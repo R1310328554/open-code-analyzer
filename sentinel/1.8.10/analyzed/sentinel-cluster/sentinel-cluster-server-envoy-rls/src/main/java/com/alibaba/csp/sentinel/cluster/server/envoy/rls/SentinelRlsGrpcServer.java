@@ -23,6 +23,8 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
 /**
+ * Sentinel Envoy RLS gRPC 服务端封装，同时注册 v2 与 v3 RateLimitService 实现。
+ *
  * @author Eric Zhao
  */
 public class SentinelRlsGrpcServer {
@@ -37,14 +39,16 @@ public class SentinelRlsGrpcServer {
         server = builder.build();
     }
 
+    /** 启动 gRPC 服务端并输出监听端口日志。 */
     public void start() throws IOException {
-        // The gRPC server has already checked the start status, so we don't check here.
+        // gRPC Server 内部已处理启动状态，此处不再重复检查。
         server.start();
         String message = "[SentinelRlsGrpcServer] RLS server is running at port " + server.getPort();
         RecordLog.info(message);
         System.out.println(message);
     }
 
+    /** 立即关闭 gRPC 服务端。 */
     public void shutdown() {
         server.shutdownNow();
     }
@@ -53,6 +57,7 @@ public class SentinelRlsGrpcServer {
         return server.isShutdown();
     }
 
+    /** 阻塞等待 gRPC 服务端终止。 */
     public void blockUntilShutdown() throws InterruptedException {
         if (server != null) {
             server.awaitTermination();

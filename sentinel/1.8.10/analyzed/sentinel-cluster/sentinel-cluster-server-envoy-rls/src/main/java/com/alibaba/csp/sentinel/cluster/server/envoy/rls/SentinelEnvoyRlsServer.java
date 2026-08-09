@@ -24,6 +24,8 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * Envoy RLS 令牌服务端入口，启动 gRPC 服务并加载规则数据源。
+ *
  * @author Eric Zhao
  */
 public class SentinelEnvoyRlsServer {
@@ -51,7 +53,7 @@ public class SentinelEnvoyRlsServer {
 
     private static int resolvePort() {
         final int defaultPort = SentinelEnvoyRlsConstants.DEFAULT_GRPC_PORT;
-        // Order: system env > property
+        // 解析顺序：系统环境变量优先于配置文件属性。
         String portStr = Optional.ofNullable(System.getenv(SentinelEnvoyRlsConstants.GRPC_PORT_ENV_KEY))
             .orElse(SentinelConfig.getConfig(SentinelEnvoyRlsConstants.GRPC_PORT_PROPERTY_KEY));
         if (StringUtil.isBlank(portStr)) {

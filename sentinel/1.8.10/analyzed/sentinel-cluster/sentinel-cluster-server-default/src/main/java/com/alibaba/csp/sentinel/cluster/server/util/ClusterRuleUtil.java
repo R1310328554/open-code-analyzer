@@ -16,11 +16,18 @@
 package com.alibaba.csp.sentinel.cluster.server.util;
 
 /**
+ * 集群规则工具类，提供规则 ID 等通用校验方法。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public final class ClusterRuleUtil {
 
+    /** 校验规则 ID 是否有效（非 null 且大于 0）。
+     *
+     * @param id 规则 ID
+     * @return 有效返回 true
+     */
     public static boolean validId(Long id) {
         return id != null && id > 0;
     }

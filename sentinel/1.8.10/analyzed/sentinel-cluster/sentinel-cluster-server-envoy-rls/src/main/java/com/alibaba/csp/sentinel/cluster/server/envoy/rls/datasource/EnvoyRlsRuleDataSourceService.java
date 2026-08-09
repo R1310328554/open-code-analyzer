@@ -31,6 +31,8 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.representer.Representer;
 
 /**
+ * Envoy RLS 规则文件数据源服务，监听 YAML 规则文件并动态加载到 {@link EnvoyRlsRuleManager}。
+ *
  * @author Eric Zhao
  * @since 1.7.0
  */
@@ -49,6 +51,7 @@ public class EnvoyRlsRuleDataSourceService {
         return new Yaml(representer);
     }
 
+    /** 初始化文件数据源；路径为空时抛出 {@link IllegalStateException}。 */
     public synchronized void init() throws Exception {
         if (ds != null) {
             return;
@@ -63,6 +66,7 @@ public class EnvoyRlsRuleDataSourceService {
         EnvoyRlsRuleManager.register2Property(ds.getProperty());
     }
 
+    /** 关闭数据源并释放文件监听资源。 */
     public synchronized void onShutdown() {
         if (ds != null) {
             try {

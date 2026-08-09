@@ -31,7 +31,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
- * Netty server handler for Sentinel token server.
+ * Sentinel 令牌服务端的 Netty 入站处理器。
+ * <p>管理连接生命周期，解析 {@link ClusterRequest} 并委托 {@link RequestProcessor} 处理，
+ * 同时处理客户端 PING 以注册命名空间连接。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -63,13 +65,13 @@ public class TokenServerHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof ClusterRequest) {
             ClusterRequest request = (ClusterRequest)msg;
 
-            // Client ping with its namespace, add to connection manager.
+            // 客户端 PING 携带命名空间，注册到连接管理器。
             if (request.getType() == ClusterConstants.MSG_TYPE_PING) {
                 handlePingRequest(ctx, request);
                 return;
             }
 
-            // Pick request processor for request type.
+            // 按请求类型选择对应的 RequestProcessor。
             RequestProcessor<?, ?> processor = RequestProcessorProvider.getProcessor(request.getType());
             if (processor == null) {
                 RecordLog.warn("[TokenServerHandler] No processor for request type: " + request.getType());
@@ -98,7 +100,7 @@ public class TokenServerHandler extends ChannelInboundHandlerAdapter {
         }
         String namespace = (String)request.getData();
         String clientAddress = getRemoteAddress(ctx);
-        // Add the remote namespace to connection manager.
+        // 将远端命名空间注册到连接管理器。
         int curCount = ConnectionManager.addConnection(namespace, clientAddress).getConnectedCount();
         int status = ClusterConstants.RESPONSE_STATUS_OK;
         ClusterResponse<Integer> response = new ClusterResponse<>(request.getId(), request.getType(), status, curCount);

@@ -24,6 +24,9 @@ import com.alibaba.csp.sentinel.spi.SpiLoader;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 集群请求处理器提供者，通过 SPI 加载并缓存 {@link RequestProcessor} 实例。
+ * <p>处理器类型由 {@link RequestType} 注解的 value 决定。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -54,6 +57,11 @@ public final class RequestProcessorProvider {
         }
     }
 
+    /** 按消息类型获取已注册的请求处理器。
+     *
+     * @param type 集群消息类型
+     * @return 对应的处理器，未注册时返回 null
+     */
     public static RequestProcessor getProcessor(int type) {
         return PROCESSOR_MAP.get(type);
     }

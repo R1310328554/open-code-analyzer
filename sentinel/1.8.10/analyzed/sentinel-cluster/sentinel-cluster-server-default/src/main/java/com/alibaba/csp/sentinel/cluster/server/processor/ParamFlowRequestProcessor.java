@@ -28,6 +28,9 @@ import com.alibaba.csp.sentinel.cluster.response.data.FlowTokenResponseData;
 import com.alibaba.csp.sentinel.cluster.server.TokenServiceProvider;
 
 /**
+ * 集群热点参数流控令牌请求处理器，处理 {@link ClusterConstants#MSG_TYPE_PARAM_FLOW} 类型请求。
+ * <p>从请求体提取 flowId、count 与参数集合，委托 {@link TokenService#requestParamToken} 判定放行。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

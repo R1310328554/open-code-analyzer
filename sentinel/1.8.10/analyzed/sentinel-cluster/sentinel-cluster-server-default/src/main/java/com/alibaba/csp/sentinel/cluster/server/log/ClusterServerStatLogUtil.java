@@ -20,6 +20,8 @@ import com.alibaba.csp.sentinel.eagleeye.StatLogger;
 import com.alibaba.csp.sentinel.log.LogBase;
 
 /**
+ * 集群令牌服务端统计日志工具，基于 EagleEye {@link StatLogger} 写入 sentinel-server.log。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -44,10 +46,19 @@ public final class ClusterServerStatLogUtil {
             .buildSingleton();
     }
 
+    /** 记录一条计数为 1 的统计日志。
+     *
+     * @param msg 日志消息键
+     */
     public static void log(String msg) {
         statLogger.stat(msg).count();
     }
 
+    /** 记录指定计数的统计日志。
+     *
+     * @param msg 日志消息键
+     * @param count 计数值
+     */
     public static void log(String msg, int count) {
         statLogger.stat(msg).count(count);
     }

@@ -29,6 +29,9 @@ import com.alibaba.csp.sentinel.init.InitFunc;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
+ * 集群令牌服务端默认初始化函数，注册编解码器与请求处理器。
+ * <p>实现 {@link InitFunc}，在 Sentinel 启动时预加载 SPI 组件。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -41,7 +44,7 @@ public class DefaultClusterServerInitFunc implements InitFunc {
 
         initDefaultProcessors();
 
-        // Eagerly-trigger the SPI pre-load of token service.
+        // 主动预加载 TokenService SPI 实现。
         TokenServiceProvider.getService();
 
         RecordLog.info("[DefaultClusterServerInitFunc] Default entity codec and processors registered");
@@ -60,7 +63,7 @@ public class DefaultClusterServerInitFunc implements InitFunc {
     }
 
     private void initDefaultProcessors() {
-        // Eagerly-trigger the SPI pre-load.
+        // 主动预加载 RequestProcessor SPI 实现。
         RequestProcessorProvider.getProcessor(0);
     }
 }

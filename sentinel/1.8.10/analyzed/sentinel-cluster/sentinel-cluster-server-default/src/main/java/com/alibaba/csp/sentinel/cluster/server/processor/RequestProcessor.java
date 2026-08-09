@@ -19,17 +19,17 @@ import com.alibaba.csp.sentinel.cluster.request.ClusterRequest;
 import com.alibaba.csp.sentinel.cluster.response.ClusterResponse;
 
 /**
- * Interface of cluster request processor.
+ * 集群请求处理器接口。
  *
- * @param <T> type of request body
- * @param <R> type of response body
+ * @param <T> 请求体类型
+ * @param <R> 响应体类型
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface RequestProcessor<T, R> {
 
     /**
-     * Process the cluster request.
+     * 处理集群请求并返回响应。
      *
      * @param request Sentinel cluster request
      * @return the response after processed

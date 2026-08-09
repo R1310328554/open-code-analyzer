@@ -25,6 +25,9 @@ import com.alibaba.csp.sentinel.cluster.server.log.ClusterServerStatLogUtil;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 
 /**
+ * Envoy RLS 场景的简化集群流控检查器，基于平均 QPS 与阈值比较判定放行。
+ * <p>不含预占用逻辑，适用于 Envoy 侧轻量级限流集成。
+ *
  * @author Eric Zhao
  * @since 1.7.0
  */
@@ -49,12 +52,12 @@ public final class SimpleClusterFlowChecker {
             ClusterServerStatLogUtil.log("flow|pass|" + id, acquireCount);
             ClusterServerStatLogUtil.log("flow|pass_request|" + id, 1);
 
-            // Remaining count is cut down to a smaller integer.
+            // 剩余配额截断为整数返回。
             return new TokenResult(TokenResultStatus.OK)
                 .setRemaining((int) nextRemaining)
                 .setWaitInMs(0);
         } else {
-            // Blocked.
+            // 请求被阻断。
             metric.add(ClusterFlowEvent.BLOCK, acquireCount);
             metric.add(ClusterFlowEvent.BLOCK_REQUEST, 1);
             ClusterServerStatLogUtil.log("flow|block|" + id, acquireCount);
