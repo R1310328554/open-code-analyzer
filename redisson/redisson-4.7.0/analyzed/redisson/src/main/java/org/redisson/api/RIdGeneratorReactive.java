@@ -18,27 +18,27 @@ package org.redisson.api;
 import reactor.core.publisher.Mono;
 
 /**
- * Id generator of <code>Long</code> type numbers.
- * Returns unique numbers but not monotonically increased.
+ * {@code Long} 型分布式 ID 生成器 Reactor API。
+ * <p>返回全局唯一 ID，但不保证严格单调递增。
  *
  * @author Nikita Koksharov
  */
 public interface RIdGeneratorReactive extends RExpirableReactive {
 
     /**
-     * Initializes Id generator params.
+     * 初始化 ID 生成器参数（起始值与预分配步长）。
      *
-     * @param value - initial value
-     * @param allocationSize - values range allocation size
-     * @return <code>true</code> if Id generator initialized
+     * @param value 起始值
+     * @param allocationSize 预分配步长
+     * @return 见方法说明
      *         <code>false</code> if Id generator already initialized
      */
     Mono<Boolean> tryInit(long value, long allocationSize);
 
     /**
-     * Returns next unique number but not monotonically increased
+     * 返回下一个全局唯一 ID（不保证严格单调递增）。
      *
-     * @return number
+     * @return 下一个 ID
      */
     Mono<Long> nextId();
 

@@ -20,33 +20,32 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 
 /**
- * Reactive API for lease-based cache operations.
+ * 基于租约（Lease）的缓存 Map Reactor API。
  * <p>
- * Lease token is an opaque string identifier generated on cache miss.
+ * 缓存未命中时生成不透明租约令牌；各方法返回 {@link Mono}。
  *
  * @author nhancdt2602
- *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RLeasedMapReactive<K, V> {
 
     /**
-     * Returns the cached value mapped by defined {@code key} or {@code null} if value is absent.
+     * 返回 {@code key} 对应的缓存值；未命中时返回 {@code null} 并尝试获取租约。
      * <p>
-     * If value is absent then tries to acquire a lease and returns it together with {@code null} value.
-     * Lease is automatically released after {@code leaseTimeToLive} timeout.
+     * 未命中时尝试获取租约并与 {@code null} 一并返回。
+     * 租约在 {@code leaseTimeToLive} 超时后自动释放。
      *
-     * @param key map key
-     * @param leaseTimeToLive lease time to live
-     * @return cached value or lease on miss
+     * @param key 键名
+     * @param leaseTimeToLive 租约存活时间
+     * @return 缓存值或未命中时的租约信息
      */
     Mono<LeaseGetResult<V>> getWithLease(K key, Duration leaseTimeToLive);
 
     /**
-     * Invalidates the entry mapped by {@code key} and deletes current lease token (if any).
+     * 使 {@code key} 对应条目失效并删除当前租约令牌（如有）。
      *
-     * @param key map key
+     * @param key 键名
      * @return {@code true} if the map entry was removed ({@code HDEL} removed a field), {@code false} otherwise.
      *         The lease key is deleted in the same operation but does not affect this return value (the script result
      *         list records {@code HDEL} counts only).
@@ -54,34 +53,34 @@ public interface RLeasedMapReactive<K, V> {
     Mono<Boolean> removeWithLease(K key);
 
     /**
-     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
+     * 仅当 {@code leaseToken} 仍有效时，将 {@code value} 写入 {@code key}。
      *
-     * @param key map key
-     * @param value map value
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, Duration)}
+     * @param key 键名
+     * @param value 起始值
+     * @param leaseToken 租约令牌
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
     Mono<Boolean> putWithLease(K key, V value, String leaseToken);
 
     /**
-     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
+     * 仅当 {@code leaseToken} 仍有效时，将 {@code value} 写入 {@code key}。
      *
-     * @param key map key
-     * @param value map value
-     * @param ttl time to live for key/value entry. If {@link Duration#ZERO} then stores infinitely.
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, Duration)}
+     * @param key 键名
+     * @param value 起始值
+     * @param ttl 条目 TTL
+     * @param leaseToken 租约令牌
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
     Mono<Boolean> putWithLease(K key, V value, Duration ttl, String leaseToken);
 
     /**
-     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
+     * 仅当 {@code leaseToken} 仍有效时，将 {@code value} 写入 {@code key}。
      *
-     * @param key map key
-     * @param value map value
-     * @param ttl time to live for key/value entry. If {@link Duration#ZERO} then stores infinitely.
-     * @param maxIdleTime max idle time for key/value entry. If {@link Duration#ZERO} then doesn't affect expiration.
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, Duration)}
+     * @param key 键名
+     * @param value 起始值
+     * @param ttl 条目 TTL
+     * @param maxIdleTime 最大空闲时间
+     * @param leaseToken 租约令牌
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
     Mono<Boolean> putWithLease(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken);
