@@ -10,18 +10,8 @@
     "docs_src/handling_errors/tutorial002_py310.py",
     "docs_src/handling_errors/tutorial003_py310.py",
     "docs_src/handling_errors/tutorial004_py310.py",
-    "docs_src/handling_errors/tutorial005_py310.py",
-    "docs_src/handling_errors/tutorial006_py310.py",
-    "docs_src/header_param_models/__init__.py",
-    "docs_src/header_param_models/tutorial001_an_py310.py",
-    "docs_src/header_param_models/tutorial001_py310.py",
-    "docs_src/header_param_models/tutorial002_an_py310.py",
-    "docs_src/header_param_models/tutorial002_py310.py",
-    "docs_src/header_param_models/tutorial003_an_py310.py",
-    "docs_src/header_param_models/tutorial003_py310.py",
-    "docs_src/header_params/__init__.py",
-    "docs_src/header_params/tutorial001_an_py310.py"
+    "docs_src/handling_errors/tutorial005_py310.py"
   ],
   "remaining_pending": 247,
-  "done": 242
+  "done": 252
 }
