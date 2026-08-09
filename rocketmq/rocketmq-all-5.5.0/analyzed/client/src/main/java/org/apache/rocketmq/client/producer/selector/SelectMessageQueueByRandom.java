@@ -22,10 +22,15 @@ import org.apache.rocketmq.client.producer.MessageQueueSelector;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 随机选择 MessageQueue，用于无顺序要求的负载均衡发送。
+ */
 public class SelectMessageQueueByRandom implements MessageQueueSelector {
+    /** 随机数生成器，种子为当前时间。 */
     private Random random = new Random(System.currentTimeMillis());
 
     @Override
+    /** 在可用队列中均匀随机选取一条。 */
     public MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {
         int value = random.nextInt(mqs.size());
         return mqs.get(value);

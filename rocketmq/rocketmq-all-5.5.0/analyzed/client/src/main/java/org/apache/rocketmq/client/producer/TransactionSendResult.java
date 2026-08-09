@@ -16,16 +16,21 @@
  */
 package org.apache.rocketmq.client.producer;
 
+/** 事务消息发送结果：在 {@link SendResult} 基础上附加本地事务状态。 */
 public class TransactionSendResult extends SendResult {
+    /** 本地事务执行结果（COMMIT/ROLLBACK/UNKNOWN）。 */
     private LocalTransactionState localTransactionState;
 
+    /** 无参构造。 */
     public TransactionSendResult() {
     }
 
+    /** 返回本地事务状态。 */
     public LocalTransactionState getLocalTransactionState() {
         return localTransactionState;
     }
 
+    /** 设置本地事务状态。 */
     public void setLocalTransactionState(LocalTransactionState localTransactionState) {
         this.localTransactionState = localTransactionState;
     }

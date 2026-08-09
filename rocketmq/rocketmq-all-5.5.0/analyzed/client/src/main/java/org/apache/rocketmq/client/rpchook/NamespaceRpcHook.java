@@ -23,13 +23,20 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * RPC 钩子：在出站 Remoting 请求头中注入 namespace 信息，
+ * 供多租户/逻辑隔离场景下的 Broker 路由识别。
+ */
 public class NamespaceRpcHook implements RPCHook {
+    /** 客户端配置，读取 namespaceV2。 */
     private final ClientConfig clientConfig;
 
+    /** 绑定客户端配置。 */
     public NamespaceRpcHook(ClientConfig clientConfig) {
         this.clientConfig = clientConfig;
     }
 
+    /** 若配置了 namespaceV2，在请求扩展字段中标记并携带 namespace。 */
     @Override
     public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
         if (StringUtils.isNotEmpty(clientConfig.getNamespaceV2())) {
@@ -38,6 +45,7 @@ public class NamespaceRpcHook implements RPCHook {
         }
     }
 
+    /** 响应后无额外处理（占位实现）。 */
     @Override
     public void doAfterResponse(String remoteAddr, RemotingCommand request,
         RemotingCommand response) {

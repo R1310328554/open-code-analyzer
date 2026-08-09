@@ -24,13 +24,22 @@ import org.apache.rocketmq.remoting.protocol.body.ConsumeStatus;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 消费者运行时统计：按 topic@group 维度累计拉取/消费 TPS、RT 及失败次数，
+ * 供管理接口 {@link #consumeStatus} 聚合快照。
+ */
 public class ConsumerStatsManager {
     private static final Logger log = LoggerFactory.getLogger(ConsumerStatsManager.class);
 
+    /** 消费成功 TPS 指标名。 */
     private static final String TOPIC_AND_GROUP_CONSUME_OK_TPS = "CONSUME_OK_TPS";
+    /** 消费失败 TPS 指标名。 */
     private static final String TOPIC_AND_GROUP_CONSUME_FAILED_TPS = "CONSUME_FAILED_TPS";
+    /** 消费耗时 RT 指标名。 */
     private static final String TOPIC_AND_GROUP_CONSUME_RT = "CONSUME_RT";
+    /** 拉取 TPS 指标名。 */
     private static final String TOPIC_AND_GROUP_PULL_TPS = "PULL_TPS";
+    /** 拉取 RT 指标名。 */
     private static final String TOPIC_AND_GROUP_PULL_RT = "PULL_RT";
 
     private final StatsItemSet topicAndGroupConsumeOKTPS;
@@ -39,6 +48,7 @@ public class ConsumerStatsManager {
     private final StatsItemSet topicAndGroupPullTPS;
     private final StatsItemSet topicAndGroupPullRT;
 
+    /** 注册各 StatsItemSet，由定时线程池驱动分钟/小时级聚合。 */
     public ConsumerStatsManager(final ScheduledExecutorService scheduledExecutorService) {
         this.topicAndGroupConsumeOKTPS =
             new StatsItemSet(TOPIC_AND_GROUP_CONSUME_OK_TPS, scheduledExecutorService, log);
@@ -54,32 +64,40 @@ public class ConsumerStatsManager {
         this.topicAndGroupPullRT = new StatsItemSet(TOPIC_AND_GROUP_PULL_RT, scheduledExecutorService, log);
     }
 
+    /** 启动钩子（当前无操作）。 */
     public void start() {
     }
 
+    /** 关闭钩子（当前无操作）。 */
     public void shutdown() {
     }
 
+    /** 累加一次拉取耗时。 */
     public void incPullRT(final String group, final String topic, final long rt) {
         this.topicAndGroupPullRT.addRTValue(topic + "@" + group, (int) rt, 1);
     }
 
+    /** 累加拉取消息条数。 */
     public void incPullTPS(final String group, final String topic, final long msgs) {
         this.topicAndGroupPullTPS.addValue(topic + "@" + group, (int) msgs, 1);
     }
 
+    /** 累加一次消费耗时。 */
     public void incConsumeRT(final String group, final String topic, final long rt) {
         this.topicAndGroupConsumeRT.addRTValue(topic + "@" + group, (int) rt, 1);
     }
 
+    /** 累加消费成功条数。 */
     public void incConsumeOKTPS(final String group, final String topic, final long msgs) {
         this.topicAndGroupConsumeOKTPS.addValue(topic + "@" + group, (int) msgs, 1);
     }
 
+    /** 累加消费失败条数。 */
     public void incConsumeFailedTPS(final String group, final String topic, final long msgs) {
         this.topicAndGroupConsumeFailedTPS.addValue(topic + "@" + group, (int) msgs, 1);
     }
 
+    /** 聚合 topic@group 的拉取/消费 TPS、RT 及失败消息总数。 */
     public ConsumeStatus consumeStatus(final String group, final String topic) {
         ConsumeStatus cs = new ConsumeStatus();
         {
@@ -127,14 +145,17 @@ public class ConsumerStatsManager {
         return cs;
     }
 
+    /** 读取分钟级拉取 RT 快照。 */
     private StatsSnapshot getPullRT(final String group, final String topic) {
         return this.topicAndGroupPullRT.getStatsDataInMinute(topic + "@" + group);
     }
 
+    /** 读取分钟级拉取 TPS 快照。 */
     private StatsSnapshot getPullTPS(final String group, final String topic) {
         return this.topicAndGroupPullTPS.getStatsDataInMinute(topic + "@" + group);
     }
 
+    /** 读取消费 RT；分钟级无数据时回退到小时级。 */
     private StatsSnapshot getConsumeRT(final String group, final String topic) {
         StatsSnapshot statsData = this.topicAndGroupConsumeRT.getStatsDataInMinute(topic + "@" + group);
         if (0 == statsData.getSum()) {
@@ -144,10 +165,12 @@ public class ConsumerStatsManager {
         return statsData;
     }
 
+    /** 读取分钟级消费成功 TPS 快照。 */
     private StatsSnapshot getConsumeOKTPS(final String group, final String topic) {
         return this.topicAndGroupConsumeOKTPS.getStatsDataInMinute(topic + "@" + group);
     }
 
+    /** 读取分钟级消费失败 TPS 快照。 */
     private StatsSnapshot getConsumeFailedTPS(final String group, final String topic) {
         return this.topicAndGroupConsumeFailedTPS.getStatsDataInMinute(topic + "@" + group);
     }

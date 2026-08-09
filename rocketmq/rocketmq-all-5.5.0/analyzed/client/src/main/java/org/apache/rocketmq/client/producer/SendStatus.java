@@ -16,9 +16,16 @@
  */
 package org.apache.rocketmq.client.producer;
 
+/**
+ * 同步发送返回的状态码：表示消息是否成功写入及副本/刷盘是否满足 SLA。
+ */
 public enum SendStatus {
+    /** 发送成功，刷盘与副本均正常。 */
     SEND_OK,
+    /** 消息已写入但同步刷盘超时。 */
     FLUSH_DISK_TIMEOUT,
+    /** 消息已写入主节点但同步到从节点超时。 */
     FLUSH_SLAVE_TIMEOUT,
+    /** 从节点不可用，无法完成同步复制。 */
     SLAVE_NOT_AVAILABLE,
 }

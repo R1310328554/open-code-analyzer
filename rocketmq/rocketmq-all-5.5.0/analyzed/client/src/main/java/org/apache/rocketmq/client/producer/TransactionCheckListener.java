@@ -19,9 +19,14 @@ package org.apache.rocketmq.client.producer;
 import org.apache.rocketmq.common.message.MessageExt;
 
 /**
- * @deprecated This interface will be removed in the version 5.0.0, interface {@link TransactionListener} is recommended.
+ * @deprecated 5.0.0 起移除，请改用 {@link TransactionListener}。
  */
 @Deprecated
+/**
+ * 旧版事务回查监听器：Broker 回查半消息时查询本地事务状态。
+ * @deprecated 请使用 {@link TransactionListener#checkLocalTransaction}
+ */
 public interface TransactionCheckListener {
+    /** 根据半消息回查本地事务状态。 */
     LocalTransactionState checkLocalTransactionState(final MessageExt msg);
 }

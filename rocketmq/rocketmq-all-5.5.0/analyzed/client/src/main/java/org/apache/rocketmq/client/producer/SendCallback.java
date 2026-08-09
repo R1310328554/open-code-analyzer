@@ -16,8 +16,13 @@
  */
 package org.apache.rocketmq.client.producer;
 
+/**
+ * 异步发送结果回调：发送成功或失败时由客户端线程池调用。
+ */
 public interface SendCallback {
+    /** 发送成功，返回 {@link SendResult}。 */
     void onSuccess(final SendResult sendResult);
 
+    /** 发送失败，携带异常信息。 */
     void onException(final Throwable e);
 }

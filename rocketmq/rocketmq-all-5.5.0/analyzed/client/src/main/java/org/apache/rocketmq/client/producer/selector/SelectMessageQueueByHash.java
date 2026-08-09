@@ -21,9 +21,13 @@ import org.apache.rocketmq.client.producer.MessageQueueSelector;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 按 arg 的 hashCode 取模选择队列，保证相同路由键的消息进入同一队列。
+ */
 public class SelectMessageQueueByHash implements MessageQueueSelector {
 
     @Override
+    /** 使用 arg.hashCode() % mqs.size() 选取队列。 */
     public MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {
         int value = arg.hashCode() % mqs.size();
         if (value < 0) {

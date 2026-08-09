@@ -22,18 +22,26 @@ import org.apache.rocketmq.client.producer.MessageQueueSelector;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 按机房（IDC）选择 MessageQueue 的策略占位实现；
+ * 当前 {@link #select} 恒返回 null，需业务侧自行扩展。
+ */
 public class SelectMessageQueueByMachineRoom implements MessageQueueSelector {
+    /** 消费者所在机房 ID 集合。 */
     private Set<String> consumeridcs;
 
     @Override
+    /** 按机房筛选队列（当前未实现，返回 null）。 */
     public MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {
         return null;
     }
 
+    /** 返回消费者机房集合。 */
     public Set<String> getConsumeridcs() {
         return consumeridcs;
     }
 
+    /** 设置消费者机房集合。 */
     public void setConsumeridcs(Set<String> consumeridcs) {
         this.consumeridcs = consumeridcs;
     }
