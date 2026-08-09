@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T23:13:15Z",
   "files": [
-    "codec-base/src/main/java/io/netty/handler/codec/MessageToMessageCodec.java",
-    "codec-base/src/main/java/io/netty/handler/codec/MessageToMessageDecoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/MessageToMessageEncoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/PrematureChannelClosureException.java",
-    "codec-base/src/main/java/io/netty/handler/codec/ProtocolDetectionResult.java",
-    "codec-base/src/main/java/io/netty/handler/codec/ProtocolDetectionState.java",
-    "codec-base/src/main/java/io/netty/handler/codec/ReplayingDecoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/ReplayingDecoderByteBuf.java",
-    "codec-base/src/main/java/io/netty/handler/codec/TooLongFrameException.java",
-    "codec-base/src/main/java/io/netty/handler/codec/UnsupportedMessageTypeException.java",
-    "codec-base/src/main/java/io/netty/handler/codec/UnsupportedValueConverter.java",
-    "codec-base/src/main/java/io/netty/handler/codec/ValueConverter.java",
-    "codec-base/src/main/java/io/netty/handler/codec/base64/Base64.java",
-    "codec-base/src/main/java/io/netty/handler/codec/base64/Base64Decoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/base64/Base64Dialect.java",
     "codec-base/src/main/java/io/netty/handler/codec/base64/Base64Encoder.java",
     "codec-base/src/main/java/io/netty/handler/codec/bytes/ByteArrayDecoder.java",
     "codec-base/src/main/java/io/netty/handler/codec/bytes/ByteArrayEncoder.java",
@@ -33,5 +18,5 @@
     "codec-base/src/main/java/io/netty/handler/codec/serialization/ObjectEncoderOutputStream.java"
   ],
   "remaining_pending": 1778,
-  "done": 120
+  "done": 135
 }
