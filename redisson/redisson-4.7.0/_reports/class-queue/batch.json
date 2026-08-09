@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:42:35Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/RedissonBaseLock.java",
-    "redisson/src/main/java/org/redisson/RedissonBinaryStream.java",
-    "redisson/src/main/java/org/redisson/RedissonBlockingDeque.java",
-    "redisson/src/main/java/org/redisson/RedissonBlockingQueue.java",
-    "redisson/src/main/java/org/redisson/RedissonBloomFilterNative.java",
-    "redisson/src/main/java/org/redisson/RedissonBuckets.java",
-    "redisson/src/main/java/org/redisson/RedissonClientSideCaching.java",
-    "redisson/src/main/java/org/redisson/RedissonCountDownLatch.java",
-    "redisson/src/main/java/org/redisson/RedissonCountDownLatchEntry.java",
-    "redisson/src/main/java/org/redisson/RedissonCuckooFilter.java",
-    "redisson/src/main/java/org/redisson/RedissonDeque.java",
-    "redisson/src/main/java/org/redisson/RedissonDoubleAdder.java",
-    "redisson/src/main/java/org/redisson/RedissonExpirable.java",
-    "redisson/src/main/java/org/redisson/RedissonFairLock.java",
-    "redisson/src/main/java/org/redisson/RedissonFencedLock.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1652,
-  "done": 1155
+  "done": 1170
 }
