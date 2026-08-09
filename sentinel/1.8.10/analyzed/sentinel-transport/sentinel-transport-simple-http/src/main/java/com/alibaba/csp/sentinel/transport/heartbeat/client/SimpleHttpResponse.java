@@ -21,17 +21,23 @@ import java.nio.charset.Charset;
 import java.util.Map;
 
 /**
- * Simple HTTP response representation.
+ * 简易 HTTP 响应：状态行、响应头与 body 字节。
+ * 通过 {@link #getBodyAsString()} 按 Content-Type charset 解码正文。
  *
  * @author leyou
  */
 public class SimpleHttpResponse {
 
+    /** 正文解码字符集，可从 Content-Type 解析。 */
     private Charset charset = Charset.forName(SentinelConfig.charset());
 
+    /** HTTP 状态行（如 HTTP/1.1 200 OK）。 */
     private String statusLine;
+    /** 数字状态码，懒解析自 statusLine。 */
     private int statusCode;
+    /** 响应头 Map。 */
     private Map<String, String> headers;
+    /** 响应体原始字节。 */
     private byte[] body;
 
     public SimpleHttpResponse(String statusLine, Map<String, String> headers) {
@@ -82,10 +88,10 @@ public class SimpleHttpResponse {
     }
 
     /**
-     * Get header of the key ignoring case.
+     * 按 key 获取响应头，忽略大小写。
      *
-     * @param key header key
-     * @return header value
+     * @param key 头名称
+     * @return 头值，不存在时 null
      */
     public String getHeader(String key) {
         if (headers == null) {
@@ -103,6 +109,7 @@ public class SimpleHttpResponse {
         return null;
     }
 
+    /** 按 charset 将 body 解码为字符串。 */
     public String getBodyAsString() {
         parseCharset();
         return new String(body, charset);

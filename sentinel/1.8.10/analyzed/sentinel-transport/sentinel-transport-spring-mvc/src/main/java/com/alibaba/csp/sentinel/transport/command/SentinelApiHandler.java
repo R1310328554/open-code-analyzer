@@ -28,14 +28,19 @@ import java.io.PrintWriter;
 import java.util.Map;
 
 /**
+ * Spring MVC 环境下的 Sentinel 命令 API 处理器：将 HTTP 参数转为 {@link CommandRequest} 并调用 {@link CommandHandler}。
+ *
  * @author shenbaoyong
  */
 public class SentinelApiHandler {
 
+    /** 内部错误时的默认响应消息。 */
     public static final String SERVER_ERROR_MESSAGE = "Command server error";
 
+    /** 绑定的命令处理器。 */
     private CommandHandler commandHandler;
 
+    /** @param commandHandler 处理具体命令的 Handler */
     public SentinelApiHandler(CommandHandler commandHandler) {
         this.commandHandler = commandHandler;
     }
@@ -85,7 +90,7 @@ public class SentinelApiHandler {
                 writeResponse(httpServletResponse, printWriter, StatusCode.OK, null);
                 return;
             }
-            // Here we directly use `toString` to encode the result to plain text.
+            // 成功结果 toString 后按 Sentinel charset 编码输出
             byte[] buffer = response.getResult().toString().getBytes(SentinelConfig.charset());
             writeResponse(httpServletResponse, printWriter, StatusCode.OK, new String(buffer));
         } else {

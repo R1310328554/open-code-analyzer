@@ -18,25 +18,28 @@ package com.alibaba.csp.sentinel.transport.command.exception;
 import com.alibaba.csp.sentinel.transport.command.http.StatusCode;
 
 /**
- * Represent exception with status code processing a request
- * 
- * @author jason
+ * HTTP 命令请求处理异常，携带 {@link StatusCode} 供 {@link HttpEventTask} 写回响应。
  *
+ * @author jason
  */
 public class RequestException extends Exception {
     private static final long serialVersionUID = 1L;
     
+    /** 默认 400 Bad Request。 */
     private StatusCode statusCode = StatusCode.BAD_REQUEST;
     
     public RequestException() {
         super();
     }
     
+    /** @param statusCode HTTP 状态码
+     * @param msg 错误消息 */
     public RequestException(StatusCode statusCode, String msg) {
         super(msg);
         this.statusCode = statusCode;
     }
     
+    /** @return 关联的 HTTP 状态码枚举。 */
     public StatusCode getStatusCode() {
         return statusCode;
     }

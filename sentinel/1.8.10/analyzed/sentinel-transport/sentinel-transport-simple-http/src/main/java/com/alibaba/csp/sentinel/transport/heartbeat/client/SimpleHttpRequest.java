@@ -24,19 +24,27 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.transport.endpoint.Endpoint;
 
 /**
- * Simple HTTP request representation.
+ * 简易 HTTP 请求描述：目标端点、路径、超时、字符集与参数 Map。
+ * 支持链式 setter 与 {@link #addParam}。
  *
  * @author leyou
  * @author Leo Li
  */
 public class SimpleHttpRequest {
 
+    /** 目标 Dashboard 端点。 */
     private Endpoint endpoint;
+    /** API 路径（如心跳注册路径）。 */
     private String requestPath = "";
+    /** Socket 读写超时（毫秒）。 */
     private int soTimeout = 3000;
+    /** 请求参数（GET 拼 URL，POST 写 body）。 */
     private Map<String, String> params;
+    /** 请求编码字符集，默认 Sentinel 全局 charset。 */
     private Charset charset = Charset.forName(SentinelConfig.charset());
 
+    /** @param endpoint 目标端点
+     * @param requestPath API 路径 */
     public SimpleHttpRequest(Endpoint endpoint, String requestPath) {
         this.endpoint = endpoint;
         this.requestPath = requestPath;
@@ -87,9 +95,10 @@ public class SimpleHttpRequest {
         return this;
     }
 
+    /** 链式添加单个请求参数。 */
     public SimpleHttpRequest addParam(String key, String value) {
         if (StringUtil.isBlank(key)) {
-            throw new IllegalArgumentException("Parameter key cannot be empty");
+            throw new IllegalArgumentException("参数键不能为空");
         }
         if (params == null) {
             params = new HashMap<String, String>();

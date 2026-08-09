@@ -41,7 +41,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The task handles incoming command request in HTTP protocol.
+ * HTTP 命令事件任务：解析 Socket 上的简易 HTTP 请求并分派给 {@link CommandHandler}。
+ * 支持 GET 查询串与 POST form-urlencoded 请求体。
  *
  * @author youji.zj
  * @author Eric Zhao
@@ -49,11 +50,15 @@ import java.util.Map;
  */
 public class HttpEventTask implements Runnable {
 
+    /** 服务端内部错误时的默认响应正文。 */
     public static final String SERVER_ERROR_MESSAGE = "Command server error";
+    /** 缺少目标命令名时的响应正文。 */
     public static final String INVALID_COMMAND_MESSAGE = "Invalid command";
 
+    /** 客户端连接 Socket。 */
     private final Socket socket;
 
+    /** 是否已写入 HTTP 响应头（异常路径需区分）。 */
     private boolean writtenHead = false;
 
     public HttpEventTask(Socket socket) {
@@ -86,24 +91,24 @@ public class HttpEventTask implements Runnable {
             CommandRequest request = processQueryString(firstLine);
 
             if (firstLine.length() > 4 && StringUtil.equalsIgnoreCase("POST", firstLine.substring(0, 4))) {
-                // Deal with post method
+                // POST 请求需额外解析请求头与 body
                 processPostRequest(inputStream, request);
             }
 
-            // Validate the target command.
+            // 校验目标命令名
             String commandName = HttpCommandUtils.getTarget(request);
             if (StringUtil.isBlank(commandName)) {
                 writeResponse(printWriter, StatusCode.BAD_REQUEST, INVALID_COMMAND_MESSAGE);
                 return;
             }
 
-            // Find the matching command handler.
+            // 查找匹配的 CommandHandler
             CommandHandler<?> commandHandler = SimpleHttpCommandCenter.getHandler(commandName);
             if (commandHandler != null) {
                 CommandResponse<?> response = commandHandler.handle(request);
                 handleResponse(response, printWriter);
             } else {
-                // No matching command handler.
+                // 未找到对应命令处理器
                 writeResponse(printWriter, StatusCode.BAD_REQUEST, "Unknown command `" + commandName + '`');
             }
 
@@ -156,25 +161,25 @@ public class HttpEventTask implements Runnable {
     }
 
     /**
-     * Try to process the body of POST request additionally.
+     * 解析 POST 请求头与 form-urlencoded 请求体，参数写入 {@link CommandRequest}。
      *
-     * @param in
-     * @param request
-     * @throws RequestException
-     * @throws IOException
+     * @param in 输入流
+     * @param request 命令请求
+     * @throws RequestException 格式或 Content-Type 不合法
+     * @throws IOException IO 错误
      */
     protected static void processPostRequest(InputStream in, CommandRequest request)
         throws RequestException, IOException {
         Map<String, String> headerMap = parsePostHeaders(in);
 
         if (headerMap == null) {
-            // illegal request
+            // 非法请求（无法解析头）
             CommandCenterLog.warn("Illegal request read: null headerMap");
             throw new RequestException(StatusCode.BAD_REQUEST, "");
         }
 
         if (headerMap.containsKey("content-type") && !checkContentTypeSupported(headerMap.get("content-type"))) {
-            // not supported Content-type
+            // 不支持的 Content-Type
             CommandCenterLog.warn("Request not supported: unsupported Content-Type: " + headerMap.get("content-type"));
             throw new RequestException(StatusCode.UNSUPPORTED_MEDIA_TYPE,
                 "Only form-encoded post request is supported");
@@ -186,7 +191,7 @@ public class HttpEventTask implements Runnable {
         } catch (Exception e) {
         }
         if (bodyLength < 1) {
-            // illegal request without Content-length header
+            // 缺少或非法 Content-Length
             CommandCenterLog.warn("Request not supported: no available Content-Length in headers");
             throw new RequestException(StatusCode.LENGTH_REQUIRED, "No legal Content-Length");
         }
@@ -195,11 +200,11 @@ public class HttpEventTask implements Runnable {
     }
 
     /**
-     * Process header line in request
+     * 逐行读取 POST 请求头直至空行。
      *
-     * @param in
-     * @return return headers in a Map, null for illegal request
-     * @throws IOException
+     * @param in 输入流
+     * @return 头字段 Map（键小写），非法请求返回 null
+     * @throws IOException IO 错误
      */
     protected static Map<String, String> parsePostHeaders(InputStream in) throws IOException {
         Map<String, String> headerMap = new HashMap<String, String>(4);
@@ -207,12 +212,12 @@ public class HttpEventTask implements Runnable {
         while (true) {
             line = readLine(in);
             if (line == null || line.length() == 0) {
-                // empty line
+                // 空行表示头部结束
                 return headerMap;
             }
             int index = line.indexOf(":");
             if (index < 1) {
-                // empty value, abandon
+                // 无冒号或空值行跳过
                 continue;
             }
             String headerName = line.substring(0, index).trim().toLowerCase();
@@ -235,8 +240,8 @@ public class HttpEventTask implements Runnable {
         // But some library do add it. So we will be compatible with that but force to
         // encoding specified in configuration as legacy processing will do.
         if (!type.contains("application/x-www-form-urlencoded")) {
-            // Not supported request type
-            // Now simple-http only support form-encoded post request.
+            // 仅支持 application/x-www-form-urlencoded
+            // simple-http 仅支持表单编码 POST
             return false;
         }
         return true;
@@ -256,15 +261,15 @@ public class HttpEventTask implements Runnable {
             }
             pos += l;
         }
-        // Only allow partial
+        // 允许部分读取 body
         return new String(buf, 0, pos, SentinelConfig.charset());
     }
 
     /**
-     * Consume all the body submitted and parse params into {@link CommandRequest}
+     * 解析 a=1&b=2 查询串，将键值对写入 {@link CommandRequest}。
      *
-     * @param queryString
-     * @param request
+     * @param queryString 查询串
+     * @param request 命令请求
      */
     protected static void parseParams(String queryString, CommandRequest request) {
         if (queryString == null || queryString.length() < 1) {
@@ -273,20 +278,20 @@ public class HttpEventTask implements Runnable {
 
         int offset = 0, pos = -1;
 
-        // check anchor
+        // 去除 # 锚点
         queryString = removeAnchor(queryString);
 
         while (true) {
             offset = pos + 1;
             pos = queryString.indexOf('&', offset);
             if (offset == pos) {
-                // empty
+                // 跳过空参数段
                 continue;
             }
             parseSingleParam(queryString.substring(offset, pos == -1 ? queryString.length() : pos), request);
 
             if (pos < 0) {
-                // reach the end
+                // 已解析完所有参数
                 break;
             }
         }
@@ -308,7 +313,7 @@ public class HttpEventTask implements Runnable {
                 writeResponse(printWriter, StatusCode.OK, null);
                 return;
             }
-            // Here we directly use `toString` to encode the result to plain text.
+            // 成功结果直接 toString 作为纯文本响应
             byte[] buffer = response.getResult().toString().getBytes(SentinelConfig.charset());
             writeResponse(printWriter, StatusCode.OK, new String(buffer));
         } else {
@@ -332,10 +337,10 @@ public class HttpEventTask implements Runnable {
     }
 
     /**
-     * Parse raw HTTP request line to a {@link CommandRequest}.
+     * 解析 HTTP 请求行（如 GET /cmd?a=1 HTTP/1.0）为 {@link CommandRequest}。
      *
-     * @param line HTTP request line
-     * @return parsed command request
+     * @param line HTTP 请求行
+     * @return 解析后的命令请求
      */
     protected static CommandRequest processQueryString(String line) {
         CommandRequest request = new CommandRequest();
@@ -356,10 +361,10 @@ public class HttpEventTask implements Runnable {
     }
 
     /**
-     * Truncate query from "a=1&b=2#mark" to "a=1&b=2"
+     * 去掉 URL 中的 # 锚点片段。
      *
-     * @param str
-     * @return
+     * @param str 原始串
+     * @return 去掉锚点后的串
      */
     protected static String removeAnchor(String str) {
         if (str == null || str.length() == 0) {
@@ -384,7 +389,7 @@ public class HttpEventTask implements Runnable {
 
         int index = single.indexOf('=');
         if (index <= 0 || index >= single.length() - 1) {
-            // empty key/val or nothing found
+            // 键或值为空则跳过
             return;
         }
 

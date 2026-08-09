@@ -23,12 +23,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
+ * {@link HandlerAdapter} 适配器：识别 {@link SentinelApiHandler} 并委托其处理 Spring MVC 请求。
+ * 默认 {@link Ordered#LOWEST_PRECEDENCE}，可通过 setOrder 调整。
+ *
  * @author shenbaoyong
  */
 public class SentinelApiHandlerAdapter implements HandlerAdapter, Ordered {
 
+    /** Handler 排序，数值越小优先级越高。 */
     private int order = Ordered.LOWEST_PRECEDENCE;
 
+    /** 设置适配器在 HandlerAdapter 链中的顺序。 */
     public void setOrder(int order) {
         this.order = order;
     }
@@ -39,11 +44,13 @@ public class SentinelApiHandlerAdapter implements HandlerAdapter, Ordered {
     }
 
     @Override
+    /** 仅支持 {@link SentinelApiHandler} 类型 handler。 */
     public boolean supports(Object handler) {
         return handler instanceof SentinelApiHandler;
     }
 
     @Override
+    /** 委托 {@link SentinelApiHandler#handle} 处理请求，不返回视图。 */
     public ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         SentinelApiHandler sentinelApiHandler = (SentinelApiHandler) handler;
         sentinelApiHandler.handle(request, response);
@@ -51,6 +58,7 @@ public class SentinelApiHandlerAdapter implements HandlerAdapter, Ordered {
     }
 
     @Override
+    /** 命令 API 不做缓存，固定返回 -1。 */
     public long getLastModified(HttpServletRequest request, Object handler) {
         return -1;
     }

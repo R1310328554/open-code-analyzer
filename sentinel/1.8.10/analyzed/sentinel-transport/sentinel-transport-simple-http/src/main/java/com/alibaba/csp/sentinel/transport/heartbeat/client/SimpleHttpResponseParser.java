@@ -24,19 +24,19 @@ import java.util.Map;
 
 /**
  * <p>
- * The parser provides functionality to parse raw bytes HTTP response to a {@link SimpleHttpResponse}.
+ * 将 Socket 输入流中的原始 HTTP 响应解析为 {@link SimpleHttpResponse}。
  * </p>
  * <p>
- * Note that this is a very NAIVE parser, {@code Content-Length} must be specified in the
- * HTTP response header, otherwise, the body will be dropped. All other body type such as
- * {@code Transfer-Encoding: chunked}, {@code Transfer-Encoding: deflate} are not supported.
+ * 朴素实现：必须存在 {@code Content-Length}，否则丢弃 body；不支持 chunked/deflate。
  * </p>
  *
  * @author leyou
  */
 public class SimpleHttpResponseParser {
 
+    /** 允许的最大响应体 4MB。 */
     private static final int MAX_BODY_SIZE = 1024 * 1024 * 4;
+    /** 读缓冲，按 maxSize 分配。 */
     private byte[] buf;
 
     public SimpleHttpResponseParser(int maxSize) {
@@ -51,11 +51,11 @@ public class SimpleHttpResponseParser {
     }
 
     /**
-     * Parse bytes from an input stream to a {@link SimpleHttpResponse}.
+     * 从输入流增量读取并解析 HTTP 响应。
      *
-     * @param in input stream
-     * @return parsed HTTP response entity
-     * @throws IOException when an IO error occurs
+     * @param in 输入流
+     * @return 解析完成的响应，流提前结束时可能为 null
+     * @throws IOException IO 错误
      */
     public SimpleHttpResponse parse(InputStream in) throws IOException {
         int bg = 0;
@@ -81,19 +81,19 @@ public class SimpleHttpResponseParser {
                         statusLine = line;
                     } else {
                         if (line.isEmpty()) {
-                            //When the `Content-Length` is absent, parse the rest of the bytes as body directly.
+                            // 无 Content-Length 时曾考虑读剩余字节（已注释）
                             //if (contentLength == -1) {
                             //    contentLength = MAX_BODY_SIZE;
                             //}
 
-                            // Parse HTTP body.
-                            // When the `Content-Length` is absent, drop the body, return directly.
+                            // 解析 HTTP 正文
+                            // 无 Content-Length 则丢弃 body 直接返回
                             response = new SimpleHttpResponse(statusLine, headers);
                             if (contentLength <= 0) {
                                 return response;
                             }
                             ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
-                            // `Content-Length` is not equal to exact length.
+                            // Content-Length 与已读长度不一致
                             if (contentLength < len - parseBg) {
                                 throw new IllegalStateException("Invalid content length: " + contentLength);
                             }
@@ -110,7 +110,7 @@ public class SimpleHttpResponseParser {
                             response.setBody(out.toByteArray());
                             return response;
                         } else if (!line.trim().isEmpty()) {
-                            // Parse HTTP header.
+                            // 解析单行响应头
                             int idx2 = line.indexOf(":");
                             String key = line.substring(0, idx2).trim();
                             String value = line.substring(idx2 + 1).trim();
@@ -121,7 +121,7 @@ public class SimpleHttpResponseParser {
                         }
                     }
                 }
-                // Move remaining bytes to the beginning.
+                // 未消费字节前移，继续读下一行
                 if (parseBg != 0) {
                     System.arraycopy(buf, parseBg, buf, 0, len - parseBg);
                 }
@@ -134,11 +134,11 @@ public class SimpleHttpResponseParser {
     }
 
     /**
-     * Get the index of CRLF separator.
+     * 在 buf[bg..ed) 中查找 \r\n 分隔符位置。
      *
-     * @param bg begin offset
-     * @param ed end offset
-     * @return the index, or {@code -1} if no CRLF is found
+     * @param bg 起始偏移
+     * @param ed 结束偏移
+     * @return CRLF 起始索引，未找到返回 -1
      */
     private int indexOfCRLF(int bg, int ed) {
         if (ed - bg < 2) {

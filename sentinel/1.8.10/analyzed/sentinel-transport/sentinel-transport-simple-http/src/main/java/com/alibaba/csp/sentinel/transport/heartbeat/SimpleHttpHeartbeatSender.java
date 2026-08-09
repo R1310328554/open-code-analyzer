@@ -26,8 +26,8 @@ import com.alibaba.csp.sentinel.transport.endpoint.Endpoint;
 import java.util.List;
 
 /**
- * The heartbeat sender provides basic API for sending heartbeat request to provided target.
- * This implementation is based on a trivial HTTP client.
+ * 基于 {@link SimpleHttpClient} 的心跳发送器：向 Dashboard 列表轮询 POST 注册信息。
+ * 命令端口未初始化时不发送心跳。
  *
  * @author Eric Zhao
  * @author Carpenter Lee
@@ -35,22 +35,28 @@ import java.util.List;
  */
 public class SimpleHttpHeartbeatSender implements HeartbeatSender {
 
+    /** HTTP 200 视为成功。 */
     private static final int OK_STATUS = 200;
 
+    /** 默认心跳间隔 10 秒。 */
     private static final long DEFAULT_INTERVAL = 1000 * 10;
 
+    /** 心跳消息构建器。 */
     private final HeartbeatMessage heartBeat = new HeartbeatMessage();
+    /** 简易 HTTP 客户端。 */
     private final SimpleHttpClient httpClient = new SimpleHttpClient();
 
+    /** Dashboard 地址列表。 */
     private final List<Endpoint> addressList;
 
+    /** 当前轮询的 Dashboard 索引。 */
     private int currentAddressIdx = 0;
 
     public SimpleHttpHeartbeatSender() {
-        // Retrieve the list of default addresses.
+        // 从 TransportConfig 读取 Dashboard 地址列表
         List<Endpoint> newAddrs = TransportConfig.getConsoleServerList();
         if (newAddrs.isEmpty()) {
-            RecordLog.warn("[SimpleHttpHeartbeatSender] Dashboard server address not configured or not available");
+            RecordLog.warn("[SimpleHttpHeartbeatSender] Dashboard 地址未配置或不可用");
         } else {
             RecordLog.info("[SimpleHttpHeartbeatSender] Default console address list retrieved: {}", newAddrs);
         }
@@ -60,7 +66,7 @@ public class SimpleHttpHeartbeatSender implements HeartbeatSender {
     @Override
     public boolean sendHeartbeat() throws Exception {
         if (TransportConfig.getRuntimePort() <= 0) {
-            RecordLog.info("[SimpleHttpHeartbeatSender] Command server port not initialized, won't send heartbeat");
+            RecordLog.info("[SimpleHttpHeartbeatSender] 命令端口未初始化，跳过心跳");
             return false;
         }
         Endpoint addrInfo = getAvailableAddress();
@@ -75,7 +81,7 @@ public class SimpleHttpHeartbeatSender implements HeartbeatSender {
             if (response.getStatusCode() == OK_STATUS) {
                 return true;
             } else if (clientErrorCode(response.getStatusCode()) || serverErrorCode(response.getStatusCode())) {
-                RecordLog.warn("[SimpleHttpHeartbeatSender] Failed to send heartbeat to " + addrInfo
+                RecordLog.warn("[SimpleHttpHeartbeatSender] 心跳发送失败，目标 " + addrInfo
                     + ", http status code: " + response.getStatusCode());
             }
         } catch (Exception e) {
@@ -89,6 +95,7 @@ public class SimpleHttpHeartbeatSender implements HeartbeatSender {
         return DEFAULT_INTERVAL;
     }
 
+    /** 按 currentAddressIdx 轮询返回可用 Dashboard 端点。 */
     private Endpoint getAvailableAddress() {
         if (addressList == null || addressList.isEmpty()) {
             return null;

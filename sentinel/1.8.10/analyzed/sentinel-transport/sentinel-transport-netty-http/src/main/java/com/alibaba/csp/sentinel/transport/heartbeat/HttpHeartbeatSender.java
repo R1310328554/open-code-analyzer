@@ -38,6 +38,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import java.util.List;
 
 /**
+ * 基于 Apache HttpClient 的心跳发送器：向 Dashboard 发起 GET 注册本机信息。
+ * SPI 优先级 {@code ORDER_LOWEST - 100}，与 Netty 实现互斥加载。
+ *
  * @author Eric Zhao
  * @author Carpenter Lee
  * @author Leo Li
@@ -45,10 +48,13 @@ import java.util.List;
 @Spi(order = Spi.ORDER_LOWEST - 100)
 public class HttpHeartbeatSender implements HeartbeatSender {
 
+    /** Apache HttpClient 实例，按 Dashboard 协议（HTTP/HTTPS）创建。 */
     private final CloseableHttpClient client;
 
+    /** HTTP 200 视为心跳成功。 */
     private static final int OK_STATUS = 200;
 
+    /** 连接与读超时（毫秒）。 */
     private final int timeoutMs = 3000;
     private final RequestConfig requestConfig = RequestConfig.custom()
         .setConnectionRequestTimeout(timeoutMs)
@@ -56,14 +62,17 @@ public class HttpHeartbeatSender implements HeartbeatSender {
         .setSocketTimeout(timeoutMs)
         .build();
 
+    /** 首个 Dashboard 端点的通信协议。 */
     private final Protocol consoleProtocol;
+    /** Dashboard 主机名或 IP。 */
     private final String consoleHost;
+    /** Dashboard 端口。 */
     private final int consolePort;
 
     public HttpHeartbeatSender() {
         List<Endpoint> dashboardList = TransportConfig.getConsoleServerList();
         if (dashboardList == null || dashboardList.isEmpty()) {
-            RecordLog.info("[NettyHttpHeartbeatSender] No dashboard server available");
+            RecordLog.info("[NettyHttpHeartbeatSender] 未配置可用的 Dashboard 地址");
             consoleProtocol = Protocol.HTTP;
             consoleHost = null;
             consolePort = -1;
@@ -71,7 +80,7 @@ public class HttpHeartbeatSender implements HeartbeatSender {
             consoleProtocol = dashboardList.get(0).getProtocol();
             consoleHost = dashboardList.get(0).getHost();
             consolePort = dashboardList.get(0).getPort();
-            RecordLog.info("[NettyHttpHeartbeatSender] Dashboard address parsed: <{}:{}>", consoleHost, consolePort);
+            RecordLog.info("[NettyHttpHeartbeatSender] 已解析 Dashboard 地址: <{}:{}>", consoleHost, consolePort);
         }
         this.client = HttpClientsFactory.getHttpClientsByProtocol(consoleProtocol);
     }
@@ -95,14 +104,14 @@ public class HttpHeartbeatSender implements HeartbeatSender {
 
         HttpGet request = new HttpGet(uriBuilder.build());
         request.setConfig(requestConfig);
-        // Send heartbeat request.
+        // 发送心跳 GET 请求
         CloseableHttpResponse response = client.execute(request);
         response.close();
         int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode == OK_STATUS) {
             return true;
         } else if (clientErrorCode(statusCode) || serverErrorCode(statusCode)) {
-            RecordLog.warn("[HttpHeartbeatSender] Failed to send heartbeat to "
+            RecordLog.warn("[HttpHeartbeatSender] 心跳发送失败，目标 "
                 + consoleHost + ":" + consolePort + ", http status code: " + statusCode);
         }
 
@@ -110,14 +119,17 @@ public class HttpHeartbeatSender implements HeartbeatSender {
     }
 
     @Override
+    /** @return 默认心跳间隔 5000 毫秒。 */
     public long intervalMs() {
         return 5000;
     }
 
+    /** 判断是否为 4xx 客户端错误状态码。 */
     private boolean clientErrorCode(int code) {
         return code > 399 && code < 500;
     }
 
+    /** 判断是否为 5xx 服务端错误状态码。 */
     private boolean serverErrorCode(int code) {
         return code > 499 && code < 600;
     }

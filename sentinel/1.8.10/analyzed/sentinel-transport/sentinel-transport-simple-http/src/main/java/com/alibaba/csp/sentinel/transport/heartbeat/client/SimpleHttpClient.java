@@ -30,21 +30,17 @@ import com.alibaba.csp.sentinel.transport.endpoint.Endpoint;
 
 /**
  * <p>
- * A very simple HTTP client that only supports GET/POST method and plain text request body.
- * The Content-Type header is always set as <pre>application/x-www-form-urlencoded</pre>.
- * All parameters in the request will be encoded using {@link URLEncoder#encode(String, String)}.
+ * 极简阻塞式 HTTP 客户端，仅支持 GET/POST 与 form-urlencoded 正文。
+ * Content-Type 固定为 <pre>application/x-www-form-urlencoded</pre>，参数经 {@link URLEncoder} 编码。
  * </p>
  * <p>
- * The result of a HTTP invocation will be wrapped as a {@link SimpleHttpResponse}. Content in response body
- * will be automatically decoded to string with provided charset.
+ * 响应封装为 {@link SimpleHttpResponse}，正文按 charset 解码为字符串。
  * </p>
  * <p>
- * This is a blocking and synchronous client, so an invocation will await the response until timeout exceed.
+ * 同步阻塞：调用线程等待响应或超时。
  * </p>
  * <p>
- * Note that this is a very NAIVE client, {@code Content-Length} must be specified in the
- * HTTP response header, otherwise, the response body will be dropped. All other body type such as
- * {@code Transfer-Encoding: chunked}, {@code Transfer-Encoding: deflate} are not supported.
+ * 实现较朴素：响应必须带 {@code Content-Length}，否则丢弃 body；不支持 chunked/deflate 等编码。
  * </p>
  *
  * @author leyou
@@ -53,11 +49,11 @@ import com.alibaba.csp.sentinel.transport.endpoint.Endpoint;
 public class SimpleHttpClient {
 
     /**
-     * Execute a GET HTTP request.
+     * 执行 GET 请求，查询参数拼接到 URL。
      *
-     * @param request HTTP request
-     * @return the response if the request is successful
-     * @throws IOException when connection cannot be established or the connection is interrupted
+     * @param request HTTP 请求
+     * @return 响应实体，request 为 null 时返回 null
+     * @throws IOException 连接失败或中断
      */
     public SimpleHttpResponse get(SimpleHttpRequest request) throws IOException {
         if (request == null) {
@@ -69,11 +65,11 @@ public class SimpleHttpClient {
     }
 
     /**
-     * Execute a POST HTTP request.
+     * 执行 POST 请求，参数放在请求体。
      *
-     * @param request HTTP request
-     * @return the response if the request is successful
-     * @throws IOException when connection cannot be established or the connection is interrupted
+     * @param request HTTP 请求
+     * @return 响应实体
+     * @throws IOException 连接失败或中断
      */
     public SimpleHttpResponse post(SimpleHttpRequest request) throws IOException {
         if (request == null) {
@@ -110,7 +106,7 @@ public class SimpleHttpClient {
                 writer.write("Content-Length: 0\r\n");
                 writer.write("\r\n");
             } else {
-                // POST method.
+                // POST：先写 Content-Length 再写 body
                 String params = encodeRequestParams(paramsMap, charset);
                 writer.write("Content-Length: " + params.getBytes(charset).length + "\r\n");
                 writer.write("\r\n");
@@ -152,11 +148,11 @@ public class SimpleHttpClient {
     }
 
     /**
-     * Encode and get the URL request parameters.
+     * 将参数 Map 编码为 application/x-www-form-urlencoded 查询串。
      *
-     * @param paramsMap pair of parameters
-     * @param charset   charset
-     * @return encoded request parameters, or empty string ("") if no parameters are provided
+     * @param paramsMap 键值对
+     * @param charset 字符集
+     * @return 编码后的参数字符串，无参数时返回空串
      */
     private String encodeRequestParams(Map<String, String> paramsMap, Charset charset) {
         if (charset == null) {
@@ -177,7 +173,7 @@ public class SimpleHttpClient {
                     .append("&");
             }
             if (paramsBuilder.length() > 0) {
-                // Remove the last '&'.
+                // 去掉末尾 &
                 paramsBuilder.delete(paramsBuilder.length() - 1, paramsBuilder.length());
             }
             return paramsBuilder.toString();
@@ -187,6 +183,7 @@ public class SimpleHttpClient {
         }
     }
 
+    /** HTTP 方法枚举。 */
     private enum RequestMethod {
         GET,
         POST
