@@ -25,18 +25,23 @@ import reactor.core.publisher.Flux;
 
 
 /**
- * 
+ * 字典序有序集合的 Reactor 门面：{@link PublisherAdder} 批量 add，
+ * {@link SetReactiveIterator} 驱动 ZSCAN 迭代成员。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonLexSortedSetReactive {
 
+    /** 底层字典序 ZSet。 */
     private final RLexSortedSet instance;
     
+    /** 包装已有 {@link RLexSortedSet}。 */
     public RedissonLexSortedSetReactive(RLexSortedSet instance) {
         this.instance = instance;
     }
 
+    /** 串行消费上游字符串流并逐条 {@code addAsync}。 */
     public Publisher<Boolean> addAll(Publisher<? extends String> c) {
         return new PublisherAdder<String>() {
             @Override
@@ -46,6 +51,7 @@ public class RedissonLexSortedSetReactive {
         }.addAll(c);
     }
 
+    /** 创建 ZSCAN 背压迭代 Flux。 */
     private Publisher<String> scanIteratorReactive(final String pattern, final int count) {
         return Flux.create(new SetReactiveIterator<String>() {
             @Override
@@ -55,18 +61,22 @@ public class RedissonLexSortedSetReactive {
         });
     }
 
+    /** 全量成员迭代，默认 chunk=10。 */
     public Publisher<String> iterator() {
         return scanIteratorReactive(null, 10);
     }
 
+    /** 按模式迭代成员。 */
     public Publisher<String> iterator(String pattern) {
         return scanIteratorReactive(pattern, 10);
     }
 
+    /** 指定 chunk 大小的全量迭代。 */
     public Publisher<String> iterator(int count) {
         return scanIteratorReactive(null, count);
     }
 
+    /** 同时指定匹配模式与 chunk 大小。 */
     public Publisher<String> iterator(String pattern, int count) {
         return scanIteratorReactive(pattern, count);
     }

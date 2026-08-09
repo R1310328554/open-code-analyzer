@@ -24,22 +24,31 @@ import org.redisson.eviction.EvictionScheduler;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * {@link RBatchReactive} 的 Reactor 实现：在单批次内聚合多条 Redis 命令。
+ * <p>
+ * 各 {@code get*} 工厂方法创建带 {@link CommandReactiveBatchService} 的响应式句柄；
+ * {@link #execute()} 提交批次，{@link #discard()} 放弃未提交命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonBatchReactive implements RBatchReactive {
 
+    /** 带 TTL 结构（MapCache/SetCache 等）使用的驱逐调度器。 */
     private final EvictionScheduler evictionScheduler;
+    /** 本批次的响应式批量命令执行器。 */
     private final CommandReactiveBatchService executorService;
+    /** 外层 Reactor 命令执行上下文（execute/discard 用）。 */
     private final CommandReactiveExecutor commandExecutor;
 
+    /** 根据连接管理与批选项构造响应式批处理会话。 */
     public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveExecutor commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandReactiveBatchService(connectionManager, commandExecutor, options);
         this.commandExecutor = commandExecutor;
     }
 
+    // --- 数组 ---
     @Override
     public <V> RArrayReactive<V> getArray(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonArray<V>(executorService, name), RArrayReactive.class);
@@ -50,6 +59,7 @@ public class RedissonBatchReactive implements RBatchReactive {
         return ReactiveProxyBuilder.create(executorService, new RedissonArray<V>(codec, executorService, name), RArrayReactive.class);
     }
 
+    // --- Redis Stream ---
     @Override
     public <K, V> RStreamReactive<K, V> getStream(String name) {
         RedissonStream<K, V> stream = new RedissonStream<K, V>(executorService, name);
@@ -62,6 +72,7 @@ public class RedissonBatchReactive implements RBatchReactive {
         return ReactiveProxyBuilder.create(executorService, stream, RStreamReactive.class);
     }
     
+    // --- Bucket / JSON Bucket / HyperLogLog ---
     @Override
     public <V> RBucketReactive<V> getBucket(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonBucket<V>(executorService, name), RBucketReactive.class);
@@ -87,6 +98,7 @@ public class RedissonBatchReactive implements RBatchReactive {
         return ReactiveProxyBuilder.create(executorService, new RedissonHyperLogLog<V>(codec, executorService, name), RHyperLogLogReactive.class);
     }
 
+    // --- List / Queue / Deque ---
     @Override
     public <V> RListReactive<V> getList(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonList<V>(executorService, name, null), 
@@ -99,6 +111,7 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonListReactive<V>(codec, executorService, name), RListReactive.class);
     }
 
+    // --- Map / MapCache / Native MapCache ---
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
         RMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, null, null);
@@ -141,6 +154,7 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonMapCacheReactive<K, V>(map, commandExecutor), RMapCacheNativeReactive.class);
     }
 
+    // --- Multimap（含 Cache Native）---
     @Override
     public <K, V> RListMultimapCacheReactive<K, V> getListMultimapCacheNative(String name) {
         RListMultimap<K, V> map = new RedissonListMultimapCacheNative<>(executorService, name);
@@ -169,6 +183,7 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonSetMultimapCacheReactive<>(map, executorService, null), RSetMultimapCacheReactive.class);
     }
 
+    // --- Set / SetCache ---
     @Override
     public <V> RSetReactive<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(executorService, name, null);
@@ -183,6 +198,7 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonSetReactive<V>(set, null), RSetReactive.class);
     }
 
+    // --- Pub/Sub Topic ---
     @Override
     public RTopicReactive getTopic(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonTopic(executorService, name), RTopicReactive.class);
@@ -215,6 +231,7 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonListReactive<V>(codec, executorService, name), RQueueReactive.class);
     }
 
+    // --- 阻塞队列 / 双端队列 ---
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonBlockingQueue<V>(executorService, name, null), 
@@ -239,6 +256,7 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonListReactive<V>(codec, executorService, name), RDequeReactive.class);
     }
 
+    // --- 原子计数器 / 脚本 / 函数 ---
     @Override
     public RAtomicLongReactive getAtomicLong(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonAtomicLong(executorService, name), RAtomicLongReactive.class);
@@ -258,6 +276,7 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonSetCacheReactive<V>(set, null), RSetCacheReactive.class);
     }
 
+    // --- 有序集合 / 字典序集合 / 位图 ---
     @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonScoredSortedSet<V>(executorService, name, null), 
@@ -303,6 +322,7 @@ public class RedissonBatchReactive implements RBatchReactive {
         return ReactiveProxyBuilder.create(executorService, new RedissonFuction(executorService, codec), RFunctionReactive.class);
     }
 
+    // --- Keys / Search ---
     @Override
     public RKeysReactive getKeys() {
         return ReactiveProxyBuilder.create(executorService, new RedissonKeys(executorService), new RedissonKeysReactive(executorService), RKeysReactive.class);
@@ -318,16 +338,19 @@ public class RedissonBatchReactive implements RBatchReactive {
         return ReactiveProxyBuilder.create(executorService, new RedissonSearch(codec, executorService), RSearchReactive.class);
     }
 
+    /** 异步提交本批次全部命令并返回聚合结果。 */
     @Override
     public Mono<BatchResult<?>> execute() {
         return commandExecutor.reactive(() -> executorService.executeAsync());
     }
 
+    /** 丢弃本批次尚未提交的命令。 */
     @Override
     public Mono<Void> discard() {
         return commandExecutor.reactive(() -> executorService.discardAsync());
     }
 
+    // --- Geo / Multimap ---
     @Override
     public <V> RGeoReactive<V> getGeo(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonGeo<V>(executorService, name, null), 
@@ -409,6 +432,7 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonListReactive<V>(codec, executorService, name), RBlockingDequeReactive.class);
     }
 
+    // --- 概率结构：Bloom / Cuckoo / TDigest / TopK / VectorSet ---
     @Override
     public <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name) {
         return ReactiveProxyBuilder.create(executorService,

@@ -21,24 +21,30 @@ import org.redisson.RedissonBlockingDeque;
 import reactor.core.publisher.Flux;
 
 /**
- * 
+ * 阻塞双端队列的 Reactor 扩展：在 {@link RedissonBlockingQueueReactive} 基础上
+ * 提供 {@link #takeFirstElements()} 与 {@link #takeLastElements()} 持续消费流。
+ *
  * @author Nikita Koksharov
  *
- * @param <V> - value type
+ * @param <V> 元素类型
  */
 public class RedissonBlockingDequeReactive<V> extends RedissonBlockingQueueReactive<V> {
 
+    /** 底层阻塞双端队列实现。 */
     private final RedissonBlockingDeque<V> queue;
     
+    /** 绑定阻塞双端队列实例。 */
     public RedissonBlockingDequeReactive(RedissonBlockingDeque<V> queue) {
         super(queue);
         this.queue = queue;
     }
 
+    /** 持续从队首阻塞 take，每取到元素 emit 到 {@link Flux}。 */
     public Flux<V> takeFirstElements() {
         return ElementsStream.takeElements(() -> queue.takeFirstAsync());
     }
     
+    /** 持续从队尾阻塞 take，每取到元素 emit 到 {@link Flux}。 */
     public Flux<V> takeLastElements() {
         return ElementsStream.takeElements(() -> queue.takeLastAsync());
     }

@@ -30,38 +30,50 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ * {@link org.redisson.api.RKeysReactive} 的 Reactor 实现：跨分片 SCAN 键空间。
+ * <p>
+ * 对每个 {@link MasterSlaveEntry} 创建独立 {@link Flux}，最终 {@link Flux#merge} 合并；
+ * 支持模式、chunk 大小与 {@link RType} 过滤。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonKeysReactive {
 
+    /** Reactor 命令执行上下文。 */
     private final CommandReactiveExecutor commandExecutor;
 
+    /** 同步键 API 委托对象（scanIteratorAsync）。 */
     private final RedissonKeys instance;
 
+    /** 绑定执行器并构造内部 {@link RedissonKeys}。 */
     public RedissonKeysReactive(CommandReactiveExecutor commandExecutor) {
         super();
         instance = new RedissonKeys(commandExecutor);
         this.commandExecutor = commandExecutor;
     }
 
+    /** 全库键流，默认 chunk=10。 */
     public Flux<String> getKeys() {
         return getKeysByPattern(null);
     }
 
+    /** 全库键流，指定每批 SCAN 数量。 */
     public Flux<String> getKeys(int count) {
         return getKeysByPattern(null, count);
     }
 
+    /** 按 glob 模式扫描键，默认 chunk=10。 */
     public Flux<String> getKeysByPattern(String pattern) {
         return getKeysByPattern(pattern, 10);
     }
 
+    /** 按模式与 chunk 大小扫描键。 */
     public Flux<String> getKeysByPattern(String pattern, int count) {
         return getKeys(KeysScanOptions.defaults().pattern(pattern).chunkSize(count));
     }
 
+    /** 按 {@link KeysScanOptions} 在各分片上 SCAN 并 merge 为单一 Flux。 */
     public Flux<String> getKeys(KeysScanOptions options) {
         KeysScanParams params = (KeysScanParams) options;
         List<Publisher<String>> publishers = new ArrayList<>();
@@ -71,6 +83,7 @@ public class RedissonKeysReactive {
         return Flux.merge(publishers);
     }
 
+    /** 为单个分片槽位创建背压驱动的键 SCAN Flux。 */
     private Flux<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count, RType type) {
         return Flux.create(emitter -> emitter.onRequest(new IteratorConsumer<String>(emitter) {
 

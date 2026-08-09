@@ -23,32 +23,43 @@ import reactor.core.publisher.Mono;
 import java.nio.ByteBuffer;
 
 /**
- * 
+ * {@link org.redisson.api.RBinaryStreamReactive} 的 Reactor 读写门面。
+ * <p>
+ * 委托 {@link RedissonBinaryStream.RedissonAsynchronousByteChannel} 异步读写
+ * {@link ByteBuffer}，并通过 {@link CommandReactiveExecutor} 包装为 {@link Mono}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonBinaryStreamReactive {
 
+    /** Reactor 命令执行器。 */
     private final CommandReactiveExecutor commandExecutor;
+    /** 底层 Redis 二进制流异步通道。 */
     private final RedissonBinaryStream.RedissonAsynchronousByteChannel channel;
 
+    /** 从 {@link RBinaryStream} 提取异步通道并绑定执行器。 */
     public RedissonBinaryStreamReactive(CommandReactiveExecutor commandExecutor, RBinaryStream stream) {
         this.commandExecutor = commandExecutor;
         channel = (RedissonBinaryStream.RedissonAsynchronousByteChannel) stream.getAsynchronousChannel();
     }
 
+    /** 返回当前读写游标位置。 */
     public long position() {
         return channel.position();
     }
 
+    /** 设置读写游标位置。 */
     public void position(long newPosition) {
         channel.position(newPosition);
     }
 
+    /** 异步从流中读取字节到缓冲区，返回实际读取长度。 */
     public Mono<Integer> read(ByteBuffer buf) {
         return commandExecutor.reactive(() -> (RFuture<Integer>) channel.read(buf));
     }
 
+    /** 异步将缓冲区内容写入流，返回实际写入长度。 */
     public Mono<Integer> write(ByteBuffer buf) {
         return commandExecutor.reactive(() -> (RFuture<Integer>) channel.write(buf));
     }

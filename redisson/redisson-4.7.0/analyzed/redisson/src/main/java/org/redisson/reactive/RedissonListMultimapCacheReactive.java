@@ -20,22 +20,28 @@ import org.redisson.api.RListMultimap;
 import org.redisson.api.RListReactive;
 
 /**
+ * 带 TTL 的 List Multimap 响应式 {@code get(K)} 工厂：
+ * 为每个键返回独立 {@link RListReactive} 代理。
  *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 外层键类型
+ * @param <V> 列表元素类型
  */
 public class RedissonListMultimapCacheReactive<K, V> {
 
+    /** 底层带缓存的 List Multimap。 */
     private final RListMultimap<K, V> instance;
+    /** 创建子列表代理的执行器。 */
     private final CommandReactiveExecutor commandExecutor;
 
+    /** 绑定 multimap 与 Reactor 执行器。 */
     public RedissonListMultimapCacheReactive(RListMultimap<K, V> instance, CommandReactiveExecutor commandExecutor) {
         this.instance = instance;
         this.commandExecutor = commandExecutor;
     }
 
+    /** 获取键对应列表的响应式视图。 */
     public RListReactive<V> get(K key) {
         RList<V> list = instance.get(key);
         return ReactiveProxyBuilder.create(commandExecutor, list, new RedissonListReactive<>(list), RListReactive.class);

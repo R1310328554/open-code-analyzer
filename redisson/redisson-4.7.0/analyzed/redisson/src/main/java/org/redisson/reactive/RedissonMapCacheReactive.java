@@ -18,14 +18,19 @@ package org.redisson.reactive;
 import org.redisson.api.RMap;
 
 /**
+ * 带 per-entry TTL 的 {@link RMapCache} Reactor 实现。
+ * <p>
+ * 继承 {@link RedissonMapReactive} 的 HSCAN 迭代能力；
+ * 其余 CRUD/TTL 方法仍由 {@link ReactiveProxyBuilder} 映射到 {@code *Async}。
  *
  * @author Nikita Koksharov
  *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class RedissonMapCacheReactive<K, V> extends RedissonMapReactive<K, V> {
 
+    /** 包装 MapCache 实例并绑定 Reactor 执行器。 */
     public RedissonMapCacheReactive(RMap<K, V> map, CommandReactiveExecutor commandExecutor) {
         super(map, commandExecutor);
     }

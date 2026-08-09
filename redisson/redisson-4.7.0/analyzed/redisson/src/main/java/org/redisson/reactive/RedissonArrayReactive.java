@@ -21,27 +21,30 @@ import org.redisson.api.array.ArrayEntry;
 import reactor.core.publisher.Flux;
 
 /**
- * Reactor facade backing the streaming methods of {@link org.redisson.api.RArrayReactive}.
+ * {@link org.redisson.api.RArrayReactive} 的 Reactor 流式方法实现。
  * <p>
- * Only the methods declared here override the generic async-to-reactive proxy; the rest of
- * the interface is served by mapping to the corresponding {@code *Async} methods.
+ * 此处声明的方法覆盖通用 async→reactive 代理；接口其余方法仍映射到对应 {@code *Async}。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 数组元素类型
  */
 public class RedissonArrayReactive<V> {
 
+    /** 底层 Redis 数组实现。 */
     private final RArray<V> instance;
 
+    /** 包装已有 {@link RArray} 实例。 */
     public RedissonArrayReactive(RArray<V> instance) {
         this.instance = instance;
     }
 
+    /** 默认每批 scan 10 个元素的数组条目流。 */
     public Publisher<ArrayEntry<V>> iterator() {
         return iterator(10);
     }
 
+    /** 指定每批 scan 数量的数组条目 {@link Flux}。 */
     public Publisher<ArrayEntry<V>> iterator(int count) {
         return Flux.<ArrayEntry<V>>create(emitter ->
                 emitter.onRequest(new ArrayEntryIteratorConsumer<>(emitter, instance, count)));
