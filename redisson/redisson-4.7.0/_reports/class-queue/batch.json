@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:21:59Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectMapReplayDecoder2.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectSetReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/PendingEntryDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/PendingResultDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ProfileInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/RankedEntryDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/RedisURIDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ScoredAttributesReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ScoredAttributesReplayDecoderV2.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ScoredEntryScanDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ScoredSortedSetPolledObjectDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ScoredSortedSetRandomMapDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ScoredSortedSetReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ScoredSortedSetReplayDecoderV2.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ScoredSortedSetScanDecoder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 422,
-  "done": 2385
+  "done": 2400
 }
