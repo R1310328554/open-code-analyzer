@@ -853,3 +853,18 @@
 2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/api/UpdateApiReqVo.java wave21a [0:15]
 2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/rule/AddFlowRuleReqVo.java wave21a [0:15]
 2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/rule/GatewayParamFlowItemVo.java wave21a [0:15]
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_single.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/degrade.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/flow_v1.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/flow_v2.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/gateway/api.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/gateway/flow.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/gateway/identity.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/home.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/login.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/machine.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/main.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/metric.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/param_flow.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/system.js wave22b
+2026-08-09T18:10:03Z DONE sentinel-dashboard/src/main/webapp/resources/app/scripts/directives/header/header.js wave22b

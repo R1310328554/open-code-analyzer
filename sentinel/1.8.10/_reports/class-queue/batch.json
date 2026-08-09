@@ -15,23 +15,8 @@
     "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_assign_manage.js",
     "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_server_manage.js",
     "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_server_monitor.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_token_client_list.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_single.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/degrade.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/flow_v1.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/flow_v2.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/gateway/api.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/gateway/flow.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/gateway/identity.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/home.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/login.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/machine.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/main.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/metric.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/param_flow.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/system.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/directives/header/header.js"
+    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_token_client_list.js"
   ],
   "remaining_pending": 305,
-  "done": 630
+  "done": 645
 }
