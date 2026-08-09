@@ -23,21 +23,28 @@ import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * {@link org.redisson.RedissonTimeSeries} 过期清理任务。
+ * <p>
+ * 从超时有序集合取过期 entry，同步删除主 ZSET 与超时 ZSET 中的对应成员。
  *
  * @author Nikita Koksharov
  *
  */
 public class TimeSeriesEvictionTask extends EvictionTask {
 
+    /** TimeSeries 主有序集合 Redis 键名。 */
     private final String name;
+    /** 记录各 entry 过期时间戳的有序集合键名。 */
     private final String timeoutSetName;
 
+    /** 构造 TimeSeries 过期清理任务。 */
     public TimeSeriesEvictionTask(String name, String timeoutSetName, CommandAsyncExecutor executor) {
         super(executor);
         this.name = name;
         this.timeoutSetName = timeoutSetName;
     }
 
+    /** 清理过期 entry，返回本次删除数量。 */
     @Override
     CompletionStage<Integer> execute() {
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -51,6 +58,7 @@ public class TimeSeriesEvictionTask extends EvictionTask {
                 System.currentTimeMillis(), keysLimit);
     }
 
+    /** 返回被清理结构的名称。 */
     @Override
     String getName() {
         return name;

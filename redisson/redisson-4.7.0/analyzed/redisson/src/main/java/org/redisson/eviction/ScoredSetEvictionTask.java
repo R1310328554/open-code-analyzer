@@ -22,26 +22,35 @@ import org.redisson.command.CommandAsyncExecutor;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 
+ * {@link org.redisson.RedissonScoredSortedSet} 过期清理任务。
+ * <p>
+ * 按 score（通常为插入时间戳）删除早于 {@code now - shiftInMilliseconds} 的成员。
+ * 不发布过期通知，仅做 ZREMRANGEBYSCORE。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ScoredSetEvictionTask extends EvictionTask {
 
+    /** 有序集合 Redis 键名。 */
     private final String name;
+    /** 保留窗口偏移（毫秒），score 早于此阈值的成员将被删除。 */
     private final long shiftInMilliseconds;
     
+    /** 构造 ScoredSet 过期清理任务。 */
     public ScoredSetEvictionTask(String name, CommandAsyncExecutor executor, long shiftInMilliseconds) {
         super(executor);
         this.name = name;
         this.shiftInMilliseconds = shiftInMilliseconds;
     }
 
+    /** 返回被清理结构的名称。 */
     @Override
     String getName() {
         return name;
     }
     
+    /** 删除 score 在 [0, now-shift] 区间内的成员。 */
     @Override
     CompletionStage<Integer> execute() {
         return executor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.ZREMRANGEBYSCORE, name, 0, System.currentTimeMillis() - shiftInMilliseconds);

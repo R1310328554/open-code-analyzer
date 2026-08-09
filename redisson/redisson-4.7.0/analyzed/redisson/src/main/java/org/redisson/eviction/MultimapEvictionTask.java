@@ -23,26 +23,37 @@ import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
 /**
- * 
+ * {@link org.redisson.RedissonListMultimap} 等 Multimap 过期清理任务。
+ * <p>
+ * 过期 key 对应 value 集合存储在独立 Redis 键中，清理时需一并删除。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MultimapEvictionTask extends EvictionTask {
 
+    /** Multimap 主哈希表 Redis 键名。 */
     private final String name;
+    /** 记录各 key 过期时间戳的有序集合键名。 */
     private final String timeoutSetName;
     
+    /** 构造 Multimap 过期清理任务。 */
     public MultimapEvictionTask(String name, String timeoutSetName, CommandAsyncExecutor executor) {
         super(executor);
         this.name = name;
         this.timeoutSetName = timeoutSetName;
     }
 
+    /** 返回被清理结构的名称。 */
     @Override
     String getName() {
         return name;
     }
 
+    /**
+     * 清理过期 key：删除超时 ZSET 条目、关联 value 集合键及主表映射。
+     * @return 本次清理的 key 数量
+     */
     CompletionStage<Integer> execute() {
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
@@ -52,6 +63,7 @@ public class MultimapEvictionTask extends EvictionTask {
                   + "local values = redis.call('hmget', KEYS[1], unpack(expiredKeys)); "
                   + "local keys = {}; "
                   + "for i, v in ipairs(values) do " +
+                        // value 非空时构造 {mapName}:value 形式的子键并删除
                         "if v ~= false then "
                         + "local name = '{' .. KEYS[1] .. '}:' .. v; "
                         + "table.insert(keys, name); "

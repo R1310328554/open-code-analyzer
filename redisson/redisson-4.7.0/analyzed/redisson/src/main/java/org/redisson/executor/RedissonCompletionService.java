@@ -21,11 +21,10 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RScheduledExecutorService;
 
 /**
- * A {@link CompletionService} that uses a supplied {@link Executor}
- * to execute tasks.  This class arranges that submitted tasks are,
- * upon completion, placed on a queue accessible using {@code take}.
- * The class is lightweight enough to be suitable for transient use
- * when processing groups of tasks.
+ * 基于 {@link RScheduledExecutorService} 的 {@link CompletionService} 实现。
+ * <p>
+ * 任务提交后，完成时（无论成功或失败）将对应 {@link RFuture} 放入完成队列，
+ * 可通过 {@code take}/{@code poll} 按完成顺序获取。
  *  
  * @author Nikita Koksharov
  *
@@ -33,14 +32,18 @@ import org.redisson.api.RScheduledExecutorService;
  */
 public class RedissonCompletionService<V> implements CompletionService<V> {
 
+    /** 底层远程调度执行器服务。 */
     protected final RScheduledExecutorService executorService;
 
+    /** 已完成任务的 Future 队列。 */
     protected final BlockingQueue<RFuture<V>> completionQueue;
     
+    /** 使用默认 {@link LinkedBlockingQueue} 构造。 */
     public RedissonCompletionService(RScheduledExecutorService executorService) {
         this(executorService, null);
     }
 
+    /** 使用自定义完成队列构造。 */
     public RedissonCompletionService(RScheduledExecutorService executorService, BlockingQueue<RFuture<V>> completionQueue) {
         if (executorService == null) {
             throw new NullPointerException("executorService can't be null");
@@ -54,6 +57,7 @@ public class RedissonCompletionService<V> implements CompletionService<V> {
         this.completionQueue = completionQueue;
     }
 
+    /** 提交 Callable，完成时入队。 */
     @Override
     public Future<V> submit(Callable<V> task) {
         if (task == null) {
@@ -61,12 +65,14 @@ public class RedissonCompletionService<V> implements CompletionService<V> {
         }
         
         RFuture<V> f = executorService.submit(task);
+        // 无论成功失败，完成回调中将 Future 放入完成队列
         f.whenComplete((res, e) -> {
             completionQueue.add(f);
         });
         return f;
     }
 
+    /** 提交 Runnable 并指定结果值，完成时入队。 */
     @Override
     public Future<V> submit(Runnable task, V result) {
         if (task == null) {
@@ -80,16 +86,19 @@ public class RedissonCompletionService<V> implements CompletionService<V> {
         return f;
     }
 
+    /** 阻塞直到有已完成任务。 */
     @Override
     public Future<V> take() throws InterruptedException {
         return completionQueue.take();
     }
 
+    /** 非阻塞取队首已完成任务，无则返回 null。 */
     @Override
     public Future<V> poll() {
         return completionQueue.poll();
     }
 
+    /** 限时等待已完成任务。 */
     @Override
     public Future<V> poll(long timeout, TimeUnit unit) throws InterruptedException {
         return completionQueue.poll(timeout, unit);

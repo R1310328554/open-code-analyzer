@@ -21,26 +21,35 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 调度任务的 Future，实现 {@link RScheduledFuture} 与 {@link Delayed}。
+ * <p>
+ * 按计划执行时间与当前时间的差值计算 {@link #getDelay}，
+ * 用于延迟队列排序。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class RedissonScheduledFuture<V> extends RedissonExecutorFuture<V> implements RScheduledFuture<V> {
 
+    /** 计划执行时间戳（毫秒）。 */
     private final long scheduledExecutionTime;
+    /** 内部 RemotePromise，供调度器访问。 */
     private final RemotePromise<V> promise;
 
+    /** 以 promise 与计划执行时间构造。 */
     public RedissonScheduledFuture(RemotePromise<V> promise, long scheduledExecutionTime) {
         super(promise);
         this.scheduledExecutionTime = scheduledExecutionTime;
         this.promise = promise;
     }
 
+    /** 返回内部 RemotePromise。 */
     public RemotePromise<V> getInnerPromise() {
         return promise;
     }
     
+    /** 按剩余延迟比较，用于 DelayQueue 排序。 */
     @Override
     public int compareTo(Delayed other) {
         if (this == other) {
@@ -58,6 +67,7 @@ public class RedissonScheduledFuture<V> extends RedissonExecutorFuture<V> implem
         return 1;
     }
     
+    /** 返回距离计划执行时间的剩余延迟。 */
     @Override
     public long getDelay(TimeUnit unit) {
         return unit.convert(scheduledExecutionTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);

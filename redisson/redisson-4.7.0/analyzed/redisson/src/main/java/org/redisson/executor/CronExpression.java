@@ -46,6 +46,11 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 
 /**
+ * Quartz 风格 Cron 表达式解析与下次触发时间计算。
+ * <p>
+ * 支持秒/分/时/日/月/周/年七段字段，以及 L、W、# 等 Quartz 扩展。
+ * 用于 {@link org.redisson.RedissonExecutorService} 的 Cron 调度。
+ *
  * @author Sharada Jambula, James House
  * @author Contributions from Mads Henderson
  * @author Refactoring from CronTrigger to CronExpression by Aaron Craven
@@ -58,19 +63,30 @@ public final class CronExpression implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 12423409423L;
 
+    /** 字段索引：秒。 */
     protected static final int SECOND = 0;
+    /** 字段索引：分。 */
     protected static final int MINUTE = 1;
+    /** 字段索引：时。 */
     protected static final int HOUR = 2;
+    /** 字段索引：日（月内）。 */
     protected static final int DAY_OF_MONTH = 3;
+    /** 字段索引：月。 */
     protected static final int MONTH = 4;
+    /** 字段索引：星期几。 */
     protected static final int DAY_OF_WEEK = 5;
+    /** 字段索引：年。 */
     protected static final int YEAR = 6;
+    /** 通配符 {@code *} 的内部整型标记。 */
     protected static final int ALL_SPEC_INT = 99; // '*'
+    /** 未指定 {@code ?} 的内部整型标记（仅日/周字段）。 */
     protected static final int NO_SPEC_INT = 98; // '?'
     protected static final Integer ALL_SPEC = ALL_SPEC_INT;
     protected static final Integer NO_SPEC = NO_SPEC_INT;
 
+    /** 月份英文缩写 → Calendar 月份索引（0 基）。 */
     protected static final Map<String, Integer> monthMap = new HashMap<String, Integer>(20);
+    /** 星期英文缩写 → 1-7（SUN=1）。 */
     protected static final Map<String, Integer> dayMap = new HashMap<String, Integer>(60);
     static {
         monthMap.put("JAN", 0);
@@ -95,31 +111,45 @@ public final class CronExpression implements Serializable, Cloneable {
         dayMap.put("SAT", 7);
     }
 
+    /** 原始 Cron 表达式字符串（大写）。 */
     private final String cronExpression;
+    /** 解析与计算使用的时区，null 时取系统默认。 */
     private TimeZone timeZone = null;
+    /** 允许的秒值集合。 */
     protected transient TreeSet<Integer> seconds;
+    /** 允许的分值集合。 */
     protected transient TreeSet<Integer> minutes;
+    /** 允许的时值集合。 */
     protected transient TreeSet<Integer> hours;
+    /** 允许的日（月内）值集合。 */
     protected transient TreeSet<Integer> daysOfMonth;
+    /** 允许的月值集合。 */
     protected transient TreeSet<Integer> months;
+    /** 允许的星期值集合。 */
     protected transient TreeSet<Integer> daysOfWeek;
+    /** 允许的年值集合。 */
     protected transient TreeSet<Integer> years;
 
+    /** 是否为“最后一个指定星期几”（L 修饰）。 */
     protected transient boolean lastdayOfWeek = false;
+    /** 第 N 个指定星期几（# 修饰，1-5）。 */
     protected transient int nthdayOfWeek = 0;
+    /** 是否为“当月最后一天”（L 修饰）。 */
     protected transient boolean lastdayOfMonth = false;
+    /** 是否使用最近工作日（W 修饰）。 */
     protected transient boolean nearestWeekday = false;
+    /** 相对月末最后一天的偏移（L-n）。 */
     protected transient int lastdayOffset = 0;
+    /** 表达式是否已解析为各字段集合。 */
     protected transient boolean expressionParsed = false;
 
+    /** 允许的最大年份（当前年 + 100）。 */
     public static final int MAX_YEAR = Calendar.getInstance().get(Calendar.YEAR) + 100;
 
     /**
-     * Constructs a new <CODE>CronExpression</CODE> based on the specified
-     * parameter.
+     * 根据 Cron 表达式字符串构造实例并立即解析。
      *
-     * @param cronExpression String representation of the cron expression the
-     *                       new object should represent
+     * @param cronExpression 新对象所代表的 cron 表达式字符串
      */
     public CronExpression(String cronExpression) {
         if (cronExpression == null) {
@@ -136,11 +166,9 @@ public final class CronExpression implements Serializable, Cloneable {
     }
 
     /**
-     * Constructs a new {@code CronExpression} as a copy of an existing
-     * instance.
+     * 复制已有 {@code CronExpression} 实例（含时区）。
      *
-     * @param expression
-     *            The existing cron expression to be copied
+     * @param expression 待复制的已有 cron 表达式实例
      */
     public CronExpression(CronExpression expression) {
         /*
@@ -160,13 +188,10 @@ public final class CronExpression implements Serializable, Cloneable {
     }
 
     /**
-     * Indicates whether the given date satisfies the cron expression. Note that
-     * milliseconds are ignored, so two Dates falling on different milliseconds
-     * of the same second will always have the same result here.
+     * 判断给定时间是否满足 cron 表达式（毫秒被忽略）。
      *
-     * @param date the date to evaluate
-     * @return a boolean indicating whether the given date satisfies the cron
-     *         expression
+     * @param date 待评估的日期时间
+     * @return 若给定时间恰好为有效触发点则返回 true
      */
     public boolean isSatisfiedBy(Date date) {
         Calendar testDateCal = Calendar.getInstance(getTimeZone());
@@ -182,29 +207,25 @@ public final class CronExpression implements Serializable, Cloneable {
     }
 
     /**
-     * Returns the next date/time <I>after</I> the given date/time which
-     * satisfies the cron expression.
+     * 返回给定时间之后第一个满足表达式的触发时间。
      *
-     * @param date the date/time at which to begin the search for the next valid
-     *             date/time
-     * @return the next valid date/time
+     * @param date 搜索起点
+     * @return 下一个有效触发时间
      */
     public Date getNextValidTimeAfter(Date date) {
         return getTimeAfter(date);
     }
 
     /**
-     * Returns the next date/time <I>after</I> the given date/time which does
-     * <I>not</I> satisfy the expression
+     * 返回给定时间之后第一个不满足表达式的时间点（性能较差，逐秒推进）。
      *
-     * @param date the date/time at which to begin the search for the next
-     *             invalid date/time
-     * @return the next valid date/time
+     * @param date 搜索起点
+     * @return 下一个无效时间点的前一秒之后
      */
     public Date getNextInvalidTimeAfter(Date date) {
         long difference = 1000;
 
-        //move back to the nearest second so differences will be accurate
+        // 对齐到整秒，保证相邻触发点间隔计算准确
         Calendar adjustCal = Calendar.getInstance(getTimeZone());
         adjustCal.setTime(date);
         adjustCal.set(Calendar.MILLISECOND, 0);
@@ -212,9 +233,9 @@ public final class CronExpression implements Serializable, Cloneable {
 
         Date newDate;
 
-        //FUTURE_TODO: (QUARTZ-481) IMPROVE THIS! The following is a BAD solution to this problem. Performance will be very bad here, depending on the cron expression. It is, however A solution.
+        // TODO(QUARTZ-481)：当前实现性能较差，依赖逐次 getTimeAfter 推进
 
-        //keep getting the next included time until it's farther than one second
+        // 循环取下一个满足点，直到与上次相差超过 1 秒
         // apart. At that point, lastDate is the last valid fire time. We return
         // the second immediately following it.
         while (difference == 1000) {
@@ -233,8 +254,7 @@ public final class CronExpression implements Serializable, Cloneable {
     }
 
     /**
-     * Returns the time zone for which this <code>CronExpression</code>
-     * will be resolved.
+     * 返回表达式解析与计算使用的时区。
      *
      * @return time zone
      */
@@ -247,19 +267,18 @@ public final class CronExpression implements Serializable, Cloneable {
     }
 
     /**
-     * Sets the time zone for which  this <code>CronExpression</code>
-     * will be resolved.
+     * 设置表达式解析与计算使用的时区。
      *
-     * @param timeZone object
+     * @param timeZone 时区对象
      */
     public void setTimeZone(TimeZone timeZone) {
         this.timeZone = timeZone;
     }
 
     /**
-     * Returns the string representation of the <CODE>CronExpression</CODE>
+     * 返回 cron 表达式的字符串形式。
      *
-     * @return a string representation of the <CODE>CronExpression</CODE>
+     * @return cron 表达式字符串
      */
     @Override
     public String toString() {
@@ -267,12 +286,10 @@ public final class CronExpression implements Serializable, Cloneable {
     }
 
     /**
-     * Indicates whether the specified cron expression can be parsed into a
-     * valid cron expression
+     * 判断给定字符串能否解析为合法 cron 表达式。
      *
-     * @param cronExpression the expression to evaluate
-     * @return a boolean indicating whether the given expression is a valid cron
-     *         expression
+     * @param cronExpression 待校验的表达式
+     * @return 合法返回 true
      */
     public static boolean isValidExpression(String cronExpression) {
 
@@ -285,6 +302,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return true;
     }
 
+    /** 校验表达式，不合法时抛出 {@link ParseException}。 */
     public static void validateExpression(String cronExpression) throws ParseException {
 
         new CronExpression(cronExpression);
@@ -293,10 +311,11 @@ public final class CronExpression implements Serializable, Cloneable {
 
     ////////////////////////////////////////////////////////////////////////////
     //
-    // Expression Parsing Functions
+    // 表达式解析
     //
     ////////////////////////////////////////////////////////////////////////////
 
+    /** 将 cron 字符串解析为各字段 TreeSet 及 L/W/# 等修饰标志。 */
     protected void buildExpression(String expression) throws ParseException {
         expressionParsed = true;
 
@@ -332,11 +351,11 @@ public final class CronExpression implements Serializable, Cloneable {
             while (exprsTok.hasMoreTokens() && exprOn <= YEAR) {
                 String expr = exprsTok.nextToken().trim();
 
-                // throw an exception if L is used with other days of the month
+                // L 不能与逗号分隔的多值日字段混用
                 if(exprOn == DAY_OF_MONTH && expr.indexOf('L') != -1 && expr.length() > 1 && expr.contains(",")) {
                     throw new ParseException("Support for specifying 'L' and 'LW' with other days of the month is not implemented", -1);
                 }
-                // throw an exception if L is used with other days of the week
+                // L 不能与逗号分隔的多值周字段混用
                 if(exprOn == DAY_OF_WEEK && expr.indexOf('L') != -1 && expr.length() > 1  && expr.contains(",")) {
                     throw new ParseException("Support for specifying 'L' with other days of the week is not implemented", -1);
                 }
@@ -365,7 +384,7 @@ public final class CronExpression implements Serializable, Cloneable {
             TreeSet<Integer> dow = getSet(DAY_OF_WEEK);
             TreeSet<Integer> dom = getSet(DAY_OF_MONTH);
 
-            // Copying the logic from the UnsupportedOperationException below
+            // 日字段与周字段不能同时指定具体值（须其一为 ?）
             boolean dayOfMSpec = !dom.contains(NO_SPEC);
             boolean dayOfWSpec = !dow.contains(NO_SPEC);
 
@@ -383,6 +402,7 @@ public final class CronExpression implements Serializable, Cloneable {
         }
     }
 
+    /** 解析单个字段片段（*、?、范围、步进、L/W/# 等）并写入对应集合。 */
     protected int storeExpressionVals(int pos, String s, int type)
             throws ParseException {
 
@@ -496,7 +516,7 @@ public final class CronExpression implements Serializable, Cloneable {
                 i++;
             }
             c = s.charAt(i);
-            if (c == '/') { // is an increment specified?
+            if (c == '/') { // 解析步进增量 /n
                 i++;
                 if (i >= s.length()) {
                     throw new ParseException("Unexpected end of string.", i);
@@ -573,6 +593,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return i;
     }
 
+    /** 处理数字后的 L、W、#、-、/ 等后缀修饰。 */
     protected int checkNext(int pos, String s, int val, int type)
             throws ParseException {
 
@@ -704,10 +725,12 @@ public final class CronExpression implements Serializable, Cloneable {
         return i;
     }
 
+    /** 返回原始 cron 表达式。 */
     public String getCronExpression() {
         return cronExpression;
     }
 
+    /** 返回各字段解析结果的调试摘要（多行文本）。 */
     public String getExpressionSummary() {
         StringBuilder buf = new StringBuilder();
 
@@ -748,6 +771,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return buf.toString();
     }
 
+    /** 将 TreeSet 字段值格式化为 *、? 或逗号分隔列表。 */
     protected String getExpressionSetSummary(java.util.Set<Integer> set) {
 
         if (set.contains(NO_SPEC)) {
@@ -800,6 +824,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return buf.toString();
     }
 
+    /** 跳过空白字符。 */
     protected int skipWhiteSpace(int i, String s) {
         for (; i < s.length() && (s.charAt(i) == ' ' || s.charAt(i) == '\t'); i++) {
             ;
@@ -808,6 +833,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return i;
     }
 
+    /** 查找下一个空白位置（用于解析数字）。 */
     protected int findNextWhiteSpace(int i, String s) {
         for (; i < s.length() && (s.charAt(i) != ' ' || s.charAt(i) != '\t'); i++) {
             ;
@@ -816,6 +842,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return i;
     }
 
+    /** 向指定字段集合添加单值、范围或步进序列。 */
     protected void addToSet(int val, int end, int incr, int type)
             throws ParseException {
 
@@ -913,7 +940,7 @@ public final class CronExpression implements Serializable, Cloneable {
             }
         }
 
-        // if the end of the range is before the start, then we need to overflow into
+        // 范围 end < start 时需跨周期取模（如跨月、跨周）
         // the next day, month etc. This is done by adding the maximum amount for that
         // type, and using modulus max to determine the value being added.
         int max = -1;
@@ -949,6 +976,7 @@ public final class CronExpression implements Serializable, Cloneable {
         }
     }
 
+    /** 按字段类型返回对应 TreeSet。 */
     TreeSet<Integer> getSet(int type) {
         switch (type) {
             case SECOND:
@@ -970,6 +998,7 @@ public final class CronExpression implements Serializable, Cloneable {
         }
     }
 
+    /** 从字符串当前位置解析连续数字。 */
     protected ValueSet getValue(int v, String s, int i) {
         char c = s.charAt(i);
         StringBuilder s1 = new StringBuilder(String.valueOf(v));
@@ -988,12 +1017,14 @@ public final class CronExpression implements Serializable, Cloneable {
         return val;
     }
 
+    /** 解析从 i 开始的整数字面值。 */
     protected int getNumericValue(String s, int i) {
         int endOfVal = findNextWhiteSpace(i, s);
         String val = s.substring(i, endOfVal);
         return Integer.parseInt(val);
     }
 
+    /** 将三字母月份缩写转为 Calendar 月份索引。 */
     protected int getMonthNumber(String s) {
         Integer integer = monthMap.get(s);
 
@@ -1004,6 +1035,7 @@ public final class CronExpression implements Serializable, Cloneable {
         return integer;
     }
 
+    /** 将三字母星期缩写转为 1-7 数值。 */
     protected int getDayOfWeekNumber(String s) {
         Integer integer = dayMap.get(s);
 
@@ -1016,28 +1048,33 @@ public final class CronExpression implements Serializable, Cloneable {
 
     ////////////////////////////////////////////////////////////////////////////
     //
-    // Computation Functions
+    // 下次触发时间计算
     //
     ////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * 计算 strictly after {@code afterTime} 的第一个满足表达式的时间点。
+     * <p>
+     * 自秒→分→时→日→月→年逐级推进，处理 L/W/# 与闰年等边界。
+     */
     public Date getTimeAfter(Date afterTime) {
 
-        // Computation is based on Gregorian year only.
+        // 仅按公历GregorianCalendar 计算
         Calendar cl = new java.util.GregorianCalendar(getTimeZone());
 
-        // move ahead one second, since we're computing the time *after* the
+        // 起点加 1 秒，因为求的是严格“之后”的触发点
         // given time
         afterTime = new Date(afterTime.getTime() + 1000);
-        // CronTrigger does not deal with milliseconds
+        // 毫秒归零
         cl.setTime(afterTime);
         cl.set(Calendar.MILLISECOND, 0);
 
         boolean gotOne = false;
-        // loop until we've computed the next time, or we've past the endTime
+        // 循环推进各字段直到找到合法组合或超出 MAX_YEAR
         while (!gotOne) {
 
             //if (endTime != null && cl.getTime().after(endTime)) return null;
-            if(cl.get(Calendar.YEAR) > 2999) { // prevent endless loop...
+            if(cl.get(Calendar.YEAR) > 2999) { // 防止无限循环
                 return null;
             }
 
@@ -1047,7 +1084,7 @@ public final class CronExpression implements Serializable, Cloneable {
             int sec = cl.get(Calendar.SECOND);
             int min = cl.get(Calendar.MINUTE);
 
-            // get second.................................................
+            // 匹配秒字段.
             st = seconds.tailSet(sec);
             if (st != null && st.size() != 0) {
                 sec = st.first();
@@ -1062,7 +1099,7 @@ public final class CronExpression implements Serializable, Cloneable {
             int hr = cl.get(Calendar.HOUR_OF_DAY);
             t = -1;
 
-            // get minute.................................................
+            // 匹配分字段.
             st = minutes.tailSet(min);
             if (st != null && st.size() != 0) {
                 t = min;
@@ -1083,7 +1120,7 @@ public final class CronExpression implements Serializable, Cloneable {
             int day = cl.get(Calendar.DAY_OF_MONTH);
             t = -1;
 
-            // get hour...................................................
+            // 匹配时字段.
             st = hours.tailSet(hr);
             if (st != null && st.size() != 0) {
                 t = hr;
@@ -1108,10 +1145,10 @@ public final class CronExpression implements Serializable, Cloneable {
             t = -1;
             int tmon = mon;
 
-            // get day...................................................
+            // 匹配日/周字段（二者互斥，仅一种规则生效）.
             boolean dayOfMSpec = !daysOfMonth.contains(NO_SPEC);
             boolean dayOfWSpec = !daysOfWeek.contains(NO_SPEC);
-            if (dayOfMSpec && !dayOfWSpec) { // get day by day of month rule
+            if (dayOfMSpec && !dayOfWSpec) { // 按“月内日”规则
                 st = daysOfMonth.tailSet(day);
                 if (lastdayOfMonth) {
                     if(!nearestWeekday) {
@@ -1224,8 +1261,8 @@ public final class CronExpression implements Serializable, Cloneable {
                     // are 1-based
                     continue;
                 }
-            } else if (dayOfWSpec && !dayOfMSpec) { // get day by day of week rule
-                if (lastdayOfWeek) { // are we looking for the last XXX day of
+            } else if (dayOfWSpec && !dayOfMSpec) { // 按“星期几”规则
+                if (lastdayOfWeek) { // 当月最后一个指定星期几
                     // the month?
                     int dow = daysOfWeek.first(); // desired
                     // d-o-w
@@ -1268,7 +1305,7 @@ public final class CronExpression implements Serializable, Cloneable {
                         continue;
                     }
 
-                } else if (nthdayOfWeek != 0) {
+                } else if (nthdayOfWeek != 0) { // 第 N 个指定星期几
                     // are we looking for the Nth XXX day in the month?
                     int dow = daysOfWeek.first(); // desired
                     // d-o-w
@@ -1363,13 +1400,13 @@ public final class CronExpression implements Serializable, Cloneable {
             int year = cl.get(Calendar.YEAR);
             t = -1;
 
-            // test for expressions that never generate a valid fire date,
+            // 超出 MAX_YEAR 则无法产生更多触发点
             // but keep looping...
             if (year > MAX_YEAR) {
                 return null;
             }
 
-            // get month...................................................
+            // 匹配月字段.
             st = months.tailSet(mon);
             if (st != null && st.size() != 0) {
                 t = mon;
@@ -1396,7 +1433,7 @@ public final class CronExpression implements Serializable, Cloneable {
             year = cl.get(Calendar.YEAR);
             t = -1;
 
-            // get year...................................................
+            // 匹配年字段.
             st = years.tailSet(year);
             if (st != null && st.size() != 0) {
                 t = year;
@@ -1419,17 +1456,16 @@ public final class CronExpression implements Serializable, Cloneable {
             cl.set(Calendar.YEAR, year);
 
             gotOne = true;
-        } // while( !done )
+        } // while( !gotOne )
 
         return cl.getTime();
     }
 
     /**
-     * Advance the calendar to the particular hour paying particular attention
-     * to daylight saving problems.
+     * 设置小时并处理夏令时跳变（若设置失败则尝试 hour+1）。
      *
-     * @param cal the calendar to operate on
-     * @param hour the hour to set
+     * @param cal 待操作的 Calendar
+     * @param hour 目标小时
      */
     protected void setCalendarHour(Calendar cal, int hour) {
         cal.set(java.util.Calendar.HOUR_OF_DAY, hour);
@@ -1438,20 +1474,24 @@ public final class CronExpression implements Serializable, Cloneable {
         }
     }
 
+    /** 返回 endTime 之前最后一个触发点（未实现，恒返回 null）。 */
     public Date getTimeBefore(Date endTime) {
         // FUTURE_TODO: implement QUARTZ-423
         return null;
     }
 
+    /** 返回最后一次触发时间（未实现，恒返回 null）。 */
     public Date getFinalFireTime() {
         // FUTURE_TODO: implement QUARTZ-423
         return null;
     }
 
+    /** 判断公历闰年。 */
     protected boolean isLeapYear(int year) {
         return ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0));
     }
 
+    /** 返回指定年月的最后一天（考虑闰年 2 月）。 */
     protected int getLastDayOfMonth(int monthNum, int year) {
 
         switch (monthNum) {
@@ -1486,6 +1526,7 @@ public final class CronExpression implements Serializable, Cloneable {
     }
 
 
+    /** 反序列化后重新解析 cron 表达式（transient 字段不持久化）。 */
     private void readObject(java.io.ObjectInputStream stream)
             throws java.io.IOException, ClassNotFoundException {
 
@@ -1496,6 +1537,7 @@ public final class CronExpression implements Serializable, Cloneable {
         } // never happens
     }
 
+    /** 克隆为新 CronExpression 实例。 */
     @Override
     @Deprecated
     public Object clone() {
@@ -1504,8 +1546,11 @@ public final class CronExpression implements Serializable, Cloneable {
 }
 
 @SuppressWarnings("VisibilityModifier")
+/** 解析数字时的临时结果：数值与下一个解析位置。 */
 class ValueSet {
+    /** 解析得到的整数值。 */
     public int value;
 
+    /** 下一个待解析字符索引。 */
     public int pos;
 }

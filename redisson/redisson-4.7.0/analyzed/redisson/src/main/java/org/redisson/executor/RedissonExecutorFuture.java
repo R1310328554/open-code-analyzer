@@ -21,24 +21,31 @@ import org.redisson.misc.CompletableFutureWrapper;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 
+ * 单个远程执行任务的 Future，包装底层 {@link CompletableFuture} 并暴露任务 ID。
+ * <p>
+ * 实现 {@link RExecutorFuture}，供客户端跟踪 Redis 中登记的任务。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class RedissonExecutorFuture<V> extends CompletableFutureWrapper<V> implements RExecutorFuture<V> {
 
+    /** Redis 中登记的任务请求 ID。 */
     private final String taskId;
     
+    /** 从 {@link RemotePromise} 构造，taskId 取自 requestId。 */
     public RedissonExecutorFuture(RemotePromise<V> promise) {
         this(promise, promise.getRequestId());
     }
     
+    /** 指定底层 Future 与 taskId 构造。 */
     public RedissonExecutorFuture(CompletableFuture<V> promise, String taskId) {
         super(promise);
         this.taskId = taskId;
     }
 
+    /** 返回远程任务 ID。 */
     @Override
     public String getTaskId() {
         return taskId;

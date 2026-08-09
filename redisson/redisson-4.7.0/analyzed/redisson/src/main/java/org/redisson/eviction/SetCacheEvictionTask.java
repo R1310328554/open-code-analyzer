@@ -25,21 +25,26 @@ import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Eviction task for {@link org.redisson.RedissonSetCache}. Unlike
- * {@link ScoredSetEvictionTask} it publishes each expired value to the
- * expired channel before removing it, so that {@code SetExpiredListener}
- * instances can be notified.
+ * {@link org.redisson.RedissonSetCache} 过期清理任务。
+ * <p>
+ * 与 {@link ScoredSetEvictionTask} 不同，删除前向过期频道发布每个过期 value，
+ * 以便 {@code SetExpiredListener} 收到通知。
  *
  * @author Nikita Koksharov
  *
  */
 public class SetCacheEvictionTask extends EvictionTask {
 
+    /** SetCache 有序集合 Redis 键名（member 为 value，score 为过期时间）。 */
     private final String name;
+    /** 过期事件 Pub/Sub 频道名。 */
     private final String expiredChannelName;
+    /** 分布式单次执行锁键名。 */
     private final String executeTaskOnceLatchName;
+    /** Lua 中使用的发布命令名。 */
     private final String publishCommand;
 
+    /** 构造 SetCache 过期清理任务。 */
     public SetCacheEvictionTask(String name, String expiredChannelName,
                                 CommandAsyncExecutor executor, String publishCommand) {
         super(executor);
@@ -49,14 +54,17 @@ public class SetCacheEvictionTask extends EvictionTask {
         this.publishCommand = publishCommand;
     }
 
+    /** 返回被清理结构的名称。 */
     @Override
     String getName() {
         return name;
     }
 
+    /** 抢锁后扫描过期 value、发布通知并批量 ZREM。 */
     @Override
     CompletionStage<Integer> execute() {
-        int latchExpireTime = Math.min(delay, 30);
+        int latchExpireTime = Math.min(delay, 30); // 锁 TTL 上限
+
         RFuture<Integer> expiredFuture = executor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "if redis.call('setnx', KEYS[3], ARGV[4]) == 0 then "
                  + "return -1;"

@@ -16,16 +16,21 @@
 package org.redisson.executor;
 
 /**
- * 
+ * 远程执行器专用类加载器，用于在 Worker 节点动态定义任务类字节码。
+ * <p>
+ * 通过 {@link #loadClass(String, byte[])} 将序列化后的 class 体注入 JVM。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonClassLoader extends ClassLoader {
 
+    /** 以指定父加载器构造。 */
     public RedissonClassLoader(ClassLoader parent) {
         super(parent);
     }
 
+    /** 将字节数组定义为指定全限定名的 Class（不触发 resolve）。 */
     public void loadClass(String name, byte[] body) {
         defineClass(name, body, 0, body.length);
     }

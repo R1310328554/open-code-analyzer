@@ -37,34 +37,56 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * 远程执行器专用的 {@link RedissonRemoteService} 扩展。
+ * <p>
+ * 重写任务拉取逻辑以处理过期/超时任务，并在 Worker 端执行任务方法时
+ * 触发 started/finished/success/failure 监听器。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonExecutorRemoteService extends RedissonRemoteService {
 
+    /** 日志记录器。 */
     private static final Logger log = LoggerFactory.getLogger(RedissonExecutorRemoteService.class);
 
+    /** 任务过期时间有序集合键名。 */
     private String tasksExpirationTimeName;
+    /** 进行中任务计数器键名。 */
     private String tasksCounterName;
+    /** 执行器状态键名。 */
     private String statusName;
+    /** 任务重试间隔键名。 */
     private String tasksRetryIntervalName;
+    /** 终止通知 Pub/Sub 主题名。 */
     private String terminationTopicName;
+    /** 调度队列有序集合键名。 */
     private String schedulerQueueName;
+    /** 单任务执行超时（毫秒），0 表示不限制。 */
     private long taskTimeout;
+    /** 任务开始监听器列表。 */
     private List<TaskStartedListener> startedListeners;
+    /** 任务结束监听器列表。 */
     private List<TaskFinishedListener> finishedListeners;
+    /** 任务失败监听器列表。 */
     private List<TaskFailureListener> failureListeners;
+    /** 任务成功监听器列表。 */
     private List<TaskSuccessListener> successListeners;
 
+    /** 构造远程执行器 RPC 服务。 */
     public RedissonExecutorRemoteService(Codec codec, String name,
                                          CommandAsyncExecutor commandExecutor, String executorId) {
         super(codec, name, commandExecutor, executorId);
     }
 
+    /**
+     * 拉取任务：若任务已过期则从各 Redis 结构清理并返回 null；
+     * 否则返回哈希表中的请求体。
+     */
     @Override
     protected RFuture<RemoteServiceRequest> getTask(String requestId, RMap<String, RemoteServiceRequest> tasks) {
         return commandExecutor.evalWriteNoRetryAsync(((RedissonObject) tasks).getRawName(), codec, RedisCommands.EVAL_OBJECT,
+                  // 检查任务是否在过期 ZSET 中且已超时
                   "local value = redis.call('zscore', KEYS[2], ARGV[1]); " +
                   "if (value ~= false and tonumber(value) < tonumber(ARGV[2])) then "
                     + "redis.call('zrem', KEYS[2], ARGV[1]); "
@@ -90,12 +112,15 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
         requestId, System.currentTimeMillis(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
 
+    /** 在 Worker 端反射调用任务方法，并通知各生命周期监听器。 */
     @Override
     protected <T> void invokeMethod(RemoteServiceRequest request, RemoteServiceMethod method,
                                     CompletableFuture<RemoteServiceCancelRequest> cancelRequestFuture,
                                     CompletableFuture<RRemoteServiceResponse> responsePromise) {
+        // 通知任务已开始
         startedListeners.forEach(l -> l.onStarted(request.getId()));
 
+        // 可选：超时后自动发起取消请求
         if (taskTimeout > 0) {
             commandExecutor.getServiceManager().newTimeout(t -> {
                 cancelRequestFuture.complete(new RemoteServiceCancelRequest(true, false));
@@ -135,9 +160,11 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
             failureListeners.forEach(l -> l.onFailed(request.getId(), null));
         }
 
+        // 通知任务已结束（无论成败）
         finishedListeners.forEach(l -> l.onFinished(request.getId()));
     }
 
+    /** 按类型拆分并注册任务生命周期监听器。 */
     public void setListeners(List<TaskListener> listeners) {
         startedListeners = listeners.stream()
                                 .filter(x -> x instanceof TaskStartedListener)
@@ -160,30 +187,37 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                                 .collect(Collectors.toList());
     }
 
+    /** 设置单任务执行超时（毫秒）。 */
     public void setTaskTimeout(long taskTimeout) {
         this.taskTimeout = taskTimeout;
     }
 
+    /** 设置调度队列 Redis 键名。 */
     public void setSchedulerQueueName(String schedulerQueueName) {
         this.schedulerQueueName = schedulerQueueName;
     }
 
+    /** 设置任务过期时间 ZSET 键名。 */
     public void setTasksExpirationTimeName(String tasksExpirationTimeName) {
         this.tasksExpirationTimeName = tasksExpirationTimeName;
     }
 
+    /** 设置进行中任务计数器键名。 */
     public void setTasksCounterName(String tasksCounterName) {
         this.tasksCounterName = tasksCounterName;
     }
 
+    /** 设置执行器状态键名。 */
     public void setStatusName(String statusName) {
         this.statusName = statusName;
     }
 
+    /** 设置任务重试间隔键名。 */
     public void setTasksRetryIntervalName(String tasksRetryIntervalName) {
         this.tasksRetryIntervalName = tasksRetryIntervalName;
     }
 
+    /** 设置终止通知主题名。 */
     public void setTerminationTopicName(String terminationTopicName) {
         this.terminationTopicName = terminationTopicName;
     }
