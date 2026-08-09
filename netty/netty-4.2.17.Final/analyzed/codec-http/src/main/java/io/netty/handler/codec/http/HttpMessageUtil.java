@@ -20,10 +20,13 @@ import io.netty.util.internal.StringUtil;
 import java.util.Map;
 
 /**
- * Provides some utility methods for HTTP message implementations.
+ * HTTP 消息 {@code toString()} 格式化工具（包内使用）。
+ * <p>
+ * 将请求/响应/Full 消息格式化为可读的多行文本，含解码结果、版本、头与正文摘要。
  */
 final class HttpMessageUtil {
 
+    /** 将 {@link HttpRequest} 追加到 StringBuilder。 */
     static StringBuilder appendRequest(StringBuilder buf, HttpRequest req) {
         appendCommon(buf, req);
         appendInitialLine(buf, req);
@@ -32,6 +35,7 @@ final class HttpMessageUtil {
         return buf;
     }
 
+    /** 将 {@link HttpResponse} 追加到 StringBuilder。 */
     static StringBuilder appendResponse(StringBuilder buf, HttpResponse res) {
         appendCommon(buf, res);
         appendInitialLine(buf, res);
@@ -50,6 +54,7 @@ final class HttpMessageUtil {
         buf.append(StringUtil.NEWLINE);
     }
 
+    /** 将 {@link FullHttpRequest} 追加到 StringBuilder。 */
     static StringBuilder appendFullRequest(StringBuilder buf, FullHttpRequest req) {
         appendFullCommon(buf, req);
         appendInitialLine(buf, req);
@@ -59,6 +64,7 @@ final class HttpMessageUtil {
         return buf;
     }
 
+    /** 将 {@link FullHttpResponse} 追加到 StringBuilder。 */
     static StringBuilder appendFullResponse(StringBuilder buf, FullHttpResponse res) {
         appendFullCommon(buf, res);
         appendInitialLine(buf, res);
@@ -80,6 +86,7 @@ final class HttpMessageUtil {
         buf.append(StringUtil.NEWLINE);
     }
 
+    /** 追加请求起始行（METHOD URI VERSION）。 */
     private static void appendInitialLine(StringBuilder buf, HttpRequest req) {
         buf.append(req.method());
         buf.append(' ');
@@ -89,6 +96,7 @@ final class HttpMessageUtil {
         buf.append(StringUtil.NEWLINE);
     }
 
+    /** 追加响应起始行（VERSION STATUS）。 */
     private static void appendInitialLine(StringBuilder buf, HttpResponse res) {
         buf.append(res.protocolVersion());
         buf.append(' ');
@@ -105,6 +113,7 @@ final class HttpMessageUtil {
         }
     }
 
+    /** 移除末尾多余换行。 */
     private static void removeLastNewLine(StringBuilder buf) {
         buf.setLength(buf.length() - StringUtil.NEWLINE.length());
     }

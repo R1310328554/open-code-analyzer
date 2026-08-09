@@ -33,14 +33,12 @@ import static io.netty.handler.codec.http.HttpUtil.getContentLength;
 import static io.netty.util.internal.StringUtil.className;
 
 /**
- * A {@link ChannelHandler} that aggregates an {@link HttpMessage}
- * and its following {@link HttpContent}s into a single {@link FullHttpRequest}
- * or {@link FullHttpResponse} (depending on if it used to handle requests or responses)
- * with no following {@link HttpContent}s.  It is useful when you don't want to take
- * care of HTTP messages whose transfer encoding is 'chunked'.  Insert this
- * handler after {@link HttpResponseDecoder} in the {@link ChannelPipeline} if being used to handle
- * responses, or after {@link HttpRequestDecoder} and {@link HttpResponseEncoder} in the
- * {@link ChannelPipeline} if being used to handle requests.
+ * 将 {@link HttpMessage} 及其后续 {@link HttpContent} 聚合为单条
+ * {@link FullHttpRequest} 或 {@link FullHttpResponse} 的 {@link ChannelHandler}。
+ * <p>
+ * 适用于不想自行处理 chunked 分块传输的场景；
+ * 处理响应时放在 {@link HttpResponseDecoder} 之后，
+ * 处理请求时放在 {@link HttpRequestDecoder} 与 {@link HttpResponseEncoder} 之后。
  * <blockquote>
  *  <pre>
  *  {@link ChannelPipeline} p = ...;
@@ -103,13 +101,12 @@ public class HttpObjectAggregator
         TOO_LARGE_CLOSE.headers().set(CONNECTION, HttpHeaderValues.CLOSE);
     }
 
+    /** Expect 失败且正文过大时是否关闭连接。 */
     private final boolean closeOnExpectationFailed;
 
     /**
      * Creates a new instance.
-     * @param maxContentLength the maximum length of the aggregated content in bytes.
-     * If the length of the aggregated content exceeds this value,
-     * {@link #handleOversizedMessage(ChannelHandlerContext, HttpMessage)} will be called.
+     * @param maxContentLength 聚合正文的最大字节数；超出时调用 {@link #handleOversizedMessage}。
      */
     public HttpObjectAggregator(int maxContentLength) {
         this(maxContentLength, false);
@@ -160,11 +157,11 @@ public class HttpObjectAggregator
 
     private Object continueResponse(HttpMessage start, int maxContentLength, ChannelPipeline pipeline) {
         if (HttpUtil.isUnsupportedExpectation(start)) {
-            // if the request contains an unsupported expectation, we return 417
+            // 不支持的 Expect 期望 → 417 Expectation Failed
             pipeline.fireUserEventTriggered(HttpExpectationFailedEvent.INSTANCE);
             return EXPECTATION_FAILED.retainedDuplicate();
         } else if (HttpUtil.is100ContinueExpected(start)) {
-            // if the request contains 100-continue but the content-length is too large, we return 413
+            // 100-continue 但 Content-Length 超限 → 413
             if (!isContentLengthInvalid(start, maxContentLength)) {
                 return CONTINUE.retainedDuplicate();
             }
@@ -178,8 +175,7 @@ public class HttpObjectAggregator
     @Override
     protected Object newContinueResponse(HttpMessage start, int maxContentLength, ChannelPipeline pipeline) {
         Object response = continueResponse(start, maxContentLength, pipeline);
-        // we're going to respond based on the request expectation so there's no
-        // need to propagate the expectation further.
+        // 已按 Expect 处理，移除 Expect 头避免下游重复处理
         if (response != null) {
             start.headers().remove(EXPECT);
         }
@@ -218,14 +214,14 @@ public class HttpObjectAggregator
     @Override
     protected void aggregate(FullHttpMessage aggregated, HttpContent content) throws Exception {
         if (content instanceof LastHttpContent) {
-            // Merge trailing headers into the message.
+            // 将 LastHttpContent 的 trailing headers 合并进聚合消息
             ((AggregatedFullHttpMessage) aggregated).setTrailingHeaders(((LastHttpContent) content).trailingHeaders());
         }
     }
 
     @Override
     protected void finishAggregation(FullHttpMessage aggregated) throws Exception {
-        // Set the 'Content-Length' header. If one isn't already set.
+        // 若未设置 Content-Length，按实际正文长度写入
         // This is important as HEAD responses will use a 'Content-Length' header which
         // does not match the actual body, but the number of bytes that would be
         // transmitted if a GET would have been used.
@@ -241,7 +237,7 @@ public class HttpObjectAggregator
     @Override
     protected void handleOversizedMessage(final ChannelHandlerContext ctx, HttpMessage oversized) throws Exception {
         if (oversized instanceof HttpRequest) {
-            // send back a 413 and close the connection
+            // 正文过大：返回 413 并按策略关闭连接
 
             // If the client started to send data already, close because it's impossible to recover.
             // If keep-alive is off and 'Expect: 100-continue' is missing, no need to leave the connection open.

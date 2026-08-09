@@ -16,18 +16,10 @@
 package io.netty.handler.codec.http;
 
 /**
- * An HTTP request.
- *
- * <h3>Accessing Query Parameters and Cookie</h3>
+ * HTTP 请求接口，包含方法、URI 与协议版本。
  * <p>
- * Unlike the Servlet API, a query string is constructed and decomposed by
- * {@link QueryStringEncoder} and {@link QueryStringDecoder}.
- *
- * {@link io.netty.handler.codec.http.cookie.Cookie} support is also provided
- * separately via {@link io.netty.handler.codec.http.cookie.ServerCookieDecoder},
- * {@link io.netty.handler.codec.http.cookie.ClientCookieDecoder},
- * {@link io.netty.handler.codec.http.cookie.ServerCookieEncoder},
- * and {@link io.netty.handler.codec.http.cookie.ClientCookieEncoder}.
+ * 查询串请用 {@link QueryStringEncoder}/{@link QueryStringDecoder}；
+ * Cookie 请用 {@code io.netty.handler.codec.http.cookie} 包下编解码器。
  *
  * @see HttpResponse
  * @see io.netty.handler.codec.http.cookie.ServerCookieDecoder
@@ -44,14 +36,13 @@ public interface HttpRequest extends HttpMessage {
     HttpMethod getMethod();
 
     /**
-     * Returns the {@link HttpMethod} of this {@link HttpRequest}.
-     *
+     * 返回本请求的 {@link HttpMethod}。
      * @return The {@link HttpMethod} of this {@link HttpRequest}
      */
     HttpMethod method();
 
     /**
-     * Set the {@link HttpMethod} of this {@link HttpRequest}.
+     * 设置本请求的 {@link HttpMethod}。
      */
     HttpRequest setMethod(HttpMethod method);
 
@@ -62,14 +53,13 @@ public interface HttpRequest extends HttpMessage {
     String getUri();
 
     /**
-     * Returns the requested URI (or alternatively, path)
-     *
+     * 返回请求 URI（或路径）。
      * @return The URI being requested
      */
     String uri();
 
     /**
-     *  Set the requested URI (or alternatively, path)
+     * 设置请求 URI（或路径）。
      */
     HttpRequest setUri(String uri);
 

@@ -18,6 +18,11 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.DecoderResult;
 import io.netty.handler.codec.DecoderResultProvider;
 
+/**
+ * HTTP 解码产物基接口，继承 {@link DecoderResultProvider} 以携带解码结果。
+ * <p>
+ * 所有 HTTP 消息与内容分块均实现本接口。
+ */
 public interface HttpObject extends DecoderResultProvider {
     /**
      * @deprecated Use {@link #decoderResult()} instead.

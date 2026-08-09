@@ -20,9 +20,9 @@ import io.netty.util.AsciiString;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The request method of HTTP or its derived protocols, such as
- * <a href="https://en.wikipedia.org/wiki/Real_Time_Streaming_Protocol">RTSP</a> and
- * <a href="https://en.wikipedia.org/wiki/Internet_Content_Adaptation_Protocol">ICAP</a>.
+ * HTTP 请求方法（及 RTSP、ICAP 等衍生协议的方法名）。
+ * <p>
+ * 内置常用方法常量；{@link #valueOf(String)} 对标准方法返回缓存实例。
  */
 public class HttpMethod implements Comparable<HttpMethod> {
 
@@ -36,10 +36,7 @@ public class HttpMethod implements Comparable<HttpMethod> {
     public static final HttpMethod OPTIONS = new HttpMethod(AsciiString.cached("OPTIONS"));
 
     /**
-     * The GET method means retrieve whatever information (in the form of an entity) is identified
-     * by the Request-URI.  If the Request-URI refers to a data-producing process, it is the
-     * produced data which shall be returned as the entity in the response and not the source text
-     * of the process, unless that text happens to be the output of the process.
+     * GET：获取 Request-URI 所标识资源的表示。
      */
     public static final HttpMethod GET = new HttpMethod(AsciiString.cached("GET"));
 
@@ -50,14 +47,12 @@ public class HttpMethod implements Comparable<HttpMethod> {
     public static final HttpMethod HEAD = new HttpMethod(AsciiString.cached("HEAD"));
 
     /**
-     * The POST method is used to request that the origin server accept the entity enclosed in the
-     * request as a new subordinate of the resource identified by the Request-URI in the
-     * Request-Line.
+     * POST：向 Request-URI 标识的资源提交实体数据。
      */
     public static final HttpMethod POST = new HttpMethod(AsciiString.cached("POST"));
 
     /**
-     * The PUT method requests that the enclosed entity be stored under the supplied Request-URI.
+     * PUT：将请求实体存储到 Request-URI 指定位置。
      */
     public static final HttpMethod PUT = new HttpMethod(AsciiString.cached("PUT"));
 
@@ -68,8 +63,7 @@ public class HttpMethod implements Comparable<HttpMethod> {
     public static final HttpMethod PATCH = new HttpMethod(AsciiString.cached("PATCH"));
 
     /**
-     * The DELETE method requests that the origin server delete the resource identified by the
-     * Request-URI.
+     * DELETE：删除 Request-URI 标识的资源。
      */
     public static final HttpMethod DELETE = new HttpMethod(AsciiString.cached("DELETE"));
 
@@ -80,8 +74,7 @@ public class HttpMethod implements Comparable<HttpMethod> {
     public static final HttpMethod TRACE = new HttpMethod(AsciiString.cached("TRACE"));
 
     /**
-     * This specification reserves the method name CONNECT for use with a proxy that can dynamically
-     * switch to being a tunnel
+     * CONNECT：经代理建立隧道（常用于 HTTPS）。
      */
     public static final HttpMethod CONNECT = new HttpMethod(AsciiString.cached("CONNECT"));
 
@@ -92,9 +85,7 @@ public class HttpMethod implements Comparable<HttpMethod> {
     public static final HttpMethod QUERY = new HttpMethod(AsciiString.cached("QUERY"));
 
     /**
-     * Returns the {@link HttpMethod} represented by the specified name.
-     * If the specified name is a standard HTTP method name, a cached instance
-     * will be returned.  Otherwise, a new instance will be returned.
+     * 按名称返回 {@link HttpMethod}；标准方法返回缓存实例，否则新建。
      */
     public static HttpMethod valueOf(String name) {
         switch (name) {
@@ -112,27 +103,22 @@ public class HttpMethod implements Comparable<HttpMethod> {
         }
     }
 
+    /** 方法名（{@link AsciiString} 缓存）。 */
     private final AsciiString name;
 
     /**
-     * Private constructor for the built-in constants defined in this class.
-     * The names are compiler-controlled literals that are already valid HTTP tokens,
-     * so there is no need to validate or trim them at runtime.
+     * 内置常量专用构造器；字面量已保证为合法 HTTP token，无需运行时校验。
      */
     private HttpMethod(AsciiString name) {
         this.name = name;
     }
 
     /**
-     * Creates a new HTTP method with the specified name.  You will not need to
-     * create a new method unless you are implementing a protocol derived from
-     * HTTP, such as
-     * <a href="https://en.wikipedia.org/wiki/Real_Time_Streaming_Protocol">RTSP</a> and
-     * <a href="https://en.wikipedia.org/wiki/Internet_Content_Adaptation_Protocol">ICAP</a>
+     * 以指定名称创建 HTTP 方法；仅扩展 RTSP/ICAP 等协议时需要。
      */
     public HttpMethod(String name) {
         checkNotNull(name, "name");
-        // The name must be non-empty and contain only valid HTTP token characters.
+        // 方法名非空且仅含合法 HTTP token 字符
         if (name.isEmpty()) {
             throw new IllegalArgumentException("name cannot be empty");
         }
@@ -145,14 +131,14 @@ public class HttpMethod implements Comparable<HttpMethod> {
     }
 
     /**
-     * Returns the name of this method.
+     * 返回方法名字符串。
      */
     public String name() {
         return name.toString();
     }
 
     /**
-     * Returns the name of this method.
+     * 返回 {@link AsciiString} 形式的方法名。
      */
     public AsciiString asciiName() {
         return name;

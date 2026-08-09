@@ -21,7 +21,9 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.util.AsciiString;
 
 /**
- * Decodes {@link ByteBuf}s into {@link HttpRequest}s and {@link HttpContent}s.
+ * 将 {@link ByteBuf} 解码为 {@link HttpRequest} 与 {@link HttpContent}。
+ * <p>
+ * 对常见 GET/POST 方法与 HTTP/1.0/1.1 版本、Host/Content-* 等头名做快速路径优化。
  *
  * <h3>Parameters that prevents excessive memory consumption</h3>
  * <table border="1">
@@ -123,9 +125,7 @@ public class HttpRequestDecoder extends HttpObjectDecoder {
             (long) 'p' << 32 | (long) 't' << 40;
 
     /**
-     * Creates a new instance with the default
-     * {@code maxInitialLineLength (4096)}, {@code maxHeaderSize (8192)}, and
-     * {@code maxChunkSize (8192)}.
+     * 使用默认参数创建请求解码器。
      * @see HttpDecoderConfig HttpDecoderConfig API documentation for detailed descriptions of
      * the configuration parameters.
      */
@@ -206,7 +206,7 @@ public class HttpRequestDecoder extends HttpObjectDecoder {
     }
 
     /**
-     * Creates a new instance with the specified configuration.
+     * 按 {@link HttpDecoderConfig} 创建请求解码器（推荐，默认启用头校验）。
      * @see HttpDecoderConfig HttpDecoderConfig API documentation for detailed descriptions of
      * the configuration parameters.
      */
@@ -217,7 +217,7 @@ public class HttpRequestDecoder extends HttpObjectDecoder {
     @Override
     protected HttpMessage createMessage(String[] initialLine) throws Exception {
         return new DefaultHttpRequest(
-                // Do strict version checking
+                // 严格校验 HTTP 版本字符串
                 HttpVersion.valueOf(initialLine[2], true),
                 HttpMethod.valueOf(initialLine[0]), initialLine[1], headersFactory);
     }
@@ -381,13 +381,14 @@ public class HttpRequestDecoder extends HttpObjectDecoder {
     }
 
     @Override
+    /** 本解码器处理请求（非响应）。 */
     protected boolean isDecodingRequest() {
         return true;
     }
 
     @Override
     protected boolean isContentAlwaysEmpty(final HttpMessage msg) {
-        // fast-path to save expensive O(n) checks; users can override createMessage
+        // DefaultHttpRequest 快速路径，避免 O(n) 正文判定
         // and extends DefaultHttpRequest making implementing HttpResponse:
         // this is why we cannot use instanceof DefaultHttpRequest here :(
         if (msg.getClass() == DefaultHttpRequest.class) {

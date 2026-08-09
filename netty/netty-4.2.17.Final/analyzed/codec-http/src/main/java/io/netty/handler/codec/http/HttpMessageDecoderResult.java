@@ -18,15 +18,16 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.DecoderResult;
 
 /**
- * A {@link DecoderResult} for {@link HttpMessage}s as produced by an {@link HttpObjectDecoder}.
+ * {@link HttpObjectDecoder} 成功解码 {@link HttpMessage} 时附带的 {@link DecoderResult}。
  * <p>
- * Please note that there is no guarantee that a {@link HttpObjectDecoder} will produce a {@link
- * HttpMessageDecoderResult}. It may simply produce a regular {@link DecoderResult}. This result is intended for
- * successful {@link HttpMessage} decoder results.
+ * 不保证解码器一定返回本类型，也可能返回普通 {@link DecoderResult}；
+ * 本类额外记录起始行与头部占用的字节数，便于监控与限流。
  */
 public final class HttpMessageDecoderResult extends DecoderResult {
 
+    /** 起始行字节长度（受 maxInitialLineLength 约束）。 */
     private final int initialLineLength;
+    /** 全部头部字节长度（受 maxHeaderSize 约束）。 */
     private final int headerSize;
 
     HttpMessageDecoderResult(int initialLineLength, int headerSize) {
@@ -36,21 +37,21 @@ public final class HttpMessageDecoderResult extends DecoderResult {
     }
 
     /**
-     * The decoded initial line length (in bytes), as controlled by {@code maxInitialLineLength}.
+     * 已解码起始行的字节长度（受 {@code maxInitialLineLength} 限制）。
      */
     public int initialLineLength() {
         return initialLineLength;
     }
 
     /**
-     * The decoded header size (in bytes), as controlled by {@code maxHeaderSize}.
+     * 已解码头部的总字节长度（受 {@code maxHeaderSize} 限制）。
      */
     public int headerSize() {
         return headerSize;
     }
 
     /**
-     * The decoded initial line length plus the decoded header size (in bytes).
+     * 起始行与头部字节长度之和。
      */
     public int totalSize() {
         return initialLineLength + headerSize;

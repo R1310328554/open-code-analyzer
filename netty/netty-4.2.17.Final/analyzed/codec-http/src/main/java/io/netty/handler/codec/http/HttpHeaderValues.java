@@ -19,12 +19,14 @@ package io.netty.handler.codec.http;
 import io.netty.util.AsciiString;
 
 /**
- * Standard HTTP header values.
+ * 标准 HTTP 头字段值常量（{@link AsciiString} 缓存）。
+ * <p>
+ * 涵盖 MIME 类型、压缩编码、缓存控制、连接语义等常见头值；
+ * 新代码应优先使用 {@link HttpHeaderValues} 而非 {@link HttpHeaders.Values}。
  */
 public final class HttpHeaderValues {
-    /**
-     * {@code "application/json"}
-     */
+    /** JSON 内容类型（{@code "application/json"}） */
+
     public static final AsciiString APPLICATION_JSON = AsciiString.cached("application/json");
     /**
      * {@code "application/manifest+json"}
@@ -50,9 +52,8 @@ public final class HttpHeaderValues {
      * {@code "application/wasm"}
      */
     public static final AsciiString APPLICATION_WASM = AsciiString.cached("application/wasm");
-    /**
-     * {@code "application/x-www-form-urlencoded"}
-     */
+    /** 表单 URL 编码类型（{@code "application/x-www-form-urlencoded"}） */
+
     public static final AsciiString APPLICATION_X_WWW_FORM_URLENCODED =
             AsciiString.cached("application/x-www-form-urlencoded");
     /**
@@ -67,10 +68,8 @@ public final class HttpHeaderValues {
      * {@code "application/zstd"}
      */
     public static final AsciiString APPLICATION_ZSTD = AsciiString.cached("application/zstd");
-    /**
-     * {@code "attachment"}
-     * See {@link HttpHeaderNames#CONTENT_DISPOSITION}
-     */
+    /** Content-Disposition 附件模式（{@code "attachment"}） */
+
     public static final AsciiString ATTACHMENT = AsciiString.cached("attachment");
     /**
      * {@code "audio/aac"}
@@ -120,21 +119,18 @@ public final class HttpHeaderValues {
      * {@code "charset"}
      */
     public static final AsciiString CHARSET = AsciiString.cached("charset");
-    /**
-     * {@code "chunked"}
-     */
+    /** 分块传输编码（{@code "chunked"}） */
+
     public static final AsciiString CHUNKED = AsciiString.cached("chunked");
-    /**
-     * {@code "close"}
-     */
+    /** 关闭连接（{@code "close"}） */
+
     public static final AsciiString CLOSE = AsciiString.cached("close");
     /**
      * {@code "compress"}
      */
     public static final AsciiString COMPRESS = AsciiString.cached("compress");
-    /**
-     * {@code "100-continue"}
-     */
+    /** Expect 100-continue 期望（{@code "100-continue"}） */
+
     public static final AsciiString CONTINUE = AsciiString.cached("100-continue");
     /**
      * {@code "deflate"}
@@ -175,13 +171,11 @@ public final class HttpHeaderValues {
      * See {@link HttpHeaderNames#CONTENT_DISPOSITION}
      */
     public static final AsciiString FORM_DATA = AsciiString.cached("form-data");
-    /**
-     * {@code "gzip"}
-     */
+    /** gzip 压缩编码（{@code "gzip"}） */
+
     public static final AsciiString GZIP = AsciiString.cached("gzip");
-    /**
-     * {@code "br"}
-     */
+    /** Brotli 压缩编码（{@code "br"}） */
+
     public static final AsciiString BR = AsciiString.cached("br");
 
     /**
@@ -201,9 +195,8 @@ public final class HttpHeaderValues {
      * {@code "x-gzip"}
      */
     public static final AsciiString X_GZIP = AsciiString.cached("x-gzip");
-    /**
-     * {@code "identity"}
-     */
+    /** 无压缩/恒等编码（{@code "identity"}） */
+
     public static final AsciiString IDENTITY = AsciiString.cached("identity");
     /**
      * {@code "image/avif"}
@@ -233,9 +226,8 @@ public final class HttpHeaderValues {
      * {@code "image/webp"}
      */
     public static final AsciiString IMAGE_WEBP = AsciiString.cached("image/webp");
-    /**
-     * {@code "keep-alive"}
-     */
+    /** 持久连接（{@code "keep-alive"}） */
+
     public static final AsciiString KEEP_ALIVE = AsciiString.cached("keep-alive");
     /**
      * {@code "max-age"}
@@ -249,9 +241,8 @@ public final class HttpHeaderValues {
      * {@code "min-fresh"}
      */
     public static final AsciiString MIN_FRESH = AsciiString.cached("min-fresh");
-    /**
-     * {@code "multipart/form-data"}
-     */
+    /** 多部分表单上传（{@code "multipart/form-data"}） */
+
     public static final AsciiString MULTIPART_FORM_DATA = AsciiString.cached("multipart/form-data");
     /**
      * {@code "multipart/mixed"}
@@ -266,9 +257,8 @@ public final class HttpHeaderValues {
      * See {@link HttpHeaderNames#CONTENT_DISPOSITION}
      */
     public static final AsciiString NAME = AsciiString.cached("name");
-    /**
-     * {@code "no-cache"}
-     */
+    /** 禁止缓存（{@code "no-cache"}） */
+
     public static final AsciiString NO_CACHE = AsciiString.cached("no-cache");
     /**
      * {@code "no-store"}
@@ -318,9 +308,8 @@ public final class HttpHeaderValues {
      * {@code "text/csv"}
      */
     public static final AsciiString TEXT_CSV = AsciiString.cached("text/csv");
-    /**
-     * {@code "text/html"}
-     */
+    /** HTML 内容类型（{@code "text/html"}） */
+
     public static final AsciiString TEXT_HTML = AsciiString.cached("text/html");
     /**
      * {@code "text/javascript"}
@@ -362,14 +351,14 @@ public final class HttpHeaderValues {
      * {@code "video/webm"}
      */
     public static final AsciiString VIDEO_WEBM = AsciiString.cached("video/webm");
-    /**
-     * {@code "websocket"}
-     */
+    /** WebSocket 协议升级值（{@code "websocket"}） */
+
     public static final AsciiString WEBSOCKET = AsciiString.cached("websocket");
     /**
      * {@code "XmlHttpRequest"}
      */
     public static final AsciiString XML_HTTP_REQUEST = AsciiString.cached("XMLHttpRequest");
 
+    /** 工具类禁止实例化 */
     private HttpHeaderValues() { }
 }

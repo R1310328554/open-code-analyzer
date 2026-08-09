@@ -40,21 +40,14 @@ import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 
 /**
- * Encodes an {@link HttpMessage} or an {@link HttpContent} into
- * a {@link ByteBuf}.
- *
- * <h3>Extensibility</h3>
- *
- * Please note that this encoder is designed to be extended to implement
- * a protocol derived from HTTP, such as
- * <a href="https://en.wikipedia.org/wiki/Real_Time_Streaming_Protocol">RTSP</a> and
- * <a href="https://en.wikipedia.org/wiki/Internet_Content_Adaptation_Protocol">ICAP</a>.
- * To implement the encoder of such a derived protocol, extend this class and
- * implement all abstract methods properly.
+ * 将 {@link HttpMessage} 或 {@link HttpContent} 编码为 {@link ByteBuf} 的抽象基类。
+ * <p>
+ * 支持定长、chunked 与无正文三种编码状态；子类实现 {@link #encodeInitialLine}。
+ * 可扩展用于 RTSP、ICAP 等 HTTP 衍生协议。
  */
 public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageToMessageEncoder<Object> {
 
-    // this is a constant to decide when it is appropriate to copy the data content into the header buffer
+    // 正文小于此阈值时合并进头部缓冲以减少分配
     private static final int COPY_CONTENT_THRESHOLD = 128;
     static final int CRLF_SHORT = (CR << 8) | LF;
     private static final int ZERO_CRLF_MEDIUM = ('0' << 16) | CRLF_SHORT;
@@ -68,17 +61,20 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
     private static final float TRAILERS_WEIGHT_NEW = HEADERS_WEIGHT_NEW;
     private static final float TRAILERS_WEIGHT_HISTORICAL = HEADERS_WEIGHT_HISTORICAL;
 
+    /** 编码状态：初始（仅消息头）。 */
     private static final int ST_INIT = 0;
+    /** 定长正文编码中。 */
     private static final int ST_CONTENT_NON_CHUNK = 1;
+    /** chunked 正文编码中。 */
     private static final int ST_CONTENT_CHUNK = 2;
+    /** 无正文（如 HEAD 响应）。 */
     private static final int ST_CONTENT_ALWAYS_EMPTY = 3;
 
     @SuppressWarnings("RedundantFieldInitialization")
     private int state = ST_INIT;
 
     /**
-     * Used to calculate an exponential moving average of the encoded size of the initial line and the headers for
-     * a guess for future buffer allocations.
+     * 起始行+头部编码大小的指数滑动平均，用于预估下次缓冲分配。
      */
     private float headersEncodedSizeAccumulator = 256;
 
@@ -125,7 +121,7 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
             if (size == 1) {
                 ctx.write(out.get(0), promise);
             } else if (size > 1) {
-                // Check if we can use a voidPromise for our extra writes to reduce GC-Pressure
+                // 多段写出时用 voidPromise 降低 GC 压力
                 // See https://github.com/netty/netty/issues/2525
                 if (promise == ctx.voidPromise()) {
                     writeVoidPromise(ctx, out);
@@ -156,7 +152,7 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
     @Override
     @SuppressWarnings("ConditionCoveredByFurtherCondition")
     protected void encode(ChannelHandlerContext ctx, Object msg, List<Object> out) throws Exception {
-        // fast-path for common idiom that doesn't require class-checks
+        // 空缓冲快速路径，避免 instanceof
         if (msg == Unpooled.EMPTY_BUFFER) {
             out.add(Unpooled.EMPTY_BUFFER);
             return;
@@ -213,7 +209,7 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
                 if (encodeContentNonChunk(out, buf, content)) {
                     break;
                 }
-                // fall-through!
+                // 定长缓冲不足时 fall-through 到 chunked 路径
             case ST_CONTENT_ALWAYS_EMPTY:
                 // We allocated a buffer so add it now.
                 out.add(buf);
@@ -504,8 +500,7 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
         if (trailingHeaders != null) {
             encodeTrailingHeaders(ctx, trailingHeaders, out);
         } else if (contentLength == 0) {
-            // Need to produce some output otherwise an
-            // IllegalStateException will be thrown
+            // 零长度 chunk 也需写出，否则下游状态异常
             out.add(content.retain());
         }
     }
@@ -552,7 +547,7 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
     }
 
     /**
-     * Encode the {@link HttpHeaders} into a {@link ByteBuf}.
+     * 将全部 {@link HttpHeaders} 编码写入 {@link ByteBuf}。
      */
     protected void encodeHeaders(HttpHeaders headers, ByteBuf buf) {
         Iterator<Entry<CharSequence, CharSequence>> iter = headers.iteratorCharSequence();
@@ -576,7 +571,7 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
     }
 
     private static void addEncodedLengthHex(ChannelHandlerContext ctx, long contentLength, List<Object> out) {
-        // logic is from Long.toHexString() but we want to avoid creating a String
+        // 仿 Long.toHexString 逻辑，避免分配 String
         int hexLen = contentLength == 0 ? 1 : (Long.SIZE - Long.numberOfLeadingZeros(contentLength) + 3) >>> 2;
         ByteBuf buf = ctx.alloc().buffer(hexLen + 2); // +2 for CRLF
         writeHexAscii(buf, contentLength, hexLen);
@@ -595,16 +590,14 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
     }
 
     /**
-     * Allows to sanitize headers of the message before encoding these.
+     * 编码前清理/规范化消息头（子类可覆盖）。
      */
     protected void sanitizeHeadersBeforeEncode(@SuppressWarnings("unused") H msg, boolean isAlwaysEmpty) {
         // noop
     }
 
     /**
-     * Determine whether a message has a content or not. Some message may have headers indicating
-     * a content without having an actual content, e.g the response to an HEAD or CONNECT request.
-     *
+     * 判断消息是否无正文（如 HEAD/CONNECT 响应）；返回 {@code true} 表示无正文。
      * @param msg the message to test
      * @return {@code true} to signal the message has no content
      */
@@ -625,9 +618,7 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
     }
 
     /**
-     * Add some additional overhead to the buffer. The rational is that it is better to slightly over allocate and waste
-     * some memory, rather than under allocate and require a resize/copy.
-     *
+     * 为缓冲分配增加余量，略多分配优于扩容拷贝。
      * @param readableBytes The readable bytes in the buffer.
      * @return The {@code readableBytes} with some additional padding.
      */
@@ -640,5 +631,6 @@ public abstract class HttpObjectEncoder<H extends HttpMessage> extends MessageTo
         buf.writeCharSequence(s, CharsetUtil.US_ASCII);
     }
 
+    /** 子类实现：编码 HTTP 起始行（请求行或状态行）。 */
     protected abstract void encodeInitialLine(ByteBuf buf, H message) throws Exception;
 }

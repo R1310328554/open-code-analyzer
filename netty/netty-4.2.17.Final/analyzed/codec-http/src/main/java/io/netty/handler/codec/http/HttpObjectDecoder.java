@@ -36,8 +36,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Decodes {@link ByteBuf}s into {@link HttpMessage}s and
- * {@link HttpContent}s.
+ * 将 {@link ByteBuf} 解码为 {@link HttpMessage} 与 {@link HttpContent} 的抽象基类。
+ * <p>
+ * 支持定长/分块正文、头校验与 RFC 9112 Transfer-Encoding 规则；
+ * 子类 {@link HttpRequestDecoder}/{@link HttpResponseDecoder} 分别处理请求与响应。
  *
  * <h3>Parameters that prevents excessive memory consumption</h3>
  * <table border="1">
@@ -146,10 +148,13 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  * as it helps with defence-in-depth.
  */
 public abstract class HttpObjectDecoder extends ByteToMessageDecoder {
+    /** 默认起始行最大长度（4096 字节）。 */
     public static final int DEFAULT_MAX_INITIAL_LINE_LENGTH = 4096;
+    /** 默认全部头部最大总长度（8192 字节）。 */
     public static final int DEFAULT_MAX_HEADER_SIZE = 8192;
     public static final boolean DEFAULT_CHUNKED_SUPPORTED = true;
     public static final boolean DEFAULT_ALLOW_PARTIAL_CHUNKS = true;
+    /** 默认单块正文/chunk 最大长度（8192 字节）。 */
     public static final int DEFAULT_MAX_CHUNK_SIZE = 8192;
     public static final boolean DEFAULT_VALIDATE_HEADERS = true;
     public static final int DEFAULT_INITIAL_BUFFER_SIZE = 128;
@@ -197,15 +202,20 @@ public abstract class HttpObjectDecoder extends ByteToMessageDecoder {
     private final HeaderParser headerParser;
     private final LineParser lineParser;
 
+    /** 当前正在解码的 HTTP 消息（起始行+头已就绪）。 */
     private HttpMessage message;
+    /** 当前 chunk 剩余字节数。 */
     private long chunkSize;
+    /** Content-Length；未设置时为 Long.MIN_VALUE。 */
     private long contentLength = Long.MIN_VALUE;
+    /** 是否使用 chunked 传输编码。 */
     private boolean chunked;
+    /** 是否正在切换到非 HTTP/1 协议（如 WebSocket）。 */
     private boolean isSwitchingToNonHttp1Protocol;
 
     private final AtomicBoolean resetRequested = new AtomicBoolean();
 
-    // These will be updated by splitHeader(...)
+    // 由 splitHeader 在解析每个头字段时更新
     private AsciiString name;
     private String value;
     private LastHttpContent trailer;
@@ -220,14 +230,13 @@ public abstract class HttpObjectDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * The internal state of {@link HttpObjectDecoder}.
-     * <em>Internal use only</em>.
+     * {@link HttpObjectDecoder} 内部解码状态机（仅内部使用）。
      */
     private enum State {
-        SKIP_INITIAL_LINE_CHARS,
+        SKIP_INITIAL_LINE_CHARS,  // 跳过起始行前的控制字符
         SKIP_CONTROL_CHARS,
-        READ_INITIAL,
-        READ_HEADER,
+        READ_INITIAL,               // 读取起始行
+        READ_HEADER,                // 读取头部
         READ_VARIABLE_LENGTH_CONTENT,
         READ_FIXED_LENGTH_CONTENT,
         READ_CHUNK_SIZE,
@@ -235,15 +244,14 @@ public abstract class HttpObjectDecoder extends ByteToMessageDecoder {
         READ_CHUNK_DELIMITER,
         READ_CHUNK_FOOTER,
         BAD_MESSAGE,
-        UPGRADED
+        UPGRADED                    // 协议已升级
+
     }
 
     private State currentState = State.SKIP_INITIAL_LINE_CHARS;
 
     /**
-     * Creates a new instance with the default
-     * {@code maxInitialLineLength (4096)}, {@code maxHeaderSize (8192)}, and
-     * {@code maxChunkSize (8192)}.
+     * 使用默认参数创建实例（起始行 4096、头部 8192、块 8192）。
      */
     protected HttpObjectDecoder() {
         this(new HttpDecoderConfig());

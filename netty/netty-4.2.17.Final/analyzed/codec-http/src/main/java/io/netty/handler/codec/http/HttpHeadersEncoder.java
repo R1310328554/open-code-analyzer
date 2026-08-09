@@ -24,12 +24,14 @@ import io.netty.util.CharsetUtil;
 import static io.netty.handler.codec.http.HttpConstants.*;
 import static io.netty.handler.codec.http.HttpObjectEncoder.CRLF_SHORT;
 
+/** HTTP 头字段行编码工具（{@code name: value\r\n}），供 {@link HttpObjectEncoder} 使用。 */
 final class HttpHeadersEncoder {
     private static final int COLON_AND_SPACE_SHORT = (COLON << 8) | SP;
 
     private HttpHeadersEncoder() {
     }
 
+    /** 将单个头字段编码写入 {@link ByteBuf}。 */
     static void encoderHeader(CharSequence name, CharSequence value, ByteBuf buf) {
         final int nameLen = name.length();
         final int valueLen = value.length();
@@ -47,6 +49,7 @@ final class HttpHeadersEncoder {
         buf.writerIndex(offset);
     }
 
+    /** 以 US-ASCII 写入字符序列；{@link AsciiString} 走零拷贝路径。 */
     private static void writeAscii(ByteBuf buf, int offset, CharSequence value) {
         if (value instanceof AsciiString) {
             ByteBufUtil.copy((AsciiString) value, 0, buf, offset, value.length());

@@ -39,8 +39,10 @@ import static io.netty.util.AsciiString.trim;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Provides the constants for the standard HTTP header names and values and
- * commonly used utility methods that accesses an {@link HttpMessage}.
+ * HTTP 头集合抽象基类，提供标准头名/头值常量及访问 {@link HttpMessage} 的便捷方法。
+ * <p>
+ * 具体实现通常通过 {@link DefaultHttpHeadersFactory#headersFactory()} 获取；
+ * 新代码应使用 {@link HttpHeaderNames}/{@link HttpHeaderValues} 替代内嵌 Names/Values。
  * <p>
  * Concrete instances of this class are most easily obtained from its default factory:
  * {@link DefaultHttpHeadersFactory#headersFactory()}.
@@ -50,8 +52,8 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
      * @deprecated Use {@link EmptyHttpHeaders#INSTANCE}.
      * <p>
      * The instance is instantiated here to break the cyclic static initialization between {@link EmptyHttpHeaders} and
-     * {@link HttpHeaders}. The issue is that if someone accesses {@link EmptyHttpHeaders#INSTANCE} before
-     * {@link HttpHeaders#EMPTY_HEADERS} then {@link HttpHeaders#EMPTY_HEADERS} will be {@code null}.
+     * {@link HttpHeaders}。若先访问 {@link EmptyHttpHeaders#INSTANCE} 再访问
+     * {@link HttpHeaders#EMPTY_HEADERS}，后者可能为 {@code null}。
      */
     @Deprecated
     public static final HttpHeaders EMPTY_HEADERS = EmptyHttpHeaders.instance();
@@ -59,7 +61,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     /**
      * @deprecated Use {@link HttpHeaderNames} instead.
      *
-     * Standard HTTP header names.
+     * 标准 HTTP 头名（已废弃，请用 {@link HttpHeaderNames}）。
      */
     @Deprecated
     public static final class Names {
@@ -135,9 +137,8 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
          * {@code "Cache-Control"}
          */
         public static final String CACHE_CONTROL = "Cache-Control";
-        /**
-         * {@code "Connection"}
-         */
+        /** 连接控制头（{@code "Connection"}） */
+
         public static final String CONNECTION = "Connection";
         /**
          * {@code "Content-Base"}
@@ -151,9 +152,8 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
          * {@code "Content-Language"}
          */
         public static final String CONTENT_LANGUAGE = "Content-Language";
-        /**
-         * {@code "Content-Length"}
-         */
+        /** 消息体长度头（{@code "Content-Length"}） */
+
         public static final String CONTENT_LENGTH = "Content-Length";
         /**
          * {@code "Content-Location"}
@@ -171,9 +171,8 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
          * {@code "Content-Range"}
          */
         public static final String CONTENT_RANGE = "Content-Range";
-        /**
-         * {@code "Content-Type"}
-         */
+        /** 消息体 MIME 类型头（{@code "Content-Type"}） */
+
         public static final String CONTENT_TYPE = "Content-Type";
         /**
          * {@code "Cookie"}
@@ -199,9 +198,8 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
          * {@code "From"}
          */
         public static final String FROM = "From";
-        /**
-         * {@code "Host"}
-         */
+        /** 目标主机头（{@code "Host"}） */
+
         public static final String HOST = "Host";
         /**
          * {@code "If-Match"}
@@ -315,9 +313,8 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
          * {@code "Trailer"}
          */
         public static final String TRAILER = "Trailer";
-        /**
-         * {@code "Transfer-Encoding"}
-         */
+        /** 传输编码头（{@code "Transfer-Encoding"}） */
+
         public static final String TRANSFER_ENCODING = "Transfer-Encoding";
         /**
          * {@code "Upgrade"}
@@ -363,7 +360,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     /**
      * @deprecated Use {@link HttpHeaderValues} instead.
      *
-     * Standard HTTP header values.
+     * 标准 HTTP 头值（已废弃，请用 {@link HttpHeaderValues}）。
      */
     @Deprecated
     public static final class Values {
@@ -396,13 +393,11 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
          * {@code "charset"}
          */
         public static final String CHARSET = "charset";
-        /**
-         * {@code "chunked"}
-         */
+        /** 分块传输编码值（{@code "chunked"}） */
+
         public static final String CHUNKED = "chunked";
-        /**
-         * {@code "close"}
-         */
+        /** 关闭连接值（{@code "close"}） */
+
         public static final String CLOSE = "close";
         /**
          * {@code "compress"}
@@ -416,9 +411,8 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
          * {@code "deflate"}
          */
         public static final String DEFLATE = "deflate";
-        /**
-         * {@code "gzip"}
-         */
+        /** gzip 压缩值（{@code "gzip"}） */
+
         public static final String GZIP = "gzip";
         /**
          * {@code "gzip,deflate"}
@@ -1185,8 +1179,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     public abstract String get(String name);
 
     /**
-     * Returns the value of a header with the specified name.  If there are
-     * more than one values for the specified name, the first value is returned.
+     * 返回指定头名的首个值；同名多值时取第一个。
      *
      * @param name The name of the header to search
      * @return The first header value or {@code null} if there is no such header
@@ -1212,8 +1205,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     }
 
     /**
-     * Returns the integer value of a header with the specified name. If there are more than one values for the
-     * specified name, the first value is returned.
+     * 返回指定头名的整数值；不存在或非整数时返回 {@code null}。
      *
      * @param name the name of the header to search
      * @return the first header value if the header is found and its value is an integer. {@code null} if there's no
@@ -1280,7 +1272,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     public abstract List<String> getAll(String name);
 
     /**
-     * Returns the values of headers with the specified name
+     * 返回指定头名的全部值列表；无匹配时返回空列表。
      *
      * @param name The name of the headers to search
      * @return A {@link List} of header values which will be empty if no values
@@ -1336,7 +1328,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     }
 
     /**
-     * Checks to see if there is a header with the specified name
+     * 检查是否存在指定头名的头字段。
      *
      * @param name The name of the header to search for
      * @return True if at least one header is found
@@ -1550,7 +1542,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     public abstract HttpHeaders remove(String name);
 
     /**
-     * Removes the header with the specified name.
+     * 移除指定头名的所有头字段。
      *
      * @param name The name of the header to remove
      * @return {@code this}
@@ -1560,7 +1552,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     }
 
     /**
-     * Removes all headers from this {@link HttpMessage}.
+     * 清空全部头字段。
      *
      * @return {@code this}
      */
@@ -1588,10 +1580,7 @@ public abstract class HttpHeaders implements Iterable<Map.Entry<String, String>>
     }
 
     /**
-     * Returns {@code true} if a header with the {@code name} and {@code value} exists, {@code false} otherwise.
-     * This also handles multiple values that are separated with a {@code ,}.
-     * <p>
-     * If {@code ignoreCase} is {@code true} then a case insensitive compare is done on the value.
+     * 判断是否存在指定头名且值匹配（支持逗号分隔多值）；{@code ignoreCase} 控制大小写。
      * @param name the name of the header to find
      * @param value the value of the header to find
      * @param ignoreCase {@code true} then a case insensitive compare is run to compare values.

@@ -22,8 +22,10 @@ import io.netty.util.CharsetUtil;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 
 /**
- * Encodes an {@link HttpRequest} or an {@link HttpContent} into
- * a {@link ByteBuf}.
+ * 将 {@link HttpRequest} 或 {@link HttpContent} 编码为 {@link ByteBuf}。
+ * <p>
+ * 编码请求行 {@code METHOD SP URI SP VERSION CRLF}；
+ * 拒绝 {@link HttpResponse}，空 URI 时写入 {@code /}。
  */
 public class HttpRequestEncoder extends HttpObjectEncoder<HttpRequest> {
     private static final char SLASH = '/';
@@ -43,8 +45,7 @@ public class HttpRequestEncoder extends HttpObjectEncoder<HttpRequest> {
         String uri = request.uri();
 
         if (uri.isEmpty()) {
-            // Add " / " as absolute path if uri is not present.
-            // See https://tools.ietf.org/html/rfc2616#section-5.1.2
+            // URI 为空时写入绝对路径 " / "（RFC 2616 §5.1.2）
             ByteBufUtil.writeMediumBE(buf, SPACE_SLASH_AND_SPACE_MEDIUM);
         } else {
             CharSequence uriCharSequence = uri;
@@ -52,8 +53,7 @@ public class HttpRequestEncoder extends HttpObjectEncoder<HttpRequest> {
             int start = uri.indexOf("://");
             if (start != -1 && uri.charAt(0) != SLASH) {
                 start += 3;
-                // Correctly handle query params.
-                // See https://github.com/netty/netty/issues/2732
+                // 绝对 URI 缺路径时在 query 前插入 '/'（见 netty#2732）
                 int index = uri.indexOf(QUESTION_MARK, start);
                 if (index == -1) {
                     if (uri.lastIndexOf(SLASH) < start) {
@@ -67,7 +67,7 @@ public class HttpRequestEncoder extends HttpObjectEncoder<HttpRequest> {
             }
             buf.writeByte(SP).writeCharSequence(uriCharSequence, CharsetUtil.UTF_8);
             if (needSlash) {
-                // write "/ " after uri
+                // 在 URI 后补 "/ "
                 ByteBufUtil.writeShortBE(buf, SLASH_AND_SPACE_SHORT);
             } else {
                 buf.writeByte(SP);

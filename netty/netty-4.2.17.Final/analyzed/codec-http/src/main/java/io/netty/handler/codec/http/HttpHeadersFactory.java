@@ -16,19 +16,18 @@
 package io.netty.handler.codec.http;
 
 /**
- * An interface for creating {@link HttpHeaders} instances.
+ * {@link HttpHeaders} 实例工厂接口。
  * <p>
- * The default implementation is {@link DefaultHttpHeadersFactory},
- * and the default instance is {@link DefaultHttpHeadersFactory#headersFactory()}.
+ * 默认实现为 {@link DefaultHttpHeadersFactory}，
+ * 默认实例见 {@link DefaultHttpHeadersFactory#headersFactory()}。
+ * 解码器/聚合器通过工厂创建请求头与 trailing headers。
  */
 public interface HttpHeadersFactory {
-    /**
-     * Create a new {@link HttpHeaders} instance.
-     */
+    /** 创建新的 {@link HttpHeaders} 实例（常规容量）。 */
+
     HttpHeaders newHeaders();
 
-    /**
-     * Create a new {@link HttpHeaders} instance, but sized to be as small an object as possible.
-     */
+    /** 创建尽可能紧凑的空 {@link HttpHeaders} 实例。 */
+
     HttpHeaders newEmptyHeaders();
 }
