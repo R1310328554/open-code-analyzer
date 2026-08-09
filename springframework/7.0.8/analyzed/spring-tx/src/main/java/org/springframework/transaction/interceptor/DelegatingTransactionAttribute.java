@@ -24,10 +24,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.transaction.support.DelegatingTransactionDefinition;
 
 /**
- * {@link TransactionAttribute} implementation that delegates all calls to a given target
- * {@link TransactionAttribute} instance. Abstract because it is meant to be subclassed,
- * with subclasses overriding specific methods that are not supposed to simply delegate
- * to the target instance.
+ * 将所有调用委托给给定目标 {@link TransactionAttribute} 实例的
+ * {@link TransactionAttribute} 实现。为抽象类，旨在被继承，
+ * 子类覆盖不应简单委托给目标实例的特定方法。
  *
  * @author Juergen Hoeller
  * @author Mark Paluch
@@ -41,8 +40,8 @@ public abstract class DelegatingTransactionAttribute extends DelegatingTransacti
 
 
 	/**
-	 * Create a DelegatingTransactionAttribute for the given target attribute.
-	 * @param targetAttribute the target TransactionAttribute to delegate to
+	 * 为给定目标属性创建 DelegatingTransactionAttribute。
+	 * @param targetAttribute 要委托的目标 TransactionAttribute
 	 */
 	public DelegatingTransactionAttribute(TransactionAttribute targetAttribute) {
 		super(targetAttribute);

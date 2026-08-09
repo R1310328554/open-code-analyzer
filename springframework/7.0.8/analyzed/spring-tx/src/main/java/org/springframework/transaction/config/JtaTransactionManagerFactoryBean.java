@@ -24,7 +24,8 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 /**
- * A {@link FactoryBean} equivalent to the &lt;tx:jta-transaction-manager/&gt; XML element.
+ * 等同于 &lt;tx:jta-transaction-manager/&gt; XML 元素的 {@link FactoryBean}。
+ * 创建并初始化 {@link JtaTransactionManager} 单例实例。
  *
  * @author Juergen Hoeller
  * @since 4.1.1

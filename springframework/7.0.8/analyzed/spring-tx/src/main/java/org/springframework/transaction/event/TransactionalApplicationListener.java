@@ -26,25 +26,24 @@ import org.springframework.context.PayloadApplicationEvent;
 import org.springframework.core.Ordered;
 
 /**
- * An {@link ApplicationListener} that is invoked according to a {@link TransactionPhase}.
- * This is a programmatic equivalent of the {@link TransactionalEventListener} annotation.
+ * 根据 {@link TransactionPhase} 调用的 {@link ApplicationListener}。
+ * 这是 {@link TransactionalEventListener} 注解的编程式等价物。
  *
- * <p>Adding {@link org.springframework.core.Ordered} to your listener implementation
- * allows you to prioritize that listener amongst other listeners running before or after
- * transaction completion.
+ * <p>在监听器实现上添加 {@link org.springframework.core.Ordered}
+ * 可让该监听器在事务完成前后运行的其他监听器中优先执行。
  *
- * <p>As of 6.1, transactional event listeners can work with thread-bound transactions managed
- * by a {@link org.springframework.transaction.PlatformTransactionManager} as well as reactive
- * transactions managed by a {@link org.springframework.transaction.ReactiveTransactionManager}.
- * For the former, listeners are guaranteed to see the current thread-bound transaction.
- * Since the latter uses the Reactor context instead of thread-local variables, the transaction
- * context needs to be included in the published event instance as the event source:
- * see {@link org.springframework.transaction.reactive.TransactionalEventPublisher}.
+ * <p>自 6.1 起，事务事件监听器可与由
+ * {@link org.springframework.transaction.PlatformTransactionManager} 管理的线程绑定事务
+ * 以及由 {@link org.springframework.transaction.ReactiveTransactionManager} 管理的响应式事务配合工作。
+ * 对于前者，监听器保证能看到当前线程绑定的事务。
+ * 由于后者使用 Reactor 上下文而非线程局部变量，
+ * 事务上下文需作为事件源包含在发布的事件实例中：
+ * 参见 {@link org.springframework.transaction.reactive.TransactionalEventPublisher}。
  *
  * @author Juergen Hoeller
  * @author Oliver Drotbohm
  * @since 5.3
- * @param <E> the specific {@code ApplicationEvent} subclass to listen to
+ * @param <E> 要监听的特定 {@code ApplicationEvent} 子类
  * @see TransactionalEventListener
  * @see TransactionalApplicationListenerAdapter
  * @see #forPayload
@@ -53,8 +52,8 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 		extends ApplicationListener<E>, Ordered {
 
 	/**
-	 * Return the execution order within transaction synchronizations.
-	 * <p>Default is {@link Ordered#LOWEST_PRECEDENCE}.
+	 * 返回事务同步内的执行顺序。
+	 * <p>默认为 {@link Ordered#LOWEST_PRECEDENCE}。
 	 * @see org.springframework.transaction.support.TransactionSynchronization#getOrder()
 	 */
 	@Override
@@ -63,8 +62,8 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 	}
 
 	/**
-	 * Transaction-synchronized listeners do not support asynchronous execution,
-	 * only their target listener ({@link #processEvent}) potentially does.
+	 * 事务同步监听器不支持异步执行，
+	 * 仅其目标监听器（{@link #processEvent}）可能支持。
 	 * @since 6.1
 	 */
 	@Override
@@ -73,10 +72,9 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 	}
 
 	/**
-	 * Return an identifier for the listener to be able to refer to it individually.
-	 * <p>It might be necessary for specific completion callback implementations
-	 * to provide a specific id, whereas for other scenarios an empty String
-	 * (as the common default value) is acceptable as well.
+	 * 返回监听器标识符以便单独引用。
+	 * <p>特定完成回调实现可能需要提供特定 id，
+	 * 其他场景下空字符串（常见默认值）也可接受。
 	 * @see org.springframework.context.event.SmartApplicationListener#getListenerId()
 	 * @see TransactionalEventListener#id
 	 * @see #addCallback
@@ -86,36 +84,36 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 	}
 
 	/**
-	 * Return the {@link TransactionPhase} in which the listener will be invoked.
-	 * <p>The default phase is {@link TransactionPhase#AFTER_COMMIT}.
+	 * 返回监听器将被调用的事务 {@link TransactionPhase}。
+	 * <p>默认阶段为 {@link TransactionPhase#AFTER_COMMIT}。
 	 */
 	default TransactionPhase getTransactionPhase() {
 		return TransactionPhase.AFTER_COMMIT;
 	}
 
 	/**
-	 * Add a callback to be invoked on processing within transaction synchronization,
-	 * i.e. when {@link #processEvent} is being triggered during actual transactions.
-	 * @param callback the synchronization callback to apply
+	 * 添加在事务同步内处理时调用的回调，
+	 * 即在真实事务期间触发 {@link #processEvent} 时。
+	 * @param callback 要应用的同步回调
 	 */
 	void addCallback(SynchronizationCallback callback);
 
 	/**
-	 * Immediately process the given {@link ApplicationEvent}. In contrast to
-	 * {@link #onApplicationEvent(ApplicationEvent)}, a call to this method will
-	 * directly process the given event without deferring it to the associated
-	 * {@link #getTransactionPhase() transaction phase}.
-	 * @param event the event to process through the target listener implementation
+	 * 立即处理给定的 {@link ApplicationEvent}。与
+	 * {@link #onApplicationEvent(ApplicationEvent)} 不同，调用此方法将
+	 * 直接处理给定事件，而非推迟到关联的
+	 * {@link #getTransactionPhase() 事务阶段}。
+	 * @param event 通过目标监听器实现处理的事件
 	 */
 	void processEvent(E event);
 
 
 	/**
-	 * Create a new {@code TransactionalApplicationListener} for the given payload consumer,
-	 * to be applied in the default phase {@link TransactionPhase#AFTER_COMMIT}.
-	 * @param consumer the event payload consumer
-	 * @param <T> the type of the event payload
-	 * @return a corresponding {@code TransactionalApplicationListener} instance
+	 * 为给定 payload 消费者创建新的 {@code TransactionalApplicationListener}，
+	 * 在默认阶段 {@link TransactionPhase#AFTER_COMMIT} 中应用。
+	 * @param consumer 事件 payload 消费者
+	 * @param <T> 事件 payload 的类型
+	 * @return 对应的 {@code TransactionalApplicationListener} 实例
 	 * @see PayloadApplicationEvent#getPayload()
 	 * @see TransactionalApplicationListenerAdapter
 	 */
@@ -124,11 +122,11 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 	}
 
 	/**
-	 * Create a new {@code TransactionalApplicationListener} for the given payload consumer.
-	 * @param phase the transaction phase in which to invoke the listener
-	 * @param consumer the event payload consumer
-	 * @param <T> the type of the event payload
-	 * @return a corresponding {@code TransactionalApplicationListener} instance
+	 * 为给定 payload 消费者创建新的 {@code TransactionalApplicationListener}。
+	 * @param phase 调用监听器的事务阶段
+	 * @param consumer 事件 payload 消费者
+	 * @param <T> 事件 payload 的类型
+	 * @return 对应的 {@code TransactionalApplicationListener} 实例
 	 * @see PayloadApplicationEvent#getPayload()
 	 * @see TransactionalApplicationListenerAdapter
 	 */
@@ -143,8 +141,8 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 
 
 	/**
-	 * Callback to be invoked on synchronization-driven event processing,
-	 * wrapping the target listener invocation ({@link #processEvent}).
+	 * 在同步驱动的事件处理时调用的回调，
+	 * 包装目标监听器调用（{@link #processEvent}）。
 	 *
 	 * @see #addCallback
 	 * @see #processEvent
@@ -152,16 +150,16 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 	interface SynchronizationCallback {
 
 		/**
-		 * Called before transactional event listener invocation.
-		 * @param event the event that transaction synchronization is about to process
+		 * 在事务事件监听器调用前调用。
+		 * @param event 事务同步即将处理的事件
 		 */
 		default void preProcessEvent(ApplicationEvent event) {
 		}
 
 		/**
-		 * Called after a transactional event listener invocation.
-		 * @param event the event that transaction synchronization finished processing
-		 * @param ex an exception that occurred during listener invocation, if any
+		 * 在事务事件监听器调用后调用。
+		 * @param event 事务同步已完成处理的事件
+		 * @param ex 监听器调用期间发生的异常（若有）
 		 */
 		default void postProcessEvent(ApplicationEvent event, @Nullable Throwable ex) {
 		}

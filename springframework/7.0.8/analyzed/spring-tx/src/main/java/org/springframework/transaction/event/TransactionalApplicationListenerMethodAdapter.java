@@ -28,14 +28,12 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.Assert;
 
 /**
- * {@link GenericApplicationListener} adapter that delegates the processing of
- * an event to a {@link TransactionalEventListener} annotated method. Supports
- * the exact same features as any regular {@link EventListener} annotated method
- * but is aware of the transactional context of the event publisher.
+ * 将事件处理委托给 {@link TransactionalEventListener} 注解方法的
+ * {@link GenericApplicationListener} 适配器。支持与任何常规
+ * {@link EventListener} 注解方法完全相同的功能，但感知事件发布者的事务上下文。
  *
- * <p>Processing of {@link TransactionalEventListener} is enabled automatically
- * when Spring's transaction management is enabled. For other cases, registering
- * a bean of type {@link TransactionalEventListenerFactory} is required.
+ * <p>启用 Spring 事务管理时，{@link TransactionalEventListener} 的处理会自动启用。
+ * 其他情况下需注册 {@link TransactionalEventListenerFactory} 类型的 Bean。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -53,10 +51,10 @@ public class TransactionalApplicationListenerMethodAdapter extends ApplicationLi
 
 
 	/**
-	 * Construct a new TransactionalApplicationListenerMethodAdapter.
-	 * @param beanName the name of the bean to invoke the listener method on
-	 * @param targetClass the target class that the method is declared on
-	 * @param method the listener method to invoke
+	 * 构造新的 TransactionalApplicationListenerMethodAdapter。
+	 * @param beanName 要调用监听器方法的 Bean 名称
+	 * @param targetClass 声明该方法的目标类
+	 * @param method 要调用的监听器方法
 	 */
 	public TransactionalApplicationListenerMethodAdapter(String beanName, Class<?> targetClass, Method method) {
 		super(beanName, targetClass, method);
@@ -95,7 +93,7 @@ public class TransactionalApplicationListenerMethodAdapter extends ApplicationLi
 			processEvent(event);
 		}
 		else {
-			// No transactional event execution at all
+			// 完全无事务事件执行
 			if (logger.isDebugEnabled()) {
 				logger.debug("No transaction is active - skipping " + event);
 			}

@@ -24,8 +24,10 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
 /**
- * {@link EventListenerFactory} implementation that handles {@link TransactionalEventListener}
- * annotated methods.
+ * 处理 {@link TransactionalEventListener} 注解方法的
+ * {@link EventListenerFactory} 实现。
+ * 为带 {@link TransactionalEventListener} 的方法创建
+ * {@link TransactionalApplicationListenerMethodAdapter} 监听器。
  *
  * @author Stephane Nicoll
  * @since 4.2
@@ -33,9 +35,11 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
  */
 public class TransactionalEventListenerFactory implements EventListenerFactory, Ordered {
 
+	/** 工厂在事件监听器处理器链中的顺序。 */
 	private int order = 50;
 
 
+	/** 设置工厂顺序。 */
 	public void setOrder(int order) {
 		this.order = order;
 	}

@@ -24,8 +24,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Composite {@link TransactionAttributeSource} implementation that iterates
- * over a given array of {@link TransactionAttributeSource} instances.
+ * 遍历给定 {@link TransactionAttributeSource} 实例数组的
+ * 组合式 {@link TransactionAttributeSource} 实现。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -37,8 +37,8 @@ public class CompositeTransactionAttributeSource implements TransactionAttribute
 
 
 	/**
-	 * Create a new CompositeTransactionAttributeSource for the given sources.
-	 * @param transactionAttributeSources the TransactionAttributeSource instances to combine
+	 * 为给定源创建新的 CompositeTransactionAttributeSource。
+	 * @param transactionAttributeSources 要组合的 TransactionAttributeSource 实例
 	 */
 	public CompositeTransactionAttributeSource(TransactionAttributeSource... transactionAttributeSources) {
 		Assert.notNull(transactionAttributeSources, "TransactionAttributeSource array must not be null");
@@ -46,8 +46,8 @@ public class CompositeTransactionAttributeSource implements TransactionAttribute
 	}
 
 	/**
-	 * Return the TransactionAttributeSource instances that this
-	 * CompositeTransactionAttributeSource combines.
+	 * 返回此 CompositeTransactionAttributeSource 组合的
+	 * TransactionAttributeSource 实例。
 	 */
 	public final TransactionAttributeSource[] getTransactionAttributeSources() {
 		return this.transactionAttributeSources;

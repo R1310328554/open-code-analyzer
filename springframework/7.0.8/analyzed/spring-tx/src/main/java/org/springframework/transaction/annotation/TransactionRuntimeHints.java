@@ -25,8 +25,7 @@ import org.springframework.aot.hint.TypeHint;
 import org.springframework.aot.hint.TypeReference;
 
 /**
- * {@link RuntimeHintsRegistrar} implementation that registers runtime hints
- * for transaction management.
+ * 为事务管理注册运行时提示的 {@link RuntimeHintsRegistrar} 实现。
  *
  * @author Sebastien Deleuze
  * @since 6.0

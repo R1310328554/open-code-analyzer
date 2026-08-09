@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import org.springframework.transaction.support.TransactionSynchronization;
 
 /**
- * The phase in which a transactional event listener applies.
+ * 事务事件监听器适用的事务阶段。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -34,44 +34,40 @@ import org.springframework.transaction.support.TransactionSynchronization;
 public enum TransactionPhase {
 
 	/**
-	 * Handle the event before transaction commit.
+	 * 在事务提交前处理事件。
 	 * @see TransactionSynchronization#beforeCommit(boolean)
 	 */
 	BEFORE_COMMIT,
 
 	/**
-	 * Handle the event after the commit has completed successfully.
-	 * <p>Note: This is a specialization of {@link #AFTER_COMPLETION} and therefore
-	 * executes in the same sequence of events as {@code AFTER_COMPLETION}
-	 * (and not in {@link TransactionSynchronization#afterCommit()}).
-	 * <p>Interactions with the underlying transactional resource will not be
-	 * committed in this phase. See
-	 * {@link TransactionSynchronization#afterCompletion(int)} for details.
+	 * 在提交成功完成后处理事件。
+	 * <p>注意：这是 {@link #AFTER_COMPLETION} 的特化，因此
+	 * 与 {@code AFTER_COMPLETION} 在同一事件序列中执行
+	 * （而非在 {@link TransactionSynchronization#afterCommit()} 中）。
+	 * <p>此阶段与底层事务资源的交互不会被提交。详见
+	 * {@link TransactionSynchronization#afterCompletion(int)}。
 	 * @see TransactionSynchronization#afterCompletion(int)
 	 * @see TransactionSynchronization#STATUS_COMMITTED
 	 */
 	AFTER_COMMIT,
 
 	/**
-	 * Handle the event if the transaction has rolled back.
-	 * <p>Note: This is a specialization of {@link #AFTER_COMPLETION} and therefore
-	 * executes in the same sequence of events as {@code AFTER_COMPLETION}.
-	 * <p>Interactions with the underlying transactional resource will not be
-	 * committed in this phase. See
-	 * {@link TransactionSynchronization#afterCompletion(int)} for details.
+	 * 若事务已回滚则处理事件。
+	 * <p>注意：这是 {@link #AFTER_COMPLETION} 的特化，因此
+	 * 与 {@code AFTER_COMPLETION} 在同一事件序列中执行。
+	 * <p>此阶段与底层事务资源的交互不会被提交。详见
+	 * {@link TransactionSynchronization#afterCompletion(int)}。
 	 * @see TransactionSynchronization#afterCompletion(int)
 	 * @see TransactionSynchronization#STATUS_ROLLED_BACK
 	 */
 	AFTER_ROLLBACK,
 
 	/**
-	 * Handle the event after the transaction has completed.
-	 * <p>For more fine-grained events, use {@link #AFTER_COMMIT} or
-	 * {@link #AFTER_ROLLBACK} to intercept transaction commit
-	 * or rollback, respectively.
-	 * <p>Interactions with the underlying transactional resource will not be
-	 * committed in this phase. See
-	 * {@link TransactionSynchronization#afterCompletion(int)} for details.
+	 * 在事务完成后处理事件。
+	 * <p>若需更细粒度的事件，分别使用 {@link #AFTER_COMMIT} 或
+	 * {@link #AFTER_ROLLBACK} 拦截事务提交或回滚。
+	 * <p>此阶段与底层事务资源的交互不会被提交。详见
+	 * {@link TransactionSynchronization#afterCompletion(int)}。
 	 * @see TransactionSynchronization#afterCompletion(int)
 	 */
 	AFTER_COMPLETION

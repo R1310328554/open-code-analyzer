@@ -24,7 +24,8 @@ import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.transaction.jta.JtaTransactionManager;
 
 /**
- * Parser for the &lt;tx:jta-transaction-manager/&gt; XML configuration element.
+ * 解析 Spring 事务命名空间中 &lt;tx:jta-transaction-manager/&gt; XML 配置元素的解析器。
+ * 将 {@link JtaTransactionManager} 注册为默认 Bean 名称 transactionManager。
  *
  * @author Juergen Hoeller
  * @author Christian Dupuis

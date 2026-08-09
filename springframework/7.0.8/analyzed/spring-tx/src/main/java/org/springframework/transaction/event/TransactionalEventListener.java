@@ -26,35 +26,32 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.AliasFor;
 
 /**
- * An {@link EventListener} that is invoked according to a {@link TransactionPhase}.
- * This is an annotation-based equivalent of {@link TransactionalApplicationListener}.
+ * 根据 {@link TransactionPhase} 调用的 {@link EventListener}。
+ * 这是 {@link TransactionalApplicationListener} 的基于注解的等价物。
  *
- * <p>If the event is not published within an active transaction, the event is discarded
- * unless the {@link #fallbackExecution} flag is explicitly set. If a transaction is
- * running, the event is handled according to its {@code TransactionPhase}.
+ * <p>若事件未在活动事务内发布，除非显式设置 {@link #fallbackExecution} 标志，
+ * 否则事件将被丢弃。若有事务运行，则按 {@code TransactionPhase} 处理事件。
  *
- * <p>Adding {@link org.springframework.core.annotation.Order @Order} to your annotated
- * method allows you to prioritize that listener amongst other listeners running before
- * or after transaction completion.
+ * <p>在注解方法上添加 {@link org.springframework.core.annotation.Order @Order}
+ * 可让该监听器在事务完成前后运行的其他监听器中优先执行。
  *
- * <p>As of 6.1, transactional event listeners can work with thread-bound transactions managed
- * by a {@link org.springframework.transaction.PlatformTransactionManager} as well as reactive
- * transactions managed by a {@link org.springframework.transaction.ReactiveTransactionManager}.
- * For the former, listeners are guaranteed to see the current thread-bound transaction.
- * Since the latter uses the Reactor context instead of thread-local variables, the transaction
- * context needs to be included in the published event instance as the event source:
- * see {@link org.springframework.transaction.reactive.TransactionalEventPublisher}.
+ * <p>自 6.1 起，事务事件监听器可与由
+ * {@link org.springframework.transaction.PlatformTransactionManager} 管理的线程绑定事务
+ * 以及由 {@link org.springframework.transaction.ReactiveTransactionManager} 管理的响应式事务配合工作。
+ * 对于前者，监听器保证能看到当前线程绑定的事务。
+ * 由于后者使用 Reactor 上下文而非线程局部变量，
+ * 事务上下文需作为事件源包含在发布的事件实例中：
+ * 参见 {@link org.springframework.transaction.reactive.TransactionalEventPublisher}。
  *
- * <p><strong>WARNING:</strong> if the {@code TransactionPhase} is set to
- * {@link TransactionPhase#AFTER_COMMIT AFTER_COMMIT} (the default),
- * {@link TransactionPhase#AFTER_ROLLBACK AFTER_ROLLBACK}, or
- * {@link TransactionPhase#AFTER_COMPLETION AFTER_COMPLETION}, the transaction will
- * have been committed or rolled back already, but the transactional resources might
- * still be active and accessible. As a consequence, any data access code triggered
- * at this point will still "participate" in the original transaction, but changes
- * will not be committed to the transactional resource. See
+ * <p><strong>警告：</strong>若 {@code TransactionPhase} 设为
+ * {@link TransactionPhase#AFTER_COMMIT AFTER_COMMIT}（默认）、
+ * {@link TransactionPhase#AFTER_ROLLBACK AFTER_ROLLBACK} 或
+ * {@link TransactionPhase#AFTER_COMPLETION AFTER_COMPLETION}，
+ * 事务已提交或回滚，但事务资源可能仍活跃且可访问。
+ * 因此，此阶段触发的任何数据访问代码仍将 "参与" 原始事务，
+ * 但变更不会提交到事务资源。详见
  * {@link org.springframework.transaction.support.TransactionSynchronization#afterCompletion(int)
- * TransactionSynchronization.afterCompletion(int)} for details.
+ * TransactionSynchronization.afterCompletion(int)}。
  *
  * @author Stephane Nicoll
  * @author Sam Brannen
@@ -70,48 +67,45 @@ import org.springframework.core.annotation.AliasFor;
 public @interface TransactionalEventListener {
 
 	/**
-	 * Phase to bind the handling of an event to.
-	 * <p>The default phase is {@link TransactionPhase#AFTER_COMMIT}.
-	 * <p>If no transaction is in progress, the event is not processed at
-	 * all unless {@link #fallbackExecution} has been enabled explicitly.
+	 * 绑定事件处理的事务阶段。
+	 * <p>默认阶段为 {@link TransactionPhase#AFTER_COMMIT}。
+	 * <p>若无事务进行中，除非显式启用 {@link #fallbackExecution}，
+	 * 否则事件完全不会被处理。
 	 */
 	TransactionPhase phase() default TransactionPhase.AFTER_COMMIT;
 
 	/**
-	 * Alias for {@link #classes}.
+	 * {@link #classes} 的别名。
 	 */
 	@AliasFor(annotation = EventListener.class, attribute = "classes")
 	Class<?>[] value() default {};
 
 	/**
-	 * The event classes that this listener handles.
-	 * <p>If this attribute is specified with a single value, the annotated
-	 * method may optionally accept a single parameter. However, if this
-	 * attribute is specified with multiple values, the annotated method
-	 * must <em>not</em> declare any parameters.
+	 * 此监听器处理的事件类。
+	 * <p>若此属性以单个值指定，注解方法可选择接受单个参数。
+	 * 但若以多个值指定，注解方法<em>不得</em>声明任何参数。
 	 */
 	@AliasFor(annotation = EventListener.class, attribute = "classes")
 	Class<?>[] classes() default {};
 
 	/**
-	 * Spring Expression Language (SpEL) attribute used for making the event
-	 * handling conditional.
-	 * <p>The default is {@code ""}, meaning the event is always handled.
+	 * 用于使事件处理条件化的 Spring 表达式语言（SpEL）属性。
+	 * <p>默认为 {@code ""}，表示始终处理事件。
 	 * @see EventListener#condition
 	 */
 	@AliasFor(annotation = EventListener.class, attribute = "condition")
 	String condition() default "";
 
 	/**
-	 * Whether the event should be handled if no transaction is running.
+	 * 若无事务运行，是否应处理事件。
 	 * @see EventListener#defaultExecution()
 	 */
 	@AliasFor(annotation = EventListener.class, attribute = "defaultExecution")
 	boolean fallbackExecution() default false;
 
 	/**
-	 * An optional identifier for the listener, defaulting to the fully-qualified
-	 * signature of the declaring method (for example, "mypackage.MyClass.myMethod()").
+	 * 监听器的可选标识符，默认为声明方法的全限定签名
+	 * （例如 "mypackage.MyClass.myMethod()"）。
 	 * @since 5.3
 	 * @see EventListener#id
 	 * @see TransactionalApplicationListener#getListenerId()

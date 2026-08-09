@@ -25,12 +25,12 @@ import org.springframework.core.Ordered;
 import org.springframework.transaction.reactive.TransactionContext;
 
 /**
- * {@code TransactionSynchronization} implementations for event processing with a
- * {@link TransactionalApplicationListener}.
+ * 与 {@link TransactionalApplicationListener} 配合进行事件处理的
+ * {@code TransactionSynchronization} 实现。
  *
  * @author Juergen Hoeller
  * @since 5.3
- * @param <E> the specific {@code ApplicationEvent} subclass to listen to
+ * @param <E> 要监听的特定 {@code ApplicationEvent} 子类
  */
 abstract class TransactionalApplicationListenerSynchronization<E extends ApplicationEvent> implements Ordered {
 
