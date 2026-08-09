@@ -15,10 +15,17 @@ import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.invoke.MethodHandles;
 
+/**
+ * Arthas gRPC 服务启动器，注册 Object、Pwd、SystemProperty、Watch 等命令服务。
+ * <p>
+ * 使用 attach 传入的 {@link Instrumentation} 与 {@link TransformerManager} 支撑字节码增强；
+ * 端口为 0 时自动选取可用 TCP 端口。
+ */
 public class GrpcServer {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName());
 
+    /** 监听端口，0 表示自动分配 */
     private int port;
 
     private Server grpcServer;
@@ -27,6 +34,11 @@ public class GrpcServer {
 
     private TransformerManager transformerManager;
 
+    /**
+     * @param port                监听端口，0 则调用 {@link SocketUtils#findAvailableTcpPort()}
+     * @param instrumentation     JVM 插桩接口
+     * @param transformerManager  ClassFileTransformer 生命周期管理
+     */
     public GrpcServer(int port, Instrumentation instrumentation, TransformerManager transformerManager) {
         if (port == 0) {
             this.port = SocketUtils.findAvailableTcpPort();
@@ -37,9 +49,13 @@ public class GrpcServer {
         this.transformerManager = transformerManager;
     }
 
+    /**
+     * 构建并启动 gRPC Server，注册各命令 Service 并添加 JVM 关闭钩子。
+     */
     public void start() {
         GrpcResultViewResolver grpcResultViewResolver = new GrpcResultViewResolver();
         GrpcJobController grpcJobController = new GrpcJobController(this.instrumentation, this.transformerManager, grpcResultViewResolver);
+        // VmTool 本地库目录与 arthas-core jar 同级
         File path = new File(VmTool.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile();
         String libPath = path.getAbsolutePath();
 

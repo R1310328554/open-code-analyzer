@@ -3,7 +3,12 @@ package com.taobao.arthas.grpcweb.grpc.objectUtils;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-// ComplexObject.java
+
+/**
+ * 复杂 Java 对象示例，用于测试 {@link JavaObjectConverter} 的序列化能力。
+ * <p>
+ * 涵盖基本类型、数组、嵌套对象、集合与 Map 等多种字段形态。
+ */
 public class ComplexObject {
     private int id;
     private String name;
@@ -23,6 +28,7 @@ public class ComplexObject {
 
     private Double[] doubleArray;
 
+    /** 嵌套对象，用于测试多层反射展开 */
     public static class NestedObject {
         private int nestedId;
         private String nestedName;
@@ -53,7 +59,6 @@ public class ComplexObject {
         }
 
     }
-
 
     public Map<String, Integer> getStringIntegerMap() {
         return stringIntegerMap;

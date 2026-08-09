@@ -20,13 +20,35 @@ import io.arthas.api.ArthasServices.MapEntry;
 import io.arthas.api.ArthasServices.MapValue;
 import io.arthas.api.ArthasServices.NullValue;
 import io.arthas.api.ArthasServices.UnexpandedObject;
+
+/**
+ * 将 JVM 堆内 Java 对象反射序列化为 gRPC {@link JavaObject}  protobuf 结构。
+ * <p>
+ * 支持基本类型、数组、集合、Map 与普通 POJO 字段；通过深度限制避免循环引用导致栈溢出。
+ */
 public class JavaObjectConverter {
+    /** 最大递归深度，超过后返回 null 或 {@link UnexpandedObject} */
     private static final int MAX_DEPTH = 5;
 
+    /**
+     * 以默认最大深度将对象转为 {@link JavaObject}。
+     *
+     * @param obj 待序列化的堆对象，可为 null
+     * @return protobuf 形式的 Java 对象描述
+     */
     public static JavaObject toJavaObject(Object obj) {
         return toJavaObject(obj, 0);
     }
 
+    /**
+     * 按 Arthas expand 参数换算实际递归深度后序列化对象。
+     * <p>
+     * expand 越大展开越深；0 或负数时使用接近 {@link #MAX_DEPTH} 的深度。
+     *
+     * @param obj    待序列化对象
+     * @param expand 展开层级（与 CLI expand 语义一致）
+     * @return protobuf JavaObject
+     */
     public static JavaObject toJavaObjectWithExpand(Object obj, int expand){
         int depth;
         if(expand <= 0){
@@ -39,6 +61,13 @@ public class JavaObjectConverter {
         return toJavaObject(obj, depth);
     }
 
+    /**
+     * 以指定起始深度递归序列化对象。
+     *
+     * @param obj   待序列化对象
+     * @param depth 当前递归深度，达到 {@link #MAX_DEPTH} 时停止展开
+     * @return JavaObject；深度超限时可能为 null
+     */
     public static JavaObject toJavaObject(Object obj, int depth) {
         if (depth >= MAX_DEPTH) {
             return null;
@@ -52,17 +81,18 @@ public class JavaObjectConverter {
         Class<? extends Object> objClazz = obj.getClass();
         objectBuilder.setClassName(objClazz.getName());
 
-        // 基础类型
+        // 包装类与 String 等基本类型
         if (isBasicType(objClazz)) {
             return objectBuilder.setBasicValue(createBasicValue(obj)).build();
-        } else if (obj instanceof Collection) { // 集合
+        } else if (obj instanceof Collection) {
             return objectBuilder.setCollection(createCollectionValue((Collection<?>) obj, depth)).build();
-        } else if (obj instanceof Map) { // map
+        } else if (obj instanceof Map) {
             return objectBuilder.setMap(createMapValue((Map<?, ?>) obj, depth)).build();
         } else if (objClazz.isArray()) {
             return objectBuilder.setArrayValue(toArrayValue(obj, depth)).build();
         }
 
+        // 普通对象：遍历声明字段
         Field[] fields = objClazz.getDeclaredFields();
         List<JavaField> javaFields = new ArrayList<>();
 
@@ -88,9 +118,9 @@ public class JavaObjectConverter {
                 } else if (fieldType.isPrimitive() || isBasicType(fieldType)) {
                     BasicValue basicValue = createBasicValue(fieldValue);
                     fieldBuilder.setBasicValue(basicValue);
-                } else if (fieldValue instanceof Collection) { // 集合
+                } else if (fieldValue instanceof Collection) {
                     fieldBuilder.setCollection(createCollectionValue((Collection<?>) fieldValue, depth));
-                } else if (fieldValue instanceof Map) { // map
+                } else if (fieldValue instanceof Map) {
                     fieldBuilder.setMap(createMapValue((Map<?, ?>) fieldValue, depth));
                 } else {
                     JavaObject nestedObject = toJavaObject(fieldValue, depth + 1);
@@ -102,7 +132,7 @@ public class JavaObjectConverter {
                     }
                 }
             } catch (IllegalAccessException e) {
-                // TODO ignore ?
+                // 无法访问的字段跳过
             }
             javaFields.add(fieldBuilder.build());
         }
@@ -111,6 +141,9 @@ public class JavaObjectConverter {
         return objectBuilder.build();
     }
 
+    /**
+     * 将 Java 数组转为 {@link ArrayValue}，元素按类型递归或标记为未展开。
+     */
     private static ArrayValue toArrayValue(Object array, int depth) {
         if (array == null || depth >= MAX_DEPTH) {
             return null;
@@ -157,6 +190,7 @@ public class JavaObjectConverter {
         return arrayBuilder.build();
     }
 
+    /** 将 Map 的键值对逐条序列化为 {@link MapValue} */
     private static MapValue createMapValue(Map<?, ?> map, int depth) {
         MapValue.Builder builder = MapValue.newBuilder();
 
@@ -168,6 +202,7 @@ public class JavaObjectConverter {
         return builder.build();
     }
 
+    /** 将集合元素序列化为 {@link CollectionValue} */
     private static CollectionValue createCollectionValue(Collection<?> collection, int depth) {
         Builder builder = CollectionValue.newBuilder();
         for (Object o : collection) {
@@ -176,6 +211,7 @@ public class JavaObjectConverter {
         return builder.build();
     }
 
+    /** 根据运行时类型填充 {@link BasicValue} 的 oneof 字段 */
     private static BasicValue createBasicValue(Object value) {
         BasicValue.Builder builder = BasicValue.newBuilder();
 
@@ -196,6 +232,7 @@ public class JavaObjectConverter {
         return builder.build();
     }
 
+    /** 判断是否为 String 及常见包装类型 */
     private static boolean isBasicType(Class<?> clazz) {
         if (String.class.equals(clazz) || Integer.class.equals(clazz) || Long.class.equals(clazz)
                 || Float.class.equals(clazz) || Double.class.equals(clazz) || Boolean.class.equals(clazz)) {

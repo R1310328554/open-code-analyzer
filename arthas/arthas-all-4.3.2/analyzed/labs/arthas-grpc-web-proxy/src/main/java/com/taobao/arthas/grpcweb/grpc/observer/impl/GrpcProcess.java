@@ -8,8 +8,15 @@ import com.taobao.arthas.core.shell.term.Tty;
 
 import java.util.Date;
 
+/**
+ * gRPC 场景下的轻量级 {@link Process} 实现，仅维护 {@link ExecStatus} 状态。
+ * <p>
+ * shell 相关的 Tty、Session、前后台切换等方法均为空实现，供 {@link ProcessAware}
+ * 监听器查询进程是否仍在 RUNNING。
+ */
 public class GrpcProcess implements Process {
 
+    /** 当前命令执行状态 */
     private ExecStatus processStatus;
 
     public void setProcessStatus(ExecStatus processStatus) {

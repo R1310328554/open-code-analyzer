@@ -26,6 +26,10 @@ import io.arthas.api.ArthasServices.ObjectQuery;
 import io.arthas.api.ArthasServices.ObjectQueryResult;
 import io.arthas.api.ArthasServices.ObjectQueryResult.Builder;
 
+/**
+ * gRPC 堆对象查询服务：通过 {@link VmTool} 获取类实例，可选 OGNL 表达式过滤，
+ * 再经 {@link JavaObjectConverter} 序列化为 {@link JavaObject} 返回。
+ */
 public class ObjectService extends ObjectServiceImplBase {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName());
 
@@ -34,7 +38,12 @@ public class ObjectService extends ObjectServiceImplBase {
 
     private GrpcJobController grpcJobController;
 
-
+    /**
+     * 初始化 VmTool 本地库并保存 Instrumentation 引用。
+     *
+     * @param grpcJobController 任务控制器，提供 Instrumentation
+     * @param libDir            arthas 本地库目录（与 core jar 同级）
+     */
     public ObjectService(GrpcJobController grpcJobController, String libDir) {
         this.inst = grpcJobController.getInstrumentation();
         this.grpcJobController = grpcJobController;
@@ -49,6 +58,9 @@ public class ObjectService extends ObjectServiceImplBase {
         }
     }
 
+    /**
+     * 按类名（及可选 ClassLoader 条件）查找实例，执行 express/resultExpress 后返回序列化对象。
+     */
     @Override
     public void query(ObjectQuery query, StreamObserver<ObjectQueryResult> responseObserver) {
         if (vmTool == null) {
@@ -63,7 +75,7 @@ public class ObjectService extends ObjectServiceImplBase {
         String express = query.getExpress();
         String resultExpress = query.getResultExpress();
 
-        // 如果只传递了 class name 参数，则jvm 里可能有多个同名的 class，需要全部查找
+        // 仅指定类名时，JVM 中可能存在多个同名类，需全部扫描
         if (isEmpty(classLoaderHash) && isEmpty(classLoaderClass)) {
             List<Class<?>> foundClassList = new ArrayList<>();
             for (Class<?> clazz : inst.getAllLoadedClasses()) {
@@ -72,7 +84,6 @@ public class ObjectService extends ObjectServiceImplBase {
                 }
             }
 
-            // 没找到
             if (foundClassList.size() == 0) {
                 arthasStreamObserver.onNext(ObjectQueryResult.newBuilder().setSuccess(false)
                         .setMessage("can not find class: " + className).build());
@@ -83,12 +94,9 @@ public class ObjectService extends ObjectServiceImplBase {
                 arthasStreamObserver.onNext(ObjectQueryResult.newBuilder().setSuccess(false).setMessage(message).build());
                 arthasStreamObserver.onCompleted();
                 return;
-            } else { // 找到了指定的 类
+            } else {
                 Object[] instances = vmTool.getInstances(foundClassList.get(0), limit);
                 Builder builder = ObjectQueryResult.newBuilder().setSuccess(true);
-                /**
-                 *  这里尝试使用express
-                 */
                 Object value = null;
                 if (!isEmpty(express)) {
                     Express unpooledExpress = ExpressFactory.unpooledExpress(foundClassList.get(0).getClassLoader());
@@ -113,8 +121,7 @@ public class ObjectService extends ObjectServiceImplBase {
             }
         }
 
-        // 有指定 classloader hash 或者 classloader className
-
+        // 指定了 classLoader hash 或 classLoader 类名，精确匹配唯一 Class
         Class<?> foundClass = null;
 
         for (Class<?> clazz : inst.getAllLoadedClasses()) {
@@ -141,7 +148,6 @@ public class ObjectService extends ObjectServiceImplBase {
                 break;
             }
         }
-        // 没找到类
         if (foundClass == null) {
             arthasStreamObserver.onNext(ObjectQueryResult.newBuilder().setSuccess(false)
                     .setMessage("can not find class: " + className).build());
@@ -178,10 +184,12 @@ public class ObjectService extends ObjectServiceImplBase {
         arthasStreamObserver.onCompleted();
     }
 
+    /** 判断字符串是否为 null 或空串 */
     public static boolean isEmpty(Object str) {
         return str == null || "".equals(str);
     }
 
+    /** OGNL 绑定用包装类，将实例数组暴露为 {@code instances} 变量 */
     static class InstancesWrapper {
         Object instances;
 
