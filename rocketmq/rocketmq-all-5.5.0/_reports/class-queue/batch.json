@@ -15,23 +15,8 @@
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetMaxOffsetRequestHeader.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetMaxOffsetResponseHeader.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetMinOffsetRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetMinOffsetResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetParentTopicInfoRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetProducerConnectionListRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetSubscriptionGroupConfigRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetTopicConfigRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetTopicStatsInfoRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetTopicsByClusterRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetUserRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/HeartbeatRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/InitConsumerOffsetRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ListAclsRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ListUsersRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/LiteSubscriptionCtlRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/LockBatchMqRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/NotificationRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/NotificationResponseHeader.java"
+    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/GetMinOffsetResponseHeader.java"
   ],
   "remaining_pending": 528,
-  "done": 930
+  "done": 945
 }
