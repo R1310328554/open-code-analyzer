@@ -34,8 +34,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.function.SingletonSupplier;
 
 /**
- * Abstract base {@code Configuration} class providing common structure for enabling
- * Spring's asynchronous method execution capability.
+ * 启用 Spring 异步方法执行能力的抽象基类 {@code Configuration}，
+ * 提供通用结构。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -64,7 +64,7 @@ public abstract class AbstractAsyncConfiguration implements ImportAware {
 	}
 
 	/**
-	 * Collect any {@link AsyncConfigurer} beans through autowiring.
+	 * 通过自动装配收集所有 {@link AsyncConfigurer} Bean。
 	 */
 	@Autowired
 	@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1290

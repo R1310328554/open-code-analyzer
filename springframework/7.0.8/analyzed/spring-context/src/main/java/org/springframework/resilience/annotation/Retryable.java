@@ -28,19 +28,18 @@ import org.springframework.core.annotation.AliasFor;
 import org.springframework.resilience.retry.MethodRetryPredicate;
 
 /**
- * A common annotation specifying retry characteristics for an individual method,
- * or for all proxy-invoked methods in a given class hierarchy if annotated at
- * the type level.
+ * 为单个方法指定重试特征的通用注解；
+ * 若在类型级别标注，则对给定类层次结构中所有经代理调用的方法生效。
  *
- * <p>Aligned with {@link org.springframework.core.retry.RetryTemplate}
- * as well as Reactor's retry support, either re-invoking an imperative
- * target method or decorating a returned reactive publisher accordingly.
+ * <p>与 {@link org.springframework.core.retry.RetryTemplate}
+ * 及 Reactor 重试支持对齐，可重新调用命令式目标方法，
+ * 或相应地装饰返回的响应式 Publisher。
  *
- * <p>For tracking the exceptions encountered by method-level retry processing,
- * consider a {@link org.springframework.resilience.retry.MethodRetryEvent} listener.
+ * <p>若要跟踪方法级重试处理中遇到的异常，
+ * 可考虑 {@link org.springframework.resilience.retry.MethodRetryEvent} 监听器。
  *
- * <p>Inspired by the <a href="https://github.com/spring-projects/spring-retry">Spring Retry</a>
- * project but redesigned as a minimal core retry feature in the Spring Framework.
+ * <p>受 <a href="https://github.com/spring-projects/spring-retry">Spring Retry</a>
+ * 项目启发，但在 Spring Framework 中重新设计为最小核心重试特性。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -59,21 +58,18 @@ import org.springframework.resilience.retry.MethodRetryPredicate;
 public @interface Retryable {
 
 	/**
-	 * Convenient default attribute for {@link #includes()},
-	 * typically used with a single exception type to retry for.
+	 * {@link #includes()} 的便捷默认属性，
+	 * 通常与单个需重试的异常类型配合使用。
 	 */
 	@AliasFor("includes")
 	Class<? extends Throwable>[] value() default {};
 
 	/**
-	 * Applicable exception types to attempt a retry for. This attribute
-	 * allows for the convenient specification of assignable exception types.
-	 * <p>The supplied exception types will be matched against an exception
-	 * thrown by a failed invocation as well as nested
-	 * {@linkplain Throwable#getCause() causes}.
-	 * <p>This can optionally be combined with {@link #excludes() excludes} or
-	 * a custom {@link #predicate() predicate}.
-	 * <p>The default is empty, leading to a retry attempt for any exception.
+	 * 应尝试重试的适用异常类型。本属性便于指定可赋值的异常类型。
+	 * <p>所提供的异常类型将与失败调用抛出的异常及嵌套的
+	 * {@linkplain Throwable#getCause() 原因} 进行匹配。
+	 * <p>可与 {@link #excludes() excludes} 或自定义 {@link #predicate() predicate} 组合使用。
+	 * <p>默认为空，表示对任意异常尝试重试。
 	 * @see #excludes()
 	 * @see #predicate()
 	 */
@@ -81,89 +77,76 @@ public @interface Retryable {
 	Class<? extends Throwable>[] includes() default {};
 
 	/**
-	 * Non-applicable exception types to avoid a retry for. This attribute
-	 * allows for the convenient specification of assignable exception types.
-	 * <p>The supplied exception types will be matched against an exception
-	 * thrown by a failed invocation as well as nested
-	 * {@linkplain Throwable#getCause() causes}.
-	 * <p>This can optionally be combined with {@link #includes() includes} or
-	 * a custom {@link #predicate() predicate}.
-	 * <p>The default is empty, leading to a retry attempt for any exception.
+	 * 应避免重试的不适用异常类型。本属性便于指定可赋值的异常类型。
+	 * <p>所提供的异常类型将与失败调用抛出的异常及嵌套的
+	 * {@linkplain Throwable#getCause() 原因} 进行匹配。
+	 * <p>可与 {@link #includes() includes} 或自定义 {@link #predicate() predicate} 组合使用。
+	 * <p>默认为空，表示对任意异常尝试重试。
 	 * @see #includes()
 	 * @see #predicate()
 	 */
 	Class<? extends Throwable>[] excludes() default {};
 
 	/**
-	 * A predicate for filtering applicable exceptions for which an invocation can
-	 * be retried.
-	 * <p>A specified {@link MethodRetryPredicate} implementation will be instantiated
-	 * per method. It can use dependency injection at the constructor level or through
-	 * autowiring annotations, in case it needs access to other beans or facilities.
-	 * <p>This can optionally be combined with {@link #includes() includes} or
-	 * {@link #excludes() excludes}.
-	 * <p>The default is a retry attempt for any exception.
+	 * 过滤可重试调用的适用异常的谓词。
+	 * <p>指定的 {@link MethodRetryPredicate} 实现将按方法实例化。
+	 * 若需访问其他 Bean 或设施，可在构造器级别或通过自动装配注解使用依赖注入。
+	 * <p>可与 {@link #includes() includes} 或 {@link #excludes() excludes} 组合使用。
+	 * <p>默认为对任意异常尝试重试。
 	 * @see #includes()
 	 * @see #excludes()
 	 */
 	Class<? extends MethodRetryPredicate> predicate() default MethodRetryPredicate.class;
 
 	/**
-	 * The maximum number of retry attempts.
-	 * <p>Note that {@code total attempts = 1 initial attempt + maxRetries attempts}.
-	 * Thus, if {@code maxRetries} is set to 4, the annotated method will be invoked
-	 * at least once and at most 5 times.
-	 * <p>The default is 3.
+	 * 最大重试次数。
+	 * <p>注意：{@code 总尝试次数 = 1 次初始尝试 + maxRetries 次重试}。
+	 * 因此若 {@code maxRetries} 设为 4，带注解方法至少调用 1 次、至多 5 次。
+	 * <p>默认为 3。
 	 */
 	long maxRetries() default 3;
 
 	/**
-	 * The maximum number of retry attempts, as a configurable String.
-	 * <p>A non-empty value specified here overrides the {@link #maxRetries()} attribute.
-	 * <p>This supports Spring-style "${...}" placeholders as well as SpEL expressions.
+	 * 可配置字符串形式的最大重试次数。
+	 * <p>此处指定非空值将覆盖 {@link #maxRetries()} 属性。
+	 * <p>支持 Spring 风格 "${...}" 占位符及 SpEL 表达式。
 	 * @see #maxRetries()
 	 */
 	String maxRetriesString() default "";
 
 	/**
-	 * The maximum amount of elapsed time allowed for the initial invocation and
-	 * any subsequent retry attempts, including delays.
-	 * <p>The default is {@code 0}, which signals that no timeout should be applied.
-	 * <p>The time unit is milliseconds by default but can be overridden via
-	 * {@link #timeUnit}.
-	 * <p>Must be greater than or equal to zero.
+	 * 初始调用及后续重试（含延迟）允许的最大耗时。
+	 * <p>默认为 {@code 0}，表示不应用超时。
+	 * <p>时间单位默认为毫秒，可通过 {@link #timeUnit} 覆盖。
+	 * <p>必须大于等于零。
 	 * @since 7.0.2
 	 */
 	long timeout() default 0;
 
 	/**
-	 * The timeout, as a duration String.
-	 * <p>A non-empty value specified here overrides the {@link #timeout()} attribute.
-	 * <p>The duration String can be in several formats:
+	 * 字符串形式的超时时间。
+	 * <p>此处指定非空值将覆盖 {@link #timeout()} 属性。
+	 * <p>持续时间字符串可为多种形式：
 	 * <ul>
-	 * <li>a plain integer &mdash; which is interpreted to represent a duration in
-	 * milliseconds by default unless overridden via {@link #timeUnit()} (prefer
-	 * using {@link #delay()} in that case)</li>
-	 * <li>any of the known {@link org.springframework.format.annotation.DurationFormat.Style
-	 * DurationFormat.Style}: the {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 ISO8601}
-	 * style or the {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE SIMPLE} style
-	 * &mdash; using the {@link #timeUnit()} as fallback if the string doesn't contain an explicit unit</li>
-	 * <li>one of the above, with Spring-style "${...}" placeholders as well as SpEL expressions</li>
+	 * <li>纯整数 &mdash; 默认解释为毫秒，除非通过 {@link #timeUnit()} 覆盖（此情况建议使用 {@link #delay()}）</li>
+	 * <li>已知 {@link org.springframework.format.annotation.DurationFormat.Style
+	 * DurationFormat.Style} 之一：{@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 ISO8601}
+	 * 或 {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE SIMPLE} 风格
+	 * &mdash; 若字符串未含显式单位则回退使用 {@link #timeUnit()}</li>
+	 * <li>上述任一种，并支持 Spring 风格 "${...}" 占位符及 SpEL 表达式</li>
 	 * </ul>
-	 * @return the timeout as a String value &mdash; for example, a placeholder, a
-	 * {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} compliant value,
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE simple format} compliant value
+	 * @return 字符串形式的超时值 &mdash; 例如占位符、
+	 * 符合 {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} 的值，
+	 * 或符合 {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE 简单格式} 的值
 	 * @since 7.0.2
 	 * @see #timeout()
 	 */
 	String timeoutString() default "";
 
 	/**
-	 * The base delay after the initial invocation. If a multiplier is specified,
-	 * this serves as the initial delay to multiply from.
-	 * <p>The time unit is milliseconds by default but can be overridden via
-	 * {@link #timeUnit}.
-	 * <p>Must be greater than or equal to zero. The default is 1000.
+	 * 初始调用后的基础延迟。若指定乘数，则作为乘法的初始延迟。
+	 * <p>时间单位默认为毫秒，可通过 {@link #timeUnit} 覆盖。
+	 * <p>必须大于等于零。默认为 1000。
 	 * @see #jitter()
 	 * @see #multiplier()
 	 * @see #maxDelay()
@@ -171,35 +154,23 @@ public @interface Retryable {
 	long delay() default 1000;
 
 	/**
-	 * The base delay after the initial invocation, as a duration String.
-	 * <p>A non-empty value specified here overrides the {@link #delay()} attribute.
-	 * <p>The duration String can be in several formats:
-	 * <ul>
-	 * <li>a plain integer &mdash; which is interpreted to represent a duration in
-	 * milliseconds by default unless overridden via {@link #timeUnit()} (prefer
-	 * using {@link #delay()} in that case)</li>
-	 * <li>any of the known {@link org.springframework.format.annotation.DurationFormat.Style
-	 * DurationFormat.Style}: the {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 ISO8601}
-	 * style or the {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE SIMPLE} style
-	 * &mdash; using the {@link #timeUnit()} as fallback if the string doesn't contain an explicit unit</li>
-	 * <li>one of the above, with Spring-style "${...}" placeholders as well as SpEL expressions</li>
-	 * </ul>
-	 * @return the initial delay as a String value &mdash; for example a placeholder,
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} compliant value
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE simple format} compliant value
+	 * 字符串形式的初始调用后基础延迟。
+	 * <p>此处指定非空值将覆盖 {@link #delay()} 属性。
+	 * <p>持续时间字符串格式参见 {@link #timeoutString()}。
+	 * @return 字符串形式的初始延迟 &mdash; 例如占位符，
+	 * 或符合 {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} 的值
+	 * 或符合 {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE 简单格式} 的值
 	 * @see #delay()
 	 */
 	String delayString() default "";
 
 	/**
-	 * A jitter value for the base retry attempt, randomly subtracted or added to
-	 * the calculated delay, resulting in a value between {@code delay - jitter}
-	 * and {@code delay + jitter} but never below the base {@link #delay()} or
-	 * above {@link #maxDelay()}. If a multiplier is specified, it is applied
-	 * to the jitter value as well.
-	 * <p>The time unit is milliseconds by default but can be overridden via
-	 * {@link #timeUnit}.
-	 * <p>The default is 0 (no jitter).
+	 * 基础重试尝试的抖动值，随机加减于计算延迟，
+	 * 结果介于 {@code delay - jitter} 与 {@code delay + jitter} 之间，
+	 * 但不低于基础 {@link #delay()} 或高于 {@link #maxDelay()}。
+	 * 若指定乘数，亦应用于抖动值。
+	 * <p>时间单位默认为毫秒，可通过 {@link #timeUnit} 覆盖。
+	 * <p>默认为 0（无抖动）。
 	 * @see #delay()
 	 * @see #multiplier()
 	 * @see #maxDelay()
@@ -207,31 +178,18 @@ public @interface Retryable {
 	long jitter() default 0;
 
 	/**
-	 * A jitter value for the base retry attempt, as a duration String.
-	 * <p>A non-empty value specified here overrides the {@link #jitter()} attribute.
-	 * <p>The duration String can be in several formats:
-	 * <ul>
-	 * <li>a plain integer &mdash; which is interpreted to represent a duration in
-	 * milliseconds by default unless overridden via {@link #timeUnit()} (prefer
-	 * using {@link #jitter()} in that case)</li>
-	 * <li>any of the known {@link org.springframework.format.annotation.DurationFormat.Style
-	 * DurationFormat.Style}: the {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 ISO8601}
-	 * style or the {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE SIMPLE} style
-	 * &mdash; using the {@link #timeUnit()} as fallback if the string doesn't contain an explicit unit</li>
-	 * <li>one of the above, with Spring-style "${...}" placeholders as well as SpEL expressions</li>
-	 * </ul>
-	 * @return the initial delay as a String value &mdash; for example a placeholder,
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} compliant value
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE simple format} compliant value
+	 * 字符串形式的基础重试抖动值。
+	 * <p>此处指定非空值将覆盖 {@link #jitter()} 属性。
+	 * <p>持续时间字符串格式参见 {@link #timeoutString()}。
+	 * @return 字符串形式的抖动值
 	 * @see #jitter()
 	 */
 	String jitterString() default "";
 
 	/**
-	 * A multiplier for a delay for the next retry attempt, applied
-	 * to the previous delay (starting with {@link #delay()}) as well
-	 * as to the applicable {@link #jitter()} for each attempt.
-	 * <p>The default is 1.0, effectively resulting in a fixed delay.
+	 * 下次重试延迟的乘数，应用于前次延迟（从 {@link #delay()} 开始）
+	 * 以及每次尝试适用的 {@link #jitter()}。
+	 * <p>默认为 1.0，即固定延迟。
 	 * @see #delay()
 	 * @see #jitter()
 	 * @see #maxDelay()
@@ -239,19 +197,18 @@ public @interface Retryable {
 	double multiplier() default 1.0;
 
 	/**
-	 * A multiplier for a delay for the next retry attempt, as a configurable String.
-	 * <p>A non-empty value specified here overrides the {@link #multiplier()} attribute.
-	 * <p>This supports Spring-style "${...}" placeholders as well as SpEL expressions.
+	 * 可配置字符串形式的下次重试延迟乘数。
+	 * <p>此处指定非空值将覆盖 {@link #multiplier()} 属性。
+	 * <p>支持 Spring 风格 "${...}" 占位符及 SpEL 表达式。
 	 * @see #multiplier()
 	 */
 	String multiplierString() default "";
 
 	/**
-	 * The maximum delay for any retry attempt, limiting how far {@link #jitter()}
-	 * and {@link #multiplier()} can increase the {@linkplain #delay() delay}.
-	 * <p>The time unit is milliseconds by default but can be overridden via
-	 * {@link #timeUnit}.
-	 * <p>The default is unlimited.
+	 * 任意重试尝试的最大延迟，限制 {@link #jitter()} 与 {@link #multiplier()}
+	 * 可将 {@linkplain #delay() 延迟} 增大的幅度。
+	 * <p>时间单位默认为毫秒，可通过 {@link #timeUnit} 覆盖。
+	 * <p>默认为无限制。
 	 * @see #delay()
 	 * @see #jitter()
 	 * @see #multiplier()
@@ -259,34 +216,21 @@ public @interface Retryable {
 	long maxDelay() default Long.MAX_VALUE;
 
 	/**
-	 * The maximum delay for any retry attempt, as a duration String.
-	 * <p>A non-empty value specified here overrides the {@link #maxDelay()} attribute.
-	 * <p>The duration String can be in several formats:
-	 * <ul>
-	 * <li>a plain integer &mdash; which is interpreted to represent a duration in
-	 * milliseconds by default unless overridden via {@link #timeUnit()} (prefer
-	 * using {@link #maxDelay()} in that case)</li>
-	 * <li>any of the known {@link org.springframework.format.annotation.DurationFormat.Style
-	 * DurationFormat.Style}: the {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 ISO8601}
-	 * style or the {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE SIMPLE} style
-	 * &mdash; using the {@link #timeUnit()} as fallback if the string doesn't contain an explicit unit</li>
-	 * <li>one of the above, with Spring-style "${...}" placeholders as well as SpEL expressions</li>
-	 * </ul>
-	 * @return the initial delay as a String value &mdash; for example a placeholder,
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} compliant value
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE simple format} compliant value
+	 * 字符串形式的任意重试最大延迟。
+	 * <p>此处指定非空值将覆盖 {@link #maxDelay()} 属性。
+	 * <p>持续时间字符串格式参见 {@link #timeoutString()}。
+	 * @return 字符串形式的最大延迟值
 	 * @see #maxDelay()
 	 */
 	String maxDelayString() default "";
 
 	/**
-	 * The {@link TimeUnit} to use for {@link #delay}, {@link #delayString},
-	 * {@link #jitter}, {@link #jitterString}, {@link #maxDelay}, and
-	 * {@link #maxDelayString}.
-	 * <p>The default is {@link TimeUnit#MILLISECONDS}.
-	 * <p>This attribute is ignored for {@link java.time.Duration} values supplied
-	 * via {@link #delayString}, {@link #jitterString}, or {@link #maxDelayString}.
-	 * @return the {@code TimeUnit} to use
+	 * 用于 {@link #delay}、{@link #delayString}、{@link #jitter}、{@link #jitterString}、
+	 * {@link #maxDelay} 与 {@link #maxDelayString} 的 {@link TimeUnit}。
+	 * <p>默认为 {@link TimeUnit#MILLISECONDS}。
+	 * <p>通过 {@link #delayString}、{@link #jitterString} 或 {@link #maxDelayString}
+	 * 提供的 {@link java.time.Duration} 值将忽略本属性。
+	 * @return 要使用的 {@code TimeUnit}
 	 */
 	TimeUnit timeUnit() default TimeUnit.MILLISECONDS;
 

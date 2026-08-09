@@ -19,12 +19,10 @@ package org.springframework.scheduling;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Extension of the {@link Runnable} interface, adding special callbacks
- * for long-running operations.
+ * {@link Runnable} 接口的扩展，为长时间运行操作添加特殊回调。
  *
- * <p>Scheduling-capable TaskExecutors are encouraged to check a submitted
- * Runnable, detecting whether this interface is implemented and reacting
- * as appropriately as they are able to.
+ * <p>建议具备调度能力的 TaskExecutor 检查提交的 Runnable，
+ * 检测是否实现本接口并尽可能作出相应处理。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -34,27 +32,24 @@ import org.jspecify.annotations.Nullable;
 public interface SchedulingAwareRunnable extends Runnable {
 
 	/**
-	 * Return whether the Runnable's operation is long-lived
-	 * ({@code true}) versus short-lived ({@code false}).
-	 * <p>In the former case, the task will not allocate a thread from the thread
-	 * pool (if any) but rather be considered as long-running background thread.
-	 * <p>This should be considered a hint. Of course TaskExecutor implementations
-	 * are free to ignore this flag and the SchedulingAwareRunnable interface overall.
-	 * <p>The default implementation returns {@code false}, as of 6.1.
+	 * 返回 Runnable 的操作是否为长生命周期（{@code true}）而非短生命周期（{@code false}）。
+	 * <p>前者情况下，任务不会从线程池（若有）分配线程，
+	 * 而是视为长时间运行的后台线程。
+	 * <p>这应视为提示。TaskExecutor 实现当然可忽略此标志及 SchedulingAwareRunnable 接口本身。
+	 * <p>默认实现返回 {@code false}（自 6.1 起）。
 	 */
 	default boolean isLongLived() {
 		return false;
 	}
 
 	/**
-	 * Return a qualifier associated with this Runnable.
-	 * <p>The default implementation returns {@code null}.
-	 * <p>May be used for custom purposes depending on the scheduler implementation.
-	 * {@link org.springframework.scheduling.config.TaskSchedulerRouter} introspects
-	 * this qualifier in order to determine the target scheduler to be used
-	 * for a given Runnable, matching the qualifier value (or the bean name)
-	 * of a specific {@link org.springframework.scheduling.TaskScheduler} or
-	 * {@link java.util.concurrent.ScheduledExecutorService} bean definition.
+	 * 返回与此 Runnable 关联的限定符。
+	 * <p>默认实现返回 {@code null}。
+	 * <p>可根据调度器实现用于自定义目的。
+	 * {@link org.springframework.scheduling.config.TaskSchedulerRouter} 内省此限定符，
+	 * 以确定给定 Runnable 应使用的目标调度器，
+	 * 匹配特定 {@link org.springframework.scheduling.TaskScheduler} 或
+	 * {@link java.util.concurrent.ScheduledExecutorService} Bean 定义的限定符值（或 Bean 名称）。
 	 * @since 6.1
 	 * @see org.springframework.scheduling.annotation.Scheduled#scheduler()
 	 */

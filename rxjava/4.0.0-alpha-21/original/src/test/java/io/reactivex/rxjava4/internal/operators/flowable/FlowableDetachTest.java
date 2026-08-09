@@ -1,0 +1,166 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.flowable;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.lang.ref.WeakReference;
+import java.util.concurrent.Flow.Subscriber;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.exceptions.TestException;
+import io.reactivex.rxjava4.functions.Function;
+import io.reactivex.rxjava4.subscribers.TestSubscriber;
+import io.reactivex.rxjava4.testsupport.TestHelper;
+
+public class FlowableDetachTest extends RxJavaTest {
+
+    Object o;
+
+    @Test
+    public void just() throws Exception {
+        o = new Object();
+
+        WeakReference<Object> wr = new WeakReference<>(o);
+
+        TestSubscriber<Object> ts = new TestSubscriber<>();
+
+        Flowable.just(o).count().toFlowable().onTerminateDetach().subscribe(ts);
+
+        ts.assertValue(1L);
+        ts.assertComplete();
+        ts.assertNoErrors();
+
+        o = null;
+
+        System.gc();
+        Thread.sleep(200);
+
+        assertNull(wr.get(), "Object retained!");
+
+    }
+
+    @Test
+    public void error() {
+        TestSubscriber<Object> ts = new TestSubscriber<>();
+
+        Flowable.error(new TestException()).onTerminateDetach().subscribe(ts);
+
+        ts.assertNoValues();
+        ts.assertError(TestException.class);
+        ts.assertNotComplete();
+    }
+
+    @Test
+    public void empty() {
+        TestSubscriber<Object> ts = new TestSubscriber<>();
+
+        Flowable.empty().onTerminateDetach().subscribe(ts);
+
+        ts.assertNoValues();
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @Test
+    public void range() {
+        TestSubscriber<Object> ts = new TestSubscriber<>();
+
+        Flowable.range(1, 1000).onTerminateDetach().subscribe(ts);
+
+        ts.assertValueCount(1000);
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @Test
+    public void backpressured() throws Exception {
+        o = new Object();
+
+        WeakReference<Object> wr = new WeakReference<>(o);
+
+        TestSubscriber<Object> ts = new TestSubscriber<>(0L);
+
+        Flowable.just(o).count().toFlowable().onTerminateDetach().subscribe(ts);
+
+        ts.assertNoValues();
+
+        ts.request(1);
+
+        ts.assertValue(1L);
+        ts.assertComplete();
+        ts.assertNoErrors();
+
+        o = null;
+
+        System.gc();
+        Thread.sleep(200);
+
+        assertNull(wr.get(), "Object retained!");
+    }
+
+    @Test
+    public void justUnsubscribed() throws Exception {
+        o = new Object();
+
+        WeakReference<Object> wr = new WeakReference<>(o);
+
+        TestSubscriber<Object> ts = new TestSubscriber<>(0);
+
+        Flowable.just(o).count().toFlowable().onTerminateDetach().subscribe(ts);
+
+        ts.cancel();
+        o = null;
+
+        System.gc();
+        Thread.sleep(200);
+
+        assertNull(wr.get(), "Object retained!");
+
+    }
+
+    @Test
+    public void deferredUpstreamProducer() {
+        final AtomicReference<Subscriber<? super Object>> subscriber = new AtomicReference<>();
+
+        TestSubscriber<Object> ts = new TestSubscriber<>(0);
+
+        Flowable.unsafeCreate(t -> subscriber.set(t)).onTerminateDetach().subscribe(ts);
+
+        ts.request(2);
+
+        new FlowableRange(1, 3).subscribe(subscriber.get());
+
+        ts.assertValues(1, 2);
+
+        ts.request(1);
+
+        ts.assertValues(1, 2, 3);
+        ts.assertComplete();
+        ts.assertNoErrors();
+    }
+
+    @Test
+    public void dispose() {
+        TestHelper.checkDisposed(Flowable.never().onTerminateDetach());
+    }
+
+    @Test
+    public void doubleOnSubscribe() {
+        TestHelper.checkDoubleOnSubscribeFlowable((Function<Flowable<Object>, Flowable<Object>>) Flowable::onTerminateDetach);
+    }
+}

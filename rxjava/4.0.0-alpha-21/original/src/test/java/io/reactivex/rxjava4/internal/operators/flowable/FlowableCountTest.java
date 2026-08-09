@@ -1,0 +1,58 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.flowable;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.testsupport.TestHelper;
+
+public class FlowableCountTest extends RxJavaTest {
+    @Test
+    public void simpleFlowable() {
+        assertEquals(0, Flowable.empty().count().toFlowable().blockingLast().intValue());
+
+        assertEquals(1, Flowable.just(1).count().toFlowable().blockingLast().intValue());
+
+        assertEquals(10, Flowable.range(1, 10).count().toFlowable().blockingLast().intValue());
+
+    }
+
+    @Test
+    public void simple() {
+        assertEquals(0, Flowable.empty().count().blockingGet().intValue());
+
+        assertEquals(1, Flowable.just(1).count().blockingGet().intValue());
+
+        assertEquals(10, Flowable.range(1, 10).count().blockingGet().intValue());
+
+    }
+
+    @Test
+    public void dispose() {
+        TestHelper.checkDisposed(Flowable.just(1).count());
+
+        TestHelper.checkDisposed(Flowable.just(1).count().toFlowable());
+    }
+
+    @Test
+    public void doubleOnSubscribe() {
+        TestHelper.checkDoubleOnSubscribeFlowable(f -> f.count().toFlowable());
+
+        TestHelper.checkDoubleOnSubscribeFlowableToSingle(Flowable::count);
+    }
+
+}

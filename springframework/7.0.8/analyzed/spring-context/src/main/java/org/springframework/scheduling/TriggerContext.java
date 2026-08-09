@@ -23,8 +23,7 @@ import java.util.Date;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Context object encapsulating last execution times and last completion time
- * of a given task.
+ * 封装给定任务上次执行时间与上次完成时间的上下文对象。
  *
  * @author Juergen Hoeller
  * @author Arjen Poutsma
@@ -33,8 +32,8 @@ import org.jspecify.annotations.Nullable;
 public interface TriggerContext {
 
 	/**
-	 * Return the clock to use for trigger calculation.
-	 * <p>Defaults to {@link Clock#systemDefaultZone()}.
+	 * 返回用于触发器计算的时钟。
+	 * <p>默认为 {@link Clock#systemDefaultZone()}。
 	 * @since 5.3
 	 * @see TaskScheduler#getClock()
 	 */
@@ -43,10 +42,10 @@ public interface TriggerContext {
 	}
 
 	/**
-	 * Return the last <i>scheduled</i> execution time of the task,
-	 * or {@code null} if not scheduled before.
-	 * <p>The default implementation delegates to {@link #lastScheduledExecution()}.
-	 * @deprecated as of 6.0, in favor on {@link #lastScheduledExecution()}
+	 * 返回任务上次<i>计划</i>执行时间，
+	 * 若此前未调度则返回 {@code null}。
+	 * <p>默认实现委托给 {@link #lastScheduledExecution()}。
+	 * @deprecated 自 6.0 起，请改用 {@link #lastScheduledExecution()}
 	 */
 	@Deprecated(since = "6.0")
 	default @Nullable Date lastScheduledExecutionTime() {
@@ -55,17 +54,17 @@ public interface TriggerContext {
 	}
 
 	/**
-	 * Return the last <i>scheduled</i> execution time of the task,
-	 * or {@code null} if not scheduled before.
+	 * 返回任务上次<i>计划</i>执行时间，
+	 * 若此前未调度则返回 {@code null}。
 	 * @since 6.0
 	 */
 	@Nullable Instant lastScheduledExecution();
 
 	/**
-	 * Return the last <i>actual</i> execution time of the task,
-	 * or {@code null} if not scheduled before.
-	 * <p>The default implementation delegates to {@link #lastActualExecution()}.
-	 * @deprecated as of 6.0, in favor on {@link #lastActualExecution()}
+	 * 返回任务上次<i>实际</i>执行时间，
+	 * 若此前未调度则返回 {@code null}。
+	 * <p>默认实现委托给 {@link #lastActualExecution()}。
+	 * @deprecated 自 6.0 起，请改用 {@link #lastActualExecution()}
 	 */
 	@Deprecated(since = "6.0")
 	default @Nullable Date lastActualExecutionTime() {
@@ -74,17 +73,17 @@ public interface TriggerContext {
 	}
 
 	/**
-	 * Return the last <i>actual</i> execution time of the task,
-	 * or {@code null} if not scheduled before.
+	 * 返回任务上次<i>实际</i>执行时间，
+	 * 若此前未调度则返回 {@code null}。
 	 * @since 6.0
 	 */
 	@Nullable Instant lastActualExecution();
 
 	/**
-	 * Return the last completion time of the task,
-	 * or {@code null} if not scheduled before.
-	 * <p>The default implementation delegates to {@link #lastCompletion()}.
-	 * @deprecated as of 6.0, in favor on {@link #lastCompletion()}
+	 * 返回任务上次完成时间，
+	 * 若此前未调度则返回 {@code null}。
+	 * <p>默认实现委托给 {@link #lastCompletion()}。
+	 * @deprecated 自 6.0 起，请改用 {@link #lastCompletion()}
 	 */
 	@Deprecated(since = "6.0")
 	default @Nullable Date lastCompletionTime() {
@@ -93,8 +92,8 @@ public interface TriggerContext {
 	}
 
 	/**
-	 * Return the last completion time of the task,
-	 * or {@code null} if not scheduled before.
+	 * 返回任务上次完成时间，
+	 * 若此前未调度则返回 {@code null}。
 	 * @since 6.0
 	 */
 	@Nullable Instant lastCompletion();

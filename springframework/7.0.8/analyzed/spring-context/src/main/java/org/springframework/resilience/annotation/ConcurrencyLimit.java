@@ -26,26 +26,21 @@ import org.springframework.aot.hint.annotation.Reflective;
 import org.springframework.core.annotation.AliasFor;
 
 /**
- * A common annotation specifying a concurrency limit for an individual method,
- * or for all proxy-invoked methods in a given class hierarchy if annotated at
- * the type level. The default behavior is to block further method invocations
- * when the limit has been reached. Alternatively, further invocations can be
- * rejected through configuring {@link #policy()} as {@code policy = REJECT}.
+ * 为单个方法指定并发上限的通用注解；
+ * 若在类型级别标注，则对给定类层次结构中所有经代理调用的方法生效。
+ * 默认行为是在达到上限时阻塞后续方法调用。
+ * 也可通过将 {@link #policy()} 配置为 {@code policy = REJECT} 来拒绝后续调用。
  *
- * <p>In the type-level case, all methods inheriting the concurrency limit
- * from the type level share a common concurrency throttle, with any mix
- * of such method invocations contributing to the shared concurrency limit.
- * Whereas for a locally annotated method, a local throttle with the specified
- * limit is going to be applied to invocations of that particular method only.
+ * <p>类型级别场景下，从类型继承并发上限的所有方法共享同一并发节流器，
+ * 任意此类方法调用均计入共享并发上限。
+ * 而局部标注的方法则仅对该方法调用应用具有指定上限的局部节流器。
  *
- * <p>This is particularly useful with Virtual Threads where there is generally
- * no thread pool limit in place. For asynchronous tasks, this can be constrained
- * on {@link org.springframework.core.task.SimpleAsyncTaskExecutor}. For
- * synchronous invocations, this annotation provides equivalent behavior through
- * {@link org.springframework.aop.interceptor.ConcurrencyThrottleInterceptor}.
- * Alternatively, consider {@link org.springframework.core.task.SyncTaskExecutor}
- * and its inherited concurrency throttling support (new as of 7.0) for
- * programmatic use.
+ * <p>在虚拟线程场景下尤其有用，因为通常不存在线程池上限。
+ * 异步任务可在 {@link org.springframework.core.task.SimpleAsyncTaskExecutor} 上约束。
+ * 同步调用时，本注解通过
+ * {@link org.springframework.aop.interceptor.ConcurrencyThrottleInterceptor} 提供等价行为。
+ * 编程式用法也可考虑 {@link org.springframework.core.task.SyncTaskExecutor}
+ * 及其继承的并发节流支持（7.0 新增）。
  *
  * @author Juergen Hoeller
  * @author Hyunsang Han
@@ -64,21 +59,19 @@ import org.springframework.core.annotation.AliasFor;
 public @interface ConcurrencyLimit {
 
 	/**
-	 * Alias for {@link #limit()}.
-	 * <p>Intended to be used when no other attributes are needed &mdash; for
-	 * example, {@code @ConcurrencyLimit(5)}.
+	 * {@link #limit()} 的别名。
+	 * <p>在无需其他属性时使用 &mdash; 例如 {@code @ConcurrencyLimit(5)}。
 	 * @see #limitString()
 	 */
 	@AliasFor("limit")
 	int value() default Integer.MIN_VALUE;
 
 	/**
-	 * The concurrency limit.
-	 * <p>Specify {@code 1} to effectively lock the target instance for each method
-	 * invocation.
-	 * <p>Specify a limit greater than {@code 1} for pool-like throttling, constraining
-	 * the number of concurrent invocations similar to the upper bound of a pool.
-	 * <p>Specify {@code -1} for unbounded concurrency.
+	 * 并发上限。
+	 * <p>指定 {@code 1} 可有效地在每次方法调用时锁定目标实例。
+	 * <p>指定大于 {@code 1} 的上限可实现类池化节流，
+	 * 限制并发调用数，类似线程池上限。
+	 * <p>指定 {@code -1} 表示无界并发。
 	 * @see #value()
 	 * @see #limitString()
 	 * @see org.springframework.util.ConcurrencyThrottleSupport#UNBOUNDED_CONCURRENCY
@@ -87,42 +80,40 @@ public @interface ConcurrencyLimit {
 	int limit() default Integer.MIN_VALUE;
 
 	/**
-	 * The concurrency limit, as a configurable String.
-	 * <p>A non-empty value specified here overrides the {@link #limit()} and
-	 * {@link #value()} attributes.
-	 * <p>This supports Spring-style "${...}" placeholders as well as SpEL expressions.
-	 * <p>See the Javadoc for {@link #limit()} for details on supported values.
+	 * 可配置字符串形式的并发上限。
+	 * <p>此处指定非空值将覆盖 {@link #limit()} 与 {@link #value()} 属性。
+	 * <p>支持 Spring 风格 "${...}" 占位符及 SpEL 表达式。
+	 * <p>支持的值详见 {@link #limit()} 的 Javadoc。
 	 * @see #limit()
 	 * @see org.springframework.util.ConcurrencyThrottleSupport#UNBOUNDED_CONCURRENCY
 	 */
 	String limitString() default "";
 
 	/**
-	 * The policy for throttling method invocations when the limit has been reached.
-	 * <p>The default behavior is to block further concurrent invocations once the
-	 * specified limit has been reached: {@link ThrottlePolicy#BLOCK}.
-	 * <p>Switch this policy to {@code REJECT} for rejecting further invocations instead,
-	 * throwing {@link org.springframework.resilience.InvocationRejectedException}
-	 * (which extends the common {@link java.util.concurrent.RejectedExecutionException})
-	 * on any further concurrent invocation attempts: {@link ThrottlePolicy#REJECT}.
+	 * 达到并发上限时对方法调用施加节流的策略。
+	 * <p>默认行为是在达到指定上限后阻塞后续并发调用：{@link ThrottlePolicy#BLOCK}。
+	 * <p>将策略切换为 {@code REJECT} 可改为拒绝后续调用，
+	 * 在进一步并发调用尝试时抛出 {@link org.springframework.resilience.InvocationRejectedException}
+	 *（继承通用 {@link java.util.concurrent.RejectedExecutionException}）：
+	 * {@link ThrottlePolicy#REJECT}。
 	 * @since 7.0.3
 	 */
 	ThrottlePolicy policy() default ThrottlePolicy.BLOCK;
 
 
 	/**
-	 * Policy to apply for throttling method invocations when the limit has been reached.
+	 * 达到并发上限时对方法调用施加节流所应用的策略。
 	 * @since 7.0.3
 	 */
 	enum ThrottlePolicy {
 
 		/**
-		 * The default: block until we can invoke the method within the configured limit.
+		 * 默认策略：阻塞直至能在配置上限内调用方法。
 		 */
 		BLOCK,
 
 		/**
-		 * Alternative: reject further method invocations once the limit has been reached.
+		 * 备选策略：达到上限后拒绝后续方法调用。
 		 * @see org.springframework.resilience.InvocationRejectedException
 		 */
 		REJECT

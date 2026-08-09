@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 import java.util.function.Predicate;
 
 /**
- * Predicate for retrying a {@link Throwable} from a specific {@link Method}.
+ * 针对特定 {@link Method} 抛出的 {@link Throwable} 判断是否重试的谓词。
  *
  * @author Juergen Hoeller
  * @since 7.0
@@ -30,16 +30,15 @@ import java.util.function.Predicate;
 public interface MethodRetryPredicate {
 
 	/**
-	 * Determine whether the given {@code Method} should be retried after
-	 * throwing the given {@code Throwable}.
-	 * @param method the method to potentially retry
-	 * @param throwable the exception encountered
+	 * 判断给定 {@code Method} 在抛出给定 {@code Throwable} 后是否应重试。
+	 * @param method 可能重试的方法
+	 * @param throwable 遇到的异常
 	 */
 	boolean shouldRetry(Method method, Throwable throwable);
 
 	/**
-	 * Build a {@code Predicate} for testing exceptions from a given method.
-	 * @param method the method to build a predicate for
+	 * 为给定方法构建用于测试异常的 {@code Predicate}。
+	 * @param method 要构建谓词的方法
 	 */
 	default Predicate<Throwable> forMethod(Method method) {
 		return (t -> shouldRetry(method, t));

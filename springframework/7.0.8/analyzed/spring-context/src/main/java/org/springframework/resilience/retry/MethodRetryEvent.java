@@ -22,9 +22,9 @@ import org.springframework.context.event.MethodFailureEvent;
 import org.springframework.util.ClassUtils;
 
 /**
- * Event published for every exception encountered during retryable method invocation.
- * Can be listened to via an {@code ApplicationListener<MethodRetryEvent>} bean or an
- * {@code @EventListener(MethodRetryEvent.class)} method.
+ * 可重试方法调用过程中遇到的每个异常都会发布此事件。
+ * 可通过 {@code ApplicationListener<MethodRetryEvent>} Bean 或
+ * {@code @EventListener(MethodRetryEvent.class)} 方法监听。
  *
  * @author Juergen Hoeller
  * @since 7.0.3
@@ -40,10 +40,10 @@ public class MethodRetryEvent extends MethodFailureEvent {
 
 
 	/**
-	 * Create a new event for the given retryable method invocation.
-	 * @param invocation the retryable method invocation
-	 * @param failure the exception encountered
-	 * @param retryAborted whether the current failure led to the retry execution getting aborted
+	 * 为给定可重试方法调用创建新事件。
+	 * @param invocation 可重试方法调用
+	 * @param failure 遇到的异常
+	 * @param retryAborted 当前失败是否导致重试执行中止
 	 */
 	public MethodRetryEvent(MethodInvocation invocation, Throwable failure, boolean retryAborted) {
 		super(invocation, failure);
@@ -52,15 +52,13 @@ public class MethodRetryEvent extends MethodFailureEvent {
 
 
 	/**
-	 * Return the exception encountered.
-	 * <p>This may be an exception thrown by the method or emitted by the reactive
-	 * publisher returned from the method, or a terminal exception on retry
-	 * exhaustion, interruption or timeout.
-	 * <p>For {@link org.springframework.core.retry.RetryTemplate} executions,
-	 * an {@code instanceof RetryException} check identifies a final exception.
-	 * For Reactor pipelines, {@code Exceptions.isRetryExhausted} identifies an
-	 * exhaustion exception, whereas {@code instanceof TimeoutException} reveals
-	 * a timeout scenario.
+	 * 返回遇到的异常。
+	 * <p>可能是方法抛出的异常、方法返回的响应式 Publisher 发出的异常，
+	 * 或重试用尽、中断或超时时的终止异常。
+	 * <p>对于 {@link org.springframework.core.retry.RetryTemplate} 执行，
+	 * {@code instanceof RetryException} 检查可识别最终异常。
+	 * 对于 Reactor 管道，{@code Exceptions.isRetryExhausted} 识别用尽异常，
+	 * 而 {@code instanceof TimeoutException} 表示超时场景。
 	 * @see #isRetryAborted()
 	 * @see org.springframework.core.retry.RetryException
 	 * @see reactor.core.Exceptions#isRetryExhausted
@@ -71,10 +69,10 @@ public class MethodRetryEvent extends MethodFailureEvent {
 	}
 
 	/**
-	 * Return whether the current failure led to the retry execution getting aborted,
-	 * typically indicating exhaustion, interruption or a timeout scenario.
-	 * <p>If this returns {@code true}, {@link #getFailure()} exposes the final exception
-	 * thrown by the retry infrastructure (rather than thrown by the method itself).
+	 * 返回当前失败是否导致重试执行中止，
+	 * 通常表示用尽、中断或超时场景。
+	 * <p>若返回 {@code true}，{@link #getFailure()} 暴露的是重试基础设施抛出的最终异常
+	 *（而非方法本身抛出）。
 	 * @see #getFailure()
 	 */
 	public boolean isRetryAborted() {

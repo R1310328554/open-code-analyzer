@@ -23,23 +23,21 @@ import java.util.Collections;
 import org.springframework.util.ExceptionTypeFilter;
 
 /**
- * A specification for retry attempts on a given method, combining common
- * retry characteristics. This roughly matches the annotation attributes
- * on {@link org.springframework.resilience.annotation.Retryable}.
+ * 给定方法重试尝试的规范，组合常见重试特征。
+ * 大致对应 {@link org.springframework.resilience.annotation.Retryable} 的注解属性。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 7.0
- * @param includes applicable exception types to attempt a retry for
- * @param excludes non-applicable exception types to avoid a retry for
- * @param predicate a predicate for filtering exceptions from applicable methods
- * @param maxRetries the maximum number of retry attempts
- * @param timeout the maximum amount of elapsed time allowed for the initial
- * invocation and any subsequent retry attempts, including delays
- * @param delay the base delay after the initial invocation
- * @param jitter a jitter value for the next retry attempt
- * @param multiplier a multiplier for a delay for the next retry attempt
- * @param maxDelay the maximum delay for any retry attempt
+ * @param includes 应尝试重试的适用异常类型
+ * @param excludes 应避免重试的不适用异常类型
+ * @param predicate 过滤适用方法异常的谓词
+ * @param maxRetries 最大重试次数
+ * @param timeout 初始调用及后续重试（含延迟）允许的最大耗时
+ * @param delay 初始调用后的基础延迟
+ * @param jitter 下次重试的抖动值
+ * @param multiplier 下次重试延迟的乘数
+ * @param maxDelay 任意重试尝试的最大延迟
  * @see AbstractRetryInterceptor#getRetrySpec
  * @see SimpleRetryInterceptor#SimpleRetryInterceptor(MethodRetrySpec)
  * @see org.springframework.resilience.annotation.Retryable
@@ -56,14 +54,14 @@ public record MethodRetrySpec(
 		Duration maxDelay) {
 
 	/**
-	 * Construct a new {@code MethodRetryPredicate} with the supplied arguments.
+	 * 使用给定参数构造新的 {@code MethodRetrySpec}。
 	 */
 	public MethodRetrySpec(MethodRetryPredicate predicate, long maxRetries, Duration delay) {
 		this(predicate, maxRetries, delay, Duration.ZERO, 1.0, Duration.ofMillis(Long.MAX_VALUE));
 	}
 
 	/**
-	 * Construct a new {@code MethodRetryPredicate} with the supplied arguments.
+	 * 使用给定参数构造新的 {@code MethodRetrySpec}。
 	 */
 	public MethodRetrySpec(MethodRetryPredicate predicate, long maxRetries, Duration delay,
 			Duration jitter, double multiplier, Duration maxDelay) {
@@ -73,8 +71,8 @@ public record MethodRetrySpec(
 	}
 
 	/**
-	 * Construct a new {@code MethodRetryPredicate} with the supplied arguments.
-	 * @deprecated as of Spring Framework 7.0.2, in favor of
+	 * 使用给定参数构造新的 {@code MethodRetrySpec}。
+	 * @deprecated 自 Spring Framework 7.0.2 起，请改用
 	 * {@link #MethodRetrySpec(Collection, Collection, MethodRetryPredicate, long, Duration, Duration, Duration, double, Duration)}
 	 */
 	@Deprecated(since = "7.0.2", forRemoval = true)

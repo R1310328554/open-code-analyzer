@@ -1,0 +1,100 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.core;
+
+import java.util.concurrent.TimeUnit;
+
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.infra.Blackhole;
+import static java.util.concurrent.Flow.*;
+
+import io.reactivex.rxjava4.functions.Function;
+
+@SuppressWarnings("exports")
+@BenchmarkMode(Mode.Throughput)
+@Warmup(iterations = 5)
+@Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
+@OutputTimeUnit(TimeUnit.SECONDS)
+@Fork(value = 1)
+@State(Scope.Thread)
+public class EachTypeFlatMapPerf {
+    @Param({ "1", "1000", "1000000" })
+    public int times;
+
+    Flowable<Integer> bpRange;
+    Observable<Integer> nbpRange;
+    Single<Integer> singleJust;
+
+    Flowable<Integer> bpRangeMapJust;
+    Observable<Integer> nbpRangeMapJust;
+    Single<Integer> singleJustMapJust;
+
+    Flowable<Integer> bpRangeMapRange;
+    Observable<Integer> nbpRangeMapRange;
+
+    @Setup
+    public void setup() {
+        bpRange = Flowable.range(1, times);
+        nbpRange = Observable.range(1, times);
+
+        bpRangeMapJust = bpRange.flatMap((Function<Integer, Publisher<Integer>>) Flowable::just);
+        nbpRangeMapJust = nbpRange.flatMap((Function<Integer, Observable<Integer>>) Observable::just);
+
+        bpRangeMapRange = bpRange.flatMap((Function<Integer, Publisher<Integer>>) v -> Flowable.range(v, 2));
+        nbpRangeMapRange = nbpRange.flatMap((Function<Integer, Observable<Integer>>) v -> Observable.range(v, 2));
+
+        singleJust = Single.just(1);
+        singleJustMapJust = singleJust.flatMap((Function<Integer, Single<Integer>>) Single::just);
+    }
+
+    @Benchmark
+    public void bpRange(Blackhole bh) {
+        bpRange.subscribe(new PerfSubscriber(bh));
+    }
+
+    @Benchmark
+    public void bpRangeMapJust(Blackhole bh) {
+        bpRangeMapJust.subscribe(new PerfSubscriber(bh));
+    }
+
+    @Benchmark
+    public void bpRangeMapRange(Blackhole bh) {
+        bpRangeMapRange.subscribe(new PerfSubscriber(bh));
+    }
+
+    @Benchmark
+    public void nbpRange(Blackhole bh) {
+        nbpRange.subscribe(new PerfObserver(bh));
+    }
+
+    @Benchmark
+    public void nbpRangeMapJust(Blackhole bh) {
+        nbpRangeMapJust.subscribe(new PerfObserver(bh));
+    }
+
+    @Benchmark
+    public void nbpRangeMapRange(Blackhole bh) {
+        nbpRangeMapRange.subscribe(new PerfObserver(bh));
+    }
+
+    @Benchmark
+    public void singleJust(Blackhole bh) {
+        singleJust.subscribe(new LatchedSingleObserver<>(bh));
+    }
+
+    @Benchmark
+    public void singleJustMapJust(Blackhole bh) {
+        singleJustMapJust.subscribe(new LatchedSingleObserver<>(bh));
+    }
+}

@@ -1,0 +1,39 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.observable;
+
+import java.util.HashMap;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.RxJavaTest;
+import io.reactivex.rxjava4.functions.BiFunction;
+import io.reactivex.rxjava4.observable.ObservableEventStream.Event;
+
+public class ObservableScanTests extends RxJavaTest {
+
+    @Test
+    public void unsubscribeScan() throws Exception {
+
+        ObservableEventStream.getEventStream("HTTP-ClusterB", 20)
+        .scan(new HashMap<>(), (BiFunction<HashMap<String, String>, Event, HashMap<String, String>>) (accum, perInstanceEvent) -> {
+            accum.put("instance", perInstanceEvent.instanceId());
+            return accum;
+        })
+        .take(10)
+        .blockingForEach(System.out::println);
+
+        Thread.sleep(200); // make sure the event streams receive their interrupt
+    }
+}

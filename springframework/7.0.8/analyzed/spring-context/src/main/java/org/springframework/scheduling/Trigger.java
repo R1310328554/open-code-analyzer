@@ -22,8 +22,7 @@ import java.util.Date;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Common interface for trigger objects that determine the next execution time
- * of a task that they get associated with.
+ * 确定所关联任务下次执行时间的触发器对象通用接口。
  *
  * @author Juergen Hoeller
  * @since 3.0
@@ -33,13 +32,12 @@ import org.jspecify.annotations.Nullable;
 public interface Trigger {
 
 	/**
-	 * Determine the next execution time according to the given trigger context.
-	 * <p>The default implementation delegates to {@link #nextExecution(TriggerContext)}.
-	 * @param triggerContext context object encapsulating last execution times
-	 * and last completion time
-	 * @return the next execution time as defined by the trigger,
-	 * or {@code null} if the trigger won't fire anymore
-	 * @deprecated as of 6.0, in favor of {@link #nextExecution(TriggerContext)}
+	 * 根据给定触发器上下文确定下次执行时间。
+	 * <p>默认实现委托给 {@link #nextExecution(TriggerContext)}。
+	 * @param triggerContext 封装上次执行时间与上次完成时间的上下文对象
+	 * @return 触发器定义的下次执行时间，
+	 * 若触发器不再触发则返回 {@code null}
+	 * @deprecated 自 6.0 起，请改用 {@link #nextExecution(TriggerContext)}
 	 */
 	@Deprecated(since = "6.0")
 	default @Nullable Date nextExecutionTime(TriggerContext triggerContext) {
@@ -48,11 +46,10 @@ public interface Trigger {
 	}
 
 	/**
-	 * Determine the next execution time according to the given trigger context.
-	 * @param triggerContext context object encapsulating last execution times
-	 * and last completion time
-	 * @return the next execution time as defined by the trigger,
-	 * or {@code null} if the trigger won't fire anymore
+	 * 根据给定触发器上下文确定下次执行时间。
+	 * @param triggerContext 封装上次执行时间与上次完成时间的上下文对象
+	 * @return 触发器定义的下次执行时间，
+	 * 若触发器不再触发则返回 {@code null}
 	 * @since 6.0
 	 */
 	@Nullable Instant nextExecution(TriggerContext triggerContext);

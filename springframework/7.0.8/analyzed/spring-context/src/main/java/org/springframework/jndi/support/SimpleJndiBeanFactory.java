@@ -40,23 +40,21 @@ import org.springframework.jndi.JndiLocatorSupport;
 import org.springframework.jndi.TypeMismatchNamingException;
 
 /**
- * Simple JNDI-based implementation of Spring's
- * {@link org.springframework.beans.factory.BeanFactory} interface.
- * Does not support enumerating bean definitions, hence doesn't implement
- * the {@link org.springframework.beans.factory.ListableBeanFactory} interface.
+ * 基于 JNDI 的 Spring {@link org.springframework.beans.factory.BeanFactory} 接口简单实现。
+ * 不支持枚举 Bean 定义，因此未实现
+ * {@link org.springframework.beans.factory.ListableBeanFactory} 接口。
  *
- * <p>This factory resolves given bean names as JNDI names within the
- * Jakarta EE application's "java:comp/env/" namespace. It caches the resolved
- * types for all obtained objects, and optionally also caches shareable
- * objects (if they are explicitly marked as
- * {@link #addShareableResource shareable resource}).
+ * <p>本工厂将给定 Bean 名称解析为 Jakarta EE 应用
+ * "java:comp/env/" 命名空间内的 JNDI 名称。它缓存所有已获取对象的解析类型，
+ * 并可选择缓存可共享对象（若显式标记为
+ * {@link #addShareableResource 可共享资源}）。
  *
- * <p>The main intent of this factory is usage in combination with Spring's
- * {@link org.springframework.context.annotation.CommonAnnotationBeanPostProcessor},
- * configured as "resourceFactory" for resolving {@code @Resource}
- * annotations as JNDI objects without intermediate bean definitions.
- * It may be used for similar lookup scenarios as well, of course,
- * in particular if BeanFactory-style type checking is required.
+ * <p>本工厂的主要用途是与 Spring 的
+ * {@link org.springframework.context.annotation.CommonAnnotationBeanPostProcessor} 配合，
+ * 配置为 "resourceFactory"，以便将 {@code @Resource}
+ * 注解直接解析为 JNDI 对象，无需中间 Bean 定义。
+ * 当然也可用于类似查找场景，
+ * 尤其当需要 BeanFactory 风格的类型检查时。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -65,13 +63,13 @@ import org.springframework.jndi.TypeMismatchNamingException;
  */
 public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFactory {
 
-	/** JNDI names of resources that are known to be shareable, i.e. can be cached */
+	/** 已知可共享、即允许缓存的 JNDI 资源名称 */
 	private final Set<String> shareableResources = new HashSet<>();
 
-	/** Cache of shareable singleton objects: bean name to bean instance. */
+	/** 可共享单例对象缓存：Bean 名称到 Bean 实例。 */
 	private final Map<String, Object> singletonObjects = new HashMap<>();
 
-	/** Cache of the types of nonshareable resources: bean name to bean type. */
+	/** 不可共享资源类型缓存：Bean 名称到 Bean 类型。 */
 	private final Map<String, Class<?>> resourceTypes = new HashMap<>();
 
 
@@ -81,20 +79,20 @@ public class SimpleJndiBeanFactory extends JndiLocatorSupport implements BeanFac
 
 
 	/**
-	 * Add the name of a shareable JNDI resource,
-	 * which this factory is allowed to cache once obtained.
-	 * @param shareableResource the JNDI name
-	 * (typically within the "java:comp/env/" namespace)
+	 * 添加可共享 JNDI 资源名称，
+	 * 本工厂在获取后允许缓存该资源。
+	 * @param shareableResource JNDI 名称
+	 *（通常位于 "java:comp/env/" 命名空间内）
 	 */
 	public void addShareableResource(String shareableResource) {
 		this.shareableResources.add(shareableResource);
 	}
 
 	/**
-	 * Set a list of names of shareable JNDI resources,
-	 * which this factory is allowed to cache once obtained.
-	 * @param shareableResources the JNDI names
-	 * (typically within the "java:comp/env/" namespace)
+	 * 设置可共享 JNDI 资源名称列表，
+	 * 本工厂在获取后允许缓存这些资源。
+	 * @param shareableResources JNDI 名称列表
+	 *（通常位于 "java:comp/env/" 命名空间内）
 	 */
 	public void setShareableResources(String... shareableResources) {
 		Collections.addAll(this.shareableResources, shareableResources);

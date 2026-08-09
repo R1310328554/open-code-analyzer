@@ -1,0 +1,123 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.streamable;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.Streamable;
+import io.reactivex.rxjava4.exceptions.TestException;
+
+public class StreamableFromStreamTest extends StreamableBaseTest {
+
+    @Test
+    public void normal() throws Throwable {
+        Streamable.fromStream(List.of(1, 2, 3).stream())
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertResult(1, 2, 3);
+    }
+
+    @Test
+    public void empty() throws Throwable {
+        Streamable.fromStream(List.of().stream())
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertResult();
+    }
+
+    @Test
+    public void one() throws Throwable {
+        Streamable.fromStream(List.of(1).stream())
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertResult(1);
+    }
+
+    @Test
+    public void hasNull() throws Throwable {
+        Streamable.fromStream(Arrays.asList(1, null, 3).stream())
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertFailure(NullPointerException.class, 1)
+        .assertError(t -> t.getMessage().equals("Item at index 1 is null."));
+        ;
+    }
+
+    @Test
+    public void hasNull2() throws Throwable {
+        Streamable.fromStream(Arrays.asList(null, 1, 2, 3).stream())
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertFailure(NullPointerException.class)
+        .assertError(t -> t.getMessage().equals("Item at index 0 is null."));
+        ;
+    }
+
+    @Test
+    public void ensureCloses() {
+        var hasClosed = new AtomicBoolean();
+        Streamable.fromStream(Stream.empty().onClose(() -> hasClosed.set(true)))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertResult();
+
+        assertTrue(hasClosed.get(), "Close not called");
+    }
+
+    @Test
+    public void ensureClosesCrash() {
+        var hasClosed = new AtomicBoolean();
+        Streamable.fromStream(Stream.empty().onClose(() -> {
+            hasClosed.set(true);
+            throw new TestException();
+        }))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertFailure(TestException.class);
+
+        assertTrue(hasClosed.get(), "Close not called");
+    }
+
+    @Test
+    public void ensureCloses2() {
+        var hasClosed = new AtomicBoolean();
+        Streamable.fromStream(Stream.of(1, 2, 3, 4, 5).onClose(() -> hasClosed.set(true)))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertResult(1, 2, 3, 4, 5);
+
+        assertTrue(hasClosed.get(), "Close not called");
+    }
+
+    @Test
+    public void ensureCloses2Crash() {
+        var hasClosed = new AtomicBoolean();
+        Streamable.fromStream(Stream.of(1, 2, 3, 4, 5).onClose(() -> {
+            hasClosed.set(true);
+            throw new TestException();
+        }))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertFailure(TestException.class, 1, 2, 3, 4, 5);
+
+        assertTrue(hasClosed.get(), "Close not called");
+    }
+}

@@ -28,8 +28,8 @@ import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
- * {@code @Configuration} class that registers the Spring infrastructure beans necessary
- * to enable proxy-based method invocations with retry and concurrency limit behavior.
+ * 注册启用基于代理的方法调用（含重试与并发上限行为）所需 Spring 基础设施 Bean 的
+ * {@code @Configuration} 类。
  *
  * @author Juergen Hoeller
  * @since 7.0

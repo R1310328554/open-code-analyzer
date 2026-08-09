@@ -45,9 +45,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.StringValueResolver;
 
 /**
- * A convenient {@link org.springframework.beans.factory.config.BeanPostProcessor
- * BeanPostProcessor} that applies a retry interceptor to all bean methods
- * annotated with {@link Retryable @Retryable}.
+ * 便捷的 {@link org.springframework.beans.factory.config.BeanPostProcessor
+ * BeanPostProcessor}，为所有带 {@link Retryable @Retryable} 注解的
+ * Bean 方法应用重试拦截器。
  *
  * @author Juergen Hoeller
  * @since 7.0

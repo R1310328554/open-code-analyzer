@@ -16,15 +16,14 @@ package io.reactivex.rxjava4.core;
 import io.reactivex.rxjava4.annotations.NonNull;
 
 /**
- * Convenience interface and callback used by the compose operator to turn a {@link Completable} into another
- * {@code Completable} fluently.
+ * compose 算子使用的便捷接口与回调，用于将 {@link Completable} 流畅地转换为另一个 {@code Completable}。
  */
 @FunctionalInterface
 public interface CompletableTransformer {
     /**
-     * Applies a function to the upstream {@link Completable} and returns a {@link CompletableSource}.
-     * @param upstream the upstream {@code Completable} instance
-     * @return the transformed {@code CompletableSource} instance
+     * 对上游 {@link Completable} 应用函数并返回 {@link CompletableSource}。
+     * @param upstream 上游 {@code Completable} 实例
+     * @return 转换后的 {@code CompletableSource} 实例
      */
     @NonNull
     CompletableSource apply(@NonNull Completable upstream);

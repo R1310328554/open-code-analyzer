@@ -26,12 +26,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
 
 /**
- * Enables Spring's core resilience features for method invocations:
- * {@link Retryable @Retryable} as well as {@link ConcurrencyLimit @ConcurrencyLimit}.
+ * 启用 Spring 方法调用的核心弹性特性：
+ * {@link Retryable @Retryable} 与 {@link ConcurrencyLimit @ConcurrencyLimit}。
  *
- * <p>These annotations can also be individually enabled by
- * defining a {@link RetryAnnotationBeanPostProcessor} or a
- * {@link ConcurrencyLimitBeanPostProcessor}.
+ * <p>也可通过分别定义 {@link RetryAnnotationBeanPostProcessor} 或
+ * {@link ConcurrencyLimitBeanPostProcessor} 单独启用这些注解。
  *
  * @author Juergen Hoeller
  * @since 7.0
@@ -45,25 +44,23 @@ import org.springframework.core.Ordered;
 public @interface EnableResilientMethods {
 
 	/**
-	 * Indicate whether subclass-based (CGLIB) proxies are to be created as opposed
-	 * to standard Java interface-based proxies.
-	 * <p>The default is {@code false}.
-	 * <p>Note that setting this attribute to {@code true} will only affect
-	 * {@link RetryAnnotationBeanPostProcessor} and
-	 * {@link ConcurrencyLimitBeanPostProcessor}.
-	 * <p>It is usually recommendable to rely on a global default proxy configuration
-	 * instead, with specific proxy requirements for certain beans expressed through
-	 * a {@link org.springframework.context.annotation.Proxyable} annotation on
-	 * the affected bean classes.
+	 * 指示是否创建基于子类（CGLIB）的代理，而非标准 Java 接口代理。
+	 * <p>默认为 {@code false}。
+	 * <p>注意：将此属性设为 {@code true} 仅影响
+	 * {@link RetryAnnotationBeanPostProcessor} 与
+	 * {@link ConcurrencyLimitBeanPostProcessor}。
+	 * <p>通常建议依赖全局默认代理配置，
+	 * 对特定 Bean 的代理需求通过受影响 Bean 类上的
+	 * {@link org.springframework.context.annotation.Proxyable} 注解表达。
 	 * @see org.springframework.aop.config.AopConfigUtils#forceAutoProxyCreatorToUseClassProxying
 	 */
 	boolean proxyTargetClass() default false;
 
 	/**
-	 * Indicate the order in which the {@link RetryAnnotationBeanPostProcessor}
-	 * and {@link ConcurrencyLimitBeanPostProcessor} should be applied.
-	 * <p>The default is {@link Ordered#LOWEST_PRECEDENCE - 1} in order to run
-	 * after all common post-processors, except for {@code @EnableAsync}.
+	 * 指示 {@link RetryAnnotationBeanPostProcessor} 与
+	 * {@link ConcurrencyLimitBeanPostProcessor} 的应用顺序。
+	 * <p>默认为 {@link Ordered#LOWEST_PRECEDENCE - 1}，以便在除 {@code @EnableAsync}
+	 * 外的所有常见后处理器之后运行。
 	 * @see org.springframework.scheduling.annotation.EnableAsync#order()
 	 */
 	int order() default Ordered.LOWEST_PRECEDENCE - 1;

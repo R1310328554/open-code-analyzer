@@ -16,8 +16,7 @@ package io.reactivex.rxjava4.core;
 import io.reactivex.rxjava4.annotations.NonNull;
 
 /**
- * Represents a basic {@link Completable} source base interface,
- * consumable via an {@link CompletableObserver}.
+ * 表示可通过 {@link CompletableObserver} 消费的基本 {@link Completable} 源基础接口。
  *
  * @since 2.0
  */
@@ -25,9 +24,9 @@ import io.reactivex.rxjava4.annotations.NonNull;
 public interface CompletableSource {
 
     /**
-     * Subscribes the given {@link CompletableObserver} to this {@code CompletableSource} instance.
-     * @param observer the {@code CompletableObserver}, not {@code null}
-     * @throws NullPointerException if {@code observer} is {@code null}
+     * 将给定 {@link CompletableObserver} 订阅到此 {@code CompletableSource} 实例。
+     * @param observer {@code CompletableObserver}，不可为 {@code null}
+     * @throws NullPointerException 若 {@code observer} 为 {@code null}
      */
     void subscribe(@NonNull CompletableObserver observer);
 }

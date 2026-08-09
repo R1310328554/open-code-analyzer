@@ -16,15 +16,15 @@ package io.reactivex.rxjava4.core;
 import io.reactivex.rxjava4.annotations.NonNull;
 
 /**
- * Interface to map/wrap a downstream observer to an upstream observer.
+ * 将下游 observer 映射/包装为上游 observer 的接口。
  */
 @FunctionalInterface
 public interface CompletableOperator {
     /**
-     * Applies a function to the child {@link CompletableObserver} and returns a new parent {@code CompletableObserver}.
-     * @param observer the child {@code CompletableObserver} instance
-     * @return the parent {@code CompletableObserver} instance
-     * @throws Throwable on failure
+     * 对子 {@link CompletableObserver} 应用函数并返回新的父 {@code CompletableObserver}。
+     * @param observer 子 {@code CompletableObserver} 实例
+     * @return 父 {@code CompletableObserver} 实例
+     * @throws Throwable 失败时抛出
      */
     @NonNull
     CompletableObserver apply(@NonNull CompletableObserver observer) throws Throwable;

@@ -1,0 +1,298 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.observable;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.Observable;
+import io.reactivex.rxjava4.core.Observer;
+import io.reactivex.rxjava4.core.RxJavaTest;
+import io.reactivex.rxjava4.disposables.Disposable;
+import io.reactivex.rxjava4.exceptions.TestException;
+import io.reactivex.rxjava4.functions.Consumer;
+import io.reactivex.rxjava4.internal.functions.Functions;
+import io.reactivex.rxjava4.internal.observers.BlockingFirstObserver;
+import io.reactivex.rxjava4.observers.TestObserver;
+import io.reactivex.rxjava4.schedulers.Schedulers;
+import io.reactivex.rxjava4.testsupport.TestHelper;
+
+public class ObservableBlockingTest extends RxJavaTest {
+
+    @Test
+    public void blockingFirst() {
+        assertEquals(1, Observable.range(1, 10)
+                .subscribeOn(Schedulers.computation()).blockingFirst().intValue());
+    }
+
+    @Test
+    public void blockingFirstDefault() {
+        assertEquals(1, Observable.<Integer>empty()
+                .subscribeOn(Schedulers.computation()).blockingFirst(1).intValue());
+    }
+
+    @Test
+    public void blockingSubscribeConsumer() {
+        final List<Integer> list = new ArrayList<>();
+
+        Observable.range(1, 5)
+        .subscribeOn(Schedulers.computation())
+        .blockingSubscribe(list::add);
+
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5), list);
+    }
+
+    @Test
+    public void blockingSubscribeConsumerConsumer() {
+        final List<Object> list = new ArrayList<>();
+
+        Observable.range(1, 5)
+        .subscribeOn(Schedulers.computation())
+        .blockingSubscribe(list::add, Functions.emptyConsumer());
+
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5), list);
+    }
+
+    @Test
+    public void blockingSubscribeConsumerConsumerError() {
+        final List<Object> list = new ArrayList<>();
+
+        TestException ex = new TestException();
+
+        Consumer<Object> cons = list::add;
+
+        Observable.range(1, 5).concatWith(Observable.<Integer>error(ex))
+        .subscribeOn(Schedulers.computation())
+        .blockingSubscribe(cons, cons);
+
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5, ex), list);
+    }
+
+    @Test
+    public void blockingSubscribeConsumerConsumerAction() {
+        final List<Object> list = new ArrayList<>();
+
+        Consumer<Object> cons = list::add;
+
+        Observable.range(1, 5)
+        .subscribeOn(Schedulers.computation())
+        .blockingSubscribe(cons, cons, () -> list.add(100));
+
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5, 100), list);
+    }
+
+    @Test
+    public void blockingSubscribeObserver() {
+        final List<Object> list = new ArrayList<>();
+
+        Observable.range(1, 5)
+        .subscribeOn(Schedulers.computation())
+        .blockingSubscribe(new Observer<Object>() /* NFI */ {
+
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Object value) {
+                list.add(value);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                list.add(e);
+            }
+
+            @Override
+            public void onComplete() {
+                list.add(100);
+            }
+
+        });
+
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5, 100), list);
+    }
+
+    @Test
+    public void blockingSubscribeObserverError() {
+        final List<Object> list = new ArrayList<>();
+
+        final TestException ex = new TestException();
+
+        Observable.range(1, 5).concatWith(Observable.<Integer>error(ex))
+        .subscribeOn(Schedulers.computation())
+        .blockingSubscribe(new Observer<Object>() /* NFI */ {
+
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Object value) {
+                list.add(value);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                list.add(e);
+            }
+
+            @Override
+            public void onComplete() {
+                list.add(100);
+            }
+
+        });
+
+        assertEquals(Arrays.asList(1, 2, 3, 4, 5, ex), list);
+    }
+
+    @Test
+    public void blockingForEachThrows() {
+        assertThrows(TestException.class, () -> {
+            Observable.just(1)
+            .blockingForEach(_ -> {
+                throw new TestException();
+            });
+        });
+    }
+
+    @Test
+    public void blockingFirstEmpty() {
+        assertThrows(NoSuchElementException.class, () -> {
+            Observable.empty().blockingFirst();
+        });
+    }
+
+    @Test
+    public void blockingLastEmpty() {
+        assertThrows(NoSuchElementException.class, () -> {
+            Observable.empty().blockingLast();
+        });
+    }
+
+    @Test
+    public void blockingFirstNormal() {
+        assertEquals(1, Observable.just(1, 2).blockingFirst(3).intValue());
+    }
+
+    @Test
+    public void blockingLastNormal() {
+        assertEquals(2, Observable.just(1, 2).blockingLast(3).intValue());
+    }
+
+    @Test
+    public void blockingSingleEmpty() {
+        assertThrows(NoSuchElementException.class, () -> {
+            Observable.empty().blockingSingle();
+        });
+    }
+
+    @Test
+    public void utilityClass() {
+        TestHelper.checkUtilityClass(ObservableBlockingSubscribe.class);
+    }
+
+    @Test
+    public void disposeUpFront() {
+        TestObserver<Object> to = new TestObserver<>();
+        to.dispose();
+        Observable.just(1).blockingSubscribe(to);
+
+        to.assertEmpty();
+    }
+
+    @Test
+    public void delayed() throws Exception {
+        final TestObserver<Object> to = new TestObserver<>();
+        final AtomicReference<Observer<? super Integer>> obsRef = new AtomicReference<>();
+
+        Schedulers.single().scheduleDirect(() -> {
+            to.dispose();
+            obsRef.get().onNext(1);
+        }, 200, TimeUnit.MILLISECONDS);
+
+        new Observable<Integer>() /* NFI */ {
+            @Override
+            protected void subscribeActual(Observer<? super Integer> observer) {
+                observer.onSubscribe(Disposable.empty());
+                obsRef.set(observer);
+            }
+        }.blockingSubscribe(to);
+
+        while (!to.isDisposed()) {
+            Thread.sleep(100);
+        }
+
+        to.assertEmpty();
+    }
+
+    @Test
+    public void interrupt() {
+        TestObserver<Object> to = new TestObserver<>();
+        Thread.currentThread().interrupt();
+        Observable.never().blockingSubscribe(to);
+    }
+
+    @Test
+    public void onCompleteDelayed() {
+        TestObserver<Object> to = new TestObserver<>();
+
+        Observable.empty().delay(100, TimeUnit.MILLISECONDS)
+        .blockingSubscribe(to);
+
+        to.assertResult();
+    }
+
+    @Test
+    public void blockingCancelUpfront() {
+        BlockingFirstObserver<Integer> o = new BlockingFirstObserver<>();
+
+        assertFalse(o.isDisposed());
+        o.dispose();
+        assertTrue(o.isDisposed());
+
+        Disposable d = Disposable.empty();
+
+        o.onSubscribe(d);
+
+        assertTrue(d.isDisposed());
+
+        Thread.currentThread().interrupt();
+        try {
+            o.blockingGet();
+            fail("Should have thrown");
+        } catch (RuntimeException ex) {
+            assertTrue(ex.getCause() instanceof InterruptedException, ex.toString());
+        }
+
+        Thread.interrupted();
+
+        o.onError(new TestException());
+
+        try {
+            o.blockingGet();
+            fail("Should have thrown");
+        } catch (TestException ex) {
+            // expected
+        }
+    }
+}

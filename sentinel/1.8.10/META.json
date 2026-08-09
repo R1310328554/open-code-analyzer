@@ -1,0 +1,7 @@
+{
+  "project": "sentinel",
+  "version": "1.8.10",
+  "git_ref": "1.8.10",
+  "repo_url": "https://github.com/alibaba/Sentinel",
+  "source": "release"
+}

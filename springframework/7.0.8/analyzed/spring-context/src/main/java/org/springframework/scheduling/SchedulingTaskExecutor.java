@@ -19,12 +19,11 @@ package org.springframework.scheduling;
 import org.springframework.core.task.AsyncTaskExecutor;
 
 /**
- * A {@link org.springframework.core.task.TaskExecutor} extension exposing
- * scheduling characteristics that are relevant to potential task submitters.
+ * 暴露与潜在任务提交者相关的调度特征的
+ * {@link org.springframework.core.task.TaskExecutor} 扩展。
  *
- * <p>Scheduling clients are encouraged to submit
- * {@link Runnable Runnables} that match the exposed preferences
- * of the {@code TaskExecutor} implementation in use.
+ * <p>建议调度客户端提交与所用 {@code TaskExecutor} 实现
+ * 所暴露偏好相匹配的 {@link Runnable Runnables}。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -34,17 +33,15 @@ import org.springframework.core.task.AsyncTaskExecutor;
 public interface SchedulingTaskExecutor extends AsyncTaskExecutor {
 
 	/**
-	 * Does this {@code TaskExecutor} prefer short-lived tasks over long-lived tasks?
-	 * <p>A {@code SchedulingTaskExecutor} implementation can indicate whether it
-	 * prefers submitted tasks to perform as little work as it can within a single
-	 * task execution. For example, submitted tasks might break a repeated loop into
-	 * individual subtasks which submit a follow-up task afterwards (if feasible).
-	 * <p>This should be considered a hint. Of course {@code TaskExecutor} clients
-	 * are free to ignore this flag and hence the {@code SchedulingTaskExecutor}
-	 * interface overall. However, thread pools will usually indicate a preference
-	 * for short-lived tasks, allowing for more fine-grained scheduling.
-	 * @return {@code true} if this executor prefers short-lived tasks (the default),
-	 * {@code false} otherwise (for treatment like a regular {@code TaskExecutor})
+	 * 此 {@code TaskExecutor} 是否偏好短生命周期任务而非长生命周期任务？
+	 * <p>{@code SchedulingTaskExecutor} 实现可指示是否偏好提交的任务
+	 * 在单次任务执行中尽可能少做工作。例如，提交的任务可将重复循环拆分为
+	 * 独立子任务，随后再提交后续任务（若可行）。
+	 * <p>这应视为提示。{@code TaskExecutor} 客户端当然可忽略此标志及
+	 * {@code SchedulingTaskExecutor} 接口本身。不过线程池通常会表明
+	 * 偏好短生命周期任务，以实现更细粒度的调度。
+	 * @return 若此执行器偏好短生命周期任务（默认）则返回 {@code true}，
+	 * 否则返回 {@code false}（按常规 {@code TaskExecutor} 处理）
 	 */
 	default boolean prefersShortLivedTasks() {
 		return true;

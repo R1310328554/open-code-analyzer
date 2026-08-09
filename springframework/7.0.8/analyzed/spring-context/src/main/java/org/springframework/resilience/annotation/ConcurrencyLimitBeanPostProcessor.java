@@ -41,17 +41,10 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.StringValueResolver;
 
-/* ===== [OCA 中文解析] =====
-class ConcurrencyLimitBeanPostProcessor — 意图说明
-
-处理器：容器生命周期中的扩展钩子；源文件: `spring-context/src/main/java/org/springframework/resilience/annotation/ConcurrencyLimitBeanPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * A convenient {@link org.springframework.beans.factory.config.BeanPostProcessor
- * BeanPostProcessor} that applies a concurrency interceptor to all bean methods
- * annotated with {@link ConcurrencyLimit @ConcurrencyLimit}.
+ * 便捷的 {@link org.springframework.beans.factory.config.BeanPostProcessor
+ * BeanPostProcessor}，为所有带 {@link ConcurrencyLimit @ConcurrencyLimit} 注解的
+ * Bean 方法应用并发拦截器。
  *
  * @author Juergen Hoeller
  * @author Hyunsang Han
@@ -79,17 +72,6 @@ public class ConcurrencyLimitBeanPostProcessor extends AbstractBeanFactoryAwareA
 	public void setEmbeddedValueResolver(StringValueResolver resolver) {
 		this.embeddedValueResolver = resolver;
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class ConcurrencyLimitInterceptor — 意图说明
-
-拦截器：调用链中的前置/后置逻辑；源文件: `spring-context/src/main/java/org/springframework/resilience/annotation/ConcurrencyLimitBeanPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private class ConcurrencyLimitInterceptor implements MethodInterceptor {
@@ -164,34 +146,12 @@ class ConcurrencyLimitInterceptor — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ConcurrencyThrottleHolder — 意图说明
-
-class `ConcurrencyThrottleHolder`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/resilience/annotation/ConcurrencyLimitBeanPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private static class ConcurrencyThrottleHolder {
 
 		final Map<Method, MethodInterceptor> methodInterceptors = new ConcurrentHashMap<>();
 
 		@Nullable MethodInterceptor classInterceptor;
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class ResilienceConcurrencyThrottleInterceptor — 意图说明
-
-拦截器：调用链中的前置/后置逻辑；源文件: `spring-context/src/main/java/org/springframework/resilience/annotation/ConcurrencyLimitBeanPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private static class ResilienceConcurrencyThrottleInterceptor extends ConcurrencyThrottleInterceptor {
@@ -211,17 +171,6 @@ class ResilienceConcurrencyThrottleInterceptor — 意图说明
 			throw new InvocationRejectedException(msg + " " + this.identifier, this.target);
 		}
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class RejectingConcurrencyThrottleInterceptor — 意图说明
-
-拦截器：调用链中的前置/后置逻辑；源文件: `spring-context/src/main/java/org/springframework/resilience/annotation/ConcurrencyLimitBeanPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private static class RejectingConcurrencyThrottleInterceptor extends ResilienceConcurrencyThrottleInterceptor {

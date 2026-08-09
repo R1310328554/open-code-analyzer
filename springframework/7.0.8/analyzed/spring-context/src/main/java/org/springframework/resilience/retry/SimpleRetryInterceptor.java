@@ -19,7 +19,7 @@ package org.springframework.resilience.retry;
 import java.lang.reflect.Method;
 
 /**
- * A simple concrete retry interceptor based on a given {@link MethodRetrySpec}.
+ * 基于给定 {@link MethodRetrySpec} 的简单具体重试拦截器。
  *
  * @author Juergen Hoeller
  * @since 7.0
@@ -30,8 +30,8 @@ public class SimpleRetryInterceptor extends AbstractRetryInterceptor {
 
 
 	/**
-	 * Create a {@code SimpleRetryInterceptor} for the given {@link MethodRetrySpec}.
-	 * @param retrySpec the specification to use for all method invocations
+	 * 为给定 {@link MethodRetrySpec} 创建 {@code SimpleRetryInterceptor}。
+	 * @param retrySpec 用于所有方法调用的规范
 	 */
 	public SimpleRetryInterceptor(MethodRetrySpec retrySpec) {
 		this.retrySpec = retrySpec;

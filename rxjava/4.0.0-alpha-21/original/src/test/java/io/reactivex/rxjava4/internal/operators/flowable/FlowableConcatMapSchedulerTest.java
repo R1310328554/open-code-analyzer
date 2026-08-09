@@ -1,0 +1,1094 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.flowable;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.Flow.*;
+import java.util.concurrent.atomic.*;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.annotations.NonNull;
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.core.config.StandardBufferedConfig;
+import io.reactivex.rxjava4.exceptions.*;
+import io.reactivex.rxjava4.functions.*;
+import io.reactivex.rxjava4.internal.functions.Functions;
+import io.reactivex.rxjava4.internal.schedulers.ImmediateThinScheduler;
+import io.reactivex.rxjava4.internal.subscriptions.*;
+import io.reactivex.rxjava4.plugins.RxJavaPlugins;
+import io.reactivex.rxjava4.processors.*;
+import io.reactivex.rxjava4.schedulers.Schedulers;
+import io.reactivex.rxjava4.subscribers.*;
+import io.reactivex.rxjava4.testsupport.*;
+
+public class FlowableConcatMapSchedulerTest extends RxJavaTest {
+
+    @Test
+    public void boundaryFusion() {
+        Flowable.range(1, 10000)
+        .observeOn(Schedulers.single())
+        .map(_ -> {
+            String name = Thread.currentThread().getName();
+            if (name.contains("RxSingleScheduler")) {
+                return "RxSingleScheduler";
+            }
+            return name;
+        })
+        .concatMap((Function<String, Publisher<?>>) Flowable::just, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .observeOn(Schedulers.computation())
+        .distinct()
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertResult("RxSingleScheduler");
+    }
+
+    @Test
+    public void innerScalarRequestRace() {
+        Flowable<Integer> just = Flowable.just(1);
+        int n = 1000;
+        for (int i = 0; i < TestHelper.RACE_DEFAULT_LOOPS; i++) {
+            PublishProcessor<Flowable<Integer>> source = PublishProcessor.create();
+
+            TestSubscriber<Integer> ts = source
+                    .concatMap(v -> v, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(n + 1))
+                    .test(1L);
+
+            TestHelper.race(() -> {
+                for (int j = 0; j < n; j++) {
+                    source.onNext(just);
+                }
+            }, () -> {
+                for (int j = 0; j < n; j++) {
+                    ts.request(1);
+                }
+            });
+
+            ts.assertValueCount(n);
+        }
+    }
+
+    @Test
+    public void innerScalarRequestRaceDelayError() {
+        Flowable<Integer> just = Flowable.just(1);
+        int n = 1000;
+        for (int i = 0; i < TestHelper.RACE_DEFAULT_LOOPS; i++) {
+            PublishProcessor<Flowable<Integer>> source = PublishProcessor.create();
+
+            TestSubscriber<Integer> ts = source
+                    .concatMap(v -> v, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, n + 1))
+                    .test(1L);
+
+            TestHelper.race(() -> {
+                for (int j = 0; j < n; j++) {
+                    source.onNext(just);
+                }
+            }, () -> {
+                for (int j = 0; j < n; j++) {
+                    ts.request(1);
+                }
+            });
+
+            ts.assertValueCount(n);
+        }
+    }
+
+    @Test
+    public void boundaryFusionDelayError() {
+        Flowable.range(1, 10000)
+        .observeOn(Schedulers.single())
+        .map(_ -> {
+            String name = Thread.currentThread().getName();
+            if (name.contains("RxSingleScheduler")) {
+                return "RxSingleScheduler";
+            }
+            return name;
+        })
+        .concatMap((Function<String, Publisher<?>>) Flowable::just, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .observeOn(Schedulers.computation())
+        .distinct()
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertResult("RxSingleScheduler");
+    }
+
+    @Test
+    public void pollThrows() {
+        Flowable.just(1)
+        .<Integer>map(_ -> {
+            throw new TestException();
+        })
+        .compose(TestHelper.<Integer>flowableStripBoundary())
+        .concatMap((Function<Integer, Publisher<Integer>>) Flowable::just, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void pollThrowsDelayError() {
+        Flowable.just(1)
+        .<Integer>map(_ -> {
+            throw new TestException();
+        })
+        .compose(TestHelper.<Integer>flowableStripBoundary())
+        .concatMap((Function<Integer, Publisher<Integer>>) Flowable::just, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void noCancelPrevious() {
+        final AtomicInteger counter = new AtomicInteger();
+
+        Flowable.range(1, 5)
+        .concatMap((Function<Integer, Flowable<Integer>>) v ->
+            Flowable.just(v).doOnCancel(counter::getAndIncrement), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+
+        assertEquals(0, counter.get());
+    }
+
+    @Test
+    public void delayErrorCallableTillTheEnd() {
+        Flowable.just(1, 2, 3, 101, 102, 23, 890, 120, 32)
+        .concatMap((Function<Integer, Flowable<Integer>>) integer -> Flowable.fromCallable(() -> {
+            if (integer >= 100) {
+                throw new NullPointerException("test null exp");
+            }
+            return integer;
+        }), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .assertFailure(CompositeException.class, 1, 2, 3, 23, 32);
+    }
+
+    @Test
+    public void delayErrorCallableEager() {
+        Flowable.just(1, 2, 3, 101, 102, 23, 890, 120, 32)
+        .concatMap((Function<Integer, Flowable<Integer>>) integer -> Flowable.fromCallable(() -> {
+            if (integer >= 100) {
+                throw new NullPointerException("test null exp");
+            }
+            return integer;
+        }), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.BOUNDARY, 2))
+        .test()
+        .assertFailure(NullPointerException.class, 1, 2, 3);
+    }
+
+    @Test
+    public void mapperScheduled() {
+        TestSubscriber<String> ts = Flowable.just(1)
+        .concatMap((Function<Integer, Flowable<String>>) _ -> Flowable.just(Thread.currentThread().getName()), Schedulers.single(),
+                new StandardBufferedConfig(2))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void mapperScheduledHidden() {
+        TestSubscriber<String> ts = Flowable.just(1)
+        .concatMap((Function<Integer, Flowable<String>>) _ -> Flowable.just(Thread.currentThread().getName()).hide(), Schedulers.single(),
+                new StandardBufferedConfig(2))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void mapperDelayErrorScheduled() {
+        TestSubscriber<String> ts = Flowable.just(1)
+        .concatMap((Function<Integer, Flowable<String>>) _ -> Flowable.just(Thread.currentThread().getName()), Schedulers.single(),
+                new StandardBufferedConfig(ErrorMode.BOUNDARY, 2))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void mapperDelayErrorScheduledHidden() {
+        TestSubscriber<String> ts = Flowable.just(1)
+        .concatMap((Function<Integer, Flowable<String>>) _ ->
+            Flowable.just(Thread.currentThread().getName()).hide(), Schedulers.single(),
+            new StandardBufferedConfig(ErrorMode.BOUNDARY, 2))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void mapperDelayError2Scheduled() {
+        TestSubscriber<String> ts = Flowable.just(1)
+        .concatMap((Function<Integer, Flowable<String>>) _ ->
+            Flowable.just(Thread.currentThread().getName()), Schedulers.single(),
+            new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void mapperDelayError2ScheduledHidden() {
+        TestSubscriber<String> ts = Flowable.just(1)
+        .concatMap((Function<Integer, Flowable<String>>) _ ->
+            Flowable.just(Thread.currentThread().getName()).hide(), Schedulers.single(),
+            new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void issue2890NoStackoverflow() throws InterruptedException, TimeoutException {
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
+        final Scheduler sch = Schedulers.from(executor);
+
+        Function<Integer, Flowable<Integer>> func = t -> {
+            Flowable<Integer> flowable = Flowable.just(t)
+                    .subscribeOn(sch)
+            ;
+            FlowableProcessor<Integer> processor = UnicastProcessor.create();
+            flowable.subscribe(processor);
+            return processor;
+        };
+
+        int n = 5000;
+        final AtomicInteger counter = new AtomicInteger();
+
+        Flowable.range(1, n)
+        .concatMap(func, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .subscribe(new DefaultSubscriber<>() /* NFI */ {
+            @Override
+            public void onNext(Integer t) {
+                // Consume after sleep for 1 ms
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    // ignored
+                }
+                if (counter.getAndIncrement() % 100 == 0) {
+                    System.out.print("testIssue2890NoStackoverflow -> ");
+                    System.out.println(counter.get());
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                executor.shutdown();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                executor.shutdown();
+            }
+        });
+
+        long awaitTerminationTimeoutMillis = 100_000;
+        if (!executor.awaitTermination(awaitTerminationTimeoutMillis, TimeUnit.MILLISECONDS)) {
+            throw new TimeoutException("Completed " + counter.get() + "/" + n + " before timed out after "
+                    + awaitTerminationTimeoutMillis + " milliseconds.");
+        }
+
+        assertEquals(n, counter.get());
+    }
+
+    @Test
+    public void concatMapRangeAsyncLoopIssue2876() {
+        final long durationSeconds = 2;
+        final long startTime = System.currentTimeMillis();
+        for (int i = 0;; i++) {
+            //only run this for a max of ten seconds
+            if (System.currentTimeMillis() - startTime > TimeUnit.SECONDS.toMillis(durationSeconds)) {
+                return;
+            }
+            if (i % 1000 == 0) {
+                System.out.println("concatMapRangeAsyncLoop > " + i);
+            }
+            TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+            Flowable.range(0, 1000)
+            .concatMap(t -> Flowable.fromIterable(Collections.singletonList(t)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+            .observeOn(Schedulers.computation()).subscribe(ts);
+
+            ts.awaitDone(2500, TimeUnit.MILLISECONDS);
+            ts.assertTerminated();
+            ts.assertNoErrors();
+            assertEquals(1000, ts.values().size());
+            assertEquals((Integer)999, ts.values().get(999));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void concatArray() throws Exception {
+        for (int i = 2; i < 10; i++) {
+            Flowable<Integer>[] obs = new Flowable[i];
+            Arrays.fill(obs, Flowable.just(1));
+
+            Integer[] expected = new Integer[i];
+            Arrays.fill(expected, 1);
+
+            Method m = Flowable.class.getMethod("concatArray",  Publisher[].class);
+
+            TestSubscriber<Integer> ts = TestSubscriber.create();
+
+            ((Flowable<Integer>)m.invoke(null, new Object[]{obs})).subscribe(ts);
+
+            ts.assertValues(expected);
+            ts.assertNoErrors();
+            ts.assertComplete();
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Test
+    public void concatMapJustJust() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.just(Flowable.just(1))
+        .concatMap((Function)Functions.identity(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .subscribe(ts);
+
+        ts.assertValue(1);
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Test
+    public void concatMapJustRange() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.just(Flowable.range(1, 5))
+        .concatMap((Function)Functions.identity(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .subscribe(ts);
+
+        ts.assertValues(1, 2, 3, 4, 5);
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Test
+    public void concatMapDelayErrorJustJust() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.just(Flowable.just(1))
+        .concatMap((Function)Functions.identity(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertValue(1);
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Test
+    public void concatMapDelayErrorJustRange() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.just(Flowable.range(1, 5))
+        .concatMap((Function)Functions.identity(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertValues(1, 2, 3, 4, 5);
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void startWithArray() throws Exception {
+        for (int i = 2; i < 10; i++) {
+            Object[] obs = new Object[i];
+            Arrays.fill(obs, 1);
+
+            Integer[] expected = new Integer[i];
+            Arrays.fill(expected, 1);
+
+            Method m = Flowable.class.getMethod("startWithArray", Object[].class);
+
+            TestSubscriber<Integer> ts = TestSubscriber.create();
+
+            ((Flowable<Integer>)m.invoke(Flowable.empty(), new Object[]{obs})).subscribe(ts);
+
+            ts.assertValues(expected);
+            ts.assertNoErrors();
+            ts.assertComplete();
+        }
+    }
+
+    @Test
+    public void concatMapDelayError() {
+        Flowable.just(Flowable.just(1), Flowable.just(2))
+        .concatMap(Functions.<Flowable<Integer>>identity(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .assertResult(1, 2);
+    }
+
+    @Test
+    public void concatMapDelayErrorJustSource() {
+        Flowable.just(0)
+        .concatMap(_ -> Flowable.just(1), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 16))
+        .test()
+        .assertResult(1);
+
+    }
+
+    @Test
+    public void concatMapJustSource() {
+        Flowable.just(0).hide()
+        .concatMap(_ -> Flowable.just(1), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(16))
+        .test()
+        .assertResult(1);
+    }
+
+    @Test
+    public void concatMapJustSourceDelayError() {
+        Flowable.just(0).hide()
+        .concatMap(_ -> Flowable.just(1), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.BOUNDARY, 16))
+        .test()
+        .assertResult(1);
+    }
+
+    @Test
+    public void concatMapScalarBackpressured() {
+        Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(Flowable.just(2)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .test(1L)
+        .assertResult(2);
+    }
+
+    @Test
+    public void concatMapScalarBackpressuredDelayError() {
+        Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(Flowable.just(2)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test(1L)
+        .assertResult(2);
+    }
+
+    @Test
+    public void concatMapEmpty() {
+        Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(Flowable.empty()), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .test()
+        .assertResult();
+    }
+
+    @Test
+    public void concatMapEmptyDelayError() {
+        Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(Flowable.empty()), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .assertResult();
+    }
+
+    @Test
+    public void ignoreBackpressure() {
+        new Flowable<Integer>() /* NFI */ {
+            @Override
+            protected void subscribeActual(Subscriber<? super Integer> s) {
+                s.onSubscribe(new BooleanSubscription());
+                for (int i = 0; i < 10; i++) {
+                    s.onNext(i);
+                }
+            }
+        }
+        .concatMap(Functions.justFunction(Flowable.just(2)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(8))
+        .test(0L)
+        .assertFailure(QueueOverflowException.class);
+    }
+
+    @Test
+    public void doubleOnSubscribe() {
+        TestHelper.checkDoubleOnSubscribeFlowable(f ->
+            f.concatMap(Functions.justFunction(Flowable.just(2)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2)));
+        TestHelper.checkDoubleOnSubscribeFlowable(f ->
+            f.concatMap(Functions.justFunction(Flowable.just(2)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2)));
+    }
+
+    @Test
+    public void immediateInnerNextOuterError() {
+        final PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        var ts = new TestSubscriberEx<Integer>() /* NFI */ {
+            @Override
+            public void onNext(Integer t) {
+                super.onNext(t);
+                if (t == 1) {
+                    pp.onError(new TestException("First"));
+                }
+            }
+        };
+
+        pp.concatMap(Functions.justFunction(Flowable.just(1)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .subscribe(ts);
+
+        pp.onNext(1);
+
+        assertFalse(pp.hasSubscribers());
+
+        ts.assertFailureAndMessage(TestException.class, "First", 1);
+    }
+
+    @Test
+    public void immediateInnerNextOuterError2() {
+        final PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        var ts = new TestSubscriberEx<Integer>() /* NFI */ {
+            @Override
+            public void onNext(Integer t) {
+                super.onNext(t);
+                if (t == 1) {
+                    pp.onError(new TestException("First"));
+                }
+            }
+        };
+
+        pp.concatMap(Functions.justFunction(Flowable.just(1).hide()), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .subscribe(ts);
+
+        pp.onNext(1);
+
+        assertFalse(pp.hasSubscribers());
+
+        ts.assertFailureAndMessage(TestException.class, "First", 1);
+    }
+
+    @Test
+    public void concatMapInnerError() {
+        Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(Flowable.error(new TestException())), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void concatMapInnerErrorDelayError() {
+        Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(Flowable.error(new TestException())), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void badSource() {
+        TestHelper.checkBadSourceFlowable(f ->
+        f.concatMap(Functions.justFunction(Flowable.just(1).hide()), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2)), true, 1, 1, 1);
+    }
+
+    @Test
+    public void badInnerSource() {
+        @SuppressWarnings("rawtypes")
+        final Subscriber[] ts0 = { null };
+        TestSubscriberEx<Integer> ts = Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(new Flowable<Integer>() /* NFI */ {
+            @Override
+            protected void subscribeActual(Subscriber<? super Integer> s) {
+                ts0[0] = s;
+                s.onSubscribe(new BooleanSubscription());
+                s.onError(new TestException("First"));
+            }
+        }), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .to(TestHelper.<Integer>testConsumer());
+
+        ts.assertFailureAndMessage(TestException.class, "First");
+
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            ts0[0].onError(new TestException("Second"));
+
+            TestHelper.assertUndeliverable(errors, 0, TestException.class);
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void badInnerSourceDelayError() {
+        @SuppressWarnings("rawtypes")
+        final Subscriber[] ts0 = { null };
+        TestSubscriberEx<Integer> ts = Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(new Flowable<Integer>() /* NFI */ {
+            @Override
+            protected void subscribeActual(Subscriber<? super Integer> s) {
+                ts0[0] = s;
+                s.onSubscribe(new BooleanSubscription());
+                s.onError(new TestException("First"));
+            }
+        }), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .to(TestHelper.<Integer>testConsumer());
+
+        ts.assertFailureAndMessage(TestException.class, "First");
+
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            ts0[0].onError(new TestException("Second"));
+
+            TestHelper.assertUndeliverable(errors, 0, TestException.class);
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void badSourceDelayError() {
+        TestHelper.checkBadSourceFlowable(f ->
+            f.concatMap(Functions.justFunction(Flowable.just(1).hide()), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2)), true, 1, 1, 1);
+    }
+
+    @Test
+    public void fusedCrash() {
+        Flowable.range(1, 2)
+        .map(_ -> { throw new TestException(); })
+        .concatMap(Functions.justFunction(Flowable.just(1)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void fusedCrashDelayError() {
+        Flowable.range(1, 2)
+        .map(_ -> { throw new TestException(); })
+        .concatMap(Functions.justFunction(Flowable.just(1)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void callableCrash() {
+        Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(Flowable.fromCallable(() -> {
+            throw new TestException();
+        })), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void callableCrashDelayError() {
+        Flowable.just(1).hide()
+        .concatMap(Functions.justFunction(Flowable.fromCallable(() -> {
+            throw new TestException();
+        })), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void dispose() {
+        TestHelper.checkDisposed(Flowable.range(1, 2)
+        .concatMap(Functions.justFunction(Flowable.just(1)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2)));
+
+        TestHelper.checkDisposed(Flowable.range(1, 2)
+        .concatMap(Functions.justFunction(Flowable.just(1)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2)));
+    }
+
+    @Test
+    public void notVeryEnd() {
+        Flowable.range(1, 2)
+        .concatMap(Functions.justFunction(Flowable.error(new TestException())), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.BOUNDARY, 16))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void error() {
+        Flowable.error(new TestException())
+        .concatMap(Functions.justFunction(Flowable.just(2)), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.BOUNDARY, 16))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void mapperThrows() {
+        Flowable.range(1, 2)
+        .concatMap((Function<Integer, Publisher<Object>>) _ -> {
+            throw new TestException();
+        }, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void mainErrors() {
+        PublishProcessor<Integer> source = PublishProcessor.create();
+
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        source.concatMap(v -> Flowable.range(v, 2), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        source.onNext(1);
+        source.onNext(2);
+        source.onError(new TestException());
+
+        ts.assertValues(1, 2, 2, 3);
+        ts.assertError(TestException.class);
+        ts.assertNotComplete();
+    }
+
+    @Test
+    public void innerErrors() {
+        final Flowable<Integer> inner = Flowable.range(1, 2)
+                .concatWith(Flowable.<Integer>error(new TestException()));
+
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.range(1, 3)
+        .concatMap((Function<Integer, Flowable<Integer>>) _ -> inner, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertValues(1, 2, 1, 2, 1, 2);
+        ts.assertError(CompositeException.class);
+        ts.assertNotComplete();
+    }
+
+    @Test
+    public void singleInnerErrors() {
+        final Flowable<Integer> inner = Flowable.range(1, 2).concatWith(Flowable.<Integer>error(new TestException()));
+
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.just(1)
+        .hide() // prevent scalar optimization
+        .concatMap((Function<Integer, Flowable<Integer>>) _ -> inner, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertValues(1, 2);
+        ts.assertError(TestException.class);
+        ts.assertNotComplete();
+    }
+
+    @Test
+    public void innerNull() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.just(1)
+        .hide() // prevent scalar optimization
+        .concatMap((Function<Integer, Flowable<Integer>>) _ -> null, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertNoValues();
+        ts.assertError(NullPointerException.class);
+        ts.assertNotComplete();
+    }
+
+    @Test
+    public void innerThrows() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.just(1)
+        .hide() // prevent scalar optimization
+        .concatMap((Function<Integer, Flowable<Integer>>) _ -> {
+            throw new TestException();
+        }, ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertNoValues();
+        ts.assertError(TestException.class);
+        ts.assertNotComplete();
+    }
+
+    @Test
+    public void innerWithEmpty() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.range(1, 3)
+        .concatMap(v -> v == 2 ? Flowable.<Integer>empty() : Flowable.range(1, 2), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertValues(1, 2, 1, 2);
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @Test
+    public void innerWithScalar() {
+        TestSubscriber<Integer> ts = TestSubscriber.create();
+
+        Flowable.range(1, 3)
+        .concatMap(v -> v == 2 ? Flowable.just(3) : Flowable.range(1, 2), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertValues(1, 2, 3, 1, 2);
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @Test
+    public void backpressure() {
+        TestSubscriber<Integer> ts = TestSubscriber.create(0);
+
+        Flowable.range(1, 3)
+        .concatMap(v -> Flowable.range(v, 2), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertNoValues();
+        ts.assertNoErrors();
+        ts.assertNotComplete();
+
+        ts.request(1);
+        ts.assertValues(1);
+        ts.assertNoErrors();
+        ts.assertNotComplete();
+
+        ts.request(3);
+        ts.assertValues(1, 2, 2, 3);
+        ts.assertNoErrors();
+        ts.assertNotComplete();
+
+        ts.request(2);
+
+        ts.assertValues(1, 2, 2, 3, 3, 4);
+        ts.assertNoErrors();
+        ts.assertComplete();
+    }
+
+    @Test
+    public void mapperScheduledLong() {
+        TestSubscriber<String> ts = Flowable.range(1, 1000)
+        .hide()
+        .observeOn(Schedulers.computation())
+        .concatMap(_ -> Flowable.just(Thread.currentThread().getName())
+                .repeat(1000)
+                .observeOn(Schedulers.cached()), Schedulers.single(), new StandardBufferedConfig(2))
+        .distinct()
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void mapperDelayErrorScheduledLong() {
+        TestSubscriber<String> ts = Flowable.range(1, 1000)
+        .hide()
+        .observeOn(Schedulers.computation())
+        .concatMap((Function<Integer, Flowable<String>>) _ -> Flowable.just(Thread.currentThread().getName())
+                .repeat(1000)
+                .observeOn(Schedulers.cached()), Schedulers.single(), new StandardBufferedConfig(ErrorMode.BOUNDARY, 2))
+        .distinct()
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void mapperDelayError2ScheduledLong() {
+        TestSubscriber<String> ts = Flowable.range(1, 1000)
+        .hide()
+        .observeOn(Schedulers.computation())
+        .concatMap((Function<Integer, Flowable<String>>) _ -> Flowable.just(Thread.currentThread().getName())
+                .repeat(1000)
+                .observeOn(Schedulers.cached()), Schedulers.single(), new StandardBufferedConfig(ErrorMode.END, 2))
+        .distinct()
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertValueCount(1)
+        .assertNoErrors()
+        .assertComplete();
+
+        assertTrue(ts.values().getFirst().startsWith("RxSingleScheduler-"), ts.values().toString());
+    }
+
+    @Test
+    public void undeliverableUponCancel() {
+        TestHelper.checkUndeliverableUponCancel((FlowableConverter<Integer, Flowable<Integer>>) upstream ->
+        upstream.concatMap((Function<Integer, Publisher<Integer>>) v -> Flowable.just(v).hide(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2)));
+    }
+
+    @Test
+    public void undeliverableUponCancelDelayError() {
+        TestHelper.checkUndeliverableUponCancel((FlowableConverter<Integer, Flowable<Integer>>) upstream ->
+        upstream.concatMap(v -> Flowable.just(v).hide(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.BOUNDARY, 2)));
+    }
+
+    @Test
+    public void undeliverableUponCancelDelayErrorTillEnd() {
+        TestHelper.checkUndeliverableUponCancel((FlowableConverter<Integer, Flowable<Integer>>) upstream ->
+        upstream.concatMap(v -> Flowable.just(v).hide(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2)));
+    }
+
+    @Test
+    public void fusionRejected() {
+        TestSubscriberEx<Object> ts = new TestSubscriberEx<>();
+
+        TestHelper.rejectFlowableFusion()
+        .concatMap(_ -> Flowable.never(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .subscribe(ts);
+    }
+
+    @Test
+    public void fusionRejectedDelayErrorr() {
+        TestSubscriberEx<Object> ts = new TestSubscriberEx<>();
+
+        TestHelper.rejectFlowableFusion()
+        .concatMap(_ -> Flowable.never(), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+    }
+
+    @Test
+    public void scalarInnerJustDispose() {
+        TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+        Flowable.just(1)
+        .hide()
+        .concatMap(_ -> Flowable.fromCallable(() -> {
+            ts.cancel();
+            return 1;
+        }), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .subscribe(ts);
+
+        ts.assertEmpty();
+    }
+
+    @Test
+    public void scalarInnerJustDisposeDelayError() {
+        TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+        Flowable.just(1)
+        .hide()
+        .concatMap(_ -> Flowable.fromCallable(() -> {
+            ts.cancel();
+            return 1;
+        }), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2))
+        .subscribe(ts);
+
+        ts.assertEmpty();
+    }
+
+    static final class EmptyDisposingFlowable extends Flowable<Object>
+    implements Supplier<Object> {
+        final TestSubscriber<Object> ts;
+        EmptyDisposingFlowable(TestSubscriber<Object> ts) {
+            this.ts = ts;
+        }
+
+        @Override
+        protected void subscribeActual(@NonNull Subscriber<? super @NonNull Object> subscriber) {
+            EmptySubscription.complete(subscriber);
+        }
+
+        @Override
+        public @NonNull Object get() throws Throwable {
+            ts.cancel();
+            return null;
+        }
+    }
+
+    @Test
+    public void scalarInnerEmptyDisposeDelayError() {
+        TestSubscriber<Object> ts = new TestSubscriber<>();
+
+        Flowable.just(1)
+        .hide()
+        .concatMap(_ -> new EmptyDisposingFlowable(ts),
+                ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(ErrorMode.END, 2)
+        )
+        .subscribe(ts);
+
+        ts.assertEmpty();
+    }
+
+    @Test
+    public void mainErrorInnerNextIgnoreCancel() {
+        AtomicReference<Subscriber<? super Integer>> ref = new AtomicReference<>();
+
+        Flowable.just(1).concatWith(Flowable.<Integer>error(new TestException()))
+        .concatMap(_ -> Flowable.<Integer>fromPublisher(ref::set), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .doOnError(_ -> {
+            ref.get().onSubscribe(new BooleanSubscription());
+            ref.get().onNext(1);
+        })
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void scalarSupplierMainError() {
+        PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        TestSubscriber<Integer> ts = pp.concatMap(_ -> Flowable.fromCallable(() -> {
+            pp.onError(new TestException());
+            return 2;
+        }), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+        .test()
+        ;
+
+        pp.onNext(1);
+
+        ts.assertFailure(TestException.class);
+    }
+
+    @Test
+    public void mainErrorInnerErrorRace() throws Throwable {
+        withErrorTracking(errors -> {
+            TestException ex1 = new TestException();
+            TestException ex2 = new TestException();
+
+            for (int i = 0; i < TestHelper.RACE_DEFAULT_LOOPS; i++) {
+                AtomicReference<Subscriber<? super Integer>> ref1 = new AtomicReference<>();
+                AtomicReference<Subscriber<? super Integer>> ref2 = new AtomicReference<>();
+
+                TestSubscriber<Integer> ts = Flowable.<Integer>fromPublisher(ref1::set)
+                .concatMap(_ -> Flowable.<Integer>fromPublisher(ref2::set), ImmediateThinScheduler.INSTANCE, new StandardBufferedConfig(2))
+                .test();
+
+                ref1.get().onSubscribe(new BooleanSubscription());
+                ref1.get().onNext(1);
+                ref2.get().onSubscribe(new BooleanSubscription());
+
+                TestHelper.race(() -> ref1.get().onError(ex1), () -> ref2.get().onError(ex2));
+
+                ts.assertError(RuntimeException.class);
+                errors.clear();
+            }
+        });
+    }
+}

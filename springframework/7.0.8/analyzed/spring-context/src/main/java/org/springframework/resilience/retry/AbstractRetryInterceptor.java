@@ -43,16 +43,8 @@ import org.springframework.core.retry.RetryTemplate;
 import org.springframework.core.retry.Retryable;
 import org.springframework.util.ClassUtils;
 
-/* ===== [OCA 中文解析] =====
-class AbstractRetryInterceptor — 意图说明
-
-拦截器：调用链中的前置/后置逻辑；源文件: `spring-context/src/main/java/org/springframework/resilience/retry/AbstractRetryInterceptor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Abstract retry interceptor implementation, adapting a given
- * retry specification to either {@link RetryTemplate} or Reactor.
+ * 抽象重试拦截器实现，将给定的重试规范适配为 {@link RetryTemplate} 或 Reactor。
  *
  * @author Juergen Hoeller
  * @since 7.0
@@ -63,12 +55,10 @@ class AbstractRetryInterceptor — 意图说明
  */
 public abstract class AbstractRetryInterceptor implements MethodInterceptor, ApplicationEventPublisherAware {
 
-	// [OCA] 字段 `logger`：类成员状态。
 	private static final Log logger = LogFactory.getLog(AbstractRetryInterceptor.class);
 
-	// [OCA] 字段 `REACTIVE_STREAMS_PRESENT`：类成员状态。
 	/**
-	 * Reactive Streams API present on the classpath?
+	 * 类路径上是否存在 Reactive Streams API？
 	 */
 	private static final boolean REACTIVE_STREAMS_PRESENT = ClassUtils.isPresent(
 			"org.reactivestreams.Publisher", AbstractRetryInterceptor.class.getClassLoader());
@@ -168,23 +158,16 @@ public abstract class AbstractRetryInterceptor implements MethodInterceptor, App
 	}
 
 	/**
-	 * Determine the retry specification for the given method on the given target.
-	 * @param method the currently executing method
-	 * @param targetClass the class of the current target object
-	 * @return the retry specification as a {@link MethodRetrySpec}
+	 * 确定给定目标上给定方法的重试规范。
+	 * @param method 当前执行的方法
+	 * @param targetClass 当前目标对象的类
+	 * @return 以 {@link MethodRetrySpec} 表示的重试规范
 	 */
 	protected abstract @Nullable MethodRetrySpec getRetrySpec(Method method, Class<?> targetClass);
 
 
-	/* ===== [OCA 中文解析] =====
-class ReactorDelegate — 意图说明
-
-class `ReactorDelegate`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/resilience/retry/AbstractRetryInterceptor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Inner class to avoid a hard dependency on Reactive Streams and Reactor at runtime.
+	 * 内部类，避免在运行时硬依赖 Reactive Streams 与 Reactor。
 	 */
 	private class ReactorDelegate {
 

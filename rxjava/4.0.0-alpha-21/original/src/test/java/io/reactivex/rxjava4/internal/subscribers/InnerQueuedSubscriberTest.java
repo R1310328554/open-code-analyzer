@@ -1,0 +1,71 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.subscribers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.*;
+import java.util.concurrent.Flow.Subscription;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.RxJavaTest;
+
+public class InnerQueuedSubscriberTest extends RxJavaTest {
+
+    @Test
+    public void requestInBatches() {
+        var support = new InnerQueuedSubscriberSupport<Integer>() /* NFI */ {
+            @Override
+            public void innerNext(InnerQueuedSubscriber<Integer> inner, Integer value) {
+            }
+
+            @Override
+            public void innerError(InnerQueuedSubscriber<Integer> inner, Throwable e) {
+            }
+
+            @Override
+            public void innerComplete(InnerQueuedSubscriber<Integer> inner) {
+            }
+
+            @Override
+            public void drain() {
+            }
+        };
+
+        InnerQueuedSubscriber<Integer> inner = new InnerQueuedSubscriber<>(support, 4);
+
+        final List<Long> requests = new ArrayList<>();
+
+        inner.onSubscribe(new Subscription() /* NFI */ {
+            @Override
+            public void request(long n) {
+                requests.add(n);
+            }
+
+            @Override
+            public void cancel() {
+                // ignore
+            }
+        });
+
+        inner.request(1);
+        inner.request(1);
+        inner.request(1);
+        inner.request(1);
+        inner.request(1);
+
+        assertEquals(Arrays.asList(4L, 3L), requests);
+    }
+}
