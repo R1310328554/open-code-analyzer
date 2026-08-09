@@ -43,8 +43,10 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * 
- * Retransform Classes.
+ * {@code retransform} 命令：注册持久 ClassFileTransformer，在 retransform 时用外部 class 替换字节码。
+ * <p>
+ * 支持列出/删除条目（{@code -l/-d/--deleteAll}）、按 classPattern 触发、
+ * 或加载多个 class 文件；后注册条目优先匹配（倒序遍历）。
  *
  * @author hengyunabc 2021-01-05
  * @see java.lang.instrument.Instrumentation#retransformClasses(Class...)
@@ -64,7 +66,9 @@ public class RetransformCommand extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(RetransformCommand.class);
     private static final int MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+    /** 全局 retransform 条目列表，按 id 排序 */
     private static volatile List<RetransformEntry> retransformEntries = new ArrayList<RetransformEntry>();
+    /** 懒加载的单例 Transformer，注册到 TransformerManager */
     private static volatile ClassFileTransformer transformer = null;
     
     private String hashCode;
@@ -131,6 +135,7 @@ public class RetransformCommand extends AnnotatedCommand {
         this.limit = limit;
     }
 
+    /** 双重检查锁：向 TransformerManager 注册 RetransformClassFileTransformer */
     private static void initTransformer() {
         if (transformer != null) {
             return;
@@ -145,6 +150,7 @@ public class RetransformCommand extends AnnotatedCommand {
         }
     }
 
+    /** 处理 list/delete/retransform-by-pattern 或加载 class 文件并 retransform */
     @Override
     public void process(CommandProcess process) {
         initTransformer();
@@ -447,6 +453,7 @@ public class RetransformCommand extends AnnotatedCommand {
         retransformEntries = new ArrayList<RetransformEntry>();
     }
 
+    /** 在 retransform 回调中倒序匹配条目，命中则返回替换字节码并递增 transformCount */
     static class RetransformClassFileTransformer implements ClassFileTransformer {
         @Override
         public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,

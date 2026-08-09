@@ -34,6 +34,11 @@ import java.util.Collection;
 import java.util.regex.Pattern;
 
 /**
+ * {@code jad} 反编译命令：将已加载类字节码 dump 后由 CFR 反编译为 Java 源码。
+ * <p>
+ * 可指定方法名仅反编译单个方法；{@code --source-only} 只输出源码；
+ * 内嵌类通过 {@code Outer$*} 模式一并 dump。
+ *
  * @author diecui1202 on 15/11/24.
  * @author hengyunabc 2018-11-16
  */
@@ -60,9 +65,7 @@ public class JadCommand extends AnnotatedCommand {
     private boolean lineNumber;
     private String directory;
 
-    /**
-     * jad output source code only
-     */
+    /** 为 true 时仅输出反编译源码，省略类元信息与 RowAffect */
     private boolean sourceOnly = false;
 
     @Argument(argName = "class-pattern", index = 0)
@@ -121,6 +124,7 @@ public class JadCommand extends AnnotatedCommand {
         this.directory = directory;
     }
 
+    /** 搜索目标类 → dump 字节码 → CFR 反编译，多匹配时提示加 -c */
     @Override
     public void process(CommandProcess process) {
         if (directory != null && !FileUtils.isDirectoryOrNotExist(directory)) {
@@ -174,6 +178,7 @@ public class JadCommand extends AnnotatedCommand {
         }
     }
 
+    /** dump 主类及内部类字节码，调用 Decompiler 反编译并清理空注释块 */
     private ExitStatus processExactMatch(CommandProcess process, RowAffect affect, Instrumentation inst, Set<Class<?>> matchedClasses, Set<Class<?>> withInnerClasses) {
         Class<?> c = matchedClasses.iterator().next();
         Set<Class<?>> allClasses = new HashSet<>(withInnerClasses);

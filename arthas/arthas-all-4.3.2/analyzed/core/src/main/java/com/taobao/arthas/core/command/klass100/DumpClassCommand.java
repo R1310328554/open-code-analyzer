@@ -34,7 +34,10 @@ import java.util.Collection;
 
 
 /**
- * Dump class byte array
+ * {@code dump} 命令：将 JVM 中已加载类的字节码 dump 到磁盘。
+ * <p>
+ * 通过 {@link ClassDumpTransformer} 触发 retransform 拦截字节码写文件；
+ * 匹配类过多时提示缩小范围或使用 {@code -c} 指定 ClassLoader。
  */
 @Name("dump")
 @Summary("Dump class byte array from JVM")
@@ -94,6 +97,7 @@ public class DumpClassCommand extends AnnotatedCommand {
         this.limit = limit;
     }
 
+    /** 搜索匹配类，超 limit 则仅列出候选；否则 retransform 并返回 dump 路径 */
     @Override
     public void process(CommandProcess process) {
         try {
@@ -181,6 +185,7 @@ public class DumpClassCommand extends AnnotatedCommand {
         return ExitStatus.failure(-1, "No class found for: " + classPattern);
     }
 
+    /** 注册 ClassDumpTransformer 并对目标类集合执行 retransform */
     private Map<Class<?>, File> dump(Instrumentation inst, Set<Class<?>> classes) throws UnmodifiableClassException {
         ClassDumpTransformer transformer = null;
         if (directory != null) {

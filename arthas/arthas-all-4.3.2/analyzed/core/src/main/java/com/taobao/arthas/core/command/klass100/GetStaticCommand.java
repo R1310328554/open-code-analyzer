@@ -36,6 +36,10 @@ import java.util.Set;
 import java.util.Collection;
 
 /**
+ * {@code getstatic} 命令：读取匹配类的静态字段值，可选 OGNL 表达式二次加工。
+ * <p>
+ * 类名与字段名支持通配或 {@code -E} 正则；多 ClassLoader 同名类时需 {@code -c} 消歧。
+ *
  * @author diecui1202 on 2017/9/27.
  */
 
@@ -99,6 +103,7 @@ public class GetStaticCommand extends AnnotatedCommand {
         this.expand = expand;
     }
 
+    /** 定位唯一目标类后遍历 static 字段，按模式匹配并反射取值 */
     @Override
     public void process(CommandProcess process) {
         RowAffect affect = new RowAffect();
@@ -143,6 +148,7 @@ public class GetStaticCommand extends AnnotatedCommand {
         }
     }
 
+    /** 对唯一匹配类扫描声明的 static 字段，支持 express 对字段值做 OGNL 变换 */
     private ExitStatus processExactMatch(CommandProcess process, RowAffect affect, Instrumentation inst,
                                    Set<Class<?>> matchedClasses) {
         Matcher<String> fieldNameMatcher = fieldNameMatcher();

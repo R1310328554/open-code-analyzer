@@ -40,7 +40,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 按 ClassLoader 维度统计 metaspace / class metadata 内存。
+ * 按 ClassLoader 维度统计 Metaspace / Class Metadata 内存占用（基于 JFR {@code jdk.ClassLoaderStatistics}）。
+ * <p>
+ * 采样前通过自定义 JFR 事件 {@link MappingEvent} 建立 JFR loaderId 与 Arthas hash 的映射；
+ * 无法直接关联时按 type + loadedClassCount 做 fallback 推断，verbose 模式展示更多列。
  *
  * @author Codex 2026-05-08
  */
@@ -108,6 +111,7 @@ public class ClassLoaderMetaspaceCommand extends AnnotatedCommand {
         this.verbose = verbose;
     }
 
+    /** 解析 duration/period，启动 JFR 采样并输出按 chunkSize 排序的 metaspace 行 */
     @Override
     public void process(CommandProcess process) {
         process.interruptHandler(new ClassLoaderMetaspaceInterruptHandler(this));
@@ -149,6 +153,7 @@ public class ClassLoaderMetaspaceCommand extends AnnotatedCommand {
         }
     }
 
+    /** 开启 JFR 录制、发射 Mapping 事件、等待采样窗口后解析 stats 并构建输出行 */
     private List<Row> collect(Instrumentation instrumentation, long durationMillis, long periodMillis)
             throws Exception {
         Path output = Files.createTempFile("arthas-classloader-metaspace-", ".jfr");
@@ -204,6 +209,7 @@ public class ClassLoaderMetaspaceCommand extends AnnotatedCommand {
         }
     }
 
+    /** 为每个非 Bootstrap ClassLoader 选取 anchor 类并 commit MappingEvent（须覆盖全部 loader 供 fallback） */
     private MappingSummary emitMappings(Instrumentation instrumentation) {
         Map<ClassLoader, Class<?>> anchorClasses = new IdentityHashMap<ClassLoader, Class<?>>();
         Map<ClassLoader, Long> loadedClassCountByLoader = new IdentityHashMap<ClassLoader, Long>();
@@ -305,6 +311,7 @@ public class ClassLoaderMetaspaceCommand extends AnnotatedCommand {
                 duplicateStatsRowCount);
     }
 
+    /** 合并 JFR stats 与 Mapping，应用 hash/classLoaderClass 过滤并按 chunkSize 排序 */
     private BuildResult buildRows(RecordingData data) {
         BuildResult result = new BuildResult();
         for (StatsRow stats : data.statsRows) {

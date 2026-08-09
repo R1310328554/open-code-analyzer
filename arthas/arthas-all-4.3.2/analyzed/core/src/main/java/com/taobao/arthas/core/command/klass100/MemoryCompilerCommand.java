@@ -31,9 +31,12 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
+ * {@code mc} 内存编译器：读取磁盘上的 {@code .java} 源文件，在指定 ClassLoader 上下文中编译为字节码。
+ * <p>
+ * 使用 {@link com.taobao.arthas.compiler.DynamicCompiler} 在内存生成 class，
+ * 默认写入当前工作目录或 {@code -d} 指定目录。
  *
  * @author hengyunabc 2019-02-05
- *
  */
 @Name("mc")
 @Summary("Memory compiler, compiles java files into bytecode and class files in memory.")
@@ -81,6 +84,7 @@ public class MemoryCompilerCommand extends AnnotatedCommand {
         this.directory = directory;
     }
 
+    /** 解析 ClassLoader、读取源文件、编译并写出 .class 文件列表 */
     @Override
     public void process(final CommandProcess process) {
         RowAffect affect = new RowAffect();

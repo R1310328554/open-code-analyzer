@@ -30,7 +30,9 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * 展示类信息
+ * {@code sc} 搜索类命令：按模式匹配 JVM 已加载类，可选输出详情、字段与 ClassLoader 过滤。
+ * <p>
+ * {@code -d} 详情模式受 {@code -n} 限制最大条数；非详情模式分页输出类名（每页 256）。
  *
  * @author vlinux
  */
@@ -108,6 +110,7 @@ public class SearchClassCommand extends AnnotatedCommand {
         this.classLoaderToString = classLoaderToString;
     }
 
+    /** 解析 ClassLoader 过滤条件，搜索并排序匹配类后按详情/摘要模式输出 */
     @Override
     public void process(final CommandProcess process) {
         // TODO: null check

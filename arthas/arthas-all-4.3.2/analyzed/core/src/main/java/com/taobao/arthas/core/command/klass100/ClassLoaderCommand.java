@@ -43,6 +43,12 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
+/**
+ * ClassLoader 诊断命令：统计/列举/树形展示加载器，查询 URL、资源、已加载类及 jar 与类的对应关系。
+ * <p>
+ * 支持按 hash（{@code -c}）或类名（{@code --classLoaderClass}）定位单个加载器；
+ * {@code --url-classes} 模式通过 ProtectionDomain CodeSource 反查类来源 jar。
+ */
 @Name("classloader")
 @Summary("Show classloader info")
 @Description(Constants.EXAMPLE +
@@ -62,6 +68,7 @@ import java.util.regex.Pattern;
 public class ClassLoaderCommand extends AnnotatedCommand {
 
     private static Logger logger = LoggerFactory.getLogger(ClassLoaderCommand.class);
+    /** --url-classes -d 模式下每个 jar 默认最多展示的类名数量 */
     private static final int DEFAULT_URL_CLASSES_LIMIT = 100;
     private static final String UNKNOWN_CODE_SOURCE = "<unknown>";
     private boolean isTree = false;
@@ -175,6 +182,7 @@ public class ClassLoaderCommand extends AnnotatedCommand {
         this.classFilter = StringUtils.normalizeClassName(classFilter);
     }
 
+    /** 按选项组合分发到统计、树形、URL 统计、资源查找、加载类或 url-classes 等子流程 */
     @Override
     public void process(CommandProcess process) {
         // ctrl-C support
@@ -267,6 +275,7 @@ public class ClassLoaderCommand extends AnnotatedCommand {
      * @param process
      * @param inst
      */
+    /** 按 ClassLoader 类型聚合实例数与已加载类总数，按 loadedCount 降序输出 */
     private void processClassLoaderStats(CommandProcess process, Instrumentation inst) {
         RowAffect affect = new RowAffect();
         List<ClassLoaderInfo> classLoaderInfos = getAllClassLoaderInfo(inst);
@@ -475,6 +484,7 @@ public class ClassLoaderCommand extends AnnotatedCommand {
         }
     }
 
+    /** 扫描目标 ClassLoader 下已加载类，按 CodeSource URL 分组统计并可过滤 jar/类名 */
     private void processUrlClasses(CommandProcess process, Instrumentation inst, ClassLoader targetClassLoader) {
         if (!urlClassesDetail && urlClassesLimit != DEFAULT_URL_CLASSES_LIMIT) {
             process.end(-1, "Option -n/--limit only works with --url-classes -d.");
@@ -728,6 +738,7 @@ public class ClassLoaderCommand extends AnnotatedCommand {
         return classLoaderSet;
     }
 
+    /** 遍历全部已加载类统计每个 ClassLoader 的 loadedClassCount，Bootstrap 单独计数 */
     private static List<ClassLoaderInfo> getAllClassLoaderInfo(Instrumentation inst, Filter... filters) {
         // 这里认为class.getClassLoader()返回是null的是由BootstrapClassLoader加载的，特殊处理
         ClassLoaderInfo bootstrapInfo = new ClassLoaderInfo(null);

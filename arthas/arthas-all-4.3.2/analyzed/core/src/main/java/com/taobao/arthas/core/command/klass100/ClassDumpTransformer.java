@@ -15,14 +15,22 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * 在 retransform 过程中拦截指定类字节码并落盘为 {@code .class} 文件的 Transformer。
+ * <p>
+ * 供 {@link DumpClassCommand}、{@link JadCommand} 等命令使用：{@link #transform} 返回 {@code null}
+ * 表示不修改字节码，仅 side-effect 写文件；目录结构按 ClassLoader 哈希与包路径组织。
+ *
  * @author beiwei30 on 25/11/2016.
  */
 class ClassDumpTransformer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory.getLogger(ClassDumpTransformer.class);
 
+    /** 需要 dump 的目标类集合 */
     private Set<Class<?>> classesToEnhance;
+    /** 已成功写入的类到文件路径映射 */
     private Map<Class<?>, File> dumpResult;
+    /** 默认 dump 根目录（Arthas 日志目录） */
     private File arthasLogHome;
 
     private File directory;
@@ -38,6 +46,7 @@ class ClassDumpTransformer implements ClassFileTransformer {
         this.directory = directory;
     }
 
+    /** 命中目标类时写盘，始终返回 null 保持原字节码不变 */
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
                             ProtectionDomain protectionDomain, byte[] classfileBuffer)
@@ -48,10 +57,12 @@ class ClassDumpTransformer implements ClassFileTransformer {
         return null;
     }
 
+    /** 返回本次 transform 周期内成功 dump 的结果 */
     public Map<Class<?>, File> getDumpResult() {
         return dumpResult;
     }
 
+    /** 解析 dump 目标目录：优先使用构造时指定的 directory，否则为日志目录下 classdump */
     public File dumpDir() {
         String classDumpDir = "classdump";
         final File dumpDir;

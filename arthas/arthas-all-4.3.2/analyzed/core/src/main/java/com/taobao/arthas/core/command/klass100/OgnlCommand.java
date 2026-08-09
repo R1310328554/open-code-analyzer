@@ -24,9 +24,12 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
+ * {@code ognl} 命令：在指定 ClassLoader 上下文中执行 OGNL 表达式并打印结果。
+ * <p>
+ * 默认使用 SystemClassLoader；{@code -x} 控制对象展开层级。
+ * 表达式可访问静态字段、调用静态方法（{@code @Class@method} 语法）。
  *
  * @author hengyunabc 2018-10-18
- *
  */
 @Name("ognl")
 @Summary("Execute ognl expression.")
@@ -70,6 +73,7 @@ public class OgnlCommand extends AnnotatedCommand {
         this.expand = expand;
     }
 
+    /** 解析 ClassLoader，通过 ExpressFactory 求值并封装 ObjectVO 输出 */
     @Override
     public void process(CommandProcess process) {
         Instrumentation inst = process.session().getInstrumentation();

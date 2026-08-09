@@ -7,17 +7,25 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
+ * 隐藏彩蛋命令 {@code july}：输出一段经字节数组编码的英文歌词文本。
+ * <p>
+ * 歌词内容刻意以十六进制字节形式存储，避免在源码中直接出现明文；
+ * 命令标记为 {@link com.taobao.middleware.cli.annotations.Hidden}，不在 help 中展示。
+ *
  * @author vlinux on 02/11/2016.
  */
 @Name("july")
 @Summary("don't ask why")
 @Hidden
 public class JulyCommand extends AnnotatedCommand {
+
+    /** 解码内置字节数组并写入终端后结束会话 */
     @Override
     public void process(CommandProcess process) {
         process.write(new String($$())).write("\n").end();
     }
 
+    /** 返回预置歌词的字节序列（ASCII），由 {@link #process} 转为字符串输出 */
     private static byte[] $$() {
         return new byte[]{
                 0x49, 0x20, 0x77, 0x69, 0x6c, 0x6c, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x6d, 0x61, 0x6b, 0x65, 0x20, 0x74, 0x68, 0x65,

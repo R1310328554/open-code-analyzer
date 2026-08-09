@@ -34,7 +34,9 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * 展示方法信息
+ * {@code sm} 搜索方法命令：在匹配类中列出构造器与方法，支持通配/正则与方法名过滤。
+ * <p>
+ * 空 method-pattern 默认为 {@code *} 或 {@code .*}；{@code -d} 输出修饰符、参数等详情。
  *
  * @author vlinux
  * @author hengyunabc 2019-02-13
@@ -101,6 +103,7 @@ public class SearchMethodCommand extends AnnotatedCommand {
         this.numberOfLimit = numberOfLimit;
     }
 
+    /** 搜索类集合，遍历 declared 构造器与方法并按模式过滤输出 */
     @Override
     public void process(CommandProcess process) {
         RowAffect affect = new RowAffect();
@@ -166,6 +169,7 @@ public class SearchMethodCommand extends AnnotatedCommand {
         process.end();
     }
 
+    /** 构造方法名匹配器；blank 时默认匹配全部方法 */
     private Matcher<String> methodNameMatcher() {
         // auto fix default methodPattern
         if (StringUtils.isBlank(methodPattern)) {

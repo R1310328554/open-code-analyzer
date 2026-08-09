@@ -30,7 +30,10 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * Redefine Classes.
+ * {@code redefine} 命令：用外部 {@code .class} 文件字节码热替换 JVM 中已加载类（一次性，不持久）。
+ * <p>
+ * 与 {@link RetransformCommand} 不同：redefine 直接替换类定义，无需注册 Transformer；
+ * 受 JVM 约束（不能增删方法/字段等），单文件上限 10MB。
  *
  * @author hengyunabc 2018-07-13
  * @see java.lang.instrument.Instrumentation#redefineClasses(ClassDefinition...)
@@ -69,6 +72,7 @@ public class RedefineCommand extends AnnotatedCommand {
         this.paths = paths;
     }
 
+    /** 读取 class 文件、按类名匹配已加载类并调用 Instrumentation.redefineClasses */
     @Override
     public void process(CommandProcess process) {
         RedefineModel redefineModel = new RedefineModel();
@@ -169,6 +173,7 @@ public class RedefineCommand extends AnnotatedCommand {
 
     }
 
+    /** 用 ASM ClassReader 从字节码解析内部类名并转为点分形式 */
     private static String readClassName(final byte[] bytes) {
         return new ClassReader(bytes).getClassName().replace("/", ".");
     }
