@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-# open-code-analyzer CLI 入口
-set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export PYTHONPATH="${ROOT}/framework${PYTHONPATH:+:$PYTHONPATH}"
-export PATH="${HOME}/.local/bin:${PATH}"
-exec python3 -m oca.cli "$@"

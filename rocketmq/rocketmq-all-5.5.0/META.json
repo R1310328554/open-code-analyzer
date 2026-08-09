@@ -1,7 +1,0 @@
-{
-  "project": "rocketmq",
-  "version": "rocketmq-all-5.5.0",
-  "git_ref": "rocketmq-all-5.5.0",
-  "repo_url": "https://github.com/apache/rocketmq",
-  "source": "release"
-}
