@@ -18,16 +18,23 @@ package com.alibaba.csp.sentinel.cluster.server.config;
 import com.alibaba.csp.sentinel.cluster.server.ServerConstants;
 
 /**
+ * 集群令牌服务端流控配置，定义全局 QPS 上限、滑动窗口参数与预占用比例等。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ServerFlowConfig {
 
+    /** 默认超出计数阈值。 */
     public static final double DEFAULT_EXCEED_COUNT = 1.0d;
+    /** 默认最大预占用比例。 */
     public static final double DEFAULT_MAX_OCCUPY_RATIO = 1.0d;
 
+    /** 默认统计窗口间隔（毫秒）。 */
     public static final int DEFAULT_INTERVAL_MS = 1000;
+    /** 默认滑动窗口桶数量。 */
     public static final int DEFAULT_SAMPLE_COUNT= 10;
+    /** 默认允许的最大 QPS。 */
     public static final double DEFAULT_MAX_ALLOWED_QPS= 30000;
 
     private final String namespace;

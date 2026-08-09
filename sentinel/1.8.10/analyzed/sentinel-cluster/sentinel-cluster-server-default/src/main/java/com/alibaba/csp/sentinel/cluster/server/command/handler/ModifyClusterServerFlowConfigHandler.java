@@ -29,6 +29,10 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 修改集群令牌服务端流控配置的命令处理器。
+ * <p>namespace 为空时加载全局流控配置；否则加载指定命名空间的流控配置。
+ * 配置经校验后写入 {@link com.alibaba.csp.sentinel.cluster.server.config.ClusterServerConfigManager}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
