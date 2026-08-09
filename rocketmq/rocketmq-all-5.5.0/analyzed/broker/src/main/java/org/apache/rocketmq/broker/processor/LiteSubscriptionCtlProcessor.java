@@ -37,18 +37,24 @@ import org.apache.rocketmq.remoting.protocol.body.LiteSubscriptionCtlRequestBody
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Lite 订阅控制处理器：处理客户端增量/全量订阅注册与注销，
+ * 维护 Lite topic 到 LMQ 的映射关系。
+ */
 public class LiteSubscriptionCtlProcessor implements NettyRequestProcessor {
     protected final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
 
     private final BrokerController brokerController;
     private final LiteSubscriptionRegistry liteSubscriptionRegistry;
 
+    /** @param brokerController Broker 控制器；@param liteSubscriptionRegistry Lite 订阅注册表 */
     public LiteSubscriptionCtlProcessor(BrokerController brokerController, LiteSubscriptionRegistry liteSubscriptionRegistry) {
         this.brokerController = brokerController;
         this.liteSubscriptionRegistry = liteSubscriptionRegistry;
     }
 
     @Override
+    /** 按 action 分发 PARTIAL/COMPLETE 的 ADD/REMOVE 订阅操作。 */
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         if (request.getBody() == null) {
             return RemotingCommand.createResponseCommand(ResponseCode.ILLEGAL_OPERATION,
@@ -113,12 +119,14 @@ public class LiteSubscriptionCtlProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 校验消费组是否允许消费，否则抛出 IllegalStateException。 */
     private void checkConsumeEnable(String group) {
         if (!LiteMetadataUtil.isConsumeEnable(group, brokerController)) {
             throw new IllegalStateException("Consumer group is not allowed to consume.");
         }
     }
 
+    /** 将 Lite topic 集合转换为 LMQ 全名集合。 */
     private Set<String> toLmqNameSet(LiteSubscriptionDTO liteSubscriptionDTO) {
         if (CollectionUtils.isEmpty(liteSubscriptionDTO.getLiteTopicSet())) {
             return Collections.emptySet();

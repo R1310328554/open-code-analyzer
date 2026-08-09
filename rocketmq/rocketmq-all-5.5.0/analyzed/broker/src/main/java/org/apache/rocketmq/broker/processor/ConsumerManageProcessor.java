@@ -47,10 +47,15 @@ import org.apache.rocketmq.remoting.rpc.RpcResponse;
 
 import static org.apache.rocketmq.remoting.protocol.RemotingCommand.buildErrorResponse;
 
+/**
+ * 消费管理处理器：查询消费组在线 client、更新/查询消费位点。
+ * 静态 topic 场景下负责逻辑队列到物理队列的位点映射与 RPC 转发。
+ */
 public class ConsumerManageProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
 
+    /** @param brokerController Broker 控制器 */
     public ConsumerManageProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
     }
@@ -76,6 +81,7 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 返回指定消费组下所有在线 clientId 列表。 */
     public RemotingCommand getConsumerListByGroup(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response =
@@ -110,6 +116,7 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 静态 topic 更新位点：将逻辑 offset 映射为物理 offset，必要时转发至目标 Broker。 */
     public RemotingCommand rewriteRequestForStaticTopic(final UpdateConsumerOffsetRequestHeader requestHeader,
         final TopicQueueMappingContext mappingContext) {
         try {
@@ -141,6 +148,7 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 提交消费位点；若 Broker 已执行 server-side reset 则忽略客户端更新。 */
     private RemotingCommand updateConsumerOffset(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
 
@@ -207,6 +215,7 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 静态 topic 查询位点：双读 leader/副本 Broker 并合并逻辑 offset。 */
     public RemotingCommand rewriteRequestForStaticTopic(QueryConsumerOffsetRequestHeader requestHeader,
         TopicQueueMappingContext mappingContext) {
         try {
@@ -283,6 +292,7 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 将物理 offset 反算为静态 topic 逻辑 offset 写入响应。 */
     public RemotingCommand rewriteResponseForStaticTopic(final QueryConsumerOffsetRequestHeader requestHeader,
         final QueryConsumerOffsetResponseHeader responseHeader,
         final TopicQueueMappingContext mappingContext, final int code) {
@@ -302,6 +312,7 @@ public class ConsumerManageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 查询消费位点；未找到时可按 setZeroIfNotFound 策略返回 0 或 NOT_FOUND。 */
     private RemotingCommand queryConsumerOffset(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response =

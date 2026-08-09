@@ -22,14 +22,22 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * POP 投递记录：序列化后写入 {@link PopConsumerKVStore}，用于可见性超时检查与重试调度。
+ * Key 由可见性超时时间戳 + groupId + topicId + queueId + offset 组成。
+ */
 public class PopConsumerRecord {
 
+    /** POP 重试 topic 版本标识。 */
     public enum RetryType {
 
+        /** 普通 topic，非重试。 */
         NORMAL_TOPIC(0),
 
+        /** 重试 topic V1 格式。 */
         RETRY_TOPIC_V1(1),
 
+        /** 重试 topic V2 格式。 */
         RETRY_TOPIC_V2(2);
 
         private final int code;
@@ -73,7 +81,7 @@ public class PopConsumerRecord {
     @JSONField(ordinal = 9)
     private boolean suspend;
 
-    // used for test and fastjson
+    // 供测试与 fastjson 反序列化使用
     public PopConsumerRecord() {
     }
 
@@ -101,10 +109,9 @@ public class PopConsumerRecord {
         return popTime + invisibleTime;
     }
 
-    /**
-     * Key: timestamp(8) + groupId + topicId + queueId + offset
-     */
+    /** Key 布局：可见性超时时间戳(8B) + groupId + topicId + queueId + offset */
     @JSONField(serialize = false)
+    /** 生成 RocksDB 存储键：以可见性超时时间为前缀便于范围扫描。 */
     public byte[] getKeyBytes() {
         int length = Long.BYTES + groupId.length() + 1 + topicId.length() + 1 + Integer.BYTES + 1 + Long.BYTES;
         byte[] bytes = new byte[length];
@@ -118,15 +125,18 @@ public class PopConsumerRecord {
     }
 
     @JSONField(serialize = false)
+    /** 是否为重试 topic 上的 POP 记录。 */
     public boolean isRetry() {
         return retryFlag != 0;
     }
 
     @JSONField(serialize = false)
+    /** 将记录序列化为 JSON 字节数组作为 value。 */
     public byte[] getValueBytes() {
         return JSON.toJSONBytes(this);
     }
 
+    /** 从 JSON 字节反序列化 POP 记录。 */
     public static PopConsumerRecord decode(byte[] body) {
         return JSON.parseObject(body, PopConsumerRecord.class);
     }

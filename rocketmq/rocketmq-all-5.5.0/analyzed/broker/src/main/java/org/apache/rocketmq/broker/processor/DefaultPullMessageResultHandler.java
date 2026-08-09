@@ -65,16 +65,22 @@ import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESPONSE_CODE;
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESULT;
 
+/**
+ * 默认 Pull 结果处理器：组装响应头、执行 Hook、更新广播位点，
+ * 并按堆内存或 PageCache 零拷贝方式向客户端传输消息。
+ */
 public class DefaultPullMessageResultHandler implements PullMessageResultHandler {
 
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     protected final BrokerController brokerController;
 
+    /** @param brokerController Broker 控制器 */
     public DefaultPullMessageResultHandler(final BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
     @Override
+    /** 处理 Pull 取消息结果：统计、长轮询挂起、offset 校正与消息传输。 */
     public RemotingCommand handle(final GetMessageResult getMessageResult,
         final RemotingCommand request,
         final PullMessageRequestHeader requestHeader,
@@ -223,6 +229,7 @@ public class DefaultPullMessageResultHandler implements PullMessageResultHandler
         return response;
     }
 
+    /** 网络流控开启时检查 channel 是否可写，不可写则丢弃本次 Pull 响应。 */
     private boolean channelIsWritable(Channel channel, PullMessageRequestHeader requestHeader) {
         if (this.brokerController.getBrokerConfig().isEnableNetWorkFlowControl()) {
             if (!channel.isWritable()) {
@@ -234,6 +241,7 @@ public class DefaultPullMessageResultHandler implements PullMessageResultHandler
         return true;
     }
 
+    /** 堆模式：合并消息 buffer 并记录磁盘落后时间。 */
     protected byte[] readGetMessageResult(final GetMessageResult getMessageResult, final String group,
         final String topic,
         final int queueId) {
@@ -269,6 +277,7 @@ public class DefaultPullMessageResultHandler implements PullMessageResultHandler
         return byteBuffer.array();
     }
 
+    /** 将 offset 漂移事件写入系统 topic 供客户端感知。 */
     protected void generateOffsetMovedEvent(final OffsetMovedEvent event) {
         try {
             MessageExtBrokerInner msgInner = new MessageExtBrokerInner();

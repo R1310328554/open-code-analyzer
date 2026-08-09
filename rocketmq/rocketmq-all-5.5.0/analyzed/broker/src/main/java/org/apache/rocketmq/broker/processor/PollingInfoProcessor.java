@@ -37,10 +37,15 @@ import org.apache.rocketmq.remoting.protocol.header.PollingInfoRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.PollingInfoResponseHeader;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 长轮询信息查询处理器：返回指定 topic@group@queue 上
+ * 当前挂起的 POP 长轮询请求数量。
+ */
 public class PollingInfoProcessor implements NettyRequestProcessor {
     private static final Logger POP_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
     private final BrokerController brokerController;
 
+    /** @param brokerController Broker 控制器 */
     public PollingInfoProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
     }
@@ -56,6 +61,7 @@ public class PollingInfoProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 校验权限后查询 pollingMap 中挂起请求数并写入响应。 */
     private RemotingCommand processRequest(final Channel channel, RemotingCommand request)
         throws RemotingCommandException {
         RemotingCommand response = RemotingCommand.createResponseCommand(PollingInfoResponseHeader.class);

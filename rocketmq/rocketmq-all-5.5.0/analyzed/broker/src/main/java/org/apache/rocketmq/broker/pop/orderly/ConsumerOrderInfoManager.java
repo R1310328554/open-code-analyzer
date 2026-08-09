@@ -22,135 +22,111 @@ import org.apache.rocketmq.common.OrderedConsumptionLevel;
 import org.apache.rocketmq.store.GetMessageResult;
 
 /**
- *
- * Ordered Consumption Controller Interface
- * This is the top-level interface that encapsulates complete ordered consumption management functionality,
- * supporting different concurrency strategy implementations
+ * 顺序消费控制器顶层接口：封装 POP 顺序消费的完整生命周期管理，
+ * 支持不同并发策略实现。
  * <p>
- * Design Goals:
- * 1. Support queue-level ordered consumption (existing implementation)
- * 2. Support message group-level ordered consumption (improve concurrency)
- * 3. Support custom ordered consumption strategies
+ * 设计目标：
+ * 1. 队列级顺序消费（现有实现）
+ * 2. 消息组级顺序消费（提升并发度）
+ * 3. 可插拔的自定义顺序消费策略
  * </p>
  */
 public interface ConsumerOrderInfoManager {
 
     /**
-     * Update the reception status of message list
-     * Called by handleGetMessageResult when consumer POPs messages, used to record message status and build consumption information
+     * POP 成功后更新消息接收状态，记录各 offset 的可见性信息并构建 orderInfo。
      *
-     * @param attemptId          Distinguish different pop requests
-     * @param isRetry            Whether it is a retry topic
-     * @param topic              Topic name
-     * @param group              Consumer group name
-     * @param queueId            Queue ID
-     * @param popTime            Time when messages are popped
-     * @param invisibleTime      Message invisible time
-     * @param msgQueueOffsetList List of message queue offsets
-     * @param orderInfoBuilder   String builder for constructing order information
-     * @param getMessageResult   Return new result
+     * @param attemptId          区分不同 POP 请求
+     * @param isRetry            是否为重试 topic
+     * @param topic              Topic 名
+     * @param group              消费组名
+     * @param queueId            队列 ID
+     * @param popTime            POP 时刻
+     * @param invisibleTime      消息不可见时长
+     * @param msgQueueOffsetList 消息队列 offset 列表
+     * @param orderInfoBuilder   构建 orderInfo 的 StringBuilder
+     * @param getMessageResult   返回给客户端的消息结果
      */
     void update(String attemptId, boolean isRetry, String topic, String group, int queueId,
         long popTime, long invisibleTime, List<Long> msgQueueOffsetList,
         StringBuilder orderInfoBuilder, GetMessageResult getMessageResult);
 
     /**
-     * Check whether the current POP request needs to be blocked
-     * Used to ensure ordered consumption of ordered messages
-     * Called when consumer POPs messages
+     * 检查当前 POP 是否应被阻塞，以保证顺序 topic 的严格有序消费。
      *
-     * @param attemptId     Attempt ID
-     * @param topic         Topic name
-     * @param group         Consumer group name
-     * @param queueId       Queue ID
-     * @param invisibleTime Invisible time
-     * @return true indicates blocking is needed, false indicates can proceed
+     * @param attemptId     请求 attemptId
+     * @param topic         Topic 名
+     * @param group         消费组名
+     * @param queueId       队列 ID
+     * @param invisibleTime 不可见时长
+     * @return true 表示需阻塞，false 表示可继续 POP
      */
     boolean checkBlock(String attemptId, String topic, String group, int queueId, long invisibleTime);
 
     /**
-     * Remove the specified topic and group
-     * Usually called during topic deletion
+     * 删除指定 topic@group 的顺序消费状态（topic 删除时调用）。
      *
-     * @param topic Topic name
-     * @param group Consumer group name
+     * @param topic Topic 名
+     * @param group 消费组名
      */
     void remove(String topic, String group);
 
-    /**
-     * Get order info count
-     */
+    /** 返回当前维护的 orderInfo 条目数。 */
     int getOrderInfoCount();
 
     /**
-     * Commit message and calculate next consumption offset
-     * Called when consumer ACKs messages
+     * ACK 时提交消费进度并计算下一可消费 offset。
      *
-     * @param topic       Topic name
-     * @param group       Consumer group name
-     * @param queueId     Queue ID
-     * @param queueOffset Message queue offset
-     * @param popTime     Pop time, used for validation
-     * @return -1: invalid, -2: no need to commit, >=0: offset that needs to be committed (indicates messages below this offset have been consumed)
+     * @param topic       Topic 名
+     * @param group       消费组名
+     * @param queueId     队列 ID
+     * @param queueOffset 消息队列 offset
+     * @param popTime     POP 时刻，用于校验
+     * @return -1 无效；-2 无需提交；>=0 应提交的 offset
      */
     long commitAndNext(String topic, String group, int queueId, long queueOffset, long popTime);
 
     /**
-     * Update the next visible time of message
-     * Used for delayed message re-consumption
+     * 更新消息下次可见时间（延迟重消费场景）。
      *
-     * @param topic           Topic name
-     * @param group           Consumer group name
-     * @param queueId         Queue ID
-     * @param queueOffset     Message offset
-     * @param popTime         Pop time, used for validation
-     * @param nextVisibleTime Next visible time
+     * @param topic           Topic 名
+     * @param group           消费组名
+     * @param queueId         队列 ID
+     * @param queueOffset     消息 offset
+     * @param popTime         POP 时刻
+     * @param nextVisibleTime 下次可见时间戳
      */
     void updateNextVisibleTime(String topic, String group, int queueId, long queueOffset,
         long popTime, long nextVisibleTime);
 
     /**
-     * Clear the blocking status of specified queue
-     * Usually called during consumer rebalancing or queue reassignment
+     * 清除指定队列的阻塞状态（重平衡或队列迁移时调用）。
      *
-     * @param topic   Topic name
-     * @param group   Consumer group name
-     * @param queueId Queue ID
+     * @param topic   Topic 名
+     * @param group   消费组名
+     * @param queueId 队列 ID
      */
     void clearBlock(String topic, String group, int queueId);
 
     /**
-     * Get ordered consumption level
-     * Used to distinguish different implementation strategies
+     * 返回顺序消费粒度（QUEUE、MESSAGE_GROUP 等）。
      *
-     * @return Ordered consumption level, such as: QUEUE, MESSAGE_GROUP, etc.
+     * @return 顺序消费级别枚举
      */
     OrderedConsumptionLevel getOrderedConsumptionLevel();
 
-    /**
-     * Start the controller
-     * Initialize necessary resources, such as timers, thread pools, etc.
-     */
+    /** 启动控制器，初始化定时器、线程池等资源。 */
     void start();
 
-    /**
-     * Shutdown the controller
-     * Release resources, clean up scheduled tasks, etc.
-     */
+    /** 关闭控制器并释放资源。 */
     void shutdown();
 
-    /**
-     * Persist the controller
-     * Persist the controller's data
-     */
+    /** 持久化顺序消费状态到磁盘。 */
     void persist();
 
     boolean load();
 
-    /**
-     * Get available message result
-     * Used to retrieve messages from cache
-     */
+    /** 从缓存中获取可立即 POP 的消息结果。 */
     CompletableFuture<GetMessageResult> getAvailableMessageResult(String attemptId, long popTime, long invisibleTime,
         String groupId,
         String topicId, int queueId, int batchSize, StringBuilder orderCountInfoBuilder);

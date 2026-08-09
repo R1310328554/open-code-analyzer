@@ -45,17 +45,20 @@ import org.apache.rocketmq.store.config.BrokerRole;
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_TOPIC;
 
 /**
- * EndTransaction processor: process commit and rollback message
+ * 事务结束处理器：处理 Producer 提交/回滚半消息，
+ * 校验 prepare 消息后将最终消息写入 CommitLog 或删除半消息。
  */
 public class EndTransactionProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
     private final BrokerController brokerController;
 
+    /** @param brokerController Broker 控制器 */
     public EndTransactionProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
     @Override
+    /** 处理 END_TRANSACTION 请求：slave 拒绝；区分事务回查与 Producer 主动结束。 */
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws
         RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -189,6 +192,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 根据半消息 topic 类型从 CommitLog 或 RocksDB 删除 prepare 消息。 */
     private void deletePrepareMessage(OperationResult result) {
         if (null == result || null == result.getPrepareMessage()) {
             LOGGER.error("deletePrepareMessage param error, result is null or prepareMessage is null");
@@ -210,12 +214,11 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
     }
 
     /**
-     * If you specify a custom first check time CheckImmunityTimeInSeconds,
-     * And the commit/rollback request whose validity period exceeds CheckImmunityTimeInSeconds and is not checked back will be processed and failed
-     * returns ILLEGAL_OPERATION 604 error
-     * @param requestHeader
-     * @param messageExt
-     * @return
+     * 若消息设置了 CheckImmunityTimeInSeconds 且 Producer 主动 commit/rollback
+     * 超出免疫期且尚未回查，则拒绝并返回 ILLEGAL_OPERATION。
+     * @param requestHeader 事务结束请求头
+     * @param messageExt prepare 消息
+     * @return true 表示应拒绝本次操作
      */
     public boolean rejectCommitOrRollback(EndTransactionRequestHeader requestHeader, MessageExt messageExt) {
         if (requestHeader.getFromTransactionCheck()) {
@@ -238,6 +241,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 校验 prepare 消息的 producerGroup、tranStateTableOffset 与 commitLogOffset。 */
     private RemotingCommand checkPrepareMessage(MessageExt msgExt, EndTransactionRequestHeader requestHeader) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
         if (msgExt != null) {
@@ -268,6 +272,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 将半消息还原为最终消息（恢复真实 topic/queueId 并清理临时属性）。 */
     private MessageExtBrokerInner endMessageTransaction(MessageExt msgExt) {
         MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
         msgInner.setTopic(msgExt.getUserProperty(MessageConst.PROPERTY_REAL_TOPIC));
@@ -300,6 +305,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
         return msgInner;
     }
 
+    /** 将最终消息写入 CommitLog 并映射 PutMessageStatus 到响应码。 */
     private RemotingCommand sendFinalMessage(MessageExtBrokerInner msgInner) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
         final PutMessageResult putMessageResult = this.brokerController.getMessageStore().putMessage(msgInner);
