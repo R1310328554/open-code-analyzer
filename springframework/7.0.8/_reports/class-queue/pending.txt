@@ -4,9 +4,6 @@ spring-context/src/main/java/org/springframework/context/annotation/Configuratio
 spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassEnhancer.java
 spring-context/src/main/java/org/springframework/context/event/AbstractApplicationEventMulticaster.java
 spring-context/src/main/java/org/springframework/context/event/ApplicationListenerMethodAdapter.java
-spring-context/src/main/java/org/springframework/context/support/AbstractApplicationContext.java
-spring-context/src/main/java/org/springframework/context/support/DefaultLifecycleProcessor.java
-spring-context/src/main/java/org/springframework/context/support/GenericApplicationContext.java
 spring-context/src/main/java/org/springframework/context/support/PostProcessorRegistrationDelegate.java
 spring-context/src/main/java/org/springframework/context/support/ReloadableResourceBundleMessageSource.java
 spring-context/src/main/java/org/springframework/format/datetime/DateFormatterRegistrar.java

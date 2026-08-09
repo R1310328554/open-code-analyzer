@@ -556,3 +556,6 @@ spring-context/src/main/java/org/springframework/context/support/ConversionServi
 spring-context/src/main/java/org/springframework/context/support/DefaultMessageSourceResolvable.java
 spring-context/src/main/java/org/springframework/context/support/DelegatingMessageSource.java
 spring-context/src/main/java/org/springframework/context/support/EmbeddedValueResolutionSupport.java
+spring-context/src/main/java/org/springframework/context/support/AbstractApplicationContext.java
+spring-context/src/main/java/org/springframework/context/support/DefaultLifecycleProcessor.java
+spring-context/src/main/java/org/springframework/context/support/GenericApplicationContext.java
