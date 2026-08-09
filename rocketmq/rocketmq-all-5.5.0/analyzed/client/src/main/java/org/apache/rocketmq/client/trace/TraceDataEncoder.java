@@ -26,15 +26,16 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Encode/decode for Trace Data
+ * 轨迹数据编解码器：在分隔符分隔的字符串与 {@link TraceContext} 列表之间互转。
+ * 支持发布、消费前/后、事务结束、撤回等多种轨迹类型的序列化与兼容旧版格式。
  */
 public class TraceDataEncoder {
 
     /**
-     * Resolving traceContext list From trace data String
+     * 从轨迹数据字符串解析 {@link TraceContext} 列表。
      *
-     * @param traceData
-     * @return
+     * @param traceData 以 {@link TraceConstants#FIELD_SPLITOR} 分隔的轨迹载荷
+     * @return 解析出的轨迹上下文列表，空输入返回空列表
      */
     public static List<TraceContext> decoderFromTraceDataString(String traceData) {
         List<TraceContext> resList = new ArrayList<>();
@@ -67,7 +68,7 @@ public class TraceDataEncoder {
                     pubContext.setSuccess(Boolean.parseBoolean(line[13]));
                 }
 
-                // compatible with the old version
+                // 兼容旧版轨迹格式（含 clientHost 等扩展字段）
                 if (line.length >= 15) {
                     bean.setOffsetMsgId(line[12]);
                     pubContext.setSuccess(Boolean.parseBoolean(line[13]));
@@ -103,10 +104,10 @@ public class TraceDataEncoder {
                 subAfterContext.setCostTime(Integer.parseInt(line[3]));
                 subAfterContext.setSuccess(Boolean.parseBoolean(line[4]));
                 if (line.length >= 7) {
-                    // add the context type
+                    // 追加消费返回类型编码
                     subAfterContext.setContextCode(Integer.parseInt(line[6]));
                 }
-                // compatible with the old version
+                // 兼容旧版 SubAfter 格式（含 timeStamp 与 groupName）
                 if (line.length >= 9) {
                     subAfterContext.setTimeStamp(Long.parseLong(line[7]));
                     subAfterContext.setGroupName(line[8]);
@@ -151,22 +152,22 @@ public class TraceDataEncoder {
     }
 
     /**
-     * Encoding the trace context into data strings and keyset sets
+     * 将 {@link TraceContext} 编码为传输实体：分隔符拼接的 transData 与 msgId/keys 索引集合。
      *
-     * @param ctx
-     * @return
+     * @param ctx 待编码的轨迹上下文
+     * @return 轨迹传输 Bean，ctx 为 null 时返回 null
      */
     public static TraceTransferBean encoderFromContextBean(TraceContext ctx) {
         if (ctx == null) {
             return null;
         }
-        //build message trace of the transferring entity content bean
+        // 按轨迹类型拼接 transData 字段
         TraceTransferBean transferBean = new TraceTransferBean();
         StringBuilder sb = new StringBuilder(256);
         switch (ctx.getTraceType()) {
             case Pub: {
                 TraceBean bean = ctx.getTraceBeans().get(0);
-                //append the content of context and traceBean to transferBean's TransData
+                // 发布轨迹：写入 topic、msgId、耗时、成功标志等
                 sb.append(ctx.getTraceType()).append(TraceConstants.CONTENT_SPLITOR)//
                     .append(ctx.getTimeStamp()).append(TraceConstants.CONTENT_SPLITOR)//
                     .append(ctx.getRegionId()).append(TraceConstants.CONTENT_SPLITOR)//

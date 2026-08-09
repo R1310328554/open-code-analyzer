@@ -20,10 +20,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Trace transferring bean
+ * 轨迹传输实体：携带编码后的轨迹字符串与用于索引的 key 集合（msgId、业务 keys）。
  */
 public class TraceTransferBean {
+    /** 分隔符编码的轨迹数据正文。 */
     private String transData;
+    /** 轨迹索引 key 集合，便于按 msgId 或业务 key 检索。 */
     private Set<String> transKey = new HashSet<>();
 
     public String getTransData() {

@@ -22,8 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.rocketmq.common.message.MessageExt;
 
+/**
+ * 轨迹视图：从轨迹 Topic 消息体解码出的单条轨迹展示模型，
+ * 供控制台或查询工具按 msgId 过滤并展示发送/消费链路。
+ */
 public class TraceView {
 
+    /** 消息 ID。 */
     private String msgId;
     private String tags;
     private String keys;
@@ -36,9 +41,16 @@ public class TraceView {
     private long bornTime;
     private String topic;
     private String groupName;
+    /** 轨迹状态（success / failed）。 */
     private String status;
 
-    public static List<TraceView> decodeFromTraceTransData(String key, MessageExt messageExt) {
+    /**
+     * 从轨迹 Topic 的 {@link MessageExt} 中解码与指定 key 匹配的轨迹视图列表。
+     *
+     * @param key 目标 msgId
+     * @param messageExt 轨迹 Topic 消息
+     * @return 匹配的轨迹视图列表
+     */
         List<TraceView> messageTraceViewList = new ArrayList<>();
         String messageBody = new String(messageExt.getBody(), StandardCharsets.UTF_8);
         if (messageBody == null || messageBody.length() <= 0) {

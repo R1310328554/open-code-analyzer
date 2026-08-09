@@ -32,10 +32,16 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.remoting.protocol.NamespaceUtil;
 
 
+/**
+ * 基于 OpenTracing 的消费消息 Hook：为每条消息创建 Consumer Span，
+ * 从消息属性提取父上下文并注入 RocketMQ 相关标签。
+ */
 public class ConsumeMessageOpenTracingHookImpl implements ConsumeMessageHook {
 
+    /** OpenTracing Tracer 实例。 */
     private Tracer tracer;
 
+    /** 注入 Tracer 以创建与结束 Span。 */
     public ConsumeMessageOpenTracingHookImpl(Tracer tracer) {
         this.tracer = tracer;
     }
@@ -46,6 +52,7 @@ public class ConsumeMessageOpenTracingHookImpl implements ConsumeMessageHook {
     }
 
     @Override
+    /** 消费前：为每条消息启动 Span，写入 topic、msgId、重试次数等标签。 */
     public void consumeMessageBefore(ConsumeMessageContext context) {
         if (context == null || context.getMsgList() == null || context.getMsgList().isEmpty()) {
             return;
@@ -78,6 +85,7 @@ public class ConsumeMessageOpenTracingHookImpl implements ConsumeMessageHook {
     }
 
     @Override
+    /** 消费后：标记成功标志并 finish 所有 Span。 */
     public void consumeMessageAfter(ConsumeMessageContext context) {
         if (context == null || context.getMsgList() == null || context.getMsgList().isEmpty()) {
             return;

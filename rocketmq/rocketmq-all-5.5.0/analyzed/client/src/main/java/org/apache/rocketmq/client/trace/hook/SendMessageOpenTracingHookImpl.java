@@ -28,8 +28,13 @@ import org.apache.rocketmq.client.producer.SendStatus;
 import org.apache.rocketmq.client.trace.TraceConstants;
 import org.apache.rocketmq.common.message.Message;
 
+/**
+ * 基于 OpenTracing 的发送消息 Hook：发送前创建 Producer Span 并 inject 到消息属性，
+ * 发送后写入 msgId、region 与成功标志后 finish。
+ */
 public class SendMessageOpenTracingHookImpl implements SendMessageHook {
 
+    /** OpenTracing Tracer 实例。 */
     private Tracer tracer;
 
     public SendMessageOpenTracingHookImpl(Tracer tracer) {
@@ -42,6 +47,7 @@ public class SendMessageOpenTracingHookImpl implements SendMessageHook {
     }
 
     @Override
+    /** 发送前：启动 Span，inject 上下文到消息 properties。 */
     public void sendMessageBefore(SendMessageContext context) {
         if (context == null) {
             return;
@@ -67,6 +73,7 @@ public class SendMessageOpenTracingHookImpl implements SendMessageHook {
     }
 
     @Override
+    /** 发送后：补充 msgId、regionId、成功标志并 finish Span。 */
     public void sendMessageAfter(SendMessageContext context) {
         if (context == null || context.getMqTraceContext() == null) {
             return;

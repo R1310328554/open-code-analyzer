@@ -16,10 +16,16 @@
  */
 package org.apache.rocketmq.client.trace;
 
+/** 轨迹事件类型枚举，对应编解码与 Hook 中的不同阶段。 */
 public enum TraceType {
+    /** 消息发布（发送）轨迹。 */
     Pub,
+    /** 消息撤回轨迹。 */
     Recall,
+    /** 消费开始前轨迹。 */
     SubBefore,
+    /** 消费结束后轨迹。 */
     SubAfter,
+    /** 事务消息提交/回滚结束轨迹。 */
     EndTransaction,
 }

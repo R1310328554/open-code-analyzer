@@ -21,34 +21,34 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import java.io.IOException;
 
 /**
- * Interface of asynchronous transfer data
+ * 轨迹异步传输接口：负责启动、追加轨迹上下文、刷盘与关闭。
+ * 由 {@link org.apache.rocketmq.client.trace.AsyncTraceDispatcher} 等实现。
  */
 public interface TraceDispatcher {
+    /** 轨迹分发器角色：生产者侧或消费者侧。 */
     enum Type {
         PRODUCE,
         CONSUME
     }
     /**
-     * Initialize asynchronous transfer data module
+     * 初始化异步轨迹传输模块，连接 NameServer 并注册客户端。
      */
     void start(String nameSrvAddr, AccessChannel accessChannel) throws MQClientException;
 
     /**
-     * Append the transferring data
-     * @param ctx data information
-     * @return
+     * 追加一条轨迹上下文到发送队列。
+     * @param ctx 轨迹上下文（通常为 {@link TraceContext}）
+     * @return 是否成功入队
      */
     boolean append(Object ctx);
 
     /**
-     * Write flush action
+     * 强制刷盘/发送缓冲中的轨迹数据。
      *
-     * @throws IOException
+     * @throws IOException 网络或 IO 异常
      */
     void flush() throws IOException;
 
-    /**
-     * Close the trace Hook
-     */
+    /** 关闭轨迹分发器，释放线程与网络资源。 */
     void shutdown();
 }

@@ -16,7 +16,10 @@
  */
 package org.apache.rocketmq.client.trace;
 
+/** 轨迹分发器类型：标识 Producer 或 Consumer 侧的轨迹上报通道。 */
 public enum TraceDispatcherType {
+    /** 生产者轨迹分发器。 */
     PRODUCER,
+    /** 消费者轨迹分发器。 */
     CONSUMER
 }

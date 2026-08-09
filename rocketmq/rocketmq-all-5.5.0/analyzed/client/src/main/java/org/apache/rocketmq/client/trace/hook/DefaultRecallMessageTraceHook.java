@@ -32,10 +32,18 @@ import org.apache.rocketmq.remoting.protocol.header.RecallMessageRequestHeader;
 
 import java.util.ArrayList;
 
+/**
+ * 默认撤回消息轨迹 RPC Hook：在 RECALL_MESSAGE 响应成功后，
+ * 可选地将 Recall 类型轨迹追加到 {@link TraceDispatcher}。
+ * 通过系统属性 {@code com.rocketmq.recall.default.trace.enable} 控制开关。
+ */
 public class DefaultRecallMessageTraceHook implements RPCHook {
 
+    /** 是否启用默认撤回轨迹的系统属性键。 */
     private static final String RECALL_TRACE_ENABLE_KEY = "com.rocketmq.recall.default.trace.enable";
+    /** 是否记录撤回轨迹，默认 false。 */
     private boolean enableDefaultTrace = Boolean.parseBoolean(System.getProperty(RECALL_TRACE_ENABLE_KEY, "false"));
+    /** 轨迹分发器，用于 append Recall 上下文。 */
     private TraceDispatcher traceDispatcher;
 
     public DefaultRecallMessageTraceHook(TraceDispatcher traceDispatcher) {
@@ -43,10 +51,12 @@ public class DefaultRecallMessageTraceHook implements RPCHook {
     }
 
     @Override
+    /** 请求前无操作。 */
     public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
     }
 
     @Override
+    /** 撤回响应后：解析 handle 与 region，构建 Recall 轨迹并 append。 */
     public void doAfterResponse(String remoteAddr, RemotingCommand request, RemotingCommand response) {
         if (request.getCode() != RequestCode.RECALL_MESSAGE
             || !enableDefaultTrace

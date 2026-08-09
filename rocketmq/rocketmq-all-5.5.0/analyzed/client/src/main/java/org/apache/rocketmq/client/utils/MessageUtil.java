@@ -24,8 +24,17 @@ import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageAccessor;
 import org.apache.rocketmq.common.message.MessageConst;
 
+/** 消息工具类：构建 Request-Reply 模式的回复消息及读取 reply-to 客户端标识。 */
 public class MessageUtil {
-    public static Message createReplyMessage(final Message requestMessage, final byte[] body) throws MQClientException {
+    /**
+     * 根据请求消息创建回复消息：复制 cluster、correlationId、replyTo、TTL 等属性，
+     * 并设置 Reply Topic 与消息类型标记。
+     *
+     * @param requestMessage 原始请求消息
+     * @param body 回复体
+     * @return 配置完成的回复 Message
+     * @throws MQClientException cluster 缺失或 requestMessage 为 null
+     */
         if (requestMessage != null) {
             Message replyMessage = new Message();
             String cluster = requestMessage.getProperty(MessageConst.PROPERTY_CLUSTER);
@@ -49,6 +58,7 @@ public class MessageUtil {
         throw new MQClientException(ClientErrorCode.CREATE_REPLY_MESSAGE_EXCEPTION, "create reply message fail, requestMessage cannot be null.");
     }
 
+    /** 读取消息属性中的 reply-to 客户端标识。 */
     public static String getReplyToClient(final Message msg) {
         return msg.getProperty(MessageConst.PROPERTY_MESSAGE_REPLY_TO_CLIENT);
     }

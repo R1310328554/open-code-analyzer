@@ -28,8 +28,13 @@ import org.apache.rocketmq.client.trace.TraceConstants;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageType;
 
+/**
+ * 基于 OpenTracing 的事务结束 Hook：为 commit/rollback 创建 Producer Span，
+ * 记录事务 ID、状态及是否来自回查等标签。
+ */
 public class EndTransactionOpenTracingHookImpl implements EndTransactionHook {
 
+    /** OpenTracing Tracer 实例。 */
     private Tracer tracer;
 
     public EndTransactionOpenTracingHookImpl(Tracer tracer) {
@@ -42,6 +47,7 @@ public class EndTransactionOpenTracingHookImpl implements EndTransactionHook {
     }
 
     @Override
+    /** 事务结束时创建并立即 finish 一条 EndTransaction Span。 */
     public void endTransaction(EndTransactionContext context) {
         if (context == null) {
             return;

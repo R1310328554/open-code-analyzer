@@ -27,8 +27,13 @@ import org.apache.rocketmq.client.trace.TraceDispatcher;
 import org.apache.rocketmq.client.trace.TraceType;
 import org.apache.rocketmq.remoting.protocol.NamespaceUtil;
 
+/**
+ * RocketMQ 原生发送轨迹 Hook：发送前准备 Pub 上下文，发送成功后 append 完整轨迹。
+ * 轨迹 Topic 消息与 trace 开关关闭时不记录。
+ */
 public class SendMessageTraceHookImpl implements SendMessageHook {
 
+    /** 本地轨迹分发器（Producer 侧）。 */
     private TraceDispatcher localDispatcher;
 
     public SendMessageTraceHookImpl(TraceDispatcher localDispatcher) {
@@ -41,18 +46,19 @@ public class SendMessageTraceHookImpl implements SendMessageHook {
     }
 
     @Override
+    /** 发送前：初始化 Pub 类型 TraceContext 与 TraceBean。 */
     public void sendMessageBefore(SendMessageContext context) {
-        //if it is message trace data,then it doesn't recorded
+        // 轨迹 Topic 自身消息不记录
         if (context == null || context.getMessage().getTopic().startsWith(((AsyncTraceDispatcher) localDispatcher).getTraceTopicName())) {
             return;
         }
-        //build the context content of TraceContext
+        // 创建 Pub 轨迹上下文
         TraceContext traceContext = new TraceContext();
         traceContext.setTraceBeans(new ArrayList<>(1));
         context.setMqTraceContext(traceContext);
         traceContext.setTraceType(TraceType.Pub);
         traceContext.setGroupName(NamespaceUtil.withoutNamespace(context.getProducerGroup()));
-        //build the data bean object of message trace
+        // 填充 topic、tags、body 长度等 TraceBean 字段
         TraceBean traceBean = new TraceBean();
         traceBean.setTopic(NamespaceUtil.withoutNamespace(context.getMessage().getTopic()));
         traceBean.setTags(context.getMessage().getTags());
@@ -65,6 +71,7 @@ public class SendMessageTraceHookImpl implements SendMessageHook {
     }
 
     @Override
+    /** 发送后：补充 msgId、耗时与成功标志，append 到 TraceDispatcher。 */
     public void sendMessageAfter(SendMessageContext context) {
         //if it is message trace data,then it doesn't recorded
         if (context == null || context.getMessage().getTopic().startsWith(((AsyncTraceDispatcher) localDispatcher).getTraceTopicName())
@@ -77,7 +84,7 @@ public class SendMessageTraceHookImpl implements SendMessageHook {
 
         if (context.getSendResult().getRegionId() == null
             || !context.getSendResult().isTraceOn()) {
-            // if switch is false,skip it
+            // region 为空或 trace 开关关闭则跳过
             return;
         }
 

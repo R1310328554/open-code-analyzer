@@ -30,8 +30,13 @@ import org.apache.rocketmq.common.message.MessageConst;
 import org.apache.rocketmq.common.message.MessageType;
 import org.apache.rocketmq.remoting.protocol.NamespaceUtil;
 
+/**
+ * RocketMQ 原生事务结束轨迹 Hook：在 commit/rollback 时构建 EndTransaction 上下文
+ * 并经由 {@link TraceDispatcher} 异步上报（跳过轨迹 Topic 自身消息）。
+ */
 public class EndTransactionTraceHookImpl implements EndTransactionHook {
 
+    /** 本地轨迹分发器。 */
     private TraceDispatcher localDispatcher;
 
     public EndTransactionTraceHookImpl(TraceDispatcher localDispatcher) {
@@ -44,18 +49,19 @@ public class EndTransactionTraceHookImpl implements EndTransactionHook {
     }
 
     @Override
+    /** 构建 EndTransaction 轨迹并 append；轨迹 Topic 消息不重复记录。 */
     public void endTransaction(EndTransactionContext context) {
-        //if it is message trace data,then it doesn't recorded
+        // 轨迹 Topic 自身消息不再写入轨迹，避免递归
         if (context == null || context.getMessage().getTopic().startsWith(((AsyncTraceDispatcher) localDispatcher).getTraceTopicName())) {
             return;
         }
         Message msg = context.getMessage();
-        //build the context content of TuxeTraceContext
+        // 组装 EndTransaction 轨迹上下文
         TraceContext tuxeContext = new TraceContext();
         tuxeContext.setTraceBeans(new ArrayList<>(1));
         tuxeContext.setTraceType(TraceType.EndTransaction);
         tuxeContext.setGroupName(NamespaceUtil.withoutNamespace(context.getProducerGroup()));
-        //build the data bean object of message trace
+        // 填充消息与事务相关 TraceBean 字段
         TraceBean traceBean = new TraceBean();
         traceBean.setTopic(NamespaceUtil.withoutNamespace(context.getMessage().getTopic()));
         traceBean.setTags(context.getMessage().getTags());

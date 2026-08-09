@@ -31,10 +31,16 @@ import org.apache.rocketmq.common.message.MessageConst;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.remoting.protocol.NamespaceUtil;
 
+/**
+ * RocketMQ 原生消费轨迹 Hook：消费前上报 SubBefore，消费后上报 SubAfter，
+ * 经 {@link TraceDispatcher} 异步写入轨迹 Topic。
+ */
 public class ConsumeMessageTraceHookImpl implements ConsumeMessageHook {
 
+    /** 本地轨迹分发器（Consumer 侧）。 */
     private TraceDispatcher localDispatcher;
 
+    /** 绑定 Consumer 侧 TraceDispatcher。 */
     public ConsumeMessageTraceHookImpl(TraceDispatcher localDispatcher) {
         this.localDispatcher = localDispatcher;
     }
@@ -45,6 +51,7 @@ public class ConsumeMessageTraceHookImpl implements ConsumeMessageHook {
     }
 
     @Override
+    /** 消费前：构建 SubBefore 上下文并 append；trace 开关为 false 的消息跳过。 */
     public void consumeMessageBefore(ConsumeMessageContext context) {
         if (context == null || context.getMsgList() == null || context.getMsgList().isEmpty()) {
             return;
@@ -62,7 +69,7 @@ public class ConsumeMessageTraceHookImpl implements ConsumeMessageHook {
             String traceOn = msg.getProperty(MessageConst.PROPERTY_TRACE_SWITCH);
 
             if (traceOn != null && traceOn.equals("false")) {
-                // If trace switch is false ,skip it
+                // 消息级 trace 开关关闭则跳过
                 continue;
             }
             TraceBean traceBean = new TraceBean();
@@ -84,6 +91,7 @@ public class ConsumeMessageTraceHookImpl implements ConsumeMessageHook {
     }
 
     @Override
+    /** 消费后：基于 SubBefore 计算耗时，构建 SubAfter 并 append。 */
     public void consumeMessageAfter(ConsumeMessageContext context) {
         if (context == null || context.getMsgList() == null || context.getMsgList().isEmpty()) {
             return;
@@ -91,7 +99,7 @@ public class ConsumeMessageTraceHookImpl implements ConsumeMessageHook {
         TraceContext subBeforeContext = (TraceContext) context.getMqTraceContext();
 
         if (subBeforeContext.getTraceBeans() == null || subBeforeContext.getTraceBeans().size() < 1) {
-            // If subBefore bean is null ,skip it
+            // 无有效 SubBefore 明细则跳过
             return;
         }
         TraceContext subAfterContext = new TraceContext();
@@ -102,7 +110,7 @@ public class ConsumeMessageTraceHookImpl implements ConsumeMessageHook {
         subAfterContext.setAccessChannel(context.getAccessChannel());
         subAfterContext.setSuccess(context.isSuccess());
 
-        // Calculate the cost time for processing messages
+        // 按消息条数均摊计算单条处理耗时
         int costTime = (int) ((System.currentTimeMillis() - subBeforeContext.getTimeStamp()) / context.getMsgList().size());
         subAfterContext.setCostTime(costTime);
         subAfterContext.setTraceBeans(subBeforeContext.getTraceBeans());
