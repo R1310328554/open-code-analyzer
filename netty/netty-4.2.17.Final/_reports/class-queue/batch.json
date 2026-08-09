@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:19:41Z",
-  "files": [
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicChannelOption.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicClientCodecBuilder.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicClientSessionCache.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicClosedChannelException.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicCodecBuilder.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicCodecDispatcher.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicCongestionControlAlgorithm.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicConnectionAddress.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicConnectionCloseEvent.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicConnectionIdGenerator.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicConnectionPathStats.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicConnectionStats.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicDatagramExtensionEvent.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicEvent.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicException.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1718,
-  "done": 195
+  "done": 210
 }
