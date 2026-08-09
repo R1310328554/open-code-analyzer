@@ -1,16 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:33:10Z",
   "files": [
-    "spring-context/src/main/java/org/springframework/cache/interceptor/CacheAspectSupport.java",
-    "spring-context/src/main/java/org/springframework/context/annotation/CommonAnnotationBeanPostProcessor.java",
-    "spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassBeanDefinitionReader.java",
-    "spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassEnhancer.java",
-    "spring-context/src/main/java/org/springframework/context/event/AbstractApplicationEventMulticaster.java",
-    "spring-context/src/main/java/org/springframework/context/event/ApplicationListenerMethodAdapter.java",
-    "spring-context/src/main/java/org/springframework/context/support/PostProcessorRegistrationDelegate.java",
-    "spring-context/src/main/java/org/springframework/context/support/ReloadableResourceBundleMessageSource.java",
-    "spring-context/src/main/java/org/springframework/jmx/access/MBeanClientInterceptor.java",
-    "spring-context/src/main/java/org/springframework/jmx/export/MBeanExporter.java",
     "spring-context/src/main/java/org/springframework/jmx/export/assembler/AbstractReflectiveMBeanInfoAssembler.java",
     "spring-context/src/main/java/org/springframework/scheduling/annotation/ScheduledAnnotationBeanPostProcessor.java",
     "spring-context/src/main/java/org/springframework/scheduling/concurrent/ExecutorConfigurationSupport.java",
@@ -23,5 +13,5 @@
     "spring-tx/src/main/java/org/springframework/transaction/jta/JtaTransactionManager.java"
   ],
   "remaining_pending": 38,
-  "done": 1433
+  "done": 1443
 }
