@@ -1,3 +1,5 @@
+"""教程 002：WebSocket 依赖注入——通过 Cookie 或 Query token 鉴权，缺失时抛出 WebSocketException。"""
+
 from fastapi import (
     Cookie,
     Depends,
@@ -9,7 +11,7 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse
 
-app = FastAPI()
+app = FastAPI()  # 创建 FastAPI 应用实例
 
 html = """
 <!DOCTYPE html>
@@ -58,6 +60,7 @@ html = """
 
 @app.get("/")
 async def get():
+    """返回内嵌 WebSocket 测试页的 HTML；客户端需先 Connect 再发消息。"""
     return HTMLResponse(html)
 
 
@@ -66,6 +69,7 @@ async def get_cookie_or_token(
     session: str | None = Cookie(default=None),
     token: str | None = Query(default=None),
 ):
+    """WebSocket 依赖：session Cookie 与 token 查询参数二选一；皆缺则 WS_1008 拒绝连接。"""
     if session is None and token is None:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
     return session or token
@@ -78,6 +82,7 @@ async def websocket_endpoint(
     q: int | None = None,
     cookie_or_token: str = Depends(get_cookie_or_token),
 ):
+    """接受连接后回显鉴权凭据、可选 q 参数与消息文本及路径 item_id。"""
     await websocket.accept()
     while True:
         data = await websocket.receive_text()
