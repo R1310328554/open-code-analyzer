@@ -34,18 +34,16 @@ import org.springframework.instrument.classloading.tomcat.TomcatLoadTimeWeaver;
 import org.springframework.util.Assert;
 
 /**
- * Default {@link LoadTimeWeaver} bean for use in an application context,
- * decorating an automatically detected internal {@code LoadTimeWeaver}.
+ * 应用上下文中使用的默认 {@link LoadTimeWeaver} Bean，
+ * 封装自动检测到的内部 {@code LoadTimeWeaver} 实现。
  *
- * <p>Typically registered for the default bean name "{@code loadTimeWeaver}";
- * the most convenient way to achieve this is Spring's
- * {@code <context:load-time-weaver>} XML tag or {@code @EnableLoadTimeWeaving}
- * on a {@code @Configuration} class.
+ * <p>通常以默认 Bean 名 "{@code loadTimeWeaver}" 注册；
+ * 最便捷的方式是使用 Spring 的 {@code <context:load-time-weaver>} XML 标签
+ * 或在 {@code @Configuration} 类上使用 {@code @EnableLoadTimeWeaving}。
  *
- * <p>This class implements a runtime environment check for obtaining the
- * appropriate weaver implementation, including
- * {@link InstrumentationSavingAgent Spring's VM agent} and any {@link ClassLoader}
- * supported by Spring's {@link ReflectiveLoadTimeWeaver}.
+ * <p>本类在运行时检测环境，自动选择最合适的织入器实现，包括
+ * {@link InstrumentationSavingAgent Spring VM 代理} 以及
+ * Spring {@link ReflectiveLoadTimeWeaver} 所支持的各类 {@link ClassLoader}。
  *
  * @author Juergen Hoeller
  * @author Ramnivas Laddad
@@ -57,6 +55,7 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/** 根据运行环境选定的底层织入器。 */
 	private @Nullable LoadTimeWeaver loadTimeWeaver;
 
 
@@ -68,6 +67,10 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 	}
 
 
+	/**
+	 * 根据类加载器类型自动选择织入器实现：
+	 * 优先尝试应用服务器专用实现，其次 JVM Instrumentation，最后反射式织入器。
+	 */
 	@Override
 	public void setBeanClassLoader(ClassLoader classLoader) {
 		LoadTimeWeaver serverSpecificLoadTimeWeaver = createServerSpecificLoadTimeWeaver(classLoader);
@@ -97,11 +100,10 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 		}
 	}
 
-	/*
-	 * This method never fails, allowing to try other possible ways to use a
-	 * server-agnostic weaver. This non-failure logic is required since
-	 * determining a load-time weaver based on the ClassLoader name alone may
-	 * legitimately fail due to other mismatches.
+	/**
+	 * 按类加载器类型尝试创建 Tomcat / GlassFish / JBoss 专用织入器。
+	 * <p>本方法永不抛出异常，以便在服务器专用织入器不可用时继续尝试其他方式。
+	 * 仅凭 ClassLoader 名称判断织入器可能因其他不匹配而合法失败，因此需要这种容错逻辑。
 	 */
 	protected @Nullable LoadTimeWeaver createServerSpecificLoadTimeWeaver(ClassLoader classLoader) {
 		String name = classLoader.getClass().getName();
@@ -124,6 +126,7 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 		return null;
 	}
 
+	/** 销毁时移除已注册的类文件转换器。 */
 	@Override
 	public void destroy() {
 		if (this.loadTimeWeaver instanceof InstrumentationLoadTimeWeaver iltw) {
@@ -136,18 +139,21 @@ public class DefaultContextLoadTimeWeaver implements LoadTimeWeaver, BeanClassLo
 	}
 
 
+	/** 向底层织入器注册类文件转换器。 */
 	@Override
 	public void addTransformer(ClassFileTransformer transformer) {
 		Assert.state(this.loadTimeWeaver != null, "Not initialized");
 		this.loadTimeWeaver.addTransformer(transformer);
 	}
 
+	/** 返回可被织入的类加载器。 */
 	@Override
 	public ClassLoader getInstrumentableClassLoader() {
 		Assert.state(this.loadTimeWeaver != null, "Not initialized");
 		return this.loadTimeWeaver.getInstrumentableClassLoader();
 	}
 
+	/** 返回用于临时类加载的一次性类加载器。 */
 	@Override
 	public ClassLoader getThrowawayClassLoader() {
 		Assert.state(this.loadTimeWeaver != null, "Not initialized");

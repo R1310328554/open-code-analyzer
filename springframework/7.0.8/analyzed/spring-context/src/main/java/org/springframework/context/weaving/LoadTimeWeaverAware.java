@@ -20,8 +20,7 @@ import org.springframework.beans.factory.Aware;
 import org.springframework.instrument.classloading.LoadTimeWeaver;
 
 /**
- * Interface to be implemented by any object that wishes to be notified
- * of the application context's default {@link LoadTimeWeaver}.
+ * 希望接收应用上下文默认 {@link LoadTimeWeaver} 通知的对象应实现的接口。
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -31,20 +30,17 @@ import org.springframework.instrument.classloading.LoadTimeWeaver;
 public interface LoadTimeWeaverAware extends Aware {
 
 	/**
-	 * Set the {@link LoadTimeWeaver} of this object's containing
-	 * {@link org.springframework.context.ApplicationContext ApplicationContext}.
-	 * <p>Invoked after the population of normal bean properties but before an
-	 * initialization callback like
-	 * {@link org.springframework.beans.factory.InitializingBean InitializingBean's}
+	 * 设置所在 {@link org.springframework.context.ApplicationContext ApplicationContext}
+	 * 的 {@link LoadTimeWeaver}。
+	 * <p>在普通 Bean 属性注入完成之后、初始化回调（如
+	 * {@link org.springframework.beans.factory.InitializingBean InitializingBean} 的
 	 * {@link org.springframework.beans.factory.InitializingBean#afterPropertiesSet() afterPropertiesSet()}
-	 * or a custom init-method. Invoked after
-	 * {@link org.springframework.context.ApplicationContextAware ApplicationContextAware's}
-	 * {@link org.springframework.context.ApplicationContextAware#setApplicationContext setApplicationContext(..)}.
-	 * <p><b>NOTE:</b> This method will only be called if there actually is a
-	 * {@code LoadTimeWeaver} available in the application context. If
-	 * there is none, the method will simply not get invoked, assuming that the
-	 * implementing object is able to activate its weaving dependency accordingly.
-	 * @param loadTimeWeaver the {@code LoadTimeWeaver} instance (never {@code null})
+	 * 或自定义 init 方法）之前调用；且在
+	 * {@link org.springframework.context.ApplicationContextAware ApplicationContextAware} 的
+	 * {@link org.springframework.context.ApplicationContextAware#setApplicationContext setApplicationContext(..)} 之后调用。
+	 * <p><b>注意：</b>仅当应用上下文中实际存在 {@code LoadTimeWeaver} 时才会调用本方法。
+	 * 若不存在，则不会调用，由实现类自行决定是否激活织入依赖。
+	 * @param loadTimeWeaver {@code LoadTimeWeaver} 实例（永不为 {@code null}）
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 * @see org.springframework.context.ApplicationContextAware#setApplicationContext
 	 */
