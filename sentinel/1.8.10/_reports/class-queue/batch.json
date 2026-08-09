@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:37:49Z",
-  "files": [
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/TokenUpdateStatus.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/statistic/ParamFlowStatisticEntryCallback.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/statistic/ParamFlowStatisticExitCallback.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/statistic/cache/CacheMap.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/statistic/cache/ConcurrentLinkedHashMapWrapper.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/statistic/data/ParamMapBucket.java",
-    "sentinel-extension/sentinel-prometheus-metric-exporter/src/main/java/com/alibaba/csp/sentinel/metric/prom/MetricConstants.java",
-    "sentinel-extension/sentinel-prometheus-metric-exporter/src/main/java/com/alibaba/csp/sentinel/metric/prom/PromExporterInit.java",
-    "sentinel-extension/sentinel-prometheus-metric-exporter/src/main/java/com/alibaba/csp/sentinel/metric/prom/collector/SentinelCollector.java",
-    "sentinel-extension/sentinel-prometheus-metric-exporter/src/main/java/com/alibaba/csp/sentinel/metric/prom/config/PrometheusGlobalConfig.java",
-    "sentinel-extension/sentinel-prometheus-metric-exporter/src/main/java/com/alibaba/csp/sentinel/metric/prom/types/GaugeMetricFamily.java",
-    "sentinel-logging/sentinel-logging-slf4j/src/main/java/com/alibaba/csp/sentinel/logging/slf4j/CommandCenterLogLogger.java",
-    "sentinel-logging/sentinel-logging-slf4j/src/main/java/com/alibaba/csp/sentinel/logging/slf4j/RecordLogLogger.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandCenterProvider.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandConstants.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 65,
-  "done": 870
+  "done": 885
 }
