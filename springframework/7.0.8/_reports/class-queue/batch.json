@@ -1,27 +1,6 @@
 {
-  "claimed_at": "2026-08-09T17:35:31Z",
-  "files": [
-    "spring-tx/src/main/java/org/springframework/transaction/support/DelegatingTransactionDefinition.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/ResourceHolder.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/ResourceHolderSupport.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/ResourceHolderSynchronization.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/ResourceTransactionDefinition.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/ResourceTransactionManager.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/SimpleTransactionScope.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/SimpleTransactionStatus.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/SmartTransactionObject.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/TransactionCallback.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/TransactionCallbackWithoutResult.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/TransactionOperations.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/TransactionSynchronization.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/TransactionSynchronizationAdapter.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/TransactionSynchronizationUtils.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/TransactionTemplate.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/WithoutTransactionOperations.java",
-    "spring-aop/src/main/java/org/aopalliance/aop/Advice.java",
-    "spring-aop/src/main/java/org/aopalliance/aop/AspectException.java",
-    "spring-aop/src/main/java/org/aopalliance/intercept/ConstructorInterceptor.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 464,
   "done": 1027
 }
