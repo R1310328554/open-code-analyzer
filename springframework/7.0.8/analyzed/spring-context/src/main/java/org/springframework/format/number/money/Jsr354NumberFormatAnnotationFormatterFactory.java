@@ -39,8 +39,8 @@ import org.springframework.format.number.PercentStyleFormatter;
 import org.springframework.util.StringUtils;
 
 /**
- * Formats {@link javax.money.MonetaryAmount} fields annotated
- * with Spring's common {@link NumberFormat} annotation.
+ * 格式化带有 Spring 通用 {@link NumberFormat} 注解的
+ * {@link javax.money.MonetaryAmount} 字段。
  *
  * @author Juergen Hoeller
  * @since 4.2
@@ -140,8 +140,8 @@ public class Jsr354NumberFormatAnnotationFormatterFactory extends EmbeddedValueR
 		private Currency determineCurrency(String text, Locale locale) {
 			try {
 				if (text.length() < 3) {
-					// Could not possibly contain a currency code ->
-					// try with locale and likely let it fail on parse.
+					// 不可能包含货币代码 ->
+					// 尝试使用区域设置，并可能在解析时失败。
 					return Currency.getInstance(locale);
 				}
 				else if (this.pattern.startsWith(CURRENCY_CODE_PATTERN)) {
@@ -151,7 +151,7 @@ public class Jsr354NumberFormatAnnotationFormatterFactory extends EmbeddedValueR
 					return Currency.getInstance(text.substring(text.length() - 3));
 				}
 				else {
-					// A pattern without a currency code...
+					// 不包含货币代码的模式...
 					return Currency.getInstance(locale);
 				}
 			}

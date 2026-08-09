@@ -27,9 +27,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.format.Formatter;
 
 /**
- * Formatter for JSR-354 {@link javax.money.MonetaryAmount} values,
- * delegating to {@link javax.money.format.MonetaryAmountFormat#format}
- * and {@link javax.money.format.MonetaryAmountFormat#parse}.
+ * 用于 JSR-354 {@link javax.money.MonetaryAmount} 值的格式化器，
+ * 委托给 {@link javax.money.format.MonetaryAmountFormat#format}
+ * 与 {@link javax.money.format.MonetaryAmountFormat#parse}。
  *
  * @author Juergen Hoeller
  * @since 4.2
@@ -41,15 +41,14 @@ public class MonetaryAmountFormatter implements Formatter<MonetaryAmount> {
 
 
 	/**
-	 * Create a locale-driven MonetaryAmountFormatter.
+	 * 创建由区域设置驱动的 MonetaryAmountFormatter。
 	 */
 	public MonetaryAmountFormatter() {
 	}
 
 	/**
-	 * Create a new MonetaryAmountFormatter for the given format name.
-	 * @param formatName the format name, to be resolved by the JSR-354
-	 * provider at runtime
+	 * 为给定格式名称创建新的 MonetaryAmountFormatter。
+	 * @param formatName 格式名称，由 JSR-354 提供者在运行时解析
 	 */
 	public MonetaryAmountFormatter(String formatName) {
 		this.formatName = formatName;
@@ -57,10 +56,8 @@ public class MonetaryAmountFormatter implements Formatter<MonetaryAmount> {
 
 
 	/**
-	 * Specify the format name, to be resolved by the JSR-354 provider
-	 * at runtime.
-	 * <p>Default is none, obtaining a {@link MonetaryAmountFormat}
-	 * based on the current locale.
+	 * 指定格式名称，由 JSR-354 提供者在运行时解析。
+	 * <p>默认不指定，根据当前区域设置获取 {@link MonetaryAmountFormat}。
 	 */
 	public void setFormatName(String formatName) {
 		this.formatName = formatName;
@@ -79,12 +76,12 @@ public class MonetaryAmountFormatter implements Formatter<MonetaryAmount> {
 
 
 	/**
-	 * Obtain a MonetaryAmountFormat for the given locale.
-	 * <p>The default implementation simply calls
-	 * {@link javax.money.format.MonetaryFormats#getAmountFormat}
-	 * with either the configured format name or the given locale.
-	 * @param locale the current locale
-	 * @return the MonetaryAmountFormat (never {@code null})
+	 * 为给定区域设置获取 MonetaryAmountFormat。
+	 * <p>默认实现直接调用
+	 * {@link javax.money.format.MonetaryFormats#getAmountFormat}，
+	 * 传入已配置的格式名称或给定区域设置。
+	 * @param locale 当前区域设置
+	 * @return MonetaryAmountFormat（永不为 {@code null}）
 	 * @see #setFormatName
 	 */
 	protected MonetaryAmountFormat getMonetaryAmountFormat(Locale locale) {

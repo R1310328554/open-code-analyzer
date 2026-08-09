@@ -30,18 +30,17 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link LoadTimeWeaver} relying on VM {@link Instrumentation}.
+ * 依赖虚拟机 {@link Instrumentation} 的 {@link LoadTimeWeaver}。
  *
- * <p>Start the JVM specifying the Java agent to be used &mdash; for example, as
- * follows where <code>spring-instrument-{version}.jar</code> is a JAR file
- * containing the {@link InstrumentationSavingAgent} class shipped with Spring
- * and where <code>{version}</code> is the release version of the Spring
- * Framework (for example, {@code 5.1.5.RELEASE}).
+ * <p>启动 JVM 时需指定要使用的 Java 代理 &mdash; 例如，其中
+ * <code>spring-instrument-{version}.jar</code> 是随 Spring 提供的、
+ * 包含 {@link InstrumentationSavingAgent} 类的 JAR 文件，
+ * <code>{version}</code> 为 Spring Framework 的发布版本
+ *（例如 {@code 5.1.5.RELEASE}）。
  *
  * <p><code>-javaagent:path/to/spring-instrument-{version}.jar</code>
  *
- * <p>In Eclipse, for example, add something similar to the following to the
- * JVM arguments for the Eclipse "Run configuration":
+ * <p>例如在 Eclipse 中，可在 Eclipse「运行配置」的 JVM 参数中添加类似以下内容：
  *
  * <p><code>-javaagent:${project_loc}/lib/spring-instrument-{version}.jar</code>
  *
@@ -65,15 +64,15 @@ public class InstrumentationLoadTimeWeaver implements LoadTimeWeaver {
 
 
 	/**
-	 * Create a new InstrumentationLoadTimeWeaver for the default ClassLoader.
+	 * 为默认 ClassLoader 创建新的 InstrumentationLoadTimeWeaver。
 	 */
 	public InstrumentationLoadTimeWeaver() {
 		this(ClassUtils.getDefaultClassLoader());
 	}
 
 	/**
-	 * Create a new InstrumentationLoadTimeWeaver for the given ClassLoader.
-	 * @param classLoader the ClassLoader that registered transformers are supposed to apply to
+	 * 为给定 ClassLoader 创建新的 InstrumentationLoadTimeWeaver。
+	 * @param classLoader 已注册转换器应适用的 ClassLoader
 	 */
 	public InstrumentationLoadTimeWeaver(@Nullable ClassLoader classLoader) {
 		this.classLoader = classLoader;
@@ -95,9 +94,8 @@ public class InstrumentationLoadTimeWeaver implements LoadTimeWeaver {
 	}
 
 	/**
-	 * We have the ability to weave the current class loader when starting the
-	 * JVM in this way, so the instrumentable class loader will always be the
-	 * current loader.
+	 * 以这种方式启动 JVM 时，我们可以织入当前类加载器，
+	 * 因此可织入的类加载器始终是当前加载器。
 	 */
 	@Override
 	public ClassLoader getInstrumentableClassLoader() {
@@ -106,7 +104,7 @@ public class InstrumentationLoadTimeWeaver implements LoadTimeWeaver {
 	}
 
 	/**
-	 * This implementation always returns a {@link SimpleThrowawayClassLoader}.
+	 * 本实现始终返回 {@link SimpleThrowawayClassLoader}。
 	 */
 	@Override
 	public ClassLoader getThrowawayClassLoader() {
@@ -114,7 +112,7 @@ public class InstrumentationLoadTimeWeaver implements LoadTimeWeaver {
 	}
 
 	/**
-	 * Remove all registered transformers, in inverse order of registration.
+	 * 按注册顺序的逆序移除所有已注册的转换器。
 	 */
 	public void removeTransformers() {
 		synchronized (this.transformers) {
@@ -129,7 +127,7 @@ public class InstrumentationLoadTimeWeaver implements LoadTimeWeaver {
 
 
 	/**
-	 * Check whether an Instrumentation instance is available for the current VM.
+	 * 检查当前虚拟机是否可用 Instrumentation 实例。
 	 * @see #getInstrumentation()
 	 */
 	public static boolean isInstrumentationAvailable() {
@@ -137,8 +135,8 @@ public class InstrumentationLoadTimeWeaver implements LoadTimeWeaver {
 	}
 
 	/**
-	 * Obtain the Instrumentation instance for the current VM, if available.
-	 * @return the Instrumentation instance, or {@code null} if none found
+	 * 获取当前虚拟机的 Instrumentation 实例（若可用）。
+	 * @return Instrumentation 实例，若未找到则为 {@code null}
 	 * @see #isInstrumentationAvailable()
 	 */
 	private static @Nullable Instrumentation getInstrumentation() {
@@ -152,7 +150,7 @@ public class InstrumentationLoadTimeWeaver implements LoadTimeWeaver {
 
 
 	/**
-	 * Inner class to avoid InstrumentationSavingAgent dependency.
+	 * 内部类，用于避免对 InstrumentationSavingAgent 的依赖。
 	 */
 	private static class InstrumentationAccessor {
 
@@ -163,7 +161,7 @@ public class InstrumentationLoadTimeWeaver implements LoadTimeWeaver {
 
 
 	/**
-	 * Decorator that only applies the given target transformer to a specific ClassLoader.
+	 * 装饰器，仅将给定目标转换器应用于特定 ClassLoader。
 	 */
 	private static class FilteringClassFileTransformer implements ClassFileTransformer {
 

@@ -23,7 +23,8 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
 
 /**
- * {@link RuntimeHintsRegistrar} to register hints for {@link DefaultFormattingConversionService}.
+ * 为 {@link DefaultFormattingConversionService} 注册运行时提示的
+ * {@link RuntimeHintsRegistrar}。
  *
  * @author Brian Clozel
  * @since 6.1
