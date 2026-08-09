@@ -1,6 +1,22 @@
 {
   "claimed_at": "2026-08-09T17:29:52Z",
-  "files": [],
+  "files": [
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeConcatArray.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeConcatArrayDelayError.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeConcatIterable.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeContains.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeCount.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeCreate.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDefer.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDelay.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDelayOtherPublisher.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDelaySubscriptionOtherPublisher.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDelayWithCompletable.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDematerialize.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDetach.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDoAfterSuccess.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDoFinally.java"
+  ],
   "remaining_pending": 602,
   "done": 405
 }

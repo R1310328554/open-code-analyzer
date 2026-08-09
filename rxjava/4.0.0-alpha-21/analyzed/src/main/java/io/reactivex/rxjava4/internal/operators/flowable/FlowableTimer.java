@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.flowable;
+
+import java.io.Serial;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static java.util.concurrent.Flow.*;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.disposables.Disposable;
+import io.reactivex.rxjava4.exceptions.MissingBackpressureException;
+import io.reactivex.rxjava4.internal.disposables.*;
+import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
+
+/**
+ * 延迟 {@code delay} 后向下游发射单个 {@code 0L} 并 onComplete。
+ * 若到时仍未 request 则 onError {@link MissingBackpressureException}。
+ */
+public final class FlowableTimer extends Flowable<Long> {
+    final Scheduler scheduler;
+    final long delay;
+    final TimeUnit unit;
+    /**
+     * @param delay 延迟时长
+     * @param unit 时间单位
+     * @param scheduler 执行定时任务的 Scheduler
+     */
+    public FlowableTimer(long delay, TimeUnit unit, Scheduler scheduler) {
+        this.delay = delay;
+        this.unit = unit;
+        this.scheduler = scheduler;
+    }
+
+    /** 创建 TimerSubscriber 并在 Scheduler 上 scheduleDirect。 */
+    @Override
+    public void subscribeActual(Subscriber<? super Long> s) {
+        TimerSubscriber ios = new TimerSubscriber(s);
+        s.onSubscribe(ios);
+
+        Disposable d = scheduler.scheduleDirect(ios, delay, unit);
+
+        ios.setResource(d);
+    }
+
+    /** 持有 Disposable；run 时检查 requested 再发射 0L。 */
+    static final class TimerSubscriber extends AtomicReference<Disposable>
+    implements Subscription, Runnable {
+
+        @Serial
+        private static final long serialVersionUID = -2809475196591179431L;
+
+        final Subscriber<? super Long> downstream;
+
+        volatile boolean requested;
+
+        TimerSubscriber(Subscriber<? super Long> downstream) {
+            this.downstream = downstream;
+        }
+
+        @Override
+        public void request(long n) {
+            if (SubscriptionHelper.validate(n)) {
+                requested = true;
+            }
+        }
+
+        @Override
+        public void cancel() {
+            DisposableHelper.dispose(this);
+        }
+
+        /** 已 request 则 onNext(0L)+onComplete，否则 MissingBackpressureException。 */
+        @Override
+        public void run() {
+            if (get() != DisposableHelper.DISPOSED) {
+                if (requested) {
+                    downstream.onNext(0L);
+                    lazySet(EmptyDisposable.INSTANCE);
+                    downstream.onComplete();
+                } else {
+                    lazySet(EmptyDisposable.INSTANCE);
+                    downstream.onError(MissingBackpressureException.createDefault());
+                }
+            }
+        }
+
+        public void setResource(Disposable d) {
+            DisposableHelper.trySet(this, d);
+        }
+    }
+}
