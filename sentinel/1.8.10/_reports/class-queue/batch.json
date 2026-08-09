@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:01:57Z",
   "files": [
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/rule/AbstractRuleEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/rule/AuthorityRuleEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/rule/DegradeRuleEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/rule/FlowRuleEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/rule/ParamFlowRuleEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/rule/RuleEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/rule/SystemRuleEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/discovery/AppInfo.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/discovery/AppManagement.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/discovery/MachineDiscovery.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/discovery/MachineInfo.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/discovery/SimpleMachineDiscovery.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/ResourceTreeNode.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/Result.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterAppAssignResultVO.java",
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterAppFullAssignRequest.java",
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterAppSingleServerAssignRequest.java",
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterClientInfoVO.java",
@@ -33,5 +18,5 @@
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/AppClusterClientStateWrapVO.java"
   ],
   "remaining_pending": 365,
-  "done": 570
+  "done": 585
 }
