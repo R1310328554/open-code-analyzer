@@ -2,12 +2,15 @@ package com.alibaba.arthas.nat.agent.common.utils;
 
 
 /**
+ * 启动欢迎横幅工具，在控制台打印各 Native Agent 组件的 ASCII 艺术字标识。
+ *
  * @description: WelcomeUtil
  * @author：flzjkl
  * @date: 2024-09-22 18:26
  */
 public class WelcomeUtil {
 
+    /** 打印 Native Agent 客户端启动横幅 */
     public static void printNativeAgentWelcomeMsg() {
         String welcomeMsg = "                  _     _                                                   _   \n" +
                 "  _ __     __ _  | |_  (_) __   __   ___      __ _    __ _    ___   _ __   | |_ \n" +
@@ -19,6 +22,7 @@ public class WelcomeUtil {
         System.out.println("=======================================================================================================================");
     }
 
+    /** 打印 Management Web 管理端启动横幅 */
     public static void printManagementWebWelcomeMsg() {
         String welcomeMsg = "                  _     _                                                   _                                                                                     _                         _     \n" +
                 "  _ __     __ _  | |_  (_) __   __   ___      __ _    __ _    ___   _ __   | |_     _ __ ___     __ _   _ __     __ _    __ _    ___   _ __ ___     ___   _ __   | |_    __      __   ___  | |__  \n" +
@@ -30,6 +34,7 @@ public class WelcomeUtil {
         System.out.println("=========================================================================================================================================================================================================================");
     }
 
+    /** 打印 Native Agent Proxy 代理端启动横幅 */
     public static void printProxyWelcomeMsg() {
         String welcomeMsg = "               _    _                                           _                                     \n" +
                 " _ __    __ _ | |_ (_)__   __  ___    __ _   __ _   ___  _ __  | |_   _ __   _ __   ___  __  __ _   _ \n" +

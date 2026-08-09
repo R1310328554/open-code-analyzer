@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 
 /**
+ * Management Web 的 Netty HTTP 入口处理器，按方法与路径分发到静态资源或 API 处理器。
+ *
  * @description: HttpRequestHandler
  * @author：flzjkl
  * @date: 2024-07-20 10:09
@@ -33,6 +35,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         HttpMethod method = request.method();
         FullHttpResponse resp = null;
 
+        // GET：静态资源（首页默认映射到 index.html）
         if (HttpMethod.GET.equals(method)) {
             if ("/".equals(path)) {
                 path = "/index.html";
@@ -40,10 +43,12 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             resp = httpResourcesHandler.handlerResources(request, path);
         }
 
+        // OPTIONS：CORS 预检请求
         if (HttpMethod.OPTIONS.equals(method)) {
             resp = httpOptionRequestHandler.handleOptionsRequest(ctx, request);
         }
 
+        // POST：Native Agent / Proxy API
         if (HttpMethod.POST.equals(method)) {
             if ("/api/native-agent".equals(path)) {
                 resp = httpNativeAgentHandler.handle(ctx, request);
@@ -53,6 +58,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             }
         }
 
+        // 未匹配路由时返回 404
         if (resp == null) {
             resp = new DefaultFullHttpResponse(request.getProtocolVersion(), HttpResponseStatus.NOT_FOUND);
             resp.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");

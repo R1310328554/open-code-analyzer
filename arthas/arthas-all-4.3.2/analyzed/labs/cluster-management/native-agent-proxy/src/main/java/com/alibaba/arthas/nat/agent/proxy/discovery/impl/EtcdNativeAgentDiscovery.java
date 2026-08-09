@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 基于 etcd 的 {@link NativeAgentDiscovery} 实现，按前缀扫描 Agent 注册键并组装 clientId→端口映射。
+ *
  * @description: EtcdNativeAgentDiscovery implements NativeAgentDiscovery
  * @author：flzjkl
  * @date: 2024-09-15 9:19
@@ -27,7 +29,7 @@ public class EtcdNativeAgentDiscovery implements NativeAgentDiscovery {
 
     @Override
     public Map<String, String> findNativeAgent(String address) {
-        // Create kv client
+        // 创建 etcd KV 客户端
         Client client = null;
         KV kvClient = null;
         Map<String, String> nativeAgentMap = null;
@@ -35,7 +37,7 @@ public class EtcdNativeAgentDiscovery implements NativeAgentDiscovery {
             client = Client.builder().endpoints("http://" + address).build();
             kvClient = client.getKVClient();
 
-            // Get value by prefix /native-agent
+            // 按 NATIVE_AGENT_KEY 前缀批量查询
             GetResponse getResponse = null;
             try {
                 ByteSequence prefix = ByteSequence.from(NativeAgentConstants.NATIVE_AGENT_KEY, StandardCharsets.UTF_8);
@@ -46,7 +48,7 @@ public class EtcdNativeAgentDiscovery implements NativeAgentDiscovery {
                 throw new RuntimeException(e);
             }
 
-            // Build Map
+            // 解析键路径，跳过 Proxy 节点，构建 clientId → 端口信息映射
             List<KeyValue> kvs = getResponse.getKvs();
             nativeAgentMap = new ConcurrentHashMap<>(kvs.size());
             for (KeyValue kv : kvs) {

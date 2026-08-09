@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
 /**
+ * Native Agent Management Web 启动入口，解析 CLI 参数并启动 Netty HTTP 服务。
+ *
  * @description: native agent server
  * @author：flzjkl
  * @date: 2024-07-20 9:23
@@ -35,9 +37,12 @@ import java.util.Arrays;
         + "https://arthas.aliyun.com/doc\n")
 public class NativeAgentManagementWebBootstrap {
     private static final Logger logger = LoggerFactory.getLogger(NativeAgentManagementWebBootstrap.class);
+    /** 默认 HTTP 监听端口 */
     private static final int DEFAULT_NATIVE_AGENT_MANAGEMENT_WEB_PORT = 3939;
     private Integer port;
+    /** 注册中心类型，由 CLI 注入，供服务发现使用 */
     public static String registrationType;
+    /** 注册中心地址，由 CLI 注入 */
     public static String registrationAddress;
 
     @Option(longName = "port")
@@ -59,10 +64,10 @@ public class NativeAgentManagementWebBootstrap {
     }
 
     public static void main(String[] args) {
-        // Print welcome message
+        // 打印 Management Web 启动横幅
         WelcomeUtil.printManagementWebWelcomeMsg();
 
-        // Startup parameter analysis
+        // 解析 CLI 启动参数
         logger.info("read input config...");
         NativeAgentManagementWebBootstrap nativeAgentManagementWebBootstrap = new NativeAgentManagementWebBootstrap();
         CLI cli = CLIConfigurator.define(NativeAgentManagementWebBootstrap.class);
@@ -75,7 +80,7 @@ public class NativeAgentManagementWebBootstrap {
         }
         logger.info("read input success!");
 
-        // Start the http server
+        // 启动 Netty HTTP 服务器
         logger.info("start the http server... httPort:{}", nativeAgentManagementWebBootstrap.getPortOrDefault());
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workGroup = new NioEventLoopGroup();
@@ -106,6 +111,7 @@ public class NativeAgentManagementWebBootstrap {
         }
     }
 
+    /** 返回监听端口，未指定时使用默认值 3939 */
     public int getPortOrDefault() {
         if (this.port == null) {
             return DEFAULT_NATIVE_AGENT_MANAGEMENT_WEB_PORT;

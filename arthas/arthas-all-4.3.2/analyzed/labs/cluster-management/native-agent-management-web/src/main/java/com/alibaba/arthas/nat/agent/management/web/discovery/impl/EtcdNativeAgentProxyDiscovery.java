@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 基于 etcd 的 {@link NativeAgentProxyDiscovery} 实现，按前缀扫描代理注册键。
+ *
  * @description: EtcdNativeAgentDiscovery implements NativeAgentDiscovery
  * @author：flzjkl
  * @date: 2024-09-15 9:19
@@ -27,7 +29,7 @@ public class EtcdNativeAgentProxyDiscovery implements NativeAgentProxyDiscovery 
 
     @Override
     public List<String> listNativeAgentProxy(String address) {
-        // Create kv client
+        // 创建 etcd KV 客户端
         Client client = null;
         KV kvClient = null;
         List<String> res = null;
@@ -35,7 +37,7 @@ public class EtcdNativeAgentProxyDiscovery implements NativeAgentProxyDiscovery 
             client = Client.builder().endpoints("http://" + address).build();
             kvClient = client.getKVClient();
 
-            // Get value by prefix /native-agent-client
+            // 按 NATIVE_AGENT_PROXY_KEY 前缀批量查询
             GetResponse getResponse = null;
             try {
                 ByteSequence prefix = ByteSequence.from(NativeAgentConstants.NATIVE_AGENT_PROXY_KEY, StandardCharsets.UTF_8);
@@ -46,7 +48,7 @@ public class EtcdNativeAgentProxyDiscovery implements NativeAgentProxyDiscovery 
                 throw new RuntimeException(e);
             }
 
-            // Build Map
+            // 将键值对中的 value 解析为代理地址列表
             List<KeyValue> kvs = getResponse.getKvs();
             if (kvs == null || kvs.size() == 0) {
                 return null;

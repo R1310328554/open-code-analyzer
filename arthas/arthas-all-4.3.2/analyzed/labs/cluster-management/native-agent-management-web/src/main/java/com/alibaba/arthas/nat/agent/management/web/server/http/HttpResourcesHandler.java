@@ -14,6 +14,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 静态资源 HTTP 处理器，从 classpath 提供 Management Web 前端页面及静态文件。
+ *
  * @description: HttpResourcesHandler
  * @author：flzjkl
  * @date: 2024-09-23 7:44
@@ -21,7 +23,9 @@ import java.util.Set;
 public class HttpResourcesHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpResourcesHandler.class);
+    /** classpath 下静态资源的根目录 */
     private static final String RESOURCES_BASE_PATH = "/native-agent";
+    /** 允许访问的文件扩展名白名单 */
     private static final Set<String> ALLOWED_EXTENSIONS;
 
     static {
@@ -34,6 +38,12 @@ public class HttpResourcesHandler {
         ALLOWED_EXTENSIONS = Collections.unmodifiableSet(tempSet);
     }
 
+    /**
+     * 根据请求路径加载 classpath 静态资源并构造 HTTP 响应。
+     *
+     * @param request 原始 HTTP 请求
+     * @param path    已解析的 URI 路径
+     */
     public FullHttpResponse handlerResources(FullHttpRequest request, String path) {
         try {
             if (request == null || path == null) {
@@ -69,11 +79,15 @@ public class HttpResourcesHandler {
         }
     }
 
+    /**
+     * 规范化并校验请求路径，过滤目录穿越并限制扩展名白名单。
+     */
     private String normalizePath(String path) {
         if (path == null) {
             return null;
         }
 
+        // 移除 ../ 与 ./ 防止路径穿越
         path = path.replaceAll("\\.\\./", "").replaceAll("\\./", "");
 
 
@@ -94,6 +108,7 @@ public class HttpResourcesHandler {
         return path;
     }
 
+    /** 按文件扩展名返回 Content-Type */
     private String getContentType(String path) {
         if (path.endsWith(".html")) return "text/html";
         if (path.endsWith(".css")) return "text/css";
@@ -103,6 +118,7 @@ public class HttpResourcesHandler {
         return "application/octet-stream";
     }
 
+    /** 将 InputStream 读入 Netty ByteBuf */
     private ByteBuf readInputStream(InputStream is) throws IOException {
         ByteBuf buffer = Unpooled.buffer();
         byte[] tmp = new byte[1024];
