@@ -49,265 +49,145 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- * In most scenarios, this is the mostly recommended class to consume messages.
- * </p>
- * Technically speaking, this push client is virtually a wrapper of the underlying pull service. Specifically, on
- * arrival of messages pulled from brokers, it roughly invokes the registered callback handler to feed the messages.
- * </p>
- * See quickstart/Consumer in the example module for a typical usage.
- * </p>
- *
- * <p>
- * <strong>Thread Safety:</strong> After initialization, the instance can be regarded as thread-safe.
- * </p>
+ * Push 模式消费者（推荐）：底层仍为 Pull，拉取到消息后回调 {@link MessageListener}。
+ * 示例见 example 模块 quickstart/Consumer。
+ * <p><strong>线程安全：</strong>初始化完成后可视为线程安全。
  */
 public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsumer {
 
     private final Logger log = LoggerFactory.getLogger(DefaultMQPushConsumer.class);
 
-    /**
-     * Internal implementation. Most of the functions herein are delegated to it.
-     */
+    /** 内部实现，大部分逻辑委托给 {@link DefaultMQPushConsumerImpl}。 */
     protected final transient DefaultMQPushConsumerImpl defaultMQPushConsumerImpl;
 
     /**
-     * Consumers of the same role is required to have exactly same subscriptions and consumerGroup to correctly achieve
-     * load balance. It's required and needs to be globally unique.
-     * </p>
-     * See <a href="https://rocketmq.apache.org/docs/introduction/02concepts">here</a> for further discussion.
+     * 消费组名：同组消费者须订阅一致以实现负载均衡，全局唯一。
+     * 详见 <a href="https://rocketmq.apache.org/docs/introduction/02concepts">概念文档</a>。
      */
     private String consumerGroup;
 
     /**
-     * Message model defines the way how messages are delivered to each consumer clients.
-     * </p>
-     * RocketMQ supports two message models: clustering and broadcasting. If clustering is set, consumer clients with
-     * the same {@link #consumerGroup} would only consume shards of the messages subscribed, which achieves load
-     * balances; Conversely, if the broadcasting is set, each consumer client will consume all subscribed messages
-     * separately.
-     * </p>
-     * This field defaults to clustering.
+     * 消息模型：CLUSTERING（集群，同组分摊队列）或 BROADCASTING（广播，每实例消费全量）。
+     * 默认 CLUSTERING。
      */
     private MessageModel messageModel = MessageModel.CLUSTERING;
 
     /**
-     * Consuming point on consumer booting.
-     * </p>
-     * There are three consuming points:
+     * 启动时的消费位点策略：
      * <ul>
-     * <li>
-     * <code>CONSUME_FROM_LAST_OFFSET</code>: consumer clients pick up where it stopped previously.
-     * If it were a newly booting up consumer client, according aging of the consumer group, there are two
-     * cases:
-     * <ol>
-     * <li>
-     * if the consumer group is created so recently that the earliest message being subscribed has yet
-     * expired, which means the consumer group represents a lately launched business, consuming will
-     * start from the very beginning;
-     * </li>
-     * <li>
-     * if the earliest message being subscribed has expired, consuming will start from the latest
-     * messages, meaning messages born prior to the booting timestamp would be ignored.
-     * </li>
-     * </ol>
-     * </li>
-     * <li>
-     * <code>CONSUME_FROM_FIRST_OFFSET</code>: Consumer client will start from earliest messages available.
-     * </li>
-     * <li>
-     * <code>CONSUME_FROM_TIMESTAMP</code>: Consumer client will start from specified timestamp, which means
-     * messages born prior to {@link #consumeTimestamp} will be ignored
-     * </li>
+     * <li>CONSUME_FROM_LAST_OFFSET：从上次位点继续；新组视消息是否过期决定从头或最新</li>
+     * <li>CONSUME_FROM_FIRST_OFFSET：从最早可用消息开始</li>
+     * <li>CONSUME_FROM_TIMESTAMP：从 {@link #consumeTimestamp} 指定时刻开始</li>
      * </ul>
      */
     private ConsumeFromWhere consumeFromWhere = ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET;
 
-    /**
-     * Backtracking consumption time with second precision. Time format is
-     * 20131223171201<br>
-     * Implying Seventeen twelve and 01 seconds on December 23, 2013 year<br>
-     * Default backtracking consumption time Half an hour ago.
-     */
+    /** 按时间戳回溯消费的起始时刻，格式 yyyyMMddHHmmss；默认半小时前。 */
     private String consumeTimestamp = UtilAll.timeMillisToHumanString3(System.currentTimeMillis() - (1000 * 60 * 30));
 
-    /**
-     * Queue allocation algorithm specifying how message queues are allocated to each consumer clients.
-     */
+    /** 队列分配策略，决定 Topic 下各队列如何分配给同组消费者。 */
     private AllocateMessageQueueStrategy allocateMessageQueueStrategy;
 
-    /**
-     * Subscription relationship
-     */
+    /** 订阅关系：topic → 订阅表达式（Tag/SQL）。 */
     private Map<String /* topic */, String /* sub expression */> subscription = new HashMap<>();
 
-    /**
-     * Message listener
-     */
+    /** 消息监听器（并发或顺序）。 */
     private MessageListener messageListener;
 
-    /**
-     * Listener to call if message queue assignment is changed.
-     */
+    /** Rebalance 导致队列分配变更时的回调。 */
     private MessageQueueListener messageQueueListener;
 
-    /**
-     * Offset Storage
-     */
+    /** 消费位点存储（本地/远程）。 */
     private OffsetStore offsetStore;
 
-    /**
-     * Minimum consumer thread number
-     */
+    /** 消费线程池最小线程数。 */
     private int consumeThreadMin = 20;
 
-    /**
-     * Max consumer thread number
-     */
+    /** 消费线程池最大线程数。 */
     private int consumeThreadMax = 20;
 
-    /**
-     * Threshold for dynamic adjustment of the number of thread pool
-     */
+    /** 动态扩缩消费线程池的队列堆积阈值。 */
     private long adjustThreadPoolNumsThreshold = 100000;
 
-    /**
-     * Concurrently max span offset.it has no effect on sequential consumption
-     */
+    /** 并发消费时单队列最大位点跨度（顺序消费无效）。 */
     private int consumeConcurrentlyMaxSpan = 2000;
 
-    /**
-     * Flow control threshold on queue level, each message queue will cache at most 1000 messages by default,
-     * Consider the {@code pullBatchSize}, the instantaneous value may exceed the limit
-     */
+    /** 单队列本地缓存消息条数流控阈值（默认 1000；瞬时可能因 pullBatchSize 超限）。 */
     private int pullThresholdForQueue = 1000;
 
-    /**
-     * Flow control threshold on queue level, means max num of messages waiting to ack.
-     * in contrast with pull threshold, once a message is popped, it's considered the beginning of consumption.
-     */
+    /** POP 模式单队列待 ACK 消息数流控阈值（POP 即视为开始消费）。 */
     private int popThresholdForQueue = 96;
 
-    /**
-     * Limit the cached message size on queue level, each message queue will cache at most 100 MiB messages by default,
-     * Consider the {@code pullBatchSize}, the instantaneous value may exceed the limit
-     *
-     * <p>
-     * The size(MB) of a message only measured by message body, so it's not accurate
-     */
+    /** 单队列本地缓存消息体大小上限（MiB，默认 100；仅统计 body 大小）。 */
     private int pullThresholdSizeForQueue = 100;
 
-    /**
-     * Flow control threshold on topic level, default value is -1(Unlimited)
-     * <p>
-     * The value of {@code pullThresholdForQueue} will be overwritten and calculated based on
-     * {@code pullThresholdForTopic} if it isn't unlimited
-     * <p>
-     * For example, if the value of pullThresholdForTopic is 1000 and 10 message queues are assigned to this consumer,
-     * then pullThresholdForQueue will be set to 100
-     */
+    /** Topic 级消息条数流控（-1 不限）；非 -1 时按分配队列数均摊到 pullThresholdForQueue。 */
     private int pullThresholdForTopic = -1;
 
-    /**
-     * Limit the cached message size on topic level, default value is -1 MiB(Unlimited)
-     * <p>
-     * The value of {@code pullThresholdSizeForQueue} will be overwritten and calculated based on
-     * {@code pullThresholdSizeForTopic} if it isn't unlimited
-     * <p>
-     * For example, if the value of pullThresholdSizeForTopic is 1000 MiB and 10 message queues are
-     * assigned to this consumer, then pullThresholdSizeForQueue will be set to 100 MiB
-     */
+    /** Topic 级缓存大小流控（MiB，-1 不限）；非 -1 时均摊到各队列。 */
     private int pullThresholdSizeForTopic = -1;
 
-    /**
-     * Message pull Interval
-     */
+    /** 拉取间隔（毫秒），>0 时限流拉取频率。 */
     private long pullInterval = 0;
 
-    /**
-     * Batch consumption size
-     */
+    /** 单次回调消费的最大消息条数。 */
     private int consumeMessageBatchMaxSize = 1;
 
-    /**
-     * Batch pull size
-     */
+    /** 单次从 Broker 拉取的最大消息条数。 */
     private int pullBatchSize = 32;
 
     private int pullBatchSizeInBytes = 256 * 1024;
 
-    /**
-     * Whether update subscription relationship when every pull
-     */
+    /** 是否每次 Pull 时更新订阅关系。 */
     private boolean postSubscriptionWhenPull = false;
 
-    /**
-     * Whether the unit of subscription group
-     */
+    /** 是否为单元化订阅组。 */
     private boolean unitMode = false;
 
-    /**
-     * Max re-consume times.
-     * In concurrently mode, -1 means 16;
-     * In orderly mode, -1 means Integer.MAX_VALUE.
-     * If messages are re-consumed more than {@link #maxReconsumeTimes} before success.
-     */
+    /** 最大重试次数：并发模式 -1 表示 16，顺序模式 -1 表示 Integer.MAX_VALUE。 */
     private int maxReconsumeTimes = -1;
 
-    /**
-     * Suspending pulling time for cases requiring slow pulling like flow-control scenario.
-     */
+    /** 流控等场景下暂停拉取的时长（毫秒）。 */
     private long suspendCurrentQueueTimeMillis = 1000;
 
-    /**
-     * Maximum amount of time in minutes a message may block the consuming thread.
-     */
+    /** 单条消息允许阻塞消费线程的最长时间（分钟）。 */
     private long consumeTimeout = 15;
 
-    /**
-     * Maximum amount of invisible time in millisecond of a message, rang is [5000, 300000]
-     */
+    /** POP 消息不可见时长（毫秒），范围 [5000, 300000]。 */
     private long popInvisibleTime = 60000;
 
-    /**
-     * Batch pop size. range is [1, 32]
-     */
+    /** POP 批量条数，范围 [1, 32]。 */
     private int popBatchNums = 32;
 
-    /**
-     * Maximum time to await message consuming when shutdown consumer, 0 indicates no await.
-     */
+    /** shutdown 时等待在途消费完成的最长时间（毫秒），0 表示不等待。 */
     private long awaitTerminationMillisWhenShutdown = 0;
 
-    /**
-     * Interface of asynchronous transfer data
-     */
+    /** 消息轨迹异步分发器。 */
     private TraceDispatcher traceDispatcher = null;
 
-    // force to use client rebalance
+    // 强制使用客户端 Rebalance
     private boolean clientRebalance = true;
 
     private RPCHook rpcHook = null;
 
-    /**
-     * Default constructor.
-     */
+    /** 默认构造：默认消费组 + 平均分配策略。 */
     public DefaultMQPushConsumer() {
         this(MixAll.DEFAULT_CONSUMER_GROUP, null, new AllocateMessageQueueAveragely());
     }
 
     /**
-     * Constructor specifying consumer group.
+     * 指定消费组构造。
      *
-     * @param consumerGroup Consumer group.
+     * @param consumerGroup 消费组名
      */
     public DefaultMQPushConsumer(final String consumerGroup) {
         this(consumerGroup, null, new AllocateMessageQueueAveragely());
     }
 
     /**
-     * Constructor specifying RPC hook.
+     * 指定 RPC Hook 构造。
      *
-     * @param rpcHook RPC hook to execute before each remoting command.
+     * @param rpcHook 每次 Remoting 请求前执行的 Hook
      */
     public DefaultMQPushConsumer(RPCHook rpcHook) {
         this(MixAll.DEFAULT_CONSUMER_GROUP, rpcHook, new AllocateMessageQueueAveragely());

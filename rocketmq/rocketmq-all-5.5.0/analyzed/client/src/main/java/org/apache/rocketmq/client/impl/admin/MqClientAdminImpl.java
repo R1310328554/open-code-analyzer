@@ -70,8 +70,13 @@ import org.apache.rocketmq.remoting.protocol.header.namesrv.DeleteTopicFromNames
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 客户端管理接口 {@link MqClientAdmin} 的 Remoting 实现：
+ * 消息查询、消费统计、消费组管理、Topic 运维等异步 CompletableFuture API。
+ */
 public class MqClientAdminImpl implements MqClientAdmin {
     private final static Logger log = LoggerFactory.getLogger(MqClientAdminImpl.class);
+    /** 共享 Remoting 客户端。 */
     private final RemotingClient remotingClient;
 
     public MqClientAdminImpl(RemotingClient remotingClient) {
@@ -79,6 +84,7 @@ public class MqClientAdminImpl implements MqClientAdmin {
     }
 
     @Override
+    /** 异步查询消息；支持按 uniqKey 或普通 key 过滤。 */
     public CompletableFuture<List<MessageExt>> queryMessage(String address, boolean uniqueKeyFlag, boolean decompressBody,
         QueryMessageRequestHeader requestHeader, long timeoutMillis) {
         CompletableFuture<List<MessageExt>> future = new CompletableFuture<>();
@@ -101,6 +107,7 @@ public class MqClientAdminImpl implements MqClientAdmin {
     }
 
     @Override
+    /** 异步获取 Topic 消费/生产统计。 */
     public CompletableFuture<TopicStatsTable> getTopicStatsInfo(String address,
         GetTopicStatsInfoRequestHeader requestHeader, long timeoutMillis) {
         CompletableFuture<TopicStatsTable> future = new CompletableFuture<>();
@@ -233,6 +240,7 @@ public class MqClientAdminImpl implements MqClientAdmin {
     }
 
     @Override
+    /** 异步调用 Broker 重置消费位点。 */
     public CompletableFuture<Map<MessageQueue, Long>> invokeBrokerToResetOffset(String address,
         ResetOffsetRequestHeader requestHeader, long timeoutMillis) {
         CompletableFuture<Map<MessageQueue, Long>> future = new CompletableFuture<>();
@@ -270,6 +278,7 @@ public class MqClientAdminImpl implements MqClientAdmin {
     }
 
     @Override
+    /** 异步从 NameServer 获取集群路由信息。 */
     public CompletableFuture<ClusterInfo> getBrokerClusterInfo(String address, long timeoutMillis) {
         CompletableFuture<ClusterInfo> future = new CompletableFuture<>();
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_BROKER_CLUSTER_INFO, null);
@@ -286,6 +295,7 @@ public class MqClientAdminImpl implements MqClientAdmin {
     }
 
     @Override
+    /** 异步查询消费组在线连接与订阅。 */
     public CompletableFuture<ConsumerConnection> getConsumerConnectionList(String address,
         GetConsumerConnectionListRequestHeader requestHeader, long timeoutMillis) {
         CompletableFuture<ConsumerConnection> future = new CompletableFuture<>();
@@ -303,6 +313,7 @@ public class MqClientAdminImpl implements MqClientAdmin {
     }
 
     @Override
+    /** 异步查询指定消费组订阅的 Topic 列表。 */
     public CompletableFuture<TopicList> queryTopicsByConsumer(String address,
         QueryTopicsByConsumerRequestHeader requestHeader, long timeoutMillis) {
         CompletableFuture<TopicList> future = new CompletableFuture<>();
@@ -338,6 +349,7 @@ public class MqClientAdminImpl implements MqClientAdmin {
     }
 
     @Override
+    /** 异步获取消费组堆积与 TPS 统计。 */
     public CompletableFuture<ConsumeStats> getConsumeStats(String address, GetConsumeStatsRequestHeader requestHeader,
         long timeoutMillis) {
         CompletableFuture<ConsumeStats> future = new CompletableFuture<>();
@@ -372,6 +384,7 @@ public class MqClientAdminImpl implements MqClientAdmin {
     }
 
     @Override
+    /** 异步获取消费者运行时信息（线程池、订阅、位点等）。 */
     public CompletableFuture<ConsumerRunningInfo> getConsumerRunningInfo(String address,
         GetConsumerRunningInfoRequestHeader requestHeader, long timeoutMillis) {
         CompletableFuture<ConsumerRunningInfo> future = new CompletableFuture<>();

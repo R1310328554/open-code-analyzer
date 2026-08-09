@@ -67,12 +67,12 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
 /**
- * This class will be removed in 2022, and a better implementation {@link DefaultLitePullConsumerImpl} is recommend to use
- * in the scenario of actively pulling messages.
+ * @deprecated 传统 Pull 实现（2022 后移除），请改用 {@link DefaultLitePullConsumerImpl}。
  */
 @Deprecated
 public class DefaultMQPullConsumerImpl implements MQConsumerInner {
     private static final Logger log = LoggerFactory.getLogger(DefaultMQPullConsumerImpl.class);
+    /** 关联的 Pull 消费者门面。 */
     private final DefaultMQPullConsumer defaultMQPullConsumer;
     private final long consumerStartTimestamp = System.currentTimeMillis();
     private final RPCHook rpcHook;
@@ -80,8 +80,10 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
     private final ArrayList<FilterMessageHook> filterMessageHookList = new ArrayList<>();
     private volatile ServiceState serviceState = ServiceState.CREATE_JUST;
     protected MQClientInstance mQClientFactory;
+    /** 封装 Pull 请求与长轮询。 */
     private PullAPIWrapper pullAPIWrapper;
     private OffsetStore offsetStore;
+    /** Pull 模式 Rebalance 实现。 */
     private RebalanceImpl rebalanceImpl = new RebalancePullImpl(this);
 
     public DefaultMQPullConsumerImpl(final DefaultMQPullConsumer defaultMQPullConsumer, final RPCHook rpcHook) {
@@ -141,7 +143,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
 
     public Set<MessageQueue> fetchSubscribeMessageQueues(String topic) throws MQClientException {
         this.isRunning();
-        // check if has info in memory, otherwise invoke api.
+        // 内存无路由则调用 NameServer API
         Set<MessageQueue> result = this.rebalanceImpl.getTopicSubscribeInfoTable().get(topic);
         if (null == result) {
             result = this.mQClientFactory.getMQAdminImpl().fetchSubscribeMessageQueues(topic);
@@ -175,6 +177,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
         return this.mQClientFactory.getMQAdminImpl().minOffset(mq);
     }
 
+    /** 非阻塞 Pull 一次。 */
     public PullResult pull(MessageQueue mq, String subExpression, long offset, int maxNums)
         throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         return pull(mq, subExpression, offset, maxNums, this.defaultMQPullConsumer.getConsumerPullTimeoutMillis());
@@ -265,7 +268,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
             null
         );
         this.pullAPIWrapper.processPullResult(mq, pullResult, subscriptionData);
-        //If namespace is not null , reset Topic without namespace.
+        // 有 namespace 时还原 topic
         this.resetTopic(pullResult.getMsgFoundList());
         if (!this.consumeMessageHookList.isEmpty()) {
             ConsumeMessageContext consumeMessageContext = null;
@@ -583,6 +586,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
         );
     }
 
+    /** 阻塞 Pull：无消息时长轮询直至有数据或超时。 */
     public PullResult pullBlockIfNotFound(MessageQueue mq, String subExpression, long offset, int maxNums)
         throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         SubscriptionData subscriptionData = getSubscriptionData(mq, subExpression);
@@ -770,10 +774,10 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
     }
 
     private void checkConfig() throws MQClientException {
-        // check consumerGroup
+        // 校验 consumerGroup
         Validators.checkGroup(this.defaultMQPullConsumer.getConsumerGroup());
 
-        // consumerGroup
+        // 消费组名校验
         if (null == this.defaultMQPullConsumer.getConsumerGroup()) {
             throw new MQClientException(
                 "consumerGroup is null"
@@ -791,7 +795,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                 null);
         }
 
-        // messageModel
+        // 消费模式校验
         if (null == this.defaultMQPullConsumer.getMessageModel()) {
             throw new MQClientException(
                 "messageModel is null"
@@ -799,7 +803,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                 null);
         }
 
-        // allocateMessageQueueStrategy
+        // 队列分配策略校验
         if (null == this.defaultMQPullConsumer.getAllocateMessageQueueStrategy()) {
             throw new MQClientException(
                 "allocateMessageQueueStrategy is null"
@@ -866,7 +870,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
         return serviceState;
     }
 
-    //Don't use this deprecated setter, which will be removed soon.
+    // 勿用此已废弃 setter，即将移除
     @Deprecated
     public void setServiceState(ServiceState serviceState) {
         this.serviceState = serviceState;

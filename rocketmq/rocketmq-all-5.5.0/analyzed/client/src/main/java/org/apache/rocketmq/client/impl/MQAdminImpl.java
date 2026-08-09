@@ -60,10 +60,16 @@ import org.apache.rocketmq.remoting.protocol.header.QueryMessageResponseHeader;
 import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
+/**
+ * 客户端管理 API 实现：创建 Topic、查询路由/位点、按时间检索 offset、
+ * 消息查询等，供 Producer/Consumer 及 tools 模块调用。
+ */
 public class MQAdminImpl {
 
     private static final Logger log = LoggerFactory.getLogger(MQAdminImpl.class);
+    /** 所属 MQClientInstance 工厂。 */
     private final MQClientInstance mQClientFactory;
+    /** Remoting 调用默认超时（毫秒）。 */
     private long timeoutMillis = 6000;
 
     public MQAdminImpl(MQClientInstance mQClientFactory) {
@@ -78,6 +84,7 @@ public class MQAdminImpl {
         this.timeoutMillis = timeoutMillis;
     }
 
+    /** 在 key 对应路由的各 Master Broker 上创建 Topic。 */
     public void createTopic(String key, String newTopic, int queueNum) throws MQClientException {
         createTopic(key, newTopic, queueNum, 0, null);
     }
@@ -140,6 +147,7 @@ public class MQAdminImpl {
         }
     }
 
+    /** 获取 Topic 可用于发布的 MessageQueue 列表（去 namespace）。 */
     public List<MessageQueue> fetchPublishMessageQueues(String topic) throws MQClientException {
         try {
             TopicRouteData topicRouteData = this.mQClientFactory.getMQClientAPIImpl().getTopicRouteInfoFromNameServer(topic, timeoutMillis);
@@ -166,6 +174,7 @@ public class MQAdminImpl {
         return resultQueues;
     }
 
+    /** 获取 Topic 可用于订阅的 MessageQueue 集合。 */
     public Set<MessageQueue> fetchSubscribeMessageQueues(String topic) throws MQClientException {
         try {
             TopicRouteData topicRouteData = this.mQClientFactory.getMQClientAPIImpl().getTopicRouteInfoFromNameServer(topic, timeoutMillis);
@@ -187,10 +196,11 @@ public class MQAdminImpl {
     }
 
     public long searchOffset(MessageQueue mq, long timestamp) throws MQClientException {
-        // default return lower boundary offset when there are more than one offsets.
+        // 多个 offset 匹配时默认返回下界（最早）
         return searchOffset(mq, timestamp, BoundaryType.LOWER);
     }
 
+    /** 按时间戳在指定队列上检索消费位点（支持 UPPER/LOWER 边界）。 */
     public long searchOffset(MessageQueue mq, long timestamp, BoundaryType boundaryType) throws MQClientException {
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(this.mQClientFactory.getBrokerNameFromMessageQueue(mq));
         if (null == brokerAddr) {
@@ -210,6 +220,7 @@ public class MQAdminImpl {
         throw new MQClientException("The broker[" + mq.getBrokerName() + "] not exist", null);
     }
 
+    /** 查询队列最大 offset。 */
     public long maxOffset(MessageQueue mq) throws MQClientException {
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(this.mQClientFactory.getBrokerNameFromMessageQueue(mq));
         if (null == brokerAddr) {
@@ -228,6 +239,7 @@ public class MQAdminImpl {
         throw new MQClientException("The broker[" + mq.getBrokerName() + "] not exist", null);
     }
 
+    /** 查询队列最小 offset。 */
     public long minOffset(MessageQueue mq) throws MQClientException {
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(this.mQClientFactory.getBrokerNameFromMessageQueue(mq));
         if (null == brokerAddr) {
@@ -276,6 +288,7 @@ public class MQAdminImpl {
             topic, messageId.getOffset(), timeoutMillis);
     }
 
+    /** 按 topic/key/时间范围查询历史消息。 */
     public QueryResult queryMessage(String topic, String key, int maxNum, long begin,
         long end) throws MQClientException,
         InterruptedException {

@@ -40,56 +40,34 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
 /**
- * @deprecated Default pulling consumer. This class will be removed in 2022, and a better implementation
- * {@link DefaultLitePullConsumer} is recommend to use in the scenario of actively pulling messages.
+ * @deprecated 传统 Pull 消费者（2022 年后移除），主动拉取场景请改用 {@link DefaultLitePullConsumer}。
  */
 @Deprecated
 public class DefaultMQPullConsumer extends ClientConfig implements MQPullConsumer {
 
     protected final transient DefaultMQPullConsumerImpl defaultMQPullConsumerImpl;
 
-    /**
-     * Do the same thing for the same Group, the application must be set,and guarantee Globally unique
-     */
+    /** 消费组名，同组须一致且全局唯一。 */
     private String consumerGroup;
-    /**
-     * Long polling mode, the Consumer connection max suspend time, it is not recommended to modify
-     */
+    /** 长轮询模式下 Broker 挂起连接的最长时间（毫秒），不建议修改。 */
     private long brokerSuspendMaxTimeMillis = 1000 * 20;
-    /**
-     * Long polling mode, the Consumer connection timeout(must greater than brokerSuspendMaxTimeMillis), it is not
-     * recommended to modify
-     */
+    /** 长轮询模式下消费者连接超时（须大于 brokerSuspendMaxTimeMillis），不建议修改。 */
     private long consumerTimeoutMillisWhenSuspend = 1000 * 30;
-    /**
-     * The socket timeout in milliseconds
-     */
+    /** Pull 请求 Socket 超时（毫秒）。 */
     private long consumerPullTimeoutMillis = 1000 * 10;
-    /**
-     * Consumption pattern,default is clustering
-     */
+    /** 消费模式，默认 CLUSTERING 集群消费。 */
     private MessageModel messageModel = MessageModel.CLUSTERING;
-    /**
-     * Message queue listener
-     */
+    /** 队列分配变更监听器。 */
     private MessageQueueListener messageQueueListener;
-    /**
-     * Offset Storage
-     */
+    /** 消费位点存储。 */
     private OffsetStore offsetStore;
-    /**
-     * Topic set you want to register
-     */
+    /** 待注册订阅的 Topic 集合。 */
     private Set<String> registerTopics = new HashSet<>();
 
     private final Set<SubscriptionData> registerSubscriptions = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    /**
-     * Queue allocation algorithm
-     */
+    /** 队列分配算法。 */
     private AllocateMessageQueueStrategy allocateMessageQueueStrategy = new AllocateMessageQueueAveragely();
-    /**
-     * Whether the unit of subscription group
-     */
+    /** 是否为单元化订阅组。 */
     private boolean unitMode = false;
 
     private int maxReconsumeTimes = 16;
@@ -115,10 +93,10 @@ public class DefaultMQPullConsumer extends ClientConfig implements MQPullConsume
     }
 
     /**
-     * Constructor specifying namespace, consumer group and RPC hook.
+     * 指定命名空间、消费组与 RPC Hook 构造。
      *
-     * @param consumerGroup Consumer group.
-     * @param rpcHook RPC hook to execute before each remoting command.
+     * @param consumerGroup 消费组名
+     * @param rpcHook 每次 Remoting 请求前执行的 Hook
      */
     public DefaultMQPullConsumer(final String namespace, final String consumerGroup, RPCHook rpcHook) {
         this.namespace = namespace;
@@ -127,9 +105,7 @@ public class DefaultMQPullConsumer extends ClientConfig implements MQPullConsume
         defaultMQPullConsumerImpl = new DefaultMQPullConsumerImpl(this, rpcHook);
     }
 
-    /**
-     * This method will be removed in a certain version after April 5, 2020, so please do not use this method.
-     */
+    /** @deprecated 2020-04-05 后将移除，请勿使用。 */
     @Deprecated
     @Override
     public void createTopic(String key, String newTopic, int queueNum,

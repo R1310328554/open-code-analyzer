@@ -48,16 +48,26 @@ import org.apache.rocketmq.remoting.protocol.body.ConsumeMessageDirectlyResult;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Push 并发消费服务：线程池调度 {@link ConsumeConcurrentlyRequest}，
+ * 调用 {@link MessageListenerConcurrently} 并处理 RECONSUME_LATER/SUCCESS。
+ */
 public class ConsumeMessageConcurrentlyService implements ConsumeMessageService {
     private static final Logger log = LoggerFactory.getLogger(ConsumeMessageConcurrentlyService.class);
+    /** 所属 Push 消费者实现。 */
     private final DefaultMQPushConsumerImpl defaultMQPushConsumerImpl;
     private final DefaultMQPushConsumer defaultMQPushConsumer;
+    /** 用户注册的并发监听器。 */
     private final MessageListenerConcurrently messageListener;
+    /** 消费任务队列。 */
     private final BlockingQueue<Runnable> consumeRequestQueue;
+    /** 消费工作线程池。 */
     private final ThreadPoolExecutor consumeExecutor;
     private final String consumerGroup;
 
+    /** 定时任务（清理过期消息等）。 */
     private final ScheduledExecutorService scheduledExecutorService;
+    /** 过期消息清理专用调度器。 */
     private final ScheduledExecutorService cleanExpireMsgExecutors;
 
     public ConsumeMessageConcurrentlyService(DefaultMQPushConsumerImpl defaultMQPushConsumerImpl,
@@ -97,6 +107,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
         }, this.defaultMQPushConsumer.getConsumeTimeout(), this.defaultMQPushConsumer.getConsumeTimeout(), TimeUnit.MINUTES);
     }
 
+    /** 关闭线程池并等待在途任务。 */
     public void shutdown(long awaitTerminateMillis) {
         this.scheduledExecutorService.shutdown();
         ThreadUtils.shutdownGracefully(this.consumeExecutor, awaitTerminateMillis, TimeUnit.MILLISECONDS);
@@ -184,6 +195,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
     }
 
     @Override
+    /** 提交一批消息到消费线程池。 */
     public void submitConsumeRequest(
         final List<MessageExt> msgs,
         final ProcessQueue processQueue,
@@ -223,6 +235,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
     }
 
     @Override
+    /** 提交 POP 模式消费请求。 */
     public void submitPopConsumeRequest(final List<MessageExt> msgs,
         final PopProcessQueue processQueue,
         final MessageQueue messageQueue) {
@@ -279,7 +292,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
                 List<MessageExt> msgBackFailed = new ArrayList<>(consumeRequest.getMsgs().size());
                 for (int i = ackIndex + 1; i < consumeRequest.getMsgs().size(); i++) {
                     MessageExt msg = consumeRequest.getMsgs().get(i);
-                    // Maybe message is expired and cleaned, just ignore it.
+                    // 消息可能已过期被清理，忽略
                     if (!consumeRequest.getProcessQueue().containsMessage(msg)) {
                         log.info("Message is not found in its process queue; skip send-back-procedure, topic={}, "
                                 + "brokerName={}, queueId={}, queueOffset={}", msg.getTopic(), msg.getBrokerName(),
@@ -316,7 +329,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
     public boolean sendMessageBack(final MessageExt msg, final ConsumeConcurrentlyContext context) {
         int delayLevel = context.getDelayLevelWhenNextConsume();
 
-        // Wrap topic with namespace before sending back message.
+        // SendBack 前为 topic 包装 namespace
         msg.setTopic(this.defaultMQPushConsumer.withNamespace(msg.getTopic()));
         try {
             this.defaultMQPushConsumerImpl.sendMessageBack(msg, delayLevel, this.defaultMQPushConsumer.queueWithNamespace(context.getMessageQueue()));

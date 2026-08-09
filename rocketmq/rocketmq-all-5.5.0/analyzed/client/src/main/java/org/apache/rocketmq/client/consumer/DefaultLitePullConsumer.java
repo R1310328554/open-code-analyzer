@@ -44,168 +44,113 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
 import static org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData.SUB_ALL;
 
+/**
+ * Lite Pull 消费者：轻量级主动拉取 API，支持 subscribe/assign、自动/手动提交位点，
+ * 适用于需要精确控制拉取节奏的场景。底层由 {@link DefaultLitePullConsumerImpl} 实现。
+ */
 public class DefaultLitePullConsumer extends ClientConfig implements LitePullConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultLitePullConsumer.class);
 
     private final DefaultLitePullConsumerImpl defaultLitePullConsumerImpl;
 
-    /**
-     * Consumers belonging to the same consumer group share a group id. The consumers in a group then divides the topic
-     * as fairly amongst themselves as possible by establishing that each queue is only consumed by a single consumer
-     * from the group. If all consumers are from the same group, it functions as a traditional message queue. Each
-     * message would be consumed by one consumer of the group only. When multiple consumer groups exist, the flow of the
-     * data consumption model aligns with the traditional publish-subscribe model. The messages are broadcast to all
-     * consumer groups.
-     */
+    /** 消费组 ID：同组内队列唯一分配，实现负载均衡；多组间为发布订阅模型。 */
     private String consumerGroup;
 
-    /**
-     * Long polling mode, the Consumer connection max suspend time, it is not recommended to modify
-     */
+    /** 长轮询 Broker 挂起最长时间（毫秒），不建议修改。 */
     private long brokerSuspendMaxTimeMillis = 1000 * 20;
 
-    /**
-     * Long polling mode, the Consumer connection timeout(must greater than brokerSuspendMaxTimeMillis), it is not
-     * recommended to modify
-     */
+    /** 长轮询连接超时（须大于 brokerSuspendMaxTimeMillis），不建议修改。 */
     private long consumerTimeoutMillisWhenSuspend = 1000 * 30;
 
-    /**
-     * The socket timeout in milliseconds
-     */
+    /** Pull Socket 超时（毫秒）。 */
     private long consumerPullTimeoutMillis = 1000 * 10;
 
-    /**
-     * Consumption pattern,default is clustering
-     */
+    /** 消费模式，默认 CLUSTERING。 */
     private MessageModel messageModel = MessageModel.CLUSTERING;
-    /**
-     * Message queue listener
-     */
+    /** 队列分配变更监听器。 */
     private MessageQueueListener messageQueueListener;
-    /**
-     * Offset Storage
-     */
+    /** 消费位点存储。 */
     private OffsetStore offsetStore;
 
-    /**
-     * Queue allocation algorithm
-     */
+    /** 队列分配策略。 */
     private AllocateMessageQueueStrategy allocateMessageQueueStrategy = new AllocateMessageQueueAveragely();
-    /**
-     * Whether the unit of subscription group
-     */
+    /** 是否为单元化订阅组。 */
     private boolean unitMode = false;
 
-    /**
-     * The flag for auto commit offset
-     */
+    /** 是否自动提交消费位点。 */
     private boolean autoCommit = true;
 
-    /**
-     * Pull thread number
-     */
+    /** Pull 工作线程数。 */
     private int pullThreadNums = 20;
 
-    /**
-     * Minimum commit offset interval time in milliseconds.
-     */
+    /** 自动提交位点的最小间隔（毫秒）。 */
     private static final long MIN_AUTOCOMMIT_INTERVAL_MILLIS = 1000;
 
-    /**
-     * Maximum commit offset interval time in milliseconds.
-     */
+    /** 自动提交位点的最大间隔（毫秒）。 */
     private long autoCommitIntervalMillis = 5 * 1000;
 
-    /**
-     * Maximum number of messages pulled each time.
-     */
+    /** 单次拉取最大消息条数。 */
     private int pullBatchSize = 10;
 
-    /**
-     * Flow control threshold for consume request, each consumer will cache at most 10000 consume requests by default.
-     * Consider the {@code pullBatchSize}, the instantaneous value may exceed the limit
-     */
+    /** 全局消费请求缓存流控阈值（默认 10000 条）。 */
     private long pullThresholdForAll = 10000;
 
-    /**
-     * Consume max span offset.
-     */
+    /** 消费位点最大跨度。 */
     private int consumeMaxSpan = 2000;
 
-    /**
-     * Flow control threshold on queue level, each message queue will cache at most 1000 messages by default, Consider
-     * the {@code pullBatchSize}, the instantaneous value may exceed the limit
-     */
+    /** 单队列本地缓存消息条数流控阈值。 */
     private int pullThresholdForQueue = 1000;
 
-    /**
-     * Limit the cached message size on queue level, each message queue will cache at most 100 MiB messages by default,
-     * Consider the {@code pullBatchSize}, the instantaneous value may exceed the limit
-     *
-     * <p>
-     * The size of a message only measured by message body, so it's not accurate
-     */
+    /** 单队列缓存消息体大小上限（MiB，仅统计 body）。 */
     private int pullThresholdSizeForQueue = 100;
 
-    /**
-     * The poll timeout in milliseconds
-     */
+    /** poll() 阻塞超时（毫秒）。 */
     private long pollTimeoutMillis = 1000 * 5;
 
-    /**
-     * Interval time in in milliseconds for checking changes in topic metadata.
-     */
+    /** Topic 元数据变更检测间隔（毫秒）。 */
     private long topicMetadataCheckIntervalMillis = 30 * 1000;
 
     private ConsumeFromWhere consumeFromWhere = ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET;
 
-    /**
-     * Backtracking consumption time with second precision. Time format is 20131223171201<br> Implying Seventeen twelve
-     * and 01 seconds on December 23, 2013 year<br> Default backtracking consumption time Half an hour ago.
-     */
+    /** 按时间戳回溯的起始时刻，格式 yyyyMMddHHmmss；默认半小时前。 */
     private String consumeTimestamp = UtilAll.timeMillisToHumanString3(System.currentTimeMillis() - (1000 * 60 * 30));
 
-    /**
-     * Interface of asynchronous transfer data
-     */
+    /** 消息轨迹分发器。 */
     private TraceDispatcher traceDispatcher = null;
 
     private RPCHook rpcHook;
 
     private final Set<SubscriptionData> subscriptionsForHeartbeat = new HashSet<>();
 
-    /**
-     * Default constructor.
-     */
+    /** 默认构造。 */
     public DefaultLitePullConsumer() {
         this(MixAll.DEFAULT_CONSUMER_GROUP, null);
     }
 
     /**
-     * Constructor specifying consumer group.
+     * 指定消费组构造。
      *
-     * @param consumerGroup Consumer group.
+     * @param consumerGroup 消费组名
      */
     public DefaultLitePullConsumer(final String consumerGroup) {
         this(consumerGroup, null);
     }
 
     /**
-     * Constructor specifying RPC hook.
+     * 指定 RPC Hook 构造。
      *
-     * @param rpcHook RPC hook to execute before each remoting command.
+     * @param rpcHook Remoting 请求 Hook
      */
     public DefaultLitePullConsumer(RPCHook rpcHook) {
         this(MixAll.DEFAULT_CONSUMER_GROUP, rpcHook);
     }
 
     /**
-     * Constructor specifying consumer group, RPC hook
+     * 指定消费组与 RPC Hook 构造。
      *
-     * @param consumerGroup Consumer group.
-     * @param rpcHook       RPC hook to execute before each remoting command.
+     * @param consumerGroup 消费组名
+     * @param rpcHook Remoting 请求 Hook
      */
     public DefaultLitePullConsumer(final String consumerGroup, RPCHook rpcHook) {
         this.consumerGroup = consumerGroup;

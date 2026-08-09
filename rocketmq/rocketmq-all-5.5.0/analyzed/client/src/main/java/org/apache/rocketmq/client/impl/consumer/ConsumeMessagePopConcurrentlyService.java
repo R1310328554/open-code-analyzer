@@ -50,12 +50,19 @@ import org.apache.rocketmq.remoting.protocol.header.ExtraInfoUtil;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * POP 并发消费服务：消费 POP 拉取的消息，成功后异步 ACK，
+ * 失败则修改不可见时间或 SendBack 重试。
+ */
 public class ConsumeMessagePopConcurrentlyService implements ConsumeMessageService {
     private static final Logger log = LoggerFactory.getLogger(ConsumeMessagePopConcurrentlyService.class);
+    /** 所属 Push 消费者实现。 */
     private final DefaultMQPushConsumerImpl defaultMQPushConsumerImpl;
     private final DefaultMQPushConsumer defaultMQPushConsumer;
+    /** 并发消息监听器。 */
     private final MessageListenerConcurrently messageListener;
     private final BlockingQueue<Runnable> consumeRequestQueue;
+    /** POP 消费线程池。 */
     private final ThreadPoolExecutor consumeExecutor;
     private final String consumerGroup;
 
@@ -84,6 +91,7 @@ public class ConsumeMessagePopConcurrentlyService implements ConsumeMessageServi
     public void start() {
     }
 
+    /** 关闭 POP 消费线程池。 */
     public void shutdown(long awaitTerminateMillis) {
         this.scheduledExecutorService.shutdown();
         ThreadUtils.shutdownGracefully(this.consumeExecutor, awaitTerminateMillis, TimeUnit.MILLISECONDS);
@@ -174,6 +182,7 @@ public class ConsumeMessagePopConcurrentlyService implements ConsumeMessageServi
     }
 
     @Override
+    /** 提交 POP 并发消费任务。 */
     public void submitPopConsumeRequest(
         final List<MessageExt> msgs,
         final PopProcessQueue processQueue,
@@ -342,6 +351,7 @@ public class ConsumeMessagePopConcurrentlyService implements ConsumeMessageServi
         }, 5000, TimeUnit.MILLISECONDS);
     }
 
+    /** 单次 POP 批次消费任务。 */
     class ConsumeRequest implements Runnable {
         private final List<MessageExt> msgs;
         private final PopProcessQueue processQueue;

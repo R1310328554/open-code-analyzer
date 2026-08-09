@@ -32,7 +32,8 @@ import org.apache.rocketmq.remoting.protocol.NamespaceUtil;
 import org.apache.rocketmq.remoting.protocol.RequestType;
 
 /**
- * Client Common configuration
+ * RocketMQ 客户端公共配置基类：NameServer 地址、心跳间隔、TLS/VIP 通道、
+ * 消息轨迹、流式请求类型及发送容错等参数，Producer/Consumer 均继承此类。
  */
 public class ClientConfig {
     public static final String SEND_MESSAGE_WITH_VIP_CHANNEL_PROPERTY = "com.rocketmq.sendMessageWithVIPChannel";
@@ -52,17 +53,11 @@ public class ClientConfig {
     protected String namespaceV2;
     protected AccessChannel accessChannel = AccessChannel.LOCAL;
 
-    /**
-     * Pulling topic information interval from the named server
-     */
+    /** 从 NameServer 拉取 Topic 路由信息的间隔（毫秒）。 */
     private int pollNameServerInterval = 1000 * 30;
-    /**
-     * Heartbeat interval in microseconds with message broker
-     */
+    /** 与 Broker 心跳间隔（毫秒；注释误写为微秒，实际为毫秒）。 */
     private int heartbeatBrokerInterval = 1000 * 30;
-    /**
-     * Offset persistent interval for consumer
-     */
+    /** 消费位点持久化间隔（毫秒）。 */
     private int persistConsumerOffsetInterval = 1000 * 5;
     private long pullTimeDelayMillsWhenException = 1000;
 
@@ -85,16 +80,14 @@ public class ClientConfig {
     private LanguageCode language = LanguageCode.JAVA;
 
     /**
-     * Enable stream request type will inject a RPCHook to add corresponding request type to remoting layer.
-     * And it will also generate a different client id to prevent unexpected reuses of MQClientInstance.
+     * 启用流式请求类型：注入 RPCHook 标记 Remoting 请求类型，
+     * 并生成不同的 clientId 以避免 MQClientInstance 被意外复用。
      */
     protected boolean enableStreamRequestType = false;
 
     /**
-     * Enable the fault tolerance mechanism of the client sending process.
-     * DO NOT OPEN when ORDER messages are required.
-     * Turning on will interfere with the queue selection functionality,
-     * possibly conflicting with the order message.
+     * 启用发送侧容错（延迟探测与 Broker 隔离）。
+     * 顺序消息场景请勿开启，否则会干扰队列选择逻辑。
      */
     private boolean sendLatencyEnable = Boolean.parseBoolean(System.getProperty(SEND_LATENCY_ENABLE, "false"));
     private boolean startDetectorEnable = Boolean.parseBoolean(System.getProperty(START_DETECTOR_ENABLE, "false"));
@@ -105,18 +98,15 @@ public class ClientConfig {
 
     private int concurrentHeartbeatThreadPoolSize = Runtime.getRuntime().availableProcessors();
 
-    /**
-     * The switch for message trace
-     */
+    /** 是否开启消息轨迹追踪。 */
     protected boolean enableTrace = false;
 
-    /**
-     * The name value of message trace topic. If not set, the default trace topic name will be used.
-     */
+    /** 消息轨迹 Topic 名称；未设置时使用默认轨迹 Topic。 */
     protected String traceTopic;
 
     protected int maxPageSizeInGetMetadata = 2000;
 
+    /** 构造 clientId：clientIP@instanceName[@unitName][@STREAM]。 */
     public String buildMQClientId() {
         StringBuilder sb = new StringBuilder();
         sb.append(this.getClientIP());
@@ -291,9 +281,9 @@ public class ClientConfig {
     }
 
     /**
-     * Domain name mode access way does not support the delimiter(;), and only one domain name can be set.
+     * 设置 NameServer 地址；域名模式不支持分号分隔，仅允许单个域名。
      *
-     * @param namesrvAddr name server address
+     * @param namesrvAddr NameServer 地址
      */
     public void setNamesrvAddr(String namesrvAddr) {
         this.namesrvAddr = namesrvAddr;
@@ -304,6 +294,7 @@ public class ClientConfig {
         return clientCallbackExecutorThreads;
     }
 
+    /** 设置客户端异步回调线程池大小。 */
     public void setClientCallbackExecutorThreads(int clientCallbackExecutorThreads) {
         this.clientCallbackExecutorThreads = clientCallbackExecutorThreads;
     }
@@ -312,6 +303,7 @@ public class ClientConfig {
         return pollNameServerInterval;
     }
 
+    /** 设置从 NameServer 拉取路由的间隔（毫秒）。 */
     public void setPollNameServerInterval(int pollNameServerInterval) {
         this.pollNameServerInterval = pollNameServerInterval;
     }

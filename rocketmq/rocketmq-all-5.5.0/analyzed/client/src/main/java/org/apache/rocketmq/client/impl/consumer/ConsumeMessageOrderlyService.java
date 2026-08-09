@@ -50,18 +50,28 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Push 顺序消费服务：按 MessageQueue 加锁保证单队列串行，
+ * 调用 {@link MessageListenerOrderly}，支持 SUSPEND/SUCCESS。
+ */
 public class ConsumeMessageOrderlyService implements ConsumeMessageService {
     private static final Logger log = LoggerFactory.getLogger(ConsumeMessageOrderlyService.class);
+    /** 单队列连续消费最长时间（毫秒），超时释放锁避免饿死。 */
     private final static long MAX_TIME_CONSUME_CONTINUOUSLY =
         Long.parseLong(System.getProperty("rocketmq.client.maxTimeConsumeContinuously", "60000"));
+    /** 所属 Push 消费者实现。 */
     private final DefaultMQPushConsumerImpl defaultMQPushConsumerImpl;
     private final DefaultMQPushConsumer defaultMQPushConsumer;
+    /** 用户注册的顺序监听器。 */
     private final MessageListenerOrderly messageListener;
     private final BlockingQueue<Runnable> consumeRequestQueue;
+    /** 消费线程池（每队列串行）。 */
     private final ThreadPoolExecutor consumeExecutor;
     private final String consumerGroup;
+    /** 队列级互斥锁，保证顺序消费。 */
     private final MessageQueueLock messageQueueLock = new MessageQueueLock();
     private final ScheduledExecutorService scheduledExecutorService;
+    /** 服务是否已停止。 */
     private volatile boolean stopped = false;
 
     public ConsumeMessageOrderlyService(DefaultMQPushConsumerImpl defaultMQPushConsumerImpl,
@@ -102,6 +112,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
     }
 
     @Override
+    /** 关闭服务并释放队列锁。 */
     public void shutdown(long awaitTerminateMillis) {
         this.stopped = true;
         this.scheduledExecutorService.shutdown();
@@ -199,6 +210,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
     }
 
     @Override
+    /** 提交顺序消费请求（同队列互斥）。 */
     public void submitConsumeRequest(
         final List<MessageExt> msgs,
         final ProcessQueue processQueue,
@@ -211,6 +223,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
     }
 
     @Override
+    /** 提交 POP 顺序消费请求。 */
     public void submitPopConsumeRequest(final List<MessageExt> msgs,
                                         final PopProcessQueue processQueue,
                                         final MessageQueue messageQueue) {

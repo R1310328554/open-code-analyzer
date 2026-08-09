@@ -47,18 +47,27 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * POP 顺序消费服务：按队列加锁串行处理 POP 消息，
+ * 保证同队列 FIFO 语义。
+ */
 public class ConsumeMessagePopOrderlyService implements ConsumeMessageService {
     private static final Logger log = LoggerFactory.getLogger(ConsumeMessagePopOrderlyService.class);
     private final DefaultMQPushConsumerImpl defaultMQPushConsumerImpl;
     private final DefaultMQPushConsumer defaultMQPushConsumer;
+    /** 顺序消息监听器。 */
     private final MessageListenerOrderly messageListener;
     private final BlockingQueue<Runnable> consumeRequestQueue;
+    /** 进行中的 POP 顺序消费请求集合。 */
     private final ConcurrentSet<ConsumeRequest> consumeRequestSet = new ConcurrentSet<>();
     private final ThreadPoolExecutor consumeExecutor;
     private final String consumerGroup;
+    /** 队列消费互斥锁。 */
     private final MessageQueueLock messageQueueLock = new MessageQueueLock();
+    /** 消费请求提交互斥锁。 */
     private final MessageQueueLock consumeRequestLock = new MessageQueueLock();
     private final ScheduledExecutorService scheduledExecutorService;
+    /** 服务停止标志。 */
     private volatile boolean stopped = false;
 
     public ConsumeMessagePopOrderlyService(DefaultMQPushConsumerImpl defaultMQPushConsumerImpl,
@@ -94,6 +103,7 @@ public class ConsumeMessagePopOrderlyService implements ConsumeMessageService {
     }
 
     @Override
+    /** 关闭 POP 顺序消费服务。 */
     public void shutdown(long awaitTerminateMillis) {
         this.stopped = true;
         this.scheduledExecutorService.shutdown();
@@ -197,6 +207,7 @@ public class ConsumeMessagePopOrderlyService implements ConsumeMessageService {
     }
 
     @Override
+    /** 提交 POP 顺序消费请求。 */
     public void submitPopConsumeRequest(final List<MessageExt> msgs,
                                      final PopProcessQueue processQueue,
                                      final MessageQueue messageQueue) {

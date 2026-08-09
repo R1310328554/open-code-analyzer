@@ -51,26 +51,39 @@ import org.apache.rocketmq.store.PutMessageResult;
 import org.apache.rocketmq.store.PutMessageStatus;
 import org.apache.rocketmq.store.config.BrokerRole;
 
+/**
+ * 基于 Half/Op Topic 队列的事务消息服务实现：prepare 写入半消息，
+ * 定时回查未决事务，根据 commit/rollback 投递或删除半消息。
+ * 配合 {@link TransactionalMessageBridge} 访问 MessageStore。
+ */
 public class TransactionalMessageServiceImpl implements TransactionalMessageService {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
 
     private TransactionalMessageBridge transactionalMessageBridge;
 
+    /** 拉取 Op/Half 消息失败时的重试次数。 */
     private static final int PULL_MSG_RETRY_NUMBER = 1;
 
+    /** 单次事务回查批处理最大耗时（毫秒）。 */
     private static final int MAX_PROCESS_TIME_LIMIT = 60000;
+    /** Op 消息缺失时 escape 重试上限。 */
     private static final int MAX_RETRY_TIMES_FOR_ESCAPE = 10;
 
+    /** Half 消息为空时的最大重试次数。 */
     private static final int MAX_RETRY_COUNT_WHEN_HALF_NULL = 1;
 
+    /** 单次从 Op Topic 拉取的消息条数。 */
     private static final int OP_MSG_PULL_NUMS = 32;
 
+    /** 无 Op 消息可拉时的休眠间隔（毫秒）。 */
     private static final int SLEEP_WHILE_NO_OP = 1000;
 
+    /** queueId → Op 消息批量删除上下文。 */
     private final ConcurrentHashMap<Integer, MessageQueueOpContext> deleteContext = new ConcurrentHashMap<>();
 
     private ServiceThread transactionalOpBatchService;
 
+    /** Half 队列 → 对应 Op 队列映射。 */
     private ConcurrentHashMap<MessageQueue, MessageQueue> opQueueMap = new ConcurrentHashMap<>();
 
     private TransactionMetrics transactionMetrics;
@@ -190,7 +203,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                         messageQueue, halfOffset, opOffset);
                     continue;
                 }
-                // single thread
+                // 单线程顺序处理，避免并发回查冲突
                 int getMessageNullCount = 1;
                 long newOffset = halfOffset;
                 long i = halfOffset;
@@ -366,15 +379,15 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
     }
 
     /**
-     * Read op message, parse op message, and fill removeMap
+     * 拉取并解析 Op 消息，填充待删除 Half 消息的 removeMap。
      *
-     * @param removeMap Half message to be remove, key:halfOffset, value: opOffset.
-     * @param opQueue Op message queue.
-     * @param pullOffsetOfOp The begin offset of op message queue.
-     * @param miniOffset The current minimum offset of half message queue.
-     * @param opMsgMap Half message offset in op message
-     * @param doneOpOffset Stored op messages that have been processed.
-     * @return Op message result.
+     * @param removeMap 待删除半消息映射，key 为 halfOffset，value 为 opOffset
+     * @param opQueue Op 消息队列
+     * @param pullOffsetOfOp Op 队列起始拉取 offset
+     * @param miniOffset Half 队列当前最小 offset
+     * @param opMsgMap Op offset → 关联 half offset 集合
+     * @param doneOpOffset 已处理完毕的 Op offset 列表
+     * @return Op 消息拉取结果
      */
     private PullResult fillOpRemoveMap(HashMap<Long, Long> removeMap, MessageQueue opQueue,
                                        long pullOffsetOfOp, long miniOffset, Map<Long, HashSet<Long>> opMsgMap, List<Long> doneOpOffset) {
@@ -439,12 +452,12 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
     }
 
     /**
-     * If return true, skip this msg
+     * 校验半消息是否已有 Producer 响应；返回 true 则跳过该消息。
      *
-     * @param removeMap Op message map to determine whether a half message was responded by producer.
-     * @param doneOpOffset Op Message which has been checked.
-     * @param msgExt Half message
-     * @return Return true if put success, otherwise return false.
+     * @param removeMap Op 消息映射，判定半消息是否已被 Producer 确认
+     * @param doneOpOffset 已校验的 Op 消息 offset
+     * @param msgExt 半消息
+     * @return 成功处理返回 true，否则 false
      */
     private boolean checkPrepareQueueOffset(HashMap<Long, Long> removeMap, List<Long> doneOpOffset,
         MessageExt msgExt, String checkImmunityTimeStr) {
@@ -473,10 +486,10 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
     }
 
     /**
-     * Write messageExt to Half topic again
+     * 将半消息重新写回 Half Topic（回查未决时延后投递）。
      *
-     * @param messageExt Message will be write back to queue
-     * @return Put result can used to determine the specific results of storage.
+     * @param messageExt 待写回的消息
+     * @return 落盘结果，可用于判断存储是否成功
      */
     private PutMessageResult putBackToHalfQueueReturnResult(MessageExt messageExt) {
         PutMessageResult putMessageResult = null;
@@ -495,24 +508,24 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
     }
 
     /**
-     * Read half message from Half Topic
+     * 从 Half Topic 拉取半消息。
      *
-     * @param mq Target message queue, in this method, it means the half message queue.
-     * @param offset Offset in the message queue.
-     * @param nums Pull message number.
-     * @return Messages pulled from half message queue.
+     * @param mq 目标队列（此处为 Half 消息队列）
+     * @param offset 队列内 offset
+     * @param nums 拉取条数
+     * @return 拉取到的半消息列表
      */
     private PullResult pullHalfMsg(MessageQueue mq, long offset, int nums) {
         return transactionalMessageBridge.getHalfMessage(mq.getQueueId(), offset, nums);
     }
 
     /**
-     * Read op message from Op Topic
+     * 从 Op Topic 拉取操作消息（记录 commit/rollback 对应的 half offset）。
      *
-     * @param mq Target Message Queue
-     * @param offset Offset in the message queue
-     * @param nums Pull message number
-     * @return Messages pulled from operate message queue.
+     * @param mq 目标 Op 消息队列
+     * @param offset 队列内 offset
+     * @param nums 拉取条数
+     * @return 拉取到的 Op 消息
      */
     private PullResult pullOpMsg(MessageQueue mq, long offset, int nums) {
         return transactionalMessageBridge.getOpMessage(mq.getQueueId(), offset, nums);
@@ -707,7 +720,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                 MessageQueueOpContext mqContext = entry.getValue();
                 //no msg in contextQueue
                 if (mqContext.getTotalSize().get() <= 0 || mqContext.getContextQueue().size() == 0 ||
-                        // wait for the interval
+                        // 等待批量删除间隔后再提交
                         mqContext.getTotalSize().get() < maxSize &&
                                 startTime - mqContext.getLastWriteTimestamp() < interval) {
                     firstTimestamp = Math.min(firstTimestamp, mqContext.getLastWriteTimestamp());

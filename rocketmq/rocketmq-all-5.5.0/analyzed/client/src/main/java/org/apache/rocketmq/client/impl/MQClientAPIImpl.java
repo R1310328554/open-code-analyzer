@@ -270,8 +270,13 @@ import org.apache.rocketmq.remoting.rpchook.StreamTypeRPCHook;
 import static org.apache.rocketmq.common.message.MessageConst.TIMER_ENGINE_TYPE;
 import static org.apache.rocketmq.remoting.protocol.RemotingSysResponseCode.SUCCESS;
 
+/**
+ * RocketMQ 客户端 Remoting API 核心实现：封装与 NameServer/Broker 的全部 RPC，
+ * 包括发送、Pull/POP、位点管理、事务、管理命令等。单实例对应一个 RemotingClient。
+ */
 public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdown {
     private final static Logger log = LoggerFactory.getLogger(MQClientAPIImpl.class);
+    /** 是否启用智能消息发送优化（系统属性控制）。 */
     private static boolean sendSmartMsg =
         Boolean.parseBoolean(System.getProperty("org.apache.rocketmq.client.sendSmartMsg", "true"));
 
@@ -279,10 +284,15 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
     }
 
+    /** 底层 Netty Remoting 客户端。 */
     private final RemotingClient remotingClient;
+    /** HTTP 方式获取 NameServer 地址列表。 */
     private final TopAddressing topAddressing;
+    /** 处理 Broker 主动下发的请求（事务回查、消费组变更等）。 */
     private final ClientRemotingProcessor clientRemotingProcessor;
+    /** 当前 NameServer 地址（可动态更新）。 */
     private String nameSrvAddr = null;
+    /** 客户端配置引用。 */
     private ClientConfig clientConfig;
 
     public MQClientAPIImpl(
@@ -325,7 +335,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         this.clientRemotingProcessor = clientRemotingProcessor;
 
         this.remotingClient.registerRPCHook(new NamespaceRpcHook(clientConfig));
-        // Inject stream rpc hook first to make reserve field signature
+        // 先注入流式 RPC Hook，保证扩展字段签名顺序
         if (clientConfig.isEnableStreamRequestType()) {
             this.remotingClient.registerRPCHook(new StreamTypeRPCHook());
         }
@@ -348,6 +358,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         this.remotingClient.registerProcessor(RequestCode.PUSH_REPLY_MESSAGE_TO_CLIENT, this.clientRemotingProcessor, null);
     }
 
+    /** 返回当前 NameServer 地址列表。 */
     public List<String> getNameServerAddressList() {
         return this.remotingClient.getNameServerAddressList();
     }
@@ -386,16 +397,19 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         return nameSrvAddr;
     }
 
+    /** 更新 NameServer 地址列表（TopAddressing 回调）。 */
     public void updateNameServerAddressList(final String addrs) {
         String[] addrArray = addrs.split(";");
         List<String> list = Arrays.asList(addrArray);
         this.remotingClient.updateNameServerAddressList(list);
     }
 
+    /** 启动 RemotingClient。 */
     public void start() {
         this.remotingClient.start();
     }
 
+    /** 关闭 RemotingClient。 */
     public void shutdown() {
         this.remotingClient.shutdown();
     }
@@ -516,6 +530,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         throw new MQClientException(response.getCode(), response.getRemark());
     }
 
+    /** 同步/异步/单向发送消息到 Broker。 */
     public SendResult sendMessage(
         final String addr,
         final String brokerName,
@@ -782,7 +797,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
 
         String uniqMsgId = MessageClientIDSetter.getUniqID(msg);
         if (msg instanceof MessageBatch && responseHeader.getBatchUniqId() == null) {
-            // This means it is not an inner batch
+            // 非内部批量消息
             StringBuilder sb = new StringBuilder();
             for (Message message : (MessageBatch) msg) {
                 sb.append(sb.length() == 0 ? "" : ",").append(MessageClientIDSetter.getUniqID(message));
@@ -804,6 +819,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         return sendResult;
     }
 
+    /** 从 Broker Pull 消息（支持长轮询与过滤）。 */
     public PullResult pullMessage(
         final String addr,
         final PullMessageRequestHeader requestHeader,
@@ -835,6 +851,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         return null;
     }
 
+    /** 异步 POP 消息；结果通过 PopCallback 回调。 */
     public void popMessageAsync(
         final String brokerName, final String addr, final PopMessageRequestHeader requestHeader,
         final long timeoutMillis, final PopCallback popCallback
@@ -862,6 +879,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         });
     }
 
+    /** 异步 Lite POP 消息。 */
     public void popLiteMessageAsync(
         final String brokerName, final String addr, final PopLiteMessageRequestHeader requestHeader,
         final long timeoutMillis, final PopCallback popCallback
@@ -890,6 +908,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         });
     }
 
+    /** 异步 ACK POP 消息。 */
     public void ackMessageAsync(
         final String addr,
         final long timeOut,
@@ -908,6 +927,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         ackMessageAsync(addr, timeout, ackCallback, requestHeader, null);
     }
 
+    /** 异步批量 ACK POP 消息。 */
     public void batchAckMessageAsync(
         final String addr,
         final long timeOut,
@@ -998,6 +1018,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         });
     }
 
+    /** 异步修改 POP 消息不可见时间。 */
     public void changeInvisibleTimeAsync(//
         final String brokerName,
         final String addr, //
@@ -1141,7 +1162,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         if (popStatus != PopStatus.FOUND) {
             return popResult;
         }
-        // it is a pop command if pop time greater than 0, we should set the check point info to extraInfo field
+        // popTime>0 为 POP 命令，须将 checkpoint 写入 extraInfo
         Map<String, Long> startOffsetInfo = null;
         Map<String, List<Long>> msgOffsetInfo = null;
         Map<String, Integer> orderCountInfo = null;
@@ -1158,8 +1179,8 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         for (MessageExt messageExt : msgFoundList) {
             if (requestHeader instanceof PopMessageRequestHeader) {
                 if (startOffsetInfo == null) {
-                    // we should set the check point info to extraInfo field , if the command is popMsg
-                    // find pop ck offset
+                    // POP 命令须将 checkpoint 写入 extraInfo
+                    // 解析 POP checkpoint offset
                     String key = messageExt.getTopic() + messageExt.getQueueId();
                     if (!map.containsKey(messageExt.getTopic() + messageExt.getQueueId())) {
                         map.put(key, ExtraInfoUtil.buildExtraInfo(messageExt.getQueueOffset(), responseHeader.getPopTime(), responseHeader.getInvisibleTime(), responseHeader.getReviveQid(),
@@ -1175,13 +1196,13 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
                         final Long msgQueueOffset;
                         if (MixAll.isLmq(topic) && messageExt.getReconsumeTimes() == 0 && StringUtils.isNotEmpty(
                             messageExt.getProperty(MessageConst.PROPERTY_INNER_MULTI_DISPATCH))) {
-                            // process LMQ
+                            // Lite/LMQ 多队列分发处理
                             String[] queues = messageExt.getProperty(MessageConst.PROPERTY_INNER_MULTI_DISPATCH)
                                 .split(MixAll.LMQ_DISPATCH_SEPARATOR);
                             String[] queueOffsets = messageExt.getProperty(MessageConst.PROPERTY_INNER_MULTI_QUEUE_OFFSET)
                                 .split(MixAll.LMQ_DISPATCH_SEPARATOR);
                             long offset = Long.parseLong(queueOffsets[ArrayUtils.indexOf(queues, topic)]);
-                            // LMQ topic has only 1 queue, which queue id is 0
+                            // LMQ topic 仅 1 个队列，queueId 恒为 0
                             queueIdKey = ExtraInfoUtil.getStartOffsetInfoMapKey(topic, MixAll.LMQ_QUEUE_ID);
                             queueOffsetKey = ExtraInfoUtil.getQueueOffsetMapKey(topic, MixAll.LMQ_QUEUE_ID, offset);
                             index = sortMap.get(queueIdKey).indexOf(offset);
@@ -1284,11 +1305,11 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
     }
 
     /**
-     * Build queue offset sorted map
+     * 构建 POP 结果的 queue offset 有序映射。
      *
-     * @param topic pop consumer topic
-     * @param msgFoundList popped message list
-     * @return sorted map, key is topicMark@queueId, value is sorted msg queueOffset list
+     * @param topic POP 消费 topic
+     * @param msgFoundList 已 POP 消息列表
+     * @return key 为 topicMark@queueId，value 为有序 queueOffset 列表
      */
     private static Map<String, List<Long>> buildQueueOffsetSortedMap(String topic, List<MessageExt> msgFoundList) {
         Map<String/*topicMark@queueId*/, List<Long>/*msg queueOffset*/> sortMap = new HashMap<>(16);
@@ -1296,18 +1317,18 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
             final String key;
             if (MixAll.isLmq(topic) && messageExt.getReconsumeTimes() == 0
                 && StringUtils.isNotEmpty(messageExt.getProperty(MessageConst.PROPERTY_INNER_MULTI_DISPATCH))) {
-                // process LMQ
+                // LMQ 多队列 offset 解析
                 String[] queues = messageExt.getProperty(MessageConst.PROPERTY_INNER_MULTI_DISPATCH)
                     .split(MixAll.LMQ_DISPATCH_SEPARATOR);
                 String[] queueOffsets = messageExt.getProperty(MessageConst.PROPERTY_INNER_MULTI_QUEUE_OFFSET)
                     .split(MixAll.LMQ_DISPATCH_SEPARATOR);
-                // LMQ topic has only 1 queue, which queue id is 0
+                // LMQ 仅 queueId=0
                 key = ExtraInfoUtil.getStartOffsetInfoMapKey(topic, MixAll.LMQ_QUEUE_ID);
                 sortMap.putIfAbsent(key, new ArrayList<>(4));
                 sortMap.get(key).add(Long.parseLong(queueOffsets[ArrayUtils.indexOf(queues, topic)]));
                 continue;
             }
-            // Value of POP_CK is used to determine whether it is a pop retry,
+            // PROPERTY_POP_CK 用于判定是否为 POP 重试（topic 可能被 Broker 改写）
             // cause topic could be rewritten by broker.
             key = ExtraInfoUtil.getStartOffsetInfoMapKey(messageExt.getTopic(),
                 messageExt.getProperty(MessageConst.PROPERTY_POP_CK), messageExt.getQueueId());
@@ -1319,6 +1340,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         return sortMap;
     }
 
+    /** 按物理 offset 查看单条消息详情。 */
     public MessageExt viewMessage(final String addr, final String topic, final long phyoffset, final long timeoutMillis)
         throws RemotingException, MQBrokerException, InterruptedException {
         ViewMessageRequestHeader requestHeader = new ViewMessageRequestHeader();
@@ -1333,7 +1355,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
             case ResponseCode.SUCCESS: {
                 ByteBuffer byteBuffer = ByteBuffer.wrap(response.getBody());
                 MessageExt messageExt = MessageDecoder.clientDecode(byteBuffer, true);
-                //If namespace not null , reset Topic without namespace.
+                // 有 namespace 时还原为用户 topic
                 if (StringUtils.isNotEmpty(this.clientConfig.getNamespace())) {
                     messageExt.setTopic(NamespaceUtil.withoutNamespace(messageExt.getTopic(), this.clientConfig.getNamespace()));
                 }
@@ -1375,7 +1397,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
     public long searchOffset(final String addr, final MessageQueue messageQueue, final long timestamp,
         final long timeoutMillis)
         throws RemotingException, MQBrokerException, InterruptedException {
-        // default return lower boundary offset when there are more than one offsets.
+        // 多 offset 匹配时默认返回下界
         return searchOffset(addr, messageQueue, timestamp, BoundaryType.LOWER, timeoutMillis);
     }
 
@@ -1405,6 +1427,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         throw new MQBrokerException(response.getCode(), response.getRemark(), addr);
     }
 
+    /** 查询队列最大 offset。 */
     public long getMaxOffset(final String addr, final MessageQueue messageQueue, final long timeoutMillis)
         throws RemotingException, MQBrokerException, InterruptedException {
         GetMaxOffsetRequestHeader requestHeader = new GetMaxOffsetRequestHeader();
@@ -1457,6 +1480,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         throw new MQBrokerException(response.getCode(), response.getRemark(), addr);
     }
 
+    /** 查询队列最小 offset。 */
     public long getMinOffset(final String addr, final MessageQueue messageQueue, final long timeoutMillis)
         throws RemotingException, MQBrokerException, InterruptedException {
         GetMinOffsetRequestHeader requestHeader = new GetMinOffsetRequestHeader();
@@ -1507,6 +1531,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         throw new MQBrokerException(response.getCode(), response.getRemark(), addr);
     }
 
+    /** 向 Broker 查询消费组在指定队列上的已提交 offset。 */
     public long queryConsumerOffset(
         final String addr,
         final QueryConsumerOffsetRequestHeader requestHeader,
@@ -1533,6 +1558,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         throw new MQBrokerException(response.getCode(), response.getRemark(), addr);
     }
 
+    /** 同步更新消费位点到 Broker。 */
     public void updateConsumerOffset(
         final String addr,
         final UpdateConsumerOffsetRequestHeader requestHeader,
@@ -1636,6 +1662,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         throw new MQBrokerException(response.getCode(), response.getRemark(), addr);
     }
 
+    /** 单向发送事务 commit/rollback 请求。 */
     public void endTransactionOneway(
         final String addr,
         final EndTransactionRequestHeader requestHeader,
@@ -2404,7 +2431,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
         requestHeader.setGroup(group);
         requestHeader.setTimestamp(timestamp);
         requestHeader.setForce(isForce);
-        // offset is -1 means offset is null
+        // offset 为 -1 表示 null
         requestHeader.setOffset(-1L);
 
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.INVOKE_BROKER_TO_RESET_OFFSET, requestHeader);
@@ -2958,7 +2985,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
 
                 DataVersion newDataVersion = subscriptionGroupWrapper.getDataVersion();
                 if (currentDataVersion == null) {
-                    // fill dataVersion before break the loop to compatible with old version server
+                    // 退出循环前填充 dataVersion，兼容旧版 Broker
                     currentDataVersion = newDataVersion;
                 }
 
@@ -2970,7 +2997,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
                     .map(GetAllSubscriptionGroupResponseHeader::getTotalGroupNum).orElse(null);
 
                 if (Objects.isNull(totalGroupNum)) {
-                    // the server side don't support totalGroupNum, all data is returned
+                    // 服务端不支持分页，一次返回全部消费组
                     break;
                 }
 
@@ -3064,7 +3091,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
                     .map(GetAllTopicConfigResponseHeader::getTotalTopicNum).orElse(null);
 
                 if (Objects.isNull(totalTopicNum)) {       // compatible with old version server
-                    // the server side don't support totalTopicNum, all data is returned
+                    // 服务端不支持 Topic 分页，一次返回全部
                     break;
                 }
 
@@ -3336,6 +3363,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
      * @throws RemotingConnectException
      * @throws MQBrokerException
      */
+    /** 更新并获取消费组禁发/禁订状态。 */
     public GroupForbidden updateAndGetGroupForbidden(String addr, UpdateGroupForbiddenRequestHeader requestHeader,
         long timeoutMillis) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.UPDATE_AND_GET_GROUP_FORBIDDEN, requestHeader);
@@ -3404,7 +3432,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback, StartAndShutdo
 
     public BrokerReplicasInfo getInSyncStateData(final String controllerAddress,
         final List<String> brokers) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException, RemotingCommandException {
-        // Get controller leader address.
+        // 获取 Controller Leader 地址
         final GetMetaDataResponseHeader controllerMetaData = getControllerMetaData(controllerAddress);
         assert controllerMetaData != null;
         assert controllerMetaData.getControllerLeaderAddress() != null;

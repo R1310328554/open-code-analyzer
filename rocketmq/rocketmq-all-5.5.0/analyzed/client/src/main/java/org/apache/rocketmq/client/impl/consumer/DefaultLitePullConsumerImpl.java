@@ -76,6 +76,10 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * {@link DefaultLitePullConsumer} 内部实现：管理 subscribe/assign、
+ * Pull 任务调度、位点提交与 Rebalance。
+ */
 public class DefaultLitePullConsumerImpl implements MQConsumerInner {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultLitePullConsumerImpl.class);
@@ -100,28 +104,20 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
         NONE, SUBSCRIBE, ASSIGN
     }
 
+    /** 消费者未启动时的异常提示。 */
     private static final String NOT_RUNNING_EXCEPTION_MESSAGE = "The consumer not running, please start it first.";
 
+    /** subscribe 与 assign 互斥时的异常提示。 */
     private static final String SUBSCRIPTION_CONFLICT_EXCEPTION_MESSAGE = "Subscribe and assign are mutually exclusive.";
-    /**
-     * the type of subscription
-     */
+    /** 订阅类型：NONE / SUBSCRIBE / ASSIGN。 */
     private SubscriptionType subscriptionType = SubscriptionType.NONE;
-    /**
-     * Delay some time when exception occur
-     */
+    /** Pull 异常后的退避延迟（毫秒）。 */
     private long pullTimeDelayMillsWhenException = 1000;
-    /**
-     * Flow control interval when message cache is full
-     */
+    /** 本地缓存满时的流控间隔（毫秒）。 */
     private static final long PULL_TIME_DELAY_MILLS_WHEN_CACHE_FLOW_CONTROL = 50;
-    /**
-     * Flow control interval when broker return flow control
-     */
+    /** Broker 流控时的退避间隔（毫秒）。 */
     private static final long PULL_TIME_DELAY_MILLS_WHEN_BROKER_FLOW_CONTROL = 20;
-    /**
-     * Delay some time when suspend pull service
-     */
+    /** 暂停 Pull 时的延迟（毫秒）。 */
     private static final long PULL_TIME_DELAY_MILLS_WHEN_PAUSE = 1000;
 
     private static final long PULL_TIME_DELAY_MILLS_ON_EXCEPTION = 3 * 1000;
@@ -157,7 +153,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
 
     private final ArrayList<ConsumeMessageHook> consumeMessageHookList = new ArrayList<>();
 
-    // only for test purpose, will be modified by reflection in unit test.
+    // 仅测试用，单测中通过反射修改
     @SuppressWarnings("FieldMayBeFinal")
     private static boolean doNotUpdateTopicSubscribeInfoWhenSubscriptionChanged = false;
 
@@ -394,11 +390,11 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
     }
 
     private void operateAfterRunning() throws MQClientException {
-        // If subscribe function invoke before start function, then update topic subscribe info after initialization.
+        // start 前已 subscribe 则在初始化后更新订阅信息
         if (subscriptionType == SubscriptionType.SUBSCRIBE) {
             updateTopicSubscribeInfoWhenSubscriptionChanged();
         }
-        // If assign function invoke before start function, then update pull task after initialization.
+        // start 前已 assign 则在初始化后更新 Pull 任务
         if (subscriptionType == SubscriptionType.ASSIGN) {
             updateAssignPullTask(assignedMessageQueue.getAssignedMessageQueues());
         }
@@ -411,10 +407,10 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
     }
 
     private void checkConfig() throws MQClientException {
-        // Check consumerGroup
+        // 校验 consumerGroup 非空
         Validators.checkGroup(this.defaultLitePullConsumer.getConsumerGroup());
 
-        // Check consumerGroup name is not equal default consumer group name.
+        // 禁止使用默认消费组名
         if (this.defaultLitePullConsumer.getConsumerGroup().equals(MixAll.DEFAULT_CONSUMER_GROUP)) {
             throw new MQClientException(
                 "consumerGroup can not equal "
@@ -424,7 +420,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                 null);
         }
 
-        // Check messageModel is not null.
+        // 校验 messageModel
         if (null == this.defaultLitePullConsumer.getMessageModel()) {
             throw new MQClientException(
                 "messageModel is null"
@@ -432,7 +428,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                 null);
         }
 
-        // Check allocateMessageQueueStrategy is not null
+        // 校验队列分配策略非空
         if (null == this.defaultLitePullConsumer.getAllocateMessageQueueStrategy()) {
             throw new MQClientException(
                 "allocateMessageQueueStrategy is null"
@@ -489,12 +485,12 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
     }
 
     /**
-     * subscribe data by customizing messageQueueListener
+     * 订阅 Topic 并注册自定义 {@link MessageQueueListener}。
      *
-     * @param topic
-     * @param subExpression
-     * @param messageQueueListener
-     * @throws MQClientException
+     * @param topic Topic 名称
+     * @param subExpression 订阅表达式
+     * @param messageQueueListener 队列变更回调
+     * @throws MQClientException 订阅冲突或参数非法
      */
     public synchronized void subscribe(String topic, String subExpression,
         MessageQueueListener messageQueueListener) throws MQClientException {
@@ -630,7 +626,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                 List<MessageExt> messages = consumeRequest.getMessageExts();
                 long offset = consumeRequest.getProcessQueue().removeMessage(messages);
                 assignedMessageQueue.updateConsumeOffset(consumeRequest.getMessageQueue(), offset);
-                //If namespace not null , reset Topic without namespace.
+                // 有 namespace 时还原 topic
                 this.resetTopic(messages);
                 if (!this.consumeMessageHookList.isEmpty()) {
                     ConsumeMessageContext consumeMessageContext = new ConsumeMessageContext();
@@ -740,10 +736,10 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
     }
 
     /**
-     * Specify offset commit
+     * 手动提交指定队列的消费位点。
      *
-     * @param messageQueues
-     * @param persist
+     * @param messageQueues 队列 → offset 映射
+     * @param persist 是否持久化到 Broker
      */
     public synchronized void commit(final Map<MessageQueue, Long> messageQueues, boolean persist) {
         if (messageQueues == null || messageQueues.size() == 0) {
@@ -769,9 +765,9 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
     }
 
     /**
-     * Get the queue assigned in subscribe mode
+     * 获取 subscribe 模式下当前分配的队列集合。
      *
-     * @return
+     * @return 已分配 MessageQueue 集合
      */
     public synchronized Set<MessageQueue> assignment() {
         return assignedMessageQueue.getAssignedMessageQueues();
