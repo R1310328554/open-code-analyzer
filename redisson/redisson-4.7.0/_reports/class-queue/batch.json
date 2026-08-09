@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:42:50Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/misc/SpinLock.java",
-    "redisson/src/main/java/org/redisson/misc/Tuple.java",
-    "redisson/src/main/java/org/redisson/misc/WrappedLock.java",
-    "redisson/src/main/java/org/redisson/pubsub/CountDownLatchPubSub.java",
-    "redisson/src/main/java/org/redisson/pubsub/LockPubSub.java",
-    "redisson/src/main/java/org/redisson/pubsub/PubSubConnectionEntry.java",
-    "redisson/src/main/java/org/redisson/pubsub/PublishSubscribe.java",
-    "redisson/src/main/java/org/redisson/pubsub/PublishSubscribeService.java",
-    "redisson/src/main/java/org/redisson/pubsub/SemaphorePubSub.java",
-    "redisson/src/main/java/org/redisson/reactive/ArrayEntryIteratorConsumer.java",
-    "redisson/src/main/java/org/redisson/reactive/CommandReactiveBatchService.java",
-    "redisson/src/main/java/org/redisson/reactive/CommandReactiveExecutor.java",
-    "redisson/src/main/java/org/redisson/reactive/CommandReactiveService.java",
-    "redisson/src/main/java/org/redisson/reactive/ElementsStream.java",
-    "redisson/src/main/java/org/redisson/reactive/IteratorConsumer.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 152,
-  "done": 2655
+  "done": 2670
 }
