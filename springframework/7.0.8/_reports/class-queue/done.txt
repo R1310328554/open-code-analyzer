@@ -536,3 +536,13 @@ spring-context/src/main/java/org/springframework/context/expression/MethodBasedE
 spring-context/src/main/java/org/springframework/context/expression/StandardBeanExpressionResolver.java
 spring-context/src/main/java/org/springframework/context/i18n/LocaleContext.java
 spring-context/src/main/java/org/springframework/context/i18n/LocaleContextHolder.java
+spring-context/src/main/java/org/springframework/context/support/StaticMessageSource.java
+spring-context/src/main/java/org/springframework/context/weaving/AspectJWeavingEnabler.java
+spring-context/src/main/java/org/springframework/context/weaving/DefaultContextLoadTimeWeaver.java
+spring-context/src/main/java/org/springframework/context/weaving/LoadTimeWeaverAware.java
+spring-context/src/main/java/org/springframework/context/weaving/LoadTimeWeaverAwareProcessor.java
+spring-context/src/main/java/org/springframework/ejb/config/AbstractJndiLocatingBeanDefinitionParser.java
+spring-context/src/main/java/org/springframework/ejb/config/JeeNamespaceHandler.java
+spring-context/src/main/java/org/springframework/ejb/config/JndiLookupBeanDefinitionParser.java
+spring-context/src/main/java/org/springframework/ejb/config/LocalStatelessSessionBeanDefinitionParser.java
+spring-context/src/main/java/org/springframework/ejb/config/RemoteStatelessSessionBeanDefinitionParser.java
