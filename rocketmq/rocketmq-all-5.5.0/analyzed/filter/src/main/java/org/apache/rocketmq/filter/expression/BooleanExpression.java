@@ -18,11 +18,9 @@
 package org.apache.rocketmq.filter.expression;
 
 /**
- * A BooleanExpression is an expression that always
- * produces a Boolean result.
+ * 布尔表达式接口：求值结果恒为布尔类型。
  * <p>
- * This class was taken from ActiveMQ org.apache.activemq.filter.BooleanExpression,
- * but the parameter is changed to an interface.
+ * 源自 ActiveMQ，求值上下文改为 {@link EvaluationContext} 接口。
  * </p>
  *
  * @see org.apache.rocketmq.filter.expression.EvaluationContext
@@ -30,7 +28,8 @@ package org.apache.rocketmq.filter.expression;
 public interface BooleanExpression extends Expression {
 
     /**
-     * @return true if the expression evaluates to Boolean.TRUE.
+     * 在给定上下文中求值，结果为 {@link Boolean#TRUE} 时返回 true。
+     * @param context 表达式求值上下文
      */
     boolean matches(EvaluationContext context) throws Exception;
 

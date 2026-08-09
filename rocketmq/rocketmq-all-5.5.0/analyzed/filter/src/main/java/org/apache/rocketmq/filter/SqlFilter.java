@@ -23,20 +23,21 @@ import org.apache.rocketmq.filter.expression.MQFilterException;
 import org.apache.rocketmq.filter.parser.SelectorParser;
 
 /**
- * SQL92 Filter, just a wrapper of {@link org.apache.rocketmq.filter.parser.SelectorParser}.
- * <p/>
+ * SQL92 消息过滤器：封装 {@link org.apache.rocketmq.filter.parser.SelectorParser} 解析逻辑。
  * <p>
- * Do not use this filter directly.Use {@link FilterFactory#get} to select a filter.
+ * 请勿直接使用，应通过 {@link FilterFactory#get} 获取过滤器实例。
  * </p>
  */
 public class SqlFilter implements FilterSpi {
 
     @Override
+    /** 调用 SelectorParser 将 SQL92 表达式编译为表达式树。 */
     public Expression compile(final String expr) throws MQFilterException {
         return SelectorParser.parse(expr);
     }
 
     @Override
+    /** 返回 {@link ExpressionType#SQL92} 类型标识。 */
     public String ofType() {
         return ExpressionType.SQL92;
     }

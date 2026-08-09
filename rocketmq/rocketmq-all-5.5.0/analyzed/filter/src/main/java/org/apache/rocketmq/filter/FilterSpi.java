@@ -21,17 +21,19 @@ import org.apache.rocketmq.filter.expression.Expression;
 import org.apache.rocketmq.filter.expression.MQFilterException;
 
 /**
- * Filter spi interface.
+ * 消息过滤器 SPI 接口：编译表达式并声明过滤器类型。
  */
 public interface FilterSpi {
 
     /**
-     * Compile.
+     * 将字符串表达式编译为可执行的 {@link Expression}。
+     * @param expr 过滤器表达式字符串
      */
+    /** 编译入口，失败时抛出 {@link MQFilterException}。 */
     Expression compile(final String expr) throws MQFilterException;
 
     /**
-     * Which type.
+     * 返回过滤器类型标识（如 SQL92）。
      */
     String ofType();
 }

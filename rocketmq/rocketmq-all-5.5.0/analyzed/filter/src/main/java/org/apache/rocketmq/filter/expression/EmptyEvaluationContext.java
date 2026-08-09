@@ -20,15 +20,17 @@ package org.apache.rocketmq.filter.expression;
 import java.util.Map;
 
 /**
- * Empty context.
+ * 空求值上下文：不含任何变量，{@link #get} 恒返回 null。
  */
 public class EmptyEvaluationContext implements EvaluationContext {
     @Override
+    /** 空实现，任意名称均返回 null。 */
     public Object get(String name) {
         return null;
     }
 
     @Override
+    /** 返回 null，表示无上下文变量映射。 */
     public Map<String, Object> keyValues() {
         return null;
     }

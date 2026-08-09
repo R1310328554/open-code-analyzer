@@ -18,15 +18,18 @@
 package org.apache.rocketmq.filter.expression;
 
 /**
- * An expression which performs an operation on two expression values.
+ * 二元表达式抽象基类：对左右两个子表达式执行运算。
  * <p>
- * This class was taken from ActiveMQ org.apache.activemq.filter.BinaryExpression,
+ * 源自 ActiveMQ {@code org.apache.activemq.filter.BinaryExpression}。
  * </p>
  */
 public abstract class BinaryExpression implements Expression {
+    /** 左操作数表达式。 */
     protected Expression left;
+    /** 右操作数表达式。 */
     protected Expression right;
 
+    /** 构造二元表达式并绑定左右子树。 */
     public BinaryExpression(Expression left, Expression right) {
         this.left = left;
         this.right = right;
@@ -67,9 +70,9 @@ public abstract class BinaryExpression implements Expression {
     }
 
     /**
-     * Returns the symbol that represents this binary expression.  For example, addition is
-     * represented by "+"
+     * 返回表示该二元运算的符号，例如加法为 "+"。
      */
+    /** 子类实现：返回运算符字符串。 */
     public abstract String getExpressionSymbol();
 
     /**

@@ -18,14 +18,9 @@
 package org.apache.rocketmq.filter.expression;
 
 /**
- * Represents a constant expression
+ * 常量表达式：封装字面量值（数字、字符串、布尔、当前时间等）。
  * <p>
- * This class was taken from ActiveMQ org.apache.activemq.filter.ConstantExpression,
- * but:
- * 1. For long type constant, the range bound by java Long type;
- * 2. For float type constant, the range bound by java Double type;
- * 3. Remove Hex and Octal expression;
- * 4. Add now expression to support to get current time.
+ * 相较 ActiveMQ 版本：Long/Double 范围受限，移除八/十六进制，新增 now 表达式。
  * </p>
  */
 public class ConstantExpression implements Expression {
@@ -36,14 +31,15 @@ public class ConstantExpression implements Expression {
         this.value = value;
     }
 
+    /** 从十进制文本创建整数常量，自动收窄为 int 或 long。 */
     public static ConstantExpression createFromDecimal(String text) {
 
-        // Strip off the 'l' or 'L' if needed.
+        // 去除 Long 后缀 l/L
         if (text.endsWith("l") || text.endsWith("L")) {
             text = text.substring(0, text.length() - 1);
         }
 
-        // only support Long.MIN_VALUE ~ Long.MAX_VALUE
+        // 仅支持 Java Long 范围内的整数
         Number value = new Long(text);
 
         long l = value.longValue();
@@ -53,6 +49,7 @@ public class ConstantExpression implements Expression {
         return new ConstantExpression(value);
     }
 
+    /** 从浮点文本创建 Double 常量，超出范围则抛异常。 */
     public static ConstantExpression createFloat(String text) {
         Double value = new Double(text);
         if (value > Double.MAX_VALUE) {
@@ -64,10 +61,12 @@ public class ConstantExpression implements Expression {
         return new ConstantExpression(value);
     }
 
+    /** 创建表示当前时间的 now 表达式。 */
     public static ConstantExpression createNow() {
         return new NowExpression();
     }
 
+    /** 直接返回内部常量值，与上下文无关。 */
     public Object evaluate(EvaluationContext context) throws Exception {
         return value;
     }
@@ -113,8 +112,7 @@ public class ConstantExpression implements Expression {
     }
 
     /**
-     * Encodes the value of string so that it looks like it would look like when
-     * it was provided in a selector.
+     * 将字符串编码为选择器字面量形式（单引号转义）。
      */
     public static String encodeString(String s) {
 

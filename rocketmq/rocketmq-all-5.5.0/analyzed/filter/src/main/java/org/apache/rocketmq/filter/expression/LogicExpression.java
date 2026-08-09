@@ -18,9 +18,9 @@
 package org.apache.rocketmq.filter.expression;
 
 /**
- * A filter performing a comparison of two objects
+ * 逻辑表达式抽象类：对两个布尔子表达式执行 AND/OR 短路求值。
  * <p>
- * This class was taken from ActiveMQ org.apache.activemq.filter.LogicExpression,
+ * 源自 ActiveMQ {@code org.apache.activemq.filter.LogicExpression}。
  * </p>
  */
 public abstract class LogicExpression extends BinaryExpression implements BooleanExpression {
@@ -29,10 +29,12 @@ public abstract class LogicExpression extends BinaryExpression implements Boolea
      * @param left
      * @param right
      */
+    /** 构造逻辑表达式，左右操作数均为布尔表达式。 */
     public LogicExpression(BooleanExpression left, BooleanExpression right) {
         super(left, right);
     }
 
+    /** 创建逻辑或（||）表达式，左真短路。 */
     public static BooleanExpression createOR(BooleanExpression lvalue, BooleanExpression rvalue) {
         return new LogicExpression(lvalue, rvalue) {
 
@@ -58,6 +60,7 @@ public abstract class LogicExpression extends BinaryExpression implements Boolea
         };
     }
 
+    /** 创建逻辑与（&&）表达式，左假短路。 */
     public static BooleanExpression createAND(BooleanExpression lvalue, BooleanExpression rvalue) {
         return new LogicExpression(lvalue, rvalue) {
 
@@ -86,6 +89,7 @@ public abstract class LogicExpression extends BinaryExpression implements Boolea
 
     public abstract Object evaluate(EvaluationContext context) throws Exception;
 
+    /** 求值后判断是否为 {@link Boolean#TRUE}。 */
     public boolean matches(EvaluationContext context) throws Exception {
         Object object = evaluate(context);
         return object != null && object == Boolean.TRUE;

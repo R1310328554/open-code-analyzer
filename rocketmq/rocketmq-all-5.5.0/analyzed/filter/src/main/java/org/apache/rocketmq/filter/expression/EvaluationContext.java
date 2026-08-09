@@ -20,19 +20,20 @@ package org.apache.rocketmq.filter.expression;
 import java.util.Map;
 
 /**
- * Context of evaluate expression.
+ * 表达式求值上下文：提供按名称读取变量与全量键值映射。
  *
- * Compare to org.apache.activemq.filter.MessageEvaluationContext, this is just an interface.
+ * 对应 ActiveMQ 的 MessageEvaluationContext，此处抽象为接口。
  */
 public interface EvaluationContext {
 
     /**
-     * Get value by name from context
+     * 按变量名从上下文取值。
+     * @param name 属性或用户属性名
      */
     Object get(String name);
 
     /**
-     * Context variables.
+     * 返回上下文全部变量键值对。
      */
     Map<String, Object> keyValues();
 }

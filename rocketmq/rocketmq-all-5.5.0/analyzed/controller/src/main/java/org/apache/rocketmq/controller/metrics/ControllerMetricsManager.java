@@ -79,15 +79,19 @@ import static org.apache.rocketmq.controller.metrics.ControllerMetricsConstant.L
 import static org.apache.rocketmq.controller.metrics.ControllerMetricsConstant.LABEL_PEER_ID;
 import static org.apache.rocketmq.controller.metrics.ControllerMetricsConstant.OPEN_TELEMETRY_METER_NAME;
 
+/**
+ * 控制器指标管理器：基于 OpenTelemetry 注册并导出角色、磁盘、请求与选举等指标。
+ */
 public class ControllerMetricsManager {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
 
+    /** 单例实例，双重检查锁懒加载。 */
     private static volatile ControllerMetricsManager instance;
 
     private static final Map<String, String> LABEL_MAP = new HashMap<>();
 
-    // metrics about node status
+    /** 节点角色 UpDownCounter（候选/跟随/领导者等）。 */
     public static LongUpDownCounter role = new NopLongUpDownCounter();
 
     public static ObservableLongGauge dLedgerDiskUsage = new NopObservableLongGauge();
@@ -100,7 +104,7 @@ public class ControllerMetricsManager {
 
     public static LongCounter electionTotal = new NopLongCounter();
 
-    // metrics about latency
+    /** 请求延迟直方图（微秒级分桶）。 */
     public static LongHistogram requestLatency = new NopLongHistogram();
 
     public static LongHistogram dLedgerOpLatency = new NopLongHistogram();
@@ -125,6 +129,7 @@ public class ControllerMetricsManager {
 
     private MetricExporter loggingMetricExporter;
 
+    /** 获取指标管理器单例，首次调用时绑定 {@link ControllerManager}。 */
     public static ControllerMetricsManager getInstance(ControllerManager controllerManager) {
         if (instance == null) {
             synchronized (ControllerMetricsManager.class) {
@@ -136,12 +141,14 @@ public class ControllerMetricsManager {
         return instance;
     }
 
+    /** 创建带全局标签（地址、组、节点 ID）的 OpenTelemetry 属性构建器。 */
     public static AttributesBuilder newAttributesBuilder() {
         AttributesBuilder builder = Attributes.builder();
         LABEL_MAP.forEach(builder::put);
         return builder;
     }
 
+    /** 记录角色变更：按新旧角色差值更新 role 指标。 */
     public static void recordRole(MemberState.Role newRole, MemberState.Role oldRole) {
         role.add(getRoleValue(newRole) - getRoleValue(oldRole),
             newAttributesBuilder().build());
@@ -178,6 +185,7 @@ public class ControllerMetricsManager {
         this.init();
     }
 
+    /** 校验指标导出配置（导出类型、端点等）是否可用。 */
     private boolean checkConfig() {
         if (config == null) {
             return false;
@@ -198,8 +206,9 @@ public class ControllerMetricsManager {
         return false;
     }
 
+    /** 为请求与 DLedger 操作延迟直方图注册显式分桶视图。 */
     private void registerMetricsView(SdkMeterProviderBuilder providerBuilder) {
-        // define latency bucket
+        // 延迟分桶边界：微秒到秒级
         List<Double> latencyBuckets = Arrays.asList(
             1 * us, 3 * us, 5 * us,
             10 * us, 30 * us, 50 * us,
@@ -229,6 +238,7 @@ public class ControllerMetricsManager {
         providerBuilder.registerView(dLedgerOpLatencySelector, latencyView);
     }
 
+    /** 在 Meter 上注册角色、磁盘、活跃 Broker、计数器与延迟等指标。 */
     private void initMetric(Meter meter) {
         role = meter.upDownCounterBuilder(GAUGE_ROLE)
             .setDescription("role of current node")
@@ -289,6 +299,7 @@ public class ControllerMetricsManager {
 
     }
 
+    /** 按配置初始化 OpenTelemetry SDK 与指标导出器（OTLP/Prom/Log）。 */
     public void init() {
         MetricsExporterType type = this.config.getMetricsExporterType();
         if (type == MetricsExporterType.DISABLE) {

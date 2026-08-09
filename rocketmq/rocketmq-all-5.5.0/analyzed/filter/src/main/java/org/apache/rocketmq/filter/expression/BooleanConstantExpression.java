@@ -18,18 +18,22 @@
 package org.apache.rocketmq.filter.expression;
 
 /**
- * BooleanConstantExpression
+ * 布尔常量表达式：表示 TRUE、FALSE 或 NULL 布尔值。
  */
 public class BooleanConstantExpression extends ConstantExpression implements BooleanExpression {
 
+    /** 布尔 NULL 常量。 */
     public static final BooleanConstantExpression NULL = new BooleanConstantExpression(null);
+    /** 布尔 TRUE 常量。 */
     public static final BooleanConstantExpression TRUE = new BooleanConstantExpression(Boolean.TRUE);
+    /** 布尔 FALSE 常量。 */
     public static final BooleanConstantExpression FALSE = new BooleanConstantExpression(Boolean.FALSE);
 
     public BooleanConstantExpression(Object value) {
         super(value);
     }
 
+    /** 判断求值结果是否为 {@link Boolean#TRUE}。 */
     public boolean matches(EvaluationContext context) throws Exception {
         Object object = evaluate(context);
         return object != null && object == Boolean.TRUE;

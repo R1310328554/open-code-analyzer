@@ -69,20 +69,23 @@ import static org.apache.rocketmq.remoting.protocol.RequestCode.CONTROLLER_GET_N
 import static org.apache.rocketmq.remoting.protocol.RequestCode.UPDATE_CONTROLLER_CONFIG;
 
 /**
- * Processor for controller request
+ * 控制器 Remoting 请求处理器：路由各类 Controller RPC 并上报指标。
  */
 public class ControllerRequestProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
+    /** 异步 Controller 操作等待超时（秒）。 */
     private static final int WAIT_TIMEOUT_OUT = 5;
     private final ControllerManager controllerManager;
     private final BrokerHeartbeatManager heartbeatManager;
     protected Set<String> configBlackList = new HashSet<>();
 
+    /** 构造处理器并初始化配置黑名单。 */
     public ControllerRequestProcessor(final ControllerManager controllerManager) {
         this.controllerManager = controllerManager;
         this.heartbeatManager = controllerManager.getHeartbeatManager();
         initConfigBlackList();
     }
+    /** 加载禁止通过 RPC 修改的配置项黑名单。 */
     private void initConfigBlackList() {
         configBlackList.add("configBlackList");
         configBlackList.add("configStorePath");
@@ -91,6 +94,7 @@ public class ControllerRequestProcessor implements NettyRequestProcessor {
         configBlackList.addAll(Arrays.asList(configArray));
     }
     @Override
+    /** 处理入站请求：分发业务逻辑并记录成功/失败/超时指标。 */
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         if (ctx != null) {
             log.debug("Receive request, {} {} {}",
@@ -130,6 +134,7 @@ public class ControllerRequestProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 按 {@link RemotingCommand#getCode()} 将请求路由到具体处理方法。 */
     private RemotingCommand handleRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         switch (request.getCode()) {
             case CONTROLLER_ALTER_SYNC_STATE_SET:
@@ -163,6 +168,7 @@ public class ControllerRequestProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 处理修改同步状态集（SyncStateSet）请求。 */
     private RemotingCommand handleAlterSyncStateSet(ChannelHandlerContext ctx,
         RemotingCommand request) throws Exception {
         final AlterSyncStateSetRequestHeader controllerRequest = (AlterSyncStateSetRequestHeader) request.decodeCommandCustomHeader(AlterSyncStateSetRequestHeader.class);
@@ -174,6 +180,7 @@ public class ControllerRequestProcessor implements NettyRequestProcessor {
         return RemotingCommand.createResponseCommand(null);
     }
 
+    /** 处理选举 Master 请求，成功时可通知 Broker 角色变更。 */
     private RemotingCommand handleControllerElectMaster(ChannelHandlerContext ctx,
         RemotingCommand request) throws Exception {
         final ElectMasterRequestHeader electMasterRequest = (ElectMasterRequestHeader) request.decodeCommandCustomHeader(ElectMasterRequestHeader.class);
@@ -205,6 +212,7 @@ public class ControllerRequestProcessor implements NettyRequestProcessor {
         return this.controllerManager.getController().getControllerMetadata();
     }
 
+    /** 处理 Broker 心跳，更新心跳管理器中的存活信息。 */
     private RemotingCommand handleBrokerHeartbeat(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         final BrokerHeartbeatRequestHeader requestHeader = (BrokerHeartbeatRequestHeader) request.decodeCommandCustomHeader(BrokerHeartbeatRequestHeader.class);
         if (requestHeader.getBrokerId() == null) {
@@ -265,6 +273,7 @@ public class ControllerRequestProcessor implements NettyRequestProcessor {
         return RemotingCommand.createResponseCommand(null);
     }
 
+    /** 动态更新控制器配置，拦截黑名单中的敏感项。 */
     private RemotingCommand handleUpdateControllerConfig(ChannelHandlerContext ctx, RemotingCommand request) {
         if (ctx != null) {
             log.info("updateConfig called by {}", RemotingHelper.parseChannelRemoteAddr(ctx.channel()));
@@ -327,9 +336,11 @@ public class ControllerRequestProcessor implements NettyRequestProcessor {
     }
 
     @Override
+    /** 是否拒绝新请求（当前恒为 false）。 */
     public boolean rejectRequest() {
         return false;
     }
+    /** 检查待更新配置是否包含黑名单键。 */
     private boolean validateBlackListConfigExist(Properties properties) {
         for (String blackConfig : configBlackList) {
             if (properties.containsKey(blackConfig)) {

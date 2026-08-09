@@ -17,10 +17,18 @@
 
 package org.apache.rocketmq.filter.constant;
 
+/**
+ * 一元运算类型枚举，用于 SQL 选择器解析与求值。
+ */
 public enum UnaryType {
+    /** 取负（-x）。 */
     NEGATE,
+    /** IN 集合成员判断。 */
     IN,
+    /** 逻辑非（NOT）。 */
     NOT,
+    /** 布尔类型强制转换。 */
     BOOLEANCAST,
+    /** 字符串 LIKE 模式匹配。 */
     LIKE
 }
