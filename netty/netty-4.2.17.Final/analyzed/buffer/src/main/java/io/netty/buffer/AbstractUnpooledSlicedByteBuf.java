@@ -29,8 +29,16 @@ import java.nio.charset.Charset;
 
 import static io.netty.util.internal.MathUtil.isOutOfBounds;
 
+/**
+ * 非池化切片 {@link ByteBuf} 的抽象基类。
+ * <p>
+ * 在底层 {@link ByteBuf} 上维护 {@code adjustment} 偏移，将本视图索引映射到底层绝对索引；
+ * 不支持 {@link #capacity(int)} 变更（固定切片长度）。
+ */
 abstract class AbstractUnpooledSlicedByteBuf extends AbstractDerivedByteBuf {
+    /** 被切片的底层缓冲区（可能经多层切片扁平化） */
     private final ByteBuf buffer;
+    /** 本切片在底层 buffer 中的起始偏移 */
     private final int adjustment;
 
     AbstractUnpooledSlicedByteBuf(ByteBuf buffer, int index, int length) {
@@ -53,8 +61,8 @@ abstract class AbstractUnpooledSlicedByteBuf extends AbstractDerivedByteBuf {
     }
 
     /**
-     * Called by the constructor before {@link #writerIndex(int)}.
-     * @param length the {@code length} argument from the constructor.
+     * 构造函数在设置 {@link #writerIndex(int)} 前调用，供子类扩展初始化。
+     * @param length 构造函数传入的切片长度
      */
     void initLength(int length) {
     }
@@ -468,12 +476,13 @@ abstract class AbstractUnpooledSlicedByteBuf extends AbstractDerivedByteBuf {
     }
 
     /**
-     * Returns the index with the needed adjustment.
+     * 将切片内相对索引转换为底层 buffer 的绝对索引。
      */
     final int idx(int index) {
         return index + adjustment;
     }
 
+    /** 校验切片范围不超出底层 buffer 容量 */
     static void checkSliceOutOfBounds(int index, int length, ByteBuf buffer) {
         if (isOutOfBounds(index, length, buffer.capacity())) {
             throw new IndexOutOfBoundsException(buffer + ".slice(" + index + ", " + length + ')');

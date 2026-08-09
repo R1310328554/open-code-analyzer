@@ -19,11 +19,14 @@ package io.netty.buffer;
 import io.netty.util.internal.RefCnt;
 
 /**
- * Abstract base class for {@link ByteBuf} implementations that count references.
+ * 自带引用计数的 {@link ByteBuf} 抽象实现基类。
+ * <p>
+ * 使用 {@link io.netty.util.internal.RefCnt} 管理引用计数；
+ * 计数归零时调用子类实现的 {@link #deallocate()} 释放底层资源。
  */
 public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
 
-    // this is setting the ref cnt to the initial value
+    /** 引用计数器，初始值为 1 */
     private final RefCnt refCnt = new RefCnt();
 
     protected AbstractReferenceCountedByteBuf(int maxCapacity) {
@@ -32,8 +35,7 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
 
     @Override
     boolean isAccessible() {
-        // Try to do non-volatile read for performance as the ensureAccessible() is racy anyway and only provide
-        // a best-effort guard.
+        // 非 volatile 读以提升热路径性能；ensureAccessible 本身存在竞态，仅作尽力而为的防护
         return RefCnt.isLiveNonVolatile(refCnt);
     }
 
@@ -43,14 +45,14 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
     }
 
     /**
-     * An unsafe operation intended for use by a subclass that sets the reference count of the buffer directly
+     * 供子类直接设置引用计数的不安全操作。
      */
     protected final void setRefCnt(int count) {
         RefCnt.setRefCnt(refCnt, count);
     }
 
     /**
-     * An unsafe operation intended for use by a subclass that resets the reference count of the buffer to 1
+     * 供子类将引用计数重置为 1 的不安全操作（如对象池复用时）。
      */
     protected final void resetRefCnt() {
         RefCnt.resetRefCnt(refCnt);
@@ -96,7 +98,7 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
     }
 
     /**
-     * Called once {@link #refCnt()} is equals 0.
+     * 当 {@link #refCnt()} 降为 0 时由 {@link #release()} 调用，子类在此释放内存。
      */
     protected abstract void deallocate();
 }

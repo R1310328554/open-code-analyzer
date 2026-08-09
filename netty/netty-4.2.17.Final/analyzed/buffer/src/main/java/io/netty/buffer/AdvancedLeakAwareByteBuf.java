@@ -33,9 +33,18 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 
+/**
+ * 高级泄漏感知 {@link ByteBuf} 包装器：在 PARANOID 级别下记录几乎所有操作的调用栈。
+ * <p>
+ * 除 {@link #retain()}、{@link #release()}、{@link #touch()} 外，读写、切片等
+ * 非引用计数操作也会通过 {@link #recordLeakNonRefCountingOperation} 记录访问轨迹，
+ * 便于定位「未 release 但仍在使用」的泄漏场景。
+ * <p>
+ * 可通过 {@code io.netty.leakDetection.acquireAndReleaseOnly} 限制仅记录 acquire/release。
+ */
 final class AdvancedLeakAwareByteBuf extends SimpleLeakAwareByteBuf {
 
-    // If set to true we will only record stacktraces for touch(...), release(...) and retain(...) calls.
+    /** 为 true 时仅记录 touch/release/retain 的栈轨迹 */
     private static final String PROP_ACQUIRE_AND_RELEASE_ONLY = "io.netty.leakDetection.acquireAndReleaseOnly";
     private static final boolean ACQUIRE_AND_RELEASE_ONLY;
 
@@ -60,11 +69,14 @@ final class AdvancedLeakAwareByteBuf extends SimpleLeakAwareByteBuf {
         super(wrapped, trackedByteBuf, leak);
     }
 
+    /** 记录非引用计数类操作（读/写/切片等），供本类及 Composite 版本复用 */
     static void recordLeakNonRefCountingOperation(ResourceLeakTracker<ByteBuf> leak) {
         if (!ACQUIRE_AND_RELEASE_ONLY) {
             leak.record();
         }
     }
+
+    // 以下重写方法均在委托 super 前记录访问栈，便于泄漏诊断
 
     @Override
     public ByteBuf order(ByteOrder endianness) {
@@ -930,6 +942,7 @@ final class AdvancedLeakAwareByteBuf extends SimpleLeakAwareByteBuf {
         return super.asReadOnly();
     }
 
+    /** retain 始终记录栈轨迹（引用计数关键路径） */
     @Override
     public ByteBuf retain() {
         leak.record();
@@ -954,6 +967,7 @@ final class AdvancedLeakAwareByteBuf extends SimpleLeakAwareByteBuf {
         return super.release(decrement);
     }
 
+    /** touch 记录当前访问点，便于关联业务上下文 */
     @Override
     public ByteBuf touch() {
         leak.record();

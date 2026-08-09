@@ -22,12 +22,16 @@ import jdk.jfr.Event;
 import jdk.jfr.Label;
 
 /**
- * An abstract memory allocator event.
+ * 内存分配器相关 JFR 事件的抽象基类。
+ * <p>
+ * 默认禁用（{@code @Enabled(false)}），子类在需要时单独启用；
+ * 记录触发事件的 {@link AbstractByteBufAllocator} 具体类型。
  */
 @Enabled(false)
 @Category("Netty")
 @SuppressWarnings("Since15")
 abstract class AbstractAllocatorEvent extends Event {
+    /** 产生该事件的分配器类型 */
     @Label("Allocator type")
     @Description("The type of allocator this event is for")
     public Class<? extends AbstractByteBufAllocator> allocatorType;

@@ -22,7 +22,10 @@ import java.nio.ByteOrder;
 import static io.netty.util.internal.PlatformDependent.BIG_ENDIAN_NATIVE_ORDER;
 
 /**
- * Special {@link SwappedByteBuf} for {@link ByteBuf}s that is using unsafe.
+ * 基于 Unsafe 读写原语的字节序交换 {@link SwappedByteBuf} 实现。
+ * <p>
+ * 在底层 {@link AbstractByteBuf} 上按目标字节序读写多字节整数；
+ * 若目标序与本地序不同则在读写时调用 {@code reverseBytes}。
  */
 abstract class AbstractUnsafeSwappedByteBuf extends SwappedByteBuf {
     private final boolean nativeByteOrder;
@@ -30,7 +33,8 @@ abstract class AbstractUnsafeSwappedByteBuf extends SwappedByteBuf {
 
     AbstractUnsafeSwappedByteBuf(AbstractByteBuf buf) {
         super(buf);
-        assert PlatformDependent.isUnaligned();
+        assert PlatformDependent.isUnaligned(); // 要求 CPU 支持非对齐访问
+
         wrapped = buf;
         nativeByteOrder = BIG_ENDIAN_NATIVE_ORDER == (order() == ByteOrder.BIG_ENDIAN);
     }
@@ -162,8 +166,11 @@ abstract class AbstractUnsafeSwappedByteBuf extends SwappedByteBuf {
         return this;
     }
 
+    /** 子类实现的底层 short 读取（无字节序转换） */
     protected abstract short _getShort(AbstractByteBuf wrapped, int index);
+    /** 子类实现的底层 int 读取（无字节序转换） */
     protected abstract int _getInt(AbstractByteBuf wrapped, int index);
+    /** 子类实现的底层 long 读取（无字节序转换） */
     protected abstract long _getLong(AbstractByteBuf wrapped, int index);
     protected abstract void _setShort(AbstractByteBuf wrapped, int index, short value);
     protected abstract void _setInt(AbstractByteBuf wrapped, int index, int value);

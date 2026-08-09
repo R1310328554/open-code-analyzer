@@ -21,12 +21,11 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
- * An auto-tuning pooling {@link ByteBufAllocator}, that follows an anti-generational hypothesis.
+ * 遵循「反代际假设」的自适应池化 {@link ByteBufAllocator}。
  * <p>
- * <strong>Note:</strong> this allocator is <strong>experimental</strong>. It is recommended to roll out usage slowly,
- * and to carefully monitor application performance in the process.
+ * <strong>注意：</strong>该分配器为<strong>实验性</strong>特性，建议逐步上线并密切监控性能。
  * <p>
- * See the {@link AdaptivePoolingAllocator} class documentation for implementation details.
+ * 实现细节参见 {@link AdaptivePoolingAllocator} 类文档。
  */
 public final class AdaptiveByteBufAllocator extends AbstractByteBufAllocator
         implements ByteBufAllocatorMetricProvider, ByteBufAllocatorMetric {
@@ -40,7 +39,9 @@ public final class AdaptiveByteBufAllocator extends AbstractByteBufAllocator
                      DEFAULT_USE_CACHED_MAGAZINES_FOR_NON_EVENT_LOOP_THREADS);
     }
 
+    /** 堆外内存池 */
     private final AdaptivePoolingAllocator direct;
+    /** 堆内存池 */
     private final AdaptivePoolingAllocator heap;
 
     public AdaptiveByteBufAllocator() {
@@ -87,6 +88,7 @@ public final class AdaptiveByteBufAllocator extends AbstractByteBufAllocator
         return this;
     }
 
+    /** 堆 Chunk 分配策略：优先 Unsafe 堆缓冲区 */
     private static final class HeapChunkAllocator implements AdaptivePoolingAllocator.ChunkAllocator {
         private final ByteBufAllocator allocator;
 
@@ -102,6 +104,7 @@ public final class AdaptiveByteBufAllocator extends AbstractByteBufAllocator
         }
     }
 
+    /** Direct Chunk 分配策略 */
     private static final class DirectChunkAllocator implements AdaptivePoolingAllocator.ChunkAllocator {
         private final ByteBufAllocator allocator;
 

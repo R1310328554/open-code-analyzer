@@ -33,11 +33,19 @@ import java.util.List;
 
 import static io.netty.buffer.AdvancedLeakAwareByteBuf.recordLeakNonRefCountingOperation;
 
+/**
+ * {@link CompositeByteBuf} 的高级泄漏感知包装器，行为同 {@link AdvancedLeakAwareByteBuf}。
+ * <p>
+ * 对所有读写、组件增删、consolidate 等操作记录访问栈；
+ * retain/release/touch 直接调用 {@link io.netty.util.ResourceLeakTracker#record()}。
+ */
 final class AdvancedLeakAwareCompositeByteBuf extends SimpleLeakAwareCompositeByteBuf {
 
     AdvancedLeakAwareCompositeByteBuf(CompositeByteBuf wrapped, ResourceLeakTracker<ByteBuf> leak) {
         super(wrapped, leak);
     }
+
+    // 以下重写均在委托 super 前记录非引用计数操作
 
     @Override
     public ByteBuf order(ByteOrder endianness) {
@@ -1017,6 +1025,7 @@ final class AdvancedLeakAwareCompositeByteBuf extends SimpleLeakAwareCompositeBy
         return super.writeBytes(in, position, length);
     }
 
+    /** retain 记录引用计数增加 */
     @Override
     public CompositeByteBuf retain() {
         leak.record();

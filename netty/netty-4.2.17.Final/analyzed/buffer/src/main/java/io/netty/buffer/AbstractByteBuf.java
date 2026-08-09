@@ -42,12 +42,16 @@ import static io.netty.util.internal.MathUtil.isOutOfBounds;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * A skeletal implementation of a buffer.
+ * {@link ByteBuf} 的骨架实现，封装读写索引、边界检查、扩容与各类读写 API 的通用逻辑。
+ * <p>
+ * 子类只需实现 {@code _getXxx}/{@code _setXxx} 等底层存取原语；
+ * 可通过系统属性 {@code io.netty.buffer.checkAccessible}、{@code io.netty.buffer.checkBounds} 控制校验行为。
  */
 public abstract class AbstractByteBuf extends ByteBuf {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractByteBuf.class);
     private static final String LEGACY_PROP_CHECK_ACCESSIBLE = "io.netty.buffer.bytebuf.checkAccessible";
     private static final String PROP_CHECK_ACCESSIBLE = "io.netty.buffer.checkAccessible";
+    /** 是否在访问前校验引用计数（CompositeByteBuf 也会读取） */
     static final boolean checkAccessible; // accessed from CompositeByteBuf
     private static final String PROP_CHECK_BOUNDS = "io.netty.buffer.checkBounds";
     private static final boolean checkBounds;
@@ -68,10 +72,13 @@ public abstract class AbstractByteBuf extends ByteBuf {
     static final ResourceLeakDetector<ByteBuf> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(ByteBuf.class);
 
+    /** 下一个待读字节的位置 */
     int readerIndex;
+    /** 下一个待写字节的位置 */
     int writerIndex;
     private int markedReaderIndex;
     private int markedWriterIndex;
+    /** 允许的最大容量上限 */
     private int maxCapacity;
 
     protected AbstractByteBuf(int maxCapacity) {
@@ -268,6 +275,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
         }
     }
 
+    /** 容量缩减后调用，必要时裁剪 reader/writer 索引 */
     // Called after a capacity reduction
     protected final void trimIndicesToCapacity(int newCapacity) {
         if (writerIndex() > newCapacity) {
@@ -284,7 +292,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
     final void ensureWritable0(int minWritableBytes) {
         final int writerIndex = writerIndex();
         final int targetCapacity = writerIndex + minWritableBytes;
-        // using non-short-circuit & to reduce branching - this is a hot path and targetCapacity should rarely overflow
+        // 热路径使用非短路 & 以减少分支；targetCapacity 极少溢出
         if (targetCapacity >= 0 & targetCapacity <= capacity()) {
             ensureAccessible();
             return;
@@ -296,12 +304,12 @@ public abstract class AbstractByteBuf extends ByteBuf {
                     writerIndex, minWritableBytes, maxCapacity, this));
         }
 
-        // Normalize the target capacity to the power of 2.
+        // 将目标容量归一化为 2 的幂（或由分配器 calculateNewCapacity 决定）
         final int fastWritable = maxFastWritableBytes();
         int newCapacity = fastWritable >= minWritableBytes ? writerIndex + fastWritable
                 : alloc().calculateNewCapacity(targetCapacity, maxCapacity);
 
-        // Adjust to the new capacity.
+        // 扩容至新容量
         capacity(newCapacity);
     }
 
@@ -344,7 +352,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
     }
 
     /**
-     * Creates a new {@link SwappedByteBuf} for this {@link ByteBuf} instance.
+     * 为本缓冲区创建字节序交换视图 {@link SwappedByteBuf}。
      */
     protected SwappedByteBuf newSwappedByteBuf() {
         return new SwappedByteBuf(this);
@@ -1399,10 +1407,10 @@ public abstract class AbstractByteBuf extends ByteBuf {
     }
 
     /**
-     * This is a simplified version of MathUtil.isOutOfBounds that does not check for capacity negative values.
+     * {@link io.netty.util.internal.MathUtil#isOutOfBounds} 的简化版，不检查 capacity 为负。
      */
     private static boolean isOutOfBoundsTrustedCapacity(int index, int fieldLength, int capacity) {
-        // keep these as branches since would make it easier to be constant-folded
+        // 保持分支形式以便 JIT 常量折叠
         return index < 0 || fieldLength < 0 || index + fieldLength < 0 || index + fieldLength > capacity;
     }
 
@@ -1446,9 +1454,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
     }
 
     /**
-     * Throws an {@link IndexOutOfBoundsException} if the current
-     * {@linkplain #readableBytes() readable bytes} of this buffer is less
-     * than the specified value.
+     * 若当前 {@linkplain #readableBytes() 可读字节数} 小于指定值则抛出 {@link IndexOutOfBoundsException}。
      */
     protected final void checkReadableBytes(int minimumReadableBytes) {
         checkReadableBytes0(checkPositiveOrZero(minimumReadableBytes, "minimumReadableBytes"));
@@ -1472,8 +1478,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
     }
 
     /**
-     * Should be called by every method that tries to access the buffers content to check
-     * if the buffer was released before.
+     * 访问缓冲区内容前应调用，确认尚未 release。
      */
     protected final void ensureAccessible() {
         if (checkAccessible && !isAccessible()) {
@@ -1491,7 +1496,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
     }
 
     /**
-     * Obtain the memory address without checking {@link #ensureAccessible()} first, if possible.
+     * 在可能的情况下不经 {@link #ensureAccessible()} 直接获取内存地址（供 JFR 等内部使用）。
      */
     long _memoryAddress() {
         return isAccessible() && hasMemoryAddress() ? memoryAddress() : 0L;

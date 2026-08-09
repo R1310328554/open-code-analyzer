@@ -25,18 +25,23 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
 
 /**
- * Skeletal {@link ByteBufAllocator} implementation to extend.
+ * {@link ByteBufAllocator} 的骨架实现，供具体分配器继承。
+ * <p>
+ * 提供 heap/direct/composite 缓冲区的默认路由、容量校验、
+ * 泄漏检测包装（{@link #toLeakAwareBuffer}）及扩容容量计算。
  */
 public abstract class AbstractByteBufAllocator implements ByteBufAllocator {
     static final int DEFAULT_INITIAL_CAPACITY = 256;
     static final int DEFAULT_MAX_CAPACITY = Integer.MAX_VALUE;
     static final int DEFAULT_MAX_COMPONENTS = 16;
+    /** 扩容时从倍增策略切换为按页递增的阈值（4 MiB） */
     static final int CALCULATE_THRESHOLD = 1048576 * 4; // 4 MiB page
 
     static {
         ResourceLeakDetector.addExclusions(AbstractByteBufAllocator.class, "toLeakAwareBuffer");
     }
 
+    /** 若泄漏检测开启，将普通 {@link ByteBuf} 包装为泄漏感知版本 */
     protected static ByteBuf toLeakAwareBuffer(ByteBuf buf) {
         ResourceLeakTracker<ByteBuf> leak = AbstractByteBuf.leakDetector.track(buf);
         if (leak != null) {
@@ -49,6 +54,7 @@ public abstract class AbstractByteBufAllocator implements ByteBufAllocator {
         return buf;
     }
 
+    /** 若泄漏检测开启，将 {@link CompositeByteBuf} 包装为泄漏感知版本 */
     protected static CompositeByteBuf toLeakAwareBuffer(CompositeByteBuf buf) {
         ResourceLeakTracker<ByteBuf> leak = AbstractByteBuf.leakDetector.track(buf);
         if (leak != null) {
@@ -64,18 +70,15 @@ public abstract class AbstractByteBufAllocator implements ByteBufAllocator {
     private final boolean directByDefault;
     private final ByteBuf emptyBuf;
 
-    /**
-     * Instance use heap buffers by default
-     */
+    /** 默认优先分配堆缓冲区 */
     protected AbstractByteBufAllocator() {
         this(false);
     }
 
     /**
-     * Create new instance
+     * 创建分配器实例。
      *
-     * @param preferDirect {@code true} if {@link #buffer(int)} should try to allocate a direct buffer rather than
-     *                     a heap buffer
+     * @param preferDirect 为 {@code true} 时 {@link #buffer(int)} 优先尝试分配 direct 而非 heap 缓冲区
      */
     protected AbstractByteBufAllocator(boolean preferDirect) {
         directByDefault = preferDirect && PlatformDependent.canReliabilyFreeDirectBuffers();
@@ -214,12 +217,12 @@ public abstract class AbstractByteBufAllocator implements ByteBufAllocator {
     }
 
     /**
-     * Create a heap {@link ByteBuf} with the given initialCapacity and maxCapacity.
+     * 创建具有指定初始容量与最大容量的堆 {@link ByteBuf}。
      */
     protected abstract ByteBuf newHeapBuffer(int initialCapacity, int maxCapacity);
 
     /**
-     * Create a direct {@link ByteBuf} with the given initialCapacity and maxCapacity.
+     * 创建具有指定初始容量与最大容量的 direct {@link ByteBuf}。
      */
     protected abstract ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity);
 
@@ -242,7 +245,7 @@ public abstract class AbstractByteBufAllocator implements ByteBufAllocator {
             return threshold;
         }
 
-        // If over threshold, do not double but just increase by threshold.
+        // 超过阈值后不再倍增，改为按 threshold 步长递增
         if (minNewCapacity > threshold) {
             int newCapacity = minNewCapacity / threshold * threshold;
             if (newCapacity > maxCapacity - threshold) {
@@ -253,7 +256,7 @@ public abstract class AbstractByteBufAllocator implements ByteBufAllocator {
             return newCapacity;
         }
 
-        // 64 <= newCapacity is a power of 2 <= threshold
+        // 64 <= newCapacity 为 2 的幂且不超过 threshold
         final int newCapacity = MathUtil.findNextPositivePowerOfTwo(Math.max(minNewCapacity, 64));
         return Math.min(newCapacity, maxCapacity);
     }

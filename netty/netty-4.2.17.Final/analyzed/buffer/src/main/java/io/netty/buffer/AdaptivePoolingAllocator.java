@@ -57,29 +57,19 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.IntConsumer;
 
 /**
- * An auto-tuning pooling allocator, that follows an anti-generational hypothesis.
+ * 遵循「反代际假设」的自适应池化分配器核心实现。
  * <p>
- * The allocator is organized into a list of Magazines, and each magazine has a chunk-buffer that they allocate buffers
- * from.
+ * 组织为 Magazine 列表，每个 Magazine 从一块 Chunk 中切分缓冲区。
+ * Magazine 持有保证线程安全的互斥结构；线程按 id 选择 Magazine，将多线程争用分散到多个条带。
+ * 争用超过阈值时动态增加 Magazine 数量。
  * <p>
- * The magazines hold the mutexes that ensure the thread-safety of the allocator, and each thread picks a magazine
- * based on the id of the thread. This spreads the contention of multi-threaded access across the magazines.
- * If contention is detected above a certain threshold, the number of magazines are increased in response to the
- * contention.
+ * 各 Magazine 维护分配尺寸直方图，用于计算首选 Chunk 大小——足以容纳约 10 次 99 分位尺寸的分配，
+ * 使 Chunk 规模随应用分配模式自适应。
  * <p>
- * The magazines maintain histograms of the sizes of the allocations they do. The histograms are used to compute the
- * preferred chunk size. The preferred chunk size is one that is big enough to service 10 allocations of the
- * 99-percentile size. This way, the chunk size is adapted to the allocation patterns.
+ * 重算首选 Chunk 开销较大，因此重算频率也随模式调整：新值与旧值相同时降低频率，否则提高。
+ * 从而在快速响应负载变化与控制统计开销之间取得平衡。
  * <p>
- * Computing the preferred chunk size is a somewhat expensive operation. Therefore, the frequency with which this is
- * done, is also adapted to the allocation pattern. If a newly computed preferred chunk is the same as the previous
- * preferred chunk size, then the frequency is reduced. Otherwise, the frequency is increased.
- * <p>
- * This allows the allocator to quickly respond to changes in the application workload,
- * without suffering undue overhead from maintaining its statistics.
- * <p>
- * Since magazines are "relatively thread-local", the allocator has a chunk cache that allows excess chunks from any
- * magazine to be shared with other magazines.
+ * Magazine 相对线程本地化，分配器还提供 Chunk 缓存，使多余 Chunk 可在 Magazine 间共享复用。
  */
 @UnstableApi
 final class AdaptivePoolingAllocator {
@@ -89,18 +79,15 @@ final class AdaptivePoolingAllocator {
             Runtime.getRuntime().maxMemory() <= LOW_MEM_THRESHOLD);
 
     /**
-     * Whether the IS_LOW_MEM setting should disable thread-local magazines.
-     * This can have fairly high performance overhead.
+     * 低内存模式下是否禁用线程本地 Magazine（启用可能带来较高性能开销）。
      */
     private static final boolean DISABLE_THREAD_LOCAL_MAGAZINES_ON_LOW_MEM = SystemPropertyUtil.getBoolean(
             "io.netty.allocator.disableThreadLocalMagazinesOnLowMemory", true);
 
     /**
-     * The 128 KiB minimum chunk size is chosen to encourage the system allocator to delegate to mmap for chunk
-     * allocations. For instance, glibc will do this.
-     * This pushes any fragmentation from chunk size deviations off physical memory, onto virtual memory,
-     * which is a much, much larger space. Chunks are also allocated in whole multiples of the minimum
-     * chunk size, which itself is a whole multiple of popular page sizes like 4 KiB, 16 KiB, and 64 KiB.
+     * 最小 Chunk 128 KiB，促使系统分配器（如 glibc）对 Chunk 使用 mmap，
+     * 将尺寸偏差导致的碎片转移到虚拟内存而非物理内存；
+     * Chunk 按最小尺寸的整数倍分配，且该最小值本身为常见页大小（4/16/64 KiB）的整数倍。
      */
     static final int MIN_CHUNK_SIZE = 128 * 1024;
     private static final int EXPANSION_ATTEMPTS = 3;
@@ -110,9 +97,9 @@ final class AdaptivePoolingAllocator {
     private static final int BUFS_PER_CHUNK = 8; // For large buffers, aim to have about this many buffers per chunk.
 
     /**
-     * The maximum size of a pooled chunk, in bytes. Allocations bigger than this will never be pooled.
+     * 可池化 Chunk 的最大字节数；更大分配永不入池。
      * <p>
-     * This number is 8 MiB, and is derived from the limitations of internal histograms.
+     * 低内存为 2 MiB，否则 8 MiB，受内部直方图精度限制。
      */
     private static final int MAX_CHUNK_SIZE = IS_LOW_MEM ?
             2 * 1024 * 1024 : // 2 MiB for systems with small heaps.
@@ -120,9 +107,8 @@ final class AdaptivePoolingAllocator {
     private static final int MAX_POOLED_BUF_SIZE = MAX_CHUNK_SIZE / BUFS_PER_CHUNK;
 
     /**
-     * The capacity if the chunk reuse queues, that allow chunks to be shared across magazines in a group.
-     * The default size is twice {@link NettyRuntime#availableProcessors()},
-     * same as the maximum number of magazines per magazine group.
+     * Magazine 组内 Chunk 复用队列容量，允许跨 Magazine 共享多余 Chunk；
+     * 默认为 {@link NettyRuntime#availableProcessors()} 的两倍。
      */
     static final int CHUNK_REUSE_QUEUE = Math.max(2, SystemPropertyUtil.getInt(
             "io.netty.allocator.chunkReuseQueueCapacity", NettyRuntime.availableProcessors() * 2));
@@ -137,20 +123,17 @@ final class AdaptivePoolingAllocator {
             "io.netty.allocator.chunkPurgeThreshold", 3));
 
     /**
-     * Per-size-class upper bound (in bytes) on the thread-local chunk cache.
-     * When a size class cache holds this many bytes worth of chunks,
-     * further offers are rejected and the chunk is marked for immediate deallocation.
-     * Chunks already in the cache are only evicted by the purge mechanism (they must be full and idle for
-     * {@link #CHUNK_PURGE_THRESHOLD} consecutive purge cycles).
+     * 线程本地 Chunk 缓存各 size class 的字节上限；
+     * 超过后拒绝入缓存并立即标记释放。
+     * 已在缓存中的 Chunk 仅由 purge 机制逐出（须已满且空闲 {@link #CHUNK_PURGE_THRESHOLD} 个 purge 周期）。
      */
     static final int THREAD_LOCAL_CACHE_MAX_BYTES = Math.max(1, SystemPropertyUtil.getInt(
             "io.netty.allocator.threadLocalChunkCacheMaxBytes", 8 * 1024 * 1024));
 
     /**
-     * Per-size-class lower bound (in bytes) on the thread-local chunk cache.
-     * The purge mechanism will not evict chunks below this retention floor, even if they are full and idle.
-     * Clamped to {@link #THREAD_LOCAL_CACHE_MAX_BYTES} if the configured value exceeds it.
-     * When equal to {@link #THREAD_LOCAL_CACHE_MAX_BYTES}, purge eviction is effectively disabled.
+     * 线程本地缓存保留下限（字节）；purge 不会逐出低于此值的 Chunk。
+     * 配置超过 {@link #THREAD_LOCAL_CACHE_MAX_BYTES} 时会被截断；
+     * 与上限相等时等效禁用 purge 逐出。
      */
     static final int THREAD_LOCAL_CACHE_MIN_BYTES = Math.min(THREAD_LOCAL_CACHE_MAX_BYTES,
             Math.max(1, SystemPropertyUtil.getInt(
@@ -158,23 +141,15 @@ final class AdaptivePoolingAllocator {
                     THREAD_LOCAL_CACHE_MAX_BYTES / 2)));
 
     /**
-     * The capacity if the magazine local buffer queue. This queue just pools the outer ByteBuf instance and not
-     * the actual memory and so helps to reduce GC pressure.
+     * Magazine 本地 ByteBuf 外壳对象队列容量；仅池化外层对象而非底层内存，减轻 GC 压力。
      */
     private static final int MAGAZINE_BUFFER_QUEUE_CAPACITY = SystemPropertyUtil.getInt(
             "io.netty.allocator.magazineBufferQueueCapacity", 1024);
 
     /**
-     * The size classes are chosen based on the following observation:
-     * <p>
-     * Most allocations, particularly ones above 256 bytes, aim to be a power-of-2. However, many use cases, such
-     * as framing protocols, are themselves operating or moving power-of-2 sized payloads, to which they add a
-     * small amount of overhead, such as headers or checksums.
-     * This means we seem to get a lot of mileage out of having both power-of-2 sizes, and power-of-2-plus-a-bit.
-     * <p>
-     * On the conflicting requirements of both having as few chunks as possible, and having as little wasted
-     * memory within each chunk as possible, this seems to strike a surprisingly good balance for the use cases
-     * tested so far.
+     * 尺寸分级的设计依据：多数分配（尤其 &gt;256 字节）趋向 2 的幂；
+     * 帧协议等场景常在 2 的幂负载上加少量头部/校验开销，因此同时提供 2 的幂与「2 的幂 + 少量余量」两档；
+     * 在 Chunk 数量与块内浪费之间取得较好平衡。
      */
     private static final int[] SIZE_CLASSES = {
             32,
@@ -336,7 +311,7 @@ final class AdaptivePoolingAllocator {
     }
 
     /**
-     * Allocate into the given buffer. Used by {@link AdaptiveByteBuf#capacity(int)}.
+     * 向给定缓冲区原地重新分配内存，供 {@link AdaptiveByteBuf#capacity(int)} 使用。
      */
     void reallocate(int size, int maxCapacity, AdaptiveByteBuf into) {
         AdaptiveByteBuf result = allocate(size, maxCapacity, Thread.currentThread(), into);
@@ -347,9 +322,7 @@ final class AdaptivePoolingAllocator {
         return chunkRegistry.totalCapacity();
     }
 
-    // Ensure that we release all previous pooled resources when this object is finalized. This is needed as otherwise
-    // we might end up with leaks. While these leaks are usually harmless in reality it would still at least be
-    // very confusing for users.
+    // finalize 时释放全部池化资源，避免用户困惑的「无害但难排查」泄漏
     @SuppressWarnings({"FinalizeDeclaration", "deprecation"})
     @Override
     protected void finalize() throws Throwable {
@@ -402,7 +375,7 @@ final class AdaptivePoolingAllocator {
         public AdaptiveByteBuf allocate(int size, int maxCapacity, Thread currentThread, AdaptiveByteBuf buf) {
             boolean reallocate = buf != null;
 
-            // Path for thread-local allocation.
+            // 线程本地 Magazine 分配路径
             Magazine tlMag = threadLocalMagazine;
             if (tlMag != null) {
                 if (buf == null) {
@@ -413,7 +386,7 @@ final class AdaptivePoolingAllocator {
                 return buf;
             }
 
-            // Path for concurrent allocation.
+            // 多线程争用下的并发分配路径
             long threadId = currentThread.getId();
             Magazine[] mags;
             int expansions = 0;
@@ -427,16 +400,16 @@ final class AdaptivePoolingAllocator {
                         buf = mag.newBuffer();
                     }
                     if (mag.tryAllocate(size, maxCapacity, buf, reallocate)) {
-                        // Was able to allocate.
+                        // 分配成功
                         return buf;
                     }
                 }
                 expansions++;
             } while (expansions <= EXPANSION_ATTEMPTS && tryExpandMagazines(mags.length));
 
-            // The magazines failed us; contention too high and we don't want to spend more effort expanding the array.
+            // Magazine 均失败：争用过高且不再扩展
             if (!reallocate && buf != null) {
-                buf.release(); // Release the previously claimed buffer before we return.
+                buf.release(); // 归还先前 claim 的 buffer 外壳
             }
             return null;
         }
@@ -483,7 +456,7 @@ final class AdaptivePoolingAllocator {
             boolean isAdded = chunkCache.offerChunk(chunk);
 
             if (freed && isAdded) {
-                // Help to free the reuse queue.
+                // 协助清空复用队列
                 freeChunkReuseQueue(ownerThread);
             }
             return isAdded;
@@ -533,9 +506,8 @@ final class AdaptivePoolingAllocator {
         boolean isEmpty();
     }
 
-    // Cached chunks are detached from magazines: no readInitInto can happen, so segment count
-    // can only grow (external releaseSegment returns) and never shrink. Once a chunk reaches
-    // full capacity (hasFullCapacity), it stays idle while in the cache.
+    // 缓存中的 Chunk 已与 Magazine 分离：segment 数只增不减；
+    // 一旦 hasFullCapacity 则在缓存中保持空闲直至 purge 或复用
     //
     // Epoch-based aging invariants (both caches):
     //
@@ -570,7 +542,7 @@ final class AdaptivePoolingAllocator {
         @Override
         public abstract SizeClassedChunk pollChunk(int size);
 
-        // Visible for testing: triggers a purge scan bypassing the budget counter.
+        // 测试用：绕过 budget 计数器触发 purge
         abstract SizeClassedChunk forcePurge();
     }
 
@@ -1165,21 +1137,15 @@ final class AdaptivePoolingAllocator {
     }
 
     private interface ChunkController {
-        /**
-         * Compute the "fast max capacity" value for the buffer.
-         */
+        /** 计算缓冲区的「快速最大容量」 */
         int computeBufferCapacity(int requestedSize, int maxCapacity, boolean isReallocation);
 
-        /**
-         * Allocate a new {@link Chunk} for the given {@link Magazine}.
-         */
+        /** 为指定 {@link Magazine} 分配新 {@link Chunk} */
         Chunk newChunkAllocation(int promptingSize, Magazine magazine);
     }
 
     private static final class SizeClassChunkManagementStrategy implements ChunkManagementStrategy {
-        // To amortize activation/deactivation of chunks, we should have a minimum number of segments per chunk.
-        // We choose 32 because it seems neither too small nor too big.
-        // For segments of 16 KiB, the chunks will be half a megabyte.
+        // 摊销 Chunk 激活/停用开销，每 Chunk 至少 32 个 segment（16 KiB segment 时约 512 KiB）
         private static final int MIN_SEGMENTS_PER_CHUNK = 32;
         private final int segmentSize;
         private final int chunkSize;
@@ -1641,12 +1607,9 @@ final class AdaptivePoolingAllocator {
             this.magazine = magazine;
         }
 
-        /**
-         * Called when a magazine is done using this chunk, probably because it was emptied.
-         */
+        /** Magazine 用完本 Chunk（通常已空）时调用，尝试入共享队列或标记释放 */
         void releaseFromMagazine() {
-            // Chunks can be reused before they become empty.
-            // We can therefor put them in the shared queue as soon as the magazine is done with this chunk.
+            // Chunk 可在未完全空之前复用；Magazine 释放后即可入共享队列
             Magazine mag = magazine;
             detachFromMagazine();
             if (!mag.offerToQueue(this)) {
@@ -1654,9 +1617,7 @@ final class AdaptivePoolingAllocator {
             }
         }
 
-        /**
-         * Called when a ByteBuf is done using its allocation in this chunk.
-         */
+        /** ByteBuf 释放其在 Chunk 中的 segment 时调用 */
         void releaseSegment(int ignoredSegmentId, int size) {
             release();
         }
@@ -1772,29 +1733,17 @@ final class AdaptivePoolingAllocator {
     }
 
     /**
-     * Removes per-allocation retain()/release() atomic ops from the hot path by replacing ref counting
-     * with a segment-count state machine. Atomics are only needed on the cold deallocation path
-     * ({@link #markToDeallocate()}), which is rare for long-lived chunks that cycle segments many times.
-     * The tradeoff is a {@link MpscIntQueue#size()} call (volatile reads, no RMW) per remaining segment
-     * return after mark — acceptable since it avoids atomic RMWs entirely.
+     * 用 segment 计数状态机替代热路径上的 retain/release 原子操作；
+     * 原子操作仅出现在冷路径 {@link #markToDeallocate()}（长寿命 Chunk 上较罕见）。
+     * 代价是 mark 后每次 segment 归还需 {@link MpscIntQueue#size()}（volatile 读），以完全避免原子 RMW。
      * <p>
-     * State transitions:
-     * <ul>
-     *   <li>{@link #AVAILABLE} (-1): chunk is in use, no deallocation tracking needed</li>
-     *   <li>0..N: local free list size at the time {@link #markToDeallocate()} was called;
-     *       used to track when all segments have been returned</li>
-     *   <li>{@link #DEALLOCATED} (Integer.MIN_VALUE): all segments returned, chunk deallocated</li>
-     * </ul>
-     * <p>
-     * Ordering: external {@link #releaseSegment} pushes to the MPSC queue (which has an implicit
-     * StoreLoad barrier via its {@code offer()}), then reads {@code state} — this guarantees
-     * visibility of any preceding {@link #markToDeallocate()} write.
+     * 状态：{@link #AVAILABLE}(-1) 使用中；0..N 为 mark 时本地空闲列表大小；
+     * {@link #DEALLOCATED}(MIN_VALUE) 全部 segment 已归还并释放。
      */
     static class SizeClassedChunk extends Chunk {
         private static final int FREE_LIST_EMPTY = -1;
         private static final int AVAILABLE = -1;
-        // Integer.MIN_VALUE so that `DEALLOCATED + externalFreeList.size()` can never equal `segments`,
-        // making late-arriving releaseSegment calls on external threads arithmetically harmless.
+        // MIN_VALUE 使 DEALLOCATED + externalFreeList.size() 永不等 segments，迟到的 releaseSegment 无害
         private static final int DEALLOCATED = Integer.MIN_VALUE;
         private static final AtomicIntegerFieldUpdater<SizeClassedChunk> STATE =
                 AtomicIntegerFieldUpdater.newUpdater(SizeClassedChunk.class, "state");
@@ -2061,9 +2010,7 @@ final class AdaptivePoolingAllocator {
             freeList.drain(freeListCapacity, this);
         }
 
-        /**
-         * Claim a suitable buddy and return its start offset into the delegate chunk, or return -1 if nothing claimed.
-         */
+        /** 在伙伴树中 claim 合适 buddy，返回在 delegate Chunk 中的起始偏移，失败返回 -1 */
         private int chooseFirstFreeBuddy(int index, int size, int currOffset) {
             byte[] buddies = this.buddies;
             while (index < buddies.length) {
@@ -2087,9 +2034,7 @@ final class AdaptivePoolingAllocator {
             return -1;
         }
 
-        /**
-         * Un-reserve the matching buddy and return whether there are any other child or sibling reservations.
-         */
+        /** 取消匹配 buddy 的预留，返回是否仍有其他子/兄弟节点被占用 */
         private boolean unreserveMatchingBuddy(int index, int size, int offset, int currOffset) {
             byte[] buddies = this.buddies;
             if (buddies.length <= index) {
@@ -2099,7 +2044,7 @@ final class AdaptivePoolingAllocator {
             int currSize = MIN_BUDDY_SIZE << (buddy & SHIFT_MASK);
 
             if (currSize == size) {
-                // We're at the right size level.
+                // 已到达目标尺寸层级
                 if (currOffset == offset) {
                     buddies[index] &= SHIFT_MASK;
                     return false;
@@ -2669,16 +2614,14 @@ final class AdaptivePoolingAllocator {
         }
     }
 
-    /**
-     * The strategy for how {@link AdaptivePoolingAllocator} should allocate chunk buffers.
-     */
+    /** {@link AdaptivePoolingAllocator} 分配 Chunk 底层缓冲的策略接口 */
     interface ChunkAllocator {
         /**
-         * Allocate a buffer for a chunk. This can be any kind of {@link AbstractByteBuf} implementation.
+         * 为 Chunk 分配底层 {@link AbstractByteBuf}。
          *
-         * @param initialCapacity The initial capacity of the returned {@link AbstractByteBuf}.
-         * @param maxCapacity     The maximum capacity of the returned {@link AbstractByteBuf}.
-         * @return The buffer that represents the chunk memory.
+         * @param initialCapacity 返回缓冲区的初始容量
+         * @param maxCapacity     返回缓冲区的最大容量
+         * @return 代表 Chunk 内存的缓冲区
          */
         AbstractByteBuf allocate(int initialCapacity, int maxCapacity);
     }

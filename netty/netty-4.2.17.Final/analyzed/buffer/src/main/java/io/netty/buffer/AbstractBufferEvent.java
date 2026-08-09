@@ -20,22 +20,31 @@ import jdk.jfr.Description;
 import jdk.jfr.MemoryAddress;
 
 @SuppressWarnings("Since15")
+/**
+ * 缓冲区生命周期 JFR 事件的抽象基类，承载容量、内存位置等通用字段。
+ */
 abstract class AbstractBufferEvent extends AbstractAllocatorEvent {
     @DataAmount
+    /** 缓冲区当前配置的容量（{@link AbstractByteBuf#capacity()}） */
     @Description("Configured buffer capacity")
     public int size;
     @DataAmount
+    /** 实际分配的快速可写上限（writerIndex + maxFastWritableBytes） */
     @Description("Actual allocated buffer capacity")
     public int maxFastCapacity;
     @DataAmount
+    /** 缓冲区允许的最大容量 */
     @Description("Maximum buffer capacity")
     public int maxCapacity;
+    /** 是否为堆外（Direct）内存 */
     @Description("Is this buffer referencing off-heap memory?")
     public boolean direct;
+    /** 堆外内存起始地址（若可用） */
     @Description("The memory address of the off-heap memory, if available")
     @MemoryAddress
     public long address;
 
+    /** 从 {@link AbstractByteBuf} 实例填充事件字段，供 JFR commit 前调用 */
     public void fill(AbstractByteBuf buf, Class<? extends AbstractByteBufAllocator> allocatorType) {
         this.allocatorType = allocatorType;
         size = buf.capacity();

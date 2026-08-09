@@ -24,17 +24,19 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Abstract base class for derived {@link ByteBuf} implementations.
+ * 池化派生 {@link ByteBuf} 的抽象基类（切片、duplicate 等）。
+ * <p>
+ * 通过 {@link io.netty.util.Recycler} 复用外层对象；持有独立引用计数，
+ * 释放时先回收到对象池再 {@code release} 父缓冲区。
  */
 abstract class AbstractPooledDerivedByteBuf extends AbstractReferenceCountedByteBuf {
 
     private final EnhancedHandle<AbstractPooledDerivedByteBuf> recyclerHandle;
+    /** 未包装的根 {@link AbstractByteBuf}，{@link #unwrap()} 返回此对象 */
     private AbstractByteBuf rootParent;
     /**
-     * Deallocations of a pooled derived buffer should always propagate through the entire chain of derived buffers.
-     * This is because each pooled derived buffer maintains its own reference count and we should respect each one.
-     * If deallocations cause a release of the "root parent" then we may prematurely release the underlying
-     * content before all the derived buffers have been released.
+     * 泄漏检测包装链上的直接父节点（通常为 {@link SimpleLeakAwareByteBuf}）。
+     * 池化派生缓冲各自维护引用计数，释放须沿链传播，避免过早释放 root 内容。
      */
     private ByteBuf parent;
 
@@ -44,7 +46,7 @@ abstract class AbstractPooledDerivedByteBuf extends AbstractReferenceCountedByte
         this.recyclerHandle = (EnhancedHandle<AbstractPooledDerivedByteBuf>) recyclerHandle;
     }
 
-    // Called from within SimpleLeakAwareByteBuf and AdvancedLeakAwareByteBuf.
+    /** 由 SimpleLeakAware/AdvancedLeakAware 包装器设置泄漏检测父节点 */
     final void parent(ByteBuf newParent) {
         assert newParent instanceof SimpleLeakAwareByteBuf;
         parent = newParent;
@@ -61,13 +63,13 @@ abstract class AbstractPooledDerivedByteBuf extends AbstractReferenceCountedByte
 
     final <U extends AbstractPooledDerivedByteBuf> U init(
             AbstractByteBuf unwrapped, ByteBuf wrapped, int readerIndex, int writerIndex, int maxCapacity) {
-        wrapped.retain(); // Retain up front to ensure the parent is accessible before doing more work.
+        wrapped.retain(); // 先 retain 父节点，确保后续初始化期间父 buffer 可访问
         parent = wrapped;
         rootParent = unwrapped;
 
         try {
             maxCapacity(maxCapacity);
-            setIndex0(readerIndex, writerIndex); // It is assumed the bounds checking is done by the caller.
+            setIndex0(readerIndex, writerIndex); // 边界检查由调用方负责
             resetRefCnt();
 
             @SuppressWarnings("unchecked")
@@ -84,11 +86,9 @@ abstract class AbstractPooledDerivedByteBuf extends AbstractReferenceCountedByte
 
     @Override
     protected final void deallocate() {
-        // We need to first store a reference to the parent before recycle this instance. This is needed as
-        // otherwise it is possible that the same AbstractPooledDerivedByteBuf is again obtained and init(...) is
-        // called before we actually have a chance to call release(). This leads to call release() on the wrong parent.
+        // 必须先保存 parent 再 recycle，否则同一实例可能被立即复用并 init，导致 release 错误的 parent
         ByteBuf parent = this.parent;
-        // Remove references to parent and root so that they can be GCed for leak detection [netty/netty#14247]
+        // 清除 parent/root 引用以便泄漏检测 GC [netty/netty#14247]
         this.parent = this.rootParent = null;
         recyclerHandle.unguardedRecycle(this);
         parent.release();
@@ -154,7 +154,7 @@ abstract class AbstractPooledDerivedByteBuf extends AbstractReferenceCountedByte
     @Override
     public ByteBuf slice(int index, int length) {
         ensureAccessible();
-        // All reference count methods should be inherited from this object (this is the "parent").
+        // 引用计数委托给本对象（作为 parent）
         return new PooledNonRetainedSlicedByteBuf(this, unwrap(), index, length);
     }
 
@@ -164,6 +164,7 @@ abstract class AbstractPooledDerivedByteBuf extends AbstractReferenceCountedByte
         return new PooledNonRetainedDuplicateByteBuf(this, unwrap());
     }
 
+    /** 不增加引用计数的 duplicate，引用计数委托给池化派生 parent */
     private static final class PooledNonRetainedDuplicateByteBuf extends UnpooledDuplicatedByteBuf {
         private final ByteBuf referenceCountDelegate;
 
@@ -235,7 +236,7 @@ abstract class AbstractPooledDerivedByteBuf extends AbstractReferenceCountedByte
 
         @Override
         public ByteBuf retainedSlice() {
-            // Capacity is not allowed to change for a sliced ByteBuf, so length == capacity()
+            // 切片容量不可变，长度等于 capacity()
             return retainedSlice(readerIndex(), capacity());
         }
 
@@ -245,6 +246,7 @@ abstract class AbstractPooledDerivedByteBuf extends AbstractReferenceCountedByte
         }
     }
 
+    /** 不增加引用计数的 slice，引用计数委托给池化派生 parent */
     private static final class PooledNonRetainedSlicedByteBuf extends UnpooledSlicedByteBuf {
         private final ByteBuf referenceCountDelegate;
 

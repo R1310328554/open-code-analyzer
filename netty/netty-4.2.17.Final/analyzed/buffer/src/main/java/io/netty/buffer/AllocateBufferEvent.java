@@ -23,19 +23,24 @@ import jdk.jfr.Name;
 @Label("Buffer Allocation")
 @Name(AllocateBufferEvent.NAME)
 @Description("Triggered when a buffer is allocated (or reallocated) from an allocator")
+/**
+ * 缓冲区分配（或扩容后重新分配）时触发的 JFR 事件。
+ * <p>
+ * 记录 Chunk 是否来自池化、是否线程本地等分配路径信息。
+ */
 final class AllocateBufferEvent extends AbstractBufferEvent {
     static final String NAME = "io.netty.AllocateBuffer";
     private static final AllocateBufferEvent INSTANCE = new AllocateBufferEvent();
 
-    /**
-     * Statically check if this event is enabled.
-     */
+    /** 静态检查该 JFR 事件是否已启用 */
     public static boolean isEventEnabled() {
         return INSTANCE.isEnabled();
     }
 
+    /** Chunk 是否来自池化（否则为一次性分配） */
     @Description("Is this chunk pooled, or is it a one-off allocation for this buffer?")
     public boolean chunkPooled;
+    /** Chunk 是否属于线程本地的 Magazine/Arena */
     @Description("Is this buffer's chunk part of a thread-local magazine or arena?")
     public boolean chunkThreadLocal;
 }

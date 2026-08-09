@@ -19,18 +19,22 @@ package io.netty.buffer;
 import java.nio.ByteBuffer;
 
 /**
- * Abstract base class for {@link ByteBuf} implementations that wrap another
- * {@link ByteBuf}.
+ * 包装另一个 {@link ByteBuf} 的派生缓冲区抽象基类。
+ * <p>
+ * 引用计数、可访问性等生命周期操作均委托给 {@link #unwrap()} 返回的底层缓冲区；
+ * 本类自身不持有独立引用计数。
  *
- * @deprecated Do not use.
+ * @deprecated 请勿使用。
  */
 @Deprecated
 public abstract class AbstractDerivedByteBuf extends AbstractByteBuf {
 
+    /** @param maxCapacity 派生视图允许的最大容量 */
     protected AbstractDerivedByteBuf(int maxCapacity) {
         super(maxCapacity);
     }
 
+    /** 可访问性委托给底层缓冲区 */
     @Override
     final boolean isAccessible() {
         return isAccessible0();
@@ -40,6 +44,7 @@ public abstract class AbstractDerivedByteBuf extends AbstractByteBuf {
         return unwrap().isAccessible();
     }
 
+    /** 引用计数委托给底层缓冲区 */
     @Override
     public final int refCnt() {
         return refCnt0();
