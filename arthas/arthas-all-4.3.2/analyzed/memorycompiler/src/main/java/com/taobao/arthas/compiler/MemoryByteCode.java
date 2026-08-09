@@ -27,12 +27,15 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-
+/**
+ * 将 javac 编译产物写入内存的 {@link SimpleJavaFileObject} 实现，不落磁盘。
+ */
 public class MemoryByteCode extends SimpleJavaFileObject {
     private static final char PKG_SEPARATOR = '.';
     private static final char DIR_SEPARATOR = '/';
     private static final String CLASS_FILE_SUFFIX = ".class";
 
+    /** 累积编译器写入的 .class 字节流 */
     private ByteArrayOutputStream byteArrayOutputStream;
 
     public MemoryByteCode(String className) {
@@ -46,6 +49,7 @@ public class MemoryByteCode extends SimpleJavaFileObject {
         this.byteArrayOutputStream = byteArrayOutputStream;
     }
 
+    /** 编译器通过此输出流写入字节码；首次调用时懒创建缓冲区 */
     @Override
     public OutputStream openOutputStream() throws IOException {
         if (byteArrayOutputStream == null) {
@@ -54,10 +58,12 @@ public class MemoryByteCode extends SimpleJavaFileObject {
         return byteArrayOutputStream;
     }
 
+    /** 返回已编译的完整 .class 字节数组 */
     public byte[] getByteCode() {
         return byteArrayOutputStream.toByteArray();
     }
 
+    /** 从虚拟 URI 路径反推全限定类名 */
     public String getClassName() {
         String className = getName();
         className = className.replace(DIR_SEPARATOR, PKG_SEPARATOR);

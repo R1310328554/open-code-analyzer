@@ -31,12 +31,16 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.GenericFutureListener;
 
 /**
+ * Forward 模式的 WebSocket 客户端处理器：远端 Tunnel 握手完成后，
+ * 再连接本地 Arthas Server（Netty LocalChannel），并通过 {@link RelayHandler} 双向转发帧。
+ *
  * @author hengyunabc 2019-08-28
  */
 public class ForwardClientSocketClientHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
 
     private static final Logger logger = LoggerFactory.getLogger(ForwardClientSocketClientHandler.class);
 
+    /** 本地 Arthas Server WebSocket 握手完成的 Promise */
     private ChannelPromise handshakeFuture;
 
     @Override
@@ -48,6 +52,9 @@ public class ForwardClientSocketClientHandler extends SimpleChannelInboundHandle
         logger.info("WebSocket Client disconnected!");
     }
 
+    /**
+     * 远端 WebSocket 握手完成后触发本地 Server 连接与双向 relay 搭建。
+     */
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, Object evt) {
         if (evt.equals(ClientHandshakeStateEvent.HANDSHAKE_COMPLETE)) {
@@ -61,12 +68,15 @@ public class ForwardClientSocketClientHandler extends SimpleChannelInboundHandle
         }
     }
 
+    /**
+     * 经 LocalChannel 连接本机 Arthas Server，握手成功后两端各挂一个 {@link RelayHandler} 做帧转发。
+     */
     private void connectLocalServer(final ChannelHandlerContext ctx) throws InterruptedException, URISyntaxException {
         final EventLoopGroup group = new NioEventLoopGroup(1, new DefaultThreadFactory("arthas-forward-client-connect-local", true));
         ChannelFuture closeFuture = null;
         try {
             logger.info("ForwardClientSocketClientHandler star connect local arthas server");
-            // 入参URI实际无意义，只为了程序不出错
+            // 占位 URI，仅满足 WebSocket 协议处理器构造要求，实际走 LocalChannel
             WebSocketClientProtocolConfig clientProtocolConfig = WebSocketClientProtocolConfig.newBuilder()
                     .webSocketUri("ws://127.0.0.1:8563/ws")
                     .maxFramePayloadLength(ArthasConstants.MAX_HTTP_CONTENT_LENGTH).build();
@@ -90,19 +100,20 @@ public class ForwardClientSocketClientHandler extends SimpleChannelInboundHandle
 
             LocalAddress localAddress = new LocalAddress(ArthasConstants.NETTY_LOCAL_ADDRESS);
             Channel localChannel = b.connect(localAddress).sync().channel();
-            // Channel localChannel = b.connect(localServerURI.getHost(), localServerURI.getPort()).sync().channel();
             this.handshakeFuture = localFrameHandler.handshakeFuture();
             handshakeFuture.addListener(new GenericFutureListener<ChannelFuture>() {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
                             ChannelPipeline pipeline = future.channel().pipeline();
                             pipeline.remove(localFrameHandler);
+                            // 本地 → 远端
                             pipeline.addLast(new RelayHandler(ctx.channel()));
                         }
                     });
 
             handshakeFuture.sync();
             ctx.pipeline().remove(ForwardClientSocketClientHandler.this);
+            // 远端 → 本地
             ctx.pipeline().addLast(new RelayHandler(localChannel));
             logger.info("ForwardClientSocketClientHandler connect local arthas server success");
 

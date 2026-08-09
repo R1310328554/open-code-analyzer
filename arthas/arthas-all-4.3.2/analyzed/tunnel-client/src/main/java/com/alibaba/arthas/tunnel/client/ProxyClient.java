@@ -41,13 +41,21 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 /**
- * 
+ * 经 Netty LocalChannel 向本机 Arthas Server 发起 HTTP GET 代理查询，
+ * 将响应封装为 {@link SimpleHttpResponse} 返回。
+ *
  * @author hengyunabc 2020-10-22
  *
  */
 public class ProxyClient {
     private static final Logger logger = LoggerFactory.getLogger(ProxyClient.class);
 
+    /**
+     * 对本地 Arthas Server 执行 GET 请求并等待响应（超时 5 秒）。
+     *
+     * @param targetUrl 请求路径（相对本地 Server）
+     * @return HTTP 响应；异常时返回 content 为 "error" 的占位对象
+     */
     public SimpleHttpResponse query(String targetUrl) throws InterruptedException {
         final Promise<SimpleHttpResponse> httpResponsePromise = GlobalEventExecutor.INSTANCE.newPromise();
 
@@ -68,7 +76,7 @@ public class ProxyClient {
             LocalAddress localAddress = new LocalAddress(ArthasConstants.NETTY_LOCAL_ADDRESS);
             Channel localChannel = b.connect(localAddress).sync().channel();
 
-            // Prepare the HTTP request.
+            // 构造 HTTP GET 请求
             HttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, targetUrl,
                     Unpooled.EMPTY_BUFFER);
             request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
@@ -103,6 +111,7 @@ public class ProxyClient {
         return httpResponse;
     }
 
+    /** 解析 HTTP 响应头与 body，完成后通过 Promise 交付结果 */
     static class HttpProxyClientHandler extends SimpleChannelInboundHandler<HttpObject> {
 
         private Promise<SimpleHttpResponse> promise;

@@ -24,14 +24,23 @@ import javax.tools.SimpleJavaFileObject;
 import java.io.IOException;
 import java.net.URI;
 
+/**
+ * 将内存中的 Java 源码字符串包装为 {@link SimpleJavaFileObject}，供 javac 直接编译。
+ */
 public class StringSource extends SimpleJavaFileObject {
+    /** 待编译的完整源码文本 */
     private final String contents;
 
+    /**
+     * @param className 全限定类名，用于构造虚拟 URI
+     * @param contents 源码字符串
+     */
     public StringSource(String className, String contents) {
         super(URI.create("string:///" + className.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
         this.contents = contents;
     }
 
+    /** javac 通过此方法读取源码字符内容 */
     @Override
     public CharSequence getCharContent(boolean ignoreEncodingErrors) throws IOException {
         return contents;
