@@ -19,7 +19,8 @@ package org.springframework.jdbc.support.incrementer;
 import javax.sql.DataSource;
 
 /**
- * {@link DataFieldMaxValueIncrementer} 检索给定 H2 序列的下一个值。
+ * 获取给定 H2 序列下一值的 {@link DataFieldMaxValueIncrementer}。
+ *
  * @author Thomas Risberg
  * @author Henning Pöttker
  * @since 2.5
@@ -27,7 +28,7 @@ import javax.sql.DataSource;
 public class H2SequenceMaxValueIncrementer extends AbstractSequenceMaxValueIncrementer {
 
 	/**
-	 * bean 属性样式使用的默认构造函数。
+	 * Bean 属性风格使用的默认构造器。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 */
@@ -35,18 +36,15 @@ public class H2SequenceMaxValueIncrementer extends AbstractSequenceMaxValueIncre
 	}
 
 	/**
-	 * 方便构造函数。
-	 * @param dataSource 要使用的数据源
-	 * @param incrementerName 要使用的序列/表的名称
+	 * 便捷构造器。
+	 * @param dataSource 要使用的 DataSource
+	 * @param incrementerName 要使用的序列/表名
 	 */
 	public H2SequenceMaxValueIncrementer(DataSource dataSource, String incrementerName) {
 		super(dataSource, incrementerName);
 	}
 
 
-	/**
-	 * 获取 Sequence Query（`SequenceQuery`）。
-	 */
 	@Override
 	protected String getSequenceQuery() {
 		return "values next value for " + getIncrementerName();

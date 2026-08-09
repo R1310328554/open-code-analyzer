@@ -21,24 +21,23 @@ import javax.sql.DataSource;
 import org.springframework.util.Assert;
 
 /**
- * 使用自定义序列表中的列的 {@link DataFieldMaxValueIncrementer} 实现的抽象基类。子类需要在其 {@link #getNextKey()}
- * 实现中提供对该表的具体处理。
+ * 使用自定义序列表中列的 {@link DataFieldMaxValueIncrementer} 实现的抽象基类。
+ * 子类须在 {@link #getNextKey()} 中提供对该表的具体处理。
+ *
  * @author Juergen Hoeller
  * @since 2.5.3
  */
 public abstract class AbstractColumnMaxValueIncrementer extends AbstractDataFieldMaxValueIncrementer {
 
-	/**
-	 */
+	/** 本序列使用的列名。 */
 	private String columnName;
 
-	/**
-	 */
+	/** 缓存中缓冲的键数量。 */
 	private int cacheSize = 1;
 
 
 	/**
-	 * bean 属性样式使用的默认构造函数。
+	 * Bean 属性风格使用的默认构造器。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -48,10 +47,10 @@ public abstract class AbstractColumnMaxValueIncrementer extends AbstractDataFiel
 	}
 
 	/**
-	 * 方便构造函数。
-	 * @param dataSource 要使用的数据源
-	 * @param incrementerName 要使用的序列/表的名称
-	 * @param columnName 序列表中要使用的列的名称
+	 * 便捷构造器。
+	 * @param dataSource 要使用的 DataSource
+	 * @param incrementerName 要使用的序列/表名
+	 * @param columnName 序列表中要使用的列名
 	 */
 	public AbstractColumnMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName);
@@ -61,36 +60,33 @@ public abstract class AbstractColumnMaxValueIncrementer extends AbstractDataFiel
 
 
 	/**
-	 * 设置序列表中列的名称。
+	 * 设置序列表中的列名。
 	 */
 	public void setColumnName(String columnName) {
 		this.columnName = columnName;
 	}
 
 	/**
-	 * 返回序列表中列的名称。
+	 * 返回序列表中的列名。
 	 */
 	public String getColumnName() {
 		return this.columnName;
 	}
 
 	/**
-	 * 设置缓冲键的数量。
+	 * 设置缓冲键数量。
 	 */
 	public void setCacheSize(int cacheSize) {
 		this.cacheSize = cacheSize;
 	}
 
 	/**
-	 * 返回缓冲的键的数量。
+	 * 返回缓冲键数量。
 	 */
 	public int getCacheSize() {
 		return this.cacheSize;
 	}
 
-	/**
-	 * 在…之后回调：Properties Set（方法 `afterPropertiesSet`）。
-	 */
 	@Override
 	public void afterPropertiesSet() {
 		super.afterPropertiesSet();

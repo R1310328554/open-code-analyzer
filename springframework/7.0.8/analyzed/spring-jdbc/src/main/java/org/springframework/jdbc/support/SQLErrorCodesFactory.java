@@ -37,10 +37,11 @@ import org.springframework.util.PatternMatchUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * 用于基于取自 {@link java.sql.DatabaseMetaData} 的“databaseProductName”创建 {@link SQLErrorCodes}
- * 的工厂。
- * <p>返回 {@code SQLErrorCodes}，其中填充了名为“sql-error-codes.xml”的配置文件中定义的供应商代码。如果没有被类路径根目录中的文件覆盖
- * （例如在“/WEB-INF/classes”目录中），则读取此包中的默认文件。
+ * 基于 {@link java.sql.DatabaseMetaData} 中的 "databaseProductName" 创建 {@link SQLErrorCodes} 的工厂。
+ *
+ * <p>返回在 "sql-error-codes.xml" 配置文件中定义的厂商错误码填充的 {@code SQLErrorCodes}。
+ * 若类路径根目录（如 "/WEB-INF/classes"）未覆盖，则读取本包中的默认文件。
+ *
  * @author Thomas Risberg
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -49,23 +50,21 @@ import org.springframework.util.StringUtils;
 public class SQLErrorCodesFactory {
 
 	/**
-	 * 自定义 SQL 错误代码文件的名称，从类路径的根目录加载（例如，从“/WEB-INF/classes”目录）。
+	 * 自定义 SQL 错误码文件名，从类路径根目录加载（如 "/WEB-INF/classes"）。
 	 */
 	public static final String SQL_ERROR_CODE_OVERRIDE_PATH = "sql-error-codes.xml";
 
 	/**
-	 * 默认 SQL 错误代码文件的名称，从类路径加载。
+	 * 默认 SQL 错误码文件名，从类路径加载。
 	 */
 	public static final String SQL_ERROR_CODE_DEFAULT_PATH = "org/springframework/jdbc/support/sql-error-codes.xml";
 
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
 	private static final Log logger = LogFactory.getLog(SQLErrorCodesFactory.class);
 
 	/**
-	 * 跟踪单个实例，以便我们可以将其返回给请求它的类。延迟初始化以避免在不需要时使 {@code SQLErrorCodesFactory} 构造函数在本机映像上可访问。
+	 * 跟踪单例实例，以便返回给请求的类。
+	 * 延迟初始化，避免在不需要时使 {@code SQLErrorCodesFactory} 构造器在 native image 中可达。
 	 */
 	private static @Nullable SQLErrorCodesFactory instance;
 
@@ -82,19 +81,20 @@ public class SQLErrorCodesFactory {
 
 
 	/**
-	 * 映射以保存配置文件中定义的所有数据库的错误代码。键是数据库产品名称，值是 SQLErrorCodes 实例。
+	 * 保存配置文件中所有数据库错误码的映射，键为数据库产品名，值为 SQLErrorCodes 实例。
 	 */
 	private final Map<String, SQLErrorCodes> errorCodesMap;
 
 	/**
-	 * 映射以缓存每个数据源的 SQLErrorCodes 实例。
+	 * 按 DataSource 缓存 SQLErrorCodes 实例的映射。
 	 */
 	private final Map<DataSource, SQLErrorCodes> dataSourceCache = new ConcurrentReferenceHashMap<>(16);
 
 
 	/**
-	 * 创建 {@link SQLErrorCodesFactory} 类的新实例。 <p>不公开以强制实施单例设计模式。除了允许通过覆盖 {@link #loadResource(S
-	 * tring)} 方法进行测试之外，将是私有的。 <p><b>不要在应用程序代码中子类化。</b>
+	 * 创建 {@link SQLErrorCodesFactory} 新实例。
+	 * <p>非 public，以强制单例模式。若非为允许通过覆盖 {@link #loadResource(String)} 进行测试，本应为 private。
+	 * <p><b>应用代码请勿子类化。</b>
 	 * @see #loadResource(String)
 	 */
 	protected SQLErrorCodesFactory() {
@@ -106,7 +106,7 @@ public class SQLErrorCodesFactory {
 			lbf.setBeanClassLoader(getClass().getClassLoader());
 			XmlBeanDefinitionReader bdr = new XmlBeanDefinitionReader(lbf);
 
-			// 加载默认的 SQL 错误代码。
+			// Load default SQL error codes.
 			Resource resource = loadResource(SQL_ERROR_CODE_DEFAULT_PATH);
 			if (resource != null && resource.exists()) {
 				bdr.loadBeanDefinitions(resource);
@@ -115,14 +115,14 @@ public class SQLErrorCodesFactory {
 				logger.info("Default sql-error-codes.xml not found (should be included in spring-jdbc jar)");
 			}
 
-			// 加载自定义 SQL 错误代码，覆盖默认值。
+			// Load custom SQL error codes, overriding defaults.
 			resource = loadResource(SQL_ERROR_CODE_OVERRIDE_PATH);
 			if (resource != null && resource.exists()) {
 				bdr.loadBeanDefinitions(resource);
 				logger.debug("Found custom sql-error-codes.xml file at the root of the classpath");
 			}
 
-			// 检查 SQLErrorCodes 类型的所有 bean。
+			// Check all beans of type SQLErrorCodes.
 			errorCodes = lbf.getBeansOfType(SQLErrorCodes.class, true, false);
 			if (logger.isTraceEnabled()) {
 				logger.trace("SQLErrorCodes loaded: " + errorCodes.keySet());
@@ -137,10 +137,11 @@ public class SQLErrorCodesFactory {
 	}
 
 	/**
-	 * 从类路径加载给定的资源。 <p><b> 不应被应用程序开发人员覆盖，应用程序开发人员应从静态 {@link #getInstance()} 方法获取此类的实例。 </b> <p
-	 * > 受保护以实现可测试性。
-	 * @param path 资源路径；自定义路径或者 {@link #SQL_ERROR_CODE_DEFAULT_PATH} 或 {@link #SQL_ERROR_CODE_OVERRIDE_PATH} 之一。
-	 * @return 资源，如果未找到资源则为 {@code null}
+	 * 从类路径加载给定资源。
+	 * <p><b>应用开发者不应覆盖，应通过静态 {@link #getInstance()} 获取本类实例。</b>
+	 * <p>protected 以便测试。
+	 * @param path 资源路径，可为自定义路径或 {@link #SQL_ERROR_CODE_DEFAULT_PATH}、{@link #SQL_ERROR_CODE_OVERRIDE_PATH}
+	 * @return 资源，未找到时 {@code null}
 	 * @see #getInstance
 	 */
 	protected @Nullable Resource loadResource(String path) {
@@ -149,10 +150,10 @@ public class SQLErrorCodesFactory {
 
 
 	/**
-	 * 返回给定数据库的 {@link SQLErrorCodes} 实例。 <p>不需要数据库元数据查找。
+	 * 返回给定数据库的 {@link SQLErrorCodes} 实例，无需数据库元数据查找。
 	 * @param databaseName 数据库名称（不得为 {@code null}）
-	 * @return 给定数据库的 {@code SQLErrorCodes} 实例（绝不是 {@code null}；可能为空）
-	 * @throws IllegalArgumentException 如果提供的数据库名称是 {@code null}
+	 * @return 给定数据库的 {@code SQLErrorCodes}（永不为 {@code null}，可能为空）
+	 * @throws IllegalArgumentException 数据库名称为 {@code null} 时
 	 */
 	public SQLErrorCodes getErrorCodes(String databaseName) {
 		Assert.notNull(databaseName, "Database product name must not be null");
@@ -174,7 +175,7 @@ public class SQLErrorCodesFactory {
 			return sec;
 		}
 
-		// 无法在定义的数据库中找到该数据库。
+		// Could not find the database among the defined ones.
 		if (logger.isDebugEnabled()) {
 			logger.debug("SQL error codes for '" + databaseName + "' not found");
 		}
@@ -182,10 +183,11 @@ public class SQLErrorCodesFactory {
 	}
 
 	/**
-	 * 返回给定 {@link DataSource} 的 {@link SQLErrorCodes}，评估 {@link java.sql.DatabaseMetaData}
-	 * 中的“databaseProductName”，如果未找到 {@code SQLErrorCodes}，则返回空错误代码实例。
+	 * 返回给定 {@link DataSource} 的 {@link SQLErrorCodes}，
+	 * 从 {@link java.sql.DatabaseMetaData} 读取 "databaseProductName"；
+	 * 未找到时返回空错误码实例。
 	 * @param dataSource 标识数据库的 {@code DataSource}
-	 * @return 对应的 {@code SQLErrorCodes} 对象（绝不是 {@code null}；可能为空）
+	 * @return 对应的 {@code SQLErrorCodes}（永不为 {@code null}，可能为空）
 	 * @see java.sql.DatabaseMetaData#getDatabaseProductName()
 	 */
 	public SQLErrorCodes getErrorCodes(DataSource dataSource) {
@@ -194,10 +196,11 @@ public class SQLErrorCodesFactory {
 	}
 
 	/**
-	 * 返回给定 {@link DataSource} 的 {@link SQLErrorCodes}，评估 {@link java.sql.DatabaseMetaData}
-	 * 中的“databaseProductName”，如果出现 JDBC 元数据访问问题，则返回 {@code null}。
+	 * 返回给定 {@link DataSource} 的 {@link SQLErrorCodes}，
+	 * 从 {@link java.sql.DatabaseMetaData} 读取 "databaseProductName"；
+	 * JDBC 元数据访问出问题时返回 {@code null}。
 	 * @param dataSource 标识数据库的 {@code DataSource}
-	 * @return 对应的 {@code SQLErrorCodes} 对象，或 {@code null}（如果出现 JDBC 元数据访问问题）
+	 * @return 对应的 {@code SQLErrorCodes}，元数据访问失败时 {@code null}
 	 * @since 5.2.9
 	 * @see java.sql.DatabaseMetaData#getDatabaseProductName()
 	 */
@@ -207,14 +210,14 @@ public class SQLErrorCodesFactory {
 			logger.debug("Looking up default SQLErrorCodes for DataSource [" + identify(dataSource) + "]");
 		}
 
-		// 尝试对现有缓存条目进行高效的无锁访问
+		// Try efficient lock-free access for existing cache entry
 		SQLErrorCodes sec = this.dataSourceCache.get(dataSource);
 		if (sec == null) {
 			synchronized (this.dataSourceCache) {
-				// 在完整的 dataSourceCache 锁内进行双重检查
+				// Double-check within full dataSourceCache lock
 				sec = this.dataSourceCache.get(dataSource);
 				if (sec == null) {
-					// 我们找不到它 - 必须查找它。
+					// We could not find it - got to look it up.
 					try {
 						String name = JdbcUtils.extractDatabaseMetaData(dataSource,
 								DatabaseMetaData::getDatabaseProductName);
@@ -238,10 +241,10 @@ public class SQLErrorCodesFactory {
 	}
 
 	/**
-	 * 将指定的数据库名称与给定的 {@link DataSource} 关联。
+	 * 将指定数据库名称与给定 {@link DataSource} 关联。
 	 * @param dataSource 标识数据库的 {@code DataSource}
-	 * @param databaseName 错误代码定义文件中指定的相应数据库名称（不得为 {@code null}）
-	 * @return 对应的 {@code SQLErrorCodes} 对象（绝不是 {@code null}）
+	 * @param databaseName 错误码定义文件中的数据库名称（不得为 {@code null}）
+	 * @return 对应的 {@code SQLErrorCodes}（永不为 {@code null}）
 	 * @see #unregisterDatabase(DataSource)
 	 */
 	public SQLErrorCodes registerDatabase(DataSource dataSource, String databaseName) {
@@ -255,9 +258,9 @@ public class SQLErrorCodesFactory {
 	}
 
 	/**
-	 * 清除指定 {@link DataSource} 的缓存（如果已注册）。
+	 * 清除指定 {@link DataSource} 的缓存（若已注册）。
 	 * @param dataSource 标识数据库的 {@code DataSource}
-	 * @return 已删除的相应 {@code SQLErrorCodes} 对象，或 {@code null}（如果未注册）
+	 * @return 被移除的 {@code SQLErrorCodes}，未注册时 {@code null}
 	 * @since 4.3.5
 	 * @see #registerDatabase(DataSource, String)
 	 */
@@ -266,16 +269,16 @@ public class SQLErrorCodesFactory {
 	}
 
 	/**
-	 * 为给定的 {@link DataSource} 构建标识字符串，主要用于记录目的。
-	 * @param dataSource {@code DataSource} 进行反思
-	 * @return 识别字符串
+	 * 为给定 {@link DataSource} 构建标识字符串，主要用于日志。
+	 * @param dataSource 要内省的 {@code DataSource}
+	 * @return 标识字符串
 	 */
 	private String identify(DataSource dataSource) {
 		return dataSource.getClass().getName() + '@' + Integer.toHexString(dataSource.hashCode());
 	}
 
 	/**
-	 * 检查 {@link CustomSQLExceptionTranslatorRegistry} 中是否有任何条目。
+	 * 检查 {@link CustomSQLExceptionTranslatorRegistry} 中是否有条目。
 	 */
 	private void checkCustomTranslatorRegistry(String databaseName, SQLErrorCodes errorCodes) {
 		SQLExceptionTranslator customTranslator =

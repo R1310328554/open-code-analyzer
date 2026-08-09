@@ -29,7 +29,9 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
- * 使用数据库序列的 {@link DataFieldMaxValueIncrementer} 实现的抽象基类。子类需要提供特定于数据库的 SQL 来使用。
+ * 使用数据库序列的 {@link DataFieldMaxValueIncrementer} 实现的抽象基类。
+ * 子类须提供数据库特定的 SQL。
+ *
  * @author Juergen Hoeller
  * @since 26.02.2004
  * @see #getSequenceQuery
@@ -37,7 +39,7 @@ import org.springframework.jdbc.support.JdbcUtils;
 public abstract class AbstractSequenceMaxValueIncrementer extends AbstractDataFieldMaxValueIncrementer {
 
 	/**
-	 * bean 属性样式使用的默认构造函数。
+	 * Bean 属性风格使用的默认构造器。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 */
@@ -45,9 +47,9 @@ public abstract class AbstractSequenceMaxValueIncrementer extends AbstractDataFi
 	}
 
 	/**
-	 * 方便构造函数。
-	 * @param dataSource 要使用的数据源
-	 * @param incrementerName 要使用的序列/表的名称
+	 * 便捷构造器。
+	 * @param dataSource 要使用的 DataSource
+	 * @param incrementerName 要使用的序列/表名
 	 */
 	public AbstractSequenceMaxValueIncrementer(DataSource dataSource, String incrementerName) {
 		super(dataSource, incrementerName);
@@ -84,7 +86,8 @@ public abstract class AbstractSequenceMaxValueIncrementer extends AbstractDataFi
 	}
 
 	/**
-	 * 返回用于检索序列值的特定于数据库的查询。 <p> 提供的 SQL 应该生成单行单列，允许提取 {@code long} 值。
+	 * 返回用于获取序列值的数据库特定查询。
+	 * <p>SQL 应返回单行单列，以便提取 {@code long} 值。
 	 */
 	protected abstract String getSequenceQuery();
 

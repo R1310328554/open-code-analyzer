@@ -32,27 +32,25 @@ import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.util.Assert;
 
 /**
- * {@link DataFieldMaxValueIncrementer} 实现的抽象基类基于类序列表中的标识列。
+ * 基于类序列表中 identity 列的 {@link DataFieldMaxValueIncrementer} 实现的抽象基类。
+ *
  * @author Juergen Hoeller
  * @author Thomas Risberg
  * @since 4.1.2
  */
 public abstract class AbstractIdentityColumnMaxValueIncrementer extends AbstractColumnMaxValueIncrementer {
 
-	/** `false`：该类的成员状态。 */
 	private boolean deleteSpecificValues = false;
 
-	/**
-	 */
+	/** 当前值缓存。 */
 	private long @Nullable [] valueCache;
 
-	/**
-	 */
+	/** 从值缓存中提供的下一个 id 索引。 */
 	private int nextValueIndex = -1;
 
 
 	/**
-	 * bean 属性样式使用的默认构造函数。
+	 * Bean 属性风格使用的默认构造器。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -60,40 +58,35 @@ public abstract class AbstractIdentityColumnMaxValueIncrementer extends Abstract
 	public AbstractIdentityColumnMaxValueIncrementer() {
 	}
 
-	/**
-	 * 创建 `AbstractIdentityColumnMaxValueIncrementer` 的新实例。
-	 */
 	public AbstractIdentityColumnMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName, columnName);
 	}
 
 
 	/**
-	 * 指定是删除当前最大键值以下的整个范围（{@code false} - 默认值），还是删除专门生成的值（{@code true}）。前一种模式将使用 where range 子句
-	 * ，而后者将使用 in 子句，从最小值减 1 开始，仅保留最大值。
+	 * 指定是删除当前最大键值以下的整个范围（{@code false}，默认），
+	 * 还是仅删除本次生成的值（{@code true}）。
+	 * 前者使用 where 范围子句，后者使用 in 子句（从最小值减 1 起），仅保留最大值。
 	 */
 	public void setDeleteSpecificValues(boolean deleteSpecificValues) {
 		this.deleteSpecificValues = deleteSpecificValues;
 	}
 
 	/**
-	 * 返回是否删除当前最大键值以下的整个范围（{@code false} - 默认值），还是删除专门生成的值（{@code true}）。
+	 * 返回是否删除当前最大键值以下的整个范围（{@code false}，默认），
+	 * 还是仅删除本次生成的值（{@code true}）。
 	 */
 	public boolean isDeleteSpecificValues() {
 		return this.deleteSpecificValues;
 	}
 
 
-	/**
-	 * 获取 Next Key（`NextKey`）。
-	 */
 	@Override
 	protected synchronized long getNextKey() throws DataAccessException {
 		if (this.nextValueIndex < 0 || this.nextValueIndex >= getCacheSize()) {
 			/*
-			* Need to use straight JDBC code because we need to make sure that the insert and select
-			* are performed on the same connection (otherwise we can't be sure that @@identity
-			* returns the correct value)
+			* 须使用原生 JDBC，确保 insert 与 select 在同一连接上执行
+			* （否则无法保证 @@identity 返回正确值）
 			*/
 			Connection con = DataSourceUtils.getConnection(getDataSource());
 			Statement stmt = null;
@@ -131,22 +124,23 @@ public abstract class AbstractIdentityColumnMaxValueIncrementer extends Abstract
 
 
 	/**
-	 * 用于增加“序列”值的语句。
-	 * @return 使用的SQL语句
+	 * 用于递增"序列"值的语句。
+	 * @return 要使用的 SQL 语句
 	 */
 	protected abstract String getIncrementStatement();
 
 	/**
-	 * 用于获取当前身份值的语句。
-	 * @return 使用的SQL语句
+	 * 用于获取当前 identity 值的语句。
+	 * @return 要使用的 SQL 语句
 	 */
 	protected abstract String getIdentityStatement();
 
 	/**
-	 * 用于清理“序列”值的语句。 <p> 默认实现要么删除当前最大值以下的整个范围，要么删除专门生成的值（从最低的负 1 开始，仅保留最大值） - 根据 {@link #isDele
-	 * teSpecificValues()} 设置。
-	 * @param values 当前生成的键值（值的数量对应{@link #getCacheSize()}）
-	 * @return 使用的SQL语句
+	 * 用于清理"序列"值的语句。
+	 * <p>默认实现根据 {@link #isDeleteSpecificValues()} 设置，
+	 * 删除当前最大值以下的整个范围，或本次生成的值（从最小值减 1 起，保留最大值）。
+	 * @param values 当前生成的键值（数量对应 {@link #getCacheSize()}）
+	 * @return 要使用的 SQL 语句
 	 */
 	protected String getDeleteStatement(long[] values) {
 		StringBuilder sb = new StringBuilder(64);

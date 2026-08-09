@@ -19,8 +19,10 @@ package org.springframework.jdbc.support.incrementer;
 import org.springframework.dao.DataAccessException;
 
 /**
- * 定义增加任何数据存储字段的最大值的契约的接口。工作原理很像序列号生成器。
- * <p>典型的实现可以使用标准 SQL、本机 RDBMS 序列或存储过程来完成这项工作。
+ * 定义递增数据存储字段最大值的契约接口，类似序列号生成器。
+ *
+ * <p>典型实现可使用标准 SQL、原生 RDBMS 序列或存储过程。
+ *
  * @author Dmitriy Kopylenko
  * @author Jean-Pierre Pawlak
  * @author Juergen Hoeller
@@ -28,23 +30,23 @@ import org.springframework.dao.DataAccessException;
 public interface DataFieldMaxValueIncrementer {
 
 	/**
-	 * 将数据存储字段的最大值递增为 int。
-	 * @return 下一个数据存储值，例如 <b>max + 1</b>
-	 * @throws org.springframework.dao.DataAccessException 如果出现错误
+	 * 以 int 递增数据存储字段的最大值。
+	 * @return 下一个数据存储值，如 <b>max + 1</b>
+	 * @throws org.springframework.dao.DataAccessException 出错时
 	 */
 	int nextIntValue() throws DataAccessException;
 
 	/**
-	 * 增加数据存储字段的最大值。
-	 * @return 下一个数据存储值，例如 <b>max + 1</b>
-	 * @throws org.springframework.dao.DataAccessException 如果出现错误
+	 * 以 long 递增数据存储字段的最大值。
+	 * @return 下一个数据存储值，如 <b>max + 1</b>
+	 * @throws org.springframework.dao.DataAccessException 出错时
 	 */
 	long nextLongValue() throws DataAccessException;
 
 	/**
-	 * 以字符串形式增加数据存储字段的最大值。
-	 * @return 数据存储值，例如 <b>max + 1</b>
-	 * @throws org.springframework.dao.DataAccessException 如果出现错误
+	 * 以 String 递增数据存储字段的最大值。
+	 * @return 下一个数据存储值，如 <b>max + 1</b>
+	 * @throws org.springframework.dao.DataAccessException 出错时
 	 */
 	String nextStringValue() throws DataAccessException;
 

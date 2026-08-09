@@ -47,12 +47,15 @@ import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.jdbc.BadSqlGrammarException;
 
 /**
- * {@link SQLExceptionTranslator} 实现，用于分析 JDBC 驱动程序抛出的特定 {@link java.sql.SQLException} 子类。
- * 如果 JDBC 驱动程序实际上未公开 JDBC 4 兼容的 {@code SQLException} 子类，则 <p> 会返回到标准 {@link
- * SQLStateSQLExceptionTranslator}。
- * <p> 从 6.0 开始，此转换器充当默认的 JDBC 异常转换器。从 6.2.12 开始，它专门内省 {@link
- * java.sql.BatchUpdateException} 以查看底层异常，类似于以前的默认 {@link
- * SQLErrorCodeSQLExceptionTranslator}。
+ * 分析 JDBC 驱动抛出的具体 {@link java.sql.SQLException} 子类的 {@link SQLExceptionTranslator} 实现。
+ *
+ * <p>若 JDBC 驱动未暴露符合 JDBC 4 的 {@code SQLException} 子类，
+ * 则回退到标准 {@link SQLStateSQLExceptionTranslator}。
+ *
+ * <p>自 6.0 起作为默认 JDBC 异常翻译器。
+ * 自 6.2.12 起专门内省 {@link java.sql.BatchUpdateException} 查看底层异常，
+ * 类似原先默认的 {@link SQLErrorCodeSQLExceptionTranslator}。
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.5
@@ -62,16 +65,10 @@ import org.springframework.jdbc.BadSqlGrammarException;
  */
 public class SQLExceptionSubclassTranslator extends AbstractFallbackSQLExceptionTranslator {
 
-	/**
-	 * 创建 `SQLExceptionSubclassTranslator` 的新实例。
-	 */
 	public SQLExceptionSubclassTranslator() {
 		setFallbackTranslator(new SQLStateSQLExceptionTranslator());
 	}
 
-	/**
-	 * 执行核心逻辑：Translate（方法 `doTranslate`）。
-	 */
 	@Override
 	protected @Nullable DataAccessException doTranslate(String task, @Nullable String sql, SQLException ex) {
 		SQLException sqlEx = ex;
@@ -120,7 +117,7 @@ public class SQLExceptionSubclassTranslator extends AbstractFallbackSQLException
 			return new RecoverableDataAccessException(buildMessage(task, sql, sqlEx), ex);
 		}
 
-		// 回退到 Spring 自己的 SQL 状态转换...
+		// Fallback to Spring's own SQL state translation...
 		return null;
 	}
 

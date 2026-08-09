@@ -19,8 +19,10 @@ package org.springframework.jdbc.support.incrementer;
 import javax.sql.DataSource;
 
 /**
- * {@link DataFieldMaxValueIncrementer} 检索大型机（z/OS、DB2/390、DB2/400）的 DB2 上给定序列的下一个值。
+ * 在大型机 DB2（z/OS、DB2/390、DB2/400）上获取给定序列下一值的 {@link DataFieldMaxValueIncrementer}。
+ *
  * <p>感谢 Jens Eickmeyer 的建议！
+ *
  * @author Juergen Hoeller
  * @since 4.3.15
  * @see Db2LuwMaxValueIncrementer
@@ -28,7 +30,7 @@ import javax.sql.DataSource;
 public class Db2MainframeMaxValueIncrementer extends AbstractSequenceMaxValueIncrementer {
 
 	/**
-	 * bean 属性样式使用的默认构造函数。
+	 * Bean 属性风格使用的默认构造器。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 */
@@ -36,18 +38,15 @@ public class Db2MainframeMaxValueIncrementer extends AbstractSequenceMaxValueInc
 	}
 
 	/**
-	 * 方便构造函数。
-	 * @param dataSource 要使用的数据源
-	 * @param incrementerName 要使用的序列/表的名称
+	 * 便捷构造器。
+	 * @param dataSource 要使用的 DataSource
+	 * @param incrementerName 要使用的序列/表名
 	 */
 	public Db2MainframeMaxValueIncrementer(DataSource dataSource, String incrementerName) {
 		super(dataSource, incrementerName);
 	}
 
 
-	/**
-	 * 获取 Sequence Query（`SequenceQuery`）。
-	 */
 	@Override
 	protected String getSequenceQuery() {
 		return "select next value for " + getIncrementerName() + " from sysibm.sysdummy1";
