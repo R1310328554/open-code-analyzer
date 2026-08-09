@@ -1471,3 +1471,12 @@ spring-aop/src/main/java/org/springframework/aop/config/ConfigBeanDefinitionPars
 spring-aop/src/main/java/org/springframework/aop/framework/AdvisedSupport.java
 spring-aop/src/main/java/org/springframework/aop/framework/CglibAopProxy.java
 spring-aop/src/main/java/org/springframework/aop/framework/ProxyFactoryBean.java
+spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterJdbcOperations.java
+spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterJdbcTemplate.java
+spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterUtils.java
+spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/AbstractJdbcCall.java
+spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/AbstractJdbcInsert.java
+spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/DefaultJdbcClient.java
+spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/JdbcClient.java
+spring-jdbc/src/main/java/org/springframework/jdbc/datasource/DataSourceTransactionManager.java
+spring-jdbc/src/main/java/org/springframework/jdbc/datasource/DataSourceUtils.java

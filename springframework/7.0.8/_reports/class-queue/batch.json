@@ -1,15 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:43:48Z",
   "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterJdbcOperations.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterJdbcTemplate.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterUtils.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/AbstractJdbcCall.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/AbstractJdbcInsert.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/DefaultJdbcClient.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/JdbcClient.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/DataSourceTransactionManager.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/DataSourceUtils.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/LazyConnectionDataSourceProxy.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/init/ScriptUtils.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/object/RdbmsOperation.java",
@@ -21,5 +12,5 @@
     "spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/SqlRowSet.java"
   ],
   "remaining_pending": 0,
-  "done": 1473
+  "done": 1482
 }
