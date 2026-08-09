@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T22:02:45Z",
   "files": [
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/QueuedMessage.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/ServerTaskToolHandler.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskAwareToolSpecification.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskDefaults.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskHandlerRegistry.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskHelper.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskManager.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskManagerHost.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskManagerOptions.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskMessageQueue.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskMetadataUtils.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TaskStore.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/TriFunction.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/DefaultToolCallback.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/DefaultToolCallbackProvider.java",
     "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/ToolCallback.java",
     "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/ToolCallbackCreateTaskHandler.java",
     "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/ToolCallbackProvider.java",
@@ -33,5 +18,5 @@
     "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/util/JsonSchemaGenerator.java"
   ],
   "remaining_pending": 705,
-  "done": 60
+  "done": 75
 }

@@ -16,9 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * {@link ToolCallResultConverter} 的默认实现：将 Java 返回值统一序列化为 MCP 可消费的 JSON 字符串。
- * <p>
- * 支持 void、字符串、图片（PNG Base64）及任意 POJO 等常见返回类型。
+ * A default implementation of {@link ToolCallResultConverter}.
  */
 public final class DefaultToolCallResultConverter implements ToolCallResultConverter {
 
@@ -27,12 +25,10 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 
 	@Override
 	public String convert(Object result, Type returnType) {
-		// void 方法无返回值，返回约定字符串 "Done"
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
 			return JsonParser.toJson("Done");
 		}
-		// 图片类型编码为 Base64 并附带 mimeType
 		if (result instanceof RenderedImage) {
 			final ByteArrayOutputStream buf = new ByteArrayOutputStream(1024 * 4);
 			try {
@@ -51,7 +47,6 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 		}
 		else if (result instanceof String) {
 			String stringResult = (String) result;
-			// 已是合法 JSON 则原样返回，避免二次引号包裹
 			if (isValidJson(stringResult)) {
 				logger.debug("Result is already valid JSON, returning as is.");
 				return stringResult;
@@ -66,7 +61,6 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 		}
 	}
 
-	/** 尝试解析字符串为 JSON 树，用于判断是否需要额外序列化。 */
 	private boolean isValidJson(String jsonString) {
 		if (jsonString == null || jsonString.trim().isEmpty()) {
 			return false;

@@ -5,9 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link ToolExecutionExceptionProcessor} 的默认实现。
- * <p>
- * 默认将工具异常消息转为字符串返回给模型；若配置 {@code alwaysThrow=true} 则重新抛出供上层处理。
+ * Default implementation of {@link ToolExecutionExceptionProcessor}.
  */
 public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExceptionProcessor {
 
@@ -15,7 +13,6 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 
 	private static final boolean DEFAULT_ALWAYS_THROW = false;
 
-	/** 为 true 时不吞异常，直接向上抛出 {@link ToolExecutionException}。 */
 	private final boolean alwaysThrow;
 
 	public DefaultToolExecutionExceptionProcessor(boolean alwaysThrow) {
@@ -37,7 +34,6 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		return new Builder();
 	}
 
-	/** 建造者，用于配置是否在处理阶段重新抛出异常。 */
 	public static class Builder {
 
 		private boolean alwaysThrow = DEFAULT_ALWAYS_THROW;

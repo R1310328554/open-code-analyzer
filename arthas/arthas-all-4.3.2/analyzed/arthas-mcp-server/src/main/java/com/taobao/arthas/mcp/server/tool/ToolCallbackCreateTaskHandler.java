@@ -19,9 +19,7 @@ import java.util.concurrent.RejectedExecutionException;
 import static com.taobao.arthas.mcp.server.tool.ToolContextKeys.*;
 
 /**
- * 将 {@link ToolCallback} 适配为 {@link CreateTaskHandler} 的通用桥接器。
- * <p>
- * 负责创建 MCP Task、在独立 Arthas 会话中异步执行工具、处理取消与失败，并回写任务终态。
+ * 将 ToolCallback 适配为 CreateTaskHandler 的通用适配器。
  *
  * @see <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks">MCP Tasks Specification</a>
  */
@@ -29,16 +27,11 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ToolCallbackCreateTaskHandler.class);
     
-    /** 被包装的实际工具回调，执行具体的 Arthas 命令逻辑。 */
     private final ToolCallback toolCallback;
 
     // 专用 executor，避免 I/O 密集型任务污染 ForkJoinPool.commonPool
     private final Executor taskExecutor;
 
-    /**
-     * @param toolCallback 要异步执行的工具实例
-     * @param taskExecutor 后台任务线程池，与 MCP 层并发限制配合使用
-     */
     public ToolCallbackCreateTaskHandler(ToolCallback toolCallback, Executor taskExecutor) {
         this.toolCallback = toolCallback;
         this.taskExecutor = taskExecutor;
@@ -52,7 +45,7 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
         logger.debug("Creating task for tool: {}", toolCallback.getToolDefinition().getName());
 
         // 前置检查：在创建 Task 之前判断并发限制，避免产生孤儿 Task。
-        // 此时请求已经被应用层的并发限制，客户端可立刻感知并重试。
+        // 此时请求已经被应程层的并发限制，客户端可立刻感知并重试。
         if (context.isAtConcurrencyLimit()) {
             logger.warn("Concurrent task session limit reached, rejecting tool: {}",
                     toolCallback.getToolDefinition().getName());
@@ -75,7 +68,7 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
 
             // 将 Task 提交到专用线程池（SynchronousQueue）。
             // 若 executor 拒绝（理论上不应发生，前置检查已拦截），
-            // 作为安全兜底捕获并标记任务失败，避免孤儿 Task。
+            // 作为安全底存捕获并标记任务失败，避免孤児 Task。
             try {
                 CompletableFuture.runAsync(() -> {
                     executeToolAndUpdateTaskStatus(taskId, args, context);
@@ -88,7 +81,7 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
                             logger.error("Failed to mark rejected task as failed: {}", taskId, ex);
                             return null;
                         });
-                // 返回已创建但即将失败的 Task，让客户端能感知
+                // 返回已创建但将就失败的 Task，让客户端能感知
                 return CompletableFuture.completedFuture(
                         new McpSchema.CreateTaskResult(task, null));
             }
@@ -100,7 +93,7 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
     }
 
     /**
-     * 在后台线程执行工具，并根据结果或异常更新任务为完成或失败。
+     * 在后台执行工具并更新任务状态。
      * 
      * @param taskId 任务 ID
      * @param args 工具参数
@@ -186,7 +179,6 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
         }
     }
 
-    /** 中断正在运行的 Arthas 作业，通常在客户端取消任务时调用。 */
     private void interruptJob(ArthasCommandContext commandContext) {
         try {
             if (commandContext != null) {
@@ -197,7 +189,6 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
         }
     }
 
-    /** 解析工具返回 JSON 中的 {@code cancelled} 标志。 */
     @SuppressWarnings("unchecked")
     private boolean isResultCancelled(String resultJson) {
         try {
@@ -209,7 +200,7 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
     }
     
     /**
-     * 清理 task 的独立 session，释放 attach 资源。
+     * 清理 task 的独立 session。
      */
     private void cleanupTaskSession(String taskId, CreateTaskContext context) {
         try {
@@ -221,7 +212,7 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
     }
 
     /**
-     * 构建增强的 {@link ToolContext}，注入任务 ID、隔离会话与传输层信息。
+     * 构建增强的 ToolContext，用于 task 执行。
      */
     private ToolContext buildEnhancedToolContext(
             String taskId, 
@@ -247,7 +238,6 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
         return new ToolContext(contextMap);
     }
 
-    /** 将工具返回字符串解析为 {@link McpSchema.CallToolResult}；非 JSON 时包装为纯文本内容。 */
     private McpSchema.CallToolResult parseToolResult(String resultJson) {
         try {
             Map<String, Object> resultMap = JsonParser.fromJson(resultJson, Map.class);
@@ -275,7 +265,6 @@ public class ToolCallbackCreateTaskHandler implements CreateTaskHandler {
         }
     }
 
-    /** 从错误型 {@link McpSchema.CallToolResult} 中提取首条文本消息。 */
     private String extractErrorMessage(McpSchema.CallToolResult result) {
         if (result.getContent() != null && !result.getContent().isEmpty()) {
             McpSchema.Content firstContent = result.getContent().get(0);
