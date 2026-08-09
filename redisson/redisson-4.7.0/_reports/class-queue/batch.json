@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:57:33Z",
   "files": [
-    "redisson/src/main/java/org/redisson/api/queue/QueueRemoveParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/AcknowledgedEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/AddedEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/ConfigEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/DisabledOperationEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/EnabledOperationEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/FullEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/NAckStatus.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/NegativelyAcknowledgedEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/PolledEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/QueueEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/event/RemovedEventListener.java",
-    "redisson/src/main/java/org/redisson/api/ratelimiter/RateLimiterArgs.java",
-    "redisson/src/main/java/org/redisson/api/ratelimiter/RateLimiterParams.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/BaseRedisNodes.java",
     "redisson/src/main/java/org/redisson/api/redisnode/RedisCluster.java",
     "redisson/src/main/java/org/redisson/api/redisnode/RedisClusterMaster.java",
     "redisson/src/main/java/org/redisson/api/redisnode/RedisClusterMasterAsync.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/api/redisnode/RedisSentinelAsync.java"
   ],
   "remaining_pending": 782,
-  "done": 2010
+  "done": 2025
 }
