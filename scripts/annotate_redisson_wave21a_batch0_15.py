@@ -18,10 +18,10 @@ ORIGINAL = VER / "original"
 ANALYZED = VER / "analyzed"
 QUEUE = VER / "_reports/class-queue"
 SCRIPTS = ROOT / "scripts"
-WAVE21A_FILE = Path("/tmp/redisson_w21a.txt")
+WAVE21A_FILE = Path("/tmp/redisson_w21_remain.txt")
 SCRIPT_NAME = "annotate_redisson_wave21a_batch0_15.py"
 MARK_NOTE = "wave21a [0:15]"
-INDEX_FILE = Path("/var/tmp/re21a.index")
+INDEX_FILE = Path("/var/tmp/re21a-retry.index")
 BATCH_FILES = [
     ln.strip()
     for ln in WAVE21A_FILE.read_text(encoding="utf-8").splitlines()
