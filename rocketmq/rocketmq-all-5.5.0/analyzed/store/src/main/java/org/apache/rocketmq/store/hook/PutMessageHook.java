@@ -19,19 +19,22 @@ package org.apache.rocketmq.store.hook;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.store.PutMessageResult;
 
+/**
+ * 写消息前置钩子：在消息写入 CommitLog 前执行校验或转换。
+ */
 public interface PutMessageHook {
 
     /**
-     * Name of the hook.
+     * 钩子名称，用于标识与日志。
      *
-     * @return name of the hook
+     * @return 钩子名称
      */
     String hookName();
 
     /**
-     *  Execute before put message. For example, Message verification or special message transform
-     * @param msg
-     * @return
+     * 写消息前执行，例如消息校验或特殊消息转换。
+     * @param msg 待写入的消息
+     * @return 写消息结果，非 OK 则中断写入
      */
     PutMessageResult executeBeforePutMessage(MessageExt msg);
 }

@@ -18,11 +18,18 @@ package org.apache.rocketmq.store.index;
 
 import java.util.List;
 
+/**
+ * 索引查询结果：包含物理偏移列表及索引最后更新时间信息。
+ */
 public class QueryOffsetResult {
+    /** 查询命中的 CommitLog 物理偏移列表。 */
     private final List<Long> phyOffsets;
+    /** 索引最后更新时间戳。 */
     private final long indexLastUpdateTimestamp;
+    /** 索引最后更新时的物理偏移。 */
     private final long indexLastUpdatePhyoffset;
 
+    /** 构造索引查询结果。 */
     public QueryOffsetResult(List<Long> phyOffsets, long indexLastUpdateTimestamp,
         long indexLastUpdatePhyoffset) {
         this.phyOffsets = phyOffsets;
@@ -30,14 +37,17 @@ public class QueryOffsetResult {
         this.indexLastUpdatePhyoffset = indexLastUpdatePhyoffset;
     }
 
+    /** 返回物理偏移列表。 */
     public List<Long> getPhyOffsets() {
         return phyOffsets;
     }
 
+    /** 返回索引最后更新时间戳。 */
     public long getIndexLastUpdateTimestamp() {
         return indexLastUpdateTimestamp;
     }
 
+    /** 返回索引最后更新的物理偏移。 */
     public long getIndexLastUpdatePhyoffset() {
         return indexLastUpdatePhyoffset;
     }

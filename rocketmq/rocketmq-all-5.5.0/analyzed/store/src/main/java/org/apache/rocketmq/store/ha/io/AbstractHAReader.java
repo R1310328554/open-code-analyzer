@@ -26,10 +26,15 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * HA 读操作抽象基类：循环读取 Socket 数据并通过钩子回调。
+ */
 public abstract class AbstractHAReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 已注册的读钩子列表。 */
     protected final List<HAReadHook> readHookList = new ArrayList<>();
 
+    /** 从 Socket 读取数据直至缓冲区满或连续三次零字节。 */
     public boolean read(SocketChannel socketChannel, ByteBuffer byteBufferRead) {
         int readSizeZeroTimes = 0;
         while (byteBufferRead.hasRemaining()) {
@@ -62,19 +67,21 @@ public abstract class AbstractHAReader {
         return true;
     }
 
+    /** 注册读完成后的回调钩子。 */
     public void registerHook(HAReadHook readHook) {
         readHookList.add(readHook);
     }
 
+    /** 清空所有已注册的读钩子。 */
     public void clearHook() {
         readHookList.clear();
     }
 
     /**
-     * Process read result.
+     * 处理读到的字节缓冲区内容。
      *
-     * @param byteBufferRead read result
-     * @return true if process succeed, false otherwise
+     * @param byteBufferRead 读取结果缓冲区
+     * @return 处理成功返回 true，否则 false
      */
     protected abstract boolean processReadResult(ByteBuffer byteBufferRead);
 }

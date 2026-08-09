@@ -19,13 +19,19 @@ package org.apache.rocketmq.store.kv;
 import org.apache.rocketmq.store.CommitLogDispatcher;
 import org.apache.rocketmq.store.DispatchRequest;
 
+/**
+ * CommitLog 压缩分发器：将分发请求转发给 CompactionService。
+ */
 public class CommitLogDispatcherCompaction implements CommitLogDispatcher {
+    /** 底层压缩服务实例。 */
     private final CompactionService cptService;
 
+    /** 绑定压缩服务。 */
     public CommitLogDispatcherCompaction(CompactionService srv) {
         this.cptService = srv;
     }
 
+    /** 将分发请求提交给压缩服务处理。 */
     @Override
     public void dispatch(DispatchRequest request) {
         if (cptService != null) {

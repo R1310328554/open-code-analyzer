@@ -17,6 +17,10 @@
 
 package org.apache.rocketmq.store.ha.io;
 
+/**
+ * HA 读钩子：每次 Socket 读取完成后触发回调。
+ */
 public interface HAReadHook {
+    /** 读取完成后调用，参数为本次读取的字节数。 */
     void afterRead(int readSize);
 }

@@ -50,10 +50,15 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import static org.apache.rocketmq.common.MixAll.dealTimeToHourStamps;
 
+/**
+ * 基于 RocksDB 的消息索引存储：异步构建 Key/Tag/唯一键到物理偏移的索引。
+ */
 public class IndexRocksDBStore implements CommitLogDispatchStore {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger logError = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
+    /** 索引构建队列默认容量。 */
     private static final int DEFAULT_CAPACITY = 100000;
+    /** 批量写入 RocksDB 的批次大小。 */
     private static final int BATCH_SIZE = 1000;
     private static final Set<String> INDEX_TYPE_SET = new HashSet<>();
 
@@ -65,13 +70,20 @@ public class IndexRocksDBStore implements CommitLogDispatchStore {
     private static final int INITIAL = 0, RUNNING = 1, SHUTDOWN = 2;
     private volatile int state = INITIAL;
 
+    /** 所属 MessageStore 实例。 */
     private final MessageStore messageStore;
+    /** 消息存储配置。 */
     private final MessageStoreConfig storeConfig;
+    /** RocksDB 存储引擎封装。 */
     private final MessageRocksDBStorage messageRocksDBStorage;
+    /** 上次删除过期索引的小时时间戳。 */
     private volatile long lastDeleteIndexTime = 0L;
+    /** 后台索引构建线程服务。 */
     private IndexBuildService indexBuildService;
+    /** 待构建索引的记录队列。 */
     private BlockingQueue<IndexRocksDBRecord> originIndexMsgQueue;
 
+    /** 构造索引存储，配置启用时自动启动构建服务。 */
     public IndexRocksDBStore(MessageStore messageStore) {
         this.messageStore = messageStore;
         this.storeConfig = messageStore.getMessageStoreConfig();
@@ -93,6 +105,7 @@ public class IndexRocksDBStore implements CommitLogDispatchStore {
         log.info("IndexRocksDBStore start success, lastOffsetPy: {}", lastOffsetPy);
     }
 
+    /** 关闭索引构建服务。 */
     public void shutdown() {
         if (this.state != RUNNING || this.state == SHUTDOWN) {
             return;
@@ -104,6 +117,7 @@ public class IndexRocksDBStore implements CommitLogDispatchStore {
         log.info("IndexRocksDBStore shutdown success");
     }
 
+    /** 按 Topic、Key 与时间范围查询物理偏移。 */
     public QueryOffsetResult queryOffset(String topic, String key, int maxNum, long beginTime, long endTime, String indexType, String lastKey) {
         if (StringUtils.isEmpty(topic) || StringUtils.isEmpty(key) || maxNum <= 0 || beginTime < 0L || endTime <= 0L || beginTime > endTime || !StringUtils.isEmpty(indexType) && !INDEX_TYPE_SET.contains(indexType)) {
             logError.error("IndexRocksDBStore queryOffset param error, topic: {}, key: {}, maxNum: {}, beginTime: {}, endTime: {}, indexType: {}, lastKey: {}", topic, key, maxNum, beginTime, endTime, indexType, lastKey);
@@ -139,6 +153,7 @@ public class IndexRocksDBStore implements CommitLogDispatchStore {
         return new QueryOffsetResult(phyOffsets, lastUpdateTime, lastOffsetPy);
     }
 
+    /** 根据分发请求异步构建 Key、Tag 与唯一键索引。 */
     public void buildIndex(DispatchRequest dispatchRequest) {
         if (null == dispatchRequest || dispatchRequest.getCommitLogOffset() < 0L || dispatchRequest.getMsgSize() <= 0 || state != RUNNING || null == this.originIndexMsgQueue) {
             logError.error("IndexRocksDBStore buildIndex error, dispatchRequest: {}, state: {}, originIndexMsgQueue: {}", dispatchRequest, state, originIndexMsgQueue);
@@ -215,6 +230,7 @@ public class IndexRocksDBStore implements CommitLogDispatchStore {
         }
     }
 
+    /** 删除早于最早 CommitLog 文件的过期索引记录。 */
     public void deleteExpiredIndex() {
         try {
             MappedFile mappedFile = messageStore.getCommitLog().getEarliestMappedFile();
@@ -242,6 +258,7 @@ public class IndexRocksDBStore implements CommitLogDispatchStore {
         }
     }
 
+    /** 判断 MappedFile 偏移是否已在 RocksDB 索引中覆盖。 */
     public boolean isMappedFileMatchedRecover(long phyOffset, long storeTimestamp,
         boolean recoverNormally) throws RocksDBException {
         if (!storeConfig.isIndexRocksDBEnable()) {
@@ -256,9 +273,11 @@ public class IndexRocksDBStore implements CommitLogDispatchStore {
         return false;
     }
 
+    /** 销毁索引存储（当前为空实现）。 */
     public void destroy() {
     }
 
+    /** 返回索引已覆盖的最大物理偏移，用于恢复分发起点。 */
     @Override
     public Long getDispatchFromPhyOffset(boolean recoverNormally) throws RocksDBException {
         if (!storeConfig.isIndexRocksDBEnable()) {
@@ -282,6 +301,7 @@ public class IndexRocksDBStore implements CommitLogDispatchStore {
         return brokerIdentifier;
     }
 
+    /** 后台线程：从队列批量拉取记录并写入 RocksDB。 */
     private class IndexBuildService extends ServiceThread {
         private final Logger log = IndexRocksDBStore.log;
         private List<IndexRocksDBRecord> irs;

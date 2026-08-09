@@ -19,15 +19,18 @@ package org.apache.rocketmq.store.hook;
 import java.util.List;
 import org.apache.rocketmq.common.message.MessageExt;
 
+/**
+ * 从节点回传消息钩子：HA 握手时按偏移将消息发回主节点。
+ */
 public interface SendMessageBackHook {
 
     /**
-     * Slave send message back to master at certain offset when HA handshake
+     * HA 握手阶段从节点将指定偏移的消息回传给主节点。
      *
-     * @param msgList
-     * @param brokerName
-     * @param brokerAddr
-     * @return
+     * @param msgList 待回传的消息列表
+     * @param brokerName Broker 名称
+     * @param brokerAddr Broker 地址
+     * @return 回传成功返回 true
      */
     boolean executeSendMessageBack(List<MessageExt> msgList, String brokerName, String brokerAddr);
 }

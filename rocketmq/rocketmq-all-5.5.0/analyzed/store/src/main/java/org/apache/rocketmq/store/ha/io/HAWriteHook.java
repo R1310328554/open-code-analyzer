@@ -17,6 +17,10 @@
 
 package org.apache.rocketmq.store.ha.io;
 
+/**
+ * HA 写钩子：每次 Socket 写入完成后触发回调。
+ */
 public interface HAWriteHook {
+    /** 写入完成后调用，参数为本次写入的字节数。 */
     void afterWrite(int writeSize);
 }

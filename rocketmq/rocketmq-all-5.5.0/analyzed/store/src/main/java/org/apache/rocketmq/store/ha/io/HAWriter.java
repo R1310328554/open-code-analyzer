@@ -26,10 +26,15 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * HA 写操作封装：循环写入 Socket 并支持写钩子回调。
+ */
 public class HAWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 已注册的写钩子列表。 */
     protected final List<HAWriteHook> writeHookList = new ArrayList<>();
 
+    /** 将缓冲区数据写入 Socket，直至全部写完或连续三次零字节。 */
     public boolean write(SocketChannel socketChannel, ByteBuffer byteBufferWrite) throws IOException {
         int writeSizeZeroTimes = 0;
         while (byteBufferWrite.hasRemaining()) {
@@ -51,10 +56,12 @@ public class HAWriter {
         return !byteBufferWrite.hasRemaining();
     }
 
+    /** 注册写完成后的回调钩子。 */
     public void registerHook(HAWriteHook writeHook) {
         writeHookList.add(writeHook);
     }
 
+    /** 清空所有已注册的写钩子。 */
     public void clearHook() {
         writeHookList.clear();
     }
