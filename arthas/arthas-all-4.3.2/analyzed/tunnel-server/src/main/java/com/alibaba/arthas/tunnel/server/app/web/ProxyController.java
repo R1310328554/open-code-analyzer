@@ -46,12 +46,18 @@ public class ProxyController {
     @Autowired
     TunnelServer tunnelServer;
 
+    /**
+     * 将 HTTP 请求经 WebSocket 转发至指定 agent，等待 agent 回传 HTTP 响应（最长 15 秒）。
+     *
+     * @param agentId 目标 agent 标识
+     */
     @RequestMapping(value = "/proxy/{agentId}/**")
     @ResponseBody
     public ResponseEntity<?> execute(@PathVariable(name = "agentId", required = true) String agentId,
             HttpServletRequest request) throws InterruptedException, ExecutionException, TimeoutException {
 
         String fullPath = (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        // 去掉 /proxy/{agentId} 前缀，得到 agent 侧目标路径
         String targetUrl = fullPath.substring("/proxy/".length() + agentId.length());
 
         logger.info("http proxy, agentId: {}, targetUrl: {}", agentId, targetUrl);
@@ -67,6 +73,7 @@ public class ProxyController {
 
             tunnelServer.addProxyRequestPromise(requestId, httpResponsePromise);
 
+            // 通过 WebSocket 下发 HTTP 代理指令
             URI uri = UriComponentsBuilder.newInstance().scheme(URIConstans.RESPONSE).path("/")
                     .queryParam(URIConstans.METHOD, MethodConstants.HTTP_PROXY).queryParam(URIConstans.ID, agentId)
                     .queryParam(URIConstans.TARGET_URL, targetUrl).queryParam(URIConstans.PROXY_REQUEST_ID, requestId)

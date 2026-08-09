@@ -10,7 +10,8 @@ import com.alibaba.arthas.tunnel.server.utils.InetAddressUtil;
 import com.taobao.arthas.common.ArthasConstants;
 
 /**
- * 
+ * Arthas Tunnel Server 的配置属性，绑定 {@code arthas.*} 前缀。
+ *
  * @author hengyunabc 2019-08-29
  *
  */
@@ -18,15 +19,18 @@ import com.taobao.arthas.common.ArthasConstants;
 @ConfigurationProperties(prefix = "arthas")
 public class ArthasProperties {
 
+    /** Tunnel Server 监听与 WebSocket 相关配置 */
     private Server server;
 
+    /** 内嵌 Redis 配置，主要用于测试环境 */
     private EmbeddedRedis embeddedRedis;
 
     /**
-     * supoort apps.html/agents.html
+     * 是否启用详情页（apps.html / agents.html）。
      */
     private boolean enableDetailPages = false;
 
+    /** 是否允许控制台页面在 iframe 中嵌入 */
     private boolean enableIframeSupport = true;
 
     public Server getServer() {
@@ -61,13 +65,17 @@ public class ArthasProperties {
         this.enableIframeSupport = enableIframeSupport;
     }
 
+    /** Tunnel Server 网络监听与客户端连接地址配置 */
     public static class Server {
         /**
-         * tunnel server listen host
+         * Tunnel Server 监听地址
          */
         private String host;
+        /** 监听端口 */
         private int port;
+        /** 是否启用 SSL */
         private boolean ssl;
+        /** WebSocket 路径，默认使用 Arthas 常量 */
         private String path = ArthasConstants.DEFAULT_WEBSOCKET_PATH;
 
         /**
@@ -118,15 +126,19 @@ public class ArthasProperties {
     }
 
     /**
-     * for test
-     * 
+     * 内嵌 Redis 配置，便于本地或测试环境启动集群存储依赖。
+     *
      * @author hengyunabc 2020-11-03
      *
      */
     public static class EmbeddedRedis {
+        /** 是否启用内嵌 Redis */
         private boolean enabled = false;
+        /** Redis 绑定地址 */
         private String host = "127.0.0.1";
+        /** Redis 端口 */
         private int port = 6379;
+        /** 额外 Redis 启动参数 */
         private List<String> settings = new ArrayList<String>();
 
         public boolean isEnabled() {

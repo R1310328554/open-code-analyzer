@@ -19,7 +19,8 @@ import com.alibaba.arthas.tunnel.server.AgentClusterInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * 
+ * 基于 Redis 的 {@link TunnelClusterStore} 实现，多 Tunnel Server 集群共享 agent 路由信息。
+ *
  * @author hengyunabc 2020-10-27
  *
  */
@@ -28,6 +29,7 @@ public class RedisTunnelClusterStore implements TunnelClusterStore {
     // 定义jackson对象
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /** Redis key 前缀，完整 key 为 prefix + agentId */
     private String prefix = "arthas-tunnel-agent-";
 
     private StringRedisTemplate redisTemplate;
@@ -59,6 +61,7 @@ public class RedisTunnelClusterStore implements TunnelClusterStore {
         try {
             ValueOperations<String, String> opsForValue = redisTemplate.opsForValue();
             String infoStr = MAPPER.writeValueAsString(info);
+            // 带 TTL 写入，agent 离线后自动过期
             opsForValue.set(prefix + agentId, infoStr, timeout, timeUnit);
         } catch (Throwable e) {
             logger.error("try to add agentInfo error. agentId:{}", agentId, e);
@@ -83,6 +86,7 @@ public class RedisTunnelClusterStore implements TunnelClusterStore {
         if (redisValues != null) {
             final ArrayList<String> result = new ArrayList<>(redisValues.size());
             for (String value : redisValues) {
+                // 去掉 key 前缀得到 agentId
                 result.add(value.substring(length));
             }
             return result;

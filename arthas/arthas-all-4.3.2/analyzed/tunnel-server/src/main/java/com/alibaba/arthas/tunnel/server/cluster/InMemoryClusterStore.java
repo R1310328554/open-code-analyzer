@@ -16,13 +16,15 @@ import org.springframework.cache.caffeine.CaffeineCache;
 import com.alibaba.arthas.tunnel.server.AgentClusterInfo;
 
 /**
- * 
+ * 基于 Caffeine 本地缓存的 {@link TunnelClusterStore} 实现，适用于单机或小规模部署。
+ *
  * @author hengyunabc 2020-12-02
  *
  */
 public class InMemoryClusterStore implements TunnelClusterStore {
     private final static Logger logger = LoggerFactory.getLogger(InMemoryClusterStore.class);
 
+    /** Spring Cache 抽象，底层为 Caffeine */
     private Cache cache;
 
     @Override
@@ -44,6 +46,7 @@ public class InMemoryClusterStore implements TunnelClusterStore {
 
     @Override
     public void addAgent(String agentId, AgentClusterInfo info, long timeout, TimeUnit timeUnit) {
+        // Caffeine Cache 的过期策略由 CacheManager 配置，此处直接写入
         cache.put(agentId, info);
     }
 
@@ -64,6 +67,7 @@ public class InMemoryClusterStore implements TunnelClusterStore {
 
         Map<String, AgentClusterInfo> result = new HashMap<String, AgentClusterInfo>();
 
+        // agentId 格式为 appName_host，按前缀过滤
         String prefix = appName + "_";
         for (Entry<String, AgentClusterInfo> entry : map.entrySet()) {
             String agentId = entry.getKey();

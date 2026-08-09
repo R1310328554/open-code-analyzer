@@ -13,7 +13,8 @@ import com.alibaba.arthas.tunnel.server.TunnelServer;
 import com.alibaba.arthas.tunnel.server.cluster.TunnelClusterStore;
 
 /**
- * 
+ * 集群路由 API：根据 agentId 查询其当前连接的 Tunnel Server 地址。
+ *
  * @author hengyunabc 2020-10-27
  *
  */
@@ -24,6 +25,12 @@ public class ClusterController {
     @Autowired
     TunnelServer tunnelServer;
 
+    /**
+     * 查找指定 agent 所连接的 Tunnel Server 主机地址。
+     *
+     * @param agentId agent 唯一标识
+     * @return 客户端连接地址，未找到时返回空字符串
+     */
     @RequestMapping(value = "/api/cluster/findHost")
     @ResponseBody
     public String execute(@RequestParam(value = "agentId", required = true) String agentId) {

@@ -8,7 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 
+ * 本机网络地址工具：自动探测可用于客户端连接的 IPv4 地址。
+ *
  * @author hengyunabc 2020-10-27
  *
  */
@@ -42,6 +43,9 @@ public class InetAddressUtil {
         }
     }
 
+    /**
+     * 判断是否为可用于对外通告的 IPv4 地址（排除回环、任意、链路本地与 IPv6）。
+     */
     public static boolean isValidAddress(InetAddress address) {
         return address != null && !address.isLoopbackAddress() // filter 127.x.x.x
                 && !address.isAnyLocalAddress() // filter 0.0.0.0

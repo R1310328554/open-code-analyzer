@@ -13,13 +13,19 @@ import com.alibaba.arthas.tunnel.server.AgentClusterInfo;
  *
  */
 public interface TunnelClusterStore {
+
+    /** 注册 agent 及其所在 Tunnel Server 信息，并设置过期时间 */
     public void addAgent(String agentId, AgentClusterInfo info, long expire, TimeUnit timeUnit);
 
+    /** 根据 agentId 查询集群路由信息 */
     public AgentClusterInfo findAgent(String agentId);
 
+    /** agent 下线时移除路由记录 */
     public void removeAgent(String agentId);
 
+    /** 返回当前所有已注册的 agentId */
     public Collection<String> allAgentIds();
 
+    /** 按应用名查询该应用下所有 agent 的集群信息 */
     public Map<String, AgentClusterInfo> agentInfo(String appName);
 }

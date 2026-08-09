@@ -19,6 +19,15 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class StatController {
     private final static Logger logger = LoggerFactory.getLogger(StatController.class);
 
+    /**
+     * 接收 agent 上报的统计/遥测数据（演示用途，仅记录日志并返回 success）。
+     *
+     * @param ip agent 所在主机 IP
+     * @param version Arthas 版本
+     * @param agentId agent 标识（可选）
+     * @param command 执行的命令
+     * @param arguments 命令参数
+     */
     @RequestMapping(value = "/api/stat")
     @ResponseBody
     public Map<String, Object> execute(@RequestParam(value = "ip", required = true) String ip,

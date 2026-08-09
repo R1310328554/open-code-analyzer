@@ -23,7 +23,8 @@ import com.alibaba.arthas.tunnel.server.app.configuration.ArthasProperties;
 import com.alibaba.arthas.tunnel.server.cluster.TunnelClusterStore;
 
 /**
- * 
+ * 详情页 REST API：列出集群中的应用与 agent 信息（需开启 {@code enableDetailPages}）。
+ *
  * @author hengyunabc 2020-11-03
  *
  */
@@ -38,6 +39,9 @@ public class DetailAPIController {
     @Autowired(required = false)
     private TunnelClusterStore tunnelClusterStore;
 
+    /**
+     * 返回集群中所有应用名称（从 agentId 前缀解析）。
+     */
     @RequestMapping("/api/tunnelApps")
     @ResponseBody
     public Set<String> tunnelApps(HttpServletRequest request, Model model) {
@@ -64,6 +68,11 @@ public class DetailAPIController {
         return result;
     }
 
+    /**
+     * 按应用名查询该应用下所有 agent 的集群信息。
+     *
+     * @param appName 应用名称
+     */
     @RequestMapping("/api/tunnelAgentInfo")
     @ResponseBody
     public Map<String, AgentClusterInfo> tunnelAgentIds(@RequestParam(value = "app", required = true) String appName,
@@ -103,6 +112,7 @@ public class DetailAPIController {
         return result;
     }
 
+    /** 从 agentId（格式 appName_host）中解析应用名 */
     private static String findAppNameFromAgentId(String id) {
         int index = id.indexOf('_');
         if (index < 0 || index >= id.length()) {

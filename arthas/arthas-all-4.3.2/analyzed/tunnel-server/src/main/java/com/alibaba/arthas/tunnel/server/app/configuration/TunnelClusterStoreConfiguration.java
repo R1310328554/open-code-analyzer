@@ -20,7 +20,8 @@ import com.alibaba.arthas.tunnel.server.cluster.RedisTunnelClusterStore;
 import com.alibaba.arthas.tunnel.server.cluster.TunnelClusterStore;
 
 /**
- * 
+ * Tunnel 集群存储自动配置：按缓存类型或 Redis 可用性选择 {@link TunnelClusterStore} 实现。
+ *
  * @author hengyunabc 2020-10-29
  *
  */
@@ -29,6 +30,9 @@ import com.alibaba.arthas.tunnel.server.cluster.TunnelClusterStore;
 @Import(RedisTunnelClusterStoreConfiguration.class)
 public class TunnelClusterStoreConfiguration {
 
+    /**
+     * 使用 Caffeine 本地缓存作为集群存储（单机或小规模部署）。
+     */
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "spring.cache.type", havingValue = "caffeine")
@@ -39,7 +43,11 @@ public class TunnelClusterStoreConfiguration {
         return inMemoryClusterStore;
     }
 
+    /** Redis 版集群存储的独立配置类，避免与 Caffeine Bean 冲突 */
     static class RedisTunnelClusterStoreConfiguration {
+        /**
+         * 配置了 Redis 主机时使用 Redis 持久化 agent 路由信息，支持多 Tunnel Server 集群。
+         */
         @Bean
         // @ConditionalOnBean(StringRedisTemplate.class)
         @ConditionalOnClass(StringRedisTemplate.class)
