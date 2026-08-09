@@ -29,9 +29,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
+ * 基于 Redisson 的 Micronaut 同步缓存，继承 {@link AbstractMapBasedSyncCache}。
+ * <p>{@link #mapCache} 非 null 时启用 TTL/max-idle；否则使用普通 {@link RMap}。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Object>> {
 
@@ -41,6 +42,10 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
     private final RMapCache<Object, Object> mapCache;
     private final RMap<Object, Object> map;
 
+    /** @param mapCache 带过期策略的 MapCache；纯 Map 模式为 null
+     *  @param map 底层 Redis Map
+     *  @param configuration 容量与过期配置
+     */
     public RedissonSyncCache(ConversionService<?> conversionService,
                              RMapCache<Object, Object> mapCache,
                              RMap<Object, Object> map,
@@ -52,6 +57,7 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
         this.mapCache = mapCache;
         this.map = map;
         this.conversionService = conversionService;
+        // 配置了 maxSize 时设置 MapCache LRU 上限。
         if (configuration.getMaxSize() != 0) {
             mapCache.setMaxSize(configuration.getMaxSize());
         }
@@ -62,6 +68,7 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
         return getNativeCache().getName();
     }
 
+    /** 键不存在时写入并返回先前值（Optional）。 */
     @NonNull
     @Override
     public <T> Optional<T> putIfAbsent(@NonNull Object key, @NonNull T value) {
@@ -77,6 +84,7 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
         return Optional.ofNullable(res);
     }
 
+    /** 键不存在时调用 supplier 获取值并写入；返回最终缓存值。 */
     @NonNull
     @Override
     public <T> T putIfAbsent(@NonNull Object key, @NonNull Supplier<T> value) {
@@ -93,6 +101,7 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
         return Optional.ofNullable(res).orElse(val);
     }
 
+    /** 写入或覆盖条目；MapCache 模式下附带 TTL/max-idle。 */
     @Override
     public void put(@NonNull Object key, @NonNull Object value) {
         ArgumentUtils.requireNonNull("key", key);
@@ -105,6 +114,7 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
         }
     }
 
+    /** 返回共享同一 Redis 结构的 {@link RedissonAsyncCache} 视图。 */
     @NonNull
     @Override
     public AsyncCache<RMap<Object, Object>> async() {

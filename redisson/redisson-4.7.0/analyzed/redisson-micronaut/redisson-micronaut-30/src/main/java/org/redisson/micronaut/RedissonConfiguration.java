@@ -28,18 +28,21 @@ import org.redisson.connection.ConnectionListener;
 import java.lang.reflect.InvocationTargetException;
 
 /**
+ * Micronaut {@link ConfigurationProperties} 绑定的 Redisson {@link Config} 扩展（Micronaut 3.x）。
+ * <p>首次访问各服务器模式配置时按需懒初始化对应子配置块。
  *
  * @author Nikita Koksharov
- *
  */
 @ConfigurationProperties("redisson")
 @Requires(missingBeans = Config.class)
 @Requires(property = "redisson")
 public class RedissonConfiguration extends Config {
 
+    /** 默认构造；子配置块在首次 getter 调用时创建。 */
     public RedissonConfiguration() {
     }
 
+    /** 获取单机模式配置；未指定任何模式时自动调用 {@link #useSingleServer()}。 */
     @Override
     public SingleServerConfig getSingleServerConfig() {
         if (isNotDefined()) {
@@ -48,12 +51,14 @@ public class RedissonConfiguration extends Config {
         return super.getSingleServerConfig();
     }
 
+    /** Micronaut 配置绑定入口：{@code redisson.single-server-config.*}。 */
     @Override
     @ConfigurationBuilder("singleServerConfig")
     protected void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
         super.setSingleServerConfig(singleConnectionConfig);
     }
 
+    /** 获取集群模式配置；未指定任何模式时自动调用 {@link #useClusterServers()}。 */
     @Override
     public ClusterServersConfig getClusterServersConfig() {
         if (isNotDefined()) {
@@ -62,12 +67,14 @@ public class RedissonConfiguration extends Config {
         return super.getClusterServersConfig();
     }
 
+    /** Micronaut 配置绑定入口：{@code redisson.cluster-servers-config.*}。 */
     @Override
     @ConfigurationBuilder(value = "clusterServersConfig", includes = {"nodeAddresses"})
     protected void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
         super.setClusterServersConfig(clusterServersConfig);
     }
 
+    /** 判断是否尚未选择任何 Redis 部署模式（五种子配置均为 null）。 */
     private boolean isNotDefined() {
         return super.getSingleServerConfig() == null
                 && super.getClusterServersConfig() == null
@@ -76,6 +83,7 @@ public class RedissonConfiguration extends Config {
                 && super.getMasterSlaveServersConfig() == null;
     }
 
+    /** 获取复制模式配置；未指定任何模式时自动调用 {@link #useReplicatedServers()}。 */
     @Override
     public ReplicatedServersConfig getReplicatedServersConfig() {
         if (isNotDefined()) {
@@ -90,6 +98,7 @@ public class RedissonConfiguration extends Config {
         super.setReplicatedServersConfig(replicatedServersConfig);
     }
 
+    /** 获取哨兵模式配置；未指定任何模式时自动调用 {@link #useSentinelServers()}。 */
     @Override
     public SentinelServersConfig getSentinelServersConfig() {
         if (isNotDefined()) {
@@ -104,6 +113,7 @@ public class RedissonConfiguration extends Config {
         super.setSentinelServersConfig(sentinelConnectionConfig);
     }
 
+    /** 获取主从模式配置；未指定任何模式时自动调用 {@link #useMasterSlaveServers()}。 */
     @Override
     public MasterSlaveServersConfig getMasterSlaveServersConfig() {
         if (isNotDefined()) {
@@ -124,6 +134,7 @@ public class RedissonConfiguration extends Config {
         return super.setCodec(codec);
     }
 
+    /** 通过反射按类名实例化 {@link Codec} 并设置到配置。 */
     public Config setCodec(String className) {
         try {
             Codec codec = (Codec) Class.forName(className).getDeclaredConstructor().newInstance();
@@ -139,6 +150,7 @@ public class RedissonConfiguration extends Config {
         return super.setNettyHook(nettyHook);
     }
 
+    /** 通过反射按类名实例化 {@link NettyHook} 并设置到配置。 */
     public Config setNettyHook(String className) {
         try {
             NettyHook nettyHook = (NettyHook) Class.forName(className).getDeclaredConstructor().newInstance();
@@ -154,6 +166,7 @@ public class RedissonConfiguration extends Config {
         return super.setAddressResolverGroupFactory(addressResolverGroupFactory);
     }
 
+    /** 通过反射按类名实例化 {@link AddressResolverGroupFactory} 并设置到配置。 */
     public Config setAddressResolverGroupFactory(String className) {
         try {
             AddressResolverGroupFactory value = (AddressResolverGroupFactory) Class.forName(className).getDeclaredConstructor().newInstance();
@@ -169,6 +182,7 @@ public class RedissonConfiguration extends Config {
         return super.setConnectionListener(connectionListener);
     }
 
+    /** 通过反射按类名实例化 {@link ConnectionListener} 并设置到配置。 */
     public Config setConnectionListener(String className) {
         try {
             ConnectionListener connectionListener = (ConnectionListener) Class.forName(className).getDeclaredConstructor().newInstance();

@@ -31,14 +31,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 基于 Redisson {@link RMap} 的 Micronaut {@link Session} 实现（Micronaut 2.x）。
+ * <p>在内存中维护属性副本，按 {@link RedissonHttpSessionConfiguration.UpdateMode}
+ * 异步或请求结束时同步到 Redis；支持跨节点属性广播。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonSession extends InMemorySession implements Session {
 
+    /** Redis Map 中存储最大非活动间隔（毫秒）的键名。 */
     private static final String MAX_INACTIVE_INTERVAL_ATTR = "session:maxInactiveInterval";
+    /** Redis Map 中存储最后访问时间戳的键名。 */
     private static final String LAST_ACCESSED_TIME_ATTR = "session:lastAccessedTime";
+    /** Redis Map 中存储创建时间戳的键名。 */
     private static final String CREATION_TIME_ATTR = "session:creationTime";
 
     private final RedissonSessionStore redissonManager;
@@ -51,12 +56,14 @@ public class RedissonSession extends InMemorySession implements Session {
     private Set<String> removedAttributes = Collections.emptySet();
     private Map<String, Object> updatedAttributes = Collections.emptyMap();
 
+    /** 以默认最大非活动间隔创建 Session。 */
     public RedissonSession(RedissonSessionStore redissonManager,
                            String id,
                            RedissonHttpSessionConfiguration.UpdateMode updateMode) {
         this(redissonManager, id, updateMode, Duration.ZERO);
     }
 
+    /** 绑定 Session Store、ID、更新模式与 TTL，并打开 Redis Map。 */
     public RedissonSession(RedissonSessionStore redissonManager,
                            String id,
                            RedissonHttpSessionConfiguration.UpdateMode updateMode,
@@ -82,6 +89,7 @@ public class RedissonSession extends InMemorySession implements Session {
         return creationTime;
     }
 
+    /** 清空内存属性；非新 Session 时在 WRITE_BEHIND 模式下异步删除 Redis 数据。 */
     @Override
     public MutableConvertibleValues<Object> clear() {
         if (!isNew()) {
@@ -93,6 +101,7 @@ public class RedissonSession extends InMemorySession implements Session {
         return super.clear();
     }
 
+    /** 批量删除 Session Map、通知桶，并在启用广播时发布清空消息。 */
     public CompletableFuture<Void> delete() {
         RBatch batch = redissonManager.createBatch();
         RMapAsync<CharSequence, Object> m = batch.getMap(map.getName(), map.getCodec());
@@ -108,6 +117,7 @@ public class RedissonSession extends InMemorySession implements Session {
         return batch.executeAsync().thenApply(s -> (Void)null).toCompletableFuture();
     }
 
+    /** 为 Session Map 与通知桶设置与 maxInactiveInterval 一致的过期时间。 */
     protected void expireSession() {
         if (getMaxInactiveInterval().getSeconds() >= 0) {
             RBatch batch = redissonManager.createBatch();
@@ -120,6 +130,7 @@ public class RedissonSession extends InMemorySession implements Session {
         }
     }
 
+    /** 构造跨节点广播用的批量属性写入消息（含编码后的值）。 */
     protected AttributesPutAllMessage createPutAllMessage(Map<CharSequence, Object> newMap) {
         Map<CharSequence, Object> map = new HashMap<>();
         for (Map.Entry<CharSequence, Object> entry : newMap.entrySet()) {
@@ -146,6 +157,7 @@ public class RedissonSession extends InMemorySession implements Session {
         return super.setMaxInactiveInterval(duration);
     }
 
+    /** WRITE_BEHIND 模式下异步写入单个属性，可选广播 {@link AttributeUpdateMessage}。 */
     private void fastPut(String name, Object value) {
         if (map == null) {
             return;
@@ -174,6 +186,7 @@ public class RedissonSession extends InMemorySession implements Session {
         return super.setLastAccessedTime(instant);
     }
 
+    /** 绕过 Redisson 同步逻辑，直接写入内存属性 Map（供远程广播回放使用）。 */
     public void superPut(CharSequence name, Object value) {
         super.put(name, value);
     }
@@ -195,6 +208,7 @@ public class RedissonSession extends InMemorySession implements Session {
         return super.put(key, value);
     }
 
+    /** 绕过 Redisson 同步逻辑，直接从内存移除属性（供远程广播回放使用）。 */
     public void superRemove(CharSequence key) {
         super.remove(key);
     }
@@ -215,6 +229,7 @@ public class RedissonSession extends InMemorySession implements Session {
         return super.remove(key);
     }
 
+    /** 将累积的属性变更批量写入 Redis，刷新 TTL 并可选广播。 */
     public CompletableFuture<RedissonSession> save() {
         Map<CharSequence, Object> newMap = new HashMap<>();
         if (isNew() || updateMode == RedissonHttpSessionConfiguration.UpdateMode.WRITE_BEHIND) {
@@ -260,6 +275,7 @@ public class RedissonSession extends InMemorySession implements Session {
         return batch.executeAsync().thenApply(b -> this).toCompletableFuture();
     }
 
+    /** 从 Redis 读出的 Map 还原元数据与业务属性到内存 Session。 */
     public void load(Map<CharSequence, Object> attrs) {
         Number creationTime = (Number) attrs.remove(CREATION_TIME_ATTR);
         if (creationTime != null) {

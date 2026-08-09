@@ -16,15 +16,18 @@
 package org.redisson.micronaut.session;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨节点广播：Session 已销毁（Micronaut 2.x）。
+ * <p>继承 {@link AttributeMessage}，携带节点 ID 与 Session ID。
  *
+ * @author Nikita Koksharov
  */
 public class SessionDestroyedMessage extends AttributeMessage {
 
     public SessionDestroyedMessage() {
     }
 
+    /** @param nodeId 销毁 Session 的节点
+     *  @param sessionId 被销毁的 Session ID */
     public SessionDestroyedMessage(String nodeId, String sessionId) {
         super(nodeId, sessionId);
     }

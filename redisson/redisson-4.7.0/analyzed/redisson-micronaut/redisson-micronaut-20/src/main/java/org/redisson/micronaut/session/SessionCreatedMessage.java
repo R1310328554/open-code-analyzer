@@ -16,15 +16,18 @@
 package org.redisson.micronaut.session;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨节点广播：新 Session 已创建（Micronaut 2.x）。
+ * <p>继承 {@link AttributeMessage}，携带节点 ID 与 Session ID。
  *
+ * @author Nikita Koksharov
  */
 public class SessionCreatedMessage extends AttributeMessage {
 
     public SessionCreatedMessage() {
     }
 
+    /** @param nodeId 创建 Session 的节点
+     *  @param sessionId 新 Session ID */
     public SessionCreatedMessage(String nodeId, String sessionId) {
         super(nodeId, sessionId);
     }

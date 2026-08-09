@@ -21,13 +21,15 @@ import io.micronaut.session.http.HttpSessionConfiguration;
 import org.redisson.client.codec.Codec;
 
 /**
- * Micronaut Session settings.
+ * Redisson 分布式 HTTP Session 的 Micronaut 配置（{@code redisson.*}，Micronaut 2.x）。
+ * <p>扩展 {@link HttpSessionConfiguration}，支持 Redis 键前缀、编解码器、更新模式与跨节点广播。
  *
  * @author Nikita Koksharov
  */
 @ConfigurationProperties("redisson")
 public class RedissonHttpSessionConfiguration extends HttpSessionConfiguration implements Toggleable {
 
+    /** Session 属性写入 Redis 的时机策略。 */
     public enum UpdateMode {WRITE_BEHIND, AFTER_REQUEST}
 
     private String keyPrefix = "";
@@ -40,9 +42,9 @@ public class RedissonHttpSessionConfiguration extends HttpSessionConfiguration i
     }
 
     /**
-     * Defines broadcasting of session updates across all micronaut services.
+     * 是否将 Session 变更广播到所有 Micronaut 服务实例。
      *
-     * @param broadcastSessionUpdates - if true then session changes are broadcasted.
+     * @param broadcastSessionUpdates 为 {@code true} 时通过 Redis Topic 同步属性变更
      */
     public void setBroadcastSessionUpdates(boolean broadcastSessionUpdates) {
         this.broadcastSessionUpdates = broadcastSessionUpdates;
@@ -53,14 +55,13 @@ public class RedissonHttpSessionConfiguration extends HttpSessionConfiguration i
     }
 
     /**
-     * Defines session attributes update mode.
-     * <p>
-     * WRITE_BEHIND - session changes stored asynchronously.
-     * AFTER_REQUEST - session changes stored only on io.micronaut.session.SessionStore#save(io.micronaut.session.Session) method invocation.
-     * <p>
-     * Default is AFTER_REQUEST.
+     * 设置 Session 属性更新模式。
+     * <p>{@link UpdateMode#WRITE_BEHIND}：变更异步写入 Redis。
+     * <p>{@link UpdateMode#AFTER_REQUEST}：仅在
+     * {@link io.micronaut.session.SessionStore#save(io.micronaut.session.Session)} 时批量落库。
+     * <p>默认 {@link UpdateMode#AFTER_REQUEST}。
      *
-     * @param updateMode - mode value
+     * @param updateMode 更新模式
      */
     public void setUpdateMode(UpdateMode updateMode) {
         this.updateMode = updateMode;
@@ -71,14 +72,10 @@ public class RedissonHttpSessionConfiguration extends HttpSessionConfiguration i
     }
 
     /**
-     * Redis data codec applied to session values.
-     * Default is Kryo5Codec codec
+     * 设置 Session 属性值的 Redis 编解码器。
+     * <p>默认 {@link org.redisson.codec.Kryo5Codec}。
      *
-     * @see org.redisson.client.codec.Codec
-     * @see org.redisson.codec.Kryo5Codec
-     *
-     * @param codec - data codec
-     * @return config
+     * @param codec 编解码器实例
      */
     public void setCodec(Codec codec) {
         this.codec = codec;
@@ -89,9 +86,9 @@ public class RedissonHttpSessionConfiguration extends HttpSessionConfiguration i
     }
 
     /**
-     * Defines string prefix applied to all objects stored in Redis.
+     * 设置写入 Redis 时所有 Session 相关键的统一前缀。
      *
-     * @param keyPrefix - key prefix value
+     * @param keyPrefix 键前缀字符串
      */
     public void setKeyPrefix(String keyPrefix) {
         this.keyPrefix = keyPrefix;
