@@ -473,3 +473,6 @@ spring-context/src/main/java/org/springframework/context/aot/BeanFactoryInitiali
 spring-context/src/main/java/org/springframework/context/aot/CglibClassHandler.java
 spring-context/src/main/java/org/springframework/context/aot/ContextAotProcessor.java
 spring-context/src/main/java/org/springframework/context/aot/KotlinReflectionBeanRegistrationAotProcessor.java
+spring-context/src/main/java/org/springframework/context/annotation/ClassPathScanningCandidateComponentProvider.java
+spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java
+spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassPostProcessor.java
