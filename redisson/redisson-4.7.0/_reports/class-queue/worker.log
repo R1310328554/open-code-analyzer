@@ -2513,3 +2513,18 @@
 2026-08-09T21:30:04Z DONE redisson/src/main/java/org/redisson/config/EntraIdCredentialsResolver.java wave83b [15:30]
 2026-08-09T21:30:04Z DONE redisson/src/main/java/org/redisson/config/EqualJitterDelay.java wave83b [15:30]
 2026-08-09T21:30:04Z DONE redisson/src/main/java/org/redisson/config/FullJitterDelay.java wave83b [15:30]
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/codec/ZStdCodec.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/BaseRedisBatchExecutor.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/BatchPromise.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/BatchService.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/CommandAsyncExecutor.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/CommandAsyncService.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/CommandBatchService.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/NoSyncedSlavesException.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/OrderedCompletableFuture.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/RedisBatchExecutor.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/RedisCommonBatchExecutor.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/RedisExecutor.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/RedisQueuedBatchExecutor.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/config/BaseConfig.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/config/BaseMasterSlaveServersConfig.java wave83a [0:15] repair after 83b mark wipe
