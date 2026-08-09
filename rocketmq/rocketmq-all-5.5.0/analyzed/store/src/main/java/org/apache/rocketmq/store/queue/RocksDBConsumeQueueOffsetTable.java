@@ -47,37 +47,28 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
+/**
+ * RocksDB ConsumeQueue Offset 表：维护 topic-queue 的 min/max 物理 offset
+ * 与 CQ 逻辑 offset 映射，支持按时间查 offset 与 checkpoint 记录。
+ */
 public class RocksDBConsumeQueueOffsetTable {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger ERROR_LOG = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
     private static final Logger ROCKSDB_LOG = LoggerFactory.getLogger(LoggerName.ROCKSDB_LOGGER_NAME);
 
+    /** Key 中 max offset 标记字节。 */
     private static final byte[] MAX_BYTES = "max".getBytes(StandardCharsets.UTF_8);
+    /** Key 中 min offset 标记字节。 */
     private static final byte[] MIN_BYTES = "min".getBytes(StandardCharsets.UTF_8);
 
     /**
-     * Rocksdb ConsumeQueue's Offset unit. Format:
-     *
-     * <pre>
-     * ┌─────────────────────────┬───────────┬───────────────────────┬───────────┬───────────┬───────────┬─────────────┐
-     * │ Topic Bytes Array Size  │  CTRL_1   │   Topic Bytes Array   │  CTRL_1   │  Max(Min) │  CTRL_1   │   QueueId   │
-     * │        (4 Bytes)        │ (1 Bytes) │       (n Bytes)       │ (1 Bytes) │ (3 Bytes) │ (1 Bytes) │  (4 Bytes)  │
-     * ├─────────────────────────┴───────────┴───────────────────────┴───────────┴───────────┴───────────┴─────────────┤
-     * │                                                    Key Unit                                                   │
-     * │                                                                                                               │
-     * </pre>
-     *
-     * <pre>
-     * ┌─────────────────────────────┬────────────────────────┐
-     * │  CommitLog Physical Offset  │   ConsumeQueue Offset  │
-     * │        (8 Bytes)            │    (8 Bytes)           │
-     * ├─────────────────────────────┴────────────────────────┤
-     * │                     Value Unit                       │
-     * │                                                      │
-     * </pre>
-     * ConsumeQueue's Offset unit. Size: CommitLog Physical Offset(8) + ConsumeQueue Offset(8) =  16 Bytes
+     * RocksDB CQ Offset 键值格式说明：
+     * Key = Topic 长度 + CTRL_1 + Topic 字节 + CTRL_1 + Max/Min 标记 + CTRL_1 + QueueId
+     * Value = CommitLog 物理 offset(8) + CQ 逻辑 offset(8)，共 16 字节。
      */
+    /** Value 中 CommitLog 物理 offset 起始位置。 */
     static final int OFFSET_PHY_OFFSET = 0;
+    /** Value 中 CQ 逻辑 offset 起始位置。 */
     static final int OFFSET_CQ_OFFSET = 8;
     /**
      * ┌─────────────────────────┬───────────┬───────────┬───────────┬───────────┬─────────────┐
@@ -85,7 +76,9 @@ public class RocksDBConsumeQueueOffsetTable {
      * │        (4 Bytes)        │ (1 Bytes) │ (1 Bytes) │ (3 Bytes) │ (1 Bytes) │  (4 Bytes)  │
      * ├─────────────────────────┴───────────┴───────────┴───────────┴───────────┴─────────────┤
      */
+    /** 不含 Topic 字节的 Key 固定长度。 */
     public static final int OFFSET_KEY_LENGTH_WITHOUT_TOPIC_BYTES = 4 + 1 + 1 + 3 + 1 + 4;
+    /** Value 固定长度：物理 offset + 逻辑 offset。 */
     private static final int OFFSET_VALUE_LENGTH = 8 + 8;
 
     /**
@@ -97,7 +90,7 @@ public class RocksDBConsumeQueueOffsetTable {
     public static final int OFFSET_KEY_LENGTH_WITHOUT_TOPIC_QUEUE_ID_BYTES = 4 + 1 + 1 + 3 + 1;
 
     /**
-     * We use a new system topic='CHECKPOINT_TOPIC' to record the maxPhyOffset built by CQ dispatch thread.
+     * 使用系统 Topic {@code CHECKPOINT_TOPIC} 记录 CQ 分发线程已构建的最大物理 offset。
      *
      * @see ConsumeQueueStore#getMaxPhyOffsetInConsumeQueue(), we use it to find the maxPhyOffset built by CQ dispatch thread.
      * If we do not record the maxPhyOffset, it may take us a long time to start traversing from the head of

@@ -43,14 +43,21 @@ import static org.apache.rocketmq.store.timer.rocksdb.TimerRocksDBRecord.TIMER_R
 import static org.apache.rocketmq.store.timer.rocksdb.TimerRocksDBRecord.TIMER_ROCKSDB_PUT;
 import static org.apache.rocketmq.store.timer.rocksdb.TimerRocksDBRecord.TIMER_ROCKSDB_UPDATE;
 
+/**
+ * RocksDB 定时消息 Timeline：按时间线索引构建、转发、Roll 与删除定时消息，
+ * 替代文件版 TimerWheel 的 RocksDB 持久化方案。
+ */
 public class Timeline {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger logError = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
     private static final String DELETE_KEY_SPLIT = "+";
+    /** 原始定时消息队列容量。 */
     private static final int ORIGIN_CAPACITY = 100000;
+    /** 批处理大小 / RocksDB 单次最大读取条数。 */
     private static final int BATCH_SIZE = 1000, MAX_BATCH_SIZE_FROM_ROCKSDB = 8000;
     private static final int INITIAL = 0, RUNNING = 1, SHUTDOWN = 2;
     private volatile int state = INITIAL;
+    /** Timeline 已处理 commit offset。 */
     private final AtomicLong commitOffset = new AtomicLong(0);
     private final MessageStore messageStore;
     private final MessageStoreConfig storeConfig;
@@ -60,9 +67,13 @@ public class Timeline {
     private final long precisionMs;
     private final TimerMetrics timerMetrics;
 
+    /** 索引构建服务：扫描 RocksDB 定时消息建立时间线索引。 */
     private TimelineIndexBuildService timelineIndexBuildService;
+    /** 转发服务：将到期消息投递到业务 Topic。 */
     private TimelineForwardService timelineForwardService;
+    /** Roll 服务：处理超长延迟消息的续期。 */
     private TimelineRollService timelineRollService;
+    /** 删除服务：清理已投递或取消的定时消息。 */
     private TimelineDeleteService timelineDeleteService;
     private BlockingQueue<TimerRocksDBRecord> originTimerMsgQueue;
 
@@ -89,6 +100,7 @@ public class Timeline {
         this.timelineDeleteService = new TimelineDeleteService();
     }
 
+    /** 启动索引构建、转发、Roll 与删除四个后台服务。 */
     public void start() {
         if (this.state == RUNNING) {
             return;
@@ -102,6 +114,7 @@ public class Timeline {
         log.info("Timeline start success, start commitOffset: {}", this.commitOffset.get());
     }
 
+    /** 关闭全部 Timeline 后台服务。 */
     public void shutDown() {
         if (this.state != RUNNING || this.state == SHUTDOWN) {
             return;
@@ -122,6 +135,7 @@ public class Timeline {
         log.info("Timeline shutdown success");
     }
 
+    /** 将定时消息记录放入 Timeline 原始队列待索引构建。 */
     public void putRecord(TimerRocksDBRecord timerRecord) throws InterruptedException {
         if (null == timerRecord) {
             return;
@@ -145,6 +159,7 @@ public class Timeline {
         }
     }
 
+    /** 记录定时消息相关指标（入队/出队/roll 等）。 */
     public void addMetric(MessageExt msg, int value) {
         if (null == msg || null == msg.getProperty(MessageConst.PROPERTY_REAL_TOPIC)) {
             return;

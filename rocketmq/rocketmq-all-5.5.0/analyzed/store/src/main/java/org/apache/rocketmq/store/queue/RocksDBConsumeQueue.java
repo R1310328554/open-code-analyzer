@@ -32,13 +32,21 @@ import org.apache.rocketmq.store.MessageFilter;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.rocksdb.RocksDBException;
 
+/**
+ * RocksDB 版 ConsumeQueue 门面：逻辑存储委托 {@link RocksDBConsumeQueueStore}，
+ * 本类主要实现 {@link ConsumeQueueInterface} 的 offset/拉取/估算等 API。
+ */
 public class RocksDBConsumeQueue implements ConsumeQueueInterface {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger ERROR_LOG = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
 
+    /** Broker 存储配置。 */
     private final MessageStoreConfig messageStoreConfig;
+    /** 底层 RocksDB CQ 存储引擎。 */
     private final RocksDBConsumeQueueStore consumeQueueStore;
+    /** Topic 名称。 */
     private final String topic;
+    /** 队列 ID。 */
     private final int queueId;
 
     public RocksDBConsumeQueue(final MessageStoreConfig messageStoreConfig,
@@ -51,7 +59,7 @@ public class RocksDBConsumeQueue implements ConsumeQueueInterface {
     }
 
     /**
-     * Only used to pass parameters when calling the destroy method
+     * 仅用于 {@link RocksDBConsumeQueueStore#destroy(ConsumeQueueInterface)} 传参。
      *
      * @see RocksDBConsumeQueueStore#destroy(ConsumeQueueInterface)
      */
@@ -142,10 +150,10 @@ public class RocksDBConsumeQueue implements ConsumeQueueInterface {
     }
 
     /**
-     * We already implement it in RocksDBConsumeQueueStore.
+     * 已在 {@link RocksDBConsumeQueueStore} 中实现，此处返回 0。
      * @see RocksDBConsumeQueueStore#getOffsetInQueueByTime
-     * @param timestamp timestamp
-     * @return
+     * @param timestamp 目标时间戳
+     * @return 占位返回值 0
      */
     @Override
     public long getOffsetInQueueByTime(long timestamp) {
@@ -153,11 +161,11 @@ public class RocksDBConsumeQueue implements ConsumeQueueInterface {
     }
 
     /**
-     * We already implement it in RocksDBConsumeQueueStore.
+     * 已在 {@link RocksDBConsumeQueueStore} 中实现，此处返回 0。
      * @see RocksDBConsumeQueueStore#getOffsetInQueueByTime
-     * @param timestamp    timestamp
-     * @param boundaryType Lower or Upper
-     * @return
+     * @param timestamp 目标时间戳
+     * @param boundaryType 下界或上界
+     * @return 占位返回值 0
      */
     @Override
     public long getOffsetInQueueByTime(long timestamp, BoundaryType boundaryType) {
@@ -193,28 +201,26 @@ public class RocksDBConsumeQueue implements ConsumeQueueInterface {
     }
 
     /**
-     * Ignored, we already implement this method
-     * @see org.apache.rocketmq.store.queue.RocksDBConsumeQueueOffsetTable#getMinCqOffset(String, int)
+     * 空实现；最小 offset 校正见 {@link RocksDBConsumeQueueOffsetTable#getMinCqOffset(String, int)}。
      */
     @Override
     public void correctMinOffset(long minCommitLogOffset) {
 
     }
 
-    /**
-     * Ignored, in rocksdb mode, we build cq in RocksDBConsumeQueueStore
-     */
+    /** 空实现；RocksDB 模式下 CQ 条目由 {@link RocksDBConsumeQueueStore} 构建。 */
     @Override
     public void putMessagePositionInfoWrapper(DispatchRequest request) {
 
     }
 
     @Override
+    /** 为消息分配 queueOffset，必要时从 RocksDB 恢复 offset 计数器。 */
     public void assignQueueOffset(QueueOffsetOperator queueOffsetOperator, MessageExtBrokerInner msg) throws RocksDBException {
         String topicQueueKey = getTopic() + "-" + getQueueId();
         Long queueOffset = queueOffsetOperator.getTopicQueueNextOffset(topicQueueKey);
         if (queueOffset == null) {
-            // we will recover topic queue table from rocksdb when we use it.
+            // 首次使用时从 RocksDB 恢复 topic-queue offset 表
             queueOffset = this.consumeQueueStore.getMaxOffsetInQueue(topic, queueId);
             queueOffsetOperator.updateQueueOffset(topicQueueKey, queueOffset);
         }
@@ -222,14 +228,15 @@ public class RocksDBConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 批量发送后递增 queueOffset 计数器。 */
     public void increaseQueueOffset(QueueOffsetOperator queueOffsetOperator, MessageExtBrokerInner msg, short messageNum) {
         String topicQueueKey = getTopic() + "-" + getQueueId();
         queueOffsetOperator.increaseQueueOffset(topicQueueKey, messageNum);
     }
 
     /**
-     * It is CPU-intensive with many offline group
-     * Optimize by caching their estimated info
+     * 估算指定 offset 区间内匹配过滤器的消息数（采样统计）。
+     * 离线消费组较多时 CPU 开销大，可缓存估算结果优化。
      */
     @Override
     public long estimateMessageCount(long from, long to, MessageFilter filter) {

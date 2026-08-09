@@ -55,6 +55,10 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.Statistics;
 import org.rocksdb.WriteBatch;
 
+/**
+ * RocksDB 版 ConsumeQueue 存储：使用两张表分别存 CQ 单元与 offset 映射，
+ * 通过 {@link RocksGroupCommitService} 批量写入并触发长轮询通知。
+ */
 public class RocksDBConsumeQueueStore extends AbstractConsumeQueueStore {
     private static final Logger ERROR_LOG = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
     private static final Logger ROCKSDB_LOG = LoggerFactory.getLogger(LoggerName.ROCKSDB_LOGGER_NAME);
@@ -67,17 +71,21 @@ public class RocksDBConsumeQueueStore extends AbstractConsumeQueueStore {
     private final String storePath;
 
     /**
-     * we use two tables with different ColumnFamilyHandle, called RocksDBConsumeQueueTable and RocksDBConsumeQueueOffsetTable.
-     * 1.RocksDBConsumeQueueTable uses to store CqUnit[physicalOffset, msgSize, tagHashCode, msgStoreTime]
-     * 2.RocksDBConsumeQueueOffsetTable uses to store physicalOffset and consumeQueueOffset(@see PhyAndCQOffset) of topic-queueId
+     * 两张 RocksDB 表：
+     * 1. {@link RocksDBConsumeQueueTable} 存 CqUnit（物理 offset、消息大小、Tag 哈希、存储时间）
+     * 2. {@link RocksDBConsumeQueueOffsetTable} 存 topic-queue 的物理/逻辑 offset 映射
      */
+    /** RocksDB 底层存储引擎。 */
     private final ConsumeQueueRocksDBStorage rocksDBStorage;
+    /** CQ 单元表。 */
     private final RocksDBConsumeQueueTable rocksDBConsumeQueueTable;
+    /** CQ offset 映射表。 */
     private final RocksDBConsumeQueueOffsetTable rocksDBConsumeQueueOffsetTable;
 
     private final List<Pair<ByteBuffer, ByteBuffer>> cqBBPairList;
     private final List<Pair<ByteBuffer, ByteBuffer>> offsetBBPairList;
     private final Map<ByteBuffer, Pair<ByteBuffer, DispatchEntry>> tempTopicQueueMaxOffsetMap;
+    /** CQ 写入是否发生不可恢复错误。 */
     private volatile boolean isCQError = false;
 
     private int consumeQueueByteBufferCacheIndex;
@@ -85,6 +93,7 @@ public class RocksDBConsumeQueueStore extends AbstractConsumeQueueStore {
 
     private final OffsetInitializer offsetInitializer;
 
+    /** RocksDB CQ 批量提交服务。 */
     private final RocksGroupCommitService groupCommitService;
 
     private final AtomicReference<ServiceState> serviceState = new AtomicReference<>(ServiceState.CREATE_JUST);
@@ -94,13 +103,11 @@ public class RocksDBConsumeQueueStore extends AbstractConsumeQueueStore {
     private long dispatchFromPhyOffset;
 
     /**
-     * there are two threads to notify longPolling when build cq successfully
+     * 构造 RocksDB CQ 存储；CQ 由 {@link RocksGroupCommitService} 构建，
+     * 因此 {@link DefaultMessageStore.ReputMessageService} 无需再通知长轮询。
      *
      * @see DefaultMessageStore.ReputMessageService#doReput()
      * @see RocksGroupCommitService#groupCommit()
-     * <p>
-     * RocksDB CQ is build by RocksGroupCommitService, so we do not need to notify longPolling in
-     * ReputMessageService
      */
     public RocksDBConsumeQueueStore(DefaultMessageStore messageStore) {
         super(messageStore);
@@ -115,7 +122,7 @@ public class RocksDBConsumeQueueStore extends AbstractConsumeQueueStore {
             this.storePath = StorePathConfigHelper.getStorePathConsumeQueue(root);
             checkFile = new File(StorePathConfigHelper.getStorePathRocksDBConsumeQueue(root) + File.separator + "CURRENT");
         }
-        if (checkFile.isFile()) { // probably used rocksdb in original/separate path
+        if (checkFile.isFile()) { // 检测到路径配置与已有 RocksDB 数据不兼容
             throw new IllegalStateException("find RocksDBConsumeQueue in original/separate path, maybe incompatible config.");
         }
 
@@ -155,6 +162,7 @@ public class RocksDBConsumeQueueStore extends AbstractConsumeQueueStore {
     }
 
     @Override
+    /** 启动 RocksDB 引擎、批量提交与清理服务。 */
     public void start() {
         if (serviceState.compareAndSet(ServiceState.CREATE_JUST, ServiceState.RUNNING)) {
             log.info("RocksDB ConsumeQueueStore start!");
@@ -189,6 +197,7 @@ public class RocksDBConsumeQueueStore extends AbstractConsumeQueueStore {
     }
 
     @Override
+    /** 加载 RocksDB 数据并恢复 offset 表。 */
     public boolean load() {
         boolean result = this.rocksDBStorage.start();
         this.rocksDBConsumeQueueTable.load();
@@ -197,6 +206,7 @@ public class RocksDBConsumeQueueStore extends AbstractConsumeQueueStore {
         return result;
     }
     @Override
+    /** 恢复 RocksDB CQ；RocksDB 模式下恢复逻辑在 load 阶段完成。 */
     public void recover(boolean concurrently) throws RocksDBException {
         start();
         this.dispatchFromPhyOffset = getMaxPhyOffsetInConsumeQueue();

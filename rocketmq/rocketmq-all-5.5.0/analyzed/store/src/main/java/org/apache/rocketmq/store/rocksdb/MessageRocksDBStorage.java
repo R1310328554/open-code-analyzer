@@ -57,12 +57,19 @@ import static org.apache.rocketmq.store.timer.rocksdb.TimerRocksDBRecord.TIMER_R
 import static org.apache.rocketmq.store.timer.rocksdb.TimerRocksDBRecord.TIMER_ROCKSDB_PUT;
 import static org.apache.rocketmq.store.timer.rocksdb.TimerRocksDBRecord.TIMER_ROCKSDB_UPDATE;
 
+/**
+ * 消息 RocksDB 统一存储：管理 index/timer/trans 三个 ColumnFamily，
+ * 为定时消息、事务消息及索引提供 KV 持久化能力。
+ */
 public class MessageRocksDBStorage extends AbstractRocksDBStorage {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger logError = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
+    /** RocksDB 数据目录名。 */
     private static final String ROCKSDB_MESSAGE_DIRECTORY = "rocksdbstore";
 
+    /** 定时消息 ColumnFamily 名称。 */
     public static final byte[] TIMER_COLUMN_FAMILY = "timer".getBytes(StandardCharsets.UTF_8);
+    /** 事务消息 ColumnFamily 名称。 */
     public static final byte[] TRANS_COLUMN_FAMILY = "trans".getBytes(StandardCharsets.UTF_8);
     private static final byte[] LAST_OFFSET_PY = "lastOffsetPy".getBytes(StandardCharsets.UTF_8);
     private static final byte[] LAST_STORE_TIMESTAMP = "lastStoreTimeStamp".getBytes(StandardCharsets.UTF_8);
@@ -71,7 +78,9 @@ public class MessageRocksDBStorage extends AbstractRocksDBStorage {
         Arrays.fill(END_SUFFIX_BYTES, (byte) 0xFF);
     }
     private static final Set<byte[]> COMMON_CHECK_POINT_KEY_SET_FOR_TIMER = new HashSet<>();
+    /** 定时系统 Topic 扫描 offset 检查点键。 */
     public static final byte[] SYS_TOPIC_SCAN_OFFSET_CHECK_POINT = "sys_topic_scan_offset_checkpoint".getBytes(StandardCharsets.UTF_8);
+    /** Timeline 处理进度检查点键。 */
     public static final byte[] TIMELINE_CHECK_POINT = "timeline_checkpoint".getBytes(StandardCharsets.UTF_8);
     static {
         COMMON_CHECK_POINT_KEY_SET_FOR_TIMER.add(SYS_TOPIC_SCAN_OFFSET_CHECK_POINT);
@@ -80,21 +89,26 @@ public class MessageRocksDBStorage extends AbstractRocksDBStorage {
     private static final byte[] DELETE_VAL_FLAG = new byte[] {(byte)0xFF};
     private static final int LAST_OFFSET_PY_LENGTH = LAST_OFFSET_PY.length;
 
+    /** 定时消息 ColumnFamily 句柄。 */
     private volatile ColumnFamilyHandle timerCFHandle;
+    /** 事务消息 ColumnFamily 句柄。 */
     private volatile ColumnFamilyHandle transCFHandle;
 
+    /** 定时 flush timer CF WAL 的调度器。 */
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private static final Cache<byte[], byte[]> DELETE_KEY_CACHE_FOR_TIMER = CacheBuilder.newBuilder()
         .maximumSize(10000)
         .expireAfterWrite(60, TimeUnit.MINUTES)
         .build();
 
+    /** 初始化 RocksDB 路径并启动存储引擎。 */
     public MessageRocksDBStorage(MessageStoreConfig messageStoreConfig) {
         super(Paths.get(messageStoreConfig.getStorePathRootDir(), ROCKSDB_MESSAGE_DIRECTORY).toString());
         this.start();
     }
 
     @Override
+    /** 打开 index/timer/trans 三个 ColumnFamily 并注册定时 flush 任务。 */
     protected boolean postLoad() {
         try {
             UtilAll.ensureDirOK(this.dbPath);
@@ -117,7 +131,7 @@ public class MessageRocksDBStorage extends AbstractRocksDBStorage {
             scheduler.scheduleAtFixedRate(() -> {
                 try {
                     db.flush(flushOptions, timerCFHandle);
-                    log.info("MessageRocksDBStorage flush timer wal success");
+                    log.info("MessageRocksDBStorage 定时 flush timer WAL 成功");
                 } catch (Exception e) {
                     logError.error("MessageRocksDBStorage flush timer wal failed, error: {}", e.getMessage());
                 }

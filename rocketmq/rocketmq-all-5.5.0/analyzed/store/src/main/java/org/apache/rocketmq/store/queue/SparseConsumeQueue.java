@@ -29,6 +29,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * 稀疏 Batch ConsumeQueue：BatchCQ 的变体，恢复时从倒数第三个 MappedFile 开始扫描，
+ * 适用于批量消息场景下减少无效文件遍历。
+ */
 public class SparseConsumeQueue extends BatchConsumeQueue {
 
     public SparseConsumeQueue(
@@ -51,6 +55,7 @@ public class SparseConsumeQueue extends BatchConsumeQueue {
     }
 
     @Override
+    /** 从倒数第三个 MappedFile 起扫描恢复，定位最后有效 CQ 条目。 */
     public void recover() {
         final List<MappedFile> mappedFiles = this.mappedFileQueue.getMappedFiles();
         if (!mappedFiles.isEmpty()) {
@@ -68,8 +73,8 @@ public class SparseConsumeQueue extends BatchConsumeQueue {
                     byteBuffer.position(i);
                     long offset = byteBuffer.getLong();
                     int size = byteBuffer.getInt();
-                    byteBuffer.getLong();   //tagscode
-                    byteBuffer.getLong();   //timestamp
+                    byteBuffer.getLong();   // Tag 哈希码
+                    byteBuffer.getLong();   // 消息存储时间戳
                     long msgBaseOffset = byteBuffer.getLong();
                     short batchSize = byteBuffer.getShort();
                     if (offset >= 0 && size > 0 && msgBaseOffset >= 0 && batchSize > 0) {
@@ -249,6 +254,7 @@ public class SparseConsumeQueue extends BatchConsumeQueue {
         }
     }
 
+    /** 在 MappedFile 末尾写入结束标记（稀疏 CQ 专用）。 */
     public void putEndPositionInfo(MappedFile mappedFile) {
         // cache max offset
         if (!mappedFile.isFull()) {
@@ -292,6 +298,7 @@ public class SparseConsumeQueue extends BatchConsumeQueue {
         }
     }
 
+    /** 判断当前 MappedFile 是否应滚动到新文件。 */
     public boolean shouldRoll() {
         if (mappedFileQueue.getLastMappedFile() == null) {
             return true;
@@ -307,12 +314,14 @@ public class SparseConsumeQueue extends BatchConsumeQueue {
         return false;
     }
 
+    /** 判断指定物理 offset 是否落在当前 CQ 文件范围内。 */
     public boolean containsOffsetFile(final long physicalOffset) {
         String fileName = UtilAll.offset2FileName(physicalOffset);
         return mappedFileQueue.getMappedFiles().stream()
             .anyMatch(mf -> Objects.equals(mf.getFile().getName(), fileName));
     }
 
+    /** 返回 CommitLog 中已索引的最大物理 offset。 */
     public long getMaxPhyOffsetInLog() {
         MappedFile lastMappedFile = mappedFileQueue.getLastMappedFile();
         Long maxOffsetInLog = getMax(lastMappedFile, b -> b.getLong(0) + b.getInt(8));
@@ -372,6 +381,7 @@ public class SparseConsumeQueue extends BatchConsumeQueue {
         return null;
     }
 
+    /** 从指定 CQ 文件名解析最大消息物理 offset。 */
     public long getMaxMsgOffsetFromFile(String simpleFileName) {
         MappedFile mappedFile = mappedFileQueue.getMappedFiles().stream()
             .filter(m -> Objects.equals(m.getFile().getName(), simpleFileName))
@@ -398,6 +408,7 @@ public class SparseConsumeQueue extends BatchConsumeQueue {
         refreshMaxCache();
     }
 
+    /** 刷新稀疏 CQ 内存状态与 MappedFile 队列。 */
     public void refresh() {
         reviseMaxAndMinOffsetInQueue();
         refreshCache();

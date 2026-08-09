@@ -76,13 +76,19 @@ import org.apache.rocketmq.store.queue.ReferredIterator;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 import org.apache.rocketmq.store.util.PerfCounter;
 
+/**
+ * 定时消息存储核心：基于时间轮（TimerWheel）+ TimerLog 实现延迟投递。
+ * 包含入队（enqueue）与出队（dequeue）两条异步流水线，支持 Master/Slave 角色切换。
+ */
 public class TimerMessageStore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** 状态：初始 / 运行 / 暂停 / 关闭。 */
     public static final int INITIAL = 0, RUNNING = 1, HAULT = 2, SHUTDOWN = 3;
     private volatile int state = INITIAL;
 
+    /** 定时消息系统 Topic（时间轮专用）。 */
     public static final String TIMER_TOPIC = TopicValidator.SYSTEM_TOPIC_PREFIX + "wheel_timer";
     public static final String TIMER_OUT_MS = MessageConst.PROPERTY_TIMER_OUT_MS;
     public static final String TIMER_ENQUEUE_MS = MessageConst.PROPERTY_TIMER_ENQUEUE_MS;
@@ -91,16 +97,21 @@ public class TimerMessageStore {
     public static final String TIMER_DELETE_UNIQUE_KEY = MessageConst.PROPERTY_TIMER_DEL_UNIQKEY;
 
     public static final Random RANDOM = new Random();
+    /** 写入结果：成功 / 需重试 / 不可重试。 */
     public static final int PUT_OK = 0, PUT_NEED_RETRY = 1, PUT_NO_RETRY = 2;
     public static final int DAY_SECS = 24 * 3600;
     public static final int DEFAULT_CAPACITY = 1024;
 
-    // The total days in the timer wheel when precision is 1000ms.
+    // 精度 1000ms 时时间轮覆盖的总天数；Broker 停机超过此天数可能丢消息
     // If the broker shutdown last more than the configured days, will cause message loss
+    /** 时间轮 TTL（天），默认 7 天。 */
     public static final int TIMER_WHEEL_TTL_DAY = 7;
     public static final int TIMER_BLANK_SLOTS = 60;
+    /** TimerLog 默认 magic 标记。 */
     public static final int MAGIC_DEFAULT = 1;
+    /** TimerLog roll（续期）magic 标记。 */
     public static final int MAGIC_ROLL = 1 << 1;
+    /** TimerLog 删除 magic 标记。 */
     public static final int MAGIC_DELETE = 1 << 2;
     public boolean debug = false;
 
@@ -108,8 +119,11 @@ public class TimerMessageStore {
     protected static final String DEQUEUE_PUT = "dequeue_put";
     protected final PerfCounter.Ticks perfCounterTicks = new PerfCounter.Ticks(LOGGER);
 
+    /** 入队写入请求队列。 */
     protected final BlockingQueue<TimerRequest> enqueuePutQueue;
+    /** 出队读取批次请求队列。 */
     protected final BlockingQueue<List<TimerRequest>> dequeueGetQueue;
+    /** 出队写入目标 Topic 请求队列。 */
     protected final BlockingQueue<TimerRequest> dequeuePutQueue;
 
     private final ByteBuffer timerLogBuffer = ByteBuffer.allocate(4 * 1024);
@@ -117,8 +131,11 @@ public class TimerMessageStore {
     private final ScheduledExecutorService scheduler;
 
     private final MessageStore messageStore;
+    /** 时间轮：按槽位索引到期定时消息。 */
     private final TimerWheel timerWheel;
+    /** TimerLog：持久化定时消息元数据。 */
     private final TimerLog timerLog;
+    /** 检查点：记录 TimerLog/TimerWheel 刷盘进度。 */
     private final TimerCheckpoint timerCheckpoint;
 
     private TimerEnqueueGetService enqueueGetService;
@@ -133,7 +150,8 @@ public class TimerMessageStore {
     protected volatile long currWriteTimeMs;
     protected volatile long preReadTimeMs;
     protected volatile long commitReadTimeMs;
-    protected volatile long currQueueOffset; //only one queue that is 0
+    /** 当前 Timer Topic 队列 offset（仅 queueId=0）。 */
+    protected volatile long currQueueOffset;
     protected volatile long commitQueueOffset;
     protected volatile long lastCommitReadTimeMs;
     protected volatile long lastCommitQueueOffset;
@@ -153,15 +171,17 @@ public class TimerMessageStore {
     protected AtomicInteger frequency = new AtomicInteger(0);
 
     private volatile BrokerRole lastBrokerRole = BrokerRole.SLAVE;
-    //the dequeue is an asynchronous process, use this flag to track if the status has changed
+    // 出队为异步流程，此标志跟踪 Master/Slave 角色是否变更
     private boolean dequeueStatusChangeFlag = false;
     private long shouldStartTime;
 
     // True if current store is master or current brokerId is equal to the minimum brokerId of the replica group in slaveActingMaster mode.
+    /** 当前 Broker 是否应运行出队（Master 或 slaveActingMaster 最小 brokerId）。 */
     protected volatile boolean shouldRunningDequeue;
     private final BrokerStatsManager brokerStatsManager;
     private Function<MessageExtBrokerInner, PutMessageResult> escapeBridgeHook;
 
+    /** TimerLog/TimerWheel 刷盘互斥锁。 */
     private final Object lockWhenFlush = new Object();
 
     public TimerMessageStore(final MessageStore messageStore, final MessageStoreConfig storeConfig,
@@ -174,7 +194,7 @@ public class TimerMessageStore {
         this.timerLogFileSize = storeConfig.getMappedFileSizeTimerLog();
         this.precisionMs = storeConfig.getTimerPrecisionMs();
 
-        // TimerWheel contains the fixed number of slots regardless of precision.
+        // 时间轮槽位总数固定，与精度无关
         this.slotsTotal = TIMER_WHEEL_TTL_DAY * DAY_SECS;
 
         String timerWheelPath = getTimerWheelPath(storeConfig.getStorePathRootDir());
@@ -212,7 +232,7 @@ public class TimerMessageStore {
                 new ThreadFactoryImpl("TimerScheduledThread"));
         }
 
-        // timerRollWindow contains the fixed number of slots regardless of precision.
+        // Roll 窗口槽位数固定，与精度无关
         if (storeConfig.getTimerRollWindowSlot() > slotsTotal - TIMER_BLANK_SLOTS
             || storeConfig.getTimerRollWindowSlot() < 2) {
             this.timerRollWindowSlots = slotsTotal - TIMER_BLANK_SLOTS;
@@ -239,6 +259,7 @@ public class TimerMessageStore {
         this.brokerStatsManager = brokerStatsManager;
     }
 
+    /** 初始化入队/出队/刷盘等后台 ServiceThread。 */
     public void initService() {
         enqueueGetService = new TimerEnqueueGetService();
         enqueuePutService = new TimerEnqueuePutService();
@@ -259,6 +280,7 @@ public class TimerMessageStore {
         }
     }
 
+    /** 加载 TimerWheel 快照与 TimerLog，恢复检查点。 */
     public boolean load() {
         this.initService();
         boolean load = timerLog.load();
@@ -296,6 +318,7 @@ public class TimerMessageStore {
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
+    /** 从 TimerLog 恢复 queueOffset 与时间轮状态。 */
     public void recover() {
         //recover timerLog
         long lastFlushPos = timerCheckpoint.getLastTimerLogFlushPos();
@@ -492,6 +515,7 @@ public class TimerMessageStore {
         return (magic | 0xF) == 0xF;
     }
 
+    /** 启动全部定时消息后台线程。 */
     public void start() {
         this.shouldStartTime = storeConfig.getDisappearTimeAfterStart() + System.currentTimeMillis();
         maybeMoveWriteTime();
@@ -556,6 +580,7 @@ public class TimerMessageStore {
         this.start();
     }
 
+    /** 优雅关闭定时消息存储并刷盘。 */
     public void shutdown() {
         if (SHUTDOWN == state) {
             return;
@@ -748,6 +773,7 @@ public class TimerMessageStore {
         holdMomentForUnknownError(50);
     }
 
+    /** 从 Timer Topic 拉取消息并入队到时间轮。 */
     public boolean enqueue(int queueId) {
         if (storeConfig.isTimerStopEnqueue()) {
             return false;
@@ -835,6 +861,7 @@ public class TimerMessageStore {
         return false;
     }
 
+    /** 将单条消息写入 TimerLog 并挂载到时间轮指定槽位。 */
     public boolean doEnqueue(long offsetPy, int sizePy, long delayedTime, MessageExt messageExt, boolean isFromTimeline) {
         LOGGER.debug("Do enqueue [{}] [{}]", new Timestamp(delayedTime), messageExt);
         //copy the value first, avoid concurrent problem
@@ -1012,6 +1039,7 @@ public class TimerMessageStore {
         }
     }
 
+    /** 扫描到期槽位，批量出队并投递到目标 Topic。 */
     public int dequeue() throws Exception {
         if (storeConfig.isTimerStopDequeue()) {
             return -1;
@@ -1185,6 +1213,7 @@ public class TimerMessageStore {
     }
 
     //0 succ; 1 fail, need retry; 2 fail, do not retry;
+    /** 将到期消息写入目标 Topic CommitLog；{@code roll} 为 true 表示续期。 */
     public int doPut(MessageExtBrokerInner message, boolean roll) throws Exception {
 
         if (!roll && null != message.getProperty(MessageConst.PROPERTY_TIMER_DEL_UNIQKEY)) {
@@ -1404,6 +1433,7 @@ public class TimerMessageStore {
 
     }
 
+    /** 入队拉取线程：从 Timer Topic Pull 消息。 */
     public class TimerEnqueueGetService extends ServiceThread {
 
         @Override
@@ -1441,6 +1471,7 @@ public class TimerMessageStore {
         return brokerIdentifier;
     }
 
+    /** 入队写入线程：将拉取到的消息写入时间轮。 */
     public class TimerEnqueuePutService extends ServiceThread {
 
         @Override
@@ -1544,6 +1575,7 @@ public class TimerMessageStore {
         }
     }
 
+    /** 出队扫描线程：扫描到期槽位生成批次请求。 */
     public class TimerDequeueGetService extends ServiceThread {
 
         @Override
@@ -1585,6 +1617,7 @@ public class TimerMessageStore {
         }
     }
 
+    /** 出队写入线程：将到期消息投递到目标 Topic。 */
     public class TimerDequeuePutMessageService extends AbstractStateService {
         @Override
         public String getServiceName() {
@@ -1691,6 +1724,7 @@ public class TimerMessageStore {
         }
     }
 
+    /** 出队读取线程：从 TimerLog 读取到期消息体。 */
     public class TimerDequeueGetMessageService extends AbstractStateService {
 
         @Override
@@ -1774,6 +1808,7 @@ public class TimerMessageStore {
         }
     }
 
+    /** 出队预热线程：提前加载即将到期的 TimerLog 数据。 */
     public class TimerDequeueWarmService extends ServiceThread {
 
         @Override
@@ -1801,14 +1836,17 @@ public class TimerMessageStore {
         }
     }
 
+    /** 判断 TimerLog 条目是否需要续期（magic 含 ROLL 位）。 */
     public boolean needRoll(int magic) {
         return (magic & MAGIC_ROLL) != 0;
     }
 
+    /** 判断 TimerLog 条目是否需要删除（magic 含 DELETE 位）。 */
     public boolean needDelete(int magic) {
         return (magic & MAGIC_DELETE) != 0;
     }
 
+    /** 定时刷盘线程：刷 TimerLog 与 TimerWheel 快照。 */
     public class TimerFlushService extends ServiceThread {
         private final SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm:ss");
 

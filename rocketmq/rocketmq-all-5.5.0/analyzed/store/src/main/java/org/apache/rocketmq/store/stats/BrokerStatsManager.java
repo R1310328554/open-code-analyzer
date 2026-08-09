@@ -42,6 +42,10 @@ import org.apache.rocketmq.common.utils.ThreadUtils;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Broker 统计管理器：聚合 Topic/Queue/Group 维度的收发 TPS、延迟、
+ * 商业计费及连接数等指标，支持定时打印与账户级统计。
+ */
 public class BrokerStatsManager {
 
     @Deprecated public static final String QUEUE_PUT_NUMS = Stats.QUEUE_PUT_NUMS;
@@ -61,7 +65,7 @@ public class BrokerStatsManager {
     @Deprecated public static final String GROUP_GET_FROM_DISK_SIZE = Stats.GROUP_GET_FROM_DISK_SIZE;
     @Deprecated public static final String BROKER_GET_FROM_DISK_NUMS = Stats.BROKER_GET_FROM_DISK_NUMS;
     @Deprecated public static final String BROKER_GET_FROM_DISK_SIZE = Stats.BROKER_GET_FROM_DISK_SIZE;
-    // For commercial
+    // 商业版计费指标（已废弃，保留兼容）
     @Deprecated public static final String COMMERCIAL_SEND_TIMES = Stats.COMMERCIAL_SEND_TIMES;
     @Deprecated public static final String COMMERCIAL_SNDBCK_TIMES = Stats.COMMERCIAL_SNDBCK_TIMES;
     @Deprecated public static final String COMMERCIAL_RCV_TIMES = Stats.COMMERCIAL_RCV_TIMES;
@@ -70,15 +74,18 @@ public class BrokerStatsManager {
     @Deprecated public static final String COMMERCIAL_RCV_SIZE = Stats.COMMERCIAL_RCV_SIZE;
     @Deprecated public static final String COMMERCIAL_PERM_FAILURES = Stats.COMMERCIAL_PERM_FAILURES;
 
-    // Send message latency
+    // 发送消息延迟统计
     @Deprecated public static final String TOPIC_PUT_LATENCY = "TOPIC_PUT_LATENCY";
     @Deprecated public static final String GROUP_ACK_NUMS = "GROUP_ACK_NUMS";
     @Deprecated public static final String GROUP_CK_NUMS = "GROUP_CK_NUMS";
+    /** 死信队列写入次数指标名。 */
     public static final String DLQ_PUT_NUMS = "DLQ_PUT_NUMS";
+    /** Broker 级 ACK 次数指标名。 */
     public static final String BROKER_ACK_NUMS = "BROKER_ACK_NUMS";
     public static final String BROKER_CK_NUMS = "BROKER_CK_NUMS";
     public static final String BROKER_GET_NUMS_WITHOUT_SYSTEM_TOPIC = "BROKER_GET_NUMS_WITHOUT_SYSTEM_TOPIC";
     public static final String BROKER_PUT_NUMS_WITHOUT_SYSTEM_TOPIC = "BROKER_PUT_NUMS_WITHOUT_SYSTEM_TOPIC";
+    /** 重试消息转入 DLQ 次数指标名。 */
     public static final String SNDBCK2DLQ_TIMES = "SNDBCK2DLQ_TIMES";
 
     public static final String COMMERCIAL_OWNER = "Owner";
@@ -111,12 +118,12 @@ public class BrokerStatsManager {
 
     @Deprecated public static final String GROUP_GET_FALL_SIZE = Stats.GROUP_GET_FALL_SIZE;
     @Deprecated public static final String GROUP_GET_FALL_TIME = Stats.GROUP_GET_FALL_TIME;
-    // Pull Message Latency
+    // Pull 消息延迟统计
     @Deprecated public static final String GROUP_GET_LATENCY = Stats.GROUP_GET_LATENCY;
 
-    // Consumer Register Time
+    // 消费者注册次数统计
     public static final String CONSUMER_REGISTER_TIME = "CONSUMER_REGISTER_TIME";
-    // Producer Register Time
+    // 生产者注册次数统计
     public static final String PRODUCER_REGISTER_TIME = "PRODUCER_REGISTER_TIME";
     public static final String CHANNEL_ACTIVITY = "CHANNEL_ACTIVITY";
     public static final String CHANNEL_ACTIVITY_CONNECT = "CONNECT";
@@ -167,6 +174,7 @@ public class BrokerStatsManager {
         init();
     }
 
+    /** 初始化全部 StatsItemSet 与 StatisticsItem 并注册定时打印。 */
     public void init() {
         momentStatsItemSetFallSize = new MomentStatsItemSet(GROUP_GET_FALL_SIZE,
             scheduledExecutorService, log);
@@ -325,9 +333,11 @@ public class BrokerStatsManager {
         this.consumerStateGetter = consumerStateGetter;
     }
 
+    /** 启动统计定时打印任务。 */
     public void start() {
     }
 
+    /** 关闭统计线程池。 */
     public void shutdown() {
         this.scheduledExecutorService.shutdown();
         this.commercialExecutor.shutdown();
@@ -345,6 +355,7 @@ public class BrokerStatsManager {
         return null;
     }
 
+    /** Topic 删除时清理相关统计项。 */
     public void onTopicDeleted(final String topic) {
         this.statsTable.get(Stats.TOPIC_PUT_NUMS).delValue(topic);
         this.statsTable.get(Stats.TOPIC_PUT_SIZE).delValue(topic);
@@ -365,6 +376,7 @@ public class BrokerStatsManager {
         this.momentStatsItemSetFallTime.delValueByInfixKey(topic, "@");
     }
 
+    /** 消费组删除时清理相关统计项。 */
     public void onGroupDeleted(final String group) {
         this.statsTable.get(Stats.GROUP_GET_NUMS).delValueBySuffixKey(group, "@");
         this.statsTable.get(Stats.GROUP_GET_SIZE).delValueBySuffixKey(group, "@");
@@ -380,6 +392,7 @@ public class BrokerStatsManager {
         this.momentStatsItemSetFallTime.delValueBySuffixKey(group, "@");
     }
 
+    /** 递增指定队列写入消息条数。 */
     public void incQueuePutNums(final String topic, final Integer queueId) {
         if (enableQueueStat) {
             this.statsTable.get(Stats.QUEUE_PUT_NUMS).addValue(buildStatsKey(topic, queueId), 1, 1);
@@ -448,6 +461,7 @@ public class BrokerStatsManager {
         this.statsTable.get(Stats.TOPIC_PUT_SIZE).addValue(topic, size, 1);
     }
 
+    /** 递增消费组拉取消息条数。 */
     public void incGroupGetNums(final String group, final String topic, final int incValue) {
         final String statsKey = buildStatsKey(topic, group);
         this.statsTable.get(Stats.GROUP_GET_NUMS).addValue(statsKey, incValue, 1);
@@ -463,6 +477,7 @@ public class BrokerStatsManager {
         this.statsTable.get(Stats.GROUP_ACK_NUMS).addValue(statsKey, incValue, 1);
     }
 
+    /** 构造 topic+group 维度的统计键。 */
     public String buildStatsKey(String topic, String group) {
         StringBuilder strBuilder;
         if (topic != null && group != null) {

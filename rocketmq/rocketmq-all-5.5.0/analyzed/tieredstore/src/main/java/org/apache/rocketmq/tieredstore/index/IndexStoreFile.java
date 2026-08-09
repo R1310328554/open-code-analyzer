@@ -55,15 +55,14 @@ import static org.apache.rocketmq.tieredstore.index.IndexStoreService.FILE_COMPA
 import static org.apache.rocketmq.tieredstore.index.IndexStoreService.FILE_DIRECTORY_NAME;
 
 /**
- * a single IndexFile in indexService
+ * 分层存储单个索引文件：Hash 槽 + 索引项链表，支持按 key/时间范围查询。
  */
 public class IndexStoreFile implements IndexFile {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
 
     /**
-     * header format:
-     * magic code(4) + begin timestamp(8) + end timestamp(8) + slot num(4) + index num(4)
+     * 索引文件头格式：magic(4) + 起始时间(8) + 结束时间(8) + 槽位数(4) + 索引项数(4)
      */
     public static final int INDEX_MAGIC_CODE = 0;
     public static final int INDEX_BEGIN_TIME_STAMP = 4;
@@ -75,17 +74,19 @@ public class IndexStoreFile implements IndexFile {
     public static final int BEGIN_MAGIC_CODE = 0xCCDDEEFF ^ 1880681586 + 4;
     public static final int END_MAGIC_CODE = 0xCCDDEEFF ^ 1880681586 + 8;
 
-    /**
-     * hash slot
-     */
+    /** Hash 槽：存储索引项链表头 offset。 */
+    /** 无效索引项标记值。 */
     private static final int INVALID_INDEX = 0;
     private static final int HASH_SLOT_SIZE = Long.BYTES;
+    /** 单次查询最大返回索引项数。 */
     private static final int MAX_QUERY_COUNT = 512;
 
     private final int hashSlotMaxCount;
     private final int indexItemMaxCount;
 
+    /** 索引文件读写锁。 */
     private final ReadWriteLock fileReadWriteLock;
+    /** 索引文件状态：UNSEALED / SEALED / UPLOAD。 */
     private final AtomicReference<IndexStatusEnum> fileStatus;
     private final AtomicLong beginTimestamp = new AtomicLong(-1L);
     private final AtomicLong endTimestamp = new AtomicLong(-1L);
@@ -206,11 +207,13 @@ public class IndexStoreFile implements IndexFile {
     }
 
     @Override
+    /** 启动索引文件（分层存储索引服务调用）。 */
     public void start() {
 
     }
 
     @Override
+    /** 批量写入索引项：keySet 中每个 key 映射到 CommitLog offset + 大小 + 时间戳。 */
     public AppendResult putKey(
         String topic, int topicId, int queueId, Set<String> keySet, long offset, int size, long timestamp) {
 
@@ -287,6 +290,7 @@ public class IndexStoreFile implements IndexFile {
     }
 
     @Override
+    /** 异步按 topic+key 与时间范围查询索引项列表。 */
     public CompletableFuture<List<IndexItem>> queryAsync(
         String topic, String key, int maxCount, long beginTime, long endTime) {
 

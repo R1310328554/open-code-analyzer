@@ -62,27 +62,40 @@ import org.apache.rocketmq.tieredstore.util.MessageStoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 分层消息存储插件：在默认 MessageStore 之上提供远端冷数据读写，
+ * 通过 {@link MessageStoreFetcherImpl} 拉取、{@link MessageStoreDispatcherImpl} 分发写入。
+ */
 public class TieredMessageStore extends AbstractPluginMessageStore {
 
     protected static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
+    /** 无效存储时间戳占位值。 */
     protected static final long MIN_STORE_TIME = -1L;
 
     protected final String brokerName;
+    /** 下层默认 MessageStore（热数据）。 */
     protected final MessageStore defaultStore;
+    /** 分层存储配置。 */
     protected final MessageStoreConfig storeConfig;
     protected final MessageStorePluginContext context;
 
+    /** Topic/Queue 元数据存储。 */
     protected final MetadataStore metadataStore;
     protected final MessageStoreExecutor storeExecutor;
     protected final IndexService indexService;
+    /** 扁平文件存储（CommitLog + CQ 分段）。 */
     protected final FlatFileStore flatFileStore;
     protected final MessageStoreFilter topicFilter;
+    /** 分层读路径：预读缓存 + 远端 Fetch。 */
     protected final MessageStoreFetcher fetcher;
+    /** 分层写路径：CommitLog 分发到 FlatFile。 */
     protected final MessageStoreDispatcher dispatcher;
+    /** 共享 RocksDB 存储（索引/定时/事务）。 */
     protected final MessageRocksDBStorage messageRocksDBStorage;
     protected TimerMessageRocksDBStore timerMessageRocksDBStore;
     protected TransMessageRocksDBStore transMessageRocksDBStore;
 
+    /** 构造分层存储：初始化元数据、FlatFile、索引、Fetcher 与 Dispatcher。 */
     public TieredMessageStore(MessageStorePluginContext context, MessageStore next) {
         super(context, next);
 
@@ -105,6 +118,7 @@ public class TieredMessageStore extends AbstractPluginMessageStore {
     }
 
     @Override
+    /** 加载元数据与 FlatFile，恢复分层存储状态。 */
     public boolean load() {
         boolean loadFlatFile = flatFileStore.load();
         boolean loadNextStore = next.load();
@@ -162,6 +176,7 @@ public class TieredMessageStore extends AbstractPluginMessageStore {
         return indexService;
     }
 
+    /** 按分层级别判断 offset 是否应从 TieredStore 读取。 */
     public boolean fetchFromCurrentStore(String topic, int queueId, long offset) {
         return fetchFromCurrentStore(topic, queueId, offset, 1);
     }
@@ -339,9 +354,8 @@ public class TieredMessageStore extends AbstractPluginMessageStore {
     }
 
     /**
-     * In the original design, getting the earliest time of the first message
-     * would generate two RPC requests. However, using the timestamp stored in the metadata
-     * avoids these requests, although this approach might introduce some level of inaccuracy.
+     * 异步获取队列最早消息时间：优先读元数据时间戳，避免两次 RPC，
+     * 可能存在一定精度误差。
      */
     @Override
     public CompletableFuture<Long> getEarliestMessageTimeAsync(String topic, int queueId) {
@@ -489,6 +503,7 @@ public class TieredMessageStore extends AbstractPluginMessageStore {
     }
 
     @Override
+    /** 注册 OpenTelemetry 分层存储指标。 */
     public void initMetrics(Meter meter, Supplier<AttributesBuilder> attributesBuilderSupplier) {
         super.initMetrics(meter, attributesBuilderSupplier);
         TieredStoreMetricsManager.init(meter, attributesBuilderSupplier, storeConfig, fetcher, flatFileStore, next);
@@ -550,6 +565,7 @@ public class TieredMessageStore extends AbstractPluginMessageStore {
     }
 
     @Override
+    /** 销毁分层存储：关闭 FlatFile、索引与元数据。 */
     public void destroy() {
         if (next != null) {
             next.destroy();

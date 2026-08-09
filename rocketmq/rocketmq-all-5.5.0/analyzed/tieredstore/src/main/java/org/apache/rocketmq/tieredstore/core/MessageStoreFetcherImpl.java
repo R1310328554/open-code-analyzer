@@ -48,11 +48,17 @@ import org.apache.rocketmq.tieredstore.util.MessageStoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 分层存储读实现：按 offset 从 FlatFile 拉取消息，Caffeine 预读缓存
+ * 减少重复远端请求，支持按时间戳查 offset 与最早消息时间。
+ */
 public class MessageStoreFetcherImpl implements MessageStoreFetcher {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
 
+    /** 预读缓存键格式：topic@queueId@offset。 */
     protected static final String CACHE_KEY_FORMAT = "%s@%d@%d";
+    /** 按时间戳 Fetch 使用的虚拟消费组名。 */
     protected static final String FETCHER_GROUP_NAME = MixAll.CID_RMQ_SYS_PREFIX + "FETCHER_TIMESTAMP";
 
     private final String brokerName;
@@ -63,6 +69,7 @@ public class MessageStoreFetcherImpl implements MessageStoreFetcher {
     private final FlatFileStore flatFileStore;
     private final MessageStoreFilter topicFilter;
     private final long memoryMaxSize;
+    /** Caffeine 预读缓存：键为 topic@queueId@offset。 */
     private final Cache<String /* topic@queueId@offset */, SelectBufferResult> fetcherCache;
 
     public MessageStoreFetcherImpl(TieredMessageStore messageStore) {
@@ -90,12 +97,12 @@ public class MessageStoreFetcherImpl implements MessageStoreFetcher {
 
         return Caffeine.newBuilder()
             .scheduler(Scheduler.systemScheduler())
-            // Clients may repeatedly request messages at the same offset in tiered storage,
-            // causing the request queue to become full. Using expire after read or write policy
-            // to refresh the cache expiration time.
+            // 分层存储中客户端可能重复请求同一 offset，
+            // 导致请求队列满；使用访问/写入过期策略刷新缓存
+            // 以延长热点 offset 的缓存存活时间
             .expireAfterAccess(storeConfig.getReadAheadCacheExpireDuration(), TimeUnit.MILLISECONDS)
             .maximumWeight(memoryMaxSize)
-            // Using the buffer size of messages to calculate memory usage
+            // 按消息 buffer 大小计算权重以限制内存
             .weigher((String key, SelectBufferResult buffer) -> buffer.getSize())
             .recordStats()
             .build();
@@ -114,7 +121,7 @@ public class MessageStoreFetcherImpl implements MessageStoreFetcher {
         MessageQueue mq = flatFile.getMessageQueue();
         SelectBufferResult buffer = this.fetcherCache.getIfPresent(
             String.format(CACHE_KEY_FORMAT, mq.getTopic(), mq.getQueueId(), offset));
-        // return duplicate buffer here
+        // 返回 buffer 副本，避免缓存条目被修改
         if (buffer == null) {
             return null;
         }
@@ -329,6 +336,7 @@ public class MessageStoreFetcherImpl implements MessageStoreFetcher {
     }
 
     @Override
+    /** 异步按 CQ offset 拉取消息，命中预读缓存则直接返回。 */
     public CompletableFuture<GetMessageResult> getMessageAsync(
         String group, String topic, int queueId, long queueOffset, int maxCount, final MessageFilter messageFilter) {
 
@@ -381,12 +389,14 @@ public class MessageStoreFetcherImpl implements MessageStoreFetcher {
     }
 
     @Override
+    /** 异步获取队列最早消息存储时间戳。 */
     public CompletableFuture<Long> getEarliestMessageTimeAsync(String topic, int queueId) {
         FlatMessageFile flatFile = flatFileStore.getFlatFile(new MessageQueue(topic, brokerName, queueId));
         return CompletableFuture.completedFuture(flatFile == null ? -1L : flatFile.getMinStoreTimestamp());
     }
 
     @Override
+    /** 异步按 CQ offset 获取消息存储时间戳。 */
     public CompletableFuture<Long> getMessageStoreTimeStampAsync(String topic, int queueId, long queueOffset) {
         FlatMessageFile flatFile = flatFileStore.getFlatFile(new MessageQueue(topic, brokerName, queueId));
         if (flatFile == null) {

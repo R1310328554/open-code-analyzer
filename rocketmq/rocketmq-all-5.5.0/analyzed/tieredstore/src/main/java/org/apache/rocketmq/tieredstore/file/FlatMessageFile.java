@@ -43,22 +43,34 @@ import org.apache.rocketmq.tieredstore.util.MessageStoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 单个 Topic-Queue 的扁平文件：包含 CommitLog 与 ConsumeQueue 两个分段，
+ * 支持追加写入、按 offset 读取及元数据恢复。
+ */
 public class FlatMessageFile implements FlatFileInterface {
 
     protected static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
+    /** 文件是否已关闭。 */
     protected volatile boolean closed = false;
 
+    /** Topic 元数据（topicId 等）。 */
     protected TopicMetadata topicMetadata;
+    /** Queue 元数据（MessageQueue 信息）。 */
     protected QueueMetadata queueMetadata;
 
     protected final String filePath;
+    /** 文件级互斥锁，保护追加与提交。 */
     protected final ReentrantLock fileLock;
+    /** GroupCommit 信号量，串行化提交。 */
     protected final Semaphore commitLock = new Semaphore(1);
     protected final MessageStoreConfig storeConfig;
     protected final MetadataStore metadataStore;
+    /** CommitLog 分段文件。 */
     protected final FlatCommitLogFile commitLog;
+    /** ConsumeQueue 分段文件。 */
     protected final FlatConsumeQueueFile consumeQueue;
 
+    /** 进行中的异步请求映射，用于去重与合并。 */
     protected final ConcurrentMap<String, CompletableFuture<?>> inFlightRequestMap;
 
     public FlatMessageFile(FlatFileFactory fileFactory, String topic, int queueId) {
@@ -93,6 +105,7 @@ public class FlatMessageFile implements FlatFileInterface {
         return !this.consumeQueue.fileSegmentTable.isEmpty();
     }
 
+    /** 从 MetadataStore 恢复或创建 Topic 元数据。 */
     public TopicMetadata recoverTopicMetadata(String topic) {
         TopicMetadata topicMetadata = this.metadataStore.getTopic(topic);
         if (topicMetadata == null) {
@@ -146,6 +159,7 @@ public class FlatMessageFile implements FlatFileInterface {
     }
 
     @Override
+    /** 追加单条消息 buffer 到 CommitLog 分段。 */
     public AppendResult appendCommitLog(ByteBuffer message) {
         if (closed) {
             return AppendResult.FILE_CLOSED;
@@ -162,6 +176,7 @@ public class FlatMessageFile implements FlatFileInterface {
     }
 
     @Override
+    /** 追加 ConsumeQueue 索引条目。 */
     public AppendResult appendConsumeQueue(DispatchRequest request) {
         if (closed) {
             return AppendResult.FILE_CLOSED;
@@ -251,6 +266,7 @@ public class FlatMessageFile implements FlatFileInterface {
     }
 
     @Override
+    /** 异步按 CQ offset 读取完整消息 ByteBuffer。 */
     public CompletableFuture<ByteBuffer> getMessageAsync(long queueOffset) {
         return getConsumeQueueAsync(queueOffset).thenCompose(cqBuffer -> {
             long commitLogOffset = MessageFormatUtil.getCommitLogOffsetFromItem(cqBuffer);

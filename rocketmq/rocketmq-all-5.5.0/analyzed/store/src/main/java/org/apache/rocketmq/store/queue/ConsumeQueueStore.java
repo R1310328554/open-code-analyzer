@@ -58,12 +58,21 @@ import static java.lang.String.format;
 import static org.apache.rocketmq.store.config.StorePathConfigHelper.getStorePathBatchConsumeQueue;
 import static org.apache.rocketmq.store.config.StorePathConfigHelper.getStorePathConsumeQueue;
 
+/**
+ * 默认 ConsumeQueue 存储实现：基于 MappedFile 管理 SimpleCQ/BatchCQ，
+ * 提供刷盘、恢复、清理及逻辑 offset 校正等后台服务。
+ */
 public class ConsumeQueueStore extends AbstractConsumeQueueStore {
+    /** CQ 定时刷盘服务。 */
     private final FlushConsumeQueueService flushConsumeQueueService;
+    /** 逻辑 offset 校正服务（CommitLog 与 CQ 不一致时修复）。 */
     private final CorrectLogicOffsetService correctLogicOffsetService;
+    /** 过期 CQ 文件清理服务。 */
     private final CleanConsumeQueueService cleanConsumeQueueService;
+    /** LMQ（Light Message Queue）计数器。 */
     private final AtomicInteger lmqCounter = new AtomicInteger(0);
 
+    /** 构造并初始化刷盘/校正/清理三个后台服务。 */
     public ConsumeQueueStore(DefaultMessageStore messageStore) {
         super(messageStore);
         this.flushConsumeQueueService = new FlushConsumeQueueService();
@@ -72,6 +81,7 @@ public class ConsumeQueueStore extends AbstractConsumeQueueStore {
     }
 
     @Override
+    /** 启动刷盘服务并注册定时清理任务。 */
     public void start() {
         this.flushConsumeQueueService.start();
         messageStore.getScheduledCleanQueueExecutorService().scheduleWithFixedDelay(this::cleanQueueFilesPeriodically,
@@ -79,12 +89,14 @@ public class ConsumeQueueStore extends AbstractConsumeQueueStore {
         log.info("Default ConsumeQueueStore start!");
     }
 
+    /** 周期性执行逻辑 offset 校正与过期文件清理。 */
     private void cleanQueueFilesPeriodically() {
         this.correctLogicOffsetService.run();
         this.cleanConsumeQueueService.run();
     }
 
     @Override
+    /** 加载 SimpleCQ 与 BatchCQ 目录下的全部队列文件。 */
     public boolean load() {
         boolean cqLoadResult = loadConsumeQueues(getStorePathConsumeQueue(this.messageStoreConfig.getStorePathRootDir()), CQType.SimpleCQ);
         boolean bcqLoadResult = loadConsumeQueues(getStorePathBatchConsumeQueue(this.messageStoreConfig.getStorePathRootDir()), CQType.BatchCQ);
@@ -92,6 +104,7 @@ public class ConsumeQueueStore extends AbstractConsumeQueueStore {
     }
 
     @Override
+    /** 恢复全部 ConsumeQueue；{@code concurrently} 为 true 时并行恢复。 */
     public void recover(boolean concurrently) {
         log.info("Start to recover consume queue concurrently={}", concurrently);
         if (concurrently) {
@@ -106,9 +119,8 @@ public class ConsumeQueueStore extends AbstractConsumeQueueStore {
     }
 
     /**
-     * Implementation of CommitLogDispatchStore.getDispatchFromPhyOffset() (inherited from ConsumeQueueStoreInterface).
-     * When recoverNormally is false, returns checkpoint's logicsPhysicalOffset so commitlog abnormal recovery starts
-     * from it.
+     * {@link CommitLogDispatchStore#getDispatchFromPhyOffset()} 的实现。
+     * 正常恢复返回 CQ 最大物理 offset；异常恢复返回 checkpoint 的 logicsPhysicalOffset。
      */
     @Override
     public Long getDispatchFromPhyOffset(boolean recoverNormally) throws RocksDBException {
@@ -124,6 +136,7 @@ public class ConsumeQueueStore extends AbstractConsumeQueueStore {
         }
     }
 
+    /** 线程池并行恢复全部 ConsumeQueue。 */
     public boolean recoverConcurrently() {
         int count = 0;
         for (ConcurrentMap<Integer, ConsumeQueueInterface> maps : this.consumeQueueTable.values()) {
@@ -543,7 +556,8 @@ public class ConsumeQueueStore extends AbstractConsumeQueueStore {
     }
 
     /**
-     * @param loadAfterDestroy file version cq do not need reload, so ignore
+     * 销毁全部 CQ；{@code loadAfterDestroy} 对文件版 CQ 无意义，忽略。
+     * @param loadAfterDestroy 销毁后是否重新加载（文件版 CQ 忽略）
      */
     @Override
     public void destroy(boolean loadAfterDestroy) {
@@ -555,6 +569,7 @@ public class ConsumeQueueStore extends AbstractConsumeQueueStore {
     }
 
     @Override
+    /** 清理物理 offset 小于 {@code minCommitLogOffset} 的过期 CQ 条目。 */
     public void cleanExpired(long minCommitLogOffset) {
         Iterator<Entry<String, ConcurrentMap<Integer, ConsumeQueueInterface>>> it = this.consumeQueueTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -598,6 +613,7 @@ public class ConsumeQueueStore extends AbstractConsumeQueueStore {
     }
 
     @Override
+    /** 截断全部 CQ 中物理 offset 大于 {@code offsetToTruncate} 的脏文件。 */
     public void truncateDirty(long offsetToTruncate) {
         long maxPhyOffsetOfConsumeQueue = getMaxPhyOffsetInConsumeQueue();
         if (maxPhyOffsetOfConsumeQueue >= offsetToTruncate) {

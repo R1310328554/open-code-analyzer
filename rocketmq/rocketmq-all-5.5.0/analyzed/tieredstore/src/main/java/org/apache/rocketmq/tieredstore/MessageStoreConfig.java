@@ -21,6 +21,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 
+/**
+ * 分层存储（Tiered Store）配置：Broker 名称、存储级别、文件大小、
+ * 元数据/后端 Provider、GroupCommit 与预读缓存等参数。
+ */
 public class MessageStoreConfig {
 
     private String brokerName = localHostName();
@@ -28,26 +32,17 @@ public class MessageStoreConfig {
     private TieredStorageLevel tieredStorageLevel = TieredStorageLevel.NOT_IN_DISK;
 
     /**
-     * All fetch requests are judged against this level first,
-     * and if the message cannot be read from the TiredMessageStore,
-     * these requests will still go to the next store for fallback processing.
+     * 分层存储级别：Fetch 请求先按此级别判断是否走 TieredStore，
+     * 读不到则回退到下层 MessageStore。
      */
     public enum TieredStorageLevel {
-        /**
-         * Disable tiered storage, all fetch request will be handled by default message store.
-         */
+        /** 禁用分层存储，全部 Fetch 走默认 MessageStore。 */
         DISABLE(0),
-        /**
-         * Only fetch request with offset not in disk will be handled by tiered storage.
-         */
+        /** 仅 offset 不在本地磁盘的消息走分层存储。 */
         NOT_IN_DISK(1),
-        /**
-         * Only fetch request with offset not in memory(page cache) will be handled by tiered storage.
-         */
+        /** 仅 offset 不在内存（PageCache）的消息走分层存储。 */
         NOT_IN_MEM(2),
-        /**
-         * All fetch request will be handled by tiered storage.
-         */
+        /** 全部 Fetch 请求优先走分层存储。 */
         FORCE(3);
 
         private final int value;
@@ -87,34 +82,37 @@ public class MessageStoreConfig {
     private boolean messageIndexEnable = true;
     private boolean recordGetMessageResult = false;
 
-    // CommitLog file size, default is 1G
+    // CommitLog 分段文件大小，默认 1G
     private long tieredStoreCommitLogMaxSize = 1024 * 1024 * 1024;
-    // ConsumeQueue file size, default is 100M
+    // ConsumeQueue 分段文件大小，默认 100M
     private long tieredStoreConsumeQueueMaxSize = 100 * 1024 * 1024;
     private int tieredStoreIndexFileMaxHashSlotNum = 5000000;
     private int tieredStoreIndexFileMaxIndexNum = 5000000 * 4;
 
+    /** 元数据存储 Provider 类名。 */
     private String tieredMetadataServiceProvider = "org.apache.rocketmq.tieredstore.metadata.DefaultMetadataStore";
+    /** 后端文件分段 Provider 类名（默认内存实现）。 */
     private String tieredBackendServiceProvider = "org.apache.rocketmq.tieredstore.provider.MemoryFileSegment";
 
-    // file reserved time, default is 72 hour
+    // 分层文件保留时间，默认 72 小时
     private boolean tieredStoreDeleteFileEnable = true;
     private int tieredStoreFileReservedTime = 72;
     private long tieredStoreDeleteFileInterval = Duration.ofHours(1).toMillis();
 
-    // time of forcing commitLog to roll to next file, default is 24 hour
+    // 强制 CommitLog 滚动间隔，默认 24 小时
     private int commitLogRollingInterval = 24;
     private int commitLogRollingMinimumSize = 16 * 1024 * 1024;
 
     private boolean tieredStoreGroupCommit = true;
     private int tieredStoreGroupCommitTimeout = 30 * 1000;
-    // Cached message count larger than this value will trigger async commit. default is 4096
+    // 缓存消息数超过此值触发异步 GroupCommit，默认 4096
     private int tieredStoreGroupCommitCount = 4 * 1024;
     // Cached message size larger than this value will trigger async commit. default is 4M
     private int tieredStoreGroupCommitSize = 4 * 1024 * 1024;
-    // Cached message count larger than this value will suspend append. default is 10000
+    // 缓存消息数超过此值暂停追加，默认 10000
     private int tieredStoreMaxGroupCommitCount = 10000;
 
+    /** 是否启用预读缓存（Caffeine）。 */
     private boolean readAheadCacheEnable = true;
     private int readAheadMessageCountThreshold = 4096;
     private int readAheadMessageSizeThreshold = 16 * 1024 * 1024;

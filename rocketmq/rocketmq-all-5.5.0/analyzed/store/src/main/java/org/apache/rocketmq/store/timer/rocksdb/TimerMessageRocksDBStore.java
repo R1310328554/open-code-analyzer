@@ -64,11 +64,17 @@ import static org.apache.rocketmq.common.message.MessageConst.PROPERTY_TIMER_ROL
 import static org.apache.rocketmq.store.rocksdb.MessageRocksDBStorage.TIMER_COLUMN_FAMILY;
 import static org.apache.rocketmq.store.timer.TimerMessageStore.TIMER_TOPIC;
 
+/**
+ * RocksDB 版定时消息存储：扫描系统 Timer Topic，配合 {@link Timeline}
+ * 实现定时消息的入队、到期投递、Roll 与删除。
+ */
 public class TimerMessageRocksDBStore {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger logError = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
+    /** 扫描系统 Topic 性能计数标签。 */
     private static final String SCAN_SYS_TOPIC = "scanSysTopic";
     private static final String SCAN_SYS_TOPIC_MISS = "scanSysTopicMiss";
+    /** 投递业务消息性能计数标签。 */
     private static final String OUT_BIZ_MESSAGE = "outBizMsg";
     private static final String ROLL_LABEL = "R";
     private static final int PUT_OK = 0, PUT_NEED_RETRY = 1, PUT_NO_RETRY = 2;
@@ -77,16 +83,22 @@ public class TimerMessageRocksDBStore {
     private static final int INITIAL = 0, RUNNING = 1, SHUTDOWN = 2;
     private volatile int state = INITIAL;
     private static long expirationThresholdMillis = 999L;
-    private final AtomicLong readOffset = new AtomicLong(0);//timerSysTopic read offset
+    /** Timer 系统 Topic 当前读取 offset。 */
+    private final AtomicLong readOffset = new AtomicLong(0);
     private final MessageStore messageStore;
     private final TimerMetrics timerMetrics;
     private final MessageStoreConfig storeConfig;
     private final BrokerStatsManager brokerStatsManager;
     private final MessageRocksDBStorage messageRocksDBStorage;
+    /** Timeline 处理器。 */
     private Timeline timeline;
+    /** 系统 Timer Topic 扫描服务。 */
     private TimerSysTopicScanService timerSysTopicScanService;
+    /** 到期消息重投服务。 */
     private TimerMessageReputService expiredMessageReputService;
+    /** Roll 续期消息重投服务。 */
     private TimerMessageReputService rollMessageReputService;
+    /** 定时精度（毫秒）。 */
     protected long precisionMs;
     private BlockingQueue<List<TimerRocksDBRecord>> expiredMessageQueue;
     private BlockingQueue<List<TimerRocksDBRecord>> rollMessageQueue;
@@ -106,6 +118,7 @@ public class TimerMessageRocksDBStore {
         bufferLocal = ThreadLocal.withInitial(() -> ByteBuffer.allocate(storeConfig.getMaxMessageSize()));
     }
 
+    /** 加载 Timeline 检查点并恢复 readOffset。 */
     public synchronized boolean load() {
         initService();
         boolean result = this.timerMetrics.load();
@@ -113,6 +126,7 @@ public class TimerMessageRocksDBStore {
         return result;
     }
 
+    /** 启动 Timeline 与扫描/重投服务。 */
     public synchronized void start() {
         if (this.state == RUNNING) {
             return;
@@ -155,6 +169,7 @@ public class TimerMessageRocksDBStore {
         }
     }
 
+    /** 关闭 RocksDB 定时消息全部后台服务。 */
     public void shutdown() {
         if (this.state != RUNNING || this.state == SHUTDOWN) {
             return;
@@ -200,6 +215,7 @@ public class TimerMessageRocksDBStore {
         return brokerStatsManager;
     }
 
+    /** 返回 Timer 系统 Topic 读取 offset 原子引用。 */
     public AtomicLong getReadOffset() {
         return readOffset;
     }
