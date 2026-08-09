@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/RDequeReactive.java",
     "redisson/src/main/java/org/redisson/api/RDequeRx.java",
     "redisson/src/main/java/org/redisson/api/RDestroyable.java",
-    "redisson/src/main/java/org/redisson/api/RDoubleAdder.java",
-    "redisson/src/main/java/org/redisson/api/RExecutorBatchFuture.java",
-    "redisson/src/main/java/org/redisson/api/RExecutorFuture.java",
-    "redisson/src/main/java/org/redisson/api/RExecutorService.java",
-    "redisson/src/main/java/org/redisson/api/RExecutorServiceAsync.java",
-    "redisson/src/main/java/org/redisson/api/RExpirable.java",
-    "redisson/src/main/java/org/redisson/api/RExpirableAsync.java",
-    "redisson/src/main/java/org/redisson/api/RExpirableReactive.java",
-    "redisson/src/main/java/org/redisson/api/RExpirableRx.java",
-    "redisson/src/main/java/org/redisson/api/RFencedLock.java",
-    "redisson/src/main/java/org/redisson/api/RFencedLockAsync.java",
-    "redisson/src/main/java/org/redisson/api/RFencedLockReactive.java",
-    "redisson/src/main/java/org/redisson/api/RFencedLockRx.java",
-    "redisson/src/main/java/org/redisson/api/RFunction.java",
-    "redisson/src/main/java/org/redisson/api/RFunctionAsync.java",
-    "redisson/src/main/java/org/redisson/api/RFunctionReactive.java"
+    "redisson/src/main/java/org/redisson/api/RDoubleAdder.java"
   ],
   "remaining_pending": 1502,
-  "done": 1290
+  "done": 1305
 }
