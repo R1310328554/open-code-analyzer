@@ -16,6 +16,9 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 
 /**
+ * {@code tt -t} 记录监听器：方法进出时保存 {@link TimeFragment} 到 {@link TimeTunnelCommand}。
+ * 用 JDK {@code Object[]} 模拟 args 栈，避免 Arthas 类进业务 ThreadLocal 导致 ClassLoader 泄漏。
+ *
  * @author beiwei30 on 30/11/2016.
  * @author hengyunabc 2020-05-20
  */
@@ -82,6 +85,7 @@ public class TimeTunnelAdviceListener extends AdviceListenerAdapter {
         afterFinishing(Advice.newForAfterThrowing(loader, clazz, method, target, args, throwable));
     }
 
+    /** 入栈保存 before 时的参数数组（方法体内可能修改 args 元素） */
     private void pushArgs(Object[] args) {
         Object[] store = argsRef.get();
         int[] posHolder = (int[]) store[0];
@@ -98,6 +102,7 @@ public class TimeTunnelAdviceListener extends AdviceListenerAdapter {
         posHolder[0] = pos;
     }
 
+    /** 出栈恢复 before 快照；栈满时从 slot 1 覆盖（环形栈） */
     private Object[] popArgs() {
         Object[] store = argsRef.get();
         int[] posHolder = (int[]) store[0];
@@ -118,6 +123,7 @@ public class TimeTunnelAdviceListener extends AdviceListenerAdapter {
         return args;
     }
 
+    /** 条件匹配则写入时间隧道并输出 {@link TimeTunnelModel}，首条标记 first=true */
     private void afterFinishing(Advice advice) {
         double cost = threadLocalWatch.costInMillis();
         TimeFragment timeTunnel = new TimeFragment(advice, LocalDateTime.now(), cost);

@@ -64,6 +64,13 @@ import static com.taobao.arthas.core.util.ArthasCheckUtils.isEquals;
  *
  * @author beiwei30 on 28/11/2016.
  */
+/**
+ * {@code monitor} 命令的 Advice 监听器：在目标方法进出时累计调用次数、成功/失败与耗时，
+ * 并按 {@link MonitorCommand#getCycle()} 周期通过 {@link Timer} 汇总输出 {@link MonitorModel}。
+ * <p>
+ * 统计采用 {@code ConcurrentHashMap + AtomicReference + CAS} 无锁更新；
+ * 定时任务在 {@code suspend} 时销毁、{@code resume} 时重建，避免后台空转。
+ */
 class MonitorAdviceListener extends AdviceListenerAdapter {
     // 输出定时任务
     private Timer timer;
@@ -80,12 +87,16 @@ class MonitorAdviceListener extends AdviceListenerAdapter {
     private MonitorCommand command;
     private CommandProcess process;
 
+    /** 绑定 monitor 命令配置与输出通道 */
     MonitorAdviceListener(MonitorCommand command, CommandProcess process, boolean verbose) {
         this.command = command;
         this.process = process;
         super.setVerbose(verbose);
     }
 
+    @Override
+    /** 首次增强时启动周期输出定时器（daemon 线程，随 session 命名） */
+    /** 首次增强时启动周期输出定时器（daemon 线程，随 session 命名） */
     @Override
     public synchronized void create() {
         if (timer == null) {
@@ -95,6 +106,9 @@ class MonitorAdviceListener extends AdviceListenerAdapter {
         }
     }
 
+    @Override
+    /** 取消定时器，detach 或 suspend 时释放资源 */
+    /** 取消定时器，detach 或 suspend 时释放资源 */
     @Override
     public synchronized void destroy() {
         if (null != timer) {
@@ -128,6 +142,11 @@ class MonitorAdviceListener extends AdviceListenerAdapter {
         finishing(clazz, method, true, Advice.newForAfterThrowing(loader, clazz, method, target, args, throwable));
     }
 
+    /**
+     * 方法结束（正常返回或抛异常）时更新统计。
+     * {@code -b} 模式下条件在 before 已求值；否则在此用完整 Advice 上下文再判。
+     * 条件表达式异常或结果为 false 的调用不计入统计。
+     */
     private void finishing(Class<?> clazz, ArthasMethod method, boolean isThrowing, Advice advice) {
         double cost = threadLocalWatch.costInMillis();
 
@@ -178,6 +197,7 @@ class MonitorAdviceListener extends AdviceListenerAdapter {
         }
     }
 
+    /** 按周期快照各方法 MonitorData、重置计数器并输出；达到 -n 上限后终止命令 */
     private class MonitorTimer extends TimerTask {
         private Map<Key, AtomicReference<MonitorData>> monitorData;
         private CommandProcess process;
@@ -208,7 +228,7 @@ class MonitorAdviceListener extends AdviceListenerAdapter {
                 MonitorData data;
                 while (true) {
                     data = value.get();
-                    //swap monitor data to new instance
+                    // CAS 交换：取走当前周期数据，放入空 MonitorData 供下一周期写入
                     if (value.compareAndSet(data, new MonitorData())) {
                         break;
                     }

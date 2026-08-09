@@ -25,6 +25,11 @@ import sun.management.counter.Counter;
 import sun.management.counter.perf.PerfInstrumentation;
 
 /**
+ * {@code perfcounter} 命令：读取 JVM HotSpot perf 计数器（CPU、GC、编译等底层指标）。
+ * <p>
+ * 通过反射 attach 到本进程 perf memory；JDK 9+ 需 {@code --add-opens} 相关模块。
+ * {@code -d} 输出单位与可变性等详情。
+ *
  * @see sun.misc.Perf
  * @see jdk.internal.perf.Perf
  * @see sun.management.counter.perf.PerfInstrumentation
@@ -38,9 +43,12 @@ import sun.management.counter.perf.PerfInstrumentation;
         Constants.WIKI + Constants.WIKI_HOME + "perfcounter")
 public class PerfCounterCommand extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(PerfCounterCommand.class);
+    /** 缓存 Perf 单例，避免重复反射 */
     private static Object perfObject;
+    /** 缓存 attach(pid, mode) 方法 */
     private static Method attachMethod;
 
+    /** 是否输出 counter 单位、可变性等详细信息 */
     private boolean details;
 
     @Option(shortName = "d", longName = "details", flag = true)
@@ -49,6 +57,9 @@ public class PerfCounterCommand extends AnnotatedCommand {
         this.details = details;
     }
 
+    @Override
+    /** 枚举全部 perf counter 并封装为 {@link PerfCounterModel} 输出 */
+    /** 枚举全部 perf counter 并封装为 {@link PerfCounterModel} 输出 */
     @Override
     public void process(CommandProcess process) {
         List<Counter> perfCounters = getPerfCounters();
@@ -75,6 +86,10 @@ public class PerfCounterCommand extends AnnotatedCommand {
         process.end();
     }
 
+    /**
+     * attach 本进程 perf buffer 并解析为 Counter 列表。
+     * JDK8 用 sun.misc.Perf，JDK9+ 用 jdk.internal.perf.Perf；失败返回空列表。
+     */
     private static List<Counter> getPerfCounters() {
 
         /**

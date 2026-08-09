@@ -25,18 +25,12 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * {@code memory} 命令：汇总 JVM 堆、非堆、各 MemoryPool 及 Direct/Mapped BufferPool 用量。
- * <p>
- * 核心逻辑在静态方法 {@link #memoryInfo()}，{@link DashboardCommand} 等亦复用该数据；
- * 部分 JVM 在特定选项下 {@link MemoryPoolMXBean#getUsage()} 可能抛 InternalError，已防御性捕获。
- *
  * @author hengyunabc 2022-03-01
  */
 @Name("memory")
 @Summary("Display jvm memory info.")
 @Description(Constants.EXAMPLE + "  memory\n" + Constants.WIKI + Constants.WIKI_HOME + "memory")
 public class MemoryCommand extends AnnotatedCommand {
-    /** 调用 memoryInfo 封装 MemoryModel 并结束命令 */
     @Override
     public void process(CommandProcess process) {
         MemoryModel result = new MemoryModel();
@@ -45,7 +39,6 @@ public class MemoryCommand extends AnnotatedCommand {
         process.end();
     }
 
-    /** 构建 heap / non-heap / buffer-pool 三组 MemoryEntryVO 列表 */
     static Map<String, List<MemoryEntryVO>> memoryInfo() {
         List<MemoryPoolMXBean> memoryPoolMXBeans = ManagementFactory.getMemoryPoolMXBeans();
         Map<String, List<MemoryEntryVO>> memoryInfoMap = new LinkedHashMap<String, List<MemoryEntryVO>>();
@@ -84,7 +77,6 @@ public class MemoryCommand extends AnnotatedCommand {
         return memoryInfoMap;
     }
 
-    /** 安全获取 MemoryPool 用量；部分 JVM bug 会抛 InternalError，此时返回 null */
     private static MemoryUsage getUsage(MemoryPoolMXBean memoryPoolMXBean) {
         try {
             return memoryPoolMXBean.getUsage();
@@ -95,7 +87,6 @@ public class MemoryCommand extends AnnotatedCommand {
         }
     }
 
-    /** 反射加载 BufferPoolMXBean（JDK7+），收集 Direct/Mapped 等缓冲池 used/capacity */
     private static void addBufferPoolMemoryInfo(Map<String, List<MemoryEntryVO>> memoryInfoMap) {
         try {
             List<MemoryEntryVO> bufferPoolMemEntries = new ArrayList<MemoryEntryVO>();
@@ -115,7 +106,6 @@ public class MemoryCommand extends AnnotatedCommand {
         }
     }
 
-    /** 从 MemoryUsage 提取 used/committed/max 构造条目 */
     private static MemoryEntryVO createMemoryEntryVO(String type, String name, MemoryUsage memoryUsage) {
         return new MemoryEntryVO(type, name, memoryUsage.getUsed(), memoryUsage.getCommitted(), memoryUsage.getMax());
     }

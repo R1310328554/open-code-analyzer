@@ -3,17 +3,25 @@ package com.taobao.arthas.core.command.monitor200;
 import java.time.LocalDateTime;
 
 /**
- * 数据监控用的value for MonitorCommand
+ * {@code monitor} 命令单个「类+方法」在一个统计周期内的聚合指标。
+ * 由 {@link MonitorAdviceListener} 无锁累加，定时任务输出前填充 className/methodName。
  *
  * @author vlinux
  */
 public class MonitorData {
+    /** 被监控类的全限定名 */
     private String className;
+    /** 被监控方法名 */
     private String methodName;
+    /** 周期内调用总次数 */
     private int total;
+    /** 正常返回次数 */
     private int success;
+    /** 抛异常次数 */
     private int failed;
+    /** 累计耗时（毫秒），用于计算平均 RT */
     private double cost;
+    /** 最近一次更新时的本地时间戳；getter 在 null 时懒填当前时间 */
     private LocalDateTime timestamp;
 
     public String getClassName() {

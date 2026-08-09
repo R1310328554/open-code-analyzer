@@ -15,7 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Thread cpu sampler
+ * 线程 CPU 采样器：两次调用 {@link #sample} 间隔 {@link #pause} 毫秒，
+ * 用 {@link ThreadMXBean#getThreadCpuTime} 差值除以墙钟时间估算 CPU 使用率。
+ * 可选通过 HotspotThreadMBean 纳入 JVM 内部线程（GC 等）。
  *
  * @author gongdewei 2020/4/23
  */
@@ -25,12 +27,17 @@ public class ThreadSampler {
     private static HotspotThreadMBean hotspotThreadMBean;
     private static boolean hotspotThreadMBeanEnable = true;
 
+    /** 上次采样时各线程累计 CPU 时间（纳秒） */
     private Map<ThreadVO, Long> lastCpuTimes = new HashMap<ThreadVO, Long>();
 
     private long lastSampleTimeNanos;
     private boolean includeInternalThreads = true;
 
 
+    /**
+     * 首次采样仅记录基准 CPU 时间并排序；第二次起计算 delta 与 CPU%。
+     * 返回的 ThreadVO 已填充 time、deltaTime、cpu 字段。
+     */
     public List<ThreadVO> sample(Collection<ThreadVO> originThreads) {
 
         List<ThreadVO> threads = new ArrayList<ThreadVO>(originThreads);
@@ -154,6 +161,7 @@ public class ThreadSampler {
         return threads;
     }
 
+    /** 读取 HotSpot 内部线程 CPU；反射失败则永久关闭以免反复抛错 */
     private Map<String, Long> getInternalThreadCpuTimes() {
         if (hotspotThreadMBeanEnable && includeInternalThreads) {
             try {
@@ -179,6 +187,7 @@ public class ThreadSampler {
         return threadVO;
     }
 
+    /** 两次 sample 之间的等待间隔（毫秒） */
     public void pause(long mills) {
         try {
             Thread.sleep(mills);

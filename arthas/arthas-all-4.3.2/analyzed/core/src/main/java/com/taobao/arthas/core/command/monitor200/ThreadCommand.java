@@ -31,6 +31,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * {@code thread} 命令：查看 JVM 线程列表、单线程栈、CPU 占用 TopN、阻塞锁持有者等。
+ * <p>
+ * 无参数时列出全部线程及状态统计；{@code -n} 按 CPU 采样排序；{@code -b} 找最多线程等待的锁；
+ * 指定 id 则输出该线程详细栈。
+ *
  * @author hengyunabc 2015年12月7日 下午2:06:21
  */
 @Name("thread")
@@ -48,7 +53,9 @@ public class ThreadCommand extends AnnotatedCommand {
     private static Set<String> states = null;
     private static ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
+    /** 指定线程 id，>0 时只展示该线程栈 */
     private long id = -1;
+    /** CPU 占用 TopN；-1 表示全部 */
     private Integer topNBusy = null;
     private boolean findMostBlockingThread = false;
     private int sampleInterval = 200;
@@ -114,6 +121,9 @@ public class ThreadCommand extends AnnotatedCommand {
     }
 
     @Override
+    /** 按参数分支：单线程 / TopN 忙线程 / 阻塞分析 / 全量列表 */
+    /** 按参数分支：单线程 / TopN 忙线程 / 阻塞分析 / 全量列表 */
+    @Override
     public void process(CommandProcess process) {
         ExitStatus exitStatus;
         if (id > 0) {
@@ -128,6 +138,7 @@ public class ThreadCommand extends AnnotatedCommand {
         CommandUtils.end(process, exitStatus);
     }
 
+    /** 枚举线程、按状态计数，经 {@link ThreadSampler} 两次采样得到 CPU 占比 */
     private ExitStatus processAllThreads(CommandProcess process) {
         List<ThreadVO> threads = ThreadUtil.getThreads();
 
@@ -172,6 +183,7 @@ public class ThreadCommand extends AnnotatedCommand {
         return ExitStatus.success();
     }
 
+    /** 查找持有锁且阻塞线程数最多的「罪魁祸首」线程 */
     private ExitStatus processBlockingThread(CommandProcess process) {
         BlockingLockInfo blockingLockInfo = ThreadUtil.findMostBlockingLock();
         if (blockingLockInfo.getThreadInfo() == null) {
@@ -181,6 +193,7 @@ public class ThreadCommand extends AnnotatedCommand {
         return ExitStatus.success();
     }
 
+    /** 采样排序后取 TopN，再拉取 ThreadInfo（含锁监视器/同步器） */
     private ExitStatus processTopBusyThreads(CommandProcess process) {
         ThreadSampler threadSampler = new ThreadSampler();
         threadSampler.sample(ThreadUtil.getThreads());

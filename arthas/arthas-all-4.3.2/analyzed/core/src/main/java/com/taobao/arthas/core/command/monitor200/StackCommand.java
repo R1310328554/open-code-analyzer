@@ -13,8 +13,8 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * Jstack命令<br/>
- * 负责输出当前方法执行上下文
+ * {@code stack} 命令：增强匹配方法，在调用完成且条件满足时输出该时刻的线程堆栈。
+ * 与 jstack 不同，仅在「目标方法被调用」时触发，便于定位慢调用或异常路径。
  *
  * @author vlinux
  * @author hengyunabc 2016-10-31
@@ -29,8 +29,11 @@ import com.taobao.middleware.cli.annotations.Summary;
         "  stack -E org\\.apache\\.commons\\.lang\\.StringUtils isBlank\n" +
         Constants.WIKI + Constants.WIKI_HOME + "stack")
 public class StackCommand extends EnhancerCommand {
+    /** 类名通配/正则模式 */
     private String classPattern;
+    /** 方法名通配/正则模式 */
     private String methodPattern;
+    /** OGNL 条件，如 {@code '#cost>100'} 过滤慢调用 */
     private String conditionExpress;
     private boolean isRegEx = false;
     private int numberOfLimit = 100;

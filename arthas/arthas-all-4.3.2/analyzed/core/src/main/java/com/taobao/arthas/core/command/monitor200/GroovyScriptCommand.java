@@ -12,10 +12,8 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * 已废弃的 {@code groovy} 脚本增强命令：原计划在方法切点执行外部 Groovy 脚本。
- * <p>
- * Arthas 3.0 起已禁用；所有匹配器与监听器工厂均抛出 {@link UnsupportedOperationException}。
- * 命令标记 {@link Hidden}，不在 help 中展示。
+ * Groovy support has been completed dropped in Arthas 3.0 because of severer memory leak.
+ * 脚本增强命令
  *
  * @author vlinux on 15/5/31.
  */
@@ -31,13 +29,9 @@ import com.taobao.middleware.cli.annotations.Summary;
         "  middleware-container/arthas/wikis/cmds/groovy")
 @Deprecated
 public class GroovyScriptCommand extends EnhancerCommand implements ScriptSupportCommand {
-    /** 目标类名匹配模式 */
     private String classPattern;
-    /** 目标方法名匹配模式 */
     private String methodPattern;
-    /** Groovy 脚本文件路径 */
     private String scriptFilepath;
-    /** 是否启用正则匹配（-E） */
     private boolean isRegEx = false;
 
     @Argument(index = 0, argName = "class-pattern")
@@ -80,7 +74,6 @@ public class GroovyScriptCommand extends EnhancerCommand implements ScriptSuppor
         return isRegEx;
     }
 
-    /** 已废弃：groovy 命令不再支持 */
     @Override
     protected Matcher getClassNameMatcher() {
         throw new UnsupportedOperationException("groovy command is not supported yet!");

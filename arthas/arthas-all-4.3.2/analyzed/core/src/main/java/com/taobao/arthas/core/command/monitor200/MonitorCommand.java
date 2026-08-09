@@ -16,7 +16,11 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * 监控请求命令<br/>
+ * {@code monitor} 命令：对匹配类/方法做字节码增强，周期性输出调用 QPS、成功率、平均 RT 等。
+ * <p>
+ * 继承 {@link EnhancerCommand} 完成类匹配与增强；监听器为 {@link MonitorAdviceListener}。
+ * 支持条件表达式过滤、{@code -c} 统计周期、{@code -n} 输出次数上限、{@code -b} 前置条件求值。
+ *
  * @author vlinux
  */
 @Name("monitor")
@@ -30,9 +34,13 @@ import com.taobao.middleware.cli.annotations.Summary;
         Constants.WIKI + Constants.WIKI_HOME + "monitor")
 public class MonitorCommand extends EnhancerCommand {
 
+    /** 类名匹配模式（通配或 -E 正则） */
     private String classPattern;
+    /** 方法名匹配模式 */
     private String methodPattern;
+    /** OGNL 条件表达式，不满足的调用不参与统计 */
     private String conditionExpress;
+    /** 统计输出周期（秒），默认 60 */
     private int cycle = 60;
     private boolean isRegEx = false;
     private int numberOfLimit = 100;
@@ -132,6 +140,9 @@ public class MonitorCommand extends EnhancerCommand {
         return methodNameMatcher;
     }
 
+    @Override
+    /** 创建监听器并注册 suspend/resume 回调以控制定时器生命周期 */
+    /** 创建监听器并注册 suspend/resume 回调以控制定时器生命周期 */
     @Override
     protected AdviceListener getAdviceListener(CommandProcess process) {
         final AdviceListener listener = new MonitorAdviceListener(this, process, GlobalOptions.verbose || this.verbose);

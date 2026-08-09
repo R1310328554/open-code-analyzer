@@ -15,11 +15,16 @@ import java.util.Map;
  * 2) Token 效率高：关键信息结构化、去噪、可 grep
  * 3) 不引入额外依赖，保持实现简单可维护
  */
+/**
+ * profiler Markdown 报告生成器（包内可见）。
+ * 解析 collapsed 文本，输出热点、栈、调用树等结构化章节，便于终端复制给 LLM。
+ */
 final class ProfilerMarkdown {
 
     private ProfilerMarkdown() {
     }
 
+    /** 报告元数据：动作、事件、是否分线程、TopN、collapsed 原文 */
     static class Options {
         private String action;
         private String event;
@@ -55,6 +60,7 @@ final class ProfilerMarkdown {
         }
     }
 
+    /** 组装完整 Markdown：元信息、热点表、栈表、调用树、函数详情与说明 */
     static String toMarkdown(Options options) {
         String collapsed = options == null ? null : options.collapsed;
         if (collapsed == null) {
@@ -191,6 +197,7 @@ final class ProfilerMarkdown {
         private final Map<String, Node> children = new LinkedHashMap<>();
     }
 
+    /** 逐行解析 collapsed；threads 模式下剥离线程名帧以免污染 self 热点 */
     private static CollapsedProfile parseCollapsed(String collapsed, boolean threadsEnabled) {
         CollapsedProfile profile = new CollapsedProfile();
 

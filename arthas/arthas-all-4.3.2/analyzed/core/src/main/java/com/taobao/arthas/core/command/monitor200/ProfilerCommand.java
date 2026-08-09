@@ -40,9 +40,12 @@ import one.profiler.AsyncProfiler;
 import one.profiler.Counter;
 
 /**
- * https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md 具体参数说明，以及哪些参数可以传递给 async-profiler agent
- * @author hengyunabc 2019-10-31
+ * {@code profiler} 命令：封装 async-profiler 原生库，支持 CPU/alloc/lock 等采样与火焰图输出。
+ * <p>
+ * 动作包括 start/stop/resume/dump/status 等；{@code --format md} 由 {@link ProfilerMarkdown} 后处理。
+ * 详见 https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md
  *
+ * @author hengyunabc 2019-10-31
  */
 //@formatter:off
 @Name("profiler")
@@ -263,7 +266,9 @@ public class ProfilerCommand extends AnnotatedCommand {
      */
     private boolean norm;
 
+    /** 解压后的 libasyncProfiler 绝对路径（按 OS/架构选择） */
     private static String libPath;
+    /** 全局 AsyncProfiler 单例，避免重复 load native 库 */
     private static AsyncProfiler profiler = null;
 
     static {
@@ -548,6 +553,10 @@ public class ProfilerCommand extends AnnotatedCommand {
     }
 
 
+    /**
+     * 懒加载 AsyncProfiler：优先 load 动作指定路径，否则从 arthas 目录复制 so 到临时文件再加载。
+     * 复制是为避免多 ClassLoader attach 时「库已加载」冲突。
+     */
     private AsyncProfiler profilerInstance() {
         if (profiler != null) {
             return profiler;
@@ -592,6 +601,7 @@ public class ProfilerCommand extends AnnotatedCommand {
     /**
      * https://github.com/async-profiler/async-profiler/blob/v4.4/src/arguments.cpp
      */
+    /** async-profiler 支持的动作及 Arthas 扩展（dumpCollapsed、getSamples 等） */
     public enum ProfilerAction {
         // start, resume, stop, dump, status, meminfo, list,
         start, resume, stop, dump, status, meminfo, list,
@@ -603,6 +613,7 @@ public class ProfilerCommand extends AnnotatedCommand {
         actions
     }
 
+    /** 将 CLI 选项拼成 async-profiler 逗号分隔参数字符串；md 格式不传给 native 层 */
     private String executeArgs(ProfilerAction action) {
         StringBuilder sb = new StringBuilder();
         final char COMMA = ',';
@@ -744,6 +755,9 @@ public class ProfilerCommand extends AnnotatedCommand {
     }
 
     @Override
+    /** 按 action 分发：采样启停、dump 各类 profile、list 事件、execute 原始命令等 */
+    /** 按 action 分发：采样启停、dump 各类 profile、list 事件、execute 原始命令等 */
+    @Override
     public void process(final CommandProcess process) {
         try {
             ProfilerAction profilerAction = ProfilerAction.valueOf(action);
@@ -875,6 +889,7 @@ public class ProfilerCommand extends AnnotatedCommand {
         }
     }
 
+    /** stop/dump：若 start 时指定过 file 则复用；md 格式走 {@link #processStopMarkdown} */
     private ProfilerModel processStop(AsyncProfiler asyncProfiler, ProfilerAction profilerAction) throws IOException {
         // profiler stop --file xxx.md：自动推断为 Markdown 输出
         if (this.format == null && this.file != null && this.file.toLowerCase().endsWith(".md")) {
@@ -909,6 +924,7 @@ public class ProfilerCommand extends AnnotatedCommand {
         return profilerModel;
     }
 
+    /** Markdown 输出：强制 collapsed 落临时文件再经 {@link ProfilerMarkdown} 生成 LLM 友好报告 */
     private ProfilerModel processStopMarkdown(AsyncProfiler asyncProfiler, ProfilerAction profilerAction) throws IOException {
         // Markdown 输出：先让 async-profiler 输出 collapsed 文本，再在 Arthas 侧做结构化汇总。
         String userFormat = this.format;
@@ -982,6 +998,7 @@ public class ProfilerCommand extends AnnotatedCommand {
         }
     }
 
+    /** 未指定 -f 时按 format 推断扩展名，优先写入 arthas output 目录 */
     private String outputFile() throws IOException {
         if (this.file == null) {
             String fileExt = outputFileExt();

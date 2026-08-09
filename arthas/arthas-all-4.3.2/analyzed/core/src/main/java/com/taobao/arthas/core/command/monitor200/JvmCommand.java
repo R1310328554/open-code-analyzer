@@ -17,10 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * {@code jvm} 命令：一次性采集目标 JVM 的运行时、类加载、编译、GC、内存、
- * 操作系统、线程与文件描述符等 MXBean 信息，封装为 {@link JvmModel}。
- * <p>
- * 各分组通过 {@link JvmModel#addItem} 追加键值；JDK9+ 可能无法读取 boot classpath。
+ * JVM info command
  *
  * @author vlinux on 15/6/6.
  */
@@ -29,25 +26,16 @@ import java.util.Map;
 @Description(Constants.WIKI + Constants.WIKI_HOME + "jvm")
 public class JvmCommand extends AnnotatedCommand {
 
-    /** JVM 运行时 MXBean（启动参数、VM 版本等） */
     private final RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-    /** 类加载统计 MXBean */
     private final ClassLoadingMXBean classLoadingMXBean = ManagementFactory.getClassLoadingMXBean();
-    /** JIT 编译器 MXBean（可能为 null） */
     private final CompilationMXBean compilationMXBean = ManagementFactory.getCompilationMXBean();
-    /** 各垃圾收集器 MXBean 列表 */
     private final Collection<GarbageCollectorMXBean> garbageCollectorMXBeans = ManagementFactory.getGarbageCollectorMXBeans();
-    /** 内存管理器（关联 MemoryPool）列表 */
     private final Collection<MemoryManagerMXBean> memoryManagerMXBeans = ManagementFactory.getMemoryManagerMXBeans();
-    /** 堆/非堆汇总内存 MXBean */
     private final MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
     //    private final Collection<MemoryPoolMXBean> memoryPoolMXBeans = ManagementFactory.getMemoryPoolMXBeans();
-    /** 操作系统 MXBean */
     private final OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
-    /** 线程 MXBean（含死锁检测） */
     private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
-    /** 依次填充各 MXBean 分组并输出 JvmModel */
     @Override
     public void process(CommandProcess process) {
 
@@ -79,14 +67,12 @@ public class JvmCommand extends AnnotatedCommand {
         process.end();
     }
 
-    /** 反射调用 com.sun.management 扩展方法获取文件描述符上限与已打开数 */
     private void addFileDescriptor(JvmModel jvmModel) {
         String group = "FILE-DESCRIPTOR";
         jvmModel.addItem(group,"MAX-FILE-DESCRIPTOR-COUNT", invokeFileDescriptor(operatingSystemMXBean, "getMaxFileDescriptorCount"))
                 .addItem(group,"OPEN-FILE-DESCRIPTOR-COUNT", invokeFileDescriptor(operatingSystemMXBean, "getOpenFileDescriptorCount"));
     }
 
-    /** 反射调用 HotSpot 扩展 OS MXBean 方法，失败返回 -1 */
     private long invokeFileDescriptor(OperatingSystemMXBean os, String name) {
         try {
             final Method method = os.getClass().getDeclaredMethod(name);
@@ -204,7 +190,6 @@ public class JvmCommand extends AnnotatedCommand {
                 .addItem(group, "DEADLOCK-COUNT",getDeadlockedThreadsCount(threadMXBean));
     }
 
-    /** 调用 findDeadlockedThreads，无死锁时返回 0 */
     private int getDeadlockedThreadsCount(ThreadMXBean threads) {
         final long[] ids = threads.findDeadlockedThreads();
         if (ids == null) {

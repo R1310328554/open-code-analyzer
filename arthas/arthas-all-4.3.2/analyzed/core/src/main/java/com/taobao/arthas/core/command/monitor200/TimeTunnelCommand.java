@@ -31,8 +31,8 @@ import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 
 /**
- * 时光隧道命令<br/>
- * 参数w/d依赖于参数i所传递的记录编号<br/>
+ * {@code tt} 时光隧道：记录（-t）、列表（-l）、查看（-i）、watch（-w）、重放（-p）、删除（-d）方法调用。
+ * 时间碎片存于静态 {@link #timeFragmentMap}，索引自 1000 递增；w/d/p 依赖 -i 指定编号。
  *
  * @author vlinux on 14/11/15.
  */
@@ -275,6 +275,7 @@ public class TimeTunnelCommand extends EnhancerCommand {
     /*
      * 记录时间片段
      */
+    /** 写入全局 map 并返回分配的唯一 index */
     int putTimeTunnel(TimeFragment tt) {
         int indexOfSeq = sequence.getAndIncrement();
         timeFragmentMap.put(indexOfSeq, tt);
@@ -476,6 +477,7 @@ public class TimeTunnelCommand extends EnhancerCommand {
         return timeFragmentList;
     }
 
+    /** 将 TimeFragment 转为可渲染 VO，object 字段为 target 的 hash 十六进制 */
     public static TimeFragmentVO createTimeFragmentVO(Integer index, TimeFragment tf, Integer expand) {
         Advice advice = tf.getAdvice();
         String object = advice.getTarget() == null
@@ -498,6 +500,10 @@ public class TimeTunnelCommand extends EnhancerCommand {
 
     /**
      * 重放指定记录
+     */
+    /**
+     * 重放：用记录的 target/params 反射调用原方法，可 --replay-times 多次并间隔等待。
+     * 重放结果与原始记录分开展示（新时间戳与耗时）。
      */
     private void processPlay(CommandProcess process) {
         TimeFragment tf = timeFragmentMap.get(index);

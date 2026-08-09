@@ -34,11 +34,6 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * {@code dashboard} 命令：按固定间隔周期性采样 JVM 线程、内存、GC、运行时与 Tomcat 指标。
- * <p>
- * 使用后台 {@link Timer} 驱动 {@link DashboardTimerTask}；支持 suspend/resume 暂停采样、
- * Ctrl+C / Q 退出；Tomcat 数据通过 localhost:8006 代理端点拉取（不可用时静默跳过）。
- *
  * @author hengyunabc 2015年11月19日 上午11:57:21
  */
 @Name("dashboard")
@@ -52,24 +47,16 @@ public class DashboardCommand extends AnnotatedCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardCommand.class);
 
-    /** Tomcat 连接器 QPS 滑动窗口计数器 */
     private SumRateCounter tomcatRequestCounter = new SumRateCounter();
-    /** Tomcat 错误请求速率计数器 */
     private SumRateCounter tomcatErrorCounter = new SumRateCounter();
-    /** 入站字节速率 */
     private SumRateCounter tomcatReceivedBytesCounter = new SumRateCounter();
-    /** 出站字节速率 */
     private SumRateCounter tomcatSentBytesCounter = new SumRateCounter();
 
-    /** 最大执行轮数，默认无限（Integer.MAX_VALUE） */
     private int numOfExecutions = Integer.MAX_VALUE;
 
-    /** 采样间隔毫秒，默认 5000 */
     private long interval = 5000;
 
-    /** 已完成的采样轮次 */
     private final AtomicLong count = new AtomicLong(0);
-    /** 驱动周期性采样的定时器 */
     private volatile Timer timer;
 
     @Option(shortName = "n", longName = "number-of-execution")
@@ -85,7 +72,6 @@ public class DashboardCommand extends AnnotatedCommand {
     }
 
 
-    /** 启动定时采样，注册中断/暂停/恢复/Q 退出等生命周期处理器 */
     @Override
     public void process(final CommandProcess process) {
 
@@ -122,7 +108,6 @@ public class DashboardCommand extends AnnotatedCommand {
         timer.scheduleAtFixedRate(new DashboardTimerTask(process), 0, getInterval());
     }
 
-    /** 取消并清理 Timer，suspend 或 end 时调用 */
     public synchronized void stop() {
         if (timer != null) {
             timer.cancel();
@@ -131,7 +116,6 @@ public class DashboardCommand extends AnnotatedCommand {
         }
     }
 
-    /** resume 时若 Timer 已销毁则重建并按原间隔继续采样 */
     public synchronized void restart(CommandProcess process) {
         if (timer == null) {
             Session session = process.session();
@@ -148,7 +132,6 @@ public class DashboardCommand extends AnnotatedCommand {
         return interval;
     }
 
-    /** 填充 OS、Java 版本、负载、CPU 核数、 uptime 等运行时信息 */
     private static void addRuntimeInfo(DashboardModel dashboardModel) {
         RuntimeInfoVO runtimeInfo = new RuntimeInfoVO();
         runtimeInfo.setOsName(System.getProperty("os.name"));
@@ -162,7 +145,6 @@ public class DashboardCommand extends AnnotatedCommand {
         dashboardModel.setRuntimeInfo(runtimeInfo);
     }
 
-    /** 遍历 GC MXBean，收集各收集器名称、次数与累计耗时 */
     private static void addGcInfo(DashboardModel dashboardModel) {
         List<GcInfoVO> gcInfos = new ArrayList<GcInfoVO>();
         dashboardModel.setGcInfos(gcInfos);
@@ -174,7 +156,6 @@ public class DashboardCommand extends AnnotatedCommand {
         }
     }
 
-    /** 探测 Tomcat 8006 端口，拉取 connector stats 与 threadpool 并计算 QPS/RT 等 */
     private void addTomcatInfo(DashboardModel dashboardModel) {
         // 如果请求tomcat信息失败，则不显示tomcat信息
         if (!NetUtils.request("http://localhost:8006").isSuccess()) {
@@ -234,7 +215,6 @@ public class DashboardCommand extends AnnotatedCommand {
         }
     }
 
-    /** 每轮采样：线程 TopN、memory、GC、runtime、Tomcat，组装 {@link DashboardModel} 输出 */
     private class DashboardTimerTask extends TimerTask {
         private CommandProcess process;
         private ThreadSampler threadSampler;

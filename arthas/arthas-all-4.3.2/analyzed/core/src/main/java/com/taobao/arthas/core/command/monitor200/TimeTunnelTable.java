@@ -20,6 +20,9 @@ import java.util.Map;
 import static com.taobao.text.ui.Element.label;
 
 /**
+ * {@code tt} 命令终端表格渲染：列表视图、单条详情、watch 结果、重放结果等。
+ * 基于 {@link TableElement} 统一列宽与 ObjectView 展开深度。
+ *
  * @author beiwei30 on 30/11/2016.
  */
 public class TimeTunnelTable {
@@ -66,6 +69,7 @@ public class TimeTunnelTable {
     }
 
     // 绘制TimeTunnel表格
+    /** 绘制时间碎片列表表（-l / 搜索无 -w 时） */
     public static Element drawTimeTunnelTable(List<TimeFragmentVO> timeFragmentList, boolean withHeader){
         TableElement table = createTable();
         if (withHeader) {
@@ -91,6 +95,7 @@ public class TimeTunnelTable {
         );
     }
 
+    /** 单条记录详情键值对（-i 无 -w） */
     public static void drawTimeTunnel(TableElement table, TimeFragmentVO tf) {
         table.row("INDEX", "" + tf.getIndex())
                 .row("GMT-CREATE", DateUtils.formatDateTime(tf.getTimestamp()))
@@ -166,6 +171,7 @@ public class TimeTunnelTable {
                 .row("METHOD", methodName);
     }
 
+    /** 重放成功：状态、耗时与返回值 */
     public static void drawPlayResult(TableElement table, ObjectVO returnObjVO,
                                int sizeLimit, double cost) {
         // 执行成功:输出成功状态
@@ -181,6 +187,7 @@ public class TimeTunnelTable {
         }
     }
 
+    /** 重放抛错：解包 InvocationTargetException 后输出栈或 ObjectView */
     public static void drawPlayException(TableElement table, ObjectVO throwableVO) {
         // 执行失败:输出失败状态
         table.row("IS-RETURN", "" + false);
