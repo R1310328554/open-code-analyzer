@@ -20,9 +20,9 @@ import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.config.BeanDefinition;
 
 /**
- * Subclass of {@link BeanDefinitionStoreException} indicating an invalid override
- * attempt: typically registering a new definition for the same bean name while
- * {@link DefaultListableBeanFactory#isAllowBeanDefinitionOverriding()} is {@code false}.
+ * {@link BeanDefinitionStoreException} 的子类，表示无效的 Bean 定义覆盖尝试：
+ * 通常在 {@link DefaultListableBeanFactory#isAllowBeanDefinitionOverriding()} 为 {@code false} 时，
+ * 为同一 Bean 名称注册新定义而抛出。
  *
  * @author Juergen Hoeller
  * @since 5.1
@@ -38,10 +38,10 @@ public class BeanDefinitionOverrideException extends BeanDefinitionStoreExceptio
 
 
 	/**
-	 * Create a new BeanDefinitionOverrideException for the given new and existing definition.
-	 * @param beanName the name of the bean
-	 * @param beanDefinition the newly registered bean definition
-	 * @param existingDefinition the existing bean definition for the same name
+	 * 为给定的新定义与已有定义创建 BeanDefinitionOverrideException。
+	 * @param beanName Bean 名称
+	 * @param beanDefinition 新注册的 Bean 定义
+	 * @param existingDefinition 同名的已有 Bean 定义
 	 */
 	public BeanDefinitionOverrideException(
 			String beanName, BeanDefinition beanDefinition, BeanDefinition existingDefinition) {
@@ -54,11 +54,11 @@ public class BeanDefinitionOverrideException extends BeanDefinitionStoreExceptio
 	}
 
 	/**
-	 * Create a new BeanDefinitionOverrideException for the given new and existing definition.
-	 * @param beanName the name of the bean
-	 * @param beanDefinition the newly registered bean definition
-	 * @param existingDefinition the existing bean definition for the same name
-	 * @param msg the detail message to include
+	 * 为给定的新定义与已有定义创建 BeanDefinitionOverrideException。
+	 * @param beanName Bean 名称
+	 * @param beanDefinition 新注册的 Bean 定义
+	 * @param existingDefinition 同名的已有 Bean 定义
+	 * @param msg 要包含的详细消息
 	 * @since 6.2.1
 	 */
 	public BeanDefinitionOverrideException(
@@ -71,7 +71,7 @@ public class BeanDefinitionOverrideException extends BeanDefinitionStoreExceptio
 
 
 	/**
-	 * Return the description of the resource that the bean definition came from.
+	 * 返回 Bean 定义来源资源的描述。
 	 */
 	@Override
 	public String getResourceDescription() {
@@ -79,7 +79,7 @@ public class BeanDefinitionOverrideException extends BeanDefinitionStoreExceptio
 	}
 
 	/**
-	 * Return the name of the bean.
+	 * 返回 Bean 名称。
 	 */
 	@Override
 	public String getBeanName() {
@@ -87,7 +87,7 @@ public class BeanDefinitionOverrideException extends BeanDefinitionStoreExceptio
 	}
 
 	/**
-	 * Return the newly registered bean definition.
+	 * 返回新注册的 Bean 定义。
 	 * @see #getBeanName()
 	 */
 	public BeanDefinition getBeanDefinition() {
@@ -95,7 +95,7 @@ public class BeanDefinitionOverrideException extends BeanDefinitionStoreExceptio
 	}
 
 	/**
-	 * Return the existing bean definition for the same name.
+	 * 返回同名的已有 Bean 定义。
 	 * @see #getBeanName()
 	 */
 	public BeanDefinition getExistingDefinition() {

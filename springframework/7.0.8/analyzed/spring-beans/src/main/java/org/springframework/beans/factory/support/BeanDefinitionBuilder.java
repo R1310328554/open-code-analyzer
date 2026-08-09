@@ -27,10 +27,10 @@ import org.springframework.core.ResolvableType;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Programmatic means of constructing
- * {@link org.springframework.beans.factory.config.BeanDefinition BeanDefinitions}
- * using the builder pattern. Intended primarily for use when implementing Spring 2.0
- * {@link org.springframework.beans.factory.xml.NamespaceHandler NamespaceHandlers}.
+ * 使用建造者模式以编程方式构造
+ * {@link org.springframework.beans.factory.config.BeanDefinition BeanDefinition} 的工具类。
+ * 主要用于实现 Spring 2.0 的
+ * {@link org.springframework.beans.factory.xml.NamespaceHandler NamespaceHandler}。
  *
  * @author Rod Johnson
  * @author Rob Harrop
@@ -41,15 +41,15 @@ import org.springframework.util.ObjectUtils;
 public final class BeanDefinitionBuilder {
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link GenericBeanDefinition}.
+	 * 创建用于构造 {@link GenericBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
 	 */
 	public static BeanDefinitionBuilder genericBeanDefinition() {
 		return new BeanDefinitionBuilder(new GenericBeanDefinition());
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link GenericBeanDefinition}.
-	 * @param beanClassName the class name for the bean that the definition is being created for
+	 * 创建用于构造 {@link GenericBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanClassName 要创建定义的 Bean 的类名
 	 */
 	public static BeanDefinitionBuilder genericBeanDefinition(String beanClassName) {
 		BeanDefinitionBuilder builder = new BeanDefinitionBuilder(new GenericBeanDefinition());
@@ -58,8 +58,8 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link GenericBeanDefinition}.
-	 * @param beanClass the {@code Class} of the bean that the definition is being created for
+	 * 创建用于构造 {@link GenericBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanClass 要创建定义的 Bean 的 {@code Class}
 	 */
 	public static BeanDefinitionBuilder genericBeanDefinition(Class<?> beanClass) {
 		BeanDefinitionBuilder builder = new BeanDefinitionBuilder(new GenericBeanDefinition());
@@ -68,9 +68,9 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link GenericBeanDefinition}.
-	 * @param beanClass the {@code Class} of the bean that the definition is being created for
-	 * @param instanceSupplier a callback for creating an instance of the bean
+	 * 创建用于构造 {@link GenericBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanClass 要创建定义的 Bean 的 {@code Class}
+	 * @param instanceSupplier 创建 Bean 实例的回调
 	 * @since 5.0
 	 */
 	public static <T> BeanDefinitionBuilder genericBeanDefinition(Class<T> beanClass, Supplier<T> instanceSupplier) {
@@ -81,17 +81,17 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link RootBeanDefinition}.
-	 * @param beanClassName the class name for the bean that the definition is being created for
+	 * 创建用于构造 {@link RootBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanClassName 要创建定义的 Bean 的类名
 	 */
 	public static BeanDefinitionBuilder rootBeanDefinition(String beanClassName) {
 		return rootBeanDefinition(beanClassName, null);
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link RootBeanDefinition}.
-	 * @param beanClassName the class name for the bean that the definition is being created for
-	 * @param factoryMethodName the name of the method to use to construct the bean instance
+	 * 创建用于构造 {@link RootBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanClassName 要创建定义的 Bean 的类名
+	 * @param factoryMethodName 用于构造 Bean 实例的工厂方法名
 	 */
 	public static BeanDefinitionBuilder rootBeanDefinition(String beanClassName, @Nullable String factoryMethodName) {
 		BeanDefinitionBuilder builder = new BeanDefinitionBuilder(new RootBeanDefinition());
@@ -101,17 +101,17 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link RootBeanDefinition}.
-	 * @param beanClass the {@code Class} of the bean that the definition is being created for
+	 * 创建用于构造 {@link RootBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanClass 要创建定义的 Bean 的 {@code Class}
 	 */
 	public static BeanDefinitionBuilder rootBeanDefinition(Class<?> beanClass) {
 		return rootBeanDefinition(beanClass, (String) null);
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link RootBeanDefinition}.
-	 * @param beanClass the {@code Class} of the bean that the definition is being created for
-	 * @param factoryMethodName the name of the method to use to construct the bean instance
+	 * 创建用于构造 {@link RootBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanClass 要创建定义的 Bean 的 {@code Class}
+	 * @param factoryMethodName 用于构造 Bean 实例的工厂方法名
 	 */
 	public static BeanDefinitionBuilder rootBeanDefinition(Class<?> beanClass, @Nullable String factoryMethodName) {
 		BeanDefinitionBuilder builder = new BeanDefinitionBuilder(new RootBeanDefinition());
@@ -121,9 +121,9 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link RootBeanDefinition}.
-	 * @param beanType the {@link ResolvableType type} of the bean that the definition is being created for
-	 * @param instanceSupplier a callback for creating an instance of the bean
+	 * 创建用于构造 {@link RootBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanType 要创建定义的 Bean 的 {@link ResolvableType 类型}
+	 * @param instanceSupplier 创建 Bean 实例的回调
 	 * @since 5.3.9
 	 */
 	public static <T> BeanDefinitionBuilder rootBeanDefinition(ResolvableType beanType, Supplier<T> instanceSupplier) {
@@ -134,9 +134,9 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link RootBeanDefinition}.
-	 * @param beanClass the {@code Class} of the bean that the definition is being created for
-	 * @param instanceSupplier a callback for creating an instance of the bean
+	 * 创建用于构造 {@link RootBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param beanClass 要创建定义的 Bean 的 {@code Class}
+	 * @param instanceSupplier 创建 Bean 实例的回调
 	 * @since 5.3.9
 	 * @see #rootBeanDefinition(ResolvableType, Supplier)
 	 */
@@ -145,34 +145,30 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Create a new {@code BeanDefinitionBuilder} used to construct a {@link ChildBeanDefinition}.
-	 * @param parentName the name of the parent bean
+	 * 创建用于构造 {@link ChildBeanDefinition} 的新 {@code BeanDefinitionBuilder}。
+	 * @param parentName 父 Bean 的名称
 	 */
 	public static BeanDefinitionBuilder childBeanDefinition(String parentName) {
 		return new BeanDefinitionBuilder(new ChildBeanDefinition(parentName));
 	}
 
 
-	/**
-	 * The {@code BeanDefinition} instance we are creating.
-	 */
+	/** 正在创建的 {@code BeanDefinition} 实例。 */
 	private final AbstractBeanDefinition beanDefinition;
 
-	/**
-	 * Our current position with respect to constructor args.
-	 */
+	/** 当前构造函数参数索引位置。 */
 	private int constructorArgIndex;
 
 
 	/**
-	 * Enforce the use of factory methods.
+	 * 强制通过工厂方法创建实例。
 	 */
 	private BeanDefinitionBuilder(AbstractBeanDefinition beanDefinition) {
 		this.beanDefinition = beanDefinition;
 	}
 
 	/**
-	 * Return the current BeanDefinition object in its raw (unvalidated) form.
+	 * 返回当前 BeanDefinition 对象的原始（未校验）形式。
 	 * @see #getBeanDefinition()
 	 */
 	public AbstractBeanDefinition getRawBeanDefinition() {
@@ -180,7 +176,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Validate and return the created BeanDefinition object.
+	 * 校验并返回已创建的 BeanDefinition 对象。
 	 */
 	public AbstractBeanDefinition getBeanDefinition() {
 		this.beanDefinition.validate();
@@ -189,7 +185,7 @@ public final class BeanDefinitionBuilder {
 
 
 	/**
-	 * Set the name of the parent definition of this bean definition.
+	 * 设置此 Bean 定义的父定义名称。
 	 */
 	public BeanDefinitionBuilder setParentName(String parentName) {
 		this.beanDefinition.setParentName(parentName);
@@ -197,8 +193,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set the name of a static factory method to use for this definition,
-	 * to be called on this bean's class.
+	 * 设置用于此定义的静态工厂方法名，将在本 Bean 的类上调用。
 	 */
 	public BeanDefinitionBuilder setFactoryMethod(String factoryMethod) {
 		this.beanDefinition.setFactoryMethodName(factoryMethod);
@@ -206,10 +201,9 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set the name of a non-static factory method to use for this definition,
-	 * including the bean name of the factory instance to call the method on.
-	 * @param factoryMethod the name of the factory method
-	 * @param factoryBean the name of the bean to call the specified factory method on
+	 * 设置用于此定义的非静态工厂方法名，包括要调用该方法的工厂实例的 Bean 名称。
+	 * @param factoryMethod 工厂方法名
+	 * @param factoryBean 要调用指定工厂方法的 Bean 名称
 	 * @since 4.3.6
 	 */
 	public BeanDefinitionBuilder setFactoryMethodOnBean(String factoryMethod, String factoryBean) {
@@ -219,8 +213,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Add an indexed constructor arg value. The current index is tracked internally
-	 * and all additions are at the present point.
+	 * 添加带索引的构造函数参数值。内部跟踪当前索引，所有添加均发生在当前位置。
 	 */
 	public BeanDefinitionBuilder addConstructorArgValue(@Nullable Object value) {
 		this.beanDefinition.getConstructorArgumentValues().addIndexedArgumentValue(
@@ -229,7 +222,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Add a reference to a named bean as a constructor arg.
+	 * 添加对命名 Bean 的引用作为构造函数参数。
 	 * @see #addConstructorArgValue(Object)
 	 */
 	public BeanDefinitionBuilder addConstructorArgReference(String beanName) {
@@ -239,7 +232,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Add the supplied property value under the given property name.
+	 * 在指定属性名下添加提供的属性值。
 	 */
 	public BeanDefinitionBuilder addPropertyValue(String name, @Nullable Object value) {
 		this.beanDefinition.getPropertyValues().add(name, value);
@@ -247,9 +240,9 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Add a reference to the specified bean name under the property specified.
-	 * @param name the name of the property to add the reference to
-	 * @param beanName the name of the bean being referenced
+	 * 在指定属性下添加对指定 Bean 名称的引用。
+	 * @param name 要添加引用的属性名
+	 * @param beanName 被引用的 Bean 名称
 	 */
 	public BeanDefinitionBuilder addPropertyReference(String name, String beanName) {
 		this.beanDefinition.getPropertyValues().add(name, new RuntimeBeanReference(beanName));
@@ -257,8 +250,8 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Add an autowired marker for the specified property on the specified bean.
-	 * @param name the name of the property to mark as autowired
+	 * 为指定 Bean 的指定属性添加自动装配标记。
+	 * @param name 要标记为自动装配的属性名
 	 * @since 5.2
 	 * @see AutowiredPropertyMarker
 	 */
@@ -268,7 +261,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set the init method for this definition.
+	 * 设置此定义的初始化方法。
 	 */
 	public BeanDefinitionBuilder setInitMethodName(@Nullable String methodName) {
 		this.beanDefinition.setInitMethodName(methodName);
@@ -276,7 +269,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set the destroy method for this definition.
+	 * 设置此定义的销毁方法。
 	 */
 	public BeanDefinitionBuilder setDestroyMethodName(@Nullable String methodName) {
 		this.beanDefinition.setDestroyMethodName(methodName);
@@ -285,7 +278,7 @@ public final class BeanDefinitionBuilder {
 
 
 	/**
-	 * Set the scope of this definition.
+	 * 设置此定义的作用域。
 	 * @see org.springframework.beans.factory.config.BeanDefinition#SCOPE_SINGLETON
 	 * @see org.springframework.beans.factory.config.BeanDefinition#SCOPE_PROTOTYPE
 	 */
@@ -295,7 +288,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set whether this definition is abstract.
+	 * 设置此定义是否为抽象定义。
 	 */
 	public BeanDefinitionBuilder setAbstract(boolean flag) {
 		this.beanDefinition.setAbstract(flag);
@@ -303,7 +296,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set whether beans for this definition should be lazily initialized or not.
+	 * 设置此定义对应的 Bean 是否应懒加载初始化。
 	 */
 	public BeanDefinitionBuilder setLazyInit(boolean lazy) {
 		this.beanDefinition.setLazyInit(lazy);
@@ -311,7 +304,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set the autowire mode for this definition.
+	 * 设置此定义的自动装配模式。
 	 */
 	public BeanDefinitionBuilder setAutowireMode(int autowireMode) {
 		this.beanDefinition.setAutowireMode(autowireMode);
@@ -319,7 +312,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set the dependency check mode for this definition.
+	 * 设置此定义的依赖检查模式。
 	 */
 	public BeanDefinitionBuilder setDependencyCheck(int dependencyCheck) {
 		this.beanDefinition.setDependencyCheck(dependencyCheck);
@@ -327,8 +320,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Append the specified bean name to the list of beans that this definition
-	 * depends on.
+	 * 将指定 Bean 名称追加到此定义所依赖的 Bean 列表。
 	 */
 	public BeanDefinitionBuilder addDependsOn(String beanName) {
 		if (this.beanDefinition.getDependsOn() == null) {
@@ -342,7 +334,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set whether this bean is a primary autowire candidate.
+	 * 设置此 Bean 是否为主要的自动装配候选者。
 	 * @since 5.1.11
 	 */
 	public BeanDefinitionBuilder setPrimary(boolean primary) {
@@ -351,7 +343,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set whether this bean is a fallback autowire candidate.
+	 * 设置此 Bean 是否为后备自动装配候选者。
 	 * @since 6.2
 	 */
 	public BeanDefinitionBuilder setFallback(boolean fallback) {
@@ -360,7 +352,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set the role of this definition.
+	 * 设置此定义的角色。
 	 */
 	public BeanDefinitionBuilder setRole(int role) {
 		this.beanDefinition.setRole(role);
@@ -368,8 +360,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Set whether this bean is 'synthetic', that is, not defined by
-	 * the application itself.
+	 * 设置此 Bean 是否为"合成"Bean，即非由应用本身定义。
 	 * @since 5.3.9
 	 */
 	public BeanDefinitionBuilder setSynthetic(boolean synthetic) {
@@ -378,7 +369,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 	/**
-	 * Apply the given customizers to the underlying bean definition.
+	 * 将给定定制器应用于底层 Bean 定义。
 	 * @since 5.0
 	 */
 	public BeanDefinitionBuilder applyCustomizers(BeanDefinitionCustomizer... customizers) {
