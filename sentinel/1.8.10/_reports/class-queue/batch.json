@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:26:59Z",
-  "files": [
-    "sentinel-demo/sentinel-demo-slotchain-spi/src/main/java/com/alibaba/csp/sentinel/demo/slotchain/DemoDegradeRuleApplication.java",
-    "sentinel-demo/sentinel-demo-slotchain-spi/src/main/java/com/alibaba/csp/sentinel/demo/slotchain/DemoFlowRuleApplication.java",
-    "sentinel-demo/sentinel-demo-slotchain-spi/src/main/java/com/alibaba/csp/sentinel/demo/slotchain/DemoSlotChainBuilder.java",
-    "sentinel-demo/sentinel-demo-sofa-rpc/src/main/java/com/alibaba/csp/sentinel/demo/sofa/rpc/DemoConsumer.java",
-    "sentinel-demo/sentinel-demo-sofa-rpc/src/main/java/com/alibaba/csp/sentinel/demo/sofa/rpc/DemoProvider.java",
-    "sentinel-demo/sentinel-demo-sofa-rpc/src/main/java/com/alibaba/csp/sentinel/demo/sofa/rpc/service/DemoService.java",
-    "sentinel-demo/sentinel-demo-sofa-rpc/src/main/java/com/alibaba/csp/sentinel/demo/sofa/rpc/service/impl/DemoServiceImpl.java",
-    "sentinel-demo/sentinel-demo-spring-cloud-gateway/src/main/java/com/alibaba/csp/sentinel/demo/spring/sc/gateway/GatewayConfiguration.java",
-    "sentinel-demo/sentinel-demo-spring-cloud-gateway/src/main/java/com/alibaba/csp/sentinel/demo/spring/sc/gateway/GatewayDemoApplication.java",
-    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/WebFluxDemoApplication.java",
-    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/config/RedisConfig.java",
-    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/config/WebFluxConfig.java",
-    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/controller/BazController.java",
-    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/controller/FooController.java",
-    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/service/BazService.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 155,
-  "done": 780
+  "done": 795
 }
