@@ -28,24 +28,30 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Promise;
 
 /**
- * 
+ * Arthas Tunnel Server 核心：维护 agent 注册表、浏览器待中继连接与 HTTP 代理 Promise。
+ *
  * @author hengyunabc 2019-08-09
  *
  */
 public class TunnelServer {
     private final static Logger logger = LoggerFactory.getLogger(TunnelServer.class);
 
+        /** 是否启用 WSS（自签名证书） */
     private boolean ssl;
+        /** 绑定地址，空则监听所有网卡 */
     private String host;
     private int port;
+        /** WebSocket 路径 */
     private String path = ArthasConstants.DEFAULT_WEBSOCKET_PATH;
 
+        /** agentId -> 在线 agent 信息 */
     private Map<String, AgentInfo> agentInfoMap = new ConcurrentHashMap<>();
 
+        /** clientConnectionId -> 浏览器侧待打通连接 */
     private Map<String, ClientConnectionInfo> clientConnectionInfoMap = new ConcurrentHashMap<>();
     
     /**
-     * 记录 proxy request
+     * 记录进行中的 HTTP proxy 请求，requestId -> 等待回包的 Promise
      */
     private Map<String, Promise<SimpleHttpResponse>> proxyRequestPromiseMap = new ConcurrentHashMap<>();
 
@@ -55,17 +61,18 @@ public class TunnelServer {
     private Channel channel;
 
     /**
-     * 在集群部署时，保存agentId和host关系
+     * 集群部署时持久化 agentId 与 tunnel server 入口映射
      */
     private TunnelClusterStore tunnelClusterStore;
     
     /**
-     * 集群部署时外部连接的host
+     * 集群部署时告知 agent/浏览器应连接的外部 host
      */
     private String clientConnectHost;
 
+        /** 启动 Netty WebSocket 服务并周期性清理失效连接 */
     public void start() throws Exception {
-        // Configure SSL.
+        // 按需配置 SSL
         final SslContext sslCtx;
         if (ssl) {
             SelfSignedCertificate ssc = new SelfSignedCertificate();
@@ -93,7 +100,7 @@ public class TunnelServer {
                 clientConnectionInfoMap.entrySet()
                         .removeIf(e -> !e.getValue().getChannelHandlerContext().channel().isActive());
                 
-                // 更新集群key信息
+                // 更新集群中的 agent 路由信息
                 if (tunnelClusterStore != null && clientConnectHost != null) {
                     try {
                         for (Entry<String, AgentInfo> entry : agentInfoMap.entrySet()) {
@@ -108,6 +115,7 @@ public class TunnelServer {
         }, 60, 60, TimeUnit.SECONDS);
     }
 
+        /** 关闭监听通道并优雅停止事件循环 */
     public void stop() {
         if (channel != null) {
             channel.close();
@@ -149,7 +157,7 @@ public class TunnelServer {
     
     public void addProxyRequestPromise(String requestId, Promise<SimpleHttpResponse> promise) {
         this.proxyRequestPromiseMap.put(requestId, promise);
-        // 把过期的proxy 请求删掉
+        // 超时清理未完成的 proxy 请求
         workerGroup.schedule(new Runnable() {
 
             @Override
@@ -228,6 +236,7 @@ public class TunnelServer {
         return path;
     }
 
+        /** 规范化 WebSocket 路径，确保以 / 开头 */
     public void setPath(String path) {
         path = path.trim();
         if (!path.startsWith("/")) {

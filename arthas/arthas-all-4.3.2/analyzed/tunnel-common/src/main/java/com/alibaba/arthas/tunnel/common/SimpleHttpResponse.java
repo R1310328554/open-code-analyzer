@@ -14,20 +14,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * 轻量 HTTP 响应模型，用于 tunnel 内 HTTP 代理在 client 与 server 间序列化传递。
+ * 反序列化时通过白名单限制可加载的类，降低不安全反序列化风险。
+ *
  * @author hengyunabc 2020-10-22
  *
  */
 public class SimpleHttpResponse implements Serializable {
     private static final long serialVersionUID = 1L;
 
+        /** 允许反序列化的类名白名单 */
     private static final List<String> whitelist = Arrays.asList(byte[].class.getName(), String.class.getName(),
             Map.class.getName(), HashMap.class.getName(), SimpleHttpResponse.class.getName());
 
+        /** HTTP 状态码，默认 200 */
     private int status = 200;
 
+        /** 响应头 */
     private Map<String, String> headers = new HashMap<String, String>();
 
+        /** 响应体字节内容 */
     private byte[] content;
 
     public void addHeader(String key, String value) {
@@ -58,6 +64,7 @@ public class SimpleHttpResponse implements Serializable {
         this.status = status;
     }
 
+        /** 序列化为字节数组，便于 Base64 后经 WebSocket 传输 */
     public static byte[] toBytes(SimpleHttpResponse response) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (ObjectOutputStream out = new ObjectOutputStream(bos)) {
@@ -67,6 +74,7 @@ public class SimpleHttpResponse implements Serializable {
         }
     }
 
+        /** 从字节反序列化；非白名单类名将抛出异常 */
     public static SimpleHttpResponse fromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
         ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         try (ObjectInputStream in = new ObjectInputStream(bis) {

@@ -42,7 +42,8 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 
 /**
- * 
+ * Tunnel Server WebSocket 帧处理器：握手分发注册/连接/开隧道，运行期处理 HTTP 代理回包。
+ *
  * @author hengyunabc 2019-08-27
  *
  */
@@ -60,19 +61,19 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof HandshakeComplete) {
             HandshakeComplete handshake = (HandshakeComplete) evt;
-            // http request uri
+            // HTTP 升级 WebSocket 时的请求 URI
             String uri = handshake.requestUri();
             logger.info("websocket handshake complete, uri: {}", uri);
 
             MultiValueMap<String, String> parameters = UriComponentsBuilder.fromUriString(uri).build().getQueryParams();
             String method = parameters.getFirst(URIConstans.METHOD);
 
-            if (MethodConstants.CONNECT_ARTHAS.equals(method)) { // form browser
+            if (MethodConstants.CONNECT_ARTHAS.equals(method)) { // 来自浏览器
                 connectArthas(ctx, parameters);
-            } else if (MethodConstants.AGENT_REGISTER.equals(method)) { // form arthas agent, register
+            } else if (MethodConstants.AGENT_REGISTER.equals(method)) { // 来自 agent 注册
                 agentRegister(ctx, handshake, uri);
             }
-            if (MethodConstants.OPEN_TUNNEL.equals(method)) { // from arthas agent open tunnel
+            if (MethodConstants.OPEN_TUNNEL.equals(method)) { // 来自 agent openTunnel
                 String clientConnectionId = parameters.getFirst(URIConstans.CLIENT_CONNECTION_ID);
                 openTunnel(ctx, clientConnectionId);
             }
@@ -85,7 +86,7 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, WebSocketFrame frame) throws Exception {
-        // 只有 arthas agent register建立的 channel 才可能有数据到这里
+        // 仅 agent 注册长连接会收到后续 Text 帧（如 HTTP 代理响应）
         if (frame instanceof TextWebSocketFrame) {
             TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
             String text = textFrame.text();
@@ -97,8 +98,8 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
 
             /**
              * <pre>
-             * 1. 之前http proxy请求已发送到 tunnel cleint，这里接收到 tunnel client的结果，并解析出SimpleHttpResponse
-             * 2. 需要据 URIConstans.PROXY_REQUEST_ID 取出当时的 Promise，再设置SimpleHttpResponse进去
+             * 1. HTTP proxy 请求已下发至 tunnel client，此处接收 agent 回传并反序列化 SimpleHttpResponse
+             * 2. 根据 URIConstans.PROXY_REQUEST_ID 找到 Promise 并完成
              * </pre>
              */
             if (MethodConstants.HTTP_PROXY.equals(method)) {
@@ -133,6 +134,7 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
         }
     }
 
+        /** 浏览器连接指定 agent：通知开隧道并在两端挂载 {@link RelayHandler} */
     private void connectArthas(ChannelHandlerContext tunnelSocketCtx, MultiValueMap<String, String> parameters)
             throws URISyntaxException {
 
@@ -170,7 +172,7 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
             }
             clientConnectionInfo.setChannelHandlerContext(tunnelSocketCtx);
 
-            // when the agent open tunnel success, will set result into the promise
+            // agent openTunnel 成功后将 agent 通道写入 Promise
             Promise<Channel> promise = GlobalEventExecutor.INSTANCE.newPromise();
             promise.addListener(new FutureListener<Channel>() {
                 @Override
@@ -179,7 +181,7 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
                     if (future.isSuccess()) {
                         tunnelSocketCtx.pipeline().remove(TunnelSocketFrameHandler.this);
 
-                        // outboundChannel is form arthas agent
+                        // outboundChannel 为 agent 新建的中继连接
                         outboundChannel.pipeline().removeLast();
 
                         outboundChannel.pipeline().addLast(new RelayHandler(tunnelSocketCtx.channel()));
@@ -222,6 +224,7 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
         }
     }
 
+        /** agent 注册：分配或复用 id，记录 AgentInfo 并回传应答 URI */
     private void agentRegister(ChannelHandlerContext ctx, HandshakeComplete handshake, String requestUri) throws URISyntaxException {
         QueryStringDecoder queryDecoder = new QueryStringDecoder(requestUri);
         Map<String, List<String>> parameters = queryDecoder.parameters();
@@ -232,15 +235,15 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
             appName = appNameList.get(0);
         }
 
-        // generate a random agent id
+        // 生成 agent id
         String id = null;
         if (appName != null) {
-            // 如果有传 app name，则生成带 app name前缀的id，方便管理
+            // 若传入 appName，生成带应用名前缀的 id，便于运维区分
             id = appName + "_" + RandomStringUtils.random(20, true, true).toUpperCase();
         } else {
             id = RandomStringUtils.random(20, true, true).toUpperCase();
         }
-        // agent传过来，则优先用 agent的
+        // agent 自带 id 时优先沿用（重连场景）
         List<String> idList = parameters.get(URIConstans.ID);
         if (idList != null && !idList.isEmpty()) {
             id = idList.get(0);
@@ -261,7 +264,7 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
 
         AgentInfo info = new AgentInfo();
 
-        // 前面可能有nginx代理
+        // 链路前可能有 nginx 等反向代理，优先从 X-Forwarded-For 解析真实 IP
         HttpHeaders headers = handshake.requestHeaders();
         String host = HttpUtils.findClientIP(headers);
 
@@ -297,6 +300,7 @@ public class TunnelSocketFrameHandler extends SimpleChannelInboundHandler<WebSoc
         ctx.channel().writeAndFlush(new TextWebSocketFrame(responseUri.toString()));
     }
 
+        /** agent openTunnel：将当前通道填入浏览器连接 Promise，完成隧道配对 */
     private void openTunnel(ChannelHandlerContext ctx, String clientConnectionId) {
         Optional<ClientConnectionInfo> infoOptional = this.tunnelServer.findClientConnection(clientConnectionId);
 

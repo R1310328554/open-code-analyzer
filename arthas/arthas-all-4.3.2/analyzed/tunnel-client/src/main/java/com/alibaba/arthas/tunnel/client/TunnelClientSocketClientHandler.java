@@ -29,7 +29,8 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 
 /**
- * 
+ * {@link TunnelClient} 的 WebSocket 入站处理器：处理注册应答、建隧道指令与 HTTP 代理请求。
+ *
  * @author hengyunabc 2019-08-28
  *
  */
@@ -37,12 +38,14 @@ public class TunnelClientSocketClientHandler extends SimpleChannelInboundHandler
     private final static Logger logger = LoggerFactory.getLogger(TunnelClientSocketClientHandler.class);
 
     private final TunnelClient tunnelClient;
+        /** 注册完成时置为 success，供 {@link TunnelClient#connect} 等待 */
     private ChannelPromise registerPromise;
 
     public TunnelClientSocketClientHandler(TunnelClient tunnelClient) {
         this.tunnelClient = tunnelClient;
     }
 
+        /** 返回注册结果的 Future */
     public ChannelFuture registerFuture() {
         return registerPromise;
     }
@@ -97,9 +100,9 @@ public class TunnelClientSocketClientHandler extends SimpleChannelInboundHandler
             if (MethodConstants.HTTP_PROXY.equals(method)) {
                 /**
                  * <pre>
-                 * 1. 从proxy请求里读取到目标的 targetUrl，和 requestId
-                 * 2. 然后通过 ProxyClient直接请求得到结果
-                 * 3. 把response结果转为 byte[]，再转为base64，再统一组合的一个url，再用 TextWebSocketFrame 发回去
+                 * 1. 从 proxy 请求读取 targetUrl 与 requestId
+                 * 2. 通过 {@link ProxyClient} 访问本地 Arthas HTTP 服务
+                 * 3. 将响应序列化后 Base64 编码，组装 URI 经 TextWebSocketFrame 回传
                  * </pre>
                  * 
                  */
@@ -144,6 +147,7 @@ public class TunnelClientSocketClientHandler extends SimpleChannelInboundHandler
         }
     }
 
+    /** 通道注销时标记断开并按配置延迟重连 */
     @Override
     public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
         tunnelClient.setConnected(false);
@@ -160,6 +164,7 @@ public class TunnelClientSocketClientHandler extends SimpleChannelInboundHandler
         }, tunnelClient.getReconnectDelay(), TimeUnit.SECONDS);
     }
 
+    /** 空闲超时发送 WebSocket Ping 保活 */
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {

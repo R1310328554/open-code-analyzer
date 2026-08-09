@@ -13,7 +13,8 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.timeout.IdleStateHandler;
 
 /**
- * 
+ * Tunnel Server 子通道 Pipeline 初始化：HTTP 编解码、WebSocket 升级、压缩与业务帧处理。
+ *
  * @author hengyunabc 2019-08-27
  *
  */
