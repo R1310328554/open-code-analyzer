@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-/* ===== [OCA 中文解析] =====
-文件意图总览
-
-配置类语法分析器：递归处理 @ComponentScan/@Import/@ImportResource/@PropertySource/@Bean。
-===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.io.IOException;
@@ -85,25 +80,15 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class ConfigurationClassParser — 意图说明
-
-把一个配置类展开成 ConfigurationClass 图（含导入边）。
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Parses a {@link Configuration} class definition, populating a collection of
- * {@link ConfigurationClass} objects (parsing a single Configuration class may result in
- * any number of ConfigurationClass objects because one Configuration class may import
- * another using the {@link Import} annotation).
+ * 解析 {@link Configuration} 类定义，填充 {@link ConfigurationClass} 集合。
+ * <p>单个 Configuration 类可能产生多个 ConfigurationClass 对象，因为一个 Configuration 类
+ * 可通过 {@link Import} 注解导入其他类。
  *
- * <p>This class helps separate the concern of parsing the structure of a Configuration class
- * from the concern of registering BeanDefinition objects based on the content of that model
- * (except {@code @ComponentScan} annotations which need to be registered immediately).
+ * <p>将「解析 Configuration 类结构」与「根据模型内容注册 BeanDefinition」解耦
+ * （{@code @ComponentScan} 除外，因其需立即注册）。
  *
- * <p>This ASM-based implementation avoids reflection and eager class loading in order to
- * interoperate effectively with lazy class loading in a Spring ApplicationContext.
+ * <p>基于 ASM 的实现避免反射与过早类加载，以配合 ApplicationContext 的延迟类加载。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -116,65 +101,56 @@ class ConfigurationClassParser — 意图说明
  */
 class ConfigurationClassParser {
 
-	// [OCA] 字段 `DEFAULT_EXCLUSION_FILTER`：类成员状态。
+	/** 默认排除过滤器：java.lang.annotation 与 org.springframework.stereotype 包下的类。 */
 	private static final Predicate<String> DEFAULT_EXCLUSION_FILTER = className ->
 			(className.startsWith("java.lang.annotation.") || className.startsWith("org.springframework.stereotype."));
 
-	// [OCA] 字段 `REGISTER_BEAN_CONDITION_FILTER`：类成员状态。
+	/** 筛选 REGISTER_BEAN 阶段的 {@link ConfigurationCondition}。 */
 	private static final Predicate<Condition> REGISTER_BEAN_CONDITION_FILTER = condition ->
 			(condition instanceof ConfigurationCondition configurationCondition &&
 				ConfigurationPhase.REGISTER_BEAN.equals(configurationCondition.getConfigurationPhase()));
 
-	// [OCA] 字段 `DEFERRED_IMPORT_COMPARATOR`：类成员状态。
+	/** 延迟 ImportSelector 的排序比较器（基于 {@code @Order}）。 */
 	private static final Comparator<DeferredImportSelectorHolder> DEFERRED_IMPORT_COMPARATOR =
 			(o1, o2) -> AnnotationAwareOrderComparator.INSTANCE.compare(o1.getImportSelector(), o2.getImportSelector());
 
 
-	// [OCA] 字段 `logger`：类成员状态。
 	private final Log logger = LogFactory.getLog(getClass());
 
-	// [OCA] 字段 `metadataReaderFactory`：类成员状态。
 	private final MetadataReaderFactory metadataReaderFactory;
 
-	// [OCA] 字段 `problemReporter`：类成员状态。
 	private final ProblemReporter problemReporter;
 
-	// [OCA] 字段 `environment`：类成员状态。
 	private final Environment environment;
 
-	// [OCA] 字段 `resourceLoader`：类成员状态。
 	private final ResourceLoader resourceLoader;
 
+	/** {@link PropertySource} 注册器（仅当 Environment 为 ConfigurableEnvironment 时创建）。 */
 	private final @Nullable PropertySourceRegistry propertySourceRegistry;
 
-	// [OCA] 字段 `registry`：类成员状态。
 	private final BeanDefinitionRegistry registry;
 
-	// [OCA] 字段 `componentScanParser`：类成员状态。
 	private final ComponentScanAnnotationParser componentScanParser;
 
-	// [OCA] 字段 `conditionEvaluator`：类成员状态。
 	private final ConditionEvaluator conditionEvaluator;
 
-	// [OCA] 字段 `configurationClasses`：类成员状态。
+	/** 已解析的配置类（键与值均为同一 ConfigurationClass 实例）。 */
 	private final Map<ConfigurationClass, ConfigurationClass> configurationClasses = new LinkedHashMap<>();
 
-	// [OCA] 字段 `knownSuperclasses`：类成员状态。
+	/** 已知超类名到引用该超类的配置类列表的映射。 */
 	private final MultiValueMap<String, ConfigurationClass> knownSuperclasses = new LinkedMultiValueMap<>();
 
-	// [OCA] 字段 `importStack`：类成员状态。
+	/** 当前 @Import 解析栈，用于检测循环导入。 */
 	private final ImportStack importStack = new ImportStack();
 
-	// [OCA] 字段 `deferredImportSelectorHandler`：类成员状态。
 	private final DeferredImportSelectorHandler deferredImportSelectorHandler = new DeferredImportSelectorHandler();
 
-	// [OCA] 字段 `objectSourceClass`：类成员状态。
+	/** 表示 {@link Object} 的占位 SourceClass（用于过滤命中时返回）。 */
 	private final SourceClass objectSourceClass = new SourceClass(Object.class);
 
 
 	/**
-	 * Create a new {@link ConfigurationClassParser} instance that will be used
-	 * to populate the set of configuration classes.
+	 * 创建用于填充配置类集合的 {@link ConfigurationClassParser} 实例。
 	 */
 	public ConfigurationClassParser(MetadataReaderFactory metadataReaderFactory,
 			ProblemReporter problemReporter, Environment environment, ResourceLoader resourceLoader,
@@ -193,16 +169,8 @@ class ConfigurationClassParser {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-方法 parse — 意图与阅读要点
-
-入口：从一组候选配置类开始解析，直到导入图闭合。
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	public void parse(Set<BeanDefinitionHolder> configCandidates) {
+		// 1. 逐个解析配置类候选 BeanDefinition
 		for (BeanDefinitionHolder holder : configCandidates) {
 			BeanDefinition bd = holder.getBeanDefinition();
 			try {
@@ -234,15 +202,9 @@ class ConfigurationClassParser {
 			}
 		}
 
+		// 2. 统一处理延迟 ImportSelector
 		this.deferredImportSelectorHandler.process();
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 parse — 意图与阅读要点
-
-入口：从一组候选配置类开始解析，直到导入图闭合。
-
-	===== [OCA 中文解析结束] ===== */
 
 	private ConfigurationClass parse(AnnotatedBeanDefinition beanDef, String beanName) {
 		ConfigurationClass configClass = new ConfigurationClass(
@@ -250,13 +212,6 @@ class ConfigurationClassParser {
 		processConfigurationClass(configClass, DEFAULT_EXCLUSION_FILTER);
 		return configClass;
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 parse — 意图与阅读要点
-
-入口：从一组候选配置类开始解析，直到导入图闭合。
-
-	===== [OCA 中文解析结束] ===== */
 
 	private ConfigurationClass parse(Class<?> clazz, String beanName) {
 		ConfigurationClass configClass = new ConfigurationClass(clazz, beanName);
@@ -273,7 +228,7 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Validate each {@link ConfigurationClass} object.
+	 * 校验每个 {@link ConfigurationClass} 对象。
 	 * @see ConfigurationClass#validate
 	 */
 	void validate() {
@@ -296,20 +251,13 @@ class ConfigurationClassParser {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-方法 processConfigurationClass — 意图与阅读要点
-
-方法 `processConfigurationClass` 复杂度较高（CCN≈11, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	protected void processConfigurationClass(ConfigurationClass configClass, Predicate<String> filter) {
+		// 1. @Conditional 在 PARSE_CONFIGURATION 阶段评估
 		if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
 			return;
 		}
 
+		// 2. 与已解析配置类合并或冲突处理
 		ConfigurationClass existingClass = this.configurationClasses.get(configClass);
 		if (existingClass != null) {
 			if (configClass.isImported()) {
@@ -337,7 +285,7 @@ class ConfigurationClassParser {
 			}
 		}
 
-		// Recursively process the configuration class and its superclass hierarchy.
+		// 3. 递归处理配置类及其超类层次
 		SourceClass sourceClass = null;
 		try {
 			sourceClass = asSourceClass(configClass, filter);
@@ -355,12 +303,11 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Apply processing and build a complete {@link ConfigurationClass} by reading the
-	 * annotations, members and methods from the source class. This method can be called
-	 * multiple times as relevant sources are discovered.
-	 * @param configClass the configuration class being build
-	 * @param sourceClass a source class
-	 * @return the superclass, or {@code null} if none found or previously processed
+	 * 读取源类的注解、成员与方法，构建完整 {@link ConfigurationClass}。
+	 * <p>随着新源类被发现可多次调用。
+	 * @param configClass 正在构建的配置类
+	 * @param sourceClass 源类
+	 * @return 待继续处理的超类 SourceClass，若无或已处理则返回 {@code null}
 	 */
 	protected final @Nullable SourceClass doProcessConfigurationClass(
 			ConfigurationClass configClass, SourceClass sourceClass, Predicate<String> filter)
@@ -465,7 +412,7 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Register member (nested) classes that happen to be configuration classes themselves.
+	 * 注册作为配置类候选的成员（嵌套）类。
 	 */
 	private void processMemberClasses(ConfigurationClass configClass, SourceClass sourceClass,
 			Predicate<String> filter) throws IOException {
@@ -498,7 +445,7 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Register default methods on interfaces implemented by the configuration class.
+	 * 注册配置类所实现接口上的 default 方法等具体方法。
 	 */
 	private void processInterfaces(ConfigurationClass configClass, SourceClass sourceClass) throws IOException {
 		for (SourceClass ifc : sourceClass.getInterfaces()) {
@@ -513,13 +460,8 @@ class ConfigurationClassParser {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 retrieveBeanMethodMetadata — 意图与阅读要点
-
-方法 `retrieveBeanMethodMetadata` 复杂度较高（CCN≈9, NLOC≈32）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Retrieve the metadata for all <code>@Bean</code> methods.
+	 * 获取所有 {@code @Bean} 方法的元数据。
 	 */
 	private Set<MethodMetadata> retrieveBeanMethodMetadata(SourceClass sourceClass) {
 		AnnotationMetadata original = sourceClass.getMetadata();
@@ -559,14 +501,8 @@ class ConfigurationClassParser {
 		return beanMethods;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 removeKnownSuperclass — 意图与阅读要点
-
-方法 `removeKnownSuperclass` 复杂度较高（CCN≈11, NLOC≈34）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Remove known superclasses for the given removed class, potentially replacing
-	 * the superclass exposure on a different config class with the same superclass.
+	 * 移除已删除类的已知超类记录，必要时用同超类的其他配置类替换暴露关系。
 	 */
 	private void removeKnownSuperclass(String removedClass, boolean replace) {
 		String replacedSuperclass = null;
@@ -606,7 +542,7 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Returns {@code @Import} classes, considering all meta-annotations.
+	 * 返回 {@code @Import} 导入的类，考虑所有元注解。
 	 */
 	private Set<SourceClass> getImports(SourceClass sourceClass) throws IOException {
 		Set<SourceClass> imports = new LinkedHashSet<>();
@@ -615,21 +551,17 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Recursively collect all declared {@code @Import} values. Unlike most
-	 * meta-annotations it is valid to have several {@code @Import}s declared with
-	 * different values; the usual process of returning values from the first
-	 * meta-annotation on a class is not sufficient.
-	 * <p>For example, it is common for a {@code @Configuration} class to declare direct
-	 * {@code @Import}s in addition to meta-imports originating from an {@code @Enable}
-	 * annotation.
-	 * <p>As of Spring Framework 7.0, {@code @Import} annotations declared on interfaces
-	 * implemented by the configuration class are also considered. This allows imports to
-	 * be triggered indirectly via marker interfaces or shared base interfaces.
-	 * @param sourceClass the class to search
-	 * @param imports the imports collected so far
-	 * @param visited used to track visited classes and interfaces to prevent infinite
-	 * recursion
-	 * @throws IOException if there is any problem reading metadata from the named class
+	 * 递归收集所有声明的 {@code @Import} 值。
+	 * <p>与多数元注解不同，允许多个 {@code @Import} 携带不同值；
+	 * 仅从首个元注解返回值不足以覆盖常见场景。
+	 * <p>例如 {@code @Configuration} 类常同时声明直接 {@code @Import} 与
+	 * 来自 {@code @Enable} 的元导入。
+	 * <p>自 Spring Framework 7.0 起，配置类所实现接口上的 {@code @Import} 亦被考虑，
+	 * 从而可通过标记接口或共享基接口间接触发导入。
+	 * @param sourceClass 待搜索的类
+	 * @param imports 已收集的导入类
+	 * @param visited 已访问类/接口集合，防止无限递归
+	 * @throws IOException 读取类元数据失败时
 	 */
 	private void collectImports(SourceClass sourceClass, Set<SourceClass> imports, Set<SourceClass> visited)
 			throws IOException {
@@ -648,13 +580,6 @@ class ConfigurationClassParser {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 processImports — 意图与阅读要点
-
-@Import 支持普通类、ImportSelector、ImportBeanDefinitionRegistrar。选择器还可 Deferred，导致处理时机推迟——这是条件装配里常见「坑」来源。
-
-	===== [OCA 中文解析结束] ===== */
-
 	private void processImports(ConfigurationClass configClass, SourceClass currentSourceClass,
 			Collection<SourceClass> importCandidates, Predicate<String> filter, boolean checkForCircularImports) {
 
@@ -662,12 +587,14 @@ class ConfigurationClassParser {
 			return;
 		}
 
+		// 1. 检测循环 @Import
 		if (checkForCircularImports && isChainedImportOnStack(configClass)) {
 			this.problemReporter.error(new CircularImportProblem(configClass, this.importStack));
 		}
 		else {
 			this.importStack.push(configClass);
 			try {
+				// 2. 按候选类型分发：ImportSelector / BeanRegistrar / ImportBeanDefinitionRegistrar / @Configuration
 				for (SourceClass candidate : importCandidates) {
 					if (candidate.isAssignable(ImportSelector.class)) {
 						// Candidate class is an ImportSelector -> delegate to it to determine imports
@@ -743,7 +670,7 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Factory method to obtain a {@link SourceClass} from a {@link ConfigurationClass}.
+	 * 工厂方法：从 {@link ConfigurationClass} 获取 {@link SourceClass}。
 	 */
 	private SourceClass asSourceClass(ConfigurationClass configurationClass, Predicate<String> filter) throws IOException {
 		AnnotationMetadata metadata = configurationClass.getMetadata();
@@ -754,7 +681,7 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Factory method to obtain a {@link SourceClass} from a {@link Class}.
+	 * 工厂方法：从 {@link Class} 获取 {@link SourceClass}。
 	 */
 	SourceClass asSourceClass(@Nullable Class<?> classType, Predicate<String> filter) throws IOException {
 		if (classType == null || filter.test(classType.getName())) {
@@ -775,7 +702,7 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Factory method to obtain a {@link SourceClass} collection from class names.
+	 * 工厂方法：从类名数组获取 {@link SourceClass} 集合。
 	 */
 	private Collection<SourceClass> asSourceClasses(String[] classNames, Predicate<String> filter) throws IOException {
 		List<SourceClass> annotatedClasses = new ArrayList<>(classNames.length);
@@ -789,7 +716,7 @@ class ConfigurationClassParser {
 	}
 
 	/**
-	 * Factory method to obtain a {@link SourceClass} from a class name.
+	 * 工厂方法：从类名获取 {@link SourceClass}。
 	 */
 	SourceClass asSourceClass(@Nullable String className, Predicate<String> filter) throws IOException {
 		if (className == null || filter.test(className)) {
@@ -828,20 +755,10 @@ class ConfigurationClassParser {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ImportStack — 意图说明
-
-class `ImportStack`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	@SuppressWarnings("serial")
 	private class ImportStack extends ArrayDeque<ConfigurationClass> implements ImportRegistry {
 
+		/** 被导入类名到导入方 AnnotationMetadata 的映射。 */
 		private final MultiValueMap<String, AnnotationMetadata> imports = new LinkedMultiValueMap<>();
 
 		void registerImport(AnnotationMetadata importingClass, String importedClass) {
@@ -867,13 +784,13 @@ class `ImportStack`：请结合所属模块与调用方理解其在整体架构�
 		}
 
 		/**
-		 * Given a stack containing (in order)
+		 * 给定栈（按顺序）包含
 		 * <ul>
 		 * <li>com.acme.Foo</li>
 		 * <li>com.acme.Bar</li>
 		 * <li>com.acme.Baz</li>
 		 * </ul>
-		 * return "[Foo->Bar->Baz]".
+		 * 则返回 {@code "[Foo->Bar->Baz]"}。
 		 */
 		@Override
 		public String toString() {
@@ -886,28 +803,16 @@ class `ImportStack`：请结合所属模块与调用方理解其在整体架构�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class DeferredImportSelectorHandler — 意图说明
-
-class `DeferredImportSelectorHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private class DeferredImportSelectorHandler {
 
 		private @Nullable List<DeferredImportSelectorHolder> deferredImportSelectors = new ArrayList<>();
 
 		/**
-		 * Handle the specified {@link DeferredImportSelector}. If deferred import
-		 * selectors are being collected, this registers this instance to the list. If
-		 * they are being processed, the {@link DeferredImportSelector} is also processed
-		 * immediately according to its {@link DeferredImportSelector.Group}.
-		 * @param configClass the source configuration class
-		 * @param importSelector the selector to handle
+		 * 处理指定的 {@link DeferredImportSelector}。
+		 * <p>若正在收集延迟导入选择器则注册到列表；若正在处理则按
+		 * {@link DeferredImportSelector.Group} 立即处理。
+		 * @param configClass 源配置类
+		 * @param importSelector 待处理的选择器
 		 */
 		void handle(ConfigurationClass configClass, DeferredImportSelector importSelector) {
 			DeferredImportSelectorHolder holder = new DeferredImportSelectorHolder(configClass, importSelector);
@@ -937,17 +842,6 @@ class `DeferredImportSelectorHandler`：请结合所属模块与调用方理解�
 			}
 		}
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class DeferredImportSelectorGroupingHandler — 意图说明
-
-class `DeferredImportSelectorGroupingHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private class DeferredImportSelectorGroupingHandler {
@@ -999,17 +893,6 @@ class `DeferredImportSelectorGroupingHandler`：请结合所属模块与调用�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class DeferredImportSelectorHolder — 意图说明
-
-class `DeferredImportSelectorHolder`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private static class DeferredImportSelectorHolder {
 
 		private final ConfigurationClass configurationClass;
@@ -1031,17 +914,6 @@ class `DeferredImportSelectorHolder`：请结合所属模块与调用方理解�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class DeferredImportSelectorGrouping — 意图说明
-
-class `DeferredImportSelectorGrouping`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private static class DeferredImportSelectorGrouping {
 
 		private final DeferredImportSelector.Group group;
@@ -1057,8 +929,8 @@ class `DeferredImportSelectorGrouping`：请结合所属模块与调用方理解
 		}
 
 		/**
-		 * Return the imports defined by the group.
-		 * @return each import with its associated configuration class
+		 * 返回分组定义的导入项。
+		 * @return 每项导入及其关联的配置类
 		 */
 		Iterable<Group.Entry> getImports() {
 			for (DeferredImportSelectorHolder deferredImport : this.deferredImports) {
@@ -1081,17 +953,6 @@ class `DeferredImportSelectorGrouping`：请结合所属模块与调用方理解
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class DefaultDeferredImportSelectorGroup — 意图说明
-
-class `DefaultDeferredImportSelectorGroup`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private static class DefaultDeferredImportSelectorGroup implements Group {
 
 		private final List<Entry> imports = new ArrayList<>();
@@ -1110,16 +971,8 @@ class `DefaultDeferredImportSelectorGroup`：请结合所属模块与调用方�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class SourceClass — 意图说明
-
-class `SourceClass`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Simple wrapper that allows annotated source classes to be dealt with
-	 * in a uniform manner, regardless of how they are loaded.
+	 * 简单包装类，使注解源类无论以何种方式加载均可统一处理。
 	 */
 	private class SourceClass implements Ordered {
 
@@ -1229,13 +1082,6 @@ class `SourceClass`：请结合所属模块与调用方理解其在整体架构�
 			return result;
 		}
 
-		/* ===== [OCA 中文解析] =====
-方法 getAnnotations — 意图与阅读要点
-
-方法 `getAnnotations` 复杂度较高（CCN≈8, NLOC≈27）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-		===== [OCA 中文解析结束] ===== */
-
 		public Set<SourceClass> getAnnotations() {
 			Set<SourceClass> result = new LinkedHashSet<>();
 			if (this.source instanceof Class<?> sourceClass) {
@@ -1316,15 +1162,8 @@ class `SourceClass`：请结合所属模块与调用方理解其在整体架构�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class CircularImportProblem — 意图说明
-
-class `CircularImportProblem`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * {@link Problem} registered upon detection of a circular {@link Import}.
+	 * 检测到循环 {@link Import} 时注册的 {@link Problem}。
 	 */
 	private static class CircularImportProblem extends Problem {
 
