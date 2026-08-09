@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * <p>gRPC client interceptor for Sentinel. Currently it only works with unary methods.</p>
+ * <p>Sentinel 集成的 gRPC 客户端拦截器，目前仅支持 unary 方法。</p>
  * <p>
  * Example code:
  * <pre>
@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * }
  * </pre>
  * <p>
- * For server interceptor, see {@link SentinelGrpcServerInterceptor}.
+ * 服务端拦截器见 {@link SentinelGrpcServerInterceptor}。
  *
  * @author Eric Zhao
  */
@@ -60,6 +60,7 @@ public class SentinelGrpcClientInterceptor implements ClientInterceptor {
     private static final Status FLOW_CONTROL_BLOCK = Status.UNAVAILABLE.withDescription(
             "Flow control limit exceeded (client side)");
 
+    /** 以 gRPC 全方法名作为资源名进行 asyncEntry，在 onClose/cancel 时 exit。 */
     @Override
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> methodDescriptor,
                                                                CallOptions callOptions, Channel channel) {
@@ -68,7 +69,7 @@ public class SentinelGrpcClientInterceptor implements ClientInterceptor {
         try {
             entry = SphU.asyncEntry(fullMethodName, EntryType.OUT);
             final AtomicReference<Entry> atomicReferenceEntry = new AtomicReference<>(entry);
-            // Allow access, forward the call.
+            // 通过流控检查，转发调用。
             return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
                     channel.newCall(methodDescriptor, callOptions)) {
                 @Override
@@ -78,7 +79,7 @@ public class SentinelGrpcClientInterceptor implements ClientInterceptor {
                         public void onClose(Status status, Metadata trailers) {
                             Entry entry = atomicReferenceEntry.get();
                             if (entry != null) {
-                                // Record the exception metrics.
+                                // 记录异常指标。
                                 if (!status.isOk()) {
                                     Tracer.traceEntry(status.asRuntimeException(), entry);
                                 }
@@ -91,14 +92,14 @@ public class SentinelGrpcClientInterceptor implements ClientInterceptor {
                 }
 
                 /**
-                 * Some Exceptions will only call cancel.
+                 * 部分异常只会触发 cancel 而不会调用 onClose。
                  */
                 @Override
                 public void cancel(@Nullable String message, @Nullable Throwable cause) {
                     Entry entry = atomicReferenceEntry.get();
-                    // Some Exceptions will call onClose and cancel.
+                    // 部分异常会同时触发 onClose 与 cancel。
                     if (entry != null) {
-                        // Record the exception metrics.
+                        // 记录异常指标。
                         Tracer.traceEntry(cause, entry);
                         entry.exit();
                         atomicReferenceEntry.set(null);
@@ -107,7 +108,7 @@ public class SentinelGrpcClientInterceptor implements ClientInterceptor {
                 }
             };
         } catch (BlockException e) {
-            // Flow control threshold exceeded, block the call.
+            // 超过流控阈值，阻断调用。
             return new ClientCall<ReqT, RespT>() {
                 @Override
                 public void start(Listener<RespT> responseListener, Metadata headers) {
@@ -131,7 +132,7 @@ public class SentinelGrpcClientInterceptor implements ClientInterceptor {
                 }
             };
         } catch (RuntimeException e) {
-            // Catch the RuntimeException newCall throws, entry is guaranteed to exit.
+            // 捕获 newCall 抛出的 RuntimeException，确保 entry 退出。
             if (entry != null) {
                 Tracer.traceEntry(e, entry);
                 entry.exit();

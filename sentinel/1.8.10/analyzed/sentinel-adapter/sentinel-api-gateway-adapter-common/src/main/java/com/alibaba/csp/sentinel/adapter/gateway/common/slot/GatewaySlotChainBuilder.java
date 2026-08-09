@@ -18,11 +18,14 @@ package com.alibaba.csp.sentinel.adapter.gateway.common.slot;
 import com.alibaba.csp.sentinel.slots.DefaultSlotChainBuilder;
 
 /**
+ * 网关 Slot 链构建器，继承 {@link DefaultSlotChainBuilder}。
+ *
  * @author Eric Zhao
  * @since 1.6.1
  *
  * @deprecated since 1.7.2, we can use @Spi(order = -4000) to adjust the order of {@link GatewayFlowSlot},
- * this class is reserved for compatibility with older versions.
+ * 自 1.7.2 起已废弃，可通过 @Spi(order = -4000) 调整 {@link GatewayFlowSlot} 顺序；
+ * 保留此类仅为兼容旧版本。
  *
  * @see GatewayFlowSlot
  * @see DefaultSlotChainBuilder

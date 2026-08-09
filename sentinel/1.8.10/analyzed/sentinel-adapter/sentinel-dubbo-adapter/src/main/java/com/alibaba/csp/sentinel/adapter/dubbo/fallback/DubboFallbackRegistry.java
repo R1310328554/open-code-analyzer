@@ -18,7 +18,8 @@ package com.alibaba.csp.sentinel.adapter.dubbo.fallback;
 import com.alibaba.csp.sentinel.adapter.dubbo.DubboAdapterGlobalConfig;
 
 /**
- * <p>Global fallback registry for Dubbo.</p>
+ * <p>Dubbo 全局降级处理器注册表（已废弃）。</p>
+ * <p>委托 {@link DubboAdapterGlobalConfig} 读写消费者/提供者降级处理器。</p>
  *
  * @author Eric Zhao
  * @deprecated use {@link DubboAdapterGlobalConfig} instead.
@@ -26,18 +27,22 @@ import com.alibaba.csp.sentinel.adapter.dubbo.DubboAdapterGlobalConfig;
 @Deprecated
 public final class DubboFallbackRegistry {
 
+    /** 获取消费者端降级处理器。 */
     public static DubboFallback getConsumerFallback() {
         return DubboAdapterGlobalConfig.getConsumerFallback();
     }
 
+    /** 设置消费者端降级处理器。 */
     public static void setConsumerFallback(DubboFallback consumerFallback) {
         DubboAdapterGlobalConfig.setConsumerFallback(consumerFallback);
     }
 
+    /** 获取提供者端降级处理器。 */
     public static DubboFallback getProviderFallback() {
         return DubboAdapterGlobalConfig.getProviderFallback();
     }
 
+    /** 设置提供者端降级处理器。 */
     public static void setProviderFallback(DubboFallback providerFallback) {
         DubboAdapterGlobalConfig.setProviderFallback(providerFallback);
     }

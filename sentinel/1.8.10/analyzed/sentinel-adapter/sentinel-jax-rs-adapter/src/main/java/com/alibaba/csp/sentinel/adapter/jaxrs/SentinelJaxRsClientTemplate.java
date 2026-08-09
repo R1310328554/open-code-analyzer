@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 
 
 /**
- * wrap jax-rs client execution with sentinel
+ * 使用 Sentinel 包装 JAX-RS 客户端调用的模板类。
  * <pre>
  *         Response response = SentinelJaxRsClientTemplate.execute(resourceName, new Supplier<Response>() {
  *
@@ -42,7 +42,7 @@ import java.util.concurrent.Future;
 public class SentinelJaxRsClientTemplate {
 
     /**
-     * execute supplier with sentinel
+     * 同步执行 JAX-RS 客户端调用，以 Sentinel 保护指定资源。
      * @param resourceName
      * @param supplier
      * @return
@@ -63,7 +63,7 @@ public class SentinelJaxRsClientTemplate {
     }
 
     /**
-     * execute supplier with sentinel
+     * 异步执行 JAX-RS 客户端调用，以 Sentinel 保护指定资源。
      * @param resourceName
      * @param supplier
      * @return

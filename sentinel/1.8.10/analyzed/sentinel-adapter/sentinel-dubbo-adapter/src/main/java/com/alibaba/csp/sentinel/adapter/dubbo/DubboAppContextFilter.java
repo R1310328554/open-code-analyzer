@@ -27,13 +27,14 @@ import com.alibaba.dubbo.rpc.RpcException;
 import static com.alibaba.dubbo.common.Constants.CONSUMER;
 
 /**
- * Puts current consumer's application name in the attachment of each invocation.
+ * 将当前消费者的应用名写入每次调用的 attachment，供 Provider 端解析调用来源。
  *
  * @author Eric Zhao
  */
 @Activate(group = CONSUMER)
 public class DubboAppContextFilter implements Filter {
 
+    /** 在调用前将消费者应用名写入 RpcContext attachment。 */
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         String application = invoker.getUrl().getParameter(Constants.APPLICATION_KEY);

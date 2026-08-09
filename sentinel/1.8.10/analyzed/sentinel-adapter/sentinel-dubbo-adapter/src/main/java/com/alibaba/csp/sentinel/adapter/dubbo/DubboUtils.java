@@ -18,12 +18,16 @@ package com.alibaba.csp.sentinel.adapter.dubbo;
 import com.alibaba.dubbo.rpc.Invocation;
 
 /**
+ * Dubbo 旧版适配器工具类，用于读取调用方应用名。
+ *
  * @author Eric Zhao
  */
 public final class DubboUtils {
 
+    /** Dubbo attachment 中传递调用方应用名的键。 */
     public static final String DUBBO_APPLICATION_KEY = "dubboApplication";
 
+    /** 从 invocation attachment 读取调用方应用名。 */
     public static String getApplication(Invocation invocation, String defaultValue) {
         if (invocation == null || invocation.getAttachments() == null) {
             throw new IllegalArgumentException("Bad invocation instance");

@@ -32,7 +32,7 @@ import io.grpc.StatusRuntimeException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * <p>gRPC server interceptor for Sentinel. Currently it only works with unary methods.</p>
+ * <p>Sentinel 集成的 gRPC 服务端拦截器，目前仅支持 unary 方法。</p>
  * <p>
  * Example code:
  * <pre>
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *      .build();
  * </pre>
  * <p>
- * For client interceptor, see {@link SentinelGrpcClientInterceptor}.
+ * 客户端拦截器见 {@link SentinelGrpcClientInterceptor}。
  *
  * @author Eric Zhao
  */
@@ -51,15 +51,16 @@ public class SentinelGrpcServerInterceptor implements ServerInterceptor {
             "Flow control limit exceeded (server side)");
     private static final StatusRuntimeException STATUS_RUNTIME_EXCEPTION = new StatusRuntimeException(Status.CANCELLED);
 
+    /** 以 gRPC 全方法名作为资源名进行 asyncEntry，在 close/onCancel 时 exit。 */
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
         String fullMethodName = call.getMethodDescriptor().getFullMethodName();
-        // Remote address: serverCall.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR);
+        // 远程地址：serverCall.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR);
         Entry entry = null;
         try {
             entry = SphU.asyncEntry(fullMethodName, EntryType.IN);
             final AtomicReference<Entry> atomicReferenceEntry = new AtomicReference<>(entry);
-            // Allow access, forward the call.
+            // 通过流控检查，转发调用。
             return new ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT>(
                     next.startCall(
                             new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
@@ -67,19 +68,18 @@ public class SentinelGrpcServerInterceptor implements ServerInterceptor {
                                 public void close(Status status, Metadata trailers) {
                                     Entry entry = atomicReferenceEntry.get();
                                     if (entry != null) {
-                                        // Record the exception metrics.
+                                        // 记录异常指标。
                                         if (!status.isOk()) {
                                             Tracer.traceEntry(status.asRuntimeException(), entry);
                                         }
-                                        //entry exit when the call be closed
+                                        // 调用关闭时 exit entry
                                         entry.exit();
                                     }
                                     super.close(status, trailers);
                                 }
                             }, headers)) {
                 /**
-                 * If call was canceled, onCancel will be called. and the close will not be called
-                 * so the server is encouraged to abort processing to save resources by onCancel
+                 * 调用被取消时会触发 onCancel 而非 close，服务端应在此中止处理以节省资源。
                  * @see ServerCall.Listener#onCancel()
                  */
                 @Override
@@ -98,7 +98,7 @@ public class SentinelGrpcServerInterceptor implements ServerInterceptor {
             return new ServerCall.Listener<ReqT>() {
             };
         } catch (RuntimeException e) {
-            // Catch the RuntimeException startCall throws, entry is guaranteed to exit.
+            // 捕获 startCall 抛出的 RuntimeException，确保 entry 退出。
             if (entry != null) {
                 Tracer.traceEntry(e, entry);
                 entry.exit();

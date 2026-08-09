@@ -23,13 +23,16 @@ import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcResult;
 
 /**
+ * Dubbo 默认降级实现，将 {@link BlockException} 包装为 {@link SentinelRpcException} 并写入 Result。
+ *
  * @author Eric Zhao
  */
 public class DefaultDubboFallback implements DubboFallback {
 
+    /** 包装阻断异常并返回带异常的 RpcResult。 */
     @Override
     public Result handle(Invoker<?> invoker, Invocation invocation, BlockException ex) {
-        // Just wrap the exception. edit by wzg923 2020/9/23
+        // 将阻断异常包装为 SentinelRpcException 并设置到 Result。
         RpcResult result = new RpcResult();
         result.setException(new SentinelRpcException(ex.toRuntimeException()));
         return result;

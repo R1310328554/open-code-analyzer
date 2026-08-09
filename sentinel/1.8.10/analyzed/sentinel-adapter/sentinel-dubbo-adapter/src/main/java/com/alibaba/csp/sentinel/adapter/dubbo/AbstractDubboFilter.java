@@ -21,10 +21,13 @@ import com.alibaba.dubbo.rpc.Invocation;
 import com.alibaba.dubbo.rpc.Invoker;
 
 /**
+ * Dubbo 旧版适配器 Filter 抽象基类，提供接口与方法级 Sentinel 资源名构建。
+ *
  * @author leyou
  */
 abstract class AbstractDubboFilter implements Filter {
 
+    /** 构建方法级资源名：接口名:方法名(参数类型列表)。 */
     protected String getMethodResourceName(Invoker<?> invoker, Invocation invocation) {
         StringBuilder buf = new StringBuilder(64);
         buf.append(invoker.getInterface().getName())
@@ -43,6 +46,7 @@ abstract class AbstractDubboFilter implements Filter {
         return buf.toString();
     }
 
+    /** 构建带前缀的方法级资源名。 */
     protected String getMethodResourceName(Invoker<?> invoker, Invocation invocation, String prefix) {
         if (StringUtil.isBlank(prefix)) {
             return getMethodResourceName(invoker, invocation);
@@ -53,10 +57,12 @@ abstract class AbstractDubboFilter implements Filter {
             .toString();
     }
 
+    /** 获取 Dubbo 接口全限定名作为资源名。 */
     protected String getInterfaceName(Invoker<?> invoker) {
         return invoker.getInterface().getName();
     }
 
+    /** 获取带前缀的接口级资源名。 */
     protected String getInterfaceName(Invoker<?> invoker, String prefix) {
         if (StringUtil.isBlank(prefix)) {
             return getInterfaceName(invoker);

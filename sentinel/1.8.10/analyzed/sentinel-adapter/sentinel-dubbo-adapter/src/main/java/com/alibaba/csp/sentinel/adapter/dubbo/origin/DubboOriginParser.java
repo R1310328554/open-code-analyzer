@@ -19,7 +19,7 @@ import com.alibaba.dubbo.rpc.Invocation;
 import com.alibaba.dubbo.rpc.Invoker;
 
 /**
- * Customized origin parser for Dubbo provider filter.
+ * Dubbo Provider Filter 的自定义调用来源解析器接口。
  *
  * @author tiecheng
  * @since 1.8.0
@@ -27,7 +27,7 @@ import com.alibaba.dubbo.rpc.Invoker;
 public interface DubboOriginParser {
 
     /**
-     * Parses the origin (caller) from Dubbo invocation.
+     * 从 Dubbo 调用中解析调用来源（caller）。
      *
      * @param invoker    Dubbo invoker
      * @param invocation Dubbo invocation

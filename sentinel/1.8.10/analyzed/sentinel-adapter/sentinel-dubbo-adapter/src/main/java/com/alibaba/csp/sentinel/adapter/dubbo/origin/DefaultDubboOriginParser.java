@@ -20,13 +20,14 @@ import com.alibaba.dubbo.rpc.Invocation;
 import com.alibaba.dubbo.rpc.Invoker;
 
 /**
- * Default Dubbo origin parser.
+ * Dubbo 默认调用来源解析器，从 invocation attachment 读取消费者应用名。
  *
  * @author tiecheng
  * @since 1.8.0
  */
 public class DefaultDubboOriginParser implements DubboOriginParser {
 
+    /** 从 attachment 读取 dubboApplication 作为 origin。 */
     @Override
     public String parse(Invoker<?> invoker, Invocation invocation) {
         return DubboUtils.getApplication(invocation, "");

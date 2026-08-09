@@ -21,14 +21,14 @@ import com.alibaba.dubbo.rpc.Invoker;
 import com.alibaba.dubbo.rpc.Result;
 
 /**
- * Fallback handler for Dubbo services.
+ * Dubbo 服务被 Sentinel 阻断时的降级处理器接口。
  *
  * @author Eric Zhao
  */
 public interface DubboFallback {
 
     /**
-     * Handle the block exception and provide fallback result.
+     * 处理阻断异常并返回降级结果。
      *
      * @param invoker Dubbo invoker
      * @param invocation Dubbo invocation

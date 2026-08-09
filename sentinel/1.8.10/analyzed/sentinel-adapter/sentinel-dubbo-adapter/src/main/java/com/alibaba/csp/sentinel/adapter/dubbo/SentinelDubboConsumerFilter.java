@@ -32,9 +32,10 @@ import com.alibaba.dubbo.rpc.RpcException;
 import static com.alibaba.dubbo.common.Constants.CONSUMER;
 
 /**
- * <p>Dubbo service consumer filter for Sentinel. Auto activated by default.</p>
- *
- * If you want to disable the consumer filter, you can configure:
+ * <p>Sentinel 集成的 Dubbo 消费者 Filter，默认自动激活。</p>
+ * <p>对接口与方法资源分别进行流控，出站流量标记为 {@link EntryType#OUT}。</p>
+ * <p>
+ * 如需禁用消费者 Filter，可配置：
  * <pre>
  * &lt;dubbo:consumer filter="-sentinel.dubbo.consumer.filter"/&gt;
  * </pre>
@@ -45,10 +46,12 @@ import static com.alibaba.dubbo.common.Constants.CONSUMER;
 @Activate(group = CONSUMER)
 public class SentinelDubboConsumerFilter extends AbstractDubboFilter implements Filter {
 
+    /** 初始化消费者 Filter 并记录日志。 */
     public SentinelDubboConsumerFilter() {
         RecordLog.info("Sentinel Dubbo consumer filter initialized");
     }
 
+    /** 对接口与方法资源 entry/exit，阻断时调用消费者降级处理器。 */
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
         Entry interfaceEntry = null;
@@ -64,7 +67,7 @@ public class SentinelDubboConsumerFilter extends AbstractDubboFilter implements 
             Result result = invoker.invoke(invocation);
             if (result.hasException()) {
                 Throwable e = result.getException();
-                // Record common exception.
+                // 记录业务异常到 Sentinel 统计。
                 Tracer.traceEntry(e, interfaceEntry);
                 Tracer.traceEntry(e, methodEntry);
             }

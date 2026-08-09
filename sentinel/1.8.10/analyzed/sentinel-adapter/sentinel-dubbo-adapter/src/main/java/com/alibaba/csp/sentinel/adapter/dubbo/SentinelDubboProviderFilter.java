@@ -33,9 +33,10 @@ import com.alibaba.dubbo.rpc.RpcException;
 import static com.alibaba.dubbo.common.Constants.PROVIDER;
 
 /**
- * <p>Dubbo service provider filter for Sentinel. Auto activated by default.</p>
- *
- * If you want to disable the provider filter, you can configure:
+ * <p>Sentinel 集成的 Dubbo 提供者 Filter，默认自动激活。</p>
+ * <p>解析调用来源并创建入口 Context，入站流量标记为 {@link EntryType#IN}。</p>
+ * <p>
+ * 如需禁用提供者 Filter，可配置：
  * <pre>
  * &lt;dubbo:provider filter="-sentinel.dubbo.provider.filter"/&gt;
  * </pre>
@@ -46,13 +47,15 @@ import static com.alibaba.dubbo.common.Constants.PROVIDER;
 @Activate(group = PROVIDER)
 public class SentinelDubboProviderFilter extends AbstractDubboFilter implements Filter {
 
+    /** 初始化提供者 Filter 并记录日志。 */
     public SentinelDubboProviderFilter() {
         RecordLog.info("Sentinel Dubbo provider filter initialized");
     }
 
+    /** 解析 origin、创建 Context，对接口与方法资源 entry/exit。 */
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        // Get origin caller.
+        // 解析调用来源（origin）。
         String origin = DubboAdapterGlobalConfig.getOriginParser().parse(invoker, invocation);
         if (null == origin) {
             origin = "";
@@ -72,7 +75,7 @@ public class SentinelDubboProviderFilter extends AbstractDubboFilter implements 
             Result result = invoker.invoke(invocation);
             if (result.hasException()) {
                 Throwable e = result.getException();
-                // Record common exception.
+                // 记录业务异常到 Sentinel 统计。
                 Tracer.traceEntry(e, interfaceEntry);
                 Tracer.traceEntry(e, methodEntry);
             }
