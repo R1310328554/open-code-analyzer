@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:08:49Z",
-  "files": [
-    "common/src/main/java/com/taobao/arthas/common/OSUtils.java",
-    "common/src/main/java/com/taobao/arthas/common/Pair.java",
-    "common/src/main/java/com/taobao/arthas/common/PidUtils.java",
-    "common/src/main/java/com/taobao/arthas/common/PlatformEnum.java",
-    "common/src/main/java/com/taobao/arthas/common/ReflectException.java",
-    "common/src/main/java/com/taobao/arthas/common/ReflectUtils.java",
-    "common/src/main/java/com/taobao/arthas/common/SocketUtils.java",
-    "common/src/main/java/com/taobao/arthas/common/UnsafeUtils.java",
-    "common/src/main/java/com/taobao/arthas/common/UsageRender.java",
-    "common/src/main/java/com/taobao/arthas/common/VmToolUtils.java",
-    "common/src/main/java/com/taobao/arthas/common/concurrent/ConcurrentWeakKeyHashMap.java",
-    "common/src/main/java/com/taobao/arthas/common/concurrent/ReusableIterator.java",
-    "core/src/main/java/com/taobao/arthas/core/Arthas.java",
-    "core/src/main/java/com/taobao/arthas/core/GlobalOptions.java",
-    "core/src/main/java/com/taobao/arthas/core/Option.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 615,
-  "done": 165
+  "done": 180
 }
