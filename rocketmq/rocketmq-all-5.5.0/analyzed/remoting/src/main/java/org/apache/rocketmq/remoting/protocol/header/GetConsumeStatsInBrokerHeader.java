@@ -25,8 +25,12 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 获取 Broker 级消费统计的请求头：指定是否仅统计顺序消费。
+ */
 @RocketMQAction(value = RequestCode.GET_BROKER_CONSUME_STATS, resource = ResourceType.CLUSTER, action = Action.GET)
 public class GetConsumeStatsInBrokerHeader implements CommandCustomHeader {
+    /** 是否仅统计顺序消费，true 表示顺序。 */
     @CFNotNull
     private boolean isOrder;
 
@@ -35,10 +39,12 @@ public class GetConsumeStatsInBrokerHeader implements CommandCustomHeader {
 
     }
 
+    /** 返回是否顺序消费统计。 */
     public boolean isOrder() {
         return isOrder;
     }
 
+    /** 设置是否顺序消费统计。 */
     public void setIsOrder(boolean isOrder) {
         this.isOrder = isOrder;
     }

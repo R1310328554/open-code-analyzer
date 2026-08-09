@@ -23,8 +23,12 @@ package org.apache.rocketmq.remoting.protocol.header;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 结束事务响应头：Broker 处理 {@link EndTransactionRequestHeader} 后返回，无附加字段。
+ */
 public class EndTransactionResponseHeader implements CommandCustomHeader {
 
+    /** 校验响应头字段（本类无字段，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

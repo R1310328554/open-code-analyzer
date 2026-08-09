@@ -25,6 +25,9 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 分页拉取全部订阅组配置的请求头：含序号、数据版本及单次最大条数。
+ */
 @RocketMQAction(value = RequestCode.GET_ALL_SUBSCRIPTIONGROUP_CONFIG, resource = ResourceType.GROUP, action = Action.GET)
 public class GetAllSubscriptionGroupRequestHeader implements CommandCustomHeader {
     @Override
@@ -32,33 +35,42 @@ public class GetAllSubscriptionGroupRequestHeader implements CommandCustomHeader
         // nothing
     }
 
+    /** 当前分页序号，从 0 起。 */
     @CFNotNull
     private Integer groupSeq;
 
+    /** 客户端已知的数据版本，用于增量同步。 */
     private String dataVersion;
 
+    /** 单次返回的最大订阅组数量。 */
     private Integer maxGroupNum;
 
+    /** 返回分页序号。 */
     public Integer getGroupSeq() {
         return groupSeq;
     }
 
+    /** 设置分页序号。 */
     public void setGroupSeq(Integer groupSeq) {
         this.groupSeq = groupSeq;
     }
 
+    /** 返回数据版本。 */
     public String getDataVersion() {
         return dataVersion;
     }
 
+    /** 设置数据版本。 */
     public void setDataVersion(String dataVersion) {
         this.dataVersion = dataVersion;
     }
 
+    /** 返回单次最大条数。 */
     public Integer getMaxGroupNum() {
         return maxGroupNum;
     }
 
+    /** 设置单次最大条数。 */
     public void setMaxGroupNum(Integer maxGroupNum) {
         this.maxGroupNum = maxGroupNum;
     }

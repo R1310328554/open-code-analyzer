@@ -25,14 +25,20 @@ import org.apache.rocketmq.remoting.annotation.CFNullable;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 交换 Broker 主从 HA 信息请求头：同步 Master HA 地址、刷盘位点及 Broker 地址。
+ */
 @RocketMQAction(value = RequestCode.EXCHANGE_BROKER_HA_INFO,resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class ExchangeHAInfoRequestHeader implements CommandCustomHeader {
+    /** Master HA 服务地址，可为空。 */
     @CFNullable
     public String masterHaAddress;
 
+    /** Master 已刷盘位点，可为空。 */
     @CFNullable
     public Long masterFlushOffset;
 
+    /** Master Broker 地址，可为空。 */
     @CFNullable
     public String masterAddress;
 
@@ -41,26 +47,32 @@ public class ExchangeHAInfoRequestHeader implements CommandCustomHeader {
 
     }
 
+    /** 返回 Master HA 地址。 */
     public String getMasterHaAddress() {
         return masterHaAddress;
     }
 
+    /** 设置 Master HA 地址。 */
     public void setMasterHaAddress(String masterHaAddress) {
         this.masterHaAddress = masterHaAddress;
     }
 
+    /** 返回 Master 刷盘位点。 */
     public Long getMasterFlushOffset() {
         return masterFlushOffset;
     }
 
+    /** 设置 Master 刷盘位点。 */
     public void setMasterFlushOffset(Long masterFlushOffset) {
         this.masterFlushOffset = masterFlushOffset;
     }
 
+    /** 返回 Master Broker 地址。 */
     public String getMasterAddress() {
         return masterAddress;
     }
 
+    /** 设置 Master Broker 地址。 */
     public void setMasterAddress(String masterAddress) {
         this.masterAddress = masterAddress;
     }

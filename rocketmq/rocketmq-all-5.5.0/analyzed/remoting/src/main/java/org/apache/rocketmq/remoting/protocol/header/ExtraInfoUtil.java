@@ -29,12 +29,21 @@ import org.apache.rocketmq.common.KeyBuilder;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.message.MessageConst;
 
+/**
+ * Pop 消费 extraInfo 编解码工具：解析/构建 Pop 附加串中的位点、时间、重试 Topic 等字段。
+ * extraInfo 各段以 {@link MessageConst#KEY_SEPARATOR} 分隔。
+ */
 public class ExtraInfoUtil {
+    /** 普通 Topic 标识。 */
     private static final String NORMAL_TOPIC = "0";
+    /** Pop 重试 Topic V1 标识。 */
     private static final String RETRY_TOPIC = "1";
+    /** Pop 重试 Topic V2 标识。 */
     private static final String RETRY_TOPIC_V2 = "2";
+    /** 队列位点键前缀（Lite 顺序消费）。 */
     private static final String QUEUE_OFFSET = "qo";
 
+    /** 按分隔符拆分 extraInfo 字符串。 */
     public static String[] split(String extraInfo) {
         if (extraInfo == null) {
             throw new IllegalArgumentException("split extraInfo is null");
@@ -42,6 +51,7 @@ public class ExtraInfoUtil {
         return extraInfo.split(MessageConst.KEY_SEPARATOR);
     }
 
+    /** 从拆分结果取 CheckPoint 队列位点（第 0 段）。 */
     public static Long getCkQueueOffset(String[] extraInfoStrs) {
         if (extraInfoStrs == null || extraInfoStrs.length < 1) {
             throw new IllegalArgumentException("getCkQueueOffset fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -49,6 +59,7 @@ public class ExtraInfoUtil {
         return Long.valueOf(extraInfoStrs[0]);
     }
 
+    /** 从拆分结果取 Pop 时间戳（第 1 段）。 */
     public static Long getPopTime(String[] extraInfoStrs) {
         if (extraInfoStrs == null || extraInfoStrs.length < 2) {
             throw new IllegalArgumentException("getPopTime fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -56,6 +67,7 @@ public class ExtraInfoUtil {
         return Long.valueOf(extraInfoStrs[1]);
     }
 
+    /** 从拆分结果取不可见时长（第 2 段）。 */
     public static Long getInvisibleTime(String[] extraInfoStrs) {
         if (extraInfoStrs == null || extraInfoStrs.length < 3) {
             throw new IllegalArgumentException("getInvisibleTime fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -63,6 +75,7 @@ public class ExtraInfoUtil {
         return Long.valueOf(extraInfoStrs[2]);
     }
 
+    /** 从拆分结果取 Revive 队列 ID（第 3 段）。 */
     public static int getReviveQid(String[] extraInfoStrs) {
         if (extraInfoStrs == null || extraInfoStrs.length < 4) {
             throw new IllegalArgumentException("getReviveQid fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -70,6 +83,7 @@ public class ExtraInfoUtil {
         return Integer.parseInt(extraInfoStrs[3]);
     }
 
+    /** 根据重试标志解析真实 Topic（含 Pop 重试 Topic 构建）。 */
     public static String getRealTopic(String[] extraInfoStrs, String topic, String cid) {
         if (extraInfoStrs == null || extraInfoStrs.length < 5) {
             throw new IllegalArgumentException("getRealTopic fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -83,6 +97,7 @@ public class ExtraInfoUtil {
         }
     }
 
+    /** 按重试标志字符串解析真实 Topic。 */
     public static String getRealTopic(String topic, String cid, String retry) {
         if (retry.equals(NORMAL_TOPIC)) {
             return topic;
@@ -95,6 +110,7 @@ public class ExtraInfoUtil {
         }
     }
 
+    /** 从拆分结果取重试 Topic 类型标志（第 4 段）。 */
     public static String getRetry(String[] extraInfoStrs) {
         if (extraInfoStrs == null || extraInfoStrs.length < 5) {
             throw new IllegalArgumentException("getRetry fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -102,6 +118,7 @@ public class ExtraInfoUtil {
         return extraInfoStrs[4];
     }
 
+    /** 从拆分结果取 Broker 名称（第 5 段）。 */
     public static String getBrokerName(String[] extraInfoStrs) {
         if (extraInfoStrs == null || extraInfoStrs.length < 6) {
             throw new IllegalArgumentException("getBrokerName fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -109,6 +126,7 @@ public class ExtraInfoUtil {
         return extraInfoStrs[5];
     }
 
+    /** 从拆分结果取队列 ID（第 6 段）。 */
     public static int getQueueId(String[] extraInfoStrs) {
         if (extraInfoStrs == null || extraInfoStrs.length < 7) {
             throw new IllegalArgumentException("getQueueId fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -116,6 +134,7 @@ public class ExtraInfoUtil {
         return Integer.parseInt(extraInfoStrs[6]);
     }
 
+    /** 从拆分结果取消息队列位点（第 7 段）。 */
     public static long getQueueOffset(String[] extraInfoStrs) {
         if (extraInfoStrs == null || extraInfoStrs.length < 8) {
             throw new IllegalArgumentException("getQueueOffset fail, extraInfoStrs length " + (extraInfoStrs == null ? 0 : extraInfoStrs.length));
@@ -123,12 +142,14 @@ public class ExtraInfoUtil {
         return Long.parseLong(extraInfoStrs[7]);
     }
 
+    /** 构建标准 Pop extraInfo 串（8 段）。 */
     public static String buildExtraInfo(long ckQueueOffset, long popTime, long invisibleTime, int reviveQid, String topic, String brokerName, int queueId) {
         String t = getRetry(topic);
         return ckQueueOffset + MessageConst.KEY_SEPARATOR + popTime + MessageConst.KEY_SEPARATOR + invisibleTime + MessageConst.KEY_SEPARATOR + reviveQid + MessageConst.KEY_SEPARATOR + t
             + MessageConst.KEY_SEPARATOR + brokerName + MessageConst.KEY_SEPARATOR + queueId;
     }
 
+    /** 构建含消息队列位点的 Pop extraInfo 串（9 段）。 */
     public static String buildExtraInfo(long ckQueueOffset, long popTime, long invisibleTime, int reviveQid, String topic, String brokerName, int queueId,
                                         long msgQueueOffset) {
         String t = getRetry(topic);
@@ -139,6 +160,7 @@ public class ExtraInfoUtil {
             + MessageConst.KEY_SEPARATOR + msgQueueOffset;
     }
 
+    /** 向 StringBuilder 追加起始位点信息段。 */
     public static void buildStartOffsetInfo(StringBuilder stringBuilder, String topic, int queueId, long startOffset) {
         if (stringBuilder == null) {
             stringBuilder = new StringBuilder(64);
@@ -153,6 +175,7 @@ public class ExtraInfoUtil {
             .append(MessageConst.KEY_SEPARATOR).append(startOffset);
     }
 
+    /** 向 StringBuilder 追加队列 ID 与顺序计数信息。 */
     public static void buildQueueIdOrderCountInfo(StringBuilder stringBuilder, String topic, int queueId, int orderCount) {
         if (stringBuilder == null) {
             stringBuilder = new StringBuilder(64);
@@ -167,6 +190,7 @@ public class ExtraInfoUtil {
                 .append(MessageConst.KEY_SEPARATOR).append(orderCount);
     }
 
+    /** 向 StringBuilder 追加队列位点与顺序计数信息。 */
     public static void buildQueueOffsetOrderCountInfo(StringBuilder stringBuilder, String topic, long queueId, long queueOffset, int orderCount) {
         if (stringBuilder == null) {
             stringBuilder = new StringBuilder(64);
@@ -181,6 +205,7 @@ public class ExtraInfoUtil {
             .append(MessageConst.KEY_SEPARATOR).append(orderCount);
     }
 
+    /** 向 StringBuilder 追加消息位点列表信息。 */
     public static void buildMsgOffsetInfo(StringBuilder stringBuilder, String topic, int queueId, List<Long> msgOffsets) {
         if (stringBuilder == null) {
             stringBuilder = new StringBuilder(64);
@@ -202,6 +227,7 @@ public class ExtraInfoUtil {
         }
     }
 
+    /** 解析消息位点信息串为 retry@queueId → 位点列表映射。 */
     public static Map<String, List<Long>> parseMsgOffsetInfo(String msgOffsetInfo) {
         if (msgOffsetInfo == null || msgOffsetInfo.length() == 0) {
             return null;
@@ -234,6 +260,7 @@ public class ExtraInfoUtil {
         return msgOffsetMap;
     }
 
+    /** 解析起始位点信息串为 retry@queueId → 位点映射。 */
     public static Map<String, Long> parseStartOffsetInfo(String startOffsetInfo) {
         if (startOffsetInfo == null || startOffsetInfo.length() == 0) {
             return null;
@@ -261,6 +288,7 @@ public class ExtraInfoUtil {
         return startOffsetMap;
     }
 
+    /** 解析顺序计数信息串为 retry@queueId → 计数映射。 */
     public static Map<String, Integer> parseOrderCountInfo(String orderCountInfo) {
         if (orderCountInfo == null || orderCountInfo.length() == 0) {
             return null;
@@ -288,6 +316,7 @@ public class ExtraInfoUtil {
         return startOffsetMap;
     }
 
+    /** 解析 Lite 顺序计数信息，段数须与 msgCount 一致。 */
     public static List<Integer> parseLiteOrderCountInfo(String orderCountInfo, int msgCount) {
         if (StringUtils.isEmpty(orderCountInfo)) {
             return null;
@@ -299,6 +328,7 @@ public class ExtraInfoUtil {
         return Arrays.stream(infos).map(ExtraInfoUtil::parseLiteOrderCount).collect(Collectors.toList());
     }
 
+    /** 解析单段 Lite 顺序计数值。 */
     private static int parseLiteOrderCount(String info) {
         if (StringUtils.isBlank(info)) {
             return 0;
@@ -310,26 +340,32 @@ public class ExtraInfoUtil {
         return split.length != 3 ? 0 : NumberUtils.toInt(split[2], 0);
     }
 
+    /** 构建起始位点 Map 键（retry@key）。 */
     public static String getStartOffsetInfoMapKey(String topic, long key) {
         return getRetry(topic) + "@" + key;
     }
 
+    /** 基于 popCk 或 Topic 构建起始位点 Map 键。 */
     public static String getStartOffsetInfoMapKey(String topic, String popCk, long key) {
         return getRetry(topic, popCk) + "@" + key;
     }
 
+    /** 构建队列位点键值（qo{queueId}%{queueOffset}）。 */
     public static String getQueueOffsetKeyValueKey(long queueId, long queueOffset) {
         return QUEUE_OFFSET + queueId + "%" + queueOffset;
     }
 
+    /** 构建队列位点 Map 键（retry@qo...）。 */
     public static String getQueueOffsetMapKey(String topic, long queueId, long queueOffset) {
         return getRetry(topic) + "@" + getQueueOffsetKeyValueKey(queueId, queueOffset);
     }
 
+    /** 判断 extraInfo 是否对应顺序消费（Revive 队列 ID 为 POP_ORDER_REVIVE_QUEUE）。 */
     public static boolean isOrder(String[] extraInfo) {
         return ExtraInfoUtil.getReviveQid(extraInfo) == KeyBuilder.POP_ORDER_REVIVE_QUEUE;
     }
 
+    /** 根据 Topic 名推断重试类型标志。 */
     private static String getRetry(String topic) {
         String t = NORMAL_TOPIC;
         if (KeyBuilder.isPopRetryTopicV2(topic)) {
@@ -340,6 +376,7 @@ public class ExtraInfoUtil {
         return t;
     }
 
+    /** 优先从 popCk 解析重试类型，否则按 Topic 推断。 */
     private static String getRetry(String topic, String popCk) {
         if (popCk != null) {
             return getRetry(split(popCk));

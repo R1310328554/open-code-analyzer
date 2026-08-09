@@ -27,13 +27,20 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 将 RocksDB 持久化配置导出为 JSON 的请求头：指定 Topic、订阅组或消费位点等配置类型。
+ */
 @RocketMQAction(value = RequestCode.EXPORT_ROCKSDB_CONFIG_TO_JSON, resource = ResourceType.CLUSTER, action = Action.GET)
 public class ExportRocksDBConfigToJsonRequestHeader implements CommandCustomHeader {
     private static final String CONFIG_TYPE_SEPARATOR = ";";
 
+    /** RocksDB 可导出的配置类型枚举。 */
     public enum ConfigType {
+        /** Topic 配置。 */
         TOPICS("topics"),
+        /** 订阅组配置。 */
         SUBSCRIPTION_GROUPS("subscriptionGroups"),
+        /** 消费位点配置。 */
         CONSUMER_OFFSETS("consumerOffsets");
 
         private final String typeName;
@@ -42,6 +49,7 @@ public class ExportRocksDBConfigToJsonRequestHeader implements CommandCustomHead
             this.typeName = typeName;
         }
 
+        /** 按名称（忽略大小写）解析配置类型。 */
         public static ConfigType getConfigTypeByName(String typeName) {
             for (ConfigType configType : ConfigType.values()) {
                 if (configType.getTypeName().equalsIgnoreCase(typeName.trim())) {
@@ -51,6 +59,7 @@ public class ExportRocksDBConfigToJsonRequestHeader implements CommandCustomHead
             throw new IllegalArgumentException("Unknown config type: " + typeName);
         }
 
+        /** 从分号分隔的类型名字符串解析配置类型列表。 */
         public static List<ConfigType> fromString(String ordinal) {
             String[] configTypeNames = StringUtils.split(ordinal, CONFIG_TYPE_SEPARATOR);
             List<ConfigType> configTypes = new ArrayList<>();
@@ -62,6 +71,7 @@ public class ExportRocksDBConfigToJsonRequestHeader implements CommandCustomHead
             return configTypes;
         }
 
+        /** 将配置类型列表序列化为分号分隔字符串。 */
         public static String toString(List<ConfigType> configTypes) {
             StringBuilder sb = new StringBuilder();
             for (ConfigType configType : configTypes) {
@@ -70,11 +80,13 @@ public class ExportRocksDBConfigToJsonRequestHeader implements CommandCustomHead
             return sb.toString();
         }
 
+        /** 返回配置类型名称。 */
         public String getTypeName() {
             return typeName;
         }
     }
 
+    /** 待导出的配置类型，分号分隔。 */
     @CFNotNull
     private String configType;
 
@@ -83,18 +95,22 @@ public class ExportRocksDBConfigToJsonRequestHeader implements CommandCustomHead
 
     }
 
+    /** 解析并返回配置类型列表。 */
     public List<ConfigType> fetchConfigType() {
         return ConfigType.fromString(configType);
     }
 
+    /** 以类型列表更新 configType 字符串。 */
     public void updateConfigType(List<ConfigType> configType) {
         this.configType = ConfigType.toString(configType);
     }
 
+    /** 返回配置类型字符串。 */
     public String getConfigType() {
         return configType;
     }
 
+    /** 设置配置类型字符串。 */
     public void setConfigType(String configType) {
         this.configType = configType;
     }

@@ -28,18 +28,24 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
 @RocketMQAction(value = RequestCode.GET_ALL_TOPIC_CONFIG, resource = ResourceType.TOPIC, action = Action.LIST)
+/**
+ * 分页拉取 Topic 配置的响应头：返回 Broker 上 Topic 总数。
+ */
 public class GetAllTopicConfigResponseHeader implements CommandCustomHeader {
 
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** Broker 上 Topic 总数。 */
     private Integer totalTopicNum;
 
+    /** 返回 Topic 总数。 */
     public Integer getTotalTopicNum() {
         return totalTopicNum;
     }
 
+    /** 设置 Topic 总数。 */
     public void setTotalTopicNum(Integer totalTopicNum) {
         this.totalTopicNum = totalTopicNum;
     }

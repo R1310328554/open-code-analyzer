@@ -25,6 +25,9 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 分页拉取订阅组配置的响应头：返回集群订阅组总数。
+ */
 @RocketMQAction(value = RequestCode.GET_ALL_SUBSCRIPTIONGROUP_CONFIG, resource = ResourceType.GROUP, action = Action.LIST)
 public class GetAllSubscriptionGroupResponseHeader implements CommandCustomHeader {
     @Override
@@ -32,13 +35,16 @@ public class GetAllSubscriptionGroupResponseHeader implements CommandCustomHeade
 
     }
 
+    /** 集群订阅组总数。 */
     @CFNotNull
     private Integer totalGroupNum;
 
+    /** 返回订阅组总数。 */
     public Integer getTotalGroupNum() {
         return totalGroupNum;
     }
 
+    /** 设置订阅组总数。 */
     public void setTotalGroupNum(Integer totalGroupNum) {
         this.totalGroupNum = totalGroupNum;
     }

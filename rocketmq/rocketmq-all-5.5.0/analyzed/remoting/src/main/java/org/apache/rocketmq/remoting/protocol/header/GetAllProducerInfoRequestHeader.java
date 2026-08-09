@@ -24,8 +24,12 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 获取集群全部生产者连接信息的请求头：无附加参数。
+ */
 @RocketMQAction(value = RequestCode.GET_ALL_PRODUCER_INFO, resource = ResourceType.CLUSTER, action = Action.GET)
 public class GetAllProducerInfoRequestHeader implements CommandCustomHeader {
+    /** 校验请求头字段（本类无字段，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
         // To change body of implemented methods use File | Settings | File

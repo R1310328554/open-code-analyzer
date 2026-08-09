@@ -26,27 +26,36 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 查询 Broker 成员组（Master/Slave 副本集）的请求头：指定集群与 Broker 名。
+ */
 @RocketMQAction(value = RequestCode.GET_BROKER_MEMBER_GROUP, action = Action.GET)
 public class GetBrokerMemberGroupRequestHeader implements CommandCustomHeader {
+    /** 集群名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.CLUSTER)
     private String clusterName;
 
+    /** Broker 逻辑名称。 */
     @CFNotNull
     private String brokerName;
 
+    /** 返回集群名称。 */
     public String getClusterName() {
         return clusterName;
     }
 
+    /** 设置集群名称。 */
     public void setClusterName(final String clusterName) {
         this.clusterName = clusterName;
     }
 
+    /** 返回 Broker 名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 名称。 */
     public void setBrokerName(final String brokerName) {
         this.brokerName = brokerName;
     }

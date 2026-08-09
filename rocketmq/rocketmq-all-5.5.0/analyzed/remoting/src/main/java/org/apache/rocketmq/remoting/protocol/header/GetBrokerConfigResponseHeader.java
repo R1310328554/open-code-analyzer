@@ -24,7 +24,11 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 获取 Broker 配置的响应头：返回配置数据版本号字符串。
+ */
 public class GetBrokerConfigResponseHeader implements CommandCustomHeader {
+    /** Broker 配置数据版本号。 */
     @CFNotNull
     private String version;
 
@@ -32,10 +36,12 @@ public class GetBrokerConfigResponseHeader implements CommandCustomHeader {
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回配置版本号。 */
     public String getVersion() {
         return version;
     }
 
+    /** 设置配置版本号。 */
     public void setVersion(String version) {
         this.version = version;
     }
