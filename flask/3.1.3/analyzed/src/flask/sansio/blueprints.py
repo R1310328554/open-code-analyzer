@@ -32,10 +32,10 @@ T_url_value_preprocessor = t.TypeVar(
 
 
 class BlueprintSetupState:
-    """Temporary holder object for registering a blueprint with the
-    application.  An instance of this class is created by the
-    :meth:`~flask.Blueprint.make_setup_state` method and later passed
-    to all register callback functions.
+    """
+        将蓝图注册到应用时的临时持有对象。
+        由 :meth:`~flask.Blueprint.make_setup_state` 创建，
+        随后传给所有注册回调函数。
     """
 
     def __init__(
@@ -45,17 +45,17 @@ class BlueprintSetupState:
         options: t.Any,
         first_registration: bool,
     ) -> None:
-        #: a reference to the current application
+        #: 当前应用的引用
         self.app = app
 
-        #: a reference to the blueprint that created this setup state.
+        #: 创建此设置状态的蓝图的引用。
         self.blueprint = blueprint
 
-        #: a dictionary with all options that were passed to the
+        #: 传给 :meth:`~flask.Flask.register_blueprint` 的所有选项。
         #: :meth:`~flask.Flask.register_blueprint` method.
         self.options = options
 
-        #: as blueprints can be registered multiple times with the
+        #: 蓝图可多次注册；此属性判断蓝图是否曾注册过。 with the
         #: application and not everything wants to be registered
         #: multiple times on it, this attribute can be used to figure
         #: out if the blueprint was registered in the past already.
@@ -65,21 +65,21 @@ class BlueprintSetupState:
         if subdomain is None:
             subdomain = self.blueprint.subdomain
 
-        #: The subdomain that the blueprint should be active for, ``None``
+        #: 蓝图生效的子域名，否则为 ``None``。, ``None``
         #: otherwise.
         self.subdomain = subdomain
 
         url_prefix = self.options.get("url_prefix")
         if url_prefix is None:
             url_prefix = self.blueprint.url_prefix
-        #: The prefix that should be used for all URLs defined on the
+        #: 蓝图上定义的所有 URL 使用的前缀。
         #: blueprint.
         self.url_prefix = url_prefix
 
         self.name = self.options.get("name", blueprint.name)
         self.name_prefix = self.options.get("name_prefix", "")
 
-        #: A dictionary with URL defaults that is added to each and every
+        #: 添加到蓝图上每个 URL 的默认参数字典。
         #: URL that was defined with the blueprint.
         self.url_defaults = dict(self.blueprint.url_values_defaults)
         self.url_defaults.update(self.options.get("url_defaults", ()))
@@ -91,9 +91,9 @@ class BlueprintSetupState:
         view_func: ft.RouteCallable | None = None,
         **options: t.Any,
     ) -> None:
-        """A helper method to register a rule (and optionally a view function)
-        to the application.  The endpoint is automatically prefixed with the
-        blueprint's name.
+        """
+            向应用注册规则（及可选视图函数）的辅助方法。
+            端点名自动加上蓝图名称前缀。
         """
         if self.url_prefix is not None:
             if rule:
@@ -117,56 +117,34 @@ class BlueprintSetupState:
 
 
 class Blueprint(Scaffold):
-    """Represents a blueprint, a collection of routes and other
-    app-related functions that can be registered on a real application
-    later.
-
-    A blueprint is an object that allows defining application functions
-    without requiring an application object ahead of time. It uses the
-    same decorators as :class:`~flask.Flask`, but defers the need for an
-    application by recording them for later registration.
-
-    Decorating a function with a blueprint creates a deferred function
-    that is called with :class:`~flask.blueprints.BlueprintSetupState`
-    when the blueprint is registered on an application.
-
-    See :doc:`/blueprints` for more information.
-
-    :param name: The name of the blueprint. Will be prepended to each
-        endpoint name.
-    :param import_name: The name of the blueprint package, usually
-        ``__name__``. This helps locate the ``root_path`` for the
-        blueprint.
-    :param static_folder: A folder with static files that should be
-        served by the blueprint's static route. The path is relative to
-        the blueprint's root path. Blueprint static files are disabled
-        by default.
-    :param static_url_path: The url to serve static files from.
-        Defaults to ``static_folder``. If the blueprint does not have
-        a ``url_prefix``, the app's static route will take precedence,
-        and the blueprint's static files won't be accessible.
-    :param template_folder: A folder with templates that should be added
-        to the app's template search path. The path is relative to the
-        blueprint's root path. Blueprint templates are disabled by
-        default. Blueprint templates have a lower precedence than those
-        in the app's templates folder.
-    :param url_prefix: A path to prepend to all of the blueprint's URLs,
-        to make them distinct from the rest of the app's routes.
-    :param subdomain: A subdomain that blueprint routes will match on by
-        default.
-    :param url_defaults: A dict of default values that blueprint routes
-        will receive by default.
-    :param root_path: By default, the blueprint will automatically set
-        this based on ``import_name``. In certain situations this
-        automatic detection can fail, so the path can be specified
-        manually instead.
-
-    .. versionchanged:: 1.1.0
-        Blueprints have a ``cli`` group to register nested CLI commands.
-        The ``cli_group`` parameter controls the name of the group under
-        the ``flask`` command.
-
-    .. versionadded:: 0.7
+    """
+        表示蓝图，即路由及其他应用相关函数的集合，可稍后注册到实际应用。
+        
+        蓝图允许在不预先拥有应用对象的情况下定义应用函数。
+        使用与 :class:`~flask.Flask` 相同的装饰器，但将注册推迟到之后。
+        
+        用蓝图装饰函数会创建延迟函数，在蓝图注册到应用时
+        以 :class:`~flask.blueprints.BlueprintSetupState` 调用。
+        
+        详见 :doc:`/blueprints`。
+        
+        :param name: 蓝图名称，会加在每个端点名前。
+        :param import_name: 蓝图包的导入名，通常为 ``__name__``，用于定位 ``root_path``。
+        :param static_folder: 蓝图静态路由提供的静态文件文件夹，相对于蓝图根路径。默认禁用。
+        :param static_url_path: 提供静态文件的 URL，默认为 ``static_folder``。
+            若蓝图无 ``url_prefix``，应用静态路由优先，蓝图静态文件不可访问。
+        :param template_folder: 加入应用模板搜索路径的模板文件夹，相对于蓝图根路径。默认禁用。
+            蓝图模板优先级低于应用 templates 文件夹。
+        :param url_prefix: 加在蓝图所有 URL 前的前缀，使其与应用其余路由区分。
+        :param subdomain: 蓝图路由默认匹配的子域名。
+        :param url_defaults: 蓝图路由默认接收的参数字典。
+        :param root_path: 默认根据 ``import_name`` 自动设置。自动检测失败时可手动指定。
+        
+        .. versionchanged:: 1.1.0
+            蓝图有 ``cli`` 组注册嵌套 CLI 命令。
+            ``cli_group`` 参数控制 ``flask`` 命令下组的名称。
+        
+        .. versionadded:: 0.7
     """
 
     _got_registered_once = False
@@ -222,19 +200,17 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def record(self, func: DeferredSetupFunction) -> None:
-        """Registers a function that is called when the blueprint is
-        registered on the application.  This function is called with the
-        state as argument as returned by the :meth:`make_setup_state`
-        method.
+        """
+            注册在蓝图注册到应用时调用的函数。
+            此函数接收 :meth:`make_setup_state` 返回的状态对象。
         """
         self.deferred_functions.append(func)
 
     @setupmethod
     def record_once(self, func: DeferredSetupFunction) -> None:
-        """Works like :meth:`record` but wraps the function in another
-        function that will ensure the function is only called once.  If the
-        blueprint is registered a second time on the application, the
-        function passed is not called.
+        """
+            类似 :meth:`record`，但包装函数确保只调用一次。
+            蓝图第二次注册时传入的函数不会被调用。
         """
 
         def wrapper(state: BlueprintSetupState) -> None:
@@ -246,58 +222,42 @@ class Blueprint(Scaffold):
     def make_setup_state(
         self, app: App, options: dict[str, t.Any], first_registration: bool = False
     ) -> BlueprintSetupState:
-        """Creates an instance of :meth:`~flask.blueprints.BlueprintSetupState`
-        object that is later passed to the register callback functions.
-        Subclasses can override this to return a subclass of the setup state.
+        """
+            创建 :meth:`~flask.blueprints.BlueprintSetupState` 实例并传给注册回调。
+            子类可重写以返回子类实例。
         """
         return BlueprintSetupState(self, app, options, first_registration)
 
     @setupmethod
     def register_blueprint(self, blueprint: Blueprint, **options: t.Any) -> None:
-        """Register a :class:`~flask.Blueprint` on this blueprint. Keyword
-        arguments passed to this method will override the defaults set
-        on the blueprint.
-
-        .. versionchanged:: 2.0.1
-            The ``name`` option can be used to change the (pre-dotted)
-            name the blueprint is registered with. This allows the same
-            blueprint to be registered multiple times with unique names
-            for ``url_for``.
-
-        .. versionadded:: 2.0
+        """
+            在此蓝图上注册 :class:`~flask.Blueprint`。关键字参数会覆盖蓝图默认值。
+            
+            .. versionchanged:: 2.0.1
+                ``name`` 可更改注册名称，允许同一蓝图多次注册。
+            
+            .. versionadded:: 2.0
         """
         if blueprint is self:
             raise ValueError("Cannot register a blueprint on itself")
         self._blueprints.append((blueprint, options))
 
     def register(self, app: App, options: dict[str, t.Any]) -> None:
-        """Called by :meth:`Flask.register_blueprint` to register all
-        views and callbacks registered on the blueprint with the
-        application. Creates a :class:`.BlueprintSetupState` and calls
-        each :meth:`record` callback with it.
-
-        :param app: The application this blueprint is being registered
-            with.
-        :param options: Keyword arguments forwarded from
-            :meth:`~Flask.register_blueprint`.
-
-        .. versionchanged:: 2.3
-            Nested blueprints now correctly apply subdomains.
-
-        .. versionchanged:: 2.1
-            Registering the same blueprint with the same name multiple
-            times is an error.
-
-        .. versionchanged:: 2.0.1
-            Nested blueprints are registered with their dotted name.
-            This allows different blueprints with the same name to be
-            nested at different locations.
-
-        .. versionchanged:: 2.0.1
-            The ``name`` option can be used to change the (pre-dotted)
-            name the blueprint is registered with. This allows the same
-            blueprint to be registered multiple times with unique names
-            for ``url_for``.
+        """
+            由 :meth:`Flask.register_blueprint` 调用，将蓝图上所有视图和回调注册到应用。
+            创建 :class:`.BlueprintSetupState` 并调用每个 :meth:`record` 回调。
+            
+            :param app: 注册此蓝图的应用。
+            :param options: 从 :meth:`~Flask.register_blueprint` 转发的关键字参数。
+            
+            .. versionchanged:: 2.3
+                嵌套蓝图现在正确应用子域名。
+            
+            .. versionchanged:: 2.1
+                以相同名称多次注册同一蓝图会报错。
+            
+            .. versionchanged:: 2.0.1
+                嵌套蓝图以带点名称注册；``name`` 选项可更改注册名称。
         """
         name_prefix = options.get("name_prefix", "")
         self_name = options.get("name", self.name)
@@ -327,7 +287,7 @@ class Blueprint(Scaffold):
                 endpoint="static",
             )
 
-        # Merge blueprint data into parent.
+        # 将蓝图数据合并到父级。
         if first_bp_registration or first_name_registration:
             self._merge_blueprint_funcs(app, name)
 
@@ -418,11 +378,9 @@ class Blueprint(Scaffold):
         provide_automatic_options: bool | None = None,
         **options: t.Any,
     ) -> None:
-        """Register a URL rule with the blueprint. See :meth:`.Flask.add_url_rule` for
-        full documentation.
-
-        The URL rule is prefixed with the blueprint's URL prefix. The endpoint name,
-        used with :func:`url_for`, is prefixed with the blueprint's name.
+        """
+            向蓝图注册 URL 规则。完整说明见 :meth:`.Flask.add_url_rule`。
+            URL 规则会加上蓝图的 URL 前缀；:func:`url_for` 使用的端点名会加上蓝图名称前缀。
         """
         if endpoint and "." in endpoint:
             raise ValueError("'endpoint' may not contain a dot '.' character.")
@@ -444,11 +402,10 @@ class Blueprint(Scaffold):
     def app_template_filter(
         self, name: str | None = None
     ) -> t.Callable[[T_template_filter], T_template_filter]:
-        """Register a template filter, available in any template rendered by the
-        application. Equivalent to :meth:`.Flask.template_filter`.
-
-        :param name: the optional name of the filter, otherwise the
-                     function name will be used.
+        """
+            注册模板过滤器，应用渲染的任何模板均可用。等价于 :meth:`.Flask.template_filter`。
+            
+            :param name: 过滤器可选名称，默认使用函数名。
         """
 
         def decorator(f: T_template_filter) -> T_template_filter:
@@ -461,12 +418,10 @@ class Blueprint(Scaffold):
     def add_app_template_filter(
         self, f: ft.TemplateFilterCallable, name: str | None = None
     ) -> None:
-        """Register a template filter, available in any template rendered by the
-        application. Works like the :meth:`app_template_filter` decorator. Equivalent to
-        :meth:`.Flask.add_template_filter`.
-
-        :param name: the optional name of the filter, otherwise the
-                     function name will be used.
+        """
+            注册模板过滤器，等价于 :meth:`app_template_filter` 装饰器及 :meth:`.Flask.add_template_filter`。
+            
+            :param name: 过滤器可选名称，默认使用函数名。
         """
 
         def register_template(state: BlueprintSetupState) -> None:
@@ -478,13 +433,12 @@ class Blueprint(Scaffold):
     def app_template_test(
         self, name: str | None = None
     ) -> t.Callable[[T_template_test], T_template_test]:
-        """Register a template test, available in any template rendered by the
-        application. Equivalent to :meth:`.Flask.template_test`.
-
-        .. versionadded:: 0.10
-
-        :param name: the optional name of the test, otherwise the
-                     function name will be used.
+        """
+            注册模板测试，应用渲染的任何模板均可用。等价于 :meth:`.Flask.template_test`。
+            
+            .. versionadded:: 0.10
+            
+            :param name: 测试可选名称，默认使用函数名。
         """
 
         def decorator(f: T_template_test) -> T_template_test:
@@ -497,14 +451,12 @@ class Blueprint(Scaffold):
     def add_app_template_test(
         self, f: ft.TemplateTestCallable, name: str | None = None
     ) -> None:
-        """Register a template test, available in any template rendered by the
-        application. Works like the :meth:`app_template_test` decorator. Equivalent to
-        :meth:`.Flask.add_template_test`.
-
-        .. versionadded:: 0.10
-
-        :param name: the optional name of the test, otherwise the
-                     function name will be used.
+        """
+            注册模板测试，等价于 :meth:`app_template_test` 及 :meth:`.Flask.add_template_test`。
+            
+            .. versionadded:: 0.10
+            
+            :param name: 测试可选名称，默认使用函数名。
         """
 
         def register_template(state: BlueprintSetupState) -> None:
@@ -516,13 +468,12 @@ class Blueprint(Scaffold):
     def app_template_global(
         self, name: str | None = None
     ) -> t.Callable[[T_template_global], T_template_global]:
-        """Register a template global, available in any template rendered by the
-        application. Equivalent to :meth:`.Flask.template_global`.
-
-        .. versionadded:: 0.10
-
-        :param name: the optional name of the global, otherwise the
-                     function name will be used.
+        """
+            注册模板全局变量，应用渲染的任何模板均可用。等价于 :meth:`.Flask.template_global`。
+            
+            .. versionadded:: 0.10
+            
+            :param name: 全局变量可选名称，默认使用函数名。
         """
 
         def decorator(f: T_template_global) -> T_template_global:
@@ -535,14 +486,12 @@ class Blueprint(Scaffold):
     def add_app_template_global(
         self, f: ft.TemplateGlobalCallable, name: str | None = None
     ) -> None:
-        """Register a template global, available in any template rendered by the
-        application. Works like the :meth:`app_template_global` decorator. Equivalent to
-        :meth:`.Flask.add_template_global`.
-
-        .. versionadded:: 0.10
-
-        :param name: the optional name of the global, otherwise the
-                     function name will be used.
+        """
+            注册模板全局变量，等价于 :meth:`app_template_global` 及 :meth:`.Flask.add_template_global`。
+            
+            .. versionadded:: 0.10
+            
+            :param name: 全局变量可选名称，默认使用函数名。
         """
 
         def register_template(state: BlueprintSetupState) -> None:
@@ -552,8 +501,9 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def before_app_request(self, f: T_before_request) -> T_before_request:
-        """Like :meth:`before_request`, but before every request, not only those handled
-        by the blueprint. Equivalent to :meth:`.Flask.before_request`.
+        """
+            类似 :meth:`before_request`，但在每个请求之前执行，不限于蓝图处理的请求。
+            等价于 :meth:`.Flask.before_request`。
         """
         self.record_once(
             lambda s: s.app.before_request_funcs.setdefault(None, []).append(f)
@@ -562,8 +512,9 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def after_app_request(self, f: T_after_request) -> T_after_request:
-        """Like :meth:`after_request`, but after every request, not only those handled
-        by the blueprint. Equivalent to :meth:`.Flask.after_request`.
+        """
+            类似 :meth:`after_request`，但在每个请求之后执行。
+            等价于 :meth:`.Flask.after_request`。
         """
         self.record_once(
             lambda s: s.app.after_request_funcs.setdefault(None, []).append(f)
@@ -572,8 +523,9 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def teardown_app_request(self, f: T_teardown) -> T_teardown:
-        """Like :meth:`teardown_request`, but after every request, not only those
-        handled by the blueprint. Equivalent to :meth:`.Flask.teardown_request`.
+        """
+            类似 :meth:`teardown_request`，但在每个请求之后执行。
+            等价于 :meth:`.Flask.teardown_request`。
         """
         self.record_once(
             lambda s: s.app.teardown_request_funcs.setdefault(None, []).append(f)
@@ -584,8 +536,9 @@ class Blueprint(Scaffold):
     def app_context_processor(
         self, f: T_template_context_processor
     ) -> T_template_context_processor:
-        """Like :meth:`context_processor`, but for templates rendered by every view, not
-        only by the blueprint. Equivalent to :meth:`.Flask.context_processor`.
+        """
+            类似 :meth:`context_processor`，但作用于每个视图渲染的模板。
+            等价于 :meth:`.Flask.context_processor`。
         """
         self.record_once(
             lambda s: s.app.template_context_processors.setdefault(None, []).append(f)
@@ -596,8 +549,9 @@ class Blueprint(Scaffold):
     def app_errorhandler(
         self, code: type[Exception] | int
     ) -> t.Callable[[T_error_handler], T_error_handler]:
-        """Like :meth:`errorhandler`, but for every request, not only those handled by
-        the blueprint. Equivalent to :meth:`.Flask.errorhandler`.
+        """
+            类似 :meth:`errorhandler`，但作用于每个请求。
+            等价于 :meth:`.Flask.errorhandler`。
         """
 
         def decorator(f: T_error_handler) -> T_error_handler:
@@ -613,8 +567,9 @@ class Blueprint(Scaffold):
     def app_url_value_preprocessor(
         self, f: T_url_value_preprocessor
     ) -> T_url_value_preprocessor:
-        """Like :meth:`url_value_preprocessor`, but for every request, not only those
-        handled by the blueprint. Equivalent to :meth:`.Flask.url_value_preprocessor`.
+        """
+            类似 :meth:`url_value_preprocessor`，但作用于每个请求。
+            等价于 :meth:`.Flask.url_value_preprocessor`。
         """
         self.record_once(
             lambda s: s.app.url_value_preprocessors.setdefault(None, []).append(f)
@@ -623,8 +578,9 @@ class Blueprint(Scaffold):
 
     @setupmethod
     def app_url_defaults(self, f: T_url_defaults) -> T_url_defaults:
-        """Like :meth:`url_defaults`, but for every request, not only those handled by
-        the blueprint. Equivalent to :meth:`.Flask.url_defaults`.
+        """
+            类似 :meth:`url_defaults`，但作用于每个请求。
+            等价于 :meth:`.Flask.url_defaults`。
         """
         self.record_once(
             lambda s: s.app.url_default_functions.setdefault(None, []).append(f)

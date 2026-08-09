@@ -35,12 +35,14 @@ if t.TYPE_CHECKING:
 
 
 class NoAppException(click.UsageError):
-    """Raised if an application cannot be found or loaded."""
+    """
+        未找到 Flask 应用时抛出的异常。
+    """
 
 
 def find_best_app(module: ModuleType) -> Flask:
-    """Given a module instance this tries to find the best possible
-    application in the module or raises an exception.
+    """
+        从模块中查找最佳 Flask 应用。
     """
     from . import Flask
 
@@ -92,12 +94,8 @@ def find_best_app(module: ModuleType) -> Flask:
 
 
 def _called_with_wrong_args(f: t.Callable[..., Flask]) -> bool:
-    """Check whether calling a function raised a ``TypeError`` because
-    the call failed or because something in the factory raised the
-    error.
-
-    :param f: The function that was called.
-    :return: ``True`` if the call failed.
+    """
+        检查工厂函数是否因参数错误而失败。
     """
     tb = sys.exc_info()[2]
 
@@ -118,8 +116,8 @@ def _called_with_wrong_args(f: t.Callable[..., Flask]) -> bool:
 
 
 def find_app_by_string(module: ModuleType, app_name: str) -> Flask:
-    """Check if the given string is a variable name or a function. Call
-    a function to get the app instance, or return the variable directly.
+    """
+        按字符串引用（如 ``'app:create_app()'``）查找应用。
     """
     from . import Flask
 
@@ -198,8 +196,8 @@ def find_app_by_string(module: ModuleType, app_name: str) -> Flask:
 
 
 def prepare_import(path: str) -> str:
-    """Given a filename this will try to calculate the python path, add it
-    to the search path and return the actual module name that is expected.
+    """
+        准备导入路径，返回模块名。
     """
     path = os.path.realpath(path)
 
@@ -244,7 +242,7 @@ def locate_app(
     try:
         __import__(module_name)
     except ImportError:
-        # Reraise the ImportError if it occurred within the imported module.
+        # 模块
         # Determine this by checking whether the trace has a depth > 1.
         if sys.exc_info()[2].tb_next:  # type: ignore[union-attr]
             raise NoAppException(
@@ -291,15 +289,12 @@ version_option = click.Option(
 
 
 class ScriptInfo:
-    """Helper object to deal with Flask applications.  This is usually not
-    necessary to interface with as it's used internally in the dispatching
-    to click.  In future versions of Flask this object will most likely play
-    a bigger role.  Typically it's created automatically by the
-    :class:`FlaskGroup` but you can also manually create it and pass it
-    onwards as click object.
-
-    .. versionchanged:: 3.1
-        Added the ``load_dotenv_defaults`` parameter and attribute.
+    """
+        处理 Flask 应用的辅助对象，通常无需直接交互，
+        内部用于 Click 分发。由 :class:`FlaskGroup` 自动创建，也可手动创建并传给 Click。
+        
+        .. versionchanged:: 3.1
+            新增 ``load_dotenv_defaults`` 参数和属性。
     """
 
     def __init__(
@@ -331,9 +326,8 @@ class ScriptInfo:
         self._loaded_app: Flask | None = None
 
     def load_app(self) -> Flask:
-        """Loads the Flask app (if not yet loaded) and returns it.  Calling
-        this multiple times will just result in the already loaded app to
-        be returned.
+        """
+            加载 Flask 应用（若尚未加载）并返回。多次调用返回已加载的同一应用。
         """
         if self._loaded_app is not None:
             return self._loaded_app
@@ -378,17 +372,8 @@ F = t.TypeVar("F", bound=t.Callable[..., t.Any])
 
 
 def with_appcontext(f: F) -> F:
-    """Wraps a callback so that it's guaranteed to be executed with the
-    script's application context.
-
-    Custom commands (and their options) registered under ``app.cli`` or
-    ``blueprint.cli`` will always have an app context available, this
-    decorator is not required in that case.
-
-    .. versionchanged:: 2.2
-        The app context is active for subcommands as well as the
-        decorated callback. The app context is always available to
-        ``app.cli`` command and parameter callbacks.
+    """
+        包装回调，确保在脚本的应用上下文中执行。
     """
 
     @click.pass_context
@@ -403,19 +388,17 @@ def with_appcontext(f: F) -> F:
 
 
 class AppGroup(click.Group):
-    """This works similar to a regular click :class:`~click.Group` but it
-    changes the behavior of the :meth:`command` decorator so that it
-    automatically wraps the functions in :func:`with_appcontext`.
-
-    Not to be confused with :class:`FlaskGroup`.
+    """
+        类似常规 Click :class:`~click.Group`，但 :meth:`command` 装饰器
+        会自动用 :func:`with_appcontext` 包装函数。勿与 :class:`FlaskGroup` 混淆。
     """
 
     def command(  # type: ignore[override]
         self, *args: t.Any, **kwargs: t.Any
     ) -> t.Callable[[t.Callable[..., t.Any]], click.Command]:
-        """This works exactly like the method of the same name on a regular
-        :class:`click.Group` but it wraps callbacks in :func:`with_appcontext`
-        unless it's disabled by passing ``with_appcontext=False``.
+        """
+            与常规 :class:`click.Group` 同名方法相同，
+            但默认用 :func:`with_appcontext` 包装回调（可通过 ``with_appcontext=False`` 禁用）。
         """
         wrap_for_ctx = kwargs.pop("with_appcontext", True)
 
@@ -429,9 +412,9 @@ class AppGroup(click.Group):
     def group(  # type: ignore[override]
         self, *args: t.Any, **kwargs: t.Any
     ) -> t.Callable[[t.Callable[..., t.Any]], click.Group]:
-        """This works exactly like the method of the same name on a regular
-        :class:`click.Group` but it defaults the group class to
-        :class:`AppGroup`.
+        """
+            与常规 :class:`click.Group` 同名方法相同，
+            但默认组类为 :class:`AppGroup`。
         """
         kwargs.setdefault("cls", AppGroup)
         return super().group(*args, **kwargs)  # type: ignore[no-any-return]
@@ -529,35 +512,8 @@ _env_file_option = click.Option(
 
 
 class FlaskGroup(AppGroup):
-    """Special subclass of the :class:`AppGroup` group that supports
-    loading more commands from the configured Flask app.  Normally a
-    developer does not have to interface with this class but there are
-    some very advanced use cases for which it makes sense to create an
-    instance of this. see :ref:`custom-scripts`.
-
-    :param add_default_commands: if this is True then the default run and
-        shell commands will be added.
-    :param add_version_option: adds the ``--version`` option.
-    :param create_app: an optional callback that is passed the script info and
-        returns the loaded app.
-    :param load_dotenv: Load the nearest :file:`.env` and :file:`.flaskenv`
-        files to set environment variables. Will also change the working
-        directory to the directory containing the first file found.
-    :param set_debug_flag: Set the app's debug flag.
-
-    .. versionchanged:: 3.1
-        ``-e path`` takes precedence over default ``.env`` and ``.flaskenv`` files.
-
-    .. versionchanged:: 2.2
-        Added the ``-A/--app``, ``--debug/--no-debug``, ``-e/--env-file`` options.
-
-    .. versionchanged:: 2.2
-        An app context is pushed when running ``app.cli`` commands, so
-        ``@with_appcontext`` is no longer required for those commands.
-
-    .. versionchanged:: 1.0
-        If installed, python-dotenv will be used to load environment variables
-        from :file:`.env` and :file:`.flaskenv` files.
+    """
+        Flask CLI 主命令组，负责加载应用并注册命令。
     """
 
     def __init__(
@@ -697,45 +653,25 @@ class FlaskGroup(AppGroup):
 
 
 def _path_is_ancestor(path: str, other: str) -> bool:
-    """Take ``other`` and remove the length of ``path`` from it. Then join it
-    to ``path``. If it is the original value, ``path`` is an ancestor of
-    ``other``."""
+    """
+        取 ``other`` 并去掉 ``path`` 长度后拼回 ``path``。
+        若结果等于原值，则 ``path`` 是 ``other`` 的祖先路径。
+    """
     return os.path.join(path, other[len(path) :].lstrip(os.sep)) == other
 
 
 def load_dotenv(
     path: str | os.PathLike[str] | None = None, load_defaults: bool = True
 ) -> bool:
-    """Load "dotenv" files to set environment variables. A given path takes
-    precedence over ``.env``, which takes precedence over ``.flaskenv``. After
-    loading and combining these files, values are only set if the key is not
-    already set in ``os.environ``.
-
-    This is a no-op if `python-dotenv`_ is not installed.
-
-    .. _python-dotenv: https://github.com/theskumar/python-dotenv#readme
-
-    :param path: Load the file at this location.
-    :param load_defaults: Search for and load the default ``.flaskenv`` and
-        ``.env`` files.
-    :return: ``True`` if at least one env var was loaded.
-
-    .. versionchanged:: 3.1
-        Added the ``load_defaults`` parameter. A given path takes precedence
-        over default files.
-
-    .. versionchanged:: 2.0
-        The current directory is not changed to the location of the
-        loaded file.
-
-    .. versionchanged:: 2.0
-        When loading the env files, set the default encoding to UTF-8.
-
-    .. versionchanged:: 1.1.0
-        Returns ``False`` when python-dotenv is not installed, or when
-        the given path isn't a file.
-
-    .. versionadded:: 1.0
+    """
+        加载 dotenv 文件设置环境变量。给定路径优先于 ``.env``，``.env`` 优先于 ``.flaskenv``。
+        合并后仅当 ``os.environ`` 中尚无该键时才设置。
+        
+        未安装 python-dotenv 时为无操作。
+        
+        :param path: 从此路径加载文件。
+        :param load_defaults: 是否搜索并加载默认 ``.flaskenv`` 和 ``.env``。
+        :return: 至少加载一个环境变量时返回 ``True``。
     """
     try:
         import dotenv
@@ -772,8 +708,8 @@ def load_dotenv(
 
 
 def show_server_banner(debug: bool, app_import_path: str | None) -> None:
-    """Show extra startup messages the first time the server is run,
-    ignoring the reloader.
+    """
+        首次运行服务器时显示额外启动信息，重载器运行时忽略。
     """
     if is_running_from_reloader():
         return
@@ -786,9 +722,9 @@ def show_server_banner(debug: bool, app_import_path: str | None) -> None:
 
 
 class CertParamType(click.ParamType):
-    """Click option type for the ``--cert`` option. Allows either an
-    existing file, the string ``'adhoc'``, or an import for a
-    :class:`~ssl.SSLContext` object.
+    """
+        ``--cert`` 选项的 Click 参数类型。接受现有文件、字符串 ``'adhoc'``
+        或 :class:`~ssl.SSLContext` 对象的导入路径。
     """
 
     name = "path"
@@ -834,8 +770,9 @@ class CertParamType(click.ParamType):
 
 
 def _validate_key(ctx: click.Context, param: click.Parameter, value: t.Any) -> t.Any:
-    """The ``--key`` option must be specified when ``--cert`` is a file.
-    Modifies the ``cert`` param to be a ``(cert, key)`` pair if needed.
+    """
+        ``--cert`` 为文件时必须指定 ``--key`` 选项。
+        修改 ``cert`` 参数类型，使 ``type`` 为文件时 ``key`` 必填。
     """
     cert = ctx.params.get("cert")
     is_adhoc = cert == "adhoc"
@@ -873,9 +810,9 @@ def _validate_key(ctx: click.Context, param: click.Parameter, value: t.Any) -> t
 
 
 class SeparatedPathType(click.Path):
-    """Click option type that accepts a list of values separated by the
-    OS's path separator (``:``, ``;`` on Windows). Each value is
-    validated as a :class:`click.Path` type.
+    """
+        Click 选项类型，接受以操作系统路径分隔符（Windows 为 ``;``，Unix 为 ``:``）
+        分隔的多个值，每个值按 :class:`click.Path` 校验。
     """
 
     def convert(
@@ -951,13 +888,13 @@ def run_command(
     extra_files: list[str] | None,
     exclude_patterns: list[str] | None,
 ) -> None:
-    """Run a local development server.
-
-    This server is for development purposes only. It does not provide
-    the stability, security, or performance of production WSGI servers.
-
-    The reloader and debugger are enabled by default with the '--debug'
-    option.
+    """
+        运行本地开发服务器。
+        
+        此函数名为 ``run`` 命令的回调，但不可作为 ``app.run`` 使用。
+        请使用 ``flask run`` 命令。
+        
+        .. versionadded:: 0.11
     """
     try:
         app: WSGIApplication = info.load_app()  # pyright: ignore
@@ -1007,12 +944,8 @@ run_command.params.insert(0, _debug_option)
 @click.command("shell", short_help="Run a shell in the app context.")
 @with_appcontext
 def shell_command() -> None:
-    """Run an interactive Python shell in the context of a given
-    Flask application.  The application will populate the default
-    namespace of this shell according to its configuration.
-
-    This is useful for executing small snippets of management code
-    without having to manually configure the application.
+    """
+        在应用上下文中打开交互式 Python shell。
     """
     import code
 
@@ -1067,7 +1000,9 @@ def shell_command() -> None:
 @click.option("--all-methods", is_flag=True, help="Show HEAD and OPTIONS methods.")
 @with_appcontext
 def routes_command(sort: str, all_methods: bool) -> None:
-    """Show all registered routes with endpoints and methods."""
+    """
+        显示所有注册路由及端点信息。
+    """
     rules = list(current_app.url_map.iter_rules())
 
     if not rules:

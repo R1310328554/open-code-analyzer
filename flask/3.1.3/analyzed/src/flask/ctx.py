@@ -22,32 +22,19 @@ if t.TYPE_CHECKING:  # pragma: no cover
     from .wrappers import Request
 
 
-# a singleton sentinel value for parameter defaults
+# 用作参数默认值的单例哨兵值
 _sentinel = object()
 
 
 class _AppCtxGlobals:
-    """A plain object. Used as a namespace for storing data during an
-    application context.
-
-    Creating an app context automatically creates this object, which is
-    made available as the :data:`g` proxy.
-
-    .. describe:: 'key' in g
-
-        Check whether an attribute is present.
-
-        .. versionadded:: 0.10
-
-    .. describe:: iter(g)
-
-        Return an iterator over the attribute names.
-
-        .. versionadded:: 0.10
+    """
+        普通对象，用作应用上下文中存储数据的命名空间。
+        
+        创建应用上下文时会自动创建此对象，并通过 :data:`g` 代理对外暴露。
     """
 
-    # Define attr methods to let mypy know this is a namespace object
-    # that has arbitrary attributes.
+    # 定义属性方法让 mypy 知道这是命名空间对象
+    # 可拥有任意属性。
 
     def __getattr__(self, name: str) -> t.Any:
         try:
@@ -65,24 +52,20 @@ class _AppCtxGlobals:
             raise AttributeError(name) from None
 
     def get(self, name: str, default: t.Any | None = None) -> t.Any:
-        """Get an attribute by name, or a default value. Like
-        :meth:`dict.get`.
-
-        :param name: Name of attribute to get.
-        :param default: Value to return if the attribute is not present.
-
-        .. versionadded:: 0.10
+        """
+            按名称获取属性，若不存在则返回默认值。行为类似 :meth:`dict.get`。
+            
+            :param name: 要获取的属性名。
+            :param default: 属性不存在时返回的值。
         """
         return self.__dict__.get(name, default)
 
     def pop(self, name: str, default: t.Any = _sentinel) -> t.Any:
-        """Get and remove an attribute by name. Like :meth:`dict.pop`.
-
-        :param name: Name of attribute to pop.
-        :param default: Value to return if the attribute is not present,
-            instead of raising a ``KeyError``.
-
-        .. versionadded:: 0.11
+        """
+            按名称获取并移除属性。行为类似 :meth:`dict.pop`。
+            
+            :param name: 要弹出的属性名。
+            :param default: 属性不存在时返回的值，而非抛出 ``KeyError``。
         """
         if default is _sentinel:
             return self.__dict__.pop(name)
@@ -90,14 +73,12 @@ class _AppCtxGlobals:
             return self.__dict__.pop(name, default)
 
     def setdefault(self, name: str, default: t.Any = None) -> t.Any:
-        """Get the value of an attribute if it is present, otherwise
-        set and return a default value. Like :meth:`dict.setdefault`.
-
-        :param name: Name of attribute to get.
-        :param default: Value to set and return if the attribute is not
-            present.
-
-        .. versionadded:: 0.11
+        """
+            若属性存在则返回其值，否则设置并返回默认值。
+            行为类似 :meth:`dict.setdefault`。
+            
+            :param name: 要获取的属性名。
+            :param default: 属性不存在时设置并返回的值。
         """
         return self.__dict__.setdefault(name, default)
 
@@ -117,25 +98,9 @@ class _AppCtxGlobals:
 def after_this_request(
     f: ft.AfterRequestCallable[t.Any],
 ) -> ft.AfterRequestCallable[t.Any]:
-    """Executes a function after this request.  This is useful to modify
-    response objects.  The function is passed the response object and has
-    to return the same or a new one.
-
-    Example::
-
-        @app.route('/')
-        def index():
-            @after_this_request
-            def add_header(response):
-                response.headers['X-Foo'] = 'Parachute'
-                return response
-            return 'Hello World!'
-
-    This is more useful if a function other than the view function wants to
-    modify a response.  For instance think of a decorator that wants to add
-    some headers without converting the return value into a response object.
-
-    .. versionadded:: 0.9
+    """
+        在当前请求结束后执行函数，常用于修改响应对象。
+        函数接收响应对象，须返回同一对象或新对象。
     """
     ctx = _cv_request.get(None)
 
@@ -153,28 +118,8 @@ F = t.TypeVar("F", bound=t.Callable[..., t.Any])
 
 
 def copy_current_request_context(f: F) -> F:
-    """A helper function that decorates a function to retain the current
-    request context.  This is useful when working with greenlets.  The moment
-    the function is decorated a copy of the request context is created and
-    then pushed when the function is called.  The current session is also
-    included in the copied request context.
-
-    Example::
-
-        import gevent
-        from flask import copy_current_request_context
-
-        @app.route('/')
-        def index():
-            @copy_current_request_context
-            def do_some_work():
-                # do some work here, it can access flask.request or
-                # flask.session like you would otherwise in the view function.
-                ...
-            gevent.spawn(do_some_work)
-            return 'Regular response'
-
-    .. versionadded:: 0.10
+    """
+        装饰函数以保留当前请求上下文的辅助函数，适用于 greenlet 场景。
     """
     ctx = _cv_request.get(None)
 
@@ -194,52 +139,23 @@ def copy_current_request_context(f: F) -> F:
 
 
 def has_request_context() -> bool:
-    """If you have code that wants to test if a request context is there or
-    not this function can be used.  For instance, you may want to take advantage
-    of request information if the request object is available, but fail
-    silently if it is unavailable.
-
-    ::
-
-        class User(db.Model):
-
-            def __init__(self, username, remote_addr=None):
-                self.username = username
-                if remote_addr is None and has_request_context():
-                    remote_addr = request.remote_addr
-                self.remote_addr = remote_addr
-
-    Alternatively you can also just test any of the context bound objects
-    (such as :class:`request` or :class:`g`) for truthness::
-
-        class User(db.Model):
-
-            def __init__(self, username, remote_addr=None):
-                self.username = username
-                if remote_addr is None and request:
-                    remote_addr = request.remote_addr
-                self.remote_addr = remote_addr
-
-    .. versionadded:: 0.7
+    """
+        若代码需要检测请求上下文是否存在，可使用此函数。
     """
     return _cv_request.get(None) is not None
 
 
 def has_app_context() -> bool:
-    """Works like :func:`has_request_context` but for the application
-    context.  You can also just do a boolean check on the
-    :data:`current_app` object instead.
-
-    .. versionadded:: 0.9
+    """
+        与 :func:`has_request_context` 类似，但针对应用上下文。
     """
     return _cv_app.get(None) is not None
 
 
 class AppContext:
-    """The app context contains application-specific information. An app
-    context is created and pushed at the beginning of each request if
-    one is not already active. An app context is also pushed when
-    running CLI commands.
+    """
+        应用上下文包含应用专属信息。每个请求开始时若尚无活动上下文，
+        会创建并压入应用上下文。
     """
 
     def __init__(self, app: Flask) -> None:
@@ -249,12 +165,16 @@ class AppContext:
         self._cv_tokens: list[contextvars.Token[AppContext]] = []
 
     def push(self) -> None:
-        """Binds the app context to the current context."""
+        """
+            将应用上下文绑定到当前上下文。
+        """
         self._cv_tokens.append(_cv_app.set(self))
         appcontext_pushed.send(self.app, _async_wrapper=self.app.ensure_sync)
 
     def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
-        """Pops the app context."""
+        """
+            弹出应用上下文。
+        """
         try:
             if len(self._cv_tokens) == 1:
                 if exc is _sentinel:
@@ -285,25 +205,9 @@ class AppContext:
 
 
 class RequestContext:
-    """The request context contains per-request information. The Flask
-    app creates and pushes it at the beginning of the request, then pops
-    it at the end of the request. It will create the URL adapter and
-    request object for the WSGI environment provided.
-
-    Do not attempt to use this class directly, instead use
-    :meth:`~flask.Flask.test_request_context` and
-    :meth:`~flask.Flask.request_context` to create this object.
-
-    When the request context is popped, it will evaluate all the
-    functions registered on the application for teardown execution
-    (:meth:`~flask.Flask.teardown_request`).
-
-    The request context is automatically popped at the end of the
-    request. When using the interactive debugger, the context will be
-    restored so ``request`` is still accessible. Similarly, the test
-    client can preserve the context after the request ends. However,
-    teardown functions may already have closed some resources such as
-    database connections.
+    """
+        请求上下文包含每个请求的专属信息。Flask 应用在请求开始时创建并压入，
+        请求结束时弹出。
     """
 
     def __init__(
@@ -335,17 +239,8 @@ class RequestContext:
         ] = []
 
     def copy(self) -> RequestContext:
-        """Creates a copy of this request context with the same request object.
-        This can be used to move a request context to a different greenlet.
-        Because the actual request object is the same this cannot be used to
-        move a request context to a different thread unless access to the
-        request object is locked.
-
-        .. versionadded:: 0.10
-
-        .. versionchanged:: 1.1
-           The current session object is used instead of reloading the original
-           data. This prevents `flask.session` pointing to an out-of-date object.
+        """
+            创建使用同一请求对象的请求上下文副本。
         """
         return self.__class__(
             self.app,
@@ -355,8 +250,8 @@ class RequestContext:
         )
 
     def match_request(self) -> None:
-        """Can be overridden by a subclass to hook into the matching
-        of the request.
+        """
+            子类可重写以介入请求匹配过程。
         """
         try:
             result = self.url_adapter.match(return_rule=True)  # type: ignore
@@ -366,9 +261,8 @@ class RequestContext:
 
     @property
     def session(self) -> SessionMixin:
-        """The session data associated with this request. Not available until
-        this context has been pushed. Accessing this property, also accessed by
-        the :data:`~flask.session` proxy, sets :attr:`.SessionMixin.accessed`.
+        """
+            与此请求关联的 session 数据。上下文压入前不可用。
         """
         assert self._session is not None, "The session has not yet been opened."
         self._session.accessed = True
@@ -389,8 +283,8 @@ class RequestContext:
 
         # Open the session at the moment that the request context is available.
         # This allows a custom open_session method to use the request context.
-        # Only open a new session if this is the first time the request was
-        # pushed, otherwise stream_with_context loses the session.
+        # 仅在首次压入请求时打开新 session
+        # 否则 stream_with_context 会丢失 session。
         if self._session is None:
             session_interface = self.app.session_interface
             self._session = session_interface.open_session(self.app, self.request)
@@ -404,12 +298,8 @@ class RequestContext:
             self.match_request()
 
     def pop(self, exc: BaseException | None = _sentinel) -> None:  # type: ignore
-        """Pops the request context and unbinds it by doing that.  This will
-        also trigger the execution of functions registered by the
-        :meth:`~flask.Flask.teardown_request` decorator.
-
-        .. versionchanged:: 0.9
-           Added the `exc` argument.
+        """
+            弹出请求上下文并解绑。同时触发 teardown_request 注册的函数。
         """
         clear_request = len(self._cv_tokens) == 1
 
