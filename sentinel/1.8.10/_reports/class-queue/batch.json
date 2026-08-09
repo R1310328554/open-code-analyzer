@@ -15,23 +15,8 @@
     "sentinel-logging/sentinel-logging-slf4j/src/main/java/com/alibaba/csp/sentinel/logging/slf4j/CommandCenterLogLogger.java",
     "sentinel-logging/sentinel-logging-slf4j/src/main/java/com/alibaba/csp/sentinel/logging/slf4j/RecordLogLogger.java",
     "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandCenterProvider.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandConstants.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandHandlerInterceptor.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandHandlerProvider.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandRequest.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandRequestExecution.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandResponse.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/annotation/CommandMapping.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/ApiCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/BasicInfoCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/FetchActiveRuleCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/FetchClusterNodeByIdCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/FetchClusterNodeHumanCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/FetchJsonTreeCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/FetchOriginCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/FetchSimpleClusterNodeCommandHandler.java"
+    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/CommandConstants.java"
   ],
   "remaining_pending": 65,
-  "done": 855
+  "done": 870
 }
