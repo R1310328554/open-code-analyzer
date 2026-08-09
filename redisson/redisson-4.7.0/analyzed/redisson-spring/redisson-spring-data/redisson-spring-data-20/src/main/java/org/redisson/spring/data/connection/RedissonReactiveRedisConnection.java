@@ -34,21 +34,26 @@ import org.springframework.data.redis.connection.ReactiveZSetCommands;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 单机模式响应式连接门面。
+ * <p>实现 {@link ReactiveRedisConnection}，按数据类型委托各 {@code RedissonReactive*Commands}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveRedisConnection extends RedissonBaseReactive implements ReactiveRedisConnection {
 
+    /** 注入响应式命令执行器。 */
     public RedissonReactiveRedisConnection(CommandReactiveExecutor executorService) {
         super(executorService);
     }
     
+    /** 返回 Key 命令实现。 */
     @Override
     public ReactiveKeyCommands keyCommands() {
         return new RedissonReactiveKeyCommands(executorService);
     }
 
+    /** 返回 String 命令实现。 */
     @Override
     public ReactiveStringCommands stringCommands() {
         return new RedissonReactiveStringCommands(executorService);
@@ -89,6 +94,7 @@ public class RedissonReactiveRedisConnection extends RedissonBaseReactive implem
         return new RedissonReactiveHyperLogLogCommands(executorService);
     }
 
+    /** 返回 Lua 脚本命令实现。 */
     @Override
     public ReactiveScriptingCommands scriptingCommands() {
         return new RedissonReactiveScriptingCommands(executorService);
@@ -99,11 +105,13 @@ public class RedissonReactiveRedisConnection extends RedissonBaseReactive implem
         return new RedissonReactiveServerCommands(executorService);
     }
 
+    /** PING：检测连接可用性。 */
     @Override
     public Mono<String> ping() {
         return read(null, StringCodec.INSTANCE, RedisCommands.PING);
     }
 
+    /** 响应式连接由工厂统一管理生命周期，此处为空实现。 */
     @Override
     public void close() {
     }

@@ -40,18 +40,22 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 Set 命令实现。
+ * <p>封装 SADD/SREM、SPOP、SINTER/SUNION/SDIFF 及 STORE 变体、SMEMBERS 等集合操作。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveSetCommands extends RedissonBaseReactive implements ReactiveSetCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveSetCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
     private static final RedisCommand<Long> SADD = new RedisCommand<Long>("SADD");
     
+    /** SADD：向集合添加一个或多个 member。 */
     @Override
     public Flux<NumericResponse<SAddCommand, Long>> sAdd(Publisher<SAddCommand> commands) {
         return execute(commands, command -> {
@@ -71,6 +75,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
 
     private static final RedisCommand<Long> SREM = new RedisCommand<Long>("SREM");
     
+    /** SREM：从集合移除 member。 */
     @Override
     public Flux<NumericResponse<SRemCommand, Long>> sRem(Publisher<SRemCommand> commands) {
         return execute(commands, command -> {
@@ -87,6 +92,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** SPOP count：随机弹出多个 member。 */
     @Override
     public Flux<ByteBuffer> sPop(SPopCommand command) {
         Assert.notNull(command.getKey(), "Key must not be null!");
@@ -108,6 +114,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** SMOVE：将 member 从源集合移动到目标集合。 */
     @Override
     public Flux<BooleanResponse<SMoveCommand>> sMove(Publisher<SMoveCommand> commands) {
         return execute(commands, command -> {
@@ -152,6 +159,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** SINTER：返回多个集合的交集 member 流。 */
     @Override
     public Flux<CommandResponse<SInterCommand, Flux<ByteBuffer>>> sInter(Publisher<SInterCommand> commands) {
         return execute(commands, command -> {
@@ -181,6 +189,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** SUNION：返回多个集合的并集 member 流。 */
     @Override
     public Flux<CommandResponse<SUnionCommand, Flux<ByteBuffer>>> sUnion(Publisher<SUnionCommand> commands) {
         return execute(commands, command -> {
@@ -210,6 +219,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** SDIFF：返回集合差集 member 流。 */
     @Override
     public Flux<CommandResponse<SDiffCommand, Flux<ByteBuffer>>> sDiff(Publisher<SDiffCommand> commands) {
         return execute(commands, command -> {
@@ -239,6 +249,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** SMEMBERS：返回集合全部 member。 */
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<ByteBuffer>>> sMembers(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
