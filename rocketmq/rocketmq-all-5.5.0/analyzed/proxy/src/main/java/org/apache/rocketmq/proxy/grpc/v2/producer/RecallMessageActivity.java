@@ -31,28 +31,36 @@ import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 撤回已发送消息的 gRPC v2 Activity：校验 Topic 后委托 {@link MessagingProcessor#recallMessage} 执行撤回。
+ */
 public class RecallMessageActivity extends AbstractMessagingActivity {
 
+    /** 构造消息撤回 Activity 并注入依赖组件。 */
     public RecallMessageActivity(MessagingProcessor messagingProcessor,
                                  GrpcClientSettingsManager grpcClientSettingsManager, GrpcChannelManager grpcChannelManager) {
         super(messagingProcessor, grpcClientSettingsManager, grpcChannelManager);
     }
 
+    /** 按 recallHandle 撤回指定 Topic 下的消息，返回新 messageId。 */
     public CompletableFuture<RecallMessageResponse> recallMessage(ProxyContext ctx,
         RecallMessageRequest request) {
         CompletableFuture<RecallMessageResponse> future = new CompletableFuture<>();
 
         try {
+            // 获取并校验 Topic 资源
             Resource topic = request.getTopic();
+            // 校验 Topic 合法性
             validateTopic(topic);
 
             future = this.messagingProcessor.recallMessage(
                 ctx,
                 topic.getName(),
                 request.getRecallHandle(),
-                Duration.ofSeconds(2).toMillis()
+                Duration.ofSeconds(2).toMillis() // 撤回操作超时 2 秒
             ).thenApply(result -> RecallMessageResponse.newBuilder()
                 .setMessageId(result)
+                // 构建成功状态响应
                 .setStatus(ResponseBuilder.getInstance().buildStatus(Code.OK, Code.OK.name()))
                 .build());
         } catch (Throwable t) {

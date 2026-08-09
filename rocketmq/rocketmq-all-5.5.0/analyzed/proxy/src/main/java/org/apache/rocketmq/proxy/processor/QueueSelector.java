@@ -20,7 +20,11 @@ import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.proxy.service.route.AddressableMessageQueue;
 import org.apache.rocketmq.proxy.service.route.MessageQueueView;
 
+/**
+ * 队列选择器：从 {@link MessageQueueView} 中选取目标 {@link AddressableMessageQueue}。
+ */
 public interface QueueSelector {
 
+    /** 根据上下文与队列视图选择可写消息队列。 */
     AddressableMessageQueue select(ProxyContext ctx, MessageQueueView messageQueueView);
 }

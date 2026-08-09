@@ -16,9 +16,15 @@
  */
 package org.apache.rocketmq.proxy.metrics;
 
+/**
+ * Proxy 指标常量：定义 OpenTelemetry 指标名与标签键。
+ */
 public class ProxyMetricsConstant {
+    /** Proxy 存活状态 Gauge 指标名。 */
     public static final String GAUGE_PROXY_UP = "rocketmq_proxy_up";
 
+    /** Proxy 运行模式标签键（local/cluster）。 */
     public static final String LABEL_PROXY_MODE = "proxy_mode";
+    /** 节点类型标签值，标识为 Proxy 节点。 */
     public static final String NODE_TYPE_PROXY = "proxy";
 }

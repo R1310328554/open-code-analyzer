@@ -22,19 +22,27 @@ import org.apache.rocketmq.proxy.common.ProxyException;
 import org.apache.rocketmq.proxy.common.ProxyExceptionCode;
 import org.apache.rocketmq.proxy.service.ServiceManager;
 
+/**
+ * Proxy 处理器抽象基类：持有 {@link MessagingProcessor} 与 {@link ServiceManager}，提供回执句柄校验。
+ */
 public abstract class AbstractProcessor extends AbstractStartAndShutdown {
 
+    /** 消息处理门面，协调各子 Processor。 */
     protected MessagingProcessor messagingProcessor;
+    /** 底层服务管理器，提供路由/消息/事务等服务。 */
     protected ServiceManager serviceManager;
 
+    /** 回执句柄已过期时的统一异常实例。 */
     protected static final ProxyException EXPIRED_HANDLE_PROXY_EXCEPTION = new ProxyException(ProxyExceptionCode.INVALID_RECEIPT_HANDLE, "receipt handle is expired");
 
+    /** 构造处理器并注入消息处理器与服务管理器。 */
     public AbstractProcessor(MessagingProcessor messagingProcessor,
         ServiceManager serviceManager) {
         this.messagingProcessor = messagingProcessor;
         this.serviceManager = serviceManager;
     }
 
+    /** 校验回执句柄未过期，否则抛出 {@link #EXPIRED_HANDLE_PROXY_EXCEPTION}。 */
     protected void validateReceiptHandle(ReceiptHandle handle) {
         if (handle.isExpired()) {
             throw EXPIRED_HANDLE_PROXY_EXCEPTION;

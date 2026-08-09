@@ -29,27 +29,36 @@ import org.apache.rocketmq.proxy.grpc.v2.common.ResponseBuilder;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 转发消息到死信队列（DLQ）的 gRPC v2 Activity：解析回执句柄并委托 {@link MessagingProcessor} 执行转发。
+ */
 public class ForwardMessageToDLQActivity extends AbstractMessagingActivity {
 
+    /** 构造 DLQ 转发 Activity 并注入消息处理器与 gRPC 通道管理器。 */
     public ForwardMessageToDLQActivity(MessagingProcessor messagingProcessor,
         GrpcClientSettingsManager grpcClientSettingsManager, GrpcChannelManager grpcChannelManager) {
         super(messagingProcessor, grpcClientSettingsManager, grpcChannelManager);
     }
 
+    /** 将指定消息转发至死信队列，返回异步 gRPC 响应。 */
     public CompletableFuture<ForwardMessageToDeadLetterQueueResponse> forwardMessageToDeadLetterQueue(ProxyContext ctx,
         ForwardMessageToDeadLetterQueueRequest request) {
         CompletableFuture<ForwardMessageToDeadLetterQueueResponse> future = new CompletableFuture<>();
         try {
+            // 校验 Topic 与消费者组
             validateTopicAndConsumerGroup(request.getTopic(), request.getGroup());
 
             String group = request.getGroup().getName();
             String handleString = request.getReceiptHandle();
+            // 移除本地缓存的回执句柄，获取完整句柄字符串
             MessageReceiptHandle messageReceiptHandle = messagingProcessor.removeReceiptHandle(ctx, grpcChannelManager.getChannel(ctx.getClientID()), group, request.getMessageId(), request.getReceiptHandle());
             if (messageReceiptHandle != null) {
                 handleString = messageReceiptHandle.getReceiptHandleStr();
             }
+            // 解码回执句柄为 Broker 可识别的结构
             ReceiptHandle receiptHandle = ReceiptHandle.decode(handleString);
 
+            // 可选 Lite Topic 名称
             String liteTopic = request.hasLiteTopic() ? request.getLiteTopic() : null;
 
             return this.messagingProcessor.forwardMessageToDeadLetterQueue(
@@ -66,6 +75,7 @@ public class ForwardMessageToDLQActivity extends AbstractMessagingActivity {
         return future;
     }
 
+    /** 将 Broker Remoting 响应转换为 gRPC DLQ 转发响应。 */
     protected ForwardMessageToDeadLetterQueueResponse convertToForwardMessageToDeadLetterQueueResponse(ProxyContext ctx,
         RemotingCommand result) {
         return ForwardMessageToDeadLetterQueueResponse.newBuilder()

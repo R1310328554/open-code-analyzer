@@ -54,11 +54,17 @@ import org.apache.rocketmq.remoting.protocol.header.ConsumerSendMsgBackRequestHe
 import org.apache.rocketmq.remoting.protocol.header.RecallMessageRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.SendMessageRequestHeader;
 
+/**
+ * 生产者消息处理器：负责发送、撤回、DLQ 转发及事务半消息数据填充。
+ */
 public class ProducerProcessor extends AbstractProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 发送完成回调使用的线程池。 */
     private final ExecutorService executor;
+    /** Topic 消息类型校验器。 */
     private final TopicMessageTypeValidator topicMessageTypeValidator;
 
+    /** 构造生产者处理器并初始化类型校验器。 */
     public ProducerProcessor(MessagingProcessor messagingProcessor,
         ServiceManager serviceManager, ExecutorService executor) {
         super(messagingProcessor, serviceManager);
@@ -66,6 +72,7 @@ public class ProducerProcessor extends AbstractProcessor {
         this.topicMessageTypeValidator = new DefaultTopicMessageTypeValidator();
     }
 
+    /** 发送单条或批量消息，含队列选择与事务数据填充。 */
     public CompletableFuture<List<SendResult>> sendMessage(ProxyContext ctx, QueueSelector queueSelector,
         String producerGroup, int sysFlag, List<Message> messageList, long timeoutMillis) {
         CompletableFuture<List<SendResult>> future = new CompletableFuture<>();
@@ -76,7 +83,7 @@ public class ProducerProcessor extends AbstractProcessor {
             String topic = message.getTopic();
             if (isNeedCheckTopicMessageType(message)) {
                 if (topicMessageTypeValidator != null) {
-                    // Do not check retry or dlq topic
+                    // 重试 Topic 与 DLQ Topic 跳过类型校验
                     if (!NamespaceUtil.isRetryTopic(topic) && !NamespaceUtil.isDLQTopic(topic)) {
                         TopicMessageType topicMessageType = serviceManager.getMetadataService().getTopicMessageType(ctx, topic);
                         TopicMessageType messageType = TopicMessageType.parseFromMessageProperty(message.getProperties());
@@ -125,6 +132,7 @@ public class ProducerProcessor extends AbstractProcessor {
         return future;
     }
 
+    /** 撤回延迟消息，解码 recallHandle 并路由至对应 Broker。 */
     public CompletableFuture<String> recallMessage(ProxyContext ctx, String topic,
                                                    String recallHandle, long timeoutMillis) {
         CompletableFuture<String> future = new CompletableFuture<>();
@@ -152,6 +160,7 @@ public class ProducerProcessor extends AbstractProcessor {
         return FutureUtils.addExecutor(future, this.executor);
     }
 
+    /** 半消息发送成功后填充事务数据到 TransactionService。 */
     protected void fillTransactionData(ProxyContext ctx, String producerGroup, AddressableMessageQueue messageQueue, SendResult sendResult, List<Message> messageList) {
         try {
             MessageId id;
@@ -175,6 +184,7 @@ public class ProducerProcessor extends AbstractProcessor {
         }
     }
 
+    /** 从 Message 列表构建 Broker SendMessageRequestHeader。 */
     protected SendMessageRequestHeader buildSendMessageRequestHeader(List<Message> messageList,
         String producerGroup, int sysFlag, int queueId) {
         SendMessageRequestHeader requestHeader = new SendMessageRequestHeader();
@@ -225,6 +235,7 @@ public class ProducerProcessor extends AbstractProcessor {
         return requestHeader;
     }
 
+    /** 转发消息至死信队列，成功后自动 ACK 原消息。 */
     public CompletableFuture<RemotingCommand> forwardMessageToDeadLetterQueue(ProxyContext ctx,
         ReceiptHandle handle,
         String messageId,
@@ -265,6 +276,7 @@ public class ProducerProcessor extends AbstractProcessor {
         return FutureUtils.addExecutor(future, this.executor);
     }
 
+    /** 判断是否需要校验 Topic 消息类型（排除转发标记消息）。 */
     private boolean isNeedCheckTopicMessageType(Message message) {
         return ConfigurationManager.getProxyConfig().isEnableTopicMessageTypeCheck()
             && !message.hasProperty(MessageConst.PROPERTY_TRANSFER_FLAG);

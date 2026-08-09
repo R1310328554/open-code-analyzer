@@ -20,15 +20,20 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * POP 消息结果过滤器：对拉取到的消息按订阅规则决定去向（匹配/DLQ/返回/不匹配）。
+ */
 public interface PopMessageResultFilter {
 
+    /** 过滤结果枚举。 */
     enum FilterResult {
-        TO_DLQ,
-        NO_MATCH,
-        MATCH,
-        TO_RETURN
+        TO_DLQ, // 转发至死信队列
+        NO_MATCH, // 不匹配订阅规则
+        MATCH, // 匹配订阅规则
+        TO_RETURN // 直接返回客户端
     }
 
+    /** 过滤单条 POP 消息并返回处理决策。 */
     FilterResult filterMessage(ProxyContext ctx, String consumerGroup, SubscriptionData subscriptionData,
         MessageExt messageExt);
 }

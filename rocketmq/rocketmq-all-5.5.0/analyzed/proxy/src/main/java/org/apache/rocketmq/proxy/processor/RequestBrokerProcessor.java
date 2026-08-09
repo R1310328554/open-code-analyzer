@@ -22,17 +22,23 @@ import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.proxy.service.ServiceManager;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Broker 请求处理器：封装对指定 Broker 的同步/单向 Remoting 请求转发。
+ */
 public class RequestBrokerProcessor extends AbstractProcessor {
 
+    /** 构造 Broker 请求处理器。 */
     public RequestBrokerProcessor(MessagingProcessor messagingProcessor,
         ServiceManager serviceManager) {
         super(messagingProcessor, serviceManager);
     }
 
+    /** 向指定 Broker 发送同步 Remoting 请求并等待响应。 */
     CompletableFuture<RemotingCommand> request(ProxyContext ctx, String brokerName, RemotingCommand request, long timeoutMillis) {
         return serviceManager.getMessageService().request(ctx, brokerName, request, timeoutMillis);
     }
 
+    /** 向指定 Broker 发送单向 Remoting 请求（不等待响应）。 */
     CompletableFuture<Void> requestOneway(ProxyContext ctx, String brokerName, RemotingCommand request, long timeoutMillis) {
         return serviceManager.getMessageService().requestOneway(ctx, brokerName, request, timeoutMillis);
     }

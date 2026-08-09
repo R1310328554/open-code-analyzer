@@ -53,13 +53,18 @@ import org.apache.rocketmq.proxy.service.route.ProxyTopicRouteData;
 import org.apache.rocketmq.remoting.protocol.route.QueueData;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 路由查询 gRPC v2 Activity：提供 Topic 路由与消费队列分配（Assignment）查询能力。
+ */
 public class RouteActivity extends AbstractMessagingActivity {
 
+    /** 构造路由 Activity 并注入消息处理器与 gRPC 组件。 */
     public RouteActivity(MessagingProcessor messagingProcessor,
         GrpcClientSettingsManager grpcClientSettingsManager, GrpcChannelManager grpcChannelManager) {
         super(messagingProcessor, grpcClientSettingsManager, grpcChannelManager);
     }
 
+    /** 查询 Topic 全量 MessageQueue 路由信息。 */
     public CompletableFuture<QueryRouteResponse> queryRoute(ProxyContext ctx, QueryRouteRequest request) {
         CompletableFuture<QueryRouteResponse> future = new CompletableFuture<>();
         try {
@@ -67,10 +72,12 @@ public class RouteActivity extends AbstractMessagingActivity {
             List<org.apache.rocketmq.proxy.common.Address> addressList = this.convertToAddressList(ctx, request.getEndpoints());
 
             String topicName = request.getTopic().getName();
+            // 从 NameServer/Broker 获取 Topic 路由数据
             ProxyTopicRouteData proxyTopicRouteData = this.messagingProcessor.getTopicRouteDataForProxy(
                 ctx, addressList, topicName);
 
             List<MessageQueue> messageQueueList = new ArrayList<>();
+            // 构建 brokerName -> brokerId -> Broker 映射
             Map<String, Map<Long, Broker>> brokerMap = buildBrokerMap(proxyTopicRouteData.getBrokerDatas());
 
             TopicMessageType topicMessageType = messagingProcessor.getMetadataService().getTopicMessageType(ctx, topicName);
@@ -96,6 +103,7 @@ public class RouteActivity extends AbstractMessagingActivity {
         return future;
     }
 
+    /** 查询消费者组的队列分配（Assignment），支持 FIFO 与 Lite 模式。 */
     public CompletableFuture<QueryAssignmentResponse> queryAssignment(ProxyContext ctx,
         QueryAssignmentRequest request) {
         CompletableFuture<QueryAssignmentResponse> future = new CompletableFuture<>();
@@ -109,7 +117,9 @@ public class RouteActivity extends AbstractMessagingActivity {
                 addressList,
                 request.getTopic().getName());
 
+            // 是否顺序消费（FIFO）模式
             boolean isFifo = false;
+            // 是否 Lite 订阅模式
             boolean isLite = false;
             SubscriptionGroupConfig groupConfig = this.messagingProcessor
                 .getSubscriptionGroupConfig(ctx, request.getGroup().getName());
@@ -172,6 +182,7 @@ public class RouteActivity extends AbstractMessagingActivity {
         return future;
     }
 
+    /** 将 Broker 权限位转换为 gRPC {@link Permission} 枚举。 */
     protected Permission convertToPermission(int perm) {
         boolean isReadable = PermName.isReadable(perm);
         boolean isWriteable = PermName.isWriteable(perm);
@@ -187,6 +198,7 @@ public class RouteActivity extends AbstractMessagingActivity {
         return Permission.NONE;
     }
 
+    /** 将 gRPC Endpoints 转换为 Proxy 内部地址列表。 */
     protected List<org.apache.rocketmq.proxy.common.Address> convertToAddressList(ProxyContext ctx, Endpoints endpoints) {
         boolean useEndpointPort = ConfigurationManager.getProxyConfig().isUseEndpointPortFromRequest();
 
@@ -204,6 +216,7 @@ public class RouteActivity extends AbstractMessagingActivity {
         return addressList;
     }
 
+    /** 从 ProxyBrokerData 列表构建 Broker 映射表。 */
     protected Map<String /*brokerName*/, Map<Long /*brokerID*/, Broker>> buildBrokerMap(
         List<ProxyTopicRouteData.ProxyBrokerData> brokerDataList) {
         Map<String, Map<Long, Broker>> brokerMap = new HashMap<>();
@@ -258,7 +271,7 @@ public class RouteActivity extends AbstractMessagingActivity {
             n = Math.max(1, Math.max(queueData.getWriteQueueNums(), queueData.getReadQueueNums()));
         }
 
-        // r here means readOnly queue nums, w means writeOnly queue nums, while rw means both readable and writable queue nums.
+        // r=只读队列数，w=只写队列数，rw=读写队列数
         int queueIdIndex = 0;
         for (int i = 0; i < r; i++) {
             MessageQueue messageQueue = MessageQueue.newBuilder().setBroker(broker).setTopic(topic)
@@ -299,6 +312,7 @@ public class RouteActivity extends AbstractMessagingActivity {
         return messageQueueList;
     }
 
+    /** 将内部 TopicMessageType 映射为 gRPC MessageType 列表。 */
     private List<MessageType> parseTopicMessageType(TopicMessageType topicMessageType) {
         switch (topicMessageType) {
             case NORMAL:

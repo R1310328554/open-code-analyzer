@@ -24,17 +24,23 @@ import org.apache.rocketmq.proxy.common.ProxyExceptionCode;
 import org.apache.rocketmq.proxy.service.ServiceManager;
 import org.apache.rocketmq.proxy.service.transaction.EndTransactionRequestData;
 
+/**
+ * 事务消息处理器：负责半消息提交/回滚及事务订阅注册。
+ */
 public class TransactionProcessor extends AbstractProcessor {
 
+    /** 构造事务处理器。 */
     public TransactionProcessor(MessagingProcessor messagingProcessor,
         ServiceManager serviceManager) {
         super(messagingProcessor, serviceManager);
     }
 
+    /** 结束事务（提交或回滚），向 Broker 发送 EndTransaction 单向请求。 */
     public CompletableFuture<Void> endTransaction(ProxyContext ctx, String topic, String transactionId, String messageId, String producerGroup,
         TransactionStatus transactionStatus, boolean fromTransactionCheck, long timeoutMillis) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         try {
+            // 从事务服务生成 EndTransaction 请求头
             EndTransactionRequestData headerData = serviceManager.getTransactionService().genEndTransactionRequestHeader(
                 ctx,
                 topic,
@@ -60,17 +66,19 @@ public class TransactionProcessor extends AbstractProcessor {
         return future;
     }
 
+    /** 将 {@link TransactionStatus} 映射为 MessageSysFlag 提交/回滚类型。 */
     protected int buildCommitOrRollback(TransactionStatus transactionStatus) {
         switch (transactionStatus) {
-            case COMMIT:
+            case COMMIT: // 提交
                 return MessageSysFlag.TRANSACTION_COMMIT_TYPE;
-            case ROLLBACK:
+            case ROLLBACK: // 回滚
                 return MessageSysFlag.TRANSACTION_ROLLBACK_TYPE;
             default:
                 return MessageSysFlag.TRANSACTION_NOT_TYPE;
         }
     }
 
+    /** 注册生产者组对 Topic 的事务订阅关系。 */
     public void addTransactionSubscription(ProxyContext ctx, String producerGroup, String topic) {
         this.serviceManager.getTransactionService().addTransactionSubscription(ctx, producerGroup, topic);
     }

@@ -32,28 +32,36 @@ import org.apache.rocketmq.proxy.grpc.v2.common.ResponseBuilder;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.proxy.processor.TransactionStatus;
 
+/**
+ * 事务提交/回滚 gRPC v2 Activity：解析事务决议并委托 {@link MessagingProcessor#endTransaction}。
+ */
 public class EndTransactionActivity extends AbstractMessagingActivity {
 
+    /** 构造事务结束 Activity 并注入依赖组件。 */
     public EndTransactionActivity(MessagingProcessor messagingProcessor,
         GrpcClientSettingsManager grpcClientSettingsManager, GrpcChannelManager grpcChannelManager) {
         super(messagingProcessor, grpcClientSettingsManager, grpcChannelManager);
     }
 
+    /** 提交或回滚半消息事务，返回异步 gRPC 响应。 */
     public CompletableFuture<EndTransactionResponse> endTransaction(ProxyContext ctx, EndTransactionRequest request) {
         CompletableFuture<EndTransactionResponse> future = new CompletableFuture<>();
         try {
+            // 校验 Topic 合法性
             validateTopic(request.getTopic());
+            // 事务 ID 不可为空
             if (StringUtils.isBlank(request.getTransactionId())) {
                 throw new GrpcProxyException(Code.INVALID_TRANSACTION_ID, "transaction id cannot be empty");
             }
 
+            // 默认未知状态，按 resolution 映射
             TransactionStatus transactionStatus = TransactionStatus.UNKNOWN;
             TransactionResolution transactionResolution = request.getResolution();
             switch (transactionResolution) {
-                case COMMIT:
+                case COMMIT: // 提交事务
                     transactionStatus = TransactionStatus.COMMIT;
                     break;
-                case ROLLBACK:
+                case ROLLBACK: // 回滚事务
                     transactionStatus = TransactionStatus.ROLLBACK;
                     break;
                 default:
@@ -66,7 +74,7 @@ public class EndTransactionActivity extends AbstractMessagingActivity {
                 request.getMessageId(),
                 request.getTopic().getName(),
                 transactionStatus,
-                request.getSource().equals(TransactionSource.SOURCE_SERVER_CHECK))
+                request.getSource().equals(TransactionSource.SOURCE_SERVER_CHECK)) // 是否来自 Broker 回查
                 .thenApply(r -> EndTransactionResponse.newBuilder()
                     .setStatus(ResponseBuilder.getInstance().buildStatus(Code.OK, Code.OK.name()))
                     .build());

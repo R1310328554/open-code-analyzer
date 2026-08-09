@@ -45,11 +45,16 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
 @SuppressWarnings("UnstableApiUsage")
+/**
+ * 客户端注册处理器：管理生产者/消费者注册、Lite 订阅同步与模式校验。
+ */
 public class ClientProcessor extends AbstractProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
+    /** Lite 订阅同步请求的限流器。 */
     private final RateLimiter syncLiteSubscriptionRateLimiter;
 
+    /** 构造客户端处理器并初始化 Lite 订阅限流器。 */
     public ClientProcessor(MessagingProcessor messagingProcessor,
         ServiceManager serviceManager) {
         super(messagingProcessor, serviceManager);
@@ -58,6 +63,7 @@ public class ClientProcessor extends AbstractProcessor {
         this.syncLiteSubscriptionRateLimiter = RateLimiter.create(proxyConfig.getMaxSyncLiteSubscriptionRate());
     }
 
+    /** 注册生产者到 ProducerManager。 */
     public void registerProducer(
         ProxyContext ctx,
         String producerGroup,
@@ -66,6 +72,7 @@ public class ClientProcessor extends AbstractProcessor {
         this.serviceManager.getProducerManager().registerProducer(producerGroup, clientChannelInfo);
     }
 
+    /** 注销生产者注册信息。 */
     public void unRegisterProducer(
         ProxyContext ctx,
         String producerGroup,
@@ -74,6 +81,7 @@ public class ClientProcessor extends AbstractProcessor {
         this.serviceManager.getProducerManager().unregisterProducer(producerGroup, clientChannelInfo);
     }
 
+    /** 按 clientId 查找生产者 Netty 通道。 */
     public Channel findProducerChannel(
         ProxyContext ctx,
         String producerGroup,
@@ -86,6 +94,7 @@ public class ClientProcessor extends AbstractProcessor {
         this.serviceManager.getProducerManager().appendProducerChangeListener(listener);
     }
 
+    /** 注册消费者并校验 Lite 模式与订阅 Topic。 */
     public void registerConsumer(
         ProxyContext ctx,
         String consumerGroup,
@@ -111,6 +120,7 @@ public class ClientProcessor extends AbstractProcessor {
             updateSubscription);
     }
 
+    /** 同步 Lite 订阅变更，含配额与限流校验。 */
     public CompletableFuture<Void> syncLiteSubscription(ProxyContext ctx,
         LiteSubscriptionDTO liteSubscriptionDTO, long timeoutMillis
     ) {
@@ -155,6 +165,7 @@ public class ClientProcessor extends AbstractProcessor {
         this.serviceManager.getConsumerManager().unregisterConsumer(consumerGroup, clientChannelInfo, false);
     }
 
+    /** 通道关闭时清理生产者与消费者注册信息。 */
     public void doChannelCloseEvent(String remoteAddr, Channel channel) {
         this.serviceManager.getConsumerManager().doChannelCloseEvent(remoteAddr, channel);
         this.serviceManager.getProducerManager().doChannelCloseEvent(remoteAddr, channel);
@@ -169,8 +180,8 @@ public class ClientProcessor extends AbstractProcessor {
     }
 
     /**
-     * Validates the message model for a given consumer group.
-     * Ensures that regular groups do not use LITE mode and LITE groups use LITE mode.
+     * 校验消费者组的消息模型是否与 Lite 绑定配置一致。
+     * 普通组不可使用 LITE 模式，Lite 组必须使用 LITE 模式。
      *
      * @param ctx          the proxy context
      * @param group        the consumer group name
@@ -179,13 +190,13 @@ public class ClientProcessor extends AbstractProcessor {
     protected void validateLiteMode(ProxyContext ctx, String group, MessageModel messageModel) {
         String bindTopic = getGroupOrException(ctx, group).getLiteBindTopic();
         if (StringUtils.isEmpty(bindTopic)) {
-            // regular group
+            // 普通消费者组
             if (MessageModel.LITE_SELECTIVE == messageModel) {
                 throw new GrpcProxyException(Code.ILLEGAL_CONSUMER_GROUP,
                     "regular group cannot use LITE mode: " + group);
             }
         } else {
-            // lite group
+            // Lite 消费者组
             if (MessageModel.LITE_SELECTIVE != messageModel) {
                 throw new GrpcProxyException(Code.ILLEGAL_CONSUMER_GROUP,
                     "lite group must use LITE mode: " + group);
@@ -197,7 +208,7 @@ public class ClientProcessor extends AbstractProcessor {
         if (CollectionUtils.isEmpty(subList)) {
             return;
         }
-        // check bindTopic for sub list
+        // 校验订阅列表中的 bindTopic 与组配置一致
         validateLiteBindTopic(ctx, group, subList.iterator().next().getTopic());
     }
 

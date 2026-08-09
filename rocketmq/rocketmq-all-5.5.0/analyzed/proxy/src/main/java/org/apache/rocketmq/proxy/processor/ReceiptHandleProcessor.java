@@ -29,12 +29,18 @@ import org.apache.rocketmq.proxy.common.RenewEvent;
 import org.apache.rocketmq.proxy.service.ServiceManager;
 import org.apache.rocketmq.proxy.service.receipt.DefaultReceiptHandleManager;
 
+/**
+ * 回执句柄处理器：管理 POP 消息回执的注册、移除与不可见时间续期。
+ */
 public class ReceiptHandleProcessor extends AbstractProcessor {
     protected final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 回执句柄生命周期管理器。 */
     protected DefaultReceiptHandleManager receiptHandleManager;
 
+    /** 构造回执处理器并注册续期事件监听器。 */
     public ReceiptHandleProcessor(MessagingProcessor messagingProcessor, ServiceManager serviceManager) {
         super(messagingProcessor, serviceManager);
+        // 续期事件：延长消息不可见时间
         StateEventListener<RenewEvent> eventListener = event -> {
             ProxyContext context = createContext(event.getEventType().name())
                 .setChannel(event.getKey().getChannel());
@@ -56,18 +62,22 @@ public class ReceiptHandleProcessor extends AbstractProcessor {
         this.appendStartAndShutdown(receiptHandleManager);
     }
 
+    /** 创建内部 Proxy 上下文，标识操作来源。 */
     protected ProxyContext createContext(String actionName) {
         return ProxyContext.createForInner(this.getClass().getSimpleName() + actionName);
     }
 
+    /** 注册 POP 消息回执句柄到本地缓存。 */
     public void addReceiptHandle(ProxyContext ctx, Channel channel, String group, String msgID, MessageReceiptHandle messageReceiptHandle) {
         receiptHandleManager.addReceiptHandle(ctx, channel, group, msgID, messageReceiptHandle);
     }
 
+    /** 移除并返回指定回执句柄。 */
     public MessageReceiptHandle removeReceiptHandle(ProxyContext ctx, Channel channel, String group, String msgID, String receiptHandle) {
         return receiptHandleManager.removeReceiptHandle(ctx, channel, group, msgID, receiptHandle);
     }
 
+    /** 获取通道上指定消费组的未 ACK 消息数。 */
     public int getUnackedMessageCount(ProxyContext ctx, Channel channel, String group) {
         return receiptHandleManager.getUnackedMessageCount(ctx, channel, group);
     }

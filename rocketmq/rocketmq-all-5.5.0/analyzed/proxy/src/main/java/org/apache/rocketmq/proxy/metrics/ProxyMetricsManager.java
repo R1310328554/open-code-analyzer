@@ -58,10 +58,15 @@ import static org.apache.rocketmq.proxy.metrics.ProxyMetricsConstant.GAUGE_PROXY
 import static org.apache.rocketmq.proxy.metrics.ProxyMetricsConstant.LABEL_PROXY_MODE;
 import static org.apache.rocketmq.proxy.metrics.ProxyMetricsConstant.NODE_TYPE_PROXY;
 
+/**
+ * Proxy 指标管理器：基于 OpenTelemetry 初始化 Gauge 并配置 OTLP/Prometheus/Log 导出器。
+ */
 public class ProxyMetricsManager implements StartAndShutdown {
     private final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
+    /** 全局 Proxy 配置引用。 */
     private static ProxyConfig proxyConfig;
+    /** 指标公共标签键值映射。 */
     private final static Map<String, String> LABEL_MAP = new HashMap<>();
     public static Supplier<AttributesBuilder> attributesBuilderSupplier;
 
@@ -70,8 +75,10 @@ public class ProxyMetricsManager implements StartAndShutdown {
     private PrometheusHttpServer prometheusHttpServer;
     private MetricExporter loggingMetricExporter;
 
+    /** Proxy 存活 Gauge 指标实例。 */
     public static ObservableLongGauge proxyUp = null;
 
+    /** Local 模式下复用 Broker Meter 并初始化 Proxy 指标。 */
     public static void initLocalMode(BrokerMetricsManager brokerMetricsManager, ProxyConfig proxyConfig) {
         if (proxyConfig.getMetricsExporterType() == MetricsExporterType.DISABLE) {
             return;
@@ -84,11 +91,13 @@ public class ProxyMetricsManager implements StartAndShutdown {
         initMetrics(brokerMetricsManager.getBrokerMeter(), brokerMetricsManager::newAttributesBuilder);
     }
 
+    /** Cluster 模式下创建独立指标管理器实例。 */
     public static ProxyMetricsManager initClusterMode(ProxyConfig proxyConfig) {
         ProxyMetricsManager.proxyConfig = proxyConfig;
         return new ProxyMetricsManager();
     }
 
+    /** 创建带公共标签的 OpenTelemetry AttributesBuilder。 */
     public static AttributesBuilder newAttributesBuilder() {
         AttributesBuilder attributesBuilder;
         if (attributesBuilderSupplier == null) {
@@ -101,6 +110,7 @@ public class ProxyMetricsManager implements StartAndShutdown {
         return attributesBuilder;
     }
 
+    /** 注册 {@link #GAUGE_PROXY_UP} 存活 Gauge 指标。 */
     private static void initMetrics(Meter meter, Supplier<AttributesBuilder> attributesBuilderSupplier) {
         ProxyMetricsManager.attributesBuilderSupplier = attributesBuilderSupplier;
 
@@ -113,6 +123,7 @@ public class ProxyMetricsManager implements StartAndShutdown {
     public ProxyMetricsManager() {
     }
 
+    /** 校验指标导出配置是否完整可用。 */
     private boolean checkConfig() {
         if (proxyConfig == null) {
             return false;
@@ -134,6 +145,7 @@ public class ProxyMetricsManager implements StartAndShutdown {
     }
 
     @Override
+    /** 按配置启动 OTLP gRPC、Prometheus 或 Log 指标导出器。 */
     public void start() throws Exception {
         MetricsExporterType metricsExporterType = proxyConfig.getMetricsExporterType();
         if (metricsExporterType == MetricsExporterType.DISABLE) {
@@ -239,6 +251,7 @@ public class ProxyMetricsManager implements StartAndShutdown {
     }
 
     @Override
+    /** 优雅关闭指标导出器并 flush 剩余数据。 */
     public void shutdown() throws Exception {
         if (proxyConfig.getMetricsExporterType() == MetricsExporterType.OTLP_GRPC) {
             periodicMetricReader.forceFlush();
