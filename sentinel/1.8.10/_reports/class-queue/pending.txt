@@ -1,5 +1,0 @@
-sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/command/SentinelApiHandlerMapping.java
-sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/command/SpringMvcHttpCommandCenter.java
-sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/command/http/StatusCode.java
-sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/SpringMvcHttpHeartbeatSender.java
-sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/client/HttpClientsFactory.java
