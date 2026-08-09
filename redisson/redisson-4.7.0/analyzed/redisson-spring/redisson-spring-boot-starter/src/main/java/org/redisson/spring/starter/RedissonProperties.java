@@ -18,16 +18,19 @@ package org.redisson.spring.starter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * {@code spring.redis.redisson.*} 扩展属性：内联 YAML 或外部配置文件路径。
+ * <p>与 Spring Boot 标准 {@code spring.redis.*} 并存；二者同时存在时 YAML/文件优先。
  *
  * @author Nikita Koksharov
  * @author AnJia (https://anjia0532.github.io/)
- *
  */
 @ConfigurationProperties(prefix = "spring.redis.redisson")
 public class RedissonProperties {
 
+    /** 内联 Redisson YAML 配置字符串。 */
     private String config;
 
+    /** Redisson 配置文件路径（Spring {@link org.springframework.core.io.Resource} 格式）。 */
     private String file;
 
     public String getConfig() {

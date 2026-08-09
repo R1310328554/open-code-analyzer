@@ -51,16 +51,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Spring configuration used with Spring Boot 4.0+
+ * Spring Boot 4.0+ 使用的 Redisson 自动配置。
+ * <p>基于 {@link org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration}
+ * 的连接详情与 SSL 捆绑包构建 {@link RedissonClient}，并注册 Spring Data Redis 兼容 Bean。
  *
  * @author Nikita Koksharov
- *
  */
 @AutoConfiguration(before = DataRedisAutoConfiguration.class)
 @ConditionalOnClass({Redisson.class, RedisOperations.class, DataRedisAutoConfiguration.class})
 @EnableConfigurationProperties({RedissonProperties.class, DataRedisProperties.class})
 public class RedissonAutoConfigurationV4 {
 
+    /** 空节点数组占位符，哨兵/集群未配置时使用。 */
     public static final String[] EMPTY = {};
 
     @Autowired(required = false)
@@ -75,6 +77,7 @@ public class RedissonAutoConfigurationV4 {
     @Autowired
     private ApplicationContext ctx;
 
+    /** 注册默认 {@link RedisTemplate}（若应用未自定义）。 */
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
@@ -91,6 +94,7 @@ public class RedissonAutoConfigurationV4 {
         return template;
     }
 
+    /** 将 {@link RedissonClient} 包装为 Spring Data {@link RedisConnectionFactory}。 */
     @Bean
     @ConditionalOnMissingBean(RedisConnectionFactory.class)
     public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
@@ -111,6 +115,10 @@ public class RedissonAutoConfigurationV4 {
         return redisson.rxJava();
     }
 
+    /**
+     * 创建 {@link RedissonClient}：优先 YAML 配置，否则从 Spring Data Redis 属性推导。
+     * <p>支持单机、哨兵、集群；创建前应用全部 {@link RedissonAutoConfigurationCustomizer}。
+     */
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean(RedissonClient.class)
     public RedissonClient redisson() throws IOException {
@@ -156,6 +164,7 @@ public class RedissonAutoConfigurationV4 {
         return Redisson.create(config);
     }
 
+    /** 从 {@link DataRedisConnectionDetails} 或 {@link DataRedisProperties} 构建哨兵模式配置。 */
     private Config buildSentinelConfig(String prefix, String username, String password, int database,
                                        String clientName, DataRedisConnectionDetails connectionDetails) {
         String[] nodes;
@@ -198,6 +207,7 @@ public class RedissonAutoConfigurationV4 {
         return config;
     }
 
+    /** 构建 Redis 集群模式 {@link Config}。 */
     private Config buildClusterConfig(String prefix, String username, String password,
                                       String clientName, DataRedisConnectionDetails connectionDetails) {
         String[] nodes;
@@ -221,6 +231,7 @@ public class RedissonAutoConfigurationV4 {
         return config;
     }
 
+    /** 构建单机模式 {@link Config}。 */
     private Config buildSingleServerConfig(String prefix, String username, String password, int database,
                                            String clientName, DataRedisConnectionDetails connectionDetails) {
         String singleAddr;
@@ -247,6 +258,7 @@ public class RedissonAutoConfigurationV4 {
         return config;
     }
 
+    /** 将 Spring Data 连接/命令超时映射到 Redisson {@link BaseConfig}。 */
     private void setTimeouts(BaseConfig c) {
         if (redisProperties.getConnectTimeout() != null) {
             c.setConnectTimeout((int) redisProperties.getConnectTimeout().toMillis());
@@ -256,6 +268,7 @@ public class RedissonAutoConfigurationV4 {
         }
     }
 
+    /** 若配置了 SSL bundle，则注入信任库与密钥库到 {@link Config}。 */
     private void initSSL(Config config) {
         DataRedisProperties.Ssl ssl = redisProperties.getSsl();
         if (ssl.getBundle() == null) {
@@ -283,11 +296,12 @@ public class RedissonAutoConfigurationV4 {
         return RedisURI.REDIS_PROTOCOL;
     }
 
+    /** 通过 MethodHandle 读取 host/port（兼容 JDK 8 record 编译产物）。 */
     @SuppressWarnings("IllegalCatch")
     private String[] convertNodes(String prefix, List<?> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
         try {
-            // fixes JDK 8 record type compilation error
+            // 兼容 JDK 8 record 类型编译：MethodHandle 反射 host/port。
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             for (Object node : nodesObject) {
                 MethodType hostType = MethodType.methodType(String.class);

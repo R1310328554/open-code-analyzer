@@ -21,13 +21,14 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.MeterBinder;
 
 /**
- * 
- * 
- * @author Nikita Koksharov
+ * Spring Boot Actuator 缓存指标绑定提供者（Boot 2.x/3.x {@code actuate.metrics.cache} 包）。
+ * <p>为 {@link RedissonCache} 实例创建 {@link RedissonCacheMetrics}。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonCacheMeterBinderProvider implements CacheMeterBinderProvider<RedissonCache> {
 
+    /** 返回绑定 hit/miss/put/eviction 指标的 {@link RedissonCacheMetrics}。 */
     @Override
     public MeterBinder getMeterBinder(RedissonCache cache, Iterable<Tag> tags) {
         return new RedissonCacheMetrics(cache, tags);

@@ -20,13 +20,14 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 import org.springframework.boot.cache.metrics.CacheMeterBinderProvider;
 
 /**
- * 
- * 
- * @author Nikita Koksharov
+ * Spring Boot 4.0+ 缓存指标绑定提供者（{@code org.springframework.boot.cache.metrics} 包）。
+ * <p>接口签名与 Actuator 版相同，适配 Boot 4 模块化包结构。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonCacheMeterBinderProviderV4 implements CacheMeterBinderProvider<RedissonCache> {
 
+    /** 创建 {@link RedissonCacheMetrics} 以暴露 Micrometer 缓存指标。 */
     @Override
     public MeterBinder getMeterBinder(RedissonCache cache, Iterable<Tag> tags) {
         return new RedissonCacheMetrics(cache, tags);

@@ -18,8 +18,8 @@ package org.redisson.spring.starter;
 import org.redisson.config.Config;
 
 /**
- * Callback interface that can be implemented by beans wishing to customize
- * the {@link org.redisson.api.RedissonClient} auto configuration
+ * 回调接口：允许 Bean 在自动配置阶段定制 {@link org.redisson.api.RedissonClient}。
+ * <p>实现类注册为 Spring Bean 后，会在 {@code RedissonClient} 创建前依次调用 {@link #customize(Config)}。
  *
  * @author Nikos Kakavas (https://github.com/nikakis)
  */
@@ -27,8 +27,8 @@ import org.redisson.config.Config;
 public interface RedissonAutoConfigurationCustomizer {
 
     /**
-     * Customize the RedissonClient configuration.
-     * @param configuration the {@link Config} to customize
+     * 定制 Redisson 客户端配置。
+     * @param configuration 待修改的 {@link Config}
      */
     void customize(Config configuration);
 

@@ -24,10 +24,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.redis.core.RedisOperations;
 
 /**
- * Spring configuration used with Spring Boot 2.7 - 3.5
+ * Spring Boot 2.7–3.5 使用的 Redisson 自动配置入口。
+ * <p>继承 {@link RedissonAutoConfiguration} 的全部 Bean 定义；
+ * 通过 {@link org.springframework.boot.autoconfigure.AutoConfiguration} 参与 Boot 3 自动配置发现。
  *
  * @author Nikita Koksharov
- *
  */
 @AutoConfiguration(before = RedisAutoConfiguration.class)
 @ConditionalOnClass({Redisson.class, RedisOperations.class, RedisAutoConfiguration.class})

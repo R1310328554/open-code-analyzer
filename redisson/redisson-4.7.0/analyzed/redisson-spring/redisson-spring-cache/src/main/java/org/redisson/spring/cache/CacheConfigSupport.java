@@ -31,9 +31,9 @@ import java.net.URL;
 import java.util.*;
 
 /**
+ * {@link CacheConfig} 的 YAML 读写支持：SnakeYAML 解析、Jodd Bean 属性绑定与监听器实例化。
  *
  * @author Nikita Koksharov
- *
  */
 public class CacheConfigSupport {
 
@@ -41,7 +41,7 @@ public class CacheConfigSupport {
 
     public CacheConfigSupport() {
         LoaderOptions yamlLoaderOptions = new LoaderOptions();
-        yamlLoaderOptions.setTagInspector(tag -> true); // Allow all tags
+        yamlLoaderOptions.setTagInspector(tag -> true); // 允许所有 YAML 标签（含自定义类名）
 
         DumperOptions yamlDumperOptions = new DumperOptions();
         yamlDumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
@@ -53,6 +53,7 @@ public class CacheConfigSupport {
         this.yamlParser = new Yaml(yamlConstructor, new Representer(yamlDumperOptions), yamlDumperOptions, yamlLoaderOptions);
     }
 
+    /** 扩展 SnakeYAML 构造器：从 tag 解析完整 Java 类名。 */
     private static class CustomConstructor extends Constructor {
 
         CustomConstructor(LoaderOptions loaderOptions) {
@@ -97,6 +98,7 @@ public class CacheConfigSupport {
         return fromMap(m, CacheConfig.class);
     }
 
+    /** 将嵌套 Map 反射实例化为指定类型并填充属性（含 listeners 特殊处理）。 */
     public static <T> Map<String, T> fromMap(Map<String, Map<String, Object>> configMap, Class<T> clazz) {
         Map<String, T> result = new HashMap<>();
 
@@ -149,6 +151,7 @@ public class CacheConfigSupport {
         return result;
     }
 
+    /** 按类名无参构造实例化 {@link org.redisson.api.map.event.MapEntryListener}。 */
     public static Object createListener(String className) {
         try {
             Class<?> clazz = Class.forName(className);
@@ -186,6 +189,7 @@ public class CacheConfigSupport {
         return fromMap(m, CacheConfig.class);
     }
 
+    /** 将 {@link CacheConfig} 映射导出为 YAML（listeners 字段省略）。 */
     public String toYAML(Map<String, ? extends CacheConfig> configs) {
         Map<String, Map<String, String>> plainMap = toPlainMap(configs);
         return yamlParser.dump(plainMap);

@@ -30,10 +30,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Cache config object used for Spring cache configuration.
+ * Spring Cache 集成用的 Redisson 缓存配置对象。
+ * <p>支持 TTL、max-idle、容量上限与 {@link org.redisson.api.map.event.MapEntryListener}。
+ * 可通过静态 {@link #fromYAML} 方法从 YAML 批量加载。
  *
  * @author Nikita Koksharov
- *
  */
 public class CacheConfig {
 
@@ -49,6 +50,7 @@ public class CacheConfig {
 
     private List<MapEntryListener> listeners = new ArrayList<>();
 
+    /** 默认构造：{@code ttl=0}、{@code maxIdleTime=0}（条目永不过期）。 */
     /**
      * Creates config object with
      * <code>ttl = 0</code> and <code>maxIdleTime = 0</code>.
@@ -58,14 +60,9 @@ public class CacheConfig {
     }
 
     /**
-     * Creates config object.
-     *
-     * @param ttl - time to live for key\value entry in milliseconds.
-     *              If <code>0</code> then time to live doesn't affect entry expiration.
-     * @param maxIdleTime - max idle time for key\value entry in milliseconds.
-     * <p>
-     * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
-     * then entry stores infinitely.
+     * 指定 TTL 与 max-idle 构造配置。
+     * @param ttl 条目存活时间（毫秒）；{@code 0} 表示不按 TTL 过期
+     * @param maxIdleTime 最大空闲时间（毫秒）；与 ttl 均为 {@code 0} 时条目永久保留
      */
     public CacheConfig(long ttl, long maxIdleTime) {
         super();
@@ -78,10 +75,8 @@ public class CacheConfig {
     }
 
     /**
-     * Set time to live for key\value entry in milliseconds.
-     *
-     * @param ttl - time to live for key\value entry in milliseconds.
-     *              If <code>0</code> then time to live doesn't affect entry expiration.
+     * 设置条目 TTL（毫秒）。
+     * @param ttl 存活时间；{@code 0} 表示 TTL 不参与过期
      */
     public void setTTL(long ttl) {
         this.ttl = ttl;
@@ -92,10 +87,8 @@ public class CacheConfig {
     }
 
     /**
-     * Set max size of map. Superfluous elements are evicted using LRU algorithm.
-     *
-     * @param maxSize - max size
-     *                  If <code>0</code> the cache is unbounded (default).
+     * 设置 Map 最大容量；超出时按 LRU 淘汰。
+     * @param maxSize 上限；{@code 0} 表示无界（默认）
      */
     public void setMaxSize(int maxSize) {
         this.maxSize = maxSize;
@@ -106,10 +99,9 @@ public class CacheConfig {
     }
 
     /**
-     * Set the eviction mode of the map. Superfluous elements are evicted using LRU or LFU algorithm.
-     *
-     * @param evictionMode - eviction mode (LRU, LFU)
-     * @return
+     * 设置淘汰算法（{@link org.redisson.api.EvictionMode#LRU} 或 LFU）。
+     * @param evictionMode 淘汰模式
+     * @return 当前实例（链式调用）
      */
     public CacheConfig setEvictionMode(EvictionMode evictionMode) {
         this.evictionMode = evictionMode;
@@ -131,14 +123,9 @@ public class CacheConfig {
     }
 
     /**
-     * listener will invoke if one of the ttl,maxIdleTime,maxSize is set
-     * listener Is one of the following implementations:
-     * EntryCreatedListener
-     * EntryExpiredListener
-     * EntryRemovedListener
-     * EntryUpdatedListener
-     *
-     * @param listener listener
+     * 注册 Map 事件监听器（ttl/maxIdleTime/maxSize 任一非零时生效）。
+     * <p>listener 可为 EntryCreated/Expired/Removed/Updated 等实现。
+     * @param listener 监听器实例
      */
     public void addListener(MapEntryListener listener) {
         listeners.add(listener);
@@ -153,11 +140,10 @@ public class CacheConfig {
     }
     
     /**
-     * Read config objects stored in YAML format from <code>String</code>
-     *
-     * @param content of config
-     * @return config
-     * @throws IOException error
+     * 从 YAML 字符串解析缓存名 → {@link CacheConfig} 映射。
+     * @param content YAML 文本
+     * @return 配置映射
+     * @throws IOException 解析失败
      */
     public static Map<String, ? extends CacheConfig> fromYAML(String content) throws IOException {
         return new CacheConfigSupport().fromYAML(content);
@@ -208,11 +194,10 @@ public class CacheConfig {
     }
 
     /**
-     * Convert current configuration to YAML format
-     *
-     * @param config map
-     * @return yaml string
-     * @throws IOException error
+     * 将配置映射序列化为 YAML 字符串。
+     * @param config 缓存名 → 配置
+     * @return YAML 文本
+     * @throws IOException 序列化失败
      */
     public static String toYAML(Map<String, ? extends CacheConfig> config) throws IOException {
         return new CacheConfigSupport().toYAML(config);

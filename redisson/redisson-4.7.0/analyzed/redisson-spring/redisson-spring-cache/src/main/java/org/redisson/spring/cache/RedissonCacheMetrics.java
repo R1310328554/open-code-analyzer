@@ -20,9 +20,10 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.cache.CacheMeterBinder;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link RedissonCache} 的 Micrometer {@link io.micrometer.core.instrument.binder.cache.CacheMeterBinder}。
+ * <p>暴露 size、hit、miss、put、eviction 等标准缓存指标。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonCacheMetrics extends CacheMeterBinder {
 
@@ -34,23 +35,24 @@ public class RedissonCacheMetrics extends CacheMeterBinder {
     }
     
     /**
-     * Record metrics on a Redisson cache.
-     *
-     * @param registry - registry to bind metrics to
-     * @param cache - cache to instrument
-     * @param tags - tags to apply to all recorded metrics
-     * @return cache
+     * 便捷方法：创建绑定器并注册到 {@link MeterRegistry}。
+     * @param registry 指标注册表
+     * @param cache 待监控的 {@link RedissonCache}
+     * @param tags 附加标签
+     * @return 同一 cache 实例（便于链式使用）
      */
     public static RedissonCache monitor(MeterRegistry registry, RedissonCache cache, Iterable<Tag> tags) {
         new RedissonCacheMetrics(cache, tags).bindTo(registry);
         return cache;
     }
 
+    /** 当前缓存条目数（底层 {@link RMap#size()}）。 */
     @Override
     protected Long size() {
         return (long) cache.getNativeCache().size();
     }
 
+    /** 命中次数，来自 {@link RedissonCache#getCacheHits()}。 */
     @Override
     protected long hitCount() {
         return cache.getCacheHits();

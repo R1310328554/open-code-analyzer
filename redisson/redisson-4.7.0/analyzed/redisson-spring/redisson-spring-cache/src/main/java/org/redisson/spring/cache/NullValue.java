@@ -20,14 +20,16 @@ import java.io.Serializable;
 import org.springframework.cache.Cache.ValueWrapper;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 表示缓存中的 {@code null} 值：Spring Cache 不允许直接存 null，
+ * 使用 {@link #INSTANCE} 单例占位并在读取时还原为 {@code null}。
  *
+ * @author Nikita Koksharov
  */
 public class NullValue implements ValueWrapper, Serializable {
 
     private static final long serialVersionUID = -8310337775544536701L;
     
+    /** 全局单例占位符。 */
     public static final NullValue INSTANCE = new NullValue();
 
     @Override

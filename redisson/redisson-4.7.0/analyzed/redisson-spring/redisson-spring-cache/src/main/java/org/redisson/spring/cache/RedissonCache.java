@@ -34,9 +34,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 /**
+ * 基于 Redisson {@link RMap}/{@link RMapCache} 的 Spring {@link org.springframework.cache.Cache} 实现。
+ * <p>支持 TTL、max-idle、null 值占位、同步/异步 {@code retrieve} 及命中/未命中统计。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonCache implements Cache {
 
@@ -56,12 +57,14 @@ public class RedissonCache implements Cache {
 
     private final AtomicLong evictions = new AtomicLong();
     
+    /** 带过期策略的 MapCache 构造（绑定 {@link CacheConfig}）。 */
     public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config, boolean allowNullValues) {
         this(mapCache, allowNullValues);
         this.mapCache = mapCache;
         this.config = config;
     }
 
+    /** 无 TTL 的普通 {@link RMap} 构造。 */
     public RedissonCache(RMap<Object, Object> map, boolean allowNullValues) {
         this.map = map;
         this.allowNullValues = allowNullValues;
@@ -80,6 +83,7 @@ public class RedissonCache implements Cache {
         return map;
     }
 
+    /** 读取缓存；统计 hit/miss 并包装 {@link NullValue}。 */
     @Override
     public ValueWrapper get(Object key) {
         Object value;
@@ -119,6 +123,7 @@ public class RedissonCache implements Cache {
         return (T) fromStoreValue(value);
     }
 
+    /** 写入条目；不允许 null 时转为删除；MapCache 附带 TTL/max-idle。 */
     @Override
     public void put(Object key, Object value) {
         if (!allowNullValues && value == null) {
@@ -135,6 +140,7 @@ public class RedissonCache implements Cache {
         addCachePut();
     }
 
+    /** 键不存在时写入并返回先前值（包装后）。 */
     public ValueWrapper putIfAbsent(Object key, Object value) {
         Object prevValue;
         if (!allowNullValues && value == null) {
@@ -165,6 +171,7 @@ public class RedissonCache implements Cache {
         return delta > 0;
     }
 
+    /** 异步读取（无 loader）；未命中返回 completed null。 */
     public CompletableFuture<?> retrieve(Object key) {
         RFuture<Object> f = map.getAsync(key);
         return f.thenApply(value -> {
@@ -180,6 +187,7 @@ public class RedissonCache implements Cache {
         }).toCompletableFuture();
     }
 
+    /** 异步读取；未命中时加锁加载并写入缓存（防击穿）。 */
     public <T> CompletableFuture<T> retrieve(Object key, Supplier<CompletableFuture<T>> valueLoader) {
         return retrieve(key).thenCompose(v -> {
             if (v != null) {
@@ -228,6 +236,7 @@ public class RedissonCache implements Cache {
         return get(map.clearAsync());
     }
 
+    /** 在 Netty 线程外同步等待 {@link RFuture}；Netty 线程内禁止调用。 */
     private <V> V get(RFuture<V> future) {
         if (Thread.currentThread().getName().startsWith("redisson-netty")) {
             throw new IllegalStateException("Sync methods can't be invoked from async/rx/reactive listeners");
@@ -254,6 +263,7 @@ public class RedissonCache implements Cache {
         return new SimpleValueWrapper(value);
     }
 
+    /** 同步读取；未命中时加锁调用 {@code valueLoader} 并回填。 */
     public <T> T get(Object key, Callable<T> valueLoader) {
         Object value;
         if (mapCache != null && config.getMaxIdleTime() == 0 && config.getMaxSize() == 0) {
@@ -313,15 +323,15 @@ public class RedissonCache implements Cache {
         return userValue;
     }
 
-    /** The number of get requests that were satisfied by the cache.
-     * @return the number of hits
+    /** 缓存命中次数。
+     * @return 命中计数
      */
     long getCacheHits(){
         return hits.get();
     }
 
-    /** A miss is a get request that is not satisfied.
-     * @return the number of misses
+    /** 缓存未命中次数。
+     * @return 未命中计数
      */
     long getCacheMisses(){
         return misses.get();
