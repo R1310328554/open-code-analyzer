@@ -22,12 +22,15 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
+ * 事务内 {@link RSet} 删除元素操作。
+ * commit 时 SREM 并释放元素级事务锁；rollback 仅解锁。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RemoveOperation extends SetOperation {
 
+    /** 待删除的元素值。 */
     private Object value;
 
     public RemoveOperation(RObject set, Object value, String transactionId, long threadId) {
@@ -39,6 +42,7 @@ public class RemoveOperation extends SetOperation {
         this.value = value;
     }
 
+    /** 提交：从 set 移除 value 并 unlock。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<>(codec, commandExecutor, name, null);
@@ -46,6 +50,7 @@ public class RemoveOperation extends SetOperation {
         getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
+    /** 回滚：不修改 set，仅释放元素锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<>(codec, commandExecutor, name, null);

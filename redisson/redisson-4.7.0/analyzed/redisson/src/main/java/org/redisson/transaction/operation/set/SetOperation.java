@@ -27,12 +27,15 @@ import org.redisson.transaction.RedissonTransactionalReadLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
- * 
+ * 事务内 {@link RSet} / {@link RSetCache} 写操作的抽象基类。
+ * 提供按元素值解析事务写锁与读锁的辅助方法，供子类 commit/rollback 使用。
+ *
  * @author Nikita Koksharov
  *
  */
 public abstract class SetOperation extends TransactionalOperation {
     
+    /** 当前事务 ID，构造 {@link RedissonTransactionalLock} 时使用。 */
     private final String transactionId;
 
     public SetOperation(String name, Codec codec, String transactionId) {
@@ -45,16 +48,19 @@ public abstract class SetOperation extends TransactionalOperation {
         this.transactionId = transactionId;
     }
 
+    /** 根据 SetCache 元素 value 获取对应的事务写锁。 */
     protected RLock getLock(RSetCache<?> setCache, CommandAsyncExecutor commandExecutor, Object value) {
         String lockName = ((RedissonSetCache<?>) setCache).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 
+    /** 根据 Set 元素 value 获取对应的事务写锁。 */
     protected RLock getLock(RSet<?> setCache, CommandAsyncExecutor commandExecutor, Object value) {
         String lockName = ((RedissonSet<?>) setCache).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 
+    /** 获取指定名称的事务读锁。 */
     protected RLock getReadLock(String readLockName, CommandAsyncExecutor commandExecutor) {
         return new RedissonTransactionalReadLock(commandExecutor, readLockName, transactionId);
     }
