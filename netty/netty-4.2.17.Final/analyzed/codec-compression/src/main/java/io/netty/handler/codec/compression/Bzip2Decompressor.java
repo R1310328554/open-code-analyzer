@@ -36,17 +36,16 @@ import static io.netty.handler.codec.compression.Bzip2Constants.MAX_SELECTORS;
 import static io.netty.handler.codec.compression.Bzip2Constants.MIN_BLOCK_SIZE;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded with the Bzip2 format.
+ * 基于 {@link InputBufferingDecompressor} 的 Bzip2 解压器，分离输入处理与输出拉取。
+ * 逻辑与 {@link Bzip2Decoder} 相同，适用于非 pipeline 的流式解压 API。
  *
- * See <a href="https://en.wikipedia.org/wiki/Bzip2">Bzip2</a>.
+ * 参见 <a href="https://en.wikipedia.org/wiki/Bzip2">Bzip2</a>。
  */
 @UnstableApi
 public final class Bzip2Decompressor extends InputBufferingDecompressor {
     private final int outputBufferSize;
 
-    /**
-     * Current state of stream.
-     */
+    /** 当前流解析状态。 */
     private enum State {
         INIT,
         INIT_BLOCK,
@@ -62,23 +61,17 @@ public final class Bzip2Decompressor extends InputBufferingDecompressor {
     }
     private State currentState = State.INIT;
 
-    /**
-     * A reader that provides bit-level reads.
-     */
+    /** 位级读取器。 */
     private final Bzip2BitReader reader = new Bzip2BitReader();
 
-    /**
-     * The decompressor for the current block.
-     */
+    /** 当前块的块级解压器。 */
     private Bzip2BlockDecompressor blockDecompressor;
 
-    /**
-     * Bzip2 Huffman coding stage.
-     */
+    /** Huffman 解码阶段。 */
     private Bzip2HuffmanStageDecoder huffmanStageDecoder;
 
     /**
-     * Always: in the range 0 .. 9. The current block size is 100000 * this number.
+     * 块大小乘数 0..9，块容量为 100000 × 该值。
      */
     private int blockSize;
 
@@ -87,9 +80,7 @@ public final class Bzip2Decompressor extends InputBufferingDecompressor {
      */
     private int blockCRC;
 
-    /**
-     * The merged CRC of all blocks decompressed so far.
-     */
+    /** 所有已解压块的合并 CRC。 */
     private int streamCRC;
 
     Bzip2Decompressor(Builder builder, ByteBufAllocator allocator) {
@@ -123,11 +114,11 @@ public final class Bzip2Decompressor extends InputBufferingDecompressor {
                 if (!reader.hasReadableBytes(10)) {
                     break;
                 }
-                // Get the block magic bytes.
+                // 读取块头或流结束魔数
                 final int magic1 = reader.readBits(24);
                 final int magic2 = reader.readBits(24);
                 if (magic1 == END_OF_STREAM_MAGIC_1 && magic2 == END_OF_STREAM_MAGIC_2) {
-                    // End of stream was reached. Check the combined CRC.
+                    // 流结束，校验合并 CRC
                     final int storedCombinedCRC = reader.readInt();
                     if (storedCombinedCRC != streamCRC) {
                         throw new DecompressionException("stream CRC error");
@@ -213,11 +204,11 @@ public final class Bzip2Decompressor extends InputBufferingDecompressor {
                 final Bzip2MoveToFrontTable tableMtf = huffmanStageDecoder.tableMTF;
 
                 int currSelector;
-                // Get zero-terminated bit runs (0..62) of MTF'ed Huffman table. length = 1..6
+                // MTF 编码的 Huffman 表选择器
                 for (currSelector = huffmanStageDecoder.currentSelector;
                      currSelector < totalSelectors; currSelector++) {
                     if (!reader.hasReadableBits(HUFFMAN_SELECTOR_LIST_MAX_LENGTH)) {
-                        // Save state if end of current ByteBuf was reached
+                        // 保存选择器解析进度
                         huffmanStageDecoder.currentSelector = currSelector;
                         return;
                     }
@@ -236,7 +227,7 @@ public final class Bzip2Decompressor extends InputBufferingDecompressor {
                 final byte[][] codeLength = huffmanStageDecoder.tableCodeLengths;
                 alphaSize = huffmanStageDecoder.alphabetSize;
 
-                /* Now the coding tables */
+                /* 读取 Huffman 码长表 */
                 int currGroup;
                 int currLength = huffmanStageDecoder.currentLength;
                 int currAlpha = 0;
@@ -286,7 +277,7 @@ public final class Bzip2Decompressor extends InputBufferingDecompressor {
                     break;
                 }
 
-                // Finally create the Huffman tables
+                // 构建 Huffman 解码表
                 huffmanStageDecoder.createHuffmanDecodingTables();
                 currentState = State.DECODE_HUFFMAN_DATA;
                 // fall through
@@ -316,7 +307,7 @@ public final class Bzip2Decompressor extends InputBufferingDecompressor {
                 }
             }
             if (uncByte < 0) {
-                // all data read
+                // 块内数据已全部读出
                 currentState = State.INIT_BLOCK;
                 int currentBlockCRC = blockDecompressor.checkCRC();
                 streamCRC = (streamCRC << 1 | streamCRC >>> 31) ^ currentBlockCRC;
@@ -360,7 +351,7 @@ public final class Bzip2Decompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * Size of the output buffer to return from {@link #takeOutput()}. Default 64K.
+         * {@link #takeOutput()} 返回的输出缓冲大小，默认 64K。
          *
          * @param outputBufferSize Output buffer size
          * @return This builder

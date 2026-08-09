@@ -16,12 +16,10 @@
 package io.netty.handler.codec.compression;
 
 /**
- * A 256 entry Move To Front transform.
+ * 256 项移到前面（MTF）变换表，用于 Bzip2 符号与表选择器编码。
  */
 final class Bzip2MoveToFrontTable {
-    /**
-     * The Move To Front list.
-     */
+    /** MTF 链表，初始为 0..255 顺序。 */
     private final byte[] mtf = {
          0,    1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,
          16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,
@@ -50,9 +48,9 @@ final class Bzip2MoveToFrontTable {
     };
 
     /**
-     * Moves a value to the head of the MTF list (forward Move To Front transform).
-     * @param value The value to move
-     * @return The position the value moved from
+     * 将值移到 MTF 表头（正向 MTF，编码侧）。
+     * @param value 要移动的字节值
+     * @return 移动前该值所在索引
      */
     int valueToFront(final byte value) {
         int index = 0;
@@ -70,9 +68,9 @@ final class Bzip2MoveToFrontTable {
     }
 
     /**
-     * Gets the value from a given index and moves it to the front of the MTF list (inverse Move To Front transform).
-     * @param index The index to move
-     * @return The value at the given index
+     * 按索引取值并移到表头（逆 MTF，解码侧）。
+     * @param index MTF 索引
+     * @return 该索引处的字节值
      */
     byte indexToFront(final int index) {
         final byte value = mtf[index];

@@ -16,11 +16,10 @@
 package io.netty.handler.codec.compression;
 
 /**
- * DivSufSort suffix array generator.<br>
+ * 基于 DivSufSort 的后缀数组生成器，用于 Bzip2 的 Burrows-Wheeler 变换。<br>
  *
- * Based on <a href="https://code.google.com/p/libdivsufsort/">libdivsufsort</a> 1.2.3 patched to support Bzip2.<br>
- * This is a simple conversion of the original C with two minor bugfixes applied (see "BUGFIX"
- * comments within the class). Documentation within the class is largely absent.
+ * 源自 <a href="https://code.google.com/p/libdivsufsort/">libdivsufsort</a> 1.2.3 并针对 Bzip2 打补丁；
+ * 由 C 代码直译，含两处 BUGFIX（见类内注释）。内部方法多为算法细节，文档从略。
  */
 final class Bzip2DivSufSort {
 
@@ -46,9 +45,9 @@ final class Bzip2DivSufSort {
     private final int n;
 
     /**
-     * @param block The input array
-     * @param bwtBlock The output array
-     * @param blockLength The length of the input data
+     * @param block 输入字节块
+     * @param bwtBlock 输出的 BWT/后缀数组缓冲
+     * @param blockLength 输入有效长度
      */
     Bzip2DivSufSort(final byte[] block, final int[] bwtBlock, final int blockLength) {
         T = block;
@@ -66,7 +65,7 @@ final class Bzip2DivSufSort {
         final int[] SA = this.SA;
         final byte[] T = this.T;
 
-        // pointers within T
+        // T 内的比较指针
         final int U1n = SA[p1 + 1] + 2;
         final int  U2n = SA[p2 + 1] + 2;
 
@@ -2089,8 +2088,8 @@ final class Bzip2DivSufSort {
     }
 
     /**
-     * Performs a Burrows Wheeler Transform on the input array.
-     * @return the index of the first character of the input array within the output array
+     * 对输入数组执行 Burrows-Wheeler 变换。
+     * @return 原块首字节在 BWT 输出中的索引（起始指针）
      */
     public int bwt() {
         final int[] SA = this.SA;

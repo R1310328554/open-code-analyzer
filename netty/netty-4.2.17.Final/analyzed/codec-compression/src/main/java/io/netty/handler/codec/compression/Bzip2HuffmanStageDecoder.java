@@ -20,17 +20,13 @@ import static io.netty.handler.codec.compression.Bzip2Constants.HUFFMAN_GROUP_RU
 import static io.netty.handler.codec.compression.Bzip2Constants.HUFFMAN_MAX_ALPHABET_SIZE;
 
 /**
- * A decoder for the Bzip2 Huffman coding stage.
+ * Bzip2 Huffman 编码阶段的解码器：维护多张 Canonical 表，每 50 符号切换选择器。
  */
 final class Bzip2HuffmanStageDecoder {
-    /**
-     * A reader that provides bit-level reads.
-     */
+    /** 位级输入读取器。 */
     private final Bzip2BitReader reader;
 
-    /**
-     * The Huffman table number to use for each group of 50 symbols.
-     */
+    /** 每 50 个符号一组所使用的 Huffman 表编号。 */
     byte[] selectors;
 
     /**
@@ -40,52 +36,47 @@ final class Bzip2HuffmanStageDecoder {
 
     /**
      * An array of values for each Huffman table that must be subtracted from the numerical value of
-     * a Huffman code of a given bit length to give its canonical code index.
+     * 给定码长的 Canonical 码索引需减去的基值。
      */
     private final int[][] codeBases;
 
     /**
      * An array of values for each Huffman table that gives the highest numerical value of a Huffman
-     * code of a given bit length.
+     * 给定码长的 Huffman 码数值上界。
      */
     private final int[][] codeLimits;
 
     /**
-     * A mapping for each Huffman table from canonical code index to output symbol.
+     * 各表从 Canonical 码索引到输出符号的映射。
      */
     private final int[][] codeSymbols;
 
-    /**
-     * The Huffman table for the current group.
-     */
+    /** 当前 50 符号组使用的 Huffman 表索引。 */
     private int currentTable;
 
-    /**
-     * The index of the current group within the selectors array.
-     */
+    /** 当前组在 selectors 数组中的索引。 */
     private int groupIndex = -1;
 
-    /**
-     * The byte position within the current group. A new group is selected every 50 decoded bytes.
+    /** 当前组内已解码符号计数；每 50 个切换表。 */
      */
     private int groupPosition = -1;
 
     /**
-     * Total number of used Huffman tables in range 2..6.
+     * 使用的 Huffman 表总数（2..6）。
      */
     final int totalTables;
 
     /**
-     * The total number of codes (uniform for each table).
+     * 字母表大小（各表一致）。
      */
     final int alphabetSize;
 
     /**
-     * Table for Move To Front transformations.
+     * 解码 Huffman 表选择器用的 MTF 表。
      */
     final Bzip2MoveToFrontTable tableMTF = new Bzip2MoveToFrontTable();
 
-    // For saving state if end of current ByteBuf was reached
+    // 输入缓冲读尽时保存的中间解析状态
     int currentSelector;
 
     /**
@@ -112,7 +103,7 @@ final class Bzip2HuffmanStageDecoder {
     }
 
     /**
-     * Constructs Huffman decoding tables from lists of Canonical Huffman code lengths.
+     * 根据各表 Canonical 码长构建解码用的基址、上界与符号映射。
      */
     void createHuffmanDecodingTables() {
         final int alphabetSize = this.alphabetSize;
@@ -126,7 +117,7 @@ final class Bzip2HuffmanStageDecoder {
             int minimumLength = HUFFMAN_DECODE_MAX_CODE_LENGTH;
             int maximumLength = 0;
 
-            // Find the minimum and maximum code length for the table
+            // 求本表最短与最长码长
             for (int i = 0; i < alphabetSize; i++) {
                 final byte currLength = codeLengths[i];
                 maximumLength = Math.max(currLength, maximumLength);
@@ -134,7 +125,7 @@ final class Bzip2HuffmanStageDecoder {
             }
             minimumLengths[table] = minimumLength;
 
-            // Calculate the first output symbol for each code length
+            // 统计各码长符号数量
             for (int i = 0; i < alphabetSize; i++) {
                 tableBases[codeLengths[i] + 1]++;
             }
@@ -143,8 +134,7 @@ final class Bzip2HuffmanStageDecoder {
                 tableBases[i] = b;
             }
 
-            // Calculate the first and last Huffman code for each code length (codes at a given
-            // length are sequential in value)
+            // 计算各码长的 Canonical 码区间
             for (int i = minimumLength, code = 0; i <= maximumLength; i++) {
                 int base = code;
                 code += tableBases[i + 1] - tableBases[i];
@@ -153,7 +143,7 @@ final class Bzip2HuffmanStageDecoder {
                 code <<= 1;
             }
 
-            // Populate the mapping from canonical code index to output symbol
+            // 填充 Canonical 索引到符号的映射
             for (int bitLength = minimumLength, codeIndex = 0; bitLength <= maximumLength; bitLength++) {
                 for (int symbol = 0; symbol < alphabetSize; symbol++) {
                     if (codeLengths[symbol] == bitLength) {
@@ -167,11 +157,11 @@ final class Bzip2HuffmanStageDecoder {
     }
 
     /**
-     * Decodes and returns the next symbol.
-     * @return The decoded symbol
+     * 解码并返回下一个 Huffman 符号。
+     * @return 解码得到的符号
      */
     int nextSymbol() {
-        // Move to next group selector if required
+        // 每 50 符号切换到下一选择器指定的表
         if (++groupPosition % HUFFMAN_GROUP_RUN_LENGTH == 0) {
             groupIndex++;
             if (groupIndex == selectors.length) {
@@ -187,12 +177,11 @@ final class Bzip2HuffmanStageDecoder {
         final int[] tableSymbols = codeSymbols[currentTable];
         int codeLength = minimumLengths[currentTable];
 
-        // Starting with the minimum bit length for the table, read additional bits one at a time
-        // until a complete code is recognised
+        // 从最短码长起逐位读取直至识别完整码字
         int codeBits = reader.readBits(codeLength);
         for (; codeLength <= HUFFMAN_DECODE_MAX_CODE_LENGTH; codeLength++) {
             if (codeBits <= tableLimits[codeLength]) {
-                // Convert the code to a symbol index and return
+                // 将 Canonical 码转换为符号索引并返回
                 return tableSymbols[codeBits - tableBases[codeLength]];
             }
             codeBits = codeBits << 1 | reader.readBits(1);

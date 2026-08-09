@@ -32,14 +32,13 @@ import static io.netty.handler.codec.compression.Bzip2Constants.MAX_BLOCK_SIZE;
 import static io.netty.handler.codec.compression.Bzip2Constants.MIN_BLOCK_SIZE;
 
 /**
- * Compresses a {@link ByteBuf} using the Bzip2 algorithm.
+ * 使用 Bzip2 算法压缩 {@link ByteBuf} 的 {@link MessageToByteEncoder}。
+ * 按块累积数据，块满或流关闭时写出压缩块与流尾。
  *
- * See <a href="https://en.wikipedia.org/wiki/Bzip2">Bzip2</a>.
+ * 参见 <a href="https://en.wikipedia.org/wiki/Bzip2">Bzip2</a>。
  */
 public class Bzip2Encoder extends MessageToByteEncoder<ByteBuf> {
-    /**
-     * Current state of stream.
-     */
+    /** 编码器当前状态。 */
     private enum State {
         INIT,
         INIT_BLOCK,
@@ -49,39 +48,25 @@ public class Bzip2Encoder extends MessageToByteEncoder<ByteBuf> {
 
     private State currentState = State.INIT;
 
-    /**
-     * A writer that provides bit-level writes.
-     */
+    /** 块内位级写入器。 */
     private final Bzip2BitWriter writer = new Bzip2BitWriter();
 
-    /**
-     * The declared maximum block size of the stream (before final run-length decoding).
-     */
+    /** 流声明的最大块大小（解压后游程解码前的上限）。 */
     private final int streamBlockSize;
 
-    /**
-     * The merged CRC of all blocks compressed so far.
-     */
+    /** 已压缩所有块的合并 CRC。 */
     private int streamCRC;
 
-    /**
-     * The compressor for the current block.
-     */
+    /** 当前块的块级压缩器。 */
     private Bzip2BlockCompressor blockCompressor;
 
-    /**
-     * (@code true} if the compressed stream has been finished, otherwise {@code false}.
-     */
+    /** 压缩流是否已结束（{@code true} 表示已写出流尾）。 */
     private volatile boolean finished;
 
-    /**
-     * Used to interact with its {@link ChannelPipeline} and other handlers.
-     */
+    /** 关联的 {@link ChannelHandlerContext}，供 {@link #close()} 使用。 */
     private volatile ChannelHandlerContext ctx;
 
-    /**
-     * Creates a new bzip2 encoder with the maximum (900,000 byte) block size.
-     */
+    /** 使用最大块大小（900000 字节，乘数 9）创建编码器。 */
     public Bzip2Encoder() {
         this(MAX_BLOCK_SIZE);
     }
@@ -90,8 +75,7 @@ public class Bzip2Encoder extends MessageToByteEncoder<ByteBuf> {
      * Creates a new bzip2 encoder with the specified {@code blockSizeMultiplier}.
      * @param blockSizeMultiplier
      *        The Bzip2 block size as a multiple of 100,000 bytes (minimum {@code 1}, maximum {@code 9}).
-     *        Larger block sizes require more memory for both compression and decompression,
-     *        but give better compression ratios. {@code 9} will usually be the best value to use.
+     *        块越大占用内存越多，但压缩率通常更好；一般推荐 {@code 9}。
      */
     public Bzip2Encoder(final int blockSizeMultiplier) {
         super(ByteBuf.class);
@@ -149,7 +133,7 @@ public class Bzip2Encoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Close current block and update {@link #streamCRC}.
+     * 关闭当前块并更新 {@link #streamCRC}。
      */
     private void closeBlock(ByteBuf out) {
         final Bzip2BlockCompressor blockCompressor = this.blockCompressor;
@@ -168,18 +152,14 @@ public class Bzip2Encoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Close this {@link Bzip2Encoder} and so finish the encoding.
-     *
-     * The returned {@link ChannelFuture} will be notified once the operation completes.
+     * 结束编码并写出 Bzip2 流尾；完成后通知返回的 {@link ChannelFuture}。
      */
     public ChannelFuture close() {
         return close(ctx().newPromise());
     }
 
     /**
-     * Close this {@link Bzip2Encoder} and so finish the encoding.
-     * The given {@link ChannelFuture} will be notified once the operation
-     * completes and will also be returned.
+     * 结束编码；完成后通知并返回给定的 {@link ChannelFuture}。
      */
     public ChannelFuture close(final ChannelPromise promise) {
         ChannelHandlerContext ctx = ctx();

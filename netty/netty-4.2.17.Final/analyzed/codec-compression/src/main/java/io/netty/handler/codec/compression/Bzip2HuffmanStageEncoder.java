@@ -23,51 +23,49 @@ import static io.netty.handler.codec.compression.Bzip2Constants.HUFFMAN_ENCODE_M
 import static io.netty.handler.codec.compression.Bzip2Constants.HUFFMAN_GROUP_RUN_LENGTH;
 
 /**
- * An encoder for the Bzip2 Huffman encoding stage.
+ * Bzip2 Huffman 编码阶段：生成多张备选表、优化选择器并写出压缩块。
  */
 final class Bzip2HuffmanStageEncoder {
-    /**
-     * Used in initial Huffman table generation.
-     */
+    /** 初始表划分时的高成本符号惩罚值。 */
     private static final int HUFFMAN_HIGH_SYMBOL_COST = 15;
 
     /**
-     * The {@link Bzip2BitWriter} to which the Huffman tables and data is written.
+     * 写出 Huffman 表与块数据的 {@link Bzip2BitWriter}。
      */
     private final Bzip2BitWriter writer;
 
     /**
-     * The output of the Move To Front Transform and Run Length Encoding[2] stages.
+     * MTF 与游程编码[2] 后的符号块。
      */
     private final char[] mtfBlock;
 
     /**
-     * The actual number of values contained in the {@link #mtfBlock} array.
+     * {@link #mtfBlock} 中有效符号个数。
      */
     private final int mtfLength;
 
     /**
-     * The number of unique values in the {@link #mtfBlock} array.
+     * MTF 块字母表大小。
      */
     private final int mtfAlphabetSize;
 
     /**
-     * The global frequencies of values within the {@link #mtfBlock} array.
+     * MTF 块各符号的全局频率。
      */
     private final int[] mtfSymbolFrequencies;
 
     /**
-     * The Canonical Huffman code lengths for each table.
+     * 各备选表的 Canonical 码长。
      */
     private final int[][] huffmanCodeLengths;
 
     /**
-     * Merged code symbols for each table. The value at each position is ((code length << 24) | code).
+     * 各表合并码字：高 8 位为码长，低 24 位为 Canonical 码值。
      */
     private final int[][] huffmanMergedCodeSymbols;
 
     /**
-     * The selectors for each segment.
+     * 每 50 符号段所选 Huffman 表的索引。
      */
     private final byte[] selectors;
 
@@ -94,7 +92,7 @@ final class Bzip2HuffmanStageEncoder {
     }
 
     /**
-     * Selects an appropriate table count for a given MTF length.
+     * 根据 MTF 块长度选择 Huffman 表数量（2..6）。
      * @param mtfLength The length to select a table count for
      * @return The selected table count
      */
@@ -115,7 +113,7 @@ final class Bzip2HuffmanStageEncoder {
     }
 
     /**
-     * Generate a Huffman code length table for a given list of symbol frequencies.
+     * 根据符号频率生成 Canonical Huffman 码长表。
      * @param alphabetSize The total number of symbols
      * @param symbolFrequencies The frequencies of the symbols
      * @param codeLengths The array to which the generated code lengths should be written
@@ -126,8 +124,7 @@ final class Bzip2HuffmanStageEncoder {
         final int[] mergedFrequenciesAndIndices = new int[alphabetSize];
         final int[] sortedFrequencies = new int[alphabetSize];
 
-        // The Huffman allocator needs its input symbol frequencies to be sorted, but we need to
-        // return code lengths in the same order as the corresponding frequencies are passed in.
+        // 分配器需要排序频率，但码长须按原始符号顺序写回
 
         // The symbol frequency and index are merged into a single array of
         // integers - frequency in the high 23 bits, index in the low 9 bits.
@@ -147,7 +144,7 @@ final class Bzip2HuffmanStageEncoder {
         // so the code lengths will be in the sortedFrequencies array afterwards
         Bzip2HuffmanAllocator.allocateHuffmanCodeLengths(sortedFrequencies, HUFFMAN_ENCODE_MAX_CODE_LENGTH);
 
-        // Reverse the sort to place the code lengths in the same order as the symbols whose frequencies were passed in
+        // 逆映射排序结果，恢复与输入频率相同的符号顺序
         for (int i = 0; i < alphabetSize; i++) {
             codeLengths[mergedFrequenciesAndIndices[i] & 0x1ff] = sortedFrequencies[i];
         }
@@ -157,7 +154,7 @@ final class Bzip2HuffmanStageEncoder {
      * Generate initial Huffman code length tables, giving each table a different low cost section
      * of the alphabet that is roughly equal in overall cumulative frequency. Note that the initial
      * tables are invalid for actual Huffman code generation, and only serve as the seed for later
-     * iterative optimisation in {@link #optimiseSelectorsAndHuffmanTables(boolean)}.
+     * 迭代优化 {@link #optimiseSelectorsAndHuffmanTables(boolean)} 的初始种子。
      */
     private void generateHuffmanOptimisationSeeds() {
         final int[][] huffmanCodeLengths = this.huffmanCodeLengths;
@@ -200,7 +197,7 @@ final class Bzip2HuffmanStageEncoder {
      * lengths and the block data encoded with them will converge towards a minimum.<br>
      * If the data is highly incompressible, it is possible that the total encoded size will
      * instead diverge (increase) slightly.<br>
-     * @param storeSelectors If {@code true}, write out the (final) chosen selectors
+     * @param storeSelectors 为 {@code true} 时写出最终选择器列表
      */
     private void optimiseSelectorsAndHuffmanTables(final boolean storeSelectors) {
         final char[] mtfBlock = this.mtfBlock;
@@ -214,12 +211,12 @@ final class Bzip2HuffmanStageEncoder {
 
         int selectorIndex = 0;
 
-        // Find the best table for each group of 50 block bytes based on the current Huffman code lengths
+        // 按当前码长为每 50 符号段选择编码代价最小的表
         for (int groupStart = 0; groupStart < mtfLength;) {
 
             final int groupEnd = Math.min(groupStart + HUFFMAN_GROUP_RUN_LENGTH, mtfLength) - 1;
 
-            // Calculate the cost of this group when encoded by each table
+            // 计算各表编码本段的码长总和
             int[] cost = new int[totalTables];
             for (int i = groupStart; i <= groupEnd; i++) {
                 final int value = mtfBlock[i];
@@ -228,7 +225,7 @@ final class Bzip2HuffmanStageEncoder {
                 }
             }
 
-            // Find the table with the least cost for this group
+            // 选取代价最小的表
             byte bestTable = 0;
             int bestCost = cost[0];
             for (byte i = 1 ; i < totalTables; i++) {
@@ -239,27 +236,27 @@ final class Bzip2HuffmanStageEncoder {
                 }
             }
 
-            // Accumulate symbol frequencies for the table chosen for this block
+            // 累加该表在本段的符号频率，供下轮重算码长
             final int[] bestGroupFrequencies = tableFrequencies[bestTable];
             for (int i = groupStart; i <= groupEnd; i++) {
                 bestGroupFrequencies[mtfBlock[i]]++;
             }
 
-            // Store a selector indicating the table chosen for this block
+            // 记录本段所选表索引
             if (storeSelectors) {
                 selectors[selectorIndex++] = bestTable;
             }
             groupStart = groupEnd + 1;
         }
 
-        // Generate new Huffman code lengths based on the frequencies for each table accumulated in this iteration
+        // 根据本轮各表频率重新生成码长
         for (int i = 0; i < totalTables; i++) {
             generateHuffmanCodeLengths(mtfAlphabetSize, tableFrequencies[i], huffmanCodeLengths[i]);
         }
     }
 
     /**
-     * Assigns Canonical Huffman codes based on the calculated lengths.
+     * 由码长分配 Canonical Huffman 码并合并为 (码长|码值) 整数。
      */
     private void assignHuffmanCodeSymbols() {
         final int[][] huffmanMergedCodeSymbols = this.huffmanMergedCodeSymbols;
@@ -297,7 +294,7 @@ final class Bzip2HuffmanStageEncoder {
     }
 
     /**
-     * Write out the selector list and Huffman tables.
+     * 写出选择器列表与各表码长（MTF + 增量编码）。
      */
     private void writeSelectorsAndHuffmanTables(ByteBuf out) {
         final Bzip2BitWriter writer = this.writer;
@@ -310,13 +307,13 @@ final class Bzip2HuffmanStageEncoder {
         writer.writeBits(out, 3, totalTables);
         writer.writeBits(out, 15, totalSelectors);
 
-        // Write the selectors
+        // MTF 编码写出各段表选择器
         Bzip2MoveToFrontTable selectorMTF = new Bzip2MoveToFrontTable();
         for (byte selector : selectors) {
             writer.writeUnary(out, selectorMTF.valueToFront(selector));
         }
 
-        // Write the Huffman tables
+        // 增量编码写出各表码长
         for (final int[] tableLengths : huffmanCodeLengths) {
             int currentLength = tableLengths[0];
 
@@ -336,7 +333,7 @@ final class Bzip2HuffmanStageEncoder {
     }
 
     /**
-     * Writes out the encoded block data.
+     * 按选择器分段写出 Huffman 编码后的 MTF 块数据。
      */
     private void writeBlockData(ByteBuf out) {
         final Bzip2BitWriter writer = this.writer;
@@ -357,17 +354,17 @@ final class Bzip2HuffmanStageEncoder {
     }
 
     /**
-     * Encodes and writes the block data.
+     * 执行四轮优化后写出表与块数据。
      */
     void encode(ByteBuf out) {
-        // Create optimised selector list and Huffman tables
+        // 生成初始种子并迭代优化选择器与码长
         generateHuffmanOptimisationSeeds();
         for (int i = 3; i >= 0; i--) {
             optimiseSelectorsAndHuffmanTables(i == 0);
         }
         assignHuffmanCodeSymbols();
 
-        // Write out the tables and the block data encoded with them
+        // 写出 Huffman 表与编码数据
         writeSelectorsAndHuffmanTables(out);
         writeBlockData(out);
     }

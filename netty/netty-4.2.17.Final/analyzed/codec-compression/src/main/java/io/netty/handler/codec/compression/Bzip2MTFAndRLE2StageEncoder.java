@@ -20,29 +20,28 @@ import static io.netty.handler.codec.compression.Bzip2Constants.HUFFMAN_SYMBOL_R
 import static io.netty.handler.codec.compression.Bzip2Constants.HUFFMAN_SYMBOL_RUNB;
 
 /**
- * An encoder for the Bzip2 Move To Front Transform and Run-Length Encoding[2] stages.<br>
- * Although conceptually these two stages are separate, it is computationally efficient to perform
- * them in one pass.
+ * Bzip2 的 MTF 变换与游程编码[2] 编码器。<br>
+ * 概念上两阶段独立，但合并为单次遍历更高效。
  */
 final class Bzip2MTFAndRLE2StageEncoder {
     /**
-     * The Burrows-Wheeler transformed block.
+     * Burrows-Wheeler 变换后的块。
      */
     private final int[] bwtBlock;
 
     /**
-     * Actual length of the data in the {@link #bwtBlock} array.
+     * {@link #bwtBlock} 有效长度。
      */
     private final int bwtLength;
 
     /**
      * At each position, {@code true} if the byte value with that index is present within the block,
-     * otherwise {@code false}.
+     * 否则 {@code false}。
      */
     private final boolean[] bwtValuesPresent;
 
     /**
-     * The output of the Move To Front Transform and Run-Length Encoding[2] stages.
+     * MTF 与游程编码[2] 的输出符号序列。
      */
     private final char[] mtfBlock;
 
@@ -57,7 +56,7 @@ final class Bzip2MTFAndRLE2StageEncoder {
     private final int[] mtfSymbolFrequencies = new int[HUFFMAN_MAX_ALPHABET_SIZE];
 
     /**
-     * The encoded alphabet size.
+     * 编码后的字母表大小。
      */
     private int alphabetSize;
 
@@ -75,7 +74,7 @@ final class Bzip2MTFAndRLE2StageEncoder {
     }
 
     /**
-     * Performs the Move To Front transform and Run Length Encoding[1] stages.
+     * 执行 MTF 变换与游程编码[2]（对零游程用 RUNA/RUNB 编码）。
      */
     void encode() {
         final int bwtLength = this.bwtLength;
@@ -99,9 +98,9 @@ final class Bzip2MTFAndRLE2StageEncoder {
         int totalRunAs = 0;
         int totalRunBs = 0;
         for (int i = 0; i < bwtLength; i++) {
-            // Move To Front
+            // 移到前面：记录符号在 MTF 表中的原位置
             final int mtfPosition = symbolMTF.valueToFront(huffmanSymbolMap[bwtBlock[i] & 0xff]);
-            // Run Length Encode
+            // 对连续零位置（重复 MTF 索引 0）做游程编码
             if (mtfPosition == 0) {
                 repeatCount++;
             } else {
@@ -156,28 +155,28 @@ final class Bzip2MTFAndRLE2StageEncoder {
     }
 
     /**
-     * @return The encoded MTF block
+     * @return 编码后的 MTF 符号数组
      */
     char[] mtfBlock() {
         return mtfBlock;
     }
 
     /**
-     * @return The actual length of the MTF block
+     * @return MTF 块有效长度
      */
     int mtfLength() {
         return mtfLength;
     }
 
     /**
-     * @return The size of the MTF block's alphabet
+     * @return MTF 字母表大小
      */
     int mtfAlphabetSize() {
         return alphabetSize;
     }
 
     /**
-     * @return The frequencies of the MTF block's symbols
+     * @return 各 MTF 符号频率
      */
     int[] mtfSymbolFrequencies() {
         return mtfSymbolFrequencies;

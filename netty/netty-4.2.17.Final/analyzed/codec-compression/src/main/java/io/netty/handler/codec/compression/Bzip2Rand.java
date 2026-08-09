@@ -16,17 +16,14 @@
 package io.netty.handler.codec.compression;
 
 /**
- * Random numbers for decompress Bzip2 blocks.
+ * Bzip2 随机化块解压用的 RNUMS 伪随机间隔表。
  */
 final class Bzip2Rand {
     /**
      * The Bzip2 specification originally included the optional addition of a slight pseudo-random
-     * perturbation to the input data, in order to work around the block sorting algorithm's non-
-     * optimal performance on some types of input. The current mainline bzip2 does not require this
-     * and will not create randomised blocks, but compatibility is still required for old data (and
-     * third party compressors that haven't caught up). When decompressing a randomised block, for
-     * each value N in this array, a 1 will be XOR'd onto the output of the Burrows-Wheeler
-     * transform stage after N bytes, then the next N taken from the following entry.
+     * 早期 Bzip2 可对输入做轻微伪随机扰动，以改善块排序在某些数据上的性能。
+     * 现行 bzip2 不再生成随机化块，但仍须兼容旧数据与第三方压缩器。
+     * 解压随机化块时，按本数组：每输出 N 字节后在 BWT 结果上异或 1，再取下一项 N。
      */
     private static final int[] RNUMS = {
             619, 720, 127, 481, 931, 816, 813, 233, 566, 247, 985, 724, 205, 454, 863, 491,
@@ -64,14 +61,15 @@ final class Bzip2Rand {
     };
 
     /**
-     * Return the random number at a specific index.
+     * 返回指定索引处的随机间隔值。
      *
-     * @param i the index
-     * @return the random number
+     * @param i 索引（对 512 取模循环）
+     * @return RNUMS 表中的间隔
      */
     static int rNums(int i) {
         return RNUMS[i];
     }
 
+    /** 工具类，禁止实例化。 */
     private Bzip2Rand() { }
 }

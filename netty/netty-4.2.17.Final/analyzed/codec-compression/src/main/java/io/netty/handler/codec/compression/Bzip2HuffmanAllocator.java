@@ -16,17 +16,16 @@
 package io.netty.handler.codec.compression;
 
 /**
- * An in-place, length restricted Canonical Huffman code length allocator.<br>
- * Based on the algorithm proposed by R. L. Milidi'u, A. A. Pessoa and E. S. Laber in
- * <a href="http://www-di.inf.puc-rio.br/~laber/public/spire98.ps">In-place Length-Restricted Prefix Coding</a>
- * and incorporating additional ideas from the implementation of
- * <a href="http://entropyware.info/shcodec/index.html">shcodec</a> by Simakov Alexander.
+ * 原地、长度受限的 Canonical Huffman 码长分配器。<br>
+ * 算法基于 Milidi'u 等人的
+ * <a href="http://www-di.inf.puc-rio.br/~laber/public/spire98.ps">In-place Length-Restricted Prefix Coding</a>，
+ * 并借鉴 <a href="http://entropyware.info/shcodec/index.html">shcodec</a> 的实现思路。
  */
 final class Bzip2HuffmanAllocator {
     /**
-     * @param array The code length array
-     * @param i The input position
-     * @param nodesToMove The number of internal nodes to be relocated
+     * @param array 码长/频率数组
+     * @param i 当前输入位置
+     * @param nodesToMove 需重定位的内部节点数
      * @return The smallest {@code k} such that {@code nodesToMove <= k <= i} and
      *         {@code i <= (array[k] % array.length)}
      */
@@ -53,7 +52,7 @@ final class Bzip2HuffmanAllocator {
     }
 
     /**
-     * Fills the code array with extended parent pointers.
+     * 用扩展父指针填充码长数组（第一遍）。
      * @param array The code length array
      */
     private static void setExtendedParentPointers(final int[] array) {
@@ -80,7 +79,7 @@ final class Bzip2HuffmanAllocator {
     }
 
     /**
-     * Finds the number of nodes to relocate in order to achieve a given code length limit.
+     * 计算为满足最大码长需重定位的节点数。
      * @param array The code length array
      * @param maximumLength The maximum bit length for the generated codes
      * @return The number of nodes to relocate
@@ -94,7 +93,7 @@ final class Bzip2HuffmanAllocator {
     }
 
     /**
-     * A final allocation pass with no code length limit.
+     * 无码长上限时的最终码长分配。
      * @param array The code length array
      */
     private static void allocateNodeLengths(final int[] array) {
@@ -114,7 +113,7 @@ final class Bzip2HuffmanAllocator {
     }
 
     /**
-     * A final allocation pass that relocates nodes in order to achieve a maximum code length limit.
+     * 通过重定位节点满足最大码长限制的分配。
      * @param array The code length array
      * @param nodesToMove The number of internal nodes to be relocated
      * @param insertDepth The depth at which to insert relocated nodes
@@ -150,7 +149,7 @@ final class Bzip2HuffmanAllocator {
     }
 
     /**
-     * Allocates Canonical Huffman code lengths in place based on a sorted frequency array.
+     * 根据已排序的频率数组原地分配 Canonical Huffman 码长。
      * @param array On input, a sorted array of symbol frequencies; On output, an array of Canonical
      *              Huffman code lengths
      * @param maximumLength The maximum code length. Must be at least {@code ceil(log2(array.length))}
@@ -165,13 +164,13 @@ final class Bzip2HuffmanAllocator {
                 return;
         }
 
-        /* Pass 1 : Set extended parent pointers */
+        /* 第一遍：设置扩展父指针 */
         setExtendedParentPointers(array);
 
-        /* Pass 2 : Find number of nodes to relocate in order to achieve maximum code length */
+        /* 第二遍：计算需重定位节点数以满足最大码长 */
         int nodesToRelocate = findNodesToRelocate(array, maximumLength);
 
-        /* Pass 3 : Generate code lengths */
+        /* 第三遍：生成最终码长 */
         if (array[0] % array.length >= nodesToRelocate) {
             allocateNodeLengths(array);
         } else {
@@ -180,5 +179,6 @@ final class Bzip2HuffmanAllocator {
         }
     }
 
+    /** 工具类，禁止实例化。 */
     private Bzip2HuffmanAllocator() { }
 }

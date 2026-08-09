@@ -18,35 +18,27 @@ package io.netty.handler.codec.compression;
 import io.netty.handler.codec.EncoderException;
 
 /**
- * An {@link EncoderException} that is raised when compression failed.
+ * 压缩失败时抛出的 {@link EncoderException} 子类。
  */
 public class CompressionException extends EncoderException {
 
     private static final long serialVersionUID = 5603413481274811897L;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建无消息的压缩异常。 */
     public CompressionException() {
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带消息与原因的压缩异常。 */
     public CompressionException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带消息的压缩异常。 */
     public CompressionException(String message) {
         super(message);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建仅带原因的压缩异常。 */
     public CompressionException(Throwable cause) {
         super(cause);
     }

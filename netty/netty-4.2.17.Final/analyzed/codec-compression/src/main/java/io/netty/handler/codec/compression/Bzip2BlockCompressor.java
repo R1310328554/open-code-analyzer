@@ -23,16 +23,16 @@ import static io.netty.handler.codec.compression.Bzip2Constants.BLOCK_HEADER_MAG
 import static io.netty.handler.codec.compression.Bzip2Constants.HUFFMAN_SYMBOL_RANGE_SIZE;
 
 /**
- * Compresses and writes a single Bzip2 block.<br><br>
+ * 压缩并写出单个 Bzip2 数据块。<br><br>
  *
- * Block encoding consists of the following stages:<br>
- * 1. Run-Length Encoding[1] - {@link #write(int)}<br>
- * 2. Burrows Wheeler Transform - {@link #close(ByteBuf)} (through {@link Bzip2DivSufSort})<br>
- * 3. Write block header - {@link #close(ByteBuf)}<br>
- * 4. Move To Front Transform - {@link #close(ByteBuf)} (through {@link Bzip2HuffmanStageEncoder})<br>
- * 5. Run-Length Encoding[2] - {@link #close(ByteBuf)}  (through {@link Bzip2HuffmanStageEncoder})<br>
- * 6. Create and write Huffman tables - {@link #close(ByteBuf)} (through {@link Bzip2HuffmanStageEncoder})<br>
- * 7. Huffman encode and write data - {@link #close(ByteBuf)} (through {@link Bzip2HuffmanStageEncoder})
+ * 块编码包含以下阶段：<br>
+ * 1. 游程编码[1] — {@link #write(int)}<br>
+ * 2. Burrows-Wheeler 变换 — {@link #close(ByteBuf)}（经 {@link Bzip2DivSufSort}）<br>
+ * 3. 写出块头 — {@link #close(ByteBuf)}<br>
+ * 4. 移到前面（MTF）变换 — {@link #close(ByteBuf)}（经 {@link Bzip2HuffmanStageEncoder}）<br>
+ * 5. 游程编码[2] — {@link #close(ByteBuf)}（经 {@link Bzip2HuffmanStageEncoder}）<br>
+ * 6. 创建并写出 Huffman 表 — {@link #close(ByteBuf)}（经 {@link Bzip2HuffmanStageEncoder}）<br>
+ * 7. Huffman 编码并写出数据 — {@link #close(ByteBuf)}（经 {@link Bzip2HuffmanStageEncoder}）
  */
 final class Bzip2BlockCompressor {
     private final ByteProcessor writeProcessor = new ByteProcessor() {
@@ -42,50 +42,34 @@ final class Bzip2BlockCompressor {
         }
     };
 
-    /**
-     * A writer that provides bit-level writes.
-     */
+    /** 提供位级写入的 {@link Bzip2BitWriter}。 */
     private final Bzip2BitWriter writer;
 
-    /**
-     * CRC builder for the block.
-     */
+    /** 当前块的 CRC 计算器。 */
     private final Crc32 crc = new Crc32();
 
-    /**
-     * The RLE'd block data.
-     */
+    /** 经游程编码[1]后的块数据。 */
     private final byte[] block;
 
-    /**
-     * Current length of the data within the {@link #block} array.
-     */
+    /** {@link #block} 数组中当前有效数据长度。 */
     private int blockLength;
 
-    /**
-     * A limit beyond which new data will not be accepted into the block.
-     */
+    /** 块容量上限，超出后不再接受新数据。 */
     private final int blockLengthLimit;
 
     /**
      * The values that are present within the RLE'd block data. For each index, {@code true} if that
-     * value is present within the data, otherwise {@code false}.
+     * 值是否出现在数据中，否则为 {@code false}。
      */
     private final boolean[] blockValuesPresent = new boolean[256];
 
-    /**
-     * The Burrows Wheeler Transformed block data.
-     */
+    /** BWT 变换后的块数据（后缀数组形式）。 */
     private final int[] bwtBlock;
 
-    /**
-     * The current RLE value being accumulated (undefined when {@link #rleLength} is 0).
-     */
+    /** 当前正在累积游程的字节值（{@link #rleLength} 为 0 时未定义）。 */
     private int rleCurrentValue = -1;
 
-    /**
-     * The repeat count of the current RLE value.
-     */
+    /** 当前游程值的重复次数。 */
     private int rleLength;
 
     /**
@@ -96,14 +80,14 @@ final class Bzip2BlockCompressor {
     Bzip2BlockCompressor(final Bzip2BitWriter writer, final int blockSize) {
         this.writer = writer;
 
-        // One extra byte is added to allow for the block wrap applied in close()
+        // 多分配一字节，供 close() 中 BWT 所需的块环绕使用
         block = new byte[blockSize + 1];
         bwtBlock = new int[blockSize + 1];
         blockLengthLimit = blockSize - 6; // 5 bytes for one RLE run plus one byte - see {@link #write(int)}
     }
 
     /**
-     * Write the Huffman symbol to output byte map.
+     * 将 Huffman 符号映射（哪些字节值出现）写入输出流。
      */
     private void writeSymbolMap(ByteBuf out) {
         Bzip2BitWriter writer = this.writer;
@@ -135,8 +119,8 @@ final class Bzip2BlockCompressor {
 
     /**
      * Writes an RLE run to the block array, updating the block CRC and present values array as required.
-     * @param value The value to write
-     * @param runLength The run length of the value to write
+     * @param value 要写入的字节值
+     * @param runLength 该值的游程长度
      */
     private void writeRun(final int value, int runLength) {
         final int blockLength = this.blockLength;
@@ -191,7 +175,7 @@ final class Bzip2BlockCompressor {
             this.rleCurrentValue = value;
             this.rleLength = 1;
         } else if (rleCurrentValue != value) {
-            // This path commits us to write 6 bytes - one RLE run (5 bytes) plus one extra
+            // 切换游程值时至少需写 6 字节：一个 RLE 段（5 字节）加一个新字节
             writeRun(rleCurrentValue & 0xff, rleLength);
             this.rleCurrentValue = value;
             this.rleLength = 1;
@@ -223,36 +207,36 @@ final class Bzip2BlockCompressor {
      * Compresses and writes out the block.
      */
     void close(ByteBuf out) {
-        // If an RLE run is in progress, write it out
+        // 若仍有未刷新的游程，先写出
         if (rleLength > 0) {
             writeRun(rleCurrentValue & 0xff, rleLength);
         }
 
-        // Apply a one byte block wrap required by the BWT implementation
+        // BWT 算法要求块末尾追加首字节形成环绕
         block[blockLength] = block[0];
 
-        // Perform the Burrows Wheeler Transform
+        // 执行 Burrows-Wheeler 变换
         Bzip2DivSufSort divSufSort = new Bzip2DivSufSort(block, bwtBlock, blockLength);
         int bwtStartPointer = divSufSort.bwt();
 
         Bzip2BitWriter writer = this.writer;
 
-        // Write out the block header
+        // 写出块头（魔数、CRC、随机化标志、BWT 起始指针）
         writer.writeBits(out, 24, BLOCK_HEADER_MAGIC_1);
         writer.writeBits(out, 24, BLOCK_HEADER_MAGIC_2);
         writer.writeInt(out, crc.getCRC());
-        writer.writeBoolean(out, false); // Randomised block flag. We never create randomised blocks
+        writer.writeBoolean(out, false); // 随机化块标志；本实现不生成随机化块
         writer.writeBits(out, 24, bwtStartPointer);
 
-        // Write out the symbol map
+        // 写出符号使用位图
         writeSymbolMap(out);
 
-        // Perform the Move To Front Transform and Run-Length Encoding[2] stages
+        // 执行 MTF 变换与游程编码[2]
         Bzip2MTFAndRLE2StageEncoder mtfEncoder = new Bzip2MTFAndRLE2StageEncoder(bwtBlock, blockLength,
                                                                                     blockValuesPresent);
         mtfEncoder.encode();
 
-        // Perform the Huffman Encoding stage and write out the encoded data
+        // 执行 Huffman 编码并写出压缩数据
         Bzip2HuffmanStageEncoder huffmanEncoder = new Bzip2HuffmanStageEncoder(writer,
                 mtfEncoder.mtfBlock(),
                 mtfEncoder.mtfLength(),

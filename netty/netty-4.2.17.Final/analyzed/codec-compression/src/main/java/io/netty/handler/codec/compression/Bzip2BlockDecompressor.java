@@ -21,136 +21,127 @@ import static io.netty.handler.codec.compression.Bzip2Constants.HUFFMAN_SYMBOL_R
 import static io.netty.handler.codec.compression.Bzip2Constants.MAX_BLOCK_LENGTH;
 
 /**
- * Reads and decompresses a single Bzip2 block.<br><br>
+ * 读取并解压单个 Bzip2 数据块。<br><br>
  *
- * Block decoding consists of the following stages:<br>
- * 1. Read block header<br>
- * 2. Read Huffman tables<br>
- * 3. Read and decode Huffman encoded data - {@link #decodeHuffmanData(Bzip2HuffmanStageDecoder)}<br>
- * 4. Run-Length Decoding[2] - {@link #decodeHuffmanData(Bzip2HuffmanStageDecoder)}<br>
- * 5. Inverse Move To Front Transform - {@link #decodeHuffmanData(Bzip2HuffmanStageDecoder)}<br>
- * 6. Inverse Burrows Wheeler Transform - {@link #initialiseInverseBWT()}<br>
- * 7. Run-Length Decoding[1] - {@link #read()}<br>
- * 8. Optional Block De-Randomisation - {@link #read()} (through {@link #decodeNextBWTByte()})
+ * 块解码包含以下阶段：<br>
+ * 1. 读取块头<br>
+ * 2. 读取 Huffman 表<br>
+ * 3. 读取并解码 Huffman 数据 — {@link #decodeHuffmanData(Bzip2HuffmanStageDecoder)}<br>
+ * 4. 游程解码[2] — {@link #decodeHuffmanData(Bzip2HuffmanStageDecoder)}<br>
+ * 5. 逆 MTF 变换 — {@link #decodeHuffmanData(Bzip2HuffmanStageDecoder)}<br>
+ * 6. 逆 BWT — {@link #initialiseInverseBWT()}<br>
+ * 7. 游程解码[1] — {@link #read()}<br>
+ * 8. 可选块去随机化 — {@link #read()}（经 {@link #decodeNextBWTByte()}）
  */
 final class Bzip2BlockDecompressor {
-    /**
-     * A reader that provides bit-level reads.
-     */
+    /** 提供位级读取的 {@link Bzip2BitReader}。 */
     private final Bzip2BitReader reader;
 
-    /**
-     * Calculates the block CRC from the fully decoded bytes of the block.
-     */
+    /** 根据完全解码后的块字节计算 CRC。 */
     private final Crc32 crc = new Crc32();
 
-    /**
-     * The CRC of the current block as read from the block header.
-     */
+    /** 从块头读取的当前块 CRC。 */
     private final int blockCRC;
 
-    /**
-     * {@code true} if the current block is randomised, otherwise {@code false}.
-     */
+    /** 当前块是否经随机化处理。 */
     private final boolean blockRandomised;
 
-    /* Huffman Decoding stage */
+    /* Huffman 解码阶段 */
     /**
-     * The end-of-block Huffman symbol. Decoding of the block ends when this is encountered.
+     * 块结束 Huffman 符号；遇到此符号即停止解码该块。
      */
     int huffmanEndOfBlockSymbol;
 
     /**
-     * Bitmap, of ranges of 16 bytes, present/not present.
+     * 16 字节分组的符号使用位图（哪些 16 字节区间有符号）。
      */
     int huffmanInUse16;
 
     /**
      * A map from Huffman symbol index to output character. Some types of data (e.g. ASCII text)
      * may contain only a limited number of byte values; Huffman symbols are only allocated to
-     * those values that actually occur in the uncompressed data.
+     * 仅为未压缩数据中实际出现的字节值分配 Huffman 符号。
      */
     final byte[] huffmanSymbolMap = new byte[256];
 
-    /* Move To Front stage */
+    /* MTF 阶段 */
     /**
      * Counts of each byte value within the {@link Bzip2BlockDecompressor#huffmanSymbolMap} data.
-     * Collected at the Move To Front stage, consumed by the Inverse Burrows Wheeler Transform stage.
+     * 在 MTF 阶段统计，供逆 BWT 阶段使用。
      */
     private final int[] bwtByteCounts = new int[256];
 
     /**
      * The Burrows-Wheeler Transform processed data. Read at the Move To Front stage, consumed by the
-     * Inverse Burrows Wheeler Transform stage.
+     * 逆 Burrows-Wheeler 变换阶段使用。
      */
     private final byte[] bwtBlock;
 
     /**
-     * Starting pointer into BWT for after untransform.
+     * 逆 BWT 后的 BWT 起始指针。
      */
     private final int bwtStartPointer;
 
-    /* Inverse Burrows-Wheeler Transform stage */
+    /* 逆 BWT 阶段 */
     /**
      * At each position contains the union of :-
      *   An output character (8 bits)
      *   A pointer from each position to its successor (24 bits, left shifted 8 bits)
      * As the pointer cannot exceed the maximum block size of 900k, 24 bits is more than enough to
-     * hold it; Folding the character data into the spare bits while performing the inverse BWT,
-     * when both pieces of information are available, saves a large number of memory accesses in
-     * the final decoding stages.
+     * 指针不超过 900k 块上限，24 位足够；逆 BWT 时将字符并入 int 高位，
+     * 在最终解码阶段合并存储可大幅减少内存访问。
      */
     private int[] bwtMergedPointers;
 
     /**
-     * The current merged pointer into the Burrow-Wheeler Transform array.
+     * 当前在合并 BWT 指针数组中的位置。
      */
     private int bwtCurrentMergedPointer;
 
     /**
      * The actual length in bytes of the current block at the Inverse Burrows Wheeler Transform
-     * stage (before final Run-Length Decoding).
+     * 阶段时的实际块长度（最终游程解码之前）。
      */
     private int bwtBlockLength;
 
     /**
-     * The number of output bytes that have been decoded up to the Inverse Burrows Wheeler Transform stage.
+     * 逆 BWT 阶段已解码的输出字节数。
      */
     private int bwtBytesDecoded;
 
-    /* Run-Length Encoding and Random Perturbation stage */
+    /* 游程编码与随机扰动阶段 */
     /**
-     * The most recently RLE decoded byte.
+     * 最近一次 RLE 解码得到的字节。
      */
     private int rleLastDecodedByte = -1;
 
     /**
      * The number of previous identical output bytes decoded. After 4 identical bytes, the next byte
-     * decoded is an RLE repeat count.
+     * 解码下一个字节作为 RLE 重复次数。
      */
     private int rleAccumulator;
 
     /**
-     * The RLE repeat count of the current decoded byte. When this reaches zero, a new byte is decoded.
+     * 当前字节的 RLE 剩余重复次数；归零后解码新字节。
      */
     private int rleRepeat;
 
     /**
-     * If the current block is randomised, the position within the RNUMS randomisation array.
+     * 随机化块时在 RNUMS 数组中的当前索引。
      */
     private int randomIndex;
 
     /**
-     * If the current block is randomised, the remaining count at the current RNUMS position.
+     * 随机化块时当前 RNUMS 位置剩余字节数。
      */
     private int randomCount = Bzip2Rand.rNums(0) - 1;
 
     /**
-     * Table for Move To Front transformations.
+     * MTF 变换用的移到前面表。
      */
     private final Bzip2MoveToFrontTable symbolMTF = new Bzip2MoveToFrontTable();
 
-    // This variables is used to save current state if we haven't got enough readable bits
+    // 输入比特不足时保存 Huffman/MTF 解码中间状态
     private int repeatCount;
     private int repeatIncrement = 1;
     private int mtfValue;
@@ -169,7 +160,7 @@ final class Bzip2BlockDecompressor {
 
     /**
      * Reads the Huffman encoded data from the input stream, performs Run-Length Decoding and
-     * applies the Move To Front transform to reconstruct the Burrows-Wheeler Transform array.
+     * 并应用逆 MTF 重建 Burrows-Wheeler 变换数组。
      */
     boolean decodeHuffmanData(final Bzip2HuffmanStageDecoder huffmanDecoder) {
         final Bzip2BitReader reader = this.reader;
@@ -242,7 +233,7 @@ final class Bzip2BlockDecompressor {
     }
 
     /**
-     * Set up the Inverse Burrows-Wheeler Transform merged pointer array.
+     * 构建逆 BWT 用的合并指针数组。
      */
     private void initialiseInverseBWT() {
         final int bwtStartPointer = this.bwtStartPointer;
@@ -254,16 +245,14 @@ final class Bzip2BlockDecompressor {
             throw new DecompressionException("start pointer invalid");
         }
 
-        // Cumulative character counts
+        // 累积字符计数，确定各字符在 BWT 列中的起始位置
         System.arraycopy(bwtByteCounts, 0, characterBase, 1, 255);
         for (int i = 2; i <= 255; i++) {
             characterBase[i] += characterBase[i - 1];
         }
 
-        // Merged-Array Inverse Burrows-Wheeler Transform
-        // Combining the output characters and forward pointers into a single array here, where we
-        // have already read both of the corresponding values, cuts down on memory accesses in the
-        // final walk through the array
+        // 合并数组式逆 BWT：字符与后继指针写入同一 int
+        // 合并字符与后继指针到同一数组，最终遍历时可减少内存访问
         for (int i = 0; i < bwtBlockLength; i++) {
             int value = bwtBlock[i] & 0xff;
             bwtMergedPointers[characterBase[value]++] = (i << 8) + value;
@@ -275,8 +264,8 @@ final class Bzip2BlockDecompressor {
 
     /**
      * Decodes a byte from the final Run-Length Encoding stage, pulling a new byte from the
-     * Burrows-Wheeler Transform stage when required.
-     * @return The decoded byte, or -1 if there are no more bytes
+     * 必要时从 BWT 阶段拉取新字节。
+     * @return 解码字节，无更多数据时返回 -1
      */
     public int read() {
         while (rleRepeat < 1) {
@@ -286,7 +275,7 @@ final class Bzip2BlockDecompressor {
 
             int nextByte = decodeNextBWTByte();
             if (nextByte != rleLastDecodedByte) {
-                // New byte, restart accumulation
+                // 新字节，重新开始 RLE 累积
                 rleLastDecodedByte = nextByte;
                 rleRepeat = 1;
                 rleAccumulator = 1;
@@ -296,7 +285,7 @@ final class Bzip2BlockDecompressor {
                     if (bwtBytesDecoded >= bwtBlockLength) {
                         throw new DecompressionException("malformed RLE: run-length byte missing at end of block");
                     }
-                    // Accumulation complete, start repetition
+                    // 累积满 4 个相同字节，读取重复次数
                     int rleRepeat = decodeNextBWTByte() + 1;
                     this.rleRepeat = rleRepeat;
                     rleAccumulator = 0;
@@ -314,8 +303,8 @@ final class Bzip2BlockDecompressor {
 
     /**
      * Decodes a byte from the Burrows-Wheeler Transform stage. If the block has randomisation
-     * applied, reverses the randomisation.
-     * @return The decoded byte
+     * 则按 RNUMS 表撤销随机化（异或 1）。
+     * @return 从 BWT 阶段解码的一个字节
      */
     private int decodeNextBWTByte() {
         int mergedPointer = bwtCurrentMergedPointer;
@@ -340,7 +329,7 @@ final class Bzip2BlockDecompressor {
 
     /**
      * Verify and return the block CRC. This method may only be called
-     * after all of the block's bytes have been read.
+     * 必须在块内所有字节读完后调用。
      * @return The block CRC
      */
     int checkCRC() {

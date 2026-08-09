@@ -18,25 +18,20 @@ package io.netty.handler.codec.compression;
 import io.netty.buffer.ByteBuf;
 
 /**
- * A bit writer that allows the writing of single bit booleans, unary numbers, bit strings
- * of arbitrary length (up to 32 bits), and bit aligned 32-bit integers. A single byte at a
- * time is written to the {@link ByteBuf} when sufficient bits have been accumulated.
+ * Bzip2 位级写入器：支持单比特布尔值、一元编码数字、最长 32 位的位串以及按位对齐的 32 位整数。
+ * 累积满 32 位后向 {@link ByteBuf} 写入一个字（4 字节）。
  */
 final class Bzip2BitWriter {
-    /**
-     * A buffer of bits waiting to be written to the output stream.
-     */
+    /** 待写入输出流的位缓冲（高 64 位有效区）。 */
     private long bitBuffer;
 
-    /**
-     * The number of bits currently buffered in {@link #bitBuffer}.
-     */
+    /** {@link #bitBuffer} 中当前已缓冲的位数。 */
     private int bitCount;
 
     /**
      * Writes up to 32 bits to the output {@link ByteBuf}.
-     * @param count The number of bits to write (maximum {@code 32} as a size of {@code int})
-     * @param value The bits to write
+     * @param count 要写入的位数（最多 {@code 32}，受 {@code int} 宽度限制）
+     * @param value 要写入的位值
      */
     void writeBits(ByteBuf out, final int count, final long value) {
         if (count < 0 || count > 32) {
@@ -57,7 +52,7 @@ final class Bzip2BitWriter {
 
     /**
      * Writes a single bit to the output {@link ByteBuf}.
-     * @param value The bit to write
+     * @param value 要写入的单个比特
      */
     void writeBoolean(ByteBuf out, final boolean value) {
         int bitCount = this.bitCount + 1;
@@ -74,8 +69,8 @@ final class Bzip2BitWriter {
 
     /**
      * Writes a zero-terminated unary number to the output {@link ByteBuf}.
-     * Example of the output for value = 6: {@code 1111110}
-     * @param value The number of {@code 1} to write
+     * 示例：value = 6 时输出 {@code 1111110}（6 个 1 后接 0）
+     * @param value 要写入的连续 {@code 1} 的个数
      */
     void writeUnary(ByteBuf out, int value) {
         if (value < 0) {
@@ -89,7 +84,7 @@ final class Bzip2BitWriter {
 
     /**
      * Writes an integer as 32 bits to the output {@link ByteBuf}.
-     * @param value The integer to write
+     * @param value 要写入的 32 位整数
      */
     void writeInt(ByteBuf out, final int value) {
         writeBits(out, 32, value);
@@ -97,7 +92,7 @@ final class Bzip2BitWriter {
 
     /**
      * Writes any remaining bits to the output {@link ByteBuf},
-     * zero padding to a whole byte as required.
+     * 必要时以零填充至整字节边界。
      */
     void flush(ByteBuf out) {
         final int bitCount = this.bitCount;

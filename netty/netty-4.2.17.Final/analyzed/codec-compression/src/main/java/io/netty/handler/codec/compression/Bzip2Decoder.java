@@ -37,14 +37,13 @@ import static io.netty.handler.codec.compression.Bzip2Constants.MAX_SELECTORS;
 import static io.netty.handler.codec.compression.Bzip2Constants.MIN_BLOCK_SIZE;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded with the Bzip2 format.
+ * 将 Bzip2 格式压缩的 {@link ByteBuf} 解压为明文。
+ * 基于状态机逐块解析流头、Huffman 表与块数据。
  *
- * See <a href="https://en.wikipedia.org/wiki/Bzip2">Bzip2</a>.
+ * 参见 <a href="https://en.wikipedia.org/wiki/Bzip2">Bzip2</a>。
  */
 public class Bzip2Decoder extends ByteToMessageDecoder {
-    /**
-     * Current state of stream.
-     */
+    /** 当前流解析状态。 */
     private enum State {
         INIT,
         INIT_BLOCK,
@@ -59,23 +58,17 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
     }
     private State currentState = State.INIT;
 
-    /**
-     * A reader that provides bit-level reads.
-     */
+    /** 位级读取器，解析块内按位编码的数据。 */
     private final Bzip2BitReader reader = new Bzip2BitReader();
 
-    /**
-     * The decompressor for the current block.
-     */
+    /** 当前块的块级解压器。 */
     private Bzip2BlockDecompressor blockDecompressor;
 
-    /**
-     * Bzip2 Huffman coding stage.
-     */
+    /** Bzip2 Huffman 解码阶段处理器。 */
     private Bzip2HuffmanStageDecoder huffmanStageDecoder;
 
     /**
-     * Always: in the range 0 .. 9. The current block size is 100000 * this number.
+     * 取值 0..9；当前块最大字节数为 100000 × 该值。
      */
     private int blockSize;
 
@@ -84,9 +77,7 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
      */
     private int blockCRC;
 
-    /**
-     * The merged CRC of all blocks decompressed so far.
-     */
+    /** 至今所有已解压块的合并 CRC。 */
     private int streamCRC;
 
     @Override
@@ -117,16 +108,16 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
 
                 streamCRC = 0;
                 currentState = State.INIT_BLOCK;
-                 // fall through
+                 // 故意 fall-through 进入下一状态
             case INIT_BLOCK:
                 if (!reader.hasReadableBytes(10)) {
                     return;
                 }
-                // Get the block magic bytes.
+                // 读取块魔数或流结束标记
                 final int magic1 = reader.readBits(24);
                 final int magic2 = reader.readBits(24);
                 if (magic1 == END_OF_STREAM_MAGIC_1 && magic2 == END_OF_STREAM_MAGIC_2) {
-                    // End of stream was reached. Check the combined CRC.
+                    // 到达流尾，校验合并 CRC
                     final int storedCombinedCRC = reader.readInt();
                     if (storedCombinedCRC != streamCRC) {
                         throw new DecompressionException("stream CRC error");
@@ -212,11 +203,11 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
                 final Bzip2MoveToFrontTable tableMtf = huffmanStageDecoder.tableMTF;
 
                 int currSelector;
-                // Get zero-terminated bit runs (0..62) of MTF'ed Huffman table. length = 1..6
+                // 读取 MTF 编码的 Huffman 表选择器（零终止位串，长度 1..6）
                 for (currSelector = huffmanStageDecoder.currentSelector;
                             currSelector < totalSelectors; currSelector++) {
                     if (!reader.hasReadableBits(HUFFMAN_SELECTOR_LIST_MAX_LENGTH)) {
-                        // Save state if end of current ByteBuf was reached
+                        // 当前 ByteBuf 读尽时保存选择器解析进度
                         huffmanStageDecoder.currentSelector = currSelector;
                         return;
                     }
@@ -235,14 +226,14 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
                 final byte[][] codeLength = huffmanStageDecoder.tableCodeLengths;
                 alphaSize = huffmanStageDecoder.alphabetSize;
 
-                /* Now the coding tables */
+                /* 读取各 Huffman 表的码长 */
                 int currGroup;
                 int currLength = huffmanStageDecoder.currentLength;
                 int currAlpha = 0;
                 boolean modifyLength = huffmanStageDecoder.modifyLength;
                 boolean saveStateAndReturn = false;
                 loop: for (currGroup = huffmanStageDecoder.currentGroup; currGroup < totalTables; currGroup++) {
-                    // start_huffman_length
+                    // 读取本表第一个符号的初始码长（5 位）
                     if (!reader.hasReadableBits(5)) {
                         saveStateAndReturn = true;
                         break;
@@ -251,18 +242,18 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
                         currLength = reader.readBits(5);
                     }
                     for (currAlpha = huffmanStageDecoder.currentAlpha; currAlpha < alphaSize; currAlpha++) {
-                        // delta_bit_length: 1..40
+                        // 增量码长调整，最多 40 次
                         if (!reader.isReadable()) {
                             saveStateAndReturn = true;
                             break loop;
                         }
-                        while (modifyLength || reader.readBoolean()) {  // 0=>next symbol; 1=>alter length
+                        while (modifyLength || reader.readBoolean()) {  // 0=下一符号；1=调整码长
                             if (!reader.isReadable()) {
                                 modifyLength = true;
                                 saveStateAndReturn = true;
                                 break loop;
                             }
-                            // 1=>decrement length;  0=>increment length
+                            // 1=码长减一；0=码长加一
                             currLength += reader.readBoolean() ? -1 : 1;
                             modifyLength = false;
                             if (!reader.isReadable()) {
@@ -277,7 +268,7 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
                     modifyLength = false;
                 }
                 if (saveStateAndReturn) {
-                    // Save state if end of current ByteBuf was reached
+                    // 输入不足时保存码长解析状态
                     huffmanStageDecoder.currentGroup = currGroup;
                     huffmanStageDecoder.currentLength = currLength;
                     huffmanStageDecoder.currentAlpha = currAlpha;
@@ -285,7 +276,7 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
                     return;
                 }
 
-                // Finally create the Huffman tables
+                // 根据码长构建 Canonical Huffman 解码表
                 huffmanStageDecoder.createHuffmanDecodingTables();
                 currentState = State.DECODE_HUFFMAN_DATA;
                 // fall through
@@ -296,9 +287,8 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
                 if (!decoded) {
                     return;
                 }
-                // It used to avoid "Bzip2Decoder.decode() did not read anything but decoded a message" exception.
-                // Because previous operation may read only a few bits from Bzip2BitReader.bitBuffer and
-                // don't read incoming ByteBuf.
+                // 避免 bitReader 只消费少量比特而未推进 ByteBuf readerIndex 的异常
+                // 因 Huffman 解码可能仅从 bitBuffer 取位，需 refill 同步底层缓冲
                 if (in.readerIndex() == oldReaderIndex && in.isReadable()) {
                     reader.refill();
                 }
@@ -310,7 +300,7 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
                     while ((uncByte = blockDecompressor.read()) >= 0) {
                         uncompressed.writeByte(uncByte);
                     }
-                    // We did read all the data, lets reset the state and do the CRC check.
+                    // 块数据读完，重置状态并校验块 CRC
                     currentState = State.INIT_BLOCK;
                     int currentBlockCRC = blockDecompressor.checkCRC();
                     streamCRC = (streamCRC << 1 | streamCRC >>> 31) ^ currentBlockCRC;
@@ -322,8 +312,7 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
                         uncompressed.release();
                     }
                 }
-                // Return here so the ByteBuf that was put in the List will be forwarded to the user and so can be
-                // released as soon as possible.
+                // 立即返回以便尽快将解压块转发给用户并释放
                 return;
             case EOF:
                 in.skipBytes(in.readableBytes());
@@ -336,7 +325,7 @@ public class Bzip2Decoder extends ByteToMessageDecoder {
 
     /**
      * Returns {@code true} if and only if the end of the compressed stream
-     * has been reached.
+     * 是否已到达。
      */
     public boolean isClosed() {
         return currentState == State.EOF;
