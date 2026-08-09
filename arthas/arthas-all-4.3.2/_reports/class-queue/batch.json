@@ -15,23 +15,8 @@
     "core/src/main/java/com/taobao/arthas/core/command/monitor200/LineCommand.java",
     "core/src/main/java/com/taobao/arthas/core/command/monitor200/LineCommandAdviceListener.java",
     "core/src/main/java/com/taobao/arthas/core/command/monitor200/MBeanCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/MemoryCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/MonitorAdviceListener.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/MonitorCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/MonitorData.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/PathTraceAdviceListener.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/PerfCounterCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/ProfilerCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/ProfilerMarkdown.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/StackAdviceListener.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/StackCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/ThreadCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/ThreadSampler.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/TimeFragment.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/TimeTunnelAdviceListener.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/TimeTunnelCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/TimeTunnelTable.java"
+    "core/src/main/java/com/taobao/arthas/core/command/monitor200/MemoryCommand.java"
   ],
   "remaining_pending": 465,
-  "done": 300
+  "done": 315
 }
