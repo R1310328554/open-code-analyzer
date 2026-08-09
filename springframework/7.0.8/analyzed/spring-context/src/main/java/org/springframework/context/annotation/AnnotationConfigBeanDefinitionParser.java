@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+解析 XML {@code <context:annotation-config/>} 元素，注册注解配置所需的 BeanPostProcessor。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.util.Set;
@@ -28,6 +33,13 @@ import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 
+/* ===== [OCA 中文解析] =====
+class AnnotationConfigBeanDefinitionParser — 意图说明
+
+将 {@code <context:annotation-config/>} 解析为一系列基础设施 Bean 定义并注册到容器。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Parser for the &lt;context:annotation-config/&gt; element.
  *
@@ -43,20 +55,20 @@ public class AnnotationConfigBeanDefinitionParser implements BeanDefinitionParse
 	public @Nullable BeanDefinition parse(Element element, ParserContext parserContext) {
 		Object source = parserContext.extractSource(element);
 
-		// Obtain bean definitions for all relevant BeanPostProcessors.
+		// [OCA] 获取所有相关 BeanPostProcessor 的 Bean 定义。
 		Set<BeanDefinitionHolder> processorDefinitions =
 				AnnotationConfigUtils.registerAnnotationConfigProcessors(parserContext.getRegistry(), source);
 
-		// Register component for the surrounding <context:annotation-config> element.
+		// [OCA] 为外围 {@code <context:annotation-config>} 元素注册组合组件。
 		CompositeComponentDefinition compDefinition = new CompositeComponentDefinition(element.getTagName(), source);
 		parserContext.pushContainingComponent(compDefinition);
 
-		// Nest the concrete beans in the surrounding component.
+		// [OCA] 将具体 Bean 嵌套到外围组合组件中。
 		for (BeanDefinitionHolder processorDefinition : processorDefinitions) {
 			parserContext.registerComponent(new BeanComponentDefinition(processorDefinition));
 		}
 
-		// Finally register the composite component.
+		// [OCA] 最终注册组合组件。
 		parserContext.popAndRegisterContainingComponent();
 
 		return null;

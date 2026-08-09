@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+为 {@link Condition} 实现提供上下文信息：注册表、BeanFactory、环境、资源加载器等。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import org.jspecify.annotations.Nullable;
@@ -23,6 +28,13 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 
+/* ===== [OCA 中文解析] =====
+interface ConditionContext — 意图说明
+
+条件评估时可访问的 Spring 基础设施上下文。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Context information for use by {@link Condition} implementations.
  *

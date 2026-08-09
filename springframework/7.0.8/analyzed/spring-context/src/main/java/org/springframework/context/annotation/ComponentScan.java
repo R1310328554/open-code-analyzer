@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+配置 {@link Configuration} 类的组件扫描指令，等价于 XML {@code <context:component-scan>}。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.lang.annotation.Documented;
@@ -27,6 +32,13 @@ import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.core.type.filter.TypeFilter;
 
+/* ===== [OCA 中文解析] =====
+@interface ComponentScan — 意图说明
+
+声明要扫描的基础包、过滤器、Bean 名称生成器等组件扫描参数。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Configures component scanning directives for use with {@link Configuration @Configuration}
  * classes.

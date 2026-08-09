@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+基于 {@link Scope} 注解解析 Bean 作用域元数据的默认实现。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.lang.annotation.Annotation;
@@ -23,6 +28,13 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.util.Assert;
 
+/* ===== [OCA 中文解析] =====
+class AnnotationScopeMetadataResolver — 意图说明
+
+从 Bean 类上的 {@link Scope}（或可配置的其他注解）提取作用域名称与代理模式。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * A {@link ScopeMetadataResolver} implementation that by default checks for
  * the presence of Spring's {@link Scope @Scope} annotation on the bean class.
@@ -38,8 +50,10 @@ import org.springframework.util.Assert;
  */
 public class AnnotationScopeMetadataResolver implements ScopeMetadataResolver {
 
+	// [OCA] 字段 `defaultProxyMode`：默认作用域代理模式。
 	private final ScopedProxyMode defaultProxyMode;
 
+	// [OCA] 字段 `scopeAnnotationType`：用于检测作用域的注解类型，默认为 {@link Scope}。
 	protected Class<? extends Annotation> scopeAnnotationType = Scope.class;
 
 

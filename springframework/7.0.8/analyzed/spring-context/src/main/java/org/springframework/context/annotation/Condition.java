@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+条件接口：组件注册前必须满足的单个条件，用于 {@link Conditional} 注解体系。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
+/* ===== [OCA 中文解析] =====
+interface Condition — 意图说明
+
+在 Bean 定义即将注册时评估是否匹配，可否决组件注册。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * A single condition that must be {@linkplain #matches matched} in order for a
  * component to be registered.

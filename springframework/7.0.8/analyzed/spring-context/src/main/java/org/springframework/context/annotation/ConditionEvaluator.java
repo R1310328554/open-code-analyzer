@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+内部类：评估 {@link Conditional} 注解，决定是否跳过组件注册。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.util.ArrayList;
@@ -39,6 +44,13 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.MultiValueMap;
 
+/* ===== [OCA 中文解析] =====
+class ConditionEvaluator — 意图说明
+
+收集并排序 {@link Condition} 实例，在配置解析或 Bean 注册阶段执行匹配判断。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Internal class used to evaluate {@link Conditional} annotations.
  *
@@ -48,6 +60,7 @@ import org.springframework.util.MultiValueMap;
  */
 class ConditionEvaluator {
 
+	// [OCA] 字段 `context`：条件评估上下文实现。
 	private final ConditionContextImpl context;
 
 
@@ -145,14 +158,19 @@ class ConditionEvaluator {
 	 */
 	private static class ConditionContextImpl implements ConditionContext {
 
+		// [OCA] 字段 `registry`：Bean 定义注册表。
 		private final @Nullable BeanDefinitionRegistry registry;
 
+		// [OCA] 字段 `beanFactory`：可配置 Bean 工厂。
 		private final @Nullable ConfigurableListableBeanFactory beanFactory;
 
+		// [OCA] 字段 `environment`：运行环境。
 		private final Environment environment;
 
+		// [OCA] 字段 `resourceLoader`：资源加载器。
 		private final ResourceLoader resourceLoader;
 
+		// [OCA] 字段 `classLoader`：类加载器。
 		private final @Nullable ClassLoader classLoader;
 
 		public ConditionContextImpl(@Nullable BeanDefinitionRegistry registry,

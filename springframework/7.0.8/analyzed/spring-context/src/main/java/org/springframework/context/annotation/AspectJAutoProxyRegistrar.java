@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+根据 {@link EnableAspectJAutoProxy} 注解注册 AspectJ 自动代理创建器。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import org.springframework.aop.config.AopConfigUtils;
@@ -21,6 +26,13 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 
+/* ===== [OCA 中文解析] =====
+class AspectJAutoProxyRegistrar — 意图说明
+
+{@link ImportBeanDefinitionRegistrar} 实现，处理 {@code @EnableAspectJAutoProxy} 导入。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Registers an {@link org.springframework.aop.aspectj.annotation.AnnotationAwareAspectJAutoProxyCreator
  * AnnotationAwareAspectJAutoProxyCreator} against the current {@link BeanDefinitionRegistry}

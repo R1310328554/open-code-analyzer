@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+{@link ComponentScan} 可重复注解的容器，聚合多个组件扫描声明。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.lang.annotation.Documented;
@@ -22,6 +27,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/* ===== [OCA 中文解析] =====
+@interface ComponentScans — 意图说明
+
+当同一类型上声明多个 {@link ComponentScan} 时，由 Java 可重复注解机制隐式生成此容器。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Container annotation that aggregates several {@link ComponentScan} annotations.
  *

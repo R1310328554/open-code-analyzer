@@ -14,10 +14,22 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+注解配置应用上下文的通用接口，定义 {@link #register} 与 {@link #scan} 方法。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import org.springframework.beans.factory.BeanRegistrar;
 
+/* ===== [OCA 中文解析] =====
+interface AnnotationConfigRegistry — 意图说明
+
+为 {@code AnnotationConfigApplicationContext} 等上下文提供编程式注册与扫描入口。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Common interface for annotation config application contexts,
  * defining {@link #register} and {@link #scan} methods.

@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+{@link Bean} 注解方法处理工具：判断 Bean 方法、解析 Bean 名称、检测作用域代理。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.lang.reflect.Method;
@@ -25,6 +30,13 @@ import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.MethodMetadata;
 import org.springframework.util.ConcurrentReferenceHashMap;
 
+/* ===== [OCA 中文解析] =====
+class BeanAnnotationHelper — 意图说明
+
+为配置类解析阶段提供 {@link Bean} 方法元数据的缓存与查询辅助。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Utilities for processing {@link Bean}-annotated methods.
  *
@@ -34,8 +46,10 @@ import org.springframework.util.ConcurrentReferenceHashMap;
  */
 abstract class BeanAnnotationHelper {
 
+	// [OCA] 字段 `beanNameCache`：方法 → Bean 名称缓存。
 	private static final Map<Method, String> beanNameCache = new ConcurrentReferenceHashMap<>();
 
+	// [OCA] 字段 `scopedProxyCache`：方法 → 是否启用作用域代理缓存。
 	private static final Map<Method, Boolean> scopedProxyCache = new ConcurrentReferenceHashMap<>();
 
 
@@ -59,9 +73,9 @@ abstract class BeanAnnotationHelper {
 	private static String retrieveBeanNameFor(Method beanMethod) {
 		String beanName = beanNameCache.get(beanMethod);
 		if (beanName == null) {
-			// By default, the bean name is empty (indicating a name to be derived from the method name)
+			// [OCA] 默认 Bean 名称为空（表示从方法名派生）。
 			beanName = "";
-			// Check to see if the user has explicitly set a custom bean name...
+			// [OCA] 检查用户是否显式设置了自定义 Bean 名称。
 			AnnotationAttributes bean =
 					AnnotatedElementUtils.findMergedAnnotationAttributes(beanMethod, Bean.class, false, false);
 			if (bean != null) {

@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+解析 XML {@code <context:component-scan/>} 元素，执行类路径组件扫描并注册 Bean 定义。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.lang.annotation.Annotation;
@@ -45,6 +50,13 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
+/* ===== [OCA 中文解析] =====
+class ComponentScanBeanDefinitionParser — 意图说明
+
+将 {@code <context:component-scan/>} XML 配置转换为 {@link ClassPathBeanDefinitionScanner} 扫描操作。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Parser for the {@code <context:component-scan/>} element.
  *
@@ -55,26 +67,37 @@ import org.springframework.util.StringUtils;
  */
 public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 
+	// [OCA] 字段 `BASE_PACKAGE_ATTRIBUTE`：基础包属性名。
 	private static final String BASE_PACKAGE_ATTRIBUTE = "base-package";
 
+	// [OCA] 字段 `RESOURCE_PATTERN_ATTRIBUTE`：资源匹配模式属性名。
 	private static final String RESOURCE_PATTERN_ATTRIBUTE = "resource-pattern";
 
+	// [OCA] 字段 `USE_DEFAULT_FILTERS_ATTRIBUTE`：是否使用默认过滤器属性名。
 	private static final String USE_DEFAULT_FILTERS_ATTRIBUTE = "use-default-filters";
 
+	// [OCA] 字段 `ANNOTATION_CONFIG_ATTRIBUTE`：是否启用注解配置属性名。
 	private static final String ANNOTATION_CONFIG_ATTRIBUTE = "annotation-config";
 
+	// [OCA] 字段 `NAME_GENERATOR_ATTRIBUTE`：Bean 名称生成器属性名。
 	private static final String NAME_GENERATOR_ATTRIBUTE = "name-generator";
 
+	// [OCA] 字段 `SCOPE_RESOLVER_ATTRIBUTE`：作用域解析器属性名。
 	private static final String SCOPE_RESOLVER_ATTRIBUTE = "scope-resolver";
 
+	// [OCA] 字段 `SCOPED_PROXY_ATTRIBUTE`：作用域代理模式属性名。
 	private static final String SCOPED_PROXY_ATTRIBUTE = "scoped-proxy";
 
+	// [OCA] 字段 `EXCLUDE_FILTER_ELEMENT`：排除过滤器子元素名。
 	private static final String EXCLUDE_FILTER_ELEMENT = "exclude-filter";
 
+	// [OCA] 字段 `INCLUDE_FILTER_ELEMENT`：包含过滤器子元素名。
 	private static final String INCLUDE_FILTER_ELEMENT = "include-filter";
 
+	// [OCA] 字段 `FILTER_TYPE_ATTRIBUTE`：过滤器类型属性名。
 	private static final String FILTER_TYPE_ATTRIBUTE = "type";
 
+	// [OCA] 字段 `FILTER_EXPRESSION_ATTRIBUTE`：过滤器表达式属性名。
 	private static final String FILTER_EXPRESSION_ATTRIBUTE = "expression";
 
 
@@ -85,7 +108,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 		String[] basePackages = StringUtils.tokenizeToStringArray(basePackage,
 				ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
 
-		// Actually scan for bean definitions and register them.
+		// [OCA] 实际扫描 Bean 定义并注册。
 		ClassPathBeanDefinitionScanner scanner = configureScanner(parserContext, element);
 		Set<BeanDefinitionHolder> beanDefinitions = scanner.doScan(basePackages);
 		registerComponents(parserContext.getReaderContext(), beanDefinitions, element);
@@ -99,7 +122,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 			useDefaultFilters = Boolean.parseBoolean(element.getAttribute(USE_DEFAULT_FILTERS_ATTRIBUTE));
 		}
 
-		// Delegate bean definition registration to scanner class.
+		// [OCA] 将 Bean 定义注册委托给扫描器。
 		ClassPathBeanDefinitionScanner scanner = createScanner(parserContext.getReaderContext(), useDefaultFilters);
 		scanner.setBeanDefinitionDefaults(parserContext.getDelegate().getBeanDefinitionDefaults());
 		scanner.setAutowireCandidatePatterns(parserContext.getDelegate().getAutowireCandidatePatterns());
@@ -146,7 +169,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 			compositeDef.addNestedComponent(new BeanComponentDefinition(beanDefHolder));
 		}
 
-		// Register annotation config processors, if necessary.
+		// [OCA] 按需注册注解配置处理器。
 		boolean annotationConfig = true;
 		if (element.hasAttribute(ANNOTATION_CONFIG_ATTRIBUTE)) {
 			annotationConfig = Boolean.parseBoolean(element.getAttribute(ANNOTATION_CONFIG_ATTRIBUTE));
@@ -172,7 +195,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	protected void parseScope(Element element, ClassPathBeanDefinitionScanner scanner) {
-		// Register ScopeMetadataResolver if class name provided.
+		// [OCA] 若提供了类名则注册 ScopeMetadataResolver。
 		if (element.hasAttribute(SCOPE_RESOLVER_ATTRIBUTE)) {
 			if (element.hasAttribute(SCOPED_PROXY_ATTRIBUTE)) {
 				throw new IllegalArgumentException(
@@ -196,7 +219,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	protected void parseTypeFilters(Element element, ClassPathBeanDefinitionScanner scanner, ParserContext parserContext) {
-		// Parse exclude and include filter elements.
+		// [OCA] 解析包含与排除过滤器子元素。
 		ClassLoader classLoader = scanner.getResourceLoader().getClassLoader();
 		NodeList nodeList = element.getChildNodes();
 		for (int i = 0; i < nodeList.getLength(); i++) {

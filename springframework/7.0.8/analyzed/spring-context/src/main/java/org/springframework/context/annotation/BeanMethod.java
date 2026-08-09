@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+表示配置类中标注了 {@link Bean} 的方法，并在解析阶段执行语义校验。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.util.Map;
@@ -25,6 +30,13 @@ import org.springframework.beans.factory.parsing.Problem;
 import org.springframework.beans.factory.parsing.ProblemReporter;
 import org.springframework.core.type.MethodMetadata;
 
+/* ===== [OCA 中文解析] =====
+class BeanMethod — 意图说明
+
+{@link ConfigurationMethod} 子类，校验 {@code @Bean} 方法是否符合配置类语义约束。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Represents a {@link Configuration @Configuration} class method annotated with
  * {@link Bean @Bean}.
@@ -48,25 +60,24 @@ final class BeanMethod extends ConfigurationMethod {
 	@SuppressWarnings("NullAway") // Reflection
 	public void validate(ProblemReporter problemReporter) {
 		if (getMetadata().getAnnotationAttributes(Autowired.class.getName()) != null) {
-			// declared as @Autowired: semantic mismatch since @Bean method arguments are autowired
-			// in any case whereas @Autowired methods are setter-like methods on the containing class
+			// [OCA] 声明了 @Autowired：语义冲突，@Bean 方法参数本就自动装配，而非 setter 式注入。
 			problemReporter.error(new AutowiredDeclaredMethodError());
 		}
 
 		if ("void".equals(getMetadata().getReturnTypeName())) {
-			// declared as void: potential misuse of @Bean, maybe meant as init method instead?
+			// [OCA] 声明为 void：可能误用 @Bean，本意或许是初始化方法？
 			problemReporter.error(new VoidDeclaredMethodError());
 		}
 
 		if (getMetadata().isStatic()) {
-			// static @Bean methods have no further constraints to validate -> return immediately
+			// [OCA] 静态 @Bean 方法无进一步约束，直接返回。
 			return;
 		}
 
 		Map<String, @Nullable Object> attributes =
 				getConfigurationClass().getMetadata().getAnnotationAttributes(Configuration.class.getName());
 		if (attributes != null && (Boolean) attributes.get("proxyBeanMethods") && !getMetadata().isOverridable()) {
-			// instance @Bean methods within @Configuration classes must be overridable to accommodate CGLIB
+			// [OCA] 启用 CGLIB 代理时，实例 @Bean 方法必须可覆盖（不能 private/final）。
 			problemReporter.error(new NonOverridableMethodError());
 		}
 	}
