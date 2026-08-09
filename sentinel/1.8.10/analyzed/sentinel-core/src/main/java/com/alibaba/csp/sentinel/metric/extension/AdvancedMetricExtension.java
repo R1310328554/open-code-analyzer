@@ -20,8 +20,7 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
- * Extended {@link MetricExtension} extending input parameters of each metric
- * collection method with {@link EntryType}.
+ * 扩展版 {@link MetricExtension}，各指标采集方法的入参携带 {@link ResourceWrapper} 等更丰富上下文。
  *
  * @author bill_yip
  * @author Eric Zhao
@@ -30,45 +29,43 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 public interface AdvancedMetricExtension extends MetricExtension {
 
     /**
-     * Add current pass count of the resource name.
+     * 累加资源通过（放行）次数。
      *
-     * @param rw          resource representation (including resource name, traffic type, etc.)
-     * @param batchCount  count to add
-     * @param args        additional arguments of the resource, eg. if the resource is a method name,
-     *                    the args will be the parameters of the method.
+     * @param rw          资源表示（含资源名、流量类型等）
+     * @param batchCount  待累加次数
+     * @param args        资源附加参数；若资源为方法名，则为方法参数
      */
     void onPass(ResourceWrapper rw, int batchCount, Object[] args);
 
     /**
-     * Add current block count of the resource name.
+     * 累加资源被限流/阻断次数。
      *
-     * @param rw         resource representation (including resource name, traffic type, etc.)
-     * @param batchCount count to add
-     * @param origin     the origin of caller (if present)
-     * @param e          the associated {@code BlockException}
-     * @param args       additional arguments of the resource, eg. if the resource is a method name,
-     *                   the args will be the parameters of the method.
+     * @param rw         资源表示（含资源名、流量类型等）
+     * @param batchCount 待累加次数
+     * @param origin     调用方来源（若有）
+     * @param e          关联的 {@code BlockException}
+     * @param args       资源附加参数；若资源为方法名，则为方法参数
      */
     void onBlocked(ResourceWrapper rw, int batchCount, String origin, BlockException e,
                    Object[] args);
 
     /**
-     * Add current completed count of the resource name.
+     * 累加资源调用完成次数。
      *
-     * @param rw         resource representation (including resource name, traffic type, etc.)
-     * @param batchCount count to add
-     * @param rt         response time of current invocation
-     * @param args       additional arguments of the resource
+     * @param rw         资源表示（含资源名、流量类型等）
+     * @param batchCount 待累加次数
+     * @param rt         本次调用响应时间
+     * @param args       资源附加参数
      */
     void onComplete(ResourceWrapper rw, long rt, int batchCount, Object[] args);
 
     /**
-     * Add current exception count of the resource name.
+     * 累加资源调用异常次数。
      *
-     * @param rw         resource representation (including resource name, traffic type, etc.)
-     * @param batchCount count to add
-     * @param throwable  exception related.
-     * @param args       additional arguments of the resource
+     * @param rw         资源表示（含资源名、流量类型等）
+     * @param batchCount 待累加次数
+     * @param throwable  关联异常
+     * @param args       资源附加参数
      */
     void onError(ResourceWrapper rw, Throwable throwable, int batchCount, Object[] args);
 }

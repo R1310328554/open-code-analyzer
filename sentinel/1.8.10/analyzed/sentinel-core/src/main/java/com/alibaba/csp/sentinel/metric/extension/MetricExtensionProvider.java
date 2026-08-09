@@ -22,7 +22,7 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
- * Get all {@link MetricExtension} via SPI.
+ * 通过 SPI 加载并持有全部 {@link MetricExtension} 实例。
  *
  * @author Carpenter Lee
  * @since 1.6.1
@@ -46,22 +46,22 @@ public class MetricExtensionProvider {
     }
 
     /**
-     * <p>Get all registered metric extensions.</p>
-     * <p>DO NOT MODIFY the returned list, use {@link #addMetricExtension(MetricExtension)}.</p>
+     * <p>获取已注册的全部指标扩展。</p>
+     * <p>请勿直接修改返回列表，应使用 {@link #addMetricExtension(MetricExtension)}。</p>
      *
-     * @return all registered metric extensions
+     * @return 已注册的全部指标扩展
      */
     public static List<MetricExtension> getMetricExtensions() {
         return metricExtensions;
     }
 
     /**
-     * Add metric extension.
+     * 添加指标扩展。
      * <p>
-     * Note that this method is NOT thread safe.
+     * 注意：本方法非线程安全。
      * </p>
      *
-     * @param metricExtension the metric extension to add.
+     * @param metricExtension 待添加的指标扩展
      */
     public static void addMetricExtension(MetricExtension metricExtension) {
         metricExtensions.add(metricExtension);

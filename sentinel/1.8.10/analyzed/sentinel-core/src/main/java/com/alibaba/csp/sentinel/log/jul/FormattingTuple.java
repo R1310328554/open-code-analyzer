@@ -18,12 +18,13 @@
 package com.alibaba.csp.sentinel.log.jul;
 
 /**
- * Holds the results of formatting done by {@link MessageFormatter}.
+ * 保存 {@link MessageFormatter} 格式化后的结果（消息、参数数组、异常）。
  *
  * @author Joern Huxhorn
  */
 public class FormattingTuple {
 
+    /** 表示空消息的占位实例。 */
     static public FormattingTuple NULL = new FormattingTuple(null);
 
     private String message;
@@ -40,14 +41,17 @@ public class FormattingTuple {
         this.argArray = argArray;
     }
 
+    /** 获取格式化后的消息文本。 */
     public String getMessage() {
         return message;
     }
 
+    /** 获取格式化时使用的参数数组。 */
     public Object[] getArgArray() {
         return argArray;
     }
 
+    /** 获取关联的异常（若有）。 */
     public Throwable getThrowable() {
         return throwable;
     }

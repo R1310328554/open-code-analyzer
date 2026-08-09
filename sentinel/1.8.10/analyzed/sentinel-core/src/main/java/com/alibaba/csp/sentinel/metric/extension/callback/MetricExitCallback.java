@@ -25,7 +25,8 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
- * Metric extension exit callback.
+ * 指标扩展的出口（exit）回调。
+ * <p>在资源调用退出时上报 RT、成功、异常及线程数等指标。</p>
  *
  * @author Carpenter Lee
  * @author Eric Zhao
@@ -52,7 +53,7 @@ public class MetricExitCallback implements ProcessorSlotExitCallback {
             long rt = completeTime - curEntry.getCreateTimestamp();
 
             if (m instanceof AdvancedMetricExtension) {
-                // Since 1.8.0 (as a temporary workaround for compatibility)
+                // 自 1.8.0 起（兼容 AdvancedMetricExtension 的临时方案）
                 ((AdvancedMetricExtension) m).onComplete(rw, rt, acquireCount, args);
                 if (ex != null) {
                     ((AdvancedMetricExtension) m).onError(rw, ex, acquireCount, args);

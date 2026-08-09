@@ -21,6 +21,9 @@ import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
 /**
+ * Sentinel JUL 日志格式化器。
+ * <p>输出格式：{@code 时间戳 级别 消息 [堆栈]}</p>
+ *
  * @author xuyue
  */
 class CspFormatter extends Formatter {

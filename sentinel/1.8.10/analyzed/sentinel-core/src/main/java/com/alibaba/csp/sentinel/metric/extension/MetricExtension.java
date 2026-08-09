@@ -18,11 +18,9 @@ package com.alibaba.csp.sentinel.metric.extension;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
- * This interface provides extension to Sentinel internal statistics.
+ * 为 Sentinel 内部统计提供扩展点的接口。
  * <p>
- * Please note that all method in this class will invoke in the same thread of biz logic.
- * It's necessary to not do time-consuming operation in any of the interface's method,
- * otherwise biz logic will be blocked.
+ * 所有方法均在业务逻辑同一线程中调用，请勿执行耗时操作，否则会阻塞业务线程。
  * </p>
  *
  * @author Carpenter Lee
@@ -31,71 +29,65 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 public interface MetricExtension {
 
     /**
-     * Add current pass count of the resource name.
+     * 累加资源通过（放行）次数。
      *
-     * @param n        count to add
-     * @param resource resource name
-     * @param args     additional arguments of the resource, eg. if the resource is a method name,
-     *                 the args will be the parameters of the method.
+     * @param n        待累加次数
+     * @param resource 资源名
+     * @param args     资源附加参数；若资源为方法名，则为方法参数
      */
     void addPass(String resource, int n, Object... args);
 
     /**
-     * Add current block count of the resource name.
+     * 累加资源被限流/阻断次数。
      *
-     * @param n              count to add
-     * @param resource       resource name
-     * @param origin         the original invoker.
-     * @param blockException block exception related.
-     * @param args           additional arguments of the resource, eg. if the resource is a method name,
-     *                       the args will be the parameters of the method.
+     * @param n              待累加次数
+     * @param resource       资源名
+     * @param origin         调用方来源
+     * @param blockException 关联的阻断异常
+     * @param args           资源附加参数；若资源为方法名，则为方法参数
      */
     void addBlock(String resource, int n, String origin, BlockException blockException, Object... args);
 
     /**
-     * Add current completed count of the resource name.
+     * 累加资源调用成功完成次数。
      *
-     * @param n        count to add
-     * @param resource resource name
-     * @param args     additional arguments of the resource, eg. if the resource is a method name,
-     *                 the args will be the parameters of the method.
+     * @param n        待累加次数
+     * @param resource 资源名
+     * @param args     资源附加参数；若资源为方法名，则为方法参数
      */
     void addSuccess(String resource, int n, Object... args);
 
     /**
-     * Add current exception count of the resource name.
+     * 累加资源调用异常次数。
      *
-     * @param n         count to add
-     * @param resource  resource name
-     * @param throwable exception related.
+     * @param n         待累加次数
+     * @param resource  资源名
+     * @param throwable 关联异常
      */
     void addException(String resource, int n, Throwable throwable);
 
     /**
-     * Add response time of the resource name.
+     * 累加资源响应时间。
      *
-     * @param rt       response time in millisecond
-     * @param resource resource name
-     * @param args     additional arguments of the resource, eg. if the resource is a method name,
-     *                 the args will be the parameters of the method.
+     * @param rt       响应时间（毫秒）
+     * @param resource 资源名
+     * @param args     资源附加参数；若资源为方法名，则为方法参数
      */
     void addRt(String resource, long rt, Object... args);
 
     /**
-     * Increase current thread count of the resource name.
+     * 增加资源当前并发线程数。
      *
-     * @param resource resource name
-     * @param args     additional arguments of the resource, eg. if the resource is a method name,
-     *                 the args will be the parameters of the method.
+     * @param resource 资源名
+     * @param args     资源附加参数；若资源为方法名，则为方法参数
      */
     void increaseThreadNum(String resource, Object... args);
 
     /**
-     * Decrease current thread count of the resource name.
+     * 减少资源当前并发线程数。
      *
-     * @param resource resource name
-     * @param args     additional arguments of the resource, eg. if the resource is a method name,
-     *                 the args will be the parameters of the method.
+     * @param resource 资源名
+     * @param args     资源附加参数；若资源为方法名，则为方法参数
      */
     void decreaseThreadNum(String resource, Object... args);
 }

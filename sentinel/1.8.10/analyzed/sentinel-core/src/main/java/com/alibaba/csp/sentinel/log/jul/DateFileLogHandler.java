@@ -33,6 +33,11 @@ import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
+/**
+ * 按日期滚动的异步文件日志 Handler。
+ * <p>使用线程池异步写入 {@link java.util.logging.FileHandler}，
+ * 并在跨日或日志文件缺失时自动切换新文件。</p>
+ */
 class DateFileLogHandler extends Handler {
 
     private final DateTimeFormatter dateFormat = DateTimeFormatter
@@ -50,7 +55,7 @@ class DateFileLogHandler extends Handler {
     );
 
     static {
-        // allow all thread could be stopped
+        // 允许核心线程超时退出，便于 JVM 关闭时回收。
         executor.allowCoreThreadTimeOut(true);
     }
 
@@ -120,7 +125,7 @@ class DateFileLogHandler extends Handler {
     private boolean logFileExits() {
         try {
             String fileName = pattern.replace("%d", dateFormat.format(Instant.now()));
-            // When file count is not 1, the first log file name will end with ".0"
+            // 当文件数量不为 1 时，首个日志文件名以 ".0" 结尾。
             if (count != 1) {
                 fileName += ".0";
             }
@@ -138,9 +143,9 @@ class DateFileLogHandler extends Handler {
             handler.close();
         }
         String newPattern = pattern.replace("%d", dateFormat.format(Instant.now()));
-        // Get current date.
+        // 获取当前日期。
         Calendar next = Calendar.getInstance();
-        // Begin of next date.
+        // 计算次日零点，作为当前日志文件的有效截止时间。
         next.set(Calendar.HOUR_OF_DAY, 0);
         next.set(Calendar.MINUTE, 0);
         next.set(Calendar.SECOND, 0);
@@ -166,7 +171,7 @@ class DateFileLogHandler extends Handler {
 
     static class LogRejectedExecutionHandler implements RejectedExecutionHandler {
         /**
-         * The period of logged rejected records.
+         * 被拒绝任务日志的记录周期（毫秒）。
          */
         private final long recordPeriod;
 

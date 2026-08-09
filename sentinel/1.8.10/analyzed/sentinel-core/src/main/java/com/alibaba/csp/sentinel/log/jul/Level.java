@@ -16,17 +16,22 @@
 package com.alibaba.csp.sentinel.log.jul;
 
 /**
- * JUL logging levels.
+ * Sentinel 自定义 JUL 日志级别，与 SLF4J 语义对齐。
  *
  * @author xue8
  */
 public class Level extends java.util.logging.Level {
     private static final String defaultBundle = "sun.util.logging.resources.logging";
 
+    /** 错误级别。 */
     public static final Level ERROR = new Level("ERROR", 1000);
+    /** 警告级别。 */
     public static final Level WARNING = new Level("WARNING", 900);
+    /** 信息级别。 */
     public static final Level INFO = new Level("INFO", 800);
+    /** 调试级别。 */
     public static final Level DEBUG = new Level("DEBUG", 700);
+    /** 跟踪级别。 */
     public static final Level TRACE = new Level("TRACE", 600);
 
     protected Level(String name, int value) {

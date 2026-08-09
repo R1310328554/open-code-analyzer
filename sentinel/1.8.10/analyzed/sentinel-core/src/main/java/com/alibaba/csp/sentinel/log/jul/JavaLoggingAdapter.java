@@ -21,7 +21,8 @@ import com.alibaba.csp.sentinel.log.Logger;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * JUL adapter for Sentinel {@link Logger} SPI.
+ * Sentinel {@link Logger} SPI 的 JUL 适配器。
+ * <p>将 Sentinel 日志 API 委托给 {@code java.util.logging}，并按配置创建文件或控制台 Handler。</p>
  *
  * @author Eric Zhao
  * @since 1.7.2
@@ -94,10 +95,12 @@ public class JavaLoggingAdapter extends BaseJulLogger implements Logger {
         log(julLogger, logHandler, Level.ERROR, msg, e);
     }
 
+    /** 获取底层 JUL Logger 名称。 */
     public String getLoggerName() {
         return loggerName;
     }
 
+    /** 获取日志文件名模式。 */
     public String getFileNamePattern() {
         return fileNamePattern;
     }

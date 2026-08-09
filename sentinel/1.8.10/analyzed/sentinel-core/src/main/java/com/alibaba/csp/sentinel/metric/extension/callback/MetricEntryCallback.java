@@ -25,7 +25,8 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
- * Metric extension entry callback.
+ * 指标扩展的入口（entry）回调。
+ * <p>在资源通过或阻断时，将事件分发给已注册的 {@link MetricExtension}。</p>
  *
  * @author Carpenter Lee
  * @since 1.6.1
