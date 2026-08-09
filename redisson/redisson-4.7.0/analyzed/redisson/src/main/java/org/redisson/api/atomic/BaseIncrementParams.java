@@ -20,11 +20,11 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Base increment arguments implementation.
+ * {@link BaseIncrementArgs} 的基类实现，保存饱和、过期与持久化等通用参数。
  *
  * @author lamnt2008
  *
- * @param <T> arguments type
+ * @param <T> 参数对象类型
  */
 public abstract class BaseIncrementParams<T> implements BaseIncrementArgs<T> {
 

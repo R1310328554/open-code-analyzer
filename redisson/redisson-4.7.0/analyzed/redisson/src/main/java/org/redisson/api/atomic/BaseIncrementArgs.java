@@ -19,52 +19,51 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Base arguments for extended atomic increment operations.
+ * 扩展原子递增操作的基础参数接口。
  *
  * @author lamnt2008
  *
- * @param <T> arguments type
+ * @param <T> 参数对象类型
  */
 public interface BaseIncrementArgs<T> {
 
     /**
-     * Caps the increment result at the lower or upper bound (or the type
-     * limits when no explicit bound is given) instead of rejecting it.
+     * 将递增结果限制在下界或上界（未显式指定时使用类型极限）内，
+     * 而非拒绝本次操作。
      * <p>
-     * Without this option, an out-of-bounds result leaves the value and its
-     * expiration unchanged, and the current value is returned.
+     * 未启用此选项时，越界结果会保持当前值与过期时间不变，并返回当前值。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     T saturate();
 
     /**
-     * Defines the specified expiration time.
+     * 设置指定的过期时间（TTL）。
      *
-     * @param ttl time to live duration
-     * @return arguments object
+     * @param ttl 存活时长
+     * @return 参数对象
      */
     T timeToLive(Duration ttl);
 
     /**
-     * Defines the specified Unix time at which the key will expire.
+     * 设置键将在指定 Unix 时间点过期。
      *
-     * @param time expire date
-     * @return arguments object
+     * @param time 过期时间
+     * @return 参数对象
      */
     T expireAt(Instant time);
 
     /**
-     * Defines removal of the existing expiration.
+     * 移除现有过期时间，使键持久化。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     T persist();
 
     /**
-     * Defines expiration setting only if the key doesn't have an expiration.
+     * 仅在键尚未设置过期时间时才应用过期配置。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     T expireIfNotSet();
 

@@ -16,26 +16,26 @@
 package org.redisson.api.bitset;
 
 /**
- * Overflow behavior for BITFIELD command.
+ * BITFIELD 命令的溢出处理方式。
  *
  * @author Su Ko
  *
  */
 public enum BitFieldOverflow {
     /**
-     * Wrap around on overflow/underflow. Uses modular arithmetic for unsigned and wraps signed ranges (default).
+     * 溢出/下溢时回绕；无符号使用模运算，有符号在取值范围内回绕（默认）。
      */
     WRAP,
 
     /**
-     * Saturate to min/max on overflow/underflow.
-     * Clamps to the closest boundary instead of wrapping.
+     * 溢出/下溢时饱和到最小/最大值；
+     * 钳制到最近边界而非回绕。
      */
     SAT,
 
     /**
-     * Return null on overflow/underflow.
-     * No change is applied when overflow/underflow is detected.
+     * 溢出/下溢时返回 null；
+     * 检测到溢出/下溢时不修改原值。
      */
     FAIL
 }

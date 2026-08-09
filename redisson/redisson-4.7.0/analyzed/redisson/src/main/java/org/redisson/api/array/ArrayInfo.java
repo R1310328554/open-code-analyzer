@@ -18,11 +18,9 @@ package org.redisson.api.array;
 import java.io.Serializable;
 
 /**
- * Array information object.
+ * 数组信息对象。
  * <p>
- * Holds the information that is always available for an array. Extended
- * statistics that are only populated when full information is requested are
- * exposed by {@link ArrayFullInfo}.
+ * 保存数组始终可用的基础信息；仅在请求完整信息时才填充的扩展统计见 {@link ArrayFullInfo}。
  *
  * @author lamnt2008
  *
@@ -40,9 +38,9 @@ public class ArrayInfo implements Serializable {
     private long sliceSize;
 
     /**
-     * Returns number of values stored in array.
+     * 返回数组中存储的元素个数。
      *
-     * @return number of values
+     * @return 元素个数
      */
     public long getCount() {
         return count;
@@ -53,9 +51,9 @@ public class ArrayInfo implements Serializable {
     }
 
     /**
-     * Returns array length.
+     * 返回数组长度。
      *
-     * @return array length
+     * @return 数组长度
      */
     public long getLength() {
         return length;
@@ -66,9 +64,9 @@ public class ArrayInfo implements Serializable {
     }
 
     /**
-     * Returns next array index used by array insert operations.
+     * 返回数组插入操作将使用的下一个索引。
      *
-     * @return next array index used by array insert operations
+     * @return 下一次插入使用的索引
      */
     public long getNextInsertIndex() {
         return nextInsertIndex;
@@ -79,9 +77,9 @@ public class ArrayInfo implements Serializable {
     }
 
     /**
-     * Returns number of slices.
+     * 返回切片数量。
      *
-     * @return number of slices
+     * @return 切片数量
      */
     public long getSlices() {
         return slices;
@@ -92,9 +90,9 @@ public class ArrayInfo implements Serializable {
     }
 
     /**
-     * Returns directory size.
+     * 返回目录大小。
      *
-     * @return directory size
+     * @return 目录大小
      */
     public long getDirectorySize() {
         return directorySize;
@@ -105,9 +103,9 @@ public class ArrayInfo implements Serializable {
     }
 
     /**
-     * Returns number of super directory entries.
+     * 返回超级目录项数量。
      *
-     * @return number of super directory entries
+     * @return 超级目录项数量
      */
     public long getSuperDirectoryEntries() {
         return superDirectoryEntries;
@@ -118,9 +116,9 @@ public class ArrayInfo implements Serializable {
     }
 
     /**
-     * Returns slice size.
+     * 返回切片大小。
      *
-     * @return slice size
+     * @return 切片大小
      */
     public long getSliceSize() {
         return sliceSize;

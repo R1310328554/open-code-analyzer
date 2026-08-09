@@ -16,7 +16,7 @@
 package org.redisson.api.bitset;
 
 /**
- * Arguments object for BITFIELD command.
+ * BITFIELD 命令的参数对象。
  *
  * @author Su Ko
  *
@@ -24,9 +24,9 @@ package org.redisson.api.bitset;
 public interface BitFieldArgs extends BitFieldInitArgs {
 
     /**
-     * Creates an empty arguments object.
+     * 创建空的 BITFIELD 参数对象。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     static BitFieldInitArgs create() {
         return new BitFieldParams();

@@ -16,7 +16,9 @@
 package org.redisson.api.atomic;
 
 /**
- * Comparison condition used for numeric compare-and-delete operations.
+ * 数值比较并删除操作使用的比较条件。
+ * <p>
+ * 各常量对应 Lua 侧的比较运算符。
  *
  * @author Nikita Koksharov
  *

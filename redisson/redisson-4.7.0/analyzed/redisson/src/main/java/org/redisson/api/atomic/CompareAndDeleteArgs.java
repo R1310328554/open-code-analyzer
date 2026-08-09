@@ -18,9 +18,9 @@ package org.redisson.api.atomic;
 import java.util.Objects;
 
 /**
- * Arguments for {@link org.redisson.api.RAtomicLong#compareAndDelete(CompareAndDeleteArgs)}
- * and {@link org.redisson.api.RAtomicDouble#compareAndDelete(CompareAndDeleteArgs)} methods.
- * Defines conditions for conditional deletion of atomic value.
+ * {@link org.redisson.api.RAtomicLong#compareAndDelete(CompareAndDeleteArgs)}
+ * 与 {@link org.redisson.api.RAtomicDouble#compareAndDelete(CompareAndDeleteArgs)} 的参数对象；
+ * 定义按数值条件删除原子值的规则。
  *
  * @author Nikita Koksharov
  *
@@ -38,120 +38,120 @@ public final class CompareAndDeleteArgs {
     }
 
     /**
-     * Deletes entry if stored value is less than specified value.
+     * 当存储值小于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs less(long value) {
         return new CompareAndDeleteArgs(ComparisonCondition.LESS, value);
     }
 
     /**
-     * Deletes entry if stored value is less than or equal to specified value.
+     * 当存储值小于或等于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs lessOrEqual(long value) {
         return new CompareAndDeleteArgs(ComparisonCondition.LESS_OR_EQUAL, value);
     }
 
     /**
-     * Deletes entry if stored value is greater than specified value.
+     * 当存储值大于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs greater(long value) {
         return new CompareAndDeleteArgs(ComparisonCondition.GREATER, value);
     }
 
     /**
-     * Deletes entry if stored value is greater than or equal to specified value.
+     * 当存储值大于或等于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs greaterOrEqual(long value) {
         return new CompareAndDeleteArgs(ComparisonCondition.GREATER_OR_EQUAL, value);
     }
 
     /**
-     * Deletes entry if stored value is equal to specified value.
+     * 当存储值等于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs equal(long value) {
         return new CompareAndDeleteArgs(ComparisonCondition.EQUAL, value);
     }
 
     /**
-     * Deletes entry if stored value is not equal to specified value.
+     * 当存储值不等于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs notEqual(long value) {
         return new CompareAndDeleteArgs(ComparisonCondition.NOT_EQUAL, value);
     }
 
     /**
-     * Deletes entry if stored value is less than specified value.
+     * 当存储值小于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs less(double value) {
         return new CompareAndDeleteArgs(ComparisonCondition.LESS, value);
     }
 
     /**
-     * Deletes entry if stored value is less than or equal to specified value.
+     * 当存储值小于或等于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs lessOrEqual(double value) {
         return new CompareAndDeleteArgs(ComparisonCondition.LESS_OR_EQUAL, value);
     }
 
     /**
-     * Deletes entry if stored value is greater than specified value.
+     * 当存储值大于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs greater(double value) {
         return new CompareAndDeleteArgs(ComparisonCondition.GREATER, value);
     }
 
     /**
-     * Deletes entry if stored value is greater than or equal to specified value.
+     * 当存储值大于或等于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs greaterOrEqual(double value) {
         return new CompareAndDeleteArgs(ComparisonCondition.GREATER_OR_EQUAL, value);
     }
 
     /**
-     * Deletes entry if stored value is equal to specified value.
+     * 当存储值等于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs equal(double value) {
         return new CompareAndDeleteArgs(ComparisonCondition.EQUAL, value);
     }
 
     /**
-     * Deletes entry if stored value is not equal to specified value.
+     * 当存储值不等于指定阈值时删除条目。
      *
-     * @param value threshold value
-     * @return arguments object
+     * @param value 阈值
+     * @return 参数对象
      */
     public static CompareAndDeleteArgs notEqual(double value) {
         return new CompareAndDeleteArgs(ComparisonCondition.NOT_EQUAL, value);

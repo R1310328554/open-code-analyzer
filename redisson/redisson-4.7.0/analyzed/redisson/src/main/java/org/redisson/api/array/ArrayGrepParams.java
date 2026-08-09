@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Array grep arguments implementation.
+ * {@link ArrayGrepArgs} 的默认实现，
+ * 封装数组 grep 的谓词、组合方式与匹配选项。
  *
  * @author lamnt2008
  *

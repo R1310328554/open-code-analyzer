@@ -16,7 +16,7 @@
 package org.redisson.api.atomic;
 
 /**
- * Arguments for extended atomic long increment operations.
+ * 扩展原子 long 递增操作的参数接口。
  *
  * @author lamnt2008
  *
@@ -24,37 +24,37 @@ package org.redisson.api.atomic;
 public interface LongIncrementArgs extends BaseIncrementArgs<LongIncrementArgs> {
 
     /**
-     * Defines default increment by {@code 1}.
+     * 使用默认递增量 {@code 1}。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     static LongIncrementArgs defaults() {
         return new LongIncrementParams();
     }
 
     /**
-     * Defines increment value.
+     * 设置递增量。
      *
-     * @param increment increment value
-     * @return arguments object
+     * @param increment 递增量
+     * @return 参数对象
      */
     static LongIncrementArgs by(long increment) {
         return new LongIncrementParams(increment);
     }
 
     /**
-     * Defines lower bound for increment result.
+     * 设置递增结果的下界。
      *
-     * @param value lower bound value
-     * @return arguments object
+     * @param value 下界值
+     * @return 参数对象
      */
     LongIncrementArgs lowerBound(long value);
 
     /**
-     * Defines upper bound for increment result.
+     * 设置递增结果的上界。
      *
-     * @param value upper bound value
-     * @return arguments object
+     * @param value 上界值
+     * @return 参数对象
      */
     LongIncrementArgs upperBound(long value);
 

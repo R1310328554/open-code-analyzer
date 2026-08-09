@@ -16,7 +16,7 @@
 package org.redisson.api.atomic;
 
 /**
- * Long increment arguments implementation.
+ * {@link LongIncrementArgs} 的默认实现，保存递增量与上下界配置。
  *
  * @author lamnt2008
  *

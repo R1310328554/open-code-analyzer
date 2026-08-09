@@ -16,7 +16,7 @@
 package org.redisson.api.array;
 
 /**
- * Arguments object for array grep operation.
+ * 数组 grep 搜索操作的参数对象。
  *
  * @author lamnt2008
  *
@@ -24,103 +24,103 @@ package org.redisson.api.array;
 public interface ArrayGrepArgs {
 
     /**
-     * Defines exact match predicate.
+     * 定义精确匹配谓词。
      *
-     * @param value value
-     * @return arguments object
+     * @param value 匹配值
+     * @return 参数对象
      */
     static ArrayGrepArgs exact(Object value) {
         return new ArrayGrepParams().withExact(value);
     }
 
     /**
-     * Defines substring match predicate.
+     * 定义子串匹配谓词。
      *
-     * @param value value
-     * @return arguments object
+     * @param value 匹配值
+     * @return 参数对象
      */
     static ArrayGrepArgs match(Object value) {
         return new ArrayGrepParams().withMatch(value);
     }
 
     /**
-     * Defines glob match predicate.
+     * 定义 glob 通配符匹配谓词。
      *
-     * @param pattern pattern
-     * @return arguments object
+     * @param pattern 匹配模式
+     * @return 参数对象
      */
     static ArrayGrepArgs glob(String pattern) {
         return new ArrayGrepParams().withGlob(pattern);
     }
 
     /**
-     * Defines regular expression match predicate.
+     * 定义正则表达式匹配谓词。
      *
-     * @param pattern pattern
-     * @return arguments object
+     * @param pattern 匹配模式
+     * @return 参数对象
      */
     static ArrayGrepArgs regex(String pattern) {
         return new ArrayGrepParams().withRegex(pattern);
     }
 
     /**
-     * Defines exact match predicate.
+     * 定义精确匹配谓词。
      *
-     * @param value value
-     * @return arguments object
+     * @param value 匹配值
+     * @return 参数对象
      */
     ArrayGrepArgs withExact(Object value);
 
     /**
-     * Defines substring match predicate.
+     * 定义子串匹配谓词。
      *
-     * @param value value
-     * @return arguments object
+     * @param value 匹配值
+     * @return 参数对象
      */
     ArrayGrepArgs withMatch(Object value);
 
     /**
-     * Defines glob match predicate.
+     * 定义 glob 通配符匹配谓词。
      *
-     * @param pattern pattern
-     * @return arguments object
+     * @param pattern 匹配模式
+     * @return 参数对象
      */
     ArrayGrepArgs withGlob(String pattern);
 
     /**
-     * Defines regular expression match predicate.
+     * 定义正则表达式匹配谓词。
      *
-     * @param pattern pattern
-     * @return arguments object
+     * @param pattern 匹配模式
+     * @return 参数对象
      */
     ArrayGrepArgs withRegex(String pattern);
 
     /**
-     * Defines predicates to be combined with AND.
+     * 定义以 AND 逻辑组合的谓词。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     ArrayGrepArgs and();
 
     /**
-     * Defines predicates to be combined with OR.
+     * 定义以 OR 逻辑组合的谓词。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     ArrayGrepArgs or();
 
     /**
-     * Defines matches limit.
+     * 定义匹配结果数量上限。
      *
-     * @param value limit value
-     * @return arguments object
+     * @param value 上限值
+     * @return 参数对象
      */
     ArrayGrepArgs limit(long value);
 
     /**
-     * Defines case-insensitive matching.
+     * 定义不区分大小写的匹配。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     ArrayGrepArgs noCase();
 

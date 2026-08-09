@@ -16,7 +16,7 @@
 package org.redisson.api.atomic;
 
 /**
- * Double increment arguments implementation.
+ * {@link DoubleIncrementArgs} 的默认实现，保存递增量与上下界配置。
  *
  * @author lamnt2008
  *

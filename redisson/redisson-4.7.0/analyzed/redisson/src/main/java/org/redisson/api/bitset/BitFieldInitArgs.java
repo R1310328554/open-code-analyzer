@@ -16,7 +16,7 @@
 package org.redisson.api.bitset;
 
 /**
- * Arguments object for BITFIELD command.
+ * BITFIELD 命令的初始化参数接口，用于链式构建子命令序列。
  *
  * @author Su Ko
  *
@@ -24,79 +24,75 @@ package org.redisson.api.bitset;
 public interface BitFieldInitArgs {
 
     /**
-     * Adds OVERFLOW subcommand.
-     * Sets overflow behavior for subsequent SET/INCRBY operations until the next OVERFLOW.
+     * 添加 OVERFLOW 子命令；
+     * 为后续 SET/INCRBY 操作设置溢出行为，直至下一次 OVERFLOW。
      *
-     * @param overflow overflow behavior
-     * @return arguments object
+     * @param overflow 溢出处理方式
+     * @return 参数对象
      */
     BitFieldInitArgs overflow(BitFieldOverflow overflow);
 
     /**
-     * Adds GET subcommand for signed value.
-     * Returns the value stored at the given encoding/offset.
+     * 添加 GET 子命令，读取有符号值。
+     * 返回指定编码/偏移处存储的值。
      *
-     * @param size size of signed number up to 64 bits
-     * @param offset offset created by {@link BitOffset#bit(long)} or {@link BitOffset#index(long)}
-     * @return arguments object
+     * @param size 有符号数位数，最多 64 位
+     * @param offset 由 {@link BitOffset#bit(long)} 或 {@link BitOffset#index(long)} 创建的偏移
+     * @return 参数对象
      */
     BitFieldArgs getSigned(int size, BitOffset offset);
 
     /**
-     * Adds GET subcommand for unsigned value.
-     * Returns the value stored at the given encoding/offset.
+     * 添加 GET 子命令，读取无符号值。
+     * 返回指定编码/偏移处存储的值。
      *
-     * @param size size of unsigned number up to 63 bits
-     * @param offset offset created by {@link BitOffset#bit(long)} or {@link BitOffset#index(long)}
-     * @return arguments object
+     * @param size 无符号数位数，最多 63 位
+     * @param offset 由 {@link BitOffset#bit(long)} 或 {@link BitOffset#index(long)} 创建的偏移
+     * @return 参数对象
      */
     BitFieldArgs getUnsigned(int size, BitOffset offset);
 
     /**
-     * Adds SET subcommand for signed value.
-     * Sets the value and returns the previous value
-     * may return null if OVERFLOW FAIL is set.
+     * 添加 SET 子命令，写入有符号值并返回旧值；
+     * 若 OVERFLOW 为 FAIL，溢出时可能返回 null。
      *
-     * @param size size of signed number up to 64 bits
-     * @param offset offset created by {@link BitOffset#bit(long)} or {@link BitOffset#index(long)}
-     * @param value value to set
-     * @return arguments object
+     * @param size 有符号数位数，最多 64 位
+     * @param offset 由 {@link BitOffset#bit(long)} 或 {@link BitOffset#index(long)} 创建的偏移
+     * @param value 要写入的值
+     * @return 参数对象
      */
     BitFieldArgs setSigned(int size, BitOffset offset, long value);
 
     /**
-     * Adds SET subcommand for unsigned value.
-     * Sets the value and returns the previous value
-     * may return null if OVERFLOW FAIL is set.
+     * 添加 SET 子命令，写入无符号值并返回旧值；
+     * 若 OVERFLOW 为 FAIL，溢出时可能返回 null。
      *
-     * @param size size of unsigned number up to 63 bits
-     * @param offset offset created by {@link BitOffset#bit(long)} or {@link BitOffset#index(long)}
-     * @param value value to set
-     * @return arguments object
+     * @param size 无符号数位数，最多 63 位
+     * @param offset 由 {@link BitOffset#bit(long)} 或 {@link BitOffset#index(long)} 创建的偏移
+     * @param value 要写入的值
+     * @return 参数对象
      */
     BitFieldArgs setUnsigned(int size, BitOffset offset, long value);
 
     /**
-     * Adds INCRBY subcommand for signed value.
-     * Increments by the given amount and returns the new value
-     * may return null if OVERFLOW FAIL is set.
+     * 添加 INCRBY 子命令，对有符号值按给定量递增并返回新值；
+     * 若 OVERFLOW 为 FAIL，溢出时可能返回 null。
      *
-     * @param size size of signed number up to 64 bits
-     * @param offset offset created by {@link BitOffset#bit(long)} or {@link BitOffset#index(long)}
-     * @param increment increment value
-     * @return arguments object
+     * @param size 有符号数位数，最多 64 位
+     * @param offset 由 {@link BitOffset#bit(long)} 或 {@link BitOffset#index(long)} 创建的偏移
+     * @param increment 递增量
+     * @return 参数对象
      */
     BitFieldArgs incrementSignedBy(int size, BitOffset offset, long increment);
 
     /**
-     * Adds INCRBY subcommand for unsigned value.
-     * Increments by the given amount and returns the new value
-     * may return null if OVERFLOW FAIL is set.
+     * 添加 INCRBY 子命令，对无符号值按给定量递增并返回新值；
+     * 若 OVERFLOW 为 FAIL，溢出时可能返回 null。
      *
-     * @param size size of unsigned number up to 63 bits
-     * @param offset offset created by {@link BitOffset#bit(long)} or {@link BitOffset#index(long)}
-     * @param increment increment value
-     * @return arguments object
+     * @param size 无符号数位数，最多 63 位
+     * @param offset 由 {@link BitOffset#bit(long)} 或 {@link BitOffset#index(long)} 创建的偏移
+     * @param increment 递增量
+     * @return 参数对象
      */
     BitFieldArgs incrementUnsignedBy(int size, BitOffset offset, long increment);
 }

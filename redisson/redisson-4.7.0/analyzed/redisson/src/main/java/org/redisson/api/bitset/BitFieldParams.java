@@ -20,7 +20,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Parameters for BITFIELD command.
+ * {@link BitFieldArgs} 与 {@link BitFieldInitArgs} 的默认实现，
+ * 按顺序保存 BITFIELD 子命令操作列表。
  *
  * @author Su Ko
  *
@@ -29,28 +30,24 @@ public final class BitFieldParams implements BitFieldArgs, BitFieldInitArgs {
 
     public enum OperationType {
         /**
-         * GET subcommand.
-         * Returns the value stored at the given encoding/offset.
+         * GET 子命令：读取指定编码/偏移处的值。
          */
         GET,
 
         /**
-         * SET subcommand.
-         * Sets the value and returns the previous value
-         * may return null if OVERFLOW FAIL is set.
+         * SET 子命令：写入值并返回旧值；
+         * 若 OVERFLOW 为 FAIL，溢出时可能返回 null。
          */
         SET,
 
         /**
-         * INCRBY subcommand.
-         * Increments by the given amount and returns the new value
-         * may return null if OVERFLOW FAIL is set.
+         * INCRBY 子命令：按给定量递增并返回新值；
+         * 若 OVERFLOW 为 FAIL，溢出时可能返回 null。
          */
         INCRBY,
 
         /**
-         * OVERFLOW subcommand.
-         * Sets overflow behavior for subsequent SET/INCRBY operations until the next OVERFLOW.
+         * OVERFLOW 子命令：为后续 SET/INCRBY 设置溢出行为，直至下一次 OVERFLOW。
          */
         OVERFLOW
     }
