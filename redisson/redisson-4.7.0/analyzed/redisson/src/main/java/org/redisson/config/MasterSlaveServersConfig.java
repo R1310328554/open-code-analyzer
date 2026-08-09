@@ -20,30 +20,30 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 
+ * 主从（Master-Slave）部署模式配置。
+ * <p>显式指定一个主节点地址与若干从节点地址，继承 {@link BaseMasterSlaveServersConfig}
+ * 的读写连接池、读模式 {@link ReadMode}、负载均衡等公共项。
+ * <p>通过 {@link org.redisson.config.Config#useMasterSlaveServers()} 启用。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<MasterSlaveServersConfig> {
 
-    /**
-     * Redis slave servers addresses
-     */
+    /** 从节点地址集合，格式 {@code host:port}。 */
     private Set<String> slaveAddresses = new HashSet<String>();
 
-    /**
-     * Redis master server address
-     */
+    /** 主节点地址，格式 {@code host:port}。 */
     private String masterAddress;
 
-    /**
-     * Database index used for Redis connection
-     */
+    /** 连接使用的 Redis 逻辑库索引（db）。 */
     private int database = 0;
 
+    /** 默认构造。 */
     public MasterSlaveServersConfig() {
     }
 
+    /** 拷贝构造，复制主从地址与 db 及父类字段。 */
     MasterSlaveServersConfig(MasterSlaveServersConfig config) {
         super(config);
         setLoadBalancer(config.getLoadBalancer());
@@ -53,9 +53,9 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     }
 
     /**
-     * Set Redis master server address. Use follow format -- host:port
+     * 设置主节点地址，格式 {@code host:port}。
      *
-     * @param masterAddress of Redis
+     * @param masterAddress Redis 主节点地址
      * @return config
      */
     public MasterSlaveServersConfig setMasterAddress(String masterAddress) {
@@ -67,9 +67,9 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     }
 
     /**
-     * Add Redis slave server address. Use follow format -- host:port
+     * 批量添加从节点地址，格式 {@code host:port}。
      *
-     * @param addresses of Redis
+     * @param addresses 从节点地址
      * @return config
      */
     public MasterSlaveServersConfig addSlaveAddress(String... addresses) {
@@ -88,10 +88,10 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     }
 
     /**
-     * Database index used for Redis connection
-     * Default is <code>0</code>
+     * 设置逻辑库索引。
+     * <p>默认 {@code 0}。
      *
-     * @param database number
+     * @param database 库编号
      * @return config
      */
     public MasterSlaveServersConfig setDatabase(int database) {

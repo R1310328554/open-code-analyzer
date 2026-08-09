@@ -20,15 +20,19 @@ import org.redisson.misc.RedisURI;
 import java.util.Map;
 
 /**
- * Maps host of RedisURI object using map defined in <code>hostsMap</code> setting.
+ * 基于 {@code hostsMap} 映射 {@link org.redisson.misc.RedisURI} 的主机名。
+ * <p>适用于 Docker/K8s 等场景：配置中的内网主机名需映射为客户端可访问的外网地址，
+ * 端口保持不变。未命中映射时原样返回 URI。
  *
  * @author Nikita Koksharov
  *
  */
 public class HostNatMapper implements NatMapper {
 
+    /** 主机映射表：原始 host → 映射后 host。 */
     private Map<String, String> hostsMap;
 
+    /** 查表替换 host，scheme 与 port 不变。 */
     @Override
     public RedisURI map(RedisURI uri) {
         String host = hostsMap.get(uri.getHost());
@@ -39,9 +43,9 @@ public class HostNatMapper implements NatMapper {
     }
 
     /**
-     * Defines hosts mapping. Host as key mapped to host as value.
+     * 设置主机映射表，键与值均为 host 字符串。
      *
-     * @param hostsMap - hosts map
+     * @param hostsMap 主机映射表
      */
     public void setHostsMap(Map<String, String> hostsMap) {
         this.hostsMap = hostsMap;

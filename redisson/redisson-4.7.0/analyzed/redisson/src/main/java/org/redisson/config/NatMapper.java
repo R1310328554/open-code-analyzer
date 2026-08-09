@@ -18,7 +18,9 @@ package org.redisson.config;
 import org.redisson.misc.RedisURI;
 
 /**
- * Maps RedisURI object. Allows to change input RedisURI's port and host values.
+ * Redis 连接 URI 的 NAT/地址映射接口。
+ * <p>在建立连接前将配置中的 {@link org.redisson.misc.RedisURI} 转换为客户
+ * 端实际可达的 host/port，常用于容器、云 NAT 网关环境。
  *
  * @author Nikita Koksharov
  *
@@ -29,17 +31,17 @@ import org.redisson.misc.RedisURI;
 public interface NatMapper {
 
     /**
-     * Applies map function to input <code>uri</code> object
+     * 对输入 URI 应用映射规则。
      *
-     * @param uri - RedisURI object
-     * @return mapped RedisURI object
+     * @param uri 原始 RedisURI
+     * @return 映射后的 RedisURI
      */
     RedisURI map(RedisURI uri);
 
     /**
-     * Returns input RedisURI object. Used by default
+     * 返回恒等映射器，URI 原样返回（默认）。
      *
-     * @return NatMapper instance what returns input RedisURI object
+     * @return 不做转换的 {@link NatMapper} 实例
      */
     static NatMapper direct() {
         return new DefaultNatMapper();

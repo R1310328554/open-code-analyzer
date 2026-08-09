@@ -16,7 +16,9 @@
 package org.redisson.config;
 
 /**
- * Maps Redisson object name.
+ * Redisson 分布式对象名称映射器。
+ * <p>在客户端与 Redis 之间对 RMap、RLock 等对象的逻辑名做双向转换，
+ * 便于多租户前缀、环境隔离等场景；{@link #direct()} 为恒等映射。
  *
  * @author Nikita Koksharov
  *
@@ -24,25 +26,25 @@ package org.redisson.config;
 public interface NameMapper {
 
     /**
-     * Applies map function to input <code>name</code>
+     * 将业务侧对象名映射为 Redis 实际使用的键名/通道名。
      *
-     * @param name - original Redisson object name
-     * @return mapped name
+     * @param name 原始 Redisson 对象名
+     * @return 映射后的名称
      */
     String map(String name);
 
     /**
-     * Applies unmap function to input mapped <code>name</code> to get original name.
+     * 将 Redis 侧名称还原为业务侧原始对象名（与 {@link #map} 互逆）。
      *
-     * @param name - mapped name
-     * @return original Redisson object name
+     * @param name 映射后的名称
+     * @return 原始 Redisson 对象名
      */
     String unmap(String name);
 
     /**
-     * Returns input Redisson object name. Used by default
+     * 返回恒等映射器，输入名称原样输出（默认行为）。
      *
-     * @return NameMapper instance what returns input Redisson object name
+     * @return 不做任何转换的 {@link NameMapper} 实例
      */
     static NameMapper direct() {
         return new DefaultNameMapper();

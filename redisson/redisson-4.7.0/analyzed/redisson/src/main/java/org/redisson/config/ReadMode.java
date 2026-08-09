@@ -16,27 +16,22 @@
 package org.redisson.config;
 
 /**
- * 
+ * 主从/哨兵/集群等拓扑下的读命令路由模式。
+ * <p>在 {@link BaseMasterSlaveServersConfig#setReadMode(ReadMode)} 中配置，
+ * 与 {@link org.redisson.connection.balancer.LoadBalancer} 配合选择具体节点。
+ *
  * @author Nikita Koksharov
  *
  */
 public enum ReadMode {
 
-    /**
-     * Read from slave nodes. Uses MASTER if no SLAVES are available.
-     * Node is selected using specified <code>loadBalancer</code> in Redisson configuration.
-     */
+    /** 优先从从节点读；无从节点时回退主节点，由 loadBalancer 选具体从节点。 */
     SLAVE,
 
-    /**
-     * Read from master node
-     */
+    /** 所有读命令走主节点（强一致读，增加主节点负载）。 */
     MASTER,
 
-    /**
-     * Read from master and slave nodes.
-     * Node is selected using specified <code>loadBalancer</code> in Redisson configuration.
-     */
+    /** 主从节点均可读，由 loadBalancer 在全部可读节点间均衡。 */
     MASTER_SLAVE,
 
 }

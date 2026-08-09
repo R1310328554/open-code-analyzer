@@ -19,12 +19,22 @@ import java.util.*;
 import java.util.function.Function;
 
 /**
+ * 将 Spring/系统属性扁平键名转换为 Redisson YAML 片段的工具类。
+ * <p>供配置导入场景使用：按前缀过滤属性、拆分层级、处理 kebab-case
+ * 与列表/类引用等特殊节点格式。
  *
  * @author Nikita Koksharov
  *
  */
 public class PropertiesConvertor {
 
+    /**
+     * 将带 {@code prefix} 的属性名集合转为 YAML 文本。
+     * @param prefix 属性名前缀（如 {@code spring.redis.redisson.}）
+     * @param propertyNames 全部候选属性名
+     * @param resolver 按属性名解析值的函数
+     * @param caseSensitive 键名是否区分大小写（false 时去掉连字符）
+     */
     public static String toYaml(String prefix, Iterable<String> propertyNames, Function<String, String> resolver, boolean caseSensitive) {
         Map<String, Object> map = new HashMap<>();
 
@@ -65,6 +75,7 @@ public class PropertiesConvertor {
         return yaml.toString();
     }
 
+    /** 将 kebab-case 转为 camelCase，或在不区分大小写时去掉连字符。 */
     private static String convertKey(String key, boolean caseSensitive) {
         if (!caseSensitive) {
             return key.replace("-", "");
@@ -80,6 +91,7 @@ public class PropertiesConvertor {
         return builder.toString();
     }
 
+    /** 在 YAML 中应输出为列表的节点键名集合。 */
     private static final Set<String> LIST_NODES = new HashSet<>(
             Arrays.asList(
                     "node-addresses", "nodeaddresses",
@@ -87,6 +99,7 @@ public class PropertiesConvertor {
                     "sentinel-addresses", "sentineladdresses",
                     "addresses"));
 
+    /** 在 YAML 中应使用 {@code !<ClassName> {}} 语法的类属性键名。 */
     private static final Set<String> CLASS_PROPERTIES = new HashSet<>(
             Arrays.asList("codec",
                     "load-balancer", "loadbalancer",
@@ -100,6 +113,7 @@ public class PropertiesConvertor {
                     "credentials-resolver", "credentialsresolver"
                     ));
 
+    /** 按值类型追加 YAML 标量、列表或类引用片段。 */
     private static void addValue(StringBuilder yaml, Map.Entry<String, Object> subEntry) {
         String value = (String) subEntry.getValue();
         if (value.contains(",") || LIST_NODES.contains(subEntry.getKey())) {

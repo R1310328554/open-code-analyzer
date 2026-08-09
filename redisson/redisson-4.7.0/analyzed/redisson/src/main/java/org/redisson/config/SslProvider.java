@@ -16,21 +16,19 @@
 package org.redisson.config;
 
 /**
- * 
+ * Redisson TLS 连接的 SSL 实现提供方。
+ * <p>在 {@link org.redisson.config.Config} 或 {@link BaseConfig} 的 SSL 相关
+ * 设置中与 truststore/keystore 等配合使用。
+ *
  * @author Nikita Koksharov
  *
  */
 public enum SslProvider {
 
-    /**
-     * Use JDK default implementation to handle SSL connection
-     */
+    /** 使用 JDK 默认 SSLEngine/JSSE 处理 TLS（无需额外 native 库）。 */
     JDK,
     
-    /**
-     * Use OpenSSL-based implementation to handle SSL connection.
-     * <code>netty-tcnative</code> lib is required to be in classpath.
-     */
+    /** 使用 Netty OpenSSL（需 classpath 中有 netty-tcnative），性能通常优于纯 JDK。 */
     OPENSSL
     
 }

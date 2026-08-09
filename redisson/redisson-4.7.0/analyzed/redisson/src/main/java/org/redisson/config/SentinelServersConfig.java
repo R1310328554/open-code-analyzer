@@ -21,36 +21,44 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * Redis Sentinel 高可用模式配置。
+ * <p>通过 Sentinel 地址发现当前主节点与从节点列表，并监听主从切换；
+ * 继承 {@link BaseMasterSlaveServersConfig} 的读写池与读模式。
+ * <p>通过 {@link org.redisson.config.Config#useSentinelServers()} 启用。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SentinelServersConfig extends BaseMasterSlaveServersConfig<SentinelServersConfig> {
 
+    /** Sentinel 节点地址列表，格式 {@code host:port}。 */
     private List<String> sentinelAddresses = new ArrayList<>();
     
+    /** 连接 URI 的 NAT 映射器。 */
     private NatMapper natMapper = NatMapper.direct();
 
+    /** Sentinel 监控的主节点逻辑名称（master set name）。 */
     private String masterName;
 
+    /** Sentinel 认证用户名（可与 Redis 主从不同）。 */
     private String sentinelUsername;
 
+    /** Sentinel 认证密码（可与 Redis 主从不同）。 */
     private String sentinelPassword;
 
-    /**
-     * Database index used for Redis connection
-     */
+    /** 逻辑库索引。 */
     private int database = 0;
     
-    /**
-     * Sentinel scan interval in milliseconds
-     */
+    /** Sentinel 拓扑扫描间隔（毫秒）。 */
     private int scanInterval = 1000;
 
+    /** 启动时是否校验 Sentinel 列表一致性。 */
     private boolean checkSentinelsList = true;
 
+    /** 是否结合 master-link-status 检查从节点同步状态。 */
     private boolean checkSlaveStatusWithSyncing = true;
 
+    /** 是否通过 Sentinel 自动发现完整 Sentinel 集群。 */
     private boolean sentinelsDiscovery = true;
 
     public SentinelServersConfig() {
@@ -71,9 +79,9 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
 
     /**
-     * Master server name used by Redis Sentinel servers and master change monitoring task.
+     * 设置 Sentinel 监控的主节点名称，用于查询主从地址与故障转移监听。
      *
-     * @param masterName of Redis
+     * @param masterName 主节点逻辑名
      * @return config
      */
     public SentinelServersConfig setMasterName(String masterName) {
@@ -85,9 +93,9 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
 
     /**
-     * Username required by the Redis Sentinel servers for authentication.
+     * 设置 Sentinel 连接认证用户名。
      *
-     * @param sentinelUsername of Redis
+     * @param sentinelUsername Sentinel 用户名
      * @return config
      */
     public SentinelServersConfig setSentinelUsername(String sentinelUsername) {
@@ -100,10 +108,9 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
 
     /**
-     * Password required by the Redis Sentinel servers for authentication.
-     * Used only if sentinel password differs from master and slave.
+     * 设置 Sentinel 认证密码（仅当与 Redis 主从密码不同时需要）。
      *
-     * @param sentinelPassword of Redis
+     * @param sentinelPassword Sentinel 密码
      * @return config
      */
     public SentinelServersConfig setSentinelPassword(String sentinelPassword) {
@@ -116,9 +123,9 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
 
     /**
-     * Add Redis Sentinel node address in host:port format. Multiple nodes at once could be added.
+     * 添加 Sentinel 地址，格式 {@code host:port}，可一次传入多个。
      *
-     * @param addresses of Redis
+     * @param addresses Sentinel 地址
      * @return config
      */
     public SentinelServersConfig addSentinelAddress(String... addresses) {
@@ -133,10 +140,10 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
 
     /**
-     * Database index used for Redis connection
-     * Default is <code>0</code>
+     * 设置逻辑库索引。
+     * <p>默认 {@code 0}。
      *
-     * @param database number
+     * @param database 库编号
      * @return config
      */
     public SentinelServersConfig setDatabase(int database) {
@@ -151,11 +158,10 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         return scanInterval;
     }
     /**
-     * Sentinel scan interval in milliseconds
-     * <p>
-     * Default is <code>1000</code>
+     * 设置 Sentinel 扫描间隔（毫秒）。
+     * <p>默认 {@code 1000}。
      *
-     * @param scanInterval in milliseconds
+     * @param scanInterval 间隔毫秒数
      * @return config
      */
     public SentinelServersConfig setScanInterval(int scanInterval) {
@@ -179,13 +185,12 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
 
     /**
-     * Defines NAT mapper which maps Redis URI object.
-     * Applied to all Redis connections.
+     * 设置应用于全部 Redis/Sentinel 连接的 NAT 映射器。
      *
      * @see HostNatMapper
      * @see HostPortNatMapper
      *
-     * @param natMapper - nat mapper object
+     * @param natMapper NAT 映射器
      * @return config
      */
     public SentinelServersConfig setNatMapper(NatMapper natMapper) {
@@ -198,11 +203,10 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
 
     /**
-     * Enables sentinels list check during Redisson startup.
-     * <p>
-     * Default is <code>true</code>
+     * 启动时是否校验各 Sentinel 返回的 Sentinel 列表一致。
+     * <p>默认 {@code true}。
      *
-     * @param checkSentinelsList - boolean value
+     * @param checkSentinelsList 是否校验
      * @return config
      */
     public SentinelServersConfig setCheckSentinelsList(boolean checkSentinelsList) {
@@ -215,11 +219,10 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
 
     /**
-     * check node status from sentinel with 'master-link-status' flag
-     * <p>
-     * Default is <code>true</code>
+     * 是否通过 Sentinel 的 master-link-status 判断从节点是否在同步。
+     * <p>默认 {@code true}。
      *
-     * @param checkSlaveStatusWithSyncing - boolean value
+     * @param checkSlaveStatusWithSyncing 是否检查
      * @return config
      */
     public SentinelServersConfig setCheckSlaveStatusWithSyncing(boolean checkSlaveStatusWithSyncing) {
@@ -232,11 +235,10 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
 
     /**
-     * Enables sentinels discovery.
-     * <p>
-     * Default is <code>true</code>
+     * 是否启用 Sentinel 自动发现（从已知 Sentinel 获取完整列表）。
+     * <p>默认 {@code true}。
      *
-     * @param sentinelsDiscovery - boolean value
+     * @param sentinelsDiscovery 是否发现
      * @return config
      */
     public SentinelServersConfig setSentinelsDiscovery(boolean sentinelsDiscovery) {

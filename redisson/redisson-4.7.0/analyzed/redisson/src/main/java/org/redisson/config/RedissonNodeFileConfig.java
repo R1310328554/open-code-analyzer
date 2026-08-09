@@ -23,15 +23,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Redisson Node file configuration
- * 
+ * Redisson Node 的文件/YAML 配置，继承 {@link Config} 的全部 Redis 连接项。
+ * <p>额外定义 MapReduce 工作线程数、按名称的 ExecutorService 线程池
+ * 及节点启动 {@link org.redisson.api.RedissonNodeInitializer} 回调。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonNodeFileConfig extends Config {
 
+    /** MapReduce 工作线程数：0=CPU 核数，-1=禁用。 */
     private int mapReduceWorkers = 0;
+    /** 节点启动完成后的初始化回调。 */
     private RedissonNodeInitializer redissonNodeInitializer;
+    /** 命名 ExecutorService 名称 → 工作线程数。 */
     private Map<String, Integer> executorServiceWorkers = new HashMap<>();
 
     public RedissonNodeFileConfig() {
@@ -50,16 +55,11 @@ public class RedissonNodeFileConfig extends Config {
     }
     
     /**
-     * MapReduce workers amount. 
-     * <p>
-     * <code>0 = current_processors_amount</code>
-     * <p>
-     * <code>-1 = disable MapReduce workers</code>
-     * 
-     * <p>
-     * Default is <code>0</code>
-     * 
-     * @param mapReduceWorkers workers for MapReduce
+     * 设置 MapReduce 工作线程数。
+     * <p>{@code 0} = 当前 CPU 核数；{@code -1} = 禁用 MapReduce。
+     * <p>默认 {@code 0}。
+     *
+     * @param mapReduceWorkers MapReduce 线程数
      * @return config
      */
     public RedissonNodeFileConfig setMapReduceWorkers(int mapReduceWorkers) {
@@ -71,9 +71,9 @@ public class RedissonNodeFileConfig extends Config {
     }
     
     /**
-     * Executor service workers amount per service name 
-     * 
-     * @param workers mapping
+     * 按 ExecutorService 名称设置各自的工作线程数。
+     *
+     * @param workers 服务名 → 线程数映射
      * @return config
      */
     public RedissonNodeFileConfig setExecutorServiceWorkers(Map<String, Integer> workers) {
@@ -85,9 +85,9 @@ public class RedissonNodeFileConfig extends Config {
     }
     
     /**
-     * Redisson node initializer
-     * 
-     * @param redissonNodeInitializer object
+     * 设置节点启动后的初始化器。
+     *
+     * @param redissonNodeInitializer 初始化器实例
      * @return config
      */
     public RedissonNodeFileConfig setRedissonNodeInitializer(RedissonNodeInitializer redissonNodeInitializer) {
@@ -99,11 +99,11 @@ public class RedissonNodeFileConfig extends Config {
     }
 
     /**
-     * Read config object stored in YAML format from <code>File</code>
+     * 从 YAML 文件加载 Redisson Node 配置。
      *
-     * @param file object
-     * @return config
-     * @throws IOException error
+     * @param file YAML 文件
+     * @return 解析后的配置
+     * @throws IOException 读取或解析失败
      */
     public static RedissonNodeFileConfig fromYAML(File file) throws IOException {
         ConfigSupport support = new ConfigSupport();

@@ -16,25 +16,22 @@
 package org.redisson.config;
 
 /**
+ * 集群模式下分片 Pub/Sub（SPUBLISH/SSUBSCRIBE）的使用策略。
+ * <p>Redis 7+ 支持按 slot 分片订阅，减轻单节点订阅压力；
+ * 在 {@link org.redisson.config.Config} 或集群子配置中指定。
  *
  * @author Nikita Koksharov
  *
  */
 public enum ShardedSubscriptionMode {
 
-    /**
-     * Use sharded pubsub only if it's available.
-     */
+    /** 仅在服务端支持时启用分片 Pub/Sub，否则回退经典模式。 */
     AUTO,
 
-    /**
-     * Use sharded pubsub.
-     */
+    /** 强制使用分片 Pub/Sub（不支持时可能失败）。 */
     ON,
 
-    /**
-     * Don't use sharded pubsub.
-     */
+    /** 禁用分片 Pub/Sub，始终使用传统 SUBSCRIBE/PUBLISH。 */
     OFF
 
 }

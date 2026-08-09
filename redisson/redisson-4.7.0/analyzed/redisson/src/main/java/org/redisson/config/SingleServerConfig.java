@@ -16,49 +16,37 @@
 package org.redisson.config;
 
 /**
- * 
+ * 单 Redis 节点部署模式配置。
+ * <p>指定一个 {@code host:port} 地址及读写/订阅连接池、逻辑库、DNS 监控等；
+ * 通过 {@link org.redisson.config.Config#useSingleServer()} 启用。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
-    /**
-     * Redis server address
-     *
-     */
+    /** Redis 服务地址，格式 {@code host:port} 或 {@code redis://...}。 */
     private String address;
 
-    /**
-     * Minimum idle subscription connection amount
-     */
+    /** 订阅连接池最小空闲连接数。 */
     private int subscriptionConnectionMinimumIdleSize = 1;
 
-    /**
-     * Redis subscription connection maximum pool size
-     *
-     */
+    /** 订阅（Pub/Sub）连接池最大容量。 */
     private int subscriptionConnectionPoolSize = 50;
 
-    /**
-     * Minimum idle Redis connection amount
-     */
+    /** 普通读写连接池最小空闲连接数。 */
     private int connectionMinimumIdleSize = 24;
 
-    /**
-     * Redis connection maximum pool size
-     */
+    /** 普通读写连接池最大容量。 */
     private int connectionPoolSize = 64;
 
-    /**
-     * Database index used for Redis connection
-     */
+    /** 逻辑库索引（db）。 */
     private int database = 0;
 
-    /**
-     * Interval in milliseconds to check DNS
-     */
+    /** DNS 解析监控间隔（毫秒），{@code -1} 禁用。 */
     private long dnsMonitoringInterval = 5000;
 
+    /** 每次 DNS 检查周期内解析次数。 */
     private int dnsMonitoringTimes = 1;
 
     SingleServerConfig() {
@@ -77,11 +65,10 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
 
     /**
-     * Redis connection pool size
-     * <p>
-     * Default is <code>64</code>
+     * 设置读写连接池最大容量。
+     * <p>默认 {@code 64}。
      *
-     * @param connectionPoolSize - pool size
+     * @param connectionPoolSize 池大小
      * @return config
      */
     public SingleServerConfig setConnectionPoolSize(int connectionPoolSize) {
@@ -93,11 +80,10 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
 
     /**
-     * Redis subscription-connection pool size limit
-     * <p>
-     * Default is <code>50</code>
+     * 设置订阅连接池最大容量。
+     * <p>默认 {@code 50}。
      *
-     * @param subscriptionConnectionPoolSize - pool size
+     * @param subscriptionConnectionPoolSize 池大小
      * @return config
      */
     public SingleServerConfig setSubscriptionConnectionPoolSize(int subscriptionConnectionPoolSize) {
@@ -109,9 +95,9 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
 
     /**
-     * Set server address. Use follow format -- host:port
+     * 设置 Redis 地址，格式 {@code host:port}。
      *
-     * @param address of Redis
+     * @param address Redis 地址
      * @return config
      */
     public SingleServerConfig setAddress(String address) {
@@ -125,13 +111,10 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
 
     /**
-     * Interval in milliseconds to check the endpoint's DNS<p>
-     * Applications must ensure the JVM DNS cache TTL is low enough to support this.<p>
-     * Set <code>-1</code> to disable.
-     * <p>
-     * Default is <code>5000</code>.
+     * 设置端点 DNS 监控间隔（毫秒）；需配合较低的 JVM DNS 缓存 TTL。
+     * <p>{@code -1} 禁用；默认 {@code 5000}。
      *
-     * @param dnsMonitoringInterval time
+     * @param dnsMonitoringInterval 间隔毫秒数
      * @return config
      */
     public SingleServerConfig setDnsMonitoringInterval(long dnsMonitoringInterval) {
@@ -147,12 +130,10 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
     
     /**
-     * The number of times per check the endpoint's DNS<p>
-     * Applications must ensure the JVM DNS cache TTL is low enough to support this.<p>
-     * <p>
-     * Default is <code>1</code>.
+     * 每个 DNS 检查周期内对端点解析的次数。
+     * <p>默认 {@code 1}。
      *
-     * @param dnsMonitoringTimes number of times
+     * @param dnsMonitoringTimes 解析次数
      * @return config
      */
     public SingleServerConfig setDnsMonitoringTimes(int dnsMonitoringTimes) {
@@ -161,13 +142,11 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
 
     /**
-     * Minimum idle subscription connection amount.
-     * <p>
-     * Default is <code>1</code>
-     * 
-     * @param subscriptionConnectionMinimumIdleSize - connections amount
-     * @return config
+     * 设置订阅连接池最小空闲数。
+     * <p>默认 {@code 1}。
      *
+     * @param subscriptionConnectionMinimumIdleSize 最小空闲连接数
+     * @return config
      */
     public SingleServerConfig setSubscriptionConnectionMinimumIdleSize(int subscriptionConnectionMinimumIdleSize) {
         this.subscriptionConnectionMinimumIdleSize = subscriptionConnectionMinimumIdleSize;
@@ -178,11 +157,10 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
 
     /**
-     * Minimum idle Redis connection amount.
-     * <p>
-     * Default is <code>24</code>
+     * 设置读写连接池最小空闲数。
+     * <p>默认 {@code 24}。
      *
-     * @param connectionMinimumIdleSize - connections amount
+     * @param connectionMinimumIdleSize 最小空闲连接数
      * @return config
      */
     public SingleServerConfig setConnectionMinimumIdleSize(int connectionMinimumIdleSize) {
@@ -194,10 +172,10 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
 
     /**
-     * Database index used for Redis connection
-     * Default is <code>0</code>
+     * 设置逻辑库索引。
+     * <p>默认 {@code 0}。
      *
-     * @param database index
+     * @param database 库编号
      * @return config
      */
     public SingleServerConfig setDatabase(int database) {
