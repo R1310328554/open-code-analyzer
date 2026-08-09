@@ -18,9 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>new object</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的<b>新键创建</b>键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain En letters
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code n} 字母。
  *
  * @author Nikita Koksharov
  *
@@ -28,9 +28,9 @@ import org.redisson.api.ObjectListener;
 public interface NewObjectListener extends ObjectListener {
 
     /**
-     * Invoked on new object event
+     * 当 Redis 中创建新键时触发。
      *
-     * @param name - name of object
+     * @param name 对象名称（键名）
      */
     void onNew(String name);
 

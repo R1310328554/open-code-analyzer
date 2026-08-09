@@ -18,10 +18,10 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>zadd</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的有序集合<b>成员添加</b>（zadd）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain Ez letters
- * 
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code z} 字母。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -29,9 +29,9 @@ import org.redisson.api.ObjectListener;
 public interface ScoredSortedSetAddListener extends ObjectListener {
 
     /**
-     * Invoked when entry added to RScoredSortedSet object
-     * 
-     * @param name - name of object
+     * 当成员被添加到 {@link org.redisson.api.RScoredSortedSet} 时触发。
+     *
+     * @param name 对象名称（键名）
      */
     void onAdd(String name);
     

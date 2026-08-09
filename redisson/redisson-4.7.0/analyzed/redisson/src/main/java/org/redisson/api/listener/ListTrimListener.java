@@ -18,9 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>ltrim</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的列表<b>裁剪</b>（ltrim）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain El letters
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code l} 字母。
  *
  * @author Nikita Koksharov
  *
@@ -29,9 +29,9 @@ import org.redisson.api.ObjectListener;
 public interface ListTrimListener extends ObjectListener {
 
     /**
-     * Invoked on list trimming event
+     * 当列表被 ltrim 命令裁剪长度时触发。
      *
-     * @param name - name of object
+     * @param name 对象名称（键名）
      */
     void onListTrim(String name);
 

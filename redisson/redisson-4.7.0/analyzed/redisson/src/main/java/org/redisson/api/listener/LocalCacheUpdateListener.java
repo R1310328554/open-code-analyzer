@@ -18,7 +18,10 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for local cache update event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的<b>本地缓存更新</b>事件。
+ * <p>
+ * 当远程 Map 条目变更需同步到本地缓存时回调，
+ * 适用于带本地缓存的 {@link org.redisson.api.RLocalCachedMap} 等结构。
  *
  * @author Nikita Koksharov
  *
@@ -27,10 +30,10 @@ import org.redisson.api.ObjectListener;
 public interface LocalCacheUpdateListener<K, V> extends ObjectListener {
 
     /**
-     * Invoked on event of map entry udpate
+     * 当 Map 条目在本地缓存中被更新时触发。
      *
-     * @param key key to update
-     * @param value new value
+     * @param key 待更新的键
+     * @param value 新的值
      */
     void onUpdate(K key, V value);
 

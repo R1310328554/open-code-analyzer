@@ -18,9 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>hset</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的 Hash<b>写入</b>（hset）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain Eh or Th letters
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code h} 或 {@code T} 字母。
  *
  * @author Nikita Koksharov
  */
@@ -28,10 +28,10 @@ import org.redisson.api.ObjectListener;
 public interface MapPutListener extends ObjectListener {
 
     /**
-     * Invoked when entry added to RMap object
+     * 当条目被写入 {@link org.redisson.api.RMap} 时触发。
      *
-     * @param name object name
-     * @param fieldName map entry field name. Can be null for keyevent notification.
+     * @param name 对象名称（键名）
+     * @param fieldName Map 字段名；键事件通知时可为 null
      */
     void onPut(String name, String fieldName);
 

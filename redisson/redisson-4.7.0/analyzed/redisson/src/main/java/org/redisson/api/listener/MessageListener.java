@@ -18,11 +18,13 @@ package org.redisson.api.listener;
 import java.util.EventListener;
 
 /**
- * Listener for Valkey or Redis messages published via RTopic Redisson object
+ * 监听通过 {@link org.redisson.api.RTopic} 发布的 Valkey 或 Redis 消息。
+ * <p>
+ * 订阅指定频道后，每条 Pub/Sub 消息都会回调 {@link #onMessage(CharSequence, Object)}。
  *
  * @author Nikita Koksharov
  *
- * @param <M> message
+ * @param <M> 消息体类型
  *
  * @see org.redisson.api.RTopic
  */
@@ -30,10 +32,10 @@ import java.util.EventListener;
 public interface MessageListener<M> extends EventListener {
 
     /**
-     * Invokes on every message in topic
+     * 收到主题消息时调用。
      *
-     * @param channel of topic
-     * @param msg topic message
+     * @param channel 主题频道名称
+     * @param msg 主题消息内容
      */
     void onMessage(CharSequence channel, M msg);
 

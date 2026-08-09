@@ -18,7 +18,10 @@ package org.redisson.api.listener;
 import java.util.EventListener;
 
 /**
- * Listener for Valkey or Redis PubSub channel status changes
+ * 监听 Valkey 或 Redis Pub/Sub <b>模式订阅</b>状态变更。
+ * <p>
+ * 在客户端成功订阅或取消模式（pattern）时回调，
+ * 可配合 {@link org.redisson.api.RTopic} 跟踪连接状态。
  *
  * @author Nikita Koksharov
  *
@@ -26,8 +29,18 @@ import java.util.EventListener;
  */
 public interface PatternStatusListener extends EventListener {
 
+    /**
+     * 模式订阅成功时调用。
+     *
+     * @param pattern 已订阅的模式表达式
+     */
     void onPSubscribe(String pattern);
 
+    /**
+     * 取消模式订阅时调用。
+     *
+     * @param pattern 已取消订阅的模式表达式
+     */
     void onPUnsubscribe(String pattern);
 
 }

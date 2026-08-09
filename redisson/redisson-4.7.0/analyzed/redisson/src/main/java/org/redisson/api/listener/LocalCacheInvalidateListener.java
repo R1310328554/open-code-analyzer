@@ -18,7 +18,10 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for local cache invalidation event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的<b>本地缓存失效</b>事件。
+ * <p>
+ * 当远程 Map 条目变更导致本地缓存条目需失效时回调，
+ * 适用于带本地缓存的 {@link org.redisson.api.RLocalCachedMap} 等结构。
  *
  * @author Nikita Koksharov
  *
@@ -27,10 +30,10 @@ import org.redisson.api.ObjectListener;
 public interface LocalCacheInvalidateListener<K, V> extends ObjectListener {
 
     /**
-     * Invoked on event of map entry invalidation
+     * 当 Map 条目从本地缓存中失效时触发。
      *
-     * @param key key to remove
-     * @param value value to remove
+     * @param key 待移除的键
+     * @param value 待移除的值
      */
     void onInvalidate(K key, V value);
 

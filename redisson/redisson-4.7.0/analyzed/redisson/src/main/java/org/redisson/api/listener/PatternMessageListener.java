@@ -18,11 +18,13 @@ package org.redisson.api.listener;
 import java.util.EventListener;
 
 /**
- * Listener for Valkey or Redis messages published via RTopic Redisson object
+ * 监听通过 {@link org.redisson.api.RTopic} 以<b>模式订阅</b>接收的 Valkey 或 Redis 消息。
+ * <p>
+ * 与 {@link MessageListener} 不同，回调中包含匹配的模式与具体频道名称。
  *
  * @author Nikita Koksharov
  *
- * @param <M> message
+ * @param <M> 消息体类型
  *
  * @see org.redisson.api.RTopic
  */
@@ -30,11 +32,11 @@ import java.util.EventListener;
 public interface PatternMessageListener<M> extends EventListener {
 
     /**
-     * Invokes on every message in topic
+     * 收到模式匹配的主题消息时调用。
      *
-     * @param pattern of channel name
-     * @param channel of topic
-     * @param msg topic message
+     * @param pattern 订阅的模式表达式
+     * @param channel 实际消息来源频道
+     * @param msg 主题消息内容
      */
     void onMessage(CharSequence pattern, CharSequence channel, M msg);
 
