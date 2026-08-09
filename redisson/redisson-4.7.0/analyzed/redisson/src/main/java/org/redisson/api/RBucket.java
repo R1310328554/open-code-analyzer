@@ -23,296 +23,267 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Object holder. Max size of object is 512MB
+ * 单对象持有者（Bucket）；单个对象最大 512MB。
+ * <p>支持读写、条件设置、过期管理及哈希摘要等操作。
  *
  * @author Nikita Koksharov
- *
- * @param <V> - the type of object
+ * @param <V> 对象类型
  */
 public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
 
     /**
-     * Returns size of object in bytes.
-     * 
-     * @return object size
+     * 返回对象序列化后的字节大小。
+     *
+     * @return 字节数
      */
     long size();
     
     /**
-     * Retrieves element stored in the holder.
-     * 
-     * @return element
+     * 读取持有者中存储的对象。
+     *
+     * @return 对象值
      */
     V get();
 
     /**
-     * Retrieves element in the holder and removes it.
-     * 
-     * @return element
+     * 读取并删除持有者中的对象。
+     *
+     * @return 对象值
      */
     V getAndDelete();
 
     /**
-     * Use {@link #setIfAbsent(Object)} instead
+     * 已废弃，请改用 {@link #setIfAbsent(Object)}。
      *
-     * @param value - value to set
-     * @return {@code true} if successful, or {@code false} if
-     *         element was already set
+     * @param value 待设置的值
+     * @return 设置成功为 {@code true}，键已存在为 {@code false}
      */
     @Deprecated
     boolean trySet(V value);
 
     /**
-     * Use {@link #setIfAbsent(Object, Duration)} instead
-     * 
-     * @param value - value to set
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
-     * @return {@code true} if successful, or {@code false} if
-     *         element was already set
+     * 已废弃，请改用 {@link #setIfAbsent(Object, Duration)}。
+     *
+     * @param value 待设置的值
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 设置成功为 {@code true}，键已存在为 {@code false}
      */
     @Deprecated
     boolean trySet(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Sets value only if object holder doesn't exist.
+     * 仅当持有者不存在时设置值（SET NX）。
      *
-     * @param value - value to set
-     * @return {@code true} if successful, or {@code false} if
-     *         element was already set
+     * @param value 待设置的值
+     * @return 设置成功为 {@code true}，键已存在为 {@code false}
      */
     boolean setIfAbsent(V value);
 
     /**
-     * Sets value with defined duration only if object holder doesn't exist.
+     * 仅当持有者不存在时设置值并指定过期时间。
      *
-     * @param value value to set
-     * @param duration expiration duration
-     * @return {@code true} if successful, or {@code false} if
-     *         element was already set
+     * @param value 待设置的值
+     * @param duration 过期时长
+     * @return 设置成功为 {@code true}，键已存在为 {@code false}
      */
     boolean setIfAbsent(V value, Duration duration);
 
     /**
-     * Sets value only if object holder already exists.
+     * 仅当持有者已存在时设置值（SET XX）。
      *
-     * @param value - value to set
-     * @return {@code true} if successful, or {@code false} if
-     *         element wasn't set
+     * @param value 待设置的值
+     * @return 设置成功为 {@code true}，键不存在为 {@code false}
      */
     boolean setIfExists(V value);
 
     /**
-     * Use {@link #setIfExists(Object, Duration)} instead
+     * 已废弃，请改用 {@link #setIfExists(Object, Duration)}。
      *
-     * @param value - value to set
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
-     * @return {@code true} if successful, or {@code false} if
-     *         element wasn't set
+     * @param value 待设置的值
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 设置成功为 {@code true}，键不存在为 {@code false}
      */
     @Deprecated
     boolean setIfExists(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Sets <code>value</code> with expiration <code>duration</code> only if object holder already exists.
+     * 仅当持有者已存在时设置值并指定过期时间。
      *
-     * @param value value to set
-     * @param duration expiration duration
-     * @return {@code true} if successful, or {@code false} if
-     *         element wasn't set
+     * @param value 待设置的值
+     * @param duration 过期时长
+     * @return 设置成功为 {@code true}，键不存在为 {@code false}
      */
     boolean setIfExists(V value, Duration duration);
 
     /**
-     * Atomically sets the value to the given updated value
-     * only if serialized state of the current value equals 
-     * to serialized state of the expected value.
+     * 原子比较并设置：当前值序列化结果与期望值相等时写入新值。
      *
-     * @param expect the expected value
-     * @param update the new value
-     * @return {@code true} if successful; or {@code false} if the actual value
-     *         was not equal to the expected value.
+     * @param expect 期望值
+     * @param update 新值
+     * @return 成功为 {@code true}，期望值不匹配为 {@code false}
      */
     boolean compareAndSet(V expect, V update);
 
     /**
-     * Atomically sets the value if the condition specified in args is met.
-     * <p>
-     * Supports multiple comparison modes:
+     * 按 {@code args} 指定条件原子设置值。
+     * <p>支持多种比较模式：
      * <ul>
-     *   <li>{@link CompareAndSetArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
-     *   <li>{@link CompareAndSetArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
-     *   <li>{@link CompareAndSetArgs#expectedDigest(String)} - requires Redis 8.4+, uses SET IFDEQ</li>
-     *   <li>{@link CompareAndSetArgs#unexpectedDigest(String)} - requires Redis 8.4+, uses SET IFDNE</li>
+     *   <li>{@link CompareAndSetArgs#expected(Object)} — 任意 Redis/Valkey 版本</li>
+     *   <li>{@link CompareAndSetArgs#unexpected(Object)} — 任意 Redis/Valkey 版本</li>
+     *   <li>{@link CompareAndSetArgs#expectedDigest(String)} — 需 Redis 8.4+，使用 SET IFDEQ</li>
+     *   <li>{@link CompareAndSetArgs#unexpectedDigest(String)} — 需 Redis 8.4+，使用 SET IFDNE</li>
      * </ul>
-     * <p>
-     * Example usage:
+     * <p>示例：
      * <pre>
-     * // Set new value if current value equals expected value
      * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;expected("oldValue").set("newValue"));
-     *
-     * // Set new value with TTL if current value does not equal unexpected value
      * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;unexpected("badValue")
-     *     .set("newValue")
-     *     .timeToLive(Duration.ofMinutes(5)));
-     *
-     * // Set new value if hash digest matches (Redis 8.4+)
+     *     .set("newValue").timeToLive(Duration.ofMinutes(5)));
      * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;expectedDigest("b6acb9d84a38ff74")
-     *     .set("newValue")
-     *     .expireAt(Instant.now().plusSeconds(3600)));
+     *     .set("newValue").expireAt(Instant.now().plusSeconds(3600)));
      * </pre>
      *
-     * @param args compare-and-set arguments containing condition and new value
-     * @return {@code true} if successful, {@code false} if condition was not met
+     * @param args 比较并设置参数
+     * @return 条件满足并成功为 {@code true}，否则 {@code false}
      */
     boolean compareAndSet(CompareAndSetArgs<V> args);
 
     /**
-     * Conditionally deletes the bucket based on value comparison.
-     * <p>
+     * 按值比较条件删除 Bucket。
      * <ul>
-     *    <li> {@link CompareAndDeleteArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
-     *    <li> {@link CompareAndDeleteArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
-     *    <li> {@link CompareAndDeleteArgs#expectedDigest(String)} - requires Redis 8.4+</li>
-     *    <li> {@link CompareAndDeleteArgs#unexpectedDigest(String)} - requires Redis 8.4+</li>
+     *    <li>{@link CompareAndDeleteArgs#expected(Object)} — 任意 Redis/Valkey 版本</li>
+     *    <li>{@link CompareAndDeleteArgs#unexpected(Object)} — 任意 Redis/Valkey 版本</li>
+     *    <li>{@link CompareAndDeleteArgs#expectedDigest(String)} — 需 Redis 8.4+</li>
+     *    <li>{@link CompareAndDeleteArgs#unexpectedDigest(String)} — 需 Redis 8.4+</li>
      * </ul>
      *
-     * @param args comparison arguments
-     * @return {@code true} if bucket was deleted, {@code false} otherwise
+     * @param args 比较参数
+     * @return 删除成功为 {@code true}，否则 {@code false}
      */
     boolean compareAndDelete(CompareAndDeleteArgs<V> args);
 
     /**
-     * Retrieves current element in the holder and replaces it with <code>newValue</code>. 
-     * 
-     * @param newValue - value to set
-     * @return previous value
+     * 读取当前值并用 {@code newValue} 替换。
+     *
+     * @param newValue 新值
+     * @return 替换前的值
      */
     V getAndSet(V newValue);
 
     /**
-     * Use {@link #getAndSet(Object, Duration)} instead
-     * 
-     * @param value - value to set
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
-     * @return previous value
+     * 已废弃，请改用 {@link #getAndSet(Object, Duration)}。
+     *
+     * @param value 新值
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 替换前的值
      */
     @Deprecated
     V getAndSet(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Retrieves current element in the holder and replaces it
-     * with <code>value</code> with defined expiration <code>duration</code>.
+     * 读取当前值并替换为新值，同时设置过期时间。
      *
-     * @param value value to set
-     * @param duration expiration duration
-     * @return previous value
+     * @param value 新值
+     * @param duration 过期时长
+     * @return 替换前的值
      */
     V getAndSet(V value, Duration duration);
 
     /**
-     * Retrieves current element in the holder and sets an expiration duration for it.
-     * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 读取当前值并为其设置过期时长。
+     * <p>需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param duration of object time to live interval
-     * @return element
+     * @param duration 存活时长
+     * @return 当前值
      */
     V getAndExpire(Duration duration);
 
     /**
-     * Retrieves current element in the holder and sets an expiration date for it.
-     * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 读取当前值并设置绝对过期时刻。
+     * <p>需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param time of exact object expiration moment
-     * @return element
+     * @param time 过期时刻
+     * @return 当前值
      */
     V getAndExpire(Instant time);
 
     /**
-     * Retrieves current element in the holder and clears expiration date set before.
-     * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 读取当前值并清除已设置的过期时间。
+     * <p>需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @return element
+     * @return 当前值
      */
     V getAndClearExpire();
 
     /**
-     * Stores element into the holder. 
-     * 
-     * @param value - value to set
+     * 将对象写入持有者。
+     *
+     * @param value 待设置的值
      */
     void set(V value);
 
     /**
-     * Use {@link #set(Object, Duration)} instead
-     * 
-     * @param value - value to set
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
+     * 已废弃，请改用 {@link #set(Object, Duration)}。
+     *
+     * @param value 待设置的值
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
      */
     @Deprecated
     void set(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Stores <code>value</code> into the holder with defined expiration <code>duration</code>.
+     * 写入对象并设置过期时长。
      *
-     * @param value value to set
-     * @param duration expiration duration
+     * @param value 待设置的值
+     * @param duration 过期时长
      */
     void set(V value, Duration duration);
 
     /**
-     * Set value and keep existing TTL.
-     * <p>
-     * Requires <b>Redis 6.0.0 and higher.</b>
+     * 设置新值并保留原有 TTL。
+     * <p>需要 <b>Redis 6.0.0 及以上</b>。
      *
-     * @param value - value to set
+     * @param value 待设置的值
      */
     void setAndKeepTTL(V value);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      * @see org.redisson.api.listener.SetObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 
     /**
-     * Returns the common part of the data stored in this bucket
-     * and a bucket defined by the <code>name</code>
+     * 返回本 Bucket 与指定名称 Bucket 存储数据的公共前缀部分。
      *
-     * @param name second bucket
-     * @return common part of the data
+     * @param name 另一 Bucket 名称
+     * @return 公共数据部分
      */
     V findCommon(String name);
 
     /**
-     * Returns the length of the common part of the data stored in this bucket
-     * and a bucket defined by the <code>name</code>
+     * 返回本 Bucket 与指定名称 Bucket 公共前缀部分的字节长度。
      *
-     * @param name second bucket
-     * @return common part of the data
+     * @param name 另一 Bucket 名称
+     * @return 公共部分长度
      */
     long findCommonLength(String name);
 
     /**
-     * Returns the hash digest of the value stored in this bucket as a hexadecimal string.
-     * The digest is computed using the XXH3 hash algorithm.
-     * <p>
-     * Requires <b>Redis 8.4.0 or higher</b>.
+     * 返回 Bucket 值的 XXH3 哈希摘要（十六进制字符串）。
+     * <p>需要 <b>Redis 8.4.0 及以上</b>。
      *
-     * @return hash digest as hexadecimal string, or {@code null} if the bucket doesn't exist
+     * @return 哈希摘要；Bucket 不存在时为 {@code null}
      */
     String getDigest();
 }

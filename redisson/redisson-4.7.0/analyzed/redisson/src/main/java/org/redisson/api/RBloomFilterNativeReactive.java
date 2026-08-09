@@ -25,117 +25,106 @@ import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
 import reactor.core.publisher.Mono;
 
 /**
- * Bloom filter based on BF.* commands
+ * 基于 Redis {@code BF.*} 命令的原生布隆过滤器 API。
+ * <p>支持 {@code BF.RESERVE/BF.ADD/BF.INSERT/BF.MEXISTS} 及扫描导出等操作。
  *
  * @author Su Ko
- *
- * @param <T> - type of object
+ * @param <T> 元素类型
  */
 public interface RBloomFilterNativeReactive<T> extends RExpirableReactive {
 
     /**
-     * Adds element
+     * 添加单个元素。
      *
-     * @param element - element to add
-     *
-     * @return <code>true</code> if element has been added successfully
-     *         <code>false</code> if element is already present
+     * @param element 待添加元素
+     * @return 新插入为 {@code true}，已存在为 {@code false}
      */
     Mono<Boolean> add(T element);
 
     /**
-     * Adds elements
+     * 批量添加元素。
      *
-     * @param elements elements to add
-     *
-     * @return set of elements representing whether each element has been added successfully
+     * @param elements 待添加元素集合
+     * @return 各元素是否新插入成功的集合
      */
     Mono<Set<T>> add(Collection<T> elements);
 
     /**
-     * create filter (if filter is not existing and not NOCREATE mode)
-     * and
-     * Adds elements
+     * 若过滤器不存在且非 NOCREATE 模式则创建，并批量添加元素。
      *
-     * @param args insert args
-     *
-     * @return set of elements representing whether each element has been added successfully
+     * @param args 插入参数
+     * @return 各元素是否新插入成功的集合
      */
     Mono<Set<T>> insert(BloomFilterInsertArgs<T> args);
 
     /**
-     * Initializes Bloom filter
+     * 以误判率与预期容量初始化布隆过滤器。
      *
-     * @param errorRate acceptable false positive rate
-     * @param capacity expected number of elements to be added
+     * @param errorRate 可接受的误判率
+     * @param capacity 预期元素数量
      */
     Mono<Void> init(double errorRate, long capacity);
 
     /**
-     * Initializes Bloom filter
+     * 使用参数对象初始化布隆过滤器。
      *
-     * @param args init args
+     * @param args 初始化参数
      */
     Mono<Void> init(BloomFilterInitArgs args);
 
     /**
-     * Checks for element presence
+     * 检测单个元素是否可能存在。
      *
-     * @param element element
-     *
-     * @return <code>true</code> if element is present
-     *         <code>false</code> if element is not present
+     * @param element 待检测元素
+     * @return 可能存在为 {@code true}，肯定不存在为 {@code false}
      */
     Mono<Boolean> exists(T element);
 
     /**
-     * Checks for elements presence
+     * 批量检测元素是否可能存在。
      *
-     * @param elements elements to check presence
-     *
-     * @return set of elements representing whether each element is present
+     * @param elements 待检测元素集合
+     * @return 各元素是否可能存在的集合
      */
     Mono<Set<T>> exists(Collection<T> elements);
 
     /**
-     * Returns count of present elements
+     * 返回过滤器中可能存在的元素计数。
      *
-     * @return count of present elements
+     * @return 元素计数
      */
     Mono<Long> count();
 
     /**
-     * Returns Bloom filter information
+     * 返回布隆过滤器完整信息。
      *
-     * @return Bloom filter information
+     * @return 过滤器信息对象
      */
     Mono<BloomFilterInfo> getInfo();
 
     /**
-     * Returns specific Bloom filter information
+     * 返回指定选项的布隆过滤器信息值。
      *
-     * @param option information option
-     * @return specific Bloom filter information value
+     * @param option 信息选项
+     * @return 对应信息值
      */
     Mono<Long> getInfo(BloomFilterInfoOption option);
 
     /**
-     * Returns ScanDumpInfo
-     * Requires <b>Redis Bloom 1.0.0 and higher.</b>
+     * 返回扫描导出信息（{@code BF.SCANDUMP}）。
+     * <p>需要 <b>Redis Bloom 1.0.0 及以上</b>；迭代从 0 开始。
      *
-     * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
-     * iteration start from 0
-     *
-     * @return BloomFilterScanDumpInfo
+     * @param iterator 上次 {@code BF.SCANDUMP} 返回的迭代器
+     * @return 扫描导出信息
      */
     Mono<BloomFilterScanDumpInfo> scanDump(long iterator);
 
     /**
-     * Loads chunk
-     * Requires <b>Redis Bloom 1.0.0 and higher.</b>
+     * 加载扫描导出的数据块。
+     * <p>需要 <b>Redis Bloom 1.0.0 及以上</b>。
      *
-     * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
-     * @param data data to load
+     * @param iterator 上次 {@code BF.SCANDUMP} 返回的迭代器
+     * @param data 待加载的数据
      */
     Mono<Void> loadChunk(long iterator, byte[] data);
 }

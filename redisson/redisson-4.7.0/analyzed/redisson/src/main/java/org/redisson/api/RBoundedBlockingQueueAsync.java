@@ -18,37 +18,31 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
+ * 已废弃：请改用带队列大小限制功能的 {@link RReliableQueue}。
  *
  * @author Nikita Koksharov
- * @param <V> the type of elements held in this collection
+ * @param <V> 集合元素类型
  */
 @Deprecated
 public interface RBoundedBlockingQueueAsync<V> extends RBlockingQueueAsync<V> {
 
     /**
-     * Sets queue capacity only if it is not set before.
+     * 仅在尚未设置容量时设置队列容量。
      *
-     * @param capacity - queue capacity
-     * @return <code>true</code> if capacity set successfully
-     *         <code>false</code> if capacity already set
+     * @param capacity 队列容量
+     * @return 设置成功为 {@code true}，容量已存在为 {@code false}
      */
     RFuture<Boolean> trySetCapacityAsync(int capacity);
 
     /**
-     * Inserts the specified element into this queue, waiting up to the
-     * specified wait time if necessary for space to become available.
+     * 异步尝试将元素插入队列；必要时等待至多 {@code timeout} 直至有可用空间。
      *
-     * @param e the element to add
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return {@code true} if successful, or {@code false} if
-     *         the specified waiting time elapses before space is available
-     * @throws ClassCastException if the class of the specified element
-     *         prevents it from being added to this queue
-     * @throws NullPointerException if the specified element is null
+     * @param e 待插入元素
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 插入成功为 {@code true}，超时为 {@code false}
+     * @throws ClassCastException 元素类型不允许加入本队列
+     * @throws NullPointerException 元素为 {@code null}
      */
     RFuture<Boolean> offerAsync(V e, long timeout, TimeUnit unit);
 

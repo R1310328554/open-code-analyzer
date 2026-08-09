@@ -16,20 +16,19 @@
 package org.redisson.api;
 
 /**
- * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
+ * 已废弃：请改用带队列大小限制功能的 {@link RReliableQueue}。
  *
  * @author Nikita Koksharov
- * @param <V> the type of elements held in this collection
+ * @param <V> 集合元素类型
  */
 @Deprecated
 public interface RBoundedBlockingQueue<V> extends RBlockingQueue<V>, RBoundedBlockingQueueAsync<V> {
 
     /**
-     * Sets queue capacity only if it is not set before.
+     * 仅在尚未设置容量时设置队列容量。
      *
-     * @param capacity - queue capacity
-     * @return <code>true</code> if capacity set successfully
-     *         <code>false</code> if capacity already set
+     * @param capacity 队列容量
+     * @return 设置成功为 {@code true}，容量已存在为 {@code false}
      */
     boolean trySetCapacity(int capacity);
     

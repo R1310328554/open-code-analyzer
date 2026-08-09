@@ -25,202 +25,145 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for BlockingQueue object
+ * {@link BlockingQueue} 的响应式 API（Project Reactor）。
  *
  * @author Nikita Koksharov
- * @param <V> the type of elements held in this collection
+ * @param <V> 集合元素类型
  */
 public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
 
     /**
-     * Retrieves and removes first available head element of <b>any</b> queue,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue own.
+     * 响应式地从指定队列集合（含自身）中拉取首个可用队头元素并移除。
      *
-     * @param queueNames - names of queue
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return Mono object with the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param queueNames 候选队列名列表
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 队头元素；超时为 {@code null}
      */
     Mono<V> pollFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Retrieves and removes first available head element of <b>any</b> queue,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue itself.
+     * 从指定队列集合（含自身）中阻塞拉取首个可用队头元素，并返回元素及其来源队列名。
      *
-     * @param queueNames queue names. Queue name itself is always included
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @return the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
+     * @param queueNames 候选队列名（自身始终参与）
+     * @param timeout 最长等待时间
+     * @return 队列名与元素的 {@link Entry}；超时为 {@code null}
+     * @throws InterruptedException 等待被中断时
      */
     Mono<Entry<String, V>> pollFromAnyWithName(Duration timeout, String... queueNames);
 
     /**
-     * Retrieves and removes first available tail element of <b>any</b> queue,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue itself.
+     * 从指定队列集合（含自身）中阻塞拉取首个可用队尾元素，并返回元素及其来源队列名。
      *
-     * @param queueNames queue names. Queue name itself is always included
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @return the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
+     * @param queueNames 候选队列名（自身始终参与）
+     * @param timeout 最长等待时间
+     * @return 队列名与元素的 {@link Entry}；超时为 {@code null}
+     * @throws InterruptedException 等待被中断时
      */
     Mono<Entry<String, V>> pollLastFromAnyWithName(Duration timeout, String... queueNames);
 
 
     /**
-     * Retrieves and removes first available head elements of <b>any</b> queue,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue itself.
+     * 从多个队列（含自身）批量拉取队头元素。
+     * <p>需要 <b>Redis 7.0.0 及以上</b>。
      *
-     * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
-     *
-     * @param duration how long to wait before giving up
-     * @param count elements amount
-     * @param queueNames name of queues
-     * @return the head elements
+     * @param duration 最长等待时间
+     * @param count 每个队列最多拉取数量
+     * @param queueNames 候选队列名
+     * @return 队列名到元素列表的映射
      */
     Mono<Map<String, List<V>>> pollFirstFromAny(Duration duration, int count, String... queueNames) throws InterruptedException;
 
     /**
-     * Retrieves and removes first available tail elements of <b>any</b> queue,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue itself.
+     * 从多个队列（含自身）批量拉取队尾元素。
+     * <p>需要 <b>Redis 7.0.0 及以上</b>。
      *
-     * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
-     *
-     * @param duration how long to wait before giving up
-     * @param count elements amount
-     * @param queueNames name of queues
-     * @return the tail elements
+     * @param duration 最长等待时间
+     * @param count 每个队列最多拉取数量
+     * @param queueNames 候选队列名
+     * @return 队列名到元素列表的映射
      */
     Mono<Map<String, List<V>>> pollLastFromAny(Duration duration, int count, String... queueNames) throws InterruptedException;
 
     /**
-     * Removes at most the given number of available elements from
-     * this queue and adds them to the given collection in async mode.  A failure
-     * encountered while attempting to add elements to
-     * collection {@code c} may result in elements being in neither,
-     * either or both collections when the associated exception is
-     * thrown.  Attempts to drain a queue to itself result in
-     * {@code IllegalArgumentException}. Further, the behavior of
-     * this operation is undefined if the specified collection is
-     * modified while the operation is in progress.
+     * 异步地将本队列中至多 {@code maxElements} 个可用元素移除并转入集合 {@code c}。
+     * <p>向目标集合添加失败时，元素可能留在原队列、目标集合或两者中；
+     * 不可将队列导入自身（否则抛出 {@code IllegalArgumentException}）；
+     * 操作进行中修改目标集合的行为未定义。
      *
-     * @param c the collection to transfer elements into
-     * @param maxElements the maximum number of elements to transfer
-     * @return the number of elements transferred
-     * @throws UnsupportedOperationException if addition of elements
-     *         is not supported by the specified collection
-     * @throws ClassCastException if the class of an element of this queue
-     *         prevents it from being added to the specified collection
-     * @throws NullPointerException if the specified collection is null
-     * @throws IllegalArgumentException if the specified collection is this
-     *         queue, or some property of an element of this queue prevents
-     *         it from being added to the specified collection
+     * @param c 目标集合
+     * @param maxElements 最多转移的元素数量
+     * @return 实际转移的元素数量
+     * @throws UnsupportedOperationException 目标集合不支持添加元素
+     * @throws ClassCastException 元素类型无法加入目标集合
+     * @throws NullPointerException 目标集合为 {@code null}
+     * @throws IllegalArgumentException 目标集合为本队列或元素属性不允许加入
      */
     Mono<Integer> drainTo(Collection<? super V> c, int maxElements);
 
     /**
-     * Removes all available elements from this queue and adds them
-     * to the given collection in async mode.  This operation may be more
-     * efficient than repeatedly polling this queue.  A failure
-     * encountered while attempting to add elements to
-     * collection {@code c} may result in elements being in neither,
-     * either or both collections when the associated exception is
-     * thrown.  Attempts to drain a queue to itself result in
-     * {@code IllegalArgumentException}. Further, the behavior of
-     * this operation is undefined if the specified collection is
-     * modified while the operation is in progress.
+     * 异步地将本队列全部可用元素移除并转入集合 {@code c}；通常比循环 poll 更高效。
+     * <p>向目标集合添加失败时，元素可能留在原队列、目标集合或两者中；
+     * 不可将队列导入自身；操作进行中修改目标集合的行为未定义。
      *
-     * @param c the collection to transfer elements into
-     * @return the number of elements transferred
-     * @throws UnsupportedOperationException if addition of elements
-     *         is not supported by the specified collection
-     * @throws ClassCastException if the class of an element of this queue
-     *         prevents it from being added to the specified collection
-     * @throws NullPointerException if the specified collection is null
-     * @throws IllegalArgumentException if the specified collection is this
-     *         queue, or some property of an element of this queue prevents
-     *         it from being added to the specified collection
+     * @param c 目标集合
+     * @return 实际转移的元素数量
+     * @throws UnsupportedOperationException 目标集合不支持添加元素
+     * @throws ClassCastException 元素类型无法加入目标集合
+     * @throws NullPointerException 目标集合为 {@code null}
+     * @throws IllegalArgumentException 目标集合为本队列或元素属性不允许加入
      */
     Mono<Integer> drainTo(Collection<? super V> c);
 
     /**
-     * Retrieves and removes last available tail element of this queue and adds it at the head of <code>queueName</code>,
-     * waiting up to the specified wait time if necessary for an element to become available.
+     * 从本队列队尾取出元素并插入目标队列队头；必要时阻塞等待。
      *
-     * @param queueName - names of destination queue
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param queueName 目标队列名
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 被移动的元素；超时为 {@code null}
      */
     Mono<V> pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit);
 
     /**
-     * Retrieves and removes the head of this queue in async mode, waiting up to the
-     * specified wait time if necessary for an element to become available.
+     * 异步阻塞地从队头取出并移除元素；必要时等待至多 {@code timeout}。
      *
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 队头元素；超时为 {@code null}
      */
     Mono<V> poll(long timeout, TimeUnit unit);
     
     /**
-     * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,
-     * waiting if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue itself.
+     * 从候选队列（含自身）中阻塞取出队尾元素并插入目标队列队头。
      *
-     * @param queueName - names of destination queue
-     * @return the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param queueName 目标队列名
+     * @return 被移动的元素
      */
     Mono<V> takeLastAndOfferFirstTo(String queueName);
 
     /**
-     * Retrieves and removes the head of this queue in async mode, waiting if necessary
-     * until an element becomes available.
+     * 异步阻塞地从队头取出并移除元素，直至有元素可用。
      *
-     * @return the head of this queue
+     * @return 队头元素
      */
     Mono<V> take();
 
     /**
-     * Inserts the specified element into this queue in async mode, waiting if necessary
-     * for space to become available.
+     * 异步阻塞地将元素插入队列；必要时等待直至有可用空间。
      *
-     * @param e the element to add
-     * @throws ClassCastException if the class of the specified element
-     *         prevents it from being added to this queue
-     * @throws NullPointerException if the specified element is null
-     * @throws IllegalArgumentException if some property of the specified
-     *         element prevents it from being added to this queue
-     * @return void
+     * @param e 待插入元素
+     * @throws ClassCastException 元素类型不允许加入本队列
+     * @throws NullPointerException 元素为 {@code null}
+     * @throws IllegalArgumentException 元素属性不允许加入本队列
      */
     Mono<Void> put(V e);
 
     /**
-     * Retrieves and removes continues stream of elements from the head of this queue.
-     * Waits for next element become available.
-     * 
-     * @return stream of elements
+     * 持续从队头阻塞取元素并移除，形成元素流。
+     * <p>每次等待下一个元素可用后再发射。
+     *
+     * @return 元素流
      */
     Flux<V> takeElements();
     
