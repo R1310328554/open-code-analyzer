@@ -22,9 +22,14 @@ package com.taobao.arthas.compiler;
 
 import java.net.URI;
 
+/**
+ * 封装编译单元对应的类名与 URI，供动态编译器索引源码或 class 资源。
+ */
 public class ClassUriWrapper {
+    /** 类资源 URI（file、jar 内路径等） */
     private final URI uri;
 
+    /** 全限定类名 */
     private final String className;
 
     public ClassUriWrapper(String className, URI uri) {

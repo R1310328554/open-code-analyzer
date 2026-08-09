@@ -9,6 +9,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 基于 ZooKeeper 的 Native Agent 注册实现，使用临时节点表示 Agent 在线状态。
+ *
  * @description: Zookeeper native agent client register implements NativeAgentRegistry
  * @author：flzjkl
  * @date: 2024-07-24 0:01
@@ -16,10 +18,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ZookeeperNativeAgentRegistry implements NativeAgentRegistry {
 
     private static final Logger logger = LoggerFactory.getLogger(ZookeeperNativeAgentRegistry.class);
+    /** 等待 ZK 会话建立完成的闭锁 */
     private static CountDownLatch latch = new CountDownLatch(1);
+    /** 会话超时时间（毫秒） */
     private static final int SESSION_TIMEOUT = 15000;
     public void registerNativeAgent(String address, String k, String v) {
-        // Create zookeeper client
+        // 创建 ZooKeeper 客户端并等待 SyncConnected
         ZooKeeper zk = null;
         AtomicBoolean createResult = new AtomicBoolean(false);
         try {
@@ -42,11 +46,11 @@ public class ZookeeperNativeAgentRegistry implements NativeAgentRegistry {
         }
 
         try {
-            // Create a service node. If the parent node does not exist, create the parent node first
+            // 若父节点不存在则先创建持久父节点
             if (zk.exists(NativeAgentConstants.NATIVE_AGENT_KEY, false) == null) {
                 zk.create(NativeAgentConstants.NATIVE_AGENT_KEY, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
-            // The EPHEMERAL mode is used to create child nodes, which means that the nodes are automatically removed at the end of the session
+            // 以 EPHEMERAL 模式创建子节点，会话结束时会自动删除
             String path = zk.create(NativeAgentConstants.NATIVE_AGENT_KEY + "/" + k, v.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
             logger.info("native agent client registered at: " + path);
         } catch (KeeperException | InterruptedException e) {

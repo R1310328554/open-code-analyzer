@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Native Agent HTTP 业务处理器：根据 JSON 中的 operation 字段分发 listProcess、attachJvm、monitor 等操作。
+ *
  * @description: hello world
  * @author：flzjkl
  * @date: 2024-08-01 7:32
@@ -29,6 +31,9 @@ public class HttpNativeAgentHandler {
     private static final String ATTACH_JVM_OPERATION = "attachJvm";
     private static final String MONITOR_OPERATION = "monitor";
 
+    /**
+     * 解析请求体并按 operation 路由到具体处理方法。
+     */
     public FullHttpResponse handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         String content = request.content().toString(StandardCharsets.UTF_8);
         FullHttpResponse resp = null;
@@ -52,6 +57,7 @@ public class HttpNativeAgentHandler {
         return resp;
     }
 
+    /** 对指定 PID 开启监控，成功返回 pid 字符串，失败返回 "-1" */
     private FullHttpResponse doMonitor(ChannelHandlerContext ctx, FullHttpRequest request, Integer pid) {
         boolean monitorSuccess = MonitorTargetPidHandler.monitorTargetPid(pid);
         String attachSuccessPid = monitorSuccess ? pid + "" : -1 + "";
@@ -59,6 +65,7 @@ public class HttpNativeAgentHandler {
         return response;
     }
 
+    /** 通过 Java Agent attach 目标 JVM，返回 Arthas Server 的 HTTP 端口 */
     private FullHttpResponse doAttachJvm(ChannelHandlerContext ctx, FullHttpRequest request, Integer pid) {
         String httpPort = "";
         try {
@@ -72,6 +79,7 @@ public class HttpNativeAgentHandler {
         return response;
     }
 
+    /** 列出本机 Java 进程，过滤掉无应用名的条目后序列化为 JSON 数组 */
     private FullHttpResponse doListProcess(ChannelHandlerContext ctx, FullHttpRequest request) {
         Map<Long, String> processMap = null;
         try {
@@ -96,6 +104,7 @@ public class HttpNativeAgentHandler {
     }
 
 
+    /** 构造带 CORS 头的 JSON HTTP 200 响应 */
     public DefaultFullHttpResponse buildHttpCorsResponse (String msg) {
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
                 Unpooled.copiedBuffer(msg.getBytes(CharsetUtil.UTF_8)));

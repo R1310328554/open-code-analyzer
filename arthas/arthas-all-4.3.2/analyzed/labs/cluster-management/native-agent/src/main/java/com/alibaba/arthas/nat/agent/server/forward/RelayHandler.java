@@ -11,12 +11,15 @@ import org.slf4j.LoggerFactory;
 
 
 /**
+ * 双向 WebSocket 帧中继：将一端 channel 的入站消息原样写入对端 channel。
+ *
  * @description: RelayHandler
  * @author：flzjkl
  * @date: 2024-08-25 22:12
  */
 public final class RelayHandler extends ChannelInboundHandlerAdapter {
     private final static Logger logger = LoggerFactory.getLogger(RelayHandler.class);
+    /** 对端 channel，与当前 handler 所在 channel 成对转发 */
     private final Channel relayChannel;
 
     public RelayHandler(Channel relayChannel) {

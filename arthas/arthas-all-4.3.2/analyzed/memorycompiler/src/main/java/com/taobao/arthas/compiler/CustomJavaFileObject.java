@@ -30,6 +30,9 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URI;
 
+/**
+ * 基于 URI 的 {@link JavaFileObject} 实现，从 URL 流式读取已有 .class 字节码供编译器使用。
+ */
 public class CustomJavaFileObject implements JavaFileObject {
     private final String className;
     private final URI uri;
@@ -43,6 +46,7 @@ public class CustomJavaFileObject implements JavaFileObject {
         return uri;
     }
 
+    /** 从 URI 对应资源打开输入流读取 class 内容 */
     public InputStream openInputStream() throws IOException {
         return uri.toURL().openStream();
     }

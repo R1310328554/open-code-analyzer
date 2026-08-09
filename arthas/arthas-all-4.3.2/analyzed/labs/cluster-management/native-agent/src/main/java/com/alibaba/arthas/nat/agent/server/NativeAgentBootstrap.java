@@ -34,6 +34,8 @@ import java.util.Arrays;
 import static com.taobao.arthas.common.ArthasConstants.MAX_HTTP_CONTENT_LENGTH;
 
 /**
+ * Arthas Native Agent 启动入口：解析 CLI 参数、注册到服务发现、启动 HTTP 与 WebSocket 服务。
+ *
  * @description: hello world
  * @author：flzjkl
  * @date: 2024-07-20 9:23
@@ -46,12 +48,17 @@ import static com.taobao.arthas.common.ArthasConstants.MAX_HTTP_CONTENT_LENGTH;
 public class NativeAgentBootstrap {
 
     private static final Logger logger = LoggerFactory.getLogger(NativeAgentBootstrap.class);
+    /** 默认 HTTP 管理端口 */
     private static final int DEFAULT_HTTP_PORT = 2671;
+    /** 默认 WebSocket 转发端口 */
     private static final int DEFAULT_WS_PORT = 2672;
+    /** 本机对外 IP，注册到注册中心 */
     public String ip;
     public Integer httpPort;
     public Integer wsPort;
+    /** 注册中心类型，如 etcd、zookeeper */
     public String registrationType;
+    /** 注册中心地址 */
     public String registrationAddress;
 
     @Option(longName = "ip", required = true)
@@ -85,15 +92,15 @@ public class NativeAgentBootstrap {
     }
 
     public static void main(String[] args) {
-        // Print welcome info
+        // 打印欢迎信息
         WelcomeUtil.printNativeAgentWelcomeMsg();
 
-        // Check And Find arthas path
+        // 检查并定位 Arthas 安装目录
         logger.info("check arthas file path...");
         ArthasHomeHandler.findArthasHome();
         logger.info("check arthas file path success");
 
-        // Read bootstrap config
+        // 解析命令行启动参数
         logger.info("read input config...");
         NativeAgentBootstrap nativeAgentBootstrap = new NativeAgentBootstrap();
         CLI cli = CLIConfigurator.define(NativeAgentBootstrap.class);
@@ -108,7 +115,7 @@ public class NativeAgentBootstrap {
         }
         logger.info("read input config success");
 
-        // Register native agent
+        // 向注册中心注册本 Agent 的 IP 与端口
         try {
             logger.info("register native agent ...");
             NativeAgentRegistryFactory nativeAgentRegistryFactory = NativeAgentRegistryFactory.getNativeAgentClientRegisterFactory();
@@ -123,7 +130,7 @@ public class NativeAgentBootstrap {
             System.exit(1);
         }
 
-        // Start the websocket server
+        // 在独立线程中启动 WebSocket 服务，用于转发到本地 Arthas Server
         int wsPortOrDefault = nativeAgentBootstrap.getWsPortOrDefault();
         Thread wsServerThread = new Thread(() -> {
             logger.info("start the websocket server... ws port:" + wsPortOrDefault);
@@ -163,7 +170,7 @@ public class NativeAgentBootstrap {
         wsServerThread.setName("native-agent-ws-server");
         wsServerThread.start();
 
-        // Start the Http server
+        // 启动 HTTP 服务，提供 listProcess、attachJvm 等 REST 接口
         int httpPortOrDefault = nativeAgentBootstrap.getHttpPortOrDefault();
         logger.info("start the http server... http port:" + httpPortOrDefault);
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
@@ -195,6 +202,7 @@ public class NativeAgentBootstrap {
 
     }
 
+    /** 生成 CLI 用法说明文本 */
     private static String usage(CLI cli) {
         StringBuilder usageStringBuilder = new StringBuilder();
         UsageMessageFormatter usageMessageFormatter = new UsageMessageFormatter();
@@ -204,6 +212,7 @@ public class NativeAgentBootstrap {
     }
 
 
+    /** 返回 HTTP 端口，未指定时使用默认值 */
     public int getHttpPortOrDefault() {
         if (this.httpPort == null) {
             return DEFAULT_HTTP_PORT;
@@ -212,6 +221,7 @@ public class NativeAgentBootstrap {
         }
     }
 
+    /** 返回 WebSocket 端口，未指定时使用默认值 */
     public int getWsPortOrDefault() {
         if (this.wsPort == null) {
             return DEFAULT_WS_PORT;

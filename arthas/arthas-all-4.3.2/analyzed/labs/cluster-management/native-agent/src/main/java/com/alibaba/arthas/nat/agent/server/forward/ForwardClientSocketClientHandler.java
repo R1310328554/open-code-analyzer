@@ -22,6 +22,8 @@ import java.net.URISyntaxException;
 
 
 /**
+ * WebSocket 客户端侧处理器：外部 WS 握手完成后，连接本地 Arthas Server 并建立双向转发。
+ *
  * @description: Forward the ws request to arthas server
  * @author：flzjkl
  * @date: 2024-09-07 8:34
@@ -30,6 +32,7 @@ public class ForwardClientSocketClientHandler extends SimpleChannelInboundHandle
 
     private static final Logger logger = LoggerFactory.getLogger(ForwardClientSocketClientHandler.class);
 
+    /** 与本地 Arthas Server 完成 WS 握手的 Future */
     private ChannelPromise handshakeFuture;
 
     @Override
@@ -54,9 +57,12 @@ public class ForwardClientSocketClientHandler extends SimpleChannelInboundHandle
         }
     }
 
+    /**
+     * 连接本机 Arthas Server，握手成功后用 {@link RelayHandler} 替换当前 pipeline 实现透明转发。
+     */
     private void connectLocalServer(final ChannelHandlerContext ctx) throws InterruptedException, URISyntaxException {
         NioEventLoopGroup group = new NioEventLoopGroup();
-        // Create the Bootstrap
+        // 配置出站 WebSocket 客户端 Bootstrap
         Bootstrap bootstrap = new Bootstrap();
         LocalFrameHandler localFrameHandler = new LocalFrameHandler();
         bootstrap.group(group)
@@ -78,7 +84,7 @@ public class ForwardClientSocketClientHandler extends SimpleChannelInboundHandle
                     }
                 });
 
-        // Connect to arthas server
+        // 连接到 attach 后启动的本地 Arthas Server
         Channel arthasChannel = bootstrap.connect("127.0.0.1", NativeAgentConstants.ARTHAS_SERVER_HTTP_PORT).sync().channel();
 
         this.handshakeFuture = localFrameHandler.handshakeFuture();
@@ -93,6 +99,7 @@ public class ForwardClientSocketClientHandler extends SimpleChannelInboundHandle
         });
 
         handshakeFuture.sync();
+        // 客户端侧也切换为 RelayHandler，形成双向管道
         ctx.pipeline().remove(ForwardClientSocketClientHandler.this);
         ctx.pipeline().addLast(new RelayHandler(arthasChannel));
 

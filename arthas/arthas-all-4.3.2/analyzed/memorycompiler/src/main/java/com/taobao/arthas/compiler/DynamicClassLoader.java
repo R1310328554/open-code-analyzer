@@ -24,13 +24,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 内存类加载器：将 {@link DynamicCompiler} 编译产生的字节码注册后按需 defineClass。
+ */
 public class DynamicClassLoader extends ClassLoader {
+    /** 类名到内存字节码的映射 */
     private final Map<String, MemoryByteCode> byteCodes = new HashMap<String, MemoryByteCode>();
 
     public DynamicClassLoader(ClassLoader classLoader) {
         super(classLoader);
     }
 
+    /** 注册一次编译输出的字节码，供后续 findClass 使用 */
     public void registerCompiledSource(MemoryByteCode byteCode) {
         byteCodes.put(byteCode.getClassName(), byteCode);
     }
@@ -45,6 +50,7 @@ public class DynamicClassLoader extends ClassLoader {
         return super.defineClass(name, byteCode.getByteCode(), 0, byteCode.getByteCode().length);
     }
 
+    /** 加载并返回本次编译涉及的全部 Class 对象 */
     public Map<String, Class<?>> getClasses() throws ClassNotFoundException {
         Map<String, Class<?>> classes = new HashMap<String, Class<?>>();
         for (MemoryByteCode byteCode : byteCodes.values()) {
@@ -53,6 +59,7 @@ public class DynamicClassLoader extends ClassLoader {
         return classes;
     }
 
+    /** 返回类名到原始字节数组的副本，不触发 defineClass */
     public Map<String, byte[]> getByteCodes() {
         Map<String, byte[]> result = new HashMap<String, byte[]>(byteCodes.size());
         for (Entry<String, MemoryByteCode> entry : byteCodes.entrySet()) {

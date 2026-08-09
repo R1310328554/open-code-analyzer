@@ -14,9 +14,13 @@ import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 
+/**
+ * 运行时动态 Java 编译器：收集源码单元、调用 javac、通过 {@link DynamicClassLoader} 加载或导出字节码。
+ */
 public class DynamicCompiler {
     private final JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
     private final StandardJavaFileManager standardFileManager;
+    /** 传给 javac 的编译选项（如 -Xlint、-g） */
     private final List<String> options = new ArrayList<String>();
     private final DynamicClassLoader dynamicClassLoader;
 
@@ -45,6 +49,9 @@ public class DynamicCompiler {
         compilationUnits.add(javaFileObject);
     }
 
+    /**
+     * 执行编译并将结果加载为 Class；存在 ERROR 级别诊断时抛出 {@link DynamicCompilerException}。
+     */
     public Map<String, Class<?>> build() {
 
         errors.clear();
@@ -95,6 +102,9 @@ public class DynamicCompiler {
 
     }
 
+    /**
+     * 执行编译并返回字节码 Map，不通过 ClassLoader 定义类（适用于仅需 .class 字节的场景）。
+     */
     public Map<String, byte[]> buildByteCodes() {
 
         errors.clear();

@@ -22,6 +22,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 基于 etcd 的 Native Agent 注册实现，通过租约（lease）维持节点存活。
+ *
  * @description: Etcd native agent register implements NativeAgentRegistry
  * @author：flzjkl
  * @date: 2024-09-13 7:54
@@ -29,15 +31,19 @@ import java.util.concurrent.TimeUnit;
 public class EtcdNativeAgentRegistry implements NativeAgentRegistry {
 
     private static final Logger logger = LoggerFactory.getLogger(EtcdNativeAgentRegistry.class);
+    /** KV 读写操作的超时时间（秒） */
     private final int TIME_OUT_SECONDS = 5;
+    /** 连接 etcd 的超时时间（秒） */
     private static final int CONNECTION_TIME_OUT_SECONDS = 5;
+    /** 租约 TTL（秒），到期后需 keepAlive 续期 */
     private final int LEASE_SECONDS = 20;
 
+    /** 用于等待 etcd 连接就绪的闭锁 */
     private static CountDownLatch latch = new CountDownLatch(1);
 
     @Override
     public void registerNativeAgent(String address, String k, String v) {
-        // Etcd client
+        // 创建 etcd 客户端并验证连通性
         Client client = null;
         client = Client.builder().endpoints("http://" + address).connectTimeout(Duration.ofSeconds(CONNECTION_TIME_OUT_SECONDS)).build();
         KV kvClient = client.getKVClient();
@@ -52,7 +58,7 @@ public class EtcdNativeAgentRegistry implements NativeAgentRegistry {
             throw new RuntimeException(e);
         }
 
-        // Create lease
+        // 申请租约，使注册节点随 Agent 存活而自动续期
         Lease leaseClient = null;
         LeaseGrantResponse leaseGrantResponse = null;
         try {
@@ -63,6 +69,7 @@ public class EtcdNativeAgentRegistry implements NativeAgentRegistry {
             throw new RuntimeException(e);
         }
         long leaseId = leaseGrantResponse.getID();
+        // 后台持续续租，防止 key 因 TTL 到期被删除
         leaseClient.keepAlive(leaseId, new StreamObserver<LeaseKeepAliveResponse>() {
             @Override
             public void onNext(LeaseKeepAliveResponse response) {
@@ -80,7 +87,7 @@ public class EtcdNativeAgentRegistry implements NativeAgentRegistry {
             }
         });
 
-        // Register native agent client synchronously
+        // 同步写入 Native Agent 的 IP 与端口信息，并绑定租约
         try {
             ByteSequence key = ByteSequence.from(NativeAgentConstants.NATIVE_AGENT_KEY + "/" + k, StandardCharsets.UTF_8);
             ByteSequence value = ByteSequence.from(v, StandardCharsets.UTF_8);

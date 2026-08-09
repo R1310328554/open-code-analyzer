@@ -10,12 +10,15 @@ import org.slf4j.LoggerFactory;
 
 
 /**
+ * 本地 WebSocket 客户端握手阶段的占位处理器，用于感知握手完成事件。
+ *
  * @description: LocalFrameHandler
  * @author：flzjkl
  * @date: 2024-08-25 22:12
  */
 public class LocalFrameHandler extends SimpleChannelInboundHandler<WebSocketFrame> {
     private final static Logger logger = LoggerFactory.getLogger(LocalFrameHandler.class);
+    /** 握手结果 Promise，供 {@link ForwardClientSocketClientHandler} 等待 */
     private ChannelPromise handshakeFuture;
 
     public LocalFrameHandler() {

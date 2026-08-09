@@ -9,6 +9,8 @@ import io.netty.handler.codec.http.*;
 import java.net.URI;
 
 /**
+ * HTTP 请求入口：处理 OPTIONS 预检与 POST /api/native-agent 业务请求。
+ *
  * @description: HttpRequestHandler
  * @author：flzjkl
  * @date: 2024-07-20 10:09
@@ -25,6 +27,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         HttpMethod method = request.method();
         FullHttpResponse resp = null;
 
+        // 浏览器跨域预检
         if (HttpMethod.OPTIONS.equals(method)) {
             resp = httpOptionRequestHandler.handleOptionsRequest(ctx, request);
         }
