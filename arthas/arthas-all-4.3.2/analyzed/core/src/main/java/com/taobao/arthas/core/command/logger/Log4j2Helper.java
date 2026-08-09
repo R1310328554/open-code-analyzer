@@ -20,12 +20,17 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 /**
- * 
- * @author hengyunabc 2019-09-20
+ * Log4j2 日志框架辅助类：在目标 ClassLoader 内动态查询 logger 配置并修改级别。
+ * <p>
+ * 由 {@link LoggerCommand} 通过 ASM 重命名后注入到应用 ClassLoader 执行；
+ * 静态块检测当前 ClassLoader 是否真正加载了 log4j-core，避免误判上游依赖。
  *
+ * @author hengyunabc 2019-09-20
  */
 public class Log4j2Helper {
+    /** 当前 ClassLoader 是否可用 Log4j2（与 Arthas 同层加载 log4j-core） */
     private static boolean Log4j2 = false;
+    /** 反射读取 LoggerConfig 内部 config 字段，用于输出配置对象信息 */
     private static Field configField = null;
 
     static {
@@ -46,10 +51,12 @@ public class Log4j2Helper {
         }
     }
 
+    /** 判断字符串非 null 且非空 */
     public static boolean hasLength(String str) {
         return (str != null && !str.isEmpty());
     }
 
+    /** 按名称获取 LoggerConfig，空名或 ROOT 统一映射为根 logger */
     private static LoggerConfig getLoggerConfig(String name) {
         if (!hasLength(name) || LoggerConfig.ROOT.equalsIgnoreCase(name)) {
             name = LogManager.ROOT_LOGGER_NAME;
@@ -57,10 +64,15 @@ public class Log4j2Helper {
         return getLoggerContext().getConfiguration().getLoggers().get(name);
     }
 
+    /** 获取当前 JVM 绑定的 Log4j2 LoggerContext */
     private static LoggerContext getLoggerContext() {
         return (LoggerContext) LogManager.getContext(false);
     }
 
+    /**
+     * 更新指定 logger 的级别；不存在则新建 LoggerConfig。
+     * @return true 成功，null 表示未启用 Log4j2，null level 表示级别名非法
+     */
     public static Boolean updateLevel(String loggerName, String logLevel) {
         if (Log4j2) {
             Level level = Level.getLevel(logLevel.toUpperCase());
@@ -80,6 +92,11 @@ public class Log4j2Helper {
         return null;
     }
 
+    /**
+     * 收集 logger 信息映射，外层 key 为 logger 名，内层为 {@link LoggerHelper} 字段键值。
+     * @param name 指定 logger 名，null/空则枚举全部
+     * @param includeNoAppender 是否包含无 appender 的 logger
+     */
     public static Map<String, Map<String, Object>> getLoggers(String name, boolean includeNoAppender) {
         Map<String, Map<String, Object>> loggerInfoMap = new HashMap<String, Map<String, Object>>();
         if (!Log4j2) {
@@ -118,6 +135,7 @@ public class Log4j2Helper {
         return loggerInfoMap;
     }
 
+    /** 反射读取 LoggerConfig 私有 config 字段，失败返回 null */
     private static Object getConfigField(LoggerConfig loggerConfig) {
         try {
             if (configField != null) {
@@ -129,6 +147,7 @@ public class Log4j2Helper {
         return null;
     }
 
+    /** 将单个 LoggerConfig 转为 JSON 友好的 Map（级别、追加器、类来源等） */
     private static Map<String, Object> doGetLoggerInfo(LoggerConfig loggerConfig) {
         Map<String, Object> info = new HashMap<String, Object>();
 
@@ -160,6 +179,7 @@ public class Log4j2Helper {
         return info;
     }
 
+    /** 提取 logger 绑定的 appender 列表，区分 File/Console/Async 类型 */
     private static List<Map<String, Object>> doGetLoggerAppenders(LoggerConfig loggerConfig) {
         List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
 
@@ -188,6 +208,7 @@ public class Log4j2Helper {
         return result;
     }
 
+    /** null 或空串判定 */
     private static boolean isEmpty(Object str) {
         return str == null || "".equals(str);
     }

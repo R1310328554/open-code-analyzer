@@ -3,17 +3,20 @@ package com.taobao.arthas.core.command.model;
 import java.lang.management.ThreadInfo;
 
 /**
- * Thread blocking lock info, extract from ThreadUtil.
+ * 线程阻塞锁信息：描述某把锁的持有者及等待该锁的线程数量。
+ * <p>
+ * 从 {@link com.taobao.arthas.core.util.ThreadUtil} 提取，供 thread -b 等
+ * 阻塞分析命令组装 {@link BusyThreadInfo} 时使用。
  *
  * @author gongdewei 2020/7/14
  */
 public class BlockingLockInfo {
 
-    // the thread info that is holing this lock.
+    /** 当前持有该锁的线程信息 */
     private ThreadInfo threadInfo = null;
-    // the associated LockInfo object
+    /** 锁对象的 identityHashCode，用于关联 MonitorInfo */
     private int lockIdentityHashCode = 0;
-    // the number of thread that is blocked on this lock
+    /** 阻塞等待该锁的线程数量 */
     private int blockingThreadCount = 0;
 
     public BlockingLockInfo() {

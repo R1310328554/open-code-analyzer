@@ -16,12 +16,16 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 /**
- * 
- * @author hengyunabc 2019-09-06
+ * Log4j 1.x 日志框架辅助类：查询 logger 与 appender 信息，并动态修改级别。
+ * <p>
+ * 注入到目标 ClassLoader 后操作 {@link org.apache.log4j.LogManager}；
+ * 通过 AsyncAppender.class 资源存在性区分真实 log4j 与 slf4j-over-log4j 桥接。
  *
+ * @author hengyunabc 2019-09-06
  */
 public class Log4jHelper {
 
+    /** 当前 ClassLoader 是否加载了可用的 Log4j 1.x */
     private static boolean Log4j = false;
 
     static {
@@ -35,6 +39,10 @@ public class Log4jHelper {
         }
     }
 
+    /**
+     * 设置 logger 级别；logger 不存在时尝试匹配根 logger。
+     * @return true/false 表示是否找到并更新，null 表示 Log4j 不可用
+     */
     public static Boolean updateLevel(String name, String level) {
         if (Log4j) {
             Level l = Level.toLevel(level, Level.ERROR);
@@ -54,6 +62,7 @@ public class Log4jHelper {
         return null;
     }
 
+    /** 按名称或全量枚举 logger，可选过滤无 appender 的条目 */
     public static Map<String, Map<String, Object>> getLoggers(String name, boolean includeNoAppender) {
         Map<String, Map<String, Object>> loggerInfoMap = new HashMap<String, Map<String, Object>>();
         if (!Log4j) {
@@ -102,6 +111,7 @@ public class Log4jHelper {
         return loggerInfoMap;
     }
 
+    /** 组装单个 Log4j Logger 的元数据（级别、有效级别、追加器链等） */
     private static Map<String, Object> doGetLoggerInfo(Logger logger) {
         Map<String, Object> info = new HashMap<String, Object>();
         info.put(LoggerHelper.name, logger.getName());
@@ -126,6 +136,7 @@ public class Log4jHelper {
         return info;
     }
 
+    /** 递归展开 appender 枚举，AsyncAppender 会展开其引用的子 appender */
     private static List<Map<String, Object>> doGetLoggerAppenders(Enumeration<Appender> appenders) {
         List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
 

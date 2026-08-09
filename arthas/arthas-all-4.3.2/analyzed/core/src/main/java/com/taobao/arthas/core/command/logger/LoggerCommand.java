@@ -32,7 +32,10 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * logger command
+ * logger 命令：查看各 ClassLoader 下的日志框架配置，或动态调整 logger 级别。
+ * <p>
+ * 支持 Log4j 1.x、Logback、Log4j2；Helper 类字节码经 ASM 重命名后注入目标 ClassLoader，
+ * 避免与宿主应用类冲突。可通过 -c 指定 ClassLoader 哈希，--name/--level 修改级别。
  *
  * @author hengyunabc 2019-09-04
  */
@@ -49,13 +52,16 @@ import com.taobao.middleware.cli.annotations.Summary;
 public class LoggerCommand extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(LoggerCommand.class);
 
+    /** 各 Helper 类原始 .class 字节，供 ASM 重命名后 defineClass */
     private static byte[] LoggerHelperBytes;
     private static byte[] Log4jHelperBytes;
     private static byte[] LogbackHelperBytes;
     private static byte[] Log4j2HelperBytes;
 
+    /** Helper 类型到字节码的映射，注入时按类型取码 */
     private static Map<Class<?>, byte[]> classToBytesMap = new HashMap<Class<?>, byte[]>();
 
+    /** Arthas 自身 ClassLoader 哈希，拼入重命名后的 Helper 类名保证唯一 */
     private static String arthasClassLoaderHash = ClassLoaderUtils
             .classLoaderHash(LoggerCommand.class.getClassLoader());
 
@@ -71,16 +77,18 @@ public class LoggerCommand extends AnnotatedCommand {
         classToBytesMap.put(Log4j2Helper.class, Log4j2HelperBytes);
     }
 
+    /** 目标 logger 名称，与 level 同时指定时走修改级别分支 */
     private String name;
 
+    /** 目标 ClassLoader 哈希（-c） */
     private String hashCode;
+    /** 按类名反查 ClassLoader（--classLoaderClass） */
     private String classLoaderClass;
 
+    /** 要设置的日志级别字符串 */
     private String level;
 
-    /**
-     * include the loggers which don't have appenders, default false.
-     */
+    /** 列表模式下是否包含未绑定 appender 的 logger，默认 false */
     private boolean includeNoAppender;
 
     @Option(shortName = "n", longName = "name")
@@ -145,6 +153,7 @@ public class LoggerCommand extends AnnotatedCommand {
         }
     }
 
+    /** 修改指定 ClassLoader 内各日志框架的 logger 级别 */
     public void level(CommandProcess process) {
         Instrumentation inst = process.session().getInstrumentation();
         boolean result = false;
@@ -201,6 +210,7 @@ public class LoggerCommand extends AnnotatedCommand {
         }
     }
 
+    /** 扫描已加载类，按 ClassLoader 聚合并输出 logger 配置信息 */
     public void loggers(CommandProcess process) {
         Map<ClassLoader, LoggerTypes> classLoaderLoggerMap = new LinkedHashMap<ClassLoader, LoggerTypes>();
 
@@ -247,6 +257,7 @@ public class LoggerCommand extends AnnotatedCommand {
         process.end();
     }
 
+    /** 在指定 ClassLoader 已加载类中识别 LOG4J/LOGBACK/LOG4J2 类型 */
     private LoggerTypes findLoggerTypes(Instrumentation inst, ClassLoader classLoader) {
         LoggerTypes loggerTypes = new LoggerTypes();
         for (Class<?> clazz : inst.getAllLoadedClasses()) {
@@ -257,6 +268,7 @@ public class LoggerCommand extends AnnotatedCommand {
         return loggerTypes;
     }
 
+    /** 根据标志性类名及 companion 资源判断真实日志实现，排除桥接包误判 */
     private void updateLoggerType(LoggerTypes loggerTypes, ClassLoader classLoader, String className) {
         if ("org.apache.log4j.Logger".equals(className)) {
             // 判断 org.apache.log4j.AsyncAppender 是否存在，如果存在则是 log4j，不是slf4j-over-log4j
@@ -286,6 +298,10 @@ public class LoggerCommand extends AnnotatedCommand {
         }
     }
 
+    /**
+     * 在目标 ClassLoader 加载或定义重命名后的 Helper 类。
+     * 类名 = 原名 + arthasHash + targetLoaderHash，避免多 ClassLoader 冲突。
+     */
     private static Class<?> helperClassNameWithClassLoader(ClassLoader classLoader, Class<?> helperClass) {
         String classLoaderHash = ClassLoaderUtils.classLoaderHash(classLoader);
         String className = helperClass.getName();
@@ -308,6 +324,7 @@ public class LoggerCommand extends AnnotatedCommand {
     }
 
     @SuppressWarnings("unchecked")
+    /** 反射调用 Helper.getLoggers，并补充 classLoader/classLoaderHash 到 JSON 输出 */
     private Map<String, Map<String, Object>> loggerInfo(ClassLoader classLoader, Class<?> helperClass) {
         Map<String, Map<String, Object>> loggers = Collections.emptyMap();
 
@@ -343,16 +360,19 @@ public class LoggerCommand extends AnnotatedCommand {
         return classLoader == null ? null : classLoader.toString();
     }
 
+    /** 反射调用 Helper.updateLevel(name, level) */
     private Boolean updateLevel(Instrumentation inst, ClassLoader classLoader, Class<?> helperClass) throws Exception {
         Class<?> clazz = helperClassNameWithClassLoader(classLoader, helperClass);
         Method updateLevelMethod = clazz.getMethod("updateLevel", new Class<?>[]{String.class, String.class});
         return (Boolean) updateLevelMethod.invoke(null, new Object[]{this.name, this.level});
     }
 
+    /** 目标 ClassLoader 内检测到的日志框架类型 */
     static enum LoggerType {
         LOG4J, LOGBACK, LOG4J2
     }
 
+    /** 某 ClassLoader 可能同时存在多种日志实现时的类型集合 */
     static class LoggerTypes {
         Set<LoggerType> types = new HashSet<LoggerType>();
 
@@ -369,6 +389,7 @@ public class LoggerCommand extends AnnotatedCommand {
         }
     }
 
+    /** 从 Arthas ClassLoader 读取 Helper 的 .class 资源字节 */
     private static byte[] loadClassBytes(Class<?> clazz) {
         try {
             InputStream stream = LoggerCommand.class.getClassLoader()

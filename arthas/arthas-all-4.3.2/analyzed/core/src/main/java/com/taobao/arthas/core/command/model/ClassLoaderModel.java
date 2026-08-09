@@ -9,34 +9,49 @@ import java.util.Map;
 import java.util.Collection;
 
 /**
+ * classloader 命令的统一结果模型，按子命令填充不同字段组合。
+ * <p>
+ * 支持 -l 列表、-t 树形、统计、URL 与类加载明细等多种输出模式；
+ * type 固定为 "classloader"。
+ *
  * @author gongdewei 2020/4/21
  */
 public class ClassLoaderModel extends ResultModel {
 
+    /** 按 pattern 匹配的类集合（classloader 查类） */
     private ClassSetVO classSet;
+    /** getResources 结果路径列表 */
     private List<String> resources;
+    /** 单个类的加载详情 */
     private ClassDetailVO loadClass;
+    /** ClassLoader 的 URL classpath 列表 */
     private List<String> urls;
-    //classloader -l -t
+    /** classloader -l / -t：ClassLoader 列表或树节点 */
     private List<ClassLoaderVO> classLoaders;
+    /** 是否为树形结构输出 */
     private Boolean tree;
 
+    /** 按名称聚合的 ClassLoader 统计信息 */
     private Map<String, ClassLoaderStat> classLoaderStats;
 
+    /** 按类名匹配到的多个 ClassLoader（需用户再指定 -c） */
     private Collection<ClassLoaderVO> matchedClassLoaders;
+    /** 用于匹配 ClassLoader 的类名 */
     private String classLoaderClass;
 
-    //urls stat
+    /** URL 维度统计：ClassLoader → URL 加载统计 */
     private Map<ClassLoaderVO, ClassLoaderUrlStat> urlStats;
 
-    // url->classes stat
+    /** 指定 ClassLoader 下 URL→已加载类 统计 */
     private ClassLoaderVO classLoader;
     private List<UrlClassStat> urlClassStats;
+    /** 是否输出 URL 类统计明细 */
     private Boolean urlClassStatsDetail;
 
     public ClassLoaderModel() {
     }
 
+    /** 结果类型标识 "classloader" */
     @Override
     public String getType() {
         return "classloader";

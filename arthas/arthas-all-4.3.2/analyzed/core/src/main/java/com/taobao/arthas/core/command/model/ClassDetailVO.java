@@ -1,27 +1,47 @@
 package com.taobao.arthas.core.command.model;
 
 /**
- * Class detail VO
+ * 类详细信息视图，扩展 {@link ClassVO} 包含修饰符、继承关系、字段与注解等。
+ * <p>
+ * 由 sc -d、classloader 等命令填充，供 JSON 输出与 Web 控制台展示。
+ *
  * @author gongdewei 2020/4/8
  */
 public class ClassDetailVO extends ClassVO {
 
+    /** 类概要描述字符串（类似 javap -verbose 摘要） */
     private String classInfo;
+    /** 类定义来源（jar 路径等） */
     private String codeSource;
+    /** 是否为 interface */
     private boolean isInterface;
+    /** 是否为 annotation 类型 */
     private boolean isAnnotation;
+    /** 是否为 enum */
     private boolean isEnum;
+    /** 是否为匿名类 */
     private boolean isAnonymousClass;
+    /** 是否为数组类型 */
     private boolean isArray;
+    /** 是否为局部类 */
     private boolean isLocalClass;
+    /** 是否为成员内部类 */
     private boolean isMemberClass;
+    /** 是否为基本类型 */
     private boolean isPrimitive;
+    /** 是否为合成类（编译器生成） */
     private boolean isSynthetic;
+    /** 简单类名 */
     private String simpleName;
+    /** 访问修饰符字符串（public final 等） */
     private String modifier;
+    /** 类级别注解名列表 */
     private String[] annotations;
+    /** 直接实现的接口名 */
     private String[] interfaces;
+    /** 父类/超类链 */
     private String[] superClass;
+    /** 字段详情列表 */
     private FieldVO[] fields;
 
     public String getClassInfo() {

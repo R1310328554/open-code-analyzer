@@ -22,14 +22,20 @@ import ch.qos.logback.core.FileAppender;
 import ch.qos.logback.core.pattern.PatternLayoutBase;
 
 /**
- * 
- * @author hengyunabc 2019-09-06
+ * Logback 日志框架辅助类：通过 SLF4J 获取 {@link LoggerContext} 并读写 logger 级别。
+ * <p>
+ * 静态初始化确认 logback-classic 与 Arthas 同 ClassLoader 加载；
+ * 预反射 PatternLayoutBase、ThrowableProxyConverter 字段供后续诊断扩展。
  *
+ * @author hengyunabc 2019-09-06
  */
 public class LogbackHelper {
 
+    /** 当前环境是否可用 Logback */
     private static boolean Logback = false;
+    /** 预留反射字段：布局头节点、异常栈长度选项 */
     private static Field headField, lengthOptionField;
+    /** 缓存的 SLF4J LoggerFactory，须为 LoggerContext 实例 */
     private static ILoggerFactory loggerFactoryInstance;
 
     static {
@@ -56,6 +62,7 @@ public class LogbackHelper {
         }
     }
 
+    /** 在 LoggerContext 中查找 logger 并设置级别，未找到返回 false */
     public static Boolean updateLevel(String name, String level) {
         if (Logback) {
             try {
@@ -75,6 +82,7 @@ public class LogbackHelper {
         return null;
     }
 
+    /** 查询单个或全部 logback logger，LinkedHashMap 保持遍历顺序 */
     public static Map<String, Map<String, Object>> getLoggers(String name, boolean includeNoAppender) {
         Map<String, Map<String, Object>> loggerInfoMap = new LinkedHashMap<String, Map<String, Object>>();
 
@@ -107,6 +115,7 @@ public class LogbackHelper {
         return loggerInfoMap;
     }
 
+    /** 提取 logback Logger 的名称、级别、追加器及类加载来源 */
     private static Map<String, Object> doGetLoggerInfo(Logger logger) {
         Map<String, Object> info = new LinkedHashMap<String, Object>();
         info.put(LoggerHelper.name, logger.getName());
@@ -130,6 +139,7 @@ public class LogbackHelper {
         return info;
     }
 
+    /** 遍历 appender 迭代器，AsyncAppender 展开 ref 列表并记录 blocking 状态 */
     @SuppressWarnings("rawtypes")
     private static List<Map<String, Object>> doGetLoggerAppenders(Iterator<Appender<ILoggingEvent>> appenders) {
         List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();

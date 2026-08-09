@@ -9,9 +9,13 @@ import java.util.List;
  */
 public class ClassLoaderMetaspaceModel extends ResultModel {
 
+    /** 各 ClassLoader 的 Metaspace 占用行数据 */
     private List<Row> rows;
+    /** 采样总时长（毫秒） */
     private long durationMillis;
+    /** 采样间隔（毫秒） */
     private long periodMillis;
+    /** 是否输出 verbose 明细 */
     private boolean verbose;
 
     @Override
@@ -55,14 +59,23 @@ public class ClassLoaderMetaspaceModel extends ResultModel {
         return this;
     }
 
+    /** 单个 ClassLoader 在 Metaspace 中的一行统计 */
     public static class Row {
+        /** ClassLoader 描述名 */
         private String name;
+        /** ClassLoader 哈希 */
         private String hash;
+        /** 加载器类型（如 sun.misc.Launcher$AppClassLoader） */
         private String type;
+        /** ClassLoaderData 结构占用（字节） */
         private long classLoaderData;
+        /** 已加载类数量 */
         private long classCount;
+        /** Metaspace Chunk 大小 */
         private long chunkSize;
+        /** Metaspace Block 大小 */
         private long blockSize;
+        /** 隐藏 Block 占用（JVM 内部结构） */
         private long hiddenBlockSize;
 
         public String getName() {
