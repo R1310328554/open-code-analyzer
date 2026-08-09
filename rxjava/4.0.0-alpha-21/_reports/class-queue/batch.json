@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:29:38Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/processors/FlowableProcessor.java",
-    "src/main/java/io/reactivex/rxjava4/processors/SerializedProcessor.java",
-    "src/main/java/io/reactivex/rxjava4/processors/package-info.java",
-    "src/main/java/io/reactivex/rxjava4/schedulers/BlockingScheduler.java",
-    "src/main/java/io/reactivex/rxjava4/schedulers/SchedulerRunnableIntrospection.java",
-    "src/main/java/io/reactivex/rxjava4/schedulers/TestScheduler.java",
-    "src/main/java/io/reactivex/rxjava4/schedulers/Timed.java",
-    "src/main/java/io/reactivex/rxjava4/schedulers/package-info.java",
-    "src/main/java/io/reactivex/rxjava4/subjects/AsyncSubject.java",
-    "src/main/java/io/reactivex/rxjava4/subjects/CompletableSubject.java",
-    "src/main/java/io/reactivex/rxjava4/subjects/MaybeSubject.java",
-    "src/main/java/io/reactivex/rxjava4/subjects/PublishSubject.java",
-    "src/main/java/io/reactivex/rxjava4/subjects/SerializedSubject.java",
-    "src/main/java/io/reactivex/rxjava4/subjects/SingleSubject.java",
-    "src/main/java/io/reactivex/rxjava4/subjects/Subject.java",
     "src/main/java/io/reactivex/rxjava4/subjects/package-info.java",
     "src/main/java/io/reactivex/rxjava4/subscribers/DefaultSubscriber.java",
     "src/main/java/io/reactivex/rxjava4/subscribers/DisposableSubscriber.java",
@@ -33,5 +18,5 @@
     "src/jmh/java/io/reactivex/rxjava4/core/FlatMapJustPerf.java"
   ],
   "remaining_pending": 122,
-  "done": 825
+  "done": 840
 }
