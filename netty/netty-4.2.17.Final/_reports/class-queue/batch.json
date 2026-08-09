@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:37:12Z",
-  "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpResponse.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpResponseDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpResponseEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpResponseStatus.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpScheme.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpServerCodec.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpServerExpectContinueHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpServerKeepAliveHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpServerUpgradeHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpStatusClass.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpVersion.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/InvalidChunkExtensionException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/InvalidChunkTerminationException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/InvalidLineSeparatorException.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1478,
-  "done": 435
+  "done": 450
 }
