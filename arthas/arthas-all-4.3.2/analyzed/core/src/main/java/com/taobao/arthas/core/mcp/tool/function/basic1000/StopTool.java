@@ -12,8 +12,15 @@ import java.util.Map;
 import static com.taobao.arthas.core.mcp.tool.function.StreamableToolUtils.createCompletedResponse;
 import static com.taobao.arthas.core.mcp.tool.function.StreamableToolUtils.createErrorResponse;
 
+/**
+ * Stop MCP Tool：安全关闭 Arthas Agent。
+ * <p>
+ * 对应 Arthas {@code stop} 命令；为避免 MCP 客户端收不到响应，
+ * 先同步返回 JSON 结果，再在后台守护线程延迟执行实际 stop。
+ */
 public class StopTool extends AbstractArthasTool {
 
+    /** 默认延迟关闭毫秒数，给 MCP 响应留出传输时间 */
     public static final int DEFAULT_SHUTDOWN_DELAY_MS = 1000;
 
     @Tool(
@@ -27,6 +34,7 @@ public class StopTool extends AbstractArthasTool {
         try {
             int shutdownDelayMs = getDefaultValue(delayMs, DEFAULT_SHUTDOWN_DELAY_MS);
 
+            // 非流式上下文：stop 只需一次性 JSON 响应
             ToolExecutionContext execContext = new ToolExecutionContext(toolContext, false);
             scheduleStop(execContext, shutdownDelayMs);
 
@@ -42,10 +50,12 @@ public class StopTool extends AbstractArthasTool {
         }
     }
 
+    /** 启动守护线程：可选 sleep 后同步执行 stop 命令 */
     private void scheduleStop(ToolExecutionContext execContext, int delayMs) {
         Object authSubject = execContext.getAuthSubject();
         String userId = execContext.getUserId();
 
+        // 后台线程持有认证上下文，确保 stop 命令权限与调用方一致
         Thread shutdownThread = new Thread(() -> {
             try {
                 if (delayMs > 0) {
@@ -62,6 +72,7 @@ public class StopTool extends AbstractArthasTool {
                 logger.error("Error executing stop command in background thread", t);
             }
         }, "arthas-mcp-stop");
+        // 守护线程：JVM 退出时不阻塞进程结束
         shutdownThread.setDaemon(true);
         shutdownThread.start();
     }

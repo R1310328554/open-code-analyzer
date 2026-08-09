@@ -5,9 +5,17 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * MBean MCP Tool：查询或周期性监控 JMX MBean 属性。
+ * <p>
+ * 对应 {@code mbean} 命令；支持名称/属性通配或正则（-E）、元数据模式（-m）
+ * 以及 -i/-n 控制的属性值刷新。
+ */
 public class MBeanTool extends AbstractArthasTool {
 
+    /** 默认属性刷新次数 */
     public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 1;
+    /** 默认属性刷新间隔（毫秒） */
     public static final int DEFAULT_REFRESH_INTERVAL_MS = 3000;
 
     /**
@@ -45,6 +53,7 @@ public class MBeanTool extends AbstractArthasTool {
 
             ToolContext toolContext
     ) {
+        // 仅当显式指定间隔或次数时才附加 -i/-n（元数据模式除外）
         boolean needStreamOutput = (intervalMs != null && intervalMs > 0) || (numberOfExecutions != null && numberOfExecutions > 0);
         
         int interval = getDefaultValue(intervalMs, DEFAULT_REFRESH_INTERVAL_MS);
@@ -55,7 +64,7 @@ public class MBeanTool extends AbstractArthasTool {
         addFlag(cmd, "-m", metadata);
         addFlag(cmd, "-E", regex);
         
-        // 只有在需要流式输出且不是查看元数据时才添加 -i 和 -n 参数
+        // 查看元数据（-m）时不需要周期性刷新参数
         if (needStreamOutput && !Boolean.TRUE.equals(metadata)) {
             cmd.append(" -i ").append(interval);
             cmd.append(" -n ").append(execCount);

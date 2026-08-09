@@ -5,6 +5,11 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * SysEnv MCP Tool：查看操作系统环境变量。
+ * <p>
+ * 对应 {@code sysenv} 命令；不传 envName 时列出全部，否则返回单个变量值。
+ */
 public class SysEnvTool extends AbstractArthasTool {
 
     @Tool(
@@ -17,6 +22,7 @@ public class SysEnvTool extends AbstractArthasTool {
             ToolContext toolContext
     ) {
         StringBuilder cmd = buildCommand("sysenv");
+        // 可选单个环境变量名；省略则 dump 全部
         if (envName != null && !envName.trim().isEmpty()) {
             cmd.append(" ").append(envName.trim());
         }

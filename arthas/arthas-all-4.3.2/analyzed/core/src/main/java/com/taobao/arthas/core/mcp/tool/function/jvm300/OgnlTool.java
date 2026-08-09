@@ -5,6 +5,12 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * OGNL MCP Tool：在目标 JVM 上下文中执行 OGNL 表达式。
+ * <p>
+ * 对应 {@code ognl} 命令；可指定 ClassLoader 与结果展开深度（-x）。
+ * 常用于动态查看对象属性或调用方法（需开启 unsafe 等选项时谨慎使用）。
+ */
 public class OgnlTool extends AbstractArthasTool {
 
     @Tool(
@@ -34,6 +40,7 @@ public class OgnlTool extends AbstractArthasTool {
             addParameter(cmd, "--classLoaderClass", classLoaderClass);
         }
 
+        // -x 控制返回对象属性遍历深度，默认由命令侧为 1
         if (expandLevel != null && expandLevel > 0) {
             cmd.append(" -x ").append(expandLevel);
         }

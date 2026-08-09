@@ -5,6 +5,11 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * GetStatic MCP Tool：读取指定类的静态字段值。
+ * <p>
+ * 对应 {@code getstatic} 命令；可选 ClassLoader（hash 或类名）与 OGNL 后处理表达式。
+ */
 public class GetStaticTool extends AbstractArthasTool {
 
 
@@ -32,6 +37,7 @@ public class GetStaticTool extends AbstractArthasTool {
     ) {
         StringBuilder cmd = buildCommand("getstatic");
 
+        // ClassLoader 指定：hash 优先于完整类名
         if (classLoaderHash != null && !classLoaderHash.trim().isEmpty()) {
             addParameter(cmd, "-c", classLoaderHash);
         } else if (classLoaderClass != null && !classLoaderClass.trim().isEmpty()) {
@@ -41,6 +47,7 @@ public class GetStaticTool extends AbstractArthasTool {
         addParameter(cmd, className);
         addParameter(cmd, fieldName);
 
+        // 可选 OGNL：对静态字段值进一步求值或展开
         if (ognlExpression != null && !ognlExpression.trim().isEmpty()) {
             cmd.append(" ").append(ognlExpression.trim());
         }

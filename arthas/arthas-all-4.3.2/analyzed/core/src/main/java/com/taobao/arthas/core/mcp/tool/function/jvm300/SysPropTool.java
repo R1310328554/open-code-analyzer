@@ -5,6 +5,11 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * SysProp MCP Tool：查看或修改 JVM 系统属性（-D）。
+ * <p>
+ * 对应 {@code sysprop} 命令；仅 propertyName 为查看，同时传 value 则尝试更新。
+ */
 public class SysPropTool extends AbstractArthasTool {
 
     @Tool(
@@ -21,6 +26,7 @@ public class SysPropTool extends AbstractArthasTool {
             ToolContext toolContext
     ) {
         StringBuilder cmd = buildCommand("sysprop");
+        // name + value 组合触发写属性；仅 name 为只读查询
         if (propertyName != null && !propertyName.trim().isEmpty()) {
             cmd.append(" ").append(propertyName.trim());
             if (propertyValue != null && !propertyValue.trim().isEmpty()) {

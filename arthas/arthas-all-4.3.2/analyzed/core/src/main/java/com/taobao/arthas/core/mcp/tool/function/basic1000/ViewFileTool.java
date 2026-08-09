@@ -18,13 +18,19 @@ import static com.taobao.arthas.core.mcp.tool.function.StreamableToolUtils.creat
 import static com.taobao.arthas.core.mcp.tool.function.StreamableToolUtils.createErrorResponse;
 
 /**
- * ViewFile MCP Tool: 在允许目录内分段查看文件内容
+ * ViewFile MCP Tool：在白名单目录内分段读取文件内容。
+ * <p>
+ * 通过环境变量 {@link #ALLOWED_DIRS_ENV} 或默认 {@code arthas-output}、{@code ~/logs/}
+ * 限制可读路径；支持 cursor 续读与 UTF-8 安全截断，避免大文件一次性返回。
  */
 public class ViewFileTool extends AbstractArthasTool {
 
+    /** 环境变量名：逗号分隔的允许读取根目录列表 */
     static final String ALLOWED_DIRS_ENV = "ARTHAS_MCP_VIEWFILE_ALLOWED_DIRS";
 
+    /** 单次默认最大读取字节数 */
     static final int DEFAULT_MAX_BYTES = 8192;
+    /** 单次允许的最大读取字节数上限 */
     static final int MAX_MAX_BYTES = 65536;
 
     @Tool(
@@ -99,6 +105,7 @@ public class ViewFileTool extends AbstractArthasTool {
         }
     }
 
+    /** 解析 path/cursor/offset 后的统一请求视图 */
     private static final class CursorRequest {
         private final String path;
         private final long offset;
@@ -111,6 +118,7 @@ public class ViewFileTool extends AbstractArthasTool {
         }
     }
 
+    /** 优先解析 cursor；否则要求 path 并规范化 offset */
     private CursorRequest parseCursorOrArgs(String path, String cursor, Long offset) {
         if (cursor != null && !cursor.trim().isEmpty()) {
             CursorValue decoded = decodeCursor(cursor.trim());
@@ -136,6 +144,7 @@ public class ViewFileTool extends AbstractArthasTool {
         }
     }
 
+    /** 解码 Base64 URL-safe JSON cursor，提取 path 与 offset */
     private CursorValue decodeCursor(String cursor) {
         try {
             byte[] jsonBytes = Base64.getUrlDecoder().decode(cursor);
@@ -160,6 +169,7 @@ public class ViewFileTool extends AbstractArthasTool {
         }
     }
 
+    /** 将 path/offset 编码为下次续读的 cursor 字符串 */
     private String encodeCursor(String path, long offset) {
         Map<String, Object> cursor = new LinkedHashMap<>();
         cursor.put("v", 1);
@@ -169,6 +179,7 @@ public class ViewFileTool extends AbstractArthasTool {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(json.getBytes(StandardCharsets.UTF_8));
     }
 
+    /** 合并环境变量配置与默认目录，解析为规范化绝对路径列表 */
     private List<Path> loadAllowedRoots() {
         String config = System.getenv(ALLOWED_DIRS_ENV);
 
@@ -224,6 +235,7 @@ public class ViewFileTool extends AbstractArthasTool {
         return new ArrayList<>(set);
     }
 
+    /** 解析并校验目标文件：必须在白名单根目录下且为普通文件 */
     private Path resolveAllowedFile(String requestedPath, List<Path> allowedRoots) throws Exception {
         Path req = Paths.get(requestedPath);
         if (req.isAbsolute()) {
@@ -273,6 +285,7 @@ public class ViewFileTool extends AbstractArthasTool {
         return Math.min(value, MAX_MAX_BYTES);
     }
 
+    /** cursor 模式下 offset 超文件大小时重置为 0，否则钳制到 fileSize */
     private static long adjustOffset(boolean cursorUsed, long requestedOffset, long fileSize) {
         if (requestedOffset < 0) {
             throw new IllegalArgumentException("offset 不允许为负数");
@@ -283,6 +296,7 @@ public class ViewFileTool extends AbstractArthasTool {
         return cursorUsed ? 0L : fileSize;
     }
 
+    /** 使用 RandomAccessFile 从指定偏移读取至多 maxBytes 字节 */
     private static byte[] readBytes(Path file, long offset, int maxBytes, long fileSize) throws Exception {
         if (offset < 0 || offset > fileSize) {
             return new byte[0];

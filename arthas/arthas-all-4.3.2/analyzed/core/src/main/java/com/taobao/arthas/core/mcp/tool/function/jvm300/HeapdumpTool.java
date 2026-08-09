@@ -12,10 +12,18 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Heapdump MCP Tool：生成 JVM 堆转储（.hprof）文件。
+ * <p>
+ * 对应 {@code heapdump} 命令；支持 {@code --live} 仅 dump 存活对象，
+ * 未指定路径时写入 {@code arthas-output/heapdump_<timestamp>.hprof}。
+ */
 public class HeapdumpTool extends AbstractArthasTool {
 
+    /** 默认 dump 输出目录（当前工作目录下 arthas-output） */
     public static final String DEFAULT_DUMP_DIR = Paths.get("arthas-output").toAbsolutePath().toString().replace("\\", "/");
 
+    /** 自动生成文件名时使用的时间戳格式 */
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     /**
@@ -39,6 +47,7 @@ public class HeapdumpTool extends AbstractArthasTool {
     ) throws IOException {
         String finalFilePath;
 
+        // 用户指定路径则规范化；否则创建默认目录并生成带时间戳的文件名
         if (filePath != null && !filePath.trim().isEmpty()) {
             finalFilePath = filePath.trim().replace("\\", "/");
         } else {

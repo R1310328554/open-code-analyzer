@@ -5,6 +5,12 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Thread MCP Tool：查看线程状态、堆栈及阻塞关系。
+ * <p>
+ * 对应 {@code thread} 命令；支持按线程 ID、最忙 TopN（-n）、阻塞分析（-b）
+ * 及显示全部匹配线程（--all）。
+ */
 public class ThreadTool extends AbstractArthasTool {
 
     /**
@@ -37,10 +43,12 @@ public class ThreadTool extends AbstractArthasTool {
         StringBuilder cmd = buildCommand("thread");
 
         addFlag(cmd, "-b", blocking);
+        // -n：按 CPU 时间排序输出最忙的前 N 个线程
         if (topN != null && topN > 0) {
             cmd.append(" -n ").append(topN);
         }
         addFlag(cmd, "--all", all);
+        // 末尾附加具体线程 ID，精确查看单线程堆栈
         if (threadId != null && threadId > 0) {
             cmd.append(" ").append(threadId);
         }

@@ -5,9 +5,16 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Dashboard MCP Tool：实时展示 JVM/线程/内存等诊断面板。
+ * <p>
+ * 对应 {@code dashboard} 命令，以流式方式按间隔刷新固定次数后结束。
+ */
 public class DashboardTool extends AbstractArthasTool {
 
+    /** 默认刷新次数（-n 参数） */
     public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 3;
+    /** 默认刷新间隔毫秒数（-i 参数） */
     public static final int DEFAULT_REFRESH_INTERVAL_MS = 3000;
 
     /**
@@ -37,8 +44,7 @@ public class DashboardTool extends AbstractArthasTool {
         cmd.append(" -i ").append(interval);
         cmd.append(" -n ").append(execCount);
 
-        // Dashboards typically run a fixed number of times,
-        // and the timeout is based on (number * interval) + buffer time
+        // 超时 = 次数 × 间隔 + 5s 缓冲，防止流式任务被提前中断
         int calculatedTimeoutMs = execCount * interval + 5000;
 
         return executeStreamable(toolContext, cmd.toString(), execCount, interval / 10, calculatedTimeoutMs,

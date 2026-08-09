@@ -5,6 +5,11 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * PerfCounter MCP Tool：查看 JVM 内部 Perf Counter 统计。
+ * <p>
+ * 对应 {@code perfcounter} 命令；{@code -d} 可输出更详细的 counter 信息。
+ */
 public class PerfCounterTool extends AbstractArthasTool {
 
     @Tool(
@@ -17,6 +22,7 @@ public class PerfCounterTool extends AbstractArthasTool {
             ToolContext toolContext
     ) {
         StringBuilder cmd = buildCommand("perfcounter");
+        // -d：打印完整 perf counter 详情
         addFlag(cmd, "-d", detailed);
         return executeSync(toolContext, cmd.toString());
     }
