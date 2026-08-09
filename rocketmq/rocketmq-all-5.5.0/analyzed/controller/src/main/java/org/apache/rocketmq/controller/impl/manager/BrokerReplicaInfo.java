@@ -28,16 +28,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Broker replicas info, mapping from brokerAddress to {brokerId, brokerHaAddress}.
+ * Broker 副本注册信息：维护 brokerId 到 IP 地址与注册校验码的映射，
+ * 并分配递增的下一个可用 brokerId。
  */
 public class BrokerReplicaInfo implements Serializable {
     private final String clusterName;
 
     private final String brokerName;
 
-    // Start from 1
+    /** 下一个待分配的 brokerId，从 {@link MixAll#FIRST_BROKER_CONTROLLER_ID} 起递增。 */
     private final AtomicLong nextAssignBrokerId;
 
+    /** brokerId 到（IP 地址, 注册校验码）的并发安全映射。 */
     private final Map<Long/*brokerId*/, Pair<String/*ipAddress*/, String/*registerCheckCode*/>> brokerIdInfo;
 
     public BrokerReplicaInfo(String clusterName, String brokerName) {
@@ -63,11 +65,13 @@ public class BrokerReplicaInfo implements Serializable {
         return brokerName;
     }
 
+    /** 注册新副本并递增 nextAssignBrokerId。 */
     public void addBroker(final Long brokerId, final String ipAddress, final String registerCheckCode) {
         this.brokerIdInfo.put(brokerId, new Pair<>(ipAddress, registerCheckCode));
         this.nextAssignBrokerId.incrementAndGet();
     }
 
+    /** 判断指定 brokerId 是否已注册。 */
     public boolean isBrokerExist(final Long brokerId) {
         return this.brokerIdInfo.containsKey(brokerId);
     }
@@ -76,6 +80,7 @@ public class BrokerReplicaInfo implements Serializable {
         return new HashSet<>(this.brokerIdInfo.keySet());
     }
 
+    /** 返回 brokerId 到 IP 地址的快照表。 */
     public Map<Long, String> getBrokerIdTable() {
         Map<Long/*brokerId*/, String/*address*/> map = new HashMap<>(this.brokerIdInfo.size());
         this.brokerIdInfo.forEach((id, pair) -> {
@@ -95,6 +100,7 @@ public class BrokerReplicaInfo implements Serializable {
         return null;
     }
 
+    /** 返回副本注册时生成的校验码，用于防重复注册。 */
     public String getBrokerRegisterCheckCode(final Long brokerId) {
         if (brokerId == null) {
             return null;
@@ -106,6 +112,7 @@ public class BrokerReplicaInfo implements Serializable {
         return null;
     }
 
+    /** 更新已注册副本的 IP 地址，保留原校验码。 */
     public void updateBrokerAddress(final Long brokerId, final String brokerAddress) {
         if (brokerId == null)
             return;

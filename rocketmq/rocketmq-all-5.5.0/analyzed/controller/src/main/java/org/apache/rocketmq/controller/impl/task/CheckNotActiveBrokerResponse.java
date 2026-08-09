@@ -19,10 +19,13 @@ package org.apache.rocketmq.controller.impl.task;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** 非活跃 Broker 扫描响应头；具体身份列表在 Remoting 消息体 JSON 中返回。 */
 public class CheckNotActiveBrokerResponse implements CommandCustomHeader {
+    /** 默认无参构造。 */
     public CheckNotActiveBrokerResponse() {
     }
 
+    /** 本响应无额外字段需校验。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

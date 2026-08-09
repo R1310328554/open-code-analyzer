@@ -45,14 +45,20 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * Raft 模式副本信息管理器：在父类同步状态集基础上维护 Broker 存活表，
+ * 处理心跳、通道关闭与非活跃扫描等 Controller 状态机事件。
+ */
 public class RaftReplicasInfoManager extends ReplicasInfoManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
+    /** Raft 状态机内持久化的 Broker 存活信息表。 */
     private final Map<BrokerIdentityInfo/* brokerIdentity*/, BrokerLiveInfo> brokerLiveTable = new ConcurrentHashMap<>(256);
 
     public RaftReplicasInfoManager(ControllerConfig controllerConfig) {
         super(controllerConfig);
     }
 
+    /** 按请求中的 Broker 身份返回存活信息，空身份则返回全表 JSON 序列化结果。 */
     public ControllerResult<GetBrokerLiveInfoResponse> getBrokerLiveInfo(final GetBrokerLiveInfoRequest request) {
         BrokerIdentityInfo brokerIdentityInfo = request.getBrokerIdentity();
         ControllerResult<GetBrokerLiveInfoResponse> result = new ControllerResult<>(new GetBrokerLiveInfoResponse());
@@ -77,6 +83,7 @@ public class RaftReplicasInfoManager extends ReplicasInfoManager {
         return result;
     }
 
+    /** 应用 Broker 心跳：更新或插入存活记录，按 epoch/offset 规则合并副本进度。 */
     public ControllerResult<RaftBrokerHeartBeatEventResponse> onBrokerHeartBeat(
         RaftBrokerHeartBeatEventRequest request) {
         BrokerIdentityInfo brokerIdentityInfo = request.getBrokerIdentityInfo();
@@ -97,6 +104,7 @@ public class RaftReplicasInfoManager extends ReplicasInfoManager {
         return result;
     }
 
+    /** Broker 通道关闭时从存活表移除对应身份。 */
     public ControllerResult<BrokerCloseChannelResponse> onBrokerCloseChannel(BrokerCloseChannelRequest request) {
         BrokerIdentityInfo brokerIdentityInfo = request.getBrokerIdentityInfo();
         ControllerResult<BrokerCloseChannelResponse> result = new ControllerResult<>(new BrokerCloseChannelResponse());
@@ -109,6 +117,7 @@ public class RaftReplicasInfoManager extends ReplicasInfoManager {
         return result;
     }
 
+    /** 扫描超时 Broker，合并需重选主的 Broker 名并返回身份列表。 */
     public ControllerResult<CheckNotActiveBrokerResponse> checkNotActiveBroker(CheckNotActiveBrokerRequest request) {
         List<BrokerIdentityInfo> notActiveBrokerIdentityInfoList = new ArrayList<>();
         long checkTime = request.getCheckTimeMillis();
@@ -132,8 +141,7 @@ public class RaftReplicasInfoManager extends ReplicasInfoManager {
         Set<String> alreadyReportedBrokerName = notActiveBrokerIdentityInfoList.stream()
             .map(BrokerIdentityInfo::getBrokerName)
             .collect(Collectors.toSet());
-        // avoid to duplicate report, filter by name,
-        // because BrokerIdentityInfo in needReElectBrokerNames does not have brokerId or clusterName
+        // 按 brokerName 去重，needReElect 列表中的身份可能缺少 clusterName/brokerId
         notActiveBrokerIdentityInfoList.addAll(needReElectBrokerNames.stream()
             .filter(brokerName -> !alreadyReportedBrokerName.contains(brokerName))
             .map(brokerName -> new BrokerIdentityInfo(null, brokerName, null))
@@ -148,6 +156,7 @@ public class RaftReplicasInfoManager extends ReplicasInfoManager {
         return result;
     }
 
+    /** 以指定调用时刻判断 Broker 心跳是否仍有效。 */
     public boolean isBrokerActive(String clusterName, String brokerName, Long brokerId, long invokeTime) {
         final BrokerLiveInfo info = this.brokerLiveTable.get(new BrokerIdentityInfo(clusterName, brokerName, brokerId));
         if (info != null) {
@@ -162,6 +171,7 @@ public class RaftReplicasInfoManager extends ReplicasInfoManager {
         return this.brokerLiveTable.get(new BrokerIdentityInfo(clusterName, brokerName, brokerId));
     }
 
+    /** 序列化父类状态及 brokerLiveTable（Hessian 编码各条目）。 */
     @Override
     public byte[] serialize() throws Throwable {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -184,6 +194,7 @@ public class RaftReplicasInfoManager extends ReplicasInfoManager {
         }
     }
 
+    /** 从字节流反序列化父类数据与 brokerLiveTable。 */
     @Override
     public void deserializeFrom(byte[] data) throws Throwable {
         int index = 0;
@@ -219,6 +230,7 @@ public class RaftReplicasInfoManager extends ReplicasInfoManager {
         }
     }
 
+    /** 带调用时刻的 Broker 活跃性谓词，供扫描需重选主副本时使用。 */
     public static class BrokerValidPredicateWithInvokeTime implements BrokerValidPredicate {
         private final long invokeTime;
         private final RaftReplicasInfoManager raftBrokerHeartBeatManager;

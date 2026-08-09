@@ -23,16 +23,21 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Manages the syncStateSet of broker replicas.
+ * Broker 副本同步状态集（syncStateSet）管理：
+ * 跟踪 Master brokerId、masterEpoch 及参与同步的副本 ID 集合。
  */
 public class SyncStateInfo implements Serializable {
     private final String clusterName;
     private final String brokerName;
+    /** Master 变更代数，每次换主递增。 */
     private final AtomicInteger masterEpoch;
+    /** syncStateSet 变更代数，集合更新时递增。 */
     private final AtomicInteger syncStateSetEpoch;
 
+    /** 当前处于同步状态的副本 brokerId 集合。 */
     private Set<Long/*brokerId*/> syncStateSet;
 
+    /** 当前 Master 副本的 brokerId。 */
     private Long masterBrokerId;
 
     public SyncStateInfo(String clusterName, String brokerName) {
@@ -43,20 +48,24 @@ public class SyncStateInfo implements Serializable {
         this.syncStateSet = Collections.emptySet();
     }
 
+    /** 记录新 Master 并递增 masterEpoch。 */
     public void updateMasterInfo(Long masterBrokerId) {
         this.masterBrokerId = masterBrokerId;
         this.masterEpoch.incrementAndGet();
     }
 
+    /** 替换 syncStateSet 并递增 syncStateSetEpoch。 */
     public void updateSyncStateSetInfo(Set<Long> newSyncStateSet) {
         this.syncStateSet = new HashSet<>(newSyncStateSet);
         this.syncStateSetEpoch.incrementAndGet();
     }
 
+    /** 是否尚未完成首次选主（masterEpoch 为 0）。 */
     public boolean isFirstTimeForElect() {
         return this.masterEpoch.get() == 0;
     }
 
+    /** 当前是否已存在 Master 副本。 */
     public boolean isMasterExist() {
         return masterBrokerId != null;
     }
@@ -85,6 +94,7 @@ public class SyncStateInfo implements Serializable {
         return masterEpoch.get();
     }
 
+    /** 从 syncStateSet 中移除指定副本。 */
     public void removeFromSyncState(final Long brokerId) {
         syncStateSet.remove(brokerId);
     }

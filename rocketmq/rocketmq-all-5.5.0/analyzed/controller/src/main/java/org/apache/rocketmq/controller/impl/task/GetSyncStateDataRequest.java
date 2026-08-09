@@ -19,7 +19,9 @@ package org.apache.rocketmq.controller.impl.task;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** 获取同步状态集数据的 Raft 请求，记录发起调用的毫秒时间戳。 */
 public class GetSyncStateDataRequest implements CommandCustomHeader {
+    /** 请求发起时刻，供状态机按时间点判断 Broker 活跃性。 */
     private final Long invokeTime = System.currentTimeMillis();
 
     @Override
@@ -31,6 +33,7 @@ public class GetSyncStateDataRequest implements CommandCustomHeader {
 
     }
 
+    /** 返回请求发起时间戳。 */
     public Long getInvokeTime() {
         return invokeTime;
     }

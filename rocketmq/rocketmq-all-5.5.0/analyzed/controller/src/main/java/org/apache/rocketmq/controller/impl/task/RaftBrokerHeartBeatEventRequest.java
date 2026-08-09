@@ -21,15 +21,18 @@ import org.apache.rocketmq.controller.impl.heartbeat.BrokerLiveInfo;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** Broker 心跳 Raft 事件请求：同时携带身份与 {@link BrokerLiveInfo} 快照字段。 */
 public class RaftBrokerHeartBeatEventRequest implements CommandCustomHeader {
-    // brokerIdentityInfo
+    // --- Broker 身份字段 ---
+    /** 集群名。 */
     private String clusterNameIdentityInfo;
 
     private String brokerNameIdentityInfo;
 
     private Long brokerIdIdentityInfo;
 
-    // brokerLiveInfo
+    // --- BrokerLiveInfo 快照字段 ---
+    /** Broker 名称。 */
     private String brokerName;
     private String brokerAddr;
     private Long heartbeatTimeoutMillis;
@@ -43,6 +46,7 @@ public class RaftBrokerHeartBeatEventRequest implements CommandCustomHeader {
     public RaftBrokerHeartBeatEventRequest() {
     }
 
+    /** 从身份与存活对象拷贝全部序列化字段。 */
     public RaftBrokerHeartBeatEventRequest(BrokerIdentityInfo brokerIdentityInfo, BrokerLiveInfo brokerLiveInfo) {
         this.clusterNameIdentityInfo = brokerIdentityInfo.getClusterName();
         this.brokerNameIdentityInfo = brokerIdentityInfo.getBrokerName();
@@ -69,6 +73,7 @@ public class RaftBrokerHeartBeatEventRequest implements CommandCustomHeader {
         this.brokerIdIdentityInfo = brokerIdentityInfo.getBrokerId();
     }
 
+    /** 由请求字段重建 {@link BrokerLiveInfo}（通道字段为 null）。 */
     public BrokerLiveInfo getBrokerLiveInfo() {
         return new BrokerLiveInfo(brokerName, brokerAddr, brokerId, lastUpdateTimestamp, heartbeatTimeoutMillis, null, epoch, maxOffset, electionPriority, confirmOffset);
     }

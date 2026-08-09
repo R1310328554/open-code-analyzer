@@ -19,10 +19,13 @@ package org.apache.rocketmq.controller.impl.task;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** Broker 心跳 Raft 事件响应头，表示 Leader 已更新存活表。 */
 public class RaftBrokerHeartBeatEventResponse implements CommandCustomHeader {
+    /** 默认无参构造。 */
     public RaftBrokerHeartBeatEventResponse() {
     }
 
+    /** 本响应无额外字段需校验。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

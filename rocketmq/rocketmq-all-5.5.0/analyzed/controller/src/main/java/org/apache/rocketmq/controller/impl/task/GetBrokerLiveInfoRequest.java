@@ -20,6 +20,7 @@ import org.apache.rocketmq.controller.impl.heartbeat.BrokerIdentityInfo;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** 查询 Broker 存活信息的 Raft 请求头，可按身份过滤或查询全表。 */
 public class GetBrokerLiveInfoRequest implements CommandCustomHeader {
     private String clusterName;
 
@@ -34,7 +35,7 @@ public class GetBrokerLiveInfoRequest implements CommandCustomHeader {
     }
 
     /**
-     * @param brokerIdentity The BrokerIdentityInfo that needs to be queried, if it is null, it means obtaining BrokerLiveInfo for all brokers
+     * @param brokerIdentity 待查询的 Broker 身份；为 null 时表示获取全部 Broker 存活信息
      */
     public GetBrokerLiveInfoRequest(BrokerIdentityInfo brokerIdentity) {
         this.clusterName = brokerIdentity.getClusterName();
@@ -42,6 +43,7 @@ public class GetBrokerLiveInfoRequest implements CommandCustomHeader {
         this.brokerId = brokerIdentity.getBrokerId();
     }
 
+    /** 从请求字段组装 {@link BrokerIdentityInfo}。 */
     public BrokerIdentityInfo getBrokerIdentity() {
         return new BrokerIdentityInfo(this.clusterName, this.brokerName, this.brokerId);
     }

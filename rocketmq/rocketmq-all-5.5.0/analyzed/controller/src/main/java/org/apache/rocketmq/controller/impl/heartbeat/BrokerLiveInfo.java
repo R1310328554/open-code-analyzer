@@ -19,20 +19,35 @@ package org.apache.rocketmq.controller.impl.heartbeat;
 import io.netty.channel.Channel;
 import java.io.Serializable;
 
+/**
+ * Broker 存活快照：记录心跳地址、超时、Netty 通道、副本 epoch 与消费位点等运行时状态。
+ * 供 Controller 心跳管理器维护在线 Broker 表并在 Raft 模式下序列化复制。
+ */
 public class BrokerLiveInfo implements Serializable {
     private static final long serialVersionUID = 3612173344946510993L;
+    /** Broker 逻辑名称。 */
     private final String brokerName;
 
+    /** Broker 对外服务地址。 */
     private String brokerAddr;
+    /** 心跳超时毫秒数，超过则视为离线。 */
     private long heartbeatTimeoutMillis;
+    /** 与 Broker 建立的 Netty 通道。 */
     private Channel channel;
+    /** 副本 Broker ID。 */
     private long brokerId;
+    /** 最近一次收到心跳的时间戳。 */
     private long lastUpdateTimestamp;
+    /** 当前副本 epoch，用于主从切换一致性判断。 */
     private int epoch;
+    /** 已写入 CommitLog 的最大偏移量。 */
     private long maxOffset;
+    /** 已确认同步的偏移量。 */
     private long confirmOffset;
+    /** 参与选主的优先级，数值越小优先级越高。 */
     private Integer electionPriority;
 
+    /** 构造不含 confirmOffset 的存活信息（首次注册场景）。 */
     public BrokerLiveInfo(String brokerName, String brokerAddr, long brokerId, long lastUpdateTimestamp,
         long heartbeatTimeoutMillis, Channel channel, int epoch, long maxOffset, Integer electionPriority) {
         this.brokerName = brokerName;
@@ -76,6 +91,7 @@ public class BrokerLiveInfo implements Serializable {
             '}';
     }
 
+    /** 返回 Broker 名称。 */
     public String getBrokerName() {
         return brokerName;
     }
@@ -140,6 +156,7 @@ public class BrokerLiveInfo implements Serializable {
         return electionPriority;
     }
 
+    /** 返回已确认同步偏移量。 */
     public long getConfirmOffset() {
         return confirmOffset;
     }

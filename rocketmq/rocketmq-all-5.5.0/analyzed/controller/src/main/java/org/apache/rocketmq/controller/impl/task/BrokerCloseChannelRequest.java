@@ -21,7 +21,9 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNullable;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** Raft 通道关闭事件请求头：携带待移除的 {@link BrokerIdentityInfo}。 */
 public class BrokerCloseChannelRequest implements CommandCustomHeader {
+    /** 集群名，可为空。 */
     @CFNullable
     private String clusterName;
 
@@ -37,12 +39,14 @@ public class BrokerCloseChannelRequest implements CommandCustomHeader {
         this.brokerId = null;
     }
 
+    /** 从 Broker 身份对象填充请求字段。 */
     public BrokerCloseChannelRequest(BrokerIdentityInfo brokerIdentityInfo) {
         this.clusterName = brokerIdentityInfo.getClusterName();
         this.brokerName = brokerIdentityInfo.getBrokerName();
         this.brokerId = brokerIdentityInfo.getBrokerId();
     }
 
+    /** 组装并返回 Broker 身份三元组。 */
     public BrokerIdentityInfo getBrokerIdentityInfo() {
         return new BrokerIdentityInfo(this.clusterName, this.brokerName, this.brokerId);
     }

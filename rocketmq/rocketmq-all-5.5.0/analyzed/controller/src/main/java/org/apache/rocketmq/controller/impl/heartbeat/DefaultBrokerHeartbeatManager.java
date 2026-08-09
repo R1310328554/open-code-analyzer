@@ -38,22 +38,30 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 
+/**
+ * 单机 Controller 模式下的 Broker 心跳管理器：
+ * 维护 {@link BrokerLiveInfo} 在线表，定时扫描超时 Broker 并通知生命周期监听器。
+ */
 public class DefaultBrokerHeartbeatManager implements BrokerHeartbeatManager {
+    /** Controller 模块日志记录器。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
 
     private ScheduledExecutorService scheduledService;
     private ExecutorService executor;
 
     private final ControllerConfig controllerConfig;
+    /** 按 Broker 身份索引的存活信息表。 */
     private final Map<BrokerIdentityInfo/* brokerIdentity*/, BrokerLiveInfo> brokerLiveTable;
     private final List<BrokerLifecycleListener> brokerLifecycleListeners;
 
+    /** @param controllerConfig Controller 配置，含扫描间隔等参数 */
     public DefaultBrokerHeartbeatManager(final ControllerConfig controllerConfig) {
         this.controllerConfig = controllerConfig;
         this.brokerLiveTable = new ConcurrentHashMap<>(256);
         this.brokerLifecycleListeners = new ArrayList<>();
     }
 
+    /** 启动定时任务，周期性扫描非活跃 Broker。 */
     @Override
     public void start() {
         this.scheduledService.scheduleAtFixedRate(this::scanNotActiveBroker, 2000, this.controllerConfig.getScanNotActiveBrokerInterval(), TimeUnit.MILLISECONDS);
@@ -71,6 +79,7 @@ public class DefaultBrokerHeartbeatManager implements BrokerHeartbeatManager {
         this.executor = Executors.newFixedThreadPool(2, new ThreadFactoryImpl("DefaultBrokerHeartbeatManager_executorService_"));
     }
 
+    /** 遍历在线表，移除超时 Broker 并关闭 Netty 通道、触发 inactive 回调。 */
     public void scanNotActiveBroker() {
         try {
             log.info("start scanNotActiveBroker");
@@ -95,6 +104,7 @@ public class DefaultBrokerHeartbeatManager implements BrokerHeartbeatManager {
         }
     }
 
+    /** 通知所有已注册的 {@link BrokerLifecycleListener} Broker 已离线。 */
     private void notifyBrokerInActive(String clusterName, String brokerName, Long brokerId) {
         for (BrokerLifecycleListener listener : this.brokerLifecycleListeners) {
             listener.onBrokerInactive(clusterName, brokerName, brokerId);
@@ -106,6 +116,10 @@ public class DefaultBrokerHeartbeatManager implements BrokerHeartbeatManager {
         this.brokerLifecycleListeners.add(listener);
     }
 
+    /**
+     * 处理 Broker 心跳：新 Broker 写入在线表，已有记录则刷新时间戳与 epoch/offset。
+     * 空字段使用默认值（如默认超时、最大选主优先级）。
+     */
     @Override
     public void onBrokerHeartbeat(String clusterName, String brokerName, String brokerAddr, Long brokerId,
         Long timeoutMillis, Channel channel, Integer epoch, Long maxOffset, Long confirmOffset,
@@ -143,6 +157,7 @@ public class DefaultBrokerHeartbeatManager implements BrokerHeartbeatManager {
 
     }
 
+    /** Netty 通道关闭时，查找对应 Broker 并触发 inactive 通知。 */
     @Override
     public void onBrokerChannelClose(Channel channel) {
         BrokerIdentityInfo addrInfo = null;
@@ -165,6 +180,7 @@ public class DefaultBrokerHeartbeatManager implements BrokerHeartbeatManager {
         return this.brokerLiveTable.get(new BrokerIdentityInfo(clusterName, brokerName, brokerId));
     }
 
+    /** 根据最后心跳时间与超时阈值判断 Broker 是否仍在线。 */
     @Override
     public boolean isBrokerActive(String clusterName, String brokerName, Long brokerId) {
         final BrokerLiveInfo info = this.brokerLiveTable.get(new BrokerIdentityInfo(clusterName, brokerName, brokerId));
@@ -176,6 +192,7 @@ public class DefaultBrokerHeartbeatManager implements BrokerHeartbeatManager {
         return false;
     }
 
+    /** 统计各集群各 Broker 名称下当前活跃副本数量。 */
     @Override
     public Map<String, Map<String, Integer>> getActiveBrokersNum() {
         Map<String, Map<String, Integer>> map = new HashMap<>();

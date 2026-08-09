@@ -19,10 +19,13 @@ package org.apache.rocketmq.controller.impl.task;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** 查询 Broker 存活信息的 Raft 响应头；存活表 JSON 在消息体中。 */
 public class GetBrokerLiveInfoResponse implements CommandCustomHeader {
+    /** 默认无参构造。 */
     public GetBrokerLiveInfoResponse() {
     }
 
+    /** 本响应无额外字段需校验。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

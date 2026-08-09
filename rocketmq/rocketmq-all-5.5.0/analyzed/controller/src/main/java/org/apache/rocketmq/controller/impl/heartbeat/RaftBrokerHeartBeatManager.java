@@ -50,6 +50,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * Raft Controller 模式下的 Broker 心跳管理器：
+ * 心跳与通道事件通过 JRaft 复制到 Leader 的 {@link RaftReplicasInfoManager}。
+ */
 public class RaftBrokerHeartBeatManager implements BrokerHeartbeatManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
     private JRaftController controller;
@@ -58,11 +62,12 @@ public class RaftBrokerHeartBeatManager implements BrokerHeartbeatManager {
     private final ExecutorService executor;
     private final ControllerConfig controllerConfig;
 
+    /** Netty 通道到 Broker 身份的本地映射，用于通道关闭时定位副本。 */
     private final Map<Channel, BrokerIdentityInfo> brokerChannelIdentityInfoMap = new HashMap<>();
 
 
-    // resolve the scene
-    // when controller all down and startup again, we wait for some time to avoid electing a new leader,which is not necessary
+    // 解决 Controller 全宕重启场景：等待一段时间再扫描，避免不必要的选主
+    /** 首次收到 Broker 心跳的时间戳，用于启动宽限期判断。 */
     private volatile long firstReceivedHeartbeatTime = -1;
 
     public RaftBrokerHeartBeatManager(ControllerConfig controllerConfig) {
@@ -71,6 +76,7 @@ public class RaftBrokerHeartBeatManager implements BrokerHeartbeatManager {
         this.controllerConfig = controllerConfig;
     }
 
+    /** 注入 JRaft Controller，用于提交心跳类 Raft 任务。 */
     public void setController(JRaftController controller) {
         this.controller = controller;
     }
@@ -96,6 +102,7 @@ public class RaftBrokerHeartBeatManager implements BrokerHeartbeatManager {
         brokerLifecycleListeners.add(listener);
     }
 
+    /** 将心跳事件封装为 {@link RaftBrokerHeartBeatEventRequest} 并同步提交至 Raft Leader。 */
     @Override
     public void onBrokerHeartbeat(String clusterName, String brokerName, String brokerAddr, Long brokerId,
         Long timeoutMillis, Channel channel, Integer epoch, Long maxOffset, Long confirmOffset,
@@ -136,6 +143,7 @@ public class RaftBrokerHeartBeatManager implements BrokerHeartbeatManager {
         brokerChannelIdentityInfoMap.put(channel, brokerIdentityInfo);
     }
 
+    /** 通道关闭时通过 Raft 提交 {@link BrokerCloseChannelRequest} 并通知监听器。 */
     @Override
     public void onBrokerChannelClose(Channel channel) {
         BrokerIdentityInfo brokerIdentityInfo = brokerChannelIdentityInfoMap.get(channel);
@@ -157,7 +165,8 @@ public class RaftBrokerHeartBeatManager implements BrokerHeartbeatManager {
     }
 
     /**
-     * @param brokerIdentityInfo null means get broker live info of all brokers
+     * 经 Raft 查询 Broker 存活信息。
+     * @param brokerIdentityInfo 为 null 时返回全部 Broker 的存活表
      */
     private Map<BrokerIdentityInfo, BrokerLiveInfo> getBrokerLiveInfo(BrokerIdentityInfo brokerIdentityInfo) {
         GetBrokerLiveInfoRequest requestHeader;
@@ -181,13 +190,14 @@ public class RaftBrokerHeartBeatManager implements BrokerHeartbeatManager {
         return new HashMap<>();
     }
 
+    /** Leader 节点定时提交 {@link CheckNotActiveBrokerRequest}，清理超时 Broker 并关闭本地通道。 */
     private void scanNotActiveBroker() {
         if (!controller.isLeaderState()) {
             log.info("current node is not leader, skip scan not active broker");
             return;
         }
 
-        // if has not received any heartbeat from broker, we do not need to scan
+        // 尚未收到任何 Broker 心跳时跳过扫描，避免冷启动误报
         if (this.firstReceivedHeartbeatTime == -1 ||
             this.firstReceivedHeartbeatTime + controllerConfig.getJraftConfig().getjRaftScanWaitTimeoutMs() > System.currentTimeMillis()) {
             log.info("has not received any heartbeat from broker, skip scan not active broker");
@@ -270,6 +280,7 @@ public class RaftBrokerHeartBeatManager implements BrokerHeartbeatManager {
         return map;
     }
 
+    /** 广播 Broker 离线事件给生命周期监听器。 */
     private void notifyBrokerInActive(String clusterName, String brokerName, Long brokerId) {
         log.info("Broker {}-{}-{} inactive", clusterName, brokerName, brokerId);
         for (BrokerLifecycleListener listener : this.brokerLifecycleListeners) {

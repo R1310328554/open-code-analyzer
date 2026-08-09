@@ -19,12 +19,15 @@ package org.apache.rocketmq.controller.impl.task;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** 扫描非活跃 Broker 的 Raft 请求：携带发起扫描时的毫秒时间戳作为判定基准。 */
 public class CheckNotActiveBrokerRequest implements CommandCustomHeader {
+    /** 扫描基准时刻，用于与最后心跳时间比较。 */
     private final Long checkTimeMillis = System.currentTimeMillis();
 
     public CheckNotActiveBrokerRequest() {
     }
 
+    /** 返回扫描基准时间戳。 */
     public Long getCheckTimeMillis() {
         return checkTimeMillis;
     }

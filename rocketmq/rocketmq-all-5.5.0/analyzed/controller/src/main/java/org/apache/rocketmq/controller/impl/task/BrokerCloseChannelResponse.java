@@ -19,10 +19,13 @@ package org.apache.rocketmq.controller.impl.task;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/** Broker 通道关闭 Raft 任务的空响应头，表示 Leader 已处理移除请求。 */
 public class BrokerCloseChannelResponse implements CommandCustomHeader {
+    /** 默认无参构造。 */
     public BrokerCloseChannelResponse() {
     }
 
+    /** 本响应无额外字段需校验。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
