@@ -18,6 +18,7 @@ package org.redisson.api.search.query;
 import java.util.List;
 
 /**
+ * 搜索结果摘要选项，用于配置摘要字段与片段参数。
  *
  * @author Nikita Koksharov
  *
@@ -33,25 +34,30 @@ public final class SummarizeOptions {
     private SummarizeOptions() {
     }
 
+    /** 创建默认摘要选项。 */
     public static SummarizeOptions defaults() {
         return new SummarizeOptions();
     }
 
+    /** 指定需生成摘要的字段列表。 */
     public SummarizeOptions fields(List<String> fields) {
         this.fields = fields;
         return this;
     }
 
+    /** 设置摘要片段数量。 */
     public SummarizeOptions fragsNum(Integer fragsNum) {
         this.fragsNum = fragsNum;
         return this;
     }
 
+    /** 设置每个摘要片段的长度。 */
     public SummarizeOptions fragSize(Integer fragSize) {
         this.fragSize = fragSize;
         return this;
     }
 
+    /** 设置摘要片段之间的分隔符。 */
     public SummarizeOptions separator(String separator) {
         this.separator = separator;
         return this;

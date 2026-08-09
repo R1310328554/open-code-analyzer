@@ -16,33 +16,33 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Linear combination configuration step.
+ * 线性组合配置步骤接口。
  *
  * @author Nikita Koksharov
  */
 public interface CombineLinearStep extends Combine {
 
     /**
-     * Sets the alpha weight for text search score.
+     * 设置文本检索得分的 alpha 权重。
      *
-     * @param alpha alpha weight value
-     * @return this step for further configuration
+     * @param alpha alpha 权重值
+     * @return 当前配置步骤
      */
     CombineLinearStep alpha(double alpha);
 
     /**
-     * Sets the beta weight for vector similarity score.
+     * 设置向量相似度得分的 beta 权重。
      *
-     * @param beta beta weight value
-     * @return this step for further configuration
+     * @param beta beta 权重值
+     * @return 当前配置步骤
      */
     CombineLinearStep beta(double beta);
 
     /**
-     * Sets the window parameter for linear combination.
+     * 设置线性组合的窗口大小。
      *
-     * @param window window size
-     * @return this step for further configuration
+     * @param window 窗口大小
+     * @return 当前配置步骤
      */
     CombineLinearStep window(int window);
 

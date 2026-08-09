@@ -16,7 +16,7 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Implementation of Linear combine configuration.
+ * {@link CombineLinearStep} 线性组合配置的实现类。
  *
  * @author Nikita Koksharov
  */

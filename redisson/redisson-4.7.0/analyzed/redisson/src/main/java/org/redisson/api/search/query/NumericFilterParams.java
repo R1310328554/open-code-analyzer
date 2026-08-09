@@ -16,6 +16,7 @@
 package org.redisson.api.search.query;
 
 /**
+ * {@link NumericFilter} 与 {@link NumericFilterMax} 的数值范围过滤器实现。
  *
  * @author Nikita Koksharov
  *

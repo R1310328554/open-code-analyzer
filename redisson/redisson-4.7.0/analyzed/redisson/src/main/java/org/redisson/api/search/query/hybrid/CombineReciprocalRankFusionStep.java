@@ -16,27 +16,25 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Reciprocal Rank Fusion (RRF) configuration step.
+ * 倒数排名融合（RRF）配置步骤接口。
  *
  * @author Nikita Koksharov
  */
 public interface CombineReciprocalRankFusionStep {
 
     /**
-     * Sets the RRF window parameter.
-     * Default is 20.
+     * 设置 RRF 窗口大小，默认 20。
      *
-     * @param window window size
-     * @return this step for further configuration
+     * @param window 窗口大小
+     * @return 当前配置步骤
      */
     CombineReciprocalRankFusionFinalStep window(int window);
 
     /**
-     * Sets the RRF constant parameter.
-     * Default is 60.
+     * 设置 RRF 常数项，默认 60。
      *
-     * @param constant constant value
-     * @return this step for further configuration
+     * @param constant 常数值
+     * @return 当前配置步骤
      */
     CombineReciprocalRankFusionFinalStep constant(double constant);
 

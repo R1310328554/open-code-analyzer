@@ -16,6 +16,7 @@
 package org.redisson.api.search.query;
 
 /**
+ * 指定搜索结果中需返回的字段标识符与属性映射。
  *
  * @author Nikita Koksharov
  *
@@ -25,10 +26,21 @@ public class ReturnAttribute {
     private final String identifier;
     private final String property;
 
+    /**
+     * 创建仅含标识符的返回属性。
+     *
+     * @param identifier 字段标识符
+     */
     public ReturnAttribute(String identifier) {
         this(identifier, null);
     }
 
+    /**
+     * 创建带属性别名的返回属性。
+     *
+     * @param identifier 字段标识符
+     * @param property 输出属性名
+     */
     public ReturnAttribute(String identifier, String property) {
         this.identifier = identifier;
         this.property = property;

@@ -16,7 +16,7 @@
 package org.redisson.api.search.query;
 
 /**
- * Query filter for {@link org.redisson.api.RSearch#search(String, String, QueryOptions)} method
+ * {@link org.redisson.api.RSearch#search(String, String, QueryOptions)} 的查询过滤器工厂。
  *
  * @author Nikita Koksharov
  *
@@ -24,20 +24,20 @@ package org.redisson.api.search.query;
 public interface QueryFilter {
 
     /**
-     * Returns numeric filter by defined field name
+     * 按字段名创建数值范围过滤器。
      *
-     * @param fieldName field name
-     * @return Numeric filter
+     * @param fieldName 字段名
+     * @return 数值过滤器
      */
     static NumericFilter numeric(String fieldName) {
         return new NumericFilterParams(fieldName);
     }
 
     /**
-     * Returns geo filter by defined field name
+     * 按字段名创建地理坐标过滤器。
      *
-     * @param fieldName field name
-     * @return geo filter
+     * @param fieldName 字段名
+     * @return 地理过滤器
      */
     static GeoFilter geo(String fieldName) {
         return new GeoFilterParams(fieldName);

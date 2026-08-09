@@ -23,32 +23,32 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * Implementation of hybrid query arguments with fluent builder pattern.
+ * {@link HybridQueryArgs} 的流式构建器实现。
  *
  * @author Nikita Koksharov
  */
 public final class HybridQueryParams implements QueryStep, ParamsStep, SortStep, HybridQueryArgs {
 
-    // Query component
+    // 文本查询组件
     private final String query;
     private String scorer;
     private String queryScoreAlias;
 
-    // Vector similarity component
+    // 向量相似度组件
     private VectorSimilarityParams vectorSimilarityParams;
 
-    // Parameters
+    // 查询参数
     private Map<String, Object> params;
 
-    // Combine component
+    // 融合组合组件
     private Combine combine;
 
-    // Sort component
+    // 排序组件
     private String sortFieldName;
     private SortOrder sortOrder;
     private boolean noSort;
 
-    // Final options
+    // 最终选项
     private List<String> loadFields;
     private Integer limitOffset;
     private Integer limitCount;

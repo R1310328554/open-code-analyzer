@@ -16,6 +16,7 @@
 package org.redisson.api.search.query;
 
 /**
+ * 数值范围过滤器的上限配置阶段。
  *
  * @author Nikita Koksharov
  *
@@ -23,18 +24,18 @@ package org.redisson.api.search.query;
 public interface NumericFilterMax {
 
     /**
-     * Defines maximum value in numeric range inclusive
+     * 设置数值范围上限（含边界）。
      *
-     * @param value numeric value
-     * @return next options
+     * @param value 上限值
+     * @return 后续查询过滤器选项
      */
     QueryFilter max(double value);
 
     /**
-     * Defines maximum value in numeric range inclusive
+     * 设置数值范围上限（不含边界）。
      *
-     * @param value numeric value
-     * @return next options
+     * @param value 上限值
+     * @return 后续查询过滤器选项
      */
     QueryFilter maxExclusive(double value);
 

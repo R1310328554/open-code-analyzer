@@ -16,32 +16,31 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Combine configuration for hybrid search fusion methods.
+ * 混合搜索融合方法的组合配置。
  * <p>
- * Supports Reciprocal Rank Fusion (RRF) and Linear combination methods.
+ * 支持倒数排名融合（RRF）与线性加权两种策略。
  *
  * @author Nikita Koksharov
  */
 public interface Combine {
 
     /**
-     * Creates a Reciprocal Rank Fusion (RRF) combine configuration.
+     * 创建倒数排名融合（RRF）组合配置。
      * <p>
-     * RRF combines rankings from text search and vector similarity using
-     * the formula: score = 1 / (constant + rank)
+     * RRF 按公式 score = 1 / (constant + rank) 融合文本检索与向量相似度排名。
      *
-     * @return RRF configuration step
+     * @return RRF 配置步骤
      */
     static CombineReciprocalRankFusionStep reciprocalRankFusion() {
         return new CombineRrfParams();
     }
 
     /**
-     * Creates a Linear combination configuration.
+     * 创建线性加权组合配置。
      * <p>
-     * Linear combination uses weighted scores: score = alpha * text_score + beta * vector_score
+     * 线性组合公式：score = alpha * text_score + beta * vector_score。
      *
-     * @return Linear configuration step
+     * @return 线性配置步骤
      */
     static CombineLinearStep linear() {
         return new CombineLinearParams();

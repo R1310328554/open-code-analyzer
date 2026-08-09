@@ -21,8 +21,7 @@ import org.redisson.api.search.GroupBy;
 import java.time.Duration;
 
 /**
- * Arguments for FT.HYBRID command which performs hybrid search combining
- * text search and vector similarity with configurable fusion methods.
+ * {@code FT.HYBRID} 混合搜索命令参数，融合文本检索与向量相似度。
  * <p>
  * Requires Redis 8.4.0 or higher.
  *
@@ -31,69 +30,69 @@ import java.time.Duration;
 public interface HybridQueryArgs {
 
     /**
-     * Creates a new hybrid query with the specified text search query.
+     * 以指定文本查询表达式创建混合搜索。
      *
-     * @param query the text search query expression
-     * @return query step for further configuration
+     * @param query 文本检索表达式
+     * @return 查询配置步骤
      */
     static QueryStep query(String query) {
         return new HybridQueryParams(query);
     }
 
     /**
-     * Configures the combine method for fusing text search and vector similarity results.
+     * 配置文本检索与向量相似度结果的融合方式。
      *
-     * @param value combine configuration (use {@link Combine#reciprocalRankFusion()} or {@link Combine#linear()})
-     * @return this instance
+     * @param value 组合配置（使用 {@link Combine#reciprocalRankFusion()} 或 {@link Combine#linear()}）
+     * @return 当前实例
      */
     HybridQueryArgs combine(Combine value);
 
     /**
-     * Specifies which fields to return in the results.
+     * 指定结果中需返回的字段。
      *
-     * @param fields field names to load
-     * @return this instance
+     * @param fields 字段名
+     * @return 当前实例
      */
     HybridQueryArgs load(String... fields);
 
     /**
-     * Limits the final results.
+     * 限制最终返回结果数量。
      *
-     * @param offset zero-indexed offset
-     * @param count number of results to return
-     * @return this instance
+     * @param offset 起始偏移（从 0 起）
+     * @param count 返回条数
+     * @return 当前实例
      */
     HybridQueryArgs limit(int offset, int count);
 
     /**
-     * Groups results by specified fields with reduction functions.
+     * 按指定字段分组并应用聚合函数。
      *
-     * @param groups group by definitions
-     * @return this instance
+     * @param groups 分组定义
+     * @return 当前实例
      */
     HybridQueryArgs groupBy(GroupBy... groups);
 
     /**
-     * Applies transformations to create new fields.
+     * 应用表达式变换以生成新字段。
      *
-     * @param expressions apply expressions
-     * @return this instance
+     * @param expressions 表达式列表
+     * @return 当前实例
      */
     HybridQueryArgs apply(Expression... expressions);
 
     /**
-     * Sets a runtime timeout for the query execution.
+     * 设置查询执行超时时间。
      *
-     * @param timeout query timeout
-     * @return this instance
+     * @param timeout 超时时间
+     * @return 当前实例
      */
     HybridQueryArgs timeout(Duration timeout);
 
     /**
-     * Applies post-filtering after the COMBINE step.
+     * 在 COMBINE 步骤之后应用后置过滤表达式。
      *
-     * @param value filter expression
-     * @return this instance
+     * @param value 过滤表达式
+     * @return 当前实例
      */
     HybridQueryArgs filter(String value);
 

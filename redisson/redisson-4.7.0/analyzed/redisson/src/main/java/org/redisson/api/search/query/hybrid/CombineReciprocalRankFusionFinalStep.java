@@ -16,7 +16,7 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Reciprocal Rank Fusion (RRF) configuration step.
+ * 倒数排名融合（RRF）的最终配置步骤接口。
  *
  * @author Nikita Koksharov
  */

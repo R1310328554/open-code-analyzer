@@ -16,7 +16,7 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Implementation of Reciprocal Rank Fusion combine configuration.
+ * {@link CombineReciprocalRankFusionStep} 倒数排名融合组合配置的实现类。
  *
  * @author Nikita Koksharov
  */

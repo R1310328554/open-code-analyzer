@@ -18,8 +18,7 @@ package org.redisson.api.search.query;
 import java.util.List;
 
 /**
- * Search result object returned by
- * {@link org.redisson.api.RSearch#search(String, String, QueryOptions)} method
+ * {@link org.redisson.api.RSearch#search(String, String, QueryOptions)} 返回的搜索结果。
  *
  * @author Nikita Koksharov
  *
@@ -36,18 +35,18 @@ public final class SearchResult {
     }
 
     /**
-     * Returns total number of results.
+     * 返回匹配文档总数。
      *
-     * @return total number of results
+     * @return 匹配总数
      */
     public long getTotal() {
         return total;
     }
 
     /**
-     * Returns list of found Document objects
+     * 返回命中的文档列表。
      *
-     * @return list of found Document objects
+     * @return 文档列表
      */
     public List<Document> getDocuments() {
         return documents;
