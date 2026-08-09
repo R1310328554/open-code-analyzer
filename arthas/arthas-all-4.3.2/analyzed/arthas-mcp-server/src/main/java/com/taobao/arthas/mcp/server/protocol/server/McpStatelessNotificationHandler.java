@@ -8,15 +8,17 @@ package com.taobao.arthas.mcp.server.protocol.server;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handler for MCP notifications in a stateless server.
+ * 无状态 MCP 服务端上的通知处理器。
+ * <p>
+ * 客户端发送 JSON-RPC 通知（无 id）时，由 {@link McpStatelessServerHandler} 路由至此接口。
  */
 public interface McpStatelessNotificationHandler {
 
 	/**
-	 * Handle to notification and complete once done.
-	 * @param transportContext {@link McpTransportContext} associated with the transport
-	 * @param params the payload of the MCP notification
-	 * @return Mono which completes once the processing is done
+	 * 处理通知并在完成后结束 Future。
+	 * @param transportContext 与本次传输关联的 {@link McpTransportContext}
+	 * @param params MCP 通知负载
+	 * @return 处理完成后完成的 CompletableFuture
 	 */
 	CompletableFuture<Void> handle(McpTransportContext transportContext, Object params);
 

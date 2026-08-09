@@ -18,13 +18,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 /**
- * MCP server function specification, the server can choose the supported features.
- * This implementation only provides an asynchronous API.
+ * MCP 服务端功能规格：声明工具、资源、提示词及任务等能力。
+ * 本实现仅提供基于 {@link CompletableFuture} 的异步 API。
  *
  * @author Yeaury
  */
 public class McpServerFeatures {
 
+	/** 不可变的服务端配置快照，供 {@link McpNettyServer} 初始化使用。 */
 	public static class McpServerConfig {
 		private final McpSchema.Implementation serverInfo;
 		private final McpSchema.ServerCapabilities serverCapabilities;
@@ -224,6 +225,7 @@ public class McpServerFeatures {
 		}
 	}
 
+	/** 工具元数据与其调用处理器的绑定。 */
 	public static class ToolSpecification {
 		private final McpSchema.Tool tool;
 		private final ToolCallFunction call;
@@ -245,7 +247,7 @@ public class McpServerFeatures {
 	}
 
 	/**
-	 * Tool call function interface with three parameters
+	 * 三参数工具调用函数式接口：交换上下文、Arthas 命令上下文与请求参数。
 	 */
 	@FunctionalInterface
 	public interface ToolCallFunction {
@@ -256,6 +258,7 @@ public class McpServerFeatures {
 		);
 	}
 
+	/** 资源描述与其读取处理器的绑定。 */
 	public static class ResourceSpecification {
 		private final McpSchema.Resource resource;
 		private final BiFunction<McpNettyServerExchange, McpSchema.ReadResourceRequest, CompletableFuture<McpSchema.ReadResourceResult>> readHandler;
@@ -276,6 +279,7 @@ public class McpServerFeatures {
 		}
 	}
 
+	/** 提示词模板与其生成处理器的绑定。 */
 	public static class PromptSpecification {
 		private final McpSchema.Prompt prompt;
 		private final BiFunction<McpNettyServerExchange, McpSchema.GetPromptRequest, CompletableFuture<McpSchema.GetPromptResult>> promptHandler;

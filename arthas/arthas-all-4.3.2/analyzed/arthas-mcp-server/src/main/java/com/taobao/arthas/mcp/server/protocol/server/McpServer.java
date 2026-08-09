@@ -22,12 +22,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 /**
- * MCP server interface and builder for Netty-based implementation.
+ * 基于 Netty 的 MCP 服务端接口与构建器。
+ * <p>
+ * 提供流式（{@link StreamableServerNettySpecification}）与无状态（{@link StatelessServerNettySpecification}）
+ * 两种服务端规格，通过链式 API 注册工具、资源、提示词及任务相关组件后 {@link #build()}。
  *
  * @author Yeaury
  */
 public interface McpServer {
 
+	/** 默认服务端标识（名称与版本）。 */
 	McpSchema.Implementation DEFAULT_SERVER_INFO = new McpSchema.Implementation("mcp-server", "1.0.0");
 
 	static StreamableServerNettySpecification netty(McpStreamableServerTransportProvider transportProvider) {
@@ -38,6 +42,7 @@ public interface McpServer {
 		return new StatelessServerNettySpecification(transport);
 	}
 
+	/** 流式 MCP 服务端构建规格，支持会话、任务工具与根目录变更回调。 */
 	class StreamableServerNettySpecification {
 
 		ObjectMapper objectMapper;
@@ -64,6 +69,7 @@ public interface McpServer {
 
 		final List<BiFunction<McpNettyServerExchange, List<McpSchema.Root>, CompletableFuture<Void>>> rootsChangeHandlers = new ArrayList<>();
 
+		/** 单次 MCP 请求默认超时时间。 */
 		Duration requestTimeout = Duration.ofSeconds(10); // Default timeout
 
 		TaskStore<McpSchema.ServerTaskPayloadResult> taskStore;
@@ -257,6 +263,7 @@ public interface McpServer {
 			return this;
 		}
 
+		/** 校验任务工具与 TaskStore 配置是否一致。 */
 		protected void validateTaskConfiguration() {
 			boolean hasTaskTools = !this.taskTools.isEmpty();
 			boolean hasTaskStore = this.taskStore != null;
@@ -265,7 +272,7 @@ public interface McpServer {
 				throw new IllegalStateException("Task-aware tools registered but no TaskStore configured. "
 						+ "Add a TaskStore via .taskStore(store) or remove task tools.");
 			}
-			// Note: Having taskStore without taskTools is allowed (for future dynamic registration)
+			// 仅配置 TaskStore 而无任务工具是允许的，便于后续动态注册
 		}
 
 		private void assertNoDuplicateTool(String toolName) {
@@ -281,6 +288,7 @@ public interface McpServer {
 			}
 		}
 
+		/** 组装并返回 {@link McpNettyServer} 实例。 */
 		public McpNettyServer build() {
 			validateTaskConfiguration();
 			
@@ -299,6 +307,7 @@ public interface McpServer {
 		}
 	}
 
+	/** 无状态 MCP 服务端构建规格，每个 HTTP 请求独立处理、不维护会话。 */
 	class StatelessServerNettySpecification {
 
 		private final McpStatelessServerTransport transport;
@@ -460,6 +469,7 @@ public interface McpServer {
 			return this;
 		}
 
+		/** 组装并返回 {@link McpStatelessNettyServer} 实例。 */
 		public McpStatelessNettyServer build() {
 			ObjectMapper mapper = this.objectMapper != null ? this.objectMapper : JsonParser.getObjectMapper();
 			return new McpStatelessNettyServer(

@@ -16,7 +16,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * In-memory implementation of EventStore.
+ * {@link EventStore} 的内存实现，按会话 ID 存储 SSE 事件以支持断线重放。
+ * <p>
+ * 每个会话保留有限条数并在超限时淘汰最旧事件，防止内存泄漏。
  *
  * @author Yeaury
  */
@@ -24,12 +26,10 @@ public class InMemoryEventStore implements EventStore {
     
     private static final Logger logger = LoggerFactory.getLogger(InMemoryEventStore.class);
     
-    /** Global event ID counter */
+    /** 全局递增的事件 ID 计数器 */
     private final AtomicLong globalEventIdCounter = new AtomicLong(0);
     
-    /**
-     * Events storage: sessionId -> list of events
-     */
+    /** 事件存储：sessionId -> 按时间顺序排列的事件列表 */
     private final Map<String, List<StoredEvent>> sessionEvents = new ConcurrentHashMap<>();
     
     /**
@@ -66,10 +66,10 @@ public class InMemoryEventStore implements EventStore {
         sessionEvents.computeIfAbsent(sessionId, k -> new ArrayList<>()).add(event);
         eventIdToSession.put(eventId, sessionId);
         
-        // Cleanup old events if needed
+        // 超出单会话上限时移除最旧事件
         List<StoredEvent> events = sessionEvents.get(sessionId);
         if (events.size() > maxEventsPerSession) {
-            // Remove oldest events
+            // 从列表头部删除最旧事件并同步 eventId 索引
             int toRemove = events.size() - maxEventsPerSession;
             for (int i = 0; i < toRemove; i++) {
                 StoredEvent removedEvent = events.remove(0);
@@ -101,7 +101,7 @@ public class InMemoryEventStore implements EventStore {
                 if (event.getEventId().equals(fromEventId)) {
                     foundStartEvent = true;
                     result.add(event);
-                    // clear the replayed events
+                    // 重放完成后从存储中清除已投递事件
                     events.remove(event);
                     eventIdToSession.remove(event.getEventId());
                 }

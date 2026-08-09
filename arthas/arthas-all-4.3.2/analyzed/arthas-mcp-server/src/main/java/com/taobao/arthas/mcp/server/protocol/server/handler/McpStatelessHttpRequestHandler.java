@@ -27,8 +27,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Server-side HTTP request handler for stateless MCP transport.
- * This handler processes HTTP requests without maintaining client sessions.
+ * 无状态 MCP 的 HTTP 请求处理器：每个 POST 独立处理 JSON-RPC 消息，不维护会话。
+ * <p>
+ * 仅支持 POST；Accept 须同时包含 application/json 与 text/event-stream。
  *
  */
 public class McpStatelessHttpRequestHandler {
@@ -48,11 +49,11 @@ public class McpStatelessHttpRequestHandler {
     private final AtomicBoolean isClosing = new AtomicBoolean(false);
 
     /**
-     * Constructs a new McpStatelessHttpRequestHandler instance.
+     * 构造无状态 HTTP 处理器。
      * 
-     * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization
-     * @param mcpEndpoint The endpoint URI where clients should send their JSON-RPC messages
-     * @param contextExtractor The extractor for transport context from the request
+     * @param objectMapper JSON 序列化/反序列化器
+     * @param mcpEndpoint 客户端发送 JSON-RPC 的 URI 后缀
+     * @param contextExtractor 从 HTTP 请求提取传输上下文的 extractor
      */
     public McpStatelessHttpRequestHandler(ObjectMapper objectMapper, String mcpEndpoint,
                                          McpTransportContextExtractor<FullHttpRequest> contextExtractor) {
@@ -103,9 +104,8 @@ public class McpStatelessHttpRequestHandler {
         }
     }
 
-    /**
-     * Handles POST requests for incoming JSON-RPC messages from clients.
-     */
+    /** 处理 POST：反序列化 JSON-RPC，区分 request/notification 并异步写回 HTTP 响应。 */
+
     private void handlePostRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
         McpTransportContext transportContext = this.contextExtractor.extract(request, new DefaultMcpTransportContext());
 

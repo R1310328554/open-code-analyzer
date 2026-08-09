@@ -9,15 +9,17 @@ import com.taobao.arthas.mcp.server.session.ArthasCommandContext;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handler for MCP requests in a stateless server.
+ * 无状态 MCP 服务端上的请求处理器。
+ * <p>
+ * 每个 MCP 方法（如 initialize、tools/call）对应一个 {@code McpStatelessRequestHandler} 实现。
  */
 public interface McpStatelessRequestHandler<R> {
 
 	/**
-	 * Handle the request and complete with a result.
-	 * @param transportContext {@link McpTransportContext} associated with the transport
-	 * @param params the payload of the MCP request
-	 * @return Mono which completes with the response object
+	 * 处理请求并返回结果。
+	 * @param transportContext 与本次传输关联的 {@link McpTransportContext}
+	 * @param params MCP 请求负载
+	 * @return 携带响应对象的 CompletableFuture
 	 */
 	CompletableFuture<R> handle(McpTransportContext transportContext, ArthasCommandContext arthasCommandContext, Object params);
 

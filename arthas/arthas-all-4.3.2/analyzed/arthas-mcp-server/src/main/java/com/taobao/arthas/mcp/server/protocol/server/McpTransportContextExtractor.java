@@ -5,20 +5,21 @@
 package com.taobao.arthas.mcp.server.protocol.server;
 
 /**
- * Interface for extracting transport context from server requests.
- * This allows inspection of HTTP transport level metadata during request processing.
+ * 从服务端原始请求中提取 {@link McpTransportContext} 的函数式接口。
+ * <p>
+ * 可在 Netty {@code FullHttpRequest} 上读取 Header、URI 等信息并写入上下文。
  *
- * @param <T> the type of server request
+ * @param <T> 服务端请求类型（通常为 {@code FullHttpRequest}）
  */
 @FunctionalInterface
 public interface McpTransportContextExtractor<T> {
 
     /**
-     * Extract transport context from the server request.
+     * 从请求中提取传输上下文并填充到 base 实例。
      * 
-     * @param serverRequest the server request to extract context from
-     * @param context the base context to fill in
-     * @return the updated context with extracted information
+     * @param serverRequest 待解析的服务端请求
+     * @param context 待填充的基础上下文
+     * @return 写入提取信息后的上下文
      */
     McpTransportContext extract(T serverRequest, McpTransportContext context);
 

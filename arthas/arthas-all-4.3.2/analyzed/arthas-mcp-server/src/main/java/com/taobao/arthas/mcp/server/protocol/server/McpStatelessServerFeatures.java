@@ -14,13 +14,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 /**
- * MCP server function specification, the server can choose the supported features.
- * This implementation only provides an asynchronous API.
+ * 无状态 MCP 服务端功能规格，服务端可按需启用工具、资源与提示词。
+ * 本实现仅提供异步 API，不包含任务与会话相关扩展。
  *
  * @author Yeaury
  */
 public class McpStatelessServerFeatures {
 
+	/** 无状态服务端启动所需的不可变配置。 */
 	public static class McpServerConfig {
 		private final McpSchema.Implementation serverInfo;
 		private final McpSchema.ServerCapabilities serverCapabilities;
@@ -41,8 +42,7 @@ public class McpStatelessServerFeatures {
 			
 			Assert.notNull(serverInfo, "The server information cannot be empty");
 
-			// If serverCapabilities is empty, the appropriate capability configuration
-			// is automatically built based on the provided capabilities
+			// 若未显式指定 serverCapabilities，则根据已注册的工具/资源/提示词自动推断能力位
 			if (serverCapabilities == null) {
 				serverCapabilities = new McpSchema.ServerCapabilities(
 						null, // experimental
@@ -165,7 +165,7 @@ public class McpStatelessServerFeatures {
 	}
 
 	/**
-	 * Tool call function interface with three parameters
+	 * 无状态工具调用函数：传输上下文、命令上下文与参数字典。
 	 */
 	@FunctionalInterface
 	public interface ToolCallFunction {

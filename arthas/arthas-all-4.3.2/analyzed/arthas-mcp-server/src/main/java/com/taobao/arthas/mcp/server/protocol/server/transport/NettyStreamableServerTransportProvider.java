@@ -19,9 +19,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Server-side implementation of the Model Context Protocol (MCP) streamable transport
- * layer using HTTP with Server-Sent Events (SSE) through Netty. This implementation
- * provides a bridge between Netty operations and the MCP transport interface.
+ * 流式 MCP 传输提供者：封装 {@link McpStreamableHttpRequestHandler} 并实现协议版本声明。
+ * <p>
+ * 负责注册会话工厂、向所有 SSE 客户端广播通知及优雅关闭。
  *
  * @see McpStreamableServerTransportProvider
  */
@@ -53,6 +53,7 @@ public class NettyStreamableServerTransportProvider implements McpStreamableServ
         this.requestHandler = new McpStreamableHttpRequestHandler(objectMapper, mcpEndpoint, disallowDelete, contextExtractor, keepAliveInterval);
     }
 
+    /** 返回本服务端支持的 MCP 协议版本列表（按时间递增）。 */
     @Override
     public List<String> protocolVersions() {
         return Arrays.asList(ProtocolVersions.MCP_2024_11_05, ProtocolVersions.MCP_2025_03_26,
@@ -65,11 +66,11 @@ public class NettyStreamableServerTransportProvider implements McpStreamableServ
     }
 
     /**
-     * Broadcasts a notification to all connected clients through their SSE connections.
+     * 通过各活跃 SSE 会话向所有已连接客户端广播通知。
      * 
-     * @param method The method name for the notification
-     * @param params The parameters for the notification
-     * @return A CompletableFuture that completes when the broadcast attempt is finished
+     * @param method 通知方法名
+     * @param params 通知参数
+     * @return 广播尝试完成后的 CompletableFuture
      */
     @Override
     public CompletableFuture<Void> notifyClients(String method, Object params) {
@@ -146,7 +147,7 @@ public class NettyStreamableServerTransportProvider implements McpStreamableServ
         }
     }
 
-    // Placeholder interface for KeepAliveScheduler if not already implemented
+    // KeepAliveScheduler 占位接口（若独立模块未引入时使用）
     private interface KeepAliveScheduler {
         void shutdown();
     }

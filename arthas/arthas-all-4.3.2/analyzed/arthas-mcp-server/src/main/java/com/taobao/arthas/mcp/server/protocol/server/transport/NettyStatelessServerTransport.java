@@ -15,9 +15,9 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Server-side implementation of the Model Context Protocol (MCP) stateless transport
- * layer using HTTP through Netty. This implementation provides a bridge between 
- * Netty operations and the MCP transport interface for stateless operations.
+ * 无状态 MCP 传输的 Netty 适配层，将 {@link McpStatelessServerHandler} 绑定到 HTTP 处理器。
+ * <p>
+ * 通过 {@link #getMcpRequestHandler()} 暴露底层 {@link McpStatelessHttpRequestHandler} 供 Netty 管道挂载。
  *
  * @see McpStatelessServerTransport
  */
@@ -28,14 +28,12 @@ public class NettyStatelessServerTransport implements McpStatelessServerTranspor
     private final McpStatelessHttpRequestHandler requestHandler;
 
     /**
-     * Constructs a new NettyStatelessServerTransportProvider instance.
+     * 私有构造：创建内部 {@link McpStatelessHttpRequestHandler}。
      * 
-     * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization
-     *                     of messages.
-     * @param mcpEndpoint The endpoint URI where clients should send their JSON-RPC
-     *                    messages via HTTP.
-     * @param contextExtractor The extractor for transport context from the request.
-     * @throws IllegalArgumentException if any parameter is null
+     * @param objectMapper JSON 序列化器
+     * @param mcpEndpoint MCP HTTP 端点路径
+     * @param contextExtractor 传输上下文提取器
+     * @throws IllegalArgumentException 任一参数为 null
      */
     private NettyStatelessServerTransport(ObjectMapper objectMapper, String mcpEndpoint,
                                           McpTransportContextExtractor<FullHttpRequest> contextExtractor) {
@@ -77,9 +75,8 @@ public class NettyStatelessServerTransport implements McpStatelessServerTranspor
         return new Builder();
     }
 
-    /**
-     * Builder for creating instances of {@link NettyStatelessServerTransport}.
-     */
+    /** {@link NettyStatelessServerTransport} 的流式构建器。 */
+
     public static class Builder {
 
         private ObjectMapper objectMapper;

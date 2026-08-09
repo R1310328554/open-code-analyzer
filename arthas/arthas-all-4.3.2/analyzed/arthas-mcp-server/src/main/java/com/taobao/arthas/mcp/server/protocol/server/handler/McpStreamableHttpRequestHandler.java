@@ -37,9 +37,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import static com.taobao.arthas.mcp.server.util.McpAuthExtractor.MCP_AUTH_SUBJECT_KEY;
 
 /**
- * Server-side implementation of the Model Context Protocol (MCP) streamable transport
- * layer using HTTP with Server-Sent Events (SSE) through Netty. This implementation
- * provides a bridge between Netty operations and the MCP transport interface.
+ * 流式 MCP 传输的 Netty HTTP+SSE 实现，维护 mcp-session-id 维度的长连接与会话状态。
+ * <p>
+ * GET 建立 SSE 监听流，POST 收发 JSON-RPC（含 initialize 创建会话），DELETE 可销毁会话。
  *
  * @see McpStreamableServerTransportProvider
  */
@@ -196,9 +196,8 @@ public class McpStreamableHttpRequestHandler {
         }
     }
 
-    /**
-     * Handles GET requests to establish SSE connections and message replay.
-     */
+    /** 处理 GET：校验 session 与 Accept 头，建立 SSE 推送通道或拒绝 last-event-id 重放。 */
+
     private void handleGetRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
         // TODO support last-event-id #3118
         // MCP 客户端在 SSE 断线重连时，可能会带上 last-event-id 尝试做消息回放。

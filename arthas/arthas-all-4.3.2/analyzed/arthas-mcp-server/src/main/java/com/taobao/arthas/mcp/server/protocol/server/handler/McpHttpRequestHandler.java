@@ -18,7 +18,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * MCP HTTP请求处理器，分发请求到无状态或流式处理器。
+ * MCP HTTP 入口处理器：按 {@link ServerProtocol} 将请求分发给无状态或流式子处理器。
+ * <p>
+ * 统一校验 MCP 端点路径、关停状态，并在出错时返回 JSON 格式的 {@link McpError}。
  * 
  * @author Yeaury
  */
@@ -64,6 +66,7 @@ public class McpHttpRequestHandler {
         this.streamableHandler = streamableHandler;
     }
 
+    /** 根据当前协议模式路由 GET/POST 等到对应子处理器。 */
     public void handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         String uri = request.uri();
         if (!uri.endsWith(mcpEndpoint)) {

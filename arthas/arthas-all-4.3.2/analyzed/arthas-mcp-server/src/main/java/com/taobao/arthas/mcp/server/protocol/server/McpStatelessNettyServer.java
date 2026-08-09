@@ -22,7 +22,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 
 /**
- * A Netty-based MCP server implementation that provides access to tools, resources, and prompts.
+ * 基于 Netty 的无状态 MCP 服务端实现，暴露工具、资源与提示词等标准 MCP 能力。
+ * <p>
+ * 构造时按 {@link McpSchema.ServerCapabilities} 注册 initialize、ping 及各子 API 的请求处理器。
  *
  * @author Yeaury
  */
@@ -70,27 +72,27 @@ public class McpStatelessNettyServer {
 
 		Map<String, McpStatelessRequestHandler<?>> requestHandlers = new HashMap<>();
 
-		// Initialize request handlers for standard MCP methods
+		// 为标准 MCP 方法注册请求处理器
         requestHandlers.put(McpSchema.METHOD_INITIALIZE, initializeRequestHandler());
 
-		// Ping MUST respond with an empty data, but not NULL response.
+		// Ping 须返回空对象而非 null 响应体
 		requestHandlers.put(McpSchema.METHOD_PING,
 				(exchange, commandContext, params) -> CompletableFuture.completedFuture(Collections.emptyMap()));
 
-		// Add tools API handlers if the tool capability is enabled
+		// 启用工具能力时注册 tools/list 与 tools/call 处理器
 		if (this.serverCapabilities.getTools() != null) {
 			requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler());
 			requestHandlers.put(McpSchema.METHOD_TOOLS_CALL, toolsCallRequestHandler());
 		}
 
-		// Add resources API handlers if provided
+		// 启用资源能力时注册资源列表、读取与模板列表处理器
 		if (this.serverCapabilities.getResources() != null) {
 			requestHandlers.put(McpSchema.METHOD_RESOURCES_LIST, resourcesListRequestHandler());
 			requestHandlers.put(McpSchema.METHOD_RESOURCES_READ, resourcesReadRequestHandler());
 			requestHandlers.put(McpSchema.METHOD_RESOURCES_TEMPLATES_LIST, resourceTemplateListRequestHandler());
 		}
 
-		// Add prompts API handlers if provider exists
+		// 启用提示词能力时注册 prompt 列表与获取处理器
 		if (this.serverCapabilities.getPrompts() != null) {
 			requestHandlers.put(McpSchema.METHOD_PROMPT_LIST, promptsListRequestHandler());
 			requestHandlers.put(McpSchema.METHOD_PROMPT_GET, promptsGetRequestHandler());
@@ -104,7 +106,7 @@ public class McpStatelessNettyServer {
 	}
 
 	// ---------------------------------------
-	// Lifecycle Management
+	// 生命周期：initialize 握手与协议版本协商
 	// ---------------------------------------
 	private McpStatelessRequestHandler<McpSchema.InitializeResult> initializeRequestHandler() {
 		return (exchange, commandContext, params) -> CompletableFuture.supplyAsync(() -> {
@@ -114,7 +116,7 @@ public class McpStatelessNettyServer {
 					initializeRequest.getProtocolVersion(), initializeRequest.getCapabilities(),
 					initializeRequest.getClientInfo());
 
-			// The server MUST respond with the highest protocol version it supports
+			// 服务端须返回其支持的最高协议版本（若客户端版本不受支持）
 			// if
 			// it does not support the requested (e.g. Client) version.
 			String serverProtocolVersion = protocolVersions.get(protocolVersions.size() - 1);
@@ -168,7 +170,7 @@ public class McpStatelessNettyServer {
 	}
 
 	// ---------------------------------------
-	// Tool Management
+	// 工具管理：动态增删与 list/call 请求处理
 	// ---------------------------------------
 
 	public CompletableFuture<Void> addTool(McpStatelessServerFeatures.ToolSpecification toolSpecification) {
@@ -270,7 +272,7 @@ public class McpStatelessNettyServer {
 	}
 
 	// ---------------------------------------
-	// Resource Management
+	// 资源管理：按 URI 注册读取处理器
 	// ---------------------------------------
 
 	public CompletableFuture<Void> addResource(McpStatelessServerFeatures.ResourceSpecification resourceSpecification) {
@@ -360,7 +362,7 @@ public class McpStatelessNettyServer {
 	}
 
 	// ---------------------------------------
-	// Prompt Management
+	// 提示词管理：按名称注册生成处理器
 	// ---------------------------------------
 
 	public CompletableFuture<Void> addPrompt(McpStatelessServerFeatures.PromptSpecification promptSpecification) {
