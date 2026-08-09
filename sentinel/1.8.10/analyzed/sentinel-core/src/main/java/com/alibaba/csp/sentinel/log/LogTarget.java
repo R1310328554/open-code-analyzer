@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.log;
 import java.lang.annotation.*;
 
 /**
+ * 标注 {@link Logger} SPI 实现所服务的日志名称。
+ *
  * @author xue8
  * @since 1.7.2
  */
@@ -26,9 +28,9 @@ import java.lang.annotation.*;
 @Documented
 public @interface LogTarget {
     /**
-     * Returns the logger name.
+     * 返回 Logger 名称。
      *
-     * @return the logger name. Record logger by default
+     * @return Logger 名称，默认为 Record logger
      */
     String value() default RecordLog.LOGGER_NAME;
 }

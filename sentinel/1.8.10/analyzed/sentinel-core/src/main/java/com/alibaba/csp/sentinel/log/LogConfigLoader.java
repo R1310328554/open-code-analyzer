@@ -23,7 +23,7 @@ import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
- * <p>The loader that responsible for loading Sentinel log configurations.</p>
+ * <p>负责加载 Sentinel 日志相关配置的加载器。</p>
  *
  * @author lianglin
  * @since 1.7.0
@@ -41,14 +41,14 @@ public class LogConfigLoader {
         try {
             load();
         } catch (Throwable t) {
-            // NOTE: do not use RecordLog here, or there will be circular class dependency!
+            // 注意：此处不要使用 RecordLog，否则会产生循环类依赖！
             System.err.println("[LogConfigLoader] Failed to initialize configuration items");
             t.printStackTrace();
         }
     }
 
     private static void load() {
-        // Order: system property -> system env -> default file (classpath:sentinel.properties) -> legacy path
+        // 加载顺序：系统属性 -> 环境变量 -> 默认文件 (classpath:sentinel.properties) -> 旧路径
         String fileName = System.getProperty(LOG_CONFIG_PROPERTY_KEY);
         if (StringUtil.isBlank(fileName)) {
             fileName = System.getenv(LOG_CONFIG_ENV_KEY);

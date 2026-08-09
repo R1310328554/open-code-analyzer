@@ -24,7 +24,7 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
- * Load registered init functions and execute in order.
+ * 加载已注册的初始化函数并按顺序执行。
  *
  * @author Eric Zhao
  */
@@ -33,10 +33,10 @@ public final class InitExecutor {
     private static AtomicBoolean initialized = new AtomicBoolean(false);
 
     /**
-     * If one {@link InitFunc} throws an exception, the init process
-     * will immediately be interrupted and the application will exit.
+     * 执行 Sentinel 初始化流程。若任一 {@link InitFunc} 抛出异常，
+     * 初始化过程会立即中断。
      *
-     * The initialization will be executed only once.
+     * 初始化仅执行一次。
      */
     public static void doInit() {
         if (!initialized.compareAndSet(false, true)) {

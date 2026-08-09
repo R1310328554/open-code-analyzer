@@ -33,5 +33,5 @@
     "sentinel-core/src/main/java/com/alibaba/csp/sentinel/log/jul/ConsoleHandler.java"
   ],
   "remaining_pending": 905,
-  "done": 45
+  "done": 60
 }

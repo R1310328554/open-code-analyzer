@@ -22,6 +22,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 标注 {@link InitFunc} 执行顺序的注解，数值越小优先级越高。
+ *
  * @author Eric Zhao
  */
 @Retention(RetentionPolicy.RUNTIME)
@@ -33,9 +35,9 @@ public @interface InitOrder {
     int HIGHEST_PRECEDENCE = Integer.MIN_VALUE;
 
     /**
-     * The order value. Lowest precedence by default.
+     * 顺序值，默认最低优先级。
      *
-     * @return the order value
+     * @return 顺序值
      */
     int value() default LOWEST_PRECEDENCE;
 }

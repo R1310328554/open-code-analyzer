@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.eagleeye;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * {@link StatLogger} 的构建器，用于配置统计日志的滚动间隔、条目上限、分隔符与输出 Appender。
+ *
  * @author jifeng
  */
 public final class StatLoggerBuilder extends BaseLoggerBuilder<StatLoggerBuilder> {
@@ -88,10 +90,21 @@ public final class StatLoggerBuilder extends BaseLoggerBuilder<StatLoggerBuilder
             entryDelimiter, keyDelimiter, valueDelimiter);
     }
 
+    /**
+     * 构建单例 {@link StatLogger}，若同名 Logger 已存在则复用。
+     *
+     * @return 单例 StatLogger
+     */
     public StatLogger buildSingleton() {
         return StatLogController.createLoggerIfNotExists(this);
     }
 
+    /**
+     * 校验统计滚动间隔（秒）。须能被 60 整除且不超过 5 分钟。
+     *
+     * @param intervalSeconds 间隔秒数
+     * @throws IllegalArgumentException 间隔非法时抛出
+     */
     static void validateInterval(final long intervalSeconds) throws IllegalArgumentException {
         if (intervalSeconds < 1) {
             throw new IllegalArgumentException("Interval cannot be less than 1" + intervalSeconds);

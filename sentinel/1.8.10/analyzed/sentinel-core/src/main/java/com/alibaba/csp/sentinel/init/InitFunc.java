@@ -16,9 +16,16 @@
 package com.alibaba.csp.sentinel.init;
 
 /**
+ * Sentinel 初始化 SPI 接口，实现类通过 {@code META-INF/services} 注册。
+ *
  * @author Eric Zhao
  */
 public interface InitFunc {
 
+    /**
+     * 执行初始化逻辑。
+     *
+     * @throws Exception 初始化失败时抛出
+     */
     void init() throws Exception;
 }

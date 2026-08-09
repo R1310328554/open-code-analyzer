@@ -26,12 +26,12 @@ import java.util.logging.LogRecord;
 import java.util.logging.StreamHandler;
 
 /**
- * This Handler publishes log records to console by using {@link java.util.logging.StreamHandler}.
+ * 使用 {@link java.util.logging.StreamHandler} 将日志记录输出到控制台。
  *
- * Print log of WARNING level or above to System.err,
- * and print log of INFO level or below to System.out.
+ * WARNING 及以上级别输出到 System.err，
+ * INFO 及以下级别输出到 System.out。
  *
- * To use this handler, add the following VM argument:
+ * 启用本 Handler 时添加以下 VM 参数：
  * <pre>
  * -Dcsp.sentinel.log.output.type=console
  * </pre>
@@ -54,12 +54,12 @@ class ConsoleHandler extends Handler {
     }
 
     /**
-     * A Handler which publishes log records to System.out.
+     * 将日志记录输出到 System.out 的 Handler。
      */
     private StreamHandler stdoutHandler;
 
     /**
-     * A Handler which publishes log records to System.err.
+     * 将日志记录输出到 System.err 的 Handler。
      */
     private StreamHandler stderrHandler;
 
@@ -110,7 +110,7 @@ class ConsoleHandler extends Handler {
     static class LogRejectedExecutionHandler implements RejectedExecutionHandler {
 
         /**
-         * The period of logged rejected records.
+         * 被拒绝任务日志的记录周期（毫秒）。
          */
         private final long recordPeriod;
 

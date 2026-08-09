@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.log;
 import com.alibaba.csp.sentinel.log.jul.JavaLoggingAdapter;
 
 /**
- * The basic biz logger of Sentinel.
+ * Sentinel 基础业务日志门面，默认基于 JUL，可通过 SPI 替换实现。
  *
  * @author youji.zj
  * @author Eric Zhao
@@ -32,10 +32,10 @@ public class RecordLog {
 
     static {
         try {
-            // Load user-defined logger implementation first.
+            // 优先加载用户自定义 Logger 实现。
             logger = LoggerSpiProvider.getLogger(LOGGER_NAME);
             if (logger == null) {
-                // If no customized loggers are provided, we use the default logger based on JUL.
+                // 若无自定义 Logger，则使用基于 JUL 的默认实现。
                 logger = new JavaLoggingAdapter(LOGGER_NAME, DEFAULT_LOG_FILENAME);
             }
         } catch (Throwable t) {

@@ -23,6 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * 统计日志的滚动时间窗口数据，按 {@link StatEntry} 聚合 {@link StatEntryFunc}。
+ * 条目数达到上限时会克隆当前窗口并异步刷盘。
+ *
  * @author jifeng
  */
 final class StatRollingData {

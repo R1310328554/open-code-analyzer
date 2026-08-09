@@ -22,7 +22,7 @@ import java.util.ServiceLoader;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * SPI provider of Sentinel {@link Logger}.
+ * Sentinel {@link Logger} 的 SPI 提供者。
  *
  * @author Eric Zhao
  * @since 1.7.2
@@ -32,8 +32,7 @@ public final class LoggerSpiProvider {
     private static final Map<String, Logger> LOGGER_MAP = new HashMap<>();
 
     static {
-        // NOTE: this class SHOULD NOT depend on any other Sentinel classes
-        // except the util classes to avoid circular dependency.
+        // 注意：本类不应依赖除 util 外的其他 Sentinel 类，以避免循环依赖。
         try {
             resolveLoggers();
         } catch (Throwable t) {
@@ -50,7 +49,7 @@ public final class LoggerSpiProvider {
     }
 
     private static void resolveLoggers() {
-        // NOTE: Here we cannot use {@code SpiLoader} directly because it depends on the RecordLog.
+        // 注意：此处不能直接使用 {@code SpiLoader}，因其依赖 RecordLog。
         ServiceLoader<Logger> loggerLoader = ServiceLoader.load(Logger.class);
 
         for (Logger logger : loggerLoader) {
@@ -59,7 +58,7 @@ public final class LoggerSpiProvider {
                 continue;
             }
             String name = annotation.value();
-            // Load first encountered logger if multiple loggers are associated with the same name.
+            // 若多个 Logger 关联同一名称，加载首个遇到的实现。
             if (StringUtil.isNotBlank(name) && !LOGGER_MAP.containsKey(name)) {
                 LOGGER_MAP.put(name, logger);
                 System.out.println("Sentinel Logger SPI loaded for <" + name + ">: "

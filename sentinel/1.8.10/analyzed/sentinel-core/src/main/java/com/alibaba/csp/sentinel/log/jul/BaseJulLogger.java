@@ -27,7 +27,7 @@ import static com.alibaba.csp.sentinel.log.LogBase.LOG_OUTPUT_TYPE_CONSOLE;
 import static com.alibaba.csp.sentinel.log.LogBase.LOG_OUTPUT_TYPE_FILE;
 
 /**
- * The default logger based on java.util.logging.
+ * 基于 {@code java.util.logging} 的默认 Logger 基类。
  *
  * @author Eric Zhao
  * @since 1.7.2
@@ -40,7 +40,7 @@ public class BaseJulLogger {
         }
         disableOtherHandlers(logger, handler);
 
-        // Compatible with slf4j placeholder format "{}".
+        // 兼容 slf4j 占位符格式 "{}"。
         FormattingTuple formattingTuple = MessageFormatter.arrayFormat(detail, params);
         String message = formattingTuple.getMessage();
         logger.log(level, message);
@@ -59,7 +59,7 @@ public class BaseJulLogger {
         String logCharSet = LogBase.getLogCharset();
         Handler handler = null;
 
-        // Create handler according to logOutputType, set formatter to CspFormatter, set encoding to LOG_CHARSET
+        // 按 logOutputType 创建 Handler，设置 CspFormatter 与 LOG_CHARSET 编码
         switch (LogBase.getLogOutputType()) {
             case LOG_OUTPUT_TYPE_FILE:
                 String fileName = LogBase.getLogBaseDir() + logName;
@@ -93,16 +93,16 @@ public class BaseJulLogger {
             disableOtherHandlers(heliumRecordLog, handler);
         }
 
-        // Set log level to INFO by default
+        // 默认将 Logger 级别设为 INFO
         heliumRecordLog.setLevel(LogBase.getLogLevel());
         return handler;
     }
 
     /**
-     * Remove all current handlers from the logger and attach it with the given log handler.
+     * 移除 Logger 上所有现有 Handler，并挂载给定 Handler。
      *
-     * @param logger  logger
-     * @param handler the log handler
+     * @param logger  Logger 实例
+     * @param handler 日志 Handler
      */
     static void disableOtherHandlers(Logger logger, Handler handler) {
         if (logger == null) {
@@ -119,11 +119,11 @@ public class BaseJulLogger {
             }
 
             logger.setUseParentHandlers(false);
-            // Remove all current handlers.
+            // 移除所有现有 Handler。
             for (Handler h : handlers) {
                 logger.removeHandler(h);
             }
-            // Attach the given handler.
+            // 挂载给定 Handler。
             logger.addHandler(handler);
         }
     }

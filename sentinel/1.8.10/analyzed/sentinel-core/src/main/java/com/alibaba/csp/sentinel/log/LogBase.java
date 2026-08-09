@@ -23,13 +23,12 @@ import java.util.logging.Level;
 import static com.alibaba.csp.sentinel.util.ConfigUtil.addSeparator;
 
 /**
- * <p>The base config class for logging.</p>
+ * <p>Sentinel 日志基础配置类。</p>
  *
  * <p>
- * The default log base directory is {@code ${user.home}/logs/csp/}. We can use the {@link #LOG_DIR}
- * property to override it. The default log file name dose not contain pid, but if multi-instances of the same service
- * are running in the same machine, we may want to distinguish the log file by process ID number.
- * In this case, {@link #LOG_NAME_USE_PID} property could be configured as "true" to turn on this switch.
+ * 默认日志根目录为 {@code ${user.home}/logs/csp/}，可通过 {@link #LOG_DIR}
+ * 属性覆盖。默认日志文件名不含 pid；若同一机器上运行同一服务的多个实例，
+ * 可通过将 {@link #LOG_NAME_USE_PID} 配置为 {@code true} 在文件名中区分进程。
  * </p>
  *
  * @author Carpenter Lee
@@ -44,11 +43,11 @@ public class LogBase {
     public static final String LOG_LEVEL = "csp.sentinel.log.level";
 
     /**
-     * Output biz log (e.g. RecordLog and CommandCenterLog) to file.
+     * 将业务日志（如 RecordLog、CommandCenterLog）输出到文件。
      */
     public static final String LOG_OUTPUT_TYPE_FILE = "file";
     /**
-     * Output biz log (e.g. RecordLog and CommandCenterLog) to console.
+     * 将业务日志（如 RecordLog、CommandCenterLog）输出到控制台。
      */
     public static final String LOG_OUTPUT_TYPE_CONSOLE = "console";
     public static final String LOG_CHARSET_UTF8 = "utf-8";
@@ -109,7 +108,7 @@ public class LogBase {
         logNameUsePid = "true".equalsIgnoreCase(usePid);
         System.out.println("INFO: Sentinel log name use pid is: " + logNameUsePid);
 
-        // load log level
+        // 加载日志级别
         String logLevelString = properties.getProperty(LOG_LEVEL);
         if (logLevelString != null && (logLevelString = logLevelString.trim()).length() > 0) {
             try {
@@ -123,36 +122,36 @@ public class LogBase {
 
 
     /**
-     * Whether log file name should contain pid. This switch is configured by {@link #LOG_NAME_USE_PID} system property.
+     * 日志文件名是否应包含 pid，由 {@link #LOG_NAME_USE_PID} 系统属性控制。
      *
-     * @return true if log file name should contain pid, return true, otherwise false
+     * @return 若文件名应包含 pid 则返回 true，否则 false
      */
     public static boolean isLogNameUsePid() {
         return logNameUsePid;
     }
 
     /**
-     * Get the log file base directory path, which is guaranteed ended with {@link File#separator}.
+     * 获取日志文件根目录路径，保证以 {@link File#separator} 结尾。
      *
-     * @return log file base directory path
+     * @return 日志文件根目录路径
      */
     public static String getLogBaseDir() {
         return logBaseDir;
     }
 
     /**
-     * Get the log file output type.
+     * 获取日志输出类型。
      *
-     * @return log output type, "file" by default
+     * @return 日志输出类型，默认为 "file"
      */
     public static String getLogOutputType() {
         return logOutputType;
     }
 
     /**
-     * Get the log file charset.
+     * 获取日志文件字符集。
      *
-     * @return the log file charset, "utf-8" by default
+     * @return 日志文件字符集，默认为 "utf-8"
      */
     public static String getLogCharset() {
         return logCharSet;

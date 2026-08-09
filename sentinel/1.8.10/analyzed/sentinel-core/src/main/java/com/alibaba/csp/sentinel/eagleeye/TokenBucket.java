@@ -17,6 +17,9 @@ package com.alibaba.csp.sentinel.eagleeye;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 固定窗口令牌桶，用于限制 EagleEye 统计写入频率。
+ */
 class TokenBucket {
 
     private final long maxTokens;
@@ -27,6 +30,10 @@ class TokenBucket {
 
     private AtomicLong tokens;
 
+    /**
+     * @param maxTokens      每个窗口的最大令牌数，须大于 0
+     * @param intervalMillis 窗口长度（毫秒），至少 1000
+     */
     public TokenBucket(long maxTokens, long intervalMillis) {
         if (maxTokens <= 0) {
             throw new IllegalArgumentException("maxTokens should > 0, but given: " + maxTokens);
@@ -40,6 +47,12 @@ class TokenBucket {
         this.tokens = new AtomicLong(maxTokens);
     }
 
+    /**
+     * 尝试消耗一个令牌。
+     *
+     * @param now 当前时间戳（毫秒）
+     * @return 若成功获取令牌返回 true，否则 false
+     */
     public boolean accept(long now) {
         long currTokens;
         if (now > nextUpdate) {

@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.eagleeye;
 
 /**
+ * 线程安全的 {@link EagleEyeAppender} 装饰器，通过同步锁串行化 delegate 的写入与滚动操作。
+ *
  * @author jifeng
  */
 final class SyncAppender extends EagleEyeAppender {

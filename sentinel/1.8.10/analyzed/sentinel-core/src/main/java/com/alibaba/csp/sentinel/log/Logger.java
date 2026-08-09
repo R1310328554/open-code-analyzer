@@ -16,9 +16,9 @@
 package com.alibaba.csp.sentinel.log;
 
 /**
- * <p>The universal logger SPI interface.</p>
- * <p>Notice: the placeholder only supports the most popular placeholder convention (slf4j).
- * So, if you're not using slf4j, you should create adapters compatible with placeholders "{}".</p>
+ * <p>Sentinel 通用 Logger SPI 接口。</p>
+ * <p>注意：占位符仅支持最常见的 slf4j 约定（{@code {}}）。
+ * 若未使用 slf4j，应实现兼容 {@code {}} 占位符的适配器。</p>
  *
  * @author xue8
  * @since 1.7.2
@@ -26,92 +26,82 @@ package com.alibaba.csp.sentinel.log;
 public interface Logger {
 
     /**
-     * Log a message at the INFO level according to the specified format
-     * and arguments.
+     * 按指定格式与参数记录 INFO 级别日志。
      *
-     * @param format    the format string
-     * @param arguments a list of arguments
+     * @param format    格式字符串
+     * @param arguments 参数列表
      */
     void info(String format, Object... arguments);
 
     /**
-     * Log an exception (throwable) at the INFO level with an
-     * accompanying message.
+     * 记录 INFO 级别日志，附带异常信息。
      *
-     * @param msg the message accompanying the exception
-     * @param e   the exception (throwable) to log
+     * @param msg 伴随异常的消息
+     * @param e   要记录的异常（Throwable）
      */
     void info(String msg, Throwable e);
 
     /**
-     * Log a message at the WARN level according to the specified format
-     * and arguments.
+     * 按指定格式与参数记录 WARN 级别日志。
      *
-     * @param format    the format string
-     * @param arguments a list of arguments
+     * @param format    格式字符串
+     * @param arguments 参数列表
      */
     void warn(String format, Object... arguments);
 
     /**
-     * Log an exception (throwable) at the WARN level with an
-     * accompanying message.
+     * 记录 WARN 级别日志，附带异常信息。
      *
-     * @param msg the message accompanying the exception
-     * @param e   the exception (throwable) to log
+     * @param msg 伴随异常的消息
+     * @param e   要记录的异常（Throwable）
      */
     void warn(String msg, Throwable e);
 
     /**
-     * Log a message at the TRACE level according to the specified format
-     * and arguments.
+     * 按指定格式与参数记录 TRACE 级别日志。
      *
-     * @param format    the format string
-     * @param arguments a list of arguments
+     * @param format    格式字符串
+     * @param arguments 参数列表
      */
     void trace(String format, Object... arguments);
 
     /**
-     * Log an exception (throwable) at the TRACE level with an
-     * accompanying message.
+     * 记录 TRACE 级别日志，附带异常信息。
      *
-     * @param msg the message accompanying the exception
-     * @param e   the exception (throwable) to log
+     * @param msg 伴随异常的消息
+     * @param e   要记录的异常（Throwable）
      */
     void trace(String msg, Throwable e);
 
     /**
-     * Log a message at the DEBUG level according to the specified format
-     * and arguments.
+     * 按指定格式与参数记录 DEBUG 级别日志。
      *
-     * @param format    the format string
-     * @param arguments a list of arguments
+     * @param format    格式字符串
+     * @param arguments 参数列表
      */
     void debug(String format, Object... arguments);
 
     /**
-     * Log an exception (throwable) at the DEBUG level with an
-     * accompanying message.
+     * 记录 DEBUG 级别日志，附带异常信息。
      *
-     * @param msg the message accompanying the exception
-     * @param e   the exception (throwable) to log
+     * @param msg 伴随异常的消息
+     * @param e   要记录的异常（Throwable）
      */
     void debug(String msg, Throwable e);
 
     /**
-     * Log a message at the ERROR level according to the specified format
-     * and arguments.
+     * 按指定格式与参数记录 ERROR 级别日志。
      *
-     * @param format    the format string
-     * @param arguments a list of arguments
+     * @param format    格式字符串
+     * @param arguments 参数列表
      */
     void error(String format, Object... arguments);
 
     /**
-     * Log an exception (throwable) at the ERROR level with an
-     * accompanying message.
+     * 记录 ERROR 级别日志，附带异常信息。
      *
-     * @param msg the message accompanying the exception
-     * @param e   the exception (throwable) to log
+     * @param msg 伴随异常的消息
+     * @param e   要记录的异常（Throwable）
      */
     void error(String msg, Throwable e);
 
