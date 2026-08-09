@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:40:53Z",
-  "files": [
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterGeoCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterHashCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterHyperLogLogCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterKeyCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterListCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterNumberCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterServerCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterSetCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterStringCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterZSetCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveGeoCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveHashCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveHyperLogLogCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveKeyCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonReactiveListCommands.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2432,
-  "done": 375
+  "done": 390
 }
