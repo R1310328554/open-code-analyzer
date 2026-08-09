@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:27:03Z",
-  "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/BrokerSyncInfo.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/DataVersion.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/EpochEntry.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/FastCodesHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/ForbiddenType.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/LanguageCode.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/MQProtosHelper.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/NamespaceUtil.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/RemotingCommandType.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/RemotingSerializable.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/RemotingSysResponseCode.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/RequestCode.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/RequestHeaderRegistry.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/RequestSource.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/RequestType.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 648,
-  "done": 825
+  "done": 840
 }
