@@ -16,36 +16,36 @@
 package org.redisson.api.geo;
 
 /**
- * Arguments object for RGeo search method.
+ * 地理搜索的可选参数阶段：在确定搜索形状后可设置结果数量与排序。
+ * <p>
+ * 由 {@link ShapeGeoSearch#box} 或 {@link ShapeGeoSearch#radius} 返回，
+ * 链式调用完成后作为 {@link GeoSearchArgs} 传给 {@link org.redisson.api.RGeo#search}。
  *
  * @author Nikita Koksharov
  */
 public interface OptionalGeoSearch extends GeoSearchArgs {
 
     /**
-     * Defines limit of search result
+     * 限制返回结果数量（按距离排序后取前 N 条）。
      *
-     * @param value - result limit
-     * @return search conditions object
+     * @param value 结果数量上限
+     * @return 当前搜索条件对象
      */
     OptionalGeoSearch count(int value);
 
     /**
-     * Defines limit of search result.
-     * Returns as soon as enough matches are found.
-     * Result size might be not closest to defined limit,
-     * but works faster.
+     * 限制返回结果数量，采用 ANY 语义：找到足够匹配即返回，可能非距离最近但更快。
      *
-     * @param value - result limit
-     * @return search conditions object
+     * @param value 结果数量上限
+     * @return 当前搜索条件对象
      */
     OptionalGeoSearch countAny(int value);
 
     /**
-     * Defines order of search result
+     * 指定结果按距离排序的方式。
      *
-     * @param geoOrder - result order
-     * @return search conditions object
+     * @param geoOrder 排序枚举（升序或降序）
+     * @return 当前搜索条件对象
      */
     OptionalGeoSearch order(GeoOrder geoOrder);
 

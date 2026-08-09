@@ -16,18 +16,20 @@
 package org.redisson.api.executor;
 
 /**
- * Task listener invoked when task was finished
+ * 分布式任务执行完成时触发的监听器。
+ * <p>
+ * 无论任务成功或失败，只要执行结束都会回调 {@link #onFinished(String)}。
+ * 可与 {@link TaskStartedListener}、{@link TaskSuccessListener} 等组合使用以跟踪任务全生命周期。
  *
  * @author Nikita Koksharov
- *
  */
 @FunctionalInterface
 public interface TaskFinishedListener extends TaskListener {
 
     /**
-     * Invoked when task finished
+     * 任务执行结束时调用。
      *
-     * @param taskId - id of task
+     * @param taskId 任务唯一标识
      */
     void onFinished(String taskId);
 

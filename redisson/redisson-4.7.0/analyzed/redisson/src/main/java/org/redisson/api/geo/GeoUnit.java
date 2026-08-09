@@ -16,12 +16,15 @@
 package org.redisson.api.geo;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 地理空间距离度量单位，对应 Redis GEO 命令中的单位字符串。
+ * <p>
+ * 各枚举常量的 {@link #toString()} 返回 Redis 接受的缩写（如 {@code m}、{@code km}）。
  *
+ * @author Nikita Koksharov
  */
 public enum GeoUnit {
 
+    /** 米（Redis 单位 {@code m}）。 */
     METERS {
         @Override
         public String toString() {
@@ -29,6 +32,7 @@ public enum GeoUnit {
         }
     },
     
+    /** 千米（Redis 单位 {@code km}）。 */
     KILOMETERS {
         @Override
         public String toString() {
@@ -36,6 +40,7 @@ public enum GeoUnit {
         }
     },
     
+    /** 英里（Redis 单位 {@code mi}）。 */
     MILES {
         @Override
         public String toString() {
@@ -43,6 +48,7 @@ public enum GeoUnit {
         }
     },
     
+    /** 英尺（Redis 单位 {@code ft}）。 */
     FEET {
         @Override
         public String toString() {

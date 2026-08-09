@@ -16,30 +16,32 @@
 package org.redisson.api.geo;
 
 /**
- * Arguments object for RGeo search method.
+ * 地理搜索的形状定义阶段：在确定搜索中心后选择矩形或圆形区域。
+ * <p>
+ * 由 {@link GeoSearchArgs#from} 返回；调用 {@link #box} 或 {@link #radius} 后进入 {@link OptionalGeoSearch} 阶段。
  *
  * @author Nikita Koksharov
  */
 public interface ShapeGeoSearch {
 
     /**
-     * Defines search within box
+     * 在以搜索中心为基准的矩形区域内搜索。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上版本。</b>
      *
-     * @param width - box width
-     * @param height - box height
-     * @param geoUnit - geo unit
-     * @return search conditions object
+     * @param width 矩形宽度
+     * @param height 矩形高度
+     * @param geoUnit 距离单位
+     * @return 可选参数构建器
      */
     OptionalGeoSearch box(double width, double height, GeoUnit geoUnit);
 
     /**
-     * Defines search within radius
+     * 在指定半径的圆形区域内搜索。
      *
-     * @param radius - radius in geo units
-     * @param geoUnit - geo unit
-     * @return search conditions object
+     * @param radius 半径（以 geoUnit 为单位）
+     * @param geoUnit 距离单位
+     * @return 可选参数构建器
      */
     OptionalGeoSearch radius(double radius, GeoUnit geoUnit);
 

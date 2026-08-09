@@ -16,11 +16,15 @@
 package org.redisson.api.geo;
 
 /**
- * Arguments object for RGeo search method.
+ * {@link org.redisson.api.RGeo#search(GeoSearchArgs)} 等地理搜索方法的参数入口。
  * <p>
- * {@link org.redisson.api.RGeo#search(GeoSearchArgs)}
- * {@link org.redisson.api.RGeoAsync#searchAsync(GeoSearchArgs)}
- * {@link org.redisson.api.RGeoRx#search(GeoSearchArgs)}
+ * 通过静态工厂 {@link #from(Object)} 或 {@link #from(double, double)} 指定搜索中心，
+ * 再链式调用 {@link ShapeGeoSearch}、{@link OptionalGeoSearch} 方法完善条件。
+ * <p>
+ * 同步/异步/Reactive 变体均接受本类型：
+ * {@link org.redisson.api.RGeo#search(GeoSearchArgs)}、
+ * {@link org.redisson.api.RGeoAsync#searchAsync(GeoSearchArgs)}、
+ * {@link org.redisson.api.RGeoRx#search(GeoSearchArgs)}、
  * {@link org.redisson.api.RGeoReactive#search(GeoSearchArgs)}
  *
  * @author Nikita Koksharov
@@ -28,21 +32,21 @@ package org.redisson.api.geo;
 public interface GeoSearchArgs {
 
     /**
-     * Defines search from defined member
+     * 以集合中已有成员的位置作为搜索中心。
      *
-     * @param member - object
-     * @return search conditions object
+     * @param member 成员对象
+     * @return 形状搜索条件构建器
      */
     static <V> ShapeGeoSearch from(V member) {
         return new GeoSearchParams(member);
     }
 
     /**
-     * Defines search from defined longitude and latitude coordinates
+     * 以给定经纬度坐标作为搜索中心。
      *
-     * @param longitude - longitude of object
-     * @param latitude - latitude of object
-     * @return search conditions object
+     * @param longitude 经度
+     * @param latitude 纬度
+     * @return 形状搜索条件构建器
      */
     static ShapeGeoSearch from(double longitude, double latitude) {
         return new GeoSearchParams(longitude, latitude);

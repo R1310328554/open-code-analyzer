@@ -20,22 +20,21 @@ import java.util.Map;
 import java.util.function.BiPredicate;
 
 /**
- * Interface for filtering messages in a ReliableFanout object.
+ * 可靠扇出（ReliableFanout）消息过滤接口。
  * <p>
- * Implementing this interface allows selective message delivery to subscribers
- * based on custom logic. The filter evaluates messages and determines if they
- * should be delivered to specific subscribers.
+ * 实现本接口可基于自定义逻辑选择性投递消息：{@link java.util.function.BiPredicate#test}
+ * 返回 {@code true} 表示应投递，{@code false} 表示过滤掉。
  * <p>
- * As a serializable BiPredicate, instances of this interface can be:
- * - Transmitted across network boundaries
- * - Replicated among all ReliableFanout objects
- * - Applied on each node during message publishing process
- * <p>
- * When implemented, the test method should return true if the message should be
- * delivered, or false to filter it out.
+ * 作为可序列化的 {@link java.util.function.BiPredicate}，实例可：
+ * <ul>
+ *   <li>跨网络传输到各节点</li>
+ *   <li>在所有 ReliableFanout 副本间复制</li>
+ *   <li>在发布流程的每个节点上执行过滤</li>
+ * </ul>
+ * 第二个参数为消息头键值对，可用于基于元数据的过滤决策。
  *
+ * @param <V> 消息体类型
  * @author Nikita Koksharov
- *
  */
 public interface MessageFilter<V> extends BiPredicate<V, Map<String, Object>>, Serializable {
 }

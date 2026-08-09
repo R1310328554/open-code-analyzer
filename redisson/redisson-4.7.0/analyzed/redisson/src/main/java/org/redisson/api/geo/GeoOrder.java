@@ -16,10 +16,16 @@
 package org.redisson.api.geo;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 地理空间搜索结果的距离排序方式。
+ * <p>
+ * 配合 {@link OptionalGeoSearch#order(GeoOrder)} 使用，
+ * {@link #ASC} 表示按距离升序（近到远），{@link #DESC} 表示降序。
  *
+ * @author Nikita Koksharov
  */
 public enum GeoOrder {
-    ASC, DESC
+    /** 按距离升序排列（由近到远）。 */
+    ASC,
+    /** 按距离降序排列（由远到近）。 */
+    DESC
 }

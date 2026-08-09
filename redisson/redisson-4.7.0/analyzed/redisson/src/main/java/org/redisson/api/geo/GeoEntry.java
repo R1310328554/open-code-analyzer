@@ -16,16 +16,28 @@
 package org.redisson.api.geo;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 地理空间集合中的单条成员及其经纬度坐标。
+ * <p>
+ * 用于 {@link org.redisson.api.RGeo#add(GeoEntry...)} 批量写入 Redis GEO 数据结构。
  *
+ * @author Nikita Koksharov
  */
 public class GeoEntry {
 
+    /** 经度（longitude）。 */
     private final double longitude;
+    /** 纬度（latitude）。 */
     private final double latitude;
+    /** 集合成员标识，可为任意对象。 */
     private final Object member;
     
+    /**
+     * 创建地理条目。
+     *
+     * @param longitude 经度
+     * @param latitude 纬度
+     * @param member 成员标识
+     */
     public GeoEntry(double longitude, double latitude, Object member) {
         super();
         this.longitude = longitude;
@@ -33,14 +45,17 @@ public class GeoEntry {
         this.member = member;
     }
     
+    /** 返回纬度。 */
     public double getLatitude() {
         return latitude;
     }
     
+    /** 返回经度。 */
     public double getLongitude() {
         return longitude;
     }
     
+    /** 返回成员标识。 */
     public Object getMember() {
         return member;
     }

@@ -18,10 +18,12 @@ package org.redisson.api.executor;
 import java.util.EventListener;
 
 /**
- * Base task listener interface
+ * 分布式任务监听器的根接口，继承 {@link java.util.EventListener}。
+ * <p>
+ * 具体监听器如 {@link TaskStartedListener}、{@link TaskSuccessListener}、
+ * {@link TaskFinishedListener} 均扩展本接口，便于统一注册与类型约束。
  *
  * @author Nikita Koksharov
- *
  */
 public interface TaskListener extends EventListener {
 }

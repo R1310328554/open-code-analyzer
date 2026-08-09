@@ -16,19 +16,20 @@
 package org.redisson.api.executor;
 
 /**
- * Task listener invoked when task was succeeded
+ * 分布式任务成功完成时触发的监听器。
+ * <p>
+ * 仅在任务正常返回结果时回调；若任务抛异常或超时，应通过其他失败监听器处理。
  *
  * @author Nikita Koksharov
- *
  */
 @FunctionalInterface
 public interface TaskSuccessListener extends TaskListener {
 
     /**
-     * Invoked when task was succeeded
+     * 任务成功完成时调用。
      *
-     * @param taskId - id of task
-     * @param result - result of task
+     * @param taskId 任务唯一标识
+     * @param result 任务执行返回的结果，类型由提交时的泛型决定
      */
     <T> void onSucceeded(String taskId, T result);
 

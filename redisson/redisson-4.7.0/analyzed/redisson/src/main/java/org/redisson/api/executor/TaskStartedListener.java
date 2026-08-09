@@ -16,18 +16,19 @@
 package org.redisson.api.executor;
 
 /**
- * Task listener invoked when task was started
+ * 分布式任务开始执行时触发的监听器。
+ * <p>
+ * 在远程执行器节点真正开始运行任务逻辑前回调，可用于记录启动时间或初始化监控上下文。
  *
  * @author Nikita Koksharov
- *
  */
 @FunctionalInterface
 public interface TaskStartedListener extends TaskListener {
 
     /**
-     * Invoked when task was started
+     * 任务开始执行时调用。
      *
-     * @param taskId - id of task
+     * @param taskId 任务唯一标识
      */
     void onStarted(String taskId);
 
