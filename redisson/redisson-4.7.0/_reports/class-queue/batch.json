@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/queue/QueueAckArgs.java",
     "redisson/src/main/java/org/redisson/api/queue/QueueAckParams.java",
     "redisson/src/main/java/org/redisson/api/queue/QueueAddArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueAddParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueConfig.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueConfigParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueMoveArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueMoveDestination.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueMoveElementsAmount.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueMoveElementsArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueMoveElementsOrder.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueMoveElementsParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueMoveParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueNegativeAckArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueNegativeAckParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueOperation.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueuePollArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueuePollParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueRemoveArgs.java"
+    "redisson/src/main/java/org/redisson/api/queue/QueueAddParams.java"
   ],
   "remaining_pending": 812,
-  "done": 1980
+  "done": 1995
 }
