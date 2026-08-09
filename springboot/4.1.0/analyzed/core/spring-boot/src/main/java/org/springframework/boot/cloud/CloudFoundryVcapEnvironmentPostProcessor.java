@@ -40,14 +40,9 @@ import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.util.StringUtils;
 
 /**
- * An {@link EnvironmentPostProcessor} that knows where to find VCAP (a.k.a. Cloud
- * Foundry) metadata in the existing environment. It parses out the VCAP_APPLICATION and
- * VCAP_SERVICES metadata and dumps it in a form that is easily consumed by
- * {@link Environment} users. If the app is running in Cloud Foundry then both metadata
- * items are JSON objects encoded in OS environment variables. VCAP_APPLICATION is a
- * shallow hash with basic information about the application (name, instance id, instance
- * index, etc.), and VCAP_SERVICES is a hash of lists where the keys are service labels
- * and the values are lists of hashes of service instance metadata. Examples are:
+ * 知道如何在现有环境中查找 VCAP（即 Cloud Foundry）元数据的 {@link EnvironmentPostProcessor}。 它解析 VCAP_APPLICATION 与 VCAP_SERVICES 元数据，
+ * 并以 {@link Environment} 使用者易于消费的形式输出。 若应用在 Cloud Foundry 中运行，这两项元数据均为编码在 OS 环境变量中的 JSON 对象。 VCAP_APPLICATION 是包含应用基本信息（名称、实例 ID、实例索引等）的浅层哈希；
+ * VCAP_SERVICES 是以服务标签为键、服务实例元数据哈希列表为值的哈希。示例如下：
  *
  * <pre class="code">
  * VCAP_APPLICATION: {"instance_id":"2ce0ac627a6c8e47e936d829a3a47b5b","instance_index":0,
@@ -60,11 +55,9 @@ import org.springframework.util.StringUtils;
  * }]}
  * </pre>
  *
- * These objects are flattened into properties. The VCAP_APPLICATION object goes straight
- * to {@code vcap.application.*} in a fairly obvious way, and the VCAP_SERVICES object is
- * unwrapped so that it is a hash of objects with key equal to the service instance name
- * (e.g. "mysql" in the example above), and value equal to that instances properties, and
- * then flattened in the same way. E.g.
+ * 这些对象被扁平化为属性。VCAP_APPLICATION 直接映射为 {@code vcap.application.*}；
+ * VCAP_SERVICES 先展开为以服务实例名（如上例中的 "mysql"）为键、实例属性为值的哈希，
+ * 再同样扁平化。例如：
  *
  * <pre class="code">
  * vcap.application.instance_id: 2ce0ac627a6c8e47e936d829a3a47b5b
@@ -82,9 +75,8 @@ import org.springframework.util.StringUtils;
  * ...
  * </pre>
  *
- * N.B. this initializer is mainly intended for informational use (the application and
- * instance ids are particularly useful). For service binding you might find that Spring
- * Cloud is more convenient and more robust against potential changes in Cloud Foundry.
+ * 注意：此初始化器主要用于信息用途（应用 ID 与实例 ID 尤其有用）。
+ * 服务绑定时 Spring Cloud 通常更便捷，且更能适应 Cloud Foundry 的潜在变更。
  *
  * @author Dave Syer
  * @author Andy Wilkinson
@@ -98,8 +90,8 @@ public class CloudFoundryVcapEnvironmentPostProcessor implements EnvironmentPost
 	private int order = ConfigDataEnvironmentPostProcessor.ORDER - 5;
 
 	/**
-	 * Create a new {@link CloudFoundryVcapEnvironmentPostProcessor} instance.
-	 * @param logFactory the log factory to use
+	 * 创建新的 {@link CloudFoundryVcapEnvironmentPostProcessor} 实例。
+	 * @param logFactory 要使用的日志工厂
 	 * @since 3.0.0
 	 */
 	public CloudFoundryVcapEnvironmentPostProcessor(DeferredLogFactory logFactory) {

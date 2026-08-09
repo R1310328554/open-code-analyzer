@@ -28,8 +28,8 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.util.Assert;
 
 /**
- * Bean that provides an {@link ApplicationAvailability} implementation by listening for
- * {@link AvailabilityChangeEvent change events}.
+ * 通过监听 {@link AvailabilityChangeEvent 变更事件} 提供
+ * {@link ApplicationAvailability} 实现的 Bean。
  *
  * @author Brian Clozel
  * @author Phillip Webb

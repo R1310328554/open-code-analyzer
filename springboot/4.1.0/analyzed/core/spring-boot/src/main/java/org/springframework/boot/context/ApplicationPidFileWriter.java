@@ -40,20 +40,17 @@ import org.springframework.core.env.Environment;
 import org.springframework.util.Assert;
 
 /**
- * An {@link ApplicationListener} that saves application PID into file. This application
- * listener will be triggered exactly once per JVM, and the file name can be overridden at
- * runtime with a System property or environment variable named "PIDFILE" (or "pidfile")
- * or using a {@code spring.pid.file} property in the Spring {@link Environment}.
+ * 将应用 PID 写入文件的 {@link ApplicationListener}。 每个 JVM 仅触发一次，文件名可在运行时通过名为 "PIDFILE"（或 "pidfile"）的系统属性或环境变量覆盖，
+ * 或使用 Spring {@link Environment} 中的 {@code spring.pid.file} 属性。
  * <p>
- * If PID file can not be created no exception is reported. This behavior can be changed
- * by assigning {@code true} to System property or environment variable named
- * {@code PID_FAIL_ON_WRITE_ERROR} (or "pid_fail_on_write_error") or to
- * {@code spring.pid.fail-on-write-error} property in the Spring {@link Environment}.
+ * 若无法创建 PID 文件则不报告异常。可通过将系统属性或环境变量
+ * {@code PID_FAIL_ON_WRITE_ERROR}（或 "pid_fail_on_write_error"）设为 {@code true}，
+ * 或设置 Spring {@link Environment} 中的 {@code spring.pid.fail-on-write-error}
+ * 属性来更改此行为。
  * <p>
- * Note: access to the Spring {@link Environment} is only possible when the
- * {@link #setTriggerEventType(Class) triggerEventType} is set to
- * {@link ApplicationEnvironmentPreparedEvent}, {@link ApplicationReadyEvent}, or
- * {@link ApplicationPreparedEvent}.
+ * 注意：仅当 {@link #setTriggerEventType(Class) triggerEventType} 设为
+ * {@link ApplicationEnvironmentPreparedEvent}、{@link ApplicationReadyEvent} 或
+ * {@link ApplicationPreparedEvent} 时，才能访问 Spring {@link Environment}。
  *
  * @author Jakub Kubrynski
  * @author Dave Syer
@@ -96,24 +93,23 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 	private Class<? extends SpringApplicationEvent> triggerEventType = ApplicationPreparedEvent.class;
 
 	/**
-	 * Create a new {@link ApplicationPidFileWriter} instance using the filename
-	 * 'application.pid'.
+	 * 使用文件名 'application.pid' 创建新的 {@link ApplicationPidFileWriter} 实例。
 	 */
 	public ApplicationPidFileWriter() {
 		this(new File(DEFAULT_FILE_NAME));
 	}
 
 	/**
-	 * Create a new {@link ApplicationPidFileWriter} instance with a specified filename.
-	 * @param filename the name of file containing pid
+	 * 使用指定文件名创建新的 {@link ApplicationPidFileWriter} 实例。
+	 * @param filename 包含 PID 的文件名
 	 */
 	public ApplicationPidFileWriter(String filename) {
 		this(new File(filename));
 	}
 
 	/**
-	 * Create a new {@link ApplicationPidFileWriter} instance with a specified file.
-	 * @param file the file containing pid
+	 * 使用指定文件创建新的 {@link ApplicationPidFileWriter} 实例。
+	 * @param file 包含 PID 的文件
 	 */
 	public ApplicationPidFileWriter(File file) {
 		Assert.notNull(file, "'file' must not be null");
@@ -121,12 +117,10 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 	}
 
 	/**
-	 * Sets the type of application event that will trigger writing of the PID file.
-	 * Defaults to {@link ApplicationPreparedEvent}. NOTE: If you use the
-	 * {@link org.springframework.boot.context.event.ApplicationStartingEvent} to trigger
-	 * the write, you will not be able to specify the PID filename in the Spring
-	 * {@link Environment}.
-	 * @param triggerEventType the trigger event type
+	 * 设置触发写入 PID 文件的应用事件类型。默认为 {@link ApplicationPreparedEvent}。
+	 * 注意：若使用 {@link org.springframework.boot.context.event.ApplicationStartingEvent}
+	 * 触发写入，将无法在 Spring {@link Environment} 中指定 PID 文件名。
+	 * @param triggerEventType 触发事件类型
 	 */
 	public void setTriggerEventType(Class<? extends SpringApplicationEvent> triggerEventType) {
 		Assert.notNull(triggerEventType, "'triggerEventType' must not be null");
@@ -184,14 +178,14 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 	}
 
 	/**
-	 * Reset the created flag for testing purposes.
+	 * 重置 created 标志，供测试使用。
 	 */
 	protected static void reset() {
 		created.set(false);
 	}
 
 	/**
-	 * Provides access to a property value.
+	 * 提供对属性值的访问。
 	 */
 	private interface Property {
 
@@ -200,7 +194,7 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 	}
 
 	/**
-	 * {@link Property} obtained from Spring's {@link Environment}.
+	 * 从 Spring {@link Environment} 获取的 {@link Property}。
 	 */
 	private static class SpringProperty implements Property {
 
@@ -238,7 +232,7 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 	}
 
 	/**
-	 * {@link Property} obtained from {@link SystemProperties}.
+	 * 从 {@link SystemProperties} 获取的 {@link Property}。
 	 */
 	private static class SystemProperty implements Property {
 

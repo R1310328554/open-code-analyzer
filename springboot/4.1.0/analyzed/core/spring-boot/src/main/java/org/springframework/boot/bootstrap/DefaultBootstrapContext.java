@@ -30,7 +30,7 @@ import org.springframework.context.event.SimpleApplicationEventMulticaster;
 import org.springframework.util.Assert;
 
 /**
- * Default {@link ConfigurableBootstrapContext} implementation.
+ * {@link ConfigurableBootstrapContext} 的默认实现。
  *
  * @author Phillip Webb
  * @since 4.0.0
@@ -132,9 +132,8 @@ public class DefaultBootstrapContext implements ConfigurableBootstrapContext {
 	}
 
 	/**
-	 * Method to be called when {@link BootstrapContext} is closed and the
-	 * {@link ApplicationContext} is prepared.
-	 * @param applicationContext the prepared context
+	 * 在 {@link BootstrapContext} 关闭且 {@link ApplicationContext} 准备完成时调用。
+	 * @param applicationContext 已准备完成的上下文
 	 */
 	public void close(ConfigurableApplicationContext applicationContext) {
 		this.events.multicastEvent(new BootstrapContextClosedEvent(this, applicationContext));

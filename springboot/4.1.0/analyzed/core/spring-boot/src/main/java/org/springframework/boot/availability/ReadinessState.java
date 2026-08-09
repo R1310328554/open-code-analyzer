@@ -17,11 +17,10 @@
 package org.springframework.boot.availability;
 
 /**
- * "Readiness" state of the application.
+ * 应用的「就绪（Readiness）」状态。
  * <p>
- * An application is considered ready when it's {@link LivenessState live} and willing to
- * accept traffic. "Readiness" failure means that the application is not able to accept
- * traffic and that the infrastructure should stop routing requests to it.
+ * 当应用 {@link LivenessState 存活} 且愿意接收流量时视为就绪。「就绪」失败表示
+ * 应用无法接收流量，基础设施应停止向其路由请求。
  *
  * @author Brian Clozel
  * @since 2.3.0
@@ -29,12 +28,12 @@ package org.springframework.boot.availability;
 public enum ReadinessState implements AvailabilityState {
 
 	/**
-	 * The application is ready to receive traffic.
+	 * 应用已就绪，可接收流量。
 	 */
 	ACCEPTING_TRAFFIC,
 
 	/**
-	 * The application is not willing to receive traffic.
+	 * 应用拒绝接收流量。
 	 */
 	REFUSING_TRAFFIC
 

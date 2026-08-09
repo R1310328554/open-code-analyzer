@@ -25,9 +25,8 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.Ordered;
 
 /**
- * {@link ApplicationContextInitializer} for setting the parent context. Also publishes
- * {@link ParentContextAvailableEvent} when the context is refreshed to signal to other
- * listeners that the context is available and has a parent.
+ * 用于设置父上下文的 {@link ApplicationContextInitializer}。上下文刷新时还会发布
+ * {@link ParentContextAvailableEvent}，通知其他监听器上下文已可用且拥有父上下文。
  *
  * @author Dave Syer
  * @since 1.0.0
@@ -81,7 +80,7 @@ public class ParentContextApplicationContextInitializer
 	}
 
 	/**
-	 * {@link ApplicationEvent} fired when a parent context is available.
+	 * 父上下文可用时触发的 {@link ApplicationEvent}。
 	 */
 	public static class ParentContextAvailableEvent extends ApplicationEvent {
 

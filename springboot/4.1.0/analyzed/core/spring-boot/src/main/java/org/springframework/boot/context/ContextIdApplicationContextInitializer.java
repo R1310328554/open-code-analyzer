@@ -26,10 +26,9 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link ApplicationContextInitializer} that sets the Spring
- * {@link ApplicationContext#getId() ApplicationContext ID}. The
- * {@code spring.application.name} property is used to create the ID. If the property is
- * not set {@code application} is used.
+ * 设置 Spring {@link ApplicationContext#getId() 应用上下文 ID} 的
+ * {@link ApplicationContextInitializer}。使用 {@code spring.application.name}
+ * 属性创建 ID；若未设置则使用 {@code application}。
  *
  * @author Dave Syer
  * @author Andy Wilkinson
@@ -70,7 +69,7 @@ public class ContextIdApplicationContextInitializer
 	}
 
 	/**
-	 * The ID of a context.
+	 * 上下文的 ID。
 	 */
 	static class ContextId {
 

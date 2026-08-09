@@ -21,12 +21,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationContext;
 
 /**
- * Provides {@link AvailabilityState availability state} information for the application.
+ * 提供应用的 {@link AvailabilityState 可用性状态} 信息。
  * <p>
- * Components can inject this class to get the current state information. To update the
- * state of the application an {@link AvailabilityChangeEvent} should be
- * {@link ApplicationContext#publishEvent published} to the application context with
- * directly or through {@link AvailabilityChangeEvent#publish}.
+ * 组件可注入此类以获取当前状态信息。要更新应用状态，应直接向应用上下文
+ * {@link ApplicationContext#publishEvent 发布} {@link AvailabilityChangeEvent}，
+ * 或通过 {@link AvailabilityChangeEvent#publish} 发布。
  *
  * @author Brian Clozel
  * @author Phillip Webb
@@ -35,48 +34,50 @@ import org.springframework.context.ApplicationContext;
 public interface ApplicationAvailability {
 
 	/**
-	 * Return the {@link LivenessState} of the application.
-	 * @return the liveness state
+	 * 返回应用的 {@link LivenessState}。
+	 *
+	 * @return 存活状态
 	 */
 	default LivenessState getLivenessState() {
 		return getState(LivenessState.class, LivenessState.BROKEN);
 	}
 
 	/**
-	 * Return the {@link ReadinessState} of the application.
-	 * @return the readiness state
+	 * 返回应用的 {@link ReadinessState}。
+	 *
+	 * @return 就绪状态
 	 */
 	default ReadinessState getReadinessState() {
 		return getState(ReadinessState.class, ReadinessState.REFUSING_TRAFFIC);
 	}
 
 	/**
-	 * Return {@link AvailabilityState} information for the application.
-	 * @param <S> the state type
-	 * @param stateType the state type
-	 * @param defaultState the default state to return if no event of the given type has
-	 * been published yet (must not be {@code null}).
-	 * @return the readiness state
+	 * 返回应用的 {@link AvailabilityState} 信息。
+	 *
+	 * @param <S> 状态类型
+	 * @param stateType 状态类型
+	 * @param defaultState 尚未发布给定类型事件时返回的默认状态（不可为 {@code null}）
+	 * @return 可用性状态
 	 * @see #getState(Class)
 	 */
 	<S extends AvailabilityState> S getState(Class<S> stateType, S defaultState);
 
 	/**
-	 * Return {@link AvailabilityState} information for the application.
-	 * @param <S> the state type
-	 * @param stateType the state type
-	 * @return the readiness state or {@code null} if no event of the given type has been
-	 * published yet
+	 * 返回应用的 {@link AvailabilityState} 信息。
+	 *
+	 * @param <S> 状态类型
+	 * @param stateType 状态类型
+	 * @return 可用性状态；若尚未发布给定类型事件则为 {@code null}
 	 * @see #getState(Class, AvailabilityState)
 	 */
 	<S extends AvailabilityState> @Nullable S getState(Class<S> stateType);
 
 	/**
-	 * Return the last {@link AvailabilityChangeEvent} received for a given state type.
-	 * @param <S> the state type
-	 * @param stateType the state type
-	 * @return the readiness state or {@code null} if no event of the given type has been
-	 * published yet
+	 * 返回给定状态类型收到的最后一个 {@link AvailabilityChangeEvent}。
+	 *
+	 * @param <S> 状态类型
+	 * @param stateType 状态类型
+	 * @return 最后一次变更事件；若尚未发布给定类型事件则为 {@code null}
 	 */
 	<S extends AvailabilityState> @Nullable AvailabilityChangeEvent<S> getLastChangeEvent(Class<S> stateType);
 

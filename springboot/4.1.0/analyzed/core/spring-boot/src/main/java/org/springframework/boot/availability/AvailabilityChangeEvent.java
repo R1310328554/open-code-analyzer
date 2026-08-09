@@ -24,12 +24,11 @@ import org.springframework.core.ResolvableType;
 import org.springframework.util.Assert;
 
 /**
- * {@link ApplicationEvent} sent when the {@link AvailabilityState} of the application
- * changes.
+ * 应用 {@link AvailabilityState} 变更时发送的 {@link ApplicationEvent}。
  * <p>
- * Any application component can send such events to update the state of the application.
+ * 任何应用组件均可发送此类事件以更新应用状态。
  *
- * @param <S> the availability state type
+ * @param <S> 可用性状态类型
  * @author Brian Clozel
  * @author Phillip Webb
  * @since 2.3.0
@@ -37,17 +36,19 @@ import org.springframework.util.Assert;
 public class AvailabilityChangeEvent<S extends AvailabilityState> extends PayloadApplicationEvent<S> {
 
 	/**
-	 * Create a new {@link AvailabilityChangeEvent} instance.
-	 * @param source the source of the event
-	 * @param state the availability state (never {@code null})
+	 * 创建新的 {@link AvailabilityChangeEvent} 实例。
+	 *
+	 * @param source 事件源
+	 * @param state 可用性状态（不可为 {@code null}）
 	 */
 	public AvailabilityChangeEvent(Object source, S state) {
 		super(source, state);
 	}
 
 	/**
-	 * Return the changed availability state.
-	 * @return the availability state
+	 * 返回变更后的可用性状态。
+	 *
+	 * @return 可用性状态
 	 */
 	public S getState() {
 		return getPayload();
@@ -67,11 +68,11 @@ public class AvailabilityChangeEvent<S extends AvailabilityState> extends Payloa
 	}
 
 	/**
-	 * Convenience method that can be used to publish an {@link AvailabilityChangeEvent}
-	 * to the given application context.
-	 * @param <S> the availability state type
-	 * @param context the context used to publish the event
-	 * @param state the changed availability state
+	 * 便捷方法，向给定应用上下文发布 {@link AvailabilityChangeEvent}。
+	 *
+	 * @param <S> 可用性状态类型
+	 * @param context 用于发布事件的上下文
+	 * @param state 变更后的可用性状态
 	 */
 	public static <S extends AvailabilityState> void publish(ApplicationContext context, S state) {
 		Assert.notNull(context, "'context' must not be null");
@@ -79,12 +80,12 @@ public class AvailabilityChangeEvent<S extends AvailabilityState> extends Payloa
 	}
 
 	/**
-	 * Convenience method that can be used to publish an {@link AvailabilityChangeEvent}
-	 * to the given application context.
-	 * @param <S> the availability state type
-	 * @param publisher the publisher used to publish the event
-	 * @param source the source of the event
-	 * @param state the changed availability state
+	 * 便捷方法，通过给定发布器发布 {@link AvailabilityChangeEvent}。
+	 *
+	 * @param <S> 可用性状态类型
+	 * @param publisher 用于发布事件的发布器
+	 * @param source 事件源
+	 * @param state 变更后的可用性状态
 	 */
 	public static <S extends AvailabilityState> void publish(ApplicationEventPublisher publisher, Object source,
 			S state) {

@@ -29,8 +29,7 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
 
 /**
- * Simple detection for well known cloud platforms. Detection can be forced using the
- * {@code "spring.main.cloud-platform"} configuration property.
+ * 常见云平台检测。可通过 {@code "spring.main.cloud-platform"} 配置属性强制指定。
  *
  * @author Phillip Webb
  * @author Brian Clozel
@@ -40,7 +39,7 @@ import org.springframework.core.env.StandardEnvironment;
 public enum CloudPlatform {
 
 	/**
-	 * No Cloud platform. Useful when false-positives are detected.
+	 * 非云平台。在出现误检测时有用。
 	 */
 	NONE {
 
@@ -56,7 +55,7 @@ public enum CloudPlatform {
 	},
 
 	/**
-	 * Cloud Foundry platform.
+	 * Cloud Foundry 平台。
 	 */
 	CLOUD_FOUNDRY {
 
@@ -68,7 +67,7 @@ public enum CloudPlatform {
 	},
 
 	/**
-	 * Heroku platform.
+	 * Heroku 平台。
 	 */
 	HEROKU {
 
@@ -80,7 +79,7 @@ public enum CloudPlatform {
 	},
 
 	/**
-	 * SAP Cloud platform.
+	 * SAP Cloud 平台。
 	 */
 	SAP {
 
@@ -92,7 +91,7 @@ public enum CloudPlatform {
 	},
 
 	/**
-	 * Nomad platform.
+	 * Nomad 平台。
 	 * @since 3.1.0
 	 */
 	NOMAD {
@@ -105,7 +104,7 @@ public enum CloudPlatform {
 	},
 
 	/**
-	 * Kubernetes platform.
+	 * Kubernetes 平台。
 	 */
 	KUBERNETES {
 
@@ -156,7 +155,7 @@ public enum CloudPlatform {
 	},
 
 	/**
-	 * Azure App Service platform.
+	 * Azure App Service 平台。
 	 */
 	AZURE_APP_SERVICE {
 
@@ -171,7 +170,7 @@ public enum CloudPlatform {
 	},
 
 	/**
-	 * Amazon Web Services (AWS) Elastic Container Service (ECS) platform.
+	 * Amazon Web Services (AWS) Elastic Container Service (ECS) 平台。
 	 * @since 4.0.0
 	 */
 	AWS_ECS {
@@ -187,9 +186,9 @@ public enum CloudPlatform {
 	private static final String PROPERTY_NAME = "spring.main.cloud-platform";
 
 	/**
-	 * Determines if the platform is active (i.e. the application is running in it).
-	 * @param environment the environment
-	 * @return if the platform is active.
+	 * 判断平台是否处于激活状态（即应用是否运行在该平台上）。
+	 * @param environment 环境
+	 * @return 平台是否激活
 	 */
 	public boolean isActive(Environment environment) {
 		String platformProperty = environment.getProperty(PROPERTY_NAME);
@@ -197,10 +196,9 @@ public enum CloudPlatform {
 	}
 
 	/**
-	 * Determines if the platform is enforced by looking at the
-	 * {@code "spring.main.cloud-platform"} configuration property.
+	 * 通过 {@code "spring.main.cloud-platform"} 配置属性判断是否强制指定平台。
 	 * @param environment the environment
-	 * @return if the platform is enforced
+	 * @return 平台是否被强制指定
 	 * @since 2.3.0
 	 */
 	public boolean isEnforced(Environment environment) {
@@ -210,7 +208,7 @@ public enum CloudPlatform {
 	/**
 	 * Determines if the platform is enforced by looking at the
 	 * {@code "spring.main.cloud-platform"} configuration property.
-	 * @param binder the binder
+	 * @param binder 绑定器
 	 * @return if the platform is enforced
 	 * @since 2.4.0
 	 */
@@ -223,27 +221,25 @@ public enum CloudPlatform {
 	}
 
 	/**
-	 * Determines if the platform is detected by looking for platform-specific environment
-	 * variables.
+	 * 通过查找平台特定环境变量判断是否检测到该平台。
 	 * @param environment the environment
-	 * @return if the platform is auto-detected.
+	 * @return 平台是否被自动检测
 	 * @since 2.3.0
 	 */
 	public abstract boolean isDetected(Environment environment);
 
 	/**
-	 * Returns if the platform is behind a load balancer and uses
-	 * {@literal X-Forwarded-For} headers.
-	 * @return if {@literal X-Forwarded-For} headers are used
+	 * 返回平台是否位于负载均衡器之后并使用 {@literal X-Forwarded-For} 头。
+	 * @return 是否使用 {@literal X-Forwarded-For} 头
 	 */
 	public boolean isUsingForwardHeaders() {
 		return true;
 	}
 
 	/**
-	 * Returns the active {@link CloudPlatform} or {@code null} if one is not active.
+	 * 返回激活的 {@link CloudPlatform}，若无激活平台则返回 {@code null}。
 	 * @param environment the environment
-	 * @return the {@link CloudPlatform} or {@code null}
+	 * @return {@link CloudPlatform} 或 {@code null}
 	 */
 	public static @Nullable CloudPlatform getActive(@Nullable Environment environment) {
 		if (environment != null) {

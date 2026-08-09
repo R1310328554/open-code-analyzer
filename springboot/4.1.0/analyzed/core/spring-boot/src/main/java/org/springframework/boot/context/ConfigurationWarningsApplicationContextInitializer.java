@@ -44,8 +44,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link ApplicationContextInitializer} to report warnings for common misconfiguration
- * mistakes.
+ * 针对常见配置错误发出警告的 {@link ApplicationContextInitializer}。
  *
  * @author Phillip Webb
  * @since 1.2.0
@@ -61,15 +60,15 @@ public class ConfigurationWarningsApplicationContextInitializer
 	}
 
 	/**
-	 * Returns the checks that should be applied.
-	 * @return the checks to apply
+	 * 返回应执行的检查项。
+	 * @return 要应用的检查
 	 */
 	protected Check[] getChecks() {
 		return new Check[] { new ComponentScanPackageCheck() };
 	}
 
 	/**
-	 * {@link BeanDefinitionRegistryPostProcessor} to report warnings.
+	 * 用于报告警告的 {@link BeanDefinitionRegistryPostProcessor}。
 	 */
 	protected static final class ConfigurationWarningsPostProcessor
 			implements PriorityOrdered, BeanDefinitionRegistryPostProcessor {
@@ -109,22 +108,22 @@ public class ConfigurationWarningsApplicationContextInitializer
 	}
 
 	/**
-	 * A single check that can be applied.
+	 * 可应用的单项检查。
 	 */
 	@FunctionalInterface
 	protected interface Check {
 
 		/**
-		 * Returns a warning if the check fails or {@code null} if there are no problems.
-		 * @param registry the {@link BeanDefinitionRegistry}
-		 * @return a warning message or {@code null}
+		 * 检查失败时返回警告信息，无问题时返回 {@code null}。
+		 * @param registry {@link BeanDefinitionRegistry}
+		 * @return 警告消息或 {@code null}
 		 */
 		@Nullable String getWarning(BeanDefinitionRegistry registry);
 
 	}
 
 	/**
-	 * {@link Check} for {@code @ComponentScan} on problematic package.
+	 * 针对问题包上 {@code @ComponentScan} 的 {@link Check}。
 	 */
 	protected static class ComponentScanPackageCheck implements Check {
 

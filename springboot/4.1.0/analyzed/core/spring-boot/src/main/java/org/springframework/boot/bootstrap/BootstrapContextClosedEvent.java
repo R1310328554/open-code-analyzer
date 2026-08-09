@@ -20,7 +20,7 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * {@link ApplicationEvent} published by a {@link BootstrapContext} when it's closed.
+ * {@link BootstrapContext} 关闭时发布的 {@link ApplicationEvent}。
  *
  * @author Phillip Webb
  * @since 4.0.0
@@ -36,16 +36,16 @@ public class BootstrapContextClosedEvent extends ApplicationEvent {
 	}
 
 	/**
-	 * Return the {@link BootstrapContext} that was closed.
-	 * @return the bootstrap context
+	 * 返回已关闭的 {@link BootstrapContext}。
+	 * @return 引导上下文
 	 */
 	public BootstrapContext getBootstrapContext() {
 		return (BootstrapContext) this.source;
 	}
 
 	/**
-	 * Return the prepared application context.
-	 * @return the application context
+	 * 返回已准备完成的应用上下文。
+	 * @return 应用上下文
 	 */
 	public ConfigurableApplicationContext getApplicationContext() {
 		return this.applicationContext;

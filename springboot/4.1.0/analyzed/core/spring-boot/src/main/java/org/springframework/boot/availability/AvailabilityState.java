@@ -17,8 +17,7 @@
 package org.springframework.boot.availability;
 
 /**
- * Tagging interface used on {@link ApplicationAvailability} states. This interface is
- * usually implemented on an {@code enum} type.
+ * 用于标记 {@link ApplicationAvailability} 状态的标签接口，通常由 {@code enum} 实现。
  *
  * @author Phillip Webb
  * @since 2.3.0

@@ -29,9 +29,8 @@ import org.springframework.core.Ordered;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Listener that closes the application context if its parent is closed. It listens for
- * refresh events and grabs the current context from there, and then listens for closed
- * events and propagates it down the hierarchy.
+ * 当父上下文关闭时关闭应用上下文的监听器。监听刷新事件获取当前上下文，
+ * 再监听关闭事件并沿层次结构向下传播。
  *
  * @author Dave Syer
  * @author Eric Bottard
@@ -67,17 +66,16 @@ public class ParentContextCloserApplicationListener
 	}
 
 	/**
-	 * Subclasses may override to create their own subclass of ContextCloserListener. This
-	 * still enforces the use of a weak reference.
-	 * @param child the child context
-	 * @return the {@link ContextCloserListener} to use
+	 * 子类可覆盖以创建自定义 ContextCloserListener 子类，仍强制使用弱引用。
+	 * @param child 子上下文
+	 * @return 要使用的 {@link ContextCloserListener}
 	 */
 	protected ContextCloserListener createContextCloserListener(ConfigurableApplicationContext child) {
 		return new ContextCloserListener(child);
 	}
 
 	/**
-	 * {@link ApplicationListener} to close the context.
+	 * 用于关闭上下文的 {@link ApplicationListener}。
 	 */
 	protected static class ContextCloserListener implements ApplicationListener<ContextClosedEvent> {
 
