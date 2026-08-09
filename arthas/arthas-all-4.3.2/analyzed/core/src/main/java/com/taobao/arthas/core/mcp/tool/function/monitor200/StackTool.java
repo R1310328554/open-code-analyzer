@@ -6,9 +6,17 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Stack MCP Tool：在方法被调用时打印其完整调用栈。
+ * <p>
+ * 对应 {@code stack} 命令；与 trace 不同，stack 关注「谁调用了目标方法」
+ * 而非方法内部子调用，适合定位调用来源。
+ */
 public class StackTool extends AbstractArthasTool {
 
+    /** 默认捕获次数（-n） */
     public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 1;
+    /** 流式轮询间隔毫秒 */
     public static final int DEFAULT_POLL_INTERVAL_MS = 50;
 
     /**

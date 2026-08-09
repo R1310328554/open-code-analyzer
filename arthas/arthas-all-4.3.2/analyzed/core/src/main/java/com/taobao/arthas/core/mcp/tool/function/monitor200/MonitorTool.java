@@ -6,10 +6,19 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Monitor MCP Tool：按固定间隔统计指定方法的调用指标。
+ * <p>
+ * 对应 {@code monitor} 命令；流式输出调用次数、成功/失败数、平均 RT、
+ * 失败率等。适合观察方法在一段时间内的吞吐与稳定性。
+ */
 public class MonitorTool extends AbstractArthasTool {
 
+    /** 默认监控轮数（-n） */
     public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 1;
+    /** 默认统计输出间隔毫秒（-c，命令侧为秒） */
     public static final int DEFAULT_REFRESH_INTERVAL_MS = 3000;
+    /** 默认最大匹配类数（-m），防止增强过多类 */
     public static final int DEFAULT_MAX_MATCH_COUNT = 50;
 
     /**
@@ -66,6 +75,7 @@ public class MonitorTool extends AbstractArthasTool {
         StringBuilder cmd = buildCommand("monitor");
 
         cmd.append(" --timeout ").append(timeoutSeconds);
+        // monitor -c 单位为秒，由毫秒换算
         cmd.append(" -c ").append(interval / 1000);
         cmd.append(" -n ").append(execCount);
         cmd.append(" -m ").append(maxMatchCount);
@@ -79,6 +89,7 @@ public class MonitorTool extends AbstractArthasTool {
         
         addQuotedParameter(cmd, condition);
 
+        // 轮询间隔取统计周期的 1/10，用于流式拉取增量输出
         return executeStreamable(toolContext, cmd.toString(), execCount, interval / 10, timeoutSeconds * 1000,
                                 "Monitor execution completed successfully");
     }

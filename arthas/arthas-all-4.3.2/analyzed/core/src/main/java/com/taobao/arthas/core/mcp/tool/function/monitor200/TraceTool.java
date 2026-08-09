@@ -6,10 +6,19 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Trace MCP Tool：追踪方法内部调用链及每个节点的耗时。
+ * <p>
+ * 对应 {@code trace} 命令；可配合 OGNL 条件（含 {@code #cost} 耗时过滤）
+ * 缩小观测范围，适合分析慢调用路径。
+ */
 public class TraceTool extends AbstractArthasTool {
 
+    /** 默认追踪次数（-n） */
     public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 1;
+    /** 流式轮询间隔毫秒 */
     public static final int DEFAULT_POLL_INTERVAL_MS = 100;
+    /** 默认最大匹配类数（-m） */
     public static final int DEFAULT_MAX_MATCH_COUNT = 50;
 
     /**

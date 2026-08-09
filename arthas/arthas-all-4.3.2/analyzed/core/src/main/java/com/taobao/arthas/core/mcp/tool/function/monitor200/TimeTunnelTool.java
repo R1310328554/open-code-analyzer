@@ -6,10 +6,19 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * TimeTunnel（tt）MCP Tool：记录并回放方法调用的「时空隧道」。
+ * <p>
+ * 对应 {@code tt} 命令；可 record 捕获入参/返回值，list/search 检索记录，
+ * replay 重放调用，info/delete 管理单条记录。适合复现与对比多次调用。
+ */
 public class TimeTunnelTool extends AbstractArthasTool {
 
+    /** record 模式默认捕获次数 */
     public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 1;
+    /** 流式轮询间隔毫秒 */
     public static final int DEFAULT_POLL_INTERVAL_MS = 100;
+    /** 默认最大匹配类数，防止增强过多类导致 Safepoint 压力 */
     public static final int DEFAULT_MAX_MATCH_COUNT = 50;
 
     /**
@@ -70,6 +79,7 @@ public class TimeTunnelTool extends AbstractArthasTool {
             cmd.append(" -M ").append(sizeLimit);
         }
 
+        // 按 action 分支组装 tt 子命令
         switch (ttAction) {
             case "record":
                 cmd = buildRecordCommand(cmd, classPattern, methodPattern, condition, execCount, maxMatch, regex, timeoutSeconds);
@@ -102,7 +112,7 @@ public class TimeTunnelTool extends AbstractArthasTool {
     }
 
     /**
-     * 验证参数
+     * 验证各 action 的必填参数
      */
     private void validateParameters(String action, String classPattern, String methodPattern, 
                                    Integer index, String searchExpression) {
@@ -140,7 +150,7 @@ public class TimeTunnelTool extends AbstractArthasTool {
     }
 
     /**
-     * 标准化操作类型
+     * 标准化操作类型：支持完整名与短别名（t/l/i/s/p/d/da）
      */
     private String normalizeAction(String action) {
         if (action == null || action.trim().isEmpty()) {
@@ -191,6 +201,7 @@ public class TimeTunnelTool extends AbstractArthasTool {
         }
     }
 
+    /** 构建 record（-t）子命令：类/方法模式、条件与增强上限 */
     private StringBuilder buildRecordCommand(StringBuilder cmd, String classPattern, String methodPattern,
                                              String condition, int execCount, int maxMatch, Boolean regex, int timeoutSeconds) {
 
@@ -214,6 +225,7 @@ public class TimeTunnelTool extends AbstractArthasTool {
         return cmd;
     }
 
+    /** 构建 list（-l）子命令，可选附带搜索过滤表达式 */
     private StringBuilder buildListCommand(StringBuilder cmd, String searchExpression) {
         cmd.append(" -l");
         if (searchExpression != null && !searchExpression.trim().isEmpty()) {

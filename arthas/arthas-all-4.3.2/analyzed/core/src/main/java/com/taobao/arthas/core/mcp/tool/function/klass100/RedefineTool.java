@@ -5,8 +5,17 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Redefine MCP Tool：在 JVM 运行时替换已加载类的字节码（热更新）。
+ * <p>
+ * 对应 {@code redefine} 命令；传入本地 .class 文件路径即可覆盖同名类，
+ * 无需重启进程。通常与 {@code dump}/{@code mc} 组合使用。
+ */
 public class RedefineTool extends AbstractArthasTool {
 
+    /**
+     * redefine 热替换：用磁盘上的 class 字节码覆盖 JVM 内已加载类
+     */
     @Tool(
             name = "redefine",
             description = "重新加载类的字节码，允许在JVM运行时，重新加载已存在的类的字节码，实现热更新"
@@ -26,6 +35,7 @@ public class RedefineTool extends AbstractArthasTool {
 
         addParameter(cmd, classFilePaths);
 
+        // 多 ClassLoader 加载同名类时需指定目标 Loader
         if (classLoaderHash != null && !classLoaderHash.trim().isEmpty()) {
             addParameter(cmd, "-c", classLoaderHash);
         } else if (classLoaderClass != null && !classLoaderClass.trim().isEmpty()) {

@@ -6,11 +6,16 @@ import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
 /**
- * 类搜索工具，对应 Arthas 的 sc 命令
- * 用于搜索 JVM 中已加载的类，支持通配符和正则表达式匹配
+ * SearchClass（sc）MCP Tool：在 JVM 已加载类中按模式搜索。
+ * <p>
+ * 对应 {@code sc} 命令；支持通配符与正则、ClassLoader 精确定位、
+ * 详情/字段展开及结果数量上限，是类诊断的常用入口。
  */
 public class SearchClassTool extends AbstractArthasTool {
 
+    /**
+     * sc 类搜索：匹配已加载类并可选输出详情与字段
+     */
     @Tool(
             name = "sc",
             description = "搜索 JVM 中已加载的类。支持通配符(*)和正则表达式匹配，可查看类的详细信息（类加载器、接口、父类、注解等）和字段信息"

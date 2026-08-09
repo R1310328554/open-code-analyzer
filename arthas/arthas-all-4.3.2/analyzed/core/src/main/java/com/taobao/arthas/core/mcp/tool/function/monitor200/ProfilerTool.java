@@ -6,12 +6,14 @@ import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
 /**
- * profiler MCP Tool: Async Profiler（async-profiler）能力封装，对应 Arthas 的 profiler 命令。
+ * Profiler MCP Tool：封装 async-profiler，对 CPU/内存/锁等事件采样。
  * <p>
- * 参考：{@link com.taobao.arthas.core.command.monitor200.ProfilerCommand}
+ * 对应 {@code profiler} 命令；支持 start/stop/dump 等动作及 flamegraph、JFR
+ * 等输出格式。参考 {@link com.taobao.arthas.core.command.monitor200.ProfilerCommand}。
  */
 public class ProfilerTool extends AbstractArthasTool {
 
+    /** profiler 子命令白名单，用于校验与规范化 action 参数 */
     private static final String[] SUPPORTED_ACTIONS = new String[] {
             "start",
             "resume",
@@ -30,6 +32,9 @@ public class ProfilerTool extends AbstractArthasTool {
             "actions"
     };
 
+    /**
+     * profiler 性能采样：按 action 驱动 async-profiler Agent
+     */
     @Tool(
             name = "profiler",
             description = "Async Profiler 诊断工具: 对应 Arthas 的 profiler 命令，用于采样 CPU/alloc/lock 等事件并输出 flamegraph/jfr 等格式。\n"
@@ -168,7 +173,7 @@ public class ProfilerTool extends AbstractArthasTool {
             addParameter(cmd, actionArg);
         }
 
-        // profiler options
+        // 以下为 async-profiler 可选参数，按需追加
         addOption(cmd, "--event", event);
         addOption(cmd, "--alloc", alloc);
         addFlag(cmd, "--live", live);
@@ -218,6 +223,7 @@ public class ProfilerTool extends AbstractArthasTool {
         return executeSync(toolContext, cmd.toString());
     }
 
+    /** 校验 action 并返回规范化的子命令名（大小写不敏感） */
     private static String normalizeAction(String action) {
         if (action == null || action.trim().isEmpty()) {
             throw new IllegalArgumentException("action is required");
@@ -240,6 +246,7 @@ public class ProfilerTool extends AbstractArthasTool {
         throw new IllegalArgumentException("Unsupported action: " + input + ". Supported actions: " + supportedList);
     }
 
+    /** 追加带值的 profiler 字符串选项（空值跳过） */
     private void addOption(StringBuilder cmd, String option, String value) {
         if (value == null || value.trim().isEmpty()) {
             return;
@@ -262,6 +269,7 @@ public class ProfilerTool extends AbstractArthasTool {
         cmd.append(" ").append(option).append(" ").append(value);
     }
 
+    /** 同一选项可重复出现（如多个 --include） */
     private void addRepeatableOption(StringBuilder cmd, String option, String[] values) {
         if (values == null || values.length == 0) {
             return;

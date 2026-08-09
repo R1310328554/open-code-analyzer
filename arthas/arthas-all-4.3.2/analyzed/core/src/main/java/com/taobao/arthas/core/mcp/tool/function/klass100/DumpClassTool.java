@@ -5,10 +5,16 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Dump MCP Tool：将 JVM 中已加载类的字节码导出到磁盘。
+ * <p>
+ * 对应 {@code dump} 命令；适用于批量备份指定包/类模式的 .class 文件，
+ * 便于离线分析或与 {@code mc}/{@code redefine} 配合做热更新。
+ */
 public class DumpClassTool extends AbstractArthasTool {
 
     /**
-     * Dump 命令 - 将JVM中已加载的类字节码导出到指定目录
+     * dump 命令 - 将JVM中已加载的类字节码导出到指定目录
      * 适用于批量下载指定包目录的class字节码
      */
     @Tool(
@@ -41,6 +47,7 @@ public class DumpClassTool extends AbstractArthasTool {
 
         addParameter(cmd, "-d", outputDir);
 
+        // 多 ClassLoader 场景下精确定位
         if (classLoaderHashcode != null && !classLoaderHashcode.trim().isEmpty()) {
             addParameter(cmd, "-c", classLoaderHashcode);
         } else if (classLoaderClass != null && !classLoaderClass.trim().isEmpty()) {
@@ -49,6 +56,7 @@ public class DumpClassTool extends AbstractArthasTool {
 
         addFlag(cmd, "--include-inner-classes", includeInnerClasses);
 
+        // 防止匹配过多类导致磁盘占满
         if (limit != null && limit > 0) {
             cmd.append(" --limit ").append(limit);
         }

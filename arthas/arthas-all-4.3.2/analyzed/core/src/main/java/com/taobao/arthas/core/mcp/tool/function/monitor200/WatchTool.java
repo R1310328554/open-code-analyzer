@@ -6,12 +6,23 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Watch MCP Tool：观察方法执行时的入参、返回值与异常。
+ * <p>
+ * 对应 {@code watch} 命令；支持 OGNL 观察表达式与 -b/-e/-s/-f 等触发时机，
+ * 流式输出便于实时调试线上逻辑。
+ */
 public class WatchTool extends AbstractArthasTool {
 
+    /** 默认观察次数（-n） */
     public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 1;
+    /** 流式轮询间隔毫秒 */
     public static final int DEFAULT_POLL_INTERVAL_MS = 50;
+    /** 默认最大匹配类数 */
     public static final int DEFAULT_MAX_MATCH_COUNT = 50;
+    /** 默认 OGNL 展开深度（-x，最大 4） */
     public static final int DEFAULT_EXPAND_LEVEL = 1;
+    /** 默认观察表达式：参数、this 与返回值 */
     public static final String DEFAULT_EXPRESS = "{params, target, returnObj}";
 
     /**
@@ -85,6 +96,7 @@ public class WatchTool extends AbstractArthasTool {
 
         addFlag(cmd, "-E", regex);
 
+        // 观察时机：入参前 / 异常后 / 成功后 / 默认完整结束（-f）
         if (Boolean.TRUE.equals(beforeMethod)) {
             cmd.append(" -b");
         } else if (Boolean.TRUE.equals(exceptionOnly)) {

@@ -6,11 +6,16 @@ import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
 /**
- * 方法搜索工具，对应 Arthas 的 sm 命令
- * 用于搜索 JVM 中已加载类的方法，支持通配符和正则表达式匹配
+ * SearchMethod（sm）MCP Tool：在已加载类中搜索方法签名。
+ * <p>
+ * 对应 {@code sm} 命令；支持类名/方法名通配或正则、ClassLoader 定位
+ * 及详情输出，便于在大量类中快速定位目标方法。
  */
 public class SearchMethodTool extends AbstractArthasTool {
 
+    /**
+     * sm 方法搜索：按类名与方法名模式列出匹配的方法
+     */
     @Tool(
             name = "sm",
             description = "搜索 JVM 中已加载类的方法。支持通配符(*)和正则表达式匹配，可查看方法的详细信息（返回类型、参数类型、异常类型、注解等）"

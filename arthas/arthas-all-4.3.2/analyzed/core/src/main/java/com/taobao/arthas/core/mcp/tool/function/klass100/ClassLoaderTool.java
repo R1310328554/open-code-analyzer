@@ -5,15 +5,31 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * ClassLoader MCP Tool：查看与管理 JVM 中的类加载器。
+ * <p>
+ * 对应 {@code classloader} 命令；可输出统计、实例列表、继承树、URL 与类映射等。
+ * 搜索已加载类请优先使用 {@code sc}（SearchClassTool）。
+ */
 public class ClassLoaderTool extends AbstractArthasTool {
 
+    /** 默认模式：输出各 ClassLoader 加载类数量等统计 */
     public static final String MODE_STATS = "stats";
+    /** 列出 ClassLoader 实例详情（-l） */
     public static final String MODE_INSTANCES = "instances";
+    /** 打印 ClassLoader 继承树（-t） */
     public static final String MODE_TREE = "tree";
+    /** 列出某 ClassLoader 已加载的全部类（-a，慎用） */
     public static final String MODE_ALL_CLASSES = "all-classes";
+    /** URL/jar 资源统计（--url-stat） */
     public static final String MODE_URL_STATS = "url-stats";
+    /** URL 与类名对应关系（--url-classes） */
     public static final String MODE_URL_CLASSES = "url-classes";
 
+    /**
+     * classloader 诊断工具
+     * 支持多种显示模式、指定 ClassLoader、资源查找与显式 load 等。
+     */
     @Tool(
             name = "classloader",
             description = "ClassLoader 诊断工具，可以查看类加载器统计信息、继承树、URLs，以及进行资源查找和类加载操作。搜索类的场景优先使用 sc 工具"
@@ -52,6 +68,7 @@ public class ClassLoaderTool extends AbstractArthasTool {
             ToolContext toolContext) {
         StringBuilder cmd = buildCommand("classloader");
 
+        // 按 mode 映射到 classloader 子命令开关
         if (mode != null) {
             switch (mode.toLowerCase()) {
                 case MODE_INSTANCES:
@@ -75,6 +92,7 @@ public class ClassLoaderTool extends AbstractArthasTool {
             }
         }
 
+        // 限定目标 ClassLoader（hash 优先）
         if (classLoaderHash != null && !classLoaderHash.trim().isEmpty()) {
             addParameter(cmd, "-c", classLoaderHash);
         } else if (classLoaderClass != null && !classLoaderClass.trim().isEmpty()) {
@@ -85,6 +103,7 @@ public class ClassLoaderTool extends AbstractArthasTool {
 
         addParameter(cmd, "--load", loadClass);
 
+        // url-classes 模式下的过滤与详情参数
         if (mode != null && MODE_URL_CLASSES.equalsIgnoreCase(mode)) {
             addFlag(cmd, "-d", details);
             addFlag(cmd, "-E", regex);

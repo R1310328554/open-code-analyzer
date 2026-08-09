@@ -5,8 +5,17 @@ import com.taobao.arthas.mcp.server.tool.ToolContext;
 import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * Retransform MCP Tool：对已加载类触发 retransform 使 Agent 修改生效。
+ * <p>
+ * 对应 {@code retransform} 命令；与 redefine 类似但走 Instrumentation
+ * retransform 路径，适用于已有 transformer 的场景。
+ */
 public class RetransformTool extends AbstractArthasTool {
 
+    /**
+     * retransform 热加载：对已存在类重新应用字节码变换
+     */
     @Tool(
             name = "retransform",
             description = "热加载类的字节码，允许对已加载的类进行字节码修改并使其生效"
