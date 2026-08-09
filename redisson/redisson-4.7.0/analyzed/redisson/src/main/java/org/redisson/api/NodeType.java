@@ -16,9 +16,10 @@
 package org.redisson.api;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Redis 集群节点类型。
+ * <p>用于区分主节点、从节点与 Sentinel 节点。
  *
+ * @author Nikita Koksharov
  */
 public enum NodeType {
 

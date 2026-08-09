@@ -18,35 +18,37 @@ package org.redisson.api;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Configuration for Lock object.
+ * 分布式锁对象的退避（back-off）配置。
+ * <p>供 {@linkplain org.redisson.RedissonSpinLock} 等自旋锁在获取失败时
+ * 按策略休眠后重试。
  *
  * @author Danila Varatyntsev
  */
 public class LockOptions {
 
     /**
-     * Factory for {@linkplain BackOffPolicy} class.
+     * {@linkplain BackOffPolicy} 工厂接口。
      */
     public interface BackOff {
         BackOffPolicy create();
     }
 
     /**
-     * Generator of sleep period values for {@linkplain org.redisson.RedissonSpinLock} back off
+     * 为 {@linkplain org.redisson.RedissonSpinLock} 退避算法生成休眠时长。
      */
     public interface BackOffPolicy {
 
         /**
-         * Generates and returns next sleep period
+         * 生成并返回下一次休眠时长
          *
-         * @return next sleep period
+         * @return 下一次休眠时长（毫秒）
          */
         long getNextSleepPeriod();
     }
 
     /**
-     * Back off algorithm, where sleep period starts with {@linkplain #initialDelay}, each time increases
-     * {@linkplain #multiplier} times but doesn't exceed {@linkplain #maxDelay}
+     * 指数退避算法：休眠从 {@linkplain #initialDelay} 起，每次乘以
+     * {@linkplain #multiplier}，且不超过 {@linkplain #maxDelay}。
      */
     public static class ExponentialBackOff implements BackOff {
         private long maxDelay = 128;
@@ -59,12 +61,12 @@ public class LockOptions {
         }
 
         /**
-         * Sets max back off delay.
+         * 设置最大退避延迟。
          * <p>
-         * Default is <code>128</code>
+         * 默认值为 <code>128</code>。
          *
-         * @param maxDelay - max sleep period. Has to be positive
-         * @return ExponentialBackOffOptions instance
+         * @param maxDelay 最大休眠时长，须为正数
+         * @return ExponentialBackOff 实例
          */
         public ExponentialBackOff maxDelay(long maxDelay) {
             if (maxDelay <= 0) {
@@ -79,12 +81,12 @@ public class LockOptions {
         }
 
         /**
-         * Sets initial back off delay.
+         * 设置初始退避延迟。
          * <p>
-         * Default is <code>1</code>
+         * 默认值为 <code>1</code>。
          *
-         * @param initialDelay - initial sleep period. Has to be positive
-         * @return ExponentialBackOffOptions instance
+         * @param initialDelay 初始休眠时长，须为正数
+         * @return ExponentialBackOff 实例
          */
         public ExponentialBackOff initialDelay(long initialDelay) {
             if (initialDelay <= 0) {
@@ -99,12 +101,12 @@ public class LockOptions {
         }
 
         /**
-         * Sets back off delay multiplier.
+         * 设置退避延迟倍数。
          * <p>
-         * Default is <code>2</code>
+         * 默认值为 <code>2</code>。
          *
-         * @param multiplier - sleep period multiplier. Has to be positive
-         * @return ExponentialBackOffOptions instance
+         * @param multiplier 休眠时长倍数，须为正数
+         * @return ExponentialBackOff 实例
          */
         public ExponentialBackOff multiplier(int multiplier) {
             if (multiplier <= 0) {
@@ -119,9 +121,8 @@ public class LockOptions {
         }
     }
 
-    /**
-     * Back off algorithm, where sleep period time increases exponentially. To prevent
-     */
+    /** 指数退避策略实现：休眠时长指数增长并加入随机抖动。 */
+
     private static final class ExponentialBackOffPolicy implements BackOffPolicy {
 
         private final long maxDelay;
@@ -148,9 +149,8 @@ public class LockOptions {
     }
 
     /**
-     * Back off algorithm, where sleep period is constant and is defined by {@linkplain #delay}.
-     * To reduce possible negative effects of many threads simultaneously sending requests, a small random value is
-     * added to all sleep periods.
+     * 固定退避算法：休眠时长由 {@linkplain #delay} 决定。
+     * <p>为减轻多线程同时重试的惊群效应，可在各次休眠上叠加小幅随机值。
      */
     public static class ConstantBackOff implements BackOff {
         private long delay = 64;
@@ -161,12 +161,12 @@ public class LockOptions {
         }
 
         /**
-         * Sets back off delay value.
+         * 设置固定退避延迟。
          * <p>
-         * Default is <code>64</code>
+         * 默认值为 <code>64</code>。
          *
-         * @param delay - sleep period value. Has to be positive
-         * @return ConstantBackOffOptions instance
+         * @param delay 休眠时长，须为正数
+         * @return ConstantBackOff 实例
          */
         public ConstantBackOff delay(long delay) {
             if (delay <= 0) {
@@ -181,9 +181,8 @@ public class LockOptions {
         }
     }
 
-    /**
-     * Back off policy, where sleep period is constant and is defined by {@linkplain #delay}
-     */
+    /** 固定休眠时长的退避策略实现。 */
+
     private static final class ConstantBackOffPolicy implements BackOffPolicy {
 
         private final long delay;
@@ -199,9 +198,9 @@ public class LockOptions {
     }
 
     /**
-     * Creates a new instance of ExponentialBackOffOptions with default options.
+     * 创建默认配置的指数退避工厂。
      *
-     * @return BackOffOptions instance
+     * @return BackOff 实例
      */
     public static BackOff defaults() {
         return new ExponentialBackOff();

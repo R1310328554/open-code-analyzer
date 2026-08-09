@@ -25,28 +25,26 @@ import org.redisson.api.map.RetryableMapWriterAsync;
 import java.time.Duration;
 
 /**
- * Use org.redisson.api.options.MapOptions instead
- * 
- * @author Nikita Koksharov
+ * 分布式 Map 读写策略配置（已废弃，请改用 org.redisson.api.options.MapOptions）。
+ * <p>可配置 {@link MapLoader}/{@link MapWriter}、write-through/write-behind
+ * 及写入重试参数。
  *
- * @param <K> key type
- * @param <V> value type
+ * @author Nikita Koksharov
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 @Deprecated
 public class MapOptions<K, V> {
     
     public enum WriteMode {
         
-        /**
-         * In write behind mode all data written in map object 
-         * also written using MapWriter in asynchronous mode.
-         */
+        /** write-behind 模式：map 写入异步批量落库至 {@link MapWriter}。 */
+
         WRITE_BEHIND,
         
         /**
-         * In write through mode all write operations for map object 
-         * are synchronized with MapWriter write operations.
-         * If MapWriter throws an error then it will be re-thrown to Map operation caller.
+         * write-through 模式：map 写操作与 {@link MapWriter} 同步；
+         * 若 {@link MapWriter} 抛错则原样传递给调用方。
          */
         WRITE_THROUGH
         
@@ -72,29 +70,27 @@ public class MapOptions<K, V> {
     }
     
     /**
-     * Creates a new instance of MapOptions with default options.
+     * 创建默认 {@link MapOptions} 实例。
      * <p>
-     * This is equivalent to:
+     * 等价于：
      * <pre>
      *     new MapOptions()
      *      .writer(null, null).loader(null);
      * </pre>
-     * 
-     * @param <K> key type
-     * @param <V> value type
-     * 
-     * @return MapOptions instance
-     * 
+     *
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @return MapOptions 实例
      */
     public static <K, V> MapOptions<K, V> defaults() {
         return new MapOptions<K, V>();
     }
     
     /**
-     * Defines {@link MapWriter} object which is invoked during write operation.
-     * 
-     * @param writer object
-     * @return MapOptions instance
+     * 设置写操作调用的 {@link MapWriter}。
+     *
+     * @param writer MapWriter 实例
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> writer(MapWriter<K, V> writer) {
         if (writer != null) {
@@ -107,10 +103,10 @@ public class MapOptions<K, V> {
     }
 
     /**
-     * Defines {@link MapWriterAsync} object which is invoked during write operation.
+     * 设置写操作调用的 {@link MapWriterAsync}。
      *
-     * @param writer object
-     * @return MapOptions instance
+     * @param writer MapWriterAsync 实例
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> writerAsync(MapWriterAsync<K, V> writer) {
         if (writer != null) {
@@ -123,13 +119,12 @@ public class MapOptions<K, V> {
     }
 
     /**
-     * Sets write behind tasks batch size. 
-     * All updates accumulated into a batch of specified size and written with {@link MapWriter}.
+     * 设置 write-behind 批量大小；更新累积到指定批次后通过 {@link MapWriter} 写入。
      * <p>
-     * Default is <code>50</code>
-     * 
-     * @param writeBehindBatchSize - size of batch
-     * @return MapOptions instance
+     * 默认值为 <code>50</code>。
+     *
+     * @param writeBehindBatchSize 批次大小
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> writeBehindBatchSize(int writeBehindBatchSize) {
         this.writeBehindBatchSize = writeBehindBatchSize;
@@ -140,13 +135,12 @@ public class MapOptions<K, V> {
     }
     
     /**
-     * Sets write behind tasks execution delay.
-     * All updates written with {@link MapWriter} and lag not more than specified delay.
+     * 设置 write-behind 任务执行延迟；更新通过 {@link MapWriter} 写入且滞后不超过该延迟。
      * <p>
-     * Default is <code>1000</code> milliseconds
-     * 
-     * @param writeBehindDelay - delay in milliseconds
-     * @return MapOptions instance
+     * 默认值为 <code>1000</code> 毫秒。
+     *
+     * @param writeBehindDelay 延迟（毫秒）
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> writeBehindDelay(int writeBehindDelay) {
         this.writeBehindDelay = writeBehindDelay;
@@ -157,12 +151,12 @@ public class MapOptions<K, V> {
     }
     
     /**
-     * Sets write mode. 
+     * 设置写入模式。
      * <p>
-     * Default is <code>{@link WriteMode#WRITE_THROUGH}</code>
-     * 
-     * @param writeMode - write mode
-     * @return MapOptions instance
+     * 默认值为 <code>{@link WriteMode#WRITE_THROUGH}</code>。
+     *
+     * @param writeMode 写入模式
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> writeMode(WriteMode writeMode) {
         this.writeMode = writeMode;
@@ -177,10 +171,10 @@ public class MapOptions<K, V> {
     }
 
     /**
-     * Sets max retry attempts for {@link RetryableMapWriter} or {@link RetryableMapWriterAsync}
+     * 设置 {@link RetryableMapWriter} 或 {@link RetryableMapWriterAsync} 的最大重试次数。
      *
-     * @param writerRetryAttempts object
-     * @return MapOptions instance
+     * @param writerRetryAttempts 最大重试次数
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> writerRetryAttempts(int writerRetryAttempts) {
         if (writerRetryAttempts <= 0){
@@ -195,10 +189,10 @@ public class MapOptions<K, V> {
     }
 
     /**
-     * Sets retry interval for {@link RetryableMapWriter} or {@link RetryableMapWriterAsync}
-     * 
-     * @param writerRetryInterval {@link Duration}
-     * @return MapOptions instance
+     * 设置 {@link RetryableMapWriter} 或 {@link RetryableMapWriterAsync} 的重试间隔。
+     *
+     * @param writerRetryInterval 重试间隔 {@link Duration}
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> writerRetryInterval(Duration writerRetryInterval) {
         if (writerRetryInterval.isNegative()) {
@@ -209,10 +203,10 @@ public class MapOptions<K, V> {
     }
 
     /**
-     * Sets {@link MapLoader} object.
-     * 
-     * @param loader object
-     * @return MapOptions instance
+     * 设置 {@link MapLoader}。
+     *
+     * @param loader MapLoader 实例
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> loader(MapLoader<K, V> loader) {
         this.loader = loader;
@@ -223,10 +217,10 @@ public class MapOptions<K, V> {
     }
 
     /**
-     * Sets {@link MapLoaderAsync} object.
+     * 设置 {@link MapLoaderAsync}。
      *
-     * @param loaderAsync object
-     * @return MapOptions instance
+     * @param loaderAsync MapLoaderAsync 实例
+     * @return MapOptions 实例
      */
     public MapOptions<K, V> loaderAsync(MapLoaderAsync<K, V> loaderAsync) {
         this.loaderAsync = loaderAsync;

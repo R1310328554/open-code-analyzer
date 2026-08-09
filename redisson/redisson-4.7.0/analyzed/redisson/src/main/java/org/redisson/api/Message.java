@@ -20,11 +20,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Message object.
+ * 队列消息不可变值对象。
+ * <p>包含消息 ID、载荷及只读 headers 元数据。
  *
  * @author Nikita Koksharov
- * @param <V> type
- *
+ * @param <V> 载荷类型
  */
 public final class Message<V> {
 

@@ -16,83 +16,66 @@
 package org.redisson.api;
 
 /**
- * enum type from https://redis.io/docs/latest/commands/object-encoding/
+ * Redis {@code OBJECT ENCODING} 返回值枚举。
+ * <p>对应命令文档：https://redis.io/docs/latest/commands/object-encoding/
  *
  * @author seakider
  */
 public enum ObjectEncoding {
-    /**
-     * Normal string encoding.
-     */
+    /** 普通字符串编码（raw）。 */
+
     RAW("raw"),
 
-    /**
-     * Strings representing integers in a 64-bit signed interval.
-     */
+    /** 64 位有符号整数区间内的整数字符串编码。 */
+
     INT("int"),
 
-    /**
-     * Strings with lengths up to the hardcoded limit of OBJ_ENCODING_EMBSTR_SIZE_LIMIT or 44 bytes.
-     */
+    /** 长度不超过 OBJ_ENCODING_EMBSTR_SIZE_LIMIT（44 字节）的嵌入式字符串编码。 */
+
     EMBSTR("embstr"),
 
-    /**
-     * An old list encoding.
-     * No longer used.
-     */
+    /** 旧版 list 编码，已不再使用。 */
+
     LINKEDLIST("linkedlist"),
 
-    /**
-     * A space-efficient encoding used for small lists.
-     * Redis <= 6.2
-     */
+    /** 小 list 的空间优化编码（Redis &lt;= 6.2）。 */
+
     ZIPLIST("ziplist"),
 
-    /**
-     * A space-efficient encoding used for small lists.
-     * Redis >= 7.0
-     */
+    /** 小 list 的空间优化编码（Redis &gt;= 7.0）。 */
+
     LISTPACK("listpack"),
 
-    /**
-     * Encoded as linkedlist of ziplists or listpacks.
-     */
+    /** quicklist：由 ziplist 或 listpack 组成的链表。 */
+
     QUICKLIST("quicklist"),
 
-    /**
-     * Normal set encoding.
-     */
+    /** 普通 set 哈希表编码。 */
+
     HASHTABLE("hashtable"),
 
-    /**
-     * Small sets composed solely of integers encoding.
-     */
+    /** 仅含整数的小 set 专用编码。 */
+
     INTSET("intset"),
 
-    /**
-     * An old hash encoding.
-     * No longer used
-     */
+    /** 旧版 hash 编码，已不再使用。 */
+
     ZIPMAP("zipmap"),
 
-    /**
-     * Normal sorted set encoding
-     */
+    /** 普通 sorted set 跳表编码。 */
+
     SKIPLIST("skiplist"),
 
-    /**
-     * Encoded as a radix tree of listpacks
-     */
+    /** stream：由 listpack 构成的 radix tree 编码。 */
+
     STREAM("stream"),
 
-    /**
-     * Key is not exist.
-     */
+    /** 键不存在。 */
+
     NULL("nonexistence"),
 
-    /**
-     * This means redis support new type and this Enum not defined.
-     */
+    /** Redis 新增编码类型，当前枚举尚未定义。 */
+
     UNKNOWN("unknown");
 
     private final String type;

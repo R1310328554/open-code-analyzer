@@ -23,10 +23,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * {@link MessageArgs} 的可变参数实现。
+ * <p>由 {@link MessageArgs#payload(Object)} 创建，供队列客户端组装投递参数。
  *
  * @author Nikita Koksharov
- * @param <V> type
- *
+ * @param <V> 载荷类型
  */
 public final class MessageParams<V> implements MessageArgs<V> {
 

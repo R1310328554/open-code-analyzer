@@ -23,12 +23,12 @@ import org.redisson.api.map.MapWriterAsync;
 import java.time.Duration;
 
 /**
- * Configuration for RMapCache object.
+ * {@link RMapCache} 的配置选项（已废弃）。
+ * <p>扩展 {@link MapOptions}，支持在条目驱逐完成后移除空的驱逐任务。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 @Deprecated
 public class MapCacheOptions<K, V> extends MapOptions<K, V> {
@@ -89,10 +89,9 @@ public class MapCacheOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Removes eviction task from memory if map is empty
-     * upon entries eviction process completion.
+     * 条目驱逐完成后，若 map 已空则从内存中移除驱逐任务。
      *
-     * @return MapOptions instance
+     * @return MapCacheOptions 实例
      */
     public MapCacheOptions<K, V> removeEmptyEvictionTask() {
         this.removeEmptyEvictionTask = true;

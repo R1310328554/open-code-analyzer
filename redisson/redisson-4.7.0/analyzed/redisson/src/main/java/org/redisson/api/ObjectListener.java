@@ -18,10 +18,10 @@ package org.redisson.api;
 import java.util.EventListener;
 
 /**
- * Redisson Object Event listener for Expired or Deleted event.
- * 
- * @author Nikita Koksharov
+ * Redisson 对象事件监听器标记接口。
+ * <p>用于过期（{@link ExpiredObjectListener}）或删除（{@link DeletedObjectListener}）等事件回调。
  *
+ * @author Nikita Koksharov
  */
 public interface ObjectListener extends EventListener {
 

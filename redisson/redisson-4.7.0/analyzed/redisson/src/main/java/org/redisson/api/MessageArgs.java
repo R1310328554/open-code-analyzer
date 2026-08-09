@@ -19,116 +19,103 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Fluent API interface defining parameters for a message in a queue.
+ * 队列消息的流式参数配置接口。
+ * <p>支持优先级、延迟投递、去重、TTL、投递次数限制及自定义 headers。
  *
  * @author Nikita Koksharov
- * @param <V> type
- *
+ * @param <V> 载荷类型
  */
 public interface MessageArgs<V> {
 
     /**
-     * Sets the priority level for the message.
-     * Defined as a number between <code>0</code> and <code>9</code>
+     * 设置消息优先级，取值 <code>0</code>～<code>9</code>。
      * <p>
-     * <code>0</code> is the lowest priority level.
-     * <p>
-     * <code>9</code> is the highest priority level.
-     * <p>
-     * Default value is <code>0</code>.
+     * <code>0</code> 为最低，<code>9</code> 为最高；默认 <code>0</code>。
      *
-     * @param priority the priority level
-     * @return arguments object
+     * @param priority 优先级
+     * @return 参数构建器
      */
     MessageArgs<V> priority(int priority);
 
     /**
-     * Sets a delay interval before the message becomes available for processing.
+     * 设置消息可消费前的延迟时长。
      * <p>
-     * <code>0</code> value means delay duration is not applied.
-     * If not defined, the queue's delay setting value is used.
-     * If queue's delay setting is also not set, the default value is <code>0</code>.
+     * <code>0</code> 表示不延迟；未设置时使用队列级 delay，队列也未设置则默认为 <code>0</code>。
      *
-     * @param interval the time duration to delay message delivery
-     * @return arguments object
+     * @param interval 延迟时长
+     * @return 参数构建器
      */
     MessageArgs<V> delay(Duration interval);
 
     /**
-     * Enables deduplication based on the payload hash for the specified interval.
+     * 在指定时间窗口内按载荷哈希去重。
      * <p>
-     * During the specified interval, messages with the same hash will be considered duplicates
-     * and won't be added to the queue.
+     * 窗口内相同哈希的消息视为重复，不会入队。
      * </p>
      *
-     * @param interval the time duration
-     * @return arguments object
+     * @param interval 去重时间窗口
+     * @return 参数构建器
      */
     MessageArgs<V> deduplicationByHash(Duration interval);
 
     /**
-     * Enables deduplication based on a custom ID for the specified interval.
+     * 在指定时间窗口内按自定义 ID 去重。
      * <p>
-     * During the specified interval, messages with the same ID will be considered duplicates
-     * and won't be added to the queue.
+     * 窗口内相同 ID 的消息视为重复，不会入队。
      * </p>
      *
-     * @param id the custom identifier
-     * @param interval the time duration
-     * @return arguments object
+     * @param id 自定义标识
+     * @param interval 去重时间窗口
+     * @return 参数构建器
      */
     MessageArgs<V> deduplicationById(Object id, Duration interval);
 
     /**
-     * Sets the time-to-live duration for the message.
+     * 设置消息存活时间（TTL）。
      * <p>
-     * After this duration has elapsed, the message is removed from the queue
-     * if it hasn't been processed.
+     * 超时且未被消费时从队列移除。
      * <p>
-     * <code>0</code> value means expiration is not applied.
-     * If not defined, the queue's timeToLive setting value is used.
-     * If queue's timeToLive setting is also not set, the default value is <code>0</code>.
+     * <code>0</code> 表示不过期；未设置时使用队列 timeToLive，队列也未设置则默认为 <code>0</code>。
      *
-     * @param value the time duration
-     * @return arguments object
+     * @param value 存活时长
+     * @return 参数构建器
      */
     MessageArgs<V> timeToLive(Duration value);
 
     /**
-     * Sets the maximum number of delivery attempts for the message.
+     * 设置消息最大投递次数。
      * <p>
-     * If processing the message fails, it may be redelivered up to the specified count.
+     * 处理失败时可重投，最多达到指定次数。
      * </p>
-     * The minimum value is <code>1</code>. If not defined, the queue's deliveryLimit setting value is used.
-     * If queue's deliveryLimit setting is also not set, the default value is <code>10</code>.
+     * 最小值为 <code>1</code>；未设置时使用队列 deliveryLimit，队列也未设置则默认为 <code>10</code>。
      *
-     * @param count the maximum number of delivery attempts
-     * @return arguments object
+     * @param count 最大投递次数
+     * @return 参数构建器
      */
     MessageArgs<V> deliveryLimit(int count);
 
     /**
-     * Adds a single header entry to the message.
+     * 添加单条消息 header。
      *
-     * @param key the header key
-     * @param value the header value
-     * @return arguments object
+     * @param key header 键
+     * @param value header 值
+     * @return 参数构建器
      */
     MessageArgs<V> header(String key, Object value);
 
     /**
-     * Adds multiple header entries to the message at once.
+     * 批量添加消息 headers。
      *
-     * @param entries a map containing header key-value pairs
-     * @return arguments object
+     * @param entries header 键值对映射
+     * @return 参数构建器
      */
     MessageArgs<V> headers(Map<String, Object> entries);
 
     /**
-     * Defines the payload to include in the message
+     * 指定消息载荷并创建参数构建器。
      *
-     * @param value the payload to include
-     * @return arguments object
+     * @param value 消息载荷
+     * @return 参数构建器
      */
     static <V> MessageArgs<V> payload(V value) {
         return new MessageParams<V>(value);

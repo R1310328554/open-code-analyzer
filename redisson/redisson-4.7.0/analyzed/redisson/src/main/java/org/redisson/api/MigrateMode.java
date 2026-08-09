@@ -17,29 +17,25 @@ package org.redisson.api;
 
 
 /**
- * migrate mode
+ * Redis 键迁移模式，对应 {@code MIGRATE} 命令的行为变体。
  *
  * @author lyrric
  */
 public enum MigrateMode {
 
-    /**
-     * Default migrate
-     */
+    /** 默认迁移：迁移后删除源节点上的键。 */
+
     MIGRATE,
-    /**
-     * Do not remove the key from the local instance.
-     */
+    /** 复制模式：不删除源节点上的键。 */
+
     COPY,
 
-    /**
-     * Replace existing key on the remote instance.
-     */
+    /** 替换模式：覆盖目标节点上已存在的同名键。 */
+
     REPLACE,
 
-    /**
-     * Do not remove the key from the local instance and replace existing key on the remote instance.
-     */
+    /** 复制并替换：保留源键且覆盖目标节点上的同名键。 */
+
     COPY_AND_REPLACE;
 
 }

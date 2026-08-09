@@ -19,143 +19,138 @@ import org.redisson.api.atomic.CompareAndDeleteArgs;
 import org.redisson.api.atomic.DoubleIncrementArgs;
 
 /**
- * Distributed implementation to the AtomicDouble
+ * 分布式双精度原子变量 {@link java.util.concurrent.atomic.AtomicDouble} 的 Redis 实现。
+ * <p>基于 {@code INCRBYFLOAT} 等命令提供原子读写与 CAS 操作。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RAtomicDouble extends RExpirable, RAtomicDoubleAsync {
 
     /**
-     * Atomically deletes the value if it satisfies the condition
-     * defined by the specified arguments.
+     * 若当前值满足 {@link CompareAndDeleteArgs} 定义的条件，则原子删除。
      *
-     * @param args compare and delete arguments
-     * @return {@code true} if deleted, {@code false} otherwise
+     * @param args 比较并删除参数
+     * @return 删除成功返回 {@code true}，否则 {@code false}
      */
     boolean compareAndDelete(CompareAndDeleteArgs args);
 
     /**
-     * Atomically decrements by one the current value.
+     * 将当前值原子减一并返回旧值。
      *
-     * @return the previous value
+     * @return 减一前的值
      */
     double getAndDecrement();
 
     /**
-     * Atomically adds the given value to the current value.
+     * 将给定增量原子加到当前值上。
      *
-     * @param delta the value to add
-     * @return the updated value
+     * @param delta 要增加的增量
+     * @return 更新后的值
      */
     double addAndGet(double delta);
 
     /**
-     * Atomically sets the value to the given updated value
-     * only if the current value {@code ==} the expected value.
+     * 仅当当前值等于期望值时，原子设置为新值。
      *
-     * @param expect the expected value
-     * @param update the new value
-     * @return true if successful; or false if the actual value
-     *         was not equal to the expected value.
+     * @param expect 期望值
+     * @param update 新值
+     * @return 成功返回 {@code true}；实际值与期望值不等时返回 {@code false}
      */
     boolean compareAndSet(double expect, double update);
 
     /**
-     * Atomically decrements the current value by one.
+     * 将当前值原子减一并返回新值。
      *
-     * @return the updated value
+     * @return 减一后的值
      */
     double decrementAndGet();
 
     /**
-     * Returns current value.
+     * 返回当前值。
      *
-     * @return current value
+     * @return 当前值
      */
     double get();
     
     /**
-     * Returns and deletes object
-     * 
-     * @return the current value
+     * 读取当前值并删除该对象。
+     *
+     * @return 删除前的当前值
      */
     double getAndDelete();
 
     /**
-     * Atomically adds the given value to the current value.
+     * 将给定增量原子加到当前值上并返回旧值。
      *
-     * @param delta the value to add
-     * @return the old value before the add
+     * @param delta 要增加的增量
+     * @return 加算前的旧值
      */
     double getAndAdd(double delta);
 
     /**
-     * Atomically sets the given value and returns the old value.
+     * 原子设置为新值并返回旧值。
      *
-     * @param newValue the new value
-     * @return the old value
+     * @param newValue 新值
+     * @return 旧值
      */
     double getAndSet(double newValue);
 
     /**
-     * Atomically increments the current value by one.
+     * 将当前值原子加一。
      *
-     * @return the updated value
+     * @return 加一后的值
      */
     double incrementAndGet();
 
     /**
-     * Atomically increments the current value according to the specified arguments.
+     * 按 {@link DoubleIncrementArgs} 指定规则原子递增当前值。
      *
-     * @param args increment arguments
-     * @return the updated value
+     * @param args 递增参数
+     * @return 递增后的值
      */
     double incrementAndGet(DoubleIncrementArgs args);
 
     /**
-     * Atomically increments the current value by one.
+     * 将当前值原子加一并返回旧值。
      *
-     * @return the old value
+     * @return 加一前的旧值
      */
     double getAndIncrement();
 
     /**
-     * Atomically sets the given value.
+     * 原子设置给定值。
      *
-     * @param newValue the new value
+     * @param newValue 新值
      */
     void set(double newValue);
     
     /**
-     * Atomically sets the given value if current value is less than
-     * the special value
+     * 仅当当前值小于给定阈值时，原子设置为新值。
      *
-     * @param less  compare value
-     * @param value newValue
-     * @return true when the value update is successful
+     * @param less  比较阈值
+     * @param value 新值
+     * @return 更新成功返回 {@code true}
      */
     boolean setIfLess(double less, double value);
     
     /**
-     * Atomically sets the given value if current value is greater than
-     * the special value
+     * 仅当当前值大于给定阈值时，原子设置为新值。
      *
-     * @param greater  compare value
-     * @param value newValue
-     * @return true when the value update is successful
+     * @param greater  比较阈值
+     * @param value 新值
+     * @return 更新成功返回 {@code true}
      */
     boolean setIfGreater(double greater, double value);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.IncrByListener
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 
