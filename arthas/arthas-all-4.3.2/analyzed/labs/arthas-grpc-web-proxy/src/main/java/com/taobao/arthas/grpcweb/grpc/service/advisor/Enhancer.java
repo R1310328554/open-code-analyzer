@@ -48,25 +48,38 @@ import static com.taobao.arthas.core.util.ArthasCheckUtils.isEquals;
 import static java.lang.System.arraycopy;
 
 /**
- * 对类进行通知增强 Created by vlinux on 15/5/17.
+ * 基于 ASM 的字节码增强器，实现 {@link ClassFileTransformer}。
+ * <p>
+ * 在目标类的方法 enter/exit/exception 及 trace 子调用点插入 {@link SpyAPI} 回调，
+ * 并将 {@link AdviceListener} 注册到 {@link AdviceListenerManager}，供 watch/trace 等命令使用。
+ * Created by vlinux on 15/5/17.
  * @author hengyunabc
  */
 public class Enhancer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory.getLogger(Enhancer.class);
 
+    /** 本次增强绑定的 advice 监听器，接收方法调用事件 */
     private final AdviceListener listener;
+    /** 是否开启 trace 模式（在子方法 invoke 点插桩） */
     private final boolean isTracing;
+    /** trace 模式下是否跳过 JDK 内部类的方法调用 */
     private final boolean skipJDKTrace;
+    /** 待增强类名的匹配器 */
     private final Matcher classNameMatcher;
+    /** 排除增强的类名匹配器 */
     private final Matcher classNameExcludeMatcher;
+    /** 待增强方法名的匹配器 */
     private final Matcher methodNameMatcher;
+    /** 增强过程的影响统计（类数、方法数、dump 文件等） */
     private final EnhancerAffect affect;
+    /** enhance 阶段确定的待转换类集合，transform 时二次校验避免误增强衍生类 */
     private Set<Class<?>> matchingClasses = null;
     private static final ClassLoader selfClassLoader = Enhancer.class.getClassLoader();
 
-    // 被增强的类的缓存
+    /** 已成功增强的 Class 弱引用缓存，reset 时据此还原原始字节码 */
     private final static Map<Class<?>/* Class */, Object> classBytesCache = new WeakHashMap<Class<?>, Object>();
+    /** gRPC-Web 模块专用的 Spy 实现，静态注册到 {@link SpyAPI} */
     private static SpyImpl spyImpl = new SpyImpl();
 
     static {
