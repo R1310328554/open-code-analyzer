@@ -19,12 +19,20 @@ package org.apache.rocketmq.common.attribute;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * 字符串型 Topic 属性：仅要求非 null。
+ */
 public class StringAttribute extends Attribute {
 
+    /**
+     * @param name 属性名
+     * @param changeable 创建后是否可修改
+     */
     public StringAttribute(String name, boolean changeable) {
         super(name, changeable);
     }
 
+    /** 校验取值非 null。 */
     @Override
     public void verify(String value) {
         checkNotNull(value);

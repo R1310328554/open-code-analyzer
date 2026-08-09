@@ -17,8 +17,14 @@
 
 package org.apache.rocketmq.common.attribute;
 
+/**
+ * ConsumeQueue 实现类型。
+ */
 public enum CQType {
+    /** 简单 ConsumeQueue。 */
     SimpleCQ,
+    /** 批量 ConsumeQueue。 */
     BatchCQ,
+    /** 基于 RocksDB 的 ConsumeQueue。 */
     RocksDBCQ
 }

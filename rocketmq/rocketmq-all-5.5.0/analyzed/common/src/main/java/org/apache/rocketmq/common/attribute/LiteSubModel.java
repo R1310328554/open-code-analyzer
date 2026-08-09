@@ -17,7 +17,12 @@
 
 package org.apache.rocketmq.common.attribute;
 
+/**
+ * Lite 订阅模型：共享或独占消费。
+ */
 public enum LiteSubModel {
+    /** 共享订阅：多消费者分摊消息。 */
     Shared,
+    /** 独占订阅：单消费者独占队列。 */
     Exclusive
 }

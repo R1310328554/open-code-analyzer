@@ -16,7 +16,12 @@
  */
 package org.apache.rocketmq.common.attribute;
 
+/**
+ * Topic 消息清理策略。
+ */
 public enum CleanupPolicy {
+    /** 按保留策略直接删除过期消息。 */
     DELETE,
+    /** 日志压缩（Compaction）策略。 */
     COMPACTION
 }

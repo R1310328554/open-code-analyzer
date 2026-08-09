@@ -16,7 +16,20 @@
  */
 package org.apache.rocketmq.common.chain;
 
+/**
+ * 责任链中的单个处理器。
+ *
+ * @param <T> 请求/上下文类型
+ * @param <R> 处理结果类型
+ */
 public interface Handler<T, R> {
 
+    /**
+     * 处理当前节点逻辑，并可选择调用 {@link HandlerChain#handle} 传递至下一节点。
+     *
+     * @param t 输入上下文
+     * @param chain 责任链实例
+     * @return 处理结果
+     */
     R handle(T t, HandlerChain<T, R> chain);
 }

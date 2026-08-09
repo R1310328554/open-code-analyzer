@@ -19,24 +19,27 @@ package org.apache.rocketmq.common.compression;
 
 import java.io.IOException;
 
+/**
+ * 消息体压缩/解压 SPI：各算法实现本接口供 Broker/Client 调用。
+ */
 public interface Compressor {
 
     /**
-     * Compress message by different compressor.
+     * 压缩消息体。
      *
-     * @param src bytes ready to compress
-     * @param level compression level used to balance compression rate and time consumption
-     * @return compressed byte data
-     * @throws IOException
+     * @param src 待压缩字节数组
+     * @param level 压缩级别，用于平衡压缩率与耗时
+     * @return 压缩后的字节数组
+     * @throws IOException 压缩 IO 异常
      */
     byte[] compress(byte[] src, int level) throws IOException;
 
     /**
-     * Decompress message by different compressor.
+     * 解压消息体。
      *
-     * @param src bytes ready to decompress
-     * @return decompressed byte data
-     * @throws IOException
+     * @param src 待解压字节数组
+     * @return 解压后的字节数组
+     * @throws IOException 解压 IO 异常
      */
     byte[] decompress(byte[] src) throws IOException;
 }

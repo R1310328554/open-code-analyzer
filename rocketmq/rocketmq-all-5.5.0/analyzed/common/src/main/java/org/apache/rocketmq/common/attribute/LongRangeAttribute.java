@@ -18,11 +18,24 @@ package org.apache.rocketmq.common.attribute;
 
 import static java.lang.String.format;
 
+/**
+ * 长整型范围 Topic 属性：取值须在 {@code [min, max]} 闭区间内。
+ */
 public class LongRangeAttribute extends Attribute {
+    /** 允许的最小值（含）。 */
     private final long min;
+    /** 允许的最大值（含）。 */
     private final long max;
+    /** 属性默认值。 */
     private final long defaultValue;
 
+    /**
+     * @param name 属性名
+     * @param changeable 创建后是否可修改
+     * @param min 最小值
+     * @param max 最大值
+     * @param defaultValue 默认值
+     */
     public LongRangeAttribute(String name, boolean changeable, long min, long max, long defaultValue) {
         super(name, changeable);
         this.min = min;
@@ -30,6 +43,7 @@ public class LongRangeAttribute extends Attribute {
         this.defaultValue = defaultValue;
     }
 
+    /** 解析为 long 并校验是否在 [min, max] 范围内。 */
     @Override
     public void verify(String value) {
         long l = Long.parseLong(value);
@@ -38,6 +52,7 @@ public class LongRangeAttribute extends Attribute {
         }
     }
 
+    /** 返回默认值。 */
     public long getDefaultValue() {
         return defaultValue;
     }

@@ -22,22 +22,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Topic 属性修改串解析器：支持 {@code +key=value} 增改、{@code -key} 删除，
+ * 键值对以逗号分隔，例如 {@code +key1=value1,+key2=value2,-key3}。
+ */
 public class AttributeParser {
 
+    /** 属性键值对之间的分隔符。 */
     public static final String ATTR_ARRAY_SEPARATOR_COMMA = ",";
 
+    /** 键与值之间的等号分隔符。 */
     public static final String ATTR_KEY_VALUE_EQUAL_SIGN = "=";
 
+    /** 新增或修改属性时的前缀符号。 */
     public static final String ATTR_ADD_PLUS_SIGN = "+";
 
+    /** 删除属性时的前缀符号。 */
     private static final String ATTR_DELETE_MINUS_SIGN = "-";
 
+    /**
+     * 将属性修改串解析为键值 Map。
+     *
+     * @param attributesModification 属性修改串，空串返回空 Map
+     * @return 解析后的属性 Map
+     */
     public static Map<String, String> parseToMap(String attributesModification) {
         if (Strings.isNullOrEmpty(attributesModification)) {
             return new HashMap<>();
         }
 
-        // format: +key1=value1,+key2=value2,-key3,+key4=value4
+        // 格式：+key1=value1,+key2=value2,-key3,+key4=value4
         Map<String, String> attributes = new HashMap<>();
         String[] kvs = attributesModification.split(ATTR_ARRAY_SEPARATOR_COMMA);
         for (String kv : kvs) {
@@ -65,6 +79,12 @@ public class AttributeParser {
         return attributes;
     }
 
+    /**
+     * 将属性 Map 序列化为修改串。
+     *
+     * @param attributes 属性 Map，null 或空 Map 返回空串
+     * @return 逗号分隔的属性修改串
+     */
     public static String parseToString(Map<String, String> attributes) {
         if (attributes == null || attributes.size() == 0) {
             return "";

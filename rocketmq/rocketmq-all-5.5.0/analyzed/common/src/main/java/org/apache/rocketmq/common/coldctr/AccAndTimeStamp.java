@@ -18,36 +18,49 @@ package org.apache.rocketmq.common.coldctr;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 冷读控制计数与时间戳：记录冷数据累计访问量及最近冷读、创建时间。
+ */
 public class AccAndTimeStamp {
 
+    /** 冷读累计计数（原子累加）。 */
     public AtomicLong coldAcc = new AtomicLong(0L);
+    /** 最近一次冷读时间戳（毫秒）。 */
     public Long lastColdReadTimeMills = System.currentTimeMillis();
+    /** 记录创建时间戳（毫秒）。 */
     public Long createTimeMills = System.currentTimeMillis();
 
+    /** 使用外部传入的冷读计数器构造。 */
     public AccAndTimeStamp(AtomicLong coldAcc) {
         this.coldAcc = coldAcc;
     }
 
+    /** 获取冷读累计计数。 */
     public AtomicLong getColdAcc() {
         return coldAcc;
     }
 
+    /** 设置冷读累计计数。 */
     public void setColdAcc(AtomicLong coldAcc) {
         this.coldAcc = coldAcc;
     }
 
+    /** 获取最近冷读时间戳。 */
     public Long getLastColdReadTimeMills() {
         return lastColdReadTimeMills;
     }
 
+    /** 设置最近冷读时间戳。 */
     public void setLastColdReadTimeMills(Long lastColdReadTimeMills) {
         this.lastColdReadTimeMills = lastColdReadTimeMills;
     }
 
+    /** 获取创建时间戳。 */
     public Long getCreateTimeMills() {
         return createTimeMills;
     }
 
+    /** 设置创建时间戳。 */
     public void setCreateTimeMills(Long createTimeMills) {
         this.createTimeMills = createTimeMills;
     }

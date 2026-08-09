@@ -18,14 +18,24 @@ package org.apache.rocketmq.common.attribute;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * 布尔型 Topic 属性：取值须为 {@code true} 或 {@code false}（忽略大小写）。
+ */
 public class BooleanAttribute extends Attribute {
+    /** 属性默认值。 */
     private final boolean defaultValue;
 
+    /**
+     * @param name 属性名
+     * @param changeable 创建后是否可修改
+     * @param defaultValue 默认值
+     */
     public BooleanAttribute(String name, boolean changeable, boolean defaultValue) {
         super(name, changeable);
         this.defaultValue = defaultValue;
     }
 
+    /** 校验取值是否为 true/false。 */
     @Override
     public void verify(String value) {
         checkNotNull(value);
@@ -35,6 +45,7 @@ public class BooleanAttribute extends Attribute {
         }
     }
 
+    /** 返回默认值。 */
     public boolean getDefaultValue() {
         return defaultValue;
     }

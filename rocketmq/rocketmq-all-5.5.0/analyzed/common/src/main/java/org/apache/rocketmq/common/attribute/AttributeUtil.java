@@ -27,8 +27,22 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Topic 属性变更工具：解析 {@code +}/{@code -} 前缀的增量修改，
+ * 校验属性定义、可变性及取值合法性，合并得到最终属性 Map。
+ */
 public class AttributeUtil {
+    /** 公共模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
+    /**
+     * 根据增量修改计算最终属性 Map。
+     *
+     * @param create 是否为创建 Topic（仅允许 {@code +key}）
+     * @param all 全部已注册属性定义
+     * @param currentAttributes 当前属性快照
+     * @param newAttributes 待应用的增量修改（键含 {@code +}/{@code -} 前缀）
+     * @return 合并后的新属性 Map
+     */
     public static Map<String, String> alterCurrentAttributes(boolean create, Map<String, Attribute> all,
         ImmutableMap<String, String> currentAttributes, ImmutableMap<String, String> newAttributes) {
 
@@ -86,6 +100,7 @@ public class AttributeUtil {
         return finalAttributes;
     }
 
+    /** 同一批次修改中禁止重复键。 */
     private static void duplicationCheck(Set<String> keys, String key) {
         boolean notExist = keys.add(key);
         if (!notExist) {
@@ -93,6 +108,7 @@ public class AttributeUtil {
         }
     }
 
+    /** 校验去掉前缀后的真实键名非空且不含 {@code +}/{@code -}。 */
     private static void validate(String kvAttribute) {
         if (Strings.isNullOrEmpty(kvAttribute)) {
             throw new RuntimeException("kv string format wrong.");
@@ -107,6 +123,7 @@ public class AttributeUtil {
         }
     }
 
+    /** 校验变更项：键须已注册、非 init 时须可变更、非删除时须通过 {@link Attribute#verify}。 */
     private static void validateAlter(Map<String, Attribute> all, Map<String, String> alter, boolean init, boolean delete) {
         for (Map.Entry<String, String> entry : alter.entrySet()) {
             String key = entry.getKey();
@@ -126,6 +143,7 @@ public class AttributeUtil {
         }
     }
 
+    /** 去掉 {@code +}/{@code -} 前缀得到真实属性键。 */
     private static String realKey(String key) {
         return key.substring(1);
     }
