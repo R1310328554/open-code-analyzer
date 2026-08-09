@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:14:34Z",
-  "files": [
-    "core/src/main/java/com/taobao/arthas/core/command/model/HistoryModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/JFRModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/JadModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/JvmItemVO.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/JvmModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/LineListModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/LineModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/LoggerModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/MBeanAttributeVO.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/MBeanModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/MemoryCompilerModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/MemoryEntryVO.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/MemoryModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/MethodNode.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/MethodVO.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 525,
-  "done": 255
+  "done": 270
 }
