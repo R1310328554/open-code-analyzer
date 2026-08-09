@@ -32,7 +32,8 @@ import org.redisson.hibernate.strategy.TransactionalEntityRegionAccessStrategy;
 import java.util.Properties;
 
 /**
- * 
+ * Hibernate 实体二级缓存 Region，基于 Redisson {@link RMapCache}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -46,6 +47,7 @@ public class RedissonEntityRegion extends BaseRegion implements EntityRegion {
         this.settings = settings;
     }
     
+    /** 按 {@link AccessType} 构建实体 Region 的并发访问策略。 */
     @Override
     public EntityRegionAccessStrategy buildAccessStrategy(AccessType accessType) throws CacheException {
         if (accessType == AccessType.READ_ONLY) {

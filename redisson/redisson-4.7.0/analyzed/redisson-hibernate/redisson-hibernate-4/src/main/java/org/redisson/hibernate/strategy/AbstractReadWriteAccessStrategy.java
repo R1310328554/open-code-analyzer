@@ -22,7 +22,9 @@ import org.hibernate.cfg.Settings;
 import org.redisson.api.RMapCache;
 
 /**
- * 
+ * 读写（READ_WRITE）缓存并发访问策略的抽象基类。
+ * 委托 {@link GeneralDataRegion} 完成 get/put，解锁时驱逐条目。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -35,11 +37,13 @@ public class AbstractReadWriteAccessStrategy extends BaseRegionAccessStrategy {
         this.mapCache = mapCache;
     }
 
+    /** 从 Region 读取缓存条目（不校验版本）。 */
     @Override
     public Object get(Object key, long txTimestamp) throws CacheException {
         return region.get(key);
     }
 
+    /** 加载后写入缓存并始终返回 true。 */
     @Override
     public boolean putFromLoad(Object key, Object value, long txTimestamp, Object version, boolean minimalPutOverride)
             throws CacheException {
@@ -47,11 +51,13 @@ public class AbstractReadWriteAccessStrategy extends BaseRegionAccessStrategy {
         return true;
     }
 
+    /** 当前实现不使用软锁，直接返回 null。 */
     @Override
     public SoftLock lockItem(Object key, Object version) throws CacheException {
         return null;
     }
 
+    /** 解锁时驱逐对应缓存条目。 */
     @Override
     public void unlockItem(Object key, SoftLock lock) throws CacheException {
         region.evict(key);

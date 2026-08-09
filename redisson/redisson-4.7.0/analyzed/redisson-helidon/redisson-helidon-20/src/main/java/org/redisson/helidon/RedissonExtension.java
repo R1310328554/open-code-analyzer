@@ -30,6 +30,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Helidon CDI 扩展：收集 {@link RedissonClient} 注入点上的限定符，
+ * 在 {@link AfterBeanDiscovery} 阶段为每个限定符注册对应的生产者 Bean。
+ * <p>配置从 MicroProfile {@link Config} 读取，键前缀为 {@code org.redisson.Redisson.<instanceName>.}。</p>
  *
  * @author Nikita Koksharov
  *
@@ -38,6 +41,7 @@ public class RedissonExtension implements Extension {
 
     private final Set<Annotation> qualifiers = new HashSet<>();
 
+    /** 收集所有 {@link RedissonClient} 注入点使用的 CDI 限定符。 */
     private <T extends RedissonClient> void processRedissonInjectionPoint(@Observes ProcessInjectionPoint<?, T> point) {
         if (point == null) {
             return;
@@ -50,6 +54,7 @@ public class RedissonExtension implements Extension {
         qualifiers.addAll(injectionPoint.getQualifiers());
     }
 
+    /** 为每个已收集的限定符注册 {@link ApplicationScoped} 范围的 {@link RedissonClient} 生产者 Bean。 */
     private void addBeans(@Observes AfterBeanDiscovery discovery, BeanManager beanManager) {
         if (discovery == null || beanManager == null) {
             return;

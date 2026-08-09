@@ -25,18 +25,20 @@ import javax.naming.NamingException;
 import java.util.Properties;
 
 /**
- * Hibernate Cache region factory based on Redisson. 
- * Uses Redisson instance located in JNDI.
- * 
- * @author Nikita Koksharov 
+ * 基于 Redisson 原生 Map 缓存的 Hibernate Region 工厂。
+ * 通过 JNDI 查找已部署的 {@link RedissonClient}，配合 {@link RedissonRegionNativeFactory} 使用原生存储。
+ *
+ * @author Nikita Koksharov
  *
  */
 public class JndiRedissonRegionNativeFactory extends RedissonRegionNativeFactory {
 
     private static final long serialVersionUID = -4814502675083325567L;
 
+    /** JNDI 中 {@link RedissonClient} 绑定名的 Hibernate 属性键。 */
     public static final String JNDI_NAME = CONFIG_PREFIX + "jndi_name";
     
+    /** 从 JNDI 查找 {@link RedissonClient}；未配置 {@link #JNDI_NAME} 时抛出 {@link CacheException}。 */
     @Override
     protected RedissonClient createRedissonClient(Properties properties) {
         String jndiName = ConfigurationHelper.getString(JNDI_NAME, properties);
@@ -62,6 +64,7 @@ public class JndiRedissonRegionNativeFactory extends RedissonRegionNativeFactory
         }
     }
 
+    /** JNDI 模式下不关闭外部管理的 Redisson 实例。 */
     @Override
     public void stop() {
     }

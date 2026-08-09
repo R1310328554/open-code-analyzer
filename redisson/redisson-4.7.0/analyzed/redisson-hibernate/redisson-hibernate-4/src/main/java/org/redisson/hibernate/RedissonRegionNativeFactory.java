@@ -27,7 +27,9 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
- * 
+ * 使用 Redisson 原生 Map 缓存（{@link RMapCacheNative}）的 Region 工厂。
+ * 启动前校验 eviction 与 max_idle 配置必须为 0。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -35,6 +37,7 @@ public class RedissonRegionNativeFactory extends RedissonRegionFactory {
 
     private static final long serialVersionUID = 4889779229712681692L;
 
+    /** 校验原生模式下不允许非零的 max_entries 与 max_idle_time，再调用父类启动逻辑。 */
     @Override
     public void start(Settings settings, Properties properties) throws CacheException {
         Set<Map.Entry<Object, Object>> entrySet = properties.entrySet();
@@ -55,6 +58,7 @@ public class RedissonRegionNativeFactory extends RedissonRegionFactory {
         super.start(settings, properties);
     }
 
+    /** 返回包装后的 {@link RMapCacheNative} 实例作为 Region 底层存储。 */
     @Override
     protected RMapCache<Object, Object> getCache(String regionName, Properties properties, String defaultKey) {
         RMapCacheNative<Object, Object> cache = redisson.getMapCacheNative(regionName);

@@ -23,7 +23,8 @@ import org.redisson.connection.ServiceManager;
 import java.util.Properties;
 
 /**
- * 
+ * Hibernate 查询结果二级缓存 Region，基于 Redisson {@link RMapCache}。
+ *
  * @author Nikita Koksharov
  *
  */

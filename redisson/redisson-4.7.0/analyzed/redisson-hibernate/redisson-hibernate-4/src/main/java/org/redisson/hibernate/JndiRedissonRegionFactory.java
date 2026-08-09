@@ -26,18 +26,20 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.redisson.api.RedissonClient;
 
 /**
- * Hibernate Cache region factory based on Redisson. 
- * Uses Redisson instance located in JNDI.
- * 
- * @author Nikita Koksharov 
+ * 基于 Redisson 的 Hibernate 二级缓存 {@link RegionFactory} 实现。
+ * 通过 JNDI 查找已部署的 {@link RedissonClient}，而非自行创建实例。
+ *
+ * @author Nikita Koksharov
  *
  */
 public class JndiRedissonRegionFactory extends RedissonRegionFactory {
 
     private static final long serialVersionUID = -4814502675083325567L;
 
+    /** JNDI 中 {@link RedissonClient} 绑定名的 Hibernate 属性键。 */
     public static final String JNDI_NAME = CONFIG_PREFIX + "jndi_name";
     
+    /** 从 JNDI 查找 {@link RedissonClient}；未配置 {@link #JNDI_NAME} 时抛出 {@link CacheException}。 */
     @Override
     protected RedissonClient createRedissonClient(Properties properties) {
         String jndiName = ConfigurationHelper.getString(JNDI_NAME, properties);
@@ -63,6 +65,7 @@ public class JndiRedissonRegionFactory extends RedissonRegionFactory {
         }
     }
 
+    /** JNDI 模式下不关闭外部管理的 Redisson 实例。 */
     @Override
     public void stop() {
     }

@@ -32,7 +32,8 @@ import org.redisson.hibernate.strategy.TransactionalCollectionRegionAccessStrate
 import java.util.Properties;
 
 /**
- * 
+ * Hibernate 集合（Collection）二级缓存 Region，基于 Redisson {@link RMapCache}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -46,6 +47,7 @@ public class RedissonCollectionRegion extends BaseRegion implements CollectionRe
         this.settings = settings;
     }
     
+    /** 按 {@link AccessType} 构建集合 Region 的并发访问策略。 */
     @Override
     public CollectionRegionAccessStrategy buildAccessStrategy(AccessType accessType) throws CacheException {
         if (accessType == AccessType.READ_ONLY) {

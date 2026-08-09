@@ -33,7 +33,9 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * Redisson 缓存 Region 的抽象基类，实现 {@link TransactionalDataRegion} 与 {@link GeneralDataRegion}。
+ * 封装 {@link RMapCache} 的读写、驱逐、TTL 及 Redis 不可用时的 fallback 降级逻辑。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -52,6 +54,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
     boolean fallback;
     volatile boolean fallbackMode;
 
+    /** 根据 Hibernate 属性初始化 TTL、maxIdle、maxSize 及 fallback 模式。 */
     public BaseRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, RegionFactory regionFactory, CacheDataDescription metadata, Properties properties, String defaultKey) {
         super();
         this.mapCache = mapCache;
@@ -89,6 +92,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
         return null;
     }
 
+    /** 异步探测 Redis 连通性；恢复后退出 fallback 模式，否则继续定时重试。 */
     private void ping() {
         fallbackMode = true;
         serviceManager.newTimeout(t -> {
@@ -105,7 +109,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
 
     @Override
     public boolean isTransactionAware() {
-        // TODO Auto-generated method stub
+        // 当前实现不参与 Hibernate 事务同步
         return false;
     }
     
@@ -172,10 +176,11 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
 
     @Override
     public int getTimeout() {
-        // 60 seconds (normalized value)
+        // 60 秒（Hibernate 规范化后的超时值）
         return (1 << 12) * 60000;
     }
 
+    /** 从缓存读取条目；fallback 模式下返回 null 而不访问 Redis。 */
     @Override
     public Object get(Object key) throws CacheException {
         if (fallbackMode) {
@@ -196,6 +201,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
         }
     }
 
+    /** 写入缓存条目，应用 Region 配置的 TTL 与 maxIdle。 */
     @Override
     public void put(Object key, Object value) throws CacheException {
         if (fallbackMode) {
@@ -213,6 +219,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
         }
     }
 
+    /** 移除指定键的缓存条目。 */
     @Override
     public void evict(Object key) throws CacheException {
         if (fallbackMode) {
@@ -230,6 +237,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
         }
     }
 
+    /** 清空整个 Region 缓存。 */
     @Override
     public void evictAll() throws CacheException {
         if (fallbackMode) {

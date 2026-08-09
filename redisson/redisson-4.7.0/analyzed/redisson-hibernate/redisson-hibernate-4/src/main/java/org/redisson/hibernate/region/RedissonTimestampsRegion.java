@@ -23,12 +23,15 @@ import org.redisson.connection.ServiceManager;
 import java.util.Properties;
 
 /**
- * 
+ * Hibernate 查询失效时间戳 Region，基于 Redisson {@link RMapCache}。
+ * 用于跟踪表/空间更新时间以支持查询缓存失效。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonTimestampsRegion extends BaseRegion implements TimestampsRegion {
 
+    /** 构造时间戳 Region，metadata 为 null（非实体类缓存）。 */
     public RedissonTimestampsRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager,
             RegionFactory regionFactory, Properties properties, String defaultKey) {
         super(mapCache, serviceManager, regionFactory, null, properties, defaultKey);
