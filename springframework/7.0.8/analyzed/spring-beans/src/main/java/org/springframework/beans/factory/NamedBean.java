@@ -17,10 +17,10 @@
 package org.springframework.beans.factory;
 
 /**
- * Counterpart of {@link BeanNameAware}. Returns the bean name of an object.
+ * {@link BeanNameAware} 的对偶接口。用于返回某个对象的 Bean 名称。
  *
- * <p>This interface can be introduced to avoid a brittle dependence on
- * bean name in objects used with Spring IoC and Spring AOP.
+ * <p>引入本接口可避免在与 Spring IoC 和 Spring AOP 配合使用的对象中，
+ * 对 Bean 名称产生脆弱的依赖。
  *
  * @author Rod Johnson
  * @since 2.0
@@ -29,7 +29,7 @@ package org.springframework.beans.factory;
 public interface NamedBean {
 
 	/**
-	 * Return the name of this bean in a Spring bean factory, if known.
+	 * 返回本 Bean 在 Spring BeanFactory 中的名称（若已知）。
 	 */
 	String getBeanName();
 

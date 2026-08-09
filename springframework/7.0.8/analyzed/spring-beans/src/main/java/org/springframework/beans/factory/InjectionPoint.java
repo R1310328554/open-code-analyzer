@@ -29,12 +29,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * A simple descriptor for an injection point, pointing to a method/constructor
- * parameter or a field.
+ * 注入点的简单描述符，指向方法/构造器参数或字段。
  *
- * <p>Exposed by {@link UnsatisfiedDependencyException}. Also available as an
- * argument for factory methods, reacting to the requesting injection point
- * for building a customized bean instance.
+ * <p>由 {@link UnsatisfiedDependencyException} 暴露。也可作为工厂方法的参数使用，
+ * 以便根据请求方的注入点构建定制化的 Bean 实例。
  *
  * @author Juergen Hoeller
  * @since 4.3
@@ -43,16 +41,19 @@ import org.springframework.util.ObjectUtils;
  */
 public class InjectionPoint {
 
+	/** 所包装的方法/构造器参数；与 {@link #field} 二者之一可用 */
 	protected @Nullable MethodParameter methodParameter;
 
+	/** 所包装的字段；与 {@link #methodParameter} 二者之一可用 */
 	protected @Nullable Field field;
 
+	/** 字段注解的缓存，避免重复反射读取 */
 	private volatile Annotation @Nullable [] fieldAnnotations;
 
 
 	/**
-	 * Create an injection point descriptor for a method or constructor parameter.
-	 * @param methodParameter the MethodParameter to wrap
+	 * 为方法或构造器参数创建注入点描述符。
+	 * @param methodParameter 要包装的 MethodParameter
 	 */
 	public InjectionPoint(MethodParameter methodParameter) {
 		Assert.notNull(methodParameter, "MethodParameter must not be null");
@@ -60,8 +61,8 @@ public class InjectionPoint {
 	}
 
 	/**
-	 * Create an injection point descriptor for a field.
-	 * @param field the field to wrap
+	 * 为字段创建注入点描述符。
+	 * @param field 要包装的字段
 	 */
 	public InjectionPoint(Field field) {
 		Assert.notNull(field, "Field must not be null");
@@ -69,8 +70,8 @@ public class InjectionPoint {
 	}
 
 	/**
-	 * Copy constructor.
-	 * @param original the original descriptor to create a copy from
+	 * 拷贝构造器。
+	 * @param original 要复制的原始描述符
 	 */
 	protected InjectionPoint(InjectionPoint original) {
 		this.methodParameter = (original.methodParameter != null ?
@@ -80,34 +81,34 @@ public class InjectionPoint {
 	}
 
 	/**
-	 * Just available for serialization purposes in subclasses.
+	 * 仅供子类序列化使用。
 	 */
 	protected InjectionPoint() {
 	}
 
 
 	/**
-	 * Return the wrapped MethodParameter, if any.
-	 * <p>Note: Either MethodParameter or Field is available.
-	 * @return the MethodParameter, or {@code null} if none
+	 * 返回所包装的 MethodParameter（若有）。
+	 * <p>注意：MethodParameter 与 Field 二者必有其一可用。
+	 * @return MethodParameter；若无则为 {@code null}
 	 */
 	public @Nullable MethodParameter getMethodParameter() {
 		return this.methodParameter;
 	}
 
 	/**
-	 * Return the wrapped Field, if any.
-	 * <p>Note: Either MethodParameter or Field is available.
-	 * @return the Field, or {@code null} if none
+	 * 返回所包装的 Field（若有）。
+	 * <p>注意：MethodParameter 与 Field 二者必有其一可用。
+	 * @return Field；若无则为 {@code null}
 	 */
 	public @Nullable Field getField() {
 		return this.field;
 	}
 
 	/**
-	 * Return the wrapped MethodParameter, assuming it is present.
-	 * @return the MethodParameter (never {@code null})
-	 * @throws IllegalStateException if no MethodParameter is available
+	 * 返回所包装的 MethodParameter，假定其一定存在。
+	 * @return MethodParameter（永不为 {@code null}）
+	 * @throws IllegalStateException 若没有可用的 MethodParameter
 	 * @since 5.0
 	 */
 	protected final MethodParameter obtainMethodParameter() {
@@ -116,7 +117,7 @@ public class InjectionPoint {
 	}
 
 	/**
-	 * Obtain the annotations associated with the wrapped field or method/constructor parameter.
+	 * 获取与所包装字段或方法/构造器参数关联的注解。
 	 */
 	public Annotation[] getAnnotations() {
 		if (this.field != null) {
@@ -133,9 +134,9 @@ public class InjectionPoint {
 	}
 
 	/**
-	 * Retrieve a field/parameter annotation of the given type, if any.
-	 * @param annotationType the annotation type to retrieve
-	 * @return the annotation instance, or {@code null} if none found
+	 * 检索给定类型的字段/参数注解（若有）。
+	 * @param annotationType 要检索的注解类型
+	 * @return 注解实例；未找到则为 {@code null}
 	 * @since 4.3.9
 	 */
 	public <A extends Annotation> @Nullable A getAnnotation(Class<A> annotationType) {
@@ -144,29 +145,27 @@ public class InjectionPoint {
 	}
 
 	/**
-	 * Return the type declared by the underlying field or method/constructor parameter,
-	 * indicating the injection type.
+	 * 返回底层字段或方法/构造器参数所声明的类型，即注入类型。
 	 */
 	public Class<?> getDeclaredType() {
 		return (this.field != null ? this.field.getType() : obtainMethodParameter().getParameterType());
 	}
 
 	/**
-	 * Returns the wrapped member, containing the injection point.
-	 * @return the Field / Method / Constructor as Member
+	 * 返回包含该注入点的所包装成员。
+	 * @return 作为 Member 的 Field / Method / Constructor
 	 */
 	public Member getMember() {
 		return (this.field != null ? this.field : obtainMethodParameter().getMember());
 	}
 
 	/**
-	 * Return the wrapped annotated element.
-	 * <p>Note: In case of a method/constructor parameter, this exposes
-	 * the annotations declared on the method or constructor itself
-	 * (i.e. at the method/constructor level, not at the parameter level).
-	 * Use {@link #getAnnotations()} to obtain parameter-level annotations in
-	 * such a scenario, transparently with corresponding field annotations.
-	 * @return the Field / Method / Constructor as AnnotatedElement
+	 * 返回所包装的带注解元素。
+	 * <p>注意：若为方法/构造器参数，这里暴露的是方法或构造器本身上声明的注解
+	 * （即方法/构造器级别，而非参数级别）。
+	 * 若要在该场景下获取参数级别注解，请使用 {@link #getAnnotations()}，
+	 * 它会透明地对应到字段注解的获取方式。
+	 * @return 作为 AnnotatedElement 的 Field / Method / Constructor
 	 */
 	public AnnotatedElement getAnnotatedElement() {
 		return (this.field != null ? this.field : obtainMethodParameter().getAnnotatedElement());

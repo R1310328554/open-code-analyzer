@@ -17,13 +17,12 @@
 package org.springframework.beans.factory;
 
 /**
- * Interface to be implemented by beans that need to react once all their properties
- * have been set by a {@link BeanFactory}: for example, to perform custom initialization,
- * or merely to check that all mandatory properties have been set.
+ * 需要在 {@link BeanFactory} 设置完所有属性后作出响应的 Bean 所实现的接口：
+ * 例如执行自定义初始化，或仅检查所有必填属性是否已设置。
  *
- * <p>An alternative to implementing {@code InitializingBean} is specifying a custom
- * init method, for example in an XML bean definition. For a list of all bean
- * lifecycle methods, see the {@link BeanFactory BeanFactory javadocs}.
+ * <p>不实现 {@code InitializingBean} 的另一种方式是指定自定义 init 方法，
+ * 例如在 XML Bean 定义中声明。完整的 Bean 生命周期方法列表见
+ * {@link BeanFactory BeanFactory javadocs}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -34,12 +33,11 @@ package org.springframework.beans.factory;
 public interface InitializingBean {
 
 	/**
-	 * Invoked by the containing {@code BeanFactory} after it has set all bean properties
-	 * and satisfied {@link BeanFactoryAware}, {@code ApplicationContextAware} etc.
-	 * <p>This method allows the bean instance to perform validation of its overall
-	 * configuration and final initialization when all bean properties have been set.
-	 * @throws Exception in the event of misconfiguration (such as failure to set an
-	 * essential property) or if initialization fails for any other reason
+	 * 由所属 {@code BeanFactory} 在设置完所有 Bean 属性，并满足
+	 * {@link BeanFactoryAware}、{@code ApplicationContextAware} 等之后调用。
+	 * <p>本方法允许 Bean 实例在所有属性设置完毕后，执行整体配置校验与最终初始化。
+	 * @throws Exception 配置错误时（例如未能设置必要属性），
+	 * 或因其他原因初始化失败时
 	 */
 	void afterPropertiesSet() throws Exception;
 

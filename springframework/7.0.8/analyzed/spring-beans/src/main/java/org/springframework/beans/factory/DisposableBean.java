@@ -17,15 +17,14 @@
 package org.springframework.beans.factory;
 
 /**
- * Interface to be implemented by beans that want to release resources on destruction.
- * A {@link BeanFactory} will invoke the destroy method on individual destruction of a
- * scoped bean. An {@link org.springframework.context.ApplicationContext} is supposed
- * to dispose all of its singletons on shutdown, driven by the application lifecycle.
+ * 希望在销毁时释放资源的 Bean 所实现的接口。
+ * {@link BeanFactory} 在销毁某个作用域 Bean 时会调用其 destroy 方法。
+ * {@link org.springframework.context.ApplicationContext} 则应在关闭时，
+ * 由应用生命周期驱动，销毁其中所有的单例 Bean。
  *
- * <p>A Spring-managed bean may also implement Java's {@link AutoCloseable} interface
- * for the same purpose. An alternative to implementing an interface is specifying a
- * custom destroy method, for example in an XML bean definition. For a list of all
- * bean lifecycle methods, see the {@link BeanFactory BeanFactory javadocs}.
+ * <p>出于同样目的，Spring 管理的 Bean 也可以实现 Java 的 {@link AutoCloseable} 接口。
+ * 不实现接口的另一种方式是指定自定义销毁方法，例如在 XML Bean 定义中声明。
+ * 完整的 Bean 生命周期方法列表见 {@link BeanFactory BeanFactory javadocs}。
  *
  * @author Juergen Hoeller
  * @since 12.08.2003
@@ -37,9 +36,9 @@ package org.springframework.beans.factory;
 public interface DisposableBean {
 
 	/**
-	 * Invoked by the containing {@code BeanFactory} on destruction of a bean.
-	 * @throws Exception in case of shutdown errors. Exceptions will get logged
-	 * but not rethrown to allow other beans to release their resources as well.
+	 * 由所属 {@code BeanFactory} 在销毁 Bean 时调用。
+	 * @throws Exception 关闭过程中出错时抛出。异常会被记录日志，
+	 * 但不会再次抛出，以便其他 Bean 也能继续释放各自的资源。
 	 */
 	void destroy() throws Exception;
 
