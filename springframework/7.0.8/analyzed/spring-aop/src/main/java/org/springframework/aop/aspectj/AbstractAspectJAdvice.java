@@ -51,7 +51,7 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * AOP 联盟 {@link org.aopalliance.aop.Advice} 类的基类包装了 AspectJ 方面或 AspectJ 注释的建议方法。
+ * 包装 AspectJ 切面或 @Aspect 注解建议方法的 AOP Alliance {@link org.aopalliance.aop.Advice} 基类。
  * @author Rod Johnson
  * @author Adrian Colyer
  * @author Juergen Hoeller
@@ -62,14 +62,14 @@ import org.springframework.util.StringUtils;
 public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedenceInformation, Serializable {
 
 	/**
-	 * 当前连接点的 ReflectiveMethodInitation userAttributes 映射中使用的键。
+	 * 当前连接点在 ReflectiveMethodInvocation userAttributes 映射中使用的键。
 	 */
 	protected static final String JOIN_POINT_KEY = JoinPoint.class.getName();
 
 
 	/**
-	 * 延迟实例化当前调用的连接点。要求 MethodInitation 与 ExposeInitationInterceptor 绑定。 <p>如果当前
-	 * ReflectiveMethodInitation 可以访问（在周围建议中），则不要使用。
+	 * 延迟实例化当前调用的连接点。要求 MethodInvocation 与 ExposeInvocationInterceptor 绑定。
+	 * <p>若当前 ReflectiveMethodInvocation 可访问（如在环绕通知中），则不要使用本方法。
 	 * @return AspectJ 连接点，或者如果我们不在 Spring AOP 调用中则通过异常。
 	 */
 	public static JoinPoint currentJoinPoint() {
@@ -86,10 +86,10 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	}
 
 
-	/** 类相关状态（`declaringClass`）。 */
+	/** 声明 Advice 方法的目标类。 */
 	private final Class<?> declaringClass;
 
-	/** 名称相关状态（`methodName`）。 */
+	/** Advice 方法名。 */
 	private final String methodName;
 
 	/** 参数相关状态（`parameterTypes`）。 */
@@ -408,7 +408,7 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	}
 
 	/**
-	 * 方法 `maybeBindJoinPoint`：完成本类中与「maybe Bind Join Point」相关的职责。
+	 * 执行 maybeBindJoinPoint 相关逻辑。
 	 */
 	private boolean maybeBindJoinPoint(Class<?> candidateParameterType) {
 		if (JoinPoint.class == candidateParameterType) {
@@ -421,7 +421,7 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	}
 
 	/**
-	 * 方法 `maybeBindProceedingJoinPoint`：完成本类中与「maybe Bind Proceeding Join Point」相关的职责。
+	 * 执行 maybeBindProceedingJoinPoint 相关逻辑。
 	 */
 	private boolean maybeBindProceedingJoinPoint(Class<?> candidateParameterType) {
 		if (ProceedingJoinPoint.class == candidateParameterType) {
@@ -437,14 +437,14 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	}
 
 	/**
-	 * 方法 `supportsProceedingJoinPoint`：完成本类中与「supports Proceeding Join Point」相关的职责。
+	 * 执行 supportsProceedingJoinPoint 相关逻辑。
 	 */
 	protected boolean supportsProceedingJoinPoint() {
 		return false;
 	}
 
 	/**
-	 * 方法 `maybeBindJoinPointStaticPart`：完成本类中与「maybe Bind Join Point Static Part」相关的职责。
+	 * 执行 maybeBindJoinPointStaticPart 相关逻辑。
 	 */
 	private boolean maybeBindJoinPointStaticPart(Class<?> candidateParameterType) {
 		if (JoinPoint.StaticPart.class == candidateParameterType) {
@@ -735,7 +735,7 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 	}
 
 	/**
-	 * 方法 `readObject`：完成本类中与「read Object」相关的职责。
+	 * 执行 readObject 相关逻辑。
 	 */
 	private void readObject(ObjectInputStream inputStream) throws IOException, ClassNotFoundException {
 		inputStream.defaultReadObject();

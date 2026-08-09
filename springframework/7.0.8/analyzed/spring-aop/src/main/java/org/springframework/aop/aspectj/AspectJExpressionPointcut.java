@@ -61,9 +61,10 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Spring {@link org.springframework.aop.Pointcut} 实现使用 AspectJ 编织器来计算切入点表达式。
- * <p>切入点表达式值是AspectJ表达式。这可以引用其他切入点并使用组合和其他操作。
- * <p>自然地，由于这是由Spring AOP的基于代理的模型处理的，因此仅支持方法执行切入点。
+ * 使用 AspectJ 织入器计算切入点表达式的 Spring {@link org.springframework.aop.Pointcut} 实现。
+ *
+ * <p>切入点表达式为 AspectJ 表达式，可引用其他切入点并使用组合等操作。
+ * <p>受 Spring AOP 基于代理模型限制，仅支持方法 execution 切入点。
  * @author Rob Harrop
  * @author Adrian Colyer
  * @author Rod Johnson
@@ -80,7 +81,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	private static final String AJC_MAGIC = "ajc$";
 
 	/**
-	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 * 支持的 AspectJ 切入点原语集合。
 	 */
 	private static final Set<PointcutPrimitive> SUPPORTED_PRIMITIVES = Set.of(
 			PointcutPrimitive.EXECUTION,
@@ -581,14 +582,14 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 	/**
-	 * 方法 `containsAnnotationPointcut`：完成本类中与「contains Annotation Pointcut」相关的职责。
+	 * 执行 containsAnnotationPointcut 相关逻辑。
 	 */
 	private boolean containsAnnotationPointcut() {
 		return resolveExpression().contains("@annotation");
 	}
 
 	/**
-	 * 方法 `compiledByAjc`：完成本类中与「compiled By Ajc」相关的职责。
+	 * 执行 compiledByAjc 相关逻辑。
 	 */
 	private static boolean compiledByAjc(Class<?> clazz) {
 		for (Field field : clazz.getDeclaredFields()) {
@@ -780,7 +781,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 
 
 	/**
-	 * 方法 `ShadowMatchKey`：完成本类中与「Shadow Match Key」相关的职责。
+	 * 执行 ShadowMatchKey 相关逻辑。
 	 */
 	private record ShadowMatchKey(AspectJExpressionPointcut expression, Method method) {
 	}

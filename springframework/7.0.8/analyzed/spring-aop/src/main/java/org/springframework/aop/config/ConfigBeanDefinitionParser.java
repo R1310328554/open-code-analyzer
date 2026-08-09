@@ -50,7 +50,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
 /**
- * {@link BeanDefinitionParser} 为 {@code <aop:config>} 标记。
+ * 解析 {@code <aop:config>} 元素的 {@link BeanDefinitionParser} 实现。
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @author Adrian Colyer

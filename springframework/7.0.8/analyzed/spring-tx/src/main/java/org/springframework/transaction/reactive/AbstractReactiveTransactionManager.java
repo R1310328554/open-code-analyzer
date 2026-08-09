@@ -51,36 +51,28 @@ class AbstractReactiveTransactionManager — 意图说明
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Abstract base class that implements Spring's standard reactive transaction workflow,
- * serving as basis for concrete platform transaction managers.
+ * 实现 Spring 标准响应式事务工作流的抽象基类，
+ * 作为具体平台事务管理器的基础。
  *
- * <p>This base class provides the following workflow handling:
+ * <p>本基类提供以下工作流处理：
  * <ul>
- * <li>determines if there is an existing transaction;
- * <li>applies the appropriate propagation behavior;
- * <li>suspends and resumes transactions if necessary;
- * <li>checks the rollback-only flag on commit;
- * <li>applies the appropriate modification on rollback
- * (actual rollback or setting rollback-only);
- * <li>triggers registered synchronization callbacks.
+ * <li>判断是否存在现有事务；
+ * <li>应用适当的传播行为；
+ * <li>必要时挂起与恢复事务；
+ * <li>提交时检查 rollback-only 标志；
+ * <li>回滚时应用适当修改（实际回滚或设置 rollback-only）；
+ * <li>触发已注册的同步回调。
  * </ul>
  *
- * <p>Subclasses have to implement specific template methods for specific
- * states of a transaction, for example: begin, suspend, resume, commit, rollback.
- * The most important of them are abstract and must be provided by a concrete
- * implementation; for the rest, defaults are provided, so overriding is optional.
+ * <p>子类须实现特定事务状态的模板方法，例如 begin、suspend、resume、commit、rollback。
+ * 其中最重要的为抽象方法，须由具体实现提供；其余有默认实现，覆盖可选。
  *
- * <p>Transaction synchronization is a generic mechanism for registering callbacks
- * that get invoked at transaction completion time. This is mainly used internally
- * by the data access support classes for R2DBC, MongoDB, etc. The same mechanism can
- * also be leveraged for custom synchronization needs in an application.
+ * <p>事务同步是注册在事务完成时调用的回调的通用机制。
+ * 主要用于 R2DBC、MongoDB 等数据访问支持类内部，应用也可利用此机制满足自定义同步需求。
  *
- * <p>The state of this class is serializable, to allow for serializing the
- * transaction strategy along with proxies that carry a transaction interceptor.
- * It is up to subclasses if they wish to make their state to be serializable too.
- * They should implement the {@code java.io.Serializable} marker interface in
- * that case, and potentially a private {@code readObject()} method (according
- * to Java serialization rules) if they need to restore any transient state.
+ * <p>本类状态可序列化，以便与携带事务拦截器的代理一起序列化事务策略。
+ * 子类是否使自身状态可序列化由其决定；若需要，应实现 {@code java.io.Serializable} 标记接口，
+ * 并在需要恢复 transient 状态时按 Java 序列化规则实现私有 {@code readObject()} 方法。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller

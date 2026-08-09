@@ -48,10 +48,11 @@ import org.springframework.util.ObjectUtils;
 
 /**
  * AOP 代理配置管理器的基类。
- * <p> 这些本身不是 AOP 代理，但此类的子类通常是直接获取 AOP 代理实例的工厂。
- * <p>该类释放了子类的建议和顾问的管理工作，但实际上并不实现由子类提供的代理创建方法。
- * <p>该类是可序列化的；子类不需要。
- * <p>该类用于保存代理的快照。
+ *
+ * <p>本类本身不是 AOP 代理，但其子类通常是直接获取 AOP 代理实例的工厂。
+ * <p>本类承担 Advisor 与 Advice 的管理，代理创建由子类实现。
+ * <p>本类可序列化；子类无需实现 Serializable。
+ * <p>本类用于保存代理配置快照。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -371,7 +372,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	}
 
 	/**
-	 * 方法 `indexOf`：完成本类中与「index Of」相关的职责。
+	 * 执行 indexOf 相关逻辑。
 	 */
 	@Override
 	public int indexOf(Advisor advisor) {
@@ -380,7 +381,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	}
 
 	/**
-	 * 方法 `replaceAdvisor`：完成本类中与「replace Advisor」相关的职责。
+	 * 执行 replaceAdvisor 相关逻辑。
 	 */
 	@Override
 	public boolean replaceAdvisor(Advisor a, Advisor b) throws AopConfigException {
@@ -503,7 +504,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	}
 
 	/**
-	 * 方法 `indexOf`：完成本类中与「index Of」相关的职责。
+	 * 执行 indexOf 相关逻辑。
 	 */
 	@Override
 	public int indexOf(Advice advice) {
@@ -662,7 +663,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 
 
 	/**
-	 * 方法 `toProxyConfigString`：完成本类中与「to Proxy Config String」相关的职责。
+	 * 执行 toProxyConfigString 相关逻辑。
 	 */
 	@Override
 	public String toProxyConfigString() {
@@ -690,7 +691,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	//---------------------------------------------------------------------
 
 	/**
-	 * 方法 `readObject`：完成本类中与「read Object」相关的职责。
+	 * 执行 readObject 相关逻辑。
 	 */
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 		// 依赖默认序列化；只需在反序列化后初始化状态即可。

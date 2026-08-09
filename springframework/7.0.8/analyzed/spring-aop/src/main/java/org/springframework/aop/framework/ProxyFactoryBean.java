@@ -55,9 +55,9 @@ import org.springframework.util.ObjectUtils;
  * org.springframework.aop.Advisor Advisors} 由当前 bean 工厂中的 bean
  * 名称列表来标识，通过“interceptorNames”属性指定。列表中的最后一个条目可以是目标 bean 的名称或 {@link
  * org.springframework.aop.TargetSource}；但是，通常最好使用“targetName”/“target”/“targetSource”属性。
- * <p>Global 拦截器和顾问程序可以在工厂级别添加。指定的在拦截器列表中展开，其中列表中包含“xxx*”条目，将给定的前缀与 bean 名称相匹配 –例如，“global*
+ * <p>可在工厂级别添加全局 Interceptor 与 Advisor。指定的在拦截器列表中展开，其中列表中包含“xxx*”条目，将给定的前缀与 bean 名称相匹配 –例如，“global*
  * ”将匹配“globalBean1”和“globalBean2”；而“*”将匹配所有定义的拦截器。如果匹配的拦截器实现了 {@link org.springframework.c
- * ore.Ordered} 接口，则根据其返回的顺序值应用匹配的拦截器。
+ * ore.Ordered} 接口，则按返回的 order 值排序应用匹配的 Interceptor。
  * <p> 在给定代理接口时创建 JDK 代理，如果没有给定代理接口，则为实际目标类创建 CGLIB 代理。请注意，后者仅在目标类没有最终方法时才有效，因为将在运行时创建动态子类。
  * <p> 可以将从该工厂获取的代理转换为 {@link Advised}，或者获取 ProxyFactoryBean 引用并以编程方式操作它。这不适用于现有的独立原型参考。然而，
  * 它适用于随后从工厂获得的原型。对拦截的更改将立即对单例（包括现有引用）起作用。但是，要更改接口或目标，需要从工厂获取新实例。这意味着从工厂获得的单例实例不具有相同的对象标识。但
@@ -552,7 +552,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	//---------------------------------------------------------------------
 
 	/**
-	 * 方法 `readObject`：完成本类中与「read Object」相关的职责。
+	 * 执行 readObject 相关逻辑。
 	 */
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 		// 依赖默认序列化；只需在反序列化后初始化状态即可。

@@ -34,8 +34,7 @@ import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link ParameterNameDiscoverer} 实现尝试从切入点表达式、返回和抛出子句推导出建议方法的参数名称。如果没有明确的解释，则返回 {@code nul
- * l}。
+ * {@link ParameterNameDiscoverer} 实现尝试从切入点表达式、返回和抛出子句推导出建议方法的参数名称。若无法明确推断参数名，则返回 {@code null}。
  * <h3>算法摘要</h3> <p>如果可以推断出明确的绑定，那么它就是。如果不可能满足建议要求，则返回 {@code null}。通过将 {@link
  * #setRaiseExceptions(boolean) raiseExceptions} 属性设置为 {@code
  * true}，在无法发现参数名称的情况下，将引发描述性异常，而不是返回 {@code null}。
@@ -85,7 +84,7 @@ public class AspectJAdviceParameterNameDiscoverer implements ParameterNameDiscov
 	private static final int STEP_FINISHED = 8;
 
 	/**
-	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 * 支持的 AspectJ 切入点原语集合。
 	 */
 	private static final Set<String> singleValuedAnnotationPcds = Set.of(
 			"@this",
@@ -275,7 +274,7 @@ public class AspectJAdviceParameterNameDiscoverer implements ParameterNameDiscov
 	}
 
 	/**
-	 * 方法 `maybeBindThisJoinPointStaticPart`：完成本类中与「maybe Bind This Join Point Static Part」相关的职责。
+	 * 执行 maybeBindThisJoinPointStaticPart 相关逻辑。
 	 */
 	private void maybeBindThisJoinPointStaticPart() {
 		if (this.argumentTypes[0] == JoinPoint.StaticPart.class) {
@@ -485,7 +484,7 @@ public class AspectJAdviceParameterNameDiscoverer implements ParameterNameDiscov
 	}
 
 	/**
-	 * 方法 `maybeBindReferencePointcutParameter`：完成本类中与「maybe Bind Reference Pointcut Parameter」相关的职责。
+	 * 执行 maybeBindReferencePointcutParameter 相关逻辑。
 	 */
 	private void maybeBindReferencePointcutParameter() {
 		if (this.numberOfRemainingUnboundArguments > 1) {
@@ -641,7 +640,7 @@ public class AspectJAdviceParameterNameDiscoverer implements ParameterNameDiscov
 	}
 
 	/**
-	 * 方法 `alreadyBound`：完成本类中与「already Bound」相关的职责。
+	 * 执行 alreadyBound 相关逻辑。
 	 */
 	private boolean alreadyBound(String varName) {
 		for (int i = 0; i < this.parameterNameBindings.length; i++) {
@@ -660,7 +659,7 @@ public class AspectJAdviceParameterNameDiscoverer implements ParameterNameDiscov
 	}
 
 	/**
-	 * 方法 `countNumberOfUnboundAnnotationArguments`：完成本类中与「count Number Of Unbound Annotation Arguments」相关的职责。
+	 * 执行 countNumberOfUnboundAnnotationArguments 相关逻辑。
 	 */
 	private int countNumberOfUnboundAnnotationArguments() {
 		int count = 0;
@@ -673,7 +672,7 @@ public class AspectJAdviceParameterNameDiscoverer implements ParameterNameDiscov
 	}
 
 	/**
-	 * 方法 `countNumberOfUnboundPrimitiveArguments`：完成本类中与「count Number Of Unbound Primitive Arguments」相关的职责。
+	 * 执行 countNumberOfUnboundPrimitiveArguments 相关逻辑。
 	 */
 	private int countNumberOfUnboundPrimitiveArguments() {
 		int count = 0;

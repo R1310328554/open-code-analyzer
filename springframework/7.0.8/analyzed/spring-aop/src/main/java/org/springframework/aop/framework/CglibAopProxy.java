@@ -59,12 +59,12 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Spring AOP 框架的基于 CGLIB 的 {@link AopProxy} 实现。
- * 这种类型的 <p> 对象应通过代理工厂获取，并由 {@link AdvisedSupport} 对象配置。该类是 Spring AOP 框架的内部类，不需要由客户端代码直接使用
- * 。
- * 如果需要，<p>{@link DefaultAopProxyFactory} 将自动创建基于 CGLIB 的代理，例如在代理目标类的情况下（有关详细信息，请参阅 {@link
- * DefaultAopProxyFactory attendant javadoc}）。
- * 如果底层（目标）类是线程安全的，则使用此类创建的 <p>Proxies 也是线程安全的。
+ * Spring AOP 框架基于 CGLIB 的 {@link AopProxy} 实现。
+ *
+ * <p>此类对象应通过由 {@link AdvisedSupport} 配置的代理工厂获取。
+ * 本类为 Spring AOP 框架内部类，客户端代码无需直接使用。
+ * <p>必要时 {@link DefaultAopProxyFactory} 会自动创建 CGLIB 代理（如代理目标类时）。
+ * <p>若底层（目标）类线程安全，则本类创建的代理也线程安全。
  * @author Rod Johnson
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -125,7 +125,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 	private final transient AdvisedDispatcher advisedDispatcher;
 
 	/**
-	 * 方法 `emptyMap`：完成本类中与「empty Map」相关的职责。
+	 * 执行 emptyMap 相关逻辑。
 	 */
 	private transient Map<Method, Integer> fixedInterceptorMap = Collections.emptyMap();
 
