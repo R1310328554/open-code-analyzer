@@ -26,10 +26,11 @@ import java.io.Serial;
 import java.util.Objects;
 
 /**
- * Reduce the sequence of values in each 'rail' to a single value.
+ * 对 ParallelFlowable 每条 rail 累积收集为单个值（通常为集合）。
+ * 各路 onComplete 时以 DeferredScalar 发射累积结果。
  *
- * @param <T> the input value type
- * @param <C> the collection type
+ * @param <T> 输入元素类型
+ * @param <C> 累积容器类型
  */
 public final class ParallelCollect<T, C> extends ParallelFlowable<C> {
 
@@ -39,6 +40,11 @@ public final class ParallelCollect<T, C> extends ParallelFlowable<C> {
 
     final BiConsumer<? super C, ? super T> collector;
 
+    /**
+     * @param source 上游 ParallelFlowable
+     * @param initialCollection 每 rail 初始容器供应器
+     * @param collector 将元素并入容器的 BiConsumer
+     */
     public ParallelCollect(ParallelFlowable<? extends T> source,
             Supplier<? extends C> initialCollection, BiConsumer<? super C, ? super T> collector) {
         this.source = source;
@@ -46,6 +52,7 @@ public final class ParallelCollect<T, C> extends ParallelFlowable<C> {
         this.collector = collector;
     }
 
+    /** 为每 rail 创建 ParallelCollectSubscriber 并 request MAX。 */
     @Override
     public void subscribe(Subscriber<? super C>[] subscribers) {
         subscribers = RxJavaPlugins.onSubscribe(this, subscribers);
@@ -87,6 +94,7 @@ public final class ParallelCollect<T, C> extends ParallelFlowable<C> {
         return source.parallelism();
     }
 
+    /** onNext 调用 collector.accept；onComplete 时 complete(collection)。 */
     static final class ParallelCollectSubscriber<T, C> extends DeferredScalarSubscriber<T, C> {
 
         @Serial

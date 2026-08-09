@@ -28,11 +28,11 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Combines a main sequence of values with the latest from multiple other sequences via
- * a selector function.
+ * 主序列每项与多路 other 各自最新值组成数组，经 combiner 合并后发射。
+ * 任一路 other 缺值时跳过该主序列项。
  *
- * @param <T> the main sequence's type
- * @param <R> the output type
+ * @param <T> 主序列元素类型
+ * @param <R> 输出类型
  */
 public final class ObservableWithLatestFromMany<T, R> extends AbstractObservableWithUpstream<T, R> {
 
@@ -60,6 +60,7 @@ public final class ObservableWithLatestFromMany<T, R> extends AbstractObservable
         this.combiner = combiner;
     }
 
+    /** 无 other 时退化为 ObservableMap；否则订阅 WithLatestFromObserver 与各路 inner。 */
     @Override
     protected void subscribeActual(Observer<? super R> observer) {
         ObservableSource<?>[] others = otherArray;
@@ -96,6 +97,7 @@ public final class ObservableWithLatestFromMany<T, R> extends AbstractObservable
         source.subscribe(parent);
     }
 
+    /** values 数组存各路最新值；主 onNext 凑齐后 combiner 并经 HalfSerializer 下发。 */
     static final class WithLatestFromObserver<T, R>
     extends AtomicInteger
     implements Observer<T>, Disposable {
@@ -146,6 +148,7 @@ public final class ObservableWithLatestFromMany<T, R> extends AbstractObservable
             DisposableHelper.setOnce(this.upstream, d);
         }
 
+        /** 任一路 latest 为 null 则跳过；否则 combiner 合并并 HalfSerializer.onNext。 */
         @Override
         public void onNext(T t) {
             if (done) {
@@ -241,6 +244,7 @@ public final class ObservableWithLatestFromMany<T, R> extends AbstractObservable
         }
     }
 
+    /** 某路 other 的 Observer；onNext 写入 parent.values[index]。 */
     static final class WithLatestInnerObserver
     extends AtomicReference<Disposable>
     implements Observer<Object> {

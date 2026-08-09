@@ -25,6 +25,11 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 
+/**
+ * 多路 Observable 按索引对齐，每轮 zipper 合并一行后发射。
+ * @param <T> 各路元素类型
+ * @param <R> zipper 输出类型
+ */
 public final class ObservableZip<T, R> extends Observable<R> {
 
     final ObservableSource<? extends T>[] sources;
@@ -33,6 +38,13 @@ public final class ObservableZip<T, R> extends Observable<R> {
     final int bufferSize;
     final boolean delayError;
 
+    /**
+     * @param sources 固定数组源（与 sourcesIterable 二选一）
+     * @param sourcesIterable 可迭代源
+     * @param zipper 数组合并函数
+     * @param bufferSize 每路 SpscLinkedArrayQueue 容量
+     * @param delayError 为 true 时延迟聚合错误
+     */
     public ObservableZip(ObservableSource<? extends T>[] sources,
             Iterable<? extends ObservableSource<? extends T>> sourcesIterable,
             Function<? super Object[], ? extends R> zipper,
@@ -73,6 +85,7 @@ public final class ObservableZip<T, R> extends Observable<R> {
         zc.subscribe(sources, bufferSize);
     }
 
+    /** 协调多路 ZipObserver；row 缓存当前轮各索引元素。 */
     static final class ZipCoordinator<T, R> extends AtomicInteger implements Disposable {
 
         @Serial
@@ -146,6 +159,7 @@ public final class ObservableZip<T, R> extends Observable<R> {
             }
         }
 
+        /** wip 门控：各路 poll 凑齐一行后 zipper.apply 并 onNext。 */
         public void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -257,6 +271,7 @@ public final class ObservableZip<T, R> extends Observable<R> {
         }
     }
 
+    /** onNext 入队 SpscLinkedArrayQueue 并 parent.drain。 */
     static final class ZipObserver<T, R> implements Observer<T> {
 
         final ZipCoordinator<T, R> parent;

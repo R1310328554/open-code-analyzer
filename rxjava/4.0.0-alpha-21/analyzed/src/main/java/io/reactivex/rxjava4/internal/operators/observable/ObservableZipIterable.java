@@ -23,11 +23,23 @@ import io.reactivex.rxjava4.functions.BiFunction;
 import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 将 Observable 每项与 Iterable 迭代器当前项 zip 后发射；
+ * Iterable 耗尽时 onComplete。
+ * @param <T> Observable 元素类型
+ * @param <U> Iterable 元素类型
+ * @param <V> zipper 输出类型
+ */
 public final class ObservableZipIterable<T, U, V> extends Observable<V> {
     final Observable<? extends T> source;
     final Iterable<U> other;
     final BiFunction<? super T, ? super U, ? extends V> zipper;
 
+    /**
+     * @param source 主 Observable
+     * @param other 同步 Iterable
+     * @param zipper (T, U) -> V
+     */
     public ObservableZipIterable(
             Observable<? extends T> source,
             Iterable<U> other, BiFunction<? super T, ? super U, ? extends V> zipper) {
@@ -36,6 +48,7 @@ public final class ObservableZipIterable<T, U, V> extends Observable<V> {
         this.zipper = zipper;
     }
 
+    /** 校验 iterator/hasNext；空 Iterable 直接 complete。 */
     @Override
     public void subscribeActual(Observer<? super V> t) {
         Iterator<U> it;
@@ -66,6 +79,7 @@ public final class ObservableZipIterable<T, U, V> extends Observable<V> {
         source.subscribe(new ZipIterableObserver<T, U, V>(t, it, zipper));
     }
 
+    /** 每项 iterator.next 与 zipper 合并；无下一项时 dispose 并 onComplete。 */
     static final class ZipIterableObserver<T, U, V> implements Observer<T>, Disposable {
         final Observer<? super V> downstream;
         final Iterator<U> iterator;
@@ -100,6 +114,7 @@ public final class ObservableZipIterable<T, U, V> extends Observable<V> {
             return upstream.isDisposed();
         }
 
+        /** next+zipper；hasNext 为 false 时结束流。 */
         @Override
         public void onNext(T t) {
             if (done) {

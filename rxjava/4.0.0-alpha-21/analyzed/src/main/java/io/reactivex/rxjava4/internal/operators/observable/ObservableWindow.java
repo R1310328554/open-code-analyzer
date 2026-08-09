@@ -22,11 +22,22 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.subjects.UnicastSubject;
 
+/**
+ * 将上游按 count/skip 切分为多个窗口 Observable。
+ * count==skip 时用 WindowExactObserver；否则用滑动 WindowSkipObserver。
+ * @param <T> 元素类型
+ */
 public final class ObservableWindow<T> extends AbstractObservableWithUpstream<T, Observable<T>> {
     final long count;
     final long skip;
     final int capacityHint;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param count 每个窗口最多元素数
+     * @param skip 窗口起始间隔（与 count 相等时为不重叠窗口）
+     * @param capacityHint UnicastSubject 容量提示
+     */
     public ObservableWindow(ObservableSource<T> source, long count, long skip, int capacityHint) {
         super(source);
         this.count = count;
@@ -34,6 +45,7 @@ public final class ObservableWindow<T> extends AbstractObservableWithUpstream<T,
         this.capacityHint = capacityHint;
     }
 
+    /** count==skip 选 Exact，否则选 Skip 策略。 */
     @Override
     public void subscribeActual(Observer<? super Observable<T>> t) {
         if (count == skip) {
@@ -43,6 +55,7 @@ public final class ObservableWindow<T> extends AbstractObservableWithUpstream<T,
         }
     }
 
+    /** 固定大小不重叠窗口；refCount 归零时 dispose 上游。 */
     static final class WindowExactObserver<T>
     extends AtomicInteger
     implements Observer<T>, Disposable, Runnable {
@@ -78,6 +91,7 @@ public final class ObservableWindow<T> extends AbstractObservableWithUpstream<T,
             }
         }
 
+        /** 懒创建 UnicastSubject 并下发 intercept；满 count 时 onComplete 当前窗口。 */
         @Override
         public void onNext(T t) {
             UnicastSubject<T> w = window;
@@ -148,6 +162,7 @@ public final class ObservableWindow<T> extends AbstractObservableWithUpstream<T,
         }
     }
 
+    /** 滑动窗口：ArrayDeque 维护多个 UnicastSubject，按 skip 开启新窗。 */
     static final class WindowSkipObserver<T> extends AtomicInteger
     implements Observer<T>, Disposable, Runnable {
 
@@ -163,7 +178,7 @@ public final class ObservableWindow<T> extends AbstractObservableWithUpstream<T,
 
         long index;
 
-        /** Counts how many elements were emitted to the very first window in windows. */
+        /** 记录已发射到 deque 首窗口的元素计数。 */
         long firstEmission;
 
         Disposable upstream;

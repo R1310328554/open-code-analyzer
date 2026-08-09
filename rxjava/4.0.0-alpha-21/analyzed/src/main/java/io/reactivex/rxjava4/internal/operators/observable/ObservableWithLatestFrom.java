@@ -24,9 +24,21 @@ import io.reactivex.rxjava4.functions.BiFunction;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.observers.SerializedObserver;
 
+/**
+ * 主序列每项与 other 最新值经 combiner 合并后发射。
+ * other 尚未 emit 时主序列 onNext 被忽略。
+ * @param <T> 主序列类型
+ * @param <U> other 类型
+ * @param <R> 合并结果类型
+ */
 public final class ObservableWithLatestFrom<T, U, R> extends AbstractObservableWithUpstream<T, R> {
     final BiFunction<? super T, ? super U, ? extends R> combiner;
     final ObservableSource<? extends U> other;
+    /**
+     * @param source 主序列 ObservableSource
+     * @param combiner (T, U) -> R 合并函数
+     * @param other 提供最新值的 ObservableSource
+     */
     public ObservableWithLatestFrom(ObservableSource<T> source,
             BiFunction<? super T, ? super U, ? extends R> combiner, ObservableSource<? extends U> other) {
         super(source);
@@ -34,6 +46,7 @@ public final class ObservableWithLatestFrom<T, U, R> extends AbstractObservableW
         this.other = other;
     }
 
+    /** SerializedObserver 包装下游；先订 other 再订主序列。 */
     @Override
     public void subscribeActual(Observer<? super R> t) {
         final SerializedObserver<R> serial = new SerializedObserver<>(t);
@@ -46,6 +59,7 @@ public final class ObservableWithLatestFrom<T, U, R> extends AbstractObservableW
         source.subscribe(wlf);
     }
 
+    /** AtomicReference 存 other 最新值；主 onNext 时 combiner.apply。 */
     static final class WithLatestFromObserver<T, U, R> extends AtomicReference<U> implements Observer<T>, Disposable {
 
         @Serial
@@ -69,6 +83,7 @@ public final class ObservableWithLatestFrom<T, U, R> extends AbstractObservableW
             DisposableHelper.setOnce(this.upstream, d);
         }
 
+        /** other 值非 null 时合并并 onNext；null combiner 结果或异常则 dispose+onError。 */
         @Override
         public void onNext(T t) {
             U u = get();
@@ -119,6 +134,7 @@ public final class ObservableWithLatestFrom<T, U, R> extends AbstractObservableW
         }
     }
 
+    /** other 侧 Observer：onNext 更新 parent.lazySet。 */
     final class WithLatestFromOtherObserver implements Observer<U> {
         private final WithLatestFromObserver<T, U, R> parent;
 

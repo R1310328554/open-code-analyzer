@@ -25,6 +25,12 @@ import io.reactivex.rxjava4.internal.fuseable.FuseToObservable;
 import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 将 Observable 全部元素收集到 Collection，上游 onComplete 后以 Single 发射该集合。
+ * 实现 {@link FuseToObservable}，可 fuse 回 {@link ObservableToList}。
+ * @param <T> 上游元素类型
+ * @param <U> 集合类型
+ */
 public final class ObservableToListSingle<T, U extends Collection<? super T>>
 extends Single<U> implements FuseToObservable<U> {
 
@@ -32,17 +38,27 @@ extends Single<U> implements FuseToObservable<U> {
 
     final Supplier<U> collectionSupplier;
 
+    /**
+     * 使用默认 ArrayList 容量提示构造集合供应器。
+     * @param source 上游 ObservableSource
+     * @param defaultCapacityHint ArrayList 初始容量
+     */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public ObservableToListSingle(ObservableSource<T> source, final int defaultCapacityHint) {
         this.source = source;
         this.collectionSupplier = (Supplier)Functions.createArrayList(defaultCapacityHint);
     }
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param collectionSupplier 可变的集合供应器
+     */
     public ObservableToListSingle(ObservableSource<T> source, Supplier<U> collectionSupplier) {
         this.source = source;
         this.collectionSupplier = collectionSupplier;
     }
 
+    /** 获取集合实例后订阅 ToListObserver。 */
     @Override
     public void subscribeActual(SingleObserver<? super U> t) {
         U coll;
@@ -61,6 +77,7 @@ extends Single<U> implements FuseToObservable<U> {
         return RxJavaPlugins.onAssembly(new ObservableToList<>(source, collectionSupplier));
     }
 
+    /** 逐项 add 至 collection；onComplete 时 onSuccess 下发集合。 */
     static final class ToListObserver<T, U extends Collection<? super T>> implements Observer<T>, Disposable {
         final SingleObserver<? super U> downstream;
 
@@ -102,6 +119,7 @@ extends Single<U> implements FuseToObservable<U> {
             downstream.onError(t);
         }
 
+        /** 清空引用后 onSuccess 发射累积集合。 */
         @Override
         public void onComplete() {
             U c = collection;

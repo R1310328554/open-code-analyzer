@@ -25,10 +25,10 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Calls a Consumer for each upstream value passing by
- * and handles any failure with a handler function.
+ * 对 ParallelFlowable 每条 rail 的 onNext 调用 Consumer；
+ * 异常由 errorHandler 决定 RETRY/SKIP/STOP 等策略。
  * <p>History: 2.0.8 - experimental
- * @param <T> the input value type
+ * @param <T> 输入元素类型
  * @since 2.2
  */
 public final class ParallelDoOnNextTry<T> extends ParallelFlowable<T> {
@@ -46,6 +46,7 @@ public final class ParallelDoOnNextTry<T> extends ParallelFlowable<T> {
         this.errorHandler = errorHandler;
     }
 
+    /** ConditionalSubscriber 走条件分支，否则普通 ParallelDoOnNextSubscriber。 */
     @Override
     public void subscribe(Subscriber<? super T>[] subscribers) {
         subscribers = RxJavaPlugins.onSubscribe(this, subscribers);
@@ -120,6 +121,7 @@ public final class ParallelDoOnNextTry<T> extends ParallelFlowable<T> {
             }
         }
 
+        /** 调用 onNext.accept；失败时按 ParallelFailureHandling 重试/跳过/终止。 */
         @Override
         public boolean tryOnNext(T t) {
             if (done) {

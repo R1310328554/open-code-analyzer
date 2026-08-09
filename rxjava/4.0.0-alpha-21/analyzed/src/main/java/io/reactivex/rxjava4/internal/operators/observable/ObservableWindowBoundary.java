@@ -25,16 +25,27 @@ import io.reactivex.rxjava4.observers.DisposableObserver;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import io.reactivex.rxjava4.subjects.UnicastSubject;
 
+/**
+ * 由 other 流每个 onNext 作为边界，切分主序列成多个窗口 Observable。
+ * @param <T> 主序列元素类型
+ * @param <B> 边界信号类型
+ */
 public final class ObservableWindowBoundary<T, B> extends AbstractObservableWithUpstream<T, Observable<T>> {
     final ObservableSource<B> other;
     final int capacityHint;
 
+    /**
+     * @param source 主序列 ObservableSource
+     * @param other 边界 ObservableSource
+     * @param capacityHint 每个 UnicastSubject 容量提示
+     */
     public ObservableWindowBoundary(ObservableSource<T> source, ObservableSource<B> other, int capacityHint) {
         super(source);
         this.other = other;
         this.capacityHint = capacityHint;
     }
 
+    /** 先 onSubscribe parent，再订阅 boundary 与主序列。 */
     @Override
     public void subscribeActual(Observer<? super Observable<T>> observer) {
         WindowBoundaryMainObserver<T, B> parent = new WindowBoundaryMainObserver<>(observer, capacityHint);
@@ -45,6 +56,7 @@ public final class ObservableWindowBoundary<T, B> extends AbstractObservableWith
         source.subscribe(parent);
     }
 
+    /** MpscLinkedQueue 串行 drain；NEXT_WINDOW 标记开启新窗。 */
     static final class WindowBoundaryMainObserver<T, B>
     extends AtomicInteger
     implements Observer<T>, Disposable, Runnable {
@@ -157,6 +169,7 @@ public final class ObservableWindowBoundary<T, B> extends AbstractObservableWith
         }
 
         @SuppressWarnings("unchecked")
+        /** wip 门控：poll 元素入当前窗或 NEXT_WINDOW 时关闭旧窗开新窗。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -248,6 +261,7 @@ public final class ObservableWindowBoundary<T, B> extends AbstractObservableWith
         }
     }
 
+    /** 边界 onNext 触发 parent.innerNext；完成/错误终止主序列。 */
     static final class WindowBoundaryInnerObserver<T, B> extends DisposableObserver<B> {
 
         final WindowBoundaryMainObserver<T, B> parent;

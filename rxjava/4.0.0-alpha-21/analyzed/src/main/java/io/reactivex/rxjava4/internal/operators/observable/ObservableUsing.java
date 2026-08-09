@@ -24,12 +24,24 @@ import io.reactivex.rxjava4.functions.*;
 import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 资源管理模式：先获取资源 D，用其创建 ObservableSource，
+ * 终止或 dispose 时通过 disposer 释放资源。
+ * @param <T> 元素类型
+ * @param <D> 资源类型
+ */
 public final class ObservableUsing<T, D> extends Observable<T> {
     final Supplier<? extends D> resourceSupplier;
     final Function<? super D, ? extends ObservableSource<? extends T>> sourceSupplier;
     final Consumer<? super D> disposer;
     final boolean eager;
 
+    /**
+     * @param resourceSupplier 资源供应器
+     * @param sourceSupplier 由资源创建 ObservableSource 的函数
+     * @param disposer 资源释放回调
+     * @param eager true 时在 onError/onComplete 前先释放资源
+     */
     public ObservableUsing(Supplier<? extends D> resourceSupplier,
             Function<? super D, ? extends ObservableSource<? extends T>> sourceSupplier,
             Consumer<? super D> disposer,
@@ -40,6 +52,7 @@ public final class ObservableUsing<T, D> extends Observable<T> {
         this.eager = eager;
     }
 
+    /** 获取资源、创建 source，失败时尝试 disposer 后 error。 */
     @Override
     public void subscribeActual(Observer<? super T> observer) {
         D resource;
@@ -73,6 +86,7 @@ public final class ObservableUsing<T, D> extends Observable<T> {
         source.subscribe(us);
     }
 
+    /** eager 模式在终止前释放资源；非 eager 在 terminate 后 disposeResource。 */
     static final class UsingObserver<T, D> extends AtomicBoolean implements Observer<T>, Disposable {
 
         @Serial
@@ -162,6 +176,7 @@ public final class ObservableUsing<T, D> extends Observable<T> {
             return get();
         }
 
+        /** CAS 保证 disposer 仅调用一次；异常走 RxJavaPlugins.onError。 */
         void disposeResource() {
             if (compareAndSet(false, true)) {
                 try {

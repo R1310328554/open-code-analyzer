@@ -20,6 +20,11 @@ import io.reactivex.rxjava4.core.Observer;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 包装 Observer 并持有额外 Disposable 资源；
+ * onError/onComplete/dispose 时一并释放 upstream 与 resource。
+ * @param <T> 元素类型
+ */
 public final class ObserverResourceWrapper<T> extends AtomicReference<Disposable> implements Observer<T>, Disposable {
 
     @Serial
@@ -45,6 +50,7 @@ public final class ObserverResourceWrapper<T> extends AtomicReference<Disposable
         downstream.onNext(t);
     }
 
+    /** dispose 后转发 onError。 */
     @Override
     public void onError(Throwable t) {
         dispose();
@@ -57,6 +63,7 @@ public final class ObserverResourceWrapper<T> extends AtomicReference<Disposable
         downstream.onComplete();
     }
 
+    /** 同时 dispose upstream 与本体 AtomicReference 中的 resource。 */
     @Override
     public void dispose() {
         DisposableHelper.dispose(upstream);
@@ -69,6 +76,7 @@ public final class ObserverResourceWrapper<T> extends AtomicReference<Disposable
         return upstream.get() == DisposableHelper.DISPOSED;
     }
 
+    /** 设置需随 Observer 生命周期释放的额外 Disposable。 */
     public void setResource(Disposable resource) {
         DisposableHelper.set(this, resource);
     }

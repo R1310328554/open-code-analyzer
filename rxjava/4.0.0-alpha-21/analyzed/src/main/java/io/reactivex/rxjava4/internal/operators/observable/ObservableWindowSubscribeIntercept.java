@@ -19,8 +19,9 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.subjects.Subject;
 
 /**
- * Wrapper for a Subject that detects an incoming subscriber.
- * @param <T> the element type of the flow.
+ * 包装 Subject 以检测是否有下游订阅。
+ * 若窗口未被订阅，{@link #tryAbandon} 可提前关闭空窗。
+ * @param <T> 流元素类型
  * @since 3.0.0
  */
 final class ObservableWindowSubscribeIntercept<T> extends Observable<T> {
@@ -34,12 +35,14 @@ final class ObservableWindowSubscribeIntercept<T> extends Observable<T> {
         this.once = new AtomicBoolean();
     }
 
+    /** 订阅底层 window 并标记 once。 */
     @Override
     protected void subscribeActual(Observer<? super T> s) {
         window.subscribe(s);
         once.set(true);
     }
 
+    /** 尚无订阅者时 CAS 置位，表示可放弃该空窗口。 */
     boolean tryAbandon() {
         return !once.get() && once.compareAndSet(false, true);
     }

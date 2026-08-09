@@ -24,10 +24,11 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Concatenates the generated Publishers on each rail.
+ * 对 ParallelFlowable 每条 rail 做 concatMap：
+ * 将元素映射为 Publisher 后顺序拼接发射。
  *
- * @param <T> the input value type
- * @param <R> the output value type
+ * @param <T> 输入元素类型
+ * @param <R> 输出元素类型
  */
 public final class ParallelConcatMap<T, R> extends ParallelFlowable<R> {
 
@@ -39,6 +40,12 @@ public final class ParallelConcatMap<T, R> extends ParallelFlowable<R> {
 
     final ErrorMode errorMode;
 
+    /**
+     * @param source 上游 ParallelFlowable
+     * @param mapper 元素到 Publisher 的映射
+     * @param prefetch 预取缓冲
+     * @param errorMode 错误处理模式
+     */
     public ParallelConcatMap(
             ParallelFlowable<T> source,
             Function<? super T, ? extends Publisher<? extends R>> mapper,
@@ -54,6 +61,7 @@ public final class ParallelConcatMap<T, R> extends ParallelFlowable<R> {
         return source.parallelism();
     }
 
+    /** 每 rail 用 FlowableConcatMap.subscribe 包装下游 Subscriber。 */
     @Override
     public void subscribe(Subscriber<? super R>[] subscribers) {
         subscribers = RxJavaPlugins.onSubscribe(this, subscribers);

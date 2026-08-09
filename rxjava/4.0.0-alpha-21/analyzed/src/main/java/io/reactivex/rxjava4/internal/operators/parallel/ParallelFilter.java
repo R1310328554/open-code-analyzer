@@ -23,9 +23,10 @@ import io.reactivex.rxjava4.parallel.ParallelFlowable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Filters each 'rail' of the source ParallelFlowable with a predicate function.
+ * 对 ParallelFlowable 每条 rail 用 predicate 过滤元素。
+ * 未通过时 request(1) 补拉。
  *
- * @param <T> the input value type
+ * @param <T> 输入元素类型
  */
 public final class ParallelFilter<T> extends ParallelFlowable<T> {
 
@@ -33,11 +34,16 @@ public final class ParallelFilter<T> extends ParallelFlowable<T> {
 
     final Predicate<? super T> predicate;
 
+    /**
+     * @param source 上游 ParallelFlowable
+     * @param predicate 过滤谓词
+     */
     public ParallelFilter(ParallelFlowable<T> source, Predicate<? super T> predicate) {
         this.source = source;
         this.predicate = predicate;
     }
 
+    /** 按下游类型选择 Conditional 或普通 FilterSubscriber。 */
     @Override
     public void subscribe(Subscriber<? super T>[] subscribers) {
         subscribers = RxJavaPlugins.onSubscribe(this, subscribers);
@@ -114,6 +120,7 @@ public final class ParallelFilter<T> extends ParallelFlowable<T> {
             }
         }
 
+        /** predicate.test 为 true 时转发；异常则 cancel+onError。 */
         @Override
         public boolean tryOnNext(T t) {
             if (!done) {
