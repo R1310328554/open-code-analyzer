@@ -26,9 +26,8 @@ import com.alibaba.csp.sentinel.slots.block.authority.AuthorityRule;
 import com.alibaba.csp.sentinel.slots.block.authority.AuthorityRuleManager;
 
 /**
- * Authority rule is designed for limiting by request origins. In blacklist mode,
- * requests will be blocked when blacklist contains current origin, otherwise will pass.
- * In whitelist mode, only requests from whitelist origin can pass.
+ * 黑白名单（Authority）规则演示：按请求来源 origin 限流。
+ * 黑名单模式：origin 在名单中则拒绝；白名单模式：仅名单内 origin 可通过。
  *
  * @author Eric Zhao
  */
@@ -37,14 +36,14 @@ public class AuthorityDemo {
     private static final String RESOURCE_NAME = "testABC";
 
     public static void main(String[] args) {
-        System.out.println("========Testing for black list========");
+        System.out.println("======== 黑名单模式测试 ========");
         initBlackRules();
         testFor(RESOURCE_NAME, "appA");
         testFor(RESOURCE_NAME, "appB");
         testFor(RESOURCE_NAME, "appC");
         testFor(RESOURCE_NAME, "appE");
 
-        System.out.println("========Testing for white list========");
+        System.out.println("======== 白名单模式测试 ========");
         initWhiteRules();
         testFor(RESOURCE_NAME, "appA");
         testFor(RESOURCE_NAME, "appB");
@@ -52,6 +51,7 @@ public class AuthorityDemo {
         testFor(RESOURCE_NAME, "appE");
     }
 
+    /** 以指定 origin 进入上下文并尝试 entry，打印通过或拦截结果。 */
     private static void testFor(/*@NonNull*/ String resource, /*@NonNull*/ String origin) {
         ContextUtil.enter(resource, origin);
         Entry entry = null;
@@ -71,7 +71,7 @@ public class AuthorityDemo {
     private static void initWhiteRules() {
         AuthorityRule rule = new AuthorityRule();
         rule.setResource(RESOURCE_NAME);
-        rule.setStrategy(RuleConstant.AUTHORITY_WHITE);
+        rule.setStrategy(RuleConstant.AUTHORITY_WHITE); // 白名单
         rule.setLimitApp("appA,appE");
         AuthorityRuleManager.loadRules(Collections.singletonList(rule));
     }
@@ -79,7 +79,7 @@ public class AuthorityDemo {
     private static void initBlackRules() {
         AuthorityRule rule = new AuthorityRule();
         rule.setResource(RESOURCE_NAME);
-        rule.setStrategy(RuleConstant.AUTHORITY_BLACK);
+        rule.setStrategy(RuleConstant.AUTHORITY_BLACK); // 黑名单
         rule.setLimitApp("appA,appB");
         AuthorityRuleManager.loadRules(Collections.singletonList(rule));
     }

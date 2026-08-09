@@ -33,6 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 异常比例熔断演示：当窗口内异常占比超过阈值时打开熔断器，
+ * 拒绝后续请求直至 {@link DegradeRule#getTimeWindow()} 秒后进入半开探测。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  */
@@ -63,9 +66,9 @@ public class ExceptionRatioCircuitBreakerDemo {
                         sleep(ThreadLocalRandom.current().nextInt(5, 10));
                         pass.addAndGet(1);
 
-                        // Error probability is 45%
+                        // 约 45% 概率抛出业务异常
                         if (ThreadLocalRandom.current().nextInt(0, 100) > 55) {
-                            // biz code raise an exception.
+                            // 模拟业务代码异常
                             throw new RuntimeException("oops");
                         }
                     } catch (BlockException e) {
@@ -73,7 +76,7 @@ public class ExceptionRatioCircuitBreakerDemo {
                         sleep(ThreadLocalRandom.current().nextInt(5, 10));
                     } catch (Throwable t) {
                         bizException.incrementAndGet();
-                        // It's required to record exception here manually.
+                        // 须手动调用 Tracer 记录异常，供熔断统计
                         Tracer.traceEntry(t, entry);
                     } finally {
                         total.addAndGet(1);
@@ -105,11 +108,11 @@ public class ExceptionRatioCircuitBreakerDemo {
         List<DegradeRule> rules = new ArrayList<>();
         DegradeRule rule = new DegradeRule(KEY)
             .setGrade(CircuitBreakerStrategy.ERROR_RATIO.getType())
-            // Set ratio threshold to 50%.
+            // 异常比例阈值 50%
             .setCount(0.5d)
             .setStatIntervalMs(30000)
             .setMinRequestAmount(50)
-            // Retry timeout (in second)
+            // 熔断打开后恢复探测间隔（秒）
             .setTimeWindow(10);
         rules.add(rule);
         DegradeRuleManager.loadRules(rules);
@@ -120,7 +123,7 @@ public class ExceptionRatioCircuitBreakerDemo {
         try {
             TimeUnit.MILLISECONDS.sleep(timeMs);
         } catch (InterruptedException e) {
-            // ignore
+            // 忽略中断
         }
     }
 
@@ -134,8 +137,8 @@ public class ExceptionRatioCircuitBreakerDemo {
         @Override
         public void run() {
             long start = System.currentTimeMillis();
-            System.out.println("Begin to run! Go go go!");
-            System.out.println("See corresponding metrics.log for accurate statistic data");
+            System.out.println("Begin to run! Go go go!"); // 启动并发压测
+            System.out.println("See corresponding metrics.log for accurate statistic data"); // 精确指标见 metrics.log
 
             long oldTotal = 0;
             long oldPass = 0;

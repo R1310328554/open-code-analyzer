@@ -15,9 +15,9 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
- * When {@link FlowRule#controlBehavior} set to {@link RuleConstant#CONTROL_BEHAVIOR_WARM_UP_RATE_LIMITER}, real passed
- * qps will gradually increase to {@link FlowRule#count}, other than burst increasing, and after the passed qps reaches
- * the threshold, the request will pass at a constant interval.
+ * 预热匀速器流控：{@link RuleConstant#CONTROL_BEHAVIOR_WARM_UP_RATE_LIMITER} 结合
+ * 预热与匀速排队，QPS 渐增到阈值后以固定间隔放行。
+ * 等价于 {@link RuleConstant#CONTROL_BEHAVIOR_WARM_UP} + {@link RuleConstant#CONTROL_BEHAVIOR_RATE_LIMITER}。
  * <p>
  * In short, {@link RuleConstant#CONTROL_BEHAVIOR_WARM_UP_RATE_LIMITER} behaves like
  * {@link RuleConstant#CONTROL_BEHAVIOR_WARM_UP} + {@link RuleConstant#CONTROL_BEHAVIOR_RATE_LIMITER}.
@@ -66,7 +66,7 @@ public class WarmUpRateLimiterFlowDemo {
 
     public static void main(String[] args) throws Exception {
         initFlowRule();
-        // trigger Sentinel internal init
+        // 触发 Sentinel 内部初始化
         Entry entry = null;
         try {
             entry = SphU.entry(KEY);
@@ -81,7 +81,7 @@ public class WarmUpRateLimiterFlowDemo {
         timer.setName("sentinel-timer-task");
         timer.start();
 
-        //first make the system run on a very low condition
+        // 先低 QPS 运行 5 秒
         for (int i = 0; i < 3; i++) {
             Thread t = new Thread(new SlowTask());
             t.setName("sentinel-slow-task");
@@ -89,7 +89,7 @@ public class WarmUpRateLimiterFlowDemo {
         }
         Thread.sleep(5000);
 
-        // request qps burst increase, warm up behavior triggered.
+        // 突发高 QPS，触发预热+匀速行为
         for (int i = 0; i < threadCount; i++) {
             Thread t = new Thread(new RunTask());
             t.setName("sentinel-run-task");
@@ -119,12 +119,12 @@ public class WarmUpRateLimiterFlowDemo {
                 Entry entry = null;
                 try {
                     entry = SphU.entry(KEY);
-                    // token acquired, means pass
+                    // 获取令牌，计为通过
                     pass.addAndGet(1);
                 } catch (BlockException e1) {
                     block.incrementAndGet();
                 } catch (Exception e2) {
-                    // biz exception
+                    // 业务异常
                 } finally {
                     total.incrementAndGet();
                     if (entry != null) {
@@ -135,7 +135,7 @@ public class WarmUpRateLimiterFlowDemo {
                 try {
                     TimeUnit.MILLISECONDS.sleep(random2.nextInt(2000));
                 } catch (InterruptedException e) {
-                    // ignore
+                    // 忽略中断
                 }
             }
         }

@@ -30,6 +30,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 
 /**
+ * 基础 QPS 流控演示：32 线程压测，规则限制每秒仅 20 个请求通过。
+ *
  * @author jialiang.linjl
  */
 public class FlowQpsDemo {
@@ -50,11 +52,11 @@ public class FlowQpsDemo {
         initFlowQpsRule();
 
         tick();
-        // first make the system run on a very low condition
+        // 先启动压测线程
         simulateTraffic();
 
-        System.out.println("===== begin to do flow control");
-        System.out.println("only 20 requests per second can pass");
+        System.out.println("===== 开始流控演示");
+        System.out.println("每秒仅允许 20 个请求通过");
 
     }
 
@@ -62,7 +64,7 @@ public class FlowQpsDemo {
         List<FlowRule> rules = new ArrayList<FlowRule>();
         FlowRule rule1 = new FlowRule();
         rule1.setResource(KEY);
-        // set limit qps to 20
+        // QPS 阈值设为 20
         rule1.setCount(20);
         rule1.setGrade(RuleConstant.FLOW_GRADE_QPS);
         rule1.setLimitApp("default");
@@ -137,12 +139,12 @@ public class FlowQpsDemo {
 
                 try {
                     entry = SphU.entry(KEY);
-                    // token acquired, means pass
+                    // 获取令牌成功，计为通过
                     pass.addAndGet(1);
                 } catch (BlockException e1) {
                     block.incrementAndGet();
                 } catch (Exception e2) {
-                    // biz exception
+                    // 业务异常
                 } finally {
                     total.incrementAndGet();
                     if (entry != null) {
@@ -154,7 +156,7 @@ public class FlowQpsDemo {
                 try {
                     TimeUnit.MILLISECONDS.sleep(random2.nextInt(50));
                 } catch (InterruptedException e) {
-                    // ignore
+                    // 忽略中断
                 }
             }
         }

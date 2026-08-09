@@ -21,13 +21,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * AOP config to enable annotation support for Sentinel.
+ * Spring AOP 配置：注册 {@link SentinelResourceAspect}，启用 {@code @SentinelResource} 注解支持。
  *
  * @author Eric Zhao
  */
 @Configuration
 public class AopConfig {
 
+    /** 声明 Sentinel 资源切面 Bean。 */
     @Bean
     public SentinelResourceAspect sentinelResourceAspect() {
         return new SentinelResourceAspect();

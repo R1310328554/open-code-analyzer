@@ -31,30 +31,21 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 
 /**
  * <p>
- * If {@link RuleConstant#CONTROL_BEHAVIOR_RATE_LIMITER} is set, incoming
- * requests are passing at regular interval. When a new request arrives, the
- * flow rule checks whether the interval between the new request and the
- * previous request. If the interval is less than the count set in the rule
- * first. If the interval is large, it will pass the request; otherwise,
- * sentinel will calculate the waiting time for this request. If the waiting
- * time is longer than the {@link FlowRule#maxQueueingTimeMs} set in the rule,
- * the request will be rejected immediately.
+ * 当流控行为为 {@link RuleConstant#CONTROL_BEHAVIOR_RATE_LIMITER}（匀速排队）时，
+ * 请求以固定间隔通过。新请求到达时检查与上一请求的间隔；
+ * 间隔不足则排队等待，超过 {@link FlowRule#maxQueueingTimeMs} 则直接拒绝。
+ * 适用于脉冲流量：避免瞬时洪峰拖垮系统，改为匀速放行。
  *
- * This method is widely used for pulsed flow. When a large amount of flow
- * comes, we don't want to pass all these requests at once, which may drag the
- * system down. We can make the system handle these requests at a steady pace by
- * using this kind of rules.
  *
  * <p>
- * This demo demonstrates how to use {@link RuleConstant#CONTROL_BEHAVIOR_RATE_LIMITER}.
+ * 本 demo 演示 {@link RuleConstant#CONTROL_BEHAVIOR_RATE_LIMITER} 与默认拒绝行为对比。
  * </p>
  *
  * <p>
  * {@link #initPaceFlowRule() } create rules that uses
  * {@code CONTROL_BEHAVIOR_RATE_LIMITER}.
  * <p>
- * {@link #simulatePulseFlow()} simulates 100 requests that arrives at almost the
- * same time. All these 100 request are passed at a fixed interval.
+ * {@link #simulatePulseFlow()} 模拟 100 个几乎同时到达的请求，匀速排队后全部通过。
  *
  * <p/>
  * Run this demo, results are as follows:
@@ -73,8 +64,7 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
  * total pass:100, total block:0
  * </pre>
  *
- * Then we invoke {@link #initDefaultFlowRule()} to set rules with default behavior, and only 10
- * requests will be allowed to pass, other requests will be rejected immediately.
+ * 随后切换为 {@link #initDefaultFlowRule()} 默认行为，仅 10 个通过、其余立即拒绝。
  * <p/>
  * The output will be like:
  * <pre>
@@ -108,7 +98,7 @@ public class PaceFlowDemo {
     private static final AtomicInteger block = new AtomicInteger();
 
     public static void main(String[] args) throws InterruptedException {
-        System.out.println("pace behavior");
+        System.out.println("匀速排队行为（pace behavior）");
         countDown = new CountDownLatch(1);
         initPaceFlowRule();
         simulatePulseFlow();
@@ -118,7 +108,7 @@ public class PaceFlowDemo {
         System.out.println("total pass:" + pass.get() + ", total block:" + block.get());
 
         System.out.println();
-        System.out.println("default behavior");
+        System.out.println("默认快速失败行为（default behavior）");
         TimeUnit.SECONDS.sleep(5);
         done.set(0);
         pass.set(0);
@@ -140,8 +130,8 @@ public class PaceFlowDemo {
         rule1.setGrade(RuleConstant.FLOW_GRADE_QPS);
         rule1.setLimitApp("default");
         /*
-         * CONTROL_BEHAVIOR_RATE_LIMITER means requests more than threshold will be queueing in the queue,
-         * until the queueing time is more than {@link FlowRule#maxQueueingTimeMs}, the requests will be rejected.
+         * CONTROL_BEHAVIOR_RATE_LIMITER：超阈值请求进入队列排队，
+         * 排队时间超过 {@link FlowRule#maxQueueingTimeMs} 则拒绝。
          */
         rule1.setControlBehavior(RuleConstant.CONTROL_BEHAVIOR_RATE_LIMITER);
         rule1.setMaxQueueingTimeMs(20 * 1000);
@@ -157,7 +147,7 @@ public class PaceFlowDemo {
         rule1.setCount(count);
         rule1.setGrade(RuleConstant.FLOW_GRADE_QPS);
         rule1.setLimitApp("default");
-        // CONTROL_BEHAVIOR_DEFAULT means requests more than threshold will be rejected immediately.
+        // CONTROL_BEHAVIOR_DEFAULT：超阈值立即拒绝
         rule1.setControlBehavior(RuleConstant.CONTROL_BEHAVIOR_DEFAULT);
 
         rules.add(rule1);
@@ -176,7 +166,7 @@ public class PaceFlowDemo {
                     } catch (BlockException e1) {
                         block.incrementAndGet();
                     } catch (Exception e2) {
-                        // biz exception
+                        // 业务异常
                     } finally {
                         if (entry != null) {
                             entry.exit();
@@ -190,7 +180,7 @@ public class PaceFlowDemo {
                     try {
                         TimeUnit.MILLISECONDS.sleep(5);
                     } catch (InterruptedException e1) {
-                        // ignore
+                        // 忽略中断
                     }
 
                     if (done.incrementAndGet() >= requestQps) {

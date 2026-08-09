@@ -31,13 +31,15 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 
 /**
- * An example for asynchronous entry in Sentinel.
+ * Sentinel 异步 {@link AsyncEntry} 用法示例：演示异步 entry 与同步 entry 嵌套、
+ * {@link ContextUtil#runOnContext} 绑定异步上下文及调用链结构。
  *
  * @author Eric Zhao
  * @since 0.2.0
  */
 public class AsyncEntryDemo {
 
+    /** 模拟异步 RPC：延迟 3 秒后在另一线程回调 handler。 */
     private void invoke(String arg, Consumer<String> handler) {
         CompletableFuture.runAsync(() -> {
             try {
@@ -52,18 +54,19 @@ public class AsyncEntryDemo {
 
     private void anotherAsync() {
         try {
+            // 创建异步 entry，资源名 test-another-async
             final AsyncEntry entry = SphU.asyncEntry("test-another-async");
 
             CompletableFuture.runAsync(() -> {
                 ContextUtil.runOnContext(entry.getAsyncContext(), () -> {
                     try {
                         TimeUnit.SECONDS.sleep(2);
-                        // Normal entry nested in asynchronous entry.
+                        // 在异步 entry 内嵌套同步 entry
                         anotherSyncInAsync();
 
                         System.out.println("Async result: 666");
                     } catch (InterruptedException e) {
-                        // Ignore.
+                        // 忽略中断
                     } finally {
                         entry.exit();
                     }
@@ -118,38 +121,37 @@ public class AsyncEntryDemo {
             final AsyncEntry entry = SphU.asyncEntry("test-async-not-nested");
 
             this.invoke("abc", result -> {
-                // If no nested entry later, we don't have to wrap in `ContextUtil.runOnContext()`.
+                // 若回调内无嵌套 entry，可不使用 ContextUtil.runOnContext()
                 try {
-                    // Here to handle the async result (without other entry).
+                    // 在此处理异步结果（无其他 entry）
                 } finally {
-                    // Exit the async entry.
+                    // 退出异步 entry
                     entry.exit();
                 }
             });
         } catch (BlockException e) {
-            // Request blocked, handle the exception.
+            // 请求被限流，处理 BlockException
             e.printStackTrace();
         }
     }
 
     private void doAsyncThenSync() {
         try {
-            // First we call an asynchronous resource.
+            // 先调用异步资源 test-async
             final AsyncEntry entry = SphU.asyncEntry("test-async");
             this.invoke("abc", resp -> {
-                // The thread is different from original caller thread for async entry.
-                // So we need to wrap in the async context so that nested invocation entry
-                // can be linked to the parent asynchronous entry.
+                // 回调线程与发起 asyncEntry 的线程不同
+                // 须在异步上下文中执行，使嵌套 entry 挂到父异步 entry 调用链
                 ContextUtil.runOnContext(entry.getAsyncContext(), () -> {
                     try {
-                        // In the callback, we do another async invocation several times under the async context.
+                        // 在回调中多次触发 anotherAsync()
                         for (int i = 0; i < 7; i++) {
                             anotherAsync();
                         }
 
                         System.out.println(resp);
 
-                        // Then we do a sync (normal) entry under current async context.
+                        // 再在异步上下文中做同步 entry
                         fetchSyncInAsync();
                     } finally {
                         // Exit the async entry.
@@ -157,7 +159,7 @@ public class AsyncEntryDemo {
                     }
                 });
             });
-            // Then we call a sync resource.
+            // 随后调用同步资源 test-sync
             fetchSync();
         } catch (BlockException ex) {
             // Request blocked, handle the exception.
@@ -170,7 +172,7 @@ public class AsyncEntryDemo {
 
         AsyncEntryDemo service = new AsyncEntryDemo();
 
-        // Expected invocation chain:
+        // 预期调用链：
         //
         // EntranceNode: machine-root
         // -EntranceNode: async-context
@@ -184,7 +186,7 @@ public class AsyncEntryDemo {
         Entry entry = null;
         try {
             entry = SphU.entry("test-top");
-            System.out.println("Do something...");
+            System.out.println("Do something..."); // 触发异步+同步嵌套调用
             service.doAsyncThenSync();
         } catch (BlockException ex) {
             // Request blocked, handle the exception.
@@ -200,14 +202,14 @@ public class AsyncEntryDemo {
     }
 
     private static void initFlowRule() {
-        // Rule 1 won't take effect as the limitApp doesn't match.
+        // 规则 1 的 limitApp 为 originB，与当前 originA 不匹配，不生效
         FlowRule rule1 = new FlowRule()
             .setResource("test-another-sync-in-async")
             .setLimitApp("originB")
             .as(FlowRule.class)
             .setCount(4)
             .setGrade(RuleConstant.FLOW_GRADE_QPS);
-        // Rule 2 will take effect.
+        // 规则 2 对 test-another-async 限 QPS=5，会生效
         FlowRule rule2 = new FlowRule()
             .setResource("test-another-async")
             .setLimitApp("default")

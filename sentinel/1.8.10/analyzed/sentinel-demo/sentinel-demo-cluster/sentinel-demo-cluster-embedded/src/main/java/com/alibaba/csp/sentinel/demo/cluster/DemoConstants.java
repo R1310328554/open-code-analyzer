@@ -16,14 +16,21 @@
 package com.alibaba.csp.sentinel.demo.cluster;
 
 /**
+ * 集群流控嵌入式 Demo 的 Apollo/Nacos 等动态配置 Key 后缀常量。
+ *
  * @author Eric Zhao
  */
 public final class DemoConstants {
 
+    /** 流控规则配置 Key 后缀。 */
     public static final String FLOW_POSTFIX = "-flow-rules";
+    /** 热点参数规则配置 Key 后缀。 */
     public static final String PARAM_FLOW_POSTFIX = "-param-rules";
+    /** 集群服务端命名空间集合配置 Key 后缀。 */
     public static final String SERVER_NAMESPACE_SET_POSTFIX = "-cs-namespace-set";
+    /** 集群客户端配置 Key 后缀。 */
     public static final String CLIENT_CONFIG_POSTFIX = "-cc-config";
+    /** 集群 Token Server/Client 映射配置 Key 后缀。 */
     public static final String CLUSTER_MAP_POSTFIX = "-cluster-map";
 
     private DemoConstants() {}

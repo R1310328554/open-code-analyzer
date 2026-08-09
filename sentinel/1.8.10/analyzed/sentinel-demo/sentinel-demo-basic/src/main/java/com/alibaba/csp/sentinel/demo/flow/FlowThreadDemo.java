@@ -29,6 +29,9 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 
 /**
+ * 并发线程数流控演示：限制 methodA 同时最多 20 个线程，
+ * methodB 变慢后 methodA 占用线程时间缩短，通过量会上升。
+ *
  * @author jialiang.linjl
  */
 public class FlowThreadDemo {
@@ -46,8 +49,7 @@ public class FlowThreadDemo {
 
     public static void main(String[] args) throws Exception {
         System.out.println(
-            "MethodA will call methodB. After running for a while, methodB becomes fast, "
-                + "which make methodA also become fast ");
+            "methodA 会调用 methodB；运行一段时间后 methodB 变快，methodA 也会更快释放线程 ");
         tick();
         initFlowRule();
 
@@ -68,7 +70,7 @@ public class FlowThreadDemo {
                         } catch (BlockException e1) {
                             block.incrementAndGet();
                         } catch (Exception e2) {
-                            // biz exception
+                            // 业务异常
                         } finally {
                             total.incrementAndGet();
                             if (methodA != null) {
@@ -88,7 +90,7 @@ public class FlowThreadDemo {
         List<FlowRule> rules = new ArrayList<FlowRule>();
         FlowRule rule1 = new FlowRule();
         rule1.setResource("methodA");
-        // set limit concurrent thread for 'methodA' to 20
+        // methodA 并发线程数上限 20
         rule1.setCount(20);
         rule1.setGrade(RuleConstant.FLOW_GRADE_THREAD);
         rule1.setLimitApp("default");
@@ -140,7 +142,7 @@ public class FlowThreadDemo {
                     stop = true;
                 }
                 if (seconds == 40) {
-                    System.out.println("method B is running much faster; more requests are allowed to pass");
+                    System.out.println("methodB 变快，更多 methodA 请求得以通过");
                     methodBRunningTime = 20;
                 }
             }

@@ -32,12 +32,12 @@ import com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker.EventObserver
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
- * Run this demo, and the output will be like:
+ * 慢调用比例熔断演示。运行后输出类似：
  *
  * <pre>
  * 1529399827825,total:0, pass:0, block:0
  * 1529399828825,total:4263, pass:100, block:4164
- * 1529399829825,total:19179, pass:4, block:19176 // circuit breaker opens
+ * 1529399829825,total:19179, pass:4, block:19176 // 熔断器打开
  * 1529399830824,total:19806, pass:0, block:19806
  * 1529399831825,total:19198, pass:0, block:19198
  * 1529399832824,total:19481, pass:0, block:19481
@@ -47,7 +47,7 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
  * 1529399836826,total:19490, pass:0, block:19492
  * 1529399837828,total:19355, pass:0, block:19355
  * 1529399838827,total:11388, pass:0, block:11388
- * 1529399839829,total:14494, pass:104, block:14390 // After 10 seconds, the system restored
+ * 1529399839829,total:14494, pass:104, block:14390 // 10 秒后系统恢复
  * 1529399840854,total:18505, pass:0, block:18505
  * 1529399841854,total:19673, pass:0, block:19676
  * </pre>
@@ -79,7 +79,7 @@ public class SlowRatioCircuitBreakerDemo {
                     try {
                         entry = SphU.entry(KEY);
                         pass.incrementAndGet();
-                        // RT: [40ms, 60ms)
+                        // 模拟 RT 在 [40ms, 60ms)
                         sleep(ThreadLocalRandom.current().nextInt(40, 60));
                     } catch (BlockException e) {
                         block.incrementAndGet();
@@ -114,11 +114,11 @@ public class SlowRatioCircuitBreakerDemo {
         List<DegradeRule> rules = new ArrayList<>();
         DegradeRule rule = new DegradeRule(KEY)
             .setGrade(CircuitBreakerStrategy.SLOW_REQUEST_RATIO.getType())
-            // Max allowed response time
+            // 最大允许 RT（毫秒）
             .setCount(50)
-            // Retry timeout (in second)
+            // 熔断恢复探测间隔（秒）
             .setTimeWindow(10)
-            // Circuit breaker opens when slow request ratio > 60%
+            // 慢调用比例超过 60% 时打开熔断
             .setSlowRatioThreshold(0.6)
             .setMinRequestAmount(100)
             .setStatIntervalMs(20000);
@@ -132,7 +132,7 @@ public class SlowRatioCircuitBreakerDemo {
         try {
             TimeUnit.MILLISECONDS.sleep(timeMs);
         } catch (InterruptedException e) {
-            // ignore
+            // 忽略中断
         }
     }
 

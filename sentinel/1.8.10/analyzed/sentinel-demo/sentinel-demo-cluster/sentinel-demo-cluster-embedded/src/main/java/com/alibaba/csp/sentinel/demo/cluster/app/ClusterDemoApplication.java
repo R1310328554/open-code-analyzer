@@ -19,11 +19,14 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
+ * 嵌入式集群流控 Demo 的 Spring Boot 启动入口。
+ *
  * @author Eric Zhao
  */
 @SpringBootApplication
 public class ClusterDemoApplication {
 
+    /** 启动 Spring Boot，加载集群 Token Server/Client 与 Sentinel 规则。 */
     public static void main(String[] args) {
         SpringApplication.run(ClusterDemoApplication.class, args);
     }

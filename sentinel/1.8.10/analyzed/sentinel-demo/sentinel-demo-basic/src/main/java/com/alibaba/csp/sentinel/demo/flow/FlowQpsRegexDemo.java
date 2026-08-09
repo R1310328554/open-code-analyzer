@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/** 正则资源名 QPS 流控演示：规则 {@code /A/.*} 匹配以 /A/ 开头的资源。 */
 public class FlowQpsRegexDemo {
 
     private static final String KEY = "/A/.*";
@@ -48,11 +49,11 @@ public class FlowQpsRegexDemo {
         initFlowQpsRule();
 
         tick();
-        // first make the system run on a very low condition
+        // 为各资源启动压测线程
         simulateTraffic();
 
-        System.out.println("===== begin to do flow control");
-        System.out.println("Resources prefixed with /A/ can only pass 20 requests per second");
+        System.out.println("===== 开始正则流控演示");
+        System.out.println("以 /A/ 为前缀的资源每秒最多通过 20 个请求");
 
     }
 
@@ -60,7 +61,7 @@ public class FlowQpsRegexDemo {
         List<FlowRule> rules = new ArrayList<FlowRule>();
         FlowRule rule1 = new FlowRule();
         rule1.setResource(KEY);
-        // set limit qps to 20
+        // QPS 阈值 20，regex=true 启用正则匹配
         rule1.setCount(20);
         rule1.setGrade(RuleConstant.FLOW_GRADE_QPS);
         rule1.setRegex(true);
@@ -165,12 +166,12 @@ public class FlowQpsRegexDemo {
 
                 try {
                     entry = SphU.entry(resourceName);
-                    // token acquired, means pass
+                    // 获取令牌成功
                     pass.addAndGet(1);
                 } catch (BlockException e1) {
                     block.incrementAndGet();
                 } catch (Exception e2) {
-                    // biz exception
+                    // 业务异常
                 } finally {
                     total.incrementAndGet();
                     if (entry != null) {
@@ -182,7 +183,7 @@ public class FlowQpsRegexDemo {
                 try {
                     TimeUnit.MILLISECONDS.sleep(random2.nextInt(50));
                 } catch (InterruptedException e) {
-                    // ignore
+                    // 忽略中断
                 }
             }
         }

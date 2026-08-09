@@ -30,8 +30,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 
 /**
- * When {@link FlowRule#controlBehavior} set to {@link RuleConstant#CONTROL_BEHAVIOR_WARM_UP}, real passed qps will
- * gradually increase to {@link FlowRule#count}, other than burst increasing.
+ * 预热（Warm Up）流控：{@link RuleConstant#CONTROL_BEHAVIOR_WARM_UP} 下
+ * 通过 QPS 在 {@link FlowRule#warmUpPeriodSec} 内渐增至 {@link FlowRule#count}，避免冷启动被冲垮。
  * <p/>
  * Run this demo, results are as follows:
  * <pre>
@@ -73,7 +73,7 @@ public class WarmUpFlowDemo {
 
     public static void main(String[] args) throws Exception {
         initFlowRule();
-        // trigger Sentinel internal init
+        // 触发 Sentinel 内部初始化
         Entry entry = null;
         try {
             entry = SphU.entry(KEY);
@@ -88,7 +88,7 @@ public class WarmUpFlowDemo {
         timer.setName("sentinel-timer-task");
         timer.start();
 
-        //first make the system run on a very low condition
+        // 先以低 QPS 预热运行约 20 秒
         for (int i = 0; i < 3; i++) {
             Thread t = new Thread(new WarmUpTask());
             t.setName("sentinel-warmup-task");
@@ -97,9 +97,7 @@ public class WarmUpFlowDemo {
         Thread.sleep(20000);
 
         /*
-         * Start more thread to simulate more qps. Since we use {@link RuleConstant.CONTROL_BEHAVIOR_WARM_UP} as
-         * {@link FlowRule#controlBehavior}, real passed qps will increase to {@link FlowRule#count} in
-         * {@link FlowRule#warmUpPeriodSec} seconds.
+         * 再启动大量线程模拟 QPS 突增；预热期内通过 QPS 在 warmUpPeriodSec 内渐增至 count。
          */
         for (int i = 0; i < threadCount; i++) {
             Thread t = new Thread(new RunTask());
@@ -129,12 +127,12 @@ public class WarmUpFlowDemo {
                 Entry entry = null;
                 try {
                     entry = SphU.entry(KEY);
-                    // token acquired, means pass
+                    // 获取令牌，计为通过
                     pass.addAndGet(1);
                 } catch (BlockException e1) {
                     block.incrementAndGet();
                 } catch (Exception e2) {
-                    // biz exception
+                    // 业务异常
                 } finally {
                     total.incrementAndGet();
                     if (entry != null) {
@@ -145,7 +143,7 @@ public class WarmUpFlowDemo {
                 try {
                     TimeUnit.MILLISECONDS.sleep(random2.nextInt(2000));
                 } catch (InterruptedException e) {
-                    // ignore
+                    // 忽略中断
                 }
             }
         }

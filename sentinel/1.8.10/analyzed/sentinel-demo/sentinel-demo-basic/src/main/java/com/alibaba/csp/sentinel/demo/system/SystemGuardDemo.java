@@ -30,6 +30,8 @@ import com.alibaba.csp.sentinel.slots.system.SystemRule;
 import com.alibaba.csp.sentinel.slots.system.SystemRuleManager;
 
 /**
+ * 系统保护规则演示：对系统负载、CPU、平均 RT、入口 QPS、并发线程数设全局阈值。
+ *
  * @author jialiang.linjl
  */
 public class SystemGuardDemo {
@@ -60,7 +62,7 @@ public class SystemGuardDemo {
                             try {
                                 TimeUnit.MILLISECONDS.sleep(20);
                             } catch (InterruptedException e) {
-                                // ignore
+                                // 忽略中断
                             }
                         } catch (BlockException e1) {
                             block.incrementAndGet();
@@ -70,7 +72,7 @@ public class SystemGuardDemo {
                                 // ignore
                             }
                         } catch (Exception e2) {
-                            // biz exception
+                            // 业务异常
                         } finally {
                             total.incrementAndGet();
                             if (entry != null) {
@@ -88,15 +90,15 @@ public class SystemGuardDemo {
 
     private static void initSystemRule() {
         SystemRule rule = new SystemRule();
-        // max load is 3
+        // 最高系统负载 3.0
         rule.setHighestSystemLoad(3.0);
-        // max cpu usage is 60%
+        // 最高 CPU 使用率 60%
         rule.setHighestCpuUsage(0.6);
-        // max avg rt of all request is 10 ms
+        // 全局平均 RT 上限 10 ms
         rule.setAvgRt(10);
-        // max total qps is 20
+        // 入口总 QPS 上限 20
         rule.setQps(20);
-        // max parallel working thread is 10
+        // 最大并发工作线程 10
         rule.setMaxThread(10);
 
         SystemRuleManager.loadRules(Collections.singletonList(rule));
