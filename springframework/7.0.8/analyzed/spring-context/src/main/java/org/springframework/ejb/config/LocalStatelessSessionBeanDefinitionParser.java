@@ -22,9 +22,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.jndi.JndiObjectFactoryBean;
 
 /**
- * {@link org.springframework.beans.factory.xml.BeanDefinitionParser}
- * implementation for parsing '{@code local-slsb}' tags and
- * creating plain {@link JndiObjectFactoryBean} definitions on 6.0.
+ * 解析 {@code local-slsb} 标签并创建普通 {@link JndiObjectFactoryBean} 定义的
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionParser} 实现（自 6.0 起）。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -37,6 +36,7 @@ class LocalStatelessSessionBeanDefinitionParser extends AbstractJndiLocatingBean
 		return JndiObjectFactoryBean.class;
 	}
 
+	/** 仅接受 {@link JndiObjectFactoryBean} 上实际存在的可写属性。 */
 	@Override
 	protected boolean isEligibleAttribute(String attributeName) {
 		return (super.isEligibleAttribute(attributeName) &&

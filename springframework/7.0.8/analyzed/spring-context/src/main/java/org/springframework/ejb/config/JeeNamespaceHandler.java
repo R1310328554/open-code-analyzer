@@ -19,14 +19,14 @@ package org.springframework.ejb.config;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * {@link org.springframework.beans.factory.xml.NamespaceHandler}
- * for the '{@code jee}' namespace.
+ * {@code jee} 命名空间的 {@link org.springframework.beans.factory.xml.NamespaceHandler}。
  *
  * @author Rob Harrop
  * @since 2.0
  */
 public class JeeNamespaceHandler extends NamespaceHandlerSupport {
 
+	/** 注册 JNDI 查找、本地/远程无状态会话 Bean 三类 XML 元素解析器。 */
 	@Override
 	public void init() {
 		registerBeanDefinitionParser("jndi-lookup", new JndiLookupBeanDefinitionParser());

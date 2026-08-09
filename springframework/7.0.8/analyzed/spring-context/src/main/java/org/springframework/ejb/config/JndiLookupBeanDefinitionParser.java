@@ -25,8 +25,8 @@ import org.springframework.jndi.JndiObjectFactoryBean;
 import org.springframework.util.StringUtils;
 
 /**
- * Simple {@link org.springframework.beans.factory.xml.BeanDefinitionParser} implementation that
- * translates {@code jndi-lookup} tag into {@link JndiObjectFactoryBean} definitions.
+ * 将 {@code jndi-lookup} 标签翻译为 {@link JndiObjectFactoryBean} Bean 定义的简单
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionParser} 实现。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -35,10 +35,13 @@ import org.springframework.util.StringUtils;
  */
 class JndiLookupBeanDefinitionParser extends AbstractJndiLocatingBeanDefinitionParser {
 
+	/** {@code default-value} 属性名。 */
 	public static final String DEFAULT_VALUE = "default-value";
 
+	/** {@code default-ref} 属性名。 */
 	public static final String DEFAULT_REF = "default-ref";
 
+	/** {@code defaultObject} Bean 属性名。 */
 	public static final String DEFAULT_OBJECT = "defaultObject";
 
 
@@ -47,12 +50,14 @@ class JndiLookupBeanDefinitionParser extends AbstractJndiLocatingBeanDefinitionP
 		return JndiObjectFactoryBean.class;
 	}
 
+	/** 排除 {@code default-value} 与 {@code default-ref}，由 {@code doParse} 单独处理。 */
 	@Override
 	protected boolean isEligibleAttribute(String attributeName) {
 		return (super.isEligibleAttribute(attributeName) &&
 				!DEFAULT_VALUE.equals(attributeName) && !DEFAULT_REF.equals(attributeName));
 	}
 
+	/** 解析默认值：字面量或 Bean 引用，二者互斥。 */
 	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
 		super.doParse(element, parserContext, builder);

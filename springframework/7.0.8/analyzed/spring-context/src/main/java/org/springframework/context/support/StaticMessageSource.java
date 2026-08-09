@@ -26,20 +26,21 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Simple implementation of {@link org.springframework.context.MessageSource}
- * which allows messages to be registered programmatically.
- * This MessageSource supports basic internationalization.
+ * {@link org.springframework.context.MessageSource} 的简单实现，支持以编程方式注册消息。
+ * 支持基本的国际化（i18n）能力。
  *
- * <p>Intended for testing rather than for use in production systems.
+ * <p>主要用于测试场景，不建议在生产系统中使用。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public class StaticMessageSource extends AbstractMessageSource {
 
+	/** 消息码 →（区域 → 消息持有者）的静态映射表。 */
 	private final Map<String, Map<Locale, MessageHolder>> messageMap = new HashMap<>();
 
 
+	/** 按消息码与区域查找不带占位符的原始消息文本。 */
 	@Override
 	protected @Nullable String resolveCodeWithoutArguments(String code, Locale locale) {
 		Map<Locale, MessageHolder> localeMap = this.messageMap.get(code);
@@ -53,6 +54,7 @@ public class StaticMessageSource extends AbstractMessageSource {
 		return holder.getMessage();
 	}
 
+	/** 按消息码与区域查找可格式化的 {@link MessageFormat}。 */
 	@Override
 	protected @Nullable MessageFormat resolveCode(String code, Locale locale) {
 		Map<Locale, MessageHolder> localeMap = this.messageMap.get(code);
@@ -67,10 +69,10 @@ public class StaticMessageSource extends AbstractMessageSource {
 	}
 
 	/**
-	 * Associate the given message with the given code.
-	 * @param code the lookup code
-	 * @param locale the locale that the message should be found within
-	 * @param msg the message associated with this lookup code
+	 * 将给定消息与消息码关联注册。
+	 * @param code 查找码
+	 * @param locale 消息所属的区域
+	 * @param msg 与该查找码关联的消息文本
 	 */
 	public void addMessage(String code, Locale locale, String msg) {
 		Assert.notNull(code, "Code must not be null");
@@ -83,10 +85,9 @@ public class StaticMessageSource extends AbstractMessageSource {
 	}
 
 	/**
-	 * Associate the given message values with the given keys as codes.
-	 * @param messages the messages to register, with messages codes
-	 * as keys and message texts as values
-	 * @param locale the locale that the messages should be found within
+	 * 批量注册消息：以键为消息码、值为消息文本。
+	 * @param messages 待注册的消息映射（键为消息码，值为消息文本）
+	 * @param locale 消息所属的区域
 	 */
 	public void addMessages(Map<String, String> messages, Locale locale) {
 		Assert.notNull(messages, "Messages Map must not be null");
@@ -100,12 +101,16 @@ public class StaticMessageSource extends AbstractMessageSource {
 	}
 
 
+	/** 缓存单条消息及其对应 {@link MessageFormat} 的内部持有者。 */
 	private class MessageHolder {
 
+		/** 原始消息文本。 */
 		private final String message;
 
+		/** 消息所属区域。 */
 		private final Locale locale;
 
+		/** 懒加载缓存的 {@link MessageFormat}。 */
 		private volatile @Nullable MessageFormat cachedFormat;
 
 		public MessageHolder(String message, Locale locale) {
@@ -113,10 +118,12 @@ public class StaticMessageSource extends AbstractMessageSource {
 			this.locale = locale;
 		}
 
+		/** 返回原始消息文本。 */
 		public String getMessage() {
 			return this.message;
 		}
 
+		/** 返回（必要时创建并缓存的）{@link MessageFormat}。 */
 		public MessageFormat getMessageFormat() {
 			MessageFormat messageFormat = this.cachedFormat;
 			if (messageFormat == null) {

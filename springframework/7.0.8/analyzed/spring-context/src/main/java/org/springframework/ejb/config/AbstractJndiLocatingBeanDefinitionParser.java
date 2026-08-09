@@ -29,9 +29,8 @@ import static org.springframework.beans.factory.xml.BeanDefinitionParserDelegate
 import static org.springframework.beans.factory.xml.BeanDefinitionParserDelegate.TRUE_VALUE;
 
 /**
- * Abstract base class for BeanDefinitionParsers which build
- * JNDI-locating beans, supporting an optional "jndiEnvironment"
- * bean property, populated from an "environment" XML sub-element.
+ * 构建 JNDI 定位 Bean 的 BeanDefinitionParser 抽象基类，
+ * 支持可选的 {@code jndiEnvironment} 属性，可从 {@code environment} XML 子元素填充。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -40,13 +39,17 @@ import static org.springframework.beans.factory.xml.BeanDefinitionParserDelegate
  */
 abstract class AbstractJndiLocatingBeanDefinitionParser extends AbstractSimpleBeanDefinitionParser {
 
+	/** {@code environment} 子元素标签名。 */
 	public static final String ENVIRONMENT = "environment";
 
+	/** {@code environment-ref} 属性名。 */
 	public static final String ENVIRONMENT_REF = "environment-ref";
 
+	/** {@code jndiEnvironment} Bean 属性名。 */
 	public static final String JNDI_ENVIRONMENT = "jndiEnvironment";
 
 
+	/** 排除 {@code environment-ref} 与 {@code lazy-init}，由后处理单独处理。 */
 	@Override
 	protected boolean isEligibleAttribute(String attributeName) {
 		return (super.isEligibleAttribute(attributeName) &&
@@ -54,15 +57,16 @@ abstract class AbstractJndiLocatingBeanDefinitionParser extends AbstractSimpleBe
 				!LAZY_INIT_ATTRIBUTE.equals(attributeName));
 	}
 
+	/** 解析 JNDI 环境配置与 lazy-init 属性。 */
 	@Override
 	protected void postProcess(BeanDefinitionBuilder definitionBuilder, Element element) {
 		Object envValue = DomUtils.getChildElementValueByTagName(element, ENVIRONMENT);
 		if (envValue != null) {
-			// Specific environment settings defined, overriding any shared properties.
+			// 内联 environment 子元素优先，覆盖共享属性引用
 			definitionBuilder.addPropertyValue(JNDI_ENVIRONMENT, envValue);
 		}
 		else {
-			// Check whether there is a reference to shared environment properties...
+			// 否则检查是否引用了共享环境属性 Bean
 			String envRef = element.getAttribute(ENVIRONMENT_REF);
 			if (StringUtils.hasLength(envRef)) {
 				definitionBuilder.addPropertyValue(JNDI_ENVIRONMENT, new RuntimeBeanReference(envRef));
