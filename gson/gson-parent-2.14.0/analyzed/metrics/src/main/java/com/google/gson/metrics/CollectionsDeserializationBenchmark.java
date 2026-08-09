@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Caliper based micro benchmarks for Gson
+ * 基于 Caliper 的 Gson 集合反序列化微基准测试。
  *
  * @author Inderjeet Singh
  */
@@ -53,14 +53,14 @@ public class CollectionsDeserializationBenchmark {
     this.json = gson.toJson(bags, LIST_TYPE);
   }
 
-  /** Benchmark to measure Gson performance for deserializing an object */
+  /** 测量 Gson 默认路径反序列化 {@code List<BagOfPrimitives>} 的性能。 */
   public void timeCollectionsDefault(int reps) {
     for (int i = 0; i < reps; ++i) {
       List<BagOfPrimitives> unused = gson.fromJson(json, LIST_TYPE_TOKEN);
     }
   }
 
-  /** Benchmark to measure deserializing objects by hand */
+  /** 测量手工流式解析 JSON 数组并构造列表的性能。 */
   @SuppressWarnings("ModifiedButNotUsed")
   public void timeCollectionsStreaming(int reps) throws IOException {
     for (int i = 0; i < reps; ++i) {
@@ -101,9 +101,8 @@ public class CollectionsDeserializationBenchmark {
   }
 
   /**
-   * This benchmark measures the ideal Gson performance: the cost of parsing a JSON stream and
-   * setting object values by reflection. We should strive to reduce the discrepancy between this
-   * and {@link #timeCollectionsDefault(int)} .
+   * 测量 Gson 的理想性能下界：解析 JSON 数组并通过反射赋值的开销。应尽量缩小与 {@link
+   * #timeCollectionsDefault(int)} 的差距。
    */
   @SuppressWarnings("ModifiedButNotUsed")
   public void timeCollectionsReflectionStreaming(int reps) throws Exception {

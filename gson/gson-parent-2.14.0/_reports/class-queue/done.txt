@@ -70,3 +70,12 @@ gson/src/main/java/com/google/gson/internal/bind/ObjectTypeAdapter.java
 gson/src/main/java/com/google/gson/internal/bind/ReflectiveTypeAdapterFactory.java
 gson/src/main/java/com/google/gson/internal/bind/SerializationDelegatingTypeAdapter.java
 gson/src/main/java/com/google/gson/internal/bind/IgnoreJRERequirement.java
+metrics/src/main/java/com/google/gson/metrics/BagOfPrimitives.java
+metrics/src/main/java/com/google/gson/metrics/BagOfPrimitivesDeserializationBenchmark.java
+metrics/src/main/java/com/google/gson/metrics/CollectionsDeserializationBenchmark.java
+metrics/src/main/java/com/google/gson/metrics/NonUploadingCaliperRunner.java
+metrics/src/main/java/com/google/gson/metrics/ParseBenchmark.java
+metrics/src/main/java/com/google/gson/metrics/SerializationBenchmark.java
+proto/src/main/java/com/google/gson/protobuf/LegacyProtoTypeAdapterFactory.java
+proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java
+test-jpms/src/main/java/module-info.java

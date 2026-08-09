@@ -18,9 +18,11 @@ package com.google.gson.metrics;
 
 import com.google.caliper.runner.CaliperMain;
 
+/** 运行 Caliper 基准测试但不将结果上传到远程服务器的辅助类。 */
 class NonUploadingCaliperRunner {
   private NonUploadingCaliperRunner() {}
 
+  /** 将首个参数与后续参数拼接为新的命令行参数数组。 */
   private static String[] concat(String first, String... others) {
     if (others.length == 0) {
       return new String[] {first};
@@ -32,9 +34,9 @@ class NonUploadingCaliperRunner {
     }
   }
 
+  /** 以禁用结果上传的方式启动指定基准测试类。 */
   public static void run(Class<?> c, String[] args) {
-    // Disable result upload; Caliper uploads results to webapp by default, see
-    // https://github.com/google/caliper/issues/356
+    // 禁用结果上传；Caliper 默认会上传结果，见 https://github.com/google/caliper/issues/356
     CaliperMain.main(c, concat("-Cresults.upload.options.url=", args));
   }
 }

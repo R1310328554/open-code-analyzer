@@ -27,6 +27,6 @@
     "proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java",
     "test-jpms/src/main/java/module-info.java"
   ],
-  "remaining_pending": 0,
-  "done": 48
+  "remaining_pending": 40,
+  "done": 57
 }

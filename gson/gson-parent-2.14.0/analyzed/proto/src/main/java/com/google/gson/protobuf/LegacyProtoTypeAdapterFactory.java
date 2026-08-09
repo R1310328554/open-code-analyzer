@@ -100,6 +100,7 @@ public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
   // proto generated code that was current in early 2026.
 
   /** 针对具体 protobuf 消息类型的适配器。 */
+  /** 针对具体 protobuf 消息类型的适配器。 */
   private static final class Adapter<T extends Message> extends TypeAdapter<T> {
     private final Gson gson;
     private final FieldNamingPolicy fieldNamingPolicy;
@@ -661,6 +662,7 @@ public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
     }
   }
 
+  /** 处理 Message.class 基类时的动态分发适配器。 */
   /** 处理 Message.class 基类时的动态分发适配器。 */
   private static class DynamicAdapter extends TypeAdapter<Message> {
     private final Gson gson;

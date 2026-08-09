@@ -18,11 +18,12 @@ package com.google.gson.metrics;
 import com.google.common.base.Objects;
 
 /**
- * Class with a bunch of primitive fields
+ * 包含多个基本类型字段的简单 POJO，供 Gson 性能基准测试使用。
  *
  * @author Inderjeet Singh
  */
 public class BagOfPrimitives {
+  /** 各字段的默认值。 */
   public static final long DEFAULT_VALUE = 0;
   public long longValue;
   public int intValue;
@@ -44,6 +45,7 @@ public class BagOfPrimitives {
     return intValue;
   }
 
+  /** 返回与当前字段值对应的预期 JSON 字符串。 */
   public String getExpectedJson() {
     return "{"
         + "\"longValue\":"

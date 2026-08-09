@@ -21,7 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 /**
- * Caliper based micro benchmarks for Gson serialization
+ * 基于 Caliper 的 Gson 序列化微基准测试。
  *
  * @author Inderjeet Singh
  * @author Jesse Wilson
@@ -43,6 +43,7 @@ public class SerializationBenchmark {
     this.bag = new BagOfPrimitives(10L, 1, false, "foo");
   }
 
+  /** 测量将 {@link BagOfPrimitives} 序列化为 JSON 字符串的性能。 */
   public void timeObjectSerialization(int reps) {
     for (int i = 0; i < reps; ++i) {
       String unused = gson.toJson(bag);

@@ -23,7 +23,7 @@ import java.io.StringReader;
 import java.lang.reflect.Field;
 
 /**
- * Caliper based micro benchmarks for Gson
+ * 基于 Caliper 的 Gson 反序列化微基准测试。
  *
  * @author Inderjeet Singh
  * @author Jesse Wilson
@@ -45,14 +45,14 @@ public class BagOfPrimitivesDeserializationBenchmark {
     this.json = gson.toJson(bag);
   }
 
-  /** Benchmark to measure Gson performance for deserializing an object */
+  /** 测量 Gson 默认路径反序列化 {@link BagOfPrimitives} 的性能。 */
   public void timeBagOfPrimitivesDefault(int reps) {
     for (int i = 0; i < reps; ++i) {
       BagOfPrimitives unused = gson.fromJson(json, BagOfPrimitives.class);
     }
   }
 
-  /** Benchmark to measure deserializing objects by hand */
+  /** 测量手工使用 {@link JsonReader} 流式解析并构造对象的性能。 */
   public void timeBagOfPrimitivesStreaming(int reps) throws IOException {
     for (int i = 0; i < reps; ++i) {
       StringReader reader = new StringReader(json);
@@ -87,9 +87,8 @@ public class BagOfPrimitivesDeserializationBenchmark {
   }
 
   /**
-   * This benchmark measures the ideal Gson performance: the cost of parsing a JSON stream and
-   * setting object values by reflection. We should strive to reduce the discrepancy between this
-   * and {@link #timeBagOfPrimitivesDefault(int)} .
+   * 测量 Gson 的理想性能下界：解析 JSON 流并通过反射赋值的开销。应尽量缩小与 {@link
+   * #timeBagOfPrimitivesDefault(int)} 的差距。
    */
   public void timeBagOfPrimitivesReflectionStreaming(int reps) throws Exception {
     for (int i = 0; i < reps; ++i) {

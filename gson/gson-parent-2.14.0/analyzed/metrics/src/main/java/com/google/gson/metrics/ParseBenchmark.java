@@ -50,15 +50,17 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * Measure Gson and Jackson parsing and binding performance.
+ * 测量 Gson 与 Jackson 的 JSON 解析与对象绑定性能。
  *
- * <p>This benchmark requires that ParseBenchmarkData.zip is on the classpath. That file contains
- * Twitter feed data, which is representative of what applications will be parsing.
+ * <p>此基准测试要求 classpath 上存在 {@code ParseBenchmarkData.zip}，其中包含 Twitter 信息流数据，代表典型应用解析场景。
  */
 public final class ParseBenchmark {
+  /** 待解析的 JSON 文档类型。 */
   @Param Document document;
+  /** 使用的解析 API（Gson 流式/DOM/绑定或 Jackson 流式/绑定）。 */
   @Param Api api;
 
+  /** 基准测试使用的 JSON 文档。 */
   private enum Document {
     TWEETS(new TypeToken<List<Tweet>>() {}, new TypeReference<List<Tweet>>() {}),
     READER_SHORT(new TypeToken<Feed>() {}, new TypeReference<Feed>() {}),
@@ -76,6 +78,7 @@ public final class ParseBenchmark {
     }
   }
 
+  /** 解析 API 实现（Gson 或 Jackson 的不同模式）。 */
   private enum Api {
     JACKSON_STREAM {
       @Override
@@ -126,6 +129,7 @@ public final class ParseBenchmark {
     parser = api.newParser();
   }
 
+  /** 重复执行解析操作以测量耗时。 */
   public void timeParse(int reps) throws Exception {
     for (int i = 0; i < reps; i++) {
       parser.parse(text, document);
@@ -164,10 +168,12 @@ public final class ParseBenchmark {
     NonUploadingCaliperRunner.run(ParseBenchmark.class, args);
   }
 
+  /** 解析器接口：将字符数组解析为指定文档类型的对象。 */
   interface Parser {
     void parse(char[] data, Document document) throws Exception;
   }
 
+  /** 使用 Gson {@link JsonReader} 逐 token 流式遍历 JSON。 */
   private static class GsonStreamParser implements Parser {
     @Override
     public void parse(char[] data, Document document) throws Exception {
@@ -213,6 +219,7 @@ public final class ParseBenchmark {
     }
   }
 
+  /** 使用 Gson {@link JsonReader#skipValue()} 跳过整个 JSON 文档。 */
   private static class GsonSkipParser implements Parser {
     @Override
     public void parse(char[] data, Document document) throws Exception {
@@ -222,6 +229,7 @@ public final class ParseBenchmark {
     }
   }
 
+  /** 使用 Jackson 流式 API 逐 token 遍历 JSON。 */
   private static class JacksonStreamParser implements Parser {
     @Override
     public void parse(char[] data, Document document) throws Exception {
@@ -268,6 +276,7 @@ public final class ParseBenchmark {
     }
   }
 
+  /** 使用 Gson {@link JsonParser} 将 JSON 解析为 DOM 树。 */
   private static class GsonDomParser implements Parser {
     @Override
     public void parse(char[] data, Document document) throws Exception {
@@ -275,6 +284,7 @@ public final class ParseBenchmark {
     }
   }
 
+  /** 使用 Gson {@link Gson#fromJson} 将 JSON 绑定为 Java 对象。 */
   private static class GsonBindParser implements Parser {
     private static final Gson gson =
         new GsonBuilder().setDateFormat("EEE MMM dd HH:mm:ss Z yyyy").create();
@@ -285,6 +295,7 @@ public final class ParseBenchmark {
     }
   }
 
+  /** 使用 Jackson {@link ObjectMapper} 将 JSON 绑定为 Java 对象。 */
   private static class JacksonBindParser implements Parser {
     private static final ObjectMapper mapper;
 
@@ -303,6 +314,7 @@ public final class ParseBenchmark {
     }
   }
 
+  /** Twitter 推文模型，字段名与 JSON 键对应。 */
   @SuppressWarnings("MemberName")
   static class Tweet {
     @JsonProperty String coordinates;
@@ -327,6 +339,7 @@ public final class ParseBenchmark {
     @JsonProperty String in_reply_to_user_id_str;
   }
 
+  /** Twitter 用户模型。 */
   @SuppressWarnings("MemberName")
   static class User {
     @JsonProperty String name;
@@ -371,6 +384,7 @@ public final class ParseBenchmark {
     @JsonProperty boolean show_all_inline_media;
   }
 
+  /** Google Reader 订阅源模型。 */
   static class Feed {
     @JsonProperty String id;
     @JsonProperty String title;

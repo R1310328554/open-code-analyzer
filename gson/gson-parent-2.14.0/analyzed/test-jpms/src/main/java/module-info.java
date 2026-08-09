@@ -15,13 +15,14 @@
  */
 
 /**
- * Dummy module to prevent Maven Compiler Plugin from failing if {@code module-info.java} exists
- * only in test sources:
+ * 占位模块，避免仅在测试源码中存在 {@code module-info.java} 时 Maven Compiler Plugin 报错：
  *
  * <blockquote>
  *
  * Can't compile test sources when main sources are missing a module descriptor
  *
  * </blockquote>
+ *
+ * <p>主源码缺少模块描述符时无法编译测试源码；此空模块满足编译器要求。
  */
 module com.google.gson.dummy {}
