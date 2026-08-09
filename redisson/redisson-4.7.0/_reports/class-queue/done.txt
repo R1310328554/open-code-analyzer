@@ -2818,3 +2818,5 @@ redisson/src/main/java/org/redisson/transaction/operation/set/AddCacheOperation.
 redisson/src/main/java/org/redisson/transaction/operation/set/AddOperation.java
 redisson/src/main/java/org/redisson/transaction/operation/set/MoveOperation.java
 redisson/src/main/java/org/redisson/transaction/operation/set/RemoveCacheOperation.java
+redisson/src/main/java/org/redisson/transaction/operation/set/RemoveOperation.java
+redisson/src/main/java/org/redisson/transaction/operation/set/SetOperation.java

@@ -2858,3 +2858,5 @@
 2026-08-09T21:55:00Z DONE redisson/src/main/java/org/redisson/transaction/operation/set/AddOperation.java wave94b [15:30]
 2026-08-09T21:55:00Z DONE redisson/src/main/java/org/redisson/transaction/operation/set/MoveOperation.java wave94b [15:30]
 2026-08-09T21:55:00Z DONE redisson/src/main/java/org/redisson/transaction/operation/set/RemoveCacheOperation.java wave94b [15:30]
+2026-08-09T21:56:32Z DONE redisson/src/main/java/org/redisson/transaction/operation/set/RemoveOperation.java wave95 [0:2] final
+2026-08-09T21:56:32Z DONE redisson/src/main/java/org/redisson/transaction/operation/set/SetOperation.java wave95 [0:2] final
