@@ -1,0 +1,69 @@
+/*
+ * Copyright 2012-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.boot.logging.log4j2;
+
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.pattern.ConverterKeys;
+import org.apache.logging.log4j.core.pattern.LogEventPatternConverter;
+import org.apache.logging.log4j.core.pattern.MdcPatternConverter;
+import org.apache.logging.log4j.core.pattern.PatternConverter;
+import org.apache.logging.log4j.util.PerformanceSensitive;
+import org.apache.logging.log4j.util.ReadOnlyStringMap;
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.boot.logging.CorrelationIdFormatter;
+import org.springframework.util.ObjectUtils;
+
+/**
+ * 使用 {@link LogEvent#getContextData() MDC} 数据将 {@link CorrelationIdFormatter}
+ * 模式转换为格式化输出的 Log4j2 {@link LogEventPatternConverter}。
+ *
+ * @author Phillip Webb
+ * @since 3.2.0
+ * @see MdcPatternConverter
+ */
+@Plugin(name = "CorrelationIdConverter", category = PatternConverter.CATEGORY)
+@ConverterKeys("correlationId")
+@PerformanceSensitive("allocation")
+public final class CorrelationIdConverter extends LogEventPatternConverter {
+
+	private final CorrelationIdFormatter formatter;
+
+	private CorrelationIdConverter(CorrelationIdFormatter formatter) {
+		super("correlationId{%s}".formatted(formatter), "mdc");
+		this.formatter = formatter;
+	}
+
+	@Override
+	public void format(LogEvent event, StringBuilder toAppendTo) {
+		ReadOnlyStringMap contextData = event.getContextData();
+		this.formatter.formatTo(contextData::getValue, toAppendTo);
+	}
+
+	/**
+	 * 创建新 {@link CorrelationIdConverter} 的工厂方法。
+	 *
+	 * @param options 选项，可为 null，或首元素为要格式化的属性名
+	 * @return PropertiesPatternConverter 实例
+	 */
+	public static CorrelationIdConverter newInstance(String @Nullable [] options) {
+		String pattern = (!ObjectUtils.isEmpty(options)) ? options[0] : null;
+		return new CorrelationIdConverter(CorrelationIdFormatter.of(pattern));
+	}
+
+}
