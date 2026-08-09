@@ -24,7 +24,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for Publish Subscribe object. Messages are delivered to all message listeners across Redis cluster.
+ * 发布/订阅 Reactor 响应式 API；消息会投递到 Redis 集群中所有消息监听器。
  *
  * @author Nikita Koksharov
  *
@@ -32,79 +32,76 @@ import reactor.core.publisher.Mono;
 public interface RTopicReactive {
 
     /**
-     * Get topic channel names
+     * 获取主题关联的频道名称列表。
      *
-     * @return channel names
+     * @return 频道名称列表
      */
     List<String> getChannelNames();
 
     /**
-     * Publish the message to all subscribers of this topic asynchronously
+     * 向该主题的所有订阅者发布消息。 asynchronously
      *
-     * @param message to send
-     * @return the <code>Future</code> object with number of clients that received the message
+     * @param message 待发送消息
+     * @return 收到消息的客户端数量
      */
     Mono<Long> publish(Object message);
 
     /**
-     * Subscribes to status changes of this topic
+     * 订阅该主题的状态变更。
      *
-     * @param listener for messages
-     * @return listener id
+     * @param listener 消息监听器
+     * @return 监听器 ID
      * @see org.redisson.api.listener.StatusListener
      */
     Mono<Integer> addListener(StatusListener listener);
 
     /**
-     * Subscribes to this topic.
-     * <code>MessageListener.onMessage</code> is called when any message
-     * is published on this topic.
+     * 订阅该主题；有消息发布时调用 {@code MessageListener.onMessage}。
      *
-     * @param <M> type of message
-     * @param type - type of message
-     * @param listener for messages
-     * @return locally unique listener id
+     * @param <M> 消息类型
+     * @param type 消息类型
+     * @param listener 消息监听器
+     * @return 本地唯一监听器 ID
      * @see org.redisson.api.listener.MessageListener
      */
     <M> Mono<Integer> addListener(Class<M> type, MessageListener<M> listener);
 
     /**
-     * Removes the listener by <code>id</code> for listening this topic
+     * 按监听器 ID 移除对该主题的订阅。
      *
-     * @param listenerIds - message listener ids
-     * @return void
+     * @param listenerIds 消息监听器 ID 列表
+     * @return 无返回值
      */
     Mono<Void> removeListener(Integer... listenerIds);
 
     /**
-     * Removes the listener by <code>instance</code> for listening this topic
+     * 按监听器实例移除对该主题的订阅。
      *
-     * @param listener - message listener
-     * @return void
+     * @param listener 消息监听器
+     * @return 无返回值
      */
     Mono<Void> removeListener(MessageListener<?> listener);
 
     /**
-     * Returns continues stream of published messages.
+     * 返回已发布消息的连续流。
      * 
-     * @param <M> type of message 
-     * @param type - type of message to listen
-     * @return stream of messages
+     * @param <M> 消息类型 
+     * @param type 消息类型 to listen
+     * @return 消息流
      */
     <M> Flux<M> getMessages(Class<M> type);
     
     /**
-     * Returns amount of subscribers to this topic across all Redisson instances.
-     * Each subscriber may have multiple listeners.
+     * 返回所有 Redisson 实例上该主题的订阅者数量；每个订阅者可注册多个监听器。
      * 
-     * @return amount of subscribers
+     * @return 订阅者数量
      */
     Mono<Long> countSubscribers();
 
     /**
-     * Removes all listeners from this topic
+     * 移除该主题上的全部监听器。
      *
-     * @return void
+     * @return 无返回值
      */
     Mono<Void> removeAllListeners();
 

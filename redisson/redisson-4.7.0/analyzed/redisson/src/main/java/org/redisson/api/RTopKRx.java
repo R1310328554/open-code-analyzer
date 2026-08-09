@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * RxJava3 interface for Top-K ({@code TOPK.*} commands).
+ * Top-K（{@code TOPK.*} 命令）RxJava3 API。
  *
- * @param <V> element type
+ * @param <V> 元素类型
  *
  * @author Nikita Koksharov
  *
@@ -34,149 +34,144 @@ import java.util.Map;
 public interface RTopKRx<V> extends RExpirableRx {
 
     /**
-     * Initializes the Top-K to track the {@code topK} most frequent items.
+     * 初始化 Top-K，跟踪频率最高的 {@code topK} 个元素。
      * <p>
      * Equivalent to {@code TOPK.RESERVE key topk}.
      *
-     * @param topK number of top items to keep track of
-     * @return void
+     * @param topK 跟踪的最高频元素数量
+     * @return 无返回值
      */
     Completable init(int topK);
 
     /**
-     * Initializes the Top-K with detailed parameters.
+     * 使用详细参数初始化 Top-K。
      * <p>
      * Equivalent to {@code TOPK.RESERVE key topk width depth decay}.
      *
-     * @param args initialization arguments
-     * @return void
+     * @param args 初始化参数
+     * @return 无返回值
      */
     Completable init(TopKInitArgs args);
 
     /**
-     * Adds an item to the Top-K.
+     * 向 Top-K 添加一个元素。
      * <p>
      * Equivalent to {@code TOPK.ADD}.
      *
-     * @param item item to add
+     * @param item 待添加元素
      * @return item dropped from the top-K list as a result,
-     *         or empty if nothing was dropped
+     *         无挤出则为 empty
      */
     Maybe<V> add(V item);
 
     /**
-     * Adds items to the Top-K.
+     * 批量向 Top-K 添加元素。
      * <p>
-     * The returned list is positionally aligned to the input: the element at
-     * index {@code i} is the item dropped from the top-K list as a result of
-     * adding {@code items.get(i)}, or {@code null} if nothing was dropped.
+     * 返回列表与输入按位置对齐：索引 {@code i} 处为添加 {@code items.get(i)} 时
+     * 从 Top-K 列表中被挤出的元素，无挤出则为 {@code null}。
      * <p>
      * Equivalent to {@code TOPK.ADD}.
      *
-     * @param items items to add
-     * @return list of dropped items aligned to the input, with {@code null} entries
+     * @param items 待添加元素列表
+     * @return 与输入对齐的被挤出元素列表，含 null 占位
      */
     Single<List<V>> add(List<V> items);
 
     /**
-     * Increases the score of an item by the given increment.
+     * 将指定元素的计数增加给定增量。
      * <p>
      * Equivalent to {@code TOPK.INCRBY}.
      *
-     * @param item item to increment
-     * @param increment increment value
+     * @param item 待增量元素
+     * @param increment 增量值
      * @return item dropped from the top-K list as a result,
-     *         or empty if nothing was dropped
+     *         无挤出则为 empty
      */
     Maybe<V> incrementBy(V item, int increment);
 
     /**
-     * Increases the score of multiple items by the given increments.
+     * 批量增加多个元素的计数。
      * <p>
-     * The returned list contains the items dropped from the top-K list, aligned
-     * to the iteration order of the supplied map; use an ordered map (such as
-     * {@link java.util.LinkedHashMap}) to correlate results with inputs.
+     * 返回被挤出 Top-K 的元素列表，顺序与 Map 迭代顺序一致；
+     * 建议使用有序 Map（如 {@link java.util.LinkedHashMap}）以便与输入对应。
      * <p>
      * Equivalent to {@code TOPK.INCRBY}.
      *
-     * @param itemIncrements map of items to their increment values
-     * @return list of dropped items, with {@code null} entries
+     * @param itemIncrements 元素与增量值的映射
+     * @return 被挤出元素列表，含 null 占位
      */
     Single<List<V>> incrementBy(Map<V, Integer> itemIncrements);
 
     /**
-     * Checks whether an item is currently in the top-K list.
+     * 检查元素是否当前位于 Top-K 列表中。
      * <p>
      * Equivalent to {@code TOPK.QUERY}.
      *
-     * @param item item to check
-     * @return {@code true} if the item is in the top-K list
+     * @param item 待检查元素
+     * @return 元素在 Top-K 中则为 true
      */
     Single<Boolean> contains(V item);
 
     /**
-     * Checks whether multiple items are currently in the top-K list.
-     * The result is positionally aligned to the input.
+     * 批量检查元素是否位于 Top-K 列表中；结果与输入按位置对齐。
      * <p>
      * Equivalent to {@code TOPK.QUERY}.
      *
-     * @param items items to check
-     * @return list of results aligned to the input
+     * @param items 待检查元素列表
+     * @return 与输入对齐的检查结果列表
      */
     Single<List<Boolean>> contains(List<V> items);
 
     /**
-     * Returns the approximate count of an item.
+     * 返回元素的近似出现次数。
      * <p>
      * Equivalent to {@code TOPK.COUNT}.
      *
-     * @param item item to count
-     * @return approximate count
-     * @deprecated since Redis Bloom 2.4.0 the count may be inaccurate.
-     *             Use {@link #listWithCount()} instead.
+     * @param item 待统计元素
+     * @return 近似出现次数
+     * @deprecated 自 Redis Bloom 2.4.0 起计数可能不准确。
+     *             请改用 {@link #listWithCount()}。
      */
     @Deprecated
     Single<Long> count(V item);
 
     /**
-     * Returns the approximate counts of multiple items.
-     * The result is positionally aligned to the input.
+     * 返回多个元素的近似出现次数；结果与输入按位置对齐。
      * <p>
      * Equivalent to {@code TOPK.COUNT}.
      *
      * @param items items to count
-     * @return list of approximate counts aligned to the input
-     * @deprecated since Redis Bloom 2.4.0 the count may be inaccurate.
-     *             Use {@link #listWithCount()} instead.
+     * @return 与输入对齐的近似次数列表
+     * @deprecated 自 Redis Bloom 2.4.0 起计数可能不准确。
+     *             请改用 {@link #listWithCount()}。
      */
     @Deprecated
     Single<List<Long>> count(List<V> items);
 
     /**
-     * Returns the full list of items currently in the top-K list.
+     * 返回当前 Top-K 列表中的全部元素。
      * <p>
      * Equivalent to {@code TOPK.LIST}.
      *
-     * @return list of top-K items
+     * @return Top-K 元素列表
      */
     Single<List<V>> list();
 
     /**
-     * Returns the full list of items currently in the top-K list
-     * together with their approximate counts.
+     * 返回当前 Top-K 列表中的全部元素及其近似出现次数。
      * <p>
      * Equivalent to {@code TOPK.LIST WITHCOUNT}.
      *
-     * @return map of top-K items to their approximate counts
+     * @return Top-K 元素到近似次数的映射
      */
     Single<Map<V, Long>> listWithCount();
 
     /**
-     * Returns Top-K information.
+     * 返回 Top-K 元信息。
      * <p>
      * Equivalent to {@code TOPK.INFO}.
      *
-     * @return Top-K information
+     * @return Top-K 元信息
      */
     Single<TopKInfo> getInfo();
 }

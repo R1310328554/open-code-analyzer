@@ -21,7 +21,7 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
 
 /**
- * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
+ * 分布式主题；消息会投递到 Redis 集群中所有订阅该主题的消息监听器。
  *
  * @author Nikita Koksharov
  *
@@ -29,73 +29,70 @@ import org.redisson.api.listener.StatusListener;
 public interface RTopic extends RTopicAsync {
 
     /**
-     * Get topic channel names
+     * 获取主题关联的频道名称列表。
      *
-     * @return channel names
+     * @return 频道名称列表
      */
     List<String> getChannelNames();
 
     /**
-     * Publish the message to all subscribers of this topic
+     * 向该主题的所有订阅者发布消息。
      *
-     * @param message to send
-     * @return the number of clients that received the message
+     * @param message 待发送消息
+     * @return 收到消息的客户端数量
      */
     long publish(Object message);
 
     /**
-     * Subscribes to this topic.
-     * <code>MessageListener.onMessage</code> is called when any message
-     * is published on this topic.
+     * 订阅该主题；有消息发布时调用 {@code MessageListener.onMessage}。
      *
-     * @param <M> - type of message
-     * @param type - type of message
-     * @param listener for messages
-     * @return locally unique listener id
+     * @param <M> 消息类型
+     * @param type 消息类型
+     * @param listener 消息监听器
+     * @return 本地唯一监听器 ID
      * @see org.redisson.api.listener.MessageListener
      */
     <M> int addListener(Class<M> type, MessageListener<? extends M> listener);
 
     /**
-     * Subscribes to status changes of this topic
+     * 订阅该主题的状态变更。
      *
-     * @param listener for messages
-     * @return listener id
+     * @param listener 消息监听器
+     * @return 监听器 ID
      * @see org.redisson.api.listener.StatusListener
      */
     int addListener(StatusListener listener);
 
     /**
-     * Removes the listener by its instance
+     * 按监听器实例移除监听器。
      *
-     * @param listener - listener instance
+     * @param listener 监听器实例
      */
     void removeListener(MessageListener<?> listener);
     
     /**
-     * Removes the listener by <code>id</code> for listening this topic
+     * 按监听器 ID 移除对该主题的订阅。
      *
-     * @param listenerIds - listener ids
+     * @param listenerIds 监听器 ID 列表
      */
     void removeListener(Integer... listenerIds);
 
     /**
-     * Removes all listeners from this topic
+     * 移除该主题上的全部监听器。
      */
     void removeAllListeners();
 
     /**
-     * Returns amount of registered listeners to this topic
+     * 返回该主题上已注册的监听器数量。
      * 
-     * @return amount of listeners
+     * @return 监听器数量
      */
     int countListeners();
     
     /**
-     * Returns amount of subscribers to this topic across all Redisson instances.
-     * Each subscriber may have multiple listeners.
+     * 返回所有 Redisson 实例上该主题的订阅者数量；每个订阅者可注册多个监听器。
      * 
-     * @return amount of subscribers
+     * @return 订阅者数量
      */
     long countSubscribers();
 }

@@ -20,10 +20,10 @@ import org.redisson.client.codec.Codec;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for transaction object allows to execute transactions over Redisson objects.
- * Uses locks for write operations and maintains data modification operations list till the commit/rollback operation.
+ * 事务 Reactor 响应式 API；写操作加锁，
+ * 并在提交/回滚前维护数据修改操作列表。
  * <p>
- * Transaction isolation level: <b>READ_COMMITTED</b>
+ * 事务隔离级别：<b>READ_COMMITTED</b>（读已提交）
  *
  * @author Nikita Koksharov
  *
@@ -31,130 +31,122 @@ import reactor.core.publisher.Mono;
 public interface RTransactionReactive {
 
     /**
-     * Returns transactional object holder instance by name.
+     * 按名称返回事务性 Bucket 实例。
      *
-     * @param <V> type of value
-     * @param name - name of object
-     * @return Bucket object
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @return Bucket 实例
      */
     <V> RBucketReactive<V> getBucket(String name);
     
     /**
-     * Returns transactional object holder instance by name
-     * using provided codec for object.
+     * 按名称返回事务性 Bucket 实例，并使用指定编解码器。
      *
-     * @param <V> type of value
-     * @param name - name of object
-     * @param codec - codec for values
-     * @return Bucket object
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @param codec 值编解码器
+     * @return Bucket 实例
      */
     <V> RBucketReactive<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns transactional map instance by name.
+     * 按名称返回事务性 Map 实例。
      *
-     * @param <K> type of key
-     * @param <V> type of value
-     * @param name - name of object
-     * @return Map object
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @return Map 实例
      */
     <K, V> RMapReactive<K, V> getMap(String name);
 
     /**
-     * Returns transactional map instance by name
-     * using provided codec for both map keys and values.
+     * 按名称返回事务性 Map 实例，键值均使用指定编解码器。
      *
-     * @param <K> type of key
-     * @param <V> type of value
-     * @param name - name of object
-     * @param codec - codec for keys and values
-     * @return Map object
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @param codec 键值编解码器
+     * @return Map 实例
      */
     <K, V> RMapReactive<K, V> getMap(String name, Codec codec);
     
     /**
-     * Returns transactional set instance by name.
+     * 按名称返回事务性 Set 实例。
      * 
-     * @param <V> type of value
-     * @param name - name of object
-     * @return Set object
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @return Set 实例
      */
     <V> RSetReactive<V> getSet(String name);
     
     /**
-     * Returns transactional set instance by name
-     * using provided codec for set objects.
+     * 按名称返回事务性 Set 实例，并使用指定编解码器。
      * 
-     * @param <V> type of value
-     * @param name - name of object
-     * @param codec - codec for values
-     * @return Set object
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @param codec 值编解码器
+     * @return Set 实例
      */
     <V> RSetReactive<V> getSet(String name, Codec codec);
     
     /**
-     * Returns transactional set-based cache instance by <code>name</code>.
-     * Supports value eviction with a given TTL value.
+     * 按名称返回事务性 Set 缓存实例，支持为元素设置 TTL 逐出。
      *
-     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String)}.</p>
+     * <p>若不需要逐出机制，建议使用普通 Set {@link #getSet(String)}。</p>
      * 
-     * @param <V> type of value
-     * @param name - name of object
-     * @return SetCache object
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @return SetCache 实例
      */
     <V> RSetCacheReactive<V> getSetCache(String name);
     
     /**
-     * Returns transactional set-based cache instance by <code>name</code>.
-     * Supports value eviction with a given TTL value.
+     * 按名称返回事务性 Set 缓存实例，支持为元素设置 TTL 逐出。
      *
-     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     * <p>若不需要逐出机制，建议使用普通 Set {@link #getSet(String, Codec)}。</p>
      * 
-     * @param <V> type of value
-     * @param name - name of object
-     * @param codec - codec for values
-     * @return SetCache object
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @param codec 值编解码器
+     * @return SetCache 实例
      */
     <V> RSetCacheReactive<V> getSetCache(String name, Codec codec);
     
     /**
-     * Returns transactional map-based cache instance by name.
-     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * 按名称返回事务性 Map 缓存实例，支持 MaxIdleTime 与 TTL 条目逐出。
      * <p>
-     * If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     * 若不需要逐出机制，建议使用普通 Map {@link #getMap(String)}。</p>
      *
-     * @param <K> type of key
-     * @param <V> type of value
-     * @param name - name of object
-     * @return MapCache object
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @return MapCache 实例
      */
     <K, V> RMapCacheReactive<K, V> getMapCache(String name);
 
     /**
-     * Returns transactional map-based cache instance by <code>name</code>
-     * using provided <code>codec</code> for both cache keys and values.
-     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * 按名称返回事务性 Map 缓存实例，键值使用指定编解码器，支持 MaxIdleTime 与 TTL 条目逐出。
      * <p>
-     * If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.
+     * 若不需要逐出机制，建议使用普通 Map {@link #getMap(String, Codec)}。
      *
-     * @param <K> type of key
-     * @param <V> type of value
-     * @param name - object name
-     * @param codec - codec for keys and values
-     * @return MapCache object
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @param codec 键值编解码器
+     * @return MapCache 实例
      */
     <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec);
     
     /**
-     * Commits all changes made on this transaction.
+     * 提交本事务的全部变更。
      * 
-     * @return void
+     * @return 无返回值
      */
     Mono<Void> commit();
     
     /**
-     * Rollback all changes made on this transaction.
-     * @return void
+     * 回滚本事务的全部变更。
+     * @return 无返回值
      */
     Mono<Void> rollback();
 
