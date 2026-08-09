@@ -21,17 +21,23 @@ import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 import com.googlecode.concurrentlinkedhashmap.Weighers;
 
 /**
- * A {@link ConcurrentLinkedHashMap} wrapper for the universal {@link CacheMap}.
+ * 基于 {@link ConcurrentLinkedHashMap} 的 {@link CacheMap} 实现，
+ * 提供线程安全 LRU 缓存与有序键遍历。
  *
  * @author Eric Zhao
  * @since 0.2.0
  */
 public class ConcurrentLinkedHashMapWrapper<T, R> implements CacheMap<T, R> {
 
+    /** 默认并发分段数。 */
     private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
 
     private final ConcurrentLinkedHashMap<T, R> map;
 
+    /**
+     * 按最大加权容量创建 LRU 缓存。
+     * @param size 最大条目数，须为正数
+     */
     public ConcurrentLinkedHashMapWrapper(long size) {
         if (size <= 0) {
             throw new IllegalArgumentException("Cache max capacity should be positive: " + size);
@@ -43,6 +49,7 @@ public class ConcurrentLinkedHashMapWrapper<T, R> implements CacheMap<T, R> {
             .build();
     }
 
+    /** 包装已有 {@link ConcurrentLinkedHashMap} 实例。 */
     public ConcurrentLinkedHashMapWrapper(ConcurrentLinkedHashMap<T, R> map) {
         if (map == null) {
             throw new IllegalArgumentException("Invalid map instance");

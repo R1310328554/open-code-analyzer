@@ -31,7 +31,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * The{@link PromExporterInit} Collector for prometheus exporter.
+ * Prometheus {@link Collector}：从本地指标日志文件增量读取 {@link MetricNode}
+ * 并组装为带资源/分类/类型标签的 {@link GaugeMetricFamily}。
  *
  * @author karl-sy
  * @date 2023-07-13 21:15
@@ -39,8 +40,10 @@ import java.util.List;
  */
 public class SentinelCollector extends Collector {
 
+    /** 延迟初始化 {@link MetricSearcher} 的锁。 */
     private final Object lock = new Object();
 
+    /** 毫秒与秒换算因子。 */
     private static final int ONE_SECOND = 1000;
     private static final String appName = PrometheusGlobalConfig.getPromFetchApp();
 
@@ -52,8 +55,10 @@ public class SentinelCollector extends Collector {
 
     private static final int delayTime = PrometheusGlobalConfig.getPromFetchDelayTime();
 
+    /** 本地指标文件搜索器，懒加载。 */
     private volatile MetricSearcher searcher;
 
+    /** 上次抓取窗口起始时间戳（秒对齐）。 */
     private volatile Long lastFetchTime;
 
     @Override
@@ -100,6 +105,7 @@ public class SentinelCollector extends Collector {
         return list;
     }
 
+    /** 按指标类型名从 {@link MetricNode} 提取对应数值。 */
     public double getTypeVal(MetricNode node,String type){
         if(MetricConstants.PASS_QPS.equals(type)){
             return node.getPassQps();

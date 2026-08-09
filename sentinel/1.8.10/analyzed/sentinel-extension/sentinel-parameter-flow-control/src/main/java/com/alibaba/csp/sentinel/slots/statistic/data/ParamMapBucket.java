@@ -24,7 +24,8 @@ import com.alibaba.csp.sentinel.slots.statistic.cache.ConcurrentLinkedHashMapWra
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * Represents metric bucket of frequent parameters in a period of time window.
+ * 滑动窗口内热点参数指标桶：按 {@link RollingParamEvent} 维度
+ * 维护参数值到 {@link AtomicInteger} 计数的 LRU 映射。
  *
  * @author Eric Zhao
  * @since 0.2.0
@@ -33,11 +34,15 @@ public class ParamMapBucket {
 
     private final CacheMap<Object, AtomicInteger>[] data;
 
+    /** 使用默认容量 {@link #DEFAULT_MAX_CAPACITY} 构造。 */
     public ParamMapBucket() {
         this(DEFAULT_MAX_CAPACITY);
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * @param capacity 每种事件类型的 LRU 缓存容量
+     */
     public ParamMapBucket(int capacity) {
         AssertUtil.isTrue(capacity > 0, "capacity should be positive");
         RollingParamEvent[] events = RollingParamEvent.values();
@@ -47,20 +52,23 @@ public class ParamMapBucket {
         }
     }
 
+    /** 清空全部事件维度的计数缓存。 */
     public void reset() {
         for (RollingParamEvent event : RollingParamEvent.values()) {
             data[event.ordinal()].clear();
         }
     }
 
+    /** 获取指定事件与参数值的当前计数，不存在时返回 0。 */
     public int get(RollingParamEvent event, Object value) {
         AtomicInteger counter = data[event.ordinal()].get(value);
         return counter == null ? 0 : counter.intValue();
     }
 
+    /** 累加指定事件与参数值的计数，支持链式调用。 */
     public ParamMapBucket add(RollingParamEvent event, int count, Object value) {
         AtomicInteger counter = data[event.ordinal()].get(value);
-        // Note: not strictly concise.
+        // 非严格原子：并发下可能短暂重复 putIfAbsent
         if (counter == null) {
             AtomicInteger old = data[event.ordinal()].putIfAbsent(value, new AtomicInteger(count));
             if (old != null) {
@@ -72,13 +80,16 @@ public class ParamMapBucket {
         return this;
     }
 
+    /** 按访问升序返回参数值键集合。 */
     public Set<Object> ascendingKeySet(RollingParamEvent type) {
         return data[type.ordinal()].keySet(true);
     }
 
+    /** 按访问降序返回参数值键集合。 */
     public Set<Object> descendingKeySet(RollingParamEvent type) {
         return data[type.ordinal()].keySet(false);
     }
 
+    /** 默认 LRU 缓存容量。 */
     public static final int DEFAULT_MAX_CAPACITY = 200;
 }

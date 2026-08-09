@@ -16,17 +16,24 @@
 package com.alibaba.csp.sentinel.command;
 
 /**
+ * Sentinel 命令中心 API 常量：版本命令名与通用响应消息。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public final class CommandConstants {
 
+    /** 查询 Sentinel 版本号的命令名。 */
     public static final String VERSION_COMMAND = "version";
 
+    /** 非法命令响应文本。 */
     public static final String MSG_INVALID_COMMAND = "Invalid command";
+    /** 未知命令响应前缀。 */
     public static final String MSG_UNKNOWN_COMMAND_PREFIX = "Unknown command";
 
+    /** 命令执行成功响应文本。 */
     public static final String MSG_SUCCESS = "success";
+    /** 命令执行失败响应文本。 */
     public static final String MSG_FAIL = "failed";
 
     private CommandConstants() {}

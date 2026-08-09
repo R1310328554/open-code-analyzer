@@ -20,7 +20,8 @@ import com.alibaba.csp.sentinel.transport.CommandCenter;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
- * Provider for a universal {@link CommandCenter} instance.
+ * {@link CommandCenter} 单例提供者：类加载时通过 {@link SpiLoader}
+ * 解析优先级最高的传输层命令中心实现。
  *
  * @author cdfive
  * @since 1.5.0
@@ -33,6 +34,7 @@ public final class CommandCenterProvider {
         resolveInstance();
     }
 
+    /** 从 SPI 加载并缓存 {@link CommandCenter} 实例。 */
     private static void resolveInstance() {
         CommandCenter resolveCommandCenter = SpiLoader.of(CommandCenter.class).loadHighestPriorityInstance();
 
@@ -46,7 +48,7 @@ public final class CommandCenterProvider {
     }
 
     /**
-     * Get resolved {@link CommandCenter} instance.
+     * 获取已解析的 {@link CommandCenter} 实例。
      *
      * @return resolved {@code CommandCenter} instance
      */

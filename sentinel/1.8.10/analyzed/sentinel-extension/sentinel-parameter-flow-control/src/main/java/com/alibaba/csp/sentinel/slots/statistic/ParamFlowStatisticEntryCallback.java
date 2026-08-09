@@ -24,6 +24,9 @@ import com.alibaba.csp.sentinel.slots.block.flow.param.ParameterMetric;
 import com.alibaba.csp.sentinel.slots.block.flow.param.ParameterMetricStorage;
 
 /**
+ * 热点参数流控 entry 回调：请求通过 {@link StatisticSlot} 时递增参数并发计数。
+ * 仅当资源已配置参数流控规则且存在 {@link ParameterMetric} 时生效。
+ *
  * @author Eric Zhao
  * @since 0.2.0
  */
@@ -31,7 +34,7 @@ public class ParamFlowStatisticEntryCallback implements ProcessorSlotEntryCallba
 
     @Override
     public void onPass(Context context, ResourceWrapper resourceWrapper, DefaultNode node, int count, Object... args) {
-        // The "hot spot" parameter metric is present only if parameter flow rules for the resource exist.
+        // 仅当资源存在参数流控规则时才有 ParameterMetric
         ParameterMetric parameterMetric = ParameterMetricStorage.getParamMetric(resourceWrapper);
 
         if (parameterMetric != null) {
@@ -42,7 +45,7 @@ public class ParamFlowStatisticEntryCallback implements ProcessorSlotEntryCallba
     @Override
     public void onBlocked(BlockException ex, Context context, ResourceWrapper resourceWrapper, DefaultNode param,
                           int count, Object... args) {
-        // Here we don't add block count here because checking the type of block exception can affect performance.
-        // We add the block count when throwing the ParamFlowException instead.
+        // 阻断计数不在此处理，避免判断 BlockException 类型影响性能；
+        // 在抛出 ParamFlowException 时再累加 block 计数
     }
 }

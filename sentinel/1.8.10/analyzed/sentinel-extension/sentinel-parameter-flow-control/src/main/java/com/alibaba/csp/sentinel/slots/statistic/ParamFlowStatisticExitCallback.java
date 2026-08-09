@@ -22,6 +22,9 @@ import com.alibaba.csp.sentinel.slots.block.flow.param.ParameterMetric;
 import com.alibaba.csp.sentinel.slots.block.flow.param.ParameterMetricStorage;
 
 /**
+ * 热点参数流控 exit 回调：请求正常退出 {@link StatisticSlot} 时递减参数并发计数。
+ * 若 entry 已被阻断（{@code getBlockError() != null}）则跳过。
+ *
  * @author Eric Zhao
  * @since 0.2.0
  */

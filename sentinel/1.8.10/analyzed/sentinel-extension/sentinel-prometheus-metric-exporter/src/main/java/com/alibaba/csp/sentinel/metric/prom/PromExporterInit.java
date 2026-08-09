@@ -22,7 +22,8 @@ import com.alibaba.csp.sentinel.metric.prom.config.PrometheusGlobalConfig;
 import io.prometheus.client.exporter.HTTPServer;
 
 /**
- * The{@link PromExporterInit} the InitFunc for prometheus exporter.
+ * {@link InitFunc} 实现：注册 {@link SentinelCollector} 并启动 Prometheus HTTP 抓取端点。
+ * 默认暴露 {@code http://ip:port/metrics}；JVM 关闭时自动停止 {@link HTTPServer}。
  *
  * @author karl-sy
  * @date 2023-07-13 21:15

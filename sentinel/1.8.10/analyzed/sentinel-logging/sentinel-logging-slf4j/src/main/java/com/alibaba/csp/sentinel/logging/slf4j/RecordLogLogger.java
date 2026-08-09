@@ -21,6 +21,9 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import org.slf4j.LoggerFactory;
 
 /**
+ * {@link RecordLog} 的 SLF4J 日志适配器，
+ * 通过 {@link LogTarget} 绑定到 Sentinel 通用记录日志 SPI。
+ *
  * @author wavesZh
  */
 @LogTarget(RecordLog.LOGGER_NAME)

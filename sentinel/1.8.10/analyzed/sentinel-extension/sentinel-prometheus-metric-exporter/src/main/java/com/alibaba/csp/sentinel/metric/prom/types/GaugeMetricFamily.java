@@ -23,7 +23,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The{@link SentinelCollector} the MetricFamilySamples for prometheus exporter.
+ * 带时间戳的 Prometheus Gauge 指标族，扩展 {@link Collector.MetricFamilySamples}
+ * 以支持 {@link Sample} 毫秒级 timestamp。
  *
  * @author karl-sy
  * @date 2023-07-13 21:15
@@ -33,6 +34,7 @@ public class GaugeMetricFamily extends Collector.MetricFamilySamples {
 
     private final List<String> labelNames;
 
+    /** 无标签单值 Gauge 指标族。 */
     public GaugeMetricFamily(String name, String help, double value) {
         super(name, Collector.Type.GAUGE, help, new ArrayList<Sample>());
         labelNames = Collections.emptyList();
@@ -43,11 +45,17 @@ public class GaugeMetricFamily extends Collector.MetricFamilySamples {
                 value));
     }
 
+    /** 指定标签名的多序列 Gauge 指标族。 */
     public GaugeMetricFamily(String name, String help, List<String> labelNames) {
         super(name, Collector.Type.GAUGE, help, new ArrayList<Sample>());
         this.labelNames = labelNames;
     }
 
+    /**
+     * 追加一条带时间戳的样本。
+     * @param labelValues 标签值，须与 labelNames 数量一致
+     * @param timestampMs 样本时间戳（毫秒）
+     */
     public GaugeMetricFamily addMetric(List<String> labelValues, double value, long timestampMs) {
         if (labelValues.size() != labelNames.size()) {
             throw new IllegalArgumentException("Incorrect number of labels.");
