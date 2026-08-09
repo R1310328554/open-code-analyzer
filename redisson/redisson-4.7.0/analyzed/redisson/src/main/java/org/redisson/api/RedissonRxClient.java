@@ -23,105 +23,101 @@ import org.redisson.config.Config;
 import java.util.Collection;
 
 /**
- * Main Redisson interface for access
- * to all redisson objects with RxJava2 interface.
- *
- * @see RedissonReactiveClient
- * @see RedissonClient
- *
+ * RxJava3 风格 Redisson 客户端 {@link RedissonRxClient}。
+ * <p>提供全部 Rx 分布式对象 factory 方法；
+ * 参见 {@link RedissonClient} 与 {@link RedissonReactiveClient}。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RedissonRxClient {
 
     /**
-     * Returns Array instance by <code>name</code>
+     * 返回Array instance by <code>name</code>。
      * <p>
-     * Requires <b>Redis 8.8 or higher.</b>
+     * 需要 <b>Redis 8.8 及以上</b>。
      *
-     * @param <V> value type
-     * @param name name of instance
+     * @param <V> 值类型
+     * @param name 实例名称
      * @return RArrayRx object
      */
     <V> RArrayRx<V> getArray(String name);
 
     /**
-     * Returns Array instance by <code>name</code>
+     * 返回Array instance by <code>name</code>。
      * using provided <code>codec</code> for values.
      * <p>
-     * Requires <b>Redis 8.8 or higher.</b>
+     * 需要 <b>Redis 8.8 及以上</b>。
      *
-     * @param <V> value type
-     * @param name name of instance
-     * @param codec codec for values
+     * @param <V> 值类型
+     * @param name 实例名称
+     * @param codec 值编解码器
      * @return RArrayRx object
      */
     <V> RArrayRx<V> getArray(String name, Codec codec);
 
     /**
-     * Returns Array instance with specified <code>options</code>.
+     * 返回Array instance with specified <code>options</code>.。
      * <p>
-     * Requires <b>Redis 8.8 or higher.</b>
+     * 需要 <b>Redis 8.8 及以上</b>。
      *
-     * @param <V> value type
-     * @param options instance options
+     * @param <V> 值类型
+     * @param options 实例选项
      * @return RArrayRx object
      */
     <V> RArrayRx<V> getArray(PlainOptions options);
 
     /**
-     * Returns time-series instance by <code>name</code>
+     * 按名称获取 {@link RTimeSeries} 实例。（Redisson API）。
      *
-     * @param <V> value type
-     * @param <L> label type
-     * @param name name of instance
+     * @param <V> 值类型
+     * @param <L> 标签类型
+     * @param name 实例名称
      * @return RTimeSeries object
      */
     <V, L> RTimeSeriesRx<V, L> getTimeSeries(String name);
 
     /**
-     * Returns time-series instance by <code>name</code>
+     * 按名称获取 {@link RTimeSeries} 实例。（Redisson API）。
      * using provided <code>codec</code> for values.
      *
-     * @param <V> value type
-     * @param <L> label type
-     * @param name name of instance
-     * @param codec codec for values
+     * @param <V> 值类型
+     * @param <L> 标签类型
+     * @param name 实例名称
+     * @param codec 值编解码器
      * @return RTimeSeries object
      */
     <V, L> RTimeSeriesRx<V, L> getTimeSeries(String name, Codec codec);
 
     /**
-     * Returns time-series instance with specified <code>options</code>.
+     * 返回time-series instance with specified <code>options</code>.。
      *
-     * @param <V> value type
-     * @param <L> label type
-     * @param options instance options
+     * @param <V> 值类型
+     * @param <L> 标签类型
+     * @param options 实例选项
      * @return RTimeSeries object
      */
     <V, L> RTimeSeriesRx<V, L> getTimeSeries(PlainOptions options);
     
     /**
-     * Returns stream instance by <code>name</code>
+     * Redis Stream 相关操作：按名称获取 {@link RStream} 实例。。
      * <p>
-     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 需要 <b>Redis 5.0.0 及以上</b>。
      * 
      * @param <K> type of key
-     * @param <V> type of value
+     * @param <V> 元素类型
      * @param name of stream
      * @return RStream object
      */
     <K, V> RStreamRx<K, V> getStream(String name);
     
     /**
-     * Returns stream instance by <code>name</code>
+     * Redis Stream 相关操作：按名称获取 {@link RStream} 实例。。
      * using provided <code>codec</code> for entries.
      * <p>
-     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 需要 <b>Redis 5.0.0 及以上</b>。
      * 
      * @param <K> type of key
-     * @param <V> type of value
+     * @param <V> 元素类型
      * @param name name of stream
      * @param codec codec for entry
      * @return RStream object
@@ -129,70 +125,70 @@ public interface RedissonRxClient {
     <K, V> RStreamRx<K, V> getStream(String name, Codec codec);
 
     /**
-     * Returns time-series instance with specified <code>options</code>.
+     * 返回time-series instance with specified <code>options</code>.。
      * <p>
-     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 需要 <b>Redis 5.0.0 及以上</b>。
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return RStream object
      */
     <K, V> RStreamRx<K, V> getStream(PlainOptions options);
 
     /**
-     * Returns API for RediSearch module
+     * 返回API for RediSearch module。
      *
      * @return RSearch object
      */
     RSearchRx getSearch();
 
     /**
-     * Returns API for RediSearch module using defined codec for attribute values.
+     * 返回API for RediSearch module using defined codec for attribute values.。
      *
      * @return RSearch object
      */
     RSearchRx getSearch(Codec codec);
 
     /**
-     * Returns API for RediSearch module with specified <code>options</code>.
+     * 返回API for RediSearch module with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return RSearch object
      */
     RSearchRx getSearch(OptionalOptions options);
 
     /**
-     * Returns geospatial items holder instance by <code>name</code>.
+     * 按名称获取 {@link RGeo} 地理空间容器实例。
      * 
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return Geo object
      */
     <V> RGeoRx<V> getGeo(String name);
     
     /**
-     * Returns geospatial items holder instance by <code>name</code>
+     * 返回geospatial items holder instance by <code>name</code>。
      * using provided codec for geospatial members.
      * 
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for value
      * @return Geo object
      */
     <V> RGeoRx<V> getGeo(String name, Codec codec);
 
     /**
-     * Returns geospatial items holder instance with specified <code>options</code>.
+     * 返回geospatial items holder instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return Geo object
      */
     <V> RGeoRx<V> getGeo(PlainOptions options);
 
     /**
-     * Returns rate limiter instance by <code>name</code>
+     * 返回rate limiter instance by <code>name</code>。
      * 
      * @param name of rate limiter
      * @return RateLimiter object
@@ -200,15 +196,15 @@ public interface RedissonRxClient {
     RRateLimiterRx getRateLimiter(String name);
 
     /**
-     * Returns rate limiter instance with specified <code>options</code>.
+     * 返回rate limiter instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return RateLimiter object
      */
     RRateLimiterRx getRateLimiter(CommonOptions options);
 
     /**
-     * Returns GCRA instance by <code>name</code>.
+     * 返回GCRA instance by <code>name</code>.。
      * <p>
      * Requires Redis 8.8.0 or higher.
      *
@@ -218,17 +214,17 @@ public interface RedissonRxClient {
     RGcraRx getGcra(String name);
 
     /**
-     * Returns GCRA instance with specified <code>options</code>.
+     * 返回GCRA instance with specified <code>options</code>.。
      * <p>
      * Requires Redis 8.8.0 or higher.
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return GCRA object
      */
     RGcraRx getGcra(CommonOptions options);
 
     /**
-     * Returns binary stream holder instance by <code>name</code>
+     * 返回binary stream holder instance by <code>name</code>。
      *
      * @param name of binary stream
      * @return BinaryStream object
@@ -236,167 +232,167 @@ public interface RedissonRxClient {
     RBinaryStreamRx getBinaryStream(String name);
 
     /**
-     * Returns binary stream holder instance with specified <code>options</code>.
+     * 返回binary stream holder instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return BinaryStream object
      */
     RBinaryStreamRx getBinaryStream(CommonOptions options);
 
     /**
-     * Returns semaphore instance by name
+     * 返回semaphore instance by name。
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Semaphore object
      */
     RSemaphoreRx getSemaphore(String name);
 
     /**
-     * Returns semaphore instance with specified <code>options</code>.
+     * 返回semaphore instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Semaphore object
      */
     RSemaphoreRx getSemaphore(CommonOptions options);
 
     /**
-     * Returns semaphore instance by name.
+     * 返回semaphore instance by name.。
      * Supports lease time parameter for each acquired permit.
      * 
-     * @param name name of object
+     * @param name 对象名称
      * @return PermitExpirableSemaphore object
      */
     RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(String name);
 
     /**
-     * Returns semaphore instance with specified <code>options</code>.
+     * 返回semaphore instance with specified <code>options</code>.。
      * Supports lease time parameter for each acquired permit.
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return PermitExpirableSemaphore object
      */
     RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(CommonOptions options);
 
     /**
-     * Returns ReadWriteLock instance by name.
+     * 返回ReadWriteLock instance by name.。
      * <p>
      * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Lock object
      */
     RReadWriteLockRx getReadWriteLock(String name);
 
     /**
-     * Returns ReadWriteLock instance with specified <code>options</code>.
+     * 返回ReadWriteLock instance with specified <code>options</code>.。
      * <p>
      * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Lock object
      */
     RReadWriteLockRx getReadWriteLock(CommonOptions options);
 
     /**
-     * Returns Lock instance by name.
+     * 返回Lock instance by name.。
      * <p>
      * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
      * <p>
      * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      * 
-     * @param name name of object
+     * @param name 对象名称
      * @return Lock object
      */
     RLockRx getFairLock(String name);
 
     /**
-     * Returns Lock instance with specified <code>options</code>.
+     * 返回Lock instance with specified <code>options</code>.。
      * <p>
      * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
      * <p>
      * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Lock object
      */
     RLockRx getFairLock(CommonOptions options);
 
     /**
-     * Returns a fair, non-reentrant Lock instance by name.
+     * 返回a fair, non-reentrant Lock instance by name.。
      * <p>
      * Acquisition order is FIFO across all Redisson instances. Unlike
      * {@link #getFairLock(String)}, attempts by the same thread to acquire
      * the lock while it already holds it cause {@link IllegalMonitorStateException}
      * for both {@code lock()} and {@code tryLock()}.
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Lock object
      */
     RLockRx getNonReentrantFairLock(String name);
 
     /**
-     * Returns a fair, non-reentrant Lock instance with specified <code>options</code>.
+     * 返回a fair, non-reentrant Lock instance with specified <code>options</code>.。
      * <p>
      * Acquisition order is FIFO across all Redisson instances. Unlike
      * {@link #getFairLock(CommonOptions)}, attempts by the same thread to acquire
      * the lock while it already holds it cause {@link IllegalMonitorStateException}
      * for both {@code lock()} and {@code tryLock()}.
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Lock object
      */
     RLockRx getNonReentrantFairLock(CommonOptions options);
 
     /**
-     * Returns Lock instance by name.
+     * 返回Lock instance by name.。
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
      * <p>
      * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Lock object
      */
     RLockRx getLock(String name);
 
     /**
-     * Returns Lock instance with specified <code>options</code>.
+     * 返回Lock instance with specified <code>options</code>.。
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
      * <p>
      * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Lock object
      */
     RLockRx getLock(CommonOptions options);
 
     /**
-     * Returns Spin lock instance by name.
+     * 返回Spin lock instance by name.。
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
      * <p>
      * Lock doesn't use a pub/sub mechanism
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Lock object
      */
     RLockRx getSpinLock(String name);
 
     /**
-     * Returns Spin lock instance by name with specified back off options.
+     * 返回Spin lock instance by name with specified back off options.。
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
      * <p>
      * Lock doesn't use a pub/sub mechanism
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Lock object
      */
     RLockRx getSpinLock(String name, LockOptions.BackOff backOff);
 
     /**
-     * Returns a non-reentrant Lock instance by name.
+     * 返回a non-reentrant Lock instance by name.。
      * <p>
      * Unlike {@link #getLock(String)}, attempts by the same thread to acquire
      * the lock while it already holds it cause {@link IllegalMonitorStateException}
@@ -404,13 +400,13 @@ public interface RedissonRxClient {
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Lock object
      */
     RLockRx getNonReentrantLock(String name);
 
     /**
-     * Returns a non-reentrant Lock instance with specified <code>options</code>.
+     * 返回a non-reentrant Lock instance with specified <code>options</code>.。
      * <p>
      * Unlike {@link #getLock(CommonOptions)}, attempts by the same thread to acquire
      * the lock while it already holds it cause {@link IllegalMonitorStateException}
@@ -418,40 +414,40 @@ public interface RedissonRxClient {
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Lock object
      */
     RLockRx getNonReentrantLock(CommonOptions options);
 
     /**
-     * Returns Fenced Lock by name.
+     * 返回Fenced Lock by name.。
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Lock object
      */
     RFencedLockRx getFencedLock(String name);
 
     /**
-     * Returns Fenced Lock instance with specified <code>options</code>..
+     * 返回Fenced Lock instance with specified <code>options</code>..。
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Lock object
      */
     RFencedLockRx getFencedLock(CommonOptions options);
 
     /**
-     * Returns MultiLock instance associated with specified <code>locks</code>
+     * 返回MultiLock instance associated with specified <code>locks</code>。
      *
      * @param locks collection of locks
      * @return MultiLock object
      */
     RLockRx getMultiLock(RLockRx... locks);
     /**
-     * Returns RedissonFasterMultiLock instance associated with specified <code>group</code> and <code>values</code>
+     * 返回RedissonFasterMultiLock instance associated with specified <code>group</code> and <code>values</code>。
      *
      * @param group the group of values
      * @param values lock values
@@ -472,82 +468,82 @@ public interface RedissonRxClient {
     RLockRx getRedLock(RLock... locks);
 
     /**
-     * Returns CountDownLatch instance by name.
+     * 返回CountDownLatch instance by name.。
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return CountDownLatch object
      */
     RCountDownLatchRx getCountDownLatch(String name);
 
     /**
-     * Returns countDownLatch instance with specified <code>options</code>.
+     * 返回countDownLatch instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return CountDownLatch object
      */
     RCountDownLatchRx getCountDownLatch(CommonOptions options);
 
     /**
-     * Returns set-based cache instance by <code>name</code>.
+     * 返回set-based cache instance by <code>name</code>.。
      * Supports value eviction with a given TTL value.
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
      *
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return SetCache object
      */
     <V> RSetCacheRx<V> getSetCache(String name);
 
     /**
-     * Returns set-based cache instance by <code>name</code>.
+     * 返回set-based cache instance by <code>name</code>.。
      * Supports value eviction with a given TTL value.
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
      *
-     * @param <V> type of values
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型s
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return SetCache object
      */
     <V> RSetCacheRx<V> getSetCache(String name, Codec codec);
 
     /**
-     * Returns set-based cache instance with specified <code>options</code>.
+     * 返回set-based cache instance with specified <code>options</code>.。
      * Supports value eviction with a given TTL value.
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSet(PlainOptions)}.</p>
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return SetCache object
      */
     <V> RSetCacheRx<V> getSetCache(PlainOptions options);
 
     /**
-     * Returns map-based cache instance by name
+     * 返回map-based cache instance by name。
      * using provided codec for both cache keys and values.
      * Supports entry eviction with a given MaxIdleTime and TTL settings.
      * <p>
      * If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.
      *
      * @param <K> type of keys
-     * @param <V> type of values
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型s
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return MapCache object
      */
     <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec);
 
     /**
-     * Returns map-based cache instance by <code>name</code>
+     * 返回map-based cache instance by <code>name</code>。
      * using provided <code>codec</code> for both cache keys and values.
      * Supports entry eviction with a given MaxIdleTime and TTL settings.
      * <p>
      * If eviction is not required then it's better to use regular map {@link #getMap(String, Codec, MapOptions)}.
      * 
      * @param <K> type of key
-     * @param <V> type of value
+     * @param <V> 元素类型
      * @param name object name
      * @param codec codec for keys and values
      * @param options map options
@@ -557,27 +553,27 @@ public interface RedissonRxClient {
     <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options);
 
     /**
-     * Returns map-based cache instance by name.
+     * 返回map-based cache instance by name.。
      * Supports entry eviction with a given MaxIdleTime and TTL settings.
      * <p>
      * If eviction is not required then it's better to use regular map {@link #getMap(String)}.
      *
      * @param <K> type of keys
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return MapCache object
      */
     <K, V> RMapCacheRx<K, V> getMapCache(String name);
 
     /**
-     * Returns map-based cache instance by name.
+     * 返回map-based cache instance by name.。
      * Supports entry eviction with a given MaxIdleTime and TTL settings.
      * <p>
      * If eviction is not required then it's better to use regular map {@link #getMap(String, MapOptions)}.</p>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param options map options
      * @return MapCache object
      */
@@ -585,98 +581,98 @@ public interface RedissonRxClient {
     <K, V> RMapCacheRx<K, V> getMapCache(String name, MapCacheOptions<K, V> options);
 
     /**
-     * Returns map-based cache instance with specified <code>options</code>.
+     * 返回map-based cache instance with specified <code>options</code>.。
      * Supports entry eviction with a given MaxIdleTime and TTL settings.
      * <p>
      * If eviction is not required then it's better to use regular map {@link #getMap(org.redisson.api.options.MapOptions)}.</p>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return MapCache object
      */
     <K, V> RMapCacheRx<K, V> getMapCache(org.redisson.api.options.MapCacheOptions<K, V> options);
 
     /**
-     * Returns map instance by name.
+     * 返回map instance by name.。
      * Supports entry eviction with a given TTL.
      * <p>
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return Map object
      */
     <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(String name);
 
     /**
-     * Returns map instance by name
+     * 返回map instance by name。
      * using provided codec for both map keys and values.
      * Supports entry eviction with a given TTL.
      * <p>
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @return Map object
      */
     <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(String name, Codec codec);
 
     /**
-     * Returns map instance.
+     * 返回map instance.。
      * Supports entry eviction with a given TTL.
      * Configured by the parameters of the options-object.
      * <p>
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return Map object
      */
     <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(org.redisson.api.options.MapOptions<K, V> options);
 
     /**
-     * Returns object holder instance by name
+     * 返回object holder instance by name。
      * 
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return Bucket object
      */
     <V> RBucketRx<V> getBucket(String name);
 
     /**
-     * Returns object holder instance by name
+     * 返回object holder instance by name。
      * using provided codec for object.
      *
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for value
      * @return Bucket object
      */
     <V> RBucketRx<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns object holder instance with specified <code>options</code>.
+     * 返回object holder instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return Bucket object
      */
     <V> RBucketRx<V> getBucket(PlainOptions options);
 
     /**
-     * Returns interface for mass operations with Bucket objects.
+     * 返回interface for mass operations with Bucket objects.。
      *
      * @return Buckets
      */
     RBucketsRx getBuckets();
 
     /**
-     * Returns interface for mass operations with Bucket objects
+     * 返回interface for mass operations with Bucket objects。
      * using provided codec for object.
      *
      * @param codec codec for bucket objects
@@ -685,22 +681,22 @@ public interface RedissonRxClient {
     RBucketsRx getBuckets(Codec codec);
 
     /**
-     * Returns API for mass operations over Bucket objects with specified <code>options</code>.
+     * 返回API for mass operations over Bucket objects with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Buckets object
      */
     RBucketsRx getBuckets(OptionalOptions options);
 
     /**
-     * Returns interface for mass operations with Map objects.
+     * 返回interface for mass operations with Map objects.。
      *
      * @return Maps object
      */
     <K, V> RMapsRx<K, V> getMaps();
 
     /**
-     * Returns interface for mass operations with Map objects
+     * 返回interface for mass operations with Map objects。
      * using provided codec for keys and values.
      *
      * @param codec codec for keys and values
@@ -709,34 +705,34 @@ public interface RedissonRxClient {
     <K, V> RMapsRx<K, V> getMaps(Codec codec);
 
     /**
-     * Returns API for mass operations over Map objects with specified <code>options</code>.
+     * 返回API for mass operations over Map objects with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Maps object
      */
     <K, V> RMapsRx<K, V> getMaps(OptionalOptions options);
 
     /**
-     * Returns JSON data holder instance by name using provided codec.
+     * 返回JSON data holder instance by name using provided codec.。
      *
-     * @param <V> type of value
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return JsonBucket object
      */
     <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec codec);
 
     /**
-     * Returns JSON data holder instance with specified <code>options</code>.
+     * 返回JSON data holder instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return JsonBucket object
      */
     <V> RJsonBucketRx<V> getJsonBucket(JsonBucketOptions<V> options);
     
     /**
-     * Returns API for mass operations over JsonBucket objects
+     * 返回API for mass operations over JsonBucket objects。
      * using provided codec for JSON object with default path.
      *
      * @param codec using provided codec for JSON object with default path.
@@ -745,151 +741,151 @@ public interface RedissonRxClient {
     RJsonBucketsRx getJsonBuckets(JsonCodec codec);
     
     /**
-     * Returns HyperLogLog instance by name.
+     * 返回HyperLogLog instance by name.。
      * 
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return HyperLogLog object
      */
     <V> RHyperLogLogRx<V> getHyperLogLog(String name);
 
     /**
-     * Returns HyperLogLog instance by name
+     * 返回HyperLogLog instance by name。
      * using provided codec for hll objects.
      *
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @param codec codec of values
      * @return HyperLogLog object
      */
     <V> RHyperLogLogRx<V> getHyperLogLog(String name, Codec codec);
 
     /**
-     * Returns HyperLogLog instance with specified <code>options</code>.
+     * 返回HyperLogLog instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return HyperLogLog object
      */
     <V> RHyperLogLogRx<V> getHyperLogLog(PlainOptions options);
 
     /**
-     * Returns id generator by name.
+     * 返回id generator by name.。
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return IdGenerator object
      */
     RIdGeneratorRx getIdGenerator(String name);
 
     /**
-     * Returns id generator instance with specified <code>options</code>.
+     * 返回id generator instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return IdGenerator object
      */
     RIdGeneratorRx getIdGenerator(CommonOptions options);
 
     /**
-     * Returns list instance by name.
+     * 按名称获取 {@link RList} 实例。
      *
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return List object
      */
     <V> RListRx<V> getList(String name);
 
     /**
-     * Returns list instance by name
+     * 返回list instance by name。
      * using provided codec for list objects.
      *
-     * @param <V> type of values
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型s
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return List object
      */
     <V> RListRx<V> getList(String name, Codec codec);
 
     /**
-     * Returns list instance with specified <code>options</code>.
+     * 返回list instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return List object
      */
     <V> RListRx<V> getList(PlainOptions options);
 
     /**
-     * Returns List based Multimap instance by name.
+     * 返回List based Multimap instance by name.。
      * 
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return ListMultimap object
      */
     <K, V> RListMultimapRx<K, V> getListMultimap(String name);
 
     /**
-     * Returns List based Multimap instance by name
+     * 返回List based Multimap instance by name。
      * using provided codec for both map keys and values.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @return RListMultimapReactive object
      */
     <K, V> RListMultimapRx<K, V> getListMultimap(String name, Codec codec);
 
     /**
-     * Returns List based Multimap instance with specified <code>options</code>.
+     * 返回List based Multimap instance with specified <code>options</code>.。
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return ListMultimap object
      */
     <K, V> RListMultimapRx<K, V> getListMultimap(PlainOptions options);
 
     /**
-     * Returns List based Multimap cache instance by name.
+     * 返回List based Multimap cache instance by name.。
      * Supports key eviction by specifying a time to live.
      * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String)}.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return RListMultimapCacheRx object
      */
     <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name);
 
     /**
-     * Returns List based Multimap cache instance by name using provided codec for both map keys and values.
+     * 返回List based Multimap cache instance by name using provided codec for both map keys and values.。
      * Supports key eviction by specifying a time to live.
      * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String, Codec)}.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @return RListMultimapCacheRx object
      */
     <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name, Codec codec);
 
     /**
-     * Returns List based Multimap instance by name.
+     * 返回List based Multimap instance by name.。
      * Supports key-entry eviction with a given TTL value.
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(String)}.</p>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return ListMultimapCache object
      */
     <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(PlainOptions options);
 
     /**
-     * Returns List based Multimap instance by name.
+     * 返回List based Multimap instance by name.。
      * Supports key-entry eviction with a given TTL value.
      * Stores insertion order and allows duplicates for values mapped to key.
      * <p>
@@ -898,14 +894,14 @@ public interface RedissonRxClient {
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return ListMultimapCache object
      */
     <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(String name);
 
     /**
-     * Returns List based Multimap instance by name
+     * 返回List based Multimap instance by name。
      * using provided codec for both map keys and values.
      * Supports key-entry eviction with a given TTL value.
      * Stores insertion order and allows duplicates for values mapped to key.
@@ -915,15 +911,15 @@ public interface RedissonRxClient {
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @return ListMultimapCache object
      */
     <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(String name, Codec codec);
 
     /**
-     * Returns List based Multimap instance by name.
+     * 返回List based Multimap instance by name.。
      * Supports key-entry eviction with a given TTL value.
      * Stores insertion order and allows duplicates for values mapped to key.
      * <p>
@@ -932,84 +928,84 @@ public interface RedissonRxClient {
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return ListMultimapCache object
      */
     <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(PlainOptions options);
 
     /**
-     * Returns Set based Multimap instance by name.
+     * 返回Set based Multimap instance by name.。
      * 
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return SetMultimap object
      */
     <K, V> RSetMultimapRx<K, V> getSetMultimap(String name);
 
     /**
-     * Returns Set based Multimap instance by name
+     * 返回Set based Multimap instance by name。
      * using provided codec for both map keys and values.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @return SetMultimap object
      */
     <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec);
 
     /**
-     * Returns Set based Multimap instance with specified <code>options</code>.
+     * 返回Set based Multimap instance with specified <code>options</code>.。
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return SetMultimap object
      */
     <K, V> RSetMultimapRx<K, V> getSetMultimap(PlainOptions options);
 
     /**
-     * Returns Set based Multimap cache instance by name.
+     * 返回Set based Multimap cache instance by name.。
      * Supports key eviction by specifying a time to live.
      * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String)}.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return RSetMultimapCacheRx object
      */
     <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name);
 
     /**
-     * Returns Set based Multimap cache instance by name using provided codec for both map keys and values.
+     * 返回Set based Multimap cache instance by name using provided codec for both map keys and values.。
      * Supports key eviction by specifying a time to live.
      * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String, Codec)}.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @return RSetMultimapCacheRx object
      */
     <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name, Codec codec);
 
     /**
-     * Returns Set based Multimap instance with specified <code>options</code>.
+     * 返回Set based Multimap instance with specified <code>options</code>.。
      * Supports key-entry eviction with a given TTL value.
      *
      * <p>If eviction is not required then it's better to use regular map {@link #getSetMultimap(PlainOptions)}.</p>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return SetMultimapCache object
      */
     <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(PlainOptions options);
 
     /**
-     * Returns Set based Multimap instance by name.
+     * 返回Set based Multimap instance by name.。
      * Supports key-entry eviction with a given TTL value.
      * Doesn't allow duplications for values mapped to key.
      * <p>
@@ -1018,14 +1014,14 @@ public interface RedissonRxClient {
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return SetMultimapCache object
      */
     <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(String name);
 
     /**
-     * Returns Set based Multimap instance by name
+     * 返回Set based Multimap instance by name。
      * using provided codec for both map keys and values.
      * Supports key-entry eviction with a given TTL value.
      * Doesn't allow duplications for values mapped to key.
@@ -1035,15 +1031,15 @@ public interface RedissonRxClient {
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @return SetMultimapCache object
      */
     <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(String name, Codec codec);
 
     /**
-     * Returns Set based Multimap instance with specified <code>options</code>.
+     * 返回Set based Multimap instance with specified <code>options</code>.。
      * Supports key-entry eviction with a given TTL value.
      * Doesn't allow duplications for values mapped to key.
      * <p>
@@ -1052,28 +1048,28 @@ public interface RedissonRxClient {
      * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return SetMultimapCache object
      */
     <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(PlainOptions options);
 
     /**
-     * Returns map instance by name.
+     * 返回map instance by name.。
      *
      * @param <K> type of keys
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return Map object
      */
     <K, V> RMapRx<K, V> getMap(String name);
 
     /**
-     * Returns map instance by name.
+     * 返回map instance by name.。
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param options map options
      * @return Map object
      */
@@ -1081,24 +1077,24 @@ public interface RedissonRxClient {
     <K, V> RMapRx<K, V> getMap(String name, MapOptions<K, V> options);
 
     /**
-     * Returns map instance by name
+     * 返回map instance by name。
      * using provided codec for both map keys and values.
      *
      * @param <K> type of keys
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @return Map object
      */
     <K, V> RMapRx<K, V> getMap(String name, Codec codec);
 
     /**
-     * Returns map instance by name
+     * 返回map instance by name。
      * using provided codec for both map keys and values.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @param options map options
      * @return Map object
@@ -1107,22 +1103,22 @@ public interface RedissonRxClient {
     <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
 
     /**
-     * Returns map instance by name.
+     * 返回map instance by name.。
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return Map object
      */
     <K, V> RMapRx<K, V> getMap(org.redisson.api.options.MapOptions<K, V> options);
 
     /**
-     * Returns local cached map instance by name.
+     * 返回local cached map instance by name.。
      * Configured by parameters of options-object.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param options local map options
      * @return LocalCachedMap object
      */
@@ -1130,12 +1126,12 @@ public interface RedissonRxClient {
     <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options);
 
     /**
-     * Returns local cached map instance by name
+     * 返回local cached map instance by name。
      * using provided codec. Configured by parameters of options-object.
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec codec for keys and values
      * @param options local map options
      * @return LocalCachedMap object
@@ -1144,21 +1140,21 @@ public interface RedissonRxClient {
     <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options);
 
     /**
-     * Returns local cached map instance with specified <code>options</code>.
+     * 返回local cached map instance with specified <code>options</code>.。
      *
      * @param <K> type of key
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return LocalCachedMap object
      */
     <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(org.redisson.api.options.LocalCachedMapOptions<K, V> options);
 
     /**
-     * Returns local cached map cache instance by name.
+     * 返回local cached map cache instance by name.。
      * Configured by parameters of options-object.
      *
      * @param <K> type of key
-     * @param <V> type of value
+     * @param <V> 元素类型
      * @param name - name of object
      * @param options - local map options
      * @return LocalCachedMapCache object
@@ -1166,11 +1162,11 @@ public interface RedissonRxClient {
     <K, V> RLocalCachedMapCacheRx<K, V> getLocalCachedMapCache(String name, LocalCachedMapCacheOptions<K, V> options);
 
     /**
-     * Returns local cached map cache instance by name using provided codec.
+     * 返回local cached map cache instance by name using provided codec.。
      * Configured by parameters of options-object.
      *
      * @param <K> type of key
-     * @param <V> type of value
+     * @param <V> 元素类型
      * @param name - name of object
      * @param codec - codec for keys and values
      * @param options - local map options
@@ -1179,192 +1175,192 @@ public interface RedissonRxClient {
     <K, V> RLocalCachedMapCacheRx<K, V> getLocalCachedMapCache(String name, Codec codec, LocalCachedMapCacheOptions<K, V> options);
 
     /**
-     * Returns set instance by name.
+     * 按名称获取 {@link RSet} 实例。
      *
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return Set object
      */
     <V> RSetRx<V> getSet(String name);
 
     /**
-     * Returns set instance by name
+     * 返回set instance by name。
      * using provided codec for set objects.
      *
-     * @param <V> type of values
+     * @param <V> 元素类型s
      * @param name name of set
-     * @param codec codec for values
+     * @param codec 值编解码器
      * @return Set object
      */
     <V> RSetRx<V> getSet(String name, Codec codec);
 
     /**
-     * Returns set instance with specified <code>options</code>.
+     * 返回set instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return Set object
      */
     <V> RSetRx<V> getSet(PlainOptions options);
 
     /**
-     * Returns Redis Sorted Set instance by name.
+     * Set 相关操作：按名称获取 {@link RScoredSortedSet} 实例（按 score 排序）。。
      * This sorted set sorts objects by object score.
      * 
-     * @param <V> type of values
+     * @param <V> 元素类型s
      * @param name of scored sorted set
      * @return ScoredSortedSet object
      */
     <V> RScoredSortedSetRx<V> getScoredSortedSet(String name);
 
     /**
-     * Returns Redis Sorted Set instance by name
+     * 返回Redis Sorted Set instance by name。
      * using provided codec for sorted set objects.
      * This sorted set sorts objects by object score.
      * 
-     * @param <V> type of values
+     * @param <V> 元素类型s
      * @param name name of scored sorted set
-     * @param codec codec for values
+     * @param codec 值编解码器
      * @return ScoredSortedSet object
      */
     <V> RScoredSortedSetRx<V> getScoredSortedSet(String name, Codec codec);
 
     /**
-     * Returns Redis Sorted Set instance with specified <code>options</code>.
+     * 返回Redis Sorted Set instance with specified <code>options</code>.。
      * This sorted set sorts objects by object score.
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return ScoredSortedSet object
      */
     <V> RScoredSortedSetRx<V> getScoredSortedSet(PlainOptions options);
 
     /**
-     * Returns String based Redis Sorted Set instance by name
+     * 返回String based Redis Sorted Set instance by name。
      * All elements are inserted with the same score during addition,
      * in order to force lexicographical ordering
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return LexSortedSet object
      */
     RLexSortedSetRx getLexSortedSet(String name);
 
     /**
-     * Returns String based Redis Sorted Set instance with specified <code>options</code>.
+     * 返回String based Redis Sorted Set instance with specified <code>options</code>.。
      * All elements are inserted with the same score during addition,
      * in order to force lexicographical ordering
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return LexSortedSet object
      */
     RLexSortedSetRx getLexSortedSet(CommonOptions options);
 
     /**
-     * Returns Sharded Topic instance by name.
+     * 返回Sharded Topic instance by name.。
      * <p>
      * Messages are delivered to message listeners connected to the same Topic.
      * <p>
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Topic object
      */
     RShardedTopicRx getShardedTopic(String name);
 
     /**
-     * Returns Sharded Topic instance by name using provided codec for messages.
+     * 返回Sharded Topic instance by name using provided codec for messages.。
      * <p>
      * Messages are delivered to message listeners connected to the same Topic.
      * <p>
      *
-     * @param name name of object
+     * @param name 对象名称
      * @param codec codec for message
      * @return Topic object
      */
     RShardedTopicRx getShardedTopic(String name, Codec codec);
 
     /**
-     * Returns Sharded Topic instance with specified <code>options</code>.
+     * 返回Sharded Topic instance with specified <code>options</code>.。
      * <p>
      * Messages are delivered to message listeners connected to the same Topic.
      * <p>
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Topic object
      */
     RShardedTopicRx getShardedTopic(PlainOptions options);
 
     /**
-     * Returns topic instance by name.
+     * 返回topic instance by name.。
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return Topic object
      */
     RTopicRx getTopic(String name);
 
     /**
-     * Returns topic instance by name
+     * 返回topic instance by name。
      * using provided codec for messages.
      *
-     * @param name name of object
+     * @param name 对象名称
      * @param codec codec for message
      * @return Topic object
      */
     RTopicRx getTopic(String name, Codec codec);
 
     /**
-     * Returns topic instance with specified <code>options</code>.
+     * 返回topic instance with specified <code>options</code>.。
      * <p>
      * Messages are delivered to message listeners connected to the same Topic.
      * <p>
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Topic object
      */
     RTopicRx getTopic(PlainOptions options);
 
     /**
-     * Returns reliable topic instance by name.
+     * 返回reliable topic instance by name.。
      * <p>
      * Dedicated Redis connection is allocated per instance (subscriber) of this object.
      * Messages are delivered to all listeners attached to the same Redis setup.
      * <p>
-     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 需要 <b>Redis 5.0.0 及以上</b>。
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return ReliableTopic object
      */
     RReliableTopicRx getReliableTopic(String name);
 
     /**
-     * Returns reliable topic instance by name
+     * 返回reliable topic instance by name。
      * using provided codec for messages.
      * <p>
      * Dedicated Redis connection is allocated per instance (subscriber) of this object.
      * Messages are delivered to all listeners attached to the same Redis setup.
      * <p>
-     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 需要 <b>Redis 5.0.0 及以上</b>。
      *
-     * @param name name of object
+     * @param name 对象名称
      * @param codec codec for message
      * @return ReliableTopic object
      */
     RReliableTopicRx getReliableTopic(String name, Codec codec);
 
     /**
-     * Returns reliable topic instance with specified <code>options</code>.
+     * 返回reliable topic instance with specified <code>options</code>.。
      * <p>
      * Dedicated Redis connection is allocated per instance (subscriber) of this object.
      * Messages are delivered to all listeners attached to the same Redis setup.
      * <p>
-     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 需要 <b>Redis 5.0.0 及以上</b>。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return ReliableTopic object
      */
     RReliableTopicRx getReliableTopic(PlainOptions options);
 
     /**
-     * Returns topic instance satisfies by pattern name.
+     * 返回topic instance satisfies by pattern name.。
      *
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
@@ -1377,7 +1373,7 @@ public interface RedissonRxClient {
     RPatternTopicRx getPatternTopic(String pattern);
 
     /**
-     * Returns topic instance satisfies by pattern name
+     * 返回topic instance satisfies by pattern name。
      * using provided codec for messages.
      *
      *  Supported glob-style patterns:
@@ -1392,49 +1388,49 @@ public interface RedissonRxClient {
     RPatternTopicRx getPatternTopic(String pattern, Codec codec);
 
     /**
-     * Returns topic instance satisfies pattern name and specified <code>options</code>..
+     * 返回topic instance satisfies pattern name and specified <code>options</code>..。
      *
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return PatterTopic object
      */
     RPatternTopicRx getPatternTopic(PatternTopicOptions options);
 
     /**
-     * Returns queue instance by name.
+     * 返回queue instance by name.。
      *
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return Queue object
      */
     <V> RQueueRx<V> getQueue(String name);
 
     /**
-     * Returns queue instance by name
+     * 返回queue instance by name。
      * using provided codec for queue objects.
      * 
-     * @param <V> type of values
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型s
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return Queue object
      */
     <V> RQueueRx<V> getQueue(String name, Codec codec);
 
     /**
-     * Returns unbounded queue instance with specified <code>options</code>.
+     * 返回unbounded queue instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return queue object
      */
     <V> RQueueRx<V> getQueue(PlainOptions options);
 
     /**
-     * Returns a reliable queue instance by name.
+     * 返回a reliable queue instance by name.。
      * <p>
      * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
      * and synchronous replication.
@@ -1446,7 +1442,7 @@ public interface RedissonRxClient {
     <V> RReliableQueueRx<V> getReliableQueue(String name);
 
     /**
-     * Returns a reliable queue instance by name and provided codec.
+     * 返回a reliable queue instance by name and provided codec.。
      * <p>
      * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
      * and synchronous replication.
@@ -1459,7 +1455,7 @@ public interface RedissonRxClient {
     <V> RReliableQueueRx<V> getReliableQueue(String name, Codec codec);
 
     /**
-     * Returns a reliable queue instance with the specified configuration options.
+     * 返回a reliable queue instance with the specified configuration options.。
      * <p>
      * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
      * and synchronous replication.
@@ -1471,186 +1467,186 @@ public interface RedissonRxClient {
     <V> RReliableQueueRx<V> getReliableQueue(PlainOptions options);
 
     /**
-     * Returns RingBuffer based queue.
+     * 返回RingBuffer based queue.。
      * 
-     * @param <V> value type
-     * @param name name of object
+     * @param <V> 值类型
+     * @param name 对象名称
      * @return RingBuffer object
      */
     <V> RRingBufferRx<V> getRingBuffer(String name);
     
     /**
-     * Returns RingBuffer based queue.
+     * 返回RingBuffer based queue.。
      * 
-     * @param <V> value type
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return RingBuffer object
      */
     <V> RRingBufferRx<V> getRingBuffer(String name, Codec codec);
 
     /**
-     * Returns RingBuffer based queue instance with specified <code>options</code>.
+     * 返回RingBuffer based queue instance with specified <code>options</code>.。
      *
-     * @param <V> value type
-     * @param options instance options
+     * @param <V> 值类型
+     * @param options 实例选项
      * @return RingBuffer object
      */
     <V> RRingBufferRx<V> getRingBuffer(PlainOptions options);
 
     /**
-     * Returns circular (ring) buffer instance by <code>name</code>.
+     * 返回circular (ring) buffer instance by <code>name</code>.。
      * <p>
-     * Requires <b>Redis 8.8 or higher.</b>
+     * 需要 <b>Redis 8.8 及以上</b>。
      *
-     * @param <V> value type
-     * @param name name of instance
+     * @param <V> 值类型
+     * @param name 实例名称
      * @return CircularBuffer object
      */
     <V> RCircularBufferRx<V> getCircularBuffer(String name);
 
     /**
-     * Returns circular (ring) buffer instance by <code>name</code>
+     * 返回circular (ring) buffer instance by <code>name</code>。
      * using provided <code>codec</code> for values.
      * <p>
-     * Requires <b>Redis 8.8 or higher.</b>
+     * 需要 <b>Redis 8.8 及以上</b>。
      *
-     * @param <V> value type
-     * @param name name of instance
-     * @param codec codec for values
+     * @param <V> 值类型
+     * @param name 实例名称
+     * @param codec 值编解码器
      * @return CircularBuffer object
      */
     <V> RCircularBufferRx<V> getCircularBuffer(String name, Codec codec);
 
     /**
-     * Returns circular (ring) buffer instance with specified <code>options</code>.
+     * 返回circular (ring) buffer instance with specified <code>options</code>.。
      * <p>
-     * Requires <b>Redis 8.8 or higher.</b>
+     * 需要 <b>Redis 8.8 及以上</b>。
      *
-     * @param <V> value type
-     * @param options instance options
+     * @param <V> 值类型
+     * @param options 实例选项
      * @return CircularBuffer object
      */
     <V> RCircularBufferRx<V> getCircularBuffer(PlainOptions options);
 
     /**
-     * Returns blocking queue instance by name.
+     * 返回blocking queue instance by name.。
      * 
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return BlockingQueue object
      */
     <V> RBlockingQueueRx<V> getBlockingQueue(String name);
 
     /**
-     * Returns blocking queue instance by name
+     * 返回blocking queue instance by name。
      * using provided codec for queue objects.
      * 
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @param codec code for values
      * @return BlockingQueue object
      */
     <V> RBlockingQueueRx<V> getBlockingQueue(String name, Codec codec);
 
     /**
-     * Returns unbounded blocking queue instance with specified <code>options</code>.
+     * 返回unbounded blocking queue instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return BlockingQueue object
      */
     <V> RBlockingQueueRx<V> getBlockingQueue(PlainOptions options);
 
     /**
-     * Returns unbounded blocking deque instance by name.
+     * 按名称获取无界 {@link RBlockingDeque} 实例。
      * 
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return BlockingDeque object
      */
     <V> RBlockingDequeRx<V> getBlockingDeque(String name);
 
     /**
-     * Returns unbounded blocking deque instance by name
+     * 返回unbounded blocking deque instance by name。
      * using provided codec for deque objects.
      * 
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @param codec deque objects codec
      * @return BlockingDeque object
      */
     <V> RBlockingDequeRx<V> getBlockingDeque(String name, Codec codec);
 
     /**
-     * Returns unbounded blocking deque instance with specified <code>options</code>.
+     * 返回unbounded blocking deque instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return BlockingDeque object
      */
     <V> RBlockingDequeRx<V> getBlockingDeque(PlainOptions options);
 
     /**
-     * Returns transfer queue instance by name.
+     * 返回transfer queue instance by name.。
      *
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return TransferQueue object
      */
     <V> RTransferQueueRx<V> getTransferQueue(String name);
 
     /**
-     * Returns transfer queue instance by name
+     * 返回transfer queue instance by name。
      * using provided codec for queue objects.
      *
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @param codec code for values
      * @return TransferQueue object
      */
     <V> RTransferQueueRx<V> getTransferQueue(String name, Codec codec);
 
     /**
-     * Returns transfer queue instance with specified <code>options</code>.
+     * 返回transfer queue instance with specified <code>options</code>.。
      *
-     * @param <V> type of values
-     * @param options instance options
+     * @param <V> 元素类型s
+     * @param options 实例选项
      * @return TransferQueue object
      */
     <V> RTransferQueueRx<V> getTransferQueue(PlainOptions options);
 
     /**
-     * Returns deque instance by name.
+     * 返回deque instance by name.。
      * 
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @return Deque object
      */
     <V> RDequeRx<V> getDeque(String name);
 
     /**
-     * Returns deque instance by name
+     * 返回deque instance by name。
      * using provided codec for deque objects.
      * 
-     * @param <V> type of values
-     * @param name name of object
+     * @param <V> 元素类型s
+     * @param name 对象名称
      * @param codec coded for values
      * @return Deque object
      */
     <V> RDequeRx<V> getDeque(String name, Codec codec);
 
     /**
-     * Returns unbounded deque instance with specified <code>options</code>.
+     * 返回unbounded deque instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return Deque object
      */
     <V> RDequeRx<V> getDeque(PlainOptions options);
 
     /**
-     * Returns "atomic long" instance by name.
+     * 返回"atomic long" instance by name.。
      *
      * @param name of the "atomic long"
      * @return AtomicLong object
@@ -1658,15 +1654,15 @@ public interface RedissonRxClient {
     RAtomicLongRx getAtomicLong(String name);
 
     /**
-     * Returns atomicLong instance with specified <code>options</code>.
+     * 返回atomicLong instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return AtomicLong object
      */
     RAtomicLongRx getAtomicLong(CommonOptions options);
 
     /**
-     * Returns "atomic double" instance by name.
+     * 返回"atomic double" instance by name.。
      *
      * @param name of the "atomic double"
      * @return AtomicLong object
@@ -1674,15 +1670,15 @@ public interface RedissonRxClient {
     RAtomicDoubleRx getAtomicDouble(String name);
 
     /**
-     * Returns atomicDouble instance with specified <code>options</code>.
+     * 返回atomicDouble instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return AtomicDouble object
      */
     RAtomicDoubleRx getAtomicDouble(CommonOptions options);
 
     /**
-     * Returns object for remote operations prefixed with the default name (redisson_remote_service)
+     * 返回object for remote operations prefixed with the default name (redisson_remote_service)。
      * 
      * @return RemoteService object
      */
@@ -1690,7 +1686,7 @@ public interface RedissonRxClient {
     RRemoteService getRemoteService();
     
     /**
-     * Returns object for remote operations prefixed with the default name (redisson_remote_service)
+     * 返回object for remote operations prefixed with the default name (redisson_remote_service)。
      * and uses provided codec for method arguments and result.
      * 
      * @param codec codec for response and request
@@ -1700,7 +1696,7 @@ public interface RedissonRxClient {
     RRemoteService getRemoteService(Codec codec);
 
     /**
-     * Returns object for remote operations prefixed with the specified name
+     * 返回object for remote operations prefixed with the specified name。
      *
      * @param name the name used as the Redis key prefix for the services
      * @return RemoteService object
@@ -1708,7 +1704,7 @@ public interface RedissonRxClient {
     RRemoteService getRemoteService(String name);
     
     /**
-     * Returns object for remote operations prefixed with the specified name
+     * 返回object for remote operations prefixed with the specified name。
      * and uses provided codec for method arguments and result.
      *
      * @param name the name used as the Redis key prefix for the services
@@ -1718,173 +1714,173 @@ public interface RedissonRxClient {
     RRemoteService getRemoteService(String name, Codec codec);
 
     /**
-     * Returns object for remote operations prefixed with specified <code>options</code>.
+     * 返回object for remote operations prefixed with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return RemoteService object
      */
     RRemoteService getRemoteService(PlainOptions options);
 
     /**
-     * Returns bitSet instance by name.
+     * 返回bitSet instance by name.。
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return BitSet object
      */
     RBitSetRx getBitSet(String name);
 
     /**
-     * Returns bitSet instance with specified <code>options</code>.
+     * 返回bitSet instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return BitSet object
      */
     RBitSetRx getBitSet(CommonOptions options);
 
     /**
-     * Returns bloom filter instance by name.
+     * 返回bloom filter instance by name.。
      *
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return BloomFilter object
      */
     <V> RBloomFilterRx<V> getBloomFilter(String name);
 
     /**
-     * Returns bloom filter instance by name
+     * 返回bloom filter instance by name。
      * using provided codec for objects.
      *
-     * @param <V> type of value
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return BloomFilter object
      */
     <V> RBloomFilterRx<V> getBloomFilter(String name, Codec codec);
 
     /**
-     * Returns bloom filter instance with specified <code>options</code>.
+     * 返回bloom filter instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return BloomFilter object
      */
     <V> RBloomFilterRx<V> getBloomFilter(PlainOptions options);
 
     /**
-     * Returns bloom filter native instance by name.
+     * 返回bloom filter native instance by name.。
      * using BF.* Commands
      *
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return BloomFilterNative object
      */
     <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name);
 
     /**
-     * Returns bloom filter native instance by name
+     * 返回bloom filter native instance by name。
      * using BF.* Commands
      * using provided codec for objects.
      *
-     * @param <V> type of value
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return BloomFilterNative object
      */
     <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name, Codec codec);
 
     /**
-     * Returns bloom filter native instance with specified <code>options</code>.
+     * 返回bloom filter native instance with specified <code>options</code>.。
      * using BF.* Commands
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return BloomFilterNative object
      */
     <V> RBloomFilterNativeRx<V> getBloomFilterNative(PlainOptions options);
 
     /**
-     * Returns cuckoo filter instance by <code>name</code>.
+     * 返回cuckoo filter instance by <code>name</code>.。
      *
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return CuckooFilter object
      */
     <V> RCuckooFilterRx<V> getCuckooFilter(String name);
 
     /**
-     * Returns cuckoo filter instance by <code>name</code>
+     * 返回cuckoo filter instance by <code>name</code>。
      * using provided <code>codec</code> for values.
      *
-     * @param <V> type of value
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return CuckooFilter object
      */
     <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec);
 
     /**
-     * Returns cuckoo filter instance with specified <code>options</code>.
+     * 返回cuckoo filter instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return CuckooFilter object
      */
     <V> RCuckooFilterRx<V> getCuckooFilter(PlainOptions options);
 
     /**
-     * Returns Top-K sketch instance by <code>name</code>.
+     * 返回Top-K sketch instance by <code>name</code>.。
      *
-     * @param <V> type of value
-     * @param name name of object
+     * @param <V> 元素类型
+     * @param name 对象名称
      * @return TopK object
      */
     <V> RTopKRx<V> getTopK(String name);
 
     /**
-     * Returns Top-K sketch instance by <code>name</code>
+     * 返回Top-K sketch instance by <code>name</code>。
      * using provided <code>codec</code> for values.
      *
-     * @param <V> type of value
-     * @param name name of object
-     * @param codec codec for values
+     * @param <V> 元素类型
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return TopK object
      */
     <V> RTopKRx<V> getTopK(String name, Codec codec);
 
     /**
-     * Returns Top-K sketch instance with specified <code>options</code>.
+     * 返回Top-K sketch instance with specified <code>options</code>.。
      *
-     * @param <V> type of value
-     * @param options instance options
+     * @param <V> 元素类型
+     * @param options 实例选项
      * @return TopK object
      */
     <V> RTopKRx<V> getTopK(PlainOptions options);
 
     /**
-     * Returns t-digest instance by <code>name</code>.
+     * 返回t-digest instance by <code>name</code>.。
      *
-     * @param name name of object
+     * @param name 对象名称
      * @return TDigest object
      */
     RTDigestRx getTDigest(String name);
 
     /**
-     * Returns t-digest instance with specified <code>options</code>.
+     * 返回t-digest instance with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return TDigest object
      */
     RTDigestRx getTDigest(PlainOptions options);
 
     /**
-     * Returns interface for Redis Function feature
+     * 返回interface for Redis Function feature。
      *
      * @return function object
      */
     RFunctionRx getFunction();
 
     /**
-     * Returns interface for Redis Function feature using provided codec
+     * 返回interface for Redis Function feature using provided codec。
      *
      * @param codec codec for params and result
      * @return function interface
@@ -1892,22 +1888,22 @@ public interface RedissonRxClient {
     RFunctionRx getFunction(Codec codec);
 
     /**
-     * Returns interface for Redis Function feature with specified <code>options</code>.
+     * 返回interface for Redis Function feature with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return function object
      */
     RFunctionRx getFunction(OptionalOptions options);
 
     /**
-     * Returns script operations object
+     * 返回script operations object。
      *
      * @return Script object
      */
     RScriptRx getScript();
 
     /**
-     * Returns script operations object using provided codec.
+     * 返回script operations object using provided codec.。
      * 
      * @param codec codec for params and result
      * @return Script object
@@ -1915,15 +1911,15 @@ public interface RedissonRxClient {
     RScriptRx getScript(Codec codec);
 
     /**
-     * Returns script operations object with specified <code>options</code>.
+     * 返回script operations object with specified <code>options</code>.。
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return Script object
      */
     RScriptRx getScript(OptionalOptions options);
 
     /**
-     * Returns vector set instance by name.
+     * 返回vector set instance by name.。
      * <p>
      * Requires <b>Redis 8.0.0 and higher.</b>
      *
@@ -1933,17 +1929,17 @@ public interface RedissonRxClient {
     RVectorSetRx getVectorSet(String name);
 
     /**
-     * Returns vector set instance by name with specified <code>options</code>.
+     * 返回vector set instance by name with specified <code>options</code>.。
      * <p>
      * Requires <b>Redis 8.0.0 and higher.</b>
      *
-     * @param options instance options
+     * @param options 实例选项
      * @return vector set instance
      */
     RVectorSetRx getVectorSet(CommonOptions options);
 
     /**
-     * Creates transaction with <b>READ_COMMITTED</b> isolation level.
+     * 创建transaction with <b>READ_COMMITTED</b> isolation level.。
      * 
      * @param options transaction configuration
      * @return Transaction object
@@ -1972,7 +1968,7 @@ public interface RedissonRxClient {
     RBatchRx createBatch();
 
     /**
-     * Returns keys operations.
+     * 返回keys operations.。
      * Each of Redis/Redisson object associated with own key
      *
      * @return Keys object
@@ -1980,7 +1976,7 @@ public interface RedissonRxClient {
     RKeysRx getKeys();
 
     /**
-     * Returns interface for operations over Redis keys with specified <code>options</code>.
+     * 返回interface for operations over Redis keys with specified <code>options</code>.。
      * Each of Redis/Redisson object is associated with own key.
      *
      * @return Keys object
@@ -1994,7 +1990,7 @@ public interface RedissonRxClient {
     void shutdown();
 
     /**
-     * Allows to get configuration provided
+     * 返回创建客户端时使用的 {@link Config}。（Redisson API）。
      * during Redisson instance creation. Further changes on
      * this object not affect Redisson instance.
      *
@@ -2003,14 +1999,14 @@ public interface RedissonRxClient {
     Config getConfig();
     
     /**
-     * Returns {@code true} if this Redisson instance has been shut down.
+     * 返回{@code true} if this Redisson instance has been shut down.。
      *
      * @return <code>true</code> if this Redisson instance has been shut down otherwise <code>false</code>
      */
     boolean isShutdown();
 
     /**
-     * Returns {@code true} if this Redisson instance was started to be shutdown
+     * 返回{@code true} if this Redisson instance was started to be shutdown。
      * or was shutdown {@link #isShutdown()} already.
      *
      * @return <code>true</code> if this Redisson instance was started to be shutdown
@@ -2019,7 +2015,7 @@ public interface RedissonRxClient {
     boolean isShuttingDown();
 
     /**
-     * Returns id of this Redisson instance
+     * 返回id of this Redisson instance。
      * 
      * @return id
      */

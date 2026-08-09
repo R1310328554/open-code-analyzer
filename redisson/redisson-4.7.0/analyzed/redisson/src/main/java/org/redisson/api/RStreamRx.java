@@ -26,76 +26,76 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Reactive interface for Redis Stream object.
+ * interface for Redis Stream object. 的 Reactor 响应式 API。
  * <p>
- * Requires <b>Redis 5.0.0 and higher.</b>
+ * 需要 <b>Redis 5.0.0 及以上</b>。
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RStreamRx<K, V> extends RExpirableRx {
 
     /**
-     * Creates consumer group.
+     * 创建消费者组。（Redisson API）。
      * <p>
      * Usage examples:
      * <pre>
      * StreamMessageId id = stream.createGroup(StreamCreateGroupArgs.name("test").id(id).makeStream());
      * </pre>
      *
-     * @param args method arguments object
+     * @param args 方法参数对象
      */
     Completable createGroup(StreamCreateGroupArgs args);
 
     /**
-     * Removes group by name.
+     * 按名称移除消费者组。（Redisson API）。
      * 
-     * @param groupName - name of group
-     * @return void
+     * @param groupName 消费者组名称
+     * @return 无返回值
      */
     Completable removeGroup(String groupName);
 
     /**
-     * Creates consumer of the group by name.
+     * 在指定组下创建消费者。（Redisson API）。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
+     * @param groupName 消费者组名称
+     * @param consumerName 消费者名称
      */
     Completable createConsumer(String groupName, String consumerName);
 
     /**
-     * Removes consumer of the group by name.
+     * 移除指定组下的消费者。（Redisson API）。
      * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
+     * @param groupName 消费者组名称
+     * @param consumerName 消费者名称
      * @return number of pending messages owned by consumer
      */
     Single<Long> removeConsumer(String groupName, String consumerName);
     
     /**
-     * Updates next message id delivered to consumers. 
+     * 更新投递给消费者的下一条消息 ID。（Redisson API）。
      * 
-     * @param groupName - name of group
-     * @param id - Stream Message ID
-     * @return void
+     * @param groupName 消费者组名称
+     * @param id Stream 消息 ID
+     * @return 无返回值
      */
     Completable updateGroupMessageId(String groupName, StreamMessageId id);
     
     /**
-     * Marks pending messages by group name and stream <code>ids</code> as correctly processed.
+     * Redis Stream 相关操作：Marks pending messages by group name and stream <code>ids</code> as correctly processed.。
      * 
-     * @param groupName - name of group
+     * @param groupName 消费者组名称
      * @param ids - stream ids
      * @return marked messages amount
      */
     Single<Long> ack(String groupName, StreamMessageId... ids);
 
     /**
-     * Acknowledges and conditionally deletes one or multiple entries (messages)
+     * 确认并条件删除一条或多条流消息。（Redisson API）。
      * for a stream consumer group at the specified key.
      *
      * Requires <b>Redis 8.2.0 and higher.</b>
@@ -117,21 +117,21 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<Long> nack(StreamNackArgs args);
 
     /**
-     * Returns common info about pending messages by group name.
+     * 返回common info about pending messages by group name.。
      * 
-     * @param groupName - name of group
+     * @param groupName 消费者组名称
      * @return result object
      */
     Single<PendingResult> getPendingInfo(String groupName);
 
     /**
-     * Returns list of pending messages by group name.
+     * 返回list of pending messages by group name.。
      * Limited by start stream id and end stream id and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max stream id
      * {@link StreamMessageId#MIN} is used as min stream id
      * 
-     * @param groupName - name of group
+     * @param groupName 消费者组名称
      * @param startId - start stream id
      * @param endId - end stream id
      * @param count - amount of messages
@@ -141,14 +141,14 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<List<PendingEntry>> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
     
     /**
-     * Returns list of pending messages by group name and consumer name.
+     * 返回list of pending messages by group name and consumer name.。
      * Limited by start stream id and end stream id and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max stream id
      * {@link StreamMessageId#MIN} is used as min stream id
      * 
-     * @param consumerName - name of consumer
-     * @param groupName - name of group
+     * @param consumerName 消费者名称
+     * @param groupName 消费者组名称
      * @param startId - start stream id
      * @param endId - end stream id
      * @param count - amount of messages
@@ -158,17 +158,17 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<List<PendingEntry>> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
 
     /**
-     * Returns list of common info about pending messages by group name.
+     * 返回list of common info about pending messages by group name.。
      * Limited by minimum idle time, messages count, start and end Stream Message IDs.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
      * @see #pendingRange
      *
-     * @param groupName - name of group
+     * @param groupName 消费者组名称
      * @param startId - start Stream Message ID
      * @param idleTime - minimum idle time of messages
      * @param idleTimeUnit - idle time unit
@@ -180,18 +180,18 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<List<PendingEntry>> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
-     * Returns list of common info about pending messages by group and consumer name.
+     * 返回list of common info about pending messages by group and consumer name.。
      * Limited by minimum idle time, messages count, start and end Stream Message IDs.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
      * @see #pendingRange
      *
-     * @param consumerName - name of consumer
-     * @param groupName - name of group
+     * @param consumerName 消费者名称
+     * @param groupName 消费者组名称
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
      * @param idleTime - minimum idle time of messages
@@ -203,7 +203,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<List<PendingEntry>> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
-     * Returns list of common info about pending messages by group and consumer name.
+     * 返回list of common info about pending messages by group and consumer name.。
      * Limited by start Stream Message ID and end Stream Message ID and count.
      *
      * @param args - method arguments object
@@ -212,17 +212,17 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<List<PendingEntry>> listPending(StreamPendingRangeArgs args);
 
     /**
-     * Returns stream data of pending messages by group name.
+     * 返回stream data of pending messages by group name.。
      * Limited by minimum idle time, messages count, start and end Stream Message IDs.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
      * @see #listPending
      *
-     * @param groupName - name of group
+     * @param groupName 消费者组名称
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
      * @param idleTime - minimum idle time of messages
@@ -233,18 +233,18 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
-     * Returns stream data of pending messages by group and customer name.
+     * 返回stream data of pending messages by group and customer name.。
      * Limited by minimum idle time, messages count, start and end Stream Message IDs.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
      * @see #listPending
      *
-     * @param consumerName - name of consumer
-     * @param groupName - name of group
+     * @param consumerName 消费者名称
+     * @param groupName 消费者组名称
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
      * @param idleTime - minimum idle time of messages
@@ -294,7 +294,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<FastAutoClaimResult> fastAutoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count);
 
     /**
-     * Read stream data from consumer group and multiple streams including current.
+     * 读取stream data from consumer group and multiple streams including current.。
      * <p>
      * Usage examples:
      * <pre>
@@ -312,7 +312,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMultiReadGroupArgs args);
 
     /**
-     * Read stream data from consumer group and current stream only.
+     * 读取stream data from consumer group and current stream only.。
      * <p>
      * Usage examples:
      * <pre>
@@ -330,14 +330,14 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamReadGroupArgs args);
 
     /**
-     * Returns number of entries in stream
+     * 返回number of entries in stream。
      * 
      * @return size of stream
      */
     Single<Long> size();
 
     /**
-     * Appends a new entry/entries and returns generated Stream Message ID
+     * Redis Stream 相关操作：追加流条目并返回生成的 Stream 消息 ID。。
      * <p>
      * Usage examples:
      * <pre>
@@ -354,7 +354,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<StreamMessageId> add(StreamAddArgs<K, V> args);
 
     /**
-     * Appends a new entry/entries by specified Stream Message ID
+     * Redis Stream 相关操作：按指定 Stream 消息 ID 追加流条目。。
      * <p>
      * Usage examples:
      * <pre>
@@ -365,13 +365,13 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      *                                 .trim(TrimStrategy.MAXLEN, 100)));
      * </pre>
      *
-     * @param id - Stream Message ID
+     * @param id Stream 消息 ID
      * @param args - method arguments object
      */
     Completable add(StreamMessageId id, StreamAddArgs<K, V> args);
 
     /**
-     * Read stream data from multiple streams including current.
+     * 读取stream data from multiple streams including current.。
      * <p>
      * Usage examples:
      * <pre>
@@ -389,7 +389,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<String, Map<StreamMessageId, Map<K, V>>>> read(StreamMultiReadArgs args);
 
     /**
-     * Read stream data from current stream only.
+     * 读取stream data from current stream only.。
      * <p>
      * Usage examples:
      * <pre>
@@ -407,7 +407,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> read(StreamReadArgs args);
 
     /**
-     * Returns stream data in range by specified start Stream ID (included) and end Stream ID (included).
+     * 返回stream data in range by specified start Stream ID (included) and end Stream ID (included).。
      * 
      * @param startId - start Stream ID
      * @param endId - end Stream ID
@@ -417,7 +417,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> range(StreamMessageId startId, StreamMessageId endId);
 
     /**
-     * Returns stream data in range by specified start Stream ID (included) and end Stream ID (included).
+     * 返回stream data in range by specified start Stream ID (included) and end Stream ID (included).。
      * 
      * @param count - stream data size limit
      * @param startId - start Stream ID
@@ -428,7 +428,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> range(int count, StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
+     * 返回stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).。
      * 
      * @param startId - start Stream ID
      * @param endId - end Stream ID
@@ -438,7 +438,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> rangeReversed(StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
+     * 返回stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).。
      * 
      * @param count - stream data size limit
      * @param startId - start Stream ID
@@ -449,7 +449,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> rangeReversed(int count, StreamMessageId startId, StreamMessageId endId);
 
     /**
-     * Returns stream data in range.
+     * 返回stream data in range.。
      *
      * @param args - method arguments object
      * @return stream data mapped by Stream ID
@@ -457,7 +457,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> range(StreamRangeArgs args);
 
     /**
-     * Returns stream data in reverse order in range.
+     * 返回stream data in reverse order in range.。
      *
      * @param args - method arguments object
      * @return stream data mapped by Stream ID
@@ -465,7 +465,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> rangeReversed(StreamRangeArgs args);
 
     /**
-     * Removes messages by id.
+     * 移除messages by id.。
      * 
      * @param ids - id of messages to remove
      * @return deleted messages amount
@@ -473,7 +473,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<Long> remove(StreamMessageId... ids);
 
     /**
-     * Removes messages.
+     * 移除messages.。
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
@@ -482,7 +482,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<Map<StreamMessageId, StreamEntryStatus>> remove(StreamRemoveArgs args);
 
     /**
-     * Trims stream using strict trimming.
+     * Redis Stream 相关操作：Trims stream using strict trimming.。
      *
      * @param args - method arguments object
      * @return number of deleted messages
@@ -490,7 +490,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<Long> trim(StreamTrimArgs args);
 
     /**
-     * Trims stream using non-strict trimming.
+     * Redis Stream 相关操作：Trims stream using non-strict trimming.。
      *
      * @param args - method arguments object
      * @return number of deleted messages
@@ -498,29 +498,29 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<Long> trimNonStrict(StreamTrimArgs args);
 
     /**
-     * Returns information about this stream.
+     * 返回information about this stream.。
      * 
      * @return info object
      */
     Single<StreamInfo<K, V>> getInfo();
     
     /**
-     * Returns list of objects with information about groups belonging to this stream.
+     * 返回list of objects with information about groups belonging to this stream.。
      * 
      * @return list of info objects 
      */
     Single<List<StreamGroup>> listGroups();
 
     /**
-     * Returns list of objects with information about group customers for specified <code>groupName</code>.
+     * 返回list of objects with information about group customers for specified <code>groupName</code>.。
      * 
-     * @param groupName - name of group
+     * @param groupName 消费者组名称
      * @return list of info objects
      */
     Maybe<List<StreamConsumer>> listConsumers(String groupName);
     
     /**
-     * Returns stream data of pending messages by group name.
+     * 返回stream data of pending messages by group name.。
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
@@ -528,7 +528,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * 
      * @see #listPending
      * 
-     * @param groupName - name of group
+     * @param groupName 消费者组名称
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
      * @param count - amount of messages
@@ -537,7 +537,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
     
     /**
-     * Returns stream data of pending messages by group and customer name.
+     * 返回stream data of pending messages by group and customer name.。
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
@@ -545,8 +545,8 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * 
      * @see #listPending
      * 
-     * @param consumerName - name of consumer
-     * @param groupName - name of group
+     * @param consumerName 消费者名称
+     * @param groupName 消费者组名称
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
      * @param count - amount of messages
@@ -555,7 +555,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Maybe<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.StreamAddListener
@@ -568,8 +568,8 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     Single<Integer> addListener(ObjectListener listener);
 

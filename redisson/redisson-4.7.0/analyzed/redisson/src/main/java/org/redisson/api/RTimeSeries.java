@@ -23,36 +23,36 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
- * Redis based time-series collection.
+ * 时间序列 {@link RTimeSeries} 同步 API。
+ * <p>基于 Redis ZSET 按时间戳存储条目，支持范围查询、TTL 与惰性过期淘汰。
  *
  * @author Nikita Koksharov
- *
- * @param <V> value type
- * @param <L> label type
+ * @param <V> 值类型
+ * @param <L> 标签/元数据类型
  */
 public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesAsync<V, L>, RDestroyable {
 
     /**
-     * Adds element to this time-series collection
+     * 添加element to this time-series collection。
      * by specified <code>timestamp</code>.
      *
-     * @param timestamp object timestamp
-     * @param object object itself
+     * @param timestamp 时间戳
+     * @param object 对象本身
      */
     void add(long timestamp, V object);
 
     /**
-     * Adds element with <code>label</code> to this time-series collection
+     * 添加element with <code>label</code> to this time-series collection。
      * by specified <code>timestamp</code>.
      *
-     * @param timestamp object timestamp
-     * @param object object itself
-     * @param label object label
+     * @param timestamp 时间戳
+     * @param object 对象本身
+     * @param label 对象标签
      */
     void add(long timestamp, V object, L label);
 
     /**
-     * Adds all elements contained in the specified map to this time-series collection.
+     * 添加all elements contained in the specified map to this time-series collection.。
      * Map contains of timestamp mapped by object.
      *
      * @param objects - map of elements to add
@@ -60,56 +60,56 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     void addAll(Map<Long, V> objects);
 
     /**
-     * Adds all entries collection to this time-series collection.
+     * 添加all entries collection to this time-series collection.。
      *
      * @param entries collection of time series entries
      */
     void addAll(Collection<TimeSeriesEntry<V, L>> entries);
 
     /**
-     * Use {@link #add(long, Object, Duration)} instead
+     * 请改用 {@link #add(long, Object, Duration)}。（Redisson API）。
      *
      * @param timestamp - object timestamp
      * @param object - object itself
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
      */
     @Deprecated
     void add(long timestamp, V object, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Adds element to this time-series collection
+     * 添加element to this time-series collection。
      * by specified <code>timestamp</code>.
      *
-     * @param timestamp object timestamp
-     * @param object object itself
+     * @param timestamp 时间戳
+     * @param object 对象本身
      * @param timeToLive time to live interval
      */
     void add(long timestamp, V object, Duration timeToLive);
 
     /**
-     * Adds element with <code>label</code> to this time-series collection
+     * 添加element with <code>label</code> to this time-series collection。
      * by specified <code>timestamp</code>.
      *
-     * @param timestamp object timestamp
-     * @param object object itself
-     * @param label object label
+     * @param timestamp 时间戳
+     * @param object 对象本身
+     * @param label 对象标签
      * @param timeToLive time to live interval
      */
     void add(long timestamp, V object, L label, Duration timeToLive);
 
     /**
-     * Use {@link #addAll(Map, Duration)} instead
+     * 请改用 {@link #addAll(Map, Duration)}。（Redisson API）。
      *
      * @param objects - map of elements to add
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
      */
     @Deprecated
     void addAll(Map<Long, V> objects, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Adds all elements contained in the specified map to this time-series collection.
+     * 添加all elements contained in the specified map to this time-series collection.。
      * Map contains of timestamp mapped by object.
      *
      * @param objects map of elements to add
@@ -118,7 +118,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     void addAll(Map<Long, V> objects, Duration timeToLive);
 
     /**
-     * Adds all time series entries collection to this time-series collection.
+     * 添加all time series entries collection to this time-series collection.。
      * Specified time to live interval applied to all entries defined in collection.
      *
      * @param entries collection of time series entries
@@ -127,14 +127,14 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     void addAll(Collection<TimeSeriesEntry<V, L>> entries, Duration timeToLive);
 
     /**
-     * Returns size of this set.
+     * 返回size of this set.。
      *
      * @return size
      */
     int size();
 
     /**
-     * Returns object by specified <code>timestamp</code> or <code>null</code> if it doesn't exist.
+     * 返回object by specified <code>timestamp</code> or <code>null</code> if it doesn't exist.。
      *
      * @param timestamp - object timestamp
      * @return object
@@ -142,15 +142,15 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     V get(long timestamp);
 
     /**
-     * Returns time series entry by specified <code>timestamp</code> or <code>null</code> if it doesn't exist.
+     * 返回time series entry by specified <code>timestamp</code> or <code>null</code> if it doesn't exist.。
      *
-     * @param timestamp object timestamp
+     * @param timestamp 时间戳
      * @return time series entry
      */
     TimeSeriesEntry<V, L> getEntry(long timestamp);
 
     /**
-     * Removes object by specified <code>timestamp</code>.
+     * 移除object by specified <code>timestamp</code>.。
      *
      * @param timestamp - object timestamp
      * @return <code>true</code> if an element was removed as a result of this call
@@ -158,7 +158,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     boolean remove(long timestamp);
 
     /**
-     * Removes and returns object by specified <code>timestamp</code>.
+     * 移除and returns object by specified <code>timestamp</code>.。
      *
      * @param timestamp - object timestamp
      * @return object or <code>null</code> if it doesn't exist
@@ -166,7 +166,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     V getAndRemove(long timestamp);
 
     /**
-     * Removes and returns entry by specified <code>timestamp</code>.
+     * 移除and returns entry by specified <code>timestamp</code>.。
      *
      * @param timestamp - object timestamp
      * @return entry or <code>null</code> if it doesn't exist
@@ -174,7 +174,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     TimeSeriesEntry<V, L> getAndRemoveEntry(long timestamp);
 
     /**
-     * Removes and returns the head elements
+     * 移除and returns the head elements。
      *
      * @param count - elements amount
      * @return collection of head elements
@@ -182,7 +182,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<V> pollFirst(int count);
 
     /**
-     * Removes and returns head entries
+     * 移除and returns head entries。
      *
      * @param count - entries amount
      * @return collection of head entries
@@ -190,7 +190,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<TimeSeriesEntry<V, L>> pollFirstEntries(int count);
 
     /**
-     * Removes and returns the tail elements or {@code null} if this time-series collection is empty.
+     * 移除and returns the tail elements or {@code null} if this time-series collection is empty.。
      *
      * @param count - elements amount
      * @return the tail element or {@code null} if this time-series collection is empty
@@ -198,7 +198,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<V> pollLast(int count);
 
     /**
-     * Removes and returns tail entries
+     * 移除and returns tail entries。
      *
      * @param count - entries amount
      * @return collection of tail entries
@@ -206,7 +206,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<TimeSeriesEntry<V, L>> pollLastEntries(int count);
 
     /**
-     * Removes and returns the head element or {@code null} if this time-series collection is empty.
+     * 移除and returns the head element or {@code null} if this time-series collection is empty.。
      *
      * @return the head element,
      *         or {@code null} if this time-series collection is empty
@@ -214,7 +214,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     V pollFirst();
 
     /**
-     * Removes and returns head entry or {@code null} if this time-series collection is empty.
+     * 移除and returns head entry or {@code null} if this time-series collection is empty.。
      *
      * @return the head entry,
      *         or {@code null} if this time-series collection is empty
@@ -222,63 +222,63 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     TimeSeriesEntry<V, L> pollFirstEntry();
 
     /**
-     * Removes and returns the tail element or {@code null} if this time-series collection is empty.
+     * 移除and returns the tail element or {@code null} if this time-series collection is empty.。
      *
      * @return the tail element or {@code null} if this time-series collection is empty
      */
     V pollLast();
 
     /**
-     * Removes and returns the tail entry or {@code null} if this time-series collection is empty.
+     * 移除and returns the tail entry or {@code null} if this time-series collection is empty.。
      *
      * @return the tail entry or {@code null} if this time-series collection is empty
      */
     TimeSeriesEntry<V, L> pollLastEntry();
 
     /**
-     * Returns the tail element or {@code null} if this time-series collection is empty.
+     * 返回the tail element or {@code null} if this time-series collection is empty.。
      *
      * @return the tail element or {@code null} if this time-series collection is empty
      */
     V last();
 
     /**
-     * Returns the tail entry or {@code null} if this time-series collection is empty.
+     * 返回the tail entry or {@code null} if this time-series collection is empty.。
      *
      * @return the tail entry or {@code null} if this time-series collection is empty
      */
     TimeSeriesEntry<V, L> lastEntry();
 
     /**
-     * Returns the head element or {@code null} if this time-series collection is empty.
+     * 返回the head element or {@code null} if this time-series collection is empty.。
      *
      * @return the head element or {@code null} if this time-series collection is empty
      */
     V first();
 
     /**
-     * Returns the head entry or {@code null} if this time-series collection is empty.
+     * 返回the head entry or {@code null} if this time-series collection is empty.。
      *
      * @return the head entry or {@code null} if this time-series collection is empty
      */
     TimeSeriesEntry<V, L> firstEntry();
 
     /**
-     * Returns timestamp of the head timestamp or {@code null} if this time-series collection is empty.
+     * 返回timestamp of the head timestamp or {@code null} if this time-series collection is empty.。
      *
      * @return timestamp or {@code null} if this time-series collection is empty
      */
     Long firstTimestamp();
 
     /**
-     * Returns timestamp of the tail element or {@code null} if this time-series collection is empty.
+     * 返回timestamp of the tail element or {@code null} if this time-series collection is empty.。
      *
      * @return timestamp or {@code null} if this time-series collection is empty
      */
     Long lastTimestamp();
 
     /**
-     * Returns the tail elements of this time-series collection.
+     * 返回the tail elements of this time-series collection.。
      *
      * @param count - elements amount
      * @return the tail elements
@@ -286,7 +286,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<V> last(int count);
 
     /**
-     * Returns the tail entries of this time-series collection.
+     * 返回the tail entries of this time-series collection.。
      *
      * @param count - entries amount
      * @return the tail entries
@@ -294,7 +294,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<TimeSeriesEntry<V, L>> lastEntries(int count);
 
     /**
-     * Returns the head elements of this time-series collection.
+     * 返回the head elements of this time-series collection.。
      *
      * @param count - elements amount
      * @return the head elements
@@ -302,7 +302,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<V> first(int count);
 
     /**
-     * Returns the head entries of this time-series collection.
+     * 返回the head entries of this time-series collection.。
      *
      * @param count - entries amount
      * @return the head entries
@@ -310,25 +310,25 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<TimeSeriesEntry<V, L>> firstEntries(int count);
 
     /**
-     * Removes values within timestamp range. Including boundary values.
+     * 移除values within timestamp range. Including boundary values.。
      *
-     * @param startTimestamp - start timestamp
-     * @param endTimestamp - end timestamp
+     * @param startTimestamp 起始时间戳
+     * @param endTimestamp 结束时间戳
      * @return number of removed elements
      */
     int removeRange(long startTimestamp, long endTimestamp);
 
     /**
-     * Returns ordered elements of this time-series collection within timestamp range. Including boundary values.
+     * 返回ordered elements of this time-series collection within timestamp range. Including boundary values.。
      *
-     * @param startTimestamp - start timestamp
-     * @param endTimestamp - end timestamp
+     * @param startTimestamp 起始时间戳
+     * @param endTimestamp 结束时间戳
      * @return elements collection
      */
     Collection<V> range(long startTimestamp, long endTimestamp);
 
     /**
-     * Returns ordered elements of this time-series collection within timestamp range. Including boundary values.
+     * 返回ordered elements of this time-series collection within timestamp range. Including boundary values.。
      *
      * @param startTimestamp start timestamp
      * @param endTimestamp end timestamp
@@ -338,16 +338,16 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<V> range(long startTimestamp, long endTimestamp, int limit);
 
     /**
-     * Returns elements of this time-series collection in reverse order within timestamp range. Including boundary values.
+     * 返回elements of this time-series collection in reverse order within timestamp range. Including boundary values.。
      *
-     * @param startTimestamp - start timestamp
-     * @param endTimestamp - end timestamp
+     * @param startTimestamp 起始时间戳
+     * @param endTimestamp 结束时间戳
      * @return elements collection
      */
     Collection<V> rangeReversed(long startTimestamp, long endTimestamp);
 
     /**
-     * Returns elements of this time-series collection in reverse order within timestamp range. Including boundary values.
+     * 返回elements of this time-series collection in reverse order within timestamp range. Including boundary values.。
      *
      * @param startTimestamp start timestamp
      * @param endTimestamp end timestamp
@@ -357,16 +357,16 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<V> rangeReversed(long startTimestamp, long endTimestamp, int limit);
 
     /**
-     * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
+     * 返回ordered entries of this time-series collection within timestamp range. Including boundary values.。
      *
-     * @param startTimestamp - start timestamp
-     * @param endTimestamp - end timestamp
+     * @param startTimestamp 起始时间戳
+     * @param endTimestamp 结束时间戳
      * @return elements collection
      */
     Collection<TimeSeriesEntry<V, L>> entryRange(long startTimestamp, long endTimestamp);
 
     /**
-     * Returns ordered entries of this time-series collection within timestamp range. Including boundary values.
+     * 返回ordered entries of this time-series collection within timestamp range. Including boundary values.。
      *
      * @param startTimestamp start timestamp
      * @param endTimestamp end timestamp
@@ -376,16 +376,16 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<TimeSeriesEntry<V, L>> entryRange(long startTimestamp, long endTimestamp, int limit);
 
     /**
-     * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
+     * 返回entries of this time-series collection in reverse order within timestamp range. Including boundary values.。
      *
-     * @param startTimestamp - start timestamp
-     * @param endTimestamp - end timestamp
+     * @param startTimestamp 起始时间戳
+     * @param endTimestamp 结束时间戳
      * @return elements collection
      */
     Collection<TimeSeriesEntry<V, L>> entryRangeReversed(long startTimestamp, long endTimestamp);
 
     /**
-     * Returns entries of this time-series collection in reverse order within timestamp range. Including boundary values.
+     * 返回entries of this time-series collection in reverse order within timestamp range. Including boundary values.。
      *
      * @param startTimestamp start timestamp
      * @param endTimestamp end timestamp
@@ -395,7 +395,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Collection<TimeSeriesEntry<V, L>> entryRangeReversed(long startTimestamp, long endTimestamp, int limit);
 
     /**
-     * Returns stream of elements in this time-series collection.
+     * 返回stream of elements in this time-series collection.。
      * Elements are loaded in batch. Batch size is 10.
      *
      * @return stream of elements
@@ -403,7 +403,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Stream<V> stream();
 
     /**
-     * Returns stream of elements in this time-series collection.
+     * 返回stream of elements in this time-series collection.。
      * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
      *
      * @param count - size of elements batch
@@ -412,7 +412,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Stream<V> stream(int count);
 
     /**
-     * Returns an iterator over elements in this time-series collection.
+     * 返回an iterator over elements in this time-series collection.。
      * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
      *
      * @param count - size of elements batch
@@ -421,7 +421,7 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
     Iterator<V> iterator(int count);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.ScoredSortedSetAddListener
@@ -429,8 +429,8 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     @Override
     int addListener(ObjectListener listener);

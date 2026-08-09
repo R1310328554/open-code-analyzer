@@ -16,10 +16,9 @@
 package org.redisson.api.bitset;
 
 /**
- * BITFIELD offset wrapper for bit or index-based offsets.
+ * BITFIELD 位偏移包装类，支持按位或按索引（{@code #} 前缀）偏移。
  *
  * @author Su Ko
- *
  */
 public final class BitOffset {
 
@@ -32,29 +31,31 @@ public final class BitOffset {
     }
 
     /**
-     * Creates a bit offset.
+     * 创建a bit offset.。
      *
-     * @param offset zero-based bit offset
-     * @return offset wrapper
+     * @param offset 从 0 开始的位偏移
+     * @return 偏移包装对象
      */
     public static BitOffset bit(long offset) {
         return new BitOffset(offset, false);
     }
 
     /**
-     * Creates an index-based offset (prefixed with '#').
+     * 创建an index-based offset (prefixed with '#').。
      *
-     * @param index index of the integer element
-     * @return offset wrapper
+     * @param index 整型元素索引
+     * @return 偏移包装对象
      */
     public static BitOffset index(long index) {
         return new BitOffset(index, true);
     }
 
+    /** 返回原始 long 偏移值。 */
     public long getLongValue() {
         return value;
     }
 
+    /** 返回 Redis 命令使用的偏移字符串（索引型带 {@code #} 前缀）。 */
     public String getValue() {
         if (indexed) {
             return "#" + value;
@@ -63,6 +64,7 @@ public final class BitOffset {
         return Long.toString(value);
     }
 
+    /** 是否为索引型偏移（{@code #} 前缀）。 */
     public boolean isIndexed() {
         return indexed;
     }
