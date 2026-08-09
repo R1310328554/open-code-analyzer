@@ -24,8 +24,8 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
- * {@link FactoryBean} that creates a JSR-310 {@link java.time.format.DateTimeFormatter}.
- * See the {@link DateTimeFormatterFactory base class} for configuration details.
+ * {@link FactoryBean}，用于创建 JSR-310 {@link java.time.format.DateTimeFormatter}。
+ * 配置细节参见 {@link DateTimeFormatterFactory 基类}。
  *
  * @author Juergen Hoeller
  * @since 4.0

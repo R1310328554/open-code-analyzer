@@ -26,8 +26,8 @@ import org.springframework.format.Printer;
 import org.springframework.format.annotation.DurationFormat;
 
 /**
- * Formats fields annotated with the {@link DurationFormat} annotation using the
- * selected style for parsing and printing JSR-310 {@code Duration}.
+ * 使用所选样式解析和打印 JSR-310 {@code Duration}，
+ * 格式化带有 {@link DurationFormat} 注解的字段。
  *
  * @author Simon Baslé
  * @since 6.2

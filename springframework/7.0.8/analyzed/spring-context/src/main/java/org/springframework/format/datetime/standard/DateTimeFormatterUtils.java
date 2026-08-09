@@ -22,7 +22,7 @@ import java.time.format.ResolverStyle;
 import org.springframework.util.StringUtils;
 
 /**
- * Internal {@link DateTimeFormatter} utilities.
+ * 内部 {@link DateTimeFormatter} 工具类。
  *
  * @author Juergen Hoeller
  * @since 5.3.5
@@ -30,11 +30,11 @@ import org.springframework.util.StringUtils;
 abstract class DateTimeFormatterUtils {
 
 	/**
-	 * Create a {@link DateTimeFormatter} for the supplied pattern, configured with
-	 * {@linkplain ResolverStyle#STRICT strict} resolution.
-	 * <p>Note that the strict resolution does not affect the parsing.
-	 * @param pattern the pattern to use
-	 * @return a new {@code DateTimeFormatter}
+	 * 为给定图案创建 {@link DateTimeFormatter}，并配置为
+	 * {@linkplain ResolverStyle#STRICT 严格}解析模式。
+	 * <p>注意，严格解析模式不影响解析行为。
+	 * @param pattern 要使用的图案
+	 * @return 新的 {@code DateTimeFormatter}
 	 * @see ResolverStyle#STRICT
 	 */
 	static DateTimeFormatter createStrictDateTimeFormatter(String pattern) {

@@ -24,7 +24,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.NamedThreadLocal;
 
 /**
- * A holder for a thread-local user {@link DateTimeContext}.
+ * 线程本地用户 {@link DateTimeContext} 的持有者。
  *
  * @author Juergen Hoeller
  * @since 4.0
@@ -41,16 +41,16 @@ public final class DateTimeContextHolder {
 
 
 	/**
-	 * Reset the DateTimeContext for the current thread.
+	 * 重置当前线程的 {@code DateTimeContext}。
 	 */
 	public static void resetDateTimeContext() {
 		dateTimeContextHolder.remove();
 	}
 
 	/**
-	 * Associate the given DateTimeContext with the current thread.
-	 * @param dateTimeContext the current DateTimeContext,
-	 * or {@code null} to reset the thread-bound context
+	 * 将给定 {@code DateTimeContext} 与当前线程关联。
+	 * @param dateTimeContext 当前的 {@code DateTimeContext}，
+	 * 或 {@code null} 以重置线程绑定的上下文
 	 */
 	public static void setDateTimeContext(@Nullable DateTimeContext dateTimeContext) {
 		if (dateTimeContext == null) {
@@ -62,19 +62,18 @@ public final class DateTimeContextHolder {
 	}
 
 	/**
-	 * Return the DateTimeContext associated with the current thread, if any.
-	 * @return the current DateTimeContext, or {@code null} if none
+	 * 返回与当前线程关联的 {@code DateTimeContext}，若有则返回。
+	 * @return 当前的 {@code DateTimeContext}，若无则返回 {@code null}
 	 */
 	public static @Nullable DateTimeContext getDateTimeContext() {
 		return dateTimeContextHolder.get();
 	}
 
 	/**
-	 * Obtain a DateTimeFormatter with user-specific settings applied to the given base formatter.
-	 * @param formatter the base formatter that establishes default formatting rules
-	 * (generally user independent)
-	 * @param locale the current user locale (may be {@code null} if not known)
-	 * @return the user-specific DateTimeFormatter
+	 * 获取已将用户专属设置应用到给定基础格式化器上的 {@code DateTimeFormatter}。
+	 * @param formatter 建立默认格式化规则的基础格式化器（通常与用户无关）
+	 * @param locale 当前用户区域（若未知可为 {@code null}）
+	 * @return 带用户专属设置的 {@code DateTimeFormatter}
 	 */
 	public static DateTimeFormatter getFormatter(DateTimeFormatter formatter, @Nullable Locale locale) {
 		DateTimeFormatter formatterToUse = (locale != null ? formatter.withLocale(locale) : formatter);

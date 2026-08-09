@@ -28,9 +28,9 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.i18n.TimeZoneAwareLocaleContext;
 
 /**
- * A context that holds user-specific <code>java.time</code> (JSR-310) settings
- * such as the user's Chronology (calendar system) and time zone.
- * <p>A {@code null} property value indicates the user has not specified a setting.
+ * 保存用户专属的 <code>java.time</code>（JSR-310）设置，
+ * 例如用户的历法（Chronology）和时区。
+ * <p>属性值为 {@code null} 表示用户未指定该设置。
  *
  * @author Juergen Hoeller
  * @since 4.0
@@ -44,24 +44,24 @@ public class DateTimeContext {
 
 
 	/**
-	 * Set the user's chronology (calendar system).
+	 * 设置用户的历法（日历系统）。
 	 */
 	public void setChronology(@Nullable Chronology chronology) {
 		this.chronology = chronology;
 	}
 
 	/**
-	 * Return the user's chronology (calendar system), if any.
+	 * 返回用户的历法（日历系统），若有则返回。
 	 */
 	public @Nullable Chronology getChronology() {
 		return this.chronology;
 	}
 
 	/**
-	 * Set the user's time zone.
-	 * <p>Alternatively, set a {@link TimeZoneAwareLocaleContext} on
-	 * {@link LocaleContextHolder}. This context class will fall back to
-	 * checking the locale context if no setting has been provided here.
+	 * 设置用户的时区。
+	 * <p>也可在 {@link LocaleContextHolder} 上设置
+	 * {@link TimeZoneAwareLocaleContext}。若此处未提供设置，
+	 * 本上下文类会回退检查区域上下文。
 	 * @see org.springframework.context.i18n.LocaleContextHolder#getTimeZone()
 	 * @see org.springframework.context.i18n.LocaleContextHolder#setLocaleContext
 	 */
@@ -70,7 +70,7 @@ public class DateTimeContext {
 	}
 
 	/**
-	 * Return the user's time zone, if any.
+	 * 返回用户的时区，若有则返回。
 	 */
 	public @Nullable ZoneId getTimeZone() {
 		return this.timeZone;
@@ -78,11 +78,10 @@ public class DateTimeContext {
 
 
 	/**
-	 * Get the DateTimeFormatter with this context's settings applied to the
-	 * base {@code formatter}.
-	 * @param formatter the base formatter that establishes default
-	 * formatting rules, generally context-independent
-	 * @return the contextual DateTimeFormatter
+	 * 获取已将本上下文设置应用到基础 {@code formatter} 上的
+	 * {@code DateTimeFormatter}。
+	 * @param formatter 建立默认格式化规则的基础格式化器，通常与上下文无关
+	 * @return 带上下文信息的 {@code DateTimeFormatter}
 	 */
 	public DateTimeFormatter getFormatter(DateTimeFormatter formatter) {
 		if (this.chronology != null) {

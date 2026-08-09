@@ -39,7 +39,7 @@ import org.springframework.format.FormatterRegistry;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 /**
- * Configures the JSR-310 <code>java.time</code> formatting system for use with Spring.
+ * 为 Spring 配置 JSR-310 <code>java.time</code> 格式化系统。
  *
  * @author Juergen Hoeller
  * @author Phillip Webb
@@ -58,12 +58,12 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 
 
 	/**
-	 * User-defined formatters.
+	 * 用户自定义的格式化器。
 	 */
 	private final Map<Type, DateTimeFormatter> formatters = new EnumMap<>(Type.class);
 
 	/**
-	 * Factories used when specific formatters have not been specified.
+	 * 在未指定特定格式化器时使用的工厂。
 	 */
 	private final Map<Type, DateTimeFormatterFactory> factories = new EnumMap<>(Type.class);
 
@@ -76,10 +76,10 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 
 
 	/**
-	 * Set whether standard ISO formatting should be applied to all date/time types.
-	 * <p>Default is "false" (no).
-	 * <p>If set to "true", the "dateStyle", "timeStyle", and "dateTimeStyle"
-	 * properties are effectively ignored.
+	 * 设置是否对所有日期/时间类型应用标准 ISO 格式化。
+	 * <p>默认为 {@code false}（否）。
+	 * <p>若设为 {@code true}，{@code dateStyle}、{@code timeStyle}
+	 * 和 {@code dateTimeStyle} 属性将实际被忽略。
 	 */
 	public void setUseIsoFormat(boolean useIsoFormat) {
 		this.factories.get(Type.DATE).setIso(useIsoFormat ? ISO.DATE : ISO.NONE);
@@ -88,7 +88,7 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 	}
 
 	/**
-	 * Set the default format style of {@link java.time.LocalDate} objects.
+	 * 设置 {@link java.time.LocalDate} 对象的默认格式样式。
 	 * <p>Default is {@link java.time.format.FormatStyle#SHORT}.
 	 */
 	public void setDateStyle(FormatStyle dateStyle) {
@@ -96,7 +96,7 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 	}
 
 	/**
-	 * Set the default format style of {@link java.time.LocalTime} objects.
+	 * 设置 {@link java.time.LocalTime} 对象的默认格式样式。
 	 * <p>Default is {@link java.time.format.FormatStyle#SHORT}.
 	 */
 	public void setTimeStyle(FormatStyle timeStyle) {
@@ -104,7 +104,7 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 	}
 
 	/**
-	 * Set the default format style of {@link java.time.LocalDateTime} objects.
+	 * 设置 {@link java.time.LocalDateTime} 对象的默认格式样式。
 	 * <p>Default is {@link java.time.format.FormatStyle#SHORT}.
 	 */
 	public void setDateTimeStyle(FormatStyle dateTimeStyle) {
@@ -112,11 +112,11 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 	}
 
 	/**
-	 * Set the formatter that will be used for objects representing date values.
-	 * <p>This formatter will be used for the {@link LocalDate} type.
-	 * When specified, the {@link #setDateStyle dateStyle} and
-	 * {@link #setUseIsoFormat useIsoFormat} properties will be ignored.
-	 * @param formatter the formatter to use
+	 * 设置用于表示日期值的格式化器。
+	 * <p>该格式化器将用于 {@link LocalDate} 类型。
+	 * 指定后，{@link #setDateStyle dateStyle} 和
+	 * {@link #setUseIsoFormat useIsoFormat} 属性将被忽略。
+	 * @param formatter 要使用的格式化器
 	 * @see #setTimeFormatter
 	 * @see #setDateTimeFormatter
 	 */
@@ -125,10 +125,10 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 	}
 
 	/**
-	 * Set the formatter that will be used for objects representing time values.
-	 * <p>This formatter will be used for the {@link LocalTime} and {@link OffsetTime}
-	 * types. When specified, the {@link #setTimeStyle timeStyle} and
-	 * {@link #setUseIsoFormat useIsoFormat} properties will be ignored.
+	 * 设置用于表示时间值的格式化器。
+	 * <p>该格式化器将用于 {@link LocalTime} 和 {@link OffsetTime} 类型。
+	 * 指定后，{@link #setTimeStyle timeStyle} 和
+	 * {@link #setUseIsoFormat useIsoFormat} 属性将被忽略。
 	 * @param formatter the formatter to use
 	 * @see #setDateFormatter
 	 * @see #setDateTimeFormatter
@@ -138,11 +138,11 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 	}
 
 	/**
-	 * Set the formatter that will be used for objects representing date and time values.
-	 * <p>This formatter will be used for {@link LocalDateTime}, {@link ZonedDateTime},
-	 * and {@link OffsetDateTime} types. When specified, the
-	 * {@link #setDateTimeStyle dateTimeStyle} and
-	 * {@link #setUseIsoFormat useIsoFormat} properties will be ignored.
+	 * 设置用于表示日期时间值的格式化器。
+	 * <p>该格式化器将用于 {@link LocalDateTime}、{@link ZonedDateTime}
+	 * 和 {@link OffsetDateTime} 类型。指定后，
+	 * {@link #setDateTimeStyle dateTimeStyle} 和
+	 * {@link #setUseIsoFormat useIsoFormat} 属性将被忽略。
 	 * @param formatter the formatter to use
 	 * @see #setDateFormatter
 	 * @see #setTimeFormatter
