@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:23:47Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubMessage.java",
-    "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubMessageDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubPatternMessage.java",
-    "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubPatternMessageDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubStatusDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubStatusMessage.java",
-    "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubType.java",
-    "redisson/src/main/java/org/redisson/cluster/ClusterNodeInfo.java",
-    "redisson/src/main/java/org/redisson/cluster/ClusterPartition.java",
-    "redisson/src/main/java/org/redisson/cluster/ClusterSlotRange.java",
-    "redisson/src/main/java/org/redisson/codec/AvroJackson3Codec.java",
-    "redisson/src/main/java/org/redisson/codec/AvroJacksonCodec.java",
-    "redisson/src/main/java/org/redisson/codec/BaseEventCodec.java",
-    "redisson/src/main/java/org/redisson/codec/CborJackson3Codec.java",
-    "redisson/src/main/java/org/redisson/codec/CborJacksonCodec.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 392,
-  "done": 2415
+  "done": 2430
 }
