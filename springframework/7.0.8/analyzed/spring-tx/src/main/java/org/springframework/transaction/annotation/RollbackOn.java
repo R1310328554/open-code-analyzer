@@ -17,13 +17,13 @@
 package org.springframework.transaction.annotation;
 
 /**
- * An enum for global rollback-on behavior.
+ * 全局回滚行为的枚举。
  *
- * <p>Note that the default behavior matches the traditional behavior in
- * EJB CMT and JTA, with the latter having rollback rules similar to Spring.
- * A global switch to trigger a rollback on any exception affects Spring's
- * {@link Transactional} as well as {@link jakarta.transaction.Transactional}
- * but leaves the non-rule-based {@link jakarta.ejb.TransactionAttribute} as-is.
+ * <p>默认行为与 EJB CMT 和 JTA 的传统行为一致，
+ * 后者回滚规则与 Spring 类似。
+ * 全局切换为任意异常触发回滚会影响 Spring 的
+ * {@link Transactional} 以及 {@link jakarta.transaction.Transactional}，
+ * 但不改变基于非规则的 {@link jakarta.ejb.TransactionAttribute}。
  *
  * @author Juergen Hoeller
  * @since 6.2
@@ -33,15 +33,14 @@ package org.springframework.transaction.annotation;
 public enum RollbackOn {
 
 	/**
-	 * The default rollback-on behavior: rollback on
-	 * {@link RuntimeException RuntimeExceptions} as well as {@link Error Errors}.
+	 * 默认回滚行为：对 {@link RuntimeException RuntimeExceptions}
+	 * 以及 {@link Error Errors} 回滚。
 	 * @see org.springframework.transaction.interceptor.RollbackRuleAttribute#ROLLBACK_ON_RUNTIME_EXCEPTIONS
 	 */
 	RUNTIME_EXCEPTIONS,
 
 	/**
-	 * The alternative mode: rollback on all exceptions, including any checked
-	 * {@link Exception}.
+	 * 替代模式：对所有异常（包括任何受检 {@link Exception}）回滚。
 	 * @see org.springframework.transaction.interceptor.RollbackRuleAttribute#ROLLBACK_ON_ALL_EXCEPTIONS
 	 */
 	ALL_EXCEPTIONS

@@ -17,8 +17,7 @@
 package org.springframework.transaction;
 
 /**
- * Superclass for exceptions caused by inappropriate usage of
- * a Spring transaction API.
+ * 因不当使用 Spring 事务 API 而引发的异常的父类。
  *
  * @author Rod Johnson
  * @since 22.03.2003
@@ -27,17 +26,17 @@ package org.springframework.transaction;
 public class TransactionUsageException extends TransactionException {
 
 	/**
-	 * Constructor for TransactionUsageException.
-	 * @param msg the detail message
+	 * TransactionUsageException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public TransactionUsageException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for TransactionUsageException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the transaction API in use
+	 * TransactionUsageException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 所用事务 API 的根因
 	 */
 	public TransactionUsageException(String msg, Throwable cause) {
 		super(msg, cause);

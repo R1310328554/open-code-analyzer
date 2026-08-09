@@ -32,7 +32,8 @@ import org.springframework.transaction.interceptor.RuleBasedTransactionAttribute
 import org.springframework.transaction.interceptor.TransactionAttribute;
 
 /**
- * Strategy implementation for parsing JTA 1.2's {@link jakarta.transaction.Transactional} annotation.
+ * 解析 JTA 1.2 {@link jakarta.transaction.Transactional} 注解的策略实现，
+ * 将 JTA 事务元数据转换为 Spring 事务属性。
  *
  * @author Juergen Hoeller
  * @since 4.0

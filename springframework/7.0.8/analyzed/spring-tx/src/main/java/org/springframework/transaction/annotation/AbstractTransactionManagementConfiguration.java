@@ -36,8 +36,8 @@ import org.springframework.transaction.interceptor.TransactionAttributeSource;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Abstract base {@code @Configuration} class providing common structure for enabling
- * Spring's annotation-driven transaction management capability.
+ * 启用 Spring 注解驱动事务管理能力的抽象 {@code @Configuration} 基类，
+ * 提供通用结构。
  *
  * @author Chris Beams
  * @author Stephane Nicoll
@@ -51,7 +51,7 @@ public abstract class AbstractTransactionManagementConfiguration implements Impo
 	protected @Nullable AnnotationAttributes enableTx;
 
 	/**
-	 * Default transaction manager, as configured through a {@link TransactionManagementConfigurer}.
+	 * 通过 {@link TransactionManagementConfigurer} 配置的默认事务管理器。
 	 */
 	protected @Nullable TransactionManager txManager;
 

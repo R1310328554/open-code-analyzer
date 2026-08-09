@@ -21,8 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Exception thrown when a general transaction system error is encountered,
- * like on commit or rollback.
+ * 遇到一般性事务系统错误（例如提交或回滚时）时抛出的异常。
  *
  * @author Juergen Hoeller
  * @since 24.03.2003
@@ -34,17 +33,17 @@ public class TransactionSystemException extends TransactionException {
 
 
 	/**
-	 * Constructor for TransactionSystemException.
-	 * @param msg the detail message
+	 * TransactionSystemException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public TransactionSystemException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for TransactionSystemException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the transaction API in use
+	 * TransactionSystemException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 所用事务 API 的根因
 	 */
 	public TransactionSystemException(String msg, Throwable cause) {
 		super(msg, cause);
@@ -52,11 +51,10 @@ public class TransactionSystemException extends TransactionException {
 
 
 	/**
-	 * Set an application exception that was thrown before this transaction exception,
-	 * preserving the original exception despite the overriding TransactionSystemException.
-	 * @param ex the application exception
-	 * @throws IllegalStateException if this TransactionSystemException already holds an
-	 * application exception
+	 * 设置在此事务异常之前抛出的应用异常，
+	 * 尽管覆盖了 TransactionSystemException，仍保留原始异常。
+	 * @param ex 应用异常
+	 * @throws IllegalStateException 若此 TransactionSystemException 已持有应用异常
 	 */
 	public void initApplicationException(Throwable ex) {
 		Assert.notNull(ex, "Application exception must not be null");
@@ -67,18 +65,17 @@ public class TransactionSystemException extends TransactionException {
 	}
 
 	/**
-	 * Return the application exception that was thrown before this transaction exception,
-	 * if any.
-	 * @return the application exception, or {@code null} if none set
+	 * 返回在此事务异常之前抛出的应用异常（若有）。
+	 * @return 应用异常，未设置则返回 {@code null}
 	 */
 	public final @Nullable Throwable getApplicationException() {
 		return this.applicationException;
 	}
 
 	/**
-	 * Return the exception that was the first to be thrown within the failed transaction:
-	 * i.e. the application exception, if any, or the TransactionSystemException's own cause.
-	 * @return the original exception, or {@code null} if there was none
+	 * 返回失败事务中首先抛出的异常：
+	 * 即应用异常（若有），否则为 TransactionSystemException 自身的 cause。
+	 * @return 原始异常，若无则返回 {@code null}
 	 */
 	public @Nullable Throwable getOriginalException() {
 		return (this.applicationException != null ? this.applicationException : getCause());

@@ -34,9 +34,8 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * AOT {@code BeanRegistrationAotProcessor} that detects the presence of
- * {@link Transactional @Transactional} on annotated elements and creates
- * the required reflection hints.
+ * AOT {@code BeanRegistrationAotProcessor}，检测注解元素上
+ * {@link Transactional @Transactional} 的存在并创建所需反射提示。
  *
  * @author Sebastien Deleuze
  * @since 6.0

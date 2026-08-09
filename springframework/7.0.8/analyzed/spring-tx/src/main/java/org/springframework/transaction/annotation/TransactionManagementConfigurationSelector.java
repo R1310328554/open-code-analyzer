@@ -23,9 +23,9 @@ import org.springframework.transaction.config.TransactionManagementConfigUtils;
 import org.springframework.util.ClassUtils;
 
 /**
- * Selects which implementation of {@link AbstractTransactionManagementConfiguration}
- * should be used based on the value of {@link EnableTransactionManagement#mode} on the
- * importing {@code @Configuration} class.
+ * 根据导入 {@code @Configuration} 类上
+ * {@link EnableTransactionManagement#mode} 的值，
+ * 选择应使用的 {@link AbstractTransactionManagementConfiguration} 实现。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -38,10 +38,10 @@ import org.springframework.util.ClassUtils;
 public class TransactionManagementConfigurationSelector extends AdviceModeImportSelector<EnableTransactionManagement> {
 
 	/**
-	 * Returns {@link ProxyTransactionManagementConfiguration} or
-	 * {@code AspectJ(Jta)TransactionManagementConfiguration} for {@code PROXY}
-	 * and {@code ASPECTJ} values of {@link EnableTransactionManagement#mode()},
-	 * respectively.
+	 * 分别针对 {@link EnableTransactionManagement#mode()} 的
+	 * {@code PROXY} 和 {@code ASPECTJ} 值，
+	 * 返回 {@link ProxyTransactionManagementConfiguration} 或
+	 * {@code AspectJ(Jta)TransactionManagementConfiguration}。
 	 */
 	@Override
 	protected String[] selectImports(AdviceMode adviceMode) {

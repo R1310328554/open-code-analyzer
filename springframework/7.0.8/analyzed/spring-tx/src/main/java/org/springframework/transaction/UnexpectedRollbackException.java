@@ -17,8 +17,7 @@
 package org.springframework.transaction;
 
 /**
- * Thrown when an attempt to commit a transaction resulted
- * in an unexpected rollback.
+ * 尝试提交事务却导致意外回滚时抛出。
  *
  * @author Rod Johnson
  * @since 17.03.2003
@@ -27,17 +26,17 @@ package org.springframework.transaction;
 public class UnexpectedRollbackException extends TransactionException {
 
 	/**
-	 * Constructor for UnexpectedRollbackException.
-	 * @param msg the detail message
+	 * UnexpectedRollbackException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public UnexpectedRollbackException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for UnexpectedRollbackException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the transaction API in use
+	 * UnexpectedRollbackException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 所用事务 API 的根因
 	 */
 	public UnexpectedRollbackException(String msg, Throwable cause) {
 		super(msg, cause);

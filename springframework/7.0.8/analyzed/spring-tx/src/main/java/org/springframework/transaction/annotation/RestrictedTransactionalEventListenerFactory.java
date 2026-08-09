@@ -25,10 +25,10 @@ import org.springframework.transaction.event.TransactionalApplicationListenerMet
 import org.springframework.transaction.event.TransactionalEventListenerFactory;
 
 /**
- * Extension of {@link TransactionalEventListenerFactory},
- * detecting invalid transaction configuration for transactional event listeners:
- * {@link Transactional} only supported with {@link Propagation#REQUIRES_NEW}
- * and {@link Propagation#NOT_SUPPORTED}.
+ * {@link TransactionalEventListenerFactory} 的扩展，
+ * 检测事务事件监听器上的无效事务配置：
+ * {@link Transactional} 仅在与 {@link Propagation#REQUIRES_NEW}
+ * 和 {@link Propagation#NOT_SUPPORTED} 组合时受支持。
  *
  * @author Juergen Hoeller
  * @since 6.1
