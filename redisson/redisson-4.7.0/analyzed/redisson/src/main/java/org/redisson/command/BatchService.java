@@ -16,6 +16,9 @@
 package org.redisson.command;
 
 /**
+ * 标记接口，表示实现类支持 Redis 批量/Pipeline 命令聚合。
+ * <p>由 {@link CommandBatchService} 实现，供 {@link CommandAsyncExecutor}
+ * 在创建批量上下文时识别。
  *
  * @author Nikita Koksharov
  *

@@ -39,15 +39,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ * 基于 Redis MULTI/EXEC 的原子批量执行器。
+ * <p>首条写命令自动发送 MULTI 开启事务；EXEC 时附带 CLIENT REPLY OFF/ON、
+ * WAIT/WAITAOF 等；每条命令的 {@link BatchPromise#getSentPromise()} 在写入成功后完成。
+ *
  * @author Nikita Koksharov
  *
- * @param <V> type of value
- * @param <R> type of returned value
+ * @param <V> Redis 回复值类型
+ * @param <R> 业务层返回类型
  */
 public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
 
+    /** 每个主从条目复用的连接与 MULTI 状态。 */
     private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections;
+    /** 按 MasterSlaveEntry 聚合后的命令表（EXEC 时使用）。 */
     private final Map<MasterSlaveEntry, Entry> aggregatedCommands;
 
     @SuppressWarnings("ParameterNumber")
@@ -64,6 +69,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         this.connections = connections;
     }
     
+    /** 登记命令并触发父类连接获取与发送流程。 */
     @Override
     public void execute() {
         try {
@@ -107,6 +113,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         }
     }
     
+    /** EXEC/DISCARD 走标准完成；普通命令仅 complete sentPromise。 */
     @Override
     protected void handleSuccess(CompletableFuture<R> promise, CompletableFuture<RedisConnection> connectionFuture, R res)
             throws ReflectiveOperationException {
@@ -149,6 +156,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         super.handleError(connectionFuture, cause);
     }
     
+    /** 首命令发 MULTI；EXEC 时组装修饰命令与完整命令列表。 */
     @Override
     protected void sendCommand(CompletableFuture<R> attemptPromise, RedisConnection connection) {
         MasterSlaveEntry msEntry = getEntry();
@@ -221,6 +229,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         }
     }
 
+    /** 每个 MasterSlaveEntry 复用同一连接，并用 OrderedCompletableFuture 保证顺序。 */
     @Override
     protected CompletableFuture<RedisConnection> getConnection(CompletableFuture<R> attemptPromise) {
         MasterSlaveEntry msEntry = getEntry();
@@ -244,6 +253,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         return entry.getConnectionFuture();
     }
 
+    /** 从 NodeSource 解析 MasterSlaveEntry（slot 或显式 entry）。 */
     private MasterSlaveEntry getEntry() {
         if (source.getSlot() != null) {
             entry = connectionManager.getWriteEntry(source.getSlot());

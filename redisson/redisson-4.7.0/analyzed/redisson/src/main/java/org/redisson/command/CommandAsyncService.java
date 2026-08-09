@@ -61,22 +61,35 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
+ * {@link CommandAsyncExecutor} 的默认实现：命令路由、重试、脚本缓存、
+ * 集群 slot 分片批量及 {@link RedisExecutor} 生命周期管理。
+ * <p>所有 {@code async*} 方法最终委托 {@link RedisExecutor} 在 Netty 线程上
+ * 获取连接、发送命令并解析回复。
  *
  * @author Nikita Koksharov
  *
  */
 public class CommandAsyncService implements CommandAsyncExecutor {
 
+    /** 日志记录器。 */
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
+    /** 默认编解码器，来自全局 Config */
     final Codec codec;
+    /** 连接与 slot 路由管理器 */
     final ConnectionManager connectionManager;
+    /** Live Object 引用解析器，可为 null */
     final RedissonObjectBuilder objectBuilder;
     final RedissonObjectBuilder.ReferenceType referenceType;
+    /** 命令失败最大重试次数 */
     private final int retryAttempts;
+    /** 重试间隔抖动策略 */
     private final DelayStrategy retryDelay;
+    /** Redis 响应超时（毫秒） */
     private final int responseTimeout;
+    /** 是否跟踪 Live Object 字段变更 */
     private final boolean trackChanges;
+    /** 对象级读模式覆盖，null 表示用全局配置 */
     private final ReadMode readMode;
 
     @Override
@@ -129,6 +142,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.readMode = objectParams.getReadMode();
     }
 
+    /** 从连接管理器与全局配置构造默认异步服务。 */
     protected CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
                                RedissonObjectBuilder.ReferenceType referenceType) {
         this.connectionManager = connectionManager;
@@ -152,6 +166,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return readMode;
     }
 
+    /** 是否启用 Live Object 引用编解码。 */
     private boolean isRedissonReferenceSupportEnabled() {
         return objectBuilder != null;
     }
@@ -385,6 +400,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return futures;
     }
 
+    /** 将 {@link ExecutionException} 转为 {@link RedisException}。 */
     public RedisException convertException(ExecutionException e) {
         if (e.getCause() instanceof RedisException) {
             return (RedisException) e.getCause();
@@ -503,6 +519,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return readAsync(client, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
     }
     
+    /** 是否启用 EVALSHA 脚本缓存。 */
     protected boolean isEvalCacheActive() {
         return connectionManager.getServiceManager().getCfg().isUseScriptCache();
     }
@@ -575,6 +592,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return script;
     }
 
+    /** 执行 Lua 脚本：优先 EVALSHA，NOSCRIPT 时 SCRIPT LOAD 后重试。 */
     public <T, R> RFuture<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType,
                                        String script, List<Object> keys, boolean noRetry, Object... params) {
 
@@ -687,6 +705,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private static final AtomicBoolean SORT_RO_SUPPORTED = new AtomicBoolean(true);
     
+    /** 核心异步入口：创建 {@link RedisExecutor} 并 execute。 */
     public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
             RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
         RedisCommand<V> cmnd = getServiceManager().resp3(command);
@@ -804,7 +823,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (Entry<MasterSlaveEntry, Map<Integer, List<Object>>> entry : entry2keys.entrySet()) {
-            // executes in batch due to CROSSLOT error
+            // 集群模式下按 slot 分组批量执行，避免 CROSSSLOT
             CommandBatchService executorService;
             if (this instanceof CommandBatchService) {
                 executorService = (CommandBatchService) this;
@@ -1244,6 +1263,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return createCommandBatchService(options);
     }
 
+    /** 创建 {@link CommandBatchService} 批量上下文。 */
     @Override
     public CommandBatchService createCommandBatchService(BatchOptions options) {
         return new CommandBatchService(this, options);

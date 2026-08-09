@@ -22,16 +22,22 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 
 /**
+ * 保证 {@link #whenComplete} 回调按注册顺序执行的 {@link CompletableFuture} 包装。
+ * <p>标准 {@code CompletableFuture.whenComplete} 在已完成时可能并发触发回调；
+ * 本类将回调入队，在父 Future 完成时按 FIFO 顺序依次调用，用于连接获取等有序场景。
  *
  * @author Nikita Koksharov
  *
  */
 public final class OrderedCompletableFuture<V> extends CompletableFuture<V> {
 
+    /** 待执行的 whenComplete 回调队列。 */
     final Queue<BiConsumer<? super V, ? super Throwable>> actions = new ConcurrentLinkedQueue<>();
 
+    /** 被包装的父 Future，状态变更委托给它。 */
     final CompletableFuture<V> parentFuture;
 
+    /** @param parentFuture 底层 Future，完成时触发队列中的回调 */
     public OrderedCompletableFuture(CompletableFuture<V> parentFuture) {
         this.parentFuture = parentFuture;
         parentFuture.whenComplete((r, e) -> {
@@ -39,6 +45,7 @@ public final class OrderedCompletableFuture<V> extends CompletableFuture<V> {
         });
     }
 
+    /** 依次执行队列中所有 whenComplete 回调。 */
     void invokeActions(V r, Throwable e) {
         while (true) {
             BiConsumer<? super V, ? super Throwable> action = actions.poll();
@@ -50,6 +57,7 @@ public final class OrderedCompletableFuture<V> extends CompletableFuture<V> {
         }
     }
 
+    /** 从父 Future 取当前结果并触发回调（已完成时使用）。 */
     void invokeActions() {
         try {
             V r = parentFuture.getNow(null);
@@ -59,6 +67,7 @@ public final class OrderedCompletableFuture<V> extends CompletableFuture<V> {
         }
     }
 
+    /** 注册回调；若父 Future 已完成则立即按序触发。 */
     @Override
     public CompletableFuture<V> whenComplete(BiConsumer<? super V, ? super Throwable> action) {
         actions.add(action);
