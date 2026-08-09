@@ -22,13 +22,17 @@ import org.redisson.client.handler.State;
 import io.netty.buffer.ByteBuf;
 
 /**
- * 
+ * 将 Netty {@link ByteBuf} 中的 RESP 片段解码为 Java 对象。
+ * <p>
+ * 解码过程可通过 {@link State} 传递嵌套层级等上下文。
+ *
  * @author Nikita Koksharov
  *
  * @param <R> result type
  */
 public interface Decoder<R> {
 
+    /** 从缓冲区读取并解码，必要时更新 {@code state}。 */
     R decode(ByteBuf buf, State state) throws IOException;
 
 }

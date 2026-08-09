@@ -20,16 +20,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.netty.channel.ChannelPromise;
 
 /**
- * 
+ * 队列中待发送命令的包装，关联 Netty {@link ChannelPromise} 与发送标志。
+ * <p>
+ * {@link #trySend()} 保证同一命令仅写入通道一次。
+ *
  * @author Nikita Koksharov
  *
  */
 public class QueueCommandHolder {
 
+    /** 是否已向通道写出（CAS 防重复发送）。 */
     final AtomicBoolean sent = new AtomicBoolean();
+    /** 写入完成时触发的 Netty Promise。 */
     final ChannelPromise channelPromise;
+    /** 待发送的队列命令。 */
     final QueueCommand command;
 
+    /** 绑定队列命令与通道写入 Promise。 */
     public QueueCommandHolder(QueueCommand command, ChannelPromise channelPromise) {
         super();
         this.command = command;
@@ -44,6 +51,7 @@ public class QueueCommandHolder {
         return channelPromise;
     }
 
+    /** 原子地将发送标志从 false 置为 true，成功表示可发送。 */
     public boolean trySend() {
         return sent.compareAndSet(false, true);
     }

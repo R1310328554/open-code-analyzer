@@ -25,6 +25,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * 批量执行中的单条命令数据，带序号与可重试错误暂存。
+ * <p>
+ * 实现 {@link Comparable} 以保证批次内按 {@code index} 排序。
  *
  * @author Nikita Koksharov
  *
@@ -33,18 +36,23 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class BatchCommandData<T, R> extends CommandData<T, R> implements Comparable<BatchCommandData<T, R>> {
 
+    /** 该命令在批量中的顺序索引。 */
     private final int index;
+    /** 重定向或可重试异常，供上层决定是否重放。 */
     private final AtomicReference<RedisException> retryError = new AtomicReference<>();
 
+    /** 使用默认 {@link StringCodec} 与新建 Promise 构造批量命令项。 */
     public BatchCommandData(RedisCommand<T> command, Object[] params, int index) {
         this(new CompletableFuture<>(), StringCodec.INSTANCE, command, params, index);
     }
 
+    /** 指定 Promise、编解码器与索引构造批量命令项。 */
     public BatchCommandData(CompletableFuture<R> promise, Codec codec, RedisCommand<T> command, Object[] params, int index) {
         super(promise, codec, command, params);
         this.index = index;
     }
 
+    /** 重定向/可重试异常暂存于 {@code retryError}，不立即完成 Promise。 */
     @Override
     public boolean tryFailure(Throwable cause) {
         if (retryError.get() != null) {
@@ -70,6 +78,7 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
         return super.cause();
     }
 
+    /** 清除暂存的重试错误，允许后续重放。 */
     public void clearError() {
         retryError.set(null);
     }
@@ -79,10 +88,12 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
         return index - o.index;
     }
 
+    /** 重试时替换为新的 {@link RedisCommand} 定义。 */
     public void updateCommand(RedisCommand command) {
         this.command = command;
     }
 
+    /** 返回批量内的顺序索引。 */
     public int getIndex() {
         return index;
     }

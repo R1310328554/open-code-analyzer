@@ -26,7 +26,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 /**
- * 
+ * 单条 Redis 命令的队列元素：命令、参数、编解码器与异步 Promise。
+ * <p>
+ * 实现 {@link QueueCommand}，供连接层排队发送与解码响应。
+ *
  * @author Nikita Koksharov
  *
  * @param <T> input type
@@ -34,16 +37,23 @@ import java.util.concurrent.CompletionException;
  */
 public class CommandData<T, R> implements QueueCommand {
 
+    /** 命令结果的异步 Future。 */
     final CompletableFuture<R> promise;
+    /** Redis 命令定义（含解码器）。 */
     RedisCommand<T> command;
+    /** 命令参数数组。 */
     final Object[] params;
+    /** 参数与返回值编解码器。 */
     final Codec codec;
+    /** 可选的消息级多段解码器。 */
     final MultiDecoder<Object> messageDecoder;
 
+    /** 使用默认消息解码器构造命令数据。 */
     public CommandData(CompletableFuture<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
         this(promise, null, codec, command, params);
     }
 
+    /** 指定自定义消息解码器构造命令数据。 */
     public CommandData(CompletableFuture<R> promise, MultiDecoder<Object> messageDecoder, Codec codec, RedisCommand<T> command, Object[] params) {
         this.promise = promise;
         this.command = command;
@@ -64,6 +74,7 @@ public class CommandData<T, R> implements QueueCommand {
         return messageDecoder;
     }
 
+    /** 返回命令结果的 Promise。 */
     public CompletableFuture<R> getPromise() {
         return promise;
     }
@@ -83,6 +94,7 @@ public class CommandData<T, R> implements QueueCommand {
         return promise.isDone() && !promise.isCompletedExceptionally();
     }
 
+    /** 以异常完成 Promise。 */
     public boolean tryFailure(Throwable cause) {
         return promise.completeExceptionally(cause);
     }
@@ -104,10 +116,12 @@ public class CommandData<T, R> implements QueueCommand {
         return Collections.emptyList();
     }
     
+    /** 判断是否为阻塞类命令（如 BLPOP、XREAD BLOCK）。 */
     public boolean isBlockingCommand() {
         return command.isBlockingCommand();
     }
 
+    /** 命令是否已完成（Promise 已结束）。 */
     @Override
     public boolean isExecuted() {
         return promise.isDone();

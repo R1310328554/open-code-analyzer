@@ -53,12 +53,17 @@ import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.CompositeCodec;
 
 /**
- * 
+ * Redisson 预注册的 Redis 命令常量库。
+ * <p>
+ * 每条 {@link RedisCommand} 绑定命令名、可选子命令、{@link MultiDecoder} 与 {@link Convertor}。
+ * 同时维护阻塞命令、Pub/Sub 命令、不可重试命令等分类集合，供连接层调度。
+ *
  * @author Nikita Koksharov
  *
  */
 public interface RedisCommands {
 
+    /** Redis 数组类型（AR*）写操作。 */
     RedisCommand<Long> ARSET = new RedisCommand<>("ARSET");
     RedisCommand<Object> ARGET = new RedisCommand<>("ARGET");
     RedisCommand<List<Object>> ARMGET = new RedisCommand<>("ARMGET", new ObjectListReplayDecoder<>());
@@ -81,6 +86,7 @@ public interface RedisCommands {
     RedisCommand<ArrayInfo> ARINFO = new RedisCommand<>("ARINFO", new ArrayInfoDecoder());
     RedisCommand<ArrayFullInfo> ARINFO_FULL = new RedisCommand<>("ARINFO", new ArrayFullInfoDecoder());
 
+    /** 向量集合（V*）相关命令。 */
     RedisCommand<Boolean> VADD = new RedisCommand<>("VADD", new BooleanReplayConvertor());
     RedisCommand<Integer> VCARD = new RedisCommand<>("VCARD", new IntegerReplayConvertor());
     RedisCommand<Integer> VDIM = new RedisCommand<>("VDIM", new IntegerReplayConvertor());
@@ -137,6 +143,7 @@ public interface RedisCommands {
                         }
                     }));
 
+    /** 调试与地理空间等扩展命令分组。 */
     RedisStrictCommand<Void> DEBUG = new RedisStrictCommand<Void>("DEBUG");
     
     RedisStrictCommand<Long> GEOADD = new RedisStrictCommand<Long>("GEOADD");
@@ -484,6 +491,7 @@ public interface RedisCommands {
                         }
                     }));
 
+    /** 按命令名识别的阻塞命令（BLPOP、BZPOPMIN 等）。 */
     Set<String> BLOCKING_COMMAND_NAMES = new HashSet<String>(
             Arrays.asList(BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName(),
                     BLPOP.getName(), BRPOP.getName(), BLMOVE.getName(), BLMOVEM.getName(),
@@ -852,6 +860,7 @@ public interface RedisCommands {
 
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_BLOCKING_SINGLE_V2 = new RedisCommand<>(XREADGROUP_SINGLE_V2, "XREADGROUP");
 
+    /** 带 BLOCK 参数的 Stream 读命令实例（XREAD/XREADGROUP）。 */
     Set<RedisCommand> BLOCKING_COMMANDS = new HashSet<>(Arrays.asList(
             XREAD_BLOCKING_SINGLE, XREAD_BLOCKING, XREADGROUP_BLOCKING_SINGLE, XREADGROUP_BLOCKING,
             XREAD_BLOCKING_SINGLE_V2, XREAD_BLOCKING_V2, XREADGROUP_BLOCKING_SINGLE_V2, XREADGROUP_BLOCKING_V2));
@@ -891,6 +900,7 @@ public interface RedisCommands {
     RedisStrictCommand<Void> MIGRATE = new RedisStrictCommand<Void>("MIGRATE", new VoidReplayConvertor());
     RedisStrictCommand<Void> QUIT = new RedisStrictCommand<Void>("QUIT", new VoidReplayConvertor());
 
+    /** Pub/Sub 发布与订阅相关命令。 */
     RedisStrictCommand<Long> PUBLISH = new RedisStrictCommand<Long>("PUBLISH");
 
     RedisStrictCommand<Long> SPUBLISH = new RedisStrictCommand<Long>("SPUBLISH");
@@ -907,10 +917,12 @@ public interface RedisCommands {
     RedisCommand<Object> PSUBSCRIBE = new RedisCommand<>("PSUBSCRIBE", new PubSubStatusDecoder());
     RedisCommand<Object> PUNSUBSCRIBE = new RedisCommand<>("PUNSUBSCRIBE", new PubSubStatusDecoder());
 
+    /** 订阅类命令名集合，用于识别 Pub/Sub 队列操作。 */
     Set<String> PUBSUB_COMMANDS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(PSUBSCRIBE.getName(), SUBSCRIBE.getName(), PUNSUBSCRIBE.getName(),
                     UNSUBSCRIBE.getName(), SSUBSCRIBE.getName(), SUNSUBSCRIBE.getName())));
 
+    /** 迭代扫描类命令名（HSCAN、SCAN、ZSCAN、SSCAN）。 */
     Set<String> SCAN_COMMANDS = new HashSet<String>(
             Arrays.asList(HSCAN.getName(), SCAN.getName(), ZSCAN.getName(), SSCAN.getName()));
 
@@ -967,8 +979,10 @@ public interface RedisCommands {
     RedisStrictCommand<Map<String, String>> INFO_CLUSTER = new RedisStrictCommand<Map<String, String>>("INFO", "CLUSTER", new StringMapDataDecoder());
     RedisStrictCommand<Map<String, String>> INFO_KEYSPACE = new RedisStrictCommand<Map<String, String>>("INFO", "KEYSPACE", new StringMapDataDecoder());
 
+    /** 不可安全自动重试的 {@link RedisCommand} 实例。 */
     Set<RedisCommand> NO_RETRY_COMMANDS = new HashSet<>(Arrays.asList(SET_BOOLEAN));
 
+    /** 不可安全自动重试的命令名（如 LPOP、XADD）。 */
     Set<String> NO_RETRY = new HashSet<>(
             Arrays.asList(RPOPLPUSH.getName(), LPOP.getName(), RPOP.getName(), LPUSH.getName(), RPUSH.getName(),
                     LPUSHX.getName(), RPUSHX.getName(), GEOADD.getName(), XADD.getName(), APPEND.getName(),
@@ -1110,6 +1124,7 @@ public interface RedisCommands {
     RedisCommand<CuckooFilterInfo> CF_INFO = new RedisCommand<>("CF.INFO",
                         new ListMultiDecoder2(new CuckooFilterInfoDecoder(), new ObjectListReplayDecoder<>()));
 
+    /** RedisBloom / RedisTimeSeries 等模块命令（TDIGEST、TOPK、CF 等）。 */
     RedisCommand<Void> TDIGEST_CREATE = new RedisCommand<>("TDIGEST.CREATE", new VoidReplayConvertor());
 
     RedisCommand<Void> TDIGEST_RESET = new RedisCommand<>("TDIGEST.RESET", new VoidReplayConvertor());

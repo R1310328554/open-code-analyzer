@@ -21,16 +21,21 @@ import org.redisson.client.RedisConnection;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * 
+ * 普通 Redis 命令连接的 Netty 入站处理器。
+ * <p>
+ * 在通道激活时创建 {@link RedisConnection} 并完成认证与协议协商。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedisConnectionHandler extends BaseConnectionHandler<RedisConnection> {
 
+    /** 绑定所属 {@link RedisClient}。 */
     public RedisConnectionHandler(RedisClient redisClient) {
         super(redisClient);
     }
     
+    /** 为当前通道创建普通命令 {@link RedisConnection}。 */
     @Override
     RedisConnection createConnection(ChannelHandlerContext ctx) {
         return new RedisConnection(redisClient, ctx.channel(), connectionPromise);

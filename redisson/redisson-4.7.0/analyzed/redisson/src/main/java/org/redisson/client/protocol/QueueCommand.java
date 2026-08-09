@@ -18,18 +18,25 @@ package org.redisson.client.protocol;
 import java.util.List;
 
 /**
- * 
+ * 连接命令队列中的统一抽象：单命令 {@link CommandData} 或多命令 {@link CommandsData}。
+ * <p>
+ * 队列处理器通过本接口判断阻塞、Pub/Sub 与完成状态。
+ *
  * @author Nikita Koksharov
  *
  */
 public interface QueueCommand {
     
+    /** 返回本队列项涉及的 Pub/Sub 子命令。 */
     List<CommandData<Object, Object>> getPubSubOperations();
 
+    /** 以异常标记命令失败。 */
     boolean tryFailure(Throwable cause);
     
+    /** 命令是否已执行完毕。 */
     boolean isExecuted();
 
+    /** 是否为阻塞命令（需独占连接直至超时或数据到达）。 */
     boolean isBlockingCommand();
     
 }

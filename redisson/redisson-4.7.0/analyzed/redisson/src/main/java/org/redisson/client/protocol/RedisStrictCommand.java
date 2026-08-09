@@ -19,13 +19,17 @@ import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
- * 
+ * 严格类型的 {@link RedisCommand} 子类，用于编译期约束返回类型。
+ * <p>
+ * 语义与普通 {@link RedisCommand} 相同，多用于 {@link RedisCommands} 中的常量声明。
+ *
  * @author Nikita Koksharov
  *
  * @param <T> command type
  */
 public class RedisStrictCommand<T> extends RedisCommand<T> {
 
+    /** 指定命令名与响应解码器。 */
     public RedisStrictCommand(String name, MultiDecoder<T> replayMultiDecoder) {
         super(name, replayMultiDecoder);
     }
@@ -34,10 +38,12 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
         super(name, subName, replayMultiDecoder);
     }
 
+    /** 仅指定命令名，使用默认解码逻辑。 */
     public RedisStrictCommand(String name) {
         super(name);
     }
 
+    /** 指定命令名与结果转换器。 */
     public RedisStrictCommand(String name, Convertor<T> convertor) {
         super(name, convertor);
     }

@@ -20,12 +20,14 @@ import java.io.IOException;
 import io.netty.buffer.ByteBuf;
 
 /**
- * 
+ * 将 Java 对象编码为 RESP 格式的 Netty {@link ByteBuf}。
+ *
  * @author Nikita Koksharov
  *
  */
 public interface Encoder {
 
+    /** 编码单个参数或值到字节缓冲区。 */
     ByteBuf encode(Object in) throws IOException;
 
 }

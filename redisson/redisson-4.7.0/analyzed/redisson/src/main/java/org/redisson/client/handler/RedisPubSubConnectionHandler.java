@@ -28,21 +28,27 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 
+ * Pub/Sub 专用连接的 Netty 入站处理器。
+ * <p>
+ * 重认证前会暂存并取消现有订阅，认证成功后恢复频道订阅。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedisPubSubConnectionHandler extends BaseConnectionHandler<RedisPubSubConnection> {
 
+    /** 绑定所属 {@link RedisClient}。 */
     public RedisPubSubConnectionHandler(RedisClient redisClient) {
         super(redisClient);
     }
     
+    /** 为当前通道创建 {@link RedisPubSubConnection}。 */
     @Override
     RedisPubSubConnection createConnection(ChannelHandlerContext ctx) {
         return new RedisPubSubConnection(redisClient, ctx.channel(), connectionPromise);
     }
 
+    /** RESP2 下重认证前先取消订阅，认证后按原映射恢复订阅。 */
     @Override
     protected CompletableFuture<Void> authWithCredential() {
         if (redisClient.getConfig().getProtocol() == Protocol.RESP3) {

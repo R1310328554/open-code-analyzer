@@ -22,20 +22,31 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 
+ * 多条命令组成的队列单元，用于 Pipeline、事务或批量同步。
+ * <p>
+ * 可标记是否跳过结果、原子执行、进入 MULTI 队列及同步从节点。
+ *
  * @author Nikita Koksharov
  *
  */
 public class CommandsData implements QueueCommand {
 
+    /** 主命令列表。 */
     private final List<CommandData<?, ?>> commands;
+    /** 附加命令（如 MULTI 后的额外操作）。 */
     private final List<CommandData<?, ?>> attachedCommands;
+    /** 整批完成的 Promise。 */
     private final CompletableFuture<Void> promise;
+    /** 是否丢弃各子命令的独立结果。 */
     private final boolean skipResult;
+    /** 是否要求原子性（事务语义）。 */
     private final boolean atomic;
+    /** 是否已进入 Redis MULTI 队列。 */
     private final boolean queued;
+    /** 执行后是否 WAIT 同步从节点。 */
     private final boolean syncSlaves;
 
+    /** 构造 Pipeline 风格命令批（不跳过结果、非原子）。 */
     public CommandsData(CompletableFuture<Void> promise, List<CommandData<?, ?>> commands, boolean queued, boolean syncSlaves) {
         this(promise, commands, null, false, false, queued, syncSlaves);
     }
@@ -56,6 +67,7 @@ public class CommandsData implements QueueCommand {
         this.syncSlaves = syncSlaves;
     }
 
+    /** 是否需要在执行后同步从节点复制。 */
     public boolean isSyncSlaves() {
         return syncSlaves;
     }
@@ -64,10 +76,12 @@ public class CommandsData implements QueueCommand {
         return promise;
     }
 
+    /** 是否已排队等待 EXEC（事务模式）。 */
     public boolean isQueued() {
         return queued;
     }
     
+    /** 是否为原子批量（事务）。 */
     public boolean isAtomic() {
         return atomic;
     }
@@ -80,10 +94,12 @@ public class CommandsData implements QueueCommand {
         return attachedCommands;
     }
     
+    /** 返回主命令列表。 */
     public List<CommandData<?, ?>> getCommands() {
         return commands;
     }
 
+    /** 从子命令中筛出 Pub/Sub 相关操作。 */
     @Override
     public List<CommandData<Object, Object>> getPubSubOperations() {
         List<CommandData<Object, Object>> result = new ArrayList<CommandData<Object, Object>>();
