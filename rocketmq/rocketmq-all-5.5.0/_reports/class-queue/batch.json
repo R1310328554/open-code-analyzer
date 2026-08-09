@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:38:03Z",
-  "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/NotifyBrokerRoleChangedRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/NotifyConsumerIdsChangedRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/NotifyMinBrokerIdChangeRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/NotifyUnsubscribeLiteRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PeekMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PollingInfoRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PollingInfoResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PopLiteMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PopLiteMessageResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PopMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PopMessageResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PullMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PullMessageResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryConsumeQueueRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryConsumeTimeSpanRequestHeader.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 498,
-  "done": 975
+  "done": 990
 }
