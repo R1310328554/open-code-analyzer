@@ -30,7 +30,10 @@ import org.springframework.data.redis.connection.RedisServer;
 import org.springframework.data.redis.connection.convert.Converters;
 
 /**
- * 
+ * Spring Data Redis {@link RedisSentinelConnection} 的 Redisson 实现。
+ * <p>通过底层 {@link RedisConnection} 同步发送 Sentinel 管理命令
+（failover、monitor、masters/slaves 查询、remove 等）。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -38,10 +41,12 @@ public class RedissonSentinelConnection implements RedisSentinelConnection {
 
     private final RedisConnection connection;
     
+    /** 绑定已连通的 Sentinel {@link RedisConnection}。 */
     public RedissonSentinelConnection(RedisConnection connection) {
         this.connection = connection;
     }
 
+    /** 对指定 master 执行 {@code SENTINEL FAILOVER}。 */
     @Override
     public void failover(NamedNode master) {
         connection.sync(RedisCommands.SENTINEL_FAILOVER, master.getName());
@@ -55,23 +60,27 @@ public class RedissonSentinelConnection implements RedisSentinelConnection {
         return servers;
     }
     
+    /** 查询所有被监控的 master 并转为 {@link RedisServer} 列表。 */
     @Override
     public Collection<RedisServer> masters() {
         List<Map<String, String>> masters = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_MASTERS);
         return toRedisServersList(masters);
     }
 
+    /** 查询指定 master 下的 replica 节点。 */
     @Override
     public Collection<RedisServer> slaves(NamedNode master) {
         List<Map<String, String>> slaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, master.getName());
         return toRedisServersList(slaves);
     }
 
+    /** 从 Sentinel 监控列表移除指定 master（{@code SENTINEL REMOVE}）。 */
     @Override
     public void remove(NamedNode master) {
         connection.sync(RedisCommands.SENTINEL_REMOVE, master.getName());
     }
 
+    /** 向 Sentinel 注册新的 master 监控（host/port/quorum）。 */
     @Override
     public void monitor(RedisServer master) {
         connection.sync(RedisCommands.SENTINEL_MONITOR, master.getName(), master.getHost(), 

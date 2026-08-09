@@ -33,7 +33,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 
+ * Spring Data Redis Pub/Sub {@link AbstractSubscription} 的 Redisson 实现。
+ * <p>通过 {@link PublishSubscribeService} 管理频道/模式订阅，
+将 Redisson 消息转为 {@link DefaultMessage} 回调 {@link MessageListener}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -42,12 +45,14 @@ public class RedissonSubscription extends AbstractSubscription {
     private final CommandAsyncExecutor commandExecutor;
     private final PublishSubscribeService subscribeService;
     
+    /** 绑定异步命令执行器与 Spring 消息监听器。 */
     public RedissonSubscription(CommandAsyncExecutor commandExecutor, MessageListener listener) {
         super(listener, null, null);
         this.commandExecutor = commandExecutor;
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
 
+    /** 对每个频道注册 {@link BaseRedisPubSubListener} 并阻塞等待订阅完成。 */
     @Override
     protected void doSubscribe(byte[]... channels) {
         List<CompletableFuture<?>> list = new ArrayList<>();
@@ -55,6 +60,7 @@ public class RedissonSubscription extends AbstractSubscription {
             CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
                 @Override
                 public void onMessage(CharSequence ch, Object message) {
+                    // 忽略非目标频道的回调（连接复用时可能收到其他频道消息）。
                     if (!Arrays.equals(((ChannelName) ch).getName(), channel)) {
                         return;
                     }
@@ -78,6 +84,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 按模式订阅（PSUBSCRIBE），回调携带 pattern 与 channel。 */
     @Override
     protected void doPsubscribe(byte[]... patterns) {
         List<CompletableFuture<?>> list = new ArrayList<>();
@@ -101,6 +108,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 将 String 或 byte[] 载荷统一为字节数组。 */
     private byte[] toBytes(Object message) {
         if (message instanceof String) {
             return  ((String) message).getBytes();
@@ -115,6 +123,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 关闭时取消所有频道与模式订阅。 */
     @Override
     protected void doClose() {
         doUnsubscribe(false, getChannels().toArray(new byte[getChannels().size()][]));

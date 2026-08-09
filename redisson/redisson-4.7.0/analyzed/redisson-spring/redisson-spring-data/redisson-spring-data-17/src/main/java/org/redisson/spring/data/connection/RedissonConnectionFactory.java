@@ -36,8 +36,11 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisSentinelConnection;
 
 /**
- * Redisson based connection factory
- * 
+ * 基于 Redisson 的 Spring Data Redis {@link RedisConnectionFactory}。
+ * <p>集群模式返回 {@link RedissonClusterConnection}，单机返回 {@link RedissonConnection}；
+Sentinel 模式下 {@link #getSentinelConnection()} 探测可用节点；
+异常经 {@link RedissonExceptionConverter} 转为 Spring {@link DataAccessException}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -45,12 +48,14 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     private final static Log log = LogFactory.getLog(RedissonConnectionFactory.class);
     
+    /** 全局异常翻译策略，供 {@link #translateExceptionIfPossible} 使用。 */
     public static final ExceptionTranslationStrategy EXCEPTION_TRANSLATION = 
                                 new PassThroughExceptionTranslationStrategy(new RedissonExceptionConverter());
 
     private Config config;
     private RedissonClient redisson;
     
+    /** 使用 {@link Redisson#create()} 默认配置创建工厂。 */
     /**
      * Creates factory with default Redisson configuration
      */
@@ -86,6 +91,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
     public void destroy() throws Exception {
     }
 
+    /** 若注入了 {@link Config}，在此阶段创建 {@link RedissonClient}。 */
     @Override
     public void afterPropertiesSet() throws Exception {
         if (config != null) {
@@ -93,16 +99,20 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
         }
     }
 
+    /** 按配置返回单机或集群 {@link RedisConnection}。 */
     @Override
     public RedisConnection getConnection() {
+        // 集群配置时使用 RedissonClusterConnection。
         if (redisson.getConfig().isClusterConfig()) {
             return new RedissonClusterConnection(redisson);
         }
         return new RedissonConnection(redisson);
     }
 
+    /** 非集群模式调用将抛出 {@link InvalidDataAccessResourceUsageException}。 */
     @Override
     public RedisClusterConnection getClusterConnection() {
+        // 非集群配置时拒绝创建集群连接。
         if (!redisson.getConfig().isClusterConfig()) {
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Cluster mode");
         }
@@ -114,8 +124,10 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
         return true;
     }
 
+    /** 遍历 Sentinel 节点 PING，返回首个可用的 {@link RedissonSentinelConnection}。 */
     @Override
     public RedisSentinelConnection getSentinelConnection() {
+        // 非 Sentinel 配置时拒绝创建 Sentinel 连接。
         if (!redisson.getConfig().isSentinelConfig()) {
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Sentinel mode");
         }
@@ -126,6 +138,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
             try {
                 connection = client.connect();
                 String res = connection.sync(RedisCommands.PING);
+                // 首个响应 PONG 的 Sentinel 用于 Spring Data 管理命令。
                 if ("pong".equalsIgnoreCase(res)) {
                     return new RedissonSentinelConnection(connection);
                 }

@@ -20,12 +20,15 @@ import org.redisson.client.protocol.convertor.Convertor;
 import io.netty.util.CharsetUtil;
 
 /**
- * 
+ * Redis 协议层字符串到字节数组转换器。
+ * <p>供 Spring Data Redis 命令参数在 UTF-8 二进制与 String 间转换。
+ *
  * @author Nikita Koksharov
  *
  */
 public class BinaryConvertor implements Convertor<Object> {
 
+    /** {@link String} 转为 UTF-8 字节数组；其他类型原样返回。 */
     @Override
     public Object convert(Object obj) {
         if (obj instanceof String) {
