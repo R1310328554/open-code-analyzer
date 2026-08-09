@@ -22,6 +22,9 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.transport.CommandCenter;
 
 /**
+ * 命令中心初始化函数：在 Sentinel 启动时解析并启动 {@link CommandCenter} 实现。
+ * 通过 {@link CommandCenterProvider} SPI 加载具体传输实现（如 Netty HTTP）。
+ *
  * @author Eric Zhao
  */
 @InitOrder(-1)
@@ -31,11 +34,13 @@ public class CommandCenterInitFunc implements InitFunc {
     public void init() throws Exception {
         CommandCenter commandCenter = CommandCenterProvider.getCommandCenter();
 
+        // 未找到 CommandCenter SPI 实现
         if (commandCenter == null) {
             RecordLog.warn("[CommandCenterInitFunc] Cannot resolve CommandCenter");
             return;
         }
 
+        // 注册命令处理器后再启动监听
         commandCenter.beforeStart();
         commandCenter.start();
         RecordLog.info("[CommandCenterInit] Starting command center: "

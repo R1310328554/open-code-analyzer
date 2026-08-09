@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 命令编解码器注册表：维护 {@link Encoder} 与 {@link Decoder} 列表，构造时注册默认字符串编解码器。
+ *
  * @author Eric Zhao
  */
 public final class CodecRegistry {
@@ -27,16 +29,18 @@ public final class CodecRegistry {
     private final List<Decoder<?>> decoderList = new ArrayList<Decoder<?>>();
 
     public CodecRegistry() {
-        // Register default codecs.
+        // 注册默认字符串编解码器
         registerEncoder(DefaultCodecs.STRING_ENCODER);
 
         registerDecoder(DefaultCodecs.STRING_DECODER);
     }
 
+    /** 注册响应体编码器。 */
     public void registerEncoder(Encoder<?> encoder) {
         encoderList.add(encoder);
     }
 
+    /** 注册请求体解码器。 */
     public void registerDecoder(Decoder<?> decoder) {
         decoderList.add(decoder);
     }
@@ -49,6 +53,7 @@ public final class CodecRegistry {
         return decoderList;
     }
 
+    /** 清空已注册的编解码器列表。 */
     public void reset() {
         encoderList.clear();
         decoderList.clear();

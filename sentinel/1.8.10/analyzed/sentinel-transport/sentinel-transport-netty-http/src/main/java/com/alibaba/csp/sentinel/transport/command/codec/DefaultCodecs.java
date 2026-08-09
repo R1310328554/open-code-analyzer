@@ -16,14 +16,16 @@
 package com.alibaba.csp.sentinel.transport.command.codec;
 
 /**
- * Caches default encoders and decoders.
+ * 默认编解码器常量：字符串类型的 {@link StringEncoder} 与 {@link StringDecoder}。
  *
  * @author Eric Zhao
  */
 final class DefaultCodecs {
 
+    /** 默认字符串编码器。 */
     public static final Encoder<String> STRING_ENCODER = new StringEncoder();
 
+    /** 默认字符串解码器。 */
     public static final Decoder<String> STRING_DECODER = new StringDecoder();
 
     private DefaultCodecs() {}

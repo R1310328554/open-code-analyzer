@@ -26,26 +26,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Sentinel 传输层配置：解析 Dashboard 地址、心跳间隔、本地 API 端口等。
+ * 配置项通过 {@link SentinelConfig} 读取，支持逗号分隔的多 Dashboard 地址。
+ *
  * @author Carpenter Lee
  * @author Jason Joo
  * @author Leo Li
  */
 public class TransportConfig {
 
+    /** Dashboard 控制台地址配置键（支持逗号分隔多个 endpoint）。 */
     public static final String CONSOLE_SERVER = "csp.sentinel.dashboard.server";
+    /** 本机命令/API 服务端口配置键。 */
     public static final String SERVER_PORT = "csp.sentinel.api.port";
+    /** 心跳上报间隔（毫秒）配置键。 */
     public static final String HEARTBEAT_INTERVAL_MS = "csp.sentinel.heartbeat.interval.ms";
+    /** 心跳上报使用的客户端 IP 配置键。 */
     public static final String HEARTBEAT_CLIENT_IP = "csp.sentinel.heartbeat.client.ip";
+    /** 机器注册心跳 API 路径配置键。 */
     public static final String HEARTBEAT_API_PATH = "csp.sentinel.heartbeat.api.path";
 
+    /** 默认机器注册心跳路径。 */
     public static final String HEARTBEAT_DEFAULT_PATH = "/registry/machine";
 
+    /** 运行时实际绑定的 API 端口（由传输层启动后回填）。 */
     private static int runtimePort = -1;
 
     /**
-     * Get heartbeat interval in milliseconds.
+     * 获取心跳间隔（毫秒）。
      *
-     * @return heartbeat interval in milliseconds if exists, or null if not configured or invalid config
+     * @return 已配置且解析成功时返回间隔毫秒数，未配置或非法时返回 null
      */
     public static Long getHeartbeatIntervalMs() {
         String interval = SentinelConfig.getConfig(HEARTBEAT_INTERVAL_MS);
@@ -58,12 +68,10 @@ public class TransportConfig {
     }
 
     /**
-     * Get a list of Endpoint(protocol, ip/domain, port) indicating Sentinel Dashboard's address.<br>
-     * NOTE: only support <b>HTTP</b> and <b>HTTPS</b> protocol
+     * 解析 Dashboard 控制台地址列表，每项为 {@link Endpoint}（协议、主机、端口）。<br>
+     * 仅支持 <b>HTTP</b> 与 <b>HTTPS</b> 协议前缀。
      *
-     * @return list of Endpoint(protocol, ip/domain, port). <br>
-     *         <b>May not be null</b>. <br>
-     *         An empty list returned when not configured.
+     * @return Endpoint 列表，<b>永不为 null</b>；未配置时返回空列表
      */
     public static List<Endpoint> getConsoleServerList() {
         String config = SentinelConfig.getConfig(CONSOLE_SERVER);
@@ -77,7 +85,7 @@ public class TransportConfig {
         while (true) {
             pos = config.indexOf(',', cur);
             if (cur < config.length() - 1 && pos < 0) {
-                // for single segment, pos move to the end
+                // 单段地址时将 pos 移到末尾
                 pos = config.length();
             }
             if (pos < 0) {
@@ -87,7 +95,7 @@ public class TransportConfig {
                 cur ++;
                 continue;
             }
-            // parsing
+            // 解析 host:port 或带协议前缀的地址
             String ipPortStr = config.substring(cur, pos);
             cur = pos + 1;
             if (StringUtil.isBlank(ipPortStr)) {
@@ -105,7 +113,7 @@ public class TransportConfig {
             }
             int index = ipPortStr.indexOf(":");
             if (index == 0) {
-                // skip
+                // 格式非法则跳过
                 continue;
             }
             String host = ipPortStr;
@@ -132,9 +140,9 @@ public class TransportConfig {
     }
 
     /**
-     * Get Server port of this HTTP server.
+     * 获取本机 HTTP 命令/API 服务端口。
      *
-     * @return the port, maybe null if not configured.
+     * @return 端口号字符串；未配置且未设置 runtimePort 时可能为 null
      */
     public static String getPort() {
         if (runtimePort > 0) {
@@ -144,19 +152,19 @@ public class TransportConfig {
     }
 
     /**
-     * Set real port this HTTP server uses.
+     * 设置传输层实际监听的端口（启动成功后调用）。
      *
-     * @param port real port.
+     * @param port 实际端口
      */
     public static void setRuntimePort(int port) {
         runtimePort = port;
     }
 
     /**
-     * Get heartbeat client local ip.
-     * If the client ip not configured,it will be the address of local host
+     * 获取心跳上报使用的本机 IP。
+     * 未配置时回退为 {@link HostNameUtil#getIp()}。
      *
-     * @return the local ip.
+     * @return 客户端 IP
      */
     public static String getHeartbeatClientIp() {
         String ip = SentinelConfig.getConfig(HEARTBEAT_CLIENT_IP, true);
@@ -167,10 +175,10 @@ public class TransportConfig {
     }
 
     /**
-     * Get the heartbeat api path. If the machine registry path of the dashboard
-     * is modified, then the API path should also be consistent with the API path of the dashboard.
+     * 获取心跳注册 API 路径；须与 Dashboard 侧机器注册路径一致。
+     * 未配置时使用 {@link #HEARTBEAT_DEFAULT_PATH}。
      *
-     * @return the heartbeat api path
+     * @return 以 / 开头的 API 路径
      * @since 1.7.1
      */
     public static String getHeartbeatApiPath() {

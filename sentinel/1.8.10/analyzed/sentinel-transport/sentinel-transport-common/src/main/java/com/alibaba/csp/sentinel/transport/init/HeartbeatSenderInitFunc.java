@@ -30,13 +30,15 @@ import com.alibaba.csp.sentinel.transport.HeartbeatSender;
 import com.alibaba.csp.sentinel.transport.config.TransportConfig;
 
 /**
- * Global init function for heartbeat sender.
+ * 心跳发送器全局初始化：加载 {@link HeartbeatSender} SPI 并按固定间隔向 Dashboard 注册本机。
+ * 间隔优先读取 {@link TransportConfig#HEARTBEAT_INTERVAL_MS}，否则使用发送器默认值。
  *
  * @author Eric Zhao
  */
 @InitOrder(-1)
 public class HeartbeatSenderInitFunc implements InitFunc {
 
+    /** 定时发送心跳的调度线程池。 */
     private ScheduledExecutorService pool = null;
 
     private void initSchedulerIfNeeded() {
@@ -50,6 +52,7 @@ public class HeartbeatSenderInitFunc implements InitFunc {
     @Override
     public void init() {
         HeartbeatSender sender = HeartbeatSenderProvider.getHeartbeatSender();
+        // 未加载 HeartbeatSender 实现则跳过
         if (sender == null) {
             RecordLog.warn("[HeartbeatSenderInitFunc] WARN: No HeartbeatSender loaded");
             return;
@@ -69,6 +72,7 @@ public class HeartbeatSenderInitFunc implements InitFunc {
         SentinelConfig.setConfig(TransportConfig.HEARTBEAT_INTERVAL_MS, String.valueOf(interval));
     }
 
+    /** 解析有效心跳间隔：配置优先，否则使用 sender 默认值。 */
     long retrieveInterval(/*@NonNull*/ HeartbeatSender sender) {
         Long intervalInConfig = TransportConfig.getHeartbeatIntervalMs();
         if (isValidHeartbeatInterval(intervalInConfig)) {
@@ -83,6 +87,7 @@ public class HeartbeatSenderInitFunc implements InitFunc {
         }
     }
 
+    /** 延迟 5 秒后首次发送，之后按 interval 固定频率调度。 */
     private void scheduleHeartbeatTask(/*@NonNull*/ final HeartbeatSender sender, /*@Valid*/ long interval) {
         pool.scheduleAtFixedRate(new Runnable() {
             @Override

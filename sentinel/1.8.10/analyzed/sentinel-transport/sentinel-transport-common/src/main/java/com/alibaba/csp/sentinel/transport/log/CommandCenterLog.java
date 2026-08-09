@@ -19,23 +19,26 @@ import com.alibaba.csp.sentinel.log.LoggerSpiProvider;
 import com.alibaba.csp.sentinel.log.jul.JavaLoggingAdapter;
 
 /**
- * Logger for command center.
+ * 命令中心专用日志门面：优先加载 SPI 自定义 Logger，否则使用 JUL 适配器。
+ * 默认日志文件名为 {@link #DEFAULT_LOG_FILENAME}。
  *
  * @author Eric Zhao
  */
 public class CommandCenterLog {
 
+    /** JUL/SPI Logger 名称。 */
     public static final String LOGGER_NAME = "sentinelCommandCenterLogger";
+    /** 默认日志文件名。 */
     public static final String DEFAULT_LOG_FILENAME = "command-center.log";
 
     private static com.alibaba.csp.sentinel.log.Logger logger = null;
 
     static {
         try {
-            // Load user-defined logger implementation first.
+            // 优先加载用户自定义 Logger SPI
             logger = LoggerSpiProvider.getLogger(LOGGER_NAME);
             if (logger == null) {
-                // If no customized loggers are provided, we use the default logger based on JUL.
+                // 无 SPI 实现时使用基于 JUL 的默认适配器
                 logger = new JavaLoggingAdapter(LOGGER_NAME, DEFAULT_LOG_FILENAME);
             }
         } catch (Throwable t) {

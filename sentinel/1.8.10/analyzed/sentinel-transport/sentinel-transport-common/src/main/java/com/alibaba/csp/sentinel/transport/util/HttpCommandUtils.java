@@ -18,17 +18,19 @@ package com.alibaba.csp.sentinel.transport.util;
 import com.alibaba.csp.sentinel.command.CommandRequest;
 
 /**
- * Util class for HTTP command center.
+ * HTTP 命令中心工具类：从 {@link CommandRequest} 元数据提取路由目标命令名。
  *
  * @author Eric Zhao
  */
 public final class HttpCommandUtils {
 
+    /** 元数据键：目标命令名称。 */
     public static final String REQUEST_TARGET = "command-target";
 
+    /** 从请求元数据读取 command-target，即待执行的命令名。 */
     public static String getTarget(CommandRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("Request cannot be null");
+            throw new IllegalArgumentException("请求不能为 null");
         }
         return request.getMetadata().get(REQUEST_TARGET);
     }

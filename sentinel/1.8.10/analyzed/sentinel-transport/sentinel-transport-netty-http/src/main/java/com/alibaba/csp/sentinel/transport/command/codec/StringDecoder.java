@@ -20,13 +20,14 @@ import java.nio.charset.Charset;
 import com.alibaba.csp.sentinel.config.SentinelConfig;
 
 /**
- * Decodes from a byte array to string.
+ * 字符串解码器：将请求体字节按 {@link SentinelConfig#charset()} 或指定 Charset 转为 String。
  *
  * @author Eric Zhao
  */
 public class StringDecoder implements Decoder<String> {
 
     @Override
+    /** 仅支持 {@link String} 及其子类。 */
     public boolean canDecode(Class<?> clazz) {
         return String.class.isAssignableFrom(clazz);
     }
@@ -39,7 +40,7 @@ public class StringDecoder implements Decoder<String> {
     @Override
     public String decode(byte[] bytes, Charset charset) {
         if (bytes == null || bytes.length <= 0) {
-            throw new IllegalArgumentException("Bad byte array");
+            throw new IllegalArgumentException("无效的字节数组");
         }
         return new String(bytes, charset);
     }

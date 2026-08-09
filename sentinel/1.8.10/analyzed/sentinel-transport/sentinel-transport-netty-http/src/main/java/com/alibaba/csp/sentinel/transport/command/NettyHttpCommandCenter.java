@@ -28,13 +28,15 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.transport.CommandCenter;
 
 /**
- * Implementation of {@link CommandCenter} based on Netty HTTP library.
+ * 基于 Netty HTTP 的 {@link CommandCenter} 实现：在独立线程中启动 {@link HttpServer} 监听命令请求。
+ * SPI 优先级 {@code ORDER_LOWEST - 100}，作为默认传输实现之一。
  *
  * @author Eric Zhao
  */
 @Spi(order = Spi.ORDER_LOWEST - 100)
 public class NettyHttpCommandCenter implements CommandCenter {
 
+    /** Netty HTTP 命令服务实例。 */
     private final HttpServer server = new HttpServer();
 
     @SuppressWarnings("PMD.ThreadPoolCreationRule")
@@ -64,7 +66,7 @@ public class NettyHttpCommandCenter implements CommandCenter {
 
     @Override
     public void beforeStart() throws Exception {
-        // Register handlers
+        // 将 SPI 加载的全部 CommandHandler 注册到 HTTP 路由
         Map<String, CommandHandler> handlers = CommandHandlerProvider.getInstance().namedHandlers();
         server.registerCommands(handlers);
     }

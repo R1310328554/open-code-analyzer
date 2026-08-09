@@ -18,27 +18,28 @@ package com.alibaba.csp.sentinel.transport.command.codec;
 import java.nio.charset.Charset;
 
 /**
- * The decoder decodes bytes into an object of type {@code <R>}.
+ * 命令请求体解码器：将字节数组解码为类型 {@code R} 的对象。
+ * 通过 {@link #canDecode} 判断是否支持目标类型。
  *
- * @param <R> target type
+ * @param <R> 目标类型
  * @author Eric Zhao
  */
 public interface Decoder<R> {
 
     /**
-     * Check whether the decoder supports the given target type.
+     * 判断是否支持解码为指定类型。
      *
-     * @param clazz type of the class
-     * @return {@code true} if supported, {@code false} otherwise
+     * @param clazz 目标类
+     * @return 支持时 true，否则 false
      */
     boolean canDecode(Class<?> clazz);
 
     /**
-     * Decode the given byte array into an object of type {@code R} with the default charset.
+     * 使用默认字符集将字节数组解码为目标对象。
      *
-     * @param bytes raw byte buffer
-     * @return the decoded target object
-     * @throws Exception error occurs when decoding the object (e.g. IO fails)
+     * @param bytes 原始字节
+     * @return 解码结果
+     * @throws Exception 解码失败时抛出
      */
     R decode(byte[] bytes) throws Exception;
 

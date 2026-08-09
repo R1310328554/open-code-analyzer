@@ -18,28 +18,29 @@ package com.alibaba.csp.sentinel.transport.command.codec;
 import java.nio.charset.Charset;
 
 /**
- * The encoder encodes an object of type {@code <R>} into byte array.
+ * 命令响应体编码器：将类型 {@code R} 的对象编码为字节数组。
+ * 通过 {@link #canEncode} 判断是否支持源类型。
  *
- * @param <R> source type
+ * @param <R> 源类型
  * @author Eric Zhao
  */
 public interface Encoder<R> {
 
     /**
-     * Check whether the encoder supports the given source type.
+     * 判断是否支持编码指定类型的对象。
      *
-     * @param clazz type of the class
-     * @return {@code true} if supported, {@code false} otherwise
+     * @param clazz 源类型
+     * @return 支持时 true，否则 false
      */
     boolean canEncode(Class<?> clazz);
 
     /**
-     * Encode the given object into a byte array with the given charset.
+     * 使用指定字符集将对象编码为字节数组。
      *
-     * @param r the object to encode
-     * @param charset the charset
-     * @return the encoded byte buffer
-     * @throws Exception error occurs when encoding the object (e.g. IO fails)
+     * @param r 待编码对象
+     * @param charset 字符集
+     * @return 编码后的字节
+     * @throws Exception 编码失败时抛出
      */
     byte[] encode(R r, Charset charset) throws Exception;
 
