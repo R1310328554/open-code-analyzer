@@ -1,5 +1,3 @@
-spring-beans/src/main/java/org/springframework/beans/TypeConverterDelegate.java
-spring-beans/src/main/java/org/springframework/beans/factory/BeanFactoryUtils.java
 spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractBeanDefinition.java
 spring-beans/src/main/java/org/springframework/beans/factory/support/BeanDefinitionValueResolver.java
 spring-beans/src/main/java/org/springframework/beans/factory/support/DisposableBeanAdapter.java

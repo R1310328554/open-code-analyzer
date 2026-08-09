@@ -205,3 +205,5 @@ spring-beans/src/main/java/org/springframework/beans/factory/config/PlaceholderC
 spring-beans/src/main/java/org/springframework/beans/BeanUtils.java
 spring-beans/src/main/java/org/springframework/beans/ExtendedBeanInfo.java
 spring-beans/src/main/java/org/springframework/beans/PropertyEditorRegistrySupport.java
+spring-beans/src/main/java/org/springframework/beans/TypeConverterDelegate.java
+spring-beans/src/main/java/org/springframework/beans/factory/BeanFactoryUtils.java
