@@ -22,35 +22,35 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * An {@link Observer}, {@link MaybeObserver}, {@link SingleObserver} and
- * {@link CompletableObserver} composite that can record events from
- * {@link Observable}s, {@link Maybe}s, {@link Single}s and {@link Completable}s
- *  and allows making assertions about them.
+ * 组合 {@link Observer}、{@link MaybeObserver}、{@link SingleObserver} 与
+ * {@link CompletableObserver}，记录 {@link Observable}、{@link Maybe}、
+ * {@link Single} 与 {@link Completable} 的事件并支持断言。
  *
- * <p>You can override the {@link #onSubscribe(Disposable)}, {@link #onNext(Object)}, {@link #onError(Throwable)},
- * {@link #onComplete()} and {@link #onSuccess(Object)} methods but not the others (this is by design).
+ * <p>可覆盖 {@link #onSubscribe(Disposable)}、{@link #onNext(Object)}、
+ * {@link #onError(Throwable)}、{@link #onComplete()} 与 {@link #onSuccess(Object)}，
+ * 其余方法不可覆盖（设计如此）。
  *
- * <p>Since 4.0.0, the {@code TestObserver} does implements {@link Disposable}
- * anymore. Use {@link #asDisposable()} to create a wrapper that calls the {@link #dispose()}.
+ * <p>自 4.0.0 起 {@code TestObserver} 不再直接实现 {@link Disposable}；
+ * 请用 {@link #asDisposable()} 获取会调用 {@link #dispose()} 的包装。
  * <strong>Implementation note</strong><br>
- * Avoids all the resource warnings because {@code Disposable} implements {@link AutoCloseable} now.
+ * {@code Disposable} 现实现 {@link AutoCloseable}，可避免资源警告。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  * @see io.reactivex.rxjava4.subscribers.TestSubscriber
  */
 public class TestObserver<T>
 extends BaseTestConsumer<T, TestObserver<T>>
 implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver {
-    /** The actual observer to forward events to. */
+    /** 转发事件的实际 observer。 */
     private final Observer<? super T> downstream;
 
-    /** Holds the current subscription if any. */
+    /** 保存当前订阅（若有）。 */
     private final AtomicReference<Disposable> upstream = new AtomicReference<>();
 
     /**
-     * Constructs a non-forwarding {@code TestObserver}.
-     * @param <T> the value type received
-     * @return the new {@code TestObserver} instance
+     * 构造不转发事件的 {@code TestObserver}。
+     * @param <T> 接收的值类型
+     * @return 新的 {@code TestObserver} 实例
      */
     @NonNull
     public static <T> TestObserver<T> create() {
@@ -58,31 +58,30 @@ implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver
     }
 
     /**
-     * Constructs a forwarding {@code TestObserver}.
-     * @param <T> the value type received
-     * @param delegate the actual {@link Observer} to forward events to
-     * @return the new {@code TestObserver} instance
+     * 构造转发事件的 {@code TestObserver}。
+     * @param <T> 接收的值类型
+     * @param delegate 转发目标 {@link Observer}
+     * @return 新的 {@code TestObserver} 实例
      */
     @NonNull
     public static <T> TestObserver<T> create(@NonNull Observer<? super T> delegate) {
         return new TestObserver<>(delegate);
     }
 
-    /**
-     * Constructs a non-forwarding TestObserver.
-     */
+    /** 构造不转发事件的 TestObserver（使用 EmptyObserver）。 */
     public TestObserver() {
         this(EmptyObserver.INSTANCE);
     }
 
     /**
-     * Constructs a forwarding {@code TestObserver}.
-     * @param downstream the actual {@link Observer} to forward events to
+     * 构造转发事件的 {@code TestObserver}。
+     * @param downstream 转发目标 {@link Observer}
      */
     public TestObserver(@NonNull Observer<? super T> downstream) {
         this.downstream = downstream;
     }
 
+    /** 记录订阅线程与 upstream，校验重复订阅后转发 downstream。 */
     @Override
     public void onSubscribe(@NonNull Disposable d) {
         try {
@@ -106,6 +105,7 @@ implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver
         }
     }
 
+    /** 记录值与线程，校验订阅顺序后转发 downstream。 */
     @Override
     public void onNext(@NonNull T t) {
         if (!checkSubscriptionOnce) {
@@ -126,6 +126,7 @@ implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver
         downstream.onNext(t);
     }
 
+    /** 记录错误与线程，转发 downstream 并 countDown done。 */
     @Override
     public void onError(@NonNull Throwable t) {
         if (!checkSubscriptionOnce) {
@@ -145,6 +146,7 @@ implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver
         }
     }
 
+    /** 递增 completions，转发 downstream 并 countDown done。 */
     @Override
     public void onComplete() {
         if (!checkSubscriptionOnce) {
@@ -164,6 +166,7 @@ implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver
         }
     }
 
+    /** 通过 DisposableHelper 取消 upstream。 */
     @Override
     public final void dispose() {
         DisposableHelper.dispose(upstream);
@@ -175,8 +178,8 @@ implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver
     }
 
     /**
-     * Expose this {@code TestObserver} as a {@link Disposable} object.
-     * @return the {@code Disposable} view of this {@code TestObserver}
+     * 将本 {@code TestObserver} 暴露为 {@link Disposable} 视图。
+     * @return 本 {@code TestObserver} 的 {@code Disposable} 包装
      * @since 4.0.0
      */
     public final Disposable asDisposable() {
@@ -185,15 +188,15 @@ implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver
 
     // state retrieval methods
     /**
-     * Returns true if this {@code TestObserver} received a subscription.
-     * @return true if this {@code TestObserver} received a subscription
+     * 判断本 {@code TestObserver} 是否已收到订阅。
+     * @return 若已收到订阅则为 true
      */
     public final boolean hasSubscription() {
         return upstream.get() != null;
     }
 
     /**
-     * Assert that the {@link #onSubscribe(Disposable)} method was called exactly once.
+     * 断言 {@link #onSubscribe(Disposable)} 恰好被调用一次。
      * @return this
      */
     @Override
@@ -205,15 +208,14 @@ implements Observer<T>, MaybeObserver<T>, SingleObserver<T>, CompletableObserver
         return this;
     }
 
+    /** Single/Maybe 成功：记录 onNext 后 onComplete。 */
     @Override
     public void onSuccess(@NonNull T value) {
         onNext(value);
         onComplete();
     }
 
-    /**
-     * An observer that ignores all events and does not report errors.
-     */
+    /** 忽略所有事件且不上报错误的 observer。 */
     enum EmptyObserver implements Observer<Object> {
         INSTANCE;
 

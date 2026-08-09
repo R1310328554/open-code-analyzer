@@ -14,19 +14,18 @@
 package io.reactivex.rxjava4.observers;
 
 /**
- * An interface that indicates that the implementing type is composed of individual components and exposes information
- * about their behavior.
+ * 表明实现类型由多个组件构成，并暴露其行为的内省接口。
  *
- * <p><em>NOTE:</em> This is considered a read-only public API and is not intended to be implemented externally.
+ * <p><em>NOTE:</em> 此为只读公共 API，不建议外部实现。
  * <p>History: 2.1.4 - experimental
  * @since 2.2
  */
 public interface LambdaConsumerIntrospection {
 
     /**
-     * Returns {@code true} or {@code false} if a custom {@code onError} consumer has been provided.
-     * @return {@code true} if a custom {@code onError} consumer implementation was supplied. Returns {@code false} if the
-     * implementation is missing an error consumer and thus using a throwing default implementation.
+     * 判断是否提供了自定义 {@code onError} consumer。
+     * @return 若提供了自定义 {@code onError} 实现则为 {@code true}；
+     *         若缺少错误 consumer 而使用会抛异常的默认实现则为 {@code false}
      */
     boolean hasCustomOnError();
 

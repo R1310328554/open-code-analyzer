@@ -13,29 +13,27 @@
 
 package io.reactivex.rxjava4.operators;
 
-/// Represents an unknown length iterable source which can be moved forward synchronously and obtain the current
-/// item via a simple call.
+/// 表示长度未知的可迭代源：可同步前移并通过简单调用获取当前项。
 /// <p>
-/// No {@code hasNext} and {@code next} duplication. C# IEnumerator is way better in this regard.
-/// @param <T> the element type of the source
+/// 避免 {@code hasNext} 与 {@code next} 的重复调用；C# IEnumerator 在此方面更优。
+/// @param <T> 源元素类型
 /// @see IndexableSource
 /// @since 4.0.0
 public interface EnumerableSource<T> {
 
     /**
-     * Synchronously obtains the next item or returns {@code false} if no
-     * more items.
-     * @return {@code true} it there is an item available which can be obtained via {@link #current()},
-     *         {@code false} if no more items are available
-     * @throws Throwable if there is a (processing) error while going to the next item synchronously
+     * 同步获取下一项；若无更多项则返回 {@code false}。
+     * @return 若有可用项（可通过 {@link #current()} 获取）则为 {@code true}，
+     *         否则为 {@code false}
+     * @throws Throwable 同步前进时发生（处理）错误
      */
     boolean nextSync() throws Throwable;
 
     /**
-     * Returns the current item if {@link #nextSync()} returned {@code true} the previous call.
+     * 若上次 {@link #nextSync()} 返回 {@code true}，返回当前项。
      * <p>
-     * Calling before the first or after exhaustion of the source is an undefined behavior
-     * @return the current item
+     * 在首次调用前或源耗尽后调用行为未定义。
+     * @return 当前项
      */
     T current(); // FIXME not sure about the name clash with Streamable.current
 }

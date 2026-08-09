@@ -23,74 +23,39 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.internal.util.EndConsumerHelper;
 
 /**
- * An abstract {@link CompletableObserver} that allows asynchronous cancellation of its subscription and associated resources.
+ * 支持异步取消订阅并管理关联资源的 {@link CompletableObserver} 抽象基类。
  *
- * <p>All pre-implemented final methods are thread-safe.
+ * <p>所有预实现的 final 方法均为线程安全。
  *
- * <p>Override the protected {@code #onStart()} to perform initialization when this
- * {@code ResourceCompletableObserver} is subscribed to a source.
+ * <p>订阅时可覆盖 {@code #onStart()} 做初始化；
+ * 在 {@code onError()} 与 {@code onComplete()} 中应显式调用 {@link #dispose()} 释放资源。
  *
- * <p>Use the public {@link #dispose()} method to dispose the sequence externally and release
- * all resources.
+ * <p>通过 {@link #add(Disposable)} 关联 {@link io.reactivex.rxjava4.disposables.Disposable Disposable}，
+ * 在 {@link #dispose()} 时一并清理；已关联资源不可单独移除，
+ * 可改用 {@link io.reactivex.rxjava4.disposables.CompositeDisposable CompositeDisposable} 灵活增删。
  *
- * <p>To release the associated resources, one has to call {@link #dispose()}
- * in {@code onError()} and {@code onComplete()} explicitly.
- *
- * <p>Use {@link #add(Disposable)} to associate resources (as {@link io.reactivex.rxjava4.disposables.Disposable Disposable}s)
- * with this {@code ResourceCompletableObserver} that will be cleaned up when {@link #dispose()} is called.
- * Removing previously associated resources is not possible but one can create a
- * {@link io.reactivex.rxjava4.disposables.CompositeDisposable CompositeDisposable}, associate it with this
- * {@code ResourceCompletableObserver} and then add/remove resources to/from the {@code CompositeDisposable}
- * freely.
- *
- * <p>Like all other consumers, {@code ResourceCompletableObserver} can be subscribed only once.
- * Any subsequent attempt to subscribe it to a new source will yield an
- * {@link IllegalStateException} with message {@code "It is not allowed to subscribe with a(n) <class name> multiple times."}.
- *
- * <p>Implementation of {@code #onStart()}, {@link #onError(Throwable)}
- * and {@link #onComplete()} are not allowed to throw any unchecked exceptions.
- *
- * <p>Example<pre><code>
- * Disposable d =
- *     Completable.complete().delay(1, TimeUnit.SECONDS)
- *     .subscribeWith(new ResourceCompletableObserver() {
- *         &#64;Override public void onStart() {
- *             add(Schedulers.single()
- *                 .scheduleDirect(() -&gt; System.out.println("Time!"),
- *                     2, TimeUnit.SECONDS));
- *         }
- *         &#64;Override public void onError(Throwable t) {
- *             t.printStackTrace();
- *             dispose();
- *         }
- *         &#64;Override public void onComplete() {
- *             System.out.println("Done!");
- *             dispose();
- *         }
- *     });
- * // ...
- * d.dispose();
- * </code></pre>
+ * <p>仅允许单次订阅；回调不得抛出未检查异常。
  */
 public abstract class ResourceCompletableObserver implements CompletableObserver, Disposable {
-    /** The active subscription. */
+    /** 当前活跃的上游订阅。 */
     private final AtomicReference<Disposable> upstream = new AtomicReference<>();
 
-    /** The resource composite, can never be null. */
+    /** 资源复合容器，永不为 null。 */
     private final ListCompositeDisposable resources = new ListCompositeDisposable();
 
     /**
-     * Adds a resource to this {@code ResourceCompletableObserver}.
+     * 向本 {@code ResourceCompletableObserver} 添加资源。
      *
-     * @param resource the resource to add
+     * @param resource 要添加的资源
      *
-     * @throws NullPointerException if resource is {@code null}
+     * @throws NullPointerException 若 resource 为 {@code null}
      */
     public final void add(@NonNull Disposable resource) {
         Objects.requireNonNull(resource, "resource is null");
         resources.add(resource);
     }
 
+    /** setOnce 成功后调用 {@link #onStart()}。 */
     @Override
     public final void onSubscribe(@NonNull Disposable d) {
         if (EndConsumerHelper.setOnce(this.upstream, d, getClass())) {
@@ -99,20 +64,15 @@ public abstract class ResourceCompletableObserver implements CompletableObserver
     }
 
     /**
-     * Called once the upstream sets a {@link Disposable} on this {@code ResourceCompletableObserver}.
-     *
-     * <p>You can perform initialization at this moment. The default
-     * implementation does nothing.
+     * 上游在本 observer 上设置 {@link Disposable} 后调用。
+     * <p>可在此做初始化；默认实现为空。
      */
     protected void onStart() {
     }
 
     /**
-     * Cancels the main disposable (if any) and disposes the resources associated with
-     * this {@code ResourceCompletableObserver} (if any).
-     *
-     * <p>This method can be called before the upstream calls {@link #onSubscribe(Disposable)} at which
-     * case the main {@link Disposable} will be immediately disposed.
+     * 取消主 disposable（若有）并 dispose 本 observer 关联的所有资源。
+     * <p>可在上游 {@link #onSubscribe(Disposable)} 之前调用，此时主 {@link Disposable} 会立即被 dispose。
      */
     @Override
     public final void dispose() {
@@ -122,8 +82,8 @@ public abstract class ResourceCompletableObserver implements CompletableObserver
     }
 
     /**
-     * Returns true if this {@code ResourceCompletableObserver} has been disposed/cancelled.
-     * @return true if this {@code ResourceCompletableObserver} has been disposed/cancelled
+     * 判断本 {@code ResourceCompletableObserver} 是否已 dispose/取消。
+     * @return 若已 dispose/取消则为 true
      */
     @Override
     public final boolean isDisposed() {

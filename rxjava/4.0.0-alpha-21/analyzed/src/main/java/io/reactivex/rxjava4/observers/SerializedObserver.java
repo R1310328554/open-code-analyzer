@@ -21,16 +21,15 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Serializes access to the {@link Observer#onNext(Object)}, {@link Observer#onError(Throwable)} and
- * {@link Observer#onComplete()} methods of another {@link Observer}.
+ * 对另一个 {@link Observer} 的 {@link Observer#onNext(Object)}、
+ * {@link Observer#onError(Throwable)} 与 {@link Observer#onComplete()} 进行串行化访问。
  *
- * <p>Note that {@link #onSubscribe(Disposable)} is not serialized in respect of the other methods so
- * make sure the {@code onSubscribe()} is called with a non-null {@link Disposable}
- * before any of the other methods are called.
+ * <p>{@link #onSubscribe(Disposable)} 相对其他方法未串行化，
+ * 须在其他方法之前以非 null {@link Disposable} 完成 onSubscribe。
  *
- * <p>The implementation assumes that the actual {@code Observer}'s methods don't throw.
+ * <p>假定实际 {@code Observer} 的方法不会抛出异常。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public final class SerializedObserver<T> implements Observer<T>, Disposable {
     final Observer<? super T> downstream;
@@ -46,25 +45,24 @@ public final class SerializedObserver<T> implements Observer<T>, Disposable {
     volatile boolean done;
 
     /**
-     * Construct a {@code SerializedObserver} by wrapping the given actual {@link Observer}.
-     * @param downstream the actual {@code Observer}, not {@code null} (not verified)
+     * 通过包装给定 {@link Observer} 构造 {@code SerializedObserver}。
+     * @param downstream 实际 {@code Observer}，非 {@code null}（未校验）
      */
     public SerializedObserver(@NonNull Observer<? super T> downstream) {
         this(downstream, false);
     }
 
     /**
-     * Construct a SerializedObserver by wrapping the given actual {@link Observer} and
-     * optionally delaying the errors till all regular values have been emitted
-     * from the internal buffer.
-     * @param actual the actual {@code Observer}, not {@code null} (not verified)
-     * @param delayError if {@code true}, errors are emitted after regular values have been emitted
+     * 包装给定 {@link Observer} 并可选择将错误延迟到内部缓冲中的常规值全部发出后再发出。
+     * @param actual 实际 {@code Observer}，非 {@code null}（未校验）
+     * @param delayError 若为 {@code true}，错误在所有常规值发出后再发出
      */
     public SerializedObserver(@NonNull Observer<? super T> actual, boolean delayError) {
         this.downstream = actual;
         this.delayError = delayError;
     }
 
+    /** 校验 upstream 后将其设为自身并转发 onSubscribe。 */
     @Override
     public void onSubscribe(@NonNull Disposable d) {
         if (DisposableHelper.validate(this.upstream, d)) {
@@ -74,6 +72,7 @@ public final class SerializedObserver<T> implements Observer<T>, Disposable {
         }
     }
 
+    /** 标记 done 并 dispose 上游。 */
     @Override
     public void dispose() {
         done = true;
@@ -85,6 +84,7 @@ public final class SerializedObserver<T> implements Observer<T>, Disposable {
         return upstream.isDisposed();
     }
 
+    /** 串行化转发 onNext；若正在 emitting 则入队。 */
     @Override
     public void onNext(@NonNull T t) {
         if (done) {
@@ -116,6 +116,7 @@ public final class SerializedObserver<T> implements Observer<T>, Disposable {
         emitLoop();
     }
 
+    /** 串行化转发 onError；delayError 模式下错误入队。 */
     @Override
     public void onError(@NonNull Throwable t) {
         if (done) {
@@ -157,6 +158,7 @@ public final class SerializedObserver<T> implements Observer<T>, Disposable {
         // no need to loop because this onError is the last event
     }
 
+    /** 串行化转发 onComplete；若正在 emitting 则入队 complete 标记。 */
     @Override
     public void onComplete() {
         if (done) {
@@ -183,6 +185,7 @@ public final class SerializedObserver<T> implements Observer<T>, Disposable {
         // no need to loop because this onComplete is the last event
     }
 
+    /** 排空内部队列并继续向下游发出事件。 */
     void emitLoop() {
         for (;;) {
             AppendOnlyLinkedArrayList<Object> q;

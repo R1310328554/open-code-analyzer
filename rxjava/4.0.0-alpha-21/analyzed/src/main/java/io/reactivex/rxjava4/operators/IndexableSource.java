@@ -16,25 +16,24 @@ package io.reactivex.rxjava4.operators;
 import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.core.Streamer;
 
-/// Represents a source which can be accessed via a zero-based index synchronously,
-/// without going through the usual [Streamer#next()] calls to obtain the next item.
-/// @param <T> the element type of the source
+/// 表示可通过从零开始的索引同步访问的源，
+/// 无需像 [Streamer#next()] 那样逐步获取下一项。
+/// @param <T> 源元素类型
 /// @since 4.0.0
 public interface IndexableSource<T> {
 
     /**
-     * Obtain an element from the given index.
-     * Make sure you read only up to {@link #limit()}
-     * @param index the index
-     * @return the element at the specified index
-     * @throws Throwable if the indexed access involves computation that can throw
+     * 按给定索引获取元素；请仅读取不超过 {@link #limit()} 的范围。
+     * @param index 索引
+     * @return 指定索引处的元素
+     * @throws Throwable 若索引访问涉及可能抛出的计算
      */
     @NonNull
     T elementAt(long index) throws Throwable;
 
     /**
-     * Returns the limit of how many items can be obtained via [{@link #elementAt(long)}.
-     * @return the index limit, exclusive
+     * 返回可通过 {@link #elementAt(long)} 获取的元素数量上限。
+     * @return 索引上限（不含）
      */
     long limit();
 }

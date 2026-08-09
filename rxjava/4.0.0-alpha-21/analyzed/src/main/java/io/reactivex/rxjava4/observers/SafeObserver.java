@@ -22,27 +22,28 @@ import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Wraps another {@link Observer} and ensures all {@code onXXX} methods conform the protocol
- * (except the requirement for serialized access).
+ * 包装另一个 {@link Observer}，确保所有 {@code onXXX} 方法符合协议
+ * （序列化访问要求除外）。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public final class SafeObserver<T> implements Observer<T>, Disposable {
-    /** The actual Subscriber. */
+    /** 实际下游 Observer。 */
     final Observer<? super T> downstream;
-    /** The subscription. */
+    /** 上游订阅。 */
     Disposable upstream;
-    /** Indicates a terminal state. */
+    /** 是否已进入终止状态。 */
     boolean done;
 
     /**
-     * Constructs a {@code SafeObserver} by wrapping the given actual {@link Observer}.
-     * @param downstream the actual {@code Observer} to wrap, not {@code null} (not validated)
+     * 通过包装给定 {@link Observer} 构造 {@code SafeObserver}。
+     * @param downstream 要包装的实际 {@code Observer}，非 {@code null}（未校验）
      */
     public SafeObserver(@NonNull Observer<? super T> downstream) {
         this.downstream = downstream;
     }
 
+    /** 校验并设置 upstream，安全转发 onSubscribe；异常时 dispose 并上报 RxJavaPlugins。 */
     @Override
     public void onSubscribe(@NonNull Disposable d) {
         if (DisposableHelper.validate(this.upstream, d)) {
@@ -65,16 +66,19 @@ public final class SafeObserver<T> implements Observer<T>, Disposable {
         }
     }
 
+    /** dispose 上游订阅。 */
     @Override
     public void dispose() {
         upstream.dispose();
     }
 
+    /** 委托 upstream.isDisposed()。 */
     @Override
     public boolean isDisposed() {
         return upstream.isDisposed();
     }
 
+    /** 校验 null 与订阅状态后安全转发 onNext；异常时 dispose 并 onError。 */
     @Override
     public void onNext(@NonNull T t) {
         if (done) {
@@ -113,6 +117,7 @@ public final class SafeObserver<T> implements Observer<T>, Disposable {
         }
     }
 
+    /** 未设置订阅时以 EmptyDisposable 订阅并向下游发出错误。 */
     void onNextNoSubscription() {
         done = true;
 
@@ -135,6 +140,7 @@ public final class SafeObserver<T> implements Observer<T>, Disposable {
         }
     }
 
+    /** 安全转发 onError；已终止或未订阅时上报 RxJavaPlugins。 */
     @Override
     public void onError(@NonNull Throwable t) {
         if (done) {
@@ -177,6 +183,7 @@ public final class SafeObserver<T> implements Observer<T>, Disposable {
         }
     }
 
+    /** 安全转发 onComplete；未订阅时走 onCompleteNoSubscription。 */
     @Override
     public void onComplete() {
         if (done) {
@@ -198,6 +205,7 @@ public final class SafeObserver<T> implements Observer<T>, Disposable {
         }
     }
 
+    /** 未设置订阅时以 EmptyDisposable 订阅并向下游发出错误。 */
     void onCompleteNoSubscription() {
 
         Throwable ex = new NullPointerException("Subscription not set!");

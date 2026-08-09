@@ -17,39 +17,29 @@ import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.disposables.Disposable;
 
 /**
- * An interface extending {@link SimpleQueue} and {@link Disposable} and allows negotiating
- * the fusion mode between subsequent operators of the {@link io.reactivex.rxjava4.core.Observable Observable} base reactive type.
+ * 扩展 {@link SimpleQueue} 与 {@link Disposable}，用于协商
+ * {@link io.reactivex.rxjava4.core.Observable Observable} 链上相邻算子之间的融合模式。
  * <p>
- * The negotiation happens in subscription time when the upstream
- * calls the {@code onSubscribe} with an instance of this interface. The
- * downstream has then the obligation to call {@link #requestFusion(int)}
- * with the appropriate mode before calling {@code request()}.
+ * 协商发生在订阅时：上游以本接口实例调用 {@code onSubscribe}，
+ * 下游须在 {@code request()} 前调用 {@link #requestFusion(int)} 指定模式。
  * <p>
- * In <b>synchronous fusion</b>, all upstream values are either already available or is generated
- * when {@link #poll()} is called synchronously. When the {@link #poll()} returns {@code null},
- * that is the indication if a terminated stream. In this mode, the upstream won't call the onXXX methods.
+ * <b>同步融合</b>：上游值已就绪或在 {@link #poll()} 同步调用时生成；
+ * {@link #poll()} 返回 {@code null} 表示流已终止，上游不再调用 onXXX。
  * <p>
- * In <b>asynchronous fusion</b>, upstream values may become available to {@link #poll()} eventually.
- * Upstream signals {@code onError()} and {@code onComplete()} as usual, however,
- * {@code onNext} will be called with {@code null} instead of the actual value.
- * Downstream should treat such onNext as indication that {@link #poll()} can be called.
+ * <b>异步融合</b>：值可能稍后通过 {@link #poll()} 可用；
+ * onError/onComplete 照常，但 onNext 以 {@code null} 代替实际值，
+ * 下游应将其视为可调用 {@link #poll()} 的信号。
  * <p>
- * The general rules for consuming the {@link SimpleQueue} interface:
+ * 消费 {@link SimpleQueue} 的一般规则：
  * <ul>
- * <li> {@link #poll()} and {@link #clear()} has to be called sequentially (from within a serializing drain-loop).</li>
- * <li>In addition, callers of {@link #poll()} should be prepared to catch exceptions.</li>
- * <li>Due to how computation attaches to the {@link #poll()}, {@link #poll()} may return
- * {@code null} even if a preceding {@link #isEmpty()} returned false.</li>
+ * <li>{@link #poll()} 与 {@link #clear()} 须在串行 drain-loop 中顺序调用。</li>
+ * <li>{@link #poll()} 调用方应准备捕获异常。</li>
+ * <li>因计算附着于 {@link #poll()}，即使 {@link #isEmpty()} 曾为 false，{@link #poll()} 仍可能返回 {@code null}。</li>
  * </ul>
  * <p>
- * Implementations should only allow calling the following methods and the rest of the
- * {@link SimpleQueue} interface methods should throw {@link UnsupportedOperationException}:
- * <ul>
- * <li>{@link #poll()}</li>
- * <li>{@link #isEmpty()}</li>
- * <li>{@link #clear()}</li>
- * </ul>
- * @param <T> the value type transmitted through the queue
+ * 实现应仅允许调用 {@link #poll()}、{@link #isEmpty()}、{@link #clear()}，
+ * 其余 {@link SimpleQueue} 方法应抛出 {@link UnsupportedOperationException}。
+ * @param <T> 经队列传递的值类型
  * @see QueueSubscription
  * @since 3.1.1
  */

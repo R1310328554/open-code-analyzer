@@ -12,17 +12,19 @@
  */
 
 /**
- * Default wrappers and implementations for observer-based consumer classes and interfaces,
- * including disposable and resource-tracking variants and
- * the {@link io.reactivex.rxjava4.observers.TestObserver TestObserver} that allows unit testing
- * {@link io.reactivex.rxjava4.core.Observable Observable}-, {@link io.reactivex.rxjava4.core.Single Single}-,
- * {@link io.reactivex.rxjava4.core.Maybe Maybe}- and {@link io.reactivex.rxjava4.core.Completable Completable}-based flows.
+ * 基于 observer 的 consumer 类与接口的默认包装与实现，
+ * 含 disposable 与 resource 跟踪变体，以及用于单元测试
+ * {@link io.reactivex.rxjava4.core.Observable Observable}、
+ * {@link io.reactivex.rxjava4.core.Single Single}、
+ * {@link io.reactivex.rxjava4.core.Maybe Maybe} 与
+ * {@link io.reactivex.rxjava4.core.Completable Completable} 流的
+ * {@link io.reactivex.rxjava4.observers.TestObserver TestObserver}。
  * <p>
- * Available observer variants
+ * 可用的 observer 变体
  * <br>
  * <table border="1" style="border-collapse: collapse;">
- * <caption>The available observer types.</caption>
- * <tr><td><b>Reactive type</b></td><td><b>Base interface</b></td><td><b>Simple</b></td><td><b>Disposable</b></td><td><b>Resource</b></td></tr>
+ * <caption>可用的 observer 类型。</caption>
+ * <tr><td><b>响应式类型</b></td><td><b>基础接口</b></td><td><b>Simple</b></td><td><b>Disposable</b></td><td><b>Resource</b></td></tr>
  * <tr>
  *     <td>{@link io.reactivex.rxjava4.core.Observable Observable}</td>
  *     <td>{@link io.reactivex.rxjava4.core.Observer Observer}</td>

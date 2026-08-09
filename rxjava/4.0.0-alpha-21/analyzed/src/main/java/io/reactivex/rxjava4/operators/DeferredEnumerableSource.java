@@ -15,22 +15,19 @@ package io.reactivex.rxjava4.operators;
 
 import java.util.concurrent.CompletionStage;
 
-/// Represents an unknown length, deferred iterable source which can be moved forward synchronously
-///  and obtain the current item via a simple call once it reports said iterable elements are ready
-/// to be consumed.
+/// 表示长度未知、可延迟就绪的可迭代源：可同步前移，
+/// 并在报告元素可消费后通过简单调用获取当前项。
 /// <p>
-/// No {@code hasNext} and {@code next} duplication. C# IEnumerator is way better in this regard.
-/// @param <T> the element type of the source
+/// 避免 {@code hasNext} 与 {@code next} 的重复调用；C# IEnumerator 在此方面更优。
+/// @param <T> 源元素类型
 /// @see IndexableSource
 /// @since 4.0.0
 public interface DeferredEnumerableSource<T> extends EnumerableSource<T> {
 
     /**
-     * Returns true if the source is ready to be consumed via its
-     * {@link EnumerableSource#nextSync()} and {@link EnumerableSource#current()}
-     * methods.
-     * @return the completion stage that indicates an empty {@code false} or a non-empty
-     *         {@code true} enumerable source is now available
+     * 返回源是否可通过 {@link EnumerableSource#nextSync()} 与
+     * {@link EnumerableSource#current()} 消费。
+     * @return 完成阶段：空源为 {@code false}，非空可迭代源就绪为 {@code true}
      */
     CompletionStage<Boolean> enumerableReady();
 }

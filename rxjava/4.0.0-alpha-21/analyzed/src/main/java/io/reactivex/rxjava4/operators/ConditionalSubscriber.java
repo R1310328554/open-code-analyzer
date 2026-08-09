@@ -17,21 +17,19 @@ import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.core.FlowableSubscriber;
 
 /**
- * A {@link FlowableSubscriber} with an additional {@link #tryOnNext(Object)} method that
- * tells the caller the specified value has been accepted or not.
+ * 在 {@link FlowableSubscriber} 基础上增加 {@link #tryOnNext(Object)}，
+ * 告知调用方指定值是否已被接受。
  *
- * <p>This allows certain queue-drain or source-drain operators
- * to avoid requesting 1 on behalf of a dropped value.
+ * <p>某些 queue-drain 或 source-drain 算子可据此避免为丢弃的值额外 request(1)。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  * @since 3.1.1
  */
 public interface ConditionalSubscriber<@NonNull T> extends FlowableSubscriber<T> {
     /**
-     * Conditionally takes the value.
-     * @param t the value to deliver
-     * @return true if the value has been accepted, false if the value has been rejected
-     * and the next value can be sent immediately
+     * 有条件地接收值。
+     * @param t 要传递的值
+     * @return 若值已被接受则为 true；若被拒绝且可立即发送下一值则为 false
      */
     boolean tryOnNext(@NonNull T t);
 }
