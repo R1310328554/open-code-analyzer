@@ -26,20 +26,30 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 /**
- * thread safe
+ * 线程安全的 TreeMap 包装：结合 {@link RoundQueue} 限制可跟踪键的数量。
+ *
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class ConcurrentTreeMap<K, V> {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+    /** 保护 tree 与 roundQueue 的可重入锁（公平模式）。 */
     private final ReentrantLock lock;
+    /** 有序键值存储。 */
     private TreeMap<K, V> tree;
+    /** 最近访问键的环形队列，用于容量控制。 */
     private RoundQueue<K> roundQueue;
 
-    public ConcurrentTreeMap(int capacity, Comparator<? super K> comparator) {
+    /**
+     * @param capacity roundQueue 容量上限
+     * @param comparator 键比较器
+     */
         tree = new TreeMap<>(comparator);
         roundQueue = new RoundQueue<>(capacity);
         lock = new ReentrantLock(true);
     }
 
+    /** 移除并返回最小键对应的 Map.Entry。 */
     public Map.Entry<K, V> pollFirstEntry() {
         lock.lock();
         try {
@@ -49,7 +59,10 @@ public class ConcurrentTreeMap<K, V> {
         }
     }
 
-    public V putIfAbsentAndRetExsit(K key, V value) {
+    /**
+     * 若 roundQueue 接受该键则尝试 putIfAbsent，并返回已存在或新写入的值；
+     * 键已在 roundQueue 中则仅返回 tree 中现有值。
+     */
         lock.lock();
         try {
             if (roundQueue.put(key)) {

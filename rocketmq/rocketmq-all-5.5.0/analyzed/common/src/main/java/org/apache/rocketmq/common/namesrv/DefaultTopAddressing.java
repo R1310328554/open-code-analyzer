@@ -31,26 +31,37 @@ import org.apache.rocketmq.common.utils.HttpTinyClient;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 默认 NameServer 地址解析：通过 HTTP 从 WS 域名拉取 NS 地址，并支持 SPI 自定义 {@link TopAddressing}。
+ */
 public class DefaultTopAddressing implements TopAddressing {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /** 缓存或外部设置的 NameServer 地址。 */
     private String nsAddr;
+    /** Web 服务地址，用于 HTTP 获取 NameServer 列表。 */
     private String wsAddr;
+    /** 单元化部署的单元名。 */
     private String unitName;
+    /** 附加 HTTP 查询参数。 */
     private Map<String, String> para;
+    /** 通过 ServiceLoader 加载的自定义 TopAddressing 实现列表。 */
     private List<TopAddressing> topAddressingList;
 
+    /** 仅指定 WS 地址构造。 */
     public DefaultTopAddressing(final String wsAddr) {
         this(wsAddr, null);
     }
 
+    /** 指定 WS 地址与单元名构造。 */
     public DefaultTopAddressing(final String wsAddr, final String unitName) {
         this.wsAddr = wsAddr;
         this.unitName = unitName;
         this.topAddressingList = loadCustomTopAddressing();
     }
 
+    /** 指定单元名、查询参数与 WS 地址构造。 */
     public DefaultTopAddressing(final String unitName, final Map<String, String> para, final String wsAddr) {
         this.wsAddr = wsAddr;
         this.unitName = unitName;
@@ -58,6 +69,7 @@ public class DefaultTopAddressing implements TopAddressing {
         this.topAddressingList = loadCustomTopAddressing();
     }
 
+    /** 去除响应字符串首尾空白及首行换行符。 */
     private static String clearNewLine(final String str) {
         String newString = str.trim();
         int index = newString.indexOf("\r");
@@ -73,6 +85,7 @@ public class DefaultTopAddressing implements TopAddressing {
         return newString;
     }
 
+    /** 通过 {@link ServiceLoader} 加载首个自定义 TopAddressing 实现。 */
     private List<TopAddressing> loadCustomTopAddressing() {
         ServiceLoader<TopAddressing> serviceLoader = ServiceLoader.load(TopAddressing.class);
         Iterator<TopAddressing> iterator = serviceLoader.iterator();
@@ -93,7 +106,7 @@ public class DefaultTopAddressing implements TopAddressing {
                 }
             }
         }
-        // Return result of default implementation
+        // 自定义实现均未返回地址时，走默认 HTTP 拉取
         return fetchNSAddr(true, 3000);
     }
 
@@ -106,7 +119,13 @@ public class DefaultTopAddressing implements TopAddressing {
         }
     }
 
-    public final String fetchNSAddr(boolean verbose, long timeoutMills) {
+    /**
+     * 通过 HTTP GET 从 wsAddr 拉取 NameServer 地址。
+     *
+     * @param verbose 失败时是否输出详细日志
+     * @param timeoutMills HTTP 超时毫秒数
+     * @return 成功返回 NS 地址字符串，失败返回 null
+     */
         StringBuilder url = new StringBuilder(this.wsAddr);
         try {
             if (null != para && para.size() > 0) {
@@ -154,10 +173,12 @@ public class DefaultTopAddressing implements TopAddressing {
         return null;
     }
 
+    /** 返回当前 nsAddr 字段值。 */
     public String getNsAddr() {
         return nsAddr;
     }
 
+    /** 设置 nsAddr 缓存。 */
     public void setNsAddr(String nsAddr) {
         this.nsAddr = nsAddr;
     }

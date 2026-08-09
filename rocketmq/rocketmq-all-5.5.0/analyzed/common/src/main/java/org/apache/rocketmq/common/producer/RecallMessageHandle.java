@@ -25,20 +25,20 @@ import java.util.Base64;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * handle to recall a message, only support delay message for now
- * v1 pattern like this:
- * version topic brokerName timestamp messageId
- * use Base64 to encode it
+ * 延迟消息撤回句柄编解码：当前仅支持 v1 格式。
+ * 明文格式：{@code version topic brokerName timestamp messageId}（空格分隔），再经 URL-safe Base64 编码。
  */
 public class RecallMessageHandle {
     private static final String SEPARATOR = " ";
     private static final String VERSION_1 = "v1";
 
+    /** v1 撤回句柄：携带 Topic、Broker、时间戳与消息 ID。 */
     public static class HandleV1 extends RecallMessageHandle {
         private String version;
         private String topic;
         private String brokerName;
         private String timestampStr;
+        /** 消息唯一键 ID。 */
         private String messageId; // id of unique key
 
         public HandleV1(String topic, String brokerName, String timestamp, String messageId) {
@@ -49,7 +49,8 @@ public class RecallMessageHandle {
             this.messageId = messageId;
         }
 
-        // no param check
+        // 不做参数校验
+        /** 构造 v1 撤回句柄 Base64 字符串。 */
         public static String buildHandle(String topic, String brokerName, String timestampStr, String messageId) {
             String rawString = String.join(SEPARATOR, VERSION_1, topic, brokerName, timestampStr, messageId);
             return Base64.getUrlEncoder().encodeToString(rawString.getBytes(UTF_8));
@@ -76,7 +77,11 @@ public class RecallMessageHandle {
         }
     }
 
-    public static RecallMessageHandle decodeHandle(String handle) throws DecoderException {
+    /**
+     * 解码撤回句柄字符串。
+     *
+     * @throws DecoderException 格式非法或版本不匹配
+     */
         if (StringUtils.isEmpty(handle)) {
             throw new DecoderException("recall handle is invalid");
         }

@@ -17,9 +17,14 @@
 package org.apache.rocketmq.common.namesrv;
 
 
+/**
+ * 顶层 NameServer 地址解析 SPI：从 WS/云配置等来源获取 NS 地址。
+ */
 public interface TopAddressing {
 
+    /** 获取当前 NameServer 地址字符串。 */
     String fetchNSAddr();
 
+    /** 注册 NameServer 地址变更回调。 */
     void registerChangeCallBack(NameServerUpdateCallback changeCallBack);
 }

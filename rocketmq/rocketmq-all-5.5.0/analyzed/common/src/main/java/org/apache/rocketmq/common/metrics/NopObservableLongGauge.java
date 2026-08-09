@@ -18,5 +18,8 @@ package org.apache.rocketmq.common.metrics;
 
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 
+/**
+ * OpenTelemetry {@link ObservableLongGauge} 的空实现：不注册可观测 long 仪表回调。
+ */
 public class NopObservableLongGauge implements ObservableLongGauge {
 }

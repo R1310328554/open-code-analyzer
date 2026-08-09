@@ -16,6 +16,14 @@
  */
 package org.apache.rocketmq.common.namesrv;
 
+/**
+ * NameServer 地址变更回调：客户端在 NS 列表更新时通知上层。
+ */
 public interface NameServerUpdateCallback {
-    String onNameServerAddressChange(String namesrvAddress);
+    /**
+     * NameServer 地址发生变化时调用。
+     *
+     * @param namesrvAddress 新的 NameServer 地址
+     * @return 处理后的地址（可为 null）
+     */
 }

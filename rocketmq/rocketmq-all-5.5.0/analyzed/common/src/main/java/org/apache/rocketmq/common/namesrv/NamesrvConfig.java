@@ -23,78 +23,76 @@ package org.apache.rocketmq.common.namesrv;
 import java.io.File;
 import org.apache.rocketmq.common.MixAll;
 
+/**
+ * NameServer 进程配置项：线程池、路径、Topic 策略及 Controller 集成等。
+ */
 public class NamesrvConfig {
 
+    /** RocketMQ 安装根目录。 */
     private String rocketmqHome = MixAll.ROCKETMQ_HOME_DIR;
+    /** KV 配置持久化文件路径。 */
     private String kvConfigPath = System.getProperty("user.home") + File.separator + "namesrv" + File.separator + "kvConfig.json";
+    /** NameServer 主配置文件存储路径。 */
     private String configStorePath = System.getProperty("user.home") + File.separator + "namesrv" + File.separator + "namesrv.properties";
+    /** 生产环境标识名。 */
     private String productEnvName = "center";
+    /** 是否为集群测试模式。 */
     private boolean clusterTest = false;
+    /** 是否启用顺序消息相关能力。 */
     private boolean orderMessageEnable = false;
+    /** 是否向 Broker 返回顺序 Topic 配置。 */
     private boolean returnOrderTopicConfigToBroker = true;
 
-    /**
-     * Indicates the nums of thread to handle client requests, like GET_ROUTEINTO_BY_TOPIC.
-     */
+    /** 处理客户端请求（如 GET_ROUTEINTO_BY_TOPIC）的线程数。 */
     private int clientRequestThreadPoolNums = 8;
-    /**
-     * Indicates the nums of thread to handle broker or operation requests, like REGISTER_BROKER.
-     */
+    /** 处理 Broker/运维请求（如 REGISTER_BROKER）的线程数。 */
     private int defaultThreadPoolNums = 16;
-    /**
-     * Indicates the capacity of queue to hold client requests.
-     */
+    /** 客户端请求队列容量。 */
     private int clientRequestThreadPoolQueueCapacity = 50000;
-    /**
-     * Indicates the capacity of queue to hold broker or operation requests.
-     */
+    /** Broker/运维请求队列容量。 */
     private int defaultThreadPoolQueueCapacity = 10000;
-    /**
-     * Interval of periodic scanning for non-active broker;
-     */
+    /** 扫描非活跃 Broker 的周期间隔（毫秒）。 */
     private long scanNotActiveBrokerInterval = 5 * 1000;
 
+    /** 待注销 Broker 请求队列容量。 */
     private int unRegisterBrokerQueueCapacity = 3000;
 
     /**
-     * Support acting master or not.
-     *
-     * The slave can be an acting master when master node is down to support following operations:
-     * 1. support lock/unlock message queue operation.
-     * 2. support searchOffset, query maxOffset/minOffset operation.
-     * 3. support query earliest msg store time.
+     * 是否支持 Acting Master：主节点宕机时从节点可临时承担主职责，支持：
+     * 1. 消息队列 lock/unlock；
+     * 2. searchOffset、maxOffset/minOffset 查询；
+     * 3. 最早消息存储时间查询。
      */
     private boolean supportActingMaster = false;
 
+    /** 是否启用全量 Topic 列表接口。 */
     private volatile boolean enableAllTopicList = true;
 
 
+    /** 是否启用 Topic 列表相关能力。 */
     private volatile boolean enableTopicList = true;
 
+    /** 最小 BrokerId 变更时是否通知客户端。 */
     private volatile boolean notifyMinBrokerIdChanged = false;
 
-    /**
-     * Is startup the controller in this name-srv
-     */
+    /** 是否在本 NameServer 进程中启动 Controller。 */
     private boolean enableControllerInNamesrv = false;
 
+    /** 启动时是否等待依赖服务就绪。 */
     private volatile boolean needWaitForService = false;
 
+    /** 等待依赖服务的超时秒数。 */
     private int waitSecondsForService = 45;
 
     /**
-     * If enable this flag, the topics that don't exist in broker registration payload will be deleted from name server.
+     * 启用后，Broker 注册载荷中不存在的 Topic 将从 NameServer 路由中删除。
      *
-     * WARNING:
-     * 1. Enable this flag and "enableSingleTopicRegister" of broker config meanwhile to avoid losing topic route info unexpectedly.
-     * 2. This flag does not support static topic currently.
+     * 注意：
+     * 1. 需与 Broker 的 enableSingleTopicRegister 同时启用，避免意外丢失路由；
+     * 2. 暂不支持静态 Topic。
      */
     private boolean deleteTopicWithBrokerRegistration = false;
-    /**
-     * Config in this black list will be not allowed to update by command.
-     * Try to update this config black list by restart process.
-     * Try to update configures in black list by restart process.
-     */
+    /** 配置黑名单：名单内项不允许通过命令热更新，需重启进程修改。 */
     private String configBlackList = "configBlackList;configStorePath;kvConfigPath";
 
     public String getConfigBlackList() {

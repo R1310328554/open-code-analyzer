@@ -17,6 +17,10 @@
 
 package org.apache.rocketmq.common.namesrv;
 
+/**
+ * NameServer 相关常量与工具方法。
+ */
 public class NamesrvUtil {
+    /** KV 命名空间：顺序 Topic 配置。 */
     public static final String NAMESPACE_ORDER_TOPIC_CONFIG = "ORDER_TOPIC_CONFIG";
 }

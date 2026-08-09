@@ -21,19 +21,28 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * not thread safe
+ * 固定容量的环形队列：新元素入队时若已满则淘汰最旧元素；非线程安全。
+ *
+ * @param <E> 元素类型
  */
 public class RoundQueue<E> {
 
+    /** 底层 FIFO 队列。 */
     private Queue<E> queue;
+    /** 最大容量。 */
     private int capacity;
 
+    /** 指定容量构造环形队列。 */
     public RoundQueue(int capacity) {
         this.capacity = capacity;
         queue = new LinkedList<>();
     }
 
-    public boolean put(E e) {
+    /**
+     * 尝试加入元素：已存在则返回 false；满则 poll 队首后再 add。
+     *
+     * @return 实际新增元素返回 true，重复元素返回 false
+     */
         boolean ok = false;
         if (!queue.contains(e)) {
             if (queue.size() >= capacity) {

@@ -20,15 +20,21 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.context.Context;
 
+/**
+ * OpenTelemetry {@link LongUpDownCounter} 的空实现：可增可减计数器的不记录占位。
+ */
 public class NopLongUpDownCounter implements LongUpDownCounter {
+    /** 增减计数值（无属性）。 */
     @Override public void add(long l) {
 
     }
 
+    /** 带属性标签增减计数值。 */
     @Override public void add(long l, Attributes attributes) {
 
     }
 
+    /** 带属性与上下文增减计数值。 */
     @Override public void add(long l, Attributes attributes, Context context) {
 
     }

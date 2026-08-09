@@ -20,15 +20,21 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.context.Context;
 
+/**
+ * OpenTelemetry {@link LongHistogram} 的空实现：不记录直方图样本。
+ */
 public class NopLongHistogram implements LongHistogram {
+    /** 记录一个 long 样本（无属性）。 */
     @Override public void record(long l) {
 
     }
 
+    /** 带属性标签记录样本。 */
     @Override public void record(long l, Attributes attributes) {
 
     }
 
+    /** 带属性与上下文记录样本。 */
     @Override public void record(long l, Attributes attributes, Context context) {
 
     }

@@ -20,15 +20,21 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.context.Context;
 
+/**
+ * OpenTelemetry {@link LongCounter} 的空实现：指标未启用时不记录任何数据。
+ */
 public class NopLongCounter implements LongCounter {
+    /** 累加计数值（无属性、无上下文）。 */
     @Override public void add(long l) {
 
     }
 
+    /** 带属性标签累加计数值。 */
     @Override public void add(long l, Attributes attributes) {
 
     }
 
+    /** 带属性与上下文累加计数值。 */
     @Override public void add(long l, Attributes attributes, Context context) {
 
     }

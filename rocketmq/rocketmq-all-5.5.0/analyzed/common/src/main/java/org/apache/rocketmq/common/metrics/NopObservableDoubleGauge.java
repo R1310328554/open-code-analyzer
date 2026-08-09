@@ -18,5 +18,8 @@ package org.apache.rocketmq.common.metrics;
 
 import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 
+/**
+ * OpenTelemetry {@link ObservableDoubleGauge} 的空实现：不注册可观测 double 仪表回调。
+ */
 public class NopObservableDoubleGauge implements ObservableDoubleGauge {
 }

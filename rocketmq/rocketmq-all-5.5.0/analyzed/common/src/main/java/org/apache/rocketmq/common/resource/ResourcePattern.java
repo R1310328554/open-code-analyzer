@@ -18,16 +18,24 @@ package org.apache.rocketmq.common.resource;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 
+/**
+ * ACL 资源匹配模式：任意、字面量或前缀匹配。
+ */
 public enum ResourcePattern {
 
+    /** 匹配任意资源。 */
     ANY((byte) 1, "ANY"),
 
+    /** 字面量精确匹配。 */
     LITERAL((byte) 2, "LITERAL"),
 
+    /** 前缀匹配。 */
     PREFIXED((byte) 3, "PREFIXED");
 
+    /** 序列化/反序列化使用的模式编码。 */
     @JSONField(value = true)
     private final byte code;
+    /** 模式名称字符串。 */
     private final String name;
 
     ResourcePattern(byte code, String name) {
