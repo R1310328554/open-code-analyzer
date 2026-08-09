@@ -100,3 +100,13 @@ docs_src/bigger_applications/app_an_py310/routers/users.py
 docs_src/body/__init__.py
 docs_src/body/tutorial001_py310.py
 docs_src/body/tutorial002_py310.py
+docs_src/body/tutorial003_py310.py
+docs_src/body/tutorial004_py310.py
+docs_src/body_fields/__init__.py
+docs_src/body_fields/tutorial001_an_py310.py
+docs_src/body_fields/tutorial001_py310.py
+docs_src/body_multiple_params/__init__.py
+docs_src/body_multiple_params/tutorial001_an_py310.py
+docs_src/body_multiple_params/tutorial001_py310.py
+docs_src/body_multiple_params/tutorial002_py310.py
+docs_src/body_multiple_params/tutorial003_an_py310.py
