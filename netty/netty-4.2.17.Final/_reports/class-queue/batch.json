@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:39:43Z",
-  "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/http/LastHttpContent.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/QueryStringDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/QueryStringEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/ReadOnlyHttpHeaders.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/ServerCookieEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/TooLongHttpContentException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/TooLongHttpHeaderException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/TooLongHttpLineException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/TransferEncodingNotAllowedException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/cookie/ClientCookieDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/cookie/ClientCookieEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/cookie/Cookie.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/cookie/CookieDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/cookie/CookieEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/cookie/CookieHeaderNames.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1448,
-  "done": 465
+  "done": 480
 }
