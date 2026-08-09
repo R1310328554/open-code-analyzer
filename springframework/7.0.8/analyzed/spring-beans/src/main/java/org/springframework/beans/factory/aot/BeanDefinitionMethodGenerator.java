@@ -33,7 +33,7 @@ import org.springframework.javapoet.ClassName;
 import org.springframework.util.StringUtils;
 
 /**
- * Generates a method that returns a {@link BeanDefinition} to be registered.
+ * 生成返回待注册 {@link BeanDefinition} 的方法。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -53,12 +53,12 @@ class BeanDefinitionMethodGenerator {
 
 
 	/**
-	 * Create a new {@link BeanDefinitionMethodGenerator} instance.
-	 * @param methodGeneratorFactory the method generator factory
-	 * @param registeredBean the registered bean
-	 * @param currentPropertyName the current property name
-	 * @param aotContributions the AOT contributions
-	 * @throws IllegalArgumentException if the bean definition defines an instance supplier since this can't be supported for code generation
+	 * 创建新的 {@link BeanDefinitionMethodGenerator} 实例。
+	 * @param methodGeneratorFactory 方法生成器工厂
+	 * @param registeredBean 已注册 bean
+	 * @param currentPropertyName 当前属性名
+	 * @param aotContributions AOT 贡献列表
+	 * @throws IllegalArgumentException 若 bean 定义定义了 instance supplier，因其无法支持代码生成
 	 */
 	BeanDefinitionMethodGenerator(
 			BeanDefinitionMethodGeneratorFactory methodGeneratorFactory,
@@ -73,10 +73,10 @@ class BeanDefinitionMethodGenerator {
 
 
 	/**
-	 * Generate the method that returns the {@link BeanDefinition} to be registered.
-	 * @param generationContext the generation context
-	 * @param beanRegistrationsCode the bean registrations code
-	 * @return a reference to the generated method.
+	 * 生成返回待注册 {@link BeanDefinition} 的方法。
+	 * @param generationContext 生成上下文
+	 * @param beanRegistrationsCode bean 注册代码
+	 * @return 生成方法的引用
 	 */
 	MethodReference generateBeanDefinitionMethod(GenerationContext generationContext,
 			BeanRegistrationsCode beanRegistrationsCode) {
@@ -84,12 +84,14 @@ class BeanDefinitionMethodGenerator {
 		BeanRegistrationCodeFragments codeFragments = getCodeFragments(generationContext, beanRegistrationsCode);
 		ClassName target = codeFragments.getTarget(this.registeredBean);
 		if (isWritablePackageName(target)) {
+			// 目标包可写：在目标类旁生成公开静态方法
 			GeneratedClass generatedClass = lookupGeneratedClass(generationContext, target);
 			GeneratedMethods generatedMethods = generatedClass.getMethods().withPrefix(getName());
 			GeneratedMethod generatedMethod = generateBeanDefinitionMethod(generationContext,
 					generatedClass.getName(), generatedMethods, codeFragments, Modifier.PUBLIC);
 			return generatedMethod.toMethodReference();
 		}
+		// 目标包不可写：在 bean 注册类中生成私有方法
 		GeneratedMethods generatedMethods = beanRegistrationsCode.getMethods().withPrefix(getName());
 		GeneratedMethod generatedMethod = generateBeanDefinitionMethod(generationContext,
 				beanRegistrationsCode.getClassName(), generatedMethods, codeFragments, Modifier.PRIVATE);
@@ -97,9 +99,9 @@ class BeanDefinitionMethodGenerator {
 	}
 
 	/**
-	 * Specify if the {@link ClassName} belongs to a writable package.
-	 * @param target the target to check
-	 * @return {@code true} if generated code in that package is allowed
+	 * 判断 {@link ClassName} 是否属于可写入的包。
+	 * @param target 待检查的目标
+	 * @return 若允许在该包中生成代码则返回 {@code true}
 	 */
 	private boolean isWritablePackageName(ClassName target) {
 		String packageName = target.packageName();
@@ -107,12 +109,11 @@ class BeanDefinitionMethodGenerator {
 	}
 
 	/**
-	 * Return the {@link GeneratedClass} to use for the specified {@code target}.
-	 * <p>If the target class is an inner class, a corresponding inner class in
-	 * the original structure is created.
-	 * @param generationContext the generation context to use
-	 * @param target the chosen target class name for the bean definition
-	 * @return the generated class to use
+	 * 返回用于指定 {@code target} 的 {@link GeneratedClass}。
+	 * <p>若目标类为内部类，则在原始结构中创建对应的内部类。
+	 * @param generationContext 使用的生成上下文
+	 * @param target 为 bean 定义选择的目标类名
+	 * @return 要使用的生成类
 	 */
 	private static GeneratedClass lookupGeneratedClass(GenerationContext generationContext, ClassName target) {
 		ClassName topLevelClassName = target.topLevelClassName();
@@ -127,6 +128,7 @@ class BeanDefinitionMethodGenerator {
 			return generatedClass;
 		}
 
+		// 逐级创建嵌套内部类
 		List<String> namesToProcess = names.subList(1, names.size());
 		ClassName currentTargetClassName = topLevelClassName;
 		GeneratedClass tmp = generatedClass;

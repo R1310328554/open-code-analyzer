@@ -37,24 +37,27 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * A collection of AOT services that can be {@link Loader loaded} from
- * a {@link SpringFactoriesLoader} or obtained from a {@link ListableBeanFactory}.
+ * AOT 服务集合，可通过 {@link Loader} 从
+ * {@link SpringFactoriesLoader} 加载，或从 {@link ListableBeanFactory} 获取。
  *
  * @author Phillip Webb
  * @since 6.0
- * @param <T> the service type
+ * @param <T> 服务类型
  */
 public final class AotServices<T> implements Iterable<T> {
 
 	/**
-	 * The location to look for AOT factories.
+	 * 查找 AOT 工厂配置的资源位置。
 	 */
 	public static final String FACTORIES_RESOURCE_LOCATION = "META-INF/spring/aot.factories";
 
+	/** 已排序的 AOT 服务列表。 */
 	private final List<T> services;
 
+	/** 从 Bean 工厂加载的服务，按 bean 名称索引。 */
 	private final Map<String, T> beans;
 
+	/** 各服务实例的来源映射。 */
 	private final Map<T, Source> sources;
 
 
@@ -80,29 +83,26 @@ public final class AotServices<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Create a new {@link Loader} that will obtain AOT services from
-	 * {@value #FACTORIES_RESOURCE_LOCATION}.
-	 * @return a new {@link Loader} instance
+	 * 创建新的 {@link Loader}，从 {@value #FACTORIES_RESOURCE_LOCATION} 获取 AOT 服务。
+	 * @return 新的 {@link Loader} 实例
 	 */
 	public static Loader factories() {
 		return factories((ClassLoader) null);
 	}
 
 	/**
-	 * Create a new {@link Loader} that will obtain AOT services from
-	 * {@value #FACTORIES_RESOURCE_LOCATION}.
-	 * @param classLoader the class loader used to load the factories resource
-	 * @return a new {@link Loader} instance
+	 * 创建新的 {@link Loader}，从 {@value #FACTORIES_RESOURCE_LOCATION} 获取 AOT 服务。
+	 * @param classLoader 用于加载工厂资源的类加载器
+	 * @return 新的 {@link Loader} 实例
 	 */
 	public static Loader factories(@Nullable ClassLoader classLoader) {
 		return factories(getSpringFactoriesLoader(classLoader));
 	}
 
 	/**
-	 * Create a new {@link Loader} that will obtain AOT services from the given
-	 * {@link SpringFactoriesLoader}.
-	 * @param springFactoriesLoader the spring factories loader
-	 * @return a new {@link Loader} instance
+	 * 创建新的 {@link Loader}，从给定的 {@link SpringFactoriesLoader} 获取 AOT 服务。
+	 * @param springFactoriesLoader Spring 工厂加载器
+	 * @return 新的 {@link Loader} 实例
 	 */
 	public static Loader factories(SpringFactoriesLoader springFactoriesLoader) {
 		Assert.notNull(springFactoriesLoader, "'springFactoriesLoader' must not be null");
@@ -110,11 +110,10 @@ public final class AotServices<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Create a new {@link Loader} that will obtain AOT services from
-	 * {@value #FACTORIES_RESOURCE_LOCATION} as well as the given
-	 * {@link ListableBeanFactory}.
-	 * @param beanFactory the bean factory
-	 * @return a new {@link Loader} instance
+	 * 创建新的 {@link Loader}，从 {@value #FACTORIES_RESOURCE_LOCATION} 以及
+	 * 给定的 {@link ListableBeanFactory} 获取 AOT 服务。
+	 * @param beanFactory bean 工厂
+	 * @return 新的 {@link Loader} 实例
 	 */
 	public static Loader factoriesAndBeans(ListableBeanFactory beanFactory) {
 		ClassLoader classLoader = (beanFactory instanceof ConfigurableBeanFactory configurableBeanFactory ?
@@ -123,11 +122,11 @@ public final class AotServices<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Create a new {@link Loader} that will obtain AOT services from the given
-	 * {@link SpringFactoriesLoader} and {@link ListableBeanFactory}.
-	 * @param springFactoriesLoader the spring factories loader
-	 * @param beanFactory the bean factory
-	 * @return a new {@link Loader} instance
+	 * 创建新的 {@link Loader}，从给定的 {@link SpringFactoriesLoader} 和
+	 * {@link ListableBeanFactory} 获取 AOT 服务。
+	 * @param springFactoriesLoader Spring 工厂加载器
+	 * @param beanFactory bean 工厂
+	 * @return 新的 {@link Loader} 实例
 	 */
 	public static Loader factoriesAndBeans(SpringFactoriesLoader springFactoriesLoader, ListableBeanFactory beanFactory) {
 		Assert.notNull(beanFactory, "'beanFactory' must not be null");
@@ -147,34 +146,34 @@ public final class AotServices<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Return a {@link Stream} of the AOT services.
-	 * @return a stream of the services
+	 * 返回 AOT 服务的 {@link Stream}。
+	 * @return 服务流
 	 */
 	public Stream<T> stream() {
 		return this.services.stream();
 	}
 
 	/**
-	 * Return the AOT services as a {@link List}.
-	 * @return a list of the services
+	 * 将 AOT 服务作为 {@link List} 返回。
+	 * @return 服务列表
 	 */
 	public List<T> asList() {
 		return this.services;
 	}
 
 	/**
-	 * Find the AOT service that was loaded for the given bean name.
-	 * @param beanName the bean name
-	 * @return the AOT service or {@code null}
+	 * 查找为给定 bean 名称加载的 AOT 服务。
+	 * @param beanName bean 名称
+	 * @return AOT 服务，或 {@code null}
 	 */
 	public @Nullable T findByBeanName(String beanName) {
 		return this.beans.get(beanName);
 	}
 
 	/**
-	 * Get the source of the given service.
-	 * @param service the service instance
-	 * @return the source of the service
+	 * 获取给定服务的来源。
+	 * @param service 服务实例
+	 * @return 服务的来源
 	 */
 	public Source getSource(T service) {
 		Source source = this.sources.get(service);
@@ -185,7 +184,7 @@ public final class AotServices<T> implements Iterable<T> {
 
 
 	/**
-	 * Loader class used to actually load the services.
+	 * 用于实际加载服务的加载器类。
 	 */
 	public static class Loader {
 
@@ -201,10 +200,10 @@ public final class AotServices<T> implements Iterable<T> {
 
 
 		/**
-		 * Load all AOT services of the given type.
-		 * @param <T> the service type
-		 * @param type the service type
-		 * @return a new {@link AotServices} instance
+		 * 加载给定类型的所有 AOT 服务。
+		 * @param <T> 服务类型
+		 * @param type 服务类型
+		 * @return 新的 {@link AotServices} 实例
 		 */
 		public <T> AotServices<T> load(Class<T> type) {
 			return new AotServices<>(this.springFactoriesLoader.load(type), loadBeans(type));
@@ -219,17 +218,17 @@ public final class AotServices<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Sources from which services were obtained.
+	 * 服务来源枚举。
 	 */
 	public enum Source {
 
 		/**
-		 * An AOT service loaded from {@link SpringFactoriesLoader}.
+		 * 通过 {@link SpringFactoriesLoader} 加载的 AOT 服务。
 		 */
 		SPRING_FACTORIES_LOADER,
 
 		/**
-		 * An AOT service loaded from a {@link BeanFactory}.
+		 * 从 {@link BeanFactory} 加载的 AOT 服务。
 		 */
 		BEAN_FACTORY
 

@@ -19,7 +19,7 @@ package org.springframework.beans.factory.aot;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Abstract superclass for all exceptions thrown by ahead-of-time processing.
+ * 提前编译（AOT）处理过程中抛出的所有异常的抽象超类。
  *
  * @author Stephane Nicoll
  * @since 6.2
@@ -28,9 +28,9 @@ import org.jspecify.annotations.Nullable;
 public abstract class AotException extends RuntimeException {
 
 	/**
-	 * Create an instance with the specified message and root cause.
-	 * @param msg the detail message
-	 * @param cause the root cause
+	 * 使用指定消息和根原因创建实例。
+	 * @param msg 详细消息
+	 * @param cause 根原因
 	 */
 	protected AotException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

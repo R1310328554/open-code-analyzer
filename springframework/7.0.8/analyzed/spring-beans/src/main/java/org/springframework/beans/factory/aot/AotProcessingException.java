@@ -19,7 +19,7 @@ package org.springframework.beans.factory.aot;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Throw when an AOT processor failed.
+ * AOT 处理器执行失败时抛出。
  *
  * @author Stephane Nicoll
  * @since 6.2
@@ -28,9 +28,9 @@ import org.jspecify.annotations.Nullable;
 public class AotProcessingException extends AotException {
 
 	/**
-	 * Create a new instance with the detail message and a root cause, if any.
-	 * @param msg the detail message
-	 * @param cause the root cause, if any
+	 * 使用详细消息和可选的根原因创建新实例。
+	 * @param msg 详细消息
+	 * @param cause 根原因（若有）
 	 */
 	public AotProcessingException(String msg, @Nullable Throwable cause) {
 		super(msg, cause);

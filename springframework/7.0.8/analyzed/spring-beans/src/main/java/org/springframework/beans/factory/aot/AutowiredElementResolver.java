@@ -29,8 +29,7 @@ import org.springframework.beans.factory.config.DependencyDescriptor;
 import org.springframework.core.log.LogMessage;
 
 /**
- * Base class for resolvers that support autowiring related to an
- * {@link Element}.
+ * 支持与 {@link Element} 相关的自动装配解析器的基类。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -40,6 +39,9 @@ abstract class AutowiredElementResolver {
 
 	private final Log logger = LogFactory.getLog(getClass());
 
+	/**
+	 * 为自动装配的 bean 注册依赖关系。
+	 */
 	protected final void registerDependentBeans(ConfigurableBeanFactory beanFactory,
 			String beanName, Set<String> autowiredBeanNames) {
 
@@ -55,11 +57,12 @@ abstract class AutowiredElementResolver {
 
 
 	/**
-	 * {@link DependencyDescriptor} that supports shortcut bean resolution.
+	 * 支持快捷 bean 解析的 {@link DependencyDescriptor}。
 	 */
 	@SuppressWarnings("serial")
 	static class ShortcutDependencyDescriptor extends DependencyDescriptor {
 
+		/** 快捷 bean 名称。 */
 		private final String shortcut;
 
 		public ShortcutDependencyDescriptor(DependencyDescriptor original, String shortcut) {

@@ -65,20 +65,20 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Internal code generator to set {@link RootBeanDefinition} properties.
+ * 用于设置 {@link RootBeanDefinition} 属性的内部代码生成器。
  *
- * <p>Generates code in the following form:<pre class="code">
+ * <p>生成如下形式的代码：<pre class="code">
  * beanDefinition.setPrimary(true);
  * beanDefinition.setScope(BeanDefinition.SCOPE_PROTOTYPE);
  * ...
  * </pre>
  *
- * <p>The generated code expects the following variables to be available:
+ * <p>生成的代码期望以下变量可用：
  * <ul>
- * <li>{@code beanDefinition}: the {@link RootBeanDefinition} to configure</li>
+ * <li>{@code beanDefinition}：待配置的 {@link RootBeanDefinition}</li>
  * </ul>
  *
- * <p>Note that this generator does <b>not</b> set the {@link InstanceSupplier}.
+ * <p>注意：此生成器<b>不会</b>设置 {@link InstanceSupplier}。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -154,7 +154,7 @@ class BeanDefinitionPropertiesCodeGenerator {
 	private void addInitDestroyMethods(Builder code, AbstractBeanDefinition beanDefinition,
 			String @Nullable [] methodNames, String format) {
 
-		// For Publisher-based destroy methods
+		// 支持基于 Publisher 的销毁方法
 		this.hints.reflection().registerType(TypeReference.of("org.reactivestreams.Publisher"));
 		if (!ObjectUtils.isEmpty(methodNames)) {
 			Class<?> beanType = ClassUtils.getUserClass(beanDefinition.getResolvableType().toClass());
@@ -169,7 +169,7 @@ class BeanDefinitionPropertiesCodeGenerator {
 	private void addInitDestroyHint(Class<?> beanUserClass, String methodName) {
 		Class<?> methodDeclaringClass = beanUserClass;
 
-		// Parse fully-qualified method name if necessary.
+		// 必要时解析全限定方法名
 		int indexOfDot = methodName.lastIndexOf('.');
 		if (indexOfDot > 0) {
 			String className = methodName.substring(0, indexOfDot);
@@ -252,7 +252,7 @@ class BeanDefinitionPropertiesCodeGenerator {
 
 	private void registerReflectionHints(RootBeanDefinition beanDefinition, Method writeMethod) {
 		this.hints.reflection().registerMethod(writeMethod, ExecutableMode.INVOKE);
-		// ReflectionUtils#findField searches recursively in the type hierarchy
+		// ReflectionUtils#findField 会在类型层次结构中递归搜索
 		Class<?> searchType = beanDefinition.getTargetType();
 		while (searchType != null && searchType != writeMethod.getDeclaringClass()) {
 			this.hints.reflection().registerType(searchType, MemberCategory.ACCESS_DECLARED_FIELDS);
@@ -402,19 +402,21 @@ class BeanDefinitionPropertiesCodeGenerator {
 	}
 
 	/**
-	 * Cast the specified {@code valueCode} to the specified {@code castType} if the
-	 * {@code castNecessary} is {@code true}. Otherwise, return the valueCode as-is.
-	 * @param castNecessary whether a cast is necessary
-	 * @param castType the type to cast to
-	 * @param valueCode the code for the value
-	 * @return the existing value or a form of {@code (castType) valueCode} if a
-	 * cast is necessary
+	 * 若 {@code castNecessary} 为 {@code true}，将指定的 {@code valueCode}
+	 * 强制转换为 {@code castType}；否则原样返回。
+	 * @param castNecessary 是否需要强制转换
+	 * @param castType 目标类型
+	 * @param valueCode 值的代码
+	 * @return 原值代码，或 {@code (castType) valueCode} 形式
 	 */
 	private CodeBlock castIfNecessary(boolean castNecessary, Class<?> castType, CodeBlock valueCode) {
 		return (castNecessary ? CodeBlock.of("($T) $L", castType, valueCode) : valueCode);
 	}
 
 
+	/**
+	 * 属性名栈，用于在嵌套值生成时传递当前属性名上下文。
+	 */
 	static class PropertyNamesStack {
 
 		private static final ThreadLocal<ArrayDeque<String>> threadLocal = ThreadLocal.withInitial(ArrayDeque::new);

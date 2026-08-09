@@ -19,12 +19,11 @@ package org.springframework.beans.factory.aot;
 import org.springframework.aot.generate.GenerationContext;
 
 /**
- * AOT contribution from a {@link BeanFactoryInitializationAotProcessor} used to
- * initialize a bean factory.
+ * 来自 {@link BeanFactoryInitializationAotProcessor} 的 AOT 贡献，用于初始化 bean 工厂。
  *
- * <p>Note: Beans implementing this interface will not have registration methods
- * generated during AOT processing unless they also implement
- * {@link org.springframework.beans.factory.aot.BeanRegistrationExcludeFilter}.
+ * <p>注意：实现此接口的 bean 在 AOT 处理期间不会生成注册方法，
+ * 除非它们同时实现了
+ * {@link org.springframework.beans.factory.aot.BeanRegistrationExcludeFilter}。
  *
  * @author Phillip Webb
  * @since 6.0
@@ -34,9 +33,9 @@ import org.springframework.aot.generate.GenerationContext;
 public interface BeanFactoryInitializationAotContribution {
 
 	/**
-	 * Apply this contribution to the given {@link BeanFactoryInitializationCode}.
-	 * @param generationContext the active generation context
-	 * @param beanFactoryInitializationCode the bean factory initialization code
+	 * 将此贡献应用到给定的 {@link BeanFactoryInitializationCode}。
+	 * @param generationContext 当前活跃的生成上下文
+	 * @param beanFactoryInitializationCode bean 工厂初始化代码
 	 */
 	void applyTo(GenerationContext generationContext,
 			BeanFactoryInitializationCode beanFactoryInitializationCode);

@@ -39,17 +39,14 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.function.ThrowingConsumer;
 
 /**
- * Resolver used to support the autowiring of methods. Typically used in
- * AOT-processed applications as a targeted alternative to the
+ * 支持方法自动装配的解析器。通常在 AOT 处理后的应用中作为
  * {@link org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
- * AutowiredAnnotationBeanPostProcessor}.
+ * AutowiredAnnotationBeanPostProcessor} 的定向替代方案使用。
  *
- * <p>When resolving arguments in a native image, the {@link Method} being used
- * must be marked with an {@link ExecutableMode#INTROSPECT introspection} hint
- * so that field annotations can be read. Full {@link ExecutableMode#INVOKE
- * invocation} hints are only required if the
- * {@link #resolveAndInvoke(RegisteredBean, Object)} method of this class is
- * being used (typically to support private methods).
+ * <p>在原生镜像中解析参数时，所用 {@link Method} 必须标记
+ * {@link ExecutableMode#INTROSPECT 内省} 提示，以便读取方法注解。
+ * 仅当使用本类的 {@link #resolveAndInvoke(RegisteredBean, Object)} 方法时
+ * （通常用于支持私有方法），才需要完整的 {@link ExecutableMode#INVOKE 调用} 提示。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -57,12 +54,16 @@ import org.springframework.util.function.ThrowingConsumer;
  */
 public final class AutowiredMethodArgumentsResolver extends AutowiredElementResolver {
 
+	/** 方法名称。 */
 	private final String methodName;
 
+	/** 方法参数类型。 */
 	private final Class<?>[] parameterTypes;
 
+	/** 是否必须注入。 */
 	private final boolean required;
 
+	/** 各参数的快捷 bean 名称（若有）。 */
 	private final String @Nullable [] shortcutBeanNames;
 
 
@@ -78,44 +79,39 @@ public final class AutowiredMethodArgumentsResolver extends AutowiredElementReso
 
 
 	/**
-	 * Create a new {@link AutowiredMethodArgumentsResolver} for the specified
-	 * method where injection is optional.
-	 * @param methodName the method name
-	 * @param parameterTypes the factory method parameter types
-	 * @return a new {@link AutowiredFieldValueResolver} instance
+	 * 为指定方法创建新的 {@link AutowiredMethodArgumentsResolver}，注入为可选。
+	 * @param methodName 方法名
+	 * @param parameterTypes 工厂方法参数类型
+	 * @return 新的 {@link AutowiredFieldValueResolver} 实例
 	 */
 	public static AutowiredMethodArgumentsResolver forMethod(String methodName, Class<?>... parameterTypes) {
 		return new AutowiredMethodArgumentsResolver(methodName, parameterTypes, false, null);
 	}
 
 	/**
-	 * Create a new {@link AutowiredMethodArgumentsResolver} for the specified
-	 * method where injection is required.
-	 * @param methodName the method name
-	 * @param parameterTypes the factory method parameter types
-	 * @return a new {@link AutowiredFieldValueResolver} instance
+	 * 为指定方法创建新的 {@link AutowiredMethodArgumentsResolver}，注入为必须。
+	 * @param methodName 方法名
+	 * @param parameterTypes 工厂方法参数类型
+	 * @return 新的 {@link AutowiredFieldValueResolver} 实例
 	 */
 	public static AutowiredMethodArgumentsResolver forRequiredMethod(String methodName, Class<?>... parameterTypes) {
 		return new AutowiredMethodArgumentsResolver(methodName, parameterTypes, true, null);
 	}
 
 	/**
-	 * Return a new {@link AutowiredMethodArgumentsResolver} instance
-	 * that uses direct bean name injection shortcuts for specific parameters.
-	 * @param beanNames the bean names to use as shortcuts (aligned with the
-	 * method parameters)
-	 * @return a new {@link AutowiredMethodArgumentsResolver} instance that uses
-	 * the given shortcut bean names
+	 * 返回为特定参数使用直接 bean 名称注入快捷方式的新
+	 * {@link AutowiredMethodArgumentsResolver} 实例。
+	 * @param beanNames 用作快捷方式的 bean 名称（与方法参数对齐）
+	 * @return 使用给定快捷 bean 名称的新 {@link AutowiredMethodArgumentsResolver} 实例
 	 */
 	public AutowiredMethodArgumentsResolver withShortcut(String... beanNames) {
 		return new AutowiredMethodArgumentsResolver(this.methodName, this.parameterTypes, this.required, beanNames);
 	}
 
 	/**
-	 * Resolve the method arguments for the specified registered bean and
-	 * provide it to the given action.
-	 * @param registeredBean the registered bean
-	 * @param action the action to execute with the resolved method arguments
+	 * 为指定已注册 bean 解析方法参数，并将结果提供给给定操作。
+	 * @param registeredBean 已注册 bean
+	 * @param action 接收解析后方法参数的操作
 	 */
 	public void resolve(RegisteredBean registeredBean, ThrowingConsumer<AutowiredArguments> action) {
 		Assert.notNull(registeredBean, "'registeredBean' must not be null");
@@ -127,9 +123,9 @@ public final class AutowiredMethodArgumentsResolver extends AutowiredElementReso
 	}
 
 	/**
-	 * Resolve the method arguments for the specified registered bean.
-	 * @param registeredBean the registered bean
-	 * @return the resolved method arguments
+	 * 为指定已注册 bean 解析方法参数。
+	 * @param registeredBean 已注册 bean
+	 * @return 解析后的方法参数
 	 */
 	public @Nullable AutowiredArguments resolve(RegisteredBean registeredBean) {
 		Assert.notNull(registeredBean, "'registeredBean' must not be null");
@@ -137,10 +133,9 @@ public final class AutowiredMethodArgumentsResolver extends AutowiredElementReso
 	}
 
 	/**
-	 * Resolve the method arguments for the specified registered bean and invoke
-	 * the method using reflection.
-	 * @param registeredBean the registered bean
-	 * @param instance the bean instance
+	 * 为指定已注册 bean 解析方法参数，并通过反射调用该方法。
+	 * @param registeredBean 已注册 bean
+	 * @param instance bean 实例
 	 */
 	public void resolveAndInvoke(RegisteredBean registeredBean, Object instance) {
 		Assert.notNull(registeredBean, "'registeredBean' must not be null");
@@ -165,6 +160,7 @@ public final class AutowiredMethodArgumentsResolver extends AutowiredElementReso
 		@Nullable Object[] arguments = new Object[argumentCount];
 		Set<String> autowiredBeanNames = CollectionUtils.newLinkedHashSet(argumentCount);
 		TypeConverter typeConverter = beanFactory.getTypeConverter();
+		// 逐个解析每个方法参数
 		for (int i = 0; i < argumentCount; i++) {
 			MethodParameter parameter = new MethodParameter(method, i);
 			DependencyDescriptor descriptor = new DependencyDescriptor(parameter, this.required);

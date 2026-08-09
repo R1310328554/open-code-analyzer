@@ -22,7 +22,7 @@ import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 
 /**
- * Thrown when AOT fails to process a bean.
+ * AOT 处理某个 bean 失败时抛出。
  *
  * @author Stephane Nicoll
  * @since 6.2
@@ -30,15 +30,15 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 @SuppressWarnings("serial")
 public class AotBeanProcessingException extends AotProcessingException {
 
+	/** 处理失败的 bean 定义。 */
 	private final RootBeanDefinition beanDefinition;
 
 
 	/**
-	 * Create an instance with the {@link RegisteredBean} that fails to be
-	 * processed, a detail message, and an optional root cause.
-	 * @param registeredBean the registered bean that fails to be processed
-	 * @param msg the detail message
-	 * @param cause the root cause, if any
+	 * 使用处理失败的 {@link RegisteredBean}、详细消息和可选根原因创建实例。
+	 * @param registeredBean 处理失败的已注册 bean
+	 * @param msg 详细消息
+	 * @param cause 根原因（若有）
 	 */
 	public AotBeanProcessingException(RegisteredBean registeredBean, String msg, @Nullable Throwable cause) {
 		super(createErrorMessage(registeredBean, msg), cause);
@@ -46,10 +46,9 @@ public class AotBeanProcessingException extends AotProcessingException {
 	}
 
 	/**
-	 * Shortcut to create an instance with the {@link RegisteredBean} that fails
-	 * to be processed with only a detail message.
-	 * @param registeredBean the registered bean that fails to be processed
-	 * @param msg the detail message
+	 * 快捷方式：仅使用处理失败的 {@link RegisteredBean} 和详细消息创建实例。
+	 * @param registeredBean 处理失败的已注册 bean
+	 * @param msg 详细消息
 	 */
 	public AotBeanProcessingException(RegisteredBean registeredBean, String msg) {
 		this(registeredBean, msg, null);
@@ -68,7 +67,7 @@ public class AotBeanProcessingException extends AotProcessingException {
 
 
 	/**
-	 * Return the bean definition of the bean that failed to be processed.
+	 * 返回处理失败的 bean 的 bean 定义。
 	 */
 	public RootBeanDefinition getBeanDefinition() {
 		return this.beanDefinition;

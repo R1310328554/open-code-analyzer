@@ -22,7 +22,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Resolved arguments to be autowired.
+ * 待自动装配的已解析参数。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -34,11 +34,11 @@ import org.springframework.util.ClassUtils;
 public interface AutowiredArguments {
 
 	/**
-	 * Return the resolved argument at the specified index.
-	 * @param <T> the type of the argument
-	 * @param index the argument index
-	 * @param requiredType the required argument type
-	 * @return the argument
+	 * 返回指定索引处已解析的参数，并校验类型。
+	 * @param <T> 参数类型
+	 * @param index 参数索引
+	 * @param requiredType 要求的参数类型
+	 * @return 参数值
 	 */
 	@SuppressWarnings("unchecked")
 	default <T> @Nullable T get(int index, Class<T> requiredType) {
@@ -51,10 +51,10 @@ public interface AutowiredArguments {
 	}
 
 	/**
-	 * Return the resolved argument at the specified index.
-	 * @param <T> the type of the argument
-	 * @param index the argument index
-	 * @return the argument
+	 * 返回指定索引处已解析的参数。
+	 * @param <T> 参数类型
+	 * @param index 参数索引
+	 * @return 参数值
 	 */
 	@SuppressWarnings("unchecked")
 	default <T> @Nullable T get(int index) {
@@ -62,25 +62,24 @@ public interface AutowiredArguments {
 	}
 
 	/**
-	 * Return the resolved argument at the specified index.
-	 * @param index the argument index
-	 * @return the argument
+	 * 返回指定索引处已解析的参数。
+	 * @param index 参数索引
+	 * @return 参数值
 	 */
 	default @Nullable Object getObject(int index) {
 		return toArray()[index];
 	}
 
 	/**
-	 * Return the arguments as an object array.
-	 * @return the arguments as an object array
+	 * 将参数作为对象数组返回。
+	 * @return 参数对象数组
 	 */
 	@Nullable Object[] toArray();
 
 	/**
-	 * Factory method to create a new {@link AutowiredArguments} instance from
-	 * the given object array.
-	 * @param arguments the arguments
-	 * @return a new {@link AutowiredArguments} instance
+	 * 工厂方法：根据给定对象数组创建新的 {@link AutowiredArguments} 实例。
+	 * @param arguments 参数数组
+	 * @return 新的 {@link AutowiredArguments} 实例
 	 */
 	static AutowiredArguments of(@Nullable Object[] arguments) {
 		Assert.notNull(arguments, "'arguments' must not be null");

@@ -31,8 +31,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Factory used to create a {@link BeanDefinitionMethodGenerator} instance for a
- * {@link RegisteredBean}.
+ * 用于为 {@link RegisteredBean} 创建 {@link BeanDefinitionMethodGenerator} 实例的工厂。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -44,25 +43,26 @@ class BeanDefinitionMethodGeneratorFactory {
 
 	private static final Log logger = LogFactory.getLog(BeanDefinitionMethodGeneratorFactory.class);
 
-
+	/** Bean 注册 AOT 处理器服务。 */
 	private final AotServices<BeanRegistrationAotProcessor> aotProcessors;
 
+	/** Bean 注册排除过滤器服务。 */
 	private final AotServices<BeanRegistrationExcludeFilter> excludeFilters;
 
 
 	/**
-	 * Create a new {@link BeanDefinitionMethodGeneratorFactory} backed by the
-	 * given {@link ConfigurableListableBeanFactory}.
-	 * @param beanFactory the bean factory use
+	 * 使用给定 {@link ConfigurableListableBeanFactory} 创建新的
+	 * {@link BeanDefinitionMethodGeneratorFactory}。
+	 * @param beanFactory 使用的 bean 工厂
 	 */
 	BeanDefinitionMethodGeneratorFactory(ConfigurableListableBeanFactory beanFactory) {
 		this(AotServices.factoriesAndBeans(beanFactory));
 	}
 
 	/**
-	 * Create a new {@link BeanDefinitionMethodGeneratorFactory} backed by the
-	 * given {@link AotServices.Loader}.
-	 * @param loader the AOT services loader to use
+	 * 使用给定 {@link AotServices.Loader} 创建新的
+	 * {@link BeanDefinitionMethodGeneratorFactory}。
+	 * @param loader 使用的 AOT 服务加载器
 	 */
 	BeanDefinitionMethodGeneratorFactory(AotServices.Loader loader) {
 		this.aotProcessors = loader.load(BeanRegistrationAotProcessor.class);
@@ -79,15 +79,14 @@ class BeanDefinitionMethodGeneratorFactory {
 
 
 	/**
-	 * Return a {@link BeanDefinitionMethodGenerator} for the given
-	 * {@link RegisteredBean} defined with the specified property name, or
-	 * {@code null} if the registered bean is excluded by a
-	 * {@link BeanRegistrationExcludeFilter}. The resulting
-	 * {@link BeanDefinitionMethodGenerator} will include all
-	 * {@link BeanRegistrationAotProcessor} provided contributions.
-	 * @param registeredBean the registered bean
-	 * @param currentPropertyName the property name that this bean belongs to
-	 * @return a new {@link BeanDefinitionMethodGenerator} instance or {@code null}
+	 * 为给定 {@link RegisteredBean}（及其所属属性名）返回
+	 * {@link BeanDefinitionMethodGenerator}，若被
+	 * {@link BeanRegistrationExcludeFilter} 排除则返回 {@code null}。
+	 * 生成的 {@link BeanDefinitionMethodGenerator} 将包含所有
+	 * {@link BeanRegistrationAotProcessor} 提供的贡献。
+	 * @param registeredBean 已注册 bean
+	 * @param currentPropertyName 此 bean 所属的属性名
+	 * @return 新的 {@link BeanDefinitionMethodGenerator} 实例，或 {@code null}
 	 */
 	@Nullable BeanDefinitionMethodGenerator getBeanDefinitionMethodGenerator(
 			RegisteredBean registeredBean, @Nullable String currentPropertyName) {
@@ -101,13 +100,12 @@ class BeanDefinitionMethodGeneratorFactory {
 	}
 
 	/**
-	 * Return a {@link BeanDefinitionMethodGenerator} for the given
-	 * {@link RegisteredBean} or {@code null} if the registered bean is excluded
-	 * by a {@link BeanRegistrationExcludeFilter}. The resulting
-	 * {@link BeanDefinitionMethodGenerator} will include all
-	 * {@link BeanRegistrationAotProcessor} provided contributions.
-	 * @param registeredBean the registered bean
-	 * @return a new {@link BeanDefinitionMethodGenerator} instance or {@code null}
+	 * 为给定 {@link RegisteredBean} 返回 {@link BeanDefinitionMethodGenerator}，
+	 * 若被 {@link BeanRegistrationExcludeFilter} 排除则返回 {@code null}。
+	 * 生成的 {@link BeanDefinitionMethodGenerator} 将包含所有
+	 * {@link BeanRegistrationAotProcessor} 提供的贡献。
+	 * @param registeredBean 已注册 bean
+	 * @return 新的 {@link BeanDefinitionMethodGenerator} 实例，或 {@code null}
 	 */
 	@Nullable BeanDefinitionMethodGenerator getBeanDefinitionMethodGenerator(RegisteredBean registeredBean) {
 		return getBeanDefinitionMethodGenerator(registeredBean, null);

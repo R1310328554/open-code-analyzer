@@ -27,13 +27,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Code generator to apply {@link AutowiredArguments}.
+ * 用于应用 {@link AutowiredArguments} 的代码生成器。
  *
- * <p>Generates code in the form: {@code args.get(0), args.get(1)} or
- * {@code args.get(0, String.class), args.get(1, Integer.class)}
+ * <p>生成形如 {@code args.get(0), args.get(1)} 或
+ * {@code args.get(0, String.class), args.get(1, Integer.class)} 的代码。
  *
- * <p>The simpler form is only used if the target method or constructor is
- * unambiguous.
+ * <p>仅当目标方法或构造器无歧义时才使用更简单的形式。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -41,8 +40,10 @@ import org.springframework.util.ReflectionUtils;
  */
 public class AutowiredArgumentsCodeGenerator {
 
+	/** 目标类。 */
 	private final Class<?> target;
 
+	/** 目标可执行元素（构造器或方法）。 */
 	private final Executable executable;
 
 

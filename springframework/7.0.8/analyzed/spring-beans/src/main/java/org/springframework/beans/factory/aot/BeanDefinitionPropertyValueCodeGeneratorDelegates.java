@@ -43,7 +43,7 @@ import org.springframework.javapoet.AnnotationSpec;
 import org.springframework.javapoet.CodeBlock;
 
 /**
- * Code generator {@link Delegate} for common bean definition property values.
+ * 针对常见 bean 定义属性值的代码生成器 {@link Delegate}。
  *
  * @author Stephane Nicoll
  * @since 6.1.2
@@ -51,8 +51,7 @@ import org.springframework.javapoet.CodeBlock;
 public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 
 	/**
-	 * A list of {@link Delegate} implementations for the following common bean
-	 * definition property value types.
+	 * 针对以下常见 bean 定义属性值类型的 {@link Delegate} 实现列表：
 	 * <ul>
 	 * <li>{@link ManagedList}</li>
 	 * <li>{@link ManagedSet}</li>
@@ -62,9 +61,8 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 	 * <li>{@link TypedStringValue}</li>
 	 * <li>{@link AutowiredPropertyMarker}</li>
 	 * </ul>
-	 * When combined with {@linkplain ValueCodeGeneratorDelegates#INSTANCES the
-	 * delegates for common value types}, this should be added first as they have
-	 * special handling for list, set, and map.
+	 * 与 {@linkplain ValueCodeGeneratorDelegates#INSTANCES 常见值类型的委托} 组合使用时，
+	 * 应优先添加本列表，因为它们对 list、set 和 map 有特殊处理。
 	 */
 	public static final List<Delegate> INSTANCES = List.of(
 			new ManagedListDelegate(),
@@ -78,12 +76,12 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 
 
 	/**
-	 * Create a {@link ValueCodeGenerator} instance with both these
-	 * {@link #INSTANCES delegate} and the {@link ValueCodeGeneratorDelegates#INSTANCES
-	 * core delegates}.
-	 * @param generatedMethods the {@link GeneratedMethods} to use
-	 * @param customDelegates additional delegates that should be considered first
-	 * @return a configured value code generator
+	 * 创建同时包含本 {@link #INSTANCES 委托} 和
+	 * {@link ValueCodeGeneratorDelegates#INSTANCES 核心委托} 的
+	 * {@link ValueCodeGenerator} 实例。
+	 * @param generatedMethods 使用的 {@link GeneratedMethods}
+	 * @param customDelegates 应优先考虑的额外委托
+	 * @return 配置好的值代码生成器
 	 * @since 7.0
 	 * @see ValueCodeGenerator#add(List)
 	 */
@@ -98,7 +96,7 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 
 
 	/**
-	 * {@link Delegate} for {@link ManagedList} types.
+	 * {@link ManagedList} 类型的 {@link Delegate}。
 	 */
 	private static class ManagedListDelegate extends CollectionDelegate<ManagedList<?>> {
 
@@ -109,7 +107,7 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 
 
 	/**
-	 * {@link Delegate} for {@link ManagedSet} types.
+	 * {@link ManagedSet} 类型的 {@link Delegate}。
 	 */
 	private static class ManagedSetDelegate extends CollectionDelegate<ManagedSet<?>> {
 
@@ -120,7 +118,7 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 
 
 	/**
-	 * {@link Delegate} for {@link ManagedMap} types.
+	 * {@link ManagedMap} 类型的 {@link Delegate}。
 	 */
 	private static class ManagedMapDelegate implements Delegate {
 
@@ -158,7 +156,7 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 
 
 	/**
-	 * {@link Delegate} for {@link Map} types.
+	 * {@link Map} 类型的 {@link Delegate}。
 	 */
 	private static class LinkedHashMapDelegate extends MapDelegate {
 
@@ -195,7 +193,7 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 
 
 	/**
-	 * {@link Delegate} for {@link BeanReference} types.
+	 * {@link BeanReference} 类型的 {@link Delegate}。
 	 */
 	private static class BeanReferenceDelegate implements Delegate {
 
@@ -216,7 +214,7 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 
 
 	/**
-	 * {@link Delegate} for {@link TypedStringValue} types.
+	 * {@link TypedStringValue} 类型的 {@link Delegate}。
 	 */
 	private static class TypedStringValueDelegate implements Delegate {
 
@@ -239,7 +237,7 @@ public abstract class BeanDefinitionPropertyValueCodeGeneratorDelegates {
 	}
 
 	/**
-	 * {@link Delegate} for {@link AutowiredPropertyMarker} types.
+	 * {@link AutowiredPropertyMarker} 类型的 {@link Delegate}。
 	 */
 	private static class AutowiredPropertyMarkerDelegate implements Delegate {
 

@@ -36,17 +36,14 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.function.ThrowingConsumer;
 
 /**
- * Resolver used to support the autowiring of fields. Typically used in
- * AOT-processed applications as a targeted alternative to the
+ * 支持字段自动装配的解析器。通常在 AOT 处理后的应用中作为
  * {@link org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
- * AutowiredAnnotationBeanPostProcessor}.
+ * AutowiredAnnotationBeanPostProcessor} 的定向替代方案使用。
  *
- * <p>When resolving arguments in a native image, the {@link Field} being used must
- * be marked with an {@link ExecutableMode#INTROSPECT introspection} hint so
- * that field annotations can be read. Full {@link ExecutableMode#INVOKE
- * invocation} hints are only required if the
- * {@link #resolveAndSet(RegisteredBean, Object)} method of this class is being
- * used (typically to support private fields).
+ * <p>在原生镜像中解析参数时，所用 {@link Field} 必须标记
+ * {@link ExecutableMode#INTROSPECT 内省} 提示，以便读取字段注解。
+ * 仅当使用本类的 {@link #resolveAndSet(RegisteredBean, Object)} 方法时
+ * （通常用于支持私有字段），才需要完整的 {@link ExecutableMode#INVOKE 调用} 提示。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -54,10 +51,13 @@ import org.springframework.util.function.ThrowingConsumer;
  */
 public final class AutowiredFieldValueResolver extends AutowiredElementResolver {
 
+	/** 字段名称。 */
 	private final String fieldName;
 
+	/** 是否必须注入。 */
 	private final boolean required;
 
+	/** 快捷 bean 名称（若有）。 */
 	private final @Nullable String shortcutBeanName;
 
 
@@ -70,20 +70,18 @@ public final class AutowiredFieldValueResolver extends AutowiredElementResolver 
 
 
 	/**
-	 * Create a new {@link AutowiredFieldValueResolver} for the specified field
-	 * where injection is optional.
-	 * @param fieldName the field name
-	 * @return a new {@link AutowiredFieldValueResolver} instance
+	 * 为指定字段创建新的 {@link AutowiredFieldValueResolver}，注入为可选。
+	 * @param fieldName 字段名
+	 * @return 新的 {@link AutowiredFieldValueResolver} 实例
 	 */
 	public static AutowiredFieldValueResolver forField(String fieldName) {
 		return new AutowiredFieldValueResolver(fieldName, false, null);
 	}
 
 	/**
-	 * Create a new {@link AutowiredFieldValueResolver} for the specified field
-	 * where injection is required.
-	 * @param fieldName the field name
-	 * @return a new {@link AutowiredFieldValueResolver} instance
+	 * 为指定字段创建新的 {@link AutowiredFieldValueResolver}，注入为必须。
+	 * @param fieldName 字段名
+	 * @return 新的 {@link AutowiredFieldValueResolver} 实例
 	 */
 	public static AutowiredFieldValueResolver forRequiredField(String fieldName) {
 		return new AutowiredFieldValueResolver(fieldName, true, null);
@@ -91,21 +89,18 @@ public final class AutowiredFieldValueResolver extends AutowiredElementResolver 
 
 
 	/**
-	 * Return a new {@link AutowiredFieldValueResolver} instance that uses a
-	 * direct bean name injection shortcut.
-	 * @param beanName the bean name to use as a shortcut
-	 * @return a new {@link AutowiredFieldValueResolver} instance that uses the
-	 * given shortcut bean name
+	 * 返回使用直接 bean 名称注入快捷方式的新 {@link AutowiredFieldValueResolver} 实例。
+	 * @param beanName 用作快捷方式的 bean 名称
+	 * @return 使用给定快捷 bean 名称的新 {@link AutowiredFieldValueResolver} 实例
 	 */
 	public AutowiredFieldValueResolver withShortcut(String beanName) {
 		return new AutowiredFieldValueResolver(this.fieldName, this.required, beanName);
 	}
 
 	/**
-	 * Resolve the field for the specified registered bean and provide it to the
-	 * given action.
-	 * @param registeredBean the registered bean
-	 * @param action the action to execute with the resolved field value
+	 * 为指定已注册 bean 解析字段值，并将结果提供给给定操作。
+	 * @param registeredBean 已注册 bean
+	 * @param action 接收解析后字段值的操作
 	 */
 	public <T> void resolve(RegisteredBean registeredBean, ThrowingConsumer<T> action) {
 		Assert.notNull(registeredBean, "'registeredBean' must not be null");
@@ -117,10 +112,10 @@ public final class AutowiredFieldValueResolver extends AutowiredElementResolver 
 	}
 
 	/**
-	 * Resolve the field value for the specified registered bean.
-	 * @param registeredBean the registered bean
-	 * @param requiredType the required type
-	 * @return the resolved field value
+	 * 为指定已注册 bean 解析字段值。
+	 * @param registeredBean 已注册 bean
+	 * @param requiredType 要求的类型
+	 * @return 解析后的字段值
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> @Nullable T resolve(RegisteredBean registeredBean, Class<T> requiredType) {
@@ -130,9 +125,9 @@ public final class AutowiredFieldValueResolver extends AutowiredElementResolver 
 	}
 
 	/**
-	 * Resolve the field value for the specified registered bean.
-	 * @param registeredBean the registered bean
-	 * @return the resolved field value
+	 * 为指定已注册 bean 解析字段值。
+	 * @param registeredBean 已注册 bean
+	 * @return 解析后的字段值
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> @Nullable T resolve(RegisteredBean registeredBean) {
@@ -140,9 +135,9 @@ public final class AutowiredFieldValueResolver extends AutowiredElementResolver 
 	}
 
 	/**
-	 * Resolve the field value for the specified registered bean.
-	 * @param registeredBean the registered bean
-	 * @return the resolved field value
+	 * 为指定已注册 bean 解析字段值。
+	 * @param registeredBean 已注册 bean
+	 * @return 解析后的字段值
 	 */
 	public @Nullable Object resolveObject(RegisteredBean registeredBean) {
 		Assert.notNull(registeredBean, "'registeredBean' must not be null");
@@ -150,10 +145,9 @@ public final class AutowiredFieldValueResolver extends AutowiredElementResolver 
 	}
 
 	/**
-	 * Resolve the field value for the specified registered bean and set it
-	 * using reflection.
-	 * @param registeredBean the registered bean
-	 * @param instance the bean instance
+	 * 为指定已注册 bean 解析字段值，并通过反射设置到实例上。
+	 * @param registeredBean 已注册 bean
+	 * @param instance bean 实例
 	 */
 	public void resolveAndSet(RegisteredBean registeredBean, Object instance) {
 		Assert.notNull(registeredBean, "'registeredBean' must not be null");

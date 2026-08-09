@@ -23,27 +23,23 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation used at the field or method/constructor parameter level
- * that indicates a default value expression for the annotated element.
+ * 可用于字段或方法/构造器参数，为被标注元素指定默认值表达式。
  *
- * <p>Typically used for expression-driven or property-driven dependency injection.
- * Also supported for dynamic resolution of handler method arguments &mdash; for
- * example, in Spring MVC.
+ * <p>通常用于表达式驱动或属性驱动的依赖注入；也支持在处理器方法参数上动态解析，
+ * 例如在 Spring MVC 中。
  *
- * <p>A common use case is to inject values using
- * <code>#{systemProperties.myProp}</code> style SpEL (Spring Expression Language)
- * expressions. Alternatively, values may be injected using
- * <code>${my.app.myProp}</code> style property placeholders.
+ * <p>常见用法是通过 SpEL（Spring 表达式语言）注入值，例如
+ * <code>#{systemProperties.myProp}</code>；也可使用
+ * <code>${my.app.myProp}</code> 风格的属性占位符。
  *
- * <p>Note that actual processing of the {@code @Value} annotation is performed
- * by a {@link org.springframework.beans.factory.config.BeanPostProcessor
- * BeanPostProcessor} which in turn means that you <em>cannot</em> use
- * {@code @Value} within
+ * <p>注意：{@code @Value} 的实际处理由
  * {@link org.springframework.beans.factory.config.BeanPostProcessor
- * BeanPostProcessor} or
+ * BeanPostProcessor} 完成，因此<em>不能</em>在
+ * {@link org.springframework.beans.factory.config.BeanPostProcessor
+ * BeanPostProcessor} 或
  * {@link org.springframework.beans.factory.config.BeanFactoryPostProcessor BeanFactoryPostProcessor}
- * types. Please consult the javadoc for the {@link AutowiredAnnotationBeanPostProcessor}
- * class (which, by default, checks for the presence of this annotation).
+ * 类型中使用 {@code @Value}。请参阅 {@link AutowiredAnnotationBeanPostProcessor}
+ * 的文档（默认会检测此注解是否存在）。
  *
  * @author Juergen Hoeller
  * @since 3.0
@@ -58,8 +54,8 @@ import java.lang.annotation.Target;
 public @interface Value {
 
 	/**
-	 * The actual value expression such as <code>#{systemProperties.myProp}</code>
-	 * or property placeholder such as <code>${my.app.myProp}</code>.
+	 * 实际值表达式，例如 <code>#{systemProperties.myProp}</code>，
+	 * 或属性占位符，例如 <code>${my.app.myProp}</code>。
 	 */
 	String value();
 
