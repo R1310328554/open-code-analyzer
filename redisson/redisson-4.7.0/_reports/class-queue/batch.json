@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:51:02Z",
   "files": [
-    "redisson/src/main/java/org/redisson/api/pubsub/PublishArgs.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PublishParams.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PullArgs.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PullConsumer.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PullConsumerAsync.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PullConsumerReactive.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PullConsumerRx.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PullParams.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PushConsumer.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PushConsumerReactive.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PushConsumerRx.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/RetentionMode.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/Subscription.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/SubscriptionAsync.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/SubscriptionConfig.java",
     "redisson/src/main/java/org/redisson/api/pubsub/SubscriptionConfigParams.java",
     "redisson/src/main/java/org/redisson/api/pubsub/SubscriptionReactive.java",
     "redisson/src/main/java/org/redisson/api/pubsub/SubscriptionRx.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/api/pubsub/event/PublishedEventListener.java"
   ],
   "remaining_pending": 842,
-  "done": 1950
+  "done": 1965
 }
