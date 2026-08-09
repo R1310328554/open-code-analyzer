@@ -17,13 +17,22 @@
 
 package org.apache.rocketmq.common.message;
 
+/**
+ * 消息类型枚举：普通、事务半消息/提交、延迟、顺序等。
+ */
 public enum MessageType {
+    /** 普通消息。 */
     Normal_Msg("Normal"),
+    /** 事务半消息。 */
     Trans_Msg_Half("Trans"),
+    /** 事务提交消息。 */
     Trans_msg_Commit("TransCommit"),
+    /** 延迟/定时消息。 */
     Delay_Msg("Delay"),
+    /** 顺序消息。 */
     Order_Msg("Order");
 
+    /** 短名称字符串。 */
     private final String shortName;
 
     MessageType(String shortName) {
@@ -34,6 +43,7 @@ public enum MessageType {
         return shortName;
     }
 
+    /** 按 shortName 查找类型，未匹配时返回 {@link #Normal_Msg}。 */
     public static MessageType getByShortName(String shortName) {
         for (MessageType msgType : MessageType.values()) {
             if (msgType.getShortName().equals(shortName)) {

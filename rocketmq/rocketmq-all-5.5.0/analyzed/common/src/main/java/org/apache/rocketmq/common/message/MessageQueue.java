@@ -18,22 +18,31 @@ package org.apache.rocketmq.common.message;
 
 import java.io.Serializable;
 
+/**
+ * 逻辑队列三元组：Topic + Broker 名 + queueId，
+ * 用于路由、消费分配与 offset 管理。
+ */
 public class MessageQueue implements Comparable<MessageQueue>, Serializable {
     private static final long serialVersionUID = 6191200464116433425L;
+    /** Topic 名。 */
     private String topic;
+    /** Broker 名称。 */
     private String brokerName;
+    /** 队列编号。 */
     private int queueId;
 
     public MessageQueue() {
 
     }
 
+    /** 拷贝构造。 */
     public MessageQueue(MessageQueue other) {
         this.topic = other.topic;
         this.brokerName = other.brokerName;
         this.queueId = other.queueId;
     }
 
+    /** 指定 Topic、Broker 与 queueId 构造。 */
     public MessageQueue(String topic, String brokerName, int queueId) {
         this.topic = topic;
         this.brokerName = brokerName;
@@ -103,6 +112,7 @@ public class MessageQueue implements Comparable<MessageQueue>, Serializable {
         return "MessageQueue [topic=" + topic + ", brokerName=" + brokerName + ", queueId=" + queueId + "]";
     }
 
+    /** 按 topic、brokerName、queueId 字典序比较。 */
     @Override
     public int compareTo(MessageQueue o) {
         {

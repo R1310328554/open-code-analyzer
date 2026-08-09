@@ -18,15 +18,25 @@ package org.apache.rocketmq.common.message;
 
 import java.util.HashSet;
 
+/**
+ * 消息系统属性键名常量：KEYS、TAGS、延迟、事务、POP、定时、DLQ 等。
+ * 以 {@link #PROPERTY_TRANSIENT_PREFIX} 开头的属性不落盘。
+ */
 public class MessageConst {
+    /** 消息业务键（索引/过滤）。 */
     public static final String PROPERTY_KEYS = "KEYS";
+    /** 消息标签。 */
     public static final String PROPERTY_TAGS = "TAGS";
+    /** 是否等待 Broker 存储确认。 */
     public static final String PROPERTY_WAIT_STORE_MSG_OK = "WAIT";
+    /** 延迟级别（旧版延迟消息）。 */
     public static final String PROPERTY_DELAY_TIME_LEVEL = "DELAY";
+    /** 重试 Topic 名。 */
     public static final String PROPERTY_RETRY_TOPIC = "RETRY_TOPIC";
     public static final String PROPERTY_ORIGIN_GROUP = "ORIGIN_GROUP";
     public static final String PROPERTY_REAL_TOPIC = "REAL_TOPIC";
     public static final String PROPERTY_REAL_QUEUE_ID = "REAL_QID";
+    /** 半事务消息标记。 */
     public static final String PROPERTY_TRANSACTION_PREPARED = "TRAN_MSG";
     public static final String PROPERTY_PRODUCER_GROUP = "PGROUP";
     public static final String PROPERTY_MIN_OFFSET = "MIN_OFFSET";
@@ -36,9 +46,12 @@ public class MessageConst {
     public static final String PROPERTY_TRANSFER_FLAG = "TRANSFER_FLAG";
     public static final String PROPERTY_CORRECTION_FLAG = "CORRECTION_FLAG";
     public static final String PROPERTY_MQ2_FLAG = "MQ2_FLAG";
+    /** 当前重试消费次数。 */
     public static final String PROPERTY_RECONSUME_TIME = "RECONSUME_TIME";
     public static final String PROPERTY_MSG_REGION = "MSG_REGION";
+    /** 消息轨迹开关。 */
     public static final String PROPERTY_TRACE_SWITCH = "TRACE_ON";
+    /** 客户端唯一消息 ID。 */
     public static final String PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX = "UNIQ_KEY";
     public static final String PROPERTY_TRANS_OFFSET = "TRANS_OFFSET";
     public static final String PROPERTY_EXTEND_UNIQ_INFO = "EXTEND_UNIQ_INFO";
@@ -50,6 +63,7 @@ public class MessageConst {
     public static final String DUP_INFO = "DUP_INFO";
     public static final String PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS = "CHECK_IMMUNITY_TIME_IN_SECONDS";
     public static final String PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET = "TRAN_PREPARED_QUEUE_OFFSET";
+    /** 事务 ID。 */
     public static final String PROPERTY_TRANSACTION_ID = "__transactionId__";
     public static final String PROPERTY_TRANSACTION_CHECK_TIMES = "TRANSACTION_CHECK_TIMES";
     public static final String PROPERTY_INSTANCE_ID = "INSTANCE_ID";
@@ -60,9 +74,11 @@ public class MessageConst {
     public static final String PROPERTY_PUSH_REPLY_TIME = "PUSH_REPLY_TIME";
     public static final String PROPERTY_CLUSTER = "CLUSTER";
     public static final String PROPERTY_MESSAGE_TYPE = "MSG_TYPE";
+    /** POP 模式 checkpoint。 */
     public static final String PROPERTY_POP_CK = "POP_CK";
     public static final String PROPERTY_POP_CK_OFFSET = "POP_CK_OFFSET";
     public static final String PROPERTY_FIRST_POP_TIME = "1ST_POP_TIME";
+    /** 顺序/分片路由键。 */
     public static final String PROPERTY_SHARDING_KEY = "__SHARDINGKEY";
     public static final String PROPERTY_LITE_TOPIC = "__LITE_TOPIC";
     public static final String PROPERTY_FORWARD_QUEUE_ID = "PROPERTY_FORWARD_QUEUE_ID";
@@ -70,24 +86,23 @@ public class MessageConst {
     public static final String PROPERTY_INNER_MULTI_DISPATCH = "INNER_MULTI_DISPATCH";
     public static final String PROPERTY_INNER_MULTI_QUEUE_OFFSET = "INNER_MULTI_QUEUE_OFFSET";
     public static final String PROPERTY_TRACE_CONTEXT = "TRACE_CONTEXT";
+    /** 定时消息延迟秒数。 */
     public static final String PROPERTY_TIMER_DELAY_SEC = "TIMER_DELAY_SEC";
+    /** 定时消息绝对投递毫秒时间戳。 */
     public static final String PROPERTY_TIMER_DELIVER_MS = "TIMER_DELIVER_MS";
     public static final String PROPERTY_BORN_HOST = "__BORNHOST";
     public static final String PROPERTY_BORN_TIMESTAMP = "BORN_TIMESTAMP";
 
-    /**
-     * property which name starts with "__RMQ.TRANSIENT." is called transient one that will not stored in broker disks.
-     */
+    /** 以此前缀开头的属性为瞬态属性，Broker 不落盘。 */
+    /** 瞬态属性键前缀。 */
     public static final String PROPERTY_TRANSIENT_PREFIX = "__RMQ.TRANSIENT.";
 
-    /**
-     * the transient property key of topicSysFlag (set by client when pulling messages)
-     */
+    /** 拉取时客户端写入的 Topic 系统标志瞬态键。 */
+    /** Topic sysFlag 瞬态属性键。 */
     public static final String PROPERTY_TRANSIENT_TOPIC_CONFIG = PROPERTY_TRANSIENT_PREFIX + "TOPIC_SYS_FLAG";
 
-    /**
-     * the transient property key of groupSysFlag (set by client when pulling messages)
-     */
+    /** 拉取时客户端写入的消费组系统标志瞬态键。 */
+    /** 消费组 sysFlag 瞬态属性键。 */
     public static final String PROPERTY_TRANSIENT_GROUP_CONFIG = PROPERTY_TRANSIENT_PREFIX + "GROUP_SYS_FLAG";
 
     public static final String KEY_SEPARATOR = " ";
@@ -100,6 +115,7 @@ public class MessageConst {
     public final static String TIMER_ENGINE_ROCKSDB_TIMELINE = "R";
     public final static String TIMER_ENGINE_FILE_TIME_WHEEL = "F";
 
+    /** 已知系统属性键集合，用于校验与索引。 */
     public static final HashSet<String> STRING_HASH_SET = new HashSet<>(64);
 
     public static final String PROPERTY_TIMER_ENQUEUE_MS = "TIMER_ENQUEUE_MS";
@@ -112,10 +128,10 @@ public class MessageConst {
     public static final String PROPERTY_TIMER_DELAY_MS = "TIMER_DELAY_MS";
     public static final String PROPERTY_CRC32 = "__CRC32#";
 
-    /**
-     * properties for DLQ
-     */
+    /** 死信队列（DLQ）相关属性。 */
+    /** DLQ 消息原始 Topic。 */
     public static final String PROPERTY_DLQ_ORIGIN_TOPIC = "DLQ_ORIGIN_TOPIC";
+    /** DLQ 消息原始 msgId。 */
     public static final String PROPERTY_DLQ_ORIGIN_MESSAGE_ID = "DLQ_ORIGIN_MESSAGE_ID";
 
     static {

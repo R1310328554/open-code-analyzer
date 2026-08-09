@@ -18,10 +18,16 @@ package org.apache.rocketmq.common.message;
 
 import java.net.SocketAddress;
 
+/**
+ * CommitLog 物理地址标识：Broker 主机 + CommitLog 偏移。
+ */
 public class MessageId {
+    /** Broker 主机地址。 */
     private SocketAddress address;
+    /** CommitLog 物理偏移。 */
     private long offset;
 
+    /** 构造物理 msgId 元组。 */
     public MessageId(SocketAddress address, long offset) {
         this.address = address;
         this.offset = offset;

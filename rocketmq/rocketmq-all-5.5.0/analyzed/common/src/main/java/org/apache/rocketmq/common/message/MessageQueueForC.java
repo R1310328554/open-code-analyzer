@@ -19,14 +19,22 @@ package org.apache.rocketmq.common.message;
 
 import java.io.Serializable;
 
+/**
+ * 带消费偏移的队列描述，供 C 端客户端或跨语言协议使用。
+ */
 public class MessageQueueForC implements Comparable<MessageQueueForC>, Serializable {
 
     private static final long serialVersionUID = 5320967846569962104L;
+    /** Topic 名。 */
     private String topic;
+    /** Broker 名称。 */
     private String brokerName;
+    /** 队列编号。 */
     private int queueId;
+    /** 当前消费偏移。 */
     private long offset;
 
+    /** 构造带偏移的队列描述。 */
     public MessageQueueForC(String topic, String brokerName, int queueId, long offset) {
         this.topic = topic;
         this.brokerName = brokerName;
@@ -34,6 +42,7 @@ public class MessageQueueForC implements Comparable<MessageQueueForC>, Serializa
         this.offset = offset;
     }
 
+    /** 按 topic、brokerName、queueId、offset 比较。 */
     @Override
     public int compareTo(MessageQueueForC o) {
         int result = this.topic.compareTo(o.topic);

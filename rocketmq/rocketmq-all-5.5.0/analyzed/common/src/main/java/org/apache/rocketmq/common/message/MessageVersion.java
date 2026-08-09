@@ -18,10 +18,16 @@ package org.apache.rocketmq.common.message;
 
 import java.nio.ByteBuffer;
 
+/**
+ * CommitLog 消息编码版本：V1 topic 长度 1 字节，V2 为 2 字节 short。
+ */
 public enum MessageVersion {
 
+    /** V1：magic {@link MessageDecoder#MESSAGE_MAGIC_CODE}，topic 长度 1 字节。 */
     MESSAGE_VERSION_V1(MessageDecoder.MESSAGE_MAGIC_CODE) {
         @Override
+        /** V1 topic 长度字段占 1 字节。 */
+        /** V2 topic 长度字段占 2 字节。 */
         public int getTopicLengthSize() {
             return 1;
         }
@@ -42,6 +48,7 @@ public enum MessageVersion {
         }
     },
 
+    /** V2：magic {@link MessageDecoder#MESSAGE_MAGIC_CODE_V2}，topic 长度 2 字节。 */
     MESSAGE_VERSION_V2(MessageDecoder.MESSAGE_MAGIC_CODE_V2) {
         @Override
         public int getTopicLengthSize() {
@@ -64,12 +71,14 @@ public enum MessageVersion {
         }
     };
 
+    /** 协议 magic 码。 */
     private final int magicCode;
 
     MessageVersion(int magicCode) {
         this.magicCode = magicCode;
     }
 
+    /** 按 magic 码解析版本，无效时抛 {@link IllegalArgumentException}。 */
     public static MessageVersion valueOfMagicCode(int magicCode) {
         for (MessageVersion version : MessageVersion.values()) {
             if (version.getMagicCode() == magicCode) {
@@ -84,6 +93,7 @@ public enum MessageVersion {
         return magicCode;
     }
 
+    /** topic 长度字段字节数。 */
     public abstract int getTopicLengthSize();
 
     public abstract int getTopicLength(java.nio.ByteBuffer buffer);

@@ -19,14 +19,20 @@ package org.apache.rocketmq.common.message;
 import java.io.Serializable;
 import java.util.Map;
 
+/**
+ * 队列分配结果：绑定 {@link MessageQueue}、请求模式（PULL/POP）及扩展附件。
+ */
 public class MessageQueueAssignment implements Serializable {
 
     private static final long serialVersionUID = 8092600270527861645L;
 
+    /** 分配的队列。 */
     private MessageQueue messageQueue;
 
+    /** 消费请求模式，默认 PULL。 */
     private MessageRequestMode mode = MessageRequestMode.PULL;
 
+    /** 扩展附件键值对。 */
     private Map<String, String> attachments;
 
     @Override
@@ -39,6 +45,7 @@ public class MessageQueueAssignment implements Serializable {
         return result;
     }
 
+    /** 相等性仅比较 messageQueue。 */
     @Override
     public boolean equals(Object obj) {
         if (this == obj)

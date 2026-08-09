@@ -24,15 +24,24 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.TopicFilterType;
 import org.apache.rocketmq.common.utils.MessageUtils;
 
+/**
+ * Broker 内部写入 CommitLog 前的消息：含 properties 字符串、tagsCode、
+ * 编码缓存及 {@link MessageVersion} 等 Broker 专用字段。
+ */
 public class MessageExtBrokerInner extends MessageExt {
     private static final long serialVersionUID = 7256001576878700634L;
+    /** 属性键值对序列化字符串（落盘格式）。 */
     private String propertiesString;
+    /** 标签 hashCode，用于索引过滤。 */
     private long tagsCode;
 
+    /** 编码后的 ByteBuffer 缓存。 */
     private ByteBuffer encodedBuff;
 
+    /** 是否已完成编码。 */
     private volatile boolean encodeCompleted;
 
+    /** 消息协议版本，默认 V1。 */
     private MessageVersion version = MessageVersion.MESSAGE_VERSION_V1;
 
     public ByteBuffer getEncodedBuff() {
@@ -43,6 +52,7 @@ public class MessageExtBrokerInner extends MessageExt {
         this.encodedBuff = encodedBuff;
     }
 
+    /** 将 tags 字符串转为 tagsCode（空串为 0）。 */
     public static long tagsString2tagsCode(final TopicFilterType filter, final String tags) {
         if (Strings.isNullOrEmpty(tags)) { return 0; }
 
@@ -62,6 +72,7 @@ public class MessageExtBrokerInner extends MessageExt {
     }
 
 
+    /** 删除属性并同步更新 propertiesString。 */
     public void deleteProperty(String name) {
         super.clearProperty(name);
         if (propertiesString != null) {
@@ -85,13 +96,14 @@ public class MessageExtBrokerInner extends MessageExt {
         this.version = version;
     }
 
+    /** 从 propertiesString 中移除 WAIT 以节省存储，properties Map 仍保留 WAIT。 */
     public void removeWaitStorePropertyString() {
         if (this.getProperties().containsKey(MessageConst.PROPERTY_WAIT_STORE_MSG_OK)) {
-            // There is no need to store "WAIT=true", remove it from propertiesString to save 9 bytes for each message.
+            // WAIT=true 无需落盘，从 propertiesString 移除以省 9 字节
             // It works for most case. In some cases msgInner.setPropertiesString invoked later and replace it.
             String waitStoreMsgOKValue = this.getProperties().remove(MessageConst.PROPERTY_WAIT_STORE_MSG_OK);
             this.setPropertiesString(MessageDecoder.messageProperties2String(this.getProperties()));
-            // Reput to properties, since msgInner.isWaitStoreMsgOK() will be invoked later
+            // 仍写回 properties，后续 isWaitStoreMsgOK() 会读取
             this.getProperties().put(MessageConst.PROPERTY_WAIT_STORE_MSG_OK, waitStoreMsgOKValue);
         } else {
             this.setPropertiesString(MessageDecoder.messageProperties2String(this.getProperties()));
@@ -106,6 +118,7 @@ public class MessageExtBrokerInner extends MessageExt {
         this.encodeCompleted = encodeCompleted;
     }
 
+    /** 是否需向 LMQ（逻辑多队列）分发。 */
     public boolean needDispatchLMQ() {
         return StringUtils.isNoneBlank(getProperty(MessageConst.PROPERTY_INNER_MULTI_DISPATCH))
             && MixAll.topicAllowsLMQ(getTopic());

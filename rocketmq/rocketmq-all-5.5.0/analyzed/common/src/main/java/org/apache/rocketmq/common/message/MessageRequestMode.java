@@ -17,26 +17,26 @@
 package org.apache.rocketmq.common.message;
 
 /**
- * Message Request Mode
+ * 消息拉取请求模式：PULL 传统拉取，POP 共享队列的 Pop 消费。
  */
 public enum MessageRequestMode {
 
-    /**
-     * pull
-     */
+    /** 传统 Pull 拉取模式。 */
+    /** Pull 拉取。 */
     PULL("PULL"),
 
-    /**
-     * pop, consumer working in pop mode could share MessageQueue
-     */
+    /** Pop 模式：多消费者可共享同一 MessageQueue。 */
+    /** Pop 消费。 */
     POP("POP");
 
+    /** 模式名称字符串。 */
     private String name;
 
     MessageRequestMode(String name) {
         this.name = name;
     }
 
+    /** 返回模式名。 */
     public String getName() {
         return name;
     }

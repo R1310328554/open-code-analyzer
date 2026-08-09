@@ -24,27 +24,45 @@ import java.nio.ByteBuffer;
 import org.apache.rocketmq.common.TopicFilterType;
 import org.apache.rocketmq.common.sysflag.MessageSysFlag;
 
+/**
+ * Broker 存储侧扩展消息：队列、Broker 名、Born/Store 主机与时间、
+ * CommitLog 偏移、重试次数及事务 prepared 偏移等。
+ */
 public class MessageExt extends Message {
     private static final long serialVersionUID = 5720810158625748049L;
 
+    /** 消息所在 Broker 名称。 */
     private String brokerName;
 
+    /** 队列 ID。 */
     private int queueId;
 
+    /** CommitLog 中序列化后的存储大小。 */
     private int storeSize;
 
+    /** 队列逻辑偏移。 */
     private long queueOffset;
+    /** 消息系统标志（IPv6、多 Tag 等）。 */
     private int sysFlag;
+    /** 消息产生时间戳。 */
     private long bornTimestamp;
+    /** 消息产生主机地址。 */
     private SocketAddress bornHost;
 
+    /** Broker 存储时间戳。 */
     private long storeTimestamp;
+    /** 存储 Broker 主机地址。 */
     private SocketAddress storeHost;
+    /** Broker 生成的 msgId（IP + 端口 + 偏移）。 */
     private String msgId;
+    /** CommitLog 物理偏移。 */
     private long commitLogOffset;
+    /** 消息体 CRC 校验值。 */
     private int bodyCRC;
+    /** 重试消费次数。 */
     private int reconsumeTimes;
 
+    /** 半事务消息 prepared 偏移。 */
     private long preparedTransactionOffset;
 
     public MessageExt() {
@@ -60,6 +78,7 @@ public class MessageExt extends Message {
         this.msgId = msgId;
     }
 
+    /** 根据 sysFlag 解析 Topic 过滤类型（单 Tag / 多 Tag）。 */
     public static TopicFilterType parseTopicFilterType(final int sysFlag) {
         if ((sysFlag & MessageSysFlag.MULTI_TAGS_FLAG) == MessageSysFlag.MULTI_TAGS_FLAG) {
             return TopicFilterType.MULTI_TAG;
@@ -68,6 +87,7 @@ public class MessageExt extends Message {
         return TopicFilterType.SINGLE_TAG;
     }
 
+    /** 将 SocketAddress 写入已有 ByteBuffer（IPv4 4 字节 / IPv6 16 字节 + 端口）。 */
     public static ByteBuffer socketAddress2ByteBuffer(final SocketAddress socketAddress, final ByteBuffer byteBuffer) {
         InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
         InetAddress address = inetSocketAddress.getAddress();
@@ -81,6 +101,7 @@ public class MessageExt extends Message {
         return byteBuffer;
     }
 
+    /** 分配合适容量并将 SocketAddress 编码为 ByteBuffer。 */
     public static ByteBuffer socketAddress2ByteBuffer(SocketAddress socketAddress) {
         InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
         InetAddress address = inetSocketAddress.getAddress();
@@ -141,6 +162,7 @@ public class MessageExt extends Message {
         this.bornHost = bornHost;
     }
 
+    /** 返回 bornHost 的 IP 字符串。 */
     public String getBornHostString() {
         if (null != this.bornHost) {
             InetAddress inetAddress = ((InetSocketAddress) this.bornHost).getAddress();
@@ -154,7 +176,7 @@ public class MessageExt extends Message {
     public String getBornHostNameString() {
         if (null != this.bornHost) {
             if (bornHost instanceof InetSocketAddress) {
-                // without reverse dns lookup
+                // 使用 getHostString 避免反向 DNS 查询
                 return ((InetSocketAddress) bornHost).getHostString();
             }
             InetAddress inetAddress = ((InetSocketAddress) this.bornHost).getAddress();
@@ -197,8 +219,10 @@ public class MessageExt extends Message {
         this.sysFlag = sysFlag;
     }
 
+    /** 标记 storeHost 为 IPv6 地址。 */
     public void setStoreHostAddressV6Flag() { this.sysFlag = this.sysFlag | MessageSysFlag.STOREHOSTADDRESS_V6_FLAG; }
 
+    /** 标记 bornHost 为 IPv6 地址。 */
     public void setBornHostV6Flag() { this.sysFlag = this.sysFlag | MessageSysFlag.BORNHOST_V6_FLAG; }
 
     public int getBodyCRC() {
@@ -249,12 +273,8 @@ public class MessageExt extends Message {
         this.preparedTransactionOffset = preparedTransactionOffset;
     }
 
-    /**
-     *
-     * achieves topicSysFlag value from transient properties
-     *
-     * @return
-     */
+    /** 从瞬态属性读取 topicSysFlag。 */
+    /** 获取 Topic 系统标志，未设置时返回 null。 */
     public Integer getTopicSysFlag() {
         String topicSysFlagString = getProperty(MessageConst.PROPERTY_TRANSIENT_TOPIC_CONFIG);
         if (topicSysFlagString != null && topicSysFlagString.length() > 0) {
@@ -263,11 +283,7 @@ public class MessageExt extends Message {
         return null;
     }
 
-    /**
-     * set topicSysFlag to transient properties, or clear it
-     *
-     * @param topicSysFlag
-     */
+    /** 写入或清除 topicSysFlag 瞬态属性。 */
     public void setTopicSysFlag(Integer topicSysFlag) {
         if (topicSysFlag == null) {
             clearProperty(MessageConst.PROPERTY_TRANSIENT_TOPIC_CONFIG);
@@ -276,12 +292,8 @@ public class MessageExt extends Message {
         }
     }
 
-    /**
-     *
-     * achieves groupSysFlag value from transient properties
-     *
-     * @return
-     */
+    /** 从瞬态属性读取 groupSysFlag。 */
+    /** 获取消费组系统标志，未设置时返回 null。 */
     public Integer getGroupSysFlag() {
         String groupSysFlagString = getProperty(MessageConst.PROPERTY_TRANSIENT_GROUP_CONFIG);
         if (groupSysFlagString != null && groupSysFlagString.length() > 0) {
@@ -290,12 +302,7 @@ public class MessageExt extends Message {
         return null;
     }
 
-    /**
-     *
-     * set groupSysFlag to transient properties, or clear it
-     *
-     * @param groupSysFlag
-     */
+    /** 写入或清除 groupSysFlag 瞬态属性。 */
     public void setGroupSysFlag(Integer groupSysFlag) {
         if (groupSysFlag == null) {
             clearProperty(MessageConst.PROPERTY_TRANSIENT_GROUP_CONFIG);

@@ -19,28 +19,35 @@ package org.apache.rocketmq.common.message;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Broker 侧批量扩展消息：body 为多条子消息编码，
+ * 支持 inner batch（无需 Broker 再拆包）。
+ */
 public class MessageExtBatch extends MessageExtBrokerInner {
 
     private static final long serialVersionUID = -2353110995348498537L;
 
-    /**
-     * Inner batch means the batch does not need to be unwrapped
-     */
+    /** true 表示 inner batch，Broker 无需再拆包。 */
+    /** 是否为 inner batch 模式。 */
     private boolean isInnerBatch = false;
 
+    /** 将消息体 body 包装为 ByteBuffer 视图。 */
     public ByteBuffer wrap() {
         assert getBody() != null;
         return ByteBuffer.wrap(getBody(), 0, getBody().length);
     }
 
+    /** 是否 inner batch。 */
     public boolean isInnerBatch() {
         return isInnerBatch;
     }
 
+    /** 设置 inner batch 标志。 */
     public void setInnerBatch(boolean innerBatch) {
         isInnerBatch = innerBatch;
     }
 
+    /** 预编码后的 ByteBuffer 缓存。 */
     private ByteBuffer encodedBuff;
 
     public ByteBuffer getEncodedBuff() {

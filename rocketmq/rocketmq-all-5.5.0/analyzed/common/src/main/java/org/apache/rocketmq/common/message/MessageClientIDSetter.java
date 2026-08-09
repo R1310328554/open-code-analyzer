@@ -22,12 +22,21 @@ import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.rocketmq.common.UtilAll;
 
+/**
+ * 客户端消息唯一 ID（UNIQ_KEY）生成与解析：
+ * 编码 IP、PID、ClassLoader、月初时间差与递增计数器。
+ */
 public class MessageClientIDSetter {
     
+    /** UNIQ_KEY 字符长度（IP + PID + hash + 时间差 + 计数）。 */
     private static final int LEN;
+    /** 固定前缀（IP、PID、ClassLoader hash 编码）。 */
     private static final char[] FIX_STRING;
+    /** 同进程内递增序号，防碰撞。 */
     private static final AtomicInteger COUNTER;
+    /** 当前月起始毫秒时间戳。 */
     private static long startTime;
+    /** 下月起始时间，用于跨月重置 startTime。 */
     private static long nextStartTime;
 
     static {
@@ -47,6 +56,7 @@ public class MessageClientIDSetter {
         COUNTER = new AtomicInteger(0);
     }
 
+    /** 将 startTime 对齐到 millis 所在月 1 日 0 点，并计算 nextStartTime。 */
     private synchronized static void setStartTime(long millis) {
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(millis);
@@ -60,6 +70,7 @@ public class MessageClientIDSetter {
         nextStartTime = cal.getTimeInMillis();
     }
 
+    /** 从 msgID 中解析近似生成时间（月初 + 编码时间差）。 */
     public static Date getNearlyTimeFromID(String msgID) {
         ByteBuffer buf = ByteBuffer.allocate(8);
         byte[] bytes = UtilAll.string2bytes(msgID);
@@ -87,6 +98,7 @@ public class MessageClientIDSetter {
         return cal.getTime();
     }
 
+    /** 从 msgID 解析发送端 IP 字符串（IPv4/IPv6）。 */
     public static String getIPStrFromID(String msgID) {
         byte[] ipBytes = getIPFromID(msgID);
         if (ipBytes.length == 16) {
@@ -96,6 +108,7 @@ public class MessageClientIDSetter {
         }
     }
 
+    /** 从 msgID 提取 IP 原始字节。 */
     public static byte[] getIPFromID(String msgID) {
         byte[] bytes = UtilAll.string2bytes(msgID);
         int ipLength = bytes.length == 28 ? 16 : 4;
@@ -104,6 +117,7 @@ public class MessageClientIDSetter {
         return result;
     }
 
+    /** 从 msgID 解析发送进程 PID。 */
     public static int getPidFromID(String msgID) {
         byte[] bytes = UtilAll.string2bytes(msgID);
         ByteBuffer wrap = ByteBuffer.wrap(bytes);
@@ -111,6 +125,7 @@ public class MessageClientIDSetter {
         return value & 0x0000FFFF;
     }
 
+    /** 生成新的客户端唯一 ID 字符串。 */
     public static String createUniqID() {
         char[] sb = new char[LEN * 2];
         System.arraycopy(FIX_STRING, 0, sb, 0, FIX_STRING.length);
@@ -120,7 +135,7 @@ public class MessageClientIDSetter {
         }
         int diff = (int)(current - startTime);
         if (diff < 0 && diff > -1000_000) {
-            // may cause by NTP
+            // NTP 回拨可能导致 diff 为负，归零处理
             diff = 0;
         }
         int pos = FIX_STRING.length;
@@ -130,16 +145,19 @@ public class MessageClientIDSetter {
         return new String(sb);
     }
 
+    /** 若消息尚无 UNIQ_KEY 属性，则写入 {@link #createUniqID()}。 */
     public static void setUniqID(final Message msg) {
         if (msg.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX) == null) {
             msg.putProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX, createUniqID());
         }
     }
 
+    /** 读取消息 UNIQ_KEY 属性值。 */
     public static String getUniqID(final Message msg) {
         return msg.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
     }
 
+    /** 无法获取真实 IP 时，用当前时间戳生成 4 字节占位 IP。 */
     public static byte[] createFakeIP() {
         ByteBuffer bb = ByteBuffer.allocate(8);
         bb.putLong(System.currentTimeMillis());

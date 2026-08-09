@@ -16,16 +16,23 @@
  */
 package org.apache.rocketmq.common.message;
 
+/**
+ * 客户端侧 {@link MessageExt}：{@link #getMsgId()} 优先返回客户端唯一 ID（UNIQ_KEY），
+ * 无 UNIQ_KEY 时回退 Broker 偏移 msgId。
+ */
 public class MessageClientExt extends MessageExt {
 
+    /** 返回 Broker 侧基于 CommitLog 偏移的 msgId。 */
     public String getOffsetMsgId() {
         return super.getMsgId();
     }
 
+    /** 设置 Broker 偏移 msgId。 */
     public void setOffsetMsgId(String offsetMsgId) {
         super.setMsgId(offsetMsgId);
     }
 
+    /** 优先返回 {@link MessageClientIDSetter} 生成的 UNIQ_KEY，否则为 offsetMsgId。 */
     @Override
     public String getMsgId() {
         String uniqID = MessageClientIDSetter.getUniqID(this);
@@ -36,8 +43,9 @@ public class MessageClientExt extends MessageExt {
         }
     }
 
+    /** 客户端 msgId 由 UNIQ_KEY 决定，此方法 intentionally 空实现。 */
     public void setMsgId(String msgId) {
-        //DO NOTHING
+        // 客户端 msgId 由 UNIQ_KEY 属性维护，此处不写入
         //MessageClientIDSetter.setUniqID(this);
     }
 }

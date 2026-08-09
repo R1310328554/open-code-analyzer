@@ -22,24 +22,36 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.rocketmq.common.MixAll;
 
+/**
+ * 批量消息容器：将多条 {@link Message} 合并为一次发送，
+ * 要求同 Topic、同 waitStoreMsgOK，且不支持延迟与重试 Topic。
+ */
 public class MessageBatch extends Message implements Iterable<Message> {
 
     private static final long serialVersionUID = 621335151046335557L;
+    /** 批量内各条消息列表。 */
     private final List<Message> messages;
 
+    /** 以消息列表构造批量对象。 */
     public MessageBatch(List<Message> messages) {
         this.messages = messages;
     }
 
+    /** 将批量消息编码为字节数组。 */
     public byte[] encode() {
         return MessageDecoder.encodeMessages(messages);
     }
 
+    /** 遍历批量内各条消息。 */
     public Iterator<Message> iterator() {
         return messages.iterator();
     }
 
-    public static MessageBatch generateFromList(Collection<? extends Message> messages) {
+    /**
+     * 从消息集合生成 {@link MessageBatch}，校验 Topic、延迟与重试约束。
+     *
+     * @throws UnsupportedOperationException 含延迟/重试 Topic 或 Topic 不一致
+     */
         assert messages != null;
         assert messages.size() > 0;
         List<Message> messageList = new ArrayList<>(messages.size());

@@ -18,12 +18,20 @@
 package org.apache.rocketmq.common.metrics;
 
 
+/**
+ * 指标导出器类型：DISABLE 关闭，OTLP gRPC、Prometheus、日志等。
+ */
 public enum MetricsExporterType {
+    /** 关闭指标导出。 */
     DISABLE(0),
+    /** OpenTelemetry OTLP gRPC 导出。 */
     OTLP_GRPC(1),
+    /** Prometheus 格式导出。 */
     PROM(2),
+    /** 日志输出指标。 */
     LOG(3);
 
+    /** 配置整型值。 */
     private final int value;
 
     MetricsExporterType(int value) {
@@ -34,6 +42,7 @@ public enum MetricsExporterType {
         return value;
     }
 
+    /** 按整型值解析导出器类型，未知值返回 DISABLE。 */
     public static MetricsExporterType valueOf(int value) {
         switch (value) {
             case 1:
@@ -47,6 +56,7 @@ public enum MetricsExporterType {
         }
     }
 
+    /** 是否启用导出（value > 0）。 */
     public boolean isEnable() {
         return this.value > 0;
     }
