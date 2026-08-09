@@ -1,17 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:07:29Z",
-  "files": [
-    "docs_src/security/tutorial003_an_py310.py",
-    "docs_src/security/tutorial003_py310.py",
-    "docs_src/security/tutorial004_an_py310.py",
-    "docs_src/security/tutorial004_py310.py",
-    "docs_src/security/tutorial005_an_py310.py",
-    "docs_src/security/tutorial005_py310.py",
-    "docs_src/security/tutorial006_an_py310.py",
-    "docs_src/security/tutorial006_py310.py",
-    "docs_src/security/tutorial007_an_py310.py",
-    "docs_src/security/tutorial007_py310.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 47,
-  "done": 452
+  "done": 462
 }

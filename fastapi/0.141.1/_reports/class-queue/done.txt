@@ -450,3 +450,13 @@ docs_src/server_sent_events/tutorial003_py310.py
 docs_src/server_sent_events/tutorial004_py310.py
 docs_src/server_sent_events/tutorial005_py310.py
 docs_src/settings/__init__.py
+docs_src/security/tutorial003_an_py310.py
+docs_src/security/tutorial003_py310.py
+docs_src/security/tutorial004_an_py310.py
+docs_src/security/tutorial004_py310.py
+docs_src/security/tutorial005_an_py310.py
+docs_src/security/tutorial005_py310.py
+docs_src/security/tutorial006_an_py310.py
+docs_src/security/tutorial006_py310.py
+docs_src/security/tutorial007_an_py310.py
+docs_src/security/tutorial007_py310.py
