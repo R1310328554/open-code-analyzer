@@ -15,23 +15,8 @@
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/api/ApiPredicateItemVo.java",
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/api/UpdateApiReqVo.java",
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/rule/AddFlowRuleReqVo.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/rule/GatewayParamFlowItemVo.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/rule/UpdateFlowRuleReqVo.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/metric/MetricFetcher.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/gateway/InMemApiDefinitionStore.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/gateway/InMemGatewayFlowRuleStore.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/metric/InMemoryMetricsRepository.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/metric/MetricsRepository.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/rule/InMemAuthorityRuleStore.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/rule/InMemDegradeRuleStore.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/rule/InMemFlowRuleStore.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/rule/InMemParamFlowRuleStore.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/rule/InMemSystemRuleStore.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/rule/InMemoryRuleRepositoryAdapter.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/rule/RuleRepository.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/rule/DynamicRuleProvider.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/rule/DynamicRulePublisher.java"
+    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/rule/GatewayParamFlowItemVo.java"
   ],
   "remaining_pending": 335,
-  "done": 600
+  "done": 615
 }
