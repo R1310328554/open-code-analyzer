@@ -3,7 +3,7 @@ package com.lmax.disruptor;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * <p>Strategy for handling a rewindableException that will pause for a specified amount of nanos.</p>
+ * <p>处理 {@link RewindableException} 的回退策略：在重试前暂停指定纳秒数。</p>
  */
 public class NanosecondPauseBatchRewindStrategy implements BatchRewindStrategy
 {
@@ -11,8 +11,9 @@ public class NanosecondPauseBatchRewindStrategy implements BatchRewindStrategy
     private final long nanoSecondPauseTime;
 
     /**
-     * <p>Strategy for handling a rewindableException that will pause for a specified amount of nanos.</p>
-     * @param  nanoSecondPauseTime Amount of nanos to pause for when a rewindable exception is thrown
+     * <p>处理 {@link RewindableException} 的回退策略：在重试前暂停指定纳秒数。</p>
+     *
+     * @param nanoSecondPauseTime 抛出可回退异常时的暂停时长（纳秒）
      */
     public NanosecondPauseBatchRewindStrategy(final long nanoSecondPauseTime)
     {

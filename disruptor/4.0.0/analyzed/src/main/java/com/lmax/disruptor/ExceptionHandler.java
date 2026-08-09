@@ -16,35 +16,34 @@
 package com.lmax.disruptor;
 
 /**
- * Callback handler for uncaught exceptions in the event processing cycle of the {@link BatchEventProcessor}
+ * {@link BatchEventProcessor} 事件处理循环中未捕获异常的回调处理器。
  *
- * @param <T> implementation storing the data for sharing during exchange or parallel coordination of an event.
+ * @param <T> 事件实现类型，在交换或并行协调过程中承载共享数据
  */
 public interface ExceptionHandler<T>
 {
     /**
-     * <p>Strategy for handling uncaught exceptions when processing an event.</p>
+     * <p>处理事件时未捕获异常的策略。</p>
      *
-     * <p>If the strategy wishes to terminate further processing by the {@link BatchEventProcessor}
-     * then it should throw a {@link RuntimeException}.</p>
+     * <p>若希望终止 {@link BatchEventProcessor} 的后续处理，应抛出 {@link RuntimeException}。</p>
      *
-     * @param ex       the exception that propagated from the {@link EventHandler}.
-     * @param sequence of the event which cause the exception.
-     * @param event    being processed when the exception occurred.  This can be null.
+     * @param ex       从 {@link EventHandler} 传播出的异常
+     * @param sequence 引发异常的事件序号
+     * @param event    异常发生时正在处理的事件，可能为 null
      */
     void handleEventException(Throwable ex, long sequence, T event);
 
     /**
-     * Callback to notify of an exception during {@link EventHandler#onStart()}
+     * 在 {@link EventHandler#onStart()} 执行期间发生异常时的回调。
      *
-     * @param ex throw during the starting process.
+     * @param ex 启动过程中抛出的异常
      */
     void handleOnStartException(Throwable ex);
 
     /**
-     * Callback to notify of an exception during {@link EventHandler#onShutdown()}
+     * 在 {@link EventHandler#onShutdown()} 执行期间发生异常时的回调。
      *
-     * @param ex throw during the shutdown process.
+     * @param ex 关闭过程中抛出的异常
      */
     void handleOnShutdownException(Throwable ex);
 }

@@ -1,12 +1,10 @@
 package com.lmax.disruptor;
 
 /**
- * Experimental poll-based interface for the Disruptor. Unlike a {@link BatchEventProcessor},
- * an event poller allows the user to control the flow of execution. This makes it ideal
- * for interoperability with existing threads whose lifecycle is not controlled by the
- * disruptor DSL.
+ * Disruptor 的实验性轮询式接口。与 {@link BatchEventProcessor} 不同，
+ * 事件轮询器允许用户自行控制执行流程，适合与生命周期不由 Disruptor DSL 管理的现有线程集成。
  *
- * @param <T> the type of event used.
+ * @param <T> 事件类型
  */
 public class EventPoller<T>
 {
@@ -16,52 +14,52 @@ public class EventPoller<T>
     private final Sequence gatingSequence;
 
     /**
-     * A callback used to process events
+     * 处理事件的回调接口。
      *
-     * @param <T> the type of the event
+     * @param <T> 事件类型
      */
     public interface Handler<T>
     {
         /**
-         * Called for each event to consume it
+         * 每消费一个事件时调用。
          *
-         * @param event the event
-         * @param sequence the sequence of the event
-         * @param endOfBatch whether this event is the last in the batch
-         * @return whether to continue consuming events. If {@code false}, the poller will not feed any more events
-         *         to the handler until {@link EventPoller#poll(Handler)} is called again
-         * @throws Exception any exceptions thrown by the handler will be propagated to the caller of {@code poll}
+         * @param event 事件对象
+         * @param sequence 事件序号
+         * @param endOfBatch 是否为当前批次的最后一个事件
+         * @return 是否继续消费事件；若为 {@code false}，轮询器将不再投递事件，
+         *         直至再次调用 {@link EventPoller#poll(Handler)}
+         * @throws Exception 处理器抛出的异常将传播给 {@code poll} 的调用方
          */
         boolean onEvent(T event, long sequence, boolean endOfBatch) throws Exception;
     }
 
     /**
-     * Indicates the result of a call to {@link #poll(Handler)}
+     * 表示 {@link #poll(Handler)} 的调用结果。
      */
     public enum PollState
     {
         /**
-         * The poller processed one or more events
+         * 轮询器已处理一个或多个事件
          */
         PROCESSING,
         /**
-         * The poller is waiting for gated sequences to advance before events become available
+         * 轮询器正在等待门控序号推进，事件尚不可用
          */
         GATING,
         /**
-         * No events need to be processed
+         * 无需处理任何事件
          */
         IDLE
     }
 
     /**
-     * Creates an event poller. Most users will want {@link RingBuffer#newPoller(Sequence...)}
-     * which will set up the poller automatically
+     * 创建事件轮询器。多数用户应使用 {@link RingBuffer#newPoller(Sequence...)}，
+     * 由框架自动完成配置。
      *
-     * @param dataProvider from which events are drawn
-     * @param sequencer the main sequencer which handles ordering of events
-     * @param sequence the sequence which will be used by this event poller
-     * @param gatingSequence the sequences to gate on
+     * @param dataProvider 事件数据来源
+     * @param sequencer 负责事件排序的主序号器
+     * @param sequence 本轮询器使用的消费序号
+     * @param gatingSequence 门控序号
      */
     public EventPoller(
         final DataProvider<T> dataProvider,
@@ -76,17 +74,16 @@ public class EventPoller<T>
     }
 
     /**
-     * Polls for events using the given handler. <br>
+     * 使用给定处理器轮询事件。<br>
      * <br>
-     * This poller will continue to feed events to the given handler until known available
-     * events are consumed or {@link Handler#onEvent(Object, long, boolean)} returns false. <br>
+     * 轮询器会持续向处理器投递事件，直至已知可用事件全部消费完毕，
+     * 或 {@link Handler#onEvent(Object, long, boolean)} 返回 false。<br>
      * <br>
-     * Note that it is possible for more events to become available while the current events
-     * are being processed. A further call to this method will process such events.
+     * 注意：处理当前事件期间可能有新事件变为可用，再次调用本方法即可处理。
      *
-     * @param eventHandler the handler used to consume events
-     * @return the state of the event poller after the poll is attempted
-     * @throws Exception exceptions thrown from the event handler are propagated to the caller
+     * @param eventHandler 消费事件的处理器
+     * @return 本次轮询尝试后轮询器的状态
+     * @throws Exception 事件处理器抛出的异常将传播给调用方
      */
     public PollState poll(final Handler<T> eventHandler) throws Exception
     {
@@ -129,16 +126,16 @@ public class EventPoller<T>
     }
 
     /**
-     * Creates an event poller. Most users will want {@link RingBuffer#newPoller(Sequence...)}
-     * which will set up the poller automatically
+     * 创建事件轮询器。多数用户应使用 {@link RingBuffer#newPoller(Sequence...)}，
+     * 由框架自动完成配置。
      *
-     * @param dataProvider from which events are drawn
-     * @param sequencer the main sequencer which handles ordering of events
-     * @param sequence the sequence which will be used by this event poller
-     * @param cursorSequence the cursor sequence, usually of the ring buffer
-     * @param gatingSequences additional sequences to gate on
-     * @param <T> the type of the event
-     * @return the event poller
+     * @param dataProvider 事件数据来源
+     * @param sequencer 负责事件排序的主序号器
+     * @param sequence 本轮询器使用的消费序号
+     * @param cursorSequence 游标序号，通常为环形缓冲区的游标
+     * @param gatingSequences 额外需要门控的序号
+     * @param <T> 事件类型
+     * @return 构造完成的事件轮询器
      */
     public static <T> EventPoller<T> newInstance(
         final DataProvider<T> dataProvider,
@@ -165,9 +162,9 @@ public class EventPoller<T>
     }
 
     /**
-     * Get the {@link Sequence} being used by this event poller
+     * 获取本事件轮询器使用的 {@link Sequence}。
      *
-     * @return the sequence used by the event poller
+     * @return 轮询器使用的消费序号
      */
     public Sequence getSequence()
     {

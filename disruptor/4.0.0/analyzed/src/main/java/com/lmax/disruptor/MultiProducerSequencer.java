@@ -24,12 +24,11 @@ import java.util.concurrent.locks.LockSupport;
 
 
 /**
- * Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.
- * Suitable for use for sequencing across multiple publisher threads.
+ * 在跟踪依赖 {@link Sequence} 的同时协调多发布者线程对数据结构的序号申领。
+ * 适用于多发布者线程的序号编排场景。
  *
- * <p>Note on {@link Sequencer#getCursor()}:  With this sequencer the cursor value is updated after the call
- * to {@link Sequencer#next()}, to determine the highest available sequence that can be read, then
- * {@link Sequencer#getHighestPublishedSequence(long, long)} should be used.
+ * <p>关于 {@link Sequencer#getCursor()} 的说明：本序号器在调用 {@link Sequencer#next()} 之后才更新游标值；
+ * 若要确定可读的最高已发布序号，应使用 {@link Sequencer#getHighestPublishedSequence(long, long)}。
  */
 public final class MultiProducerSequencer extends AbstractSequencer
 {
@@ -44,10 +43,10 @@ public final class MultiProducerSequencer extends AbstractSequencer
     private final int indexShift;
 
     /**
-     * Construct a Sequencer with the selected wait strategy and buffer size.
+     * 以指定等待策略与缓冲区大小构造序号器。
      *
-     * @param bufferSize   the size of the buffer that this will sequence over.
-     * @param waitStrategy for those waiting on sequences.
+     * @param bufferSize   本序号器所编排的缓冲区大小
+     * @param waitStrategy 等待序号可用的策略
      */
     public MultiProducerSequencer(final int bufferSize, final WaitStrategy waitStrategy)
     {
@@ -125,6 +124,7 @@ public final class MultiProducerSequencer extends AbstractSequencer
         if (wrapPoint > cachedGatingSequence || cachedGatingSequence > current)
         {
             long gatingSequence;
+            // 步骤：环绕点超过门控序号时，自旋等待消费者推进
             while (wrapPoint > (gatingSequence = Util.getMinimumSequence(gatingSequences, current)))
             {
                 LockSupport.parkNanos(1L); // TODO, should we spin based on the wait strategy?
@@ -209,23 +209,17 @@ public final class MultiProducerSequencer extends AbstractSequencer
     }
 
     /**
-     * The below methods work on the availableBuffer flag.
+     * 以下方法操作 availableBuffer 标志位。
      *
-     * <p>The prime reason is to avoid a shared sequence object between publisher threads.
-     * (Keeping single pointers tracking start and end would require coordination
-     * between the threads).
+     * <p>主要目的是避免发布者线程之间共享同一个序号对象。
+     * （若仅用首尾指针跟踪，则线程间需要额外协调）。
      *
-     * <p>--  Firstly we have the constraint that the delta between the cursor and minimum
-     * gating sequence will never be larger than the buffer size (the code in
-     * next/tryNext in the Sequence takes care of that).
-     * -- Given that; take the sequence value and mask off the lower portion of the
-     * sequence as the index into the buffer (indexMask). (aka modulo operator)
-     * -- The upper portion of the sequence becomes the value to check for availability.
-     * ie: it tells us how many times around the ring buffer we've been (aka division)
-     * -- Because we can't wrap without the gating sequences moving forward (i.e. the
-     * minimum gating sequence is effectively our last available position in the
-     * buffer), when we have new data and successfully claimed a slot we can simply
-     * write over the top.
+     * <p>-- 首先，游标与最小门控序号之差不会超过缓冲区大小
+     * （Sequence 中 next/tryNext 的代码保证这一点）。
+     * -- 将序号值与 indexMask 做按位与，得到缓冲区索引（等价于取模）。
+     * -- 序号的高位部分作为可用性校验值（即绕环次数，等价于除法）。
+     * -- 由于门控序号未推进时无法环绕（最小门控序号即缓冲区中最后可用位置），
+     * 成功申领槽位并写入新数据后可直接覆盖。
      */
     private void setAvailable(final long sequence)
     {
@@ -251,6 +245,7 @@ public final class MultiProducerSequencer extends AbstractSequencer
     @Override
     public long getHighestPublishedSequence(final long lowerBound, final long availableSequence)
     {
+        // 步骤：从 lowerBound 起逐个检查发布状态，返回连续已发布的最高序号
         for (long sequence = lowerBound; sequence <= availableSequence; sequence++)
         {
             if (!isAvailable(sequence))

@@ -16,21 +16,20 @@
 package com.lmax.disruptor;
 
 /**
- * Implementations translate (write) data representations into events claimed from the {@link RingBuffer}.
+ * 将外部数据表示写入从 {@link RingBuffer} 申领到的事件槽位。
  *
- * <p>When publishing to the RingBuffer, provide an EventTranslator. The RingBuffer will select the next available
- * event by sequence and provide it to the EventTranslator (which should update the event), before publishing
- * the sequence update.
+ * <p>向 RingBuffer 发布时提供 EventTranslator：RingBuffer 按序号选出下一个可用事件，
+ * 交由 EventTranslator 填充后再发布序号更新。
  *
- * @param <T> event implementation storing the data for sharing during exchange or parallel coordination of an event.
+ * @param <T> 事件实现类型，在交换或并行协调过程中承载共享数据
  */
 public interface EventTranslator<T>
 {
     /**
-     * Translate a data representation into fields set in given event
+     * 将数据表示翻译并写入给定事件的字段。
      *
-     * @param event    into which the data should be translated.
-     * @param sequence that is assigned to event.
+     * @param event    待写入数据的目标事件
+     * @param sequence 分配给该事件的序号
      */
     void translateTo(T event, long sequence);
 }

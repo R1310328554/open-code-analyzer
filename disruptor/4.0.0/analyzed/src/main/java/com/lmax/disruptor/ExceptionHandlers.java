@@ -15,14 +15,14 @@
  */
 package com.lmax.disruptor;
 
-/** Provides static methods for accessing a default {@link ExceptionHandler} object. */
+/** 提供访问默认 {@link ExceptionHandler} 实例的静态方法。 */
 public final class ExceptionHandlers
 {
 
     /**
-     * Get a reference to the default {@link ExceptionHandler} instance.
+     * 获取默认 {@link ExceptionHandler} 实例的引用。
      *
-     * @return a reference to the default {@link ExceptionHandler} instance
+     * @return 默认 {@link ExceptionHandler} 实例的引用
      */
     public static ExceptionHandler<Object> defaultHandler()
     {

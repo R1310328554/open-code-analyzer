@@ -20,16 +20,16 @@ import com.lmax.disruptor.util.Util;
 import java.util.Arrays;
 
 /**
- * Hides a group of Sequences behind a single Sequence
+ * 将一组 {@link Sequence} 聚合为单个 {@link Sequence}，对外暴露组内最小序号。
  */
 public final class FixedSequenceGroup extends Sequence
 {
     private final Sequence[] sequences;
 
     /**
-     * Constructor
+     * 构造固定序号组。
      *
-     * @param sequences the list of sequences to be tracked under this sequence group
+     * @param sequences 本组需要跟踪的序号列表
      */
     public FixedSequenceGroup(final Sequence[] sequences)
     {
@@ -37,9 +37,9 @@ public final class FixedSequenceGroup extends Sequence
     }
 
     /**
-     * Get the minimum sequence value for the group.
+     * 获取组内最小序号值。
      *
-     * @return the minimum sequence value for the group.
+     * @return 组内最小序号值
      */
     @Override
     public long get()
@@ -54,7 +54,7 @@ public final class FixedSequenceGroup extends Sequence
     }
 
     /**
-     * Not supported.
+     * 不支持写操作。
      */
     @Override
     public void set(final long value)
@@ -63,7 +63,7 @@ public final class FixedSequenceGroup extends Sequence
     }
 
     /**
-     * Not supported.
+     * 不支持写操作。
      */
     @Override
     public boolean compareAndSet(final long expectedValue, final long newValue)
@@ -72,7 +72,7 @@ public final class FixedSequenceGroup extends Sequence
     }
 
     /**
-     * Not supported.
+     * 不支持写操作。
      */
     @Override
     public long incrementAndGet()
@@ -81,7 +81,7 @@ public final class FixedSequenceGroup extends Sequence
     }
 
     /**
-     * Not supported.
+     * 不支持写操作。
      */
     @Override
     public long addAndGet(final long increment)

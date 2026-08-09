@@ -6,8 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.lmax.disruptor.util.Util.awaitNanos;
 
 /**
- * Variation of the {@link TimeoutBlockingWaitStrategy} that attempts to elide conditional wake-ups
- * when the lock is uncontended.
+ * {@link TimeoutBlockingWaitStrategy} 的变体：在锁无竞争时尝试省略条件唤醒。
  */
 public class LiteTimeoutBlockingWaitStrategy implements WaitStrategy
 {
@@ -16,8 +15,8 @@ public class LiteTimeoutBlockingWaitStrategy implements WaitStrategy
     private final long timeoutInNanos;
 
     /**
-     * @param timeout how long to wait before timing out
-     * @param units the unit in which timeout is specified
+     * @param timeout 超时前等待的时长
+     * @param units 超时时间的单位
      */
     public LiteTimeoutBlockingWaitStrategy(final long timeout, final TimeUnit units)
     {
@@ -35,6 +34,7 @@ public class LiteTimeoutBlockingWaitStrategy implements WaitStrategy
         long nanos = timeoutInNanos;
 
         long availableSequence;
+        // 步骤 1：若主游标尚未到达目标序号，在互斥锁上带超时地等待
         if (cursorSequence.get() < sequence)
         {
             synchronized (mutex)
@@ -53,6 +53,7 @@ public class LiteTimeoutBlockingWaitStrategy implements WaitStrategy
             }
         }
 
+        // 步骤 2：主游标已推进后，等待依赖序号追上目标
         while ((availableSequence = dependentSequence.get()) < sequence)
         {
             barrier.checkAlert();

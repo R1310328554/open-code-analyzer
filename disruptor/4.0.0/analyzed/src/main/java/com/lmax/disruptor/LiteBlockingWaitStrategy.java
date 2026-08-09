@@ -18,10 +18,8 @@ package com.lmax.disruptor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Variation of the {@link BlockingWaitStrategy} that attempts to elide conditional wake-ups when
- * the lock is uncontended.  Shows performance improvements on microbenchmarks.  However this
- * wait strategy should be considered experimental as I have not full proved the correctness of
- * the lock elision code.
+ * {@link BlockingWaitStrategy} 的变体：在锁无竞争时尝试省略条件唤醒。
+ * 微基准测试显示性能有所提升，但因锁省略逻辑尚未完全验证正确性，应视为实验性策略。
  */
 public final class LiteBlockingWaitStrategy implements WaitStrategy
 {
@@ -33,6 +31,7 @@ public final class LiteBlockingWaitStrategy implements WaitStrategy
         throws AlertException, InterruptedException
     {
         long availableSequence;
+        // 步骤 1：若主游标尚未到达目标序号，在互斥锁上阻塞等待唤醒
         if (cursorSequence.get() < sequence)
         {
             synchronized (mutex)
@@ -53,6 +52,7 @@ public final class LiteBlockingWaitStrategy implements WaitStrategy
             }
         }
 
+        // 步骤 2：主游标已推进后，自旋等待依赖序号追上目标
         while ((availableSequence = dependentSequence.get()) < sequence)
         {
             barrier.checkAlert();
