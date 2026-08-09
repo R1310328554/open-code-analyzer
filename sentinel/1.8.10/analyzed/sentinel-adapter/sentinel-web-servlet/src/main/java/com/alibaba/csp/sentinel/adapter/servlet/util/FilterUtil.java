@@ -25,7 +25,7 @@ import com.alibaba.csp.sentinel.adapter.servlet.config.WebServletConfig;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * Util class for web servlet filter.
+ * Web Servlet 过滤器工具类，提供 URL 规范化与流控拦截响应处理。
  *
  * @author zhaoyuguang
  * @author youji.zj
@@ -45,7 +45,7 @@ public final class FilterUtil {
             return pathInfo;
         }
 
-        // Note: pathInfo should be converted to camelCase style.
+        // 注意：pathInfo 应转换为 camelCase 风格。
         int lastSlashIndex = pathInfo.lastIndexOf("/");
 
         if (lastSlashIndex >= 0) {
@@ -69,7 +69,7 @@ public final class FilterUtil {
             writeDefaultBlockedPage(response, WebServletConfig.getBlockPageHttpStatus());
         } else {
             String redirectUrl = WebServletConfig.getBlockPage() + "?http_referer=" + url.toString();
-            // Redirect to the customized block page.
+            // 重定向到自定义拦截页。
             response.sendRedirect(redirectUrl);
         }
     }
@@ -98,7 +98,7 @@ public final class FilterUtil {
         char[] pathChars = StringUtil.trimToEmpty(path).toCharArray();
         int length = pathChars.length;
 
-        // Check path and slash.
+        // 检查路径与斜杠。
         boolean startsWithSlash = false;
         boolean endsWithSlash = false;
 
@@ -131,12 +131,12 @@ public final class FilterUtil {
             String element = new String(pathChars, index, nextSlashIndex - index);
             index = nextSlashIndex;
 
-            // Ignore "."
+            // 忽略 "."
             if (".".equals(element)) {
                 continue;
             }
 
-            // Backtrack ".."
+            // 回退 ".."
             if ("..".equals(element)) {
                 if (level == 0) {
                     if (isAbsolutePath) {
@@ -155,7 +155,7 @@ public final class FilterUtil {
             buf.append(element).append(PATH_SPLIT);
         }
 
-        // remove the last "/"
+        // 移除末尾的 "/"
         if (buf.length() > 0) {
             if (!endsWithSlash || removeTrailingSlash) {
                 buf.setLength(buf.length() - 1);
@@ -173,11 +173,11 @@ public final class FilterUtil {
 
             if (slash) {
                 if (ch == PATH_SPLIT.charAt(0) || ch == '\\') {
-                    break; // if a slash
+                    break; // 遇到斜杠
                 }
             } else {
                 if (ch != PATH_SPLIT.charAt(0) && ch != '\\') {
-                    break; // if not a slash
+                    break; // 非斜杠字符
                 }
             }
         }

@@ -18,19 +18,19 @@ package com.alibaba.csp.sentinel.adapter.servlet.callback;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * Registry for URL cleaner and URL block handler.
+ * Web Servlet 适配器回调管理器，统一管理 URL 清洗器、流控拦截处理器与请求来源解析器。
  *
  * @author youji.zj
  */
 public class WebCallbackManager {
 
     /**
-     * URL cleaner.
+     * URL 清洗器。
      */
     private static volatile UrlCleaner urlCleaner = new DefaultUrlCleaner();
 
     /**
-     * URL block handler.
+     * URL 流控拦截处理器。
      */
     private static volatile UrlBlockHandler urlBlockHandler = new DefaultUrlBlockHandler();
 

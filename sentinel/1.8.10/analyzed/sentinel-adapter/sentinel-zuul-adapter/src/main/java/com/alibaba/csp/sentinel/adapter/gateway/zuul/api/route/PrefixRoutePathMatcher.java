@@ -24,6 +24,8 @@ import org.springframework.util.PathMatcher;
 import javax.servlet.http.HttpServletRequest;
 
 /**
+ * 基于 Ant 风格路径模式的路由匹配器，用于匹配 {@link RequestContext} 请求路径。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -43,7 +45,7 @@ public class PrefixRoutePathMatcher implements Predicate<RequestContext> {
 
     @Override
     public boolean test(RequestContext context) {
-        //Solve the problem of prefix matching
+        // 解决前缀路径匹配问题
         HttpServletRequest request = context.getRequest();
         String path = request.getRequestURI();
         if (path == null) {

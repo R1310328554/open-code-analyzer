@@ -22,7 +22,7 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * The configuration center for Web Servlet adapter.
+ * Web Servlet 适配器的配置中心。
  *
  * @author leyou
  * @author zhaoyuguang
@@ -37,8 +37,7 @@ public final class WebServletConfig {
     private static final int HTTP_STATUS_TOO_MANY_REQUESTS = 429;
 
     /**
-     * Get redirecting page when Sentinel blocking for {@link CommonFilter} or
-     * {@link CommonTotalFilter} occurs.
+     * 获取 {@link CommonFilter} 或 {@link CommonTotalFilter} 被 Sentinel 拦截时的跳转页面。
      *
      * @return the block page URL, maybe null if not configured.
      */
@@ -51,10 +50,9 @@ public final class WebServletConfig {
     }
 
     /**
-     * <p>Get the HTTP status when using the default block page.</p>
-     * <p>You can set the status code with the {@code -Dcsp.sentinel.web.servlet.block.status}
-     * property. When the property is empty or invalid, Sentinel will use 429 (Too Many Requests)
-     * as the default status code.</p>
+     * <p>获取使用默认拦截页时的 HTTP 状态码。</p>
+     * <p>可通过 {@code -Dcsp.sentinel.web.servlet.block.status} 属性设置状态码。
+     * 当属性为空或无效时，Sentinel 默认使用 429（Too Many Requests）。</p>
      *
      * @return the HTTP status of the default block page
      * @since 1.7.0
@@ -78,7 +76,7 @@ public final class WebServletConfig {
     }
 
     /**
-     * Set the HTTP status of the default block page.
+     * 设置默认拦截页的 HTTP 状态码。
      *
      * @param httpStatus the HTTP status of the default block page
      * @since 1.7.0

@@ -23,14 +23,14 @@ import javax.servlet.http.HttpServletResponse;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /***
- * The URL block handler handles requests when blocked.
+ * URL 流控拦截处理器，在请求被 Sentinel 拦截时处理响应。
  *
  * @author youji.zj
  */
 public interface UrlBlockHandler {
 
     /**
-     * Handle the request when blocked.
+     * 处理被 Sentinel 拦截的请求。
      *
      * @param request  Servlet request
      * @param response Servlet response

@@ -36,7 +36,7 @@ import com.alibaba.csp.sentinel.context.ContextUtil;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /***
- * Servlet filter for all requests.
+ * 对所有 Servlet 请求进行 Sentinel 总流量统计的过滤器。
  *
  * @author youji.zj
  */

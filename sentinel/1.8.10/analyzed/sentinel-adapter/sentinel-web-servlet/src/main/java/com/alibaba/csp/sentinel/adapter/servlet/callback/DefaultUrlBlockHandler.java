@@ -24,7 +24,7 @@ import com.alibaba.csp.sentinel.adapter.servlet.util.FilterUtil;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /***
- * The default {@link UrlBlockHandler}.
+ * {@link UrlBlockHandler} 的默认实现。
  *
  * @author youji.zj
  */
@@ -33,7 +33,7 @@ public class DefaultUrlBlockHandler implements UrlBlockHandler {
     @Override
     public void blocked(HttpServletRequest request, HttpServletResponse response, BlockException ex)
         throws IOException {
-        // Directly redirect to the default flow control (blocked) page or customized block page.
+        // 直接跳转到默认流控拦截页或自定义拦截页。
         FilterUtil.blockRequest(request, response);
     }
 }

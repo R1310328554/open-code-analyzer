@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.adapter.gateway.common.param.RequestItemParser;
 import com.netflix.zuul.context.RequestContext;
 
 /**
+ * 基于 {@link RequestContext} 的请求属性解析器，供 Zuul 网关热点参数流控使用。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

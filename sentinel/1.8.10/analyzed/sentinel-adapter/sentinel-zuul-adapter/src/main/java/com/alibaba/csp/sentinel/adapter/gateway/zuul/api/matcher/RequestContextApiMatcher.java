@@ -27,6 +27,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 import com.netflix.zuul.context.RequestContext;
 
 /**
+ * 基于 {@link RequestContext} 的 API 匹配器，将 {@link ApiDefinition} 中的路径谓词转换为路由匹配谓词。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

@@ -23,6 +23,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.regex.Pattern;
 
 /**
+ * 基于正则表达式的路由路径匹配器。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -39,7 +41,7 @@ public class RegexRoutePathMatcher implements Predicate<RequestContext> {
 
     @Override
     public boolean test(RequestContext context) {
-        //Solve the problem of route matching
+        // 解决路由路径匹配问题
         HttpServletRequest request = context.getRequest();
         String path = request.getRequestURI();
         if (path == null) {

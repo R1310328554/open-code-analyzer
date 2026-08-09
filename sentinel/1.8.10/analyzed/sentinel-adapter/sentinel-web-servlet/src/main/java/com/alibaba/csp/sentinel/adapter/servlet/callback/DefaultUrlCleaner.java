@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.adapter.servlet.callback;
 
 /***
+ * {@link UrlCleaner} 的默认实现，直接返回原始 URL。
+ *
  * @author youji.zj
  */
 public class DefaultUrlCleaner implements UrlCleaner {
