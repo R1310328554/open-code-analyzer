@@ -24,7 +24,7 @@ import com.netflix.zuul.exception.ZuulException;
 import static com.alibaba.csp.sentinel.adapter.gateway.zuul.constants.ZuulConstant.SEND_RESPONSE_FILTER_ORDER;
 
 /**
- * This filter will mark complete and exit {@link com.alibaba.csp.sentinel.Entry}.
+ * Zuul 后置过滤器，标记请求完成并按序退出 {@link com.alibaba.csp.sentinel.Entry}。
  *
  * @author tiger
  * @author Eric Zhao
@@ -58,8 +58,7 @@ public class SentinelZuulPostFilter extends ZuulFilter {
 
     @Override
     public Object run() throws ZuulException {
-        // Exit the entries in order.
-        // The entries can be retrieved from the request context.
+        // 按序退出 Entry；Entry 可从请求上下文中获取。
         SentinelEntryUtils.tryExitFromCurrentContext();
         return null;
     }

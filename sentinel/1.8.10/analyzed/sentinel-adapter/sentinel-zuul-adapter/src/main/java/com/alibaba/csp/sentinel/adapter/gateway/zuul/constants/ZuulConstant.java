@@ -19,51 +19,53 @@ package com.alibaba.csp.sentinel.adapter.gateway.zuul.constants;
 import com.netflix.zuul.ZuulFilter;
 
 /**
+ * Zuul 适配器常量定义，包含 {@link com.netflix.zuul.context.RequestContext} 键名与过滤器类型。
+ *
  * @author tiger
  */
 public class ZuulConstant {
 
     /**
-     * Zuul {@link com.netflix.zuul.context.RequestContext} key for use in load balancer.
+     * 负载均衡使用的 Zuul {@link com.netflix.zuul.context.RequestContext} 键（服务 ID）。
      */
     public static final String SERVICE_ID_KEY = "serviceId";
     /**
-     * Zuul {@link com.netflix.zuul.context.RequestContext} key for proxying (route ID).
+     * 代理路由使用的 Zuul {@link com.netflix.zuul.context.RequestContext} 键（路由 ID）。
      */
     public static final String PROXY_ID_KEY = "proxy";
 
     /**
-     * {@link ZuulFilter#filterType()} error type.
+     * {@link ZuulFilter#filterType()} 错误类型。
      */
     public static final String ERROR_TYPE = "error";
 
     /**
-     * {@link ZuulFilter#filterType()} post type.
+     * {@link ZuulFilter#filterType()} 后置类型。
      */
     public static final String POST_TYPE = "post";
 
     /**
-     * {@link ZuulFilter#filterType()} pre type.
+     * {@link ZuulFilter#filterType()} 前置类型。
      */
     public static final String PRE_TYPE = "pre";
 
     /**
-     * {@link ZuulFilter#filterType()} route type.
+     * {@link ZuulFilter#filterType()} 路由类型。
      */
     public static final String ROUTE_TYPE = "route";
 
     /**
-     * Filter Order for SEND_RESPONSE_FILTER_ORDER
+     * 发送响应过滤器的执行顺序。
      */
     public static final int SEND_RESPONSE_FILTER_ORDER = 1000;
 
     /**
-     * Zuul use Sentinel as default context when serviceId is empty.
+     * 当 serviceId 为空时，Zuul 使用的 Sentinel 默认上下文名。
      */
     public static final String ZUUL_DEFAULT_CONTEXT = "zuul_default_context";
 
     /**
-     * Zuul context key for keeping Sentinel entries.
+     * 在 Zuul 上下文中保存 Sentinel Entry 的键名。
      *
      * @since 1.6.0
      */

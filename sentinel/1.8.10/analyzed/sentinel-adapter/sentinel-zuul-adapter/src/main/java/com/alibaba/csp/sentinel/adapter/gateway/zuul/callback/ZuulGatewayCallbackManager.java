@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.adapter.gateway.zuul.callback;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * Zuul 网关回调管理器，统一管理请求来源解析器。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

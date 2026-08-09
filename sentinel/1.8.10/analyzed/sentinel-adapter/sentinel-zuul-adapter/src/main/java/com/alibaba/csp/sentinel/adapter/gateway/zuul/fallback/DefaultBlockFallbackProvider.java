@@ -19,7 +19,7 @@ package com.alibaba.csp.sentinel.adapter.gateway.zuul.fallback;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
- * Default Fallback provider for sentinel {@link BlockException}, {@literal *} meant for all routes.
+ * Sentinel {@link BlockException} 的默认降级提供者，路由 {@literal *} 表示匹配所有路由。
  *
  * @author tiger
  */

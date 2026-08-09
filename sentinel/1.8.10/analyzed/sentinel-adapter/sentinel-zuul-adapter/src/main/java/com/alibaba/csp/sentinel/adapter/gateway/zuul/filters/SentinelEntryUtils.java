@@ -25,6 +25,8 @@ import com.alibaba.csp.sentinel.context.ContextUtil;
 import com.netflix.zuul.context.RequestContext;
 
 /**
+ * Zuul 过滤器中 Sentinel Entry 的退出与异常追踪工具类。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

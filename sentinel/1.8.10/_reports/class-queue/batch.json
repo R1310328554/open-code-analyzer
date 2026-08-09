@@ -15,23 +15,8 @@
     "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/api/ZuulGatewayApiMatcherManager.java",
     "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/api/matcher/RequestContextApiMatcher.java",
     "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/api/route/PrefixRoutePathMatcher.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/api/route/RegexRoutePathMatcher.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/api/route/ZuulRouteMatchers.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/callback/DefaultRequestOriginParser.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/callback/RequestOriginParser.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/callback/ZuulGatewayCallbackManager.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/constants/ZuulConstant.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/fallback/BlockResponse.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/fallback/DefaultBlockFallbackProvider.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/fallback/ZuulBlockFallbackManager.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/fallback/ZuulBlockFallbackProvider.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/filters/EntryHolder.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/filters/SentinelEntryUtils.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/filters/SentinelZuulErrorFilter.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/filters/SentinelZuulPostFilter.java",
-    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/filters/SentinelZuulPreFilter.java",
-    "sentinel-adapter/sentinel-zuul2-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul2/HttpRequestMessageItemParser.java"
+    "sentinel-adapter/sentinel-zuul-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/gateway/zuul/api/route/RegexRoutePathMatcher.java"
   ],
-  "remaining_pending": 575,
-  "done": 360
+  "remaining_pending": 560,
+  "done": 375
 }

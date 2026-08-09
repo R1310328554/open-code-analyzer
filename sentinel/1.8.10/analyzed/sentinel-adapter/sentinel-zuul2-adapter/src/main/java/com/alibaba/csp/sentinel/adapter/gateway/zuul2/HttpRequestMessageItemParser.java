@@ -19,6 +19,8 @@ import com.alibaba.csp.sentinel.adapter.gateway.common.param.RequestItemParser;
 import com.netflix.zuul.message.http.HttpRequestMessage;
 
 /**
+ * 基于 {@link HttpRequestMessage} 的请求属性解析器，供 Zuul2 网关热点参数流控使用。
+ *
  * @author wavesZh
  * @since 1.7.2
  */

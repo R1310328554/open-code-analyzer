@@ -25,7 +25,7 @@ import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 
 /**
- * This filter track routing exception and exit entry;
+ * Zuul 错误过滤器，追踪路由异常并按序退出 Sentinel Entry。
  *
  * @author tiger
  * @author Eric Zhao
@@ -64,8 +64,7 @@ public class SentinelZuulErrorFilter extends ZuulFilter {
         Throwable throwable = ctx.getThrowable();
         if (throwable != null) {
             if (!BlockException.isBlockException(throwable)) {
-                // Trace exception for each entry and exit entries in order.
-                // The entries can be retrieved from the request context.
+                // 为每个 Entry 记录异常并按序退出；Entry 可从请求上下文中获取。
                 SentinelEntryUtils.tryTraceExceptionThenExitFromCurrentContext(throwable);
                 RecordLog.info("[SentinelZuulErrorFilter] Trace error cause", throwable.getCause());
             }

@@ -17,20 +17,20 @@
 package com.alibaba.csp.sentinel.adapter.gateway.zuul.fallback;
 
 /**
- * This interface is compatible for different spring cloud version.
+ * Zuul 流控降级提供者接口，兼容不同 Spring Cloud 版本。
  *
  * @author tiger
  */
 public interface ZuulBlockFallbackProvider {
 
     /**
-     * The route this fallback will be used for.
+     * 本降级提供者适用的路由 ID。
      * @return The route the fallback will be used for.
      */
     String getRoute();
 
     /**
-     * Provides a fallback response based on the cause of the failed execution.
+     * 根据执行失败原因生成降级响应。
      *
      * @param route The route the fallback is for
      * @param cause cause of the main method failure, may be <code>null</code>

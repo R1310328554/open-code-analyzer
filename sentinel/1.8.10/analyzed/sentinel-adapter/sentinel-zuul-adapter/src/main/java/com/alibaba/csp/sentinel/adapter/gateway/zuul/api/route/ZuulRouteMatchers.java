@@ -20,6 +20,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 import com.netflix.zuul.context.RequestContext;
 
 /**
+ * Zuul 路由路径匹配谓词工厂，提供全匹配、Ant、精确与正则四种匹配方式。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

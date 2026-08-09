@@ -51,8 +51,8 @@ import javax.servlet.http.HttpServletRequest;
 import static com.alibaba.csp.sentinel.adapter.gateway.common.SentinelGatewayConstants.*;
 
 /**
- * This pre-filter will regard all {@code proxyId} and all customized API as resources.
- * When a BlockException caught, the filter will try to find a fallback to execute.
+ * Zuul 前置过滤器，将所有 {@code proxyId} 与匹配的自定义 API 视为 Sentinel 资源。
+ * 捕获 {@link BlockException} 时尝试查找并执行降级逻辑。
  *
  * @author tiger
  * @author Eric Zhao
@@ -83,7 +83,7 @@ public class SentinelZuulPreFilter extends ZuulFilter {
     }
 
     /**
-     * This run before route filter so we can get more accurate RT time.
+     * 在路由过滤器之前执行，以便更准确地统计响应时间（RT）。
      */
     @Override
     public int filterOrder() {
@@ -136,18 +136,18 @@ public class SentinelZuulPreFilter extends ZuulFilter {
             ZuulBlockFallbackProvider zuulBlockFallbackProvider = ZuulBlockFallbackManager.getFallbackProvider(
                 fallBackRoute);
             BlockResponse blockResponse = zuulBlockFallbackProvider.fallbackResponse(fallBackRoute, ex);
-            // Prevent routing from running
+            // 阻止后续路由执行
             ctx.setRouteHost(null);
             ctx.set(ZuulConstant.SERVICE_ID_KEY, null);
 
-            // Set fallback response.
+            // 设置降级响应体。
             ctx.setResponseBody(blockResponse.toString());
             ctx.setResponseStatusCode(blockResponse.getCode());
-            // Set Response ContentType
+            // 设置响应 Content-Type
             ctx.getResponse().setContentType("application/json; charset=utf-8");
         } finally {
-            // We don't exit the entry here. We need to exit the entries in post filter to record Rt correctly.
-            // So here the entries will be carried in the request context.
+            // 此处不退出 Entry，需在 post 过滤器中退出以正确记录 RT；
+            // 因此将 Entry 暂存于请求上下文中。
             if (!holders.isEmpty()) {
                 ctx.put(ZuulConstant.ZUUL_CTX_SENTINEL_ENTRIES_KEY, holders);
             }
