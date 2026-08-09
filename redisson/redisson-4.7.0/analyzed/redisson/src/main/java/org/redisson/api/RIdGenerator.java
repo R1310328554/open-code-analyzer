@@ -16,28 +16,27 @@
 package org.redisson.api;
 
 /**
- * Id generator of <code>Long</code> type numbers.
- * Returns unique numbers but not monotonically increased.
+ * Long 型分布式 ID 生成器。
+ * <p>返回唯一 Long 型 ID，但不保证严格单调递增；本地预分配区间以减少 Redis 访问。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RIdGenerator extends RExpirable, RIdGeneratorAsync {
 
     /**
-     * Initializes Id generator params.
+     * 初始化 ID 生成器参数。
      *
-     * @param value - initial value
-     * @param allocationSize - values range allocation size
-     * @return <code>true</code> if Id generator initialized
+     * @param value 初始值
+     * @param allocationSize 预分配区间大小
+     * @return 见方法说明
      *         <code>false</code> if Id generator already initialized
      */
     boolean tryInit(long value, long allocationSize);
 
     /**
-     * Returns next unique number but not monotonically increased
+     * 返回下一个唯一 ID（非严格单调递增）。
      *
-     * @return number
+     * @return 唯一元素近似基数
      */
     long nextId();
 

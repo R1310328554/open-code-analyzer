@@ -22,38 +22,38 @@ import java.util.Map;
 public interface RJsonBuckets extends RJsonBucketsAsync {
     
     /**
-     * 按 Redis 键批量读取 JSON 对象（默认 JSON 路径）。
+     * Returns Redis json object mapped by key with default path
      *
-     * @param keys Redis 键名
+     * @param keys keys
      * @param <V>  type of object with specific json-path
-     * @return 键名到 JSON 值的映射
+     * @return Map with name as key and bucket as value
      */
     <V> Map<String, V> get(String... keys);
     
     /**
-     * 按 Redis 键批量读取指定 JSON 路径下的值。
+     * Returns Redis json object mapped by key with specific path
      *
-     * @param codec JSON 编解码器
-     * @param path JSON 路径
-     * @param keys Redis 键名
+     * @param codec codec for specific path
+     * @param path  json path
+     * @param keys  keys
      * @param <V>   type of value at specific json-path
-     * @return 键名到 JSON 值的映射
+     * @return Map with name as key and bucket as value
      */
     <V> Map<String, V> get(JsonCodec codec, String path, String... keys);
     
     /**
-     * 按 Redis 键批量写入 JSON 对象（默认 JSON 路径）。
+     * Saves json objects with default path mapped by Redis key.
      *
-     * @param buckets JSON 桶映射
+     * @param buckets map of json buckets
      */
     void set(Map<String, ?> buckets);
     
     /**
-     * 按 Redis 键批量写入指定 JSON 路径下的值。
+     * Saves json objects with specific path mapped by Redis key.
      *
-     * @param codec JSON 编解码器
-     * @param path JSON 路径
-     * @param buckets JSON 桶映射
+     * @param codec   codec for specific path
+     * @param path    json path
+     * @param buckets map of json buckets
      */
     void set(JsonCodec codec, String path, Map<String, ?> buckets);
 }

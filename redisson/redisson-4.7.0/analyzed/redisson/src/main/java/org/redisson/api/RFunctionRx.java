@@ -22,143 +22,143 @@ import io.reactivex.rxjava3.core.Single;
 import java.util.List;
 
 /**
- * Interface for Redis Function feature
+ * Redis Function RxJava3 风格 API。
+ * <p>各方法返回 {@link Completable}、{@link Single} 或 {@link Maybe}。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RFunctionRx {
 
     /**
-     * Deletes library. Error is thrown if library doesn't exist.
+     * 删除函数库；库不存在时抛出错误。
      *
-     * @param libraryName library name
+     * @param libraryName 函数库名称
      */
     Completable delete(String libraryName);
 
     /**
-     * Returns serialized state of all libraries.
+     * 返回所有函数库的序列化状态。
      *
-     * @return serialized state
+     * @return 序列化状态
      */
     Single<byte[]> dump();
 
     /**
-     * Deletes all libraries.
+     * 删除所有已加载的函数库。
      *
      */
     Completable flush();
 
     /**
-     * Kills currently executed functions.
-     * Applied only to functions which don't modify data.
+     * 终止当前正在执行的函数（仅适用于不修改数据的函数）。
+     * 仅适用于不修改数据的函数。
      *
      */
     Completable kill();
 
     /**
-     * Returns information about libraries and functions per each.
+     * 返回各函数库及其包含函数的信息列表。
      *
-     * @return list of libraries
+     * @return 函数库列表
      */
     Single<List<FunctionLibrary>> list();
 
     /**
-     * Returns information about libraries and functions per each by name pattern.
+     * 按名称模式（glob）返回匹配的函数库及函数信息。
      * <p>
      *  Supported glob-style patterns:
      *    h?llo matches hello, hallo and hxllo
      *    h*llo matches hllo and heeeello
      *    h[ae]llo matches hello and hallo, but not hillo
      *
-     * @param namePattern name pattern
-     * @return list of libraries
+     * @param namePattern 名称匹配模式
+     * @return 函数库列表
      */
     Single<List<FunctionLibrary>> list(String namePattern);
 
     /**
-     * Loads a library. Error is thrown if library already exists.
+     * 加载函数库；库已存在时抛出错误。
      *
-     * @param libraryName library name
-     * @param code function code
+     * @param libraryName 函数库名称
+     * @param code 函数库代码
      */
     Completable load(String libraryName, String code);
 
     /**
-     * Loads a library and overwrites existing library.
+     * 加载函数库并覆盖同名已有库。
      *
-     * @param libraryName library name
-     * @param code function code
+     * @param libraryName 函数库名称
+     * @param code 函数库代码
      */
     Completable loadAndReplace(String libraryName, String code);
 
     /**
-     * Restores libraries using their state returned by {@link #dump()} method.
-     * Restored libraries are appended to the existing libraries and throws error in case of collision.
+     * 使用 {@link #dump()} 返回的状态恢复函数库。
+     * 恢复的库追加到现有库；名称冲突时抛出错误。
      *
-     * @param payload serialized state
+     * @param payload 序列化状态
      */
     Completable restore(byte[] payload);
 
     /**
-     * Restores libraries using their state returned by {@link #dump()} method.
-     * Restored libraries are appended to the existing libraries.
+     * 使用 {@link #dump()} 返回的状态恢复函数库。
+     * 恢复的库追加到现有库。
      *
-     * @param payload serialized state
+     * @param payload 序列化状态
      */
     Completable restoreAndReplace(byte[] payload);
 
     /**
-     * Restores libraries using their state returned by {@link #dump()} method.
-     * Deletes all existing libraries before restoring.
+     * 使用 {@link #dump()} 返回的状态恢复函数库。
+     * 恢复前先删除所有现有库。
      *
-     * @param payload serialized state
+     * @param payload 序列化状态
      */
     Completable restoreAfterFlush(byte[] payload);
 
     /**
-     * Returns information about currently running
-     * Redis function and available execution engines.
+     * 返回当前正在运行的 Redis Function 及可用执行引擎信息。
+     * 当前运行的 Redis Function 及可用执行引擎。
      *
-     * @return function information
+     * @return 函数运行信息
      */
     Single<FunctionStats> stats();
 
     /**
-     * Executes function
+     * 执行 Redis Function。
      *
      * @param <R>        - type of result
-     * @param key        - used to locate Redis node in Cluster
-     * @param mode       - execution mode
-     * @param name       - function name
-     * @param returnType - return type
-     * @param keys       - keys available through KEYS param in script
-     * @param values     - values available through VALUES param in script
-     * @return result object
+     * @param key 路由键（Cluster 定位节点）
+     * @param mode 执行模式
+     * @param name 函数名称
+     * @param returnType 返回值类型
+     * @param keys 脚本 KEYS 参数
+     * @param values 脚本 ARGV 参数
+     * @return 执行结果
      */
     <R> Maybe<R> call(String key, FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
-     * Executes function
+     * 执行 Redis Function。
      *
      * @param <R>        - type of result
-     * @param mode       - execution mode
-     * @param name       - function name
-     * @param returnType - return type
-     * @param keys       - keys available through KEYS param in script
-     * @param values     - values available through VALUES param in script
-     * @return result object
+     * @param mode 执行模式
+     * @param name 函数名称
+     * @param returnType 返回值类型
+     * @param keys 脚本 KEYS 参数
+     * @param values 脚本 ARGV 参数
+     * @return 执行结果
      */
     <R> Maybe<R> call(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
-     * Executes function
+     * 执行 Redis Function。
      *
      * @param <R>        - type of result
-     * @param mode       - execution mode
-     * @param name       - function name
-     * @param returnType - return type
-     * @return result object
+     * @param mode 执行模式
+     * @param name 函数名称
+     * @param returnType 返回值类型
+     * @return 执行结果
      */
     <R> Maybe<R> call(FunctionMode mode, String name, FunctionResult returnType);
 

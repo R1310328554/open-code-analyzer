@@ -18,27 +18,27 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * {@code Long} 型分布式 ID 生成器 RxJava API。
- * <p>返回全局唯一 ID，但不保证严格单调递增。
+ * Id generator of <code>Long</code> type numbers.
+ * Returns unique numbers but not monotonically increased.
  *
  * @author Nikita Koksharov
  */
 public interface RIdGeneratorRx extends RExpirableRx {
 
     /**
-     * 初始化 ID 生成器参数（起始值与预分配步长）。
+     * Initializes Id generator params.
      *
-     * @param value 起始值
-     * @param allocationSize 预分配步长
-     * @return 见方法说明
+     * @param value - initial value
+     * @param allocationSize - values range allocation size
+     * @return <code>true</code> if Id generator initialized
      *         <code>false</code> if Id generator already initialized
      */
     Single<Boolean> tryInit(long value, long allocationSize);
 
     /**
-     * 返回下一个全局唯一 ID（不保证严格单调递增）。
+     * Returns next unique number but not monotonically increased
      *
-     * @return 下一个 ID
+     * @return number
      */
     Single<Long> nextId();
 

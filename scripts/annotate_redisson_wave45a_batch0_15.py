@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Chinese-annotate Redisson 4.7.0 wave-45b api [15:30]."""
+"""Chinese-annotate Redisson 4.7.0 wave-45a api [0:15]."""
 from __future__ import annotations
 
 import importlib.util
@@ -18,13 +18,13 @@ ORIGINAL = VER / "original"
 ANALYZED = VER / "analyzed"
 QUEUE = VER / "_reports/class-queue"
 SCRIPTS = ROOT / "scripts"
-WAVE45B_FILE = Path("/tmp/re45b.txt")
-SCRIPT_NAME = "annotate_redisson_wave45b_batch15_30.py"
-MARK_NOTE = "wave45b [15:30]"
-INDEX_FILE = Path("/var/tmp/re45b.index")
+WAVE45A_FILE = Path("/tmp/re45a.txt")
+SCRIPT_NAME = "annotate_redisson_wave45a_batch0_15.py"
+MARK_NOTE = "wave45a [0:15]"
+INDEX_FILE = Path("/var/tmp/re45a.index")
 BATCH_FILES = [
     ln.strip()
-    for ln in WAVE45B_FILE.read_text(encoding="utf-8").splitlines()
+    for ln in WAVE45A_FILE.read_text(encoding="utf-8").splitlines()
     if ln.strip()
 ]
 
@@ -38,13 +38,13 @@ GUARD_FILES = [
 ]
 
 _spec = importlib.util.spec_from_file_location(
-    "wave45b_replacements_redisson",
-    SCRIPTS / "wave45b_replacements_redisson.py",
+    "wave45a_replacements_redisson",
+    SCRIPTS / "wave45a_replacements_redisson.py",
 )
 _mod = importlib.util.module_from_spec(_spec)
 assert _spec.loader is not None
 _spec.loader.exec_module(_mod)
-FILE_REPLACEMENTS = _mod.W45B_REPLACEMENTS
+FILE_REPLACEMENTS = _mod.W45A_REPLACEMENTS
 
 
 def has_chinese(text: str) -> bool:
@@ -155,28 +155,37 @@ def push_main(retries: int = 4) -> None:
             merge_base = subprocess.check_output(
                 ["git", "-C", str(ROOT), "merge-base", local, remote], text=True
             ).strip()
-            if merge_base != remote:
+            if merge_base != local:
+                rebased = subprocess.check_output(
+                    [
+                        "git",
+                        "-C",
+                        str(ROOT),
+                        "commit-tree",
+                        subprocess.check_output(
+                            ["git", "-C", str(ROOT), "rev-parse", f"{local}^{{tree}}"],
+                            text=True,
+                        ).strip(),
+                        "-p",
+                        remote,
+                        "-m",
+                        subprocess.check_output(
+                            ["git", "-C", str(ROOT), "log", "-1", "--format=%s", local],
+                            text=True,
+                        ).strip(),
+                    ],
+                    text=True,
+                ).strip()
+                subprocess.run(
+                    ["git", "-C", str(ROOT), "update-ref", "refs/heads/main", rebased],
+                    check=True,
+                )
+            elif merge_base != remote:
                 raise RuntimeError(
                     f"main diverged: local={local[:8]} remote={remote[:8]} merge-base={merge_base[:8]}"
                 )
-            rebased = subprocess.check_output(
-                [
-                    "git", "-C", str(ROOT), "commit-tree",
-                    subprocess.check_output(
-                        ["git", "-C", str(ROOT), "rev-parse", f"{local}^{{tree}}"], text=True
-                    ).strip(),
-                    "-p", remote,
-                    "-m", subprocess.check_output(
-                        ["git", "-C", str(ROOT), "log", "-1", "--format=%s", local], text=True
-                    ).strip(),
-                ],
-                text=True,
-            ).strip()
-            subprocess.run(
-                ["git", "-C", str(ROOT), "update-ref", "refs/heads/main", rebased], check=True
-            )
         r = subprocess.run(
-            ["git", "-C", str(ROOT), "push", "-u", "origin", "refs/heads/main:main"],
+            ["git", "-C", str(ROOT), "push", "origin", "refs/heads/main:main"],
             capture_output=True,
             text=True,
         )
@@ -212,28 +221,18 @@ def main() -> int:
         return 1
 
     script_backup = {
-        SCRIPTS / "wave45b_replacements_redisson.py": (
-            (SCRIPTS / "wave45b_replacements_redisson.py").read_bytes()
-            if (SCRIPTS / "wave45b_replacements_redisson.py").exists()
-            else b""
-        ),
-        SCRIPTS / "_gen_wave45b_replacements.py": (
-            (SCRIPTS / "_gen_wave45b_replacements.py").read_bytes()
-            if (SCRIPTS / "_gen_wave45b_replacements.py").exists()
-            else b""
-        ),
+        SCRIPTS / "wave45a_replacements_redisson.py": (
+            SCRIPTS / "wave45a_replacements_redisson.py"
+        ).read_bytes(),
+        SCRIPTS / "_gen_wave45a_replacements.py": (
+            SCRIPTS / "_gen_wave45a_replacements.py"
+        ).read_bytes(),
         SCRIPTS / SCRIPT_NAME: (SCRIPTS / SCRIPT_NAME).read_bytes(),
     }
     subprocess.run(["git", "-C", str(ROOT), "fetch", "origin", "main"], check=True)
-    subprocess.run(["git", "-C", str(ROOT), "checkout", "-f", "main"], check=True)
     subprocess.run(["git", "-C", str(ROOT), "reset", "--hard", "origin/main"], check=True)
     for path, data in script_backup.items():
-        if data:
-            path.write_bytes(data)
-
-    if not (SCRIPTS / "wave45b_replacements_redisson.py").exists():
-        subprocess.run([sys.executable, str(SCRIPTS / "_gen_wave45b_replacements.py")], check=True)
-
+        path.write_bytes(data)
     ok, failures, cjk_counts = annotate_files()
     if failures or ok != len(BATCH_FILES):
         print(
@@ -254,14 +253,15 @@ def main() -> int:
     analyzed_paths = [f"redisson/redisson-4.7.0/analyzed/{rel}" for rel in BATCH_FILES]
     script_paths = [
         f"scripts/{SCRIPT_NAME}",
-        "scripts/wave45b_replacements_redisson.py",
-        "scripts/_gen_wave45b_replacements.py",
+        "scripts/wave45a_replacements_redisson.py",
+        "scripts/_gen_wave45a_replacements.py",
     ]
     sha, tree_count = isolated_index_commit(
-        "redisson redisson-4.7.0: Chinese-annotate wave45b [15:30]",
+        "redisson redisson-4.7.0: Chinese-annotate wave45a [0:15]",
         [*analyzed_paths, *script_paths],
     )
     push_main()
+    subprocess.run(["git", "-C", str(ROOT), "reset", "--hard", sha], check=True)
 
     subprocess.run(
         [
@@ -286,11 +286,11 @@ def main() -> int:
     queue_sha, _ = isolated_index_commit(
         f"queue: mark redisson redisson-4.7.0 {MARK_NOTE} done",
         queue_paths,
-        base_ref="HEAD",
+        base_ref=sha,
     )
     push_main()
 
-    subprocess.run(["git", "-C", str(ROOT), "fetch", "origin", "main"], check=True)
+    subprocess.run(["git", "-C", str(ROOT), "reset", "--hard", "origin/main"], check=True)
     origin_chinese = verify_origin_main()
     done_total = len(
         [ln for ln in (QUEUE / "done.txt").read_text(encoding="utf-8").splitlines() if ln.strip()]

@@ -18,11 +18,11 @@ package org.redisson.api;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Represents the result of an asynchronous computation
- * 
- * @author Nikita Koksharov
+ * 表示异步计算结果的接口。
+ * <p>扩展 {@link java.util.concurrent.Future} 与 {@link java.util.concurrent.CompletionStage}，Redisson 各异步 API 均返回此类型。
  *
- * @param <V> type of value
+ * @author Nikita Koksharov
+ * @param <V> 结果值类型
  */
 public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionStage<V> {
 

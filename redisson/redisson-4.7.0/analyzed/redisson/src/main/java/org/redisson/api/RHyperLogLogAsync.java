@@ -18,53 +18,52 @@ package org.redisson.api;
 import java.util.Collection;
 
 /**
- * Probabilistic data structure that lets you maintain counts of millions of items with extreme space efficiency.
- * Asynchronous interface.
- * 
- * @author Nikita Koksharov
+ * {@link RHyperLogLog} 异步 API。
+ * <p>各方法返回 {@link RFuture}。
  *
- * @param <V> type of stored values
+ * @author Nikita Koksharov
+ * @param <V> 元素类型
  */
 public interface RHyperLogLogAsync<V> extends RExpirableAsync {
 
     /**
-     * Adds element into this structure.
+     * 向 HyperLogLog 添加元素。
      * 
-     * @param obj - element to add
-     * @return <code>true</code> if object has been added 
+     * @param obj 待添加元素
+     * @return 见方法说明
      *          or <code>false</code> if it was already added
      */
     RFuture<Boolean> addAsync(V obj);
 
     /**
-     * Adds all elements contained in <code>objects</code> collection into this structure
+     * 批量向 HyperLogLog 添加元素。
      * 
-     * @param objects - elements to add
-     * @return <code>true</code> if at least one object has been added 
+     * @param objects 待添加元素集合
+     * @return 见方法说明
      *          or <code>false</code> if all were already added
      */
     RFuture<Boolean> addAllAsync(Collection<V> objects);
 
     /**
-     * Returns approximated number of unique elements added into this structure.
+     * 返回已添加唯一元素的近似基数。
      * 
-     * @return approximated number of unique elements added into this structure
+     * @return 已添加唯一元素的近似基数
      */
     RFuture<Long> countAsync();
 
     /**
-     * Returns approximated number of unique elements 
-     * added into this instances and other instances defined through <code>otherLogNames</code>.
+     * 返回本实例与其他指定实例合并后的近似唯一元素数。
+     * 本实例与 {@code otherLogNames} 指定其他实例合并后的近似唯一元素数。
      * 
-     * @param otherLogNames - name of instances
-     * @return number
+     * @param otherLogNames 其他 HyperLogLog 键名
+     * @return 唯一元素近似基数
      */
     RFuture<Long> countWithAsync(String... otherLogNames);
 
     /**
-     * Merges multiple instances into this instance.
+     * 将多个 HyperLogLog 实例合并到本实例。
      * 
-     * @param otherLogNames - name of instances
+     * @param otherLogNames 其他 HyperLogLog 键名
      * @return void
      */
     RFuture<Void> mergeWithAsync(String... otherLogNames);

@@ -26,111 +26,111 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Geospatial items holder. Reactive interface.
- * 
- * @author Nikita Koksharov
+ * {@link RGeo} RxJava3 风格 API。
+ * <p>各方法返回 {@link Single} 或 {@link Maybe}。
  *
- * @param <V> type of value
+ * @author Nikita Koksharov
+ * @param <V> 成员类型
  */
 public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
 
     /**
-     * Adds geospatial member.
+     * 添加带经纬度的地理空间成员。
      * 
-     * @param longitude - longitude of object
-     * @param latitude - latitude of object
-     * @param member - object itself
-     * @return number of elements added to the sorted set, 
-     * not including elements already existing for which 
-     * the score was updated
+     * @param longitude 经度
+     * @param latitude 纬度
+     * @param member 成员对象
+     * @return 新增元素数量
+     * 不含已存在且仅更新分数的元素；
+     * 已存在成员的分数被更新时不计入新增数。
      */
     Single<Long> add(double longitude, double latitude, V member);
 
     /**
-     * Adds geospatial members.
+     * 批量添加地理空间成员。
      * 
-     * @param entries - objects
-     * @return number of elements added to the sorted set, 
-     * not including elements already existing for which 
-     * the score was updated
+     * @param entries 地理空间条目
+     * @return 新增元素数量
+     * 不含已存在且仅更新分数的元素；
+     * 已存在成员的分数被更新时不计入新增数。
      */
     Single<Long> add(GeoEntry... entries);
 
     /**
-     * Adds geospatial member only if it's already exists.
+     * 仅当成员已存在时更新坐标（GEOADD XX）。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param longitude - longitude of object
-     * @param latitude - latitude of object
-     * @param member - object itself
-     * @return number of elements added to the sorted set
+     * @param longitude 经度
+     * @param latitude 纬度
+     * @param member 成员对象
+     * @return 新增元素数量
      */
     Single<Long> addIfExists(double longitude, double latitude, V member);
 
     /**
-     * Adds geospatial members only if it's already exists.
+     * 批量：仅当成员已存在时更新坐标。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param entries - objects
-     * @return number of elements added to the sorted set
+     * @param entries 地理空间条目
+     * @return 新增元素数量
      */
     Single<Long> addIfExists(GeoEntry... entries);
 
     /**
-     * Adds geospatial member only if has not been added before.
+     * 仅当成员不存在时添加（GEOADD NX）。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param longitude - longitude of object
-     * @param latitude - latitude of object
-     * @param member - object itself
-     * @return number of elements added to the sorted set
+     * @param longitude 经度
+     * @param latitude 纬度
+     * @param member 成员对象
+     * @return 新增元素数量
      */
     Single<Boolean> tryAdd(double longitude, double latitude, V member);
 
     /**
-     * Adds geospatial members only if has not been added before.
+     * 批量：仅当成员不存在时添加。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param entries - objects
-     * @return number of elements added to the sorted set
+     * @param entries 地理空间条目
+     * @return 新增元素数量
      */
     Single<Long> tryAdd(GeoEntry... entries);
 
     /**
-     * Returns distance between members in <code>GeoUnit</code> units.
+     * 返回两成员间距离（指定 {@link GeoUnit} 单位）。
      * 
-     * @param firstMember - first object
-     * @param secondMember - second object
-     * @param geoUnit - geo unit
-     * @return distance
+     * @param firstMember 第一个成员
+     * @param secondMember 第二个成员
+     * @param geoUnit 距离单位
+     * @return 距离
      */
     Single<Double> dist(V firstMember, V secondMember, GeoUnit geoUnit);
     
     /**
-     * Returns 11 characters Geohash string mapped by defined member.
+     * 返回成员对应的 11 位 Geohash 字符串映射。
      * 
-     * @param members - objects
-     * @return hash mapped by object
+     * @param members 成员集合
+     * @return 成员到 Geohash 的映射
      */
     Maybe<Map<V, String>> hash(V... members);
 
     /**
-     * Returns geo-position mapped by defined member.
+     * 返回成员经纬度坐标映射。
      * 
-     * @param members - objects
-     * @return geo position mapped by object
+     * @param members 成员集合
+     * @return 成员到坐标的映射
      */
     Maybe<Map<V, GeoPosition>> pos(V... members);
 
     /**
-     * Returns the members of a sorted set, which are within the
+     * 按搜索条件返回范围内的成员列表。
      * borders of specified search conditions.
      * <p>
-     * Usage examples:
+     * 用法示例：
      * <pre>
      * List objects = geo.search(GeoSearchArgs.from(15, 37)
      *                                 .radius(200, GeoUnit.KILOMETERS)
@@ -144,16 +144,16 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * <p>
      * Requires <b>Redis 3.2.10 and higher.</b>
      *
-     * @param args - search conditions object
-     * @return list of memebers
+     * @param args 搜索条件
+     * @return 成员列表
      */
     Maybe<List<V>> search(GeoSearchArgs args);
 
     /**
-     * Returns the distance mapped by member of a sorted set,
-     * which are within the borders of specified search conditions.
+     * 按搜索条件返回成员及距离的映射。
+     * 在指定搜索条件范围内查找成员。
      * <p>
-     * Usage examples:
+     * 用法示例：
      * <pre>
      * Map objects = geo.searchWithDistance(GeoSearchArgs.from(15, 37)
      *                                 .radius(200, GeoUnit.KILOMETERS)
@@ -167,16 +167,16 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * <p>
      * Requires <b>Redis 3.2.10 and higher.</b>
      *
-     * @param args - search conditions object
-     * @return distance mapped by object
+     * @param args 搜索条件
+     * @return 成员到距离的映射
      */
     Maybe<Map<V, Double>> searchWithDistance(GeoSearchArgs args);
 
     /**
-     * Returns the position mapped by member of a sorted set,
-     * which are within the borders of specified search conditions.
+     * 按搜索条件返回成员及坐标的映射。
+     * 在指定搜索条件范围内查找成员。
      * <p>
-     * Usage examples:
+     * 用法示例：
      * <pre>
      * Map objects = geo.searchWithPosition(GeoSearchArgs.from(15, 37)
      *                                 .radius(200, GeoUnit.KILOMETERS)
@@ -190,18 +190,18 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * <p>
      * Requires <b>Redis 3.2.10 and higher.</b>
      *
-     * @param args - search conditions object
-     * @return position mapped by object
+     * @param args 搜索条件
+     * @return 成员到坐标的映射
      */
     Maybe<Map<V, GeoPosition>> searchWithPosition(GeoSearchArgs args);
 
     /**
-     * Finds the members of a sorted set,
-     * which are within the borders of specified search conditions.
+     * 按搜索条件查找成员并写入目标键。
+     * 在指定搜索条件范围内查找成员。
      * <p>
-     * Stores result to <code>destName</code>.
+     * 将结果写入 {@code destName} 目标键。
      * <p>
-     * Usage examples:
+     * 用法示例：
      * <pre>
      * long count = geo.storeSearchTo(GeoSearchArgs.from(15, 37)
      *                                 .radius(200, GeoUnit.KILOMETERS)
@@ -213,18 +213,18 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      *                                 .radius(200, GeoUnit.KILOMETERS)));
      * </pre>
      *
-     * @param args - search conditions object
-     * @return length of result
+     * @param args 搜索条件
+     * @return 结果集长度
      */
     Single<Long> storeSearchTo(String destName, GeoSearchArgs args);
 
     /**
-     * Finds the members of a sorted set,
-     * which are within the borders of specified search conditions.
+     * 按搜索条件查找成员并写入目标键。
+     * 在指定搜索条件范围内查找成员。
      * <p>
-     * Stores result to <code>destName</code> sorted by distance.
+     * 将结果按距离排序后写入 {@code destName} 目标键。
      * <p>
-     * Usage examples:
+     * 用法示例：
      * <pre>
      * long count = geo.storeSortedSearchTo(GeoSearchArgs.from(15, 37)
      *                                 .radius(200, GeoUnit.KILOMETERS)
@@ -236,8 +236,8 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      *                                 .radius(200, GeoUnit.KILOMETERS)));
      * </pre>
      *
-     * @param args - search conditions object
-     * @return length of result
+     * @param args 搜索条件
+     * @return 结果集长度
      */
     RFuture<Long> storeSortedSearchTo(String destName, GeoSearchArgs args);
 

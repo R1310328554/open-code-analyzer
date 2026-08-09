@@ -25,162 +25,161 @@ import reactor.core.publisher.Mono;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis 键空间管理 Reactor API。
- * <p>各方法返回 {@link Mono} 或 {@link reactor.core.publisher.Flux}。
- *
+ * 
  * @author Nikita Koksharov
+ *
  */
 public interface RKeysReactive {
 
     /**
-     * 将对象移动到指定 Redis 数据库。
+     * Move object to another database
      *
-     * @param name 对象名称
-     * @param database 目标数据库编号
-     * @return 见方法说明
+     * @param name of object
+     * @param database - Redis database number
+     * @return <code>true</code> if key was moved else <code>false</code>
      */
     Mono<Boolean> move(String name, int database);
     
     /**
-     * 将对象从源 Redis 实例迁移到目标实例。
-     * @deprecated 已废弃， use {@link #migrate(MigrateArgs)}  instead
+     * Transfer object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
-     * @param name 对象名称
-     * @param host 目标主机
-     * @param port 目标端口
-     * @param database 目标数据库编号
-     * @param timeout 通信最大空闲时间（毫秒）
-     * @return 无返回值
+     * @param name of object
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @return void
      */
     @Deprecated
     Mono<Void> migrate(String name, String host, int port, int database, long timeout);
     /**
-     * 将对象从源 Redis 实例迁移到目标实例。
+     * Transfer object from source Redis instance to destination Redis instance
      *
-     * @param migrateArgs 迁移参数
+     * @param migrateArgs migrateArgs
      */
     Mono<Void> migrate(MigrateArgs migrateArgs);
 
     /**
-     * 将对象从源 Redis 实例复制到目标实例。
-     * @deprecated 已废弃， use {@link #migrate(MigrateArgs)}  instead
+     * Copy object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
-     * @param name 对象名称
-     * @param host 目标主机
-     * @param port 目标端口
-     * @param database 目标数据库编号
-     * @param timeout 通信最大空闲时间（毫秒）
-     * @return 无返回值
+     * @param name of object
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @return void
      */
     @Deprecated
     Mono<Void> copy(String name, String host, int port, int database, long timeout);
     
     /**
-     * 已废弃，请改用 {@link #expire(Duration, String...)}。
+     * Use {@link #expire(Duration, String...)} instead.
      *
-     * @param name 对象名称
-     * @param timeToLive 存活时间
-     * @param timeUnit 时间单位
-     * @return 见方法说明
+     * @param name of object
+     * @param timeToLive - timeout before object will be deleted
+     * @param timeUnit - timeout time unit
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     @Deprecated
     Mono<Boolean> expire(String name, long timeToLive, TimeUnit timeUnit);
 
 
     /**
-     * 为多个对象设置相对过期时长；到期后 Redis 键将自动删除。
+     * Set a timeout for multiple objects. After the timeout has expired,
      * the keys will automatically be deleted.
      *
-     * @param duration 过期时长
-     * @param names 对象名称
-     * @return 成功设置过期的键数量
+     * @param duration timeout before keys will be deleted
+     * @param names object names
+     * @return number of keys for which the timeout was set successfully
      */
     Mono<Long> expire(Duration duration, String... names);
 
     /**
-     * 已废弃，请改用 {@link #expireAt(Instant, String...)}。
+     * Use {@link #expireAt(Instant, String...)} instead.
      * 
-     * @param name 对象名称
-     * @param timestamp 过期时间戳
-     * @return 见方法说明
+     * @param name of object
+     * @param timestamp - expire date in milliseconds (Unix timestamp)
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     @Deprecated
     Mono<Boolean> expireAt(String name, long timestamp);
 
     /**
-     * 为多个对象设置相对过期时长；到期后 Redis 键将自动删除。
+     * Set a timeout for multiple objects. After the timeout has expired,
      * the keys will automatically be deleted.
      *
-     * @param instant 过期时刻
-     * @param names 对象名称
-     * @return 成功设置过期的键数量
+     * @param instant expiration date/time (Unix timestamp in milliseconds)
+     * @param names object names
+     * @return number of keys for which the timeout was set successfully
      */
     Mono<Long> expireAt(Instant instant, String... names);
 
     /**
-     * 清除对象的过期时间或绝对过期时刻。
+     * Clear an expire timeout or expire date for object.
      * 
-     * @param name 对象名称
-     * @return 见方法说明
+     * @param name of object
+     * @return <code>true</code> if timeout was removed
      *         <code>false</code> if object does not exist or does not have an associated timeout
      */
     Mono<Boolean> clearExpire(String name);
     
     /**
-     * 仅当新键不存在时将 {@code oldName} 重命名为 {@code newName}。
-     * 仅当新键不存在时
+     * Rename object with <code>oldName</code> to <code>newName</code>
+     * only if new key is not exists
      *
-     * @param oldName 原对象名称
-     * @param newName 新对象名称
-     * @return 见方法说明
+     * @param oldName - old name of object
+     * @param newName - new name of object
+     * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
      */
     Mono<Boolean> renamenx(String oldName, String newName);
     
     /**
-     * 将当前对象键重命名为 {@code newName}。
+     * Rename current object key to <code>newName</code>
      *
-     * @param currentName 当前对象名称
-     * @param newName 新对象名称
-     * @return 无返回值
+     * @param currentName - current name of object
+     * @param newName - new name of object
+     * @return void
      */
     Mono<Void> rename(String currentName, String newName);
     
     /**
-     * 返回带过期时间的 Redisson 对象剩余存活时间。
+     * Remaining time to live of Redisson object that has a timeout
      *
-     * @param name 对象名称
-     * @return 剩余毫秒数
+     * @param name of key
+     * @return time in milliseconds
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */
     Mono<Long> remainTimeToLive(String name);
 
     /**
-     * 更新对象的最后访问时间。
+     * Update the last access time of an object. 
      * 
-     * @param names 对象名称
-     * @return 已 touch 的对象数量
+     * @param names of keys
+     * @return count of objects were touched
      */
     Mono<Long> touch(String... names);
     
     /**
-     * 检查给定键是否存在。
+     * Checks if provided keys exist
      * 
-     * @param names 对象名称
-     * @return 存在的键数量
+     * @param names of keys
+     * @return amount of existing keys
      */
     Mono<Long> countExists(String... names);
     
     /**
-     * 按键获取 Redis 对象类型。
+     * Get Redis object type by key
      * 
-     * @param key 键名
-     * @return 键类型
+     * @param key - name of key
+     * @return type of key
      */
     Mono<RType> getType(String key);
     
     /**
-     * 以增量迭代方式加载键（SCAN 遍历）。
+     * Load keys in incrementally iterate mode. Keys traversed with SCAN operation.
      * Each SCAN operation loads up to 10 keys per request.
      *
      * @return keys
@@ -188,167 +187,167 @@ public interface RKeysReactive {
     Flux<String> getKeys();
 
     /**
-     * 通过 SCAN 迭代获取所有键（异步 Iterable）。
+     * Get all keys using iterable. Keys traversing with SCAN operation.
      *
-     * @param options SCAN 选项
-     * @return Iterable
+     * @param options scan options
+     * @return Iterable object
      */
     Flux<String> getKeys(KeysScanOptions options);
 
     /**
-     * 已废弃，请改用 {@link #getKeys(KeysScanOptions)}。
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
-     * @param count 返回数量
+     * @param count - keys loaded per request to Redis
      * @return keys
      */
     @Deprecated
     Flux<String> getKeys(int count);
 
     /**
-     * 已废弃，请改用 {@link #getKeys(KeysScanOptions)}。
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
-     * @param pattern 匹配模式
+     * @param pattern - match pattern
      * @return keys
      */
     @Deprecated
     Flux<String> getKeysByPattern(String pattern);
 
     /**
-     * 已废弃，请改用 {@link #getKeys(KeysScanOptions)}。
+     * Use {@link #getKeys(KeysScanOptions)} instead.
      *
-     * @param pattern 匹配模式
-     * @param count 返回数量
+     * @param pattern - match pattern
+     * @param count - keys loaded per request to Redis
      * @return keys
      */
     @Deprecated
     Flux<String> getKeysByPattern(String pattern, int count);
     
     /**
-     * 获取键在 Cluster 中的 hash slot（仅集群模式）。
-     * 仅适用于 Cluster 节点.
+     * Get hash slot identifier for key.
+     * Available for cluster nodes only.
      *
      * Uses <code>KEYSLOT</code> Redis command.
      *
-     * @param key 键名
+     * @param key - name of key
      * @return slot number
      */
     Mono<Integer> getSlot(String key);
 
     /**
-     * 随机返回一个键。
+     * Get random key
      *
      * Uses <code>RANDOM_KEY</code> Redis command.
      *
-     * @return 随机键名
+     * @return random key
      */
     Mono<String> randomKey();
 
     /**
-     * 按 glob 模式批量删除对象。
+     * Delete multiple objects by a key pattern.
      *
      * Uses Lua script.
      *
-     *  支持的 glob 模式示例：
+     *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern 匹配模式
+     * @param pattern - match pattern
      * @return deleted objects amount
      */
     Mono<Long> deleteByPattern(String pattern);
 
     /**
-     * 按 glob 模式批量异步解除链接（UNLINK）。
+     * Unlink multiple objects by a key pattern.
      *
      * Uses Lua script.
      *
-     *  支持的 glob 模式示例：
+     *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern 匹配模式
+     * @param pattern - match pattern
      * @return deleted objects amount
      */
     Mono<Long> unlinkByPattern(String pattern);
 
     /**
-     * 按名称批量删除对象。
+     * Delete multiple objects by name.
      *
      * Uses <code>DEL</code> Redis command.
      *
-     * @param keys Redis 键名
+     * @param keys - object names
      * @return deleted objects amount
      */
     Mono<Long> delete(String... keys);
 
     /**
-     * 按名称批量删除对象。
-     * 实际删除将异步进行。
+     * Delete multiple objects by name.
+     * Actual removal will happen later asynchronously.
      * <p>
-     * 需要 Redis 4.0+
+     * Requires Redis 4.0+
      * 
-     * @param keys Redis 键名
-     * @return 已删除键数量
+     * @param keys of objects
+     * @return number of removed keys
      */
     Mono<Long> unlink(String... keys);
     
     /**
-     * 返回当前选中数据库的键数量。
+     * Returns the number of keys in the currently-selected database
      *
      * @return count of keys
      */
     Mono<Long> count();
     
     /**
-     * 清空当前选中数据库的所有键。
+     * Delete all the keys of the currently selected database
      *
      * Uses <code>FLUSHDB</code> Redis command.
      * 
-     * @return 无返回值
+     * @return void
      */
     Mono<Void> flushdb();
 
     /**
-     * 交换两个 Redis 数据库的内容。
+     * Swap two databases.
      * <p>     * Requires Redis 4.0+
      *
-     * @return 无返回值
+     * @return void
      */
     Mono<Void> swapdb(int db1, int db2);
 
     /**
-     * 清空所有数据库的所有键。
+     * Delete all the keys of all the existing databases
      *
      * Uses <code>FLUSHALL</code> Redis command.
      *
-     * @return 无返回值
+     * @return void
      */
     Mono<Void> flushall();
 
     /**
-     * 清空当前选中数据库的所有键。
-     * 在后台执行，不阻塞服务器。
+     * Delete all keys of currently selected database
+     * in background without blocking server.
      * <p>
-     * 需要 Redis 4.0+
+     * Requires Redis 4.0+
      *
-     * @return 无返回值
+     * @return void
      */
     Mono<Void> flushdbParallel();
 
     /**
-     * 清空所有数据库的所有键。
-     * 在后台执行，不阻塞服务器。
+     * Delete all keys of all existing databases
+     * in background without blocking server.
      * <p>
-     * 需要 Redis 4.0+
+     * Requires Redis 4.0+
      *
-     * @return 无返回值
+     * @return void
      */
     Mono<Void> flushallParallel();
 
     /**
-     * 注册全局 Redisson 对象事件监听器。
+     * Adds global object event listener
      * which is invoked for each Redisson object.
      *
      * @see org.redisson.api.listener.TrackingListener
@@ -358,15 +357,15 @@ public interface RKeysReactive {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener 事件监听器
-     * @return 监听器 ID
+     * @param listener object event listener
+     * @return listener id
      */
     Mono<Integer> addListener(ObjectListener listener);
 
     /**
-     * 移除全局对象事件监听器。
+     * Removes global object event listener
      *
-     * @param listenerId 监听器 ID
+     * @param listenerId - listener id
      */
     Mono<Void> removeListener(int listenerId);
 

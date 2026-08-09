@@ -18,81 +18,79 @@ package org.redisson.api;
 import java.time.Duration;
 
 /**
- * Redis based GCRA object.
- * <p>
- * Requires <b>Redis 8.8.0 or higher.</b>
+ * 基于 Redis 的 GCRA（Generic Cell Rate Algorithm）限流对象。
+ * <p>需要 <b>Redis 8.8.0 及以上</b>。
  *
  * @author Su Ko
- *
  */
 public interface RGcra extends RGcraAsync, RExpirable {
 
     /**
-     * Sets the rate configuration only if it hasn't been set before.
+     * 仅尚未配置时设置速率参数。
      *
-     * @param maxBurst maximum burst size
-     * @param tokensPerPeriod token replenishment rate per period
-     * @param period replenishment period
+     * @param maxBurst 最大突发容量
+     * @param tokensPerPeriod 每周期补充令牌数
+     * @param period 补充周期
      * @return {@code true} if the rate was set, or {@code false} if it was already set before
      */
     boolean trySetRate(long maxBurst, long tokensPerPeriod, Duration period);
 
     /**
-     * Sets the rate configuration overwriting the previous value and resetting the consumed tokens.
+     * 覆盖设置速率参数并重置已消耗令牌。
      *
-     * @param maxBurst maximum burst size
-     * @param tokensPerPeriod token replenishment rate per period
-     * @param period replenishment period
+     * @param maxBurst 最大突发容量
+     * @param tokensPerPeriod 每周期补充令牌数
+     * @param period 补充周期
      */
     void setRate(long maxBurst, long tokensPerPeriod, Duration period);
 
     /**
-     * Returns the rate configuration set through
-     * {@link #trySetRate(long, long, Duration)} or {@link #setRate(long, long, Duration)} method.
+     * 返回通过 trySetRate/setRate 设置的速率配置。
+     * {@link #trySetRate(long, long, Duration)} 或 {@link #setRate(long, long, Duration)}。
      *
-     * @return rate configuration or {@code null} if the rate wasn't set
+     * @return 速率配置；未设置时返回 {@code null}
      */
     GcraConfig getConfig();
 
     /**
-     * Applies the GCRA algorithm with a single token request
-     * using the rate configuration set through
-     * {@link #trySetRate(long, long, Duration)} or {@link #setRate(long, long, Duration)} method.
+     * 以单令牌请求执行 GCRA 限流。
+     * 使用已通过以下方法设置的速率配置：
+     * {@link #trySetRate(long, long, Duration)} 或 {@link #setRate(long, long, Duration)}。
      *
-     * @return GCRA result
+     * @return GCRA 限流结果
      */
     GcraResult tryAcquire();
 
     /**
-     * Applies the GCRA algorithm with a custom token request size
-     * using the rate configuration set through
-     * {@link #trySetRate(long, long, Duration)} or {@link #setRate(long, long, Duration)} method.
+     * 以指定令牌数执行 GCRA 限流。
+     * 使用已通过以下方法设置的速率配置：
+     * {@link #trySetRate(long, long, Duration)} 或 {@link #setRate(long, long, Duration)}。
      *
-     * @param tokens requested token amount
-     * @return GCRA result
+     * @param tokens 请求令牌数
+     * @return GCRA 限流结果
      */
     GcraResult tryAcquire(long tokens);
 
     /**
-     * Applies the GCRA algorithm with a single token request.
+     * 以单令牌请求执行 GCRA 限流（一次性参数，已废弃）。
      *
-     * @param maxBurst maximum burst size
-     * @param tokensPerPeriod token replenishment rate per period
-     * @param period replenishment period
-     * @return GCRA result
+     * @param maxBurst 最大突发容量
+     * @param tokensPerPeriod 每周期补充令牌数
+     * @param period 补充周期
+     * @return GCRA 限流结果
      * @deprecated use {@link #trySetRate(long, long, Duration)} with {@link #tryAcquire()} instead
      */
     @Deprecated
     GcraResult tryAcquire(long maxBurst, long tokensPerPeriod, Duration period);
 
     /**
-     * Applies the GCRA algorithm with a custom token request size.
+     * 以指定令牌数执行 GCRA 限流（一次性参数，已废弃）。
      *
-     * @param maxBurst maximum burst size
-     * @param tokensPerPeriod token replenishment rate per period
-     * @param period replenishment period
-     * @param tokens requested token amount
-     * @return GCRA result
+     * @param maxBurst 最大突发容量
+     * @param tokensPerPeriod 每周期补充令牌数
+     * @param period 补充周期
+     * @param tokens 请求令牌数
+     * @return GCRA 限流结果
      * @deprecated use {@link #trySetRate(long, long, Duration)} with {@link #tryAcquire(long)} instead
      */
     @Deprecated
