@@ -23,12 +23,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
- * Default tool callback provider implementation
+ * 默认 {@link ToolCallbackProvider}：扫描 classpath 中带 {@link Tool} 注解的方法并注册为工具回调。
  * <p>
- * Scan methods with @Tool annotations in the classpath and register them as tool callbacks.
- * <p>
- * Users must call {@link #setToolBasePackage(String)} to configure the package to scan before calling
- * {@link #getToolCallbacks()}.
+ * 调用 {@link #getToolCallbacks()} 前须先通过 {@link #setToolBasePackage(String)} 指定扫描包路径。
  */
 public class DefaultToolCallbackProvider implements ToolCallbackProvider {
     private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallbackProvider.class);

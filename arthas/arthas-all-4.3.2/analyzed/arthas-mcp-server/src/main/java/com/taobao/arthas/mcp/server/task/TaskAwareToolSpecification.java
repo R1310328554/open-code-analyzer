@@ -11,9 +11,10 @@ import com.taobao.arthas.mcp.server.session.ArthasCommandContext;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Task-aware tool specification combining tool definition with task handlers.
- *
- * <p>Task support modes: OPTIONAL (default, backward-compatible), REQUIRED, FORBIDDEN.
+ * Task 感知工具规格：将 {@link McpSchema.Tool} 定义与 Task 生命周期处理器绑定。
+ * <p>
+ * Task 支持模式（{@link McpSchema.TaskSupportMode}）：OPTIONAL（默认，向后兼容）、
+ * REQUIRED（必须带 Task 元数据）、FORBIDDEN（禁用 Task）。
  *
  * @author Yeaury
  */
@@ -62,6 +63,7 @@ public final class TaskAwareToolSpecification {
         return new Builder();
     }
 
+    /** 构建 {@link TaskAwareToolSpecification} 的流式 Builder。 */
     public static class Builder extends AbstractTaskAwareToolSpecificationBuilder<Builder> {
 
         private TriFunction<McpNettyServerExchange, ArthasCommandContext, McpSchema.CallToolRequest, CompletableFuture<McpSchema.CallToolResult>> callHandler;

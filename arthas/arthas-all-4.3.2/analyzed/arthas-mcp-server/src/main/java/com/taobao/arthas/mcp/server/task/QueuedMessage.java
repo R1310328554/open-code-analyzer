@@ -7,16 +7,16 @@ package com.taobao.arthas.mcp.server.task;
 import com.taobao.arthas.mcp.server.protocol.spec.McpSchema;
 
 /**
- * Message types for side-channel communication during task execution.
- *
- * <p>Request and Notification are dequeued for delivery to the client.
- * Response messages are retrieved exclusively via {@code waitForResponse}.
+ * Task 执行期间 side-channel 通信的消息类型。
+ * <p>
+ * {@link QueuedMessage.Request} 与 {@link QueuedMessage.Notification} 由 dequeue 取出并投递给客户端；
+ * {@link QueuedMessage.Response} 仅通过 {@code waitForResponse} 按 requestId 匹配获取。
  *
  * @author Yeaury
  */
 public abstract class QueuedMessage {
 
-    /** Server-to-client request (e.g. elicitation, sampling) requiring a response. */
+    /** 服务端发往客户端、需客户端回复的请求（如 elicitation、sampling）。 */
     public static class Request extends QueuedMessage {
         private final Object requestId;
         private final String method;
@@ -46,7 +46,7 @@ public abstract class QueuedMessage {
         }
     }
 
-    /** Client response to a prior Request. */
+    /** 客户端对先前 {@link Request} 的响应。 */
     public static class Response extends QueuedMessage {
         private final Object requestId;
         private final McpSchema.Result result;
@@ -70,7 +70,7 @@ public abstract class QueuedMessage {
         }
     }
 
-    /** Async notification (e.g. progress update) that requires no response. */
+    /** 异步通知（如进度更新），无需客户端回复。 */
     public static class Notification extends QueuedMessage {
         private final String method;
         private final Object notification;

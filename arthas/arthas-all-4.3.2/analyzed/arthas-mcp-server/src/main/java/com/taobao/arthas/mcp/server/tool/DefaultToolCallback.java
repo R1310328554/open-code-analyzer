@@ -20,6 +20,11 @@ import java.util.Map;
 import java.util.stream.Stream;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
+/**
+ * 基于反射调用 {@code @Tool} 标注方法的默认 {@link ToolCallback} 实现。
+ * <p>
+ * 解析 JSON 入参、校验必填项、注入 {@link ToolContext}，并将返回值经 {@link ToolCallResultConverter} 序列化。
+ */
 public class DefaultToolCallback implements ToolCallback {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallback.class);
@@ -89,9 +94,7 @@ public class DefaultToolCallback implements ToolCallback {
         }
     }
 
-    /**
-     * validate the required parameters
-     */
+    /** 校验带 {@link ToolParam#required()} 的参数是否已提供且非空。 */
     private void validateRequiredParameters(Map<String, Object> toolArguments) {
         Parameter[] parameters = this.toolMethod.getParameters();
         
@@ -105,7 +108,7 @@ public class DefaultToolCallback implements ToolCallback {
                 String paramName = parameter.getName();
                 Object paramValue = toolArguments.get(paramName);
                 
-                // check if the parameter is empty or an empty string
+                // 拒绝 null 或仅空白字符串的必填参数
                 if (paramValue == null) {
                     throw new IllegalArgumentException("Required parameter '" + paramName + "' is missing");
                 }
@@ -179,6 +182,7 @@ public class DefaultToolCallback implements ToolCallback {
         return new Builder();
     }
 
+    /** {@link DefaultToolCallback} 的流式构建器。 */
     public static final class Builder {
 
         private ToolDefinition toolDefinition;

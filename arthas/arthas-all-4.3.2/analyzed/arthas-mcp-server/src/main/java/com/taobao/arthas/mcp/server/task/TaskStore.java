@@ -10,16 +10,16 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Persistent store for task state and results with session isolation.
+ * 带会话隔离的 Task 状态与结果持久化存储。
+ * <p>
+ * 会话校验：{@code sessionId} 为 null 时允许全部访问（单租户）；
+ * 无 session 的 Task 任意会话可读；否则 sessionId 必须匹配。
+ * <p>
+ * 错误约定：{@link #getTask}、{@link #getTaskResult} 未命中返回 null；
+ * {@link #storeTaskResult} 未命中抛异常；{@link #updateTaskStatus} 静默忽略；
+ * {@link #requestCancellation} 对终态 Task 抛 -32602。
  *
- * <p>Session validation rules: null {@code sessionId} allows all access (single-tenant);
- * tasks without a session are accessible from any session; otherwise sessionIds must match.
- *
- * <p>Error conventions: {@link #getTask} and {@link #getTaskResult} return null on miss;
- * {@link #storeTaskResult} throws on miss; {@link #updateTaskStatus} silently ignores misses;
- * {@link #requestCancellation} throws (-32602) for terminal tasks.
- *
- * @param <R> result type stored by this store
+ * @param <R> 本存储保存的结果类型
  * @author Yeaury
  */
 public interface TaskStore<R extends McpSchema.Result> {

@@ -9,16 +9,21 @@ import com.taobao.arthas.mcp.server.protocol.spec.McpSchema;
 import java.time.Duration;
 
 /**
- * Default configuration constants for the task system.
+ * Task 子系统的默认配置常量。
+ * <p>
+ * 涵盖 TTL、轮询间隔、容量上限、side-channel 超时及工具输入 schema 等默认值。
  *
  * @author Yeaury
  */
 public final class TaskDefaults {
 
+    /** Task 默认存活时间：10 分钟（毫秒）。 */
     public static final long DEFAULT_TTL_MS = 10 * 60 * 1000L;
 
+    /** 客户端轮询 Task 状态的默认间隔：1 秒。 */
     public static final long DEFAULT_POLL_INTERVAL_MS = 1000L;
 
+    /** tasks/list 分页默认每页条数。 */
     public static final int DEFAULT_PAGE_SIZE = 100;
 
     /**
@@ -47,35 +52,48 @@ public final class TaskDefaults {
      */
     public static final int DEFAULT_MAX_CONCURRENT_TASK_SESSIONS = 5;
 
+    /** 自动轮询模式（无 Task 元数据）的默认超时：10 分钟。 */
     public static final long DEFAULT_AUTOMATIC_POLLING_TIMEOUT_MS = 600000L;
 
+    /** side-channel 等待客户端响应的默认超时：5 分钟。 */
     public static final int DEFAULT_SIDE_CHANNEL_TIMEOUT_MINUTES = 5;
 
+    /** Task TTL 上限：24 小时。 */
     public static final long MAX_TTL_MS = 24 * 60 * 60 * 1000L;
 
+    /** 允许的最小轮询间隔：100 毫秒。 */
     public static final long MIN_POLL_INTERVAL_MS = 100L;
 
+    /** 允许的最大轮询间隔：1 小时。 */
     public static final long MAX_POLL_INTERVAL_MS = 60 * 60 * 1000L;
 
+    /** 过期 Task 后台清理任务的执行间隔：1 分钟。 */
     public static final long CLEANUP_INTERVAL_MINUTES = 1L;
 
+    /** 消息队列 shutdown 时的清理等待上限：1 秒。 */
     public static final long MESSAGE_QUEUE_CLEANUP_TIMEOUT_MS = 1_000L;
 
+    /** waitForResponse 内部轮询间隔：50 毫秒。 */
     public static final long RESPONSE_POLL_INTERVAL_MS = 50L;
 
+    /** TaskStore 关闭时的等待超时：5 秒。 */
     public static final long TASK_STORE_SHUTDOWN_TIMEOUT_SECONDS = 5L;
 
+    /** 按轮询间隔推算超时时的默认最大轮询次数。 */
     public static final int DEFAULT_MAX_POLL_ATTEMPTS = 60;
 
+    /** 轮询超时上限：1 小时。 */
     public static final long MAX_TIMEOUT_MS = 3_600_000L;
 
+    /** watch 类 Task 单次结果中允许的最大更新条数。 */
     public static final int MAX_WATCH_UPDATES = 100;
 
+    /** 无输入参数工具的默认 JSON Schema（空 object）。 */
     public static final McpSchema.JsonSchema EMPTY_INPUT_SCHEMA =
             new McpSchema.JsonSchema("object", null, null, null);
 
     /**
-     * Calculates a polling timeout scaled to the given poll interval, capped at {@link #MAX_TIMEOUT_MS}.
+     * 按轮询间隔与 {@link #DEFAULT_MAX_POLL_ATTEMPTS} 推算超时，上限为 {@link #MAX_TIMEOUT_MS}。
      */
     public static Duration calculateTimeout(Long pollInterval) {
         long interval = pollInterval != null ? pollInterval : DEFAULT_POLL_INTERVAL_MS;
@@ -84,7 +102,7 @@ public final class TaskDefaults {
     }
 
     /**
-     * Validates that task-aware tools are not registered without a TaskStore.
+     * 校验：注册了 Task 感知工具时必须同时配置 {@link TaskStore}。
      */
     public static void validateTaskConfiguration(boolean hasTaskTools, boolean hasTaskStore) {
         if (hasTaskTools && !hasTaskStore) {

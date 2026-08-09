@@ -7,7 +7,7 @@ package com.taobao.arthas.mcp.server.task;
 import com.taobao.arthas.mcp.server.protocol.spec.McpSchema.TaskStatus;
 
 /**
- * Utility methods for task status checks.
+ * Task 状态判定与状态机转移校验的工具类。
  *
  * @author Yeaury
  */
@@ -15,7 +15,7 @@ public final class TaskHelper {
 
     private TaskHelper() {}
 
-    /** Returns true if the status is COMPLETED, FAILED, or CANCELLED. */
+    /** 判断是否为终态：COMPLETED、FAILED 或 CANCELLED。 */
     public static boolean isTerminal(TaskStatus status) {
         if (status == null) {
             return false;
@@ -26,10 +26,10 @@ public final class TaskHelper {
     }
 
     /**
-     * Returns true if the transition from {@code from} to {@code to} is valid.
-     *
-     * <p>Terminal states cannot transition further. WORKING can transition to any state.
-     * INPUT_REQUIRED can transition to WORKING or any terminal state.
+     * 校验从 {@code from} 到 {@code to} 的状态转移是否合法。
+     * <p>
+     * 终态不可再转移；WORKING 可转至任意状态；
+     * INPUT_REQUIRED 仅可回到 WORKING 或进入终态。
      */
     public static boolean isValidTransition(TaskStatus from, TaskStatus to) {
         if (from == null || to == null) {

@@ -26,7 +26,10 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
- * Manages task-aware tool registration and task lifecycle on the server side.
+ * 服务端 Task 感知工具的注册与 Task 生命周期管理。
+ * <p>
+ * 负责工具增删、callTool 分发（创建 Task / 自动轮询 / 同步调用）、
+ * 以及 tasks/* 请求处理器与 {@link TaskManagerHost} 的桥接。
  *
  * @see TaskManager
  * @see TaskManagerHost
@@ -48,7 +51,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
 
     private final Object toolRegistrationLock = new Object();
 
-    /** Notifies all connected clients of a method/params pair. */
+    /** 向所有已连接客户端广播指定 method/params 通知。 */
     private final BiFunction<String, Object, CompletableFuture<Void>> clientNotifier;
 
     @SuppressWarnings("unchecked")
@@ -78,7 +81,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
     }
 
     // ---------------------------------------
-    // Task Tool Registration
+    // Task 工具注册
     // ---------------------------------------
 
     public CompletableFuture<Void> addTaskTool(
@@ -168,7 +171,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
     }
 
     // ---------------------------------------
-    // Task Tool Call Handling
+    // Task 工具调用处理
     // ---------------------------------------
 
     public CompletableFuture<Object> handleToolCall(
@@ -185,7 +188,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
                 .thenApply(r -> (Object) r);
     }
 
-    /** Dispatches a task-aware tool call; handles task creation or automatic polling. */
+    /** 分发 Task 感知工具调用：带 Task 元数据则创建 Task，否则按模式走自动轮询或同步 handler。 */
     private CompletableFuture<?> doHandleTaskToolCall(
             McpNettyServerExchange exchange,
             ArthasCommandContext commandContext,
@@ -231,7 +234,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
         return f;
     }
 
-    /** Handles task creation for a task-aware tool call. */
+    /** 处理带 Task 元数据的工具调用，委托 {@link CreateTaskHandler} 创建异步 Task。 */
     private CompletableFuture<McpSchema.CreateTaskResult> handleTaskToolCreateTask(
             McpNettyServerExchange exchange,
             ArthasCommandContext commandContext,
@@ -273,7 +276,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
                 });
     }
 
-    /** Handles automatic task polling for a task-aware tool call without task metadata. */
+    /** 无 Task 元数据时隐式创建 Task 并轮询至终态，对客户端表现为同步 callTool。 */
     private CompletableFuture<McpSchema.CallToolResult> handleAutomaticTaskPolling(
             McpNettyServerExchange exchange,
             ArthasCommandContext commandContext,
@@ -311,7 +314,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
                 });
     }
 
-    /** Polls a task until it reaches a terminal state, then returns the result. */
+    /** 轮询 Task 直至 COMPLETED/FAILED/CANCELLED，再取 payload 作为 CallToolResult。 */
     private CompletableFuture<McpSchema.CallToolResult> pollTaskUntilTerminal(
             String taskId,
             String sessionId,
@@ -360,8 +363,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
                 return f;
             }
 
-            // For FAILED/CANCELLED: fetch the stored payload (FAILED has one via failTask;
-            // CANCELLED has none, so fall back to a synthetic error result).
+            // FAILED/CANCELLED：优先取存储的 payload（failTask 会写入；CANCELLED 通常无 payload，回退合成错误结果）
             if (finalTask.getStatus() == McpSchema.TaskStatus.FAILED
                     || finalTask.getStatus() == McpSchema.TaskStatus.CANCELLED) {
                 return taskStore.getTaskResult(taskId, sessionId)
@@ -369,7 +371,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
                             if (result != null) {
                                 return (McpSchema.CallToolResult) result;
                             }
-                            // CANCELLED (or FAILED without payload as a safety net)
+                            // CANCELLED，或 FAILED 但未存 payload 时的兜底
                             String msg = finalTask.getStatus() == McpSchema.TaskStatus.CANCELLED
                                     ? "Task was cancelled" +
                                         (finalTask.getStatusMessage() != null ? ": " + finalTask.getStatusMessage() : "")
@@ -440,7 +442,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
     }
 
     // ---------------------------------------
-    // Task Request Handler Wiring
+    // Task 请求处理器装配
     // ---------------------------------------
 
     public Map<String, McpRequestHandler<?>> getRequestHandlers(
@@ -502,7 +504,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
     }
 
     // ---------------------------------------
-    // Metadata Helpers
+    // 元数据辅助
     // ---------------------------------------
 
     private McpSchema.Result addRelatedTaskMetadata(String taskId, McpSchema.Result result) {
@@ -519,7 +521,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
     }
 
     // ---------------------------------------
-    // Lifecycle
+    // 生命周期
     // ---------------------------------------
 
     public CompletableFuture<Void> notifyTaskStatus(McpSchema.TaskStatusNotification taskStatusNotification) {
@@ -545,7 +547,7 @@ public class ServerTaskToolHandler extends AbstractTaskHandler<McpSchema.ServerT
     }
 
     // ---------------------------------------
-    // TaskManagerHost Implementation
+    // TaskManagerHost 实现
     // ---------------------------------------
 
     @Override

@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Utilities for adding {@code relatedTask} metadata to notifications and results.
+ * 为通知与结果注入 {@code _meta.relatedTask} 元数据的工具类。
  *
  * @author Yeaury
  */
@@ -19,8 +19,8 @@ public final class TaskMetadataUtils {
     private TaskMetadataUtils() {}
 
     /**
-     * Injects {@code _meta.relatedTask.taskId} into a notification.
-     * {@link McpSchema.TaskStatusNotification} is returned unchanged (already contains taskId).
+     * 向通知对象注入 {@code _meta.relatedTask.taskId}。
+     * {@link McpSchema.TaskStatusNotification} 已自带 taskId，原样返回。
      */
     @SuppressWarnings("unchecked")
     public static Object addRelatedTaskMetadata(String taskId, Object notification) {
@@ -44,14 +44,14 @@ public final class TaskMetadataUtils {
         return notification;
     }
 
-    /** Merges {@code relatedTask: {taskId}} into a new metadata map, overlaying existing entries. */
+    /** 将 {@code relatedTask: {taskId}} 合并到新 metadata 映射，覆盖同名字段。 */
     public static Map<String, Object> mergeRelatedTaskMetadata(String taskId, Map<String, Object> existingMeta) {
         Map<String, Object> taskIdMap = new HashMap<>();
         taskIdMap.put("taskId", taskId);
         return mergeRelatedTaskMetadata((Object) taskIdMap, existingMeta);
     }
 
-    /** Merges {@code relatedTask: relatedTaskValue} into a new metadata map, overlaying existing entries. */
+    /** 将 {@code relatedTask: relatedTaskValue} 合并到新 metadata 映射，覆盖同名字段。 */
     public static Map<String, Object> mergeRelatedTaskMetadata(Object relatedTaskValue,
                                                                  Map<String, Object> existingMeta) {
         Map<String, Object> newMeta = new HashMap<>();

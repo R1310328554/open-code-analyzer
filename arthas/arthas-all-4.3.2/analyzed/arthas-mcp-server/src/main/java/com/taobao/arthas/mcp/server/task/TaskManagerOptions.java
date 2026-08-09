@@ -7,7 +7,7 @@ package com.taobao.arthas.mcp.server.task;
 import java.time.Duration;
 
 /**
- * Configuration options for {@link TaskManager}.
+ * {@link TaskManager} 的配置选项：TaskStore、消息队列与轮询参数。
  *
  * @author Yeaury
  */
@@ -44,7 +44,7 @@ public class TaskManagerOptions {
     }
 
     /**
-     * Creates a {@link DefaultTaskManager} if store/queue are configured, otherwise {@link NullTaskManager}.
+     * 若配置了 store 或 queue 则创建 {@link DefaultTaskManager}，否则返回 {@link NullTaskManager} 单例。
      */
     public TaskManager createTaskManager() {
         if (this.taskStore == null && this.messageQueue == null) {
@@ -57,6 +57,7 @@ public class TaskManagerOptions {
         return new Builder();
     }
 
+    /** {@link TaskManagerOptions} 的流式构建器。 */
     public static class Builder {
         private TaskStore<?> taskStore;
         private TaskMessageQueue messageQueue;

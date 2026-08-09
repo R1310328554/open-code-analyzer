@@ -14,7 +14,10 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 /**
- * Registry for task request handlers, shared by client and server.
+ * Task 相关 JSON-RPC 请求处理器的注册表，客户端与服务端共用。
+ * <p>
+ * 维护 method 到 {@link TaskManagerHost.TaskRequestHandler} 的映射，
+ * 并支持按能力标志装配 tasks/get、tasks/result、tasks/list、tasks/cancel。
  *
  * @author Yeaury
  */
@@ -43,8 +46,8 @@ class TaskHandlerRegistry {
     }
 
     /**
-     * Wires registered handlers via the adapter/registrar pair.
-     * tasks/get and tasks/result are always wired; tasks/list and tasks/cancel are conditional.
+     * 通过 adapter/registrar 将已注册处理器接入协议层。
+     * tasks/get 与 tasks/result 始终装配；tasks/list、tasks/cancel 按能力标志条件装配。
      */
     public <T> void wireHandlers(boolean supportsList, boolean supportsCancel,
                                   BiFunction<String, TaskManagerHost.TaskRequestHandler, T> adapter,

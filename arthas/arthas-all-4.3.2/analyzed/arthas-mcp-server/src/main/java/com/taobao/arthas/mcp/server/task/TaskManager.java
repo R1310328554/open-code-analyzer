@@ -10,12 +10,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
- * Orchestrates task state, message queuing, polling, and handler registration.
- *
- * <p>Interacts with the protocol layer via five lifecycle methods:
- * {@link #processInboundRequest}, {@link #processOutboundRequest},
- * {@link #processInboundResponse}, {@link #processOutboundNotification}, {@link #onClose}.
- * Must be bound to a {@link TaskManagerHost} via {@link #bind} before use.
+ * 编排 Task 状态、side-channel 消息队列、轮询与处理器注册的核心接口。
+ * <p>
+ * 通过五个生命周期方法与协议层交互：
+ * {@link #processInboundRequest}、{@link #processOutboundRequest}、
+ * {@link #processInboundResponse}、{@link #processOutboundNotification}、{@link #onClose}。
+ * 使用前须通过 {@link #bind} 绑定 {@link TaskManagerHost}。
  *
  * @author Yeaury
  * @see DefaultTaskManager
@@ -46,8 +46,9 @@ public interface TaskManager {
 
     Duration defaultPollInterval();
 
-    // === Supporting types ===
+    // === 配套类型 ===
 
+    /** 入站请求处理上下文：会话 ID 与通知/请求发送能力。 */
     class InboundRequestContext {
         private final String sessionId;
         private final NotificationSender sendNotification;
@@ -74,16 +75,19 @@ public interface TaskManager {
         }
     }
 
+    /** 发送出站通知的函数式接口。 */
     @FunctionalInterface
     interface NotificationSender {
         CompletableFuture<Void> send(Object notification, NotificationOptions options);
     }
 
+    /** 发送出站请求并等待 typed 响应的函数式接口。 */
     @FunctionalInterface
     interface RequestSender {
         <T> CompletableFuture<T> send(Object request, Class<T> resultType, RequestOptions options);
     }
 
+    /** {@link #processInboundRequest} 的返回值：封装 side-channel 回调与 Task 创建参数标志。 */
     class InboundRequestResult {
         private final Consumer<Object> sendNotification;
         private final RequestSender sendRequest;
@@ -117,6 +121,7 @@ public interface TaskManager {
         }
     }
 
+    /** {@link #processOutboundRequest} 的返回值：指示请求是否已入队等待 Task 消费。 */
     class OutboundRequestResult {
         private final boolean queued;
 
@@ -129,6 +134,7 @@ public interface TaskManager {
         }
     }
 
+    /** {@link #processInboundResponse} 的返回值：指示响应是否已被 Task 侧消费。 */
     class InboundResponseResult {
         private final boolean consumed;
 
@@ -141,6 +147,7 @@ public interface TaskManager {
         }
     }
 
+    /** {@link #processOutboundNotification} 的返回值：指示通知是否入队及 JSON-RPC 封装体。 */
     class OutboundNotificationResult {
         private final boolean queued;
         private final Object jsonrpcNotification;
@@ -163,6 +170,7 @@ public interface TaskManager {
         }
     }
 
+    /** 出站请求的 Task 关联选项：TTL 与 relatedTask 元数据。 */
     class RequestOptions {
         private final TaskCreationParams task;
         private final RelatedTaskInfo relatedTask;
@@ -185,6 +193,7 @@ public interface TaskManager {
         }
     }
 
+    /** 出站通知的 relatedTask 元数据选项。 */
     class NotificationOptions {
         private final RelatedTaskInfo relatedTask;
 
@@ -204,6 +213,7 @@ public interface TaskManager {
         }
     }
 
+    /** Task 创建参数（当前仅 TTL）。 */
     class TaskCreationParams {
         private final Long ttl;
 
@@ -216,6 +226,7 @@ public interface TaskManager {
         }
     }
 
+    /** 关联 Task 标识，用于 _meta.relatedTask 元数据。 */
     class RelatedTaskInfo {
         private final String taskId;
 

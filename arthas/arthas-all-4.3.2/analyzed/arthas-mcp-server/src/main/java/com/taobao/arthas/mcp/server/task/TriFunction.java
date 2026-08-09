@@ -5,12 +5,12 @@
 package com.taobao.arthas.mcp.server.task;
 
 /**
- * Three-argument function interface.
+ * 三参数函数式接口，用于 Task 感知工具的 callHandler 等场景。
  *
- * @param <T> first argument type
- * @param <U> second argument type
- * @param <V> third argument type
- * @param <R> result type
+ * @param <T> 第一个参数类型
+ * @param <U> 第二个参数类型
+ * @param <V> 第三个参数类型
+ * @param <R> 返回值类型
  * @author Yeaury
  */
 @FunctionalInterface
