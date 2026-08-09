@@ -1,22 +1,22 @@
 {
   "claimed_at": "2026-08-09T17:48:06Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableAny.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableAnySingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableAutoConnect.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableBlockingSubscribe.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableBuffer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableBufferBoundary.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableBufferExactBoundary.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableCollect.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableCollectSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableCombineLatest.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableConcatWithCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableConcatWithMaybe.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableConcatWithSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableCount.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableCountSingle.java"
+    "src/main/java/io/reactivex/rxjava4/core/Completable.java",
+    "src/main/java/io/reactivex/rxjava4/core/Flowable.java",
+    "src/main/java/io/reactivex/rxjava4/core/Maybe.java",
+    "src/main/java/io/reactivex/rxjava4/core/Observable.java",
+    "src/main/java/io/reactivex/rxjava4/core/Scheduler.java",
+    "src/main/java/io/reactivex/rxjava4/core/Single.java",
+    "src/main/java/io/reactivex/rxjava4/core/Streamable.java",
+    "src/main/java/io/reactivex/rxjava4/internal/functions/Functions.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableBuffer.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableBufferBoundary.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableBufferTimed.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableCache.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableCombineLatest.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableConcatMap.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableConcatMapScheduler.java"
   ],
   "remaining_pending": 482,
-  "done": 510
+  "done": 525
 }
