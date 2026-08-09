@@ -40,47 +40,59 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * Hibernate Cache region factory based on Redisson. 
- * Creates own Redisson instance during region start.
- * 
- * @author Nikita Koksharov
+ * 基于 Redisson 的 Hibernate 二级缓存 {@link RegionFactory} 实现（Hibernate 5.3+）。
+ * <p>在 Region 启动时创建并持有独立的 {@link RedissonClient} 实例。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonRegionFactory extends RegionFactoryTemplate {
     
     private static final long serialVersionUID = 3785315696581773811L;
 
+    /** 查询结果缓存区域的默认配置键后缀。 */
     public static final String QUERY_DEF = "query";
     
+    /** 集合缓存区域的默认配置键后缀。 */
     public static final String COLLECTION_DEF = "collection";
     
+    /** 实体缓存区域的默认配置键后缀。 */
     public static final String ENTITY_DEF = "entity";
     
+    /** 自然 ID 缓存区域的默认配置键后缀。 */
     public static final String NATURAL_ID_DEF = "naturalid";
     
+    /** 时间戳缓存区域的默认配置键后缀。 */
     public static final String TIMESTAMPS_DEF = "timestamps";
     
+    /** Region 最大条目数配置键后缀。 */
     public static final String MAX_ENTRIES_SUFFIX = ".eviction.max_entries";
 
+    /** Region TTL 配置键后缀。 */
     public static final String TTL_SUFFIX = ".expiration.time_to_live";
 
+    /** Region 最大空闲时间配置键后缀。 */
     public static final String MAX_IDLE_SUFFIX = ".expiration.max_idle_time";
     
+    /** Hibernate 属性中 Redisson 相关配置的前缀。 */
     public static final String CONFIG_PREFIX = "hibernate.cache.redisson.";
     
+    /** Redisson 配置文件路径对应的 Hibernate 属性键。 */
     public static final String REDISSON_CONFIG_PATH = CONFIG_PREFIX + "config";
 
+    /** 是否在 Redis 不可用时启用本地降级模式的属性键。 */
     public static final String FALLBACK = CONFIG_PREFIX + "fallback";
 
     RedissonClient redisson;
     private CacheKeysFactory cacheKeysFactory;
     protected boolean fallback;
 
+    /** 返回启动时解析的缓存键工厂。 */
     @Override
     protected CacheKeysFactory getImplicitCacheKeysFactory() {
         return cacheKeysFactory;
     }
 
+    /** 加载 Redisson 配置、初始化客户端并解析 fallback 与缓存键工厂。 */
     @Override
     protected void prepareForUse(SessionFactoryOptions settings, @SuppressWarnings("rawtypes") Map properties) throws CacheException {
         this.redisson = createRedissonClient(properties);
@@ -93,6 +105,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
                 properties.get(Environment.CACHE_KEYS_FACTORY), new RedissonCacheKeysFactory(redisson.getConfig().getCodec()));
     }
 
+    /** 从类路径或指定路径加载 YAML/JSON 配置并创建 {@link RedissonClient}。 */
     protected RedissonClient createRedissonClient(Map properties) {
         Config config = null;
         if (!properties.containsKey(REDISSON_CONFIG_PATH)) {
@@ -135,21 +148,25 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         return null;
     }
 
+    /** 关闭 Redisson 客户端并释放连接。 */
     @Override
     protected void releaseFromUse() {
         redisson.shutdown();
     }
 
+    /** 默认启用最小化 put 策略以减少缓存写入。 */
     @Override
     public boolean isMinimalPutsEnabledByDefault() {
         return true;
     }
 
+    /** 默认缓存并发访问策略为 {@link AccessType#TRANSACTIONAL}。 */
     @Override
     public AccessType getDefaultAccessType() {
         return AccessType.TRANSACTIONAL;
     }
 
+    /** 通过 Redis Lua 脚本生成全局递增时间戳；失败且启用 fallback 时使用父类本地递增。 */
     @Override
     public long nextTimestamp() {
         long time = System.currentTimeMillis() << 12;
@@ -172,6 +189,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         }
     }
 
+    /** 构建域数据（实体/集合/自然 ID）二级缓存 Region。 */
     @Override
     public DomainDataRegion buildDomainDataRegion(
             DomainDataRegionConfig regionConfig,
@@ -186,6 +204,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         );
     }
 
+    /** 根据 Region 配置创建 {@link RedissonStorage} 作为底层存储访问层。 */
     @Override
     protected DomainDataStorageAccess createDomainDataStorageAccess(DomainDataRegionConfig regionConfig,
             DomainDataRegionBuildingContext buildingContext) {
@@ -197,6 +216,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         } else if (!regionConfig.getNaturalIdCaching().isEmpty()) {
             defaultKey = NATURAL_ID_DEF;
         } else {
+            // 无法从 Region 配置推断缓存类型。
             throw new IllegalArgumentException("Unable to determine entity cache type!");
         }
 
@@ -208,6 +228,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         return RegionNameQualifier.INSTANCE.qualify(name, getOptions());
     }
 
+    /** 为查询结果 Region 创建 {@link RedissonStorage} 存储访问。 */
     @Override
     protected StorageAccess createQueryResultsRegionStorageAccess(String regionName,
             SessionFactoryImplementor sessionFactory) {
@@ -215,6 +236,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         return new RedissonStorage(regionName, mapCache, ((Redisson)redisson).getServiceManager(), sessionFactory.getProperties(), QUERY_DEF);
     }
 
+    /** 为时间戳 Region 创建 {@link RedissonStorage} 存储访问。 */
     @Override
     protected StorageAccess createTimestampsRegionStorageAccess(String regionName,
             SessionFactoryImplementor sessionFactory) {
@@ -222,6 +244,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         return new RedissonStorage(regionName, mapCache, ((Redisson)redisson).getServiceManager(), sessionFactory.getProperties(), TIMESTAMPS_DEF);
     }
 
+    /** 获取指定 Region 名称对应的 {@link RMapCache} 实例。 */
     protected RMapCache<Object, Object> getCache(String cacheName, Map properties, String defaultKey) {
         return redisson.getMapCache(cacheName);
     }
