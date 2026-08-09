@@ -32,16 +32,21 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Spring Data Redis 集群模式响应式连接门面。
+ * <p>继承 {@link RedissonReactiveRedisConnection} 并实现 {@link ReactiveRedisClusterConnection}；
+各 {@code *Commands()} 返回集群专用命令适配器。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedisConnection implements ReactiveRedisClusterConnection {
 
+    /** 注入响应式命令执行器。 */
     public RedissonReactiveRedisClusterConnection(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** 返回集群 Key 命令适配器。 */
     @Override
     public ReactiveClusterKeyCommands keyCommands() {
         return new RedissonReactiveClusterKeyCommands(executorService);
@@ -87,6 +92,7 @@ public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedi
         return new RedissonReactiveClusterHyperLogLogCommands(executorService);
     }
 
+    /** 返回集群 Server 命令适配器。 */
     @Override
     public ReactiveClusterServerCommands serverCommands() {
         return new RedissonReactiveClusterServerCommands(executorService);
@@ -97,6 +103,7 @@ public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedi
         return new RedissonReactiveClusterStreamCommands(executorService);
     }
 
+    /** 对指定集群节点执行 PING。 */
     @Override
     public Mono<String> ping(RedisClusterNode node) {
         return execute(node, RedisCommands.PING);
