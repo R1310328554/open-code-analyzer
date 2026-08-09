@@ -58,3 +58,13 @@ docs_src/additional_responses/__init__.py
 docs_src/additional_responses/tutorial001_py310.py
 docs_src/additional_responses/tutorial002_py310.py
 docs_src/additional_responses/tutorial003_py310.py
+docs_src/app_testing/tutorial003_py310.py
+docs_src/app_testing/tutorial004_py310.py
+docs_src/async_tests/__init__.py
+docs_src/async_tests/app_a_py310/__init__.py
+docs_src/async_tests/app_a_py310/main.py
+docs_src/async_tests/app_a_py310/test_main.py
+docs_src/authentication_error_status_code/__init__.py
+docs_src/authentication_error_status_code/tutorial001_an_py310.py
+docs_src/background_tasks/__init__.py
+docs_src/background_tasks/tutorial001_py310.py
