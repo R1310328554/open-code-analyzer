@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:50:55Z",
-  "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaders.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeadersFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHttpCodec.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHttpDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHttpEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHttpHeaders.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHttpResponseStreamIdHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyPingFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyProtocolException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyRstStreamFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdySession.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdySessionHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdySessionStatus.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdySettingsFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyStreamFrame.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1298,
-  "done": 615
+  "done": 630
 }
