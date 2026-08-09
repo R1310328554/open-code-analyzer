@@ -26,15 +26,13 @@ import java.util.List;
 
 /**
  * A class representing an array type in JSON. An array is a list of {@link JsonElement}s each of
- * which can be of a different type. This is an ordered list, meaning that the order in which
- * elements are added is preserved. This class does not support {@code null} values. If {@code null}
+ * which can be of a different type. 有序列表，添加顺序会被保留。 本类不支持 {@code null} 值； If {@code null}
  * is provided as element argument to any of the methods, it is converted to a {@link JsonNull}.
  *
  * <p>{@code JsonArray} only implements the {@link Iterable} interface but not the {@link List}
  * interface. A {@code List} view of it can be obtained with {@link #asList()}.
  *
- * <p>See the {@link JsonElement} documentation for details on how to convert {@code JsonArray} and
- * generally any {@code JsonElement} from and to JSON.
+ * <p>转换 {@code JsonArray} 及一般 {@code JsonElement} 与 JSON 的详情见 {@link JsonElement} 文档。
  *
  * @author Inderjeet Singh
  * @author Joel Leitch

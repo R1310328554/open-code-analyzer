@@ -988,8 +988,7 @@ public final class Gson {
   // https://github.com/google/gson/pull/1700#discussion_r973764414
 
   /**
-   * Reads the next JSON value from {@code reader} and converts it to an object of type {@code
-   * typeOfT}. Returns {@code null}, if the {@code reader} is at EOF.
+   * 从 {@code reader} 读取下一个 JSON 值并转换为 {@code typeOfT} 类型对象。若 {@code reader} 已到 EOF 则返回 {@code null}。
    *
    * <p>Since {@code Type} is not parameterized by T, this method is not type-safe and should be
    * used carefully. If you are creating the {@code Type} from a {@link TypeToken}, prefer using
@@ -1026,8 +1025,7 @@ public final class Gson {
   }
 
   /**
-   * Reads the next JSON value from {@code reader} and converts it to an object of type {@code
-   * typeOfT}. Returns {@code null}, if the {@code reader} is at EOF. This method is useful if the
+   * 从 {@code reader} 读取下一个 JSON 值并转换为 {@code typeOfT} 类型对象。若 {@code reader} 已到 EOF 则返回 {@code null}。 This method is useful if the
    * specified object is a generic type. For non-generic objects, {@link #fromJson(JsonReader,
    * Type)} can be called, or {@link TypeToken#get(Class)} can be used to create the type token.
    *
