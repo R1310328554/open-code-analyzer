@@ -38,18 +38,22 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 Server 命令实现。
+ * <p>封装 BGSAVE、SAVE、FLUSHDB/FLUSHALL、INFO、CONFIG、TIME、CLIENT LIST 等管理命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveServerCommands extends RedissonBaseReactive implements ReactiveServerCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveServerCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
     static final RedisStrictCommand<String> BGREWRITEAOF = new RedisStrictCommand<String>("BGREWRITEAOF");
     
+    /** BGREWRITEAOF：异步重写 AOF 文件。 */
     @Override
     public Mono<String> bgReWriteAof() {
         return write(null, StringCodec.INSTANCE, BGREWRITEAOF);
@@ -57,6 +61,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
 
     static final RedisStrictCommand<String> BGSAVE = new RedisStrictCommand<String>("BGSAVE");
     
+    /** BGSAVE：后台触发 RDB 快照。 */
     @Override
     public Mono<String> bgSave() {
         return write(null, StringCodec.INSTANCE, BGSAVE);
@@ -74,6 +79,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
         return write(null, StringCodec.INSTANCE, SAVE);
     }
 
+    /** DBSIZE：汇总所有 master 节点的 key 数量。 */
     @Override
     public Mono<Long> dbSize() {
         return executorService.reactive(() -> {
@@ -86,6 +92,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
     
     private static final RedisStrictCommand<String> FLUSHDB = new RedisStrictCommand<String>("FLUSHDB");
 
+    /** FLUSHDB：清空所有节点当前数据库。 */
     @Override
     public Mono<String> flushDb() {
         return executorService.reactive(() -> {
@@ -107,6 +114,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
     static final RedisStrictCommand<Properties> INFO_DEFAULT = new RedisStrictCommand<Properties>("INFO", "DEFAULT", new ObjectDecoder(new PropertiesDecoder()));
     static final RedisStrictCommand<Properties> INFO = new RedisStrictCommand<Properties>("INFO", new ObjectDecoder(new PropertiesDecoder()));
     
+    /** INFO DEFAULT：读取默认段服务器信息。 */
     @Override
     public Mono<Properties> info() {
         return read(null, StringCodec.INSTANCE, INFO_DEFAULT);
@@ -119,6 +127,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
 
     static final RedisStrictCommand<Properties> CONFIG_GET = new RedisStrictCommand<Properties>("CONFIG", "GET", new PropertiesListDecoder());
     
+    /** CONFIG GET：按模式读取运行时配置。 */
     @Override
     public Mono<Properties> getConfig(String pattern) {
         return read(null, StringCodec.INSTANCE, CONFIG_GET, pattern);
@@ -145,6 +154,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
         return read(null, LongCodec.INSTANCE, TIME);
     }
 
+    /** TIME：读取服务器时间并按 {@link TimeUnit} 转换（毫秒基准）。 */
     @Override
     public Mono<Long> time(TimeUnit timeUnit) {
         return read(null, LongCodec.INSTANCE, new RedisStrictCommand<>("TIME", new TimeLongObjectDecoder() {
@@ -161,6 +171,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
         throw new UnsupportedOperationException();
     }
 
+    /** 客户端名称应通过 Redisson {@link Config} 配置，此处不支持。 */
     @Override
     public Mono<String> setClientName(String name) {
         throw new UnsupportedOperationException("Should be defined through Redisson Config object");
@@ -173,6 +184,7 @@ public class RedissonReactiveServerCommands extends RedissonBaseReactive impleme
 
     private static final StringToRedisClientInfoConverter CONVERTER = new StringToRedisClientInfoConverter();
 
+    /** CLIENT LIST：解析为 {@link RedisClientInfo} 流。 */
     @Override
     public Flux<RedisClientInfo> getClientList() {
         Mono<List<String>> m = read(null, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);

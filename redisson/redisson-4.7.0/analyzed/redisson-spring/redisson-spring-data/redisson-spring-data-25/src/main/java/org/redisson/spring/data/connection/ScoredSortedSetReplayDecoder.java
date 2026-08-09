@@ -28,7 +28,9 @@ import org.springframework.data.redis.connection.DefaultTuple;
 import org.springframework.data.redis.connection.RedisZSetCommands.Tuple;
 
 /**
- * 
+ * 有序集合响应解码为 {@link Set}{@code <}{@link Tuple}{@code >}，以 {@link LinkedHashSet} 保留 Redis 返回顺序。
+ * <p>奇数下标参数经 {@link DoubleCodec} 解析 score。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -36,12 +38,14 @@ public class ScoredSortedSetReplayDecoder implements MultiDecoder<Set<Tuple>> {
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
+        // 奇数下标为 score，使用 DoubleCodec。
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 成对解析 member/score 并加入 {@link LinkedHashSet}。 */
     @Override
     public Set<Tuple> decode(List<Object> parts, State state) {
         Set<Tuple> result = new LinkedHashSet<Tuple>();
