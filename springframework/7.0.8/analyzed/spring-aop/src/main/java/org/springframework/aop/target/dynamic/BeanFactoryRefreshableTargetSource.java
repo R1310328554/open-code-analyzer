@@ -20,8 +20,12 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.util.Assert;
 
 /**
- * 可刷新的 TargetSource，从 BeanFactory 获取新的目标 bean。
- * <p> 可以被子类化以覆盖 {@code requiresRefresh()} 以抑制不必要的刷新。默认情况下，每次“refreshCheckDelay”过去后都会执行刷新。
+ * Refreshable TargetSource that fetches fresh target beans from a BeanFactory.
+ *
+ * <p>Can be subclassed to override {@code requiresRefresh()} to suppress
+ * unnecessary refreshes. By default, a refresh will be performed every time
+ * the "refreshCheckDelay" has elapsed.
+ *
  * @author Rob Harrop
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -33,18 +37,18 @@ import org.springframework.util.Assert;
  */
 public class BeanFactoryRefreshableTargetSource extends AbstractRefreshableTargetSource {
 
-	/** 底层 BeanFactory 引用。 */
 	private final BeanFactory beanFactory;
 
-	/** 名称相关状态（`beanName`）。 */
 	private final String beanName;
 
 
 	/**
-	 * 为给定的 bean 工厂和 bean 名称创建一个新的 BeanFactoryRefreshableTargetSource。 <p>注意，传入的 BeanFactory
-	 * 应该为给定的 bean 名称设置适当的 bean 定义。
-	 * @param beanFactory 从中获取bean的 BeanFactory
-	 * @param beanName 目标 bean 的名称
+	 * Create a new BeanFactoryRefreshableTargetSource for the given
+	 * bean factory and bean name.
+	 * <p>Note that the passed-in BeanFactory should have an appropriate
+	 * bean definition set up for the given bean name.
+	 * @param beanFactory the BeanFactory to fetch beans from
+	 * @param beanName the name of the target bean
 	 */
 	public BeanFactoryRefreshableTargetSource(BeanFactory beanFactory, String beanName) {
 		Assert.notNull(beanFactory, "BeanFactory is required");
@@ -55,7 +59,7 @@ public class BeanFactoryRefreshableTargetSource extends AbstractRefreshableTarge
 
 
 	/**
-	 * 检索新的目标对象。
+	 * Retrieve a fresh target object.
 	 */
 	@Override
 	protected final Object freshTarget() {
@@ -63,7 +67,10 @@ public class BeanFactoryRefreshableTargetSource extends AbstractRefreshableTarge
 	}
 
 	/**
-	 * 子类可以重写的模板方法，以为给定的 bean 工厂和 bean 名称提供新的目标对象。 <p>此默认实现从 bean 工厂获取新的目标 bean 实例。
+	 * A template method that subclasses may override to provide a
+	 * fresh target object for the given bean factory and bean name.
+	 * <p>This default implementation fetches a new target bean
+	 * instance from the bean factory.
 	 * @see org.springframework.beans.factory.BeanFactory#getBean
 	 */
 	protected Object obtainFreshBean(BeanFactory beanFactory, String beanName) {

@@ -25,32 +25,34 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.Assert;
 
 /**
- * 简单的 ClassFilter，用于查找类中存在的特定注释。
+ * Simple ClassFilter that looks for a specific annotation being present on a class.
+ *
  * @author Juergen Hoeller
  * @since 2.0
  * @see AnnotationMatchingPointcut
  */
 public class AnnotationClassFilter implements ClassFilter {
 
-	/** 类型相关状态（`annotationType`）。 */
 	private final Class<? extends Annotation> annotationType;
 
-	/** `checkInherited`：该类的成员状态。 */
 	private final boolean checkInherited;
 
 
 	/**
-	 * 为给定的注释类型创建一个新的 AnnotationClassFilter。
-	 * @param annotationType 要查找的注释类型
+	 * Create a new AnnotationClassFilter for the given annotation type.
+	 * @param annotationType the annotation type to look for
 	 */
 	public AnnotationClassFilter(Class<? extends Annotation> annotationType) {
 		this(annotationType, false);
 	}
 
 	/**
-	 * 为给定的注释类型创建一个新的 AnnotationClassFilter。
-	 * @param annotationType 要查找的注释类型
-	 * @param checkInherited 是否还检查超类和接口以及注释类型的元注释（即是否使用 {@link AnnotatedElementUtils#hasAnnotation} 语义而不是标准 Java {@link Class#isAnnotationPresent}）
+	 * Create a new AnnotationClassFilter for the given annotation type.
+	 * @param annotationType the annotation type to look for
+	 * @param checkInherited whether to also check the superclasses and
+	 * interfaces as well as meta-annotations for the annotation type
+	 * (i.e. whether to use {@link AnnotatedElementUtils#hasAnnotation}
+	 * semantics instead of standard Java {@link Class#isAnnotationPresent})
 	 */
 	public AnnotationClassFilter(Class<? extends Annotation> annotationType, boolean checkInherited) {
 		Assert.notNull(annotationType, "Annotation type must not be null");
@@ -59,18 +61,12 @@ public class AnnotationClassFilter implements ClassFilter {
 	}
 
 
-	/**
-	 * 匹配：es（方法 `matches`）。
-	 */
 	@Override
 	public boolean matches(Class<?> clazz) {
 		return (this.checkInherited ? AnnotatedElementUtils.hasAnnotation(clazz, this.annotationType) :
 				clazz.isAnnotationPresent(this.annotationType));
 	}
 
-	/**
-	 * 比较是否相等。
-	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof AnnotationClassFilter otherCf &&
@@ -78,17 +74,11 @@ public class AnnotationClassFilter implements ClassFilter {
 				this.checkInherited == otherCf.checkInherited));
 	}
 
-	/**
-	 * 判断是否包含/具备 h Code。
-	 */
 	@Override
 	public int hashCode() {
 		return this.annotationType.hashCode();
 	}
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return getClass().getName() + ": " + this.annotationType;

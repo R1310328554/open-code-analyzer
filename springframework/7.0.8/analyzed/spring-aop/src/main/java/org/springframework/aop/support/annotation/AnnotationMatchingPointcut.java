@@ -27,8 +27,9 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
 
 /**
- * 简单的 {@link Pointcut}，用于查找 {@linkplain #forClassAnnotation class} 或 {@linkplain
- * #forMethodAnnotation method} 上存在的特定注释。
+ * Simple {@link Pointcut} that looks for a specific annotation being present on a
+ * {@linkplain #forClassAnnotation class} or {@linkplain #forMethodAnnotation method}.
+ *
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 2.0
@@ -37,25 +38,24 @@ import org.springframework.util.Assert;
  */
 public class AnnotationMatchingPointcut implements Pointcut {
 
-	/** 类相关状态（`classFilter`）。 */
 	private final ClassFilter classFilter;
 
-	/** 方法相关状态（`methodMatcher`）。 */
 	private final MethodMatcher methodMatcher;
 
 
 	/**
-	 * 为给定的注释类型创建一个新的 AnnotationMatchingPointcut。
-	 * @param classAnnotationType 在类级别查找的注释类型
+	 * Create a new AnnotationMatchingPointcut for the given annotation type.
+	 * @param classAnnotationType the annotation type to look for at the class level
 	 */
 	public AnnotationMatchingPointcut(Class<? extends Annotation> classAnnotationType) {
 		this(classAnnotationType, false);
 	}
 
 	/**
-	 * 为给定的注释类型创建一个新的 AnnotationMatchingPointcut。
-	 * @param classAnnotationType 在类级别查找的注释类型
-	 * @param checkInherited 是否还检查超类和接口以及注释类型的元注释
+	 * Create a new AnnotationMatchingPointcut for the given annotation type.
+	 * @param classAnnotationType the annotation type to look for at the class level
+	 * @param checkInherited whether to also check the superclasses and interfaces
+	 * as well as meta-annotations for the annotation type
 	 * @see AnnotationClassFilter#AnnotationClassFilter(Class, boolean)
 	 */
 	public AnnotationMatchingPointcut(Class<? extends Annotation> classAnnotationType, boolean checkInherited) {
@@ -64,9 +64,11 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	}
 
 	/**
-	 * 为给定的注释类型创建一个新的 AnnotationMatchingPointcut。
-	 * @param classAnnotationType 在类级别查找的注释类型（可以是 {@code null}）
-	 * @param methodAnnotationType 在方法级别查找的注释类型（可以是 {@code null}）
+	 * Create a new AnnotationMatchingPointcut for the given annotation types.
+	 * @param classAnnotationType the annotation type to look for at the class level
+	 * (can be {@code null})
+	 * @param methodAnnotationType the annotation type to look for at the method level
+	 * (can be {@code null})
 	 */
 	public AnnotationMatchingPointcut(@Nullable Class<? extends Annotation> classAnnotationType,
 			@Nullable Class<? extends Annotation> methodAnnotationType) {
@@ -75,10 +77,13 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	}
 
 	/**
-	 * 为给定的注释类型创建一个新的 AnnotationMatchingPointcut。
-	 * @param classAnnotationType 在类级别查找的注释类型（可以是 {@code null}）
-	 * @param methodAnnotationType 在方法级别查找的注释类型（可以是 {@code null}）
-	 * @param checkInherited 是否还检查超类和接口以及注释类型的元注释
+	 * Create a new AnnotationMatchingPointcut for the given annotation types.
+	 * @param classAnnotationType the annotation type to look for at the class level
+	 * (can be {@code null})
+	 * @param methodAnnotationType the annotation type to look for at the method level
+	 * (can be {@code null})
+	 * @param checkInherited whether to also check the superclasses and interfaces
+	 * as well as meta-annotations for the annotation type
 	 * @since 5.0
 	 * @see AnnotationClassFilter#AnnotationClassFilter(Class, boolean)
 	 * @see AnnotationMethodMatcher#AnnotationMethodMatcher(Class, boolean)
@@ -106,25 +111,16 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	}
 
 
-	/**
-	 * 获取 Class Filter（`ClassFilter`）。
-	 */
 	@Override
 	public ClassFilter getClassFilter() {
 		return this.classFilter;
 	}
 
-	/**
-	 * 获取 Method Matcher（`MethodMatcher`）。
-	 */
 	@Override
 	public MethodMatcher getMethodMatcher() {
 		return this.methodMatcher;
 	}
 
-	/**
-	 * 比较是否相等。
-	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof AnnotationMatchingPointcut otherPointcut &&
@@ -132,26 +128,21 @@ public class AnnotationMatchingPointcut implements Pointcut {
 				this.methodMatcher.equals(otherPointcut.methodMatcher)));
 	}
 
-	/**
-	 * 判断是否包含/具备 h Code。
-	 */
 	@Override
 	public int hashCode() {
 		return this.classFilter.hashCode() * 37 + this.methodMatcher.hashCode();
 	}
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return "AnnotationMatchingPointcut: " + this.classFilter + ", " + this.methodMatcher;
 	}
 
 	/**
-	 * AnnotationMatchingPointcut 的工厂方法，该方法与类级别的指定注释相匹配。
-	 * @param annotationType 在类级别查找的注释类型
-	 * @return 对应的AnnotationMatchingPointcut
+	 * Factory method for an AnnotationMatchingPointcut that matches
+	 * for the specified annotation at the class level.
+	 * @param annotationType the annotation type to look for at the class level
+	 * @return the corresponding AnnotationMatchingPointcut
 	 */
 	public static AnnotationMatchingPointcut forClassAnnotation(Class<? extends Annotation> annotationType) {
 		Assert.notNull(annotationType, "Annotation type must not be null");
@@ -159,9 +150,10 @@ public class AnnotationMatchingPointcut implements Pointcut {
 	}
 
 	/**
-	 * AnnotationMatchingPointcut 的工厂方法，该方法与方法级别的指定注释相匹配。
-	 * @param annotationType 在方法级别查找的注释类型
-	 * @return 对应的AnnotationMatchingPointcut
+	 * Factory method for an AnnotationMatchingPointcut that matches
+	 * for the specified annotation at the method level.
+	 * @param annotationType the annotation type to look for at the method level
+	 * @return the corresponding AnnotationMatchingPointcut
 	 */
 	public static AnnotationMatchingPointcut forMethodAnnotation(Class<? extends Annotation> annotationType) {
 		Assert.notNull(annotationType, "Annotation type must not be null");
@@ -170,7 +162,8 @@ public class AnnotationMatchingPointcut implements Pointcut {
 
 
 	/**
-	 * {@link ClassFilter} 委托 {@link AnnotationUtils#isCandidateClass} 来过滤其方法不值得一开始搜索的类。
+	 * {@link ClassFilter} that delegates to {@link AnnotationUtils#isCandidateClass}
+	 * for filtering classes whose methods are not worth searching to begin with.
 	 * @since 5.2
 	 */
 	private static class AnnotationCandidateClassFilter implements ClassFilter {

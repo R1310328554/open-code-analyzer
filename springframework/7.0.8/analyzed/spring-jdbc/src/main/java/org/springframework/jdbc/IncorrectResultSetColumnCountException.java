@@ -19,7 +19,9 @@ package org.springframework.jdbc;
 import org.springframework.dao.DataRetrievalFailureException;
 
 /**
- * 当结果集没有正确的列计数时，例如当期望单个列但获得 0 列或多于 1 列时，会引发数据访问异常。
+ * Data access exception thrown when a result set did not have the correct column count,
+ * for example when expecting a single column but getting 0 or more than 1 column.
+ *
  * @author Juergen Hoeller
  * @since 2.0
  * @see org.springframework.dao.IncorrectResultSizeDataAccessException
@@ -27,17 +29,15 @@ import org.springframework.dao.DataRetrievalFailureException;
 @SuppressWarnings("serial")
 public class IncorrectResultSetColumnCountException extends DataRetrievalFailureException {
 
-	/** `expectedCount`：该类的成员状态。 */
 	private final int expectedCount;
 
-	/** `actualCount`：该类的成员状态。 */
 	private final int actualCount;
 
 
 	/**
-	 * In CorrectResultSetColumnCountException 的构造函数。
-	 * @param expectedCount 预期的列数
-	 * @param actualCount 实际列数
+	 * Constructor for IncorrectResultSetColumnCountException.
+	 * @param expectedCount the expected column count
+	 * @param actualCount the actual column count
 	 */
 	public IncorrectResultSetColumnCountException(int expectedCount, int actualCount) {
 		super("Incorrect column count: expected " + expectedCount + ", actual " + actualCount);
@@ -46,10 +46,10 @@ public class IncorrectResultSetColumnCountException extends DataRetrievalFailure
 	}
 
 	/**
-	 * In CorrectResultCountDataAccessException 的构造函数。
-	 * @param msg 详细消息
-	 * @param expectedCount 预期的列数
-	 * @param actualCount 实际列数
+	 * Constructor for IncorrectResultCountDataAccessException.
+	 * @param msg the detail message
+	 * @param expectedCount the expected column count
+	 * @param actualCount the actual column count
 	 */
 	public IncorrectResultSetColumnCountException(String msg, int expectedCount, int actualCount) {
 		super(msg);
@@ -59,14 +59,14 @@ public class IncorrectResultSetColumnCountException extends DataRetrievalFailure
 
 
 	/**
-	 * 返回预期的列数。
+	 * Return the expected column count.
 	 */
 	public int getExpectedCount() {
 		return this.expectedCount;
 	}
 
 	/**
-	 * 返回实际的列数。
+	 * Return the actual column count.
 	 */
 	public int getActualCount() {
 		return this.actualCount;

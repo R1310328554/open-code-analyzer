@@ -23,9 +23,13 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.TargetSource;
 
 /**
- * 包装可刷新目标对象的抽象 {@link org.springframework.aop.TargetSource} 实现。子类可以判断是否需要刷新，以及是否需要提供新鲜的目标对
- * 象。
- * <p>I 实现 {@link Refreshable} 接口，以便允许对刷新状态进行显式控制。
+ * Abstract {@link org.springframework.aop.TargetSource} implementation that
+ * wraps a refreshable target object. Subclasses can determine whether a
+ * refresh is required, and need to provide fresh target objects.
+ *
+ * <p>Implements the {@link Refreshable} interface in order to allow for
+ * explicit control over the refresh status.
+ *
  * @author Rod Johnson
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -35,11 +39,9 @@ import org.springframework.aop.TargetSource;
  */
 public abstract class AbstractRefreshableTargetSource implements TargetSource, Refreshable {
 
-	/**
-	 */
+	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** 目标相关状态（`targetObject`）。 */
 	@SuppressWarnings("NullAway.Init")
 	protected Object targetObject;
 
@@ -53,17 +55,16 @@ public abstract class AbstractRefreshableTargetSource implements TargetSource, R
 
 
 	/**
-	 * 设置刷新检查之间的延迟（以毫秒为单位）。默认值为 -1，表示根本不进行刷新检查。 <p>请注意，仅当 {@link #requiresRefresh()} 返回 {@code 
-	 * true} 时才会发生实际刷新。
+	 * Set the delay between refresh checks, in milliseconds.
+	 * Default is -1, indicating no refresh checks at all.
+	 * <p>Note that an actual refresh will only happen when
+	 * {@link #requiresRefresh()} returns {@code true}.
 	 */
 	public void setRefreshCheckDelay(long refreshCheckDelay) {
 		this.refreshCheckDelay = refreshCheckDelay;
 	}
 
 
-	/**
-	 * 获取 Target Class（`TargetClass`）。
-	 */
 	@Override
 	public synchronized Class<?> getTargetClass() {
 		if (this.targetObject == null) {
@@ -72,9 +73,6 @@ public abstract class AbstractRefreshableTargetSource implements TargetSource, R
 		return this.targetObject.getClass();
 	}
 
-	/**
-	 * 获取 Target（`Target`）。
-	 */
 	@Override
 	public final synchronized @Nullable Object getTarget() {
 		if ((refreshCheckDelayElapsed() && requiresRefresh()) || this.targetObject == null) {
@@ -84,9 +82,6 @@ public abstract class AbstractRefreshableTargetSource implements TargetSource, R
 	}
 
 
-	/**
-	 * 刷新（方法 `refresh`）。
-	 */
 	@Override
 	public final synchronized void refresh() {
 		logger.debug("Attempting to refresh target");
@@ -98,26 +93,17 @@ public abstract class AbstractRefreshableTargetSource implements TargetSource, R
 		logger.debug("Target refreshed successfully");
 	}
 
-	/**
-	 * 获取 Refresh Count（`RefreshCount`）。
-	 */
 	@Override
 	public synchronized long getRefreshCount() {
 		return this.refreshCount;
 	}
 
-	/**
-	 * 获取 Last Refresh Time（`LastRefreshTime`）。
-	 */
 	@Override
 	public synchronized long getLastRefreshTime() {
 		return this.lastRefreshTime;
 	}
 
 
-	/**
-	 * 刷新：Check Delay Elapsed（方法 `refreshCheckDelayElapsed`）。
-	 */
 	private boolean refreshCheckDelayElapsed() {
 		if (this.refreshCheckDelay < 0) {
 			return false;
@@ -126,7 +112,7 @@ public abstract class AbstractRefreshableTargetSource implements TargetSource, R
 		long currentTimeMillis = System.currentTimeMillis();
 
 		if (this.lastRefreshCheck < 0 || currentTimeMillis - this.lastRefreshCheck > this.refreshCheckDelay) {
-			// 将执行刷新检查 - 更新时间戳。
+			// Going to perform a refresh check - update the timestamp.
 			this.lastRefreshCheck = currentTimeMillis;
 			logger.debug("Refresh check delay elapsed - checking whether refresh is required");
 			return true;
@@ -137,17 +123,22 @@ public abstract class AbstractRefreshableTargetSource implements TargetSource, R
 
 
 	/**
-	 * 判断是否需要刷新。在刷新检查延迟过后，为每次刷新检查调用。 <p>默认实现总是返回{@code true}，每次延迟过去后都会触发刷新。通过对底层目标资源进行适当检查，由子类覆
-	 * 盖。
-	 * @return 需要刷新
+	 * Determine whether a refresh is required.
+	 * Invoked for each refresh check, after the refresh check delay has elapsed.
+	 * <p>The default implementation always returns {@code true}, triggering
+	 * a refresh every time the delay has elapsed. To be overridden by subclasses
+	 * with an appropriate check of the underlying target resource.
+	 * @return whether a refresh is required
 	 */
 	protected boolean requiresRefresh() {
 		return true;
 	}
 
 	/**
-	 * 获取新的目标对象。 <p>仅在刷新检查发现需要刷新时调用（即 {@link #requiresRefresh()} 已返回 {@code true}）。
-	 * @return 新鲜的目标对象
+	 * Obtain a fresh target object.
+	 * <p>Only invoked if a refresh check has found that a refresh is required
+	 * (that is, {@link #requiresRefresh()} has returned {@code true}).
+	 * @return the fresh target object
 	 */
 	protected abstract Object freshTarget();
 

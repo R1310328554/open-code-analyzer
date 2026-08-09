@@ -28,9 +28,14 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 
 /**
- * 动态 {@link org.springframework.aop.TargetSource} 实现的基类，用于创建新的原型 bean 实例以支持池或每次调用新实例策略。
- * <p>这样的 TargetSource 必须在 {@link BeanFactory} 中运行，因为它需要调用 {@code getBean}
- * 方法来创建新的原型实例。因此，这个基类扩展了{@link AbstractBeanFactoryBasedTargetSource}。
+ * Base class for dynamic {@link org.springframework.aop.TargetSource} implementations
+ * that create new prototype bean instances to support a pooling or
+ * new-instance-per-invocation strategy.
+ *
+ * <p>Such TargetSources must run in a {@link BeanFactory}, as it needs to
+ * call the {@code getBean} method to create a new prototype instance.
+ * Therefore, this base class extends {@link AbstractBeanFactoryBasedTargetSource}.
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see org.springframework.beans.factory.BeanFactory#getBean
@@ -41,14 +46,11 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 @SuppressWarnings("serial")
 public abstract class AbstractPrototypeBasedTargetSource extends AbstractBeanFactoryBasedTargetSource {
 
-	/**
-	 * 设置 Bean Factory（`BeanFactory`）。
-	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
 		super.setBeanFactory(beanFactory);
 
-		// 检查目标bean是否被定义为prototype。
+		// Check whether the target bean is defined as prototype.
 		if (!beanFactory.isPrototype(getTargetBeanName())) {
 			throw new BeanDefinitionStoreException(
 					"Cannot use prototype-based TargetSource against non-prototype bean with name '" +
@@ -57,8 +59,8 @@ public abstract class AbstractPrototypeBasedTargetSource extends AbstractBeanFac
 	}
 
 	/**
-	 * 子类应该调用此方法来创建新的原型实例。
-	 * @throws BeansException 如果bean创建失败
+	 * Subclasses should call this method to create a new prototype instance.
+	 * @throws BeansException if bean creation failed
 	 */
 	protected Object newPrototypeInstance() throws BeansException {
 		if (logger.isDebugEnabled()) {
@@ -68,8 +70,8 @@ public abstract class AbstractPrototypeBasedTargetSource extends AbstractBeanFac
 	}
 
 	/**
-	 * 子类应该调用此方法来销毁过时的原型实例。
-	 * @param target 要销毁的 bean 实例
+	 * Subclasses should call this method to destroy an obsolete prototype instance.
+	 * @param target the bean instance to destroy
 	 */
 	protected void destroyPrototypeInstance(Object target) {
 		if (logger.isDebugEnabled()) {
@@ -90,27 +92,28 @@ public abstract class AbstractPrototypeBasedTargetSource extends AbstractBeanFac
 
 
 	//---------------------------------------------------------------------
-	// 序列化支持
+	// Serialization support
 	//---------------------------------------------------------------------
 
-	/**
-	 * 方法 `readObject`：完成本类中与「read Object」相关的职责。
-	 */
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 		throw new NotSerializableException("A prototype-based TargetSource itself is not deserializable - " +
 				"just a disconnected SingletonTargetSource or EmptyTargetSource is");
 	}
 
 	/**
-	 * 在序列化时将此对象替换为 SingletonTargetSource。受保护，否则子类不会调用它。 （{@code writeReplace()} 方法必须对正在序列化的类可见
-	 * 。） <p> 通过此方法的实现，无需将此类或子类中的不可序列化字段标记为瞬态。
+	 * Replaces this object with a SingletonTargetSource on serialization.
+	 * Protected as otherwise it won't be invoked for subclasses.
+	 * (The {@code writeReplace()} method must be visible to the class
+	 * being serialized.)
+	 * <p>With this implementation of this method, there is no need to mark
+	 * non-serializable fields in this class or subclasses as transient.
 	 */
 	protected Object writeReplace() throws ObjectStreamException {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Disconnecting TargetSource [" + this + "]");
 		}
 		try {
-			// 创建断开连接的 SingletonTargetSource/EmptyTargetSource。
+			// Create disconnected SingletonTargetSource/EmptyTargetSource.
 			Object target = getTarget();
 			return (target != null ? new SingletonTargetSource(target) :
 					EmptyTargetSource.forClass(getTargetClass()));

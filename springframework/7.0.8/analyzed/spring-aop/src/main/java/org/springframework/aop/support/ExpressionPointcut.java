@@ -21,14 +21,15 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.Pointcut;
 
 /**
- * 由使用字符串表达式的切入点实现的接口。
+ * Interface to be implemented by pointcuts that use String expressions.
+ *
  * @author Rob Harrop
  * @since 2.0
  */
 public interface ExpressionPointcut extends Pointcut {
 
 	/**
-	 * 返回此切入点的字符串表达式。
+	 * Return the String expression for this pointcut.
 	 */
 	@Nullable String getExpression();
 

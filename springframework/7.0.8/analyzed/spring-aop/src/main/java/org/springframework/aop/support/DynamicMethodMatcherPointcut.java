@@ -21,23 +21,20 @@ import org.springframework.aop.MethodMatcher;
 import org.springframework.aop.Pointcut;
 
 /**
- * 当我们想要强制子类实现 MethodMatcher 接口，但子类想要成为切入点时，很方便的超类。也可以重写 getClassFilter() 方法来自定义 ClassFilte
- * r 行为。
+ * Convenient superclass when we want to force subclasses to
+ * implement MethodMatcher interface, but subclasses
+ * will want to be pointcuts. The getClassFilter() method can
+ * be overridden to customize ClassFilter behavior as well.
+ *
  * @author Rod Johnson
  */
 public abstract class DynamicMethodMatcherPointcut extends DynamicMethodMatcher implements Pointcut {
 
-	/**
-	 * 获取 Class Filter（`ClassFilter`）。
-	 */
 	@Override
 	public ClassFilter getClassFilter() {
 		return ClassFilter.TRUE;
 	}
 
-	/**
-	 * 获取 Method Matcher（`MethodMatcher`）。
-	 */
 	@Override
 	public final MethodMatcher getMethodMatcher() {
 		return this;

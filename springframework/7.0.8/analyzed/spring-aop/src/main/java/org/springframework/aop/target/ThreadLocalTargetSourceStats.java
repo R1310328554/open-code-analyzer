@@ -17,24 +17,25 @@
 package org.springframework.aop.target;
 
 /**
- * ThreadLocal TargetSource 的统计信息。
+ * Statistics for a ThreadLocal TargetSource.
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public interface ThreadLocalTargetSourceStats {
 
 	/**
-	 * 返回客户端调用的次数。
+	 * Return the number of client invocations.
 	 */
 	int getInvocationCount();
 
 	/**
-	 * 返回线程绑定对象满足的命中数。
+	 * Return the number of hits that were satisfied by a thread-bound object.
 	 */
 	int getHitCount();
 
 	/**
-	 * 返回创建的线程绑定对象的数量。
+	 * Return the number of thread-bound objects created.
 	 */
 	int getObjectCount();
 

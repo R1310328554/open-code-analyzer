@@ -23,8 +23,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 
 /**
- * 以无效方式访问 ResultSet 时抛出异常。此类异常始终有 {@code java.sql.SQLException} 根本原因。
- * <p> 当指定了无效的 ResultSet 列索引或名称时，通常会发生这种情况。也由断开连接的 SqlRowSets 引发。
+ * Exception thrown when a ResultSet has been accessed in an invalid fashion.
+ * Such exceptions always have a {@code java.sql.SQLException} root cause.
+ *
+ * <p>This typically happens when an invalid ResultSet column index or name
+ * has been specified. Also thrown by disconnected SqlRowSets.
+ *
  * @author Juergen Hoeller
  * @since 1.2
  * @see BadSqlGrammarException
@@ -33,15 +37,14 @@ import org.springframework.dao.InvalidDataAccessResourceUsageException;
 @SuppressWarnings("serial")
 public class InvalidResultSetAccessException extends InvalidDataAccessResourceUsageException {
 
-	/** `sql`：该类的成员状态。 */
 	private final @Nullable String sql;
 
 
 	/**
-	 * InvalidResultSetAccessException 的构造函数。
-	 * @param task 当前任务名称
-	 * @param sql 有问题的 SQL 语句
-	 * @param ex 根本原因
+	 * Constructor for InvalidResultSetAccessException.
+	 * @param task name of current task
+	 * @param sql the offending SQL statement
+	 * @param ex the root cause
 	 */
 	public InvalidResultSetAccessException(String task, String sql, SQLException ex) {
 		super(task + "; invalid ResultSet access for SQL [" + sql + "]", ex);
@@ -49,8 +52,8 @@ public class InvalidResultSetAccessException extends InvalidDataAccessResourceUs
 	}
 
 	/**
-	 * InvalidResultSetAccessException 的构造函数。
-	 * @param ex 根本原因
+	 * Constructor for InvalidResultSetAccessException.
+	 * @param ex the root cause
 	 */
 	public InvalidResultSetAccessException(SQLException ex) {
 		super(ex.getMessage(), ex);
@@ -59,15 +62,15 @@ public class InvalidResultSetAccessException extends InvalidDataAccessResourceUs
 
 
 	/**
-	 * 返回包装的 SQLException。
+	 * Return the wrapped SQLException.
 	 */
 	public @Nullable SQLException getSQLException() {
 		return (SQLException) getCause();
 	}
 
 	/**
-	 * 返回导致问题的 SQL。
-	 * @return 违规 SQL（如果已知）
+	 * Return the SQL that caused the problem.
+	 * @return the offending SQL, if known
 	 */
 	public @Nullable String getSql() {
 		return this.sql;

@@ -21,9 +21,12 @@ import org.springframework.aop.MethodMatcher;
 import org.springframework.aop.Pointcut;
 
 /**
- * 当我们想要强制子类实现 {@link MethodMatcher} 接口但子类想要成为切入点时，方便的超类。
- * <p>{@link #setClassFilter "classFilter"} 属性可以设置为自定义 {@link ClassFilter} 行为。默认为{@link
- * ClassFilter#TRUE}。
+ * Convenient superclass when we want to force subclasses to implement the
+ * {@link MethodMatcher} interface but subclasses will want to be pointcuts.
+ *
+ * <p>The {@link #setClassFilter "classFilter"} property can be set to customize
+ * {@link ClassFilter} behavior. The default is {@link ClassFilter#TRUE}.
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
@@ -33,24 +36,19 @@ public abstract class StaticMethodMatcherPointcut extends StaticMethodMatcher im
 
 
 	/**
-	 * 设置用于此切入点的 {@link ClassFilter}。默认为 {@link ClassFilter#TRUE}。
+	 * Set the {@link ClassFilter} to use for this pointcut.
+	 * Default is {@link ClassFilter#TRUE}.
 	 */
 	public void setClassFilter(ClassFilter classFilter) {
 		this.classFilter = classFilter;
 	}
 
-	/**
-	 * 获取 Class Filter（`ClassFilter`）。
-	 */
 	@Override
 	public ClassFilter getClassFilter() {
 		return this.classFilter;
 	}
 
 
-	/**
-	 * 获取 Method Matcher（`MethodMatcher`）。
-	 */
 	@Override
 	public final MethodMatcher getMethodMatcher() {
 		return this;

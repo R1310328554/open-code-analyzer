@@ -17,26 +17,27 @@
 package org.springframework.aop.target;
 
 /**
- * 池目标源的配置接口。
+ * Config interface for a pooling target source.
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public interface PoolingConfig {
 
 	/**
-	 * 返回池的最大大小。
+	 * Return the maximum size of the pool.
 	 */
 	int getMaxSize();
 
 	/**
-	 * 返回池中活动对象的数量。
-	 * @throws UnsupportedOperationException 如果池不支持
+	 * Return the number of active objects in the pool.
+	 * @throws UnsupportedOperationException if not supported by the pool
 	 */
 	int getActiveCount() throws UnsupportedOperationException;
 
 	/**
-	 * 返回池中空闲对象的数量。
-	 * @throws UnsupportedOperationException 如果池不支持
+	 * Return the number of idle objects in the pool.
+	 * @throws UnsupportedOperationException if not supported by the pool
 	 */
 	int getIdleCount() throws UnsupportedOperationException;
 

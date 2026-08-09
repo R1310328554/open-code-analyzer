@@ -27,9 +27,15 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.PatternMatchUtils;
 
 /**
- * 用于简单方法名称匹配的切入点 bean，作为正则表达式模式的替代方案。
- * <p>E每个配置的方法名称可以是精确的方法名称或方法名称模式（有关支持的模式样式的详细信息，请参阅 {@link #isMatch(String, String)}）。
- * <p>不处理重载方法：具有给定名称的所有方法都符合条件。
+ * Pointcut bean for simple method name matches, as an alternative to regular
+ * expression patterns.
+ *
+ * <p>Each configured method name can be an exact method name or a method name
+ * pattern (see {@link #isMatch(String, String)} for details on the supported
+ * pattern styles).
+ *
+ * <p>Does not handle overloaded methods: all methods with a given name will be eligible.
+ *
  * @author Juergen Hoeller
  * @author Rod Johnson
  * @author Rob Harrop
@@ -45,7 +51,8 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 
 
 	/**
-	 * 配置单个方法名称模式的便捷方法。 <p> 使用此方法或 {@link #setMappedNames(String...)}，但不能同时使用两者。
+	 * Convenience method for configuring a single method name pattern.
+	 * <p>Use either this method or {@link #setMappedNames(String...)}, but not both.
 	 * @see #setMappedNames
 	 */
 	public void setMappedName(String mappedNamePattern) {
@@ -53,7 +60,8 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	}
 
 	/**
-	 * 设置定义要匹配的方法的方法名称模式。 <p>Matching 将是所有这些的并集；如果有匹配，则切入点匹配。
+	 * Set the method name patterns defining methods to match.
+	 * <p>Matching will be the union of all these; if any match, the pointcut matches.
 	 * @see #setMappedName(String)
 	 */
 	public void setMappedNames(String... mappedNamePatterns) {
@@ -61,10 +69,13 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	}
 
 	/**
-	 * 除了已配置的方法名称模式之外，添加另一个方法名称模式。 <p>与“set”方法一样，此方法用于在使用代理之前配置代理时使用。 <p><b>NOTE:</b> 此方法在使用代理后
-	 * 不起作用，因为建议链将被缓存。
-	 * @param mappedNamePattern 附加方法名称模式
-	 * @return 切入点以允许方法链接
+	 * Add another method name pattern, in addition to those already configured.
+	 * <p>Like the "set" methods, this method is for use when configuring proxies,
+	 * before a proxy is used.
+	 * <p><b>NOTE:</b> This method does not work after the proxy is in use, since
+	 * advice chains will be cached.
+	 * @param mappedNamePattern the additional method name pattern
+	 * @return this pointcut to allow for method chaining
 	 * @see #setMappedNames(String...)
 	 * @see #setMappedName(String)
 	 */
@@ -74,9 +85,6 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	}
 
 
-	/**
-	 * 匹配：es（方法 `matches`）。
-	 */
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
 		for (String mappedNamePattern : this.mappedNamePatterns) {
@@ -88,11 +96,13 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	}
 
 	/**
-	 * 确定给定的方法名称是否与映射的名称模式匹配。 <p> 默认实现检查 {@code xxx*}、{@code *xxx}、{@code *xxx*} 和 {@code xxx*y
-	 * yy} 匹配以及直接相等。 <p>可以在子类中重写。
-	 * @param methodName 要检查的方法名称
-	 * @param mappedNamePattern 方法名称模式
-	 * @return true} 如果方法名称与模式匹配
+	 * Determine if the given method name matches the mapped name pattern.
+	 * <p>The default implementation checks for {@code xxx*}, {@code *xxx},
+	 * {@code *xxx*}, and {@code xxx*yyy} matches, as well as direct equality.
+	 * <p>Can be overridden in subclasses.
+	 * @param methodName the method name to check
+	 * @param mappedNamePattern the method name pattern
+	 * @return {@code true} if the method name matches the pattern
 	 * @see PatternMatchUtils#simpleMatch(String, String)
 	 */
 	protected boolean isMatch(String methodName, String mappedNamePattern) {
@@ -100,26 +110,17 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	}
 
 
-	/**
-	 * 比较是否相等。
-	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof NameMatchMethodPointcut that &&
 				this.mappedNamePatterns.equals(that.mappedNamePatterns)));
 	}
 
-	/**
-	 * 判断是否包含/具备 h Code。
-	 */
 	@Override
 	public int hashCode() {
 		return this.mappedNamePatterns.hashCode();
 	}
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return getClass().getName() + ": " + this.mappedNamePatterns;
