@@ -15,23 +15,8 @@
     "common/src/main/java/org/apache/rocketmq/common/chain/HandlerChain.java",
     "common/src/main/java/org/apache/rocketmq/common/coldctr/AccAndTimeStamp.java",
     "common/src/main/java/org/apache/rocketmq/common/compression/CompressionType.java",
-    "common/src/main/java/org/apache/rocketmq/common/compression/Compressor.java",
-    "common/src/main/java/org/apache/rocketmq/common/compression/CompressorFactory.java",
-    "common/src/main/java/org/apache/rocketmq/common/compression/Lz4Compressor.java",
-    "common/src/main/java/org/apache/rocketmq/common/compression/ZlibCompressor.java",
-    "common/src/main/java/org/apache/rocketmq/common/compression/ZstdCompressor.java",
-    "common/src/main/java/org/apache/rocketmq/common/config/ConfigHelper.java",
-    "common/src/main/java/org/apache/rocketmq/common/config/ConfigManagerVersion.java",
-    "common/src/main/java/org/apache/rocketmq/common/config/ConfigRocksDBStorage.java",
-    "common/src/main/java/org/apache/rocketmq/common/consistenthash/ConsistentHashRouter.java",
-    "common/src/main/java/org/apache/rocketmq/common/consistenthash/HashFunction.java",
-    "common/src/main/java/org/apache/rocketmq/common/consistenthash/Node.java",
-    "common/src/main/java/org/apache/rocketmq/common/consistenthash/VirtualNode.java",
-    "common/src/main/java/org/apache/rocketmq/common/constant/CommonConstants.java",
-    "common/src/main/java/org/apache/rocketmq/common/constant/ConsumeInitMode.java",
-    "common/src/main/java/org/apache/rocketmq/common/constant/DBMsgConstants.java",
-    "common/src/main/java/org/apache/rocketmq/common/constant/FIleReadaheadMode.java"
+    "common/src/main/java/org/apache/rocketmq/common/compression/Compressor.java"
   ],
   "remaining_pending": 1098,
-  "done": 360
+  "done": 375
 }
