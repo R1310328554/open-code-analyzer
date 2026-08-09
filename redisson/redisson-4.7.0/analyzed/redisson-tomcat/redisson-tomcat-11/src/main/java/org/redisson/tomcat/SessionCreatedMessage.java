@@ -16,15 +16,18 @@
 package org.redisson.tomcat;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨 Tomcat 节点广播：通知其他实例有新 Session 创建。
+ * <p>继承 {@link AttributeMessage}，携带节点 ID 与 Session ID。
  *
+ * @author Nikita Koksharov
  */
 public class SessionCreatedMessage extends AttributeMessage {
 
     public SessionCreatedMessage() {
     }
 
+    /** @param nodeId 创建 Session 的节点
+     *  @param sessionId 新 Session ID */
     public SessionCreatedMessage(String nodeId, String sessionId) {
         super(nodeId, sessionId);
     }

@@ -25,10 +25,11 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Redisson Valve object for Apache Tomcat
- * 
- * @author Nikita Koksharov
+ * Tomcat Valve：在请求处理期间标记 {@link RedissonSession} 为“使用中”。
+ * <p>通过 {@link RedissonSession#startUsage()} / {@link RedissonSession#endUsage()}
+ * 防止后台线程在请求未完成时覆盖 Session 状态。
  *
+ * @author Nikita Koksharov
  */
 public class UsageValve extends ValveBase {
 
@@ -40,21 +41,24 @@ public class UsageValve extends ValveBase {
         super(true);
     }
 
+    /** 递增 Valve 引用计数。 */
     public void incUsage() {
         usage.incrementAndGet();
     }
 
+    /** 递减引用计数并返回当前值。 */
     public int decUsage() {
         return usage.decrementAndGet();
     }
 
+    /** 请求前 {@code startUsage}，完成后 {@code endUsage}，再委托 Valve 链。 */
     @Override
     public void invoke(Request request, Response response) throws IOException, ServletException {
         if (getNext() == null) {
             return;
         }
 
-        //check if we already filtered/processed this request
+        // 防止同一请求重复进入使用计数逻辑
         if (request.getNote(ALREADY_FILTERED_NOTE) == null) {
             request.setNote(ALREADY_FILTERED_NOTE, Boolean.TRUE);
             try {
