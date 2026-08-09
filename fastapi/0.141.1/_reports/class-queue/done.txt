@@ -420,3 +420,13 @@ docs_src/response_model/tutorial003_03_py310.py
 docs_src/response_model/tutorial003_04_py310.py
 docs_src/response_model/tutorial003_05_py310.py
 docs_src/response_model/tutorial003_py310.py
+docs_src/schema_extra_example/tutorial003_py310.py
+docs_src/schema_extra_example/tutorial004_an_py310.py
+docs_src/schema_extra_example/tutorial004_py310.py
+docs_src/schema_extra_example/tutorial005_an_py310.py
+docs_src/schema_extra_example/tutorial005_py310.py
+docs_src/security/__init__.py
+docs_src/security/tutorial001_an_py310.py
+docs_src/security/tutorial001_py310.py
+docs_src/security/tutorial002_an_py310.py
+docs_src/security/tutorial002_py310.py
