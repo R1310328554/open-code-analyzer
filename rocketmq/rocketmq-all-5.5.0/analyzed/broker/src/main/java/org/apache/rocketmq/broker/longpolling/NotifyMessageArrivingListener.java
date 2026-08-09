@@ -25,12 +25,16 @@ import org.apache.rocketmq.broker.processor.PopMessageProcessor;
 import org.apache.rocketmq.common.lite.LiteUtil;
 import org.apache.rocketmq.store.MessageArrivingListener;
 
+/**
+ * 消息到达监听器：lite LMQ 走 {@link LiteEventDispatcher}，普通 topic 唤醒 pull/pop/notification 长轮询。
+ */
 public class NotifyMessageArrivingListener implements MessageArrivingListener {
     private final PullRequestHoldService pullRequestHoldService;
     private final PopMessageProcessor popMessageProcessor;
     private final NotificationProcessor notificationProcessor;
     private final LiteEventDispatcher liteEventDispatcher;
 
+    /** 注入 pull 挂起、POP、通知处理器及 lite 事件分发器。 */
     public NotifyMessageArrivingListener(final PullRequestHoldService pullRequestHoldService, final PopMessageProcessor popMessageProcessor, final NotificationProcessor notificationProcessor, final LiteEventDispatcher liteEventDispatcher) {
         this.pullRequestHoldService = pullRequestHoldService;
         this.popMessageProcessor = popMessageProcessor;
@@ -39,6 +43,7 @@ public class NotifyMessageArrivingListener implements MessageArrivingListener {
     }
 
     @Override
+    /** 新消息写入 CommitLog 后回调：lite 队列分发事件，否则通知三类长轮询挂起请求。 */
     public void arriving(String topic, int queueId, long logicOffset, long tagsCode,
                          long msgStoreTime, byte[] filterBitMap, Map<String, String> properties) {
         if (LiteUtil.isLiteTopicQueue(topic)) {

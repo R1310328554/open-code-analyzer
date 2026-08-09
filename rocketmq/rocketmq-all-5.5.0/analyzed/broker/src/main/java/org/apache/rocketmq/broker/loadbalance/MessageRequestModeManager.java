@@ -23,6 +23,9 @@ import org.apache.rocketmq.common.ConfigManager;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.body.SetMessageRequestModeRequestBody;
 
+/**
+ * 消息拉取模式配置管理器：持久化 topic × consumerGroup 的 {@link SetMessageRequestModeRequestBody} 映射。
+ */
 public class MessageRequestModeManager extends ConfigManager {
 
     private transient BrokerController brokerController;
@@ -30,14 +33,17 @@ public class MessageRequestModeManager extends ConfigManager {
     private ConcurrentHashMap<String/*topic*/, ConcurrentHashMap<String/*consumerGroup*/, SetMessageRequestModeRequestBody>>
         messageRequestModeMap = new ConcurrentHashMap<>();
 
+    /** 空构造，供 JSON 反序列化使用。 */
     public MessageRequestModeManager() {
         // empty construct for decode
     }
 
+    /** 绑定 Broker 以解析配置文件路径。 */
     public MessageRequestModeManager(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
+    /** 设置指定 topic 与 consumerGroup 的消息请求模式（POP/PULL 等）。 */
     public void setMessageRequestMode(String topic, String consumerGroup, SetMessageRequestModeRequestBody requestBody) {
         ConcurrentHashMap<String, SetMessageRequestModeRequestBody> consumerGroup2ModeMap = messageRequestModeMap.get(topic);
         if (consumerGroup2ModeMap == null) {
@@ -51,6 +57,7 @@ public class MessageRequestModeManager extends ConfigManager {
         consumerGroup2ModeMap.put(consumerGroup, requestBody);
     }
 
+    /** 查询 topic+group 的消息请求模式；未配置则 null。 */
     public SetMessageRequestModeRequestBody getMessageRequestMode(String topic, String consumerGroup) {
         ConcurrentHashMap<String, SetMessageRequestModeRequestBody> consumerGroup2ModeMap = messageRequestModeMap.get(topic);
         if (consumerGroup2ModeMap != null) {
@@ -60,6 +67,7 @@ public class MessageRequestModeManager extends ConfigManager {
         return null;
     }
 
+    /** 返回完整的 topic → group → 模式 映射表。 */
     public ConcurrentHashMap<String, ConcurrentHashMap<String, SetMessageRequestModeRequestBody>> getMessageRequestModeMap() {
         return this.messageRequestModeMap;
     }
@@ -74,11 +82,13 @@ public class MessageRequestModeManager extends ConfigManager {
     }
 
     @Override
+    /** 返回 messageRequestMode 持久化 JSON 文件路径。 */
     public String configFilePath() {
         return BrokerPathConfigHelper.getMessageRequestModePath(this.brokerController.getMessageStoreConfig().getStorePathRootDir());
     }
 
     @Override
+    /** 从 JSON 恢复 messageRequestModeMap。 */
     public void decode(String jsonString) {
         if (jsonString != null) {
             MessageRequestModeManager obj = RemotingSerializable.fromJson(jsonString, MessageRequestModeManager.class);

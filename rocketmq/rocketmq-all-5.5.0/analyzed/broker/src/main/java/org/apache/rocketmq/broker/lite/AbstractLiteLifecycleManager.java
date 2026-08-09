@@ -39,11 +39,12 @@ import java.util.function.Function;
 import static org.apache.rocketmq.broker.offset.ConsumerOffsetManager.TOPIC_GROUP_SEPARATOR;
 
 /**
- * Abstract class of lite lifecycle manager, which is used to manage the TTL of lite topics
- * and the validity of subscription. The subclasses provide file CQ and rocksdb CQ implementations.
+ * Lite 主题生命周期管理抽象基类：负责 lite topic 的 TTL 过期清理与订阅有效性判定。
+ * 子类分别基于文件 ConsumeQueue 与 RocksDB ConsumeQueue 实现具体扫描逻辑。
  */
 public abstract class AbstractLiteLifecycleManager extends ServiceThread {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
+    /** maxOffset 异常时连续扫描超过该次数才判定过期，避免并发读写 transient 状态。 */
     private static final int MAX_INVALID_SCAN_COUNT = 5;
 
     protected final BrokerController brokerController;
@@ -54,12 +55,14 @@ public abstract class AbstractLiteLifecycleManager extends ServiceThread {
     protected Map<String, Set<String>> subscriberGroupMap = Collections.emptyMap();
     protected Map<String, Integer> invalidScanCountMap = new ConcurrentHashMap<>();
 
+    /** 绑定 Broker 控制器与 lite 分片策略。 */
     public AbstractLiteLifecycleManager(BrokerController brokerController, LiteSharding liteSharding) {
         this.brokerController = brokerController;
         this.brokerName = brokerController.getBrokerConfig().getBrokerName();
         this.liteSharding = liteSharding;
     }
 
+    /** 初始化 MessageStore 引用，启动前必须调用。 */
     public boolean init() {
         this.messageStore = brokerController.getMessageStore();
         assert messageStore != null;
@@ -67,41 +70,36 @@ public abstract class AbstractLiteLifecycleManager extends ServiceThread {
     }
 
     /**
-     * This method actually returns NEXT slot index to use, starting from 0
+     * 返回指定 LMQ 队列下一个可写 slot 索引（从 0 起算）。
      */
     public abstract long getMaxOffsetInQueue(String lmqName);
 
     /**
-     * Collect expired LMQ of lite topic, and also attach its parent topic name
-     * return Pair of parent topic and lmq name, not null
+     * 收集已过期的 lite LMQ，附带父 topic 名；返回 (parentTopic, lmqName) 列表，非 null。
      */
     public abstract List<Pair<String, String>> collectExpiredLiteTopic();
 
     /**
-     * Collect LMQ by parent topic
-     * return lmq name list, not null
+     * 按父 topic 收集其下所有 LMQ 名称；返回列表非 null。
      */
     public abstract List<String> collectByParentTopic(String parentTopic);
 
     /**
-     * Iterator of lite topic, for high frequency iteration
-     * Triple<lmqName, maxOffsetInQueue, lastStoreTimestamp>, lastStoreTimestamp is null for now
-     * return true to continue, false to break.
+     * 高频遍历 lite topic；Triple 为 (lmqName, maxOffset, lastStoreTimestamp)，后者暂为 null。
+     * 回调返回 true 继续，false 中断。
      *
-     * @param function consumer func
+     * @param function 遍历回调
      */
     public abstract void forEachLiteTopic(Function<Triple<String, Long, Long>, Boolean> function);
 
     /**
-     * Check if the subscription for the given LMQ is active.
-     * A subscription is considered active if either:
-     * - the current broker is responsible for this LMQ according to the sharding strategy
-     * - the LMQ exists (has messages) in the message store
+     * 判断给定 LMQ 的订阅是否仍有效：当前 broker 负责该 LMQ，或 MessageStore 中仍有消息。
      */
     public boolean isSubscriptionActive(String parentTopic, String lmqName) {
         return brokerName.equals(liteSharding.shardingByLmqName(parentTopic, lmqName)) || isLmqExist(lmqName);
     }
 
+    /** 统计父 topic 下 lite LMQ 数量；非 lite 类型 topic 返回 0。 */
     public int getLiteTopicCount(String parentTopic) {
         if (!LiteMetadataUtil.isLiteMessageType(parentTopic, brokerController)) {
             return 0;
@@ -109,10 +107,12 @@ public abstract class AbstractLiteLifecycleManager extends ServiceThread {
         return collectByParentTopic(parentTopic).size();
     }
 
+    /** LMQ 队列 maxOffset > 0 即视为存在。 */
     public boolean isLmqExist(String lmqName) {
         return getMaxOffsetInQueue(lmqName) > 0;
     }
 
+    /** 刷新元数据后扫描并删除所有 TTL 过期的 lite LMQ。 */
     public void cleanExpiredLiteTopic() {
         try {
             updateMetadata(); // necessary
@@ -127,6 +127,7 @@ public abstract class AbstractLiteLifecycleManager extends ServiceThread {
         }
     }
 
+    /** 按父 topic 批量清理其下全部 lite LMQ。 */
     public void cleanByParentTopic(String parentTopic) {
         try {
             if (!LiteMetadataUtil.isLiteMessageType(parentTopic, brokerController)) {
@@ -158,11 +159,13 @@ public abstract class AbstractLiteLifecycleManager extends ServiceThread {
         LOGGER.info("End checking lite ttl.");
     }
 
+    /** 从 Topic/Subscription 配置刷新 TTL 映射与订阅 group 映射。 */
     public void updateMetadata() {
         ttlMap = LiteMetadataUtil.getTopicTtlMap(brokerController);
         subscriberGroupMap = LiteMetadataUtil.getSubscriberGroupMap(brokerController);
     }
 
+    /** 综合 maxOffset、最后写入时间与 topic TTL 判定 LMQ 是否过期。 */
     public boolean isLiteTopicExpired(String parentTopic, String lmqName, long maxOffset) {
         if (!LiteUtil.isLiteTopicQueue(lmqName)) {
             return false;
@@ -199,6 +202,7 @@ public abstract class AbstractLiteLifecycleManager extends ServiceThread {
         return inactiveTime > minutes * 60 * 1000;
     }
 
+    /** 删除 LMQ：清理消费位点、订阅注册及 MessageStore 中的 topic 数据。 */
     public void deleteLmq(String parentTopic, String lmqName) {
         try {
             Set<String> groups = subscriberGroupMap.getOrDefault(parentTopic, Collections.emptySet());
@@ -220,8 +224,7 @@ public abstract class AbstractLiteLifecycleManager extends ServiceThread {
     }
 
     /**
-     * Maybe we can check all subscriber groups, but currently consumer lag checking is not performed.
-     * Only inactive time of message sending is considered for TTL expiration.
+     * 当前未做消费滞后检查，TTL 过期仅依据消息发送静默时长。
      */
     public boolean hasConsumerLag(String lmqName, long maxOffset, long latestStoreTime, String parentTopic) {
         return false;

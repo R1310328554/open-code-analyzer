@@ -27,8 +27,12 @@ import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.common.attribute.TopicMessageType;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * Lite 元数据工具：从 Topic/Subscription 配置读取 lite 类型、绑定 topic、TTL 及订阅 group 映射。
+ */
 public class LiteMetadataUtil {
 
+    /** 判断消费组是否允许消费。 */
     public static boolean isConsumeEnable(String group, BrokerController brokerController) {
         if (null == group || null == brokerController) {
             return false;
@@ -38,6 +42,7 @@ public class LiteMetadataUtil {
         return null != groupConfig && groupConfig.isConsumeEnable();
     }
 
+    /** 父 topic 的 {@link TopicMessageType} 是否为 LITE。 */
     public static boolean isLiteMessageType(String parentTopic, BrokerController brokerController) {
         if (null == parentTopic || null == brokerController) {
             return false;
@@ -46,6 +51,7 @@ public class LiteMetadataUtil {
         return topicConfig != null && TopicMessageType.LITE.equals(topicConfig.getTopicMessageType());
     }
 
+    /** 消费组是否配置了 liteBindTopic（lite 订阅组）。 */
     public static boolean isLiteGroupType(String group, BrokerController brokerController) {
         if (null == group || null == brokerController) {
             return false;
@@ -55,6 +61,7 @@ public class LiteMetadataUtil {
         return null != groupConfig && groupConfig.getLiteBindTopic() != null;
     }
 
+    /** 返回消费组绑定的 lite 父 topic；未配置则 null。 */
     public static String getLiteBindTopic(String group, BrokerController brokerController) {
         if (null == group || null == brokerController) {
             return null;
@@ -64,6 +71,7 @@ public class LiteMetadataUtil {
         return null != groupConfig ? groupConfig.getLiteBindTopic() : null;
     }
 
+    /** 消费组是否为 lite 独占订阅模式。 */
     public static boolean isSubLiteExclusive(String group, BrokerController brokerController) {
         if (null == group || null == brokerController) {
             return false;
@@ -73,6 +81,7 @@ public class LiteMetadataUtil {
         return null != groupConfig && groupConfig.isLiteSubExclusive();
     }
 
+    /** 独占模式下是否在重置位点时清空 offset。 */
     public static boolean isResetOffsetInExclusiveMode(String group, BrokerController brokerController) {
         if (null == group || null == brokerController) {
             return false;
@@ -82,6 +91,7 @@ public class LiteMetadataUtil {
         return null != groupConfig && groupConfig.isResetOffsetInExclusiveMode();
     }
 
+    /** 退订时是否重置消费位点。 */
     public static boolean isResetOffsetOnUnsubscribe(String group, BrokerController brokerController) {
         if (null == group || null == brokerController) {
             return false;
@@ -91,6 +101,7 @@ public class LiteMetadataUtil {
         return null != groupConfig && groupConfig.isResetOffsetOnUnsubscribe();
     }
 
+    /** 返回 group 级 maxClientEventCount，未配置则用 broker 默认值。 */
     public static int getMaxClientEventCount(String group, BrokerController brokerController) {
         if (null == group || null == brokerController) {
             return -1;
@@ -103,6 +114,7 @@ public class LiteMetadataUtil {
         return groupConfig.getMaxClientEventCount();
     }
 
+    /** 是否为 wildcard lite 消费组（通配订阅父 topic 下全部 LMQ）。 */
     public static boolean isWildcardGroup(String group, BrokerController brokerController) {
         if (null == group || null == brokerController) {
             return false;
@@ -112,6 +124,7 @@ public class LiteMetadataUtil {
         return groupConfig != null && groupConfig.isWildcardLiteGroup();
     }
 
+    /** 构建 lite topic 名 → 过期分钟数 的 TTL 映射。 */
     public static Map<String, Integer> getTopicTtlMap(BrokerController brokerController) {
         if (null == brokerController) {
             return Collections.emptyMap();
@@ -127,6 +140,7 @@ public class LiteMetadataUtil {
             ));
     }
 
+    /** 构建 lite 父 topic → 订阅该 topic 的 group 集合 映射。 */
     public static Map<String, Set<String>> getSubscriberGroupMap(BrokerController brokerController) {
         if (null == brokerController) {
             return Collections.emptyMap();

@@ -28,17 +28,22 @@ import org.apache.rocketmq.common.message.MessageQueue;
 
 import java.util.List;
 
+/**
+ * 一致性哈希 lite 分片：按 liteTopic 哈希值映射到父 topic 路由中的 MessageQueue 所属 broker。
+ */
 public class LiteShardingImpl implements LiteSharding {
 
     private final BrokerController brokerController;
     private final TopicRouteInfoManager topicRouteInfoManager;
 
+    /** 注入 Broker 与 topic 路由管理器。 */
     public LiteShardingImpl(BrokerController brokerController, TopicRouteInfoManager topicRouteInfoManager) {
         this.brokerController = brokerController;
         this.topicRouteInfoManager = topicRouteInfoManager;
     }
 
     @Override
+    /** 对 liteTopic 做 consistentHash，选取 writeQueue 对应 broker；路由缺失时回退当前 broker。 */
     public String shardingByLmqName(String parentTopic, String lmqName) {
         TopicPublishInfo topicPublishInfo = topicRouteInfoManager.tryToFindTopicPublishInfo(parentTopic);
         if (topicPublishInfo == null) {

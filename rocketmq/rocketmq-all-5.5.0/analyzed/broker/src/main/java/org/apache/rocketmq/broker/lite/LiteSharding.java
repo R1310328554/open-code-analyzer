@@ -17,7 +17,11 @@
 
 package org.apache.rocketmq.broker.lite;
 
+/**
+ * Lite LMQ 分片策略：根据 parentTopic 与 lmqName 计算负责该 LMQ 的 broker 名。
+ */
 public interface LiteSharding {
 
+    /** 返回应承载该 LMQ 的 brokerName。 */
     String shardingByLmqName(String parentTopic, String lmqName);
 }

@@ -17,7 +17,11 @@
 
 package org.apache.rocketmq.broker.lite;
 
+/**
+ * Lite 配额超限异常：客户端 lite 订阅数或事件数超过配置上限时抛出。
+ */
 public class LiteQuotaException extends RuntimeException {
+    /** 携带描述信息的 lite 配额异常。 */
     public LiteQuotaException(String message) {
         super(message);
     }

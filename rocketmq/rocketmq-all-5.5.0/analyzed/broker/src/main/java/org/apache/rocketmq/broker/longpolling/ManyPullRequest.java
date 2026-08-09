@@ -19,17 +19,23 @@ package org.apache.rocketmq.broker.longpolling;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 同一 topic-queue 上聚合的多个长轮询 PullRequest，供 LMQ 等多订阅场景批量唤醒。
+ */
 public class ManyPullRequest {
     private final ArrayList<PullRequest> pullRequestList = new ArrayList<>();
 
+    /** 追加单个挂起 pull 请求。 */
     public synchronized void addPullRequest(final PullRequest pullRequest) {
         this.pullRequestList.add(pullRequest);
     }
 
+    /** 批量追加挂起 pull 请求。 */
     public synchronized void addPullRequest(final List<PullRequest> many) {
         this.pullRequestList.addAll(many);
     }
 
+    /** 克隆当前列表并清空内部容器，供唤醒线程无锁处理。 */
     public synchronized List<PullRequest> cloneListAndClear() {
         if (!this.pullRequestList.isEmpty()) {
             List<PullRequest> result = (ArrayList<PullRequest>) this.pullRequestList.clone();
@@ -40,10 +46,12 @@ public class ManyPullRequest {
         return null;
     }
 
+    /** 返回内部 pull 请求列表（非副本）。 */
     public ArrayList<PullRequest> getPullRequestList() {
         return pullRequestList;
     }
 
+    /** 是否无任何挂起请求。 */
     public synchronized boolean isEmpty() {
         return this.pullRequestList.isEmpty();
     }

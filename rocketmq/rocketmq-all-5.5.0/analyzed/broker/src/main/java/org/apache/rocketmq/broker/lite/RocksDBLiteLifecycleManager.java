@@ -40,21 +40,27 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
+/**
+ * 基于 RocksDB ConsumeQueue offset 表的 lite 生命周期管理器，适用于 defaultRocksDB 或 CombineCQ 双写场景。
+ */
 public class RocksDBLiteLifecycleManager extends AbstractLiteLifecycleManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
 
     private Map<String, Long> maxCqOffsetTable;
 
+    /** 绑定 Broker 与 lite 分片组件。 */
     public RocksDBLiteLifecycleManager(BrokerController brokerController, LiteSharding liteSharding) {
         super(brokerController, liteSharding);
     }
 
     @Override
+    /** 从 RocksDB maxCqOffsetTable 读取 lmqName-0 的 next offset。 */
     public long getMaxOffsetInQueue(String lmqName) {
         return maxCqOffsetTable.getOrDefault(lmqName + "-0", -1L) + 1;
     }
 
     @Override
+    /** 遍历 maxCqOffsetTable，筛选属于 parentTopic 的 LMQ。 */
     public List<String> collectByParentTopic(String parentTopic) {
         if (StringUtils.isEmpty(parentTopic)) {
             return Collections.emptyList();
@@ -73,6 +79,7 @@ public class RocksDBLiteLifecycleManager extends AbstractLiteLifecycleManager {
     }
 
     @Override
+    /** 扫描 offset 表，收集 TTL 过期的 (parentTopic, lmqName)。 */
     public List<Pair<String, String>> collectExpiredLiteTopic() {
         List<Pair<String, String>> lmqToDelete = new ArrayList<>();
         Iterator<Map.Entry<String, Long>> iterator = maxCqOffsetTable.entrySet().iterator();
@@ -92,6 +99,7 @@ public class RocksDBLiteLifecycleManager extends AbstractLiteLifecycleManager {
     }
 
     @Override
+    /** 解析 Tiered/Combine/RocksDB 队列存储并挂载 maxCqOffsetTable；失败则中止启动。 */
     public boolean init() {
         super.init();
         if (messageStore instanceof TieredMessageStore) { // only support TieredMessageStore plugin
@@ -130,6 +138,7 @@ public class RocksDBLiteLifecycleManager extends AbstractLiteLifecycleManager {
     }
 
     @Override
+    /** 遍历 offset 表中所有 lite LMQ 并回调。 */
     public void forEachLiteTopic(Function<Triple<String, Long, Long>, Boolean> function) {
         for (Map.Entry<String, Long> entry : maxCqOffsetTable.entrySet()) {
             String queueAndQid = entry.getKey();

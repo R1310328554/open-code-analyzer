@@ -17,12 +17,18 @@
 
 package org.apache.rocketmq.broker.lite;
 
+/**
+ * Lite 控制面事件监听器：订阅/退订 LMQ 时回调。
+ */
 public interface LiteCtlListener {
 
+    /** 客户端注册对指定 LMQ 的 lite 订阅。 */
     void onRegister(String clientId, String group, String lmqName);
 
+    /** 客户端取消对指定 LMQ 的 lite 订阅。 */
     void onUnregister(String clientId, String group, String lmqName);
 
+    /** 客户端断开或 group 下全部 lite 订阅被移除。 */
     void onRemoveAll(String clientId, String group);
 
 }

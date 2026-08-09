@@ -35,20 +35,26 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
+/**
+ * 基于内存 ConsumeQueue 表的 lite 生命周期管理器：扫描、过期判定与遍历均直接访问 MessageStore 队列索引。
+ */
 public class LiteLifecycleManager extends AbstractLiteLifecycleManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
 
+    /** 绑定 Broker 与 lite 分片组件。 */
     public LiteLifecycleManager(BrokerController brokerController, LiteSharding liteSharding) {
         super(brokerController, liteSharding);
     }
 
     @Override
+    /** 从 ConsumeQueue 表读取 LMQ queueId=0 的 maxOffset。 */
     public long getMaxOffsetInQueue(String lmqName) {
         ConsumeQueueInterface consumeQueue = messageStore.getConsumeQueue(lmqName, 0);
         return consumeQueue != null ? consumeQueue.getMaxOffsetInQueue() : 0L;
     }
 
     @Override
+    /** 遍历 ConsumeQueue 表，筛选属于 parentTopic 的 LMQ 名。 */
     public List<String> collectByParentTopic(String parentTopic) {
         if (StringUtils.isEmpty(parentTopic)) {
             return Collections.emptyList();
@@ -66,6 +72,7 @@ public class LiteLifecycleManager extends AbstractLiteLifecycleManager {
     }
 
     @Override
+    /** 全表扫描 ConsumeQueue，收集 TTL 已过期的 (parentTopic, lmqName) 对。 */
     public List<Pair<String, String>> collectExpiredLiteTopic() {
         List<Pair<String, String>> lmqToDelete = new ArrayList<>();
         Iterator<Map.Entry<String, ConcurrentMap<Integer, ConsumeQueueInterface>>> iterator =
@@ -90,6 +97,7 @@ public class LiteLifecycleManager extends AbstractLiteLifecycleManager {
     }
 
     @Override
+    /** 遍历所有 lite LMQ 并回调 (lmqName, maxOffset, null)。 */
     public void forEachLiteTopic(Function<Triple<String, Long, Long>, Boolean> function) {
         Iterator<Map.Entry<String, ConcurrentMap<Integer, ConsumeQueueInterface>>> iterator =
             messageStore.getQueueStore().getConsumeQueueTable().entrySet().iterator();

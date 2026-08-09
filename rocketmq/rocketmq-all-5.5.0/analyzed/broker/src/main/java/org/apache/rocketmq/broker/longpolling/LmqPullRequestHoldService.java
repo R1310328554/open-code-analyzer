@@ -22,14 +22,19 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * LMQ 长轮询挂起服务：继承 PullRequestHoldService，针对 lite 队列优化 hold 表清理逻辑。
+ */
 public class LmqPullRequestHoldService extends PullRequestHoldService {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
+    /** 绑定 Broker 控制器。 */
     public LmqPullRequestHoldService(BrokerController brokerController) {
         super(brokerController);
     }
 
     @Override
+    /** Broker 容器模式下附加 broker 标识前缀。 */
     public String getServiceName() {
         if (brokerController != null && brokerController.getBrokerConfig().isInBrokerContainer()) {
             return this.brokerController.getBrokerIdentity().getIdentifier() + LmqPullRequestHoldService.class.getSimpleName();
@@ -38,6 +43,7 @@ public class LmqPullRequestHoldService extends PullRequestHoldService {
     }
 
     @Override
+    /** 扫描挂起 pull 请求，有新消息则唤醒；LMQ 队列为空时移除 hold 条目。 */
     public void checkHoldRequest() {
         for (String key : pullRequestTable.keySet()) {
             int idx = key.lastIndexOf(TOPIC_QUEUEID_SEPARATOR);

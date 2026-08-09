@@ -24,39 +24,50 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Lite 订阅者查询结果包装：ListWrapper 为 flat 列表，MapWrapper 按 group 分组。
+ */
 public abstract class SubscriberWrapper {
 
+    /** 扁平 {@link ClientGroup} 列表包装。 */
     public static class ListWrapper extends SubscriberWrapper {
         private final List<ClientGroup> clients;
 
+        /** 创建空 client 列表。 */
         public ListWrapper() {
             this.clients = new ArrayList<>();
         }
 
+        /** 用已有 client 列表初始化。 */
         public ListWrapper(List<ClientGroup> clients) {
             this.clients = clients;
         }
 
+        /** 返回订阅 client 列表。 */
         public List<ClientGroup> getClients() {
             return this.clients;
         }
     }
 
+    /** group → client 列表 的分组包装。 */
     public static class MapWrapper extends SubscriberWrapper {
         private final Map<String, List<ClientGroup>> groupMap = new HashMap<>();
 
         public MapWrapper() {
         }
 
+        /** 返回按 group 分组的 client 映射。 */
         public Map<String, List<ClientGroup>> getGroupMap() {
             return groupMap;
         }
     }
 
+    /** 若当前实例为 ListWrapper 则强转，否则 null。 */
     public ListWrapper asListWrapper() {
         return this instanceof ListWrapper ? (ListWrapper) this : null;
     }
 
+    /** 若当前实例为 MapWrapper 则强转，否则 null。 */
     public MapWrapper asMapWrapper() {
         return this instanceof MapWrapper ? (MapWrapper) this : null;
     }
