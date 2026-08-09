@@ -19,6 +19,12 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
+/**
+ * {@code watch} 方法观测命令：在方法 before/return/throw 切点求值 OGNL 并输出参数、返回值或异常。
+ * <p>
+ * 默认在方法结束后观测（-f）；-b/-s/-e 可分别指定 before/成功返回/抛异常切点；
+ * {@code -M} 限制结果字节数，{@code -x} 控制对象展开深度。
+ */
 @Name("watch")
 @Summary("Display the input/output parameter, return object, and thrown exception of specified method invocation")
 @Description(Constants.EXPRESS_DESCRIPTION + "\nExamples:\n" +
@@ -34,17 +40,29 @@ import com.taobao.middleware.cli.annotations.Summary;
         Constants.WIKI + Constants.WIKI_HOME + "watch")
 public class WatchCommand extends EnhancerCommand {
 
+    /** 目标类名匹配模式 */
     private String classPattern;
+    /** 目标方法名匹配模式 */
     private String methodPattern;
+    /** OGNL 观测表达式，默认 {@code {params, target, returnObj}} */
     private String express;
+    /** OGNL 条件表达式，满足时才输出 */
     private String conditionExpress;
+    /** -b：方法进入前观测 */
     private boolean isBefore = false;
+    /** -f：方法退出时观测（默认行为由 CLI 解析决定） */
     private boolean isFinish = false;
+    /** -e：抛异常后观测 */
     private boolean isException = false;
+    /** -s：正常返回后观测 */
     private boolean isSuccess = false;
+    /** 对象展开深度（-x） */
     private Integer expand = 1;
+    /** 结果字节上限（-M） */
     private Integer sizeLimit;
+    /** 是否启用正则匹配（-E） */
     private boolean isRegEx = false;
+    /** 最大观测输出次数（-n） */
     private int numberOfLimit = 100;
     
     @Argument(index = 0, argName = "class-pattern")
@@ -199,6 +217,7 @@ public class WatchCommand extends EnhancerCommand {
         return methodNameMatcher;
     }
 
+    /** 校验 sizeLimit 后进入父类 enhance 流程 */
     @Override
     public void process(CommandProcess process) {
         String validateError = validateSizeLimit(sizeLimit);
@@ -219,6 +238,7 @@ public class WatchCommand extends EnhancerCommand {
         CompletionUtils.complete(completion, Arrays.asList(EXPRESS_EXAMPLES));
     }
 
+    /** sizeLimit 必须大于 0，否则返回错误提示 */
     static String validateSizeLimit(Integer sizeLimit) {
         if (sizeLimit != null && sizeLimit.intValue() <= 0) {
             return "sizeLimit must be greater than 0.";

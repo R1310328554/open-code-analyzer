@@ -39,10 +39,13 @@ import com.taobao.middleware.cli.annotations.Summary;
 import arthas.VmTool;
 
 /**
- * 
+ * {@code vmtool} 命令：通过 JNI 本地库 {@link VmTool} 执行 JVM 级诊断操作。
+ * <p>
+ * 支持堆实例枚举、强制 GC、堆/引用分析、线程中断及 glibc malloc 统计等；
+ * {@code getInstances} 可配合 OGNL 表达式对实例数组二次求值。
+ *
  * @author hengyunabc 2021-04-27
  * @author ZhangZiCheng 2021-04-29
- *
  */
 //@formatter:off
 @Name("vmtool")
@@ -65,11 +68,17 @@ import arthas.VmTool;
 public class VmToolCommand extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(VmToolCommand.class);
 
+    /** 子命令动作（getInstances / forceGc / heapAnalyze 等） */
     private VmToolAction action;
+    /** 目标类全限定名，getInstances 与 referenceAnalyze 必填 */
     private String className;
+    /** OGNL 表达式，默认对 instances 数组求值 */
     private String express;
+    /** interruptThread 动作的目标线程 ID */
     private int threadId;
+    /** 指定 ClassLoader 的 hashCode（-c） */
     private String hashCode = null;
+    /** 按 ClassLoader 类名消歧（--classLoaderClass） */
     private String classLoaderClass;
     /**
      * default value 1
@@ -194,10 +203,12 @@ public class VmToolCommand extends AnnotatedCommand {
         this.threadId = threadId;
     }
 
+    /** vmtool 支持的原生动作枚举 */
     public enum VmToolAction {
         getInstances, forceGc, heapAnalyze, referenceAnalyze, interruptThread, mallocTrim, mallocStats
     }
 
+    /** 按 action 分发：实例查询需解析 ClassLoader 与类名，其余直接调 JNI */
     @Override
     public void process(final CommandProcess process) {
         try {
@@ -370,6 +381,7 @@ public class VmToolCommand extends AnnotatedCommand {
         return sb.toString();
     }
 
+    /** OGNL 绑定包装：使表达式中可直接访问 {@code instances} 变量 */
     static class InstancesWrapper {
         Object instances;
 
@@ -386,6 +398,7 @@ public class VmToolCommand extends AnnotatedCommand {
         }
     }
 
+    /** 懒加载单例 VmTool；复制 so 到临时文件避免多 ClassLoader 重复 loadNative */
     private VmTool vmToolInstance() {
         if (vmTool != null) {
             return vmTool;

@@ -22,8 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 调用跟踪命令<br/>
- * 负责输出一个类中的所有方法调用路径
+ * {@code trace} 调用跟踪命令：对匹配方法增强后输出内部调用链路与各节点耗时。
+ * <p>
+ * 支持 OGNL 条件表达式（如 {@code '#cost>100'}）、次数上限 {@code -n}、
+ * 路径过滤 {@code -p}（启用 {@link PathTraceAdviceListener}）及跳过 JDK 方法。
  *
  * @author vlinux on 15/5/27.
  */
@@ -45,12 +47,19 @@ import java.util.List;
 //@formatter:on
 public class TraceCommand extends EnhancerCommand {
 
+    /** 目标类名匹配模式（positional） */
     private String classPattern;
+    /** 目标方法名匹配模式 */
     private String methodPattern;
+    /** OGNL 条件表达式，满足时才输出 trace 树 */
     private String conditionExpress;
+    /** 是否启用正则匹配（-E） */
     private boolean isRegEx = false;
+    /** 最大输出次数，达到后自动结束命令 */
     private int numberOfLimit = 100;
+    /** 路径追踪模式列表（-p），非空时走 PathTrace 分支 */
     private List<String> pathPatterns;
+    /** 是否跳过 JDK 类内部调用（--skipJDKMethod，默认 true） */
     private boolean skipJDKTrace;
 
     @Argument(argName = "class-pattern", index = 0)
@@ -163,6 +172,7 @@ public class TraceCommand extends EnhancerCommand {
         return methodNameMatcher;
     }
 
+    /** 无 -p 时用标准 TraceAdviceListener，否则用路径过滤监听器 */
     @Override
     protected AdviceListener getAdviceListener(CommandProcess process) {
         if (pathPatterns == null || pathPatterns.isEmpty()) {
@@ -193,6 +203,7 @@ public class TraceCommand extends EnhancerCommand {
         return new GroupMatcher.Or<String>(matcherList);
     }
 
+    /** 路径 trace 模式下方法名不做额外过滤，匹配全部方法 */
     private Matcher<String> getPathTracingMethodMatcher() {
         return new TrueMatcher<String>();
     }

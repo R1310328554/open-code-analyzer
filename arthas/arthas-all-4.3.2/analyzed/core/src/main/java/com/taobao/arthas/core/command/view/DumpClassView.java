@@ -17,10 +17,15 @@ import java.util.List;
 import static com.taobao.text.ui.Element.label;
 
 /**
+ * {@code dump} 命令的终端渲染视图：展示已 dump 的 class 文件路径或 ClassLoader 消歧列表。
+ * <p>
+ * 多个 ClassLoader 匹配时先列出候选；成功 dump 后以表格输出 hash、ClassLoader 与磁盘路径。
+ *
  * @author gongdewei 2020/4/21
  */
 public class DumpClassView extends ResultView<DumpClassModel> {
 
+    /** 优先展示 matchedClassLoaders，否则 dump 结果或 matchedClasses 列表 */
     @Override
     public void draw(CommandProcess process, DumpClassModel result) {
         if (result.getMatchedClassLoaders() != null) {
@@ -38,6 +43,7 @@ public class DumpClassView extends ResultView<DumpClassModel> {
         }
     }
 
+    /** 三列表格：ClassLoader hash、名称、class 文件落盘路径 */
     private void drawDumpedClasses(CommandProcess process, List<DumpClassVO> classVOs) {
         TableElement table = new TableElement().leftCellPadding(1).rightCellPadding(1);
         table.row(new LabelElement("HASHCODE").style(Decoration.bold.bold()),

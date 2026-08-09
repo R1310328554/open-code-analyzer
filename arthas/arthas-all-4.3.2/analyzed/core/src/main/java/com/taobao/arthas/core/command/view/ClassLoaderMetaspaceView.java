@@ -12,12 +12,16 @@ import com.taobao.text.util.RenderUtil;
 import java.util.List;
 
 /**
- * classloader-metaspace 命令的终端渲染视图。
+ * {@code classloader-metaspace} 命令的终端渲染视图：以表格展示各 ClassLoader 的 Metaspace 占用。
+ * <p>
+ * {@code -v} verbose 模式额外输出 ClassLoaderData 指针、hiddenBlockSize 与类型；
+ * 无数据时提示未找到统计信息。
  *
  * @author Codex 2026-05-08
  */
 public class ClassLoaderMetaspaceView extends ResultView<ClassLoaderMetaspaceModel> {
 
+    /** 按 verbose 标志选择默认或详细列布局渲染表格 */
     @Override
     public void draw(CommandProcess process, ClassLoaderMetaspaceModel result) {
         List<Row> rows = result.getRows();
@@ -34,6 +38,7 @@ public class ClassLoaderMetaspaceView extends ResultView<ClassLoaderMetaspaceMod
         }
     }
 
+    /** 默认列：hash、classes、chunkSize、blockSize、name */
     private void drawDefaultTable(CommandProcess process, TableElement table, List<Row> rows) {
         table.add(new RowElement().style(Decoration.bold.bold())
                 .add("hash", "classes", "chunkSize", "blockSize", "name"));
@@ -48,6 +53,7 @@ public class ClassLoaderMetaspaceView extends ResultView<ClassLoaderMetaspaceMod
         process.write(RenderUtil.render(table, process.width()));
     }
 
+    /** verbose 列：额外展示 classLoaderData 地址、hiddenBlockSize 与 type */
     private void drawVerboseTable(CommandProcess process, TableElement table, List<Row> rows) {
         table.add(new RowElement().style(Decoration.bold.bold())
                 .add("hash", "classLoaderData", "classes", "chunkSize", "blockSize", "hiddenBlockSize", "type",

@@ -13,12 +13,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * View of 'dashboard' command
+ * {@code dashboard} 命令的终端渲染视图：按终端尺寸动态分区展示线程、内存/GC、Runtime/Tomcat。
+ * <p>
+ * 上半区为线程 TopN，下半区田字格布局；高度不足时优先保证 memory 至少 8 行以显示 metaspace。
  *
  * @author gongdewei 2020/4/22
  */
 public class DashboardView extends ResultView<DashboardModel> {
 
+    /** 根据 process 宽高计算各区块高度并拼接渲染结果 */
     @Override
     public void draw(CommandProcess process, DashboardModel result) {
         int width = process.width();
@@ -70,6 +73,7 @@ public class DashboardView extends ResultView<DashboardModel> {
         process.write(threadInfo + memoryAndGc + runTimeAndTomcat);
     }
 
+    /** 左半 memory、右半 GC 指标，合并为单行双列表格 */
     static String drawMemoryInfoAndGcInfo(Map<String, List<MemoryEntryVO>> memoryInfo, List<GcInfoVO> gcInfos, int width, int height) {
         TableElement table = new TableElement(1, 1);
         TableElement memoryInfoTable = MemoryView.drawMemoryInfo(memoryInfo);
@@ -138,6 +142,7 @@ public class DashboardView extends ResultView<DashboardModel> {
         return String.format("%d%s", size / unit, unitStr);
     }
 
+    /** 渲染 Tomcat connector QPS/RT 与 threadpool  busy/total；无 Tomcat 时返回 null */
     private TableElement drawTomcatInfo(TomcatInfoVO tomcatInfo) {
         if (tomcatInfo == null) {
             return null;

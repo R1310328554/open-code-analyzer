@@ -21,10 +21,16 @@ import java.util.Map.Entry;
 import static com.taobao.arthas.core.util.ClassUtils.formatClassLoaderText;
 
 /**
+ * {@code classloader} 命令的终端渲染视图：根据 {@link ClassLoaderModel} 中填充的分支
+ * 渲染 ClassLoader 列表、树、URL 统计、已加载类、资源路径等。
+ * <p>
+ * 多个 ClassLoader 匹配时优先展示消歧列表；{@code -t} 树模式递归渲染父子关系。
+ *
  * @author gongdewei 2020/4/21
  */
 public class ClassLoaderView extends ResultView<ClassLoaderModel> {
 
+    /** 按 model 中非空字段依次分发到对应 draw* 子方法 */
     @Override
     public void draw(CommandProcess process, ClassLoaderModel result) {
         if (result.getMatchedClassLoaders() != null) {
@@ -170,6 +176,7 @@ public class ClassLoaderView extends ResultView<ClassLoaderModel> {
         return table;
     }
 
+    /** 表格或树形渲染 ClassLoader 列表，供本类及 dump/getstatic 等复用 */
     public static void drawClassLoaders(CommandProcess process, Collection<ClassLoaderVO> classLoaders, boolean isTree) {
         Element element = isTree ? renderTree(classLoaders) : renderTable(classLoaders);
         process.write(RenderUtil.render(element, process.width()))
@@ -220,7 +227,7 @@ public class ClassLoaderView extends ResultView<ClassLoaderModel> {
         return new LabelElement(sb.toString());
     }
 
-    // 统计所有的ClassLoader的信息
+    /** 平铺表格：name、loadedCount、hash、parent */
     private static TableElement renderTable(Collection<ClassLoaderVO> classLoaderInfos) {
         TableElement table = new TableElement().leftCellPadding(1).rightCellPadding(1);
         table.add(new RowElement().style(Decoration.bold.bold()).add("name", "loadedCount", "hash", "parent"));
@@ -231,7 +238,7 @@ public class ClassLoaderView extends ResultView<ClassLoaderModel> {
         return table;
     }
 
-    // 以树状列出ClassLoader的继承结构
+    /** 树形展示 ClassLoader 父子继承链 */
     private static Element renderTree(Collection<ClassLoaderVO> classLoaderInfos) {
         TreeElement root = new TreeElement();
         for (ClassLoaderVO classLoader : classLoaderInfos) {

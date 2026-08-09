@@ -15,13 +15,20 @@ import com.taobao.arthas.core.util.ThreadLocalWatch;
 import java.time.LocalDateTime;
 
 /**
+ * {@code watch} 命令的运行时 Advice 监听器：在 before/return/throw 切点观测方法并输出 {@link WatchModel}。
+ * <p>
+ * 通过 {@link ThreadLocalWatch} 统计耗时；OGNL 条件与表达式求值失败时结束命令并提示查看日志。
+ *
  * @author beiwei30 on 29/11/2016.
  */
 class WatchAdviceListener extends AdviceListenerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(WatchAdviceListener.class);
+    /** 线程局部计时器，统计单次方法调用耗时 */
     private final ThreadLocalWatch threadLocalWatch = new ThreadLocalWatch();
+    /** 关联的 watch 命令配置（切点、表达式、次数上限等） */
     private WatchCommand command;
+    /** 命令输出通道 */
     private CommandProcess process;
 
     public WatchAdviceListener(WatchCommand command, CommandProcess process, boolean verbose) {
@@ -30,6 +37,7 @@ class WatchAdviceListener extends AdviceListenerAdapter {
         super.setVerbose(verbose);
     }
 
+    /** 判断是否需要在方法退出时（finish 切点）触发观测 */
     private boolean isFinish() {
         return command.isFinish() || !command.isBefore() && !command.isException() && !command.isSuccess();
     }
@@ -73,6 +81,7 @@ class WatchAdviceListener extends AdviceListenerAdapter {
     }
 
 
+    /** 评估条件表达式，满足则求值 express 并 append WatchModel；达上限则 abortProcess */
     private void watching(Advice advice) {
         try {
             // 本次调用的耗时
