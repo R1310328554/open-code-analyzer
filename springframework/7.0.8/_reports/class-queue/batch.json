@@ -10,18 +10,8 @@
     "spring-aop/src/main/java/org/springframework/aop/config/ConfigBeanDefinitionParser.java",
     "spring-aop/src/main/java/org/springframework/aop/framework/AdvisedSupport.java",
     "spring-aop/src/main/java/org/springframework/aop/framework/CglibAopProxy.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/ProxyFactoryBean.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/autoproxy/AbstractAutoProxyCreator.java",
-    "spring-aop/src/main/java/org/springframework/aop/interceptor/CustomizableTraceInterceptor.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/BeanPropertyRowMapper.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcOperations.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/StatementCreatorUtils.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/CallMetaDataContext.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/GenericCallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/GenericTableMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/TableMetaDataContext.java"
+    "spring-aop/src/main/java/org/springframework/aop/framework/ProxyFactoryBean.java"
   ],
   "remaining_pending": 18,
-  "done": 1453
+  "done": 1463
 }
