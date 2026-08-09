@@ -313,3 +313,18 @@
 2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/LineCommandAdviceListener.java wave11a [0:15] repair
 2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/MBeanCommand.java wave11a [0:15] repair
 2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/MemoryCommand.java wave11a [0:15] repair
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/TraceAdviceListener.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/TraceCommand.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/TraceEntity.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/VmToolCommand.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/WatchAdviceListener.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/WatchCommand.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/Base64View.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/CatView.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/ClassLoaderMetaspaceView.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/ClassLoaderView.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/DashboardView.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/DumpClassView.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/EchoView.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/EnhancerView.java wave12a [0:15]
+2026-08-09T22:23:09Z DONE core/src/main/java/com/taobao/arthas/core/command/view/GetStaticView.java wave12a [0:15]
