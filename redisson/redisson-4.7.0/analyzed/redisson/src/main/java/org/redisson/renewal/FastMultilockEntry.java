@@ -18,18 +18,24 @@ package org.redisson.renewal;
 import java.util.Collection;
 
 /**
+ * 快速联锁（MultiLock）续期条目：
+ * 在 {@link LockEntry} 基础上额外记录 Redis Hash 中的
+ * 多个锁字段名，供 {@link FastMultilockTask} 批量续期 Lua 使用。
  *
  * @author Nikita Koksharov
  *
  */
 public class FastMultilockEntry extends LockEntry {
 
+    /** 联锁涉及的 Hash 字段集合。 */
     private final Collection<String> fields;
 
+    /** @param fields 需一并续期的锁字段 */
     public FastMultilockEntry(Collection<String> fields) {
         this.fields = fields;
     }
 
+    /** @return 锁字段集合 */
     public Collection<String> getFields() {
         return fields;
     }

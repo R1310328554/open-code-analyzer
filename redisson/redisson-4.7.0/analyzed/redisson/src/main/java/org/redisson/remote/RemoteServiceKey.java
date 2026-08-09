@@ -19,16 +19,25 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * 
+ * 远程服务调用的唯一标识键：
+ * 由服务接口、方法名与方法签名（参数类型哈希）组成，
+ * 用于在 {@link BaseRemoteService} 中注册与查找本地方法实现。
+ * <p>
+ * 实现 {@link #equals} 与 {@link #hashCode}，可作为 Map 键使用。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RemoteServiceKey {
 
+    /** 远程服务接口类型。 */
     private final Class<?> serviceInterface;
+    /** 目标方法名。 */
     private final String methodName;
+    /** 方法参数类型签名（用于重载区分）。 */
     private final long[] signature;
 
+    /** @param serviceInterface 服务接口 @param method 方法名 @param signature 参数类型签名数组 */
     public RemoteServiceKey(Class<?> serviceInterface, String method, long[] signature) {
         super();
         this.serviceInterface = serviceInterface;
@@ -36,18 +45,22 @@ public class RemoteServiceKey {
         this.signature = signature;
     }
     
+    /** @return 方法名 */
     public String getMethodName() {
         return methodName;
     }
 
+    /** @return 参数类型签名数组 */
     public long[] getSignature() {
         return signature;
     }
     
+    /** @return 服务接口 Class */
     public Class<?> getServiceInterface() {
         return serviceInterface;
     }
 
+    /** 比较接口、方法名与签名数组是否完全一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -58,6 +71,7 @@ public class RemoteServiceKey {
                         && Objects.deepEquals(signature, that.signature);
     }
 
+    /** 基于接口、方法名与签名数组计算哈希。 */
     @Override
     public int hashCode() {
         return Objects.hash(serviceInterface, methodName, Arrays.hashCode(signature));

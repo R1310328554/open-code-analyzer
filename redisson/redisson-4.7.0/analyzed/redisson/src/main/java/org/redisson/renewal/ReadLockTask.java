@@ -26,21 +26,28 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * 读写锁读锁看门狗续期任务：
+ * Lua 脚本批量延长主 Hash 键与各读锁 {@code rwlock_timeout} 子键 TTL。
+ * <p>
+ * 读锁可重入且多线程共享；续期需遍历条目内所有 lockName 字段。
  *
  * @author Nikita Koksharov
  *
  */
 public class ReadLockTask extends LockTask {
 
+    /** @param internalLockLeaseTime lease 毫秒 @param executor 执行器 @param chunkSize 批大小 */
     public ReadLockTask(long internalLockLeaseTime, CommandAsyncExecutor executor, int chunkSize) {
         super(internalLockLeaseTime, executor, chunkSize);
     }
 
+    /** 分块续期所有读锁注册项。 */
     @Override
     CompletionStage<Void> renew(Iterator<String> iter, int chunkSize) {
         return AsyncChunkProcessor.processAll(iter, chunkSize, this::buildChunk);
     }
 
+    /** 组装读锁 Lua 参数：主键、keyPrefix、各 lockName 列表。 */
     private ChunkExecution<List<Object>> buildChunk(Iterator<String> iter, int chunkSize) {
         Map<String, List<Long>> name2threadIds = new HashMap<>();
         List<Object> args = new ArrayList<>();
@@ -49,7 +56,7 @@ public class ReadLockTask extends LockTask {
         List<Object> keys = new ArrayList<>(chunkSize);
         List<Object> keysArgs = new ArrayList<>(chunkSize);
 
-        // Build chunk, skipping invalid entries
+        // 跳过无效 ReadLockEntry
         while (iter.hasNext() && keys.size() < chunkSize) {
             String key = iter.next();
 
@@ -81,7 +88,7 @@ public class ReadLockTask extends LockTask {
             name2threadIds.put(key, threadIds);
         }
 
-        // No valid entries found - signal completion
+        // 无有效读锁条目
         if (keys.isEmpty()) {
             return null;
         }
@@ -117,6 +124,7 @@ public class ReadLockTask extends LockTask {
                 keysArgs,
                 args.toArray());
 
+        // 续期失败的键：对该键下所有 threadId 取消续期
         return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
             for (Object k : keys) {
@@ -131,6 +139,7 @@ public class ReadLockTask extends LockTask {
         });
     }
 
+    /** 注册读锁续期；首次条目时启动定时任务。 */
     public void add(String rawName, String lockName, long threadId, String keyPrefix) {
         addSlotName(rawName);
 

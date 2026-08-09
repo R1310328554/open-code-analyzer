@@ -16,8 +16,10 @@
 package org.redisson.remote;
 
 /**
- * Rises when invocation timeout has been occurred
- * 
+ * 远程服务调用超时异常：
+ * 当 {@link RemoteInvocationOptions} 指定的执行超时到期
+ * 仍未收到 {@link RemoteServiceResponse} 时抛出。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -25,6 +27,7 @@ public class RemoteServiceTimeoutException extends RuntimeException {
 
     private static final long serialVersionUID = -1749266931994840256L;
 
+    /** @param message 超时描述（通常含请求 ID 与超时毫秒数） */
     public RemoteServiceTimeoutException(String message) {
         super(message);
     }

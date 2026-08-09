@@ -26,22 +26,30 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * 普通分布式锁看门狗续期任务：
+ * 分块执行 Lua EVAL，对每个 Redis Hash 锁键调用 {@code pexpire}
+ * 延长 TTL；若字段已不存在则取消本地续期注册。
+ * <p>
+ * 继承 {@link RenewalTask} 的定时调度与条目管理。
  *
  * @author Nikita Koksharov
  *
  */
 public class LockTask extends RenewalTask {
 
+    /** @param internalLockLeaseTime lease 毫秒 @param executor 执行器 @param chunkSize 批大小 */
     public LockTask(long internalLockLeaseTime,
                     CommandAsyncExecutor executor, int chunkSize) {
         super(internalLockLeaseTime, executor, chunkSize);
     }
 
+    /** 分块续期所有已注册锁名。 */
     @Override
     CompletionStage<Void> renew(Iterator<String> iter, int chunkSize) {
         return AsyncChunkProcessor.processAll(iter, chunkSize, this::buildChunk);
     }
 
+    /** 构建一批锁键与对应 lockName 参数，执行批量 pexpire Lua。 */
     private ChunkExecution<List<String>> buildChunk(Iterator<String> iter, int chunkSize) {
         Map<String, Long> name2threadId = new HashMap<>(chunkSize);
         List<Object> args = new ArrayList<>(chunkSize + 1);
@@ -49,7 +57,7 @@ public class LockTask extends RenewalTask {
 
         List<String> keys = new ArrayList<>(chunkSize);
 
-        // Build chunk, skipping invalid entries
+        // 跳过无有效 threadId 或 lockName 的条目
         while (iter.hasNext() && keys.size() < chunkSize) {
             String key = iter.next();
 
@@ -72,7 +80,7 @@ public class LockTask extends RenewalTask {
             name2threadId.put(key, threadId);
         }
 
-        // No valid entries found - signal completion
+        // 本块无有效键则返回 null 结束
         if (keys.isEmpty()) {
             return null;
         }
@@ -94,6 +102,7 @@ public class LockTask extends RenewalTask {
                 new ArrayList<>(keys),
                 args.toArray());
 
+        // Lua 返回仍存在的键；其余视为已释放并 cancel
         return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
             for (String key : keys) {
@@ -102,6 +111,7 @@ public class LockTask extends RenewalTask {
         });
     }
 
+    /** 注册单锁续期条目并触发调度。 */
     public void add(String rawName, String lockName, long threadId) {
         LockEntry entry = new LockEntry();
         entry.addThreadId(threadId, lockName);

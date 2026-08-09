@@ -25,21 +25,29 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * 快速联锁看门狗续期任务：
+ * 通过 Lua 脚本在单个 Redis Hash 键上批量校验并延长
+ * 多个锁字段的过期时间，适用于 {@link org.redisson.RedissonMultiLock}。
+ * <p>
+ * 分块调用 {@link AsyncChunkProcessor}，chunk 大小固定为 1。
  *
  * @author Nikita Koksharov
  *
  */
 public class FastMultilockTask extends LockTask {
 
+    /** @param internalLockLeaseTime 看门狗 lease 毫秒数 @param executor 命令执行器 */
     public FastMultilockTask(long internalLockLeaseTime, CommandAsyncExecutor executor) {
         super(internalLockLeaseTime, executor, 1);
     }
 
+    /** 迭代所有注册锁名，分块执行 Lua 续期。 */
     @Override
     CompletionStage<Void> renew(Iterator<String> iter, int chunkSize) {
         return AsyncChunkProcessor.processAll(iter, chunkSize, this::buildChunk);
     }
 
+    /** 构建单块联锁续期：校验各字段仍由当前线程持有。 */
     private ChunkExecution<Boolean> buildChunk(Iterator<String> iter, int chunkSize) {
         Map<String, Long> name2lockName = new HashMap<>();
         List<Object> args = new ArrayList<>();
@@ -48,7 +56,7 @@ public class FastMultilockTask extends LockTask {
 
         List<String> keys = new ArrayList<>(chunkSize);
 
-        // Build chunk, skipping invalid entries
+        // 组装 chunk，跳过已失效条目
         while (iter.hasNext() && keys.size() < chunkSize) {
             String key = iter.next();
 
@@ -68,7 +76,7 @@ public class FastMultilockTask extends LockTask {
             name2lockName.put(key, threadId);
         }
 
-        // No valid entries found - signal completion
+        // 无有效条目则结束本轮
         if (keys.isEmpty()) {
             return null;
         }
@@ -103,6 +111,7 @@ public class FastMultilockTask extends LockTask {
                 Collections.singletonList(firstName),
                 args.toArray());
 
+        // Lua 返回 0 表示锁已丢失，取消对应续期注册
         return new ChunkExecution<>(f, exists -> {
             if (!exists) {
                 cancelExpirationRenewal(firstName, name2lockName.get(firstName));
@@ -110,6 +119,7 @@ public class FastMultilockTask extends LockTask {
         });
     }
 
+    /** 注册一条联锁续期：rawName 为 Redis 键，fields 为 Hash 字段。 */
     public void add(String rawName, String lockName, long threadId, Collection<String> fields) {
         FastMultilockEntry entry = new FastMultilockEntry(fields);
         entry.addThreadId(threadId, lockName);
