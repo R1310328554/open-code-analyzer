@@ -30,9 +30,8 @@ import org.springframework.core.Ordered;
 import org.springframework.util.ClassUtils;
 
 /**
- * A {@link org.springframework.beans.factory.config.BeanFactoryPostProcessor}
- * implementation that allows for convenient registration of custom autowire
- * qualifier types.
+ * {@link org.springframework.beans.factory.config.BeanFactoryPostProcessor} 实现，
+ * 便于注册自定义的自动装配限定符注解类型。
  *
  * <pre class="code">
  * &lt;bean id="customAutowireConfigurer" class="org.springframework.beans.factory.annotation.CustomAutowireConfigurer"&gt;
@@ -50,13 +49,19 @@ import org.springframework.util.ClassUtils;
  */
 public class CustomAutowireConfigurer implements BeanFactoryPostProcessor, BeanClassLoaderAware, Ordered {
 
+	/** 后置处理器排序值（默认与未实现 Ordered 的处理器相同） */
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
 
+	/** 要注册的自定义限定符注解类型集合 */
 	private @Nullable Set<?> customQualifierTypes;
 
+	/** 用于解析限定符类名的 ClassLoader */
 	private @Nullable ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
 
+	/**
+	 * 设置本后置处理器的排序值。
+	 */
 	public void setOrder(int order) {
 		this.order = order;
 	}
@@ -72,14 +77,11 @@ public class CustomAutowireConfigurer implements BeanFactoryPostProcessor, BeanC
 	}
 
 	/**
-	 * Register custom qualifier annotation types to be considered
-	 * when autowiring beans. Each element of the provided set may
-	 * be either a Class instance or a String representation of the
-	 * fully-qualified class name of the custom annotation.
-	 * <p>Note that any annotation that is itself annotated with Spring's
-	 * {@link org.springframework.beans.factory.annotation.Qualifier}
-	 * does not require explicit registration.
-	 * @param customQualifierTypes the custom types to register
+	 * 注册在自动装配 Bean 时需要考虑的自定义限定符注解类型。
+	 * 集合中每个元素可以是 {@code Class} 实例，也可以是自定义注解全限定类名的字符串。
+	 * <p>注意：本身已标注 Spring {@link org.springframework.beans.factory.annotation.Qualifier}
+	 * 的注解无需再显式注册。
+	 * @param customQualifierTypes 要注册的自定义类型
 	 */
 	public void setCustomQualifierTypes(Set<?> customQualifierTypes) {
 		this.customQualifierTypes = customQualifierTypes;

@@ -25,15 +25,13 @@ import org.springframework.core.type.StandardAnnotationMetadata;
 import org.springframework.util.Assert;
 
 /**
- * Extension of the {@link org.springframework.beans.factory.support.GenericBeanDefinition}
- * class, adding support for annotation metadata exposed through the
- * {@link AnnotatedBeanDefinition} interface.
+ * {@link org.springframework.beans.factory.support.GenericBeanDefinition} 的扩展，
+ * 通过 {@link AnnotatedBeanDefinition} 接口暴露注解元数据。
  *
- * <p>This GenericBeanDefinition variant is mainly useful for testing code that expects
- * to operate on an AnnotatedBeanDefinition, for example strategy implementations
- * in Spring's component scanning support (where the default definition class is
- * {@link org.springframework.context.annotation.ScannedGenericBeanDefinition},
- * which also implements the AnnotatedBeanDefinition interface).
+ * <p>该 GenericBeanDefinition 变体主要用于测试：测试代码期望操作
+ * {@code AnnotatedBeanDefinition}（例如组件扫描相关策略）。扫描侧默认的定义类是
+ * {@link org.springframework.context.annotation.ScannedGenericBeanDefinition}，
+ * 同样实现了 {@code AnnotatedBeanDefinition}。
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -44,14 +42,16 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implements AnnotatedBeanDefinition {
 
+	/** Bean 类上的注解元数据 */
 	private final AnnotationMetadata metadata;
 
+	/** 工厂方法元数据（若通过工厂方法定义 Bean） */
 	private @Nullable MethodMetadata factoryMethodMetadata;
 
 
 	/**
-	 * Create a new AnnotatedGenericBeanDefinition for the given bean class.
-	 * @param beanClass the loaded bean class
+	 * 根据给定的已加载 Bean 类创建 {@code AnnotatedGenericBeanDefinition}。
+	 * @param beanClass 已加载的 Bean 类
 	 */
 	public AnnotatedGenericBeanDefinition(Class<?> beanClass) {
 		setBeanClass(beanClass);
@@ -59,13 +59,12 @@ public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implem
 	}
 
 	/**
-	 * Create a new AnnotatedGenericBeanDefinition for the given annotation metadata,
-	 * allowing for ASM-based processing and avoidance of early loading of the bean class.
-	 * Note that this constructor is functionally equivalent to
-	 * {@link org.springframework.context.annotation.ScannedGenericBeanDefinition
-	 * ScannedGenericBeanDefinition}, however the semantics of the latter indicate that a
-	 * bean was discovered specifically via component-scanning as opposed to other means.
-	 * @param metadata the annotation metadata for the bean class in question
+	 * 根据给定的注解元数据创建 {@code AnnotatedGenericBeanDefinition}，
+	 * 支持基于 ASM 的处理，并可避免过早加载 Bean 类。
+	 * <p>功能上与 {@link org.springframework.context.annotation.ScannedGenericBeanDefinition
+	 * ScannedGenericBeanDefinition} 等价；后者语义上表示 Bean 是通过组件扫描发现的，
+	 * 而本类不强调发现途径。
+	 * @param metadata 目标 Bean 类的注解元数据
 	 * @since 3.1.1
 	 */
 	public AnnotatedGenericBeanDefinition(AnnotationMetadata metadata) {
@@ -80,10 +79,10 @@ public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implem
 	}
 
 	/**
-	 * Create a new AnnotatedGenericBeanDefinition for the given annotation metadata,
-	 * based on an annotated class and a factory method on that class.
-	 * @param metadata the annotation metadata for the bean class in question
-	 * @param factoryMethodMetadata metadata for the selected factory method
+	 * 根据给定的注解元数据与工厂方法元数据创建 {@code AnnotatedGenericBeanDefinition}
+	 *（基于带注解的类及其上的工厂方法）。
+	 * @param metadata 目标 Bean 类的注解元数据
+	 * @param factoryMethodMetadata 所选工厂方法的元数据
 	 * @since 4.1.1
 	 */
 	public AnnotatedGenericBeanDefinition(AnnotationMetadata metadata, MethodMetadata factoryMethodMetadata) {

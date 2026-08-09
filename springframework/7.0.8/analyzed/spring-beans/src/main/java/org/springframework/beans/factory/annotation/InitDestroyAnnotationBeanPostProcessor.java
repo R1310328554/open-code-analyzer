@@ -52,35 +52,24 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
 
-/* ===== [OCA 中文解析] =====
-class InitDestroyAnnotationBeanPostProcessor — 意图说明
-
-处理器：容器生命周期中的扩展钩子；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/annotation/InitDestroyAnnotationBeanPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * {@link org.springframework.beans.factory.config.BeanPostProcessor} implementation
- * that invokes annotated init and destroy methods. Allows for an annotation
- * alternative to Spring's {@link org.springframework.beans.factory.InitializingBean}
- * and {@link org.springframework.beans.factory.DisposableBean} callback interfaces.
+ * {@link org.springframework.beans.factory.config.BeanPostProcessor} 实现：
+ * 调用带注解的 init / destroy 方法。可作为 Spring
+ * {@link org.springframework.beans.factory.InitializingBean} 与
+ * {@link org.springframework.beans.factory.DisposableBean} 回调接口的注解式替代。
  *
- * <p>The actual annotation types that this post-processor checks for can be
- * configured through the {@link #setInitAnnotationType "initAnnotationType"}
- * and {@link #setDestroyAnnotationType "destroyAnnotationType"} properties.
- * Any custom annotation can be used, since there are no required annotation
- * attributes.
+ * <p>本后置处理器实际检查的注解类型可通过
+ * {@link #setInitAnnotationType "initAnnotationType"} 与
+ * {@link #setDestroyAnnotationType "destroyAnnotationType"} 属性配置。
+ * 可使用任意自定义注解，因为不要求注解具备特定属性。
  *
- * <p>Init and destroy annotations may be applied to methods of any visibility:
- * public, package-protected, protected, or private. Multiple such methods
- * may be annotated, but it is recommended to only annotate one single
- * init method and destroy method, respectively.
+ * <p>init / destroy 注解可用于任意可见性的方法：public、包级、protected 或 private。
+ * 可以标注多个方法，但建议分别只标注一个 init 方法与一个 destroy 方法。
  *
- * <p>Spring's {@link org.springframework.context.annotation.CommonAnnotationBeanPostProcessor}
- * supports the {@link jakarta.annotation.PostConstruct} and {@link jakarta.annotation.PreDestroy}
- * annotations out of the box, as init annotation and destroy annotation, respectively.
- * Furthermore, it also supports the {@link jakarta.annotation.Resource} annotation
- * for annotation-driven injection of named beans.
+ * <p>Spring 的 {@link org.springframework.context.annotation.CommonAnnotationBeanPostProcessor}
+ * 开箱即用地支持 {@link jakarta.annotation.PostConstruct} 与
+ * {@link jakarta.annotation.PreDestroy}，分别作为 init 与 destroy 注解。
+ * 此外还支持 {@link jakarta.annotation.Resource}，用于按名称进行注解驱动注入。
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -94,7 +83,7 @@ class InitDestroyAnnotationBeanPostProcessor — 意图说明
 public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareBeanPostProcessor,
 		MergedBeanDefinitionPostProcessor, BeanRegistrationAotProcessor, PriorityOrdered, Serializable {
 
-	// [OCA] 字段 `emptyLifecycleMetadata`：类成员状态。
+	/** 空生命周期元数据：各回调均为空操作 */
 	private final transient LifecycleMetadata emptyLifecycleMetadata =
 			new LifecycleMetadata(Object.class, Collections.emptyList(), Collections.emptyList()) {
 				@Override
@@ -113,25 +102,26 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 			};
 
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/** 日志记录器 */
 	protected transient Log logger = LogFactory.getLog(getClass());
 
+	/** 视为「初始化」标记的注解类型集合 */
 	private final Set<Class<? extends Annotation>> initAnnotationTypes = new LinkedHashSet<>(2);
 
+	/** 视为「销毁」标记的注解类型集合 */
 	private final Set<Class<? extends Annotation>> destroyAnnotationTypes = new LinkedHashSet<>(2);
 
-	// [OCA] 字段 `order`：类成员状态。
+	/** 后置处理器排序值 */
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
+	/** 按 Bean 类缓存的生命周期元数据 */
 	private final transient @Nullable Map<Class<?>, LifecycleMetadata> lifecycleMetadataCache = new ConcurrentHashMap<>(256);
 
 
 	/**
-	 * Specify the init annotation to check for, indicating initialization
-	 * methods to call after configuration of a bean.
-	 * <p>Any custom annotation can be used, since there are no required
-	 * annotation attributes. There is no default, although a typical choice
-	 * is the {@link jakarta.annotation.PostConstruct} annotation.
+	 * 指定要检查的 init 注解，用于标识 Bean 配置完成后应调用的初始化方法。
+	 * <p>可使用任意自定义注解（不要求特定属性）。没有默认值，典型选择是
+	 * {@link jakarta.annotation.PostConstruct}。
 	 * @see #addInitAnnotationType
 	 */
 	public void setInitAnnotationType(Class<? extends Annotation> initAnnotationType) {
@@ -140,8 +130,7 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 	}
 
 	/**
-	 * Add an init annotation to check for, indicating initialization
-	 * methods to call after configuration of a bean.
+	 * 追加一个要检查的 init 注解，用于标识 Bean 配置完成后应调用的初始化方法。
 	 * @since 6.0.11
 	 * @see #setInitAnnotationType
 	 */
@@ -152,11 +141,9 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 	}
 
 	/**
-	 * Specify the destroy annotation to check for, indicating destruction
-	 * methods to call when the context is shutting down.
-	 * <p>Any custom annotation can be used, since there are no required
-	 * annotation attributes. There is no default, although a typical choice
-	 * is the {@link jakarta.annotation.PreDestroy} annotation.
+	 * 指定要检查的 destroy 注解，用于标识上下文关闭时应调用的销毁方法。
+	 * <p>可使用任意自定义注解（不要求特定属性）。没有默认值，典型选择是
+	 * {@link jakarta.annotation.PreDestroy}。
 	 * @see #addDestroyAnnotationType
 	 */
 	public void setDestroyAnnotationType(Class<? extends Annotation> destroyAnnotationType) {
@@ -165,8 +152,7 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 	}
 
 	/**
-	 * Add a destroy annotation to check for, indicating destruction
-	 * methods to call when the context is shutting down.
+	 * 追加一个要检查的 destroy 注解，用于标识上下文关闭时应调用的销毁方法。
 	 * @since 6.0.11
 	 * @see #setDestroyAnnotationType
 	 */
@@ -176,6 +162,9 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 		}
 	}
 
+	/**
+	 * 设置本后置处理器的排序值。
+	 */
 	public void setOrder(int order) {
 		this.order = order;
 	}
@@ -207,12 +196,18 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 		return null;
 	}
 
+	/**
+	 * 查找生命周期元数据，并将 init/destroy 方法登记到 Bean 定义中。
+	 */
 	private LifecycleMetadata findLifecycleMetadata(RootBeanDefinition beanDefinition, Class<?> beanClass) {
 		LifecycleMetadata metadata = findLifecycleMetadata(beanClass);
 		metadata.checkInitDestroyMethods(beanDefinition);
 		return metadata;
 	}
 
+	/**
+	 * 将检测到的生命周期方法名与已有方法名安全合并（去重）。
+	 */
 	private static String[] safeMerge(String @Nullable [] existingNames, Collection<LifecycleMethod> detectedMethods) {
 		Stream<String> detectedNames = detectedMethods.stream().map(LifecycleMethod::getIdentifier);
 		Stream<String> mergedNames = (existingNames != null ?
@@ -268,12 +263,15 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 	}
 
 
+	/**
+	 * 按 Bean 类查找（或构建并缓存）生命周期元数据。
+	 */
 	private LifecycleMetadata findLifecycleMetadata(Class<?> beanClass) {
 		if (this.lifecycleMetadataCache == null) {
-			// Happens after deserialization, during destruction...
+			// 反序列化之后、销毁阶段可能走到这里……
 			return buildLifecycleMetadata(beanClass);
 		}
-		// Quick check on the concurrent map first, with minimal locking.
+		// 先在并发 Map 上快速查找，尽量少加锁
 		LifecycleMetadata metadata = this.lifecycleMetadataCache.get(beanClass);
 		if (metadata == null) {
 			synchronized (this.lifecycleMetadataCache) {
@@ -288,13 +286,9 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 		return metadata;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 buildLifecycleMetadata — 意图与阅读要点
-
-方法 `buildLifecycleMetadata` 复杂度较高（CCN≈15, NLOC≈37）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 扫描类层次结构，构建 init/destroy 方法元数据。
+	 */
 	private LifecycleMetadata buildLifecycleMetadata(final Class<?> beanClass) {
 		if (!AnnotationUtils.isCandidateClass(beanClass, this.initAnnotationTypes) &&
 				!AnnotationUtils.isCandidateClass(beanClass, this.destroyAnnotationTypes)) {
@@ -340,38 +334,36 @@ public class InitDestroyAnnotationBeanPostProcessor implements DestructionAwareB
 
 
 	//---------------------------------------------------------------------
-	// Serialization support
+	// 序列化支持
 	//---------------------------------------------------------------------
 
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-		// Rely on default serialization; just initialize state after deserialization.
+		// 依赖默认序列化；反序列化后仅初始化状态
 		ois.defaultReadObject();
 
-		// Initialize transient fields.
+		// 初始化 transient 字段
 		this.logger = LogFactory.getLog(getClass());
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class LifecycleMetadata — 意图说明
-
-class `LifecycleMetadata`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/annotation/InitDestroyAnnotationBeanPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Class representing information about annotated init and destroy methods.
+	 * 表示带注解的 init / destroy 方法信息的内部类。
 	 */
 	private class LifecycleMetadata {
 
+		/** 目标 Bean 类 */
 		private final Class<?> beanClass;
 
+		/** 检测到的全部 init 方法 */
 		private final Collection<LifecycleMethod> initMethods;
 
+		/** 检测到的全部 destroy 方法 */
 		private final Collection<LifecycleMethod> destroyMethods;
 
+		/** 已登记到 Bean 定义、实际需要调用的 init 方法 */
 		private volatile @Nullable Set<LifecycleMethod> checkedInitMethods;
 
+		/** 已登记到 Bean 定义、实际需要调用的 destroy 方法 */
 		private volatile @Nullable Set<LifecycleMethod> checkedDestroyMethods;
 
 		public LifecycleMetadata(Class<?> beanClass, Collection<LifecycleMethod> initMethods,
@@ -382,6 +374,9 @@ class `LifecycleMetadata`：请结合所属模块与调用方理解其在整体�
 			this.destroyMethods = destroyMethods;
 		}
 
+		/**
+		 * 将尚未由外部管理的 init/destroy 方法登记到 Bean 定义中。
+		 */
 		public void checkInitDestroyMethods(RootBeanDefinition beanDefinition) {
 			Set<LifecycleMethod> checkedInitMethods = CollectionUtils.newLinkedHashSet(this.initMethods.size());
 			for (LifecycleMethod lifecycleMethod : this.initMethods) {
@@ -409,6 +404,9 @@ class `LifecycleMetadata`：请结合所属模块与调用方理解其在整体�
 			this.checkedDestroyMethods = checkedDestroyMethods;
 		}
 
+		/**
+		 * 调用已检查（或全部）的 init 方法。
+		 */
 		public void invokeInitMethods(Object target, String beanName) throws Throwable {
 			Collection<LifecycleMethod> checkedInitMethods = this.checkedInitMethods;
 			Collection<LifecycleMethod> initMethodsToIterate =
@@ -423,6 +421,9 @@ class `LifecycleMetadata`：请结合所属模块与调用方理解其在整体�
 			}
 		}
 
+		/**
+		 * 调用已检查（或全部）的 destroy 方法。
+		 */
 		public void invokeDestroyMethods(Object target, String beanName) throws Throwable {
 			Collection<LifecycleMethod> checkedDestroyMethods = this.checkedDestroyMethods;
 			Collection<LifecycleMethod> destroyMethodsToUse =
@@ -437,6 +438,9 @@ class `LifecycleMetadata`：请结合所属模块与调用方理解其在整体�
 			}
 		}
 
+		/**
+		 * 是否存在需要调用的 destroy 方法。
+		 */
 		public boolean hasDestroyMethods() {
 			Collection<LifecycleMethod> checkedDestroyMethods = this.checkedDestroyMethods;
 			Collection<LifecycleMethod> destroyMethodsToUse =
@@ -446,20 +450,15 @@ class `LifecycleMetadata`：请结合所属模块与调用方理解其在整体�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class LifecycleMethod — 意图说明
-
-class `LifecycleMethod`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/annotation/InitDestroyAnnotationBeanPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Class representing an annotated init or destroy method.
+	 * 表示单个带注解的 init 或 destroy 方法。
 	 */
 	private static class LifecycleMethod {
 
+		/** 生命周期方法 */
 		private final Method method;
 
+		/** 方法标识（方法名，或私有/不可见时的限定方法名） */
 		private final String identifier;
 
 		public LifecycleMethod(Method method, Class<?> beanClass) {
@@ -479,6 +478,9 @@ class `LifecycleMethod`：请结合所属模块与调用方理解其在整体架
 			return this.identifier;
 		}
 
+		/**
+		 * 在目标实例上调用该生命周期方法。
+		 */
 		public void invoke(Object target) throws Throwable {
 			ReflectionUtils.makeAccessible(this.method);
 			this.method.invoke(target);
@@ -496,8 +498,8 @@ class `LifecycleMethod`：请结合所属模块与调用方理解其在整体架
 		}
 
 		/**
-		 * Determine if the supplied lifecycle {@link Method} is private or not
-		 * visible to the supplied bean {@link Class}.
+		 * 判断给定的生命周期 {@link Method} 是否为 private，
+		 * 或对给定 Bean {@link Class} 不可见。
 		 * @since 6.0.11
 		 */
 		private static boolean isPrivateOrNotVisible(Method method, Class<?> beanClass) {
@@ -505,8 +507,7 @@ class `LifecycleMethod`：请结合所属模块与调用方理解其在整体架
 			if (Modifier.isPrivate(modifiers)) {
 				return true;
 			}
-			// Method is declared in a class that resides in a different package
-			// than the bean class and the method is neither public nor protected?
+			// 方法声明在与 Bean 类不同包中，且既非 public 也非 protected？
 			return (!method.getDeclaringClass().getPackageName().equals(beanClass.getPackageName()) &&
 					!(Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)));
 		}

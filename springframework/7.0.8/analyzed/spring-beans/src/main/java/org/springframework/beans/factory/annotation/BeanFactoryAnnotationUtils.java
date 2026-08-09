@@ -38,16 +38,9 @@ import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
 
-/* ===== [OCA 中文解析] =====
-class BeanFactoryAnnotationUtils — 意图说明
-
-Bean 工厂：存在与获取 Bean 实例的核心入口；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/annotation/BeanFactoryAnnotationUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Convenience methods performing bean lookups related to Spring-specific annotations,
- * for example Spring's {@link Qualifier @Qualifier} annotation.
+ * 与 Spring 特有注解相关的 Bean 查找便捷方法，
+ * 例如 Spring 的 {@link Qualifier @Qualifier}。
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -57,14 +50,14 @@ Bean 工厂：存在与获取 Bean 实例的核心入口；源文件: `spring-be
 public abstract class BeanFactoryAnnotationUtils {
 
 	/**
-	 * Retrieve all beans of type {@code T} from the given {@code BeanFactory} declaring a
-	 * qualifier (for example, via {@code <qualifier>} or {@code @Qualifier}) matching the given
-	 * qualifier, or having a bean name matching the given qualifier.
-	 * @param beanFactory the factory to get the target beans from (also searching ancestors)
-	 * @param beanType the type of beans to retrieve
-	 * @param qualifier the qualifier for selecting among all type matches
-	 * @return the matching beans of type {@code T}
-	 * @throws BeansException if any of the matching beans could not be created
+	 * 从给定 {@code BeanFactory} 中检索类型为 {@code T}、且声明了匹配给定限定符的全部 Bean
+	 *（例如通过 {@code <qualifier>} 或 {@code @Qualifier}），
+	 * 或者 Bean 名称本身与该限定符匹配的 Bean。
+	 * @param beanFactory 获取目标 Bean 的工厂（也会搜索祖先）
+	 * @param beanType 要检索的 Bean 类型
+	 * @param qualifier 在全部类型匹配中用于筛选的限定符
+	 * @return 匹配的 {@code T} 类型 Bean
+	 * @throws BeansException 若任一匹配 Bean 无法创建
 	 * @since 5.1.1
 	 * @see BeanFactoryUtils#beansOfTypeIncludingAncestors(ListableBeanFactory, Class)
 	 */
@@ -82,16 +75,16 @@ public abstract class BeanFactoryAnnotationUtils {
 	}
 
 	/**
-	 * Obtain a bean of type {@code T} from the given {@code BeanFactory} declaring a
-	 * qualifier (for example, via {@code <qualifier>} or {@code @Qualifier}) matching the given
-	 * qualifier, or having a bean name matching the given qualifier.
-	 * @param beanFactory the factory to get the target bean from (also searching ancestors)
-	 * @param beanType the type of bean to retrieve
-	 * @param qualifier the qualifier for selecting between multiple bean matches
-	 * @return the matching bean of type {@code T} (never {@code null})
-	 * @throws NoUniqueBeanDefinitionException if multiple matching beans of type {@code T} found
-	 * @throws NoSuchBeanDefinitionException if no matching bean of type {@code T} found
-	 * @throws BeansException if the bean could not be created
+	 * 从给定 {@code BeanFactory} 中获取类型为 {@code T}、且声明了匹配给定限定符的单个 Bean
+	 *（例如通过 {@code <qualifier>} 或 {@code @Qualifier}），
+	 * 或者 Bean 名称本身与该限定符匹配的 Bean。
+	 * @param beanFactory 获取目标 Bean 的工厂（也会搜索祖先）
+	 * @param beanType 要检索的 Bean 类型
+	 * @param qualifier 在多个类型匹配中用于筛选的限定符
+	 * @return 匹配的 {@code T} 类型 Bean（永不为 {@code null}）
+	 * @throws NoUniqueBeanDefinitionException 若找到多个匹配的 {@code T} 类型 Bean
+	 * @throws NoSuchBeanDefinitionException 若找不到匹配的 {@code T} 类型 Bean
+	 * @throws BeansException 若 Bean 无法创建
 	 * @see BeanFactoryUtils#beanOfTypeIncludingAncestors(ListableBeanFactory, Class)
 	 */
 	public static <T> T qualifiedBeanOfType(BeanFactory beanFactory, Class<T> beanType, String qualifier)
@@ -100,11 +93,11 @@ public abstract class BeanFactoryAnnotationUtils {
 		Assert.notNull(beanFactory, "BeanFactory must not be null");
 
 		if (beanFactory instanceof ListableBeanFactory lbf) {
-			// Full qualifier matching supported.
+			// 支持完整的限定符匹配
 			return qualifiedBeanOfType(lbf, beanType, qualifier);
 		}
 		else if (beanFactory.containsBean(qualifier) && beanFactory.isTypeMatch(qualifier, beanType)) {
-			// Fallback: target bean at least found by bean name.
+			// 回退：至少能按 Bean 名称找到目标
 			return beanFactory.getBean(qualifier, beanType);
 		}
 		else {
@@ -116,12 +109,12 @@ public abstract class BeanFactoryAnnotationUtils {
 	}
 
 	/**
-	 * Obtain a bean of type {@code T} from the given {@code BeanFactory} declaring a qualifier
-	 * (for example, {@code <qualifier>} or {@code @Qualifier}) matching the given qualifier).
-	 * @param beanFactory the factory to get the target bean from
-	 * @param beanType the type of bean to retrieve
-	 * @param qualifier the qualifier for selecting between multiple bean matches
-	 * @return the matching bean of type {@code T} (never {@code null})
+	 * 从给定 {@code ListableBeanFactory} 中获取类型为 {@code T}、
+	 * 且声明了匹配给定限定符的 Bean（例如 {@code <qualifier>} 或 {@code @Qualifier}）。
+	 * @param beanFactory 获取目标 Bean 的工厂
+	 * @param beanType 要检索的 Bean 类型
+	 * @param qualifier 在多个类型匹配中用于筛选的限定符
+	 * @return 匹配的 {@code T} 类型 Bean（永不为 {@code null}）
 	 */
 	private static <T> T qualifiedBeanOfType(ListableBeanFactory beanFactory, Class<T> beanType, String qualifier) {
 		String[] candidateBeans = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(beanFactory, beanType);
@@ -138,7 +131,7 @@ public abstract class BeanFactoryAnnotationUtils {
 			return beanFactory.getBean(matchingBean, beanType);
 		}
 		else if (beanFactory.containsBean(qualifier) && beanFactory.isTypeMatch(qualifier, beanType)) {
-			// Fallback: target bean at least found by bean name - probably a manually registered singleton.
+			// 回退：至少能按 Bean 名称找到目标——多半是手动注册的单例
 			return beanFactory.getBean(qualifier, beanType);
 		}
 		else {
@@ -148,10 +141,9 @@ public abstract class BeanFactoryAnnotationUtils {
 	}
 
 	/**
-	 * Determine the {@link Qualifier#value() qualifier value} for the given
-	 * annotated element.
-	 * @param annotatedElement the class, method or parameter to introspect
-	 * @return the associated qualifier value, or {@code null} if none
+	 * 获取给定带注解元素上的 {@link Qualifier#value() 限定符值}。
+	 * @param annotatedElement 要内省的类、方法或参数
+	 * @return 关联的限定符值；没有则为 {@code null}
 	 * @since 6.2
 	 */
 	public static @Nullable String getQualifierValue(AnnotatedElement annotatedElement) {
@@ -159,25 +151,19 @@ public abstract class BeanFactoryAnnotationUtils {
 		return (qualifier != null ? qualifier.value() : null);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 isQualifierMatch — 意图与阅读要点
-
-方法 `isQualifierMatch` 复杂度较高（CCN≈16, NLOC≈46）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Check whether the named bean declares a qualifier of the given name.
-	 * @param qualifier the qualifier to match
-	 * @param beanName the name of the candidate bean
-	 * @param beanFactory the factory from which to retrieve the named bean
-	 * @return {@code true} if either the bean definition (in the XML case)
-	 * or the bean's factory method (in the {@code @Bean} case) defines a matching
-	 * qualifier value (through {@code <qualifier>} or {@code @Qualifier})
+	 * 检查指定名称的 Bean 是否声明了给定名称的限定符。
+	 * @param qualifier 要匹配的限定符
+	 * @param beanName 候选 Bean 的名称
+	 * @param beanFactory 用于检索该命名 Bean 的工厂
+	 * @return 若 Bean 定义（XML 场景）或 Bean 的工厂方法（{@code @Bean} 场景）
+	 * 通过 {@code <qualifier>} / {@code @Qualifier} 定义了匹配的限定符值，则为 {@code true}
 	 * @since 5.0
 	 */
 	public static boolean isQualifierMatch(
 			Predicate<String> qualifier, String beanName, @Nullable BeanFactory beanFactory) {
 
-		// Try quick bean name or alias match first...
+		// 先快速匹配 Bean 名称或别名……
 		if (qualifier.test(beanName)) {
 			return true;
 		}
@@ -191,7 +177,7 @@ public abstract class BeanFactoryAnnotationUtils {
 				Class<?> beanType = beanFactory.getType(beanName);
 				if (beanFactory instanceof ConfigurableBeanFactory cbf) {
 					BeanDefinition bd = cbf.getMergedBeanDefinition(beanName);
-					// Explicit qualifier metadata on bean definition? (typically in XML definition)
+					// Bean 定义上是否有显式限定符元数据？（通常来自 XML）
 					if (bd instanceof AbstractBeanDefinition abd) {
 						AutowireCandidateQualifier candidate = abd.getQualifier(Qualifier.class.getName());
 						if (candidate != null) {
@@ -201,7 +187,7 @@ public abstract class BeanFactoryAnnotationUtils {
 							}
 						}
 					}
-					// Corresponding qualifier on factory method? (typically in configuration class)
+					// 工厂方法上是否有对应限定符？（通常来自配置类）
 					if (bd instanceof RootBeanDefinition rbd) {
 						Method factoryMethod = rbd.getResolvedFactoryMethod();
 						if (factoryMethod != null) {
@@ -212,7 +198,7 @@ public abstract class BeanFactoryAnnotationUtils {
 						}
 					}
 				}
-				// Corresponding qualifier on bean implementation class? (for custom user types)
+				// Bean 实现类上是否有对应限定符？（自定义用户类型）
 				if (beanType != null) {
 					Qualifier targetAnnotation = AnnotationUtils.getAnnotation(beanType, Qualifier.class);
 					if (targetAnnotation != null) {
@@ -221,7 +207,7 @@ public abstract class BeanFactoryAnnotationUtils {
 				}
 			}
 			catch (NoSuchBeanDefinitionException ignored) {
-				// can't compare qualifiers for a manually registered singleton object
+				// 手动注册的单例对象无法比较限定符
 			}
 		}
 		return false;

@@ -24,11 +24,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link org.springframework.beans.factory.wiring.BeanWiringInfoResolver} that
- * uses the Configurable annotation to identify which classes need autowiring.
- * The bean name to look up will be taken from the {@link Configurable} annotation
- * if specified; otherwise the default will be the fully-qualified name of the
- * class being configured.
+ * {@link org.springframework.beans.factory.wiring.BeanWiringInfoResolver} 实现：
+ * 通过 {@link Configurable} 注解识别需要自动装配的类。
+ * <p>查找用的 Bean 名称取自 {@code @Configurable}（若已指定）；
+ * 否则默认为被配置类的全限定名。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -46,32 +45,31 @@ public class AnnotationBeanWiringInfoResolver implements BeanWiringInfoResolver 
 	}
 
 	/**
-	 * Build the {@link BeanWiringInfo} for the given {@link Configurable} annotation.
-	 * @param beanInstance the bean instance
-	 * @param annotation the Configurable annotation found on the bean class
-	 * @return the resolved BeanWiringInfo
+	 * 根据给定的 {@link Configurable} 注解构建 {@link BeanWiringInfo}。
+	 * @param beanInstance Bean 实例
+	 * @param annotation Bean 类上找到的 {@code Configurable} 注解
+	 * @return 解析得到的 {@code BeanWiringInfo}
 	 */
 	protected BeanWiringInfo buildWiringInfo(Object beanInstance, Configurable annotation) {
 		if (!Autowire.NO.equals(annotation.autowire())) {
-			// Autowiring by name or by type
+			// 按名称或按类型自动装配
 			return new BeanWiringInfo(annotation.autowire().value(), annotation.dependencyCheck());
 		}
 		else if (!annotation.value().isEmpty()) {
-			// Explicitly specified bean name for bean definition to take property values from
+			// 显式指定了作为属性值模板的 Bean 定义名称
 			return new BeanWiringInfo(annotation.value(), false);
 		}
 		else {
-			// Default bean name for bean definition to take property values from
+			// 使用默认 Bean 名称作为属性值模板
 			return new BeanWiringInfo(getDefaultBeanName(beanInstance), true);
 		}
 	}
 
 	/**
-	 * Determine the default bean name for the specified bean instance.
-	 * <p>The default implementation returns the superclass name for a CGLIB
-	 * proxy and the name of the plain bean class else.
-	 * @param beanInstance the bean instance to build a default name for
-	 * @return the default bean name to use
+	 * 为指定 Bean 实例确定默认 Bean 名称。
+	 * <p>默认实现：若为 CGLIB 代理则返回超类名，否则返回普通 Bean 类名。
+	 * @param beanInstance 要为其生成默认名称的 Bean 实例
+	 * @return 要使用的默认 Bean 名称
 	 * @see org.springframework.util.ClassUtils#getUserClass(Class)
 	 */
 	protected String getDefaultBeanName(Object beanInstance) {

@@ -43,20 +43,12 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
-/* ===== [OCA 中文解析] =====
-class QualifierAnnotationAutowireCandidateResolver — 意图说明
-
-解析器：名称/类型/占位符等到具体对象的转换；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/annotation/QualifierAnnotationAutowireCandidateResolver.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * {@link AutowireCandidateResolver} implementation that matches bean definition
- * qualifiers against {@link #addQualifierType(Class) qualifier annotations} on
- * the field or parameter to be autowired. Also supports suggested expression
- * values through a {@link #setValueAnnotationType(Class) value annotation}.
+ * {@link AutowireCandidateResolver} 实现：将 Bean 定义上的限定符与待自动装配字段/参数上的
+ * {@link #addQualifierType(Class) 限定符注解} 进行匹配；同时通过
+ * {@link #setValueAnnotationType(Class) value 注解} 支持建议的表达式取值。
  *
- * <p>Also supports JSR-330's {@link jakarta.inject.Qualifier} annotation if available.
+ * <p>若可用，也支持 JSR-330 的 {@link jakarta.inject.Qualifier} 注解。
  *
  * @author Mark Fisher
  * @author Juergen Hoeller
@@ -69,15 +61,17 @@ class QualifierAnnotationAutowireCandidateResolver — 意图说明
  */
 public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwareAutowireCandidateResolver {
 
+	/** 识别为限定符的注解类型集合 */
 	private final Set<Class<? extends Annotation>> qualifierTypes = CollectionUtils.newLinkedHashSet(2);
 
+	/** 表示默认值表达式的注解类型（默认为 {@link Value}） */
 	private Class<? extends Annotation> valueAnnotationType = Value.class;
 
 
 	/**
-	 * Create a new {@code QualifierAnnotationAutowireCandidateResolver} for Spring's
-	 * standard {@link Qualifier @Qualifier} annotation.
-	 * <p>Also supports JSR-330's {@link jakarta.inject.Qualifier} annotation if available.
+	 * 创建面向 Spring 标准 {@link Qualifier @Qualifier} 注解的
+	 * {@code QualifierAnnotationAutowireCandidateResolver}。
+	 * <p>若可用，也支持 JSR-330 的 {@link jakarta.inject.Qualifier} 注解。
 	 */
 	@SuppressWarnings("unchecked")
 	public QualifierAnnotationAutowireCandidateResolver() {
@@ -87,14 +81,13 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 							QualifierAnnotationAutowireCandidateResolver.class.getClassLoader()));
 		}
 		catch (ClassNotFoundException ex) {
-			// JSR-330 API (as included in Jakarta EE) not available - simply skip.
+			// 无 Jakarta EE 中的 JSR-330 API——直接跳过
 		}
 	}
 
 	/**
-	 * Create a new {@code QualifierAnnotationAutowireCandidateResolver} for the given
-	 * qualifier annotation type.
-	 * @param qualifierType the qualifier annotation to look for
+	 * 为给定的限定符注解类型创建 {@code QualifierAnnotationAutowireCandidateResolver}。
+	 * @param qualifierType 要查找的限定符注解
 	 */
 	public QualifierAnnotationAutowireCandidateResolver(Class<? extends Annotation> qualifierType) {
 		Assert.notNull(qualifierType, "'qualifierType' must not be null");
@@ -102,9 +95,8 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	}
 
 	/**
-	 * Create a new {@code QualifierAnnotationAutowireCandidateResolver} for the given
-	 * qualifier annotation types.
-	 * @param qualifierTypes the qualifier annotations to look for
+	 * 为给定的一组限定符注解类型创建 {@code QualifierAnnotationAutowireCandidateResolver}。
+	 * @param qualifierTypes 要查找的限定符注解集合
 	 */
 	public QualifierAnnotationAutowireCandidateResolver(Set<Class<? extends Annotation>> qualifierTypes) {
 		Assert.notNull(qualifierTypes, "'qualifierTypes' must not be null");
@@ -113,27 +105,22 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 
 
 	/**
-	 * Register the given type to be used as a qualifier when autowiring.
-	 * <p>This identifies qualifier annotations for direct use (on fields,
-	 * method parameters and constructor parameters) as well as
-	 * meta-annotations that in turn identify actual qualifier annotations.
-	 * <p>This implementation only supports annotations as qualifier types.
-	 * The default is Spring's {@link Qualifier @Qualifier} annotation which serves
-	 * as a qualifier for direct use and also as a meta-annotation.
-	 * @param qualifierType the annotation type to register
+	 * 注册在自动装配时用作限定符的注解类型。
+	 * <p>既包括可直接使用的限定符注解（字段、方法参数、构造器参数），
+	 * 也包括进而标识实际限定符注解的元注解。
+	 * <p>本实现仅支持以注解作为限定符类型。
+	 * 默认为 Spring 的 {@link Qualifier @Qualifier}，既可直接使用，也可作为元注解。
+	 * @param qualifierType 要注册的注解类型
 	 */
 	public void addQualifierType(Class<? extends Annotation> qualifierType) {
 		this.qualifierTypes.add(qualifierType);
 	}
 
 	/**
-	 * Set the 'value' annotation type, to be used on fields, method parameters
-	 * and constructor parameters.
-	 * <p>The default value annotation type is the Spring-provided
-	 * {@link Value @Value} annotation.
-	 * <p>This setter property exists so that developers can provide their own
-	 * (non-Spring-specific) annotation type to indicate a default value
-	 * expression for a specific argument.
+	 * 设置用于字段、方法参数与构造器参数的「value」注解类型。
+	 * <p>默认的 value 注解类型是 Spring 提供的 {@link Value @Value}。
+	 * <p>提供此 setter，便于开发者使用自定义（非 Spring 专属）注解
+	 * 为特定参数声明默认值表达式。
 	 */
 	public void setValueAnnotationType(Class<? extends Annotation> valueAnnotationType) {
 		this.valueAnnotationType = valueAnnotationType;
@@ -141,23 +128,14 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 
 
 	/**
-	 * Determine whether the provided bean definition is an autowire candidate.
-	 * <p>To be considered a candidate the bean's <em>autowire-candidate</em>
-	 * attribute must not have been set to 'false'. Also, if an annotation on
-	 * the field or parameter to be autowired is recognized by this bean factory
-	 * as a <em>qualifier</em>, the bean must 'match' against the annotation as
-	 * well as any attributes it may contain. The bean definition must contain
-	 * the same qualifier or match by meta attributes. A "value" attribute will
-	 * fall back to match against the bean name or an alias if a qualifier or
-	 * attribute does not match.
+	 * 判断给定的 Bean 定义是否为自动装配候选。
+	 * <p>要被视为候选，Bean 的 <em>autowire-candidate</em> 属性不得设为 {@code false}。
+	 * 此外，若待装配字段/参数上的注解被本 BeanFactory 识别为<em>限定符</em>，
+	 * 则该 Bean 还必须与该注解及其属性匹配。Bean 定义须包含相同限定符，或通过元属性匹配。
+	 * 若限定符或属性未能匹配，{@code value} 属性会回退到与 Bean 名称或别名匹配。
 	 * @see Qualifier
 	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 isAutowireCandidate — 意图与阅读要点
-
-方法 `isAutowireCandidate` 复杂度较高（CCN≈10, NLOC≈20）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public boolean isAutowireCandidate(BeanDefinitionHolder bdHolder, DependencyDescriptor descriptor) {
 		if (!super.isAutowireCandidate(bdHolder, descriptor)) {
 			return false;
@@ -180,10 +158,10 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	}
 
 	/**
-	 * Match the given qualifier annotations against the candidate bean definition.
-	 * @return {@code false} if a qualifier has been found but not matched,
-	 * {@code true} if a qualifier has been found and matched,
-	 * {@code null} if no qualifier has been found at all
+	 * 将给定的限定符注解与候选 Bean 定义进行匹配。
+	 * @return 找到限定符但未匹配则为 {@code false}；
+	 * 找到并匹配则为 {@code true}；
+	 * 完全未找到限定符则为 {@code null}
 	 */
 	protected @Nullable Boolean checkQualifiers(BeanDefinitionHolder bdHolder, Annotation[] annotationsToSearch) {
 		boolean qualifierFound = false;
@@ -215,8 +193,8 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 						if (isQualifier(metaType)) {
 							qualifierFound = true;
 							foundMeta = true;
-							// Only accept fallback match if @Qualifier annotation has a value...
-							// Otherwise, it is just a marker for a custom qualifier annotation.
+							// 仅当 @Qualifier 注解带有 value 时才接受回退匹配……
+							// 否则它只是自定义限定符注解的标记
 							if ((fallbackToMeta && ObjectUtils.isEmpty(AnnotationUtils.getValue(metaAnn))) ||
 									!checkQualifier(bdHolder, metaAnn, typeConverter)) {
 								return false;
@@ -233,17 +211,18 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	}
 
 	/**
-	 * Check whether the given annotation type is a plain "java." annotation,
-	 * typically from {@code java.lang.annotation}.
-	 * <p>Aligned with
-	 * {@code org.springframework.core.annotation.AnnotationsScanner#hasPlainJavaAnnotationsOnly}.
+	 * 判断给定注解类型是否为普通的 {@code java.} 注解
+	 *（通常来自 {@code java.lang.annotation}）。
+	 * <p>与
+	 * {@code org.springframework.core.annotation.AnnotationsScanner#hasPlainJavaAnnotationsOnly}
+	 * 对齐。
 	 */
 	private boolean isPlainJavaAnnotation(Class<? extends Annotation> annotationType) {
 		return annotationType.getName().startsWith("java.");
 	}
 
 	/**
-	 * Check whether the given annotation type is a recognized qualifier type.
+	 * 判断给定注解类型是否为已识别的限定符类型。
 	 */
 	protected boolean isQualifier(Class<? extends Annotation> annotationType) {
 		for (Class<? extends Annotation> qualifierType : this.qualifierTypes) {
@@ -254,13 +233,8 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 		return false;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 checkQualifier — 意图与阅读要点
-
-方法 `checkQualifier` 复杂度较高（CCN≈27, NLOC≈69）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Match the given qualifier annotation against the candidate bean definition.
+	 * 将给定的限定符注解与候选 Bean 定义进行匹配。
 	 */
 	protected boolean checkQualifier(
 			BeanDefinitionHolder bdHolder, Annotation annotation, TypeConverter typeConverter) {
@@ -273,9 +247,9 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 			qualifier = bd.getQualifier(ClassUtils.getShortName(type));
 		}
 		if (qualifier == null) {
-			// First, check annotation on qualified element, if any
+			// 首先检查「限定元素」上的注解（若有）
 			Annotation targetAnnotation = getQualifiedElementAnnotation(bd, type);
-			// Then, check annotation on factory method, if applicable
+			// 然后检查工厂方法上的注解（若适用）
 			if (targetAnnotation == null) {
 				targetAnnotation = getFactoryMethodAnnotation(bd, type);
 			}
@@ -287,7 +261,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 			}
 			if (targetAnnotation == null) {
 				BeanFactory beanFactory = getBeanFactory();
-				// Look for matching annotation on the target class
+				// 在目标类上查找匹配的注解
 				if (beanFactory != null) {
 					try {
 						Class<?> beanType = beanFactory.getType(bdHolder.getBeanName());
@@ -296,7 +270,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 						}
 					}
 					catch (NoSuchBeanDefinitionException ex) {
-						// Not the usual case - simply forget about the type check...
+						// 非常规情况——忽略类型检查即可……
 					}
 				}
 				if (targetAnnotation == null && bd.hasBeanClass()) {
@@ -310,28 +284,28 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 
 		Map<String, @Nullable Object> attributes = AnnotationUtils.getAnnotationAttributes(annotation);
 		if (attributes.isEmpty() && qualifier == null) {
-			// If no attributes, the qualifier must be present
+			// 没有属性时，限定符本身必须存在
 			return false;
 		}
 		for (Map.Entry<String, Object> entry : attributes.entrySet()) {
 			String attributeName = entry.getKey();
 			Object expectedValue = entry.getValue();
 			Object actualValue = null;
-			// Check qualifier first
+			// 先检查限定符
 			if (qualifier != null) {
 				actualValue = qualifier.getAttribute(attributeName);
 			}
 			if (actualValue == null) {
-				// Fall back on bean definition attribute
+				// 回退到 Bean 定义属性
 				actualValue = bd.getAttribute(attributeName);
 			}
 			if (actualValue == null && attributeName.equals(AutowireCandidateQualifier.VALUE_KEY) &&
 					expectedValue instanceof String name && bdHolder.matchesName(name)) {
-				// Finally, check bean name (or alias) match
+				// 最后检查 Bean 名称（或别名）是否匹配
 				continue;
 			}
 			if (actualValue == null && qualifier != null) {
-				// Fall back on default, but only if the qualifier is present
+				// 仅在限定符存在时回退到默认值
 				actualValue = AnnotationUtils.getDefaultValue(annotation, attributeName);
 			}
 			if (actualValue != null) {
@@ -344,11 +318,17 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 		return true;
 	}
 
+	/**
+	 * 从 Bean 定义的「限定元素」上获取指定类型的注解。
+	 */
 	protected @Nullable Annotation getQualifiedElementAnnotation(RootBeanDefinition bd, Class<? extends Annotation> type) {
 		AnnotatedElement qualifiedElement = bd.getQualifiedElement();
 		return (qualifiedElement != null ? AnnotationUtils.getAnnotation(qualifiedElement, type) : null);
 	}
 
+	/**
+	 * 从已解析的工厂方法上获取指定类型的注解。
+	 */
 	protected @Nullable Annotation getFactoryMethodAnnotation(RootBeanDefinition bd, Class<? extends Annotation> type) {
 		Method resolvedFactoryMethod = bd.getResolvedFactoryMethod();
 		return (resolvedFactoryMethod != null ? AnnotationUtils.getAnnotation(resolvedFactoryMethod, type) : null);
@@ -356,8 +336,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 
 
 	/**
-	 * Determine whether the given dependency declares an autowired annotation,
-	 * checking its required flag.
+	 * 判断给定依赖是否声明了自动装配注解，并检查其 {@code required} 标志。
 	 * @see Autowired#required()
 	 */
 	@Override
@@ -367,31 +346,26 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 		}
 
 		for (Annotation ann : descriptor.getAnnotations()) {
-			// Directly present?
+			// 直接标注？
 			if (ann instanceof Autowired autowired) {
 				return autowired.required();
 			}
-			// Meta-present?
+			// 元标注？
 			Autowired autowired = AnnotationUtils.findAnnotation(ann.annotationType(), Autowired.class);
 			if (autowired != null) {
 				return autowired.required();
 			}
 		}
-		// No @Autowired annotation present: default to true.
+		// 未出现 @Autowired：默认视为必需
 		return true;
 	}
 
 	/**
-	 * Determine whether the given dependency declares a qualifier annotation.
+	 * 判断给定依赖是否声明了限定符注解。
 	 * @see #isQualifier(Class)
 	 * @see Qualifier
 	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 hasQualifier — 意图与阅读要点
-
-方法 `hasQualifier` 复杂度较高（CCN≈8, NLOC≈19）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public boolean hasQualifier(DependencyDescriptor descriptor) {
 		for (Annotation annotation : descriptor.getAnnotations()) {
 			if (isQualifier(annotation.annotationType())) {
@@ -426,7 +400,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	}
 
 	/**
-	 * Determine whether the given dependency declares a value annotation.
+	 * 判断给定依赖是否声明了 value 注解，并返回其建议值。
 	 * @see Value
 	 */
 	@Override
@@ -442,10 +416,10 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	}
 
 	/**
-	 * Determine a suggested value from any of the given candidate annotations.
+	 * 从给定候选注解中确定建议值。
 	 */
 	protected @Nullable Object findValue(Annotation[] annotationsToSearch) {
-		if (annotationsToSearch.length > 0) {   // qualifier annotations have to be local
+		if (annotationsToSearch.length > 0) {   // 限定符注解必须是本地声明的
 			AnnotationAttributes attr = AnnotatedElementUtils.getMergedAnnotationAttributes(
 					AnnotatedElementUtils.forAnnotations(annotationsToSearch), this.valueAnnotationType);
 			if (attr != null) {
@@ -456,7 +430,7 @@ public class QualifierAnnotationAutowireCandidateResolver extends GenericTypeAwa
 	}
 
 	/**
-	 * Extract the value attribute from the given annotation.
+	 * 从给定注解属性中提取 {@code value}。
 	 * @since 4.3
 	 */
 	protected Object extractValue(AnnotationAttributes attr) {

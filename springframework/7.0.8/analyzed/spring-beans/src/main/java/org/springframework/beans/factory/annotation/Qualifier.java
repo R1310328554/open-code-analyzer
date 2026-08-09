@@ -24,9 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation may be used on a field or parameter as a qualifier for
- * candidate beans when autowiring. It may also be used to annotate other
- * custom annotations that can then in turn be used as qualifiers.
+ * 可用于字段或参数，在自动装配时限定候选 Bean。
+ * 也可用于标注其他自定义注解，使那些注解进而可作为限定符使用。
  *
  * @author Mark Fisher
  * @author Juergen Hoeller
@@ -39,6 +38,9 @@ import java.lang.annotation.Target;
 @Documented
 public @interface Qualifier {
 
+	/**
+	 * 限定符值（通常为候选 Bean 名称或其他匹配键）。
+	 */
 	String value() default "";
 
 }

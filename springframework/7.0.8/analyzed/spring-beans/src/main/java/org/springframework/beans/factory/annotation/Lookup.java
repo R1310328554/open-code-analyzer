@@ -23,29 +23,23 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation that indicates 'lookup' methods, to be overridden by the container
- * to redirect them back to the {@link org.springframework.beans.factory.BeanFactory}
- * for a {@code getBean} call. This is essentially an annotation-based version of the
- * XML {@code lookup-method} attribute, resulting in the same runtime arrangement.
+ * 标记「查找（lookup）」方法：容器将覆盖这些方法，把调用重定向回
+ * {@link org.springframework.beans.factory.BeanFactory} 的 {@code getBean}。
+ * 本质上是 XML {@code lookup-method} 属性的注解版，运行时安排相同。
  *
- * <p>The resolution of the target bean can either be based on the return type
- * ({@code getBean(Class)}) or on a suggested bean name ({@code getBean(String)}),
- * in both cases passing the method's arguments to the {@code getBean} call
- * for applying them as target factory method arguments or constructor arguments.
+ * <p>目标 Bean 可按返回类型解析（{@code getBean(Class)}），也可按建议的 Bean 名称解析
+ * （{@code getBean(String)}）；两种情况下都会把方法参数传给 {@code getBean}，
+ * 作为目标工厂方法参数或构造器参数。
  *
- * <p>Such lookup methods can have default (stub) implementations that will simply
- * get replaced by the container, or they can be declared as abstract - for the
- * container to fill them in at runtime. In both cases, the container will generate
- * runtime subclasses of the method's containing class via CGLIB, which is why such
- * lookup methods can only work on beans that the container instantiates through
- * regular constructors: i.e. lookup methods cannot get replaced on beans returned
- * from factory methods where we cannot dynamically provide a subclass for them.
+ * <p>这类查找方法可以有默认（桩）实现，运行时会被容器替换；也可以声明为 abstract，
+ * 由容器在运行时填充。无论哪种方式，容器都会通过 CGLIB 为目标方法所在类生成运行时子类，
+ * 因此查找方法只适用于容器通过常规构造器实例化的 Bean：
+ * 从工厂方法返回的 Bean 无法被动态提供子类，查找方法也就无法被替换。
  *
- * <p><b>Recommendations for typical Spring configuration scenarios:</b>
- * When a concrete class may be needed in certain scenarios, consider providing stub
- * implementations of your lookup methods. And please remember that lookup methods
- * won't work on beans returned from {@code @Bean} methods in configuration classes;
- * you'll have to resort to {@code @Inject Provider<TargetBean>} or the like instead.
+ * <p><b>典型 Spring 配置场景的建议：</b>
+ * 若某些场景仍需要具体类，可为查找方法提供桩实现。另请记住：配置类中
+ * {@code @Bean} 方法返回的 Bean 上，查找方法无效；
+ * 此时应改用 {@code @Inject Provider<TargetBean>} 等方式。
  *
  * @author Juergen Hoeller
  * @since 4.1
@@ -58,9 +52,8 @@ import java.lang.annotation.Target;
 public @interface Lookup {
 
 	/**
-	 * This annotation attribute may suggest a target bean name to look up.
-	 * If not specified, the target bean will be resolved based on the
-	 * annotated method's return type declaration.
+	 * 可建议要查找的目标 Bean 名称。
+	 * 未指定时，将根据被注解方法的返回类型声明解析目标 Bean。
 	 */
 	String value() default "";
 

@@ -25,7 +25,7 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
 
 /**
- * {@link RuntimeHintsRegistrar} for Jakarta annotations and their pre-Jakarta equivalents.
+ * 面向 Jakarta 注解（及其前 Jakarta 等价物）的 {@link RuntimeHintsRegistrar}。
  *
  * @author Brian Clozel
  * @author Sam Brannen
