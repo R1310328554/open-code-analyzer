@@ -1,8 +1,10 @@
+"""教程 010（Annotated）：Annotated 形式汇总 alias、文档元数据、校验与 deprecated。"""
+
 from typing import Annotated
 
 from fastapi import FastAPI, Query
 
-app = FastAPI()
+app = FastAPI()  # 创建 FastAPI 应用实例
 
 
 @app.get("/items/")
@@ -20,6 +22,7 @@ async def read_items(
         ),
     ] = None,
 ):
+    """与 tutorial010 非 Annotated 版等价；适合复杂 Query 元数据的集中声明。"""
     results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
     if q:
         results.update({"q": q})
