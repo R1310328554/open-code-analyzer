@@ -17,6 +17,9 @@ package io.netty.handler.codec.quic;
 
 import io.netty.util.internal.StringUtil;
 
+/**
+ * {@link QuicConnectionStats} 的 Quiche 实现，封装 quiche 连接级收发包统计。
+ */
 final class QuicheQuicConnectionStats implements QuicConnectionStats {
 
     private final long[] values;
@@ -70,9 +73,7 @@ final class QuicheQuicConnectionStats implements QuicConnectionStats {
         return values[8];
     }
 
-    /**
-     * Returns the {@link String} representation of stats.
-     */
+    /** 返回连接统计的可读字符串表示。 */
     @Override
     public String toString() {
         return StringUtil.simpleClassName(this) + "[" +

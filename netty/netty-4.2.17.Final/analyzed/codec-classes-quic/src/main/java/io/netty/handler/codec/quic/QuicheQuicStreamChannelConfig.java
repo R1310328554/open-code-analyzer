@@ -24,9 +24,11 @@ import io.netty.channel.WriteBufferWaterMark;
 
 import java.util.Map;
 
+/**
+ * {@link QuicStreamChannelConfig} 的 Quiche 实现，默认启用半关闭并强制直接 IO 分配器。
+ */
 final class QuicheQuicStreamChannelConfig extends DefaultChannelConfig implements QuicStreamChannelConfig {
-    // We should use half-closure sementatics by default as this is what QUIC does by default.
-    // If you receive a FIN you should still keep the stream open until you write a FIN as well.
+    // QUIC 默认半关闭语义：收到 FIN 后仍可写，直至本地也发送 FIN
     private volatile boolean allowHalfClosure = true;
     private volatile boolean readFrames;
     volatile DirectIoByteBufAllocator allocator;
@@ -153,6 +155,7 @@ final class QuicheQuicStreamChannelConfig extends DefaultChannelConfig implement
     @Override
     public QuicStreamChannelConfig setAllowHalfClosure(boolean allowHalfClosure) {
         if (!isHalfClosureSupported()) {
+            // 单向流不支持半关闭
             throw new UnsupportedOperationException("Undirectional streams don't support half-closure");
         }
         this.allowHalfClosure = allowHalfClosure;

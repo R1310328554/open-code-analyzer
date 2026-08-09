@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
- * Default {@link QuicChannelConfig} implementation.
+ * {@link QuicChannelConfig} 的 Quiche 默认实现，扩展 QLOG 与分段 Datagram 分配器选项。
  */
 final class QuicheQuicChannelConfig extends DefaultChannelConfig implements QuicChannelConfig {
 
@@ -144,6 +144,7 @@ final class QuicheQuicChannelConfig extends DefaultChannelConfig implements Quic
 
     private void setQLogConfiguration(QLogConfiguration qLogConfiguration) {
         if (channel.isRegistered()) {
+            // QLOG 必须在通道注册前配置
             throw new IllegalStateException("QLOG can only be enabled before the Channel was registered");
         }
         this.qLogConfiguration = qLogConfiguration;

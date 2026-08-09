@@ -60,13 +60,15 @@ import java.util.function.LongFunction;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * 基于 BoringSSL 的 {@link QuicSslContext} 实现，管理原生 SSL_CTX、会话缓存与 QUIC TLS 1.3 握手。
+ */
 final class QuicheQuicSslContext extends QuicSslContext {
 
     private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(QuicheQuicSslContext.class);
 
-    // Use default that is supported in java 11 and earlier and also in OpenSSL / BoringSSL.
-    // See https://github.com/netty/netty-tcnative/issues/567
-    // See https://www.java.com/en/configure_crypto.html for ordering
+    // 默认命名组顺序与 Java 11 及 BoringSSL 兼容
+    // 参见 https://github.com/netty/netty-tcnative/issues/567
     private static final String[] DEFAULT_NAMED_GROUPS = { "x25519", "secp256r1", "secp384r1", "secp521r1" };
     private static final String[] NAMED_GROUPS;
 
@@ -79,18 +81,15 @@ final class QuicheQuicSslContext extends QuicSslContext {
             defaultConvertedNamedGroups.add(GroupsConverter.toBoringSSL(namedGroups[i]));
         }
 
-        // Call Quic.isAvailable() first to ensure native lib is loaded.
-        // See https://github.com/netty/netty-incubator-codec-quic/issues/759
+        // 先调用 Quic.isAvailable() 确保原生库已加载
         if (Quic.isAvailable()) {
             final long sslCtx = BoringSSL.SSLContext_new();
             try {
-                // Let's filter out any group that is not supported from the default.
+                // 过滤 BoringSSL 不支持的默认命名组（如 FIPS 模式）
                 Iterator<String> defaultGroupsIter = defaultConvertedNamedGroups.iterator();
                 while (defaultGroupsIter.hasNext()) {
                     if (BoringSSL.SSLContext_set1_groups_list(sslCtx, defaultGroupsIter.next()) == 0) {
-                        // Not supported, let's remove it. This could for example be the case if we use
-                        // fips and the configure group is not supported when using FIPS.
-                        // See https://github.com/netty/netty-tcnative/issues/883
+                        // 不支持的组从默认列表移除
                         defaultGroupsIter.remove();
                     }
                 }
@@ -263,11 +262,11 @@ final class QuicheQuicSslContext extends QuicSslContext {
 
             apn = new QuicheQuicApplicationProtocolNegotiator(applicationProtocols);
             if (this.sessionCache != null) {
-                // Cache is handled via our own implementation.
+                // 客户端会话缓存由 QuicClientSessionCache 实现
                 this.sessionCache.setSessionCacheSize((int) sessionCacheSize);
                 this.sessionCache.setSessionTimeout((int) sessionTimeout);
             } else {
-                // Cache is handled by BoringSSL internally
+                // 服务端会话缓存由 BoringSSL 内部管理
                 BoringSSL.SSLContext_setSessionCacheSize(
                         nativeSslContext.address(), sessionCacheSize);
                 this.sessionCacheSize = sessionCacheSize;
@@ -351,7 +350,7 @@ final class QuicheQuicSslContext extends QuicSslContext {
     }
 
     /**
-     * Add the given engine to this context
+     * 将引擎重新挂入本上下文（如 SNI 切换后）。
      *
      * @param engine    the engine to add.
      * @return          the pointer address of this context.
@@ -364,7 +363,7 @@ final class QuicheQuicSslContext extends QuicSslContext {
     }
 
     /**
-     * Remove the given engine from this context.
+     * 从上下文映射中移除引擎并清理无效会话缓存。
      *
      * @param engine    the engine to remove.
      */
@@ -611,7 +610,7 @@ final class QuicheQuicSslContext extends QuicSslContext {
         public void sign(long ssl, int signatureAlgorithm, byte[] input, BiConsumer<byte[], Throwable> callback) {
             final QuicheQuicSslEngine engine = engineMap.get(ssl);
             if (engine == null) {
-                // May be null if it was destroyed in the meantime.
+                // 引擎可能已被销毁，此时返回 null
                 callback.accept(null, null);
             } else {
                 privateKeyMethod.sign(engine, signatureAlgorithm, input).addListener(f -> {

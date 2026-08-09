@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/** Quiche 原生 QUIC 连接的 Java 包装，管理 recv/send 地址信息与 SSL 生命周期。 */
 final class QuicheQuicConnection {
     private static final int TOTAL_RECV_INFO_SIZE = Quiche.SIZEOF_QUICHE_RECV_INFO +
             Quiche.SIZEOF_SOCKADDR_STORAGE + Quiche.SIZEOF_SOCKADDR_STORAGE;
@@ -39,16 +40,8 @@ final class QuicheQuicConnection {
     final long ssl;
     private ReferenceCounted refCnt;
 
-    // This block of memory is used to store the following structs (in this order):
-    // - quiche_recv_info
-    // - sockaddr_storage
-    // - quiche_recv_info
-    // - sockaddr_storage
-    // - quiche_send_info
-    // - quiche_send_info
-    //
-    // We need to have every stored 2 times as we need to check if the last sockaddr has changed between
-    // quiche_conn_recv and quiche_conn_send calls. If this happens we know a QUIC connection migration did happen.
+    // 连续原生内存块依次存放 quiche_recv_info、sockaddr_storage 等结构（各存两份）。
+    // recv 与 send 之间若 sockaddr 变化，可检测 QUIC 连接迁移（路径变更）。
     private final ByteBuf recvInfoBuffer;
     private final ByteBuf sendInfoBuffer;
 
@@ -65,11 +58,11 @@ final class QuicheQuicConnection {
         this.ssl = ssl;
         this.engine = engine;
         this.refCnt = refCnt;
-        // TODO: Maybe cache these per thread as we only use them temporary within a limited scope.
+        // TODO: 可考虑按线程缓存，仅在有限作用域内临时使用
         recvInfoBuffer = Quiche.allocateNativeOrder(TOTAL_RECV_INFO_SIZE);
         sendInfoBuffer = Quiche.allocateNativeOrder(2 * Quiche.SIZEOF_QUICHE_SEND_INFO);
 
-        // Let's memset the memory.
+        // 清零原生内存
         recvInfoBuffer.setZero(0, recvInfoBuffer.capacity());
         sendInfoBuffer.setZero(0, sendInfoBuffer.capacity());
 
@@ -191,10 +184,10 @@ final class QuicheQuicConnection {
         assert recvInfoBuffer.refCnt() != 0;
         assert sendInfoBuffer.refCnt() != 0;
 
-        // Fill quiche_recv_info struct with the addresses.
+        // 填充 quiche_recv_info 中的本地/对端地址
         QuicheRecvInfo.setRecvInfo(recvInfoBuffer1, remote, local);
 
-        // Fill both quiche_send_info structs with the same addresses.
+        // 两个 quiche_send_info 均写入相同地址，便于后续比较是否迁移
         QuicheSendInfo.setSendInfo(sendInfoBuffer1, local, remote);
         QuicheSendInfo.setSendInfo(sendInfoBuffer2, local, remote);
         engine.sniSelectedCallback = sniSelectedCallback;
@@ -220,8 +213,7 @@ final class QuicheQuicConnection {
         return isFreed() || Quiche.quiche_conn_is_closed(connection);
     }
 
-    // Let's override finalize() as we want to ensure we never leak memory even if the user will miss to close
-    // Channel that uses this connection and just let it get GC'ed
+    // 覆盖 finalize，即使用户未显式关闭通道也释放原生连接，防止泄漏
     @Override
     protected void finalize() throws Throwable {
         try {

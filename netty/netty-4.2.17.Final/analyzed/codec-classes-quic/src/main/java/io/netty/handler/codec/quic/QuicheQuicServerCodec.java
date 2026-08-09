@@ -37,7 +37,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * {@link QuicheQuicCodec} for QUIC servers.
+ * 基于 Quiche 的 QUIC 服务端编解码器：处理 Initial 报文、token 验证、版本协商与新连接接入。
  */
 final class QuicheQuicServerCodec extends QuicheQuicCodec {
     private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(QuicheQuicServerCodec.class);
@@ -112,8 +112,7 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
         ByteBuffer dcidByteBuffer = dcid.internalNioBuffer(dcid.readerIndex(), dcid.readableBytes());
         QuicheQuicChannel channel = getChannel(dcidByteBuffer);
         if (channel == null && type == QuicPacketType.INITIAL) {
-            // We only want to possibility create a new QuicChannel if this is the initial packet, otherwise
-            // drop the packet on the floor if we did not find a mapping before.
+            // 仅 Initial 报文可创建新连接；无映射的非 Initial 报文直接丢弃
             return handleServer(ctx, sender, recipient, type, version, scid, dcid, token,
                     senderSockaddrMemory, recipientSockaddrMemory, freeTask, localConnIdLength, config);
         }
@@ -140,9 +139,9 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
                                            ByteBuf senderSockaddrMemory, ByteBuf recipientSockaddrMemory,
                                            Consumer<QuicheQuicChannel> freeTask, int localConnIdLength,
                                            QuicheConfig config) throws Exception {
-        // Version is an unsigned int.
+        // version 为无符号 32 位整数
         if (!Quiche.quiche_version_is_supported((int) version)) {
-            // Version is not supported, try to negotiate it.
+            // 版本不支持则发送版本协商报文
             ByteBuf out = ctx.alloc().directBuffer(Quic.MAX_DATAGRAM_SIZE);
 
             int res = Quiche.quiche_negotiate_version(
@@ -156,11 +155,11 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
         final int offset;
         boolean noToken = false;
         if (!token.isReadable()) {
-            // Clear buffers so we can reuse these.
+            // 清空缓冲以便复用
             mintTokenBuffer.clear();
             connIdBuffer.clear();
 
-            // The remote peer did not send a token.
+            // 对端未携带 token，需发送 Retry 并要求地址验证
             if (tokenHandler.writeToken(mintTokenBuffer, dcid, sender)) {
                 ByteBuffer connId = connectionIdAddressGenerator.newId(
                         scid.internalNioBuffer(scid.readerIndex(), scid.readableBytes()),
@@ -184,9 +183,8 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
             offset = 0;
             noToken = true;
         } else {
-            // Slice the token before pass it ot the QuicTokenHandler as the implementation might modify
-            // the readerIndex.
-            // See https://github.com/netty/netty-incubator-codec-quic/issues/742
+            // 校验前 slice token，避免 QuicTokenHandler 修改 readerIndex
+            // 参见 https://github.com/netty/netty-incubator-codec-quic/issues/742
             offset = tokenHandler.validateToken(token.slice(), sender);
             if (offset == -1) {
                 if (LOGGER.isDebugEnabled()) {
@@ -223,7 +221,7 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
             scidLen = localConnIdLength;
             ocidLen = token.readableBytes() - offset;
             ocidAddr = Quiche.memoryAddress(token, offset, ocidLen);
-            // Now create the key to store the channel in the map.
+            // 从 dcid 构造映射键
             byte[] bytes = new byte[localConnIdLength];
             dcid.getBytes(dcid.readerIndex(), bytes);
             key = ByteBuffer.wrap(bytes);
@@ -233,7 +231,7 @@ final class QuicheQuicServerCodec extends QuicheQuicCodec {
                 streamHandler, streamOptionsArray, streamAttrsArray, freeTask, sslTaskExecutor,
                 connectionIdAddressGenerator, resetTokenGenerator);
 
-        // We also need to add the original id as there might be multiple INITIAL packets.
+        // 记录原始 dcid，因可能收到多个 INITIAL 报文
         byte[] originalId = new byte[dcid.readableBytes()];
         dcid.getBytes(dcid.readerIndex(), originalId);
         channel.sourceConnectionIds().add(ByteBuffer.wrap(originalId));

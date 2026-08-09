@@ -44,6 +44,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
+/**
+ * Quiche QUIC 的 {@link QuicSslEngine} 实现；握手由原生层驱动，Java 侧主要维护会话与 SNI。
+ */
 final class QuicheQuicSslEngine extends QuicSslEngine {
     QuicheQuicSslContext ctx;
     private final String peerHost;
@@ -66,8 +69,7 @@ final class QuicheQuicSslEngine extends QuicSslEngine {
         this.peerHost = peerHost;
         this.peerPort = peerPort;
         this.endpointIdentificationAlgorithm = endpointIdentificationAlgorithm;
-        // Use SNI if peerHost was specified and a valid hostname
-        // See https://github.com/netty/netty/issues/4746
+        // 客户端且 peerHost 为合法主机名时启用 SNI
         if (ctx.isClient() && isValidHostNameForSNI(peerHost)) {
             tlsHostName = peerHost;
             sniHostNames = Collections.singletonList(new SNIHostName(tlsHostName));
@@ -77,7 +79,7 @@ final class QuicheQuicSslEngine extends QuicSslEngine {
     }
 
     long moveTo(String hostname, QuicheQuicSslContext ctx) {
-        // First of remove the engine from its previous QuicheQuicSslContext.
+        // 先从旧 QuicheQuicSslContext 移除，再挂到新上下文（SNI 重选证书域）
         this.ctx.remove(this);
         this.ctx = ctx;
         long added = ctx.add(this);
@@ -98,7 +100,7 @@ final class QuicheQuicSslEngine extends QuicSslEngine {
     }
 
     /**
-     * Validate that the given hostname can be used in SNI extension.
+     * 校验主机名是否可用于 TLS SNI 扩展。
      */
     static boolean isValidHostNameForSNI(@Nullable String hostname) {
         return hostname != null &&
@@ -118,8 +120,7 @@ final class QuicheQuicSslEngine extends QuicSslEngine {
         return parameters;
     }
 
-    // These method will override the method defined by Java 8u251 and later. As we may compile with an earlier
-    // java8 version we don't use @Override annotations here.
+    // 覆盖 Java 8u251+ 方法；编译目标可能更早，故不加 @Override
     public synchronized String getApplicationProtocol() {
         return applicationProtocol;
     }
@@ -183,7 +184,7 @@ final class QuicheQuicSslEngine extends QuicSslEngine {
 
     @Override
     public String[] getSupportedProtocols() {
-        // QUIC only supports TLSv1.3
+        // QUIC 仅支持 TLS 1.3
         return new String[] { "TLSv1.3" };
     }
 
@@ -338,11 +339,10 @@ final class QuicheQuicSslEngine extends QuicSslEngine {
         }
 
         /**
-         * Init peer certificates that can be obtained via {@link #getPeerCertificateChain()}
-         * and {@link #getPeerCertificates()}.
+         * 从 JNI 返回的字节数组初始化对端证书链，供 {@link #getPeerCertificateChain()} 使用。
          */
         private void initPeerCerts(byte[][] chain, byte[] clientCert) {
-            // Return the full chain from the JNI layer.
+            // 客户端模式：JNI 已返回完整链
             if (getUseClientMode()) {
                 if (isEmpty(chain)) {
                     peerCerts = EmptyArrays.EMPTY_CERTIFICATES;
@@ -353,11 +353,7 @@ final class QuicheQuicSslEngine extends QuicSslEngine {
                     initCerts(chain, 0);
                 }
             } else {
-                // if used on the server side SSL_get_peer_cert_chain(...) will not include the remote peer
-                // certificate. We use SSL_get_peer_certificate to get it in this case and add it to our
-                // array later.
-                //
-                // See https://www.openssl.org/docs/ssl/SSL_get_peer_cert_chain.html
+                // 服务端：SSL_get_peer_cert_chain 不含叶证书，需单独取 peer cert 并置于链首
                 if (isEmpty(clientCert)) {
                     peerCerts = EmptyArrays.EMPTY_CERTIFICATES;
                     x509PeerCerts = EmptyArrays.EMPTY_JAVAX_X509_CERTIFICATES;
@@ -439,14 +435,14 @@ final class QuicheQuicSslEngine extends QuicSslEngine {
             synchronized (this) {
                 Map<String, Object> values = this.values;
                 if (values == null) {
-                    // Use size of 2 to keep the memory overhead small
+                    // 初始容量 2，降低会话属性 Map 内存开销
                     values = this.values = new HashMap<>(2);
                 }
                 old = values.put(name, value);
             }
 
             if (value instanceof SSLSessionBindingListener) {
-                // Use newSSLSessionBindingEvent so we alway use the wrapper if needed.
+                // 统一通过 newSSLSessionBindingEvent 触发绑定事件
                 ((SSLSessionBindingListener) value).valueBound(newSSLSessionBindingEvent(name));
             }
             notifyUnbound(old, name);

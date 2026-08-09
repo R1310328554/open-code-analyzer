@@ -21,10 +21,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/** 原生 SSL 指针到 {@link QuicheQuicSslEngine} 的并发映射，供 BoringSSL 回调查找 Java 引擎。 */
 final class QuicheQuicSslEngineMap {
 
     private final ConcurrentMap<Long, QuicheQuicSslEngine> engines = new ConcurrentHashMap<>();
 
+    /** 按原生 ssl 指针获取引擎，不存在时返回 null。 */
     @Nullable
     QuicheQuicSslEngine get(long ssl) {
         return engines.get(ssl);
@@ -35,6 +37,7 @@ final class QuicheQuicSslEngineMap {
         return engines.remove(ssl);
     }
 
+    /** 注册 ssl 指针与引擎的映射。 */
     void put(long ssl, QuicheQuicSslEngine engine) {
         engines.put(ssl, engine);
     }

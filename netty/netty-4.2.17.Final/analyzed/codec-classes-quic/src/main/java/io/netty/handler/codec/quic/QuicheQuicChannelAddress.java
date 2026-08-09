@@ -18,12 +18,14 @@ package io.netty.handler.codec.quic;
 import java.net.SocketAddress;
 
 /**
- * Just a container to pass the {@link QuicheQuicChannel} to {@link QuicheQuicClientCodec}.
+ * 将 {@link QuicheQuicChannel} 包装为 {@link SocketAddress}，供 {@link QuicheQuicClientCodec#connect} 识别。
+ * 客户端 connect 时通过此地址关联已创建的 QUIC 连接通道。
  */
 final class QuicheQuicChannelAddress extends SocketAddress {
 
     final QuicheQuicChannel channel;
 
+    /** 绑定目标 QUIC 连接通道。 */
     QuicheQuicChannelAddress(QuicheQuicChannel channel) {
         this.channel = channel;
     }

@@ -17,6 +17,9 @@ package io.netty.handler.codec.quic;
 
 import io.netty.util.internal.StringUtil;
 
+/**
+ * {@link QuicTransportParameters} 的 Quiche 实现，封装对端协商的传输参数（流控、超时等）。
+ */
 final class QuicheQuicTransportParameters implements QuicTransportParameters {
     private final long[] values;
 
@@ -24,6 +27,7 @@ final class QuicheQuicTransportParameters implements QuicTransportParameters {
         this.values = values;
     }
 
+    /** 最大空闲超时（毫秒）。 */
     @Override
     public long maxIdleTimeout() {
         return values[0];
@@ -54,6 +58,7 @@ final class QuicheQuicTransportParameters implements QuicTransportParameters {
         return values[5];
     }
 
+    /** 初始允许的双向流数量上限。 */
     @Override
     public long initialMaxStreamsBidi() {
         return values[6];
@@ -74,6 +79,7 @@ final class QuicheQuicTransportParameters implements QuicTransportParameters {
         return values[9];
     }
 
+    /** 是否禁止主动连接迁移。 */
     @Override
     public boolean disableActiveMigration() {
         return values[10] == 1;

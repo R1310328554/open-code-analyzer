@@ -47,7 +47,8 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * {@link QuicStreamChannel} implementation that uses <a href="https://github.com/cloudflare/quiche">quiche</a>.
+ * 基于 <a href="https://github.com/cloudflare/quiche">quiche</a> 的 {@link QuicStreamChannel} 实现。
+ * 封装单条 QUIC 流的读写、半关闭、优先级与 FIN 语义。
  */
 final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicStreamChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
@@ -82,14 +83,13 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
         this.id = DefaultChannelId.newInstance();
         unsafe = new QuicStreamChannelUnsafe();
         this.pipeline = new DefaultChannelPipeline(this) {
-            // TODO: add some overrides maybe ?
+            // TODO: 可按需覆盖 pipeline 行为
         };
         config = new QuicheQuicStreamChannelConfig(this);
         this.address = new QuicStreamAddress(streamId);
         this.closePromise = newPromise();
         queue = new PendingWriteQueue(this);
-        // Local created unidirectional streams have the input shutdown by spec. There will never be any data for
-        // these to be read.
+        // 本地创建的单向流按规范输入端已关闭，不会再有可读数据
         if (parent.streamType(streamId) == QuicStreamType.UNIDIRECTIONAL && parent.isStreamLocalCreated(streamId)) {
             inputShutdown = true;
         }
@@ -354,7 +354,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
 
     @Override
     public long bytesBeforeUnwritable() {
-        // Capacity might be negative if the stream was closed.
+        // 流关闭后 capacity 可能为负，对外显示为 0
         return Math.max(capacity, 0);
     }
 
@@ -363,7 +363,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
         if (writable) {
             return 0;
         }
-        // Just return something positive for now
+        // 不可写时暂返回正数占位
         return 8;
     }
 
@@ -387,18 +387,13 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
         return id.compareTo(o.id());
     }
 
-    /**
-     * Returns the ID of this channel.
-     */
+    /** 基于 {@link ChannelId} 的哈希值。 */
     @Override
     public int hashCode() {
         return id.hashCode();
     }
 
-    /**
-     * Returns {@code true} if and only if the specified object is identical
-     * with this channel (i.e: {@code this == o}).
-     */
+    /** 仅当 {@code this == o} 时为 true（流通道不做值相等比较）。 */
     @Override
     public boolean equals(Object o) {
         return this == o;
@@ -409,27 +404,25 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
         return "[id: 0x" + id.asShortText() + ", " + address + "]";
     }
 
-    /**
-     * Stream writability changed.
-     */
+    /** 父连接通知流可写容量变化，处理排队写与 STOP_SENDING。 */
     boolean writable(long capacity) {
         assert eventLoop().inEventLoop();
         if (capacity < 0) {
-            // If the value is negative its a quiche error.
+            // 负 capacity 表示 Quiche 错误码
             if (capacity != Quiche.QUICHE_ERR_DONE) {
                 if (!queue.isEmpty()) {
                     if (capacity == Quiche.QUICHE_ERR_STREAM_STOPPED) {
                         queue.removeAndFailAll(new ChannelOutputShutdownException("STOP_SENDING frame received"));
-                        // If STOP_SENDING is received we should not close the channel but just fail all queued writes.
+                        // 收到 STOP_SENDING 仅失败排队写，不立即关闭通道
                         return false;
                     } else {
                         queue.removeAndFailAll(Quiche.convertToException((int) capacity));
                     }
                 } else if (capacity == Quiche.QUICHE_ERR_STREAM_STOPPED) {
-                    // If STOP_SENDING is received we should not close the channel
+                    // STOP_SENDING 时保持通道打开以便读完剩余数据
                     return false;
                 }
-                // IF this error was not QUICHE_ERR_STREAM_STOPPED we should close the channel.
+                // 非 STREAM_STOPPED 的错误需关闭流
                 finSent = true;
                 unsafe().close(unsafe().voidPromise());
             }
@@ -437,7 +430,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
         }
         this.capacity = capacity;
         boolean mayNeedWrite = unsafe().writeQueued();
-        // we need to re-read this.capacity as writeQueued() may update the capacity.
+        // writeQueued 可能更新 capacity，需重新读取
         updateWritabilityIfNeeded(this.capacity > 0);
         return mayNeedWrite;
     }
@@ -449,12 +442,10 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
         }
     }
 
-    /**
-     * Stream is readable.
-     */
+    /** 标记流可读；若已有 pending read 则立即 recv。 */
     void readable() {
         assert eventLoop().inEventLoop();
-        // Mark as readable and if a read is pending execute it.
+        // 标记可读，有挂起 read 时触发 recv
         readable = true;
         if (readPending) {
             unsafe().recv();
@@ -547,13 +538,13 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
             }
             active = false;
             try {
-                // Close the channel and fail the queued messages in all cases.
+                // 关闭流并失败所有排队消息
                 sendFinIfNeeded();
             } catch (Exception ignore) {
-                // Just ignore
+                // sendFin 异常可忽略
             } finally {
                 if (!queue.isEmpty()) {
-                    // Only fail if the queue is non-empty.
+                    // 队列非空时才批量失败
                     if (writeFailCause == null) {
                         writeFailCause = new ClosedChannelException();
                     }
@@ -565,8 +556,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                 if (type() == QuicStreamType.UNIDIRECTIONAL && isLocalCreated()) {
                     inputShutdown = true;
                     outputShutdown = true;
-                    // If its an unidirectional stream and was created locally it is safe to close the stream now as
-                    // we will never receive data from the other side.
+                    // 本地单向流不会再收到对端数据，可立即通知父连接 streamClosed
                     parent().streamClosed(streamId());
                 } else {
                     removeStreamFromParent();
@@ -590,15 +580,8 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                 return;
             }
 
-            // As a user may call deregister() from within any method while doing processing in the ChannelPipeline,
-            // we need to ensure we do the actual deregister operation later. This is needed as for example,
-            // we may be in the ByteToMessageDecoder.callDecode(...) method and so still try to do processing in
-            // the old EventLoop while the user already registered the Channel to a new EventLoop. Without delay,
-            // the deregister operation this could lead to have a handler invoked by different EventLoop and so
-            // threads.
-            //
-            // See:
-            // https://github.com/netty/netty/issues/4435
+            // deregister 延迟到 EventLoop 任务中执行，避免 pipeline 回调栈内重入导致跨线程调用
+            // 参见 https://github.com/netty/netty/issues/4435
             invokeLater(() -> {
                 if (fireChannelInactive) {
                     pipeline.fireChannelInactive();
@@ -617,17 +600,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
 
         private void invokeLater(Runnable task) {
             try {
-                // This method is used by outbound operation implementations to trigger an inbound event later.
-                // They do not trigger an inbound event immediately because an outbound operation might have been
-                // triggered by another inbound event handler method.  If fired immediately, the call stack
-                // will look like this for example:
-                //
-                //   handlerA.inboundBufferUpdated() - (1) an inbound handler method closes a connection.
-                //   -> handlerA.ctx.close()
-                //      -> channel.unsafe.close()
-                //         -> handlerA.channelInactive() - (2) another inbound handler method called while in (1) yet
-                //
-                // which means the execution of two inbound handler methods of the same handler overlap undesirably.
+                // 出站操作触发的入站事件延后执行，避免同一 handler 入站方法嵌套调用
                 eventLoop().execute(task);
             } catch (RejectedExecutionException e) {
                 LOGGER.warn("Can't invoke task later as EventLoop rejected it", e);
@@ -653,20 +626,13 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
             if (readable) {
                 unsafe().recv();
 
-                // As the stream was readable, and we called recv() ourselves we also need to call
-                // connectionSendAndFlush(). This is needed as recv() might consume data and so a window update
-                // frame might be produced. If we miss to call connectionSendAndFlush() we might never send the update
-                // to the remote peer and so the remote peer might never attempt to send more data.
-                // See also https://docs.rs/quiche/latest/quiche/struct.Connection.html#method.send.
+                // recv 可能产生窗口更新，需 connectionSendAndFlush 将对端窗口变化发回
                 parent().connectionSendAndFlush();
             }
         }
 
         private void closeIfNeeded(boolean wasFinSent) {
-            // Let's check if we should close the channel now.
-            // If it's a unidirectional channel we can close it as there will be no fin that we can read
-            // from the remote peer. If its an bidirectional channel we should only close the channel if we
-            // also received the fin from the remote peer.
+            // 已发 FIN 后：单向流可关；双向流需同时收到对端 FIN
             if (!wasFinSent && QuicheQuicStreamChannel.this.finSent
                     && (type() == QuicStreamType.UNIDIRECTIONAL || finReceived)) {
                 // close the channel now
@@ -696,9 +662,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                         } else if (res == 0 || res == Quiche.QUICHE_ERR_DONE) {
                             break;
                         } else if (res == Quiche.QUICHE_ERR_STREAM_STOPPED) {
-                            // Once its signaled that the stream is stopped we can just fail everything.
-                            // That said we should not close the channel yet as there might be some data that is
-                            // not read yet by the user.
+                            // STREAM_STOPPED 时失败排队写，但通道保持打开供用户读完
                             queue.removeAndFailAll(
                                     new ChannelOutputShutdownException("STOP_SENDING frame received"));
                             break;
@@ -726,15 +690,13 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                 ReferenceCountUtil.release(msg);
                 return;
             }
-            // Check first if the Channel is in a state in which it will accept writes, if not fail everything
-            // with the right exception
+            // 先检查通道是否仍可写，否则用合适异常失败
             if (!isOpen()) {
                 queueAndFailAll(msg, promise, new ClosedChannelException());
             } else if (finSent) {
                 queueAndFailAll(msg, promise, new ChannelOutputShutdownException("Fin was sent already"));
             } else if (!queue.isEmpty()) {
-                // If the queue is not empty we should just add the message to the queue as we will drain
-                // it later once the stream becomes writable again.
+                // 队列非空则入队，待可写时 drain
                 try {
                     msg = filterMsg(msg);
                 } catch (UnsupportedOperationException e) {
@@ -743,11 +705,11 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                     return;
                 }
 
-                // Touch the message to make things easier in terms of debugging buffer leaks.
+                // touch 便于排查 ByteBuf 泄漏
                 ReferenceCountUtil.touch(msg);
                 queue.add(msg, promise);
 
-                // Try again to write queued messages.
+                // 再次尝试写出排队消息
                 writeQueued();
             } else {
                 assert queue.isEmpty();
@@ -879,10 +841,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                 }
                 return 1;
             } finally {
-                // As we called quiche_conn_stream_send(...) we need to ensure we will call quiche_conn_send(...) either
-                // now or we will do so once we see the channelReadComplete event.
-                //
-                // See https://docs.rs/quiche/0.6.0/quiche/struct.Connection.html#method.send
+                // stream_send 后需 connectionSendAndFlush，否则报文可能滞留在 Quiche 连接缓冲
                 if (sendSomething) {
                     parent.connectionSendAndFlush();
                 }
@@ -892,7 +851,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
         @Override
         public void flush() {
             assert eventLoop().inEventLoop();
-            // NOOP.
+            // 流级 flush 为空操作，由父连接统一发送
         }
 
         @Override
@@ -950,8 +909,7 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
         void recv() {
             assert eventLoop().inEventLoop();
             if (inRecv) {
-                // As the use may call read() we need to guard against reentrancy here as otherwise it could
-                // be possible that we re-enter this method while still processing it.
+                // 防止 read 重入 recv
                 return;
             }
 
@@ -959,22 +917,18 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
             try {
                 ChannelPipeline pipeline = pipeline();
                 QuicheQuicStreamChannelConfig config = (QuicheQuicStreamChannelConfig) config();
-                // Directly access the DirectIoByteBufAllocator as we need an direct buffer to read into in all cases
-                // even if there is no Unsafe present and the direct buffer is not pooled.
+                // 读路径始终需要直接缓冲供 JNI 写入
                 DirectIoByteBufAllocator allocator = config.allocator;
                 @SuppressWarnings("deprecation")
                 RecvByteBufAllocator.Handle allocHandle = this.recvBufAllocHandle();
                 boolean readFrames = config.isReadFrames();
 
-                // We should loop as long as a read() was requested and there is anything left to read, which means the
-                // stream was marked as readable before.
+                // 在 readPending 且 readable 时循环读取
                 while (active && readPending && readable) {
                     allocHandle.reset(config);
                     ByteBuf byteBuf = null;
                     QuicheQuicChannel parent = parent();
-                    // It's possible that the stream was marked as finish while we iterated over the readable streams
-                    // or while we did have auto read disabled. If so we need to ensure we not try to read from it as it
-                    // would produce an error.
+                    // 迭代过程中流可能已结束，避免对已 FIN 流继续 recv
                     boolean readCompleteNeeded = false;
                     boolean continueReading = true;
                     try {
@@ -984,12 +938,11 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                             QuicheQuicChannel.StreamRecvResult result = parent.streamRecv(streamId(), byteBuf);
                             switch (result) {
                                 case DONE:
-                                    // Nothing left to read;
+                                    // 无更多数据可读
                                     readable = false;
                                     break;
                                 case FIN:
-                                    // If we received a FIN we also should mark the channel as non-readable as
-                                    // there is nothing left to read really.
+                                    // 收到 FIN 后标记不可读并设置 inputShutdown
                                     readable = false;
                                     finReceived = true;
                                     inputShutdown = true;
@@ -1011,12 +964,11 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                                     break;
                                 }
                             }
-                            // We did read one message.
+                            // 已成功读取一条消息
                             allocHandle.incMessagesRead(1);
                             readCompleteNeeded = true;
 
-                            // It's important that we reset this to false before we call fireChannelRead(...)
-                            // as the user may request another read() from channelRead(...) callback.
+                            // fireChannelRead 前清除 readPending，允许用户在回调中再次 read
                             readPending = false;
 
                             if (readFrames) {
@@ -1041,14 +993,13 @@ final class QuicheQuicStreamChannel extends DefaultAttributeMap implements QuicS
                     }
                 }
             } finally {
-                // About to leave the method lets reset so we can enter it again.
+                // 退出 recv 时清除 inRecv 标志
                 inRecv = false;
                 removeStreamFromParent();
             }
         }
 
-        // Read was complete and something was read, so we we need to reset the readPending flags, the allocHandle
-        // and call fireChannelReadComplete(). The user may schedule another read now.
+        // 一次 read 批次结束，触发 fireChannelReadComplete
         private void readComplete(@SuppressWarnings("deprecation") RecvByteBufAllocator.Handle allocHandle,
                                   ChannelPipeline pipeline) {
             allocHandle.readComplete();

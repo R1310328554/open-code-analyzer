@@ -19,6 +19,9 @@ import io.netty.util.internal.StringUtil;
 
 import java.net.InetSocketAddress;
 
+/**
+ * {@link QuicConnectionPathStats} 的 Quiche 实现，从 JNI 返回的对象数组解析各路径指标。
+ */
 final class QuicheQuicConnectionPathStats implements QuicConnectionPathStats {
 
     private final Object[] values;
@@ -37,6 +40,7 @@ final class QuicheQuicConnectionPathStats implements QuicConnectionPathStats {
         return (InetSocketAddress) values[1];
     }
 
+    /** 路径地址验证状态（Quiche 内部枚举值）。 */
     public long validationState() {
         return (long) values[2];
     }
@@ -106,9 +110,7 @@ final class QuicheQuicConnectionPathStats implements QuicConnectionPathStats {
         return (long) values[15];
     }
 
-    /**
-     * Returns the {@link String} representation of stats.
-     */
+    /** 返回路径统计的可读字符串表示。 */
     @Override
     public String toString() {
         return StringUtil.simpleClassName(this) + "[" +

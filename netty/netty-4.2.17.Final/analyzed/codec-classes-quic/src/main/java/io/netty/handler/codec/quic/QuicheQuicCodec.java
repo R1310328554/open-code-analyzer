@@ -37,7 +37,8 @@ import java.util.function.Consumer;
 import static io.netty.handler.codec.quic.Quiche.allocateNativeOrder;
 
 /**
- * Abstract base class for QUIC codecs.
+ * QUIC 编解码器抽象基类：解析 UDP 报文、维护连接 ID 映射、批量 flush 出站数据。
+ * 子类实现 {@link #quicPacketRead} 与 {@link #connectQuicChannel} 以区分客户端/服务端。
  */
 abstract class QuicheQuicCodec extends ChannelDuplexHandler {
     private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(QuicheQuicCodec.class);
@@ -59,7 +60,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
     private boolean inChannelReadComplete;
     private boolean delayRemoval;
 
-    // This buffer is used to copy InetSocketAddress to sockaddr_storage and so pass it down the JNI layer.
+    // 将 InetSocketAddress 拷贝为 sockaddr_storage，供 JNI 层 Quiche 调用
     private ByteBuf senderSockaddrMemory;
     private ByteBuf recipientSockaddrMemory;
 
@@ -91,7 +92,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
 
     private void processDelayedRemoval() {
         for (;;) {
-            // Now remove all channels that we marked for removal.
+            // 移除先前标记为延迟删除的连接
             QuicheQuicChannel toBeRemoved = delayedRemoval.poll();
             if (toBeRemoved == null) {
                 break;
@@ -135,7 +136,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
     }
 
     /**
-     * See {@link io.netty.channel.ChannelHandler#handlerAdded(ChannelHandlerContext)}.
+     * 子类扩展点，等价于 {@link io.netty.channel.ChannelHandler#handlerAdded}。
      */
     protected void handlerAdded(ChannelHandlerContext ctx, int localConnIdLength) {
         // NOOP.
@@ -144,8 +145,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
         try {
-            // Use a copy of the array as closing the channel may cause an unwritable event that could also
-            // remove channels.
+            // 复制数组后迭代，关闭通道可能触发 writability 变更并修改集合
             for (QuicheQuicChannel ch : channels.toArray(new QuicheQuicChannel[0])) {
                 ch.forceClose();
             }
@@ -178,8 +178,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
         try {
             ByteBuf buffer = ((DatagramPacket) msg).content();
             if (!buffer.isDirect()) {
-                // We need a direct buffer as otherwise we can not access the memoryAddress.
-                // Let's do a copy to direct memory.
+                // JNI 需要直接内存才能读取 memoryAddress，非直接缓冲则拷贝一份
                 ByteBuf direct = ctx.alloc().directBuffer(buffer.readableBytes());
                 try {
                     direct.writeBytes(buffer, buffer.readerIndex(), buffer.readableBytes());
@@ -204,7 +203,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
     }
 
     /**
-     * Handle a QUIC packet and return {@link QuicheQuicChannel} that is mapped to the id.
+     * 处理 QUIC 报文并返回与连接 ID 映射的 {@link QuicheQuicChannel}。
      *
      * @param ctx the {@link ChannelHandlerContext}.
      * @param sender the {@link InetSocketAddress} of the sender of the QUIC packet
@@ -253,8 +252,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
     @Override
     public final void channelWritabilityChanged(ChannelHandlerContext ctx) {
         if (ctx.channel().isWritable()) {
-            // Ensure we delay removal from the channels Set as otherwise we will might see an exception
-            // due modifications while iteration.
+            // 可写时延迟从 channels 集合移除，避免迭代中修改导致异常
             delayRemoval = true;
             try {
                 for (QuicheQuicChannel channel : channels) {
@@ -267,8 +265,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
                 processDelayedRemoval();
             }
         } else {
-            // As we batch flushes we need to ensure we at least try to flush a batch once the channel becomes
-            // unwritable. Otherwise we may end up with buffering too much writes and so waste memory.
+            // 批量 flush 策略下，不可写时至少 flush 一次，避免出站缓冲占用过多内存
             ctx.flush();
         }
 
@@ -291,8 +288,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
 
     @Override
     public final void flush(ChannelHandlerContext ctx) {
-        // If we are in the channelReadComplete(...) method we might be able to delay the flush(...) until we finish
-        // processing all channels.
+        // 在 channelReadComplete 内可延迟 flush，待所有连接处理完毕再统一发送
         if (inChannelReadComplete) {
             flushIfNeeded(ctx);
         } else if (pendingPackets > 0) {
@@ -314,7 +310,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
     }
 
     /**
-     * Connects the given {@link QuicheQuicChannel}.
+     * 完成给定 {@link QuicheQuicChannel} 的连接建立（客户端实现）。
      *
      * @param channel                   the {@link QuicheQuicChannel} to connect.
      * @param remoteAddress             the remote {@link SocketAddress}.
@@ -334,8 +330,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
                                                int localConnIdLength, QuicheConfig config, ChannelPromise promise);
 
     private void flushIfNeeded(ChannelHandlerContext ctx) {
-        // Check if we should force a flush() and so ensure the packets are delivered in a timely
-        // manner and also make room in the outboundbuffer again that belongs to the underlying channel.
+        // 按 FlushStrategy 决定是否立即 flush，及时发送并释放底层出站缓冲
         if (flushStrategy.shouldFlushNow(pendingPackets, pendingBytes)) {
             flushNow(ctx);
         }
@@ -362,8 +357,7 @@ abstract class QuicheQuicCodec extends ChannelDuplexHandler {
                     type, version, scid,
                     dcid, token, senderSockaddrMemory, recipientSockaddrMemory, freeTask, localConnIdLength, config);
             if (channel != null) {
-                // Add to queue first, we might be able to safe some flushes and consolidate them
-                // in channelReadComplete(...) this way.
+                // 先入队，在 channelReadComplete 中合并 flush 以减少系统调用
                 if (channel.markInFireChannelReadCompleteQueue()) {
                     needsFireChannelReadComplete.add(channel);
                 }

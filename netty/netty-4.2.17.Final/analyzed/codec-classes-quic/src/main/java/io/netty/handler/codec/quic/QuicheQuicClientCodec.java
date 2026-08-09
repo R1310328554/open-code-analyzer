@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * {@link QuicheQuicCodec} for QUIC clients.
+ * 基于 Quiche 的 QUIC 客户端编解码器，负责查找已有连接并完成 connect 握手。
  */
 final class QuicheQuicClientCodec extends QuicheQuicCodec {
 
@@ -37,8 +37,7 @@ final class QuicheQuicClientCodec extends QuicheQuicCodec {
 
     QuicheQuicClientCodec(QuicheConfig config, Function<QuicChannel, ? extends QuicSslEngine> sslEngineProvider,
                           Executor sslTaskExecutor, int localConnIdLength, FlushStrategy flushStrategy) {
-        // Let's just use Quic.MAX_DATAGRAM_SIZE as the maximum size for a token on the client side. This should be
-        // safe enough and as we not have too many codecs at the same time this should be ok.
+        // 客户端侧 token 最大长度沿用 Quic.MAX_DATAGRAM_SIZE，实例数量有限时足够安全
         super(config, localConnIdLength, flushStrategy);
         this.sslEngineProvider = sslEngineProvider;
         this.sslTaskExecutor = sslTaskExecutor;
@@ -66,7 +65,7 @@ final class QuicheQuicClientCodec extends QuicheQuicCodec {
                     senderSockaddrMemory.internalNioBuffer(0, senderSockaddrMemory.capacity()),
                     recipientSockaddrMemory.internalNioBuffer(0, recipientSockaddrMemory.capacity()));
         } catch (Throwable cause) {
-            // Only fail the original promise. Cleanup will be done as part of the listener attached to it.
+            // 仅失败原始 promise，清理由后续 listener 完成
             promise.setFailure(cause);
             return;
         }

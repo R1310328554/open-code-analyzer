@@ -20,14 +20,15 @@ import java.nio.ByteBuffer;
 
 
 /**
- * Utility class to handle access to {@code quiche_recv_info}.
+ * 读写 {@code quiche_recv_info} 原生结构体的工具类，填充收包时的源/目的地址。
  */
 final class QuicheRecvInfo {
 
+    /** 工具类，禁止实例化。 */
     private QuicheRecvInfo() { }
 
     /**
-     * Set the {@link InetSocketAddress} into the {@code quiche_recv_info} struct.
+     * 将源地址 {@code from} 与目的地址 {@code to} 写入 {@code quiche_recv_info} 结构体。
      *
      * <pre>
      * typedef struct {
