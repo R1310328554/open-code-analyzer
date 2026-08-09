@@ -43,16 +43,21 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Spring Data Redis 响应式 GEO 命令实现。
+ * <p>封装 GEOADD、GEODIST、GEOHASH、GEOPOS、GEORADIUS 等命令，
+通过 {@link RedissonBaseReactive#write} / {@link RedissonBaseReactive#read} 路由。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements ReactiveGeoCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveGeoCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** 批量 GEOADD：经度、纬度与 member 依次写入命令参数。 */
     @Override
     public Flux<NumericResponse<GeoAddCommand, Long>> geoAdd(Publisher<GeoAddCommand> commands) {
         return execute(commands, command -> {
@@ -75,6 +80,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** GEODIST：可选 {@link Metric} 经 {@link DistanceConvertor} 解码。 */
     @Override
     public Flux<CommandResponse<GeoDistCommand, Distance>> geoDist(Publisher<GeoDistCommand> commands) {
         return execute(commands, command -> {
@@ -100,6 +106,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
     
     private static final RedisCommand<List<Object>> GEOHASH = new RedisCommand<List<Object>>("GEOHASH", new ObjectListReplayDecoder<Object>());
 
+    /** GEOHASH：返回各 member 的 geohash 字符串列表。 */
     @Override
     public Flux<MultiValueResponse<GeoHashCommand, String>> geoHash(Publisher<GeoHashCommand> commands) {
         return execute(commands, command -> {
@@ -119,6 +126,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
 
     private final MultiDecoder<Map<Object, Object>> geoDecoder = new ListMultiDecoder2(new ObjectListReplayDecoder2(), new PointDecoder());
     
+    /** GEOPOS：经 {@code geoDecoder} 解码经纬度 {@link Point}。 */
     @Override
     public Flux<MultiValueResponse<GeoPosCommand, Point>> geoPos(Publisher<GeoPosCommand> commands) {
         return execute(commands, command -> {
@@ -160,11 +168,13 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             params.add(command.getDistance().getMetric().getAbbreviation());
             
             RedisCommand<GeoResults<GeoLocation<byte[]>>> cmd;
+            // WITHCOORD：返回 member 与坐标。
             if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
                 cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", postitionDecoder);
                 params.add("WITHCOORD");
             } else {
                 MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder());
+                // WITHDIST：返回 member 与距离。
                 cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", distanceDecoder);
                 params.add("WITHDIST");
             }
@@ -182,6 +192,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** GEORADIUSBYMEMBER_RO：以 member 为圆心按半径查询。 */
     @Override
     public Flux<CommandResponse<GeoRadiusByMemberCommand, Flux<GeoResult<GeoLocation<ByteBuffer>>>>> geoRadiusByMember(
             Publisher<GeoRadiusByMemberCommand> commands) {
