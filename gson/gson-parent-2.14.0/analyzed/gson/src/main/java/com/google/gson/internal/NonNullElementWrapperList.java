@@ -24,9 +24,8 @@ import java.util.Objects;
 import java.util.RandomAccess;
 
 /**
- * {@link List} which wraps another {@code List} but prevents insertion of {@code null} elements.
- * Methods which only perform checks with the element argument (e.g. {@link #contains(Object)}) do
- * not throw exceptions for {@code null} arguments.
+ * 包装另一个 {@code List} 的 {@link List}，但禁止插入 {@code null} 元素。
+ * 仅对元素参数执行检查的方法（例如 {@link #contains(Object)}）不会对 {@code null} 参数抛出异常。
  */
 public class NonNullElementWrapperList<E> extends AbstractList<E> implements RandomAccess {
   // Explicitly specify ArrayList as type to guarantee that delegate implements RandomAccess

@@ -17,15 +17,13 @@
 package com.google.gson.internal;
 
 /**
- * Defines a generic object construction factory. The purpose of this class is to construct a
- * default instance of a class that can be used for object navigation while deserialization from its
- * JSON representation.
+ * 定义通用的对象构造工厂。此类用于构造类的默认实例，以便在从 JSON 表示反序列化时进行对象导航。
  *
  * @author Inderjeet Singh
  * @author Joel Leitch
  */
 public interface ObjectConstructor<T> {
 
-  /** Returns a new instance. */
+  /** 返回新实例。 */
   T construct();
 }

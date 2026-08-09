@@ -38,14 +38,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Adapts maps to either JSON objects or JSON arrays.
+ * 将 Map 适配为 JSON 对象或 JSON 数组。
  *
- * <h2>Maps as JSON objects</h2>
+ * <h2>Map 作为 JSON 对象</h2>
  *
- * For primitive keys or when complex map key serialization is not enabled, this converts Java
- * {@link Map Maps} to JSON Objects. This requires that map keys can be serialized as strings; this
- * is insufficient for some key types. For example, consider a map whose keys are points on a grid.
- * The default JSON form encodes reasonably:
+ * 对于基本类型键或未启用复杂 Map 键序列化时，将 Java {@link Map} 转换为 JSON 对象。
+ * 这要求 Map 键可序列化为字符串；对某些键类型不足。例如键为网格点的 Map，默认 JSON 形式编码合理：
  *
  * <pre>{@code
  * Map<Point, String> original = new LinkedHashMap<>();
@@ -54,7 +52,7 @@ import java.util.Map;
  * System.out.println(gson.toJson(original, type));
  * }</pre>
  *
- * The above code prints this JSON object:
+ * 上述代码输出如下 JSON 对象：
  *
  * <pre>{@code
  * {
@@ -63,24 +61,21 @@ import java.util.Map;
  * }
  * }</pre>
  *
- * But GSON is unable to deserialize this value because the JSON string name is just the {@link
- * Object#toString() toString()} of the map key. Attempting to convert the above JSON to an object
- * fails with a parse exception:
+ * 但 GSON 无法反序列化该值，因为 JSON 字符串名仅为 Map 键的 {@link Object#toString() toString()}。
+ * 尝试将上述 JSON 转为对象会抛出解析异常：
  *
  * <pre>com.google.gson.JsonParseException: Expecting object found: "(5,6)"
  *   at com.google.gson.JsonObjectDeserializationVisitor.visitFieldUsingCustomHandler
  *   at com.google.gson.ObjectNavigator.navigateClassFields
  *   ...</pre>
  *
- * <h2>Maps as JSON arrays</h2>
+ * <h2>Map 作为 JSON 数组</h2>
  *
- * An alternative approach taken by this type adapter when it is required and complex map key
- * serialization is enabled is to encode maps as arrays of map entries. Each map entry is a two
- * element array containing a key and a value. This approach is more flexible because any type can
- * be used as the map's key; not just strings. But it's also less portable because the receiver of
- * such JSON must be aware of the map entry convention.
+ * 在需要且启用复杂 Map 键序列化时，此类型适配器采用将 Map 编码为 Map 条目数组的替代方案。
+ * 每个 Map 条目为包含键和值的二元数组。此方式更灵活，因为任意类型均可作 Map 键，不限于字符串；
+ * 但可移植性较差，因为接收方须了解 Map 条目约定。
  *
- * <p>Register this adapter when you are creating your GSON instance.
+ * <p>创建 GSON 实例时注册此适配器：
  *
  * <pre>{@code
  * Gson gson = new GsonBuilder()
@@ -88,8 +83,7 @@ import java.util.Map;
  *   .create();
  * }</pre>
  *
- * This will change the structure of the JSON emitted by the code above. Now we get an array. In
- * this case the arrays elements are map entries:
+ * 这将改变上述代码发出的 JSON 结构，得到数组，其元素为 Map 条目：
  *
  * <pre>{@code
  * [
@@ -110,7 +104,7 @@ import java.util.Map;
  * ]
  * }</pre>
  *
- * This format will serialize and deserialize just fine as long as this adapter is registered.
+ * 只要注册了此适配器，该格式即可正常序列化与反序列化。
  */
 public final class MapTypeAdapterFactory implements TypeAdapterFactory {
   private final ConstructorConstructor constructorConstructor;
@@ -151,7 +145,7 @@ public final class MapTypeAdapterFactory implements TypeAdapterFactory {
     return result;
   }
 
-  /** Returns a type adapter that writes the value as a string. */
+  /** 返回将值写为字符串的类型适配器。 */
   private TypeAdapter<?> getKeyAdapter(Gson context, Type keyType) {
     return (keyType == boolean.class || keyType == Boolean.class)
         ? TypeAdapters.BOOLEAN_AS_STRING

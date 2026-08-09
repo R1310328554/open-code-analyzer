@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Adapter for enum classes (but not for the base class {@code java.lang.Enum}). */
+/** 枚举类的适配器（不适用于基类 {@code java.lang.Enum}）。 */
 class EnumTypeAdapter<T extends Enum<T>> extends TypeAdapter<T> {
   static final TypeAdapterFactory FACTORY =
       new TypeAdapterFactory() {
@@ -51,7 +51,7 @@ class EnumTypeAdapter<T extends Enum<T>> extends TypeAdapter<T> {
       };
 
   /**
-   * Taken from Java 19 method {@link HashMap.newHashMap}, using default load factor {@code 0.75F}.
+   * 取自 Java 19 的 {@link HashMap.newHashMap} 方法，使用默认负载因子 {@code 0.75F}。
    */
   private static int calculateHashMapCapacity(int numMappings) {
     return (int) Math.ceil(numMappings / 0.75F);

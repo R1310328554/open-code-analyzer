@@ -30,7 +30,7 @@ import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 
-/** Adapter for arrays. */
+/** 数组的类型适配器。 */
 public final class ArrayTypeAdapter<E> extends TypeAdapter<Object> {
   public static final TypeAdapterFactory FACTORY =
       new TypeAdapterFactory() {

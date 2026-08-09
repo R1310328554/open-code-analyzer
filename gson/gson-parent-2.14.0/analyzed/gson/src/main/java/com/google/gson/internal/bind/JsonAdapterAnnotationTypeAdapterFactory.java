@@ -29,8 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Given a type T, looks for the annotation {@link JsonAdapter} and uses an instance of the
- * specified class as the default type adapter.
+ * 给定类型 T，查找 {@link JsonAdapter} 注解，并将指定类的实例用作默认类型适配器。
  *
  * @since 2.3
  */
@@ -42,20 +41,19 @@ public final class JsonAdapterAnnotationTypeAdapterFactory implements TypeAdapte
     }
   }
 
-  /** Factory used for {@link TreeTypeAdapter}s created for {@code @JsonAdapter} on a class. */
+  /** 用于类上 {@code @JsonAdapter} 所创建 {@link TreeTypeAdapter} 的工厂。 */
   private static final TypeAdapterFactory TREE_TYPE_CLASS_DUMMY_FACTORY =
       new DummyTypeAdapterFactory();
 
-  /** Factory used for {@link TreeTypeAdapter}s created for {@code @JsonAdapter} on a field. */
+  /** 用于字段上 {@code @JsonAdapter} 所创建 {@link TreeTypeAdapter} 的工厂。 */
   private static final TypeAdapterFactory TREE_TYPE_FIELD_DUMMY_FACTORY =
       new DummyTypeAdapterFactory();
 
   private final ConstructorConstructor constructorConstructor;
 
   /**
-   * For a class, if it is annotated with {@code @JsonAdapter} and refers to a {@link
-   * TypeAdapterFactory}, stores the factory instance in case it has been requested already. Has to
-   * be a {@link ConcurrentMap} because {@link Gson} guarantees to be thread-safe.
+   * 对类：若标注 {@code @JsonAdapter} 且引用 {@link TypeAdapterFactory}，则缓存工厂实例以防重复请求。
+   * 必须为 {@link ConcurrentMap}，因为 {@link Gson} 保证线程安全。
    */
   // Note: In case these strong reference to TypeAdapterFactory instances are considered
   // a memory leak in the future, could consider switching to WeakReference<TypeAdapterFactory>
@@ -162,8 +160,7 @@ public final class JsonAdapterAnnotationTypeAdapterFactory implements TypeAdapte
   }
 
   /**
-   * Returns whether {@code factory} is a type adapter factory created for {@code @JsonAdapter}
-   * placed on {@code type}.
+   * 返回 {@code factory} 是否为在 {@code type} 上的 {@code @JsonAdapter} 所创建的类型适配器工厂。
    */
   public boolean isClassJsonAdapterFactory(TypeToken<?> type, TypeAdapterFactory factory) {
     Objects.requireNonNull(type);

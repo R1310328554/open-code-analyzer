@@ -31,15 +31,14 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 
-/** Adapter for {@link JsonElement} and subclasses. */
+/** {@link JsonElement} 及其子类的适配器。 */
 public class JsonElementTypeAdapter extends TypeAdapter<JsonElement> {
   public static final JsonElementTypeAdapter ADAPTER = new JsonElementTypeAdapter();
 
   private JsonElementTypeAdapter() {}
 
   /**
-   * Tries to begin reading a JSON array or JSON object, returning {@code null} if the next element
-   * is neither of those.
+   * 尝试开始读取 JSON 数组或对象；若下一元素均不是则返回 {@code null}。
    */
   private JsonElement tryBeginNesting(JsonReader in, JsonToken peeked) throws IOException {
     switch (peeked) {
@@ -54,7 +53,7 @@ public class JsonElementTypeAdapter extends TypeAdapter<JsonElement> {
     }
   }
 
-  /** Reads a {@link JsonElement} which cannot have any nested elements */
+  /** 读取不能包含嵌套元素的 {@link JsonElement}。 */
   private JsonElement readTerminal(JsonReader in, JsonToken peeked) throws IOException {
     switch (peeked) {
       case STRING:

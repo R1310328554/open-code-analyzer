@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** This writer creates a JsonElement. */
+/** 此 writer 创建 JsonElement。 */
 public final class JsonTreeWriter extends JsonWriter {
   private static final Writer UNWRITABLE_WRITER =
       new Writer() {
@@ -49,23 +49,23 @@ public final class JsonTreeWriter extends JsonWriter {
         }
       };
 
-  /** Added to the top of the stack when this writer is closed to cause following ops to fail. */
+  /** 关闭此 writer 时压入栈顶，使后续操作失败。 */
   private static final JsonPrimitive SENTINEL_CLOSED = new JsonPrimitive("closed");
 
-  /** The JsonElements and JsonArrays under modification, outermost to innermost. */
+  /** 正在修改的 JsonElement 与 JsonArray，由外到内。 */
   private final List<JsonElement> stack = new ArrayList<>();
 
-  /** The name for the next JSON object value. If non-null, the top of the stack is a JsonObject. */
+  /** 下一个 JSON 对象值的名称。若非 null，栈顶为 JsonObject。 */
   private String pendingName;
 
-  /** the JSON element constructed by this writer. */
+  /** 此 writer 构造的 JSON 元素。 */
   private JsonElement product = JsonNull.INSTANCE; // TODO: is this really what we want?;
 
   public JsonTreeWriter() {
     super(UNWRITABLE_WRITER);
   }
 
-  /** Returns the top level object produced by this writer. */
+  /** 返回此 writer 产生的顶层对象。 */
   public JsonElement get() {
     if (!stack.isEmpty()) {
       throw new IllegalStateException("Expected one JSON element but was " + stack);

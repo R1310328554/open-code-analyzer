@@ -18,11 +18,11 @@ package com.google.gson.internal.bind;
 
 import com.google.gson.TypeAdapter;
 
-/** Type adapter which might delegate serialization to another adapter. */
+/** 可能将序列化委托给另一适配器的类型适配器。 */
 public abstract class SerializationDelegatingTypeAdapter<T> extends TypeAdapter<T> {
   /**
-   * Returns the adapter used for serialization, might be {@code this} or another adapter. That
-   * other adapter might itself also be a {@code SerializationDelegatingTypeAdapter}.
+   * 返回用于序列化的适配器，可能是 {@code this} 或其他适配器。后者本身也可能是
+   * {@code SerializationDelegatingTypeAdapter}。
    */
   public abstract TypeAdapter<T> getSerializationDelegate();
 }

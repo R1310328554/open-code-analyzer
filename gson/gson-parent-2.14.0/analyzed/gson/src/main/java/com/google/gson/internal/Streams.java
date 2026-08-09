@@ -33,13 +33,13 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Objects;
 
-/** Reads and writes GSON parse trees over streams. */
+/** 在流上读写 GSON 解析树。 */
 public final class Streams {
   private Streams() {
     throw new UnsupportedOperationException();
   }
 
-  /** Takes a reader in any state and returns the next value as a JsonElement. */
+  /** 接受任意状态的 reader，将下一个值作为 JsonElement 返回。 */
   public static JsonElement parse(JsonReader reader) throws JsonParseException {
     boolean isEmpty = true;
     try {
@@ -65,7 +65,7 @@ public final class Streams {
     }
   }
 
-  /** Writes the JSON element to the writer, recursively. */
+  /** 将 JSON 元素递归写入 writer。 */
   public static void write(JsonElement element, JsonWriter writer) throws IOException {
     JsonElementTypeAdapter.ADAPTER.write(writer, element);
   }
@@ -74,7 +74,7 @@ public final class Streams {
     return appendable instanceof Writer ? (Writer) appendable : new AppendableWriter(appendable);
   }
 
-  /** Adapts an {@link Appendable} so it can be passed anywhere a {@link Writer} is used. */
+  /** 将 {@link Appendable} 适配为可在需要 {@link Writer} 处使用。 */
   private static final class AppendableWriter extends Writer {
     private final Appendable appendable;
     private final CurrentWrite currentWrite = new CurrentWrite();
@@ -131,7 +131,7 @@ public final class Streams {
       return this;
     }
 
-    /** A mutable char sequence pointing at a single char[]. */
+    /** 指向单个 char[] 的可变字符序列。 */
     private static class CurrentWrite implements CharSequence {
       private char[] chars;
       private String cachedString;

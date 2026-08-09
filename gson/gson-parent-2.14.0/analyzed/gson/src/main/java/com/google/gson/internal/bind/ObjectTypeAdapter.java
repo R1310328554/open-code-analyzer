@@ -34,11 +34,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Adapts types whose static type is only 'Object'. Uses getClass() on serialization and a
- * primitive/Map/List on deserialization.
+ * 适配静态类型仅为 Object 的类型。序列化时使用 getClass()，反序列化时使用基本类型/Map/List。
  */
 public final class ObjectTypeAdapter extends TypeAdapter<Object> {
-  /** Gson default factory using {@link ToNumberPolicy#DOUBLE}. */
+  /** 使用 {@link ToNumberPolicy#DOUBLE} 的 Gson 默认工厂。 */
   private static final TypeAdapterFactory DOUBLE_FACTORY = newFactory(ToNumberPolicy.DOUBLE);
 
   private final Gson gson;
@@ -71,8 +70,7 @@ public final class ObjectTypeAdapter extends TypeAdapter<Object> {
   }
 
   /**
-   * Tries to begin reading a JSON array or JSON object, returning {@code null} if the next element
-   * is neither of those.
+   * 尝试开始读取 JSON 数组或对象；若下一元素均不是则返回 {@code null}。
    */
   private Object tryBeginNesting(JsonReader in, JsonToken peeked) throws IOException {
     switch (peeked) {

@@ -19,13 +19,13 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-/** Provides DateFormats for US locale with patterns which were the default ones before Java 9. */
+/** 提供美国区域设置的 DateFormat，其模式为 Java 9 之前的默认模式。 */
 public class PreJava9DateFormatProvider {
   private PreJava9DateFormatProvider() {}
 
   /**
-   * Returns the same DateFormat as {@code DateFormat.getDateTimeInstance(dateStyle, timeStyle,
-   * Locale.US)} in Java 8 or below.
+   * 返回与 Java 8 及以下版本中 {@code DateFormat.getDateTimeInstance(dateStyle, timeStyle,
+   * Locale.US)} 相同的 DateFormat。
    */
   public static DateFormat getUsDateTimeFormat(int dateStyle, int timeStyle) {
     String pattern =

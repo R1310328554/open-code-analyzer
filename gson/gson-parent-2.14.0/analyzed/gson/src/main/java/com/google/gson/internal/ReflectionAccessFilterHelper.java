@@ -22,7 +22,7 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/** Internal helper class for {@link ReflectionAccessFilter}. */
+/** {@link ReflectionAccessFilter} 的内部辅助类。 */
 public class ReflectionAccessFilterHelper {
   private ReflectionAccessFilterHelper() {}
 
@@ -57,9 +57,8 @@ public class ReflectionAccessFilterHelper {
   }
 
   /**
-   * Gets the result of applying all filters until the first one returns a result other than {@link
-   * FilterResult#INDECISIVE}, or {@link FilterResult#ALLOW} if the list of filters is empty or all
-   * returned {@code INDECISIVE}.
+   * 依次应用所有过滤器，直到第一个返回非 {@link FilterResult#INDECISIVE} 的结果；
+   * 若过滤器列表为空或全部返回 {@code INDECISIVE}，则返回 {@link FilterResult#ALLOW}。
    */
   public static FilterResult getFilterResult(
       List<ReflectionAccessFilter> reflectionFilters, Class<?> c) {
@@ -72,7 +71,7 @@ public class ReflectionAccessFilterHelper {
     return FilterResult.ALLOW;
   }
 
-  /** See {@link AccessibleObject#canAccess(Object)} (Java >= 9) */
+  /** 参见 {@link AccessibleObject#canAccess(Object)}（Java >= 9）。 */
   public static boolean canAccess(AccessibleObject accessibleObject, Object object) {
     return AccessChecker.INSTANCE.canAccess(accessibleObject, object);
   }

@@ -28,9 +28,9 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-/** Type adapter for {@link Number}. */
+/** {@link Number} 的类型适配器。 */
 public final class NumberTypeAdapter extends TypeAdapter<Number> {
-  /** Gson default factory using {@link ToNumberPolicy#LAZILY_PARSED_NUMBER}. */
+  /** 使用 {@link ToNumberPolicy#LAZILY_PARSED_NUMBER} 的 Gson 默认工厂。 */
   private static final TypeAdapterFactory LAZILY_PARSED_NUMBER_FACTORY =
       newFactory(ToNumberPolicy.LAZILY_PARSED_NUMBER);
 

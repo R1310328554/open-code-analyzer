@@ -19,22 +19,20 @@ package com.google.gson.internal;
 import java.lang.reflect.Type;
 
 /**
- * Contains static utility methods pertaining to primitive types and their corresponding wrapper
- * types.
+ * 包含与基本类型及其对应包装类型相关的静态工具方法。
  *
  * @author Kevin Bourrillion
  */
 public final class Primitives {
   private Primitives() {}
 
-  /** Returns true if this type is a primitive. */
+  /** 若此类型为基本类型则返回 {@code true}。 */
   public static boolean isPrimitive(Type type) {
     return type instanceof Class<?> && ((Class<?>) type).isPrimitive();
   }
 
   /**
-   * Returns {@code true} if {@code type} is one of the nine primitive-wrapper types, such as {@link
-   * Integer}.
+   * 若 {@code type} 为九种基本类型包装类之一（例如 {@link Integer}），则返回 {@code true}。
    *
    * @see Class#isPrimitive
    */
@@ -51,8 +49,7 @@ public final class Primitives {
   }
 
   /**
-   * Returns the corresponding wrapper type of {@code type} if it is a primitive type; otherwise
-   * returns {@code type} itself. Idempotent.
+   * 若 {@code type} 为基本类型，则返回对应的包装类型；否则返回 {@code type} 本身。幂等。
    *
    * <pre>
    *     wrap(int.class) == Integer.class
@@ -75,8 +72,7 @@ public final class Primitives {
   }
 
   /**
-   * Returns the corresponding primitive type of {@code type} if it is a wrapper type; otherwise
-   * returns {@code type} itself. Idempotent.
+   * 若 {@code type} 为包装类型，则返回对应的基本类型；否则返回 {@code type} 本身。幂等。
    *
    * <pre>
    *     unwrap(Integer.class) == int.class

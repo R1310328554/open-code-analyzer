@@ -28,17 +28,12 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 /**
- * Type adapters for {@code java.time} types.
+ * {@code java.time} 类型的类型适配器。
  *
- * <p>These adapters mimic what {@link ReflectiveTypeAdapterFactory} would produce for the same
- * types. That is by no means a natural encoding, given that many of the types have standard ISO
- * representations. If Gson had added support for the types at the same time they appeared (in Java
- * 8, released in 2014), it would surely have used those representations. Unfortunately, in the
- * intervening time, people have been using the reflective representations, and changing that would
- * potentially be incompatible. Meanwhile, depending on the details of private fields in JDK classes
- * is obviously fragile, and it also needs special {@code --add-opens} configuration with more
- * recent JDK versions. So here we freeze the representation that was current with JDK 21, in a way
- * that does not use reflection.
+ * <p>这些适配器模拟 {@link ReflectiveTypeAdapterFactory} 对相同类型会产生的编码。鉴于许多类型具有标准 ISO
+ * 表示，这绝非自然编码。若 Gson 在类型出现之时（Java 8，2014 年发布）即添加支持，无疑会采用那些表示。
+ * 不幸的是，其间用户已使用反射表示，更改将可能不兼容。同时，依赖 JDK 类私有字段显然脆弱，
+ * 在较新 JDK 上还需特殊 {@code --add-opens} 配置。因此此处冻结 JDK 21 时的表示，且不使用反射。
  */
 @IgnoreJRERequirement // Protected by a reflective check
 final class JavaTimeTypeAdapters implements TypeAdapters.FactorySupplier {

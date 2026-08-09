@@ -22,7 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
- * Do sneaky things to allocate objects without invoking their constructors.
+ * 在不调用构造函数的情况下分配对象（非常规手段）。
  *
  * @author Joel Leitch
  * @author Jesse Wilson
@@ -31,9 +31,8 @@ public abstract class UnsafeAllocator {
   public abstract <T> T newInstance(Class<T> c) throws Exception;
 
   /**
-   * Asserts that the class is instantiable. This check should have already occurred in {@link
-   * ConstructorConstructor}; this check here acts as safeguard since trying to use Unsafe for
-   * non-instantiable classes might crash the JVM on some devices.
+   * 断言类可实例化。此检查应已在 {@link ConstructorConstructor} 中完成；
+   * 此处作为额外保障，因为对不可实例化类使用 Unsafe 在某些设备上可能导致 JVM 崩溃。
    */
   private static void assertInstantiable(Class<?> c) {
     String exceptionMessage = ConstructorConstructor.checkInstantiable(c);

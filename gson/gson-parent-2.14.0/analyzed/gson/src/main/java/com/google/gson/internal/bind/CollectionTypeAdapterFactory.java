@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collection;
 
-/** Adapt a homogeneous collection of objects. */
+/** 适配同构对象集合。 */
 public final class CollectionTypeAdapterFactory implements TypeAdapterFactory {
   private final ConstructorConstructor constructorConstructor;
 

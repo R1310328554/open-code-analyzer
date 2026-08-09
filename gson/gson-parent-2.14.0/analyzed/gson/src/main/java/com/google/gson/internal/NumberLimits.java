@@ -4,8 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
- * This class enforces limits on numbers parsed from JSON to avoid potential performance problems
- * when extremely large numbers are used.
+ * 对从 JSON 解析的数值施加限制，避免使用极大数字时可能出现的性能问题。
  */
 public class NumberLimits {
   private NumberLimits() {}

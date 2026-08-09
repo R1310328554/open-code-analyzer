@@ -56,7 +56,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Type adapter that reflects over the fields and methods of a class. */
+/** 通过反射遍历类字段与方法进行序列化/反序列化的类型适配器。 */
 public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
   private final ConstructorConstructor constructorConstructor;
   private final FieldNamingStrategy fieldNamingPolicy;
@@ -81,7 +81,7 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
     return !excluder.excludeField(f, serialize);
   }
 
-  /** first element holds the default name */
+  /** 第一个元素为默认名称 */
   @SuppressWarnings("MixedMutabilityReturnType")
   private List<String> getFieldNames(Field f) {
 
@@ -288,7 +288,7 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
   private static class FieldsData {
     static final FieldsData EMPTY = new FieldsData(Collections.emptyMap(), Collections.emptyList());
 
-    /** Maps from JSON member name to field */
+    /** 从 JSON 成员名到字段的映射 */
     final Map<String, BoundField> deserializedFields;
 
     final List<BoundField> serializedFields;
@@ -426,12 +426,12 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
   }
 
   abstract static class BoundField {
-    /** Name used for serialization (but not for deserialization) */
+    /** 用于序列化的名称（不用于反序列化） */
     final String serializedName;
 
     final Field field;
 
-    /** Name of the underlying field */
+    /** 底层字段名 */
     final String fieldName;
 
     protected BoundField(String serializedName, Field field) {
@@ -440,34 +440,30 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
       this.fieldName = field.getName();
     }
 
-    /** Read this field value from the source, and append its JSON value to the writer */
+    /** 从源读取此字段值，并将其 JSON 值写入 writer */
     abstract void write(JsonWriter writer, Object source)
         throws IOException, IllegalAccessException;
 
-    /** Read the value into the target array, used to provide constructor arguments for records */
+    /** 将值读入目标数组，用于为 record 提供构造参数 */
     abstract void readIntoArray(JsonReader reader, int index, Object[] target)
         throws IOException, JsonParseException;
 
     /**
-     * Read the value from the reader, and set it on the corresponding field on target via
-     * reflection
+     * 从 reader 读取值，并通过反射设置到 target 的对应字段上
      */
     abstract void readIntoField(JsonReader reader, Object target)
         throws IOException, IllegalAccessException;
   }
 
   /**
-   * Base class for Adapters produced by this factory.
+   * 此工厂产生的 Adapter 的基类。
    *
-   * <p>The {@link RecordAdapter} is a special case to handle records for JVMs that support it, for
-   * all other types we use the {@link FieldReflectionAdapter}. This class encapsulates the common
-   * logic for serialization and deserialization. During deserialization, we construct an
-   * accumulator A, which we use to accumulate values from the source JSON. After the object has
-   * been read in full, the {@link #finalize(Object)} method is used to convert the accumulator to
-   * an instance of T.
+   * <p>{@link RecordAdapter} 是支持 record 的 JVM 上的特例；其他类型使用 {@link FieldReflectionAdapter}。
+   * 此类封装序列化与反序列化的公共逻辑。反序列化时构造累加器 A，从源 JSON 累积各字段值；
+   * 对象完整读取后，通过 {@link #finalize(Object)} 将累加器转为 T 的实例。
    *
-   * @param <T> type of objects that this Adapter creates.
-   * @param <A> type of accumulator used to build the deserialization result.
+   * @param <T> 此 Adapter 创建的对象类型
+   * @param <A> 用于构建反序列化结果的累加器类型
    */
   // This class is public because external projects check for this class with `instanceof` (even
   // though it is internal)
@@ -526,17 +522,16 @@ public final class ReflectiveTypeAdapterFactory implements TypeAdapterFactory {
       return finalize(accumulator);
     }
 
-    /** Create the Object that will be used to collect each field value */
+    /** 创建用于收集各字段值的对象 */
     abstract A createAccumulator();
 
     /**
-     * Read a single BoundField into the accumulator. The JsonReader will be pointed at the start of
-     * the value for the BoundField to read from.
+     * 将单个 BoundField 读入累加器。JsonReader 将指向待读取的 BoundField 值的起始位置。
      */
     abstract void readField(A accumulator, JsonReader in, BoundField field)
         throws IllegalAccessException, IOException;
 
-    /** Convert the accumulator to a final instance of T. */
+    /** 将累加器转换为 T 的最终实例。 */
     abstract T finalize(A accumulator);
   }
 

@@ -40,14 +40,13 @@ import java.util.Objects;
 import java.util.TimeZone;
 
 /**
- * This type adapter supports subclasses of date by defining a {@link
- * DefaultDateTypeAdapter.DateType} and then using its {@code createAdapterFactory} methods.
+ * 此类型适配器通过定义 {@link DefaultDateTypeAdapter.DateType} 并使用其 {@code createAdapterFactory}
+ * 方法，支持日期子类。
  *
- * <p><b>Important:</b> Instances of this class (or rather the {@link SimpleDateFormat} they use)
- * capture the current default {@link Locale} and {@link TimeZone} when they are created. Therefore
- * avoid storing factories obtained from {@link DateType} in {@code static} fields, since they only
- * create a single adapter instance and its behavior would then depend on when Gson classes are
- * loaded first, and which default {@code Locale} and {@code TimeZone} was used at that point.
+ * <p><b>重要：</b>此类的实例（更确切地说，其使用的 {@link SimpleDateFormat}）在创建时会捕获当前默认的
+ * {@link Locale} 和 {@link TimeZone}。因此避免将 {@link DateType} 获得的工厂存入 {@code static} 字段，
+ * 因为它们仅创建一个适配器实例，其行为将取决于 Gson 类首次加载的时机及当时的默认 {@code Locale} 和
+ * {@code TimeZone}。
  *
  * @author Inderjeet Singh
  * @author Joel Leitch
@@ -55,7 +54,7 @@ import java.util.TimeZone;
 public final class DefaultDateTypeAdapter<T extends Date> extends TypeAdapter<T> {
   private static final String SIMPLE_NAME = "DefaultDateTypeAdapter";
 
-  /** Factory for {@link Date} adapters which use {@link DateFormat#DEFAULT} as style. */
+  /** 为使用 {@link DateFormat#DEFAULT} 样式的 {@link Date} 适配器提供的工厂。 */
   public static final TypeAdapterFactory DEFAULT_STYLE_FACTORY =
       // Because SimpleDateFormat captures the default TimeZone when it was created, let the factory
       // always create new DefaultDateTypeAdapter instances (which are then cached by the Gson
@@ -112,8 +111,7 @@ public final class DefaultDateTypeAdapter<T extends Date> extends TypeAdapter<T>
   private final DateType<T> dateType;
 
   /**
-   * List of 1 or more different date formats used for de-serialization attempts. The first of them
-   * is used for serialization as well.
+   * 用于反序列化尝试的一种或多种日期格式列表。其中第一种也用于序列化。
    */
   private final List<DateFormat> dateFormats = new ArrayList<>();
 
