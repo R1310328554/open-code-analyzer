@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/stream/StreamInfo.java",
     "redisson/src/main/java/org/redisson/api/stream/StreamMessageId.java",
     "redisson/src/main/java/org/redisson/api/stream/StreamMessageIdArgs.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamMultiReadArgs.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamMultiReadGroupArgs.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamMultiReadGroupParams.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamMultiReadParams.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamNackArgs.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamNackMode.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamNackParams.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamPendingRangeArgs.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamPendingRangeParams.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamRangeArgs.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamRangeParams.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamReadArgs.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamReadGroupArgs.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamReadGroupParams.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamReadParams.java",
-    "redisson/src/main/java/org/redisson/api/stream/StreamReferencesArgs.java"
+    "redisson/src/main/java/org/redisson/api/stream/StreamMultiReadArgs.java"
   ],
   "remaining_pending": 662,
-  "done": 2130
+  "done": 2145
 }
