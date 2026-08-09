@@ -26,28 +26,27 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 /**
- * An encoder which serializes a Java object into a {@link ByteBuf}.
+ * 将 Java 对象序列化为 {@link ByteBuf} 的编码器。
  * <p>
- * Please note that the serialized form this encoder produces is not
- * compatible with the standard {@link ObjectInputStream}.  Please use
- * {@link ObjectDecoder} or {@link ObjectDecoderInputStream} to ensure the
- * interoperability with this encoder.
+ * 本编码器产出的格式与标准 {@link ObjectInputStream} 不兼容。
+ * 请配合 {@link ObjectDecoder} 或 {@link ObjectDecoderInputStream} 使用。
  * <p>
- * <strong>Security:</strong> serialization can be a security liability,
- * and should not be used without defining a list of classes that are
- * allowed to be desirialized. Such a list can be specified with the
- * <tt>jdk.serialFilter</tt> system property, for instance.
- * See the <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
- * serialization filtering</a> article for more information.
+ * <strong>安全提示：</strong>Java 序列化存在安全风险，使用前应通过
+ * {@code jdk.serialFilter} 等机制限制允许反序列化的类。
+ * 详见 <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
+ * serialization filtering</a>。
  *
- * @deprecated This class has been deprecated with no replacement,
- * because serialization can be a security liability
+ * @deprecated 因序列化存在安全风险，本类已弃用且无替代方案
  */
 @Deprecated
 @Sharable
 public class ObjectEncoder extends MessageToByteEncoder<Serializable> {
+    /** 长度字段占位符（4 字节），序列化完成后回填实际长度。 */
+    /** 长度字段占位符（4 字节），序列化完成后回填实际长度。 */
     private static final byte[] LENGTH_PLACEHOLDER = new byte[4];
 
+    /** 创建编码器，出站消息类型为 {@link Serializable}。 */
+    /** 创建编码器，出站消息类型为 {@link Serializable}。 */
     public ObjectEncoder() {
         super(Serializable.class);
     }
@@ -59,6 +58,7 @@ public class ObjectEncoder extends MessageToByteEncoder<Serializable> {
         ByteBufOutputStream bout = new ByteBufOutputStream(out);
         ObjectOutputStream oout = null;
         try {
+            // 先写入 4 字节长度占位符
             bout.write(LENGTH_PLACEHOLDER);
             oout = new CompactObjectOutputStream(bout);
             oout.writeObject(msg);
@@ -73,6 +73,7 @@ public class ObjectEncoder extends MessageToByteEncoder<Serializable> {
 
         int endIdx = out.writerIndex();
 
+        // 回填实际载荷长度（不含长度字段本身）
         out.setInt(startIdx, endIdx - startIdx - 4);
     }
 }

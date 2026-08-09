@@ -20,9 +20,18 @@ import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.io.OutputStream;
 
+/**
+ * 精简版 {@link ObjectOutputStream}，写入更紧凑的类描述符。
+ * <p>
+ * 对普通类写入“瘦”描述符（仅类名），对基本类型、数组、接口等仍写入完整描述符。
+ */
 class CompactObjectOutputStream extends ObjectOutputStream {
 
+    /** 完整（fat）类描述符类型标识。 */
+    /** 完整（fat）类描述符类型标识。 */
     static final int TYPE_FAT_DESCRIPTOR = 0;
+    /** 精简（thin）类描述符类型标识，仅含类名。 */
+    /** 精简（thin）类描述符类型标识，仅含类名。 */
     static final int TYPE_THIN_DESCRIPTOR = 1;
 
     CompactObjectOutputStream(OutputStream out) throws IOException {
@@ -39,9 +48,11 @@ class CompactObjectOutputStream extends ObjectOutputStream {
         Class<?> clazz = desc.forClass();
         if (clazz.isPrimitive() || clazz.isArray() || clazz.isInterface() ||
             desc.getSerialVersionUID() == 0) {
+            // 特殊类型或 serialVersionUID 为 0 时使用完整描述符
             write(TYPE_FAT_DESCRIPTOR);
             super.writeClassDescriptor(desc);
         } else {
+            // 普通类：仅写入类名以节省空间
             write(TYPE_THIN_DESCRIPTOR);
             writeUTF(desc.getName());
         }

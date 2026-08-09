@@ -26,8 +26,9 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 import java.util.List;
 
 /**
- * Decodes a received {@link ByteBuf} into an array of bytes.
- * A typical setup for TCP/IP would be:
+ * 将收到的 {@link ByteBuf} 解码为 {@code byte[]}。
+ * <p>
+ * TCP/IP 场景下的典型管线配置：
  * <pre>
  * {@link ChannelPipeline} pipeline = ...;
  *
@@ -41,8 +42,7 @@ import java.util.List;
  * pipeline.addLast("frameEncoder", new {@link LengthFieldPrepender}(4));
  * pipeline.addLast("bytesEncoder", new {@link ByteArrayEncoder}());
  * </pre>
- * and then you can use an array of bytes instead of a {@link ByteBuf}
- * as a message:
+ * 配置完成后，业务层可直接以 {@code byte[]} 作为消息类型：
  * <pre>
  * void channelRead({@link ChannelHandlerContext} ctx, byte[] bytes) {
  *     ...
@@ -50,13 +50,15 @@ import java.util.List;
  * </pre>
  */
 public class ByteArrayDecoder extends MessageToMessageDecoder<ByteBuf> {
+    /** 创建解码器，入站消息类型为 {@link ByteBuf}。 */
+    /** 创建解码器，入站消息类型为 {@link ByteBuf}。 */
     public ByteArrayDecoder() {
         super(ByteBuf.class);
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
-         // copy the ByteBuf content to a byte array
+        // 将 ByteBuf 内容复制为 byte 数组
         out.add(ByteBufUtil.getBytes(msg));
     }
 }

@@ -27,52 +27,46 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 /**
- * An {@link ObjectOutput} which is interoperable with {@link ObjectDecoder}
- * and {@link ObjectDecoderInputStream}.
+ * 与 {@link ObjectDecoder}、{@link ObjectDecoderInputStream} 互操作的 {@link ObjectOutput} 实现。
  * <p>
- * <strong>Security:</strong> serialization can be a security liability,
- * and should not be used without defining a list of classes that are
- * allowed to be desirialized. Such a list can be specified with the
- * <tt>jdk.serialFilter</tt> system property, for instance.
- * See the <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
- * serialization filtering</a> article for more information.
+ * <strong>安全提示：</strong>Java 序列化存在安全风险，使用前应通过
+ * {@code jdk.serialFilter} 等机制限制允许反序列化的类。
+ * 详见 <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
+ * serialization filtering</a>。
  *
- * @deprecated This class has been deprecated with no replacement,
- * because serialization can be a security liability
+ * @deprecated 因序列化存在安全风险，本类已弃用且无替代方案
  */
 @Deprecated
 public class ObjectEncoderOutputStream extends OutputStream implements
         ObjectOutput {
 
+    /** 底层数据输出流。 */
+    /** 底层数据输出流。 */
     private final DataOutputStream out;
+    /** 序列化对象的预估字节长度，用于初始缓冲区大小。 */
+    /** 序列化对象的预估字节长度，用于初始缓冲区大小。 */
     private final int estimatedLength;
 
     /**
-     * Creates a new {@link ObjectOutput} with the estimated length of 512
-     * bytes.
+     * 创建 {@link ObjectOutput}，预估长度为 512 字节。
      *
      * @param out
-     *        the {@link OutputStream} where the serialized form will be
-     *        written out
+     *        写入序列化数据的 {@link OutputStream}
      */
     public ObjectEncoderOutputStream(OutputStream out) {
         this(out, 512);
     }
 
     /**
-     * Creates a new {@link ObjectOutput}.
+     * 创建 {@link ObjectOutput}。
      *
      * @param out
-     *        the {@link OutputStream} where the serialized form will be
-     *        written out
+     *        写入序列化数据的 {@link OutputStream}
      *
      * @param estimatedLength
-     *        the estimated byte length of the serialized form of an object.
-     *        If the length of the serialized form exceeds this value, the
-     *        internal buffer will be expanded automatically at the cost of
-     *        memory bandwidth.  If this value is too big, it will also waste
-     *        memory bandwidth.  To avoid unnecessary memory copy or allocation
-     *        cost, please specify the properly estimated value.
+     *        单个对象序列化形式的预估字节长度。
+     *        实际超出时会自动扩容；过大则浪费内存带宽。
+     *        为减少拷贝与分配，请给出合理预估值。
      */
     public ObjectEncoderOutputStream(OutputStream out, int estimatedLength) {
         ObjectUtil.checkNotNull(out, "out");
@@ -123,6 +117,8 @@ public class ObjectEncoderOutputStream extends OutputStream implements
         out.flush();
     }
 
+    /** 返回底层 {@link DataOutputStream} 已写入的字节数。 */
+    /** 返回底层 {@link DataOutputStream} 已写入的字节数。 */
     public final int size() {
         return out.size();
     }

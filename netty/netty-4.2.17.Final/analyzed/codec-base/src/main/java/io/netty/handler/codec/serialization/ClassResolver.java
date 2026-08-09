@@ -16,21 +16,27 @@
 package io.netty.handler.codec.serialization;
 
 /**
- * please use {@link ClassResolvers} as instance factory
+ * 反序列化时按类名解析 {@link Class} 的接口。
  * <p>
- * <strong>Security:</strong> serialization can be a security liability,
- * and should not be used without defining a list of classes that are
- * allowed to be desirialized. Such a list can be specified with the
- * <tt>jdk.serialFilter</tt> system property, for instance.
- * See the <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
- * serialization filtering</a> article for more information.
+ * 请通过 {@link ClassResolvers} 工厂获取实例。
+ * <p>
+ * <strong>安全提示：</strong>Java 序列化存在安全风险，使用前应通过
+ * {@code jdk.serialFilter} 等机制限制允许反序列化的类。
+ * 详见 <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
+ * serialization filtering</a>。
  *
- * @deprecated This class has been deprecated with no replacement,
- * because serialization can be a security liability
+ * @deprecated 因序列化存在安全风险，本接口已弃用且无替代方案
  */
 @Deprecated
 public interface ClassResolver {
 
+    /**
+     * 按类名解析并返回 {@link Class} 对象。
+     *
+      * @param className 完全限定类名
+     * @return 对应的 {@link Class}
+      * @throws ClassNotFoundException 类不存在时抛出
+     */
     Class<?> resolve(String className) throws ClassNotFoundException;
 
 }

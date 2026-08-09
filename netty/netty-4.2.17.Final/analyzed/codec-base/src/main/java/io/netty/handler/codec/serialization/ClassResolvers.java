@@ -22,36 +22,35 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Factory methods for creating {@link ClassResolver} instances.
+ * 创建 {@link ClassResolver} 实例的工厂方法集合。
  * <p>
- * <strong>Security:</strong> serialization can be a security liability,
- * and should not be used without defining a list of classes that are
- * allowed to be desirialized. Such a list can be specified with the
- * <tt>jdk.serialFilter</tt> system property, for instance.
- * See the <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
- * serialization filtering</a> article for more information.
+ * <strong>安全提示：</strong>Java 序列化存在安全风险，使用前应通过
+ * {@code jdk.serialFilter} 等机制限制允许反序列化的类。
+ * 详见 <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
+ * serialization filtering</a>。
  *
- * @deprecated This class has been deprecated with no replacement,
- * because serialization can be a security liability
+ * @deprecated 因序列化存在安全风险，本类已弃用且无替代方案
  */
 @Deprecated
 public final class ClassResolvers {
 
     /**
-     * cache disabled
-     * @param classLoader - specific classLoader to use, or null if you want to revert to default
-     * @return new instance of class resolver
+     * 创建禁用缓存的解析器。
+     *
+      * @param classLoader 指定类加载器；为 {@code null} 时使用默认类加载器
+     * @return 新的 {@link ClassResolver} 实例
      */
     public static ClassResolver cacheDisabled(ClassLoader classLoader) {
         return new ClassLoaderClassResolver(defaultClassLoader(classLoader));
     }
 
     /**
-     * non-aggressive non-concurrent cache
-     * good for non-shared default cache
+     * 创建非激进、非并发的弱引用缓存解析器。
+     * <p>
+     * 适用于非共享的默认缓存场景。
      *
-     * @param classLoader - specific classLoader to use, or null if you want to revert to default
-     * @return new instance of class resolver
+      * @param classLoader 指定类加载器；为 {@code null} 时使用默认类加载器
+     * @return 新的 {@link ClassResolver} 实例
      */
     public static ClassResolver weakCachingResolver(ClassLoader classLoader) {
         return new CachingClassResolver(
@@ -60,11 +59,12 @@ public final class ClassResolvers {
     }
 
     /**
-     * aggressive non-concurrent cache
-     * good for non-shared cache, when we're not worried about class unloading
+     * 创建非激进、非并发的软引用缓存解析器。
+     * <p>
+     * 适用于非共享缓存且不担心类卸载的场景。
      *
-     * @param classLoader - specific classLoader to use, or null if you want to revert to default
-     * @return new instance of class resolver
+      * @param classLoader 指定类加载器；为 {@code null} 时使用默认类加载器
+     * @return 新的 {@link ClassResolver} 实例
      */
     public static ClassResolver softCachingResolver(ClassLoader classLoader) {
         return new CachingClassResolver(
@@ -73,11 +73,12 @@ public final class ClassResolvers {
     }
 
     /**
-     * non-aggressive concurrent cache
-     * good for shared cache, when we're worried about class unloading
+     * 创建非激进、并发的弱引用缓存解析器。
+     * <p>
+     * 适用于共享缓存且需考虑类卸载的场景。
      *
-     * @param classLoader - specific classLoader to use, or null if you want to revert to default
-     * @return new instance of class resolver
+      * @param classLoader 指定类加载器；为 {@code null} 时使用默认类加载器
+     * @return 新的 {@link ClassResolver} 实例
      */
     public static ClassResolver weakCachingConcurrentResolver(ClassLoader classLoader) {
         return new CachingClassResolver(
@@ -86,11 +87,12 @@ public final class ClassResolvers {
     }
 
     /**
-     * aggressive concurrent cache
-     * good for shared cache, when we're not worried about class unloading
+     * 创建激进、并发的软引用缓存解析器。
+     * <p>
+     * 适用于共享缓存且不担心类卸载的场景。
      *
-     * @param classLoader - specific classLoader to use, or null if you want to revert to default
-     * @return new instance of class resolver
+      * @param classLoader 指定类加载器；为 {@code null} 时使用默认类加载器
+     * @return 新的 {@link ClassResolver} 实例
      */
     public static ClassResolver softCachingConcurrentResolver(ClassLoader classLoader) {
         return new CachingClassResolver(
@@ -98,6 +100,8 @@ public final class ClassResolvers {
                 new SoftReferenceMap<String, Class<?>>(new ConcurrentHashMap<>()));
     }
 
+    /** 解析实际使用的类加载器：优先入参，其次线程上下文类加载器，最后本类所在加载器。 */
+    /** 解析实际使用的类加载器：优先入参，其次线程上下文类加载器，最后本类所在加载器。 */
     static ClassLoader defaultClassLoader(ClassLoader classLoader) {
         if (classLoader != null) {
             return classLoader;

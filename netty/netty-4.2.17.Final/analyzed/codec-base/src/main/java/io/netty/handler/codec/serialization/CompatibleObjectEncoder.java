@@ -28,42 +28,39 @@ import java.io.OutputStream;
 import java.io.Serializable;
 
 /**
- * An encoder which serializes a Java object into a {@link ByteBuf}
- * (interoperability version).
+ * 将 Java 对象序列化为 {@link ByteBuf} 的编码器（与标准 JDK 对象流互操作）。
  * <p>
- * This encoder is interoperable with the standard Java object streams such as
- * {@link ObjectInputStream} and {@link ObjectOutputStream}.
+ * 本编码器与标准 {@link ObjectInputStream}、{@link ObjectOutputStream} 格式兼容。
  * <p>
- * <strong>Security:</strong> serialization can be a security liability,
- * and should not be used without defining a list of classes that are
- * allowed to be desirialized. Such a list can be specified with the
- * <tt>jdk.serialFilter</tt> system property, for instance.
- * See the <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
- * serialization filtering</a> article for more information.
+ * <strong>安全提示：</strong>Java 序列化存在安全风险，使用前应通过
+ * {@code jdk.serialFilter} 等机制限制允许反序列化的类。
+ * 详见 <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
+ * serialization filtering</a>。
  *
- * @deprecated This class has been deprecated with no replacement,
- * because serialization can be a security liability
+ * @deprecated 因序列化存在安全风险，本类已弃用且无替代方案
  */
 @Deprecated
 public class CompatibleObjectEncoder extends MessageToByteEncoder<Serializable> {
+    /** 每隔多少个对象调用一次 {@link ObjectOutputStream#reset()}。 */
+    /** 每隔多少个对象调用一次 {@link ObjectOutputStream#reset()}。 */
     private final int resetInterval;
+    /** 已写入对象计数，用于触发 reset。 */
+    /** 已写入对象计数，用于触发 reset。 */
     private int writtenObjects;
 
     /**
-     * Creates a new instance with the reset interval of {@code 16}.
+     * 创建实例，reset 间隔默认为 {@code 16}。
      */
     public CompatibleObjectEncoder() {
         this(16); // Reset at every sixteen writes
     }
 
     /**
-     * Creates a new instance.
+     * 创建实例。
      *
      * @param resetInterval
-     *        the number of objects between {@link ObjectOutputStream#reset()}.
-     *        {@code 0} will disable resetting the stream, but the remote
-     *        peer will be at the risk of getting {@link OutOfMemoryError} in
-     *        the long term.
+     *        两次 {@link ObjectOutputStream#reset()} 之间写入的对象个数。
+     *        为 {@code 0} 时禁用 reset，对端长期运行可能因重复类描述符积累而 {@link OutOfMemoryError}。
      */
     public CompatibleObjectEncoder(int resetInterval) {
         super(Serializable.class);
@@ -71,9 +68,8 @@ public class CompatibleObjectEncoder extends MessageToByteEncoder<Serializable> 
     }
 
     /**
-     * Creates a new {@link ObjectOutputStream} which wraps the specified
-     * {@link OutputStream}.  Override this method to use a subclass of the
-     * {@link ObjectOutputStream}.
+     * 创建包装指定 {@link OutputStream} 的 {@link ObjectOutputStream}。
+     * 子类可覆写以返回自定义 {@link ObjectOutputStream} 子类。
      */
     protected ObjectOutputStream newObjectOutputStream(OutputStream out) throws Exception {
         return new ObjectOutputStream(out);
@@ -86,7 +82,7 @@ public class CompatibleObjectEncoder extends MessageToByteEncoder<Serializable> 
                 new ByteBufOutputStream(out));
         try {
             if (resetInterval != 0) {
-                // Resetting will prevent OOM on the receiving side.
+                // 定期 reset 防止对端 OOM
                 writtenObjects ++;
                 if (writtenObjects % resetInterval == 0) {
                     oos.reset();

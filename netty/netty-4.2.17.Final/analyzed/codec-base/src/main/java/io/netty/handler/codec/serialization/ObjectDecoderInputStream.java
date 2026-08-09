@@ -25,80 +25,72 @@ import java.io.ObjectInput;
 import java.io.StreamCorruptedException;
 
 /**
- * An {@link ObjectInput} which is interoperable with {@link ObjectEncoder}
- * and {@link ObjectEncoderOutputStream}.
+ * 与 {@link ObjectEncoder}、{@link ObjectEncoderOutputStream} 互操作的 {@link ObjectInput} 实现。
  * <p>
- * <strong>Security:</strong> serialization can be a security liability,
- * and should not be used without defining a list of classes that are
- * allowed to be desirialized. Such a list can be specified with the
- * <tt>jdk.serialFilter</tt> system property, for instance.
- * See the <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
- * serialization filtering</a> article for more information.
+ * <strong>安全提示：</strong>Java 序列化存在安全风险，使用前应通过
+ * {@code jdk.serialFilter} 等机制限制允许反序列化的类。
+ * 详见 <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
+ * serialization filtering</a>。
  *
- * @deprecated This class has been deprecated with no replacement,
- * because serialization can be a security liability
+ * @deprecated 因序列化存在安全风险，本类已弃用且无替代方案
  */
 @Deprecated
 public class ObjectDecoderInputStream extends InputStream implements
         ObjectInput {
 
+    /** 底层数据输入流。 */
+    /** 底层数据输入流。 */
     private final DataInputStream in;
+    /** 允许读取的单个对象最大字节数。 */
+    /** 允许读取的单个对象最大字节数。 */
     private final int maxObjectSize;
+    /** 类名解析器。 */
+    /** 类名解析器。 */
     private final ClassResolver classResolver;
 
     /**
-     * Creates a new {@link ObjectInput}.
+     * 创建 {@link ObjectInput}，使用默认类加载器与 1 MB 对象大小上限。
      *
      * @param in
-     *        the {@link InputStream} where the serialized form will be
-     *        read from
+     *        读取序列化数据的 {@link InputStream}
      */
     public ObjectDecoderInputStream(InputStream in) {
         this(in, null);
     }
 
     /**
-     * Creates a new {@link ObjectInput}.
+     * 创建 {@link ObjectInput}，对象大小上限为 1 MB。
      *
      * @param in
-     *        the {@link InputStream} where the serialized form will be
-     *        read from
+     *        读取序列化数据的 {@link InputStream}
      * @param classLoader
-     *        the {@link ClassLoader} which will load the class of the
-     *        serialized object
+     *        加载序列化对象类的 {@link ClassLoader}
      */
     public ObjectDecoderInputStream(InputStream in, ClassLoader classLoader) {
         this(in, classLoader, 1048576);
     }
 
     /**
-     * Creates a new {@link ObjectInput}.
+     * 创建 {@link ObjectInput}，使用默认类加载器。
      *
      * @param in
-     *        the {@link InputStream} where the serialized form will be
-     *        read from
+     *        读取序列化数据的 {@link InputStream}
      * @param maxObjectSize
-     *        the maximum byte length of the serialized object.  if the length
-     *        of the received object is greater than this value,
-     *        a {@link StreamCorruptedException} will be raised.
+     *        单个序列化对象允许的最大字节长度；超出时抛出 {@link StreamCorruptedException}
      */
     public ObjectDecoderInputStream(InputStream in, int maxObjectSize) {
         this(in, null, maxObjectSize);
     }
 
     /**
-     * Creates a new {@link ObjectInput}.
+     * 创建 {@link ObjectInput}。
      *
      * @param in
-     *        the {@link InputStream} where the serialized form will be
-     *        read from
+     *        读取序列化数据的 {@link InputStream}
      * @param classLoader
-     *        the {@link ClassLoader} which will load the class of the
-     *        serialized object
+     *        加载序列化对象类的 {@link ClassLoader}
      * @param maxObjectSize
-     *        the maximum byte length of the serialized object.  if the length
-     *        of the received object is greater than this value,
-     *        a {@link StreamCorruptedException} will be raised.
+     *        单个序列化对象允许的最大字节长度；超出时抛出 {@link StreamCorruptedException}
      */
     public ObjectDecoderInputStream(InputStream in, ClassLoader classLoader, int maxObjectSize) {
         ObjectUtil.checkNotNull(in, "in");
@@ -137,7 +129,7 @@ public class ObjectDecoderInputStream extends InputStream implements
         in.close();
     }
 
-    // Suppress a warning since the class is not thread-safe
+    // 类非线程安全，抑制警告
     @Override
     public void mark(int readlimit) {
         in.mark(readlimit);
@@ -148,7 +140,7 @@ public class ObjectDecoderInputStream extends InputStream implements
         return in.markSupported();
     }
 
-    // Suppress a warning since the class is not thread-safe
+    // 类非线程安全，抑制警告
     @Override
     public int read() throws IOException {
         return in.read();

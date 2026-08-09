@@ -22,8 +22,15 @@ import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 import java.io.StreamCorruptedException;
 
+/**
+ * 精简版 {@link ObjectInputStream}，配合 {@link CompactObjectOutputStream} 使用。
+ * <p>
+ * 支持“瘦”类描述符（仅类名），并通过 {@link ClassResolver} 加载类。
+ */
 class CompactObjectInputStream extends ObjectInputStream {
 
+    /** 反序列化时解析类名的解析器。 */
+    /** 反序列化时解析类名的解析器。 */
     private final ClassResolver classResolver;
 
     CompactObjectInputStream(InputStream in, ClassResolver classResolver) throws IOException {
@@ -49,8 +56,10 @@ class CompactObjectInputStream extends ObjectInputStream {
         }
         switch (type) {
         case CompactObjectOutputStream.TYPE_FAT_DESCRIPTOR:
+            // 完整类描述符，走标准 JDK 格式
             return super.readClassDescriptor();
         case CompactObjectOutputStream.TYPE_THIN_DESCRIPTOR:
+            // 瘦描述符：仅类名，由 ClassResolver 解析
             String className = readUTF();
             Class<?> clazz = classResolver.resolve(className);
             return ObjectStreamClass.lookupAny(clazz);
@@ -66,6 +75,7 @@ class CompactObjectInputStream extends ObjectInputStream {
         try {
             clazz = classResolver.resolve(desc.getName());
         } catch (ClassNotFoundException ignored) {
+            // 自定义解析失败时回退到 JDK 默认逻辑
             clazz = super.resolveClass(desc);
         }
 

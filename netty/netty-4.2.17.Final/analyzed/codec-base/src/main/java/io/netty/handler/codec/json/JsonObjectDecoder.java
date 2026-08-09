@@ -29,36 +29,57 @@ import io.netty.channel.ChannelPipeline;
 import java.util.List;
 
 /**
- * Splits a byte stream of JSON objects and arrays into individual objects/arrays and passes them up the
- * {@link ChannelPipeline}.
+ * 将 JSON 对象/数组字节流按顶层边界切分，逐个向上游 {@link ChannelPipeline} 传递。
  * <p>
- * The byte stream is expected to be in UTF-8 character encoding or ASCII. The current implementation
- * uses direct {@code byte} to {@code char} cast and then compares that {@code char} to a few low range
- * ASCII characters like {@code '{'}, {@code '['} or {@code '"'}. UTF-8 is not using low range [0..0x7F]
- * byte values for multibyte codepoint representations therefore fully supported by this implementation.
+ * 输入流应为 UTF-8 或 ASCII。实现通过 {@code byte} 到 {@code char} 的直接转换，
+ * 并与 {@code '{'}、{@code '['}、{@code '"'} 等低范围 ASCII 比较；
+ * UTF-8 多字节码点不使用 [0..0x7F] 范围，因此本实现完全支持 UTF-8。
  * <p>
- * This class does not do any real parsing or validation. A sequence of bytes is considered a JSON object/array
- * if it contains a matching number of opening and closing braces/brackets. It's up to a subsequent
- * {@link ChannelHandler} to parse the JSON text into a more usable form i.e. a POJO.
+ * 本类不做完整 JSON 解析或校验：仅当开闭括号/方括号数量匹配时即视为一个 JSON 对象/数组。
+ * 后续 {@link io.netty.channel.ChannelHandler} 负责将 JSON 文本解析为 POJO 等可用形式。
  */
 public class JsonObjectDecoder extends ByteToMessageDecoder {
 
+    /** 状态：流已损坏，丢弃后续输入。 */
+    /** 状态：流已损坏，丢弃后续输入。 */
     private static final int ST_CORRUPTED = -1;
+    /** 状态：初始，等待 JSON 起始符。 */
+    /** 状态：初始，等待 JSON 起始符。 */
     private static final int ST_INIT = 0;
+    /** 状态：正常解码单个 JSON 对象/数组。 */
+    /** 状态：正常解码单个 JSON 对象/数组。 */
     private static final int ST_DECODING_NORMAL = 1;
+    /** 状态：流式解码 JSON 数组元素。 */
+    /** 状态：流式解码 JSON 数组元素。 */
     private static final int ST_DECODING_ARRAY_STREAM = 2;
 
+    /** 未闭合的括号/方括号计数。 */
+    /** 未闭合的括号/方括号计数。 */
     private int openBraces;
+    /** 当前扫描到的字节索引。 */
+    /** 当前扫描到的字节索引。 */
     private int idx;
 
+    /** 上次 {@link ByteBuf#readerIndex()}，用于缓冲区压缩后校正 idx。 */
+    /** 上次 {@link ByteBuf#readerIndex()}，用于缓冲区压缩后校正 idx。 */
     private int lastReaderIndex;
 
+    /** 当前解码状态。 */
+    /** 当前解码状态。 */
     private int state;
+    /** 是否处于 JSON 字符串内部。 */
+    /** 是否处于 JSON 字符串内部。 */
     private boolean insideString;
 
+    /** 单个 JSON 对象/数组允许的最大字节数（含括号等）。 */
+    /** 单个 JSON 对象/数组允许的最大字节数（含括号等）。 */
     private final int maxObjectLength;
+    /** 顶层为数组时是否逐元素流式输出。 */
+    /** 顶层为数组时是否逐元素流式输出。 */
     private final boolean streamArrayElements;
 
+    /** 默认最大对象长度 1 MB。 */
+    /** 默认最大对象长度 1 MB。 */
     public JsonObjectDecoder() {
         // 1 MB
         this(1024 * 1024);
@@ -73,12 +94,10 @@ public class JsonObjectDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * @param maxObjectLength   maximum number of bytes a JSON object/array may use (including braces and all).
-     *                             Objects exceeding this length are dropped and an {@link TooLongFrameException}
-     *                             is thrown.
-     * @param streamArrayElements   if set to true and the "top level" JSON object is an array, each of its entries
-     *                                  is passed through the pipeline individually and immediately after it was fully
-     *                                  received, allowing for arrays with "infinitely" many elements.
+      * @param maxObjectLength   单个 JSON 对象/数组允许的最大字节数（含括号等）。
+     *                             超出则丢弃并抛出 {@link TooLongFrameException}。
+      * @param streamArrayElements   为 {@code true} 且顶层为数组时，每收完一个元素立即向上游传递，
+     *                                  可处理“无限长”数组。
      *
      */
     public JsonObjectDecoder(int maxObjectLength, boolean streamArrayElements) {
@@ -97,12 +116,12 @@ public class JsonObjectDecoder extends ByteToMessageDecoder {
             this.idx = in.readerIndex() + (idx - lastReaderIndex);
         }
 
-        // index of next byte to process.
+        // 待处理的下一个字节索引
         int idx = this.idx;
         int wrtIdx = in.writerIndex();
 
         if (wrtIdx > maxObjectLength) {
-            // buffer size exceeded maxObjectLength; discarding the complete buffer.
+            // 缓冲区总长度超限，丢弃并复位
             in.skipBytes(in.readableBytes());
             reset();
             throw new TooLongFrameException(
@@ -114,32 +133,28 @@ public class JsonObjectDecoder extends ByteToMessageDecoder {
             if (state == ST_DECODING_NORMAL) {
                 decodeByte(c, in, idx);
 
-                // All opening braces/brackets have been closed. That's enough to conclude
-                // that the JSON object/array is complete.
+                // 所有括号已闭合，视为一个完整 JSON 对象/数组
                 if (openBraces == 0) {
                     ByteBuf json = extractObject(ctx, in, in.readerIndex(), idx + 1 - in.readerIndex());
                     if (json != null) {
                         out.add(json);
                     }
 
-                    // The JSON object/array was extracted => discard the bytes from
-                    // the input buffer.
+                    // 已提取，丢弃已消费字节
                     in.readerIndex(idx + 1);
-                    // Reset the object state to get ready for the next JSON object/text
-                    // coming along the byte stream.
+                    // 复位状态，准备下一个 JSON
                     reset();
                 }
             } else if (state == ST_DECODING_ARRAY_STREAM) {
                 decodeByte(c, in, idx);
 
                 if (!insideString && (openBraces == 1 && c == ',' || openBraces == 0 && c == ']')) {
-                    // skip leading spaces. No range check is needed and the loop will terminate
-                    // because the byte at position idx is not a whitespace.
+                    // 跳过元素前导空白
                     for (int i = in.readerIndex(); Character.isWhitespace(in.getByte(i)); i++) {
                         in.skipBytes(1);
                     }
 
-                    // skip trailing spaces.
+                    // 跳过元素尾部空白
                     int idxNoSpaces = idx - 1;
                     while (idxNoSpaces >= in.readerIndex() && Character.isWhitespace(in.getByte(idxNoSpaces))) {
                         idxNoSpaces--;
@@ -156,15 +171,15 @@ public class JsonObjectDecoder extends ByteToMessageDecoder {
                         reset();
                     }
                 }
-            // JSON object/array detected. Accumulate bytes until all braces/brackets are closed.
+            // 检测到 JSON 对象/数组起始，开始累积
             } else if (c == '{' || c == '[') {
                 initDecoding(c);
 
                 if (state == ST_DECODING_ARRAY_STREAM) {
-                    // Discard the array bracket
+                    // 流式模式下丢弃数组开括号
                     in.skipBytes(1);
                 }
-            // Discard leading spaces in front of a JSON object/array.
+            // 跳过 JSON 前的空白
             } else if (Character.isWhitespace(c)) {
                 in.skipBytes(1);
             } else {
@@ -183,7 +198,7 @@ public class JsonObjectDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Override this method if you want to filter the json objects/arrays that get passed through the pipeline.
+     * 子类可覆写以过滤向上游传递的 JSON 对象/数组。
      */
     @SuppressWarnings("UnusedParameters")
     protected ByteBuf extractObject(ChannelHandlerContext ctx, ByteBuf buffer, int index, int length) {
@@ -196,8 +211,7 @@ public class JsonObjectDecoder extends ByteToMessageDecoder {
         } else if ((c == '}' || c == ']') && !insideString) {
             openBraces--;
         } else if (c == '"') {
-            // start of a new JSON string. It's necessary to detect strings as they may
-            // also contain braces/brackets and that could lead to incorrect results.
+            // 进入或退出 JSON 字符串；字符串内的括号不计入 openBraces
             if (!insideString) {
                 insideString = true;
             } else {
@@ -211,9 +225,9 @@ public class JsonObjectDecoder extends ByteToMessageDecoder {
                         break;
                     }
                 }
-                // The double quote isn't escaped only if there are even "\"s.
+                // 反斜杠数量为偶数时，该双引号未转义，字符串结束
                 if (backslashCount % 2 == 0) {
-                    // Since the double quote isn't escaped then this is the end of a string.
+                    // 字符串结束
                     insideString = false;
                 }
             }

@@ -25,50 +25,41 @@ import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
 
 /**
- * A decoder which deserializes the received {@link ByteBuf}s into Java
- * objects.
+ * 将收到的 {@link ByteBuf} 反序列化为 Java 对象的解码器。
  * <p>
- * Please note that the serialized form this decoder expects is not
- * compatible with the standard {@link ObjectOutputStream}.  Please use
- * {@link ObjectEncoder} or {@link ObjectEncoderOutputStream} to ensure the
- * interoperability with this decoder.
+ * 本解码器期望的序列化格式与标准 {@link ObjectOutputStream} 不兼容。
+ * 请配合 {@link ObjectEncoder} 或 {@link ObjectEncoderOutputStream} 使用。
  * <p>
- * <strong>Security:</strong> serialization can be a security liability,
- * and should not be used without defining a list of classes that are
- * allowed to be desirialized. Such a list can be specified with the
- * <tt>jdk.serialFilter</tt> system property, for instance.
- * See the <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
- * serialization filtering</a> article for more information.
+ * <strong>安全提示：</strong>Java 序列化存在安全风险，使用前应通过
+ * {@code jdk.serialFilter} 等机制限制允许反序列化的类。
+ * 详见 <a href="https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html">
+ * serialization filtering</a>。
  *
- * @deprecated This class has been deprecated with no replacement,
- * because serialization can be a security liability
+ * @deprecated 因序列化存在安全风险，本类已弃用且无替代方案
  */
 @Deprecated
 public class ObjectDecoder extends LengthFieldBasedFrameDecoder {
 
+    /** 反序列化时解析类名的解析器。 */
+    /** 反序列化时解析类名的解析器。 */
     private final ClassResolver classResolver;
 
     /**
-     * Creates a new decoder whose maximum object size is {@code 1048576}
-     * bytes.  If the size of the received object is greater than
-     * {@code 1048576} bytes, a {@link StreamCorruptedException} will be
-     * raised.
+     * 创建解码器，单对象最大字节数为 {@code 1048576}（1 MB）。
+     * 超出时抛出 {@link StreamCorruptedException}。
      *
-     * @param classResolver  the {@link ClassResolver} to use for this decoder
+      * @param classResolver 本解码器使用的 {@link ClassResolver}
      */
     public ObjectDecoder(ClassResolver classResolver) {
         this(1048576, classResolver);
     }
 
     /**
-     * Creates a new decoder with the specified maximum object size.
+     * 创建指定最大对象大小的解码器。
      *
-     * @param maxObjectSize  the maximum byte length of the serialized object.
-     *                       if the length of the received object is greater
-     *                       than this value, {@link StreamCorruptedException}
-     *                       will be raised.
-     * @param classResolver    the {@link ClassResolver} which will load the class
-     *                       of the serialized object
+      * @param maxObjectSize  序列化对象允许的最大字节长度；
+     *                       超出时抛出 {@link StreamCorruptedException}
+      * @param classResolver    加载序列化对象类的 {@link ClassResolver}
      */
     public ObjectDecoder(int maxObjectSize, ClassResolver classResolver) {
         super(maxObjectSize, 0, 4, 0, 4);

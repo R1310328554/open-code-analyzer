@@ -15,10 +15,18 @@
  */
 package io.netty.handler.codec.serialization;
 
+/**
+ * 基于指定 {@link ClassLoader} 的 {@link ClassResolver} 实现。
+ */
 class ClassLoaderClassResolver implements ClassResolver {
 
+    /** 用于加载类的类加载器。 */
+    /** 用于加载类的类加载器。 */
     private final ClassLoader classLoader;
 
+    /**
+      * @param classLoader 加载反序列化类时使用的类加载器
+     */
     ClassLoaderClassResolver(ClassLoader classLoader) {
         this.classLoader = classLoader;
     }
@@ -28,6 +36,7 @@ class ClassLoaderClassResolver implements ClassResolver {
         try {
             return classLoader.loadClass(className);
         } catch (ClassNotFoundException ignored) {
+            // loadClass 失败时回退到 Class.forName
             return Class.forName(className, false, classLoader);
         }
     }

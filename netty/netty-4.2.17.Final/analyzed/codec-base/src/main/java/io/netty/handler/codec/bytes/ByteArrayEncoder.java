@@ -27,8 +27,9 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import java.util.List;
 
 /**
- * Encodes the requested array of bytes into a {@link ByteBuf}.
- * A typical setup for TCP/IP would be:
+ * 将 {@code byte[]} 编码为 {@link ByteBuf}。
+ * <p>
+ * TCP/IP 场景下的典型管线配置：
  * <pre>
  * {@link ChannelPipeline} pipeline = ...;
  *
@@ -42,8 +43,7 @@ import java.util.List;
  * pipeline.addLast("frameEncoder", new {@link LengthFieldPrepender}(4));
  * pipeline.addLast("bytesEncoder", new {@link ByteArrayEncoder}());
  * </pre>
- * and then you can use an array of bytes instead of a {@link ByteBuf}
- * as a message:
+ * 配置完成后，业务层可直接以 {@code byte[]} 作为消息类型：
  * <pre>
  * void channelRead({@link ChannelHandlerContext} ctx, byte[] bytes) {
  *     ...
@@ -52,12 +52,15 @@ import java.util.List;
  */
 @Sharable
 public class ByteArrayEncoder extends MessageToMessageEncoder<byte[]> {
+    /** 创建编码器，出站消息类型为 {@code byte[]}。 */
+    /** 创建编码器，出站消息类型为 {@code byte[]}。 */
     public ByteArrayEncoder() {
         super(byte[].class);
     }
 
     @Override
     protected void encode(ChannelHandlerContext ctx, byte[] msg, List<Object> out) throws Exception {
+        // 零拷贝包装为 ByteBuf，不复制底层数组
         out.add(Unpooled.wrappedBuffer(msg));
     }
 }
