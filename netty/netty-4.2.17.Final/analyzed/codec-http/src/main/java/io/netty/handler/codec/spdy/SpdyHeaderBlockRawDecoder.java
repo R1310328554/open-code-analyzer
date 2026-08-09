@@ -23,21 +23,29 @@ import java.nio.charset.StandardCharsets;
 
 import static io.netty.handler.codec.spdy.SpdyCodecUtil.getSignedInt;
 
+/**
+ * SPDY 明文头部块解码器：按「头部数 → 名长度 → 名 → 值长度 → 值」格式逐字段解析。
+ * <p>支持跨 {@link ByteBuf} 分包累积（{@code cumulation}）；超长头部标记 truncated，非法格式标记 invalid。
+ */
 public class SpdyHeaderBlockRawDecoder extends SpdyHeaderBlockDecoder {
 
     private static final int LENGTH_FIELD_SIZE = 4;
 
+    /** 单个头部块允许的最大字节数 */
     private final int maxHeaderSize;
 
     private State state;
 
+    /** 跨调用累积未读完的头部块片段 */
     private ByteBuf cumulation;
 
+    /** 当前已计入的头部总字节数（防压缩炸弹） */
     private int headerSize;
     private int numHeaders;
     private int length;
     private String name;
 
+    /** 明文头部块解析状态机 */
     private enum State {
         READ_NUM_HEADERS,
         READ_NAME_LENGTH,

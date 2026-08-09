@@ -25,6 +25,10 @@ import java.util.Set;
 
 import static io.netty.handler.codec.spdy.SpdyCodecUtil.SPDY_MAX_NV_LENGTH;
 
+/**
+ * SPDY 明文头部块编码器：将 {@link SpdyHeadersFrame} 序列化为 SPDY/3 二进制格式
+ * （4 字节头部数 + 各 Name/Value 的长度前缀与 ASCII 内容；多值以 NUL 分隔）。
+ */
 public class SpdyHeaderBlockRawEncoder extends SpdyHeaderBlockEncoder {
 
     private final int version;

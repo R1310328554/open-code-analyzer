@@ -25,19 +25,22 @@ import java.util.Set;
 import static io.netty.handler.codec.spdy.SpdyCodecUtil.*;
 
 /**
- * Encodes a SPDY Frame into a {@link ByteBuf}.
+ * 将各类 SPDY 帧对象编码为网络字节序的 {@link ByteBuf}。
+ * <p>控制帧通过 {@link #writeControlFrameHeader} 写入版本+类型+标志+24 位长度；
+ * DATA 帧使用独立的 8 字节头（Stream-ID + 标志 + 长度）。
  */
 public class SpdyFrameEncoder {
 
     private final int version;
 
     /**
-     * Creates a new instance with the specified {@code spdyVersion}.
+     * 使用指定 {@code spdyVersion} 创建编码器。
      */
     public SpdyFrameEncoder(SpdyVersion spdyVersion) {
         version = ObjectUtil.checkNotNull(spdyVersion, "spdyVersion").version();
     }
 
+    /** 写入 SPDY 控制帧公共头（版本最高位置 1） */
     protected void writeControlFrameHeader(ByteBuf buffer, int type, byte flags, int length) {
         buffer.writeShort(version | 0x8000);
         buffer.writeShort(type);

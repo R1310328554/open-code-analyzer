@@ -25,10 +25,15 @@ import io.netty.handler.codec.compression.CompressionException;
 import static io.netty.handler.codec.spdy.SpdyCodecUtil.*;
 import static io.netty.util.internal.ObjectUtil.checkNotNullWithIAE;
 
+/**
+ * 基于 JZlib 的 SPDY 头部块编码器：先由 {@link SpdyHeaderBlockRawEncoder} 生成明文块，
+ * 再用带 {@link SpdyCodecUtil#SPDY_DICT SPDY 预设字典} 的 Deflater 压缩。
+ */
 class SpdyHeaderBlockJZlibEncoder extends SpdyHeaderBlockRawEncoder {
 
     private final Deflater z = new Deflater();
 
+    /** 压缩器已 end，后续 encode 返回空 buffer */
     private boolean finished;
 
     SpdyHeaderBlockJZlibEncoder(
@@ -61,6 +66,7 @@ class SpdyHeaderBlockJZlibEncoder extends SpdyHeaderBlockRawEncoder {
         }
     }
 
+    /** 将明文头部块写入 JZlib 输入缓冲 */
     private void setInput(ByteBuf decompressed) {
         int len = decompressed.readableBytes();
 
@@ -79,6 +85,7 @@ class SpdyHeaderBlockJZlibEncoder extends SpdyHeaderBlockRawEncoder {
         z.avail_in = len;
     }
 
+    /** 执行 Z_SYNC_FLUSH 压缩并返回输出 ByteBuf */
     private ByteBuf encode(ByteBufAllocator alloc) {
         boolean release = true;
         ByteBuf out = null;

@@ -20,42 +20,66 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * SPDY 编解码内部工具类：帧头布局常量、帧类型/标志位、Zlib 预设字典及字节序读取/头部校验。
+ * <p>SPDY/3 帧头固定 8 字节；控制帧最高位为 1，数据帧最高位为 0。
+ */
 final class SpdyCodecUtil {
 
+    /** 会话级流 ID（0 表示非特定流，如 SETTINGS/PING） */
     static final int SPDY_SESSION_STREAM_ID = 0;
 
+    /** 控制帧类型字段在帧头中的字节偏移 */
     static final int SPDY_HEADER_TYPE_OFFSET   = 2;
+    /** 标志位字段偏移 */
     static final int SPDY_HEADER_FLAGS_OFFSET  = 4;
+    /** 24 位长度字段偏移 */
     static final int SPDY_HEADER_LENGTH_OFFSET = 5;
+    /** SPDY 帧头总长度（字节） */
     static final int SPDY_HEADER_SIZE          = 8;
 
     static final int SPDY_MAX_LENGTH = 0xFFFFFF; // Length is a 24-bit field
 
+    /** DATA 帧 FIN 标志：本帧为该流最后一段数据 */
     static final byte SPDY_DATA_FLAG_FIN = 0x01;
 
+    /** 帧类型：携带请求/响应体的 DATA 帧 */
     static final int SPDY_DATA_FRAME          = 0;
+    /** 客户端发起新流（等价 HTTP 请求） */
     static final int SPDY_SYN_STREAM_FRAME    = 1;
+    /** 服务端响应头部（等价 HTTP 响应行+头） */
     static final int SPDY_SYN_REPLY_FRAME     = 2;
+    /** 异常终止单条流 */
     static final int SPDY_RST_STREAM_FRAME    = 3;
+    /** 会话参数协商（窗口大小等） */
     static final int SPDY_SETTINGS_FRAME      = 4;
     static final int SPDY_PUSH_PROMISE_FRAME  = 5;
+    /** 心跳/RTT 测量 */
     static final int SPDY_PING_FRAME          = 6;
+    /** 优雅关闭整个 SPDY 会话 */
     static final int SPDY_GOAWAY_FRAME        = 7;
+    /** 在已存在流上追加头部（如 trailer） */
     static final int SPDY_HEADERS_FRAME       = 8;
+    /** 流控窗口增量更新 */
     static final int SPDY_WINDOW_UPDATE_FRAME = 9;
 
+    /** 控制帧 FIN：头部块或流结束 */
     static final byte SPDY_FLAG_FIN            = 0x01;
+    /** SYN_STREAM 单向流标志（如 server push，仅接收数据） */
     static final byte SPDY_FLAG_UNIDIRECTIONAL = 0x02;
 
+    /** SETTINGS 清除已持久化项 */
     static final byte SPDY_SETTINGS_CLEAR         = 0x01;
+    /** 要求对端持久化该设置值 */
     static final byte SPDY_SETTINGS_PERSIST_VALUE = 0x01;
+    /** 该设置已由对端持久化 */
     static final byte SPDY_SETTINGS_PERSISTED     = 0x02;
 
     static final int SPDY_SETTINGS_MAX_ID = 0xFFFFFF; // ID is a 24-bit field
 
     static final int SPDY_MAX_NV_LENGTH = 0xFFFF; // Length is a 16-bit field
 
-    // Zlib Dictionary
+    // Zlib Dictionary — SPDY 规范预置 HTTP 头名字/值，提升头部压缩率
     static final byte[] SPDY_DICT = {
         0x00, 0x00, 0x00, 0x07, 0x6f, 0x70, 0x74, 0x69,   // - - - - o p t i
         0x6f, 0x6e, 0x73, 0x00, 0x00, 0x00, 0x04, 0x68,   // o n s - - - - h
@@ -241,7 +265,7 @@ final class SpdyCodecUtil {
     }
 
     /**
-     * Reads a big-endian unsigned short integer from the buffer.
+     * 从 {@link ByteBuf} 指定偏移处读取大端无符号 16 位整数。
      */
     static int getUnsignedShort(ByteBuf buf, int offset) {
         return (buf.getByte(offset)     & 0xFF) << 8 |
@@ -249,7 +273,7 @@ final class SpdyCodecUtil {
     }
 
     /**
-     * Reads a big-endian unsigned medium integer from the buffer.
+     * 读取大端无符号 24 位整数（SPDY 帧长度字段）。
      */
     static int getUnsignedMedium(ByteBuf buf, int offset) {
         return (buf.getByte(offset)     & 0xFF) << 16 |
@@ -258,7 +282,7 @@ final class SpdyCodecUtil {
     }
 
     /**
-     * Reads a big-endian (31-bit) integer from the buffer.
+     * 读取大端 31 位无符号整数（SPDY Stream-ID：最高位恒为 0）。
      */
     static int getUnsignedInt(ByteBuf buf, int offset) {
         return (buf.getByte(offset)     & 0x7F) << 24 |
@@ -268,7 +292,7 @@ final class SpdyCodecUtil {
     }
 
     /**
-     * Reads a big-endian signed integer from the buffer.
+     * 读取大端有符号 32 位整数（如 RST_STREAM 状态码）。
      */
     static int getSignedInt(ByteBuf buf, int offset) {
         return (buf.getByte(offset)     & 0xFF) << 24 |
@@ -278,7 +302,7 @@ final class SpdyCodecUtil {
     }
 
     /**
-     * Returns {@code true} if ID is for a server initiated stream or ping.
+     * 判断 ID 是否由服务端发起（偶数 Stream-ID / PING）。
      */
     static boolean isServerId(int id) {
         // Server initiated streams and pings have even IDs
@@ -286,7 +310,7 @@ final class SpdyCodecUtil {
     }
 
     /**
-     * Validate a SPDY header name.
+     * 校验 SPDY 头部名：非空、小写 ASCII、无 NUL、长度 ≤ {@link #SPDY_MAX_NV_LENGTH}。
      */
     static void validateHeaderName(CharSequence name) {
         checkNonEmpty(name, "name");
@@ -313,7 +337,7 @@ final class SpdyCodecUtil {
     }
 
     /**
-     * Validate a SPDY header value. Does not validate max length.
+     * 校验 SPDY 头部值：非 null、不含 NUL 字符（不校验最大长度）。
      */
     static void validateHeaderValue(CharSequence value) {
         checkNotNull(value, "value");

@@ -24,10 +24,15 @@ import java.util.zip.Deflater;
 import static io.netty.handler.codec.spdy.SpdyCodecUtil.SPDY_DICT;
 import static io.netty.util.internal.ObjectUtil.checkNotNullWithIAE;
 
+/**
+ * 基于 JDK {@link Deflater} 的 SPDY 头部块编码器：明文块由父类生成，
+ * 再使用带 {@link SpdyCodecUtil#SPDY_DICT} 预设字典的 Zlib 压缩。
+ */
 class SpdyHeaderBlockZlibEncoder extends SpdyHeaderBlockRawEncoder {
 
     private final Deflater compressor;
 
+    /** 压缩器已 end，后续 encode 返回空 buffer */
     private boolean finished;
 
     SpdyHeaderBlockZlibEncoder(SpdyVersion spdyVersion, int compressionLevel) {

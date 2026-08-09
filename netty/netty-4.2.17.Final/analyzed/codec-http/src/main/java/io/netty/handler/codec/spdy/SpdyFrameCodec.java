@@ -27,11 +27,15 @@ import java.net.SocketAddress;
 import java.util.List;
 
 /**
- * A {@link ChannelHandler} that encodes and decodes SPDY Frames.
+ * SPDY 帧双向编解码 {@link ChannelHandler}：入站 {@link ByteBuf} 解码为帧对象，
+ * 出站帧对象编码为 {@link ByteBuf}。
+ * <p>同时实现 {@link SpdyFrameDecoderDelegate}，将解码事件转为 {@code fireChannelRead}；
+ * 头部块由 {@link SpdyHeaderBlockDecoder}/{@link SpdyHeaderBlockEncoder} 处理。
  */
 public class SpdyFrameCodec extends ByteToMessageDecoder
         implements SpdyFrameDecoderDelegate, ChannelOutboundHandler {
 
+    /** 收到非法帧时向上游抛出的固定异常实例 */
     protected static final SpdyProtocolException INVALID_FRAME =
         new SpdyProtocolException("Received invalid frame");
 
@@ -40,18 +44,20 @@ public class SpdyFrameCodec extends ByteToMessageDecoder
     private final SpdyHeaderBlockDecoder spdyHeaderBlockDecoder;
     private final SpdyHeaderBlockEncoder spdyHeaderBlockEncoder;
 
+    /** 正在组装的带头部帧（SYN_STREAM/SYN_REPLY/HEADERS） */
     private SpdyHeadersFrame spdyHeadersFrame;
+    /** 正在组装的 SETTINGS 帧 */
     private SpdySettingsFrame spdySettingsFrame;
 
     private ChannelHandlerContext ctx;
+    /** 本轮 read 循环是否已产生可读消息（用于 autoRead 续读） */
     private boolean read;
     private final boolean validateHeaders;
+    /** 是否将未知帧类型透传给上层（需子类配合校验） */
     private final boolean supportsUnknownFrames;
 
     /**
-     * Creates a new instance with the specified {@code version},
-     * {@code validateHeaders (true)}, and
-     * the default decoder and encoder options
+     * 使用指定 {@code version}、默认校验头部（{@code validateHeaders=true}）及默认编解码参数创建实例
      * ({@code maxChunkSize (8192)}, {@code maxHeaderSize (16384)},
      * {@code compressionLevel (6)}, {@code windowBits (15)},
      * and {@code memLevel (8)}).
@@ -61,9 +67,7 @@ public class SpdyFrameCodec extends ByteToMessageDecoder
     }
 
     /**
-     * Creates a new instance with the specified {@code version},
-     * {@code validateHeaders}, and
-     * the default decoder and encoder options
+     * 使用指定 {@code version}、{@code validateHeaders} 及默认编解码参数创建实例
      * ({@code maxChunkSize (8192)}, {@code maxHeaderSize (16384)},
      * {@code compressionLevel (6)}, {@code windowBits (15)},
      * and {@code memLevel (8)}).
@@ -73,8 +77,7 @@ public class SpdyFrameCodec extends ByteToMessageDecoder
     }
 
     /**
-     * Creates a new instance with the specified {@code version}, {@code validateHeaders (true)},
-     * decoder and encoder options.
+     * 使用指定 {@code version}、{@code validateHeaders (true)} 及自定义编解码参数创建实例。
      */
     public SpdyFrameCodec(
             SpdyVersion version, int maxChunkSize, int maxHeaderSize,
@@ -83,8 +86,7 @@ public class SpdyFrameCodec extends ByteToMessageDecoder
     }
 
     /**
-     * Creates a new instance with the specified {@code version}, {@code validateHeaders},
-     * decoder and encoder options.
+     * 使用指定 {@code version}、{@code validateHeaders} 及自定义编解码参数创建实例。
      */
     public SpdyFrameCodec(
             SpdyVersion version, int maxChunkSize, int maxHeaderSize,
@@ -96,13 +98,9 @@ public class SpdyFrameCodec extends ByteToMessageDecoder
     }
 
     /**
-     * Creates a new instance with the specified {@code version}, {@code validateHeaders},
-     * decoder and encoder options.
+     * 使用指定 {@code version}、{@code validateHeaders} 及自定义编解码参数创建实例，
+     * 可选透传未知帧类型。
      */
-    public SpdyFrameCodec(
-            SpdyVersion version, int maxChunkSize, int maxHeaderSize,
-            int compressionLevel, int windowBits, int memLevel, boolean validateHeaders,
-            boolean supportsUnknownFrames) {
         this(version, maxChunkSize,
                 SpdyHeaderBlockDecoder.newInstance(version, maxHeaderSize),
                 SpdyHeaderBlockEncoder.newInstance(version, compressionLevel, windowBits, memLevel),
@@ -460,15 +458,15 @@ public class SpdyFrameCodec extends ByteToMessageDecoder
     }
 
     /**
-     * Create a SpdyUnknownFrame.
+     * 创建 {@link SpdyUnknownFrame} 实例，子类可覆写以返回自定义实现。
      * */
     protected SpdyFrame newSpdyUnknownFrame(int frameType, byte flags, ByteBuf payload) {
         return new DefaultSpdyUnknownFrame(frameType, flags, payload);
     }
 
     /**
-     * Check whether the unknown frame is valid, if not, the frame will be discarded,
-     * otherwise, the frame will be passed to {@link SpdyFrameDecoder#decodeUnknownFrame(int, byte, int, ByteBuf)}.
+     * 校验未知帧头是否合法；返回 {@code false} 时解码器丢弃该帧，
+     * 返回 {@code true} 时交由 {@link SpdyFrameDecoder#decodeUnknownFrame(int, byte, int, ByteBuf)} 处理。
      * <p>
      * By default this method always returns {@code false}, sub-classes may override this.
      **/

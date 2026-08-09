@@ -19,21 +19,22 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
 /**
- * Super-class for SPDY header-block decoders.
+ * SPDY 头部块解码器抽象基类：将 Zlib 压缩的 Name/Value 块解析为 HTTP 风格头部。
  *
  * @see SpdyHeaderBlockRawDecoder
  * @see SpdyHeaderBlockZlibDecoder
  */
 public abstract class SpdyHeaderBlockDecoder {
 
+    /** 工厂方法：默认使用 {@link SpdyHeaderBlockZlibDecoder} */
     static SpdyHeaderBlockDecoder newInstance(SpdyVersion spdyVersion, int maxHeaderSize) {
         return new SpdyHeaderBlockZlibDecoder(spdyVersion, maxHeaderSize);
     }
 
     /**
-     * Decodes a SPDY Header Block, adding the Name/Value pairs to the given Headers frame.
-     * If the header block is malformed, the Headers frame will be marked as invalid.
-     * A stream error with status code PROTOCOL_ERROR must be issued in response to an invalid frame.
+     * 解码头部块，将 Name/Value 对填入 {@code frame}。
+     * 若头部块格式非法，{@code frame} 会被标记为 invalid；
+     * 此时应以 PROTOCOL_ERROR 重置该流。
      *
      * @param alloc the {@link ByteBufAllocator} which can be used to allocate new {@link ByteBuf}s
      * @param headerBlock the HeaderBlock to decode
@@ -44,7 +45,9 @@ public abstract class SpdyHeaderBlockDecoder {
      */
     abstract void decode(ByteBufAllocator alloc, ByteBuf headerBlock, SpdyHeadersFrame frame) throws Exception;
 
+    /** 一个完整头部块解码结束时的收尾（重置内部状态） */
     abstract void endHeaderBlock(SpdyHeadersFrame frame) throws Exception;
 
+    /** 连接关闭时释放资源 */
     abstract void end();
 }

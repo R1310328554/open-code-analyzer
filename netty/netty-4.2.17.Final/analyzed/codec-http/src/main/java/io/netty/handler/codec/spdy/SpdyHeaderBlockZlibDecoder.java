@@ -23,6 +23,11 @@ import java.util.zip.Inflater;
 
 import static io.netty.handler.codec.spdy.SpdyCodecUtil.*;
 
+/**
+ * 基于 JDK {@link Inflater} 的 SPDY 头部块解码器：先 Zlib 解压，再委托
+ * {@link SpdyHeaderBlockRawDecoder} 解析明文 Name/Value 块。
+ * <p>解压总量上限为 {@code maxHeaderSize × 16}，防止恶意可压缩头部导致事件循环阻塞。
+ */
 final class SpdyHeaderBlockZlibDecoder extends SpdyHeaderBlockRawDecoder {
 
     private static final int DEFAULT_BUFFER_CAPACITY = 4096;
@@ -35,12 +40,15 @@ final class SpdyHeaderBlockZlibDecoder extends SpdyHeaderBlockRawDecoder {
     // instead of an equal cap so this never rejects well-formed header blocks, while still
     // preventing a maliciously compressible header block from forcing an effectively unbounded
     // number of Inflater#inflate() calls on the calling (event-loop) thread.
+    /** 解压上限 = maxHeaderSize × 此倍数 */
     private static final int MAX_DECOMPRESSED_SIZE_MULTIPLIER = 16;
 
     private final Inflater decompressor = new Inflater();
     private final long maxDecompressedSize;
 
+    /** 解压输出缓冲 */
     private ByteBuf decompressed;
+    /** 本头部块已累计解压字节数 */
     private long totalInflated;
 
     SpdyHeaderBlockZlibDecoder(SpdyVersion spdyVersion, int maxHeaderSize) {
@@ -48,6 +56,7 @@ final class SpdyHeaderBlockZlibDecoder extends SpdyHeaderBlockRawDecoder {
         maxDecompressedSize = calculateMaxDecompressedSizePerBlock(maxHeaderSize);
     }
 
+    /** 计算单个头部块允许的最大解压字节数 */
     static long calculateMaxDecompressedSizePerBlock(int maxHeaderSize) {
         return (long) maxHeaderSize * MAX_DECOMPRESSED_SIZE_MULTIPLIER;
     }

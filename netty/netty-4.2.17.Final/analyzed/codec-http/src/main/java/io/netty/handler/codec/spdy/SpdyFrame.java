@@ -16,7 +16,7 @@
 package io.netty.handler.codec.spdy;
 
 /**
- * A SPDY Protocol Frame
+ * 所有 SPDY 帧类型的标记接口，用于类型系统统一约束。
  */
 public interface SpdyFrame {
     // Tag interface

@@ -44,7 +44,8 @@ import static io.netty.handler.codec.spdy.SpdyCodecUtil.getUnsignedMedium;
 import static io.netty.handler.codec.spdy.SpdyCodecUtil.getUnsignedShort;
 
 /**
- * Decodes {@link ByteBuf}s into SPDY Frames.
+ * 将入站 {@link ByteBuf} 按 SPDY/3 帧格式解码，通过 {@link SpdyFrameDecoderDelegate} 回调逐帧通知。
+ * <p>内部采用有限状态机：先读 8 字节公共头，再按帧类型分支；DATA 帧可拆分为多个 chunk（受 {@code maxChunkSize} 限制）。
  */
 public class SpdyFrameDecoder {
 
@@ -62,10 +63,14 @@ public class SpdyFrameDecoder {
     private int length;
     private int streamId;
 
+    /** SETTINGS 帧中待读取的条目数 */
     private int numSettings;
 
+    /** 解码状态机各阶段 */
     private enum State {
+        /** 读取 8 字节公共帧头 */
         READ_COMMON_HEADER,
+        /** 读取 DATA 帧 payload（可分包） */
         READ_DATA_FRAME,
         READ_SYN_STREAM_FRAME,
         READ_SYN_REPLY_FRAME,
@@ -76,29 +81,32 @@ public class SpdyFrameDecoder {
         READ_GOAWAY_FRAME,
         READ_HEADERS_FRAME,
         READ_WINDOW_UPDATE_FRAME,
+        /** 扩展/未知控制帧 */
         READ_UNKNOWN_FRAME,
+        /** 读取 Zlib 压缩的 Name/Value 头部块 */
         READ_HEADER_BLOCK,
+        /** 丢弃不支持的帧体 */
         DISCARD_FRAME,
+        /** 不可恢复协议错误，丢弃后续输入 */
         FRAME_ERROR
     }
 
     /**
-     * Creates a new instance with the specified {@code version}
-     * and the default {@code maxChunkSize (8192)}.
+     * 使用指定 {@code version} 及默认 {@code maxChunkSize (8192)} 创建解码器。
      */
     public SpdyFrameDecoder(SpdyVersion spdyVersion, SpdyFrameDecoderDelegate delegate) {
         this(spdyVersion, delegate, 8192);
     }
 
     /**
-     * Creates a new instance with the specified parameters.
+     * 使用指定参数创建解码器。
      */
     public SpdyFrameDecoder(SpdyVersion spdyVersion, SpdyFrameDecoderDelegate delegate, int maxChunkSize) {
         this(spdyVersion, delegate, maxChunkSize, DEFAULT_MAX_NUM_SETTINGS);
     }
 
     /**
-     * Creates a new instance with the specified parameters.
+     * 使用指定参数创建解码器，含 SETTINGS 条目数上限。
      */
     public SpdyFrameDecoder(SpdyVersion spdyVersion, SpdyFrameDecoderDelegate delegate,
                             int maxChunkSize, int maxNumSettings) {
@@ -109,6 +117,9 @@ public class SpdyFrameDecoder {
         state = State.READ_COMMON_HEADER;
     }
 
+    /**
+     * 从 buffer 中尽可能多地解码帧；数据不足时保留当前状态等待更多字节。
+     */
     public void decode(ByteBuf buffer) {
         boolean last;
         int statusCode;
@@ -445,7 +456,7 @@ public class SpdyFrameDecoder {
     }
 
     /**
-     * Decode the unknown frame, returns true if parsed something, otherwise false.
+     * 解码未知帧；成功解析返回 {@code true}，数据不足返回 {@code false}。
      */
     protected boolean decodeUnknownFrame(int frameType, byte flags, int length, ByteBuf buffer) {
         if (length == 0) {
@@ -461,8 +472,7 @@ public class SpdyFrameDecoder {
     }
 
     /**
-     * Check whether the unknown frame is valid, if not, the frame will be discarded,
-     * otherwise, the frame will be passed to {@link #decodeUnknownFrame(int, byte, int, ByteBuf)}.
+     * 判断未知帧头是否合法；合法则走 {@link #decodeUnknownFrame(int, byte, int, ByteBuf)}，否则丢弃。
      * */
     protected boolean isValidUnknownFrameHeader(int streamId, int type, byte flags, int length) {
         return false;

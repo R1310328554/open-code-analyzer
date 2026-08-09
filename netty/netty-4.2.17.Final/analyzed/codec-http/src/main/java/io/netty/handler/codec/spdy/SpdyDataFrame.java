@@ -20,7 +20,9 @@ import io.netty.buffer.ByteBufHolder;
 import io.netty.buffer.Unpooled;
 
 /**
- * A SPDY Protocol DATA Frame
+ * SPDY DATA 帧：在已建立的流上传输请求/响应体字节。
+ * <p>继承 {@link SpdyStreamFrame} 的流 ID 与 FIN 语义，并通过 {@link ByteBufHolder}
+ * 持有可变长 payload；单帧 payload 上限 16 MiB（24 位长度字段）。
  */
 public interface SpdyDataFrame extends ByteBufHolder, SpdyStreamFrame {
 
@@ -31,8 +33,7 @@ public interface SpdyDataFrame extends ByteBufHolder, SpdyStreamFrame {
     SpdyDataFrame setLast(boolean last);
 
     /**
-     * Returns the data payload of this frame.  If there is no data payload
-     * {@link Unpooled#EMPTY_BUFFER} is returned.
+     * 返回本帧数据负载；无数据时返回 {@link Unpooled#EMPTY_BUFFER}。
      *
      * The data payload cannot exceed 16777215 bytes.
      */

@@ -19,7 +19,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
 /**
- * Super-class for SPDY header-block encoders.
+ * SPDY 头部块编码器抽象基类：将 {@link SpdyHeadersFrame} 中的 Name/Value 对
+ * 序列化并（可选）Zlib 压缩为线上格式。
  *
  * @see SpdyHeaderBlockZlibEncoder
  * @see SpdyHeaderBlockJZlibEncoder
@@ -27,11 +28,14 @@ import io.netty.buffer.ByteBufAllocator;
  */
 public abstract class SpdyHeaderBlockEncoder {
 
+    /** 工厂方法：默认使用 {@link SpdyHeaderBlockZlibEncoder} */
     static SpdyHeaderBlockEncoder newInstance(
             SpdyVersion version, int compressionLevel, int windowBits, int memLevel) {
         return new SpdyHeaderBlockZlibEncoder(version, compressionLevel);
     }
 
+    /** 将帧内头部编码为压缩后的 {@link ByteBuf} */
     abstract ByteBuf encode(ByteBufAllocator alloc, SpdyHeadersFrame frame) throws Exception;
+    /** 连接关闭时释放压缩器资源 */
     abstract void end();
 }
