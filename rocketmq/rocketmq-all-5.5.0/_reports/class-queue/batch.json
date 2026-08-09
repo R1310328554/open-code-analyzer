@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:18:37Z",
   "files": [
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/AuthenticationEvaluator.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/builder/AuthenticationContextBuilder.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/builder/DefaultAuthenticationContextBuilder.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/chain/DefaultAuthenticationHandler.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/context/AuthenticationContext.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/context/DefaultAuthenticationContext.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/enums/SubjectType.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/enums/UserStatus.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/enums/UserType.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/exception/AuthenticationException.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/factory/AuthenticationFactory.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/manager/AuthenticationMetadataManager.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/manager/AuthenticationMetadataManagerImpl.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/model/Subject.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/model/User.java",
     "auth/src/main/java/org/apache/rocketmq/auth/authentication/provider/AuthenticationMetadataProvider.java",
     "auth/src/main/java/org/apache/rocketmq/auth/authentication/provider/AuthenticationProvider.java",
     "auth/src/main/java/org/apache/rocketmq/auth/authentication/provider/DefaultAuthenticationProvider.java",
@@ -32,6 +17,6 @@
     "auth/src/main/java/org/apache/rocketmq/auth/authorization/context/DefaultAuthorizationContext.java",
     "auth/src/main/java/org/apache/rocketmq/auth/authorization/enums/Decision.java"
   ],
-  "remaining_pending": 1458,
-  "done": 0
+  "remaining_pending": 1473,
+  "done": 15
 }
