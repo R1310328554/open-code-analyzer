@@ -28,12 +28,17 @@ import org.apache.rocketmq.common.message.MessageExt;
 import static org.apache.rocketmq.common.message.MessageDecoder.NAME_VALUE_SEPARATOR;
 import static org.apache.rocketmq.common.message.MessageDecoder.PROPERTY_SEPARATOR;
 
+/**
+ * 消息辅助工具：分片键哈希选队列、属性串裁剪等。
+ */
 public class MessageUtils {
 
+    /** 对分片键做 Murmur3 哈希，映射到 [0, indexSize) 的下标。 */
     public static int getShardingKeyIndex(String shardingKey, int indexSize) {
         return Math.abs(Hashing.murmur3_32().hashBytes(shardingKey.getBytes(StandardCharsets.UTF_8)).asInt() % indexSize);
     }
 
+    /** 从消息属性读取分片键（缺省为空串）并计算队列下标。 */
     public static int getShardingKeyIndexByMsg(MessageExt msg, int indexSize) {
         String shardingKey = msg.getProperty(MessageConst.PROPERTY_SHARDING_KEY);
         if (shardingKey == null) {
@@ -43,6 +48,7 @@ public class MessageUtils {
         return getShardingKeyIndex(shardingKey, indexSize);
     }
 
+    /** 批量消息各自分片键对应的队列下标集合（去重）。 */
     public static Set<Integer> getShardingKeyIndexes(Collection<MessageExt> msgs, int indexSize) {
         Set<Integer> indexSet = new HashSet<>(indexSize);
         for (MessageExt msg : msgs) {
@@ -51,6 +57,12 @@ public class MessageUtils {
         return indexSet;
     }
 
+    /**
+     * 从 RocketMQ 属性串中删除指定 name 的键值对（格式 name=value，多属性以分隔符连接）。
+     *
+     * @param propertiesString 原始属性串，可为 null
+     * @param name             要删除的属性名
+     */
     public static String deleteProperty(String propertiesString, String name) {
         if (propertiesString != null) {
             int idx0 = 0;
@@ -58,7 +70,7 @@ public class MessageUtils {
             int idx2;
             idx1 = propertiesString.indexOf(name, idx0);
             if (idx1 != -1) {
-                // cropping may be required
+                // 可能需要裁剪掉匹配到的属性片段
                 StringBuilder stringBuilder = new StringBuilder(propertiesString.length());
                 while (true) {
                     int startIdx = idx0;
@@ -76,15 +88,15 @@ public class MessageUtils {
                         }
                     }
                     if (idx1 == -1) {
-                        // there are no characters that need to be skipped. Append all remaining characters.
+                        // 无需再跳过，追加剩余全部字符
                         stringBuilder.append(propertiesString, idx0, propertiesString.length());
                         break;
                     }
-                    // there are characters that need to be cropped
+                    // 保留 idx0 到匹配起点之间的字符
                     stringBuilder.append(propertiesString, idx0, idx1);
-                    // move idx2 to the end of the cropped character
+                    // 将 idx2 移到被裁剪属性值的末尾
                     idx2 = propertiesString.indexOf(PROPERTY_SEPARATOR, idx1 + name.length() + 1);
-                    // all subsequent characters will be cropped
+                    // 该属性及其后直到下一分隔符的内容均被裁剪
                     if (idx2 == -1) {
                         break;
                     }

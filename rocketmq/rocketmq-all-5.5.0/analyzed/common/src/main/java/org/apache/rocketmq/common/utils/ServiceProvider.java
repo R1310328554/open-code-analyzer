@@ -29,16 +29,19 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JDK Service Provider 机制加载实现类：从 META-INF/service/ 读取并实例化。
+ */
 public class ServiceProvider {
     private static final Logger LOG = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
     /**
-     * A reference to the classloader that loaded this class. It's more efficient to compute it once and cache it here.
+     * 加载本类的 ClassLoader 引用，只计算一次并缓存，避免重复获取。
      */
     private static ClassLoader thisClassLoader;
     
     /**
-     * JDK1.3+ <a href= "http://java.sun.com/j2se/1.3/docs/guide/jar/jar.html#Service%20Provider" > 'Service Provider'
-     * specification</a>.
+     * JDK1.3+ <a href= "http://java.sun.com/j2se/1.3/docs/guide/jar/jar.html#Service%20Provider" > Service Provider
+     * 规范</a> 中定义的资源路径前缀。
      */
     public static final String PREFIX = "META-INF/service/";
     
@@ -47,13 +50,13 @@ public class ServiceProvider {
     }
     
     /**
-     * Returns a string that uniquely identifies the specified object, including its class.
+     * 返回能唯一标识指定对象（含其类）的字符串。
      * <p>
-     * The returned string is of form "classname@hashcode", ie is the same as the return value of the Object.toString()
-     * method, but works even when the specified object's class has overridden the toString method.
+     * 格式为 "classname@hashcode"，与 {@link Object#toString()} 默认形式相同，
+     * 但在目标类已重写 toString 时仍能稳定标识实例。
      *
-     * @param o may be null.
-     * @return a string of form classname@hashcode, or "null" if param o is null.
+     * @param o 可为 null
+     * @return classname@hashcode，o 为 null 时返回 "null"
      */
     protected static String objectId(Object o) {
         if (o == null) {
@@ -79,9 +82,8 @@ public class ServiceProvider {
             classLoader = Thread.currentThread().getContextClassLoader();
         } catch (SecurityException ex) {
             /**
-             * The getContextClassLoader() method throws SecurityException when the context
-             * class loader isn't an ancestor of the calling class's class
-             * loader, or if security permissions are restricted.
+             * 当上下文 ClassLoader 不是调用类 ClassLoader 的祖先，或安全策略禁止访问时，
+             * getContextClassLoader() 会抛出 SecurityException。
              */
         }
         return classLoader;
@@ -158,13 +160,13 @@ public class ServiceProvider {
         try {
             if (classLoader != null) {
                 try {
-                    // Warning: must typecast here & allow exception to be generated/caught & recast properly
+                    // 注意：此处需显式转型，并正确捕获/传播异常
                     serviceClazz = classLoader.loadClass(serviceName);
                     if (clazz.isAssignableFrom(serviceClazz)) {
                         LOG.info("Loaded class {} from classloader {}", serviceClazz.getName(),
                             objectId(classLoader));
                     } else {
-                        // This indicates a problem with the ClassLoader tree. An incompatible ClassLoader was used to load the implementation.
+                        // ClassLoader 树不一致：实现类并非由当前 loader 视角下的 clazz 子类
                         LOG.error(
                             "Class {} loaded from classloader {} does not extend {} as loaded by this classloader.",
                             serviceClazz.getName(),
@@ -173,21 +175,21 @@ public class ServiceProvider {
                     return (T) serviceClazz.getDeclaredConstructor().newInstance();
                 } catch (ClassNotFoundException ex) {
                     if (classLoader == thisClassLoader) {
-                        // Nothing more to try, onwards.
+                        // 已无可选 loader，向上抛出
                         LOG.warn("Unable to locate any class {} via classloader {}", serviceName,
                             objectId(classLoader));
                         throw ex;
                     }
-                    // Ignore exception, continue
+                    // 忽略，尝试其他 ClassLoader
                 } catch (NoClassDefFoundError e) {
                     if (classLoader == thisClassLoader) {
-                        // Nothing more to try, onwards.
+                        // 已无可选 loader，向上抛出
                         LOG.warn(
                             "Class {} cannot be loaded via classloader {}.it depends on some other class that cannot be found.",
                             serviceClazz, objectId(classLoader));
                         throw e;
                     }
-                    // Ignore exception, continue
+                    // 忽略，尝试其他 ClassLoader
                 }
             }
         } catch (Exception e) {

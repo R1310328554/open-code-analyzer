@@ -19,17 +19,22 @@ package org.apache.rocketmq.common.utils;
 import org.apache.commons.lang3.SerializationException;
 
 /**
- * Serializer
+ * 对象与字节数组互转的序列化 SPI。
  */
 public interface Serializer {
 
     /**
-     * Serialize object t to byte[]
+     * 将对象序列化为 byte[]。
+     *
+     * @param t 待序列化对象
      */
     <T> byte[] serialize(T t) throws SerializationException;
 
     /**
-     * De-serialize bytes to T
+     * 将字节数组反序列化为指定类型实例。
+     *
+     * @param bytes 序列化数据
+     * @param type  目标类型
      */
     <T> T deserialize(byte[] bytes, Class<T> type) throws SerializationException;
 }

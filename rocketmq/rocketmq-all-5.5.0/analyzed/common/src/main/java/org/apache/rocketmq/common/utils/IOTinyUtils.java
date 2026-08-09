@@ -33,19 +33,25 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 轻量级 I/O 工具类，提供流读写、文件复制与目录清理等常用操作。
+ */
 public class IOTinyUtils {
 
+    /** 将输入流按指定编码（为空则 UTF-8）读为字符串。 */
     static public String toString(InputStream input, String encoding) throws IOException {
         return (null == encoding) ? toString(new InputStreamReader(input, StandardCharsets.UTF_8)) : toString(new InputStreamReader(
             input, encoding));
     }
 
+    /** 将 {@link Reader} 全部内容读入字符串。 */
     static public String toString(Reader reader) throws IOException {
         CharArrayWriter sw = new CharArrayWriter();
         copy(reader, sw);
         return sw.toString();
     }
 
+    /** 从 Reader 复制字符到 Writer，返回复制的字符数。 */
     static public long copy(Reader input, Writer output) throws IOException {
         char[] buffer = new char[1 << 12];
         long count = 0;
@@ -56,6 +62,7 @@ public class IOTinyUtils {
         return count;
     }
 
+    /** 按行读取 Reader，返回行列表（不含换行符）。 */
     static public List<String> readLines(Reader input) throws IOException {
         BufferedReader reader = toBufferedReader(input);
         List<String> list = new ArrayList<>();
@@ -75,6 +82,7 @@ public class IOTinyUtils {
         return reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader);
     }
 
+    /** 使用 NIO FileChannel 将源文件复制到目标路径。 */
     static public void copyFile(String source, String target) throws IOException {
         File sf = new File(source);
         if (!sf.exists()) {
@@ -102,6 +110,7 @@ public class IOTinyUtils {
         }
     }
 
+    /** 删除文件或目录（目录会先递归清空内容）。 */
     public static void delete(File fileOrDir) throws IOException {
         if (fileOrDir == null) {
             return;
@@ -114,6 +123,7 @@ public class IOTinyUtils {
         fileOrDir.delete();
     }
 
+    /** 清空目录下所有条目，目录本身保留。 */
     public static void cleanDirectory(File directory) throws IOException {
         if (!directory.exists()) {
             String message = directory + " does not exist";
@@ -126,7 +136,7 @@ public class IOTinyUtils {
         }
 
         File[] files = directory.listFiles();
-        if (files == null) { // null if security restricted
+        if (files == null) { // 受安全策略限制时 listFiles 可能返回 null
             throw new IOException("Failed to list contents of " + directory);
         }
 
@@ -144,6 +154,7 @@ public class IOTinyUtils {
         }
     }
 
+    /** 将字符串按指定编码写入文件（覆盖写入）。 */
     public static void writeStringToFile(File file, String data, String encoding) throws IOException {
         OutputStream os = null;
         try {

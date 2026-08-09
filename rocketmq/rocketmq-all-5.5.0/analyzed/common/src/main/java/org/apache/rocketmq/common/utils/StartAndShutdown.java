@@ -17,6 +17,10 @@
 
 package org.apache.rocketmq.common.utils;
 
+/**
+ * 同时具备 {@link Start} 与 {@link Shutdown} 生命周期的组件；可在关闭前执行 {@link #preShutdown()} 钩子。
+ */
 public interface StartAndShutdown extends Start, Shutdown {
+    /** 正式 shutdown 之前调用，默认空实现。 */
     default void preShutdown() throws Exception {}
 }
