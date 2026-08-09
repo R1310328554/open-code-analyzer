@@ -29,31 +29,42 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 按 Topic 查询路由信息的请求头：NameServer 返回 Broker 队列分布。
+ * acceptStandardJsonOnly 控制是否仅接受标准 JSON 格式路由数据。
+ */
 @RocketMQAction(value = RequestCode.GET_ROUTEINFO_BY_TOPIC, resource = ResourceType.CLUSTER, action = Action.GET)
 public class GetRouteInfoRequestHeader extends TopicRequestHeader {
 
+    /** 目标 Topic 名称。 */
     @CFNotNull
     private String topic;
 
+    /** 是否仅接受标准 JSON 路由格式，可为空。 */
     @CFNullable
     private Boolean acceptStandardJsonOnly;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回是否仅接受标准 JSON 路由格式。 */
     public Boolean getAcceptStandardJsonOnly() {
         return acceptStandardJsonOnly;
     }
 
+    /** 设置是否仅接受标准 JSON 路由格式。 */
     public void setAcceptStandardJsonOnly(Boolean acceptStandardJsonOnly) {
         this.acceptStandardJsonOnly = acceptStandardJsonOnly;
     }

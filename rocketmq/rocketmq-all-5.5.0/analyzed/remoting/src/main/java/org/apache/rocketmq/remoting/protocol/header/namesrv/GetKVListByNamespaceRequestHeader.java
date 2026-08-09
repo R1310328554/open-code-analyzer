@@ -25,19 +25,26 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 按命名空间列出 NameServer KV 键的请求头：返回该 namespace 下全部 key。
+ */
 @RocketMQAction(value = RequestCode.GET_KVLIST_BY_NAMESPACE, resource = ResourceType.CLUSTER, action = Action.GET)
 public class GetKVListByNamespaceRequestHeader implements CommandCustomHeader {
+    /** KV 配置命名空间。 */
     @CFNotNull
     private String namespace;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回命名空间。 */
     public String getNamespace() {
         return namespace;
     }
 
+    /** 设置命名空间。 */
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }

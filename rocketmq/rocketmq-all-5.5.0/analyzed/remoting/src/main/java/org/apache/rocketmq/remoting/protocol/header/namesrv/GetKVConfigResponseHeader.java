@@ -21,18 +21,25 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNullable;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 读取 NameServer KV 配置的响应头：返回查询到的配置值。
+ */
 public class GetKVConfigResponseHeader implements CommandCustomHeader {
+    /** 配置值，不存在时可为空。 */
     @CFNullable
     private String value;
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回配置值。 */
     public String getValue() {
         return value;
     }
 
+    /** 设置配置值。 */
     public void setValue(String value) {
         this.value = value;
     }

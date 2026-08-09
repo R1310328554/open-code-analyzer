@@ -25,30 +25,40 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 从 NameServer 路由表删除 Topic 的请求头：指定 Topic 与可选集群名。
+ */
 @RocketMQAction(value = RequestCode.DELETE_TOPIC_IN_NAMESRV, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class DeleteTopicFromNamesrvRequestHeader extends TopicRequestHeader {
+    /** 待删除的 Topic 名称。 */
     @CFNotNull
     private String topic;
 
+    /** 目标集群名称，可为空。 */
     @RocketMQResource(ResourceType.CLUSTER)
     private String clusterName;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回集群名称。 */
     public String getClusterName() {
         return clusterName;
     }
 
+    /** 设置集群名称。 */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }

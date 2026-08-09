@@ -24,20 +24,27 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 为 Broker 恢复写权限的请求头：NameServer 解除对该 Broker 的只读限制。
+ */
 @RocketMQAction(value = RequestCode.ADD_WRITE_PERM_OF_BROKER, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class AddWritePermOfBrokerRequestHeader implements CommandCustomHeader {
+    /** 目标 Broker 组名称。 */
     @CFNotNull
     private String brokerName;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 Broker 组名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 组名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }

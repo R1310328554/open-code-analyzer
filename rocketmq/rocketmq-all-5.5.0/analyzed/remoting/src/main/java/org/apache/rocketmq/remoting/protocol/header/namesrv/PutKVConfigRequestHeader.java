@@ -25,39 +25,52 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 写入 NameServer KV 配置的请求头：按 namespace、key 写入 value。
+ */
 @RocketMQAction(value = RequestCode.PUT_KV_CONFIG, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class PutKVConfigRequestHeader implements CommandCustomHeader {
+    /** KV 配置命名空间。 */
     @CFNotNull
     private String namespace;
+    /** 配置键。 */
     @CFNotNull
     private String key;
+    /** 配置值。 */
     @CFNotNull
     private String value;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回命名空间。 */
     public String getNamespace() {
         return namespace;
     }
 
+    /** 设置命名空间。 */
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }
 
+    /** 返回配置键。 */
     public String getKey() {
         return key;
     }
 
+    /** 设置配置键。 */
     public void setKey(String key) {
         this.key = key;
     }
 
+    /** 返回配置值。 */
     public String getValue() {
         return value;
     }
 
+    /** 设置配置值。 */
     public void setValue(String value) {
         this.value = value;
     }

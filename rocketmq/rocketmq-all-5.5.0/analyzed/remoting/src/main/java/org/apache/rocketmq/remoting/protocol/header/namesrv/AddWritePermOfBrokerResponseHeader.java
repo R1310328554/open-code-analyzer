@@ -20,18 +20,25 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 恢复 Broker 写权限的响应头：返回本次恢复写权限涉及的 Topic 数量。
+ */
 public class AddWritePermOfBrokerResponseHeader implements CommandCustomHeader {
+    /** 恢复写权限的 Topic 数量。 */
     @CFNotNull
     private Integer addTopicCount;
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回恢复写权限的 Topic 数量。 */
     public Integer getAddTopicCount() {
         return addTopicCount;
     }
 
+    /** 设置恢复写权限的 Topic 数量。 */
     public void setAddTopicCount(Integer addTopicCount) {
         this.addTopicCount = addTopicCount;
     }

@@ -25,23 +25,33 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * Broker 向 Controller 注册自身的请求头：携带集群、Broker 组名、brokerId 与访问地址。
+ */
 @RocketMQAction(value = RequestCode.CONTROLLER_REGISTER_BROKER, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class RegisterBrokerToControllerRequestHeader implements CommandCustomHeader {
 
+    /** 集群名称。 */
     @RocketMQResource(ResourceType.CLUSTER)
     private String clusterName;
 
+    /** Broker 组名称。 */
     private String brokerName;
 
+    /** 本 Broker 的 brokerId。 */
     private Long brokerId;
 
+    /** Broker 对外服务地址。 */
     private String brokerAddress;
 
+    /** 请求发起时间戳（毫秒）。 */
     private long invokeTime;
 
+    /** 默认构造。 */
     public RegisterBrokerToControllerRequestHeader() {
     }
 
+    /** 指定集群、Broker 组、brokerId 与地址的构造。 */
     public RegisterBrokerToControllerRequestHeader(String clusterName, String brokerName, Long brokerId, String brokerAddress) {
         this.clusterName = clusterName;
         this.brokerName = brokerName;
@@ -50,47 +60,58 @@ public class RegisterBrokerToControllerRequestHeader implements CommandCustomHea
         this.invokeTime = System.currentTimeMillis();
     }
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回请求发起时间戳。 */
     public long getInvokeTime() {
         return invokeTime;
     }
 
+    /** 设置请求发起时间戳。 */
     public void setInvokeTime(long invokeTime) {
         this.invokeTime = invokeTime;
     }
 
+    /** 返回集群名称。 */
     public String getClusterName() {
         return clusterName;
     }
 
+    /** 返回 Broker 组名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 返回 brokerId。 */
     public Long getBrokerId() {
         return brokerId;
     }
 
+    /** 返回 Broker 地址。 */
     public String getBrokerAddress() {
         return brokerAddress;
     }
 
+    /** 设置集群名称。 */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }
 
+    /** 设置 Broker 组名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }
 
+    /** 设置 brokerId。 */
     public void setBrokerId(Long brokerId) {
         this.brokerId = brokerId;
     }
 
+    /** 设置 Broker 地址。 */
     public void setBrokerAddress(String brokerAddress) {
         this.brokerAddress = brokerAddress;
     }

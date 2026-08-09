@@ -21,23 +21,31 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 查询 Broker 数据版本的响应头：changed 表示 NameServer 侧 Topic 配置是否已变更。
+ */
 public class QueryDataVersionResponseHeader implements CommandCustomHeader {
+    /** 数据版本是否已变更。 */
     @CFNotNull
     private Boolean changed;
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回数据版本是否已变更。 */
     public Boolean getChanged() {
         return changed;
     }
 
+    /** 设置数据版本是否已变更。 */
     public void setChanged(Boolean changed) {
         this.changed = changed;
     }
 
+    /** 返回含 changed 字段的调试字符串。 */
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("QueryDataVersionResponseHeader{");
