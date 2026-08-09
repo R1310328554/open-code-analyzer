@@ -43,23 +43,16 @@ import org.apache.rocketmq.store.SelectMappedBufferResult;
 import org.apache.rocketmq.store.config.BrokerRole;
 import org.apache.rocketmq.store.logfile.MappedFile;
 
+/**
+ * 批量消费队列（BCQ）：每条 CQ 单元对应一批消息的 CommitLog 物理范围，提升批量消费效率。
+ */
 public class BatchConsumeQueue implements ConsumeQueueInterface {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
     /**
-     * BatchConsumeQueue's store unit. Format:
-     * <pre>
-     * ┌─────────────────────────┬───────────┬────────────┬──────────┬─────────────┬─────────┬───────────────┬─────────┐
-     * │CommitLog Physical Offset│ Body Size │Tag HashCode│Store time│msgBaseOffset│batchSize│compactedOffset│reserved │
-     * │        (8 Bytes)        │ (4 Bytes) │ (8 Bytes)  │(8 Bytes) │(8 Bytes)    │(2 Bytes)│   (4 Bytes)   │(4 Bytes)│
-     * ├─────────────────────────┴───────────┴────────────┴──────────┴─────────────┴─────────┴───────────────┴─────────┤
-     * │                                                  Store Unit                                                   │
-     * │                                                                                                               │
-     * </pre>
-     * BatchConsumeQueue's store unit. Size:
-     * CommitLog Physical Offset(8) + Body Size(4) + Tag HashCode(8) + Store time(8) +
-     * msgBaseOffset(8) + batchSize(2) + compactedOffset(4) + reserved(4)= 46 Bytes
-     */
+ * BatchConsumeQueue 存储单元格式说明。
+
+ */
     public static final int CQ_STORE_UNIT_SIZE = 46;
     public static final int MSG_TAG_OFFSET_INDEX = 12;
     public static final int MSG_STORE_TIME_OFFSET_INDEX = 20;
@@ -143,6 +136,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 加载持久化数据。 */
     public boolean load() {
         boolean result = this.mappedFileQueue.load();
         log.info("Load batch consume queue {}-{} {} {}", topic, queueId, result ? "OK" : "Failed", mappedFileQueue.getMappedFiles().size());
@@ -157,7 +151,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
         ConcurrentSkipListMap<Long, MappedFile> newTimeCache = new ConcurrentSkipListMap<>();
 
         List<MappedFile> mappedFiles = mappedFileQueue.getMappedFiles();
-        // iterate all BCQ files
+        /** 遍历全部 BCQ 文件 */
         for (int i = 0; i < mappedFiles.size(); i++) {
             MappedFile bcq = mappedFiles.get(i);
             if (isNewFile(bcq)) {
@@ -210,7 +204,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     protected MappedFile searchOffsetFromCache(long msgOffset) {
         Map.Entry<Long, MappedFile> floorEntry = this.offsetCache.floorEntry(msgOffset);
         if (floorEntry == null) {
-            // the offset is too small.
+            /** offset 过小 */
             return null;
         } else {
             return floorEntry.getValue();
@@ -220,7 +214,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     private MappedFile searchTimeFromCache(long time) {
         Map.Entry<Long, MappedFile> floorEntry = this.timeCache.floorEntry(time);
         if (floorEntry == null) {
-            // the timestamp is too small. so we decide to result first BCQ file.
+            /** 时间戳过小，返回第一个 BCQ 文件 */
             return this.mappedFileQueue.getFirstMappedFile();
         } else {
             return floorEntry.getValue();
@@ -228,6 +222,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 恢复 CompactionLog。 */
     public void recover() {
         final List<MappedFile> mappedFiles = this.mappedFileQueue.getMappedFiles();
         if (!mappedFiles.isEmpty()) {
@@ -462,12 +457,14 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 刷盘。 */
     public boolean flush(final int flushLeastPages) {
         boolean result = this.mappedFileQueue.flush(flushLeastPages);
         return result;
     }
 
     @Override
+    /** 删除过期索引文件。 */
     public int deleteExpiredFile(long minCommitLogPos) {
         int cnt = this.mappedFileQueue.deleteExpiredFileByOffset(minCommitLogPos, CQ_STORE_UNIT_SIZE);
         this.correctMinOffset(minCommitLogPos);
@@ -666,11 +663,9 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     }
 
     /**
-     * Gets SelectMappedBufferResult by batch-message offset
-     * Node: the caller is responsible for the release of SelectMappedBufferResult
-     * @param msgOffset
-     * @return SelectMappedBufferResult
-     */
+ * 按批量消息 offset 获取 SelectMappedBufferResult；调用方负责 release。
+
+ */
     public SelectMappedBufferResult getBatchMsgIndexBuffer(final long msgOffset) {
         if (msgOffset >= maxOffsetInQueue) {
             return null;
@@ -1003,6 +998,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
         }
 
         @Override
+        /** 释放引用计数。 */
         public void release() {
             if (sbr != null) {
                 sbr.release();
@@ -1046,6 +1042,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 销毁索引服务。 */
     public void destroy() {
         this.maxMsgPhyOffsetInCommitLog = -1;
         this.minOffsetInQueue = -1;
@@ -1085,6 +1082,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 交换 mmap 映射。 */
     public void swapMap(int reserveNum, long forceSwapIntervalMs, long normalSwapIntervalMs) {
         mappedFileQueue.swapMap(reserveNum, forceSwapIntervalMs, normalSwapIntervalMs);
     }
@@ -1203,6 +1201,7 @@ public class BatchConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 关闭并释放资源。 */
     public boolean shutdown() {
         return true;
     }

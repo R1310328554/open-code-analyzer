@@ -34,19 +34,25 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 存储层统计服务：采样记录 put/get TPS、延迟分布桶、Topic 维度计数及磁盘落后指标，周期性打印并供 Broker 查询。
+ */
 public class StoreStatsService extends ServiceThread {
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** 采样频率（毫秒）。 */
     private static final int FREQUENCY_OF_SAMPLING = 1000;
 
+    /** 采样窗口最大记录数（10 分钟）。 */
     private static final int MAX_RECORDS_OF_SAMPLING = 60 * 10;
     private static final String[] PUT_MESSAGE_ENTIRE_TIME_MAX_DESC = new String[] {
         "[<=0ms]", "[0~10ms]", "[10~50ms]", "[50~100ms]", "[100~200ms]", "[200~500ms]", "[500ms~1s]", "[1~2s]", "[2~3s]", "[3~4s]", "[4~5s]", "[5~10s]", "[10s~]",
     };
 
-    //The rule to define buckets
+    /** 定义延迟分布桶的规则 */
     private static final Map<Integer/*interval step size*/, Integer/*times*/> PUT_MESSAGE_ENTIRE_TIME_BUCKETS = new TreeMap<>();
-    //buckets
+    /** 当前采样桶 */
     private TreeMap<Long/*bucket*/, LongAdder/*times*/> buckets = new TreeMap<>();
     private Map<Long/*bucket*/, LongAdder/*times*/> lastBuckets = new TreeMap<>();
 
@@ -72,9 +78,9 @@ public class StoreStatsService extends ServiceThread {
     private long messageStoreBootTimestamp = System.currentTimeMillis();
     private volatile long putMessageEntireTimeMax = 0;
     private volatile long getMessageEntireTimeMax = 0;
-    // for putMessageEntireTimeMax
+    /** 保护 putMessageEntireTimeMax 的锁 */
     private ReentrantLock putLock = new ReentrantLock();
-    // for getMessageEntireTimeMax
+    /** 保护 getMessageEntireTimeMax 的锁 */
     private ReentrantLock getLock = new ReentrantLock();
 
     private volatile long dispatchMaxBuffer = 0;
@@ -525,6 +531,8 @@ public class StoreStatsService extends ServiceThread {
         return result;
     }
 
+    /** 后台线程主循环。 */
+
     public void run() {
         log.info(this.getServiceName() + " service started");
 
@@ -544,6 +552,7 @@ public class StoreStatsService extends ServiceThread {
     }
 
     @Override
+    /** 返回后台线程服务名。 */
     public String getServiceName() {
         if (this.brokerIdentity != null && this.brokerIdentity.isInBrokerContainer()) {
             return brokerIdentity.getIdentifier() + StoreStatsService.class.getSimpleName();

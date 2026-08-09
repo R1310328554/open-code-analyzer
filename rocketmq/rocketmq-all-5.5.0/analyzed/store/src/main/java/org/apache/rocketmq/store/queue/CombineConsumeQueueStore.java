@@ -42,21 +42,25 @@ import org.apache.rocketmq.store.exception.ConsumeQueueException;
 import org.apache.rocketmq.store.exception.StoreException;
 import org.rocksdb.RocksDBException;
 
+/**
+ * 组合消费队列存储：按 Topic 类型在文件型 CQ 与 RocksDB CQ 之间路由读写。
+ */
 public class CombineConsumeQueueStore implements ConsumeQueueStoreInterface {
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger BROKER_LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
     private final DefaultMessageStore messageStore;
     private final MessageStoreConfig messageStoreConfig;
 
-    // Inner consume queue store.
+    /** 内部文件型 CQ 存储 */
     private final LinkedList<AbstractConsumeQueueStore> innerConsumeQueueStoreList = new LinkedList<>();
     private final ConsumeQueueStore consumeQueueStore;
     private final RocksDBConsumeQueueStore rocksDBConsumeQueueStore;
 
-    // current read consume queue store.
+    /** 当前读 CQ 存储 */
     private final AbstractConsumeQueueStore currentReadStore;
-    // consume queue store for assign offset and increase offset.
+    /** 分配/递增 offset 的 CQ 存储 */
     private final AbstractConsumeQueueStore assignOffsetStore;
 
 
@@ -131,6 +135,7 @@ public class CombineConsumeQueueStore implements ConsumeQueueStoreInterface {
     }
 
     @Override
+    /** 加载持久化数据。 */
     public boolean load() {
         for (AbstractConsumeQueueStore store : innerConsumeQueueStoreList) {
             if (!store.load()) {
@@ -143,6 +148,7 @@ public class CombineConsumeQueueStore implements ConsumeQueueStoreInterface {
     }
 
     @Override
+    /** 恢复 CompactionLog。 */
     public void recover(boolean concurrently) throws RocksDBException {
         for (AbstractConsumeQueueStore store : innerConsumeQueueStoreList) {
             store.recover(concurrently);
@@ -153,7 +159,7 @@ public class CombineConsumeQueueStore implements ConsumeQueueStoreInterface {
     @Override
     public boolean isMappedFileMatchedRecover(long phyOffset, long storeTimestamp,
         boolean recoverNormally) throws RocksDBException {
-        // make sure assignOffsetStore can be fully recovered
+        /** 确保 assignOffsetStore 可完整恢复 */
         if (!assignOffsetStore.isMappedFileMatchedRecover(phyOffset, storeTimestamp, recoverNormally)) {
             return false;
         }
@@ -208,6 +214,7 @@ public class CombineConsumeQueueStore implements ConsumeQueueStoreInterface {
     }
 
     @Override
+    /** 启动服务。 */
     public void start() {
         boolean success = false;
         try {
@@ -278,6 +285,7 @@ public class CombineConsumeQueueStore implements ConsumeQueueStoreInterface {
     }
 
     @Override
+    /** 关闭并释放资源。 */
     public boolean shutdown() {
         boolean result = true;
         for (AbstractConsumeQueueStore store : innerConsumeQueueStoreList) {
@@ -289,6 +297,7 @@ public class CombineConsumeQueueStore implements ConsumeQueueStoreInterface {
     }
 
     @Override
+    /** 销毁索引服务。 */
     public void destroy(boolean loadAfterDestroy) {
         for (AbstractConsumeQueueStore store : innerConsumeQueueStoreList) {
             store.destroy(loadAfterDestroy);
@@ -307,6 +316,7 @@ public class CombineConsumeQueueStore implements ConsumeQueueStoreInterface {
     }
 
     @Override
+    /** 刷盘。 */
     public void flush() throws StoreException {
         for (AbstractConsumeQueueStore store : innerConsumeQueueStoreList) {
             store.flush();

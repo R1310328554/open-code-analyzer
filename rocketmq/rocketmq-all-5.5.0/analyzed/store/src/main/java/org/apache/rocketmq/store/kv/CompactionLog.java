@@ -68,7 +68,11 @@ import java.util.stream.Collectors;
 
 import static org.apache.rocketmq.common.message.MessageDecoder.BLANK_MAGIC_CODE;
 
+/**
+ * Compaction 日志：对 KV/Compaction Topic 消息进行合并压缩，维护 Compaction CQ 与 offset 映射。
+ */
 public class CompactionLog {
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
     private static final int END_FILE_MIN_BLANK_LENGTH = 4 + 4;
@@ -137,6 +141,8 @@ public class CompactionLog {
         }
     }
 
+    /** 加载持久化数据。 */
+
     public void load(boolean exitOk) throws IOException, RuntimeException {
         initLogAndCq(exitOk);
         if (defaultMessageStore.getMessageStoreConfig().getBrokerRole() == BrokerRole.SLAVE
@@ -156,7 +162,7 @@ public class CompactionLog {
 
     private boolean putMessageFromRemote(byte[] bytes) {
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-        // split bytebuffer to avoid encode message again
+        /** 拆分 ByteBuffer 避免重复编码 */
         while (byteBuffer.hasRemaining()) {
             int mark = byteBuffer.position();
             ByteBuffer bb = byteBuffer.slice();
@@ -212,7 +218,7 @@ public class CompactionLog {
                 });
         }
 
-        // merge files
+        /** 合并 Compaction 文件 */
         if (getLog().isMappedFilesEmpty()) {
             replaceFiles(getLog().getMappedFiles(), current, replicating);
         } else if (replicating.getLog().isMappedFilesEmpty()) {
@@ -798,6 +804,8 @@ public class CompactionLog {
 //        return compactionScq;
 //    }
 
+    /** 刷盘。 */
+
     public void flush(int flushLeastPages) {
         this.flushLog(flushLeastPages);
         this.flushCQ(flushLeastPages);
@@ -1004,6 +1012,8 @@ public class CompactionLog {
                     compactionLog.defaultMessageStore, subFolder);
             }
         }
+
+        /** 关闭并释放资源。 */
 
         public void shutdown() {
             mappedFileQueue.shutdown(1000 * 30);

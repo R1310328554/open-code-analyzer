@@ -30,29 +30,25 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.netty.NettySystemConfig;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 
+/**
+ * 经典 HA 主节点连接：向 Slave 传输 CommitLog 数据并接收 offset 上报。
+ */
 public class DefaultHAConnection implements HAConnection {
 
     /**
-     * Transfer Header buffer size. Schema: physic offset and body size. Format:
-     *
-     * <pre>
-     * ┌───────────────────────────────────────────────┬───────────────────────┐
-     * │                  physicOffset                 │         bodySize      │
-     * │                    (8bytes)                   │         (4bytes)      │
-     * ├───────────────────────────────────────────────┴───────────────────────┤
-     * │                                                                       │
-     * │                           Transfer Header                             │
-     * </pre>
-     * <p>
-     */
+ * 传输头缓冲区大小；包含物理 offset 与 body 大小。
+
+ */
     public static final int TRANSFER_HEADER_SIZE = 8 + 4;
 
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final DefaultHAService haService;
     private final SocketChannel socketChannel;
     private final String clientAddress;
     private WriteSocketService writeSocketService;
     private ReadSocketService readSocketService;
+    /** 当前 HA 连接状态。 */
     private volatile HAConnectionState currentState = HAConnectionState.TRANSFER;
     private volatile long slaveRequestOffset = -1;
     private volatile long slaveAckOffset = -1;
@@ -77,12 +73,16 @@ public class DefaultHAConnection implements HAConnection {
         this.flowMonitor = new FlowMonitor(haService.getDefaultMessageStore().getMessageStoreConfig());
     }
 
+    /** 启动服务。 */
+
     public void start() {
         changeCurrentState(HAConnectionState.TRANSFER);
         this.flowMonitor.start();
         this.readSocketService.start();
         this.writeSocketService.start();
     }
+
+    /** 关闭并释放资源。 */
 
     public void shutdown() {
         changeCurrentState(HAConnectionState.SHUTDOWN);
@@ -91,6 +91,8 @@ public class DefaultHAConnection implements HAConnection {
         this.flowMonitor.shutdown(true);
         this.close();
     }
+
+    /** 关闭连接。 */
 
     public void close() {
         if (this.socketChannel != null) {
@@ -105,6 +107,8 @@ public class DefaultHAConnection implements HAConnection {
     public SocketChannel getSocketChannel() {
         return socketChannel;
     }
+
+    /** 切换 HA 连接状态。 */
 
     public void changeCurrentState(HAConnectionState currentState) {
         log.info("change state to {}", currentState);
@@ -150,6 +154,7 @@ public class DefaultHAConnection implements HAConnection {
         }
 
         @Override
+        /** 后台线程主循环。 */
         public void run() {
             log.info(this.getServiceName() + " service started");
 
@@ -201,6 +206,7 @@ public class DefaultHAConnection implements HAConnection {
         }
 
         @Override
+        /** 返回后台线程服务名。 */
         public String getServiceName() {
             if (haService.getDefaultMessageStore().getBrokerConfig().isInBrokerContainer()) {
                 return haService.getDefaultMessageStore().getBrokerIdentity().getIdentifier() + ReadSocketService.class.getSimpleName();
@@ -313,7 +319,7 @@ public class DefaultHAConnection implements HAConnection {
                         if (interval > DefaultHAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig()
                             .getHaSendHeartbeatInterval()) {
 
-                            // Build Header
+                            /** 构建传输头 */
                             this.byteBufferHeader.position(0);
                             this.byteBufferHeader.limit(TRANSFER_HEADER_SIZE);
                             this.byteBufferHeader.putLong(this.nextTransferFromWhere);
@@ -355,7 +361,7 @@ public class DefaultHAConnection implements HAConnection {
                         selectResult.getByteBuffer().limit(size);
                         this.selectMappedBufferResult = selectResult;
 
-                        // Build Header
+                        /** 构建传输头 */
                         this.byteBufferHeader.position(0);
                         this.byteBufferHeader.limit(TRANSFER_HEADER_SIZE);
                         this.byteBufferHeader.putLong(thisOffset);
@@ -407,7 +413,7 @@ public class DefaultHAConnection implements HAConnection {
 
         private boolean transferData() throws Exception {
             int writeSizeZeroTimes = 0;
-            // Write Header
+            /** 写入传输头 */
             while (this.byteBufferHeader.hasRemaining()) {
                 int writeSize = this.socketChannel.write(this.byteBufferHeader);
                 if (writeSize > 0) {
@@ -429,7 +435,7 @@ public class DefaultHAConnection implements HAConnection {
 
             writeSizeZeroTimes = 0;
 
-            // Write Body
+            /** 写入消息体 */
             if (!this.byteBufferHeader.hasRemaining()) {
                 while (this.selectMappedBufferResult.getByteBuffer().hasRemaining()) {
                     int writeSize = this.socketChannel.write(this.selectMappedBufferResult.getByteBuffer());
@@ -465,6 +471,7 @@ public class DefaultHAConnection implements HAConnection {
         }
 
         @Override
+        /** 关闭并释放资源。 */
         public void shutdown() {
             super.shutdown();
         }

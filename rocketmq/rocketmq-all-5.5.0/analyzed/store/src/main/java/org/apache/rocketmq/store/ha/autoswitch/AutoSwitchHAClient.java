@@ -41,6 +41,9 @@ import org.apache.rocketmq.store.ha.HAConnectionState;
 import org.apache.rocketmq.store.ha.io.AbstractHAReader;
 import org.apache.rocketmq.store.ha.io.HAWriter;
 
+/**
+ * 自动切换 HA 从节点客户端：握手协商 SyncStateSet、epoch 与异步 Learner 角色后同步数据。
+ */
 public class AutoSwitchHAClient extends ServiceThread implements HAClient {
 
     /**
@@ -102,8 +105,11 @@ public class AutoSwitchHAClient extends ServiceThread implements HAClient {
      */
     public static final int TRANSFER_HEADER_SIZE = 4 + 8;
     public static final int MIN_HEADER_SIZE = Math.min(HANDSHAKE_HEADER_SIZE, TRANSFER_HEADER_SIZE);
+    /** 存储模块日志。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 读缓冲上限（4MB）。 */
     private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024 * 4;
+    /** Master HA 地址（原子引用）。 */
     private final AtomicReference<String> masterHaAddress = new AtomicReference<>();
     private final AtomicReference<String> masterAddress = new AtomicReference<>();
     private final ByteBuffer handshakeHeaderBuffer = ByteBuffer.allocate(HANDSHAKE_HEADER_SIZE);
@@ -121,12 +127,14 @@ public class AutoSwitchHAClient extends ServiceThread implements HAClient {
     private HAWriter haWriter;
     private FlowMonitor flowMonitor;
     /**
-     * last time that slave reads date from master.
-     */
+ * Slave 最近一次从 Master 读取数据的时间。
+
+ */
     private long lastReadTimestamp;
     /**
-     * last time that slave reports offset to master.
-     */
+ * Slave 最近一次向 Master 上报 offset 的时间。
+
+ */
     private long lastWriteTimestamp;
 
     private long currentReportedOffset;
@@ -176,6 +184,7 @@ public class AutoSwitchHAClient extends ServiceThread implements HAClient {
     }
 
     @Override
+    /** 返回后台线程服务名。 */
     public String getServiceName() {
         if (haService.getDefaultMessageStore().getBrokerConfig().isInBrokerContainer()) {
             return haService.getDefaultMessageStore().getBrokerIdentity().getIdentifier() + AutoSwitchHAClient.class.getSimpleName();
@@ -226,6 +235,7 @@ public class AutoSwitchHAClient extends ServiceThread implements HAClient {
     }
 
     @Override
+    /** 切换 HA 连接状态。 */
     public void changeCurrentState(HAConnectionState haConnectionState) {
         LOGGER.info("change state to {}", haConnectionState);
         this.currentState = haConnectionState;
@@ -268,9 +278,10 @@ public class AutoSwitchHAClient extends ServiceThread implements HAClient {
     }
 
     @Override
+    /** 关闭并释放资源。 */
     public void shutdown() {
         changeCurrentState(HAConnectionState.SHUTDOWN);
-        // Shutdown thread firstly
+        /** 先关闭 HA 线程 */
         this.flowMonitor.shutdown();
         super.shutdown();
 
@@ -290,12 +301,12 @@ public class AutoSwitchHAClient extends ServiceThread implements HAClient {
     private boolean sendHandshakeHeader() throws IOException {
         this.handshakeHeaderBuffer.position(0);
         this.handshakeHeaderBuffer.limit(HANDSHAKE_HEADER_SIZE);
-        // Original state
+        /** 原始 HA 状态 */
         this.handshakeHeaderBuffer.putInt(HAConnectionState.HANDSHAKE.ordinal());
-        // IsSyncFromLastFile
+        /** 是否从最后一个文件同步 */
         short isSyncFromLastFile = this.haService.getDefaultMessageStore().getMessageStoreConfig().isSyncFromLastFile() ? (short) 1 : (short) 0;
         this.handshakeHeaderBuffer.putShort(isSyncFromLastFile);
-        // IsAsyncLearner role
+        /** 是否为 AsyncLearner 角色 */
         short isAsyncLearner = this.haService.getDefaultMessageStore().getMessageStoreConfig().isAsyncLearner() ? (short) 1 : (short) 0;
         this.handshakeHeaderBuffer.putShort(isAsyncLearner);
         // Slave brokerId
@@ -377,6 +388,7 @@ public class AutoSwitchHAClient extends ServiceThread implements HAClient {
     }
 
     @Override
+    /** 后台线程主循环。 */
     public void run() {
         LOGGER.info(this.getServiceName() + " service started");
 

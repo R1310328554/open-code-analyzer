@@ -24,22 +24,26 @@ import org.apache.rocketmq.store.queue.BatchConsumeQueue;
 import org.rocksdb.CompressionType;
 import org.rocksdb.util.SizeUnit;
 
+/**
+ * MessageStore 运行时配置：路径、MappedFile 大小、刷盘/清理策略、HA、RocksDB、定时消息、Compaction 等全部可调参数。
+ */
 public class MessageStoreConfig {
 
+    /** 多路径 CommitLog 分隔符。 */
     public static final String MULTI_PATH_SPLITTER = System.getProperty("rocketmq.broker.multiPathSplitter", ",");
 
-    //The root directory in which the log data is kept
+    /** 日志数据根目录 */
     @ImportantField
     private String storePathRootDir = System.getProperty("user.home") + File.separator + "store";
 
-    //The directory in which the commitlog is kept
+    /** CommitLog 存储目录 */
     @ImportantField
     private String storePathCommitLog = null;
 
     @ImportantField
     private String storePathDLedgerCommitLog = null;
 
-    //The directory in which the epochFile is kept
+    /** Epoch 文件目录 */
     @ImportantField
     private String storePathEpochFile = null;
 
@@ -48,13 +52,13 @@ public class MessageStoreConfig {
 
     private String readOnlyCommitLogStorePaths = null;
 
-    // CommitLog file size,default is 1G
+    /** CommitLog 单文件大小，默认 1G */
     private int mappedFileSizeCommitLog = 1024 * 1024 * 1024;
 
-    // CompactionLog file size, default is 100M
+    /** CompactionLog 单文件大小，默认 100M */
     private int compactionMappedFileSize = 100 * 1024 * 1024;
 
-    // CompactionLog consumeQueue file size, default is 10M
+    /** Compaction CQ 单文件大小，默认 10M */
     private int compactionCqMappedFileSize = 10 * 1024 * 1024;
 
     private int compactionScheduleInternal = 15 * 60 * 1000;
@@ -65,7 +69,7 @@ public class MessageStoreConfig {
 
     private boolean enableCompaction = true;
 
-    // TimerLog file size, default is 100M
+    /** TimerLog 单文件大小，默认 100M */
     private int mappedFileSizeTimerLog = 100 * 1024 * 1024;
 
     private int timerPrecisionMs = 1000;
@@ -84,11 +88,10 @@ public class MessageStoreConfig {
     private boolean timerWheelEnable = true;
 
     /**
-     * 1. Register to broker after (startTime + disappearTimeAfterStart)
-     * 2. Internal msg exchange will start after (startTime + disappearTimeAfterStart)
-     * A. PopReviveService
-     * B. TimerDequeueGetService
-     */
+ * 1. Broker 在 (startTime + disappearTimeAfterStart) 后才注册
+ * 2. 内部消息交换（PopReviveService、TimerDequeueGetService 等）也在该时刻后启动
+
+ */
     @ImportantField
     private int disappearTimeAfterStart = -1;
 
@@ -128,30 +131,30 @@ public class MessageStoreConfig {
     private boolean indexFileWriteEnable = true;
     private boolean indexFileReadEnable = true;
 
-    // default, defaultRocksDB
+    /** 默认 RocksDB 模式标识 */
     @ImportantField
     private String storeType = StoreType.DEFAULT.getStoreType();
 
     private boolean iteratorWhenUseRocksdbConsumeQueue = true;
 
-    // ConsumeQueue file size,default is 30W
+    /** ConsumeQueue 单文件条目数，默认 30 万 */
     private int mappedFileSizeConsumeQueue = 300000 * ConsumeQueue.CQ_STORE_UNIT_SIZE;
-    // enable consume queue ext
+    /** 是否启用 ConsumeQueue 扩展文件 */
     private boolean enableConsumeQueueExt = false;
-    // ConsumeQueue extend file size, 48M
+    /** ConsumeQueue 扩展文件大小，48M */
     private int mappedFileSizeConsumeQueueExt = 48 * 1024 * 1024;
     private int mapperFileSizeBatchConsumeQueue = 300000 * BatchConsumeQueue.CQ_STORE_UNIT_SIZE;
-    // Bit count of filter bit map.
-    // this will be set by pipe of calculate filter bit map.
+    /** 过滤器位图 bit 数 */
+    /** 由位图计算管道设置 */
     private int bitMapLengthConsumeQueueExt = 64;
 
-    // CommitLog flush interval
-    // flush data to disk
+    /** CommitLog 刷盘间隔 */
+    /** 将数据 flush 到磁盘 */
     @ImportantField
     private int flushIntervalCommitLog = 500;
 
-    // Only used if TransientStorePool enabled
-    // flush data to FileChannel
+    /** 仅 TransientStorePool 启用时有效 */
+    /** 将数据 flush 到 FileChannel */
     @ImportantField
     private int commitIntervalCommitLog = 200;
 
@@ -162,53 +165,54 @@ public class MessageStoreConfig {
     private int diskSpaceCleanForciblyRatio = 85;
 
     /**
-     * introduced since 4.0.x. Determine whether to use mutex reentrantLock when putting message.<br/>
-     */
+ * 自 4.0.x 起：落盘时是否使用互斥 ReentrantLock。
+
+ */
     private boolean useReentrantLockWhenPutMessage = true;
 
-    // Whether schedule flush
+    /** 是否定时 flush */
     @ImportantField
     private boolean flushCommitLogTimed = true;
-    // ConsumeQueue flush interval
+    /** ConsumeQueue 刷盘间隔 */
     private int flushIntervalConsumeQueue = 1000;
-    // Resource reclaim interval
+    /** 资源回收间隔 */
     private int cleanResourceInterval = 10000;
-    // CommitLog removal interval
+    /** CommitLog 过期删除检查间隔 */
     private int deleteCommitLogFilesInterval = 100;
-    // ConsumeQueue removal interval
+    /** ConsumeQueue 过期删除检查间隔 */
     private int deleteConsumeQueueFilesInterval = 100;
     private int destroyMapedFileIntervalForcibly = 1000 * 120;
     private int redeleteHangedFileInterval = 1000 * 120;
-    // When to delete,default is at 4 am
+    /** 定时删除时刻，默认凌晨 4 点 */
     @ImportantField
     private String deleteWhen = "04";
     private int diskMaxUsedSpaceRatio = 75;
-    // The number of hours to keep a log file before deleting it (in hours)
+    /** 日志文件保留小时数 */
     @ImportantField
     private int fileReservedTime = 72;
     @ImportantField
     private int deleteFileBatchMax = 10;
-    // Flow control for ConsumeQueue
+    /** ConsumeQueue 流控阈值 */
     private int putMsgIndexHightWater = 600000;
-    // The maximum size of message body,default is 4M,4M only for body length,not include others.
+    /** 消息体最大长度，默认 4M（仅 body，不含属性） */
     private int maxMessageSize = 1024 * 1024 * 4;
 
-    // The maximum size of message body can be  set in config;count with maxMsgNums * CQ_STORE_UNIT_SIZE(20 || 46)
+    /** 可配置的最大消息体；与 maxMsgNums * CQ_STORE_UNIT_SIZE 相关 */
     private int maxFilterMessageSize = 16000;
-    // Whether check the CRC32 of the records consumed.
-    // This ensures no on-the-wire or on-disk corruption to the messages occurred.
-    // This check adds some overhead,so it may be disabled in cases seeking extreme performance.
+    /** 消费时是否校验 CRC32 */
+    /** 防止网络或磁盘损坏的消息被消费 */
+    /** 校验有开销，极致性能场景可关闭 */
     private boolean checkCRCOnRecover = true;
-    // Whether check the commitlog offset validity during abnormal recovery.
-    // This helps detect and truncate old file data that may pass CRC checks but contains invalid offsets.
+    /** 异常恢复时是否校验 CommitLog offset 有效性 */
+    /** 帮助检测并截断 CRC 通过但 offset 无效的旧数据 */
     private boolean checkCommitLogOffsetOnRecover = false;
-    // How many pages are to be flushed when flush CommitLog
+    /** CommitLog flush 页数 */
     private int flushCommitLogLeastPages = 4;
-    // How many pages are to be committed when commit data to file
+    /** commit 到文件的页数 */
     private int commitCommitLogLeastPages = 4;
-    // Flush page size when the disk in warming state
+    /** 磁盘预热时的 flush 页大小 */
     private int flushLeastPagesWhenWarmMapedFile = 1024 / 4 * 16;
-    // How many pages are to be flushed when flush ConsumeQueue
+    /** ConsumeQueue flush 页数 */
     private int flushConsumeQueueLeastPages = 2;
     private int flushCommitLogThoroughInterval = 1000 * 10;
     private int commitCommitLogThoroughInterval = 200;
@@ -234,9 +238,9 @@ public class MessageStoreConfig {
     private int haSendHeartbeatInterval = 1000 * 5;
     private int haHousekeepingInterval = 1000 * 20;
     /**
-     * Maximum size of data to transfer to slave.
-     * NOTE: cannot be larger than HAClient.READ_MAX_BUFFER_SIZE
-     */
+ * 向 Slave 传输数据的最大字节数；不可大于 HAClient.READ_MAX_BUFFER_SIZE。
+
+ */
     private int haTransferBatchSize = 1024 * 32;
     @ImportantField
     private String haMasterAddress = null;
@@ -245,9 +249,9 @@ public class MessageStoreConfig {
     private volatile BrokerRole brokerRole = BrokerRole.ASYNC_MASTER;
     @ImportantField
     private FlushDiskType flushDiskType = FlushDiskType.ASYNC_FLUSH;
-    // Used by GroupTransferService to sync messages from master to slave
+    /** GroupTransferService 主从同步消息用 */
     private int syncFlushTimeout = 1000 * 5;
-    // Used by PutMessage to wait messages be flushed to disk and synchronized in current broker member group.
+    /** PutMessage 等待刷盘并在副本组同步完成 */
     private int putMessageTimeout = 1000 * 8;
     private int slaveTimeout = 3000;
     private String messageDelayLevel = "1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h";
@@ -277,7 +281,7 @@ public class MessageStoreConfig {
     @ImportantField
     private boolean writeWithoutMmap = false;
 
-    // DLedger message store config
+    /** DLedger 存储配置 */
     private boolean enableDLegerCommitLog = false;
     private String dLegerGroup;
     private String dLegerPeers;
@@ -297,14 +301,14 @@ public class MessageStoreConfig {
     private int scheduleAsyncDeliverMaxResendNum2Blocked = 3;
 
     private int maxBatchDeleteFilesNum = 50;
-    //Polish dispatch
+    /** Dispatch 优化开关 */
     private int dispatchCqThreads = 10;
     private int dispatchCqCacheNum = 1024 * 4;
     private boolean enableAsyncReput = true;
-    //For recheck the reput
+    /** Reput 复查用 */
     private boolean recheckReputOffsetFromCq = false;
 
-    // Maximum length of topic, it will be removed in the future release
+    /** Topic 最大长度（后续版本移除） */
     @Deprecated
     private int maxTopicLength = Byte.MAX_VALUE;
 
@@ -329,11 +333,11 @@ public class MessageStoreConfig {
     private boolean enabledAppendPropCRC = false;
     private boolean forceVerifyPropCRC = false;
     private int travelCqFileNumWhenGetMessage = 1;
-    // Sleep interval between to corrections
+    /** 校正间隔休眠时间 */
     private int correctLogicMinOffsetSleepInterval = 1;
-    // Force correct min offset interval
+    /** 强制校正最小 offset 间隔 */
     private int correctLogicMinOffsetForceInterval = 5 * 60 * 1000;
-    // swap
+    /** Swap 相关配置 */
     private boolean mappedFileSwapEnable = true;
     private long commitLogForceSwapMapInterval = 12L * 60 * 60 * 1000;
     private long commitLogSwapMapInterval = 1L * 60 * 60 * 1000;
@@ -454,7 +458,7 @@ public class MessageStoreConfig {
 
     private int batchDispatchRequestThreadPoolNums = 16;
 
-    // rocksdb mode
+    /** RocksDB 模式 */
     private long cleanRocksDBDirtyCQIntervalMin = 60;
     private long statRocksDBCQIntervalSec = 10;
     private long memTableFlushIntervalMs = 60 * 60 * 1000L;
@@ -518,7 +522,7 @@ public class MessageStoreConfig {
      */
     private boolean enableAcceleratedRecovery = false;
 
-    // Shared byte buffer manager configuration
+    /** 共享 ByteBuffer 管理器配置 */
     private int sharedByteBufferNum = 16;
 
     private boolean useSeparateStorePathForRocksdbCQ = false;
@@ -1841,7 +1845,7 @@ public class MessageStoreConfig {
     }
 
     public void setTimerCongestNumEachSlot(int timerCongestNumEachSlot) {
-        // In order to get this value from messageStoreConfig properties file created before v4.4.1.
+        /** 兼容 v4.4.1 之前 properties 文件读取该值 */
         this.timerCongestNumEachSlot = timerCongestNumEachSlot;
     }
 

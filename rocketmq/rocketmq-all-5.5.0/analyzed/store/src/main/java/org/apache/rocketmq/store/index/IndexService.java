@@ -37,11 +37,16 @@ import org.apache.rocketmq.store.DispatchRequest;
 import org.apache.rocketmq.store.config.StorePathConfigHelper;
 import org.rocksdb.RocksDBException;
 
+/**
+ * 消息索引服务：按 key 维护 IndexFile 链表，支持异步/同步建索引与过期清理。
+ */
 public class IndexService implements CommitLogDispatchStore {
+    /** 存储模块日志。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     /**
-     * Maximum times to attempt index file creation.
-     */
+ * 创建 IndexFile 的最大重试次数。
+
+ */
     private static final int MAX_TRY_IDX_CREATE = 3;
     private final DefaultMessageStore defaultMessageStore;
     private final int hashSlotNum;
@@ -58,11 +63,13 @@ public class IndexService implements CommitLogDispatchStore {
             StorePathConfigHelper.getStorePathIndex(defaultMessageStore.getMessageStoreConfig().getStorePathRootDir());
     }
 
+    /** 加载持久化数据。 */
+
     public boolean load(final boolean lastExitOK) {
         File dir = new File(this.storePath);
         File[] files = dir.listFiles();
         if (files != null) {
-            // ascending order
+            /** 按时间升序 */
             Arrays.sort(files);
             for (File file : files) {
                 try {
@@ -98,6 +105,8 @@ public class IndexService implements CommitLogDispatchStore {
 
         return (long) indexFileList.get(0).getFileSize() * indexFileList.size();
     }
+
+    /** 删除过期索引文件。 */
 
     public void deleteExpiredFile(long offset) {
         Object[] files = null;
@@ -151,6 +160,8 @@ public class IndexService implements CommitLogDispatchStore {
             }
         }
     }
+
+    /** 销毁索引服务。 */
 
     public void destroy() {
         try {
@@ -220,6 +231,8 @@ public class IndexService implements CommitLogDispatchStore {
     private String buildKey(final String topic, final String key, final String indexType) {
         return topic + "#" + indexType + "#" + key;
     }
+
+    /** 构建消息索引。 */
 
     public void buildIndex(DispatchRequest req) {
         IndexFile indexFile = retryGetAndCreateIndexFile();
@@ -297,10 +310,10 @@ public class IndexService implements CommitLogDispatchStore {
     }
 
     /**
-     * Retries to get or create index file.
-     *
-     * @return {@link IndexFile} or null on failure.
-     */
+ * 重试获取或创建 IndexFile。
+ * @return {@link IndexFile} 或失败时 null
+
+ */
     public IndexFile retryGetAndCreateIndexFile() {
         IndexFile indexFile = null;
 
@@ -369,6 +382,7 @@ public class IndexService implements CommitLogDispatchStore {
 
                 Thread flushThread = new Thread(new Runnable() {
                     @Override
+                    /** 后台线程主循环。 */
                     public void run() {
                         IndexService.this.flush(flushThisFile);
                     }
@@ -381,6 +395,8 @@ public class IndexService implements CommitLogDispatchStore {
 
         return indexFile;
     }
+
+    /** 刷盘。 */
 
     public void flush(final IndexFile f) {
         if (null == f) {
@@ -401,9 +417,13 @@ public class IndexService implements CommitLogDispatchStore {
         }
     }
 
+    /** 启动服务。 */
+
     public void start() {
 
     }
+
+    /** 关闭并释放资源。 */
 
     public void shutdown() {
         try {

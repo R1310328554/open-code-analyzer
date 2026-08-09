@@ -57,7 +57,11 @@ import org.apache.rocketmq.store.logfile.MappedFile;
 import org.rocksdb.RocksDBException;
 
 /**
- * Store all metadata downtime for recovery, data protection reliability
+ * 存储恢复所需的全部元数据停机信息，保障数据可靠性。
+
+ */
+/**
+ * 基于 DLedger 的 CommitLog 实现：将消息写入 Raft 复制日志，支持主从自动切换与 epoch 管理。
  */
 public class DLedgerCommitLog extends CommitLog {
 
@@ -70,13 +74,13 @@ public class DLedgerCommitLog extends CommitLog {
     private final DLedgerMmapFileStore dLedgerFileStore;
     private final MmapFileList dLedgerFileList;
 
-    //The id identifies the broker role, 0 means master, others means slave
+    /** Broker 角色 ID：0 为 Master，非 0 为 Slave */
     private final int id;
 
     private final MessageSerializer messageSerializer;
     private volatile long beginTimeInDledgerLock = 0;
 
-    //This offset separate the old commitlog from dledger commitlog
+    /** 分隔旧 CommitLog 与 DLedger CommitLog 的 offset */
     private long dividedCommitlogOffset = -1;
 
     private boolean isInrecoveringOldCommitlog = false;
@@ -116,6 +120,7 @@ public class DLedgerCommitLog extends CommitLog {
     }
 
     @Override
+    /** 加载持久化数据。 */
     public boolean load() {
         return super.load();
     }
@@ -132,16 +137,19 @@ public class DLedgerCommitLog extends CommitLog {
     }
 
     @Override
+    /** 启动服务。 */
     public void start() {
         dLedgerServer.startup();
     }
 
     @Override
+    /** 关闭并释放资源。 */
     public void shutdown() {
         dLedgerServer.shutdown();
     }
 
     @Override
+    /** 刷盘。 */
     public long flush() {
         dLedgerFileStore.flush();
         return dLedgerFileList.getFlushedWhere();
@@ -192,6 +200,7 @@ public class DLedgerCommitLog extends CommitLog {
     }
 
     @Override
+    /** 删除过期索引文件。 */
     public int deleteExpiredFile(
         final long expiredTime,
         final int deleteFilesInterval,
@@ -200,7 +209,7 @@ public class DLedgerCommitLog extends CommitLog {
     ) {
         if (mappedFileQueue.getMappedFiles().isEmpty()) {
             refreshConfig();
-            //To prevent too much log in defaultMessageStore
+            /** 避免 DefaultMessageStore 日志过多 */
             return Integer.MAX_VALUE;
         } else {
             disableDeleteDledger();
@@ -209,7 +218,7 @@ public class DLedgerCommitLog extends CommitLog {
         if (count > 0 || mappedFileQueue.getMappedFiles().size() != 1) {
             return count;
         }
-        //the old logic will keep the last file, here to delete it
+        /** 旧逻辑保留最后一个文件，此处主动删除 */
         MappedFile mappedFile = mappedFileQueue.getLastMappedFile();
         log.info("Try to delete the last old commitlog file {}", mappedFile.getFileName());
         long liveMaxTimestamp = mappedFile.getLastModifiedTimestamp() + expiredTime;
@@ -245,6 +254,7 @@ public class DLedgerCommitLog extends CommitLog {
     }
 
     @Override
+    /** 读取映射文件数据。 */
     public SelectMappedBufferResult getData(final long offset) {
         if (offset < dividedCommitlogOffset) {
             return super.getData(offset);
@@ -272,6 +282,7 @@ public class DLedgerCommitLog extends CommitLog {
     }
 
     @Override
+    /** 读取映射文件数据。 */
     public boolean getData(final long offset, final int size, final ByteBuffer byteBuffer) {
         if (offset < dividedCommitlogOffset) {
             return super.getData(offset, size, byteBuffer);
@@ -803,6 +814,7 @@ public class DLedgerCommitLog extends CommitLog {
     }
 
     @Override
+    /** 销毁索引服务。 */
     public void destroy() {
         super.destroy();
         dLedgerFileList.destroy();
@@ -877,6 +889,8 @@ public class DLedgerCommitLog extends CommitLog {
             }
         }
 
+        /** 读取映射文件数据。 */
+
         public byte[] getData() {
             return data.array();
         }
@@ -917,8 +931,9 @@ public class DLedgerCommitLog extends CommitLog {
             String key = msgInner.getTopic() + "-" + msgInner.getQueueId();
 
             /**
-             * Serialize message
-             */
+ * 序列化消息。
+
+ */
             final byte[] propertiesData =
                 msgInner.getPropertiesString() == null ? null : msgInner.getPropertiesString().getBytes(MessageDecoder.CHARSET_UTF8);
 
@@ -1112,6 +1127,7 @@ public class DLedgerCommitLog extends CommitLog {
         }
 
         @Override
+        /** 释放引用计数。 */
         public synchronized void release() {
             super.release();
             if (sbr != null) {

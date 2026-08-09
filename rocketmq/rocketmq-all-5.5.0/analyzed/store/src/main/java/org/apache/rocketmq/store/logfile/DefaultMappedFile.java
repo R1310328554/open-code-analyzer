@@ -61,6 +61,9 @@ import org.apache.rocketmq.store.util.LibC;
 import sun.misc.Unsafe;
 
 
+/**
+ * 默认 MappedFile 实现：mmap 或 FileChannel 读写 CommitLog/CQ 映射文件，支持 TransientStorePool。
+ */
 public class DefaultMappedFile extends AbstractMappedFile {
     public static final int OS_PAGE_SIZE = 1024 * 4;
     public static final Unsafe UNSAFE = getUnsafe();
@@ -84,13 +87,15 @@ public class DefaultMappedFile extends AbstractMappedFile {
     protected FileChannel fileChannel;
 
     /**
-     * Message will put to here first, and then reput to FileChannel if writeBuffer is not null.
-     */
+ * 消息先写入 writeBuffer，非空时再 reput 到 FileChannel。
+
+ */
     protected ByteBuffer writeBuffer = null;
     protected TransientStorePool transientStorePool = null;
     /**
-     * Configuration flag to use RandomAccessFile instead of MappedByteBuffer for writing
-     */
+ * 写路径使用 RandomAccessFile 而非 MappedByteBuffer 的配置开关。
+
+ */
     protected boolean writeWithoutMmap = false;
     protected String fileName;
     protected long fileFromOffset;
@@ -105,9 +110,9 @@ public class DefaultMappedFile extends AbstractMappedFile {
     protected long mappedByteBufferAccessCountSinceLastSwap = 0L;
 
     /**
-     * If this mapped file belongs to consume queue, this field stores store-timestamp of first message referenced by
-     * this logical queue.
-     */
+ * CQ 映射文件时，存储首条引用消息的 store-timestamp。
+
+ */
     private long startTimestamp = -1;
 
     /**
@@ -128,7 +133,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
         FLUSHED_POSITION_UPDATER = AtomicIntegerFieldUpdater.newUpdater(DefaultMappedFile.class, "flushedPosition");
 
         Method isLoaded0method = null;
-        // On the windows platform and openjdk 11 method isLoaded0 always returns false.
+        /** Windows + OpenJDK11 下 isLoaded0 恒为 false */
         // see https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/19fb8f93c59dfd791f62d41f332db9e306bc1422/src/java.base/windows/native/libnio/MappedByteBuffer.c#L34
         if (!SystemUtils.IS_OS_WINDOWS) {
             try {
@@ -210,10 +215,10 @@ public class DefaultMappedFile extends AbstractMappedFile {
             this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
 
             if (writeWithoutMmap) {
-                // Still create MappedByteBuffer for reading operations
+                /** 读路径仍创建 MappedByteBuffer */
                 this.mappedByteBuffer = this.fileChannel.map(MapMode.READ_ONLY, 0, fileSize);
             } else {
-                // Use MappedByteBuffer for both reading and writing (default behavior)
+                /** 读写均使用 MappedByteBuffer（默认） */
                 this.mappedByteBuffer = this.fileChannel.map(MapMode.READ_WRITE, 0, fileSize);
             }
 
@@ -234,6 +239,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
     }
 
     @Override
+    /** 重命名映射文件。 */
     public boolean renameTo(String fileName) {
         File newFile = new File(fileName);
         boolean rename = file.renameTo(newFile);
@@ -248,6 +254,8 @@ public class DefaultMappedFile extends AbstractMappedFile {
     public long getLastModifiedTimestamp() {
         return this.file.lastModified();
     }
+
+    /** 读取映射文件数据。 */
 
     public boolean getData(int pos, int size, ByteBuffer byteBuffer) {
         if (byteBuffer.remaining() < size) {
@@ -289,6 +297,9 @@ public class DefaultMappedFile extends AbstractMappedFile {
         return fileChannel;
     }
 
+    /** 追加消息。 */
+
+    /** 追加消息。 */
     public AppendMessageResult appendMessage(final ByteBuffer byteBufferMsg, final CompactionAppendMsgCallback cb) {
         assert byteBufferMsg != null;
         assert cb != null;
@@ -426,11 +437,13 @@ public class DefaultMappedFile extends AbstractMappedFile {
     }
 
     @Override
+    /** 按 offset 获取文件起始 offset。 */
     public long getFileFromOffset() {
         return this.fileFromOffset;
     }
 
     @Override
+    /** 追加消息。 */
     public boolean appendMessage(final byte[] data) {
         return appendMessage(data, 0, data.length);
     }
@@ -664,6 +677,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
     }
 
     @Override
+    /** 选择映射缓冲区。 */
     public SelectMappedBufferResult selectMappedBuffer(int pos, int size) {
         int readPosition = getReadPosition();
         if ((pos + size) <= readPosition) {
@@ -741,6 +755,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
     }
 
     @Override
+    /** 销毁索引服务。 */
     public boolean destroy(final long intervalForcibly) {
         this.shutdown(intervalForcibly);
 
@@ -836,6 +851,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
     }
 
     @Override
+    /** 交换 mmap 映射。 */
     public boolean swapMap() {
         if (getRefCount() == 1 && this.mappedByteBufferWaitToClean == null) {
 

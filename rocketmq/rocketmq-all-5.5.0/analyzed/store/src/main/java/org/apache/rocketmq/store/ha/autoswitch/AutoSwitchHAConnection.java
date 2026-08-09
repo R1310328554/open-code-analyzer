@@ -38,6 +38,9 @@ import org.apache.rocketmq.store.ha.HAConnectionState;
 import org.apache.rocketmq.store.ha.io.AbstractHAReader;
 import org.apache.rocketmq.store.ha.io.HAWriter;
 
+/**
+ * 自动切换 HA 主节点连接：处理握手、传输 CommitLog 并维护 SyncStateSet 同步状态。
+ */
 public class AutoSwitchHAConnection implements HAConnection {
 
     /**
@@ -70,6 +73,7 @@ public class AutoSwitchHAConnection implements HAConnection {
      */
     public static final int TRANSFER_HEADER_SIZE = HANDSHAKE_HEADER_SIZE + 8 + 8;
     public static final int EPOCH_ENTRY_SIZE = 12;
+    /** 存储模块日志。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final AutoSwitchHAService haService;
     private final SocketChannel socketChannel;
@@ -79,6 +83,7 @@ public class AutoSwitchHAConnection implements HAConnection {
     private final ReadSocketService readSocketService;
     private final FlowMonitor flowMonitor;
 
+    /** 当前 HA 连接状态。 */
     private volatile HAConnectionState currentState = HAConnectionState.HANDSHAKE;
     private volatile long slaveRequestOffset = -1;
     private volatile long slaveAckOffset = -1;
@@ -123,6 +128,7 @@ public class AutoSwitchHAConnection implements HAConnection {
     }
 
     @Override
+    /** 启动服务。 */
     public void start() {
         changeCurrentState(HAConnectionState.HANDSHAKE);
         this.flowMonitor.start();
@@ -131,6 +137,7 @@ public class AutoSwitchHAConnection implements HAConnection {
     }
 
     @Override
+    /** 关闭并释放资源。 */
     public void shutdown() {
         changeCurrentState(HAConnectionState.SHUTDOWN);
         this.flowMonitor.shutdown(true);
@@ -140,6 +147,7 @@ public class AutoSwitchHAConnection implements HAConnection {
     }
 
     @Override
+    /** 关闭连接。 */
     public void close() {
         if (this.socketChannel != null) {
             try {
@@ -149,6 +157,8 @@ public class AutoSwitchHAConnection implements HAConnection {
             }
         }
     }
+
+    /** 切换 HA 连接状态。 */
 
     public void changeCurrentState(HAConnectionState connectionState) {
         LOGGER.info("change state to {}", connectionState);
@@ -193,7 +203,7 @@ public class AutoSwitchHAConnection implements HAConnection {
         this.currentTransferEpoch = entry.getEpoch();
         this.currentTransferEpochEndOffset = entry.getEndOffset();
         if (entry.getEpoch() == this.epochCache.lastEpoch()) {
-            // Use -1 to stand for Long.max
+            /** 用 -1 表示 Long.MAX_VALUE */
             this.currentTransferEpochEndOffset = -1;
         }
     }
@@ -243,6 +253,7 @@ public class AutoSwitchHAConnection implements HAConnection {
         }
 
         @Override
+        /** 后台线程主循环。 */
         public void run() {
             LOGGER.info(this.getServiceName() + " service started");
 
@@ -294,6 +305,7 @@ public class AutoSwitchHAConnection implements HAConnection {
         }
 
         @Override
+        /** 返回后台线程服务名。 */
         public String getServiceName() {
             if (haService.getDefaultMessageStore().getBrokerConfig().isInBrokerContainer()) {
                 return haService.getDefaultMessageStore().getBrokerIdentity().getIdentifier() + ReadSocketService.class.getSimpleName();
@@ -314,15 +326,15 @@ public class AutoSwitchHAConnection implements HAConnection {
 
                         switch (slaveState) {
                             case HANDSHAKE:
-                                // SlaveBrokerId
+                                /** Slave Broker ID */
                                 Long slaveBrokerId = byteBufferRead.getLong(readPosition + AutoSwitchHAClient.HANDSHAKE_HEADER_SIZE - 8);
                                 AutoSwitchHAConnection.this.slaveId = slaveBrokerId;
-                                // Flag(isSyncFromLastFile)
+                                /** 标志：是否从末文件同步 */
                                 short syncFromLastFileFlag = byteBufferRead.getShort(readPosition + AutoSwitchHAClient.HANDSHAKE_HEADER_SIZE - 12);
                                 if (syncFromLastFileFlag == 1) {
                                     AutoSwitchHAConnection.this.isSyncFromLastFile = true;
                                 }
-                                // Flag(isAsyncLearner role)
+                                /** 标志：AsyncLearner 角色 */
                                 short isAsyncLearner = byteBufferRead.getShort(readPosition + AutoSwitchHAClient.HANDSHAKE_HEADER_SIZE - 10);
                                 if (isAsyncLearner == 1) {
                                     AutoSwitchHAConnection.this.isAsyncLearner = true;
@@ -398,13 +410,14 @@ public class AutoSwitchHAConnection implements HAConnection {
         }
 
         @Override
+        /** 传输 CommitLog 数据。 */
         protected boolean transferData(int maxTransferSize) throws Exception {
 
             if (null != this.selectMappedBufferResult && maxTransferSize >= 0) {
                 this.selectMappedBufferResult.getByteBuffer().limit(maxTransferSize);
             }
 
-            // Write Header
+            /** 写入传输头 */
             boolean result = haWriter.write(this.socketChannel, this.byteBufferHeader);
 
             if (!result) {
@@ -415,7 +428,7 @@ public class AutoSwitchHAConnection implements HAConnection {
                 return true;
             }
 
-            // Write Body
+            /** 写入消息体 */
             result = haWriter.write(this.socketChannel, this.selectMappedBufferResult.getByteBuffer());
 
             if (result) {
@@ -504,7 +517,7 @@ public class AutoSwitchHAConnection implements HAConnection {
         }
 
         private boolean handshakeWithSlave() throws IOException {
-            // Write Header
+            /** 写入传输头 */
             boolean result = this.haWriter.write(this.socketChannel, this.byteBufferHeader);
 
             if (!result) {
@@ -533,7 +546,7 @@ public class AutoSwitchHAConnection implements HAConnection {
                 // Maybe it's used for heartbeat
                 entry = AutoSwitchHAConnection.this.epochCache.firstEntry();
             }
-            // Build Header
+            /** 构建传输头 */
             this.byteBufferHeader.position(0);
             this.byteBufferHeader.limit(TRANSFER_HEADER_SIZE);
             // State
@@ -625,7 +638,7 @@ public class AutoSwitchHAConnection implements HAConnection {
                 this.nextTransferFromWhere += size;
                 updateLastTransferInfo();
 
-                // Build Header
+                /** 构建传输头 */
                 buildTransferHeaderBuffer(this.transferOffset, size);
 
                 this.lastWriteOver = this.transferData(size);

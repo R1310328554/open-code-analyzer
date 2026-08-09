@@ -65,7 +65,11 @@ import org.apache.rocketmq.store.util.PerfCounter;
 import org.apache.rocketmq.store.metrics.StoreMetricsManager;
 import org.rocksdb.RocksDBException;
 
+/**
+ * MessageStore 插件抽象基类：将接口调用委托给 next 链，便于扩展存储能力。
+ */
 public abstract class AbstractPluginMessageStore implements MessageStore {
+    /** 插件链下一层 MessageStore。 */
     protected MessageStore next;
     protected MessageStorePluginContext context;
 
@@ -75,6 +79,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getEarliestMessageTime。 */
     public long getEarliestMessageTime() {
         return next.getEarliestMessageTime();
     }
@@ -85,31 +90,41 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 isOSPageCacheBusy。 */
     public boolean isOSPageCacheBusy() {
         return next.isOSPageCacheBusy();
     }
 
     @Override
+    /** 委托 next 执行 isTransientStorePoolDeficient。 */
     public boolean isTransientStorePoolDeficient() {
         return next.isTransientStorePoolDeficient();
     }
 
     @Override
+    /** 委托 next 执行 load。 */
+    /** 加载持久化数据。 */
     public boolean load() {
         return next.load();
     }
 
     @Override
+    /** 委托 next 执行 start。 */
+    /** 启动服务。 */
     public void start() throws Exception {
         next.start();
     }
 
     @Override
+    /** 委托 next 执行 shutdown。 */
+    /** 关闭并释放资源。 */
     public void shutdown() {
         next.shutdown();
     }
 
     @Override
+    /** 委托 next 执行 destroy。 */
+    /** 销毁索引服务。 */
     public void destroy() {
         next.destroy();
     }
@@ -130,43 +145,51 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getMessage。 */
     public GetMessageResult getMessage(String group, String topic, int queueId, long offset,
         int maxMsgNums, final MessageFilter messageFilter) {
         return next.getMessage(group, topic, queueId, offset, maxMsgNums, messageFilter);
     }
 
     @Override
+    /** 委托 next 执行 getMessageAsync。 */
     public CompletableFuture<GetMessageResult> getMessageAsync(String group, String topic,
         int queueId, long offset, int maxMsgNums, MessageFilter messageFilter) {
         return next.getMessageAsync(group, topic, queueId, offset, maxMsgNums, messageFilter);
     }
 
     @Override
+    /** 委托 next 执行 getMaxOffsetInQueue。 */
     public long getMaxOffsetInQueue(String topic, int queueId) throws ConsumeQueueException {
         return next.getMaxOffsetInQueue(topic, queueId);
     }
 
     @Override
+    /** 委托 next 执行 getMaxOffsetInQueue。 */
     public long getMaxOffsetInQueue(String topic, int queueId, boolean committed) throws ConsumeQueueException {
         return next.getMaxOffsetInQueue(topic, queueId, committed);
     }
 
     @Override
+    /** 委托 next 执行 getMinOffsetInQueue。 */
     public long getMinOffsetInQueue(String topic, int queueId) {
         return next.getMinOffsetInQueue(topic, queueId);
     }
 
     @Override
+    /** 委托 next 执行 getCommitLogOffsetInQueue。 */
     public long getCommitLogOffsetInQueue(String topic, int queueId, long consumeQueueOffset) {
         return next.getCommitLogOffsetInQueue(topic, queueId, consumeQueueOffset);
     }
 
     @Override
+    /** 委托 next 执行 getOffsetInQueueByTime。 */
     public long getOffsetInQueueByTime(String topic, int queueId, long timestamp) {
         return next.getOffsetInQueueByTime(topic, queueId, timestamp);
     }
 
     @Override
+    /** 委托 next 执行 getOffsetInQueueByTime。 */
     public long getOffsetInQueueByTime(String topic, int queueId, long timestamp, BoundaryType boundaryType) {
         return next.getOffsetInQueueByTime(topic, queueId, timestamp, boundaryType);
     }
@@ -187,52 +210,62 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getRunningDataInfo。 */
     public String getRunningDataInfo() {
         return next.getRunningDataInfo();
     }
 
     @Override
+    /** 委托 next 执行 getRuntimeInfo。 */
     public HashMap<String, String> getRuntimeInfo() {
         return next.getRuntimeInfo();
     }
 
     @Override
+    /** 委托 next 执行 getMaxPhyOffset。 */
     public long getMaxPhyOffset() {
         return next.getMaxPhyOffset();
     }
 
     @Override
+    /** 委托 next 执行 getMinPhyOffset。 */
     public long getMinPhyOffset() {
         return next.getMinPhyOffset();
     }
 
     @Override
+    /** 委托 next 执行 getEarliestMessageTime。 */
     public long getEarliestMessageTime(String topic, int queueId) {
         return next.getEarliestMessageTime(topic, queueId);
     }
 
     @Override
+    /** 委托 next 执行 getEarliestMessageTimeAsync。 */
     public CompletableFuture<Long> getEarliestMessageTimeAsync(String topic, int queueId) {
         return next.getEarliestMessageTimeAsync(topic, queueId);
     }
 
     @Override
+    /** 委托 next 执行 getMessageStoreTimeStamp。 */
     public long getMessageStoreTimeStamp(String topic, int queueId, long consumeQueueOffset) {
         return next.getMessageStoreTimeStamp(topic, queueId, consumeQueueOffset);
     }
 
     @Override
+    /** 委托 next 执行 getMessageStoreTimeStampAsync。 */
     public CompletableFuture<Long> getMessageStoreTimeStampAsync(String topic, int queueId,
         long consumeQueueOffset) {
         return next.getMessageStoreTimeStampAsync(topic, queueId, consumeQueueOffset);
     }
 
     @Override
+    /** 委托 next 执行 getMessageTotalInQueue。 */
     public long getMessageTotalInQueue(String topic, int queueId) {
         return next.getMessageTotalInQueue(topic, queueId);
     }
 
     @Override
+    /** 委托 next 执行 getCommitLogData。 */
     public SelectMappedBufferResult getCommitLogData(long offset) {
         return next.getCommitLogData(offset);
     }
@@ -311,11 +344,13 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 刷盘。 */
     public long flush() {
         return next.flush();
     }
 
     @Override
+    /** 委托 next 执行 getConfirmOffset。 */
     public long getConfirmOffset() {
         return next.getConfirmOffset();
     }
@@ -326,6 +361,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getDispatcherList。 */
     public LinkedList<CommitLogDispatcher> getDispatcherList() {
         return next.getDispatcherList();
     }
@@ -336,6 +372,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getConsumeQueue。 */
     public ConsumeQueueInterface getConsumeQueue(String topic, int queueId) {
         return next.getConsumeQueue(topic, queueId);
     }
@@ -346,6 +383,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getBrokerStatsManager。 */
     public BrokerStatsManager getBrokerStatsManager() {
         return next.getBrokerStatsManager();
     }
@@ -372,6 +410,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getStateMachineVersion。 */
     public long getStateMachineVersion() {
         return next.getStateMachineVersion();
     }
@@ -382,11 +421,13 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getHARuntimeInfo。 */
     public HARuntimeInfo getHARuntimeInfo() {
         return next.getHARuntimeInfo();
     }
 
     @Override
+    /** 委托 next 执行 getLastMappedFile。 */
     public boolean getLastMappedFile(long startOffset) {
         return next.getLastMappedFile(startOffset);
     }
@@ -407,11 +448,13 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getFlushedWhere。 */
     public long getFlushedWhere() {
         return next.getFlushedWhere();
     }
 
     @Override
+    /** 委托 next 执行 getMasterStoreInProcess。 */
     public MessageStore getMasterStoreInProcess() {
         return next.getMasterStoreInProcess();
     }
@@ -422,6 +465,8 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getData。 */
+    /** 读取映射文件数据。 */
     public boolean getData(long offset, int size, ByteBuffer byteBuffer) {
         return next.getData(offset, size, byteBuffer);
     }
@@ -432,6 +477,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getAliveReplicaNumInGroup。 */
     public int getAliveReplicaNumInGroup() {
         return next.getAliveReplicaNumInGroup();
     }
@@ -442,11 +488,13 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getMasterFlushedOffset。 */
     public long getMasterFlushedOffset() {
         return next.getMasterFlushedOffset();
     }
 
     @Override
+    /** 委托 next 执行 getBrokerInitMaxOffset。 */
     public long getBrokerInitMaxOffset() {
         return next.getBrokerInitMaxOffset();
     }
@@ -467,6 +515,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getHaService。 */
     public HAService getHaService() {
         return next.getHaService();
     }
@@ -477,11 +526,13 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 isOffsetAligned。 */
     public boolean isOffsetAligned(long offset) {
         return next.isOffsetAligned(offset);
     }
 
     @Override
+    /** 委托 next 执行 getRunningFlags。 */
     public RunningFlags getRunningFlags() {
         return next.getRunningFlags();
     }
@@ -492,17 +543,20 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getSendMessageBackHook。 */
     public SendMessageBackHook getSendMessageBackHook() {
         return next.getSendMessageBackHook();
     }
 
     @Override
+    /** 委托 next 执行 getMessage。 */
     public GetMessageResult getMessage(String group, String topic, int queueId, long offset,
         int maxMsgNums, int maxTotalMsgSize, MessageFilter messageFilter) {
         return next.getMessage(group, topic, queueId, offset, maxMsgNums, maxTotalMsgSize, messageFilter);
     }
 
     @Override
+    /** 委托 next 执行 getMessageAsync。 */
     public CompletableFuture<GetMessageResult> getMessageAsync(String group, String topic,
         int queueId, long offset, int maxMsgNums, int maxTotalMsgSize,
         MessageFilter messageFilter) {
@@ -515,6 +569,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getBulkCommitLogData。 */
     public List<SelectMappedBufferResult> getBulkCommitLogData(long offset, int size) {
         return next.getBulkCommitLogData(offset, size);
     }
@@ -531,36 +586,43 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getMessageStoreConfig。 */
     public MessageStoreConfig getMessageStoreConfig() {
         return next.getMessageStoreConfig();
     }
 
     @Override
+    /** 委托 next 执行 getStoreStatsService。 */
     public StoreStatsService getStoreStatsService() {
         return next.getStoreStatsService();
     }
 
     @Override
+    /** 委托 next 执行 getStoreCheckpoint。 */
     public StoreCheckpoint getStoreCheckpoint() {
         return next.getStoreCheckpoint();
     }
 
     @Override
+    /** 委托 next 执行 getSystemClock。 */
     public SystemClock getSystemClock() {
         return next.getSystemClock();
     }
 
     @Override
+    /** 委托 next 执行 getCommitLog。 */
     public CommitLog getCommitLog() {
         return next.getCommitLog();
     }
 
     @Override
+    /** 委托 next 执行 getTransientStorePool。 */
     public TransientStorePool getTransientStorePool() {
         return next.getTransientStorePool();
     }
 
     @Override
+    /** 委托 next 执行 getAllocateMappedFileService。 */
     public AllocateMappedFileService getAllocateMappedFileService() {
         return next.getAllocateMappedFileService();
     }
@@ -581,16 +643,19 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getQueueStore。 */
     public ConsumeQueueStoreInterface getQueueStore() {
         return next.getQueueStore();
     }
 
     @Override
+    /** 委托 next 执行 isSyncDiskFlush。 */
     public boolean isSyncDiskFlush() {
         return next.isSyncDiskFlush();
     }
 
     @Override
+    /** 委托 next 执行 isSyncMaster。 */
     public boolean isSyncMaster() {
         return next.isSyncMaster();
     }
@@ -606,11 +671,13 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getPutMessageHookList。 */
     public List<PutMessageHook> getPutMessageHookList() {
         return next.getPutMessageHookList();
     }
 
     @Override
+    /** 委托 next 执行 getLastFileFromOffset。 */
     public long getLastFileFromOffset() {
         return next.getLastFileFromOffset();
     }
@@ -621,11 +688,13 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 isMappedFilesEmpty。 */
     public boolean isMappedFilesEmpty() {
         return next.isMappedFilesEmpty();
     }
 
     @Override
+    /** 委托 next 执行 getTimerMessageStore。 */
     public TimerMessageStore getTimerMessageStore() {
         return next.getTimerMessageStore();
     }
@@ -636,11 +705,13 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getTimingMessageCount。 */
     public long getTimingMessageCount(String topic) {
         return next.getTimingMessageCount(topic);
     }
 
     @Override
+    /** 委托 next 执行 isShutdown。 */
     public boolean isShutdown() {
         return next.isShutdown();
     }
@@ -651,6 +722,7 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 next 执行 getMetricsView。 */
     public List<Pair<InstrumentSelector, ViewBuilder>> getMetricsView() {
         return next.getMetricsView();
     }
@@ -670,16 +742,19 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
         next.notifyMessageArriveIfNecessary(dispatchRequest);
     }
 
+    /** 委托 next 执行 getNext。 */
     public MessageStore getNext() {
         return next;
     }
 
     @Override
+    /** 委托 next 执行 getStateMachine。 */
     public MessageStoreStateMachine getStateMachine() {
         return next.getStateMachine();
     }
 
     @Override
+    /** 委托 next 执行 getStoreMetricsManager。 */
     public StoreMetricsManager getStoreMetricsManager() {
         return next.getStoreMetricsManager();
     }

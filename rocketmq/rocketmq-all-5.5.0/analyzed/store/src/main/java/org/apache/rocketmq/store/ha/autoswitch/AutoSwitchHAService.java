@@ -54,9 +54,14 @@ import org.apache.rocketmq.store.ha.HAConnectionStateNotificationService;
 import org.rocksdb.RocksDBException;
 
 /**
- * SwitchAble ha service, support switch role to master or slave.
+ * 可切换角色的 HA 服务：支持 Master/Slave 角色切换与 SyncStateSet 管理。
+
+ */
+/**
+ * 可切换角色的 HA 服务：管理 SyncStateSet、epoch 文件、主从 truncate 与 HA 连接生命周期。
  */
 public class AutoSwitchHAService extends DefaultHAService {
+    /** 存储模块日志。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final ExecutorService executorService = ThreadUtils.newSingleThreadExecutor(new ThreadFactoryImpl("AutoSwitchHAService_Executor_"));
     private final ConcurrentHashMap<Long/*brokerId*/, Long/*lastCaughtUpTimestamp*/> connectionCaughtUpTimeTable = new ConcurrentHashMap<>();
@@ -89,6 +94,7 @@ public class AutoSwitchHAService extends DefaultHAService {
     }
 
     @Override
+    /** 关闭并释放资源。 */
     public void shutdown() {
         super.shutdown();
         if (this.haClient != null) {
@@ -126,12 +132,12 @@ public class AutoSwitchHAService extends DefaultHAService {
             return false;
         }
         destroyConnections();
-        // Stop ha client if needed
+        /** 必要时停止 HA Client */
         if (this.haClient != null) {
             this.haClient.shutdown();
         }
 
-        // Truncate dirty file
+        /** 截断脏文件 */
         final long truncateOffset = truncateInvalidMsg();
 
         this.defaultMessageStore.setConfirmOffset(computeConfirmOffset());
@@ -140,7 +146,7 @@ public class AutoSwitchHAService extends DefaultHAService {
             this.epochCache.truncateSuffixByOffset(truncateOffset);
         }
 
-        // Append new epoch to epochFile
+        /** 向 epoch 文件追加新 epoch */
         final EpochEntry newEpochEntry = new EpochEntry(masterEpoch, this.defaultMessageStore.getMaxPhyOffset());
         if (this.epochCache.lastEpoch() >= masterEpoch) {
             this.epochCache.truncateSuffixByEpoch(masterEpoch);
@@ -208,7 +214,7 @@ public class AutoSwitchHAService extends DefaultHAService {
             LOGGER.warn("newMasterEpoch {} < lastEpoch {}, fail to change to master", masterEpoch, lastEpoch);
             return false;
         }
-        // Append new epoch to epochFile
+        /** 向 epoch 文件追加新 epoch */
         final EpochEntry newEpochEntry = new EpochEntry(masterEpoch, this.defaultMessageStore.getMaxPhyOffset());
         if (this.epochCache.lastEpoch() >= masterEpoch) {
             this.epochCache.truncateSuffixByEpoch(masterEpoch);
@@ -274,9 +280,9 @@ public class AutoSwitchHAService extends DefaultHAService {
     }
 
     /**
-     * Check and maybe shrink the SyncStateSet.
-     * A slave will be removed from SyncStateSet if (curTime - HaConnection.lastCaughtUpTime) > option(haMaxTimeSlaveNotCatchup)
-     */
+ * 检查并可能收缩 SyncStateSet：Slave 长时间未上报 offset 则移除。
+
+ */
     public Set<Long> maybeShrinkSyncStateSet() {
         final Set<Long> newSyncStateSet = getLocalSyncStateSet();
         boolean isSyncStateSetChanged = false;
@@ -310,9 +316,9 @@ public class AutoSwitchHAService extends DefaultHAService {
     }
 
     /**
-     * Check and maybe add the slave to SyncStateSet. A slave will be added to SyncStateSet if its slaveMaxOffset >=
-     * current confirmOffset, and it is caught up to an offset within the current leader epoch.
-     */
+ * 检查并可能将 Slave 加入 SyncStateSet：slaveMaxOffset 追平 confirmOffset 时加入。
+
+ */
     public void maybeExpandInSyncStateSet(final Long slaveBrokerId, final long slaveMaxOffset) {
         final Set<Long> currentSyncStateSet = getLocalSyncStateSet();
         if (currentSyncStateSet.contains(slaveBrokerId)) {
@@ -569,6 +575,7 @@ public class AutoSwitchHAService extends DefaultHAService {
         }
 
         @Override
+        /** 返回后台线程服务名。 */
         public String getServiceName() {
             if (defaultMessageStore.getBrokerConfig().isInBrokerContainer()) {
                 return defaultMessageStore.getBrokerConfig().getIdentifier() + AcceptSocketService.class.getSimpleName();

@@ -33,44 +33,46 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.store.DefaultMessageStore;
 
+/**
+ * 经典 HA 从节点客户端：连接 Master 拉取 CommitLog 并上报 slaveMaxOffset。
+ */
 public class DefaultHAClient extends ServiceThread implements HAClient {
 
     /**
-     * Report header buffer size. Schema: slaveMaxOffset. Format:
-     *
-     * <pre>
-     * ┌───────────────────────────────────────────────┐
-     * │                  slaveMaxOffset               │
-     * │                    (8bytes)                   │
-     * ├───────────────────────────────────────────────┤
-     * │                                               │
-     * │                  Report Header                │
-     * </pre>
-     * <p>
-     */
+ * 上报头缓冲区大小；协议字段：slaveMaxOffset（8 字节）。
+
+ */
+    /** 上报头大小（8 字节 slaveMaxOffset）。 */
     public static final int REPORT_HEADER_SIZE = 8;
 
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 读缓冲上限（4MB）。 */
     private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024 * 4;
+    /** Master HA 地址（原子引用）。 */
     private final AtomicReference<String> masterHaAddress = new AtomicReference<>();
     private final AtomicReference<String> masterAddress = new AtomicReference<>();
     private final ByteBuffer reportOffset = ByteBuffer.allocate(REPORT_HEADER_SIZE);
     private SocketChannel socketChannel;
     private Selector selector;
     /**
-     * last time that slave reads date from master.
-     */
+ * Slave 最近一次从 Master 读取数据的时间。
+
+ */
     private long lastReadTimestamp = System.currentTimeMillis();
     /**
-     * last time that slave reports offset to master.
-     */
+ * Slave 最近一次向 Master 上报 offset 的时间。
+
+ */
     private long lastWriteTimestamp = System.currentTimeMillis();
 
     private long currentReportedOffset = 0;
     private int dispatchPosition = 0;
     private ByteBuffer byteBufferRead = ByteBuffer.allocate(READ_MAX_BUFFER_SIZE);
     private ByteBuffer byteBufferBackup = ByteBuffer.allocate(READ_MAX_BUFFER_SIZE);
+    /** 所属 DefaultMessageStore。 */
     private DefaultMessageStore defaultMessageStore;
+    /** 当前 HA 连接状态。 */
     private volatile HAConnectionState currentState = HAConnectionState.READY;
     private FlowMonitor flowMonitor;
 
@@ -243,6 +245,8 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
         return result;
     }
 
+    /** 切换 HA 连接状态。 */
+
     public void changeCurrentState(HAConnectionState currentState) {
         log.info("change state to {}", currentState);
         this.currentState = currentState;
@@ -300,6 +304,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
     }
 
     @Override
+    /** 后台线程主循环。 */
     public void run() {
         log.info(this.getServiceName() + " service started");
 
@@ -388,6 +393,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
     }
 
     @Override
+    /** 关闭并释放资源。 */
     public void shutdown() {
         this.changeCurrentState(HAConnectionState.SHUTDOWN);
         this.flowMonitor.shutdown();
@@ -402,6 +408,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
     }
 
     @Override
+    /** 返回后台线程服务名。 */
     public String getServiceName() {
         if (this.defaultMessageStore != null && this.defaultMessageStore.getBrokerConfig().isInBrokerContainer()) {
             return this.defaultMessageStore.getBrokerIdentity().getIdentifier() + DefaultHAClient.class.getSimpleName();
