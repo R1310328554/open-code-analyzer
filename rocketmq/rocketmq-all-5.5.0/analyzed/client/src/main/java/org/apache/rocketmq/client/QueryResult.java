@@ -19,19 +19,25 @@ package org.apache.rocketmq.client;
 import java.util.List;
 import org.apache.rocketmq.common.message.MessageExt;
 
+/**
+ * 消息索引查询结果：包含索引最后更新时间戳与匹配的消息列表。
+ */
 public class QueryResult {
     private final long indexLastUpdateTimestamp;
     private final List<MessageExt> messageList;
 
+    /** 构造查询结果。 */
     public QueryResult(long indexLastUpdateTimestamp, List<MessageExt> messageList) {
         this.indexLastUpdateTimestamp = indexLastUpdateTimestamp;
         this.messageList = messageList;
     }
 
+    /** 返回索引最后更新时间戳。 */
     public long getIndexLastUpdateTimestamp() {
         return indexLastUpdateTimestamp;
     }
 
+    /** 返回匹配的消息列表。 */
     public List<MessageExt> getMessageList() {
         return messageList;
     }

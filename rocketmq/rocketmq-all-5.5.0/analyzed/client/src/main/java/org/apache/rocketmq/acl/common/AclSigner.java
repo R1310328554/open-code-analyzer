@@ -26,22 +26,31 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * ACL 请求签名工具：使用 HMAC 算法对请求内容计算签名并 Base64 编码，
+ * 供客户端 {@link AclClientRPCHook} 与服务端鉴权链校验。
+ */
 public class AclSigner {
+    /** 默认字符集 UTF-8。 */
     public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+    /** 默认签名算法 HmacSHA1。 */
     public static final SigningAlgorithm DEFAULT_ALGORITHM = SigningAlgorithm.HmacSHA1;
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_AUTHORIZE_LOGGER_NAME);
     private static final int CAL_SIGNATURE_FAILED = 10015;
     private static final String CAL_SIGNATURE_FAILED_MSG = "[%s:signature-failed] unable to calculate a request signature. error=%s";
 
+    /** 使用默认算法与 UTF-8 对字符串数据签名。 */
     public static String calSignature(String data, String key) throws AclException {
         return calSignature(data, key, DEFAULT_ALGORITHM, DEFAULT_CHARSET);
     }
 
+    /** 指定算法与字符集对字符串数据签名。 */
     public static String calSignature(String data, String key, SigningAlgorithm algorithm,
         Charset charset) throws AclException {
         return signAndBase64Encode(data, key, algorithm, charset);
     }
 
+    /** 字符串路径：HMAC 签名后 Base64 编码。 */
     private static String signAndBase64Encode(String data, String key, SigningAlgorithm algorithm, Charset charset)
         throws AclException {
         try {
@@ -54,6 +63,7 @@ public class AclSigner {
         }
     }
 
+    /** 底层 HMAC 计算；失败时抛出 {@link AclException}。 */
     private static byte[] sign(byte[] data, byte[] key, SigningAlgorithm algorithm) throws AclException {
         try {
             Mac mac = Mac.getInstance(algorithm.toString());
@@ -66,15 +76,18 @@ public class AclSigner {
         }
     }
 
+    /** 使用默认算法与 UTF-8 对字节数组签名。 */
     public static String calSignature(byte[] data, String key) throws AclException {
         return calSignature(data, key, DEFAULT_ALGORITHM, DEFAULT_CHARSET);
     }
 
+    /** 指定算法与字符集对字节数组签名。 */
     public static String calSignature(byte[] data, String key, SigningAlgorithm algorithm,
         Charset charset) throws AclException {
         return signAndBase64Encode(data, key, algorithm, charset);
     }
 
+    /** 字节数组路径：HMAC 签名后 Base64 编码。 */
     private static String signAndBase64Encode(byte[] data, String key, SigningAlgorithm algorithm, Charset charset)
         throws AclException {
         try {

@@ -33,10 +33,15 @@ import java.util.SortedMap;
 
 import static org.apache.rocketmq.acl.common.SessionCredentials.CHARSET;
 
+/**
+ * ACL 辅助工具：组装 Remoting 待签名字节、IPv4/IPv6 网段校验与展开、
+ * 以及从 YAML 配置构建 {@link AclClientRPCHook}。
+ */
 public class AclUtils {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /** 拼接扩展字段值（跳过 Signature）与请求体，作为签名输入。 */
     public static byte[] combineRequestContent(RemotingCommand request, SortedMap<String, String> fieldsMap) {
         try {
             StringBuilder sb = new StringBuilder();
@@ -52,6 +57,7 @@ public class AclUtils {
         }
     }
 
+    /** 顺序合并两个字节数组；任一方为空则返回另一方。 */
     public static byte[] combineBytes(byte[] b1, byte[] b2) {
         if (b1 == null || b1.length == 0) return b2;
         if (b2 == null || b2.length == 0) return b1;
@@ -61,20 +67,22 @@ public class AclUtils {
         return total;
     }
 
+    /** 委托 {@link AclSigner} 计算签名。 */
     public static String calSignature(byte[] data, String secretKey) {
         return AclSigner.calSignature(data, secretKey);
     }
 
+    /** 校验 IPv6 网段表达式中 * 与 - 的合法位置。 */
     public static void IPv6AddressCheck(String netAddress) {
         if (isAsterisk(netAddress) || isMinus(netAddress)) {
             int asterisk = netAddress.indexOf("*");
             int minus = netAddress.indexOf("-");
-            // '*' must be the end of netAddress if it exists
+            // 通配符 * 若存在，必须位于网段末尾
             if (asterisk > -1 && asterisk != netAddress.length() - 1) {
                 throw new AclException(String.format("NetAddress examine scope Exception netAddress is %s", netAddress));
             }
 
-            // format like "2::ac5:78:1-200:*" or "2::ac5:78:1-200" is legal
+            // 合法格式示例：2::ac5:78:1-200:* 或 2::ac5:78:1-200
             if (minus > -1) {
                 if (asterisk == -1) {
                     if (minus <= netAddress.lastIndexOf(":")) {
@@ -89,6 +97,7 @@ public class AclUtils {
         }
     }
 
+    /** 按 * / - 组合将 IPv6 缩写展开为 8 段标准形式。 */
     public static String v6ipProcess(String netAddress) {
         int part;
         String subAddress;
@@ -109,12 +118,14 @@ public class AclUtils {
         return expandIP(subAddress, part);
     }
 
+    /** 校验网段前 index 段数值是否在合法范围内。 */
     public static void verify(String netAddress, int index) {
         if (!AclUtils.isScope(netAddress, index)) {
             throw new AclException(String.format("NetAddress examine scope Exception netAddress is %s", netAddress));
         }
     }
 
+    /** 解析 {a,b,c} 形式的 IPv6 部分地址列表。 */
     public static String[] getAddresses(String netAddress, String partialAddress) {
         String[] parAddStrArray = StringUtils.split(partialAddress.substring(1, partialAddress.length() - 1), ",");
         String address = netAddress.substring(0, netAddress.indexOf("{"));
@@ -125,8 +136,9 @@ public class AclUtils {
         return addressStrArray;
     }
 
+    /** 判断 IPv4 或 IPv6 网段前 index 段是否在合法范围。 */
     public static boolean isScope(String netAddress, int index) {
-        // IPv6 Address
+        // IPv6 地址分支
         if (isColon(netAddress)) {
             netAddress = expandIP(netAddress, 8);
             String[] strArray = StringUtils.split(netAddress, ":");
@@ -141,6 +153,7 @@ public class AclUtils {
 
     }
 
+    /** IPv4 分段范围校验。 */
     public static boolean isScope(String[] num, int index) {
         for (int i = 0; i < index; i++) {
             if (!isScope(num[i])) {
@@ -150,31 +163,38 @@ public class AclUtils {
         return true;
     }
 
+    /** 是否包含冒号（IPv6 特征）。 */
     public static boolean isColon(String netAddress) {
         return netAddress.indexOf(':') > -1;
     }
 
+    /** 单段 IPv4 十进制是否在 0–255。 */
     public static boolean isScope(String num) {
         return isScope(Integer.parseInt(num.trim()));
     }
 
+    /** 整数是否在 IPv4 单段合法范围 0–255。 */
     public static boolean isScope(int num) {
         return num >= 0 && num <= 255;
     }
 
+    /** 是否包含通配符 *。 */
     public static boolean isAsterisk(String asterisk) {
         return asterisk.indexOf('*') > -1;
     }
 
+    /** 是否包含逗号（多地址枚举）。 */
     public static boolean isComma(String colon) {
         return colon.indexOf(',') > -1;
     }
 
+    /** 是否包含连字符 -（范围表示）。 */
     public static boolean isMinus(String minus) {
         return minus.indexOf('-') > -1;
 
     }
 
+    /** IPv6 十六进制分段范围校验。 */
     public static boolean isIPv6Scope(String[] num, int index) {
         for (int i = 0; i < index; i++) {
             int value;
@@ -190,15 +210,17 @@ public class AclUtils {
         return true;
     }
 
+    /** 单段 IPv6 十六进制值是否在 0–ffff。 */
     public static boolean isIPv6Scope(int num) {
         int min = Integer.parseInt("0", 16);
         int max = Integer.parseInt("ffff", 16);
         return num >= min && num <= max;
     }
 
+    /** 将 :: 缩写 IPv6 展开并左补零至每段 4 位十六进制。 */
     public static String expandIP(String netAddress, int part) {
         netAddress = netAddress.toUpperCase();
-        // expand netAddress
+        // 展开 :: 省略段
         int separatorCount = StringUtils.countMatches(netAddress, ":");
         int padCount = part - separatorCount;
         if (padCount > 0) {
@@ -209,7 +231,7 @@ public class AclUtils {
             netAddress = StringUtils.replace(netAddress, "::", padStr.toString());
         }
 
-        // pad netAddress
+        // 各段左补零
         String[] strArray = StringUtils.splitPreserveAllTokens(netAddress, ":");
         for (int i = 0; i < strArray.length; i++) {
             if (strArray[i].length() < 4) {
@@ -217,7 +239,7 @@ public class AclUtils {
             }
         }
 
-        // output
+        // 拼接输出
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < strArray.length; i++) {
             sb.append(strArray[i]);
@@ -228,6 +250,7 @@ public class AclUtils {
         return sb.toString();
     }
 
+    /** 从文件路径加载 YAML 并反序列化为指定类型；文件不存在返回 null。 */
     public static <T> T getYamlDataObject(String path, Class<T> clazz) {
         try (FileInputStream fis = new FileInputStream(path)) {
             return getYamlDataObject(fis, clazz);
@@ -238,6 +261,7 @@ public class AclUtils {
         }
     }
 
+    /** 从输入流加载 YAML 并反序列化。 */
     public static <T> T getYamlDataObject(InputStream fis, Class<T> clazz) {
         Yaml yaml = new Yaml();
         try {
@@ -247,6 +271,7 @@ public class AclUtils {
         }
     }
 
+    /** 从 YAML 文件路径读取 accessKey/secretKey 并构建 ACL RPC Hook。 */
     public static RPCHook getAclRPCHook(String fileName) {
         JSONObject yamlDataObject;
         try {
@@ -259,6 +284,7 @@ public class AclUtils {
         return buildRpcHook(yamlDataObject);
     }
 
+    /** 从 YAML 输入流构建 ACL RPC Hook。 */
     public static RPCHook getAclRPCHook(InputStream inputStream) {
         JSONObject yamlDataObject = null;
         try {
@@ -270,6 +296,7 @@ public class AclUtils {
         return buildRpcHook(yamlDataObject);
     }
 
+    /** 解析 accessKey/secretKey，非空时包装为 {@link AclClientRPCHook}。 */
     private static RPCHook buildRpcHook(JSONObject yamlDataObject) {
         if (yamlDataObject == null || yamlDataObject.isEmpty()) {
             log.warn("Failed to parse configuration to enable ACL.");

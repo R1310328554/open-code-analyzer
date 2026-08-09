@@ -24,9 +24,13 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * MQ 运维辅助工具：提供按时间戳重置消费位点等便捷方法。
+ */
 public class MQHelper {
     private static final Logger log = LoggerFactory.getLogger(MQHelper.class);
 
+    /** @deprecated 请使用带 instanceName 的重载方法。 */
     @Deprecated
     public static void resetOffsetByTimestamp(
         final MessageModel messageModel,
@@ -37,13 +41,13 @@ public class MQHelper {
     }
 
     /**
-     * Reset consumer topic offset according to time
+     * 按时间戳重置指定消费组在各队列上的消费位点。
      *
-     * @param messageModel  which model
-     * @param instanceName  which instance
-     * @param consumerGroup consumer group
-     * @param topic         topic
-     * @param timestamp     time
+     * @param messageModel 集群/广播消费模式
+     * @param instanceName 客户端实例名
+     * @param consumerGroup 消费组
+     * @param topic Topic
+     * @param timestamp 目标时间戳（毫秒）
      */
     public static void resetOffsetByTimestamp(
         final MessageModel messageModel,

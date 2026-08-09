@@ -16,9 +16,15 @@
  */
 package org.apache.rocketmq.acl.common;
 
+/**
+ * ACL 请求签名支持的 HMAC 算法。
+ */
 public enum SigningAlgorithm {
+    /** HMAC-SHA1（默认）。 */
     HmacSHA1,
+    /** HMAC-SHA256。 */
     HmacSHA256,
+    /** HMAC-MD5。 */
     HmacMD5;
 
 }

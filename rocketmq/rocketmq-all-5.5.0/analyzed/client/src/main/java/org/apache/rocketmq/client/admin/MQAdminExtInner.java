@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.client.admin;
 
+/**
+ * MQAdmin 扩展内部标记接口：供 {@code MQClientInstance} 识别管理端实现。
+ */
 public interface MQAdminExtInner {
 
 }

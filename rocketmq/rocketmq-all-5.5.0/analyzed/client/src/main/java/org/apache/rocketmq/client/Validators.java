@@ -33,20 +33,20 @@ import org.apache.rocketmq.remoting.protocol.ResponseCode;
 import static org.apache.rocketmq.common.topic.TopicValidator.isTopicOrGroupIllegal;
 
 /**
- * Common Validator
+ * 客户端通用校验器：校验 Group、Topic、Message 与 Broker/Topic 权限配置。
  */
 public class Validators {
+    /** 通用字符串最大长度。 */
     public static final int CHARACTER_MAX_LENGTH = 255;
+    /** Topic 名称最大长度。 */
     public static final int TOPIC_MAX_LENGTH = 127;
     /*
-     * Group name max length is 120, for it will be used to make up retry and DLQ topic,
-     * like pull retry: %RETRY%group_topic and pop retry: %RETRY%group_topic.
+     * 消费组名最长 120：需预留 %RETRY%group_topic 等重试 Topic 拼接空间。
      */
+    /** 消费组名称最大长度。 */
     public static final int GROUP_MAX_LENGTH = 120;
 
-    /**
-     * Validate group
-     */
+    /** 校验消费组名非空、长度与字符合法性。 */
     public static void checkGroup(String group) throws MQClientException {
         if (UtilAll.isBlank(group)) {
             throw new MQClientException("the specified group is blank", null);
@@ -63,15 +63,16 @@ public class Validators {
         }
     }
 
+    /** 校验消息 Topic、Body 非空且不超过 Producer 最大消息大小。 */
     public static void checkMessage(Message msg, DefaultMQProducer defaultMQProducer) throws MQClientException {
         if (null == msg) {
             throw new MQClientException(ResponseCode.MESSAGE_ILLEGAL, "the message is null");
         }
-        // topic
+        // 校验 Topic
         Validators.checkTopic(msg.getTopic());
         Validators.isNotAllowedSendTopic(msg.getTopic());
 
-        // body
+        // 校验消息体
         if (null == msg.getBody()) {
             throw new MQClientException(ResponseCode.MESSAGE_ILLEGAL, "the message body is null");
         }
@@ -92,6 +93,7 @@ public class Validators {
         }
     }
 
+    /** 校验 Topic 非空、长度与字符合法性。 */
     public static void checkTopic(String topic) throws MQClientException {
         if (UtilAll.isBlank(topic)) {
             throw new MQClientException("The specified topic is blank", null);
@@ -109,6 +111,7 @@ public class Validators {
         }
     }
 
+    /** 禁止用户使用系统保留 Topic。 */
     public static void isSystemTopic(String topic) throws MQClientException {
         if (TopicValidator.isSystemTopic(topic)) {
             throw new MQClientException(
@@ -116,6 +119,7 @@ public class Validators {
         }
     }
 
+    /** 禁止向不允许发送的 Topic 投递消息。 */
     public static void isNotAllowedSendTopic(String topic) throws MQClientException {
         if (TopicValidator.isNotAllowedSendTopic(topic)) {
             throw new MQClientException(
@@ -123,6 +127,7 @@ public class Validators {
         }
     }
 
+    /** 校验 Topic 权限位是否合法。 */
     public static void checkTopicConfig(final TopicConfig topicConfig) throws MQClientException {
         if (!PermName.isValid(topicConfig.getPerm())) {
             throw new MQClientException(ResponseCode.NO_PERMISSION,
@@ -130,6 +135,7 @@ public class Validators {
         }
     }
 
+    /** 校验 Broker 配置中的 brokerPermission 是否合法。 */
     public static void checkBrokerConfig(final Properties brokerConfig) throws MQClientException {
         String brokerPermission = brokerConfig.getProperty("brokerPermission");
         if (brokerPermission != null && !PermName.isValid(brokerPermission)) {

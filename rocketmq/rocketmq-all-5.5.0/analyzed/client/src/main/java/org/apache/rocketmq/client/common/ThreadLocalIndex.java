@@ -19,11 +19,15 @@ package org.apache.rocketmq.client.common;
 
 import java.util.Random;
 
+/**
+ * 线程本地递增索引：为每线程维护独立计数器，用于客户端实例名等场景。
+ */
 public class ThreadLocalIndex {
     private final ThreadLocal<Integer> threadLocalIndex = new ThreadLocal<>();
     private final Random random = new Random();
     private final static int POSITIVE_MASK = 0x7FFFFFFF;
 
+    /** 线程内递增并返回非负索引值。 */
     public int incrementAndGet() {
         Integer index = this.threadLocalIndex.get();
         if (null == index) {
@@ -33,6 +37,7 @@ public class ThreadLocalIndex {
         return index & POSITIVE_MASK;
     }
 
+    /** 用随机正整数重置当前线程索引。 */
     public void reset() {
         int index = Math.abs(random.nextInt(Integer.MAX_VALUE));
         this.threadLocalIndex.set(index);

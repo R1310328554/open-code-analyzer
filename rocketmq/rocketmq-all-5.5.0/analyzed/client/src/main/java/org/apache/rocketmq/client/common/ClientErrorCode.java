@@ -17,12 +17,22 @@
 
 package org.apache.rocketmq.client.common;
 
+/**
+ * 客户端本地错误码常量：连接 Broker、NameServer 超时与 Topic 不存在等场景。
+ */
 public class ClientErrorCode {
+    /** 连接 Broker 失败。 */
     public static final int CONNECT_BROKER_EXCEPTION = 10001;
+    /** 访问 Broker 超时。 */
     public static final int ACCESS_BROKER_TIMEOUT = 10002;
+    /** Broker 不存在。 */
     public static final int BROKER_NOT_EXIST_EXCEPTION = 10003;
+    /** 未配置或无法连接 NameServer。 */
     public static final int NO_NAME_SERVER_EXCEPTION = 10004;
+    /** Topic 路由未找到。 */
     public static final int NOT_FOUND_TOPIC_EXCEPTION = 10005;
+    /** 请求超时。 */
     public static final int REQUEST_TIMEOUT_EXCEPTION = 10006;
+    /** 创建 Reply 消息失败。 */
     public static final int CREATE_REPLY_MESSAGE_EXCEPTION = 10007;
 }

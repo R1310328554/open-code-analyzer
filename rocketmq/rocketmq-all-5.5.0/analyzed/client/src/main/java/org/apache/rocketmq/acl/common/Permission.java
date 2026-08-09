@@ -16,13 +16,21 @@
  */
 package org.apache.rocketmq.acl.common;
 
+/**
+ * ACL 权限位掩码：发布、订阅、拒绝等权限以位运算组合。
+ */
 public class Permission {
 
+    /** 拒绝访问。 */
     public static final byte DENY = 1;
+    /** 任意权限占位（保留位）。 */
     public static final byte ANY = 1 << 1;
+    /** 发布（写）权限。 */
     public static final byte PUB = 1 << 2;
+    /** 订阅（读）权限。 */
     public static final byte SUB = 1 << 3;
 
+    /** 将 PUB/SUB/PUB|SUB/DENY 等字符串解析为权限位掩码。 */
     public static byte parsePermFromString(String permString) {
         if (permString == null) {
             return Permission.DENY;

@@ -24,13 +24,23 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
+/**
+ * ACL 会话凭证：承载 AccessKey、SecretKey、SecurityToken 与请求签名，
+ * 默认可从 {@link #KEY_FILE} 指定的本地 key 文件加载。
+ */
 public class SessionCredentials {
+    /** 凭证与签名使用的字符集。 */
     public static final Charset CHARSET = StandardCharsets.UTF_8;
+    /** Remoting 扩展字段：AccessKey 键名。 */
     public static final String ACCESS_KEY = "AccessKey";
+    /** Remoting 扩展字段：SecretKey 键名。 */
     public static final String SECRET_KEY = "SecretKey";
+    /** Remoting 扩展字段：Signature 键名。 */
     public static final String SIGNATURE = "Signature";
+    /** 临时安全令牌字段名（STS 场景）。 */
     public static final String SECURITY_TOKEN = "SecurityToken";
 
+    /** 本地 key 文件路径，可通过系统属性 rocketmq.client.keyFile 覆盖。 */
     public static final String KEY_FILE = System.getProperty("rocketmq.client.keyFile",
         System.getProperty("user.home") + File.separator + "key");
 
@@ -39,6 +49,7 @@ public class SessionCredentials {
     private String securityToken;
     private String signature;
 
+    /** 无参构造：尝试从 {@link #KEY_FILE} 加载 AccessKey/SecretKey。 */
     public SessionCredentials() {
         String keyContent = null;
         try {
@@ -53,16 +64,19 @@ public class SessionCredentials {
         }
     }
 
+    /** 使用 AccessKey 与 SecretKey 构造凭证。 */
     public SessionCredentials(String accessKey, String secretKey) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
     }
 
+    /** 构造带临时 SecurityToken 的凭证。 */
     public SessionCredentials(String accessKey, String secretKey, String securityToken) {
         this(accessKey, secretKey);
         this.securityToken = securityToken;
     }
 
+    /** 从 Properties 更新 AccessKey、SecretKey 与 SecurityToken。 */
     public void updateContent(Properties prop) {
         {
             String value = prop.getProperty(ACCESS_KEY);
@@ -84,34 +98,42 @@ public class SessionCredentials {
         }
     }
 
+    /** 返回 AccessKey。 */
     public String getAccessKey() {
         return accessKey;
     }
 
+    /** 设置 AccessKey。 */
     public void setAccessKey(String accessKey) {
         this.accessKey = accessKey;
     }
 
+    /** 返回 SecretKey。 */
     public String getSecretKey() {
         return secretKey;
     }
 
+    /** 设置 SecretKey。 */
     public void setSecretKey(String secretKey) {
         this.secretKey = secretKey;
     }
 
+    /** 返回当前请求签名。 */
     public String getSignature() {
         return signature;
     }
 
+    /** 设置请求签名。 */
     public void setSignature(String signature) {
         this.signature = signature;
     }
 
+    /** 返回 SecurityToken。 */
     public String getSecurityToken() {
         return securityToken;
     }
 
+    /** 设置 SecurityToken。 */
     public void setSecurityToken(final String securityToken) {
         this.securityToken = securityToken;
     }

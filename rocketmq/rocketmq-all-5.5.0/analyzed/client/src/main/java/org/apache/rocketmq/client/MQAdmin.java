@@ -25,80 +25,47 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
 import java.util.Map;
 
 /**
- * Base interface for MQ management
+ * MQ 管理基础接口：Topic 创建、队列 offset 查询与按 key 检索消息等。
  */
 public interface MQAdmin {
     /**
-     * Creates a topic
-     *  @param key accessKey
-     * @param newTopic topic name
-     * @param queueNum topic's queue number
-     * @param attributes
+     * 创建 Topic。
+     *
+     * @param key accessKey
+     * @param newTopic Topic 名称
+     * @param queueNum 队列数
+     * @param attributes 扩展属性
      */
     void createTopic(final String key, final String newTopic, final int queueNum, Map<String, String> attributes)
         throws MQClientException;
 
     /**
-     * Creates a topic
-     *  @param key accessKey
-     * @param newTopic topic name
-     * @param queueNum topic's queue number
-     * @param topicSysFlag topic system flag
-     * @param attributes
+     * 创建 Topic（指定系统标志位）。
+     *
+     * @param topicSysFlag Topic 系统标志
      */
     void createTopic(String key, String newTopic, int queueNum, int topicSysFlag, Map<String, String> attributes)
         throws MQClientException;
 
     /**
-     * Gets the message queue offset according to some time in milliseconds<br>
-     * be cautious to call because of more IO overhead
-     *
-     * @param mq Instance of MessageQueue
-     * @param timestamp from when in milliseconds.
-     * @return offset
+     * 按时间戳查找队列消费位点；涉及 Broker IO，调用需谨慎。
      */
     long searchOffset(final MessageQueue mq, final long timestamp) throws MQClientException;
 
-    /**
-     * Gets the max offset
-     *
-     * @param mq Instance of MessageQueue
-     * @return the max offset
-     */
+    /** 获取队列最大 offset。 */
     long maxOffset(final MessageQueue mq) throws MQClientException;
 
-    /**
-     * Gets the minimum offset
-     *
-     * @param mq Instance of MessageQueue
-     * @return the minimum offset
-     */
+    /** 获取队列最小 offset。 */
     long minOffset(final MessageQueue mq) throws MQClientException;
 
-    /**
-     * Gets the earliest stored message time
-     *
-     * @param mq Instance of MessageQueue
-     * @return the time in microseconds
-     */
+    /** 获取队列最早消息存储时间（微秒）。 */
     long earliestMsgStoreTime(final MessageQueue mq) throws MQClientException;
 
-    /**
-     * Query messages
-     *
-     * @param topic message topic
-     * @param key message key index word
-     * @param maxNum max message number
-     * @param begin from when
-     * @param end to when
-     * @return Instance of QueryResult
-     */
+    /** 按 Topic 与 key 在时间范围内索引查询消息。 */
     QueryResult queryMessage(final String topic, final String key, final int maxNum, final long begin,
         final long end) throws MQClientException, InterruptedException;
 
-    /**
-     * @return The {@code MessageExt} of given msgId
-     */
+    /** 按 msgId 查看单条消息详情。 */
     MessageExt viewMessage(String topic,
         String msgId) throws RemotingException, MQBrokerException, InterruptedException, MQClientException;
 
