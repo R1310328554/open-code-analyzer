@@ -50,6 +50,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 集群模式配置与状态查询控制器，支持修改客户端/服务端配置及查询集群运行状态。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -67,6 +69,11 @@ public class ClusterConfigController {
     @Autowired
     private ClusterConfigService clusterConfigService;
 
+    /**
+     * 修改单台机器的集群配置，按 mode 区分客户端或服务端。
+     *
+     * @param payload JSON 请求体，须包含 mode 字段
+     */
     @PostMapping("/config/modify_single")
     public Result<Boolean> apiModifyClusterConfig(@RequestBody String payload) {
         if (StringUtil.isBlank(payload)) {
@@ -91,7 +98,7 @@ public class ClusterConfigController {
                         if (r != null) {
                             return r;
                         }
-                        // TODO: bad design here, should refactor!
+                        // TODO: 此处设计欠佳，后续应重构！
                         clusterConfigService.modifyClusterServerConfig(d).get();
                         return Result.ofSuccess(true);
                     default:
@@ -108,6 +115,7 @@ public class ClusterConfigController {
         }
     }
 
+    /** 将 ExecutionException 转换为 Result，客户端不支持时返回 4041。 */
     private <T> Result<T> errorResponse(ExecutionException ex) {
         if (isNotSupported(ex.getCause())) {
             return unsupportedVersion();
@@ -116,6 +124,9 @@ public class ClusterConfigController {
         }
     }
 
+    /**
+     * 查询单台机器的集群通用状态（客户端/服务端模式等）。
+     */
     @GetMapping("/state_single")
     public Result<ClusterUniversalStateVO> apiGetClusterState(@RequestParam String app,
                                                               @RequestParam String ip,
@@ -145,6 +156,7 @@ public class ClusterConfigController {
         }
     }
 
+    /** 查询应用下所有机器的集群令牌服务端状态。 */
     @GetMapping("/server_state/{app}")
     public Result<List<AppClusterServerStateWrapVO>> apiGetClusterServerStateOfApp(@PathVariable String app) {
         if (StringUtil.isEmpty(app)) {
@@ -164,6 +176,7 @@ public class ClusterConfigController {
         }
     }
 
+    /** 查询应用下所有机器的集群令牌客户端状态。 */
     @GetMapping("/client_state/{app}")
     public Result<List<AppClusterClientStateWrapVO>> apiGetClusterClientStateOfApp(@PathVariable String app) {
         if (StringUtil.isEmpty(app)) {
@@ -183,6 +196,7 @@ public class ClusterConfigController {
         }
     }
 
+    /** 查询应用下所有机器的集群通用状态对列表。 */
     @GetMapping("/state/{app}")
     public Result<List<ClusterUniversalStatePairVO>> apiGetClusterStateOfApp(@PathVariable String app) {
         if (StringUtil.isEmpty(app)) {
@@ -201,6 +215,7 @@ public class ClusterConfigController {
         }
     }
 
+    /** 判断异常是否因客户端不支持集群流控命令导致。 */
     private boolean isNotSupported(Throwable ex) {
         return ex instanceof CommandNotFoundException;
     }
@@ -212,12 +227,13 @@ public class ClusterConfigController {
                 .flatMap(m -> VersionUtils.parseVersion(m.getVersion())
                     .map(v -> v.greaterOrEqual(version140)))
                 .orElse(true);
-            // If error occurred or cannot retrieve machine info, return true.
+            // 出错或无法获取机器信息时默认视为支持。
         } catch (Exception ex) {
             return true;
         }
     }
 
+    /** 校验集群配置修改请求的基本字段与版本兼容性。 */
     private Result<Boolean> checkValidRequest(ClusterModifyRequest request) {
         if (StringUtil.isEmpty(request.getApp())) {
             return Result.ofFail(-1, "app cannot be empty");
@@ -237,6 +253,7 @@ public class ClusterConfigController {
         return null;
     }
 
+    /** 返回客户端版本不支持集群流控的错误结果（4041）。 */
     private <R> Result<R> unsupportedVersion() {
         return Result.ofFail(4041, "Sentinel client not supported for cluster flow control (unsupported version or dependency absent)");
     }

@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 控制台版本查询接口，从配置项 {@code sentinel.dashboard.version} 读取并返回主版本号。
+ *
  * @author hisenyuan
  * @since 1.7.0
  */
@@ -34,6 +36,7 @@ public class VersionController {
     @Value("${sentinel.dashboard.version:}")
     private String sentinelDashboardVersion;
 
+    /** 返回控制台版本字符串，截取首个 "-" 之前的主版本部分。 */
     @GetMapping("/version")
     public Result<String> apiGetVersion() {
         if (StringUtil.isNotBlank(sentinelDashboardVersion)) {

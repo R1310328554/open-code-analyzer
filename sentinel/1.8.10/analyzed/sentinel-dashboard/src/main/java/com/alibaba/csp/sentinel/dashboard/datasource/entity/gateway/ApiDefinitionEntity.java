@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Entity for {@link ApiDefinition}.
+ * 网关 API 定义持久化实体，对应 {@link ApiDefinition}。
  *
  * @author cdfive
  * @since 1.7.0
@@ -45,6 +45,9 @@ public class ApiDefinitionEntity implements RuleEntity {
     private String apiName;
     private Set<ApiPredicateItemEntity> predicateItems;
 
+    /**
+     * 从 {@link ApiDefinition} 构造实体，含路径匹配谓词列表。
+     */
     public static ApiDefinitionEntity fromApiDefinition(String app, String ip, Integer port, ApiDefinition apiDefinition) {
         ApiDefinitionEntity entity = new ApiDefinitionEntity();
         entity.setApp(app);
@@ -69,6 +72,7 @@ public class ApiDefinitionEntity implements RuleEntity {
         return entity;
     }
 
+    /** 转换为 {@link ApiDefinition} 供客户端下发。 */
     public ApiDefinition toApiDefinition() {
         ApiDefinition apiDefinition = new ApiDefinition();
         apiDefinition.setApiName(apiName);

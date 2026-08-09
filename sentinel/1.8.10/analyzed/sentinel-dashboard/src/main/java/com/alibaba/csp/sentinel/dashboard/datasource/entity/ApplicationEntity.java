@@ -20,6 +20,8 @@ import java.util.Date;
 import com.alibaba.csp.sentinel.dashboard.discovery.AppInfo;
 
 /**
+ * 应用持久化实体，对应控制台发现的应用信息。
+ *
  * @author leyou
  */
 public class ApplicationEntity {
@@ -88,6 +90,7 @@ public class ApplicationEntity {
         this.activeConsole = activeConsole;
     }
 
+    /** 转换为运行时 {@link AppInfo} 对象。 */
     public AppInfo toAppInfo() {
         return new AppInfo(app, appType);
     }

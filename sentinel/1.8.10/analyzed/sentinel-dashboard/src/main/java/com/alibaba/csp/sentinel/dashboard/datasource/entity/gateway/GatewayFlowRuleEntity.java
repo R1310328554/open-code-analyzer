@@ -24,7 +24,7 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * Entity for {@link GatewayFlowRule}.
+ * 网关流控规则持久化实体，对应 {@link GatewayFlowRule}，含统计窗口单位换算逻辑。
  *
  * @author cdfive
  * @since 1.7.0
@@ -64,6 +64,7 @@ public class GatewayFlowRuleEntity implements RuleEntity {
 
     private GatewayParamFlowItemEntity paramItem;
 
+    /** 将 interval 与 intervalUnit 换算为秒级统计窗口。 */
     public static Long calIntervalSec(Long interval, Integer intervalUnit) {
         switch (intervalUnit) {
             case INTERVAL_UNIT_SECOND:
@@ -81,6 +82,7 @@ public class GatewayFlowRuleEntity implements RuleEntity {
         throw new IllegalArgumentException("Invalid intervalUnit: " + intervalUnit);
     }
 
+    /** 将秒级窗口解析为 (interval, intervalUnit) 二元组，优先取最大单位。 */
     public static Object[] parseIntervalSec(Long intervalSec) {
         if (intervalSec % (60 * 60 * 24) == 0) {
             return new Object[] {intervalSec / (60 * 60 * 24), INTERVAL_UNIT_DAY};
@@ -97,6 +99,7 @@ public class GatewayFlowRuleEntity implements RuleEntity {
         return new Object[] {intervalSec, INTERVAL_UNIT_SECOND};
     }
 
+    /** 转换为 {@link GatewayFlowRule} 供客户端下发。 */
     public GatewayFlowRule toGatewayFlowRule() {
         GatewayFlowRule rule = new GatewayFlowRule();
         rule.setResource(resource);
@@ -131,6 +134,7 @@ public class GatewayFlowRuleEntity implements RuleEntity {
         return rule;
     }
 
+    /** 从 {@link GatewayFlowRule} 构造实体，含参数流控项映射。 */
     public static GatewayFlowRuleEntity fromGatewayFlowRule(String app, String ip, Integer port, GatewayFlowRule rule) {
         GatewayFlowRuleEntity entity = new GatewayFlowRuleEntity();
         entity.setApp(app);

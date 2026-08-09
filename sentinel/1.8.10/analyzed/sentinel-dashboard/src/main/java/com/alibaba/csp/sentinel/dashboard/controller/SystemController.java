@@ -37,6 +37,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 系统保护规则 REST 控制器，提供查询、新增、更新与删除接口，并将规则下发至 Sentinel 客户端。
+ *
  * @author leyou(lihao)
  */
 @RestController
@@ -52,6 +54,7 @@ public class SystemController {
     @Autowired
     private AppManagement appManagement;
 
+    /** 校验 app、ip、port 基本参数及机器归属关系。 */
     private <R> Result<R> checkBasicParams(String app, String ip, Integer port) {
         if (StringUtil.isEmpty(app)) {
             return Result.ofFail(-1, "app can't be null or empty");
@@ -71,6 +74,9 @@ public class SystemController {
         return null;
     }
 
+    /**
+     * 查询指定机器上的系统保护规则，拉取后写入本地仓库。
+     */
     @GetMapping("/rules.json")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<SystemRuleEntity>> apiQueryMachineRules(String app, String ip,
@@ -89,6 +95,7 @@ public class SystemController {
         }
     }
 
+    /** 统计参数数组中非空且非负的元素个数。 */
     private int countNotNullAndNotNegative(Number... values) {
         int notNullCount = 0;
         for (int i = 0; i < values.length; i++) {
@@ -99,6 +106,9 @@ public class SystemController {
         return notNullCount;
     }
 
+    /**
+     * 新增系统保护规则；五个阈值字段中仅允许设置一个大于 0 的值。
+     */
     @RequestMapping("/new.json")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<SystemRuleEntity> apiAdd(String app, String ip, Integer port,
@@ -122,7 +132,7 @@ public class SystemController {
         entity.setApp(app.trim());
         entity.setIp(ip.trim());
         entity.setPort(port);
-        // -1 is a fake value
+        // -1 表示未设置该阈值的占位值
         if (null != highestSystemLoad) {
             entity.setHighestSystemLoad(highestSystemLoad);
         } else {
@@ -165,6 +175,9 @@ public class SystemController {
         return Result.ofSuccess(entity);
     }
 
+    /**
+     * 按 ID 更新系统保护规则，仅更新请求中非 null 的字段。
+     */
     @GetMapping("/save.json")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<SystemRuleEntity> apiUpdateIfNotNull(Long id, String app, Double highestSystemLoad,
@@ -227,6 +240,7 @@ public class SystemController {
         return Result.ofSuccess(entity);
     }
 
+    /** 按 ID 删除系统保护规则并下发最新规则集。 */
     @RequestMapping("/delete.json")
     @AuthAction(PrivilegeType.DELETE_RULE)
     public Result<?> delete(Long id) {
@@ -249,6 +263,7 @@ public class SystemController {
         return Result.ofSuccess(id);
     }
 
+    /** 将指定机器上的系统规则通过 {@link SentinelApiClient} 下发至客户端。 */
     private boolean publishRules(String app, String ip, Integer port) {
         List<SystemRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
         return sentinelApiClient.setSystemRuleOfMachine(app, ip, port, rules);

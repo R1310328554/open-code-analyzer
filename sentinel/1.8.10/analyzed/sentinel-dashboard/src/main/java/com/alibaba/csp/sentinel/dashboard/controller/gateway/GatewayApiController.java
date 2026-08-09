@@ -39,7 +39,7 @@ import java.util.*;
 import static com.alibaba.csp.sentinel.adapter.gateway.common.SentinelGatewayConstants.*;
 
 /**
- * Gateway api Controller for manage gateway api definitions.
+ * 网关 API 定义管理控制器，提供查询、新增、更新与删除接口。
  *
  * @author cdfive
  * @since 1.7.0
@@ -56,6 +56,7 @@ public class GatewayApiController {
     @Autowired
     private SentinelApiClient sentinelApiClient;
 
+    /** 从客户端拉取网关 API 定义列表并写入本地仓库。 */
     @GetMapping("/list.json")
     @AuthAction(AuthService.PrivilegeType.READ_RULE)
     public Result<List<ApiDefinitionEntity>> queryApis(String app, String ip, Integer port) {
@@ -80,6 +81,7 @@ public class GatewayApiController {
         }
     }
 
+    /** 新增网关 API 定义，校验匹配规则后持久化并下发至客户端。 */
     @PostMapping("/new.json")
     @AuthAction(AuthService.PrivilegeType.WRITE_RULE)
     public Result<ApiDefinitionEntity> addApi(HttpServletRequest request, @RequestBody AddApiReqVo reqVo) {
@@ -139,7 +141,7 @@ public class GatewayApiController {
         }
         entity.setPredicateItems(new LinkedHashSet<>(predicateItemEntities));
 
-        // 检查API名称不能重复
+        // 检查 API 名称不能重复
         List<ApiDefinitionEntity> allApis = repository.findAllByMachine(MachineInfo.of(app.trim(), ip.trim(), port));
         if (allApis.stream().map(o -> o.getApiName()).anyMatch(o -> o.equals(apiName.trim()))) {
             return Result.ofFail(-1, "apiName exists: " + apiName);
@@ -163,6 +165,7 @@ public class GatewayApiController {
         return Result.ofSuccess(entity);
     }
 
+    /** 更新已有网关 API 定义的匹配规则并下发至客户端。 */
     @PostMapping("/save.json")
     @AuthAction(AuthService.PrivilegeType.WRITE_RULE)
     public Result<ApiDefinitionEntity> updateApi(@RequestBody UpdateApiReqVo reqVo) {
@@ -226,6 +229,7 @@ public class GatewayApiController {
         return Result.ofSuccess(entity);
     }
 
+    /** 按 ID 删除网关 API 定义并下发最新规则集。 */
     @PostMapping("/delete.json")
     @AuthAction(AuthService.PrivilegeType.DELETE_RULE)
 
@@ -253,6 +257,7 @@ public class GatewayApiController {
         return Result.ofSuccess(id);
     }
 
+    /** 将指定机器上的网关 API 定义通过 {@link SentinelApiClient} 下发至客户端。 */
     private boolean publishApis(String app, String ip, Integer port) {
         List<ApiDefinitionEntity> apis = repository.findAllByMachine(MachineInfo.of(app, ip, port));
         return sentinelApiClient.modifyApis(app, ip, port, apis);

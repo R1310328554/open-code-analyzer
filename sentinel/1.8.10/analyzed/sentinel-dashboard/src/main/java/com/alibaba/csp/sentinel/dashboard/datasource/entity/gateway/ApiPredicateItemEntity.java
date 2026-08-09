@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.adapter.gateway.common.api.ApiPredicateItem;
 import java.util.Objects;
 
 /**
- * Entity for {@link ApiPredicateItem}.
+ * 网关 API 路径匹配谓词实体，对应 {@link ApiPredicateItem}。
  *
  * @author cdfive
  * @since 1.7.0

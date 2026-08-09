@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.dashboard.datasource.entity;
 import java.util.Date;
 
 /**
+ * 监控拉取位点实体，记录各机器上次拉取监控数据的最晚时间戳。
+ *
  * @author leyou
  */
 public class MetricPositionEntity {

@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.dashboard.datasource.entity;
 import java.util.Date;
 
 /**
+ * 监控指标持久化实体，聚合单资源在某时间窗口内的 QPS、RT 等统计数据。
+ *
  * @author leyou
  */
 public class MetricEntity {
@@ -35,9 +37,8 @@ public class MetricEntity {
     private Long blockQps;
     private Long exceptionQps;
 
-    /**
-     * summary rt of all success exit qps.
-     */
+    /** 所有成功请求 RT 的累计值（rt = avgRt × successQps）。 */
+
     private double rt;
 
     /**
@@ -47,6 +48,7 @@ public class MetricEntity {
 
     private int resourceCode;
 
+    /** 浅拷贝给定 MetricEntity 的全部字段。 */
     public static MetricEntity copyOf(MetricEntity oldEntity) {
         MetricEntity entity = new MetricEntity();
         entity.setId(oldEntity.getId());
@@ -64,32 +66,37 @@ public class MetricEntity {
         return entity;
     }
 
+    /** 累加通过 QPS。 */
     public synchronized void addPassQps(Long passQps) {
         this.passQps += passQps;
     }
 
+    /** 累加被限流 QPS。 */
     public synchronized void addBlockQps(Long blockQps) {
         this.blockQps += blockQps;
     }
 
+    /** 累加异常 QPS。 */
     public synchronized void addExceptionQps(Long exceptionQps) {
         this.exceptionQps += exceptionQps;
     }
 
+    /** 累加本次聚合条目数。 */
     public synchronized void addCount(int count) {
         this.count += count;
     }
 
+    /** 按 avgRt × successQps 累加 RT 与成功 QPS。 */
     public synchronized void addRtAndSuccessQps(double avgRt, Long successQps) {
         this.rt += avgRt * successQps;
         this.successQps += successQps;
     }
 
     /**
-     * {@link #rt} = {@code avgRt * successQps}
+     * 设置 RT 与成功 QPS，满足 {@link #rt} = {@code avgRt × successQps}。
      *
-     * @param avgRt      average rt of {@code successQps}
-     * @param successQps
+     * @param avgRt      成功 QPS 的平均 RT
+     * @param successQps 成功 QPS
      */
     public synchronized void setRtAndSuccessQps(double avgRt, Long successQps) {
         this.rt = avgRt * successQps;

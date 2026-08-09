@@ -20,6 +20,8 @@ import java.util.Date;
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 
 /**
+ * 机器持久化实体，记录应用下 Sentinel 客户端实例的注册信息。
+ *
  * @author leyou
  */
 public class MachineEntity {
@@ -96,6 +98,7 @@ public class MachineEntity {
         this.port = port;
     }
 
+    /** 转换为运行时 {@link MachineInfo}，并将 timestamp 映射为心跳时间。 */
     public MachineInfo toMachineInfo() {
         MachineInfo machineInfo = new MachineInfo();
 

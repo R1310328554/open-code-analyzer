@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.dashboard.datasource.entity;
 
 /**
+ * Sentinel 语义化版本模型，支持主/次/修订号比较与后缀标识。
+ *
  * @author Eric Zhao
  * @since 0.2.1
  */
@@ -83,6 +85,7 @@ public class SentinelVersion {
         return this;
     }
 
+    /** 判断当前版本是否严格大于给定版本。 */
     public boolean greaterThan(SentinelVersion version) {
         if (version == null) {
             return true;
@@ -90,6 +93,7 @@ public class SentinelVersion {
         return getFullVersion() > version.getFullVersion();
     }
 
+    /** 判断当前版本是否大于或等于给定版本。 */
     public boolean greaterOrEqual(SentinelVersion version) {
         if (version == null) {
             return true;

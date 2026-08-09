@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Flow rule controller (v2).
+ * 流控规则 REST 控制器（v2），基于动态规则 Provider/Publisher 实现应用级规则管理。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -65,6 +65,7 @@ public class FlowControllerV2 {
     @Qualifier("flowRuleDefaultPublisher")
     private DynamicRulePublisher<List<FlowRuleEntity>> rulePublisher;
 
+    /** 查询指定应用的流控规则，集群模式下以 flowId 作为规则 ID。 */
     @GetMapping("/rules")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<FlowRuleEntity>> apiQueryMachineRules(@RequestParam String app) {
@@ -90,6 +91,7 @@ public class FlowControllerV2 {
         }
     }
 
+    /** 校验流控规则实体的必填字段与策略/行为组合合法性。 */
     private <R> Result<R> checkEntityInternal(FlowRuleEntity entity) {
         if (entity == null) {
             return Result.ofFail(-1, "invalid body");
@@ -134,6 +136,7 @@ public class FlowControllerV2 {
         return null;
     }
 
+    /** 新增流控规则并发布至动态规则源。 */
     @PostMapping("/rule")
     @AuthAction(value = AuthService.PrivilegeType.WRITE_RULE)
     public Result<FlowRuleEntity> apiAddFlowRule(@RequestBody FlowRuleEntity entity) {
@@ -158,6 +161,7 @@ public class FlowControllerV2 {
         return Result.ofSuccess(entity);
     }
 
+    /** 按 ID 更新流控规则并发布至动态规则源。 */
     @PutMapping("/rule/{id}")
     @AuthAction(AuthService.PrivilegeType.WRITE_RULE)
 
@@ -199,6 +203,7 @@ public class FlowControllerV2 {
         return Result.ofSuccess(entity);
     }
 
+    /** 按 ID 删除流控规则并发布至动态规则源。 */
     @DeleteMapping("/rule/{id}")
     @AuthAction(PrivilegeType.DELETE_RULE)
     public Result<Long> apiDeleteRule(@PathVariable("id") Long id) {
@@ -219,6 +224,7 @@ public class FlowControllerV2 {
         return Result.ofSuccess(id);
     }
 
+    /** 将应用下全部流控规则通过 {@link DynamicRulePublisher} 发布。 */
     private void publishRules(/*@NonNull*/ String app) throws Exception {
         List<FlowRuleEntity> rules = repository.findAllByApp(app);
         rulePublisher.publish(app, rules);

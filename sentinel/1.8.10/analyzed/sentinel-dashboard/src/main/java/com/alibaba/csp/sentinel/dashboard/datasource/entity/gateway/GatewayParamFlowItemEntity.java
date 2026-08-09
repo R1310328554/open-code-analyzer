@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.adapter.gateway.common.rule.GatewayParamFlowItem
 import java.util.Objects;
 
 /**
- * Entity for {@link GatewayParamFlowItem}.
+ * 网关参数流控项实体，对应 {@link GatewayParamFlowItem}，定义参数解析与匹配策略。
  *
  * @author cdfive
  * @since 1.7.0

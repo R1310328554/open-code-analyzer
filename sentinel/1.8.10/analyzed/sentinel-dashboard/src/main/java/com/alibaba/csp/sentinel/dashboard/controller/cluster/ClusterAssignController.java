@@ -35,6 +35,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 集群令牌服务端分配控制器，支持全量/单台分配与解绑操作。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
@@ -47,6 +49,12 @@ public class ClusterAssignController {
     @Autowired
     private ClusterAssignService clusterAssignService;
 
+    /**
+     * 为应用全量分配集群令牌服务端，覆盖现有映射。
+     *
+     * @param app 应用名
+     * @param assignRequest 包含 clusterMap 与 remainingList 的分配请求
+     */
     @PostMapping("/all_server/{app}")
     public Result<ClusterAppAssignResultVO> apiAssignAllClusterServersOfApp(@PathVariable String app,
                                                                             @RequestBody
@@ -67,6 +75,12 @@ public class ClusterAssignController {
         }
     }
 
+    /**
+     * 为应用分配单台集群令牌服务端。
+     *
+     * @param app 应用名
+     * @param assignRequest 包含 clusterMap 与 remainingList 的分配请求
+     */
     @PostMapping("/single_server/{app}")
     public Result<ClusterAppAssignResultVO> apiAssignSingleClusterServersOfApp(@PathVariable String app,
                                                                                @RequestBody ClusterAppSingleServerAssignRequest assignRequest) {
@@ -85,6 +99,12 @@ public class ClusterAssignController {
         }
     }
 
+    /**
+     * 解绑应用中指定机器 ID 集合对应的集群令牌服务端。
+     *
+     * @param app 应用名
+     * @param machineIds 待解绑的机器 ID 集合
+     */
     @PostMapping("/unbind_server/{app}")
     public Result<ClusterAppAssignResultVO> apiUnbindClusterServersOfApp(@PathVariable String app,
                                                                          @RequestBody Set<String> machineIds) {
