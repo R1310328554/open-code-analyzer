@@ -32,17 +32,20 @@ import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 
 /**
- * Groups multiple independent locks and manages them as one lock.
+ * 联锁（MultiLock）：将多个独立 {@link RLock} 组合为一把逻辑锁统一加锁/解锁。
+ * <p>按固定顺序尝试获取全部子锁；任一失败则释放已持有的锁。
+ * 支持可重入、租约续期与 {@link java.util.concurrent.locks.Condition}。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonMultiLock implements RLock {
 
     class LockState {
         
+        /** 续期后的新租约时长。 */
         private final long newLeaseTime;
         private final long lockWaitTime;
+        /** 已成功获取的子锁列表。 */
         private final List<RLock> acquiredLocks;
         private final long waitTime;
         private final long threadId;
@@ -51,6 +54,7 @@ public class RedissonMultiLock implements RLock {
 
         private long remainTime;
         private long time = System.currentTimeMillis();
+        /** 允许连续获取失败的最大子锁次数。 */
         private int failedLocksLimit;
         
         LockState(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
@@ -177,6 +181,7 @@ public class RedissonMultiLock implements RLock {
         this.locks.addAll(Arrays.asList(locks));
     }
     
+    /** 阻塞获取锁直至成功。 */
     @Override
     public void lock() {
         try {
@@ -186,6 +191,7 @@ public class RedissonMultiLock implements RLock {
         }
     }
 
+    /** 阻塞获取锁直至成功。 */
     @Override
     public void lock(long leaseTime, TimeUnit unit) {
         try {
@@ -195,11 +201,13 @@ public class RedissonMultiLock implements RLock {
         }
     }
     
+    /** 异步阻塞获取锁。 */
     @Override
     public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit) {
         return lockAsync(leaseTime, unit, Thread.currentThread().getId());
     }
     
+    /** 异步阻塞获取锁。 */
     @Override
     public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit, long threadId) {
         long baseWaitTime = locks.size() * 1500;
@@ -222,6 +230,7 @@ public class RedissonMultiLock implements RLock {
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 联锁 tryLockAsyncCycle 操作。 */
     protected CompletionStage<Void> tryLockAsyncCycle(long threadId, long leaseTime, TimeUnit unit, long waitTime) {
         return tryLockAsync(waitTime, leaseTime, unit, threadId).thenCompose(res -> {
             if (res) {
@@ -233,11 +242,13 @@ public class RedissonMultiLock implements RLock {
     }
 
 
+    /** 可中断地阻塞获取锁。 */
     @Override
     public void lockInterruptibly() throws InterruptedException {
         lockInterruptibly(-1, null);
     }
 
+    /** 可中断地阻塞获取锁。 */
     @Override
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
         long baseWaitTime = locks.size() * 1500;
@@ -264,6 +275,7 @@ public class RedissonMultiLock implements RLock {
         }
     }
 
+    /** 尝试获取锁，支持等待超时与租约。 */
     @Override
     public boolean tryLock() {
         try {
@@ -274,6 +286,7 @@ public class RedissonMultiLock implements RLock {
         }
     }
 
+    /** 联锁 unlockInner 操作。 */
     protected void unlockInner(Collection<RLock> locks) {
         locks.stream()
                 .map(RLockAsync::unlockAsync)
@@ -286,6 +299,7 @@ public class RedissonMultiLock implements RLock {
                 });
     }
     
+    /** 异步执行 unlockInner。 */
     protected RFuture<Void> unlockInnerAsync(Collection<RLock> locks, long threadId) {
         CompletableFuture[] s = locks.stream().map(l -> l.unlockAsync(threadId).toCompletableFuture())
                                                 .toArray(CompletableFuture[]::new);
@@ -293,15 +307,18 @@ public class RedissonMultiLock implements RLock {
         return new CompletableFutureWrapper<>(future);
     }
 
+    /** 尝试获取锁，支持等待超时与租约。 */
     @Override
     public boolean tryLock(long waitTime, TimeUnit unit) throws InterruptedException {
         return tryLock(waitTime, -1, unit);
     }
     
+    /** 联锁 failedLocksLimit 操作。 */
     protected int failedLocksLimit() {
         return 0;
     }
     
+    /** 尝试获取锁，支持等待超时与租约。 */
     @Override
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
 //        try {
@@ -387,6 +404,7 @@ public class RedissonMultiLock implements RLock {
         return true;
     }
 
+    /** 异步尝试获取锁。 */
     @Override
     public RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         LockState state = new LockState(waitTime, leaseTime, unit, threadId);
@@ -394,96 +412,115 @@ public class RedissonMultiLock implements RLock {
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 异步尝试获取锁。 */
     @Override
     public RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit) {
         return tryLockAsync(waitTime, leaseTime, unit, Thread.currentThread().getId());
     }
 
     
+    /** 联锁 calcLockWaitTime 操作。 */
     protected long calcLockWaitTime(long remainTime) {
         return remainTime;
     }
 
+    /** 异步释放锁。 */
     @Override
     public RFuture<Void> unlockAsync(long threadId) {
         return unlockInnerAsync(locks, threadId);
     }
     
+    /** 释放当前线程持有的锁。 */
     @Override
     public void unlock() {
         locks.forEach(Lock::unlock);
     }
 
+    /** 创建与锁绑定的 Condition。 */
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步强制释放锁。 */
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步释放锁。 */
     @Override
     public RFuture<Void> unlockAsync() {
         return unlockAsync(Thread.currentThread().getId());
     }
 
+    /** 异步尝试获取锁。 */
     @Override
     public RFuture<Boolean> tryLockAsync() {
         return tryLockAsync(Thread.currentThread().getId());
     }
 
+    /** 异步阻塞获取锁。 */
     @Override
     public RFuture<Void> lockAsync() {
         return lockAsync(Thread.currentThread().getId());
     }
 
+    /** 异步阻塞获取锁。 */
     @Override
     public RFuture<Void> lockAsync(long threadId) {
         return lockAsync(-1, null, threadId);
     }
 
+    /** 异步尝试获取锁。 */
     @Override
     public RFuture<Boolean> tryLockAsync(long threadId) {
         return tryLockAsync(-1, -1, null, threadId);
     }
 
+    /** 异步尝试获取锁。 */
     @Override
     public RFuture<Boolean> tryLockAsync(long waitTime, TimeUnit unit) {
         return tryLockAsync(waitTime, -1, unit);
     }
 
+    /** 异步获取 HoldCount 或执行 HoldCount 操作。 */
     @Override
     public RFuture<Integer> getHoldCountAsync() {
         throw new UnsupportedOperationException();
     }
 
+    /** 返回对象名称。 */
     @Override
     public String getName() {
         throw new UnsupportedOperationException();
     }
 
+    /** 强制释放锁（不校验持有者）。 */
     @Override
     public boolean forceUnlock() {
         throw new UnsupportedOperationException();
     }
 
+    /** 锁是否已被任意线程持有。 */
     @Override
     public boolean isLocked() {
         throw new UnsupportedOperationException();
     }
     
+    /** 是否LockedAsync。 */
     @Override
     public RFuture<Boolean> isLockedAsync() {
         throw new UnsupportedOperationException();
     }
 
+    /** 指定线程是否持有该锁。 */
     @Override
     public boolean isHeldByThread(long threadId) {
         return locks.stream().map(l -> l.isHeldByThread(threadId)).reduce(true, (r, u) -> r && u);
     }
 
+    /** 是否HeldByThreadAsync。 */
     @Override
     public RFuture<Boolean> isHeldByThreadAsync(long threadId) {
         CompletableFuture<Boolean>[] s = locks.stream().map(l -> l.isHeldByThreadAsync(threadId).toCompletableFuture())
@@ -494,42 +531,50 @@ public class RedissonMultiLock implements RLock {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 当前线程是否持有该锁。 */
     @Override
     public boolean isHeldByCurrentThread() {
         return locks.stream().map(l -> l.isHeldByCurrentThread())
                                 .reduce(true, (r, u) -> r && u);
     }
 
+    /** 当前线程重入持有次数。 */
     @Override
     public int getHoldCount() {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 remainTimeToLive。 */
     @Override
     public RFuture<Long> remainTimeToLiveAsync() {
         throw new UnsupportedOperationException();
     }
 
+    /** 返回锁剩余租约毫秒数。 */
     @Override
     public long remainTimeToLive() {
         throw new UnsupportedOperationException();
     }
 
+    /** 注册对象变更监听器。 */
     @Override
     public int addListener(ObjectListener listener) {
         throw new UnsupportedOperationException();
     }
 
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         throw new UnsupportedOperationException();

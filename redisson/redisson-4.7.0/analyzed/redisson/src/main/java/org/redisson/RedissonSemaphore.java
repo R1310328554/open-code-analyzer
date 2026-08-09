@@ -36,17 +36,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.concurrent.Semaphore}.
- * <p>
- * Works in non-fair mode. Therefore order of acquiring is unpredictable.
+ * 分布式信号量 {@link RSemaphore}，对应 {@link java.util.concurrent.Semaphore}。
+ * <p>非公平模式，获取顺序不可预测；基于 Redis + Pub/Sub 唤醒等待线程。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedissonSemaphore.class);
 
+    /** 信号量等待/唤醒 Pub/Sub 通道。 */
     private final SemaphorePubSub semaphorePubSub;
 
     public RedissonSemaphore(CommandAsyncExecutor commandExecutor, String name) {
@@ -58,15 +57,18 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         return getChannelName(getRawName());
     }
     
+    /** 获取 ChannelName。 */
     public static String getChannelName(String name) {
         return prefixName("redisson_sc", name);
     }
 
+    /** 获取一个信号量许可（阻塞）。 */
     @Override
     public void acquire() throws InterruptedException {
         acquire(1);
     }
 
+    /** 获取一个信号量许可（阻塞）。 */
     @Override
     public void acquire(int permits) throws InterruptedException {
         if (tryAcquire(permits)) {
@@ -90,11 +92,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 //        get(acquireAsync(permits));
     }
     
+    /** 异步获取信号量许可。 */
     @Override
     public RFuture<Void> acquireAsync() {
         return acquireAsync(1);
     }
     
+    /** 异步获取信号量许可。 */
     @Override
     public RFuture<Void> acquireAsync(int permits) {
         CompletableFuture<Void> result = new CompletableFuture<>();
@@ -126,6 +130,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         return new CompletableFutureWrapper<>(result);
     }
     
+    /** 异步尝试获取许可。 */
     private void tryAcquireAsync(AtomicLong time, int permits, RedissonLockEntry entry, CompletableFuture<Boolean> result) {
         if (result.isDone()) {
             unsubscribe(entry);
@@ -200,6 +205,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         });
     }
     
+    /** 异步获取信号量许可。 */
     private void acquireAsync(int permits, RedissonLockEntry entry, CompletableFuture<Void> result) {
         if (result.isDone()) {
             unsubscribe(entry);
@@ -232,21 +238,25 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         });
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire() {
         return tryAcquire(1);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(int permits) {
         return get(tryAcquireAsync(permits));
     }
     
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync() {
         return tryAcquireAsync(1);
     }
     
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(int permits) {
         if (permits < 0) {
@@ -262,6 +272,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         });
     }
 
+    /** 信号量 tryAcquireAsync0 操作。 */
     private RFuture<Boolean> tryAcquireAsync0(int permits) {
         return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local value = redis.call('get', KEYS[1]); " +
@@ -273,16 +284,19 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                   Collections.<Object>singletonList(getRawName()), permits);
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(long waitTime, TimeUnit unit) {
         return tryAcquireAsync(1, waitTime, unit);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(Duration waitTime) throws InterruptedException {
         return tryAcquire(1, waitTime);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(int permits, Duration waitTime) throws InterruptedException {
         LOGGER.debug("trying to acquire, permits: {}, waitTime: {}, name: {}", permits, waitTime,  getName());
@@ -352,11 +366,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 //        return get(tryAcquireAsync(permits, waitTime));
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(Duration waitTime) {
         return tryAcquireAsync(1, waitTime);
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(int permits, Duration waitTime) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
@@ -408,44 +424,53 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(int permits, long waitTime, TimeUnit unit) throws InterruptedException {
         return tryAcquire(permits, Duration.ofMillis(unit.toMillis(waitTime)));
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(int permits, long waitTime, TimeUnit unit) {
         return tryAcquireAsync(permits, Duration.ofMillis(unit.toMillis(waitTime)));
     }
 
+    /** 信号量 subscribe 操作。 */
     private CompletableFuture<RedissonLockEntry> subscribe() {
         return semaphorePubSub.subscribe(getRawName(), getChannelName());
     }
 
+    /** 信号量 unsubscribe 操作。 */
     private void unsubscribe(RedissonLockEntry entry) {
         semaphorePubSub.unsubscribe(entry, getRawName(), getChannelName());
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(long time, TimeUnit unit) throws InterruptedException {
         return tryAcquire(1, time, unit);
     }
 
+    /** 释放信号量/限流许可。 */
     @Override
     public void release() {
         release(1);
     }
 
+    /** 释放信号量/限流许可。 */
     @Override
     public void release(int permits) {
         get(releaseAsync(permits));
     }
     
+    /** 异步释放许可。 */
     @Override
     public RFuture<Void> releaseAsync() {
         return releaseAsync(1);
     }
     
+    /** 异步释放许可。 */
     @Override
     public RFuture<Void> releaseAsync(int permits) {
         if (permits < 0) {
@@ -467,11 +492,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         return future;
     }
 
+    /** 信号量 releaseIfExists 操作。 */
     @Override
     public boolean releaseIfExists(int permits) {
         return get(releaseIfExistsAsync(permits));
     }
 
+    /** 异步执行 releaseIfExists。 */
     @Override
     public RFuture<Boolean> releaseIfExistsAsync(int permits) {
         if (permits < 0) {
@@ -498,11 +525,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         return future;
     }
 
+    /** 一次性获取全部可用许可。 */
     @Override
     public int drainPermits() {
         return get(drainPermitsAsync());
     }
 
+    /** 异步执行 drainPermits。 */
     @Override
     public RFuture<Integer> drainPermitsAsync() {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -515,21 +544,25 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 Collections.singletonList(getRawName()));
     }
 
+    /** 返回当前可用许可数。 */
     @Override
     public int availablePermits() {
         return get(availablePermitsAsync());
     }
 
+    /** 异步执行 availablePermits。 */
     @Override
     public RFuture<Integer> availablePermitsAsync() {
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.GET_INTEGER, getRawName());
     }
 
+    /** 信号量 trySetPermits 操作。 */
     @Override
     public boolean trySetPermits(int permits) {
         return get(trySetPermitsAsync(permits));
     }
     
+    /** 异步执行 trySetPermits。 */
     @Override
     public RFuture<Boolean> trySetPermitsAsync(int permits) {
         RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -555,11 +588,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         return future;
     }
 
+    /** 信号量 trySetPermits 操作。 */
     @Override
     public boolean trySetPermits(int permits, Duration timeToLive) {
         return get(trySetPermitsAsync(permits, timeToLive));
     }
 
+    /** 异步执行 trySetPermits。 */
     @Override
     public RFuture<Boolean> trySetPermitsAsync(int permits, Duration timeToLive) {
         RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -585,11 +620,13 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         return future;
     }
 
+    /** addPermits：添加操作。 */
     @Override
     public void addPermits(int permits) {
         get(addPermitsAsync(permits));
     }
 
+    /** 异步执行 addPermits。 */
     @Override
     public RFuture<Void> addPermitsAsync(int permits) {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,

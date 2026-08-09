@@ -38,13 +38,16 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Nikita Koksharov
+ * {@link RMultimap} 抽象基类：每个键映射到 Redis Set 子键。
+ * <p>通过 {@code prefix} 后缀命名子集合，封装 getAll/putAll/removeAll 等通用逻辑。
  *
- * @param <K> key
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public abstract class RedissonMultimap<K, V> extends RedissonExpirable implements RMultimap<K, V> {
 
+    /** 多值映射子键前缀。 */
     final String prefix;
     
     RedissonMultimap(CommandAsyncExecutor commandAsyncExecutor, String name) {
@@ -57,6 +60,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         prefix = suffixName(getRawName(), "");
     }
 
+    /** 异步执行 sizeInMemory。 */
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
@@ -71,41 +75,48 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 "return size; ", Arrays.asList(getRawName()), prefix);
     }
 
+    /** 异步执行 copy。 */
     @Override
     public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
         throw new UnsupportedOperationException();
     }
 
+    /** 获取公平锁。 */
     @Override
     public RLock getFairLock(K key) {
         String lockName = getLockByMapKey(key, "fairlock");
         return new RedissonFairLock(commandExecutor, lockName);
     }
     
+    /** 获取可过期许可信号量。 */
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(K key) {
         String lockName = getLockByMapKey(key, "permitexpirablesemaphore");
         return new RedissonPermitExpirableSemaphore(commandExecutor, lockName);
     }
     
+    /** 获取 CountDownLatch。 */
     @Override
     public RCountDownLatch getCountDownLatch(K key) {
         String lockName = getLockByMapKey(key, "countdownlatch");
         return new RedissonCountDownLatch(commandExecutor, lockName);
     }
     
+    /** 获取分布式信号量。 */
     @Override
     public RSemaphore getSemaphore(K key) {
         String lockName = getLockByMapKey(key, "semaphore");
         return new RedissonSemaphore(commandExecutor, lockName);
     }
     
+    /** 获取分布式锁。 */
     @Override
     public RLock getLock(K key) {
         String lockName = getLockByMapKey(key, "lock");
         return new RedissonLock(commandExecutor, lockName);
     }
     
+    /** 获取读写锁。 */
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
         String lockName = getLockByMapKey(key, "rw_lock");
@@ -116,6 +127,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return Hash.hash128toBase64(objectState);
     }
 
+    /** Multimap keyHash 操作。 */
     protected String keyHash(Object key) {
         ByteBuf objectState = encodeMapKey(key);
         try {
@@ -125,41 +137,49 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         }
     }
     
+    /** 返回元素数量。 */
     @Override
     public int size() {
         return get(sizeAsync());
     }
 
+    /** Multimap fastRemoveValue 操作。 */
     @Override
     public long fastRemoveValue(V... values) {
         return get(fastRemoveValueAsync(values));
     }
 
+    /** Multimap keySize 操作。 */
     @Override
     public int keySize() {
         return get(keySizeAsync());
     }
 
+    /** 集合是否为空。 */
     @Override
     public boolean isEmpty() {
         return size() == 0;
     }
 
+    /** 是否包含指定键。 */
     @Override
     public boolean containsKey(Object key) {
         return get(containsKeyAsync(key));
     }
 
+    /** 是否包含指定值。 */
     @Override
     public boolean containsValue(Object value) {
         return get(containsValueAsync(value));
     }
 
+    /** 是否包含键值对。 */
     @Override
     public boolean containsEntry(Object key, Object value) {
         return get(containsEntryAsync(key, value));
     }
 
+    /** 向指定键的 Set 添加值。 */
     @Override
     public boolean put(K key, V value) {
         return get(putAsync(key, value));
@@ -169,81 +189,97 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return suffixName(getRawName(), hash);
     }
 
+    /** 移除元素。 */
     @Override
     public boolean remove(Object key, Object value) {
         return get(removeAsync(key, value));
     }
 
+    /** 批量写入多键多值。 */
     @Override
     public boolean putAll(K key, Iterable<? extends V> values) {
         return get(putAllAsync(key, values));
     }
 
+    /** 清空全部元素。 */
     @Override
     public void clear() {
         delete();
     }
 
+    /** 返回键集合视图。 */
     @Override
     public Set<K> keySet() {
         return new KeySet();
     }
 
+    /** 返回键集合视图。 */
     @Override
     public Set<K> keySet(int count) {
         return new KeySet(count);
     }
 
+    /** 返回值集合视图。 */
     @Override
     public Collection<V> values() {
         return new Values();
     }
 
+    /** 返回值集合视图。 */
     @Override
     public Collection<V> values(int count) {
         return new Values(count);
     }
 
+    /** 返回全部键及其 Set 值。 */
     @Override
     public Collection<V> getAll(K key) {
         return get(getAllAsync(key));
     }
 
+    /** 批量移除元素。 */
     @Override
     public Collection<V> removeAll(Object key) {
         return get(removeAllAsync(key));
     }
 
+    /** 替换指定键的全部值。 */
     @Override
     public Collection<V> replaceValues(K key, Iterable<? extends V> values) {
         return get(replaceValuesAsync(key, values));
     }
 
+    /** 返回键值对集合视图。 */
     @Override
     public Collection<Entry<K, V>> entries() {
         return new EntrySet();
     }
 
+    /** 返回键值对集合视图。 */
     @Override
     public Collection<Entry<K, V>> entries(int count) {
         return new EntrySet(count);
     }
 
+    /** Multimap readAllKeySet 操作。 */
     @Override
     public Set<K> readAllKeySet() {
         return get(readAllKeySetAsync());
     }
 
+    /** 异步执行 readAllKeySet。 */
     @Override
     public RFuture<Set<K>> readAllKeySetAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.HKEYS, getRawName());
     }
 
+    /** Multimap fastRemove 操作。 */
     @Override
     public long fastRemove(K... keys) {
         return get(fastRemoveAsync(keys));
     }
 
+    /** 异步执行 fastRemove。 */
     @Override
     public RFuture<Long> fastRemoveAsync(K... keys) {
         if (keys == null || keys.length == 0) {
@@ -264,6 +300,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return fastRemoveAsync(mapKeys, listKeys, RedisCommands.EVAL_LONG);
     }
 
+    /** 异步执行 fastRemove。 */
     protected <T> RFuture<T> fastRemoveAsync(List<Object> mapKeys, List<Object> listKeys, RedisCommand<T> evalCommandType) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, evalCommandType,
                     "local res = redis.call('hdel', KEYS[1], unpack(ARGV)); " +
@@ -274,6 +311,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                     listKeys, mapKeys.toArray());
     }
     
+    /** 异步执行 delete。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN_AMOUNT,
@@ -294,6 +332,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 Arrays.<Object>asList(getRawName()), prefix);
     }
 
+    /** 异步执行 rename。 */
     @Override
     public RFuture<Void> renameAsync(String newName) {
         String newPrefix = suffixName(newName, "");
@@ -315,6 +354,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 renamenx。 */
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
         String newPrefix = suffixName(newName, "");
@@ -353,6 +393,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -375,6 +416,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 timeUnit.toMillis(timeToLive), prefix, param);
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -397,6 +439,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 timestamp, prefix, param);
     }
 
+    /** 异步执行 clearExpire。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -412,6 +455,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 prefix);
     }
     
+    /** 异步执行 keySize。 */
     @Override
     public RFuture<Integer> keySizeAsync() {
         return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HLEN, getRawName());
@@ -579,6 +623,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
 
     }
 
+    /** 注册对象变更监听器。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof MapPutListener) {
@@ -593,6 +638,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return super.addListener(listener);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof MapPutListener) {
@@ -607,6 +653,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return super.addListenerAsync(listener);
     }
 
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         removeListener(listenerId, "__subkeyevent@*:hset", "__keyevent@*:hset",
@@ -614,6 +661,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(listenerId, "__subkeyevent@*:hset", "__keyevent@*:hset",

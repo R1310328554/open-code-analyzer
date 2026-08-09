@@ -39,16 +39,19 @@ import static org.redisson.client.protocol.RedisCommands.LINDEX;
 import static org.redisson.client.protocol.RedisCommands.LLEN_INT;
 
 /**
+ * 基于 Redis List 的二分有序 {@link RPriorityQueue} 实现。
+ * <p>按 Comparator 维护升序，支持 offer/poll/peek 及阻塞变体。
  *
  * @author Nikita Koksharov
- *
- * @param <V> value type
+ * @param <V> 元素类型
  */
 public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPriorityQueue<V> {
 
     public static class BinarySearchResult<V> {
 
+        /** 二分查找命中的元素值。 */
         private V value;
+        /** 二分查找命中的列表索引，-1 表示未找到。 */
         private int index = -1;
 
         public BinarySearchResult(V value) {
@@ -96,10 +99,12 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         lock = redisson.getLock(getLockName());
     }
 
+    /** 获取 LockName。 */
     private String getLockName() {
         return prefixName("redisson_sortedset_lock", getName());
     }
 
+    /** 优先级队列 loadComparator 操作。 */
     private void loadComparator() {
         try {
             String comparatorSign = comparatorHolder.get();
@@ -145,17 +150,20 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         }
     }
 
+    /** 按优先级插入元素。 */
     @Override
     public boolean offer(V e) {
         return add(e);
     }
 
+    /** 是否包含指定元素。 */
     @Override
     public boolean contains(Object o) {
         checkComparator();
         return binarySearch((V) o).getIndex() >= 0;
     }
 
+    /** 添加元素/成员。 */
     @Override
     public boolean add(V value) {
         lock.lock();
@@ -196,6 +204,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return get(commandExecutor.writeAsync(getRawName(), codec, LINDEX, getRawName(), index));
     }
 
+    /** 返回元素数量。 */
     @Override
     public int size() {
         return get(sizeAsync());
@@ -206,6 +215,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return get(commandExecutor.writeAsync(getRawName(), codec, LLEN_INT, getRawName()));
     }
 
+    /** 优先级队列 checkComparator 操作。 */
     private void checkComparator() {
         String comparatorSign = comparatorHolder.get();
         if (comparatorSign != null) {
@@ -217,6 +227,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         }
     }
 
+    /** 移除元素。 */
     @Override
     public boolean remove(Object value) {
         lock.lock();
@@ -236,6 +247,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         }
     }
 
+    /** 是否包含全部给定元素。 */
     @Override
     public boolean containsAll(Collection<?> c) {
         checkComparator();
@@ -247,6 +259,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return true;
     }
 
+    /** 批量添加元素。 */
     @Override
     public boolean addAll(Collection<? extends V> c) {
         boolean changed = false;
@@ -258,6 +271,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return changed;
     }
 
+    /** 仅保留与给定集合的交集。 */
     @Override
     public boolean retainAll(Collection<?> c) {
         boolean changed = false;
@@ -271,6 +285,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return changed;
     }
 
+    /** 批量移除元素。 */
     @Override
     public boolean removeAll(Collection<?> c) {
         boolean changed = false;
@@ -282,21 +297,25 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return changed;
     }
 
+    /** 清空全部元素。 */
     @Override
     public void clear() {
         delete();
     }
 
+    /** 返回元素比较器。 */
     @Override
     public Comparator<? super V> comparator() {
         return comparator;
     }
 
+    /** 异步执行 poll。 */
     @Override
     public RFuture<V> pollAsync() {
         return wrapLockedAsync(RedisCommands.LPOP, getRawName());
     }
 
+    /** 异步执行 wrapLocked。 */
     protected final <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
         CompletionStage<V> f = sizeAsync().thenCompose(r -> {
             if (r > 0) {
@@ -309,6 +328,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 wrapLocked。 */
     protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
         long randomId = getServiceManager().getRandom().nextLong();
         CompletionStage<R> f = lock.lockAsync(randomId).thenCompose(r -> {
@@ -336,6 +356,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 获取 First。 */
     public V getFirst() {
         V value = getValue(0);
         if (value == null) {
@@ -344,30 +365,36 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return value;
     }
 
+    /** 移除并返回队首/最高优先级元素。 */
     @Override
     public V poll() {
         return get(pollAsync());
     }
 
+    /** 优先级队列 element 操作。 */
     @Override
     public V element() {
         return getFirst();
     }
 
+    /** 异步执行 peek。 */
     @Override
     public RFuture<V> peekAsync() {
         return getAsync(0);
     }
 
+    /** 查看但不移除最高优先级元素。 */
     @Override
     public V peek() {
         return getValue(0);
     }
 
+    /** 获取 ComparatorKeyName。 */
     private String getComparatorKeyName() {
         return suffixName(getRawName(), "redisson_sortedset_comparator");
     }
 
+    /** 优先级队列 trySetComparator 操作。 */
     @Override
     public boolean trySetComparator(Comparator<? super V> comparator) {
         if (comparator.getClass().isSynthetic()) {
@@ -384,11 +411,13 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return res;
     }
     
+    /** 移除元素。 */
     @Override
     public V remove() {
         return removeFirst();
     }
 
+    /** removeFirst：移除操作。 */
     public V removeFirst() {
         V value = poll();
         if (value == null) {
@@ -397,6 +426,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return value;
     }
 
+    /** 优先级队列 binarySearch 操作。 */
     public BinarySearchResult<V> binarySearch(V value) {
         return binarySearch(value, true);
     }
@@ -434,6 +464,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
 
     @Override
     @SuppressWarnings("AvoidInlineConditionals")
+    /** 优先级队列 toString 操作。 */
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -450,16 +481,19 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         }
     }
     
+    /** 优先级队列 pollLastAndOfferFirstTo 操作。 */
     @Override
     public V pollLastAndOfferFirstTo(String queueName) {
         return get(pollLastAndOfferFirstToAsync(queueName));
     }
 
+    /** 将成员移动到另一 Set。 */
     @Override
     public List<V> move(QueueMoveElementsArgs args) {
         return get(moveAsync(args));
     }
 
+    /** 异步执行 move。 */
     @Override
     public RFuture<List<V>> moveAsync(QueueMoveElementsArgs args) {
         QueueMoveElementsParams pp = (QueueMoveElementsParams) args;
@@ -478,6 +512,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         });
     }
 
+    /** 异步执行 pollLastAndOfferFirstTo。 */
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
         CompletionStage<V> f = sizeAsync().thenCompose(r -> {
@@ -489,41 +524,49 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 delete。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), getComparatorKeyName());
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getComparatorKeyName());
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), getComparatorKeyName());
     }
 
+    /** 异步执行 clearExpire。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return clearExpireAsync(getRawName(), getComparatorKeyName());
     }
 
+    /** 移除并返回队首/最高优先级元素。 */
     @Override
     public List<V> poll(int limit) {
         return get(pollAsync(limit));
     }
 
+    /** 异步执行 offer。 */
     @Override
     public RFuture<Boolean> offerAsync(V e) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步添加 ZSet 成员。 */
     @Override
     public RFuture<Boolean> addAsync(V e) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 poll。 */
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
         return wrapLockedAsync(() -> {

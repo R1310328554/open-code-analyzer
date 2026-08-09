@@ -34,17 +34,22 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 可过期许可的分布式信号量 {@link RPermitExpirableSemaphore}。
+ * <p>每次 acquire 返回带 TTL 的 permitId；到期自动释放，
+ * 也可通过 permitId 显式 release 或续期。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonPermitExpirableSemaphore extends RedissonExpirable implements RPermitExpirableSemaphore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedissonPermitExpirableSemaphore.class);
 
+    /** 信号量 Pub/Sub 通道名。 */
     private final String channelName;
+    /** 信号量等待/唤醒 Pub/Sub 通道。 */
     private final SemaphorePubSub semaphorePubSub;
 
+    /** 存储 permit 过期时间的 Redis 键后缀。 */
     private final String timeoutName;
     
     private final long nonExpirableTimeout = 922337203685477L;
@@ -56,22 +61,26 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         this.channelName = prefixName("redisson_sc", getRawName());
     }
 
+    /** 获取一个信号量许可（阻塞）。 */
     @Override
     public String acquire() throws InterruptedException {
         return acquire(-1, TimeUnit.MILLISECONDS);
     }
 
+    /** 获取一个信号量许可（阻塞）。 */
     @Override
     public List<String> acquire(int permits) throws InterruptedException {
         return acquire(permits, -1, TimeUnit.MILLISECONDS);
     }
 
+    /** 获取一个信号量许可（阻塞）。 */
     @Override
     public String acquire(long leaseTime, TimeUnit timeUnit) throws InterruptedException {
         List<String> ids = acquire(1, leaseTime, timeUnit);
         return getFirstOrNull(ids);
     }
     
+    /** 获取一个信号量许可（阻塞）。 */
     @Override
     public List<String> acquire(int permits, long leaseTime, TimeUnit timeUnit) throws InterruptedException {
         List<String> ids = tryAcquire(permits, leaseTime, timeUnit);
@@ -106,6 +115,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 //        return get(acquireAsync(permits, leaseTime, timeUnit));
     }
     
+    /** 异步获取信号量许可。 */
     @Override
     public RFuture<String> acquireAsync() {
         CompletionStage<String> future = acquireAsync(1)
@@ -113,11 +123,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(future);
     }
     
+    /** 异步获取信号量许可。 */
     @Override
     public RFuture<List<String>> acquireAsync(int permits) {
         return acquireAsync(permits, -1, TimeUnit.MILLISECONDS);
     }
     
+    /** 异步获取信号量许可。 */
     @Override
     public RFuture<String> acquireAsync(long leaseTime, TimeUnit timeUnit) {
         CompletionStage<String> future = acquireAsync(1, leaseTime, timeUnit)
@@ -126,6 +138,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(future);
     }
     
+    /** 异步获取信号量许可。 */
     @Override
     public RFuture<List<String>> acquireAsync(int permits, long leaseTime, TimeUnit timeUnit) {
         long timeoutDate = calcTimeout(leaseTime, timeUnit);
@@ -151,6 +164,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 异步尝试获取许可。 */
     private void tryAcquireAsync(AtomicLong time, int permits, RedissonLockEntry entry, CompletableFuture<List<String>> result, long leaseTime, TimeUnit timeUnit) {
         if (result.isDone()) {
             unsubscribe(entry);
@@ -254,6 +268,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         
     }
 
+    /** 异步获取信号量许可。 */
     private CompletableFuture<List<String>> acquireAsync(int permits, RedissonLockEntry entry, long leaseTime, TimeUnit timeUnit) {
         long timeoutDate = calcTimeout(leaseTime, timeUnit);
         CompletableFuture<List<String>> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate).toCompletableFuture();
@@ -300,12 +315,14 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         });
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public String tryAcquire() {
         List<String> ids = tryAcquire(1);
         return getFirstOrNull(ids);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public List<String> tryAcquire(int permits) {
         List<String> ids = tryAcquire(permits, -1, TimeUnit.MILLISECONDS);
@@ -315,11 +332,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return ids;
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     private List<String> tryAcquire(int permits, long leaseTime, TimeUnit timeUnit) {
         long timeoutDate = calcTimeout(leaseTime, timeUnit);
         return get(tryAcquireAsync(permits, timeoutDate));
     }
 
+    /** 可过期信号量 calcTimeout 操作。 */
     private long calcTimeout(long leaseTime, TimeUnit timeUnit) {
         if (leaseTime != -1) {
             return System.currentTimeMillis() + timeUnit.toMillis(leaseTime);
@@ -327,6 +346,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return nonExpirableTimeout;
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<String> tryAcquireAsync() {
         CompletionStage<String> future = tryAcquireAsync(1)
@@ -334,6 +354,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(future);
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<List<String>> tryAcquireAsync(int permits) {
         CompletableFuture<List<String>> future = tryAcquireAsync(permits, nonExpirableTimeout).toCompletableFuture()
@@ -352,6 +373,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(future);
     }
 
+    /** 异步尝试获取许可。 */
     private RFuture<List<String>> tryAcquireAsync(int permits, long timeoutDate) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
@@ -367,6 +389,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         });
     }
 
+    /** 异步尝试获取许可。 */
     private RFuture<List<String>> tryAcquireAsync(List<String> ids, long timeoutDate) {
         List<Object> params = new ArrayList<>();
         params.add(ids.size());
@@ -421,6 +444,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(future);
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<String> tryAcquireAsync(long waitTime, TimeUnit unit) {
         CompletionStage<String> future = tryAcquireAsync(1, waitTime, -1, unit)
@@ -428,12 +452,14 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(future);
     }
     
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public String tryAcquire(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         List<String> ids = tryAcquire(1, waitTime, leaseTime, unit);
         return getFirstOrNull(ids);
     }
     
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<String> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit) {
         CompletionStage<String> future = tryAcquireAsync(1, waitTime, leaseTime, unit)
@@ -441,6 +467,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(future);
     }
     
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public List<String> tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         long time = unit.toMillis(waitTime);
@@ -512,6 +539,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 //        return get(tryAcquireAsync(permits, waitTime, leaseTime, unit));
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<List<String>> tryAcquireAsync(int permits, long waitTime, long leaseTime, TimeUnit timeUnit) {
         CompletableFuture<List<String>> result = new CompletableFuture<>();
@@ -571,14 +599,17 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 可过期信号量 subscribe 操作。 */
     private CompletableFuture<RedissonLockEntry> subscribe() {
         return semaphorePubSub.subscribe(getRawName(), channelName);
     }
 
+    /** 可过期信号量 unsubscribe 操作。 */
     private void unsubscribe(RedissonLockEntry entry) {
         semaphorePubSub.unsubscribe(entry, getRawName(), channelName);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public String tryAcquire(long waitTime, TimeUnit unit) throws InterruptedException {
         List<String> ids = tryAcquire(1, waitTime, -1, unit);
@@ -588,26 +619,31 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return ids.get(0);
     }
 
+    /** 释放信号量/限流许可。 */
     @Override
     public void release(String permitId) {
         get(releaseAsync(permitId));
     }
 
+    /** 释放信号量/限流许可。 */
     @Override
     public void release(List<String> permitsIds) {
         get(releaseAsync(permitsIds));
     }
 
+    /** 可过期信号量 tryRelease 操作。 */
     @Override
     public boolean tryRelease(String permitId) {
         return get(tryReleaseAsync(permitId));
     }
 
+    /** 可过期信号量 tryRelease 操作。 */
     @Override
     public int tryRelease(List<String> permitsIds) {
         return get(tryReleaseAsync(permitsIds));
     }
 
+    /** 异步执行 tryRelease。 */
     @Override
     public RFuture<Boolean> tryReleaseAsync(String permitId) {
         if (permitId == null) {
@@ -631,6 +667,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 id, 1, System.currentTimeMillis(), getSubscribeService().getPublishCommand());
     }
     
+    /** 异步执行 tryRelease。 */
     @Override
     public RFuture<Integer> tryReleaseAsync(List<String> permitsIds) {
         if (permitsIds == null || permitsIds.isEmpty()) {
@@ -673,37 +710,44 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 params.toArray());
     }
     
+    /** 异步执行 sizeInMemory。 */
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
         List<Object> keys = Arrays.<Object>asList(getRawName(), timeoutName);
         return super.sizeInMemoryAsync(keys);
     }
 
+    /** 异步执行 copy。 */
     @Override
     public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 delete。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), timeoutName);
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return super.expireAsync(timeToLive, timeUnit, param, getRawName(), timeoutName);
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), timeoutName);
     }
 
+    /** 异步执行 clearExpire。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return clearExpireAsync(getRawName(), timeoutName);
     }
 
+    /** 异步释放许可。 */
     @Override
     public RFuture<Void> releaseAsync(String permitId) {
         CompletionStage<Void> f = tryReleaseAsync(permitId).handle((res, e) -> {
@@ -719,6 +763,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步释放许可。 */
     @Override
     public RFuture<Void> releaseAsync(List<String> permitsIds) {
         CompletionStage<Void> f = tryReleaseAsync(permitsIds).handle((res, e) -> {
@@ -735,21 +780,25 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 返回当前可用许可数。 */
     @Override
     public int availablePermits() {
         return get(availablePermitsAsync());
     }
 
+    /** 获取 Permits。 */
     @Override
     public int getPermits() {
         return get(getPermitsAsync());
     }
 
+    /** 可过期信号量 acquiredPermits 操作。 */
     @Override
     public int acquiredPermits() {
         return get(acquiredPermitsAsync());
     }
     
+    /** 异步执行 availablePermits。 */
     @Override
     public RFuture<Integer> availablePermitsAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -768,6 +817,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 System.currentTimeMillis(), getSubscribeService().getPublishCommand());
     }
 
+    /** 异步获取 Permits 或执行 Permits 操作。 */
     @Override
     public RFuture<Integer> getPermitsAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -792,6 +842,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 System.currentTimeMillis(), getSubscribeService().getPublishCommand());
     }
 
+    /** 异步执行 acquiredPermits。 */
     @Override
     public RFuture<Integer> acquiredPermitsAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -809,16 +860,19 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 System.currentTimeMillis(), getSubscribeService().getPublishCommand());
     }
 
+    /** 可过期信号量 trySetPermits 操作。 */
     @Override
     public boolean trySetPermits(int permits) {
         return get(trySetPermitsAsync(permits));
     }
 
+    /** 设置信号量总许可数。 */
     @Override
     public void setPermits(int permits) {
         get(setPermitsAsync(permits));
     }
 
+    /** 设置PermitsAsync。 */
     @Override
     public RFuture<Void> setPermitsAsync(int permits) {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
@@ -839,6 +893,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 permits, getSubscribeService().getPublishCommand());
     }
 
+    /** 异步执行 trySetPermits。 */
     @Override
     public RFuture<Boolean> trySetPermitsAsync(int permits) {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -853,11 +908,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 permits, getSubscribeService().getPublishCommand());
     }
 
+    /** addPermits：添加操作。 */
     @Override
     public void addPermits(int permits) {
         get(addPermitsAsync(permits));
     }
     
+    /** 异步执行 addPermits。 */
     @Override
     public RFuture<Void> addPermitsAsync(int permits) {
         return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
@@ -872,6 +929,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 Arrays.asList(getRawName(), channelName), permits, getSubscribeService().getPublishCommand());
     }
 
+    /** 异步执行 updateLeaseTime。 */
     @Override
     public RFuture<Boolean> updateLeaseTimeAsync(String permitId, long leaseTime, TimeUnit unit) {
         long timeoutDate = calcTimeout(leaseTime, unit);
@@ -896,11 +954,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 id, timeoutDate, System.currentTimeMillis(), getSubscribeService().getPublishCommand());
     }
 
+    /** 可过期信号量 updateLeaseTime 操作。 */
     @Override
     public boolean updateLeaseTime(String permitId, long leaseTime, TimeUnit unit) {
         return get(updateLeaseTimeAsync(permitId, leaseTime, unit));
     }
     
+    /** 异步获取 LeaseTime 或执行 LeaseTime 操作。 */
     @Override
     public RFuture<Long> getLeaseTimeAsync(String permitId) {
         byte[] id = ByteBufUtil.decodeHexDump(permitId);
@@ -935,15 +995,18 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 获取 LeaseTime。 */
     @Override
     public long getLeaseTime(String permitId) {
         return get(getLeaseTimeAsync(permitId));
     }
 
+    /** 可过期信号量 hasOnlyNearestTimeout 操作。 */
     private static boolean hasOnlyNearestTimeout(List<String> ids) {
         return ids.size() == 1 && ids.get(0).startsWith(":");
     }
 
+    /** 获取 FirstOrNull。 */
     private static String getFirstOrNull(List<String> ids) {
         if (ids.isEmpty()) {
             return null;

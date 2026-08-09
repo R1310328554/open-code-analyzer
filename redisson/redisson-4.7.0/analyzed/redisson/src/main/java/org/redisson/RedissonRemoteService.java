@@ -37,15 +37,19 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 分布式远程服务 {@link RRemoteService} 实现。
+ * <p>基于 Redis 队列在 JVM 间调用接口方法；支持多 worker、
+ * 异步回调与 RxJava/Reactor 代理。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonRemoteService extends BaseRemoteService implements RRemoteService {
 
     public static class Entry {
         
+        /** 远程方法调用结果 Future。 */
         RFuture<String> future;
+        /** 当前可用 worker 计数。 */
         final AtomicInteger freeWorkers;
         
         public Entry(int workers) {
@@ -74,11 +78,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         super(codec, name, commandExecutor, executorId);
     }
 
+    /** 远程服务 RequestTasksMapName 相关操作。 */
     public String getRequestTasksMapName(Class<?> remoteInterface) {
         String queue = getRequestQueueName(remoteInterface);
         return queue + ":tasks";
     }
 
+    /** 异步添加 ZSet 成员。 */
     @Override
     protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
                                                   RemotePromise<Object> result) {
@@ -93,6 +99,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return future.toCompletableFuture();
     }
 
+    /** 异步移除 ZSet 成员。 */
     @Override
     protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(requestQueueName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -106,11 +113,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return f.toCompletableFuture();
     }
         
+    /** 注册远程服务接口实现。 */
     @Override
     public <T> void register(Class<T> remoteInterface, T object) {
         register(remoteInterface, object, 1);
     }
 
+    /** 注销远程服务。 */
     @Override
     public <T> void deregister(Class<T> remoteInterface) {
         Entry entry = remoteMap.remove(remoteInterface);
@@ -119,6 +128,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         }
     }
     
+    /** 远程服务 PendingInvocations 相关操作。 */
     @Override
     public int getPendingInvocations(Class<?> remoteInterface) {
         String requestQueueName = getRequestQueueName(remoteInterface);
@@ -126,6 +136,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return requestQueue.size();
     }
 
+    /** 异步获取 PendingInvocations 或执行 PendingInvocations 操作。 */
     @Override
     public RFuture<Integer> getPendingInvocationsAsync(Class<?> remoteInterface) {
         String requestQueueName = getRequestQueueName(remoteInterface);
@@ -133,6 +144,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return requestQueue.sizeAsync();
     }
 
+    /** 远程服务 FreeWorkers 相关操作。 */
     @Override
     public int getFreeWorkers(Class<?> remoteInterface) {
         Entry entry = remoteMap.get(remoteInterface);
@@ -142,11 +154,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return entry.getFreeWorkers().get();
     }
     
+    /** 注册远程服务接口实现。 */
     @Override
     public <T> void register(Class<T> remoteInterface, T object, int workers) {
         register(remoteInterface, object, workers, commandExecutor.getServiceManager().getExecutor());
     }
 
+    /** 注册远程服务接口实现。 */
     @Override
     public <T> void register(Class<T> remoteInterface, T object, int workers, ExecutorService executor) {
         if (workers < 1) {
@@ -162,11 +176,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         subscribe(remoteInterface, requestQueue, executor, object);
     }
 
+    /** 远程服务 tryExecute 操作。 */
     @Override
     public <T> boolean tryExecute(Class<T> remoteInterface, T object, long timeout, TimeUnit timeUnit) throws InterruptedException {
         return tryExecute(remoteInterface, object, commandExecutor.getServiceManager().getExecutor(), timeout, timeUnit);
     }
 
+    /** 远程服务 tryExecute 操作。 */
     @Override
     public <T> boolean tryExecute(Class<T> remoteInterface, T object, ExecutorService executorService, long timeout, TimeUnit timeUnit) throws InterruptedException {
         String requestQueueName = getRequestQueueName(remoteInterface);
@@ -189,11 +205,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return true;
     }
 
+    /** 异步执行 tryExecute。 */
     @Override
     public <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object, long timeout, TimeUnit timeUnit) {
         return tryExecuteAsync(remoteInterface, object, commandExecutor.getServiceManager().getExecutor(), timeout, timeUnit);
     }
 
+    /** 异步执行 tryExecute。 */
     @Override
     public <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object, ExecutorService executor, long timeout, TimeUnit timeUnit) {
         String requestQueueName = getRequestQueueName(remoteInterface);
@@ -224,12 +242,14 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 tryExecute。 */
     @Override
     public <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object) {
         return tryExecuteAsync(remoteInterface, object, -1, null);
     }
     
     @SuppressWarnings("MethodLength")
+    /** 远程服务 subscribe 操作。 */
     private <T> void subscribe(Class<T> remoteInterface, RBlockingQueue<String> requestQueue,
             ExecutorService executor, Object bean) {
         Entry entry = remoteMap.get(remoteInterface);
@@ -403,6 +423,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     private final Map<RemoteServiceKey, Method> methodsCache = new ConcurrentHashMap<>();
 
+    /** 远程服务 executeMethod 操作。 */
     private <T> RFuture<RRemoteServiceResponse> executeMethod(Class<T> remoteInterface, RBlockingQueue<String> requestQueue,
             ExecutorService executor, RemoteServiceRequest request, Object bean) {
 
@@ -495,6 +516,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         return new CompletableFutureWrapper<>(responsePromise);
     }
 
+    /** 远程服务 invokeMethod 操作。 */
     protected <T> void invokeMethod(RemoteServiceRequest request, RemoteServiceMethod method,
                                     CompletableFuture<RemoteServiceCancelRequest> cancelRequestFuture,
                                     CompletableFuture<RRemoteServiceResponse> responsePromise) {
@@ -514,6 +536,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         }
     }
 
+    /** 远程服务 resubscribe 操作。 */
     private <T> void resubscribe(Class<T> remoteInterface, RBlockingQueue<String> requestQueue,
             ExecutorService executor, Object bean) {
         Entry entry = remoteMap.get(remoteInterface);
@@ -526,6 +549,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         }
     }
 
+    /** 远程服务 Task 相关操作。 */
     protected RFuture<RemoteServiceRequest> getTask(String requestId, RMap<String, RemoteServiceRequest> tasks) {
         return tasks.removeAsync(requestId);
     }

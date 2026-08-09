@@ -34,9 +34,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 分布式令牌桶限流器 {@link RRateLimiter}。
+ * <p>基于 Redis + Lua 脚本实现 OVERALL/PER_CLIENT 速率配置，
+ * 支持 tryAcquire 与异步/响应式变体。
  *
+ * @author Nikita Koksharov
  */
 public final class RedissonRateLimiter extends RedissonExpirable implements RRateLimiter {
 
@@ -60,88 +62,105 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
         return suffixName(getValueName(), getServiceManager().getId());
     }
     
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire() {
         return tryAcquire(1);
     }
     
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync() {
         return tryAcquireAsync(1L);
     }
     
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(long permits) {
         return get(tryAcquireAsync(RedisCommands.EVAL_NULL_BOOLEAN, permits));
     }
     
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(long permits) {
         return tryAcquireAsync(RedisCommands.EVAL_NULL_BOOLEAN, permits);
     }
 
+    /** 获取一个信号量许可（阻塞）。 */
     @Override
     public void acquire() {
         get(acquireAsync());
     }
     
+    /** 异步获取信号量许可。 */
     @Override
     public RFuture<Void> acquireAsync() {
         return acquireAsync(1);
     }
 
+    /** 获取一个信号量许可（阻塞）。 */
     @Override
     public void acquire(long permits) {
         get(acquireAsync(permits));
     }
 
+    /** 异步获取信号量许可。 */
     @Override
     public RFuture<Void> acquireAsync(long permits) {
         CompletionStage<Void> f = tryAcquireAsync(permits, Duration.ofMillis(-1)).thenApply(res -> null);
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(long timeout, TimeUnit unit) {
         return get(tryAcquireAsync(timeout, unit));
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(long timeout, TimeUnit unit) {
         return tryAcquireAsync(1, timeout, unit);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(Duration timeout) {
         return get(tryAcquireAsync(timeout));
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(Duration timeout) {
         return tryAcquireAsync(1, timeout);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(long permits, Duration timeout) {
         return get(tryAcquireAsync(permits, timeout));
     }
 
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(long permits, Duration timeout) {
         CompletableFuture<Boolean> f = tryAcquireAsync(permits, timeout.toMillis());
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 尝试获取许可（限流/信号量）。 */
     @Override
     public boolean tryAcquire(long permits, long timeout, TimeUnit unit) {
         return get(tryAcquireAsync(permits, timeout, unit));
     }
     
+    /** 异步尝试获取许可。 */
     @Override
     public RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit) {
         return tryAcquireAsync(permits, Duration.ofMillis(unit.toMillis(timeout)));
     }
     
+    /** 异步尝试获取许可。 */
     private CompletableFuture<Boolean> tryAcquireAsync(long permits, long timeoutInMillis) {
         CompletableFuture<Boolean> promise = new CompletableFuture<>();
         long startTime = System.currentTimeMillis();
@@ -149,6 +168,7 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
         return promise;
     }
 
+    /** 异步尝试获取许可。 */
     private void tryAcquireAsync(long permits, long timeoutInMillis, long startTime, CompletableFuture<Boolean> promise) {
         RFuture<Long> future = tryAcquireAsync(RedisCommands.EVAL_LONG, permits);
         future.whenComplete((delay, ex) -> {
@@ -194,6 +214,7 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
         });
     }
     
+    /** 异步尝试获取许可。 */
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
         byte[] random = getServiceManager().generateIdArray();
 
@@ -271,6 +292,7 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     }
 
 
+    /** 异步释放许可。 */
     @Override
     public RFuture<Void> releaseAsync(long permits) {
         if (permits < 0) {
@@ -320,31 +342,37 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
                 Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()), permits);
     }
 
+    /** 释放信号量/限流许可。 */
     @Override
     public void release(long permits) {
         get(releaseAsync(permits));
     }
 
+    /** 配置令牌桶速率（仅首次生效）。 */
     @Override
     public boolean trySetRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
         return get(trySetRateAsync(type, rate, rateInterval, unit));
     }
 
+    /** 异步配置令牌桶速率。 */
     @Override
     public RFuture<Boolean> trySetRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
         return trySetRateAsync(type, rate, Duration.ofMillis(unit.toMillis(rateInterval)), Duration.ZERO);
     }
 
+    /** 设置Rate。 */
     @Override
     public void setRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
         get(setRateAsync(type, rate, rateInterval, unit));
     }
 
+    /** 设置RateAsync。 */
     @Override
     public RFuture<Void> setRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
         return setRateAsync(type, rate, Duration.ofMillis(unit.toMillis(rateInterval)), Duration.ZERO);
     }
 
+    /** 异步配置令牌桶速率。 */
     @Override
     public RFuture<Boolean> trySetRateAsync(RateType type, long rate, Duration rateInterval, Duration keepAliveTime) {
         if (!keepAliveTime.equals(Duration.ZERO) && keepAliveTime.toMillis() < rateInterval.toMillis()) {
@@ -363,26 +391,31 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
                 rate, rateInterval.toMillis(), type.ordinal(), keepAliveTime.toMillis());
     }
 
+    /** 配置令牌桶速率（仅首次生效）。 */
     @Override
     public boolean trySetRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime) {
         return get(trySetRateAsync(mode, rate, rateInterval, keepAliveTime));
     }
 
+    /** 异步配置令牌桶速率。 */
     @Override
     public RFuture<Boolean> trySetRateAsync(RateType mode, long rate, Duration rateInterval) {
         return trySetRateAsync(mode, rate, rateInterval, Duration.ZERO);
     }
 
+    /** 配置令牌桶速率（仅首次生效）。 */
     @Override
     public boolean trySetRate(RateType mode, long rate, Duration rateInterval) {
         return get(trySetRateAsync(mode, rate, rateInterval));
     }
 
+    /** 设置Rate。 */
     @Override
     public void setRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime) {
         get(setRateAsync(mode, rate, rateInterval, keepAliveTime));
     }
 
+    /** 设置RateAsync。 */
     @Override
     public RFuture<Void> setRateAsync(RateType type, long rate, Duration rateInterval, Duration keepAliveTime) {
         if (!keepAliveTime.isZero() && keepAliveTime.toMillis() < rateInterval.toMillis()) {
@@ -407,37 +440,44 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
                 rate, rateInterval.toMillis(), type.ordinal(), keepAliveTime.toMillis());
     }
 
+    /** 设置Rate。 */
     @Override
     public void setRate(RateType mode, long rate, Duration rateInterval) {
         get(setRateAsync(mode, rate, rateInterval));
     }
 
+    /** 设置RateAsync。 */
     @Override
     public RFuture<Void> setRateAsync(RateType mode, long rate, Duration rateInterval) {
         return setRateAsync(mode, rate, rateInterval, Duration.ZERO);
     }
 
+    /** 设置Rate。 */
     @Override
     public void setRate(RateLimiterArgs args) {
         get(setRateAsync(args));
     }
 
+    /** 设置RateAsync。 */
     @Override
     public RFuture<Void> setRateAsync(RateLimiterArgs args) {
         CompletionStage<Void> f = setOrUpdateAsync(args, false).thenApply(r -> null);
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 限流器 updateRate 操作。 */
     @Override
     public boolean updateRate(RateLimiterArgs args) {
         return get(updateRateAsync(args));
     }
 
+    /** 异步执行 updateRate。 */
     @Override
     public RFuture<Boolean> updateRateAsync(RateLimiterArgs args) {
         return setOrUpdateAsync(args, true);
     }
 
+    /** 设置OrUpdateAsync。 */
     private RFuture<Boolean> setOrUpdateAsync(RateLimiterArgs args, boolean requireExist) {
         RateLimiterParams params = (RateLimiterParams) args;
 
@@ -545,21 +585,25 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
         return new RateLimiterConfig(type, rateInterval, rate);
     }));
     
+    /** 返回限流器当前 Rate 配置。 */
     @Override
     public RateLimiterConfig getConfig() {
         return get(getConfigAsync());
     }
     
+    /** 异步获取 Config 或执行 Config 操作。 */
     @Override
     public RFuture<RateLimiterConfig> getConfigAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, HGETALL, getRawName());
     }
 
+    /** 返回当前可用许可数。 */
     @Override
     public long availablePermits() {
         return get(availablePermitsAsync());
     }
 
+    /** 异步执行 availablePermits。 */
     @Override
     public RFuture<Long> availablePermitsAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
@@ -599,22 +643,26 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
                 System.currentTimeMillis());
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return super.expireAsync(timeToLive, timeUnit, param,
                                     getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
+    /** 异步执行 clearExpire。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return clearExpireAsync(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }
 
+    /** 异步执行 delete。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());

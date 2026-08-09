@@ -52,10 +52,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Base Redisson object
+ * Redisson 分布式对象基类，实现 {@link RObject} 通用能力。
+ * <p>管理命令执行器、编解码器、键名/hash-tag、Pub/Sub 监听器
+ * 与对象追踪（OBJECT ENCODING）等基础设施。
  *
  * @author Nikita Koksharov
- *
  */
 public abstract class RedissonObject implements RObject {
 
@@ -63,8 +64,11 @@ public abstract class RedissonObject implements RObject {
     private static final long MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT_NANOS =
             TimeUnit.MILLISECONDS.toNanos(MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT);
 
+    /** 异步 Redis 命令执行器。 */
     protected CommandAsyncExecutor commandExecutor;
+    /** Redis 键名（含 hash-tag）。 */
     protected String name;
+    /** 值序列化编解码器。 */
     protected final Codec codec;
     private final Map<String, Collection<Integer>> listeners = new ConcurrentHashMap<>();
 
@@ -132,6 +136,7 @@ public abstract class RedissonObject implements RObject {
         this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, name);
     }
 
+    /** 构造带 hash-tag 的键前缀。 */
     public static String prefixName(String prefix, String name) {
         if (name.contains("{")) {
             return prefix + ":" + name;
@@ -139,10 +144,12 @@ public abstract class RedissonObject implements RObject {
         return prefix + ":{" + name + "}";
     }
 
+    /** 返回连接服务管理器。 */
     public ServiceManager getServiceManager() {
         return commandExecutor.getServiceManager();
     }
 
+    /** 为键名追加后缀段。 */
     public static String suffixName(String name, String suffix) {
         if (name.contains("{")) {
             return name + ":" + suffix;
@@ -150,15 +157,18 @@ public abstract class RedissonObject implements RObject {
         return "{" + name + "}:" + suffix;
     }
 
+    /** Redisson 对象基类 toStream 方法。 */
     protected final <T> Stream<T> toStream(Iterator<T> iterator) {
         Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize(iterator, Spliterator.NONNULL);
         return StreamSupport.stream(spliterator, false);
     }
     
+    /** 按键获取 Set 视图或值。 */
     protected final <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);
     }
     
+    /** Redisson 对象基类 toSeconds 方法。 */
     protected final long toSeconds(long timeout, TimeUnit unit) {
         long seconds = unit.toSeconds(timeout);
         if (timeout != 0 && seconds == 0) {
@@ -167,37 +177,45 @@ public abstract class RedissonObject implements RObject {
         return seconds;
     }
 
+    /** 返回对象名称。 */
     @Override
     public String getName() {
         return commandExecutor.getServiceManager().getNameMapper().unmap(name);
     }
 
+    /** 返回未经处理的 Redis 键名。 */
     public final String getRawName() {
         return name;
     }
 
+    /** 返回未经处理的 Redis 键名。 */
     protected String getRawName(Object o) {
         return getRawName();
     }
 
+    /** 设置对象 Redis 键名。 */
     protected void setName(String name) {
         this.name = mapName(name);
     }
 
+    /** 重命名 Redis 键。 */
     @Override
     public void rename(String newName) {
         get(renameAsync(newName));
     }
     
+    /** 异步执行 sizeInMemory。 */
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.MEMORY_USAGE, getRawName());
     }
     
+    /** 异步执行 sizeInMemory。 */
     public final RFuture<Long> sizeInMemoryAsync(List<Object> keys) {
         return sizeInMemoryAsync(commandExecutor, keys);
     }
 
+    /** 异步执行 sizeInMemory。 */
     public final RFuture<Long> sizeInMemoryAsync(CommandAsyncExecutor commandExecutor, List<Object> keys) {
         return commandExecutor.evalWriteAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                   "local total = 0;"
@@ -211,43 +229,52 @@ public abstract class RedissonObject implements RObject {
 
     }
     
+    /** Redisson 对象基类 sizeInMemory 方法。 */
     @Override
     public long sizeInMemory() {
         return get(sizeInMemoryAsync());
     }
 
+    /** 异步执行 copy。 */
     @Override
     public final RFuture<Boolean> copyAsync(String destination) {
         return copyAsync(destination, -1);
     }
 
+    /** 异步执行 copy。 */
     @Override
     public final RFuture<Boolean> copyAsync(String destination, int database) {
         return copyAsync(Arrays.asList(getRawName(), mapName(destination)), database, false);
     }
 
+    /** 异步执行 copyAndReplace。 */
     @Override
     public final RFuture<Boolean> copyAndReplaceAsync(String destination) {
         return copyAndReplaceAsync(destination, -1);
     }
 
+    /** 异步执行 copyAndReplace。 */
     @Override
     public final RFuture<Boolean> copyAndReplaceAsync(String destination, int database) {
         return copyAsync(Arrays.asList(getRawName(), mapName(destination)), database, true);
     }
 
+    /** 异步执行 copy。 */
     protected RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
         return copyAsync(commandExecutor, keys, database, replace);
     }
 
+    /** 异步执行 rename。 */
     protected final RFuture<Void> renameAsync(List<Object> keys) {
         return renameAsync(commandExecutor, keys, () -> {});
     }
 
+    /** 异步执行 renamenx。 */
     protected final RFuture<Void> renamenxAsync(List<Object> keys) {
         return renameAsync(commandExecutor, keys, () -> {});
     }
 
+    /** 异步执行 copy。 */
     protected final RFuture<Boolean> copyAsync(CommandAsyncExecutor commandExecutor, List<Object> keys,
                                                 int database, boolean replace) {
         int pairCount = keys.size() / 2;
@@ -300,6 +327,7 @@ public abstract class RedissonObject implements RObject {
                     database, Boolean.compare(replace, false));
     }
 
+    /** Redisson 对象基类 executeDumpRestoreCopy 方法。 */
     private RFuture<Boolean> executeDumpRestoreCopy(CommandAsyncExecutor commandExecutor, List<Object> keys,
                                                     boolean replace) {
         int pairCount = keys.size() / 2;
@@ -326,6 +354,7 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** Redisson 对象基类 copyOnePairAcrossSlots 方法。 */
     private RFuture<Boolean> copyOnePairAcrossSlots(CommandAsyncExecutor commandExecutor,
                                                     String sourceKey, String destKey, boolean replace) {
         RFuture<List<Object>> dumpFuture = commandExecutor.evalWriteAsync(
@@ -368,6 +397,7 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(stage);
     }
 
+    /** 异步执行 rename。 */
     protected final RFuture<Void> renameAsync(CommandAsyncExecutor commandExecutor, List<Object> keys, Runnable runnable) {
         if (keys.size() == 2) {
             List<Object> args = new ArrayList<>();
@@ -390,6 +420,7 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 renamenx。 */
     protected final RFuture<Boolean> renamenxAsync(CommandAsyncExecutor commandExecutor, List<Object> keys, Consumer<Boolean> callback) {
         if (keys.size() == 2) {
             List<Object> args = new ArrayList<>();
@@ -424,36 +455,43 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 复制 Set 到目标键。 */
     @Override
     public final boolean copy(String destination) {
         return get(copyAsync(destination));
     }
 
+    /** 复制 Set 到目标键。 */
     @Override
     public final boolean copy(String destination, int database) {
         return get(copyAsync(destination, database));
     }
 
+    /** Redisson 对象基类 copyAndReplace 方法。 */
     @Override
     public final boolean copyAndReplace(String destination) {
         return get(copyAndReplaceAsync(destination));
     }
 
+    /** Redisson 对象基类 copyAndReplace 方法。 */
     @Override
     public final boolean copyAndReplace(String destination, int database) {
         return get(copyAndReplaceAsync(destination, database));
     }
 
+    /** Redisson 对象基类 mapName 方法。 */
     protected final String mapName(String name) {
         return commandExecutor.getServiceManager().getNameMapper().map(name);
     }
 
+    /** Redisson 对象基类 checkNotBatch 方法。 */
     protected final void checkNotBatch() {
         if (commandExecutor instanceof BatchService) {
             throw new IllegalStateException("This method doesn't work in batch mode.");
         }
     }
 
+    /** 异步执行 rename。 */
     @Override
     public RFuture<Void> renameAsync(String newName) {
         String nn = mapName(newName);
@@ -480,41 +518,49 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** Redisson 对象基类 migrate 方法。 */
     @Override
     public void migrate(String host, int port, int database, long timeout) {
         get(migrateAsync(host, port, database, timeout));
     }
 
+    /** 异步执行 migrate。 */
     @Override
     public RFuture<Void> migrateAsync(String host, int port, int database, long timeout) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.MIGRATE, host, port, getRawName(), database, timeout);
     }
     
+    /** 复制 Set 到目标键。 */
     @Override
     public void copy(String host, int port, int database, long timeout) {
         get(copyAsync(host, port, database, timeout));
     }
 
+    /** 异步执行 copy。 */
     @Override
     public RFuture<Void> copyAsync(String host, int port, int database, long timeout) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.MIGRATE, host, port, getRawName(), database, timeout, "COPY");
     }
     
+    /** 将成员移动到另一 Set。 */
     @Override
     public boolean move(int database) {
         return get(moveAsync(database));
     }
 
+    /** 异步执行 move。 */
     @Override
     public RFuture<Boolean> moveAsync(int database) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.MOVE, getRawName(), database);
     }
 
+    /** Redisson 对象基类 renamenx 方法。 */
     @Override
     public boolean renamenx(String newName) {
         return get(renamenxAsync(newName));
     }
 
+    /** 异步执行 renamenx。 */
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
         RFuture<Boolean> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getRawName(), newName);
@@ -528,55 +574,66 @@ public abstract class RedissonObject implements RObject {
 
     }
 
+    /** 删除 Redis 键。 */
     @Override
     public boolean delete() {
         return get(deleteAsync());
     }
 
+    /** 异步执行 delete。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.DEL_BOOL, getRawName());
     }
 
+    /** 异步执行 delete。 */
     protected final RFuture<Boolean> deleteAsync(String... keys) {
         return commandExecutor.writeAsync(keys[0], StringCodec.INSTANCE, RedisCommands.DEL_OBJECTS, keys);
     }
 
+    /** 异步删除 Redis 键。 */
     @Override
     public boolean unlink() {
         return get(unlinkAsync());
     }
 
+    /** 异步执行 unlink。 */
     @Override
     public RFuture<Boolean> unlinkAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.UNLINK_BOOL, getRawName());
     }
 
+    /** 更新键最后访问时间。 */
     @Override
     public boolean touch() {
         return get(touchAsync());
     }
 
+    /** 异步执行 touch。 */
     @Override
     public RFuture<Boolean> touchAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.TOUCH, getRawName());
     }
     
+    /** 键是否存在。 */
     @Override
     public boolean isExists() {
         return get(isExistsAsync());
     }
 
+    /** 是否ExistsAsync。 */
     @Override
     public RFuture<Boolean> isExistsAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EXISTS, getRawName());
     }
 
+    /** 获取 Codec。 */
     @Override
     public Codec getCodec() {
         return codec;
     }
 
+    /** Redisson 对象基类 encode 方法。 */
     protected List<ByteBuf> encode(Collection<?> values) {
         List<ByteBuf> result = new ArrayList<>(values.size());
         for (Object object : values) {
@@ -585,6 +642,7 @@ public abstract class RedissonObject implements RObject {
         return result;
     }
     
+    /** Redisson 对象基类 encode 方法。 */
     public void encode(Collection<Object> params, Collection<?> values) {
         try {
             for (Object object : values) {
@@ -598,6 +656,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
     
+    /** 获取 LockByMapKey。 */
     public final String getLockByMapKey(Object key, String suffix) {
         ByteBuf keyState = encodeMapKey(key);
         try {
@@ -607,6 +666,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** 获取 LockByValue。 */
     public final String getLockByValue(Object key, String suffix) {
         ByteBuf keyState = encode(key);
         try {
@@ -616,6 +676,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** Redisson 对象基类 encodeMapKeys 方法。 */
     protected final void encodeMapKeys(Collection<Object> params, Collection<?> values) {
         try {
             for (Object object : values) {
@@ -629,6 +690,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** Redisson 对象基类 encode 方法。 */
     protected final void encode(Collection<Object> params, Consumer<Collection<Object>> func) {
         try {
             func.accept(params);
@@ -640,6 +702,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** Redisson 对象基类 encodeMapValues 方法。 */
     protected final void encodeMapValues(Collection<Object> params, Collection<?> values) {
         try {
             for (Object object : values) {
@@ -653,10 +716,12 @@ public abstract class RedissonObject implements RObject {
         }
     }
     
+    /** Redisson 对象基类 encode 方法。 */
     public ByteBuf encode(Object value) {
         return commandExecutor.encode(codec, value);
     }
 
+    /** Redisson 对象基类 encode 方法。 */
     public void encode(Collection<?> params, Object value) {
         try {
             Object v = encode(value);
@@ -669,10 +734,12 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** Redisson 对象基类 encodeMapKey 方法。 */
     public final ByteBuf encodeMapKey(Object value) {
         return commandExecutor.encodeMapKey(codec, value);
     }
 
+    /** Redisson 对象基类 encodeMapKey 方法。 */
     public final ByteBuf encodeMapKey(Object value, Collection<Object> params) {
         try {
             return encodeMapKey(value);
@@ -684,35 +751,42 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** Redisson 对象基类 encodeMapValue 方法。 */
     public final ByteBuf encodeMapValue(Object value) {
         return commandExecutor.encodeMapValue(codec, value);
     }
 
+    /** Redisson 对象基类 dump 方法。 */
     @Override
     public byte[] dump() {
         return get(dumpAsync());
     }
     
+    /** 异步执行 dump。 */
     @Override
     public RFuture<byte[]> dumpAsync() {
         return commandExecutor.readAsync(getRawName(), ByteArrayCodec.INSTANCE, RedisCommands.DUMP, getRawName());
     }
     
+    /** Redisson 对象基类 restore 方法。 */
     @Override
     public void restore(byte[] state) {
         get(restoreAsync(state));
     }
     
+    /** 异步执行 restore。 */
     @Override
     public RFuture<Void> restoreAsync(byte[] state) {
         return restoreAsync(state, 0, null);
     }
     
+    /** Redisson 对象基类 restore 方法。 */
     @Override
     public void restore(byte[] state, long timeToLive, TimeUnit timeUnit) {
         get(restoreAsync(state, timeToLive, timeUnit));
     }
     
+    /** 异步执行 restore。 */
     @Override
     public RFuture<Void> restoreAsync(byte[] state, long timeToLive, TimeUnit timeUnit) {
         long ttl = 0;
@@ -723,11 +797,13 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RESTORE, getRawName(), ttl, state);
     }
 
+    /** Redisson 对象基类 restoreAndReplace 方法。 */
     @Override
     public void restoreAndReplace(byte[] state, long timeToLive, TimeUnit timeUnit) {
         get(restoreAndReplaceAsync(state, timeToLive, timeUnit));
     }
     
+    /** 异步执行 restoreAndReplace。 */
     @Override
     public RFuture<Void> restoreAndReplaceAsync(byte[] state, long timeToLive, TimeUnit timeUnit) {
         long ttl = 0;
@@ -738,55 +814,66 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RESTORE, getRawName(), ttl, state, "REPLACE");
     }
     
+    /** Redisson 对象基类 restoreAndReplace 方法。 */
     @Override
     public void restoreAndReplace(byte[] state) {
         get(restoreAndReplaceAsync(state));
     }
     
+    /** 异步执行 restoreAndReplace。 */
     @Override
     public RFuture<Void> restoreAndReplaceAsync(byte[] state) {
         return restoreAndReplaceAsync(state, 0, null);
     }
 
+    /** 获取 IdleTime。 */
     public Long getIdleTime() {
         return get(getIdleTimeAsync());
     }
 
+    /** 获取 ReferenceCount。 */
     @Override
     public int getReferenceCount() {
         return get(getReferenceCountAsync());
     }
 
+    /** 获取 AccessFrequency。 */
     @Override
     public int getAccessFrequency() {
         return get(getAccessFrequencyAsync());
     }
 
+    /** 获取 InternalEncoding。 */
     @Override
     public ObjectEncoding getInternalEncoding() {
         return get(getInternalEncodingAsync());
     }
 
+    /** 异步获取 IdleTime 或执行 IdleTime 操作。 */
     @Override
     public RFuture<Long> getIdleTimeAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_IDLETIME, getRawName());
     }
 
+    /** 异步获取 ReferenceCount 或执行 ReferenceCount 操作。 */
     @Override
     public RFuture<Integer> getReferenceCountAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_REFCOUNT, getRawName());
     }
 
+    /** 异步获取 AccessFrequency 或执行 AccessFrequency 操作。 */
     @Override
     public RFuture<Integer> getAccessFrequencyAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_FREQ, getRawName());
     }
 
+    /** 异步获取 InternalEncoding 或执行 InternalEncoding 操作。 */
     @Override
     public RFuture<ObjectEncoding> getInternalEncodingAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_ENCODING, getRawName());
     }
 
+    /** 移除监听器。 */
     protected final void removeListener(int listenerId, String... names) {
         for (String name : names) {
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
@@ -795,10 +882,12 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** 获取 ListenerIdsByName。 */
     protected final Collection<Integer> getListenerIdsByName(String name) {
         return listeners.getOrDefault(name, Collections.emptyList());
     }
 
+    /** 获取 NameByListenerId。 */
     protected final String getNameByListenerId(int listenerId) {
         for (Map.Entry<String, Collection<Integer>> entry : listeners.entrySet()) {
             if (entry.getValue().contains(listenerId)) {
@@ -808,6 +897,7 @@ public abstract class RedissonObject implements RObject {
         return null;
     }
 
+    /** removeListenerId：移除操作。 */
     protected final void removeListenerId(String name, int listenerId) {
         listeners.computeIfPresent(name, (k, ids) -> {
             ids.remove(listenerId);
@@ -818,6 +908,7 @@ public abstract class RedissonObject implements RObject {
         });
     }
 
+    /** 异步执行 removeListener。 */
     protected final RFuture<Void> removeListenerAsync(RFuture<Void> future, int listenerId, String... names) {
         List<CompletableFuture<Void>> futures = new ArrayList<>(names.length + 1);
         if (future != null) {
@@ -833,10 +924,12 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** addTrackingListener：添加操作。 */
     protected final int addTrackingListener(TrackingListener listener) {
         return addTrackingListenerAsync(listener).toCompletableFuture().join();
     }
 
+    /** 异步执行 addTrackingListener。 */
     protected final RFuture<Integer> addTrackingListenerAsync(TrackingListener listener) {
         if (!getServiceManager().isResp3()) {
             throw new IllegalStateException("`protocol` config setting should be set to RESP3 value");
@@ -849,10 +942,12 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(r);
     }
 
+    /** 注册对象变更监听器。 */
     protected <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
         return addListener(name, listener, consumer, m -> m.equals(getRawName()));
     }
 
+    /** 注册对象变更监听器。 */
     protected final <T extends ObjectListener> int addListener(String name, T listener,
                                                                BiConsumer<T, String> consumer,
                                                                Function<String, Boolean> condition) {
@@ -866,6 +961,7 @@ public abstract class RedissonObject implements RObject {
         return id;
     }
 
+    /** addMapFieldListener：添加操作。 */
     protected final <T extends ObjectListener> int addMapFieldListener(String subkeyEventName, String keyEventName,
                                                                        T listener, MapFieldListener<T> consumer) {
         MapFieldListenerContext<T> context = new MapFieldListenerContext<>(listener, consumer, keyEventName);
@@ -885,11 +981,13 @@ public abstract class RedissonObject implements RObject {
         return id;
     }
 
+    /** 异步执行 addListener。 */
     protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener,
                                                                            BiConsumer<T, String> consumer) {
         return addListenerAsync(name, listener, consumer, m -> m.equals(getRawName()));
     }
 
+    /** 异步执行 addListener。 */
     protected final <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener,
                                                                            BiConsumer<T, String> consumer,
                                                                            Function<String, Boolean> condition) {
@@ -906,6 +1004,7 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(r);
     }
 
+    /** 异步执行 addMapFieldListener。 */
     protected final <T extends ObjectListener> RFuture<Integer> addMapFieldListenerAsync(String subkeyEventName, String keyEventName,
                                                                                          T listener, MapFieldListener<T> consumer) {
         MapFieldListenerContext<T> context = new MapFieldListenerContext<>(listener, consumer, keyEventName);
@@ -926,6 +1025,7 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** Redisson 对象基类 createMapFieldPubSubListener 方法。 */
     private <T extends ObjectListener> RedisPubSubListener<byte[]> createMapFieldPubSubListener(String subkeyEventName,
                                                                                                  String keyEventName,
                                                                                                  MapFieldListenerContext<T> context) {
@@ -944,6 +1044,7 @@ public abstract class RedissonObject implements RObject {
         };
     }
 
+    /** Redisson 对象基类 onMapFieldMessage 方法。 */
     private <T extends ObjectListener> void onMapFieldMessage(CharSequence channel, byte[] msg,
                                                               MapFieldListenerContext<T> context) {
         if (!channel.toString().startsWith("__subkeyevent@")) {
@@ -964,6 +1065,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** Redisson 对象基类 onKeyEventMapFieldMessage 方法。 */
     private <T extends ObjectListener> void onKeyEventMapFieldMessage(CharSequence channel, byte[] msg,
                                                                       MapFieldListenerContext<T> context) {
         String name = new String(msg, StandardCharsets.UTF_8);
@@ -987,6 +1089,7 @@ public abstract class RedissonObject implements RObject {
         }, MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
+    /** removeKeyEventMapFieldListener：移除操作。 */
     private void removeKeyEventMapFieldListener(MapFieldListenerContext<?> context) {
         if (!context.keyEventUnsubscribed.compareAndSet(false, true)) {
             return;
@@ -1003,12 +1106,14 @@ public abstract class RedissonObject implements RObject {
         });
     }
 
+    /** 是否DuplicateEvent。 */
     private static boolean isDuplicateEvent(MapFieldEvent event, long sequence, long timestamp) {
         return event != null
                 && event.sequence != sequence
                 && Math.abs(timestamp - event.timestamp) <= MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT_NANOS;
     }
 
+    /** 获取 EventName。 */
     private static String getEventName(CharSequence channel) {
         String name = channel.toString();
         int index = name.lastIndexOf(':');
@@ -1018,6 +1123,7 @@ public abstract class RedissonObject implements RObject {
         return name.substring(index + 1);
     }
 
+    /** Redisson 对象基类 decodeSubkeyEventMessage 方法。 */
     private static SubkeyEventMessage decodeSubkeyEventMessage(byte[] msg) {
         int keyLengthEndIndex = indexOf(msg, (byte) ':', 0);
         int keyLength = parseLength(msg, 0, keyLengthEndIndex);
@@ -1035,6 +1141,7 @@ public abstract class RedissonObject implements RObject {
         return new SubkeyEventMessage(name, fieldNames);
     }
 
+    /** Redisson 对象基类 decodeSubkeyNames 方法。 */
     private static List<String> decodeSubkeyNames(byte[] msg, int startIndex) {
         List<String> result = new ArrayList<>();
         int index = startIndex;
@@ -1059,6 +1166,7 @@ public abstract class RedissonObject implements RObject {
         return Collections.emptyList();
     }
 
+    /** Redisson 对象基类 indexOf 方法。 */
     private static int indexOf(byte[] value, byte separator, int startIndex) {
         for (int i = startIndex; i < value.length; i++) {
             if (value[i] == separator) {
@@ -1068,6 +1176,7 @@ public abstract class RedissonObject implements RObject {
         return -1;
     }
 
+    /** Redisson 对象基类 parseLength 方法。 */
     private static int parseLength(byte[] value, int startIndex, int endIndex) {
         if (startIndex >= endIndex || endIndex > value.length) {
             return -1;
@@ -1084,11 +1193,13 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** addListenerId：添加操作。 */
     protected final void addListenerId(String name, Integer id) {
         Collection<Integer> ids = listeners.computeIfAbsent(name, k -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
         ids.add(id);
     }
 
+    /** removeListeners：移除操作。 */
     protected final void removeListeners() {
         for (Map.Entry<String, Collection<Integer>> entry : listeners.entrySet()) {
             for (Integer id : entry.getValue()) {
@@ -1097,6 +1208,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    /** 注册对象变更监听器。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof ExpiredObjectListener) {
@@ -1108,6 +1220,7 @@ public abstract class RedissonObject implements RObject {
         throw new IllegalArgumentException();
     }
     
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof ExpiredObjectListener) {
@@ -1119,26 +1232,31 @@ public abstract class RedissonObject implements RObject {
         throw new IllegalArgumentException("This type of listener can't be added to this object");
     }
     
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         removeListener(listenerId, "__keyevent@*:expired", "__keyevent@*:del");
     }
     
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(null, listenerId, "__keyevent@*:expired", "__keyevent@*:del");
     }
 
+    /** 异步执行 removeListener。 */
     protected final RFuture<Void> removeListenerAsync(int listenerId, String... names) {
         List<String> ns = new ArrayList<>(Arrays.asList(names));
         ns.addAll(Arrays.asList("__keyevent@*:expired", "__keyevent@*:del"));
         return removeListenerAsync(null, listenerId, ns.toArray(new String[0]));
     }
 
+    /** removeTrackingListener：移除操作。 */
     protected final void removeTrackingListener(int listenerId) {
         removeTrackingListenerAsync(listenerId).toCompletableFuture().join();
     }
 
+    /** 异步执行 removeTrackingListener。 */
     protected final RFuture<Void> removeTrackingListenerAsync(int listenerId) {
         PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
         if (!subscribeService.hasEntry(ChannelName.TRACKING)) {
@@ -1154,12 +1272,14 @@ public abstract class RedissonObject implements RObject {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** Redisson 对象基类 map 方法。 */
     protected final List<String> map(String[] keys) {
         return Arrays.stream(keys)
                 .map(k -> mapName(k))
                 .collect(Collectors.toList());
     }
 
+    /** 获取 SubscribeService。 */
     protected final PublishSubscribeService getSubscribeService() {
         return commandExecutor.getConnectionManager().getSubscribeService();
     }

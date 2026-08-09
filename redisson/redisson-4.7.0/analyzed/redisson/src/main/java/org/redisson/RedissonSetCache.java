@@ -48,27 +48,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
- * <p>Set-based cache with ability to set TTL for each entry via
- * {@link RSetCache#add(Object, long, TimeUnit)} method.
- * </p>
- *
- * <p>Current Redis implementation doesn't have set entry eviction functionality.
- * Thus values are checked for TTL expiration during any value read operation.
- * If entry expired then it doesn't returns and clean task runs asynchronous.
- * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.eviction.EvictionScheduler}. This scheduler
- * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
- *
- * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>
+ * 带逐元素 TTL 的 Set 缓存 {@link RSetCache}。
+ * <p>通过 {@link RSetCache#add(Object, long, TimeUnit)} 为每个成员设置过期；
+ * 读操作触发惰性过期检查，{@link org.redisson.eviction.EvictionScheduler}
+ * 定期异步清理。若无需逐元素 TTL 建议使用 {@link org.redisson.api.RSet}。
  *
  * @author Nikita Koksharov
- *
- * @param <V> value
+ * @param <V> 元素类型
  */
 public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V>, ScanIterator {
 
+    /** 关联 Redisson 客户端（MapReduce 等）。 */
     final RedissonClient redisson;
+    /** 过期条目异步淘汰调度器。 */
     final EvictionScheduler evictionScheduler;
+    /** 过期事件 Pub/Sub 发布命令名。 */
     final String publishCommand;
 
     public RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
@@ -96,16 +90,19 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     
+    /** 创建 MapReduce 任务入口。 */
     @Override
     public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
         return new RedissonCollectionMapReduce<>(this, redisson, commandExecutor);
     }
 
+    /** 返回元素数量。 */
     @Override
     public int size() {
         return get(sizeAsync());
     }
 
+    /** 异步返回元素数量。 */
     @Override
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -115,16 +112,19 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L);
     }
 
+    /** 集合是否为空。 */
     @Override
     public boolean isEmpty() {
         return size() == 0;
     }
 
+    /** 是否包含指定元素。 */
     @Override
     public boolean contains(Object o) {
         return get(containsAsync(o));
     }
 
+    /** 异步执行 contains。 */
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
         String name = getRawName(o);
@@ -141,12 +141,14 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), encode(o));
     }
 
+    /** SSCAN 增量扫描迭代器。 */
     @Override
     public ScanResult<Object> scanIterator(String name, RedisClient client, String startPos, String pattern, int count) {
         RFuture<ScanResult<Object>> f = scanIteratorAsync(name, client, startPos, pattern, count);
         return get(f);
     }
 
+    /** 异步 SSCAN 迭代器。 */
     @Override
     public RFuture<ScanResult<Object>> scanIteratorAsync(String name, RedisClient client, String startPos, String pattern, int count) {
         List<Object> params = new ArrayList<>();
@@ -176,16 +178,19 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 + "return {res[1], result};", Arrays.asList(name), params.toArray());
     }
 
+    /** 返回成员迭代器。 */
     @Override
     public Iterator<V> iterator(int count) {
         return iterator(null, count);
     }
     
+    /** 返回成员迭代器。 */
     @Override
     public Iterator<V> iterator(String pattern) {
         return iterator(pattern, 10);
     }
     
+    /** 返回成员迭代器。 */
     @Override
     public Iterator<V> iterator(String pattern, int count) {
         return new RedissonBaseIterator<V>() {
@@ -203,43 +208,51 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         };
     }
     
+    /** 返回成员迭代器。 */
     @Override
     public Iterator<V> iterator() {
         return iterator(null);
     }
 
+    /** 一次性读取全部成员。 */
     @Override
     public Set<V> readAll() {
         return get(readAllAsync());
     }
 
+    /** 异步读取全部成员。 */
     @Override
     public RFuture<Set<V>> readAllAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGEBYSCORE, getRawName(), System.currentTimeMillis(), 92233720368547758L);
     }
 
+    /** SetCache toArray 操作。 */
     @Override
     public Object[] toArray() {
         Set<V> res = get(readAllAsync());
         return res.toArray();
     }
 
+    /** SetCache toArray 操作。 */
     @Override
     public <T> T[] toArray(T[] a) {
         Set<V> res = get(readAllAsync());
         return res.toArray(a);
     }
 
+    /** 添加元素/成员。 */
     @Override
     public boolean add(V e) {
         return get(addAsync(e));
     }
 
+    /** 添加元素/成员。 */
     @Override
     public boolean add(V value, long ttl, TimeUnit unit) {
         return get(addAsync(value, ttl, unit));
     }
 
+    /** 异步添加 ZSet 成员。 */
     @Override
     public RFuture<Boolean> addAsync(V value, long ttl, TimeUnit unit) {
         if (ttl < 0) {
@@ -267,21 +280,25 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Arrays.asList(name), System.currentTimeMillis(), timeoutDate, objectState);
     }
 
+    /** SetCache tryAdd 操作。 */
     @Override
     public boolean tryAdd(V... values) {
         return get(tryAddAsync(values));
     }
 
+    /** 异步执行 tryAdd。 */
     @Override
     public RFuture<Boolean> tryAddAsync(V... values) {
         return tryAddAsync(92233720368547758L - System.currentTimeMillis(), TimeUnit.MILLISECONDS, values);
     }
 
+    /** SetCache tryAdd 操作。 */
     @Override
     public boolean tryAdd(long ttl, TimeUnit unit, V... values) {
         return get(tryAddAsync(ttl, unit, values));
     }
 
+    /** 异步执行 tryAdd。 */
     @Override
     public RFuture<Boolean> tryAddAsync(long ttl, TimeUnit unit, V... values) {
         long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
@@ -309,27 +326,32 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                        Arrays.asList(getRawName()), params.toArray());
     }
 
+    /** 异步添加 ZSet 成员。 */
     @Override
     public RFuture<Boolean> addAsync(V value) {
         return addAsync(value, 92233720368547758L - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
+    /** 异步移除 ZSet 成员。 */
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
         String name = getRawName(o);
         return commandExecutor.writeAsync(name, codec, RedisCommands.ZREM, name, encode(o));
     }
 
+    /** 移除元素。 */
     @Override
     public boolean remove(Object value) {
         return get(removeAsync((V) value));
     }
 
+    /** 是否包含全部给定元素。 */
     @Override
     public boolean containsAll(Collection<?> c) {
         return get(containsAllAsync(c));
     }
 
+    /** 异步执行 containsAll。 */
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
@@ -355,11 +377,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Collections.<Object>singletonList(getRawName()), params.toArray());
     }
 
+    /** 批量添加元素。 */
     @Override
     public boolean addAll(Collection<? extends V> c) {
         return get(addAllAsync(c));
     }
 
+    /** 异步执行 addAll。 */
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
@@ -378,11 +402,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_BOOL_RAW, params.toArray());
     }
 
+    /** 仅保留与给定集合的交集。 */
     @Override
     public boolean retainAll(Collection<?> c) {
         return get(retainAllAsync(c));
     }
 
+    /** 异步执行 retainAll。 */
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
@@ -405,6 +431,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
              Arrays.<Object>asList(getRawName(), "redisson_temp__{" + getRawName() + "}"), params.toArray());
     }
 
+    /** 异步执行 removeAll。 */
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
@@ -418,52 +445,61 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZREM, params.toArray());
     }
 
+    /** 批量移除元素。 */
     @Override
     public boolean removeAll(Collection<?> c) {
         return get(removeAllAsync(c));
     }
 
+    /** 清空全部元素。 */
     @Override
     public void clear() {
         delete();
     }
 
+    /** 获取可过期许可信号量。 */
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
         String lockName = getLockByValue(value, "permitexpirablesemaphore");
         return new RedissonPermitExpirableSemaphore(commandExecutor, lockName);
     }
 
+    /** 获取分布式信号量。 */
     @Override
     public RSemaphore getSemaphore(V value) {
         String lockName = getLockByValue(value, "semaphore");
         return new RedissonSemaphore(commandExecutor, lockName);
     }
     
+    /** 获取 CountDownLatch。 */
     @Override
     public RCountDownLatch getCountDownLatch(V value) {
         String lockName = getLockByValue(value, "countdownlatch");
         return new RedissonCountDownLatch(commandExecutor, lockName);
     }
     
+    /** 获取公平锁。 */
     @Override
     public RLock getFairLock(V value) {
         String lockName = getLockByValue(value, "fairlock");
         return new RedissonFairLock(commandExecutor, lockName);
     }
     
+    /** 获取分布式锁。 */
     @Override
     public RLock getLock(V value) {
         String lockName = getLockByValue(value, "lock");
         return new RedissonLock(commandExecutor, lockName);
     }
     
+    /** 获取读写锁。 */
     @Override
     public RReadWriteLock getReadWriteLock(V value) {
         String lockName = getLockByValue(value, "rw_lock");
         return new RedissonReadWriteLock(commandExecutor, lockName);
     }
 
+    /** SetCache destroy 操作。 */
     @Override
     public void destroy() {
         if (evictionScheduler != null) {
@@ -483,43 +519,51 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         removeListeners();
     }
 
+    /** SetCache stream 操作。 */
     @Override
     public Stream<V> stream(int count) {
         return toStream(iterator(count));
     }
 
+    /** SetCache stream 操作。 */
     @Override
     public Stream<V> stream(String pattern, int count) {
         return toStream(iterator(pattern, count));
     }
 
+    /** SetCache stream 操作。 */
     @Override
     public Stream<V> stream(String pattern) {
         return toStream(iterator(pattern));
     }
 
+    /** addAllCounted：添加操作。 */
     @Override
     public int addAllCounted(Collection<? extends V> c) {
         return get(addAllCountedAsync(c));
     }
 
+    /** removeAllCounted：移除操作。 */
     @Override
     public int removeAllCounted(Collection<? extends V> c) {
         return get(removeAllCountedAsync(c));
     }
 
+    /** SetCache distributedIterator 操作。 */
     @Override
     public Iterator<V> distributedIterator(String pattern) {
         String iteratorName = "__redisson_scored_sorted_set_cursor_{" + getRawName() + "}";
         return distributedIterator(iteratorName, pattern, 10);
     }
 
+    /** SetCache distributedIterator 操作。 */
     @Override
     public Iterator<V> distributedIterator(int count) {
         String iteratorName = "__redisson_scored_sorted_set_cursor_{" + getRawName() + "}";
         return distributedIterator(iteratorName, null, count);
     }
 
+    /** SetCache distributedIterator 操作。 */
     @Override
     public Iterator<V> distributedIterator(String iteratorName, String pattern, int count) {
         return new RedissonBaseIterator<V>() {
@@ -536,10 +580,12 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         };
     }
 
+    /** SetCache distributedScanIterator 操作。 */
     private ScanResult<Object> distributedScanIterator(String iteratorName, String pattern, int count) {
         return get(distributedScanIteratorAsync(iteratorName, pattern, count));
     }
 
+    /** 异步执行 distributedScanIterator。 */
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, String pattern, int count) {
         List<Object> args = new ArrayList<>(2);
         args.add(System.currentTimeMillis());
@@ -583,116 +629,139 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Arrays.asList(getRawName(), iteratorName), args.toArray());
     }
 
+    /** 随机移除并返回一个成员。 */
     @Override
     public Set<V> removeRandom(int amount) {
         throw new UnsupportedOperationException();
     }
 
+    /** 随机移除并返回一个成员。 */
     @Override
     public V removeRandom() {
         throw new UnsupportedOperationException();
     }
 
+    /** 随机返回一个成员（不移除）。 */
     @Override
     public V random() {
         return get(randomAsync());
     }
 
+    /** 随机返回一个成员（不移除）。 */
     @Override
     public Set<V> random(int count) {
         return get(randomAsync(count));
     }
 
+    /** 将成员移动到另一 Set。 */
     @Override
     public boolean move(String destination, V member) {
         throw new UnsupportedOperationException();
     }
 
+    /** 计算并存储集合并集。 */
     @Override
     public int union(String... names) {
         return get(unionAsync(names));
     }
 
+    /** SetCache readUnion 操作。 */
     @Override
     public Set<V> readUnion(String... names) {
         return get(readUnionAsync(names));
     }
 
+    /** SetCache diff 操作。 */
     @Override
     public int diff(String... names) {
         return get(diffAsync(names));
     }
 
+    /** SetCache readDiff 操作。 */
     @Override
     public Set<V> readDiff(String... names) {
         return get(readDiffAsync(names));
     }
 
+    /** 计算并存储集合交集。 */
     @Override
     public int intersection(String... names) {
         return get(intersectionAsync(names));
     }
 
+    /** SetCache readIntersection 操作。 */
     @Override
     public Set<V> readIntersection(String... names) {
         return get(readIntersectionAsync(names));
     }
 
+    /** SetCache countIntersection 操作。 */
     @Override
     public Integer countIntersection(String... names) {
         return get(countIntersectionAsync(names));
     }
 
+    /** SetCache countIntersection 操作。 */
     @Override
     public Integer countIntersection(int limit, String... names) {
         return get(countIntersectionAsync(limit, names));
     }
 
+    /** SetCache countUnion 操作。 */
     @Override
     public Integer countUnion(String... names) {
         return get(countUnionAsync(names));
     }
 
+    /** SetCache countUnion 操作。 */
     @Override
     public Integer countUnion(int limit, String... names) {
         return get(countUnionAsync(limit, names));
     }
 
+    /** SetCache countUnionApprox 操作。 */
     @Override
     public Integer countUnionApprox(String... names) {
         return get(countUnionApproxAsync(names));
     }
 
+    /** SetCache countUnionApprox 操作。 */
     @Override
     public Integer countUnionApprox(int limit, String... names) {
         return get(countUnionApproxAsync(limit, names));
     }
 
+    /** SetCache countDiff 操作。 */
     @Override
     public Integer countDiff(String... names) {
         return get(countDiffAsync(names));
     }
 
+    /** SetCache countDiff 操作。 */
     @Override
     public Integer countDiff(int limit, String... names) {
         return get(countDiffAsync(limit, names));
     }
 
+    /** SetCache containsEach 操作。 */
     @Override
     public Set<V> containsEach(Collection<V> c) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步随机移除成员。 */
     @Override
     public RFuture<Set<V>> removeRandomAsync(int amount) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步随机移除成员。 */
     @Override
     public RFuture<V> removeRandomAsync() {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步随机返回成员。 */
     @Override
     public RFuture<V> randomAsync() {
         String tempName = prefixName("__redisson_cache_temp", getRawName());
@@ -708,6 +777,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L);
     }
 
+    /** 异步随机返回成员。 */
     @Override
     public RFuture<Set<V>> randomAsync(int count) {
         String tempName = prefixName("__redisson_cache_temp", getRawName());
@@ -723,11 +793,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L, count);
     }
 
+    /** 异步执行 move。 */
     @Override
     public RFuture<Boolean> moveAsync(String destination, V member) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步计算 ZSet 并集。 */
     @Override
     public RFuture<Integer> unionAsync(String... names) {
         List<Object> keys = new ArrayList<>();
@@ -757,6 +829,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L, names.length+1);
     }
 
+    /** 异步执行 readUnion。 */
     @Override
     public RFuture<Set<V>> readUnionAsync(String... names) {
         List<Object> keys = new ArrayList<>();
@@ -783,6 +856,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L, names.length+1);
     }
 
+    /** 异步执行 diff。 */
     @Override
     public RFuture<Integer> diffAsync(String... names) {
         List<Object> keys = new ArrayList<>();
@@ -810,6 +884,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L, names.length+1);
     }
 
+    /** 异步执行 readDiff。 */
     @Override
     public RFuture<Set<V>> readDiffAsync(String... names) {
         List<Object> keys = new ArrayList<>();
@@ -835,6 +910,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis());
     }
 
+    /** 异步计算 ZSet 交集。 */
     @Override
     public RFuture<Integer> intersectionAsync(String... names) {
         List<Object> keys = new ArrayList<>();
@@ -864,6 +940,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L, names.length+1);
     }
 
+    /** 异步执行 readIntersection。 */
     @Override
     public RFuture<Set<V>> readIntersectionAsync(String... names) {
         List<Object> keys = new ArrayList<>();
@@ -890,11 +967,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis());
     }
 
+    /** 异步执行 countIntersection。 */
     @Override
     public RFuture<Integer> countIntersectionAsync(String... names) {
         return countIntersectionAsync(0, names);
     }
 
+    /** 异步执行 countIntersection。 */
     @Override
     public RFuture<Integer> countIntersectionAsync(int limit, String... names) {
         List<Object> keys = new ArrayList<>();
@@ -924,11 +1003,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L, names.length+1, limit);
     }
 
+    /** 异步执行 countUnion。 */
     @Override
     public RFuture<Integer> countUnionAsync(String... names) {
         return countUnionAsync(0, names);
     }
 
+    /** 异步执行 countUnion。 */
     @Override
     public RFuture<Integer> countUnionAsync(int limit, String... names) {
         List<Object> keys = new ArrayList<>();
@@ -961,21 +1042,25 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
      * exactly rather than estimated. An exact value is a valid result for an
      * approximate count, so both variants share the same implementation.
      */
+    /** 异步执行 countUnionApprox。 */
     @Override
     public RFuture<Integer> countUnionApproxAsync(String... names) {
         return countUnionAsync(0, names);
     }
 
+    /** 异步执行 countUnionApprox。 */
     @Override
     public RFuture<Integer> countUnionApproxAsync(int limit, String... names) {
         return countUnionAsync(limit, names);
     }
 
+    /** 异步执行 countDiff。 */
     @Override
     public RFuture<Integer> countDiffAsync(String... names) {
         return countDiffAsync(0, names);
     }
 
+    /** 异步执行 countDiff。 */
     @Override
     public RFuture<Integer> countDiffAsync(int limit, String... names) {
         List<Object> keys = new ArrayList<>();
@@ -1006,6 +1091,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), 92233720368547758L, limit);
     }
 
+    /** 异步执行 addAllCounted。 */
     @Override
     public RFuture<Integer> addAllCountedAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
@@ -1029,6 +1115,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZADD_INT, args.toArray());
     }
 
+    /** 异步执行 removeAllCounted。 */
     @Override
     public RFuture<Integer> removeAllCountedAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
@@ -1042,131 +1129,157 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZREM_INT, args.toArray());
     }
 
+    /** 异步执行 containsEach。 */
     @Override
     public RFuture<Set<V>> containsEachAsync(Collection<V> c) {
         throw new UnsupportedOperationException();
     }
 
+    /** SetCache readSort 操作。 */
     @Override
     public Set<V> readSort(SortOrder order) {
         return get(readSortAsync(order));
     }
 
+    /** SetCache readSort 操作。 */
     @Override
     public Set<V> readSort(SortOrder order, int offset, int count) {
         return get(readSortAsync(order, offset, count));
     }
 
+    /** SetCache readSort 操作。 */
     @Override
     public Set<V> readSort(String byPattern, SortOrder order) {
         return get(readSortAsync(byPattern, order));
     }
 
+    /** SetCache readSort 操作。 */
     @Override
     public Set<V> readSort(String byPattern, SortOrder order, int offset, int count) {
         return get(readSortAsync(byPattern, order, offset, count));
     }
 
+    /** SetCache readSort 操作。 */
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
         return get(readSortAsync(byPattern, getPatterns, order));
     }
 
+    /** SetCache readSort 操作。 */
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return get(readSortAsync(byPattern, getPatterns, order, offset, count));
     }
 
+    /** SetCache readSortAlpha 操作。 */
     @Override
     public Set<V> readSortAlpha(SortOrder order) {
         return get(readSortAlphaAsync(order));
     }
 
+    /** SetCache readSortAlpha 操作。 */
     @Override
     public Set<V> readSortAlpha(SortOrder order, int offset, int count) {
         return get(readSortAlphaAsync(order, offset, count));
     }
 
+    /** SetCache readSortAlpha 操作。 */
     @Override
     public Set<V> readSortAlpha(String byPattern, SortOrder order) {
         return get(readSortAlphaAsync(byPattern, order));
     }
 
+    /** SetCache readSortAlpha 操作。 */
     @Override
     public Set<V> readSortAlpha(String byPattern, SortOrder order, int offset, int count) {
         return get(readSortAlphaAsync(byPattern, order, offset, count));
     }
 
+    /** SetCache readSortAlpha 操作。 */
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
         return get(readSortAlphaAsync(byPattern, getPatterns, order));
     }
 
+    /** SetCache readSortAlpha 操作。 */
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
     }
 
+    /** SetCache sortTo 操作。 */
     @Override
     public int sortTo(String destName, SortOrder order) {
         return get(sortToAsync(destName, order));
     }
 
+    /** SetCache sortTo 操作。 */
     @Override
     public int sortTo(String destName, SortOrder order, int offset, int count) {
         return get(sortToAsync(destName, order, offset, count));
     }
 
+    /** SetCache sortTo 操作。 */
     @Override
     public int sortTo(String destName, String byPattern, SortOrder order) {
         return get(sortToAsync(destName, byPattern, order));
     }
 
+    /** SetCache sortTo 操作。 */
     @Override
     public int sortTo(String destName, String byPattern, SortOrder order, int offset, int count) {
         return get(sortToAsync(destName, byPattern, order, offset, count));
     }
 
+    /** SetCache sortTo 操作。 */
     @Override
     public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
         return get(sortToAsync(destName, byPattern, getPatterns, order));
     }
 
+    /** SetCache sortTo 操作。 */
     @Override
     public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return get(sortToAsync(destName, byPattern, getPatterns, order, offset, count));
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public RFuture<Set<V>> readSortAsync(SortOrder order) {
         return readSortAsync(null, null, order, -1, -1, false);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public RFuture<Set<V>> readSortAsync(SortOrder order, int offset, int count) {
         return readSortAsync(null, null, order, offset, count, false);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order) {
         return readSortAsync(byPattern, null, order, -1, -1, false);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order, int offset, int count) {
         return readSortAsync(byPattern, null, order, offset, count, false);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order) {
         return readSortAsync(byPattern, getPatterns, order, -1, -1);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return readSortAsync(byPattern, getPatterns, order, offset, count, false);
     }
 
+    /** 异步执行 readSort。 */
     private <T> RFuture<T> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
         throw new UnsupportedOperationException();
 //        List<Object> params = new ArrayList<>();
@@ -1210,61 +1323,73 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 //                Arrays.asList(getRawName(), tempName), params.toArray());
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public RFuture<Set<V>> readSortAlphaAsync(SortOrder order) {
         return readSortAsync(null, null, order, -1, -1, true);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public RFuture<Set<V>> readSortAlphaAsync(SortOrder order, int offset, int count) {
         return readSortAsync(null, null, order, offset, count, true);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public RFuture<Set<V>> readSortAlphaAsync(String byPattern, SortOrder order) {
         return readSortAsync(byPattern, null, order, -1, -1, true);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public RFuture<Set<V>> readSortAlphaAsync(String byPattern, SortOrder order, int offset, int count) {
         return readSortAsync(byPattern, null, order, offset, count, true);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order) {
         return readSortAsync(byPattern, getPatterns, order, -1, -1, true);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return readSortAsync(byPattern, getPatterns, order, offset, count, true);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, SortOrder order) {
         return sortToAsync(destName, null, null, order, -1, -1);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, SortOrder order, int offset, int count) {
         return sortToAsync(destName, null, null, order, offset, count);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order) {
         return sortToAsync(destName, byPattern, null, order, -1, -1);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order, int offset, int count) {
         return sortToAsync(destName, byPattern, null, order, offset, count);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
         return sortToAsync(destName, byPattern, getPatterns, order, -1, -1);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         throw new UnsupportedOperationException();
@@ -1307,26 +1432,31 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 //                Arrays.asList(getRawName(), tempName), params.toArray());
     }
 
+    /** addIfAbsent：添加操作。 */
     @Override
     public boolean addIfAbsent(Duration ttl, V object) {
         return get(addIfAbsentAsync(ttl, object));
     }
 
+    /** addIfExists：添加操作。 */
     @Override
     public boolean addIfExists(Duration ttl, V object) {
         return get(addIfExistsAsync(ttl, object));
     }
 
+    /** addIfLess：添加操作。 */
     @Override
     public boolean addIfLess(Duration ttl, V object) {
         return get(addIfLessAsync(ttl, object));
     }
 
+    /** addIfGreater：添加操作。 */
     @Override
     public boolean addIfGreater(Duration ttl, V object) {
         return get(addIfGreaterAsync(ttl, object));
     }
 
+    /** 异步执行 addIfAbsent。 */
     @Override
     public RFuture<Boolean> addIfAbsentAsync(Duration ttl, V object) {
         long timeoutDate = System.currentTimeMillis() + ttl.toMillis();
@@ -1346,6 +1476,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), timeoutDate, encode(object));
     }
 
+    /** 异步执行 addIfExists。 */
     @Override
     public RFuture<Boolean> addIfExistsAsync(Duration ttl, V object) {
         long timeoutDate = System.currentTimeMillis() + ttl.toMillis();
@@ -1368,6 +1499,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), timeoutDate, encode(object));
     }
 
+    /** 异步执行 addIfLess。 */
     @Override
     public RFuture<Boolean> addIfLessAsync(Duration ttl, V object) {
         long timeoutDate = System.currentTimeMillis() + ttl.toMillis();
@@ -1390,6 +1522,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), timeoutDate, encode(object));
     }
 
+    /** 异步执行 addIfGreater。 */
     @Override
     public RFuture<Boolean> addIfGreaterAsync(Duration ttl, V object) {
         long timeoutDate = System.currentTimeMillis() + ttl.toMillis();
@@ -1412,31 +1545,37 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 System.currentTimeMillis(), timeoutDate, encode(object));
     }
 
+    /** addAllIfAbsent：添加操作。 */
     @Override
     public int addAllIfAbsent(Map<V, Duration> objects) {
         return get(addAllIfAbsentAsync(objects));
     }
 
+    /** addIfAbsent：添加操作。 */
     @Override
     public boolean addIfAbsent(Map<V, Duration> objects) {
         return get(addIfAbsentAsync(objects));
     }
 
+    /** addAllIfExist：添加操作。 */
     @Override
     public int addAllIfExist(Map<V, Duration> objects) {
         return get(addAllIfExistAsync(objects));
     }
 
+    /** addAllIfGreater：添加操作。 */
     @Override
     public int addAllIfGreater(Map<V, Duration> objects) {
         return get(addAllIfGreaterAsync(objects));
     }
 
+    /** addAllIfLess：添加操作。 */
     @Override
     public int addAllIfLess(Map<V, Duration> objects) {
         return get(addAllIfLessAsync(objects));
     }
 
+    /** 异步执行 addAllIfAbsent。 */
     @Override
     public RFuture<Integer> addAllIfAbsentAsync(Map<V, Duration> objects) {
         List<Object> params = new ArrayList<>();
@@ -1463,6 +1602,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         "return result; ",
                 Arrays.asList(getRawName()), params.toArray());
     }
+    /** 异步执行 addIfAbsent。 */
     @Override
     public RFuture<Boolean> addIfAbsentAsync(Map<V, Duration> objects) {
         List<Object> params = new ArrayList<>();
@@ -1490,6 +1630,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                  "return 1; ",
                 Collections.singletonList(getRawName()), params.toArray());
     }
+    /** 异步执行 addAllIfExist。 */
     @Override
     public RFuture<Integer> addAllIfExistAsync(Map<V, Duration> objects) {
         List<Object> params = new ArrayList<>();
@@ -1517,6 +1658,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Arrays.asList(getRawName()), params.toArray());
     }
 
+    /** 异步执行 addAllIfGreater。 */
     @Override
     public RFuture<Integer> addAllIfGreaterAsync(Map<V, Duration> objects) {
         List<Object> params = new ArrayList<>();
@@ -1544,6 +1686,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Arrays.asList(getRawName()), params.toArray());
     }
 
+    /** 异步执行 addAllIfLess。 */
     @Override
     public RFuture<Integer> addAllIfLessAsync(Map<V, Duration> objects) {
         List<Object> params = new ArrayList<>();
@@ -1571,11 +1714,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Arrays.asList(getRawName()), params.toArray());
     }
 
+    /** 批量添加元素。 */
     @Override
     public int addAll(Map<V, Duration> objects) {
         return get(addAllAsync(objects));
     }
 
+    /** 异步执行 addAll。 */
     @Override
     public RFuture<Integer> addAllAsync(Map<V, Duration> objects) {
         List<Object> params = new ArrayList<>();
@@ -1603,6 +1748,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                 Arrays.asList(getRawName()), params.toArray());
     }
 
+    /** 注册对象变更监听器。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof SetAddListener) {
@@ -1621,6 +1767,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return super.addListener(listener);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof SetAddListener) {
@@ -1642,6 +1789,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     private volatile BaseEventCodec.OSType osType;
     private volatile Codec topicCodec;
 
+    /** 获取 Topic。 */
     protected RTopic getTopic(String name) {
         if (getSubscribeService().isShardingSupported()) {
             return RedissonShardedTopic.createRaw(topicCodec, commandExecutor, name);
@@ -1649,6 +1797,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return RedissonTopic.createRaw(topicCodec, commandExecutor, name);
     }
 
+    /** 异步执行 addExpiredListener。 */
     private RFuture<Integer> addExpiredListenerAsync(SetExpiredListener<V> listener) {
         CompletionStage<Void> osTypeFuture = CompletableFuture.completedFuture(null);
         if (osType == null) {
@@ -1677,11 +1826,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 返回异步成员迭代器。 */
     @Override
     public AsyncIterator<V> iteratorAsync() {
         return iteratorAsync(10);
     }
 
+    /** 返回异步成员迭代器。 */
     @Override
     public AsyncIterator<V> iteratorAsync(int count) {
         AsyncIterator<V> asyncIterator = new BaseAsyncIterator<V, Object>() {
@@ -1695,6 +1846,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
     }
 
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         removeTrackingListener(listenerId);
@@ -1710,6 +1862,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         String expiredChannelName = getExpiredChannelName();

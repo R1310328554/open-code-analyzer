@@ -1,6 +1,21 @@
 {
   "claimed_at": "2026-08-09T20:30:19Z",
   "files": [
+    "redisson/src/main/java/org/redisson/RedissonCircularBuffer.java",
+    "redisson/src/main/java/org/redisson/RedissonDelayedQueue.java",
+    "redisson/src/main/java/org/redisson/RedissonExecutorService.java",
+    "redisson/src/main/java/org/redisson/RedissonFasterMultiLock.java",
+    "redisson/src/main/java/org/redisson/RedissonGeo.java",
+    "redisson/src/main/java/org/redisson/RedissonJsonBucket.java",
+    "redisson/src/main/java/org/redisson/RedissonKeys.java",
+    "redisson/src/main/java/org/redisson/RedissonListMultimap.java",
+    "redisson/src/main/java/org/redisson/RedissonListMultimapValues.java",
+    "redisson/src/main/java/org/redisson/RedissonLiveObjectService.java",
+    "redisson/src/main/java/org/redisson/RedissonLocalCachedMap.java",
+    "redisson/src/main/java/org/redisson/RedissonLock.java",
+    "redisson/src/main/java/org/redisson/RedissonMap.java",
+    "redisson/src/main/java/org/redisson/RedissonMapCache.java",
+    "redisson/src/main/java/org/redisson/RedissonMapCacheNative.java",
     "redisson/src/main/java/org/redisson/RedissonMultiLock.java",
     "redisson/src/main/java/org/redisson/RedissonMultimap.java",
     "redisson/src/main/java/org/redisson/RedissonObject.java",
@@ -18,5 +33,5 @@
     "redisson/src/main/java/org/redisson/RedissonSetMultimap.java"
   ],
   "remaining_pending": 1112,
-  "done": 1695
+  "done": 1680
 }

@@ -35,17 +35,21 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Main infrastructure class allows to get access
- * to all Redisson objects on top of Redis server.
+ * Reactor 风格 Redisson 客户端 {@link RedissonReactiveClient}。
+ * <p>在 Redis/Valkey 之上提供全部响应式分布式对象 factory 方法；
+ * 委托 {@link CommandReactiveExecutor} 执行非阻塞命令。
  *
  * @author Nikita Koksharov
- *
  */
 public final class RedissonReactive implements RedissonReactiveClient {
 
+    /** Write-Behind 批写服务。 */
     private final WriteBehindService writeBehindService;
+    /** 淘汰调度器。 */
     private final EvictionScheduler evictionScheduler;
+    /** 响应式命令执行器。 */
     private final CommandReactiveExecutor commandExecutor;
+    /** Redis 连接管理器。 */
     private final ConnectionManager connectionManager;
 
     RedissonReactive(ConnectionManager connectionManager, EvictionScheduler evictionScheduler,
@@ -60,10 +64,12 @@ public final class RedissonReactive implements RedissonReactiveClient {
         this.writeBehindService = writeBehindService;
     }
 
+    /** 返回命令执行器。 */
     public CommandReactiveExecutor getCommandExecutor() {
         return commandExecutor;
     }
 
+    /** 获取 {@link RArray} 响应式分布式对象。 */
     @Override
     public <V> RArrayReactive<V> getArray(String name) {
         RedissonArray<V> array = new RedissonArray<>(commandExecutor, name);
@@ -71,6 +77,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonArrayReactive<>(array), RArrayReactive.class);
     }
 
+    /** 获取 {@link RArray} 响应式分布式对象。 */
     @Override
     public <V> RArrayReactive<V> getArray(String name, Codec codec) {
         RedissonArray<V> array = new RedissonArray<>(codec, commandExecutor, name);
@@ -78,6 +85,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonArrayReactive<>(array), RArrayReactive.class);
     }
 
+    /** 获取 {@link RArray} 响应式分布式对象。 */
     @Override
     public <V> RArrayReactive<V> getArray(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -86,18 +94,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonArrayReactive<>(array), RArrayReactive.class);
     }
     
+    /** 获取响应式 Stream 对象 Stream。 */
     @Override
     public <K, V> RStreamReactive<K, V> getStream(String name) {
         RedissonStream<K, V> stream = new RedissonStream<K, V>(commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, stream, RStreamReactive.class);
     }
 
+    /** 获取响应式 Stream 对象 Stream。 */
     @Override
     public <K, V> RStreamReactive<K, V> getStream(String name, Codec codec) {
         RedissonStream<K, V> stream = new RedissonStream<K, V>(codec, commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, stream, RStreamReactive.class);
     }
 
+    /** 获取响应式 Stream 对象 Stream。 */
     @Override
     public <K, V> RStreamReactive<K, V> getStream(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -106,16 +117,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, stream, RStreamReactive.class);
     }
 
+    /** 获取 RediSearch 客户端。 */
     @Override
     public RSearchReactive getSearch() {
         return getSearch((Codec) null);
     }
 
+    /** 获取 RediSearch 客户端。 */
     @Override
     public RSearchReactive getSearch(Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonSearch(codec, commandExecutor), RSearchReactive.class);
     }
 
+    /** 获取 RediSearch 客户端。 */
     @Override
     public RSearchReactive getSearch(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -123,18 +137,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonSearch(params.getCodec(), ca), RSearchReactive.class);
     }
 
+    /** 获取 {@link RGeo} 响应式分布式对象。 */
     @Override
     public <V> RGeoReactive<V> getGeo(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonGeo<V>(commandExecutor, name, null), 
                 new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RGeoReactive.class);
     }
     
+    /** 获取 {@link RGeo} 响应式分布式对象。 */
     @Override
     public <V> RGeoReactive<V> getGeo(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonGeo<V>(codec, commandExecutor, name, null), 
                 new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RGeoReactive.class);
     }
 
+    /** 获取 {@link RGeo} 响应式分布式对象。 */
     @Override
     public <V> RGeoReactive<V> getGeo(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -144,11 +161,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonScoredSortedSetReactive<V>(params.getCodec(), ca, params.getName()), RGeoReactive.class);
     }
 
+    /** 获取公平锁。 */
     @Override
     public RLockReactive getFairLock(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFairLock(commandExecutor, name), RLockReactive.class);
     }
 
+    /** 获取公平锁。 */
     @Override
     public RLockReactive getFairLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -156,12 +175,14 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFairLock(ca, params.getName()), RLockReactive.class);
     }
 
+    /** 获取 {@link RNonReentrantFairLock} 响应式分布式对象。 */
     @Override
     public RLockReactive getNonReentrantFairLock(String name) {
         return ReactiveProxyBuilder.create(commandExecutor,
                 new RedissonNonReentrantFairLock(commandExecutor, name), RLockReactive.class);
     }
 
+    /** 获取 {@link RNonReentrantFairLock} 响应式分布式对象。 */
     @Override
     public RLockReactive getNonReentrantFairLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -170,11 +191,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonNonReentrantFairLock(ca, params.getName()), RLockReactive.class);
     }
 
+    /** 获取限流器。 */
     @Override
     public RRateLimiterReactive getRateLimiter(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonRateLimiter(commandExecutor, name), RRateLimiterReactive.class);
     }
 
+    /** 获取限流器。 */
     @Override
     public RRateLimiterReactive getRateLimiter(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -182,11 +205,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonRateLimiter(ca, params.getName()), RRateLimiterReactive.class);
     }
 
+    /** 获取 {@link RGcra} 响应式分布式对象。 */
     @Override
     public RGcraReactive getGcra(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonGcra(commandExecutor, name), RGcraReactive.class);
     }
 
+    /** 获取 {@link RGcra} 响应式分布式对象。 */
     @Override
     public RGcraReactive getGcra(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -194,6 +219,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonGcra(ca, params.getName()), RGcraReactive.class);
     }
 
+    /** 获取 {@link RBinaryStream} 响应式分布式对象。 */
     @Override
     public RBinaryStreamReactive getBinaryStream(String name) {
         RedissonBinaryStream stream = new RedissonBinaryStream(commandExecutor, name);
@@ -201,6 +227,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBinaryStreamReactive(commandExecutor, stream), RBinaryStreamReactive.class);
     }
 
+    /** 获取 {@link RBinaryStream} 响应式分布式对象。 */
     @Override
     public RBinaryStreamReactive getBinaryStream(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -210,11 +237,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBinaryStreamReactive(ca, stream), RBinaryStreamReactive.class);
     }
 
+    /** 获取分布式信号量。 */
     @Override
     public RSemaphoreReactive getSemaphore(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name), RSemaphoreReactive.class);
     }
 
+    /** 获取分布式信号量。 */
     @Override
     public RSemaphoreReactive getSemaphore(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -222,11 +251,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonSemaphore(ca, params.getName()), RSemaphoreReactive.class);
     }
 
+    /** 获取可过期许可信号量。 */
     @Override
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name), RPermitExpirableSemaphoreReactive.class);
     }
 
+    /** 获取可过期许可信号量。 */
     @Override
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -235,11 +266,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonPermitExpirableSemaphore(ca, params.getName()), RPermitExpirableSemaphoreReactive.class);
     }
 
+    /** 获取读写锁。 */
     @Override
     public RReadWriteLockReactive getReadWriteLock(String name) {
         return new RedissonReadWriteLockReactive(commandExecutor, name);
     }
 
+    /** 获取读写锁。 */
     @Override
     public RReadWriteLockReactive getReadWriteLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -247,11 +280,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return new RedissonReadWriteLockReactive(ca, params.getName());
     }
 
+    /** 获取分布式锁。 */
     @Override
     public RLockReactive getLock(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonLock(commandExecutor, name), RLockReactive.class);
     }
 
+    /** 获取分布式锁。 */
     @Override
     public RLockReactive getLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -259,23 +294,27 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonLock(ca, params.getName()), RLockReactive.class);
     }
 
+    /** 获取 {@link RSpinLock} 响应式分布式对象。 */
     @Override
     public RLockReactive getSpinLock(String name) {
         return getSpinLock(name, LockOptions.defaults());
     }
 
+    /** 获取 {@link RSpinLock} 响应式分布式对象。 */
     @Override
     public RLockReactive getSpinLock(String name, LockOptions.BackOff backOff) {
         RedissonSpinLock spinLock = new RedissonSpinLock(commandExecutor, name, backOff);
         return ReactiveProxyBuilder.create(commandExecutor, spinLock, RLockReactive.class);
     }
 
+    /** 获取 {@link RNonReentrantLock} 响应式分布式对象。 */
     @Override
     public RLockReactive getNonReentrantLock(String name) {
         return ReactiveProxyBuilder.create(commandExecutor,
                 new RedissonNonReentrantLock(commandExecutor, name), RLockReactive.class);
     }
 
+    /** 获取 {@link RNonReentrantLock} 响应式分布式对象。 */
     @Override
     public RLockReactive getNonReentrantLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -284,12 +323,14 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonNonReentrantLock(ca, params.getName()), RLockReactive.class);
     }
 
+    /** 获取 {@link RFencedLock} 响应式分布式对象。 */
     @Override
     public RFencedLockReactive getFencedLock(String name) {
         RedissonFencedLock lock = new RedissonFencedLock(commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, lock, RFencedLockReactive.class);
     }
 
+    /** 获取 {@link RFencedLock} 响应式分布式对象。 */
     @Override
     public RFencedLockReactive getFencedLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -298,6 +339,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, lock, RFencedLockReactive.class);
     }
 
+    /** 获取联锁。 */
     @Override
     public RLockReactive getMultiLock(RLockReactive... locks) {
         RLock[] ls = Arrays.stream(locks)
@@ -306,26 +348,31 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonMultiLock(ls), RLockReactive.class);
     }
 
+    /** 获取联锁。 */
     @Override
     public RLockReactive getMultiLock(String group, Collection<Object> values) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFasterMultiLock(commandExecutor, group, values), RLockReactive.class);
     }
 
+    /** 获取联锁。 */
     @Override
     public RLockReactive getMultiLock(RLock... locks) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonMultiLock(locks), RLockReactive.class);
     }
     
+    /** 获取 {@link RRedLock} 响应式分布式对象。 */
     @Override
     public RLockReactive getRedLock(RLock... locks) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonRedLock(locks), RLockReactive.class);
     }
 
+    /** 获取 {@link RCountDownLatch} 响应式分布式对象。 */
     @Override
     public RCountDownLatchReactive getCountDownLatch(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonCountDownLatch(commandExecutor, name), RCountDownLatchReactive.class);
     }
 
+    /** 获取 {@link RCountDownLatch} 响应式分布式对象。 */
     @Override
     public RCountDownLatchReactive getCountDownLatch(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -333,6 +380,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonCountDownLatch(ca, params.getName()), RCountDownLatchReactive.class);
     }
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null, writeBehindService);
@@ -340,6 +388,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);
     }
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, null, writeBehindService);
@@ -347,6 +396,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);
     }
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(org.redisson.api.options.MapCacheOptions<K, V> options) {
         MapCacheParams<K, V> params = (MapCacheParams) options;
@@ -359,6 +409,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapCacheReactive<>(map, ca), RMapCacheReactive.class);
     }
 
+    /** 获取 {@link RMapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(String name) {
         RMapCacheNative<K, V> map = new RedissonMapCacheNative<>(commandExecutor, name, null, null, writeBehindService);
@@ -366,6 +417,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheNativeReactive.class);
     }
 
+    /** 获取 {@link RMapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(String name, Codec codec) {
         RMapCacheNative<K, V> map = new RedissonMapCacheNative<>(codec, commandExecutor, name, null, null, writeBehindService);
@@ -373,6 +425,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheNativeReactive.class);
     }
 
+    /** 获取 {@link RMapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(org.redisson.api.options.MapOptions<K, V> options) {
         MapParams<K, V> params = (MapParams<K, V>) options;
@@ -385,6 +438,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapCacheReactive<>(map, ca), RMapCacheNativeReactive.class);
     }
 
+    /** 响应式客户端 createOptions 方法。 */
     private static <K, V> MapOptions<K, V> createOptions(MapParams<K, V> params) {
         MapOptions<K, V> ops = MapOptions.<K, V>defaults()
                 .loader(params.getLoader())
@@ -404,6 +458,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ops;
     }
 
+    /** 响应式客户端 createOptions 方法。 */
     private static <K, V> MapCacheOptions<K, V> createOptions(MapCacheParams<K, V> params) {
         MapCacheOptions<K, V> ops = MapCacheOptions.<K, V>defaults()
                 .loader(params.getLoader())
@@ -427,16 +482,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ops;
     }
 
+    /** 获取 {@link RBucket} 响应式分布式对象。 */
     @Override
     public <V> RBucketReactive<V> getBucket(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBucket<V>(commandExecutor, name), RBucketReactive.class);
     }
 
+    /** 获取 {@link RBucket} 响应式分布式对象。 */
     @Override
     public <V> RBucketReactive<V> getBucket(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBucket<V>(codec, commandExecutor, name), RBucketReactive.class);
     }
 
+    /** 获取 {@link RBucket} 响应式分布式对象。 */
     @Override
     public <V> RBucketReactive<V> getBucket(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -445,16 +503,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBucket<V>(params.getCodec(), ca, params.getName()), RBucketReactive.class);
     }
 
+    /** 获取 {@link RBuckets} 响应式分布式对象。 */
     @Override
     public RBucketsReactive getBuckets() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBuckets(commandExecutor), RBucketsReactive.class);
     }
 
+    /** 获取 {@link RBuckets} 响应式分布式对象。 */
     @Override
     public RBucketsReactive getBuckets(Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBuckets(codec, commandExecutor), RBucketsReactive.class);
     }
 
+    /** 获取 {@link RBuckets} 响应式分布式对象。 */
     @Override
     public RBucketsReactive getBuckets(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -462,16 +523,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBuckets(params.getCodec(), ca), RBucketsReactive.class);
     }
 
+    /** 获取 {@link RMaps} 响应式分布式对象。 */
     @Override
     public <K, V> RMapsReactive<K, V> getMaps() {
         return createMaps(new RedissonMaps<>(commandExecutor), commandExecutor);
     }
 
+    /** 获取 {@link RMaps} 响应式分布式对象。 */
     @Override
     public <K, V> RMapsReactive<K, V> getMaps(Codec codec) {
         return createMaps(new RedissonMaps<>(codec, commandExecutor), commandExecutor);
     }
 
+    /** 获取 {@link RMaps} 响应式分布式对象。 */
     @Override
     public <K, V> RMapsReactive<K, V> getMaps(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -479,11 +543,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return createMaps(new RedissonMaps<>(params.getCodec(), ce), ce);
     }
 
+    /** 响应式客户端 createMaps 方法。 */
     private <K, V> RMapsReactive<K, V> createMaps(RMaps<K, V> maps, CommandReactiveExecutor ce) {
         return ReactiveProxyBuilder.create(commandExecutor, maps,
                                             new RedissonMapsReactive<>(maps, ce), RMapsReactive.class);
     }
 
+    /** 响应式客户端 findBuckets 方法。 */
     @Override
     public <V> List<RBucketReactive<V>> findBuckets(String pattern) {
         RKeys redissonKeys = new RedissonKeys(commandExecutor);
@@ -498,11 +564,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return buckets;
     }
 
+    /** 获取 {@link RJsonBucket} 响应式分布式对象。 */
     @Override
     public <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonJsonBucket<V>(codec, commandExecutor, name), RJsonBucketReactive.class);
     }
 
+    /** 获取 {@link RJsonBucket} 响应式分布式对象。 */
     @Override
     public <V> RJsonBucketReactive<V> getJsonBucket(JsonBucketOptions<V> options) {
         JsonBucketParams<V> params = (JsonBucketParams<V>) options;
@@ -511,21 +579,25 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonJsonBucket<V>(params.getCodec(), ca, params.getName()), RJsonBucketReactive.class);
     }
     
+    /** 获取 {@link RJsonBuckets} 响应式分布式对象。 */
     @Override
     public RJsonBucketsReactive getJsonBuckets(JsonCodec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonJsonBuckets(codec, commandExecutor), RJsonBucketsReactive.class);
     }
     
+    /** 获取 {@link RHyperLogLog} 响应式分布式对象。 */
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogReactive.class);
     }
 
+    /** 获取 {@link RHyperLogLog} 响应式分布式对象。 */
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(codec, commandExecutor, name), RHyperLogLogReactive.class);
     }
 
+    /** 获取 {@link RHyperLogLog} 响应式分布式对象。 */
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -534,11 +606,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonHyperLogLog<V>(params.getCodec(), ca, params.getName()), RHyperLogLogReactive.class);
     }
 
+    /** 获取 {@link RIdGenerator} 响应式分布式对象。 */
     @Override
     public RIdGeneratorReactive getIdGenerator(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonIdGenerator(commandExecutor, name), RIdGeneratorReactive.class);
     }
 
+    /** 获取 {@link RIdGenerator} 响应式分布式对象。 */
     @Override
     public RIdGeneratorReactive getIdGenerator(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -546,18 +620,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonIdGenerator(ca, params.getName()), RIdGeneratorReactive.class);
     }
 
+    /** 获取 {@link RList} 响应式分布式对象。 */
     @Override
     public <V> RListReactive<V> getList(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonList<V>(commandExecutor, name, null), 
                 new RedissonListReactive<V>(commandExecutor, name), RListReactive.class);
     }
 
+    /** 获取 {@link RList} 响应式分布式对象。 */
     @Override
     public <V> RListReactive<V> getList(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonList<V>(codec, commandExecutor, name, null), 
                 new RedissonListReactive<V>(codec, commandExecutor, name), RListReactive.class);
     }
 
+    /** 获取 {@link RList} 响应式分布式对象。 */
     @Override
     public <V> RListReactive<V> getList(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -566,18 +643,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListReactive<V>(params.getCodec(), ca, params.getName()), RListReactive.class);
     }
 
+    /** 获取 {@link RListMultimap} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(commandExecutor, name), 
                 new RedissonListMultimapReactive<K, V>(commandExecutor, name), RListMultimapReactive.class);
     }
 
+    /** 获取 {@link RListMultimap} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(codec, commandExecutor, name), 
                 new RedissonListMultimapReactive<K, V>(codec, commandExecutor, name), RListMultimapReactive.class);
     }
 
+    /** 获取 {@link RListMultimap} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -586,18 +666,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListMultimapReactive<K, V>(params.getCodec(), ca, params.getName()), RListMultimapReactive.class);
     }
 
+    /** 获取 Set 多值映射。 */
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(commandExecutor, name), 
                 new RedissonSetMultimapReactive<K, V>(commandExecutor, name, this), RSetMultimapReactive.class);
     }
 
+    /** 获取 Set 多值映射。 */
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(codec, commandExecutor, name), 
                 new RedissonSetMultimapReactive<K, V>(codec, commandExecutor, name, this), RSetMultimapReactive.class);
     }
 
+    /** 获取 Set 多值映射。 */
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -606,6 +689,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetMultimapReactive<K, V>(params.getCodec(), ca, params.getName(), this), RSetMultimapReactive.class);
     }
 
+    /** 获取 {@link RListMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(String name) {
         RedissonListMultimapCache<K, V> listMultimap = new RedissonListMultimapCache<>(evictionScheduler, commandExecutor, name);
@@ -613,6 +697,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListMultimapCacheReactive<K, V>(listMultimap, commandExecutor), RListMultimapCacheReactive.class);
     }
 
+    /** 获取 {@link RListMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(String name, Codec codec) {
         RedissonListMultimapCache<K, V> listMultimap = new RedissonListMultimapCache<>(evictionScheduler, codec, commandExecutor, name);
@@ -620,6 +705,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListMultimapCacheReactive<>(listMultimap, commandExecutor), RListMultimapCacheReactive.class);
     }
 
+    /** 获取 {@link RListMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheReactive<K, V> getListMultimapCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -629,6 +715,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListMultimapCacheReactive<>(listMultimap, ca), RListMultimapCacheReactive.class);
     }
 
+    /** 获取 {@link RListMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheNativeReactive<K, V> getListMultimapCacheNative(String name) {
         RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(commandExecutor, name);
@@ -636,6 +723,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListMultimapCacheReactive<>(listMultimap, commandExecutor), RListMultimapCacheNativeReactive.class);
     }
 
+    /** 获取 {@link RListMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheNativeReactive<K, V> getListMultimapCacheNative(String name, Codec codec) {
         RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(codec, commandExecutor, name);
@@ -643,6 +731,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListMultimapCacheReactive<>(listMultimap, commandExecutor), RListMultimapCacheNativeReactive.class);
     }
 
+    /** 获取 {@link RListMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheNativeReactive<K, V> getListMultimapCacheNative(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -652,6 +741,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListMultimapCacheReactive<>(listMultimap, ca), RListMultimapCacheNativeReactive.class);
     }
 
+    /** 获取 {@link RSetMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name) {
         RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, commandExecutor, name);
@@ -659,6 +749,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetMultimapCacheReactive<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheReactive.class);
     }
 
+    /** 获取 {@link RSetMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name, Codec codec) {
         RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, codec, commandExecutor, name);
@@ -666,6 +757,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetMultimapCacheReactive<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheReactive.class);
     }
 
+    /** 获取 {@link RSetMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -675,6 +767,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetMultimapCacheReactive<K, V>(setMultimap, ca, this), RSetMultimapCacheReactive.class);
     }
 
+    /** 获取 {@link RSetMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheNativeReactive<K, V> getSetMultimapCacheNative(String name) {
         RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(commandExecutor, name);
@@ -682,6 +775,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetMultimapCacheReactive<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheNativeReactive.class);
     }
 
+    /** 获取 {@link RSetMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheNativeReactive<K, V> getSetMultimapCacheNative(String name, Codec codec) {
         RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(codec, commandExecutor, name);
@@ -689,6 +783,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetMultimapCacheReactive<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheNativeReactive.class);
     }
 
+    /** 获取 {@link RSetMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheNativeReactive<K, V> getSetMultimapCacheNative(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -698,6 +793,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetMultimapCacheReactive<K, V>(setMultimap, ca, this), RSetMultimapCacheNativeReactive.class);
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null, writeBehindService);
@@ -705,6 +801,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapReactive<K, V>(map, commandExecutor), RMapReactive.class);
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, null, writeBehindService);
@@ -712,6 +809,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapReactive<K, V>(map, commandExecutor), RMapReactive.class);
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapReactive<K, V> getMap(org.redisson.api.options.MapOptions<K, V> options) {
         MapParams<K, V> params = (MapParams<K, V>) options;
@@ -723,6 +821,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapReactive<K, V>(map, ca), RMapReactive.class);
     }
 
+    /** 获取 Set 对象。 */
     @Override
     public <V> RSetReactive<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(commandExecutor, name, null);
@@ -730,6 +829,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetReactive<V>(set, this), RSetReactive.class);
     }
 
+    /** 获取 Set 对象。 */
     @Override
     public <V> RSetReactive<V> getSet(String name, Codec codec) {
         RedissonSet<V> set = new RedissonSet<V>(codec, commandExecutor, name, null);
@@ -737,6 +837,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetReactive<V>(set, this), RSetReactive.class);
     }
 
+    /** 获取 Set 对象。 */
     @Override
     public <V> RSetReactive<V> getSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -746,18 +847,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetReactive<V>(set, this), RSetReactive.class);
     }
 
+    /** 获取有序集合。 */
     @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScoredSortedSet<V>(commandExecutor, name, null), 
                 new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RScoredSortedSetReactive.class);
     }
 
+    /** 获取有序集合。 */
     @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null), 
                 new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RScoredSortedSetReactive.class);
     }
 
+    /** 获取有序集合。 */
     @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -766,6 +870,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonScoredSortedSetReactive<V>(params.getCodec(), ca, params.getName()), RScoredSortedSetReactive.class);
     }
 
+    /** 获取 {@link RLexSortedSet} 响应式分布式对象。 */
     @Override
     public RLexSortedSetReactive getLexSortedSet(String name) {
         RedissonLexSortedSet set = new RedissonLexSortedSet(commandExecutor, name, null);
@@ -774,6 +879,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 RLexSortedSetReactive.class);
     }
 
+    /** 获取 {@link RLexSortedSet} 响应式分布式对象。 */
     @Override
     public RLexSortedSetReactive getLexSortedSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -784,6 +890,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 RLexSortedSetReactive.class);
     }
 
+    /** 获取 {@link RShardedTopic} 响应式分布式对象。 */
     @Override
     public RShardedTopicReactive getShardedTopic(String name) {
         RedissonShardedTopic topic = new RedissonShardedTopic(commandExecutor, name);
@@ -791,6 +898,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTopicReactive(topic), RShardedTopicReactive.class);
     }
 
+    /** 获取 {@link RShardedTopic} 响应式分布式对象。 */
     @Override
     public RShardedTopicReactive getShardedTopic(String name, Codec codec) {
         RedissonShardedTopic topic = new RedissonShardedTopic(codec, commandExecutor, name);
@@ -798,6 +906,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTopicReactive(topic), RShardedTopicReactive.class);
     }
 
+    /** 获取 {@link RShardedTopic} 响应式分布式对象。 */
     @Override
     public RShardedTopicReactive getShardedTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -807,6 +916,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTopicReactive(topic), RShardedTopicReactive.class);
     }
 
+    /** 获取 {@link RTopic} 响应式分布式对象。 */
     @Override
     public RTopicReactive getTopic(String name) {
         RedissonTopic topic = new RedissonTopic(commandExecutor, name);
@@ -814,6 +924,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTopicReactive(topic), RTopicReactive.class);
     }
 
+    /** 获取 {@link RTopic} 响应式分布式对象。 */
     @Override
     public RTopicReactive getTopic(String name, Codec codec) {
         RedissonTopic topic = new RedissonTopic(codec, commandExecutor, name);
@@ -821,6 +932,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTopicReactive(topic), RTopicReactive.class);
     }
 
+    /** 获取 {@link RTopic} 响应式分布式对象。 */
     @Override
     public RTopicReactive getTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -830,6 +942,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTopicReactive(topic), RTopicReactive.class);
     }
 
+    /** 获取 {@link RReliableTopic} 响应式分布式对象。 */
     @Override
     public RReliableTopicReactive getReliableTopic(String name) {
         RedissonReliableTopic topic = new RedissonReliableTopic(commandExecutor, name);
@@ -837,6 +950,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }
 
+    /** 获取 {@link RReliableTopic} 响应式分布式对象。 */
     @Override
     public RReliableTopicReactive getReliableTopic(String name, Codec codec) {
         RedissonReliableTopic topic = new RedissonReliableTopic(codec, commandExecutor, name);
@@ -844,6 +958,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }
 
+    /** 获取 {@link RReliableTopic} 响应式分布式对象。 */
     @Override
     public RReliableTopicReactive getReliableTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -853,16 +968,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }
 
+    /** 获取 {@link RPatternTopic} 响应式分布式对象。 */
     @Override
     public RPatternTopicReactive getPatternTopic(String pattern) {
          return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic(commandExecutor, pattern), RPatternTopicReactive.class);
     }
 
+    /** 获取 {@link RPatternTopic} 响应式分布式对象。 */
     @Override
     public RPatternTopicReactive getPatternTopic(String pattern, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic(codec, commandExecutor, pattern), RPatternTopicReactive.class);
     }
 
+    /** 获取 {@link RPatternTopic} 响应式分布式对象。 */
     @Override
     public RPatternTopicReactive getPatternTopic(PatternTopicOptions options) {
         PatternTopicParams params = (PatternTopicParams) options;
@@ -871,18 +989,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonPatternTopic(params.getCodec(), ca, params.getPattern()), RPatternTopicReactive.class);
     }
 
+    /** 获取 {@link RQueue} 响应式分布式对象。 */
     @Override
     public <V> RQueueReactive<V> getQueue(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(commandExecutor, name, null), 
                 new RedissonListReactive<V>(commandExecutor, name), RQueueReactive.class);
     }
 
+    /** 获取 {@link RQueue} 响应式分布式对象。 */
     @Override
     public <V> RQueueReactive<V> getQueue(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
                 new RedissonListReactive<V>(codec, commandExecutor, name), RQueueReactive.class);
     }
 
+    /** 获取 {@link RQueue} 响应式分布式对象。 */
     @Override
     public <V> RQueueReactive<V> getQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -891,31 +1012,37 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListReactive<V>(params.getCodec(), ca, params.getName()), RQueueReactive.class);
     }
 
+    /** 获取 {@link RReliableQueue} 响应式分布式对象。 */
     @Override
     public <V> RReliableQueueReactive<V> getReliableQueue(String name) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
+    /** 获取 {@link RReliableQueue} 响应式分布式对象。 */
     @Override
     public <V> RReliableQueueReactive<V> getReliableQueue(String name, Codec codec) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
+    /** 获取 {@link RReliableQueue} 响应式分布式对象。 */
     @Override
     public <V> RReliableQueueReactive<V> getReliableQueue(PlainOptions options) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
+    /** 获取 {@link RRingBuffer} 响应式分布式对象。 */
     @Override
     public <V> RRingBufferReactive<V> getRingBuffer(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonRingBuffer<V>(commandExecutor, name, null), RRingBufferReactive.class);
     }
 
+    /** 获取 {@link RRingBuffer} 响应式分布式对象。 */
     @Override
     public <V> RRingBufferReactive<V> getRingBuffer(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonRingBuffer<V>(codec, commandExecutor, name, null), RRingBufferReactive.class);
     }
 
+    /** 获取 {@link RRingBuffer} 响应式分布式对象。 */
     @Override
     public <V> RRingBufferReactive<V> getRingBuffer(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -924,18 +1051,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonRingBuffer<V>(params.getCodec(), ca, params.getName(), null), RRingBufferReactive.class);
     }
 
+    /** 获取 {@link RCircularBuffer} 响应式分布式对象。 */
     @Override
     public <V> RCircularBufferReactive<V> getCircularBuffer(String name) {
         return ReactiveProxyBuilder.create(commandExecutor,
                 new RedissonCircularBuffer<V>(commandExecutor, name), RCircularBufferReactive.class);
     }
 
+    /** 获取 {@link RCircularBuffer} 响应式分布式对象。 */
     @Override
     public <V> RCircularBufferReactive<V> getCircularBuffer(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor,
                 new RedissonCircularBuffer<V>(codec, commandExecutor, name), RCircularBufferReactive.class);
     }
 
+    /** 获取 {@link RCircularBuffer} 响应式分布式对象。 */
     @Override
     public <V> RCircularBufferReactive<V> getCircularBuffer(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -944,6 +1074,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonCircularBuffer<V>(params.getCodec(), ca, params.getName()), RCircularBufferReactive.class);
     }
 
+    /** 获取 {@link RBlockingQueue} 响应式分布式对象。 */
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name) {
         RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(commandExecutor, name, null);
@@ -951,6 +1082,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBlockingQueueReactive<V>(queue), RBlockingQueueReactive.class);
     }
 
+    /** 获取 {@link RBlockingQueue} 响应式分布式对象。 */
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec) {
         RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
@@ -958,6 +1090,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBlockingQueueReactive<V>(queue), RBlockingQueueReactive.class);
     }
 
+    /** 获取 {@link RBlockingQueue} 响应式分布式对象。 */
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -967,18 +1100,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBlockingQueueReactive<V>(queue), RBlockingQueueReactive.class);
     }
 
+    /** 获取 {@link RDeque} 响应式分布式对象。 */
     @Override
     public <V> RDequeReactive<V> getDeque(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonDeque<V>(commandExecutor, name, null), 
                 new RedissonListReactive<V>(commandExecutor, name), RDequeReactive.class);
     }
 
+    /** 获取 {@link RDeque} 响应式分布式对象。 */
     @Override
     public <V> RDequeReactive<V> getDeque(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonDeque<V>(codec, commandExecutor, name, null), 
                 new RedissonListReactive<V>(codec, commandExecutor, name), RDequeReactive.class);
     }
 
+    /** 获取 {@link RDeque} 响应式分布式对象。 */
     @Override
     public <V> RDequeReactive<V> getDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -987,6 +1123,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonListReactive<V>(params.getCodec(), ca, params.getName()), RDequeReactive.class);
     }
 
+    /** 获取 {@link RTimeSeries} 响应式分布式对象。 */
     @Override
     public <V, L> RTimeSeriesReactive<V, L> getTimeSeries(String name) {
         RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<V, L>(evictionScheduler, commandExecutor, name);
@@ -994,6 +1131,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTimeSeriesReactive<V, L>(timeSeries, this), RTimeSeriesReactive.class);
     }
 
+    /** 获取 {@link RTimeSeries} 响应式分布式对象。 */
     @Override
     public <V, L> RTimeSeriesReactive<V, L> getTimeSeries(String name, Codec codec) {
         RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<V, L>(codec, evictionScheduler, commandExecutor, name);
@@ -1001,6 +1139,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTimeSeriesReactive<V, L>(timeSeries, this), RTimeSeriesReactive.class);
     }
 
+    /** 获取 {@link RTimeSeries} 响应式分布式对象。 */
     @Override
     public <V, L> RTimeSeriesReactive<V, L> getTimeSeries(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1010,6 +1149,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTimeSeriesReactive<V, L>(timeSeries, this), RTimeSeriesReactive.class);
     }
 
+    /** 获取带 TTL 的 Set 缓存。 */
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name) {
         RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
@@ -1017,6 +1157,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetCacheReactive<V>(set, this), RSetCacheReactive.class);
     }
 
+    /** 获取带 TTL 的 Set 缓存。 */
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
         RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
@@ -1024,6 +1165,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetCacheReactive<V>(set, this), RSetCacheReactive.class);
     }
 
+    /** 获取带 TTL 的 Set 缓存。 */
     @Override
     public <V> RSetCacheReactive<V> getSetCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1033,11 +1175,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonSetCacheReactive<V>(set, this), RSetCacheReactive.class);
     }
 
+    /** 获取 {@link RAtomicLong} 响应式分布式对象。 */
     @Override
     public RAtomicLongReactive getAtomicLong(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonAtomicLong(commandExecutor, name), RAtomicLongReactive.class);
     }
 
+    /** 获取 {@link RAtomicLong} 响应式分布式对象。 */
     @Override
     public RAtomicLongReactive getAtomicLong(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -1046,11 +1190,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonAtomicLong(ca, params.getName()), RAtomicLongReactive.class);
     }
 
+    /** 获取 {@link RAtomicDouble} 响应式分布式对象。 */
     @Override
     public RAtomicDoubleReactive getAtomicDouble(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(commandExecutor, name), RAtomicDoubleReactive.class);
     }
 
+    /** 获取 {@link RAtomicDouble} 响应式分布式对象。 */
     @Override
     public RAtomicDoubleReactive getAtomicDouble(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -1058,21 +1204,25 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(ca, params.getName()), RAtomicDoubleReactive.class);
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService() {
         return getRemoteService("redisson_rs", connectionManager.getServiceManager().getCfg().getCodec());
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService(String name) {
         return getRemoteService(name, connectionManager.getServiceManager().getCfg().getCodec());
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService(Codec codec) {
         return getRemoteService("redisson_rs", codec);
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService(String name, Codec codec) {
         String executorId = connectionManager.getServiceManager().getId();
@@ -1082,6 +1232,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return new RedissonRemoteService(codec, name, commandExecutor, executorId);
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1093,11 +1244,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return new RedissonRemoteService(params.getCodec(), params.getName(), ca, executorId);
     }
 
+    /** 获取 {@link RBitSet} 响应式分布式对象。 */
     @Override
     public RBitSetReactive getBitSet(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBitSet(commandExecutor, name), RBitSetReactive.class);
     }
 
+    /** 获取 {@link RBitSet} 响应式分布式对象。 */
     @Override
     public RBitSetReactive getBitSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -1105,16 +1258,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBitSet(ca, params.getName()), RBitSetReactive.class);
     }
 
+    /** 获取 {@link RBloomFilter} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterReactive<V> getBloomFilter(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilter<>(commandExecutor, name), RBloomFilterReactive.class);
     }
 
+    /** 获取 {@link RBloomFilter} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterReactive<V> getBloomFilter(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilter<>(codec, commandExecutor, name), RBloomFilterReactive.class);
     }
 
+    /** 获取 {@link RBloomFilter} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterReactive<V> getBloomFilter(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1123,16 +1279,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBloomFilter<V>(params.getCodec(), ca, params.getName()), RBloomFilterReactive.class);
     }
 
+    /** 获取 {@link RBloomFilterNative} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(commandExecutor, name), RBloomFilterNativeReactive.class);
     }
 
+    /** 获取 {@link RBloomFilterNative} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(codec, commandExecutor, name), RBloomFilterNativeReactive.class);
     }
 
+    /** 获取 {@link RBloomFilterNative} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1141,11 +1300,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBloomFilterNative<V>(params.getCodec(), ca, params.getName()), RBloomFilterNativeReactive.class);
     }
 
+    /** 获取 {@link RCuckooFilter} 响应式分布式对象。 */
     @Override
     public <V> RCuckooFilterReactive<V> getCuckooFilter(String name) {
         return getCuckooFilter(name, null);
     }
 
+    /** 获取 {@link RCuckooFilter} 响应式分布式对象。 */
     @Override
     public <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor,
@@ -1153,6 +1314,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 RCuckooFilterReactive.class);
     }
 
+    /** 获取 {@link RCuckooFilter} 响应式分布式对象。 */
     @Override
     public <V> RCuckooFilterReactive<V> getCuckooFilter(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1162,6 +1324,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 RCuckooFilterReactive.class);
     }
 
+    /** 获取 {@link RTDigest} 响应式分布式对象。 */
     @Override
     public RTDigestReactive getTDigest(String name) {
         return ReactiveProxyBuilder.create(commandExecutor,
@@ -1169,6 +1332,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 RTDigestReactive.class);
     }
 
+    /** 获取 {@link RTDigest} 响应式分布式对象。 */
     @Override
     public RTDigestReactive getTDigest(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1178,11 +1342,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 RTDigestReactive.class);
     }
 
+    /** 获取 {@link RTopK} 响应式分布式对象。 */
     @Override
     public <V> RTopKReactive<V> getTopK(String name) {
         return getTopK(name, null);
     }
 
+    /** 获取 {@link RTopK} 响应式分布式对象。 */
     @Override
     public <V> RTopKReactive<V> getTopK(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor,
@@ -1190,6 +1356,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 RTopKReactive.class);
     }
 
+    /** 获取 {@link RTopK} 响应式分布式对象。 */
     @Override
     public <V> RTopKReactive<V> getTopK(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1199,16 +1366,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 RTopKReactive.class);
     }
 
+    /** 获取 {@link RFunction} 响应式分布式对象。 */
     @Override
     public RFunctionReactive getFunction() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
     }
 
+    /** 获取 {@link RFunction} 响应式分布式对象。 */
     @Override
     public RFunctionReactive getFunction(Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor, codec), RFunctionReactive.class);
     }
 
+    /** 获取 {@link RFunction} 响应式分布式对象。 */
     @Override
     public RFunctionReactive getFunction(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -1216,16 +1386,19 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(ca, params.getCodec()), RFunctionReactive.class);
     }
 
+    /** 获取 {@link RScript} 响应式分布式对象。 */
     @Override
     public RScriptReactive getScript() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptReactive.class);
     }
     
+    /** 获取 {@link RScript} 响应式分布式对象。 */
     @Override
     public RScriptReactive getScript(Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor, codec), RScriptReactive.class);
     }
 
+    /** 获取 {@link RScript} 响应式分布式对象。 */
     @Override
     public RScriptReactive getScript(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -1233,12 +1406,14 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(ca, params.getCodec()), RScriptReactive.class);
     }
 
+    /** 获取 {@link RVectorSet} 响应式分布式对象。 */
     @Override
     public RVectorSetReactive getVectorSet(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonVectorSet(commandExecutor, name),
                 new RedissonVectorSetReactive(commandExecutor, name), RVectorSetReactive.class);
     }
 
+    /** 获取 {@link RVectorSet} 响应式分布式对象。 */
     @Override
     public RVectorSetReactive getVectorSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -1247,21 +1422,25 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonVectorSetReactive(ca, params.getName()), RVectorSetReactive.class);
     }
 
+    /** 创建命令批处理。 */
     @Override
     public RBatchReactive createBatch(BatchOptions options) {
         return new RedissonBatchReactive(evictionScheduler, connectionManager, commandExecutor, options);
     }
 
+    /** 创建命令批处理。 */
     @Override
     public RBatchReactive createBatch() {
         return createBatch(BatchOptions.defaults());
     }
 
+    /** 返回全部映射键。 */
     @Override
     public RKeysReactive getKeys() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonKeys(commandExecutor), new RedissonKeysReactive(commandExecutor), RKeysReactive.class);
     }
 
+    /** 返回全部映射键。 */
     @Override
     public RKeysReactive getKeys(KeysOptions options) {
         KeysParams params = (KeysParams) options;
@@ -1269,27 +1448,32 @@ public final class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonKeys(ca), new RedissonKeysReactive(ca), RKeysReactive.class);
     }
 
+    /** 返回限流器当前 Rate 配置。 */
     @Override
     public Config getConfig() {
         return connectionManager.getServiceManager().getCfg();
     }
 
+    /** 关闭客户端。 */
     @Override
     public void shutdown() {
         writeBehindService.stop();
         connectionManager.shutdown();
     }
 
+    /** 客户端是否已关闭。 */
     @Override
     public boolean isShutdown() {
         return connectionManager.getServiceManager().isShutdown();
     }
 
+    /** 是否ShuttingDown。 */
     @Override
     public boolean isShuttingDown() {
         return connectionManager.getServiceManager().isShuttingDown();
     }
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options) {
         RMapCache<K, V> map = new RedissonMapCache<>(codec, evictionScheduler, commandExecutor, name, null, options, writeBehindService);
@@ -1298,6 +1482,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapCacheOptions<K, V> options) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options, writeBehindService);
@@ -1305,6 +1490,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapCacheReactive<>(map, commandExecutor), RMapCacheReactive.class);
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options) {
         RMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options, writeBehindService);
@@ -1312,6 +1498,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapReactive<K, V>(map, commandExecutor), RMapReactive.class);
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
         RMap<K, V> map = new RedissonMap<>(codec, commandExecutor, name, null, options, writeBehindService);
@@ -1319,11 +1506,13 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapReactive<>(map, commandExecutor), RMapReactive.class);
     }
 
+    /** 获取 {@link RLocalCachedMap} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapReactive<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options) {
         return getLocalCachedMap(name, null, options);
     }
 
+    /** 获取 {@link RLocalCachedMap} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapReactive<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options) {
         RMap<K, V> map = new RedissonLocalCachedMap<>(codec, commandExecutor, name,
@@ -1332,6 +1521,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapReactive<>(map, commandExecutor), RLocalCachedMapReactive.class);
     }
 
+    /** 获取 {@link RLocalCachedMap} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapReactive<K, V> getLocalCachedMap(org.redisson.api.options.LocalCachedMapOptions<K, V> options) {
         LocalCachedMapParams<K, V> params = (LocalCachedMapParams) options;
@@ -1371,21 +1561,25 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonMapReactive<>(map, ca), RLocalCachedMapReactive.class);
     }
 
+    /** 获取 {@link RLocalCachedMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapCacheReactive<K, V> getLocalCachedMapCache(String name, LocalCachedMapCacheOptions<K, V> options) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Visit https://redisson.pro");
     }
 
+    /** 获取 {@link RLocalCachedMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapCacheReactive<K, V> getLocalCachedMapCache(String name, Codec codec, LocalCachedMapCacheOptions<K, V> options) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Visit https://redisson.pro");
     }
 
+    /** 创建 Redis 事务。 */
     @Override
     public RTransactionReactive createTransaction(TransactionOptions options) {
         return new RedissonTransactionReactive(commandExecutor, options);
     }
 
+    /** 获取 {@link RBlockingDeque} 响应式分布式对象。 */
     @Override
     public <V> RBlockingDequeReactive<V> getBlockingDeque(String name) {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(commandExecutor, name, null);
@@ -1393,6 +1587,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBlockingDequeReactive<V>(deque), RBlockingDequeReactive.class);
     }
 
+    /** 获取 {@link RBlockingDeque} 响应式分布式对象。 */
     @Override
     public <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec) {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(codec, commandExecutor, name, null);
@@ -1400,6 +1595,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBlockingDequeReactive<V>(deque), RBlockingDequeReactive.class);
     }
 
+    /** 获取 {@link RBlockingDeque} 响应式分布式对象。 */
     @Override
     public <V> RBlockingDequeReactive<V> getBlockingDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1409,6 +1605,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonBlockingDequeReactive<V>(deque), RBlockingDequeReactive.class);
     }
 
+    /** 获取 {@link RTransferQueue} 响应式分布式对象。 */
     @Override
     public <V> RTransferQueueReactive<V> getTransferQueue(String name) {
         String remoteName = RedissonObject.suffixName(name, "remoteService");
@@ -1418,6 +1615,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTransferQueueReactive<V>(queue), RTransferQueueReactive.class);
     }
 
+    /** 获取 {@link RTransferQueue} 响应式分布式对象。 */
     @Override
     public <V> RTransferQueueReactive<V> getTransferQueue(String name, Codec codec) {
         String remoteName = RedissonObject.suffixName(name, "remoteService");
@@ -1427,6 +1625,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTransferQueueReactive<V>(queue), RTransferQueueReactive.class);
     }
 
+    /** 获取 {@link RTransferQueue} 响应式分布式对象。 */
     @Override
     public <V> RTransferQueueReactive<V> getTransferQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1438,6 +1637,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
                 new RedissonTransferQueueReactive<V>(queue), RTransferQueueReactive.class);
     }
 
+    /** 获取 {@link RId} 响应式分布式对象。 */
     @Override
     public String getId() {
         return commandExecutor.getServiceManager().getId();

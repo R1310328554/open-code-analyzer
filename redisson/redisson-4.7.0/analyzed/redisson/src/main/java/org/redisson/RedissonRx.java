@@ -33,17 +33,21 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * Main infrastructure class allows to get access
- * to all Redisson objects on top of Redis server.
+ * RxJava3 风格 Redisson 客户端 {@link RedissonRxClient}。
+ * <p>在 Redis/Valkey 之上提供全部 Rx 分布式对象 factory 方法；
+ * 委托 {@link CommandRxExecutor} 执行异步命令。
  *
  * @author Nikita Koksharov
- *
  */
 public final class RedissonRx implements RedissonRxClient {
 
+    /** Write-Behind 批写服务。 */
     private final WriteBehindService writeBehindService;
+    /** 淘汰调度器。 */
     private final EvictionScheduler evictionScheduler;
+    /** RxJava 命令执行器。 */
     private final CommandRxExecutor commandExecutor;
+    /** Redis 连接管理器。 */
     private final ConnectionManager connectionManager;
 
     RedissonRx(ConnectionManager connectionManager, EvictionScheduler evictionScheduler, WriteBehindService writeBehindService) {
@@ -57,10 +61,12 @@ public final class RedissonRx implements RedissonRxClient {
         this.writeBehindService = writeBehindService;
     }
 
+    /** 返回命令执行器。 */
     public CommandRxExecutor getCommandExecutor() {
         return commandExecutor;
     }
 
+    /** 获取 {@link RArray} 响应式分布式对象。 */
     @Override
     public <V> RArrayRx<V> getArray(String name) {
         RedissonArray<V> array = new RedissonArray<>(commandExecutor, name);
@@ -68,6 +74,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonArrayRx<>(array), RArrayRx.class);
     }
 
+    /** 获取 {@link RArray} 响应式分布式对象。 */
     @Override
     public <V> RArrayRx<V> getArray(String name, Codec codec) {
         RedissonArray<V> array = new RedissonArray<>(codec, commandExecutor, name);
@@ -75,6 +82,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonArrayRx<>(array), RArrayRx.class);
     }
 
+    /** 获取 {@link RArray} 响应式分布式对象。 */
     @Override
     public <V> RArrayRx<V> getArray(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -83,16 +91,19 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonArrayRx<>(array), RArrayRx.class);
     }
 
+    /** 获取响应式 Stream 对象 Stream。 */
     @Override
     public <K, V> RStreamRx<K, V> getStream(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(commandExecutor, name), RStreamRx.class);
     }
 
+    /** 获取响应式 Stream 对象 Stream。 */
     @Override
     public <K, V> RStreamRx<K, V> getStream(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(codec, commandExecutor, name), RStreamRx.class);
     }
 
+    /** 获取响应式 Stream 对象 Stream。 */
     @Override
     public <K, V> RStreamRx<K, V> getStream(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -101,16 +112,19 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonStream<K, V>(params.getCodec(), commandExecutor.copy(params), params.getName()), RStreamRx.class);
     }
 
+    /** 获取 RediSearch 客户端。 */
     @Override
     public RSearchRx getSearch() {
         return getSearch((Codec) null);
     }
 
+    /** 获取 RediSearch 客户端。 */
     @Override
     public RSearchRx getSearch(Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonSearch(codec, commandExecutor), RSearchRx.class);
     }
 
+    /** 获取 RediSearch 客户端。 */
     @Override
     public RSearchRx getSearch(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -118,6 +132,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSearch(params.getCodec(), commandExecutor.copy(params)), RSearchRx.class);
     }
 
+    /** 获取 {@link RGeo} 响应式分布式对象。 */
     @Override
     public <V> RGeoRx<V> getGeo(String name) {
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(commandExecutor, name, null);
@@ -125,6 +140,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonScoredSortedSetRx<V>(set), RGeoRx.class);
     }
     
+    /** 获取 {@link RGeo} 响应式分布式对象。 */
     @Override
     public <V> RGeoRx<V> getGeo(String name, Codec codec) {
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null);
@@ -132,6 +148,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonScoredSortedSetRx<V>(set), RGeoRx.class);
     }
 
+    /** 获取 {@link RGeo} 响应式分布式对象。 */
     @Override
     public <V> RGeoRx<V> getGeo(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -141,11 +158,13 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonScoredSortedSetRx<V>(set), RGeoRx.class);
     }
 
+    /** 获取公平锁。 */
     @Override
     public RLockRx getFairLock(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonFairLock(commandExecutor, name), RLockRx.class);
     }
 
+    /** 获取公平锁。 */
     @Override
     public RLockRx getFairLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -153,12 +172,14 @@ public final class RedissonRx implements RedissonRxClient {
                             new RedissonFairLock(commandExecutor.copy(params), params.getName()), RLockRx.class);
     }
 
+    /** 获取 {@link RNonReentrantFairLock} 响应式分布式对象。 */
     @Override
     public RLockRx getNonReentrantFairLock(String name) {
         return RxProxyBuilder.create(commandExecutor,
                 new RedissonNonReentrantFairLock(commandExecutor, name), RLockRx.class);
     }
 
+    /** 获取 {@link RNonReentrantFairLock} 响应式分布式对象。 */
     @Override
     public RLockRx getNonReentrantFairLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -166,11 +187,13 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonNonReentrantFairLock(commandExecutor.copy(params), params.getName()), RLockRx.class);
     }
 
+    /** 获取限流器。 */
     @Override
     public RRateLimiterRx getRateLimiter(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonRateLimiter(commandExecutor, name), RRateLimiterRx.class);
     }
 
+    /** 获取限流器。 */
     @Override
     public RRateLimiterRx getRateLimiter(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -178,11 +201,13 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonRateLimiter(commandExecutor.copy(params), params.getName()), RRateLimiterRx.class);
     }
 
+    /** 获取 {@link RGcra} 响应式分布式对象。 */
     @Override
     public RGcraRx getGcra(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonGcra(commandExecutor, name), RGcraRx.class);
     }
 
+    /** 获取 {@link RGcra} 响应式分布式对象。 */
     @Override
     public RGcraRx getGcra(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -190,6 +215,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonGcra(commandExecutor.copy(params), params.getName()), RGcraRx.class);
     }
 
+    /** 获取 {@link RBinaryStream} 响应式分布式对象。 */
     @Override
     public RBinaryStreamRx getBinaryStream(String name) {
         RedissonBinaryStream stream = new RedissonBinaryStream(commandExecutor, name);
@@ -197,6 +223,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBinaryStreamRx(commandExecutor, stream), RBinaryStreamRx.class);
     }
 
+    /** 获取 {@link RBinaryStream} 响应式分布式对象。 */
     @Override
     public RBinaryStreamRx getBinaryStream(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -206,11 +233,13 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBinaryStreamRx(ce, stream), RBinaryStreamRx.class);
     }
 
+    /** 获取分布式信号量。 */
     @Override
     public RSemaphoreRx getSemaphore(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name), RSemaphoreRx.class);
     }
 
+    /** 获取分布式信号量。 */
     @Override
     public RSemaphoreRx getSemaphore(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -218,11 +247,13 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonSemaphore(ce, params.getName()), RSemaphoreRx.class);
     }
 
+    /** 获取可过期许可信号量。 */
     @Override
     public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name), RPermitExpirableSemaphoreRx.class);
     }
 
+    /** 获取可过期许可信号量。 */
     @Override
     public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -231,11 +262,13 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonPermitExpirableSemaphore(ce, params.getName()), RPermitExpirableSemaphoreRx.class);
     }
 
+    /** 获取读写锁。 */
     @Override
     public RReadWriteLockRx getReadWriteLock(String name) {
         return new RedissonReadWriteLockRx(commandExecutor, name);
     }
 
+    /** 获取读写锁。 */
     @Override
     public RReadWriteLockRx getReadWriteLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -243,11 +276,13 @@ public final class RedissonRx implements RedissonRxClient {
         return new RedissonReadWriteLockRx(ce, params.getName());
     }
 
+    /** 获取分布式锁。 */
     @Override
     public RLockRx getLock(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonLock(commandExecutor, name), RLockRx.class);
     }
 
+    /** 获取分布式锁。 */
     @Override
     public RLockRx getLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -255,23 +290,27 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonLock(ce, params.getName()), RLockRx.class);
     }
 
+    /** 获取 {@link RSpinLock} 响应式分布式对象。 */
     @Override
     public RLockRx getSpinLock(String name) {
         return getSpinLock(name, LockOptions.defaults());
     }
 
+    /** 获取 {@link RSpinLock} 响应式分布式对象。 */
     @Override
     public RLockRx getSpinLock(String name, LockOptions.BackOff backOff) {
         RedissonSpinLock spinLock = new RedissonSpinLock(commandExecutor, name, backOff);
         return RxProxyBuilder.create(commandExecutor, spinLock, RLockRx.class);
     }
 
+    /** 获取 {@link RNonReentrantLock} 响应式分布式对象。 */
     @Override
     public RLockRx getNonReentrantLock(String name) {
         return RxProxyBuilder.create(commandExecutor,
                 new RedissonNonReentrantLock(commandExecutor, name), RLockRx.class);
     }
 
+    /** 获取 {@link RNonReentrantLock} 响应式分布式对象。 */
     @Override
     public RLockRx getNonReentrantLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -280,12 +319,14 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonNonReentrantLock(ce, params.getName()), RLockRx.class);
     }
 
+    /** 获取 {@link RFencedLock} 响应式分布式对象。 */
     @Override
     public RFencedLockRx getFencedLock(String name) {
         RedissonFencedLock lock = new RedissonFencedLock(commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, lock, RFencedLockRx.class);
     }
 
+    /** 获取 {@link RFencedLock} 响应式分布式对象。 */
     @Override
     public RFencedLockRx getFencedLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -294,6 +335,7 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, lock, RFencedLockRx.class);
     }
 
+    /** 获取联锁。 */
     @Override
     public RLockRx getMultiLock(RLockRx... locks) {
         RLock[] ls = Arrays.stream(locks)
@@ -302,26 +344,31 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonMultiLock(ls), RLockRx.class);
     }
 
+    /** 获取联锁。 */
     @Override
     public RLockRx getMultiLock(String group, Collection<Object> values) {
         return RxProxyBuilder.create(commandExecutor, new RedissonFasterMultiLock(commandExecutor, group, values), RLockRx.class);
     }
 
+    /** 获取联锁。 */
     @Override
     public RLockRx getMultiLock(RLock... locks) {
         return RxProxyBuilder.create(commandExecutor, new RedissonMultiLock(locks), RLockRx.class);
     }
     
+    /** 获取 {@link RRedLock} 响应式分布式对象。 */
     @Override
     public RLockRx getRedLock(RLock... locks) {
         return RxProxyBuilder.create(commandExecutor, new RedissonRedLock(locks), RLockRx.class);
     }
 
+    /** 获取 {@link RCountDownLatch} 响应式分布式对象。 */
     @Override
     public RCountDownLatchRx getCountDownLatch(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonCountDownLatch(commandExecutor, name), RCountDownLatchRx.class);
     }
 
+    /** 获取 {@link RCountDownLatch} 响应式分布式对象。 */
     @Override
     public RCountDownLatchRx getCountDownLatch(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -329,6 +376,7 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonCountDownLatch(ce, params.getName()), RCountDownLatchRx.class);
     }
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec) {
         RMap<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null, null);
@@ -336,6 +384,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheRx.class);
     }
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name) {
         RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, null, null);
@@ -343,6 +392,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheRx.class);
     }
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(org.redisson.api.options.MapCacheOptions<K, V> options) {
         MapCacheParams<K, V> params = (MapCacheParams<K, V>) options;
@@ -373,16 +423,19 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapCacheRx<K, V>(map, ce), RMapCacheRx.class);
     }
 
+    /** 获取 {@link RBucket} 响应式分布式对象。 */
     @Override
     public <V> RBucketRx<V> getBucket(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBucket<V>(commandExecutor, name), RBucketRx.class);
     }
 
+    /** 获取 {@link RBucket} 响应式分布式对象。 */
     @Override
     public <V> RBucketRx<V> getBucket(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBucket<V>(codec, commandExecutor, name), RBucketRx.class);
     }
 
+    /** 获取 {@link RBucket} 响应式分布式对象。 */
     @Override
     public <V> RBucketRx<V> getBucket(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -391,16 +444,19 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBucket<V>(params.getCodec(), ce, params.getName()), RBucketRx.class);
     }
 
+    /** 获取 {@link RBuckets} 响应式分布式对象。 */
     @Override
     public RBucketsRx getBuckets() {
         return RxProxyBuilder.create(commandExecutor, new RedissonBuckets(commandExecutor), RBucketsRx.class);
     }
 
+    /** 获取 {@link RBuckets} 响应式分布式对象。 */
     @Override
     public RBucketsRx getBuckets(Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBuckets(codec, commandExecutor), RBucketsRx.class);
     }
 
+    /** 获取 {@link RBuckets} 响应式分布式对象。 */
     @Override
     public RBucketsRx getBuckets(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -408,16 +464,19 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonBuckets(params.getCodec(), ce), RBucketsRx.class);
     }
 
+    /** 获取 {@link RMaps} 响应式分布式对象。 */
     @Override
     public <K, V> RMapsRx<K, V> getMaps() {
         return createMaps(new RedissonMaps<>(commandExecutor), commandExecutor);
     }
 
+    /** 获取 {@link RMaps} 响应式分布式对象。 */
     @Override
     public <K, V> RMapsRx<K, V> getMaps(Codec codec) {
         return createMaps(new RedissonMaps<>(codec, commandExecutor), commandExecutor);
     }
 
+    /** 获取 {@link RMaps} 响应式分布式对象。 */
     @Override
     public <K, V> RMapsRx<K, V> getMaps(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -425,16 +484,19 @@ public final class RedissonRx implements RedissonRxClient {
         return createMaps(new RedissonMaps<>(params.getCodec(), ce), ce);
     }
 
+    /** 响应式客户端 createMaps 方法。 */
     private <K, V> RMapsRx<K, V> createMaps(RMaps<K, V> maps, CommandRxExecutor ce) {
         return RxProxyBuilder.create(commandExecutor, maps,
                                         new RedissonMapsRx<>(maps, ce), RMapsRx.class);
     }
 
+    /** 获取 {@link RJsonBucket} 响应式分布式对象。 */
     @Override
     public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonJsonBucket<>(codec, commandExecutor, name), RJsonBucketRx.class);
     }
 
+    /** 获取 {@link RJsonBucket} 响应式分布式对象。 */
     @Override
     public <V> RJsonBucketRx<V> getJsonBucket(JsonBucketOptions<V> options) {
         JsonBucketParams<V> params = (JsonBucketParams<V>) options;
@@ -442,21 +504,25 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonJsonBucket<>(params.getCodec(), ce, params.getName()), RJsonBucketRx.class);
     }
     
+    /** 获取 {@link RJsonBuckets} 响应式分布式对象。 */
     @Override
     public RJsonBucketsRx getJsonBuckets(JsonCodec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonJsonBuckets(codec, commandExecutor), RJsonBucketsRx.class);
     }
     
+    /** 获取 {@link RHyperLogLog} 响应式分布式对象。 */
     @Override
     public <V> RHyperLogLogRx<V> getHyperLogLog(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogRx.class);
     }
 
+    /** 获取 {@link RHyperLogLog} 响应式分布式对象。 */
     @Override
     public <V> RHyperLogLogRx<V> getHyperLogLog(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(codec, commandExecutor, name), RHyperLogLogRx.class);
     }
 
+    /** 获取 {@link RHyperLogLog} 响应式分布式对象。 */
     @Override
     public <V> RHyperLogLogRx<V> getHyperLogLog(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -464,11 +530,13 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(params.getCodec(), ce, params.getName()), RHyperLogLogRx.class);
     }
 
+    /** 获取 {@link RIdGenerator} 响应式分布式对象。 */
     @Override
     public RIdGeneratorRx getIdGenerator(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonIdGenerator(commandExecutor, name), RIdGeneratorRx.class);
     }
 
+    /** 获取 {@link RIdGenerator} 响应式分布式对象。 */
     @Override
     public RIdGeneratorRx getIdGenerator(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -476,6 +544,7 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonIdGenerator(ce, params.getName()), RIdGeneratorRx.class);
     }
 
+    /** 获取 {@link RList} 响应式分布式对象。 */
     @Override
     public <V> RListRx<V> getList(String name) {
         RedissonList<V> list = new RedissonList<V>(commandExecutor, name, null);
@@ -483,6 +552,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListRx<V>(list), RListRx.class);
     }
 
+    /** 获取 {@link RList} 响应式分布式对象。 */
     @Override
     public <V> RListRx<V> getList(String name, Codec codec) {
         RedissonList<V> list = new RedissonList<V>(codec, commandExecutor, name, null);
@@ -490,6 +560,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListRx<V>(list), RListRx.class);
     }
 
+    /** 获取 {@link RList} 响应式分布式对象。 */
     @Override
     public <V> RListRx<V> getList(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -499,6 +570,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListRx<V>(list), RListRx.class);
     }
 
+    /** 获取 {@link RListMultimap} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapRx<K, V> getListMultimap(String name) {
         RedissonListMultimap<K, V> listMultimap = new RedissonListMultimap<>(commandExecutor, name);
@@ -506,6 +578,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapRx.class);
     }
 
+    /** 获取 {@link RListMultimap} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapRx<K, V> getListMultimap(String name, Codec codec) {
         RedissonListMultimap<K, V> listMultimap = new RedissonListMultimap<>(codec, commandExecutor, name);
@@ -513,6 +586,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapRx.class);
     }
 
+    /** 获取 {@link RListMultimap} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapRx<K, V> getListMultimap(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -522,6 +596,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapRx.class);
     }
 
+    /** 获取 {@link RListMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name) {
         RedissonListMultimapCache<K, V> listMultimap = new RedissonListMultimapCache<>(evictionScheduler, commandExecutor, name);
@@ -529,6 +604,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapCacheRx.class);
     }
 
+    /** 获取 {@link RListMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name, Codec codec) {
         RedissonListMultimapCache<K, V> listMultimap = new RedissonListMultimapCache<>(evictionScheduler, codec, commandExecutor, name);
@@ -536,6 +612,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapCacheRx.class);
     }
 
+    /** 获取 {@link RListMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -545,6 +622,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, ce), RListMultimapCacheRx.class);
     }
 
+    /** 获取 {@link RListMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(String name) {
         RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(commandExecutor, name);
@@ -552,6 +630,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapCacheNativeRx.class);
     }
 
+    /** 获取 {@link RListMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(String name, Codec codec) {
         RedissonListMultimapCacheNative<K, V> listMultimap = new RedissonListMultimapCacheNative<>(codec, commandExecutor, name);
@@ -559,6 +638,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapCacheNativeRx.class);
     }
 
+    /** 获取 {@link RListMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RListMultimapCacheNativeRx<K, V> getListMultimapCacheNative(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -568,6 +648,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListMultimapRx<K, V>(listMultimap, ce), RListMultimapCacheNativeRx.class);
     }
 
+    /** 获取 Set 多值映射。 */
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name) {
         RedissonSetMultimap<K, V> setMultimap = new RedissonSetMultimap<>(commandExecutor, name);
@@ -575,6 +656,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<K, V>(setMultimap, commandExecutor, this), RSetMultimapRx.class);
     }
 
+    /** 获取 Set 多值映射。 */
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec) {
         RedissonSetMultimap<K, V> setMultimap = new RedissonSetMultimap<>(codec, commandExecutor, name);
@@ -582,6 +664,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<K, V>(setMultimap, commandExecutor, this), RSetMultimapRx.class);
     }
 
+    /** 获取 Set 多值映射。 */
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -591,6 +674,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<>(setMultimap, ce, this), RSetMultimapRx.class);
     }
 
+    /** 获取 {@link RSetMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name) {
         RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, commandExecutor, name);
@@ -598,6 +682,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheRx.class);
     }
 
+    /** 获取 {@link RSetMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name, Codec codec) {
         RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, codec, commandExecutor, name);
@@ -605,6 +690,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheRx.class);
     }
 
+    /** 获取 {@link RSetMultimapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -614,6 +700,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<>(setMultimap, ce, this), RSetMultimapCacheRx.class);
     }
 
+    /** 获取 {@link RSetMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(String name) {
         RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(commandExecutor, name);
@@ -621,6 +708,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<>(setMultimap, commandExecutor, this), RSetMultimapCacheNativeRx.class);
     }
 
+    /** 获取 {@link RSetMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(String name, Codec codec) {
         RedissonSetMultimapCacheNative<K, V> setMultimap = new RedissonSetMultimapCacheNative<>(codec, commandExecutor, name);
@@ -628,6 +716,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<>(setMultimap, commandExecutor, this), RSetMultimapCacheNativeRx.class);
     }
 
+    /** 获取 {@link RSetMultimapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RSetMultimapCacheNativeRx<K, V> getSetMultimapCacheNative(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -637,6 +726,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetMultimapRx<>(setMultimap, ce, this), RSetMultimapCacheNativeRx.class);
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapRx<K, V> getMap(String name) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null, null);
@@ -644,6 +734,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapRx<K, V>(map, commandExecutor), RMapRx.class);
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, null, null);
@@ -651,6 +742,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapRx<K, V>(map, commandExecutor), RMapRx.class);
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapRx<K, V> getMap(org.redisson.api.options.MapOptions<K, V> options) {
         MapParams<K, V> params = (MapParams<K, V>) options;
@@ -662,6 +754,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapRx<>(map, ce), RMapRx.class);
     }
 
+    /** 获取 Set 对象。 */
     @Override
     public <V> RSetRx<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(commandExecutor, name, null);
@@ -669,6 +762,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetRx<V>(set, this), RSetRx.class);
     }
 
+    /** 获取 Set 对象。 */
     @Override
     public <V> RSetRx<V> getSet(String name, Codec codec) {
         RedissonSet<V> set = new RedissonSet<V>(codec, commandExecutor, name, null);
@@ -676,6 +770,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetRx<V>(set, this), RSetRx.class);
     }
 
+    /** 获取 Set 对象。 */
     @Override
     public <V> RSetRx<V> getSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -685,6 +780,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetRx<V>(set, this), RSetRx.class);
     }
 
+    /** 获取有序集合。 */
     @Override
     public <V> RScoredSortedSetRx<V> getScoredSortedSet(String name) {
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(commandExecutor, name, null);
@@ -692,6 +788,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonScoredSortedSetRx<V>(set), RScoredSortedSetRx.class);
     }
 
+    /** 获取有序集合。 */
     @Override
     public <V> RScoredSortedSetRx<V> getScoredSortedSet(String name, Codec codec) {
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null);
@@ -699,6 +796,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonScoredSortedSetRx<V>(set), RScoredSortedSetRx.class);
     }
 
+    /** 获取有序集合。 */
     @Override
     public <V> RScoredSortedSetRx<V> getScoredSortedSet(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -708,6 +806,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonScoredSortedSetRx<>(set), RScoredSortedSetRx.class);
     }
 
+    /** 获取 {@link RLexSortedSet} 响应式分布式对象。 */
     @Override
     public RLexSortedSetRx getLexSortedSet(String name) {
         RedissonLexSortedSet set = new RedissonLexSortedSet(commandExecutor, name, null);
@@ -715,6 +814,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonLexSortedSetRx(set), RLexSortedSetRx.class);
     }
 
+    /** 获取 {@link RLexSortedSet} 响应式分布式对象。 */
     @Override
     public RLexSortedSetRx getLexSortedSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -724,18 +824,21 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonLexSortedSetRx(set), RLexSortedSetRx.class);
     }
 
+    /** 获取 {@link RShardedTopic} 响应式分布式对象。 */
     @Override
     public RShardedTopicRx getShardedTopic(String name) {
         RShardedTopic topic = new RedissonShardedTopic(commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RShardedTopicRx.class);
     }
 
+    /** 获取 {@link RShardedTopic} 响应式分布式对象。 */
     @Override
     public RShardedTopicRx getShardedTopic(String name, Codec codec) {
         RShardedTopic topic = new RedissonShardedTopic(codec, commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RShardedTopicRx.class);
     }
 
+    /** 获取 {@link RShardedTopic} 响应式分布式对象。 */
     @Override
     public RShardedTopicRx getShardedTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -744,18 +847,21 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RShardedTopicRx.class);
     }
 
+    /** 获取 {@link RTopic} 响应式分布式对象。 */
     @Override
     public RTopicRx getTopic(String name) {
         RTopic topic = new RedissonTopic(commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RTopicRx.class);
     }
 
+    /** 获取 {@link RTopic} 响应式分布式对象。 */
     @Override
     public RTopicRx getTopic(String name, Codec codec) {
         RTopic topic = new RedissonTopic(codec, commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RTopicRx.class);
     }
 
+    /** 获取 {@link RTopic} 响应式分布式对象。 */
     @Override
     public RTopicRx getTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -764,16 +870,19 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RTopicRx.class);
     }
 
+    /** 获取 {@link RReliableTopic} 响应式分布式对象。 */
     @Override
     public RReliableTopicRx getReliableTopic(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(commandExecutor, name), RReliableTopicRx.class);
     }
 
+    /** 获取 {@link RReliableTopic} 响应式分布式对象。 */
     @Override
     public RReliableTopicRx getReliableTopic(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(codec, commandExecutor, name), RReliableTopicRx.class);
     }
 
+    /** 获取 {@link RReliableTopic} 响应式分布式对象。 */
     @Override
     public RReliableTopicRx getReliableTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -782,16 +891,19 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonReliableTopic(params.getCodec(), ce, params.getName()), RReliableTopicRx.class);
     }
 
+    /** 获取 {@link RPatternTopic} 响应式分布式对象。 */
     @Override
     public RPatternTopicRx getPatternTopic(String pattern) {
         return RxProxyBuilder.create(commandExecutor, new RedissonPatternTopic(commandExecutor, pattern), RPatternTopicRx.class);
     }
 
+    /** 获取 {@link RPatternTopic} 响应式分布式对象。 */
     @Override
     public RPatternTopicRx getPatternTopic(String pattern, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonPatternTopic(codec, commandExecutor, pattern), RPatternTopicRx.class);
     }
 
+    /** 获取 {@link RPatternTopic} 响应式分布式对象。 */
     @Override
     public RPatternTopicRx getPatternTopic(PatternTopicOptions options) {
         PatternTopicParams params = (PatternTopicParams) options;
@@ -799,18 +911,21 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonPatternTopic(params.getCodec(), ce, params.getPattern()), RPatternTopicRx.class);
     }
 
+    /** 获取 {@link RQueue} 响应式分布式对象。 */
     @Override
     public <V> RQueueRx<V> getQueue(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonQueue<V>(commandExecutor, name, null), 
                 new RedissonListRx<V>(new RedissonList<V>(commandExecutor, name, null)), RQueueRx.class);
     }
 
+    /** 获取 {@link RQueue} 响应式分布式对象。 */
     @Override
     public <V> RQueueRx<V> getQueue(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
                 new RedissonListRx<V>(new RedissonList<V>(codec, commandExecutor, name, null)), RQueueRx.class);
     }
 
+    /** 获取 {@link RQueue} 响应式分布式对象。 */
     @Override
     public <V> RQueueRx<V> getQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -819,31 +934,37 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListRx<V>(new RedissonList<V>(params.getCodec(), ce, params.getName(), null)), RQueueRx.class);
     }
 
+    /** 获取 {@link RReliableQueue} 响应式分布式对象。 */
     @Override
     public <V> RReliableQueueRx<V> getReliableQueue(String name) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
+    /** 获取 {@link RReliableQueue} 响应式分布式对象。 */
     @Override
     public <V> RReliableQueueRx<V> getReliableQueue(String name, Codec codec) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
+    /** 获取 {@link RReliableQueue} 响应式分布式对象。 */
     @Override
     public <V> RReliableQueueRx<V> getReliableQueue(PlainOptions options) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
+    /** 获取 {@link RRingBuffer} 响应式分布式对象。 */
     @Override
     public <V> RRingBufferRx<V> getRingBuffer(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonRingBuffer<V>(commandExecutor, name, null), RRingBufferRx.class);
     }
 
+    /** 获取 {@link RRingBuffer} 响应式分布式对象。 */
     @Override
     public <V> RRingBufferRx<V> getRingBuffer(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonRingBuffer<V>(codec, commandExecutor, name, null), RRingBufferRx.class);
     }
 
+    /** 获取 {@link RRingBuffer} 响应式分布式对象。 */
     @Override
     public <V> RRingBufferRx<V> getRingBuffer(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -852,18 +973,21 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonRingBuffer<V>(params.getCodec(), ce, params.getName(), null), RRingBufferRx.class);
     }
 
+    /** 获取 {@link RCircularBuffer} 响应式分布式对象。 */
     @Override
     public <V> RCircularBufferRx<V> getCircularBuffer(String name) {
         return RxProxyBuilder.create(commandExecutor,
                 new RedissonCircularBuffer<V>(commandExecutor, name), RCircularBufferRx.class);
     }
 
+    /** 获取 {@link RCircularBuffer} 响应式分布式对象。 */
     @Override
     public <V> RCircularBufferRx<V> getCircularBuffer(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor,
                 new RedissonCircularBuffer<V>(codec, commandExecutor, name), RCircularBufferRx.class);
     }
 
+    /** 获取 {@link RCircularBuffer} 响应式分布式对象。 */
     @Override
     public <V> RCircularBufferRx<V> getCircularBuffer(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -872,6 +996,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonCircularBuffer<V>(params.getCodec(), ce, params.getName()), RCircularBufferRx.class);
     }
 
+    /** 获取 {@link RBlockingQueue} 响应式分布式对象。 */
     @Override
     public <V> RBlockingQueueRx<V> getBlockingQueue(String name) {
         RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(commandExecutor, name, null);
@@ -879,6 +1004,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBlockingQueueRx<V>(queue), RBlockingQueueRx.class);
     }
 
+    /** 获取 {@link RBlockingQueue} 响应式分布式对象。 */
     @Override
     public <V> RBlockingQueueRx<V> getBlockingQueue(String name, Codec codec) {
         RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
@@ -886,6 +1012,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBlockingQueueRx<V>(queue), RBlockingQueueRx.class);
     }
 
+    /** 获取 {@link RBlockingQueue} 响应式分布式对象。 */
     @Override
     public <V> RBlockingQueueRx<V> getBlockingQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -895,6 +1022,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBlockingQueueRx<V>(queue), RBlockingQueueRx.class);
     }
 
+    /** 获取 {@link RDeque} 响应式分布式对象。 */
     @Override
     public <V> RDequeRx<V> getDeque(String name) {
         RedissonDeque<V> queue = new RedissonDeque<V>(commandExecutor, name, null);
@@ -902,6 +1030,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListRx<V>(queue), RDequeRx.class);
     }
 
+    /** 获取 {@link RDeque} 响应式分布式对象。 */
     @Override
     public <V> RDequeRx<V> getDeque(String name, Codec codec) {
         RedissonDeque<V> queue = new RedissonDeque<V>(codec, commandExecutor, name, null);
@@ -909,6 +1038,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListRx<V>(queue), RDequeRx.class);
     }
 
+    /** 获取 {@link RDeque} 响应式分布式对象。 */
     @Override
     public <V> RDequeRx<V> getDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -918,6 +1048,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonListRx<V>(queue), RDequeRx.class);
     }
 
+    /** 获取 {@link RTimeSeries} 响应式分布式对象。 */
     @Override
     public <V, L> RTimeSeriesRx<V, L> getTimeSeries(String name) {
         RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<V, L>(evictionScheduler, commandExecutor, name);
@@ -925,6 +1056,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonTimeSeriesRx<V, L>(timeSeries, this), RTimeSeriesRx.class);
     }
 
+    /** 获取 {@link RTimeSeries} 响应式分布式对象。 */
     @Override
     public <V, L> RTimeSeriesRx<V, L> getTimeSeries(String name, Codec codec) {
         RTimeSeries<V, L> timeSeries = new RedissonTimeSeries<V, L>(codec, evictionScheduler, commandExecutor, name);
@@ -932,6 +1064,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonTimeSeriesRx<V, L>(timeSeries, this), RTimeSeriesRx.class);
     }
 
+    /** 获取 {@link RTimeSeries} 响应式分布式对象。 */
     @Override
     public <V, L> RTimeSeriesRx<V, L> getTimeSeries(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -941,6 +1074,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonTimeSeriesRx<>(timeSeries, this), RTimeSeriesRx.class);
     }
 
+    /** 获取带 TTL 的 Set 缓存。 */
     @Override
     public <V> RSetCacheRx<V> getSetCache(String name) {
         RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
@@ -948,6 +1082,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetCacheRx<V>(set, this), RSetCacheRx.class);
     }
 
+    /** 获取带 TTL 的 Set 缓存。 */
     @Override
     public <V> RSetCacheRx<V> getSetCache(String name, Codec codec) {
         RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
@@ -955,6 +1090,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetCacheRx<V>(set, this), RSetCacheRx.class);
     }
 
+    /** 获取带 TTL 的 Set 缓存。 */
     @Override
     public <V> RSetCacheRx<V> getSetCache(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -964,11 +1100,13 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonSetCacheRx<V>(set, this), RSetCacheRx.class);
     }
 
+    /** 获取 {@link RAtomicLong} 响应式分布式对象。 */
     @Override
     public RAtomicLongRx getAtomicLong(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonAtomicLong(commandExecutor, name), RAtomicLongRx.class);
     }
 
+    /** 获取 {@link RAtomicLong} 响应式分布式对象。 */
     @Override
     public RAtomicLongRx getAtomicLong(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -976,11 +1114,13 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonAtomicLong(ce, params.getName()), RAtomicLongRx.class);
     }
 
+    /** 获取 {@link RAtomicDouble} 响应式分布式对象。 */
     @Override
     public RAtomicDoubleRx getAtomicDouble(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(commandExecutor, name), RAtomicDoubleRx.class);
     }
 
+    /** 获取 {@link RAtomicDouble} 响应式分布式对象。 */
     @Override
     public RAtomicDoubleRx getAtomicDouble(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -988,21 +1128,25 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(ce, params.getName()), RAtomicDoubleRx.class);
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService() {
         return getRemoteService("redisson_rs", connectionManager.getServiceManager().getCfg().getCodec());
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService(String name) {
         return getRemoteService(name, connectionManager.getServiceManager().getCfg().getCodec());
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService(Codec codec) {
         return getRemoteService("redisson_rs", codec);
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService(String name, Codec codec) {
         String executorId = connectionManager.getServiceManager().getId();
@@ -1012,6 +1156,7 @@ public final class RedissonRx implements RedissonRxClient {
         return new RedissonRemoteService(codec, name, commandExecutor, executorId);
     }
 
+    /** 获取远程服务执行器。 */
     @Override
     public RRemoteService getRemoteService(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1023,11 +1168,13 @@ public final class RedissonRx implements RedissonRxClient {
         return new RedissonRemoteService(params.getCodec(), params.getName(), commandExecutor, executorId);
     }
 
+    /** 获取 {@link RBitSet} 响应式分布式对象。 */
     @Override
     public RBitSetRx getBitSet(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBitSet(commandExecutor, name), RBitSetRx.class);
     }
 
+    /** 获取 {@link RBitSet} 响应式分布式对象。 */
     @Override
     public RBitSetRx getBitSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -1035,16 +1182,19 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonBitSet(ce, params.getName()), RBitSetRx.class);
     }
 
+    /** 获取 {@link RBloomFilter} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterRx<V> getBloomFilter(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBloomFilter<>(commandExecutor, name), RBloomFilterRx.class);
     }
 
+    /** 获取 {@link RBloomFilter} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterRx<V> getBloomFilter(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBloomFilter<>(codec, commandExecutor, name), RBloomFilterRx.class);
     }
 
+    /** 获取 {@link RBloomFilter} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterRx<V> getBloomFilter(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1053,16 +1203,19 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBloomFilter<V>(params.getCodec(), ce, params.getName()), RBloomFilterRx.class);
     }
 
+    /** 获取 {@link RBloomFilterNative} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(commandExecutor, name), RBloomFilterNativeRx.class);
     }
 
+    /** 获取 {@link RBloomFilterNative} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(codec, commandExecutor, name), RBloomFilterNativeRx.class);
     }
 
+    /** 获取 {@link RBloomFilterNative} 响应式分布式对象。 */
     @Override
     public <V> RBloomFilterNativeRx<V> getBloomFilterNative(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1071,11 +1224,13 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBloomFilterNative<V>(params.getCodec(), ce, params.getName()), RBloomFilterNativeRx.class);
     }
 
+    /** 获取 {@link RCuckooFilter} 响应式分布式对象。 */
     @Override
     public <V> RCuckooFilterRx<V> getCuckooFilter(String name) {
         return getCuckooFilter(name, null);
     }
 
+    /** 获取 {@link RCuckooFilter} 响应式分布式对象。 */
     @Override
     public <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor,
@@ -1083,6 +1238,7 @@ public final class RedissonRx implements RedissonRxClient {
                 RCuckooFilterRx.class);
     }
 
+    /** 获取 {@link RCuckooFilter} 响应式分布式对象。 */
     @Override
     public <V> RCuckooFilterRx<V> getCuckooFilter(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1092,6 +1248,7 @@ public final class RedissonRx implements RedissonRxClient {
                 RCuckooFilterRx.class);
     }
 
+    /** 获取 {@link RTDigest} 响应式分布式对象。 */
     @Override
     public RTDigestRx getTDigest(String name) {
         return RxProxyBuilder.create(commandExecutor,
@@ -1099,6 +1256,7 @@ public final class RedissonRx implements RedissonRxClient {
                 RTDigestRx.class);
     }
 
+    /** 获取 {@link RTDigest} 响应式分布式对象。 */
     @Override
     public RTDigestRx getTDigest(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1108,11 +1266,13 @@ public final class RedissonRx implements RedissonRxClient {
                 RTDigestRx.class);
     }
 
+    /** 获取 {@link RTopK} 响应式分布式对象。 */
     @Override
     public <V> RTopKRx<V> getTopK(String name) {
         return getTopK(name, null);
     }
 
+    /** 获取 {@link RTopK} 响应式分布式对象。 */
     @Override
     public <V> RTopKRx<V> getTopK(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor,
@@ -1120,6 +1280,7 @@ public final class RedissonRx implements RedissonRxClient {
                 RTopKRx.class);
     }
 
+    /** 获取 {@link RTopK} 响应式分布式对象。 */
     @Override
     public <V> RTopKRx<V> getTopK(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1129,16 +1290,19 @@ public final class RedissonRx implements RedissonRxClient {
                 RTopKRx.class);
     }
 
+    /** 获取 {@link RFunction} 响应式分布式对象。 */
     @Override
     public RFunctionRx getFunction() {
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionRx.class);
     }
 
+    /** 获取 {@link RFunction} 响应式分布式对象。 */
     @Override
     public RFunctionRx getFunction(Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor, codec), RFunctionRx.class);
     }
 
+    /** 获取 {@link RFunction} 响应式分布式对象。 */
     @Override
     public RFunctionRx getFunction(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -1146,16 +1310,19 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(ce, params.getCodec()), RFunctionRx.class);
     }
 
+    /** 获取 {@link RScript} 响应式分布式对象。 */
     @Override
     public RScriptRx getScript() {
         return RxProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptRx.class);
     }
     
+    /** 获取 {@link RScript} 响应式分布式对象。 */
     @Override
     public RScriptRx getScript(Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor, codec), RScriptRx.class);
     }
 
+    /** 获取 {@link RScript} 响应式分布式对象。 */
     @Override
     public RScriptRx getScript(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
@@ -1163,6 +1330,7 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonScript(ce, params.getCodec()), RScriptRx.class);
     }
 
+    /** 获取 {@link RVectorSet} 响应式分布式对象。 */
     @Override
     public RVectorSetRx getVectorSet(String name) {
         RedissonVectorSet set = new RedissonVectorSet(commandExecutor, name);
@@ -1170,6 +1338,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonVectorSetRx(commandExecutor, set), RVectorSetRx.class);
     }
 
+    /** 获取 {@link RVectorSet} 响应式分布式对象。 */
     @Override
     public RVectorSetRx getVectorSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
@@ -1179,21 +1348,25 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonVectorSetRx(ce, set), RVectorSetRx.class);
     }
 
+    /** 创建命令批处理。 */
     @Override
     public RBatchRx createBatch() {
         return createBatch(BatchOptions.defaults());
     }
     
+    /** 创建命令批处理。 */
     @Override
     public RBatchRx createBatch(BatchOptions options) {
         return new RedissonBatchRx(evictionScheduler, connectionManager, commandExecutor, options);
     }
 
+    /** 返回全部映射键。 */
     @Override
     public RKeysRx getKeys() {
         return RxProxyBuilder.create(commandExecutor, new RedissonKeys(commandExecutor), new RedissonKeysRx(commandExecutor), RKeysRx.class);
     }
 
+    /** 返回全部映射键。 */
     @Override
     public RKeysRx getKeys(KeysOptions options) {
         KeysParams params = (KeysParams) options;
@@ -1201,27 +1374,32 @@ public final class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonKeys(ce), new RedissonKeysRx(ce), RKeysRx.class);
     }
 
+    /** 返回限流器当前 Rate 配置。 */
     @Override
     public Config getConfig() {
         return connectionManager.getServiceManager().getCfg();
     }
 
+    /** 关闭客户端。 */
     @Override
     public void shutdown() {
         writeBehindService.stop();
         connectionManager.shutdown();
     }
 
+    /** 客户端是否已关闭。 */
     @Override
     public boolean isShutdown() {
         return connectionManager.getServiceManager().isShutdown();
     }
 
+    /** 是否ShuttingDown。 */
     @Override
     public boolean isShuttingDown() {
         return connectionManager.getServiceManager().isShuttingDown();
     }
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options) {
         RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options, writeBehindService);
@@ -1230,6 +1408,7 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
 
+    /** 获取 {@link RMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, MapCacheOptions<K, V> options) {
         RMap<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options, writeBehindService);
@@ -1237,6 +1416,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheRx.class);
     }
 
+    /** 获取 {@link RMapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(String name) {
         RMap<K, V> map = new RedissonMapCacheNative<>(commandExecutor, name, null, null, null);
@@ -1244,6 +1424,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheNativeRx.class);
     }
 
+    /** 获取 {@link RMapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(String name, Codec codec) {
         RMap<K, V> map = new RedissonMapCacheNative<>(codec, commandExecutor, name, null, null, null);
@@ -1251,6 +1432,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapCacheRx<K, V>(map, commandExecutor), RMapCacheNativeRx.class);
     }
 
+    /** 获取 {@link RMapCacheNative} 响应式分布式对象。 */
     @Override
     public <K, V> RMapCacheNativeRx<K, V> getMapCacheNative(org.redisson.api.options.MapOptions<K, V> options) {
         MapParams<K, V> params = (MapParams<K, V>) options;
@@ -1262,6 +1444,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapCacheRx<>(map, ce), RMapCacheNativeRx.class);
     }
 
+    /** 响应式客户端 createOptions 方法。 */
     private static <K, V> MapOptions<K, V> createOptions(MapParams<K, V> params) {
         MapOptions<K, V> ops = MapOptions.<K, V>defaults()
                 .loader(params.getLoader())
@@ -1281,6 +1464,7 @@ public final class RedissonRx implements RedissonRxClient {
         return ops;
     }
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, MapOptions<K, V> options) {
         RMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options, writeBehindService);
@@ -1289,6 +1473,7 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
 
+    /** 获取 {@link RMap} 响应式分布式对象。 */
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
         RMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, options, writeBehindService);
@@ -1296,11 +1481,13 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapRx<K, V>(map, commandExecutor), RMapRx.class);
     }
 
+    /** 获取 {@link RLocalCachedMap} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options) {
         return getLocalCachedMap(name, null, options);
     }
 
+    /** 获取 {@link RLocalCachedMap} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options) {
         RMap<K, V> map = new RedissonLocalCachedMap<>(codec, commandExecutor, name, options, evictionScheduler, null, writeBehindService);
@@ -1308,6 +1495,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapRx<>(map, commandExecutor), RLocalCachedMapRx.class);
     }
 
+    /** 获取 {@link RLocalCachedMap} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapRx<K, V> getLocalCachedMap(org.redisson.api.options.LocalCachedMapOptions<K, V> options) {
         LocalCachedMapParams<K, V> params = (LocalCachedMapParams) options;
@@ -1348,21 +1536,25 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonMapRx<>(map, ce), RLocalCachedMapRx.class);
     }
 
+    /** 获取 {@link RLocalCachedMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapCacheRx<K, V> getLocalCachedMapCache(String name, LocalCachedMapCacheOptions<K, V> options) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Visit https://redisson.pro");
     }
 
+    /** 获取 {@link RLocalCachedMapCache} 响应式分布式对象。 */
     @Override
     public <K, V> RLocalCachedMapCacheRx<K, V> getLocalCachedMapCache(String name, Codec codec, LocalCachedMapCacheOptions<K, V> options) {
         throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Visit https://redisson.pro");
     }
 
+    /** 创建 Redis 事务。 */
     @Override
     public RTransactionRx createTransaction(TransactionOptions options) {
         return new RedissonTransactionRx(commandExecutor, options);
     }
 
+    /** 获取 {@link RBlockingDeque} 响应式分布式对象。 */
     @Override
     public <V> RBlockingDequeRx<V> getBlockingDeque(String name) {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(commandExecutor, name, null);
@@ -1370,6 +1562,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBlockingDequeRx<V>(deque), RBlockingDequeRx.class);
     }
 
+    /** 获取 {@link RBlockingDeque} 响应式分布式对象。 */
     @Override
     public <V> RBlockingDequeRx<V> getBlockingDeque(String name, Codec codec) {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(codec, commandExecutor, name, null);
@@ -1377,6 +1570,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBlockingDequeRx<V>(deque), RBlockingDequeRx.class);
     }
 
+    /** 获取 {@link RBlockingDeque} 响应式分布式对象。 */
     @Override
     public <V> RBlockingDequeRx<V> getBlockingDeque(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1386,6 +1580,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonBlockingDequeRx<V>(deque), RBlockingDequeRx.class);
     }
 
+    /** 获取 {@link RTransferQueue} 响应式分布式对象。 */
     @Override
     public <V> RTransferQueueRx<V> getTransferQueue(String name) {
         String remoteName = RedissonObject.suffixName(name, "remoteService");
@@ -1395,6 +1590,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonTransferQueueRx<V>(queue), RTransferQueueRx.class);
     }
 
+    /** 获取 {@link RTransferQueue} 响应式分布式对象。 */
     @Override
     public <V> RTransferQueueRx<V> getTransferQueue(String name, Codec codec) {
         String remoteName = RedissonObject.suffixName(name, "remoteService");
@@ -1404,6 +1600,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonTransferQueueRx<V>(queue), RTransferQueueRx.class);
     }
 
+    /** 获取 {@link RTransferQueue} 响应式分布式对象。 */
     @Override
     public <V> RTransferQueueRx<V> getTransferQueue(PlainOptions options) {
         PlainParams params = (PlainParams) options;
@@ -1415,6 +1612,7 @@ public final class RedissonRx implements RedissonRxClient {
                 new RedissonTransferQueueRx<V>(queue), RTransferQueueRx.class);
     }
 
+    /** 获取 {@link RId} 响应式分布式对象。 */
     @Override
     public String getId() {
         return commandExecutor.getServiceManager().getId();

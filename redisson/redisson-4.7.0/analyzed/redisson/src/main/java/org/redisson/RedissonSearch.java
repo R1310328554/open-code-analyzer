@@ -47,9 +47,11 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * RediSearch 模块 {@link RSearch} 客户端实现。
+ * <p>封装索引创建/删除、文档增删改、FT.SEARCH/FT.AGGREGATE
+ * 及拼写建议等全文检索命令。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonSearch implements RSearch {
 
@@ -66,19 +68,23 @@ public class RedissonSearch implements RSearch {
         this.commandExecutor = commandExecutor;
     }
 
+    /** 是否ClusterMode。 */
     private boolean isClusterMode() {
         return commandExecutor.getServiceManager().getCfg().isClusterConfig();
     }
 
+    /** RediSearch cursorRoutes 操作。 */
     private Map<Long, MasterSlaveEntry> cursorRoutes() {
         return commandExecutor.getServiceManager().getSearchCursorRoutes();
     }
 
+    /** 创建 RediSearch 索引。 */
     @Override
     public void createIndex(String indexName, IndexOptions options, FieldIndex... fields) {
         commandExecutor.get(createIndexAsync(indexName, options, fields));
     }
 
+    /** 异步执行 createIndex。 */
     @Override
     public RFuture<Void> createIndexAsync(String indexName, IndexOptions options, FieldIndex... fields) {
         if (fields.length == 0) {
@@ -166,6 +172,7 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_CREATE, args.toArray());
     }
 
+    /** addSVSVamanaVectorIndex：添加操作。 */
     private static void addSVSVamanaVectorIndex(List<Object> args, FieldIndex field) {
         if (field instanceof SVSVamanaVectorIndex) {
             SVSVamanaVectorIndexParams params = (SVSVamanaVectorIndexParams) field;
@@ -215,6 +222,7 @@ public class RedissonSearch implements RSearch {
         }
     }
 
+    /** addHNSWVectorIndex：添加操作。 */
     private static void addHNSWVectorIndex(List<Object> args, FieldIndex field) {
         if (field instanceof HNSWVectorIndex) {
             HNSWVectorIndexParams params = (HNSWVectorIndexParams) field;
@@ -256,6 +264,7 @@ public class RedissonSearch implements RSearch {
         }
     }
 
+    /** addFlatVectorIndex：添加操作。 */
     private static void addFlatVectorIndex(List<Object> args, FieldIndex field) {
         if (field instanceof FlatVectorIndex) {
             FlatVectorIndexParams params = (FlatVectorIndexParams) field;
@@ -285,6 +294,7 @@ public class RedissonSearch implements RSearch {
         }
     }
 
+    /** addNumericIndex：添加操作。 */
     private static void addNumericIndex(List<Object> args, FieldIndex field) {
         if (field instanceof NumericIndex) {
             NumericIndexParams params = (NumericIndexParams) field;
@@ -309,6 +319,7 @@ public class RedissonSearch implements RSearch {
         }
     }
 
+    /** addGeoIndex：添加操作。 */
     private static void addGeoIndex(List<Object> args, FieldIndex field) {
         if (field instanceof GeoIndex) {
             GeoIndexParams params = (GeoIndexParams) field;
@@ -333,6 +344,7 @@ public class RedissonSearch implements RSearch {
         }
     }
 
+    /** addGeoShapeIndex：添加操作。 */
     private static void addGeoShapeIndex(List<Object> args, FieldIndex field) {
         if (field instanceof GeoShapeIndex) {
             GeoShapeIndexParams params = (GeoShapeIndexParams) field;
@@ -355,6 +367,7 @@ public class RedissonSearch implements RSearch {
         }
     }
 
+    /** addTagIndex：添加操作。 */
     private static void addTagIndex(List<Object> args, FieldIndex field) {
         if (field instanceof TagIndexParams) {
             TagIndexParams params = (TagIndexParams) field;
@@ -392,6 +405,7 @@ public class RedissonSearch implements RSearch {
         }
     }
 
+    /** addTextIndex：添加操作。 */
     private static void addTextIndex(List<Object> args, FieldIndex field) {
         if (field instanceof TextIndexParams) {
             TextIndexParams params = (TextIndexParams) field;
@@ -433,11 +447,13 @@ public class RedissonSearch implements RSearch {
         }
     }
 
+    /** 执行 FT.SEARCH 查询。 */
     @Override
     public SearchResult search(String indexName, String query, QueryOptions options) {
         return commandExecutor.get(searchAsync(indexName, query, options));
     }
 
+    /** 异步执行 search。 */
     @Override
     public RFuture<SearchResult> searchAsync(String indexName, String query, QueryOptions options) {
         List<Object> args = createSearchArgs(indexName, query, options);
@@ -460,6 +476,7 @@ public class RedissonSearch implements RSearch {
     }
 
     @SuppressWarnings("MethodLength")
+    /** RediSearch createSearchArgs 操作。 */
     private List<Object> createSearchArgs(String indexName, String query, QueryOptions options) {
         List<Object> args = new ArrayList<>();
         args.add(indexName);
@@ -620,6 +637,7 @@ public class RedissonSearch implements RSearch {
         return args;
     }
 
+    /** RediSearch value 操作。 */
     private String value(double score, boolean exclusive) {
         StringBuilder element = new StringBuilder();
         if (Double.isInfinite(score)) {
@@ -637,11 +655,13 @@ public class RedissonSearch implements RSearch {
         return element.toString();
     }
 
+    /** 执行 FT.AGGREGATE 聚合。 */
     @Override
     public AggregationResult aggregate(String indexName, String query, AggregationOptions options) {
         return commandExecutor.get(aggregateAsync(indexName, query, options));
     }
 
+    /** 执行 FT.AGGREGATE 聚合。 */
     @Override
     public Iterable<AggregationEntry> aggregate(String indexName, String query, IterableAggregationOptions options) {
         List<Object> args = createAggregateArgs(indexName, query, options);
@@ -696,14 +716,17 @@ public class RedissonSearch implements RSearch {
         };
     }
 
+    /** SSCAN 增量扫描迭代器。 */
     private ScanResult<Object> scanIterator(String indexName, RedisCommand<?> command, Object... params) {
         return commandExecutor.get(scanIteratorAsync(indexName, command, params));
     }
 
+    /** 异步 SSCAN 迭代器。 */
     private RFuture<ScanResult<Object>> scanIteratorAsync(String indexName, RedisCommand<?> command, Object... params) {
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, params);
     }
 
+    /** RediSearch createAggregateArgs 操作。 */
     private List<Object> createAggregateArgs(String indexName, String query, AggregationBaseOptions<?> options){
         List<Object> args = new ArrayList<>();
         args.add(indexName);
@@ -799,6 +822,7 @@ public class RedissonSearch implements RSearch {
         return args;
     }
 
+    /** 异步执行 aggregate。 */
     @Override
     public RFuture<AggregationResult> aggregateAsync(String indexName, String query, AggregationOptions options) {
         List<Object> args = createAggregateArgs(indexName, query, options);
@@ -851,11 +875,13 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.writeRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
+    /** RediSearch profileSearch 操作。 */
     @Override
     public SearchProfileResult profileSearch(String indexName, String query, ProfileQueryOptions options) {
         return commandExecutor.get(profileSearchAsync(indexName, query, options));
     }
 
+    /** 异步执行 profileSearch。 */
     @Override
     public RFuture<SearchProfileResult> profileSearchAsync(String indexName, String query, ProfileQueryOptions options) {
         List<Object> searchArgs = createSearchArgs(indexName, query, options);
@@ -867,11 +893,13 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.readRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
+    /** RediSearch profileAggregate 操作。 */
     @Override
     public AggregateProfileResult profileAggregate(String indexName, String query, ProfileAggregationOptions options) {
         return commandExecutor.get(profileAggregateAsync(indexName, query, options));
     }
 
+    /** 异步执行 profileAggregate。 */
     @Override
     public RFuture<AggregateProfileResult> profileAggregateAsync(String indexName, String query, ProfileAggregationOptions options) {
         List<Object> aggregateArgs = createAggregateArgs(indexName, query, options);
@@ -883,6 +911,7 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.readRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
+    /** RediSearch buildProfileArgs 操作。 */
     private static List<Object> buildProfileArgs(String indexName, String queryType, boolean limited, List<Object> innerArgs) {
         List<Object> args = new ArrayList<>(innerArgs.size() + 4);
         args.add(indexName);
@@ -899,51 +928,61 @@ public class RedissonSearch implements RSearch {
         return args;
     }
 
+    /** addAlias：添加操作。 */
     @Override
     public void addAlias(String alias, String indexName) {
         commandExecutor.get(addAliasAsync(alias, indexName));
     }
 
+    /** 异步执行 addAlias。 */
     @Override
     public RFuture<Void> addAliasAsync(String alias, String indexName) {
         return commandExecutor.writeAsync(alias, StringCodec.INSTANCE, RedisCommands.FT_ALIASADD, alias, indexName);
     }
 
+    /** RediSearch delAlias 操作。 */
     @Override
     public void delAlias(String alias) {
         commandExecutor.get(delAliasAsync(alias));
     }
 
+    /** 异步执行 delAlias。 */
     @Override
     public RFuture<Void> delAliasAsync(String alias) {
         return commandExecutor.writeAsync(alias, StringCodec.INSTANCE, RedisCommands.FT_ALIASDEL, alias);
     }
 
+    /** RediSearch updateAlias 操作。 */
     @Override
     public void updateAlias(String alias, String indexName) {
         commandExecutor.get(updateAliasAsync(alias, indexName));
     }
 
+    /** 异步执行 updateAlias。 */
     @Override
     public RFuture<Void> updateAliasAsync(String alias, String indexName) {
         return commandExecutor.writeAsync(alias, StringCodec.INSTANCE, RedisCommands.FT_ALIASUPDATE, alias, indexName);
     }
 
+    /** 获取 Aliases。 */
     @Override
     public List<String> getAliases(String indexName) {
         return commandExecutor.get(getAliasesAsync(indexName));
     }
 
+    /** 异步获取 Aliases 或执行 Aliases 操作。 */
     @Override
     public RFuture<List<String>> getAliasesAsync(String indexName) {
         return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_ALIASLIST, indexName);
     }
 
+    /** RediSearch alter 操作。 */
     @Override
     public void alter(String indexName, boolean skipInitialScan, FieldIndex... fields) {
         commandExecutor.get(alterAsync(indexName, skipInitialScan, fields));
     }
 
+    /** 异步执行 alter。 */
     @Override
     public RFuture<Void> alterAsync(String indexName, boolean skipInitialScan, FieldIndex... fields) {
         List<Object> args = new ArrayList<>();
@@ -968,31 +1007,37 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_ALTER, args.toArray());
     }
 
+    /** 返回限流器当前 Rate 配置。 */
     @Override
     public Map<String, String> getConfig(String parameter) {
         return commandExecutor.get(getConfigAsync(parameter));
     }
 
+    /** 异步获取 Config 或执行 Config 操作。 */
     @Override
     public RFuture<Map<String, String>> getConfigAsync(String parameter) {
         return commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_CONFIG_GET, parameter);
     }
 
+    /** 设置Config。 */
     @Override
     public void setConfig(String parameter, String value) {
         commandExecutor.get(setConfigAsync(parameter, value));
     }
 
+    /** 设置ConfigAsync。 */
     @Override
     public RFuture<Void> setConfigAsync(String parameter, String value) {
         return commandExecutor.writeAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_CONFIG_SET, parameter, value);
     }
 
+    /** RediSearch delCursor 操作。 */
     @Override
     public void delCursor(String indexName, long cursorId) {
         commandExecutor.get(delCursorAsync(indexName, cursorId));
     }
 
+    /** 异步执行 delCursor。 */
     @Override
     public RFuture<Void> delCursorAsync(String indexName, long cursorId) {
         MasterSlaveEntry entry = null;
@@ -1005,11 +1050,13 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.writeAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_CURSOR_DEL, indexName, cursorId);
     }
 
+    /** RediSearch readCursor 操作。 */
     @Override
     public AggregationResult readCursor(String indexName, long cursorId) {
         return commandExecutor.get(readCursorAsync(indexName, cursorId));
     }
 
+    /** 异步执行 readCursor。 */
     @Override
     public RFuture<AggregationResult> readCursorAsync(String indexName, long cursorId) {
         RedisStrictCommand command;
@@ -1030,6 +1077,7 @@ public class RedissonSearch implements RSearch {
         return executeCursorRead(indexName, cursorId, command, indexName, cursorId);
     }
 
+    /** RediSearch executeCursorRead 操作。 */
     private RFuture<AggregationResult> executeCursorRead(String indexName, long cursorId,
                                                          RedisStrictCommand command, Object... params) {
         MasterSlaveEntry entry;
@@ -1052,11 +1100,13 @@ public class RedissonSearch implements RSearch {
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** RediSearch readCursor 操作。 */
     @Override
     public AggregationResult readCursor(String indexName, long cursorId, int count) {
         return commandExecutor.get(readCursorAsync(indexName, cursorId, count));
     }
 
+    /** 异步执行 readCursor。 */
     @Override
     public RFuture<AggregationResult> readCursorAsync(String indexName, long cursorId, int count) {
         RedisStrictCommand command;
@@ -1077,11 +1127,13 @@ public class RedissonSearch implements RSearch {
         return executeCursorRead(indexName, cursorId, command, indexName, cursorId, "COUNT", count);
     }
 
+    /** addDict：添加操作。 */
     @Override
     public long addDict(String dictionary, String... terms) {
         return commandExecutor.get(addDictAsync(dictionary, terms));
     }
 
+    /** 异步执行 addDict。 */
     @Override
     public RFuture<Long> addDictAsync(String dictionary, String... terms) {
         List<Object> args = new ArrayList<>();
@@ -1090,11 +1142,13 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.writeAsync(dictionary, LongCodec.INSTANCE, RedisCommands.FT_DICTADD, args.toArray());
     }
 
+    /** RediSearch delDict 操作。 */
     @Override
     public long delDict(String dictionary, String... terms) {
         return commandExecutor.get(delDictAsync(dictionary, terms));
     }
 
+    /** 异步执行 delDict。 */
     @Override
     public RFuture<Long> delDictAsync(String dictionary, String... terms) {
         List<Object> args = new ArrayList<>();
@@ -1103,51 +1157,61 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.writeAsync(dictionary, LongCodec.INSTANCE, RedisCommands.FT_DICTDEL, args.toArray());
     }
 
+    /** RediSearch dumpDict 操作。 */
     @Override
     public List<String> dumpDict(String dictionary) {
         return commandExecutor.get(dumpDictAsync(dictionary));
     }
 
+    /** 异步执行 dumpDict。 */
     @Override
     public RFuture<List<String>> dumpDictAsync(String dictionary) {
         return commandExecutor.readAsync(dictionary, StringCodec.INSTANCE, RedisCommands.FT_DICTDUMP, dictionary);
     }
 
+    /** 删除索引。 */
     @Override
     public void dropIndex(String indexName) {
         commandExecutor.get(dropIndexAsync(indexName));
     }
 
+    /** 异步执行 dropIndex。 */
     @Override
     public RFuture<Void> dropIndexAsync(String indexName) {
         return commandExecutor.writeAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_DROPINDEX, indexName);
     }
 
+    /** RediSearch dropIndexAndDocuments 操作。 */
     @Override
     public void dropIndexAndDocuments(String indexName) {
         commandExecutor.get(dropIndexAndDocumentsAsync(indexName));
     }
 
+    /** 异步执行 dropIndexAndDocuments。 */
     @Override
     public RFuture<Void> dropIndexAndDocumentsAsync(String indexName) {
         return commandExecutor.writeAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_DROPINDEX, indexName, "DD");
     }
 
+    /** 返回索引/模块信息。 */
     @Override
     public IndexInfo info(String indexName) {
         return commandExecutor.get(infoAsync(indexName));
     }
 
+    /** 异步执行 info。 */
     @Override
     public RFuture<IndexInfo> infoAsync(String indexName) {
         return commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_INFO, indexName);
     }
 
+    /** RediSearch hasIndex 操作。 */
     @Override
     public boolean hasIndex(String indexName) {
         return commandExecutor.get(hasIndexAsync(indexName));
     }
 
+    /** 异步执行 hasIndex。 */
     @Override
     public RFuture<Boolean> hasIndexAsync(String indexName) {
         return commandExecutor.evalReadAsync(indexName, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -1165,11 +1229,13 @@ public class RedissonSearch implements RSearch {
         );
     }
 
+    /** RediSearch spellcheck 操作。 */
     @Override
     public Map<String, Map<String, Double>> spellcheck(String indexName, String query, SpellcheckOptions options) {
         return commandExecutor.get(spellcheckAsync(indexName, query, options));
     }
 
+    /** 异步执行 spellcheck。 */
     @Override
     public RFuture<Map<String, Map<String, Double>>> spellcheckAsync(String indexName, String query, SpellcheckOptions options) {
         List<Object> args = new ArrayList<>();
@@ -1210,21 +1276,25 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.readRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
+    /** RediSearch dumpSynonyms 操作。 */
     @Override
     public Map<String, List<String>> dumpSynonyms(String indexName) {
         return commandExecutor.get(dumpSynonymsAsync(indexName));
     }
 
+    /** 异步执行 dumpSynonyms。 */
     @Override
     public RFuture<Map<String, List<String>>> dumpSynonymsAsync(String indexName) {
         return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_SYNDUMP, indexName);
     }
 
+    /** RediSearch updateSynonyms 操作。 */
     @Override
     public void updateSynonyms(String indexName, String synonymGroupId, String... terms) {
         commandExecutor.get(updateSynonymsAsync(indexName, synonymGroupId, terms));
     }
 
+    /** 异步执行 updateSynonyms。 */
     @Override
     public RFuture<Void> updateSynonymsAsync(String indexName, String synonymGroupId, String... terms) {
         List<Object> args = new ArrayList<>();
@@ -1234,16 +1304,19 @@ public class RedissonSearch implements RSearch {
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_SYNUPDATE, args.toArray());
     }
 
+    /** 获取 Indexes。 */
     @Override
     public List<String> getIndexes() {
         return commandExecutor.get(getIndexesAsync());
     }
 
+    /** 异步获取 Indexes 或执行 Indexes 操作。 */
     @Override
     public RFuture<List<String>> getIndexesAsync() {
         return commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_LIST);
     }
 
+    /** RediSearch hybridSearch 操作。 */
     @Override
     public HybridSearchResult hybridSearch(String indexName, HybridQueryArgs args) {
         return commandExecutor.get(hybridSearchAsync(indexName, args));
@@ -1251,6 +1324,7 @@ public class RedissonSearch implements RSearch {
 
     @Override
     @SuppressWarnings("MethodLength")
+    /** 异步执行 hybridSearch。 */
     public RFuture<HybridSearchResult> hybridSearchAsync(String indexName, HybridQueryArgs args) {
         HybridQueryParams options = (HybridQueryParams) args;
 
