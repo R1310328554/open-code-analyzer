@@ -26,15 +26,14 @@ import org.springframework.util.function.ThrowingBiFunction;
 import org.springframework.util.function.ThrowingSupplier;
 
 /**
- * Specialized {@link Supplier} that can be set on a
- * {@link AbstractBeanDefinition#setInstanceSupplier(Supplier) BeanDefinition}
- * when details about the {@link RegisteredBean registered bean} are needed to
- * supply the instance.
+ * 专用 {@link Supplier}，当需要 {@link RegisteredBean 已注册 Bean} 的详细信息
+ * 来提供实例时，可设置到
+ * {@link AbstractBeanDefinition#setInstanceSupplier(Supplier) BeanDefinition} 上。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
  * @since 6.0
- * @param <T> the type of instance supplied by this supplier
+ * @param <T> 本供应商提供的实例类型
  * @see RegisteredBean
  * @see org.springframework.beans.factory.aot.BeanInstanceSupplier
  */
@@ -47,31 +46,28 @@ public interface InstanceSupplier<T> extends ThrowingSupplier<T> {
 	}
 
 	/**
-	 * Get the supplied instance.
-	 * @param registeredBean the registered bean requesting the instance
-	 * @return the supplied instance
-	 * @throws Exception on error
+	 * 获取提供的实例。
+	 * @param registeredBean 请求实例的已注册 Bean
+	 * @return 提供的实例
+	 * @throws Exception 发生错误时
 	 */
 	T get(RegisteredBean registeredBean) throws Exception;
 
 	/**
-	 * Return the factory method that this supplier uses to create the
-	 * instance, or {@code null} if it is not known or this supplier uses
-	 * another means.
-	 * @return the factory method used to create the instance, or {@code null}
+	 * 返回本供应商用于创建实例的工厂方法，
+	 * 若未知或使用其他方式则为 {@code null}。
+	 * @return 用于创建实例的工厂方法，或 {@code null}
 	 */
 	default @Nullable Method getFactoryMethod() {
 		return null;
 	}
 
 	/**
-	 * Return a composed instance supplier that first obtains the instance from
-	 * this supplier and then applies the {@code after} function to obtain the
-	 * result.
-	 * @param <V> the type of output of the {@code after} function, and of the
-	 * composed function
-	 * @param after the function to apply after the instance is obtained
-	 * @return a composed instance supplier
+	 * 返回组合实例供应商：先从本供应商获取实例，
+	 * 再应用 {@code after} 函数得到结果。
+	 * @param <V> {@code after} 函数的输出类型，也是组合函数的结果类型
+	 * @param after 获取实例后要应用的函数
+	 * @return 组合后的实例供应商
 	 */
 	default <V> InstanceSupplier<V> andThen(
 			ThrowingBiFunction<RegisteredBean, ? super T, ? extends V> after) {
@@ -90,11 +86,10 @@ public interface InstanceSupplier<T> extends ThrowingSupplier<T> {
 	}
 
 	/**
-	 * Factory method to create an {@link InstanceSupplier} from a
-	 * {@link ThrowingSupplier}.
-	 * @param <T> the type of instance supplied by this supplier
-	 * @param supplier the source supplier
-	 * @return a new {@link InstanceSupplier}
+	 * 从 {@link ThrowingSupplier} 创建 {@link InstanceSupplier} 的工厂方法。
+	 * @param <T> 本供应商提供的实例类型
+	 * @param supplier 源供应商
+	 * @return 新的 {@link InstanceSupplier}
 	 */
 	static <T> InstanceSupplier<T> using(ThrowingSupplier<T> supplier) {
 		Assert.notNull(supplier, "Supplier must not be null");
@@ -105,12 +100,11 @@ public interface InstanceSupplier<T> extends ThrowingSupplier<T> {
 	}
 
 	/**
-	 * Factory method to create an {@link InstanceSupplier} from a
-	 * {@link ThrowingSupplier}.
-	 * @param <T> the type of instance supplied by this supplier
-	 * @param factoryMethod the factory method being used
-	 * @param supplier the source supplier
-	 * @return a new {@link InstanceSupplier}
+	 * 从 {@link ThrowingSupplier} 创建 {@link InstanceSupplier} 的工厂方法。
+	 * @param <T> 本供应商提供的实例类型
+	 * @param factoryMethod 使用的工厂方法
+	 * @param supplier 源供应商
+	 * @return 新的 {@link InstanceSupplier}
 	 */
 	static <T> InstanceSupplier<T> using(@Nullable Method factoryMethod, ThrowingSupplier<T> supplier) {
 		Assert.notNull(supplier, "Supplier must not be null");
@@ -133,12 +127,11 @@ public interface InstanceSupplier<T> extends ThrowingSupplier<T> {
 	}
 
 	/**
-	 * Lambda friendly method that can be used to create an
-	 * {@link InstanceSupplier} and add post processors in a single call. For
-	 * example: {@code InstanceSupplier.of(registeredBean -> ...).andThen(...)}.
-	 * @param <T> the type of instance supplied by this supplier
-	 * @param instanceSupplier the source instance supplier
-	 * @return a new {@link InstanceSupplier}
+	 * Lambda 友好方法，可在单次调用中创建 {@link InstanceSupplier} 并添加后处理器。
+	 * 例如：{@code InstanceSupplier.of(registeredBean -> ...).andThen(...)}。
+	 * @param <T> 本供应商提供的实例类型
+	 * @param instanceSupplier 源实例供应商
+	 * @return 新的 {@link InstanceSupplier}
 	 */
 	static <T> InstanceSupplier<T> of(InstanceSupplier<T> instanceSupplier) {
 		Assert.notNull(instanceSupplier, "InstanceSupplier must not be null");

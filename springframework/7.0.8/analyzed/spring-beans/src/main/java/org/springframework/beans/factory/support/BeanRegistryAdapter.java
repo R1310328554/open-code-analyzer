@@ -39,22 +39,27 @@ import org.springframework.util.Assert;
 import org.springframework.util.MultiValueMap;
 
 /**
- * {@link BeanRegistry} implementation that delegates to
- * {@link BeanDefinitionRegistry} and {@link ListableBeanFactory}.
+ * 委托给 {@link BeanDefinitionRegistry} 和 {@link ListableBeanFactory} 的
+ * {@link BeanRegistry} 实现。
  *
  * @author Sebastien Deleuze
  * @since 7.0
  */
 public class BeanRegistryAdapter implements BeanRegistry {
 
+	/** Bean 定义注册表。 */
 	private final BeanDefinitionRegistry beanRegistry;
 
+	/** 可列举的 Bean 工厂。 */
 	private final ListableBeanFactory beanFactory;
 
+	/** 运行环境。 */
 	private final Environment environment;
 
+	/** 发起注册的 BeanRegistrar 类，用作 Bean 定义来源。 */
 	private final Class<? extends BeanRegistrar> beanRegistrarClass;
 
+	/** 按 Bean 名称索引的 Bean 定义定制器（可选）。 */
 	private final @Nullable MultiValueMap<String, BeanDefinitionCustomizer> customizers;
 
 
@@ -178,9 +183,9 @@ public class BeanRegistryAdapter implements BeanRegistry {
 
 
 	/**
-	 * {@link RootBeanDefinition} subclass for {@code #registerBean} based
-	 * registrations with constructors resolution match{@link BeanUtils#getResolvableConstructor}
-	 * behavior. It also sets the bean registrar class as the source.
+	 * 用于基于 {@code #registerBean} 注册的 {@link RootBeanDefinition} 子类，
+	 * 构造器解析行为与 {@link BeanUtils#getResolvableConstructor} 一致，
+	 * 并将 BeanRegistrar 类设为来源。
 	 */
 	@SuppressWarnings("serial")
 	private static class BeanRegistrarBeanDefinition extends RootBeanDefinition {
@@ -215,6 +220,7 @@ public class BeanRegistryAdapter implements BeanRegistry {
 	}
 
 
+	/** 将 {@link Spec} 配置操作适配到 {@link RootBeanDefinition}。 */
 	private static class BeanSpecAdapter<T> implements Spec<T> {
 
 		private final RootBeanDefinition beanDefinition;
@@ -295,6 +301,7 @@ public class BeanRegistryAdapter implements BeanRegistry {
 	}
 
 
+	/** 将 {@link SupplierContext} 委托给 {@link BeanFactory}。 */
 	private static class SupplierContextAdapter implements SupplierContext {
 
 		private final BeanFactory beanFactory;

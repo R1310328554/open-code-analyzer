@@ -25,10 +25,10 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 
 /**
- * Interface responsible for creating instances corresponding to a root bean definition.
+ * 负责根据根 Bean 定义创建实例的接口。
  *
- * <p>This is pulled out into a strategy as various approaches are possible,
- * including using CGLIB to create subclasses on the fly to support Method Injection.
+ * <p>抽取为策略接口是因为存在多种实现方式，
+ * 包括使用 CGLIB 动态创建子类以支持方法注入。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -37,55 +37,50 @@ import org.springframework.beans.factory.BeanFactory;
 public interface InstantiationStrategy {
 
 	/**
-	 * Return an instance of the bean with the given name in this factory.
-	 * @param bd the bean definition
-	 * @param beanName the name of the bean when it is created in this context.
-	 * The name can be {@code null} if we are autowiring a bean which doesn't
-	 * belong to the factory.
-	 * @param owner the owning BeanFactory
-	 * @return a bean instance for this bean definition
-	 * @throws BeansException if the instantiation attempt failed
+	 * 在本工厂中返回具有给定名称的 Bean 实例。
+	 * @param bd Bean 定义
+	 * @param beanName 在本上下文中创建 Bean 时的名称。
+	 * 若自动装配的 Bean 不属于该工厂，名称可为 {@code null}
+	 * @param owner 所属的 BeanFactory
+	 * @return 该 Bean 定义的 Bean 实例
+	 * @throws BeansException 若实例化失败
 	 */
 	Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner)
 			throws BeansException;
 
 	/**
-	 * Return an instance of the bean with the given name in this factory,
-	 * creating it via the given constructor.
-	 * @param bd the bean definition
-	 * @param beanName the name of the bean when it is created in this context.
-	 * The name can be {@code null} if we are autowiring a bean which doesn't
-	 * belong to the factory.
-	 * @param owner the owning BeanFactory
-	 * @param ctor the constructor to use
-	 * @param args the constructor arguments to apply
-	 * @return a bean instance for this bean definition
-	 * @throws BeansException if the instantiation attempt failed
+	 * 在本工厂中通过给定构造器创建并返回具有给定名称的 Bean 实例。
+	 * @param bd Bean 定义
+	 * @param beanName 在本上下文中创建 Bean 时的名称。
+	 * 若自动装配的 Bean 不属于该工厂，名称可为 {@code null}
+	 * @param owner 所属的 BeanFactory
+	 * @param ctor 要使用的构造器
+	 * @param args 要应用的构造器参数
+	 * @return 该 Bean 定义的 Bean 实例
+	 * @throws BeansException 若实例化失败
 	 */
 	Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			Constructor<?> ctor, Object... args) throws BeansException;
 
 	/**
-	 * Return an instance of the bean with the given name in this factory,
-	 * creating it via the given factory method.
-	 * @param bd the bean definition
-	 * @param beanName the name of the bean when it is created in this context.
-	 * The name can be {@code null} if we are autowiring a bean which doesn't
-	 * belong to the factory.
-	 * @param owner the owning BeanFactory
-	 * @param factoryBean the factory bean instance to call the factory method on,
-	 * or {@code null} in case of a static factory method
-	 * @param factoryMethod the factory method to use
-	 * @param args the factory method arguments to apply
-	 * @return a bean instance for this bean definition
-	 * @throws BeansException if the instantiation attempt failed
+	 * 在本工厂中通过给定工厂方法创建并返回具有给定名称的 Bean 实例。
+	 * @param bd Bean 定义
+	 * @param beanName 在本上下文中创建 Bean 时的名称。
+	 * 若自动装配的 Bean 不属于该工厂，名称可为 {@code null}
+	 * @param owner 所属的 BeanFactory
+	 * @param factoryBean 要调用工厂方法的工厂 Bean 实例，
+	 * 静态工厂方法时为 {@code null}
+	 * @param factoryMethod 要使用的工厂方法
+	 * @param args 要应用的工厂方法参数
+	 * @return 该 Bean 定义的 Bean 实例
+	 * @throws BeansException 若实例化失败
 	 */
 	Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			@Nullable Object factoryBean, Method factoryMethod, @Nullable Object... args)
 			throws BeansException;
 
 	/**
-	 * Determine the actual class for the given bean definition, as instantiated at runtime.
+	 * 确定给定 Bean 定义在运行时实际实例化的类。
 	 * @since 6.0
 	 */
 	default Class<?> getActualBeanClass(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {

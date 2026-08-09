@@ -22,17 +22,14 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.util.ObjectUtils;
 
 /**
- * GenericBeanDefinition is a one-stop shop for declarative bean definition purposes.
- * Like all common bean definitions, it allows for specifying a class plus optionally
- * constructor argument values and property values. Additionally, deriving from a
- * parent bean definition can be flexibly configured through the "parentName" property.
+ * GenericBeanDefinition 是声明式 Bean 定义的一站式方案。
+ * 与所有常见 Bean 定义一样，可指定类以及可选的构造器参数值和属性值。
+ * 此外，可通过 {@code parentName} 属性灵活配置从父 Bean 定义继承。
  *
- * <p>In general, use this {@code GenericBeanDefinition} class for the purpose of
- * registering declarative bean definitions (for example, XML definitions which a bean
- * post-processor might operate on, potentially even reconfiguring the parent name).
- * Use {@code RootBeanDefinition}/{@code ChildBeanDefinition} where parent/child
- * relationships happen to be pre-determined, and prefer {@link RootBeanDefinition}
- * specifically for programmatic definitions derived from factory methods/suppliers.
+ * <p>通常使用本 {@code GenericBeanDefinition} 类注册声明式 Bean 定义
+ * （例如 Bean 后处理器可能操作的 XML 定义，甚至可重新配置父名称）。
+ * 在父子关系已预先确定时使用 {@code RootBeanDefinition}/{@code ChildBeanDefinition}，
+ * 对于由工厂方法/供应商派生的编程式定义，优先使用 {@link RootBeanDefinition}。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -44,12 +41,12 @@ import org.springframework.util.ObjectUtils;
 public class
 GenericBeanDefinition extends AbstractBeanDefinition {
 
+	/** 父 Bean 的名称。 */
 	private @Nullable String parentName;
 
 
 	/**
-	 * Create a new GenericBeanDefinition, to be configured through its bean
-	 * properties and configuration methods.
+	 * 创建新的 GenericBeanDefinition，通过 Bean 属性和配置方法进行配置。
 	 * @see #setBeanClass
 	 * @see #setScope
 	 * @see #setConstructorArgumentValues
@@ -60,9 +57,8 @@ GenericBeanDefinition extends AbstractBeanDefinition {
 	}
 
 	/**
-	 * Create a new GenericBeanDefinition as deep copy of the given
-	 * bean definition.
-	 * @param original the original bean definition to copy from
+	 * 将给定 Bean 定义深拷贝为新的 GenericBeanDefinition。
+	 * @param original 要拷贝的原始 Bean 定义
 	 */
 	public GenericBeanDefinition(BeanDefinition original) {
 		super(original);

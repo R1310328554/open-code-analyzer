@@ -23,21 +23,17 @@ import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Bean definition for beans which inherit settings from their parent.
- * Child bean definitions have a fixed dependency on a parent bean definition.
+ * 用于从父 Bean 继承配置的 Bean 定义。
+ * 子 Bean 定义对父 Bean 定义具有固定依赖关系。
  *
- * <p>A child bean definition will inherit constructor argument values,
- * property values and method overrides from the parent, with the option
- * to add new values. If init method, destroy method and/or static factory
- * method are specified, they will override the corresponding parent settings.
- * The remaining settings will <i>always</i> be taken from the child definition:
- * depends on, autowire mode, dependency check, singleton, lazy init.
+ * <p>子 Bean 定义会继承父定义的构造器参数值、属性值和方法覆盖，
+ * 并可选择添加新值。若指定了初始化方法、销毁方法和/或静态工厂方法，
+ * 将覆盖父定义中的对应设置。其余设置<i>始终</i>取自子定义：
+ * depends-on、自动装配模式、依赖检查、单例、延迟初始化。
  *
- * <p><b>NOTE:</b> Since Spring 2.5, the preferred way to register bean
- * definitions programmatically is the {@link GenericBeanDefinition} class,
- * which allows to dynamically define parent dependencies through the
- * {@link GenericBeanDefinition#setParentName} method. This effectively
- * supersedes the ChildBeanDefinition class for most use cases.
+ * <p><b>注意：</b>自 Spring 2.5 起，以编程方式注册 Bean 定义的推荐方式是
+ * {@link GenericBeanDefinition} 类，可通过 {@link GenericBeanDefinition#setParentName}
+ * 方法动态定义父依赖关系，在大多数场景下已取代 ChildBeanDefinition。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -47,13 +43,14 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 public class ChildBeanDefinition extends AbstractBeanDefinition {
 
+	/** 父 Bean 的名称。 */
 	private @Nullable String parentName;
 
 
 	/**
-	 * Create a new ChildBeanDefinition for the given parent, to be
-	 * configured through its bean properties and configuration methods.
-	 * @param parentName the name of the parent bean
+	 * 为给定父 Bean 创建新的 ChildBeanDefinition，
+	 * 通过 Bean 属性和配置方法进行配置。
+	 * @param parentName 父 Bean 的名称
 	 * @see #setBeanClass
 	 * @see #setScope
 	 * @see #setConstructorArgumentValues
@@ -65,9 +62,9 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	}
 
 	/**
-	 * Create a new ChildBeanDefinition for the given parent.
-	 * @param parentName the name of the parent bean
-	 * @param pvs the additional property values of the child
+	 * 为给定父 Bean 创建新的 ChildBeanDefinition。
+	 * @param parentName 父 Bean 的名称
+	 * @param pvs 子 Bean 的附加属性值
 	 */
 	public ChildBeanDefinition(String parentName, MutablePropertyValues pvs) {
 		super(null, pvs);
@@ -75,10 +72,10 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	}
 
 	/**
-	 * Create a new ChildBeanDefinition for the given parent.
-	 * @param parentName the name of the parent bean
-	 * @param cargs the constructor argument values to apply
-	 * @param pvs the additional property values of the child
+	 * 为给定父 Bean 创建新的 ChildBeanDefinition。
+	 * @param parentName 父 Bean 的名称
+	 * @param cargs 要应用的构造器参数值
+	 * @param pvs 子 Bean 的附加属性值
 	 */
 	public ChildBeanDefinition(
 			String parentName, ConstructorArgumentValues cargs, MutablePropertyValues pvs) {
@@ -88,12 +85,11 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	}
 
 	/**
-	 * Create a new ChildBeanDefinition for the given parent,
-	 * providing constructor arguments and property values.
-	 * @param parentName the name of the parent bean
-	 * @param beanClass the class of the bean to instantiate
-	 * @param cargs the constructor argument values to apply
-	 * @param pvs the property values to apply
+	 * 为给定父 Bean 创建新的 ChildBeanDefinition，提供构造器参数和属性值。
+	 * @param parentName 父 Bean 的名称
+	 * @param beanClass 要实例化的 Bean 类
+	 * @param cargs 要应用的构造器参数值
+	 * @param pvs 要应用的属性值
 	 */
 	public ChildBeanDefinition(
 			String parentName, Class<?> beanClass, ConstructorArgumentValues cargs, MutablePropertyValues pvs) {
@@ -104,13 +100,12 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	}
 
 	/**
-	 * Create a new ChildBeanDefinition for the given parent,
-	 * providing constructor arguments and property values.
-	 * Takes a bean class name to avoid eager loading of the bean class.
-	 * @param parentName the name of the parent bean
-	 * @param beanClassName the name of the class to instantiate
-	 * @param cargs the constructor argument values to apply
-	 * @param pvs the property values to apply
+	 * 为给定父 Bean 创建新的 ChildBeanDefinition，提供构造器参数和属性值。
+	 * 使用 Bean 类名以避免过早加载 Bean 类。
+	 * @param parentName 父 Bean 的名称
+	 * @param beanClassName 要实例化的类名
+	 * @param cargs 要应用的构造器参数值
+	 * @param pvs 要应用的属性值
 	 */
 	public ChildBeanDefinition(
 			String parentName, String beanClassName, ConstructorArgumentValues cargs, MutablePropertyValues pvs) {
@@ -121,9 +116,8 @@ public class ChildBeanDefinition extends AbstractBeanDefinition {
 	}
 
 	/**
-	 * Create a new ChildBeanDefinition as deep copy of the given
-	 * bean definition.
-	 * @param original the original bean definition to copy from
+	 * 将给定 Bean 定义深拷贝为新的 ChildBeanDefinition。
+	 * @param original 要拷贝的原始 Bean 定义
 	 */
 	public ChildBeanDefinition(ChildBeanDefinition original) {
 		super(original);

@@ -27,8 +27,8 @@ import org.springframework.core.io.AbstractResource;
 import org.springframework.util.Assert;
 
 /**
- * Descriptive {@link org.springframework.core.io.Resource} wrapper for
- * a {@link org.springframework.beans.factory.config.BeanDefinition}.
+ * 对 {@link org.springframework.beans.factory.config.BeanDefinition} 进行描述的
+ * {@link org.springframework.core.io.Resource} 包装器。
  *
  * @author Juergen Hoeller
  * @since 2.5.2
@@ -36,12 +36,13 @@ import org.springframework.util.Assert;
  */
 class BeanDefinitionResource extends AbstractResource {
 
+	/** 被包装的 Bean 定义对象。 */
 	private final BeanDefinition beanDefinition;
 
 
 	/**
-	 * Create a new BeanDefinitionResource.
-	 * @param beanDefinition the BeanDefinition object to wrap
+	 * 创建新的 BeanDefinitionResource。
+	 * @param beanDefinition 要包装的 BeanDefinition 对象
 	 */
 	public BeanDefinitionResource(BeanDefinition beanDefinition) {
 		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
@@ -49,7 +50,7 @@ class BeanDefinitionResource extends AbstractResource {
 	}
 
 	/**
-	 * Return the wrapped BeanDefinition object.
+	 * 返回被包装的 BeanDefinition 对象。
 	 */
 	public final BeanDefinition getBeanDefinition() {
 		return this.beanDefinition;
@@ -79,7 +80,7 @@ class BeanDefinitionResource extends AbstractResource {
 
 
 	/**
-	 * This implementation compares the underlying BeanDefinition.
+	 * 本实现比较底层 BeanDefinition 是否相等。
 	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
@@ -88,7 +89,7 @@ class BeanDefinitionResource extends AbstractResource {
 	}
 
 	/**
-	 * This implementation returns the hash code of the underlying BeanDefinition.
+	 * 本实现返回底层 BeanDefinition 的哈希码。
 	 */
 	@Override
 	public int hashCode() {
