@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:04:24Z",
-  "files": [
-    "tools/src/main/java/org/apache/rocketmq/tools/command/export/ExportMetadataInRocksDBCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/export/ExportMetricsCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/export/ExportPopRecordCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/ha/GetSyncStateSetSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/ha/HAStatusSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/lite/GetBrokerLiteInfoSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/lite/GetLiteClientInfoSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/lite/GetLiteGroupInfoSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/lite/GetLiteTopicInfoSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/lite/GetParentTopicInfoSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/lite/TriggerLiteDispatchSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/CheckMsgSendRTCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/ConsumeMessageCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/DecodeMessageIdCommond.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/DumpCompactionLogCommand.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 168,
-  "done": 1305
+  "done": 1320
 }
