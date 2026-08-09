@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:57:08Z",
   "files": [
-    "redisson/src/main/java/org/redisson/api/RFunctionRx.java",
-    "redisson/src/main/java/org/redisson/api/RFuture.java",
-    "redisson/src/main/java/org/redisson/api/RGcra.java",
-    "redisson/src/main/java/org/redisson/api/RGcraAsync.java",
-    "redisson/src/main/java/org/redisson/api/RGcraReactive.java",
-    "redisson/src/main/java/org/redisson/api/RGcraRx.java",
-    "redisson/src/main/java/org/redisson/api/RGeo.java",
-    "redisson/src/main/java/org/redisson/api/RGeoAsync.java",
-    "redisson/src/main/java/org/redisson/api/RGeoReactive.java",
-    "redisson/src/main/java/org/redisson/api/RGeoRx.java",
-    "redisson/src/main/java/org/redisson/api/RHyperLogLog.java",
-    "redisson/src/main/java/org/redisson/api/RHyperLogLogAsync.java",
-    "redisson/src/main/java/org/redisson/api/RHyperLogLogReactive.java",
-    "redisson/src/main/java/org/redisson/api/RHyperLogLogRx.java",
-    "redisson/src/main/java/org/redisson/api/RIdGenerator.java",
     "redisson/src/main/java/org/redisson/api/RIdGeneratorAsync.java",
     "redisson/src/main/java/org/redisson/api/RIdGeneratorReactive.java",
     "redisson/src/main/java/org/redisson/api/RIdGeneratorRx.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/api/RLexSortedSet.java"
   ],
   "remaining_pending": 1472,
-  "done": 1320
+  "done": 1335
 }
