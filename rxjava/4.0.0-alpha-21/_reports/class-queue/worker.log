@@ -958,3 +958,18 @@
 2026-08-09T18:00:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableRetryWhen.java wave19b
 2026-08-09T18:00:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSampleTimed.java wave19b
 2026-08-09T18:00:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSampleWithObservable.java wave19b
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableLastMaybe.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableLastSingle.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableLift.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableMap.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableMapNotification.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableMaterialize.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableMergeWithCompletable.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableMergeWithMaybe.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableMergeWithSingle.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableNever.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableObserveOn.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableOnErrorComplete.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableOnErrorNext.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableOnErrorReturn.java wave19a [0:15]
+2026-08-09T18:00:11Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservablePublish.java wave19a [0:15]
