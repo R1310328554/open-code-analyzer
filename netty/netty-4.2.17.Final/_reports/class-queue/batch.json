@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:13:15Z",
-  "files": [
-    "codec-base/src/main/java/io/netty/handler/codec/base64/Base64Encoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/bytes/ByteArrayDecoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/bytes/ByteArrayEncoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/json/JsonObjectDecoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/CachingClassResolver.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/ClassLoaderClassResolver.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/ClassResolver.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/ClassResolvers.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/CompactObjectInputStream.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/CompactObjectOutputStream.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/CompatibleObjectEncoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/ObjectDecoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/ObjectDecoderInputStream.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/ObjectEncoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/serialization/ObjectEncoderOutputStream.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1778,
-  "done": 135
+  "done": 150
 }
