@@ -1,17 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:01:57Z",
-  "files": [
-    "docs_src/response_model/__init__.py",
-    "docs_src/response_model/tutorial001_01_py310.py",
-    "docs_src/response_model/tutorial001_py310.py",
-    "docs_src/response_model/tutorial002_py310.py",
-    "docs_src/response_model/tutorial003_01_py310.py",
-    "docs_src/response_model/tutorial003_02_py310.py",
-    "docs_src/response_model/tutorial003_03_py310.py",
-    "docs_src/response_model/tutorial003_04_py310.py",
-    "docs_src/response_model/tutorial003_05_py310.py",
-    "docs_src/response_model/tutorial003_py310.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 87,
-  "done": 412
+  "done": 422
 }

@@ -410,3 +410,13 @@ docs_src/response_directly/tutorial002_py310.py
 docs_src/response_headers/__init__.py
 docs_src/response_headers/tutorial001_py310.py
 docs_src/response_headers/tutorial002_py310.py
+docs_src/response_model/__init__.py
+docs_src/response_model/tutorial001_01_py310.py
+docs_src/response_model/tutorial001_py310.py
+docs_src/response_model/tutorial002_py310.py
+docs_src/response_model/tutorial003_01_py310.py
+docs_src/response_model/tutorial003_02_py310.py
+docs_src/response_model/tutorial003_03_py310.py
+docs_src/response_model/tutorial003_04_py310.py
+docs_src/response_model/tutorial003_05_py310.py
+docs_src/response_model/tutorial003_py310.py
