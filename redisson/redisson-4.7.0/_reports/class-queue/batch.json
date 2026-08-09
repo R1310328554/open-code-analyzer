@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/executor/RedissonExecutorFutureReference.java",
     "redisson/src/main/java/org/redisson/executor/RedissonExecutorRemoteService.java",
     "redisson/src/main/java/org/redisson/executor/RedissonScheduledFuture.java",
-    "redisson/src/main/java/org/redisson/executor/RemoteExecutorService.java",
-    "redisson/src/main/java/org/redisson/executor/RemoteExecutorServiceAsync.java",
-    "redisson/src/main/java/org/redisson/executor/RemotePromise.java",
-    "redisson/src/main/java/org/redisson/executor/ScheduledTasksService.java",
-    "redisson/src/main/java/org/redisson/executor/SpringTasksInjector.java",
-    "redisson/src/main/java/org/redisson/executor/TasksBatchService.java",
-    "redisson/src/main/java/org/redisson/executor/TasksInjector.java",
-    "redisson/src/main/java/org/redisson/executor/TasksRunnerService.java",
-    "redisson/src/main/java/org/redisson/executor/TasksService.java",
-    "redisson/src/main/java/org/redisson/executor/params/ScheduledAtFixedRateParameters.java",
-    "redisson/src/main/java/org/redisson/executor/params/ScheduledCronExpressionParameters.java",
-    "redisson/src/main/java/org/redisson/executor/params/ScheduledParameters.java",
-    "redisson/src/main/java/org/redisson/executor/params/ScheduledWithFixedDelayParameters.java",
-    "redisson/src/main/java/org/redisson/executor/params/TaskParameters.java",
-    "redisson/src/main/java/org/redisson/iterator/BaseAsyncIterator.java",
-    "redisson/src/main/java/org/redisson/iterator/BaseIterator.java"
+    "redisson/src/main/java/org/redisson/executor/RemoteExecutorService.java"
   ],
   "remaining_pending": 242,
-  "done": 2550
+  "done": 2565
 }
