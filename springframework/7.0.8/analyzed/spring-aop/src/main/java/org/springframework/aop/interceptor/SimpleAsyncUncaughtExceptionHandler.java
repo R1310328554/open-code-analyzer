@@ -23,7 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A default {@link AsyncUncaughtExceptionHandler} that simply logs the exception.
+ * 默认 {@link AsyncUncaughtExceptionHandler}，仅记录异常日志。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -31,6 +31,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class SimpleAsyncUncaughtExceptionHandler implements AsyncUncaughtExceptionHandler {
 
+	/** 用于记录异步未捕获异常的日志器。 */
 	private static final Log logger = LogFactory.getLog(SimpleAsyncUncaughtExceptionHandler.class);
 
 

@@ -41,7 +41,7 @@ import org.springframework.javapoet.ClassName;
 import org.springframework.javapoet.CodeBlock;
 
 /**
- * {@link BeanRegistrationAotProcessor} for {@link ScopedProxyFactoryBean}.
+ * 用于 {@link ScopedProxyFactoryBean} 的 {@link BeanRegistrationAotProcessor}。
  *
  * @author Stephane Nicoll
  * @author Phillip Webb
@@ -138,7 +138,7 @@ class ScopedProxyBeanRegistrationAotProcessor implements BeanRegistrationAotProc
 
 			GeneratedMethod generatedMethod = beanRegistrationCode.getMethods()
 					.add("getScopedProxyInstance", method -> {
-						method.addJavadoc("Create the scoped proxy bean instance for '$L'.",
+						method.addJavadoc("为 '$L' 创建作用域代理 Bean 实例。",
 								this.registeredBean.getBeanName());
 						method.addModifiers(Modifier.PRIVATE, Modifier.STATIC);
 						method.returns(ScopedProxyFactoryBean.class);

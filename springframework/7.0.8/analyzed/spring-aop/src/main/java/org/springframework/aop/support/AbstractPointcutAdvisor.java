@@ -26,9 +26,8 @@ import org.springframework.core.Ordered;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Abstract base class for {@link org.springframework.aop.PointcutAdvisor}
- * implementations. Can be subclassed for returning a specific pointcut/advice
- * or a freely configurable pointcut/advice.
+ * {@link org.springframework.aop.PointcutAdvisor} 实现的抽象基类。
+ * 可子类化以返回特定切入点/advice，或自由配置切入点/advice。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller

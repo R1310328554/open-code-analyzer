@@ -32,14 +32,13 @@ import org.springframework.util.Assert;
 import org.springframework.util.PatternMatchUtils;
 
 /**
- * Pointcut and method matcher for use as a simple <b>cflow</b>-style pointcut.
+ * 用作简单 <b>cflow</b> 风格切入点的切入点与方法匹配器。
  *
- * <p>Each configured method name pattern can be an exact method name or a
- * pattern (see {@link #isMatch(String, String)} for details on the supported
- * pattern styles).
+ * <p>每个配置的方法名模式可为精确方法名或模式
+ * （支持的模式风格见 {@link #isMatch(String, String)}）。
  *
- * <p>Note that evaluating such pointcuts is 10-15 times slower than evaluating
- * normal pointcuts, but they are useful in some cases.
+ * <p>注意：评估此类切入点比普通切入点慢 10–15 倍，
+ * 但在某些场景下很有用。
  *
  * @author Rod Johnson
  * @author Rob Harrop
@@ -52,13 +51,13 @@ import org.springframework.util.PatternMatchUtils;
 public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher, Serializable {
 
 	/**
-	 * The class against which to match.
+	 * 用于匹配的类。
 	 * @since 6.1
 	 */
 	protected final Class<?> clazz;
 
 	/**
-	 * An immutable list of distinct method name patterns against which to match.
+	 * 用于匹配的不重复方法名模式不可变列表。
 	 * @since 6.1
 	 */
 	protected final List<String> methodNamePatterns;
@@ -67,20 +66,18 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 
 
 	/**
-	 * Construct a new pointcut that matches all control flows below the given class.
-	 * @param clazz the class
+	 * 构造匹配给定类下所有控制流的新切入点。
+	 * @param clazz 类
 	 */
 	public ControlFlowPointcut(Class<?> clazz) {
 		this(clazz, (String) null);
 	}
 
 	/**
-	 * Construct a new pointcut that matches all calls below a method matching
-	 * the given method name pattern in the given class.
-	 * <p>If no method name pattern is given, the pointcut matches all control flows
-	 * below the given class.
-	 * @param clazz the class
-	 * @param methodNamePattern the method name pattern (may be {@code null})
+	 * 构造匹配给定类中符合方法名模式的方法下所有调用的新切入点。
+	 * <p>若未给定方法名模式，则匹配给定类下所有控制流。
+	 * @param clazz 类
+	 * @param methodNamePattern 方法名模式（可为 {@code null}）
 	 */
 	public ControlFlowPointcut(Class<?> clazz, @Nullable String methodNamePattern) {
 		Assert.notNull(clazz, "Class must not be null");
@@ -90,12 +87,10 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	}
 
 	/**
-	 * Construct a new pointcut that matches all calls below a method matching
-	 * one of the given method name patterns in the given class.
-	 * <p>If no method name pattern is given, the pointcut matches all control flows
-	 * below the given class.
-	 * @param clazz the class
-	 * @param methodNamePatterns the method name patterns (potentially empty)
+	 * 构造匹配给定类中符合任一方法名模式的方法下所有调用的新切入点。
+	 * <p>若未给定方法名模式，则匹配给定类下所有控制流。
+	 * @param clazz 类
+	 * @param methodNamePatterns 方法名模式（可能为空）
 	 * @since 6.1
 	 */
 	public ControlFlowPointcut(Class<?> clazz, String... methodNamePatterns) {
@@ -103,12 +98,10 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	}
 
 	/**
-	 * Construct a new pointcut that matches all calls below a method matching
-	 * one of the given method name patterns in the given class.
-	 * <p>If no method name pattern is given, the pointcut matches all control flows
-	 * below the given class.
-	 * @param clazz the class
-	 * @param methodNamePatterns the method name patterns (potentially empty)
+	 * 构造匹配给定类中符合任一方法名模式的方法下所有调用的新切入点。
+	 * <p>若未给定方法名模式，则匹配给定类下所有控制流。
+	 * @param clazz 类
+	 * @param methodNamePatterns 方法名模式列表（可能为空）
 	 * @since 6.1
 	 */
 	public ControlFlowPointcut(Class<?> clazz, List<String> methodNamePatterns) {
@@ -121,8 +114,8 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 
 
 	/**
-	 * Subclasses can override this for greater filtering (and performance).
-	 * <p>The default implementation always returns {@code true}.
+	 * 子类可覆盖以实现更强过滤（及更好性能）。
+	 * <p>默认实现始终返回 {@code true}。
 	 */
 	@Override
 	public boolean matches(Class<?> clazz) {
@@ -130,8 +123,8 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	}
 
 	/**
-	 * Subclasses can override this if it's possible to filter out some candidate classes.
-	 * <p>The default implementation always returns {@code true}.
+	 * 若可过滤部分候选类，子类可覆盖。
+	 * <p>默认实现始终返回 {@code true}。
 	 */
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
@@ -164,16 +157,15 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	}
 
 	/**
-	 * Get the number of times {@link #matches(Method, Class, Object...)} has been
-	 * evaluated.
-	 * <p>Useful for optimization and testing purposes.
+	 * 获取 {@link #matches(Method, Class, Object...)} 被评估的次数。
+	 * <p>便于优化与测试。
 	 */
 	public int getEvaluations() {
 		return this.evaluationCount.get();
 	}
 
 	/**
-	 * Increment the {@link #getEvaluations() evaluation count}.
+	 * 递增 {@link #getEvaluations() 评估计数}。
 	 * @since 6.1
 	 * @see #matches(Method, Class, Object...)
 	 */
@@ -182,17 +174,14 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	}
 
 	/**
-	 * Determine if the given method name matches the method name pattern at the
-	 * specified index.
-	 * <p>This method is invoked by {@link #matches(Method, Class, Object...)}.
-	 * <p>The default implementation retrieves the method name pattern from
-	 * {@link #methodNamePatterns} and delegates to {@link #isMatch(String, String)}.
-	 * <p>Can be overridden in subclasses &mdash; for example, to support
-	 * regular expressions.
-	 * @param methodName the method name to check
-	 * @param patternIndex the index of the method name pattern
-	 * @return {@code true} if the method name matches the pattern at the specified
-	 * index
+	 * 判断给定方法名是否匹配指定索引处的方法名模式。
+	 * <p>由 {@link #matches(Method, Class, Object...)} 调用。
+	 * <p>默认实现从 {@link #methodNamePatterns} 取模式，
+	 * 并委托给 {@link #isMatch(String, String)}。
+	 * <p>子类可覆盖，例如以支持正则表达式。
+	 * @param methodName 待检查的方法名
+	 * @param patternIndex 方法名模式索引
+	 * @return 方法名匹配指定索引处模式则 {@code true}
 	 * @since 6.1
 	 * @see #methodNamePatterns
 	 * @see #isMatch(String, String)
@@ -204,15 +193,14 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 	}
 
 	/**
-	 * Determine if the given method name matches the method name pattern.
-	 * <p>This method is invoked by {@link #isMatch(String, int)}.
-	 * <p>The default implementation checks for direct equality as well as
-	 * {@code xxx*}, {@code *xxx}, {@code *xxx*}, and {@code xxx*yyy} matches.
-	 * <p>Can be overridden in subclasses &mdash; for example, to support a
-	 * different style of simple pattern matching.
-	 * @param methodName the method name to check
-	 * @param methodNamePattern the method name pattern
-	 * @return {@code true} if the method name matches the pattern
+	 * 判断给定方法名是否匹配方法名模式。
+	 * <p>由 {@link #isMatch(String, int)} 调用。
+	 * <p>默认实现检查直接相等及
+	 * {@code xxx*}、{@code *xxx}、{@code *xxx*}、{@code xxx*yyy} 匹配。
+	 * <p>子类可覆盖，例如以支持不同风格的简单模式匹配。
+	 * @param methodName 待检查的方法名
+	 * @param methodNamePattern 方法名模式
+	 * @return 方法名匹配模式则 {@code true}
 	 * @since 6.1
 	 * @see #isMatch(String, int)
 	 * @see PatternMatchUtils#simpleMatch(String, String)

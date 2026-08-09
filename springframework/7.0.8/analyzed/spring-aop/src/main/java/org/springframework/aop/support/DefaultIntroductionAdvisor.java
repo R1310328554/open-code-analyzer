@@ -32,8 +32,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Simple {@link org.springframework.aop.IntroductionAdvisor} implementation
- * that by default applies to any class.
+ * 简单的 {@link org.springframework.aop.IntroductionAdvisor} 实现，
+ * 默认适用于任意类。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -50,9 +50,9 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 
 
 	/**
-	 * Create a DefaultIntroductionAdvisor for the given advice.
-	 * @param advice the Advice to apply (may implement the
-	 * {@link org.springframework.aop.IntroductionInfo} interface)
+	 * 为给定 advice 创建 DefaultIntroductionAdvisor。
+	 * @param advice 要应用的 Advice（可实现
+	 * {@link org.springframework.aop.IntroductionInfo} 接口）
 	 * @see #addInterface
 	 */
 	public DefaultIntroductionAdvisor(Advice advice) {
@@ -60,10 +60,9 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 	}
 
 	/**
-	 * Create a DefaultIntroductionAdvisor for the given advice.
-	 * @param advice the Advice to apply
-	 * @param introductionInfo the IntroductionInfo that describes
-	 * the interface to introduce (may be {@code null})
+	 * 为给定 advice 创建 DefaultIntroductionAdvisor。
+	 * @param advice 要应用的 Advice
+	 * @param introductionInfo 描述要引入接口的 IntroductionInfo（可为 {@code null}）
 	 */
 	public DefaultIntroductionAdvisor(Advice advice, @Nullable IntroductionInfo introductionInfo) {
 		Assert.notNull(advice, "Advice must not be null");
@@ -81,9 +80,9 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 	}
 
 	/**
-	 * Create a DefaultIntroductionAdvisor for the given advice.
-	 * @param advice the Advice to apply
-	 * @param ifc the interface to introduce
+	 * 为给定 advice 创建 DefaultIntroductionAdvisor。
+	 * @param advice 要应用的 Advice
+	 * @param ifc 要引入的接口
 	 */
 	public DefaultIntroductionAdvisor(DynamicIntroductionAdvice advice, Class<?> ifc) {
 		Assert.notNull(advice, "Advice must not be null");
@@ -93,8 +92,8 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 
 
 	/**
-	 * Add the specified interface to the list of interfaces to introduce.
-	 * @param ifc the interface to introduce
+	 * 将指定接口加入待引入接口列表。
+	 * @param ifc 要引入的接口
 	 */
 	public void addInterface(Class<?> ifc) {
 		Assert.notNull(ifc, "Interface must not be null");

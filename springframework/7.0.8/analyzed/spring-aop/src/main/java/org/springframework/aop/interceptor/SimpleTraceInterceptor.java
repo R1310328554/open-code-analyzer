@@ -23,12 +23,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Simple AOP Alliance {@code MethodInterceptor} that can be introduced
- * in a chain to display verbose trace information about intercepted method
- * invocations, with method entry and method exit info.
+ * 简单的 AOP Alliance {@code MethodInterceptor}，
+ * 可加入拦截器链以输出被拦截方法调用的详细跟踪信息，
+ * 包括方法进入与退出信息。
  *
- * <p>Consider using {@code CustomizableTraceInterceptor} for more
- * advanced needs.
+ * <p>若有更高级需求，可考虑使用 {@code CustomizableTraceInterceptor}。
  *
  * @author Dmitriy Kopylenko
  * @author Juergen Hoeller
@@ -39,15 +38,14 @@ import org.springframework.util.Assert;
 public class SimpleTraceInterceptor extends AbstractTraceInterceptor {
 
 	/**
-	 * Create a new SimpleTraceInterceptor with a static logger.
+	 * 使用静态 logger 创建新的 SimpleTraceInterceptor。
 	 */
 	public SimpleTraceInterceptor() {
 	}
 
 	/**
-	 * Create a new SimpleTraceInterceptor with dynamic or static logger,
-	 * according to the given flag.
-	 * @param useDynamicLogger whether to use a dynamic logger or a static logger
+	 * 根据给定标志，使用动态或静态 logger 创建新的 SimpleTraceInterceptor。
+	 * @param useDynamicLogger 是否使用动态 logger 而非静态 logger
 	 * @see #setUseDynamicLogger
 	 */
 	public SimpleTraceInterceptor(boolean useDynamicLogger) {
@@ -71,9 +69,9 @@ public class SimpleTraceInterceptor extends AbstractTraceInterceptor {
 	}
 
 	/**
-	 * Return a description for the given method invocation.
-	 * @param invocation the invocation to describe
-	 * @return the description
+	 * 返回给定方法调用的描述。
+	 * @param invocation 待描述的方法调用
+	 * @return 描述字符串
 	 */
 	protected String getInvocationDescription(MethodInvocation invocation) {
 		Object target = invocation.getThis();

@@ -23,10 +23,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.StopWatch;
 
 /**
- * Simple AOP Alliance {@code MethodInterceptor} for performance monitoring.
- * This interceptor has no effect on the intercepted method call.
+ * 用于性能监控的简单 AOP Alliance {@code MethodInterceptor}。
+ * 该拦截器不会改变被拦截方法调用的行为。
  *
- * <p>Uses a {@code StopWatch} for the actual performance measuring.
+ * <p>使用 {@code StopWatch} 进行实际性能测量。
  *
  * @author Rod Johnson
  * @author Dmitriy Kopylenko
@@ -37,15 +37,14 @@ import org.springframework.util.StopWatch;
 public class PerformanceMonitorInterceptor extends AbstractMonitoringInterceptor {
 
 	/**
-	 * Create a new PerformanceMonitorInterceptor with a static logger.
+	 * 使用静态 logger 创建新的 PerformanceMonitorInterceptor。
 	 */
 	public PerformanceMonitorInterceptor() {
 	}
 
 	/**
-	 * Create a new PerformanceMonitorInterceptor with a dynamic or static logger,
-	 * according to the given flag.
-	 * @param useDynamicLogger whether to use a dynamic logger or a static logger
+	 * 根据给定标志，使用动态或静态 logger 创建新的 PerformanceMonitorInterceptor。
+	 * @param useDynamicLogger 是否使用动态 logger 而非静态 logger
 	 * @see #setUseDynamicLogger
 	 */
 	public PerformanceMonitorInterceptor(boolean useDynamicLogger) {

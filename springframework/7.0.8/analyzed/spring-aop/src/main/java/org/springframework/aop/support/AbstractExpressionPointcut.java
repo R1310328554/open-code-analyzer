@@ -21,8 +21,8 @@ import java.io.Serializable;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Abstract superclass for expression pointcuts,
- * offering location and expression properties.
+ * 表达式切入点的抽象超类，
+ * 提供 location 与 expression 属性。
  *
  * @author Rod Johnson
  * @author Rob Harrop
@@ -39,17 +39,17 @@ public abstract class AbstractExpressionPointcut implements ExpressionPointcut, 
 
 
 	/**
-	 * Set the location for debugging.
+	 * 设置用于调试的 location。
 	 */
 	public void setLocation(@Nullable String location) {
 		this.location = location;
 	}
 
 	/**
-	 * Return location information about the pointcut expression
-	 * if available. This is useful in debugging.
-	 * @return location information as a human-readable String,
-	 * or {@code null} if none is available
+	 * 返回切入点表达式的 location 信息（若有）。
+	 * 便于调试。
+	 * @return 可读的 location 字符串，
+	 * 若无则返回 {@code null}
 	 */
 	public @Nullable String getLocation() {
 		return this.location;
@@ -61,7 +61,7 @@ public abstract class AbstractExpressionPointcut implements ExpressionPointcut, 
 			onSetExpression(expression);
 		}
 		catch (IllegalArgumentException ex) {
-			// Fill in location information if possible.
+			// 尽可能补充 location 信息。
 			if (this.location != null) {
 				throw new IllegalArgumentException("Invalid expression at location [" + this.location + "]: " + ex);
 			}
@@ -72,18 +72,18 @@ public abstract class AbstractExpressionPointcut implements ExpressionPointcut, 
 	}
 
 	/**
-	 * Called when a new pointcut expression is set.
-	 * The expression should be parsed at this point if possible.
-	 * <p>This implementation is empty.
-	 * @param expression the expression to set
-	 * @throws IllegalArgumentException if the expression is invalid
+	 * 设置新切入点表达式时调用。
+	 * 若可能，应在此解析表达式。
+	 * <p>本实现为空。
+	 * @param expression 要设置的表达式
+	 * @throws IllegalArgumentException 若表达式无效
 	 * @see #setExpression
 	 */
 	protected void onSetExpression(@Nullable String expression) throws IllegalArgumentException {
 	}
 
 	/**
-	 * Return this pointcut's expression.
+	 * 返回本切入点的表达式。
 	 */
 	@Override
 	public @Nullable String getExpression() {
