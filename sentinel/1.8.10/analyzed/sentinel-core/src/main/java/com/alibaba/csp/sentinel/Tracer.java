@@ -23,7 +23,7 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
- * This class is used to record other exceptions except block exception.
+ * 用于记录除 BlockException 以外的其他异常。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -38,19 +38,19 @@ public class Tracer {
     protected Tracer() {}
 
     /**
-     * Trace provided {@link Throwable} to the resource entry in current context.
+     * 将给定 {@link Throwable} 追踪到当前上下文中的资源 Entry。
      *
-     * @param e exception to record
+     * @param e 要记录的异常
      */
     public static void trace(Throwable e) {
         traceContext(e, ContextUtil.getContext());
     }
 
     /**
-     * Trace provided {@link Throwable} to current entry in current context.
+     * 将给定 {@link Throwable} 追踪到当前上下文中的当前 Entry。
      *
-     * @param e     exception to record
-     * @param count exception count to add
+     * @param e     要记录的异常
+     * @param count 要增加的异常计数
      */
     @Deprecated
     public static void trace(Throwable e, int count) {
@@ -58,10 +58,10 @@ public class Tracer {
     }
 
     /**
-     * Trace provided {@link Throwable} to current entry of given entrance context.
+     * 将给定 {@link Throwable} 追踪到指定入口上下文的当前 Entry。
      *
-     * @param e     exception to record
-     * @param context target entrance context
+     * @param e       要记录的异常
+     * @param context 目标入口上下文
      * @since 1.8.0
      */
     public static void traceContext(Throwable e, Context context) {
@@ -76,10 +76,10 @@ public class Tracer {
     }
 
     /**
-     * Trace provided {@link Throwable} and add exception count to current entry in provided context.
+     * 将给定 {@link Throwable} 追踪到指定上下文中当前 Entry 并增加异常计数。
      *
-     * @param e     exception to record
-     * @param count exception count to add
+     * @param e     要记录的异常
+     * @param count 要增加的异常计数
      * @since 1.4.2
      */
     @Deprecated
@@ -95,9 +95,9 @@ public class Tracer {
     }
 
     /**
-     * Trace provided {@link Throwable} to the given resource entry.
+     * 将给定 {@link Throwable} 追踪到指定资源 Entry。
      *
-     * @param e exception to record
+     * @param e 要记录的异常
      * @since 1.4.2
      */
     public static void traceEntry(Throwable e, Entry entry) {
@@ -116,13 +116,13 @@ public class Tracer {
     }
 
     /**
-     * Set exception to trace. If not set, all Exception except for {@link BlockException} will be traced.
+     * 设置要追踪的异常。若未设置，除 {@link BlockException} 外的所有 Exception 都会被追踪。
      * <p>
-     * Note that if both {@link #setExceptionsToIgnore(Class[])} and this method is set,
-     * the ExceptionsToIgnore will be of higher precedence.
+     * 注意若同时设置 {@link #setExceptionsToIgnore(Class[])} 与本方法，
+     * ExceptionsToIgnore 优先级更高。
      * </p>
      *
-     * @param traceClasses the list of exception classes to trace.
+     * @param traceClasses 要追踪的异常类列表
      * @since 1.6.1
      */
     @SafeVarargs
@@ -132,9 +132,9 @@ public class Tracer {
     }
 
     /**
-     * Get exception classes to trace.
+     * 获取要追踪的异常类。
      *
-     * @return an array of exception classes to trace.
+     * @return 要追踪的异常类数组
      * @since 1.6.1
      */
     public static Class<? extends Throwable>[] getExceptionsToTrace() {
@@ -142,13 +142,13 @@ public class Tracer {
     }
 
     /**
-     * Set exceptions to ignore. if not set, all Exception except for {@link BlockException} will be traced.
+     * 设置要忽略的异常。若未设置，除 {@link BlockException} 外的所有 Exception 都会被追踪。
      * <p>
-     * Note that if both {@link #setExceptionsToTrace(Class[])} and this method is set,
-     * the ExceptionsToIgnore will be of higher precedence.
+     * 注意若同时设置 {@link #setExceptionsToTrace(Class[])} 与本方法，
+     * ExceptionsToIgnore 优先级更高。
      * </p>
      *
-     * @param ignoreClasses the list of exception classes to ignore.
+     * @param ignoreClasses 要忽略的异常类列表
      * @since 1.6.1
      */
     @SafeVarargs
@@ -158,9 +158,9 @@ public class Tracer {
     }
 
     /**
-     * Get exception classes to ignore.
+     * 获取要忽略的异常类。
      *
-     * @return an array of exception classes to ignore.
+     * @return 要忽略的异常类数组
      * @since 1.6.1
      */
     public static Class<? extends Throwable>[] getExceptionsToIgnore() {
@@ -168,17 +168,17 @@ public class Tracer {
     }
 
     /**
-     * Get exception predicate
-     * @return the exception predicate.
+     * 获取异常谓词。
+     * @return 异常谓词
      */
     public static Predicate<? extends Throwable> getExceptionPredicate() {
         return exceptionPredicate;
     }
 
     /**
-     * set an exception predicate which indicates the exception should be traced(return true) or ignored(return false)
-     * except for {@link BlockException}
-     * @param exceptionPredicate the exception predicate
+     * 设置异常谓词，指示异常应被追踪（返回 true）还是忽略（返回 false），
+     * {@link BlockException} 除外。
+     * @param exceptionPredicate 异常谓词
      */
     public static void setExceptionPredicate(Predicate<Throwable> exceptionPredicate) {
         AssertUtil.notNull(exceptionPredicate, "exception predicate must not be null");
@@ -193,10 +193,10 @@ public class Tracer {
     }
 
     /**
-     * Check whether the throwable should be traced.
+     * 检查 Throwable 是否应被追踪。
      *
-     * @param t the throwable to check.
-     * @return true if the throwable should be traced, else return false.
+     * @param t 要检查的 Throwable
+     * @return 若应追踪则返回 true，否则返回 false
      */
     protected static boolean shouldTrace(Throwable t) {
         if (t == null || t instanceof BlockException) {

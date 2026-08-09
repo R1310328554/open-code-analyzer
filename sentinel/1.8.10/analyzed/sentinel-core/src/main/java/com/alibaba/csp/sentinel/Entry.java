@@ -24,23 +24,21 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.context.Context;
 
 /**
- * Each {@link SphU}#entry() will return an {@link Entry}. This class holds information of current invocation:<br/>
+ * 每次 {@link SphU}#entry() 返回一个 {@link Entry}。本类保存当前调用的信息：<br/>
  *
  * <ul>
- * <li>createTime, the create time of this entry, using for rt statistics.</li>
- * <li>current {@link Node}, that is statistics of the resource in current context.</li>
- * <li>origin {@link Node}, that is statistics for the specific origin. Usually the
- * origin could be the Service Consumer's app name, see
+ * <li>createTime，Entry 创建时间，用于 RT 统计。</li>
+ * <li>current {@link Node}，即当前上下文中该资源的统计节点。</li>
+ * <li>origin {@link Node}，即特定来源的统计节点。来源通常是服务消费者的应用名，见
  * {@link ContextUtil#enter(String name, String origin)} </li>
- * <li>{@link ResourceWrapper}, that is resource name.</li>
+ * <li>{@link ResourceWrapper}，即资源名称。</li>
  * <br/>
  * </ul>
  *
  * <p>
- * A invocation tree will be created if we invoke SphU#entry() multi times in the same {@link Context},
- * so parent or child entry may be held by this to form the tree. Since {@link Context} always holds
- * the current entry in the invocation tree, every {@link Entry#exit()} call should modify
- * {@link Context#setCurEntry(Entry)} as parent entry of this.
+ * 在同一 {@link Context} 中多次调用 SphU#entry() 会形成调用树，
+ * 本类通过 parent 或 child 引用构成该树。由于 {@link Context} 始终持有调用树中的当前 Entry，
+ * 每次 {@link Entry#exit()} 都应将 {@link Context#setCurEntry(Entry)} 更新为本 Entry 的父 Entry。
  * </p>
  *
  * @author qinan.qn
@@ -60,7 +58,7 @@ public abstract class Entry implements AutoCloseable {
 
     private Node curNode;
     /**
-     * {@link Node} of the specific origin, Usually the origin is the Service Consumer.
+     * 特定来源的 {@link Node}，通常来源为服务消费者。
      */
     private Node originNode;
 
@@ -89,9 +87,9 @@ public abstract class Entry implements AutoCloseable {
     }
 
     /**
-     * Complete the current resource entry and restore the entry stack in context.
-     * Do not need to carry count or args parameter, initialization does
-     * @throws ErrorEntryFreeException if entry in current context does not match current entry
+     * 完成当前资源 Entry 并恢复上下文中的 Entry 栈。
+     * 无需传入 count 或 args 参数，初始化时已携带。
+     * @throws ErrorEntryFreeException 若当前上下文中的 Entry 与当前 Entry 不匹配
      */
     public void exit() throws ErrorEntryFreeException {
         exit(count, args);
@@ -102,7 +100,7 @@ public abstract class Entry implements AutoCloseable {
     }
 
     /**
-     * Equivalent to {@link #exit()}. Support try-with-resources since JDK 1.7.
+     * 等价于 {@link #exit()}。自 JDK 1.7 起支持 try-with-resources。
      *
      * @since 1.5.0
      */
@@ -112,28 +110,28 @@ public abstract class Entry implements AutoCloseable {
     }
 
     /**
-     * Exit this entry. This method should invoke if and only if once at the end of the resource protection.
+     * 退出本 Entry。应在资源保护结束时且仅调用一次。
      *
-     * @param count tokens to release.
-     * @param args extra parameters
-     * @throws ErrorEntryFreeException, if {@link Context#getCurEntry()} is not this entry.
+     * @param count 要释放的令牌数
+     * @param args 额外参数
+     * @throws ErrorEntryFreeException 若 {@link Context#getCurEntry()} 不是本 Entry
      */
     public abstract void exit(int count, Object... args) throws ErrorEntryFreeException;
 
     /**
-     * Exit this entry.
+     * 退出本 Entry。
      *
-     * @param count tokens to release.
-     * @param args extra parameters
-     * @return next available entry after exit, that is the parent entry.
-     * @throws ErrorEntryFreeException, if {@link Context#getCurEntry()} is not this entry.
+     * @param count 要释放的令牌数
+     * @param args 额外参数
+     * @return exit 后下一个可用 Entry，即父 Entry
+     * @throws ErrorEntryFreeException 若 {@link Context#getCurEntry()} 不是本 Entry
      */
     protected abstract Entry trueExit(int count, Object... args) throws ErrorEntryFreeException;
 
     /**
-     * Get related {@link Node} of the parent {@link Entry}.
+     * 获取父 {@link Entry} 关联的 {@link Node}。
      *
-     * @return
+     * @return 父 Entry 的 Node
      */
     public abstract Node getLastNode();
 
@@ -176,10 +174,10 @@ public abstract class Entry implements AutoCloseable {
     }
 
     /**
-     * Get origin {@link Node} of the this {@link Entry}.
+     * 获取本 {@link Entry} 的来源 {@link Node}。
      *
-     * @return origin {@link Node} of the this {@link Entry}, may be null if no origin specified by
-     * {@link ContextUtil#enter(String name, String origin)}.
+     * @return 本 {@link Entry} 的来源 {@link Node}；若未通过
+     * {@link ContextUtil#enter(String name, String origin)} 指定来源则可能为 null
      */
     public Node getOriginNode() {
         return originNode;
@@ -190,11 +188,11 @@ public abstract class Entry implements AutoCloseable {
     }
 
     /**
-     * Like {@code CompletableFuture} since JDK 8, it guarantees specified handler
-     * is invoked when this entry terminated (exited), no matter it's blocked or permitted.
-     * Use it when you did some STATEFUL operations on entries.
+     * 类似 JDK 8 的 {@code CompletableFuture}，保证在本 Entry 终止（exit）时调用指定处理器，
+     * 无论被阻断还是放行。
+     * 在 Entry 上执行有状态操作时使用。
      * 
-     * @param handler handler function on the invocation terminates
+     * @param handler 调用终止时的处理函数
      * @since 1.8.0
      */
     public abstract void whenTerminate(BiConsumer<Context, Entry> handler);

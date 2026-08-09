@@ -45,8 +45,8 @@ public class CtSph implements Sph {
     private static final Object[] OBJECTS0 = new Object[0];
 
     /**
-     * Same resource({@link ResourceWrapper#equals(Object)}) will share the same
-     * {@link ProcessorSlotChain}, no matter in which {@link Context}.
+     * 相同资源（{@link ResourceWrapper#equals(Object)}）无论在哪个 {@link Context} 中
+     * 都共享同一 {@link ProcessorSlotChain}。
      */
     private static volatile Map<ResourceWrapper, ProcessorSlotChain> chainMap
         = new HashMap<ResourceWrapper, ProcessorSlotChain>();
@@ -56,7 +56,7 @@ public class CtSph implements Sph {
     private AsyncEntry asyncEntryWithNoChain(ResourceWrapper resourceWrapper, Context context) {
         AsyncEntry entry = new AsyncEntry(resourceWrapper, null, context);
         entry.initAsyncContext();
-        // The async entry will be removed from current context as soon as it has been created.
+        // 异步 Entry 创建后立即从当前上下文中移除。
         entry.cleanCurrentEntryInLocal();
         return entry;
     }
@@ -65,23 +65,23 @@ public class CtSph implements Sph {
                                                       Object... args) throws BlockException {
         Context context = ContextUtil.getContext();
         if (context instanceof NullContext) {
-            // The {@link NullContext} indicates that the amount of context has exceeded the threshold,
-            // so here init the entry only. No rule checking will be done.
+            // {@link NullContext} 表示上下文数量已超过阈值，
+            // 此处仅初始化 Entry，不执行规则检查。
             return asyncEntryWithNoChain(resourceWrapper, context);
         }
         if (context == null) {
-            // Using default context.
+            // 使用默认上下文。
             context = InternalContextUtil.internalEnter(Constants.CONTEXT_DEFAULT_NAME);
         }
 
-        // Global switch is turned off, so no rule checking will be done.
+        // 全局开关关闭，不执行规则检查。
         if (!Constants.ON) {
             return asyncEntryWithNoChain(resourceWrapper, context);
         }
 
         ProcessorSlot<Object> chain = lookProcessChain(resourceWrapper);
 
-        // Means processor cache size exceeds {@link Constants.MAX_SLOT_CHAIN_SIZE}, so no rule checking will be done.
+        // 表示 Processor 缓存大小超过 {@link Constants.MAX_SLOT_CHAIN_SIZE}，不执行规则检查。
         if (chain == null) {
             return asyncEntryWithNoChain(resourceWrapper, context);
         }
@@ -89,19 +89,19 @@ public class CtSph implements Sph {
         AsyncEntry asyncEntry = new AsyncEntry(resourceWrapper, chain, context, count, args);
         try {
             chain.entry(context, resourceWrapper, null, count, prioritized, args);
-            // Initiate the async context only when the entry successfully passed the slot chain.
+            // 仅在 Entry 成功通过 Slot 链后初始化异步上下文。
             asyncEntry.initAsyncContext();
-            // The asynchronous call may take time in background, and current context should not be hanged on it.
-            // So we need to remove current async entry from current context.
+            // 异步调用可能在后台耗时，当前上下文不应挂在其上。
+            // 因此需将当前异步 Entry 从当前上下文中移除。
             asyncEntry.cleanCurrentEntryInLocal();
         } catch (BlockException e1) {
-            // When blocked, the async entry will be exited on current context.
-            // The async context will not be initialized.
+            // 被阻断时，异步 Entry 将在当前上下文中 exit。
+            // 异步上下文不会被初始化。
             asyncEntry.exitForContext(context, count, args);
             throw e1;
         } catch (Throwable e1) {
-            // This should not happen, unless there are errors existing in Sentinel internal.
-            // When this happens, async context is not initialized.
+            // 正常情况下不应发生，除非 Sentinel 内部存在错误。
+            // 发生时异步上下文不会被初始化。
             RecordLog.warn("Sentinel unexpected exception in asyncEntryInternal", e1);
 
             asyncEntry.cleanCurrentEntryInLocal();
@@ -118,17 +118,17 @@ public class CtSph implements Sph {
         throws BlockException {
         Context context = ContextUtil.getContext();
         if (context instanceof NullContext) {
-            // The {@link NullContext} indicates that the amount of context has exceeded the threshold,
-            // so here init the entry only. No rule checking will be done.
+            // {@link NullContext} 表示上下文数量已超过阈值，
+            // 此处仅初始化 Entry，不执行规则检查。
             return new CtEntry(resourceWrapper, null, context);
         }
 
         if (context == null) {
-            // Using default context.
+            // 使用默认上下文。
             context = InternalContextUtil.internalEnter(Constants.CONTEXT_DEFAULT_NAME);
         }
 
-        // Global switch is close, no rule checking will do.
+        // 全局开关关闭，不执行规则检查。
         if (!Constants.ON) {
             return new CtEntry(resourceWrapper, null, context);
         }
@@ -136,8 +136,8 @@ public class CtSph implements Sph {
         ProcessorSlot<Object> chain = lookProcessChain(resourceWrapper);
 
         /*
-         * Means amount of resources (slot chain) exceeds {@link Constants.MAX_SLOT_CHAIN_SIZE},
-         * so no rule checking will be done.
+         * 表示资源（Slot 链）数量超过 {@link Constants.MAX_SLOT_CHAIN_SIZE}，
+         * 不执行规则检查。
          */
         if (chain == null) {
             return new CtEntry(resourceWrapper, null, context);
@@ -150,46 +150,45 @@ public class CtSph implements Sph {
             e.exit(count, args);
             throw e1;
         } catch (Throwable e1) {
-            // This should not happen, unless there are errors existing in Sentinel internal.
+            // 正常情况下不应发生，除非 Sentinel 内部存在错误。
             RecordLog.info("Sentinel unexpected exception", e1);
         }
         return e;
     }
 
     /**
-     * Do all {@link Rule}s checking about the resource.
+     * 对资源执行全部 {@link Rule} 检查。
      *
-     * <p>Each distinct resource will use a {@link ProcessorSlot} to do rules checking. Same resource will use
-     * same {@link ProcessorSlot} globally. </p>
+     * <p>每个不同资源使用一个 {@link ProcessorSlot} 做规则检查。相同资源全局共享同一
+     * {@link ProcessorSlot}。</p>
      *
-     * <p>Note that total {@link ProcessorSlot} count must not exceed {@link Constants#MAX_SLOT_CHAIN_SIZE},
-     * otherwise no rules checking will do. In this condition, all requests will pass directly, with no checking
-     * or exception.</p>
+     * <p>注意 {@link ProcessorSlot} 总数不得超过 {@link Constants#MAX_SLOT_CHAIN_SIZE}，
+     * 否则不做规则检查。此时所有请求直接通过，无检查也无异常。</p>
      *
-     * @param resourceWrapper resource name
-     * @param count           tokens needed
-     * @param args            arguments of user method call
-     * @return {@link Entry} represents this call
-     * @throws BlockException if any rule's threshold is exceeded
+     * @param resourceWrapper 资源名称
+     * @param count           所需令牌数
+     * @param args            用户方法调用参数
+     * @return 表示本次调用的 {@link Entry}
+     * @throws BlockException 若任一规则阈值被超过
      */
     public Entry entry(ResourceWrapper resourceWrapper, int count, Object... args) throws BlockException {
         return entryWithPriority(resourceWrapper, count, false, args);
     }
 
     /**
-     * Get {@link ProcessorSlotChain} of the resource. new {@link ProcessorSlotChain} will
-     * be created if the resource doesn't relate one.
+     * 获取资源的 {@link ProcessorSlotChain}。若资源尚未关联则创建新的
+     * {@link ProcessorSlotChain}。
      *
-     * <p>Same resource({@link ResourceWrapper#equals(Object)}) will share the same
-     * {@link ProcessorSlotChain} globally, no matter in which {@link Context}.<p/>
+     * <p>相同资源（{@link ResourceWrapper#equals(Object)}）全局共享同一
+     * {@link ProcessorSlotChain}，与所在 {@link Context} 无关。<p/>
      *
      * <p>
-     * Note that total {@link ProcessorSlot} count must not exceed {@link Constants#MAX_SLOT_CHAIN_SIZE},
-     * otherwise null will return.
+     * 注意 {@link ProcessorSlot} 总数不得超过 {@link Constants#MAX_SLOT_CHAIN_SIZE}，
+     * 否则返回 null。
      * </p>
      *
-     * @param resourceWrapper target resource
-     * @return {@link ProcessorSlotChain} of the resource
+     * @param resourceWrapper 目标资源
+     * @return 资源的 {@link ProcessorSlotChain}
      */
     ProcessorSlot<Object> lookProcessChain(ResourceWrapper resourceWrapper) {
         ProcessorSlotChain chain = chainMap.get(resourceWrapper);
@@ -197,7 +196,7 @@ public class CtSph implements Sph {
             synchronized (LOCK) {
                 chain = chainMap.get(resourceWrapper);
                 if (chain == null) {
-                    // Entry size limit.
+                    // Entry 数量上限。
                     if (chainMap.size() >= Constants.MAX_SLOT_CHAIN_SIZE) {
                         return null;
                     }
@@ -215,9 +214,9 @@ public class CtSph implements Sph {
     }
 
     /**
-     * Get current size of created slot chains.
+     * 获取已创建 Slot 链的当前数量。
      *
-     * @return size of created slot chains
+     * @return 已创建 Slot 链数量
      * @since 0.2.0
      */
     public static int entrySize() {
@@ -225,7 +224,7 @@ public class CtSph implements Sph {
     }
 
     /**
-     * Reset the slot chain map. Only for internal test.
+     * 重置 Slot 链映射。仅供内部测试。
      *
      * @since 0.2.0
      */
@@ -234,7 +233,7 @@ public class CtSph implements Sph {
     }
 
     /**
-     * Only for internal test.
+     * 仅供内部测试。
      *
      * @since 0.2.0
      */
@@ -243,7 +242,7 @@ public class CtSph implements Sph {
     }
 
     /**
-     * This class is used for skip context name checking.
+     * 用于跳过上下文名称检查的辅助类。
      */
     private final static class InternalContextUtil extends ContextUtil {
         static Context internalEnter(String name) {

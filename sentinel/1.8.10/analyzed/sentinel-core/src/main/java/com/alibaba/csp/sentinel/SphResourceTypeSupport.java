@@ -19,57 +19,56 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.system.SystemRule;
 
 /**
+ * 支持按资源类型分类的 Sph 扩展接口。
+ *
  * @author Eric Zhao
  * @since 1.7.0
  */
 public interface SphResourceTypeSupport {
 
     /**
-     * Record statistics and perform rule checking for the given resource with provided classification.
+     * 对给定分类的资源记录统计并执行规则检查。
      *
-     * @param name         the unique name of the protected resource
-     * @param resourceType the classification of the resource
-     * @param trafficType  the traffic type (inbound, outbound or internal). This is used
-     *                     to mark whether it can be blocked when the system is unstable,
-     *                     only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount   the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param args         args for parameter flow control or customized slots
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data)
-     * @throws BlockException if the block criteria is met
+     * @param name         受保护资源的唯一名称
+     * @param resourceType 资源分类
+     * @param trafficType  流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                     仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount   单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param args         用于热点参数流控或自定义 Slot 的参数
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）
+     * @throws BlockException 若满足阻断条件
      */
     Entry entryWithType(String name, int resourceType, EntryType trafficType, int batchCount, Object[] args)
         throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given resource with the provided classification.
+     * 对给定分类的资源记录统计并执行规则检查。
      *
-     * @param name         the unique name of the protected resource
-     * @param resourceType classification of the resource (e.g. Web or RPC)
-     * @param trafficType  the traffic type (inbound, outbound or internal). This is used
-     *                     to mark whether it can be blocked when the system is unstable,
-     *                     only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount   the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param prioritized  whether the entry is prioritized
-     * @param args         args for parameter flow control or customized slots
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data)
-     * @throws BlockException if the block criteria is met
+     * @param name         受保护资源的唯一名称
+     * @param resourceType 资源分类（例如 Web 或 RPC）
+     * @param trafficType  流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                     仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount   单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param prioritized  该 Entry 是否具有优先级
+     * @param args         用于热点参数流控或自定义 Slot 的参数
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）
+     * @throws BlockException 若满足阻断条件
      */
     Entry entryWithType(String name, int resourceType, EntryType trafficType, int batchCount, boolean prioritized,
                         Object[] args) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given resource that indicates an async invocation.
+     * 对表示异步调用的给定资源记录统计并执行规则检查。
      *
-     * @param name         the unique name for the protected resource
-     * @param resourceType classification of the resource (e.g. Web or RPC)
-     * @param trafficType  the traffic type (inbound, outbound or internal). This is used
-     *                     to mark whether it can be blocked when the system is unstable,
-     *                     only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount   the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param prioritized  whether the entry is prioritized
-     * @param args         args for parameter flow control or customized slots
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data)
-     * @throws BlockException if the block criteria is met
+     * @param name         受保护资源的唯一名称
+     * @param resourceType 资源分类（例如 Web 或 RPC）
+     * @param trafficType  流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                     仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount   单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param prioritized  该 Entry 是否具有优先级
+     * @param args         用于热点参数流控或自定义 Slot 的参数
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）
+     * @throws BlockException 若满足阻断条件
      */
     AsyncEntry asyncEntryWithType(String name, int resourceType, EntryType trafficType, int batchCount,
                                   boolean prioritized,

@@ -16,15 +16,22 @@
 package com.alibaba.csp.sentinel;
 
 /**
+ * 资源类型常量，用于区分 Web、RPC、网关、数据库等不同资源分类。
+ *
  * @author Eric Zhao
  * @since 1.7.0
  */
 public final class ResourceTypeConstants {
 
+    /** 通用资源类型。 */
     public static final int COMMON = 0;
+    /** Web 资源类型。 */
     public static final int COMMON_WEB = 1;
+    /** RPC 资源类型。 */
     public static final int COMMON_RPC = 2;
+    /** API 网关资源类型。 */
     public static final int COMMON_API_GATEWAY = 3;
+    /** 数据库 SQL 资源类型。 */
     public static final int COMMON_DB_SQL = 4;
 
     private ResourceTypeConstants() {}

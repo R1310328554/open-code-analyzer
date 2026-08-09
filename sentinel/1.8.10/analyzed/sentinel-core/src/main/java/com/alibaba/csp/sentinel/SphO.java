@@ -28,38 +28,36 @@ import com.alibaba.csp.sentinel.slots.system.SystemRule;
 import com.alibaba.csp.sentinel.slots.system.SystemRuleManager;
 
 /**
- * Conceptually, physical or logical resource that need protection should be
- * surrounded by an entry. The requests to this resource will be blocked if any
- * criteria is met, eg. when any {@link Rule}'s threshold is exceeded. Once blocked,
- * {@link SphO}#entry() will return false.
+ * 概念上，需要保护的物理或逻辑资源应被 Entry 包裹。若满足任一条件
+ *（例如任一 {@link Rule} 阈值被超过），对该资源的请求将被阻断。一旦被阻断，
+ * {@link SphO}#entry() 将返回 false。
  *
  * <p>
- * To configure the criteria, we can use <code>XXXRuleManager.loadRules()</code> to add rules. eg.
- * {@link FlowRuleManager#loadRules(List)}, {@link DegradeRuleManager#loadRules(List)},
- * {@link SystemRuleManager#loadRules(List)}.
+ * 可通过 <code>XXXRuleManager.loadRules()</code> 配置条件，例如
+ * {@link FlowRuleManager#loadRules(List)}、{@link DegradeRuleManager#loadRules(List)}、
+ * {@link SystemRuleManager#loadRules(List)}。
  * </p>
  *
  * <p>
- * Following code is an example. {@code "abc"} represent a unique name for the
- * protected resource:
+ * 示例如下，{@code "abc"} 表示受保护资源的唯一名称：
  * </p>
  *
  * <pre>
  * public void foo() {
  *    if (SphO.entry("abc")) {
  *        try {
- *            // business logic
+ *            // 业务逻辑
  *        } finally {
- *            SphO.exit(); // must exit()
+ *            SphO.exit(); // 必须 exit()
  *        }
  *    } else {
- *        // failed to enter the protected resource.
+ *        // 未能进入受保护资源
  *    }
  * }
  * </pre>
  *
- * Make sure {@code SphO.entry()} and {@link SphO#exit()} be paired in the same thread,
- * otherwise {@link ErrorEntryFreeException} will be thrown.
+ * 确保 {@code SphO.entry()} 与 {@link SphO#exit()} 在同一线程中配对调用，
+ * 否则将抛出 {@link ErrorEntryFreeException}。
  *
  * @author jialiang.linjl
  * @author leyou
@@ -71,111 +69,106 @@ public class SphO {
     private static final Object[] OBJECTS0 = new Object[0];
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name the unique name of the protected resource
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param name 受保护资源的唯一名称
+     * @return 若无规则阈值被超过则返回 true，否则返回 false
      */
     public static boolean entry(String name) {
         return entry(name, EntryType.OUT, 1, OBJECTS0);
     }
 
     /**
-     * Checking all {@link Rule}s about the protected method.
+     * 检查受保护方法相关的全部 {@link Rule}。
      *
-     * @param method the protected method
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param method 受保护的方法
+     * @return 若无规则阈值被超过则返回 true，否则返回 false
      */
     public static boolean entry(Method method) {
         return entry(method, EntryType.OUT, 1, OBJECTS0);
     }
 
     /**
-     * Checking all {@link Rule}s about the protected method.
+     * 检查受保护方法相关的全部 {@link Rule}。
      *
-     * @param method     the protected method
-     * @param batchCount the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param method     受保护的方法
+     * @param batchCount 单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @return 若无规则阈值被超过则返回 true，否则返回 false
      */
     public static boolean entry(Method method, int batchCount) {
         return entry(method, EntryType.OUT, batchCount, OBJECTS0);
     }
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name       the unique string for the resource
-     * @param batchCount the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param name       资源的唯一字符串标识
+     * @param batchCount 单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @return 若无规则阈值被超过则返回 true，否则返回 false
      */
     public static boolean entry(String name, int batchCount) {
         return entry(name, EntryType.OUT, batchCount, OBJECTS0);
     }
 
     /**
-     * Checking all {@link Rule}s about the protected method.
+     * 检查受保护方法相关的全部 {@link Rule}。
      *
-     * @param method the protected method
-     * @param type   the resource is an inbound or an outbound method. This is used
-     *               to mark whether it can be blocked when the system is unstable,
-     *               only inbound traffic could be blocked by {@link SystemRule}
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param method 受保护的方法
+     * @param type   资源为入站或出站方法。用于标记系统不稳定时是否可被限流，
+     *               仅入站流量可被 {@link SystemRule} 阻断
+     * @return 若无规则阈值被超过则返回 true，否则返回 false
      */
     public static boolean entry(Method method, EntryType type) {
         return entry(method, type, 1, OBJECTS0);
     }
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name the unique name for the protected resource
-     * @param type the resource is an inbound or an outbound method. This is used
-     *             to mark whether it can be blocked when the system is unstable,
-     *             only inbound traffic could be blocked by {@link SystemRule}
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param name 受保护资源的唯一名称
+     * @param type 资源为入站或出站方法。用于标记系统不稳定时是否可被限流，
+     *             仅入站流量可被 {@link SystemRule} 阻断
+     * @return 若无规则阈值被超过则返回 true，否则返回 false
      */
     public static boolean entry(String name, EntryType type) {
         return entry(name, type, 1, OBJECTS0);
     }
 
     /**
-     * Checking all {@link Rule}s about the protected method.
+     * 检查受保护方法相关的全部 {@link Rule}。
      *
-     * @param method the protected method
-     * @param type   the resource is an inbound or an outbound method. This is used
-     *               to mark whether it can be blocked when the system is unstable,
-     *               only inbound traffic could be blocked by {@link SystemRule}
-     * @param count  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param method 受保护的方法
+     * @param type   资源为入站或出站方法。用于标记系统不稳定时是否可被限流，
+     *               仅入站流量可被 {@link SystemRule} 阻断
+     * @param count  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @return 若无规则阈值被超过则返回 true，否则返回 false
      */
     public static boolean entry(Method method, EntryType type, int count) {
         return entry(method, type, count, OBJECTS0);
     }
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name  the unique name for the protected resource
-     * @param type  the resource is an inbound or an outbound method. This is used
-     *              to mark whether it can be blocked when the system is unstable,
-     *              only inbound traffic could be blocked by {@link SystemRule}
-     * @param count the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param name  受保护资源的唯一名称
+     * @param type  资源为入站或出站方法。用于标记系统不稳定时是否可被限流，
+     *              仅入站流量可被 {@link SystemRule} 阻断
+     * @param count 单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @return 若无规则阈值被超过则返回 true，否则返回 false
      */
     public static boolean entry(String name, EntryType type, int count) {
         return entry(name, type, count, OBJECTS0);
     }
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name        the unique name for the protected resource
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param args        args for parameter flow control or customized slots
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param name        受保护资源的唯一名称
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param args        用于热点参数流控或自定义 Slot 的参数
+     * @return 若无规则阈值被超过则返回 true，否则返回 false。
      */
     public static boolean entry(String name, EntryType trafficType, int batchCount, Object... args) {
         try {
@@ -190,15 +183,14 @@ public class SphO {
     }
 
     /**
-     * Record statistics and perform rule checking for the given method resource.
+     * 对给定方法资源记录统计并执行规则检查。
      *
-     * @param method      the protected method
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param args        args for parameter flow control or customized slots
-     * @return true if no rule's threshold is exceeded, otherwise return false.
+     * @param method      受保护的方法
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param args        用于热点参数流控或自定义 Slot 的参数
+     * @return 若无规则阈值被超过则返回 true，否则返回 false。
      */
     public static boolean entry(Method method, EntryType trafficType, int batchCount, Object... args) {
         try {

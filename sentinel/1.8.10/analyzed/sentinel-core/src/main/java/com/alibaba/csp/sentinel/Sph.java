@@ -21,7 +21,7 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.system.SystemRule;
 
 /**
- * The basic interface for recording statistics and performing rule checking for resources.
+ * 对资源记录统计并执行规则检查的基础接口。
  *
  * @author qinan.qn
  * @author jialiang.linjl
@@ -31,164 +31,155 @@ import com.alibaba.csp.sentinel.slots.system.SystemRule;
 public interface Sph extends SphResourceTypeSupport {
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name the unique name of the protected resource
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @param name 受保护资源的唯一名称
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(String name) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given method.
+     * 对给定方法记录统计并执行规则检查。
      *
-     * @param method the protected method
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @param method 受保护的方法
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(Method method) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given method.
+     * 对给定方法记录统计并执行规则检查。
      *
-     * @param method     the protected method
-     * @param batchCount the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @param method     受保护的方法
+     * @param batchCount 单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(Method method, int batchCount) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name       the unique string for the resource
-     * @param batchCount the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @param name       资源的唯一字符串标识
+     * @param batchCount 单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(String name, int batchCount) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given method.
+     * 对给定方法记录统计并执行规则检查。
      *
-     * @param method      the protected method
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @param method      受保护的方法
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(Method method, EntryType trafficType) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name        the unique name for the protected resource
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @param name        受保护资源的唯一名称
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(String name, EntryType trafficType) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given method.
+     * 对给定方法记录统计并执行规则检查。
      *
-     * @param method      the protected method
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @param method      受保护的方法
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(Method method, EntryType trafficType, int batchCount) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name        the unique name for the protected resource
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @param name        受保护资源的唯一名称
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(String name, EntryType trafficType, int batchCount) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param method      the protected method
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
+     * @param method      受保护的方法
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
      * @param args        parameters of the method for flow control or customized slots
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data).
-     * @throws BlockException if the block criteria is met
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）.
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(Method method, EntryType trafficType, int batchCount, Object... args) throws BlockException;
 
     /**
-     * Record statistics and perform rule checking for the given resource.
+     * 对给定资源记录统计并执行规则检查。
      *
-     * @param name        the unique name for the protected resource
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param args        args for parameter flow control or customized slots
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data)
-     * @throws BlockException if the block criteria is met
+     * @param name        受保护资源的唯一名称
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param args        用于热点参数流控或自定义 Slot 的参数
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）
+     * @throws BlockException 若满足阻断条件
      */
     Entry entry(String name, EntryType trafficType, int batchCount, Object... args) throws BlockException;
 
     /**
-     * Create a protected asynchronous resource.
+     * 创建受保护的异步资源。
      *
-     * @param name        the unique name for the protected resource
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param args        args for parameter flow control or customized slots
-     * @return created asynchronous entry
-     * @throws BlockException if the block criteria is met
+     * @param name        受保护资源的唯一名称
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param args        用于热点参数流控或自定义 Slot 的参数
+     * @return 创建的异步 Entry
+     * @throws BlockException 若满足阻断条件
      * @since 0.2.0
      */
     AsyncEntry asyncEntry(String name, EntryType trafficType, int batchCount, Object... args) throws BlockException;
 
     /**
-     * Create a protected resource with priority.
+     * 创建带优先级的受保护资源。
      *
-     * @param name        the unique name for the protected resource
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param prioritized whether the entry is prioritized
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data)
-     * @throws BlockException if the block criteria is met
+     * @param name        受保护资源的唯一名称
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param prioritized 该 Entry 是否具有优先级
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）
+     * @throws BlockException 若满足阻断条件
      * @since 1.4.0
      */
     Entry entryWithPriority(String name, EntryType trafficType, int batchCount, boolean prioritized)
         throws BlockException;
 
     /**
-     * Create a protected resource with priority.
+     * 创建带优先级的受保护资源。
      *
-     * @param name        the unique name for the protected resource
-     * @param trafficType the traffic type (inbound, outbound or internal). This is used
-     *                    to mark whether it can be blocked when the system is unstable,
-     *                    only inbound traffic could be blocked by {@link SystemRule}
-     * @param batchCount  the amount of calls within the invocation (e.g. batchCount=2 means request for 2 tokens)
-     * @param prioritized whether the entry is prioritized
-     * @param args        args for parameter flow control or customized slots
-     * @return the {@link Entry} of this invocation (used for mark the invocation complete and get context data)
-     * @throws BlockException if the block criteria is met
+     * @param name        受保护资源的唯一名称
+     * @param trafficType 流量类型（入站、出站或内部）。用于标记系统不稳定时是否可被限流，
+     *                    仅入站流量可被 {@link SystemRule} 阻断
+     * @param batchCount  单次调用内的请求数量（例如 batchCount=2 表示申请 2 个令牌）
+     * @param prioritized 该 Entry 是否具有优先级
+     * @param args        用于热点参数流控或自定义 Slot 的参数
+     * @return 本次调用的 {@link Entry}（用于标记调用完成并获取上下文数据）
+     * @throws BlockException 若满足阻断条件
      * @since 1.5.0
      */
     Entry entryWithPriority(String name, EntryType trafficType, int batchCount, boolean prioritized, Object... args)

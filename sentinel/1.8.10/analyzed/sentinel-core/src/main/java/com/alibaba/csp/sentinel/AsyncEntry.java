@@ -22,7 +22,7 @@ import com.alibaba.csp.sentinel.slotchain.ProcessorSlot;
 import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 
 /**
- * The entry for asynchronous resources.
+ * 异步资源的 Entry。
  *
  * @author Eric Zhao
  * @since 0.2.0
@@ -40,7 +40,7 @@ public class AsyncEntry extends CtEntry {
     }
 
     /**
-     * Remove current entry from local context, but does not exit.
+     * 从本地上下文中移除当前 Entry，但不执行 exit。
      */
     void cleanCurrentEntryInLocal() {
         if (context instanceof NullContext) {
@@ -70,7 +70,7 @@ public class AsyncEntry extends CtEntry {
     }
 
     /**
-     * The async context should not be initialized until the node for current resource has been set to current entry.
+     * 异步上下文不应在当前资源的 Node 已设置到当前 Entry 之前初始化。
      */
     void initAsyncContext() {
         if (asyncContext == null) {

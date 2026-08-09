@@ -27,7 +27,7 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.util.function.BiConsumer;
 
 /**
- * Linked entry within current context.
+ * 当前上下文中的链式 Entry。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -54,7 +54,7 @@ class CtEntry extends Entry {
     }
 
     private void setUpEntryFor(Context context) {
-        // The entry should not be associated to NullContext.
+        // Entry 不应关联到 NullContext。
         if (context instanceof NullContext) {
             return;
         }
@@ -71,7 +71,7 @@ class CtEntry extends Entry {
     }
 
     /**
-     * Note: the exit handlers will be called AFTER onExit of slot chain.
+     * 注意：exit 处理器将在 Slot 链的 onExit 之后调用。
      */
     private void callExitHandlersAndCleanUp(Context ctx) {
         if (exitHandlers != null && !exitHandlers.isEmpty()) {
@@ -89,7 +89,7 @@ class CtEntry extends Entry {
 
     protected void exitForContext(Context context, int count, Object... args) throws ErrorEntryFreeException {
         if (context != null) {
-            // Null context should exit without clean-up.
+            // NullContext 应直接退出，不做清理。
             if (context instanceof NullContext) {
                 return;
             }
@@ -97,7 +97,7 @@ class CtEntry extends Entry {
             if (context.getCurEntry() != this) {
                 String curEntryNameInContext = context.getCurEntry() == null ? null
                     : context.getCurEntry().getResourceWrapper().getName();
-                // Clean previous call stack.
+                // 清理先前的调用栈。
                 CtEntry e = (CtEntry) context.getCurEntry();
                 while (e != null) {
                     e.exit(count, args);
@@ -108,25 +108,25 @@ class CtEntry extends Entry {
                     resourceWrapper.getName());
                 throw new ErrorEntryFreeException(errorMessage);
             } else {
-                // Go through the onExit hook of all slots.
+                // 依次触发所有 Slot 的 onExit 钩子。
                 if (chain != null) {
                     chain.exit(context, resourceWrapper, count, args);
                 }
-                // Go through the existing terminate handlers (associated to this invocation).
+                // 依次执行与本调用关联的终止处理器。
                 callExitHandlersAndCleanUp(context);
 
-                // Restore the call stack.
+                // 恢复调用栈。
                 context.setCurEntry(parent);
                 if (parent != null) {
                     ((CtEntry) parent).child = null;
                 }
                 if (parent == null) {
-                    // Default context (auto entered) will be exited automatically.
+                    // 默认上下文（自动进入）将自动退出。
                     if (ContextUtil.isDefaultContext(context)) {
                         ContextUtil.exit();
                     }
                 }
-                // Clean the reference of context in current entry to avoid duplicate exit.
+                // 清除当前 Entry 中的 context 引用，避免重复 exit。
                 clearEntryContext();
             }
         }
