@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T21:19:52Z",
   "files": [
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/HybridSearchResultDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/IndexInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/KeyValueMessage.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ListFirstObjectDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ListIteratorReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ListIteratorResult.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ListMultiDecoder2.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ListObjectDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ListResultReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ListScanResult.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ListScanResultReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/Long2MultiDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapCacheKeyScanResult.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapCacheKeyScanResultDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapCacheScanResult.java",
     "redisson/src/main/java/org/redisson/client/protocol/decoder/MapCacheScanResultReplayDecoder.java",
     "redisson/src/main/java/org/redisson/client/protocol/decoder/MapEntriesDecoder.java",
     "redisson/src/main/java/org/redisson/client/protocol/decoder/MapKeyDecoder.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectMapReplayDecoder.java"
   ],
   "remaining_pending": 452,
-  "done": 2340
+  "done": 2355
 }
