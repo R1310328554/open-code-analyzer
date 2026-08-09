@@ -47,17 +47,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class YamlProcessor — 意图说明
-
-处理器：容器生命周期中的扩展钩子；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/config/YamlProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Base class for YAML factories.
+ * YAML 工厂的基类。
  *
- * <p>Requires SnakeYAML 2.0 or higher.
+ * <p>需要 SnakeYAML 2.0 或更高版本。
  *
  * @author Dave Syer
  * @author Juergen Hoeller
@@ -67,30 +60,28 @@ class YamlProcessor — 意图说明
  */
 public abstract class YamlProcessor {
 
-	// [OCA] 字段 `logger`：类成员状态。
 	private final Log logger = LogFactory.getLog(getClass());
 
-	// [OCA] 字段 `resolutionMethod`：类成员状态。
+	/** 资源解析方法，默认为 OVERRIDE */
 	private ResolutionMethod resolutionMethod = ResolutionMethod.OVERRIDE;
 
-	// [OCA] 字段 `resources`：类成员状态。
+	/** 要加载的 YAML 资源数组 */
 	private Resource[] resources = new Resource[0];
 
-	// [OCA] 字段 `documentMatchers`：类成员状态。
+	/** 文档匹配器列表，用于选择性加载 YAML 资源中的部分文档 */
 	private List<DocumentMatcher> documentMatchers = Collections.emptyList();
 
-	// [OCA] 字段 `matchDefault`：类成员状态。
+	/** 所有文档匹配器均弃权时，文档是否仍应匹配，默认为 true */
 	private boolean matchDefault = true;
 
-	// [OCA] 字段 `supportedTypes`：类成员状态。
+	/** 可从 YAML 文档加载的支持类型集合 */
 	private Set<String> supportedTypes = Collections.emptySet();
 
 
 	/**
-	 * A map of document matchers allowing callers to selectively use only
-	 * some of the documents in a YAML resource. In YAML documents are
-	 * separated by {@code ---} lines, and each document is converted
-	 * to properties before the match is made. For example,
+	 * 设置文档匹配器映射，允许调用方仅选择性使用 YAML 资源中的部分文档。
+	 * 在 YAML 中，文档以 {@code ---} 行分隔，每个文档在匹配前
+	 * 会先转换为 properties。例如：
 	 * <pre class="code">
 	 * environment: dev
 	 * url: https://dev.bar.com
@@ -100,12 +91,12 @@ public abstract class YamlProcessor {
 	 * url:https://foo.bar.com
 	 * name: My Cool App
 	 * </pre>
-	 * when mapped with
+	 * 配合以下匹配器：
 	 * <pre class="code">
 	 * setDocumentMatchers(properties -&gt;
 	 *     ("prod".equals(properties.getProperty("environment")) ? MatchStatus.FOUND : MatchStatus.NOT_FOUND));
 	 * </pre>
-	 * would end up as
+	 * 将得到：
 	 * <pre class="code">
 	 * environment=prod
 	 * url=https://foo.bar.com
@@ -117,18 +108,17 @@ public abstract class YamlProcessor {
 	}
 
 	/**
-	 * Flag indicating that a document for which all the
-	 * {@link #setDocumentMatchers(DocumentMatcher...) document matchers} abstain will
-	 * nevertheless match. Default is {@code true}.
+	 * 指示所有 {@link #setDocumentMatchers(DocumentMatcher...) 文档匹配器}均弃权时，
+	 * 文档是否仍应匹配。默认为 {@code true}。
 	 */
 	public void setMatchDefault(boolean matchDefault) {
 		this.matchDefault = matchDefault;
 	}
 
 	/**
-	 * Method to use for resolving resources. Each resource will be converted to a Map,
-	 * so this property is used to decide which map entries to keep in the final output
-	 * from this factory. Default is {@link ResolutionMethod#OVERRIDE}.
+	 * 设置资源解析方法。每个资源将转换为 Map，
+	 * 此属性用于决定本工厂最终输出中保留哪些 Map 条目。
+	 * 默认为 {@link ResolutionMethod#OVERRIDE}。
 	 */
 	public void setResolutionMethod(ResolutionMethod resolutionMethod) {
 		Assert.notNull(resolutionMethod, "ResolutionMethod must not be null");
@@ -136,7 +126,7 @@ public abstract class YamlProcessor {
 	}
 
 	/**
-	 * Set locations of YAML {@link Resource resources} to be loaded.
+	 * 设置要加载的 YAML {@link Resource 资源}位置。
 	 * @see ResolutionMethod
 	 */
 	public void setResources(Resource... resources) {
@@ -144,14 +134,11 @@ public abstract class YamlProcessor {
 	}
 
 	/**
-	 * Set the supported types that can be loaded from YAML documents.
-	 * <p>If no supported types are configured, only Java standard classes
-	 * (as defined in {@link org.yaml.snakeyaml.constructor.SafeConstructor})
-	 * encountered in YAML documents will be supported.
-	 * If an unsupported type is encountered, a {@link ComposerException}
-	 * will be thrown when the corresponding YAML node is processed.
-	 * @param supportedTypes the supported types, or an empty array to clear the
-	 * supported types
+	 * 设置可从 YAML 文档加载的支持类型。
+	 * <p>若未配置支持类型，则仅支持 YAML 文档中遇到的 Java 标准类
+	 * （定义于 {@link org.yaml.snakeyaml.constructor.SafeConstructor}）。
+	 * 若遇到不支持的类型，处理对应 YAML 节点时将抛出 {@link ComposerException}。
+	 * @param supportedTypes 支持类型，或传入空数组以清除支持类型
 	 * @since 5.1.16
 	 * @see #createYaml()
 	 */
@@ -166,19 +153,12 @@ public abstract class YamlProcessor {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 process — 意图与阅读要点
-
-方法 `process` 复杂度较高（CCN≈9, NLOC≈26）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Provide an opportunity for subclasses to process the Yaml parsed from the supplied
-	 * resources. Each resource is parsed in turn and the documents inside checked against
-	 * the {@link #setDocumentMatchers(DocumentMatcher...) matchers}. If a document
-	 * matches it is passed into the callback, along with its representation as Properties.
-	 * Depending on the {@link #setResolutionMethod(ResolutionMethod)} not all the
-	 * documents will be parsed.
-	 * @param callback a callback to delegate to once matching documents are found
+	 * 为子类提供处理从所供资源解析出的 YAML 的机会。
+	 * 依次解析每个资源，并根据 {@link #setDocumentMatchers(DocumentMatcher...) 匹配器}
+	 * 检查其中的文档。若文档匹配，则连同其 Properties 表示一起传入回调。
+	 * 根据 {@link #setResolutionMethod(ResolutionMethod)}，并非所有文档都会被解析。
+	 * @param callback 找到匹配文档后委托的回调
 	 * @see #createYaml()
 	 */
 	protected void process(MatchCallback callback) {
@@ -192,14 +172,12 @@ public abstract class YamlProcessor {
 	}
 
 	/**
-	 * Create the {@link Yaml} instance to use.
-	 * <p>The default implementation sets the "allowDuplicateKeys" flag to {@code false},
-	 * enabling built-in duplicate key handling.
-	 * <p>If custom {@linkplain #setSupportedTypes supported types} have been configured,
-	 * the default implementation creates a {@code Yaml} instance that filters out
-	 * unsupported types encountered in YAML documents.
-	 * If an unsupported type is encountered, a {@link ComposerException} will be
-	 * thrown when the node is processed.
+	 * 创建要使用的 {@link Yaml} 实例。
+	 * <p>默认实现将 "allowDuplicateKeys" 标志设为 {@code false}，
+	 * 启用内置的重复键处理。
+	 * <p>若已配置自定义 {@linkplain #setSupportedTypes 支持类型}，
+	 * 默认实现将创建过滤 YAML 文档中不支持类型的 {@code Yaml} 实例。
+	 * 若遇到不支持的类型，处理节点时将抛出 {@link ComposerException}。
 	 * @see LoaderOptions#setAllowDuplicateKeys(boolean)
 	 */
 	protected Yaml createYaml() {
@@ -210,13 +188,6 @@ public abstract class YamlProcessor {
 		return new Yaml(new Constructor(loaderOptions), new Representer(dumperOptions),
 				dumperOptions, loaderOptions);
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 process — 意图与阅读要点
-
-方法 `process` 复杂度较高（CCN≈9, NLOC≈26）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
 
 	private boolean process(MatchCallback callback, Yaml yaml, Resource resource) {
 		int count = 0;
@@ -257,10 +228,10 @@ public abstract class YamlProcessor {
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private Map<String, Object> asMap(Object object) {
-		// YAML can have numbers as keys
+		// YAML 的键可以是数字
 		Map<String, Object> result = new LinkedHashMap<>();
 		if (!(object instanceof Map map)) {
-			// A document can be a text literal
+			// 文档可以是文本字面量
 			result.put("document", object);
 			return result;
 		}
@@ -273,19 +244,12 @@ public abstract class YamlProcessor {
 				result.put(key.toString(), value);
 			}
 			else {
-				// It has to be a map key in this case
+				// 此时键必须是 Map 键
 				result.put("[" + key + "]", value);
 			}
 		});
 		return result;
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 process — 意图与阅读要点
-
-方法 `process` 复杂度较高（CCN≈9, NLOC≈26）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
 
 	private boolean process(Map<String, Object> map, MatchCallback callback) {
 		Properties properties = CollectionFactory.createStringAdaptingProperties();
@@ -327,12 +291,11 @@ public abstract class YamlProcessor {
 	}
 
 	/**
-	 * Return a flattened version of the given map, recursively following any nested Map
-	 * or Collection values. Entries from the resulting map retain the same order as the
-	 * source. When called with the Map from a {@link MatchCallback} the result will
-	 * contain the same values as the {@link MatchCallback} Properties.
-	 * @param source the source map
-	 * @return a flattened map
+	 * 返回给定 Map 的扁平化版本，递归遍历所有嵌套 Map 或 Collection 值。
+	 * 结果 Map 中的条目保持与源相同的顺序。对 {@link MatchCallback} 的 Map 调用时，
+	 * 结果将包含与 {@link MatchCallback} Properties 相同的值。
+	 * @param source 源 Map
+	 * @return 扁平化后的 Map
 	 * @since 4.1.3
 	 */
 	protected final Map<String, Object> getFlattenedMap(Map<String, Object> source) {
@@ -340,15 +303,13 @@ public abstract class YamlProcessor {
 	}
 
 	/**
-	 * Return a flattened version of the given map, recursively following any nested Map
-	 * or Collection values. Entries from the resulting map retain the same order as the
-	 * source. When called with the Map from a {@link MatchCallback} the result will
-	 * contain the same values as the {@link MatchCallback} Properties.
-	 * @param source the source map
-	 * @param includeEmpty whether empty entries should be included in the result
-	 * @param emptyValue the value used to represent an empty entry &mdash; for
-	 * example, {@code null} or an empty {@code String}
-	 * @return a flattened map
+	 * 返回给定 Map 的扁平化版本，递归遍历所有嵌套 Map 或 Collection 值。
+	 * 结果 Map 中的条目保持与源相同的顺序。对 {@link MatchCallback} 的 Map 调用时，
+	 * 结果将包含与 {@link MatchCallback} Properties 相同的值。
+	 * @param source 源 Map
+	 * @param includeEmpty 是否在结果中包含空条目
+	 * @param emptyValue 表示空条目的值，例如 {@code null} 或空 {@code String}
+	 * @return 扁平化后的 Map
 	 * @since 7.0.4
 	 */
 	protected final Map<String, Object> getFlattenedMap(Map<String, Object> source, boolean includeEmpty,
@@ -360,11 +321,6 @@ public abstract class YamlProcessor {
 	}
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	/* ===== [OCA 中文解析] =====
-方法 buildFlattenedMap — 意图与阅读要点
-
-方法 `buildFlattenedMap` 复杂度较高（CCN≈12, NLOC≈38）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	private void buildFlattenedMap(Map<String, Object> result, Map<String, Object> source, @Nullable String path,
 			boolean includeEmpty, @Nullable Object emptyValue) {
 
@@ -385,11 +341,11 @@ public abstract class YamlProcessor {
 				result.put(key, value);
 			}
 			else if (value instanceof Map map) {
-				// Need a compound key
+				// 需要复合键
 				buildFlattenedMap(result, map, key, includeEmpty, emptyValue);
 			}
 			else if (value instanceof Collection collection) {
-				// Need a compound key
+				// 需要复合键
 				if (collection.isEmpty()) {
 					result.put(key, "");
 				}
@@ -408,81 +364,58 @@ public abstract class YamlProcessor {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-interface MatchCallback — 意图说明
-
-interface `MatchCallback`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/config/YamlProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Callback interface used to process the YAML parsing results.
+	 * 用于处理 YAML 解析结果的回调接口。
 	 */
 	@FunctionalInterface
 	public interface MatchCallback {
 
 		/**
-		 * Process the given representation of the parsing results.
-		 * @param properties the properties to process (as a flattened
-		 * representation with indexed keys in case of a collection or map)
-		 * @param map the result map (preserving the original value structure
-		 * in the YAML document)
+		 * 处理给定的解析结果表示。
+		 * @param properties 要处理的属性（扁平化表示，集合或 Map 时使用索引键）
+		 * @param map 结果 Map（保留 YAML 文档中的原始值结构）
 		 */
 		void process(Properties properties, Map<String, Object> map);
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-interface DocumentMatcher — 意图说明
-
-interface `DocumentMatcher`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/config/YamlProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Strategy interface used to test if properties match.
+	 * 用于测试属性是否匹配的策略接口。
 	 */
 	@FunctionalInterface
 	public interface DocumentMatcher {
 
 		/**
-		 * Test if the given properties match.
-		 * @param properties the properties to test
-		 * @return the status of the match
+		 * 测试给定属性是否匹配。
+		 * @param properties 要测试的属性
+		 * @return 匹配状态
 		 */
 		MatchStatus matches(Properties properties);
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-enum MatchStatus — 意图说明
-
-enum `MatchStatus`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/config/YamlProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Status returned from {@link DocumentMatcher#matches(java.util.Properties)}.
+	 * {@link DocumentMatcher#matches(java.util.Properties)} 返回的状态。
 	 */
 	public enum MatchStatus {
 
 		/**
-		 * A match was found.
+		 * 找到匹配。
 		 */
 		FOUND,
 
 		/**
-		 * No match was found.
+		 * 未找到匹配。
 		 */
 		NOT_FOUND,
 
 		/**
-		 * The matcher should not be considered.
+		 * 匹配器不应被考虑。
 		 */
 		ABSTAIN;
 
 		/**
-		 * Compare two {@link MatchStatus} items, returning the most specific status.
+		 * 比较两个 {@link MatchStatus} 项，返回更具体的状态。
 		 */
 		public static MatchStatus getMostSpecific(MatchStatus a, MatchStatus b) {
 			return (a.ordinal() < b.ordinal() ? a : b);
@@ -490,43 +423,28 @@ enum `MatchStatus`：请结合所属模块与调用方理解其在整体架构�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-enum ResolutionMethod — 意图说明
-
-enum `ResolutionMethod`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/config/YamlProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Method to use for resolving resources.
+	 * 资源解析方法。
 	 */
 	public enum ResolutionMethod {
 
 		/**
-		 * Replace values from earlier in the list.
+		 * 用列表中靠后的值替换靠前的值。
 		 */
 		OVERRIDE,
 
 		/**
-		 * Replace values from earlier in the list, ignoring any failures.
+		 * 用列表中靠后的值替换靠前的值，忽略任何失败。
 		 */
 		OVERRIDE_AND_IGNORE,
 
 		/**
-		 * Take the first resource in the list that exists and use just that.
+		 * 取列表中第一个存在的资源，仅使用该资源。
 		 */
 		FIRST_FOUND
 	}
 
-	/* ===== [OCA 中文解析] =====
-class SupportedTagInspector — 意图说明
-
-class `SupportedTagInspector`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/config/YamlProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-	===== [OCA 中文解析结束] ===== */
-
+	/** 过滤 YAML 标签的检查器，仅允许配置的支持类型 */
 	private class SupportedTagInspector implements TagInspector {
 
 		@Override

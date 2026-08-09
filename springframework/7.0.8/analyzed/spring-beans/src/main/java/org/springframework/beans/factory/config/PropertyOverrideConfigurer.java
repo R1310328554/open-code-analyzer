@@ -26,36 +26,32 @@ import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.BeanInitializationException;
 
 /**
- * Property resource configurer that overrides bean property values in an application
- * context definition. It <i>pushes</i> values from a properties file into bean definitions.
+ * 属性资源配置器，用于覆盖应用上下文定义中的 Bean 属性值。
+ * 它将 properties 文件中的值<i>推送</i>到 Bean 定义中。
  *
- * <p>Configuration lines are expected to be of the following form:
+ * <p>配置行格式如下：
  *
  * <pre class="code">beanName.property=value</pre>
  *
- * Example properties file:
+ * 示例 properties 文件：
  *
  * <pre class="code">
  * dataSource.driverClassName=com.mysql.jdbc.Driver
  * dataSource.url=jdbc:mysql:mydb</pre>
  *
- * <p>In contrast to {@link PropertyPlaceholderConfigurer}, the original definition
- * can have default values or no values at all for such bean properties. If an
- * overriding properties file does not have an entry for a certain bean property,
- * the default context definition is used.
+ * <p>与 {@link PropertyPlaceholderConfigurer} 不同，原始定义中此类 Bean 属性
+ * 可以有默认值，也可以完全没有值。若覆盖用的 properties 文件没有某属性的条目，
+ * 则使用上下文定义中的默认值。
  *
- * <p>Note that the context definition <i>is not</i> aware of being overridden;
- * so this is not immediately obvious when looking at the XML definition file.
- * Furthermore, note that specified override values are always <i>literal</i> values;
- * they are not translated into bean references. This also applies when the original
- * value in the XML bean definition specifies a bean reference.
+ * <p>注意：上下文定义<i>并不知道</i>自己被覆盖；因此查看 XML 定义文件时这一点并不明显。
+ * 此外，指定的覆盖值始终是<i>字面值</i>，不会转换为 Bean 引用。
+ * 即使 XML Bean 定义中的原始值指定了 Bean 引用，也适用此规则。
  *
- * <p>In case of multiple PropertyOverrideConfigurers that define different values for
- * the same bean property, the <i>last</i> one will win (due to the overriding mechanism).
+ * <p>若有多个 PropertyOverrideConfigurer 为同一 Bean 属性定义了不同值，
+ * <i>最后一个</i>将生效（由于覆盖机制）。
  *
- * <p>Property values can be converted after reading them in, through overriding
- * the {@code convertPropertyValue} method. For example, encrypted values
- * can be detected and decrypted accordingly before processing them.
+ * <p>读取属性值后可通过重写 {@code convertPropertyValue} 方法进行转换。
+ * 例如，可检测加密值并在处理前相应解密。
  *
  * @author Juergen Hoeller
  * @author Rod Johnson
@@ -65,35 +61,33 @@ import org.springframework.beans.factory.BeanInitializationException;
  */
 public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 
-	/**
-	 * The default bean name separator.
-	 */
+	/** 默认的 Bean 名称分隔符 */
 	public static final String DEFAULT_BEAN_NAME_SEPARATOR = ".";
 
 
+	/** Bean 名称与属性路径之间的分隔符，默认为点号（"."） */
 	private String beanNameSeparator = DEFAULT_BEAN_NAME_SEPARATOR;
 
+	/** 是否忽略无效键，默认为 {@code false} */
 	private boolean ignoreInvalidKeys = false;
 
-	/**
-	 * Contains names of beans that have overrides.
-	 */
+	/** 包含已被覆盖的 Bean 名称 */
 	private final Set<String> beanNames = ConcurrentHashMap.newKeySet(16);
 
 
 	/**
-	 * Set the separator to expect between bean name and property path.
-	 * Default is a dot (".").
+	 * 设置 Bean 名称与属性路径之间期望的分隔符。
+	 * 默认为点号（"."）。
 	 */
 	public void setBeanNameSeparator(String beanNameSeparator) {
 		this.beanNameSeparator = beanNameSeparator;
 	}
 
 	/**
-	 * Set whether to ignore invalid keys. Default is "false".
-	 * <p>If you ignore invalid keys, keys that do not follow the 'beanName.property' format
-	 * (or refer to invalid bean names or properties) will just be logged at debug level.
-	 * This allows one to have arbitrary other keys in a properties file.
+	 * 设置是否忽略无效键。默认为 {@code false}。
+	 * <p>若忽略无效键，不符合 'beanName.property' 格式
+	 * （或引用无效 Bean 名称或属性）的键将仅以 debug 级别记录。
+	 * 这样 properties 文件中可以包含任意其他键。
 	 */
 	public void setIgnoreInvalidKeys(boolean ignoreInvalidKeys) {
 		this.ignoreInvalidKeys = ignoreInvalidKeys;
@@ -122,7 +116,7 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 	}
 
 	/**
-	 * Process the given key as 'beanName.property' entry.
+	 * 将给定键作为 'beanName.property' 条目处理。
 	 */
 	protected void processKey(ConfigurableListableBeanFactory factory, String key, String value)
 			throws BeansException {
@@ -142,7 +136,7 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 	}
 
 	/**
-	 * Apply the given property value to the corresponding bean.
+	 * 将给定属性值应用到对应 Bean。
 	 */
 	protected void applyPropertyValue(
 			ConfigurableListableBeanFactory factory, String beanName, String property, String value) {
@@ -160,10 +154,9 @@ public class PropertyOverrideConfigurer extends PropertyResourceConfigurer {
 
 
 	/**
-	 * Were there overrides for this bean?
-	 * Only valid after processing has occurred at least once.
-	 * @param beanName name of the bean to query status for
-	 * @return whether there were property overrides for the named bean
+	 * 该 Bean 是否存在覆盖？仅在至少处理过一次后才有效。
+	 * @param beanName 要查询状态的 Bean 名称
+	 * @return 指定 Bean 是否存在属性覆盖
 	 */
 	public boolean hasPropertyOverridesFor(String beanName) {
 		return this.beanNames.contains(beanName);
