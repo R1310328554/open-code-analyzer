@@ -1425,3 +1425,6 @@ spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/TemporaryLobCreat
 spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/ResultSetWrappingSqlRowSetMetaData.java
 spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/SqlRowSetMetaData.java
 spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/Jdbc4SqlXmlHandler.java
+spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlBinaryStreamProvider.java
+spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlCharacterStreamProvider.java
+spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlResultProvider.java

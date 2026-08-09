@@ -3,11 +3,8 @@
   "files": [
     "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlFeatureNotImplementedException.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlHandler.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlValue.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlBinaryStreamProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlCharacterStreamProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlResultProvider.java"
+    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlValue.java"
   ],
   "remaining_pending": 58,
-  "done": 1427
+  "done": 1430
 }
