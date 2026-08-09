@@ -23,12 +23,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * {@code FT.AGGREGATE} 聚合结果解码器（RESP2 位置式格式）。
+ * <p>
+ * 回复结构为 {@code [total, row1, row2, ...]}，首元素为匹配总数，
+ * 后续每个元素为一行的属性 {@link Map}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class AggregationResultDecoder implements MultiDecoder<Object> {
 
+    /** 解析总数与各行属性，空回复返回 {@code null}。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

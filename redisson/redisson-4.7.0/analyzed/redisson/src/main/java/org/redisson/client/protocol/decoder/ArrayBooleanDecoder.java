@@ -20,12 +20,16 @@ import org.redisson.client.handler.State;
 import java.util.List;
 
 /**
+ * 布尔数组解码器，将 Redis 数组回复转为 {@code boolean[]}。
+ * <p>
+ * 元素为 {@link Boolean} 时取其值，否则视为 {@code false}。
  *
  * @author seakider
  *
  */
 public class ArrayBooleanDecoder implements MultiDecoder<boolean[]> {
     
+    /** 逐元素转换；空数组时返回长度为 0 的数组。 */
     @Override
     public boolean[] decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

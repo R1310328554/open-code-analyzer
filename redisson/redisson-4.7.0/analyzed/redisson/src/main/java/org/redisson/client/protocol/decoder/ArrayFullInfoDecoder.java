@@ -22,13 +22,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Full array information decoder.
+ * Redis 数组完整元信息解码器，解析 {@link ArrayFullInfo}。
+ * <p>
+ * 在 {@link AbstractArrayInfoDecoder#populateBase} 基础上，额外填充
+ * 稠密/稀疏分片统计及平均尺寸、填充率等字段。
  *
  * @author Nikita Koksharov
  *
  */
 public class ArrayFullInfoDecoder extends AbstractArrayInfoDecoder implements MultiDecoder<ArrayFullInfo> {
 
+    /** 将键值对列表解码为含完整统计信息的 {@link ArrayFullInfo}。 */
     @Override
     public ArrayFullInfo decode(List<Object> parts, State state) {
         Map<String, Object> map = toMap(parts);

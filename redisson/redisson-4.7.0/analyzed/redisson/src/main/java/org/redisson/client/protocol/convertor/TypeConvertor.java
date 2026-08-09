@@ -18,12 +18,17 @@ package org.redisson.client.protocol.convertor;
 import org.redisson.api.RType;
 
 /**
- * 
+ * Redis {@code TYPE} 命令回复转换器，将类型字符串映射为 {@link RType}。
+ * <p>
+ * 支持 string、list、set、zset、hash、stream、gcra、ReJSON-RL 等类型；
+ * {@code none} 表示键不存在，返回 {@code null}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class TypeConvertor implements Convertor<RType> {
 
+    /** 按 Redis 类型名查找对应 {@link RType}，无法识别时抛出异常。 */
     @Override
     public RType convert(Object obj) {
         String val = obj.toString();

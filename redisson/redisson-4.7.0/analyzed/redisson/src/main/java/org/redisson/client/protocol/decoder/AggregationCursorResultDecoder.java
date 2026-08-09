@@ -24,12 +24,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * {@code FT.AGGREGATE WITHCURSOR} 游标聚合结果解码器（RESP2 格式）。
+ * <p>
+ * 回复结构为 {@code [[total, doc1, doc2, ...], cursorId]}，
+ * 解析为含游标 ID 的 {@link AggregationResult}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class AggregationCursorResultDecoder implements MultiDecoder<Object> {
 
+    /** 解析聚合行与游标 ID；空回复时返回总数 0、游标 -1。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

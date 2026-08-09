@@ -23,12 +23,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * {@code FT.AGGREGATE WITHCURSOR} 游标扫描结果解码器。
+ * <p>
+ * 将 RESP2 格式回复 {@code [[total, row1, row2, ...], cursorId]} 转为
+ * {@link ListScanResult}{@code <}{@link AggregationEntry}{@code >}。
  *
  * @author seakider
  *
  */
 public class AggregationCursorResultScanDecoder implements MultiDecoder<ListScanResult<AggregationEntry>> {
 
+    /** 解析每行为 {@link AggregationEntry}，游标 ID 作为扫描位置字符串。 */
     @Override
     public ListScanResult<AggregationEntry> decode(List<Object> parts, State state) {
 

@@ -26,27 +26,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Decoder for the {@code FT.PROFILE ... AGGREGATE ...} command response.
+ * {@code FT.PROFILE ... AGGREGATE ...} 命令回复解码器。
  * <p>
- * Handles both RESP2 and RESP3 wire formats:
+ * 同时支持 RESP2 与 RESP3 两种线格式：
  * <ul>
- *   <li>RESP2: a 2-element array {@code [<aggregate-result>, <profile-info>]}
- *       where the aggregate result has the positional shape
- *       {@code [total, [row], [row], ...]} returned by {@code FT.AGGREGATE}.</li>
- *   <li>RESP3: a Map with {@code "Results"} and {@code "Profile"} keys; the
- *       Results value is itself a Map keyed by {@code total_results},
- *       {@code results}, etc., and each result has an
- *       {@code extra_attributes} entry holding the row data.</li>
+ *   <li>RESP2：二元数组 {@code [<聚合结果>, <性能剖析信息>]，聚合部分为
+ *       {@code FT.AGGREGATE} 的位置式结构 {@code [total, [row], [row], ...]}。</li>
+ *   <li>RESP3：含 {@code "Results"} 与 {@code "Profile"} 键的 Map；Results 内嵌
+ *       {@code total_results}、{@code results} 等字段，每行数据位于
+ *       {@code extra_attributes} 中。</li>
  * </ul>
- * Both shapes are flattened to nested {@link List}s by the surrounding
- * {@link UnboundedListMultiDecoder}; this decoder examines the shape at
- * runtime to decide how to interpret the data.
+ * 外层 {@link UnboundedListMultiDecoder} 会将两种格式展平为嵌套 {@link List}；
+ * 本解码器在运行时根据首元素类型判断具体格式。
  *
  * @author Nikita Koksharov
  *
  */
 public class AggregateProfileResultDecoder implements MultiDecoder<Object> {
 
+    /** 解析聚合结果与性能剖析信息，组装为 {@link AggregateProfileResult}。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts == null || parts.isEmpty()) {
@@ -76,10 +74,12 @@ public class AggregateProfileResultDecoder implements MultiDecoder<Object> {
         return new AggregateProfileResult(aggregationResult, info);
     }
 
+    /** RESP3 格式下首元素为键名字符串，据此与 RESP2 区分。 */
     private static boolean isResp3Shape(List<Object> parts) {
         return parts.get(0) instanceof String;
     }
 
+    /** 安全地将对象转为 {@link List}，非列表时返回空列表。 */
     @SuppressWarnings("unchecked")
     private static List<Object> asList(Object value) {
         if (value instanceof List) {
@@ -88,6 +88,7 @@ public class AggregateProfileResultDecoder implements MultiDecoder<Object> {
         return Collections.emptyList();
     }
 
+    /** 解析 RESP2 位置式聚合结果：首元素为总数，后续为各行属性 Map 或键值列表。 */
     @SuppressWarnings("unchecked")
     private static AggregationResult decodeAggregationResultResp2(List<Object> parts) {
         if (parts.isEmpty()) {
@@ -109,6 +110,7 @@ public class AggregateProfileResultDecoder implements MultiDecoder<Object> {
         return new AggregationResult(total, attributes);
     }
 
+    /** 解析 RESP3 映射式聚合结果，从 {@code total_results} 与 {@code results} 提取行数据。 */
     @SuppressWarnings("unchecked")
     private static AggregationResult decodeAggregationResultResp3(List<Object> parts) {
         if (parts.isEmpty()) {
@@ -142,6 +144,7 @@ public class AggregateProfileResultDecoder implements MultiDecoder<Object> {
         return new AggregationResult(total, attributes);
     }
 
+    /** 将交替排列的键值列表转为 {@link Map}，跳过键为 {@code null} 的项。 */
     private static Map<String, Object> kvListToMap(List<Object> kvs) {
         Map<String, Object> attrs = new LinkedHashMap<>();
         for (int j = 0; j + 1 < kvs.size(); j += 2) {

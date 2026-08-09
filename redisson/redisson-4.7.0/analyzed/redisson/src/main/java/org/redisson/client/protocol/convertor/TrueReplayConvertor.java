@@ -16,12 +16,16 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 恒真回复转换器：忽略 Redis 回复内容，始终返回 {@code true}。
+ * <p>
+ * 适用于只关心命令是否成功、无需解析具体回复体的场景。
+ *
  * @author Nikita Koksharov
  *
  */
 public class TrueReplayConvertor implements Convertor<Boolean> {
 
+    /** 无论 {@code obj} 为何值，均返回 {@code true}。 */
     @Override
     public Boolean convert(Object obj) {
         return true;

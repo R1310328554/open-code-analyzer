@@ -16,12 +16,16 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 空回复转换器：丢弃 Redis 回复内容，始终返回 {@code null}。
+ * <p>
+ * 用于无需消费回复体、仅等待命令完成的命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class VoidReplayConvertor implements Convertor<Void> {
 
+    /** 忽略 {@code obj}，返回 {@code null}。 */
     @Override
     public Void convert(Object obj) {
         return null;

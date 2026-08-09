@@ -22,13 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Array entry decoder.
+ * Redis 数组元素解码器，将回复转为 {@link ArrayEntry} 列表。
+ * <p>
+ * 支持两种线格式：嵌套子列表 {@code [[index, value], ...]} 或
+ * 扁平键值对 {@code [index1, value1, index2, value2, ...]}。
  *
  * @author lamnt2008
  *
  */
 public class ArrayEntryDecoder implements MultiDecoder<List<ArrayEntry<Object>>> {
 
+    /** 根据首元素类型选择嵌套列表或扁平键值对解析路径。 */
     @Override
     public List<ArrayEntry<Object>> decode(List<Object> parts, State state) {
         List<ArrayEntry<Object>> result = new ArrayList<>(parts.size());
@@ -46,6 +50,7 @@ public class ArrayEntryDecoder implements MultiDecoder<List<ArrayEntry<Object>>>
         return result;
     }
 
+    /** 将数值或字符串形式的索引转为 {@code long}。 */
     private long toLong(Object value) {
         if (value instanceof Number) {
             return ((Number) value).longValue();

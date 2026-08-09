@@ -21,19 +21,24 @@ import org.redisson.client.handler.State;
 import java.util.*;
 
 /**
+ * {@code FT.AGGREGATE WITHCURSOR} 游标扫描结果解码器 V2。
+ * <p>
+ * 同时支持 RESP2 扁平格式与 RESP3 映射格式，返回
+ * {@link ListScanResult}{@code <}{@link AggregationEntry}{@code >}。
  *
  * @author seakider
  *
  */
 public class AggregationCursorResultScanDecoderV2 implements MultiDecoder<ListScanResult<AggregationEntry>> {
 
+    /** 按首元素类型分支解析，每行封装为含总数的 {@link AggregationEntry}。 */
     @Override
     public ListScanResult<AggregationEntry> decode(List<Object> parts, State state) {
         List<Object> attrs = (List<Object>) parts.get(0);
         String cursorId = String.valueOf(parts.get(1));
 
-        // FT.AGGREGATE WITHCURSOR returns the legacy RESP2-flat shape ([count, doc1, doc2, ...])
-        // unless the FORMAT argument is used, even on a RESP3 connection.
+        // 未指定 FORMAT 时，FT.AGGREGATE WITHCURSOR 在 RESP3 连接上仍返回
+        // 传统 RESP2 扁平结构 [count, doc1, doc2, ...]。
         if (!attrs.isEmpty() && attrs.get(0) instanceof Long) {
             long total = (Long) attrs.get(0);
             List<AggregationEntry> docs = new ArrayList<>(Math.max(0, attrs.size() - 1));

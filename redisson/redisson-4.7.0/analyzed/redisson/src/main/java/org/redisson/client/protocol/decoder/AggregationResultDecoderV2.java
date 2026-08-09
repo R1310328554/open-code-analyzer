@@ -24,20 +24,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * {@code FT.AGGREGATE} 聚合结果解码器 V2。
+ * <p>
+ * 兼容 RESP2 扁平格式 {@code [count, doc1, doc2, ...]} 与 RESP3 映射格式
+ * （含 {@code total_results}、{@code results}、{@code extra_attributes}）。
+ *
  * @author Nikita Koksharov
  *
  */
 public class AggregationResultDecoderV2 implements MultiDecoder<Object> {
 
+    /** 按首元素类型选择 RESP2 或 RESP3 解析路径。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
             return null;            
         }
 
-        // FT.AGGREGATE returns the legacy RESP2-flat shape ([count, doc1, doc2, ...])
-        // unless the FORMAT argument is used, even on a RESP3 connection.
+        // 未指定 FORMAT 时，FT.AGGREGATE 在 RESP3 连接上仍返回
+        // 传统 RESP2 扁平结构 [count, doc1, doc2, ...]。
         if (parts.get(0) instanceof Long) {
             long total = (Long) parts.get(0);
             List<Map<String, Object>> docs = new ArrayList<>();
