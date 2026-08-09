@@ -27,6 +27,7 @@
     "proto/src/main/java/com/google/gson/protobuf/ProtoTypeAdapter.java",
     "test-jpms/src/main/java/module-info.java"
   ],
-  "remaining_pending": 40,
-  "done": 57
+  "remaining_pending": 0,
+  "done": 97,
+  "note": "queue complete — wave4 finished"
 }
