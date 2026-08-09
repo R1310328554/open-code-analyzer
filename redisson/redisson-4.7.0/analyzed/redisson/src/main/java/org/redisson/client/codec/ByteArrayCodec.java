@@ -20,12 +20,16 @@ import org.redisson.client.protocol.Encoder;
 import io.netty.buffer.Unpooled;
 
 /**
- * 
+ * 原始字节数组（{@code byte[]}）的 Redis 编解码器。
+ * <p>
+ * 编码时使用 Netty {@code wrappedBuffer}，解码时完整读取可读字节。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ByteArrayCodec extends BaseCodec {
 
+    /** 单例实例。 */
     public static final ByteArrayCodec INSTANCE = new ByteArrayCodec();
 
     private final Encoder encoder = in -> Unpooled.wrappedBuffer((byte[]) in);
@@ -36,11 +40,13 @@ public class ByteArrayCodec extends BaseCodec {
         return result;
     };
 
+    /** 返回将缓冲区读为 {@code byte[]} 的解码器。 */
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
     }
 
+    /** 返回将 {@code byte[]} 包装为 Netty 缓冲区的编码器。 */
     @Override
     public Encoder getValueEncoder() {
         return encoder;

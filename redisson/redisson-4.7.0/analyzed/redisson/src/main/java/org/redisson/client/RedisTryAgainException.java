@@ -16,7 +16,10 @@
 package org.redisson.client;
 
 /**
- * 
+ * Redis 返回 {@code TRYAGAIN} 错误时抛出的异常。
+ * <p>
+ * 常见于集群重配置或事务冲突，客户端应稍后重试。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -24,6 +27,7 @@ public class RedisTryAgainException extends RedisRetryException {
 
     private static final long serialVersionUID = -2565335188503354660L;
 
+    /** 使用服务器返回的错误消息构造异常。 */
     public RedisTryAgainException(String message) {
         super(message);
     }

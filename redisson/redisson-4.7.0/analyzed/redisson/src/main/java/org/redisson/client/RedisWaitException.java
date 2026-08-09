@@ -16,7 +16,9 @@
 package org.redisson.client;
 
 /**
- * This error occurs when Redis server is busy.
+ * Redis 服务器繁忙时抛出的异常（{@code WAIT} 相关场景）。
+ * <p>
+ * 表示复制同步或阻塞操作未能在预期时间内完成，可稍后重试。
  *
  * @author Nikita Koksharov
  *
@@ -25,6 +27,7 @@ public class RedisWaitException extends RedisRetryException {
 
     private static final long serialVersionUID = -5658453331593019251L;
 
+    /** 使用错误消息构造 WAIT 异常。 */
     public RedisWaitException(String message) {
         super(message);
     }

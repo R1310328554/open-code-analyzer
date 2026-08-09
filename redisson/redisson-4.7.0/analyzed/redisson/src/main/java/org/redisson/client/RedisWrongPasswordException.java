@@ -16,8 +16,10 @@
 package org.redisson.client;
 
 /**
- * This error occurs when username password pair is incorrect.
- * 
+ * Redis 用户名或密码不正确时抛出的异常。
+ * <p>
+ * 通常在 AUTH/HELLO 握手阶段因凭据校验失败而触发。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -25,6 +27,7 @@ public class RedisWrongPasswordException extends RedisException {
 
     private static final long serialVersionUID = -2565335188503354660L;
 
+    /** 使用服务器返回的错误消息构造异常。 */
     public RedisWrongPasswordException(String message) {
         super(message);
     }

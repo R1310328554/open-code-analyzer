@@ -16,12 +16,16 @@
 package org.redisson.client;
 
 /**
+ * 可重试的 Redis 操作异常基类。
+ * <p>
+ * 表示临时性故障，上层可依据策略延迟后重试。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedisRetryException extends RedisException {
 
+    /** 使用错误消息构造可重试异常。 */
     public RedisRetryException(String message) {
         super(message);
     }

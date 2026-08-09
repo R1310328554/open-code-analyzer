@@ -16,7 +16,10 @@
 package org.redisson.client;
 
 /**
- * 
+ * Redis 命令响应等待超时异常。
+ * <p>
+ * 表示已发送命令但在配置时限内未收到完整响应。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -24,6 +27,7 @@ public class RedisResponseTimeoutException extends RedisTimeoutException {
 
     private static final long serialVersionUID = 2829224148153662863L;
 
+    /** 使用详细超时说明构造异常。 */
     public RedisResponseTimeoutException(String message) {
         super(message);
     }

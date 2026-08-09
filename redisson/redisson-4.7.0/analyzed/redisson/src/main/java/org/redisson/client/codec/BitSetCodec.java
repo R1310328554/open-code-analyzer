@@ -21,13 +21,17 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 /**
- * 
+ * {@link BitSet} 的 Redis 编解码器（已弃用）。
+ * <p>
+ * 仅实现解码：将 Redis 字节串按大端位序解析为 {@link BitSet}，编码操作不支持。
+ *
  * @author Nikita Koksharov
  *
  */
 @Deprecated
 public class BitSetCodec implements Codec {
 
+    /** 单例实例。 */
     public static final BitSetCodec INSTANCE = new BitSetCodec();
 
     private final Decoder<Object> decoder = (buf, state) -> {
@@ -36,6 +40,7 @@ public class BitSetCodec implements Codec {
         return fromByteArrayReverse(result);
     };
 
+    /** 将 Redis 返回的字节数组按 MSB 优先顺序转换为 {@link BitSet}。 */
     private static BitSet fromByteArrayReverse(byte[] bytes) {
         BitSet bits = new BitSet();
         for (int i = 0; i < bytes.length * 8; i++) {
@@ -46,11 +51,13 @@ public class BitSetCodec implements Codec {
         return bits;
     }
 
+    /** 返回值解码器。 */
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
     }
 
+    /** 不支持编码，调用时抛出 {@link UnsupportedOperationException}。 */
     @Override
     public Encoder getValueEncoder() {
         throw new UnsupportedOperationException();
@@ -76,6 +83,7 @@ public class BitSetCodec implements Codec {
         throw new UnsupportedOperationException();
     }
 
+    /** 返回当前类的类加载器。 */
     @Override
     public ClassLoader getClassLoader() {
         return getClass().getClassLoader();

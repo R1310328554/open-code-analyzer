@@ -19,10 +19,9 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 /**
- * Redis codec interface.
+ * Redis 对象编解码器接口。
  * <p>
- * It's required for implementation to have two constructors
- * default and with ClassLoader object as parameter. 
+ * 实现类需提供无参构造器及接受 {@link ClassLoader} 的构造器，以便在自定义类加载器下复制实例。
  *
  * @author Nikita Koksharov
  *
@@ -30,50 +29,50 @@ import org.redisson.client.protocol.Encoder;
 public interface Codec {
 
     /**
-     * Returns object decoder used for hash map values in HMAP Redis structure
+     * 返回 HMAP 结构中哈希表值的对象解码器。
      *
      * @return decoder
      */
     Decoder<Object> getMapValueDecoder();
 
     /**
-     * Returns object encoder used for hash map values in HMAP Redis structure
+     * 返回 HMAP 结构中哈希表值的对象编码器。
      *
      * @return encoder
      */
     Encoder getMapValueEncoder();
 
     /**
-     * Returns object decoder used for hash map keys in HMAP Redis structure
+     * 返回 HMAP 结构中哈希表键的对象解码器。
      *
      * @return decoder
      */
     Decoder<Object> getMapKeyDecoder();
 
     /**
-     * Returns object encoder used for hash map keys in HMAP Redis structure
+     * 返回 HMAP 结构中哈希表键的对象编码器。
      *
      * @return encoder
      */
     Encoder getMapKeyEncoder();
 
     /**
-     * Returns object decoder used for any objects stored Redis structure except HMAP
+     * 返回除 HMAP 外其他 Redis 结构存储对象的通用解码器。
      *
      * @return decoder
      */
     Decoder<Object> getValueDecoder();
 
     /**
-     * Returns object encoder used for any objects stored Redis structure except HMAP
+     * 返回除 HMAP 外其他 Redis 结构存储对象的通用编码器。
      *
      * @return encoder
      */
     Encoder getValueEncoder();
     
     /**
-     * Returns class loader object used to load classes used in decoding process
-     * 
+     * 返回解码过程中加载类所使用的类加载器。
+     *
      * @return class loader
      */
     ClassLoader getClassLoader();

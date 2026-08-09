@@ -18,12 +18,14 @@ package org.redisson.client.codec;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * 
+ * {@link Integer} 的 Redis 编解码器，基于 {@link StringCodec} 解析字符串后转换。
+ *
  * @author Nikita Koksharov
  *
  */
 public class IntegerCodec extends StringCodec {
 
+    /** 单例实例。 */
     public static final IntegerCodec INSTANCE = new IntegerCodec();
 
     private final Decoder<Object> decoder = (buf, state) -> {
@@ -31,6 +33,7 @@ public class IntegerCodec extends StringCodec {
         return Integer.valueOf(str);
     };
 
+    /** 先按字符串解码，再解析为 {@link Integer}。 */
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;

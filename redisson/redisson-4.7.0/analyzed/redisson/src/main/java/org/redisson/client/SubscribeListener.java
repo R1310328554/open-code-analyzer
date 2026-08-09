@@ -20,22 +20,30 @@ import org.redisson.client.protocol.pubsub.PubSubType;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 
+ * 等待指定频道订阅成功的 Pub/Sub 监听器。
+ * <p>
+ * 当 {@link #onStatus} 收到匹配的订阅确认时完成内部 {@link CompletableFuture}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SubscribeListener extends BaseRedisPubSubListener {
 
+    /** 订阅成功时完成的 Future。 */
     private final CompletableFuture<Void> promise = new CompletableFuture<>();
+    /** 待确认的频道名称。 */
     private final ChannelName name;
+    /** 期望的订阅类型（SUBSCRIBE/PSUBSCRIBE 等）。 */
     private final PubSubType type;
 
+    /** 指定目标频道与订阅类型创建监听器。 */
     public SubscribeListener(ChannelName name, PubSubType type) {
         super();
         this.name = name;
         this.type = type;
     }
 
+    /** 收到订阅状态回调时，若频道与类型均匹配则标记成功。 */
     @Override
     public void onStatus(PubSubType type, CharSequence channel) {
         if (name.equals(channel) && this.type.equals(type)) {
@@ -43,6 +51,7 @@ public class SubscribeListener extends BaseRedisPubSubListener {
         }
     }
 
+    /** 返回订阅成功时完成的 Future。 */
     public CompletableFuture<Void> getSuccessFuture() {
         return promise;
     }
