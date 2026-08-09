@@ -24,13 +24,14 @@ import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import org.apache.rocketmq.store.QueryMessageResult;
 
+/**
+ * 按 key/时间查询消息的零拷贝传输：响应头 + {@link QueryMessageResult} 多段 buffer。
+ */
 public class QueryMessageTransfer extends AbstractReferenceCounted implements FileRegion {
     private final ByteBuffer byteBufferHeader;
     private final QueryMessageResult queryMessageResult;
 
-    /**
-     * Bytes which were transferred already.
-     */
+    /** 已累计写入 channel 的字节数。 */
     private long transferred;
 
     public QueryMessageTransfer(ByteBuffer byteBufferHeader, QueryMessageResult queryMessageResult) {
@@ -64,6 +65,7 @@ public class QueryMessageTransfer extends AbstractReferenceCounted implements Fi
     }
 
     @Override
+    /** 分段写出查询结果 buffer 列表。 */
     public long transferTo(WritableByteChannel target, long position) throws IOException {
         if (this.byteBufferHeader.hasRemaining()) {
             transferred += target.write(this.byteBufferHeader);
@@ -108,6 +110,7 @@ public class QueryMessageTransfer extends AbstractReferenceCounted implements Fi
     }
 
     @Override
+    /** 释放 QueryMessageResult 引用。 */
     protected void deallocate() {
         this.queryMessageResult.release();
     }

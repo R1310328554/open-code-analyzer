@@ -23,15 +23,9 @@ import org.apache.rocketmq.broker.pop.orderly.QueueLevelConsumerManager;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Memory-based Consumer Order Information Manager for Lite Topics
- * Trade-off considerations::
- * 1. Lite Topics are primarily used for lightweight consumption where
- *    strict ordering requirements are relatively low
- * 2. Considering compatibility with traditional PushConsumer,
- *    a certain degree of ordering control failure is acceptable
- * 3. Avoiding I/O overhead from persistence operations
- * <p>
- * We may make structural adjustments and optimizations to reduce overhead and memory footprint.
+ * 基于内存的 Lite Topic 顺序消费信息管理器。
+ * 设计取舍：Lite 场景对严格顺序要求较低；兼容 PushConsumer 时可容忍部分顺序控制失效；
+ * 避免持久化 I/O 开销。后续可能进一步优化结构与内存占用。
  */
 public class MemoryConsumerOrderInfoManager extends QueueLevelConsumerManager {
 
@@ -42,12 +36,13 @@ public class MemoryConsumerOrderInfoManager extends QueueLevelConsumerManager {
     @Override
     protected void updateLockFreeTimestamp(String topic, String group, int queueId, OrderInfo orderInfo) {
         if (this.getConsumerOrderInfoLockManager() != null) {
-            // use max lock free time to prevent unexpected blocking
+            // 取最大 lock-free 时间戳，避免意外长时间阻塞
             this.getConsumerOrderInfoLockManager().updateLockFreeTimestamp(
                 topic, group, queueId, orderInfo.getMaxLockFreeTimestamp());
         }
     }
 
+    /** Pop 挂起队列：校验 popTime 后递减 offset 消费计数并刷新不可见时间与 lock-free 戳。 */
     public void suspendQueue(String topic, String group, int queueId, long popTime, long visibilityTimeout) {
         ConcurrentHashMap<Integer, OrderInfo> orderInfoMap = this.getTable().get(buildKey(topic, group));
         if (null == orderInfoMap) {
@@ -72,6 +67,6 @@ public class MemoryConsumerOrderInfoManager extends QueueLevelConsumerManager {
 
     @Override
     public void persist() {
-        // MemoryConsumerOrderInfoManager persist, do nothing.
+        // 纯内存实现，persist 为空操作。
     }
 }

@@ -24,13 +24,14 @@ import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import org.apache.rocketmq.store.GetMessageResult;
 
+/**
+ * 批量消息零拷贝传输：Netty FileRegion 封装响应头与 {@link GetMessageResult} 多段 ByteBuffer。
+ */
 public class ManyMessageTransfer extends AbstractReferenceCounted implements FileRegion {
     private final ByteBuffer byteBufferHeader;
     private final GetMessageResult getMessageResult;
 
-    /**
-     * Bytes which were transferred already.
-     */
+    /** 已累计写入 channel 的字节数。 */
     private long transferred;
 
     public ManyMessageTransfer(ByteBuffer byteBufferHeader, GetMessageResult getMessageResult) {
@@ -64,6 +65,7 @@ public class ManyMessageTransfer extends AbstractReferenceCounted implements Fil
     }
 
     @Override
+    /** 优先写完响应头，再逐段写出消息体 buffer；返回累计 transferred。 */
     public long transferTo(WritableByteChannel target, long position) throws IOException {
         if (this.byteBufferHeader.hasRemaining()) {
             transferred += target.write(this.byteBufferHeader);
@@ -108,6 +110,7 @@ public class ManyMessageTransfer extends AbstractReferenceCounted implements Fil
     }
 
     @Override
+    /** 释放 GetMessageResult 引用计数。 */
     protected void deallocate() {
         this.getMessageResult.release();
     }

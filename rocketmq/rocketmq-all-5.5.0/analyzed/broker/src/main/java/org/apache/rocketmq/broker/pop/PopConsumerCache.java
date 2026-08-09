@@ -35,9 +35,14 @@ import org.apache.rocketmq.common.utils.ConcurrentHashMapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Pop 消费内存缓冲：在 CK（Checkpoint）落盘前缓存 in-flight PopConsumerRecord，
+ * 定时清理超时记录、触发 revive 并提交最小可推进位点。
+ */
 public class PopConsumerCache extends ServiceThread {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
+    /** 位点不存在时的哨兵值。 */
     private static final long OFFSET_NOT_EXIST = -1L;
 
     private final BrokerController brokerController;
@@ -75,6 +80,7 @@ public class PopConsumerCache extends ServiceThread {
         return this.estimateCacheSize.intValue();
     }
 
+    /** 估算缓存条数是否超过 popCkMaxBufferSize 上限。 */
     public boolean isCacheFull() {
         return this.estimateCacheSize.intValue() > brokerController.getBrokerConfig().getPopCkMaxBufferSize();
     }
@@ -89,6 +95,7 @@ public class PopConsumerCache extends ServiceThread {
         return consumerRecords != null ? consumerRecords.getInFlightRecordCount() : 0L;
     }
 
+    /** 将 Pop 拉取记录写入按 group@topic@queueId 分片的内存表。 */
     public void writeRecords(List<PopConsumerRecord> consumerRecordList) {
         this.estimateCacheSize.addAndGet(consumerRecordList.size());
         consumerRecordList.forEach(consumerRecord -> {
@@ -101,7 +108,7 @@ public class PopConsumerCache extends ServiceThread {
     }
 
     /**
-     * Remove the record from the input list then return the content that has not been deleted
+     * 批量 ACK：从缓存删除已确认记录，返回未能删除的剩余列表。
      */
     public List<PopConsumerRecord> deleteRecords(List<PopConsumerRecord> consumerRecordList) {
         int total = consumerRecordList.size();
@@ -116,11 +123,12 @@ public class PopConsumerCache extends ServiceThread {
         return remain;
     }
 
+    /** 扫描全部 shard：过期记录 revive 或落 CK，并提交 buffer 最小 offset。 */
     public int cleanupRecords(Consumer<PopConsumerRecord> consumer) {
         int remain = 0;
         Iterator<Map.Entry<String, ConsumerRecords>> iterator = consumerRecordTable.entrySet().iterator();
         while (iterator.hasNext()) {
-            // revive or write record to store
+            // 消费者离线超时：revive 或写入 CK store
             ConsumerRecords records = iterator.next().getValue();
             boolean timeout = consumerLockService.isLockTimeout(
                 records.getGroupId(), records.getTopicId());
@@ -150,11 +158,11 @@ public class PopConsumerCache extends ServiceThread {
                 }
             });
 
-            // write to store and handle it later
+            // 未到期记录写入 store 延后处理
             consumerRecordStore.writeRecords(writeConsumerRecords);
             records.clearStagedRecords();
 
-            // commit min offset in buffer to offset store
+            // 将 buffer 内最小 offset 提交到 ConsumerOffsetManager
             long offset = records.getMinOffsetInBuffer();
             if (offset > OFFSET_NOT_EXIST) {
                 this.commitOffset("PopConsumerCache",
@@ -205,6 +213,7 @@ public class PopConsumerCache extends ServiceThread {
         }
     }
 
+    /** 单个 group@topic@queueId 下的 in-flight Pop 记录双跳表结构。 */
     protected static class ConsumerRecords {
 
         private final String groupId;
@@ -248,7 +257,7 @@ public class PopConsumerCache extends ServiceThread {
             Iterator<Map.Entry<Long, PopConsumerRecord>>
                 iterator = recordTreeMap.entrySet().iterator();
 
-            // refer: org.apache.rocketmq.broker.processor.PopBufferMergeService.scan
+            // 过期判定逻辑参考 PopBufferMergeService.scan
             while (iterator.hasNext()) {
                 Map.Entry<Long, PopConsumerRecord> entry = iterator.next();
                 if (entry.getValue().getVisibilityTimeout() <= currentTime ||

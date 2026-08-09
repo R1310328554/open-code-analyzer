@@ -21,16 +21,23 @@ import java.util.Map;
 import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
+/**
+ * 消费消息追踪上下文：承载一次 Pull/Pop 消费链路中的 group、topic、消息 ID、
+ * 账号统计与商业化计量等元数据，供 {@link ConsumeMessageHook} 前后置回调使用。
+ */
 public class ConsumeMessageContext {
+    /** 消费组名（不含 namespace）。 */
     private String consumerGroup;
     private String topic;
     private Integer queueId;
     private String clientHost;
     private String storeHost;
+    /** 消息 ID 与 store 时间戳映射。 */
     private Map<String, Long> messageIds;
     private int bodyLength;
     private boolean success;
     private String status;
+    /** 扩展追踪上下文，由 trace 组件注入。 */
     private Object mqTraceContext;
     private TopicConfig topicConfig;
 
@@ -39,6 +46,7 @@ public class ConsumeMessageContext {
     private String accountOwnerSelf;
     private int rcvMsgNum;
     private int rcvMsgSize;
+    /** 账号维度接收统计类型。 */
     private BrokerStatsManager.StatsType rcvStat;
     private int commercialRcvMsgNum;
 
@@ -46,6 +54,7 @@ public class ConsumeMessageContext {
     private BrokerStatsManager.StatsType commercialRcvStats;
     private int commercialRcvTimes;
     private int commercialRcvSize;
+    /** SQL/Tag 过滤后实际投递的消息条数。 */
     private int filterMessageCount;
 
     private String namespace;

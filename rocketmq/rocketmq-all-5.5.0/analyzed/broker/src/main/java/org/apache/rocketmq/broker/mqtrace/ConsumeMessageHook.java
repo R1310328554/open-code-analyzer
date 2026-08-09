@@ -16,10 +16,16 @@
  */
 package org.apache.rocketmq.broker.mqtrace;
 
+/**
+ * 消费消息钩子：在 Broker 向客户端返回消息前后插入自定义逻辑（追踪、审计、限流等）。
+ */
 public interface ConsumeMessageHook {
+    /** 钩子唯一名称，用于注册与去重。 */
     String hookName();
 
+    /** 消费响应发出前回调。 */
     void consumeMessageBefore(final ConsumeMessageContext context);
 
+    /** 消费响应完成后回调（含成功/失败状态）。 */
     void consumeMessageAfter(final ConsumeMessageContext context);
 }

@@ -16,10 +16,16 @@
  */
 package org.apache.rocketmq.broker.mqtrace;
 
+/**
+ * 发送消息钩子：在 Broker 处理 Producer 发送请求前后插入自定义逻辑。
+ */
 public interface SendMessageHook {
+    /** 钩子唯一名称。 */
     String hookName();
 
+    /** 消息落盘/转发前回调。 */
     void sendMessageBefore(final SendMessageContext context);
 
+    /** 发送处理完成后回调。 */
     void sendMessageAfter(final SendMessageContext context);
 }

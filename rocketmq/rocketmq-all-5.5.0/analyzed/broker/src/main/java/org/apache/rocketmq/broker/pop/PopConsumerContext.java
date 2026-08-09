@@ -23,6 +23,10 @@ import org.apache.rocketmq.remoting.protocol.header.ExtraInfoUtil;
 import org.apache.rocketmq.store.GetMessageResult;
 import org.apache.rocketmq.store.GetMessageStatus;
 
+/**
+ * 单次 Pop 拉取会话上下文：聚合多队列 GetMessageResult、生成 PopConsumerRecord，
+ * 并拼接 startOffset/msgOffset/orderCount 等 ExtraInfo 字符串。
+ */
 public class PopConsumerContext {
 
     private final String clientHost;
@@ -67,11 +71,13 @@ public class PopConsumerContext {
         this.orderCountInfo = new StringBuilder();
     }
 
+    /** 是否至少有一个队列拉取到消息。 */
     public boolean isFound() {
         return getMessageResultList != null && !getMessageResultList.isEmpty();
     }
 
-    // offset is consumer last request offset
+    // offset 为 consumer 本次请求的起始拉取位点
+    /** 合并单队列拉取结果：构建 PopConsumerRecord 并累加 restCount。 */
     public void addGetMessageResult(GetMessageResult result,
         String topicId, int queueId, PopConsumerRecord.RetryType retryType, long offset) {
 
@@ -107,6 +113,7 @@ public class PopConsumerContext {
         return groupId;
     }
 
+    /** 累加队列剩余可 Pop 消息估算数。 */
     public void addRestCount(long delta) {
         this.restCount.addAndGet(delta);
     }
@@ -135,6 +142,7 @@ public class PopConsumerContext {
         return attemptId;
     }
 
+    /** 汇总所有 GetMessageResult 的消息条数。 */
     public int getMessageCount() {
         return getMessageResultList != null ?
             getMessageResultList.stream().mapToInt(GetMessageResult::getMessageCount).sum() : 0;

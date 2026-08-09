@@ -21,12 +21,16 @@ import java.util.Properties;
 import org.apache.rocketmq.common.message.MessageType;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
+/**
+ * 发送消息追踪上下文：记录 Producer 发送请求的 topic、msgId、队列位点、
+ * 响应码及账号/商业化统计字段，供 {@link SendMessageHook} 使用。
+ */
 public class SendMessageContext {
-    /** namespace */
+    /** 租户 namespace。 */
     private String namespace;
-    /** producer group without namespace. */
+    /** 生产者组名（不含 namespace）。 */
     private String producerGroup;
-    /** topic without namespace. */
+    /** Topic 名（不含 namespace）。 */
     private String topic;
     private String msgId;
     private String originMsgId;
@@ -38,6 +42,7 @@ public class SendMessageContext {
     private int code;
     private String errorMsg;
     private String msgProps;
+    /** 扩展追踪上下文。 */
     private Object mqTraceContext;
     private Properties extProps;
     private String brokerRegionId;
@@ -48,9 +53,7 @@ public class SendMessageContext {
 
     private boolean isSuccess = false;
 
-    /**
-     * Account Statistics
-     */
+    /** 账号维度发送统计字段。 */
     private String accountAuthType;
     private String accountOwnerParent;
     private String accountOwnerSelf;
@@ -59,9 +62,7 @@ public class SendMessageContext {
     private BrokerStatsManager.StatsType sendStat;
     private int commercialSendMsgNum;
 
-    /**
-     * For Commercial
-     */
+    /** 商业化计量字段。 */
     private String commercialOwner;
     private BrokerStatsManager.StatsType commercialSendStats;
     private int commercialSendSize;

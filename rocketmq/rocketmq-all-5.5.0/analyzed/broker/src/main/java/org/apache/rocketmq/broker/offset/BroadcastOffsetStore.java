@@ -22,10 +22,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.rocketmq.common.MixAll;
 
+/**
+ * 广播消费单 client 的队列位点表：queueId → AtomicLong offset。
+ */
 public class BroadcastOffsetStore {
 
     private final ConcurrentMap<Integer, AtomicLong> offsetTable = new ConcurrentHashMap<>();
 
+    /** 更新队列位点；increaseOnly 为 true 时仅允许单调递增。 */
     public void updateOffset(int queueId, long offset, boolean increaseOnly) {
         AtomicLong offsetOld = this.offsetTable.get(queueId);
         if (null == offsetOld) {
@@ -41,6 +45,7 @@ public class BroadcastOffsetStore {
         }
     }
 
+    /** 读取队列位点，不存在返回 -1。 */
     public long readOffset(int queueId) {
         AtomicLong offset = this.offsetTable.get(queueId);
         if (offset != null) {
@@ -49,6 +54,7 @@ public class BroadcastOffsetStore {
         return -1L;
     }
 
+    /** 返回已有位点记录的 queueId 集合。 */
     public Set<Integer> queueList() {
         return offsetTable.keySet();
     }

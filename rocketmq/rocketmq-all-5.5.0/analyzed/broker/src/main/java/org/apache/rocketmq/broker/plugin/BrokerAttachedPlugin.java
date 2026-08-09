@@ -19,55 +19,48 @@ package org.apache.rocketmq.broker.plugin;
 
 import java.util.Map;
 
+/**
+ * Broker 附属插件生命周期接口：加载、启停、元数据同步及运行时信息扩展。
+ */
 public interface BrokerAttachedPlugin {
 
     /**
-     * Get plugin name
-     *
-     * @return plugin name
+     * 插件名称。
      */
     String pluginName();
 
     /**
-     * Load broker attached plugin.
+     * 加载插件资源。
      *
-     * @return load success or failed
+     * @return 是否加载成功
      */
     boolean load();
 
-    /**
-     * Start broker attached plugin.
-     */
+    /** 启动插件后台任务。 */
     void start();
 
-    /**
-     * Shutdown broker attached plugin.
-     */
+    /** 关闭插件并释放资源。 */
     void shutdown();
 
-    /**
-     * Sync metadata from master.
-     */
+    /** 从 Master Broker 同步元数据。 */
     void syncMetadata();
 
     /**
-     * Sync metadata reverse from slave
+     * 反向从 Slave 拉取元数据（主从角色切换场景）。
      *
-     * @param brokerAddr
+     * @param brokerAddr 目标 Broker 地址
      */
     void syncMetadataReverse(String brokerAddr) throws Exception;
 
     /**
-     * Some plugin need build runningInfo when prepare runtime info.
-     *
-     * @param runtimeInfo
+     * 向 Broker 运行时信息 Map 注入插件状态字段。
      */
     void buildRuntimeInfo(Map<String, String> runtimeInfo);
 
     /**
-     * Some plugin need do something when status changed. For example, brokerRole change to master or slave.
+     * Broker 角色/状态变更回调（如升主、降从）。
      *
-     * @param shouldStart
+     * @param shouldStart 是否应处于运行态
      */
     void statusChanged(boolean shouldStart);
 

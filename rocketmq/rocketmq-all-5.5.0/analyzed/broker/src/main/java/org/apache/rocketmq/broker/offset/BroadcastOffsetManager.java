@@ -28,18 +28,15 @@ import org.apache.rocketmq.common.ServiceThread;
 import org.apache.rocketmq.store.exception.ConsumeQueueException;
 
 /**
- * manage the offset of broadcast.
- * now, use this to support switch remoting client between proxy and broker
+ * 广播消费位点管理器：按 clientId 维护各队列拉取位点，并汇总提交 group@broadcast 位点。
+ * 同时支持 Proxy 与 Broker 直连切换时的初始位点协商。
  */
 public class BroadcastOffsetManager extends ServiceThread {
     private static final String TOPIC_GROUP_SEPARATOR = "@";
     private final BrokerController brokerController;
     private final BrokerConfig brokerConfig;
 
-    /**
-     * k: topic@groupId
-     * v: the pull offset of all client of all queue
-     */
+    /** key 为 topic@groupId，value 为该组下所有 client 各队列拉取位点。 */
     protected final ConcurrentHashMap<String /* topic@groupId */, BroadcastOffsetData> offsetStoreMap =
         new ConcurrentHashMap<>();
 
@@ -48,6 +45,7 @@ public class BroadcastOffsetManager extends ServiceThread {
         this.brokerConfig = brokerController.getBrokerConfig();
     }
 
+    /** 更新指定 client 在某队列上的广播拉取位点；fromProxy 标记请求是否经 Proxy 转发。 */
     public void updateOffset(String topic, String group, int queueId, long offset, String clientId, boolean fromProxy) {
         BroadcastOffsetData broadcastOffsetData = offsetStoreMap.computeIfAbsent(
             buildKey(topic, group), key -> new BroadcastOffsetData(topic, group));
@@ -65,12 +63,10 @@ public class BroadcastOffsetManager extends ServiceThread {
     }
 
     /**
-     * the time need init offset
-     * 1. client connect to proxy -> client connect to broker
-     * 2. client connect to broker -> client connect to proxy
-     * 3. client connect to proxy at the first time
+     * 查询是否需要初始化拉取位点，典型场景：
+     * 1. Proxy 切 Broker；2. Broker 切 Proxy；3. 首次经 Proxy 拉取。
      *
-     * @return -1 means no init offset, use the queueOffset in pullRequestHeader
+     * @return -1 表示无需初始化，沿用 Pull 请求头中的 queueOffset
      */
     public Long queryInitOffset(String topic, String groupId, int queueId, String clientId, long requestOffset,
         boolean fromProxy) throws ConsumeQueueException {
@@ -103,6 +99,7 @@ public class BroadcastOffsetManager extends ServiceThread {
         return offset.get();
     }
 
+    /** 依次从本地缓存、ConsumerOffsetManager、MessageStore 解析可用起始位点。 */
     private long getOffset(BroadcastTimedOffsetStore offsetStore, String topic, String groupId, int queueId)
         throws ConsumeQueueException {
         long storeOffset = -1;
@@ -124,9 +121,7 @@ public class BroadcastOffsetManager extends ServiceThread {
     }
 
     /**
-     * 1. scan expire offset
-     * 2. calculate the min offset of all client of one topic@group,
-     * and then commit consumer offset by group@broadcast
+     * 定时扫描：1) 清理过期 client 位点；2) 取各队列最小位点并以 group@broadcast 提交。
      */
     protected void scanOffsetData() {
         for (String k : offsetStoreMap.keySet()) {
@@ -178,8 +173,8 @@ public class BroadcastOffsetManager extends ServiceThread {
     }
 
     /**
-     * @param group group of users
-     * @return the groupId used to commit offset
+     * @param group 用户消费组
+     * @return 用于提交位点的 broadcast 专用 groupId（group@broadcast）
      */
     private static String broadcastGroupId(String group) {
         return group + TOPIC_GROUP_SEPARATOR + "broadcast";
@@ -216,19 +211,13 @@ public class BroadcastOffsetManager extends ServiceThread {
 
     public static class BroadcastTimedOffsetStore {
 
-        /**
-         * the timeStamp of last update occurred
-         */
+        /** 该 client 位点最后一次更新时间戳。 */
         private volatile long timestamp;
 
-        /**
-         * mark the offset of this client is updated by proxy or not
-         */
+        /** 标记该 client 位点是否由 Proxy 侧更新。 */
         private volatile boolean fromProxy;
 
-        /**
-         * the pulled offset of each queue
-         */
+        /** 各队列已拉取位点存储。 */
         private final BroadcastOffsetStore offsetStore;
 
         public BroadcastTimedOffsetStore(boolean fromProxy) {

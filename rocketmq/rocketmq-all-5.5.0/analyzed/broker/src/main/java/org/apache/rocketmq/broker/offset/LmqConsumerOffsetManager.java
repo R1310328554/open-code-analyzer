@@ -28,7 +28,12 @@ import org.apache.rocketmq.broker.BrokerPathConfigHelper;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Lite/LMQ 消费位点管理器：LMQ group 使用 topic@group 单键存储位点，
+ * 与普通多队列位点表分离持久化。
+ */
 public class LmqConsumerOffsetManager extends ConsumerOffsetManager {
+    /** LMQ 位点表：key 为 topic@group，value 为队列 0 的 committed offset。 */
     private ConcurrentHashMap<String, Long> lmqOffsetTable = new ConcurrentHashMap<>(512);
 
     public LmqConsumerOffsetManager() {
@@ -44,7 +49,7 @@ public class LmqConsumerOffsetManager extends ConsumerOffsetManager {
         if (!MixAll.isLmq(group)) {
             return super.queryOffset(group, topic, queueId);
         }
-        // topic@group
+        // LMQ 位点 key：topic@group
         String key = topic + TOPIC_GROUP_SEPARATOR + group;
         Long offset = lmqOffsetTable.get(key);
         if (offset != null) {
@@ -115,6 +120,7 @@ public class LmqConsumerOffsetManager extends ConsumerOffsetManager {
     }
 
     @Override
+    /** 删除指定 LMQ group 的全部 topic@group 位点条目。 */
     public void removeOffset(String group) {
         if (!MixAll.isLmq(group)) {
             super.removeOffset(group);
@@ -136,6 +142,7 @@ public class LmqConsumerOffsetManager extends ConsumerOffsetManager {
     }
 
     @Override
+    /** 为 LMQ topic/group 分配重置位点，同步更新 lmqOffsetTable 与 resetOffsetTable。 */
     public void assignResetOffset(String topic, String group, int queueId, long offset) {
         if (Strings.isNullOrEmpty(topic) || Strings.isNullOrEmpty(group) || queueId < 0 || offset < 0) {
             LOG.warn("Illegal arguments when assigning reset offset. Topic={}, group={}, queueId={}, offset={}",

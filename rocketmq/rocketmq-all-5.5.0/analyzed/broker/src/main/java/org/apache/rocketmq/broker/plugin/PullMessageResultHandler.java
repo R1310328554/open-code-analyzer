@@ -26,21 +26,15 @@ import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfi
 import org.apache.rocketmq.store.GetMessageResult;
 import org.apache.rocketmq.store.MessageFilter;
 
+/**
+ * Pull 消息结果处理器插件：在 Store 返回 GetMessageResult 后定制响应组装逻辑。
+ */
 public interface PullMessageResultHandler {
 
     /**
-     * Handle result of get message from store.
+     * 处理 Store 拉取结果并构造/改写 Remoting 响应。
      *
-     * @param getMessageResult store result
-     * @param request request
-     * @param requestHeader request header
-     * @param channel channel
-     * @param subscriptionData sub data
-     * @param subscriptionGroupConfig sub config
-     * @param brokerAllowSuspend brokerAllowSuspend
-     * @param messageFilter store message filter
-     * @param response response
-     * @return response or null
+     * @return 最终响应；返回 null 表示沿用默认处理
      */
     RemotingCommand handle(final GetMessageResult getMessageResult,
                            final RemotingCommand request,

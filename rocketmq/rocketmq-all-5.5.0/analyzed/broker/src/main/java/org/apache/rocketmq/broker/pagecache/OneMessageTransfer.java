@@ -23,13 +23,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 
+/**
+ * 单条消息零拷贝传输：响应头 + {@link SelectMappedBufferResult} 映射缓冲区。
+ */
 public class OneMessageTransfer extends AbstractReferenceCounted implements FileRegion {
     private final ByteBuffer byteBufferHeader;
     private final SelectMappedBufferResult selectMappedBufferResult;
 
-    /**
-     * Bytes which were transferred already.
-     */
+    /** 已累计写入 channel 的字节数。 */
     private long transferred;
 
     public OneMessageTransfer(ByteBuffer byteBufferHeader, SelectMappedBufferResult selectMappedBufferResult) {
@@ -58,6 +59,7 @@ public class OneMessageTransfer extends AbstractReferenceCounted implements File
     }
 
     @Override
+    /** 先写响应头，再写 mapped buffer 剩余内容。 */
     public long transferTo(WritableByteChannel target, long position) throws IOException {
         if (this.byteBufferHeader.hasRemaining()) {
             transferred += target.write(this.byteBufferHeader);
@@ -98,6 +100,7 @@ public class OneMessageTransfer extends AbstractReferenceCounted implements File
     }
 
     @Override
+    /** 释放 SelectMappedBufferResult 引用。 */
     protected void deallocate() {
         this.selectMappedBufferResult.release();
     }
