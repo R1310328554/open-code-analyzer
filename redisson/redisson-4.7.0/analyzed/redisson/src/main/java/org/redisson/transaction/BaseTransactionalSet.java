@@ -36,23 +36,36 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * 
+ * 事务内 {@link org.redisson.api.RSet} / {@link org.redisson.api.RCollection} 抽象基类。
+ * <p>
+ * 以成员值哈希为键维护 {@link #state}；{@link #NULL} 表示事务内已删成员。
+ * SSCAN/readAll 与本地变更合并，写操作登记对应 Set 系列 {@link TransactionalOperation}。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
 
+    /** 成员在事务内被删除的哨兵对象。 */
     static final Object NULL = new Object();
     
+    /** 锁等待超时（毫秒）。 */
     private final long timeout;
+    /** 成员哈希 → 本地值或 {@link #NULL}。 */
     final Map<HashValue, Object> state = new HashMap<>();
+    /** 待提交操作列表。 */
     final List<TransactionalOperation> operations;
+    /** 底层集合异步 API。 */
     final RCollectionAsync<V> set;
+    /** RObject 视图（取 name/codec）。 */
     final RObject object;
+    /** Redis 键名。 */
     final String name;
+    /** 整集合是否在事务内删除。 */
     Boolean deleted;
 
+    /** 是否已设置过期相关操作。 */
     boolean hasExpiration;
 
     public BaseTransactionalSet(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations,
@@ -65,6 +78,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         this.name = object.getName();
     }
 
+    /** 编码成员并计算 128 位哈希。 */
     private HashValue toHash(Object value) {
         ByteBuf state = ((RedissonObject) set).encode(value);
         try {
@@ -142,6 +156,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     protected abstract ScanResult<Object> scanIteratorSource(String name, RedisClient client,
                                                              String startPos, String pattern, int count);
     
+    /** SSCAN 与 {@link #state} 合并：剔除已删成员、追加本地新增。 */
     protected ScanResult<Object> scanIterator(String name, RedisClient client,
                                               String startPos, String pattern, int count) {
         ScanResult<Object> res = scanIteratorSource(name, client, startPos, pattern, count);
@@ -168,6 +183,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     
     protected abstract RFuture<Set<V>> readAllAsyncSource();
     
+    /** 读全量成员并与本地 state 合并。 */
     public RFuture<Set<V>> readAllAsync() {
         RFuture<Set<V>> future = readAllAsyncSource();
         CompletionStage<Set<V>> f = future.thenApply(res -> {
@@ -192,6 +208,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 添加成员：本地已删则视为新加，登记 add 操作。 */
     public RFuture<Boolean> addAsync(V value) {
         long threadId = Thread.currentThread().getId();
         TransactionalOperation operation = createAddOperation(value, threadId);
@@ -232,6 +249,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         throw new UnsupportedOperationException();
     }
     
+    /** 将成员移至另一集合：需同时锁定源与目标集合上的成员锁。 */
     public RFuture<Boolean> moveAsync(String destination, V value) {
         RSet<V> destinationSet = new RedissonSet<V>(object.getCodec(), commandExecutor, destination, null);
         
@@ -269,6 +287,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
     
+    /** 移除成员：本地置 {@link #NULL} 并登记 remove 操作。 */
     public RFuture<Boolean> removeAsync(Object value) {
         long threadId = Thread.currentThread().getId();
         return executeLocked((V) value, () -> {
@@ -310,6 +329,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         return set.containsAllAsync(coll);
     }
 
+    /** 批量 add：多成员锁后逐条写入 state 与 operations。 */
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         long threadId = Thread.currentThread().getId();
         return executeLocked(() -> containsAllAsync(c).thenApply(res -> {
@@ -342,6 +362,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         }), c);
     }
     
+    /** 事务内不支持 SUNIONSTORE 等集合运算。 */
     public RFuture<Integer> unionAsync(String... names) {
         throw new UnsupportedOperationException();
     }
@@ -410,6 +431,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         throw new UnsupportedOperationException();
     }
     
+    /** 编码后 ByteBuf 比较成员相等性。 */
     private boolean isEqual(Object value, Object oldValue) {
         ByteBuf valueBuf = ((RedissonObject) set).encode(value);
         ByteBuf oldValueBuf = ((RedissonObject) set).encode(oldValue);
@@ -422,6 +444,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         }
     }
 
+    /** 按单个成员值加锁后执行。 */
     protected <R> RFuture<R> executeLocked(Object value, Supplier<CompletionStage<R>> runnable) {
         RLock lock = getLock(set, (V) value);
         return executeLocked(timeout, runnable, lock);

@@ -28,7 +28,11 @@ import org.redisson.transaction.operation.map.MapCachePutIfAbsentOperation;
 import org.redisson.transaction.operation.map.MapCachePutOperation;
 
 /**
- * 
+ * 带 TTL/idle 的 {@link org.redisson.api.RMapCache} 事务基类。
+ * <p>
+ * 在 {@link BaseTransactionalMap} 之上，将 put/fastPut 等委托为
+ * {@code MapCache*} 系列 {@link TransactionalOperation}，携带过期参数。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -40,22 +44,26 @@ public class BaseTransactionalMapCache<K, V> extends BaseTransactionalMap<K, V> 
         super(commandExecutor, timeout, operations, map, transactionId);
     }
     
+    /** 带 TTL 与 maxIdle 的 putIfAbsent。 */
     public RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         long threadId = Thread.currentThread().getId();
         return putIfAbsentOperationAsync(key, value, new MapCachePutIfAbsentOperation(map, key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, transactionId, threadId));
     }
     
+    /** 带过期参数的 fastPut（始终写入并返回是否为新键）。 */
     public RFuture<Boolean> fastPutOperationAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         long threadId = Thread.currentThread().getId();
         return fastPutOperationAsync(key, value, new MapCacheFastPutOperation(map, key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, transactionId, threadId));
     }
     
+    /** 使用毫秒级绝对/增量超时参数的 put（MapCache 内部语义）。 */
     public RFuture<V> putOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout, long maxIdleDelta, long ttlTimeoutDelta) {
         long threadId = Thread.currentThread().getId();
         return putOperationAsync(key, value, new MapCachePutOperation(map, key, value,
                 ttlTimeoutDelta, TimeUnit.MILLISECONDS, maxIdleDelta, TimeUnit.MILLISECONDS, transactionId, threadId));
     }
     
+    /** 带过期参数的 fastPutIfAbsent。 */
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         long threadId = Thread.currentThread().getId();
         return fastPutIfAbsentOperationAsync(key, value, new MapCacheFastPutIfAbsentOperation(map, key, value, 

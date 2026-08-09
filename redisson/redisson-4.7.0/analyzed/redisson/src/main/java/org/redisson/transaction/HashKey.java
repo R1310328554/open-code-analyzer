@@ -20,15 +20,22 @@ import org.redisson.client.codec.Codec;
 import java.util.Objects;
 
 /**
- * 
+ * 本地缓存 Map 在事务 commit 协调中的键标识。
+ * <p>
+ * 由 Redis 对象 {@link #name} 与 {@link #codec} 组成；
+ * {@link #equals}/{@link #hashCode} 仅比较 name（同一名称视为同一 LocalCachedMap）。
+ *
  * @author Nikita Koksharov
  *
  */
 public final class HashKey {
 
+    /** 对象编解码器（影响 disabled-keys 结构）。 */
     final Codec codec;
+    /** LocalCachedMap 的 Redis 名称。 */
     final String name;
     
+    /** @param name Map 名称 @param codec 编解码器 */
     public HashKey(String name, Codec codec) {
         this.name = name;
         this.codec = codec;
@@ -42,6 +49,7 @@ public final class HashKey {
         return name;
     }
 
+    /** 相等性仅基于 {@link #name}。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

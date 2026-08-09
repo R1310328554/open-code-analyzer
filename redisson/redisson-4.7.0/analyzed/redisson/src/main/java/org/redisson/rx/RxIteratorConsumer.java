@@ -24,13 +24,11 @@ import org.redisson.client.RedisClient;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Shared backpressure-aware SCAN-cursor consumer for the RxJava3 facade.
- *
- * Rx counterpart of {@link org.redisson.reactive.IteratorConsumer}. Drives a
- * cursor-paginated SCAN/HSCAN/SSCAN to completion through a {@link ReplayProcessor},
- * advancing the cursor until Redis returns "0", with a single in-flight chain
- * regardless of how many times {@code accept(long)} is invoked by upstream
- * request replenishment (e.g. from {@link io.reactivex.rxjava3.core.Flowable#merge}).
+ * RxJava3 侧带背压的 SCAN 游标消费者（共享基类）。
+ * <p>
+ * 对应 Reactive 版 {@link org.redisson.reactive.IteratorConsumer}。
+ * 通过 {@link ReplayProcessor} 驱动 SCAN/HSCAN/SSCAN 分页直至游标为 {@code "0"}；
+ * {@link #requested} 与单链守卫保证并发 {@code request} 时仅一条拉取链在飞。
  *
  * @author Nikita Koksharov
  *
@@ -38,11 +36,15 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public abstract class RxIteratorConsumer<V> implements LongConsumer {
 
+    /** 向下游发射扫描结果的 ReplayProcessor。 */
     private final ReplayProcessor<V> processor;
 
+    /** 当前 SCAN 游标位置。 */
     private String nextIterPos = "0";
+    /** 上次扫描绑定的 Redis 连接客户端（集群槽位亲和）。 */
     private RedisClient client;
 
+    /** 下游已 request、尚未 onNext 的许可计数。 */
     private final AtomicLong requested = new AtomicLong();
 
     public RxIteratorConsumer(ReplayProcessor<V> processor) {
@@ -51,14 +53,13 @@ public abstract class RxIteratorConsumer<V> implements LongConsumer {
 
     @Override
     public void accept(long value) {
-        // Single-chain guard: addAndGet(value) == value iff prior counter was 0,
-        // i.e. no chain is currently running. Concurrent requests just bump the
-        // counter; the in-flight chain reads it as it goes.
+        // 单链守卫：仅当计数器由 0 增至 value 时启动拉取链；并发 request 只累加计数，由在飞链按需消费
         if (requested.addAndGet(value) == value) {
             nextValues();
         }
     }
 
+    /** 发起一轮 scanIterator，解析结果后 onNext/onComplete/onError。 */
     protected void nextValues() {
         scanIterator(client, nextIterPos).whenComplete((res, e) -> {
             if (e != null) {
@@ -84,12 +85,15 @@ public abstract class RxIteratorConsumer<V> implements LongConsumer {
         });
     }
 
+    /** 子类可覆写：将 Redis 原始值转为下游类型（默认原样返回）。 */
     protected Object transformValue(Object value) {
         return value;
     }
 
+    /** 游标归零后是否再扫一轮（如 Set 在事务态下可能有新增）。 */
     protected abstract boolean tryAgain();
 
+    /** 子类实现具体 SCAN/HSCAN/SSCAN 异步调用。 */
     protected abstract RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos);
 
 }

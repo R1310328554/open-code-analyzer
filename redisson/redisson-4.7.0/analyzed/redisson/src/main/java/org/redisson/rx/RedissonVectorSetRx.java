@@ -22,30 +22,41 @@ import org.redisson.api.RVectorSetAsync;
 import java.util.List;
 
 /**
+ * 向量集合 {@link org.redisson.api.RVectorSet} 的 RxJava3 适配。
+ * <p>
+ * 通过 {@code ZRANGEBYLEX} 分页拉取成员，以 {@link io.reactivex.rxjava3.core.Flowable}
+ * 递归拼接实现全量迭代；每批默认 {@value #BATCH_SIZE} 条。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonVectorSetRx {
 
+    /** 单次 range 请求的最大成员数。 */
     private static final int BATCH_SIZE = 10;
 
+    /** 底层异步向量集合实例。 */
     private final RVectorSetAsync instance;
+    /** Rx 命令执行器，用于将 {@link org.redisson.api.RFuture} 转为 {@link io.reactivex.rxjava3.core.Flowable}。 */
     private final CommandRxExecutor commandExecutor;
 
+    /** @param commandExecutor Rx 执行器 @param instance 被包装的 RVectorSetAsync */
     public RedissonVectorSetRx(CommandRxExecutor commandExecutor, RVectorSetAsync instance) {
         this.commandExecutor = commandExecutor;
         this.instance = instance;
     }
 
+    /** @return Redis 键名（委托底层 {@link RObject}） */
     public String getName() {
         return ((RObject) instance).getName();
     }
 
+    /** 从字典序最小成员起迭代全部元素。 */
     public Flowable<String> iterator() {
         return scan(null);
     }
 
+    /** 递归分页：本页不足 {@link #BATCH_SIZE} 则结束，否则以上一页末元素为下一起点继续 scan。 */
     private Flowable<String> scan(String lastElement) {
         return Flowable.defer(() -> fetchPage(lastElement).concatMap(page -> {
             Flowable<String> current = Flowable.fromIterable(page);
@@ -56,6 +67,7 @@ public class RedissonVectorSetRx {
         }));
     }
 
+    /** 拉取一页 lex 范围成员；{@code lastElement==null} 时从 {@code "-"} 起，否则用开区间 {@code "("+lastElement}。 */
     private Flowable<List<String>> fetchPage(String lastElement) {
         String start;
         if (lastElement == null) {

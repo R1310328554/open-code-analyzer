@@ -22,18 +22,24 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 
 /**
- * 
+ * 集合 SSCAN 迭代的 Rx {@link Flowable} 工厂抽象基类。
+ * <p>
+ * {@link #create()} 创建 {@link ReplayProcessor} 并绑定 {@link RxIteratorConsumer}，
+ * 在 {@code doOnRequest} 中按背压驱动 {@link #scanIterator}。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public abstract class SetRxIterator<V> {
 
+    /** 构建带背压的 SSCAN {@link Flowable}。 */
     public Flowable<V> create() {
         ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new RxIteratorConsumer<V>(p) {
             @Override
-            protected boolean tryAgain() {
+            /** 游标结束后是否重试（默认 false）。 */
+    protected boolean tryAgain() {
                 return SetRxIterator.this.tryAgain();
             }
 
@@ -48,6 +54,7 @@ public abstract class SetRxIterator<V> {
         return false;
     }
 
+    /** 子类提供具体集合的 SSCAN 异步实现。 */
     protected abstract RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos);
 
 }

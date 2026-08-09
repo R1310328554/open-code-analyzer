@@ -27,14 +27,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * 
+ * Redisson 分布式事务对象的公共基类。
+ * <p>
+ * 持有 {@link #transactionId} 与对象级 {@link #lockName}，
+ * 提供 {@link #executeLocked} 在获取事务锁后运行异步逻辑；
+ * move/migrate 在事务内不支持。
+ *
  * @author Nikita Koksharov
  *
  */
 public class BaseTransactionalObject {
 
+    /** 当前事务唯一 ID，参与锁名后缀与操作记录。 */
     final String transactionId;
+    /** 对象级事务锁 Redis 键名。 */
     final String lockName;
+    /** 异步命令执行器。 */
     final CommandAsyncExecutor commandExecutor;
 
     public BaseTransactionalObject(String transactionId, String lockName, CommandAsyncExecutor commandExecutor) {
@@ -43,6 +51,7 @@ public class BaseTransactionalObject {
         this.commandExecutor = commandExecutor;
     }
 
+    /** 事务内不支持 MOVE。 */
     public RFuture<Boolean> moveAsync(int database) {
         throw new UnsupportedOperationException("move method is not supported in transaction");
     }
@@ -51,18 +60,22 @@ public class BaseTransactionalObject {
         throw new UnsupportedOperationException("migrate method is not supported in transaction");
     }
 
+    /** 对象级写锁（{@link RedissonTransactionalWriteLock}）。 */
     protected RLock getWriteLock() {
         return new RedissonTransactionalWriteLock(commandExecutor, lockName, transactionId);
     }
 
+    /** 对象级读锁（{@link RedissonTransactionalReadLock}）。 */
     protected RLock getReadLock() {
         return new RedissonTransactionalReadLock(commandExecutor, lockName, transactionId);
     }
 
+    /** 约定后缀 {@code :transaction_lock} 作为对象事务锁名。 */
     protected static String getLockName(String name) {
         return name + ":transaction_lock";
     }
 
+    /** 单锁：lockAsync 成功后执行 runnable。 */
     protected <R> RFuture<R> executeLocked(long timeout, Supplier<CompletionStage<R>> runnable, RLock lock) {
         return executeLocked(Thread.currentThread().getId(), timeout, runnable, lock);
     }
@@ -72,6 +85,7 @@ public class BaseTransactionalObject {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 多锁：{@link RedissonMultiLock} 加锁后执行；异常时 unlock。 */
     protected <R> RFuture<R> executeLocked(long timeout, Supplier<CompletionStage<R>> runnable, List<RLock> locks) {
         RedissonMultiLock multiLock = new RedissonMultiLock(locks.toArray(new RLock[0]));
         long threadId = Thread.currentThread().getId();

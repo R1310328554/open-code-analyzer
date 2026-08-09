@@ -41,18 +41,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
- * 
+ * 事务内批量 {@link org.redisson.api.RBuckets} 实现。
+ * <p>
+ * 按 Redis 键名维护 {@link #state}；多键写操作通过 {@link RedissonMultiLock}
+ * 一次性加锁，支持 trySet、setIfAllKeysExist/Absent 等条件批量写入。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonTransactionalBuckets extends RedissonBuckets {
 
+    /** 键已删除哨兵。 */
     static final Object NULL = new Object();
     
+    /** 多锁等待超时。 */
     private final long timeout;
+    /** 事务是否已结束。 */
     private final AtomicBoolean executed;
+    /** 操作列表。 */
     private final List<TransactionalOperation> operations;
+    /** 键名 → 本地值或 {@link #NULL}。 */
     private final Map<String, Object> state = new HashMap<>();
+    /** 事务 ID。 */
     private final String transactionId;
     
     public RedissonTransactionalBuckets(CommandAsyncExecutor commandExecutor, 
@@ -76,6 +86,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
     }
 
     @Override
+    /** 批量 get：合并本地 state 与 Redis 未缓存键。 */
     public <V> RFuture<Map<String, V>> getAsync(String... keys) {
         checkState();
         
@@ -108,6 +119,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
     }
     
     @Override
+    /** 批量 set：对每个键加锁并登记 {@link BucketSetOperation}。 */
     public RFuture<Void> setAsync(Map<String, ?> buckets) {
         checkState();
         
@@ -126,7 +138,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
         }, buckets.keySet());
     }
     
-//    Add RKeys.deleteAsync support
+//    待实现：RKeys.deleteAsync 的事务支持
 //
 //    public RFuture<Long> deleteAsync(String... keys) {
 //        checkState();
@@ -175,6 +187,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
 //    }
     
     @Override
+    /** 全部键均不存在时才批量写入。 */
     public RFuture<Boolean> trySetAsync(Map<String, ?> buckets) {
         checkState();
         
@@ -213,6 +226,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
     }
 
     @Override
+    /** 指定键在 Redis 与本地均存在时才批量 set。 */
     public RFuture<Boolean> setIfAllKeysExistAsync(SetArgs args) {
         checkState();
 
@@ -254,6 +268,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
     }
 
     @Override
+    /** 全部键 absent 时才批量 set。 */
     public RFuture<Boolean> setIfAllKeysAbsentAsync(SetArgs args) {
         checkState();
 
@@ -294,6 +309,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
         }, buckets.keySet());
     }
     
+    /** 对 keys 集合加 MultiLock 后执行。 */
     protected <R> RFuture<R> executeLocked(Supplier<CompletionStage<R>> runnable, Collection<String> keys) {
         List<RLock> locks = new ArrayList<>(keys.size());
         for (String key : keys) {

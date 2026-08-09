@@ -35,20 +35,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
- * 
+ * 事务内 {@link org.redisson.api.RBucket} 实现。
+ * <p>
+ * {@link #state} 缓存未提交值，{@link #NULL} 表示已删；
+ * 写路径在 {@link RedissonTransactionalLock} 保护下追加 {@link TransactionalOperation}。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
 
+    /** 桶在事务内被删除的哨兵。 */
     static final Object NULL = new Object();
     
+    /** 加锁超时（毫秒）。 */
     private long timeout;
+    /** 所属事务是否已结束。 */
     private final AtomicBoolean executed;
+    /** 待提交操作列表。 */
     private final List<TransactionalOperation> operations;
+    /** 本地缓存值（null 表示尚未读写）。 */
     private Object state;
+    /** 是否登记过期操作。 */
     private boolean hasExpiration;
+    /** 事务 ID。 */
     private final String transactionId;
     
     public RedissonTransactionalBucket(CommandAsyncExecutor commandExecutor, long timeout, String name, List<TransactionalOperation> operations, AtomicBoolean executed, String transactionId) {
@@ -152,6 +163,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     }
     
     @Override
+    /** 存在性：本地 {@link #NULL} 为 false，否则看 state 或 Redis。 */
     public RFuture<Boolean> isExistsAsync() {
         checkState();
         if (state != null) {
@@ -226,6 +238,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     
     @Override
     @SuppressWarnings("unchecked")
+    /** 读值：优先事务本地 state。 */
     public RFuture<V> getAsync() {
         checkState();
         if (state != null) {
@@ -240,6 +253,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     }
     
     @Override
+    /** CAS：编码比较 expect 与当前值后条件写入。 */
     public RFuture<Boolean> compareAndSetAsync(V expect, V update) {
         checkState();
         long currentThreadId = Thread.currentThread().getId();
@@ -317,6 +331,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     }
     
     @Override
+    /** 无条件 set 并更新本地 state。 */
     public RFuture<Void> setAsync(V newValue) {
         long currentThreadId = Thread.currentThread().getId();
         return setAsync(newValue, new BucketSetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId, currentThreadId));
@@ -368,6 +383,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         return trySet(value, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), value, duration.toMillis(), TimeUnit.MILLISECONDS, transactionId, currentThreadId));
     }
 
+    /** trySet/setIfAbsent：仅当键不存在时写入。 */
     private RFuture<Boolean> trySet(V newValue, BucketTrySetOperation operation) {
         checkState();
         return executeLocked(() -> {
@@ -406,6 +422,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         }
     }
     
+    /** 在桶级事务锁内执行 runnable。 */
     protected <R> RFuture<R> executeLocked(Supplier<CompletionStage<R>> runnable) {
         RLock lock = getLock();
         CompletionStage<R> f = lock.lockAsync(timeout, TimeUnit.MILLISECONDS).thenCompose(res -> runnable.get());
@@ -420,6 +437,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         return getName() + ":transaction_lock";
     }
 
+    /** 事务已 commit/rollback 后抛 {@link IllegalStateException}。 */
     protected void checkState() {
         if (executed.get()) {
             throw new IllegalStateException("Unable to execute operation. Transaction is in finished state!");

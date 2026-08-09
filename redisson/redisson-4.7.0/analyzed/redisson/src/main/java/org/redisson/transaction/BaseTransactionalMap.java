@@ -43,7 +43,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * 事务内 {@link org.redisson.api.RMap} 操作的抽象基类。
+ * <p>
+ * 维护 {@link #state} 键哈希 → {@link MapEntry} 的写时复制视图，
+ * 在 commit 前将变更记录为 {@link TransactionalOperation}；读路径合并 Redis 与本地状态。
+ * {@link MapEntry#NULL} 表示键已在事务内删除。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -51,8 +56,10 @@ import java.util.stream.Collectors;
  */
 public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
 
+    /** 事务本地 map 条目；{@link #NULL} 为删除哨兵。 */
     public static class MapEntry {
         
+        /** 表示该键在事务内已被移除。 */
         public static final MapEntry NULL = new MapEntry(null, null);
         
         private final Object key;
@@ -74,11 +81,17 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         
     }
     
+    /** 获取锁的超时（毫秒）。 */
     private final long timeout;
+    /** 所属事务的操作列表，commit 时批量执行。 */
     final List<TransactionalOperation> operations;
+    /** 键 128 位哈希 → 本地条目（含未提交写入与删除标记）。 */
     final Map<HashValue, MapEntry> state = new HashMap<>();
+    /** 底层 Redis Map 实例。 */
     final RMap<K, V> map;
+    /** 事务内是否已标记整表删除（null 表示尚未触及）。 */
     Boolean deleted;
+    /** 是否已登记过期相关操作。 */
     boolean hasExpiration;
 
     public BaseTransactionalMap(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations, RMap<K, V> map, String transactionId) {
@@ -88,6 +101,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         this.map = map;
     }
 
+    /** 将 map 键编码后计算 128 位哈希，用于 {@link #state} 索引。 */
     HashValue toKeyHash(Object key) {
         ByteBuf keyState = ((RedissonObject) map).encodeMapKey(key);
         try {
@@ -97,6 +111,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         }
     }
     
+    /** 存在性：优先事务本地 {@link #deleted}，否则查 Redis。 */
     public RFuture<Boolean> isExistsAsync() {
         if (deleted != null) {
             return new CompletableFutureWrapper<>(!deleted);
@@ -151,6 +166,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         }, getWriteLock());
     }
     
+    /** HSCAN 结果与 {@link #state} 合并：隐藏已删键、覆盖/追加本地写入。 */
     protected ScanResult<Map.Entry<Object, Object>> scanIterator(String name, RedisClient client,
                                                                  String startPos, String pattern, int count) {
         ScanResult<Map.Entry<Object, Object>> res = ((RedissonMap<?, ?>) map).scanIterator(name, client, startPos, pattern, count);
@@ -200,6 +216,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         return res;
     }
     
+    /** 含键判断：本地 NULL 视为不存在，否则查 Redis。 */
     public RFuture<Boolean> containsKeyAsync(Object key) {
         HashValue keyHash = toKeyHash(key);
         MapEntry currentValue = state.get(keyHash);
@@ -224,6 +241,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         return map.containsValueAsync(value);
     }
     
+    /** 数值字段自增：合并本地 BigDecimal 状态后登记 {@link MapAddAndGetOperation}。 */
     protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
         long threadId = Thread.currentThread().getId();
         return executeLocked(key, () -> {
@@ -262,6 +280,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         });
     }
 
+    /** 仅当键已存在时写入（本地或 Redis 侧判定）。 */
     protected RFuture<V> putIfExistsOperationAsync(K key, V value) {
         long threadId = Thread.currentThread().getId();
         return putIfExistsOperationAsync(key, value, new MapPutIfExistsOperation(map, key, value, transactionId, threadId));
@@ -297,6 +316,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         });
     }
 
+    /** 仅当键不存在时写入，返回已有值或 null。 */
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
         long threadId = Thread.currentThread().getId();
         return putIfAbsentOperationAsync(key, value, new MapPutIfAbsentOperation(map, key, value, transactionId, threadId));
@@ -332,6 +352,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         });
     }
     
+    /** 无条件 put，返回替换前的值。 */
     protected final RFuture<V> putOperationAsync(K key, V value) {
         long threadId = Thread.currentThread().getId();
         return putOperationAsync(key, value, new MapPutOperation(map, key, value, transactionId, threadId));
@@ -487,7 +508,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
                 }
             }
 
-            // TODO optimize
+            // TODO 优化：可对未命中本地状态的键批量 getAll
             return ((RedissonMap<K, V>) map).getAllAsync(new HashSet<>(keyList), Long.MIN_VALUE).thenApply(res -> {
                 for (K key : res.keySet()) {
                     HashValue keyHash = toKeyHash(key);
@@ -495,8 +516,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
                     counter.incrementAndGet();
                     state.put(keyHash, MapEntry.NULL);
                 }
-                // Release locks for keys that do not exist in Redis.
-                // Locks were acquired for all keys, but operations are only added for keys that exist.
+                // Redis 中不存在的键提前释放锁（加锁时覆盖了全部 keys）
                 for (K key : keyList) {
                     if (!res.containsKey(key)) {
                         getLock(key).unlockAsync(threadId);
@@ -599,6 +619,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 批量 get：本地 state 命中则直接填充，其余异步从 Redis 拉取。 */
     protected RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
         Set<K> keysToLoad = new HashSet<>();
         Map<K, V> map = new HashMap<>();
@@ -642,6 +663,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
     }
 
 
+    /** 按键删除：本地置 NULL 并登记 {@link MapRemoveOperation}。 */
     protected RFuture<V> removeOperationAsync(K key) {
         long threadId = Thread.currentThread().getId();
         return executeLocked(key, () -> {
@@ -696,6 +718,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         });
     }
     
+    /** 按 codec 编码后的 ByteBuf 字节级比较两值是否相等。 */
     private boolean isEqual(Object value, Object oldValue) {
         ByteBuf valueBuf = ((RedissonObject) map).encodeMapValue(value);
         ByteBuf oldValueBuf = ((RedissonObject) map).encodeMapValue(oldValue);
@@ -786,11 +809,13 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         return executeLocked(timeout, runnable, lock);
     }
 
+    /** 按 map 键派生事务专用细粒度锁名。 */
     protected RLock getLock(K key) {
         String lockName = ((RedissonMap<K, V>) map).getLockByMapKey(key, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 
+    /** 本地 state 是否仍含非 NULL 条目（用于 touch/expire 短路）。 */
     private boolean isExists() {
         boolean notExists = state.values().stream().noneMatch(v -> v != MapEntry.NULL);
         return !notExists;

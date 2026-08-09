@@ -43,19 +43,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ * Redisson {@link RTransaction} 实现：乐观式分布式事务。
+ * <p>
+ * 事务内对 Bucket/Set/Map 等的写操作记录为 {@link TransactionalOperation}，
+ * commit 时批量执行并配合 LocalCachedMap 的 disable/enable 广播；
+ * rollback 逆序回滚锁状态。同一事务实例仅可 commit 或 rollback 一次。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonTransaction implements RTransaction {
 
+    /** 命令执行器。 */
     private final CommandAsyncExecutor commandExecutor;
+    /** 事务是否已 commit/rollback 结束。 */
     private final AtomicBoolean executed = new AtomicBoolean();
     
+    /** 超时、同步从库数等选项。 */
     private final TransactionOptions options;
+    /** 事务内累积的操作（线程安全列表）。 */
     private List<TransactionalOperation> operations = new CopyOnWriteArrayList<>();
+    /** 参与事务的 LocalCachedMap 名称集合。 */
     private Set<String> localCaches = new HashSet<>();
+    /** 源 LocalCachedMap → 事务包装实例。 */
     private final Map<RLocalCachedMap<?, ?>, RLocalCachedMap<?, ?>> localCacheInstances = new IdentityHashMap<>();
+    /** 按 Redis 名缓存的事务对象（Bucket/Set/Map 等）。 */
     private final Map<String, Object> instances = new HashMap<>();
 
     private RedissonTransactionalBuckets bucketsInstance;
@@ -113,6 +125,7 @@ public class RedissonTransaction implements RTransaction {
         });
     }
 
+    /** 同一 Redis 名不可混用不同 Codec 类型的事务对象。 */
     private void checkCodecMismatch(String name, Codec codec) {
         if (codec == null) {
             return;
@@ -224,6 +237,7 @@ public class RedissonTransaction implements RTransaction {
     }
     
     @Override
+    /** 异步提交：先 disable 本地缓存 → 执行 batch → enable 缓存。 */
     public RFuture<Void> commitAsync() {
         checkState();
         
@@ -270,6 +284,7 @@ public class RedissonTransaction implements RTransaction {
         return new CompletableFutureWrapper<>(ff);
     }
 
+    /** 根据 {@link TransactionOptions} 构建 IN_MEMORY_ATOMIC 批处理选项。 */
     private BatchOptions createOptions() {
         MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntrySet().iterator().next();
         int syncSlaves = entry.getAvailableSlaves();
@@ -327,6 +342,7 @@ public class RedissonTransaction implements RTransaction {
         executed.set(true);
     }
 
+    /** 超过事务 wall-clock 超时则 rollback 并抛 {@link TransactionTimeoutException}。 */
     private void checkTimeout() {
         if (options.getTimeout() != -1 && System.currentTimeMillis() - startTime > options.getTimeout()) {
             rollbackAsync();
@@ -366,10 +382,11 @@ public class RedissonTransaction implements RTransaction {
         try {
             publishBatch.execute();
         } catch (Exception e) {
-            // skip it. Disabled local cache entries are enabled once reach timeout.
+            // 忽略 enable 失败：被禁用的本地缓存条目会在超时后自动恢复
         }
     }
 
+    /** delete/unlink/expire 等整键操作需禁用 LocalCachedMap 全表缓存。 */
     private boolean isKeyOperate(TransactionalOperation transactionalOperation) {
         return transactionalOperation instanceof DeleteOperation || transactionalOperation
                 instanceof UnlinkOperation || transactionalOperation instanceof ExpireOperation
@@ -377,6 +394,7 @@ public class RedissonTransaction implements RTransaction {
                 || transactionalOperation instanceof ClearExpireOperation;
     }
 
+    /** 同步路径：向各节点广播禁用 LocalCachedMap 条目并等待 ACK。 */
     private Map<HashKey, HashValue> disableLocalCache(String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
         if (localCaches.isEmpty()) {
             return Collections.emptyMap();
@@ -481,6 +499,7 @@ public class RedissonTransaction implements RTransaction {
         return hashes;
     }
 
+    /** 异步 disable 本地缓存并基于 {@link AsyncCountDownLatch} 等待各 Map ACK。 */
     private CompletionStage<Map<HashKey, HashValue>> disableLocalCacheAsync(String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
         if (localCaches.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
@@ -601,6 +620,7 @@ public class RedissonTransaction implements RTransaction {
         rollback(operations);
     }
     
+    /** 同步回滚：对各 operation 调用 rollback 并清空列表。 */
     public void rollback(List<TransactionalOperation> operations) {
         checkState();
 
@@ -649,6 +669,7 @@ public class RedissonTransaction implements RTransaction {
         return operations;
     }
 
+    /** 事务已结束时拒绝进一步 getBucket/getMap 等操作。 */
     protected void checkState() {
         if (executed.get()) {
             throw new IllegalStateException("Unable to execute operation. Transaction was finished!");

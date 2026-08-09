@@ -27,7 +27,11 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
- * 
+ * 事务内 {@link RLocalCachedMap} 包装：继承 {@link RedissonTransactionalMap}。
+ * <p>
+ * 本地缓存管理（preload/clearLocalCache/cachedKeySet 等）在事务内不可用；
+ * commit 时由 {@link RedissonTransaction} 协调各节点缓存 disable/enable。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -41,11 +45,13 @@ public class RedissonTransactionalLocalCachedMap<K, V> extends RedissonTransacti
     }
 
     @Override
+    /** 事务内不支持 destroy。 */
     public void destroy() {
         throw new UnsupportedOperationException("destroy method is not supported in transaction");
     }
 
     @Override
+    /** 事务内不支持预加载本地缓存。 */
     public void preloadCache() {
         throw new UnsupportedOperationException("preloadCache method is not supported in transaction");
     }
@@ -56,6 +62,7 @@ public class RedissonTransactionalLocalCachedMap<K, V> extends RedissonTransacti
     }
 
     @Override
+    /** 事务内不支持 clearLocalCache。 */
     public RFuture<Void> clearLocalCacheAsync() {
         throw new UnsupportedOperationException("clearLocalCache method is not supported in transaction");
     }
@@ -66,6 +73,7 @@ public class RedissonTransactionalLocalCachedMap<K, V> extends RedissonTransacti
     }
 
     @Override
+    /** 事务内不可读 JVM 侧缓存键集。 */
     public Set<K> cachedKeySet() {
         throw new UnsupportedOperationException("cachedKeySet method is not supported in transaction");
     }
@@ -81,6 +89,7 @@ public class RedissonTransactionalLocalCachedMap<K, V> extends RedissonTransacti
     }
 
     @Override
+    /** 事务内不可直接暴露本地缓存 Map 快照。 */
     public Map<K, V> getCachedMap() {
         throw new UnsupportedOperationException("getCachedMap method is not supported in transaction");
     }
