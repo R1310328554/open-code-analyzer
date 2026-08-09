@@ -19,28 +19,25 @@ package org.springframework.aop.config;
 import org.springframework.beans.factory.parsing.ParseState;
 
 /**
- * 代表建议元素的 {@link ParseState} 条目。
+ * 表示 advice 元素的 {@link ParseState} 条目。
+ *
  * @author Mark Fisher
  * @since 2.0
  */
 public class AdviceEntry implements ParseState.Entry {
 
-	/** `kind`：该类的成员状态。 */
 	private final String kind;
 
 
 	/**
-	 * 创建一个新的 {@code AdviceEntry} 实例。
-	 * @param kind 该条目所代表的建议类型（之前、之后、周围）
+	 * 创建新的 {@code AdviceEntry} 实例。
+	 * @param kind 本条目表示的通知类型（before、after、around）
 	 */
 	public AdviceEntry(String kind) {
 		this.kind = kind;
 	}
 
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return "Advice (" + this.kind + ")";

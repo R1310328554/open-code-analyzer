@@ -37,8 +37,9 @@ import org.springframework.core.Ordered;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link org.springframework.aop.framework.autoproxy.AbstractAdvisorAutoProxyCreator}
- * 子类，公开 AspectJ 的调用上下文，并在多个建议来自同一方面时理解 AspectJ 的建议优先级规则。
+ * {@link org.springframework.aop.framework.autoproxy.AbstractAdvisorAutoProxyCreator} 的子类，
+ * 暴露 AspectJ 调用上下文，并理解同一切面中多条通知的 AspectJ 优先级规则。
+ *
  * @author Adrian Colyer
  * @author Juergen Hoeller
  * @author Ramnivas Laddad
@@ -48,17 +49,20 @@ import org.springframework.util.ClassUtils;
 public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProxyCreator
 		implements SmartInitializingSingleton, DisposableBean {
 
-	/**
-	 * 方法 `AspectJPrecedenceComparator`：完成本类中与「Aspect J Precedence Comparator」相关的职责。
-	 */
 	private static final Comparator<Advisor> DEFAULT_PRECEDENCE_COMPARATOR = new AspectJPrecedenceComparator();
 
 
 	/**
-	 * 根据 AspectJ 优先级对提供的 {@link Advisor} 实例进行排序。 <p>如果两条建议来自同一方面，则它们将具有相同的顺序。然后根据以下规则进一步对来自同一方
-	 * 面的建议进行排序： <ul> <li> 如果在 </em> 建议之后一对中的任何一个是 <em>，则最后声明的建议具有最高优先级（即最后运行）。</li> <li>否则首先声明
-	 * 的建议具有最高优先级（即运行）首先).</li> </ul> <p><b>I重要：</b> Advisor 按优先级顺序排序，从最高优先级到最低优先级。在“进入”连接点时，优先
-	 * 级最高的顾问程序应首先运行。在连接点“退出”时，优先级最高的顾问程序应该最后运行。
+	 * 按 AspectJ 优先级对给定 {@link Advisor} 实例排序。
+	 * <p>若两条通知来自同一切面，它们具有相同 order。
+	 * 同一切面的通知再按以下规则进一步排序：
+	 * <ul>
+	 * <li>若其中一条为 <em>after</em> 通知，则后声明的通知优先级最高（即最后运行）。</li>
+	 * <li>否则先声明的通知优先级最高（即最先运行）。</li>
+	 * </ul>
+	 * <p><b>重要：</b>Advisor 按优先级从高到低排序。
+	 * 进入连接点时，最高优先级 Advisor 应最先运行；
+	 * 离开连接点时，最高优先级 Advisor 应最后运行。
 	 */
 	@Override
 	protected List<Advisor> sortAdvisors(List<Advisor> advisors) {
@@ -81,17 +85,14 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 	}
 
 	/**
-	 * 将 {@link ExposeInvocationInterceptor} 添加到建议链的开头。 <p> 使用 AspectJ 切入点表达式和使用 AspectJ
-	 * 样式建议时需要此附加建议。
+	 * 在通知链开头添加 {@link ExposeInvocationInterceptor}。
+	 * <p>使用 AspectJ 切入点表达式及 AspectJ 风格通知时需要此额外通知。
 	 */
 	@Override
 	protected void extendAdvisors(List<Advisor> candidateAdvisors) {
 		AspectJProxyUtils.makeAdvisorChainAspectJCapableIfNecessary(candidateAdvisors);
 	}
 
-	/**
-	 * 方法 `shouldSkip`：完成本类中与「should Skip」相关的职责。
-	 */
 	@Override
 	protected boolean shouldSkip(Class<?> beanClass, String beanName) {
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
@@ -104,17 +105,11 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 		return super.shouldSkip(beanClass, beanName);
 	}
 
-	/**
-	 * 在…之后回调：Singletons Instantiated（方法 `afterSingletonsInstantiated`）。
-	 */
 	@Override
 	public void afterSingletonsInstantiated() {
 		ShadowMatchUtils.clearCache();
 	}
 
-	/**
-	 * 销毁（方法 `destroy`）。
-	 */
 	@Override
 	public void destroy() {
 		ShadowMatchUtils.clearCache();
@@ -122,7 +117,7 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 
 
 	/**
-	 * 实现 AspectJ 的 {@link PartialComparable} 接口来定义部分排序。
+	 * 实现 AspectJ 的 {@link PartialComparable} 接口，用于定义偏序关系。
 	 */
 	private static class PartiallyComparableAdvisorHolder implements PartialComparable {
 

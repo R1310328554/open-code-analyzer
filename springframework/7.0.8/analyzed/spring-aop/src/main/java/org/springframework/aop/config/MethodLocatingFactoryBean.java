@@ -27,41 +27,38 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link FactoryBean} 实现在指定 bean 上定位 {@link Method}。
+ * 在指定 Bean 上定位 {@link Method} 的 {@link FactoryBean} 实现。
+ *
  * @author Rob Harrop
  * @since 2.0
  */
 public class MethodLocatingFactoryBean implements FactoryBean<Method>, BeanFactoryAware {
 
-	/** 名称相关状态（`targetBeanName`）。 */
 	private @Nullable String targetBeanName;
 
-	/** 名称相关状态（`methodName`）。 */
 	private @Nullable String methodName;
 
-	/** 方法相关状态（`method`）。 */
 	private @Nullable Method method;
 
 
 	/**
-	 * 设置用于定位 {@link Method} 的 bean 的名称。 <p>此属性是必需的。
-	 * @param targetBeanName 用于定位 {@link Method} 的 bean 的名称
+	 * 设置要定位 {@link Method} 的目标 Bean 名称。
+	 * <p>此属性必填。
+	 * @param targetBeanName 要定位 {@link Method} 的 Bean 名称
 	 */
 	public void setTargetBeanName(String targetBeanName) {
 		this.targetBeanName = targetBeanName;
 	}
 
 	/**
-	 * 设置要查找的 {@link Method} 的名称。 <p>此属性是必需的。
-	 * @param methodName 要定位的 {@link Method} 的名称
+	 * 设置要定位的 {@link Method} 名称。
+	 * <p>此属性必填。
+	 * @param methodName 要定位的 {@link Method} 名称
 	 */
 	public void setMethodName(String methodName) {
 		this.methodName = methodName;
 	}
 
-	/**
-	 * 设置 Bean Factory（`BeanFactory`）。
-	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		if (!StringUtils.hasText(this.targetBeanName)) {
@@ -84,25 +81,16 @@ public class MethodLocatingFactoryBean implements FactoryBean<Method>, BeanFacto
 	}
 
 
-	/**
-	 * 获取 Object（`Object`）。
-	 */
 	@Override
 	public @Nullable Method getObject() throws Exception {
 		return this.method;
 	}
 
-	/**
-	 * 获取 Object Type（`ObjectType`）。
-	 */
 	@Override
 	public Class<Method> getObjectType() {
 		return Method.class;
 	}
 
-	/**
-	 * 判断是否 Singleton。
-	 */
 	@Override
 	public boolean isSingleton() {
 		return true;

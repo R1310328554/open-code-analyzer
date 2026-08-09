@@ -23,8 +23,9 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.OrderUtils;
 
 /**
- * 由指定单例对象支持的 {@link MetadataAwareAspectInstanceFactory} 实现，为每个 {@link
- * #getAspectInstance()} 调用返回相同的实例。
+ * {@link MetadataAwareAspectInstanceFactory} 的实现，
+ * 由指定单例对象支持，每次 {@link #getAspectInstance()} 调用返回同一实例。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -34,14 +35,13 @@ import org.springframework.core.annotation.OrderUtils;
 public class SingletonMetadataAwareAspectInstanceFactory extends SingletonAspectInstanceFactory
 		implements MetadataAwareAspectInstanceFactory, Serializable {
 
-	/** `metadata`：该类的成员状态。 */
 	private final AspectMetadata metadata;
 
 
 	/**
-	 * 为给定方面创建一个新的 SingletonMetadataAwareAspectInstanceFactory。
-	 * @param aspectInstance 单例方面实例
-	 * @param aspectName 方面的名称
+	 * 为给定切面创建新的 SingletonMetadataAwareAspectInstanceFactory。
+	 * @param aspectInstance 单例切面实例
+	 * @param aspectName 切面名称
 	 */
 	public SingletonMetadataAwareAspectInstanceFactory(Object aspectInstance, String aspectName) {
 		super(aspectInstance);
@@ -49,25 +49,16 @@ public class SingletonMetadataAwareAspectInstanceFactory extends SingletonAspect
 	}
 
 
-	/**
-	 * 获取 Aspect Metadata（`AspectMetadata`）。
-	 */
 	@Override
 	public final AspectMetadata getAspectMetadata() {
 		return this.metadata;
 	}
 
-	/**
-	 * 获取 Aspect Creation Mutex（`AspectCreationMutex`）。
-	 */
 	@Override
 	public Object getAspectCreationMutex() {
 		return this;
 	}
 
-	/**
-	 * 获取 Order For Aspect Class（`OrderForAspectClass`）。
-	 */
 	@Override
 	protected int getOrderForAspectClass(Class<?> aspectClass) {
 		return OrderUtils.getOrder(aspectClass, Ordered.LOWEST_PRECEDENCE);

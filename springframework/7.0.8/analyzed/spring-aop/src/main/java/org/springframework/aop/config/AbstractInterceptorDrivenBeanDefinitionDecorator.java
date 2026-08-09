@@ -35,15 +35,20 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * 希望将 {@link org.aopalliance.intercept.MethodInterceptor interceptor} 添加到生成的 bean 的
- * {@link org.springframework.beans.factory.xml.BeanDefinitionDecorator
- * BeanDefinitionDecorators} 的基本实现。
- * <p>此基类控制 {@link ProxyFactoryBean} bean 定义的创建，并将原始内容包装为 {@link ProxyFactoryBean} 的
- * {@code target} 属性的内部 bean 定义。
- * <p>Caining 已正确处理，确保仅创建一个 {@link ProxyFactoryBean} 定义。如果以前的 {@link
- * org.springframework.beans.factory.xml.BeanDefinitionDecorator} 已经创建了 {@link
- * org.springframework.aop.framework.ProxyFactoryBean}，则只需将拦截器添加到现有定义中。
- * <p>子类只需为它们希望添加的拦截器创建{@code BeanDefinition}。
+ * 希望向结果 Bean 添加 {@link org.aopalliance.intercept.MethodInterceptor 拦截器} 的
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionDecorator BeanDefinitionDecorator}
+ * 基类实现。
+ *
+ * <p>本基类控制 {@link ProxyFactoryBean} Bean 定义的创建，
+ * 并将原始定义包装为 {@link ProxyFactoryBean} {@code target} 属性的内部 Bean 定义。
+ *
+ * <p>正确处理链式装饰，确保仅创建一个 {@link ProxyFactoryBean} 定义。
+ * 若先前的 {@link org.springframework.beans.factory.xml.BeanDefinitionDecorator}
+ * 已创建 {@link org.springframework.aop.framework.ProxyFactoryBean}，
+ * 则仅将拦截器添加到现有定义。
+ *
+ * <p>子类只需创建要添加的拦截器 {@code BeanDefinition}。
+ *
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
@@ -51,19 +56,16 @@ import org.springframework.util.StringUtils;
  */
 public abstract class AbstractInterceptorDrivenBeanDefinitionDecorator implements BeanDefinitionDecorator {
 
-	/**
-	 * 方法 `decorate`：完成本类中与「decorate」相关的职责。
-	 */
 	@Override
 	public final BeanDefinitionHolder decorate(Node node, BeanDefinitionHolder definitionHolder, ParserContext parserContext) {
 		BeanDefinitionRegistry registry = parserContext.getRegistry();
 
-		// 获取根 bean 名称 - 将是生成的代理工厂 bean 的名称
+		// 获取根 Bean 名称——将作为生成的代理工厂 Bean 名称
 		String existingBeanName = definitionHolder.getBeanName();
 		BeanDefinition targetDefinition = definitionHolder.getBeanDefinition();
 		BeanDefinitionHolder targetHolder = new BeanDefinitionHolder(targetDefinition, existingBeanName + ".TARGET");
 
-		// 委托给子类进行拦截器定义
+		// 委托子类创建拦截器定义
 		BeanDefinition interceptorDefinition = createInterceptorDefinition(node);
 
 		// 生成名称并注册拦截器
@@ -76,22 +78,22 @@ public abstract class AbstractInterceptorDrivenBeanDefinitionDecorator implement
 		if (!isProxyFactoryBeanDefinition(targetDefinition)) {
 			// 创建代理定义
 			RootBeanDefinition proxyDefinition = new RootBeanDefinition();
-			// 创建代理工厂 bean 定义
+			// 创建 ProxyFactoryBean 定义
 			proxyDefinition.setBeanClass(ProxyFactoryBean.class);
 			proxyDefinition.setScope(targetDefinition.getScope());
 			proxyDefinition.setLazyInit(targetDefinition.isLazyInit());
-			// 设定目标
+			// 设置 target
 			proxyDefinition.setDecoratedDefinition(targetHolder);
 			proxyDefinition.getPropertyValues().add("target", targetHolder);
-			// 创建拦截器名称列表
+			// 创建 interceptorNames 列表
 			proxyDefinition.getPropertyValues().add("interceptorNames", new ManagedList<>());
-			// 从原始 bean 定义复制自动装配设置。
+			// 从原始 Bean 定义复制 autowire 设置。
 			proxyDefinition.setAutowireCandidate(targetDefinition.isAutowireCandidate());
 			proxyDefinition.setPrimary(targetDefinition.isPrimary());
 			if (targetDefinition instanceof AbstractBeanDefinition abd) {
 				proxyDefinition.copyQualifiersFrom(abd);
 			}
-			// 将其包装在带有 bean 名称的 BeanDefinitionHolder 中
+			// 用 BeanDefinitionHolder 包装并指定 Bean 名称
 			result = new BeanDefinitionHolder(proxyDefinition, existingBeanName);
 		}
 
@@ -99,9 +101,6 @@ public abstract class AbstractInterceptorDrivenBeanDefinitionDecorator implement
 		return result;
 	}
 
-	/**
-	 * 添加：Interceptor Name To List（方法 `addInterceptorNameToList`）。
-	 */
 	@SuppressWarnings("unchecked")
 	private void addInterceptorNameToList(String interceptorName, BeanDefinition beanDefinition) {
 		List<String> list = (List<String>) beanDefinition.getPropertyValues().get("interceptorNames");
@@ -109,16 +108,10 @@ public abstract class AbstractInterceptorDrivenBeanDefinitionDecorator implement
 		list.add(interceptorName);
 	}
 
-	/**
-	 * 判断是否 Proxy Factory Bean Definition。
-	 */
 	private boolean isProxyFactoryBeanDefinition(BeanDefinition existingDefinition) {
 		return ProxyFactoryBean.class.getName().equals(existingDefinition.getBeanClassName());
 	}
 
-	/**
-	 * 获取 Interceptor Name Suffix（`InterceptorNameSuffix`）。
-	 */
 	protected String getInterceptorNameSuffix(BeanDefinition interceptorDefinition) {
 		String beanClassName = interceptorDefinition.getBeanClassName();
 		return (StringUtils.hasLength(beanClassName) ?
@@ -126,7 +119,7 @@ public abstract class AbstractInterceptorDrivenBeanDefinitionDecorator implement
 	}
 
 	/**
-	 * 子类应该实现此方法，以返回它们希望应用于正在装饰的 bean 的拦截器的 {@code BeanDefinition}。
+	 * 子类应实现本方法，返回要应用于被装饰 Bean 的拦截器 {@code BeanDefinition}。
 	 */
 	protected abstract BeanDefinition createInterceptorDefinition(Node node);
 

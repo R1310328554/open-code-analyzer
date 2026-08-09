@@ -20,24 +20,23 @@ import org.springframework.beans.factory.parsing.ParseState;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link ParseState} 条目代表一个方面。
+ * 表示 aspect 的 {@link ParseState} 条目。
+ *
  * @author Mark Fisher
  * @author Juergen Hoeller
  * @since 2.0
  */
 public class AspectEntry implements ParseState.Entry {
 
-	/** `id`：该类的成员状态。 */
 	private final String id;
 
-	/** `ref`：该类的成员状态。 */
 	private final String ref;
 
 
 	/**
-	 * 创建一个新的 {@code AspectEntry} 实例。
-	 * @param id 方面元素的 id
-	 * @param ref 此方面元素引用的 bean 名称
+	 * 创建新的 {@code AspectEntry} 实例。
+	 * @param id aspect 元素的 id
+	 * @param ref 本 aspect 元素引用的 Bean 名称
 	 */
 	public AspectEntry(String id, String ref) {
 		this.id = id;
@@ -45,9 +44,6 @@ public class AspectEntry implements ParseState.Entry {
 	}
 
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return "Aspect: " + (StringUtils.hasLength(this.id) ? "id='" + this.id + "'" :

@@ -23,7 +23,9 @@ import org.springframework.beans.factory.config.BeanReference;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
 
 /**
- * {@link org.springframework.beans.factory.parsing.ComponentDefinition} 保存切面定义，包括其嵌套切入点。
+ * 持有切面定义（含嵌套切入点）的
+ * {@link org.springframework.beans.factory.parsing.ComponentDefinition}。
+ *
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
@@ -32,16 +34,11 @@ import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
  */
 public class AspectComponentDefinition extends CompositeComponentDefinition {
 
-	/** Bean相关状态（`beanDefinitions`）。 */
 	private final BeanDefinition[] beanDefinitions;
 
-	/** Bean相关状态（`beanReferences`）。 */
 	private final BeanReference[] beanReferences;
 
 
-	/**
-	 * 创建 `AspectComponentDefinition` 的新实例。
-	 */
 	public AspectComponentDefinition(String aspectName, BeanDefinition @Nullable [] beanDefinitions,
 			BeanReference @Nullable [] beanReferences, @Nullable Object source) {
 
@@ -51,17 +48,11 @@ public class AspectComponentDefinition extends CompositeComponentDefinition {
 	}
 
 
-	/**
-	 * 获取 Bean Definitions（`BeanDefinitions`）。
-	 */
 	@Override
 	public BeanDefinition[] getBeanDefinitions() {
 		return this.beanDefinitions;
 	}
 
-	/**
-	 * 获取 Bean References（`BeanReferences`）。
-	 */
 	@Override
 	public BeanReference[] getBeanReferences() {
 		return this.beanReferences;

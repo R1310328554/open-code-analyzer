@@ -25,9 +25,13 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.xml.ParserContext;
 
 /**
- * 用于处理“{@code aop}”命名空间标签内部使用的自动代理创建者注册的实用程序类。
- * <p>仅应注册单个自动代理创建者，并且多个配置元素可能希望注册不同的具体实现。因此，此类委托给 {@link AopConfigUtils}，它提供了一个简单的升级协议。调用者
- * 可以请求特定的自动代理创建者，并知道该创建者 OCAJAVA2DO 或其功能更强大的变体 </i> 将被注册为后处理器。
+ * 处理 '{@code aop}' 命名空间标签内部使用的自动代理创建器注册的工具类。
+ *
+ * <p>应仅注册一个自动代理创建器，多个配置元素可能希望注册不同具体实现。
+ * 因此本类委托 {@link AopConfigUtils}，其提供简单升级协议。
+ * 调用者可请求特定自动代理创建器，并确知该创建器
+ * <i>或其更强变体</i>将作为后处理器注册。
+ *
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @author Mark Fisher
@@ -37,19 +41,16 @@ import org.springframework.beans.factory.xml.ParserContext;
 public abstract class AopNamespaceUtils {
 
 	/**
-	 * AOP 相关 XML 标记上的 {@code proxy-target-class} 属性。
+	 * AOP 相关 XML 标签上的 {@code proxy-target-class} 属性。
 	 */
 	public static final String PROXY_TARGET_CLASS_ATTRIBUTE = "proxy-target-class";
 
 	/**
-	 * AOP 相关 XML 标记上的 {@code expose-proxy} 属性。
+	 * AOP 相关 XML 标签上的 {@code expose-proxy} 属性。
 	 */
 	private static final String EXPOSE_PROXY_ATTRIBUTE = "expose-proxy";
 
 
-	/**
-	 * 注册：Auto Proxy Creator If Necessary（方法 `registerAutoProxyCreatorIfNecessary`）。
-	 */
 	public static void registerAutoProxyCreatorIfNecessary(
 			ParserContext parserContext, Element sourceElement) {
 
@@ -59,9 +60,6 @@ public abstract class AopNamespaceUtils {
 		registerComponentIfNecessary(beanDefinition, parserContext);
 	}
 
-	/**
-	 * 注册：Aspect J Auto Proxy Creator If Necessary（方法 `registerAspectJAutoProxyCreatorIfNecessary`）。
-	 */
 	public static void registerAspectJAutoProxyCreatorIfNecessary(
 			ParserContext parserContext, Element sourceElement) {
 
@@ -71,9 +69,6 @@ public abstract class AopNamespaceUtils {
 		registerComponentIfNecessary(beanDefinition, parserContext);
 	}
 
-	/**
-	 * 注册：Aspect J Annotation Auto Proxy Creator If Necessary（方法 `registerAspectJAnnotationAutoProxyCreatorIfNecessary`）。
-	 */
 	public static void registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 			ParserContext parserContext, Element sourceElement) {
 
@@ -83,9 +78,6 @@ public abstract class AopNamespaceUtils {
 		registerComponentIfNecessary(beanDefinition, parserContext);
 	}
 
-	/**
-	 * 方法 `useClassProxyingIfNecessary`：完成本类中与「use Class Proxying If Necessary」相关的职责。
-	 */
 	private static void useClassProxyingIfNecessary(BeanDefinitionRegistry registry, @Nullable Element sourceElement) {
 		if (sourceElement != null) {
 			boolean proxyTargetClass = Boolean.parseBoolean(sourceElement.getAttribute(PROXY_TARGET_CLASS_ATTRIBUTE));
@@ -99,9 +91,6 @@ public abstract class AopNamespaceUtils {
 		}
 	}
 
-	/**
-	 * 注册：Component If Necessary（方法 `registerComponentIfNecessary`）。
-	 */
 	private static void registerComponentIfNecessary(@Nullable BeanDefinition beanDefinition, ParserContext parserContext) {
 		if (beanDefinition != null) {
 			parserContext.registerComponent(

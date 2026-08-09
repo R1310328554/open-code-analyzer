@@ -21,8 +21,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.aspectj.AspectInstanceFactory;
 
 /**
- * {@link org.springframework.aop.aspectj.AspectInstanceFactory} 的子接口，返回与 AspectJ 注释的类关联的
- * {@link AspectMetadata}。
+ * {@link org.springframework.aop.aspectj.AspectInstanceFactory} 的子接口，
+ * 返回与 AspectJ 注解类关联的 {@link AspectMetadata}。
+ *
  * @author Rod Johnson
  * @since 2.0
  * @see AspectMetadata
@@ -31,14 +32,14 @@ import org.springframework.aop.aspectj.AspectInstanceFactory;
 public interface MetadataAwareAspectInstanceFactory extends AspectInstanceFactory {
 
 	/**
-	 * 获取该工厂方面的 AspectJ AspectMetadata。
-	 * @return 方面元数据
+	 * 获取本工厂所管理切面的 AspectJ AspectMetadata。
+	 * @return 切面元数据
 	 */
 	AspectMetadata getAspectMetadata();
 
 	/**
-	 * 为该工厂获取尽可能最佳的创建互斥体。
-	 * @return 互斥对象（可能是 {@code null}，不使用互斥）
+	 * 获取本工厂尽可能最佳的创建互斥体。
+	 * @return 互斥对象（可为 {@code null} 表示不使用互斥）
 	 * @since 4.3
 	 */
 	@Nullable Object getAspectCreationMutex();

@@ -25,14 +25,22 @@ import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.util.Assert;
 
 /**
- * 按优先级对 AspectJ 建议/顾问进行排序（<i> 而非 </i> 调用顺序）。
- * <p>给定两条建议，{@code A} 和 {@code B}： <ul> <li> 如果 {@code A} 和 {@code B} 定义在不同方面，则顺序值最低的方面中的建
- * 议具有最高优先级。 </li> <li> 如果 {@code A} 和{@code B} 在同一切面中定义，如果 {@code A} 或 {@code B} 之一是 <em>a
- * fter</em> 建议的一种形式，则该切面中最后声明的建议具有最高优先级。如果 {@code A} 和 {@code B} 都不是 <em>after</em> 建议的形式，
- * 则该方面中首先声明的建议具有最高优先级。 </li> </ul>
- * <p>I 重要提示：此比较器与 AspectJ 的 {@link org.aspectj.util.PartialOrder PartialOrder}
- * 排序实用程序一起使用。因此，与普通的 {@link Comparator} 不同，此比较器的 {@code 0}
- * 返回值意味着我们不关心顺序，而不是两个元素必须以相同的方式排序。
+ * 按优先级（<i>非</i>调用顺序）对 AspectJ 通知/Advisor 排序。
+ *
+ * <p>给定两条通知 {@code A} 与 {@code B}：
+ * <ul>
+ * <li>若 {@code A} 与 {@code B} 定义在不同切面中，
+ * 则 order 值最小的切面中的通知优先级最高。</li>
+ * <li>若 {@code A} 与 {@code B} 定义在同一切面中，
+ * 若其中一条为 <em>after</em> 通知，则切面中后声明的通知优先级最高；
+ * 若两者均非 <em>after</em> 通知，则先声明的通知优先级最高。</li>
+ * </ul>
+ *
+ * <p>重要：本比较器与 AspectJ 的
+ * {@link org.aspectj.util.PartialOrder PartialOrder} 排序工具配合使用。
+ * 因此与普通 {@link Comparator} 不同，返回 {@code 0} 表示不关心排序，
+ * 而非两元素必须完全相同顺序。
+ *
  * @author Adrian Colyer
  * @author Juergen Hoeller
  * @since 2.0
@@ -46,7 +54,6 @@ class AspectJPrecedenceComparator implements Comparator<Advisor> {
 	private static final int LOWER_PRECEDENCE = 1;
 
 
-	/** 通知器相关状态（`advisorComparator`）。 */
 	private final Comparator<? super Advisor> advisorComparator;
 
 
@@ -58,9 +65,9 @@ class AspectJPrecedenceComparator implements Comparator<Advisor> {
 	}
 
 	/**
-	 * 创建 {@code AspectJPrecedenceComparator}，使用给定的 {@link Comparator} 来比较 {@link
-	 * org.springframework.aop.Advisor} 实例。
-	 * @param advisorComparator 用于顾问的 {@code Comparator}
+	 * 创建 {@code AspectJPrecedenceComparator}，
+	 * 使用给定 {@link Comparator} 比较 {@link org.springframework.aop.Advisor} 实例。
+	 * @param advisorComparator 用于 Advisor 的 {@code Comparator}
 	 */
 	public AspectJPrecedenceComparator(Comparator<? super Advisor> advisorComparator) {
 		Assert.notNull(advisorComparator, "Advisor comparator must not be null");
@@ -68,9 +75,6 @@ class AspectJPrecedenceComparator implements Comparator<Advisor> {
 	}
 
 
-	/**
-	 * 方法 `compare`：完成本类中与「compare」相关的职责。
-	 */
 	@Override
 	public int compare(Advisor o1, Advisor o2) {
 		int advisorPrecedence = this.advisorComparator.compare(o1, o2);
@@ -80,19 +84,15 @@ class AspectJPrecedenceComparator implements Comparator<Advisor> {
 		return advisorPrecedence;
 	}
 
-	/**
-	 * 方法 `comparePrecedenceWithinAspect`：完成本类中与「compare Precedence Within Aspect」相关的职责。
-	 */
 	private int comparePrecedenceWithinAspect(Advisor advisor1, Advisor advisor2) {
 		boolean oneOrOtherIsAfterAdvice =
 				(AspectJAopUtils.isAfterAdvice(advisor1) || AspectJAopUtils.isAfterAdvice(advisor2));
 		int adviceDeclarationOrderDelta = getAspectDeclarationOrder(advisor1) - getAspectDeclarationOrder(advisor2);
 
 		if (oneOrOtherIsAfterAdvice) {
-			// 最后声明的建议具有更高的优先级
+			// 后声明的通知优先级更高
 			if (adviceDeclarationOrderDelta < 0) {
-				// 通知 1 在通知 2 之前声明
-				// 所以advice1的优先级较低
+				// advice1 先于 advice2 声明，故 advice1 优先级更低
 				return LOWER_PRECEDENCE;
 			}
 			else if (adviceDeclarationOrderDelta == 0) {
@@ -103,10 +103,9 @@ class AspectJPrecedenceComparator implements Comparator<Advisor> {
 			}
 		}
 		else {
-			// 首先声明的建议具有更高的优先级
+			// 先声明的通知优先级更高
 			if (adviceDeclarationOrderDelta < 0) {
-				// 通知 1 在通知 2 之前声明
-				// 所以advice1有更高的优先级
+				// advice1 先于 advice2 声明，故 advice1 优先级更高
 				return HIGHER_PRECEDENCE;
 			}
 			else if (adviceDeclarationOrderDelta == 0) {
@@ -118,35 +117,23 @@ class AspectJPrecedenceComparator implements Comparator<Advisor> {
 		}
 	}
 
-	/**
-	 * 方法 `declaredInSameAspect`：完成本类中与「declared In Same Aspect」相关的职责。
-	 */
 	private boolean declaredInSameAspect(Advisor advisor1, Advisor advisor2) {
 		return (hasAspectName(advisor1) && hasAspectName(advisor2) &&
 				getAspectName(advisor1).equals(getAspectName(advisor2)));
 	}
 
-	/**
-	 * 判断是否包含/具备 Aspect Name。
-	 */
 	private boolean hasAspectName(Advisor advisor) {
 		return (advisor instanceof AspectJPrecedenceInformation ||
 				advisor.getAdvice() instanceof AspectJPrecedenceInformation);
 	}
 
-	// 前提条件是 hasAspectName 返回 true
-	/**
-	 * 获取 Aspect Name（`AspectName`）。
-	 */
+	// 前置条件：hasAspectName 已返回 true
 	private String getAspectName(Advisor advisor) {
 		AspectJPrecedenceInformation precedenceInfo = AspectJAopUtils.getAspectJPrecedenceInformationFor(advisor);
 		Assert.state(precedenceInfo != null, () -> "Unresolvable AspectJPrecedenceInformation for " + advisor);
 		return precedenceInfo.getAspectName();
 	}
 
-	/**
-	 * 获取 Aspect Declaration Order（`AspectDeclarationOrder`）。
-	 */
 	private int getAspectDeclarationOrder(Advisor advisor) {
 		AspectJPrecedenceInformation precedenceInfo = AspectJAopUtils.getAspectJPrecedenceInformationFor(advisor);
 		return (precedenceInfo != null ? precedenceInfo.getDeclarationOrder() : 0);

@@ -21,20 +21,31 @@ import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * {@code NamespaceHandler} 为 {@code aop} 命名空间。
- * <p> 为 {@code <aop:config>} 标记提供 {@link
- * org.springframework.beans.factory.xml.BeanDefinitionParser}。 {@code config} 标签可以包含嵌套的
- * {@code pointcut}、{@code advisor} 和 {@code aspect} 标签。
- * <p>{@code pointcut} 标记允许使用简单语法创建命名 {@link AspectJExpressionPointcut} bean： <pre
- * class="code"> <aop:pointcut id=“getNameCalls”表达式=“执行(* *..ITestBean.getName(..))”/>
+ * {@code aop} 命名空间的 {@code NamespaceHandler}。
+ *
+ * <p>为 {@code <aop:config>} 标签提供
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionParser}。
+ * {@code config} 标签可包含嵌套的 {@code pointcut}、{@code advisor} 与 {@code aspect} 标签。
+ *
+ * <p>{@code pointcut} 标签可用简单语法创建命名的
+ * {@link AspectJExpressionPointcut} Bean：
+ * <pre class="code">
+ * &lt;aop:pointcut id=&quot;getNameCalls&quot; expression=&quot;execution(* *..ITestBean.getName(..))&quot;/&gt;
  * </pre>
- * <p> 使用 {@code advisor} 标签，您可以配置 {@link org.springframework.aop.Advisor} 并将其自动应用于 {@link
- * org.springframework.beans.factory.BeanFactory} 中的所有相关 bean。 {@code advisor} 标签支持内联和引用
- * {@link org.springframework.aop.Pointcut Pointcuts}：
- * <pre class="code"> <aop:advisor id="getAgeAdvisor";切入点=“执行(* *..ITestBean.getAge(..))”
- * Advice-ref =“getAgeCounter”/>
- * <aop:advisor id="getNameAdvisor"; pointcut-ref="getNameCalls";
- * Advice-ref=“getNameCounter”/></pre>
+ *
+ * <p>使用 {@code advisor} 标签可配置 {@link org.springframework.aop.Advisor}，
+ * 并自动应用于 {@link org.springframework.beans.factory.BeanFactory} 中所有相关 Bean。
+ * {@code advisor} 标签支持内联与引用的 {@link org.springframework.aop.Pointcut 切入点}：
+ *
+ * <pre class="code">
+ * &lt;aop:advisor id=&quot;getAgeAdvisor&quot;
+ *     pointcut=&quot;execution(* *..ITestBean.getAge(..))&quot;
+ *     advice-ref=&quot;getAgeCounter&quot;/&gt;
+ *
+ * &lt;aop:advisor id=&quot;getNameAdvisor&quot;
+ *     pointcut-ref=&quot;getNameCalls&quot;
+ *     advice-ref=&quot;getNameCounter&quot;/&gt;</pre>
+ *
  * @author Rob Harrop
  * @author Adrian Colyer
  * @author Juergen Hoeller
@@ -43,17 +54,18 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 public class AopNamespaceHandler extends NamespaceHandlerSupport {
 
 	/**
-	 * 为“{@code config}”、“{@code spring-configured}”、“{@code aspectj-autoproxy}”和“{@code
-	 * scoped-proxy}”标签注册 {@link BeanDefinitionParser BeanDefinitionParsers}。
+	 * 注册 '{@code config}'、'{@code spring-configured}'、
+	 * '{@code aspectj-autoproxy}' 与 '{@code scoped-proxy}' 标签的
+	 * {@link BeanDefinitionParser BeanDefinitionParser}。
 	 */
 	@Override
 	public void init() {
-		// 在 2.0 XSD 以及 2.5+ XSD 中
+		// 2.0 XSD 及 2.5+ XSD 均包含
 		registerBeanDefinitionParser("config", new ConfigBeanDefinitionParser());
 		registerBeanDefinitionParser("aspectj-autoproxy", new AspectJAutoProxyBeanDefinitionParser());
 		registerBeanDefinitionDecorator("scoped-proxy", new ScopedProxyBeanDefinitionDecorator());
 
-		// 仅在 2.0 XSD 中：在 2.5+ 中移至上下文命名空间
+		// 仅 2.0 XSD 包含：2.5+ 已移至 context 命名空间
 		registerBeanDefinitionParser("spring-configured", new SpringConfiguredBeanDefinitionParser());
 	}
 

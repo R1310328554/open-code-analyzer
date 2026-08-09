@@ -19,20 +19,21 @@ package org.springframework.aop.aspectj.annotation;
 import org.springframework.aop.framework.AopConfigException;
 
 /**
- * 尝试对非 AspectJ 注释样式方面的类执行顾问程序生成操作时抛出的 AopConfigException 扩展。
+ * 对非 AspectJ 注解风格切面类执行 Advisor 生成操作时抛出的
+ * {@link org.springframework.aop.framework.AopConfigException} 扩展。
+ *
  * @author Rod Johnson
  * @since 2.0
  */
 @SuppressWarnings("serial")
 public class NotAnAtAspectException extends AopConfigException {
 
-	/** 类相关状态（`nonAspectClass`）。 */
 	private final Class<?> nonAspectClass;
 
 
 	/**
-	 * 为给定类创建一个新的 NotAnAtAspectException。
-	 * @param nonAspectClass 违规班级
+	 * 为给定类创建新的 NotAnAtAspectException。
+	 * @param nonAspectClass 违规的类
 	 */
 	public NotAnAtAspectException(Class<?> nonAspectClass) {
 		super(nonAspectClass.getName() + " is not an @AspectJ aspect");
@@ -40,7 +41,7 @@ public class NotAnAtAspectException extends AopConfigException {
 	}
 
 	/**
-	 * 返回有问题的类。
+	 * 返回违规的类。
 	 */
 	public Class<?> getNonAspectClass() {
 		return this.nonAspectClass;

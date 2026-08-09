@@ -23,7 +23,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * 装饰器使 {@link MetadataAwareAspectInstanceFactory} 仅实例化一次。
+ * 装饰器，使 {@link MetadataAwareAspectInstanceFactory} 仅实例化一次。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -31,15 +32,13 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class LazySingletonAspectInstanceFactoryDecorator implements MetadataAwareAspectInstanceFactory, Serializable {
 
-	/** `maaif`：该类的成员状态。 */
 	private final MetadataAwareAspectInstanceFactory maaif;
 
-	/** `materialized`：该类的成员状态。 */
 	private volatile @Nullable Object materialized;
 
 
 	/**
-	 * 为给定的 AspectInstanceFactory 创建一个新的延迟初始化装饰器。
+	 * 为给定 AspectInstanceFactory 创建新的延迟初始化装饰器。
 	 * @param maaif 要装饰的 MetadataAwareAspectInstanceFactory
 	 */
 	public LazySingletonAspectInstanceFactoryDecorator(MetadataAwareAspectInstanceFactory maaif) {
@@ -49,7 +48,7 @@ public class LazySingletonAspectInstanceFactoryDecorator implements MetadataAwar
 
 
 	/**
-	 * 获取 Aspect Instance（`AspectInstance`）。
+	 * 获取切面实例，首次调用时延迟创建并缓存。
 	 */
 	@Override
 	public Object getAspectInstance() {
@@ -74,39 +73,27 @@ public class LazySingletonAspectInstanceFactoryDecorator implements MetadataAwar
 	}
 
 	/**
-	 * 判断是否 Materialized。
+	 * 返回切面实例是否已物化（已创建）。
 	 */
 	public boolean isMaterialized() {
 		return (this.materialized != null);
 	}
 
-	/**
-	 * 获取 Aspect Class Loader（`AspectClassLoader`）。
-	 */
 	@Override
 	public @Nullable ClassLoader getAspectClassLoader() {
 		return this.maaif.getAspectClassLoader();
 	}
 
-	/**
-	 * 获取 Aspect Metadata（`AspectMetadata`）。
-	 */
 	@Override
 	public AspectMetadata getAspectMetadata() {
 		return this.maaif.getAspectMetadata();
 	}
 
-	/**
-	 * 获取 Aspect Creation Mutex（`AspectCreationMutex`）。
-	 */
 	@Override
 	public @Nullable Object getAspectCreationMutex() {
 		return this.maaif.getAspectCreationMutex();
 	}
 
-	/**
-	 * 获取 Order（`Order`）。
-	 */
 	@Override
 	public int getOrder() {
 		return this.maaif.getOrder();
@@ -114,7 +101,7 @@ public class LazySingletonAspectInstanceFactoryDecorator implements MetadataAwar
 
 
 	/**
-	 * 返回字符串表示。
+	 * 返回本装饰器的字符串表示。
 	 */
 	@Override
 	public String toString() {
