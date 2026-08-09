@@ -10,6 +10,11 @@ import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 
 /**
+ * 一元 RPC 执行器：客户端发送完整请求后，服务端返回单个响应并结束流。
+ * <p>
+ * 需等待 HTTP/2 DATA 帧携带 {@code END_STREAM} 标志，表示请求体已全部到达，
+ * 再调用 {@link GrpcDispatcher#unaryExecute(GrpcRequest)} 并依次写出 header、body、尾帧。
+ *
  * @author: FengYe
  * @date: 2024/10/24 01:51
  * @description: UnaryProcessor
@@ -27,7 +32,7 @@ public class UnaryExecutor extends AbstractGrpcExecutor {
 
     @Override
     public void execute(GrpcRequest request, Http2DataFrame frame, ChannelHandlerContext context) throws Throwable {
-        // 一元调用，等到 endStream 再响应
+        // 一元调用需等到 endStream，确保请求体完整后再响应
         if (frame.isEndStream()) {
             GrpcResponse response = dispatcher.unaryExecute(request);
             context.writeAndFlush(new DefaultHttp2HeadersFrame(response.getEndHeader()).stream(frame.stream()));

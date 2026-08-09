@@ -15,6 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * {@link ArthasSampleService} 的 gRPC 实现，覆盖四种调用模式的示例逻辑。
+ * <p>
+ * 通过 {@link GrpcService} 与 {@link GrpcMethod} 声明路由，
+ * 由 {@link com.taobao.arthas.grpc.server.handler.GrpcDispatcher} 扫描并绑定 MethodHandle。
+ *
  * @author: FengYe
  * @date: 2024/6/30 下午11:43
  * @description: ArthasSampleServiceImpl
@@ -22,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @GrpcService("arthas.grpc.unittest.ArthasUnittestService")
 public class ArthasSampleServiceImpl implements ArthasSampleService {
 
+    /** 按请求 id 存储累加结果，供 unaryAddSum / unaryGetSum 使用 */
     private ConcurrentHashMap<Integer, Integer> map = new ConcurrentHashMap<>();
 
     @Override
@@ -60,6 +66,7 @@ public class ArthasSampleServiceImpl implements ArthasSampleService {
             @Override
             public void onNext(GrpcRequest<ArthasUnittest.ArthasUnittestRequest> req) {
                 try {
+                    // 一帧 DATA 内可能含多个 protobuf 消息，逐段解析并累加
                     byte[] bytes = req.readData();
                     while (bytes != null && bytes.length != 0) {
                         ArthasUnittest.ArthasUnittestRequest request = ArthasUnittest.ArthasUnittestRequest.parseFrom(bytes);
@@ -110,6 +117,7 @@ public class ArthasSampleServiceImpl implements ArthasSampleService {
             @Override
             public void onNext(GrpcRequest<ArthasUnittest.ArthasUnittestRequest> req) {
                 try {
+                    // 每帧请求解析后立即回写对应响应，实现双向流 echo
                     byte[] bytes = req.readData();
                     while (bytes != null && bytes.length != 0) {
                         GrpcResponse<ArthasUnittest.ArthasUnittestResponse> grpcResponse = new GrpcResponse<>();

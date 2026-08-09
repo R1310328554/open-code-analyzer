@@ -13,6 +13,11 @@ import io.netty.handler.codec.http2.Http2DataFrame;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 服务端流 RPC 执行器：客户端发送单个请求，服务端通过 {@link StreamObserver} 多次推送响应。
+ * <p>
+ * 收到首帧即调用 {@link GrpcDispatcher#serverStreamExecute(GrpcRequest, StreamObserver)}，
+ * 业务层每 {@code onNext} 一次即写出一帧 DATA，{@code onCompleted} 时发送带 END_STREAM 的尾帧。
+ *
  * @author: FengYe
  * @date: 2024/10/24 01:51
  * @description: UnaryProcessor
@@ -35,7 +40,7 @@ public class ServerStreamExecutor extends AbstractGrpcExecutor {
 
             @Override
             public void onNext(GrpcResponse res) {
-                // 控制流只能响应一次header
+                // 每个 HTTP/2 stream 的 gRPC 响应头只能发送一次
                 if (!sendHeader.get()) {
                     sendHeader.compareAndSet(false, true);
                     context.writeAndFlush(new DefaultHttp2HeadersFrame(res.getEndHeader()).stream(frame.stream()));
