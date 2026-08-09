@@ -60,8 +60,12 @@ import org.apache.rocketmq.remoting.protocol.header.GetConsumerRunningInfoReques
 import org.apache.rocketmq.remoting.protocol.header.NotifyUnsubscribeLiteRequestHeader;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * Remoting 协议虚拟通道：包装 Netty 父通道并支持事务回查、直连消费等中继。
+ */
 public class RemotingChannel extends ProxyChannel implements RemoteChannelConverter, ChannelExtendAttributeGetter {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 调用客户端 Remoting 接口的默认超时（3 秒）。 */
     private static final long DEFAULT_MQ_CLIENT_TIMEOUT = Duration.ofSeconds(3).toMillis();
     private final String clientId;
     private final String remoteAddress;
@@ -69,6 +73,7 @@ public class RemotingChannel extends ProxyChannel implements RemoteChannelConver
     private final RemotingProxyOutClient remotingProxyOutClient;
     private final Set<SubscriptionData> subscriptionData;
 
+    /** 构造 Remoting 通道并绑定父 Netty 通道与订阅数据。 */
     public RemotingChannel(RemotingProxyOutClient remotingProxyOutClient, ProxyRelayService proxyRelayService,
         Channel parent,
         String clientId, Set<SubscriptionData> subscriptionData) {
@@ -113,12 +118,14 @@ public class RemotingChannel extends ProxyChannel implements RemoteChannelConver
     }
 
     @Override
+    /** 将其他类型消息直接写回父 Netty 通道。 */
     protected CompletableFuture<Void> processOtherMessage(Object msg) {
         this.parent().writeAndFlush(msg);
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
+    /** 向客户端发送事务状态回查请求并等待写入完成。 */
     protected CompletableFuture<Void> processCheckTransaction(CheckTransactionStateRequestHeader header,
         MessageExt messageExt, TransactionData transactionData,
         CompletableFuture<ProxyRelayResult<Void>> responseFuture) {
@@ -131,6 +138,7 @@ public class RemotingChannel extends ProxyChannel implements RemoteChannelConver
             requestHeader.setTransactionId(transactionData.getTransactionId());
             requestHeader.setMsgId(header.getMsgId());
 
+            // 构建事务回查 Remoting 请求
             RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.CHECK_TRANSACTION_STATE, requestHeader);
             request.setBody(RemotingConverter.getInstance().convertMsgToBytes(messageExt));
 
@@ -152,6 +160,7 @@ public class RemotingChannel extends ProxyChannel implements RemoteChannelConver
     }
 
     @Override
+    /** 转发获取消费者运行信息请求至客户端。 */
     protected CompletableFuture<Void> processGetConsumerRunningInfo(RemotingCommand command,
         GetConsumerRunningInfoRequestHeader header,
         CompletableFuture<ProxyRelayResult<ConsumerRunningInfo>> responseFuture) {
@@ -180,11 +189,13 @@ public class RemotingChannel extends ProxyChannel implements RemoteChannelConver
     }
 
     @Override
+    /** Lite 取消订阅通知（Remoting 协议暂未实现）。 */
     protected CompletableFuture<Void> processNotifyUnsubscribeLite(NotifyUnsubscribeLiteRequestHeader header) {
         throw new NotImplementedException();
     }
 
     @Override
+    /** 转发直连消费请求至客户端并返回消费结果。 */
     protected CompletableFuture<Void> processConsumeMessageDirectly(RemotingCommand command,
         ConsumeMessageDirectlyResultRequestHeader header, MessageExt messageExt,
         CompletableFuture<ProxyRelayResult<ConsumeMessageDirectlyResult>> responseFuture) {
@@ -226,6 +237,7 @@ public class RemotingChannel extends ProxyChannel implements RemoteChannelConver
         return JSON.toJSONString(this.subscriptionData);
     }
 
+    /** 从 Remoting 通道扩展属性 JSON 反序列化订阅集合。 */
     public static Set<SubscriptionData> parseChannelExtendAttribute(Channel channel) {
         if (ChannelHelper.getChannelProtocolType(channel).equals(ChannelProtocolType.REMOTING) &&
             channel instanceof ChannelExtendAttributeGetter) {
@@ -246,6 +258,7 @@ public class RemotingChannel extends ProxyChannel implements RemoteChannelConver
     }
 
     @Override
+    /** 导出可跨 Proxy 转发的 {@link RemoteChannel} 快照。 */
     public RemoteChannel toRemoteChannel() {
         return new RemoteChannel(
             ConfigurationManager.getProxyConfig().getLocalServeAddr(),

@@ -30,11 +30,15 @@ import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Remoting 认证流水线：启用时校验客户端身份凭证。
+ */
 public class AuthenticationPipeline implements RequestPipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     private final AuthConfig authConfig;
     private final AuthenticationEvaluator authenticationEvaluator;
 
+    /** 构造认证流水线并获取 {@link AuthenticationEvaluator}。 */
     public AuthenticationPipeline(AuthConfig authConfig, MessagingProcessor messagingProcessor) {
         this.authConfig = authConfig;
         this.authenticationEvaluator = AuthenticationFactory.getEvaluator(authConfig, messagingProcessor::getMetadataService);
@@ -42,11 +46,14 @@ public class AuthenticationPipeline implements RequestPipeline {
 
     @Override
     public void execute(ChannelHandlerContext ctx, RemotingCommand request, ProxyContext context) throws Exception {
+        // 未启用认证时直接跳过
         if (!authConfig.isAuthenticationEnabled()) {
             return;
         }
         try {
+            // 构建认证上下文并执行评估
             AuthenticationContext authenticationContext = newContext(ctx, request, context);
+            // 校验凭证，失败抛出 AuthenticationException
             authenticationEvaluator.evaluate(authenticationContext);
         } catch (AuthenticationException ex) {
             throw ex;
@@ -56,6 +63,7 @@ public class AuthenticationPipeline implements RequestPipeline {
         }
     }
 
+    /** 基于 Netty 上下文与 Remoting 请求创建认证上下文。 */
     protected AuthenticationContext newContext(ChannelHandlerContext ctx, RemotingCommand request, ProxyContext context) {
         return AuthenticationFactory.newContext(authConfig, ctx, request);
     }

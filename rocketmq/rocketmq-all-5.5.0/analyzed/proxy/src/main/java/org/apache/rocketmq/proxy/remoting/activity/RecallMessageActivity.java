@@ -30,9 +30,13 @@ import org.apache.rocketmq.remoting.protocol.header.RecallMessageRequestHeader;
 
 import java.time.Duration;
 
+/**
+ * 消息撤回 Remoting Activity：校验延迟 Topic 类型后转发撤回请求。
+ */
 public class RecallMessageActivity extends AbstractRemotingActivity {
     TopicMessageTypeValidator topicMessageTypeValidator;
 
+    /** 构造消息撤回 Activity 并初始化 Topic 类型校验器。 */
     public RecallMessageActivity(RequestPipeline requestPipeline,
                                  MessagingProcessor messagingProcessor) {
         super(requestPipeline, messagingProcessor);
@@ -42,12 +46,16 @@ public class RecallMessageActivity extends AbstractRemotingActivity {
     @Override
     public RemotingCommand processRequest0(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
+        // 解析撤回请求头
         RecallMessageRequestHeader requestHeader = request.decodeCommandCustomHeader(RecallMessageRequestHeader.class);
         String topic = requestHeader.getTopic();
+        // 启用类型校验时确认 Topic 为延迟消息类型
         if (ConfigurationManager.getProxyConfig().isEnableTopicMessageTypeCheck()) {
             TopicMessageType messageType = messagingProcessor.getMetadataService().getTopicMessageType(context, topic);
+            // 仅允许 DELAY 类型 Topic 执行撤回
             topicMessageTypeValidator.validate(messageType, TopicMessageType.DELAY);
         }
+        // 2 秒超时转发至 Broker
         return request(ctx, request, context, Duration.ofSeconds(2).toMillis());
     }
 }

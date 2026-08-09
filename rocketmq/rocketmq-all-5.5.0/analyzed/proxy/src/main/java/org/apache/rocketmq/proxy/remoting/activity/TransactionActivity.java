@@ -27,8 +27,12 @@ import org.apache.rocketmq.proxy.processor.TransactionStatus;
 import org.apache.rocketmq.proxy.remoting.pipeline.RequestPipeline;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 事务消息 Remoting Activity：处理提交/回滚决议并通知 {@link MessagingProcessor}。
+ */
 public class TransactionActivity extends AbstractRemotingActivity {
 
+    /** 构造事务 Activity。 */
     public TransactionActivity(RequestPipeline requestPipeline,
         MessagingProcessor messagingProcessor) {
         super(requestPipeline, messagingProcessor);
@@ -41,20 +45,23 @@ public class TransactionActivity extends AbstractRemotingActivity {
         response.setCode(ResponseCode.SUCCESS);
         response.setRemark(null);
 
+        // 解析事务结束请求头
         final EndTransactionRequestHeader requestHeader = (EndTransactionRequestHeader) request.decodeCommandCustomHeader(EndTransactionRequestHeader.class);
 
+        // 默认未知状态，按 commitOrRollback 字段解析
         TransactionStatus transactionStatus = TransactionStatus.UNKNOWN;
         switch (requestHeader.getCommitOrRollback()) {
-            case MessageSysFlag.TRANSACTION_COMMIT_TYPE:
+            case MessageSysFlag.TRANSACTION_COMMIT_TYPE: // 提交
                 transactionStatus = TransactionStatus.COMMIT;
                 break;
-            case MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:
+            case MessageSysFlag.TRANSACTION_ROLLBACK_TYPE: // 回滚
                 transactionStatus = TransactionStatus.ROLLBACK;
                 break;
             default:
                 break;
         }
 
+        // 委托处理器完成事务二阶段
         this.messagingProcessor.endTransaction(
             context,
             requestHeader.getTopic(),

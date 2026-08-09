@@ -34,22 +34,29 @@ import org.apache.rocketmq.proxy.remoting.RemotingProxyOutClient;
 import org.apache.rocketmq.proxy.service.relay.ProxyRelayService;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * Remoting 通道管理器：按组维护 Netty 原始通道到 {@link RemotingChannel} 的映射。
+ */
 public class RemotingChannelManager implements StartAndShutdown {
     protected final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     private final ProxyRelayService proxyRelayService;
+    /** groupKey -> (rawChannel -> RemotingChannel) 双层映射。 */
     protected final ConcurrentMap<String /* group */, Map<Channel /* raw channel */, RemotingChannel>> groupChannelMap = new ConcurrentHashMap<>();
 
     private final RemotingProxyOutClient remotingProxyOutClient;
 
+    /** 注入出站客户端与中继服务。 */
     public RemotingChannelManager(RemotingProxyOutClient remotingProxyOutClient, ProxyRelayService proxyRelayService) {
         this.remotingProxyOutClient = remotingProxyOutClient;
         this.proxyRelayService = proxyRelayService;
     }
 
+    /** 生成生产者组通道键（前缀 p）。 */
     protected String buildProducerKey(String group) {
         return buildKey("p", group);
     }
 
+    /** 生成消费者组通道键（前缀 c）。 */
     protected String buildConsumerKey(String group) {
         return buildKey("c", group);
     }
@@ -58,10 +65,12 @@ public class RemotingChannelManager implements StartAndShutdown {
         return prefix + group;
     }
 
+    /** 为生产者组创建或复用 RemotingChannel。 */
     public RemotingChannel createProducerChannel(ProxyContext ctx, Channel channel, String group, String clientId) {
         return createChannel(channel, buildProducerKey(group), clientId, Collections.emptySet());
     }
 
+    /** 为消费者组创建或复用 RemotingChannel 并绑定订阅。 */
     public RemotingChannel createConsumerChannel(ProxyContext ctx, Channel channel, String group, String clientId, Set<SubscriptionData> subscriptionData) {
         return createChannel(channel, buildConsumerKey(group), clientId, subscriptionData);
     }
@@ -85,6 +94,7 @@ public class RemotingChannelManager implements StartAndShutdown {
         return clientIdChannelMap.get(channel);
     }
 
+    /** 从所有组中移除指定原始通道关联的 RemotingChannel。 */
     public Set<RemotingChannel> removeChannel(Channel channel) {
         Set<RemotingChannel> removedChannelSet = new HashSet<>();
         Set<String> groupKeySet = groupChannelMap.keySet();
@@ -119,9 +129,9 @@ public class RemotingChannelManager implements StartAndShutdown {
     }
 
     /**
-     * to get the org channel pass by nettyRemotingServer
-     * @param channel
-     * @return
+     * 获取 NettyRemotingServer 传入的原始 Netty 通道。
+     * @param channel 可能是 RemotingChannel 或其父通道
+     * @return 底层原始 Channel
      */
     protected Channel getOrgRawChannel(Channel channel) {
         if (channel instanceof RemotingChannel) {

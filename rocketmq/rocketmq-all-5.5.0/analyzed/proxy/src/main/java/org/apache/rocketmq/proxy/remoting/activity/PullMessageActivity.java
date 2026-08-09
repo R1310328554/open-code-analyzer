@@ -29,7 +29,11 @@ import org.apache.rocketmq.remoting.protocol.ResponseCode;
 import org.apache.rocketmq.remoting.protocol.header.PullMessageRequestHeader;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * Pull 消费 Remoting Activity：补全订阅信息后转发拉取请求。
+ */
 public class PullMessageActivity extends AbstractRemotingActivity {
+    /** 构造 Pull 消费 Activity。 */
     public PullMessageActivity(RequestPipeline requestPipeline,
         MessagingProcessor messagingProcessor) {
         super(requestPipeline, messagingProcessor);
@@ -40,23 +44,28 @@ public class PullMessageActivity extends AbstractRemotingActivity {
         ProxyContext context) throws Exception {
         PullMessageRequestHeader requestHeader = (PullMessageRequestHeader) request.decodeCommandCustomHeader(PullMessageRequestHeader.class);
         int sysFlag = requestHeader.getSysFlag();
+        // 请求未携带订阅信息时从本地消费组缓存补全
         if (!PullSysFlag.hasSubscriptionFlag(sysFlag)) {
+            // 查询消费组注册信息
             ConsumerGroupInfo consumerInfo = messagingProcessor.getConsumerGroupInfo(context, requestHeader.getConsumerGroup());
             if (consumerInfo == null) {
                 return RemotingCommand.buildErrorResponse(ResponseCode.SUBSCRIPTION_NOT_LATEST,
                     "the consumer's subscription not latest");
             }
+            // 查找 Topic 对应订阅表达式
             SubscriptionData subscriptionData = consumerInfo.findSubscriptionData(requestHeader.getTopic());
             if (subscriptionData == null) {
                 return RemotingCommand.buildErrorResponse(ResponseCode.SUBSCRIPTION_NOT_EXIST,
                     "the consumer's subscription not exist");
             }
+            // 写入订阅字符串与表达式类型后重编码请求头
             requestHeader.setSysFlag(PullSysFlag.buildSysFlagWithSubscription(sysFlag));
             requestHeader.setSubscription(subscriptionData.getSubString());
             requestHeader.setExpressionType(subscriptionData.getExpressionType());
             request.writeCustomHeader(requestHeader);
             request.makeCustomHeaderToNet();
         }
+        // 挂起超时加 10 秒缓冲后转发
         long timeoutMillis = requestHeader.getSuspendTimeoutMillis() + Duration.ofSeconds(10).toMillis();
         return request(ctx, request, context, timeoutMillis);
     }

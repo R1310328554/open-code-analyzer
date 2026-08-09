@@ -23,12 +23,17 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Remoting 消息转换工具：单例模式，将 {@link MessageExt} 编码为字节数组。
+ */
 public class RemotingConverter {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
     protected static final Object INSTANCE_CREATE_LOCK = new Object();
+    /** 双重检查锁定的单例实例。 */
     protected static volatile RemotingConverter instance;
 
+    /** 获取全局唯一 RemotingConverter 实例。 */
     public static RemotingConverter getInstance() {
         if (instance == null) {
             synchronized (INSTANCE_CREATE_LOCK) {
@@ -40,9 +45,11 @@ public class RemotingConverter {
         return instance;
     }
 
+    /** 重置 storeSize 后编码消息体，供 Remoting 请求携带。 */
     public byte[] convertMsgToBytes(final MessageExt msg) throws Exception {
-        // change to 0 for recalculate storeSize
+        // 置零 storeSize 以便重新计算存储大小
         msg.setStoreSize(0);
+        // Topic 长度超过 byte 上限时记录警告
         if (msg.getTopic().length() > Byte.MAX_VALUE) {
             log.warn("Topic length is too long, topic: {}", msg.getTopic());
         }

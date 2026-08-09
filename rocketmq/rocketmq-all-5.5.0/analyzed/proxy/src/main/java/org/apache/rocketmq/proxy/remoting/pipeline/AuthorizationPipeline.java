@@ -32,11 +32,15 @@ import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Remoting 授权流水线：启用时校验请求对 Topic/Group 等资源的访问权限。
+ */
 public class AuthorizationPipeline implements RequestPipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     private final AuthConfig authConfig;
     private final AuthorizationEvaluator authorizationEvaluator;
 
+    /** 构造授权流水线并获取 {@link AuthorizationEvaluator}。 */
     public AuthorizationPipeline(AuthConfig authConfig, MessagingProcessor messagingProcessor) {
         this.authConfig = authConfig;
         this.authorizationEvaluator = AuthorizationFactory.getEvaluator(authConfig, messagingProcessor::getMetadataService);
@@ -44,11 +48,14 @@ public class AuthorizationPipeline implements RequestPipeline {
 
     @Override
     public void execute(ChannelHandlerContext ctx, RemotingCommand request, ProxyContext context) throws Exception {
+        // 未启用授权时直接跳过
         if (!authConfig.isAuthorizationEnabled()) {
             return;
         }
         try {
+            // 从请求解析一个或多个授权上下文
             List<AuthorizationContext> contexts = newContexts(request, ctx, context);
+            // 批量评估资源访问权限
             authorizationEvaluator.evaluate(contexts);
         } catch (AuthorizationException | AuthenticationException ex) {
             throw ex;
@@ -58,6 +65,7 @@ public class AuthorizationPipeline implements RequestPipeline {
         }
     }
 
+    /** 基于 Remoting 请求创建授权上下文列表。 */
     protected List<AuthorizationContext> newContexts(RemotingCommand request, ChannelHandlerContext ctx, ProxyContext context) {
         return AuthorizationFactory.newContexts(authConfig, ctx, request);
     }

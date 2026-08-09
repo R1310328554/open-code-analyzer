@@ -25,7 +25,11 @@ import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.proxy.remoting.pipeline.RequestPipeline;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Pop 消费 Remoting Activity：按 pollTime 设置超时并转发至 Broker。
+ */
 public class PopMessageActivity extends AbstractRemotingActivity {
+    /** 构造 Pop 消费 Activity。 */
     public PopMessageActivity(RequestPipeline requestPipeline,
         MessagingProcessor messagingProcessor) {
         super(requestPipeline, messagingProcessor);
@@ -34,8 +38,11 @@ public class PopMessageActivity extends AbstractRemotingActivity {
     @Override
     protected RemotingCommand processRequest0(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
+        // 解析 Pop 请求头，获取长轮询等待时间
         PopMessageRequestHeader popMessageRequestHeader = (PopMessageRequestHeader) request.decodeCommandCustomHeader(PopMessageRequestHeader.class);
+        // pollTime 加上 10 秒缓冲作为转发超时
         long timeoutMillis = popMessageRequestHeader.getPollTime();
+        // 异步转发 Pop 请求至 Broker
         return request(ctx, request, context, timeoutMillis + Duration.ofSeconds(10).toMillis());
     }
 }

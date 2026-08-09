@@ -44,7 +44,11 @@ import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.proxy.remoting.pipeline.RequestPipeline;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 消费者管理 Remoting Activity：查询消费组、连接信息及批量锁/解锁队列。
+ */
 public class ConsumerManagerActivity extends AbstractRemotingActivity {
+    /** 构造消费者管理 Activity。 */
     public ConsumerManagerActivity(RequestPipeline requestPipeline, MessagingProcessor messagingProcessor) {
         super(requestPipeline, messagingProcessor);
     }
@@ -53,13 +57,13 @@ public class ConsumerManagerActivity extends AbstractRemotingActivity {
     protected RemotingCommand processRequest0(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         switch (request.getCode()) {
-            case RequestCode.GET_CONSUMER_LIST_BY_GROUP: {
+            case RequestCode.GET_CONSUMER_LIST_BY_GROUP: { // 按组查询消费者列表
                 return getConsumerListByGroup(ctx, request, context);
             }
-            case RequestCode.LOCK_BATCH_MQ: {
+            case RequestCode.LOCK_BATCH_MQ: { // 批量锁定 MessageQueue
                 return lockBatchMQ(ctx, request, context);
             }
-            case RequestCode.UNLOCK_BATCH_MQ: {
+            case RequestCode.UNLOCK_BATCH_MQ: { // 批量解锁 MessageQueue
                 return unlockBatchMQ(ctx, request, context);
             }
             case RequestCode.UPDATE_CONSUMER_OFFSET:
@@ -70,7 +74,7 @@ public class ConsumerManagerActivity extends AbstractRemotingActivity {
             case RequestCode.GET_EARLIEST_MSG_STORETIME: {
                 return request(ctx, request, context, Duration.ofSeconds(3).toMillis());
             }
-            case RequestCode.GET_CONSUMER_CONNECTION_LIST: {
+            case RequestCode.GET_CONSUMER_CONNECTION_LIST: { // 查询消费者连接列表
                 return getConsumerConnectionList(ctx, request, context);
             }
             default:
@@ -79,6 +83,7 @@ public class ConsumerManagerActivity extends AbstractRemotingActivity {
         return null;
     }
 
+    /** 返回指定消费组下所有在线 clientId 列表。 */
     protected RemotingCommand getConsumerListByGroup(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         RemotingCommand response = RemotingCommand.createResponseCommand(GetConsumerListByGroupResponseHeader.class);
@@ -92,6 +97,7 @@ public class ConsumerManagerActivity extends AbstractRemotingActivity {
         return response;
     }
 
+    /** 返回消费组连接详情，含订阅表与客户端地址。 */
     protected RemotingCommand getConsumerConnectionList(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -129,6 +135,7 @@ public class ConsumerManagerActivity extends AbstractRemotingActivity {
         return response;
     }
 
+    /** 异步转发批量锁队列请求至对应 Broker。 */
     protected RemotingCommand lockBatchMQ(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -150,6 +157,7 @@ public class ConsumerManagerActivity extends AbstractRemotingActivity {
         return null;
     }
 
+    /** 异步转发批量解锁队列请求至对应 Broker。 */
     protected RemotingCommand unlockBatchMQ(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);

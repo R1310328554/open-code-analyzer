@@ -34,9 +34,13 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.protocol.header.SendMessageRequestHeader;
 
+/**
+ * 消息发送 Remoting Activity：校验 Topic 类型并转发单条/批量/回退消息。
+ */
 public class SendMessageActivity extends AbstractRemotingActivity {
     TopicMessageTypeValidator topicMessageTypeValidator;
 
+    /** 构造发送消息 Activity 并初始化类型校验器。 */
     public SendMessageActivity(RequestPipeline requestPipeline,
         MessagingProcessor messagingProcessor) {
         super(requestPipeline, messagingProcessor);
@@ -47,12 +51,12 @@ public class SendMessageActivity extends AbstractRemotingActivity {
     protected RemotingCommand processRequest0(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         switch (request.getCode()) {
-            case RequestCode.SEND_MESSAGE:
+            case RequestCode.SEND_MESSAGE: // 单条发送
             case RequestCode.SEND_MESSAGE_V2:
-            case RequestCode.SEND_BATCH_MESSAGE: {
+            case RequestCode.SEND_BATCH_MESSAGE: { // 批量发送
                 return sendMessage(ctx, request, context);
             }
-            case RequestCode.CONSUMER_SEND_MSG_BACK: {
+            case RequestCode.CONSUMER_SEND_MSG_BACK: { // 消费失败回退
                 return consumerSendMessage(ctx, request, context);
             }
             default:
@@ -61,6 +65,7 @@ public class SendMessageActivity extends AbstractRemotingActivity {
         return null;
     }
 
+    /** 校验 Topic 消息类型、注册事务订阅后转发发送请求。 */
     protected RemotingCommand sendMessage(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         SendMessageRequestHeader requestHeader = SendMessageRequestHeader.parseRequestHeader(request);
@@ -69,7 +74,7 @@ public class SendMessageActivity extends AbstractRemotingActivity {
         TopicMessageType messageType = TopicMessageType.parseFromMessageProperty(property);
         if (isNeedCheckTopicMessageType(property)) {
             if (topicMessageTypeValidator != null) {
-                // Do not check retry or dlq topic
+                // 重试 Topic 与 DLQ 跳过类型校验
                 if (!NamespaceUtil.isRetryTopic(topic) && !NamespaceUtil.isDLQTopic(topic)) {
                     TopicMessageType topicMessageType = messagingProcessor.getMetadataService().getTopicMessageType(context, topic);
                     topicMessageTypeValidator.validate(topicMessageType, messageType);
@@ -77,6 +82,7 @@ public class SendMessageActivity extends AbstractRemotingActivity {
             }
         }
         if (!NamespaceUtil.isRetryTopic(topic) && !NamespaceUtil.isDLQTopic(topic)) {
+            // 事务消息需注册事务订阅
             if (TopicMessageType.TRANSACTION.equals(messageType)) {
                 messagingProcessor.addTransactionSubscription(context, requestHeader.getProducerGroup(), requestHeader.getTopic());
             }
@@ -84,11 +90,13 @@ public class SendMessageActivity extends AbstractRemotingActivity {
         return request(ctx, request, context, Duration.ofSeconds(3).toMillis());
     }
 
+    /** 转发消费失败回退（send msg back）请求。 */
     protected RemotingCommand consumerSendMessage(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         return request(ctx, request, context, Duration.ofSeconds(3).toMillis());
     }
 
+    /** 判断是否需校验 Topic 消息类型（排除转发标记）。 */
     private boolean isNeedCheckTopicMessageType(Map<String, String> property) {
         return ConfigurationManager.getProxyConfig().isEnableTopicMessageTypeCheck()
             && !property.containsKey(MessageConst.PROPERTY_TRANSFER_FLAG);

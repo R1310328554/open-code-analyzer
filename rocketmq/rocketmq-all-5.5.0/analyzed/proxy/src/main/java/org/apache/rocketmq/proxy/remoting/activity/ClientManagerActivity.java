@@ -43,10 +43,15 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.ProducerData;
 
 import java.util.Set;
 
+/**
+ * 客户端管理 Remoting Activity：处理心跳注册、注销及通道关闭事件。
+ */
 public class ClientManagerActivity extends AbstractRemotingActivity {
 
+    /** Remoting 通道管理器，维护生产者/消费者组与底层 Netty 通道映射。 */
     private final RemotingChannelManager remotingChannelManager;
 
+    /** 构造客户端管理 Activity 并注册生产/消费变更监听器。 */
     public ClientManagerActivity(RequestPipeline requestPipeline, MessagingProcessor messagingProcessor,
         RemotingChannelManager manager) {
         super(requestPipeline, messagingProcessor);
@@ -54,6 +59,7 @@ public class ClientManagerActivity extends AbstractRemotingActivity {
         this.init();
     }
 
+    /** 注册消费者 ID 变更与生产者变更监听器。 */
     protected void init() {
         this.messagingProcessor.registerConsumerListener(new ConsumerIdsChangeListenerImpl());
         this.messagingProcessor.registerProducerListener(new ProducerChangeListenerImpl());
@@ -63,9 +69,9 @@ public class ClientManagerActivity extends AbstractRemotingActivity {
     protected RemotingCommand processRequest0(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         switch (request.getCode()) {
-            case RequestCode.HEART_BEAT:
+            case RequestCode.HEART_BEAT: // 客户端心跳注册
                 return this.heartBeat(ctx, request, context);
-            case RequestCode.UNREGISTER_CLIENT:
+            case RequestCode.UNREGISTER_CLIENT: // 注销客户端
                 return this.unregisterClient(ctx, request, context);
             case RequestCode.CHECK_CLIENT_CONFIG:
                 return this.checkClientConfig(ctx, request, context);
@@ -77,9 +83,11 @@ public class ClientManagerActivity extends AbstractRemotingActivity {
 
     protected RemotingCommand heartBeat(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) {
+        // 解码心跳包，提取生产者与消费者注册信息
         HeartbeatData heartbeatData = HeartbeatData.decode(request.getBody(), HeartbeatData.class);
         String clientId = heartbeatData.getClientID();
 
+        // 遍历心跳中的生产者组并注册
         for (ProducerData data : heartbeatData.getProducerDataSet()) {
             ClientChannelInfo clientChannelInfo = new ClientChannelInfo(
                 this.remotingChannelManager.createProducerChannel(context, ctx.channel(), data.getGroupName(), clientId),
@@ -89,6 +97,7 @@ public class ClientManagerActivity extends AbstractRemotingActivity {
             messagingProcessor.registerProducer(context, data.getGroupName(), clientChannelInfo);
         }
 
+        // 遍历心跳中的消费者组并注册
         for (ConsumerData data : heartbeatData.getConsumerDataSet()) {
             ClientChannelInfo clientChannelInfo = new ClientChannelInfo(
                 this.remotingChannelManager.createConsumerChannel(context, ctx.channel(), data.getGroupName(), clientId, data.getSubscriptionDataSet()),
@@ -105,6 +114,7 @@ public class ClientManagerActivity extends AbstractRemotingActivity {
         return response;
     }
 
+    /** 将 clientId、语言与版本写入父 Netty 通道属性。 */
     private void setClientPropertiesToChannelAttr(final ClientChannelInfo clientChannelInfo) {
         Channel channel = clientChannelInfo.getChannel();
         if (channel instanceof RemotingChannel) {
@@ -163,6 +173,7 @@ public class ClientManagerActivity extends AbstractRemotingActivity {
         return response;
     }
 
+    /** 通道关闭时清理所有关联 RemotingChannel 并通知处理器。 */
     public void doChannelCloseEvent(String remoteAddr, Channel channel) {
         Set<RemotingChannel> remotingChannelSet = this.remotingChannelManager.removeChannel(channel);
         for (RemotingChannel remotingChannel : remotingChannelSet) {
@@ -170,6 +181,7 @@ public class ClientManagerActivity extends AbstractRemotingActivity {
         }
     }
 
+    /** 消费者注销时同步移除 Remoting 通道。 */
     protected class ConsumerIdsChangeListenerImpl implements ConsumerIdsChangeListener {
 
         @Override
@@ -192,6 +204,7 @@ public class ClientManagerActivity extends AbstractRemotingActivity {
         }
     }
 
+    /** 生产者注销时同步移除 Remoting 通道。 */
     protected class ProducerChangeListenerImpl implements ProducerChangeListener {
 
         @Override
