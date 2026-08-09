@@ -1,5 +1,10 @@
+/**
+ * jsTreeTable 1.0：将树形数据渲染为可展开/折叠的 HTML 表格。
+ * 支持 depthFirst、makeTree、renderTree 与 expandLevel 控制。
+ */
 var com_github_culmat_jsTreeTable =  (function(){
 
+	/** 深度优先遍历树，对每个节点执行 func 回调。 */
 	function depthFirst(tree, func, childrenAttr) {
 		childrenAttr = childrenAttr || 'children'
 		function i_depthFirst(node) {
@@ -16,13 +21,12 @@ var com_github_culmat_jsTreeTable =  (function(){
 		return tree
 	}
 	
-	/*
-	 * make a deep copy of the object
-	 */
+	/** 通过 JSON 序列化深拷贝对象。 */
 	function copy(data){
 		return JSON.parse(JSON.stringify(data))
 	}
 	
+	/** 将扁平 id/parent 列表组装为嵌套 children 树结构。 */
 	function makeTree (data, idAttr, refAttr, childrenAttr) {
 		var data_tmp = data
 		idAttr = idAttr || 'id'
@@ -62,6 +66,7 @@ var com_github_culmat_jsTreeTable =  (function(){
 		return tree
 	}
 	
+	/** 将树渲染为带 data-tt-* 属性的 HTML table 行。 */
 	function renderTree(tree, childrenAttr, idAttr, attrs, renderer, tableAttributes) {
 		childrenAttr = childrenAttr || 'children'
 		idAttr = idAttr || 'id'
@@ -150,6 +155,7 @@ var com_github_culmat_jsTreeTable =  (function(){
 		return nodes
 	}
 	
+	/** 为已渲染表格绑定展开/折叠交互与层级缩进。 */
 	function treeTable(table){
 		table.addClass('jsTT')
 		table.expandLevel = function (n) {
@@ -226,6 +232,7 @@ var com_github_culmat_jsTreeTable =  (function(){
 		return table
 	}
 	
+	/** 渲染树表并挂载到 mountPoint，可选 slider 控制展开层级。 */
 	function appendTreetable(tree, options) {
 		function inALine(nodes) {
 			var tr = $('<tr>')

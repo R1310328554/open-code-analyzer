@@ -1,7 +1,8 @@
 /**
- * Authority rule service.
+ * 授权规则 HTTP 服务：按机器查询及 CRUD 黑白名单规则。
  */
 angular.module('sentinelDashboardApp').service('AuthorityRuleService', ['$http', function ($http) {
+    /** GET /authority/rules 拉取指定机器的授权规则列表。 */
     this.queryMachineRules = function(app, ip, port) {
         var param = {
             app: app,
@@ -15,6 +16,7 @@ angular.module('sentinelDashboardApp').service('AuthorityRuleService', ['$http',
         });
     };
 
+    /** POST /authority/rule 新增授权规则。 */
     this.addNewRule = function(rule) {
         return $http({
             url: '/authority/rule',
@@ -23,6 +25,7 @@ angular.module('sentinelDashboardApp').service('AuthorityRuleService', ['$http',
         });
     };
 
+    /** PUT /authority/rule/{id} 更新已有授权规则。 */
     this.saveRule = function (entity) {
         return $http({
             url: '/authority/rule/' + entity.id,
@@ -31,6 +34,7 @@ angular.module('sentinelDashboardApp').service('AuthorityRuleService', ['$http',
         });
     };
 
+    /** DELETE /authority/rule/{id} 删除授权规则。 */
     this.deleteRule = function (entity) {
         return $http({
             url: '/authority/rule/' + entity.id,
@@ -38,6 +42,7 @@ angular.module('sentinelDashboardApp').service('AuthorityRuleService', ['$http',
         });
     };
 
+    /** 校验资源名、限流应用与黑白名单策略是否完整。 */
     this.checkRuleValid = function checkRuleValid(rule) {
         if (rule.resource === undefined || rule.resource === '') {
             alert('资源名称不能为空');

@@ -1,6 +1,8 @@
+/** 网关自定义 API 定义 HTTP 服务：管理 API 名称与匹配规则。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.service('GatewayApiService', ['$http', function ($http) {
+  /** GET /gateway/api/list.json 拉取网关 API 定义列表。 */
   this.queryApis = function (app, ip, port) {
     var param = {
       app: app,
@@ -14,6 +16,7 @@ app.service('GatewayApiService', ['$http', function ($http) {
     });
   };
 
+  /** POST /gateway/api/new.json 新增网关 API 定义。 */
   this.newApi = function (api) {
     return $http({
       url: '/gateway/api/new.json',
@@ -22,6 +25,7 @@ app.service('GatewayApiService', ['$http', function ($http) {
     });
   };
 
+  /** POST /gateway/api/save.json 更新已有网关 API 定义。 */
   this.saveApi = function (api) {
     return $http({
       url: '/gateway/api/save.json',
@@ -30,6 +34,7 @@ app.service('GatewayApiService', ['$http', function ($http) {
     });
   };
 
+  /** POST /gateway/api/delete.json 删除网关 API 定义。 */
   this.deleteApi = function (api) {
     var param = {
       id: api.id,
@@ -42,6 +47,7 @@ app.service('GatewayApiService', ['$http', function ($http) {
     });
   };
 
+  /** 校验 API 名称、匹配规则非空且名称不重复。 */
   this.checkApiValid = function (api, apiNames) {
     if (api.apiName === undefined || api.apiName === '') {
       alert('API名称不能为空');
@@ -49,7 +55,7 @@ app.service('GatewayApiService', ['$http', function ($http) {
     }
 
     if (api.predicateItems == null || api.predicateItems.length === 0) {
-      // Should never happen since no remove button will display when only one predicateItem.
+      // 仅剩一条匹配规则时不应出现此情况（界面不显示删除按钮）
       alert('至少有一个匹配规则');
       return false;
     }

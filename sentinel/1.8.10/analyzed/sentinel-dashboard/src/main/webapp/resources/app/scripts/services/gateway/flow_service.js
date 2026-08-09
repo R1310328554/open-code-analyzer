@@ -1,6 +1,8 @@
+/** 网关流控规则 HTTP 服务：按 API 维度管理 QPS/线程数限流。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.service('GatewayFlowService', ['$http', function ($http) {
+  /** GET /gateway/flow/list.json 拉取网关流控规则列表。 */
   this.queryRules = function (app, ip, port) {
     var param = {
       app: app,
@@ -15,6 +17,7 @@ app.service('GatewayFlowService', ['$http', function ($http) {
     });
   };
 
+  /** POST /gateway/flow/new.json 新增网关流控规则。 */
   this.newRule = function (rule) {
     return $http({
       url: '/gateway/flow/new.json',
@@ -23,6 +26,7 @@ app.service('GatewayFlowService', ['$http', function ($http) {
     });
   };
 
+  /** POST /gateway/flow/save.json 更新已有网关流控规则。 */
   this.saveRule = function (rule) {
     return $http({
       url: '/gateway/flow/save.json',
@@ -31,6 +35,7 @@ app.service('GatewayFlowService', ['$http', function ($http) {
     });
   };
 
+  /** POST /gateway/flow/delete.json 删除网关流控规则。 */
   this.deleteRule = function (rule) {
     var param = {
       id: rule.id,
@@ -44,6 +49,7 @@ app.service('GatewayFlowService', ['$http', function ($http) {
     });
   };
 
+  /** 校验 API 名称、参数属性匹配串与 QPS/线程数阈值。 */
   this.checkRuleValid = function (rule) {
     if (rule.resource === undefined || rule.resource === '') {
       alert('API名称不能为空');

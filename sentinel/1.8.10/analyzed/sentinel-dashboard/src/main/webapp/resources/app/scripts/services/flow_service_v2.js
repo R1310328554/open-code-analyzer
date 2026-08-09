@@ -1,6 +1,8 @@
+/** 流控规则 HTTP 服务（v2 API）：RESTful 风格 CRUD，支持扩展集群字段。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.service('FlowServiceV2', ['$http', function ($http) {
+    /** GET /v2/flow/rules 拉取指定机器的流控规则列表。 */
     this.queryMachineRules = function (app, ip, port) {
         var param = {
             app: app,
@@ -14,6 +16,7 @@ app.service('FlowServiceV2', ['$http', function ($http) {
         });
     };
 
+    /** POST /v2/flow/rule 新增流控规则。 */
     this.newRule = function (rule) {
         return $http({
             url: '/v2/flow/rule',
@@ -22,6 +25,7 @@ app.service('FlowServiceV2', ['$http', function ($http) {
         });
     };
 
+    /** PUT /v2/flow/rule/{id} 更新已有流控规则。 */
     this.saveRule = function (rule) {
         return $http({
             url: '/v2/flow/rule/' + rule.id,
@@ -30,6 +34,7 @@ app.service('FlowServiceV2', ['$http', function ($http) {
         });
     };
 
+    /** DELETE /v2/flow/rule/{id} 删除流控规则。 */
     this.deleteRule = function (rule) {
         return $http({
             url: '/v2/flow/rule/' + rule.id,
@@ -37,14 +42,17 @@ app.service('FlowServiceV2', ['$http', function ($http) {
         });
     };
 
+    /** 判断数值是否未定义、非数字或小于 0。 */
     function notNumberAtLeastZero(num) {
         return num === undefined || num === '' || isNaN(num) || num < 0;
     }
 
+    /** 判断数值是否未定义、非数字或不大于 0。 */
     function notNumberGreaterThanZero(num) {
         return num === undefined || num === '' || isNaN(num) || num <= 0;
     }
 
+    /** 校验资源名、阈值、流控模式、关联资源、整形方式与集群配置。 */
     this.checkRuleValid = function (rule) {
         if (rule.resource === undefined || rule.resource === '') {
             alert('资源名称不能为空');
