@@ -28,7 +28,9 @@ import io.termd.core.telnet.netty.TelnetChannelHandler;
 import io.termd.core.tty.TtyConnection;
 
 /**
- * 
+ * 连接首包协议探测：1 秒内无数据则默认 Telnet；否则读前 3 字节，
+ * 非 {@code GET} 走 Telnet，{@code GET} 走 HTTP → WebSocket TTY pipeline。
+ *
  * @author hengyunabc 2019-11-04
  *
  */
@@ -49,6 +51,7 @@ public class ProtocolDetectHandler extends ChannelInboundHandlerAdapter {
         this.httpSessionManager = httpSessionManager;
     }
 
+    /** 超时未收到数据则按 Telnet 处理 */
     private ScheduledFuture<?> detectTelnetFuture;
 
     @Override
@@ -89,6 +92,7 @@ public class ProtocolDetectHandler extends ChannelInboundHandlerAdapter {
             pipeline.addLast(handler);
             ctx.fireChannelActive(); // trigger TelnetChannelHandler init
         } else {
+            // HTTP + WebSocket TTY 完整 pipeline
             pipeline.addLast(new HttpServerCodec());
             pipeline.addLast(new ChunkedWriteHandler());
             pipeline.addLast(new HttpObjectAggregator(ArthasConstants.MAX_HTTP_CONTENT_LENGTH));

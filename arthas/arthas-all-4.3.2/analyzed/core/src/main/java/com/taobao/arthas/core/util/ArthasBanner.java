@@ -22,6 +22,11 @@ import java.util.Map.Entry;
 import static com.taobao.text.ui.Element.label;
 
 /**
+ * Arthas 启动 Banner：彩色 Logo、版本号、文档链接与欢迎信息表格。
+ * <p>
+ * 静态块从 classpath 资源加载 logo/thanks/version；{@link #welcome()} 供
+ * Shell 与 {@link com.taobao.arthas.core.shell.term.impl.http.api.HttpApiHandler} 初始化会话时使用。
+ *
  * @author beiwei30 on 16/11/2016.
  */
 public class ArthasBanner {
@@ -56,6 +61,7 @@ public class ArthasBanner {
                 }
             }
 
+            // 将 logo 文本拆成 6 段，渲染为彩色表格
             StringBuilder sb = new StringBuilder();
             String[] LOGOS = new String[6];
             int i = 0, j = 0;
@@ -82,26 +88,32 @@ public class ArthasBanner {
         }
     }
 
+    /** 官方文档 URL */
     public static String wiki() {
         return WIKI;
     }
 
+    /** 教程页面 URL */
     public static String tutorials() {
         return TUTORIALS;
     }
 
+    /** 致谢/贡献者文本 */
     public static String credit() {
         return THANKS;
     }
 
+    /** 当前 Arthas 版本号 */
     public static String version() {
         return VERSION;
     }
 
+    /** 带 ANSI 颜色的 Logo 字符串 */
     public static String logo() {
         return LOGO;
     }
 
+    /** 去除 ANSI 转义后的纯文本 Logo */
     public static String plainTextLogo() {
         return RenderUtil.ansiToPlainText(LOGO);
     }
@@ -110,6 +122,12 @@ public class ArthasBanner {
         return welcome(Collections.<String, String>emptyMap());
     }
 
+    /**
+     * 生成完整欢迎信息：Logo + 版本/PID/时间等表格，可附加自定义键值行。
+     *
+     * @param infos 额外展示字段
+     * @return 渲染后的多行字符串
+     */
     public static String welcome(Map<String, String> infos) {
         logger.info("Current arthas version: {}, recommend latest version: {}", version(), latestVersion());
         String appName = System.getProperty("project.name");
@@ -138,6 +156,7 @@ public class ArthasBanner {
         return logo() + "\n" + RenderUtil.render(table);
     }
 
+    /** 后台线程拉取远程最新版本，最多等待 2 秒 */
     static String latestVersion() {
         final String[] version = { "" };
         Thread thread = new Thread(new Runnable() {
@@ -165,12 +184,12 @@ public class ArthasBanner {
     }
 
     /**
-     * support redirect
+     * 打开 URL 连接，支持 HTTP 3xx 重定向跟随。
      *
-     * @param url
-     * @return
-     * @throws MalformedURLException
-     * @throws IOException
+     * @param url 目标地址
+     * @return 已配置超时的连接
+     * @throws MalformedURLException URL 格式错误
+     * @throws IOException 网络 IO 失败
      */
     private static URLConnection openURLConnection(String url) throws MalformedURLException, IOException {
         URLConnection connection = new URL(url).openConnection();

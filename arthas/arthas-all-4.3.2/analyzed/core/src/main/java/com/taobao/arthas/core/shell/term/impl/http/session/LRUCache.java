@@ -6,15 +6,13 @@ import java.util.Map;
 import java.util.ArrayList;
 
 /**
- * An LRU cache, based on <code>LinkedHashMap</code>.
+ * 基于 {@link LinkedHashMap} 的 LRU（最近最少使用）缓存。
  *
  * <p>
- * This cache has a fixed maximum number of elements (<code>cacheSize</code>).
- * If the cache is full and another entry is added, the LRU (least recently
- * used) entry is dropped.
+ * 容量固定为 {@code cacheSize}；满员时新增条目会淘汰最久未访问项。
  *
  * <p>
- * This class is thread-safe. All methods of this class are synchronized.
+ * 线程安全：所有公开方法均 {@code synchronized}。
  *
  * <p>
  * Author: Christian d'Heureuse, Inventec Informatik AG, Zurich, Switzerland<br>
@@ -28,10 +26,9 @@ public class LRUCache<K, V> {
     private int cacheSize;
 
     /**
-     * Creates a new LRU cache.
-     * 
-     * @param cacheSize the maximum number of entries that will be kept in this
-     *                  cache.
+     * 创建指定容量的 LRU 缓存。
+     *
+     * @param cacheSize 最多保留的条目数
      */
     public LRUCache(int cacheSize) {
         this.cacheSize = cacheSize;
@@ -48,50 +45,43 @@ public class LRUCache<K, V> {
     }
 
     /**
-     * Retrieves an entry from the cache.<br>
-     * The retrieved entry becomes the MRU (most recently used) entry.
-     * 
-     * @param key the key whose associated value is to be returned.
-     * @return the value associated to this key, or null if no value with this key
-     *         exists in the cache.
+     * 读取条目并将其标记为最近使用（MRU）。
+     *
+     * @param key 键
+     * @return 关联值，不存在则 null
      */
     public synchronized V get(K key) {
         return map.get(key);
     }
 
     /**
-     * Adds an entry to this cache. The new entry becomes the MRU (most recently
-     * used) entry. If an entry with the specified key already exists in the cache,
-     * it is replaced by the new entry. If the cache is full, the LRU (least
-     * recently used) entry is removed from the cache.
-     * 
-     * @param key   the key with which the specified value is to be associated.
-     * @param value a value to be associated with the specified key.
+     * 写入条目；键已存在则替换。缓存满时淘汰 LRU 项。
+     *
+     * @param key   键
+     * @param value 值
      */
     public synchronized void put(K key, V value) {
         map.put(key, value);
     }
 
-    /**
-     * Clears the cache.
-     */
+    /** 清空缓存 */
     public synchronized void clear() {
         map.clear();
     }
 
     /**
-     * Returns the number of used entries in the cache.
-     * 
-     * @return the number of entries currently in the cache.
+     * 返回当前已占用的条目数。
+     *
+     * @return 缓存内条目数量
      */
     public synchronized int usedEntries() {
         return map.size();
     }
 
     /**
-     * Returns a <code>Collection</code> that contains a copy of all cache entries.
-     * 
-     * @return a <code>Collection</code> with a copy of the cache content.
+     * 返回缓存条目的副本集合。
+     *
+     * @return 条目快照
      */
     public synchronized Collection<Map.Entry<K, V>> getAll() {
         return new ArrayList<Map.Entry<K, V>>(map.entrySet());

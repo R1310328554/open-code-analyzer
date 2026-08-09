@@ -45,15 +45,21 @@ import java.util.TreeMap;
 
 
 /**
- * Http Restful Api Handler
+ * HTTP REST API 核心处理器：解析 POST {@code /api} JSON，按 {@link ApiAction} 分发。
+ * <p>
+ * 支持同步/异步命令执行、会话生命周期、结果拉取与 Job 中断；
+ * 与 {@link SessionManager}、{@link JobController} 协作完成 Shell 语义。
  *
  * @author gongdewei 2020-03-18
  */
 public class HttpApiHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpApiHandler.class);
+    /** JSON 序列化时对 {@link ObjectVO} 做可读化过滤 */
     private static final ValueFilter[] JSON_FILTERS = new ValueFilter[] { new ObjectVOFilter() };
+    /** Session 属性键：标记无 sessionId 的一次性 EXEC 会话 */
     private static final String ONETIME_SESSION_KEY = "oneTimeSession";
+    /** 同步 EXEC 默认超时（毫秒） */
     public static final int DEFAULT_EXEC_TIMEOUT = 30000;
     private final SessionManager sessionManager;
     private final InternalCommandManager commandManager;
@@ -67,6 +73,13 @@ public class HttpApiHandler {
         jobController = this.sessionManager.getJobController();
     }
 
+    /**
+     * 处理完整 HTTP 请求并返回 JSON 响应体。
+     *
+     * @param ctx     Netty 上下文（读取 HTTP Session 鉴权信息）
+     * @param request POST 请求
+     * @return JSON 格式的 {@link ApiResponse}
+     */
     public HttpResponse handle(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
 
         ApiResponse result;
@@ -93,13 +106,14 @@ public class HttpApiHandler {
 
         byte[] jsonBytes = JSON.toJSONBytes(result, JSON_FILTERS);
 
-        // create http response
+        // 构造 HTTP 200 JSON 响应
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(),
                 HttpResponseStatus.OK, Unpooled.wrappedBuffer(jsonBytes));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");
         return response;
     }
 
+    /** 解析请求 JSON 为 {@link ApiRequest} */
     private ApiRequest parseRequest(String requestBody) throws ApiException {
         if (StringUtils.isBlank(requestBody)) {
             throw new ApiException("parse request failed: request body is empty");
@@ -113,6 +127,9 @@ public class HttpApiHandler {
         }
     }
 
+    /**
+     * 校验 action、解析/创建 Session，并分发到具体处理方法。
+     */
     private ApiResponse processRequest(ChannelHandlerContext ctx, ApiRequest apiRequest) {
 
         String actionStr = apiRequest.getAction();
@@ -127,12 +144,12 @@ public class HttpApiHandler {
                 throw new ApiException("unknown action: " + actionStr);
             }
 
-            //no session required
+            // INIT_SESSION 无需已有 Session
             if (ApiAction.INIT_SESSION.equals(action)) {
                 return processInitSessionRequest(apiRequest);
             }
 
-            //required session
+            // 其余 action 通常需要 sessionId（EXEC 允许省略并创建一次性 Session）
             Session session = null;
             boolean allowNullSession = ApiAction.EXEC.equals(action);
             String sessionId = apiRequest.getSessionId();
@@ -191,6 +208,7 @@ public class HttpApiHandler {
         return createResponse(ApiState.REFUSED, "Unsupported action: " + actionStr);
     }
 
+    /** 按 {@link ApiAction} 路由到对应 process* 方法 */
     private ApiResponse dispatchRequest(ApiAction action, ApiRequest apiRequest, Session session) throws ApiException {
         switch (action) {
             case EXEC:
@@ -213,6 +231,7 @@ public class HttpApiHandler {
         return null;
     }
 
+    /** 创建新 Session、结果分发器与消费者，并推送欢迎信息 */
     private ApiResponse processInitSessionRequest(ApiRequest apiRequest) throws ApiException {
         ApiResponse response = new ApiResponse();
 
@@ -257,10 +276,10 @@ public class HttpApiHandler {
     }
 
     /**
-     * Update session input status for all consumer
+     * 向 Session 所有消费者广播输入状态变更。
      *
-     * @param session
-     * @param inputStatus
+     * @param session     目标 Session
+     * @param inputStatus 新的输入状态
      */
     private void updateSessionInputStatus(Session session, InputStatus inputStatus) {
         SharingResultDistributor resultDistributor = session.getResultDistributor();
@@ -269,6 +288,7 @@ public class HttpApiHandler {
         }
     }
 
+    /** 加入已有 Session：新建消费者，禁用输入与中断 */
     private ApiResponse processJoinSessionRequest(ApiRequest apiRequest, Session session) {
 
         //create consumer
@@ -287,6 +307,7 @@ public class HttpApiHandler {
         return response;
     }
 
+    /** 返回 Session 元信息（pid、创建/访问时间） */
     private ApiResponse processSessionInfoRequest(ApiRequest apiRequest, Session session) {
         ApiResponse response = new ApiResponse();
         Map<String, Object> body = new TreeMap<String, Object>();
@@ -301,6 +322,7 @@ public class HttpApiHandler {
         return response;
     }
 
+    /** 销毁 Session 并从 SessionManager 移除 */
     private ApiResponse processCloseSessionRequest(ApiRequest apiRequest, Session session) {
         sessionManager.removeSession(session.getSessionId());
         ApiResponse response = new ApiResponse();
@@ -309,11 +331,11 @@ public class HttpApiHandler {
     }
 
     /**
-     * Execute command sync, wait for job finish or timeout, sending results immediately
+     * 同步执行命令：阻塞等待 Job 结束或超时，结果打包在响应 body 中。
      *
-     * @param apiRequest
-     * @param session
-     * @return
+     * @param apiRequest 含 command 与 execTimeout
+     * @param session    执行上下文
+     * @return 含 results 的 {@link ApiResponse}
      */
     private ApiResponse processExecRequest(ApiRequest apiRequest, Session session) {
         boolean oneTimeAccess = false;
@@ -395,6 +417,7 @@ public class HttpApiHandler {
                     .setBody(body);
             return response;
         } finally {
+            // 一次性 Session 执行完毕后自动清理
             if (oneTimeAccess) {
                 sessionManager.removeSession(session.getSessionId());
             }
@@ -402,11 +425,11 @@ public class HttpApiHandler {
     }
 
     /**
-     * Execute command async, create and schedule the job running, but no wait for the results.
+     * 异步执行命令：创建 Job 并立即返回 SCHEDULED，结果通过 PULL_RESULTS 获取。
      *
-     * @param apiRequest
-     * @param session
-     * @return
+     * @param apiRequest 含 command
+     * @param session    执行上下文
+     * @return 含 jobId 的 {@link ApiResponse}
      */
     private ApiResponse processAsyncExecRequest(ApiRequest apiRequest, Session session) {
         String commandLine = apiRequest.getCommand();
@@ -466,6 +489,7 @@ public class HttpApiHandler {
         }
     }
 
+    /** 中断当前 Session 的前台 Job */
     private ApiResponse processInterruptJob(ApiRequest apiRequest, Session session) {
         Job job = session.getForegroundJob();
         if (job == null) {
@@ -482,11 +506,11 @@ public class HttpApiHandler {
     }
 
     /**
-     * Pull results from result queue
+     * 从指定 consumer 的结果队列拉取增量输出。
      *
-     * @param apiRequest
-     * @param session
-     * @return
+     * @param apiRequest 需 consumerId
+     * @param session    目标 Session
+     * @return body 含 results 列表
      */
     private ApiResponse processPullResultsRequest(ApiRequest apiRequest, Session session) throws ApiException {
         String consumerId = apiRequest.getConsumerId();
@@ -514,6 +538,7 @@ public class HttpApiHandler {
         return response;
     }
 
+    /** 轮询 Job 状态直至结束或超时（100ms 间隔） */
     private boolean waitForJob(Job job, int timeout) {
         long startTime = System.currentTimeMillis();
         while (true) {
@@ -532,6 +557,7 @@ public class HttpApiHandler {
         }
     }
 
+    /** 根据 CLI 令牌创建 Job（同步方法避免并发创建） */
     private synchronized Job createJob(List<CliToken> args, Session session, ResultDistributor resultDistributor) {
         Job job = jobController.createJob(commandManager, args, session, new ApiJobHandler(session), new ApiTerm(session), resultDistributor);
         return job;
@@ -542,6 +568,7 @@ public class HttpApiHandler {
         return createJob(CliTokens.tokenize(line), session, resultDistributor);
     }
 
+    /** 构造仅含 state 与 message 的错误/拒绝响应 */
     private ApiResponse createResponse(ApiState apiState, String message) {
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setState(apiState);
@@ -549,11 +576,13 @@ public class HttpApiHandler {
         return apiResponse;
     }
 
+    /** 读取 POST 请求 UTF-8 正文 */
     private String getBody(FullHttpRequest request) {
         ByteBuf buf = request.content();
         return buf.toString(CharsetUtil.UTF_8);
     }
 
+    /** Job 生命周期监听：维护 foregroundJob 与输入状态 */
     private class ApiJobHandler implements JobListener {
 
         private Session session;
@@ -592,6 +621,9 @@ public class HttpApiHandler {
         }
     }
 
+    /**
+     * API 场景下的哑 {@link Term}：无真实 TTY，固定宽高供命令渲染。
+     */
     private static class ApiTerm implements Term {
 
         private Session session;

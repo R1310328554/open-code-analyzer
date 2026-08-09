@@ -17,8 +17,11 @@ import io.termd.core.function.Consumer;
 import io.termd.core.tty.TtyConnection;
 
 /**
- * both suport http/telnet
- * 
+ * 单端口同时支持 HTTP（WebSocket TTY）与 Telnet 的 {@link TermServer} 实现。
+ * <p>
+ * 底层由 {@link NettyHttpTelnetTtyBootstrap} 监听；
+ * {@link ProtocolDetectHandler} 按首包区分协议后接入对应 pipeline。
+ *
  * @author hengyunabc 2019-11-04
  *
  */
@@ -26,6 +29,7 @@ public class HttpTelnetTermServer extends TermServer {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpTelnetTermServer.class);
 
+    /** 新连接建立后回调，包装为 {@link TermImpl} */
     private Handler<Term> termHandler;
     private NettyHttpTelnetTtyBootstrap bootstrap;
     private String hostIp;

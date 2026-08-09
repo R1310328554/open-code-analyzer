@@ -14,13 +14,18 @@ import io.termd.core.util.CompletableFuture;
 import io.termd.core.util.Helper;
 
 /**
+ * {@link NettyHttpTelnetBootstrap} 的 TTY 友好封装：配置 BINARY 选项与字符集，
+ * 并将 {@link TelnetTtyConnection} 工厂注入底层引导。
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author hengyunabc 2019-11-05
  */
 public class NettyHttpTelnetTtyBootstrap {
 
     private final NettyHttpTelnetBootstrap httpTelnetTtyBootstrap;
+    /** Telnet 输出是否启用 BINARY 选项 */
     private boolean outBinary;
+    /** Telnet 输入是否启用 BINARY 选项 */
     private boolean inBinary;
     private Charset charset = Charset.forName("UTF-8");
 
@@ -51,11 +56,10 @@ public class NettyHttpTelnetTtyBootstrap {
     }
 
     /**
-     * Enable or disable the TELNET BINARY option on output.
+     * 启用或禁用 Telnet 输出的 BINARY 选项。
      *
-     * @param outBinary
-     *            true to require the client to receive binary
-     * @return this object
+     * @param outBinary true 要求客户端以二进制接收
+     * @return this
      */
     public NettyHttpTelnetTtyBootstrap setOutBinary(boolean outBinary) {
         this.outBinary = outBinary;
@@ -67,11 +71,10 @@ public class NettyHttpTelnetTtyBootstrap {
     }
 
     /**
-     * Enable or disable the TELNET BINARY option on input.
+     * 启用或禁用 Telnet 输入的 BINARY 选项。
      *
-     * @param inBinary
-     *            true to require the client to emit binary
-     * @return this object
+     * @param inBinary true 要求客户端以二进制发送
+     * @return this
      */
     public NettyHttpTelnetTtyBootstrap setInBinary(boolean inBinary) {
         this.inBinary = inBinary;
@@ -86,12 +89,14 @@ public class NettyHttpTelnetTtyBootstrap {
         this.charset = charset;
     }
 
+    /** 异步启动，返回 CompletableFuture */
     public CompletableFuture<?> start(Consumer<TtyConnection> factory) {
         CompletableFuture<?> fut = new CompletableFuture();
         start(factory, Helper.startedHandler(fut));
         return fut;
     }
 
+    /** 异步停止 */
     public CompletableFuture<?> stop() {
         CompletableFuture<?> fut = new CompletableFuture();
         stop(Helper.stoppedHandler(fut));

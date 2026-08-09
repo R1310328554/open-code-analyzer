@@ -1,21 +1,21 @@
 package com.taobao.arthas.core.util;
 
 /**
- * Utils for checks
+ * 相等性与成员判定工具。
  * Created by vlinux on 15/5/19.
  */
 public class ArthasCheckUtils {
 
     /**
-     * check whether a component is in an Array<br/>
+     * 判断元素是否出现在可变参数数组中。
      *
-     * @param e   component
-     * @param s   array
-     * @param <E> component type
-     * @return <br/>
-     * (1,1,2,3)        == true
-     * (1,2,3,4)        == false
-     * (null,1,null,2)  == true
+     * @param e   待查元素
+     * @param s   候选数组
+     * @param <E> 元素类型
+     * @return 存在相等项（含双 null）为 true<br/>
+     * (1,1,2,3)        == true<br/>
+     * (1,2,3,4)        == false<br/>
+     * (null,1,null,2)  == true<br/>
      * (1,null)         == false
      */
     public static <E> boolean isIn(E e, E... s) {
@@ -33,16 +33,16 @@ public class ArthasCheckUtils {
     }
 
     /**
-     * check whether two components are equal<br/>
+     * 判断两元素是否相等（双 null 视为相等）。
      *
-     * @param src    source component
-     * @param target target component
-     * @param <E>    component type
-     * @return <br/>
-     * (null, null)    == true
-     * (1L,2L)         == false
-     * (1L,1L)         == true
-     * ("abc",null)    == false
+     * @param src    源元素
+     * @param target 目标元素
+     * @param <E>    元素类型
+     * @return 相等为 true<br/>
+     * (null, null)    == true<br/>
+     * (1L,2L)         == false<br/>
+     * (1L,1L)         == true<br/>
+     * ("abc",null)    == false<br/>
      * (null,"abc")    == false
      */
     public static <E> boolean isEquals(E src, E target) {

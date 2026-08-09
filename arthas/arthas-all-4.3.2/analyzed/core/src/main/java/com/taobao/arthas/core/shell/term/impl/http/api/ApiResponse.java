@@ -1,16 +1,27 @@
 package com.taobao.arthas.core.shell.term.impl.http.api;
 
 /**
- * Http Api exception
+ * HTTP API 统一响应体，序列化为 POST {@code /api} 的 JSON 返回值。
+ * <p>
+ * 链式 setter 便于构建；{@link #state} 表示处理结果，
+ * {@link #body} 承载命令输出或会话元数据等业务载荷。
+ *
  * @author gongdewei 2020-03-19
  */
 public class ApiResponse<T> {
+    /** 与 {@link ApiRequest#getRequestId()} 对应的请求 ID */
     private String requestId;
+    /** 处理状态，见 {@link ApiState} */
     private ApiState state;
+    /** 错误或提示信息 */
     private String message;
+    /** 关联的 Arthas Shell Session ID */
     private String sessionId;
+    /** 结果消费者 ID，多客户端拉取结果时使用 */
     private String consumerId;
+    /** 异步/同步执行关联的 Job ID */
     private String jobId;
+    /** 业务数据体（命令结果、会话信息等） */
     private T body;
 
     public String getRequestId() {

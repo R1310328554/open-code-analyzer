@@ -25,12 +25,17 @@ import io.termd.core.telnet.TelnetHandler;
 import io.termd.core.tty.TtyConnection;
 
 /**
+ * 基于 Netty 的 HTTP/Telnet 复用端口引导类，扩展 termd {@link TelnetBootstrap}。
+ * <p>
+ * 每个新连接首包由 {@link ProtocolDetectHandler} 分流至 HTTP 或 Telnet pipeline。
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author hengyunabc 2019-11-05
  */
 public class NettyHttpTelnetBootstrap extends TelnetBootstrap {
 
     private EventLoopGroup group;
+    /** 活跃连接集合，stop 时统一关闭 */
     private ChannelGroup channelGroup;
     private EventExecutorGroup workerGroup;
     private HttpSessionManager httpSessionManager;
@@ -56,6 +61,13 @@ public class NettyHttpTelnetBootstrap extends TelnetBootstrap {
 
     }
 
+    /**
+     * 绑定端口并安装协议探测 handler；成功/失败通过 doneHandler 回调。
+     *
+     * @param handlerFactory Telnet 侧 TelnetHandler 工厂
+     * @param factory        HTTP WebSocket 侧 TtyConnection 消费者
+     * @param doneHandler    启动完成回调
+     */
     public void start(final Supplier<TelnetHandler> handlerFactory, final Consumer<TtyConnection> factory,
                     final Consumer<Throwable> doneHandler) {
         ServerBootstrap boostrap = new ServerBootstrap();

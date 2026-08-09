@@ -8,13 +8,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.taobao.arthas.core.util.StringUtils;
 
 /**
- * 
+ * {@link HttpSession} 的轻量实现：随机 ID + {@link ConcurrentHashMap} 属性表。
+ * <p>
+ * 时间相关与失效逻辑为占位实现，满足 HTTP 鉴权与用户标识传递即可。
+ *
  * @author hengyunabc 2021-03-03
  *
  */
 public class SimpleHttpSession implements HttpSession {
+    /** 线程安全的会话属性存储 */
     private Map<String, Object> attributes = new ConcurrentHashMap<String, Object>();
 
+    /** 32 位随机会话 ID */
     private String id;
 
     public SimpleHttpSession() {
