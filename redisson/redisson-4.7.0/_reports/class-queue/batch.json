@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T21:28:06Z",
   "files": [
-    "redisson/src/main/java/org/redisson/codec/ZStdCodec.java",
-    "redisson/src/main/java/org/redisson/command/BaseRedisBatchExecutor.java",
-    "redisson/src/main/java/org/redisson/command/BatchPromise.java",
-    "redisson/src/main/java/org/redisson/command/BatchService.java",
-    "redisson/src/main/java/org/redisson/command/CommandAsyncExecutor.java",
-    "redisson/src/main/java/org/redisson/command/CommandAsyncService.java",
-    "redisson/src/main/java/org/redisson/command/CommandBatchService.java",
-    "redisson/src/main/java/org/redisson/command/NoSyncedSlavesException.java",
-    "redisson/src/main/java/org/redisson/command/OrderedCompletableFuture.java",
-    "redisson/src/main/java/org/redisson/command/RedisBatchExecutor.java",
-    "redisson/src/main/java/org/redisson/command/RedisCommonBatchExecutor.java",
-    "redisson/src/main/java/org/redisson/command/RedisExecutor.java",
-    "redisson/src/main/java/org/redisson/command/RedisQueuedBatchExecutor.java",
-    "redisson/src/main/java/org/redisson/config/BaseConfig.java",
-    "redisson/src/main/java/org/redisson/config/BaseMasterSlaveServersConfig.java",
     "redisson/src/main/java/org/redisson/config/ClusterServersConfig.java",
     "redisson/src/main/java/org/redisson/config/CommandMapper.java",
     "redisson/src/main/java/org/redisson/config/Config.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/config/FullJitterDelay.java"
   ],
   "remaining_pending": 332,
-  "done": 2460
+  "done": 2475
 }
