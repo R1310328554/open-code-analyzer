@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:40:36Z",
-  "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/SearchOffsetRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/SearchOffsetResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/SendMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/SendMessageRequestHeaderV2.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/SendMessageResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/StatisticsMessagesRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/TriggerLiteDispatchRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/UnlockBatchMqRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/UnregisterClientRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/UnregisterClientResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/UpdateAclRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/UpdateConsumerOffsetRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/UpdateConsumerOffsetResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/UpdateGroupForbiddenRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/UpdateUserRequestHeader.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 468,
-  "done": 1005
+  "done": 1020
 }
