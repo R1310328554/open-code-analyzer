@@ -30,16 +30,21 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 Pub/Sub 命令实现。
+ * <p>通过 {@link #createSubscription(SubscriptionListener)} 创建
+ {@link RedissonReactiveSubscription} 管理订阅；{@link #publish} 向频道发布消息。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactivePubSubCommands extends RedissonBaseReactive implements ReactivePubSubCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactivePubSubCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** PUBLISH：向指定频道发布消息，返回接收订阅者数量。 */
     @Override
     public Flux<Long> publish(Publisher<ChannelMessage<ByteBuffer, ByteBuffer>> messageStream) {
         return execute(messageStream, msg -> {
@@ -47,16 +52,19 @@ public class RedissonReactivePubSubCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 直接订阅未实现，须通过 {@link #createSubscription} 获取订阅对象后操作。 */
     @Override
     public Mono<Void> subscribe(ByteBuffer... channels) {
         throw new UnsupportedOperationException("Subscribe through ReactiveSubscription object created by createSubscription method");
     }
 
+    /** 直接模式订阅未实现，须通过 {@link #createSubscription} 获取订阅对象后操作。 */
     @Override
     public Mono<Void> pSubscribe(ByteBuffer... patterns) {
         throw new UnsupportedOperationException("Subscribe through ReactiveSubscription object created by createSubscription method");
     }
 
+    /** 创建带 {@link SubscriptionListener} 的响应式订阅对象。 */
     @Override
     public Mono<ReactiveSubscription> createSubscription(SubscriptionListener subscriptionListener) {
         return Mono.just(new RedissonReactiveSubscription(executorService.getConnectionManager(), subscriptionListener));
