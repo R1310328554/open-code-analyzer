@@ -15,23 +15,8 @@
     "broker/src/main/java/org/apache/rocketmq/broker/metrics/PopMetricsConstant.java",
     "broker/src/main/java/org/apache/rocketmq/broker/metrics/PopMetricsManager.java",
     "broker/src/main/java/org/apache/rocketmq/broker/metrics/PopReviveMessageType.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/ProducerAttr.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/mqtrace/ConsumeMessageContext.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/mqtrace/ConsumeMessageHook.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/mqtrace/SendMessageContext.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/mqtrace/SendMessageHook.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/offset/BroadcastOffsetManager.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/offset/BroadcastOffsetStore.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/offset/LmqConsumerOffsetManager.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/offset/MemoryConsumerOrderInfoManager.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/pagecache/ManyMessageTransfer.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/pagecache/OneMessageTransfer.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/pagecache/QueryMessageTransfer.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/plugin/BrokerAttachedPlugin.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/plugin/PullMessageResultHandler.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/pop/PopConsumerCache.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/pop/PopConsumerContext.java"
+    "broker/src/main/java/org/apache/rocketmq/broker/metrics/ProducerAttr.java"
   ],
   "remaining_pending": 1338,
-  "done": 120
+  "done": 135
 }
