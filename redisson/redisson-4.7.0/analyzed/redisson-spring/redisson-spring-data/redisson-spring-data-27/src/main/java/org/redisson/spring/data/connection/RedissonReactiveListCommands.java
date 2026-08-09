@@ -42,7 +42,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 List 命令实现。
+ * <p>封装 LPUSH/RPUSH、LRANGE、LTRIM、LINSERT、LPOP/RPOP、BLPOP/BRPOP 等列表操作。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -53,10 +55,12 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
     private static final RedisStrictCommand<Long> RPUSHX = new RedisStrictCommand<Long>("RPUSHX");
     private static final RedisStrictCommand<Long> LPUSHX = new RedisStrictCommand<Long>("LPUSHX");
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveListCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** LPUSH/RPUSH 或 LPUSHX/RPUSHX：按方向与 upsert 标志选择命令。 */
     @Override
     public Flux<NumericResponse<PushCommand, Long>> push(Publisher<PushCommand> commands) {
         return execute(commands, command -> {
@@ -64,6 +68,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             Assert.notNull(command.getKey(), "Key must not be null!");
             Assert.notEmpty(command.getValues(), "Values must not be null or empty!");
 
+            // PUSHX 仅允许单个 value。
             if (!command.getUpsert() && command.getValues().size() > 1) {
                 throw new InvalidDataAccessApiUsageException(
                         String.format("%s PUSHX only allows one value!", command.getDirection()));
@@ -96,6 +101,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
     
     private static final RedisStrictCommand<Long> LLEN = new RedisStrictCommand<Long>("LLEN");
 
+    /** LLEN：返回列表长度。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> lLen(Publisher<KeyCommand> commands) {
         return execute(commands, key -> {
@@ -108,6 +114,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** LRANGE：按闭区间下标返回列表片段。 */
     @Override
     public Flux<CommandResponse<RangeCommand, Flux<ByteBuffer>>> lRange(Publisher<RangeCommand> commands) {
         return execute(commands, command -> {
@@ -208,6 +215,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** LPOP/RPOP：按 {@link Direction} 弹出列表头或尾元素。 */
     @Override
     public Flux<ByteBufferResponse<PopCommand>> pop(Publisher<PopCommand> commands) {
         return execute(commands, command -> {
@@ -226,6 +234,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** BLPOP/BRPOP：阻塞式弹出，超时以秒计。 */
     @Override
     public Flux<PopResponse> bPop(Publisher<BPopCommand> commands) {
         return execute(commands, command -> {
@@ -249,6 +258,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** RPOPLPUSH：从源列表弹出并推入目标列表。 */
     @Override
     public Flux<ByteBufferResponse<RPopLPushCommand>> rPopLPush(Publisher<RPopLPushCommand> commands) {
         return execute(commands, command -> {
@@ -306,6 +316,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** LMOVE：原子地从源列表弹出并推入目标列表。 */
     @Override
     public Flux<ByteBufferResponse<LMoveCommand>> lMove(Publisher<? extends LMoveCommand> commands) {
         return execute(commands, command -> {
@@ -324,6 +335,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** BLMOVE：阻塞版 LMOVE，在超时内等待可移动元素。 */
     @Override
     public Flux<ByteBufferResponse<BLMoveCommand>> bLMove(Publisher<BLMoveCommand> commands) {
         return execute(commands, command -> {
@@ -343,6 +355,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** LPOP/RPOP：按方向弹出单个或多个列表元素。 */
     @Override
     public Flux<CommandResponse<PopCommand, Flux<ByteBuffer>>> popList(Publisher<PopCommand> commands) {
         return execute(commands, command -> {

@@ -23,31 +23,39 @@ import org.springframework.data.redis.connection.*;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 单机模式响应式连接门面。
+ * <p>实现 {@link ReactiveRedisConnection}，按数据类型委托各 {@code RedissonReactive*Commands}；
+生命周期由工厂统一管理，{@link #closeLater()} 为空操作。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveRedisConnection extends RedissonBaseReactive implements ReactiveRedisConnection {
 
+    /** 注入响应式命令执行器。 */
     public RedissonReactiveRedisConnection(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** 延迟关闭为空实现，连接由 {@link RedissonConnectionFactory} 统一管理。 */
     @Override
     public Mono<Void> closeLater() {
         return Mono.empty();
     }
 
+    /** 返回 Key 命令实现。 */
     @Override
     public ReactiveKeyCommands keyCommands() {
         return new RedissonReactiveKeyCommands(executorService);
     }
 
+    /** 返回 String 命令实现。 */
     @Override
     public ReactiveStringCommands stringCommands() {
         return new RedissonReactiveStringCommands(executorService);
     }
 
+    /** 返回数值命令实现。 */
     @Override
     public ReactiveNumberCommands numberCommands() {
         return new RedissonReactiveNumberCommands(executorService);
@@ -58,6 +66,7 @@ public class RedissonReactiveRedisConnection extends RedissonBaseReactive implem
         return new RedissonReactiveListCommands(executorService);
     }
 
+    /** 返回 Set 命令实现。 */
     @Override
     public ReactiveSetCommands setCommands() {
         return new RedissonReactiveSetCommands(executorService);
@@ -83,11 +92,13 @@ public class RedissonReactiveRedisConnection extends RedissonBaseReactive implem
         return new RedissonReactiveHyperLogLogCommands(executorService);
     }
 
+    /** 返回 Pub/Sub 命令实现。 */
     @Override
     public ReactivePubSubCommands pubSubCommands() {
         return new RedissonReactivePubSubCommands(executorService);
     }
 
+    /** 返回 Lua 脚本命令实现。 */
     @Override
     public ReactiveScriptingCommands scriptingCommands() {
         return new RedissonReactiveScriptingCommands(executorService);
@@ -103,6 +114,7 @@ public class RedissonReactiveRedisConnection extends RedissonBaseReactive implem
         return new RedissonReactiveStreamCommands(executorService);
     }
 
+    /** PING：检测连接可用性。 */
     @Override
     public Mono<String> ping() {
         return read(null, StringCodec.INSTANCE, RedisCommands.PING);
