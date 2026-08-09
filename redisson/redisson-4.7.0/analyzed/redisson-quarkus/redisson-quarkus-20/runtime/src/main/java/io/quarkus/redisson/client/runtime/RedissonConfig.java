@@ -23,15 +23,16 @@ import io.smallrye.config.WithName;
 import java.util.Map;
 
 /**
- * Redisson config
+ * Quarkus {@code quarkus.redisson.*} 运行时配置映射。
+ * <p>各方法返回扁平化属性 Map，供 {@link PropertiesConvertor} 转为 Redisson YAML。
  *
  * @author Nikita Koksharov
- *
  */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 @ConfigMapping(prefix = "quarkus")
 public interface RedissonConfig {
 
+    /** 通用 Redisson 参数（{@code quarkus.redisson.*}）。 */
     /**
      * Common params
      *
@@ -40,6 +41,7 @@ public interface RedissonConfig {
     @WithName("redisson")
     Map<String, String> params();
 
+    /** 单节点模式配置（{@code quarkus.redisson.single-server-config.*}）。 */
     /**
      * Single server params
      *
@@ -48,6 +50,7 @@ public interface RedissonConfig {
     @WithName("redisson.single-server-config")
     Map<String, String> singleServerConfig();
 
+    /** 集群模式配置（{@code quarkus.redisson.cluster-servers-config.*}）。 */
     /**
      * Cluster servers params
      *
@@ -56,6 +59,7 @@ public interface RedissonConfig {
     @WithName("redisson.cluster-servers-config")
     Map<String, String> clusterServersConfig();
 
+    /** 哨兵模式配置（{@code quarkus.redisson.sentinel-servers-config.*}）。 */
     /**
      * Sentinel servers params
      *
@@ -64,6 +68,7 @@ public interface RedissonConfig {
     @WithName("redisson.sentinel-servers-config")
     Map<String, String> sentinelServersConfig();
 
+    /** 复制模式配置（{@code quarkus.redisson.replicated-servers-config.*}）。 */
     /**
      * Replicated servers params
      *
@@ -72,6 +77,7 @@ public interface RedissonConfig {
     @WithName("redisson.replicated-servers-config")
     Map<String, String> replicatedServersConfig();
 
+    /** 主从模式配置（{@code quarkus.redisson.master-slave-servers-config.*}）。 */
     /**
      * Master and slave servers params
      *

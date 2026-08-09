@@ -19,13 +19,15 @@ import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
+ * Quarkus 运行时 Recorder：在 RUNTIME_INIT 阶段触发 {@link RedissonClientProducer} 实例化。
+ * <p>确保 CDI 容器在应用启动时完成 Redisson 客户端的 eagerly 初始化。
  *
  * @author Nikita Koksharov
- *
  */
 @Recorder
 public class RedissonClientRecorder {
 
+    /** 通过 Arc 容器获取并初始化 {@link RedissonClientProducer}。 */
     public void createProducer() {
         Arc.container().instance(RedissonClientProducer.class).get();
     }

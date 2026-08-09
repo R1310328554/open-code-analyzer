@@ -23,14 +23,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * 集成测试用 {@link CredentialsResolver}：始终返回空 {@link Credentials}。
+ * <p>用于验证 Quarkus Redisson 扩展在无认证 Redis 下的连接流程。
  *
  * @author Nikita Koksharov
- *
  */
 public final class MyCredentialsResolver implements CredentialsResolver {
 
     private final CompletionStage<Credentials> future = CompletableFuture.completedFuture(new Credentials());
 
+    /** 忽略目标地址，返回预构造的空凭证 Future。 */
     @Override
     public CompletionStage<Credentials> resolve(InetSocketAddress address) {
         return future;

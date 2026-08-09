@@ -35,9 +35,11 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
+ * 基于 Redisson {@link RMap}/{@link RMapCache}/{@link RMapCacheNative} 的 Quarkus 缓存实现。
+ * <p>按 {@link RedissonCacheInfo} 选择底层结构；TTL、max-idle 与 maxSize 在构造时绑定。
+ * PRO 版实现（V2、LOCALCACHE 等）在未授权时抛出 {@link IllegalArgumentException}。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
 
@@ -46,6 +48,7 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
     private RMapCache mapCache;
     private RMapCacheNative mapCacheNative;
 
+    /** 从 Arc 获取 {@link RedissonClient}，按配置选择 Map/MapCache/Native 结构。 */
     public RedissonCacheImpl(RedissonCacheInfo cacheInfo) {
         RedissonClient redisson = Arc.container().select(RedissonClient.class).get();
         CacheImplementation impl = cacheInfo.implementation.orElse(CacheImplementation.STANDARD);
@@ -62,6 +65,7 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
                 }
             } else if (impl == CacheImplementation.NATIVE) {
                 if (cacheInfo.expireAfterAccess.isPresent()) {
+                    // NATIVE 实现不支持访问后过期。
                     throw new IllegalArgumentException("expireAfterAccess isn't supported by NATIVE implementation");
                 }
                 if (cacheInfo.maxSize.isPresent()) {
@@ -83,6 +87,7 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
         }
     }
 
+    /** 异步写入；存在 TTL 或 max-idle 时使用 MapCache 带过期参数的 putAsync。 */
     @Override
     public <K, V> Uni<V> put(K key, V value) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
@@ -174,6 +179,7 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
         return map.getName();
     }
 
+    /** 缓存未命中时通过 {@link RMap#computeIfAbsentAsync} 加载值。 */
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
@@ -197,6 +203,7 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
         return Uni.createFrom().completionStage((Supplier<CompletionStage<Void>>) () -> map.deleteAsync().thenApply(r -> null));
     }
 
+    /** 扫描全部键并按谓词批量删除匹配条目。 */
     @Override
     public Uni<Void> invalidateIf(Predicate<Object> predicate) {
         return Uni.createFrom().completionStage((Supplier<CompletionStage<Void>>) () -> {

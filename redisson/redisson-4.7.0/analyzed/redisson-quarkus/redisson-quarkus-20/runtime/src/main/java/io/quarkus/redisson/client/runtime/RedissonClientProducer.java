@@ -40,9 +40,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
+ * Quarkus 2.x 运行时 CDI 生产者：从配置或 {@code redisson.yaml} 构建 {@link RedissonClient}。
+ * <p>优先读取 {@code quarkus.redisson.file} 指定资源；否则将 {@code quarkus.redisson.*}
+ * 属性转换为 YAML 后解析。应用关闭时按 {@link ShutdownConfig} 优雅停机。
  *
  * @author Nikita Koksharov
- *
  */
 @ApplicationScoped
 public class RedissonClientProducer {
@@ -52,6 +54,7 @@ public class RedissonClientProducer {
     @Inject
     public ShutdownConfig shutdownConfig;
 
+    /** 创建默认 {@link RedissonClient} Bean；配置缺失时抛出 {@link IllegalStateException}。 */
     @Produces
     @Singleton
     @DefaultBean
@@ -77,6 +80,7 @@ public class RedissonClientProducer {
         }
 
         if (config.trim().isEmpty()) {
+            // 未找到 YAML 文件且 quarkus.redisson.* 属性为空。
             throw new IllegalStateException("Redisson settings aren't defined.");
         }
 
@@ -86,6 +90,7 @@ public class RedissonClientProducer {
         return redisson;
     }
 
+    /** 容器销毁时关闭 Redisson；若配置了 shutdown timeout 则分阶段等待。 */
     @PreDestroy
     public void close() {
         if (redisson != null) {

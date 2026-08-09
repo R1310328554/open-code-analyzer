@@ -15,14 +15,22 @@
  */
 package io.quarkus.cache.redisson.runtime;
 
+/**
+ * Quarkus Redisson 缓存底层 Redis 结构实现类型。
+ * <p>STANDARD/NATIVE 为开源版可用；V2、LOCALCACHE、CLUSTERED 等需 PRO 版本。
+ */
 public enum CacheImplementation {
 
+    /** 标准 {@link RMap}/{@link RMapCache} 实现。 */
     STANDARD,
 
+    /** Native Map 实现（{@link RMapCacheNative}），不支持 max-idle 与 LRU。 */
     NATIVE,
 
+    /** PRO 版 V2 结构（需联系 sales@redisson.pro）。 */
     V2,
 
+    /** PRO 版本地缓存层。 */
     LOCALCACHE,
 
     LOCALCACHE_V2,

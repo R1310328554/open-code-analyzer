@@ -20,6 +20,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 import java.lang.reflect.AnnotatedElement;
 
+/** GraalVM Native Image 下替换 ByteBuddy 形式类型变量注解解析（返回 null 避免反射失败）。 */
 @TargetClass(className = "net.bytebuddy.description.type.TypeDescription$Generic$AnnotationReader$ForTypeVariableBoundType$OfFormalTypeVariable")
 final class OfFormalTypeVariableSubstitute {
 
@@ -30,6 +31,7 @@ final class OfFormalTypeVariableSubstitute {
 
 }
 
+/** 替换类型变量上界注解读取器，Native 构建时跳过 ByteBuddy 内部反射。 */
 @TargetClass(className = "net.bytebuddy.description.type.TypeDescription$Generic$AnnotationReader$ForTypeVariableBoundType")
 final class ForTypeVariableBoundTypeSubstitute {
 
