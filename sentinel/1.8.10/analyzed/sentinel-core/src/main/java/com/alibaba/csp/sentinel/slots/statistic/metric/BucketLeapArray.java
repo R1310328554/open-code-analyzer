@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.slots.statistic.base.WindowWrap;
 import com.alibaba.csp.sentinel.slots.statistic.data.MetricBucket;
 
 /**
- * The fundamental data structure for metric statistics in a time span.
+ * 时间跨度内指标统计的基础数据结构。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -39,7 +39,7 @@ public class BucketLeapArray extends LeapArray<MetricBucket> {
 
     @Override
     protected WindowWrap<MetricBucket> resetWindowTo(WindowWrap<MetricBucket> w, long startTime) {
-        // Update the start time and reset value.
+        // 更新起始时间并重置统计值。
         w.resetTo(startTime);
         w.value().reset();
         return w;

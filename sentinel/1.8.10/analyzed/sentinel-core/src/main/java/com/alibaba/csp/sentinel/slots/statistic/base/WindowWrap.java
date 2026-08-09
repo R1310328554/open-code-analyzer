@@ -16,33 +16,27 @@
 package com.alibaba.csp.sentinel.slots.statistic.base;
 
 /**
- * Wrapper entity class for a period of time window.
+ * 时间窗口段的包装实体类。
  *
- * @param <T> data type
+ * @param <T> 统计数据类型
  * @author jialiang.linjl
  * @author Eric Zhao
  */
 public class WindowWrap<T> {
 
-    /**
-     * Time length of a single window bucket in milliseconds.
-     */
+    /** 单个窗口桶的时间长度（毫秒）。 */
     private final long windowLengthInMs;
 
-    /**
-     * Start timestamp of the window in milliseconds.
-     */
+    /** 窗口起始时间戳（毫秒）。 */
     private long windowStart;
 
-    /**
-     * Statistic data.
-     */
+    /** 统计数据。 */
     private T value;
 
     /**
-     * @param windowLengthInMs a single window bucket's time length in milliseconds.
-     * @param windowStart      the start timestamp of the window
-     * @param value            statistic data
+     * @param windowLengthInMs 单个窗口桶的时间长度（毫秒）
+     * @param windowStart      窗口起始时间戳
+     * @param value            统计数据
      */
     public WindowWrap(long windowLengthInMs, long windowStart, T value) {
         this.windowLengthInMs = windowLengthInMs;
@@ -67,10 +61,10 @@ public class WindowWrap<T> {
     }
 
     /**
-     * Reset start timestamp of current bucket to provided time.
+     * 将当前桶的起始时间重置为给定值。
      *
-     * @param startTime valid start timestamp
-     * @return bucket after reset
+     * @param startTime 有效的起始时间戳
+     * @return 重置后的桶
      */
     public WindowWrap<T> resetTo(long startTime) {
         this.windowStart = startTime;
@@ -78,10 +72,10 @@ public class WindowWrap<T> {
     }
 
     /**
-     * Check whether given timestamp is in current bucket.
+     * 判断给定时间戳是否落在当前桶内。
      *
-     * @param timeMillis valid timestamp in ms
-     * @return true if the given time is in current bucket, otherwise false
+     * @param timeMillis 有效时间戳（毫秒）
+     * @return 在桶内返回 true，否则 false
      * @since 1.5.0
      */
     public boolean isTimeInWindow(long timeMillis) {

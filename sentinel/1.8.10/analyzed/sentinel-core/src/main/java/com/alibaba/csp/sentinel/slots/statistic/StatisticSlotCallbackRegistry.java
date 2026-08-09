@@ -25,10 +25,10 @@ import com.alibaba.csp.sentinel.slotchain.ProcessorSlotExitCallback;
 
 /**
  * <p>
- * Callback registry for {@link StatisticSlot}. Now two kind of callbacks are supported:
+ * {@link StatisticSlot} 的回调注册表，目前支持两类回调：
  * <ul>
- * <li>{@link ProcessorSlotEntryCallback}: callback for entry (passed and blocked)</li>
- * <li>{@link ProcessorSlotExitCallback}: callback for exiting {@link StatisticSlot}</li>
+ * <li>{@link ProcessorSlotEntryCallback}：entry 阶段回调（放行与阻断）</li>
+ * <li>{@link ProcessorSlotExitCallback}：退出 {@link StatisticSlot} 时的回调</li>
  * </ul>
  * </p>
  *
@@ -43,22 +43,27 @@ public final class StatisticSlotCallbackRegistry {
     private static final Map<String, ProcessorSlotExitCallback> exitCallbackMap
         = new ConcurrentHashMap<String, ProcessorSlotExitCallback>();
 
+    /** 清空全部 entry 回调。 */
     public static void clearEntryCallback() {
         entryCallbackMap.clear();
     }
 
+    /** 清空全部 exit 回调。 */
     public static void clearExitCallback() {
         exitCallbackMap.clear();
     }
 
+    /** 注册 entry 回调。 */
     public static void addEntryCallback(String key, ProcessorSlotEntryCallback<DefaultNode> callback) {
         entryCallbackMap.put(key, callback);
     }
 
+    /** 注册 exit 回调。 */
     public static void addExitCallback(String key, ProcessorSlotExitCallback callback) {
         exitCallbackMap.put(key, callback);
     }
 
+    /** 按 key 移除 entry 回调。 */
     public static ProcessorSlotEntryCallback<DefaultNode> removeEntryCallback(String key) {
         if (key == null) {
             return null;
@@ -66,6 +71,7 @@ public final class StatisticSlotCallbackRegistry {
         return entryCallbackMap.remove(key);
     }
 
+    /** 按 key 移除 exit 回调。 */
     public static ProcessorSlotExitCallback removeExitCallback(String key) {
         if (key == null) {
             return null;
@@ -73,10 +79,12 @@ public final class StatisticSlotCallbackRegistry {
         return exitCallbackMap.remove(key);
     }
 
+    /** 获取全部 entry 回调。 */
     public static Collection<ProcessorSlotEntryCallback<DefaultNode>> getEntryCallbacks() {
         return entryCallbackMap.values();
     }
 
+    /** 获取全部 exit 回调。 */
     public static Collection<ProcessorSlotExitCallback> getExitCallbacks() {
         return exitCallbackMap.values();
     }

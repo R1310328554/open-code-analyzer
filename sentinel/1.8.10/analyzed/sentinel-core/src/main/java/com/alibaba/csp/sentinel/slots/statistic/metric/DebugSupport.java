@@ -16,13 +16,13 @@
 package com.alibaba.csp.sentinel.slots.statistic.metric;
 
 /**
+ * 调试支持接口，用于输出指标内部状态。
+ *
  * @author Eric Zhao
  * @since 1.5.0
  */
 public interface DebugSupport {
 
-    /**
-     * For debug;
-     */
+    /** 输出调试信息。 */
     void debug();
 }

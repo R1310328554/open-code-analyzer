@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.slots.statistic.base.WindowWrap;
 import com.alibaba.csp.sentinel.slots.statistic.data.MetricBucket;
 
 /**
- * A kind of {@code BucketLeapArray} that only reserves for future buckets.
+ * 仅用于未来窗口桶的 {@code BucketLeapArray} 变体。
  *
  * @author jialiang.linjl
  * @since 1.5.0
@@ -28,7 +28,7 @@ import com.alibaba.csp.sentinel.slots.statistic.data.MetricBucket;
 public class FutureBucketLeapArray extends LeapArray<MetricBucket> {
 
     public FutureBucketLeapArray(int sampleCount, int intervalInMs) {
-        // This class is the original "BorrowBucketArray".
+        // 本类即原 BorrowBucketArray。
         super(sampleCount, intervalInMs);
     }
 
@@ -39,7 +39,7 @@ public class FutureBucketLeapArray extends LeapArray<MetricBucket> {
 
     @Override
     protected WindowWrap<MetricBucket> resetWindowTo(WindowWrap<MetricBucket> w, long startTime) {
-        // Update the start time and reset value.
+        // 更新起始时间并重置统计值。
         w.resetTo(startTime);
         w.value().reset();
         return w;
@@ -47,7 +47,7 @@ public class FutureBucketLeapArray extends LeapArray<MetricBucket> {
 
     @Override
     public boolean isWindowDeprecated(long time, WindowWrap<MetricBucket> windowWrap) {
-        // Tricky: will only calculate for future.
+        // 技巧：仅对未来窗口进行计算。
         return time >= windowWrap.windowStart();
     }
 }

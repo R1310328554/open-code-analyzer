@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.slots.statistic.base.WindowWrap;
 import com.alibaba.csp.sentinel.slots.statistic.data.MetricBucket;
 
 /**
+ * 支持预占（占用未来配额）的滑动窗口数组，组合当前桶与未来借用桶。
+ *
  * @author jialiang.linjl
  * @since 1.5.0
  */
@@ -31,7 +33,7 @@ public class OccupiableBucketLeapArray extends LeapArray<MetricBucket> {
     private final FutureBucketLeapArray borrowArray;
 
     public OccupiableBucketLeapArray(int sampleCount, int intervalInMs) {
-        // This class is the original "CombinedBucketArray".
+        // 本类即原 CombinedBucketArray。
         super(sampleCount, intervalInMs);
         this.borrowArray = new FutureBucketLeapArray(sampleCount, intervalInMs);
     }
@@ -50,7 +52,7 @@ public class OccupiableBucketLeapArray extends LeapArray<MetricBucket> {
 
     @Override
     protected WindowWrap<MetricBucket> resetWindowTo(WindowWrap<MetricBucket> w, long time) {
-        // Update the start time and reset value.
+        // 更新起始时间并重置统计值。
         w.resetTo(time);
         MetricBucket borrowBucket = borrowArray.getWindowValue(time);
         if (borrowBucket != null) {

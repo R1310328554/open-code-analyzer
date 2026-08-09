@@ -18,19 +18,24 @@ package com.alibaba.csp.sentinel.slots.statistic.base;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
+ * 基于 {@link LongAdder} 的一元滑动窗口数组，用于简单计数统计。
+ *
  * @author Eric Zhao
  */
 public class UnaryLeapArray extends LeapArray<LongAdder> {
 
+    /** 指定采样数与窗口间隔（毫秒）构造滑动数组。 */
     public UnaryLeapArray(int sampleCount, int intervalInMs) {
         super(sampleCount, intervalInMs);
     }
 
+    /** 创建空的 {@link LongAdder} 桶。 */
     @Override
     public LongAdder newEmptyBucket(long time) {
         return new LongAdder();
     }
 
+    /** 重置窗口起始时间并清空计数。 */
     @Override
     protected WindowWrap<LongAdder> resetWindowTo(WindowWrap<LongAdder> windowWrap, long startTime) {
         windowWrap.resetTo(startTime);

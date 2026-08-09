@@ -22,7 +22,7 @@ import com.alibaba.csp.sentinel.slots.statistic.data.MetricBucket;
 import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
- * Represents a basic structure recording invocation metrics of protected resources.
+ * 记录受保护资源调用指标的基础结构。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -30,171 +30,171 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 public interface Metric extends DebugSupport {
 
     /**
-     * Get total success count.
+     * 获取成功总数。
      *
-     * @return success count
+     * @return 成功计数
      */
     long success();
 
     /**
-     * Get max success count.
+     * 获取最大成功计数。
      *
-     * @return max success count
+     * @return 最大成功计数
      */
     long maxSuccess();
 
     /**
-     * Get total exception count.
+     * 获取异常总数。
      *
-     * @return exception count
+     * @return 异常计数
      */
     long exception();
 
     /**
-     * Get total block count.
+     * 获取阻断总数。
      *
-     * @return block count
+     * @return 阻断计数
      */
     long block();
 
     /**
-     * Get total pass count. not include {@link #occupiedPass()}
+     * 获取放行总数，不包含 {@link #occupiedPass()}。
      *
-     * @return pass count
+     * @return 放行计数
      */
     long pass();
 
     /**
-     * Get total response time.
+     * 获取响应时间总和。
      *
-     * @return total RT
+     * @return 总 RT
      */
     long rt();
 
     /**
-     * Get the minimal RT.
+     * 获取最小 RT。
      *
-     * @return minimal RT
+     * @return 最小 RT
      */
     long minRt();
 
     /**
-     * Get aggregated metric nodes of all resources.
+     * 获取全部资源的聚合指标节点。
      *
-     * @return metric node list of all resources
+     * @return 全部资源的指标节点列表
      */
     List<MetricNode> details();
 
     /**
-     * Generate aggregated metric items that satisfies the time predicate.
+     * 生成满足时间谓词的聚合指标项。
      *
-     * @param timePredicate time predicate
-     * @return aggregated metric items
+     * @param timePredicate 时间谓词
+     * @return 聚合指标项
      * @since 1.7.0
      */
     List<MetricNode> detailsOnCondition(Predicate<Long> timePredicate);
 
     /**
-     * Get the raw window array.
+     * 获取原始窗口数组。
      *
-     * @return window metric array
+     * @return 窗口指标数组
      */
     MetricBucket[] windows();
 
     /**
-     * Add current exception count.
+     * 累加当前异常计数。
      *
-     * @param n count to add
+     * @param n 要增加的数量
      */
     void addException(int n);
 
     /**
-     * Add current block count.
+     * 累加当前阻断计数。
      *
-     * @param n count to add
+     * @param n 要增加的数量
      */
     void addBlock(int n);
 
     /**
-     * Add current completed count.
+     * 累加当前完成计数。
      *
-     * @param n count to add
+     * @param n 要增加的数量
      */
     void addSuccess(int n);
 
     /**
-     * Add current pass count.
+     * 累加当前放行计数。
      *
-     * @param n count to add
+     * @param n 要增加的数量
      */
     void addPass(int n);
 
     /**
-     * Add given RT to current total RT.
+     * 将给定 RT 累加到当前总 RT。
      *
-     * @param rt RT
+     * @param rt 响应时间
      */
     void addRT(long rt);
 
     /**
-     * Get the sliding window length in seconds.
+     * 获取滑动窗口长度（秒）。
      *
-     * @return the sliding window length
+     * @return 滑动窗口长度
      */
     double getWindowIntervalInSec();
 
     /**
-     * Get sample count of the sliding window.
+     * 获取滑动窗口采样数。
      *
-     * @return sample count of the sliding window.
+     * @return 滑动窗口采样数
      */
     int getSampleCount();
 
     /**
-     * Note: this operation will not perform refreshing, so will not generate new buckets.
+     * 注意：此操作不会刷新窗口，因此不会生成新桶。
      *
-     * @param timeMillis valid time in ms
-     * @return pass count of the bucket exactly associated to provided timestamp, or 0 if the timestamp is invalid
+     * @param timeMillis 有效时间（毫秒）
+     * @return 与给定时间戳精确对应的桶的放行数；时间戳无效时返回 0
      * @since 1.5.0
      */
     long getWindowPass(long timeMillis);
 
-    // Occupy-based (@since 1.5.0)
+    // 预占相关（@since 1.5.0）
 
     /**
-     * Add occupied pass, which represents pass requests that borrow the latter windows' token.
+     * 累加预占放行数，表示借用后续窗口配额的放行请求。
      *
-     * @param acquireCount tokens count.
+     * @param acquireCount 令牌数量
      * @since 1.5.0
      */
     void addOccupiedPass(int acquireCount);
 
     /**
-     * Add request that occupied.
+     * 添加预占请求。
      *
-     * @param futureTime   future timestamp that the acquireCount should be added on.
-     * @param acquireCount tokens count.
+     * @param futureTime   应累加 acquireCount 的未来时间戳
+     * @param acquireCount 令牌数量
      * @since 1.5.0
      */
     void addWaiting(long futureTime, int acquireCount);
 
     /**
-     * Get waiting pass account
+     * 获取等待中的放行数。
      *
-     * @return waiting pass count
+     * @return 等待放行计数
      * @since 1.5.0
      */
     long waiting();
 
     /**
-     * Get occupied pass count.
+     * 获取预占放行计数。
      *
-     * @return occupied pass count
+     * @return 预占放行计数
      * @since 1.5.0
      */
     long occupiedPass();
 
-    // Tool methods.
+    // 工具方法。
 
     long previousWindowBlock();
 

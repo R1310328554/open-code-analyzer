@@ -16,24 +16,20 @@
 package com.alibaba.csp.sentinel.slots.statistic;
 
 /**
+ * 滑动窗口统计中的指标事件类型。
+ *
  * @author Eric Zhao
  */
 public enum MetricEvent {
 
-    /**
-     * Normal pass.
-     */
+    /** 正常放行。 */
     PASS,
-    /**
-     * Normal block.
-     */
+    /** 正常阻断。 */
     BLOCK,
     EXCEPTION,
     SUCCESS,
     RT,
 
-    /**
-     * Passed in future quota (pre-occupied, since 1.5.0).
-     */
+    /** 占用未来配额而放行（预占，自 1.5.0 起）。 */
     OCCUPIED_PASS
 }

@@ -28,7 +28,7 @@ import com.alibaba.csp.sentinel.slots.statistic.metric.occupy.OccupiableBucketLe
 import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
- * The basic metric class in Sentinel using a {@link BucketLeapArray} internal.
+ * Sentinel 基础指标类，内部使用 {@link BucketLeapArray}。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -49,9 +49,7 @@ public class ArrayMetric implements Metric {
         }
     }
 
-    /**
-     * For unit test.
-     */
+    /** 供单元测试使用。 */
     public ArrayMetric(LeapArray<MetricBucket> array) {
         this.data = array;
     }
@@ -285,10 +283,10 @@ public class ArrayMetric implements Metric {
     }
 
     /**
-     * Get total sum for provided event in {@code intervalInSec}.
+     * 获取指定事件在 {@code intervalInSec} 内的总和。
      *
-     * @param event event to calculate
-     * @return total sum for event
+     * @param event 待统计的事件
+     * @return 事件总和
      */
     public long getSum(MetricEvent event) {
         data.currentWindow();
@@ -302,10 +300,10 @@ public class ArrayMetric implements Metric {
     }
 
     /**
-     * Get average count for provided event per second.
+     * 获取指定事件的每秒平均计数。
      *
-     * @param event event to calculate
-     * @return average count per second for event
+     * @param event 待统计的事件
+     * @return 每秒平均计数
      */
     public double getAvg(MetricEvent event) {
         return getSum(event) / data.getIntervalInSecond();

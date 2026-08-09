@@ -19,16 +19,15 @@ import com.alibaba.csp.sentinel.slots.block.AbstractRule;
 
 /**
  * <p>
- * Sentinel System Rule makes the inbound traffic and capacity meet. It takes
- * average RT, QPS and thread count of requests into account. And it also
- * provides a measurement of system's load, but only available on Linux.
+ * Sentinel 系统规则使入站流量与系统容量相匹配，综合考虑平均 RT、QPS 与线程数。
+ * 还提供系统负载度量（仅 Linux 可用）。
  * </p>
  * <p>
- * We recommend to coordinate {@link #highestSystemLoad}, {@link #qps}, {@link #avgRt}
- * and {@link #maxThread} to make sure your system run in safety level.
+ * 建议协调 {@link #highestSystemLoad}、{@link #qps}、{@link #avgRt}
+ * 与 {@link #maxThread}，确保系统运行在安全水位。
  * </p>
  * <p>
- * To set the threshold appropriately, performance test may be needed.
+ * 合理设置阈值通常需要性能测试。
  * </p>
  *
  * @author jialiang.linjl
@@ -37,13 +36,9 @@ import com.alibaba.csp.sentinel.slots.block.AbstractRule;
  */
 public class SystemRule extends AbstractRule {
 
-    /**
-     * negative value means no threshold checking.
-     */
+    /** 负值表示不检查该阈值。 */
     private double highestSystemLoad = -1;
-    /**
-     * cpu usage, between [0, 1]
-     */
+    /** CPU 使用率，取值范围 [0, 1]。 */
     private double highestCpuUsage = -1;
     private double qps = -1;
     private long avgRt = -1;
@@ -54,12 +49,11 @@ public class SystemRule extends AbstractRule {
     }
 
     /**
-     * Set max total QPS. In a high concurrency condition, real passed QPS may be greater than max QPS set.
-     * The real passed QPS will nearly satisfy the following formula:<br/>
+     * 设置全局最大 QPS。高并发下实际放行 QPS 可能略高于设定值，近似满足：<br/>
      *
-     * <pre>real passed QPS = QPS set + concurrent thread number</pre>
+     * <pre>实际放行 QPS = 设定 QPS + 并发线程数</pre>
      *
-     * @param qps max total QOS, values <= 0 are special for clearing the threshold.
+     * @param qps 全局最大 QPS，≤ 0 表示清除该阈值
      */
     public void setQps(double qps) {
         this.qps = qps;
@@ -70,10 +64,10 @@ public class SystemRule extends AbstractRule {
     }
 
     /**
-     * Set max PARALLEL working thread. When concurrent thread number is greater than {@code maxThread} only
-     * maxThread will run in parallel.
+     * 设置最大并行工作线程数。并发线程数超过 {@code maxThread} 时，
+     * 仅允许 {@code maxThread} 个线程并行执行。
      *
-     * @param maxThread max parallel thread number, values <= 0 are special for clearing the threshold.
+     * @param maxThread 最大并行线程数，≤ 0 表示清除该阈值
      */
     public void setMaxThread(long maxThread) {
         this.maxThread = maxThread;
@@ -84,9 +78,9 @@ public class SystemRule extends AbstractRule {
     }
 
     /**
-     * Set max average RT(response time) of all passed requests.
+     * 设置全部已通过请求的最大平均 RT（响应时间）。
      *
-     * @param avgRt max average response time, values <= 0 are special for clearing the threshold.
+     * @param avgRt 最大平均响应时间，≤ 0 表示清除该阈值
      */
     public void setAvgRt(long avgRt) {
         this.avgRt = avgRt;
@@ -98,15 +92,15 @@ public class SystemRule extends AbstractRule {
 
     /**
      * <p>
-     * Set highest load. The load is not same as Linux system load, which is not sensitive enough.
-     * To calculate the load, both Linux system load, current global response time and global QPS will be considered,
-     * which means that we need to coordinate with {@link #setAvgRt(long)} and {@link #setQps(double)}
+     * 设置最高系统负载。该负载与 Linux load 不同，后者不够敏感。
+     * 计算时会综合考虑 Linux 系统负载、全局 RT 与全局 QPS，
+     * 因此需与 {@link #setAvgRt(long)}、{@link #setQps(double)} 协调配置。
      * </p>
      * <p>
-     * Note that this parameter is only available on Unix like system.
+     * 注意：该参数仅在类 Unix 系统上可用。
      * </p>
      *
-     * @param highestSystemLoad highest system load, values <= 0 are special for clearing the threshold.
+     * @param highestSystemLoad 最高系统负载，≤ 0 表示清除该阈值
      * @see SystemRuleManager
      */
     public void setHighestSystemLoad(double highestSystemLoad) {
@@ -114,18 +108,18 @@ public class SystemRule extends AbstractRule {
     }
 
     /**
-     * Get highest cpu usage. Cpu usage is between [0, 1]
+     * 获取最高 CPU 使用率，取值范围 [0, 1]。
      *
-     * @return highest cpu usage
+     * @return 最高 CPU 使用率
      */
     public double getHighestCpuUsage() {
         return highestCpuUsage;
     }
 
     /**
-     * set highest cpu usage. Cpu usage is between [0, 1]
+     * 设置最高 CPU 使用率，取值范围 [0, 1]。
      *
-     * @param highestCpuUsage the value to set.
+     * @param highestCpuUsage 待设置的值
      */
     public void setHighestCpuUsage(double highestCpuUsage) {
         this.highestCpuUsage = highestCpuUsage;

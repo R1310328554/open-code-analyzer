@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.slots.statistic.MetricEvent;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Represents metrics data in a period of time span.
+ * 表示一段时间跨度内的指标数据。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -54,9 +54,9 @@ public class MetricBucket {
     }
 
     /**
-     * Reset the adders.
+     * 重置全部计数器。
      *
-     * @return new metric bucket in initial state
+     * @return 处于初始状态的指标桶
      */
     public MetricBucket reset() {
         for (MetricEvent event : MetricEvent.values()) {
@@ -126,7 +126,7 @@ public class MetricBucket {
     public void addRT(long rt) {
         add(MetricEvent.RT, rt);
 
-        // Not thread-safe, but it's okay.
+        // 非线程安全，但在此场景可接受。
         if (rt < minRt) {
             minRt = rt;
         }

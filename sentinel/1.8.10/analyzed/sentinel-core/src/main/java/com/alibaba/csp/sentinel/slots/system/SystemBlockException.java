@@ -18,17 +18,21 @@ package com.alibaba.csp.sentinel.slots.system;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
+ * 系统保护规则触发的阻断异常。
+ *
  * @author jialiang.linjl
  */
 public class SystemBlockException extends BlockException {
 
     private final String resourceName;
 
+    /** 指定资源名、消息与原因构造异常。 */
     public SystemBlockException(String resourceName, String message, Throwable cause) {
         super(message, cause);
         this.resourceName = resourceName;
     }
 
+    /** 指定资源名与限流类型构造异常。 */
     public SystemBlockException(String resourceName, String limitType) {
         super(limitType);
         this.resourceName = resourceName;
@@ -38,15 +42,16 @@ public class SystemBlockException extends BlockException {
         return resourceName;
     }
 
+    /** 不填充堆栈，降低阻断异常开销。 */
     @Override
     public Throwable fillInStackTrace() {
         return this;
     }
 
     /**
-     * Return the limit type of system rule.
+     * 返回触发的系统规则限流类型。
      *
-     * @return the limit type
+     * @return 限流类型
      * @since 1.4.2
      */
     public String getLimitType() {
