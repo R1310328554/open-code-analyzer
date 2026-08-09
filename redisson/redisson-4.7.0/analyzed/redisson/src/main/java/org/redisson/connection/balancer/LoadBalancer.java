@@ -21,18 +21,21 @@ import org.redisson.connection.ClientConnectionsEntry;
 import java.util.List;
 
 /**
- * 
+ * 从节点负载均衡器接口。
+ * <p>
+ * 读操作根据 {@link ReadMode} 从从节点列表中选取 {@link ClientConnectionsEntry}；
+ * 推荐使用带 {@link RedisCommand} 参数的 {@link #getEntry(List, RedisCommand)}。
+ *
  * @author Nikita Koksharov
  *
  */
 public interface LoadBalancer {
 
-    /*
-     * Use getEntry(List, RedisCommand) method instead
-     */
+    /* 请改用 getEntry(List, RedisCommand) 方法 */
     @Deprecated
     ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy);
 
+    /** 默认忽略命令，委托无命令版本。 */
     default ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
         return getEntry(clientsCopy);
     }

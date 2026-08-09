@@ -84,14 +84,20 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
+ * Redisson 底层运行时服务管理器（final 类）。
+ * <p>
+ * 统一管理 Netty EventLoop、DNS 解析器、业务线程池、HashedWheelTimer、
+ * 空闲连接监视、脚本 SHA 缓存、连接事件、NAT 映射及各类 Redisson 内部服务。
  *
  * @author Nikita Koksharov
  *
  */
 public final class ServiceManager {
 
+    /** 日志记录器。 */
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    /** 关闭过程中的占位 Timeout，cancel 恒返回 true。 */
     public static final Timeout DUMMY_TIMEOUT = new Timeout() {
         @Override
         public Timer timer() {
@@ -119,36 +125,50 @@ public final class ServiceManager {
         }
     };
 
+    /** 连接事件分发中心。 */
     private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
 
+    /** 本 Redisson 实例唯一 ID。 */
     private final String id = UUID.randomUUID().toString();
 
+    /** Netty EventLoop 组（NIO/EPOLL/KQUEUE/IO_URING）。 */
     private final EventLoopGroup group;
 
+    /** Socket 通道实现类。 */
     private Class<? extends DuplexChannel> socketChannelClass;
 
+    /** DNS 地址解析器组。 */
     private final AddressResolverGroup<InetSocketAddress> resolverGroup;
 
+    /** 业务命令执行线程池。 */
     private final ExecutorService executor;
 
+    /** 全局 Redisson Config。 */
     private final Config cfg;
 
+    /** 主从服务器配置。 */
     private MasterSlaveServersConfig config;
 
+    /** 定时任务轮（重连、扫描、锁续期等）。 */
     private HashedWheelTimer timer;
 
+    /** 空闲连接回收监视器。 */
     private IdleConnectionWatcher connectionWatcher;
 
+    /** 关闭标志。 */
     private final AtomicBoolean shutdownLatch = new AtomicBoolean();
 
     private final ElementsSubscribeService elementsSubscribeService = new ElementsSubscribeService(this);
 
+    /** NAT 地址映射器。 */
     private NatMapper natMapper = NatMapper.direct();
 
     private volatile boolean hashImportDisabled;
 
+    /** 各节点已缓存的 Lua 脚本 SHA 集合。 */
     private static final Map<InetSocketAddress, Set<String>> SCRIPT_SHA_CACHE = new ConcurrentHashMap<>();
 
+    /** 脚本内容 → SHA1 的 LRU 缓存。 */
     private static final Map<String, String> SHA_CACHE = new LRUCacheMap<>(500, 0, 0);
 
     private final Map<String, ResponseEntry> responses = new ConcurrentHashMap<>();
@@ -157,6 +177,7 @@ public final class ServiceManager {
 
     private LockRenewalScheduler renewalScheduler;
 
+    /** 按 TransportMode 初始化 EventLoop、解析器、线程池与 Timer。 */
     public ServiceManager(MasterSlaveServersConfig config, Config cfg) {
         RedisURI u = null;
         if (config.getMasterAddress() != null) {
@@ -260,7 +281,7 @@ public final class ServiceManager {
         this.connectionEventsHub.addListener(new ConnectionListener() {
             @Override
             public void onConnect(InetSocketAddress addr) {
-                // empty
+                // 占位监听器：断开时清理 SCRIPT_SHA_CACHE
             }
 
             @Override
@@ -272,11 +293,12 @@ public final class ServiceManager {
         initTimer();
     }
 
-    // for Quarkus substitution
+    // 供 Quarkus 原生镜像替换 IO_URING EventLoop 工厂
     private static EventLoopGroup createIOUringGroup(Config cfg) {
         return new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"), IoUringIoHandler.newFactory());
     }
 
+    /** 初始化 HashedWheelTimer 与 IdleConnectionWatcher。 */
     private void initTimer() {
         Duration testdelay = config.getRetryDelay().calcDelay(0);
         int minTimeout = Math.min((int) testdelay.toMillis(), config.getTimeout());
@@ -296,6 +318,7 @@ public final class ServiceManager {
         connectionWatcher = new IdleConnectionWatcher(group, config);
     }
 
+    /** 调度定时任务；关闭中返回 DUMMY_TIMEOUT。 */
     public Timeout newTimeout(TimerTask task, long delay, TimeUnit unit) {
         try {
             return timer.newTimeout(task, delay, unit);
@@ -308,6 +331,7 @@ public final class ServiceManager {
         }
     }
 
+    /** 是否正在关闭。 */
     public boolean isShuttingDown() {
         return shutdownLatch.get();
     }
@@ -333,6 +357,7 @@ public final class ServiceManager {
         return group;
     }
 
+    /** 解析主机名为全部 IP 地址列表。 */
     public CompletableFuture<List<RedisURI>> resolveAll(RedisURI uri) {
         if (uri.isIP()) {
             RedisURI mappedUri = toURI(uri.getScheme(), uri.getHost(), "" + uri.getPort());
@@ -392,6 +417,7 @@ public final class ServiceManager {
 
     private final FastRemovalQueue<CompletableFuture<?>> lastFutures = new FastRemovalQueue<>();
 
+    /** 注册待关闭的 Future（shutdown 时等待完成）。 */
     public void addFuture(CompletableFuture<?> future) {
         lastFutures.add(future);
         future.whenComplete((r, e) -> {
@@ -403,6 +429,7 @@ public final class ServiceManager {
         }
     }
 
+    /** 同步等待所有注册 Future 完成或超时。 */
     public void shutdownFutures(long timeout, TimeUnit unit) {
         Stream<CompletableFuture<?>> stream = StreamSupport.stream(lastFutures.spliterator(), false);
         CompletableFuture<Void> future = CompletableFuture.allOf(stream.toArray(CompletableFuture[]::new));
@@ -429,6 +456,7 @@ public final class ServiceManager {
                 });
     }
 
+    /** 标记开始关闭。 */
     public void close() {
         shutdownLatch.set(true);
     }
@@ -491,6 +519,7 @@ public final class ServiceManager {
         return elementsSubscribeService;
     }
 
+    /** 解析主机名为单个 IP 的 RedisURI。 */
     public CompletableFuture<RedisURI> resolveIP(RedisURI address) {
         return resolveIP(address.getScheme(), address);
     }
@@ -519,6 +548,7 @@ public final class ServiceManager {
         return result;
     }
 
+    /** 解析为 InetSocketAddress。 */
     public CompletableFuture<InetSocketAddress> resolve(RedisURI address) {
         if (address.isIP()) {
             try {
@@ -575,6 +605,7 @@ public final class ServiceManager {
         }
     }
 
+    /** 设置 NAT 映射器。 */
     public void setNatMapper(NatMapper natMapper) {
         this.natMapper = natMapper;
     }
@@ -596,6 +627,7 @@ public final class ServiceManager {
         }
     }
 
+    /** 计算 Lua 脚本 SHA1（带 LRU 缓存）。 */
     public String calcSHA(String script) {
         return SHA_CACHE.computeIfAbsent(script, k -> {
             try {
@@ -608,6 +640,7 @@ public final class ServiceManager {
         });
     }
 
+    /** 带关闭检测与重试的命令执行包装。 */
     public <T> RFuture<T> execute(Supplier<CompletionStage<T>> supplier) {
         CompletableFuture<T> result = new CompletableFuture<>();
         AtomicInteger attempts = new AtomicInteger();
@@ -644,6 +677,7 @@ public final class ServiceManager {
         });
     }
 
+    /** 将 CompletionStage 结果转移到 CompletableFuture。 */
     public <V> void transfer(CompletionStage<V> source, CompletableFuture<V> dest) {
         source.whenComplete((res, e) -> {
             if (e != null) {
@@ -664,6 +698,7 @@ public final class ServiceManager {
 
     private final Random random = RandomXoshiro256PlusPlus.create();
 
+    /** 返回实例级随机数生成器。 */
     public Random getRandom() {
         return random;
     }
@@ -692,6 +727,7 @@ public final class ServiceManager {
         return liveObjectLatch;
     }
 
+    /** 是否使用 RESP3 协议。 */
     public boolean isResp3() {
         return cfg.getProtocol() == Protocol.RESP3;
     }
@@ -720,6 +756,7 @@ public final class ServiceManager {
         RESP3MAPPING.put(RedisCommands.ZDIFF_ENTRY, RedisCommands.ZDIFF_ENTRY_V2);
     }
 
+    /** 将 RESP2 命令映射为 RESP3 等价命令。 */
     public <R> RedisCommand<R> resp3(RedisCommand<R> command) {
         if (isResp3()) {
             return (RedisCommand<R>) RESP3MAPPING.getOrDefault(command, command);
@@ -803,10 +840,12 @@ public final class ServiceManager {
 
     private boolean clusterDetected;
 
+    /** 标记检测到集群模式（CROSSSLOT 探测）。 */
     public void setClusterDetected(boolean clusterDetected) {
         this.clusterDetected = clusterDetected;
     }
 
+    /** 是否为集群部署。 */
     public boolean isClusterSetup() {
         return cfg.isClusterConfig() || clusterDetected;
     }

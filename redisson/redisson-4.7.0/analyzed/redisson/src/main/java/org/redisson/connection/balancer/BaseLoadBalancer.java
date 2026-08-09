@@ -22,27 +22,31 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
+ * 负载均衡器基类，提供按主机名正则过滤从节点列表的能力。
  *
  * @author Nikita Koksharov
  *
  */
 public abstract class BaseLoadBalancer implements LoadBalancer {
 
+    /** 主机名:端口 过滤正则（可选）。 */
     private Pattern pattern;
 
     /**
-     * Defines a regular expression pattern to filter hostnames
+     * 设置主机名过滤正则，匹配 {@code host:port} 格式。
      *
-     * @param value regular expression
+     * @param value 正则表达式
      */
     public void setRegex(String value) {
         this.pattern = Pattern.compile(value);
     }
 
+    /** 使用实例级 pattern 过滤从节点列表。 */
     protected List<ClientConnectionsEntry> filter(List<ClientConnectionsEntry> entries) {
         return filter(entries, pattern);
     }
 
+    /** 按指定 pattern 过滤从节点，pattern 为 null 时原样返回。 */
     protected final List<ClientConnectionsEntry> filter(List<ClientConnectionsEntry> entries, Pattern pattern) {
         if (pattern == null) {
             return entries;

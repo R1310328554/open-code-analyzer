@@ -39,42 +39,62 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
+ * 主从/单节点 Redis 连接管理器基类，实现 {@link ConnectionManager}。
+ * <p>
+ * 职责包括：延迟连接（lazyConnect）、主从条目管理、RedisClient 创建、
+ * DNS 监控、集群模式探测及优雅关闭。子类包括 {@link ClusterConnectionManager}、
+ * {@link SentinelConnectionManager}、{@link ReplicatedConnectionManager} 等。
  *
  * @author Nikita Koksharov
  *
  */
 public class MasterSlaveConnectionManager implements ConnectionManager {
 
+    /** Redis 集群最大槽数。 */
     public static final int MAX_SLOT = 16384;
 
+    /** 默认失败节点检测器。 */
     private static final FailedNodeDetector DEFAULT_FAILED_NODE_DETECTOR = new FailedConnectionDetector();
 
+    /** 非集群模式下的全槽范围（0..16383）。 */
     protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT-1);
 
+    /** 日志记录器。 */
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    /** DNS 变更监视器（主机名解析 IP 变化时触发重连）。 */
     protected DNSMonitor dnsMonitor;
 
+    /** 主从服务器配置。 */
     protected MasterSlaveServersConfig config;
 
+    /** 当前主从条目（单条目模式）。 */
     private MasterSlaveEntry masterSlaveEntry;
 
+    /** Pub/Sub 订阅服务。 */
     protected final PublishSubscribeService subscribeService;
 
+    /** 底层 Netty/线程池/DNS 等服务管理器。 */
     protected final ServiceManager serviceManager;
 
+    /** 临时节点直连缓存（拓扑探测等场景）。 */
     private final Map<RedisURI, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
 
+    /** 延迟连接同步门闩，保证 connect 只执行一次。 */
     protected final AtomicReference<CompletableFuture<Void>> lazyConnectLatch = new AtomicReference<>();
 
-    // Owns lazyConnectLatch: a synchronous entry teardown during doConnect re-enters lazyConnect on
-    // this same thread, which must not join() the latch it holds.
+    // 持有 lazyConnectLatch 的线程：doConnect 中同步拆条目会重入 lazyConnect，
+    // 不可 join() 自己持有的门闩，否则会自死锁。
+    /** 当前持有 lazyConnectLatch 的连接线程。 */
     private volatile Thread connectingThread;
 
+    /** 是否为 connect 重试的最后一次尝试。 */
     private boolean lastAttempt;
 
+    /** 轮询计数器，用于 getNextEntry 均衡。 */
     protected final AtomicInteger rrCounter = new AtomicInteger(0);
 
+    /** 由主从配置构造，初始化 ServiceManager 与 Pub/Sub 服务。 */
     MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
         if (cfg instanceof MasterSlaveServersConfig) {
             this.config = (MasterSlaveServersConfig) cfg;
@@ -95,12 +115,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return serviceManager;
     }
 
+    /** 同步关闭所有临时节点连接。 */
     protected void closeNodeConnections() {
         nodeConnections.values().stream()
                 .map(c -> c.getRedisClient().shutdownAsync())
                 .forEach(f -> f.toCompletableFuture().join());
     }
 
+    /** 异步关闭所有临时节点连接。 */
     protected CompletableFuture<Void> closeNodeConnectionsAsync() {
         List<CompletableFuture<Void>> futures = nodeConnections.values().stream()
                 .map(c -> c.getRedisClient().shutdownAsync().toCompletableFuture())
@@ -108,12 +130,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
+    /** 关闭并移除指定临时节点连接。 */
     protected void closeNodeConnection(RedisConnection conn) {
         if (nodeConnections.values().removeAll(Arrays.asList(conn))) {
             conn.closeAsync();
         }
     }
 
+    /** 断开并移除指定 URI 的临时节点连接。 */
     protected final void disconnectNode(RedisURI addr) {
         RedisConnection conn = nodeConnections.remove(addr);
         if (conn != null) {
@@ -122,10 +146,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    /** 以 MASTER 类型连接指定节点（拓扑探测）。 */
     protected final CompletionStage<RedisConnection> connectToNode(BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
         return connectToNode(NodeType.MASTER, cfg, addr, sslHostname);
     }
 
+    /** 连接指定类型节点，结果缓存于 nodeConnections。 */
     protected final CompletionStage<RedisConnection> connectToNode(NodeType type, BaseConfig<?> cfg, RedisURI addr, String sslHostname) {
         RedisConnection conn = nodeConnections.get(addr);
         if (conn != null) {
@@ -158,6 +184,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
+    /** 返回主从条目集合（延迟连接后）。 */
     public Collection<MasterSlaveEntry> getEntrySet() {
         lazyConnect();
 
@@ -168,10 +195,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     /**
-     * Selects the next master entry using round-robin strategy.
-     * In single-server mode returns the single master; in cluster mode
-     * distributes across all cluster masters.
+     * 轮询选取下一个 master 条目。
+     * 单节点模式返回唯一主节点；集群模式在所有 master 间均衡分配。
      */
+    /** 轮询返回下一个主从条目。 */
     public MasterSlaveEntry getNextEntry() {
         lazyConnect();
 
@@ -189,13 +216,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return list.get(index);
     }
 
+    /** 延迟连接入口：首次调用触发 connect()，后续 join 等待完成。 */
     protected final void lazyConnect() {
         if (isInitialized()) {
             return;
         }
 
-        // Re-entry by the connecting thread itself: return rather than join() the latch it holds,
-        // which would self-deadlock.
+        // 连接线程重入：直接返回，避免 join 自己持有的门闩导致自死锁
         if (Thread.currentThread() == connectingThread) {
             return;
         }
@@ -214,8 +241,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        // This thread now owns the latch; mark it so a synchronous re-entry into lazyConnect
-        // returns instead of join()ing the latch only it can complete.
+        // 标记当前线程持有门闩，重入 lazyConnect 时不 join
         connectingThread = Thread.currentThread();
         try {
             connect();
@@ -229,6 +255,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
+    /** 建立连接，按 retryAttempts 重试。 */
     public final void connect() {
         int attempt = config.getRetryAttempts() + 1;
         for (int i = 0; i < attempt; i++) {
@@ -263,6 +290,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    /** 通过 CROSSSLOT 探测是否为集群模式。 */
     private void detectCluster() {
         if (masterSlaveEntry == null) {
             return;
@@ -285,6 +313,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    /** 核心连接逻辑：创建 MasterSlaveEntry/SingleEntry、建立主从连接池、启动 DNS 监控。 */
     protected void doConnect(Function<RedisURI, String> hostnameMapper) {
         try {
             if (config.isSlaveNotUsed()) {
@@ -297,7 +326,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             String hostname = hostnameMapper.apply(uri);
             CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(uri, hostname);
             try {
-                // bound the wait even when minimumIdleSize == 0; an unbounded join() never completes the lazyConnect latch if master entry setup stalls, parking all callers
+                // 即使 minimumIdleSize==0 也限制等待时间，避免主节点初始化卡住导致 lazyConnect 永不完成
                 masterFuture.get((long) config.getConnectTimeout() * Math.max(1, config.getMasterConnectionMinimumIdleSize()), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -309,7 +338,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             if (!config.isSlaveNotUsed()) {
                 CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(hostnameMapper);
                 try {
-                    // bound the wait even when minimumIdleSize == 0; an unbounded join() never completes the lazyConnect latch if the slave balancer stalls, parking all callers
+                    // 限制从节点均衡器等待时间，避免 lazyConnect 永久阻塞
                     fs.get((long) config.getConnectTimeout() * Math.max(1, config.getSlaveConnectionMinimumIdleSize()), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -332,6 +361,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    /** 非 IP 地址且启用 DNS 监控时启动 {@link DNSMonitor}。 */
     protected void startDNSMonitoring(RedisClient masterHost) {
         if (masterHost.getConfig().getAddress().isIP()) {
             return;
@@ -345,6 +375,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    /** 从基类配置复制字段到 MasterSlaveServersConfig。 */
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig c = new MasterSlaveServersConfig();
         
@@ -446,6 +477,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
+    /** 创建 RedisClient（URI 地址）。 */
     public RedisClient createClient(NodeType type, RedisURI address, String sslHostname) {
         RedisClient client = createClient(type, address, config.getConnectTimeout(), config.getTimeout(), sslHostname);
         return client;
@@ -468,6 +500,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return RedisClient.create(redisConfig);
     }
 
+    /** 组装 RedisClientConfig，合并全局 Config 与 MasterSlaveServersConfig。 */
     protected RedisClientConfig createRedisConfig(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
         Config serviceCfg = serviceManager.getCfg();
         RedisClientConfig redisConfig = new RedisClientConfig();
@@ -570,7 +603,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private NodeType getNodeType(NodeType type, InetSocketAddress address) {
         if (!isInitialized()) {
-            // pre-init getEntry() can trigger lazyConnect and park the caller on the latch held by the connecting thread.
+            // 初始化前 getEntry() 可能触发 lazyConnect 并在连接线程持有的门闩上阻塞
             return type;
         }
         if (getServiceManager().getCfg().isSingleConfig()) {
@@ -595,6 +628,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
+    /** 非集群模式固定返回全槽起始槽号。 */
     public int calcSlot(String key) {
         return singleSlotRange.getStartSlot();
     }
@@ -636,6 +670,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return getEntry(slot);
     }
 
+    /** 按槽号查找条目（非集群返回唯一条目）。 */
     public MasterSlaveEntry getEntry(int slot) {
         lazyConnect();
 
@@ -652,11 +687,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return getEntry(slot);
     }
 
+    /** 切换指定槽的主节点。 */
     protected CompletableFuture<RedisClient> changeMaster(int slot, RedisURI address) {
         MasterSlaveEntry entry = getEntry(slot);
         return entry.changeMaster(address);
     }
 
+    /** 连接失败时的内部清理。 */
     protected void internalShutdown() {
         if (lazyConnectLatch.get() == null && lastAttempt) {
             shutdown();
@@ -664,11 +701,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
+    /** 使用默认 Netty 参数关闭。 */
     public void shutdown() {
-        shutdown(0, 10, TimeUnit.SECONDS); //default netty value
+        shutdown(0, 10, TimeUnit.SECONDS); // Netty 默认优雅关闭参数
     }
 
     @Override
+    /** 异步优雅关闭：DNS 监控、连接池、线程池、EventLoop。 */
     public CompletionStage<Void> shutdownAsync(long quietPeriod, long timeout, TimeUnit unit) {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
@@ -731,6 +770,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
+    /** 同步优雅关闭。 */
     public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
@@ -757,7 +797,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 future.get(timeoutInNanos, TimeUnit.NANOSECONDS);
                 timeoutInNanos = Math.max(0, timeoutInNanos - (System.nanoTime() - startTime));
             } catch (Exception e) {
-                // skip
+                // 关闭超时忽略
             }
         }
 
@@ -784,6 +824,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    /** 是否已完成延迟连接（或非 lazy 模式）。 */
     private boolean isInitialized() {
         return !serviceManager.getCfg().isLazyInitialization()
                     || (lazyConnectLatch.get() != null
@@ -802,6 +843,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
+    /** 创建命令异步执行器。 */
     public CommandAsyncExecutor createCommandExecutor(RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
         return CommandAsyncExecutor.create(this, objectBuilder, referenceType);
     }

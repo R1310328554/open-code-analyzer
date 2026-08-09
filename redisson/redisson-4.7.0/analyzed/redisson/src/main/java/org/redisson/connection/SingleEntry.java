@@ -27,17 +27,22 @@ import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 
+ * 单节点模式下的 {@link MasterSlaveEntry} 实现。
+ * <p>
+ * 读写均路由到唯一主节点；{@link ReadMode} 在此模式下无效。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SingleEntry extends MasterSlaveEntry {
 
+    /** 构造单节点条目。 */
     public SingleEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         super(connectionManager, config);
     }
 
     @Override
+    /** 单节点读操作等同于写操作（始终走主节点）。 */
     public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
         return super.connectionWriteOp(command);
     }
@@ -56,6 +61,7 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
+    /** 读连接归还等同于写连接归还。 */
     public void releaseRead(RedisConnection connection) {
         super.releaseWrite(connection);
     }
@@ -66,6 +72,7 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
+    /** 单节点仅返回主节点条目。 */
     public Collection<ClientConnectionsEntry> getAllEntries() {
         return Collections.singletonList(masterEntry);
     }

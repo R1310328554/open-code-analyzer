@@ -26,7 +26,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Load Balancer redirects specified commands to the Redis node with specified address.
+ * 按命令名将特定 Redis 命令路由到指定节点。
+ * <p>
+ * 支持 {@code commandsMap}：主机名正则 → 命令名集合；
+ * 已弃用的 {@link #setAddress}/{@link #setCommands} 仍可用但建议迁移。
  *
  * @author Nikita Koksharov
  *
@@ -35,12 +38,16 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
 
     private static final Logger log = LoggerFactory.getLogger(CommandsLoadBalancer.class);
 
+    /** 主机名正则 → 应路由到匹配节点的命令名集合。 */
     private final Map<Pattern, Set<String>> commandsMap = new HashMap<>();
 
+    /** 已弃用：固定命令名集合。 */
     private Set<String> commands;
+    /** 已弃用：固定目标节点地址。 */
     private RedisURI address;
 
     @Override
+    /** 按命令名选择目标节点，未命中则回退轮询策略。 */
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
         String name = redisCommand.getName().toLowerCase(Locale.ENGLISH);
 
@@ -67,9 +74,9 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
     }
 
     /**
-     * Defines Redis node address where the commands are redirected to
+     * 已弃用：设置命令重定向目标节点地址。
      *
-     * @param address Redis node address
+     * @param address Redis 节点地址
      */
     @Deprecated
     public void setAddress(String address) {
@@ -78,10 +85,9 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
     }
 
     /**
-     * Defines command names which are redirected to the Redis node
-     * specified by {@link #setAddress(String)}
+     * 已弃用：设置需重定向的命令名列表。
      *
-     * @param commands commands list
+     * @param commands 命令名列表
      */
     @Deprecated
     public void setCommands(List<String> commands) {
@@ -92,9 +98,9 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
     }
 
     /**
-     * Defines command names mapped per host name regular expression.
+     * 设置命令名到主机名正则的映射表。
      * <p>
-     * YAML definition example:
+     * YAML 示例：
      * <pre>
      *      loadBalancer: !&lt;org.redisson.connection.balancer.CommandsLoadBalancer&gt;
      *       commandsMap:
@@ -102,9 +108,7 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
      *           "slavehost2.*" : ["mget", "publish"]
      * </pre>
      *
-     * @param value a map where the key is a host name regular expression,
-     *                 and the value is an array of command names
-     *                 that should be executed.
+     * @param value 键为主机名正则，值为应在此节点执行的命令名集合
      */
     public void setCommandsMap(Map<String, Set<String>> value) {
         for (Map.Entry<String, Set<String>> e : value.entrySet()) {

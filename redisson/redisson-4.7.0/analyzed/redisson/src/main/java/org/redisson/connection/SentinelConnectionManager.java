@@ -40,27 +40,39 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Redis Sentinel 高可用模式的连接管理器。
+ * <p>
+ * 连接 Sentinel 获取 master/slaves 地址，周期性 SENTINEL 命令检测拓扑变更，
+ * 支持 Sentinel 发现、NAT 映射及 master 故障转移。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
+    /** 日志记录器。 */
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    /** 需 DNS 监控的 Sentinel 主机名集合。 */
     private final Set<RedisURI> sentinelHosts = new HashSet<>();
+    /** 已连接的 Sentinel 客户端映射。 */
     private final ConcurrentMap<RedisURI, RedisClient> sentinels = new ConcurrentHashMap<>();
+    /** 当前 master URI。 */
     private final AtomicReference<RedisURI> currentMaster = new AtomicReference<>();
 
+    /** Sentinel 拓扑扫描定时任务。 */
     private volatile Timeout monitorFuture;
+    /** 已断开的 Sentinel 地址（重连后清除）。 */
     private final Set<RedisURI> disconnectedSentinels = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    /** SENTINEL GET-MASTER-ADDR-BY-NAME 命令。 */
     private RedisStrictCommand<RedisURI> masterHostCommand;
 
     private boolean usePassword = false;
     private String scheme;
     private SentinelServersConfig cfg;
 
+    /** 构造 Sentinel 连接管理器并初始化 masterHostCommand。 */
     SentinelConnectionManager(SentinelServersConfig cfg, Config configCopy) {
         super(cfg, configCopy);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
@@ -79,6 +91,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
+    /** 连接 Sentinel 获取 master/slaves 拓扑后委托父类 doConnect。 */
     public void doConnect(Function<RedisURI, String> hostnameMapper) {
         checkAuth(cfg);
 
@@ -211,6 +224,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         return NetUtil.createByteArrayFromIpAddressString(host) == null;
     }
 
+    /** 校验 Sentinel 与 Redis 密码配置一致性。 */
     private void checkAuth(SentinelServersConfig cfg) {
         if (serviceManager.getCfg().getPassword() == null && cfg.getPassword() == null) {
             return;
@@ -248,6 +262,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
     
     @Override
+    /** Sentinel 模式对 master 禁用 DNS 监控，改为 Sentinel DNS 检查。 */
     protected void startDNSMonitoring(RedisClient masterHost) {
         if (config.getDnsMonitoringInterval() == -1 || sentinelHosts.isEmpty()) {
             return;
@@ -272,6 +287,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
 
+    /** 定时检查 Sentinel 主机名 IP 变更。 */
     private void scheduleSentinelDNSCheck() {
         monitorFuture = serviceManager.newTimeout(t -> {
             CompletableFuture<Void> f = performSentinelDNSCheck();
@@ -308,6 +324,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
     
+    /** 轮询各 Sentinel 检查 master/slave/sentinel 拓扑变更。 */
     private void scheduleChangeCheck(SentinelServersConfig cfg, Iterator<RedisClient> iterator, AtomicReference<Throwable> lastException) {
         AtomicReference<Throwable> exceptionReference = Optional.ofNullable(lastException)
                                                                 .orElseGet(() -> new AtomicReference<>());
@@ -324,6 +341,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
+    /** 对单个 Sentinel 执行拓扑状态检查。 */
     private void checkState(SentinelServersConfig cfg, Iterator<RedisClient> iterator, AtomicReference<Throwable> lastException) {
         if (!iterator.hasNext()) {
             if (lastException.get() != null) {
@@ -386,6 +404,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
+    /** 检测 Sentinel 集合变更（sentinelsDiscovery）。 */
     private CompletionStage<Void> checkSentinelsChange(SentinelServersConfig cfg, RedisConnection connection) {
         if (!cfg.isSentinelsDiscovery()) {
             return CompletableFuture.completedFuture(null);
@@ -433,6 +452,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
+    /** 检测从节点增减并更新连接池。 */
     private CompletionStage<Void> checkSlavesChange(SentinelServersConfig cfg, RedisConnection connection) {
         RFuture<List<Map<String, String>>> slavesFuture = connection.async(1, cfg.getRetryDelay(), cfg.getTimeout(),
                                                                             StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
@@ -512,6 +532,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
+    /** 检测 master 地址变更并触发 changeMaster。 */
     private CompletionStage<RedisClient> checkMasterChange(SentinelServersConfig cfg, RedisConnection connection) {
         RFuture<RedisURI> masterFuture = connection.async(1, cfg.getRetryDelay(), cfg.getTimeout(),
                                                             StringCodec.INSTANCE, masterHostCommand, cfg.getMasterName());
@@ -571,6 +592,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 });
     }
 
+    /** 注册新发现的 Sentinel 客户端。 */
     private CompletionStage<Void> registerSentinel(InetSocketAddress addr) {
         RedisURI uri = toURI(addr);
         RedisClient sentinel = sentinels.get(uri);
@@ -662,6 +684,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 根据 SENTINEL SLAVES 返回的 flags 判断从节点是否下线。 */
     private boolean isDown(String flags, String masterLinkStatus) {
         boolean baseStatus = flags.contains("s_down") || flags.contains("disconnected");
         if (cfg.isCheckSlaveStatusWithSyncing() && !StringUtil.isNullOrEmpty(masterLinkStatus)) {
@@ -694,6 +717,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         return res;
     }
     
+    /** 返回所有 Sentinel RedisClient。 */
     public Collection<RedisClient> getSentinels() {
         return sentinels.values();
     }
@@ -721,6 +745,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 .thenCompose(v -> super.shutdownAsync(quietPeriod, timeout, unit));
     }
 
+    /** 对 Sentinel 地址应用 NAT 映射。 */
     private RedisURI applyNatMap(RedisURI address) {
         RedisURI result = cfg.getNatMapper().map(address);
         if (!result.equals(address)) {

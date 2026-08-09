@@ -35,7 +35,10 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
- * Address resolver which allows to control concurrency level of requests to DNS servers.
+ * 顺序/限并发 DNS 地址解析器工厂。
+ * <p>
+ * 通过 {@link AsyncSemaphore} 限制同时向 DNS 服务器发起的查询数，
+ * 避免高并发下 DNS 请求风暴。
  *
  * @author Nikita Koksharov
  *
@@ -44,8 +47,10 @@ public class SequentialDnsAddressResolverFactory implements AddressResolverGroup
 
     static final Logger log = LoggerFactory.getLogger(SequentialDnsAddressResolverFactory.class);
 
+    /** 经信号量限流的 InetSocketAddress 解析器。 */
     static class LimitedInetSocketAddressResolver extends InetSocketAddressResolver {
 
+        /** DNS 查询并发限制信号量。 */
         final AsyncSemaphore semaphore;
 
         LimitedInetSocketAddressResolver(AsyncSemaphore semaphore, EventExecutor executor, NameResolver<InetAddress> nameResolver) {
@@ -69,6 +74,7 @@ public class SequentialDnsAddressResolverFactory implements AddressResolverGroup
             }, promise);
         }
 
+        /** 获取信号量后执行解析，完成时释放。 */
         private void execute(Callable<?> callable, Promise<?> promise) {
             semaphore.acquire().thenAccept(s -> {
                 promise.addListener(r -> {
@@ -83,17 +89,18 @@ public class SequentialDnsAddressResolverFactory implements AddressResolverGroup
         }
     }
 
+    /** 全局 DNS 查询并发限制。 */
     private final AsyncSemaphore asyncSemaphore;
 
+    /** 默认并发度为 2。 */
     public SequentialDnsAddressResolverFactory() {
         this(2);
     }
 
     /**
-     * Creates DNS resolver factory with the specified number of requests
-     * to DNS servers which can be executed at the same moment.
+     * 指定 DNS 查询最大并发数。
      *
-     * @param concurrencyLevel number of requests can be executed at the same moment.
+     * @param concurrencyLevel 同一时刻可执行的 DNS 请求数
      */
     public SequentialDnsAddressResolverFactory(int concurrencyLevel) {
         asyncSemaphore = new AsyncSemaphore(concurrencyLevel);
@@ -108,6 +115,7 @@ public class SequentialDnsAddressResolverFactory implements AddressResolverGroup
             dnsResolverBuilder.getClass().getMethod("socketChannelType", Class.class, boolean.class);
             dnsResolverBuilder.socketChannelType(socketChannelType, true);
         } catch (NoSuchMethodException e) {
+            // Netty 版本过低，无法启用 DNS UDP 超时后的 TCP 回退
             log.warn("DNS TCP fallback on UDP query timeout disabled. Upgrade Netty to 4.1.105 or higher.");
             dnsResolverBuilder.socketChannelType(socketChannelType);
         }

@@ -21,20 +21,31 @@ import org.redisson.misc.RedisURI;
 import java.util.Objects;
 
 /**
- * 
+ * 命令路由节点来源描述，封装槽号、地址、客户端及集群重定向信息。
+ * <p>
+ * 集群模式下 {@link Redirect} 区分 MOVED/ASK/REDIRECT 重定向类型；
+ * 也可直接绑定 {@link MasterSlaveEntry} 或 {@link RedisClient}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class NodeSource {
 
+    /** 集群重定向类型。 */
     public enum Redirect {MOVED, ASK, REDIRECT}
 
+    /** 集群槽号（可为 null）。 */
     private Integer slot;
+    /** 目标节点 URI（重定向场景）。 */
     private RedisURI addr;
+    /** 目标 Redis 客户端实例。 */
     private RedisClient redisClient;
+    /** 重定向类型。 */
     private Redirect redirect;
+    /** 关联的主从条目。 */
     private MasterSlaveEntry entry;
 
+    /** 复制现有 NodeSource 并替换 redisClient。 */
     public NodeSource(NodeSource nodeSource, RedisClient redisClient) {
         this.slot = nodeSource.slot;
         this.addr = nodeSource.addr;
@@ -43,50 +54,61 @@ public class NodeSource {
         this.entry = nodeSource.getEntry();
     }
 
+    /** 仅绑定主从条目。 */
     public NodeSource(MasterSlaveEntry entry) {
         this.entry = entry;
     }
 
+    /** 仅指定槽号。 */
     public NodeSource(Integer slot) {
         this.slot = slot;
     }
 
+    /** 绑定主从条目与客户端。 */
     public NodeSource(MasterSlaveEntry entry, RedisClient redisClient) {
         this.entry = entry;
         this.redisClient = redisClient;
     }
     
+    /** 仅指定 Redis 客户端。 */
     public NodeSource(RedisClient redisClient) {
         this.redisClient = redisClient;
     }
     
+    /** 指定槽号与客户端。 */
     public NodeSource(Integer slot, RedisClient redisClient) {
         this.slot = slot;
         this.redisClient = redisClient;
     }
     
+    /** 集群重定向场景：槽号 + 地址 + 重定向类型。 */
     public NodeSource(Integer slot, RedisURI addr, Redirect redirect) {
         this.slot = slot;
         this.addr = addr;
         this.redirect = redirect;
     }
 
+    /** 返回关联的主从条目。 */
     public MasterSlaveEntry getEntry() {
         return entry;
     }
     
+    /** 返回重定向类型。 */
     public Redirect getRedirect() {
         return redirect;
     }
 
+    /** 返回集群槽号。 */
     public Integer getSlot() {
         return slot;
     }
 
+    /** 返回目标 Redis 客户端。 */
     public RedisClient getRedisClient() {
         return redisClient;
     }
 
+    /** 返回目标 URI。 */
     public RedisURI getAddr() {
         return addr;
     }

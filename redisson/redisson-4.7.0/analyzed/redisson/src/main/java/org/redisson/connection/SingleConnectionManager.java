@@ -20,16 +20,22 @@ import org.redisson.client.DefaultCredentialsResolver;
 import org.redisson.config.*;
 
 /**
- * 
+ * 单 Redis 服务器模式的连接管理器。
+ * <p>
+ * 将 {@link SingleServerConfig} 转换为 {@link MasterSlaveServersConfig} 并委托
+ * {@link MasterSlaveConnectionManager} 实现；读写模式固定为 MASTER。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
+    /** 由单服务器配置构造，内部转换为 MasterSlaveServersConfig。 */
     SingleConnectionManager(SingleServerConfig cfg, Config configCopy) {
         super(create(cfg), configCopy);
     }
 
+    /** 将 SingleServerConfig 字段映射到 MasterSlaveServersConfig。 */
     private static MasterSlaveServersConfig create(SingleServerConfig cfg) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         
@@ -119,7 +125,9 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setDnsMonitoringTimes(cfg.getDnsMonitoringTimes());
         newconfig.setMasterConnectionMinimumIdleSize(cfg.getConnectionMinimumIdleSize());
         newconfig.setSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
+        // 单节点模式读写均走主节点
         newconfig.setReadMode(ReadMode.MASTER);
+        // 订阅连接也绑定主节点
         newconfig.setSubscriptionMode(SubscriptionMode.MASTER);
         newconfig.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
         

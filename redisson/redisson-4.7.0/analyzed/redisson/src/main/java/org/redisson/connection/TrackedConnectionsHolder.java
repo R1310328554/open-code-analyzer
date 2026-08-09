@@ -27,20 +27,29 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * 客户端追踪（CLIENT TRACKING）专用连接持有者装饰器。
+ * <p>
+ * 复用底层 {@link ConnectionsHolder} 的连接池，但 acquire 时共享同一 Future；
+ * {@link #reset()} 关闭 CLIENT TRACKING 并归还连接。
  *
  * @author Nikita Koksharov
  *
  */
 public class TrackedConnectionsHolder extends ConnectionsHolder<RedisConnection> {
 
+    /** 被装饰的底层连接池。 */
     private final ConnectionsHolder<RedisConnection> holder;
 
+    /** 当前追踪连接的 acquire Future（全局共享）。 */
     private final AtomicReference<CompletableFuture<RedisConnection>> connectionFuture = new AtomicReference<>();
 
+    /** 追踪连接所属节点条目（release 时记录）。 */
     private volatile ClientConnectionsEntry entry;
 
+    /** 追踪连接引用计数。 */
     private final AtomicInteger usage = new AtomicInteger();
 
+    /** 包装现有连接池，不支持独立 initConnections。 */
     public TrackedConnectionsHolder(ConnectionsHolder<RedisConnection> holder) {
         super(null, 0, null, holder.getServiceManager(), false);
         this.holder = holder;
@@ -72,6 +81,7 @@ public class TrackedConnectionsHolder extends ConnectionsHolder<RedisConnection>
     }
 
     @Override
+    /** 获取追踪连接：首次 acquire 创建共享 Future，后续复用。 */
     public CompletableFuture<RedisConnection> acquireConnection(RedisCommand<?> command) {
         CompletableFuture<RedisConnection> newFuture = new CompletableFuture<>();
         if (!connectionFuture.compareAndSet(null, newFuture)) {
@@ -100,9 +110,11 @@ public class TrackedConnectionsHolder extends ConnectionsHolder<RedisConnection>
     @Override
     public void releaseConnection(ClientConnectionsEntry entry, RedisConnection connection) {
         this.entry = entry;
+        // 追踪模式下暂不立即归还，由 reset() 统一处理
         //holder.releaseConnection(entry, connection);
     }
 
+    /** 发送 CLIENT TRACKING OFF 并归还追踪连接到连接池。 */
     public void reset() {
         if (connectionFuture.get() != null
                 && connectionFuture.get().getNow(null) != null) {
@@ -114,10 +126,12 @@ public class TrackedConnectionsHolder extends ConnectionsHolder<RedisConnection>
         }
     }
 
+    /** 增加追踪连接引用计数。 */
     public void incUsage() {
         usage.incrementAndGet();
     }
 
+    /** 减少追踪连接引用计数。 */
     public int decUsage() {
         return usage.decrementAndGet();
     }

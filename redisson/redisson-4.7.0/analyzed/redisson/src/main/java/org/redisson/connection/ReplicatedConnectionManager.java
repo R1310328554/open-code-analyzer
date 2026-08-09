@@ -43,23 +43,29 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * {@link ConnectionManager} for AWS ElastiCache Replication Groups or Azure Redis Cache. By providing all nodes
- * of the replication group to this manager, the role of each node can be polled to determine
- * if a failover has occurred resulting in a new master.
+ * AWS ElastiCache 复制组 / Azure Redis Cache 等托管复制拓扑的连接管理器。
+ * <p>
+ * 配置所有复制组节点地址，周期性 INFO replication 轮询各节点 role，
+ * 检测主从切换并自动更新 master/slave 连接池。
  *
  * @author Nikita Koksharov
  * @author Steve Ungerer
  */
 public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
+    /** INFO replication 中角色字段键名。 */
     private static final String ROLE_KEY = "role";
 
+    /** 日志记录器。 */
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    /** 当前 master 节点地址。 */
     private final AtomicReference<InetSocketAddress> currentMaster = new AtomicReference<>();
 
+    /** 拓扑扫描定时任务。 */
     private volatile Timeout monitorFuture;
 
+    /** 复制节点角色。 */
     private enum Role {
         master,
         slave
@@ -67,12 +73,14 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private ReplicatedServersConfig cfg;
 
+    /** 构造复制组连接管理器。 */
     ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config configCopy) {
         super(cfg, configCopy);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
     }
 
     @Override
+    /** 探测各节点 role，确定 master/slave 后委托父类 doConnect。 */
     public void doConnect(Function<RedisURI, String> hostnameMapper) {
         if (cfg.getNodeAddresses().isEmpty()) {
             throw new IllegalArgumentException("At least one Redis node should be defined!");
@@ -84,7 +92,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
             RedisConnection connection = null;
             try {
-                // bound the wait; an unbounded join() on a half-open seed never completes the lazyConnect latch, parking all callers
+                // 限制种子连接等待，避免 lazyConnect 永久阻塞
                 connection = connectionFuture.toCompletableFuture().get(config.getConnectTimeout(), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -129,8 +137,9 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
+    /** 复制组模式禁用 DNS 监控。 */
     protected void startDNSMonitoring(RedisClient masterHost) {
-        // disabled
+        // 托管复制组由 scanInterval 轮询，不使用 DNS 监控
     }
 
     @Override
@@ -141,6 +150,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         return res;
     }
     
+    /** 按 scanInterval 周期性扫描所有节点 role 与 master 变更。 */
     private void scheduleMasterChangeCheck(ReplicatedServersConfig cfg) {
         if (serviceManager.isShuttingDown()) {
             return;
@@ -176,6 +186,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
+    /** 将未出现在扫描结果中的从节点标记下线。 */
     private void checkFailedSlaves(Set<InetSocketAddress> slaveIPs) {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
         Set<RedisClient> failedSlaves = entry.getAllEntries().stream()
@@ -194,6 +205,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 检查单节点 role，处理 master 切换与 slave 上线。 */
     CompletableFuture<Role> checkNode(RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
         CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
         return connectionFuture
@@ -255,6 +267,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 .toCompletableFuture();
     }
 
+    /** 节点检查失败处理：超时时断开临时连接。 */
     protected void handleNodeCheckError(RedisURI uri, CompletionStage<RedisConnection> connectionFuture, Throwable ex) {
         Throwable cause = ex;
         if (ex instanceof CompletionException) {
@@ -268,6 +281,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 从节点上线：addSlave 或 unfreeze。 */
     private CompletableFuture<Void> slaveUp(InetSocketAddress address, RedisURI uri) {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
         if (!entry.hasSlave(address)) {

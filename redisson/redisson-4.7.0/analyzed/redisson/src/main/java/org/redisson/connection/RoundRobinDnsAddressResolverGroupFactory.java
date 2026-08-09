@@ -22,15 +22,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 
+ * 轮询 DNS 地址解析器组工厂。
+ * <p>
+ * 对同一主机名解析出的多个 IP 按轮询方式分配，适用于多 A 记录负载均衡场景。
+ * 兼容 Netty 4.1.105+ 的 DNS TCP 回退特性。
+ *
  * @author Nikita Koksharov
  * @author hasaadon
  *
  */
 public class RoundRobinDnsAddressResolverGroupFactory implements AddressResolverGroupFactory {
 
+    /** 工厂日志记录器。 */
     static final Logger log = LoggerFactory.getLogger(RoundRobinDnsAddressResolverGroupFactory.class);
 
+    /** 构建带轮询策略的 {@link DnsAddressResolverGroup}。 */
     @Override
     public DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType,
                                           Class<? extends SocketChannel> socketChannelType,
@@ -40,6 +46,7 @@ public class RoundRobinDnsAddressResolverGroupFactory implements AddressResolver
             dnsResolverBuilder.getClass().getMethod("socketChannelType", Class.class, boolean.class);
             dnsResolverBuilder.socketChannelType(socketChannelType, true);
         } catch (NoSuchMethodException e) {
+            // Netty 版本过低，无法启用 DNS UDP 超时后的 TCP 回退
             log.warn("DNS TCP fallback on UDP query timeout disabled. Upgrade Netty to 4.1.105 or higher.");
             dnsResolverBuilder.socketChannelType(socketChannelType);
         }

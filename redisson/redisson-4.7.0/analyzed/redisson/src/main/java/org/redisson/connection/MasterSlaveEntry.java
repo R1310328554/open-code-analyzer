@@ -47,40 +47,60 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 /**
+ * 单个主从组（master + slaves）的连接与路由条目。
+ * <p>
+ * 管理主/从连接池、Pub/Sub 池、读写路由、从节点上下线、
+ * 主节点切换及连接池冻结/解冻逻辑。
  *
  * @author Nikita Koksharov
  *
  */
 public class MasterSlaveEntry {
 
+    /** 日志记录器。 */
     final Logger log = LoggerFactory.getLogger(getClass());
 
+    /** 主节点连接池条目。 */
     volatile ClientConnectionsEntry masterEntry;
 
+    /** 故障转移后被替换的新条目（旧条目引用计数归零前保留）。 */
     MasterSlaveEntry replacedBy;
 
+    /** 外部引用计数（集群槽迁移等场景）。 */
     int references;
     
+    /** 主从配置。 */
     final MasterSlaveServersConfig config;
+    /** 所属连接管理器。 */
     final ConnectionManager connectionManager;
 
+    /** 主节点写连接池。 */
     final MasterConnectionPool masterConnectionPool;
     
+    /** 主节点 Pub/Sub 连接池。 */
     final MasterPubSubConnectionPool masterPubSubConnectionPool;
 
+    /** 从节点 Pub/Sub 连接池。 */
     final PubSubConnectionPool slavePubSubConnectionPool;
 
+    /** 从节点读连接池（含负载均衡）。 */
     final SlaveConnectionPool slaveConnectionPool;
 
+    /** RedisClient → 连接池条目（含从节点及可选的主-as-slave）。 */
     final Map<RedisClient, ClientConnectionsEntry> client2Entry = new ConcurrentHashMap<>();
 
+    /** 条目是否活跃（shutdown 后置 false）。 */
     final AtomicBoolean active = new AtomicBoolean(true);
 
+    /** 无从节点可用 Pub/Sub 时回退到主节点。 */
     final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
 
+    /** 可用从节点数量（集群 INFO 同步）。 */
     volatile int availableSlaves = -1;
+    /** 主节点是否启用 AOF。 */
     volatile boolean aofEnabled;
 
+    /** 构造主从条目并初始化各连接池。 */
     public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
         this.config = config;
@@ -95,6 +115,7 @@ public class MasterSlaveEntry {
         return config;
     }
 
+    /** 按配置添加所有从节点并初始化负载均衡。 */
     public CompletableFuture<Void> initSlaveBalancer(Function<RedisURI, String> hostnameMapper) {
         List<CompletableFuture<Void>> result = new ArrayList<>(config.getSlaveAddresses().size());
         for (String address : config.getSlaveAddresses()) {
@@ -110,6 +131,7 @@ public class MasterSlaveEntry {
         });
     }
 
+    /** 无从节点或 MASTER_SLAVE 模式时将主节点加入读负载均衡。 */
     private void useMasterAsSlave() {
         if (hasNoSlaves()
                 || config.getReadMode() == ReadMode.MASTER_SLAVE) {
@@ -147,6 +169,7 @@ public class MasterSlaveEntry {
         return setupMasterEntry(address, null);
     }
 
+    /** 创建并初始化主节点连接池。 */
     public CompletableFuture<RedisClient> setupMasterEntry(RedisURI address, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.MASTER, address, sslHostname);
         return setupMasterEntry(client);
@@ -187,6 +210,7 @@ public class MasterSlaveEntry {
         });
     }
 
+    /** 标记从节点下线并冻结连接池。 */
     public boolean slaveDown(InetSocketAddress address) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
         if (connectionEntry != null && connectionEntry == masterEntry) {
@@ -216,7 +240,7 @@ public class MasterSlaveEntry {
     }
 
     private boolean slaveDown(ClientConnectionsEntry entry) {
-        // add master as slave if no more slaves available
+        // 无可用从节点时将主节点作为从节点参与读负载
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && hasNoSlaves()) {
@@ -228,6 +252,7 @@ public class MasterSlaveEntry {
         return true;
     }
 
+    /** 连接断开时冻结并调度重连检查。 */
     public void shutdownAndReconnectAsync(RedisClient client, Throwable cause) {
         ClientConnectionsEntry entry = getEntry(client);
         if (slaveDown(entry, FreezeReason.RECONNECT)) {
@@ -236,6 +261,7 @@ public class MasterSlaveEntry {
         }
     }
 
+    /** 定时 PING 检测并重连冻结的从节点。 */
     private void scheduleCheck(ClientConnectionsEntry entry) {
         connectionManager.getServiceManager().newTimeout(timeout -> {
             boolean res = entry.getLock().execute(() -> {
@@ -316,6 +342,7 @@ public class MasterSlaveEntry {
         return slaveDown(entry);
     }
 
+    /** 主节点下线处理。 */
     public void masterDown() {
         masterEntry.nodeDown();
     }
@@ -368,11 +395,13 @@ public class MasterSlaveEntry {
         return addSlave(client);
     }
     
+    /** 添加从节点并初始化连接池。 */
     public CompletableFuture<Void> addSlave(RedisURI address, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, sslHostname);
         return addSlave(client);
     }
 
+    /** 返回所有节点连接池条目（不可变视图）。 */
     public Collection<ClientConnectionsEntry> getAllEntries() {
         return Collections.unmodifiableCollection(client2Entry.values());
     }
@@ -398,6 +427,7 @@ public class MasterSlaveEntry {
         return client2Entry.get(redisClient);
     }
 
+    /** 按 URI 查找连接池条目。 */
     public ClientConnectionsEntry getEntry(RedisURI addr) {
         if (addr.equals(masterEntry.getClient().getAddr())) {
             return masterEntry;
@@ -497,6 +527,7 @@ public class MasterSlaveEntry {
      * @param address of Redis
      * @return client 
      */
+    /** 切换主节点：新建 master 连接池并迁移旧 master 为 slave。 */
     public CompletableFuture<RedisClient> changeMaster(RedisURI address) {
         ClientConnectionsEntry oldMaster = masterEntry;
         CompletableFuture<RedisClient> future = setupMasterEntry(address);
@@ -550,6 +581,7 @@ public class MasterSlaveEntry {
         masterEntry.shutdownAsync();
     }
 
+    /** 异步关闭所有节点连接池。 */
     public CompletableFuture<Void> shutdownAsync() {
         if (!active.compareAndSet(true, false)) {
             return CompletableFuture.completedFuture(null);
@@ -566,10 +598,12 @@ public class MasterSlaveEntry {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
+    /** 获取主节点写连接。 */
     public CompletableFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
         return masterConnectionPool.get(command, false);
     }
 
+    /** 获取主节点 CLIENT TRACKING 写连接。 */
     public CompletableFuture<RedisConnection> trackedConnectionWriteOp(RedisCommand<?> command) {
         return masterConnectionPool.get(command, true);
     }
@@ -582,6 +616,7 @@ public class MasterSlaveEntry {
         return connectionReadOp(command, trackChanges, null);
     }
 
+    /** 按 ReadMode 获取读连接（可覆盖模式）。 */
     public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, boolean trackChanges, ReadMode override) {
         ReadMode mode = override;
         if (override == null) {
@@ -633,6 +668,7 @@ public class MasterSlaveEntry {
         return f;
     }
 
+    /** 获取 Pub/Sub 连接，无从节点时回退主节点。 */
     public CompletableFuture<RedisPubSubConnection> nextPubSubConnection(ClientConnectionsEntry entry) {
         if (entry != null) {
             return slavePubSubConnectionPool.get(entry);
@@ -667,6 +703,7 @@ public class MasterSlaveEntry {
         entry.returnConnection(connection);
     }
 
+    /** 归还写连接到主节点池。 */
     public void releaseWrite(RedisConnection connection) {
         masterEntry.returnConnection(connection);
     }
@@ -675,6 +712,7 @@ public class MasterSlaveEntry {
         releaseRead(connection, null);
     }
 
+    /** 按 ReadMode 归还读连接。 */
     public void releaseRead(RedisConnection connection, ReadMode override) {
         ReadMode mode = override;
         if (override == null) {
@@ -693,10 +731,12 @@ public class MasterSlaveEntry {
         entry.returnConnection(connection);
     }
 
+    /** 增加引用计数。 */
     public void incReference() {
         references++;
     }
 
+    /** 减少引用计数。 */
     public int decReference() {
         return --references;
     }
@@ -723,7 +763,7 @@ public class MasterSlaveEntry {
                 return null;
             }
 
-            // only RECONNECT freeze reason could be replaced
+            // 仅 RECONNECT 冻结原因可被覆盖；MANAGER 可升级冻结从节点
             if (connectionEntry.getFreezeReason() == null
                     || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
                     || (freezeReason == FreezeReason.MANAGER
@@ -760,6 +800,7 @@ public class MasterSlaveEntry {
         return unfreezeAsync(entry, freezeReason, 0);
     }
 
+    /** 解冻连接池：重新 init 连接并按 retryAttempts 重试。 */
     private CompletableFuture<Boolean> unfreezeAsync(ClientConnectionsEntry entry, FreezeReason freezeReason, int retry) {
         return entry.getLock().execute(() -> {
             if (!entry.isFreezed()) {
