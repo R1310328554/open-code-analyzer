@@ -17,12 +17,16 @@ package com.alibaba.csp.sentinel.dashboard.domain.cluster;
 
 
 /**
+ * 连接描述视图，以 address 与 host 标识一条客户端连接。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ConnectionDescriptorVO {
 
+    /** 连接地址，通常为 {@code ip:port}。 */
     private String address;
+    /** 连接主机名或 IP。 */
     private String host;
 
     public String getAddress() {

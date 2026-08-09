@@ -16,15 +16,21 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster.config;
 
 /**
+ * 集群令牌客户端配置，定义所连服务端地址与请求/连接超时。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ClusterClientConfig {
 
+    /** 集群令牌服务端主机名或 IP。 */
     private String serverHost;
+    /** 集群令牌服务端端口。 */
     private Integer serverPort;
 
+    /** 令牌请求超时（毫秒）。 */
     private Integer requestTimeout;
+    /** 与服务端建立连接的超时（毫秒）。 */
     private Integer connectTimeout;
 
     public String getServerHost() {

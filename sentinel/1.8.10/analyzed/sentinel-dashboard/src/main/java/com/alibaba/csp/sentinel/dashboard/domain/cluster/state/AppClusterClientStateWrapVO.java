@@ -16,19 +16,22 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster.state;
 
 /**
+ * 应用维度集群客户端状态包装视图，聚合机器标识与 {@link ClusterClientStateVO} 详情。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public class AppClusterClientStateWrapVO {
 
-    /**
-     * {ip}@{transport_command_port}.
-     */
+    /** 机器唯一标识，格式为 {@code ip@transport_command_port}。 */
+
     private String id;
 
+    /** Sentinel 命令端口（transport command port）。 */
     private Integer commandPort;
     private String ip;
 
+    /** 集群客户端运行状态详情。 */
     private ClusterClientStateVO state;
 
     public String getId() {

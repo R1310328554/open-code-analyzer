@@ -21,12 +21,18 @@ import java.util.Set;
 import com.alibaba.csp.sentinel.dashboard.domain.cluster.request.ClusterAppAssignMap;
 
 /**
+ * 应用级集群令牌服务端全量分配请求体。
+ * <p>{@link #clusterMap} 为服务端机器与客户端/命名空间的映射列表；
+ * {@link #remainingList} 为本次未参与分配的机器 ID 集合。</p>
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public class ClusterAppFullAssignRequest {
 
+    /** 集群分配映射列表，每项对应一台令牌服务端机器。 */
     private List<ClusterAppAssignMap> clusterMap;
+    /** 未分配机器 ID 集合。 */
     private Set<String> remainingList;
 
     public List<ClusterAppAssignMap> getClusterMap() {

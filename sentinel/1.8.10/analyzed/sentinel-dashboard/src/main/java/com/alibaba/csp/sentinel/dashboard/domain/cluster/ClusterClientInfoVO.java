@@ -16,16 +16,22 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster;
 
 /**
+ * 集群令牌客户端信息视图，展示所连服务端地址、客户端运行状态与超时配置。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public class ClusterClientInfoVO {
 
+    /** 所连集群令牌服务端主机名或 IP。 */
     private String serverHost;
+    /** 所连集群令牌服务端端口。 */
     private Integer serverPort;
 
+    /** 客户端运行状态码。 */
     private Integer clientState;
 
+    /** 令牌请求超时（毫秒）。 */
     private Integer requestTimeout;
 
     public String getServerHost() {

@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.dashboard.domain.cluster.config.ServerFlowConfig
 import com.alibaba.csp.sentinel.dashboard.domain.cluster.config.ServerTransportConfig;
 
 /**
+ * 集群令牌服务端配置修改请求，含流控、传输与命名空间配置。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -31,8 +33,11 @@ public class ClusterServerModifyRequest implements ClusterModifyRequest {
     private Integer port;
 
     private Integer mode;
+    /** 服务端流控配置。 */
     private ServerFlowConfig flowConfig;
+    /** 服务端传输配置（端口与空闲超时）。 */
     private ServerTransportConfig transportConfig;
+    /** 该服务端负责的命名空间集合。 */
     private Set<String> namespaceSet;
 
     @Override

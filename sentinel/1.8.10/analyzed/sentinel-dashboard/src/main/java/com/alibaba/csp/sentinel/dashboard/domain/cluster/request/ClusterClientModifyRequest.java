@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.dashboard.domain.cluster.request;
 import com.alibaba.csp.sentinel.dashboard.domain.cluster.config.ClusterClientConfig;
 
 /**
+ * 集群客户端配置修改请求，实现 {@link ClusterModifyRequest} 并携带 {@link ClusterClientConfig}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -27,7 +29,9 @@ public class ClusterClientModifyRequest implements ClusterModifyRequest {
     private String ip;
     private Integer port;
 
+    /** 集群运行模式。 */
     private Integer mode;
+    /** 待下发的客户端配置。 */
     private ClusterClientConfig clientConfig;
 
     @Override

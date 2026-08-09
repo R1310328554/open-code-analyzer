@@ -18,13 +18,18 @@ package com.alibaba.csp.sentinel.dashboard.domain.cluster;
 import java.util.List;
 
 /**
+ * 命名空间维度的连接分组视图，汇总该命名空间下的连接列表与已连接数量。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ConnectionGroupVO {
 
+    /** 命名空间名称。 */
     private String namespace;
+    /** 该命名空间下的连接描述列表。 */
     private List<ConnectionDescriptorVO> connectionSet;
+    /** 当前已建立的连接数量。 */
     private Integer connectedCount;
 
     public String getNamespace() {

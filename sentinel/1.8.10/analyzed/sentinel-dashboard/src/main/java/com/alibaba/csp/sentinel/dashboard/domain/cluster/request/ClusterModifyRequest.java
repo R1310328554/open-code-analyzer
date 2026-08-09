@@ -16,16 +16,22 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster.request;
 
 /**
+ * 集群配置修改请求通用接口，提供目标机器标识与运行模式访问器。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface ClusterModifyRequest {
 
+    /** @return 目标应用名 */
     String getApp();
 
+    /** @return 目标机器 IP */
     String getIp();
 
+    /** @return 目标机器端口 */
     Integer getPort();
 
+    /** @return 集群运行模式 */
     Integer getMode();
 }

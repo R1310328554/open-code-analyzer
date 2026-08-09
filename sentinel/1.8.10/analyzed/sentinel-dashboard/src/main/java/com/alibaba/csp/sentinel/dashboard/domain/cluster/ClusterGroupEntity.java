@@ -19,18 +19,23 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 集群分组实体，描述一台令牌服务端机器及其关联的客户端集合。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public class ClusterGroupEntity {
 
+    /** 机器唯一标识。 */
     private String machineId;
 
     private String ip;
     private Integer port;
 
+    /** 绑定到该服务端的客户端机器 ID 集合。 */
     private Set<String> clientSet = new HashSet<>();
 
+    /** 该服务端机器是否归属当前应用。 */
     private Boolean belongToApp;
 
     public String getMachineId() {

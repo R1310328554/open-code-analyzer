@@ -16,15 +16,21 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster.config;
 
 /**
+ * 集群令牌服务端传输配置，定义 Netty 监听端口与连接空闲超时。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ServerTransportConfig {
 
+    /** 默认监听端口。 */
     public static final int DEFAULT_PORT = 18730;
+    /** 默认连接空闲超时（秒）。 */
     public static final int DEFAULT_IDLE_SECONDS = 600;
 
+    /** 服务端监听端口。 */
     private Integer port;
+    /** 连接空闲超过该秒数将被关闭。 */
     private Integer idleSeconds;
 
     public ServerTransportConfig() {

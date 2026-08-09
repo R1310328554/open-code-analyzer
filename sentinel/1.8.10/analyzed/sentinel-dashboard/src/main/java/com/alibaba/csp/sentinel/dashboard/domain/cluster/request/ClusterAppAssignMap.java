@@ -18,20 +18,27 @@ package com.alibaba.csp.sentinel.dashboard.domain.cluster.request;
 import java.util.Set;
 
 /**
+ * 集群分配映射条目，描述一台令牌服务端机器及其客户端与命名空间绑定。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public class ClusterAppAssignMap {
 
+    /** 令牌服务端机器 ID。 */
     private String machineId;
     private String ip;
     private Integer port;
 
+    /** 该机器是否归属当前应用。 */
     private Boolean belongToApp;
 
+    /** 绑定到该服务端的客户端机器 ID 集合。 */
     private Set<String> clientSet;
 
+    /** 该服务端负责的命名空间集合。 */
     private Set<String> namespaceSet;
+    /** 该服务端机器允许的最大 QPS。 */
     private Double maxAllowedQps;
 
     public String getMachineId() {
