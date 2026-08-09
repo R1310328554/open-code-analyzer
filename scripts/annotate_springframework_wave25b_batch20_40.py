@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Chinese-annotate Spring Framework 7.0.8 wave-24b batch [20:40]."""
+"""Chinese-annotate Spring Framework 7.0.8 wave-25b batch [20:40]."""
 from __future__ import annotations
 
 import importlib.util
@@ -30,7 +30,7 @@ GUARD_FILES = [
     VER
     / "analyzed/spring-tx/src/main/java/org/springframework/transaction/TransactionDefinition.java",
     VER
-    / "analyzed/spring-aop/src/main/java/org/springframework/aop/framework/Advised.java",
+    / "analyzed/spring-tx/src/main/java/org/springframework/transaction/interceptor/RollbackRuleAttribute.java",
     ROOT
     / "rxjava/4.0.0-alpha-21/analyzed/src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSamplePublisher.java",
 ]
