@@ -15,23 +15,8 @@
     "codec-compression/src/main/java/io/netty/handler/codec/compression/LzfDecompressor.java",
     "codec-compression/src/main/java/io/netty/handler/codec/compression/LzfEncoder.java",
     "codec-compression/src/main/java/io/netty/handler/codec/compression/LzmaFrameEncoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/Snappy.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/SnappyFrameDecoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/SnappyFrameDecompressor.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/SnappyFrameEncoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/SnappyFramedDecoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/SnappyFramedEncoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/SnappyOptions.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/StandardCompressionOptions.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZlibCodecFactory.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZlibDecoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZlibEncoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZlibUtil.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZlibWrapper.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/Zstd.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZstdConstants.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZstdDecoder.java"
+    "codec-compression/src/main/java/io/netty/handler/codec/compression/Snappy.java"
   ],
   "remaining_pending": 1598,
-  "done": 300
+  "done": 315
 }
