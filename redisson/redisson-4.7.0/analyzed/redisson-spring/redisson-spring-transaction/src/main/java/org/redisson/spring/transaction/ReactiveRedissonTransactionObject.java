@@ -18,20 +18,28 @@ package org.redisson.spring.transaction;
 import org.springframework.transaction.support.SmartTransactionObject;
 
 /**
+ * 响应式 Redisson 事务对象：实现 {@link org.springframework.transaction.support.SmartTransactionObject}，
+ * 供 {@link ReactiveRedissonTransactionManager} 在事务生命周期中持有
+ * {@link ReactiveRedissonResourceHolder}。
+ *
  * @author Nikita Koksharov
  */
 public class ReactiveRedissonTransactionObject implements SmartTransactionObject {
 
+    /** 绑定的 Redisson 响应式资源持有者。 */
     private ReactiveRedissonResourceHolder resourceHolder;
 
+    /** 返回当前资源持有者。 */
     public ReactiveRedissonResourceHolder getResourceHolder() {
         return resourceHolder;
     }
 
+    /** 设置或清空资源持有者（挂起/恢复时使用）。 */
     public void setResourceHolder(ReactiveRedissonResourceHolder resourceHolder) {
         this.resourceHolder = resourceHolder;
     }
 
+    /** 若资源持有者存在则读取其 rollback-only 状态。 */
     @Override
     public boolean isRollbackOnly() {
         if (resourceHolder != null) {
@@ -40,8 +48,9 @@ public class ReactiveRedissonTransactionObject implements SmartTransactionObject
         return false;
     }
 
+    /** Redisson 响应式事务无需 flush，空实现。 */
     @Override
     public void flush() {
-        // skip
+        // Redisson 响应式事务不支持 flush，跳过。
     }
 }

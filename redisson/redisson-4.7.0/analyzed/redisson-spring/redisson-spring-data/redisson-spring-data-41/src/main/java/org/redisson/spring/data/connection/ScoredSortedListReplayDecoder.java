@@ -27,7 +27,9 @@ import org.springframework.data.redis.connection.zset.DefaultTuple;
 import org.springframework.data.redis.connection.zset.Tuple;
 
 /**
- * 
+ * 有序集合批量响应解码器：member/score 交替排列，产出 {@link List}{@code <}{@link Tuple}{@code >}。
+ * <p>奇数下标参数经 {@link DoubleCodec} 解析为 score。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -35,12 +37,14 @@ public class ScoredSortedListReplayDecoder implements MultiDecoder<List<Tuple>> 
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
+        // 奇数下标为 score，使用 DoubleCodec。
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 每两个元素组装为一个 {@link DefaultTuple}（member 字节数组 + score）。 */
     @Override
     public List<Tuple> decode(List<Object> parts, State state) {
         List<Tuple> result = new ArrayList<Tuple>();

@@ -19,18 +19,24 @@ import org.redisson.api.RTransactionReactive;
 import org.springframework.transaction.support.ResourceHolderSupport;
 
 /**
+ * 响应式 Redisson 事务资源持有者：在 {@link org.springframework.transaction.reactive.TransactionSynchronizationManager}
+ * 中以 {@link org.redisson.api.RedissonReactiveClient} 为键绑定 {@link org.redisson.api.RTransactionReactive}。
+ * <p>继承 {@link org.springframework.transaction.support.ResourceHolderSupport} 以支持 rollback-only 标记。
  *
  * @author Nikita Koksharov
  *
  */
 public class ReactiveRedissonResourceHolder extends ResourceHolderSupport {
 
+    /** 当前 Reactor 上下文绑定的 Redisson 响应式事务。 */
     private RTransactionReactive transaction;
 
+    /** 返回绑定的 {@link RTransactionReactive}。 */
     public RTransactionReactive getTransaction() {
         return transaction;
     }
 
+    /** 设置或清空绑定的 {@link RTransactionReactive}（完成清理时使用）。 */
     public void setTransaction(RTransactionReactive transaction) {
         this.transaction = transaction;
     }

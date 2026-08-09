@@ -30,18 +30,26 @@ import reactor.core.publisher.Mono;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 基于 {@link org.redisson.api.RedissonReactiveClient} 的 Spring 响应式事务管理器。
+ * <p>继承 {@link org.springframework.transaction.reactive.AbstractReactiveTransactionManager}，
+ * 将 {@link TransactionDefinition} 映射为 {@link TransactionOptions} 并绑定
+ * {@link RTransactionReactive} 到 {@link TransactionSynchronizationManager}。
+ * <p>提交/回滚以 Reactor {@link Mono} 返回，错误包装为 {@link TransactionSystemException}。
  *
  * @author Nikita Koksharov
  *
  */
 public class ReactiveRedissonTransactionManager extends AbstractReactiveTransactionManager {
 
+    /** Redisson 响应式客户端，兼作事务资源键。 */
     private final RedissonReactiveClient redissonClient;
 
+    /** 指定提供 {@link RTransactionReactive} 的 Redisson 响应式客户端。 */
     public ReactiveRedissonTransactionManager(RedissonReactiveClient redissonClient) {
         this.redissonClient = redissonClient;
     }
 
+    /** 从当前 Reactor 事务上下文获取绑定的 {@link RTransactionReactive}。 */
     public Mono<RTransactionReactive> getCurrentTransaction() {
         return TransactionSynchronizationManager.forCurrentTransaction().map(manager -> {
             ReactiveRedissonResourceHolder holder = (ReactiveRedissonResourceHolder) manager.getResource(redissonClient);
@@ -54,6 +62,7 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
     }
 
 
+    /** 创建事务对象并读取已绑定的 {@link ReactiveRedissonResourceHolder}（若有）。 */
     @Override
     protected Object doGetTransaction(TransactionSynchronizationManager synchronizationManager) throws TransactionException {
         ReactiveRedissonTransactionObject transactionObject = new ReactiveRedissonTransactionObject();
@@ -63,11 +72,13 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
         return transactionObject;
     }
 
+    /** 按 {@link TransactionDefinition} 超时创建 {@link RTransactionReactive} 并绑定资源。 */
     @Override
     protected Mono<Void> doBegin(TransactionSynchronizationManager synchronizationManager, Object transaction, TransactionDefinition definition) throws TransactionException {
         ReactiveRedissonTransactionObject tObject = (ReactiveRedissonTransactionObject) transaction;
 
         TransactionOptions options = TransactionOptions.defaults();
+        // 将 Spring 事务超时（秒）写入 Redisson TransactionOptions。
         if (definition.getTimeout() != TransactionDefinition.TIMEOUT_DEFAULT) {
             options.timeout(definition.getTimeout(), TimeUnit.SECONDS);
         }
@@ -81,6 +92,7 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
         return Mono.empty();
     }
 
+    /** 提交绑定的 {@link RTransactionReactive}；失败映射为 {@link TransactionSystemException}。 */
     @Override
     protected Mono<Void> doCommit(TransactionSynchronizationManager synchronizationManager, GenericReactiveTransaction status) throws TransactionException {
         ReactiveRedissonTransactionObject to = (ReactiveRedissonTransactionObject) status.getTransaction();
@@ -89,6 +101,7 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
         });
     }
 
+    /** 回滚绑定的 {@link RTransactionReactive}；失败映射为 {@link TransactionSystemException}。 */
     @Override
     protected Mono<Void> doRollback(TransactionSynchronizationManager synchronizationManager, GenericReactiveTransaction status) throws TransactionException {
         ReactiveRedissonTransactionObject to = (ReactiveRedissonTransactionObject) status.getTransaction();
@@ -97,6 +110,7 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
         });
     }
 
+    /** 挂起当前事务：解绑资源并返回供后续 resume 的 suspendedResources。 */
     @Override
     protected Mono<Object> doSuspend(TransactionSynchronizationManager synchronizationManager, Object transaction) throws TransactionException {
         return Mono.fromSupplier(() -> {
@@ -106,6 +120,7 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
         });
     }
 
+    /** 恢复挂起的事务资源到 {@link TransactionSynchronizationManager}。 */
     @Override
     protected Mono<Void> doResume(TransactionSynchronizationManager synchronizationManager, Object transaction, Object suspendedResources) throws TransactionException {
         return Mono.fromRunnable(() -> {
@@ -113,6 +128,7 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
         });
     }
 
+    /** 将资源持有者标记为 rollback-only。 */
     @Override
     protected Mono<Void> doSetRollbackOnly(TransactionSynchronizationManager synchronizationManager, GenericReactiveTransaction status) throws TransactionException {
         return Mono.fromRunnable(() -> {
@@ -121,6 +137,7 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
         });
     }
 
+    /** 事务完成后解绑资源并清空 {@link RTransactionReactive} 引用。 */
     @Override
     protected Mono<Void> doCleanupAfterCompletion(TransactionSynchronizationManager synchronizationManager, Object transaction) {
         return Mono.fromRunnable(() -> {
@@ -130,6 +147,7 @@ public class ReactiveRedissonTransactionManager extends AbstractReactiveTransact
         });
     }
 
+    /** 若事务对象已持有资源则视为存在活动事务。 */
     @Override
     protected boolean isExistingTransaction(Object transaction) throws TransactionException {
         ReactiveRedissonTransactionObject transactionObject = (ReactiveRedissonTransactionObject) transaction;
