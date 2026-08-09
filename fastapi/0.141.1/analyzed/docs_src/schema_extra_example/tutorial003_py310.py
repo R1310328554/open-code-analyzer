@@ -1,10 +1,14 @@
+"""教程 003：Body(examples=[...])——在请求体参数上声明单个 OpenAPI 示例。"""
+
 from fastapi import Body, FastAPI
 from pydantic import BaseModel
 
-app = FastAPI()
+app = FastAPI()  # 创建 FastAPI 应用实例
 
 
 class Item(BaseModel):
+    """商品模型：name/price 必填；description 与 tax 可选。"""
+
     name: str
     description: str | None = None
     price: float
@@ -25,5 +29,6 @@ async def update_item(
         ],
     ),
 ):
+    """Body(examples=...) 将示例写入 OpenAPI；Swagger UI 可一键填充请求体。"""
     results = {"item_id": item_id, "item": item}
     return results
