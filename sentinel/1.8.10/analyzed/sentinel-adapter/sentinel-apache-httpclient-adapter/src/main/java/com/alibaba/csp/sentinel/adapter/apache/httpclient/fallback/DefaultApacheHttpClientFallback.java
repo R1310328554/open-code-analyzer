@@ -26,13 +26,15 @@ import org.apache.http.protocol.HttpContext;
 import java.io.IOException;
 
 /**
+ * Apache HttpClient 默认降级实现，将 {@link BlockException} 包装为 {@link SentinelRpcException}。
+ *
  * @author zhaoyuguang
  */
 public class DefaultApacheHttpClientFallback implements ApacheHttpClientFallback {
 
     @Override
     public CloseableHttpResponse handle(HttpRequestWrapper request, BlockException e) {
-        // Just wrap and throw the exception.
+        // 包装并抛出阻断异常。
         throw new SentinelRpcException(e);
     }
 }

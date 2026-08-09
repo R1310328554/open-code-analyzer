@@ -22,36 +22,47 @@ import com.alibaba.csp.sentinel.adapter.apache.httpclient5.fallback.DefaultApach
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * Apache HttpClient 5.x Sentinel 适配器配置，包含资源名前缀、提取器与降级处理器。
+ *
  * @author uuuyuqi
  */
 public class SentinelApacheHttpClientConfig {
 
+    /** Sentinel 资源名前缀，默认为 {@code httpclient:}。 */
     private String prefix = "httpclient:";
+    /** 资源名提取器。 */
     private ApacheHttpClientResourceExtractor extractor = new DefaultApacheHttpClientResourceExtractor();
+    /** 阻断降级处理器。 */
     private ApacheHttpClientFallback fallback = new DefaultApacheHttpClientFallback();
 
+    /** 获取资源名前缀。 */
     public String getPrefix() {
         return prefix;
     }
 
+    /** 设置资源名前缀。 */
     public void setPrefix(String prefix) {
         AssertUtil.notNull(prefix, "prefix cannot be null");
         this.prefix = prefix;
     }
 
+    /** 获取资源名提取器。 */
     public ApacheHttpClientResourceExtractor getExtractor() {
         return extractor;
     }
 
+    /** 设置资源名提取器。 */
     public void setExtractor(ApacheHttpClientResourceExtractor extractor) {
         AssertUtil.notNull(extractor, "extractor cannot be null");
         this.extractor = extractor;
     }
 
+    /** 获取降级处理器。 */
     public ApacheHttpClientFallback getFallback() {
         return fallback;
     }
 
+    /** 设置降级处理器。 */
     public void setFallback(ApacheHttpClientFallback fallback) {
         AssertUtil.notNull(fallback, "fallback cannot be null");
         this.fallback = fallback;

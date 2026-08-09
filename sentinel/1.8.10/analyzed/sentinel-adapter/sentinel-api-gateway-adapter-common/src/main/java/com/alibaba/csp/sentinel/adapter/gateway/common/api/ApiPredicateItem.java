@@ -18,13 +18,15 @@ package com.alibaba.csp.sentinel.adapter.gateway.common.api;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 网关 API 匹配谓词项标记接口。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public interface ApiPredicateItem {
 
     /**
-     * Combine two {@link ApiPredicateItem}.
+     * 将两个 {@link ApiPredicateItem} 组合为谓词组。
      *
      * @param item another predicate item
      * @return combined predicate group item
