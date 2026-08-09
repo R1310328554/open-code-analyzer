@@ -19,16 +19,21 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
 /**
- * 
+ * Redis 发布/订阅消息监听器，扩展 {@link MessageListener}。
+ * <p>
+ * 提供订阅状态变更与模式消息的默认空实现回调。
+ *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 消息值类型
  */
 public interface RedisPubSubListener<V> extends MessageListener<V> {
 
+    /** 订阅/取消订阅状态变更回调，默认空实现。 */
     default void onStatus(PubSubType type, CharSequence channel) {
     }
 
+    /** 模式订阅消息回调，默认空实现。 */
     default void onPatternMessage(CharSequence pattern, CharSequence channel, V message) {
     }
 

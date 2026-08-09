@@ -16,7 +16,10 @@
 package org.redisson.client;
 
 /**
- * 
+ * 集群或哨兵拓扑中找不到目标 Redis 节点时抛出。
+ * <p>
+ * 可能因节点下线、槽位映射过期或配置不一致导致。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -24,6 +27,7 @@ public class RedisNodeNotFoundException extends RedisException {
 
     private static final long serialVersionUID = -4756928186967834601L;
 
+    /** 使用错误消息构造节点未找到异常。 */
     public RedisNodeNotFoundException(String msg) {
         super(msg);
     }

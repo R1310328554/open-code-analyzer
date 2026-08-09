@@ -16,8 +16,10 @@
 package org.redisson.client;
 
 /**
- * This error occurs in case when Redis server free memory exhausted.
- * 
+ * Redis 服务器可用内存耗尽（OOM）时抛出。
+ * <p>
+ * 可能触发驱逐策略或拒绝写入，需扩容或清理数据。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -25,6 +27,7 @@ public class RedisOutOfMemoryException extends RedisException {
 
     private static final long serialVersionUID = -2565335188503354660L;
 
+    /** 使用错误消息构造 OOM 异常。 */
     public RedisOutOfMemoryException(String message) {
         super(message);
     }

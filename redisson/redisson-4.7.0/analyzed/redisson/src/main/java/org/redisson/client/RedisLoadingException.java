@@ -16,7 +16,10 @@
 package org.redisson.client;
 
 /**
- * 
+ * Redis 正在加载持久化数据（LOADING）时抛出的可重试异常。
+ * <p>
+ * 继承 {@link RedisRetryException}，客户端可在数据就绪后重试。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -24,6 +27,7 @@ public class RedisLoadingException extends RedisRetryException {
 
     private static final long serialVersionUID = -2565335188503354660L;
 
+    /** 使用错误消息构造 LOADING 异常。 */
     public RedisLoadingException(String message) {
         super(message);
     }

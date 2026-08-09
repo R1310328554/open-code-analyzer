@@ -16,8 +16,10 @@
 package org.redisson.client;
 
 /**
- * This error occurs when username password pair is incorrect.
- * 
+ * 向只读副本节点执行写命令（READONLY）时抛出。
+ * <p>
+ * 客户端应改向主节点或启用读写分离的正确路由。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -25,6 +27,7 @@ public class RedisReadonlyException extends RedisException {
 
     private static final long serialVersionUID = -2565335188503354660L;
 
+    /** 使用错误消息构造只读异常。 */
     public RedisReadonlyException(String message) {
         super(message);
     }

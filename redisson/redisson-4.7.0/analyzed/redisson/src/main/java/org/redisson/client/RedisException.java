@@ -16,7 +16,10 @@
 package org.redisson.client;
 
 /**
- * 
+ * Redis 命令执行或协议处理相关的运行时异常基类。
+ * <p>
+ * 多数 Redisson 客户端错误均继承此类或其子类。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -24,17 +27,21 @@ public class RedisException extends RuntimeException {
 
     private static final long serialVersionUID = 3389820652701696154L;
 
+    /** 构造无消息的 Redis 异常。 */
     public RedisException() {
     }
 
+    /** 以根因构造 Redis 异常。 */
     public RedisException(Throwable cause) {
         super(cause);
     }
 
+    /** 以消息与根因构造 Redis 异常。 */
     public RedisException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** 以消息构造 Redis 异常。 */
     public RedisException(String message) {
         super(message);
     }

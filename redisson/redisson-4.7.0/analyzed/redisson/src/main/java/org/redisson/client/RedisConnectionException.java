@@ -16,7 +16,10 @@
 package org.redisson.client;
 
 /**
- * 
+ * Redis 连接建立或通信失败时抛出的异常。
+ * <p>
+ * 区别于命令级 {@link RedisException}，表示传输层或握手问题。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -24,14 +27,17 @@ public class RedisConnectionException extends RedisException {
 
     private static final long serialVersionUID = -4756928186967834601L;
 
+    /** 以根因构造连接异常。 */
     public RedisConnectionException(Throwable cause) {
         super(cause);
     }
 
+    /** 以消息构造连接异常。 */
     public RedisConnectionException(String msg) {
         super(msg);
     }
 
+    /** 以消息与根因构造连接异常。 */
     public RedisConnectionException(String msg, Throwable e) {
         super(msg, e);
     }

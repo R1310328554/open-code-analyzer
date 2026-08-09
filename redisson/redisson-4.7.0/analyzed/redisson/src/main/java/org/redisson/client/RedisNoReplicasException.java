@@ -16,13 +16,15 @@
 package org.redisson.client;
 
 /**
- * This error occurs when Redis a redis master has insufficient slaves to handle a request.
- * *
+ * 主节点可用从节点不足（NOREPLICAS）时抛出的可重试异常。
+ * <p>
+ * 常见于 {@code min-replicas-to-write} 等配置阻止写入时。
  */
 public class RedisNoReplicasException extends RedisRetryException {
 
     private static final long serialVersionUID = -5658453331593029252L;
 
+    /** 使用错误消息构造 NOREPLICAS 异常。 */
     public RedisNoReplicasException(String message) {
         super(message);
     }

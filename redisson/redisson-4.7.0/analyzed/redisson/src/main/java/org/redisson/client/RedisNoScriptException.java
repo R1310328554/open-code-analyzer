@@ -16,8 +16,10 @@
 package org.redisson.client;
 
 /**
- * This error occurs when script isn't found in EVAL cache.
- * 
+ * EVAL 脚本缓存中未找到指定脚本（NOSCRIPT）时抛出。
+ * <p>
+ * 通常需使用 EVALSHA 前先 SCRIPT LOAD，或回退 EVAL。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -25,6 +27,7 @@ public class RedisNoScriptException extends RedisException {
 
     private static final long serialVersionUID = -2565335188503354660L;
 
+    /** 使用错误消息构造 NOSCRIPT 异常。 */
     public RedisNoScriptException(String message) {
         super(message);
     }

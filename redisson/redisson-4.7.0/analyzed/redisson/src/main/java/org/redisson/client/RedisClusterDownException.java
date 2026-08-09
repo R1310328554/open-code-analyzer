@@ -16,8 +16,10 @@
 package org.redisson.client;
 
 /**
- * This error occurs when Redis Cluster is down.
- * 
+ * Redis 集群整体不可用时抛出的异常。
+ * <p>
+ * 客户端收到 CLUSTERDOWN 响应时可重试。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -25,6 +27,7 @@ public class RedisClusterDownException extends RedisRetryException {
 
     private static final long serialVersionUID = -2565335188503354660L;
 
+    /** 使用错误消息构造集群不可用异常。 */
     public RedisClusterDownException(String message) {
         super(message);
     }

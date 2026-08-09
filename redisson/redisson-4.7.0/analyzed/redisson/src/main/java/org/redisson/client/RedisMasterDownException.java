@@ -16,8 +16,10 @@
 package org.redisson.client;
 
 /**
- * This error occurs when Slave lost connection with Master.
- * 
+ * 从节点与主节点失联（MASTERDOWN）时抛出的可重试异常。
+ * <p>
+ * 常见于主从复制中断，客户端可稍后重试或切换节点。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -25,6 +27,7 @@ public class RedisMasterDownException extends RedisRetryException {
 
     private static final long serialVersionUID = -2565335188503354660L;
 
+    /** 使用错误消息构造 MASTERDOWN 异常。 */
     public RedisMasterDownException(String message) {
         super(message);
     }

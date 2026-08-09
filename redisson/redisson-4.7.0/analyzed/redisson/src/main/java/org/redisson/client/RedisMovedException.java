@@ -18,7 +18,10 @@ package org.redisson.client;
 import org.redisson.misc.RedisURI;
 
 /**
- * 
+ * Redis 集群 MOVED 永久重定向异常。
+ * <p>
+ * 表示槽位已迁移，客户端应更新槽位映射并向目标节点重发命令。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -26,6 +29,7 @@ public class RedisMovedException extends RedisRedirectException {
 
     private static final long serialVersionUID = -6969734163155547631L;
 
+    /** 携带槽位号与目标节点 URI 构造 MOVED 异常。 */
     public RedisMovedException(int slot, RedisURI url) {
         super(slot, url);
     }
