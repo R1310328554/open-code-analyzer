@@ -17,13 +17,19 @@
 package org.apache.rocketmq.store;
 
 /**
- * When write a message to the commit log, returns code
+ * 向 CommitLog 写入消息时返回的状态码枚举。
  */
 public enum AppendMessageStatus {
+    /** 写入成功。 */
     PUT_OK,
+    /** 当前文件剩余空间不足。 */
     END_OF_FILE,
+    /** 消息体超过允许的最大尺寸。 */
     MESSAGE_SIZE_EXCEEDED,
+    /** 消息属性总大小超限。 */
     PROPERTIES_SIZE_EXCEEDED,
+    /** 未知错误。 */
     UNKNOWN_ERROR,
+    /** RocksDB 存储层错误。 */
     ROCKSDB_ERROR,
 }

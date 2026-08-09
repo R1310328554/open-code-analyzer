@@ -18,6 +18,10 @@ package org.apache.rocketmq.store;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 消息压缩场景下的追加写入回调：将源缓冲区内容写入目标 MappedByteBuffer。
+ */
 public interface CompactionAppendMsgCallback {
+    /** 将 bbSrc 内容追加到 bbDest，返回写入结果。 */
     AppendMessageResult doAppend(ByteBuffer bbDest, long fileFromOffset, int maxBlank, ByteBuffer bbSrc);
 }

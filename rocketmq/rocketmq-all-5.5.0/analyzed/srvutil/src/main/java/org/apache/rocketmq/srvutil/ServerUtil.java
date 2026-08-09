@@ -24,22 +24,27 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+/**
+ * 服务端命令行工具：构建通用选项、解析参数并转为 Properties。
+ */
 public class ServerUtil {
 
+    /** 向 Options 追加 -h/--help 与 -n/--namesrvAddr 等通用选项。 */
     public static Options buildCommandlineOptions(final Options options) {
-        Option opt = new Option("h", "help", false, "Print help");
+        Option opt = new Option("h", "help", false, "Print help");  // 打印帮助
         opt.setRequired(false);
         options.addOption(opt);
 
         opt =
             new Option("n", "namesrvAddr", true,
-                "Name server address list, eg: '192.168.0.1:9876;192.168.0.2:9876'");
+                "Name server address list, eg: '192.168.0.1:9876;192.168.0.2:9876'");  // NameServer 地址列表
         opt.setRequired(false);
         options.addOption(opt);
 
         return options;
     }
 
+    /** 解析命令行；若含 -h 则打印帮助并 exit(0)，解析失败则 exit(1)。 */
     public static CommandLine parseCmdLine(final String appName, String[] args, Options options,
         CommandLineParser parser) {
         HelpFormatter hf = new HelpFormatter();
@@ -60,12 +65,14 @@ public class ServerUtil {
         return commandLine;
     }
 
+    /** 打印命令行帮助信息。 */
     public static void printCommandLineHelp(final String appName, final Options options) {
         HelpFormatter hf = new HelpFormatter();
         hf.setWidth(110);
         hf.printHelp(appName, options, true);
     }
 
+    /** 将已解析的命令行选项转为 Properties（longOpt 为键）。 */
     public static Properties commandLine2Properties(final CommandLine commandLine) {
         Properties properties = new Properties();
         Option[] opts = commandLine.getOptions();

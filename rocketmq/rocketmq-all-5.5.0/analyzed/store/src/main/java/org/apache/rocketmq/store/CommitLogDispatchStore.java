@@ -19,30 +19,28 @@ package org.apache.rocketmq.store;
 import org.rocksdb.RocksDBException;
 
 /**
- * Interface for stores that require commitlog dispatch and recovery. Each store implementing this interface should
- * register itself in the commitlog when loading. This abstraction allows the commitlog recovery process to
- * automatically consider all registered stores without needing to modify the recovery logic when adding a new store.
+ * 需要参与 CommitLog 分发与恢复的存储抽象。
+ * 实现类在加载时向 CommitLog 注册，恢复流程可自动遍历所有已注册存储。
  */
 public interface CommitLogDispatchStore {
 
     /**
-     * Get the dispatch offset in the store. Messages whose phyOffset larger than this offset need to be dispatched. The
-     * dispatch offset is only used during recovery.
+     * 获取本存储的分发起始物理偏移；大于该偏移的消息需重新分发（仅恢复阶段使用）。
      *
-     * @param recoverNormally true if broker exited normally last time (normal recovery), false for abnormal recovery
-     * @return the dispatch phyOffset, or null if the store is not enabled or has no valid offset
-     * @throws RocksDBException if there is an error accessing RocksDB storage
+     * @param recoverNormally 上次 Broker 是否正常退出
+     * @return 分发 phyOffset；未启用或无有效偏移时返回 null
+     * @throws RocksDBException 访问 RocksDB 失败
      */
     Long getDispatchFromPhyOffset(boolean recoverNormally) throws RocksDBException;
 
     /**
-     * Used to determine whether to start doDispatch from this commitLog mappedFile.
+     * 判断是否应从该 CommitLog MappedFile 开始执行 doDispatch。
      *
-     * @param phyOffset the offset of the first message in this commitlog mappedFile
-     * @param storeTimestamp the timestamp of the first message in this commitlog mappedFile
-     * @param recoverNormally whether this is a normal recovery
-     * @return whether to start recovering from this MappedFile
-     * @throws RocksDBException if there is an error accessing RocksDB storage
+     * @param phyOffset 该文件首条消息的物理偏移
+     * @param storeTimestamp 该文件首条消息的存储时间戳
+     * @param recoverNormally 是否为正常恢复
+     * @return 是否从该 MappedFile 开始恢复
+     * @throws RocksDBException 访问 RocksDB 失败
      */
     boolean isMappedFileMatchedRecover(long phyOffset, long storeTimestamp,
         boolean recoverNormally) throws RocksDBException;

@@ -20,14 +20,21 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 默认消息过滤器：基于 SubscriptionData 在 ConsumeQueue 层按 Tag 码过滤。
+ * CommitLog 层默认全部匹配。
+ */
 public class DefaultMessageFilter implements MessageFilter {
 
+    /** 订阅表达式与 Tag 集合。 */
     private SubscriptionData subscriptionData;
 
+    /** 使用给定订阅数据构造过滤器。 */
     public DefaultMessageFilter(final SubscriptionData subscriptionData) {
         this.subscriptionData = subscriptionData;
     }
 
+    /** 按 ConsumeQueue 中的 tagsCode 判断是否匹配订阅。 */
     @Override
     public boolean isMatchedByConsumeQueue(Long tagsCode, ConsumeQueueExt.CqExtUnit cqExtUnit) {
         if (null == tagsCode || null == subscriptionData) {
@@ -42,6 +49,7 @@ public class DefaultMessageFilter implements MessageFilter {
             || subscriptionData.getCodeSet().contains(tagsCode.intValue());
     }
 
+    /** CommitLog 层默认不过滤，恒为 true。 */
     @Override
     public boolean isMatchedByCommitLog(ByteBuffer msgBuffer, Map<String, String> properties) {
         return true;

@@ -21,23 +21,23 @@ import org.apache.rocketmq.common.message.MessageExtBatch;
 import org.apache.rocketmq.common.message.MessageExtBrokerInner;
 
 /**
- * Write messages callback interface
+ * 消息追加写入 CommitLog 的回调接口。
  */
 public interface AppendMessageCallback {
 
     /**
-     * After message serialization, write MappedByteBuffer
+     * 单条消息序列化后写入 MappedByteBuffer
      *
-     * @return How many bytes to write
+     * @return 实际写入字节数等信息
      */
     AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer,
         final int maxBlank, final MessageExtBrokerInner msg, PutMessageContext putMessageContext);
 
     /**
-     * After batched message serialization, write MappedByteBuffer
+     * 批量消息序列化后写入 MappedByteBuffer
      *
-     * @param messageExtBatch, backed up by a byte array
-     * @return How many bytes to write
+     * @param messageExtBatch 由字节数组支撑的批量消息
+     * @return 实际写入字节数等信息
      */
     AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer,
         final int maxBlank, final MessageExtBatch messageExtBatch, PutMessageContext putMessageContext);

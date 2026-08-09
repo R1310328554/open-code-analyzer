@@ -32,15 +32,24 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 文件变更监听服务：周期性计算 MD5，哈希变化时回调 Listener。
+ * 常用于证书/配置文件热更新场景。
+ */
 public class FileWatchService extends LifecycleAwareServiceThread {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
+    /** 默认轮询间隔（毫秒）。 */
     private static final int DEFAULT_WATCH_INTERVAL = 500;
 
+    /** 文件路径到上次 MD5 摘要的映射。 */
     private final Map<String, String> currentHash = new HashMap<>();
+    /** 文件变更回调。 */
     private final Listener listener;
+    /** 轮询间隔（毫秒）。 */
     private final int watchInterval;
     private final MessageDigest md = MessageDigest.getInstance("MD5");
 
+    /** 使用默认轮询间隔构造监听服务。 */
     public FileWatchService(final String[] watchFiles, final Listener listener) throws Exception {
         this(watchFiles, listener, DEFAULT_WATCH_INTERVAL);
     }
@@ -55,11 +64,13 @@ public class FileWatchService extends LifecycleAwareServiceThread {
         }
     }
 
+    /** 返回服务线程名称。 */
     @Override
     public String getServiceName() {
         return "FileWatchService";
     }
 
+    /** 主循环：定时比对 MD5，变化时触发 onChanged。 */
     @Override
     public void run0() {
         log.info(this.getServiceName() + " service started");
@@ -82,20 +93,16 @@ public class FileWatchService extends LifecycleAwareServiceThread {
     }
 
     /**
-     * Note: we ignore DELETE event on purpose. This is useful when application renew CA file.
-     * When the operator delete/rename the old CA file and copy a new one, this ensures the old CA file is used during
-     * the operation.
-     * <p>
-     * As we know exactly what to do when file does not exist or when IO exception is raised, there is no need to
-     * propagate the exception up.
+     * 注意：故意忽略 DELETE 事件，便于证书轮换时仍沿用旧文件哈希。
+     * 文件不存在或 IO 异常时复用上次哈希，不向上抛异常。
      *
-     * @param filePath Absolute path of the file to calculate its MD5 digest.
-     * @return Hash of the file content if exists; empty string otherwise.
+     * @param filePath 待计算 MD5 的文件绝对路径
+     * @return 文件内容哈希；不存在时返回空串
      */
     private String md5Digest(String filePath) {
         Path path = Paths.get(filePath);
         if (!path.toFile().exists()) {
-            // Reuse previous hash result
+            // 复用上次哈希，避免短暂缺失导致误报
             return currentHash.getOrDefault(filePath, "");
         }
         byte[] raw;
@@ -111,11 +118,12 @@ public class FileWatchService extends LifecycleAwareServiceThread {
         return UtilAll.bytes2string(hash);
     }
 
+    /** 文件变更回调接口。 */
     public interface Listener {
         /**
-         * Will be called when the target files are changed
+         * 目标文件内容变更时调用
          *
-         * @param path the changed file path
+         * @param path 变更文件路径
          */
         void onChanged(String path);
     }

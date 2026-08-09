@@ -34,17 +34,23 @@ import org.apache.rocketmq.store.logfile.DefaultMappedFile;
 import org.apache.rocketmq.store.logfile.MappedFile;
 
 /**
- * Create MappedFile in advance
+ * 预分配 MappedFile 的后台服务：异步创建 mmap 文件以降低写入延迟。
  */
 public class AllocateMappedFileService extends ServiceThread {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 等待预分配完成的超时时间（毫秒）。 */
     private static int waitTimeOut = 1000 * 5;
+    /** 文件路径到分配请求的映射表。 */
     private ConcurrentMap<String, AllocateRequest> requestTable =
         new ConcurrentHashMap<>();
+    /** 待处理的预分配请求优先队列。 */
     private PriorityBlockingQueue<AllocateRequest> requestQueue =
         new PriorityBlockingQueue<>();
+    /** 服务是否发生过 IO 等异常。 */
     private volatile boolean hasException = false;
+    /** 所属 MessageStore。 */
     private DefaultMessageStore messageStore;
+    /** 可选的外部预处理器。 */
     private PreprocessHandler preprocessHandler;
 
     public AllocateMappedFileService(DefaultMessageStore messageStore) {
@@ -52,16 +58,17 @@ public class AllocateMappedFileService extends ServiceThread {
     }
 
     /**
-     * Set preprocess handler for external extension
+     * 设置外部扩展用的预处理器
      *
-     * @param preprocessHandler the preprocess handler
+     * @param preprocessHandler 预处理器实例
      */
     public void setPreprocessHandler(PreprocessHandler preprocessHandler) {
         this.preprocessHandler = preprocessHandler;
     }
 
+    /** 提交当前与下一个文件的预分配请求，阻塞等待当前文件 mmap 就绪后返回。 */
     public MappedFile putRequestAndReturnMappedFile(String nextFilePath, String nextNextFilePath, int fileSize) {
-        // Execute preprocess logic if handler is set
+        // 若配置了预处理器则先执行
         final PreprocessHandler finalPreprocessHandler = this.preprocessHandler;
         if (finalPreprocessHandler != null) {
             try {
@@ -73,7 +80,7 @@ public class AllocateMappedFileService extends ServiceThread {
         int canSubmitRequests = 2;
         if (this.messageStore.isTransientStorePoolEnable()) {
             if (this.messageStore.getMessageStoreConfig().isFastFailIfNoBufferInStorePool()
-                && BrokerRole.SLAVE != this.messageStore.getMessageStoreConfig().getBrokerRole()) { //if broker is slave, don't fast fail even no buffer in pool
+                && BrokerRole.SLAVE != this.messageStore.getMessageStoreConfig().getBrokerRole()) { // 从节点即使缓冲池不足也不快速失败
                 canSubmitRequests = this.messageStore.remainTransientStoreBufferNumbs() - this.requestQueue.size();
             }
         }
@@ -168,7 +175,7 @@ public class AllocateMappedFileService extends ServiceThread {
     }
 
     /**
-     * Only interrupted by the external thread, will return false
+     * 仅被外部线程中断时返回 false
      */
     private boolean mmapOperation() {
         boolean isSuccess = false;
@@ -213,7 +220,7 @@ public class AllocateMappedFileService extends ServiceThread {
                         + " " + req.getFilePath() + " " + req.getFileSize());
                 }
 
-                // pre write mappedFile
+                // 预热 mappedFile 页缓存
                 if (mappedFile.getFileSize() >= this.messageStore.getMessageStoreConfig()
                     .getMappedFileSizeCommitLog()
                     &&
@@ -250,25 +257,28 @@ public class AllocateMappedFileService extends ServiceThread {
     }
 
     /**
-     * Preprocess handler interface for external extension
+     * 预分配前的外部扩展预处理接口
      */
     @FunctionalInterface
     public interface PreprocessHandler {
         /**
-         * Preprocess before allocating mapped file
+         * 分配 mapped 文件前的预处理
          *
-         * @param nextFilePath the next file path
-         * @param nextNextFilePath the next next file path
-         * @param fileSize the file size
+         * @param nextFilePath 即将使用的文件路径
+         * @param nextNextFilePath 再下一个文件路径
+         * @param fileSize 文件大小
          */
         void preprocess(String nextFilePath, String nextNextFilePath, int fileSize);
     }
 
     static class AllocateRequest implements Comparable<AllocateRequest> {
-        // Full file path
+        /** 完整文件路径。 */
         private String filePath;
+        /** 预分配文件大小。 */
         private int fileSize;
+        /** 分配完成信号量。 */
         private CountDownLatch countDownLatch = new CountDownLatch(1);
+        /** 分配完成的 MappedFile（volatile 保证可见性）。 */
         private volatile MappedFile mappedFile = null;
 
         public AllocateRequest(String filePath, int fileSize) {

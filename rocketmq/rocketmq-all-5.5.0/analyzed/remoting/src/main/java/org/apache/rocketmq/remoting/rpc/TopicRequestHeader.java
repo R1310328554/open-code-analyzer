@@ -16,16 +16,23 @@
  */
 package org.apache.rocketmq.remoting.rpc;
 
+/**
+ * 带 Topic 字段的 RPC 请求头抽象基类，支持逻辑标识 lo。
+ */
 public abstract class TopicRequestHeader extends RpcRequestHeader {
-    //logical
+    /** 逻辑标识（logical），用于区分同名 Topic 的不同逻辑视图。 */
     protected Boolean lo;
 
+    /** 返回 Topic 名称。 */
     public abstract String getTopic();
+    /** 设置 Topic 名称。 */
     public abstract void setTopic(String topic);
 
+    /** 返回逻辑标识 lo。 */
     public Boolean getLo() {
         return lo;
     }
+    /** 设置逻辑标识 lo。 */
     public void setLo(Boolean lo) {
         this.lo = lo;
     }

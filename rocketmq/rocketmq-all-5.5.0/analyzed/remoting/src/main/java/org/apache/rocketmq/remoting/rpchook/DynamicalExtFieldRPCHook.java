@@ -21,10 +21,15 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 动态扩展字段 RPC 钩子：从系统属性或环境变量读取 Zone 信息并注入请求。
+ */
 public class DynamicalExtFieldRPCHook implements RPCHook {
 
+    /** 请求发出前：若配置了 Zone 名称/模式，则写入 RemotingCommand 扩展字段。 */
     @Override
     public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
+        // 优先读 JVM 属性，否则读环境变量
         String zoneName = System.getProperty(MixAll.ROCKETMQ_ZONE_PROPERTY, System.getenv(MixAll.ROCKETMQ_ZONE_ENV));
         if (StringUtils.isNotBlank(zoneName)) {
             request.addExtField(MixAll.ZONE_NAME, zoneName);
@@ -35,6 +40,7 @@ public class DynamicalExtFieldRPCHook implements RPCHook {
         }
     }
 
+    /** 响应返回后：本钩子无需处理，留空实现。 */
     @Override
     public void doAfterResponse(String remoteAddr, RemotingCommand request, RemotingCommand response) {
 

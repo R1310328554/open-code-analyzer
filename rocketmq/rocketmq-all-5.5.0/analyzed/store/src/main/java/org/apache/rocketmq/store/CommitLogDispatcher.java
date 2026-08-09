@@ -20,14 +20,14 @@ package org.apache.rocketmq.store;
 import org.rocksdb.RocksDBException;
 
 /**
- * Dispatcher of commit log.
+ * CommitLog 消息分发器：将已持久化消息派发到 ConsumeQueue、索引等结构。
  */
 public interface CommitLogDispatcher {
 
     /**
-     *  Dispatch messages from store to build consume queues, indexes, and filter data
-     * @param request dispatch message request
-     * @throws RocksDBException only in rocksdb mode
+     * 根据 DispatchRequest 构建 ConsumeQueue、索引与过滤数据
+     * @param request 分发请求
+     * @throws RocksDBException 仅 RocksDB 模式下可能抛出
      */
     void dispatch(final DispatchRequest request) throws RocksDBException;
 }

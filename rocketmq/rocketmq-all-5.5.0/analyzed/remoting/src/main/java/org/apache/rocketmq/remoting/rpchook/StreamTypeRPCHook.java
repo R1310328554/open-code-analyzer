@@ -22,12 +22,17 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.RequestType;
 
+/**
+ * 流式请求 RPC 钩子：在请求扩展字段中标记 RequestType.STREAM。
+ */
 public class StreamTypeRPCHook implements RPCHook {
+    /** 请求发出前：写入 REQ_T 扩展字段，值为 STREAM 类型码。 */
     @Override
     public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
         request.addExtField(MixAll.REQ_T, String.valueOf(RequestType.STREAM.getCode()));
     }
 
+    /** 响应返回后：本钩子无需处理，留空实现。 */
     @Override
     public void doAfterResponse(String remoteAddr, RemotingCommand request,
         RemotingCommand response) {
