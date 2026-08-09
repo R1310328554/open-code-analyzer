@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:57:08Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/RIdGeneratorAsync.java",
-    "redisson/src/main/java/org/redisson/api/RIdGeneratorReactive.java",
-    "redisson/src/main/java/org/redisson/api/RIdGeneratorRx.java",
-    "redisson/src/main/java/org/redisson/api/RJsonBuckets.java",
-    "redisson/src/main/java/org/redisson/api/RJsonBucketsAsync.java",
-    "redisson/src/main/java/org/redisson/api/RJsonBucketsReactive.java",
-    "redisson/src/main/java/org/redisson/api/RJsonBucketsRx.java",
-    "redisson/src/main/java/org/redisson/api/RKeysAsync.java",
-    "redisson/src/main/java/org/redisson/api/RKeysReactive.java",
-    "redisson/src/main/java/org/redisson/api/RKeysRx.java",
-    "redisson/src/main/java/org/redisson/api/RLeasedMap.java",
-    "redisson/src/main/java/org/redisson/api/RLeasedMapAsync.java",
-    "redisson/src/main/java/org/redisson/api/RLeasedMapReactive.java",
-    "redisson/src/main/java/org/redisson/api/RLeasedMapRx.java",
-    "redisson/src/main/java/org/redisson/api/RLexSortedSet.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1472,
-  "done": 1335
+  "done": 1350
 }
