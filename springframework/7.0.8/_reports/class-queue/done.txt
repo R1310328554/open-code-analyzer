@@ -556,3 +556,13 @@ spring-context/src/main/java/org/springframework/context/support/ConversionServi
 spring-context/src/main/java/org/springframework/context/support/DefaultMessageSourceResolvable.java
 spring-context/src/main/java/org/springframework/context/support/DelegatingMessageSource.java
 spring-context/src/main/java/org/springframework/context/support/EmbeddedValueResolutionSupport.java
+spring-context/src/main/java/org/springframework/context/annotation/Configuration.java
+spring-context/src/main/java/org/springframework/context/event/ContextRefreshedEvent.java
+spring-context/src/main/java/org/springframework/context/event/ContextRestartedEvent.java
+spring-context/src/main/java/org/springframework/context/event/ContextStartedEvent.java
+spring-context/src/main/java/org/springframework/context/event/ContextStoppedEvent.java
+spring-context/src/main/java/org/springframework/context/event/DefaultEventListenerFactory.java
+spring-context/src/main/java/org/springframework/context/event/EventExpressionEvaluator.java
+spring-context/src/main/java/org/springframework/context/event/EventExpressionRootObject.java
+spring-context/src/main/java/org/springframework/context/event/EventListener.java
+spring-context/src/main/java/org/springframework/context/event/EventListenerFactory.java
