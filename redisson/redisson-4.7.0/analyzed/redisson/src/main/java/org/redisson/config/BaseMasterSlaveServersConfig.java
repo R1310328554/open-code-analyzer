@@ -21,44 +21,47 @@ import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
 /**
- * 主从/哨兵/集群等「一主多从」拓扑的公共配置基类。
- * <p>定义读写连接池大小、读模式 {@link ReadMode}、订阅模式、
- * 从节点负载均衡 {@link LoadBalancer} 及 DNS 监控等。
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <T> 配置类型
+ * @param <T> config type
  */
 public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig<T>> extends BaseConfig<T> {
 
-    /** 多个从节点之间的读请求负载均衡器。 */
+    /**
+     * Connection load balancer for multiple Redis slave servers
+     */
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
 
-    /** 每个从节点的读连接池最小空闲连接数。 */
+    /**
+     * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
+     */
     private int slaveConnectionMinimumIdleSize = 24;
 
-    /** 每个从节点的读连接池最大连接数。 */
+    /**
+     * Redis 'slave' node maximum connection pool size for <b>each</b> slave node
+     */
     private int slaveConnectionPoolSize = 64;
 
-    /** 标记为失败的从节点重连尝试间隔（毫秒）。 */
     private int failedSlaveReconnectionInterval = 3000;
 
     @Deprecated
     private int failedSlaveCheckInterval = 180000;
     
-    /** 主节点写连接池最小空闲连接数。 */
+    /**
+     * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
+     */
     private int masterConnectionMinimumIdleSize = 24;
 
-    /** 主节点写连接池最大连接数。 */
+    /**
+     * Redis 'master' node maximum connection pool size
+     */
     private int masterConnectionPoolSize = 64;
 
-    /** 读命令路由模式，默认从从节点读取。 */
     private ReadMode readMode = ReadMode.SLAVE;
 
-    /** 从节点 LOADING 时是否回退到主节点读。 */
     private boolean fallbackLoadingToMaster = true;
     
-    /** Pub/Sub 订阅连接所连节点类型。 */
     private SubscriptionMode subscriptionMode = SubscriptionMode.MASTER;
     
     /**
@@ -71,12 +74,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     private int subscriptionConnectionPoolSize = 50;
 
-    /** DNS 解析监控间隔（毫秒），-1 禁用。 */
     private long dnsMonitoringInterval = 5000;
 
     private int dnsMonitoringTimes = 1;
 
-    /** 判定从节点是否失败的检测器。 */
     private FailedNodeDetector failedSlaveNodeDetector = new FailedConnectionDetector();
     
     public BaseMasterSlaveServersConfig() {
@@ -101,11 +102,13 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * 每个从节点的读连接池最大容量。
-     * <p>默认 {@code 64}。
-     *
+     * Redis 'slave' servers connection pool size for <b>each</b> slave node.
+     * <p>
+     * Default is <code>64</code>
+     * <p>
      * @see #setSlaveConnectionMinimumIdleSize(int)
-     * @param slaveConnectionPoolSize 池大小
+     *
+     * @param slaveConnectionPoolSize - size of pool
      * @return config
      */
     public T setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
@@ -177,9 +180,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * 设置多从节点读负载均衡器，默认轮询。
+     * Connection load balancer to multiple Redis slave servers.
+     * Uses Round-robin algorithm by default
      *
-     * @param loadBalancer 负载均衡实现
+     * @param loadBalancer object
      * @return config
      *
      * @see org.redisson.connection.balancer.RandomLoadBalancer
@@ -269,10 +273,11 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     
     /**
-     * 设置读操作使用的节点类型。
-     * <p>默认 {@code SLAVE}。
+     * Set node type used for read operation.
+     * <p>
+     * Default is <code>SLAVE</code>
      *
-     * @param readMode 读模式
+     * @param readMode param
      * @return config
      */
     public T setReadMode(ReadMode readMode) {
@@ -284,10 +289,12 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * 从节点返回 LOADING 时是否改在主节点重试读命令。
-     * <p>默认 {@code true}。
+     * Defines whether a read command should be redirected to the master node
+     * if a slave node returns a LOADING error.
+     * <p>
+     * Default is <code>true</code>
      *
-     * @param fallbackLoadingToMaster 为 true 则回退主节点
+     * @param fallbackLoadingToMaster <code>true</code> to retry on master
      * @return config
      */
     public T setFallbackLoadingToMaster(boolean fallbackLoadingToMaster) {
@@ -299,7 +306,6 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         return fallbackLoadingToMaster;
     }
     
-    /** 读与订阅均指向主节点时返回 true（无从节点流量）。 */
     public boolean isSlaveNotUsed() {
         return getReadMode() == ReadMode.MASTER && getSubscriptionMode() == SubscriptionMode.MASTER;
     }
@@ -357,15 +363,18 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * 设置从节点失败检测器。
-     * <p>默认 {@code FailedConnectionDetector}。
+     * Defines failed Redis Slave node detector object
+     * which implements failed node detection logic.
+     * <p>
+     * Default is <code>org.redisson.client.FailedConnectionDetector</code>
      *
-     * @param failedNodeDetector 检测器实例
+     * @param failedNodeDetector Redis Slave node detector object
      * @return config
      *
      * @see org.redisson.client.FailedConnectionDetector
      * @see org.redisson.client.FailedCommandsDetector
      * @see org.redisson.client.FailedCommandsTimeoutDetector
+     *
      */
     public T setFailedSlaveNodeDetector(FailedNodeDetector failedNodeDetector) {
         this.failedSlaveNodeDetector = failedNodeDetector;

@@ -31,26 +31,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 批量命令执行器基类，将单条命令登记到 {@link CommandBatchService} 的命令表，
- * 而非立即发送到 Redis。
- * <p>子类 {@link RedisBatchExecutor}（内存聚合）与 {@link RedisQueuedBatchExecutor}
- * （Redis MULTI/EXEC 队列）决定具体入队与发送策略。
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <V> Redis 回复值类型
- * @param <R> 业务层返回类型
+ * @param <V> type of value
+ * @param <R> type of returned value
  */
 public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
 
-    /** 按节点源分组的待执行批量命令表。 */
     final ConcurrentMap<NodeSource, Entry> commands;
-    /** 批量执行选项（模式、超时、同步从库等）。 */
     final BatchOptions options;
-    /** 全局命令序号，保证批量结果按添加顺序排列。 */
     final AtomicInteger index;
     
-    /** 批量是否已 execute/discard，防止重复提交。 */
     final AtomicBoolean executed;
     
     @SuppressWarnings("ParameterNumber")
@@ -73,7 +65,6 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         this.executed = executed;
     }
 
-    /** 计算批量响应超时：基础 timeout + 可选 sync 等待时间。 */
     private static int timeout(ConnectionManager connectionManager, BatchOptions options) {
         int result = connectionManager.getServiceManager().getConfig().getTimeout();
         if (options.getResponseTimeout() > 0) {
@@ -85,7 +76,6 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         return result;
     }
 
-    /** 解析批量重试间隔策略。 */
     private static DelayStrategy retryInterval(ConnectionManager connectionManager, BatchOptions options) {
         if (options.getRetryDelay() != null) {
             return options.getRetryDelay();
@@ -93,7 +83,6 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         return connectionManager.getServiceManager().getConfig().getRetryDelay();
     }
 
-    /** 解析批量最大重试次数。 */
     private static int retryAttempts(ConnectionManager connectionManager, BatchOptions options) {
         if (options.getRetryAttempts() >= 0) {
             return options.getRetryAttempts();
@@ -101,7 +90,6 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         return connectionManager.getServiceManager().getConfig().getRetryAttempts();
     }
 
-    /** 将当前命令封装为 {@link BatchCommandData} 并加入对应节点 Entry。 */
     protected final void addBatchCommandData(Object[] batchParams) {
         Entry entry = commands.computeIfAbsent(source, k -> new Entry());
 

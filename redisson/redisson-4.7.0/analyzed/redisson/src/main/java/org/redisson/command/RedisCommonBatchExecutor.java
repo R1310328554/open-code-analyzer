@@ -41,23 +41,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 批量命令的实际发送执行器：从 {@link Entry} 取出已聚合的命令列表，
- * 经单连接一次性写入 Redis（Pipeline 或 MULTI/EXEC）。
- * <p>所有分片槽位各有一个实例并行执行，{@link #slots} 计数归零后完成整批。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
 
-    /** 日志记录器。 */
     static final Logger log = LoggerFactory.getLogger(RedisCommonBatchExecutor.class);
 
-    /** 本节点待发送的命令集合。 */
     private final Entry entry;
-    /** 剩余待完成的分片/节点数，归零时 complete 主 Promise。 */
     private final AtomicInteger slots;
-    /** 批量选项，决定原子性、跳过回复、WAIT 等行为。 */
     private final BatchOptions options;
     
     public RedisCommonBatchExecutor(NodeSource source, CompletableFuture<Void> mainPromise,
@@ -99,13 +92,11 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
         return connectionManager.getServiceManager().getConfig().getRetryAttempts();
     }
 
-    /** 异常时清除 Entry 中各命令的错误状态以便重试。 */
     @Override
     protected void onException() {
         entry.clearErrors();
     }
     
-    /** 释放 Entry 内所有命令参数的引用计数。 */
     @Override
     protected void free() {
         free(entry);
@@ -130,7 +121,6 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
         return f;
     }
 
-    /** 组装 ASKING、命令列表并委托 {@link CommandsData} 批量发送。 */
     @Override
     protected void sendCommand(CompletableFuture<Void> attemptPromise, RedisConnection connection) {
         boolean isAtomic = options.getExecutionMode() != ExecutionMode.IN_MEMORY;
@@ -146,7 +136,7 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
             if ((c.getPromise().isCancelled() || (c.getPromise().isDone() && !c.getPromise().isCompletedExceptionally()))
                     && !isWaitCommand(c) 
                         && !isAtomic) {
-                // 已成功或已取消的非 WAIT 命令在内存模式下可跳过
+                // skip command
                 continue;
             }
             list.add(c);
@@ -192,13 +182,11 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
         writeFuture = connection.send(new CommandsData(attemptPromise, list, options.isSkipResult(), isAtomic, isQueued, options.getSyncSlaves() > 0));
     }
 
-    /** 判断是否为 WAIT / WAITAOF 同步从库命令。 */
     protected boolean isWaitCommand(CommandData<?, ?> c) {
         return c.getCommand().getName().equals(RedisCommands.WAIT.getName())
                 || c.getCommand().getName().equals(RedisCommands.WAITAOF.getName());
     }
 
-    /** 本分片发送成功后递减 slots，全部完成时通知主 Promise。 */
     @Override
     protected void handleResult(CompletableFuture<Void> attemptPromise, CompletableFuture<RedisConnection> connectionFuture) throws ReflectiveOperationException {
         if (attemptPromise.isDone() && !attemptPromise.isCompletedExceptionally()) {

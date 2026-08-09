@@ -25,43 +25,52 @@ import java.net.URL;
 import java.time.Duration;
 
 /**
- * Redisson 客户端配置的抽象基类，采用 fluent 链式 setter。
- * <p>涵盖连接超时、重试、SSL、TCP 选项及凭据等通用项；
- * 具体部署模式由 {@link Config} 子配置继承扩展。
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <T> 配置类型（用于链式返回）
+ * @param <T> config type
  */
 public class BaseConfig<T extends BaseConfig<T>> {
 
     protected static final Logger log = LoggerFactory.getLogger("config");
 
-    /** 空闲连接超时（毫秒）：超过此时间未使用且连接数大于最小空闲数则关闭并移出池。 */
+    /**
+     * If pooled connection not used for a <code>timeout</code> time
+     * and current connections amount bigger than minimum idle connections pool size,
+     * then it will closed and removed from pool.
+     * Value in milliseconds.
+     *
+     */
     private int idleConnectionTimeout = 10000;
 
-    /** 建立 TCP 连接的超时时间（毫秒）。 */
+    /**
+     * Timeout during connecting to any Redis server.
+     * Value in milliseconds.
+     *
+     */
     private int connectTimeout = 10000;
 
-    /** Redis 命令响应超时（毫秒）：从命令成功写入连接后开始计时。 */
+    /**
+     * Redis server response timeout. Starts to countdown when Redis command was succesfully sent.
+     * Value in milliseconds.
+     *
+     */
     private int timeout = 3000;
 
-    /** 单频道订阅操作的超时（毫秒）。 */
     private int subscriptionTimeout = 7500;
 
-    /** 命令发送失败时的最大重试次数。 */
     private int retryAttempts = 4;
 
     @Deprecated
     private int retryInterval = 1500;
 
-    /** 命令重试间隔抖动策略。 */
     private DelayStrategy retryDelay = new EqualJitterDelay(Duration.ofMillis(1000), Duration.ofSeconds(2));
 
-    /** 断线重连间隔抖动策略。 */
     private DelayStrategy reconnectionDelay = new EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10));
 
-    /** Redis 认证密码，不需要时为 null（已废弃，请用 Config 级设置）。 */
+    /**
+     * Password for Redis authentication. Should be null if not needed
+     */
     @Deprecated
     private String password;
 
@@ -71,10 +80,14 @@ public class BaseConfig<T extends BaseConfig<T>> {
     @Deprecated
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
-    /** 单条 Redis 连接上允许的 Pub/Sub 订阅数上限。 */
+    /**
+     * Subscriptions per Redis connection limit
+     */
     private int subscriptionsPerConnection = 5;
 
-    /** 客户端连接名称，通过 CLIENT SETNAME 设置。 */
+    /**
+     * Name of client connection
+     */
     private String clientName;
     
     @Deprecated
@@ -110,7 +123,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
     @Deprecated
     private KeyManagerFactory sslKeyManagerFactory;
 
-    /** PING 保活间隔（毫秒），0 表示禁用。 */
     private int pingConnectionInterval = 30000;
     
     @Deprecated
@@ -137,11 +149,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
     @Deprecated
     private CommandMapper commandMapper = CommandMapper.direct();
     
-    /** 包内可见的默认构造。 */
     BaseConfig() {
     }
 
-    /** 从已有配置复制字段（拷贝构造）。 */
     BaseConfig(T config) {
         if (config.getUsername() != null) {
             setUsername(config.getUsername());
@@ -225,10 +235,11 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * 设置单连接 Pub/Sub 订阅数上限。
-     * <p>默认 {@code 5}。
+     * Subscriptions per Redis connection limit
+     * <p>
+     * Default is <code>5</code>
      *
-     * @param subscriptionsPerConnection 订阅数量上限
+     * @param subscriptionsPerConnection amount
      * @return config
      */
     public T setSubscriptionsPerConnection(int subscriptionsPerConnection) {
@@ -285,11 +296,13 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * 命令在 {@code retryAttempts} 次内仍无法发送则抛错；成功发送后开始 {@code timeout} 计时。
-     * <p>默认 4 次（字段初始值）。
+     * Error will be thrown if Redis command can't be sent to Redis server after <code>retryAttempts</code>.
+     * But if it sent successfully then <code>timeout</code> will be started.
+     * <p>
+     * Default is <code>3</code> attempts
      *
      * @see #timeout
-     * @param retryAttempts 重试次数
+     * @param retryAttempts retry attempts
      * @return config
      */
     public T setRetryAttempts(int retryAttempts) {
@@ -325,10 +338,11 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Redis 响应超时（毫秒），自命令成功写入连接起算。
-     * <p>默认 {@code 3000}。
+     * Redis server response timeout. Starts to countdown when Redis command has been successfully sent.
+     * <p>
+     * Default is <code>3000</code> milliseconds
      *
-     * @param timeout 超时毫秒数
+     * @param timeout in milliseconds
      * @return config
      */
     public T setTimeout(int timeout) {
@@ -345,10 +359,11 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * 每个频道订阅操作的超时（毫秒）。
-     * <p>默认 {@code 7500}。
+     * Defines subscription timeout applied per channel subscription.
+     * <p>
+     * Default is <code>7500</code> milliseconds.
      *
-     * @param subscriptionTimeout 超时毫秒数
+     * @param subscriptionTimeout timeout in milliseconds
      * @return config
      */
     public T setSubscriptionTimeout(int subscriptionTimeout) {
@@ -357,10 +372,12 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * 连接初始化时通过 CLIENT SETNAME 设置的客户端名称。
-     * <p>默认 {@code null}。
+     * Setup connection name during connection init
+     * via CLIENT SETNAME command
+     * <p>
+     * Default is <code>null</code>
      *
-     * @param clientName 客户端名称
+     * @param clientName name of client
      * @return config
      */
     public T setClientName(String clientName) {
@@ -373,10 +390,11 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * 连接任意 Redis 节点的 TCP 超时（毫秒）。
-     * <p>默认 {@code 10000}。
-     *
-     * @param connectTimeout 超时毫秒数
+     * Timeout during connecting to any Redis server.
+     * <p>
+     * Default is <code>10000</code> milliseconds.
+     * 
+     * @param connectTimeout timeout in milliseconds
      * @return config
      */
     public T setConnectTimeout(int connectTimeout) {
@@ -389,10 +407,13 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * 空闲连接回收超时（毫秒）。
-     * <p>默认 {@code 10000}。
+     * If pooled connection not used for a <code>timeout</code> time
+     * and current connections amount bigger than minimum idle connections pool size,
+     * then it will closed and removed from pool.
+     * <p>
+     * Default is <code>10000</code> milliseconds.
      *
-     * @param idleConnectionTimeout 超时毫秒数
+     * @param idleConnectionTimeout timeout in milliseconds
      * @return config
      */
     public T setIdleConnectionTimeout(int idleConnectionTimeout) {
@@ -560,10 +581,12 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * 每条连接发送 PING 的间隔（毫秒），{@code 0} 禁用。
-     * <p>默认 {@code 30000}。
-     *
-     * @param pingConnectionInterval 间隔毫秒数
+     * Defines PING command sending interval per connection to Redis.
+     * <code>0</code> means disable.
+     * <p>
+     * Default is <code>30000</code>
+     * 
+     * @param pingConnectionInterval time in milliseconds
      * @return config
      */
     public T setPingConnectionInterval(int pingConnectionInterval) {

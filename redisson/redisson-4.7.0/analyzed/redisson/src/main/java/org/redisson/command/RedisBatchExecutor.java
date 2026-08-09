@@ -29,13 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 内存模式批量执行器：仅将命令登记到 {@link CommandBatchService}，
- * 在 {@code executeAsync} 时统一打包发送（可配合 MULTI/EXEC 或 Pipeline）。
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <V> Redis 回复值类型
- * @param <R> 业务层返回类型
+ * @param <V> type of value
+ * @param <R> type of returned value
  */
 public class RedisBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
 
@@ -49,7 +47,6 @@ public class RedisBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
                 commands, options, index, executed, referenceType, noRetry);
     }
     
-    /** 将命令参数登记到批量队列，不立即建立连接。 */
     @Override
     public void execute() {
         try {

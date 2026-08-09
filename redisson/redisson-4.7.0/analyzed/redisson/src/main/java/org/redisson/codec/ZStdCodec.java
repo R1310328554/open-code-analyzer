@@ -27,10 +27,13 @@ import org.redisson.client.protocol.Encoder;
 import java.io.IOException;
 
 /**
- * ZStandard（Zstd）压缩编解码器。
- * <p>先用内部 {@link Codec} 将对象序列化为二进制，再经 Zstd 压缩写入 Redis；
- * 解码时先解压再委托内部编解码器。默认内部编解码器为 {@link Kryo5Codec}。
- * <p>基于 <a href="https://github.com/luben/zstd-jni">zstd-jni</a>，完全线程安全。
+ * ZStandard codec.
+ * Uses inner <code>Codec</code> to convert object to binary stream.
+ * <code>Kryo5Codec</code> is used by default.
+ * <p>
+ * Based on <a href="https://github.com/luben/zstd-jni">https://github.com/luben/zstd-jni</a>
+ *
+ * Fully thread-safe.
  *
  * @see Kryo5Codec
  *
@@ -39,35 +42,28 @@ import java.io.IOException;
  */
 public class ZStdCodec extends BaseCodec {
 
-    /** 内层编解码器，负责对象与字节的互转。 */
     private final Codec innerCodec;
 
-    /** 使用默认 {@link Kryo5Codec} 构造。 */
     public ZStdCodec() {
         this(new Kryo5Codec());
     }
 
-    /** @param innerCodec 内层编解码器 */
     public ZStdCodec(Codec innerCodec) {
         this.innerCodec = innerCodec;
     }
 
-    /** @param classLoader 传递给内层 Kryo 编解码器的类加载器 */
     public ZStdCodec(ClassLoader classLoader) {
         this(new Kryo5Codec(classLoader));
     }
 
-    /** 复制已有编解码器并绑定新的类加载器。 */
     public ZStdCodec(ClassLoader classLoader, ZStdCodec codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
     
-    /** 解码：读压缩前原始长度 → Zstd 解压 → 内层解码。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            // 压缩前原始字节长度
             int size = buf.readInt();
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer(size);
 
@@ -83,7 +79,6 @@ public class ZStdCodec extends BaseCodec {
         }
     };
 
-    /** 编码：内层序列化 → 写入原始长度 → Zstd 压缩。 */
     private final Encoder encoder = new Encoder() {
 
         @Override
@@ -104,13 +99,11 @@ public class ZStdCodec extends BaseCodec {
         }
     };
 
-    /** 返回值解码器。 */
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
     }
 
-    /** 返回值编码器。 */
     @Override
     public Encoder getValueEncoder() {
         return encoder;

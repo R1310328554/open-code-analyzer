@@ -16,16 +16,12 @@
 package org.redisson.command;
 
 /**
- * 批量执行后同步从库数量不足时抛出的运行时异常。
- * <p>当 {@link org.redisson.api.BatchOptions} 配置了 {@code syncSlaves} 且
- * WAIT/WAITAOF 返回的已同步从库数低于预期时触发。
  *
  * @author Nikita Koksharov
  *
  */
 public class NoSyncedSlavesException extends RuntimeException {
 
-    /** @param message 描述未满足同步从库数量的详情 */
     public NoSyncedSlavesException(String message) {
         super(message);
     }
