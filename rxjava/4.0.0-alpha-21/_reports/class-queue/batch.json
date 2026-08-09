@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:32:51Z",
   "files": [
-    "src/jmh/java/io/reactivex/rxjava4/core/FlattenCrossMapPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/FlattenJustPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/FlattenRangePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/FlowableFlatMapCompletableAsyncPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/FlowableFlatMapCompletableSyncPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/InputWithIncrementingInteger.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/JustAsyncPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/LatchedSingleObserver.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/MemoryPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/ObservableFlatMapPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/OperatorFlatMapPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/OperatorMergePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/PerfAsyncConsumer.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/PerfBoundedSubscriber.java",
-    "src/jmh/java/io/reactivex/rxjava4/core/PerfConsumer.java",
     "src/jmh/java/io/reactivex/rxjava4/core/PerfInteropConsumer.java",
     "src/jmh/java/io/reactivex/rxjava4/core/PerfObserver.java",
     "src/jmh/java/io/reactivex/rxjava4/core/PerfSubscriber.java",
@@ -33,5 +18,5 @@
     "src/jmh/java/io/reactivex/rxjava4/streamable/StreamableFilterPerf.java"
   ],
   "remaining_pending": 92,
-  "done": 855
+  "done": 870
 }
