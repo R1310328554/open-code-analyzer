@@ -13,22 +13,31 @@ import com.taobao.arthas.core.view.Ansi;
 import java.util.List;
 
 /**
+ * Shell 主命令行处理器：解析用户输入并分派内置命令或 Arthas 诊断 Job。
+ * <p>
+ * 支持 exit/logout/q/quit、jobs、fg、bg、kill 等类 bash 内置命令，
+ * 其余输入经 {@link CliTokens#tokenize} 解析后由 {@link ShellImpl#createJob} 创建并运行 Job。
+ *
  * @author beiwei30 on 23/11/2016.
  */
 public class ShellLineHandler implements Handler<String> {
 
+    /** 所属 Shell 会话 */
     private ShellImpl shell;
+    /** 终端，用于输出与关闭 */
     private Term term;
 
+    /** @param shell 处理输入行的 Shell 实例 */
     public ShellLineHandler(ShellImpl shell) {
         this.shell = shell;
         this.term = shell.term();
     }
 
     @Override
+    /** 解析一行输入：内置命令、Job 管理或创建新诊断 Job */
     public void handle(String line) {
         if (line == null) {
-            // EOF
+            // EOF（Ctrl+D）：与 exit 相同流程
             handleExit();
             return;
         }
@@ -36,7 +45,7 @@ public class ShellLineHandler implements Handler<String> {
         List<CliToken> tokens = CliTokens.tokenize(line);
         CliToken first = TokenUtils.findFirstTextToken(tokens);
         if (first == null) {
-            // For now do like this
+            // 空行或仅含空白/管道符：重新显示提示符
             shell.readline();
             return;
         }
@@ -59,12 +68,14 @@ public class ShellLineHandler implements Handler<String> {
             return;
         }
 
+        // 非内置命令：创建 Arthas 诊断 Job 并运行
         Job job = createJob(tokens);
         if (job != null) {
             job.run();
         }
     }
 
+    /** 从参数字符串解析 Job ID，支持 %1 或 1 两种写法 */
     private int getJobId(String arg) {
         int result = -1;
         try {
@@ -78,6 +89,7 @@ public class ShellLineHandler implements Handler<String> {
         return result;
     }
 
+    /** 调用 ShellImpl 创建 Job；解析失败时输出错误并重新 readline */
     private Job createJob(List<CliToken> tokens) {
         Job job;
         try {
@@ -90,6 +102,7 @@ public class ShellLineHandler implements Handler<String> {
         return job;
     }
 
+    /** 处理 kill 命令：终止指定 Job */
     private void handleKill(List<CliToken> tokens) {
         String arg = TokenUtils.findSecondTokenText(tokens);
         if (arg == null) {
@@ -108,10 +121,12 @@ public class ShellLineHandler implements Handler<String> {
         }
     }
 
+    /** 处理 bg 命令：将 STOPPED 状态的 Job 恢复为后台运行 */
     private void handleBackground(List<CliToken> tokens) {
         String arg = TokenUtils.findSecondTokenText(tokens);
         Job job;
         if (arg == null) {
+            // 无参数时默认当前前台 Job
             job = shell.getForegroundJob();
         } else {
             job = shell.jobController().getJob(getJobId(arg));
@@ -131,6 +146,7 @@ public class ShellLineHandler implements Handler<String> {
         }
     }
 
+    /** 处理 fg 命令：将 Job 恢复到前台（resume 或 toForeground） */
     private void handleForeground(List<CliToken> tokens) {
         String arg = TokenUtils.findSecondTokenText(tokens);
         Job job;
@@ -144,12 +160,13 @@ public class ShellLineHandler implements Handler<String> {
             shell.readline();
         } else {
             if (job.getSession() != shell.session()) {
+                // 不允许 fg 其他会话创建的 Job
                 term.write("job " + job.id() + " doesn't belong to this session, so can not fg it\n");
                 shell.readline();
             } else if (job.status() == ExecStatus.STOPPED) {
                 job.resume(true);
             } else if (job.status() == ExecStatus.RUNNING) {
-                // job is running
+                // 已在运行：仅切到前台显示输出
                 job.toForeground();
             } else {
                 term.write("job " + job.id() + " is already terminated, so can not fg it\n");
@@ -158,6 +175,7 @@ public class ShellLineHandler implements Handler<String> {
         }
     }
 
+    /** 列出当前会话所有 Job 及其状态行 */
     private void handleJobs() {
         for (Job job : shell.jobController().jobs()) {
             String statusLine = shell.statusLine(job, job.status());
@@ -166,6 +184,7 @@ public class ShellLineHandler implements Handler<String> {
         shell.readline();
     }
 
+    /** 退出当前 Shell 会话：提示 Arthas 仍在后台运行，需 stop 命令完全关闭 */
     private void handleExit() {
         String msg = Ansi.ansi().fg(Ansi.Color.GREEN).a("Session has been terminated.\n"
                 + "Arthas is still running in the background.\n"
