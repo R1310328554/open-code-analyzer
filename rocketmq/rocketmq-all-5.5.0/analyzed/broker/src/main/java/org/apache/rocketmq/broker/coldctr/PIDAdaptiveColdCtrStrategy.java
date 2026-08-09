@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * 基于 PID 控制的自适应冷读流控：根据全局冷读误差历史动态调节 group 阈值。
+ */
 public class PIDAdaptiveColdCtrStrategy implements ColdCtrStrategy {
     /**
      * Stores the maximum number of recent et val
@@ -28,17 +31,20 @@ public class PIDAdaptiveColdCtrStrategy implements ColdCtrStrategy {
     /**
      * The weights of the three modules of the PID formula
      */
+    /** PID 比例、积分、微分权重系数。 */
     private static final Double KP = 0.5, KI = 0.3, KD = 0.2;
     private final List<Long> historyEtValList = new ArrayList<>();
     private final ColdDataCgCtrService coldDataCgCtrService;
     private final Long expectGlobalVal;
     private long et = 0L;
 
+    /** 绑定流控服务并设置期望全局冷读目标值。 */
     public PIDAdaptiveColdCtrStrategy(ColdDataCgCtrService coldDataCgCtrService, Long expectGlobalVal) {
         this.coldDataCgCtrService = coldDataCgCtrService;
         this.expectGlobalVal = expectGlobalVal;
     }
 
+    /** 历史误差样本足够时计算 PID 决策因子。 */
     @Override
     public Double decisionFactor() {
         if (historyEtValList.size() < MAX_STORE_NUMS) {
@@ -54,6 +60,7 @@ public class PIDAdaptiveColdCtrStrategy implements ColdCtrStrategy {
         return  KP * et + KI * integration + KD * differential;
     }
 
+    /** 决策因子为正时将阈值提高 1.5 倍。 */
     @Override
     public void promote(String consumerGroup, Long currentThreshold) {
         if (decisionFactor() > 0) {
@@ -61,6 +68,7 @@ public class PIDAdaptiveColdCtrStrategy implements ColdCtrStrategy {
         }
     }
 
+    /** 决策因子为负时将阈值降至 0.8 倍（不低于默认 group 阈值）。 */
     @Override
     public void decelerate(String consumerGroup, Long currentThreshold) {
         if (decisionFactor() < 0) {
@@ -72,6 +80,7 @@ public class PIDAdaptiveColdCtrStrategy implements ColdCtrStrategy {
         }
     }
 
+    /** 记录期望与实际全局冷读之差，维护最近 {@link #MAX_STORE_NUMS} 条误差历史。 */
     @Override
     public void collect(Long globalAcc) {
         et = expectGlobalVal - globalAcc;

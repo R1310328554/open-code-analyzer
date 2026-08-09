@@ -34,11 +34,15 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
 
+/**
+ * Broker 元数据 RocksDB 封装：初始化存储、读写 KV、维护 {@link DataVersion} 及批量/WAL 刷盘。
+ */
 public class RocksDBConfigManager {
     protected static final Logger BROKER_LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
     public static final Charset CHARSET = StandardCharsets.UTF_8;
 
+    /** 底层 {@link ConfigRocksDBStorage} 实例。 */
     public ConfigRocksDBStorage configRocksDBStorage = null;
     private FlushOptions flushOptions = null;
     private volatile long lastFlushMemTableMicroSecond = 0;
@@ -71,6 +75,7 @@ public class RocksDBConfigManager {
         this.versionCF = new String(KV_DATA_VERSION_COLUMN_FAMILY_NAME, CHARSET);
     }
 
+    /** 打开 RocksDB；readOnly 为 true 时只读打开（迁移场景）。 */
     public boolean init(boolean readOnly) {
         this.configRocksDBStorage = ConfigRocksDBStorage.getStore(filePath, readOnly, compressionType);
         return this.configRocksDBStorage.start();
@@ -84,6 +89,7 @@ public class RocksDBConfigManager {
         return this.init(false);
     }
 
+    /** 从 version 列族加载 KV 数据版本号。 */
     public boolean loadDataVersion() {
         String currDataVersionString = null;
         try {
@@ -98,6 +104,7 @@ public class RocksDBConfigManager {
         }
     }
 
+    /** 迭代 default 列族全部 KV 并交给回调解码。 */
     public boolean loadData(BiConsumer<byte[], byte[]> biConsumer) {
         try {
             configRocksDBStorage.iterate(this.defaultCF, biConsumer);
@@ -123,6 +130,7 @@ public class RocksDBConfigManager {
         return true;
     }
 
+    /** 刷 WAL 并按间隔 flush MemTable。 */
     public void flushWAL() {
         try {
             if (!isLoaded()) {
@@ -159,6 +167,7 @@ public class RocksDBConfigManager {
         this.configRocksDBStorage.delete(defaultCF, keyBytes);
     }
 
+    /** 递增版本计数并持久化到 version 列族。 */
     public void updateKvDataVersion() throws Exception {
         kvDataVersion.nextVersion();
         this.configRocksDBStorage.put(versionCF, KV_DATA_VERSION_KEY, KV_DATA_VERSION_KEY.length,
@@ -180,6 +189,7 @@ public class RocksDBConfigManager {
         configRocksDBStorage.writeBatchPutOperation(defaultCF, writeBatch, key, value);
     }
 
+    /** 批量写入并刷 WAL。 */
     public void batchPutWithWal(final WriteBatch batch) throws Exception {
         this.configRocksDBStorage.batchPutWithWal(batch);
     }

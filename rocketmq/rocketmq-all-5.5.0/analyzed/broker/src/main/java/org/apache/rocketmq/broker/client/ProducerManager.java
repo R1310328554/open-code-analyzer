@@ -37,10 +37,16 @@ import org.apache.rocketmq.remoting.protocol.body.ProducerInfo;
 import org.apache.rocketmq.remoting.protocol.body.ProducerTableInfo;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
+/**
+ * 生产者连接管理器：维护 producer group 到 Netty {@link Channel} 的映射，
+ * 负责注册/注销、过期扫描、通道关闭事件及事务回查时的可用通道选取。
+ */
 public class ProducerManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+    /** 通道无心跳超过该毫秒数视为过期并清理。 */
     private static final long CHANNEL_EXPIRED_TIMEOUT = 1000 * 120;
     private static final int GET_AVAILABLE_CHANNEL_RETRY_COUNT = 3;
+    /** group 名 → (Channel → 客户端通道信息) 二级表。 */
     private final ConcurrentMap<String /* group name */, ConcurrentMap<Channel, ClientChannelInfo>> groupChannelTable =
         new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Channel> clientChannelTable = new ConcurrentHashMap<>();
@@ -59,6 +65,7 @@ public class ProducerManager {
         this.brokerConfig = null;
     }
 
+    /** 注入统计管理器与 Broker 配置。 */
     public ProducerManager(final BrokerStatsManager brokerStatsManager, final BrokerConfig brokerConfig) {
         this.brokerStatsManager = brokerStatsManager;
         this.brokerConfig = brokerConfig;
@@ -68,6 +75,7 @@ public class ProducerManager {
         return this.groupChannelTable.size();
     }
 
+    /** 判断指定 producer group 是否仍有在线连接。 */
     public boolean groupOnline(String group) {
         Map<Channel, ClientChannelInfo> channels = this.groupChannelTable.get(group);
         return channels != null && !channels.isEmpty();
@@ -77,6 +85,7 @@ public class ProducerManager {
         return groupChannelTable;
     }
 
+    /** 汇总所有 group 下在线生产者信息供管理接口查询。 */
     public ProducerTableInfo getProducerTable() {
         Map<String, List<ProducerInfo>> map = new HashMap<>();
         for (String group : this.groupChannelTable.keySet()) {
@@ -104,6 +113,7 @@ public class ProducerManager {
         return new ProducerTableInfo(map);
     }
 
+    /** 定时扫描并移除超时未更新的通道，空 group 一并删除。 */
     public void scanNotActiveChannel() {
         Iterator<Map.Entry<String, ConcurrentMap<Channel, ClientChannelInfo>>> iterator = this.groupChannelTable.entrySet().iterator();
 
@@ -142,6 +152,7 @@ public class ProducerManager {
         }
     }
 
+    /** Netty 通道关闭时从各 group 表移除对应连接并触发变更监听。 */
     public boolean doChannelCloseEvent(final String remoteAddr, final Channel channel) {
         boolean removed = false;
         if (channel != null) {
@@ -203,6 +214,7 @@ public class ProducerManager {
         return removed;
     }
 
+    /** 注册或刷新 producer 连接；可配置拒绝新 producer 注册（事务场景）。 */
     public void registerProducer(final String group, final ClientChannelInfo clientChannelInfo) {
 
         long start = System.currentTimeMillis();
@@ -258,6 +270,7 @@ public class ProducerManager {
         }
     }
 
+    /** 显式注销 producer 连接，group 为空时移除整个 group。 */
     public void unregisterProducer(final String group, final ClientChannelInfo clientChannelInfo) {
         ConcurrentMap<Channel, ClientChannelInfo> channelTable = this.groupChannelTable.get(group);
         if (null != channelTable && !channelTable.isEmpty()) {
@@ -276,6 +289,7 @@ public class ProducerManager {
         }
     }
 
+    /** 轮询选取 group 内 active 且可写的 Channel，供事务状态回查使用。 */
     public Channel getAvailableChannel(String groupId) {
         if (groupId == null) {
             return null;
@@ -316,6 +330,7 @@ public class ProducerManager {
         return lastActiveChannel;
     }
 
+    /** 按 clientId 查找已注册通道。 */
     public Channel findChannel(String clientId) {
         return clientChannelTable.get(clientId);
     }
@@ -331,6 +346,7 @@ public class ProducerManager {
         }
     }
 
+    /** 注册 producer 上下线事件监听器。 */
     public void appendProducerChangeListener(ProducerChangeListener producerChangeListener) {
         producerChangeListenerList.add(producerChangeListener);
     }

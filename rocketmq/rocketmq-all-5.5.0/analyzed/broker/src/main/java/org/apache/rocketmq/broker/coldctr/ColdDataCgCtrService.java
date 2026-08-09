@@ -37,29 +37,33 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
 /**
- * store the cg cold read ctr table and acc the size of the cold
- * reading msg, timing to clear the table and set acc to zero
+ * 冷数据消费组流控服务：维护运行时/配置阈值表，累计冷读量，
+ * 定时清零并按策略动态调节各 group 冷读限速。
  */
 public class ColdDataCgCtrService extends ServiceThread {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_COLDCTR_LOGGER_NAME);
     private final SystemClock systemClock = new SystemClock();
     private final long cgColdAccResideTimeoutMills = 60 * 1000;
+    /** 全局冷读字节累计，每周期清零。 */
     private static final AtomicLong GLOBAL_ACC = new AtomicLong(0L);
     private static final String ADAPTIVE = "||adaptive";
     /**
      * as soon as the consumerGroup read the cold data then it will be put into @code cgColdThresholdMapRuntime,
      * and it also will be removed when does not read cold data in @code cgColdAccResideTimeoutMills later;
      */
+    /** 运行时表：正在读冷数据的 consumer group → 累计量与时间戳。 */
     private final ConcurrentHashMap<String, AccAndTimeStamp> cgColdThresholdMapRuntime = new ConcurrentHashMap<>();
     /**
      * if the system admin wants to set the special cold read threshold for some consumerGroup, the configuration will
      * be putted into @code cgColdThresholdMapConfig
      */
+    /** 配置表：管理员或自适应策略写入的 per-group 冷读阈值。 */
     private final ConcurrentHashMap<String, Long> cgColdThresholdMapConfig = new ConcurrentHashMap<>();
     private final BrokerConfig brokerConfig;
     private final MessageStoreConfig messageStoreConfig;
     private final ColdCtrStrategy coldCtrStrategy;
 
+    /** 按配置选择 PID 自适应或简单冷读流控策略。 */
     public ColdDataCgCtrService(BrokerController brokerController) {
         this.brokerConfig = brokerController.getBrokerConfig();
         this.messageStoreConfig = brokerController.getMessageStoreConfig();
@@ -71,6 +75,7 @@ public class ColdDataCgCtrService extends ServiceThread {
         return ColdDataCgCtrService.class.getSimpleName();
     }
 
+    /** 后台循环：定期清零累计、清理超时 group 并执行加减速策略。 */
     @Override
     public void run() {
         log.info("{} service started", this.getServiceName());
@@ -95,6 +100,7 @@ public class ColdDataCgCtrService extends ServiceThread {
         log.info("{} service end", this.getServiceName());
     }
 
+    /** 导出运行时表、配置表及全局累计的 JSON 快照。 */
     public String getColdDataFlowCtrInfo() {
         JSONObject result = new JSONObject();
         result.put("runtimeTable", this.cgColdThresholdMapRuntime);
@@ -110,6 +116,7 @@ public class ColdDataCgCtrService extends ServiceThread {
      * update the acc to zero for the cg in the table;
      * use the strategy to promote or decelerate the cg;
      */
+    /** 清理长期无冷读的 group、重置累计并按策略 promote/decelerate。 */
     private void clearDataAcc() {
         log.info("clearDataAcc cgColdThresholdMapRuntime key size: {}", cgColdThresholdMapRuntime.size());
         if (brokerConfig.isColdCtrStrategyEnable()) {
@@ -159,6 +166,7 @@ public class ColdDataCgCtrService extends ServiceThread {
         }
     }
 
+    /** 累加指定 group 与本周期的全局冷读字节数。 */
     public void coldAcc(String consumerGroup, long coldDataToAcc) {
         if (coldDataToAcc <= 0) {
             return;
@@ -183,6 +191,7 @@ public class ColdDataCgCtrService extends ServiceThread {
         cgColdThresholdMapConfig.remove(consumerGroup);
     }
 
+    /** 判断该 group 是否应触发冷读流控（超 group 或全局阈值）。 */
     public boolean isCgNeedColdDataFlowCtr(String consumerGroup) {
         if (!this.messageStoreConfig.isColdDataFlowControlEnable()) {
             return false;
@@ -202,6 +211,7 @@ public class ColdDataCgCtrService extends ServiceThread {
         return GLOBAL_ACC.get() >= this.brokerConfig.getGlobalColdReadThreshold();
     }
 
+    /** 全局冷读累计是否超过 {@link BrokerConfig#getGlobalColdReadThreshold()}。 */
     public boolean isGlobalColdCtr() {
         return GLOBAL_ACC.get() > this.brokerConfig.getGlobalColdReadThreshold();
     }

@@ -28,14 +28,13 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 /**
- * just requests are type of pull have the qualification to be put into this hold queue.
- * if the pull request is reading cold data and that request will be cold at the first time,
- * then the pull request will be cold in this @code pullRequestLinkedBlockingQueue,
- * in @code coldTimeoutMillis later the pull request will be warm and marked holded
+ * 冷读 Pull 请求挂起服务：首次触发冷读流控的 Pull 请求入队，
+ * 经过 {@link #coldHoldTimeoutMillis} 后唤醒并标记不再挂起。
  */
 public class ColdDataPullRequestHoldService extends ServiceThread {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_COLDCTR_LOGGER_NAME);
+    /** 唤醒后写入请求扩展字段，表示后续不再挂起。 */
     public static final String NO_SUSPEND_KEY = "_noSuspend_";
 
     private final long coldHoldTimeoutMillis = 3000;
@@ -43,6 +42,7 @@ public class ColdDataPullRequestHoldService extends ServiceThread {
     private final BrokerController brokerController;
     private final LinkedBlockingQueue<PullRequest> pullRequestColdHoldQueue = new LinkedBlockingQueue<>(10000);
 
+    /** 冷读流控开启时将 Pull 请求放入挂起队列。 */
     public void suspendColdDataReadRequest(PullRequest pullRequest) {
         if (this.brokerController.getMessageStoreConfig().isColdDataFlowControlEnable()) {
             pullRequestColdHoldQueue.offer(pullRequest);
@@ -58,6 +58,7 @@ public class ColdDataPullRequestHoldService extends ServiceThread {
         return ColdDataPullRequestHoldService.class.getSimpleName();
     }
 
+    /** 后台循环检查挂起队列，超时请求唤醒并执行 pull 处理。 */
     @Override
     public void run() {
         log.info("{} service started", this.getServiceName());
@@ -79,6 +80,7 @@ public class ColdDataPullRequestHoldService extends ServiceThread {
         log.info("{} service end", this.getServiceName());
     }
 
+    /** 遍历挂起队列，超时条目添加 NO_SUSPEND 标记并触发 wakeup 处理。 */
     private void checkColdDataPullRequest() {
         int succTotal = 0, errorTotal = 0, queueSize = pullRequestColdHoldQueue.size() ;
         Iterator<PullRequest> iterator = pullRequestColdHoldQueue.iterator();

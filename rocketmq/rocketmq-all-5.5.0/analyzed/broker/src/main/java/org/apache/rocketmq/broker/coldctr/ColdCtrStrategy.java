@@ -16,27 +16,30 @@
  */
 package org.apache.rocketmq.broker.coldctr;
 
+/**
+ * 冷读流控策略 SPI：根据全局冷读量决策加速或减速各 consumer group 的冷读阈值。
+ */
 public interface ColdCtrStrategy {
     /**
-     * Calculate the determining factor about whether to accelerate or decelerate
-     * @return
+     * 计算加/减速决策因子；正值倾向加速，负值倾向减速。
+     * @return 决策因子，简单策略可返回 null
      */
     Double decisionFactor();
     /**
-     * Promote the speed for consumerGroup to read cold data
-     * @param consumerGroup
-     * @param currentThreshold
+     * 提高指定 consumer group 的冷读阈值（放宽限速）。
+     * @param consumerGroup 消费组名（自适应策略带 ||adaptive 后缀）
+     * @param currentThreshold 当前阈值
      */
     void promote(String consumerGroup, Long currentThreshold);
     /**
-     * Decelerate the speed for consumerGroup to read cold data
-     * @param consumerGroup
-     * @param currentThreshold
+     * 降低指定 consumer group 的冷读阈值（收紧限速）。
+     * @param consumerGroup 消费组名
+     * @param currentThreshold 当前阈值
      */
     void decelerate(String consumerGroup, Long currentThreshold);
     /**
-     * Collect the total number of cold read data in the system
-     * @param globalAcc
+     * 采集本周期全局冷读累计量，供策略更新内部状态。
+     * @param globalAcc 全局冷读字节累计
      */
     void collect(Long globalAcc);
 }

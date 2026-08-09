@@ -28,20 +28,18 @@ import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 
+/**
+ * Broker v2 配置 RocksDB 键值编解码辅助：按表前缀/记录前缀构造
+ * DataVersion 与配置条目的 Netty {@link ByteBuf} 键值。
+ */
 public class ConfigHelper {
 
     /**
-     * <p>
-     * Layout of data version key:
-     * [table-prefix, 1 byte][table-id, 2 byte][record-prefix, 1 byte][data-version-bytes]
-     * </p>
+     * 从 RocksDB 加载指定表的 DataVersion。
+     * <p>键布局：[table-prefix,1][table-id,2][record-prefix,1][data-version-bytes]</p>
+     * <p>值布局：[state-machine-version,8][timestamp,8][counter,8]</p>
      *
-     * <p>
-     * Layout of data version value:
-     * [state-machine-version, 8 bytes][timestamp, 8 bytes][sequence counter, 8 bytes]
-     * </p>
-     *
-     * @throws RocksDBException if RocksDB raises an error
+     * @throws RocksDBException RocksDB 读失败时抛出
      */
     public static Optional<ByteBuf> loadDataVersion(ConfigStorage configStorage, TableId tableId)
         throws RocksDBException {
@@ -64,6 +62,7 @@ public class ConfigHelper {
         return Optional.empty();
     }
 
+    /** 递增 DataVersion 并将键值对写入 WriteBatch。 */
     public static void stampDataVersion(WriteBatch writeBatch, TableId table, DataVersion dataVersion, long stateMachineVersion)
         throws RocksDBException {
         // Increase data version
@@ -88,6 +87,7 @@ public class ConfigHelper {
         }
     }
 
+    /** 从 ByteBuf 解析 stateVersion、timestamp、counter 填入 DataVersion。 */
     public static void onDataVersionLoad(ByteBuf buf, DataVersion dataVersion) {
         if (buf.readableBytes() == 8 /* state machine version */ + 8 /* timestamp */ + 8 /* counter */) {
             long stateMachineVersion = buf.readLong();
@@ -100,6 +100,7 @@ public class ConfigHelper {
         buf.release();
     }
 
+    /** 构造配置记录键：[table-prefix][table-id][data-prefix][name-len][name-bytes]。 */
     public static ByteBuf keyBufOf(TableId tableId, final String name) {
         Preconditions.checkNotNull(name);
         byte[] bytes = name.getBytes(StandardCharsets.UTF_8);
@@ -113,6 +114,7 @@ public class ConfigHelper {
         return keyBuf;
     }
 
+    /** 按序列化类型（当前仅 JSON）构造配置值 ByteBuf。 */
     public static ByteBuf valueBufOf(final Object config, SerializationType serializationType) {
         if (SerializationType.JSON == serializationType) {
             byte[] payload = JSON.toJSONBytes(config);
@@ -124,6 +126,7 @@ public class ConfigHelper {
         throw new RuntimeException("Unsupported serialization type: " + serializationType);
     }
 
+    /** 读取 ByteBuf 全部可读字节为数组。 */
     public static byte[] readBytes(final ByteBuf buf) {
         byte[] bytes = new byte[buf.readableBytes()];
         buf.readBytes(bytes);

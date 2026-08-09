@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.broker.coldctr;
 
+/**
+ * 简单冷读流控策略：超阈值时固定倍率升阈，仅全局超限时才降阈。
+ */
 public class SimpleColdCtrStrategy implements ColdCtrStrategy {
     private final ColdDataCgCtrService coldDataCgCtrService;
 
@@ -28,11 +31,13 @@ public class SimpleColdCtrStrategy implements ColdCtrStrategy {
         return null;
     }
 
+    /** 无条件将 group 阈值提高 1.5 倍。 */
     @Override
     public void promote(String consumerGroup, Long currentThreshold) {
         coldDataCgCtrService.addOrUpdateGroupConfig(consumerGroup, (long)(currentThreshold * 1.5));
     }
 
+    /** 仅全局超限时将阈值降至 0.8 倍（不低于默认 group 阈值）。 */
     @Override
     public void decelerate(String consumerGroup, Long currentThreshold) {
         if (!coldDataCgCtrService.isGlobalColdCtr()) {

@@ -20,13 +20,19 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * RocksDB 消费位点值序列化包装：queueId → offset 映射表。
+ */
 public class RocksDBOffsetSerializeWrapper extends RemotingSerializable {
+    /** 队列 ID 到消费位点的映射。 */
     private ConcurrentMap<Integer, Long> offsetTable = null;
 
+    /** 返回位点映射表。 */
     public ConcurrentMap<Integer, Long> getOffsetTable() {
         return offsetTable;
     }
 
+    /** 设置位点映射表。 */
     public void setOffsetTable(ConcurrentMap<Integer, Long> offsetTable) {
         this.offsetTable = offsetTable;
     }

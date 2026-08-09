@@ -28,14 +28,20 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * 广播消费模式下的队列 rebalance 锁管理器：
+ * 保证同一 MessageQueue 在同一时刻仅被一个 consumer 实例持有。
+ */
 public class RebalanceLockManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.REBALANCE_LOCK_LOGGER_NAME);
+    /** 锁最大存活时间（毫秒），超时后可被其他 client 抢占。 */
     private final static long REBALANCE_LOCK_MAX_LIVE_TIME = Long.parseLong(System.getProperty(
         "rocketmq.broker.rebalance.lockMaxLiveTime", "60000"));
     private final Lock lock = new ReentrantLock();
     private final ConcurrentMap<String/* group */, ConcurrentHashMap<MessageQueue, LockEntry>> mqLockTable =
         new ConcurrentHashMap<>(1024);
 
+    /** 判断 group 下所有队列锁是否均已过期（或 group 不存在）。 */
     public boolean isLockAllExpired(final String group) {
         final ConcurrentHashMap<MessageQueue, LockEntry> lockEntryMap = mqLockTable.get(group);
         if (null == lockEntryMap) {
@@ -49,6 +55,7 @@ public class RebalanceLockManager {
         return true;
     }
 
+    /** 尝试为 client 锁定单个 MessageQueue；已持有则刷新时间戳。 */
     public boolean tryLock(final String group, final MessageQueue mq, final String clientId) {
 
         if (!this.isLocked(group, mq, clientId)) {
@@ -120,6 +127,7 @@ public class RebalanceLockManager {
         return false;
     }
 
+    /** 批量尝试加锁，返回成功锁定的队列集合。 */
     public Set<MessageQueue> tryLockBatch(final String group, final Set<MessageQueue> mqs,
         final String clientId) {
         Set<MessageQueue> lockedMqs = new HashSet<>(mqs.size());
@@ -189,6 +197,7 @@ public class RebalanceLockManager {
         return lockedMqs;
     }
 
+    /** 批量释放 client 持有的队列锁。 */
     public void unlockBatch(final String group, final Set<MessageQueue> mqs, final String clientId) {
         try {
             this.lock.lockInterruptibly();
@@ -226,6 +235,7 @@ public class RebalanceLockManager {
         }
     }
 
+    /** 单队列锁条目：持有 clientId 与最后更新时间。 */
     static class LockEntry {
         private String clientId;
         private volatile long lastUpdateTimestamp = System.currentTimeMillis();
@@ -246,11 +256,13 @@ public class RebalanceLockManager {
             this.lastUpdateTimestamp = lastUpdateTimestamp;
         }
 
+        /** 判断锁是否仍由指定 client 持有且未过期。 */
         public boolean isLocked(final String clientId) {
             boolean eq = this.clientId.equals(clientId);
             return eq && !this.isExpired();
         }
 
+        /** 距上次更新超过 {@link #REBALANCE_LOCK_MAX_LIVE_TIME} 则视为过期。 */
         public boolean isExpired() {
             boolean expired =
                 (System.currentTimeMillis() - this.lastUpdateTimestamp) > REBALANCE_LOCK_MAX_LIVE_TIME;

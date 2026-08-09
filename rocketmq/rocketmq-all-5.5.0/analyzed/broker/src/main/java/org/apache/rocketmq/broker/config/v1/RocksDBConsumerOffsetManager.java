@@ -37,6 +37,10 @@ import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.rocksdb.CompressionType;
 import org.rocksdb.WriteBatch;
 
+/**
+ * 基于 RocksDB 的消费位点管理器：支持独立/统一 RocksDB 实例，
+ * 启动时与 JSON 文件合并并按需从旧库迁移。
+ */
 public class RocksDBConsumerOffsetManager extends ConsumerOffsetManager {
 
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
@@ -70,10 +74,12 @@ public class RocksDBConsumerOffsetManager extends ConsumerOffsetManager {
         this(brokerController, useSingleRocksDBForAllConfigs, null);
     }
 
+    /** 按 Broker 配置选择单库或多库 RocksDB 路径。 */
     public RocksDBConsumerOffsetManager(BrokerController brokerController) {
         this(brokerController, brokerController.getBrokerConfig().isUseSingleRocksDBForAllConfigs(), null);
     }
 
+    /** 初始化 RocksDB、加载位点并与 JSON 合并；统一库模式下尝试迁移。 */
     @Override
     public boolean load() {
         if (!rocksDBConfigManager.init()) {
@@ -92,6 +98,7 @@ public class RocksDBConsumerOffsetManager extends ConsumerOffsetManager {
         return this.rocksDBConfigManager.loadData(this::decodeOffset) && merge();
     }
 
+    /** JSON 版本更新时将 JSON 位点全量导入 RocksDB。 */
     private boolean merge() {
         if (!UtilAll.isPathExists(this.configFilePath()) && !UtilAll.isPathExists(this.configFilePath() + ".bak")) {
             log.info("consumerOffset json file does not exist, so skip merge");
@@ -133,6 +140,7 @@ public class RocksDBConsumerOffsetManager extends ConsumerOffsetManager {
         }
     }
 
+    /** 解码 topic@group 键与 {@link RocksDBOffsetSerializeWrapper} 值到内存表。 */
     protected void decodeOffset(final byte[] key, final byte[] body) {
         String topicAtGroup = new String(key, DataConverter.CHARSET_UTF8);
         RocksDBOffsetSerializeWrapper wrapper = JSON.parseObject(body, RocksDBOffsetSerializeWrapper.class);
@@ -157,6 +165,7 @@ public class RocksDBConsumerOffsetManager extends ConsumerOffsetManager {
         return BrokerPathConfigHelper.getConsumerOffsetPath(this.storePathRootDir);
     }
 
+    /** 增量模式仅刷版本与 WAL；否则全量 batch 写入 RocksDB。 */
     @Override
     public synchronized void persist() {
         if (brokerController.getBrokerConfig().isPersistConsumerOffsetIncrementally()) {
@@ -186,6 +195,7 @@ public class RocksDBConsumerOffsetManager extends ConsumerOffsetManager {
         }
     }
 
+    /** 更新内存位点并按配置增量或跳过持久化。 */
     @Override
     public void commitOffset(String clientHost, String group, String topic, int queueId, long offset) {
         String key = topic + TOPIC_GROUP_SEPARATOR + group;
@@ -254,6 +264,7 @@ public class RocksDBConsumerOffsetManager extends ConsumerOffsetManager {
      * This method will only be called when switching from separate RocksDB mode to unified mode.
      * It opens the separate RocksDB in read-only mode, compares versions, and imports data if needed.
      */
+    /** 统一库模式下只读打开旧独立库，版本较新则导入位点数据。 */
     private void migrateFromSeparateRocksDBs() {
         String separateRocksDBPath = rocksdbConfigFilePath(this.storePathRootDir, false);
 

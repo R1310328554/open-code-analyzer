@@ -20,12 +20,16 @@ import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * LMQ 场景下的订阅组管理器：LMQ group 视为始终存在且使用默认配置，不落库。
+ */
 public class RocksDBLmqSubscriptionGroupManager extends RocksDBSubscriptionGroupManager {
 
     public RocksDBLmqSubscriptionGroupManager(BrokerController brokerController) {
         super(brokerController);
     }
 
+    /** LMQ group 返回仅含组名的默认配置，否则委托父类。 */
     @Override
     public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) {
         if (MixAll.isLmq(group)) {
@@ -36,6 +40,7 @@ public class RocksDBLmqSubscriptionGroupManager extends RocksDBSubscriptionGroup
         return super.findSubscriptionGroupConfig(group);
     }
 
+    /** 忽略 LMQ group 的更新请求。 */
     @Override
     public void updateSubscriptionGroupConfig(final SubscriptionGroupConfig config) {
         if (config == null || MixAll.isLmq(config.getGroupName())) {
@@ -44,6 +49,7 @@ public class RocksDBLmqSubscriptionGroupManager extends RocksDBSubscriptionGroup
         super.updateSubscriptionGroupConfig(config);
     }
 
+    /** LMQ group 恒为 true，其余走父类逻辑。 */
     @Override
     public boolean containsSubscriptionGroup(String group) {
         if (MixAll.isLmq(group)) {

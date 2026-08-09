@@ -21,12 +21,16 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.common.constant.PermName;
 
+/**
+ * LMQ 场景下的 Topic 配置管理器：LMQ topic 动态生成单队列读写配置，不持久化。
+ */
 public class RocksDBLmqTopicConfigManager extends RocksDBTopicConfigManager {
 
     public RocksDBLmqTopicConfigManager(BrokerController brokerController) {
         super(brokerController);
     }
 
+    /** LMQ topic 返回 1 读 1 写队列的默认配置。 */
     @Override
     public TopicConfig selectTopicConfig(final String topic) {
         if (MixAll.isLmq(topic)) {
@@ -35,6 +39,7 @@ public class RocksDBLmqTopicConfigManager extends RocksDBTopicConfigManager {
         return super.selectTopicConfig(topic);
     }
 
+    /** 忽略 LMQ topic 的更新请求。 */
     @Override
     public void updateTopicConfig(final TopicConfig topicConfig) {
         if (topicConfig == null || MixAll.isLmq(topicConfig.getTopicName())) {
@@ -43,6 +48,7 @@ public class RocksDBLmqTopicConfigManager extends RocksDBTopicConfigManager {
         super.updateTopicConfig(topicConfig);
     }
 
+    /** LMQ topic 恒为 true，其余走父类逻辑。 */
     @Override
     public boolean containsTopic(String topic) {
         if (MixAll.isLmq(topic)) {
@@ -51,6 +57,7 @@ public class RocksDBLmqTopicConfigManager extends RocksDBTopicConfigManager {
         return super.containsTopic(topic);
     }
 
+    /** 构造 LMQ topic 的单队列读写 {@link TopicConfig}。 */
     private TopicConfig simpleLmqTopicConfig(String topic) {
         return new TopicConfig(topic, 1, 1, PermName.PERM_READ | PermName.PERM_WRITE);
     }

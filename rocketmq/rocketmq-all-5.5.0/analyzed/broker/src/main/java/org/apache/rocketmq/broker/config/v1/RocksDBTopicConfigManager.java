@@ -33,6 +33,10 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * 基于 RocksDB 的 Topic 配置管理器：读写 topic 元数据，
+ * 支持与 JSON 合并及从独立库迁移到统一 metadata 库。
+ */
 public class RocksDBTopicConfigManager extends TopicConfigManager {
     private static final String VERSION_COLUMN_FAMILY = "topicVersion";
     private static final String TOPIC_COLUMN_FAMILY = "topic";
@@ -63,10 +67,12 @@ public class RocksDBTopicConfigManager extends TopicConfigManager {
         this(brokerController, useSingleRocksDBForAllConfigs, null);
     }
 
+    /** 按 Broker 配置初始化 RocksDB 路径与列族。 */
     public RocksDBTopicConfigManager(BrokerController brokerController) {
         this(brokerController, brokerController.getBrokerConfig().isUseSingleRocksDBForAllConfigs(), null);
     }
 
+    /** 加载 RocksDB topic 配置、合并 JSON 并在统一库模式下迁移。 */
     @Override
     public boolean load() {
         if (!rocksDBConfigManager.init()) {
@@ -129,6 +135,7 @@ public class RocksDBTopicConfigManager extends TopicConfigManager {
         return this.rocksDBConfigManager.stop();
     }
 
+    /** 将 RocksDB KV 解码为 {@link TopicConfig} 写入内存表。 */
     protected void decodeTopicConfig(byte[] key, byte[] body) {
         String topicName = new String(key, DataConverter.CHARSET_UTF8);
         TopicConfig topicConfig = JSON.parseObject(body, TopicConfig.class);
@@ -137,6 +144,7 @@ public class RocksDBTopicConfigManager extends TopicConfigManager {
         log.info("load exist local topic, {}", topicConfig.toString());
     }
 
+    /** 更新内存表并同步写入 RocksDB。 */
     @Override
     public TopicConfig putTopicConfig(TopicConfig topicConfig) {
         String topicName = topicConfig.getTopicName();
@@ -162,6 +170,7 @@ public class RocksDBTopicConfigManager extends TopicConfigManager {
         return topicConfig;
     }
 
+    /** 实时持久化模式下 flush WAL。 */
     @Override
     public synchronized void persist() {
         if (brokerController.getMessageStoreConfig().isRealTimePersistRocksDBConfig()) {
@@ -221,6 +230,7 @@ public class RocksDBTopicConfigManager extends TopicConfigManager {
      * This method will only be called when switching from separate RocksDB mode to unified mode.
      * It opens the separate RocksDB in read-only mode, compares versions, and imports data if needed.
      */
+    /** 统一库模式下从旧 topics 独立库导入较新版本数据。 */
     private void migrateFromSeparateRocksDBs() {
         String separateRocksDBPath = rocksdbConfigFilePath(this.storePathRootDir, false);
 

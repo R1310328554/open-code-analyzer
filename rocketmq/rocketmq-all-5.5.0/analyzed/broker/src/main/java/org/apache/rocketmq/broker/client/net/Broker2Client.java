@@ -53,14 +53,20 @@ import org.apache.rocketmq.remoting.protocol.header.NotifyUnsubscribeLiteRequest
 import org.apache.rocketmq.remoting.protocol.header.ResetOffsetRequestHeader;
 import org.apache.rocketmq.store.exception.ConsumeQueueException;
 
+/**
+ * Broker 主动调用 Client 的 RPC 封装：重置消费位点、查询消费进度、
+ * 事务状态回查及通知 consumerId 变更等下行 Remoting 请求。
+ */
 public class Broker2Client {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
 
+    /** 绑定 {@link BrokerController} 以获取 RemotingServer 与消费者管理器。 */
     public Broker2Client(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
+    /** 向客户端发送轻量退订通知（oneway）。 */
     public void notifyUnsubscribeLite(Channel channel, NotifyUnsubscribeLiteRequestHeader requestHeader) {
         RemotingCommand request =
             RemotingCommand.createRequestCommand(RequestCode.NOTIFY_UNSUBSCRIBE_LITE, requestHeader);
@@ -71,6 +77,7 @@ public class Broker2Client {
         }
     }
 
+    /** 向 producer 通道发送事务状态回查请求，附带序列化后的消息体。 */
     public void checkProducerTransactionState(
         final String group,
         final Channel channel,
@@ -87,12 +94,14 @@ public class Broker2Client {
         }
     }
 
+    /** 同步调用客户端并等待响应（默认 10s 超时）。 */
     public RemotingCommand callClient(final Channel channel,
         final RemotingCommand request
     ) throws RemotingSendRequestException, RemotingTimeoutException, InterruptedException {
         return this.brokerController.getRemotingServer().invokeSync(channel, request, 10000);
     }
 
+    /** 通知 consumer 同组内 consumerId 列表已变更。 */
     public void notifyConsumerIdsChanged(
         final Channel channel,
         final String consumerGroup) {
@@ -117,6 +126,7 @@ public class Broker2Client {
         return resetOffset(topic, group, timeStamp, isForce, false);
     }
 
+    /** 按时间戳计算各队列目标位点并下发 RESET_CONSUMER_CLIENT_OFFSET 到在线 consumer。 */
     public RemotingCommand resetOffset(String topic, String group, long timeStamp, boolean isForce,
         boolean isC) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -231,6 +241,7 @@ public class Broker2Client {
         return response;
     }
 
+    /** 将 Java MessageQueue 位点表转为 C++ 客户端使用的结构列表。 */
     private List<MessageQueueForC> convertOffsetTable2OffsetList(Map<MessageQueue, Long> table) {
         List<MessageQueueForC> list = new ArrayList<>();
         for (Entry<MessageQueue, Long> entry : table.entrySet()) {
@@ -242,6 +253,7 @@ public class Broker2Client {
         return list;
     }
 
+    /** 向在线 consumer 拉取各 MessageQueue 消费进度，可指定单个 clientId。 */
     public RemotingCommand getConsumeStatus(String topic, String group, String originClientId) {
         final RemotingCommand result = RemotingCommand.createResponseCommand(null);
 
