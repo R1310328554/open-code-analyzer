@@ -30,9 +30,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
+ * 基于 Redisson {@link RMap}/{@link RMapCache} 的 Micronaut {@link AsyncCache} 实现。
+ * <p>读操作走 Redis 异步 API；缺失键时通过 {@link ExecutorService} 加载并回填。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
 
@@ -42,6 +43,11 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
     private final ExecutorService executorService;
     private final BaseCacheConfiguration configuration;
 
+    /** @param mapCache 带 TTL 的 Map 缓存；无过期策略时为 null
+     *  @param map 底层 {@link RMap}（始终非 null）
+     *  @param executorService 缓存未命中时执行 supplier 的线程池
+     *  @param configuration 过期与编解码配置
+     */
     public RedissonAsyncCache(RMapCache<Object, Object> mapCache,
                               RMap<Object, Object> map,
                               ExecutorService executorService,
@@ -54,6 +60,7 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
         this.configuration = configuration;
     }
 
+    /** 异步读取并转换为 {@code requiredType}；不存在时返回空 Optional。 */
     @Override
     public <T> CompletableFuture<Optional<T>> get(Object key, Argument<T> requiredType) {
         ArgumentUtils.requireNonNull("key", key);
@@ -67,6 +74,7 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
                       .toCompletableFuture();
     }
 
+    /** 缓存未命中时在 IO 线程池执行 supplier 并写入缓存。 */
     @Override
     public <T> CompletableFuture<T> get(Object key, Argument<T> requiredType, Supplier<T> supplier) {
         ArgumentUtils.requireNonNull("key", key);
@@ -83,6 +91,7 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
         });
     }
 
+    /** 键不存在时写入；返回先前值（Optional）。 */
     @Override
     public <T> CompletableFuture<Optional<T>> putIfAbsent(Object key, T value) {
         ArgumentUtils.requireNonNull("key", key);
@@ -100,6 +109,7 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
                         .toCompletableFuture();
     }
 
+    /** 写入或覆盖条目；有 {@link RMapCache} 时附带 TTL/max-idle。 */
     @Override
     public CompletableFuture<Boolean> put(Object key, Object value) {
         ArgumentUtils.requireNonNull("key", key);
@@ -117,6 +127,7 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
                         .toCompletableFuture();
     }
 
+    /** 异步移除单个缓存键。 */
     @Override
     public CompletableFuture<Boolean> invalidate(Object key) {
         ArgumentUtils.requireNonNull("key", key);
@@ -125,6 +136,7 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
                     .toCompletableFuture();
     }
 
+    /** 异步删除整个 Redis Map/MapCache。 */
     @Override
     public CompletableFuture<Boolean> invalidateAll() {
         return map.deleteAsync()

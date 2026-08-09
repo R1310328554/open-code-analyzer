@@ -25,9 +25,10 @@ import java.io.IOException;
 import java.io.Serializable;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 集群 HTTP Session 属性同步消息的基类（Micronaut 2.x）。
+ * <p>携带发起节点 ID 与目标 Session ID，并提供编解码辅助方法。
  *
+ * @author Nikita Koksharov
  */
 public class AttributeMessage implements Serializable {
 
@@ -38,6 +39,9 @@ public class AttributeMessage implements Serializable {
     public AttributeMessage() {
     }
     
+    /** @param nodeId 发起变更的 Micronaut 节点标识
+     *  @param sessionId 目标 HTTP Session ID
+     */
     public AttributeMessage(String nodeId, String sessionId) {
         this.nodeId = nodeId;
         this.sessionId = sessionId;
@@ -51,6 +55,7 @@ public class AttributeMessage implements Serializable {
         return nodeId;
     }
     
+    /** 使用 Redisson {@link Encoder} 将属性值序列化为字节数组。 */
 	protected byte[] toByteArray(Encoder encoder, Object value) throws IOException {
 		if (value == null) {
 			return null;
@@ -64,6 +69,7 @@ public class AttributeMessage implements Serializable {
         }
 	}
 	
+    /** 使用 Redisson {@link Decoder} 从字节数组反序列化属性值。 */
 	protected Object toObject(Decoder<?> decoder, byte[] value) throws IOException, ClassNotFoundException {
     	if (value == null) {
     		return null;

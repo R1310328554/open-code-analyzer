@@ -24,10 +24,10 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
- * Micronaut Cache settings.
+ * Micronaut 缓存通用配置基类，封装 {@link MapParams} 与过期/容量策略。
+ * <p>子类通过 {@link io.micronaut.context.annotation.EachProperty} 绑定命名缓存实例。
  *
  * @author Nikita Koksharov
- *
  */
 public class BaseCacheConfiguration implements Named {
 
@@ -40,6 +40,7 @@ public class BaseCacheConfiguration implements Named {
     private Duration expireAfterAccess = Duration.ZERO;
     private int maxSize;
 
+    /** 以缓存名称初始化 {@link MapParams} 选项。 */
     public BaseCacheConfiguration(String name) {
         this.name = name;
         this.mapOptions = (MapParams<Object, Object>) org.redisson.api.options.MapOptions.name(name);
@@ -56,14 +57,10 @@ public class BaseCacheConfiguration implements Named {
     }
 
     /**
-     * Redis data codec applied to cache entries.
-     * Default is Kryo5Codec codec
+     * 设置缓存条目的 Redis 编解码器。
+     * <p>默认使用 {@link org.redisson.codec.Kryo5Codec}。
      *
-     * @see Codec
-     * @see org.redisson.codec.Kryo5Codec
-     *
-     * @param className codec class name
-     * @return config
+     * @param className 编解码器全限定类名
      */
     public void setCodec(String className) {
         this.codec = create(className);
@@ -82,9 +79,9 @@ public class BaseCacheConfiguration implements Named {
     }
 
     /**
-     * Cache entry time to live duration applied after each write operation.
+     * 写入后条目的存活时间（TTL）。
      *
-     * @param expireAfterWrite - time to live duration
+     * @param expireAfterWrite 写入后过期时长
      */
     public void setExpireAfterWrite(Duration expireAfterWrite) {
         this.expireAfterWrite = expireAfterWrite;
@@ -95,9 +92,9 @@ public class BaseCacheConfiguration implements Named {
     }
 
     /**
-     * Cache entry time to live duration applied after each read operation.
+     * 访问后条目的空闲过期时间（max idle）。
      *
-     * @param expireAfterAccess - time to live duration
+     * @param expireAfterAccess 访问后过期时长
      */
     public void setExpireAfterAccess(Duration expireAfterAccess) {
         this.expireAfterAccess = expireAfterAccess;
@@ -108,67 +105,66 @@ public class BaseCacheConfiguration implements Named {
     }
 
     /**
-     * Max size of this cache. Superfluous elements are evicted using LRU algorithm.
+     * 缓存最大条目数；超出时按 LRU 逐出。
+     * <p>{@code 0} 表示不限制容量（默认）。
      *
-     * @param maxSize - max size
-     *                  If <code>0</code> the cache is unbounded (default).
+     * @param maxSize 最大条目数
      */
     public void setMaxSize(int maxSize) {
         this.maxSize = maxSize;
     }
 
     /**
-     * Sets write behind tasks batch size.
-     * During MapWriter methods execution all updates accumulated into a batch of specified size.
-     * <p>
-     * Default is <code>50</code>
+     * 设置 Write-Behind 批量写入大小。
+     * <p>MapWriter 执行期间累积的更新达到该批量大小时一并提交。
+     * <p>默认 {@code 50}。
      *
-     * @param writeBehindBatchSize - size of batch
+     * @param writeBehindBatchSize 批量大小
      */
     public void setWriteBehindBatchSize(int writeBehindBatchSize) {
         mapOptions.writeBehindBatchSize(writeBehindBatchSize);
     }
 
     /**
-     * Sets write behind tasks execution delay. All updates would be applied with lag not more than specified delay.
-     * <p>
-     * Default is <code>1000</code> milliseconds
+     * 设置 Write-Behind 任务执行延迟（毫秒）。
+     * <p>所有更新最晚在该延迟内异步落库。
+     * <p>默认 {@code 1000} 毫秒。
      *
-     * @param writeBehindDelay - delay in milliseconds
+     * @param writeBehindDelay 延迟毫秒数
      */
     public void setWriteBehindDelay(int writeBehindDelay) {
         mapOptions.writeBehindDelay(writeBehindDelay);
     }
 
     /**
-     * Sets {@link MapWriter} object used for write-through operations.
+     * 设置 Write-Through/Write-Behind 使用的 {@link MapWriter}（反射实例化）。
      *
-     * @param className writer object class name
+     * @param className MapWriter 全限定类名
      */
     public void setWriter(String className) {
         mapOptions.writer(create(className));
     }
 
     /**
-     * Sets write mode.
-     * <p>
-     * Default is <code>{@link WriteMode#WRITE_THROUGH}</code>
+     * 设置写入模式。
+     * <p>默认 {@link WriteMode#WRITE_THROUGH}。
      *
-     * @param writeMode - write mode
+     * @param writeMode 写入模式
      */
     public void setWriteMode(WriteMode writeMode) {
         mapOptions.writeMode(writeMode);
     }
 
     /**
-     * Sets {@link MapLoader} object used to load entries during read-operations execution.
+     * 设置读穿透时使用的 {@link MapLoader}（反射实例化）。
      *
-     * @param className loader object class name
+     * @param className MapLoader 全限定类名
      */
     public void setLoader(String className) {
         mapOptions.loader(create(className));
     }
 
+    /** 构建普通 {@link RMap} 选项，合并 loader/writer/codec 等配置。 */
     public <K, V> org.redisson.api.options.MapOptions<K, V> getMapOptions() {
         org.redisson.api.options.MapOptions<K, V> ops = org.redisson.api.options.MapOptions.name(getName());
         ops.writer((MapWriter<K, V>) mapOptions.getWriter());
@@ -182,6 +178,7 @@ public class BaseCacheConfiguration implements Named {
         return ops;
     }
 
+    /** 构建带 TTL/逐出能力的 {@link RMapCache} 选项。 */
     public <K, V> org.redisson.api.options.MapCacheOptions<K, V> getMapCacheOptions() {
         org.redisson.api.options.MapCacheOptions<K, V> ops = org.redisson.api.options.MapCacheOptions.name(getName());
         ops.writer((MapWriter<K, V>) mapOptions.getWriter());

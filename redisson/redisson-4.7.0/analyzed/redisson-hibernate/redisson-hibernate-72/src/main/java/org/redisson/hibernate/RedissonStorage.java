@@ -28,9 +28,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Redisson {@link RMapCache} 上的 Hibernate {@link DomainDataStorageAccess} 实现（Hibernate 7.2）。
+ * <p>支持 TTL、max_idle、max_entries 配置及 Redis 不可用时的 fallback 降级。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonStorage implements DomainDataStorageAccess {
 
@@ -46,6 +47,14 @@ public class RedissonStorage implements DomainDataStorageAccess {
     boolean fallback;
     volatile boolean fallbackMode;
     
+    /** 从 Hibernate 属性解析 TTL、max_idle、max_entries 与 fallback 并应用到 {@link RMapCache}。
+     *
+     * @param regionName Region 逻辑名
+     * @param mapCache 底层 Redisson Map 缓存
+     * @param serviceManager Redisson 服务管理器（用于 fallback 心跳）
+     * @param properties Hibernate 缓存属性
+     * @param defaultKey 默认配置键后缀（entity/collection 等）
+     */
     public RedissonStorage(String regionName, RMapCache<Object, Object> mapCache, ServiceManager serviceManager, Map<String, Object> properties, String defaultKey) {
         super();
         this.mapCache = mapCache;
@@ -69,6 +78,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
         fallback = Boolean.parseBoolean(fallbackValue);
     }
 
+    /** 按 map 名、Region 名、默认键后缀的优先级查找配置属性。 */
     private String getProperty(Map<String, Object> properties, String name, String regionName, String defaultKey, String suffix) {
         String maxEntries = (String) properties.get(RedissonRegionFactory.CONFIG_PREFIX + name + suffix);
         if (maxEntries != null) {
@@ -81,6 +91,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
         return (String) properties.get(RedissonRegionFactory.CONFIG_PREFIX + defaultKey + suffix);
     }
 
+    /** 进入 fallback 模式后周期性探测 Redis 是否恢复。 */
     private void ping() {
         fallbackMode = true;
         serviceManager.newTimeout(t -> {
@@ -95,12 +106,15 @@ public class RedissonStorage implements DomainDataStorageAccess {
         }, 1, TimeUnit.SECONDS);
     }
 
+    /** 从缓存读取条目；fallback 模式下返回 null。 */
     @Override
     public Object getFromCache(Object key, SharedSessionContractImplementor session) {
+        // fallback 模式下跳过远程读取。
         if (fallbackMode) {
             return null;
         }
         try {
+            // 未配置 max_idle 与 max_entries 时使用仅 TTL 的读取路径。
             if (maxIdle == 0 && size == 0) {
                 return mapCache.getWithTTLOnly(key);
             }
@@ -116,6 +130,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
         }
     }
 
+    /** 写入缓存条目；fallback 模式下跳过写入。 */
     @Override
     public void putIntoCache(Object key, Object value, SharedSessionContractImplementor session) {
         if (fallbackMode) {
@@ -133,6 +148,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
         }
     }
 
+    /** 判断键是否存在；fallback 模式下恒为 false。 */
     @Override
     public boolean contains(Object key) {
         if (fallbackMode) {
@@ -150,6 +166,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
         }
     }
 
+    /** 清空整个 Region 缓存；fallback 模式下跳过。 */
     @Override
     public void evictData() {
         if (fallbackMode) {
@@ -167,6 +184,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
         }
     }
 
+    /** 逐出指定键；fallback 模式下跳过。 */
     @Override
     public void evictData(Object key) {
         if (fallbackMode) {
@@ -184,6 +202,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
         }
     }
 
+    /** 销毁底层 {@link RMapCache} 并释放 Redis 资源。 */
     @Override
     public void release() {
         try {
