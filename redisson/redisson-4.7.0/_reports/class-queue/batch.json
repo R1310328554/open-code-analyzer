@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T17:58:08Z",
-  "files": [
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/BaseRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/NonStrictReadWriteCollectionRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/NonStrictReadWriteEntityRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/NonStrictReadWriteNaturalIdRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/ReadOnlyCollectionRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/ReadOnlyEntityRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/ReadOnlyNaturalIdRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/ReadWriteCollectionRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/ReadWriteEntityRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/ReadWriteNaturalIdRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/TransactionalCollectionRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/TransactionalEntityRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-4/src/main/java/org/redisson/hibernate/strategy/TransactionalNaturalIdRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-5/src/main/java/org/redisson/hibernate/JndiRedissonRegionFactory.java",
-    "redisson-hibernate/redisson-hibernate-5/src/main/java/org/redisson/hibernate/JndiRedissonRegionNativeFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2792,
-  "done": 15
+  "done": 30
 }

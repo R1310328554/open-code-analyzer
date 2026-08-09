@@ -120,7 +120,12 @@ def isolated_index_commit(
         ["git", "-C", str(ROOT), "rev-parse", base_ref], text=True
     ).strip()
     subprocess.run(["git", "-C", str(ROOT), "read-tree", base], env=env, check=True)
-    subprocess.run(["git", "-C", str(ROOT), "add", "--", *paths], env=env, check=True)
+    normal = [p for p in paths if not p.endswith("worker.log")]
+    forced = [p for p in paths if p.endswith("worker.log")]
+    if normal:
+        subprocess.run(["git", "-C", str(ROOT), "add", "--", *normal], env=env, check=True)
+    if forced:
+        subprocess.run(["git", "-C", str(ROOT), "add", "-f", "--", *forced], env=env, check=True)
     tree_count = tree_guard(env)
     tree = subprocess.check_output(
         ["git", "-C", str(ROOT), "write-tree"], env=env, text=True
