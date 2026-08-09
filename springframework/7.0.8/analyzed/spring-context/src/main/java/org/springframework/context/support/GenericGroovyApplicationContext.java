@@ -31,14 +31,13 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 /**
- * An {@link org.springframework.context.ApplicationContext} implementation that extends
- * {@link GenericApplicationContext} and implements {@link GroovyObject} such that beans
- * can be retrieved with the dot de-reference syntax instead of using {@link #getBean}.
+ * 扩展 {@link GenericApplicationContext} 并实现 {@link GroovyObject} 的
+ * {@link org.springframework.context.ApplicationContext} 实现，
+ * 允许使用点号解引用语法获取 Bean，而无需调用 {@link #getBean}。
  *
- * <p>Consider this as the equivalent of {@link GenericXmlApplicationContext} for
- * Groovy bean definitions, or even an upgrade thereof since it seamlessly understands
- * XML bean definition files as well. The main difference is that, within a Groovy
- * script, the context can be used with an inline bean definition closure as follows:
+ * <p>可视为 Groovy Bean 定义的 {@link GenericXmlApplicationContext} 等价物，
+ * 甚至可视为其升级版，因为它也能无缝理解 XML Bean 定义文件。
+ * 主要区别在于：在 Groovy 脚本中，上下文可与内联 Bean 定义闭包配合使用，例如：
  *
  * <pre class="code">
  * import org.hibernate.SessionFactory
@@ -65,8 +64,7 @@ import org.springframework.core.io.Resource;
  * context.refresh()
  * </pre>
  *
- * <p>Alternatively, load a Groovy bean definition script like the following
- * from an external resource (for example, an "applicationContext.groovy" file):
+ * <p>或者，从外部资源（例如 "applicationContext.groovy" 文件）加载如下 Groovy Bean 定义脚本：
  *
  * <pre class="code">
  * import org.hibernate.SessionFactory
@@ -91,8 +89,8 @@ import org.springframework.core.io.Resource;
  * }
  * </pre>
  *
- * <p>With the following Java code creating the {@code GenericGroovyApplicationContext}
- * (potentially using Ant-style '*'/'**' location patterns):
+ * <p>配合以下 Java 代码创建 {@code GenericGroovyApplicationContext}
+ *（也可使用 Ant 风格 '*'/'**' 位置模式）：
  *
  * <pre class="code">
  * GenericGroovyApplicationContext context = new GenericGroovyApplicationContext();
@@ -100,16 +98,14 @@ import org.springframework.core.io.Resource;
  * context.refresh();
  * </pre>
  *
- * <p>Or even more concise, provided that no extra configuration is needed:
+ * <p>若无需额外配置，还可更简洁地：
  *
  * <pre class="code">
  * ApplicationContext context = new GenericGroovyApplicationContext("org/myapp/applicationContext.groovy");
  * </pre>
  *
- * <p><b>This application context also understands XML bean definition files,
- * allowing for seamless mixing and matching with Groovy bean definition files.</b>
- * ".xml" files will be parsed as XML content; all other kinds of resources will
- * be parsed as Groovy scripts.
+ * <p><b>本应用上下文也理解 XML Bean 定义文件，可与 Groovy Bean 定义文件无缝混用。</b>
+ * ".xml" 文件按 XML 内容解析；其他类型资源按 Groovy 脚本解析。
  *
  * @author Juergen Hoeller
  * @author Jeff Brown
@@ -118,24 +114,25 @@ import org.springframework.core.io.Resource;
  */
 public class GenericGroovyApplicationContext extends GenericApplicationContext implements GroovyObject {
 
+	/** Groovy Bean 定义读取器。 */
 	private final GroovyBeanDefinitionReader reader = new GroovyBeanDefinitionReader(this);
 
+	/** 用于在 Groovy 属性访问时委托到上下文 Bean 的包装器。 */
 	private final BeanWrapper contextWrapper = new BeanWrapperImpl(this);
 
+	/** Groovy 元类，支持动态方法/属性调用。 */
 	private MetaClass metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(getClass());
 
 
 	/**
-	 * Create a new GenericGroovyApplicationContext that needs to be
-	 * {@link #load loaded} and then manually {@link #refresh refreshed}.
+	 * 创建新的 GenericGroovyApplicationContext，需先 {@link #load 加载} 再手动 {@link #refresh 刷新}。
 	 */
 	public GenericGroovyApplicationContext() {
 	}
 
 	/**
-	 * Create a new GenericGroovyApplicationContext, loading bean definitions
-	 * from the given resources and automatically refreshing the context.
-	 * @param resources the resources to load from
+	 * 创建新的 GenericGroovyApplicationContext，从给定资源加载 Bean 定义并自动刷新上下文。
+	 * @param resources 要加载的资源
 	 */
 	public GenericGroovyApplicationContext(Resource... resources) {
 		load(resources);
@@ -143,9 +140,8 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 	}
 
 	/**
-	 * Create a new GenericGroovyApplicationContext, loading bean definitions
-	 * from the given resource locations and automatically refreshing the context.
-	 * @param resourceLocations the resources to load from
+	 * 创建新的 GenericGroovyApplicationContext，从给定资源位置加载 Bean 定义并自动刷新上下文。
+	 * @param resourceLocations 要加载的资源位置
 	 */
 	public GenericGroovyApplicationContext(String... resourceLocations) {
 		load(resourceLocations);
@@ -153,11 +149,9 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 	}
 
 	/**
-	 * Create a new GenericGroovyApplicationContext, loading bean definitions
-	 * from the given resource locations and automatically refreshing the context.
-	 * @param relativeClass class whose package will be used as a prefix when
-	 * loading each specified resource name
-	 * @param resourceNames relatively-qualified names of resources to load
+	 * 创建新的 GenericGroovyApplicationContext，从给定资源位置加载 Bean 定义并自动刷新上下文。
+	 * @param relativeClass 加载各资源名时用作包前缀的类
+	 * @param resourceNames 相对限定资源名
 	 */
 	public GenericGroovyApplicationContext(Class<?> relativeClass, String... resourceNames) {
 		load(relativeClass, resourceNames);
@@ -166,9 +160,8 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 
 
 	/**
-	 * Exposes the underlying {@link GroovyBeanDefinitionReader} for convenient access
-	 * to the {@code loadBeanDefinition} methods on it as well as the ability
-	 * to specify an inline Groovy bean definition closure.
+	 * 暴露底层 {@link GroovyBeanDefinitionReader}，便于访问其 {@code loadBeanDefinition} 方法
+	 * 以及指定内联 Groovy Bean 定义闭包。
 	 * @see GroovyBeanDefinitionReader#loadBeanDefinitions(org.springframework.core.io.Resource...)
 	 * @see GroovyBeanDefinitionReader#loadBeanDefinitions(String...)
 	 */
@@ -177,8 +170,8 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 	}
 
 	/**
-	 * Delegates the given environment to underlying {@link GroovyBeanDefinitionReader}.
-	 * Should be called before any call to {@code #load}.
+	 * 将给定环境委托给底层 {@link GroovyBeanDefinitionReader}。
+	 * 应在任何 {@code #load} 调用之前执行。
 	 */
 	@Override
 	public void setEnvironment(ConfigurableEnvironment environment) {
@@ -187,32 +180,28 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 	}
 
 	/**
-	 * Load bean definitions from the given Groovy scripts or XML files.
-	 * <p>Note that ".xml" files will be parsed as XML content; all other kinds
-	 * of resources will be parsed as Groovy scripts.
-	 * @param resources one or more resources to load from
+	 * 从给定 Groovy 脚本或 XML 文件加载 Bean 定义。
+	 * <p>注意：".xml" 文件按 XML 内容解析；其他类型资源按 Groovy 脚本解析。
+	 * @param resources 要加载的一个或多个资源
 	 */
 	public void load(Resource... resources) {
 		this.reader.loadBeanDefinitions(resources);
 	}
 
 	/**
-	 * Load bean definitions from the given Groovy scripts or XML files.
-	 * <p>Note that ".xml" files will be parsed as XML content; all other kinds
-	 * of resources will be parsed as Groovy scripts.
-	 * @param resourceLocations one or more resource locations to load from
+	 * 从给定 Groovy 脚本或 XML 文件加载 Bean 定义。
+	 * <p>注意：".xml" 文件按 XML 内容解析；其他类型资源按 Groovy 脚本解析。
+	 * @param resourceLocations 要加载的一个或多个资源位置
 	 */
 	public void load(String... resourceLocations) {
 		this.reader.loadBeanDefinitions(resourceLocations);
 	}
 
 	/**
-	 * Load bean definitions from the given Groovy scripts or XML files.
-	 * <p>Note that ".xml" files will be parsed as XML content; all other kinds
-	 * of resources will be parsed as Groovy scripts.
-	 * @param relativeClass class whose package will be used as a prefix when
-	 * loading each specified resource name
-	 * @param resourceNames relatively-qualified names of resources to load
+	 * 从给定 Groovy 脚本或 XML 文件加载 Bean 定义。
+	 * <p>注意：".xml" 文件按 XML 内容解析；其他类型资源按 Groovy 脚本解析。
+	 * @param relativeClass 加载各资源名时用作包前缀的类
+	 * @param resourceNames 相对限定资源名
 	 */
 	public void load(Class<?> relativeClass, String... resourceNames) {
 		Resource[] resources = new Resource[resourceNames.length];
@@ -223,7 +212,7 @@ public class GenericGroovyApplicationContext extends GenericApplicationContext i
 	}
 
 
-	// Implementation of the GroovyObject interface
+	// GroovyObject 接口实现
 
 	@Override
 	public void setMetaClass(MetaClass metaClass) {

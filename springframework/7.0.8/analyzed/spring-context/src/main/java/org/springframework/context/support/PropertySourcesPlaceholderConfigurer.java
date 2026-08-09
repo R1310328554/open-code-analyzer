@@ -39,24 +39,22 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringValueResolver;
 
 /**
- * Specialization of {@link PlaceholderConfigurerSupport} that resolves ${...} placeholders
- * within bean definition property values and {@code @Value} annotations against the current
- * Spring {@link Environment} and its set of {@link PropertySources}.
+ * {@link PlaceholderConfigurerSupport} 的特化实现，针对当前 Spring
+ * {@link Environment} 及其 {@link PropertySources} 集合，
+ * 解析 Bean 定义属性值与 {@code @Value} 注解中的 ${...} 占位符。
  *
- * <p>This class is designed as a general replacement for {@code PropertyPlaceholderConfigurer}.
- * It is used by default to support the {@code property-placeholder} element in working against
- * the spring-context-3.1 or higher XSD; whereas, spring-context versions &lt;= 3.0 default to
- * {@code PropertyPlaceholderConfigurer} to ensure backward compatibility. See the spring-context
- * XSD documentation for complete details.
+ * <p>本类设计为 {@code PropertyPlaceholderConfigurer} 的通用替代。
+ * 默认用于支持 spring-context 3.1 及以上 XSD 的 {@code property-placeholder} 元素；
+ * 而 spring-context &lt;= 3.0 为向后兼容默认使用 {@code PropertyPlaceholderConfigurer}。
+ * 完整细节参见 spring-context XSD 文档。
  *
- * <p>Any local properties (for example, those added via {@link #setProperties}, {@link #setLocations}
- * et al.) are added as a single {@link PropertySource}. Search precedence of local properties is
- * based on the value of the {@link #setLocalOverride localOverride} property, which is by
- * default {@code false} meaning that local properties are to be searched last, after all
- * environment property sources.
+ * <p>通过 {@link #setProperties}、{@link #setLocations} 等添加的本地属性
+ * 会作为单个 {@link PropertySource} 加入。
+ * 本地属性的搜索优先级由 {@link #setLocalOverride localOverride} 属性决定，
+ * 默认为 {@code false}，即本地属性最后搜索，排在所有环境属性源之后。
  *
- * <p>See {@link org.springframework.core.env.ConfigurableEnvironment} and related javadocs
- * for details on manipulating environment property sources.
+ * <p>操作环境属性源的细节参见
+ * {@link org.springframework.core.env.ConfigurableEnvironment} 及相关 JavaDoc。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -69,29 +67,29 @@ import org.springframework.util.StringValueResolver;
 public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerSupport implements EnvironmentAware {
 
 	/**
-	 * {@value} is the name given to the {@link PropertySource} for the set of
-	 * {@linkplain #mergeProperties() merged properties} supplied to this configurer.
+	 * 赋予本配置器 {@linkplain #mergeProperties() 合并属性} 的 {@link PropertySource} 的名称：{@value}。
 	 */
 	public static final String LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME = "localProperties";
 
 	/**
-	 * {@value} is the name given to the {@link PropertySource} that wraps the
-	 * {@linkplain #setEnvironment environment} supplied to this configurer.
+	 * 包装本配置器 {@linkplain #setEnvironment 环境} 的 {@link PropertySource} 的名称：{@value}。
 	 */
 	public static final String ENVIRONMENT_PROPERTIES_PROPERTY_SOURCE_NAME = "environmentProperties";
 
 
+	/** 自定义属性源集合；设置后忽略环境与本地属性。 */
 	private @Nullable MutablePropertySources propertySources;
 
+	/** postProcessBeanFactory 中实际应用的属性源。 */
 	private @Nullable PropertySources appliedPropertySources;
 
+	/** 注入的 Environment。 */
 	private @Nullable Environment environment;
 
 
 	/**
-	 * Customize the set of {@link PropertySources} to be used by this configurer.
-	 * <p>Setting this property indicates that environment property sources and
-	 * local properties should be ignored.
+	 * 自定义本配置器使用的 {@link PropertySources} 集合。
+	 * <p>设置此属性表示应忽略环境属性源与本地属性。
 	 * @see #postProcessBeanFactory
 	 */
 	public void setPropertySources(PropertySources propertySources) {
@@ -100,8 +98,7 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 
 	/**
 	 * {@inheritDoc}
-	 * <p>{@code PropertySources} from the given {@link Environment} will be searched
-	 * when replacing ${...} placeholders.
+	 * <p>替换 ${...} 占位符时将搜索给定 {@link Environment} 中的 {@code PropertySources}。
 	 * @see #setPropertySources
 	 * @see #postProcessBeanFactory
 	 */
@@ -112,19 +109,17 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 
 
 	/**
-	 * Processing occurs by replacing ${...} placeholders in bean definitions by resolving each
-	 * against this configurer's set of {@link PropertySources}, which includes:
+	 * 通过针对本配置器的 {@link PropertySources} 集合解析每个 ${...} 占位符来处理 Bean 定义，包括：
 	 * <ul>
-	 * <li>all {@linkplain org.springframework.core.env.ConfigurableEnvironment#getPropertySources
-	 * environment property sources}, if an {@code Environment} {@linkplain #setEnvironment is present}
-	 * <li>{@linkplain #mergeProperties merged local properties}, if {@linkplain #setLocation any}
-	 * {@linkplain #setLocations have} {@linkplain #setProperties been}
-	 * {@linkplain #setPropertiesArray specified}
-	 * <li>any property sources set by calling {@link #setPropertySources}
+	 * <li>若 {@linkplain #setEnvironment 存在} {@code Environment}，则包含其全部
+	 * {@linkplain org.springframework.core.env.ConfigurableEnvironment#getPropertySources 环境属性源}
+	 * <li>若 {@linkplain #setLocation 已} {@linkplain #setLocations 指定}
+	 * {@linkplain #setProperties 本地} {@linkplain #setPropertiesArray 属性}，则包含
+	 * {@linkplain #mergeProperties 合并后的本地属性}
+	 * <li>调用 {@link #setPropertySources} 设置的任意属性源
 	 * </ul>
-	 * <p>If {@link #setPropertySources} is called, <strong>environment and local properties will be
-	 * ignored</strong>. This method is designed to give the user fine-grained control over property
-	 * sources, and once set, the configurer makes no assumptions about adding additional sources.
+	 * <p>若调用 {@link #setPropertySources}，<strong>将忽略环境与本地属性</strong>。
+	 * 此方法旨在让用户精细控制属性源；一旦设置，配置器不再假设会添加其他源。
 	 */
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
@@ -157,9 +152,9 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	}
 
 	/**
-	 * Create a {@link ConfigurablePropertyResolver} for the specified property sources.
-	 * <p>The default implementation creates a {@link PropertySourcesPropertyResolver}.
-	 * @param propertySources the property sources to use
+	 * 为指定属性源创建 {@link ConfigurablePropertyResolver}。
+	 * <p>默认实现创建 {@link PropertySourcesPropertyResolver}。
+	 * @param propertySources 要使用的属性源
 	 * @since 6.0.12
 	 */
 	protected ConfigurablePropertyResolver createPropertyResolver(MutablePropertySources propertySources){
@@ -167,8 +162,7 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	}
 
 	/**
-	 * Visit each bean definition in the given bean factory and attempt to replace ${...} property
-	 * placeholders with values from the given properties.
+	 * 遍历给定 BeanFactory 中的每个 Bean 定义，尝试用给定属性解析 ${...} 占位符。
 	 */
 	protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess,
 			ConfigurablePropertyResolver propertyResolver) throws BeansException {
@@ -192,10 +186,9 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	}
 
 	/**
-	 * Implemented for compatibility with
-	 * {@link org.springframework.beans.factory.config.PlaceholderConfigurerSupport}.
-	 * @throws UnsupportedOperationException in this implementation
-	 * @deprecated in favor of
+	 * 为与 {@link org.springframework.beans.factory.config.PlaceholderConfigurerSupport} 兼容而实现。
+	 * @throws UnsupportedOperationException 本实现中始终抛出
+	 * @deprecated 请改用
 	 * {@link #processProperties(ConfigurableListableBeanFactory, ConfigurablePropertyResolver)}
 	 */
 	@Override
@@ -206,10 +199,9 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	}
 
 	/**
-	 * Return the property sources that were actually applied during
-	 * {@link #postProcessBeanFactory(ConfigurableListableBeanFactory) post-processing}.
-	 * @return the property sources that were applied
-	 * @throws IllegalStateException if the property sources have not yet been applied
+	 * 返回 {@link #postProcessBeanFactory(ConfigurableListableBeanFactory) 后处理} 中实际应用的属性源。
+	 * @return 已应用的属性源
+	 * @throws IllegalStateException 若属性源尚未应用
 	 * @since 4.0
 	 */
 	public PropertySources getAppliedPropertySources() throws IllegalStateException {
@@ -219,9 +211,8 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 
 
 	/**
-	 * Custom {@link PropertySource} that delegates to the
-	 * {@link ConfigurableEnvironment#getPropertySources() PropertySources} in a
-	 * {@link ConfigurableEnvironment}.
+	 * 自定义 {@link PropertySource}，委托给 {@link ConfigurableEnvironment} 中的
+	 * {@link ConfigurableEnvironment#getPropertySources() PropertySources}。
 	 * @since 6.2.7
 	 */
 	private static class ConfigurableEnvironmentPropertySource extends PropertySource<ConfigurableEnvironment> {
@@ -253,12 +244,12 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 		}
 
 		/**
-		 * Convert the supplied value to a {@link String} using the {@link ConversionService}
-		 * from the {@link Environment}.
-		 * <p>This is a modified version of
-		 * {@link org.springframework.core.env.AbstractPropertyResolver#convertValueIfNecessary(Object, Class)}.
-		 * @param value the value to convert
-		 * @return the converted value, or the original value if no conversion is necessary
+		 * 使用 {@link Environment} 中的 {@link ConversionService} 将给定值转换为 {@link String}。
+		 * <p>这是
+		 * {@link org.springframework.core.env.AbstractPropertyResolver#convertValueIfNecessary(Object, Class)}
+		 * 的修改版本。
+		 * @param value 要转换的值
+		 * @return 转换后的值，或无需转换时的原值
 		 * @since 6.2.8
 		 */
 		private @Nullable String convertToString(Object value) {
@@ -276,9 +267,9 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 
 
 	/**
-	 * Fallback {@link PropertySource} that delegates to a raw {@link Environment}.
-	 * <p>Should never apply in a regular scenario, since the {@code Environment}
-	 * in an {@code ApplicationContext} should always be a {@link ConfigurableEnvironment}.
+	 * 委托给原始 {@link Environment} 的回退 {@link PropertySource}。
+	 * <p>常规场景中不应出现，因为 {@code ApplicationContext} 中的 {@code Environment}
+	 * 应始终为 {@link ConfigurableEnvironment}。
 	 * @since 6.2.7
 	 */
 	private static class FallbackEnvironmentPropertySource extends PropertySource<Environment> {
