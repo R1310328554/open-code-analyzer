@@ -34,15 +34,21 @@ import org.apache.rocketmq.client.impl.mqclient.MQClientAPIExt;
 import org.apache.rocketmq.client.impl.mqclient.MQClientAPIFactory;
 import org.apache.rocketmq.proxy.service.route.TopicRouteHelper;
 
+/**
+ * {@link AdminService} 默认实现：经 NameServer 查询路由并在 Broker 上建 Topic。
+ */
 public class DefaultAdminService implements AdminService {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 访问 NameServer/Broker 的 MQ 客户端工厂。 */
     private final MQClientAPIFactory mqClientAPIFactory;
 
+    /** 注入 MQ 客户端工厂。 */
     public DefaultAdminService(MQClientAPIFactory mqClientAPIFactory) {
         this.mqClientAPIFactory = mqClientAPIFactory;
     }
 
     @Override
+    /** 直接向 NameServer 拉取路由判断 Topic 是否存在。 */
     public boolean topicExist(String topic) {
         boolean topicExist;
         TopicRouteData topicRouteData;
@@ -57,6 +63,7 @@ public class DefaultAdminService implements AdminService {
     }
 
     @Override
+    /** 获取 createTopic 与 sampleTopic 路由后委派 {@link #createTopicOnBroker}。 */
     public boolean createTopicOnTopicBrokerIfNotExist(String createTopic, String sampleTopic, int wQueueNum,
         int rQueueNum, boolean examineTopic, int retryCheckCount) {
         TopicRouteData curTopicRouteData = new TopicRouteData();
@@ -91,6 +98,7 @@ public class DefaultAdminService implements AdminService {
     }
 
     @Override
+    /** 对缺失 Broker 调用 createTopic，可选轮询确认 Topic 可见。 */
     public boolean createTopicOnBroker(String topic, int wQueueNum, int rQueueNum, List<BrokerData> curBrokerDataList,
         List<BrokerData> sampleBrokerDataList, boolean examineTopic, int retryCheckCount) throws Exception {
         Set<String> curBrokerAddr = new HashSet<>();
@@ -123,7 +131,7 @@ public class DefaultAdminService implements AdminService {
         }
 
         if (examineTopic) {
-            // examine topic exist.
+            // 轮询确认 Topic 已在 NameServer 可见
             int count = retryCheckCount;
             while (count-- > 0) {
                 if (this.topicExist(topic)) {
@@ -136,10 +144,12 @@ public class DefaultAdminService implements AdminService {
         return false;
     }
 
+    /** 经 MQ 客户端从 NameServer 获取 Topic 路由。 */
     protected TopicRouteData getTopicRouteDataDirectlyFromNameServer(String topic) throws Exception {
         return this.getClient().getTopicRouteInfoFromNameServer(topic, Duration.ofSeconds(3).toMillis());
     }
 
+    /** 返回工厂持有的 MQ 客户端实例。 */
     protected MQClientAPIExt getClient() {
         return this.mqClientAPIFactory.getClient();
     }

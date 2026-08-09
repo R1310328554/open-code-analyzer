@@ -22,15 +22,22 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 协议协商解码器：读取前 4 字节匹配 {@link ProtocolHandler} 并配置管道。
+ */
 public class ProtocolNegotiationHandler extends ByteToMessageDecoder {
 
+    /** 按优先级排列的协议处理器列表。 */
     private final List<ProtocolHandler> protocolHandlerList = new ArrayList<ProtocolHandler>();
+    /** 无匹配时使用的默认协议处理器（通常为 Remoting）。 */
     private final ProtocolHandler fallbackProtocolHandler;
 
+    /** 指定兜底协议处理器。 */
     public ProtocolNegotiationHandler(ProtocolHandler fallbackProtocolHandler) {
         this.fallbackProtocolHandler = fallbackProtocolHandler;
     }
 
+    /** 追加协议处理器，支持链式调用。 */
     public ProtocolNegotiationHandler addProtocolHandler(ProtocolHandler protocolHandler) {
         protocolHandlerList.add(protocolHandler);
         return this;
@@ -38,7 +45,7 @@ public class ProtocolNegotiationHandler extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        // use 4 bytes to judge protocol
+        // 读取前 4 字节判断协议类型
         if (in.readableBytes() < 4) {
             return;
         }

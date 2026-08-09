@@ -46,8 +46,12 @@ import org.apache.rocketmq.proxy.service.transaction.LocalTransactionService;
 import org.apache.rocketmq.proxy.service.transaction.TransactionService;
 import org.apache.rocketmq.remoting.RPCHook;
 
+/**
+ * 本地模式 {@link ServiceManager}：与内嵌 {@link BrokerController} 同进程协作。
+ */
 public class LocalServiceManager extends AbstractStartAndShutdown implements ServiceManager {
 
+    /** 内嵌 Broker 控制器，提供本地生产/消费管理。 */
     private final BrokerController brokerController;
     private final TopicRouteService topicRouteService;
     private final MessageService messageService;
@@ -57,11 +61,13 @@ public class LocalServiceManager extends AbstractStartAndShutdown implements Ser
     private final AdminService adminService;
 
     private final MQClientAPIFactory mqClientAPIFactory;
+    /** 本地虚拟通道管理器。 */
     private final ChannelManager channelManager;
 
     private final ScheduledExecutorService scheduledExecutorService = ThreadUtils.newSingleThreadScheduledExecutor(
         new ThreadFactoryImpl("LocalServiceManagerScheduledThread"));
 
+    /** 基于 Broker 实例构建本地消息、路由、事务等子服务。 */
     public LocalServiceManager(BrokerController brokerController, RPCHook rpcHook) {
         this.brokerController = brokerController;
         this.channelManager = new ChannelManager();
@@ -85,6 +91,7 @@ public class LocalServiceManager extends AbstractStartAndShutdown implements Ser
         this.init();
     }
 
+    /** 注册 MQ 客户端工厂、路由服务与定时通道清理任务。 */
     protected void init() {
         this.appendStartAndShutdown(this.mqClientAPIFactory);
         this.appendStartAndShutdown(this.topicRouteService);
@@ -132,10 +139,12 @@ public class LocalServiceManager extends AbstractStartAndShutdown implements Ser
     }
 
     @Override
+    /** 本地模式不支持 Lite 订阅，返回 null。 */
     public LiteSubscriptionService getLiteSubscriptionService() {
         return null;
     }
 
+    /** 启动定时扫描 {@link ChannelManager} 并管理调度线程池生命周期。 */
     private class LocalServiceManagerStartAndShutdown implements StartAndShutdown {
         @Override
         public void start() throws Exception {

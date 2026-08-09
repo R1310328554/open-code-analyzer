@@ -26,12 +26,18 @@ import org.apache.rocketmq.srvutil.FileWatchService;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * TLS 证书热更新管理器：监听证书/私钥文件变更并重载 SslContext。
+ */
 public class TlsCertificateManager implements StartAndShutdown {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
+    /** 证书与私钥文件的监视服务。 */
     private final FileWatchService fileWatchService;
+    /** 证书重载事件监听器列表。 */
     private final List<TlsContextReloadListener> reloadListeners = new ArrayList<>();
 
+    /** 按 Proxy 配置初始化证书/私钥路径的文件监视。 */
     public TlsCertificateManager() {
         try {
             this.fileWatchService = new FileWatchService(
@@ -52,12 +58,14 @@ public class TlsCertificateManager implements StartAndShutdown {
         return this.fileWatchService;
     }
 
+    /** 注册 TLS 上下文重载监听器。 */
     public void registerReloadListener(TlsContextReloadListener listener) {
         if (listener != null) {
             this.reloadListeners.add(listener);
         }
     }
 
+    /** 移除已注册的 TLS 重载监听器。 */
     public void unregisterReloadListener(TlsContextReloadListener listener) {
         if (listener != null) {
             this.reloadListeners.remove(listener);
@@ -69,6 +77,7 @@ public class TlsCertificateManager implements StartAndShutdown {
     }
 
     @Override
+    /** 启动文件监视并记录监听路径。 */
     public void start() throws Exception {
         this.fileWatchService.start();
         log.info("TLS certificate manager started successfully, start watching: {} {}",
@@ -78,6 +87,7 @@ public class TlsCertificateManager implements StartAndShutdown {
     }
 
     @Override
+    /** 停止文件监视服务。 */
     public void shutdown() throws Exception {
         this.fileWatchService.shutdown();
         log.info("TLS certificate manager shutdown successfully");
@@ -115,8 +125,10 @@ public class TlsCertificateManager implements StartAndShutdown {
         }
     }
 
-    // Interface for listeners interested in TLS context reload events
+    // TLS 上下文重载事件监听接口
+    /** 证书与私钥均更新后触发 SslContext 重载。 */
     public interface TlsContextReloadListener {
+        /** 执行 TLS 上下文热重载回调。 */
         void onTlsContextReload();
     }
 }

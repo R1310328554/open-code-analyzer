@@ -21,23 +21,31 @@ import org.apache.rocketmq.common.ObjectCreator;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.RemotingClient;
 
+/**
+ * {@link ServiceManager} 工厂：按部署模式创建本地或集群实现。
+ */
 public class ServiceManagerFactory {
+    /** 创建无 RPCHook 的本地模式服务管理器。 */
     public static ServiceManager createForLocalMode(BrokerController brokerController) {
         return createForLocalMode(brokerController, null);
     }
 
+    /** 创建带鉴权钩子的本地模式 {@link LocalServiceManager}。 */
     public static ServiceManager createForLocalMode(BrokerController brokerController, RPCHook rpcHook) {
         return new LocalServiceManager(brokerController, rpcHook);
     }
 
+    /** 创建默认配置的集群模式服务管理器。 */
     public static ServiceManager createForClusterMode() {
         return createForClusterMode(null, null);
     }
 
+    /** 创建带 RPCHook 的集群模式服务管理器。 */
     public static ServiceManager createForClusterMode(RPCHook rpcHook) {
         return createForClusterMode(rpcHook, null);
     }
 
+    /** 创建可定制 Remoting 客户端的 {@link ClusterServiceManager}。 */
     public static ServiceManager createForClusterMode(RPCHook rpcHook, ObjectCreator<RemotingClient> remotingClientCreator) {
         return new ClusterServiceManager(rpcHook, remotingClientCreator);
     }

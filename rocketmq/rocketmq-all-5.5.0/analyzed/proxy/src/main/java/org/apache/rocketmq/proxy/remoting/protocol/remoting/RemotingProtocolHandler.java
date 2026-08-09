@@ -26,13 +26,21 @@ import org.apache.rocketmq.remoting.netty.NettyEncoder;
 import org.apache.rocketmq.remoting.netty.NettyRemotingServer;
 import org.apache.rocketmq.remoting.netty.RemotingCodeDistributionHandler;
 
+/**
+ * 经典 Remoting 协议处理器：向管道注入编解码与业务分发处理器。
+ */
 public class RemotingProtocolHandler implements ProtocolHandler {
 
+    /** {@link NettyEncoder} 懒加载供应器。 */
     private final Supplier<NettyEncoder> encoderSupplier;
+    /** Remoting 请求码分发处理器供应器。 */
     private final Supplier<RemotingCodeDistributionHandler> remotingCodeDistributionHandlerSupplier;
+    /** 连接生命周期管理处理器供应器。 */
     private final Supplier<NettyRemotingServer.NettyConnectManageHandler> connectionManageHandlerSupplier;
+    /** Remoting 服务端业务处理器供应器。 */
     private final Supplier<NettyRemotingServer.NettyServerHandler> serverHandlerSupplier;
 
+    /** 注入各 Remoting 管道组件的供应器。 */
     public RemotingProtocolHandler(Supplier<NettyEncoder> encoderSupplier,
         Supplier<RemotingCodeDistributionHandler> remotingCodeDistributionHandlerSupplier,
         Supplier<NettyRemotingServer.NettyConnectManageHandler> connectionManageHandlerSupplier,
@@ -44,11 +52,13 @@ public class RemotingProtocolHandler implements ProtocolHandler {
     }
 
     @Override
+    /** 作为兜底协议，始终返回 true。 */
     public boolean match(ByteBuf in) {
         return true;
     }
 
     @Override
+    /** 向管道末尾追加编码器、解码器与连接/业务处理器。 */
     public void config(ChannelHandlerContext ctx, ByteBuf msg) {
         ctx.pipeline().addLast(
             this.encoderSupplier.get(),

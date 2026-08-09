@@ -42,21 +42,25 @@ import org.apache.rocketmq.proxy.remoting.protocol.ProtocolHandler;
 import org.apache.rocketmq.remoting.common.TlsMode;
 import org.apache.rocketmq.remoting.netty.TlsSystemConfig;
 
+/**
+ * HTTP/2 本地代理协议处理器：将 Remoting 端口流量转发至本机 gRPC 服务。
+ */
 public class Http2ProtocolProxyHandler implements ProtocolHandler {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_REMOTING_NAME);
     private static final String LOCAL_HOST = "127.0.0.1";
     /**
-     * The int value of "PRI ". Now use 4 bytes to judge protocol, may be has potential risks if there is a new protocol
-     * which start with "PRI " in the future
+     * HTTP/2 连接前导 "PRI " 的整型值；当前以 4 字节识别协议。
      * <p>
-     * The full HTTP/2 connection preface is "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
+     * 完整前导为 "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
      * <p>
-     * ref: https://datatracker.ietf.org/doc/html/rfc7540#section-3.5
+     * 参考: https://datatracker.ietf.org/doc/html/rfc7540#section-3.5
      */
     private static final int PRI_INT = 0x50524920;
 
+    /** 出站连接使用的 TLS 上下文，禁用 TLS 时为 null。 */
     private final SslContext sslContext;
 
+    /** 按 {@link TlsSystemConfig} 构建支持 ALPN HTTP/2 的客户端 SslContext。 */
     public Http2ProtocolProxyHandler() {
         try {
             TlsMode tlsMode = TlsSystemConfig.tlsMode;
@@ -81,18 +85,20 @@ public class Http2ProtocolProxyHandler implements ProtocolHandler {
     }
 
     @Override
+    /** 启用本地 gRPC 代理且前 4 字节为 "PRI " 时匹配 HTTP/2。 */
     public boolean match(ByteBuf in) {
         if (!ConfigurationManager.getProxyConfig().isEnableRemotingLocalProxyGrpc()) {
             return false;
         }
 
-        // If starts with 'PRI '
+        // 判断是否为 HTTP/2 连接前导 "PRI "
         return in.getInt(in.readerIndex()) == PRI_INT;
     }
 
     @Override
+    /** 建立至本机 gRPC 端口的出站连接并装配前后端代理处理器。 */
     public void config(final ChannelHandlerContext ctx, final ByteBuf msg) {
-        // proxy channel to http2 server
+        // 将入站通道代理至 HTTP/2 gRPC 服务端
         final Channel inboundChannel = ctx.channel();
 
         ProxyConfig config = ConfigurationManager.getProxyConfig();
@@ -128,6 +134,7 @@ public class Http2ProtocolProxyHandler implements ProtocolHandler {
         ctx.pipeline().addLast(new Http2ProxyFrontendHandler(outboundChannel, sslHandler));
     }
 
+    /** 在入站侧注入 HAProxy 转发器，出站侧添加 HAProxy 编码器。 */
     protected void configPipeline(Channel inboundChannel, Channel outboundChannel) {
         inboundChannel.pipeline().addLast(new HAProxyMessageForwarder(outboundChannel));
         outboundChannel.pipeline().addFirst(HAProxyMessageEncoder.INSTANCE);

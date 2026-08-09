@@ -47,6 +47,9 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.netty.AttributeKeys;
 
+/**
+ * HAProxy 消息转发器：将 Remoting 侧 PROXY 协议信息同步至 gRPC 出站通道。
+ */
 public class HAProxyMessageForwarder extends ChannelInboundHandlerAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_REMOTING_NAME);
@@ -54,13 +57,16 @@ public class HAProxyMessageForwarder extends ChannelInboundHandlerAdapter {
     private static final Field FIELD_ATTRIBUTE =
         FieldUtils.getField(DefaultAttributeMap.class, "attributes", true);
 
+    /** 目标 gRPC 出站 {@link Channel}。 */
     private final Channel outboundChannel;
 
+    /** 绑定待写入 HAProxy 消息的出站通道。 */
     public HAProxyMessageForwarder(final Channel outboundChannel) {
         this.outboundChannel = outboundChannel;
     }
 
     @Override
+    /** 首包到达时转发 PROXY 信息并继续传递原始消息。 */
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         try {
             forwardHAProxyMessage(ctx.channel(), outboundChannel);
@@ -73,6 +79,7 @@ public class HAProxyMessageForwarder extends ChannelInboundHandlerAdapter {
         }
     }
 
+    /** 构建 {@link HAProxyMessage} 并同步写入出站通道。 */
     private void forwardHAProxyMessage(Channel inboundChannel, Channel outboundChannel) throws Exception {
         if (!(inboundChannel instanceof DefaultAttributeMap)) {
             return;
@@ -86,6 +93,7 @@ public class HAProxyMessageForwarder extends ChannelInboundHandlerAdapter {
         outboundChannel.writeAndFlush(message).sync();
     }
 
+    /** 从通道属性或本地/远程地址组装 HAProxy v2 PROXY 消息。 */
     protected HAProxyMessage buildHAProxyMessage(Channel inboundChannel) throws IllegalAccessException, DecoderException {
         String sourceAddress = null, destinationAddress = null;
         int sourcePort = 0, destinationPort = 0;
@@ -135,6 +143,7 @@ public class HAProxyMessageForwarder extends ChannelInboundHandlerAdapter {
             proxiedProtocol, sourceAddress, destinationAddress, sourcePort, destinationPort, haProxyTLVs);
     }
 
+    /** 收集以 TLV 前缀标记的通道扩展属性。 */
     protected List<HAProxyTLV> buildHAProxyTLV(Channel inboundChannel) throws IllegalAccessException, DecoderException {
         List<HAProxyTLV> result = new ArrayList<>();
         if (!inboundChannel.hasAttr(AttributeKeys.PROXY_PROTOCOL_ADDR)) {
@@ -158,6 +167,7 @@ public class HAProxyMessageForwarder extends ChannelInboundHandlerAdapter {
         return result;
     }
 
+    /** 将单个 TLV 属性键值对解码为 {@link HAProxyTLV}。 */
     protected HAProxyTLV buildHAProxyTLV(String attributeKey, String attributeValue) throws DecoderException {
         String typeString = StringUtils.substringAfter(attributeKey, HAProxyConstants.PROXY_PROTOCOL_TLV_PREFIX);
         ByteBuf byteBuf = Unpooled.buffer();

@@ -28,10 +28,15 @@ import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 本地虚拟通道管理器：按 clientId 复用 {@link SimpleChannel} 并定期清理。
+ */
 public class ChannelManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** clientId 到虚拟通道的并发映射。 */
     private final ConcurrentMap<String, SimpleChannel> clientIdChannelMap = new ConcurrentHashMap<>();
 
+    /** 按远程/本地地址生成 clientId 并复用或创建 {@link SimpleChannel}。 */
     public SimpleChannel createChannel(ProxyContext context) {
         final String clientId = anonymousChannelId(context);
         if (Strings.isNullOrEmpty(clientId)) {
@@ -43,6 +48,7 @@ public class ChannelManager {
         return channel;
     }
 
+    /** 为 RPC 调用创建或复用 {@link InvocationChannel}。 */
     public SimpleChannel createInvocationChannel(ProxyContext context) {
         final String clientId = anonymousChannelId(InvocationChannel.class.getName(), context);
         final String clientHost = context.getRemoteAddress();
@@ -57,22 +63,26 @@ public class ChannelManager {
         return channel;
     }
 
+    /** 以 remote@local 拼接匿名通道 ID。 */
     private String anonymousChannelId(ProxyContext context) {
         final String clientHost = context.getRemoteAddress();
         final String localAddress = context.getLocalAddress();
         return clientHost + "@" + localAddress;
     }
 
+    /** 以 key@remote@local 拼接带类型前缀的通道 ID。 */
     private String anonymousChannelId(String key, ProxyContext context) {
         final String clientHost = context.getRemoteAddress();
         final String localAddress = context.getLocalAddress();
         return key + "@" + clientHost + "@" + localAddress;
     }
 
+    /** 根据 {@link ProxyContext} 地址信息新建简单通道。 */
     private SimpleChannel createChannelInner(ProxyContext context) {
         return new SimpleChannel(context.getRemoteAddress(), context.getLocalAddress());
     }
 
+    /** 移除非活跃通道并清理过期上下文。 */
     public void scanAndCleanChannels() {
         try {
             Iterator<Map.Entry<String, SimpleChannel>> iterator = clientIdChannelMap.entrySet().iterator();

@@ -20,9 +20,14 @@ package org.apache.rocketmq.proxy.remoting.protocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
+/**
+ * 协议处理器接口：根据入站字节流识别协议并配置 Netty 管道。
+ */
 public interface ProtocolHandler {
 
+    /** 判断 {@link ByteBuf} 前若干字节是否匹配本协议。 */
     boolean match(ByteBuf msg);
 
+    /** 匹配成功后向 {@link ChannelHandlerContext} 管道注入协议相关处理器。 */
     void config(final ChannelHandlerContext ctx, final ByteBuf msg);
 }

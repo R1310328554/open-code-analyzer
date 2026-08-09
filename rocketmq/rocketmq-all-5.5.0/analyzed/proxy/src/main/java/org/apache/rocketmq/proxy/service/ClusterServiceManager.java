@@ -55,13 +55,21 @@ import org.apache.rocketmq.proxy.service.transaction.TransactionService;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.RemotingClient;
 
+/**
+ * 集群模式 {@link ServiceManager}：通过 NameServer 与 Broker 远程交互。
+ */
 public class ClusterServiceManager extends AbstractStartAndShutdown implements ServiceManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
+    /** 集群事务消息服务。 */
     protected ClusterTransactionService clusterTransactionService;
+    /** 生产者组与通道管理器。 */
     protected ProducerManager producerManager;
+    /** 集群消费者组管理器。 */
     protected ClusterConsumerManager consumerManager;
+    /** Topic 路由查询服务。 */
     protected TopicRouteService topicRouteService;
+    /** 消息收发服务。 */
     protected MessageService messageService;
     protected ProxyRelayService proxyRelayService;
     protected ClusterMetadataService metadataService;
@@ -78,6 +86,7 @@ public class ClusterServiceManager extends AbstractStartAndShutdown implements S
         this(rpcHook, null);
     }
 
+    /** 初始化各 MQClientAPIFactory 及集群子服务并注册生命周期。 */
     public ClusterServiceManager(RPCHook rpcHook, ObjectCreator<RemotingClient> remotingClientCreator) {
         ProxyConfig proxyConfig = ConfigurationManager.getProxyConfig();
         NameserverAccessConfig nameserverAccessConfig = new NameserverAccessConfig(proxyConfig.getNamesrvAddr(),
@@ -126,7 +135,7 @@ public class ClusterServiceManager extends AbstractStartAndShutdown implements S
             this.transactionClientAPIFactory);
         this.proxyRelayService = new ClusterProxyRelayService(this.clusterTransactionService);
 
-        // Lite subscriptions use a separate channel
+        // Lite 订阅使用独立 Remoting 通道
         this.liteSubscriptionAPIFactory = new MQClientAPIFactory(
             nameserverAccessConfig,
             "LiteSubscription_",
@@ -139,6 +148,7 @@ public class ClusterServiceManager extends AbstractStartAndShutdown implements S
         this.init();
     }
 
+    /** 注册生产者变更监听、定时扫描非活跃通道并挂载启停钩子。 */
     protected void init() {
         this.producerManager.appendProducerChangeListener(new ProducerChangeListenerImpl());
 
@@ -207,6 +217,7 @@ public class ClusterServiceManager extends AbstractStartAndShutdown implements S
         return liteSubscriptionService;
     }
 
+    /** 消费者 ID 变更监听空实现（集群模式暂不处理）。 */
     protected static class ConsumerIdsChangeListenerImpl implements ConsumerIdsChangeListener {
 
         @Override
@@ -220,6 +231,7 @@ public class ClusterServiceManager extends AbstractStartAndShutdown implements S
         }
     }
 
+    /** 生产者组注销时取消事务 Topic 订阅。 */
     protected class ProducerChangeListenerImpl implements ProducerChangeListener {
         @Override
         public void handle(ProducerGroupEvent event, String group, ClientChannelInfo clientChannelInfo) {
