@@ -32,9 +32,8 @@ import java.util.Date;
 import java.util.TimeZone;
 
 /**
- * Adapter for java.sql.Date. Although this class appears stateless, it is not. DateFormat captures
- * its time zone and locale when it is created, which gives this class state. DateFormat isn't
- * thread safe either, so this class has to synchronize its read and write methods.
+ * {@link java.sql.Date} 的类型适配器。表面无状态，但 {@link java.text.DateFormat} 在创建时捕获时区与 {@link java.util.Locale}，
+ * 且非线程安全，故读写方法须同步。
  */
 @SuppressWarnings("JavaUtilDate")
 final class SqlDateTypeAdapter extends TypeAdapter<java.sql.Date> {

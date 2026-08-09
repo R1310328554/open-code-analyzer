@@ -40,122 +40,50 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 /**
- * Writes a JSON (<a href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a>) encoded value to a
- * stream, one token at a time. The stream includes both literal values (strings, numbers, booleans
- * and nulls) as well as the begin and end delimiters of objects and arrays.
- *
- * <h2>Encoding JSON</h2>
- *
- * To encode your data as JSON, create a new {@code JsonWriter}. Call methods on the writer as you
- * walk the structure's contents, nesting arrays and objects as necessary:
- *
- * <ul>
- *   <li>To write <strong>arrays</strong>, first call {@link #beginArray()}. Write each of the
- *       array's elements with the appropriate {@link #value} methods or by nesting other arrays and
- *       objects. Finally close the array using {@link #endArray()}.
- *   <li>To write <strong>objects</strong>, first call {@link #beginObject()}. Write each of the
- *       object's properties by alternating calls to {@link #name} with the property's value. Write
- *       property values with the appropriate {@link #value} method or by nesting other objects or
- *       arrays. Finally close the object using {@link #endObject()}.
- * </ul>
- *
- * <h2>Configuration</h2>
- *
- * The behavior of this writer can be customized with the following methods:
- *
- * <ul>
- *   <li>{@link #setFormattingStyle(FormattingStyle)}, the default is {@link
- *       FormattingStyle#COMPACT}
- *   <li>{@link #setHtmlSafe(boolean)}, by default HTML characters are not escaped in the JSON
- *       output
- *   <li>{@link #setStrictness(Strictness)}, the default is {@link Strictness#LEGACY_STRICT}
- *   <li>{@link #setSerializeNulls(boolean)}, by default {@code null} is serialized
- * </ul>
- *
- * The default configuration of {@code JsonWriter} instances used internally by the {@link
- * com.google.gson.Gson} class differs, and can be adjusted with the various {@link
- * com.google.gson.GsonBuilder} methods.
- *
- * <h2>Example</h2>
- *
- * Suppose we'd like to encode a stream of messages such as the following:
- *
- * <pre>{@code
- * [
- *   {
- *     "id": 912345678901,
- *     "text": "How do I stream JSON in Java?",
- *     "geo": null,
- *     "user": {
- *       "name": "json_newb",
- *       "followers_count": 41
- *      }
- *   },
- *   {
- *     "id": 912345678902,
- *     "text": "@json_newb just use JsonWriter!",
- *     "geo": [50.454722, -104.606667],
- *     "user": {
- *       "name": "jesse",
- *       "followers_count": 2
- *     }
- *   }
- * ]
+ * 将 JSON (<a href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a>) 编码值写入流，一次一个令牌。该流包括文
+ * 字值（字符串、数字、布尔值和空值）以及对象和数组的开始和结束分隔符。
+ * <h2>编码 JSON</h2>
+ * 要将数据编码为 JSON，请创建一个新的 {@code JsonWriter}。当您遍历结构体的内容、根据需要嵌套数组和对象时，调用编写器上的方法：
+ * <ul> <li>要写入<strong>数组</strong>，首先调用{@link #beginArray()}。使用适当的 {@link #value}
+ * 方法或通过嵌套其他数组和对象来写入数组的每个元素。最后使用 {@link #endArray()} 关闭数组。
+ * <li>要写入<strong>对象</strong>，首先调用{@link #beginObject()}。通过交替调用 {@link #name}
+ * 和属性值来写入对象的每个属性。使用适当的 {@link #value} 方法或通过嵌套其他对象或数组来写入属性值。最后使用 {@link #endObject()}
+ * 关闭该对象。 </ul>
+ * <h2>配置</h2>
+ * 可以使用以下方法自定义该编写器的行为：
+ * <ul> <li>{@link #setFormattingStyle(FormattingStyle)}，默认为 {@link
+ * FormattingStyle#COMPACT} <li>{@link #setHtmlSafe(boolean)}，默认情况下 JSON 输出中 HTML 字符不会转义
+ * <li>{@link #setStrictness(Strictness)}，默认为 {@link Strictness#LEGACY_STRICT} <li>{@link
+ * #setSerializeNulls(boolean)}，默认情况{@code null} 序列化为 </ul>
+ * {@link com.google.gson.Gson} 类内部使用的 {@code JsonWriter} 实例的默认配置有所不同，并且可以使用各种 {@link
+ * com.google.gson.GsonBuilder} 方法进行调整。
+ * <h2>示例</h2>
+ * 假设我们想要对如下消息流进行编码：
+ * <pre>{@code [ { "id": 912345678901, "text": "如何在 Java 中传输 JSON？", "geo": null, "user":
+ * { "name": "json_newb", "followers_count": 41 } }, { "id": 912345678902, "text":
+ * "@json_newb 只需使用JsonWriter!", "geo": [50.454722, -104.606667], "user": { "name":
+ * "jesse", "followers_count": 2 } } ] }</pre>
+ * 这段代码对上面的结构进行了编码：
+ * <pre>{@code public void writeJsonStream(OutputStream out, List<Message> messages) 抛出
+ * IOException { JsonWriter writer = new JsonWriter(new OutputStreamWriter(out, "UTF-8"));
+ * writer.setIndent(" "); writeMessagesArray（作者，消息）； writer.close(); }
+ * public void writeMessagesArray(JsonWriter writer, List<Message> messages) 抛出
+ * IOException { writer.beginArray(); for (消息消息:消息) { writeMessage(作者, 消息); }
+ * writer.endArray(); }
+ * public void writeMessage(JsonWriter writer, Message message) 抛出 IOException {
+ * writer.beginObject(); writer.name("id").value(message.getId());
+ * writer.name("text").value(message.getText()); if (message.getGeo() != null) {
+ * writer.name("geo"); writeDoublesArray(writer, message.getGeo()); } else {
+ * writer.name("geo").nullValue(); } writer.name("用户"); writeUser(writer,
+ * message.getUser()); writer.endObject(); }
+ * public void writeUser(JsonWriter writer, User user) 抛出 IOException {
+ * writer.beginObject(); writer.name("name").value(user.getName());
+ * writer.name("followers_count").value(user.getFollowersCount()); writer.endObject(); }
+ * public void writeDoublesArray(JsonWriter writer, List<Double> doubles) 抛出 IOException {
+ * writer.beginArray(); for (双精度值: 双精度) { writer.value(value); } writer.endArray(); }
  * }</pre>
- *
- * This code encodes the above structure:
- *
- * <pre>{@code
- * public void writeJsonStream(OutputStream out, List<Message> messages) throws IOException {
- *   JsonWriter writer = new JsonWriter(new OutputStreamWriter(out, "UTF-8"));
- *   writer.setIndent("    ");
- *   writeMessagesArray(writer, messages);
- *   writer.close();
- * }
- *
- * public void writeMessagesArray(JsonWriter writer, List<Message> messages) throws IOException {
- *   writer.beginArray();
- *   for (Message message : messages) {
- *     writeMessage(writer, message);
- *   }
- *   writer.endArray();
- * }
- *
- * public void writeMessage(JsonWriter writer, Message message) throws IOException {
- *   writer.beginObject();
- *   writer.name("id").value(message.getId());
- *   writer.name("text").value(message.getText());
- *   if (message.getGeo() != null) {
- *     writer.name("geo");
- *     writeDoublesArray(writer, message.getGeo());
- *   } else {
- *     writer.name("geo").nullValue();
- *   }
- *   writer.name("user");
- *   writeUser(writer, message.getUser());
- *   writer.endObject();
- * }
- *
- * public void writeUser(JsonWriter writer, User user) throws IOException {
- *   writer.beginObject();
- *   writer.name("name").value(user.getName());
- *   writer.name("followers_count").value(user.getFollowersCount());
- *   writer.endObject();
- * }
- *
- * public void writeDoublesArray(JsonWriter writer, List<Double> doubles) throws IOException {
- *   writer.beginArray();
- *   for (Double value : doubles) {
- *     writer.value(value);
- *   }
- *   writer.endArray();
- * }
- * }</pre>
- *
- * <p>Each {@code JsonWriter} may be used to write a single JSON stream. Instances of this class are
- * not thread safe. Calls that would result in a malformed JSON string will fail with an {@link
- * IllegalStateException}.
- *
+ * <p>Each {@code JsonWriter} 可用于写入单个 JSON 流。此类的实例不是线程安全的。导致格式错误的 JSON 字符串的调用将会失败并显示
+ * {@link IllegalStateException}。
  * @author Jesse Wilson
  * @since 1.6
  */
@@ -198,7 +126,7 @@ public class JsonWriter implements Closeable, Flushable {
     HTML_SAFE_REPLACEMENT_CHARS['\''] = "\\u0027";
   }
 
-  /** The JSON output destination */
+  /** JSON 输出目标。 */
   private final Writer out;
 
   private int[] stack = new int[32];
@@ -209,8 +137,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   private FormattingStyle formattingStyle;
-  // These fields cache data derived from the formatting style, to avoid having to
-  // re-evaluate it every time something is written
+  // 这些字段缓存从格式化样式派生的数据，以避免必须
+  // 每次写东西时重新评估它
   private String formattedColon;
   private String formattedComma;
   private boolean usesEmptyNewlineAndIndent;
@@ -224,9 +152,8 @@ public class JsonWriter implements Closeable, Flushable {
   private boolean serializeNulls = true;
 
   /**
-   * Creates a new instance that writes a JSON-encoded stream to {@code out}. For best performance,
-   * ensure {@link Writer} is buffered; wrapping in {@link java.io.BufferedWriter BufferedWriter} if
-   * necessary.
+   * 创建一个新实例，将 JSON 编码流写入 {@code out}。为了获得最佳性能，请确保 {@link Writer} 已缓冲；如有必要，用 {@link
+   * java.io.BufferedWriter BufferedWriter} 包装。
    */
   public JsonWriter(Writer out) {
     this.out = Objects.requireNonNull(out, "out == null");
@@ -234,16 +161,12 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Sets the indentation string to be repeated for each level of indentation in the encoded
-   * document. If {@code indent.isEmpty()} the encoded document will be compact. Otherwise the
-   * encoded document will be more human-readable.
-   *
-   * <p>This is a convenience method which overwrites any previously {@linkplain
-   * #setFormattingStyle(FormattingStyle) set formatting style} with either {@link
-   * FormattingStyle#COMPACT} if the given indent string is empty, or {@link FormattingStyle#PRETTY}
-   * with the given indent if not empty.
-   *
-   * @param indent a string containing only whitespace.
+   * 设置要为编码文档中的每个缩进级别重复的缩进字符串。如果 {@code indent.isEmpty()} 编码的文档将是紧凑的。否则编码后的文档将更易于人类阅读。
+   * <p>这是一种方便的方法，如果给定的缩进字符串为空，则使用 {@link FormattingStyle#COMPACT} 覆盖任何先前的 {@linkplain #setFo
+   * rmattingStyle(FormattingStyle) set formatting style}；如果给定的缩进字符串不为空，则使用 {@link Formatting
+   * Style#PRETTY} 覆盖任何先前的 {@linkplain #setFormattingStyle(FormattingStyle) set formatting st
+   * yle}。
+   * @param indent 仅包含空格的字符串。
    */
   public final void setIndent(String indent) {
     if (indent.isEmpty()) {
@@ -254,12 +177,9 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Sets the formatting style to be used in the encoded document.
-   *
-   * <p>The formatting style specifies for example the indentation string to be repeated for each
-   * level of indentation, or the newline style, to accommodate various OS styles.
-   *
-   * @param formattingStyle the formatting style to use, must not be {@code null}.
+   * 设置要在编码文档中使用的格式样式。
+   * <p>格式样式指定例如每个缩进级别重复的缩进字符串或换行符样式，以适应各种操作系统样式。
+   * @param formattingStyle 要使用的格式样式不能是 {@code null}。
    * @see #getFormattingStyle()
    * @since 2.11.0
    */
@@ -270,7 +190,7 @@ public class JsonWriter implements Closeable, Flushable {
     if (this.formattingStyle.usesSpaceAfterSeparators()) {
       this.formattedColon = ": ";
 
-      // Only add space if no newline is written
+      // 仅在未写入换行符时添加空格
       if (this.formattingStyle.getNewline().isEmpty()) {
         this.formattedComma = ", ";
       }
@@ -283,9 +203,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Returns the pretty printing style used by this writer.
-   *
-   * @return the {@code FormattingStyle} that will be used.
+   * 返回作者使用的漂亮的打印样式。
+   * @return 将使用的{@code FormattingStyle}。
    * @see #setFormattingStyle(FormattingStyle)
    * @since 2.11.0
    */
@@ -294,29 +213,21 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Sets the strictness of this writer.
-   *
-   * @deprecated Please use {@link #setStrictness(Strictness)} instead. {@code
-   *     JsonWriter.setLenient(true)} should be replaced by {@code
-   *     JsonWriter.setStrictness(Strictness.LENIENT)} and {@code JsonWriter.setLenient(false)}
-   *     should be replaced by {@code JsonWriter.setStrictness(Strictness.LEGACY_STRICT)}.<br>
-   *     However, if you used {@code setLenient(false)} before, you might prefer {@link
-   *     Strictness#STRICT} now instead.
-   * @param lenient whether this writer should be lenient. If true, the strictness is set to {@link
-   *     Strictness#LENIENT}. If false, the strictness is set to {@link Strictness#LEGACY_STRICT}.
+   * 设定了这位作家的严格性。
+   * @deprecated 请改用 {@link #setStrictness(Strictness)}。 {@code JsonWriter.setLenient(true)} 应替换为 {@code JsonWriter.setStrictness(Strictness.LENIENT)}，{@code JsonWriter.setLenient(false)} 应替换为 {@code JsonWriter.setStrictness(Strictness.LEGACY_STRICT)}。<br> 但是，如果您以前使用过 {@code setLenient(false)}，那么您现在可能更喜欢 {@link Strictness#STRICT}。
+   * @param lenient 这位作家是否应该宽容。如果为 true，则严格性设置为 {@link Strictness#LENIENT}。如果为 false，则严格性设置为 {@link Strictness#LEGACY_STRICT}。
    * @see #setStrictness(Strictness)
    */
   @Deprecated
-  // Don't specify @InlineMe, so caller with `setLenient(false)` becomes aware of new
-  // Strictness.STRICT
+  // 不要指定 @InlineMe，因此使用 `setLenient(false)` 的调用者会意识到新的
+  // 严格性.STRICT
   @SuppressWarnings("InlineMeSuggester")
   public final void setLenient(boolean lenient) {
     setStrictness(lenient ? Strictness.LENIENT : Strictness.LEGACY_STRICT);
   }
 
   /**
-   * Returns true if the {@link Strictness} of this writer is equal to {@link Strictness#LENIENT}.
-   *
+   * 如果此编写器的 {@link Strictness} 等于 {@link Strictness#LENIENT}，则返回 true。
    * @see #getStrictness()
    */
   public boolean isLenient() {
@@ -324,21 +235,13 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Configures how strict this writer is with regard to the syntax rules specified in <a
-   * href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a>. By default, {@link
-   * Strictness#LEGACY_STRICT} is used.
-   *
-   * <dl>
-   *   <dt>{@link Strictness#STRICT} &amp; {@link Strictness#LEGACY_STRICT}
-   *   <dd>The behavior of these is currently identical. In these strictness modes, the writer only
-   *       writes JSON in accordance with RFC 8259.
-   *   <dt>{@link Strictness#LENIENT}
-   *   <dd>This mode relaxes the behavior of the writer to allow the writing of {@link
-   *       Double#isNaN() NaNs} and {@link Double#isInfinite() infinities}. It also allows writing
-   *       multiple top level values.
-   * </dl>
-   *
-   * @param strictness the new strictness of this writer. May not be {@code null}.
+   * 配置此编写器对于 <a href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a>
+   * 中指定的语法规则的严格程度。默认情况下，使用 {@link Strictness#LEGACY_STRICT}。
+   * <dl> <dt>{@link Strictness#STRICT} &amp; {@link Strictness#LEGACY_STRICT}
+   * <dd>这些行为目前是相同的。在这些严格模式下，编写器仅根据 RFC 8259 编写 JSON。 <dt>{@link Strictness#LENIENT}
+   * <dd>此模式放宽了编写器的行为，以允许编写 {@link Double#isNaN() NaNs} 和 {@link Double#isInfinite()
+   * infinities}。它还允许写入多个顶级值。 </dl>
+   * @param strictness 这位作家的新严格。可能不是 {@code null}。
    * @see #getStrictness()
    * @since 2.11.0
    */
@@ -347,8 +250,7 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Returns the {@linkplain Strictness strictness} of this writer.
-   *
+   * 返回该作者的 {@linkplain Strictness strictness}。
    * @see #setStrictness(Strictness)
    * @since 2.11.0
    */
@@ -357,11 +259,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Configures this writer to emit JSON that's safe for direct inclusion in HTML and XML documents.
-   * This escapes the HTML characters {@code <}, {@code >}, {@code &}, {@code =} and {@code '}
-   * before writing them to the stream. Without this setting, your XML/HTML encoder should replace
-   * these characters with the corresponding escape sequences.
-   *
+   * 配置此编写器以发出可安全直接包含在 HTML 和 XML 文档中的 JSON。这会在将 HTML 字符 {@code <}、{@code >}、{@code &}、{@code
+   *  =} 和 {@code '} 写入流之前对其进行转义。如果没有此设置，您的 XML/HTML 编码器应将这些字符替换为相应的转义序列。
    * @see #isHtmlSafe()
    */
   public final void setHtmlSafe(boolean htmlSafe) {
@@ -369,8 +268,7 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Returns true if this writer writes JSON that's safe for inclusion in HTML and XML documents.
-   *
+   * 如果此作者编写的 JSON 可以安全地包含在 HTML 和 XML 文档中，则返回 true。
    * @see #setHtmlSafe(boolean)
    */
   public final boolean isHtmlSafe() {
@@ -378,9 +276,7 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Sets whether object members are serialized when their value is null. This has no impact on
-   * array elements. The default is true.
-   *
+   * 设置对象成员的值为空时是否序列化。这对数组元素没有影响。默认为 true。
    * @see #getSerializeNulls()
    */
   public final void setSerializeNulls(boolean serializeNulls) {
@@ -388,9 +284,7 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Returns true if object members are serialized when their value is null. This has no impact on
-   * array elements. The default is true.
-   *
+   * 如果对象成员在其值为 null 时被序列化，则返回 true。这对数组元素没有影响。默认为 true。
    * @see #setSerializeNulls(boolean)
    */
   public final boolean getSerializeNulls() {
@@ -398,10 +292,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Begins encoding a new array. Each call to this method must be paired with a call to {@link
-   * #endArray}.
-   *
-   * @return this writer.
+   * 开始对新数组进行编码。对此方法的每次调用都必须与对 {@link #endArray} 的调用配对。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter beginArray() throws IOException {
@@ -410,9 +302,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Ends encoding the current array.
-   *
-   * @return this writer.
+   * 结束对当前数组的编码。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter endArray() throws IOException {
@@ -420,10 +311,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Begins encoding a new object. Each call to this method must be paired with a call to {@link
-   * #endObject}.
-   *
-   * @return this writer.
+   * 开始对新对象进行编码。对此方法的每次调用都必须与对 {@link #endObject} 的调用配对。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter beginObject() throws IOException {
@@ -432,16 +321,15 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Ends encoding the current object.
-   *
-   * @return this writer.
+   * 结束对当前对象的编码。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter endObject() throws IOException {
     return closeScope(EMPTY_OBJECT, NONEMPTY_OBJECT, '}');
   }
 
-  /** Enters a new scope by appending any necessary whitespace and the given bracket. */
+  /** 追加必要空白与左括号，进入新作用域。 */
   @CanIgnoreReturnValue
   private JsonWriter openScope(int empty, char openBracket) throws IOException {
     beforeValue();
@@ -450,7 +338,7 @@ public class JsonWriter implements Closeable, Flushable {
     return this;
   }
 
-  /** Closes the current scope by appending any necessary whitespace and the given bracket. */
+  /** 追加必要空白与右括号，关闭当前作用域。 */
   @CanIgnoreReturnValue
   private JsonWriter closeScope(int empty, int nonempty, char closeBracket) throws IOException {
     int context = peek();
@@ -476,7 +364,7 @@ public class JsonWriter implements Closeable, Flushable {
     stack[stackSize++] = newTop;
   }
 
-  /** Returns the value on the top of the stack. */
+  /** 返回栈顶元素。 */
   private int peek() {
     if (stackSize == 0) {
       throw new IllegalStateException("JsonWriter is closed.");
@@ -484,16 +372,15 @@ public class JsonWriter implements Closeable, Flushable {
     return stack[stackSize - 1];
   }
 
-  /** Replace the value on the top of the stack with the given value. */
+  /** 用给定值替换栈顶元素。 */
   private void replaceTop(int topOfStack) {
     stack[stackSize - 1] = topOfStack;
   }
 
   /**
-   * Encodes the property name.
-   *
-   * @param name the name of the forthcoming value. May not be {@code null}.
-   * @return this writer.
+   * 对属性名称进行编码。
+   * @param name 即将到来的值的名称。可能不是 {@code null}。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter name(String name) throws IOException {
@@ -518,10 +405,9 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Encodes {@code value}.
-   *
-   * @param value the literal string value, or null to encode a null literal.
-   * @return this writer.
+   * 编码 {@code value}。
+   * @param value 文字字符串值，或 null 来编码空文字。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter value(String value) throws IOException {
@@ -535,9 +421,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Encodes {@code value}.
-   *
-   * @return this writer.
+   * 编码 {@code value}。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter value(boolean value) throws IOException {
@@ -548,9 +433,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Encodes {@code value}.
-   *
-   * @return this writer.
+   * 编码 {@code value}。
+   * @return 作家。
    * @since 2.7
    */
   @CanIgnoreReturnValue
@@ -565,13 +449,10 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Encodes {@code value}.
-   *
-   * @param value a finite value, or if {@link #setStrictness(Strictness) lenient}, also {@link
-   *     Float#isNaN() NaN} or {@link Float#isInfinite() infinity}.
-   * @return this writer.
-   * @throws IllegalArgumentException if the value is NaN or Infinity and this writer is not {@link
-   *     #setStrictness(Strictness) lenient}.
+   * 编码 {@code value}。
+   * @param value 有限值，或者如果是 {@link #setStrictness(Strictness) lenient}，则也是 {@link Float#isNaN() NaN} 或 {@link Float#isInfinite() infinity}。
+   * @return 作家。
+   * @throws IllegalArgumentException 如果值为 NaN 或 Infinity 并且该编写器不是 {@link #setStrictness(Strictness) lenient}。
    * @since 2.9.1
    */
   @CanIgnoreReturnValue
@@ -586,13 +467,10 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Encodes {@code value}.
-   *
-   * @param value a finite value, or if {@link #setStrictness(Strictness) lenient}, also {@link
-   *     Double#isNaN() NaN} or {@link Double#isInfinite() infinity}.
-   * @return this writer.
-   * @throws IllegalArgumentException if the value is NaN or Infinity and this writer is not {@link
-   *     #setStrictness(Strictness) lenient}.
+   * 编码 {@code value}。
+   * @param value 有限值，或者如果是 {@link #setStrictness(Strictness) lenient}，则也是 {@link Double#isNaN() NaN} 或 {@link Double#isInfinite() infinity}。
+   * @return 作家。
+   * @throws IllegalArgumentException 如果值为 NaN 或 Infinity 并且该编写器不是 {@link #setStrictness(Strictness) lenient}。
    */
   @CanIgnoreReturnValue
   public JsonWriter value(double value) throws IOException {
@@ -606,9 +484,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Encodes {@code value}.
-   *
-   * @return this writer.
+   * 编码 {@code value}。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter value(long value) throws IOException {
@@ -619,15 +496,11 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Encodes {@code value}. The value is written by directly writing the {@link Number#toString()}
-   * result to JSON. Implementations must make sure that the result represents a valid JSON number.
-   *
-   * @param value a finite value, or if {@link #setStrictness(Strictness) lenient}, also {@link
-   *     Double#isNaN() NaN} or {@link Double#isInfinite() infinity}.
-   * @return this writer.
-   * @throws IllegalArgumentException if the value is NaN or Infinity and this writer is not {@link
-   *     #setStrictness(Strictness) lenient}; or if the {@code toString()} result is not a valid
-   *     JSON number.
+   * 编码 {@code value}。该值是通过直接将 {@link Number#toString()} 结果写入 JSON 来写入的。实现必须确保结果代表有效的 JSON
+   * 数字。
+   * @param value 有限值，或者如果是 {@link #setStrictness(Strictness) lenient}，则也是 {@link Double#isNaN() NaN} 或 {@link Double#isInfinite() infinity}。
+   * @return 作家。
+   * @throws IllegalArgumentException 如果值为 NaN 或 Infinity 并且该作者不是 {@link #setStrictness(Strictness) lenient}；或者如果 {@code toString()} 结果不是有效的 JSON 数字。
    */
   @CanIgnoreReturnValue
   public JsonWriter value(Number value) throws IOException {
@@ -640,7 +513,7 @@ public class JsonWriter implements Closeable, Flushable {
     Class<? extends Number> numberClass = value.getClass();
 
     if (!alwaysCreatesValidJsonNumber(numberClass)) {
-      // Validate that string is valid before writing it directly to JSON output
+      // 在将字符串直接写入 JSON 输出之前验证该字符串是否有效
       if (string.equals("-Infinity") || string.equals("Infinity") || string.equals("NaN")) {
         if (strictness != Strictness.LENIENT) {
           throw new IllegalArgumentException("Numeric values must be finite, but was " + string);
@@ -659,9 +532,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Encodes {@code null}.
-   *
-   * @return this writer.
+   * 编码 {@code null}。
+   * @return 作家。
    */
   @CanIgnoreReturnValue
   public JsonWriter nullValue() throws IOException {
@@ -679,13 +551,11 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Writes {@code value} directly to the writer without quoting or escaping. This might not be
-   * supported by all implementations, if not supported an {@code UnsupportedOperationException} is
-   * thrown.
-   *
-   * @param value the literal string value, or null to encode a null literal.
-   * @return this writer.
-   * @throws UnsupportedOperationException if this writer does not support writing raw JSON values.
+   * 将 {@code value} 直接写入写入器，无需引用或转义。这可能不受所有实现的支持，如果不支持，则会抛出 {@code
+   * UnsupportedOperationException}。
+   * @param value 文字字符串值，或 null 来编码空文字。
+   * @return 作家。
+   * @throws UnsupportedOperationException 如果该编写器不支持写入原始 JSON 值。
    * @since 2.4
    */
   @CanIgnoreReturnValue
@@ -700,7 +570,7 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Ensures all buffered data is written to the underlying {@link Writer} and flushes that writer.
+   * 确保所有缓冲数据写入底层 {@link Writer} 并刷新该写入器。
    */
   @Override
   public void flush() throws IOException {
@@ -711,9 +581,8 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Flushes and closes this writer and the underlying {@link Writer}.
-   *
-   * @throws IOException if the JSON document is incomplete.
+   * 刷新并关闭此编写器和底层 {@link Writer}。
+   * @throws IOException 如果 JSON 文档不完整。
    */
   @Override
   public void close() throws IOException {
@@ -726,10 +595,10 @@ public class JsonWriter implements Closeable, Flushable {
     stackSize = 0;
   }
 
-  /** Returns whether the {@code toString()} of {@code c} will always return a valid JSON number. */
+  /** 判断 {@code c} 的 {@code toString()} 是否始终产生合法 JSON 数字。 */
   private static boolean alwaysCreatesValidJsonNumber(Class<? extends Number> c) {
-    // Does not include Float or Double because their value can be NaN or Infinity
-    // Does not include LazilyParsedNumber because it could contain a malformed string
+    // 不包括 Float 或 Double，因为它们的值可以是 NaN 或 Infinity
+    // 不包括 LazilyParsedNumber，因为它可能包含格式错误的字符串
     return c == Integer.class
         || c == Long.class
         || c == Byte.class
@@ -784,8 +653,7 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Inserts any necessary separators and whitespace before a name. Also adjusts the stack to expect
-   * the name's value.
+   * 在名称前插入任何必要的分隔符和空格。还调整堆栈以期望名称的值。
    */
   private void beforeName() throws IOException {
     int context = peek();
@@ -799,8 +667,7 @@ public class JsonWriter implements Closeable, Flushable {
   }
 
   /**
-   * Inserts any necessary separators and whitespace before a literal value, inline array, or inline
-   * object. Also adjusts the stack to expect either a closing bracket or another element.
+   * 在文字值、内联数组或内联对象之前插入任何必要的分隔符和空格。还调整堆栈以期望右括号或另一个元素。
    */
   @SuppressWarnings("fallthrough")
   private void beforeValue() throws IOException {
@@ -809,7 +676,7 @@ public class JsonWriter implements Closeable, Flushable {
         if (strictness != Strictness.LENIENT) {
           throw new IllegalStateException("JSON must have only one top-level value.");
         }
-      // fall-through
+      // 跌倒
       case EMPTY_DOCUMENT: // first in document
         replaceTop(NONEMPTY_DOCUMENT);
         break;

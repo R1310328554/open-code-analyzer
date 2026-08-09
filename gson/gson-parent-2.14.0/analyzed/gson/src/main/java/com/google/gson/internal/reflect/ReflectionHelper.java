@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
+/** 反射工具：可访问性、Record 支持及人类可读的对象描述。 */
 public class ReflectionHelper {
 
   private static final RecordHelper RECORD_HELPER;
@@ -57,11 +58,10 @@ public class ReflectionHelper {
   }
 
   /**
-   * Internal implementation of making an {@link AccessibleObject} accessible.
+   * 内部实现：使 {@link AccessibleObject} 可访问。
    *
-   * @param object the object that {@link AccessibleObject#setAccessible(boolean)} should be called
-   *     on.
-   * @throws JsonIOException if making the object accessible fails
+   * @param object 对其调用 {@link AccessibleObject#setAccessible(boolean)} 的对象
+   * @throws JsonIOException 设置可访问失败时
    */
   public static void makeAccessible(AccessibleObject object) throws JsonIOException {
     try {
@@ -79,12 +79,10 @@ public class ReflectionHelper {
   }
 
   /**
-   * Returns a short string describing the {@link AccessibleObject} in a human-readable way. The
-   * result is normally shorter than {@link AccessibleObject#toString()} because it omits modifiers
-   * (e.g. {@code final}) and uses simple names for constructor and method parameter types.
+   * 返回 {@link AccessibleObject} 的简短可读描述，通常比 {@link AccessibleObject#toString()} 更短。
    *
-   * @param object object to describe
-   * @param uppercaseFirstLetter whether the first letter of the description should be uppercased
+   * @param object 待描述对象
+   * @param uppercaseFirstLetter 是否将首字母大写
    */
   public static String getAccessibleObjectDescription(
       AccessibleObject object, boolean uppercaseFirstLetter) {
@@ -112,15 +110,12 @@ public class ReflectionHelper {
     return description;
   }
 
-  /** Creates a string representation for a field, omitting modifiers and the field type. */
+  /** 生成字段的字符串表示，省略修饰符与字段类型。 */
   public static String fieldToString(Field field) {
     return field.getDeclaringClass().getName() + "#" + field.getName();
   }
 
-  /**
-   * Creates a string representation for a constructor. E.g.: {@code java.lang.String(char[], int,
-   * int)}
-   */
+  /** 生成构造器的字符串表示，例如 {@code java.lang.String(char[], int, int)}。 */
   public static String constructorToString(Constructor<?> constructor) {
     StringBuilder stringBuilder = new StringBuilder(constructor.getDeclaringClass().getName());
     appendExecutableParameters(constructor, stringBuilder);
@@ -152,16 +147,16 @@ public class ReflectionHelper {
     return Modifier.isStatic(clazz.getModifiers());
   }
 
-  /** Returns whether the class is anonymous or a non-static local class. */
+  /** 判断类是否为匿名类或非 static 局部类。 */
   public static boolean isAnonymousOrNonStaticLocal(Class<?> clazz) {
     return !isStatic(clazz) && (clazz.isAnonymousClass() || clazz.isLocalClass());
   }
 
   /**
-   * Tries making the constructor accessible, returning an exception message if this fails.
+   * 尝试使构造器可访问。
    *
-   * @param constructor constructor to make accessible
-   * @return exception message; {@code null} if successful, non-{@code null} if unsuccessful
+   * @param constructor 目标构造器
+   * @return 失败时返回异常消息，成功返回 {@code null}
    */
   public static String tryMakeAccessible(Constructor<?> constructor) {
     try {
@@ -178,7 +173,7 @@ public class ReflectionHelper {
     }
   }
 
-  /** If records are supported on the JVM, this is equivalent to a call to Class.isRecord() */
+  /** 若 JVM 支持 Record，等价于 {@link Class#isRecord()}。 */
   public static boolean isRecord(Class<?> raw) {
     return RECORD_HELPER.isRecord(raw);
   }
@@ -187,7 +182,7 @@ public class ReflectionHelper {
     return RECORD_HELPER.getRecordComponentNames(raw);
   }
 
-  /** Looks up the record accessor method that corresponds to the given record field */
+  /** 查找与给定 Record 字段对应的访问器方法。 */
   public static Method getAccessor(Class<?> raw, Field field) {
     return RECORD_HELPER.getAccessor(raw, field);
   }
@@ -219,7 +214,7 @@ public class ReflectionHelper {
         exception);
   }
 
-  /** Internal abstraction over reflection when Records are supported. */
+  /** Record 受支持时的反射抽象。 */
   private abstract static class RecordHelper {
     abstract boolean isRecord(Class<?> clazz);
 
@@ -296,7 +291,7 @@ public class ReflectionHelper {
     }
   }
 
-  /** Instance used when records are not supported */
+  /** JVM 不支持 Record 时使用的实现。 */
   private static class RecordNotSupportedHelper extends RecordHelper {
 
     @Override

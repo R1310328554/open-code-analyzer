@@ -34,9 +34,8 @@ import java.lang.reflect.Type;
 import java.util.Objects;
 
 /**
- * Adapts a Gson 1.x tree-style adapter as a streaming TypeAdapter. Since the tree adapter may be
- * serialization-only or deserialization-only, this class has a facility to look up a delegate type
- * adapter on demand.
+ * 将 Gson 1.x 树形风格适配器（{@link JsonSerializer}/{@link JsonDeserializer}）包装为流式 {@link TypeAdapter}。
+ * 树形适配器可能仅支持序列化或反序列化，因此本类可按需查找委托适配器。
  */
 public final class TreeTypeAdapter<T> extends SerializationDelegatingTypeAdapter<T> {
   private final JsonSerializer<T> serializer;
@@ -44,18 +43,14 @@ public final class TreeTypeAdapter<T> extends SerializationDelegatingTypeAdapter
   final Gson gson;
   private final TypeToken<T> typeToken;
 
-  /**
-   * Only intended as {@code skipPast} for {@link Gson#getDelegateAdapter(TypeAdapterFactory,
-   * TypeToken)}, must not be used in any other way.
-   */
+  /** 仅作为 {@link Gson#getDelegateAdapter(TypeAdapterFactory, TypeToken)} 的 {@code skipPast} 参数，不得用于其他用途。 */
   private final TypeAdapterFactory skipPastForGetDelegateAdapter;
 
   private final GsonContextImpl context = new GsonContextImpl();
   private final boolean nullSafe;
 
   /**
-   * The delegate is lazily created because it may not be needed, and creating it may fail. Field
-   * has to be {@code volatile} because {@link Gson} guarantees to be thread-safe.
+   * 委托适配器延迟创建：可能用不到，且创建可能失败。字段须为 {@code volatile}，因 {@link Gson} 保证线程安全。
    */
   private volatile TypeAdapter<T> delegate;
 
@@ -120,20 +115,19 @@ public final class TreeTypeAdapter<T> extends SerializationDelegatingTypeAdapter
   }
 
   /**
-   * Returns the type adapter which is used for serialization. Returns {@code this} if this {@code
-   * TreeTypeAdapter} has a {@link #serializer}; otherwise returns the delegate.
+   * 返回用于序列化的类型适配器。若本 {@code TreeTypeAdapter} 有 {@link #serializer} 则返回 {@code this}，否则返回委托。
    */
   @Override
   public TypeAdapter<T> getSerializationDelegate() {
     return serializer != null ? this : delegate();
   }
 
-  /** Returns a new factory that will match each type against {@code exactType}. */
+  /** 返回新工厂：仅当类型与 {@code exactType} 完全匹配时创建适配器。 */
   public static TypeAdapterFactory newFactory(TypeToken<?> exactType, Object typeAdapter) {
     return new SingleTypeFactory(typeAdapter, exactType, false, null);
   }
 
-  /** Returns a new factory that will match each type and its raw type against {@code exactType}. */
+  /** 返回新工厂：类型或其原始类型与 {@code exactType} 匹配时创建适配器。 */
   public static TypeAdapterFactory newFactoryWithMatchRawType(
       TypeToken<?> exactType, Object typeAdapter) {
     // only bother matching raw types if exact type is a raw type
@@ -141,10 +135,7 @@ public final class TreeTypeAdapter<T> extends SerializationDelegatingTypeAdapter
     return new SingleTypeFactory(typeAdapter, exactType, matchRawType, null);
   }
 
-  /**
-   * Returns a new factory that will match each type's raw type for assignability to {@code
-   * hierarchyType}.
-   */
+  /** 返回新工厂：当类型的原始类型可赋值给 {@code hierarchyType} 时创建适配器。 */
   public static TypeAdapterFactory newTypeHierarchyFactory(
       Class<?> hierarchyType, Object typeAdapter) {
     return new SingleTypeFactory(typeAdapter, null, false, hierarchyType);

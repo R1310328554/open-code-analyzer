@@ -26,6 +26,9 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Date;
 
+/**
+ * {@link java.sql.Timestamp} 的类型适配器，委托 {@link java.util.Date} 适配器完成读写后再转换。
+ */
 @SuppressWarnings("JavaUtilDate")
 class SqlTimestampTypeAdapter extends TypeAdapter<Timestamp> {
   static final TypeAdapterFactory FACTORY =

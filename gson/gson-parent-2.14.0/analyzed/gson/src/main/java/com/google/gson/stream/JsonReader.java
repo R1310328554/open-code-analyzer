@@ -28,183 +28,69 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Reads a JSON (<a href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a>) encoded value as a
- * stream of tokens. This stream includes both literal values (strings, numbers, booleans, and
- * nulls) as well as the begin and end delimiters of objects and arrays. The tokens are traversed in
- * depth-first order, the same order that they appear in the JSON document. Within JSON objects,
- * name/value pairs are represented by a single token.
- *
- * <h2>Parsing JSON</h2>
- *
- * To create a recursive descent parser for your own JSON streams, first create an entry point
- * method that creates a {@code JsonReader}.
- *
- * <p>Next, create handler methods for each structure in your JSON text. You'll need a method for
- * each object type and for each array type.
- *
- * <ul>
- *   <li>Within <strong>array handling</strong> methods, first call {@link #beginArray} to consume
- *       the array's opening bracket. Then create a while loop that accumulates values, terminating
- *       when {@link #hasNext} is false. Finally, read the array's closing bracket by calling {@link
- *       #endArray}.
- *   <li>Within <strong>object handling</strong> methods, first call {@link #beginObject} to consume
- *       the object's opening brace. Then create a while loop that assigns values to local variables
- *       based on their name. This loop should terminate when {@link #hasNext} is false. Finally,
- *       read the object's closing brace by calling {@link #endObject}.
- * </ul>
- *
- * <p>When a nested object or array is encountered, delegate to the corresponding handler method.
- *
- * <p>When an unknown name is encountered, strict parsers should fail with an exception. Lenient
- * parsers should call {@link #skipValue()} to recursively skip the value's nested tokens, which may
- * otherwise conflict.
- *
- * <p>If a value may be null, you should first check using {@link #peek()}. Null literals can be
- * consumed using either {@link #nextNull()} or {@link #skipValue()}.
- *
- * <h2>Configuration</h2>
- *
- * The behavior of this reader can be customized with the following methods:
- *
- * <ul>
- *   <li>{@link #setStrictness(Strictness)}, the default is {@link Strictness#LEGACY_STRICT}
- *   <li>{@link #setNestingLimit(int)}, the default is {@value #DEFAULT_NESTING_LIMIT}
- * </ul>
- *
- * The default configuration of {@code JsonReader} instances used internally by the {@link
- * com.google.gson.Gson} class differs, and can be adjusted with the various {@link
- * com.google.gson.GsonBuilder} methods.
- *
- * <h2>Example</h2>
- *
- * Suppose we'd like to parse a stream of messages such as the following:
- *
- * <pre>{@code
- * [
- *   {
- *     "id": 912345678901,
- *     "text": "How do I read a JSON stream in Java?",
- *     "geo": null,
- *     "user": {
- *       "name": "json_newb",
- *       "followers_count": 41
- *      }
- *   },
- *   {
- *     "id": 912345678902,
- *     "text": "@json_newb just use JsonReader!",
- *     "geo": [50.454722, -104.606667],
- *     "user": {
- *       "name": "jesse",
- *       "followers_count": 2
- *     }
- *   }
- * ]
- * }</pre>
- *
- * This code implements the parser for the above structure:
- *
- * <pre>{@code
- * public List<Message> readJsonStream(InputStream in) throws IOException {
- *   JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));
- *   try {
- *     return readMessagesArray(reader);
- *   } finally {
- *     reader.close();
- *   }
- * }
- *
+ * 将 JSON (<a href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a>) 编码值读取为令牌流。该流包含文字值（字
+ * 符串、数字、布尔值和空值）以及对象和数组的开始和结束分隔符。标记按深度优先顺序遍历，与它们在 JSON 文档中出现的顺序相同。在 JSON 对象中，名称/值对由单个标记表示。
+ * <h2>解析 JSON</h2>
+ * 要为您自己的 JSON 流创建递归下降解析器，首先创建一个用于创建 {@code JsonReader} 的入口点方法。
+ * <p>接下来，为 JSON 文本中的每个结构创建处理程序方法。您需要为每种对象类型和每种数组类型提供一个方法。
+ * <ul> <li><strong>数组处理</strong>方法中，首先调用{@link #beginArray}来消耗数组的左括号。然后创建一个累积值的 while
+ * 循环，当 {@link #hasNext} 为 false 时终止。最后，通过调用 {@link #endArray} 读取数组的右括号。
+ * <li>在<strong>对象处理</strong>方法中，首先调用{@link #beginObject}来消耗对象的左大括号。然后创建一个 while
+ * 循环，根据局部变量的名称为其赋值。当 {@link #hasNext} 为 false 时，此循环应终止。最后，通过调用 {@link #endObject}
+ * 读取对象的右大括号。 </ul>
+ * <p>当遇到嵌套对象或数组时，委托给相应的处理程序方法。
+ * <p>当遇到未知名称时，严格解析器应该失败并出现异常。宽松的解析器应该调用 {@link #skipValue()} 来递归地跳过值的嵌套标记，否则可能会发生冲突。
+ * <p>如果值可能为空，则应首先使用 {@link #peek()} 进行检查。可以使用 {@link #nextNull()} 或 {@link #skipValue()}
+ * 使用空文字。
+ * <h2>配置</h2>
+ * 可以使用以下方法自定义该读取器的行为：
+ * <ul> <li>{@link #setStrictness(Strictness)}，默认为 {@link Strictness#LEGACY_STRICT}
+ * <li>{@link #setNestingLimit(int)}，默认为 {@value #DEFAULT_NESTING_LIMIT} </ul>
+ * {@link com.google.gson.Gson} 类内部使用的 {@code JsonReader} 实例的默认配置有所不同，并且可以使用各种 {@link
+ * com.google.gson.GsonBuilder} 方法进行调整。
+ * <h2>示例</h2>
+ * 假设我们想要解析如下消息流：
+ * <pre>{@code [ { "id": 912345678901, "text": "如何在 Java 中读取 JSON 流？", "geo": null,
+ * "user": { "name": "json_newb", "followers_count": 41 } }, { "id": 912345678902, "text":
+ * "@json_newb只需使用 JsonReader！", "geo": [50.454722, -104.606667], "user": { "name":
+ * "jesse", "followers_count": 2 } } ] }</pre>
+ * 此代码实现了上述结构的解析器：
+ * <pre>{@code public List<Message> readJsonStream(InputStream in) 抛出 IOException {
+ * JsonReader reader = new JsonReader(new InputStreamReader(in, "UTF-8"));尝试 { 返回
+ * readMessagesArray(reader); } 最后 { reader.close(); } }
  * public List<Message> readMessagesArray(JsonReader reader) throws IOException {
- *   List<Message> messages = new ArrayList<>();
- *
- *   reader.beginArray();
- *   while (reader.hasNext()) {
- *     messages.add(readMessage(reader));
- *   }
- *   reader.endArray();
- *   return messages;
- * }
- *
- * public Message readMessage(JsonReader reader) throws IOException {
- *   long id = -1;
- *   String text = null;
- *   User user = null;
- *   List<Double> geo = null;
- *
- *   reader.beginObject();
- *   while (reader.hasNext()) {
- *     String name = reader.nextName();
- *     if (name.equals("id")) {
- *       id = reader.nextLong();
- *     } else if (name.equals("text")) {
- *       text = reader.nextString();
- *     } else if (name.equals("geo") && reader.peek() != JsonToken.NULL) {
- *       geo = readDoublesArray(reader);
- *     } else if (name.equals("user")) {
- *       user = readUser(reader);
- *     } else {
- *       reader.skipValue();
- *     }
- *   }
- *   reader.endObject();
- *   return new Message(id, text, user, geo);
- * }
- *
+ * List<Message> messages = new ArrayList<>();
+ * reader.beginArray(); while (reader.hasNext()) { messages.add(readMessage(reader)); } rea
+ * der.endArray();返回消息； }
+ * 公共消息 readMessage(JsonReader reader) 抛出 IOException { long id = -1;字符串文本=空；用户用户=空；列表
+ * <Double> geo = null;
+ * reader.beginObject(); while (reader.hasNext()) { 字符串名称 = reader.nextName(); if (name.equ
+ * als("id")) { id = reader.nextLong(); } else if (name.equals("text")) { text = reader.nex
+ * tString(); } else if (name.equals("geo") && reader.peek() != JsonToken.NULL) { geo = rea
+ * dDoublesArray(reader); } else if (name.equals("user")) { user = readUser(reader); } else
+ *  { reader.skipValue(); } } reader.endObject();返回新消息（id，文本，用户，地理）； }
  * public List<Double> readDoublesArray(JsonReader reader) throws IOException {
- *   List<Double> doubles = new ArrayList<>();
- *
- *   reader.beginArray();
- *   while (reader.hasNext()) {
- *     doubles.add(reader.nextDouble());
- *   }
- *   reader.endArray();
- *   return doubles;
- * }
- *
- * public User readUser(JsonReader reader) throws IOException {
- *   String username = null;
- *   int followersCount = -1;
- *
- *   reader.beginObject();
- *   while (reader.hasNext()) {
- *     String name = reader.nextName();
- *     if (name.equals("name")) {
- *       username = reader.nextString();
- *     } else if (name.equals("followers_count")) {
- *       followersCount = reader.nextInt();
- *     } else {
- *       reader.skipValue();
- *     }
- *   }
- *   reader.endObject();
- *   return new User(username, followersCount);
- * }
- * }</pre>
- *
- * <h2>Number Handling</h2>
- *
- * This reader permits numeric values to be read as strings and string values to be read as numbers.
- * For example, both elements of the JSON array {@code [1, "1"]} may be read using either {@link
- * #nextInt} or {@link #nextString}. This behavior is intended to prevent lossy numeric conversions:
- * double is JavaScript's only numeric type and very large values like {@code 9007199254740993}
- * cannot be represented exactly on that platform. To minimize precision loss, extremely large
- * values should be written and read as strings in JSON.
- *
- * <h2 id="nonexecuteprefix">Non-Execute Prefix</h2>
- *
- * Web servers that serve private data using JSON may be vulnerable to <a
- * href="http://en.wikipedia.org/wiki/JSON#Cross-site_request_forgery">Cross-site request
- * forgery</a> attacks. In such an attack, a malicious site gains access to a private JSON file by
- * executing it with an HTML {@code <script>} tag.
- *
- * <p>Prefixing JSON files with <code>")]}'\n"</code> makes them non-executable by {@code <script>}
- * tags, disarming the attack. Since the prefix is malformed JSON, strict parsing fails when it is
- * encountered. This class permits the non-execute prefix when {@linkplain
- * #setStrictness(Strictness) lenient parsing} is enabled.
- *
- * <p>Each {@code JsonReader} may be used to read a single JSON stream. Instances of this class are
- * not thread safe.
- *
+ * List<Double> doubles = new ArrayList<>();
+ * reader.beginArray(); while (reader.hasNext()) { doubles.add(reader.nextDouble()); } read
+ * er.endArray();返回双打； }
+ * public User readUser(JsonReader reader) throws IOException { String 用户名 = null; int
+ * 追随者计数 = -1;
+ * reader.beginObject(); while (reader.hasNext()) { 字符串名称 = reader.nextName(); if (name.equ
+ * als("name")) { 用户名 = reader.nextString(); } else if (name.equals("followers_count")) { f
+ * ollowersCount = reader.nextInt(); } else { reader.skipValue(); } } reader.endObject();返回
+ * 新用户（用户名，关注者数量）； } } X
+ * <h2>号码处理</h2>
+ * 该读取器允许将数值读取为字符串，并将字符串值读取为数字。例如，可以使用 {@link #nextInt} 或 {@link #nextString} 读取 JSON 数组 {@
+ * code [1, "1"]} 的两个元素。此行为旨在防止有损数字转换：double 是 JavaScript 唯一的数字类型，并且像 {@code 90071992547409
+ * 93} 这样非常大的值无法在该平台上准确表示。为了最大限度地减少精度损失，应将极大的值作为 JSON 中的字符串进行写入和读取。
+ * 非执行前缀
+ * 使用 JSON 提供私有数据的 Web 服务器可能容易受到 <a
+ * href="http://en.wikipedia.org/wiki/JSON#Cross-site_request_forgery"> 跨站点请求伪造 </a>
+ * 攻击。在此类攻击中，恶意站点通过使用 HTML {@code <script>} 标记执行私有 JSON 文件来获取对私有 JSON 文件的访问权限。
+ * <p>使用 <code> 前缀 JSON 文件")]}'\n"</code> 使它们不可被 {@code <script>} 标签执行，从而解除攻击。由于前缀是格式错误的
+ * JSON，因此遇到它时严格解析会失败。当启用 {@linkplain #setStrictness(Strictness) lenient parsing}
+ * 时，此类允许非执行前缀。
+ * <p>Each {@code JsonReader} 可用于读取单个 JSON 流。此类的实例不是线程安全的。
  * @author Jesse Wilson
  * @since 1.6
  */
@@ -223,14 +109,14 @@ public class JsonReader implements Closeable {
   private static final int PEEKED_DOUBLE_QUOTED = 9;
   private static final int PEEKED_UNQUOTED = 10;
 
-  /** When this is returned, the string value is stored in peekedString. */
+  /** 返回此值时，字符串存于 peekedString。 */
   private static final int PEEKED_BUFFERED = 11;
 
   private static final int PEEKED_SINGLE_QUOTED_NAME = 12;
   private static final int PEEKED_DOUBLE_QUOTED_NAME = 13;
   private static final int PEEKED_UNQUOTED_NAME = 14;
 
-  /** When this is returned, the integer value is stored in peekedLong. */
+  /** 返回此值时，整数值存于 peekedLong。 */
   private static final int PEEKED_LONG = 15;
 
   private static final int PEEKED_NUMBER = 16;
@@ -246,11 +132,11 @@ public class JsonReader implements Closeable {
   private static final int NUMBER_CHAR_EXP_SIGN = 6;
   private static final int NUMBER_CHAR_EXP_DIGIT = 7;
 
-  /** The input JSON. */
+  /** 输入 JSON 流。 */
   private final Reader in;
 
   private Strictness strictness = Strictness.LEGACY_STRICT;
-  // Default nesting limit is based on
+  // 默认嵌套限制基于
   // https://github.com/square/moshi/blob/parent-1.15.0/moshi/src/main/java/com/squareup/moshi/JsonReader.java#L228-L230
   static final int DEFAULT_NESTING_LIMIT = 255;
   private int nestingLimit = DEFAULT_NESTING_LIMIT;
@@ -258,9 +144,8 @@ public class JsonReader implements Closeable {
   static final int BUFFER_SIZE = 1024;
 
   /**
-   * Use a manual buffer to easily read and unread upcoming characters, and also so we can create
-   * strings without an intermediate StringBuilder. We decode literals directly out of this buffer,
-   * so it must be at least as long as the longest token that can be reported as a number.
+   * 使用手动缓冲区可以轻松读取和取消读取即将到来的字符，这样我们就可以在没有中间 StringBuilder 的情况下创建字符串。我们直接从该缓冲区中解码文字，因此它必须至少与可以
+   * 报告为数字的最长标记一样长。
    */
   private final char[] buffer = new char[BUFFER_SIZE];
 
@@ -273,24 +158,22 @@ public class JsonReader implements Closeable {
   int peeked = PEEKED_NONE;
 
   /**
-   * A peeked value that was composed entirely of digits with an optional leading dash. Positive
-   * values may not have a leading 0.
+   * 完全由带有可选前导破折号的数字组成的已查看值。正值不能有前导 0。
    */
   private long peekedLong;
 
   /**
-   * The number of characters in a peeked number literal. Increment 'pos' by this after reading a
-   * number.
+   * The number of characters in a peeked number literal. Increment 'pos' by this after
+   * reading a number.
    */
   private int peekedNumberLength;
 
   /**
-   * A peeked string that should be parsed on the next double, long or string. This is populated
-   * before a numeric value is parsed and used if that parsing fails.
+   * 应在下一个 double、long 或 string 上解析的已查看字符串。这是在解析数值之前填充的，如果解析失败则使用该值。
    */
   private String peekedString;
 
-  /** The nesting stack. Using a manual array rather than an ArrayList saves 20%. */
+  /** 嵌套栈；用手动数组而非 ArrayList 可节省约 20% 开销。 */
   private int[] stack = new int[32];
 
   private int stackSize = 0;
@@ -310,35 +193,27 @@ public class JsonReader implements Closeable {
   private String[] pathNames = new String[32];
   private int[] pathIndices = new int[32];
 
-  /** Creates a new instance that reads a JSON-encoded stream from {@code in}. */
+  /** 创建从 {@code in} 读取 JSON 的新实例。 */
   public JsonReader(Reader in) {
     this.in = Objects.requireNonNull(in, "in == null");
   }
 
   /**
-   * Sets the strictness of this reader.
-   *
-   * @deprecated Please use {@link #setStrictness(Strictness)} instead. {@code
-   *     JsonReader.setLenient(true)} should be replaced by {@code
-   *     JsonReader.setStrictness(Strictness.LENIENT)} and {@code JsonReader.setLenient(false)}
-   *     should be replaced by {@code JsonReader.setStrictness(Strictness.LEGACY_STRICT)}.<br>
-   *     However, if you used {@code setLenient(false)} before, you might prefer {@link
-   *     Strictness#STRICT} now instead.
-   * @param lenient whether this reader should be lenient. If true, the strictness is set to {@link
-   *     Strictness#LENIENT}. If false, the strictness is set to {@link Strictness#LEGACY_STRICT}.
+   * 设置该读者的严格程度。
+   * @deprecated 请改用 {@link #setStrictness(Strictness)}。 {@code JsonReader.setLenient(true)} 应替换为 {@code JsonReader.setStrictness(Strictness.LENIENT)}，{@code JsonReader.setLenient(false)} 应替换为 {@code JsonReader.setStrictness(Strictness.LEGACY_STRICT)}。<br> 但是，如果您以前使用过 {@code setLenient(false)}，那么您现在可能更喜欢 {@link Strictness#STRICT}。
+   * @param lenient 这位读者是否应该宽容。如果为 true，则严格性设置为 {@link Strictness#LENIENT}。如果为 false，则严格性设置为 {@link Strictness#LEGACY_STRICT}。
    * @see #setStrictness(Strictness)
    */
   @Deprecated
-  // Don't specify @InlineMe, so caller with `setLenient(false)` becomes aware of new
-  // Strictness.STRICT
+  // 不要指定 @InlineMe，因此使用 `setLenient(false)` 的调用者会意识到新的
+  // 严格性.STRICT
   @SuppressWarnings("InlineMeSuggester")
   public final void setLenient(boolean lenient) {
     setStrictness(lenient ? Strictness.LENIENT : Strictness.LEGACY_STRICT);
   }
 
   /**
-   * Returns true if the {@link Strictness} of this reader is equal to {@link Strictness#LENIENT}.
-   *
+   * 如果此读取器的 {@link Strictness} 等于 {@link Strictness#LENIENT}，则返回 true。
    * @see #getStrictness()
    */
   public final boolean isLenient() {
@@ -346,56 +221,26 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Configures how liberal this parser is in what it accepts.
-   *
-   * <p>In {@linkplain Strictness#STRICT strict} mode, the parser only accepts JSON in accordance
-   * with <a href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a>. In {@linkplain
-   * Strictness#LEGACY_STRICT legacy strict} mode (the default), only JSON in accordance with the
-   * RFC 8259 is accepted, with a few exceptions denoted below for backwards compatibility reasons.
-   * In {@linkplain Strictness#LENIENT lenient} mode, all sort of non-spec compliant JSON is
-   * accepted (see below).
-   *
-   * <dl>
-   *   <dt>{@link Strictness#STRICT}
-   *   <dd>In strict mode, only input compliant with RFC 8259 is accepted.
-   *   <dt>{@link Strictness#LEGACY_STRICT}
-   *   <dd>In legacy strict mode, the following departures from RFC 8259 are accepted:
-   *       <ul>
-   *         <li>JsonReader allows the literals {@code true}, {@code false} and {@code null} to have
-   *             any capitalization, for example {@code fAlSe} or {@code NULL}
-   *         <li>JsonReader supports the escape sequence {@code \'}, representing a {@code '}
-   *             (single-quote)
-   *         <li>JsonReader supports the escape sequence <code>\<i>LF</i></code> (with {@code LF}
-   *             being the Unicode character {@code U+000A}), resulting in a {@code LF} within the
-   *             read JSON string
-   *         <li>JsonReader allows unescaped control characters ({@code U+0000} through {@code
-   *             U+001F})
-   *       </ul>
-   *   <dt>{@link Strictness#LENIENT}
-   *   <dd>In lenient mode, all input that is accepted in legacy strict mode is accepted in addition
-   *       to the following departures from RFC 8259:
-   *       <ul>
-   *         <li>Streams that start with the <a href="#nonexecuteprefix">non-execute prefix</a>,
-   *             {@code ")]}'\n"}
-   *         <li>Streams that include multiple top-level values. With legacy strict or strict
-   *             parsing, each stream must contain exactly one top-level value.
-   *         <li>Numbers may be {@link Double#isNaN() NaNs} or {@link Double#isInfinite()
-   *             infinities} represented by {@code NaN} and {@code (-)Infinity} respectively.
-   *         <li>End of line comments starting with {@code //} or {@code #} and ending with a
-   *             newline character.
-   *         <li>C-style comments starting with {@code /*} and ending with {@code *}{@code /}. Such
-   *             comments may not be nested.
-   *         <li>Names that are unquoted or {@code 'single quoted'}.
-   *         <li>Strings that are unquoted or {@code 'single quoted'}.
-   *         <li>Array elements separated by {@code ;} instead of {@code ,}.
-   *         <li>Unnecessary array separators. These are interpreted as if null was the omitted
-   *             value.
-   *         <li>Names and values separated by {@code =} or {@code =>} instead of {@code :}.
-   *         <li>Name/value pairs separated by {@code ;} instead of {@code ,}.
-   *       </ul>
-   * </dl>
-   *
-   * @param strictness the new strictness value of this reader. May not be {@code null}.
+   * 配置此解析器接受的内容的自由度。
+   * <p>在 {@linkplain Strictness#STRICT strict} 模式下，解析器仅接受符合 <a
+   * href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a> 的 JSON。在 {@linkplain
+   * Strictness#LEGACY_STRICT legacy strict} 模式（默认）下，仅接受符合 RFC 8259 的
+   * JSON，出于向后兼容性原因，下面指出了一些例外情况。在 {@linkplain Strictness#LENIENT lenient} 模式下，接受所有类型的不符合规范的
+   * JSON（见下文）。
+   * <dl> <dt>{@link Strictness#STRICT} <dd>在严格模式下，仅接受符合 RFC 8259 的输入。 <dt>{@link
+   * Strictness#LEGACY_STRICT} <dd>在传统严格模式下，接受以下与 RFC 8259 的偏差： <ul> <li>JsonReader 允许文本
+   * {@code true}、{@code false} 和 {@code null} 具有任意大小写，例如 {@code fAlSe} 或 {@code NULL}
+   * <li>JsonReader 支持转义序列 {@code \'}，表示 {@code '}（单引号） <li>JsonReader 支持转义序列
+   * <code>\<i>LF</i></code>（其中 {@code LF} 是 Unicode 字符） {@code U+000A})，导致读取的 JSON 字符串中出现
+   * {@code LF} <li>JsonReader 允许未转义的控制字符（{@code U+0000} 到 {@code U+001F}） </ul> <dt>{@link
+   * Strictness#LENIENT} <dd>在宽松模式下，除了以下偏离之外，还接受在传统严格模式下接受的所有输入来自 RFC 8259：<ul> <li> 以 <a
+   * href="#nonexecuteprefix"> 非执行前缀开头的流 </a>, {@code ")]}'\n"} <li>
+   * 包含多个顶级值的流。使用传统严格或严格解析时，每个流必须恰好包含一个顶级值。 <li>Numbers 可以是 {@link Double#isNaN() NaNs} 或
+   * {@link Double#isInfinite() infinities}，分别由 {@code NaN} 和 {@code (-)Infinity} 表示。 {@code
+   * /*} 和以 {@code *}{@code /} 结尾的注释不能嵌套在未加引号的 <li>Name 或未加引号的 <li> 字符串中，而不是由 {@code ;} 分隔。
+   * {@code ,}。 <li> 不必要的数组分隔符。这些被解释为 <li> 名称和值由 {@code =} 或 {@code =>} 分隔，而不是 <li> 名称/值对，由
+   * {@code ;} 分隔。 {@code ,}。</ul> </dl>
+   * @param strictness 该读者的新严格值。可能不是 {@code null}。
    * @see #getStrictness()
    * @since 2.11.0
    */
@@ -405,8 +250,7 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the {@linkplain Strictness strictness} of this reader.
-   *
+   * 返回此阅读器的 {@linkplain Strictness strictness}。
    * @see #setStrictness(Strictness)
    * @since 2.11.0
    */
@@ -415,20 +259,14 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Sets the nesting limit of this reader.
-   *
-   * <p>The nesting limit defines how many JSON arrays or objects may be open at the same time. For
-   * example a nesting limit of 0 means no arrays or objects may be opened at all, a nesting limit
-   * of 1 means one array or object may be open at the same time, and so on. So a nesting limit of 3
-   * allows reading the JSON data <code>[{"a":[true]}]</code>, but for a nesting limit of 2 it would
-   * fail at the inner {@code [true]}.
-   *
-   * <p>The nesting limit can help to protect against a {@link StackOverflowError} when recursive
-   * {@link com.google.gson.TypeAdapter} implementations process deeply nested JSON data.
-   *
-   * <p>The default nesting limit is {@value #DEFAULT_NESTING_LIMIT}.
-   *
-   * @throws IllegalArgumentException if the nesting limit is negative.
+   * 设置该读取器的嵌套限制。
+   * <p> 的嵌套限制定义了可以同时打开多少个 JSON 数组或对象。例如，嵌套限制为 0 意味着根本不能打开任何数组或对象，嵌套限制为 1 意味着可以同时打开一个数组或对象，依此
+   * 类推。因此，嵌套限制为 3 允许读取 JSON 数据 <code>[{"a":[true]}]</code>，但嵌套限制为 2 时，它将在内部 {@code [true]} 处
+   * 失败。
+   * <p> 当递归 {@link com.google.gson.TypeAdapter} 实现处理深度嵌套的 JSON 数据时，嵌套限制有助于防止 {@link
+   * StackOverflowError}。
+   * <p>默认嵌套限制为{@value #DEFAULT_NESTING_LIMIT}。
+   * @throws IllegalArgumentException 如果嵌套限制为负数。
    * @since 2.12.0
    * @see #getNestingLimit()
    */
@@ -440,8 +278,7 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the nesting limit of this reader.
-   *
+   * 返回此读取器的嵌套限制。
    * @since 2.12.0
    * @see #setNestingLimit(int)
    */
@@ -450,10 +287,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Consumes the next token from the JSON stream and asserts that it is the beginning of a new
-   * array.
-   *
-   * @throws IllegalStateException if the next token is not the beginning of an array.
+   * 使用 JSON 流中的下一个标记并断言它是新数组的开始。
+   * @throws IllegalStateException 如果下一个标记不是数组的开头。
    */
   public void beginArray() throws IOException {
     int p = peeked;
@@ -470,10 +305,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Consumes the next token from the JSON stream and asserts that it is the end of the current
-   * array.
-   *
-   * @throws IllegalStateException if the next token is not the end of an array.
+   * 使用 JSON 流中的下一个标记并断言它是当前数组的末尾。
+   * @throws IllegalStateException 如果下一个标记不是数组的末尾。
    */
   public void endArray() throws IOException {
     int p = peeked;
@@ -490,10 +323,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Consumes the next token from the JSON stream and asserts that it is the beginning of a new
-   * object.
-   *
-   * @throws IllegalStateException if the next token is not the beginning of an object.
+   * 使用 JSON 流中的下一个标记并断言它是新对象的开始。
+   * @throws IllegalStateException 如果下一个标记不是对象的开头。
    */
   public void beginObject() throws IOException {
     int p = peeked;
@@ -509,10 +340,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Consumes the next token from the JSON stream and asserts that it is the end of the current
-   * object.
-   *
-   * @throws IllegalStateException if the next token is not the end of an object.
+   * 使用 JSON 流中的下一个标记并断言它是当前对象的末尾。
+   * @throws IllegalStateException 如果下一个标记不是对象的结尾。
    */
   public void endObject() throws IOException {
     int p = peeked;
@@ -529,7 +358,7 @@ public class JsonReader implements Closeable {
     }
   }
 
-  /** Returns true if the current array or object has another element. */
+  /** 当前数组或对象是否还有下一元素。 */
   public boolean hasNext() throws IOException {
     int p = peeked;
     if (p == PEEKED_NONE) {
@@ -538,7 +367,7 @@ public class JsonReader implements Closeable {
     return p != PEEKED_END_OBJECT && p != PEEKED_END_ARRAY && p != PEEKED_EOF;
   }
 
-  /** Returns the type of the next token without consuming it. */
+  /** 返回下一令牌类型但不消费。 */
   public JsonToken peek() throws IOException {
     int p = peeked;
     if (p == PEEKED_NONE) {
@@ -584,7 +413,7 @@ public class JsonReader implements Closeable {
     if (peekStack == JsonScope.EMPTY_ARRAY) {
       stack[stackSize - 1] = JsonScope.NONEMPTY_ARRAY;
     } else if (peekStack == JsonScope.NONEMPTY_ARRAY) {
-      // Look for a comma before the next element.
+      // 在下一个元素之前查找逗号。
       int c = nextNonWhitespace(true);
       switch (c) {
         case ']':
@@ -599,7 +428,7 @@ public class JsonReader implements Closeable {
       }
     } else if (peekStack == JsonScope.EMPTY_OBJECT || peekStack == JsonScope.NONEMPTY_OBJECT) {
       stack[stackSize - 1] = JsonScope.DANGLING_NAME;
-      // Look for a comma before the next element.
+      // 在下一个元素之前查找逗号。
       if (peekStack == JsonScope.NONEMPTY_OBJECT) {
         int c = nextNonWhitespace(true);
         switch (c) {
@@ -642,7 +471,7 @@ public class JsonReader implements Closeable {
       }
     } else if (peekStack == JsonScope.DANGLING_NAME) {
       stack[stackSize - 1] = JsonScope.NONEMPTY_OBJECT;
-      // Look for a colon before the value.
+      // 在值之前查找冒号。
       int c = nextNonWhitespace(true);
       switch (c) {
         case ':':
@@ -681,10 +510,10 @@ public class JsonReader implements Closeable {
           peeked = PEEKED_END_ARRAY;
           return peeked;
         }
-      // fall-through to handle ",]"
+      // 处理“,]”的失败
       case ';':
       case ',':
-        // In lenient mode, a 0-length literal in an array means 'null'.
+        // 在宽松模式下，数组中的 0 长度文字表示“null”。
         if (peekStack == JsonScope.EMPTY_ARRAY || peekStack == JsonScope.NONEMPTY_ARRAY) {
           checkLenient();
           pos--;
@@ -730,13 +559,13 @@ public class JsonReader implements Closeable {
   }
 
   private int peekKeyword() throws IOException {
-    // Figure out which keyword we're matching against by its first character.
+    // 通过第一个字符找出我们要匹配的关键字。
     char c = buffer[pos];
     String keyword;
     String keywordUpper;
     int peeking;
 
-    // Look at the first letter to determine what keyword we are trying to match.
+    // 查看第一个字母来确定我们要匹配的关键字。
     if (c == 't' || c == 'T') {
       keyword = "true";
       keywordUpper = "TRUE";
@@ -753,10 +582,10 @@ public class JsonReader implements Closeable {
       return PEEKED_NONE;
     }
 
-    // Uppercased keywords are not allowed in STRICT mode
+    // STRICT 模式下不允许使用大写关键字
     boolean allowsUpperCased = strictness != Strictness.STRICT;
 
-    // Confirm that chars [0..length) match the keyword.
+    // 确认 chars [0..length) 与关键字匹配。
     int length = keyword.length();
     for (int i = 0; i < length; i++) {
       if (pos + i >= limit && !fillBuffer(i + 1)) {
@@ -773,14 +602,14 @@ public class JsonReader implements Closeable {
       return PEEKED_NONE; // Don't match trues, falsey or nullsoft!
     }
 
-    // We've found the keyword followed either by EOF or by a non-literal character.
+    // 我们发现关键字后跟 EOF 或非文字字符。
     pos += length;
     peeked = peeking;
     return peeked;
   }
 
   private int peekNumber() throws IOException {
-    // Like nextNonWhitespace, this uses locals 'p' and 'l' to save inner-loop field access.
+    // 与 nextNonWhitespace 一样，它使用局部变量“p”和“l”来保存内循环字段访问。
     char[] buffer = this.buffer;
     int p = pos;
     int l = limit;
@@ -796,8 +625,8 @@ public class JsonReader implements Closeable {
     for (; true; i++) {
       if (p + i == l) {
         if (i == buffer.length) {
-          // Though this looks like a well-formed number, it's too long to continue reading. Give up
-          // and let the application handle this as an unquoted literal.
+          // 虽然这看起来是一个格式良好的数字，但它太长了，无法继续阅读。放弃
+          // 并让应用程序将其作为不带引号的文字处理。
           return PEEKED_NONE;
         }
         if (!fillBuffer(i + 1)) {
@@ -869,8 +698,8 @@ public class JsonReader implements Closeable {
       }
     }
 
-    // We've read a complete number. Decide if it's a PEEKED_LONG or a PEEKED_NUMBER.
-    // Don't store -0 as long; user might want to read it as double -0.0
+    // 我们已经阅读了完整的数字。确定它是 PEEKED_LONG 还是 PEEKED_NUMBER。
+    // 不要存储-0那么久；用户可能想将其读为 double -0.0
     // Don't try to convert Long.MIN_VALUE to positive long; it would overflow MAX_VALUE
     if (last == NUMBER_CHAR_DIGIT
         && fitsInLong
@@ -918,9 +747,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the next token, a {@link JsonToken#NAME property name}, and consumes it.
-   *
-   * @throws IllegalStateException if the next token is not a property name.
+   * 返回下一个令牌（{@link JsonToken#NAME property name}）并使用它。
+   * @throws IllegalStateException 如果下一个标记不是属性名称。
    */
   public String nextName() throws IOException {
     int p = peeked;
@@ -943,10 +771,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the {@link JsonToken#STRING string} value of the next token, consuming it. If the next
-   * token is a number, this method will return its string form.
-   *
-   * @throws IllegalStateException if the next token is not a string.
+   * 返回下一个令牌的 {@link JsonToken#STRING string} 值，并使用它。如果下一个标记是数字，则此方法将返回其字符串形式。
+   * @throws IllegalStateException 如果下一个标记不是字符串。
    */
   public String nextString() throws IOException {
     int p = peeked;
@@ -977,9 +803,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the {@link JsonToken#BOOLEAN boolean} value of the next token, consuming it.
-   *
-   * @throws IllegalStateException if the next token is not a boolean.
+   * 返回下一个令牌的 {@link JsonToken#BOOLEAN boolean} 值，并使用它。
+   * @throws IllegalStateException 如果下一个标记不是布尔值。
    */
   public boolean nextBoolean() throws IOException {
     int p = peeked;
@@ -999,9 +824,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Consumes the next token from the JSON stream and asserts that it is a literal null.
-   *
-   * @throws IllegalStateException if the next token is not a JSON null.
+   * 使用 JSON 流中的下一个标记并断言它是文字 null。
+   * @throws IllegalStateException 如果下一个标记不是 JSON null。
    */
   public void nextNull() throws IOException {
     int p = peeked;
@@ -1017,14 +841,11 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the {@link JsonToken#NUMBER double} value of the next token, consuming it. If the next
-   * token is a string, this method will attempt to parse it as a double using {@link
-   * Double#parseDouble(String)}.
-   *
-   * @throws IllegalStateException if the next token is neither a number nor a string.
-   * @throws NumberFormatException if the next literal value cannot be parsed as a double.
-   * @throws MalformedJsonException if the next literal value is NaN or Infinity and this reader is
-   *     not {@link #setStrictness(Strictness) lenient}.
+   * 返回下一个令牌的 {@link JsonToken#NUMBER double} 值，并使用它。如果下一个标记是字符串，此方法将尝试使用 {@link
+   * Double#parseDouble(String)} 将其解析为双精度型。
+   * @throws IllegalStateException 如果下一个标记既不是数字也不是字符串。
+   * @throws NumberFormatException 如果下一个文字值无法解析为双精度值。
+   * @throws MalformedJsonException 如果下一个文字值为 NaN 或 Infinity 并且该读取器不是 {@link #setStrictness(Strictness) lenient}。
    */
   public double nextDouble() throws IOException {
     int p = peeked;
@@ -1061,13 +882,10 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the {@link JsonToken#NUMBER long} value of the next token, consuming it. If the next
-   * token is a string, this method will attempt to parse it as a long. If the next token's numeric
-   * value cannot be exactly represented by a Java {@code long}, this method throws.
-   *
-   * @throws IllegalStateException if the next token is neither a number nor a string.
-   * @throws NumberFormatException if the next literal value cannot be parsed as a number, or
-   *     exactly represented as a long.
+   * 返回下一个令牌的 {@link JsonToken#NUMBER long} 值，并使用它。如果下一个标记是字符串，此方法将尝试将其解析为长整型。如果下一个标记的数值不能由 J
+   * ava {@code long} 精确表示，则此方法将抛出异常。
+   * @throws IllegalStateException 如果下一个标记既不是数字也不是字符串。
+   * @throws NumberFormatException 如果下一个文字值无法解析为数字或精确表示为 long。
    */
   public long nextLong() throws IOException {
     int p = peeked;
@@ -1097,7 +915,7 @@ public class JsonReader implements Closeable {
         pathIndices[stackSize - 1]++;
         return result;
       } catch (NumberFormatException ignored) {
-        // Fall back to parse as a double below.
+        // 回退到下面解析为双精度。
       }
     } else {
       throw unexpectedTokenError("a long");
@@ -1116,14 +934,11 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the string up to but not including {@code quote}, unescaping any character escape
-   * sequences encountered along the way. The opening quote should have already been read. This
-   * consumes the closing quote, but does not include it in the returned string.
-   *
-   * @param quote either ' or ".
+   * 返回直到但不包括 {@code quote} 的字符串，对沿途遇到的任何字符转义序列进行转义。开头引文应该已经读过。这会消耗结束引号，但不会将其包含在返回的字符串中。
+   * @param quote ' 或 "。
    */
   private String nextQuotedValue(char quote) throws IOException {
-    // Like nextNonWhitespace, this uses locals 'p' and 'l' to save inner-loop field access.
+    // 与 nextNonWhitespace 一样，它使用局部变量“p”和“l”来保存内循环字段访问。
     char[] buffer = this.buffer;
     StringBuilder builder = null;
     while (true) {
@@ -1135,7 +950,7 @@ public class JsonReader implements Closeable {
         int c = buffer[p++];
 
         // In strict mode, throw an exception when meeting unescaped control characters (U+0000
-        // through U+001F)
+        // 通过 U+001F)
         if (strictness == Strictness.STRICT && c < 0x20) {
           throw syntaxError(
               "Unescaped control characters (\\u0000-\\u001F) are not allowed in strict mode");
@@ -1178,7 +993,7 @@ public class JsonReader implements Closeable {
     }
   }
 
-  /** Returns an unquoted value as a string. */
+  /** 将未加引号的值作为字符串返回。 */
   @SuppressWarnings("fallthrough")
   private String nextUnquotedValue() throws IOException {
     StringBuilder builder = null;
@@ -1207,11 +1022,11 @@ public class JsonReader implements Closeable {
           case '\n':
             break findNonLiteralCharacter;
           default:
-            // skip character to be included in string value
+            // 跳过要包含在字符串值中的字符
         }
       }
 
-      // Attempt to load the entire literal into the buffer at once.
+      // 尝试一次将整个文字加载到缓冲区中。
       if (i < buffer.length) {
         if (fillBuffer(i + 1)) {
           continue;
@@ -1239,7 +1054,7 @@ public class JsonReader implements Closeable {
   }
 
   private void skipQuotedValue(char quote) throws IOException {
-    // Like nextNonWhitespace, this uses locals 'p' and 'l' to save inner-loop field access.
+    // 与 nextNonWhitespace 一样，它使用局部变量“p”和“l”来保存内循环字段访问。
     char[] buffer = this.buffer;
     do {
       int p = pos;
@@ -1291,7 +1106,7 @@ public class JsonReader implements Closeable {
             pos += i;
             return;
           default:
-            // skip the character
+            // 跳过该字符
         }
       }
       pos += i;
@@ -1299,13 +1114,10 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the {@link JsonToken#NUMBER int} value of the next token, consuming it. If the next
-   * token is a string, this method will attempt to parse it as an int. If the next token's numeric
-   * value cannot be exactly represented by a Java {@code int}, this method throws.
-   *
-   * @throws IllegalStateException if the next token is neither a number nor a string.
-   * @throws NumberFormatException if the next literal value cannot be parsed as a number, or
-   *     exactly represented as an int.
+   * 返回下一个令牌的 {@link JsonToken#NUMBER int} 值，并使用它。如果下一个标记是字符串，此方法将尝试将其解析为 int。如果下一个标记的数值不能由 J
+   * ava {@code int} 精确表示，则此方法将抛出异常。
+   * @throws IllegalStateException 如果下一个标记既不是数字也不是字符串。
+   * @throws NumberFormatException 如果下一个文字值无法解析为数字或精确表示为 int。
    */
   public int nextInt() throws IOException {
     int p = peeked;
@@ -1340,7 +1152,7 @@ public class JsonReader implements Closeable {
         pathIndices[stackSize - 1]++;
         return result;
       } catch (NumberFormatException ignored) {
-        // Fall back to parse as a double below.
+        // 回退到下面解析为双精度。
       }
     } else {
       throw unexpectedTokenError("an int");
@@ -1359,10 +1171,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Closes this JSON reader and the underlying {@link Reader}.
-   *
-   * <p>Using the JSON reader after it has been closed will throw an {@link IllegalStateException}
-   * in most cases.
+   * 关闭此 JSON 读取器和底层 {@link Reader}。
+   * <p> 在大多数情况下，关闭 JSON 读取器后使用它会抛出 {@link IllegalStateException}。
    */
   @Override
   public void close() throws IOException {
@@ -1373,20 +1183,11 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Skips the next value recursively. This method is intended for use when the JSON token stream
-   * contains unrecognized or unhandled values.
-   *
-   * <p>The behavior depends on the type of the next JSON token:
-   *
-   * <ul>
-   *   <li>Start of a JSON array or object: It and all of its nested values are skipped.
-   *   <li>Primitive value (for example a JSON number): The primitive value is skipped.
-   *   <li>Property name: Only the name but not the value of the property is skipped. {@code
-   *       skipValue()} has to be called again to skip the property value as well.
-   *   <li>End of a JSON array or object: Only this end token is skipped.
-   *   <li>End of JSON document: Skipping has no effect, the next token continues to be the end of
-   *       the document.
-   * </ul>
+   * 递归地跳过下一个值。此方法适用于当 JSON 令牌流包含无法识别或未处理的值时。
+   * <p> 的行为取决于下一个 JSON 令牌的类型：
+   * JSON 数组或对象的 <ul> <li>Start：跳过它及其所有嵌套值。 <li>Primitive 值（例如 JSON 数字）：跳过原始值。 <li>属性名称：仅跳过属性
+   * 的名称，但不跳过属性的值。还必须再次调用 {@code skipValue()} 才能跳过属性值。 JSON 数组或对象的 <li>End：仅跳过此结束标记。 JSON 文档的
+   *  <li>End：跳过无效，下一个标记仍然是文档的结尾。 OCAJAVA7文档
    */
   public void skipValue() throws IOException {
     int count = 0;
@@ -1410,10 +1211,10 @@ public class JsonReader implements Closeable {
           count--;
           break;
         case PEEKED_END_OBJECT:
-          // Only update when object end is explicitly skipped, otherwise stack is not updated
-          // anyways
+          // 仅当显式跳过对象末尾时才更新，否则堆栈不更新
+          // 无论如何
           if (count == 0) {
-            // Free the last path name so that it can be garbage collected
+            // 释放最后一个路径名，以便可以对其进行垃圾收集
             pathNames[stackSize - 1] = null;
           }
           stackSize--;
@@ -1430,21 +1231,21 @@ public class JsonReader implements Closeable {
           break;
         case PEEKED_UNQUOTED_NAME:
           skipUnquotedValue();
-          // Only update when name is explicitly skipped, otherwise stack is not updated anyways
+          // 仅当显式跳过名称时才更新，否则堆栈不会更新
           if (count == 0) {
             pathNames[stackSize - 1] = "<skipped>";
           }
           break;
         case PEEKED_SINGLE_QUOTED_NAME:
           skipQuotedValue('\'');
-          // Only update when name is explicitly skipped, otherwise stack is not updated anyways
+          // 仅当显式跳过名称时才更新，否则堆栈不会更新
           if (count == 0) {
             pathNames[stackSize - 1] = "<skipped>";
           }
           break;
         case PEEKED_DOUBLE_QUOTED_NAME:
           skipQuotedValue('"');
-          // Only update when name is explicitly skipped, otherwise stack is not updated anyways
+          // 仅当显式跳过名称时才更新，否则堆栈不会更新
           if (count == 0) {
             pathNames[stackSize - 1] = "<skipped>";
           }
@@ -1453,11 +1254,11 @@ public class JsonReader implements Closeable {
           pos += peekedNumberLength;
           break;
         case PEEKED_EOF:
-          // Do nothing
+          // 什么都不做
           return;
         default:
-          // For all other tokens there is nothing to do; token has already been consumed from
-          // underlying reader
+          // 对于所有其他代币，无需执行任何操作；令牌已被消耗
+          // 底层读者
       }
       peeked = PEEKED_NONE;
     } while (count > 0);
@@ -1466,7 +1267,7 @@ public class JsonReader implements Closeable {
   }
 
   private void push(int newTop) throws MalformedJsonException {
-    // - 1 because stack contains as first element either EMPTY_DOCUMENT or NONEMPTY_DOCUMENT
+    // - 1 因为堆栈包含 EMPTY_DOCUMENT 或 NONEMPTY_DOCUMENT 作为第一个元素
     if (stackSize - 1 >= nestingLimit) {
       throw new MalformedJsonException(
           "Nesting limit " + nestingLimit + " reached" + locationString());
@@ -1482,8 +1283,7 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns true once {@code limit - pos >= minimum}. If the data is exhausted before that many
-   * characters are available, this returns false.
+   * {@code limit - pos >= minimum} 一次返回 true。如果在可用字符数之前数据已耗尽，则返回 false。
    */
   private boolean fillBuffer(int minimum) throws IOException {
     char[] buffer = this.buffer;
@@ -1500,7 +1300,7 @@ public class JsonReader implements Closeable {
     while ((total = in.read(buffer, limit, buffer.length - limit)) != -1) {
       limit += total;
 
-      // if this is the first read, consume an optional byte order mark (BOM) if it exists
+      // 如果这是第一次读取，则使用可选的字节顺序标记 (BOM)（如果存在）
       if (lineNumber == 0 && lineStart == 0 && limit > 0 && buffer[0] == '\ufeff') {
         pos++;
         lineStart++;
@@ -1515,9 +1315,8 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns the next character in the stream that is neither whitespace nor a part of a comment.
-   * When this returns, the returned character is always at {@code buffer[pos-1]}; this means the
-   * caller can always push back the returned character by decrementing {@code pos}.
+   * 返回流中既不是空格也不是注释一部分的下一个字符。当它返回时，返回的字符总是在{@code buffer[pos-1]}；这意味着调用者始终可以通过递减 {@code pos} 
+   * 来推回返回的字符。
    */
   private int nextNonWhitespace(boolean throwOnEof) throws IOException {
     /*
@@ -1565,7 +1364,7 @@ public class JsonReader implements Closeable {
         char peek = buffer[pos];
         switch (peek) {
           case '*':
-            // skip a /* c-style comment */
+            // 跳过 /* c 风格注释 */
             pos++;
             if (!skipTo("*/")) {
               throw syntaxError("Unterminated comment");
@@ -1575,7 +1374,7 @@ public class JsonReader implements Closeable {
             continue;
 
           case '/':
-            // skip a // end-of-line comment
+            // 跳过 // 行尾注释
             pos++;
             skipToEndOfLine();
             p = pos;
@@ -1616,8 +1415,7 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Advances the position until after the next newline character. If the line is terminated by
-   * "\r\n", the '\n' must be consumed as whitespace by the caller.
+   * 将位置前进到下一个换行符之后。如果该行以“\r\n”终止，则调用者必须将“\n”用作空格。
    */
   private void skipToEndOfLine() throws IOException {
     while (pos < limit || fillBuffer(1)) {
@@ -1633,7 +1431,7 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * @param toFind a string to search for. Must not contain a newline.
+   * @param toFind 要搜索的字符串。不得包含换行符。
    */
   private boolean skipTo(String toFind) throws IOException {
     int length = toFind.length();
@@ -1673,7 +1471,7 @@ public class JsonReader implements Closeable {
         case JsonScope.EMPTY_ARRAY:
         case JsonScope.NONEMPTY_ARRAY:
           int pathIndex = pathIndices[i];
-          // If index is last path element it points to next array element; have to decrement
+          // 如果索引是最后一个路径元素，则它指向下一个数组元素；必须减少
           if (usePreviousPath && pathIndex > 0 && i == stackSize - 1) {
             pathIndex--;
           }
@@ -1699,47 +1497,30 @@ public class JsonReader implements Closeable {
   }
 
   /**
-   * Returns a <a href="https://goessner.net/articles/JsonPath/">JSONPath</a> in <i>dot-notation</i>
-   * to the next (or current) location in the JSON document. That means:
-   *
-   * <ul>
-   *   <li>For JSON arrays the path points to the index of the next element (even if there are no
-   *       further elements).
-   *   <li>For JSON objects the path points to the last property, or to the current property if its
-   *       name has already been consumed.
-   * </ul>
-   *
-   * <p>This method can be useful to add additional context to exception messages <i>before</i> a
-   * value is consumed, for example when the {@linkplain #peek() peeked} token is unexpected.
+   * 将 <i>dot-notation</i> 中的 <a href="https://goessner.net/articles/JsonPath/">JSONPath</a>
+   * 返回到 JSON 文档中的下一个（或当前）位置。这意味着：
+   * <ul> <li> 对于 JSON 数组，路径指向下一个元素的索引（即使没有其他元素）。 <li>对于 JSON 对象，路径指向最后一个属性，或者指向当前属性（如果其名称已被使
+   * 用）。 </ul>
+   * <p> 此方法可用于在使用 </i> 值之前向异常消息 <i> 添加附加上下文，例如当 {@linkplain #peek() peeked} 令牌意外时。
    */
   public String getPath() {
     return getPath(false);
   }
 
   /**
-   * Returns a <a href="https://goessner.net/articles/JsonPath/">JSONPath</a> in <i>dot-notation</i>
-   * to the previous (or current) location in the JSON document. That means:
-   *
-   * <ul>
-   *   <li>For JSON arrays the path points to the index of the previous element.<br>
-   *       If no element has been consumed yet it uses the index 0 (even if there are no elements).
-   *   <li>For JSON objects the path points to the last property, or to the current property if its
-   *       name has already been consumed.
-   * </ul>
-   *
-   * <p>This method can be useful to add additional context to exception messages <i>after</i> a
-   * value has been consumed.
+   * 将 <i>dot-notation</i> 中的 <a href="https://goessner.net/articles/JsonPath/">JSONPath</a>
+   * 返回到 JSON 文档中的上一个（或当前）位置。这意味着：
+   * <ul> <li> 对于 JSON 数组，路径指向前一个元素的索引。<br> 如果尚未使用任何元素，则它使用索引 0（即使没有元素）。 <li>对于 JSON 对象，路径指向最
+   * 后一个属性，或者指向当前属性（如果其名称已被使用）。 </ul>
+   * <p> 此方法可用于在使用 </i> 值后向异常消息 <i> 添加附加上下文。
    */
   public String getPreviousPath() {
     return getPath(true);
   }
 
   /**
-   * Unescapes the character identified by the character or characters that immediately follow a
-   * backslash. The backslash '\' should have already been read. This supports both Unicode escapes
-   * "u000A" and two-character escapes "\n".
-   *
-   * @throws MalformedJsonException if the escape sequence is malformed
+   * 对紧跟在反斜杠后面的一个或多个字符所标识的字符进行取消转义。反斜杠“\”应该已经被读取。这支持 Unicode 转义符“u000A”和双字符转义符“\n”。
+   * @throws MalformedJsonException 如果转义序列格式错误
    */
   @SuppressWarnings("fallthrough")
   private char readEscapeCharacter() throws IOException {
@@ -1753,7 +1534,7 @@ public class JsonReader implements Closeable {
         if (pos + 4 > limit && !fillBuffer(4)) {
           throw syntaxError("Unterminated escape sequence");
         }
-        // Equivalent to Integer.parseInt(stringPool.get(buffer, pos, 4), 16);
+        // 等价于 Integer.parseInt(stringPool.get(buffer, pos, 4), 16);
         int result = 0;
         for (int i = pos, end = i + 4; i < end; i++) {
           char c = buffer[i];
@@ -1792,7 +1573,7 @@ public class JsonReader implements Closeable {
         }
         lineNumber++;
         lineStart = pos;
-      // fall-through
+      // 跌倒
 
       case '\'':
         if (strictness == Strictness.STRICT) {
@@ -1803,14 +1584,13 @@ public class JsonReader implements Closeable {
       case '/':
         return escaped;
       default:
-        // throw error when none of the above cases are matched
+        // 当以上情况都不匹配时抛出错误
         throw syntaxError("Invalid escape sequence");
     }
   }
 
   /**
-   * Throws a new {@link MalformedJsonException} with the given message and information about the
-   * current location.
+   * 抛出一个新的 {@link MalformedJsonException}，其中包含给定的消息和有关当前位置的信息。
    */
   private MalformedJsonException syntaxError(String message) throws MalformedJsonException {
     throw new MalformedJsonException(
@@ -1831,9 +1611,9 @@ public class JsonReader implements Closeable {
             + TroubleshootingGuide.createUrl(troubleshootingId));
   }
 
-  /** Consumes the non-execute prefix if it exists. */
+  /** 若存在 non-execute 前缀则消费之。 */
   private void consumeNonExecutePrefix() throws IOException {
-    // fast-forward through the leading whitespace
+    // 通过前导空白快进
     int unused = nextNonWhitespace(true);
     pos--;
 
@@ -1851,7 +1631,7 @@ public class JsonReader implements Closeable {
       return; // not a security token!
     }
 
-    // we consumed a security token!
+    // 我们消耗了一个安全令牌！
     pos += 5;
   }
 

@@ -17,60 +17,54 @@
 package com.google.gson.stream;
 
 /**
- * A structure, name or value type in a JSON-encoded string.
- *
+ * JSON 编码字符串中的结构、名称或值类型。
  * @author Jesse Wilson
  * @since 1.6
  */
 public enum JsonToken {
 
   /**
-   * The opening of a JSON array. Written using {@link JsonWriter#beginArray} and read using {@link
-   * JsonReader#beginArray}.
+   * JSON 数组的打开。使用 {@link JsonWriter#beginArray} 编写并使用 {@link JsonReader#beginArray} 读取。
    */
   BEGIN_ARRAY,
 
   /**
-   * The closing of a JSON array. Written using {@link JsonWriter#endArray} and read using {@link
-   * JsonReader#endArray}.
+   * JSON 数组的结束。使用 {@link JsonWriter#endArray} 编写并使用 {@link JsonReader#endArray} 读取。
    */
   END_ARRAY,
 
   /**
-   * The opening of a JSON object. Written using {@link JsonWriter#beginObject} and read using
-   * {@link JsonReader#beginObject}.
+   * 打开一个 JSON 对象。使用 {@link JsonWriter#beginObject} 编写并使用 {@link JsonReader#beginObject} 读取。
    */
   BEGIN_OBJECT,
 
   /**
-   * The closing of a JSON object. Written using {@link JsonWriter#endObject} and read using {@link
-   * JsonReader#endObject}.
+   * JSON 对象的结束。使用 {@link JsonWriter#endObject} 编写并使用 {@link JsonReader#endObject} 读取。
    */
   END_OBJECT,
 
   /**
-   * A JSON property name. Within objects, tokens alternate between names and their values. Written
-   * using {@link JsonWriter#name} and read using {@link JsonReader#nextName}
+   * JSON 属性名称。在对象内，标记在名称及其值之间交替。使用 {@link JsonWriter#name} 编写并使用 {@link
+   * JsonReader#nextName} 读取
    */
   NAME,
 
-  /** A JSON string. */
+  /** JSON 字符串。 */
   STRING,
 
   /**
-   * A JSON number represented in this API by a Java {@code double}, {@code long}, or {@code int}.
+   * 此 API 中由 Java {@code double}、{@code long} 或 {@code int} 表示的 JSON 编号。
    */
   NUMBER,
 
-  /** A JSON {@code true} or {@code false}. */
+  /** JSON 布尔值 {@code true} 或 {@code false}。 */
   BOOLEAN,
 
-  /** A JSON {@code null}. */
+  /** JSON {@code null}。 */
   NULL,
 
   /**
-   * The end of the JSON stream. This sentinel value is returned by {@link JsonReader#peek()} to
-   * signal that the JSON-encoded value has no more tokens.
+   * JSON 流的结尾。此标记值由 {@link JsonReader#peek()} 返回，以表明 JSON 编码值不再有标记。
    */
   END_DOCUMENT
 }

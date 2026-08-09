@@ -28,24 +28,15 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Represents a generic type {@code T}. Java doesn't yet provide a way to represent generic types,
- * so this class does. Forces clients to create a subclass of this class which enables retrieval the
- * type information even at runtime.
+ * 表示泛型类型 {@code T}。Java 无法在运行时直接表示泛型，本类通过匿名子类在运行时保留类型信息。
  *
- * <p>For example, to create a type literal for {@code List<String>}, you can create an empty
- * anonymous class:
+ * <p>例如创建 {@code List<String>} 的类型字面量：
+ * {@code TypeToken<List<String>> list = new TypeToken<List<String>>() {};}
  *
- * <p>{@code TypeToken<List<String>> list = new TypeToken<List<String>>() {};}
+ * <p>匿名 {@code TypeToken} 子类不得捕获类型变量（如 {@code TypeToken<List<T>>}），否则擦除后 Gson 无法获得真实类型，
+ * 编译期看似类型安全却可能在运行时抛出 {@code ClassCastException}。
  *
- * <p>Capturing a type variable as type argument of an anonymous {@code TypeToken} subclass is not
- * allowed, for example {@code TypeToken<List<T>>}. Due to type erasure the runtime type of a type
- * variable is not available to Gson and therefore it cannot provide the functionality one might
- * expect. This would give a false sense of type-safety at compile time and could lead to an
- * unexpected {@code ClassCastException} at runtime.
- *
- * <p>If the type arguments of the parameterized type are only available at runtime, for example
- * when you want to create a {@code List<E>} based on a {@code Class<E>} representing the element
- * type, the method {@link #getParameterized(Type, Type...)} can be used.
+ * <p>若泛型实参仅在运行时可用，可使用 {@link #getParameterized(Type, Type...)}。
  *
  * @author Bob Lee
  * @author Sven Mawson
@@ -57,17 +48,11 @@ public class TypeToken<T> {
   private final int hashCode;
 
   /**
-   * Constructs a new type literal. Derives represented class from type parameter.
+   * 构造新的类型字面量，从类型参数推导所表示的类。
    *
-   * <p>Clients create an empty anonymous subclass. Doing so embeds the type parameter in the
-   * anonymous class's type hierarchy so we can reconstitute it at runtime despite erasure, for
-   * example:
+   * <p>客户端应创建空的匿名子类，例如 {@code new TypeToken<List<String>>() {}}
    *
-   * <p>{@code new TypeToken<List<String>>() {}}
-   *
-   * @throws IllegalArgumentException If the anonymous {@code TypeToken} subclass captures a type
-   *     variable, for example {@code TypeToken<List<T>>}. See the {@code TypeToken} class
-   *     documentation for more details.
+   * @throws IllegalArgumentException 若匿名子类捕获了类型变量（如 {@code TypeToken<List<T>>}）
    */
   @SuppressWarnings("unchecked")
   protected TypeToken() {
@@ -76,7 +61,7 @@ public class TypeToken<T> {
     this.hashCode = type.hashCode();
   }
 
-  /** Unsafe. Constructs a type literal manually. */
+  /** 非安全：手动指定 {@link Type} 构造类型字面量。 */
   @SuppressWarnings("unchecked")
   private TypeToken(Type type) {
     this.type = GsonTypes.canonicalize(Objects.requireNonNull(type));
@@ -88,10 +73,7 @@ public class TypeToken<T> {
     return !Objects.equals(System.getProperty("gson.allowCapturingTypeVariables"), "true");
   }
 
-  /**
-   * Verifies that {@code this} is an instance of a direct subclass of TypeToken and returns the
-   * type argument for {@code T} in {@link GsonTypes#canonicalize canonical form}.
-   */
+  /** 验证 {@code this} 为 {@code TypeToken} 的直接子类，并返回 {@code T} 的规范化类型实参。 */
   private Type getTypeTokenTypeArgument() {
     Type superclass = getClass().getGenericSuperclass();
     if (superclass instanceof ParameterizedType) {
@@ -157,20 +139,20 @@ public class TypeToken<T> {
     }
   }
 
-  /** Returns the raw (non-generic) type for this type. */
+  /** 返回原始（非泛型）类型。 */
   public final Class<? super T> getRawType() {
     return rawType;
   }
 
-  /** Gets underlying {@code Type} instance. */
+  /** 返回底层 {@link Type} 实例。 */
   public final Type getType() {
     return type;
   }
 
   /**
-   * Check if this type is assignable from the given class object.
+   * 判断给定 {@link Class} 是否可赋值给本类型。
    *
-   * @deprecated this implementation may be inconsistent with javac for types with wildcards.
+   * @deprecated 对含通配符的类型可能与 javac 不一致
    */
   @Deprecated
   public boolean isAssignableFrom(Class<?> cls) {
@@ -178,9 +160,9 @@ public class TypeToken<T> {
   }
 
   /**
-   * Check if this type is assignable from the given Type.
+   * 判断给定 {@link Type} 是否可赋值给本类型。
    *
-   * @deprecated this implementation may be inconsistent with javac for types with wildcards.
+   * @deprecated 对含通配符的类型可能与 javac 不一致
    */
   @Deprecated
   public boolean isAssignableFrom(Type from) {
@@ -206,19 +188,16 @@ public class TypeToken<T> {
   }
 
   /**
-   * Check if this type is assignable from the given type token.
+   * 判断给定 {@link TypeToken} 是否可赋值给本类型。
    *
-   * @deprecated this implementation may be inconsistent with javac for types with wildcards.
+   * @deprecated 对含通配符的类型可能与 javac 不一致
    */
   @Deprecated
   public boolean isAssignableFrom(TypeToken<?> token) {
     return isAssignableFrom(token.getType());
   }
 
-  /**
-   * Private helper function that performs some assignability checks for the provided
-   * GenericArrayType.
-   */
+  /** 对 {@link GenericArrayType} 执行可赋值性检查的私有辅助方法。 */
   private static boolean isAssignableFrom(Type from, GenericArrayType to) {
     Type toGenericComponentType = to.getGenericComponentType();
     if (toGenericComponentType instanceof ParameterizedType) {
@@ -240,7 +219,7 @@ public class TypeToken<T> {
     return true;
   }
 
-  /** Private recursive helper function to actually do the type-safe checking of assignability. */
+  /** 递归执行类型安全可赋值性检查的私有辅助方法。 */
   private static boolean isAssignableFrom(
       Type from, ParameterizedType to, Map<String, Type> typeVarMap) {
 
@@ -290,10 +269,7 @@ public class TypeToken<T> {
     return isAssignableFrom(sType, to, new HashMap<>(typeVarMap));
   }
 
-  /**
-   * Checks if two parameterized types are exactly equal, under the variable replacement described
-   * in the typeVarMap.
-   */
+  /** 在 typeVarMap 变量替换下，判断两个参数化类型是否完全相等。 */
   private static boolean typeEquals(
       ParameterizedType from, ParameterizedType to, Map<String, Type> typeVarMap) {
     if (from.getRawType().equals(to.getRawType())) {
@@ -326,10 +302,7 @@ public class TypeToken<T> {
     return new IllegalArgumentException(exceptionMessage.toString());
   }
 
-  /**
-   * Checks if two types are the same or are equivalent under a variable mapping given in the type
-   * map that was provided.
-   */
+  /** 判断两类型是否相同，或在给定 typeMap 下等价。 */
   private static boolean matches(Type from, Type to, Map<String, Type> typeMap) {
     return to.equals(from)
         || (from instanceof TypeVariable
@@ -351,36 +324,24 @@ public class TypeToken<T> {
     return GsonTypes.typeToString(type);
   }
 
-  /** Gets type literal for the given {@code Type} instance. */
+  /** 为给定 {@link Type} 获取类型字面量。 */
   public static TypeToken<?> get(Type type) {
     return new TypeToken<>(type);
   }
 
-  /** Gets type literal for the given {@code Class} instance. */
+  /** 为给定 {@link Class} 获取类型字面量。 */
   public static <T> TypeToken<T> get(Class<T> type) {
     return new TypeToken<>(type);
   }
 
   /**
-   * Gets a type literal for the parameterized type represented by applying {@code typeArguments} to
-   * {@code rawType}. This is mainly intended for situations where the type arguments are not
-   * available at compile time. The following example shows how a type token for {@code Map<K, V>}
-   * can be created:
+   * 将 {@code typeArguments} 应用于 {@code rawType}，得到参数化类型的类型字面量；适用于编译期无法获得泛型实参的场景。
    *
-   * <pre>{@code
-   * Class<K> keyClass = ...;
-   * Class<V> valueClass = ...;
-   * TypeToken<?> mapTypeToken = TypeToken.getParameterized(Map.class, keyClass, valueClass);
-   * }</pre>
+   * <p>返回 {@code TypeToken<?>}，无编译期类型安全，须传入正确数量的类型实参。
    *
-   * As seen here the result is a {@code TypeToken<?>}; this method cannot provide any type-safety,
-   * and care must be taken to pass in the correct number of type arguments.
+   * <p>若 {@code rawType} 非泛型且未提供实参，则委托 {@link #get(Class)}。
    *
-   * <p>If {@code rawType} is a non-generic class and no type arguments are provided, this method
-   * simply delegates to {@link #get(Class)} and creates a {@code TypeToken(Class)}.
-   *
-   * @throws IllegalArgumentException If {@code rawType} is not of type {@code Class}, or if the
-   *     type arguments are invalid for the raw type
+   * @throws IllegalArgumentException {@code rawType} 非 {@code Class} 或实参无效时
    */
   public static TypeToken<?> getParameterized(Type rawType, Type... typeArguments) {
     Objects.requireNonNull(rawType);
@@ -443,9 +404,7 @@ public class TypeToken<T> {
     return new TypeToken<>(GsonTypes.newParameterizedTypeWithOwner(null, rawClass, typeArguments));
   }
 
-  /**
-   * Gets type literal for the array type whose elements are all instances of {@code componentType}.
-   */
+  /** 获取元素类型为 {@code componentType} 的数组类型字面量。 */
   public static TypeToken<?> getArray(Type componentType) {
     return new TypeToken<>(GsonTypes.arrayOf(componentType));
   }

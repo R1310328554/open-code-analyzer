@@ -74,9 +74,9 @@ final class TypeAdapterRuntimeTypeWrapper<T> extends TypeAdapter<T> {
   }
 
   /**
-   * Returns whether the type adapter uses reflection.
+   * 判断类型适配器是否使用反射。
    *
-   * @param typeAdapter the type adapter to check.
+   * @param typeAdapter 待检查的类型适配器
    */
   private static boolean isReflective(TypeAdapter<?> typeAdapter) {
     // Run this in loop in case multiple delegating adapters are nested
@@ -93,7 +93,7 @@ final class TypeAdapterRuntimeTypeWrapper<T> extends TypeAdapter<T> {
     return typeAdapter instanceof ReflectiveTypeAdapterFactory.Adapter;
   }
 
-  /** Finds a compatible runtime type if it is more specific */
+  /** 若运行时类型更具体，则返回与之兼容的运行时类型 */
   private static Type getRuntimeTypeIfMoreSpecific(Type type, Object value) {
     if (value != null && (type instanceof Class<?> || type instanceof TypeVariable<?>)) {
       type = value.getClass();

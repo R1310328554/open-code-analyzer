@@ -15,8 +15,7 @@
  */
 
 /**
- * Defines the Gson serialization/deserialization API.
- *
+ * 定义 Gson 序列化/反序列化 API。
  * @since 2.8.6
  */
 module com.google.gson {
@@ -25,12 +24,12 @@ module com.google.gson {
   exports com.google.gson.reflect;
   exports com.google.gson.stream;
 
-  // Optional dependency on Error Prone Annotations
+  // 对易错注释的可选依赖
   requires static com.google.errorprone.annotations;
 
-  // Optional dependency on java.sql
+  // 对 java.sql 的可选依赖
   requires static java.sql;
 
-  // Optional dependency on jdk.unsupported for JDK's sun.misc.Unsafe
+  // JDK 的 sun.misc.Unsafe 对 jdk.unsupported 的可选依赖
   requires static jdk.unsupported;
 }

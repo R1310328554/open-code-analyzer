@@ -20,8 +20,8 @@ import com.google.gson.Strictness;
 import java.io.IOException;
 
 /**
- * Thrown when a reader encounters malformed JSON. Some syntax errors can be ignored by using {@link
- * Strictness#LENIENT} for {@link JsonReader#setStrictness(Strictness)}.
+ * 当读者遇到格式错误的 JSON 时抛出。通过将 {@link Strictness#LENIENT} 用于 {@link
+ * JsonReader#setStrictness(Strictness)} 可以忽略某些语法错误。
  */
 public final class MalformedJsonException extends IOException {
   private static final long serialVersionUID = 1L;

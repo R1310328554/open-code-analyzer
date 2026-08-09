@@ -25,13 +25,12 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Utilities methods for manipulating dates in iso8601 format. This is much faster and GC friendly
- * than using SimpleDateFormat so highly suitable if you (un)serialize lots of date objects.
+ * ISO8601 日期格式的工具方法。比 {@link java.text.SimpleDateFormat} 更快且 GC 友好，适合大量日期序列化/反序列化。
  *
- * <p>Supported parse format:
+ * <p>支持的解析格式：
  * [yyyy-MM-dd|yyyyMMdd][T(hh:mm[:ss[.sss]]|hhmm[ss[.sss]])]?[Z|[+-]hh[:]mm]]
  *
- * @see <a href="http://www.w3.org/TR/NOTE-datetime">this specification</a>
+ * @see <a href="http://www.w3.org/TR/NOTE-datetime">W3C 日期时间规范</a>
  */
 // Date parsing code from Jackson databind ISO8601Utils.java
 // https://github.com/FasterXML/jackson-databind/blob/2.8/src/main/java/com/fasterxml/jackson/databind/util/ISO8601Utils.java
@@ -39,18 +38,10 @@ import java.util.TimeZone;
 public class ISO8601Utils {
   private ISO8601Utils() {}
 
-  /**
-   * ID to represent the 'UTC' string, default timezone since Jackson 2.7
-   *
-   * @since 2.7
-   */
+  /** 表示 {@code UTC} 字符串的 ID，Jackson 2.7 起为默认时区。 @since 2.7 */
   private static final String UTC_ID = "UTC";
 
-  /**
-   * The UTC timezone, prefetched to avoid more lookups.
-   *
-   * @since 2.7
-   */
+  /** 预取的 UTC 时区，避免重复查找。 @since 2.7 */
   private static final TimeZone TIMEZONE_UTC = TimeZone.getTimeZone(UTC_ID);
 
   /*
@@ -60,33 +51,33 @@ public class ISO8601Utils {
    */
 
   /**
-   * Format a date into 'yyyy-MM-ddThh:mm:ssZ' (default timezone, no milliseconds precision)
+   * 格式化为 {@code yyyy-MM-ddThh:mm:ssZ}（默认时区，无毫秒）。
    *
-   * @param date the date to format
-   * @return the date formatted as 'yyyy-MM-ddThh:mm:ssZ'
+   * @param date 待格式化日期
+   * @return 格式化后的字符串
    */
   public static String format(Date date) {
     return format(date, false, TIMEZONE_UTC);
   }
 
   /**
-   * Format a date into 'yyyy-MM-ddThh:mm:ss[.sss]Z' (GMT timezone)
+   * 格式化为 {@code yyyy-MM-ddThh:mm:ss[.sss]Z}（GMT 时区）。
    *
-   * @param date the date to format
-   * @param millis true to include millis precision otherwise false
-   * @return the date formatted as 'yyyy-MM-ddThh:mm:ss[.sss]Z'
+   * @param date 待格式化日期
+   * @param millis 是否包含毫秒
+   * @return 格式化后的字符串
    */
   public static String format(Date date, boolean millis) {
     return format(date, millis, TIMEZONE_UTC);
   }
 
   /**
-   * Format date into yyyy-MM-ddThh:mm:ss[.sss][Z|[+-]hh:mm]
+   * 格式化为 {@code yyyy-MM-ddThh:mm:ss[.sss][Z|[+-]hh:mm]}。
    *
-   * @param date the date to format
-   * @param millis true to include millis precision otherwise false
-   * @param tz timezone to use for the formatting (UTC will produce 'Z')
-   * @return the date formatted as yyyy-MM-ddThh:mm:ss[.sss][Z|[+-]hh:mm]
+   * @param date 待格式化日期
+   * @param millis 是否包含毫秒
+   * @param tz 时区（UTC 输出 {@code Z}）
+   * @return 格式化后的字符串
    */
   public static String format(Date date, boolean millis, TimeZone tz) {
     Calendar calendar = new GregorianCalendar(tz, Locale.US);
@@ -136,13 +127,13 @@ public class ISO8601Utils {
    */
 
   /**
-   * Parse a date from ISO-8601 formatted string. It expects a format
+   * 从 ISO-8601 字符串解析日期。期望格式：
    * [yyyy-MM-dd|yyyyMMdd][T(hh:mm[:ss[.sss]]|hhmm[ss[.sss]])]?[Z|[+-]hh[:mm]]]
    *
-   * @param date ISO string to parse in the appropriate format.
-   * @param pos The position to start parsing from, updated to where parsing stopped.
-   * @return the parsed date
-   * @throws ParseException if the date is not in the appropriate format
+   * @param date 待解析的 ISO 字符串
+   * @param pos 起始解析位置，解析结束后更新为停止位置
+   * @return 解析得到的日期
+   * @throws ParseException 格式不正确时
    */
   public static Date parse(String date, ParsePosition pos) throws ParseException {
     Exception fail = null;
@@ -309,25 +300,25 @@ public class ISO8601Utils {
   }
 
   /**
-   * Check if the expected character exist at the given offset in the value.
+   * 检查指定偏移处是否为期望字符。
    *
-   * @param value the string to check at the specified offset
-   * @param offset the offset to look for the expected character
-   * @param expected the expected character
-   * @return true if the expected character exist at the given offset
+   * @param value 字符串
+   * @param offset 偏移
+   * @param expected 期望字符
+   * @return 匹配则 {@code true}
    */
   private static boolean checkOffset(String value, int offset, char expected) {
     return (offset < value.length()) && (value.charAt(offset) == expected);
   }
 
   /**
-   * Parse an integer located between 2 given offsets in a string
+   * 解析字符串中两偏移之间的整数。
    *
-   * @param value the string to parse
-   * @param beginIndex the start index for the integer in the string
-   * @param endIndex the end index for the integer in the string
-   * @return the int
-   * @throws NumberFormatException if the value is not a number
+   * @param value 字符串
+   * @param beginIndex 起始索引
+   * @param endIndex 结束索引
+   * @return 整数值
+   * @throws NumberFormatException 非数字时
    */
   private static int parseInt(String value, int beginIndex, int endIndex)
       throws NumberFormatException {
@@ -357,11 +348,11 @@ public class ISO8601Utils {
   }
 
   /**
-   * Zero pad a number to a specified length
+   * 将整数左侧补零至指定长度。
    *
-   * @param buffer buffer to use for padding
-   * @param value the integer value to pad if necessary.
-   * @param length the length of the string we should zero pad
+   * @param buffer 目标缓冲区
+   * @param value 整数值
+   * @param length 目标长度
    */
   private static void padInt(StringBuilder buffer, int value, int length) {
     String strValue = Integer.toString(value);
@@ -371,9 +362,7 @@ public class ISO8601Utils {
     buffer.append(strValue);
   }
 
-  /**
-   * Returns the index of the first character in the string that is not a digit, starting at offset.
-   */
+  /** 从 offset 起返回第一个非数字字符的索引。 */
   private static int indexOfNonDigit(String string, int offset) {
     for (int i = offset; i < string.length(); i++) {
       char c = string.charAt(i);

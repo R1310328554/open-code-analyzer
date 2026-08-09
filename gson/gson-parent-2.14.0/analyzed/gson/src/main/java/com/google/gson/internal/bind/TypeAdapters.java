@@ -53,10 +53,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 
-/**
- * Type adapters for basic types. More complex adapters exist as separate classes in the enclosing
- * package.
- */
+/** 基本类型的类型适配器；更复杂的适配器见同包下其他类。 */
 public final class TypeAdapters {
   private TypeAdapters() {
     throw new UnsupportedOperationException();
@@ -163,9 +160,7 @@ public final class TypeAdapters {
         }
       };
 
-  /**
-   * Writes a boolean as a string. Useful for map keys, where booleans aren't otherwise permitted.
-   */
+  /** 将布尔值写为字符串；适用于 Map 键等不允许布尔字面量的场景。 */
   public static final TypeAdapter<Boolean> BOOLEAN_AS_STRING =
       new TypeAdapter<Boolean>() {
         @Override
@@ -804,9 +799,7 @@ public final class TypeAdapters {
   public static final TypeAdapterFactory CURRENCY_FACTORY = newFactory(Currency.class, CURRENCY);
 
   /**
-   * An abstract {@link TypeAdapter} for classes whose JSON serialization consists of a fixed set of
-   * integer fields. That is the case for {@link Calendar} and the legacy serialization of various
-   * {@code java.time} types.
+   * 抽象 {@link TypeAdapter}：JSON 由固定整数字段组成。{@link Calendar} 及若干 {@code java.time} 类型的旧式序列化即属此类。
    */
   abstract static class IntegerFieldsTypeAdapter<T> extends TypeAdapter<T> {
     private final List<String> fields;
@@ -1034,10 +1027,7 @@ public final class TypeAdapters {
     };
   }
 
-  /**
-   * Returns a factory for all subtypes of {@code typeAdapter}. We do a runtime check to confirm
-   * that the deserialized type matches the type requested.
-   */
+  /** 为 {@code clazz} 的所有子类型返回工厂；反序列化结果须与请求类型匹配。 */
   public static <T1> TypeAdapterFactory newTypeHierarchyFactory(
       Class<T1> clazz, TypeAdapter<T1> typeAdapter) {
     return new TypeAdapterFactory() {

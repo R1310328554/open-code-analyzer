@@ -25,19 +25,14 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Encapsulates access to {@code java.sql} types, to allow Gson to work without the {@code java.sql}
- * module being present. No {@link ClassNotFoundException}s will be thrown in case the {@code
- * java.sql} module is not present.
+ * 封装对 {@code java.sql} 类型的访问，使 Gson 在缺少 {@code java.sql} 模块时仍可运行且不抛出 {@link ClassNotFoundException}。
  *
- * <p>If {@link #SUPPORTS_SQL_TYPES} is {@code true}, all other constants of this class will be
- * non-{@code null} and {@link #SQL_TYPE_FACTORIES} will contain the SQL type adapter factories.
- * However, if it is {@code false} all other constants will be {@code null} and {@link
- * #SQL_TYPE_FACTORIES} will be an empty list, and there will be no support for {@code java.sql}
- * types.
+ * <p>若 {@link #SUPPORTS_SQL_TYPES} 为 {@code true}，其余常量非 {@code null}，且 {@link #SQL_TYPE_FACTORIES}
+ * 包含 SQL 类型适配器工厂；若为 {@code false}，其余常量为 {@code null}，{@link #SQL_TYPE_FACTORIES} 为空列表。
  */
 @SuppressWarnings("JavaUtilDate")
 public final class SqlTypesSupport {
-  /** {@code true} if {@code java.sql} types are supported, {@code false} otherwise */
+  /** 是否支持 {@code java.sql} 类型 */
   public static final boolean SUPPORTS_SQL_TYPES;
 
   public static final DateType<? extends Date> DATE_DATE_TYPE;
