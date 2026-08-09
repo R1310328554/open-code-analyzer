@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:12:42Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/RSetMultimapCacheReactive.java",
-    "redisson/src/main/java/org/redisson/api/RSetMultimapCacheRx.java",
-    "redisson/src/main/java/org/redisson/api/RSetMultimapReactive.java",
-    "redisson/src/main/java/org/redisson/api/RSetMultimapRx.java",
-    "redisson/src/main/java/org/redisson/api/RSetReactive.java",
-    "redisson/src/main/java/org/redisson/api/RSetRx.java",
-    "redisson/src/main/java/org/redisson/api/RShardedTopic.java",
-    "redisson/src/main/java/org/redisson/api/RShardedTopicAsync.java",
-    "redisson/src/main/java/org/redisson/api/RShardedTopicReactive.java",
-    "redisson/src/main/java/org/redisson/api/RShardedTopicRx.java",
-    "redisson/src/main/java/org/redisson/api/RSortable.java",
-    "redisson/src/main/java/org/redisson/api/RSortableAsync.java",
-    "redisson/src/main/java/org/redisson/api/RSortableReactive.java",
-    "redisson/src/main/java/org/redisson/api/RSortableRx.java",
-    "redisson/src/main/java/org/redisson/api/RSortedSet.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1322,
-  "done": 1485
+  "done": 1500
 }
