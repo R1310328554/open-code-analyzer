@@ -198,9 +198,7 @@ public abstract class NamedParameterUtils {
 		return parsedSql;
 	}
 
-	/**
-	 * 添加：Named Parameter（方法 `addNamedParameter`）。
-	 */
+	/** 将已解析的命名参数登记到参数列表并递增总计数。 */
 	private static int addNamedParameter(List<ParameterHolder> parameterList,
 			int totalParameterCount, int escapes, int i, int j, String parameter) {
 
@@ -209,9 +207,7 @@ public abstract class NamedParameterUtils {
 		return totalParameterCount;
 	}
 
-	/**
-	 * 添加：New Named Parameter（方法 `addNewNamedParameter`）。
-	 */
+	/** 首次出现的命名参数加入集合并递增命名参数计数。 */
 	private static int addNewNamedParameter(Set<String> namedParameters, int namedParameterCount, String parameter) {
 		if (!namedParameters.contains(parameter)) {
 			namedParameters.add(parameter);

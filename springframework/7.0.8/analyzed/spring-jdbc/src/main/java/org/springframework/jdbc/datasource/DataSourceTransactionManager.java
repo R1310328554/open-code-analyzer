@@ -87,13 +87,13 @@ import org.springframework.util.Assert;
 public class DataSourceTransactionManager extends AbstractPlatformTransactionManager
 		implements ResourceTransactionManager, InitializingBean {
 
-	/** 来源相关状态（`dataSource`）。 */
+	/** 此管理器所绑定事务的 JDBC {@link DataSource}。 */
 	private @Nullable DataSource dataSource;
 
-	/** `false`：该类的成员状态。 */
+	/** 是否通过显式 SQL 语句强制只读事务（默认 {@code false}）。 */
 	private boolean enforceReadOnly = false;
 
-	/** `defaultReadOnly`：该类的成员状态。 */
+	/** 从数据源新连接上探测到的默认 {@link Connection#isReadOnly()} 标志。 */
 	private volatile @Nullable Boolean defaultReadOnly;
 
 
@@ -159,12 +159,10 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 指定是否通过事务连接上的显式语句强制事务的只读性质（如 {@link TransactionDefinition#isReadOnly()} 所示）：Oracle、MySQL 
-	 * 和 Postgres 所理解的“SET TRANSACTION READ ONLY”。 <p> 的精确处理，包括在连接上执行的任何 SQL 语句，都可以通过 {@link #p
-	 * repareTransactionalConnection} 进行定制。 <p>这种只读处理模式超出了Spring默认应用的{@link Connection#setReadO
-	 * nly}提示。与标准 JDBC 提示相反，“SET TRANSACTION READ ONLY”强制执行类似隔离级别的连接模式，其中严格不允许数据操作语句。另外，在 Oracl
-	 * e 上，这种只读模式为整个事务提供了读一致性。 <p> 请注意，旧版 Oracle JDBC 驱动程序（9i、10g）用于强制执行此只读模式，即使对于 {@code Conne
-	 * ction.setReadOnly(true} 也是如此。然而，对于最近的驱动程序，需要明确应用这种强有力的强制执行，例如通过此标志。
+	 * 指定是否通过事务连接上的显式语句强制事务的只读性质（如 {@link TransactionDefinition#isReadOnly()} 所示），即 Oracle、MySQL 和 Postgres 所理解的 {@code SET TRANSACTION READ ONLY}。
+	 * <p>在连接上执行的具体 SQL 语句可通过 {@link #prepareTransactionalConnection} 定制。
+	 * <p>此只读处理模式超出 Spring 默认应用的 {@link Connection#setReadOnly} 提示；与标准 JDBC 提示不同，{@code SET TRANSACTION READ ONLY} 会强制类似隔离级别的连接模式，严格禁止数据修改语句。在 Oracle 上，该模式还为整个事务提供读一致性。
+	 * <p>旧版 Oracle JDBC 驱动（9i、10g）即使对 {@code Connection.setReadOnly(true)} 也会强制此只读模式；较新驱动则需通过本标志显式启用。
 	 * @since 4.3.7
 	 * @see #prepareTransactionalConnection
 	 */
@@ -182,7 +180,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 在…之后回调：Properties Set（方法 `afterPropertiesSet`）。
+	 * 校验已配置 {@link #setDataSource(DataSource) DataSource}。
 	 */
 	@Override
 	public void afterPropertiesSet() {
@@ -193,7 +191,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 
 	/**
-	 * 获取 Resource Factory（`ResourceFactory`）。
+	 * 返回作为资源工厂的数据源。
 	 */
 	@Override
 	public Object getResourceFactory() {
@@ -201,7 +199,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 执行核心逻辑：Get Transaction（方法 `doGetTransaction`）。
+	 * 创建并初始化数据源事务对象，绑定当前线程上已有的连接持有者（若有）。
 	 */
 	@Override
 	protected Object doGetTransaction() {
@@ -214,7 +212,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 判断是否 Existing Transaction。
+	 * 判断给定事务对象是否对应已激活的 JDBC 事务。
 	 */
 	@Override
 	protected boolean isExistingTransaction(Object transaction) {
@@ -223,7 +221,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 执行核心逻辑：Begin（方法 `doBegin`）。
+	 * 获取或创建连接、设置隔离级别与只读标志，并切换为手动提交以开启 JDBC 事务。
 	 */
 	@Override
 	protected void doBegin(Object transaction, TransactionDefinition definition) {
@@ -287,7 +285,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 执行核心逻辑：Suspend（方法 `doSuspend`）。
+	 * 挂起当前事务：解绑线程资源并清空连接持有者引用。
 	 */
 	@Override
 	protected Object doSuspend(Object transaction) {
@@ -297,7 +295,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 执行核心逻辑：Resume（方法 `doResume`）。
+	 * 恢复先前挂起的事务资源到当前线程。
 	 */
 	@Override
 	protected void doResume(@Nullable Object transaction, Object suspendedResources) {
@@ -305,7 +303,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 执行核心逻辑：Commit（方法 `doCommit`）。
+	 * 提交底层 JDBC 连接上的事务。
 	 */
 	@Override
 	protected void doCommit(DefaultTransactionStatus status) {
@@ -323,7 +321,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 执行核心逻辑：Rollback（方法 `doRollback`）。
+	 * 回滚底层 JDBC 连接上的事务。
 	 */
 	@Override
 	protected void doRollback(DefaultTransactionStatus status) {
@@ -341,7 +339,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 执行核心逻辑：Set Rollback Only（方法 `doSetRollbackOnly`）。
+	 * 将当前 JDBC 事务标记为仅回滚。
 	 */
 	@Override
 	protected void doSetRollbackOnly(DefaultTransactionStatus status) {
@@ -354,7 +352,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	}
 
 	/**
-	 * 执行核心逻辑：Cleanup After Completion（方法 `doCleanupAfterCompletion`）。
+	 * 事务完成后解绑连接、重置连接状态并释放新获取的连接。
 	 */
 	@Override
 	protected void doCleanupAfterCompletion(Object transaction) {

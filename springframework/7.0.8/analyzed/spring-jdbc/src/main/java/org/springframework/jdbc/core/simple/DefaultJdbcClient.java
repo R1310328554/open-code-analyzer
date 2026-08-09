@@ -61,31 +61,32 @@ import org.springframework.util.Assert;
  */
 final class DefaultJdbcClient implements JdbcClient {
 
-	/** 名称相关状态（`namedParamOps`）。 */
+	/** 底层命名参数 JDBC 操作委托。 */
 	private final NamedParameterJdbcOperations namedParamOps;
 
-	/** `conversionService`：该类的成员状态。 */
+	/** 用于行映射与参数类型转换的 {@link ConversionService}。 */
 	private final ConversionService conversionService;
 
+	/** 按目标类型缓存的 {@link RowMapper} 实例。 */
 	private final Map<Class<?>, RowMapper<?>> rowMapperCache = new ConcurrentHashMap<>();
 
 
 	/**
-	 * 创建 `DefaultJdbcClient` 的新实例。
+	 * 基于给定 {@link DataSource} 创建实例（内部包装为 {@link JdbcTemplate}）。
 	 */
 	public DefaultJdbcClient(DataSource dataSource) {
 		this(new JdbcTemplate(dataSource));
 	}
 
 	/**
-	 * 创建 `DefaultJdbcClient` 的新实例。
+	 * 基于给定 {@link JdbcOperations} 创建实例。
 	 */
 	public DefaultJdbcClient(JdbcOperations jdbcTemplate) {
 		this(new NamedParameterJdbcTemplate(jdbcTemplate), null);
 	}
 
 	/**
-	 * 创建 `DefaultJdbcClient` 的新实例。
+	 * 基于给定 {@link NamedParameterJdbcOperations} 创建实例，可选指定类型转换服务。
 	 */
 	public DefaultJdbcClient(NamedParameterJdbcOperations jdbcTemplate, @Nullable ConversionService conversionService) {
 		Assert.notNull(jdbcTemplate, "NamedParameterJdbcTemplate must not be null");
@@ -95,9 +96,6 @@ final class DefaultJdbcClient implements JdbcClient {
 	}
 
 
-	/**
-	 * 方法 `sql`：完成本类中与「sql」相关的职责。
-	 */
 	@Override
 	public StatementSpec sql(String sql) {
 		return new DefaultStatementSpec(sql, this.namedParamOps);
