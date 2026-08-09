@@ -3,21 +3,34 @@ package com.taobao.arthas.core.command.model;
 import java.time.LocalDateTime;
 
 /**
- * StackCommand result model
+ * stack 命令的结构化结果：在指定时刻捕获某线程的调用栈及相关上下文。
+ * <p>
+ * 与 {@link TraceModel} 不同，stack 只输出单次快照，不构建调用树；
+ * {@link #traceId} / {@link #rpcId} 用于与分布式追踪上下文对齐（若存在）。
+ *
  * @author gongdewei 2020/4/13
  */
 public class StackModel extends ResultModel {
 
+    /** 采样时刻（Agent 侧本地时间） */
     private LocalDateTime ts;
+    /** 获取栈帧的耗时（毫秒），用于诊断 stack 命令自身开销 */
     private double cost;
+    /** 分布式 traceId，无追踪上下文时可能为空 */
     private String traceId;
+    /** RPC 子跨度标识，与 traceId 配套使用 */
     private String rpcId;
+    /** 目标线程名称 */
     private String threadName;
+    /** 目标线程 id（字符串形式，兼容 JSON 序列化） */
     private String threadId;
+    /** 是否为守护线程 */
     private boolean daemon;
+    /** 线程优先级 */
     private int priority;
-    /* Thread Current ClassLoader */
+    /** 线程上下文 ClassLoader 的描述（hash 或类名摘要） */
     private String classloader;
+    /** 自栈顶向下的调用栈元素数组 */
     private StackTraceElement[] stackTrace;
 
     @Override

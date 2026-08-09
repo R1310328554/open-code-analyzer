@@ -3,13 +3,17 @@ package com.taobao.arthas.core.command.model;
 import java.util.List;
 
 /**
- * Tomcat info of 'dashboard' command
+ * dashboard 命令中的 Tomcat 监控摘要：连接器 QPS/RT 与线程池占用。
+ * <p>
+ * 通过 JMX 或 Tomcat 内部 MBean 采集；无 Tomcat 或 MBean 不可用时对应列表可能为空。
  *
  * @author gongdewei 2020/4/23
  */
 public class TomcatInfoVO {
 
+    /** 各 HTTP 连接器（Coyote Connector）的吞吐与错误率统计 */
     private List<ConnectorStats> connectorStats;
+    /** Executor / 线程池 busy 与 capacity 快照 */
     private List<ThreadPool> threadPools;
 
     public TomcatInfoVO() {
@@ -31,12 +35,19 @@ public class TomcatInfoVO {
         this.threadPools = threadPools;
     }
 
+    /** 单个 Connector 的请求指标（名称通常含端口与协议） */
     public static class ConnectorStats {
+        /** Connector 名称或 JMX ObjectName 摘要 */
         private String name;
+        /** 每秒请求数（采样窗口内估算） */
         private double qps;
+        /** 平均响应时间（毫秒） */
         private double rt;
+        /** 错误率（0~1 或百分比，取决于采集端归一化） */
         private double error;
+        /** 累计接收字节数 */
         private long received;
+        /** 累计发送字节数 */
         private long sent;
 
         public String getName() {
@@ -88,9 +99,13 @@ public class TomcatInfoVO {
         }
     }
 
+    /** Tomcat 线程池 busy / max 线程数 */
     public static class ThreadPool {
+        /** 线程池名称（如 http-nio-8080） */
         private String name;
+        /** 当前活跃（busy）线程数 */
         private long busy;
+        /** 池容量或最大线程数 */
         private long total;
 
         public ThreadPool() {

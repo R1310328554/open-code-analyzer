@@ -6,13 +6,20 @@ import com.taobao.arthas.core.util.StringUtils;
 import java.util.List;
 
 /**
- * Tree model of TraceCommand
+ * trace 命令的运行时调用树构建器：在字节码增强回调中维护当前栈指针与节点计数。
+ * <p>
+ * 同一 {@link MethodNode}（类名+方法名+行号）在兄弟层只创建一次，递归调用会复用节点并
+ * 再次 {@link #begin()}；追踪结束后 {@link #trim()} 统一规范化内部类名显示。
+ *
  * @author gongdewei 2020/4/28
  */
 public class TraceTree {
+    /** 树根，固定为 {@link ThreadNode} */
     private TraceNode root;
 
+    /** 当前栈顶节点，随 begin/end 在树中上下移动 */
     private TraceNode current;
+    /** 已访问/创建的节点总数（含复用时的 begin 计数） */
     private int nodeCount = 0;
 
     public TraceTree(ThreadNode root) {
@@ -21,11 +28,12 @@ public class TraceTree {
     }
 
     /**
-     * Begin a new method call
-     * @param className className of method
-     * @param methodName method name of the call
-     * @param lineNumber line number of invoke point
-     * @param isInvoking Whether to invoke this method in other classes
+     * 进入一次方法调用：查找或创建 {@link MethodNode}，下移 current。
+     *
+     * @param className 被调类名（可能为内部类 $ 形式，trim 前不规范化）
+     * @param methodName 方法名
+     * @param lineNumber 调用点行号
+     * @param isInvoking 是否为跨类 invoke（影响 MethodNode 展示）
      */
     public void begin(String className, String methodName, int lineNumber, boolean isInvoking) {
         TraceNode child = findChild(current, className, methodName, lineNumber);
@@ -38,10 +46,11 @@ public class TraceTree {
         nodeCount += 1;
     }
 
+    /** 在当前节点的直接子节点中按三元组匹配已有 MethodNode */
     private TraceNode findChild(TraceNode node, String className, String methodName, int lineNumber) {
         List<TraceNode> childList = node.getChildren();
         if (childList != null) {
-            //less memory than foreach/iterator
+            // 索引 for 循环比 foreach 少分配 Iterator，热路径上略省内存
             for (int i = 0; i < childList.size(); i++) {
                 TraceNode child = childList.get(i);
                 if (matchNode(child, className, methodName, lineNumber)) {
@@ -62,14 +71,16 @@ public class TraceTree {
         return false;
     }
 
+    /** 正常返回：结束当前节点并回退到父节点 */
     public void end() {
         current.end();
         if (current.parent() != null) {
-            //TODO 为什么会到达这里？ 调用end次数比begin多？
+            // end 次数多于 begin 时 parent 可能已为 null，此处静默忽略
             current = current.parent();
         }
     }
 
+    /** 异常路径：挂 {@link ThrowNode} 后按 throw 语义结束当前方法帧 */
     public void end(Throwable throwable, int lineNumber) {
         ThrowNode throwNode = new ThrowNode();
         throwNode.setException(throwable.getClass().getName());
@@ -79,6 +90,7 @@ public class TraceTree {
         this.end(true);
     }
 
+    /** isThrow 为 true 时标记当前 MethodNode 并设置 throw 标志 */
     public void end(boolean isThrow) {
         if (isThrow) {
             current.setMark("throws Exception");
@@ -90,16 +102,15 @@ public class TraceTree {
         this.end();
     }
 
-    /**
-     * 修整树结点
-     */
+    /** 追踪结束后修整树：递归规范化 MethodNode 的类名 */
     public void trim() {
         this.normalizeClassName(root);
     }
 
     /**
-     * 转换标准类名，放在trace结束后统一转换，减少重复操作
-     * @param node
+     * 将内部类 $ 等形式转为点分展示名；在 trace 结束统一执行，避免热路径重复转换。
+     *
+     * @param node 当前遍历节点
      */
     private void normalizeClassName(TraceNode node) {
         if (node instanceof MethodNode) {
@@ -110,7 +121,6 @@ public class TraceTree {
         }
         List<TraceNode> children = node.getChildren();
         if (children != null) {
-            //less memory fragment than foreach
             for (int i = 0; i < children.size(); i++) {
                 TraceNode child = children.get(i);
                 normalizeClassName(child);
