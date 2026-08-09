@@ -823,3 +823,33 @@
 2026-08-09T17:34:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapIterableObservable.java wave14a Maybe* [0:15]
 2026-08-09T17:34:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapNotification.java wave14a Maybe* [0:15]
 2026-08-09T17:34:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapSingle.java wave14a Maybe* [0:15]
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeMap.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeMaterialize.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeNever.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeObserveOn.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeOnErrorComplete.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeOnErrorNext.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeOnErrorReturn.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybePeek.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeSubscribeOn.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeSwitchIfEmpty.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeSwitchIfEmptySingle.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeTakeUntilMaybe.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeTakeUntilPublisher.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeTimeInterval.java wave15a
+2026-08-09T17:39:56Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeTimeoutMaybe.java wave15a
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeTimeoutPublisher.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeTimer.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeToFlowable.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeToObservable.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeToPublisher.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeToSingle.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeUnsafeCreate.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeUnsubscribeOn.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeUsing.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeZipArray.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeZipIterable.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/mixed/CompletableAndThenObservable.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/mixed/CompletableAndThenPublisher.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/mixed/ConcatMapXMainObserver.java wave15b
+2026-08-09T17:39:59Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/mixed/ConcatMapXMainSubscriber.java wave15b
