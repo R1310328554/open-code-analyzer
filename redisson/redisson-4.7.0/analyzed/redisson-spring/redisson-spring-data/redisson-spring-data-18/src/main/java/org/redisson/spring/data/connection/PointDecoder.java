@@ -25,19 +25,24 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.springframework.data.geo.Point;
 
 /**
- * 
+ * 将 Redis GEO 坐标对（经度、纬度）解码为 Spring {@link Point}。
+ * <p>空列表返回 {@code null}；各坐标分量以 {@link DoubleCodec} 解析。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PointDecoder implements MultiDecoder<Point> {
 
+    /** 经纬度分量均按 double 解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return DoubleCodec.INSTANCE.getValueDecoder();
     }
     
+    /** 从前两个 double 元素构造 {@link Point}(longitude, latitude)。 */
     @Override
     public Point decode(List<Object> parts, State state) {
+        // Redis 返回空列表表示该 member 无坐标。
         if (parts.isEmpty()) {
             return null;
         }

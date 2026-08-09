@@ -20,21 +20,27 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.client.protocol.convertor.Convertor;
 
 /**
- * 
+ * 时间单位转换器：将 Redis 协议层数值从 {@code source} 单位换算为 {@code unit}。
+ * <p>常用于 EXPIRE/PEXPIRE 等命令在秒与毫秒间转换。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SecondsConvertor implements Convertor<Long> {
 
+    /** 目标时间单位。 */
     private final TimeUnit unit;
+    /** 源时间单位（Redis 返回值语义）。 */
     private final TimeUnit source;
     
+    /** 指定目标与源 {@link TimeUnit}。 */
     public SecondsConvertor(TimeUnit unit, TimeUnit source) {
         super();
         this.unit = unit;
         this.source = source;
     }
 
+    /** 将 {@link Long} 数值从 {@code source} 换算为 {@code unit}。 */
     @Override
     public Long convert(Object obj) {
         return unit.convert((Long)obj, source);

@@ -25,7 +25,9 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
- * 
+ * 集合型 Redis 响应解码器：将元素列表转为 {@link LinkedHashSet} 以保持顺序。
+ * <p>元素解码由构造时注入的 {@link Decoder} 负责。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -33,16 +35,19 @@ public class SetReplayDecoder<T> implements MultiDecoder<Set<T>> {
 
     private final Decoder<Object> decoder;
     
+    /** 指定集合元素解码器。 */
     public SetReplayDecoder(Decoder<Object> decoder) {
         super();
         this.decoder = decoder;
     }
 
+    /** 返回构造时注入的元素解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return decoder;
     }
     
+    /** 将响应元素列表包装为 {@link LinkedHashSet}。 */
     @Override
     public Set<T> decode(List<Object> parts, State state) {
         return new LinkedHashSet(parts);

@@ -20,7 +20,9 @@ import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.Metric;
 
 /**
- * 
+ * 将 Redis GEO 距离数值包装为 Spring {@link Distance}。
+ * <p>构造时指定 {@link Metric}（如千米、英里），供 {@code GEODIST} 等命令使用。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -28,11 +30,13 @@ public class DistanceConvertor implements Convertor<Distance> {
 
     private final Metric metric;
     
+    /** 绑定距离度量单位。 */
     public DistanceConvertor(Metric metric) {
         super();
         this.metric = metric;
     }
 
+    /** 将 {@link Double} 数值与 {@code metric} 组装为 {@link Distance}。 */
     @Override
     public Distance convert(Object obj) {
         return new Distance((Double)obj, metric);

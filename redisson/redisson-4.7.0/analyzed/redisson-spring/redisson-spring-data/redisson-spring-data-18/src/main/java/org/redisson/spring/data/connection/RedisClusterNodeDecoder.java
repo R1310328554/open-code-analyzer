@@ -32,7 +32,10 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * 
+ * 将 Redis {@code CLUSTER NODES} 文本响应解码为 {@link RedisClusterNode} 列表。
+ * <p>解析 node id、地址、flags、master、link state 与 slot 区间；
+经 {@link ServiceManager#toURI} 规范化 host/port。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -40,10 +43,12 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
 
     private final ServiceManager serviceManager;
 
+    /** 注入连接管理器，用于地址解析与 URI 规范化。 */
     public RedisClusterNodeDecoder(ServiceManager serviceManager) {
         this.serviceManager = serviceManager;
     }
 
+    /** 按行解析 CLUSTER NODES 输出并构建 {@link RedisClusterNode} 集合。 */
     @Override
     public List<RedisClusterNode> decode(ByteBuf buf, State state) throws IOException {
         String response = buf.toString(CharsetUtil.UTF_8);
@@ -66,7 +71,7 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
                 String addr = params[1].split("@")[0];
                 String name = addr.substring(0, addr.lastIndexOf(":"));
                 if (name.isEmpty()) {
-                    // skip nodes with empty address
+                    // 跳过无有效地址的节点（NOADDR 等）。
                     continue;
                 }
 
@@ -75,6 +80,7 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
             }
 
             String masterId = params[3];
+            // "-" 表示当前节点为 master，无 upstream master。
             if ("-".equals(masterId)) {
                 masterId = null;
             }
@@ -87,13 +93,16 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
             if (params.length > 8) {
                 for (int i = 0; i < params.length - 8; i++) {
                     String slots = params[i + 8];
+                    // 忽略 slot 迁移中的箭头标记行。
                     if (slots.indexOf("-<-") != -1 || slots.indexOf("->-") != -1) {
                         continue;
                     }
 
                     String[] parts = slots.split("-");
+                    // 单个 slot 号。
                     if(parts.length == 1) {
                         slotsCollection.add(Integer.valueOf(parts[0]));
+                    // slot 区间 start-end 展开为连续编号。
                     } else if(parts.length == 2) {
                         for (int j = Integer.parseInt(parts[0]); j < Integer.parseInt(parts[1]) + 1; j++) {
                             slotsCollection.add(j);

@@ -24,12 +24,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
 /**
- * 
+ * 将 Redis INFO/CONFIG 类 colon 分隔文本解码为 {@link Properties}。
+ * <p>按行拆分 {@code key:value}，忽略格式非法行。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PropertiesDecoder implements Decoder<Properties> {
 
+    /** 从 Netty {@link ByteBuf} 读取 UTF-8 文本并解析为属性表。 */
     @Override
     public Properties decode(ByteBuf buf, State state) {
         String value = buf.toString(CharsetUtil.UTF_8);
@@ -43,6 +46,7 @@ public class PropertiesDecoder implements Decoder<Properties> {
                 continue;
             }
             String second = pair[1];
+            // 去除 Windows 换行残留 \r。
             if (second.charAt(second.length() - 1) == '\r') {
                 second = second.substring(0, second.length() - 1);
             }
