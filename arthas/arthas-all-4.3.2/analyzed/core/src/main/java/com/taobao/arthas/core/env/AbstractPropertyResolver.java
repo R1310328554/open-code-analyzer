@@ -24,7 +24,10 @@ import com.taobao.arthas.core.env.convert.ConfigurableConversionService;
 import com.taobao.arthas.core.env.convert.DefaultConversionService;
 
 /**
- * Abstract base class for resolving properties against any underlying source.
+ * 属性解析器的抽象基类，提供占位符替换、类型转换与必填项校验等通用能力。
+ * <p>
+ * 子类只需实现 {@link #getPropertyAsRawString(String)} 即可对接任意底层属性源
+ * （如 {@link PropertySourcesPropertyResolver}）。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -32,20 +35,28 @@ import com.taobao.arthas.core.env.convert.DefaultConversionService;
  */
 public abstract class AbstractPropertyResolver implements ConfigurablePropertyResolver {
 
+    /** 属性值类型转换服务，默认使用 {@link DefaultConversionService} */
     protected ConfigurableConversionService conversionService = new DefaultConversionService();
 
+    /** 非严格占位符助手（无法解析时保留原样） */
     private PropertyPlaceholderHelper nonStrictHelper;
 
+    /** 严格占位符助手（无法解析时抛异常） */
     private PropertyPlaceholderHelper strictHelper;
 
+    /** 嵌套占位符无法解析时是否忽略（默认 false，即严格模式） */
     private boolean ignoreUnresolvableNestedPlaceholders = false;
 
+    /** 占位符前缀，默认 "${" */
     private String placeholderPrefix = SystemPropertyUtils.PLACEHOLDER_PREFIX;
 
+    /** 占位符后缀，默认 "}" */
     private String placeholderSuffix = SystemPropertyUtils.PLACEHOLDER_SUFFIX;
 
+    /** 占位符与默认值的分隔符，默认 ":" */
     private String valueSeparator = SystemPropertyUtils.VALUE_SEPARATOR;
 
+    /** 必填属性键集合，由 {@link #validateRequiredProperties()} 校验 */
     private final Set<String> requiredProperties = new LinkedHashSet<String>();
 
     public ConfigurableConversionService getConversionService() {
@@ -57,9 +68,9 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
     }
 
     /**
-     * Set the prefix that placeholders replaced by this resolver must begin with.
+     * 设置占位符前缀。
      * <p>
-     * The default is "${".
+     * 默认值为 "${"。
      * 
      * @see org.springframework.util.SystemPropertyUtils#PLACEHOLDER_PREFIX
      */
@@ -69,9 +80,9 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
     }
 
     /**
-     * Set the suffix that placeholders replaced by this resolver must end with.
+     * 设置占位符后缀。
      * <p>
-     * The default is "}".
+     * 默认值为 "}"。
      * 
      * @see org.springframework.util.SystemPropertyUtils#PLACEHOLDER_SUFFIX
      */
@@ -81,11 +92,9 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
     }
 
     /**
-     * Specify the separating character between the placeholders replaced by this
-     * resolver and their associated default value, or {@code null} if no such
-     * special character should be processed as a value separator.
+     * 设置占位符与默认值之间的分隔符；传 {@code null} 表示不处理默认值语法。
      * <p>
-     * The default is ":".
+     * 默认值为 ":"。
      * 
      * @see org.springframework.util.SystemPropertyUtils#VALUE_SEPARATOR
      */
@@ -95,13 +104,10 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
     }
 
     /**
-     * Set whether to throw an exception when encountering an unresolvable
-     * placeholder nested within the value of a given property. A {@code false}
-     * value indicates strict resolution, i.e. that an exception will be thrown. A
-     * {@code true} value indicates that unresolvable nested placeholders should be
-     * passed through in their unresolved ${...} form.
+     * 设置嵌套占位符无法解析时的行为。
      * <p>
-     * The default is {@code false}.
+     * {@code false}（默认）表示严格解析，无法解析则抛异常；
+     * {@code true} 表示保留未解析的 ${...} 原样。
      * 
      * @since 3.2
      */
@@ -185,15 +191,10 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
     }
 
     /**
-     * Resolve placeholders within the given string, deferring to the value of
-     * {@link #setIgnoreUnresolvableNestedPlaceholders} to determine whether any
-     * unresolvable placeholders should raise an exception or be ignored.
+     * 解析字符串中的嵌套占位符，行为取决于 {@link #setIgnoreUnresolvableNestedPlaceholders}。
      * <p>
-     * Invoked from {@link #getProperty} and its variants, implicitly resolving
-     * nested placeholders. In contrast, {@link #resolvePlaceholders} and
-     * {@link #resolveRequiredPlaceholders} do <i>not</i> delegate to this method
-     * but rather perform their own handling of unresolvable placeholders, as
-     * specified by each of those methods.
+     * 由 {@link #getProperty} 及其变体隐式调用；与 {@link #resolvePlaceholders}、
+     * {@link #resolveRequiredPlaceholders} 不同，后者各自处理无法解析的情况。
      * 
      * @since 3.2
      * @see #setIgnoreUnresolvableNestedPlaceholders
@@ -217,11 +218,10 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
     }
 
     /**
-     * Retrieve the specified property as a raw String, i.e. without resolution of
-     * nested placeholders.
+     * 获取指定属性的原始字符串值，不进行嵌套占位符解析。
      * 
-     * @param key the property name to resolve
-     * @return the property value or {@code null} if none found
+     * @param key 属性名
+     * @return 属性值，未找到返回 {@code null}
      */
     protected abstract String getPropertyAsRawString(String key);
 

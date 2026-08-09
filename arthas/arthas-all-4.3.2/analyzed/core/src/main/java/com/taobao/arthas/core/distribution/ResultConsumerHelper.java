@@ -15,7 +15,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 命令结果模型辅助类
+ * 命令结果模型的辅助工具类。
+ * <p>
+ * 提供 {@link #getItemCount(ResultModel)} 用于估算单条结果包含的数据元素数量，
+ * 供 {@link impl.ResultConsumerImpl} 在批量拉取时决定是否立即 flush，避免单次推送过大。
  *
  * @author gongdewei 2020/5/18
  */
@@ -23,23 +26,26 @@ public class ResultConsumerHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(ResultConsumerHelper.class);
 
+    /** 按模型类名缓存可统计元素数量的反射字段，避免频繁反射产生内存碎片 */
     private static ConcurrentHashMap<String, List<Field>> modelFieldMap = new ConcurrentHashMap<String, List<Field>>();
 
     /**
-     * 估算命令执行结果的item数量，目的是提供一个度量值，作为Consumer分发时进行切片的参考依据，避免单次发送大量数据。
-     * 注意：此方法调用频繁，避免产生内存碎片
+     * 估算命令执行结果中包含的数据元素数量。
+     * <p>
+     * 作为 Consumer 分发时进行切片的参考依据，避免单次发送大量数据。
+     * 注意：此方法调用频繁，实现上缓存 Field 对象以减少反射开销。
      *
-     * @param model
-     * @return
+     * @param model 待估算的结果模型
+     * @return 元素数量，至少为 1
      */
     public static int getItemCount(ResultModel model) {
-        //如果实现Countable接口，则认为model自己统计元素数量
+        // 实现 Countable 接口的模型自行统计元素数量
         if (model instanceof Countable) {
             return ((Countable) model).size();
         }
 
-        //对于普通的Model，通过类反射统计容器类字段统计元素数量
-        //缓存Field对象，避免产生内存碎片
+        // 普通 Model：通过反射统计 Collection/Map/Array/Countable 类型字段的元素数
+        // 缓存 Field 对象，避免重复扫描类结构
         Class modelClass = model.getClass();
         List<Field> fields = modelFieldMap.get(modelClass.getName());
         if (fields == null) {
@@ -48,7 +54,7 @@ public class ResultConsumerHelper {
             for (int i = 0; i < declaredFields.length; i++) {
                 Field field = declaredFields[i];
                 Class<?> fieldClass = field.getType();
-                //如果是List/Map/Array/Countable类型的字段，则缓存起来后面统计数量
+                // 仅缓存可统计元素数量的容器类字段
                 if (Collection.class.isAssignableFrom(fieldClass)
                         || Map.class.isAssignableFrom(fieldClass)
                         || Countable.class.isAssignableFrom(fieldClass)
@@ -63,7 +69,7 @@ public class ResultConsumerHelper {
             }
         }
 
-        //统计Model对象的item数量
+        // 遍历缓存字段累加元素数量
         int count = 0;
         try {
             for (int i = 0; i < fields.size(); i++) {
@@ -88,6 +94,7 @@ public class ResultConsumerHelper {
             logger.error("get item count of result model failed, model: {}", JSON.toJSONString(model), e);
         }
 
+        // 无容器字段时至少计为 1，保证单条结果也能触发批次逻辑
         return count > 0 ? count : 1;
     }
 

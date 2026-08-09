@@ -19,11 +19,11 @@ package com.taobao.arthas.core.env;
 import com.taobao.arthas.core.env.convert.ConfigurableConversionService;
 
 /**
- * Configuration interface to be implemented by most if not all
- * {@link PropertyResolver} types. Provides facilities for accessing and
- * customizing the {@link org.springframework.core.convert.ConversionService
- * ConversionService} used when converting property values from one type to
- * another.
+ * 可配置的属性解析器接口：在 {@link PropertyResolver} 基础上扩展类型转换、
+ * 占位符语法与必填项校验等配置能力。
+ * <p>
+ * 大多数 {@link PropertyResolver} 实现（如 {@link AbstractPropertyResolver}）
+ * 都会实现此接口。
  *
  * @author Chris Beams
  * @since 3.1
@@ -31,11 +31,9 @@ import com.taobao.arthas.core.env.convert.ConfigurableConversionService;
 public interface ConfigurablePropertyResolver extends PropertyResolver {
 
     /**
-     * Return the {@link ConfigurableConversionService} used when performing type
-     * conversions on properties.
+     * 返回用于属性值类型转换的 {@link ConfigurableConversionService}。
      * <p>
-     * The configurable nature of the returned conversion service allows for the
-     * convenient addition and removal of individual {@code Converter} instances:
+     * 可通过返回的服务动态增删 {@code Converter} 实例：
      * 
      * <pre class="code">
      * ConfigurableConversionService cs = env.getConversionService();
@@ -48,13 +46,10 @@ public interface ConfigurablePropertyResolver extends PropertyResolver {
     ConfigurableConversionService getConversionService();
 
     /**
-     * Set the {@link ConfigurableConversionService} to be used when performing type
-     * conversions on properties.
+     * 替换整个 {@link ConfigurableConversionService} 实例。
      * <p>
-     * <strong>Note:</strong> as an alternative to fully replacing the
-     * {@code ConversionService}, consider adding or removing individual
-     * {@code Converter} instances by drilling into {@link #getConversionService()}
-     * and calling methods such as {@code #addConverter}.
+     * <strong>提示：</strong>通常只需通过 {@link #getConversionService()} 增删
+     * 单个 {@code Converter}，无需整体替换。
      * 
      * @see PropertyResolver#getProperty(String, Class)
      * @see #getConversionService()
@@ -63,50 +58,39 @@ public interface ConfigurablePropertyResolver extends PropertyResolver {
     void setConversionService(ConfigurableConversionService conversionService);
 
     /**
-     * Set the prefix that placeholders replaced by this resolver must begin with.
+     * 设置占位符前缀（默认 "${"）。
      */
     void setPlaceholderPrefix(String placeholderPrefix);
 
     /**
-     * Set the suffix that placeholders replaced by this resolver must end with.
+     * 设置占位符后缀（默认 "}"）。
      */
     void setPlaceholderSuffix(String placeholderSuffix);
 
     /**
-     * Specify the separating character between the placeholders replaced by this
-     * resolver and their associated default value, or {@code null} if no such
-     * special character should be processed as a value separator.
+     * 设置占位符与默认值的分隔符（默认 ":"）；传 {@code null} 禁用默认值语法。
      */
     void setValueSeparator(String valueSeparator);
 
     /**
-     * Set whether to throw an exception when encountering an unresolvable
-     * placeholder nested within the value of a given property. A {@code false}
-     * value indicates strict resolution, i.e. that an exception will be thrown. A
-     * {@code true} value indicates that unresolvable nested placeholders should be
-     * passed through in their unresolved ${...} form.
+     * 设置嵌套占位符无法解析时的行为。
      * <p>
-     * Implementations of {@link #getProperty(String)} and its variants must inspect
-     * the value set here to determine correct behavior when property values contain
-     * unresolvable placeholders.
+     * {@code false} 表示严格模式（抛异常），{@code true} 表示保留 ${...} 原样。
+     * {@link #getProperty(String)} 及其变体须据此决定解析策略。
      * 
      * @since 3.2
      */
     void setIgnoreUnresolvableNestedPlaceholders(boolean ignoreUnresolvableNestedPlaceholders);
 
     /**
-     * Specify which properties must be present, to be verified by
-     * {@link #validateRequiredProperties()}.
+     * 声明必填属性键，由 {@link #validateRequiredProperties()} 统一校验。
      */
     void setRequiredProperties(String... requiredProperties);
 
     /**
-     * Validate that each of the properties specified by
-     * {@link #setRequiredProperties} is present and resolves to a non-{@code null}
-     * value.
+     * 校验 {@link #setRequiredProperties} 声明的所有键均存在且非 {@code null}。
      * 
-     * @throws MissingRequiredPropertiesException if any of the required properties
-     *                                            are not resolvable.
+     * @throws MissingRequiredPropertiesException 存在缺失的必填属性时抛出
      */
     void validateRequiredProperties() throws MissingRequiredPropertiesException;
 
