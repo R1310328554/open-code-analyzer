@@ -1,6 +1,27 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 87,
+  "claimed_at": "2026-08-09T18:04:56Z",
+  "files": [
+    "docs_src/response_model/tutorial004_py310.py",
+    "docs_src/response_model/tutorial005_py310.py",
+    "docs_src/response_model/tutorial006_py310.py",
+    "docs_src/response_status_code/__init__.py",
+    "docs_src/response_status_code/tutorial001_py310.py",
+    "docs_src/response_status_code/tutorial002_py310.py",
+    "docs_src/schema_extra_example/__init__.py",
+    "docs_src/schema_extra_example/tutorial001_py310.py",
+    "docs_src/schema_extra_example/tutorial002_py310.py",
+    "docs_src/schema_extra_example/tutorial003_an_py310.py",
+    "docs_src/schema_extra_example/tutorial003_py310.py",
+    "docs_src/schema_extra_example/tutorial004_an_py310.py",
+    "docs_src/schema_extra_example/tutorial004_py310.py",
+    "docs_src/schema_extra_example/tutorial005_an_py310.py",
+    "docs_src/schema_extra_example/tutorial005_py310.py",
+    "docs_src/security/__init__.py",
+    "docs_src/security/tutorial001_an_py310.py",
+    "docs_src/security/tutorial001_py310.py",
+    "docs_src/security/tutorial002_an_py310.py",
+    "docs_src/security/tutorial002_py310.py"
+  ],
+  "remaining_pending": 67,
   "done": 422
 }
