@@ -18,30 +18,32 @@ package com.alibaba.csp.sentinel.adapter.gateway.common.rule;
 import com.alibaba.csp.sentinel.adapter.gateway.common.SentinelGatewayConstants;
 
 /**
+ * 网关参数流控项，描述从请求中提取并匹配参数的策略。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public class GatewayParamFlowItem {
 
     /**
-     * Should be set when applying to parameter flow rules.
+     * 应用于参数流控规则时需设置的参数索引。
      */
     private Integer index;
 
     /**
-     * Strategy for parsing item (e.g. client IP, arbitrary headers and URL parameters).
+     * 解析策略（如客户端 IP、任意 Header 或 URL 参数）。
      */
     private int parseStrategy;
     /**
-     * Field to get (only required for arbitrary headers or URL parameters mode).
+     * 待提取字段名（仅在 Header 或 URL 参数模式下必填）。
      */
     private String fieldName;
     /**
-     * Matching pattern. If not set, all values will be kept in LRU map.
+     * 匹配模式。若未设置，所有值将保留在 LRU map 中。
      */
     private String pattern;
     /**
-     * Matching strategy for item value.
+     * 参数值的匹配策略。
      */
     private int matchStrategy = SentinelGatewayConstants.PARAM_MATCH_STRATEGY_EXACT;
 

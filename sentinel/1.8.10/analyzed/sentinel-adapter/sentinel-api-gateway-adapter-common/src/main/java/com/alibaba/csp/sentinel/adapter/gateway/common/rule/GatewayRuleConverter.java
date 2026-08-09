@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowItem;
 import com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule;
 
 /**
+ * 网关规则转换器，将 {@link GatewayFlowRule} 转换为内部 {@link ParamFlowRule}。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -58,12 +60,11 @@ final class GatewayRuleConverter {
     }
 
     /**
-     * Convert a gateway rule to parameter flow rule, then apply the generated
-     * parameter index to {@link GatewayParamFlowItem} of the rule.
+     * 将网关规则转换为参数流控规则，并将生成的参数索引写入规则的 {@link GatewayParamFlowItem}。
      *
-     * @param gatewayRule a valid gateway rule that should contain valid parameter items
-     * @param idx generated parameter index (callers should guarantee it's unique and incremental)
-     * @return converted parameter flow rule
+     * @param gatewayRule 有效的网关规则，应包含有效的参数项
+     * @param idx 生成的参数索引（调用方应保证唯一且递增）
+     * @return 转换后的参数流控规则
      */
     static ParamFlowRule applyToParamRule(/*@Valid*/ GatewayFlowRule gatewayRule, int idx) {
         ParamFlowRule paramRule = new ParamFlowRule(gatewayRule.getResource())
@@ -75,9 +76,9 @@ final class GatewayRuleConverter {
             .setMaxQueueingTimeMs(gatewayRule.getMaxQueueingTimeoutMs())
             .setParamIdx(idx);
         GatewayParamFlowItem gatewayItem = gatewayRule.getParamItem();
-        // Apply the current idx to gateway rule item.
+        // 将当前 idx 写入网关规则项。
         gatewayItem.setIndex(idx);
-        // Apply for pattern-based parameters.
+        // 为基于 pattern 的参数添加非匹配放行项。
         String valuePattern = gatewayItem.getPattern();
         if (valuePattern != null) {
             paramRule.getParamFlowItemList().add(generateNonMatchPassParamItem());

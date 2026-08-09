@@ -24,6 +24,8 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
+ * 网关 API 匹配器抽象基类，将多个 {@link com.alibaba.csp.sentinel.util.function.Predicate} 以 OR 逻辑组合。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -32,7 +34,7 @@ public abstract class AbstractApiMatcher<T> implements Predicate<T> {
     protected final String apiName;
     protected final ApiDefinition apiDefinition;
     /**
-     * We use {@link com.alibaba.csp.sentinel.util.function.Predicate} here as the min JDK version is 1.7.
+     * 因最低 JDK 版本为 1.7，此处使用 {@link com.alibaba.csp.sentinel.util.function.Predicate}。
      */
     protected final Set<Predicate<T>> matchers = new HashSet<>();
 
@@ -50,7 +52,7 @@ public abstract class AbstractApiMatcher<T> implements Predicate<T> {
     }
 
     /**
-     * Initialize the matchers.
+     * 初始化内部匹配器集合。
      */
     protected abstract void initializeMatchers();
 

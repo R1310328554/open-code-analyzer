@@ -28,6 +28,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
+ * 网关参数解析器，从请求实体中按规则提取热点参数。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -41,12 +43,12 @@ public class GatewayParamParser<T> {
     }
 
     /**
-     * Parse parameters for given resource from the request entity on condition of the rule predicate.
+     * 根据规则谓词，从请求实体中为给定资源解析参数。
      *
-     * @param resource      valid resource name
-     * @param request       valid request
-     * @param rulePredicate rule predicate indicating the rules to refer
-     * @return the parameter array
+     * @param resource      有效资源名
+     * @param request       有效请求
+     * @param rulePredicate 指示需参考哪些规则的谓词
+     * @return 参数数组
      */
     public Object[] parseParameterFor(String resource, T request, Predicate<GatewayFlowRule> rulePredicate) {
         if (StringUtil.isEmpty(resource) || request == null || rulePredicate == null) {
@@ -112,12 +114,12 @@ public class GatewayParamParser<T> {
     private String parseHeader(/*@Valid*/ GatewayParamFlowItem item, T request) {
         String headerKey = item.getFieldName();
         String pattern = item.getPattern();
-        // TODO: what if the header has multiple values?
+        // TODO: 若 header 存在多个值应如何处理？
         String headerValue = requestItemParser.getHeader(request, headerKey);
         if (StringUtil.isEmpty(pattern)) {
             return headerValue;
         }
-        // Match value according to regex pattern or exact mode.
+        // 按正则或精确模式匹配值。
         return parseWithMatchStrategyInternal(item.getMatchStrategy(), headerValue, pattern);
     }
 
@@ -127,7 +129,7 @@ public class GatewayParamParser<T> {
         if (StringUtil.isEmpty(pattern)) {
             return host;
         }
-        // Match value according to regex pattern or exact mode.
+        // 按正则或精确模式匹配值。
         return parseWithMatchStrategyInternal(item.getMatchStrategy(), host, pattern);
     }
 
@@ -138,7 +140,7 @@ public class GatewayParamParser<T> {
         if (StringUtil.isEmpty(pattern)) {
             return param;
         }
-        // Match value according to regex pattern or exact mode.
+        // 按正则或精确模式匹配值。
         return parseWithMatchStrategyInternal(item.getMatchStrategy(), param, pattern);
     }
 
@@ -149,7 +151,7 @@ public class GatewayParamParser<T> {
         if (StringUtil.isEmpty(pattern)) {
             return param;
         }
-        // Match value according to regex pattern or exact mode.
+        // 按正则或精确模式匹配值。
         return parseWithMatchStrategyInternal(item.getMatchStrategy(), param, pattern);
     }
 

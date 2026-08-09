@@ -33,13 +33,15 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 网关流控规则管理器，负责加载规则并转换为参数流控规则。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public final class GatewayRuleManager {
 
     /**
-     * Gateway flow rule map: (resource, [rules...])
+     * 网关流控规则映射：(resource, [rules...])。
      */
     private static final Map<String, Set<GatewayFlowRule>> GATEWAY_RULE_MAP = new ConcurrentHashMap<>();
 
@@ -71,11 +73,10 @@ public final class GatewayRuleManager {
     }
 
     /**
-     * Load all provided gateway rules into memory, while
-     * previous rules will be replaced.
+     * 将所有给定网关规则加载到内存，并替换之前的规则。
      *
-     * @param rules rule set
-     * @return true if updated, otherwise false
+     * @param rules 规则集合
+     * @return 若已更新则返回 true，否则 false
      */
     public static boolean loadRules(Set<GatewayFlowRule> rules) {
         return currentProperty.updateValue(rules);
@@ -101,11 +102,11 @@ public final class GatewayRuleManager {
     }
 
     /**
-     * <p>Get all converted parameter rules.</p>
-     * <p>Note: caller SHOULD NOT modify the list and rules.</p>
+     * <p>获取所有已转换的参数流控规则。</p>
+     * <p>注意：调用方不应修改返回的列表与规则。</p>
      *
-     * @param resourceName valid resource name
-     * @return converted parameter rules
+     * @param resourceName 有效资源名
+     * @return 已转换的参数流控规则
      */
     public static List<ParamFlowRule> getConvertedParamRules(String resourceName) {
         if (StringUtil.isBlank(resourceName)) {
@@ -137,7 +138,7 @@ public final class GatewayRuleManager {
         if (item.getParseStrategy() < 0) {
             return false;
         }
-        // Check required field name for item types.
+        // 校验特定解析策略所需的字段名。
         if (FIELD_REQUIRED_SET.contains(item.getParseStrategy()) && StringUtil.isBlank(item.getFieldName())) {
             return false;
         }
@@ -159,7 +160,7 @@ public final class GatewayRuleManager {
         }
 
         private int getIdxInternal(Map<String, Integer> idxMap, String resourceName) {
-            // Prepare index map.
+            // 准备索引映射。
             if (!idxMap.containsKey(resourceName)) {
                 idxMap.put(resourceName, 0);
             }
@@ -194,7 +195,7 @@ public final class GatewayRuleManager {
                 }
                 String resourceName = rule.getResource();
                 if (rule.getParamItem() == null) {
-                    // Cache the rules with no parameter config, then skip.
+                    // 暂存无参数配置的规则，稍后处理。
                     List<GatewayFlowRule> noParamList = noParamMap.get(resourceName);
                     if (noParamList == null) {
                         noParamList = new ArrayList<>();
@@ -203,13 +204,13 @@ public final class GatewayRuleManager {
                     noParamList.add(rule);
                 } else {
                     int idx = getIdxInternal(idxMap, resourceName);
-                    // Convert to parameter flow rule.
+                    // 转换为参数流控规则。
                     if (paramFlowRules.add(GatewayRuleConverter.applyToParamRule(rule, idx))) {
                         idxMap.put(rule.getResource(), idx + 1);
                     }
                     cacheRegexPattern(rule.getParamItem());
                 }
-                // Apply to the gateway rule map.
+                // 写入网关规则映射。
                 Set<GatewayFlowRule> ruleSet = gatewayRuleMap.get(resourceName);
                 if (ruleSet == null) {
                     ruleSet = new HashSet<>();
@@ -217,7 +218,7 @@ public final class GatewayRuleManager {
                 }
                 ruleSet.add(rule);
             }
-            // Handle non-param mode rules.
+            // 处理无参数模式的规则。
             for (Map.Entry<String, List<GatewayFlowRule>> e : noParamMap.entrySet()) {
                 List<GatewayFlowRule> rules = e.getValue();
                 if (rules == null || rules.isEmpty()) {
@@ -225,7 +226,7 @@ public final class GatewayRuleManager {
                 }
                 for (GatewayFlowRule rule : rules) {
                     int idx = getIdxInternal(idxMap, e.getKey());
-                    // Always use the same index (the last position).
+                    // 始终使用同一索引（最后一个位置）。
                     paramFlowRules.add(GatewayRuleConverter.applyNonParamToParamRule(rule, idx));
                 }
             }
@@ -240,7 +241,7 @@ public final class GatewayRuleManager {
             Map<String, List<ParamFlowRule>> newRuleMap = ParamFlowRuleUtil.buildParamRuleMap(
                     new ArrayList<>(paramFlowRules));
             if (newRuleMap == null || newRuleMap.isEmpty()) {
-                // No parameter flow rules, so clear all the metrics.
+                // 无参数流控规则，清除所有指标。
                 for (String resource : CONVERTED_PARAM_RULE_MAP.keySet()) {
                     ParameterMetricStorage.clearParamMetricForResource(resource);
                 }
@@ -249,7 +250,7 @@ public final class GatewayRuleManager {
                 return;
             }
 
-            // Clear unused parameter metrics.
+            // 清除不再使用的参数指标。
             for (Map.Entry<String, List<ParamFlowRule>> entry : CONVERTED_PARAM_RULE_MAP.entrySet()) {
                 String resource = entry.getKey();
                 if (!newRuleMap.containsKey(resource)) {
@@ -267,7 +268,7 @@ public final class GatewayRuleManager {
                 }
             }
 
-            // Apply to converted rule map.
+            // 写入转换后的规则映射。
             CONVERTED_PARAM_RULE_MAP.clear();
             CONVERTED_PARAM_RULE_MAP.putAll(newRuleMap);
 

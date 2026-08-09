@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.adapter.gateway.common.SentinelGatewayConstants;
 import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 
 /**
+ * 网关流控规则，支持路由/API 两种资源模式及参数热点限流。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -36,13 +38,12 @@ public class GatewayFlowRule {
     private int controlBehavior = RuleConstant.CONTROL_BEHAVIOR_DEFAULT;
     private int burst;
     /**
-     * For throttle (rate limiting with queueing).
+     * 用于匀速排队（带队列的限流）。
      */
     private int maxQueueingTimeoutMs = 500;
 
     /**
-     * For parameter flow control. If not set, the gateway rule will be
-     * converted to normal flow rule.
+     * 用于参数流控。若未设置，网关规则将转换为普通流控规则。
      */
     private GatewayParamFlowItem paramItem;
 

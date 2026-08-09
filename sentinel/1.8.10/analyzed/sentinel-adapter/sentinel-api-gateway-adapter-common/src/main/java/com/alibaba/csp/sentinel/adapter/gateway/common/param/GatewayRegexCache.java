@@ -22,6 +22,8 @@ import java.util.regex.Pattern;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
+ * 网关正则表达式编译缓存，避免重复编译相同 pattern。
+ *
  * @author Eric Zhao
  * @since 1.6.2
  */

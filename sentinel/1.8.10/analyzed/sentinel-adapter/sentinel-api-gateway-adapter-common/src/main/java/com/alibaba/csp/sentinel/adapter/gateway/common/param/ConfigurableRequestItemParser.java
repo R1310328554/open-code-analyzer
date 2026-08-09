@@ -24,10 +24,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * delegate RequestItemParser, support add extractors to customize request item parse.
+ * 委托 {@link RequestItemParser} 的可配置实现，支持添加提取器以自定义请求项解析。
  * <p>
- * example:
- * if you want to get client real ip in multi nginx proxy, you can register SentinelGatewayFilter bean as follows
+ * 示例：若需在多级 Nginx 代理场景下获取客户端真实 IP，可按如下方式注册 SentinelGatewayFilter bean：
  *
  * ConfigurableRequestItemParser<ServerWebExchange> parser = new  ConfigurableRequestItemParser<>(new ServerWebExchangeItemParser());
  * List<String> headerNames = Arrays.asList("X-Real-IP", "Client-IP");

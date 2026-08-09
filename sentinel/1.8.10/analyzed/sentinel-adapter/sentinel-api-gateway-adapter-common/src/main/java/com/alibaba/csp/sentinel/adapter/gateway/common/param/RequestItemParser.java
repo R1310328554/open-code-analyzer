@@ -16,51 +16,53 @@
 package com.alibaba.csp.sentinel.adapter.gateway.common.param;
 
 /**
+ * 从网关请求中提取路径、客户端 IP、Header、URL 参数与 Cookie 的解析器接口。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public interface RequestItemParser<T> {
 
     /**
-     * Get API path from the request.
+     * 从请求中获取 API 路径。
      *
-     * @param request valid request
-     * @return API path
+     * @param request 有效请求
+     * @return API 路径
      */
     String getPath(T request);
 
     /**
-     * Get remote address from the request.
+     * 从请求中获取远程地址。
      *
-     * @param request valid request
-     * @return remote address
+     * @param request 有效请求
+     * @return 远程地址
      */
     String getRemoteAddress(T request);
 
     /**
-     * Get the header associated with the header key.
+     * 获取与 header key 关联的请求头值。
      *
-     * @param request valid request
-     * @param key     valid header key
-     * @return the header
+     * @param request 有效请求
+     * @param key     有效 header key
+     * @return 请求头值
      */
     String getHeader(T request, String key);
 
     /**
-     * Get the parameter value associated with the parameter name.
+     * 获取与参数名关联的 URL 参数值。
      *
-     * @param request   valid request
-     * @param paramName valid parameter name
-     * @return the parameter value
+     * @param request   有效请求
+     * @param paramName 有效参数名
+     * @return 参数值
      */
     String getUrlParam(T request, String paramName);
 
     /**
-     * Get the cookie value associated with the cookie name.
+     * 获取与 cookie 名关联的 Cookie 值。
      *
-     * @param request    valid request
-     * @param cookieName valid cookie name
-     * @return the cookie value
+     * @param request    有效请求
+     * @param cookieName 有效 cookie 名
+     * @return Cookie 值
      * @since 1.7.0
      */
     String getCookieValue(T request, String cookieName);

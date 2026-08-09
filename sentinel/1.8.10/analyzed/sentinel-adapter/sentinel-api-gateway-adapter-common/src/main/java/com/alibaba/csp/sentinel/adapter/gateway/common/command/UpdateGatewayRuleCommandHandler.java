@@ -31,6 +31,8 @@ import java.net.URLDecoder;
 import java.util.Set;
 
 /**
+ * 更新网关流控规则的命令处理器。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -64,12 +66,12 @@ public class UpdateGatewayRuleCommandHandler implements CommandHandler<String> {
     }
 
     /**
-     * Write target value to given data source.
+     * 将目标值写入给定数据源。
      *
-     * @param dataSource writable data source
-     * @param value target value to save
-     * @param <T> value type
-     * @return true if write successful or data source is empty; false if error occurs
+     * @param dataSource 可写数据源
+     * @param value 待保存的目标值
+     * @param <T> 值类型
+     * @return 写入成功或数据源为空时返回 true；发生错误时返回 false
      */
     private <T> boolean writeToDataSource(WritableDataSource<T> dataSource, T value) {
         if (dataSource != null) {
