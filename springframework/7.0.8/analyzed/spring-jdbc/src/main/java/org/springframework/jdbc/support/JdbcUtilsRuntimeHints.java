@@ -25,14 +25,15 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
 /**
- * {@link RuntimeHintsRegistrar} implementation that registers runtime hints for
- * {@link JdbcUtils}.
- *
+ * {@link RuntimeHintsRegistrar} 实现，为 {@link JdbcUtils} 注册运行时提示。
  * @author Brian Clozel
  * @since 6.2.13
  */
 class JdbcUtilsRuntimeHints implements RuntimeHintsRegistrar {
 
+	/**
+	 * 注册：Hints（方法 `registerHints`）。
+	 */
 	@Override
 	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		hints.reflection().registerType(Types.class, MemberCategory.ACCESS_PUBLIC_FIELDS);

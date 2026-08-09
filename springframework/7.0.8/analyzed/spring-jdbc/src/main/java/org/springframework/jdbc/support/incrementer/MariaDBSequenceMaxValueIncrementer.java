@@ -19,16 +19,14 @@ package org.springframework.jdbc.support.incrementer;
 import javax.sql.DataSource;
 
 /**
- * {@link DataFieldMaxValueIncrementer} that retrieves the next value of a given
- * MariaDB sequence.
- *
+ * {@link DataFieldMaxValueIncrementer} 检索给定 MariaDB 序列的下一个值。
  * @author Mahmoud Ben Hassine
  * @since 6.0
  */
 public class MariaDBSequenceMaxValueIncrementer extends AbstractSequenceMaxValueIncrementer {
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 */
@@ -36,14 +34,17 @@ public class MariaDBSequenceMaxValueIncrementer extends AbstractSequenceMaxValue
 	}
 
 	/**
-	 * Convenience constructor.
-	 * @param dataSource the DataSource to use
-	 * @param incrementerName the name of the sequence to use
+	 * 方便构造函数。
+	 * @param dataSource 要使用的数据源
+	 * @param incrementerName 要使用的序列的名称
 	 */
 	public MariaDBSequenceMaxValueIncrementer(DataSource dataSource, String incrementerName) {
 		super(dataSource, incrementerName);
 	}
 
+	/**
+	 * 获取 Sequence Query（`SequenceQuery`）。
+	 */
 	@Override
 	protected String getSequenceQuery() {
 		return "select next value for " + getIncrementerName();

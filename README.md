@@ -40,13 +40,22 @@ springframework/
       项目模块说明/
 ```
 
-### 注释策略（重要）
+### 注释策略（重要）——直接改 `analyzed` 源码
 
-- **意图优先**：说明「这段代码要解决什么问题 / 主路径怎么走 / 弯弯绕绕在哪」
-- 原有英文 JavaDoc **保留**；OCA 中文解析插在其**之前**
-- **跳过**无营养 getter/setter，以及过于简单的 `equals`/`hashCode`/`toString`
-- **字段**补充简短中文含义
-- 方法内部：仅在复杂主路径关键节点加 `// [OCA]` 行内导读
+本项目的**主目标**是让国内开发者直接阅读中文注释版源码，因此 `analyzed/` 不是只写架构文档，而是**改文件内容**：
+
+1. **已有英文 JavaDoc / `//` 注释 → 翻译成中文**（保留 `{@link}` / `@param` 等标签结构）
+2. **每个字段**补充中文注释（说明含义与意图）
+3. **每个方法**补充中文注释；复杂方法在方法体内关键步骤加中文行内注释
+4. 版权 License 头保持英文不动
+5. `original/` 永远只读对照；所有改动只发生在 `analyzed/`
+
+```bash
+# 推荐：从 original 重建 analyzed 并做中文翻译/补注释
+./bin/localize-zh.sh springframework 7.0.8 --force-sync
+# 或只处理某些模块
+./bin/localize-zh.sh springframework 7.0.8 --modules spring-jdbc,spring-beans
+```
 
 ---
 

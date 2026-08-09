@@ -29,18 +29,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.InvalidResultSetAccessException;
 
 /**
- * Mirror interface for {@link javax.sql.RowSet}, representing a disconnected variant of
- * {@link java.sql.ResultSet} data.
- *
- * <p>The main difference to the standard JDBC RowSet is that a {@link java.sql.SQLException}
- * is never thrown here. This allows an SqlRowSet to be used without having to deal with
- * checked exceptions. An SqlRowSet will throw Spring's {@link InvalidResultSetAccessException}
- * instead (when appropriate).
- *
- * <p>Note: This interface extends the {@code java.io.Serializable} marker interface.
- * Implementations, which typically hold disconnected data, are encouraged to be actually
- * serializable (as far as possible).
- *
+ * {@link javax.sql.RowSet} 的镜像接口，代表 {@link java.sql.ResultSet} 数据的断开连接变体。
+ * <p> 与标准 JDBC RowSet 的主要区别在于，这里永远不会抛出 {@link java.sql.SQLException}。这允许使用 SqlRowSet
+ * 而无需处理已检查的异常。 SqlRowSet 将抛出 Spring 的 {@link InvalidResultSetAccessException}（在适当的时候）。
+ * <p>注：该接口扩展了{@code java.io.Serializable}标记接口。鼓励通常保存断开连接的数据的实现实际上可序列化（尽可能）。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 1.2
@@ -52,443 +44,438 @@ import org.springframework.jdbc.InvalidResultSetAccessException;
 public interface SqlRowSet extends Serializable {
 
 	/**
-	 * Retrieve the meta-data, i.e. number, types and properties
-	 * for the columns of this row set.
-	 * @return a corresponding SqlRowSetMetaData instance
+	 * 检索元数据，即该行集的列的数量、类型和属性。
+	 * @return 对应的SqlRowSetMetaData实例
 	 * @see java.sql.ResultSet#getMetaData()
 	 */
 	SqlRowSetMetaData getMetaData();
 
 	/**
-	 * Map the given column label to its column index.
-	 * @param columnLabel the name of the column
-	 * @return the column index for the given column label
+	 * 将给定的列标签映射到其列索引。
+	 * @param columnLabel 列的名称
+	 * @return 给定列标签的列索引
 	 * @see java.sql.ResultSet#findColumn(String)
 	 */
 	int findColumn(String columnLabel) throws InvalidResultSetAccessException;
 
 
-	// RowSet methods for extracting data values
+	// 用于提取数据值的 RowSet 方法
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a BigDecimal object.
-	 * @param columnIndex the column index
-	 * @return an BigDecimal object representing the column value
+	 * 以 BigDecimal 对象形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的 BigDecimal 对象
 	 * @see java.sql.ResultSet#getBigDecimal(int)
 	 */
 	@Nullable BigDecimal getBigDecimal(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a BigDecimal object.
-	 * @param columnLabel the column label
-	 * @return an BigDecimal object representing the column value
+	 * 以 BigDecimal 对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的 BigDecimal 对象
 	 * @see java.sql.ResultSet#getBigDecimal(String)
 	 */
 	@Nullable BigDecimal getBigDecimal(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a boolean.
-	 * @param columnIndex the column index
-	 * @return a boolean representing the column value
+	 * 以布尔值形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的布尔值
 	 * @see java.sql.ResultSet#getBoolean(int)
 	 */
 	boolean getBoolean(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a boolean.
-	 * @param columnLabel the column label
-	 * @return a boolean representing the column value
+	 * 以布尔值形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的布尔值
 	 * @see java.sql.ResultSet#getBoolean(String)
 	 */
 	boolean getBoolean(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a byte.
-	 * @param columnIndex the column index
-	 * @return a byte representing the column value
+	 * 以字节形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的字节
 	 * @see java.sql.ResultSet#getByte(int)
 	 */
 	byte getByte(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a byte.
-	 * @param columnLabel the column label
-	 * @return a byte representing the column value
+	 * 以字节形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字节
 	 * @see java.sql.ResultSet#getByte(String)
 	 */
 	byte getByte(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Date object.
-	 * @param columnIndex the column index
-	 * @return a Date object representing the column value
+	 * 以 Date 对象的形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的日期对象
 	 * @see java.sql.ResultSet#getDate(int)
 	 */
 	@Nullable Date getDate(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Date object.
-	 * @param columnLabel the column label
-	 * @return a Date object representing the column value
+	 * 以 Date 对象的形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的日期对象
 	 * @see java.sql.ResultSet#getDate(String)
 	 */
 	@Nullable Date getDate(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Date object.
-	 * @param columnIndex the column index
-	 * @param cal the Calendar to use in constructing the Date
-	 * @return a Date object representing the column value
+	 * 以 Date 对象的形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的日期对象
 	 * @see java.sql.ResultSet#getDate(int, Calendar)
 	 */
 	@Nullable Date getDate(int columnIndex, Calendar cal) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Date object.
-	 * @param columnLabel the column label
-	 * @param cal the Calendar to use in constructing the Date
-	 * @return a Date object representing the column value
+	 * 以 Date 对象的形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的日期对象
 	 * @see java.sql.ResultSet#getDate(String, Calendar)
 	 */
 	@Nullable Date getDate(String columnLabel, Calendar cal) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Double object.
-	 * @param columnIndex the column index
-	 * @return a Double object representing the column value
+	 * 以 Double 对象形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的双精度对象
 	 * @see java.sql.ResultSet#getDouble(int)
 	 */
 	double getDouble(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Double object.
-	 * @param columnLabel the column label
-	 * @return a Double object representing the column value
+	 * 以 Double 对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的双精度对象
 	 * @see java.sql.ResultSet#getDouble(String)
 	 */
 	double getDouble(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a float.
-	 * @param columnIndex the column index
-	 * @return a float representing the column value
+	 * 以浮点数形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的浮点数
 	 * @see java.sql.ResultSet#getFloat(int)
 	 */
 	float getFloat(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a float.
-	 * @param columnLabel the column label
-	 * @return a float representing the column value
+	 * 以浮点数形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的浮点数
 	 * @see java.sql.ResultSet#getFloat(String)
 	 */
 	float getFloat(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as an int.
-	 * @param columnIndex the column index
-	 * @return an int representing the column value
+	 * 以 int 形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return int 表示列值
 	 * @see java.sql.ResultSet#getInt(int)
 	 */
 	int getInt(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as an int.
-	 * @param columnLabel the column label
-	 * @return an int representing the column value
+	 * 以 int 形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return int 表示列值
 	 * @see java.sql.ResultSet#getInt(String)
 	 */
 	int getInt(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a long.
-	 * @param columnIndex the column index
-	 * @return a long representing the column value
+	 * 以 long 形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return long 代表列值
 	 * @see java.sql.ResultSet#getLong(int)
 	 */
 	long getLong(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a long.
-	 * @param columnLabel the column label
-	 * @return a long representing the column value
+	 * 以 long 形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return long 代表列值
 	 * @see java.sql.ResultSet#getLong(String)
 	 */
 	long getLong(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a String
-	 * (for NCHAR, NVARCHAR, LONGNVARCHAR columns).
-	 * @param columnIndex the column index
-	 * @return a String representing the column value
+	 * 以字符串形式检索当前行中指定列的值（对于 NCHAR、NVARCHAR、LONGNVARCHAR 列）。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的字符串
 	 * @since 4.1.3
 	 * @see java.sql.ResultSet#getNString(int)
 	 */
 	@Nullable String getNString(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a String
-	 * (for NCHAR, NVARCHAR, LONGNVARCHAR columns).
-	 * @param columnLabel the column label
-	 * @return a String representing the column value
+	 * 以字符串形式检索当前行中指定列的值（对于 NCHAR、NVARCHAR、LONGNVARCHAR 列）。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字符串
 	 * @since 4.1.3
 	 * @see java.sql.ResultSet#getNString(String)
 	 */
 	@Nullable String getNString(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as an Object.
-	 * @param columnIndex the column index
-	 * @return an Object representing the column value
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的对象
 	 * @see java.sql.ResultSet#getObject(int)
 	 */
 	@Nullable Object getObject(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as an Object.
-	 * @param columnLabel the column label
-	 * @return an Object representing the column value
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的对象
 	 * @see java.sql.ResultSet#getObject(String)
 	 */
 	@Nullable Object getObject(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as an Object.
-	 * @param columnIndex the column index
-	 * @param map a Map object containing the mapping from SQL types to Java types
-	 * @return an Object representing the column value
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @param map 包含从 SQL 类型到 Java 类型的映射的 Map 对象
+	 * @return 表示列值的对象
 	 * @see java.sql.ResultSet#getObject(int, Map)
 	 */
 	@Nullable Object getObject(int columnIndex, Map<String, Class<?>> map) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as an Object.
-	 * @param columnLabel the column label
-	 * @param map a Map object containing the mapping from SQL types to Java types
-	 * @return an Object representing the column value
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param map 包含从 SQL 类型到 Java 类型的映射的 Map 对象
+	 * @return 表示列值的对象
 	 * @see java.sql.ResultSet#getObject(String, Map)
 	 */
 	@Nullable Object getObject(String columnLabel, Map<String, Class<?>> map) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as an Object.
-	 * @param columnIndex the column index
-	 * @param type the Java type to convert the designated column to
-	 * @return an Object representing the column value
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @param type 将指定列转换为的 Java 类型
+	 * @return 表示列值的对象
 	 * @since 4.1.3
 	 * @see java.sql.ResultSet#getObject(int, Class)
 	 */
 	<T> @Nullable T getObject(int columnIndex, Class<T> type) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as an Object.
-	 * @param columnLabel the column label
-	 * @param type the Java type to convert the designated column to
-	 * @return an Object representing the column value
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param type 将指定列转换为的 Java 类型
+	 * @return 表示列值的对象
 	 * @since 4.1.3
 	 * @see java.sql.ResultSet#getObject(String, Class)
 	 */
 	<T> @Nullable T getObject(String columnLabel, Class<T> type) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a short.
-	 * @param columnIndex the column index
-	 * @return a short representing the column value
+	 * 检索当前行中指定列的值作为短值。
+	 * @param columnIndex 列索引
+	 * @return 短表示列值
 	 * @see java.sql.ResultSet#getShort(int)
 	 */
 	short getShort(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a short.
-	 * @param columnLabel the column label
-	 * @return a short representing the column value
+	 * 检索当前行中指定列的值作为短值。
+	 * @param columnLabel 列标签
+	 * @return 短表示列值
 	 * @see java.sql.ResultSet#getShort(String)
 	 */
 	short getShort(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a String.
-	 * @param columnIndex the column index
-	 * @return a String representing the column value
+	 * 以字符串形式检索当前行中指定列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的字符串
 	 * @see java.sql.ResultSet#getString(int)
 	 */
 	@Nullable String getString(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a String.
-	 * @param columnLabel the column label
-	 * @return a String representing the column value
+	 * 以字符串形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字符串
 	 * @see java.sql.ResultSet#getString(String)
 	 */
 	@Nullable String getString(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Time object.
-	 * @param columnIndex the column index
-	 * @return a Time object representing the column value
+	 * 以 Time 对象的形式检索当前行中指示列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的时间对象
 	 * @see java.sql.ResultSet#getTime(int)
 	 */
 	@Nullable Time getTime(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Time object.
-	 * @param columnLabel the column label
-	 * @return a Time object representing the column value
+	 * 以 Time 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的时间对象
 	 * @see java.sql.ResultSet#getTime(String)
 	 */
 	@Nullable Time getTime(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Time object.
-	 * @param columnIndex the column index
-	 * @param cal the Calendar to use in constructing the Date
-	 * @return a Time object representing the column value
+	 * 以 Time 对象的形式检索当前行中指示列的值。
+	 * @param columnIndex 列索引
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间对象
 	 * @see java.sql.ResultSet#getTime(int, Calendar)
 	 */
 	@Nullable Time getTime(int columnIndex, Calendar cal) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Time object.
-	 * @param columnLabel the column label
-	 * @param cal the Calendar to use in constructing the Date
-	 * @return a Time object representing the column value
+	 * 以 Time 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间对象
 	 * @see java.sql.ResultSet#getTime(String, Calendar)
 	 */
 	@Nullable Time getTime(String columnLabel, Calendar cal) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Timestamp object.
-	 * @param columnIndex the column index
-	 * @return a Timestamp object representing the column value
+	 * 以 Timestamp 对象的形式检索当前行中指示列的值。
+	 * @param columnIndex 列索引
+	 * @return 表示列值的时间戳对象
 	 * @see java.sql.ResultSet#getTimestamp(int)
 	 */
 	@Nullable Timestamp getTimestamp(int columnIndex) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Timestamp object.
-	 * @param columnLabel the column label
-	 * @return a Timestamp object representing the column value
+	 * 以 Timestamp 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的时间戳对象
 	 * @see java.sql.ResultSet#getTimestamp(String)
 	 */
 	@Nullable Timestamp getTimestamp(String columnLabel) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Timestamp object.
-	 * @param columnIndex the column index
-	 * @param cal the Calendar to use in constructing the Date
-	 * @return a Timestamp object representing the column value
+	 * 以 Timestamp 对象的形式检索当前行中指示列的值。
+	 * @param columnIndex 列索引
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间戳对象
 	 * @see java.sql.ResultSet#getTimestamp(int, Calendar)
 	 */
 	@Nullable Timestamp getTimestamp(int columnIndex, Calendar cal) throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the value of the indicated column in the current row as a Timestamp object.
-	 * @param columnLabel the column label
-	 * @param cal the Calendar to use in constructing the Date
-	 * @return a Timestamp object representing the column value
+	 * 以 Timestamp 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间戳对象
 	 * @see java.sql.ResultSet#getTimestamp(String, Calendar)
 	 */
 	@Nullable Timestamp getTimestamp(String columnLabel, Calendar cal) throws InvalidResultSetAccessException;
 
 
-	// RowSet navigation methods
+	// RowSet 导航方法
 
 	/**
-	 * Move the cursor to the given row number in the row set, just after the last row.
-	 * @param row the number of the row where the cursor should move
-	 * @return {@code true} if the cursor is on the row set, {@code false} otherwise
+	 * 将光标移动到行集中最后一行之后的给定行号。
+	 * @param row 光标应移动的行号
+	 * @return true} 如果光标位于行集上，否则为 {@code false}
 	 * @see java.sql.ResultSet#absolute(int)
 	 */
 	boolean absolute(int row) throws InvalidResultSetAccessException;
 
 	/**
-	 * Move the cursor to the end of this row set.
+	 * 将光标移至该行集的末尾。
 	 * @see java.sql.ResultSet#afterLast()
 	 */
 	void afterLast() throws InvalidResultSetAccessException;
 
 	/**
-	 * Move the cursor to the front of this row set, just before the first row.
+	 * 将光标移动到该行集的前面，就在第一行之前。
 	 * @see java.sql.ResultSet#beforeFirst()
 	 */
 	void beforeFirst() throws InvalidResultSetAccessException;
 
 	/**
-	 * Move the cursor to the first row of this row set.
-	 * @return {@code true} if the cursor is on a valid row, {@code false} otherwise
+	 * 将光标移至该行集的第一行。
+	 * @return true} 如果光标位于有效行上，否则为 {@code false}
 	 * @see java.sql.ResultSet#first()
 	 */
 	boolean first() throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve the current row number.
-	 * @return the current row number
+	 * 检索当前行号。
+	 * @return 当前行号
 	 * @see java.sql.ResultSet#getRow()
 	 */
 	int getRow() throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve whether the cursor is after the last row of this row set.
-	 * @return {@code true} if the cursor is after the last row, {@code false} otherwise
+	 * 检索光标是否位于该行集的最后一行之后。
+	 * @return true} 如果光标位于最后一行之后，否则为 {@code false}
 	 * @see java.sql.ResultSet#isAfterLast()
 	 */
 	boolean isAfterLast() throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve whether the cursor is before the first row of this row set.
-	 * @return {@code true} if the cursor is before the first row, {@code false} otherwise
+	 * 检索光标是否位于该行集的第一行之前。
+	 * @return true} 如果光标位于第一行之前，否则为 {@code false}
 	 * @see java.sql.ResultSet#isBeforeFirst()
 	 */
 	boolean isBeforeFirst() throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve whether the cursor is on the first row of this row set.
-	 * @return {@code true} if the cursor is after the first row, {@code false} otherwise
+	 * 检索光标是否位于该行集的第一行。
+	 * @return true} 如果光标位于第一行之后，否则为 {@code false}
 	 * @see java.sql.ResultSet#isFirst()
 	 */
 	boolean isFirst() throws InvalidResultSetAccessException;
 
 	/**
-	 * Retrieve whether the cursor is on the last row of this row set.
-	 * @return {@code true} if the cursor is after the last row, {@code false} otherwise
+	 * 检索光标是否位于该行集的最后一行。
+	 * @return true} 如果光标位于最后一行之后，否则为 {@code false}
 	 * @see java.sql.ResultSet#isLast()
 	 */
 	boolean isLast() throws InvalidResultSetAccessException;
 
 	/**
-	 * Move the cursor to the last row of this row set.
-	 * @return {@code true} if the cursor is on a valid row, {@code false} otherwise
+	 * 将光标移至该行集的最后一行。
+	 * @return true} 如果光标位于有效行上，否则为 {@code false}
 	 * @see java.sql.ResultSet#last()
 	 */
 	boolean last() throws InvalidResultSetAccessException;
 
 	/**
-	 * Move the cursor to the next row.
-	 * @return {@code true} if the new row is valid, {@code false} if there are no more rows
+	 * 将光标移至下一行。
+	 * @return true} 如果新行有效，则 {@code false} 如果没有更多行
 	 * @see java.sql.ResultSet#next()
 	 */
 	boolean next() throws InvalidResultSetAccessException;
 
 	/**
-	 * Move the cursor to the previous row.
-	 * @return {@code true} if the new row is valid, {@code false} if it is off the row set
+	 * 将光标移至上一行。
+	 * @return true} 如果新行有效，则 {@code false} 如果它不在行集内
 	 * @see java.sql.ResultSet#previous()
 	 */
 	boolean previous() throws InvalidResultSetAccessException;
 
 	/**
-	 * Move the cursor a relative number of rows, either positive or negative.
-	 * @return {@code true} if the cursor is on a row, {@code false} otherwise
+	 * 将光标移动相对行数（正数或负数）。
+	 * @return true} 如果光标位于一行，否则为 {@code false}
 	 * @see java.sql.ResultSet#relative(int)
 	 */
 	boolean relative(int rows) throws InvalidResultSetAccessException;
 
 	/**
-	 * Report whether the last column read had a value of SQL {@code NULL}.
-	 * <p>Note that you must first call one of the getter methods and then
-	 * call the {@code wasNull()} method.
-	 * @return {@code true} if the most recent column retrieved was
-	 * SQL {@code NULL}, {@code false} otherwise
+	 * 报告最后读取的列是否具有 SQL {@code NULL} 值。 <p>请注意，您必须首先调用其中一个 getter 方法，然后再调用 {@code wasNull()} 方法
+	 * 。
+	 * @return true} 如果最近检索到的列是 SQL {@code NULL}，否则为 {@code false}
 	 * @see java.sql.ResultSet#wasNull()
 	 */
 	boolean wasNull() throws InvalidResultSetAccessException;

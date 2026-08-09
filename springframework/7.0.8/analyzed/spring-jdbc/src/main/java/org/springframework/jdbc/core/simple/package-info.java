@@ -1,12 +1,8 @@
 /**
- * Simplification layer for common JDBC interactions.
- *
- * <p>{@code JdbcClient} provides a fluent API for JDBC query and update operations,
- * supporting JDBC-style positional as well as Spring-style named parameters.
- *
- * <p>{@code SimpleJdbcInsert} and {@code SimpleJdbcCall} take advantage of database
- * meta-data provided by the JDBC driver to simplify the application code. Much of the
- * parameter specification becomes unnecessary since it can be looked up in the meta-data.
+ * 常见 JDBC 交互的简化层。
+ * <p>{@code JdbcClient} 为 JDBC 查询和更新操作提供流畅的 API，支持 JDBC 样式的位置以及 Spring 样式的命名参数。
+ * <p>{@code SimpleJdbcInsert} 和 {@code SimpleJdbcCall} 利用 JDBC 驱动程序提供的数据库元数据来简化应用程序代码。许多参数
+ * 规范变得不必要，因为可以在元数据中查找它们。
  */
 @NullMarked
 package org.springframework.jdbc.core.simple;

@@ -19,42 +19,28 @@ package org.springframework.jdbc.support.incrementer;
 import javax.sql.DataSource;
 
 /**
- * {@link DataFieldMaxValueIncrementer} that increments the maximum value of a given Sybase table
- * with the equivalent of an auto-increment column. Note: If you use this class, your table key
- * column should <i>NOT</i> be defined as an IDENTITY column, as the sequence table does the job.
- *
- * <p>This class is intended to be used with Sybase Anywhere.
- *
- * <p>The sequence is kept in a table. There should be one sequence table per
- * table that needs an auto-generated key.
- *
- * <p>Example:
- *
- * <pre class="code">create table tab (id int not null primary key, text varchar(100))
- * create table tab_sequence (id bigint identity)
- * insert into tab_sequence values(DEFAULT)</pre>
- *
- * If "cacheSize" is set, the intermediate values are served without querying the
- * database. If the server or your application is stopped or crashes or a transaction
- * is rolled back, the unused values will never be served. The maximum hole size in
- * numbering is consequently the value of cacheSize.
- *
- * <b>HINT:</b> Since Sybase Anywhere supports the JDBC {@code getGeneratedKeys}
- * method, it is recommended to use IDENTITY columns directly in the tables and then
- * use a {@link org.springframework.jdbc.core.simple.SimpleJdbcInsert} or use a
- * {@link org.springframework.jdbc.support.KeyHolder} when calling the
- * {@code update(PreparedStatementCreator psc, KeyHolder generatedKeyHolder)}
- * method of the {@link org.springframework.jdbc.core.JdbcTemplate}.
- *
- * <p>Thanks to Tarald Saxi Stormark for the suggestion!
- *
+ * {@link DataFieldMaxValueIncrementer} 增加给定 Sybase 表的最大值，相当于自动增量列。注意：如果您使用此类，您的表键列应将
+ * <i>NOT</i> 定义为 IDENTITY 列，因为序列表会完成此工作。
+ * <p> 该类旨在与 Sybase Anywhere 一起使用。
+ * <p>序列保存在一个表中。每个表应该有一个需要自动生成键的序列表。
+ * <p>示例：
+ * <pre class="code">创建表 tab (id int 非空主键，text varchar(100)) 创建表 tab_sequence (id bigint
+ * 身份) 插入 tab_sequence 值(DEFAULT)</pre>
+ * 如果设置了“cacheSize”，则无需查询数据库即可提供中间值。如果服务器或您的应用程序停止或崩溃或事务回滚，则永远不会提供未使用的值。因此，编号中的最大空洞大小就是cach
+ * eSize 的值。
+ * <b>HINT:</b> 由于 Sybase Anywhere 支持 JDBC {@code getGeneratedKeys} 方法，因此建议直接在表中使用
+ * IDENTITY 列，然后在调用 {@link org.springframework.jdbc.core.JdbcTemplate} 的 {@code
+ * update(PreparedStatementCreator psc, KeyHolder generatedKeyHolder)} 方法时使用 {@link
+ * org.springframework.jdbc.core.simple.SimpleJdbcInsert} 或使用 {@link
+ * org.springframework.jdbc.support.KeyHolder}。
+ * <p>感谢 Tarald Saxi Stormark 的建议！
  * @author Thomas Risberg
  * @since 3.0.5
  */
 public class SybaseAnywhereMaxValueIncrementer extends SybaseMaxValueIncrementer {
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -63,16 +49,19 @@ public class SybaseAnywhereMaxValueIncrementer extends SybaseMaxValueIncrementer
 	}
 
 	/**
-	 * Convenience constructor.
-	 * @param dataSource the DataSource to use
-	 * @param incrementerName the name of the sequence/table to use
-	 * @param columnName the name of the column in the sequence table to use
+	 * 方便构造函数。
+	 * @param dataSource 要使用的数据源
+	 * @param incrementerName 要使用的序列/表的名称
+	 * @param columnName 序列表中要使用的列的名称
 	 */
 	public SybaseAnywhereMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName, columnName);
 	}
 
 
+	/**
+	 * 获取 Increment Statement（`IncrementStatement`）。
+	 */
 	@Override
 	protected String getIncrementStatement() {
 		return "insert into " + getIncrementerName() + " values(DEFAULT)";

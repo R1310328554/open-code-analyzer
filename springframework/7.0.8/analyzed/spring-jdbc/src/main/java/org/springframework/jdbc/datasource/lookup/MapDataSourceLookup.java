@@ -27,11 +27,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Simple {@link DataSourceLookup} implementation that relies on a map for doing lookups.
- *
- * <p>Useful for testing environments or applications that need to match arbitrary
- * {@link String} names to target {@link DataSource} objects.
- *
+ * 简单的 {@link DataSourceLookup} 实现依赖于映射来进行查找。
+ * <p> 适用于测试需要将任意 {@link String} 名称与目标 {@link DataSource} 对象相匹配的环境或应用程序。
  * @author Costin Leau
  * @author Juergen Hoeller
  * @author Rick Evans
@@ -43,24 +40,23 @@ public class MapDataSourceLookup implements DataSourceLookup {
 
 
 	/**
-	 * Create a new instance of the {@link MapDataSourceLookup} class.
+	 * 创建 {@link MapDataSourceLookup} 类的新实例。
 	 */
 	public MapDataSourceLookup() {
 	}
 
 	/**
-	 * Create a new instance of the {@link MapDataSourceLookup} class.
-	 * @param dataSources the {@link Map} of {@link DataSource DataSources}; the keys
-	 * are {@link String Strings}, the values are actual {@link DataSource} instances.
+	 * 创建 {@link MapDataSourceLookup} 类的新实例。
+	 * @param dataSources {@link Map} 或 {@link DataSource DataSources}；键是 {@link String Strings}，值是实际的 {@link DataSource} 实例。
 	 */
 	public MapDataSourceLookup(Map<String, DataSource> dataSources) {
 		setDataSources(dataSources);
 	}
 
 	/**
-	 * Create a new instance of the {@link MapDataSourceLookup} class.
-	 * @param dataSourceName the name under which the supplied {@link DataSource} is to be added
-	 * @param dataSource the {@link DataSource} to be added
+	 * 创建 {@link MapDataSourceLookup} 类的新实例。
+	 * @param dataSourceName 要添加提供的 {@link DataSource} 的名称
+	 * @param dataSource 要添加的 {@link DataSource}
 	 */
 	public MapDataSourceLookup(String dataSourceName, DataSource dataSource) {
 		addDataSource(dataSourceName, dataSource);
@@ -68,11 +64,9 @@ public class MapDataSourceLookup implements DataSourceLookup {
 
 
 	/**
-	 * Set the {@link Map} of {@link DataSource DataSources}; the keys
-	 * are {@link String Strings}, the values are actual {@link DataSource} instances.
-	 * <p>If the supplied {@link Map} is {@code null}, then this method
-	 * call effectively has no effect.
-	 * @param dataSources said {@link Map} of {@link DataSource DataSources}
+	 * 设置{@link Map}为{@link DataSource DataSources}；键是 {@link String Strings}，值是实际的 {@link
+	 * DataSource} 实例。 <p>如果提供的 {@link Map} 是 {@code null}，则此方法调用实际上无效。
+	 * @param dataSources {@link Map} 表示 {@link DataSource DataSources}
 	 */
 	public void setDataSources(@Nullable Map<String, DataSource> dataSources) {
 		if (dataSources != null) {
@@ -81,19 +75,18 @@ public class MapDataSourceLookup implements DataSourceLookup {
 	}
 
 	/**
-	 * Get the {@link Map} of {@link DataSource DataSources} maintained by this object.
-	 * <p>The returned {@link Map} is {@link Collections#unmodifiableMap(java.util.Map) unmodifiable}.
-	 * @return said {@link Map} of {@link DataSource DataSources} (never {@code null})
+	 * 获取该对象维护的 {@link DataSource DataSources} 的 {@link Map}。 <p>返回的{@link Map}是{@link
+	 * Collections#unmodifiableMap(java.util.Map) unmodifiable}。
+	 * @return {@link Map} 或 {@link DataSource DataSources}（绝不是 {@code null}）
 	 */
 	public Map<String, DataSource> getDataSources() {
 		return Collections.unmodifiableMap(this.dataSources);
 	}
 
 	/**
-	 * Add the supplied {@link DataSource} to the map of {@link DataSource DataSources}
-	 * maintained by this object.
-	 * @param dataSourceName the name under which the supplied {@link DataSource} is to be added
-	 * @param dataSource the {@link DataSource} to be so added
+	 * 将提供的 {@link DataSource} 添加到此对象维护的 {@link DataSource DataSources} 映射中。
+	 * @param dataSourceName 要添加提供的 {@link DataSource} 的名称
+	 * @param dataSource 如此添加 {@link DataSource}
 	 */
 	public void addDataSource(String dataSourceName, DataSource dataSource) {
 		Assert.notNull(dataSourceName, "DataSource name must not be null");
@@ -101,6 +94,9 @@ public class MapDataSourceLookup implements DataSourceLookup {
 		this.dataSources.put(dataSourceName, dataSource);
 	}
 
+	/**
+	 * 获取 Data Source（`DataSource`）。
+	 */
 	@Override
 	public DataSource getDataSource(String dataSourceName) throws DataSourceLookupFailureException {
 		Assert.notNull(dataSourceName, "DataSource name must not be null");

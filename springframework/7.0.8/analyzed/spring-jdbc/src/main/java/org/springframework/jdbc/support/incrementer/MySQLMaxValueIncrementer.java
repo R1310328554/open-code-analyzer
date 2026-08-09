@@ -28,42 +28,20 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
-/* ===== [OCA 中文解析] =====
-class MySQLMaxValueIncrementer — 意图说明
-
-class `MySQLMaxValueIncrementer`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/MySQLMaxValueIncrementer.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * {@link DataFieldMaxValueIncrementer} that increments the maximum value of a given MySQL table
- * with the equivalent of an auto-increment column. Note: If you use this class, your MySQL
- * key column should <i>NOT</i> be auto-increment, as the sequence table does the job.
- *
- * <p>The sequence is kept in a table; there should be one sequence table per
- * table that needs an auto-generated key. The storage engine used by the sequence table
- * can be MYISAM or INNODB since the sequences are allocated using a separate connection
- * without being affected by any other transactions that might be in progress.
- *
- * <p>Example:
- *
- * <pre class="code">
- * create table tab (id int unsigned not null primary key, text varchar(100));
- * create table tab_sequence (value int not null);
- * insert into tab_sequence values(0);</pre>
- *
- * <p>If {@code cacheSize} is set, the intermediate values are served without querying the
- * database. If the server or your application is stopped or crashes or a transaction
- * is rolled back, the unused values will never be served. The maximum hole size in
- * numbering is consequently the value of {@code cacheSize}.
- *
- * <p>It is possible to avoid acquiring a new connection for the incrementer by setting the
- * "useNewConnection" property to false. In this case you <i>MUST</i> use a non-transactional
- * storage engine like MYISAM when defining the incrementer table.
- *
- * <p>Note that {@code MySQLMaxValueIncrementer} is compatible with
- * <a href="https://dev.mysql.com/doc/refman/8.0/en/mysql-tips.html#safe-updates">MySQL safe updates mode</a>.
- *
+ * {@link DataFieldMaxValueIncrementer} 增加给定 MySQL 表的最大值，相当于自动增量列。注意：如果您使用此类，您的 MySQL 键列应
+ * <i>NOT</i> 自动递增，因为序列表会执行此操作。
+ * <p>序列保存在一个表中；每个表应该有一个需要自动生成键的序列表。序列表使用的存储引擎可以是 MYISAM 或 INNODB，因为序列是使用单独的连接进行分配的，而不会受到可能
+ * 正在进行的任何其他事务的影响。
+ * <p>示例：
+ * <pre class="code"> 创建表选项卡（id int unsigned not null 主键，text
+ * varchar(100)）；创建表tab_sequence（值int不为空）；插入 tab_sequence 值(0);</pre>
+ * <p> 如果设置了 {@code cacheSize}，则无需查询数据库即可提供中间值。如果服务器或您的应用程序停止或崩溃或事务回滚，则永远不会提供未使用的值。因此，编号中的最
+ * 大孔尺寸是 {@code cacheSize} 的值。
+ * <p>可以通过将“useNewConnection”属性设置为 false 来避免为增量器获取新连接。在这种情况下，您 <i>MUST</i> 在定义增量表时使用非事务性存储引
+ * 擎（如 MYISAM）。
+ * <p>注意，{@code MySQLMaxValueIncrementer}与<a
+ * href="https://dev.mysql.com/doc/refman/8.0/en/mysql-tips.html#safe-updates">MySQL安全更新模式</a>兼容。
  * @author Jean-Pierre Pawlak
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -71,25 +49,25 @@ class `MySQLMaxValueIncrementer`：请结合所属模块与调用方理解其在
  */
 public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer {
 
-	// [OCA] 字段 `VALUE_SQL`：类成员状态。
-	/** The SQL string for retrieving the new sequence value. */
+	/**
+	 */
 	private static final String VALUE_SQL = "select last_insert_id()";
 
-	// [OCA] 字段 `nextId`：类成员状态。
-	/** The next id to serve. */
+	/**
+	 */
 	private long nextId = 0;
 
-	// [OCA] 字段 `maxId`：类成员状态。
-	/** The max id to serve. */
+	/**
+	 */
 	private long maxId = 0;
 
-	// [OCA] 字段 `useNewConnection`：类成员状态。
-	/** Whether to use a new connection for the incrementer. */
+	/**
+	 */
 	private boolean useNewConnection = true;
 
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -98,10 +76,10 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 	}
 
 	/**
-	 * Convenience constructor.
-	 * @param dataSource the DataSource to use
-	 * @param incrementerName the name of the sequence table to use
-	 * @param columnName the name of the column in the sequence table to use
+	 * 方便构造函数。
+	 * @param dataSource 要使用的数据源
+	 * @param incrementerName 要使用的序列表的名称
+	 * @param columnName 序列表中要使用的列的名称
 	 */
 	public MySQLMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName, columnName);
@@ -109,13 +87,8 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 
 
 	/**
-	 * Set whether to use a new connection for the incrementer.
-	 * <p>{@code true} is necessary to support transactional storage engines,
-	 * using an isolated separate transaction for the increment operation.
-	 * {@code false} is sufficient if the storage engine of the sequence table
-	 * is non-transactional (like MYISAM), avoiding the effort of acquiring an
-	 * extra {@code Connection} for the increment operation.
-	 * <p>Default is {@code true}.
+	 * 设置增量器是否使用新连接。 <p>{@code true} 对于支持事务存储引擎是必要的，使用隔离的单独事务进行增量操作。如果序列表的存储引擎是非事务性的（如 MYISAM），
+	 * {@code false} 就足够了，避免了为增量操作获取额外的 {@code Connection} 的工作。 <p>默认为{@code true}。
 	 * @since 4.3.6
 	 * @see DataSource#getConnection()
 	 */
@@ -124,12 +97,10 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 	}
 
 
+	/**
+	 * 获取 Next Key（`NextKey`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getNextKey — 意图与阅读要点
-
-方法 `getNextKey` 复杂度较高（CCN≈12, NLOC≈71）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	protected synchronized long getNextKey() throws DataAccessException {
 		if (this.maxId == this.nextId) {
 			/*
@@ -158,7 +129,7 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 				if (!this.useNewConnection) {
 					DataSourceUtils.applyTransactionTimeout(stmt, getDataSource());
 				}
-				// Increment the sequence column...
+				// 增加序列列...
 				String columnName = getColumnName();
 				try {
 					stmt.executeUpdate("update " + getIncrementerName() + " set " + columnName +
@@ -168,7 +139,7 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 					throw new DataAccessResourceFailureException("Could not increment " + columnName + " for " +
 							getIncrementerName() + " sequence table", ex);
 				}
-				// Retrieve the new max of the sequence column...
+				// 检索序列列的新最大值...
 				ResultSet rs = stmt.executeQuery(VALUE_SQL);
 				try {
 					if (!rs.next()) {

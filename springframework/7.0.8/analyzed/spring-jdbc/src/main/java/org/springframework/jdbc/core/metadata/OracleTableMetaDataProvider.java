@@ -29,36 +29,34 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Oracle-specific implementation of the {@link org.springframework.jdbc.core.metadata.TableMetaDataProvider}.
- * Supports a feature for including synonyms in the meta-data lookup. Also supports lookup of current schema
- * using the {@code sys_context}.
- *
- * <p>Thanks to Mike Youngstrom and Bruce Campbell for submitting the original suggestion for the Oracle
- * current schema lookup implementation.
- *
+ * {@link org.springframework.jdbc.core.metadata.TableMetaDataProvider} 的 Oracle
+ * 特定实现。支持在元数据查找中包含同义词的功能。还支持使用 {@code sys_context} 查找当前模式。
+ * <p>感谢 Mike Youngstrom 和 Bruce Campbell 提交有关 Oracle 当前模式查找实现的原始建议。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 3.0
  */
 public class OracleTableMetaDataProvider extends GenericTableMetaDataProvider {
 
+	/** `includeSynonyms`：该类的成员状态。 */
 	private final boolean includeSynonyms;
 
+	/** `defaultSchema`：该类的成员状态。 */
 	private final @Nullable String defaultSchema;
 
 
 	/**
-	 * Constructor used to initialize with provided database meta-data.
-	 * @param databaseMetaData meta-data to be used
+	 * 用于使用提供的数据库元数据进行初始化的构造函数。
+	 * @param databaseMetaData 要使用的元数据
 	 */
 	public OracleTableMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		this(databaseMetaData, false);
 	}
 
 	/**
-	 * Constructor used to initialize with provided database meta-data.
-	 * @param databaseMetaData meta-data to be used
-	 * @param includeSynonyms whether to include synonyms
+	 * 用于使用提供的数据库元数据进行初始化的构造函数。
+	 * @param databaseMetaData 要使用的元数据
+	 * @param includeSynonyms 是否包含同义词
 	 */
 	public OracleTableMetaDataProvider(DatabaseMetaData databaseMetaData, boolean includeSynonyms)
 			throws SQLException {
@@ -71,6 +69,9 @@ public class OracleTableMetaDataProvider extends GenericTableMetaDataProvider {
 
 	/*
 	 * Oracle-based implementation for detecting the current schema.
+	 */
+	/**
+	 * 查找：Default Schema（方法 `lookupDefaultSchema`）。
 	 */
 	private static @Nullable String lookupDefaultSchema(DatabaseMetaData databaseMetaData) {
 		try {
@@ -98,6 +99,9 @@ public class OracleTableMetaDataProvider extends GenericTableMetaDataProvider {
 		}
 	}
 
+	/**
+	 * 获取 Default Schema（`DefaultSchema`）。
+	 */
 	@Override
 	protected @Nullable String getDefaultSchema() {
 		if (this.defaultSchema != null) {
@@ -107,6 +111,9 @@ public class OracleTableMetaDataProvider extends GenericTableMetaDataProvider {
 	}
 
 
+	/**
+	 * 初始化：With Table Column Meta Data（方法 `initializeWithTableColumnMetaData`）。
+	 */
 	@Override
 	public void initializeWithTableColumnMetaData(DatabaseMetaData databaseMetaData,
 			@Nullable String catalogName, @Nullable String schemaName, @Nullable String tableName)

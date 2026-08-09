@@ -19,14 +19,9 @@ package org.springframework.jdbc.support.incrementer;
 import javax.sql.DataSource;
 
 /**
- * {@link DataFieldMaxValueIncrementer} that retrieves the next value
- * of a given HSQL sequence.
- *
- * <p>Thanks to Guillaume Bilodeau for the suggestion!
- *
- * <p><b>NOTE:</b> This is an alternative to using a regular table to support
- * generating unique keys that was necessary in previous versions of HSQL.
- *
+ * {@link DataFieldMaxValueIncrementer} 检索给定 HSQL 序列的下一个值。
+ * <p>感谢 Guillaume Bilodeau 的建议！
+ * <p><b>NOTE:</b> 这是使用常规表的替代方法来支持生成以前版本的 HSQL 中必需的唯一键。
  * @author Thomas Risberg
  * @since 2.5
  * @see HsqlMaxValueIncrementer
@@ -34,7 +29,7 @@ import javax.sql.DataSource;
 public class HsqlSequenceMaxValueIncrementer extends AbstractSequenceMaxValueIncrementer {
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 */
@@ -42,15 +37,18 @@ public class HsqlSequenceMaxValueIncrementer extends AbstractSequenceMaxValueInc
 	}
 
 	/**
-	 * Convenience constructor.
-	 * @param dataSource the DataSource to use
-	 * @param incrementerName the name of the sequence/table to use
+	 * 方便构造函数。
+	 * @param dataSource 要使用的数据源
+	 * @param incrementerName 要使用的序列/表的名称
 	 */
 	public HsqlSequenceMaxValueIncrementer(DataSource dataSource, String incrementerName) {
 		super(dataSource, incrementerName);
 	}
 
 
+	/**
+	 * 获取 Sequence Query（`SequenceQuery`）。
+	 */
 	@Override
 	protected String getSequenceQuery() {
 		return "call next value for " + getIncrementerName();

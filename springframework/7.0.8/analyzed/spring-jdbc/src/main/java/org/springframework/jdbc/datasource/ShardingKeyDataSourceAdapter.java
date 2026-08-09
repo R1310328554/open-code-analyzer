@@ -26,24 +26,17 @@ import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 
 /**
- * An adapter for a target {@link DataSource}, designed to apply sharding keys, if specified,
- * to every standard {@code #getConnection} call, returning a direct connection to the shard
- * corresponding to the specified sharding key value. All other methods simply delegate
- * to the corresponding methods of the target {@code DataSource}.
- *
- * <p>The target {@code DataSource} must implement the {@link #createConnectionBuilder} method;
- * otherwise, a {@link java.sql.SQLFeatureNotSupportedException} will be thrown when attempting
- * to acquire shard connections.
- *
- * <p>This adapter needs to be configured with a {@link ShardingKeyProvider} callback which is
- * used to get the current sharding keys for every {@code #getConnection} call, for example:
- *
- * <pre class="code">
- * ShardingKeyDataSourceAdapter dataSourceAdapter = new ShardingKeyDataSourceAdapter(dataSource);
- * dataSourceAdapter.setShardingKeyProvider(() -&gt; dataSource.createShardingKeyBuilder()
- *     .subkey(SecurityContextHolder.getContext().getAuthentication().getName(), JDBCType.VARCHAR).build());
- * </pre>
- *
+ * 目标 {@link DataSource} 的适配器，旨在将分片键（如果指定）应用于每个标准 {@code #getConnection} 调用，返回与指定分片键值对应的分片的
+ * 直接连接。所有其他方法都简单地委托给目标 {@code DataSource} 的相应方法。
+ * <p>目标{@code DataSource}必须实现{@link #createConnectionBuilder}方法；否则，在尝试获取分片连接时将抛出 {@link
+ * java.sql.SQLFeatureNotSupportedException}。
+ * <p> 该适配器需要配置 {@link ShardingKeyProvider} 回调，该回调用于获取每个 {@code #getConnection}
+ * 调用的当前分片键，例如：
+ * <pre class="code"> ShardingKeyDataSourceAdapter dataSourceAdapter = new
+ * ShardingKeyDataSourceAdapter(dataSource); dataSourceAdapter.setShardingKeyProvider(() ->
+ * dataSource.createShardingKeyBuilder()
+ * .subkey(SecurityContextHolder.getContext().getAuthentication().getName(),
+ * JDBCType.VARCHAR).build()); OCAJAVA1文档
  * @author Mohamed Lahyane (Anir)
  * @author Juergen Hoeller
  * @since 6.1.2
@@ -53,24 +46,22 @@ import org.jspecify.annotations.Nullable;
  */
 public class ShardingKeyDataSourceAdapter extends DelegatingDataSource {
 
+	/** `shardingkeyProvider`：该类的成员状态。 */
 	private @Nullable ShardingKeyProvider shardingkeyProvider;
 
 
 	/**
-	 * Create a new instance of {@code ShardingKeyDataSourceAdapter}, wrapping the
-	 * given {@link DataSource}.
-	 * @param dataSource the target {@code DataSource} to be wrapped
+	 * 创建 {@code ShardingKeyDataSourceAdapter} 的新实例，包装给定的 {@link DataSource}。
+	 * @param dataSource 要包装的目标 {@code DataSource}
 	 */
 	public ShardingKeyDataSourceAdapter(DataSource dataSource) {
 		super(dataSource);
 	}
 
 	/**
-	 * Create a new instance of {@code ShardingKeyDataSourceAdapter}, wrapping the
-	 * given {@link DataSource}.
-	 * @param dataSource the target {@code DataSource} to be wrapped
-	 * @param shardingKeyProvider the {@code ShardingKeyProvider} used to get the
-	 * sharding keys
+	 * 创建 {@code ShardingKeyDataSourceAdapter} 的新实例，包装给定的 {@link DataSource}。
+	 * @param dataSource 要包装的目标 {@code DataSource}
+	 * @param shardingKeyProvider {@code ShardingKeyProvider} 用于获取分片键
 	 */
 	public ShardingKeyDataSourceAdapter(DataSource dataSource, ShardingKeyProvider shardingKeyProvider) {
 		super(dataSource);
@@ -79,7 +70,7 @@ public class ShardingKeyDataSourceAdapter extends DelegatingDataSource {
 
 
 	/**
-	 * Set the {@link ShardingKeyProvider} for this adapter.
+	 * 为此适配器设置 {@link ShardingKeyProvider}。
 	 */
 	public void setShardingKeyProvider(ShardingKeyProvider shardingKeyProvider) {
 		this.shardingkeyProvider = shardingKeyProvider;
@@ -87,12 +78,10 @@ public class ShardingKeyDataSourceAdapter extends DelegatingDataSource {
 
 
 	/**
-	 * Obtain a connection to the database shard using the provided sharding key
-	 * and super sharding key (if available).
-	 * <p>The sharding key is obtained from the configured
-	 * {@link #setShardingKeyProvider ShardingKeyProvider}.
-	 * @return a {@code Connection} object representing a direct shard connection
-	 * @throws SQLException if an error occurs while creating the connection
+	 * 使用提供的分片键和超级分片键（如果可用）获取与数据库分片的连接。 <p>的分片键是从配置的{@link #setShardingKeyProvider ShardingKeyP
+	 * rovider}中获取的。
+	 * @return 表示直接分片连接的 {@code Connection} 对象
+	 * @throws SQLException 如果创建连接时发生错误
 	 * @see #createConnectionBuilder()
 	 */
 	@Override
@@ -101,14 +90,12 @@ public class ShardingKeyDataSourceAdapter extends DelegatingDataSource {
 	}
 
 	/**
-	 * Obtain a connection to the database shard using the provided username and password,
-	 * considering the sharding keys (if available) and the given credentials.
-	 * <p>The sharding key is obtained from the configured
-	 * {@link #setShardingKeyProvider ShardingKeyProvider}.
-	 * @param username the database user on whose behalf the connection is being made
-	 * @param password the user's password
-	 * @return a {@code Connection} object representing a direct shard connection
-	 * @throws SQLException if an error occurs while creating the connection
+	 * 使用提供的用户名和密码获取与数据库分片的连接，并考虑分片密钥（如果可用）和给定的凭据。 <p>的分片键是从配置的{@link #setShardingKeyProvider S
+	 * hardingKeyProvider}中获取的。
+	 * @param username 代表其建立连接的数据库用户
+	 * @param password 用户的密码
+	 * @return 表示直接分片连接的 {@code Connection} 对象
+	 * @throws SQLException 如果创建连接时发生错误
 	 */
 	@Override
 	public Connection getConnection(String username, String password) throws SQLException {
@@ -116,11 +103,11 @@ public class ShardingKeyDataSourceAdapter extends DelegatingDataSource {
 	}
 
 	/**
-	 * Create a new instance of {@link ConnectionBuilder} using the target {@code DataSource}'s
-	 * {@code createConnectionBuilder()} method and set the appropriate sharding keys
-	 * from the configured {@link #setShardingKeyProvider ShardingKeyProvider}.
-	 * @return a ConnectionBuilder object representing a builder for direct shard connections
-	 * @throws SQLException if an error occurs while creating the ConnectionBuilder
+	 * 使用目标 {@code DataSource} 的 {@code createConnectionBuilder()} 方法创建 {@link
+	 * ConnectionBuilder} 的新实例，并从配置的 {@link #setShardingKeyProvider ShardingKeyProvider}
+	 * 设置适当的分片键。
+	 * @return ConnectionBuilder 对象表示直接分片连接的构建器
+	 * @throws SQLException 如果创建 ConnectionBuilder 时发生错误
 	 */
 	@Override
 	public ConnectionBuilder createConnectionBuilder() throws SQLException {

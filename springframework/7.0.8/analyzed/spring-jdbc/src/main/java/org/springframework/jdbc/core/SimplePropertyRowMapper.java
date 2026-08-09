@@ -39,43 +39,20 @@ import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
-/* ===== [OCA 中文解析] =====
-class SimplePropertyRowMapper — 意图说明
-
-class `SimplePropertyRowMapper`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/SimplePropertyRowMapper.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * {@link RowMapper} implementation that converts a row into a new instance
- * of the specified mapped target class. The mapped target class must be a
- * top-level class or {@code static} nested class, and it may expose either a
- * <em>data class</em> constructor with named parameters corresponding to column
- * names or classic bean property setter methods with property names corresponding
- * to column names or fields with corresponding field names.
- *
- * <p>When combining a data class constructor with setter methods, any property
- * mapped successfully via a constructor argument will not be mapped additionally
- * via a corresponding setter method or field mapping. This means that constructor
- * arguments take precedence over property setter methods which in turn take
- * precedence over direct field mappings.
- *
- * <p>To facilitate mapping between columns and properties that don't have matching
- * names, try using underscore-separated column aliases in the SQL statement like
- * {@code "select fname as first_name from customer"}, where {@code first_name}
- * can be mapped to a {@code setFirstName(String)} method in the target class.
- *
- * <p>This is a flexible alternative to {@link DataClassRowMapper} and
- * {@link BeanPropertyRowMapper} for scenarios where no specific customization
- * and no pre-defined property mappings are needed.
- *
- * <p>In terms of its fallback property discovery algorithm, this class is similar to
- * {@link org.springframework.jdbc.core.namedparam.SimplePropertySqlParameterSource}
- * and is similarly used for {@link org.springframework.jdbc.core.simple.JdbcClient}.
- *
+ * {@link RowMapper} 实现将行转换为指定映射目标类的新实例。映射的目标类必须是顶级类或 {@code static} 嵌套类，并且它可以公开具有与列名称相对应的命
+ * 名参数的 <em> 数据类 </em> 构造函数，或者具有与列名称相对应的属性名称或具有相应字段名称的字段的经典 bean 属性设置方法。
+ * <p>将数据类构造函数与 setter 方法组合时，任何通过构造函数参数成功映射的属性都不会通过相应的 setter 方法或字段映射进行额外映射。这意味着构造函数参数优先于属性
+ * 设置方法，而属性设置方法又优先于直接字段映射。
+ * <p>为了促进没有匹配名称的列和属性之间的映射，请尝试在 SQL 语句中使用下划线分隔的列别名，例如 {@code "select fname as first_name fr
+ * om customer"}，其中 {@code first_name} 可以映射到目标类中的 {@code setFirstName(String)} 方法。
+ * <p>这是 {@link DataClassRowMapper} 和 {@link BeanPropertyRowMapper}
+ * 的灵活替代方案，适用于不需要特定定制和预定义属性映射的场景。
+ * <p>就其后备属性发现算法而言，该类与{@link org.springframework.jdbc.core.namedparam.SimplePropertySqlPara
+ * meterSource}类似，并且类似地用于{@link org.springframework.jdbc.core.simple.JdbcClient}。
  * @author Juergen Hoeller
  * @since 6.1
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see DataClassRowMapper
  * @see BeanPropertyRowMapper
  * @see org.springframework.jdbc.core.simple.JdbcClient.StatementSpec#query(Class)
@@ -83,40 +60,41 @@ class `SimplePropertyRowMapper`：请结合所属模块与调用方理解其在�
  */
 public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 
-	// [OCA] 字段 `NO_DESCRIPTOR`：类成员状态。
+	/**
+	 * 方法 `Object`：完成本类中与「Object」相关的职责。
+	 */
 	private static final Object NO_DESCRIPTOR = new Object();
 
-	// [OCA] 字段 `mappedClass`：类成员状态。
+	/** 类相关状态（`mappedClass`）。 */
 	private final Class<T> mappedClass;
 
-	// [OCA] 字段 `conversionService`：类成员状态。
+	/** `conversionService`：该类的成员状态。 */
 	private final ConversionService conversionService;
 
-	// [OCA] 字段 `mappedConstructor`：类成员状态。
+	/** 构造器相关状态（`mappedConstructor`）。 */
 	private final Constructor<T> mappedConstructor;
 
+	/** 构造器相关状态（`constructorParameterNames`）。 */
 	private final @Nullable String[] constructorParameterNames;
 
-	// [OCA] 字段 `constructorParameterTypes`：类成员状态。
+	/** 构造器相关状态（`constructorParameterTypes`）。 */
 	private final TypeDescriptor[] constructorParameterTypes;
 
-	// [OCA] 字段 `propertyDescriptors`：类成员状态。
 	private final Map<String, Object> propertyDescriptors = new ConcurrentHashMap<>();
 
 
 	/**
-	 * Create a new {@code SimplePropertyRowMapper}.
-	 * @param mappedClass the class that each row should be mapped to
+	 * 创建一个新的 {@code SimplePropertyRowMapper}。
+	 * @param mappedClass 每行应映射到的类
 	 */
 	public SimplePropertyRowMapper(Class<T> mappedClass) {
 		this(mappedClass, DefaultConversionService.getSharedInstance());
 	}
 
 	/**
-	 * Create a new {@code SimplePropertyRowMapper}.
-	 * @param mappedClass the class that each row should be mapped to
-	 * @param conversionService a {@link ConversionService} for binding
-	 * JDBC values to bean properties
+	 * 创建一个新的 {@code SimplePropertyRowMapper}。
+	 * @param mappedClass 每行应映射到的类
+	 * @param conversionService 用于将 JDBC 值绑定到 bean 属性的 {@link ConversionService}
 	 */
 	public SimplePropertyRowMapper(Class<T> mappedClass, ConversionService conversionService) {
 		Assert.notNull(mappedClass, "Mapped Class must not be null");
@@ -135,12 +113,10 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 	}
 
 
+	/**
+	 * 映射：Row（方法 `mapRow`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 mapRow — 意图与阅读要点
-
-方法 `mapRow` 复杂度较高（CCN≈8, NLOC≈42）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public T mapRow(ResultSet rs, int rowNumber) throws SQLException {
 		@Nullable Object[] args = new Object[this.constructorParameterNames.length];
 		Set<Integer> usedIndex = new HashSet<>();
@@ -148,11 +124,11 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 			String name = this.constructorParameterNames[i];
 			int index;
 			try {
-				// Try direct name match first
+				// 首先尝试直接名称匹配
 				index = rs.findColumn(name);
 			}
 			catch (SQLException ex) {
-				// Try underscored name match instead
+				// 尝试使用下划线名称匹配
 				index = rs.findColumn(JdbcUtils.convertPropertyNameToUnderscoreName(name));
 			}
 			TypeDescriptor td = this.constructorParameterTypes[i];
@@ -188,17 +164,13 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 		return mappedObject;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 getDescriptor — 意图与阅读要点
-
-方法 `getDescriptor` 复杂度较高（CCN≈11, NLOC≈34）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 获取 Descriptor（`Descriptor`）。
+	 */
 	private Object getDescriptor(String column) {
 		return this.propertyDescriptors.computeIfAbsent(column, name -> {
 
-			// Try direct match first
+			// 首先尝试直接匹配
 			PropertyDescriptor pd = BeanUtils.getPropertyDescriptor(this.mappedClass, name);
 			if (pd != null && pd.getWriteMethod() != null) {
 				return BeanUtils.getWriteMethodParameter(pd);
@@ -208,7 +180,7 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 				return field;
 			}
 
-			// Try de-underscored match instead
+			// 尝试改为取消下划线匹配
 			String adaptedName = JdbcUtils.convertUnderscoreNameToPropertyName(name);
 			if (!adaptedName.equals(name)) {
 				pd = BeanUtils.getPropertyDescriptor(this.mappedClass, adaptedName);
@@ -221,7 +193,7 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 				}
 			}
 
-			// Fallback: case-insensitive match
+			// Fallback：不区分大小写的匹配
 			PropertyDescriptor[] pds = BeanUtils.getPropertyDescriptors(this.mappedClass);
 			for (PropertyDescriptor candidate : pds) {
 				if (name.equalsIgnoreCase(candidate.getName())) {

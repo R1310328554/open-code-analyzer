@@ -22,9 +22,7 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * SQL Server specific implementation for the {@link CallMetaDataProvider} interface.
- * This class is intended for internal use by the Simple JDBC classes.
- *
+ * {@link CallMetaDataProvider} 接口的 SQL Server 特定实现。此类供 Simple JDBC 类内部使用。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.5
@@ -36,11 +34,17 @@ public class SqlServerCallMetaDataProvider extends GenericCallMetaDataProvider {
 	private static final String RETURN_VALUE_NAME = "@RETURN_VALUE";
 
 
+	/**
+	 * 创建 `SqlServerCallMetaDataProvider` 的新实例。
+	 */
 	public SqlServerCallMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		super(databaseMetaData);
 	}
 
 
+	/**
+	 * 方法 `parameterNameToUse`：完成本类中与「parameter Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String parameterNameToUse(@Nullable String parameterName) {
 		if (parameterName == null) {
@@ -54,11 +58,17 @@ public class SqlServerCallMetaDataProvider extends GenericCallMetaDataProvider {
 		}
 	}
 
+	/**
+	 * 方法 `namedParameterBindingToUse`：完成本类中与「named Parameter Binding To Use」相关的职责。
+	 */
 	@Override
 	public String namedParameterBindingToUse(@Nullable String parameterName) {
 		return parameterName + " = ?";
 	}
 
+	/**
+	 * 方法 `byPassReturnParameter`：完成本类中与「by Pass Return Parameter」相关的职责。
+	 */
 	@Override
 	public boolean byPassReturnParameter(String parameterName) {
 		return RETURN_VALUE_NAME.equals(parameterName);

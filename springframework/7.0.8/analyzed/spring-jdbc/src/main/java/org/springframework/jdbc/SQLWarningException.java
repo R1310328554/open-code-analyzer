@@ -23,13 +23,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.UncategorizedDataAccessException;
 
 /**
- * Exception thrown when we're not ignoring {@link java.sql.SQLWarning SQLWarnings}.
- *
- * <p>If an SQLWarning is reported, the operation completed, so we will need
- * to explicitly roll it back if we're not happy when looking at the warning.
- * We might choose to ignore (and log) the warning, or to wrap and throw it
- * in the shape of this SQLWarningException instead.
- *
+ * 当我们不忽略 {@link java.sql.SQLWarning SQLWarnings} 时抛出异常。
+ * <p>如果报告 SQLWarning，则操作已完成，因此如果我们在查看警告时不满意，则需要显式回滚它。我们可能会选择忽略（并记录）警告，或者将其包装并以 SQLWarningE
+ * xception 的形式抛出。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see org.springframework.jdbc.core.JdbcTemplate#setIgnoreWarnings
@@ -38,9 +34,9 @@ import org.springframework.dao.UncategorizedDataAccessException;
 public class SQLWarningException extends UncategorizedDataAccessException {
 
 	/**
-	 * Constructor for SQLWarningException.
-	 * @param msg the detail message
-	 * @param ex the JDBC warning
+	 * SQLWarningException 的构造函数。
+	 * @param msg 详细消息
+	 * @param ex JDBC 警告
 	 */
 	public SQLWarningException(String msg, SQLWarning ex) {
 		super(msg, ex);
@@ -48,7 +44,7 @@ public class SQLWarningException extends UncategorizedDataAccessException {
 
 
 	/**
-	 * Return the underlying {@link SQLWarning}.
+	 * 返回底层 {@link SQLWarning}。
 	 * @since 5.3.29
 	 */
 	public @Nullable SQLWarning getSQLWarning() {
@@ -56,8 +52,8 @@ public class SQLWarningException extends UncategorizedDataAccessException {
 	}
 
 	/**
-	 * Return the underlying {@link SQLWarning}.
-	 * @deprecated as of 5.3.29, in favor of {@link #getSQLWarning()}
+	 * 返回底层 {@link SQLWarning}。
+	 * @deprecated 5.3.29，支持 {@link #getSQLWarning()}
 	 */
 	@Deprecated(since = "5.3.29")
 	public @Nullable SQLWarning SQLWarning() {

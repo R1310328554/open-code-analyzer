@@ -32,23 +32,13 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Implementation of {@link SmartDataSource} that wraps a single JDBC Connection
- * which is not closed after use. Obviously, this is not multi-threading capable.
- *
- * <p>Note that at shutdown, someone should close the underlying Connection
- * via the {@code close()} method. Client code will never call close
- * on the Connection handle if it is SmartDataSource-aware (for example, uses
- * {@code DataSourceUtils.releaseConnection}).
- *
- * <p>If client code will call {@code close()} in the assumption of a pooled
- * Connection, like when using persistence tools, set "suppressClose" to "true".
- * This will return a close-suppressing proxy instead of the physical Connection.
- *
- * <p>This is primarily intended for testing. For example, it enables easy testing
- * outside an application server, for code that expects to work on a DataSource.
- * In contrast to {@link DriverManagerDataSource}, it reuses the same Connection
- * all the time, avoiding excessive creation of physical Connections.
- *
+ * {@link SmartDataSource} 的实现，包装单个 JDBC 连接，使用后不会关闭。显然，这不具备多线程能力。
+ * <p>注意，在关闭时，应该有人通过 {@code close()} 方法关闭底层连接。如果客户端代码支持 SmartDataSource（例如，使用 {@code
+ * DataSourceUtils.releaseConnection}），则它永远不会对连接句柄调用 close。
+ * <p> 如果客户端代码将在假设池化连接的情况下调用 {@code close()}，就像使用持久性工具时一样，请将“suppressClose”设置为“true”。这将返回一个
+ * 关闭抑制代理而不是物理连接。
+ * <p>这主要用于测试。例如，它可以在应用程序服务器外部轻松测试希望在数据源上运行的代码。与 {@link DriverManagerDataSource} 相比，它始终重用相同
+ * 的连接，避免过多创建物理连接。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see #getConnection()
@@ -58,39 +48,43 @@ import org.springframework.util.ObjectUtils;
 public class SingleConnectionDataSource extends DriverManagerDataSource
 		implements SmartDataSource, AutoCloseable, DisposableBean {
 
-	/** Create a close-suppressing proxy? */
+	/**
+	 */
 	private boolean suppressClose;
 
-	/** Explicit rollback before close? */
+	/**
+	 */
 	private boolean rollbackBeforeClose;
 
-	/** Override auto-commit state? */
+	/**
+	 */
 	private @Nullable Boolean autoCommit;
 
-	/** Wrapped Connection. */
+	/**
+	 */
 	private @Nullable Connection target;
 
-	/** Proxy Connection. */
+	/**
+	 */
 	private @Nullable Connection connection;
 
-	/** Lifecycle lock for the shared Connection. */
+	/**
+	 */
 	private final Lock connectionLock = new ReentrantLock();
 
 
 	/**
-	 * Constructor for bean-style configuration.
+	 * bean 样式配置的构造函数。
 	 */
 	public SingleConnectionDataSource() {
 	}
 
 	/**
-	 * Create a new SingleConnectionDataSource with the given standard
-	 * DriverManager parameters.
-	 * @param url the JDBC URL to use for accessing the DriverManager
-	 * @param username the JDBC username to use for accessing the DriverManager
-	 * @param password the JDBC password to use for accessing the DriverManager
-	 * @param suppressClose if the returned Connection should be a
-	 * close-suppressing proxy or the physical Connection
+	 * 使用给定的标准 DriverManager 参数创建一个新的 SingleConnectionDataSource。
+	 * @param url 用于访问 DriverManager 的 JDBC URL
+	 * @param username 用于访问 DriverManager 的 JDBC 用户名
+	 * @param password 用于访问 DriverManager 的 JDBC 密码
+	 * @param suppressClose 返回的连接是否应该是关闭抑制代理或物理连接
 	 * @see java.sql.DriverManager#getConnection(String, String, String)
 	 */
 	public SingleConnectionDataSource(String url, String username, String password, boolean suppressClose) {
@@ -99,11 +93,9 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Create a new SingleConnectionDataSource with the given standard
-	 * DriverManager parameters.
-	 * @param url the JDBC URL to use for accessing the DriverManager
-	 * @param suppressClose if the returned Connection should be a
-	 * close-suppressing proxy or the physical Connection
+	 * 使用给定的标准 DriverManager 参数创建一个新的 SingleConnectionDataSource。
+	 * @param url 用于访问 DriverManager 的 JDBC URL
+	 * @param suppressClose 返回的连接是否应该是关闭抑制代理或物理连接
 	 * @see java.sql.DriverManager#getConnection(String, String, String)
 	 */
 	public SingleConnectionDataSource(String url, boolean suppressClose) {
@@ -112,12 +104,9 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Create a new SingleConnectionDataSource with a given Connection.
-	 * @param target underlying target Connection
-	 * @param suppressClose if the Connection should be wrapped with a Connection that
-	 * suppresses {@code close()} calls (to allow for normal {@code close()}
-	 * usage in applications that expect a pooled Connection but do not know our
-	 * SmartDataSource interface)
+	 * 使用给定的连接创建一个新的 SingleConnectionDataSource。
+	 * @param target 底层目标连接
+	 * @param suppressClose 是否应使用抑制 {@code close()} 调用的连接来包装连接（以允许在需要池连接但不知道我们的 SmartDataSource 接口的应用程序中正常使用 {@code close()}）
 	 */
 	public SingleConnectionDataSource(Connection target, boolean suppressClose) {
 		Assert.notNull(target, "Connection must not be null");
@@ -128,25 +117,21 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 
 
 	/**
-	 * Specify whether the returned Connection should be a close-suppressing proxy
-	 * or the physical Connection.
+	 * 指定返回的连接应该是关闭抑制代理还是物理连接。
 	 */
 	public void setSuppressClose(boolean suppressClose) {
 		this.suppressClose = suppressClose;
 	}
 
 	/**
-	 * Return whether the returned Connection will be a close-suppressing proxy
-	 * or the physical Connection.
+	 * 返回返回的 Connection 是关闭抑制代理还是物理 Connection。
 	 */
 	protected boolean isSuppressClose() {
 		return this.suppressClose;
 	}
 
 	/**
-	 * Specify whether the shared Connection should be explicitly rolled back
-	 * before close (if not in auto-commit mode).
-	 * <p>This is recommended for the Oracle JDBC driver in testing scenarios.
+	 * 指定共享连接是否应在关闭前显式回滚（如果不在自动提交模式下）。 <p> 建议在测试场景中用于 Oracle JDBC 驱动程序。
 	 * @since 6.1.2
 	 */
 	public void setRollbackBeforeClose(boolean rollbackBeforeClose) {
@@ -154,8 +139,7 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Return whether the shared Connection should be explicitly rolled back
-	 * before close (if not in auto-commit mode).
+	 * 返回共享连接是否应在关闭之前显式回滚（如果不在自动提交模式下）。
 	 * @since 6.1.2
 	 */
 	protected boolean isRollbackBeforeClose() {
@@ -163,28 +147,31 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Specify whether the returned Connection's "autoCommit" setting should be overridden.
+	 * 指定是否应覆盖返回的连接的“autoCommit”设置。
 	 */
 	public void setAutoCommit(boolean autoCommit) {
 		this.autoCommit = autoCommit;
 	}
 
 	/**
-	 * Return whether the returned Connection's "autoCommit" setting should be overridden.
-	 * @return the "autoCommit" value, or {@code null} if none to be applied
+	 * 返回是否应覆盖返回的连接的“autoCommit”设置。
+	 * @return “autoCommit”值，或 {@code null}（如果没有应用）
 	 */
 	protected @Nullable Boolean getAutoCommitValue() {
 		return this.autoCommit;
 	}
 
 
+	/**
+	 * 获取 Connection（`Connection`）。
+	 */
 	@Override
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public Connection getConnection() throws SQLException {
 		this.connectionLock.lock();
 		try {
 			if (this.connection == null) {
-				// No underlying Connection -> lazy init via DriverManager.
+				// 没有底层连接 -> 通过 DriverManager 进行延迟初始化。
 				initConnection();
 			}
 			if (this.connection.isClosed()) {
@@ -200,9 +187,7 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Specifying a custom username and password doesn't make sense
-	 * with a single Connection. Returns the single Connection if given
-	 * the same username and password; throws an SQLException else.
+	 * 指定自定义用户名和密码对于单个连接没有意义。如果给定相同的用户名和密码，则返回单个连接；否则抛出 SQLException。
 	 */
 	@Override
 	public Connection getConnection(String username, String password) throws SQLException {
@@ -216,7 +201,7 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * This is a single Connection: Do not close it when returning to the "pool".
+	 * 这是单个连接：返回“池”时不要关闭它。
 	 */
 	@Override
 	public boolean shouldClose(Connection con) {
@@ -230,10 +215,8 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Close the underlying Connection.
-	 * The provider of this DataSource needs to care for proper shutdown.
-	 * <p>As this class implements {@link AutoCloseable}, it can be used
-	 * with a try-with-resource statement.
+	 * 关闭底层连接。此数据源的提供者需要注意正确关闭。 <p>A 由于此类实现了 {@link AutoCloseable}，因此它可以与 try-with-resource 语句一
+	 * 起使用。
 	 * @since 6.1.2
 	 */
 	@Override
@@ -242,10 +225,8 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Close the underlying Connection.
-	 * The provider of this DataSource needs to care for proper shutdown.
-	 * <p>As this bean implements {@link DisposableBean}, a bean factory
-	 * will automatically invoke this on destruction of the bean.
+	 * 关闭底层连接。此数据源的提供者需要注意正确关闭。 <p>A 由于该 bean 实现了 {@link DisposableBean}，因此 bean 工厂将在销毁该 bean 时
+	 * 自动调用它。
 	 */
 	@Override
 	public void destroy() {
@@ -262,7 +243,7 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 
 
 	/**
-	 * Initialize the underlying Connection via the DriverManager.
+	 * 通过DriverManager初始化底层Connection。
 	 */
 	public void initConnection() throws SQLException {
 		if (getUrl() == null) {
@@ -286,7 +267,7 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Reset the underlying shared Connection, to be reinitialized on next access.
+	 * 重置底层共享连接，以便在下次访问时重新初始化。
 	 */
 	public void resetConnection() {
 		this.connectionLock.lock();
@@ -303,10 +284,8 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Prepare the given Connection before it is exposed.
-	 * <p>The default implementation applies the auto-commit flag, if necessary.
-	 * Can be overridden in subclasses.
-	 * @param con the Connection to prepare
+	 * 在暴露之前准备好给定的连接。 <p> 如有必要，默认实现会应用自动提交标志。可以在子类中重写。
+	 * @param con 连接准备
 	 * @see #setAutoCommit
 	 */
 	protected void prepareConnection(Connection con) throws SQLException {
@@ -317,7 +296,7 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Close the underlying shared Connection.
+	 * 关闭底层共享连接。
 	 * @since 6.1.2
 	 */
 	protected void closeConnection(Connection con) {
@@ -340,10 +319,9 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 	}
 
 	/**
-	 * Wrap the given Connection with a proxy that delegates every method call to it
-	 * but suppresses close calls.
-	 * @param target the original Connection to wrap
-	 * @return the wrapped Connection
+	 * 使用代理包装给定的 Connection，该代理将每个方法调用委托给它，但抑制关闭调用。
+	 * @param target 要包装的原始连接
+	 * @return 包裹连接
 	 */
 	protected Connection getCloseSuppressingConnectionProxy(Connection target) {
 		return (Connection) Proxy.newProxyInstance(
@@ -354,7 +332,7 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 
 
 	/**
-	 * Invocation handler that suppresses close calls on JDBC Connections.
+	 * 抑制 JDBC 连接上的关闭调用的调用处理程序。
 	 */
 	private static class CloseSuppressingInvocationHandler implements InvocationHandler {
 
@@ -366,23 +344,23 @@ public class SingleConnectionDataSource extends DriverManagerDataSource
 
 		@Override
 		public @Nullable Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			// Invocation on ConnectionProxy interface coming in...
+			// 对 ConnectionProxy 接口的调用即将到来...
 
 			return switch (method.getName()) {
-				// Only consider equal when proxies are identical.
+				// 仅当代理相同时才考虑相等。
 				case "equals" -> (proxy == args[0]);
-				// Use hashCode of Connection proxy.
+				// 使用连接代理的 hashCode。
 				case "hashCode" -> System.identityHashCode(proxy);
-				// Handle close method: don't pass the call on.
+				// 处理 close 方法：不传递调用。
 				case "close" -> null;
 				case "isClosed" -> this.target.isClosed();
-				// Handle getTargetConnection method: return underlying Connection.
+				// Handle getTargetConnection方法：返回底层Connection。
 				case "getTargetConnection" -> this.target;
 				case "unwrap" -> (((Class<?>) args[0]).isInstance(proxy) ? proxy : this.target.unwrap((Class<?>) args[0]));
 				case "isWrapperFor" -> (((Class<?>) args[0]).isInstance(proxy) || this.target.isWrapperFor((Class<?>) args[0]));
 				default -> {
 					try {
-						// Invoke method on target Connection.
+						// 调用目标连接上的方法。
 						yield method.invoke(this.target, args);
 					}
 					catch (InvocationTargetException ex) {

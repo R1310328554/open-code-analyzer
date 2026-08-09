@@ -19,30 +19,19 @@ package org.springframework.jdbc.support.incrementer;
 import javax.sql.DataSource;
 
 /**
- * {@link DataFieldMaxValueIncrementer} that increments the maximum counter value of an
- * auto-increment column of a given MySQL table.
- *
- * <p>The sequence is kept in a table. The storage engine used by the sequence table must be
- * InnoDB in MySQL 8.0 or later since the current maximum auto-increment counter is required to be
- * persisted across restarts of the database server.
- *
- * <p>Example:
- *
- * <pre class="code">
- * create table tab_sequence (`id` bigint unsigned primary key auto_increment);</pre>
- *
- * <p>If {@code cacheSize} is set, the intermediate values are served without querying the
- * database. If the server or your application is stopped or crashes or a transaction
- * is rolled back, the unused values will never be served. The maximum hole size in
- * numbering is consequently the value of {@code cacheSize}.
- *
+ * {@link DataFieldMaxValueIncrementer} 增加给定 MySQL 表的自动增量列的最大计数器值。
+ * <p>序列保存在一个表中。 MySQL 8.0及以上版本中，序列表使用的存储引擎必须是InnoDB，因为数据库服务器重启后需要保留当前的最大自增计数器。
+ * <p>示例：
+ * <pre class="code"> 创建表 tab_sequence (`id` bigint 无符号主键 auto_increment);</pre>
+ * <p> 如果设置了 {@code cacheSize}，则无需查询数据库即可提供中间值。如果服务器或您的应用程序停止或崩溃或事务回滚，则永远不会提供未使用的值。因此，编号中的最
+ * 大孔尺寸是 {@code cacheSize} 的值。
  * @author Henning Pöttker
  * @since 6.1.2
  */
 public class MySQLIdentityColumnMaxValueIncrementer extends AbstractIdentityColumnMaxValueIncrementer {
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -51,20 +40,26 @@ public class MySQLIdentityColumnMaxValueIncrementer extends AbstractIdentityColu
 	}
 
 	/**
-	 * Convenience constructor.
-	 * @param dataSource the DataSource to use
-	 * @param incrementerName the name of the sequence table to use
-	 * @param columnName the name of the column in the sequence table to use
+	 * 方便构造函数。
+	 * @param dataSource 要使用的数据源
+	 * @param incrementerName 要使用的序列表的名称
+	 * @param columnName 序列表中要使用的列的名称
 	 */
 	public MySQLIdentityColumnMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName, columnName);
 	}
 
+	/**
+	 * 获取 Increment Statement（`IncrementStatement`）。
+	 */
 	@Override
 	protected String getIncrementStatement() {
 		return "insert into " + getIncrementerName() + " () values ()";
 	}
 
+	/**
+	 * 获取 Identity Statement（`IdentityStatement`）。
+	 */
 	@Override
 	protected String getIdentityStatement() {
 		return "select last_insert_id()";

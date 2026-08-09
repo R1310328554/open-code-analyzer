@@ -28,13 +28,9 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link org.springframework.beans.factory.xml.BeanDefinitionParser} that
- * parses an {@code embedded-database} element and creates a {@link BeanDefinition}
- * for an {@link EmbeddedDatabaseFactoryBean}.
- *
- * <p>Picks up nested {@code script} elements and configures a
- * {@link ResourceDatabasePopulator} for each of them.
- *
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionParser} 解析 {@code
+ * embedded-database} 元素并为 {@link EmbeddedDatabaseFactoryBean} 创建 {@link BeanDefinition}。
+ * <p>拾取嵌套的 {@code script} 元素并为每个元素配置一个 {@link ResourceDatabasePopulator}。
  * @author Oliver Gierke
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -44,16 +40,19 @@ import org.springframework.util.StringUtils;
 class EmbeddedDatabaseBeanDefinitionParser extends AbstractBeanDefinitionParser {
 
 	/**
-	 * Constant for the "database-name" attribute.
+	 * “数据库名称”属性的常量。
 	 */
 	static final String DB_NAME_ATTRIBUTE = "database-name";
 
 	/**
-	 * Constant for the "generate-name" attribute.
+	 * “generate-name”属性的常量。
 	 */
 	static final String GENERATE_NAME_ATTRIBUTE = "generate-name";
 
 
+	/**
+	 * 解析：Internal（方法 `parseInternal`）。
+	 */
 	@Override
 	protected AbstractBeanDefinition parseInternal(Element element, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(EmbeddedDatabaseFactoryBean.class);
@@ -65,11 +64,17 @@ class EmbeddedDatabaseBeanDefinitionParser extends AbstractBeanDefinitionParser 
 		return builder.getBeanDefinition();
 	}
 
+	/**
+	 * 方法 `shouldGenerateIdAsFallback`：完成本类中与「should Generate Id As Fallback」相关的职责。
+	 */
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
 		return true;
 	}
 
+	/**
+	 * 设置 Generate Unique Database Name Flag（`GenerateUniqueDatabaseNameFlag`）。
+	 */
 	private void setGenerateUniqueDatabaseNameFlag(Element element, BeanDefinitionBuilder builder) {
 		String generateName = element.getAttribute(GENERATE_NAME_ATTRIBUTE);
 		if (StringUtils.hasText(generateName)) {
@@ -77,11 +82,14 @@ class EmbeddedDatabaseBeanDefinitionParser extends AbstractBeanDefinitionParser 
 		}
 	}
 
+	/**
+	 * 设置 Database Name（`DatabaseName`）。
+	 */
 	private void setDatabaseName(Element element, BeanDefinitionBuilder builder) {
-		// 1) Check for an explicit database name
+		// 1) 检查显式数据库名称
 		String name = element.getAttribute(DB_NAME_ATTRIBUTE);
 
-		// 2) Fall back to an implicit database name based on the ID
+		// 2) 根据 ID 回退到隐式数据库名称
 		if (!StringUtils.hasText(name)) {
 			name = element.getAttribute(ID_ATTRIBUTE);
 		}
@@ -89,9 +97,12 @@ class EmbeddedDatabaseBeanDefinitionParser extends AbstractBeanDefinitionParser 
 		if (StringUtils.hasText(name)) {
 			builder.addPropertyValue("databaseName", name);
 		}
-		// else, let EmbeddedDatabaseFactory use the default "testdb" name
+		// 否则，让 EmbeddedDatabaseFactory 使用默认的“testdb”名称
 	}
 
+	/**
+	 * 设置 Database Type（`DatabaseType`）。
+	 */
 	private void setDatabaseType(Element element, BeanDefinitionBuilder builder) {
 		String type = element.getAttribute("type");
 		if (StringUtils.hasText(type)) {

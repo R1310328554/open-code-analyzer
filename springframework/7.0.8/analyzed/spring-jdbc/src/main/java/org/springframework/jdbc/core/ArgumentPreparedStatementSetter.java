@@ -22,26 +22,28 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Simple adapter for {@link PreparedStatementSetter} that applies a given array
- * of arguments.
- *
+ * {@link PreparedStatementSetter} 的简单适配器，应用给定的参数数组。
  * @author Juergen Hoeller
  * @since 3.2.3
  */
 public class ArgumentPreparedStatementSetter implements PreparedStatementSetter, ParameterDisposer {
 
+	/** `args`：该类的成员状态。 */
 	private final @Nullable Object @Nullable [] args;
 
 
 	/**
-	 * Create a new {@code ArgumentPreparedStatementSetter} for the given arguments.
-	 * @param args the arguments to set
+	 * 为给定参数创建一个新的 {@code ArgumentPreparedStatementSetter}。
+	 * @param args 要设置的参数
 	 */
 	public ArgumentPreparedStatementSetter(@Nullable Object @Nullable [] args) {
 		this.args = args;
 	}
 
 
+	/**
+	 * 设置 Values（`Values`）。
+	 */
 	@Override
 	public void setValues(PreparedStatement ps) throws SQLException {
 		if (this.args != null) {
@@ -53,13 +55,11 @@ public class ArgumentPreparedStatementSetter implements PreparedStatementSetter,
 	}
 
 	/**
-	 * Set the value for the prepared statement's specified parameter position
-	 * using the supplied value.
-	 * <p>This method can be overridden by subclasses if needed.
-	 * @param ps the PreparedStatement
-	 * @param parameterPosition index of the parameter position
-	 * @param argValue the value to set
-	 * @throws SQLException if thrown by PreparedStatement methods
+	 * 使用提供的值设置准备语句的指定参数位置的值。 <p> 如果需要，该方法可以被子类覆盖。
+	 * @param ps 准备好的声明
+	 * @param parameterPosition 参数位置索引
+	 * @param argValue 要设置的值
+	 * @throws SQLException 如果由PreparedStatement方法抛出
 	 */
 	protected void doSetValue(PreparedStatement ps, int parameterPosition, @Nullable Object argValue)
 			throws SQLException {
@@ -72,6 +72,9 @@ public class ArgumentPreparedStatementSetter implements PreparedStatementSetter,
 		}
 	}
 
+	/**
+	 * 方法 `cleanupParameters`：完成本类中与「cleanup Parameters」相关的职责。
+	 */
 	@Override
 	public void cleanupParameters() {
 		StatementCreatorUtils.cleanupParameters(this.args);

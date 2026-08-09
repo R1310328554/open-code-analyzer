@@ -21,8 +21,7 @@ import java.sql.DatabaseMetaData;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Holder of meta-data for a specific parameter that is used for call processing.
- *
+ * 用于呼叫处理的特定参数的元数据的持有者。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.5
@@ -30,21 +29,27 @@ import org.jspecify.annotations.Nullable;
  */
 public class CallParameterMetaData {
 
+	/** `function`：该类的成员状态。 */
 	private final boolean function;
 
+	/** 参数相关状态（`parameterName`）。 */
 	private final @Nullable String parameterName;
 
+	/** 参数相关状态（`parameterType`）。 */
 	private final int parameterType;
 
+	/** 类型相关状态（`sqlType`）。 */
 	private final int sqlType;
 
+	/** 类型相关状态（`typeName`）。 */
 	private final @Nullable String typeName;
 
+	/** `nullable`：该类的成员状态。 */
 	private final boolean nullable;
 
 
 	/**
-	 * Constructor taking all the properties including the function marker.
+	 * 构造函数采用所有属性，包括函数标记。
 	 * @since 5.2.9
 	 */
 	public CallParameterMetaData(boolean function, @Nullable String columnName, int columnType,
@@ -60,7 +65,7 @@ public class CallParameterMetaData {
 
 
 	/**
-	 * Return whether this parameter is declared in a function.
+	 * 返回此参数是否在函数中声明。
 	 * @since 5.2.9
 	 */
 	public boolean isFunction() {
@@ -68,24 +73,22 @@ public class CallParameterMetaData {
 	}
 
 	/**
-	 * Return the parameter name.
+	 * 返回参数名称。
 	 */
 	public @Nullable String getParameterName() {
 		return this.parameterName;
 	}
 
 	/**
-	 * Return the parameter type.
+	 * 返回参数类型。
 	 */
 	public int getParameterType() {
 		return this.parameterType;
 	}
 
 	/**
-	 * Determine whether the declared parameter qualifies as a 'return' parameter
-	 * for our purposes: type {@link DatabaseMetaData#procedureColumnReturn} or
-	 * {@link DatabaseMetaData#procedureColumnResult}, or in case of a function,
-	 * {@link DatabaseMetaData#functionReturn}.
+	 * 确定声明的参数是否符合我们的目的的“返回”参数：类型 {@link DatabaseMetaData#procedureColumnReturn} 或 {@link Datab
+	 * aseMetaData#procedureColumnResult}，或者如果是函数，则为 {@link DatabaseMetaData#functionReturn}。
 	 * @since 4.3.15
 	 */
 	public boolean isReturnParameter() {
@@ -95,9 +98,8 @@ public class CallParameterMetaData {
 	}
 
 	/**
-	 * Determine whether the declared parameter qualifies as an 'out' parameter
-	 * for our purposes: type {@link DatabaseMetaData#procedureColumnOut},
-	 * or in case of a function, {@link DatabaseMetaData#functionColumnOut}.
+	 * 确定声明的参数是否符合我们的目的的“输出”参数：类型 {@link DatabaseMetaData#procedureColumnOut}，或者如果是函数，则为 {@link
+	 *  DatabaseMetaData#functionColumnOut}。
 	 * @since 5.3.31
 	 */
 	public boolean isOutParameter() {
@@ -106,9 +108,8 @@ public class CallParameterMetaData {
 	}
 
 	/**
-	 * Determine whether the declared parameter qualifies as an 'in-out' parameter
-	 * for our purposes: type {@link DatabaseMetaData#procedureColumnInOut},
-	 * or in case of a function, {@link DatabaseMetaData#functionColumnInOut}.
+	 * 确定声明的参数是否符合我们的目的的“输入输出”参数：类型 {@link DatabaseMetaData#procedureColumnInOut}，或者如果是函数，则为 {@
+	 * link DatabaseMetaData#functionColumnInOut}。
 	 * @since 5.3.31
 	 */
 	public boolean isInOutParameter() {
@@ -117,21 +118,21 @@ public class CallParameterMetaData {
 	}
 
 	/**
-	 * Return the parameter SQL type.
+	 * 返回参数 SQL 类型。
 	 */
 	public int getSqlType() {
 		return this.sqlType;
 	}
 
 	/**
-	 * Return the parameter type name.
+	 * 返回参数类型名称。
 	 */
 	public @Nullable String getTypeName() {
 		return this.typeName;
 	}
 
 	/**
-	 * Return whether the parameter is nullable.
+	 * 返回参数是否可为空。
 	 */
 	public boolean isNullable() {
 		return this.nullable;

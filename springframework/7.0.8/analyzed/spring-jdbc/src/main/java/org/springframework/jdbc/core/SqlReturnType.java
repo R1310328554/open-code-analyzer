@@ -22,15 +22,9 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interface to be implemented for retrieving values for more complex database-specific
- * types not supported by the standard {@code CallableStatement.getObject} method.
- *
- * <p>Implementations perform the actual work of getting the actual values. They must
- * implement the callback method {@code getTypeValue} which can throw SQLExceptions
- * that will be caught and translated by the calling code. This callback method has
- * access to the underlying Connection via the given CallableStatement object, if that
- * should be needed to create any database-specific objects.
- *
+ * 要实现的接口用于检索标准 {@code CallableStatement.getObject} 方法不支持的更复杂的数据库特定类型的值。
+ * <p>I实现执行获取实际值的实际工作。它们必须实现回调方法 {@code getTypeValue}，该方法可以抛出 SQLException，这些异常将由调用代码捕获和转换。
+ * 如果需要创建任何特定于数据库的对象，则此回调方法可以通过给定的 CallableStatement 对象访问底层 Connection。
  * @author Thomas Risberg
  * @since 1.1
  * @see java.sql.Types
@@ -40,9 +34,7 @@ import org.jspecify.annotations.Nullable;
 public interface SqlReturnType {
 
 	/**
-	 * Constant that indicates an unknown (or unspecified) SQL type.
-	 * Passed into setTypeValue if the original operation method does
-	 * not specify an SQL type.
+	 * 指示未知（或未指定）SQL 类型的常量。如果原始操作方法没有指定SQL类型，则传入setTypeValue。
 	 * @see java.sql.Types
 	 * @see JdbcOperations#update(String, Object[])
 	 */
@@ -50,14 +42,13 @@ public interface SqlReturnType {
 
 
 	/**
-	 * Get the type value from the specific object.
-	 * @param cs the CallableStatement to operate on
-	 * @param paramIndex the index of the parameter for which we need to set the value
-	 * @param sqlType the SQL type of the parameter we are setting
-	 * @param typeName the type name of the parameter (optional)
-	 * @return the target value
-	 * @throws SQLException if an SQLException is encountered setting parameter values
-	 * (that is, there's no need to catch SQLException)
+	 * 从特定对象获取类型值。
+	 * @param cs 要操作的 CallableStatement
+	 * @param paramIndex 我们需要为其设置值的参数的索引
+	 * @param sqlType 我们正在设置的参数的 SQL 类型
+	 * @param typeName 参数的类型名称（可选）
+	 * @return 目标值
+	 * @throws SQLException 如果设置参数值时遇到 SQLException（即无需捕获 SQLException）
 	 * @see java.sql.Types
 	 * @see java.sql.CallableStatement#getObject
 	 */

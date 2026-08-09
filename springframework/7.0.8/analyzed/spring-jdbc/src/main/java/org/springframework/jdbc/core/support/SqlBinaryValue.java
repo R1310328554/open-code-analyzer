@@ -30,23 +30,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.SqlTypeValue;
 
 /**
- * Object to represent a binary parameter value for an SQL statement, for example,
- * a binary stream for a BLOB or a LONGVARBINARY or PostgreSQL BYTEA column.
- *
- * <p>Designed for use with {@link org.springframework.jdbc.core.JdbcTemplate}
- * as well as {@link org.springframework.jdbc.core.simple.JdbcClient}, to be
- * passed in as a parameter value wrapping the target content value.
- *
- * <p>Can be combined with {@link org.springframework.jdbc.core.SqlParameterValue}
- * for specifying an SQL type, for example,
- * {@code new SqlParameterValue(Types.BLOB, new SqlBinaryValue(myContent))}.
- * With most database drivers, the type hint is not actually necessary.
- *
- * <p>Note: Only specify {@code Types.BLOB} in case of an actual BLOB, preferring
- * {@code Types.LONGVARBINARY} otherwise. With PostgreSQL, {@code Types.ARRAY}
- * has to be specified for BYTEA columns, rather than {@code Types.BLOB}. This
- * is in contrast to {@link SqlLobValue} where byte array handling was lenient.
- *
+ * 表示 SQL 语句的二进制参数值的对象，例如 BLOB 或 LONGVARBINARY 或 PostgreSQL BYTEA 列的二进制流。
+ * <p> 设计用于与 {@link org.springframework.jdbc.core.JdbcTemplate} 以及 {@link
+ * org.springframework.jdbc.core.simple.JdbcClient} 一起使用，作为包装目标内容值的参数值传入。
+ * <p>可以与{@link org.springframework.jdbc.core.SqlParameterValue}组合用于指定SQL类型，例如{@code new
+ * SqlParameterValue(Types.BLOB, new
+ * SqlBinaryValue(myContent))}。对于大多数数据库驱动程序，类型提示实际上并不是必需的。
+ * <p>注意：仅在实际 BLOB 的情况下指定 {@code Types.BLOB}，否则首选 {@code Types.LONGVARBINARY}。对于
+ * PostgreSQL，必须为 BYTEA 列指定 {@code Types.ARRAY}，而不是 {@code Types.BLOB}。这与 {@link
+ * SqlLobValue} 形成鲜明对比，其中字节数组处理较为宽松。
  * @author Juergen Hoeller
  * @since 6.1.4
  * @see SqlCharacterValue
@@ -54,14 +46,16 @@ import org.springframework.jdbc.core.SqlTypeValue;
  */
 public class SqlBinaryValue implements SqlTypeValue {
 
+	/** `content`：该类的成员状态。 */
 	private final Object content;
 
+	/** `length`：该类的成员状态。 */
 	private final long length;
 
 
 	/**
-	 * Create a new {@code SqlBinaryValue} for the given content.
-	 * @param bytes the content as a byte array
+	 * 为给定内容创建一个新的 {@code SqlBinaryValue}。
+	 * @param bytes 内容作为字节数组
 	 */
 	public SqlBinaryValue(byte[] bytes) {
 		this.content = bytes;
@@ -69,9 +63,9 @@ public class SqlBinaryValue implements SqlTypeValue {
 	}
 
 	/**
-	 * Create a new {@code SqlBinaryValue} for the given content.
-	 * @param stream the content stream
-	 * @param length the length of the content (or -1 if undetermined)
+	 * 为给定内容创建一个新的 {@code SqlBinaryValue}。
+	 * @param stream 内容流
+	 * @param length 内容的长度（如果未确定则为-1）
 	 */
 	public SqlBinaryValue(InputStream stream, long length) {
 		this.content = stream;
@@ -79,11 +73,10 @@ public class SqlBinaryValue implements SqlTypeValue {
 	}
 
 	/**
-	 * Create a new {@code SqlBinaryValue} for the given content.
-	 * <p>Consider specifying a {@link Resource} with content length support
-	 * when available: {@link SqlBinaryValue#SqlBinaryValue(Resource)}.
-	 * @param resource the resource to obtain a content stream from
-	 * @param length the length of the content (or -1 if undetermined)
+	 * 为给定内容创建一个新的 {@code SqlBinaryValue}。 <p>考虑指定具有内容长度支持的 {@link Resource}（如果可用）：{@link
+	 * SqlBinaryValue#SqlBinaryValue(Resource)}。
+	 * @param resource 从中获取内容流的资源
+	 * @param length 内容的长度（如果未确定则为-1）
 	 */
 	public SqlBinaryValue(InputStreamSource resource, long length) {
 		this.content = resource;
@@ -91,9 +84,8 @@ public class SqlBinaryValue implements SqlTypeValue {
 	}
 
 	/**
-	 * Create a new {@code SqlBinaryValue} for the given content.
-	 * <p>The length will get derived from {@link Resource#contentLength()}.
-	 * @param resource the resource to obtain a content stream from
+	 * 为给定内容创建一个新的 {@code SqlBinaryValue}。 <p> 的长度将从 {@link Resource#contentLength()} 中获得。
+	 * @param resource 从中获取内容流的资源
 	 */
 	public SqlBinaryValue(Resource resource) {
 		this.content = resource;
@@ -101,6 +93,9 @@ public class SqlBinaryValue implements SqlTypeValue {
 	}
 
 
+	/**
+	 * 设置 Type Value（`TypeValue`）。
+	 */
 	@Override
 	public void setTypeValue(PreparedStatement ps, int paramIndex, int sqlType, @Nullable String typeName)
 			throws SQLException {
@@ -132,6 +127,9 @@ public class SqlBinaryValue implements SqlTypeValue {
 		}
 	}
 
+	/**
+	 * 设置 Byte Array（`ByteArray`）。
+	 */
 	private void setByteArray(PreparedStatement ps, int paramIndex, int sqlType, byte[] bytes)
 			throws SQLException {
 
@@ -143,6 +141,9 @@ public class SqlBinaryValue implements SqlTypeValue {
 		}
 	}
 
+	/**
+	 * 设置 Input Stream（`InputStream`）。
+	 */
 	private void setInputStream(PreparedStatement ps, int paramIndex, int sqlType, InputStream is, long length)
 			throws SQLException {
 

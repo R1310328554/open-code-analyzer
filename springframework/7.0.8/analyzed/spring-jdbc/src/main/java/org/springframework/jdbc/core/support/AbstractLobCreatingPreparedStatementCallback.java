@@ -26,43 +26,32 @@ import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.util.Assert;
 
 /**
- * Abstract {@link PreparedStatementCallback} implementation that manages a {@link LobCreator}.
- * Typically used as inner class, with access to surrounding method arguments.
- *
- * <p>Delegates to the {@code setValues} template method for setting values
- * on the PreparedStatement, using a given LobCreator for BLOB/CLOB arguments.
- *
- * <p>A usage example with {@link org.springframework.jdbc.core.JdbcTemplate}:
- *
- * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);  // reusable object
- * LobHandler lobHandler = new DefaultLobHandler();  // reusable object
- *
- * jdbcTemplate.execute(
- *     "INSERT INTO imagedb (image_name, content, description) VALUES (?, ?, ?)",
- *     new AbstractLobCreatingPreparedStatementCallback(lobHandler) {
- *       protected void setValues(PreparedStatement ps, LobCreator lobCreator) throws SQLException {
- *         ps.setString(1, name);
- *         lobCreator.setBlobAsBinaryStream(ps, 2, contentStream, contentLength);
- *         lobCreator.setClobAsString(ps, 3, description);
- *       }
- *     });
- * </pre>
- *
+ * 管理 {@link LobCreator} 的抽象 {@link PreparedStatementCallback} 实现。通常用作内部类，可以访问周围的方法参数。
+ * <p>D 委托给 {@code setValues} 模板方法，用于设置PreparedStatement 上的值，使用给定的 LobCreator 作为 BLOB/CLOB
+ * 参数。
+ * <p>A 与 {@link org.springframework.jdbc.core.JdbcTemplate} 的使用示例：
+ * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource); // 可重用对象
+ * LobHandler lobHandler = new DefaultLobHandler(); // 可重用对象
+ * jdbcTemplate.execute( "INSERT INTO imagedb (image_name, content, description) VALUES (?,
+ *  ?, ?)", new AbstractLobCreatingPreparedStatementCallback(lobHandler) { protected void s
+ * etValues(PreparedStatement ps, LobCreator lobCreator) throws SQLException { ps.setString
+ * (1, name); } lobCreator.setBlobAsBinaryStream(ps, 2, contentStream, contentLength); lobC
+ * reator.setClobAsString(ps, 3, 描述); OCAJAVA0文档
  * @author Juergen Hoeller
  * @since 1.0.2
  * @see org.springframework.jdbc.support.lob.LobCreator
- * @deprecated as of 6.2, in favor of {@link SqlBinaryValue} and {@link SqlCharacterValue}
+ * @deprecated 6.2，支持 {@link SqlBinaryValue} 和 {@link SqlCharacterValue}
  */
 @Deprecated(since = "6.2")
 public abstract class AbstractLobCreatingPreparedStatementCallback implements PreparedStatementCallback<Integer> {
 
+	/** 处理器相关状态（`lobHandler`）。 */
 	private final LobHandler lobHandler;
 
 
 	/**
-	 * Create a new AbstractLobCreatingPreparedStatementCallback for the
-	 * given LobHandler.
-	 * @param lobHandler the LobHandler to create LobCreators with
+	 * 为给定的 LobHandler 创建一个新的 AbstractLobCreatingPreparedStatementCallback。
+	 * @param lobHandler 用于创建 LobCreators 的 LobHandler
 	 */
 	public AbstractLobCreatingPreparedStatementCallback(LobHandler lobHandler) {
 		Assert.notNull(lobHandler, "LobHandler must not be null");
@@ -70,6 +59,9 @@ public abstract class AbstractLobCreatingPreparedStatementCallback implements Pr
 	}
 
 
+	/**
+	 * 执行核心逻辑：In Prepared Statement（方法 `doInPreparedStatement`）。
+	 */
 	@Override
 	public final Integer doInPreparedStatement(PreparedStatement ps) throws SQLException, DataAccessException {
 		try (LobCreator lobCreator = this.lobHandler.getLobCreator()) {
@@ -79,12 +71,11 @@ public abstract class AbstractLobCreatingPreparedStatementCallback implements Pr
 	}
 
 	/**
-	 * Set values on the given PreparedStatement, using the given
-	 * LobCreator for BLOB/CLOB arguments.
-	 * @param ps the PreparedStatement to use
-	 * @param lobCreator the LobCreator to use
-	 * @throws SQLException if thrown by JDBC methods
-	 * @throws DataAccessException in case of custom exceptions
+	 * 使用给定的 BLOB/CLOB 参数的 LobCreator 在给定的PreparedStatement 上设置值。
+	 * @param ps 要使用的PreparedStatement
+	 * @param lobCreator 要使用的 LobCreator
+	 * @throws SQLException 如果由 JDBC 方法抛出
+	 * @throws DataAccessException 如果出现自定义异常
 	 */
 	protected abstract void setValues(PreparedStatement ps, LobCreator lobCreator)
 			throws SQLException, DataAccessException;

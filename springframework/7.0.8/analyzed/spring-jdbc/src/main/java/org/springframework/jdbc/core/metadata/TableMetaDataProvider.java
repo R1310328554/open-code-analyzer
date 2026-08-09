@@ -23,10 +23,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interface specifying the API to be implemented by a class providing table meta-data.
- *
- * <p>This is intended for internal use by the Simple JDBC classes.
- *
+ * 接口指定由提供表元数据的类实现的 API。
+ * <p>这是供简单 JDBC 类内部使用的。
  * @author Thomas Risberg
  * @author Sam Brannen
  * @since 2.5
@@ -34,110 +32,93 @@ import org.jspecify.annotations.Nullable;
 public interface TableMetaDataProvider {
 
 	/**
-	 * Initialize using the database meta-data provided.
-	 * @param databaseMetaData used to retrieve database specific information
-	 * @throws SQLException in case of initialization failure
+	 * 使用提供的数据库元数据进行初始化。
+	 * @param databaseMetaData 用于检索数据库特定信息
+	 * @throws SQLException 如果初始化失败
 	 */
 	void initializeWithMetaData(DatabaseMetaData databaseMetaData) throws SQLException;
 
 	/**
-	 * Initialize using provided database meta-data, table and column information.
-	 * <p>This initialization can be turned off by specifying that column meta-data
-	 * should not be used.
-	 * @param databaseMetaData used to retrieve database specific information
-	 * @param catalogName name of catalog to use (or {@code null} if none)
-	 * @param schemaName name of schema name to use (or {@code null} if none)
-	 * @param tableName name of the table
-	 * @throws SQLException in case of initialization failure
+	 * 使用提供的数据库元数据、表和列信息进行初始化。 <p> 可以通过指定不应使用列元数据来关闭此初始化。
+	 * @param databaseMetaData 用于检索数据库特定信息
+	 * @param catalogName 要使用的目录名称（如果没有，则为 {@code null}）
+	 * @param schemaName 要使用的模式名称的名称（如果没有，则为 {@code null}）
+	 * @param tableName 表名
+	 * @throws SQLException 如果初始化失败
 	 */
 	void initializeWithTableColumnMetaData(DatabaseMetaData databaseMetaData, @Nullable String catalogName,
 			@Nullable String schemaName, @Nullable String tableName) throws SQLException;
 
 	/**
-	 * Get the table parameter meta-data that is currently used.
-	 * @return a List of {@link TableParameterMetaData}
+	 * 获取当前使用的表参数元数据。
+	 * @return {@link TableParameterMetaData} 列表
 	 */
 	List<TableParameterMetaData> getTableParameterMetaData();
 
 	/**
-	 * Get the table name formatted based on meta-data information.
-	 * <p>This could include altering the case.
+	 * 获取基于元数据信息格式化的表名。 <p>这可能包括更改大小写。
 	 */
 	@Nullable String tableNameToUse(@Nullable String tableName);
 
 	/**
-	 * Get the column name formatted based on meta-data information.
-	 * <p>This could include altering the case.
+	 * 获取基于元数据信息格式化的列名称。 <p>这可能包括更改大小写。
 	 * @since 6.1
 	 */
 	@Nullable String columnNameToUse(@Nullable String columnName);
 
 	/**
-	 * Get the catalog name formatted based on meta-data information.
-	 * <p>This could include altering the case.
+	 * 获取基于元数据信息格式化的目录名称。 <p>这可能包括更改大小写。
 	 */
 	@Nullable String catalogNameToUse(@Nullable String catalogName);
 
 	/**
-	 * Get the schema name formatted based on meta-data information.
-	 * <p>This could include altering the case.
+	 * 获取基于元数据信息格式化的模式名称。 <p>这可能包括更改大小写。
 	 */
 	@Nullable String schemaNameToUse(@Nullable String schemaName);
 
 	/**
-	 * Provide any modification of the catalog name passed in to match the meta-data
-	 * currently used.
-	 * <p>The returned value will be used for meta-data lookups.
-	 * <p>This could include altering the case used or providing a base catalog
-	 * if none is provided.
+	 * 提供对传入的目录名称的任何修改，以匹配当前使用的元数据。 <p>返回的值将用于元数据查找。 <p>这可能包括更改所使用的案例或提供基本目录（如果未提供）。
 	 */
 	@Nullable String metaDataCatalogNameToUse(@Nullable String catalogName) ;
 
 	/**
-	 * Provide any modification of the schema name passed in to match the meta-data
-	 * currently used.
-	 * <p>The returned value will be used for meta-data lookups.
-	 * <p>This could include altering the case used or providing a base schema
-	 * if none is provided.
+	 * 提供对传入的架构名称的任何修改，以匹配当前使用的元数据。 <p>返回的值将用于元数据查找。 <p>这可能包括更改使用的情况或提供基本模式（如果未提供）。
 	 */
 	@Nullable String metaDataSchemaNameToUse(@Nullable String schemaName) ;
 
 	/**
-	 * Are we using the meta-data for the table columns?
+	 * 我们是否使用表列的元数据？
 	 */
 	boolean isTableColumnMetaDataUsed();
 
 	/**
-	 * Does this database support the JDBC feature for retrieving generated keys?
+	 * 该数据库是否支持 JDBC 功能来检索生成的密钥？
 	 * @see java.sql.DatabaseMetaData#supportsGetGeneratedKeys()
 	 */
 	boolean isGetGeneratedKeysSupported();
 
 	/**
-	 * Does this database support a simple query to retrieve generated keys when
-	 * the JDBC feature for retrieving generated keys is not supported?
+	 * 当不支持检索生成密钥的 JDBC 功能时，此数据库是否支持简单查询来检索生成的密钥？
 	 * @see #isGetGeneratedKeysSupported()
 	 * @see #getSimpleQueryForGetGeneratedKey(String, String)
 	 */
 	boolean isGetGeneratedKeysSimulated();
 
 	/**
-	 * Get the simple query to retrieve generated keys when the JDBC feature for
-	 * retrieving generated keys is not supported.
+	 * 当不支持检索生成密钥的 JDBC 功能时，获取简单查询来检索生成的密钥。
 	 * @see #isGetGeneratedKeysSimulated()
 	 */
 	@Nullable String getSimpleQueryForGetGeneratedKey(String tableName, String keyColumnName);
 
 	/**
-	 * Does this database support a column name String array for retrieving generated keys?
+	 * 该数据库是否支持列名字符串数组来检索生成的键？
 	 * @see java.sql.Connection#createStruct(String, Object[])
 	 */
 	boolean isGeneratedKeysColumnNameArraySupported();
 
 	/**
-	 * Get the string used to quote SQL identifiers.
-	 * <p>This method returns a space ({@code " "}) if identifier quoting is not supported.
-	 * @return database identifier quote string
+	 * 获取用于引用 SQL 标识符的字符串。 <p> 如果不支持标识符引用，则此方法返回一个空格 ({@code " "})。
+	 * @return 标识符引用字符串
 	 * @since 6.1
 	 * @see DatabaseMetaData#getIdentifierQuoteString()
 	 */

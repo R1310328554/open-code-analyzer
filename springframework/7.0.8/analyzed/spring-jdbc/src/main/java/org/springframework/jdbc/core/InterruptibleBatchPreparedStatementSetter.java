@@ -17,24 +17,13 @@
 package org.springframework.jdbc.core;
 
 /**
- * Extension of the {@link BatchPreparedStatementSetter} interface,
- * adding a batch exhaustion check.
- *
- * <p>This interface allows you to signal the end of a batch rather than
- * having to determine the exact batch size upfront. Batch size is still
- * being honored, but it is now the maximum size of the batch.
- *
- * <p>The {@link #isBatchExhausted} method is called after each call to
- * {@link #setValues} to determine whether there were some values added,
- * or if the batch was determined to be complete and no additional values
- * were provided during the last call to {@code setValues}.
- *
- * <p>Consider extending the
- * {@link org.springframework.jdbc.core.support.AbstractInterruptibleBatchPreparedStatementSetter}
- * base class instead of implementing this interface directly, using a single
- * {@code setValuesIfAvailable} callback method that checks for available
- * values and sets them, returning whether values have actually been provided.
- *
+ * 扩展{@link BatchPreparedStatementSetter}接口，添加批量耗尽检查。
+ * <p>此接口允许您发出批处理结束的信号，而不必预先确定确切的批处理大小。批次大小仍然受到尊重，但现在它是批次的最大大小。
+ * <p> 每次调用 {@link #setValues} 后都会调用 {@link #isBatchExhausted} 方法，以确定是否添加了一些值，或者是否确定批次已完成并且
+ * 在上次调用 {@code setValues} 期间没有提供其他值。
+ * <p>考虑扩展 {@link
+ * org.springframework.jdbc.core.support.AbstractInterruptibleBatchPreparedStatementSetter}
+ * 基类，而不是直接实现此接口，使用单个 {@code setValuesIfAvailable} 回调方法检查可用值并设置它们，返回值是否已实际提供。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.0
@@ -44,15 +33,11 @@ package org.springframework.jdbc.core;
 public interface InterruptibleBatchPreparedStatementSetter extends BatchPreparedStatementSetter {
 
 	/**
-	 * Return whether the batch is complete, that is, whether there were no
-	 * additional values added during the last {@code setValues} call.
-	 * <p><b>NOTE:</b> If this method returns {@code true}, any parameters
-	 * that might have been set during the last {@code setValues} call will
-	 * be ignored! Make sure that you set a corresponding internal flag if you
-	 * detect exhaustion <i>at the beginning</i> of your {@code setValues}
-	 * implementation, letting this method return {@code true} based on the flag.
-	 * @param i index of the statement we're issuing in the batch, starting from 0
-	 * @return whether the batch is already exhausted
+	 * 返回批处理是否完成，即上次 {@code setValues} 调用期间是否没有添加其他值。 <p><b>NOTE:</b> 如果此方法返回 {@code true}，则在上次
+	 *  {@code setValues} 调用期间可能设置的任何参数都将被忽略！如果您在 {@code setValues} 实现的开头 </i> 检测到耗尽 <i>，请确保设置相
+	 * 应的内部标志，让此方法根据该标志返回 {@code true}。
+	 * @param i 我们在批次中发出的语句的索引，从 0 开始
+	 * @return 该批次已经用完
 	 * @see #setValues
 	 * @see org.springframework.jdbc.core.support.AbstractInterruptibleBatchPreparedStatementSetter#setValuesIfAvailable
 	 */

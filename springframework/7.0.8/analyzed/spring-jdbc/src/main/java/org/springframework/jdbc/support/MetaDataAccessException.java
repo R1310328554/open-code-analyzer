@@ -19,12 +19,8 @@ package org.springframework.jdbc.support;
 import org.springframework.core.NestedCheckedException;
 
 /**
- * Exception indicating that something went wrong during JDBC meta-data lookup.
- *
- * <p>This is a checked exception since we want it to be caught, logged and
- * handled rather than cause the application to fail. Failure to read JDBC
- * meta-data is usually not a fatal problem.
- *
+ * 异常表明 JDBC 元数据查找期间出现问题。
+ * <p>这是一个已检查的异常，因为我们希望它被捕获、记录和处理，而不是导致应用程序失败。读取 JDBC 元数据失败通常不是致命问题。
  * @author Thomas Risberg
  * @since 1.0.1
  */
@@ -32,17 +28,17 @@ import org.springframework.core.NestedCheckedException;
 public class MetaDataAccessException extends NestedCheckedException {
 
 	/**
-	 * Constructor for MetaDataAccessException.
-	 * @param msg the detail message
+	 * MetaDataAccessException 的构造函数。
+	 * @param msg 详细消息
 	 */
 	public MetaDataAccessException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for MetaDataAccessException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * MetaDataAccessException 的构造函数。
+	 * @param msg 详细消息
+	 * @param cause 根本原因来自于所使用的数据访问 API
 	 */
 	public MetaDataAccessException(String msg, Throwable cause) {
 		super(msg, cause);

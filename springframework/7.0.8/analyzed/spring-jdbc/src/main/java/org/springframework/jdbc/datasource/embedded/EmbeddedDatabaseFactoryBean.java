@@ -27,17 +27,11 @@ import org.springframework.jdbc.datasource.init.DatabasePopulator;
 import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
 
 /**
- * A subclass of {@link EmbeddedDatabaseFactory} that implements {@link FactoryBean}
- * for registration as a Spring bean. Returns the actual {@link DataSource} that
- * provides connectivity to the embedded database to Spring.
- *
- * <p>The target {@link DataSource} is returned instead of an {@link EmbeddedDatabase}
- * proxy since the {@link FactoryBean} will manage the initialization and destruction
- * lifecycle of the embedded database instance.
- *
- * <p>Implements {@link DisposableBean} to shut down the embedded database when the
- * managing Spring container is being closed.
- *
+ * {@link EmbeddedDatabaseFactory} 的子类，实现 {@link FactoryBean} 以注册为 Spring bean。返回实际的
+ * {@link DataSource}，该 {@link DataSource} 提供与 Spring 的嵌入式数据库的连接。
+ * <p> 返回目标 {@link DataSource} 而不是 {@link EmbeddedDatabase} 代理，因为 {@link FactoryBean}
+ * 将管理嵌入式数据库实例的初始化和销毁​​生命周期。
+ * <p>I 实现 {@link DisposableBean} 以在关闭管理 Spring 容器时关闭嵌入式数据库。
  * @author Keith Donald
  * @author Juergen Hoeller
  * @since 3.0
@@ -45,13 +39,13 @@ import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
 public class EmbeddedDatabaseFactoryBean extends EmbeddedDatabaseFactory
 		implements FactoryBean<DataSource>, InitializingBean, DisposableBean {
 
+	/** `databaseCleaner`：该类的成员状态。 */
 	private @Nullable DatabasePopulator databaseCleaner;
 
 
 	/**
-	 * Set a script execution to be run in the bean destruction callback,
-	 * cleaning up the database and leaving it in a known state for others.
-	 * @param databaseCleaner the database script executor to run on destroy
+	 * 设置要在 bean 销毁回调中运行的脚本执行，清理数据库并使其处于其他人已知的状态。
+	 * @param databaseCleaner 在销毁时运行的数据库脚本执行器
 	 * @see #setDatabasePopulator
 	 * @see org.springframework.jdbc.datasource.init.DataSourceInitializer#setDatabaseCleaner
 	 */
@@ -59,28 +53,43 @@ public class EmbeddedDatabaseFactoryBean extends EmbeddedDatabaseFactory
 		this.databaseCleaner = databaseCleaner;
 	}
 
+	/**
+	 * 在…之后回调：Properties Set（方法 `afterPropertiesSet`）。
+	 */
 	@Override
 	public void afterPropertiesSet() {
 		initDatabase();
 	}
 
 
+	/**
+	 * 获取 Object（`Object`）。
+	 */
 	@Override
 	public @Nullable DataSource getObject() {
 		return getDataSource();
 	}
 
+	/**
+	 * 获取 Object Type（`ObjectType`）。
+	 */
 	@Override
 	public Class<? extends DataSource> getObjectType() {
 		return DataSource.class;
 	}
 
+	/**
+	 * 判断是否 Singleton。
+	 */
 	@Override
 	public boolean isSingleton() {
 		return true;
 	}
 
 
+	/**
+	 * 销毁（方法 `destroy`）。
+	 */
 	@Override
 	public void destroy() {
 		DatabasePopulator cleaner = this.databaseCleaner;

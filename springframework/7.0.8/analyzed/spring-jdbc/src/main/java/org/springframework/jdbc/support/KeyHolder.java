@@ -24,19 +24,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 
 /**
- * Interface for retrieving keys, typically used for auto-generated keys
- * as potentially returned by JDBC insert statements.
- *
- * <p>Implementations of this interface can hold any number of keys.
- * In the general case, the keys are returned as a List containing one Map
- * for each row of keys.
- *
- * <p>Most applications only use one key per row and process only one row at a
- * time in an insert statement. In these cases, just call {@link #getKey() getKey}
- * or {@link #getKeyAs(Class) getKeyAs} to retrieve the key. The value returned
- * by {@code getKey} is a {@link Number}, which is the usual type for auto-generated
- * keys. For any other auto-generated key type, use {@code getKeyAs} instead.
- *
+ * 用于检索键的接口，通常用于自动生成的键（可能由 JDBC 插入语句返回）。
+ * <p> 该接口的实现可以容纳任意数量的键。在一般情况下，键以列表的形式返回，其中每行键包含一个映射。
+ * <p>大多数应用程序每行仅使用一个键，并且在插入语句中一次仅处理一行。在这些情况下，只需调用 {@link #getKey() getKey} 或 {@link #getKey
+ * As(Class) getKeyAs} 即可检索密钥。 {@code getKey} 返回的值是 {@link Number}，这是自动生成键的常用类型。对于任何其他自动生成的
+ * 密钥类型，请改用 {@code getKeyAs}。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Slawomir Dymitrow
@@ -47,52 +39,37 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 public interface KeyHolder {
 
 	/**
-	 * Retrieve the first item from the first map, assuming that there is just
-	 * one item and just one map, and that the item is a number.
-	 * This is the typical case: a single, numeric generated key.
-	 * <p>Keys are held in a List of Maps, where each item in the list represents
-	 * the keys for each row. If there are multiple columns, then the Map will have
-	 * multiple entries as well. If this method encounters multiple entries in
-	 * either the map or the list meaning that multiple keys were returned,
-	 * then an InvalidDataAccessApiUsageException is thrown.
-	 * @return the generated key as a number
-	 * @throws InvalidDataAccessApiUsageException if multiple keys are encountered
+	 * 从第一个地图中检索第一个项目，假设只有一个项目和一个地图，并且该项目是一个数字。这是典型的情况：单个数字生成的密钥。 <p>Keys 保存在映射列表中，其中列表中的每个项目代表
+	 * 每行的键。如果有多个列，则映射也将有多个条目。如果此方法在映射或列表中遇到多个条目（意味着返回了多个键），则会引发 InvalidDataAccessApiUsageExcep
+	 * tion。
+	 * @return 生成的密钥为数字
+	 * @throws InvalidDataAccessApiUsageException 如果遇到多个键
 	 * @see #getKeyAs(Class)
 	 */
 	@Nullable Number getKey() throws InvalidDataAccessApiUsageException;
 
 	/**
-	 * Retrieve the first item from the first map, assuming that there is just
-	 * one item and just one map, and that the item is an instance of specified type.
-	 * This is a common case: a single generated key of the specified type.
-	 * <p>Keys are held in a List of Maps, where each item in the list represents
-	 * the keys for each row. If there are multiple columns, then the Map will have
-	 * multiple entries as well. If this method encounters multiple entries in
-	 * either the map or the list meaning that multiple keys were returned,
-	 * then an InvalidDataAccessApiUsageException is thrown.
-	 * @param keyType the type of the auto-generated key
-	 * @return the generated key as an instance of specified type
-	 * @throws InvalidDataAccessApiUsageException if multiple keys are encountered
+	 * 从第一个映射中检索第一个项目，假设只有一个项目和一个映射，并且该项目是指定类型的实例。这是一种常见情况：指定类型的单个生成密钥。 <p>Keys 保存在映射列表中，其中列表中的
+	 * 每个项目代表每行的键。如果有多个列，则映射也将有多个条目。如果此方法在映射或列表中遇到多个条目（意味着返回了多个键），则会引发 InvalidDataAccessApiUsag
+	 * eException。
+	 * @param keyType 自动生成的密钥的类型
+	 * @return 生成的密钥作为指定类型的实例
+	 * @throws InvalidDataAccessApiUsageException 如果遇到多个键
 	 * @since 5.3
 	 * @see #getKey()
 	 */
 	<T> @Nullable T getKeyAs(Class<T> keyType) throws InvalidDataAccessApiUsageException;
 
 	/**
-	 * Retrieve the first map of keys.
-	 * <p>If there are multiple entries in the list (meaning that multiple rows
-	 * had keys returned), then an InvalidDataAccessApiUsageException is thrown.
-	 * @return the Map of generated keys for a single row
-	 * @throws InvalidDataAccessApiUsageException if keys for multiple rows are encountered
+	 * 检索第一个键映射。 <p>如果列表中有多个条目（意味着多行返回了键），则抛出 InvalidDataAccessApiUsageException。
+	 * @return 单行生成的键的映射
+	 * @throws InvalidDataAccessApiUsageException 如果遇到多行的键
 	 */
 	@Nullable Map<String, Object> getKeys() throws InvalidDataAccessApiUsageException;
 
 	/**
-	 * Return a reference to the List that contains the keys.
-	 * <p>Can be used for extracting keys for multiple rows (an unusual case),
-	 * and also for adding new maps of keys.
-	 * @return the List for the generated keys, with each entry representing
-	 * an individual row through a Map of column names and key values
+	 * 返回对包含键的列表的引用。 <p> 可用于提取多行的键（一种不寻常的情况），也可用于添加新的键映射。
+	 * @return 生成的键的列表，每个条目代表通过列名称和键值的映射的单独行
 	 */
 	List<Map<String, Object>> getKeyList();
 

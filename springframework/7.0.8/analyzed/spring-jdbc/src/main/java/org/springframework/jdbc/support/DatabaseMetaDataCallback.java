@@ -22,29 +22,21 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A callback interface used by the JdbcUtils class. Implementations of this
- * interface perform the actual work of extracting database meta-data, but
- * don't need to worry about exception handling. SQLExceptions will be caught
- * and handled correctly by the JdbcUtils class.
- *
+ * JdbcUtils 类使用的回调接口。该接口的实现执行提取数据库元数据的实际工作，但不需要担心异常处理。 JdbcUtils 类将捕获并正确处理 SQLException。
  * @author Thomas Risberg
  * @author Juergen Hoeller
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see JdbcUtils#extractDatabaseMetaData(javax.sql.DataSource, DatabaseMetaDataCallback)
  */
 @FunctionalInterface
 public interface DatabaseMetaDataCallback<T extends @Nullable Object> {
 
 	/**
-	 * Implementations must implement this method to process the meta-data
-	 * passed in. Exactly what the implementation chooses to do is up to it.
-	 * @param dbmd the DatabaseMetaData to process
-	 * @return a result object extracted from the meta-data
-	 * (can be an arbitrary object, as needed by the implementation)
-	 * @throws SQLException if an SQLException is encountered getting
-	 * column values (that is, there's no need to catch SQLException)
-	 * @throws MetaDataAccessException in case of other failures while
-	 * extracting meta-data (for example, reflection failure)
+	 * 实现必须实现此方法来处理传入的元数据。具体实现选择做什么取决于它。
+	 * @param dbmd 要处理的数据库元数据
+	 * @return 从元数据中提取的结果对象（可以是任意对象，根据实现的需要）
+	 * @throws SQLException 如果获取列值时遇到 SQLException（即无需捕获 SQLException）
+	 * @throws MetaDataAccessException 提取元数据时发生其他故障（例如反射故障）
 	 */
 	T processMetaData(DatabaseMetaData dbmd) throws SQLException, MetaDataAccessException;
 

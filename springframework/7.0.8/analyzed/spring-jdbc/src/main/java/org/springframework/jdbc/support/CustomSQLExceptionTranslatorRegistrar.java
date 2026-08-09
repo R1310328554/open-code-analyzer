@@ -22,31 +22,30 @@ import java.util.Map;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
- * Registry for custom {@link SQLExceptionTranslator} instances for specific databases.
- *
+ * 特定数据库的自定义 {@link SQLExceptionTranslator} 实例的注册表。
  * @author Thomas Risberg
  * @since 3.1.1
  */
 public class CustomSQLExceptionTranslatorRegistrar implements InitializingBean {
 
 	/**
-	 * Map registry to hold custom translators specific databases.
-	 * Key is the database product name as defined in the
-	 * {@link org.springframework.jdbc.support.SQLErrorCodesFactory}.
+	 * 映射注册表以保存自定义翻译器特定数据库。键是 {@link org.springframework.jdbc.support.SQLErrorCodesFactory} 中定义
+	 * 的数据库产品名称。
 	 */
 	private final Map<String, SQLExceptionTranslator> translators = new HashMap<>();
 
 
 	/**
-	 * Setter for a Map of {@link SQLExceptionTranslator} references where the key must
-	 * be the database name as defined in the {@code sql-error-codes.xml} file.
-	 * <p>Note that any existing translators will remain unless there is a match in the
-	 * database name, at which point the new translator will replace the existing one.
+	 * {@link SQLExceptionTranslator} 引用映射的设置器，其中键必须是 {@code sql-error-codes.xml} 文件中定义的数据库名称。 
+	 * <p>请注意，除非数据库名称匹配，否则任何现有的翻译器都将保留，此时新的翻译器将替换现有的翻译器。
 	 */
 	public void setTranslators(Map<String, SQLExceptionTranslator> translators) {
 		this.translators.putAll(translators);
 	}
 
+	/**
+	 * 在…之后回调：Properties Set（方法 `afterPropertiesSet`）。
+	 */
 	@Override
 	public void afterPropertiesSet() {
 		this.translators.forEach((dbName, translator) ->

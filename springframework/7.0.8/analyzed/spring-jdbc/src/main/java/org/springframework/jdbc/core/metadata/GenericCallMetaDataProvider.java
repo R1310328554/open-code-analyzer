@@ -34,18 +34,9 @@ import org.springframework.jdbc.core.SqlOutParameter;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class GenericCallMetaDataProvider — 意图说明
-
-class `GenericCallMetaDataProvider`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/GenericCallMetaDataProvider.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * A generic implementation of the {@link CallMetaDataProvider} interface.
- *
- * <p>This class can be extended to provide database specific behavior.
- *
+ * {@link CallMetaDataProvider} 接口的通用实现。
+ * <p> 这个类可以扩展以提供数据库特定的行为。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -54,48 +45,45 @@ class `GenericCallMetaDataProvider`：请结合所属模块与调用方理解其
  */
 public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 
-	// [OCA] 字段 `logger`：类成员状态。
-	/** Logger available to subclasses. */
+	/**
+	 */
 	protected static final Log logger = LogFactory.getLog(CallMetaDataProvider.class);
 
 
-	// [OCA] 字段 `userName`：类成员状态。
+	/** 名称相关状态（`userName`）。 */
 	private final String userName;
 
-	// [OCA] 字段 `procedureColumnMetaDataUsed`：类成员状态。
+	/** `false`：该类的成员状态。 */
 	private boolean procedureColumnMetaDataUsed = false;
 
-	// [OCA] 字段 `supportsCatalogsInProcedureCalls`：类成员状态。
+	/** `true`：该类的成员状态。 */
 	private boolean supportsCatalogsInProcedureCalls = true;
 
-	// [OCA] 字段 `supportsSchemasInProcedureCalls`：类成员状态。
+	/** `true`：该类的成员状态。 */
 	private boolean supportsSchemasInProcedureCalls = true;
 
-	// [OCA] 字段 `storesUpperCaseIdentifiers`：类成员状态。
+	/** `true`：该类的成员状态。 */
 	private boolean storesUpperCaseIdentifiers = true;
 
-	// [OCA] 字段 `storesLowerCaseIdentifiers`：类成员状态。
+	/** `false`：该类的成员状态。 */
 	private boolean storesLowerCaseIdentifiers = false;
 
-	// [OCA] 字段 `callParameterMetaData`：类成员状态。
 	private final List<CallParameterMetaData> callParameterMetaData = new ArrayList<>();
 
 
 	/**
-	 * Constructor used to initialize with provided database meta-data.
-	 * @param databaseMetaData meta-data to be used
+	 * 用于使用提供的数据库元数据进行初始化的构造函数。
+	 * @param databaseMetaData 要使用的元数据
 	 */
 	protected GenericCallMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		this.userName = databaseMetaData.getUserName();
 	}
 
 
+	/**
+	 * 初始化：With Meta Data（方法 `initializeWithMetaData`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 initializeWithMetaData — 意图与阅读要点
-
-方法 `initializeWithMetaData` 复杂度较高（CCN≈9, NLOC≈34）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void initializeWithMetaData(DatabaseMetaData databaseMetaData) throws SQLException {
 		try {
 			setSupportsCatalogsInProcedureCalls(databaseMetaData.supportsCatalogsInProcedureCalls());
@@ -131,6 +119,9 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 		}
 	}
 
+	/**
+	 * 初始化：With Procedure Column Meta Data（方法 `initializeWithProcedureColumnMetaData`）。
+	 */
 	@Override
 	public void initializeWithProcedureColumnMetaData(DatabaseMetaData databaseMetaData, @Nullable String catalogName,
 			@Nullable String schemaName, @Nullable String procedureName) throws SQLException {
@@ -139,26 +130,41 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 		processProcedureColumns(databaseMetaData, catalogName, schemaName, procedureName);
 	}
 
+	/**
+	 * 获取 Call Parameter Meta Data（`CallParameterMetaData`）。
+	 */
 	@Override
 	public List<CallParameterMetaData> getCallParameterMetaData() {
 		return this.callParameterMetaData;
 	}
 
+	/**
+	 * 方法 `procedureNameToUse`：完成本类中与「procedure Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String procedureNameToUse(@Nullable String procedureName) {
 		return identifierNameToUse(procedureName);
 	}
 
+	/**
+	 * 方法 `catalogNameToUse`：完成本类中与「catalog Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String catalogNameToUse(@Nullable String catalogName) {
 		return identifierNameToUse(catalogName);
 	}
 
+	/**
+	 * 方法 `schemaNameToUse`：完成本类中与「schema Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String schemaNameToUse(@Nullable String schemaName) {
 		return identifierNameToUse(schemaName);
 	}
 
+	/**
+	 * 方法 `metaDataCatalogNameToUse`：完成本类中与「meta Data Catalog Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String metaDataCatalogNameToUse(@Nullable String catalogName) {
 		if (isSupportsCatalogsInProcedureCalls()) {
@@ -169,6 +175,9 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 		}
 	}
 
+	/**
+	 * 方法 `metaDataSchemaNameToUse`：完成本类中与「meta Data Schema Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String metaDataSchemaNameToUse(@Nullable String schemaName) {
 		if (isSupportsSchemasInProcedureCalls()) {
@@ -179,70 +188,103 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 		}
 	}
 
+	/**
+	 * 方法 `parameterNameToUse`：完成本类中与「parameter Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String parameterNameToUse(@Nullable String parameterName) {
 		return identifierNameToUse(parameterName);
 	}
 
+	/**
+	 * 方法 `namedParameterBindingToUse`：完成本类中与「named Parameter Binding To Use」相关的职责。
+	 */
 	@Override
 	public String namedParameterBindingToUse(@Nullable String parameterName) {
 		return parameterName + " => ?";
 	}
 
+	/**
+	 * 创建：Default Out Parameter（方法 `createDefaultOutParameter`）。
+	 */
 	@Override
 	public SqlParameter createDefaultOutParameter(String parameterName, CallParameterMetaData meta) {
 		return new SqlOutParameter(parameterName, meta.getSqlType());
 	}
 
+	/**
+	 * 创建：Default In Out Parameter（方法 `createDefaultInOutParameter`）。
+	 */
 	@Override
 	public SqlParameter createDefaultInOutParameter(String parameterName, CallParameterMetaData meta) {
 		return new SqlInOutParameter(parameterName, meta.getSqlType());
 	}
 
+	/**
+	 * 创建：Default In Parameter（方法 `createDefaultInParameter`）。
+	 */
 	@Override
 	public SqlParameter createDefaultInParameter(String parameterName, CallParameterMetaData meta) {
 		return new SqlParameter(parameterName, meta.getSqlType());
 	}
 
+	/**
+	 * 获取 User Name（`UserName`）。
+	 */
 	@Override
 	public String getUserName() {
 		return this.userName;
 	}
 
+	/**
+	 * 判断是否 Procedure Column Meta Data Used。
+	 */
 	@Override
 	public boolean isProcedureColumnMetaDataUsed() {
 		return this.procedureColumnMetaDataUsed;
 	}
 
+	/**
+	 * 判断是否 Return Result Set Supported。
+	 */
 	@Override
 	public boolean isReturnResultSetSupported() {
 		return true;
 	}
 
+	/**
+	 * 判断是否 Ref Cursor Supported。
+	 */
 	@Override
 	public boolean isRefCursorSupported() {
 		return false;
 	}
 
+	/**
+	 * 获取 Ref Cursor Sql Type（`RefCursorSqlType`）。
+	 */
 	@Override
 	public int getRefCursorSqlType() {
 		return Types.OTHER;
 	}
 
+	/**
+	 * 方法 `byPassReturnParameter`：完成本类中与「by Pass Return Parameter」相关的职责。
+	 */
 	@Override
 	public boolean byPassReturnParameter(String parameterName) {
 		return false;
 	}
 
 	/**
-	 * Specify whether the database supports the use of catalog name in procedure calls.
+	 * 指定数据库是否支持在过程调用中使用目录名称。
 	 */
 	protected void setSupportsCatalogsInProcedureCalls(boolean supportsCatalogsInProcedureCalls) {
 		this.supportsCatalogsInProcedureCalls = supportsCatalogsInProcedureCalls;
 	}
 
 	/**
-	 * Does the database support the use of catalog name in procedure calls?
+	 * 数据库是否支持在过程调用中使用目录名称？
 	 */
 	@Override
 	public boolean isSupportsCatalogsInProcedureCalls() {
@@ -250,14 +292,14 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * Specify whether the database supports the use of schema name in procedure calls.
+	 * 指定数据库是否支持在过程调用中使用架构名称。
 	 */
 	protected void setSupportsSchemasInProcedureCalls(boolean supportsSchemasInProcedureCalls) {
 		this.supportsSchemasInProcedureCalls = supportsSchemasInProcedureCalls;
 	}
 
 	/**
-	 * Does the database support the use of schema name in procedure calls?
+	 * 数据库是否支持在过程调用中使用架构名称？
 	 */
 	@Override
 	public boolean isSupportsSchemasInProcedureCalls() {
@@ -265,34 +307,37 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * Specify whether the database uses upper case for identifiers.
+	 * 指定数据库是否使用大写字母作为标识符。
 	 */
 	protected void setStoresUpperCaseIdentifiers(boolean storesUpperCaseIdentifiers) {
 		this.storesUpperCaseIdentifiers = storesUpperCaseIdentifiers;
 	}
 
 	/**
-	 * Does the database use upper case for identifiers?
+	 * 数据库是否使用大写字母作为标识符？
 	 */
 	protected boolean isStoresUpperCaseIdentifiers() {
 		return this.storesUpperCaseIdentifiers;
 	}
 
 	/**
-	 * Specify whether the database uses lower case for identifiers.
+	 * 指定数据库是否使用小写字母作为标识符。
 	 */
 	protected void setStoresLowerCaseIdentifiers(boolean storesLowerCaseIdentifiers) {
 		this.storesLowerCaseIdentifiers = storesLowerCaseIdentifiers;
 	}
 
 	/**
-	 * Does the database use lower case for identifiers?
+	 * 数据库是否使用小写字母作为标识符？
 	 */
 	protected boolean isStoresLowerCaseIdentifiers() {
 		return this.storesLowerCaseIdentifiers;
 	}
 
 
+	/**
+	 * 方法 `identifierNameToUse`：完成本类中与「identifier Name To Use」相关的职责。
+	 */
 	private @Nullable String identifierNameToUse(@Nullable String identifierName) {
 		if (identifierName == null) {
 			return null;
@@ -308,13 +353,8 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 processProcedureColumns — 意图与阅读要点
-
-方法 `processProcedureColumns` 复杂度较高（CCN≈25, NLOC≈97）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Process the procedure column meta-data.
+	 * 处理过程列元数据。
 	 */
 	private void processProcedureColumns(DatabaseMetaData databaseMetaData,
 			@Nullable String catalogName, @Nullable String schemaName, @Nullable String procedureName) {
@@ -326,7 +366,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 			ProcedureMetadata procedureMetadata = getProcedureMetadata(databaseMetaData,
 					metaDataCatalogName, metaDataSchemaName, metaDataProcedureName);
 			if (procedureMetadata.hits() > 1) {
-				// Try again with exact match in case of placeholders
+				// 如果有占位符，请重试完全匹配
 				String searchStringEscape = databaseMetaData.getSearchStringEscape();
 				if (searchStringEscape != null) {
 					procedureMetadata = getProcedureMetadata(databaseMetaData, metaDataCatalogName,
@@ -335,11 +375,11 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 				}
 			}
 			if (procedureMetadata.hits() == 0) {
-				// Functions not exposed as procedures anymore on PostgreSQL driver 42.2.11
+				// PostgreSQL 驱动程序 42.2.11 上的函数不再作为过程公开
 				procedureMetadata = getProcedureMetadataAsFunction(databaseMetaData,
 						metaDataCatalogName, metaDataSchemaName, metaDataProcedureName);
 				if (procedureMetadata.hits() > 1) {
-					// Try again with exact match in case of placeholders
+					// 如果有占位符，请重试完全匹配
 					String searchStringEscape = databaseMetaData.getSearchStringEscape();
 					if (searchStringEscape != null) {
 						procedureMetadata = getProcedureMetadataAsFunction(
@@ -349,7 +389,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 					}
 				}
 			}
-			// Handling matches
+			// 处理比赛
 
 			boolean isFunction = procedureMetadata.function();
 			List<String> matches = procedureMetadata.matches;
@@ -418,14 +458,17 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 						"Consider declaring explicit parameters -- for example, via SimpleJdbcCall#addDeclaredParameter().",
 						ex);
 			}
-			// Although we could invoke `this.callParameterMetaData.clear()` so that
-			// we don't retain a partial list of column names (like we do in
-			// GenericTableMetaDataProvider.processTableColumns(...)), we choose
-			// not to do that here, since invocation of the stored procedure will
-			// likely fail anyway with an incorrect argument list.
+			// 虽然我们可以调用 `this.callParameterMetaData.clear()` 以便
+			// 我们不保留列名的部分列表（就像我们在
+			// GenericTableMetaDataProvider.processTableColumns(...))，我们选择
+			// 不要在这里这样做，因为调用存储过程将
+			// 无论如何，可能会因参数列表不正确而失败。
 		}
 	}
 
+	/**
+	 * 获取 Procedure Metadata（`ProcedureMetadata`）。
+	 */
 	private ProcedureMetadata getProcedureMetadata(DatabaseMetaData databaseMetaData,
 			@Nullable String catalogName, @Nullable String schemaName, @Nullable String procedureName) throws SQLException {
 		if (logger.isDebugEnabled()) {
@@ -441,6 +484,9 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 		return new ProcedureMetadata(schemaName, procedureName, matches, false);
 	}
 
+	/**
+	 * 获取 Procedure Metadata As Function（`ProcedureMetadataAsFunction`）。
+	 */
 	private ProcedureMetadata getProcedureMetadataAsFunction(DatabaseMetaData databaseMetaData,
 			@Nullable String catalogName, @Nullable String schemaName, @Nullable String procedureName) throws SQLException {
 		if (logger.isDebugEnabled()) {
@@ -456,6 +502,9 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 		return new ProcedureMetadata(schemaName, procedureName, matches, true);
 	}
 
+	/**
+	 * 方法 `escapeNamePattern`：完成本类中与「escape Name Pattern」相关的职责。
+	 */
 	private static @Nullable String escapeNamePattern(@Nullable String name, @Nullable String escape) {
 		if (name == null || escape == null) {
 			return name;
@@ -465,6 +514,9 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 					.replace("%", escape + "%");
 	}
 
+	/**
+	 * 判断是否 In Or Out Column。
+	 */
 	private static boolean isInOrOutColumn(int columnType, boolean function) {
 		if (function) {
 			return (columnType == DatabaseMetaData.functionColumnIn ||
@@ -478,15 +530,9 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-record ProcedureMetadata — 意图说明
-
-record `ProcedureMetadata`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/GenericCallMetaDataProvider.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 方法 `ProcedureMetadata`：完成本类中与「Procedure Metadata」相关的职责。
+	 */
 	private record ProcedureMetadata(@Nullable String schemaName, @Nullable String procedureName,
 			List<String> matches, boolean function) {
 

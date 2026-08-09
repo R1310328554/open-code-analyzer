@@ -32,14 +32,16 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
 /**
- * Internal utility methods used with JDBC configuration.
- *
+ * 与 JDBC 配置一起使用的内部实用程序方法。
  * @author Juergen Hoeller
  * @author Stephane Nicoll
  * @since 3.1
  */
 abstract class DatabasePopulatorConfigUtils {
 
+	/**
+	 * 设置 Database Populator（`DatabasePopulator`）。
+	 */
 	public static void setDatabasePopulator(Element element, BeanDefinitionBuilder builder) {
 		List<Element> scripts = DomUtils.getChildElementsByTagName(element, "script");
 		if (!scripts.isEmpty()) {
@@ -48,6 +50,9 @@ abstract class DatabasePopulatorConfigUtils {
 		}
 	}
 
+	/**
+	 * 创建：Database Populator（方法 `createDatabasePopulator`）。
+	 */
 	private static @Nullable BeanDefinition createDatabasePopulator(Element element, List<Element> scripts, String execution) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(CompositeDatabasePopulator.class);
 
@@ -67,7 +72,7 @@ abstract class DatabasePopulatorConfigUtils {
 			delegate.addPropertyValue("ignoreFailedDrops", ignoreFailedDrops);
 			delegate.addPropertyValue("continueOnError", continueOnError);
 
-			// Use a factory bean for the resources so they can be given an order if a pattern is used
+			// 对资源使用工厂 bean，以便在使用模式时可以给它们下达订单
 			BeanDefinitionBuilder resourcesFactory = BeanDefinitionBuilder.genericBeanDefinition(SortedResourcesFactoryBean.class);
 			resourcesFactory.addConstructorArgValue(new TypedStringValue(scriptElement.getAttribute("location")));
 			delegate.addPropertyValue("scripts", resourcesFactory.getBeanDefinition());
@@ -89,6 +94,9 @@ abstract class DatabasePopulatorConfigUtils {
 		return builder.getBeanDefinition();
 	}
 
+	/**
+	 * 获取 Separator（`Separator`）。
+	 */
 	private static @Nullable String getSeparator(Element element, Element scriptElement) {
 		String scriptSeparator = scriptElement.getAttribute("separator");
 		if (StringUtils.hasLength(scriptSeparator)) {

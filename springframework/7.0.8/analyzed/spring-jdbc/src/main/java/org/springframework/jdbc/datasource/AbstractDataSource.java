@@ -26,25 +26,22 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Abstract base class for Spring's {@link javax.sql.DataSource}
- * implementations, taking care of the padding.
- *
- * <p>'Padding' in the context of this class means default implementations
- * for certain methods from the {@code DataSource} interface, such as
- * {@link #getLoginTimeout()}, {@link #setLoginTimeout(int)}, and so forth.
- *
+ * Spring 的 {@link javax.sql.DataSource} 实现的抽象基类，负责填充。
+ * 此类上下文中的 <p>“Padding”表示 {@code DataSource} 接口中某些方法的默认实现，例如 {@link
+ * #getLoginTimeout()}、{@link #setLoginTimeout(int)} 等。
  * @author Juergen Hoeller
  * @since 07.05.2003
  * @see DriverManagerDataSource
  */
 public abstract class AbstractDataSource implements DataSource {
 
-	/** Logger available to subclasses. */
+	/**
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 
 	/**
-	 * Returns 0, indicating the default system timeout is to be used.
+	 * 返回0，表示使用默认的系统超时。
 	 */
 	@Override
 	public int getLoginTimeout() throws SQLException {
@@ -52,7 +49,7 @@ public abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * Setting a login timeout is not supported.
+	 * 不支持设置登录超时。
 	 */
 	@Override
 	public void setLoginTimeout(int timeout) throws SQLException {
@@ -60,7 +57,7 @@ public abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * LogWriter methods are not supported.
+	 * 不支持 LogWriter 方法。
 	 */
 	@Override
 	public PrintWriter getLogWriter() {
@@ -68,18 +65,24 @@ public abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * LogWriter methods are not supported.
+	 * 不支持 LogWriter 方法。
 	 */
 	@Override
 	public void setLogWriter(PrintWriter pw) throws SQLException {
 		throw new UnsupportedOperationException("setLogWriter");
 	}
 
+	/**
+	 * 获取 Parent Logger（`ParentLogger`）。
+	 */
 	@Override
 	public Logger getParentLogger() {
 		return Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	}
 
+	/**
+	 * 方法 `unwrap`：完成本类中与「unwrap」相关的职责。
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T unwrap(Class<T> iface) throws SQLException {
@@ -90,6 +93,9 @@ public abstract class AbstractDataSource implements DataSource {
 				"] cannot be unwrapped as [" + iface.getName() + "]");
 	}
 
+	/**
+	 * 判断是否 Wrapper For。
+	 */
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
 		return iface.isInstance(this);

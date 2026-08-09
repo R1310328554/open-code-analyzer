@@ -22,14 +22,9 @@ import java.sql.ShardingKey;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Strategy interface for determining sharding keys which are used to establish direct
- * shard connections in the context of sharded databases. This is used as a callback
- * for providing the current sharding key (plus optionally a super sharding key) in
- * {@link org.springframework.jdbc.datasource.ShardingKeyDataSourceAdapter}.
- *
- * <p>Can be used as a functional interface (for example, with a lambda expression) for a simple
- * sharding key, or as a two-method interface when including a super sharding key as well.
- *
+ * 用于确定分片键的策略接口，分片键用于在分片数据库上下文中建立直接分片连接。这用作在 {@link org.springframework.jdbc.datasource.Sha
+ * rdingKeyDataSourceAdapter} 中提供当前分片键（以及可选的超级分片键）的回调。
+ * <p>可以用作简单分片键的函数接口（例如，使用 lambda 表达式），或者在包含超级分片键时用作两种方法接口。
  * @author Mohamed Lahyane (Anir)
  * @author Juergen Hoeller
  * @since 6.1.2
@@ -38,19 +33,16 @@ import org.jspecify.annotations.Nullable;
 public interface ShardingKeyProvider {
 
 	/**
-	 * Determine the sharding key. This method returns the sharding key relevant to the current
-	 * context which will be used to obtain a direct shard connection.
-	 * @return the sharding key, or {@code null} if it is not available or cannot be determined
-	 * @throws SQLException if an error occurs while obtaining the sharding key
+	 * 确定分片键。该方法返回与当前上下文相关的分片键，用于获取直接分片连接。
+	 * @return 分片键，或 {@code null}（如果不可用或无法确定）
+	 * @throws SQLException 如果获取分片key出错
 	 */
 	@Nullable ShardingKey getShardingKey() throws SQLException;
 
 	/**
-	 * Determine the super sharding key, if any. This method returns the super sharding key
-	 * relevant to the current context which will be used to obtain a direct shard connection.
-	 * @return the super sharding key, or {@code null} if it is not available or cannot be
-	 * determined (the default)
-	 * @throws SQLException if an error occurs while obtaining the super sharding key
+	 * 确定超级分片键（如果有）。该方法返回与当前上下文相关的超级分片键，用于获取直接分片连接。
+	 * @return 超级分片键，如果不可用或无法确定则为 {@code null}（默认）
+	 * @throws SQLException 如果获取超级分片键出错
 	 */
 	default @Nullable ShardingKey getSuperShardingKey() throws SQLException {
 		return null;

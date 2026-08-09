@@ -27,17 +27,8 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
-/* ===== [OCA 中文解析] =====
-class CallMetaDataProviderFactory — 意图说明
-
-工厂：封装复杂创建逻辑；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/CallMetaDataProviderFactory.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Factory used to create a {@link CallMetaDataProvider} implementation
- * based on the type of database being used.
- *
+ * 工厂用于根据所使用的数据库类型创建 {@link CallMetaDataProvider} 实现。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -45,29 +36,19 @@ class CallMetaDataProviderFactory — 意图说明
  */
 public final class CallMetaDataProviderFactory {
 
-	// [OCA] 字段 `DB2`：类成员状态。
 	private static final String DB2 = "DB2";
-	// [OCA] 字段 `DERBY`：类成员状态。
 	private static final String DERBY = "Apache Derby";
-	// [OCA] 字段 `HANA`：类成员状态。
 	private static final String HANA = "HDB";
-	// [OCA] 字段 `INFORMIX`：类成员状态。
 	private static final String INFORMIX = "Informix Dynamic Server";
-	// [OCA] 字段 `MARIA`：类成员状态。
 	private static final String MARIA = "MariaDB";
-	// [OCA] 字段 `MS_SQL_SERVER`：类成员状态。
 	private static final String MS_SQL_SERVER = "Microsoft SQL Server";
-	// [OCA] 字段 `MYSQL`：类成员状态。
 	private static final String MYSQL = "MySQL";
-	// [OCA] 字段 `ORACLE`：类成员状态。
 	private static final String ORACLE = "Oracle";
-	// [OCA] 字段 `POSTGRES`：类成员状态。
 	private static final String POSTGRES = "PostgreSQL";
-	// [OCA] 字段 `SYBASE`：类成员状态。
 	private static final String SYBASE = "Sybase";
 
-	// [OCA] 字段 `supportedDatabaseProductsForProcedures`：类成员状态。
-	/** List of supported database products for procedure calls. */
+	/**
+	 */
 	public static final List<String> supportedDatabaseProductsForProcedures = List.of(
 			DERBY,
 			DB2,
@@ -80,8 +61,8 @@ public final class CallMetaDataProviderFactory {
 			SYBASE
 		);
 
-	// [OCA] 字段 `supportedDatabaseProductsForFunctions`：类成员状态。
-	/** List of supported database products for function calls. */
+	/**
+	 */
 	public static final List<String> supportedDatabaseProductsForFunctions = List.of(
 			MARIA,
 			MS_SQL_SERVER,
@@ -90,24 +71,24 @@ public final class CallMetaDataProviderFactory {
 			POSTGRES
 		);
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(CallMetaDataProviderFactory.class);
 
 
+	/**
+	 * 创建 `CallMetaDataProviderFactory` 的新实例。
+	 */
 	private CallMetaDataProviderFactory() {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-方法 createMetaDataProvider — 意图与阅读要点
-
-方法 `createMetaDataProvider` 复杂度较高（CCN≈19, NLOC≈57）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Create a {@link CallMetaDataProvider} based on the database meta-data.
-	 * @param dataSource the JDBC DataSource to use for retrieving meta-data
-	 * @param context the class that holds configuration and meta-data
-	 * @return instance of the CallMetaDataProvider implementation to be used
+	 * 根据数据库元数据创建 {@link CallMetaDataProvider}。
+	 * @param dataSource 用于检索元数据的 JDBC 数据源
+	 * @param context 保存配置和元数据的类
+	 * @return 要使用的 CallMetaDataProvider 实现的
 	 */
 	public static CallMetaDataProvider createMetaDataProvider(DataSource dataSource, final CallMetaDataContext context) {
 		try {

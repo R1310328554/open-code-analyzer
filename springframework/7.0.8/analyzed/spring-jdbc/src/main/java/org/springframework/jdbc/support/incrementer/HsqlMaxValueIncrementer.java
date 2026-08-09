@@ -19,27 +19,15 @@ package org.springframework.jdbc.support.incrementer;
 import javax.sql.DataSource;
 
 /**
- * {@link DataFieldMaxValueIncrementer} that increments the maximum value of a given HSQL table
- * with the equivalent of an auto-increment column. Note: If you use this class, your HSQL
- * key column should <i>NOT</i> be auto-increment, as the sequence table does the job.
- *
- * <p>The sequence is kept in a table. There should be one sequence table per
- * table that needs an auto-generated key.
- *
- * <p>Example:
- *
- * <pre class="code">create table tab (id int not null primary key, text varchar(100));
- * create table tab_sequence (value identity);
- * insert into tab_sequence values(0);</pre>
- *
- * If "cacheSize" is set, the intermediate values are served without querying the
- * database. If the server or your application is stopped or crashes or a transaction
- * is rolled back, the unused values will never be served. The maximum hole size in
- * numbering is consequently the value of cacheSize.
- *
- * <p><b>NOTE:</b> HSQL now supports sequences and you should consider using them instead:
- * {@link HsqlSequenceMaxValueIncrementer}
- *
+ * {@link DataFieldMaxValueIncrementer} 增加给定 HSQL 表的最大值，相当于自动增量列。注意：如果您使用此类，您的 HSQL 键列应 <i>
+ * NOT</i> 自动递增，因为序列表会执行此操作。
+ * <p>序列保存在一个表中。每个表应该有一个需要自动生成键的序列表。
+ * <p>示例：
+ * <pre class="code">创建表选项卡（id int不为空主键，text varchar（100））；创建表tab_sequence（值标识）；插入
+ * tab_sequence 值(0);</pre>
+ * 如果设置了“cacheSize”，则无需查询数据库即可提供中间值。如果服务器或您的应用程序停止或崩溃或事务回滚，则永远不会提供未使用的值。因此，编号中的最大空洞大小就是cach
+ * eSize 的值。
+ * <p><b>NOTE：</b> HSQL 现在支持序列，您应该考虑使用它们：{@link HsqlSequenceMaxValueIncrementer}
  * @author Jean-Pierre Pawlak
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -48,7 +36,7 @@ import javax.sql.DataSource;
 public class HsqlMaxValueIncrementer extends AbstractIdentityColumnMaxValueIncrementer {
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -57,21 +45,27 @@ public class HsqlMaxValueIncrementer extends AbstractIdentityColumnMaxValueIncre
 	}
 
 	/**
-	 * Convenience constructor.
-	 * @param dataSource the DataSource to use
-	 * @param incrementerName the name of the sequence/table to use
-	 * @param columnName the name of the column in the sequence table to use
+	 * 方便构造函数。
+	 * @param dataSource 要使用的数据源
+	 * @param incrementerName 要使用的序列/表的名称
+	 * @param columnName 序列表中要使用的列的名称
 	 */
 	public HsqlMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName, columnName);
 	}
 
 
+	/**
+	 * 获取 Increment Statement（`IncrementStatement`）。
+	 */
 	@Override
 	protected String getIncrementStatement() {
 		return "insert into " + getIncrementerName() + " values(null)";
 	}
 
+	/**
+	 * 获取 Identity Statement（`IdentityStatement`）。
+	 */
 	@Override
 	protected String getIdentityStatement() {
 		return "select max(identity()) from " + getIncrementerName();

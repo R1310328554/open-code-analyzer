@@ -17,20 +17,25 @@
 package org.springframework.jdbc.datasource.embedded;
 
 /**
- * An {@link EmbeddedDatabaseConfigurer} delegate that can be used to customize
- * the embedded database.
- *
+ * 可用于自定义嵌入式数据库的 {@link EmbeddedDatabaseConfigurer} 委托。
  * @author Stephane Nicoll
  * @since 6.2
  */
 public class EmbeddedDatabaseConfigurerDelegate extends AbstractEmbeddedDatabaseConfigurer {
 
+	/** 目标相关状态（`target`）。 */
 	private final EmbeddedDatabaseConfigurer target;
 
+	/**
+	 * 创建 `EmbeddedDatabaseConfigurerDelegate` 的新实例。
+	 */
 	public EmbeddedDatabaseConfigurerDelegate(EmbeddedDatabaseConfigurer target) {
 		this.target = target;
 	}
 
+	/**
+	 * 方法 `configureConnectionProperties`：完成本类中与「configure Connection Properties」相关的职责。
+	 */
 	@Override
 	public void configureConnectionProperties(ConnectionProperties properties, String databaseName) {
 		this.target.configureConnectionProperties(properties, databaseName);

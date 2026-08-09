@@ -17,10 +17,7 @@
 package org.springframework.jdbc.core;
 
 /**
- * Subinterface of {@link SqlTypeValue} that adds a cleanup callback,
- * to be invoked after the value has been set and the corresponding
- * statement has been executed.
- *
+ * {@link SqlTypeValue} 的子接口，添加清理回调，在设置值并执行相应语句后调用。
  * @author Juergen Hoeller
  * @since 1.1
  * @see org.springframework.jdbc.core.support.SqlLobValue
@@ -28,8 +25,7 @@ package org.springframework.jdbc.core;
 public interface DisposableSqlTypeValue extends SqlTypeValue {
 
 	/**
-	 * Clean up resources held by this type value,
-	 * for example the LobCreator in case of an SqlLobValue.
+	 * 清理此类型值所持有的资源，例如 SqlLobValue 中的 LobCreator。
 	 * @see org.springframework.jdbc.core.support.SqlLobValue#cleanup()
 	 * @see org.springframework.jdbc.support.SqlValue#cleanup()
 	 */

@@ -24,26 +24,17 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessException;
 
 /**
- * Callback interface used by {@link JdbcTemplate}'s query methods.
- * Implementations of this interface perform the actual work of extracting
- * results from a {@link java.sql.ResultSet}, but don't need to worry
- * about exception handling. {@link java.sql.SQLException SQLExceptions}
- * will be caught and handled by the calling JdbcTemplate.
- *
- * <p>This interface is mainly used within the JDBC framework itself.
- * A {@link RowMapper} is usually a simpler choice for ResultSet processing,
- * mapping one result object per row instead of one result object for
- * the entire ResultSet.
- *
- * <p>Note: In contrast to a {@link RowCallbackHandler}, a ResultSetExtractor
- * object is typically stateless and thus reusable, as long as it doesn't
- * access stateful resources (such as output streams when streaming LOB
- * contents) or keep result state within the object.
- *
+ * {@link JdbcTemplate} 的查询方法使用的回调接口。此接口的实现执行从 {@link java.sql.ResultSet}
+ * 中提取结果的实际工作，但无需担心异常处理。 {@link java.sql.SQLException SQLExceptions} 将由调用 JdbcTemplate
+ * 捕获并处理。
+ * <p>该接口主要在JDBC框架本身内使用。 {@link RowMapper} 通常是 ResultSet 处理的一种更简单的选择，它为每行映射一个结果对象，而不是整个 Res
+ * ultSet 的一个结果对象。
+ * <p>注意：与 {@link RowCallbackHandler} 相比，ResultSetExtractor 对象通常是无状态的，因此可以重用，只要它不访问有状态资源（例如
+ * 流式传输 LOB 内容时的输出流）或将结果状态保留在对象内。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since April 24, 2003
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see JdbcTemplate
  * @see RowCallbackHandler
  * @see RowMapper
@@ -53,14 +44,11 @@ import org.springframework.dao.DataAccessException;
 public interface ResultSetExtractor<T extends @Nullable Object> {
 
 	/**
-	 * Implementations must implement this method to process the entire ResultSet.
-	 * @param rs the ResultSet to extract data from. Implementations should
-	 * not close this: it will be closed by the calling JdbcTemplate.
-	 * @return an arbitrary result object, or {@code null} if none
-	 * (the extractor will typically be stateful in the latter case).
-	 * @throws SQLException if an SQLException is encountered getting column
-	 * values or navigating (that is, there's no need to catch SQLException)
-	 * @throws DataAccessException in case of custom exceptions
+	 * 实现必须实现此方法来处理整个 ResultSet。
+	 * @param rs 要从中提取数据的 ResultSet。实现不应关闭它：它将通过调用 JdbcTemplate 来关闭。
+	 * @return 任意结果对象，如果没有，则为 {@code null}（在后一种情况下，提取器通常是有状态的）。
+	 * @throws SQLException 如果在获取列值或导航时遇到 SQLException（即无需捕获 SQLException）
+	 * @throws DataAccessException 如果出现自定义异常
 	 */
 	T extractData(ResultSet rs) throws SQLException, DataAccessException;
 

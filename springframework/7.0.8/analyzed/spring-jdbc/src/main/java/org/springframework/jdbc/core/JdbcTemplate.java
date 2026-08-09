@@ -59,52 +59,23 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
-/* ===== [OCA 中文解析] =====
-class JdbcTemplate — 意图说明
-
-class `JdbcTemplate`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * <b>This is the central delegate in the JDBC core package.</b>
- * It can be used directly for many data access purposes, supporting any kind
- * of JDBC operation. For a more focused and convenient facade on top of this,
- * consider {@link org.springframework.jdbc.core.simple.JdbcClient} as of 6.1.
- *
- * <p>This class simplifies the use of JDBC and helps to avoid common errors.
- * It executes core JDBC workflow, leaving application code to provide SQL
- * and extract results. This class executes SQL queries or updates, initiating
- * iteration over ResultSets and catching JDBC exceptions and translating
- * them to the common {@code org.springframework.dao} exception hierarchy.
- *
- * <p>Code using this class need only implement callback interfaces, giving
- * them a clearly defined contract. The {@link PreparedStatementCreator} callback
- * interface creates a prepared statement given a Connection, providing SQL and
- * any necessary parameters. The {@link ResultSetExtractor} interface extracts
- * values from a ResultSet. See also {@link PreparedStatementSetter} and
- * {@link RowMapper} for two popular alternative callback interfaces.
- *
- * <p>An instance of this template class is thread-safe once configured.
- * Can be used within a service implementation via direct instantiation
- * with a DataSource reference, or get prepared in an application context
- * and given to services as bean reference. Note: The DataSource should
- * always be configured as a bean in the application context, in the first case
- * given to the service directly, in the second case to the prepared template.
- *
- * <p>Because this class is parameterizable by the callback interfaces and
- * the {@link org.springframework.jdbc.support.SQLExceptionTranslator}
- * interface, there should be no need to subclass it.
- *
- * <p>All SQL operations performed by this class are logged at debug level,
- * using "org.springframework.jdbc.core.JdbcTemplate" as log category.
- *
- * <p><b>NOTE: As of 6.1, there is a unified JDBC access facade available in
- * the form of {@link org.springframework.jdbc.core.simple.JdbcClient}.</b>
- * {@code JdbcClient} provides a fluent API style for common JDBC queries/updates
- * with flexible use of indexed or named parameters. It delegates to a
- * {@code JdbcTemplate}/{@code NamedParameterJdbcTemplate} for actual execution.
- *
+ * <b>这是 JDBC 核心包中的中央委托。 </b> 它可以直接用于许多数据访问目的，支持任何类型的 JDBC 操作。在此之上，为了获得更集中、更方便的外观，请考虑从 6.1 
+ * 开始使用 {@link org.springframework.jdbc.core.simple.JdbcClient}。
+ * <p>该类简化了 JDBC 的使用并有助于避免常见错误。它执行核心 JDBC 工作流程，让应用程序代码提供 SQL 并提取结果。此类执行 SQL 查询或更新、启动 Result
+ * Set 迭代并捕获 JDBC 异常并将它们转换为常见的 {@code org.springframework.dao} 异常层次结构。
+ * 使用此类的 <p>Code 只需实现回调接口，给它们一个明确定义的契约。 {@link PreparedStatementCreator}
+ * 回调接口在给定连接的情况下创建准备好的语句，提供 SQL 和任何必要的参数。 {@link ResultSetExtractor} 接口从 ResultSet
+ * 中提取值。另请参阅 {@link PreparedStatementSetter} 和 {@link RowMapper} 了解两个流行的替代回调接口。
+ * <p>一旦配置，该模板类的实例就是线程安全的。可以通过使用 DataSource 引用直接实例化在服务实现中使用，或者在应用程序上下文中做好准备并作为 bean 引用提供给服务
+ * 。注意：数据源应始终在应用程序上下文中配置为 bean，在第一种情况下直接提供给服务，在第二种情况下提供给准备好的模板。
+ * <p> 因为此类可通过回调接口和 {@link org.springframework.jdbc.support.SQLExceptionTranslator}
+ * 接口进行参数化，所以不需要对其进行子类化。
+ * <p>A 此类执行的所有 SQL 操作都在调试级别记录，使用“org.springframework.jdbc.core.JdbcTemplate”作为日志类别。
+ * <p><b>NOTE：从 6.1 开始，有一个统一的 JDBC 访问外观，以 {@link
+ * org.springframework.jdbc.core.simple.JdbcClient} 的形式提供。</b> {@code JdbcClient} 为常见的 JDBC
+ * 查询/更新提供了流畅的 API 风格，可以灵活地使用索引或命名参数。它委托给 {@code JdbcTemplate}/{@code
+ * NamedParameterJdbcTemplate} 来实际执行。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Thomas Risberg
@@ -124,75 +95,57 @@ class `JdbcTemplate`：请结合所属模块与调用方理解其在整体架构
  */
 public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 
-	// [OCA] 字段 `RETURN_RESULT_SET_PREFIX`：类成员状态。
 	private static final String RETURN_RESULT_SET_PREFIX = "#result-set-";
 
-	// [OCA] 字段 `RETURN_UPDATE_COUNT_PREFIX`：类成员状态。
 	private static final String RETURN_UPDATE_COUNT_PREFIX = "#update-count-";
 
 
-	// [OCA] 字段 `ignoreWarnings`：类成员状态。
-	/** If this variable is {@code false}, we will throw exceptions on SQL warnings. */
+	/**
+	 */
 	private boolean ignoreWarnings = true;
 
-	// [OCA] 字段 `fetchSize`：类成员状态。
 	/**
-	 * If this variable is set to a non-negative value, it will be used for setting the
-	 * fetchSize property on statements used for query processing.
+	 * 如果此变量设置为非负值，它将用于设置用于查询处理的语句的 fetchSize 属性。
 	 */
 	private int fetchSize = -1;
 
-	// [OCA] 字段 `maxRows`：类成员状态。
 	/**
-	 * If this variable is set to a non-negative value, it will be used for setting the
-	 * maxRows property on statements used for query processing.
+	 * 如果此变量设置为非负值，它将用于设置用于查询处理的语句的 maxRows 属性。
 	 */
 	private int maxRows = -1;
 
-	// [OCA] 字段 `queryTimeout`：类成员状态。
 	/**
-	 * If this variable is set to a non-negative value, it will be used for setting the
-	 * queryTimeout property on statements used for query processing.
+	 * 如果此变量设置为非负值，它将用于设置用于查询处理的语句的 queryTimeout 属性。
 	 */
 	private int queryTimeout = -1;
 
-	// [OCA] 字段 `skipResultsProcessing`：类成员状态。
 	/**
-	 * If this variable is set to true, then all results checking will be bypassed for any
-	 * callable statement processing. This can be used to avoid a bug in some older Oracle
-	 * JDBC drivers like 10.1.0.2.
+	 * 如果此变量设置为 true，则任何可调用语句处理都将绕过所有结果检查。这可用于避免某些较旧的 Oracle JDBC 驱动程序（如 10.1.0.2）中的错误。
 	 */
 	private boolean skipResultsProcessing = false;
 
-	// [OCA] 字段 `skipUndeclaredResults`：类成员状态。
 	/**
-	 * If this variable is set to true then all results from a stored procedure call
-	 * that don't have a corresponding SqlOutParameter declaration will be bypassed.
-	 * All other results processing will be take place unless the variable
-	 * {@code skipResultsProcessing} is set to {@code true}.
+	 * 如果此变量设置为 true，则将绕过没有相应 SqlOutParameter 声明的存储过程调用的所有结果。除非将变量 {@code
+	 * skipResultsProcessing} 设置为 {@code true}，否则将进行所有其他结果处理。
 	 */
 	private boolean skipUndeclaredResults = false;
 
-	// [OCA] 字段 `resultsMapCaseInsensitive`：类成员状态。
 	/**
-	 * If this variable is set to true then execution of a CallableStatement will return
-	 * the results in a Map that uses case-insensitive names for the parameters.
+	 * 如果此变量设置为 true，则 CallableStatement 的执行将返回 Map 中的结果，该 Map 使用不区分大小写的参数名称。
 	 */
 	private boolean resultsMapCaseInsensitive = false;
 
 
 	/**
-	 * Construct a new JdbcTemplate for bean usage.
-	 * <p>Note: The DataSource has to be set before using the instance.
+	 * 构造一个新的 JdbcTemplate 以供 bean 使用。 <p>注意：在使用实例之前必须设置数据源。
 	 * @see #setDataSource
 	 */
 	public JdbcTemplate() {
 	}
 
 	/**
-	 * Construct a new JdbcTemplate, given a DataSource to obtain connections from.
-	 * <p>Note: This will not trigger initialization of the exception translator.
-	 * @param dataSource the JDBC DataSource to obtain connections from
+	 * 构造一个新的 JdbcTemplate，给定一个从中获取连接的 DataSource。 <p>注意：这不会触发异常转换器的初始化。
+	 * @param dataSource 从中获取连接的 JDBC 数据源
 	 */
 	public JdbcTemplate(DataSource dataSource) {
 		setDataSource(dataSource);
@@ -200,11 +153,9 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * Construct a new JdbcTemplate, given a DataSource to obtain connections from.
-	 * <p>Note: Depending on the "lazyInit" flag, initialization of the exception translator
-	 * will be triggered.
-	 * @param dataSource the JDBC DataSource to obtain connections from
-	 * @param lazyInit whether to lazily initialize the SQLExceptionTranslator
+	 * 构造一个新的 JdbcTemplate，给定一个从中获取连接的 DataSource。 <p>注意：根据“lazyInit”标志，将触发异常转换器的初始化。
+	 * @param dataSource 从中获取连接的 JDBC 数据源
+	 * @param lazyInit 是否延迟初始化 SQLExceptionTranslator
 	 */
 	public JdbcTemplate(DataSource dataSource, boolean lazyInit) {
 		setDataSource(dataSource);
@@ -213,8 +164,8 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * Copy constructor for a derived JdbcTemplate.
-	 * @param original the original template to copy from
+	 * 派生 JdbcTemplate 的复制构造函数。
+	 * @param original 要复制的原始模板
 	 * @since 7.0
 	 */
 	public JdbcTemplate(JdbcAccessor original) {
@@ -234,10 +185,9 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 
 
 	/**
-	 * Set whether we want to ignore JDBC statement warnings ({@link SQLWarning}).
-	 * <p>Default is {@code true}, swallowing and logging all warnings. Switch this flag to
-	 * {@code false} to make this JdbcTemplate throw a {@link SQLWarningException} instead
-	 * (or chain the {@link SQLWarning} into the primary {@link SQLException}, if any).
+	 * 设置是否要忽略 JDBC 语句警告 ({@link SQLWarning})。 <p>Default 是 {@code true}，吞并并记录所有警告。将此标志切换为
+	 * {@code false} 以使此 JdbcTemplate 改为抛出 {@link SQLWarningException}（或将 {@link SQLWarning}
+	 * 链接到主 {@link SQLException}（如果有））。
 	 * @see Statement#getWarnings()
 	 * @see java.sql.SQLWarning
 	 * @see org.springframework.jdbc.SQLWarningException
@@ -248,21 +198,16 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * Return whether we ignore SQLWarnings.
+	 * 返回我们是否忽略 SQLWarnings。
 	 */
 	public boolean isIgnoreWarnings() {
 		return this.ignoreWarnings;
 	}
 
 	/**
-	 * Set the fetch size for this JdbcTemplate. This is important for processing large
-	 * result sets: Setting this higher than the default value will increase processing
-	 * speed at the cost of memory consumption; setting this lower can avoid transferring
-	 * row data that will never be read by the application.
-	 * <p>Default is -1, indicating to use the JDBC driver's default configuration
-	 * (i.e. to not pass a specific fetch size setting on to the driver).
-	 * <p>Note: As of 4.3, negative values other than -1 will get passed on to the driver,
-	 * since, for example, MySQL supports special behavior for {@code Integer.MIN_VALUE}.
+	 * 设置此 JdbcTemplate 的获取大小。这对于处理大型结果集很重要：将其设置为高于默认值会以内存消耗为代价提高处理速度；设置较低的值可以避免传输应用程序永远不会读取的行数
+	 * 据。 <p>Default 为 -1，表示使用 JDBC 驱动程序的默认配置（即不将特定的获取大小设置传递给驱动程序）。 <p>注意：从 4.3 开始，除 -1 之外的负值将传
+	 * 递给驱动程序，因为 MySQL 支持 {@code Integer.MIN_VALUE} 的特殊行为。
 	 * @see java.sql.Statement#setFetchSize
 	 */
 	public void setFetchSize(int fetchSize) {
@@ -270,22 +215,16 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * Return the fetch size specified for this JdbcTemplate.
+	 * 返回为此 JdbcTemplate 指定的获取大小。
 	 */
 	public int getFetchSize() {
 		return this.fetchSize;
 	}
 
 	/**
-	 * Set the maximum number of rows for this JdbcTemplate. This is important for
-	 * processing subsets of large result sets, avoiding to read and hold the entire
-	 * result set in the database or in the JDBC driver if we're never interested in
-	 * the entire result in the first place (for example, when performing searches
-	 * that might return a large number of matches).
-	 * <p>Default is -1, indicating to use the JDBC driver's default configuration
-	 * (i.e. to not pass a specific max rows setting on to the driver).
-	 * <p>Note: As of 4.3, negative values other than -1 will get passed on to the
-	 * driver, in sync with {@link #setFetchSize}'s support for special MySQL values.
+	 * 设置此 JdbcTemplate 的最大行数。这对于处理大型结果集的子集非常重要，如果我们一开始就对整个结果不感兴趣（例如，在执行可能返回大量匹配项的搜索时），则可以避免读取并
+	 * 保存数据库或 JDBC 驱动程序中的整个结果集。 <p>Default 为 -1，表示使用 JDBC 驱动程序的默认配置（即不将特定的最大行数设置传递给驱动程序）。 <p>注意
+	 * ：从 4.3 开始，除 -1 之外的负值将传递给驱动程序，与 {@link #setFetchSize} 对特殊 MySQL 值的支持同步。
 	 * @see java.sql.Statement#setMaxRows
 	 */
 	public void setMaxRows(int maxRows) {
@@ -293,19 +232,15 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * Return the maximum number of rows specified for this JdbcTemplate.
+	 * 返回为此 JdbcTemplate 指定的最大行数。
 	 */
 	public int getMaxRows() {
 		return this.maxRows;
 	}
 
 	/**
-	 * Set the query timeout (seconds) for statements that this JdbcTemplate executes.
-	 * <p>Default is -1, indicating to use the JDBC driver's default
-	 * (i.e. to not pass a specific query timeout setting on the driver).
-	 * <p>Note: Any timeout specified here will be overridden by the remaining
-	 * transaction timeout when executing within a transaction that has a
-	 * timeout specified at the transaction level.
+	 * 设置此 JdbcTemplate 执行的语句的查询超时（秒）。 <p>Default 为 -1，表示使用 JDBC 驱动程序的默认值（即不传递驱动程序上的特定查询超时设置）。 
+	 * <p>注意：当在事务级别指定了超时的事务中执行时，此处指定的任何超时都将被剩余事务超时覆盖。
 	 * @see java.sql.Statement#setQueryTimeout
 	 */
 	public void setQueryTimeout(int queryTimeout) {
@@ -313,54 +248,50 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * Return the query timeout (seconds) for statements that this JdbcTemplate executes.
+	 * 返回此 JdbcTemplate 执行的语句的查询超时（秒）。
 	 */
 	public int getQueryTimeout() {
 		return this.queryTimeout;
 	}
 
 	/**
-	 * Set whether results processing should be skipped. Can be used to optimize callable
-	 * statement processing when we know that no results are being passed back - the processing
-	 * of out parameter will still take place. This can be used to avoid a bug in some older
-	 * Oracle JDBC drivers like 10.1.0.2.
+	 * 设置是否应跳过结果处理。当我们知道没有结果被传回时，可用于优化可调用语句处理 - 输出参数的处理仍将进行。这可用于避免某些较旧的 Oracle JDBC 驱动程序（如 10.1
+	 * .0.2）中的错误。
 	 */
 	public void setSkipResultsProcessing(boolean skipResultsProcessing) {
 		this.skipResultsProcessing = skipResultsProcessing;
 	}
 
 	/**
-	 * Return whether results processing should be skipped.
+	 * 返回是否应跳过结果处理。
 	 */
 	public boolean isSkipResultsProcessing() {
 		return this.skipResultsProcessing;
 	}
 
 	/**
-	 * Set whether undeclared results should be skipped.
+	 * 设置是否应跳过未声明的结果。
 	 */
 	public void setSkipUndeclaredResults(boolean skipUndeclaredResults) {
 		this.skipUndeclaredResults = skipUndeclaredResults;
 	}
 
 	/**
-	 * Return whether undeclared results should be skipped.
+	 * 返回是否应跳过未声明的结果。
 	 */
 	public boolean isSkipUndeclaredResults() {
 		return this.skipUndeclaredResults;
 	}
 
 	/**
-	 * Set whether execution of a CallableStatement will return the results in a Map
-	 * that uses case-insensitive names for the parameters.
+	 * 设置 CallableStatement 的执行是否将在使用不区分大小写的参数名称的 Map 中返回结果。
 	 */
 	public void setResultsMapCaseInsensitive(boolean resultsMapCaseInsensitive) {
 		this.resultsMapCaseInsensitive = resultsMapCaseInsensitive;
 	}
 
 	/**
-	 * Return whether execution of a CallableStatement will return the results in a Map
-	 * that uses case-insensitive names for the parameters.
+	 * 返回 CallableStatement 的执行是否会在使用不区分大小写的参数名称的 Map 中返回结果。
 	 */
 	public boolean isResultsMapCaseInsensitive() {
 		return this.resultsMapCaseInsensitive;
@@ -368,27 +299,25 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with a plain java.sql.Connection
+	// 处理普通 java.sql.Connection 的方法
 	//-------------------------------------------------------------------------
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T extends @Nullable Object> T execute(ConnectionCallback<T> action) throws DataAccessException {
 		Assert.notNull(action, "Callback object must not be null");
 
 		Connection con = DataSourceUtils.getConnection(obtainDataSource());
 		try {
-			// Create close-suppressing Connection proxy, also preparing returned Statements.
+			// 创建关闭抑制连接代理，同时准备返回的语句。
 			Connection conToUse = createConnectionProxy(con);
 			return action.doInConnection(conToUse);
 		}
 		catch (SQLException ex) {
-			// Release Connection early, to avoid potential connection pool deadlock
-			// in the case when the exception translator hasn't been initialized yet.
+			// 尽早释放连接，避免潜在的连接池死锁
+			// 在异常转换器尚未初始化的情况下。
 			String sql = getSql(action);
 			DataSourceUtils.releaseConnection(con, getDataSource());
 			con = null;
@@ -400,12 +329,10 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * Create a close-suppressing proxy for the given JDBC Connection.
-	 * Called by the {@code execute} method.
-	 * <p>The proxy also prepares returned JDBC Statements, applying
-	 * statement settings such as fetch size, max rows, and query timeout.
-	 * @param con the JDBC Connection to create a proxy for
-	 * @return the Connection proxy
+	 * 为给定的 JDBC 连接创建关闭抑制代理。由 {@code execute} 方法调用。 <p>代理还准备返回的 JDBC 语句，应用语句设置，例如获取大小、最大行数和查询超时
+	 * 。
+	 * @param con 用于创建代理的 JDBC 连接
+	 * @return 连接代理
 	 * @see java.sql.Connection#close()
 	 * @see #execute(ConnectionCallback)
 	 * @see #applyStatementSettings
@@ -419,16 +346,12 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with static SQL (java.sql.Statement)
+	// 处理静态 SQL 的方法 (java.sql.Statement)
 	//-------------------------------------------------------------------------
 
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	private <T extends @Nullable Object> T execute(StatementCallback<T> action, boolean closeResources) throws DataAccessException {
 		Assert.notNull(action, "Callback object must not be null");
 
@@ -442,8 +365,8 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 			return result;
 		}
 		catch (SQLException ex) {
-			// Release Connection early, to avoid potential connection pool deadlock
-			// in the case when the exception translator hasn't been initialized yet.
+			// 尽早释放连接，避免潜在的连接池死锁
+			// 在异常转换器尚未初始化的情况下。
 			if (stmt != null) {
 				handleWarnings(stmt, ex);
 			}
@@ -462,35 +385,24 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 		}
 	}
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T extends @Nullable Object> T execute(StatementCallback<T> action) throws DataAccessException {
 		return execute(action, true);
 	}
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void execute(String sql) throws DataAccessException {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Executing SQL statement [" + sql + "]");
 		}
 
-		// Callback to execute the statement.
-		/* ===== [OCA 中文解析] =====
-class ExecuteStatementCallback — 意图说明
-
-class `ExecuteStatementCallback`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-		===== [OCA 中文解析结束] ===== */
+		// 执行语句的回调。
 		class ExecuteStatementCallback implements StatementCallback<@Nullable Object>, SqlProvider {
 			@Override
 			public @Nullable Object doInStatement(Statement stmt) throws SQLException {
@@ -506,6 +418,9 @@ class `ExecuteStatementCallback`：请结合所属模块与调用方理解其在
 		execute(new ExecuteStatementCallback(), true);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, ResultSetExtractor<T> rse) throws DataAccessException {
 		Assert.notNull(sql, "SQL must not be null");
@@ -514,14 +429,7 @@ class `ExecuteStatementCallback`：请结合所属模块与调用方理解其在
 			logger.debug("Executing SQL query [" + sql + "]");
 		}
 
-		// Callback to execute the query.
-		/* ===== [OCA 中文解析] =====
-class QueryStatementCallback — 意图说明
-
-class `QueryStatementCallback`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-		===== [OCA 中文解析结束] ===== */
+		// 执行查询的回调。
 		class QueryStatementCallback implements StatementCallback<T>, SqlProvider {
 			@Override
 			public T doInStatement(Statement stmt) throws SQLException {
@@ -543,25 +451,27 @@ class `QueryStatementCallback`：请结合所属模块与调用方理解其在�
 		return execute(new QueryStatementCallback(), true);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public void query(String sql, RowCallbackHandler rch) throws DataAccessException {
 		query(sql, new RowCallbackHandlerResultSetExtractor(rch, this.maxRows));
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, RowMapper<T> rowMapper) throws DataAccessException {
 		return result(query(sql, new RowMapperResultSetExtractor<>(rowMapper, 0, this.maxRows)));
 	}
 
+	/**
+	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 */
 	@Override
 	public <T> Stream<T> queryForStream(String sql, RowMapper<T> rowMapper) throws DataAccessException {
-		/* ===== [OCA 中文解析] =====
-class StreamStatementCallback — 意图说明
-
-class `StreamStatementCallback`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-		===== [OCA 中文解析结束] ===== */
 		class StreamStatementCallback implements StatementCallback<Stream<T>>, SqlProvider {
 			@Override
 			public Stream<T> doInStatement(Statement stmt) throws SQLException {
@@ -582,37 +492,58 @@ class `StreamStatementCallback`：请结合所属模块与调用方理解其在�
 		return result(execute(new StreamStatementCallback(), false));
 	}
 
+	/**
+	 * 方法 `queryForMap`：完成本类中与「query For Map」相关的职责。
+	 */
 	@Override
 	public Map<String, @Nullable Object> queryForMap(String sql) throws DataAccessException {
 		return result(queryForObject(sql, getColumnMapRowMapper()));
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, RowMapper<T> rowMapper) throws DataAccessException {
 		List<T> results = query(sql, rowMapper);
 		return DataAccessUtils.nullableSingleResult(results);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T> @Nullable T queryForObject(String sql, Class<T> requiredType) throws DataAccessException {
 		return queryForObject(sql, getSingleColumnRowMapper(requiredType));
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, Class<T> elementType) throws DataAccessException {
 		return query(sql, getSingleColumnRowMapper(elementType));
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public List<Map<String, @Nullable Object>> queryForList(String sql) throws DataAccessException {
 		return query(sql, getColumnMapRowMapper());
 	}
 
+	/**
+	 * 方法 `queryForRowSet`：完成本类中与「query For Row Set」相关的职责。
+	 */
 	@Override
 	public SqlRowSet queryForRowSet(String sql) throws DataAccessException {
 		return result(query(sql, new SqlRowSetResultSetExtractor()));
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(String sql) throws DataAccessException {
 		Assert.notNull(sql, "SQL must not be null");
@@ -620,14 +551,7 @@ class `StreamStatementCallback`：请结合所属模块与调用方理解其在�
 			logger.debug("Executing SQL update [" + sql + "]");
 		}
 
-		// Callback to execute the update statement.
-		/* ===== [OCA 中文解析] =====
-class UpdateStatementCallback — 意图说明
-
-class `UpdateStatementCallback`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-		===== [OCA 中文解析结束] ===== */
+		// 执行更新语句的回调。
 		class UpdateStatementCallback implements StatementCallback<Integer>, SqlProvider {
 			@Override
 			public Integer doInStatement(Statement stmt) throws SQLException {
@@ -646,26 +570,17 @@ class `UpdateStatementCallback`：请结合所属模块与调用方理解其在�
 		return updateCount(execute(new UpdateStatementCallback(), true));
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 batchUpdate — 意图与阅读要点
-
-方法 `batchUpdate` 复杂度较高（CCN≈12, NLOC≈50）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public int[] batchUpdate(String... sql) throws DataAccessException {
 		Assert.notEmpty(sql, "SQL array must not be empty");
 		if (logger.isDebugEnabled()) {
 			logger.debug("Executing SQL batch update of " + sql.length + " statements");
 		}
 
-		// Callback to execute the batch update.
-		/* ===== [OCA 中文解析] =====
-class BatchUpdateStatementCallback — 意图说明
-
-class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-		===== [OCA 中文解析结束] ===== */
+		// 执行批量更新的回调。
 		class BatchUpdateStatementCallback implements StatementCallback<int[]>, SqlProvider {
 
 			private final StringBuilder currSql = new StringBuilder();
@@ -727,16 +642,12 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with prepared statements
+	// 处理准备好的语句的方法
 	//-------------------------------------------------------------------------
 
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	private <T extends @Nullable Object> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action, boolean closeResources)
 			throws DataAccessException {
 
@@ -757,8 +668,8 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 			return result;
 		}
 		catch (SQLException ex) {
-			// Release Connection early, to avoid potential connection pool deadlock
-			// in the case when the exception translator hasn't been initialized yet.
+			// 尽早释放连接，避免潜在的连接池死锁
+			// 在异常转换器尚未初始化的情况下。
 			if (psc instanceof ParameterDisposer parameterDisposer) {
 				parameterDisposer.cleanupParameters();
 			}
@@ -784,38 +695,32 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		}
 	}
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T extends @Nullable Object> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action)
 			throws DataAccessException {
 
 		return execute(psc, action, true);
 	}
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T extends @Nullable Object> T execute(String sql, PreparedStatementCallback<T> action) throws DataAccessException {
 		return execute(new SimplePreparedStatementCreator(sql), action, true);
 	}
 
 	/**
-	 * Query using a prepared statement, allowing for a PreparedStatementCreator
-	 * and a PreparedStatementSetter. Most other query methods use this method,
-	 * but application code will always work with either a creator or a setter.
-	 * @param psc a callback that creates a PreparedStatement given a Connection
-	 * @param pss a callback that knows how to set values on the prepared statement.
-	 * If this is {@code null}, the SQL will be assumed to contain no bind parameters.
-	 * @param rse a callback that will extract results
-	 * @return an arbitrary result object, as returned by the ResultSetExtractor
-	 * @throws DataAccessException if there is any problem
+	 * 使用准备好的语句进行查询，允许使用PreparedStatementCreator 和PreparedStatementSetter。大多数其他查询方法都使用此方法，但应用程序
+	 * 代码将始终与创建者或设置者一起使用。
+	 * @param psc 给定连接创建一个PreparedStatement的回调
+	 * @param pss 知道如何在准备好的语句上设置值的回调。如果这是 {@code null}，则将假定 SQL 不包含绑定参数。
+	 * @param rse 将提取结果的回调
+	 * @return 任意结果对象，由 ResultSetExtractor 返回
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	public <T extends @Nullable Object> T query(
 			PreparedStatementCreator psc, @Nullable PreparedStatementSetter pss, ResultSetExtractor<T> rse)
@@ -842,95 +747,137 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		}, true);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T query(PreparedStatementCreator psc, ResultSetExtractor<T> rse) throws DataAccessException {
 		return query(psc, null, rse);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, @Nullable PreparedStatementSetter pss, ResultSetExtractor<T> rse) throws DataAccessException {
 		return query(new SimplePreparedStatementCreator(sql), pss, rse);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, ResultSetExtractor<T> rse) throws DataAccessException {
 		return query(sql, newArgTypePreparedStatementSetter(args, argTypes), rse);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Deprecated(since = "5.3")
 	@Override
 	public <T extends @Nullable Object> T query(String sql, @Nullable Object @Nullable [] args, ResultSetExtractor<T> rse) throws DataAccessException {
 		return query(sql, newArgPreparedStatementSetter(args), rse);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, ResultSetExtractor<T> rse, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return query(sql, newArgPreparedStatementSetter(args), rse);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public void query(PreparedStatementCreator psc, RowCallbackHandler rch) throws DataAccessException {
 		query(psc, new RowCallbackHandlerResultSetExtractor(rch, this.maxRows));
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public void query(String sql, @Nullable PreparedStatementSetter pss, RowCallbackHandler rch) throws DataAccessException {
 		query(sql, pss, new RowCallbackHandlerResultSetExtractor(rch, this.maxRows));
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public void query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowCallbackHandler rch) throws DataAccessException {
 		query(sql, newArgTypePreparedStatementSetter(args, argTypes), rch);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Deprecated(since = "5.3")
 	@Override
 	public void query(String sql, @Nullable Object @Nullable [] args, RowCallbackHandler rch) throws DataAccessException {
 		query(sql, newArgPreparedStatementSetter(args), rch);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public void query(String sql, RowCallbackHandler rch, @Nullable Object @Nullable ... args) throws DataAccessException {
 		query(sql, newArgPreparedStatementSetter(args), rch);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(PreparedStatementCreator psc, RowMapper<T> rowMapper) throws DataAccessException {
 		return result(query(psc, new RowMapperResultSetExtractor<>(rowMapper, 0, this.maxRows)));
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, @Nullable PreparedStatementSetter pss, RowMapper<T> rowMapper) throws DataAccessException {
 		return result(query(sql, pss, new RowMapperResultSetExtractor<>(rowMapper, 0, this.maxRows)));
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowMapper<T> rowMapper) throws DataAccessException {
 		return result(query(sql, args, argTypes, new RowMapperResultSetExtractor<>(rowMapper, 0, this.maxRows)));
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Deprecated(since = "5.3")
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, @Nullable Object @Nullable [] args, RowMapper<T> rowMapper) throws DataAccessException {
 		return result(query(sql, newArgPreparedStatementSetter(args), new RowMapperResultSetExtractor<>(rowMapper, 0, this.maxRows)));
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return result(query(sql, newArgPreparedStatementSetter(args), new RowMapperResultSetExtractor<>(rowMapper, 0, this.maxRows)));
 	}
 
 	/**
-	 * Query using a prepared statement, allowing for a PreparedStatementCreator
-	 * and a PreparedStatementSetter. Most other query methods use this method,
-	 * but application code will always work with either a creator or a setter.
-	 * @param psc a callback that creates a PreparedStatement given a Connection
-	 * @param pss a callback that knows how to set values on the prepared statement.
-	 * If this is {@code null}, the SQL will be assumed to contain no bind parameters.
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result Stream, containing mapped objects, needing to be
-	 * closed once fully processed (for example, through a try-with-resources clause)
-	 * @throws DataAccessException if the query fails
+	 * 使用准备好的语句进行查询，允许使用PreparedStatementCreator 和PreparedStatementSetter。大多数其他查询方法都使用此方法，但应用程序
+	 * 代码将始终与创建者或设置者一起使用。
+	 * @param psc 给定连接创建一个PreparedStatement的回调
+	 * @param pss 知道如何在准备好的语句上设置值的回调。如果这是 {@code null}，则将假定 SQL 不包含绑定参数。
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果流，包含映射对象，完全处理后需要关闭（例如，通过 try-with-resources 子句）
+	 * @throws DataAccessException 如果查询失败
 	 * @since 5.3
 	 */
 	public <T extends @Nullable Object> Stream<T> queryForStream(PreparedStatementCreator psc, @Nullable PreparedStatementSetter pss,
@@ -953,21 +900,33 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		}, false));
 	}
 
+	/**
+	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> Stream<T> queryForStream(PreparedStatementCreator psc, RowMapper<T> rowMapper) throws DataAccessException {
 		return queryForStream(psc, null, rowMapper);
 	}
 
+	/**
+	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> Stream<T> queryForStream(String sql, @Nullable PreparedStatementSetter pss, RowMapper<T> rowMapper) throws DataAccessException {
 		return queryForStream(new SimplePreparedStatementCreator(sql), pss, rowMapper);
 	}
 
+	/**
+	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> Stream<T> queryForStream(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return queryForStream(new SimplePreparedStatementCreator(sql), newArgPreparedStatementSetter(args), rowMapper);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowMapper<T> rowMapper)
 			throws DataAccessException {
@@ -976,6 +935,9 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		return DataAccessUtils.nullableSingleResult(results);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Deprecated(since = "5.3")
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, @Nullable Object @Nullable [] args, RowMapper<T> rowMapper) throws DataAccessException {
@@ -983,12 +945,18 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		return DataAccessUtils.nullableSingleResult(results);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args) throws DataAccessException {
 		List<T> results = query(sql, newArgPreparedStatementSetter(args), new RowMapperResultSetExtractor<>(rowMapper, 1));
 		return DataAccessUtils.nullableSingleResult(results);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T> @Nullable T queryForObject(String sql, @Nullable Object @Nullable [] args, int[] argTypes, Class<T> requiredType)
 			throws DataAccessException {
@@ -996,63 +964,99 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		return queryForObject(sql, args, argTypes, getSingleColumnRowMapper(requiredType));
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Deprecated(since = "5.3")
 	@Override
 	public <T> @Nullable T queryForObject(String sql, @Nullable Object @Nullable [] args, Class<T> requiredType) throws DataAccessException {
 		return queryForObject(sql, getSingleColumnRowMapper(requiredType), args);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T> @Nullable T queryForObject(String sql, Class<T> requiredType, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return queryForObject(sql, getSingleColumnRowMapper(requiredType), args);
 	}
 
+	/**
+	 * 方法 `queryForMap`：完成本类中与「query For Map」相关的职责。
+	 */
 	@Override
 	public Map<String, @Nullable Object> queryForMap(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException {
 		return result(queryForObject(sql, args, argTypes, getColumnMapRowMapper()));
 	}
 
+	/**
+	 * 方法 `queryForMap`：完成本类中与「query For Map」相关的职责。
+	 */
 	@Override
 	public Map<String, @Nullable Object> queryForMap(String sql, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return result(queryForObject(sql, getColumnMapRowMapper(), args));
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, @Nullable Object @Nullable [] args, int[] argTypes, Class<T> elementType) throws DataAccessException {
 		return query(sql, args, argTypes, getSingleColumnRowMapper(elementType));
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Deprecated(since = "5.3")
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, @Nullable Object @Nullable [] args, Class<T> elementType) throws DataAccessException {
 		return query(sql, newArgPreparedStatementSetter(args), getSingleColumnRowMapper(elementType));
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, Class<T> elementType, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return query(sql, newArgPreparedStatementSetter(args), getSingleColumnRowMapper(elementType));
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public List<Map<String, @Nullable Object>> queryForList(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException {
 		return query(sql, args, argTypes, getColumnMapRowMapper());
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public List<Map<String, @Nullable Object>> queryForList(String sql, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return query(sql, newArgPreparedStatementSetter(args), getColumnMapRowMapper());
 	}
 
+	/**
+	 * 方法 `queryForRowSet`：完成本类中与「query For Row Set」相关的职责。
+	 */
 	@Override
 	public SqlRowSet queryForRowSet(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException {
 		return result(query(sql, args, argTypes, new SqlRowSetResultSetExtractor()));
 	}
 
+	/**
+	 * 方法 `queryForRowSet`：完成本类中与「query For Row Set」相关的职责。
+	 */
 	@Override
 	public SqlRowSet queryForRowSet(String sql, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return result(query(sql, newArgPreparedStatementSetter(args), new SqlRowSetResultSetExtractor()));
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	protected int update(PreparedStatementCreator psc, @Nullable PreparedStatementSetter pss)
 			throws DataAccessException {
 
@@ -1077,11 +1081,17 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		}, true));
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(PreparedStatementCreator psc) throws DataAccessException {
 		return update(psc, (PreparedStatementSetter) null);
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(PreparedStatementCreator psc, KeyHolder generatedKeyHolder)
 			throws DataAccessException {
@@ -1100,27 +1110,34 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		}, true));
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(String sql, @Nullable PreparedStatementSetter pss) throws DataAccessException {
 		return update(new SimplePreparedStatementCreator(sql), pss);
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException {
 		return update(sql, newArgTypePreparedStatementSetter(args, argTypes));
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(String sql, @Nullable Object @Nullable ... args) throws DataAccessException {
 		return update(sql, newArgPreparedStatementSetter(args));
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 batchUpdate — 意图与阅读要点
-
-方法 `batchUpdate` 复杂度较高（CCN≈12, NLOC≈50）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public int[] batchUpdate(PreparedStatementCreator psc, BatchPreparedStatementSetter pss,
 			KeyHolder generatedKeyHolder) throws DataAccessException {
 
@@ -1130,12 +1147,10 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		return result;
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 batchUpdate — 意图与阅读要点
-
-方法 `batchUpdate` 复杂度较高（CCN≈12, NLOC≈50）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public int[] batchUpdate(String sql, BatchPreparedStatementSetter pss) throws DataAccessException {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Executing SQL batch update [" + sql + "]");
@@ -1150,22 +1165,18 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		return result;
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 batchUpdate — 意图与阅读要点
-
-方法 `batchUpdate` 复杂度较高（CCN≈12, NLOC≈50）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public int[] batchUpdate(String sql, List<Object[]> batchArgs) throws DataAccessException {
 		return batchUpdate(sql, batchArgs, new int[0]);
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 batchUpdate — 意图与阅读要点
-
-方法 `batchUpdate` 复杂度较高（CCN≈12, NLOC≈50）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public int[] batchUpdate(String sql, List<Object[]> batchArgs, int[] argTypes) throws DataAccessException {
 		if (batchArgs.isEmpty()) {
 			return new int[0];
@@ -1202,12 +1213,10 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 				});
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 batchUpdate — 意图与阅读要点
-
-方法 `batchUpdate` 复杂度较高（CCN≈12, NLOC≈50）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> int[][] batchUpdate(String sql, Collection<T> batchArgs, int batchSize,
 			ParameterizedPreparedStatementSetter<T> pss) throws DataAccessException {
 
@@ -1263,15 +1272,13 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with callable statements
+	// 处理可调用语句的方法
 	//-------------------------------------------------------------------------
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T extends @Nullable Object> T execute(CallableStatementCreator csc, CallableStatementCallback<T> action)
 			throws DataAccessException {
 
@@ -1292,8 +1299,8 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 			return result;
 		}
 		catch (SQLException ex) {
-			// Release Connection early, to avoid potential connection pool deadlock
-			// in the case when the exception translator hasn't been initialized yet.
+			// 尽早释放连接，避免潜在的连接池死锁
+			// 在异常转换器尚未初始化的情况下。
 			if (csc instanceof ParameterDisposer parameterDisposer) {
 				parameterDisposer.cleanupParameters();
 			}
@@ -1317,16 +1324,17 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		}
 	}
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 execute — 意图与阅读要点
-
-方法 `execute` 复杂度较高（CCN≈7, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T extends @Nullable Object> T execute(String callString, CallableStatementCallback<T> action) throws DataAccessException {
 		return execute(new SimpleCallableStatementCreator(callString), action);
 	}
 
+	/**
+	 * 方法 `call`：完成本类中与「call」相关的职责。
+	 */
 	@Override
 	public Map<String, @Nullable Object> call(CallableStatementCreator csc, List<SqlParameter> declaredParameters)
 			throws DataAccessException {
@@ -1369,11 +1377,11 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Extract returned ResultSets from the completed stored procedure.
-	 * @param cs a JDBC wrapper for the stored procedure
-	 * @param updateCountParameters the parameter list of declared update count parameters for the stored procedure
-	 * @param resultSetParameters the parameter list of declared resultSet parameters for the stored procedure
-	 * @return a Map that contains returned results
+	 * 从已完成的存储过程中提取返回的结果集。
+	 * @param cs 存储过程的 JDBC 包装器
+	 * @param updateCountParameters 存储过程声明的更新计数参数的参数列表
+	 * @param resultSetParameters 存储过程声明的 resultSet 参数的参数列表
+	 * @return 包含返回结果的地图
 	 */
 	protected Map<String, @Nullable Object> extractReturnedResults(CallableStatement cs,
 			@Nullable List<SqlParameter> updateCountParameters, @Nullable List<SqlParameter> resultSetParameters,
@@ -1433,10 +1441,10 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Extract output parameters from the completed stored procedure.
-	 * @param cs the JDBC wrapper for the stored procedure
-	 * @param parameters parameter list for the stored procedure
-	 * @return a Map that contains returned results
+	 * 从已完成的存储过程中提取输出参数。
+	 * @param cs 存储过程的 JDBC 包装器
+	 * @param parameters 存储过程的参数列表
+	 * @return 包含返回结果的地图
 	 */
 	protected Map<String, @Nullable Object> extractOutputParameters(CallableStatement cs, List<SqlParameter> parameters)
 			throws SQLException {
@@ -1479,10 +1487,10 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Process the given ResultSet from a stored procedure.
-	 * @param rs the ResultSet to process
-	 * @param param the corresponding stored procedure parameter
-	 * @return a Map that contains returned results
+	 * 处理存储过程中给定的 ResultSet。
+	 * @param rs 要处理的结果集
+	 * @param param 对应的存储过程参数
+	 * @return 包含返回结果的地图
 	 */
 	@SuppressWarnings("NullAway") // See https://github.com/uber/NullAway/issues/950
 	protected Map<@Nullable String, @Nullable Object> processResultSet(
@@ -1515,12 +1523,12 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 
 
 	//-------------------------------------------------------------------------
-	// Implementation hooks and helper methods
+	// 实现挂钩和辅助方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Create a new RowMapper for reading columns as key-value pairs.
-	 * @return the RowMapper to use
+	 * 创建一个新的 RowMapper 以将列读取为键值对。
+	 * @return 行映射器的使用
 	 * @see ColumnMapRowMapper
 	 */
 	protected RowMapper<Map<String, @Nullable Object>> getColumnMapRowMapper() {
@@ -1528,9 +1536,9 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Create a new RowMapper for reading result objects from a single column.
-	 * @param requiredType the type that each result object is expected to match
-	 * @return the RowMapper to use
+	 * 创建一个新的 RowMapper 用于从单个列读取结果对象。
+	 * @param requiredType 每个结果对象期望匹配的类型
+	 * @return 行映射器的使用
 	 * @see SingleColumnRowMapper
 	 */
 	protected <T> RowMapper<@Nullable T> getSingleColumnRowMapper(Class<T> requiredType) {
@@ -1538,11 +1546,9 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Create a Map instance to be used as the results map.
-	 * <p>If {@link #resultsMapCaseInsensitive} has been set to true,
-	 * a {@link LinkedCaseInsensitiveMap} will be created; otherwise, a
-	 * {@link LinkedHashMap} will be created.
-	 * @return the results Map instance
+	 * 创建一个用作结果地图的 Map 实例。 <p>如果{@link #resultsMapCaseInsensitive}已设置为true，则会创建{@link
+	 * LinkedCaseInsensitiveMap}；否则，将创建 {@link LinkedHashMap}。
+	 * @return 结果映射实例
 	 * @see #setResultsMapCaseInsensitive
 	 * @see #isResultsMapCaseInsensitive
 	 */
@@ -1556,10 +1562,9 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Prepare the given JDBC Statement (or PreparedStatement or CallableStatement),
-	 * applying statement settings such as fetch size, max rows, and query timeout.
-	 * @param stmt the JDBC Statement to prepare
-	 * @throws SQLException if thrown by JDBC API
+	 * 准备给定的 JDBC 语句（或PreparedStatement 或 CallableStatement），应用语句设置，例如获取大小、最大行数和查询超时。
+	 * @param stmt 准备的 JDBC 语句
+	 * @throws SQLException 如果由 JDBC API 抛出
 	 * @see #setFetchSize
 	 * @see #setMaxRows
 	 * @see #setQueryTimeout
@@ -1578,36 +1583,31 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Create a new arg-based PreparedStatementSetter using the args passed in.
-	 * <p>By default, we'll create an {@link ArgumentPreparedStatementSetter}.
-	 * This method allows for the creation to be overridden by subclasses.
-	 * @param args object array with arguments
-	 * @return the new PreparedStatementSetter to use
+	 * 使用传入的参数创建一个新的基于参数的PreparedStatementSetter。 <p> 默认情况下，我们将创建一个 {@link ArgumentPreparedStat
+	 * ementSetter}。此方法允许子类覆盖创建。
+	 * @param args 带参数的对象数组
+	 * @return 使用新的PreparedStatementSetter
 	 */
 	protected PreparedStatementSetter newArgPreparedStatementSetter(@Nullable Object @Nullable [] args) {
 		return new ArgumentPreparedStatementSetter(args);
 	}
 
 	/**
-	 * Create a new arg-type-based PreparedStatementSetter using the args and types passed in.
-	 * <p>By default, we'll create an {@link ArgumentTypePreparedStatementSetter}.
-	 * This method allows for the creation to be overridden by subclasses.
-	 * @param args object array with arguments
-	 * @param argTypes int array of SQLTypes for the associated arguments
-	 * @return the new PreparedStatementSetter to use
+	 * 使用传入的参数和类型创建一个新的基于参数类型的PreparedStatementSetter。<p>B默认情况下，我们将创建一个{@link ArgumentTypePrepa
+	 * redStatementSetter}。此方法允许子类覆盖创建。
+	 * @param args 带参数的对象数组
+	 * @param argTypes 关联参数的 SQLType 的 int 数组
+	 * @return 使用新的PreparedStatementSetter
 	 */
 	protected PreparedStatementSetter newArgTypePreparedStatementSetter(@Nullable Object @Nullable [] args, int[] argTypes) {
 		return new ArgumentTypePreparedStatementSetter(args, argTypes);
 	}
 
 	/**
-	 * Handle warnings before propagating a primary {@code SQLException}
-	 * from executing the given statement.
-	 * <p>Calls regular {@link #handleWarnings(Statement)} but catches
-	 * {@link SQLWarningException} in order to chain the {@link SQLWarning}
-	 * into the primary exception instead.
-	 * @param stmt the current JDBC statement
-	 * @param ex the primary exception after failed statement execution
+	 * 在传播主 {@code SQLException} 执行给定语句之前处理警告。 <p> 调用常规 {@link #handleWarnings(Statement)} 但捕获
+	 * {@link SQLWarningException}，以便将 {@link SQLWarning} 链接到主要异常中。
+	 * @param stmt 当前的 JDBC 语句
+	 * @param ex 语句执行失败后的主要异常
 	 * @since 5.3.29
 	 * @see #handleWarnings(Statement)
 	 * @see SQLException#setNextException
@@ -1628,13 +1628,10 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Handle the warnings for the given JDBC statement, if any.
-	 * <p>Throws a {@link SQLWarningException} if we're not ignoring warnings,
-	 * otherwise logs the warnings at debug level.
-	 * @param stmt the current JDBC statement
-	 * @throws SQLException in case of warnings retrieval failure
-	 * @throws SQLWarningException for a concrete warning to raise
-	 * (when not ignoring warnings)
+	 * 处理给定 JDBC 语句的警告（如果有）。 <p> 如果我们不忽略警告，则抛出 {@link SQLWarningException}，否则在调试级别记录警告。
+	 * @param stmt 当前的 JDBC 语句
+	 * @throws SQLException 如果警告检索失败
+	 * @throws SQLWarningException 提出具体警告（当不忽略警告时）
 	 * @see #setIgnoreWarnings
 	 * @see #handleWarnings(SQLWarning)
 	 */
@@ -1655,10 +1652,9 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Throw a {@link SQLWarningException} if encountering an actual warning.
-	 * @param warning the warnings object from the current statement.
-	 * May be {@code null}, in which case this method does nothing.
-	 * @throws SQLWarningException in case of an actual warning to be raised
+	 * 如果遇到实际警告，则抛出 {@link SQLWarningException}。
+	 * @param warning 当前语句中的警告对象。可能是 {@code null}，在这种情况下该方法不执行任何操作。
+	 * @throws SQLWarningException 如果实际发出警告
 	 */
 	protected void handleWarnings(@Nullable SQLWarning warning) throws SQLWarningException {
 		if (warning != null) {
@@ -1667,11 +1663,11 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 	/**
-	 * Translate the given {@link SQLException} into a generic {@link DataAccessException}.
-	 * @param task readable text describing the task being attempted
-	 * @param sql the SQL query or update that caused the problem (may be {@code null})
-	 * @param ex the offending {@code SQLException}
-	 * @return a DataAccessException wrapping the {@code SQLException} (never {@code null})
+	 * 将给定的 {@link SQLException} 转换为通用 {@link DataAccessException}。
+	 * @param task 描述正在尝试的任务的可读文本
+	 * @param sql 导致问题的 SQL 查询或更新（可能是 {@code null}）
+	 * @param ex 有问题的 {@code SQLException}
+	 * @return DataAccessException 包装 {@code SQLException}（绝不是 {@code null}）
 	 * @since 5.0
 	 * @see #getExceptionTranslator()
 	 */
@@ -1682,25 +1678,34 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 
 
 	/**
-	 * Determine SQL from potential provider object.
-	 * @param obj object which is potentially an SqlProvider
-	 * @return the SQL string, or {@code null} if not known
+	 * 从潜在的提供者对象中确定 SQL。
+	 * @param obj 可能是 SqlProvider 的对象
+	 * @return SQL 字符串，如果未知则为 {@code null}
 	 * @see SqlProvider
 	 */
 	private static @Nullable String getSql(Object obj) {
 		return (obj instanceof SqlProvider sqlProvider ? sqlProvider.getSql() : null);
 	}
 
+	/**
+	 * 方法 `result`：完成本类中与「result」相关的职责。
+	 */
 	private static <T> T result(@Nullable T result) {
 		Assert.state(result != null, "No result");
 		return result;
 	}
 
+	/**
+	 * 更新：Count（方法 `updateCount`）。
+	 */
 	private static int updateCount(@Nullable Integer result) {
 		Assert.state(result != null, "No update count");
 		return result;
 	}
 
+	/**
+	 * 方法 `storeGeneratedKeys`：完成本类中与「store Generated Keys」相关的职责。
+	 */
 	private void storeGeneratedKeys(KeyHolder generatedKeyHolder, PreparedStatement ps, int rowsExpected)
 			throws SQLException {
 
@@ -1718,13 +1723,9 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 getPreparedStatementCallback — 意图与阅读要点
-
-方法 `getPreparedStatementCallback` 复杂度较高（CCN≈14, NLOC≈50）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 获取 Prepared Statement Callback（`PreparedStatementCallback`）。
+	 */
 	private PreparedStatementCallback<int[]> getPreparedStatementCallback(BatchPreparedStatementSetter pss,
 			@Nullable KeyHolder generatedKeyHolder) {
 		return ps -> {
@@ -1777,16 +1778,8 @@ class `BatchUpdateStatementCallback`：请结合所属模块与调用方理解�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class CloseSuppressingInvocationHandler — 意图说明
-
-class `CloseSuppressingInvocationHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Invocation handler that suppresses close calls on JDBC Connections.
-	 * Also prepares returned Statement (Prepared/CallbackStatement) objects.
+	 * 抑制 JDBC 连接上的关闭调用的调用处理程序。还准备返回的 Statement (Prepared/CallbackStatement) 对象。
 	 * @see java.sql.Connection#close()
 	 */
 	private class CloseSuppressingInvocationHandler implements InvocationHandler {
@@ -1799,17 +1792,17 @@ class `CloseSuppressingInvocationHandler`：请结合所属模块与调用方理
 
 		@Override
 		public @Nullable Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			// Invocation on ConnectionProxy interface coming in...
+			// 对 ConnectionProxy 接口的调用即将到来...
 
 			return switch (method.getName()) {
-				// Only consider equal when proxies are identical.
+				// 仅当代理相同时才考虑相等。
 				case "equals" -> (proxy == args[0]);
-				// Use hashCode of Connection proxy.
+				// 使用连接代理的 hashCode。
 				case "hashCode" -> System.identityHashCode(proxy);
-				// Handle close method: suppress, not valid.
+				// 处理关闭方法：抑制，无效。
 				case "close" -> null;
 				case "isClosed" -> false;
-				// Handle getTargetConnection method: return underlying Connection.
+				// Handle getTargetConnection方法：返回底层Connection。
 				case "getTargetConnection" -> this.target;
 				case "unwrap" ->
 						(((Class<?>) args[0]).isInstance(proxy) ? proxy : this.target.unwrap((Class<?>) args[0]));
@@ -1817,11 +1810,11 @@ class `CloseSuppressingInvocationHandler`：请结合所属模块与调用方理
 						(((Class<?>) args[0]).isInstance(proxy) || this.target.isWrapperFor((Class<?>) args[0]));
 				default -> {
 					try {
-						// Invoke method on target Connection.
+						// 调用目标连接上的方法。
 						Object retVal = method.invoke(this.target, args);
 
-						// If return value is a JDBC Statement, apply statement settings
-						// (fetch size, max rows, transaction timeout).
+						// 如果返回值是 JDBC 语句，则应用语句设置
+						// （获取大小、最大行数、事务超时）。
 						if (retVal instanceof Statement statement) {
 							applyStatementSettings(statement);
 						}
@@ -1837,15 +1830,8 @@ class `CloseSuppressingInvocationHandler`：请结合所属模块与调用方理
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class SimplePreparedStatementCreator — 意图说明
-
-class `SimplePreparedStatementCreator`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Simple adapter for PreparedStatementCreator, allowing to use a plain SQL statement.
+	 * PreparedStatementCreator 的简单适配器，允许使用纯 SQL 语句。
 	 */
 	private static class SimplePreparedStatementCreator implements PreparedStatementCreator, SqlProvider {
 
@@ -1868,15 +1854,8 @@ class `SimplePreparedStatementCreator`：请结合所属模块与调用方理解
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class SimpleCallableStatementCreator — 意图说明
-
-class `SimpleCallableStatementCreator`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Simple adapter for CallableStatementCreator, allowing to use a plain SQL statement.
+	 * CallableStatementCreator 的简单适配器，允许使用纯 SQL 语句。
 	 */
 	private static class SimpleCallableStatementCreator implements CallableStatementCreator, SqlProvider {
 
@@ -1899,17 +1878,9 @@ class `SimpleCallableStatementCreator`：请结合所属模块与调用方理解
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class RowCallbackHandlerResultSetExtractor — 意图说明
-
-class `RowCallbackHandlerResultSetExtractor`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Adapter to enable use of a RowCallbackHandler inside a ResultSetExtractor.
-	 * <p>Uses a regular ResultSet, so we have to be careful when using it:
-	 * We don't use it for navigating since this could lead to unpredictable consequences.
+	 * 用于启用在 ResultSetExtractor 内使用 RowCallbackHandler 的适配器。 <p>U 使用常规结果集，因此我们在使用它时必须小心：我们不使用它进
+	 * 行导航，因为这可能会导致不可预测的后果。
 	 */
 	private static class RowCallbackHandlerResultSetExtractor implements ResultSetExtractor<@Nullable Object> {
 
@@ -1933,15 +1904,8 @@ class `RowCallbackHandlerResultSetExtractor`：请结合所属模块与调用方
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ResultSetSpliterator — 意图说明
-
-class `ResultSetSpliterator`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/JdbcTemplate.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Spliterator for queryForStream adaptation of a ResultSet to a Stream.
+	 * 用于将 ResultSet 适配为 Stream 的 queryForStream 的 Spliterator。
 	 * @since 5.3
 	 */
 	private static class ResultSetSpliterator<T> implements Spliterator<T> {

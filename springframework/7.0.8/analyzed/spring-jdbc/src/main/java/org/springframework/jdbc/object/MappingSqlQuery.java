@@ -25,32 +25,27 @@ import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Reusable query in which concrete subclasses must implement the abstract
- * mapRow(ResultSet, int) method to convert each row of the JDBC ResultSet
- * into an object.
- *
- * <p>Simplifies MappingSqlQueryWithParameters API by dropping parameters and
- * context. Most subclasses won't care about parameters. If you don't use
- * contextual information, subclass this instead of MappingSqlQueryWithParameters.
- *
+ * 可重用查询，其中具体子类必须实现抽象 mapRow(ResultSet, int) 方法以将 JDBC ResultSet 的每一行转换为对象。
+ * <p>S 通过删除参数和上下文来简化 MappingSqlQueryWithParameters
+ * API。大多数子类不会关心参数。如果您不使用上下文信息，请对其进行子类化而不是 MappingSqlQueryWithParameters。
  * @author Rod Johnson
  * @author Thomas Risberg
  * @author Jean-Pierre Pawlak
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see MappingSqlQueryWithParameters
  */
 public abstract class MappingSqlQuery<T extends @Nullable Object> extends MappingSqlQueryWithParameters<T> {
 
 	/**
-	 * Constructor that allows use as a JavaBean.
+	 * 允许用作 JavaBean 的构造函数。
 	 */
 	public MappingSqlQuery() {
 	}
 
 	/**
-	 * Convenient constructor with DataSource and SQL string.
-	 * @param ds the DataSource to use to obtain connections
-	 * @param sql the SQL to run
+	 * 带有 DataSource 和 SQL 字符串的便捷构造函数。
+	 * @param ds 用于获取连接的 DataSource
+	 * @param sql 要运行的 SQL
 	 */
 	public MappingSqlQuery(DataSource ds, String sql) {
 		super(ds, sql);
@@ -58,8 +53,7 @@ public abstract class MappingSqlQuery<T extends @Nullable Object> extends Mappin
 
 
 	/**
-	 * This method is implemented to invoke the simpler mapRow
-	 * template method, ignoring parameters.
+	 * 实现此方法是为了调用更简单的 mapRow 模板方法，忽略参数。
 	 * @see #mapRow(ResultSet, int)
 	 */
 	@Override
@@ -70,17 +64,12 @@ public abstract class MappingSqlQuery<T extends @Nullable Object> extends Mappin
 	}
 
 	/**
-	 * Subclasses must implement this method to convert each row of the
-	 * ResultSet into an object of the result type.
-	 * <p>Subclasses of this class, as opposed to direct subclasses of
-	 * MappingSqlQueryWithParameters, don't need to concern themselves
-	 * with the parameters to the execute method of the query object.
-	 * @param rs the ResultSet we're working through
-	 * @param rowNum row number (from 0) we're up to
-	 * @return an object of the result type
-	 * @throws SQLException if there's an error extracting data.
-	 * Subclasses can simply not catch SQLExceptions, relying on the
-	 * framework to clean up.
+	 * 子类必须实现此方法才能将 ResultSet 的每一行转换为结果类型的对象。与 MappingSqlQueryWithParameters 的直接子类相反，此类的 <p> 子类
+	 * 不需要关心查询对象的执行方法的参数。
+	 * @param rs 我们正在处理的 ResultSet
+	 * @param rowNum 我们要做的行号（从 0 开始）
+	 * @return 结果类型的对象
+	 * @throws SQLException 如果提取数据时出现错误。子类根本无法捕获 SQLException，只能依靠框架来清理。
 	 */
 	protected abstract T mapRow(ResultSet rs, int rowNum) throws SQLException;
 

@@ -30,50 +30,24 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-/* ===== [OCA 中文解析] =====
-class TransactionAwareDataSourceProxy — 意图说明
-
-代理相关：AOP/事务等横切能力的载体；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/datasource/TransactionAwareDataSourceProxy.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Proxy for a target JDBC {@link javax.sql.DataSource}, adding awareness of
- * Spring-managed transactions. Similar to a transactional JNDI DataSource
- * as provided by a Jakarta EE server.
- *
- * <p>Data access code that should remain unaware of Spring's data access support
- * can work with this proxy to seamlessly participate in Spring-managed transactions.
- * Note that the transaction manager, for example {@link DataSourceTransactionManager},
- * still needs to work with the underlying DataSource, <i>not</i> with this proxy.
- *
- * <p><b>Make sure that TransactionAwareDataSourceProxy is the outermost DataSource
- * of a chain of DataSource proxies/adapters.</b> TransactionAwareDataSourceProxy
- * can delegate either directly to the target connection pool or to some
- * intermediary proxy/adapter like {@link LazyConnectionDataSourceProxy} or
- * {@link UserCredentialsDataSourceAdapter}.
- *
- * <p>Delegates to {@link DataSourceUtils} for automatically participating in
- * thread-bound transactions, for example managed by {@link DataSourceTransactionManager}.
- * {@code getConnection} calls and {@code close} calls on returned Connections
- * will behave properly within a transaction, i.e. always operate on the transactional
- * Connection. If not within a transaction, normal DataSource behavior applies.
- *
- * <p>This proxy allows data access code to work with the plain JDBC API and still
- * participate in Spring-managed transactions, similar to JDBC code in a Jakarta EE/JTA
- * environment. However, if possible, use Spring's DataSourceUtils, JdbcTemplate or
- * JDBC operation objects to get transaction participation even without a proxy for
- * the target DataSource, avoiding the need to define such a proxy in the first place.
- *
- * <p>As a further effect, using a transaction-aware DataSource will apply remaining
- * transaction timeouts to all created JDBC (Prepared/Callable)Statement. This means
- * that all operations performed through standard JDBC will automatically participate
- * in Spring-managed transaction timeouts.
- *
- * <p><b>NOTE:</b> This DataSource proxy needs to return wrapped Connections (which
- * implement the {@link ConnectionProxy} interface) in order to handle close calls
- * properly. Use {@link Connection#unwrap} to retrieve the native JDBC Connection.
- *
+ * 目标 JDBC {@link javax.sql.DataSource} 的代理，增加了对 Spring 管理的事务的感知。类似于 Jakarta EE 服务器提供的事务性
+ * JNDI 数据源。
+ * <p> 应该不知道 Spring 数据访问支持的数据访问代码可以与此代理一起工作，以无缝参与 Spring 管理的事务。请注意，事务管理器（例如 {@link DataSour
+ * ceTransactionManager}）仍然需要使用此代理来处理底层数据源 <i>not</i>。
+ * <p><b>确保 TransactionAwareDataSourceProxy 是数据源代理/适配器链的最外层数据源。</b>
+ * TransactionAwareDataSourceProxy 可以直接委托给目标连接池或某些中间代理/适配器，例如 {@link
+ * LazyConnectionDataSourceProxy} 或 {@link UserCredentialsDataSourceAdapter}。
+ * <p>D委托 {@link DataSourceUtils} 自动参与线程绑定事务，例如由 {@link DataSourceTransactionManager}
+ * 管理。返回连接上的 {@code getConnection} 调用和 {@code close}
+ * 调用将在事务内正常运行，即始终在事务连接上进行操作。如果不在事务内，则应用正常的数据源行为。
+ * <p>此代理允许数据访问代码与普通 JDBC API 一起使用，并且仍然参与 Spring 管理的事务，类似于 Jakarta EE/JTA 环境中的 JDBC 代码。但是，如
+ * 果可能的话，即使没有目标数据源的代理，也可以使用 Spring 的 DataSourceUtils、JdbcTemplate 或 JDBC 操作对象来获取事务参与，从而避免首先
+ * 定义此类代理。
+ * <p>A 的另一个效果是，使用事务感知数据源会将剩余事务超时应用于所有创建的 JDBC（Prepared/Callable）语句。这意味着通过标准 JDBC 执行的所有操作都将
+ * 自动参与 Spring 管理的事务超时。
+ * <p><b>NOTE:</b> 此数据源代理需要返回包装的连接（实现 {@link ConnectionProxy} 接口），以便正确处理关闭调用。使用 {@link
+ * Connection#unwrap} 检索本机 JDBC 连接。
  * @author Juergen Hoeller
  * @since 1.1
  * @see javax.sql.DataSource#getConnection()
@@ -84,23 +58,23 @@ class TransactionAwareDataSourceProxy — 意图说明
  */
 public class TransactionAwareDataSourceProxy extends DelegatingDataSource {
 
-	// [OCA] 字段 `lazyTransactionalConnections`：类成员状态。
+	/** `true`：该类的成员状态。 */
 	private boolean lazyTransactionalConnections = true;
 
-	// [OCA] 字段 `reobtainTransactionalConnections`：类成员状态。
+	/** `false`：该类的成员状态。 */
 	private boolean reobtainTransactionalConnections = false;
 
 
 	/**
-	 * Create a new TransactionAwareDataSourceProxy.
+	 * 创建一个新的 TransactionAwareDataSourceProxy。
 	 * @see #setTargetDataSource
 	 */
 	public TransactionAwareDataSourceProxy() {
 	}
 
 	/**
-	 * Create a new TransactionAwareDataSourceProxy.
-	 * @param targetDataSource the target DataSource
+	 * 创建一个新的 TransactionAwareDataSourceProxy。
+	 * @param targetDataSource 目标数据源
 	 */
 	public TransactionAwareDataSourceProxy(DataSource targetDataSource) {
 		super(targetDataSource);
@@ -108,10 +82,7 @@ public class TransactionAwareDataSourceProxy extends DelegatingDataSource {
 
 
 	/**
-	 * Specify whether to obtain the transactional target Connection lazily on
-	 * actual data access.
-	 * <p>The default is "true". Specify "false" to immediately obtain a target
-	 * Connection when a transaction-aware Connection handle is retrieved.
+	 * 指定是否在实际数据访问时延迟获取事务目标连接。 <p>默认为“true”。指定“false”可在检索事务感知连接句柄时立即获取目标连接。
 	 * @since 6.1.2
 	 */
 	public void setLazyTransactionalConnections(boolean lazyTransactionalConnections) {
@@ -119,13 +90,8 @@ public class TransactionAwareDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Specify whether to reobtain the target Connection for each operation
-	 * performed within a transaction.
-	 * <p>The default is "false". Specify "true" to reobtain transactional
-	 * Connections for every call on the Connection proxy; this is advisable
-	 * on JBoss if you hold on to a Connection handle across transaction boundaries.
-	 * <p>The effect of this setting is similar to the
-	 * "hibernate.connection.release_mode" value "after_statement".
+	 * 指定是否为事务中执行的每个操作重新获取目标连接。 <p>默认为“false”。指定“true”以便为连接代理上的每次调用重新获取事务连接；如果您跨事务边界持有连接句柄，这在 J
+	 * Boss 上是可取的。 <p> 这个设置的效果类似于“hibernate.connection.release_mode”值“after_statement”。
 	 */
 	public void setReobtainTransactionalConnections(boolean reobtainTransactionalConnections) {
 		this.reobtainTransactionalConnections = reobtainTransactionalConnections;
@@ -133,11 +99,9 @@ public class TransactionAwareDataSourceProxy extends DelegatingDataSource {
 
 
 	/**
-	 * Delegates to DataSourceUtils for automatically participating in Spring-managed
-	 * transactions. Throws the original SQLException, if any.
-	 * <p>The returned Connection handle implements the ConnectionProxy interface,
-	 * allowing to retrieve the underlying target Connection.
-	 * @return a transactional Connection if any, a new one else
+	 * 委托 DataSourceUtils 自动参与 Spring 管理的事务。抛出原始 SQLException（如果有）。
+	 * <p>返回的Connection句柄实现了ConnectionProxy接口，允许检索底层目标Connection。
+	 * @return 事务连接（如果有），否则是一个新连接
 	 * @see DataSourceUtils#doGetConnection
 	 * @see ConnectionProxy#getTargetConnection
 	 */
@@ -152,10 +116,9 @@ public class TransactionAwareDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Wraps the given Connection with a proxy that delegates every method call to it
-	 * but delegates {@code close()} calls to DataSourceUtils.
-	 * @param targetDataSource the DataSource that the Connection came from
-	 * @return the wrapped Connection
+	 * 使用代理包装给定的 Connection，该代理将每个方法调用委托给它，但将 {@code close()} 调用委托给 DataSourceUtils。
+	 * @param targetDataSource 连接来自的数据源
+	 * @return 包裹连接
 	 * @see java.sql.Connection#close()
 	 * @see DataSourceUtils#doReleaseConnection
 	 */
@@ -167,14 +130,10 @@ public class TransactionAwareDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Determine whether to obtain a fixed target Connection for the proxy
-	 * or to reobtain the target Connection for each operation.
-	 * <p>The default implementation returns {@code true} for all
-	 * standard cases. This can be overridden through the
-	 * {@link #setReobtainTransactionalConnections "reobtainTransactionalConnections"}
-	 * flag, which enforces a non-fixed target Connection within an active transaction.
-	 * Note that non-transactional access will always use a fixed Connection.
-	 * @param targetDataSource the target DataSource
+	 * 确定是为代理获取固定的目标Connection，还是为每次操作重新获取目标Connection。 <p> 对于所有标准情况，默认实现都会返回 {@code true}。这可以通
+	 * 过 {@link #setReobtainTransactionalConnections "reobtainTransactionalConnections"} 标志覆盖，该
+	 * 标志在活动事务中强制使用非固定目标连接。请注意，非事务访问将始终使用固定连接。
+	 * @param targetDataSource 目标数据源
 	 */
 	protected boolean shouldObtainFixedConnection(DataSource targetDataSource) {
 		return (!TransactionSynchronizationManager.isSynchronizationActive() ||
@@ -182,16 +141,8 @@ public class TransactionAwareDataSourceProxy extends DelegatingDataSource {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class TransactionAwareInvocationHandler — 意图说明
-
-事务抽象：边界、同步与管理器；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/datasource/TransactionAwareDataSourceProxy.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Invocation handler that delegates close calls on JDBC Connections
-	 * to DataSourceUtils for being aware of thread-bound transactions.
+	 * 将 JDBC 连接上的关闭调用委托给 DataSourceUtils 的调用处理程序，以了解线程绑定事务。
 	 */
 	private class TransactionAwareInvocationHandler implements InvocationHandler {
 
@@ -207,19 +158,19 @@ class TransactionAwareInvocationHandler — 意图说明
 
 		@Override
 		public @Nullable Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			// Invocation on ConnectionProxy interface coming in...
+			// 对 ConnectionProxy 接口的调用即将到来...
 
 			switch (method.getName()) {
 				case "equals" -> {
-					// Only considered as equal when proxies are identical.
+					// 仅当代理相同时才被视为相等。
 					return (proxy == args[0]);
 				}
 				case "hashCode" -> {
-					// Use hashCode of Connection proxy.
+					// 使用连接代理的 hashCode。
 					return System.identityHashCode(proxy);
 				}
 				case "toString" -> {
-					// Allow for differentiating between the proxy and the raw Connection.
+					// 允许区分代理和原始连接。
 					StringBuilder sb = new StringBuilder("Transaction-aware proxy for target Connection ");
 					if (this.target != null) {
 						sb.append('[').append(this.target).append(']');
@@ -230,12 +181,12 @@ class TransactionAwareInvocationHandler — 意图说明
 					return sb.toString();
 				}
 				case "close" -> {
-					// Handle close method: only close if not within a transaction.
+					// 处理关闭方法：仅在不在事务内时关闭。
 					if (this.target != null) {
 						ConnectionHolder conHolder = (ConnectionHolder)
 								TransactionSynchronizationManager.getResource(this.targetDataSource);
 						if (conHolder != null && conHolder.hasConnection() && conHolder.getConnection() == this.target) {
-							// It's the transactional Connection: Don't close it.
+							// 这是事务连接：不要关闭它。
 							conHolder.released();
 						}
 						else {
@@ -262,7 +213,7 @@ class TransactionAwareInvocationHandler — 意图说明
 
 			if (this.target == null) {
 				if (method.getName().equals("getWarnings") || method.getName().equals("clearWarnings")) {
-					// Avoid creation of target Connection on pre-close cleanup (for example, Hibernate Session)
+					// 避免在关闭前清理时创建目标连接（例如，Hibernate Session）
 					return null;
 				}
 				if (this.closed) {
@@ -278,16 +229,16 @@ class TransactionAwareInvocationHandler — 意图说明
 			}
 
 			if (method.getName().equals("getTargetConnection")) {
-				// Handle getTargetConnection method: return underlying Connection.
+				// Handle getTargetConnection方法：返回底层Connection。
 				return actualTarget;
 			}
 
-			// Invoke method on target Connection.
+			// 调用目标连接上的方法。
 			try {
 				Object retVal = method.invoke(actualTarget, args);
 
-				// If return value is a Statement, apply transaction timeout.
-				// Applies to createStatement, prepareStatement, prepareCall.
+				// 如果返回值是Statement，则应用事务超时。
+				// 适用于createStatement、prepareStatement、prepareCall。
 				if (retVal instanceof Statement statement) {
 					DataSourceUtils.applyTransactionTimeout(statement, this.targetDataSource);
 				}

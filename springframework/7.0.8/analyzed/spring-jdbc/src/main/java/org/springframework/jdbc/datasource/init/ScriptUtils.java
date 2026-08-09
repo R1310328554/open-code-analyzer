@@ -34,18 +34,9 @@ import org.springframework.core.io.support.EncodedResource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class ScriptUtils — 意图说明
-
-class `ScriptUtils`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/datasource/init/ScriptUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Generic utility methods for working with SQL scripts in conjunction with JDBC.
- *
- * <p>Mainly for internal use within the framework.
- *
+ * 用于将 SQL 脚本与 JDBC 结合使用的通用实用程序方法。
+ * <p>主要供框架内部使用。
  * @author Thomas Risberg
  * @author Sam Brannen
  * @author Juergen Hoeller
@@ -61,79 +52,59 @@ class `ScriptUtils`：请结合所属模块与调用方理解其在整体架构�
  */
 public abstract class ScriptUtils {
 
-	// [OCA] 字段 `DEFAULT_STATEMENT_SEPARATOR`：类成员状态。
 	/**
-	 * Default statement separator within SQL scripts: {@code ";"}.
+	 * SQL 脚本中的默认语句分隔符：{@code ";"}。
 	 */
 	public static final String DEFAULT_STATEMENT_SEPARATOR = ";";
 
-	// [OCA] 字段 `FALLBACK_STATEMENT_SEPARATOR`：类成员状态。
 	/**
-	 * Fallback statement separator within SQL scripts: {@code "\n"}.
-	 * <p>Used if neither a custom separator nor the
-	 * {@link #DEFAULT_STATEMENT_SEPARATOR} is present in a given script.
+	 * SQL 脚本中的后备语句分隔符：{@code "\n"}。如果给定脚本中既不存在自定义分隔符也不存在 {@link
+	 * #DEFAULT_STATEMENT_SEPARATOR}，则使用 <p>。
 	 */
 	public static final String FALLBACK_STATEMENT_SEPARATOR = "\n";
 
-	// [OCA] 字段 `EOF_STATEMENT_SEPARATOR`：类成员状态。
 	/**
-	 * End of file (EOF) SQL statement separator: {@code "^^^ END OF SCRIPT ^^^"}.
-	 * <p>This value may be supplied as the {@code separator} to {@link
-	 * #executeSqlScript(Connection, EncodedResource, boolean, boolean, String, String, String, String)}
-	 * to denote that an SQL script contains a single statement (potentially
-	 * spanning multiple lines) with no explicit statement separator. Note that
-	 * such a script should not actually contain this value; it is merely a
-	 * <em>virtual</em> statement separator.
+	 * 文件结束 (EOF) SQL 语句分隔符：{@code "^^^ END OF SCRIPT ^^^"}。 <p> 该值可以作为 {@code separator} 提供给
+	 * {@link #executeSqlScript(Connection, EncodedResource, boolean, boolean, String, String,
+	 * String, String)}，以表示 SQL 脚本包含单个语句（可能跨越多行），没有显式语句分隔符。请注意，这样的脚本实际上不应包含此值；它只是一个
+	 * <em>virtual</em> 语句分隔符。
 	 */
 	public static final String EOF_STATEMENT_SEPARATOR = "^^^ END OF SCRIPT ^^^";
 
-	// [OCA] 字段 `DEFAULT_COMMENT_PREFIX`：类成员状态。
 	/**
-	 * Default prefix for single-line comments within SQL scripts: {@code "--"}.
+	 * SQL 脚本中单行注释的默认前缀：{@code "--"}。
 	 */
 	public static final String DEFAULT_COMMENT_PREFIX = "--";
 
-	// [OCA] 字段 `DEFAULT_COMMENT_PREFIXES`：类成员状态。
 	/**
-	 * Default prefixes for single-line comments within SQL scripts: {@code ["--"]}.
+	 * SQL 脚本中单行注释的默认前缀：{@code ["--"]}。
 	 * @since 5.2
 	 */
 	public static final String[] DEFAULT_COMMENT_PREFIXES = {DEFAULT_COMMENT_PREFIX};
 
-	// [OCA] 字段 `DEFAULT_BLOCK_COMMENT_START_DELIMITER`：类成员状态。
 	/**
-	 * Default start delimiter for block comments within SQL scripts: {@code "/*"}.
+	 * SQL 脚本中块注释的默认起始分隔符：{@code "/*"}。
 	 */
 	public static final String DEFAULT_BLOCK_COMMENT_START_DELIMITER = "/*";
 
-	// [OCA] 字段 `DEFAULT_BLOCK_COMMENT_END_DELIMITER`：类成员状态。
 	/**
-	 * Default end delimiter for block comments within SQL scripts: <code>"*&#47;"</code>.
+	 * SQL 脚本中块注释的默认结束分隔符：<code>"*&#47;"</code>。
 	 */
 	public static final String DEFAULT_BLOCK_COMMENT_END_DELIMITER = "*/";
 
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(ScriptUtils.class);
 
 
-	/* ===== [OCA 中文解析] =====
-方法 executeSqlScript — 意图与阅读要点
-
-方法 `executeSqlScript` 复杂度较高（CCN≈23, NLOC≈87）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Execute the given SQL script using default settings for statement
-	 * separators, comment delimiters, and exception handling flags.
-	 * <p>Statement separators and comments will be removed before executing
-	 * individual statements within the supplied script.
-	 * <p><strong>Warning</strong>: this method does <em>not</em> release the
-	 * provided {@link Connection}.
-	 * @param connection the JDBC connection to use to execute the script; already
-	 * configured and ready to use
-	 * @param resource the resource to load the SQL script from; encoded with the
-	 * current platform's default encoding
-	 * @throws ScriptException if an error occurred while executing the SQL script
+	 * 使用语句分隔符、注释分隔符和异常处理标志的默认设置执行给定的 SQL 脚本。 <p>语句分隔符和注释将在执行所提供脚本中的各个语句之前被删除。 <p><strong>Warni
+	 * ng</strong>：此方法执行 <em>not</em> 释放提供的 {@link Connection}。
+	 * @param connection 用于执行脚本的 JDBC 连接；已经配置并可以使用
+	 * @param resource 从中加载 SQL 脚本的资源；使用当前平台的默认编码进行编码
+	 * @throws ScriptException 如果执行 SQL 脚本时发生错误
 	 * @see #executeSqlScript(Connection, EncodedResource, boolean, boolean, String, String, String, String)
 	 * @see #DEFAULT_STATEMENT_SEPARATOR
 	 * @see #DEFAULT_COMMENT_PREFIX
@@ -146,23 +117,12 @@ public abstract class ScriptUtils {
 		executeSqlScript(connection, new EncodedResource(resource));
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 executeSqlScript — 意图与阅读要点
-
-方法 `executeSqlScript` 复杂度较高（CCN≈23, NLOC≈87）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Execute the given SQL script using default settings for statement
-	 * separators, comment delimiters, and exception handling flags.
-	 * <p>Statement separators and comments will be removed before executing
-	 * individual statements within the supplied script.
-	 * <p><strong>Warning</strong>: this method does <em>not</em> release the
-	 * provided {@link Connection}.
-	 * @param connection the JDBC connection to use to execute the script; already
-	 * configured and ready to use
-	 * @param resource the resource (potentially associated with a specific encoding)
-	 * to load the SQL script from
-	 * @throws ScriptException if an error occurred while executing the SQL script
+	 * 使用语句分隔符、注释分隔符和异常处理标志的默认设置执行给定的 SQL 脚本。 <p>语句分隔符和注释将在执行所提供脚本中的各个语句之前被删除。 <p><strong>Warni
+	 * ng</strong>：此方法执行 <em>not</em> 释放提供的 {@link Connection}。
+	 * @param connection 用于执行脚本的 JDBC 连接；已经配置并可以使用
+	 * @param resource 用于加载 SQL 脚本的资源（可能与特定编码相关）
+	 * @throws ScriptException 如果执行 SQL 脚本时发生错误
 	 * @see #executeSqlScript(Connection, EncodedResource, boolean, boolean, String, String, String, String)
 	 * @see #DEFAULT_STATEMENT_SEPARATOR
 	 * @see #DEFAULT_COMMENT_PREFIX
@@ -176,35 +136,18 @@ public abstract class ScriptUtils {
 				DEFAULT_BLOCK_COMMENT_START_DELIMITER, DEFAULT_BLOCK_COMMENT_END_DELIMITER);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 executeSqlScript — 意图与阅读要点
-
-方法 `executeSqlScript` 复杂度较高（CCN≈23, NLOC≈87）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Execute the given SQL script.
-	 * <p>Statement separators and comments will be removed before executing
-	 * individual statements within the supplied script.
-	 * <p><strong>Warning</strong>: this method does <em>not</em> release the
-	 * provided {@link Connection}.
-	 * @param connection the JDBC connection to use to execute the script; already
-	 * configured and ready to use
-	 * @param resource the resource (potentially associated with a specific encoding)
-	 * to load the SQL script from
-	 * @param continueOnError whether to continue without throwing an exception
-	 * in the event of an error
-	 * @param ignoreFailedDrops whether to continue in the event of specifically
-	 * an error on a {@code DROP} statement
-	 * @param commentPrefix the prefix that identifies single-line comments in the
-	 * SQL script (typically "--")
-	 * @param separator the script statement separator; defaults to
-	 * {@value #DEFAULT_STATEMENT_SEPARATOR} if not specified and falls back to
-	 * {@value #FALLBACK_STATEMENT_SEPARATOR} as a last resort; may be set to
-	 * {@value #EOF_STATEMENT_SEPARATOR} to signal that the script contains a
-	 * single statement without a separator
-	 * @param blockCommentStartDelimiter the <em>start</em> block comment delimiter
-	 * @param blockCommentEndDelimiter the <em>end</em> block comment delimiter
-	 * @throws ScriptException if an error occurred while executing the SQL script
+	 * 执行给定的 SQL 脚本。 <p>语句分隔符和注释将在执行所提供脚本中的各个语句之前被删除。 <p><strong>Warning</strong>：此方法执行 <em>not
+	 * </em> 释放提供的 {@link Connection}。
+	 * @param connection 用于执行脚本的 JDBC 连接；已经配置并可以使用
+	 * @param resource 用于加载 SQL 脚本的资源（可能与特定编码相关）
+	 * @param continueOnError 发生错误时是否继续而不抛出异常
+	 * @param ignoreFailedDrops 当 {@code DROP} 语句出现特定错误时是否继续
+	 * @param commentPrefix 标识 SQL 脚本中单行注释的前缀（通常为“--”）
+	 * @param separator 脚本语句分隔符；如果未指定，则默认为 {@value #DEFAULT_STATEMENT_SEPARATOR}，并回退到 {@value #FALLBACK_STATEMENT_SEPARATOR} 作为最后的手段；可以设置为 {@value #EOF_STATEMENT_SEPARATOR} 以表明脚本包含单个不带分隔符的语句
+	 * @param blockCommentStartDelimiter <em>start</em> 块注释分隔符
+	 * @param blockCommentEndDelimiter <em>end</em> 块注释分隔符
+	 * @throws ScriptException 如果执行 SQL 脚本时发生错误
 	 * @see #DEFAULT_STATEMENT_SEPARATOR
 	 * @see #FALLBACK_STATEMENT_SEPARATOR
 	 * @see #EOF_STATEMENT_SEPARATOR
@@ -220,35 +163,18 @@ public abstract class ScriptUtils {
 				blockCommentEndDelimiter);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 executeSqlScript — 意图与阅读要点
-
-方法 `executeSqlScript` 复杂度较高（CCN≈23, NLOC≈87）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Execute the given SQL script.
-	 * <p>Statement separators and comments will be removed before executing
-	 * individual statements within the supplied script.
-	 * <p><strong>Warning</strong>: this method does <em>not</em> release the
-	 * provided {@link Connection}.
-	 * @param connection the JDBC connection to use to execute the script; already
-	 * configured and ready to use
-	 * @param resource the resource (potentially associated with a specific encoding)
-	 * to load the SQL script from
-	 * @param continueOnError whether to continue without throwing an exception
-	 * in the event of an error
-	 * @param ignoreFailedDrops whether to continue in the event of specifically
-	 * an error on a {@code DROP} statement
-	 * @param commentPrefixes the prefixes that identify single-line comments in the
-	 * SQL script (typically "--")
-	 * @param separator the script statement separator; defaults to
-	 * {@value #DEFAULT_STATEMENT_SEPARATOR} if not specified and falls back to
-	 * {@value #FALLBACK_STATEMENT_SEPARATOR} as a last resort; may be set to
-	 * {@value #EOF_STATEMENT_SEPARATOR} to signal that the script contains a
-	 * single statement without a separator
-	 * @param blockCommentStartDelimiter the <em>start</em> block comment delimiter
-	 * @param blockCommentEndDelimiter the <em>end</em> block comment delimiter
-	 * @throws ScriptException if an error occurred while executing the SQL script
+	 * 执行给定的 SQL 脚本。 <p>语句分隔符和注释将在执行所提供脚本中的各个语句之前被删除。 <p><strong>Warning</strong>：此方法执行 <em>not
+	 * </em> 释放提供的 {@link Connection}。
+	 * @param connection 用于执行脚本的 JDBC 连接；已经配置并可以使用
+	 * @param resource 用于加载 SQL 脚本的资源（可能与特定编码相关）
+	 * @param continueOnError 发生错误时是否继续而不抛出异常
+	 * @param ignoreFailedDrops 当 {@code DROP} 语句出现特定错误时是否继续
+	 * @param commentPrefixes 标识 SQL 脚本中单行注释的前缀（通常为“--”）
+	 * @param separator 脚本语句分隔符；如果未指定，则默认为 {@value #DEFAULT_STATEMENT_SEPARATOR}，并回退到 {@value #FALLBACK_STATEMENT_SEPARATOR} 作为最后的手段；可以设置为 {@value #EOF_STATEMENT_SEPARATOR} 以表明脚本包含单个不带分隔符的语句
+	 * @param blockCommentStartDelimiter <em>start</em> 块注释分隔符
+	 * @param blockCommentEndDelimiter <em>end</em> 块注释分隔符
+	 * @throws ScriptException 如果执行 SQL 脚本时发生错误
 	 * @since 5.2
 	 * @see #DEFAULT_STATEMENT_SEPARATOR
 	 * @see #FALLBACK_STATEMENT_SEPARATOR
@@ -300,9 +226,9 @@ public abstract class ScriptUtils {
 						}
 						do {
 							if (hasResultSet) {
-								// We invoke getResultSet() to ensure the JDBC driver processes
-								// it, but we intentionally ignore the returned ResultSet since
-								// we cannot do anything meaningful with it here.
+								// 我们调用 getResultSet() 以确保 JDBC 驱动程序进程
+								// 它，但我们故意忽略返回的结果集，因为
+								// 我们不能在这里用它做任何有意义的事情。
 								stmt.getResultSet();
 								if (logger.isDebugEnabled()) {
 									logger.debug("ResultSet returned for SQL: " + statement);
@@ -353,6 +279,9 @@ public abstract class ScriptUtils {
 		}
 	}
 
+	/**
+	 * 方法 `logSqlWarnings`：完成本类中与「log Sql Warnings」相关的职责。
+	 */
 	private static void logSqlWarnings(Statement stmt) throws SQLException {
 		SQLWarning warningToLog = stmt.getWarnings();
 		while (warningToLog != null) {
@@ -364,19 +293,14 @@ public abstract class ScriptUtils {
 	}
 
 	/**
-	 * Read a script from the provided resource, using the supplied comment prefixes
-	 * and statement separator, and build a {@code String} containing the lines.
-	 * <p>Lines <em>beginning</em> with one of the comment prefixes are excluded
-	 * from the results; however, line comments anywhere else &mdash; for example,
-	 * within a statement &mdash; will be included in the results.
-	 * @param resource the {@code EncodedResource} containing the script
-	 * to be processed
-	 * @param separator the statement separator in the SQL script (typically ";")
-	 * @param commentPrefixes the prefixes that identify comments in the SQL script
-	 * (typically "--")
-	 * @param blockCommentEndDelimiter the <em>end</em> block comment delimiter
-	 * @return a {@code String} containing the script lines
-	 * @throws IOException in case of I/O errors
+	 * 使用提供的注释前缀和语句分隔符从提供的资源中读取脚本，并构建包含这些行的 {@code String}。 <p> 具有注释前缀之一的 <em>beginning</em> 行将
+	 * 从结果中排除；然而，在其他地方都可以添加注释——例如，在一个语句中——将包含在结果中。
+	 * @param resource 包含要处理的脚本的 {@code EncodedResource}
+	 * @param separator SQL 脚本中的语句分隔符（通常为“;”）
+	 * @param commentPrefixes 标识 SQL 脚本中注释的前缀（通常为“--”）
+	 * @param blockCommentEndDelimiter <em>end</em> 块注释分隔符
+	 * @return {@code String} 包含脚本行
+	 * @throws IOException 发生 I/O 错误时
 	 */
 	static String readScript(EncodedResource resource, @Nullable String separator,
 			String[] commentPrefixes, String blockCommentEndDelimiter) throws IOException {
@@ -386,6 +310,9 @@ public abstract class ScriptUtils {
 		}
 	}
 
+	/**
+	 * 方法 `readScript`：完成本类中与「read Script」相关的职责。
+	 */
 	private static String readScript(LineNumberReader lineNumberReader, String @Nullable [] commentPrefixes,
 			@Nullable String separator, @Nullable String blockCommentEndDelimiter) throws IOException {
 
@@ -405,6 +332,9 @@ public abstract class ScriptUtils {
 		return scriptBuilder.toString();
 	}
 
+	/**
+	 * 方法 `appendSeparatorToScriptIfNecessary`：完成本类中与「append Separator To Script If Necessary」相关的职责。
+	 */
 	private static void appendSeparatorToScriptIfNecessary(StringBuilder scriptBuilder, @Nullable String separator) {
 		if (separator == null) {
 			return;
@@ -413,31 +343,23 @@ public abstract class ScriptUtils {
 		if (trimmed.length() == separator.length()) {
 			return;
 		}
-		// separator ends in whitespace, so we might want to see if the script is trying
-		// to end the same way
+		// 分隔符以空格结尾，因此我们可能想查看脚本是否正在尝试
+		// 以同样的方式结束
 		if (scriptBuilder.lastIndexOf(trimmed) == scriptBuilder.length() - trimmed.length()) {
 			scriptBuilder.append(separator.substring(trimmed.length()));
 		}
 	}
 
 	/**
-	 * Determine if the provided SQL script contains the specified statement separator.
-	 * <p>This method is intended to be used to find the string separating each
-	 * SQL statement &mdash; for example, a ';' character.
-	 * <p>Any occurrence of the separator within the script will be ignored if it
-	 * is within a <em>literal</em> block of text enclosed in single quotes
-	 * ({@code '}) or double quotes ({@code "}), if it is escaped with a backslash
-	 * ({@code \}), or if it is within a single-line comment or block comment.
-	 * @param resource the resource from which the script was read, or {@code null}
-	 * if unknown
-	 * @param script the SQL script to search within
-	 * @param separator the statement separator to search for
-	 * @param commentPrefixes the prefixes that identify single-line comments
-	 * (typically {@code "--"})
-	 * @param blockCommentStartDelimiter the <em>start</em> block comment delimiter
-	 * (typically {@code "/*"})
-	 * @param blockCommentEndDelimiter the <em>end</em> block comment delimiter
-	 * (typically <code>"*&#47;"</code>)
+	 * 确定提供的 SQL 脚本是否包含指定的语句分隔符。 <p>此方法旨在用于查找分隔每个 SQL 语句的字符串 –例如，“;”特点。 OCAJAVA1DO如果脚本中出现的任何分隔符
+	 * 位于用单引号 ({@code '}) 或双引号 ({@code "}) 括起来的 <em>literal</em> 文本块内、使用反斜杠 ({@code \}) 转义或者位于单
+	 * 行注释或块注释内，则该分隔符将被忽略。
+	 * @param resource 从中读取脚本的资源，或 {@code null}（如果未知）
+	 * @param script 要在其中搜索的 SQL 脚本
+	 * @param separator 要搜索的语句分隔符
+	 * @param commentPrefixes 标识单行注释的前缀（通常是 {@code "--"}）
+	 * @param blockCommentStartDelimiter <em>start</em> 块注释分隔符（通常为 {@code "/*"}）
+	 * @param blockCommentEndDelimiter <em>end</em> 块注释分隔符（通常为 <code>"*&#47;"</code>）
 	 * @since 5.2.16
 	 */
 	static boolean containsStatementSeparator(@Nullable EncodedResource resource, String script,
@@ -454,7 +376,7 @@ public abstract class ScriptUtils {
 				inEscape = false;
 				continue;
 			}
-			// MySQL style escapes
+			// MySQL 风格的转义
 			if (c == '\\') {
 				inEscape = true;
 				continue;
@@ -470,19 +392,19 @@ public abstract class ScriptUtils {
 					return true;
 				}
 				else if (startsWithAny(script, commentPrefixes, i)) {
-					// Skip over any content from the start of the comment to the EOL
+					// 跳过从评论开头到 EOL 的任何内容
 					int indexOfNextNewline = script.indexOf('\n', i);
 					if (indexOfNextNewline > i) {
 						i = indexOfNextNewline;
 						continue;
 					}
 					else {
-						// If there's no EOL, we must be at the end of the script, so stop here.
+						// 如果没有 EOL，我们必须处于脚本的末尾，因此在此停止。
 						break;
 					}
 				}
 				else if (script.startsWith(blockCommentStartDelimiter, i)) {
-					// Skip over any block comments
+					// 跳过任何块注释
 					int indexOfCommentEnd = script.indexOf(blockCommentEndDelimiter, i);
 					if (indexOfCommentEnd > i) {
 						i = indexOfCommentEnd + blockCommentEndDelimiter.length() - 1;
@@ -500,28 +422,17 @@ public abstract class ScriptUtils {
 	}
 
 	/**
-	 * Split an SQL script into separate statements delimited by the provided
-	 * separator string. Each individual statement will be added to the provided
-	 * {@code List}.
-	 * <p>Within the script, the provided {@code commentPrefixes} will be honored:
-	 * any text beginning with one of the comment prefixes and extending to the
-	 * end of the line will be omitted from the output. Similarly, the provided
-	 * {@code blockCommentStartDelimiter} and {@code blockCommentEndDelimiter}
-	 * delimiters will be honored: any text enclosed in a block comment will be
-	 * omitted from the output. In addition, multiple adjacent whitespace characters
-	 * will be collapsed into a single space.
-	 * @param resource the resource from which the script was read
-	 * @param script the SQL script
-	 * @param separator text separating each statement
-	 * (typically a ';' or newline character)
-	 * @param commentPrefixes the prefixes that identify SQL line comments
-	 * (typically "--")
-	 * @param blockCommentStartDelimiter the <em>start</em> block comment delimiter;
-	 * never {@code null} or empty
-	 * @param blockCommentEndDelimiter the <em>end</em> block comment delimiter;
-	 * never {@code null} or empty
-	 * @param statements the list that will contain the individual statements
-	 * @throws ScriptException if an error occurred while splitting the SQL script
+	 * 将 SQL 脚本拆分为由提供的分隔符字符串分隔的单独语句。每个单独的声明都将添加到提供的 {@code List} 中。 <p> 在脚本中，将遵循提供的 {@code comm
+	 * entPrefixes}：任何以注释前缀之一开头并延伸到行尾的文本都将从输出中省略。同样，将遵循提供的 {@code blockCommentStartDelimiter} 和
+	 *  {@code blockCommentEndDelimiter} 分隔符：块注释中包含的任何文本都将从输出中省略。此外，多个相邻的空白字符将被折叠成一个空格。
+	 * @param resource 从中读取脚本的资源
+	 * @param script SQL脚本
+	 * @param separator 分隔每个语句的文本（通常是“;”或换行符）
+	 * @param commentPrefixes 标识 SQL 行注释的前缀（通常为“--”）
+	 * @param blockCommentStartDelimiter <em>start</em> 块注释分隔符；绝不是 {@code null} 或空
+	 * @param blockCommentEndDelimiter <em>end</em> 块注释分隔符；绝不是 {@code null} 或空
+	 * @param statements 将包含各个语句的列表
+	 * @throws ScriptException 如果拆分 SQL 脚本时发生错误
 	 * @since 5.2
 	 */
 	static void splitSqlScript(@Nullable EncodedResource resource, String script,
@@ -549,7 +460,7 @@ public abstract class ScriptUtils {
 				sb.append(c);
 				continue;
 			}
-			// MySQL style escapes
+			// MySQL 风格的转义
 			if (c == '\\') {
 				inEscape = true;
 				sb.append(c);
@@ -563,7 +474,7 @@ public abstract class ScriptUtils {
 			}
 			if (!inSingleQuote && !inDoubleQuote) {
 				if (script.startsWith(separator, i)) {
-					// We've reached the end of the current statement
+					// 我们已到达当前声明的结尾
 					if (sb.length() > 0) {
 						statements.add(sb.toString());
 						sb = new StringBuilder();
@@ -572,19 +483,19 @@ public abstract class ScriptUtils {
 					continue;
 				}
 				else if (startsWithAny(script, commentPrefixes, i)) {
-					// Skip over any content from the start of the comment to the EOL
+					// 跳过从评论开头到 EOL 的任何内容
 					int indexOfNextNewline = script.indexOf('\n', i);
 					if (indexOfNextNewline > i) {
 						i = indexOfNextNewline;
 						continue;
 					}
 					else {
-						// If there's no EOL, we must be at the end of the script, so stop here.
+						// 如果没有 EOL，我们必须处于脚本的末尾，因此在此停止。
 						break;
 					}
 				}
 				else if (script.startsWith(blockCommentStartDelimiter, i)) {
-					// Skip over any block comments
+					// 跳过任何块注释
 					int indexOfCommentEnd = script.indexOf(blockCommentEndDelimiter, i);
 					if (indexOfCommentEnd > i) {
 						i = indexOfCommentEnd + blockCommentEndDelimiter.length() - 1;
@@ -596,7 +507,7 @@ public abstract class ScriptUtils {
 					}
 				}
 				else if (c == ' ' || c == '\r' || c == '\n' || c == '\t') {
-					// Avoid multiple adjacent whitespace characters
+					// 避免多个相邻的空白字符
 					if (sb.length() > 0 && sb.charAt(sb.length() - 1) != ' ') {
 						c = ' ';
 					}
@@ -613,6 +524,9 @@ public abstract class ScriptUtils {
 		}
 	}
 
+	/**
+	 * 启动：s With Any（方法 `startsWithAny`）。
+	 */
 	private static boolean startsWithAny(String script, String[] prefixes, int offset) {
 		for (String prefix : prefixes) {
 			if (script.startsWith(prefix, offset)) {

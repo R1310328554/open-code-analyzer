@@ -24,12 +24,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.InvalidResultSetAccessException;
 
 /**
- * The default implementation of Spring's {@link SqlRowSetMetaData} interface, wrapping a
- * {@link java.sql.ResultSetMetaData} instance, catching any {@link SQLException SQLExceptions}
- * and translating them to a corresponding Spring {@link InvalidResultSetAccessException}.
- *
- * <p>Used by {@link ResultSetWrappingSqlRowSet}.
- *
+ * Spring 的 {@link SqlRowSetMetaData} 接口的默认实现，包装 {@link java.sql.ResultSetMetaData}
+ * 实例，捕获任何 {@link SQLException SQLExceptions} 并将它们转换为相应的 Spring {@link
+ * InvalidResultSetAccessException}。
+ * <p> 由 {@link ResultSetWrappingSqlRowSet} 使用。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 1.2
@@ -37,16 +35,16 @@ import org.springframework.jdbc.InvalidResultSetAccessException;
  */
 public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 
+	/** 结果相关状态（`resultSetMetaData`）。 */
 	private final ResultSetMetaData resultSetMetaData;
 
+	/** 名称相关状态（`columnNames`）。 */
 	private String @Nullable [] columnNames;
 
 
 	/**
-	 * Create a new ResultSetWrappingSqlRowSetMetaData object
-	 * for the given ResultSetMetaData instance.
-	 * @param resultSetMetaData a disconnected ResultSetMetaData instance
-	 * to wrap (usually a {@code javax.sql.RowSetMetaData} instance)
+	 * 为给定的 ResultSetMetaData 实例创建一个新的 ResultSetWrappingSqlRowSetMetaData 对象。
+	 * @param resultSetMetaData 要包装的断开连接的 ResultSetMetaData 实例（通常是 {@code javax.sql.RowSetMetaData} 实例）
 	 * @see java.sql.ResultSet#getMetaData
 	 * @see javax.sql.RowSetMetaData
 	 * @see ResultSetWrappingSqlRowSet#getMetaData
@@ -56,6 +54,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 	}
 
 
+	/**
+	 * 获取 Catalog Name（`CatalogName`）。
+	 */
 	@Override
 	public String getCatalogName(int column) throws InvalidResultSetAccessException {
 		try {
@@ -66,6 +67,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Column Class Name（`ColumnClassName`）。
+	 */
 	@Override
 	public String getColumnClassName(int column) throws InvalidResultSetAccessException {
 		try {
@@ -76,6 +80,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Column Count（`ColumnCount`）。
+	 */
 	@Override
 	public int getColumnCount() throws InvalidResultSetAccessException {
 		try {
@@ -86,6 +93,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Column Names（`ColumnNames`）。
+	 */
 	@Override
 	public String[] getColumnNames() throws InvalidResultSetAccessException {
 		if (this.columnNames == null) {
@@ -97,6 +107,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		return this.columnNames;
 	}
 
+	/**
+	 * 获取 Column Display Size（`ColumnDisplaySize`）。
+	 */
 	@Override
 	public int getColumnDisplaySize(int column) throws InvalidResultSetAccessException {
 		try {
@@ -107,6 +120,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Column Label（`ColumnLabel`）。
+	 */
 	@Override
 	public String getColumnLabel(int column) throws InvalidResultSetAccessException {
 		try {
@@ -117,6 +133,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Column Name（`ColumnName`）。
+	 */
 	@Override
 	public String getColumnName(int column) throws InvalidResultSetAccessException {
 		try {
@@ -127,6 +146,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Column Type（`ColumnType`）。
+	 */
 	@Override
 	public int getColumnType(int column) throws InvalidResultSetAccessException {
 		try {
@@ -137,6 +159,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Column Type Name（`ColumnTypeName`）。
+	 */
 	@Override
 	public String getColumnTypeName(int column) throws InvalidResultSetAccessException {
 		try {
@@ -147,6 +172,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Precision（`Precision`）。
+	 */
 	@Override
 	public int getPrecision(int column) throws InvalidResultSetAccessException {
 		try {
@@ -157,6 +185,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Scale（`Scale`）。
+	 */
 	@Override
 	public int getScale(int column) throws InvalidResultSetAccessException {
 		try {
@@ -167,6 +198,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Schema Name（`SchemaName`）。
+	 */
 	@Override
 	public String getSchemaName(int column) throws InvalidResultSetAccessException {
 		try {
@@ -177,6 +211,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 获取 Table Name（`TableName`）。
+	 */
 	@Override
 	public String getTableName(int column) throws InvalidResultSetAccessException {
 		try {
@@ -187,6 +224,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 判断是否 Case Sensitive。
+	 */
 	@Override
 	public boolean isCaseSensitive(int column) throws InvalidResultSetAccessException {
 		try {
@@ -197,6 +237,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 判断是否 Currency。
+	 */
 	@Override
 	public boolean isCurrency(int column) throws InvalidResultSetAccessException {
 		try {
@@ -207,6 +250,9 @@ public class ResultSetWrappingSqlRowSetMetaData implements SqlRowSetMetaData {
 		}
 	}
 
+	/**
+	 * 判断是否 Signed。
+	 */
 	@Override
 	public boolean isSigned(int column) throws InvalidResultSetAccessException {
 		try {

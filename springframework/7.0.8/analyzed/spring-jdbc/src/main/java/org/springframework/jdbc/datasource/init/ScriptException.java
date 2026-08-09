@@ -21,9 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessException;
 
 /**
- * Root of the hierarchy of data access exceptions that are related to processing
- * of SQL scripts.
- *
+ * 与 SQL 脚本处理相关的数据访问异常层次结构的根。
  * @author Sam Brannen
  * @since 4.0.3
  */
@@ -31,17 +29,17 @@ import org.springframework.dao.DataAccessException;
 public abstract class ScriptException extends DataAccessException {
 
 	/**
-	 * Create a new {@code ScriptException}.
-	 * @param message the detail message
+	 * 创建一个新的 {@code ScriptException}。
+	 * @param message 详细消息
 	 */
 	public ScriptException(String message) {
 		super(message);
 	}
 
 	/**
-	 * Create a new {@code ScriptException}.
-	 * @param message the detail message
-	 * @param cause the root cause
+	 * 创建一个新的 {@code ScriptException}。
+	 * @param message 详细消息
+	 * @param cause 根本原因
 	 */
 	public ScriptException(String message, @Nullable Throwable cause) {
 		super(message, cause);

@@ -24,40 +24,51 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Abstract base class for {@link LobHandler} implementations.
- *
- * <p>Implements all accessor methods for column names through a column lookup
- * and delegating to the corresponding accessor that takes a column index.
- *
+ * {@link LobHandler} 实现的抽象基类。
+ * <p>I 通过列查找实现列名的所有访问器方法，并将其委托给采用列索引的相应访问器。
  * @author Juergen Hoeller
  * @since 1.2
  * @see java.sql.ResultSet#findColumn
- * @deprecated as of 6.2, in favor of {@link org.springframework.jdbc.core.support.SqlBinaryValue}
- * and {@link org.springframework.jdbc.core.support.SqlCharacterValue}
+ * @deprecated 6.2，支持 {@link org.springframework.jdbc.core.support.SqlBinaryValue} 和 {@link org.springframework.jdbc.core.support.SqlCharacterValue}
  */
 @Deprecated(since = "6.2")
 public abstract class AbstractLobHandler implements LobHandler {
 
+	/**
+	 * 获取 Blob As Bytes（`BlobAsBytes`）。
+	 */
 	@Override
 	public byte @Nullable [] getBlobAsBytes(ResultSet rs, String columnName) throws SQLException {
 		return getBlobAsBytes(rs, rs.findColumn(columnName));
 	}
 
+	/**
+	 * 获取 Blob As Binary Stream（`BlobAsBinaryStream`）。
+	 */
 	@Override
 	public @Nullable InputStream getBlobAsBinaryStream(ResultSet rs, String columnName) throws SQLException {
 		return getBlobAsBinaryStream(rs, rs.findColumn(columnName));
 	}
 
+	/**
+	 * 获取 Clob As String（`ClobAsString`）。
+	 */
 	@Override
 	public @Nullable String getClobAsString(ResultSet rs, String columnName) throws SQLException {
 		return getClobAsString(rs, rs.findColumn(columnName));
 	}
 
+	/**
+	 * 获取 Clob As Ascii Stream（`ClobAsAsciiStream`）。
+	 */
 	@Override
 	public @Nullable InputStream getClobAsAsciiStream(ResultSet rs, String columnName) throws SQLException {
 		return getClobAsAsciiStream(rs, rs.findColumn(columnName));
 	}
 
+	/**
+	 * 获取 Clob As Character Stream（`ClobAsCharacterStream`）。
+	 */
 	@Override
 	public Reader getClobAsCharacterStream(ResultSet rs, String columnName) throws SQLException {
 		return getClobAsCharacterStream(rs, rs.findColumn(columnName));

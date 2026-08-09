@@ -19,9 +19,7 @@ package org.springframework.jdbc.datasource.init;
 import org.springframework.core.io.support.EncodedResource;
 
 /**
- * Thrown by {@link ScriptUtils} if a statement in an SQL script failed when
- * executing it against the target database.
- *
+ * 如果 SQL 脚本中的语句在对目标数据库执行时失败，则由 {@link ScriptUtils} 抛出。
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 3.0.5
@@ -30,12 +28,11 @@ import org.springframework.core.io.support.EncodedResource;
 public class ScriptStatementFailedException extends ScriptException {
 
 	/**
-	 * Construct a new {@code ScriptStatementFailedException}.
-	 * @param stmt the actual SQL statement that failed
-	 * @param stmtNumber the statement number in the SQL script (i.e.,
-	 * the n<sup>th</sup> statement present in the resource)
-	 * @param encodedResource the resource from which the SQL statement was read
-	 * @param cause the underlying cause of the failure
+	 * 构造一个新的 {@code ScriptStatementFailedException}。
+	 * @param stmt 实际失败的 SQL 语句
+	 * @param stmtNumber SQL 脚本中的语句编号（即资源中存在的第 n<sup>th</sup> 语句）
+	 * @param encodedResource 从中读取 SQL 语句的资源
+	 * @param cause 失败的根本原因
 	 */
 	public ScriptStatementFailedException(String stmt, int stmtNumber, EncodedResource encodedResource, Throwable cause) {
 		super(buildErrorMessage(stmt, stmtNumber, encodedResource), cause);
@@ -43,14 +40,11 @@ public class ScriptStatementFailedException extends ScriptException {
 
 
 	/**
-	 * Build an error message for an SQL script execution failure,
-	 * based on the supplied arguments.
-	 * @param stmt the actual SQL statement that failed
-	 * @param stmtNumber the statement number in the SQL script (i.e.,
-	 * the n<sup>th</sup> statement present in the resource)
-	 * @param encodedResource the resource from which the SQL statement was read
-	 * @return an error message suitable for an exception's <em>detail message</em>
-	 * or logging
+	 * 根据提供的参数构建 SQL 脚本执行失败的错误消息。
+	 * @param stmt 实际失败的 SQL 语句
+	 * @param stmtNumber SQL 脚本中的语句编号（即资源中存在的第 n<sup>th</sup> 语句）
+	 * @param encodedResource 从中读取 SQL 语句的资源
+	 * @return 适合异常的 <em> 详细消息 </em> 或日志记录的错误消息
 	 * @since 4.2
 	 */
 	public static String buildErrorMessage(String stmt, int stmtNumber, EncodedResource encodedResource) {

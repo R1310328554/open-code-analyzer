@@ -25,10 +25,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
- * Used to {@linkplain #setDatabasePopulator set up} a database during
- * initialization and {@link #setDatabaseCleaner clean up} a database during
- * destruction.
- *
+ * 用于初始化期间的 {@linkplain #setDatabasePopulator set up} 数据库和销毁期间的 {@link #setDatabaseCleaner
+ * clean up} 数据库。
  * @author Dave Syer
  * @author Sam Brannen
  * @since 3.0
@@ -36,29 +34,30 @@ import org.springframework.util.Assert;
  */
 public class DataSourceInitializer implements InitializingBean, DisposableBean {
 
+	/** 来源相关状态（`dataSource`）。 */
 	private @Nullable DataSource dataSource;
 
+	/** `databasePopulator`：该类的成员状态。 */
 	private @Nullable DatabasePopulator databasePopulator;
 
+	/** `databaseCleaner`：该类的成员状态。 */
 	private @Nullable DatabasePopulator databaseCleaner;
 
+	/** `true`：该类的成员状态。 */
 	private boolean enabled = true;
 
 
 	/**
-	 * The {@link DataSource} for the database to populate when this component
-	 * is initialized and to clean up when this component is shut down.
-	 * <p>This property is mandatory with no default provided.
-	 * @param dataSource the DataSource
+	 * {@link DataSource}，用于在初始化此组件时填充数据库并在关闭此组件时清除数据库。 <p>此属性是强制性的，没有提供默认值。
+	 * @param dataSource 数据源
 	 */
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 
 	/**
-	 * Set the {@link DatabasePopulator} to execute during the bean initialization phase,
-	 * if any.
-	 * @param databasePopulator the {@code DatabasePopulator} to use during initialization
+	 * 将 {@link DatabasePopulator} 设置为在 bean 初始化阶段执行（如果有）。
+	 * @param databasePopulator 初始化期间使用的 {@code DatabasePopulator}
 	 * @see #setDatabaseCleaner
 	 */
 	public void setDatabasePopulator(@Nullable DatabasePopulator databasePopulator) {
@@ -66,9 +65,8 @@ public class DataSourceInitializer implements InitializingBean, DisposableBean {
 	}
 
 	/**
-	 * Set the {@link DatabasePopulator} to execute during the bean destruction phase,
-	 * if any, cleaning up the database and leaving it in a known state for others.
-	 * @param databaseCleaner the {@code DatabasePopulator} to use during destruction
+	 * 将 {@link DatabasePopulator} 设置为在 bean 销毁阶段执行（如果有），清理数据库并使其处于其他人已知的状态。
+	 * @param databaseCleaner 销毁期间使用的 {@code DatabasePopulator}
 	 * @see #setDatabasePopulator
 	 */
 	public void setDatabaseCleaner(@Nullable DatabasePopulator databaseCleaner) {
@@ -76,10 +74,9 @@ public class DataSourceInitializer implements InitializingBean, DisposableBean {
 	}
 
 	/**
-	 * Flag to explicitly enable or disable the {@linkplain #setDatabasePopulator
-	 * database populator} and {@linkplain #setDatabaseCleaner database cleaner}.
-	 * @param enabled {@code true} if the database populator and database cleaner
-	 * should be called on startup and shutdown, respectively
+	 * 用于显式启用或禁用 {@linkplain #setDatabasePopulator database populator} 和 {@linkplain
+	 * #setDatabaseCleaner database cleaner} 的标记。
+	 * @param enabled {@code true} 是否应在启动和关闭时分别调用数据库填充器和数据库清理器
 	 */
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
@@ -87,8 +84,7 @@ public class DataSourceInitializer implements InitializingBean, DisposableBean {
 
 
 	/**
-	 * Use the {@linkplain #setDatabasePopulator database populator} to set up
-	 * the database.
+	 * 使用 {@linkplain #setDatabasePopulator database populator} 设置数据库。
 	 */
 	@Override
 	public void afterPropertiesSet() {
@@ -96,14 +92,16 @@ public class DataSourceInitializer implements InitializingBean, DisposableBean {
 	}
 
 	/**
-	 * Use the {@linkplain #setDatabaseCleaner database cleaner} to clean up the
-	 * database.
+	 * 使用 {@linkplain #setDatabaseCleaner database cleaner} 清理数据库。
 	 */
 	@Override
 	public void destroy() {
 		execute(this.databaseCleaner);
 	}
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	private void execute(@Nullable DatabasePopulator populator) {
 		Assert.state(this.dataSource != null, "DataSource must be set");
 		if (this.enabled && populator != null) {

@@ -26,10 +26,8 @@ import org.apache.derby.jdbc.EmbeddedDriver;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@link EmbeddedDatabaseConfigurer} for the Apache Derby database.
- *
- * <p>Call {@link #getInstance()} to get the singleton instance of this class.
- *
+ * 适用于 Apache Derby 数据库的 {@link EmbeddedDatabaseConfigurer}。
+ * <p>调用{@link #getInstance()}来获取该类的单例实例。
  * @author Oliver Gierke
  * @author Juergen Hoeller
  * @since 3.0
@@ -38,16 +36,17 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 
 	private static final String URL_TEMPLATE = "jdbc:derby:memory:%s;%s";
 
+	/** `instance`：该类的成员状态。 */
 	private static @Nullable DerbyEmbeddedDatabaseConfigurer instance;
 
 
 	/**
-	 * Get the singleton {@link DerbyEmbeddedDatabaseConfigurer} instance.
-	 * @return the configurer instance
+	 * 获取单例 {@link DerbyEmbeddedDatabaseConfigurer} 实例。
+	 * @return 配置器实例
 	 */
 	public static synchronized DerbyEmbeddedDatabaseConfigurer getInstance() {
 		if (instance == null) {
-			// disable log file
+			// 禁用日志文件
 			System.setProperty("derby.stream.error.method",
 					OutputStreamFactory.class.getName() + ".getNoopOutputStream");
 			instance = new DerbyEmbeddedDatabaseConfigurer();
@@ -56,9 +55,15 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 	}
 
 
+	/**
+	 * 创建 `DerbyEmbeddedDatabaseConfigurer` 的新实例。
+	 */
 	private DerbyEmbeddedDatabaseConfigurer() {
 	}
 
+	/**
+	 * 方法 `configureConnectionProperties`：完成本类中与「configure Connection Properties」相关的职责。
+	 */
 	@Override
 	public void configureConnectionProperties(ConnectionProperties properties, String databaseName) {
 		properties.setDriverClass(EmbeddedDriver.class);
@@ -67,6 +72,9 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 		properties.setPassword("");
 	}
 
+	/**
+	 * 方法 `shutdown`：完成本类中与「shutdown」相关的职责。
+	 */
 	@Override
 	public void shutdown(DataSource dataSource, String databaseName) {
 		try {
@@ -74,7 +82,7 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 					String.format(URL_TEMPLATE, databaseName, "drop=true"), new Properties());
 		}
 		catch (SQLException ex) {
-			// Error code that indicates successful shutdown
+			// 关机成功的错误码
 			if (!"08006".equals(ex.getSQLState())) {
 				LogFactory.getLog(getClass()).warn("Could not shut down embedded Derby database", ex);
 			}

@@ -22,10 +22,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.util.StringUtils;
 
 /**
- * JavaBean for holding custom JDBC error codes translation for a particular
- * database. The "exceptionClass" property defines which exception will be
- * thrown for the list of error codes specified in the errorCodes property.
- *
+ * 用于保存特定数据库的自定义 JDBC 错误代码转换的 JavaBean。 “exceptionClass”属性定义对于 errorCodes 属性中指定的错误代码列表将引发哪个
+ * 异常。
  * @author Thomas Risberg
  * @since 1.1
  * @see SQLErrorCodeSQLExceptionTranslator
@@ -34,25 +32,26 @@ public class CustomSQLErrorCodesTranslation {
 
 	private String[] errorCodes = new String[0];
 
+	/** 异常相关状态（`exceptionClass`）。 */
 	private @Nullable Class<?> exceptionClass;
 
 
 	/**
-	 * Set the SQL error codes to match.
+	 * 设置匹配的 SQL 错误代码。
 	 */
 	public void setErrorCodes(String... errorCodes) {
 		this.errorCodes = StringUtils.sortStringArray(errorCodes);
 	}
 
 	/**
-	 * Return the SQL error codes to match.
+	 * 返回要匹配的 SQL 错误代码。
 	 */
 	public String[] getErrorCodes() {
 		return this.errorCodes;
 	}
 
 	/**
-	 * Set the exception class for the specified error codes.
+	 * 设置指定错误代码的异常类。
 	 */
 	public void setExceptionClass(@Nullable Class<?> exceptionClass) {
 		if (exceptionClass != null && !DataAccessException.class.isAssignableFrom(exceptionClass)) {
@@ -63,7 +62,7 @@ public class CustomSQLErrorCodesTranslation {
 	}
 
 	/**
-	 * Return the exception class for the specified error codes.
+	 * 返回指定错误代码的异常类。
 	 */
 	public @Nullable Class<?> getExceptionClass() {
 		return this.exceptionClass;

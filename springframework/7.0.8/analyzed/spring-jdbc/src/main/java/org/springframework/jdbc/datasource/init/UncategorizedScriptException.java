@@ -17,10 +17,7 @@
 package org.springframework.jdbc.datasource.init;
 
 /**
- * Thrown when we cannot determine anything more specific than "something went
- * wrong while processing an SQL script": for example, a {@link java.sql.SQLException}
- * from JDBC that we cannot pinpoint more precisely.
- *
+ * 当我们无法确定比“处理 SQL 脚本时出现问题”更具体的内容时抛出：例如，我们无法更精确地查明来自 JDBC 的 {@link java.sql.SQLException}。
  * @author Sam Brannen
  * @since 4.0.3
  */
@@ -28,17 +25,17 @@ package org.springframework.jdbc.datasource.init;
 public class UncategorizedScriptException extends ScriptException {
 
 	/**
-	 * Create a new {@code UncategorizedScriptException}.
-	 * @param message detailed message
+	 * 创建一个新的 {@code UncategorizedScriptException}。
+	 * @param message 详细留言
 	 */
 	public UncategorizedScriptException(String message) {
 		super(message);
 	}
 
 	/**
-	 * Create a new {@code UncategorizedScriptException}.
-	 * @param message detailed message
-	 * @param cause the root cause
+	 * 创建一个新的 {@code UncategorizedScriptException}。
+	 * @param message 详细留言
+	 * @param cause 根本原因
 	 */
 	public UncategorizedScriptException(String message, Throwable cause) {
 		super(message, cause);

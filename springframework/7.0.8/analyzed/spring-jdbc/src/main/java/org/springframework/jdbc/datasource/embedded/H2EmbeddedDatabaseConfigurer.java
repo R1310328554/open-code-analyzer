@@ -23,10 +23,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link EmbeddedDatabaseConfigurer} for an H2 embedded database instance.
- *
- * <p>Call {@link #getInstance()} to get the singleton instance of this class.
- *
+ * 用于 H2 嵌入式数据库实例的 {@link EmbeddedDatabaseConfigurer}。
+ * <p>调用{@link #getInstance()}来获取该类的单例实例。
  * @author Oliver Gierke
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -34,15 +32,17 @@ import org.springframework.util.ClassUtils;
  */
 final class H2EmbeddedDatabaseConfigurer extends AbstractEmbeddedDatabaseConfigurer {
 
+	/** `instance`：该类的成员状态。 */
 	private static @Nullable H2EmbeddedDatabaseConfigurer instance;
 
+	/** 类相关状态（`driverClass`）。 */
 	private final Class<? extends Driver> driverClass;
 
 
 	/**
-	 * Get the singleton {@code H2EmbeddedDatabaseConfigurer} instance.
-	 * @return the configurer instance
-	 * @throws ClassNotFoundException if H2 is not on the classpath
+	 * 获取单例 {@code H2EmbeddedDatabaseConfigurer} 实例。
+	 * @return 配置器实例
+	 * @throws ClassNotFoundException 如果 H2 不在类路径上
 	 */
 	@SuppressWarnings("unchecked")
 	public static synchronized H2EmbeddedDatabaseConfigurer getInstance() throws ClassNotFoundException {
@@ -54,10 +54,16 @@ final class H2EmbeddedDatabaseConfigurer extends AbstractEmbeddedDatabaseConfigu
 	}
 
 
+	/**
+	 * 创建 `H2EmbeddedDatabaseConfigurer` 的新实例。
+	 */
 	private H2EmbeddedDatabaseConfigurer(Class<? extends Driver> driverClass) {
 		this.driverClass = driverClass;
 	}
 
+	/**
+	 * 方法 `configureConnectionProperties`：完成本类中与「configure Connection Properties」相关的职责。
+	 */
 	@Override
 	public void configureConnectionProperties(ConnectionProperties properties, String databaseName) {
 		properties.setDriverClass(this.driverClass);

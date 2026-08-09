@@ -19,12 +19,9 @@ package org.springframework.jdbc.datasource.embedded;
 import javax.sql.DataSource;
 
 /**
- * {@code EmbeddedDatabase} serves as a handle to an embedded database instance.
- *
- * <p>An {@code EmbeddedDatabase} is also a {@link DataSource} and adds a
- * {@link #shutdown} operation so that the embedded database instance can be
- * shut down gracefully.
- *
+ * {@code EmbeddedDatabase} 用作嵌入式数据库实例的句柄。
+ * <p>An {@code EmbeddedDatabase} 也是 {@link DataSource}，并添加了 {@link #shutdown}
+ * 操作，以便可以正常关闭嵌入式数据库实例。
  * @author Keith Donald
  * @author Sam Brannen
  * @since 3.0
@@ -32,7 +29,7 @@ import javax.sql.DataSource;
 public interface EmbeddedDatabase extends DataSource {
 
 	/**
-	 * Shut down this embedded database.
+	 * 关闭该嵌入式数据库。
 	 */
 	void shutdown();
 

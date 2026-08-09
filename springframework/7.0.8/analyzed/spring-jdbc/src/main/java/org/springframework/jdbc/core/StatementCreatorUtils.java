@@ -45,21 +45,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.SpringProperties;
 import org.springframework.jdbc.support.SqlValue;
 
-/* ===== [OCA 中文解析] =====
-class StatementCreatorUtils — 意图说明
-
-class `StatementCreatorUtils`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/StatementCreatorUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Utility methods for PreparedStatementSetter/Creator and CallableStatementCreator
- * implementations, providing sophisticated parameter management (including support
- * for LOB values).
- *
- * <p>Used by PreparedStatementCreatorFactory and CallableStatementCreatorFactory,
- * but also available for direct use in custom setter/creator implementations.
- *
+ * 用于PreparedStatementSetter/Creator 和CallableStatementCreator 实现的实用方法，提供复杂的参数管理（包括对LOB 值的支
+ * 持）。
+ * <p> 由PreparedStatementCreatorFactory 和CallableStatementCreatorFactory
+ * 使用，但也可直接在自定义setter/creator 实现中使用。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 1.1
@@ -74,22 +64,20 @@ class `StatementCreatorUtils`：请结合所属模块与调用方理解其在整
  */
 public abstract class StatementCreatorUtils {
 
-	// [OCA] 字段 `IGNORE_GETPARAMETERTYPE_PROPERTY_NAME`：类成员状态。
 	/**
-	 * System property that instructs Spring to ignore {@link java.sql.ParameterMetaData#getParameterType}
-	 * completely, i.e. to never even attempt to retrieve {@link PreparedStatement#getParameterMetaData()}
-	 * for {@link StatementCreatorUtils#setNull} calls.
-	 * <p>The default is "false", trying {@code getParameterType} calls first and falling back to
-	 * {@link PreparedStatement#setNull} / {@link PreparedStatement#setObject} calls based on
-	 * well-known behavior of common databases.
-	 * <p>Consider switching this flag to "true" if you experience misbehavior at runtime,
-	 * for example, with connection pool issues in case of an exception thrown from {@code getParameterType}
-	 * (as reported on JBoss AS 7) or in case of performance problems (as reported on PostgreSQL).
+	 * 指示 Spring 完全忽略 {@link java.sql.ParameterMetaData#getParameterType} 的系统属性，即永远不会尝试为
+	 * {@link StatementCreatorUtils#setNull} 调用检索 {@link
+	 * PreparedStatement#getParameterMetaData()}。 <p>默认值为“false”，首先尝试 {@code getParameterType}
+	 * 调用，然后根据常见数据库的众所周知的行为回退到 {@link PreparedStatement#setNull} / {@link
+	 * PreparedStatement#setObject} 调用。 <p> 如果您在运行时遇到不当行为，请考虑将此标志切换为“true”，例如，在 {@code
+	 * getParameterType} 抛出异常（如 JBoss AS 7 上报告）或出现性能问题（如 PostgreSQL 上报告）时出现连接池问题。
 	 */
 	public static final String IGNORE_GETPARAMETERTYPE_PROPERTY_NAME = "spring.jdbc.getParameterType.ignore";
 
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(StatementCreatorUtils.class);
 
 	private static final Map<Class<?>, Integer> javaTypeToSqlTypeMap = new HashMap<>(64);
@@ -127,9 +115,9 @@ public abstract class StatementCreatorUtils {
 
 
 	/**
-	 * Derive a default SQL type from the given Java type.
-	 * @param javaType the Java type to translate
-	 * @return the corresponding SQL type, or {@link SqlTypeValue#TYPE_UNKNOWN} if none found
+	 * 从给定的 Java 类型派生默认 SQL 类型。
+	 * @param javaType 要翻译的 Java 类型
+	 * @return 相应的 SQL 类型，如果未找到，则为 {@link SqlTypeValue#TYPE_UNKNOWN}
 	 */
 	public static int javaTypeToSqlParameterType(@Nullable Class<?> javaType) {
 		if (javaType == null) {
@@ -152,13 +140,12 @@ public abstract class StatementCreatorUtils {
 	}
 
 	/**
-	 * Set the value for a parameter. The method used is based on the SQL type
-	 * of the parameter and we can handle complex types like arrays and LOBs.
-	 * @param ps the prepared statement or callable statement
-	 * @param paramIndex index of the parameter we are setting
-	 * @param param the parameter as it is declared including type
-	 * @param inValue the value to set
-	 * @throws SQLException if thrown by PreparedStatement methods
+	 * 设置参数的值。使用的方法基于参数的 SQL 类型，我们可以处理数组和 LOB 等复杂类型。
+	 * @param ps 准备好的语句或可调用的语句
+	 * @param paramIndex 我们正在设置的参数的索引
+	 * @param param 声明的参数包括类型
+	 * @param inValue 要设置的值
+	 * @throws SQLException 如果由PreparedStatement方法抛出
 	 */
 	public static void setParameterValue(PreparedStatement ps, int paramIndex, SqlParameter param,
 			@Nullable Object inValue) throws SQLException {
@@ -167,13 +154,12 @@ public abstract class StatementCreatorUtils {
 	}
 
 	/**
-	 * Set the value for a parameter. The method used is based on the SQL type
-	 * of the parameter and we can handle complex types like arrays and LOBs.
-	 * @param ps the prepared statement or callable statement
-	 * @param paramIndex index of the parameter we are setting
-	 * @param sqlType the SQL type of the parameter
-	 * @param inValue the value to set (plain value or an SqlTypeValue)
-	 * @throws SQLException if thrown by PreparedStatement methods
+	 * 设置参数的值。使用的方法基于参数的 SQL 类型，我们可以处理数组和 LOB 等复杂类型。
+	 * @param ps 准备好的语句或可调用的语句
+	 * @param paramIndex 我们正在设置的参数的索引
+	 * @param sqlType 参数的 SQL 类型
+	 * @param inValue 要设置的值（普通值或 SqlTypeValue）
+	 * @throws SQLException 如果由PreparedStatement方法抛出
 	 * @see SqlTypeValue
 	 */
 	public static void setParameterValue(PreparedStatement ps, int paramIndex, int sqlType,
@@ -183,15 +169,13 @@ public abstract class StatementCreatorUtils {
 	}
 
 	/**
-	 * Set the value for a parameter. The method used is based on the SQL type
-	 * of the parameter and we can handle complex types like arrays and LOBs.
-	 * @param ps the prepared statement or callable statement
-	 * @param paramIndex index of the parameter we are setting
-	 * @param sqlType the SQL type of the parameter
-	 * @param typeName the type name of the parameter
-	 * (optional, only used for SQL NULL and SqlTypeValue)
-	 * @param inValue the value to set (plain value or an SqlTypeValue)
-	 * @throws SQLException if thrown by PreparedStatement methods
+	 * 设置参数的值。使用的方法基于参数的 SQL 类型，我们可以处理数组和 LOB 等复杂类型。
+	 * @param ps 准备好的语句或可调用的语句
+	 * @param paramIndex 我们正在设置的参数的索引
+	 * @param sqlType 参数的 SQL 类型
+	 * @param typeName 参数的类型名称（可选，仅用于 SQL NULL 和 SqlTypeValue）
+	 * @param inValue 要设置的值（普通值或 SqlTypeValue）
+	 * @throws SQLException 如果由PreparedStatement方法抛出
 	 * @see SqlTypeValue
 	 */
 	public static void setParameterValue(PreparedStatement ps, int paramIndex, int sqlType, String typeName,
@@ -200,23 +184,15 @@ public abstract class StatementCreatorUtils {
 		setParameterValueInternal(ps, paramIndex, sqlType, typeName, null, inValue);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 setParameterValueInternal — 意图与阅读要点
-
-方法 `setParameterValueInternal` 复杂度较高（CCN≈9, NLOC≈31）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Set the value for a parameter. The method used is based on the SQL type
-	 * of the parameter and we can handle complex types like arrays and LOBs.
-	 * @param ps the prepared statement or callable statement
-	 * @param paramIndex index of the parameter we are setting
-	 * @param sqlType the SQL type of the parameter
-	 * @param typeName the type name of the parameter
-	 * (optional, only used for SQL NULL and SqlTypeValue)
-	 * @param scale the number of digits after the decimal point
-	 * (for DECIMAL and NUMERIC types)
-	 * @param inValue the value to set (plain value or an SqlTypeValue)
-	 * @throws SQLException if thrown by PreparedStatement methods
+	 * 设置参数的值。使用的方法基于参数的 SQL 类型，我们可以处理数组和 LOB 等复杂类型。
+	 * @param ps 准备好的语句或可调用的语句
+	 * @param paramIndex 我们正在设置的参数的索引
+	 * @param sqlType 参数的 SQL 类型
+	 * @param typeName 参数的类型名称（可选，仅用于 SQL NULL 和 SqlTypeValue）
+	 * @param scale 小数点后的位数（对于 DECIMAL 和 NUMERIC 类型）
+	 * @param inValue 要设置的值（普通值或 SqlTypeValue）
+	 * @throws SQLException 如果由PreparedStatement方法抛出
 	 * @see SqlTypeValue
 	 */
 	private static void setParameterValueInternal(PreparedStatement ps, int paramIndex, int sqlType,
@@ -226,7 +202,7 @@ public abstract class StatementCreatorUtils {
 		int sqlTypeToUse = sqlType;
 		Object inValueToUse = inValue;
 
-		// override type info?
+		// 覆盖类型信息？
 		if (inValue instanceof SqlParameterValue parameterValue) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Overriding type info with runtime info from SqlParameterValue: column index " + paramIndex +
@@ -256,14 +232,8 @@ public abstract class StatementCreatorUtils {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 setNull — 意图与阅读要点
-
-方法 `setNull` 复杂度较高（CCN≈23, NLOC≈70）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Set the specified PreparedStatement parameter to null,
-	 * respecting database-specific peculiarities.
+	 * 将指定的PreparedStatement 参数设置为null，以尊重特定于数据库的特性。
 	 */
 	private static void setNull(PreparedStatement ps, int paramIndex, int sqlType, @Nullable String typeName)
 			throws SQLException {
@@ -299,14 +269,14 @@ public abstract class StatementCreatorUtils {
 				}
 			}
 			if (sqlTypeToUse == null) {
-				// Proceed with database-specific checks
+				// 继续进行特定于数据库的检查
 				sqlTypeToUse = Types.NULL;
 				DatabaseMetaData dbmd = ps.getConnection().getMetaData();
 				String jdbcDriverName = dbmd.getDriverName();
 				String databaseProductName = dbmd.getDatabaseProductName();
 				if (databaseProductName.startsWith("Informix") ||
 						(jdbcDriverName.startsWith("Microsoft") && jdbcDriverName.contains("SQL Server"))) {
-						// "Microsoft SQL Server JDBC Driver 3.0" versus "Microsoft JDBC Driver 4.0 for SQL Server"
+						// “Microsoft SQL Server JDBC Driver 3.0”与“Microsoft JDBC Driver 4.0 for SQL Server”
 					useSetObject = true;
 				}
 				else if (databaseProductName.startsWith("DB2") ||
@@ -327,29 +297,25 @@ public abstract class StatementCreatorUtils {
 			ps.setNull(paramIndex, sqlType, typeName);
 		}
 		else {
-			// Fall back to generic setNull call.
+			// 回退到通用 setNull 调用。
 			try {
-				// Try generic setNull call with SQL type specified.
+				// 尝试使用指定的 SQL 类型进行通用 setNull 调用。
 				ps.setNull(paramIndex, sqlType);
 			}
 			catch (SQLFeatureNotSupportedException ex) {
 				if (sqlType == Types.NULL) {
 					throw ex;
 				}
-				// Fall back to generic setNull call without SQL type specified
-				// (for example, for MySQL TIME_WITH_TIMEZONE / TIMESTAMP_WITH_TIMEZONE).
+				// 回退到通用 setNull 调用而不指定 SQL 类型
+				// （例如，对于 MySQL TIME_WITH_TIMEZONE / TIMESTAMP_WITH_TIMEZONE）。
 				ps.setNull(paramIndex, Types.NULL);
 			}
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 setValue — 意图与阅读要点
-
-方法 `setValue` 复杂度较高（CCN≈39, NLOC≈127）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 设置 Value（`Value`）。
+	 */
 	private static void setValue(PreparedStatement ps, int paramIndex, int sqlType,
 			@Nullable String typeName, @Nullable Integer scale, Object inValue) throws SQLException {
 
@@ -368,8 +334,8 @@ public abstract class StatementCreatorUtils {
 		else if ((sqlType == Types.CLOB || sqlType == Types.NCLOB) && isStringValue(inValue.getClass())) {
 			String strVal = inValue.toString();
 			if (strVal.length() > 4000) {
-				// Necessary for older Oracle drivers, in particular when running against an Oracle 10 database.
-				// Should also work fine against other drivers/databases since it uses standard JDBC 4.0 API.
+				// 对于较旧的 Oracle 驱动程序是必需的，特别是在针对 Oracle 10 数据库运行时。
+				// 由于它使用标准 JDBC 4.0 API，因此也应该可以与其他驱动程序/数据库一起正常工作。
 				if (sqlType == Types.NCLOB) {
 					ps.setNClob(paramIndex, new StringReader(strVal), strVal.length());
 				}
@@ -378,7 +344,7 @@ public abstract class StatementCreatorUtils {
 				}
 			}
 			else {
-				// Fallback: setString or setNString binding
+				// 后备：setString 或 setNString 绑定
 				if (sqlType == Types.NCLOB) {
 					ps.setNString(paramIndex, strVal);
 				}
@@ -469,36 +435,35 @@ public abstract class StatementCreatorUtils {
 				ps.setTimestamp(paramIndex, new java.sql.Timestamp(cal.getTime().getTime()), cal);
 			}
 			else {
-				// Fall back to generic setObject call without SQL type specified.
+				// 回退到不指定 SQL 类型的通用 setObject 调用。
 				ps.setObject(paramIndex, inValue);
 			}
 		}
 		else {
-			// Fall back to generic setObject call.
+			// 回退到通用 setObject 调用。
 			try {
-				// Try generic setObject call with SQL type specified.
+				// 尝试使用指定的 SQL 类型进行通用 setObject 调用。
 				ps.setObject(paramIndex, inValue, sqlType);
 			}
 			catch (SQLFeatureNotSupportedException ex) {
-				// Fall back to generic setObject call without SQL type specified
-				// (for example, for MySQL TIME_WITH_TIMEZONE / TIMESTAMP_WITH_TIMEZONE).
+				// 回退到通用 setObject 调用而不指定 SQL 类型
+				// （例如，对于 MySQL TIME_WITH_TIMEZONE / TIMESTAMP_WITH_TIMEZONE）。
 				ps.setObject(paramIndex, inValue);
 			}
 		}
 	}
 
 	/**
-	 * Check whether the given value can be treated as a String value.
+	 * 检查给定值是否可以被视为字符串值。
 	 */
 	private static boolean isStringValue(Class<?> inValueType) {
-		// Consider any CharSequence (including StringBuffer and StringBuilder) as a String.
+		// 将任何 CharSequence（包括 StringBuffer 和 StringBuilder）视为字符串。
 		return (CharSequence.class.isAssignableFrom(inValueType) ||
 				StringWriter.class.isAssignableFrom(inValueType));
 	}
 
 	/**
-	 * Check whether the given value is a {@code java.util.Date}
-	 * (but not one of the JDBC-specific subclasses).
+	 * 检查给定值是否是 {@code java.util.Date}（但不是特定于 JDBC 的子类之一）。
 	 */
 	private static boolean isDateValue(Class<?> inValueType) {
 		return (java.util.Date.class.isAssignableFrom(inValueType) &&
@@ -508,9 +473,8 @@ public abstract class StatementCreatorUtils {
 	}
 
 	/**
-	 * Clean up all resources held by parameter values which were passed to an
-	 * execute method. This is for example important for closing LOB values.
-	 * @param paramValues parameter values supplied. May be {@code null}.
+	 * 清理传递给执行方法的参数值所持有的所有资源。例如，这对于关闭 LOB 值很重要。
+	 * @param paramValues 提供的参数值。可能是 {@code null}。
 	 * @see DisposableSqlTypeValue#cleanup()
 	 * @see org.springframework.jdbc.core.support.SqlLobValue#cleanup()
 	 */
@@ -521,20 +485,19 @@ public abstract class StatementCreatorUtils {
 	}
 
 	/**
-	 * Clean up all resources held by parameter values which were passed to an
-	 * execute method. This is for example important for closing LOB values.
-	 * @param paramValues parameter values supplied. May be {@code null}.
+	 * 清理传递给执行方法的参数值所持有的所有资源。例如，这对于关闭 LOB 值很重要。
+	 * @param paramValues 提供的参数值。可能是 {@code null}。
 	 * @see DisposableSqlTypeValue#cleanup()
 	 * @see org.springframework.jdbc.core.support.SqlLobValue#cleanup()
 	 */
 	public static void cleanupParameters(@Nullable Collection<?> paramValues) {
 		if (paramValues != null) {
 			for (Object inValue : paramValues) {
-				// Unwrap SqlParameterValue first...
+				// 首先解开 SqlParameterValue...
 				if (inValue instanceof SqlParameterValue sqlParameterValue) {
 					inValue = sqlParameterValue.getValue();
 				}
-				// Check for disposable value types
+				// 检查一次性值类型
 				if (inValue instanceof SqlValue sqlValue) {
 					sqlValue.cleanup();
 				}

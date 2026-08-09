@@ -37,21 +37,12 @@ import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.util.Assert;
 
 /**
- * An "RDBMS operation" is a multithreaded, reusable object representing a query,
- * update, or stored procedure call. An RDBMS operation is <b>not</b> a command,
- * as a command is not reusable. However, execute methods may take commands as
- * arguments. Subclasses should be JavaBeans, allowing easy configuration.
- *
- * <p>This class and subclasses throw runtime exceptions, defined in the
- * {@code org.springframework.dao} package (and as thrown by the
- * {@code org.springframework.jdbc.core} package, which the classes
- * in this package use under the hood to perform raw JDBC operations).
- *
- * <p>Subclasses should set SQL and add parameters before invoking the
- * {@link #compile()} method. The order in which parameters are added is
- * significant. The appropriate {@code execute} or {@code update}
- * method can then be invoked.
- *
+ * “RDBMS 操作”是表示查询、更新或存储过程调用的多线程、可重用对象。一个RDBMS操作是<b>而不是</b>命令，因为命令是不可重用的。但是，执行方法可以将命令作为参数。子
+ * 类应该是JavaBeans，以便于配置。
+ * <p> 该类和子类抛出 {@code org.springframework.dao} 包中定义的运行时异常（以及由 {@code
+ * org.springframework.jdbc.core} 包抛出的异常，该包中的类在后台使用该异常来执行原始 JDBC 操作）。
+ * <p>子类应在调用 {@link #compile()} 方法之前设置 SQL 并添加参数。添加参数的顺序很重要。然后可以调用适当的 {@code execute} 或 {@c
+ * ode update} 方法。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see SqlQuery
@@ -61,51 +52,54 @@ import org.springframework.util.Assert;
  */
 public abstract class RdbmsOperation implements InitializingBean {
 
-	/** Logger available to subclasses. */
+	/**
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** Lower-level class used to execute SQL. */
+	/**
+	 */
 	private JdbcTemplate jdbcTemplate = new JdbcTemplate();
 
 	private int resultSetType = ResultSet.TYPE_FORWARD_ONLY;
 
+	/** `false`：该类的成员状态。 */
 	private boolean updatableResults = false;
 
+	/** `false`：该类的成员状态。 */
 	private boolean returnGeneratedKeys = false;
 
+	/** 名称相关状态（`generatedKeysColumnNames`）。 */
 	private String @Nullable [] generatedKeysColumnNames;
 
+	/** `sql`：该类的成员状态。 */
 	private @Nullable String sql;
 
 	private final List<SqlParameter> declaredParameters = new ArrayList<>();
 
 	/**
-	 * Has this operation been compiled? Compilation means at
-	 * least checking that a DataSource and sql have been provided,
-	 * but subclasses may also implement their own custom validation.
+	 * 这个操作编译了吗？编译意味着至少检查是否已提供 DataSource 和 sql，但子类也可以实现自己的自定义验证。
 	 */
 	private volatile boolean compiled;
 
 
 	/**
-	 * An alternative to the more commonly used {@link #setDataSource} when you want to
-	 * use the same {@link JdbcTemplate} in multiple {@code RdbmsOperations}. This is
-	 * appropriate if the {@code JdbcTemplate} has special configuration such as a
-	 * {@link org.springframework.jdbc.support.SQLExceptionTranslator} to be reused.
+	 * 当您想在多个 {@code RdbmsOperations} 中使用相同的 {@link JdbcTemplate} 时，可以替代更常用的 {@link
+	 * #setDataSource}。如果 {@code JdbcTemplate} 具有特殊配置（例如要重用的 {@link
+	 * org.springframework.jdbc.support.SQLExceptionTranslator}），则这是合适的。
 	 */
 	public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
 	/**
-	 * Return the {@link JdbcTemplate} used by this operation object.
+	 * 返回此操作对象使用的 {@link JdbcTemplate}。
 	 */
 	public JdbcTemplate getJdbcTemplate() {
 		return this.jdbcTemplate;
 	}
 
 	/**
-	 * Set the JDBC {@link DataSource} to obtain connections from.
+	 * 设置从中获取连接的 JDBC {@link DataSource}。
 	 * @see org.springframework.jdbc.core.JdbcTemplate#setDataSource
 	 */
 	public void setDataSource(DataSource dataSource) {
@@ -113,11 +107,8 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Set the fetch size for this RDBMS operation. This is important for processing
-	 * large result sets: Setting this higher than the default value will increase
-	 * processing speed at the cost of memory consumption; setting this lower can
-	 * avoid transferring row data that will never be read by the application.
-	 * <p>Default is -1, indicating to use the driver's default.
+	 * 设置此 RDBMS 操作的获取大小。这对于处理大型结果集很重要：将其设置为高于默认值会以内存消耗为代价提高处理速度；设置较低的值可以避免传输应用程序永远不会读取的行数据。 <p
+	 * >Default 为-1，表示使用驱动程序的默认值。
 	 * @see org.springframework.jdbc.core.JdbcTemplate#setFetchSize
 	 */
 	public void setFetchSize(int fetchSize) {
@@ -125,10 +116,8 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Set the maximum number of rows for this RDBMS operation. This is important
-	 * for processing subsets of large result sets, in order to avoid reading and
-	 * holding the entire result set in the database or in the JDBC driver.
-	 * <p>Default is -1, indicating to use the driver's default.
+	 * 设置此 RDBMS 操作的最大行数。这对于处理大型结果集的子集非常重要，以避免在数据库或 JDBC 驱动程序中读取和保存整个结果集。 <p>Default 为-1，表示使用驱动
+	 * 程序的默认值。
 	 * @see org.springframework.jdbc.core.JdbcTemplate#setMaxRows
 	 */
 	public void setMaxRows(int maxRows) {
@@ -136,19 +125,16 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Set the query timeout for statements that this RDBMS operation executes.
-	 * <p>Default is -1, indicating to use the JDBC driver's default.
-	 * <p>Note: Any timeout specified here will be overridden by the remaining
-	 * transaction timeout when executing within a transaction that has a
-	 * timeout specified at the transaction level.
+	 * 设置此 RDBMS 操作执行的语句的查询超时。 <p>Default 为-1，表示使用 JDBC 驱动程序的默认值。 <p>注意：当在事务级别指定了超时的事务中执行时，此处指定
+	 * 的任何超时都将被剩余事务超时覆盖。
 	 */
 	public void setQueryTimeout(int queryTimeout) {
 		this.jdbcTemplate.setQueryTimeout(queryTimeout);
 	}
 
 	/**
-	 * Set whether to use statements that return a specific type of ResultSet.
-	 * @param resultSetType the ResultSet type
+	 * 设置是否使用返回特定类型ResultSet的语句。
+	 * @param resultSetType 结果集类型
 	 * @see java.sql.ResultSet#TYPE_FORWARD_ONLY
 	 * @see java.sql.ResultSet#TYPE_SCROLL_INSENSITIVE
 	 * @see java.sql.ResultSet#TYPE_SCROLL_SENSITIVE
@@ -159,15 +145,14 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Return whether statements will return a specific type of ResultSet.
+	 * Return 语句是否将返回特定类型的 ResultSet。
 	 */
 	public int getResultSetType() {
 		return this.resultSetType;
 	}
 
 	/**
-	 * Set whether to use statements that are capable of returning
-	 * updatable ResultSets.
+	 * 设置是否使用能够返回可更新结果集的语句。
 	 * @see java.sql.Connection#prepareStatement(String, int, int)
 	 */
 	public void setUpdatableResults(boolean updatableResults) {
@@ -179,15 +164,14 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Return whether statements will return updatable ResultSets.
+	 * 返回语句是否将返回可更新的结果集。
 	 */
 	public boolean isUpdatableResults() {
 		return this.updatableResults;
 	}
 
 	/**
-	 * Set whether prepared statements should be capable of returning
-	 * auto-generated keys.
+	 * 设置准备好的语句是否应该能够返回自动生成的键。
 	 * @see java.sql.Connection#prepareStatement(String, int)
 	 */
 	public void setReturnGeneratedKeys(boolean returnGeneratedKeys) {
@@ -199,15 +183,14 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Return whether statements should be capable of returning
-	 * auto-generated keys.
+	 * 返回语句是否应该能够返回自动生成的键。
 	 */
 	public boolean isReturnGeneratedKeys() {
 		return this.returnGeneratedKeys;
 	}
 
 	/**
-	 * Set the column names of the auto-generated keys.
+	 * 设置自动生成的键的列名称。
 	 * @see java.sql.Connection#prepareStatement(String, String[])
 	 */
 	public void setGeneratedKeysColumnNames(String @Nullable ... names) {
@@ -219,30 +202,29 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Return the column names of the auto generated keys.
+	 * 返回自动生成的键的列名称。
 	 */
 	public String @Nullable [] getGeneratedKeysColumnNames() {
 		return this.generatedKeysColumnNames;
 	}
 
 	/**
-	 * Set the SQL executed by this operation.
+	 * 设置该操作执行的SQL。
 	 */
 	public void setSql(@Nullable String sql) {
 		this.sql = sql;
 	}
 
 	/**
-	 * Subclasses can override this to supply dynamic SQL if they wish, but SQL is
-	 * normally set by calling the {@link #setSql} method or in a subclass constructor.
+	 * 如果子类愿意，可以重写它以提供动态 SQL，但 SQL 通常是通过调用 {@link #setSql} 方法或在子类构造函数中设置的。
 	 */
 	public @Nullable String getSql() {
 		return this.sql;
 	}
 
 	/**
-	 * Resolve the configured SQL for actual use.
-	 * @return the SQL (never {@code null})
+	 * 解析配置好的SQL以供实际使用。
+	 * @return SQL（绝不是 {@code null}）
 	 * @since 5.0
 	 */
 	protected String resolveSql() {
@@ -252,13 +234,10 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Add anonymous parameters, specifying only their SQL types
-	 * as defined in the {@code java.sql.Types} class.
-	 * <p>Parameter ordering is significant. This method is an alternative
-	 * to the {@link #declareParameter} method, which should normally be preferred.
-	 * @param types array of SQL types as defined in the
-	 * {@code java.sql.Types} class
-	 * @throws InvalidDataAccessApiUsageException if the operation is already compiled
+	 * 添加匿名参数，仅指定 {@code java.sql.Types} 类中定义的 SQL 类型。 <p>参数排序很重要。此方法是 {@link
+	 * #declareParameter} 方法的替代方法，通常应首选 {@link #declareParameter} 方法。
+	 * @param types {@code java.sql.Types} 类中定义的 SQL 类型数组
+	 * @throws InvalidDataAccessApiUsageException 如果该操作已经编译
 	 */
 	public void setTypes(int @Nullable [] types) throws InvalidDataAccessApiUsageException {
 		if (isCompiled()) {
@@ -272,16 +251,10 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Declare a parameter for this operation.
-	 * <p>The order in which this method is called is significant when using
-	 * positional parameters. It is not significant when using named parameters
-	 * with named SqlParameter objects here; it remains significant when using
-	 * named parameters in combination with unnamed SqlParameter objects here.
-	 * @param param the SqlParameter to add. This will specify SQL type and (optionally)
-	 * the parameter's name. Note that you typically use the {@link SqlParameter} class
-	 * itself here, not any of its subclasses.
-	 * @throws InvalidDataAccessApiUsageException if the operation is already compiled,
-	 * and hence cannot be configured further
+	 * 声明此操作的参数。 <p> 使用位置参数时，调用此方法的顺序很重要。此处使用带有命名 SqlParameter 对象的命名参数并不重要；当将命名参数与未命名的 SqlParam
+	 * eter 对象结合使用时，它仍然很重要。
+	 * @param param 要添加的 SqlParameter。这将指定 SQL 类型和（可选）参数名称。请注意，您通常在此处使用 {@link SqlParameter} 类本身，而不是其任何子类。
+	 * @throws InvalidDataAccessApiUsageException 如果该操作已编译，因此无法进一步配置
 	 */
 	public void declareParameter(SqlParameter param) throws InvalidDataAccessApiUsageException {
 		if (isCompiled()) {
@@ -291,10 +264,8 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Add one or more declared parameters. Used for configuring this operation
-	 * when used in a bean factory.  Each parameter will specify SQL type and (optionally)
-	 * the parameter's name.
-	 * @param parameters an array containing the declared {@link SqlParameter} objects
+	 * 添加一个或多个声明的参数。用于在 bean 工厂中使用时配置此操作。每个参数将指定 SQL 类型和（可选）参数名称。
+	 * @param parameters 包含声明的 {@link SqlParameter} 对象的数组
 	 * @see #declaredParameters
 	 */
 	public void setParameters(SqlParameter... parameters) {
@@ -313,7 +284,7 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Return a list of the declared {@link SqlParameter} objects.
+	 * 返回声明的 {@link SqlParameter} 对象的列表。
 	 */
 	protected List<SqlParameter> getDeclaredParameters() {
 		return this.declaredParameters;
@@ -321,7 +292,7 @@ public abstract class RdbmsOperation implements InitializingBean {
 
 
 	/**
-	 * Ensures compilation if used in a bean factory.
+	 * 如果在 bean 工厂中使用，确保编译。
 	 */
 	@Override
 	public void afterPropertiesSet() {
@@ -329,10 +300,8 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Compile this query.
-	 * Ignores subsequent attempts to compile.
-	 * @throws InvalidDataAccessApiUsageException if the object hasn't
-	 * been correctly initialized, for example if no DataSource has been provided
+	 * 编译此查询。忽略后续的编译尝试。
+	 * @throws InvalidDataAccessApiUsageException 如果对象尚未正确初始化，例如，如果未提供 DataSource
 	 */
 	public final void compile() throws InvalidDataAccessApiUsageException {
 		if (!isCompiled()) {
@@ -357,19 +326,15 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Is this operation "compiled"? Compilation, as in JDO,
-	 * means that the operation is fully configured, and ready to use.
-	 * The exact meaning of compilation will vary between subclasses.
-	 * @return whether this operation is compiled and ready to use
+	 * 这个操作是“编译”的吗？与 JDO 中一样，编译意味着操作已完全配置并可供使用。编译的确切含义因子类而异。
+	 * @return 该操作已编译并可以使用
 	 */
 	public boolean isCompiled() {
 		return this.compiled;
 	}
 
 	/**
-	 * Check whether this operation has been compiled already;
-	 * lazily compile it if not already compiled.
-	 * <p>Automatically called by {@code validateParameters}.
+	 * 检查该操作是否已经编译；如果尚未编译，则延迟编译它。 <p>由{@code validateParameters}自动调用。
 	 * @see #validateParameters
 	 */
 	protected void checkCompiled() {
@@ -380,11 +345,9 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Validate the parameters passed to an execute method based on declared parameters.
-	 * Subclasses should invoke this method before every {@code executeQuery()}
-	 * or {@code update()} method.
-	 * @param parameters the parameters supplied (may be {@code null})
-	 * @throws InvalidDataAccessApiUsageException if the parameters are invalid
+	 * 根据声明的参数验证传递给执行方法的参数。子类应在每个 {@code executeQuery()} 或 {@code update()} 方法之前调用此方法。
+	 * @param parameters 提供的参数（可能是 {@code null}）
+	 * @throws InvalidDataAccessApiUsageException 如果参数无效
 	 */
 	protected void validateParameters(Object @Nullable [] parameters) throws InvalidDataAccessApiUsageException {
 		checkCompiled();
@@ -403,11 +366,9 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Validate the named parameters passed to an execute method based on declared parameters.
-	 * Subclasses should invoke this method before every {@code executeQuery()} or
-	 * {@code update()} method.
-	 * @param parameters parameter Map supplied (may be {@code null})
-	 * @throws InvalidDataAccessApiUsageException if the parameters are invalid
+	 * 根据声明的参数验证传递给执行方法的命名参数。子类应在每个 {@code executeQuery()} 或 {@code update()} 方法之前调用此方法。
+	 * @param parameters 提供的参数映射（可能是 {@code null}）
+	 * @throws InvalidDataAccessApiUsageException 如果参数无效
 	 */
 	protected void validateNamedParameters(@Nullable Map<String, ?> parameters) throws InvalidDataAccessApiUsageException {
 		checkCompiled();
@@ -431,9 +392,9 @@ public abstract class RdbmsOperation implements InitializingBean {
 	}
 
 	/**
-	 * Validate the given parameter count against the given declared parameters.
-	 * @param suppliedParamCount the number of actual parameters given
-	 * @param declaredInParamCount the number of input parameters declared
+	 * 根据给定的声明参数验证给定的参数计数。
+	 * @param suppliedParamCount 给出的实际参数的数量
+	 * @param declaredInParamCount 声明的输入参数的数量
 	 */
 	private void validateParameterCount(int suppliedParamCount, int declaredInParamCount) {
 		if (suppliedParamCount < declaredInParamCount) {
@@ -448,26 +409,20 @@ public abstract class RdbmsOperation implements InitializingBean {
 
 
 	/**
-	 * Subclasses must implement this template method to perform their own compilation.
-	 * Invoked after this base class's compilation is complete.
-	 * <p>Subclasses can assume that SQL and a DataSource have been supplied.
-	 * @throws InvalidDataAccessApiUsageException if the subclass hasn't been
-	 * properly configured
+	 * 子类必须实现此模板方法才能执行自己的编译。该基类编译完成后调用。 <p>子类可以假定已提供 SQL 和数据源。
+	 * @throws InvalidDataAccessApiUsageException 如果子类没有正确配置
 	 */
 	protected abstract void compileInternal() throws InvalidDataAccessApiUsageException;
 
 	/**
-	 * Return whether BLOB/CLOB parameters are supported for this kind of operation.
-	 * <p>The default is {@code true}.
+	 * 返回此类操作是否支持 BLOB/CLOB 参数。 <p>默认为{@code true}。
 	 */
 	protected boolean supportsLobParameters() {
 		return true;
 	}
 
 	/**
-	 * Return whether this operation accepts additional parameters that are
-	 * given but not actually used. Applies in particular to parameter Maps.
-	 * <p>The default is {@code false}.
+	 * 返回此操作是否接受给定但未实际使用的附加参数。特别适用于参数映射。 <p>默认为{@code false}。
 	 * @see StoredProcedure
 	 */
 	protected boolean allowsUnusedParameters() {

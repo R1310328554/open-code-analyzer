@@ -32,26 +32,27 @@ import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.util.Assert;
 
 /**
- * Abstract base class for {@link DataFieldMaxValueIncrementer} implementations
- * which are based on identity columns in a sequence-like table.
- *
+ * {@link DataFieldMaxValueIncrementer} 实现的抽象基类基于类序列表中的标识列。
  * @author Juergen Hoeller
  * @author Thomas Risberg
  * @since 4.1.2
  */
 public abstract class AbstractIdentityColumnMaxValueIncrementer extends AbstractColumnMaxValueIncrementer {
 
+	/** `false`：该类的成员状态。 */
 	private boolean deleteSpecificValues = false;
 
-	/** The current cache of values. */
+	/**
+	 */
 	private long @Nullable [] valueCache;
 
-	/** The next id to serve from the value cache. */
+	/**
+	 */
 	private int nextValueIndex = -1;
 
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -59,30 +60,33 @@ public abstract class AbstractIdentityColumnMaxValueIncrementer extends Abstract
 	public AbstractIdentityColumnMaxValueIncrementer() {
 	}
 
+	/**
+	 * 创建 `AbstractIdentityColumnMaxValueIncrementer` 的新实例。
+	 */
 	public AbstractIdentityColumnMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName, columnName);
 	}
 
 
 	/**
-	 * Specify whether to delete the entire range below the current maximum key value
-	 * ({@code false} - the default), or the specifically generated values ({@code true}).
-	 * The former mode will use a where range clause whereas the latter will use an in
-	 * clause starting with the lowest value minus 1, just preserving the maximum value.
+	 * 指定是删除当前最大键值以下的整个范围（{@code false} - 默认值），还是删除专门生成的值（{@code true}）。前一种模式将使用 where range 子句
+	 * ，而后者将使用 in 子句，从最小值减 1 开始，仅保留最大值。
 	 */
 	public void setDeleteSpecificValues(boolean deleteSpecificValues) {
 		this.deleteSpecificValues = deleteSpecificValues;
 	}
 
 	/**
-	 * Return whether to delete the entire range below the current maximum key value
-	 * ({@code false} - the default), or the specifically generated values ({@code true}).
+	 * 返回是否删除当前最大键值以下的整个范围（{@code false} - 默认值），还是删除专门生成的值（{@code true}）。
 	 */
 	public boolean isDeleteSpecificValues() {
 		return this.deleteSpecificValues;
 	}
 
 
+	/**
+	 * 获取 Next Key（`NextKey`）。
+	 */
 	@Override
 	protected synchronized long getNextKey() throws DataAccessException {
 		if (this.nextValueIndex < 0 || this.nextValueIndex >= getCacheSize()) {
@@ -127,26 +131,22 @@ public abstract class AbstractIdentityColumnMaxValueIncrementer extends Abstract
 
 
 	/**
-	 * Statement to use to increment the "sequence" value.
-	 * @return the SQL statement to use
+	 * 用于增加“序列”值的语句。
+	 * @return 使用的SQL语句
 	 */
 	protected abstract String getIncrementStatement();
 
 	/**
-	 * Statement to use to obtain the current identity value.
-	 * @return the SQL statement to use
+	 * 用于获取当前身份值的语句。
+	 * @return 使用的SQL语句
 	 */
 	protected abstract String getIdentityStatement();
 
 	/**
-	 * Statement to use to clean up "sequence" values.
-	 * <p>The default implementation either deletes the entire range below
-	 * the current maximum value, or the specifically generated values
-	 * (starting with the lowest minus 1, just preserving the maximum value)
-	 * - according to the {@link #isDeleteSpecificValues()} setting.
-	 * @param values the currently generated key values
-	 * (the number of values corresponds to {@link #getCacheSize()})
-	 * @return the SQL statement to use
+	 * 用于清理“序列”值的语句。 <p> 默认实现要么删除当前最大值以下的整个范围，要么删除专门生成的值（从最低的负 1 开始，仅保留最大值） - 根据 {@link #isDele
+	 * teSpecificValues()} 设置。
+	 * @param values 当前生成的键值（值的数量对应{@link #getCacheSize()}）
+	 * @return 使用的SQL语句
 	 */
 	protected String getDeleteStatement(long[] values) {
 		StringBuilder sb = new StringBuilder(64);

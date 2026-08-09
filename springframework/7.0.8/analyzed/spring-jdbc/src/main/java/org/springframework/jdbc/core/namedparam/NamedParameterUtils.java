@@ -29,18 +29,9 @@ import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.core.SqlParameterValue;
 import org.springframework.util.Assert;
 
-/* ===== [OCA 中文解析] =====
-class NamedParameterUtils — 意图说明
-
-class `NamedParameterUtils`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Helper methods for named parameter parsing.
- *
- * <p>Only intended for internal use within Spring's JDBC framework.
- *
+ * 用于命名参数解析的辅助方法。
+ * <p>仅用于 Spring 的 JDBC 框架内部使用。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Yanming Zhou
@@ -48,29 +39,23 @@ class `NamedParameterUtils`：请结合所属模块与调用方理解其在整�
  */
 public abstract class NamedParameterUtils {
 
-	// [OCA] 字段 `START_SKIP`：类成员状态。
 	/**
-	 * Set of characters that qualify as comment or quote starting characters.
+	 * 符合注释或引用起始字符资格的字符集。
 	 */
 	private static final String[] START_SKIP = {"'", "\"", "--", "/*", "`"};
 
-	// [OCA] 字段 `STOP_SKIP`：类成员状态。
 	/**
-	 * Set of characters that are the corresponding comment or quote ending characters.
+	 * 作为相应注释或引用结束字符的字符集。
 	 */
 	private static final String[] STOP_SKIP = {"'", "\"", "\n", "*/", "`"};
 
-	// [OCA] 字段 `PARAMETER_SEPARATORS`：类成员状态。
 	/**
-	 * Set of characters that qualify as parameter separators,
-	 * indicating that a parameter name in an SQL String has ended.
+	 * 符合参数分隔符的字符集，指示 SQL 字符串中的参数名称已结束。
 	 */
 	private static final String PARAMETER_SEPARATORS = "\"':&,;()|=+-*%/\\<>^";
 
-	// [OCA] 字段 `separatorIndex`：类成员状态。
 	/**
-	 * An index with separator flags per character code.
-	 * Technically only needed between 34 and 124 at this point.
+	 * 每个字符代码带有分隔符标志的索引。从技术上讲，此时只需要 34 到 124 之间。
 	 */
 	private static final boolean[] separatorIndex = new boolean[128];
 
@@ -82,19 +67,13 @@ public abstract class NamedParameterUtils {
 
 
 	//-------------------------------------------------------------------------
-	// Core methods used by NamedParameterJdbcTemplate and SqlQuery/SqlUpdate
+	// NamedParameterJdbcTemplate 和 SqlQuery/SqlUpdate 使用的核心方法
 	//-------------------------------------------------------------------------
 
-	/* ===== [OCA 中文解析] =====
-方法 parseSqlStatement — 意图与阅读要点
-
-方法 `parseSqlStatement` 复杂度较高（CCN≈33, NLOC≈115）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Parse the SQL statement and locate any placeholders or named parameters.
-	 * Named parameters are substituted for a JDBC placeholder.
-	 * @param sql the SQL statement
-	 * @return the parsed statement, represented as {@link ParsedSql} instance
+	 * 解析 SQL 语句并找到所有占位符或命名参数。命名参数替代 JDBC 占位符。
+	 * @param sql SQL语句
+	 * @return 解析后的语句，表示为 {@link ParsedSql} 实例
 	 */
 	public static ParsedSql parseSqlStatement(String sql) {
 		Assert.notNull(sql, "SQL must not be null");
@@ -128,13 +107,13 @@ public abstract class NamedParameterUtils {
 			if (c == ':' || c == '&') {
 				int j = i + 1;
 				if (c == ':' && j < statement.length && statement[j] == ':') {
-					// Postgres-style "::" casting operator should be skipped
+					// 应跳过 Postgres 风格的“::”转换运算符
 					i = i + 2;
 					continue;
 				}
 				String parameter = null;
 				if (c == ':' && j < statement.length && statement[j] == '{') {
-					// :{x} style parameter
+					// :{x} 样式参数
 					while (statement[j] != '}') {
 						j++;
 						if (j >= statement.length) {
@@ -189,7 +168,7 @@ public abstract class NamedParameterUtils {
 				if (c == '\\') {
 					int j = i + 1;
 					if (j < statement.length && statement[j] == ':') {
-						// escaped ":" should be skipped
+						// 应跳过转义的“：”
 						sqlToUse.deleteCharAt(i - escapes);
 						escapes++;
 						i = i + 2;
@@ -199,7 +178,7 @@ public abstract class NamedParameterUtils {
 				if (c == '?') {
 					int j = i + 1;
 					if (j < statement.length && (statement[j] == '?' || statement[j] == '|' || statement[j] == '&')) {
-						// Postgres-style "??", "?|", "?&" operator should be skipped
+						// 应跳过 Postgres 风格的“??”、“?|”、“?&”运算符
 						i = i + 2;
 						continue;
 					}
@@ -219,6 +198,9 @@ public abstract class NamedParameterUtils {
 		return parsedSql;
 	}
 
+	/**
+	 * 添加：Named Parameter（方法 `addNamedParameter`）。
+	 */
 	private static int addNamedParameter(List<ParameterHolder> parameterList,
 			int totalParameterCount, int escapes, int i, int j, String parameter) {
 
@@ -227,6 +209,9 @@ public abstract class NamedParameterUtils {
 		return totalParameterCount;
 	}
 
+	/**
+	 * 添加：New Named Parameter（方法 `addNewNamedParameter`）。
+	 */
 	private static int addNewNamedParameter(Set<String> namedParameters, int namedParameterCount, String parameter) {
 		if (!namedParameters.contains(parameter)) {
 			namedParameters.add(parameter);
@@ -235,16 +220,11 @@ public abstract class NamedParameterUtils {
 		return namedParameterCount;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 skipCommentsAndQuotes — 意图与阅读要点
-
-方法 `skipCommentsAndQuotes` 复杂度较高（CCN≈12, NLOC≈37）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Skip over comments and quoted names present in an SQL statement.
-	 * @param statement character array containing SQL statement
-	 * @param position current position of statement
-	 * @return next position to process after any comments or quotes are skipped
+	 * 跳过 SQL 语句中出现的注释和引用名称。
+	 * @param statement 包含SQL语句的字符数组
+	 * @param position 语句的当前位置
+	 * @return 跳过任何评论或引用后要处理的位置
 	 */
 	private static int skipCommentsAndQuotes(char[] statement, int position) {
 		for (int i = 0; i < START_SKIP.length; i++) {
@@ -264,7 +244,7 @@ public abstract class NamedParameterUtils {
 							int endPos = m;
 							for (int n = 1; n < STOP_SKIP[i].length(); n++) {
 								if (m + n >= statement.length) {
-									// last comment not closed properly
+									// 最后评论未正确关闭
 									return statement.length;
 								}
 								if (statement[m + n] != STOP_SKIP[i].charAt(n)) {
@@ -274,12 +254,12 @@ public abstract class NamedParameterUtils {
 								endPos = m + n;
 							}
 							if (endMatch) {
-								// found character sequence ending comment or quote
+								// 找到结束评论或引用的字符序列
 								return endPos + 1;
 							}
 						}
 					}
-					// character sequence ending comment or quote not found
+					// 未找到结束注释或引用的字符序列
 					return statement.length;
 				}
 			}
@@ -287,27 +267,14 @@ public abstract class NamedParameterUtils {
 		return position;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 substituteNamedParameters — 意图与阅读要点
-
-方法 `substituteNamedParameters` 复杂度较高（CCN≈12, NLOC≈53）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Parse the SQL statement and locate any placeholders or named parameters. Named
-	 * parameters are substituted for a JDBC placeholder, and any select list is expanded
-	 * to the required number of placeholders. Select lists may contain an array of
-	 * objects, and in that case the placeholders will be grouped and enclosed with
-	 * parentheses. This allows for the use of "expression lists" in the SQL statement
-	 * like: <br /><br />
-	 * {@code select id, name, state from table where (name, age) in (('John', 35), ('Ann', 50))}
-	 * <p>The parameter values passed in are used to determine the number of
-	 * placeholders to be used for a select list. Select lists should not be empty
-	 * and should be limited to 100 or fewer elements. An empty list or a larger
-	 * number of elements is not guaranteed to be supported by the database and
-	 * is strictly vendor-dependent.
-	 * @param parsedSql the parsed representation of the SQL statement
-	 * @param paramSource the source for named parameters
-	 * @return the SQL statement with substituted parameters
+	 * 解析 SQL 语句并找到所有占位符或命名参数。命名参数会替换 JDBC 占位符，并且任何选择列表都会扩展到所需数量的占位符。选择列表可能包含对象数组，在这种情况下，占位符将被分
+	 * 组并用括号括起来。这允许在 SQL 语句中使用“表达式列表”，例如： <br /><br /> {@code select id, name, state from table
+	 *  where (name, age) in (('John', 35), ('Ann', 50))} <p> 传入的参数值用于确定要用于选择列表的占位符数量。选择列表不应为空，
+	 * 并且应限制为 100 个或更少的元素。空列表或大量元素不保证数据库支持，并且严格取决于供应商。
+	 * @param parsedSql SQL 语句的解析表示
+	 * @param paramSource 命名参数的来源
+	 * @return 带有替换参数的 SQL 语句
 	 * @see #parseSqlStatement
 	 */
 	public static String substituteNamedParameters(ParsedSql parsedSql, @Nullable SqlParameterSource paramSource) {
@@ -366,13 +333,11 @@ public abstract class NamedParameterUtils {
 	}
 
 	/**
-	 * Convert a Map of named parameter values to a corresponding array.
-	 * @param parsedSql the parsed SQL statement
-	 * @param paramSource the source for named parameters
-	 * @param declaredParams the List of declared SqlParameter objects
-	 * (may be {@code null}). If specified, the parameter metadata will
-	 * be built into the value array in the form of SqlParameterValue objects.
-	 * @return the array of values
+	 * 将命名参数值的 Map 转换为相应的数组。
+	 * @param parsedSql 解析后的SQL语句
+	 * @param paramSource 命名参数的来源
+	 * @param declaredParams 声明的 SqlParameter 对象的列表（可能是 {@code null}）。如果指定，参数元数据将以 SqlParameterValue 对象的形式构建到值数组中。
+	 * @return 值数组
 	 */
 	public static @Nullable Object[] buildValueArray(
 			ParsedSql parsedSql, SqlParameterSource paramSource, @Nullable List<SqlParameter> declaredParams) {
@@ -408,26 +373,26 @@ public abstract class NamedParameterUtils {
 	}
 
 	/**
-	 * Find a matching parameter in the given list of declared parameters.
-	 * @param declaredParams the declared SqlParameter objects
-	 * @param paramName the name of the desired parameter
-	 * @param paramIndex the index of the desired parameter
-	 * @return the declared SqlParameter, or {@code null} if none found
+	 * 在给定的声明参数列表中查找匹配的参数。
+	 * @param declaredParams 声明的 SqlParameter 对象
+	 * @param paramName 所需参数的名称
+	 * @param paramIndex 所需参数的索引
+	 * @return 声明 SqlParameter，如果未找到则为 {@code null}
 	 */
 	private static @Nullable SqlParameter findParameter(
 			@Nullable List<SqlParameter> declaredParams, String paramName, int paramIndex) {
 
 		if (declaredParams != null) {
-			// First pass: Look for named parameter match.
+			// 第一遍：查找命名参数匹配。
 			for (SqlParameter declaredParam : declaredParams) {
 				if (paramName.equals(declaredParam.getName())) {
 					return declaredParam;
 				}
 			}
-			// Second pass: Look for parameter index match.
+			// 第二遍：寻找参数索引匹配。
 			if (paramIndex < declaredParams.size()) {
 				SqlParameter declaredParam = declaredParams.get(paramIndex);
-				// Only accept unnamed parameters for index matches.
+				// 仅接受索引匹配的未命名参数。
 				if (declaredParam.getName() == null) {
 					return declaredParam;
 				}
@@ -437,20 +402,17 @@ public abstract class NamedParameterUtils {
 	}
 
 	/**
-	 * Determine whether a parameter name ends at the current position,
-	 * that is, whether the given character qualifies as a separator.
+	 * 确定参数名称是否以当前位置结束，即给定字符是否符合分隔符的条件。
 	 */
 	private static boolean isParameterSeparator(char c) {
 		return (c < 128 && separatorIndex[c]) || Character.isWhitespace(c);
 	}
 
 	/**
-	 * Convert parameter types from an SqlParameterSource into a corresponding int array.
-	 * This is necessary in order to reuse existing methods on JdbcTemplate.
-	 * Any named parameter types are placed in the correct position in the
-	 * Object array based on the parsed SQL statement info.
-	 * @param parsedSql the parsed SQL statement
-	 * @param paramSource the source for named parameters
+	 * 将参数类型从 SqlParameterSource 转换为相应的 int 数组。为了重用 JdbcTemplate 上的现有方法，这是必要的。根据解析的 SQL 语句信息，任何
+	 * 命名参数类型都会放置在对象数组中的正确位置。
+	 * @param parsedSql 解析后的SQL语句
+	 * @param paramSource 命名参数的来源
 	 */
 	public static int[] buildSqlTypeArray(ParsedSql parsedSql, SqlParameterSource paramSource) {
 		int[] sqlTypes = new int[parsedSql.getTotalParameterCount()];
@@ -463,12 +425,10 @@ public abstract class NamedParameterUtils {
 	}
 
 	/**
-	 * Convert parameter declarations from an SqlParameterSource to a corresponding List of SqlParameters.
-	 * This is necessary in order to reuse existing methods on JdbcTemplate.
-	 * The SqlParameter for a named parameter is placed in the correct position in the
-	 * resulting list based on the parsed SQL statement info.
-	 * @param parsedSql the parsed SQL statement
-	 * @param paramSource the source for named parameters
+	 * 将参数声明从 SqlParameterSource 转换为相应的 SqlParameters 列表。为了重用 JdbcTemplate 上的现有方法，这是必要的。根据解析的
+	 * SQL 语句信息，命名参数的 SqlParameter 被放置在结果列表中的正确位置。
+	 * @param parsedSql 解析后的SQL语句
+	 * @param paramSource 命名参数的来源
 	 */
 	public static List<SqlParameter> buildSqlParameterList(ParsedSql parsedSql, SqlParameterSource paramSource) {
 		List<String> paramNames = parsedSql.getParameterNames();
@@ -482,38 +442,28 @@ public abstract class NamedParameterUtils {
 
 
 	//-------------------------------------------------------------------------
-	// Convenience methods operating on a plain SQL String
+	// 对纯 SQL 字符串进行操作的便捷方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Parse the SQL statement and locate any placeholders or named parameters.
-	 * <p>Named parameters are substituted for a JDBC placeholder.
-	 * <p>This is a shortcut version of
-	 * {@link #parseSqlStatement(String)} in combination with
-	 * {@link #substituteNamedParameters(ParsedSql, SqlParameterSource)}.
-	 * @param sql the SQL statement
-	 * @return the actual (parsed) SQL statement
+	 * 解析 SQL 语句并找到所有占位符或命名参数。 <p>Named 参数替换 JDBC 占位符。 <p>这是{@link
+	 * #parseSqlStatement(String)}与{@link #substituteNamedParameters(ParsedSql,
+	 * SqlParameterSource)}结合的快捷版本。
+	 * @param sql SQL语句
+	 * @return 实际的（已解析的）SQL 语句
 	 */
 	public static String parseSqlStatementIntoString(String sql) {
 		ParsedSql parsedSql = parseSqlStatement(sql);
 		return substituteNamedParameters(parsedSql, null);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 substituteNamedParameters — 意图与阅读要点
-
-方法 `substituteNamedParameters` 复杂度较高（CCN≈12, NLOC≈53）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Parse the SQL statement and locate any placeholders or named parameters.
-	 * <p>Named parameters are substituted for a JDBC placeholder, and any select
-	 * list is expanded to the required number of placeholders.
-	 * <p>This is a shortcut version of
-	 * {@link #parseSqlStatement(String)} in combination with
-	 * {@link #substituteNamedParameters(ParsedSql, SqlParameterSource)}.
-	 * @param sql the SQL statement
-	 * @param paramSource the source for named parameters
-	 * @return the SQL statement with substituted parameters
+	 * 解析 SQL 语句并找到所有占位符或命名参数。 <p>Named 参数会替换 JDBC 占位符，并且任何选择列表都会扩展到所需数量的占位符。 <p>这是{@link
+	 * #parseSqlStatement(String)}与{@link #substituteNamedParameters(ParsedSql,
+	 * SqlParameterSource)}结合的快捷版本。
+	 * @param sql SQL语句
+	 * @param paramSource 命名参数的来源
+	 * @return 带有替换参数的 SQL 语句
 	 */
 	public static String substituteNamedParameters(String sql, SqlParameterSource paramSource) {
 		ParsedSql parsedSql = parseSqlStatement(sql);
@@ -521,28 +471,16 @@ public abstract class NamedParameterUtils {
 	}
 
 	/**
-	 * Convert a Map of named parameter values to a corresponding array.
-	 * <p>This is a shortcut version of
-	 * {@link #buildValueArray(ParsedSql, SqlParameterSource, java.util.List)}.
-	 * @param sql the SQL statement
-	 * @param paramMap the Map of parameters
-	 * @return the array of values
+	 * 将命名参数值的 Map 转换为相应的数组。 <p>这是{@link #buildValueArray(ParsedSql, SqlParameterSource,
+	 * java.util.List)}的快捷版本。
+	 * @param sql SQL语句
+	 * @param paramMap 参数图
+	 * @return 值数组
 	 */
 	public static @Nullable Object[] buildValueArray(String sql, Map<String, ?> paramMap) {
 		ParsedSql parsedSql = parseSqlStatement(sql);
 		return buildValueArray(parsedSql, new MapSqlParameterSource(paramMap), null);
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class ParameterHolder — 意图说明
-
-class `ParameterHolder`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private static class ParameterHolder {

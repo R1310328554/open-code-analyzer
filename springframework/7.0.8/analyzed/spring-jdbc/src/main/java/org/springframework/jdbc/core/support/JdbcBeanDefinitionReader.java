@@ -27,35 +27,27 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
 /**
- * Bean definition reader that reads values from a database table,
- * based on a given SQL statement.
- *
- * <p>Expects columns for bean name, property name and value as String.
- * Formats for each are identical to the properties format recognized
- * by PropertiesBeanDefinitionReader.
- *
- * <p><b>NOTE:</b> This is mainly intended as an example for a custom
- * JDBC-based bean definition reader. It does not aim to offer
- * comprehensive functionality.
- *
+ * Bean 定义读取器，根据给定的 SQL 语句从数据库表中读取值。
+ * <p> 期望 bean 名称、属性名称和值的列为字符串。每个格式都与 PropertiesBeanDefinitionReader 识别的属性格式相同。
+ * <p><b>NOTE:</b> 这主要用作基于 JDBC 的自定义 bean 定义阅读器的示例。它并不旨在提供全面的功能。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see #loadBeanDefinitions
- * @deprecated in favor of Spring's common bean definition formats and/or
- * custom BeanDefinitionReader implementations
+ * @deprecated 支持 Spring 的通用 bean 定义格式和/或自定义 BeanDefinitionReader 实现
  */
 @Deprecated(since = "5.3")
 public class JdbcBeanDefinitionReader {
 
+	/** `propReader`：该类的成员状态。 */
 	private final org.springframework.beans.factory.support.PropertiesBeanDefinitionReader propReader;
 
+	/** 模板相关状态（`jdbcTemplate`）。 */
 	private @Nullable JdbcTemplate jdbcTemplate;
 
 
 	/**
-	 * Create a new JdbcBeanDefinitionReader for the given bean factory,
-	 * using a default PropertiesBeanDefinitionReader underneath.
-	 * <p>DataSource or JdbcTemplate still need to be set.
+	 * 使用下面的默认 PropertiesBeanDefinitionReader 为给定的 bean 工厂创建一个新的 JdbcBeanDefinitionReader。
+	 * <p>DataSource 或 JdbcTemplate 仍需要设置。
 	 * @see #setDataSource
 	 * @see #setJdbcTemplate
 	 */
@@ -64,9 +56,8 @@ public class JdbcBeanDefinitionReader {
 	}
 
 	/**
-	 * Create a new JdbcBeanDefinitionReader that delegates to the
-	 * given PropertiesBeanDefinitionReader underneath.
-	 * <p>DataSource or JdbcTemplate still need to be set.
+	 * 创建一个新的 JdbcBeanDefinitionReader，委托给下面给定的 PropertiesBeanDefinitionReader。 <p>DataSource
+	 * 或 JdbcTemplate 仍需要设置。
 	 * @see #setDataSource
 	 * @see #setJdbcTemplate
 	 */
@@ -77,16 +68,14 @@ public class JdbcBeanDefinitionReader {
 
 
 	/**
-	 * Set the DataSource to use to obtain database connections.
-	 * Will implicitly create a new JdbcTemplate with the given DataSource.
+	 * 设置用于获取数据库连接的数据源。将使用给定的 DataSource 隐式创建一个新的 JdbcTemplate。
 	 */
 	public void setDataSource(DataSource dataSource) {
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
 	/**
-	 * Set the JdbcTemplate to be used by this bean factory.
-	 * Contains settings for DataSource, SQLExceptionTranslator, etc.
+	 * 设置该 bean 工厂要使用的 JdbcTemplate。包含数据源、SQLExceptionTranslator 等的设置。
 	 */
 	public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
 		Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
@@ -95,13 +84,8 @@ public class JdbcBeanDefinitionReader {
 
 
 	/**
-	 * Load bean definitions from the database via the given SQL string.
-	 * @param sql the SQL query to use for loading bean definitions.
-	 * The first three columns must be bean name, property name and value.
-	 * Any join and any other columns are permitted: for example,
-	 * {@code SELECT BEAN_NAME, PROPERTY, VALUE FROM CONFIG WHERE CONFIG.APP_ID = 1}
-	 * It's also possible to perform a join. Column names are not significant --
-	 * only the ordering of these first three columns.
+	 * 通过给定的 SQL 字符串从数据库加载 Bean 定义。
+	 * @param sql 用于加载 bean 定义的 SQL 查询。前三列必须是 bean 名称、属性名称和值。允许任何联接和任何其他列：例如 {@code SELECT BEAN_NAME, PROPERTY, VALUE FROM CONFIG WHERE CONFIG.APP_ID = 1} 也可以执行联接。列名称并不重要——只有前三列的顺序。
 	 */
 	public void loadBeanDefinitions(String sql) {
 		Assert.notNull(this.jdbcTemplate, "Not fully configured - specify DataSource or JdbcTemplate");
@@ -110,7 +94,7 @@ public class JdbcBeanDefinitionReader {
 			String beanName = rs.getString(1);
 			String property = rs.getString(2);
 			String value = rs.getString(3);
-			// Make a properties entry by combining bean name and property.
+			// 通过组合 bean 名称和属性来创建属性条目。
 			props.setProperty(beanName + '.' + property, value);
 		});
 		this.propReader.registerBeanDefinitions(props);

@@ -30,33 +30,28 @@ import org.springframework.jdbc.support.SQLExceptionTranslator;
 import org.springframework.util.Assert;
 
 /**
- * Convenient superclass for JDBC-based data access objects.
- *
- * <p>Requires a {@link javax.sql.DataSource} to be set, providing a
- * {@link org.springframework.jdbc.core.JdbcTemplate} based on it to
- * subclasses through the {@link #getJdbcTemplate()} method.
- *
- * <p>This base class is mainly intended for JdbcTemplate usage but can
- * also be used when working with a Connection directly or when using
- * {@code org.springframework.jdbc.object} operation objects.
- *
+ * 基于 JDBC 的数据访问对象的方便超类。
+ * <p>需要设置一个{@link javax.sql.DataSource}，通过{@link #getJdbcTemplate()}方法向子类提供基于它的{@link
+ * org.springframework.jdbc.core.JdbcTemplate}。
+ * <p>该基类主要用于 JdbcTemplate 使用，但也可以在直接使用 Connection 或使用 {@code
+ * org.springframework.jdbc.object} 操作对象时使用。
  * @author Juergen Hoeller
  * @since 28.07.2003
  * @see #setDataSource
  * @see #getJdbcTemplate
  * @see org.springframework.jdbc.core.JdbcTemplate
- * @deprecated as of 7.0, in favor of direct injection of {@link JdbcTemplate}
- * or {@link org.springframework.jdbc.core.simple.JdbcClient}
+ * @deprecated 7.0，支持直接注入{@link JdbcTemplate}或{@link org.springframework.jdbc.core.simple.JdbcClient}
  */
 @Deprecated(since = "7.0", forRemoval = true)
 @SuppressWarnings("removal")
 public abstract class JdbcDaoSupport extends DaoSupport {
 
+	/** 模板相关状态（`jdbcTemplate`）。 */
 	private @Nullable JdbcTemplate jdbcTemplate;
 
 
 	/**
-	 * Set the JDBC DataSource to be used by this DAO.
+	 * 设置此 DAO 要使用的 JDBC 数据源。
 	 */
 	public final void setDataSource(DataSource dataSource) {
 		if (this.jdbcTemplate == null || dataSource != this.jdbcTemplate.getDataSource()) {
@@ -66,12 +61,10 @@ public abstract class JdbcDaoSupport extends DaoSupport {
 	}
 
 	/**
-	 * Create a JdbcTemplate for the given DataSource.
-	 * Only invoked if populating the DAO with a DataSource reference!
-	 * <p>Can be overridden in subclasses to provide a JdbcTemplate instance
-	 * with different configuration, or a custom JdbcTemplate subclass.
-	 * @param dataSource the JDBC DataSource to create a JdbcTemplate for
-	 * @return the new JdbcTemplate instance
+	 * 为给定的数据源创建 JdbcTemplate。仅当使用数据源引用填充 DAO 时才调用！ <p>可以在子类中重写，以提供具有不同配置的JdbcTemplate实例，或者自定义J
+	 * dbcTemplate子类。
+	 * @param dataSource 用于创建 JdbcTemplate 的 JDBC 数据源
+	 * @return 新的 JdbcTemplate 实例
 	 * @see #setDataSource
 	 */
 	protected JdbcTemplate createJdbcTemplate(DataSource dataSource) {
@@ -79,15 +72,14 @@ public abstract class JdbcDaoSupport extends DaoSupport {
 	}
 
 	/**
-	 * Return the JDBC DataSource used by this DAO.
+	 * 返回此 DAO 使用的 JDBC 数据源。
 	 */
 	public final @Nullable DataSource getDataSource() {
 		return (this.jdbcTemplate != null ? this.jdbcTemplate.getDataSource() : null);
 	}
 
 	/**
-	 * Set the JdbcTemplate for this DAO explicitly,
-	 * as an alternative to specifying a DataSource.
+	 * 显式为此 DAO 设置 JdbcTemplate，作为指定数据源的替代方法。
 	 */
 	public final void setJdbcTemplate(@Nullable JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
@@ -95,24 +87,23 @@ public abstract class JdbcDaoSupport extends DaoSupport {
 	}
 
 	/**
-	 * Return the JdbcTemplate for this DAO,
-	 * pre-initialized with the DataSource or set explicitly.
+	 * 返回此 DAO 的 JdbcTemplate，使用 DataSource 预先初始化或显式设置。
 	 */
 	public final @Nullable JdbcTemplate getJdbcTemplate() {
 		return this.jdbcTemplate;
 	}
 
 	/**
-	 * Initialize the template-based configuration of this DAO.
-	 * Called after a new JdbcTemplate has been set, either directly
-	 * or through a DataSource.
-	 * <p>This implementation is empty. Subclasses may override this
-	 * to configure further objects based on the JdbcTemplate.
+	 * 初始化此 DAO 的基于模板的配置。在直接或通过数据源设置新的 JdbcTemplate 后调用。 <p>这个实现是空的。子类可以覆盖它以基于 JdbcTemplate 配置更
+	 * 多对象。
 	 * @see #getJdbcTemplate()
 	 */
 	protected void initTemplateConfig() {
 	}
 
+	/**
+	 * 检查：Dao Config（方法 `checkDaoConfig`）。
+	 */
 	@Override
 	protected void checkDaoConfig() {
 		if (this.jdbcTemplate == null) {
@@ -122,8 +113,7 @@ public abstract class JdbcDaoSupport extends DaoSupport {
 
 
 	/**
-	 * Return the SQLExceptionTranslator of this DAO's JdbcTemplate,
-	 * for translating SQLExceptions in custom JDBC access code.
+	 * 返回此 DAO 的 JdbcTemplate 的 SQLExceptionTranslator，用于转换自定义 JDBC 访问代码中的 SQLException。
 	 * @see org.springframework.jdbc.core.JdbcTemplate#getExceptionTranslator()
 	 */
 	protected final SQLExceptionTranslator getExceptionTranslator() {
@@ -133,9 +123,9 @@ public abstract class JdbcDaoSupport extends DaoSupport {
 	}
 
 	/**
-	 * Get a JDBC Connection, either from the current transaction or a new one.
-	 * @return the JDBC Connection
-	 * @throws CannotGetJdbcConnectionException if the attempt to get a Connection failed
+	 * 从当前事务或新事务获取 JDBC 连接。
+	 * @return JDBC连接
+	 * @throws CannotGetJdbcConnectionException 如果尝试获取连接失败
 	 * @see org.springframework.jdbc.datasource.DataSourceUtils#getConnection(javax.sql.DataSource)
 	 */
 	protected final Connection getConnection() throws CannotGetJdbcConnectionException {
@@ -145,9 +135,8 @@ public abstract class JdbcDaoSupport extends DaoSupport {
 	}
 
 	/**
-	 * Close the given JDBC Connection, created via this DAO's DataSource,
-	 * if it isn't bound to the thread.
-	 * @param con the Connection to close
+	 * 如果给定的 JDBC 连接（通过此 DAO 的数据源创建）未绑定到线程，则关闭该连接。
+	 * @param con 要关闭的连接
 	 * @see org.springframework.jdbc.datasource.DataSourceUtils#releaseConnection
 	 */
 	protected final void releaseConnection(Connection con) {

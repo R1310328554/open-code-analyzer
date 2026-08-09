@@ -23,10 +23,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.util.Assert;
 
 /**
- * Base implementation of {@link DataFieldMaxValueIncrementer} that delegates
- * to a single {@link #getNextKey} template method that returns a {@code long}.
- * Uses longs for String values, padding with zeroes if required.
- *
+ * {@link DataFieldMaxValueIncrementer} 的基本实现，委托给返回 {@code long} 的单个 {@link #getNextKey}
+ * 模板方法。使用长整型作为字符串值，如果需要则用零填充。
  * @author Dmitriy Kopylenko
  * @author Juergen Hoeller
  * @author Jean-Pierre Pawlak
@@ -34,19 +32,22 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractDataFieldMaxValueIncrementer implements DataFieldMaxValueIncrementer, InitializingBean {
 
+	/** 来源相关状态（`dataSource`）。 */
 	@SuppressWarnings("NullAway.Init")
 	private DataSource dataSource;
 
-	/** The name of the sequence/table containing the sequence. */
+	/**
+	 */
 	@SuppressWarnings("NullAway.Init")
 	private String incrementerName;
 
-	/** The length to which a string result should be prepended with zeroes. */
+	/**
+	 */
 	protected int paddingLength = 0;
 
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 */
@@ -54,9 +55,9 @@ public abstract class AbstractDataFieldMaxValueIncrementer implements DataFieldM
 	}
 
 	/**
-	 * Convenience constructor.
-	 * @param dataSource the DataSource to use
-	 * @param incrementerName the name of the sequence/table to use
+	 * 方便构造函数。
+	 * @param dataSource 要使用的数据源
+	 * @param incrementerName 要使用的序列/表的名称
 	 */
 	public AbstractDataFieldMaxValueIncrementer(DataSource dataSource, String incrementerName) {
 		Assert.notNull(dataSource, "DataSource must not be null");
@@ -67,48 +68,50 @@ public abstract class AbstractDataFieldMaxValueIncrementer implements DataFieldM
 
 
 	/**
-	 * Set the data source to retrieve the value from.
+	 * 设置要从中检索值的数据源。
 	 */
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 
 	/**
-	 * Return the data source to retrieve the value from.
+	 * 返回要从中检索值的数据源。
 	 */
 	public DataSource getDataSource() {
 		return this.dataSource;
 	}
 
 	/**
-	 * Set the name of the sequence/table.
+	 * 设置序列/表的名称。
 	 */
 	public void setIncrementerName(String incrementerName) {
 		this.incrementerName = incrementerName;
 	}
 
 	/**
-	 * Return the name of the sequence/table.
+	 * 返回序列/表的名称。
 	 */
 	public String getIncrementerName() {
 		return this.incrementerName;
 	}
 
 	/**
-	 * Set the padding length, i.e. the length to which a string result
-	 * should be prepended with zeroes.
+	 * 设置填充长度，即字符串结果应在前面添加零的长度。
 	 */
 	public void setPaddingLength(int paddingLength) {
 		this.paddingLength = paddingLength;
 	}
 
 	/**
-	 * Return the padding length for String values.
+	 * 返回字符串值的填充长度。
 	 */
 	public int getPaddingLength() {
 		return this.paddingLength;
 	}
 
+	/**
+	 * 在…之后回调：Properties Set（方法 `afterPropertiesSet`）。
+	 */
 	@Override
 	public void afterPropertiesSet() {
 		if (this.dataSource == null) {
@@ -120,16 +123,25 @@ public abstract class AbstractDataFieldMaxValueIncrementer implements DataFieldM
 	}
 
 
+	/**
+	 * 方法 `nextIntValue`：完成本类中与「next Int Value」相关的职责。
+	 */
 	@Override
 	public int nextIntValue() throws DataAccessException {
 		return (int) getNextKey();
 	}
 
+	/**
+	 * 方法 `nextLongValue`：完成本类中与「next Long Value」相关的职责。
+	 */
 	@Override
 	public long nextLongValue() throws DataAccessException {
 		return getNextKey();
 	}
 
+	/**
+	 * 方法 `nextStringValue`：完成本类中与「next String Value」相关的职责。
+	 */
 	@Override
 	public String nextStringValue() throws DataAccessException {
 		String s = Long.toString(getNextKey());
@@ -142,9 +154,8 @@ public abstract class AbstractDataFieldMaxValueIncrementer implements DataFieldM
 
 
 	/**
-	 * Determine the next key to use, as a long.
-	 * @return the key to use as a long. It will eventually be converted later
-	 * in another format by the public concrete methods of this class.
+	 * 确定下一个要使用的键，如长键。
+	 * @return 键作为长键使用。它最终将由此类的公共具体方法稍后转换为另一种格式。
 	 */
 	protected abstract long getNextKey();
 

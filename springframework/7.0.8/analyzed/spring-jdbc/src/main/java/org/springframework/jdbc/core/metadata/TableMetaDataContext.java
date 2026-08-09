@@ -38,17 +38,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class TableMetaDataContext — 意图说明
-
-class `TableMetaDataContext`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/TableMetaDataContext.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Class to manage context meta-data used for the configuration
- * and execution of operations on a database table.
- *
+ * 管理用于配置和执行数据库表操作的上下文元数据的类。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -56,119 +47,122 @@ class `TableMetaDataContext`：请结合所属模块与调用方理解其在整�
  */
 public class TableMetaDataContext {
 
-	// Logger available to subclasses
-	// [OCA] 字段 `logger`：类成员状态。
+	// 记录器可用于子类
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	// Name of table for this context
+	// 此上下文的表名称
+	/** 名称相关状态（`tableName`）。 */
 	private @Nullable String tableName;
 
-	// Name of catalog for this context
+	// 此上下文的目录名称
+	/** 名称相关状态（`catalogName`）。 */
 	private @Nullable String catalogName;
 
-	// Name of schema for this context
+	// 此上下文的架构名称
+	/** 名称相关状态（`schemaName`）。 */
 	private @Nullable String schemaName;
 
-	// Should we access insert parameter meta-data info or not
-	// [OCA] 字段 `accessTableColumnMetaData`：类成员状态。
+	// 我们是否应该访问插入参数元数据信息
+	/** `true`：该类的成员状态。 */
 	private boolean accessTableColumnMetaData = true;
 
-	// Should we override default for including synonyms for meta-data lookups
-	// [OCA] 字段 `overrideIncludeSynonymsDefault`：类成员状态。
+	// 我们是否应该覆盖默认值以包含元数据查找的同义词
+	/** `false`：该类的成员状态。 */
 	private boolean overrideIncludeSynonymsDefault = false;
 
-	// Are we quoting identifiers?
-	// [OCA] 字段 `quoteIdentifiers`：类成员状态。
+	// 我们是否引用标识符？
+	/** `false`：该类的成员状态。 */
 	private boolean quoteIdentifiers = false;
 
-	// The provider of table meta-data
+	// 表元数据提供者
+	/** `metaDataProvider`：该类的成员状态。 */
 	private @Nullable TableMetaDataProvider metaDataProvider;
 
-	// List of columns objects to be used in this context
-	// [OCA] 字段 `tableColumns`：类成员状态。
+	// 要在此上下文中使用的列对象的列表
 	private List<String> tableColumns = new ArrayList<>();
 
-	// Are we using generated key columns
-	// [OCA] 字段 `generatedKeyColumnsUsed`：类成员状态。
+	// 我们是否使用生成的键列
+	/** `false`：该类的成员状态。 */
 	private boolean generatedKeyColumnsUsed = false;
 
 
 	/**
-	 * Set the name of the table for this context.
+	 * 设置此上下文的表名称。
 	 */
 	public void setTableName(@Nullable String tableName) {
 		this.tableName = tableName;
 	}
 
 	/**
-	 * Get the name of the table for this context.
+	 * 获取此上下文的表的名称。
 	 */
 	public @Nullable String getTableName() {
 		return this.tableName;
 	}
 
 	/**
-	 * Set the name of the catalog for this context.
+	 * 设置此上下文的目录名称。
 	 */
 	public void setCatalogName(@Nullable String catalogName) {
 		this.catalogName = catalogName;
 	}
 
 	/**
-	 * Get the name of the catalog for this context.
+	 * 获取此上下文的目录名称。
 	 */
 	public @Nullable String getCatalogName() {
 		return this.catalogName;
 	}
 
 	/**
-	 * Set the name of the schema for this context.
+	 * 设置此上下文的架构名称。
 	 */
 	public void setSchemaName(@Nullable String schemaName) {
 		this.schemaName = schemaName;
 	}
 
 	/**
-	 * Get the name of the schema for this context.
+	 * 获取此上下文的架构名称。
 	 */
 	public @Nullable String getSchemaName() {
 		return this.schemaName;
 	}
 
 	/**
-	 * Specify whether we should access table column meta-data.
+	 * 指定我们是否应该访问表列元数据。
 	 */
 	public void setAccessTableColumnMetaData(boolean accessTableColumnMetaData) {
 		this.accessTableColumnMetaData = accessTableColumnMetaData;
 	}
 
 	/**
-	 * Are we accessing table meta-data?
+	 * 我们正在访问表元数据吗？
 	 */
 	public boolean isAccessTableColumnMetaData() {
 		return this.accessTableColumnMetaData;
 	}
 
 	/**
-	 * Specify whether we should override default for accessing synonyms.
+	 * 指定我们是否应该覆盖访问同义词的默认值。
 	 */
 	public void setOverrideIncludeSynonymsDefault(boolean override) {
 		this.overrideIncludeSynonymsDefault = override;
 	}
 
 	/**
-	 * Are we overriding include synonyms default?
+	 * 我们是否覆盖默认的包含同义词？
 	 */
 	public boolean isOverrideIncludeSynonymsDefault() {
 		return this.overrideIncludeSynonymsDefault;
 	}
 
 	/**
-	 * Specify whether we are quoting SQL identifiers.
-	 * <p>Defaults to {@code false}. If set to {@code true}, the identifier
-	 * quote string for the underlying database will be used to quote SQL
-	 * identifiers in generated SQL statements.
-	 * @param quoteIdentifiers whether identifiers should be quoted
+	 * 指定我们是否引用 SQL 标识符。 <p>默认为 {@code false}。如果设置为 {@code true}，则底层数据库的标识符引用字符串将用于在生成的 SQL 语句中
+	 * 引用 SQL 标识符。
+	 * @param quoteIdentifiers 标识符是否应该加引号
 	 * @since 6.1
 	 * @see java.sql.DatabaseMetaData#getIdentifierQuoteString()
 	 */
@@ -177,7 +171,7 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * Are we quoting identifiers?
+	 * 我们是否引用标识符？
 	 * @since 6.1
 	 * @see #setQuoteIdentifiers(boolean)
 	 */
@@ -186,7 +180,7 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * Get a List of the table column names.
+	 * 获取表列名称的列表。
 	 */
 	public List<String> getTableColumns() {
 		return this.tableColumns;
@@ -194,25 +188,28 @@ public class TableMetaDataContext {
 
 
 	/**
-	 * Process the current meta-data with the provided configuration options.
-	 * @param dataSource the DataSource being used
-	 * @param declaredColumns any columns that are declared
-	 * @param generatedKeyNames name of generated keys
+	 * 使用提供的配置选项处理当前元数据。
+	 * @param dataSource 正在使用的数据源
+	 * @param declaredColumns 声明的任何列
+	 * @param generatedKeyNames 生成的密钥的名称
 	 */
 	public void processMetaData(DataSource dataSource, List<String> declaredColumns, String[] generatedKeyNames) {
 		this.metaDataProvider = TableMetaDataProviderFactory.createMetaDataProvider(dataSource, this);
 		this.tableColumns = reconcileColumnsToUse(declaredColumns, generatedKeyNames);
 	}
 
+	/**
+	 * 方法 `obtainMetaDataProvider`：完成本类中与「obtain Meta Data Provider」相关的职责。
+	 */
 	private TableMetaDataProvider obtainMetaDataProvider() {
 		Assert.state(this.metaDataProvider != null, "No TableMetaDataProvider - call processMetaData first");
 		return this.metaDataProvider;
 	}
 
 	/**
-	 * Compare columns created from meta-data with declared columns and return a reconciled list.
-	 * @param declaredColumns declared column names
-	 * @param generatedKeyNames names of generated key columns
+	 * 将从元数据创建的列与声明的列进行比较，并返回一个协调列表。
+	 * @param declaredColumns 声明的列名
+	 * @param generatedKeyNames 生成的键列的名称
 	 */
 	protected List<String> reconcileColumnsToUse(List<String> declaredColumns, String[] generatedKeyNames) {
 		if (generatedKeyNames.length > 0) {
@@ -235,13 +232,13 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * Match the provided column names and values with the list of columns used.
-	 * @param parameterSource the parameter names and values
+	 * 将提供的列名称和值与所使用的列列表进行匹配。
+	 * @param parameterSource 参数名称和值
 	 */
 	public List<Object> matchInParameterValuesWithInsertColumns(SqlParameterSource parameterSource) {
 		List<Object> values = new ArrayList<>();
-		// For parameter source lookups we need to provide case-insensitive lookup support since the
-		// database meta-data is not necessarily providing case-sensitive column names
+		// 对于参数源查找，我们需要提供不区分大小写的查找支持，因为
+		// 数据库元数据不一定提供区分大小写的列名
 		Map<String, String> caseInsensitiveParameterNames =
 				SqlParameterSourceUtils.extractCaseInsensitiveParameterNames(parameterSource);
 		for (String column : this.tableColumns) {
@@ -274,8 +271,8 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * Match the provided column names and values with the list of columns used.
-	 * @param inParameters the parameter names and values
+	 * 将提供的列名称和值与所使用的列列表进行匹配。
+	 * @param inParameters 参数名称和值
 	 */
 	public List<Object> matchInParameterValuesWithInsertColumns(Map<String, ?> inParameters) {
 		List<Object> values = new ArrayList<>(inParameters.size());
@@ -297,14 +294,9 @@ public class TableMetaDataContext {
 		return values;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 createInsertString — 意图与阅读要点
-
-方法 `createInsertString` 复杂度较高（CCN≈12, NLOC≈55）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Build the insert string based on configuration and meta-data information.
-	 * @return the insert string to be used
+	 * 根据配置和元数据信息构建插入字符串。
+	 * @return 插入要使用的字符串
 	 */
 	public String createInsertString(String... generatedKeyNames) {
 		Set<String> keys = CollectionUtils.newLinkedHashSet(generatedKeyNames.length);
@@ -369,8 +361,8 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * Build the array of {@link java.sql.Types} based on configuration and meta-data information.
-	 * @return the array of types to be used
+	 * 根据配置和元数据信息构建 {@link java.sql.Types} 数组。
+	 * @return 要使用的类型数组
 	 */
 	public int[] createInsertTypes() {
 		int[] types = new int[getTableColumns().size()];
@@ -400,7 +392,7 @@ public class TableMetaDataContext {
 
 
 	/**
-	 * Does this database support the JDBC feature for retrieving generated keys?
+	 * 该数据库是否支持 JDBC 功能来检索生成的密钥？
 	 * @see java.sql.DatabaseMetaData#supportsGetGeneratedKeys()
 	 */
 	public boolean isGetGeneratedKeysSupported() {
@@ -408,8 +400,7 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * Does this database support a simple query to retrieve generated keys when
-	 * the JDBC feature for retrieving generated keys is not supported?
+	 * 当不支持检索生成密钥的 JDBC 功能时，此数据库是否支持简单查询来检索生成的密钥？
 	 * @see #isGetGeneratedKeysSupported()
 	 * @see #getSimpleQueryForGetGeneratedKey(String, String)
 	 */
@@ -418,8 +409,7 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * Get the simple query to retrieve generated keys when the JDBC feature for
-	 * retrieving generated keys is not supported.
+	 * 当不支持检索生成密钥的 JDBC 功能时，获取简单查询来检索生成的密钥。
 	 * @see #isGetGeneratedKeysSimulated()
 	 */
 	public @Nullable String getSimpleQueryForGetGeneratedKey(String tableName, String keyColumnName) {
@@ -427,23 +417,12 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * Does this database support a column name String array for retrieving generated keys?
+	 * 该数据库是否支持列名字符串数组来检索生成的键？
 	 * @see java.sql.Connection#createStruct(String, Object[])
 	 */
 	public boolean isGeneratedKeysColumnNameArraySupported() {
 		return obtainMetaDataProvider().isGeneratedKeysColumnNameArraySupported();
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class QuoteHandler — 意图说明
-
-class `QuoteHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/TableMetaDataContext.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private static final class QuoteHandler {

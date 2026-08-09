@@ -21,8 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.support.EncodedResource;
 
 /**
- * Thrown by {@link ScriptUtils} if an SQL script cannot be properly parsed.
- *
+ * 如果无法正确解析 SQL 脚本，则由 {@link ScriptUtils} 抛出。
  * @author Sam Brannen
  * @since 4.0.3
  */
@@ -30,25 +29,28 @@ import org.springframework.core.io.support.EncodedResource;
 public class ScriptParseException extends ScriptException {
 
 	/**
-	 * Create a new {@code ScriptParseException}.
-	 * @param message detailed message
-	 * @param resource the resource from which the SQL script was read
+	 * 创建一个新的 {@code ScriptParseException}。
+	 * @param message 详细留言
+	 * @param resource 从中读取 SQL 脚本的资源
 	 */
 	public ScriptParseException(String message, @Nullable EncodedResource resource) {
 		super(buildMessage(message, resource));
 	}
 
 	/**
-	 * Create a new {@code ScriptParseException}.
-	 * @param message detailed message
-	 * @param resource the resource from which the SQL script was read
-	 * @param cause the underlying cause of the failure
+	 * 创建一个新的 {@code ScriptParseException}。
+	 * @param message 详细留言
+	 * @param resource 从中读取 SQL 脚本的资源
+	 * @param cause 失败的根本原因
 	 */
 	public ScriptParseException(String message, @Nullable EncodedResource resource, @Nullable Throwable cause) {
 		super(buildMessage(message, resource), cause);
 	}
 
 
+	/**
+	 * 构建：Message（方法 `buildMessage`）。
+	 */
 	private static String buildMessage(String message, @Nullable EncodedResource resource) {
 		return String.format("Failed to parse SQL script from resource [%s]: %s",
 				(resource == null ? "<unknown>" : resource), message);

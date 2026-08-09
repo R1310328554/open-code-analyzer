@@ -43,34 +43,25 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.util.NumberUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class JdbcUtils — 意图说明
-
-class `JdbcUtils`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/support/JdbcUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Generic utility methods for working with JDBC. Mainly for internal use
- * within the framework, but also useful for custom JDBC access code.
- *
+ * 使用 JDBC 的通用实用程序方法。主要供框架内部使用，但也可用于自定义 JDBC 访问代码。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Ben Blinebury
  */
 public abstract class JdbcUtils {
 
-	// [OCA] 字段 `TYPE_UNKNOWN`：类成员状态。
 	/**
-	 * Constant that indicates an unknown (or unspecified) SQL type.
+	 * 指示未知（或未指定）SQL 类型的常量。
 	 * @see java.sql.Types
 	 */
 	public static final int TYPE_UNKNOWN = Integer.MIN_VALUE;
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(JdbcUtils.class);
 
-	// [OCA] 字段 `typeNames`：类成员状态。
 	private static final Map<Integer, String> typeNames = new HashMap<>();
 
 	static {
@@ -86,9 +77,8 @@ public abstract class JdbcUtils {
 
 
 	/**
-	 * Close the given JDBC Connection and ignore any thrown exception.
-	 * This is useful for typical finally blocks in manual JDBC code.
-	 * @param con the JDBC Connection to close (may be {@code null})
+	 * 关闭给定的 JDBC 连接并忽略任何抛出的异常。这对于手动 JDBC 代码中的典型finally 块很有用。
+	 * @param con 要关闭的 JDBC 连接（可能是 {@code null}）
 	 */
 	public static void closeConnection(@Nullable Connection con) {
 		if (con != null) {
@@ -99,16 +89,15 @@ public abstract class JdbcUtils {
 				logger.debug("Could not close JDBC Connection", ex);
 			}
 			catch (Throwable ex) {
-				// We don't trust the JDBC driver: It might throw RuntimeException or Error.
+				// 我们不信任 JDBC 驱动程序：它可能会抛出 RuntimeException 或错误。
 				logger.debug("Unexpected exception on closing JDBC Connection", ex);
 			}
 		}
 	}
 
 	/**
-	 * Close the given JDBC Statement and ignore any thrown exception.
-	 * This is useful for typical finally blocks in manual JDBC code.
-	 * @param stmt the JDBC Statement to close (may be {@code null})
+	 * 关闭给定的 JDBC 语句并忽略任何抛出的异常。这对于手动 JDBC 代码中的典型finally 块很有用。
+	 * @param stmt 要关闭的 JDBC 语句（可能是 {@code null}）
 	 */
 	public static void closeStatement(@Nullable Statement stmt) {
 		if (stmt != null) {
@@ -119,16 +108,15 @@ public abstract class JdbcUtils {
 				logger.trace("Could not close JDBC Statement", ex);
 			}
 			catch (Throwable ex) {
-				// We don't trust the JDBC driver: It might throw RuntimeException or Error.
+				// 我们不信任 JDBC 驱动程序：它可能会抛出 RuntimeException 或错误。
 				logger.trace("Unexpected exception on closing JDBC Statement", ex);
 			}
 		}
 	}
 
 	/**
-	 * Close the given JDBC ResultSet and ignore any thrown exception.
-	 * This is useful for typical finally blocks in manual JDBC code.
-	 * @param rs the JDBC ResultSet to close (may be {@code null})
+	 * 关闭给定的 JDBC ResultSet 并忽略任何抛出的异常。这对于手动 JDBC 代码中的典型finally 块很有用。
+	 * @param rs 要关闭的 JDBC ResultSet（可能是 {@code null}）
 	 */
 	public static void closeResultSet(@Nullable ResultSet rs) {
 		if (rs != null) {
@@ -139,25 +127,21 @@ public abstract class JdbcUtils {
 				logger.trace("Could not close JDBC ResultSet", ex);
 			}
 			catch (Throwable ex) {
-				// We don't trust the JDBC driver: It might throw RuntimeException or Error.
+				// 我们不信任 JDBC 驱动程序：它可能会抛出 RuntimeException 或错误。
 				logger.trace("Unexpected exception on closing JDBC ResultSet", ex);
 			}
 		}
 	}
 
 	/**
-	 * Retrieve a JDBC column value from a ResultSet, using the specified value type.
-	 * <p>Uses the specifically typed ResultSet accessor methods, falling back to
-	 * {@link #getResultSetValue(java.sql.ResultSet, int)} for unknown types.
-	 * <p>Note that the returned value may not be assignable to the specified
-	 * required type, in case of an unknown type. Calling code needs to deal
-	 * with this case appropriately, for example, throwing a corresponding exception.
-	 * @param rs is the ResultSet holding the data
-	 * @param index is the column index
-	 * @param requiredType the required value type (may be {@code null})
-	 * @return the value object (possibly not of the specified required type,
-	 * with further conversion steps necessary)
-	 * @throws SQLException if thrown by the JDBC API
+	 * 使用指定的值类型从 ResultSet 检索 JDBC 列值。 <p>U 使用特定类型的 ResultSet 访问器方法，对于未知类型回退到 {@link #getResult
+	 * SetValue(java.sql.ResultSet, int)}。 <p>请注意，如果类型未知，则返回值可能无法分配给指定的所需类型。调用代码需要适当处理这种情况，例如抛出
+	 * 相应的异常。
+	 * @param rs 是保存数据的 ResultSet
+	 * @param index 是列索引
+	 * @param requiredType 所需的值类型（可能是 {@code null}）
+	 * @return 值对象（可能不是指定的所需类型，需要进一步的转换步骤）
+	 * @throws SQLException 如果由 JDBC API 抛出
 	 * @see #getResultSetValue(ResultSet, int)
 	 */
 	public static @Nullable Object getResultSetValue(ResultSet rs, int index, @Nullable Class<?> requiredType) throws SQLException {
@@ -167,7 +151,7 @@ public abstract class JdbcUtils {
 
 		Object value;
 
-		// Explicitly extract typed value, as far as possible.
+		// 尽可能显式提取键入的值。
 		if (String.class == requiredType) {
 			return rs.getString(index);
 		}
@@ -215,26 +199,26 @@ public abstract class JdbcUtils {
 			return rs.getClob(index);
 		}
 		else if (requiredType.isEnum()) {
-			// Enums can either be represented through a String or an enum index value:
-			// leave enum type conversion up to the caller (for example, a ConversionService)
-			// but make sure that we return nothing other than a String or an Integer.
+			// 枚举可以通过字符串或枚举索引值表示：
+			// 将枚举类型转换留给调用者（例如 ConversionService）
+			// 但请确保我们只返回字符串或整数。
 			Object obj = rs.getObject(index);
 			if (obj instanceof String) {
 				return obj;
 			}
 			else if (obj instanceof Number number) {
-				// Defensively convert any Number to an Integer (as needed by our
-				// ConversionService's IntegerToEnumConverterFactory) for use as index
+				// 防御性地将任何数字转换为整数（根据我们的需要
+				// ConversionService 的 IntegerToEnumConverterFactory）用作索引
 				return NumberUtils.convertNumberToTargetClass(number, Integer.class);
 			}
 			else {
-				// for example, on Postgres: getObject returns a PGObject, but we need a String
+				// 例如，在 Postgres 上： getObject 返回一个 PGObject，但我们需要一个 String
 				return rs.getString(index);
 			}
 		}
 
 		else {
-			// Some unknown type desired -> rely on getObject.
+			// 需要一些未知类型 -> 依赖 getObject。
 			try {
 				return rs.getObject(index, requiredType);
 			}
@@ -248,37 +232,32 @@ public abstract class JdbcUtils {
 				}
 			}
 
-			// Corresponding SQL types for JSR-310, left up to the caller to convert
-			// them (for example, through a ConversionService).
+			// JSR-310 对应的 SQL 类型，由调用者进行转换
+			// 它们（例如，通过 ConversionService）。
 			String typeName = requiredType.getSimpleName();
 			return switch (typeName) {
 				case "LocalDate" -> rs.getDate(index);
 				case "LocalTime" -> rs.getTime(index);
 				case "LocalDateTime" -> rs.getTimestamp(index);
-				// Fall back to getObject without type specification, again
-				// left up to the caller to convert the value if necessary.
+				// 再次退回到没有类型规范的 getObject
+				// 如有必要，由调用者自行转换该值。
 				default -> getResultSetValue(rs, index);
 			};
 		}
 
-		// Perform was-null check if necessary (for results that the JDBC driver returns as primitives).
+		// 如有必要，执行 was-null 检查（对于 JDBC 驱动程序作为原语返回的结果）。
 		return (rs.wasNull() ? null : value);
 	}
 
 	/**
-	 * Retrieve a JDBC column value from a ResultSet, using the most appropriate
-	 * value type. The returned value should be a detached value object, not having
-	 * any ties to the active ResultSet: in particular, it should not be a Blob or
-	 * Clob object but rather a byte array or String representation, respectively.
-	 * <p>Uses the {@code getObject(index)} method, but includes additional "hacks"
-	 * to get around Oracle 10g returning a non-standard object for its TIMESTAMP
-	 * datatype and a {@code java.sql.Date} for DATE columns leaving out the
-	 * time portion: These columns will explicitly be extracted as standard
-	 * {@code java.sql.Timestamp} object.
-	 * @param rs is the ResultSet holding the data
-	 * @param index is the column index
-	 * @return the value object
-	 * @throws SQLException if thrown by the JDBC API
+	 * 使用最合适的值类型从 ResultSet 检索 JDBC 列值。返回的值应该是一个分离的值对象，与活动的 ResultSet 没有任何联系：特别是，它不应该是 Blob 或 C
+	 * lob 对象，而应该分别是字节数组或字符串表示形式。 <p>U 使用 {@code getObject(index)} 方法，但包含额外的“技巧”来绕过 Oracle 10g 
+	 * 返回其 TIMESTAMP 数据类型的非标准对象和 {@code java.sql.Date} 用于 DATE 列，省略时间部分：这些列将显式提取为标准 {@code java
+	 * .sql.Timestamp} 对象。
+	 * @param rs 是保存数据的 ResultSet
+	 * @param index 是列索引
+	 * @return 值对象
+	 * @throws SQLException 如果由 JDBC API 抛出
 	 * @see java.sql.Blob
 	 * @see java.sql.Clob
 	 * @see java.sql.Timestamp
@@ -315,25 +294,14 @@ public abstract class JdbcUtils {
 		return obj;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 extractDatabaseMetaData — 意图与阅读要点
-
-方法 `extractDatabaseMetaData` 复杂度较高（CCN≈7, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Extract database meta-data via the given DatabaseMetaDataCallback.
-	 * <p>This method will open a connection to the database and retrieve its meta-data.
-	 * Since this method is called before the exception translation feature is configured
-	 * for a DataSource, this method can not rely on SQLException translation itself.
-	 * <p>Any exceptions will be wrapped in a MetaDataAccessException. This is a checked
-	 * exception and any calling code should catch and handle this exception. You can just
-	 * log the error and hope for the best, but there is probably a more serious error that
-	 * will reappear when you try to access the database again.
-	 * @param dataSource the DataSource to extract meta-data for
-	 * @param action callback that will do the actual work
-	 * @return object containing the extracted information, as returned by
-	 * the DatabaseMetaDataCallback's {@code processMetaData} method
-	 * @throws MetaDataAccessException if meta-data access failed
+	 * 通过给定的 DatabaseMetaDataCallback 提取数据库元数据。 <p>此方法将打开与数据库的连接并检索其元数据。由于该方法是在为数据源配置异常转换功能之前调用
+	 * 的，因此该方法不能依赖于 SQLException 转换本身。 <p>A任何异常都将包装在 MetaDataAccessException 中。这是一个已检查的异常，任何调用代
+	 * 码都应该捕获并处理此异常。您可以只记录错误并希望得到最好的结果，但是当您尝试再次访问数据库时，可能会再次出现更严重的错误。
+	 * @param dataSource 用于提取元数据的 DataSource
+	 * @param action 回调将完成实际工作
+	 * @return 包含由 DatabaseMetaDataCallback 的 {@code processMetaData} 方法返回的提取信息
+	 * @throws MetaDataAccessException 如果元数据访问失败
 	 * @see java.sql.DatabaseMetaData
 	 */
 	public static <T extends @Nullable Object> T extractDatabaseMetaData(DataSource dataSource, DatabaseMetaDataCallback<T> action)
@@ -348,7 +316,7 @@ public abstract class JdbcUtils {
 			}
 			catch (SQLException ex) {
 				if (DataSourceUtils.isConnectionTransactional(con, dataSource)) {
-					// Probably a closed thread-bound Connection - retry against fresh Connection
+					// 可能是一个封闭的线程绑定连接 - 重试新连接
 					DataSourceUtils.releaseConnection(con, dataSource);
 					con = null;
 					logger.debug("Failed to obtain DatabaseMetaData from transactional Connection - " +
@@ -361,7 +329,7 @@ public abstract class JdbcUtils {
 				}
 			}
 			if (metaData == null) {
-				// should only happen in test environments
+				// 应该只发生在测试环境中
 				throw new MetaDataAccessException("DatabaseMetaData returned by Connection [" + con + "] was null");
 			}
 			return action.processMetaData(metaData);
@@ -382,25 +350,16 @@ public abstract class JdbcUtils {
 	}
 
 	/**
-	 * Call the specified method on DatabaseMetaData for the given DataSource,
-	 * and extract the invocation result.
-	 * @param dataSource the DataSource to extract meta-data for
-	 * @param metaDataMethodName the name of the DatabaseMetaData method to call
-	 * @return the object returned by the specified DatabaseMetaData method
-	 * @throws MetaDataAccessException if we couldn't access the DatabaseMetaData
-	 * or failed to invoke the specified method
+	 * 为给定的 DataSource 调用 DatabaseMetaData 上的指定方法，并提取调用结果。
+	 * @param dataSource 用于提取元数据的 DataSource
+	 * @param metaDataMethodName 要调用的 DatabaseMetaData 方法的名称
+	 * @return 指定DatabaseMetaData方法返回的对象
+	 * @throws MetaDataAccessException 如果我们无法访问 DatabaseMetaData 或无法调用指定的方法
 	 * @see java.sql.DatabaseMetaData
-	 * @deprecated in favor of
-	 * {@link #extractDatabaseMetaData(DataSource, DatabaseMetaDataCallback)}
-	 * with a lambda expression or method reference and a generically typed result
+	 * @deprecated 支持带有 lambda 表达式或方法引用和通用类型结果的 {@link #extractDatabaseMetaData(DataSource, DatabaseMetaDataCallback)}
 	 */
 	@Deprecated(since = "5.2.9")
 	@SuppressWarnings("unchecked")
-	/* ===== [OCA 中文解析] =====
-方法 extractDatabaseMetaData — 意图与阅读要点
-
-方法 `extractDatabaseMetaData` 复杂度较高（CCN≈7, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public static <T> T extractDatabaseMetaData(DataSource dataSource, final String metaDataMethodName)
 			throws MetaDataAccessException {
 
@@ -428,14 +387,10 @@ public abstract class JdbcUtils {
 	}
 
 	/**
-	 * Return whether the given JDBC driver supports JDBC batch updates.
-	 * <p>Typically invoked right before execution of a given set of statements:
-	 * to decide whether the set of SQL statements should be executed through
-	 * the JDBC batch mechanism or simply in a traditional one-by-one fashion.
-	 * <p>Logs a warning if the "supportsBatchUpdates" methods throws an exception
-	 * and simply returns {@code false} in that case.
-	 * @param con the Connection to check
-	 * @return whether JDBC batch updates are supported
+	 * 返回给定的 JDBC 驱动程序是否支持 JDBC 批量更新。 <p> 通常在执行给定的一组语句之前调用：决定是否应通过 JDBC 批处理机制或简单地以传统的一对一方式执行该组 
+	 * SQL 语句。如果“supportsBatchUpdates”方法引发异常，<p> 会记录警告并在这种情况下仅返回 {@code false}。
+	 * @param con 要检查的连接
+	 * @return 支持JDBC批量更新
 	 * @see java.sql.DatabaseMetaData#supportsBatchUpdates()
 	 */
 	public static boolean supportsBatchUpdates(Connection con) {
@@ -458,10 +413,9 @@ public abstract class JdbcUtils {
 	}
 
 	/**
-	 * Extract a common name for the target database in use even if
-	 * various drivers/platforms provide varying names at runtime.
-	 * @param source the name as provided in database meta-data
-	 * @return the common name to be used (for example, "DB2" or "Sybase")
+	 * 即使各种驱动程序/平台在运行时提供不同的名称，也可以为正在使用的目标数据库提取通用名称。
+	 * @param source 数据库元数据中提供的名称
+	 * @return 要使用的通用名称（例如“DB2”或“Sybase”）
 	 */
 	public static @Nullable String commonDatabaseName(@Nullable String source) {
 		String name = source;
@@ -477,15 +431,10 @@ public abstract class JdbcUtils {
 		return name;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 isNumeric — 意图与阅读要点
-
-方法 `isNumeric` 复杂度较高（CCN≈10, NLOC≈6）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Check whether the given SQL type is numeric.
-	 * @param sqlType the SQL type to be checked
-	 * @return whether the type is numeric
+	 * 检查给定的 SQL 类型是否为数字。
+	 * @param sqlType 要检查的 SQL 类型
+	 * @return 类型是数字
 	 */
 	public static boolean isNumeric(int sqlType) {
 		return (Types.BIT == sqlType || Types.BIGINT == sqlType || Types.DECIMAL == sqlType ||
@@ -495,10 +444,9 @@ public abstract class JdbcUtils {
 	}
 
 	/**
-	 * Resolve the standard type name for the given SQL type, if possible.
-	 * @param sqlType the SQL type to resolve
-	 * @return the corresponding constant name in {@link java.sql.Types}
-	 * (for example, "VARCHAR"/"NUMERIC"), or {@code null} if not resolvable
+	 * 如果可能，解析给定 SQL 类型的标准类型名称。
+	 * @param sqlType 要解析的 SQL 类型
+	 * @return {@link java.sql.Types} 中对应的常量名称（例如“VARCHAR”/“NUMERIC”），如果不可解析则为 {@code null}
 	 * @since 5.2
 	 */
 	public static @Nullable String resolveTypeName(int sqlType) {
@@ -506,16 +454,12 @@ public abstract class JdbcUtils {
 	}
 
 	/**
-	 * Determine the column name to use. The column name is determined based on a
-	 * lookup using ResultSetMetaData.
-	 * <p>This method's implementation takes into account clarifications expressed
-	 * in the JDBC 4.0 specification:
-	 * <p><i>columnLabel - the label for the column specified with the SQL AS clause.
-	 * If the SQL AS clause was not specified, then the label is the name of the column</i>.
-	 * @param resultSetMetaData the current meta-data to use
-	 * @param columnIndex the index of the column for the lookup
-	 * @return the column name to use
-	 * @throws SQLException in case of lookup failure
+	 * 确定要使用的列名称。列名称是根据使用 ResultSetMetaData 的查找来确定的。 <p>此方法的实现考虑了 JDBC 4.0 规范中表达的说明： <p><i>colu
+	 * mnLabel - 使用 SQL AS 子句指定的列的标签。如果未指定 SQL AS 子句，则标签是列 </i> 的名称。
+	 * @param resultSetMetaData 当前要使用的元数据
+	 * @param columnIndex 用于查找的列的索引
+	 * @return 要使用的列名称
+	 * @throws SQLException 如果查找失败
 	 */
 	public static String lookupColumnName(ResultSetMetaData resultSetMetaData, int columnIndex) throws SQLException {
 		String name = resultSetMetaData.getColumnLabel(columnIndex);
@@ -526,10 +470,9 @@ public abstract class JdbcUtils {
 	}
 
 	/**
-	 * Convert a property name using "camelCase" to a corresponding column name with underscores.
-	 * A name like "customerNumber" would match a "customer_number" column name.
-	 * @param name the property name to be converted
-	 * @return the column name using underscores
+	 * 使用“camelCase”将属性名称转换为带有下划线的相应列名称。诸如“customerNumber”之类的名称将与“customer_number”列名称匹配。
+	 * @param name 要转换的属性名称
+	 * @return 使用下划线的列名
 	 * @since 6.1
 	 * @see #convertUnderscoreNameToPropertyName
 	 */
@@ -553,10 +496,9 @@ public abstract class JdbcUtils {
 	}
 
 	/**
-	 * Convert a column name with underscores to the corresponding property name using "camelCase".
-	 * A name like "customer_number" would match a "customerNumber" property name.
-	 * @param name the potentially underscores-based column name to be converted
-	 * @return the name using "camelCase"
+	 * 使用“camelCase”将带下划线的列名称转换为相应的属性名称。诸如“customer_number”之类的名称将与“customerNumber”属性名称匹配。
+	 * @param name 要转换的可能基于下划线的列名称
+	 * @return 使用“camelCase”命名
 	 * @see #convertPropertyNameToUnderscoreName
 	 */
 	public static String convertUnderscoreNameToPropertyName(@Nullable String name) {

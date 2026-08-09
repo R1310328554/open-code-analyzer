@@ -23,25 +23,25 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link EmbeddedDatabaseConfigurer} for an HSQL embedded database instance.
- *
- * <p>Call {@link #getInstance()} to get the singleton instance of this class.
- *
+ * 用于 HSQL 嵌入式数据库实例的 {@link EmbeddedDatabaseConfigurer}。
+ * <p>调用{@link #getInstance()}来获取该类的单例实例。
  * @author Keith Donald
  * @author Oliver Gierke
  * @since 3.0
  */
 final class HsqlEmbeddedDatabaseConfigurer extends AbstractEmbeddedDatabaseConfigurer {
 
+	/** `instance`：该类的成员状态。 */
 	private static @Nullable HsqlEmbeddedDatabaseConfigurer instance;
 
+	/** 类相关状态（`driverClass`）。 */
 	private final Class<? extends Driver> driverClass;
 
 
 	/**
-	 * Get the singleton {@link HsqlEmbeddedDatabaseConfigurer} instance.
-	 * @return the configurer instance
-	 * @throws ClassNotFoundException if HSQL is not on the classpath
+	 * 获取单例 {@link HsqlEmbeddedDatabaseConfigurer} 实例。
+	 * @return 配置器实例
+	 * @throws ClassNotFoundException 如果 HSQL 不在类路径上
 	 */
 	@SuppressWarnings("unchecked")
 	public static synchronized HsqlEmbeddedDatabaseConfigurer getInstance() throws ClassNotFoundException {
@@ -53,10 +53,16 @@ final class HsqlEmbeddedDatabaseConfigurer extends AbstractEmbeddedDatabaseConfi
 	}
 
 
+	/**
+	 * 创建 `HsqlEmbeddedDatabaseConfigurer` 的新实例。
+	 */
 	private HsqlEmbeddedDatabaseConfigurer(Class<? extends Driver> driverClass) {
 		this.driverClass = driverClass;
 	}
 
+	/**
+	 * 方法 `configureConnectionProperties`：完成本类中与「configure Connection Properties」相关的职责。
+	 */
 	@Override
 	public void configureConnectionProperties(ConnectionProperties properties, String databaseName) {
 		properties.setDriverClass(this.driverClass);

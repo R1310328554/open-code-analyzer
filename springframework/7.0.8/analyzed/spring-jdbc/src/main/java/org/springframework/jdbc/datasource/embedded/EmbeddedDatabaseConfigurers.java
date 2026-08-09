@@ -21,9 +21,8 @@ import java.util.function.UnaryOperator;
 import org.springframework.util.Assert;
 
 /**
- * Maps well-known {@linkplain EmbeddedDatabaseType embedded database types}
- * to {@link EmbeddedDatabaseConfigurer} strategies.
- *
+ * 将众所周知的 {@linkplain EmbeddedDatabaseType embedded database types} 映射到 {@link
+ * EmbeddedDatabaseConfigurer} 策略。
  * @author Keith Donald
  * @author Oliver Gierke
  * @author Sam Brannen
@@ -33,10 +32,10 @@ import org.springframework.util.Assert;
 public abstract class EmbeddedDatabaseConfigurers {
 
 	/**
-	 * Return a configurer instance for the given embedded database type.
-	 * @param type the {@linkplain EmbeddedDatabaseType embedded database type}
-	 * @return the configurer instance
-	 * @throws IllegalStateException if the driver for the specified database type is not available
+	 * 返回给定嵌入式数据库类型的配置器实例。
+	 * @param type {@linkplain EmbeddedDatabaseType embedded database type}
+	 * @return 配置器实例
+	 * @throws IllegalStateException 如果指定数据库类型的驱动程序不可用
 	 */
 	public static EmbeddedDatabaseConfigurer getConfigurer(EmbeddedDatabaseType type) {
 		Assert.notNull(type, "EmbeddedDatabaseType is required");
@@ -53,13 +52,12 @@ public abstract class EmbeddedDatabaseConfigurers {
 	}
 
 	/**
-	 * Customize the default configurer for the given embedded database type.
-	 * <p>The {@code customizer} typically uses
-	 * {@link EmbeddedDatabaseConfigurerDelegate} to customize things as necessary.
-	 * @param type the {@linkplain EmbeddedDatabaseType embedded database type}
-	 * @param customizer the customizer to return based on the default
-	 * @return the customized configurer instance
-	 * @throws IllegalStateException if the driver for the specified database type is not available
+	 * 为给定的嵌入式数据库类型自定义默认配置器。 <p>{@code customizer} 通常使用 {@link EmbeddedDatabaseConfigurerDelega
+	 * te} 根据需要进行自定义。
+	 * @param type {@linkplain EmbeddedDatabaseType embedded database type}
+	 * @param customizer 定制器根据默认值返回
+	 * @return 自定义配置器实例
+	 * @throws IllegalStateException 如果指定数据库类型的驱动程序不可用
 	 */
 	public static EmbeddedDatabaseConfigurer customizeConfigurer(
 			EmbeddedDatabaseType type, UnaryOperator<EmbeddedDatabaseConfigurer> customizer) {

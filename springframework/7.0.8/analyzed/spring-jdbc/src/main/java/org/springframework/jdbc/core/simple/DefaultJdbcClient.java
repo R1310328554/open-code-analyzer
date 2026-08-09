@@ -51,9 +51,7 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.util.Assert;
 
 /**
- * The default implementation of {@link JdbcClient},
- * as created by the static factory methods.
- *
+ * {@link JdbcClient} 的默认实现，由静态工厂方法创建。
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 6.1
@@ -63,21 +61,32 @@ import org.springframework.util.Assert;
  */
 final class DefaultJdbcClient implements JdbcClient {
 
+	/** 名称相关状态（`namedParamOps`）。 */
 	private final NamedParameterJdbcOperations namedParamOps;
 
+	/** `conversionService`：该类的成员状态。 */
 	private final ConversionService conversionService;
 
 	private final Map<Class<?>, RowMapper<?>> rowMapperCache = new ConcurrentHashMap<>();
 
 
+	/**
+	 * 创建 `DefaultJdbcClient` 的新实例。
+	 */
 	public DefaultJdbcClient(DataSource dataSource) {
 		this(new JdbcTemplate(dataSource));
 	}
 
+	/**
+	 * 创建 `DefaultJdbcClient` 的新实例。
+	 */
 	public DefaultJdbcClient(JdbcOperations jdbcTemplate) {
 		this(new NamedParameterJdbcTemplate(jdbcTemplate), null);
 	}
 
+	/**
+	 * 创建 `DefaultJdbcClient` 的新实例。
+	 */
 	public DefaultJdbcClient(NamedParameterJdbcOperations jdbcTemplate, @Nullable ConversionService conversionService) {
 		Assert.notNull(jdbcTemplate, "NamedParameterJdbcTemplate must not be null");
 		this.namedParamOps = jdbcTemplate;
@@ -86,6 +95,9 @@ final class DefaultJdbcClient implements JdbcClient {
 	}
 
 
+	/**
+	 * 方法 `sql`：完成本类中与「sql」相关的职责。
+	 */
 	@Override
 	public StatementSpec sql(String sql) {
 		return new DefaultStatementSpec(sql, this.namedParamOps);

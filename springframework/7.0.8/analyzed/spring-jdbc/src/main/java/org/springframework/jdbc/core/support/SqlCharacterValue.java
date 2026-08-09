@@ -29,22 +29,14 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.SqlTypeValue;
 
 /**
- * Object to represent a character-based parameter value for an SQL statement,
- * for example, a character stream for a CLOB/NCLOB or a LONGVARCHAR column.
- *
- * <p>Designed for use with {@link org.springframework.jdbc.core.JdbcTemplate}
- * as well as {@link org.springframework.jdbc.core.simple.JdbcClient}, to be
- * passed in as a parameter value wrapping the target content value.
- *
- * <p>Can be combined with {@link org.springframework.jdbc.core.SqlParameterValue}
- * for specifying an SQL type, for example,
- * {@code new SqlParameterValue(Types.CLOB, new SqlCharacterValue(myContent))}.
- * With most database drivers, the type hint is not actually necessary.
- *
- * <p>Note: Only specify {@code Types.CLOB} in case of an actual CLOB, preferring
- * {@code Types.LONGVARCHAR} otherwise. This is in contrast to {@link SqlLobValue}
- * where char sequence handling was lenient.
- *
+ * 表示 SQL 语句的基于字符的参数值的对象，例如 CLOB/NCLOB 或 LONGVARCHAR 列的字符流。
+ * <p> 设计用于与 {@link org.springframework.jdbc.core.JdbcTemplate} 以及 {@link
+ * org.springframework.jdbc.core.simple.JdbcClient} 一起使用，作为包装目标内容值的参数值传入。
+ * <p>可以与{@link org.springframework.jdbc.core.SqlParameterValue}组合用于指定SQL类型，例如{@code new
+ * SqlParameterValue(Types.CLOB, new
+ * SqlCharacterValue(myContent))}。对于大多数数据库驱动程序，类型提示实际上并不是必需的。
+ * <p>注意：仅在实际 CLOB 的情况下指定 {@code Types.CLOB}，否则首选 {@code Types.LONGVARCHAR}。这与 {@link
+ * SqlLobValue} 形成鲜明对比，其中字符序列处理较为宽松。
  * @author Juergen Hoeller
  * @since 6.1.4
  * @see SqlBinaryValue
@@ -52,14 +44,16 @@ import org.springframework.jdbc.core.SqlTypeValue;
  */
 public class SqlCharacterValue implements SqlTypeValue {
 
+	/** `content`：该类的成员状态。 */
 	private final Object content;
 
+	/** `length`：该类的成员状态。 */
 	private final long length;
 
 
 	/**
-	 * Create a new CLOB value with the given content string.
-	 * @param string the content as a String or other CharSequence
+	 * 使用给定的内容字符串创建一个新的 CLOB 值。
+	 * @param string String 或其他 CharSequence 形式的内容
 	 */
 	public SqlCharacterValue(CharSequence string) {
 		this.content = string;
@@ -67,8 +61,8 @@ public class SqlCharacterValue implements SqlTypeValue {
 	}
 
 	/**
-	 * Create a new {@code SqlCharacterValue} for the given content.
-	 * @param characters the content as a character array
+	 * 为给定内容创建一个新的 {@code SqlCharacterValue}。
+	 * @param characters 内容为字符数组
 	 */
 	public SqlCharacterValue(char[] characters) {
 		this.content = characters;
@@ -76,9 +70,9 @@ public class SqlCharacterValue implements SqlTypeValue {
 	}
 
 	/**
-	 * Create a new {@code SqlCharacterValue} for the given content.
-	 * @param reader the content reader
-	 * @param length the length of the content (or -1 if undetermined)
+	 * 为给定内容创建一个新的 {@code SqlCharacterValue}。
+	 * @param reader 内容阅读器
+	 * @param length 内容的长度（如果未确定则为-1）
 	 */
 	public SqlCharacterValue(Reader reader, long length) {
 		this.content = reader;
@@ -86,9 +80,9 @@ public class SqlCharacterValue implements SqlTypeValue {
 	}
 
 	/**
-	 * Create a new {@code SqlCharacterValue} for the given content.
-	 * @param asciiStream the content as ASCII stream
-	 * @param length the length of the content (or -1 if undetermined)
+	 * 为给定内容创建一个新的 {@code SqlCharacterValue}。
+	 * @param asciiStream 内容为 ASCII 流
+	 * @param length 内容的长度（如果未确定则为-1）
 	 */
 	public SqlCharacterValue(InputStream asciiStream, long length) {
 		this.content = asciiStream;
@@ -96,6 +90,9 @@ public class SqlCharacterValue implements SqlTypeValue {
 	}
 
 
+	/**
+	 * 设置 Type Value（`TypeValue`）。
+	 */
 	@Override
 	public void setTypeValue(PreparedStatement ps, int paramIndex, int sqlType, @Nullable String typeName)
 			throws SQLException {
@@ -117,6 +114,9 @@ public class SqlCharacterValue implements SqlTypeValue {
 		}
 	}
 
+	/**
+	 * 设置 String（`String`）。
+	 */
 	private void setString(PreparedStatement ps, int paramIndex, int sqlType, String string)
 			throws SQLException {
 
@@ -131,6 +131,9 @@ public class SqlCharacterValue implements SqlTypeValue {
 		}
 	}
 
+	/**
+	 * 设置 Reader（`Reader`）。
+	 */
 	private void setReader(PreparedStatement ps, int paramIndex, int sqlType, Reader reader, long length)
 			throws SQLException {
 
@@ -160,6 +163,9 @@ public class SqlCharacterValue implements SqlTypeValue {
 		}
 	}
 
+	/**
+	 * 设置 Input Stream（`InputStream`）。
+	 */
 	private void setInputStream(PreparedStatement ps, int paramIndex, InputStream is, long length)
 			throws SQLException {
 

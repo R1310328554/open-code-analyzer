@@ -23,8 +23,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessResourceFailureException;
 
 /**
- * Fatal exception thrown when we can't connect to an RDBMS using JDBC.
- *
+ * 当我们无法使用 JDBC 连接到 RDBMS 时抛出致命异常。
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
@@ -32,8 +31,8 @@ import org.springframework.dao.DataAccessResourceFailureException;
 public class CannotGetJdbcConnectionException extends DataAccessResourceFailureException {
 
 	/**
-	 * Constructor for {@code CannotGetJdbcConnectionException}.
-	 * @param msg the detail message
+	 * {@code CannotGetJdbcConnectionException} 的构造函数。
+	 * @param msg 详细消息
 	 * @since 5.0
 	 */
 	public CannotGetJdbcConnectionException(String msg) {
@@ -41,18 +40,18 @@ public class CannotGetJdbcConnectionException extends DataAccessResourceFailureE
 	}
 
 	/**
-	 * Constructor for {@code CannotGetJdbcConnectionException}.
-	 * @param msg the detail message
-	 * @param ex the root cause SQLException
+	 * {@code CannotGetJdbcConnectionException} 的构造函数。
+	 * @param msg 详细消息
+	 * @param ex 根本原因 SQLException
 	 */
 	public CannotGetJdbcConnectionException(String msg, @Nullable SQLException ex) {
 		super(msg, ex);
 	}
 
 	/**
-	 * Constructor for {@code CannotGetJdbcConnectionException}.
-	 * @param msg the detail message
-	 * @param ex the root cause IllegalStateException
+	 * {@code CannotGetJdbcConnectionException} 的构造函数。
+	 * @param msg 详细消息
+	 * @param ex 根本原因 IllegalStateException
 	 * @since 5.3.22
 	 */
 	public CannotGetJdbcConnectionException(String msg, IllegalStateException ex) {

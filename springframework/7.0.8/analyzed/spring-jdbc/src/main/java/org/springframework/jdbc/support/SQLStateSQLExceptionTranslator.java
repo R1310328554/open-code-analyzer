@@ -32,28 +32,15 @@ import org.springframework.dao.QueryTimeoutException;
 import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.jdbc.BadSqlGrammarException;
 
-/* ===== [OCA 中文解析] =====
-class SQLStateSQLExceptionTranslator — 意图说明
-
-class `SQLStateSQLExceptionTranslator`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/support/SQLStateSQLExceptionTranslator.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * {@link SQLExceptionTranslator} implementation that analyzes the SQL state in
- * the {@link SQLException} based on the first two digits (the SQL state "class").
- * Detects standard SQL state values and well-known vendor-specific SQL states.
- *
- * <p>Not able to diagnose all problems, but is portable between databases and
- * does not require special initialization (no database vendor detection, etc.).
- * For more precise translation, consider {@link SQLErrorCodeSQLExceptionTranslator}.
- *
- * <p>This translator is commonly used as a {@link #setFallbackTranslator fallback}
- * behind a primary translator such as {@link SQLErrorCodeSQLExceptionTranslator} or
- * {@link SQLExceptionSubclassTranslator}. As of 6.2.12, it specifically introspects
- * {@link java.sql.BatchUpdateException} to look at the underlying exception
- * (for alignment when used behind a {@link SQLExceptionSubclassTranslator}).
- *
+ * {@link SQLExceptionTranslator} 实现，根据前两位数字（SQL 状态“类”）分析 {@link SQLException} 中的 SQL
+ * 状态。检测标准 SQL 状态值和众所周知的特定于供应商的 SQL 状态。
+ * <p>无法诊断所有问题，但可以在数据库之间移植，并且不需要特殊的初始化（无需数据库供应商检测等）。要获得更精确的翻译，请考虑 {@link SQLErrorCodeSQLExc
+ * eptionTranslator}。
+ * <p> 此转换器通常用作主转换器（例如 {@link SQLErrorCodeSQLExceptionTranslator} 或 {@link
+ * SQLExceptionSubclassTranslator}）后面的 {@link #setFallbackTranslator fallback}。从 6.2.12
+ * 开始，它专门内省 {@link java.sql.BatchUpdateException} 以查看底层异常（用于在 {@link
+ * SQLExceptionSubclassTranslator} 后面使用时的对齐）。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Thomas Risberg
@@ -63,7 +50,9 @@ class `SQLStateSQLExceptionTranslator`：请结合所属模块与调用方理解
  */
 public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLExceptionTranslator {
 
-	// [OCA] 字段 `BAD_SQL_GRAMMAR_CODES`：类成员状态。
+	/**
+	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 */
 	private static final Set<String> BAD_SQL_GRAMMAR_CODES = Set.of(
 			"07",  // Dynamic SQL error
 			"21",  // Cardinality violation
@@ -73,7 +62,9 @@ public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLException
 			"65"   // Oracle: unknown identifier
 		);
 
-	// [OCA] 字段 `DATA_INTEGRITY_VIOLATION_CODES`：类成员状态。
+	/**
+	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 */
 	private static final Set<String> DATA_INTEGRITY_VIOLATION_CODES = Set.of(
 			"01",  // Data truncation
 			"02",  // No data found
@@ -83,13 +74,17 @@ public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLException
 			"44"   // With check violation
 		);
 
-	// [OCA] 字段 `PESSIMISTIC_LOCKING_FAILURE_CODES`：类成员状态。
+	/**
+	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 */
 	private static final Set<String> PESSIMISTIC_LOCKING_FAILURE_CODES = Set.of(
 			"40",  // Transaction rollback
 			"61"   // Oracle: deadlock
 	);
 
-	// [OCA] 字段 `DATA_ACCESS_RESOURCE_FAILURE_CODES`：类成员状态。
+	/**
+	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 */
 	private static final Set<String> DATA_ACCESS_RESOURCE_FAILURE_CODES = Set.of(
 			"08",  // Connection exception
 			"53",  // PostgreSQL: insufficient resources (for example, disk full)
@@ -98,14 +93,18 @@ public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLException
 			"58"   // DB2: unexpected system error
 		);
 
-	// [OCA] 字段 `TRANSIENT_DATA_ACCESS_RESOURCE_CODES`：类成员状态。
+	/**
+	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 */
 	private static final Set<String> TRANSIENT_DATA_ACCESS_RESOURCE_CODES = Set.of(
 			"JW",  // Sybase: internal I/O error
 			"JZ",  // Sybase: unexpected I/O error
 			"S1"   // DB2: communication failure
 		);
 
-	// [OCA] 字段 `DUPLICATE_KEY_ERROR_CODES`：类成员状态。
+	/**
+	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 */
 	private static final Set<Integer> DUPLICATE_KEY_ERROR_CODES = Set.of(
 			1,     // Oracle
 			301,   // SAP HANA
@@ -117,13 +116,16 @@ public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLException
 		);
 
 
+	/**
+	 * 执行核心逻辑：Translate（方法 `doTranslate`）。
+	 */
 	@Override
 	protected @Nullable DataAccessException doTranslate(String task, @Nullable String sql, SQLException ex) {
 		SQLException sqlEx = ex;
 		String sqlState;
 		if (sqlEx instanceof BatchUpdateException) {
-			// Unwrap BatchUpdateException to expose contained exception
-			// with potentially more specific SQL state.
+			// 展开 BatchUpdateException 以公开包含的异常
+			// 具有可能更具体的 SQL 状态。
 			if (sqlEx.getNextException() != null) {
 				SQLException nestedSqlEx = sqlEx.getNextException();
 				if (nestedSqlEx.getSQLState() != null) {
@@ -133,11 +135,11 @@ public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLException
 			sqlState = sqlEx.getSQLState();
 		}
 		else {
-			// Expose top-level exception but potentially use nested SQL state.
+			// 公开顶级异常但可能使用嵌套 SQL 状态。
 			sqlState = getSqlState(sqlEx);
 		}
 
-		// The actual SQL state check...
+		// 实际的 SQL 状态检查...
 		if (sqlState != null && sqlState.length() >= 2) {
 			String classCode = sqlState.substring(0, 2);
 			if (logger.isDebugEnabled()) {
@@ -169,23 +171,21 @@ public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLException
 			}
 		}
 
-		// For MySQL: exception class name indicating a timeout?
-		// (since MySQL doesn't throw the JDBC 4 SQLTimeoutException)
+		// 对于 MySQL：指示超时的异常类名称？
+		// （因为 MySQL 不会抛出 JDBC 4 SQLTimeoutException）
 		if (sqlEx.getClass().getName().contains("Timeout")) {
 			return new QueryTimeoutException(buildMessage(task, sql, sqlEx), ex);
 		}
 
-		// Couldn't resolve anything proper - resort to UncategorizedSQLException.
+		// 无法正确解决任何问题 - 求助于 UncategorizedSQLException。
 		return null;
 	}
 
 	/**
-	 * Gets the SQL state code from the supplied {@link SQLException exception}.
-	 * <p>Some JDBC drivers nest the actual exception from a batched update, so we
-	 * might need to dig down into the nested exception.
-	 * @param ex the exception from which the {@link SQLException#getSQLState() SQL state}
-	 * is to be extracted
-	 * @return the SQL state code
+	 * 从提供的 {@link SQLException exception} 获取 SQL 状态代码。 <p>一些 JDBC 驱动程序会嵌套来自批量更新的实际异常，因此我们可能需要深
+	 * 入研究嵌套异常。
+	 * @param ex 要从中提取 {@link SQLException#getSQLState() SQL state} 的异常
+	 * @return SQL状态代码
 	 */
 	private @Nullable String getSqlState(SQLException ex) {
 		String sqlState = ex.getSQLState();
@@ -200,12 +200,10 @@ public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLException
 
 
 	/**
-	 * Check whether the given SQL state and the associated error code (in case
-	 * of a generic SQL state value) indicate a {@link DuplicateKeyException}:
-	 * either SQL state 23505 as a specific indication, or the generic SQL state
-	 * 23000 with a well-known vendor code.
-	 * @param sqlState the SQL state value
-	 * @param errorCode the error code
+	 * 检查给定的 SQL 状态和关联的错误代码（在通用 SQL 状态值的情况下）是否指示 {@link DuplicateKeyException}：作为特定指示的 SQL 状态 2
+	 * 3505，或具有众所周知的供应商代码的通用 SQL 状态 23000。
+	 * @param sqlState SQL 状态值
+	 * @param errorCode 错误代码
 	 */
 	static boolean indicatesDuplicateKey(@Nullable String sqlState, int errorCode) {
 		return ("23505".equals(sqlState) ||
@@ -213,18 +211,16 @@ public class SQLStateSQLExceptionTranslator extends AbstractFallbackSQLException
 	}
 
 	/**
-	 * Check whether the given SQL state indicates a {@link CannotAcquireLockException},
-	 * with SQL state 40001 as a specific indication.
-	 * @param sqlState the SQL state value
+	 * 检查给定的 SQL 状态是否指示 {@link CannotAcquireLockException}，以 SQL 状态 40001 作为特定指示。
+	 * @param sqlState SQL 状态值
 	 */
 	static boolean indicatesCannotAcquireLock(@Nullable String sqlState) {
 		return "40001".equals(sqlState);
 	}
 
 	/**
-	 * Check whether the given SQL state indicates a {@link QueryTimeoutException},
-	 * with SQL state 57014 as a specific indication.
-	 * @param sqlState the SQL state value
+	 * 检查给定的 SQL 状态是否指示 {@link QueryTimeoutException}，其中 SQL 状态 57014 作为特定指示。
+	 * @param sqlState SQL 状态值
 	 */
 	static boolean indicatesQueryTimeout(@Nullable String sqlState) {
 		return "57014".equals(sqlState);

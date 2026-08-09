@@ -24,18 +24,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessException;
 
 /**
- * Generic callback interface for code that operates on a JDBC Connection.
- * Allows to execute any number of operations on a single Connection,
- * using any type and number of Statements.
- *
- * <p>This is particularly useful for delegating to existing data access code
- * that expects a Connection to work on and throws SQLException. For newly
- * written code, it is strongly recommended to use JdbcTemplate's more specific
- * operations, for example a {@code query} or {@code update} variant.
- *
+ * 在 JDBC 连接上操作的代码的通用回调接口。允许使用任何类型和数量的语句在单个连接上执行任意数量的操作。
+ * <p>这对于委托给需要连接工作并抛出 SQLException 的现有数据访问代码特别有用。对于新编写的代码，强烈建议使用 JdbcTemplate 更具体的操作，例如 {@c
+ * ode query} 或 {@code update} 变体。
  * @author Juergen Hoeller
  * @since 1.1.3
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see JdbcTemplate#execute(ConnectionCallback)
  * @see JdbcTemplate#query
  * @see JdbcTemplate#update
@@ -44,24 +38,15 @@ import org.springframework.dao.DataAccessException;
 public interface ConnectionCallback<T extends @Nullable Object> {
 
 	/**
-	 * Gets called by {@code JdbcTemplate.execute} with an active JDBC
-	 * Connection. Does not need to care about activating or closing the
-	 * Connection, or handling transactions.
-	 * <p>If called without a thread-bound JDBC transaction (initiated by
-	 * DataSourceTransactionManager), the code will simply get executed on the
-	 * JDBC connection with its transactional semantics. If JdbcTemplate is
-	 * configured to use a JTA-aware DataSource, the JDBC Connection and thus
-	 * the callback code will be transactional if a JTA transaction is active.
-	 * <p>Allows for returning a result object created within the callback, i.e.
-	 * a domain object or a collection of domain objects. Note that there's special
-	 * support for single step actions: see {@code JdbcTemplate.queryForObject}
-	 * etc. A thrown RuntimeException is treated as application exception:
-	 * it gets propagated to the caller of the template.
-	 * @param con active JDBC Connection
-	 * @return a result object, or {@code null} if none
-	 * @throws SQLException if thrown by a JDBC method, to be auto-converted
-	 * to a DataAccessException by an SQLExceptionTranslator
-	 * @throws DataAccessException in case of custom exceptions
+	 * 由 {@code JdbcTemplate.execute} 使用活动的 JDBC 连接进行调用。不需要关心激活或关闭连接，或处理事务。 <p>如果在没有线程绑定 JDBC 事
+	 * 务（由 DataSourceTransactionManager 启动）的情况下调用，则代码将简单地在 JDBC 连接上以其事务语义执行。如果 JdbcTemplate 配置为
+	 * 使用 JTA 感知的数据源，则 JDBC 连接以及回调代码将是事务性的（如果 JTA 事务处于活动状态）。 <p>A允许返回在回调中创建的结果对象，即域对象或域对象的集合。请注
+	 * 意，对单步操作有特殊支持：请参阅 {@code JdbcTemplate.queryForObject} 等。抛出的 RuntimeException 被视为应用程序异常：它会
+	 * 传播到模板的调用者。
+	 * @param con 活动 JDBC 连接
+	 * @return 结果对象，如果没有则为 {@code null}
+	 * @throws SQLException 如果由 JDBC 方法抛出，则由 SQLExceptionTranslator 自动转换为 DataAccessException
+	 * @throws DataAccessException 如果出现自定义异常
 	 * @see JdbcTemplate#queryForObject(String, Class)
 	 * @see JdbcTemplate#queryForRowSet(String)
 	 */

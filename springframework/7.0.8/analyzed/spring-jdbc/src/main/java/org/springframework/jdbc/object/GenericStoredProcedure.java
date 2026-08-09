@@ -17,13 +17,9 @@
 package org.springframework.jdbc.object;
 
 /**
- * Concrete implementation making it possible to define the RDBMS stored procedures
- * in an application context without writing a custom Java implementation class.
- * <p>
- * This implementation does not provide a typed method for invocation so executions
- * must use one of the generic {@link StoredProcedure#execute(java.util.Map)} or
- * {@link StoredProcedure#execute(org.springframework.jdbc.core.ParameterMapper)} methods.
- *
+ * 具体实现使得可以在应用程序上下文中定义 RDBMS 存储过程，而无需编写自定义 Java 实现类。 <p> 此实现不提供用于调用的类型化方法，因此执行必须使用通用
+ * {@link StoredProcedure#execute(java.util.Map)} 或 {@link
+ * StoredProcedure#execute(org.springframework.jdbc.core.ParameterMapper)} 方法之一。
  * @author Thomas Risberg
  * @see org.springframework.jdbc.object.StoredProcedure
  */

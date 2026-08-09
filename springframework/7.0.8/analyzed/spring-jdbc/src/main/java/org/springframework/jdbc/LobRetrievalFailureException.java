@@ -21,28 +21,27 @@ import java.io.IOException;
 import org.springframework.dao.DataRetrievalFailureException;
 
 /**
- * Exception to be thrown when a LOB could not be retrieved.
- *
+ * 无法检索 LOB 时抛出异常。
  * @author Juergen Hoeller
  * @since 1.0.2
- * @deprecated as of 6.2 along with {@link org.springframework.jdbc.support.lob.LobHandler}
+ * @deprecated 6.2 以及 {@link org.springframework.jdbc.support.lob.LobHandler}
  */
 @Deprecated(since = "6.2")
 @SuppressWarnings("serial")
 public class LobRetrievalFailureException extends DataRetrievalFailureException {
 
 	/**
-	 * Constructor for LobRetrievalFailureException.
-	 * @param msg the detail message
+	 * LobRetrievalFailureException 的构造函数。
+	 * @param msg 详细消息
 	 */
 	public LobRetrievalFailureException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for LobRetrievalFailureException.
-	 * @param msg the detail message
-	 * @param ex the root cause IOException
+	 * LobRetrievalFailureException 的构造函数。
+	 * @param msg 详细消息
+	 * @param ex IOException 的根本原因
 	 */
 	public LobRetrievalFailureException(String msg, IOException ex) {
 		super(msg, ex);

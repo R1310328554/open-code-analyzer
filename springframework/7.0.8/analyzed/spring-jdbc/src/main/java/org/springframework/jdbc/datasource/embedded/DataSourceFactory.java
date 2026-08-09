@@ -19,15 +19,11 @@ package org.springframework.jdbc.datasource.embedded;
 import javax.sql.DataSource;
 
 /**
- * {@code DataSourceFactory} encapsulates the creation of a particular
- * {@link DataSource} implementation such as a non-pooling
- * {@link org.springframework.jdbc.datasource.SimpleDriverDataSource}
- * or a HikariCP pool setup in the shape of a {@code HikariDataSource}.
- *
- * <p>Call {@link #getConnectionProperties()} to configure normalized
- * {@code DataSource} properties before calling {@link #getDataSource()}
- * to actually get the configured {@code DataSource} instance.
- *
+ * {@code DataSourceFactory} 封装了特定 {@link DataSource} 实现的创建，例如 {@code HikariDataSource}
+ * 形式的非池化 {@link org.springframework.jdbc.datasource.SimpleDriverDataSource} 或 HikariCP
+ * 池设置。
+ * <p> 在调用 {@link #getDataSource()} 实际获取配置的 {@code DataSource} 实例之前，先调用 {@link
+ * #getConnectionProperties()} 配置规范化的 {@code DataSource} 属性。
  * @author Keith Donald
  * @author Sam Brannen
  * @since 3.0
@@ -35,14 +31,13 @@ import javax.sql.DataSource;
 public interface DataSourceFactory {
 
 	/**
-	 * Get the {@linkplain ConnectionProperties connection properties}
-	 * of the {@link #getDataSource DataSource} to be configured.
+	 * 获取要配置的 {@link #getDataSource DataSource} 的 {@linkplain ConnectionProperties connection
+	 * properties}。
 	 */
 	ConnectionProperties getConnectionProperties();
 
 	/**
-	 * Get the {@link DataSource} with the
-	 * {@linkplain #getConnectionProperties connection properties} applied.
+	 * 获取应用了 {@linkplain #getConnectionProperties connection properties} 的 {@link DataSource}。
 	 */
 	DataSource getDataSource();
 

@@ -43,17 +43,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class CallMetaDataContext — 意图说明
-
-class `CallMetaDataContext`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/CallMetaDataContext.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Class to manage context meta-data used for the configuration
- * and execution of a stored procedure call.
- *
+ * 用于管理用于存储过程调用的配置和执行的上下文元数据的类。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Kiril Nugmanov
@@ -61,182 +52,186 @@ class `CallMetaDataContext`：请结合所属模块与调用方理解其在整�
  */
 public class CallMetaDataContext {
 
-	// Logger available to subclasses
-	// [OCA] 字段 `logger`：类成员状态。
+	// 记录器可用于子类
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	// Name of procedure to call
+	// 要调用的过程名称
+	/** 名称相关状态（`procedureName`）。 */
 	private @Nullable String procedureName;
 
-	// Name of catalog for call
+	// 调用目录名称
+	/** 名称相关状态（`catalogName`）。 */
 	private @Nullable String catalogName;
 
-	// Name of schema for call
+	// 调用的模式名称
+	/** 名称相关状态（`schemaName`）。 */
 	private @Nullable String schemaName;
 
-	// List of SqlParameter objects to be used in call execution
-	// [OCA] 字段 `callParameters`：类成员状态。
+	// 调用执行中使用的 SqlParameter 对象列表
 	private List<SqlParameter> callParameters = new ArrayList<>();
 
-	// Actual name to use for the return value in the output map
+	// 用于输出映射中返回值的实际名称
+	/** 名称相关状态（`actualFunctionReturnName`）。 */
 	private @Nullable String actualFunctionReturnName;
 
-	// Set of in parameter names to exclude use for any not listed
-	// [OCA] 字段 `limitedInParameterNames`：类成员状态。
+	// 一组参数名称以排除用于任何未列出的内容
 	private Set<String> limitedInParameterNames = new HashSet<>();
 
-	// List of SqlParameter names for out parameters
-	// [OCA] 字段 `outParameterNames`：类成员状态。
+	// 输出参数的 SqlParameter 名称列表
 	private List<String> outParameterNames = new ArrayList<>();
 
-	// Indicates whether this is a procedure or a function
-	// [OCA] 字段 `function`：类成员状态。
+	// 指示这是一个过程还是一个函数
+	/** `false`：该类的成员状态。 */
 	private boolean function = false;
 
-	// Indicates whether this procedure's return value should be included
-	// [OCA] 字段 `returnValueRequired`：类成员状态。
+	// 指示是否应包含此过程的返回值
+	/** `false`：该类的成员状态。 */
 	private boolean returnValueRequired = false;
 
-	// Should we access call parameter meta-data info or not
-	// [OCA] 字段 `accessCallParameterMetaData`：类成员状态。
+	// 我们是否应该访问调用参数元数据信息
+	/** `true`：该类的成员状态。 */
 	private boolean accessCallParameterMetaData = true;
 
-	// Should we bind parameter by name
-	// [OCA] 字段 `namedBinding`：类成员状态。
+	// 我们应该按名称绑定参数吗
+	/** 名称相关状态（`namedBinding`）。 */
 	private boolean namedBinding;
 
-	// The provider of call meta-data
+	// 通话元数据提供者
+	/** `metaDataProvider`：该类的成员状态。 */
 	private @Nullable CallMetaDataProvider metaDataProvider;
 
 
 	/**
-	 * Specify the name used for the return value of the function.
+	 * 指定用于函数返回值的名称。
 	 */
 	public void setFunctionReturnName(String functionReturnName) {
 		this.actualFunctionReturnName = functionReturnName;
 	}
 
 	/**
-	 * Get the name used for the return value of the function.
+	 * 获取用于函数返回值的名称。
 	 */
 	public String getFunctionReturnName() {
 		return (this.actualFunctionReturnName != null ? this.actualFunctionReturnName : "return");
 	}
 
 	/**
-	 * Specify a limited set of the {@code in} parameters to be used.
+	 * 指定要使用的一组有限的 {@code in} 参数。
 	 */
 	public void setLimitedInParameterNames(Set<String> limitedInParameterNames) {
 		this.limitedInParameterNames = limitedInParameterNames;
 	}
 
 	/**
-	 * Get the limited set of the {@code in} parameters to be used.
+	 * 获取要使用的 {@code in} 参数的有限集。
 	 */
 	public Set<String> getLimitedInParameterNames() {
 		return this.limitedInParameterNames;
 	}
 
 	/**
-	 * Specify the names of the {@code out} parameters.
+	 * 指定 {@code out} 参数的名称。
 	 */
 	public void setOutParameterNames(List<String> outParameterNames) {
 		this.outParameterNames = outParameterNames;
 	}
 
 	/**
-	 * Get the list of the {@code out} parameter names.
+	 * 获取 {@code out} 参数名称列表。
 	 */
 	public List<String> getOutParameterNames() {
 		return this.outParameterNames;
 	}
 
 	/**
-	 * Specify the name of the procedure.
+	 * 指定过程的名称。
 	 */
 	public void setProcedureName(@Nullable String procedureName) {
 		this.procedureName = procedureName;
 	}
 
 	/**
-	 * Get the name of the procedure.
+	 * 获取过程的名称。
 	 */
 	public @Nullable String getProcedureName() {
 		return this.procedureName;
 	}
 
 	/**
-	 * Specify the name of the catalog.
+	 * 指定目录的名称。
 	 */
 	public void setCatalogName(@Nullable String catalogName) {
 		this.catalogName = catalogName;
 	}
 
 	/**
-	 * Get the name of the catalog.
+	 * 获取目录的名称。
 	 */
 	public @Nullable String getCatalogName() {
 		return this.catalogName;
 	}
 
 	/**
-	 * Specify the name of the schema.
+	 * 指定架构的名称。
 	 */
 	public void setSchemaName(@Nullable String schemaName) {
 		this.schemaName = schemaName;
 	}
 
 	/**
-	 * Get the name of the schema.
+	 * 获取架构的名称。
 	 */
 	public @Nullable String getSchemaName() {
 		return this.schemaName;
 	}
 
 	/**
-	 * Specify whether this call is a function call.
+	 * 指定此调用是否是函数调用。
 	 */
 	public void setFunction(boolean function) {
 		this.function = function;
 	}
 
 	/**
-	 * Check whether this call is a function call.
+	 * 检查这个调用是否是一个函数调用。
 	 */
 	public boolean isFunction() {
 		return this.function;
 	}
 
 	/**
-	 * Specify whether a return value is required.
+	 * 指定是否需要返回值。
 	 */
 	public void setReturnValueRequired(boolean returnValueRequired) {
 		this.returnValueRequired = returnValueRequired;
 	}
 
 	/**
-	 * Check whether a return value is required.
+	 * 检查是否需要返回值。
 	 */
 	public boolean isReturnValueRequired() {
 		return this.returnValueRequired;
 	}
 
 	/**
-	 * Specify whether call parameter meta-data should be accessed.
+	 * 指定是否应访问调用参数元数据。
 	 */
 	public void setAccessCallParameterMetaData(boolean accessCallParameterMetaData) {
 		this.accessCallParameterMetaData = accessCallParameterMetaData;
 	}
 
 	/**
-	 * Check whether call parameter meta-data should be accessed.
+	 * 检查是否应访问调用参数元数据。
 	 */
 	public boolean isAccessCallParameterMetaData() {
 		return this.accessCallParameterMetaData;
 	}
 
 	/**
-	 * Specify whether parameters should be bound by name.
+	 * 指定参数是否应按名称绑定。
 	 * @since 4.2
 	 */
 	public void setNamedBinding(boolean namedBinding) {
@@ -244,7 +239,7 @@ public class CallMetaDataContext {
 	}
 
 	/**
-	 * Check whether parameters should be bound by name.
+	 * 检查参数是否应按名称绑定。
 	 * @since 4.2
 	 */
 	public boolean isNamedBinding() {
@@ -253,24 +248,26 @@ public class CallMetaDataContext {
 
 
 	/**
-	 * Initialize this class with meta-data from the database.
-	 * @param dataSource the DataSource used to retrieve meta-data
+	 * 使用数据库中的元数据初始化此类。
+	 * @param dataSource 用于检索元数据的 DataSource
 	 */
 	public void initializeMetaData(DataSource dataSource) {
 		this.metaDataProvider = CallMetaDataProviderFactory.createMetaDataProvider(dataSource, this);
 	}
 
+	/**
+	 * 方法 `obtainMetaDataProvider`：完成本类中与「obtain Meta Data Provider」相关的职责。
+	 */
 	private CallMetaDataProvider obtainMetaDataProvider() {
 		Assert.state(this.metaDataProvider != null, "No CallMetaDataProvider - call initializeMetaData first");
 		return this.metaDataProvider;
 	}
 
 	/**
-	 * Create a ReturnResultSetParameter/SqlOutParameter depending on the support provided
-	 * by the JDBC driver used for the database in use.
-	 * @param parameterName the name of the parameter (also used as the name of the List returned in the output)
-	 * @param rowMapper a RowMapper implementation used to map the data returned in the result set
-	 * @return the appropriate SqlParameter
+	 * 根据所用数据库所使用的 JDBC 驱动程序提供的支持创建 ReturnResultSetParameter/SqlOutParameter。
+	 * @param parameterName 参数的名称（也用作输出中返回的列表的名称）
+	 * @param rowMapper RowMapper 实现，用于映射结果集中返回的数据
+	 * @return 适当的Sql参数
 	 */
 	public SqlParameter createReturnResultSetParameter(String parameterName, RowMapper<?> rowMapper) {
 		CallMetaDataProvider provider = obtainMetaDataProvider();
@@ -289,8 +286,7 @@ public class CallMetaDataContext {
 	}
 
 	/**
-	 * Get the name of the single out parameter for this call.
-	 * If there are multiple parameters, the name of the first one will be returned.
+	 * 获取此调用的单个输出参数的名称。如果有多个参数，则返回第一个参数的名称。
 	 */
 	public @Nullable String getScalarOutParameterName() {
 		if (isFunction()) {
@@ -305,29 +301,22 @@ public class CallMetaDataContext {
 	}
 
 	/**
-	 * Get the List of SqlParameter objects to be used in call execution.
+	 * 获取要在调用执行中使用的 SqlParameter 对象的列表。
 	 */
 	public List<SqlParameter> getCallParameters() {
 		return this.callParameters;
 	}
 
 	/**
-	 * Process the list of parameters provided, and if procedure column meta-data is used,
-	 * the parameters will be matched against the meta-data information and any missing
-	 * ones will be automatically included.
-	 * @param parameters the list of parameters to use as a base
+	 * 处理提供的参数列表，如果使用过程列元数据，则参数将与元数据信息进行匹配，并且将自动包含任何缺失的参数。
+	 * @param parameters 用作基础的参数列表
 	 */
 	public void processParameters(List<SqlParameter> parameters) {
 		this.callParameters = reconcileParameters(parameters);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 reconcileParameters — 意图与阅读要点
-
-方法 `reconcileParameters` 复杂度较高（CCN≈43, NLOC≈140）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Reconcile the provided parameters with available meta-data and add new ones where appropriate.
+	 * 将提供的参数与可用的元数据进行协调，并在适当的情况下添加新参数。
 	 */
 	protected List<SqlParameter> reconcileParameters(List<SqlParameter> parameters) {
 		CallMetaDataProvider provider = obtainMetaDataProvider();
@@ -338,14 +327,14 @@ public class CallMetaDataContext {
 		List<String> outParamNames = new ArrayList<>();
 		List<String> metaDataParamNames = new ArrayList<>();
 
-		// Get the names of the meta-data parameters
+		// 获取元数据参数的名称
 		for (CallParameterMetaData meta : provider.getCallParameterMetaData()) {
 			if (!meta.isReturnParameter()) {
 				metaDataParamNames.add(lowerCase(meta.getParameterName()));
 			}
 		}
 
-		// Separate implicit return parameters from explicit parameters...
+		// 将隐式返回参数与显式参数分开...
 		for (SqlParameter param : parameters) {
 			if (param.isResultsParameter()) {
 				declaredReturnParams.add(param);
@@ -420,7 +409,7 @@ public class CallMetaDataContext {
 			}
 			else {
 				if (meta.isReturnParameter()) {
-					// DatabaseMetaData.procedureColumnReturn or possibly procedureColumnResult
+					// DatabaseMetaData.procedureColumnReturn 或可能 procedureColumnResult
 					if (!isFunction() && !isReturnValueRequired() && paramName != null &&
 							provider.byPassReturnParameter(paramName)) {
 						if (logger.isDebugEnabled()) {
@@ -459,7 +448,7 @@ public class CallMetaDataContext {
 						}
 					}
 					else {
-						// DatabaseMetaData.procedureColumnIn or possibly procedureColumnUnknown
+						// DatabaseMetaData.procedureColumnIn 或可能 procedureColumnUnknown
 						if (this.limitedInParameterNames.isEmpty() ||
 								limitedInParamNamesMap.containsKey(lowerCase(paramNameToUse))) {
 							workParams.add(provider.createDefaultInParameter(paramNameToUse, meta));
@@ -481,19 +470,14 @@ public class CallMetaDataContext {
 		return workParams;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 matchInParameterValuesWithCallParameters — 意图与阅读要点
-
-方法 `matchInParameterValuesWithCallParameters` 复杂度较高（CCN≈12, NLOC≈59）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Match input parameter values with the parameters declared to be used in the call.
-	 * @param parameterSource the input values
-	 * @return a Map containing the matched parameter names with the value taken from the input
+	 * 将输入参数值与声明要在调用中使用的参数进行匹配。
+	 * @param parameterSource 输入值
+	 * @return 包含匹配参数名称和从输入中获取的值的映射
 	 */
 	public Map<String, Object> matchInParameterValuesWithCallParameters(SqlParameterSource parameterSource) {
-		// For parameter source lookups we need to provide case-insensitive lookup support
-		// since the database meta-data is not necessarily providing case-sensitive parameter names.
+		// 对于参数源查找，我们需要提供不区分大小写的查找支持
+		// 因为数据库元数据不一定提供区分大小写的参数名称。
 		Map<String, String> caseInsensitiveParameterNames =
 				SqlParameterSourceUtils.extractCaseInsensitiveParameterNames(parameterSource);
 
@@ -555,15 +539,10 @@ public class CallMetaDataContext {
 		return matchedParameters;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 matchInParameterValuesWithCallParameters — 意图与阅读要点
-
-方法 `matchInParameterValuesWithCallParameters` 复杂度较高（CCN≈12, NLOC≈59）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Match input parameter values with the parameters declared to be used in the call.
-	 * @param inParameters the input values
-	 * @return a Map containing the matched parameter names with the value taken from the input
+	 * 将输入参数值与声明要在调用中使用的参数进行匹配。
+	 * @param inParameters 输入值
+	 * @return 包含匹配参数名称和从输入中获取的值的映射
 	 */
 	public Map<String, ?> matchInParameterValuesWithCallParameters(Map<String, ?> inParameters) {
 		CallMetaDataProvider provider = obtainMetaDataProvider();
@@ -621,13 +600,9 @@ public class CallMetaDataContext {
 		return matchedParameters;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 matchInParameterValuesWithCallParameters — 意图与阅读要点
-
-方法 `matchInParameterValuesWithCallParameters` 复杂度较高（CCN≈12, NLOC≈59）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 匹配：In Parameter Values With Call Parameters（方法 `matchInParameterValuesWithCallParameters`）。
+	 */
 	public Map<String, ?> matchInParameterValuesWithCallParameters(Object[] parameterValues) {
 		Map<String, Object> matchedParameters = CollectionUtils.newHashMap(parameterValues.length);
 		int i = 0;
@@ -640,14 +615,9 @@ public class CallMetaDataContext {
 		return matchedParameters;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 createCallString — 意图与阅读要点
-
-方法 `createCallString` 复杂度较高（CCN≈11, NLOC≈44）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Build the call string based on configuration and meta-data information.
-	 * @return the call string to be used
+	 * 根据配置和元数据信息构建调用字符串。
+	 * @return 要使用的调用字符串
 	 */
 	public String createCallString() {
 		Assert.state(this.metaDataProvider != null, "No CallMetaDataProvider available");
@@ -657,8 +627,8 @@ public class CallMetaDataContext {
 		String catalogNameToUse;
 		String schemaNameToUse;
 
-		// For Oracle where catalogs are not supported we need to reverse the schema name
-		// and the catalog name since the catalog is used for the package name
+		// 对于不支持目录的 Oracle，我们需要反转模式名称
+		// 和目录名称，因为目录用于包名称
 		if (this.metaDataProvider.isSupportsSchemasInProcedureCalls() &&
 				!this.metaDataProvider.isSupportsCatalogsInProcedureCalls()) {
 			schemaNameToUse = this.metaDataProvider.catalogNameToUse(getCatalogName());
@@ -703,9 +673,9 @@ public class CallMetaDataContext {
 	}
 
 	/**
-	 * Build the parameter binding fragment.
-	 * @param parameter call parameter
-	 * @return parameter binding fragment
+	 * 构建参数绑定片段。
+	 * @param parameter 调用参数
+	 * @return 结合片段
 	 * @since 4.2
 	 */
 	protected String createParameterBinding(SqlParameter parameter) {
@@ -713,6 +683,9 @@ public class CallMetaDataContext {
 		return (isNamedBinding() ? this.metaDataProvider.namedParameterBindingToUse(parameter.getName()) : "?");
 	}
 
+	/**
+	 * 方法 `lowerCase`：完成本类中与「lower Case」相关的职责。
+	 */
 	private static String lowerCase(@Nullable String paramName) {
 		return (paramName != null ? paramName.toLowerCase(Locale.ROOT) : "");
 	}

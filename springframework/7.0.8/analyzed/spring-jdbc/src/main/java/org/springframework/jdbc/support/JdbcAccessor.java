@@ -26,13 +26,9 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
- * Base class for {@link org.springframework.jdbc.core.JdbcTemplate} and
- * other JDBC-accessing DAO helpers, defining common properties such as
- * DataSource and exception translator.
- *
- * <p>Not intended to be used directly.
- * See {@link org.springframework.jdbc.core.JdbcTemplate}.
- *
+ * {@link org.springframework.jdbc.core.JdbcTemplate} 和其他 JDBC 访问 DAO
+ * 帮助程序的基类，定义常见属性，例如数据源和异常转换器。
+ * <p> 不适合直接使用。请参阅 {@link org.springframework.jdbc.core.JdbcTemplate}。
  * @author Juergen Hoeller
  * @author Sebastien Deleuze
  * @since 28.11.2003
@@ -40,34 +36,38 @@ import org.springframework.util.Assert;
  */
 public abstract class JdbcAccessor implements InitializingBean {
 
-	/** Logger available to subclasses. */
+	/**
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/** 来源相关状态（`dataSource`）。 */
 	private @Nullable DataSource dataSource;
 
+	/** 异常相关状态（`exceptionTranslator`）。 */
 	private volatile @Nullable SQLExceptionTranslator exceptionTranslator;
 
+	/** `true`：该类的成员状态。 */
 	private boolean lazyInit = true;
 
 
 	/**
-	 * Set the JDBC DataSource to obtain connections from.
+	 * 设置从中获取连接的 JDBC 数据源。
 	 */
 	public void setDataSource(@Nullable DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 
 	/**
-	 * Return the DataSource used by this template.
+	 * 返回此模板使用的数据源。
 	 */
 	public @Nullable DataSource getDataSource() {
 		return this.dataSource;
 	}
 
 	/**
-	 * Obtain the DataSource for actual use.
-	 * @return the DataSource (never {@code null})
-	 * @throws IllegalStateException in case of no DataSource set
+	 * 获取实际使用的DataSource。
+	 * @return 数据源（绝不是 {@code null}）
+	 * @throws IllegalStateException 如果没有设置数据源
 	 * @since 5.0
 	 */
 	protected DataSource obtainDataSource() {
@@ -77,10 +77,10 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * Specify the database product name for the {@code DataSource} that this accessor uses.
-	 * This allows for initializing a {@link SQLErrorCodeSQLExceptionTranslator} without
-	 * obtaining a {@code Connection} from the {@code DataSource} to get the meta-data.
-	 * @param dbName the database product name that identifies the error codes entry
+	 * 指定此访问器使用的 {@code DataSource} 的数据库产品名称。这允许初始化 {@link
+	 * SQLErrorCodeSQLExceptionTranslator}，而无需从 {@code DataSource} 获取 {@code Connection}
+	 * 来获取元数据。
+	 * @param dbName 标识错误代码条目的数据库产品名称
 	 * @see #setExceptionTranslator
 	 * @see SQLErrorCodeSQLExceptionTranslator#setDatabaseProductName
 	 * @see java.sql.DatabaseMetaData#getDatabaseProductName()
@@ -95,10 +95,8 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * Set the exception translator for this instance.
-	 * <p>A {@link SQLErrorCodeSQLExceptionTranslator} used by default if a user-provided
-	 * `sql-error-codes.xml` file has been found in the root of the classpath. Otherwise,
-	 * {@link SQLExceptionSubclassTranslator} serves as the default translator as of 6.0.
+	 * 为此实例设置异常转换器。如果在类路径的根目录中找到用户提供的 `sql-error-codes.xml` 文件，则默认使用 <p>A {@link SQLErrorCodeSQ
+	 * LExceptionTranslator}。否则，从 6.0 开始，{@link SQLExceptionSubclassTranslator} 将作为默认转换器。
 	 * @see org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator
 	 * @see org.springframework.jdbc.support.SQLExceptionSubclassTranslator
 	 */
@@ -107,8 +105,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * Return the exception translator to use for this instance,
-	 * creating a default if necessary.
+	 * 返回用于此实例的异常转换器，并在必要时创建默认值。
 	 * @see #setExceptionTranslator
 	 */
 	public SQLExceptionTranslator getExceptionTranslator() {
@@ -132,10 +129,9 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * Set whether to lazily initialize the SQLExceptionTranslator for this accessor,
-	 * on first encounter of an SQLException. Default is "true"; can be switched to
-	 * "false" for initialization on startup.
-	 * <p>Early initialization just applies if {@code afterPropertiesSet()} is called.
+	 * 设置是否在第一次遇到 SQLException 时延迟初始化此访问器的
+	 * SQLExceptionTranslator。默认为“true”；可以切换为“false”以在启动时进行初始化。 <p>早期初始化仅在调用 {@code
+	 * afterPropertiesSet()} 时适用。
 	 * @see #getExceptionTranslator()
 	 * @see #afterPropertiesSet()
 	 */
@@ -144,7 +140,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * Return whether to lazily initialize the SQLExceptionTranslator for this accessor.
+	 * 返回是否延迟初始化此访问器的 SQLExceptionTranslator。
 	 * @see #getExceptionTranslator()
 	 */
 	public boolean isLazyInit() {
@@ -152,8 +148,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * Eagerly initialize the exception translator, if demanded,
-	 * creating a default one for the specified DataSource if none set.
+	 * 如果需要，请立即初始化异常转换器，如果没有设置，则为指定的数据源创建一个默认转换器。
 	 */
 	@Override
 	public void afterPropertiesSet() {

@@ -34,29 +34,17 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * The common implementation of Spring's {@link SqlRowSet} interface, wrapping a
- * {@link java.sql.ResultSet}, catching any {@link SQLException SQLExceptions} and
- * translating them to a corresponding Spring {@link InvalidResultSetAccessException}.
- *
- * <p>The passed-in ResultSet should already be disconnected if the SqlRowSet is supposed
- * to be usable in a disconnected fashion. This means that you will usually pass in a
- * {@code javax.sql.rowset.CachedRowSet}, which implements the ResultSet interface.
- *
- * <p>Note: Since JDBC 4.0, it has been clarified that any methods using a String to identify
- * the column should be using the column label. The column label is assigned using the ALIAS
- * keyword in the SQL query string. When the query doesn't use an ALIAS, the default label is
- * the column name. Most JDBC ResultSet implementations follow this pattern, but there are
- * exceptions such as the {@code com.sun.rowset.CachedRowSetImpl} class which only uses
- * the column name, ignoring any column labels. {@code ResultSetWrappingSqlRowSet}
- * will translate column labels to the correct column index to provide better support for
- * {@code com.sun.rowset.CachedRowSetImpl} which is the default implementation used by
- * {@link org.springframework.jdbc.core.JdbcTemplate} when working with RowSets.
- *
- * <p>Note: This class implements the {@code java.io.Serializable} marker interface
- * through the SqlRowSet interface, but is only actually serializable if the disconnected
- * ResultSet/RowSet contained in it is serializable. Most CachedRowSet implementations
- * are actually serializable, so serialization should usually work.
- *
+ * Spring 的 {@link SqlRowSet} 接口的常见实现，包装 {@link java.sql.ResultSet}，捕获任何 {@link
+ * SQLException SQLExceptions} 并将它们转换为相应的 Spring {@link InvalidResultSetAccessException}。
+ * <p> 如果 SqlRowSet 应该以断开连接的方式使用，则传入的 ResultSet 应该已经断开连接。这意味着您通常会传入一个实现 ResultSet 接口的
+ * {@code javax.sql.rowset.CachedRowSet}。
+ * <p>Note：从 JDBC 4.0 开始，已经明确任何使用 String 来标识列的方法都应该使用列标签。列标签是使用 SQL 查询字符串中的 ALIAS
+ * 关键字分配的。当查询不使用别名时，默认标签是列名。大多数 JDBC ResultSet 实现都遵循此模式，但也有例外，例如 {@code
+ * com.sun.rowset.CachedRowSetImpl} 类仅使用列名称，忽略任何列标签。 {@code ResultSetWrappingSqlRowSet}
+ * 会将列标签转换为正确的列索引，以便为 {@code com.sun.rowset.CachedRowSetImpl} 提供更好的支持，这是 {@link
+ * org.springframework.jdbc.core.JdbcTemplate} 在使用 RowSet 时使用的默认实现。
+ * <p>注意：此类通过 SqlRowSet 接口实现 {@code java.io.Serializable} 标记接口，但只有在其中包含的断开连接的 ResultSet/Row
+ * Set 是可序列化的情况下才真正可序列化。大多数 CachedRowSet 实现实际上都是可序列化的，因此序列化通常应该有效。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 1.2
@@ -66,25 +54,27 @@ import org.springframework.util.StringUtils;
  */
 public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 
-	/** use serialVersionUID from Spring 1.2 for interoperability. */
+	/**
+	 */
 	private static final long serialVersionUID = -4688694393146734764L;
 
+	/** 结果相关状态（`resultSet`）。 */
 	@SuppressWarnings("serial")
 	private final ResultSet resultSet;
 
+	/** `rowSetMetaData`：该类的成员状态。 */
 	@SuppressWarnings("serial")
 	private final SqlRowSetMetaData rowSetMetaData;
 
+	/** `columnLabelMap`：该类的成员状态。 */
 	@SuppressWarnings("serial")
 	private final Map<String, Integer> columnLabelMap;
 
 
 	/**
-	 * Create a new {@code ResultSetWrappingSqlRowSet} for the given {@link ResultSet}.
-	 * @param resultSet a disconnected ResultSet to wrap
-	 * (usually a {@code javax.sql.rowset.CachedRowSet})
-	 * @throws InvalidResultSetAccessException if extracting
-	 * the ResultSetMetaData failed
+	 * 为给定的 {@link ResultSet} 创建新的 {@code ResultSetWrappingSqlRowSet}。
+	 * @param resultSet 要包装的断开连接的结果集（通常是 {@code javax.sql.rowset.CachedRowSet}）
+	 * @throws InvalidResultSetAccessException 如果提取 ResultSetMetaData 失败
 	 * @see javax.sql.rowset.CachedRowSet
 	 * @see java.sql.ResultSet#getMetaData
 	 * @see ResultSetWrappingSqlRowSetMetaData
@@ -104,13 +94,13 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 				this.columnLabelMap = CollectionUtils.newHashMap(columnCount * 2);
 				for (int i = 1; i <= columnCount; i++) {
 					String key = rsmd.getColumnLabel(i);
-					// Make sure to preserve first matching column for any given name,
-					// as defined in ResultSet's type-level javadoc (lines 81 to 83).
+					// 确保保留任何给定名称的第一个匹配列，
+					// 如 ResultSet 的类型级 javadoc 中所定义（第 81 至 83 行）。
 					if (!this.columnLabelMap.containsKey(key)) {
 						this.columnLabelMap.put(key, i);
 					}
-					// Also support column names prefixed with table name
-					// as in {table_name}.{column.name}.
+					// 还支持以表名为前缀的列名
+					// 如 {table_name}.{column.name} 中所示。
 					String table = rsmd.getTableName(i);
 					if (StringUtils.hasLength(table)) {
 						key = table + "." + rsmd.getColumnName(i);
@@ -132,8 +122,7 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 
 
 	/**
-	 * Return the underlying ResultSet
-	 * (usually a {@code javax.sql.rowset.CachedRowSet}).
+	 * 返回底层 ResultSet（通常是 {@code javax.sql.rowset.CachedRowSet}）。
 	 * @see javax.sql.rowset.CachedRowSet
 	 */
 	public final ResultSet getResultSet() {
@@ -168,7 +157,7 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 
-	// RowSet methods for extracting data values
+	// 用于提取数据值的 RowSet 方法
 
 	/**
 	 * @see java.sql.ResultSet#getBigDecimal(int)
@@ -570,7 +559,7 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 
-	// RowSet navigation methods
+	// RowSet 导航方法
 
 	/**
 	 * @see java.sql.ResultSet#absolute(int)

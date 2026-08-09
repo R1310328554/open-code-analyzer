@@ -20,14 +20,16 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
- * The MySQL/MariaDB specific implementation of {@link TableMetaDataProvider}.
- * Sets {@link #setGeneratedKeysColumnNameArraySupported} to {@code false}.
- *
+ * {@link TableMetaDataProvider} 的 MySQL/MariaDB 具体实现。将 {@link
+ * #setGeneratedKeysColumnNameArraySupported} 设置为 {@code false}。
  * @author Juergen Hoeller
  * @since 6.2.12
  */
 public class MySQLTableMetaDataProvider extends GenericTableMetaDataProvider {
 
+	/**
+	 * 创建 `MySQLTableMetaDataProvider` 的新实例。
+	 */
 	public MySQLTableMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		super(databaseMetaData);
 		setGeneratedKeysColumnNameArraySupported(false);

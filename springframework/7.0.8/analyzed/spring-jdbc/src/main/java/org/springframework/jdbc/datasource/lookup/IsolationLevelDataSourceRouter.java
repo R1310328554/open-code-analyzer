@@ -25,64 +25,35 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.Assert;
 
 /**
- * DataSource that routes to one of various target DataSources based on the
- * current transaction isolation level. The target DataSources need to be
- * configured with the isolation level name as key, as defined on the
- * {@link org.springframework.transaction.TransactionDefinition TransactionDefinition}
- * interface.
- *
- * <p>This is particularly useful in combination with JTA transaction management
- * (typically through Spring's {@link org.springframework.transaction.jta.JtaTransactionManager}).
- * Standard JTA does not support transaction-specific isolation levels. Some JTA
- * providers support isolation levels as a vendor-specific extension (for example, WebLogic),
- * which is the preferred way of addressing this. As an alternative (for example, on WebSphere),
- * the target database can be represented through multiple JNDI DataSources, each
- * configured with a different isolation level (for the entire DataSource).
- * {@code IsolationLevelDataSourceRouter} allows to transparently switch to the
- * appropriate DataSource based on the current transaction's isolation level.
- *
- * <p>For example, the configuration can look like the following, assuming that
- * the target DataSources are defined as individual Spring beans with names
- * "myRepeatableReadDataSource", "mySerializableDataSource", and "myDefaultDataSource":
- *
- * <pre class="code">
- * &lt;bean id="dataSourceRouter" class="org.springframework.jdbc.datasource.lookup.IsolationLevelDataSourceRouter"&gt;
- *   &lt;property name="targetDataSources"&gt;
- *     &lt;map&gt;
- *       &lt;entry key="ISOLATION_REPEATABLE_READ" value-ref="myRepeatableReadDataSource"/&gt;
- *       &lt;entry key="ISOLATION_SERIALIZABLE" value-ref="mySerializableDataSource"/&gt;
- *     &lt;/map&gt;
- *   &lt;/property&gt;
- *   &lt;property name="defaultTargetDataSource" ref="myDefaultDataSource"/&gt;
- * &lt;/bean&gt;</pre>
- *
- * Alternatively, the keyed values can also be data source names, to be resolved
- * through a {@link #setDataSourceLookup DataSourceLookup}: by default, JNDI
- * names for a standard JNDI lookup. This allows for a single concise definition
- * without the need for separate DataSource bean definitions.
- *
- * <pre class="code">
- * &lt;bean id="dataSourceRouter" class="org.springframework.jdbc.datasource.lookup.IsolationLevelDataSourceRouter"&gt;
- *   &lt;property name="targetDataSources"&gt;
- *     &lt;map&gt;
- *       &lt;entry key="ISOLATION_REPEATABLE_READ" value="java:comp/env/jdbc/myrrds"/&gt;
- *       &lt;entry key="ISOLATION_SERIALIZABLE" value="java:comp/env/jdbc/myserds"/&gt;
- *     &lt;/map&gt;
- *   &lt;/property&gt;
- *   &lt;property name="defaultTargetDataSource" value="java:comp/env/jdbc/mydefds"/&gt;
- * &lt;/bean&gt;</pre>
- *
- * Note: If you are using this router in combination with Spring's
- * {@link org.springframework.transaction.jta.JtaTransactionManager},
- * don't forget to switch the "allowCustomIsolationLevels" flag to "true".
- * (By default, JtaTransactionManager will only accept a default isolation level
- * because of the lack of isolation level support in standard JTA itself.)
- *
- * <pre class="code">
- * &lt;bean id="transactionManager" class="org.springframework.transaction.jta.JtaTransactionManager"&gt;
- *   &lt;property name="allowCustomIsolationLevels" value="true"/&gt;
- * &lt;/bean&gt;</pre>
- *
+ * 根据当前事务隔离级别路由到各种目标数据源之一的数据源。目标数据源需要使用隔离级别名称作为键进行配置，如 {@link org.springframework.transacti
+ * on.TransactionDefinition TransactionDefinition} 接口上所定义。
+ * <p> 这在与 JTA 事务管理（通常通过 Spring 的 {@link org.springframework.transaction.jta.JtaTransaction
+ * Manager}）结合时特别有用。标准 JTA 不支持特定于事务的隔离级别。一些 JTA 提供程序支持隔离级别作为特定于供应商的扩展（例如 WebLogic），这是解决此问题的
+ * 首选方法。作为替代方案（例如，在 WebSphere 上），目标数据库可以通过多个 JNDI 数据源表示，每个数据源配置不同的隔离级别（针对整个数据源）。 {@code Iso
+ * lationLevelDataSourceRouter} 允许根据当前事务的隔离级别透明地切换到适当的数据源。
+ * <p>例如，配置如下所示，假设目标 DataSource
+ * 被定义为名称为“myRepeatableReadDataSource”、“mySerializedDataSource”和“myDefaultDataSource”的单独
+ * Spring beans：
+ * <pre class="code"> <bean id="dataSourceRouter"
+ * class="org.springframework.jdbc.datasource.lookup.IsolationLevelDataSourceRouter">;
+ * <属性名称=“targetDataSources”> <地图> <entry key="ISOLATION_REPEATABLE_READ"
+ * value-ref="myRepeatableReadDataSource"/>> <entry key="ISOLATION_SERIALIZABLE"
+ * value-ref="mySerializedDataSource"/>> &lt;/地图&gt; &lt;/属性&gt;
+ * &lt;属性名称=“defaultTargetDataSource”ref=“myDefaultDataSource”/> </bean></pre>
+ * 或者，键值也可以是数据源名称，通过 {@link #setDataSourceLookup DataSourceLookup} 解析：默认情况下，标准 JNDI 查找的
+ * JNDI 名称。这允许单个简洁的定义，而不需要单独的 DataSource bean 定义。
+ * <pre class="code"> <bean id="dataSourceRouter"
+ * class="org.springframework.jdbc.datasource.lookup.IsolationLevelDataSourceRouter">;
+ * <属性名称=“targetDataSources”> <地图> <entry key="ISOLATION_REPEATABLE_READ"
+ * value="java:comp/env/jdbc/myrrds"/>> <entry key="ISOLATION_SERIALIZABLE"
+ * value="java:comp/env/jdbc/myserds"/>> &lt;/地图&gt; &lt;/属性&gt;
+ * &lt;属性名称=“defaultTargetDataSource”值=“java:comp/env/jdbc/mydefds”/&gt; </bean></pre>
+ * 注意：如果您将此路由器与 Spring 的 {@link org.springframework.transaction.jta.JtaTransactionManager}
+ * 结合使用，请不要忘记将“allowCustomIsolationLevels”标志切换为“true”。 （默认情况下，JtaTransactionManager
+ * 只接受默认的隔离级别，因为标准 JTA 本身缺乏隔离级别支持。）
+ * <pre class="code"> <bean id="transactionManager"
+ * class="org.springframework.transaction.jta.JtaTransactionManager">
+ * <属性名称=“allowCustomIsolationLevels”值=“true”/> </bean></pre>
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 2.0.1
@@ -97,8 +68,7 @@ import org.springframework.util.Assert;
 public class IsolationLevelDataSourceRouter extends AbstractRoutingDataSource {
 
 	/**
-	 * Map of constant names to constant values for the isolation constants
-	 * defined in {@link TransactionDefinition}.
+	 * {@link TransactionDefinition} 中定义的隔离常量的常量名称到常量值的映射。
 	 */
 	static final Map<String, Integer> constants = Map.of(
 			"ISOLATION_DEFAULT", TransactionDefinition.ISOLATION_DEFAULT,
@@ -110,9 +80,8 @@ public class IsolationLevelDataSourceRouter extends AbstractRoutingDataSource {
 
 
 	/**
-	 * Supports Integer values for the isolation level constants
-	 * as well as isolation level names as defined on the
-	 * {@link org.springframework.transaction.TransactionDefinition TransactionDefinition interface}.
+	 * 支持隔离级别常量的整数值以及 {@link org.springframework.transaction.TransactionDefinition
+	 * TransactionDefinition interface} 上定义的隔离级别名称。
 	 */
 	@Override
 	protected Object resolveSpecifiedLookupKey(Object lookupKey) {
@@ -133,6 +102,9 @@ public class IsolationLevelDataSourceRouter extends AbstractRoutingDataSource {
 		}
 	}
 
+	/**
+	 * 方法 `determineCurrentLookupKey`：完成本类中与「determine Current Lookup Key」相关的职责。
+	 */
 	@Override
 	protected @Nullable Object determineCurrentLookupKey() {
 		return TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();

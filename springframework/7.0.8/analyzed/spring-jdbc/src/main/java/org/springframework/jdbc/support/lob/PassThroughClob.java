@@ -33,45 +33,62 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.FileCopyUtils;
 
 /**
- * Simple JDBC {@link Clob} adapter that exposes a given String or character stream.
- * Optionally used by {@link DefaultLobHandler}.
- *
+ * 公开给定字符串或字符流的简单 JDBC {@link Clob} 适配器。可选地由 {@link DefaultLobHandler} 使用。
  * @author Juergen Hoeller
  * @since 2.5.3
  */
 @Deprecated(since = "6.2")
 class PassThroughClob implements Clob {
 
+	/** `content`：该类的成员状态。 */
 	private @Nullable String content;
 
+	/** `characterStream`：该类的成员状态。 */
 	private @Nullable Reader characterStream;
 
+	/** `asciiStream`：该类的成员状态。 */
 	private @Nullable InputStream asciiStream;
 
+	/** `contentLength`：该类的成员状态。 */
 	private final long contentLength;
 
 
+	/**
+	 * 创建 `PassThroughClob` 的新实例。
+	 */
 	public PassThroughClob(String content) {
 		this.content = content;
 		this.contentLength = content.length();
 	}
 
+	/**
+	 * 创建 `PassThroughClob` 的新实例。
+	 */
 	public PassThroughClob(Reader characterStream, long contentLength) {
 		this.characterStream = characterStream;
 		this.contentLength = contentLength;
 	}
 
+	/**
+	 * 创建 `PassThroughClob` 的新实例。
+	 */
 	public PassThroughClob(InputStream asciiStream, long contentLength) {
 		this.asciiStream = asciiStream;
 		this.contentLength = contentLength;
 	}
 
 
+	/**
+	 * 方法 `length`：完成本类中与「length」相关的职责。
+	 */
 	@Override
 	public long length() throws SQLException {
 		return this.contentLength;
 	}
 
+	/**
+	 * 获取 Character Stream（`CharacterStream`）。
+	 */
 	@Override
 	public Reader getCharacterStream() throws SQLException {
 		if (this.content != null) {
@@ -87,6 +104,9 @@ class PassThroughClob implements Clob {
 		}
 	}
 
+	/**
+	 * 获取 Ascii Stream（`AsciiStream`）。
+	 */
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
 		try {
@@ -107,51 +127,81 @@ class PassThroughClob implements Clob {
 	}
 
 
+	/**
+	 * 获取 Character Stream（`CharacterStream`）。
+	 */
 	@Override
 	public Reader getCharacterStream(long pos, long length) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 设置 Character Stream（`CharacterStream`）。
+	 */
 	@Override
 	public Writer setCharacterStream(long pos) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 设置 Ascii Stream（`AsciiStream`）。
+	 */
 	@Override
 	public OutputStream setAsciiStream(long pos) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 获取 Sub String（`SubString`）。
+	 */
 	@Override
 	public String getSubString(long pos, int length) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 设置 String（`String`）。
+	 */
 	@Override
 	public int setString(long pos, String str) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 设置 String（`String`）。
+	 */
 	@Override
 	public int setString(long pos, String str, int offset, int len) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 方法 `position`：完成本类中与「position」相关的职责。
+	 */
 	@Override
 	public long position(String searchstr, long start) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 方法 `position`：完成本类中与「position」相关的职责。
+	 */
 	@Override
 	public long position(Clob searchstr, long start) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 方法 `truncate`：完成本类中与「truncate」相关的职责。
+	 */
 	@Override
 	public void truncate(long len) throws SQLException {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * 方法 `free`：完成本类中与「free」相关的职责。
+	 */
 	@Override
 	public void free() throws SQLException {
 		// no-op

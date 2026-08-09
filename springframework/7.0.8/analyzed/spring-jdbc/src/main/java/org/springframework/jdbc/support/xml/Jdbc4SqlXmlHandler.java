@@ -36,64 +36,80 @@ import org.w3c.dom.Document;
 import org.springframework.dao.DataAccessResourceFailureException;
 
 /**
- * Default implementation of the {@link SqlXmlHandler} interface.
- * Provides database-specific implementations for storing and
- * retrieving XML documents to and from fields in a database,
- * relying on the JDBC 4.0 {@code java.sql.SQLXML} facility.
- *
+ * {@link SqlXmlHandler} 接口的默认实现。依赖于 JDBC 4.0 {@code java.sql.SQLXML} 工具，提供特定于数据库的实现，用于在数据库
+ * 中的字段中存储和检索 XML 文档。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.5.6
  * @see java.sql.SQLXML
  * @see java.sql.ResultSet#getSQLXML
  * @see java.sql.PreparedStatement#setSQLXML
- * @deprecated as of 6.2, in favor of direct {@link ResultSet#getSQLXML} and
- * {@link Connection#createSQLXML()} usage, possibly in combination with a
- * custom {@link org.springframework.jdbc.support.SqlValue} implementation
+ * @deprecated 6.2，支持直接使用 {@link ResultSet#getSQLXML} 和 {@link Connection#createSQLXML()}，可能与自定义 {@link org.springframework.jdbc.support.SqlValue} 实现结合使用
  */
 @Deprecated(since = "6.2")
 public class Jdbc4SqlXmlHandler implements SqlXmlHandler {
 
 	//-------------------------------------------------------------------------
-	// Convenience methods for accessing XML content
+	// 访问 XML 内容的便捷方法
 	//-------------------------------------------------------------------------
 
+	/**
+	 * 获取 Xml As String（`XmlAsString`）。
+	 */
 	@Override
 	public @Nullable String getXmlAsString(ResultSet rs, String columnName) throws SQLException {
 		SQLXML xmlObject = rs.getSQLXML(columnName);
 		return (xmlObject != null ? xmlObject.getString() : null);
 	}
 
+	/**
+	 * 获取 Xml As String（`XmlAsString`）。
+	 */
 	@Override
 	public @Nullable String getXmlAsString(ResultSet rs, int columnIndex) throws SQLException {
 		SQLXML xmlObject = rs.getSQLXML(columnIndex);
 		return (xmlObject != null ? xmlObject.getString() : null);
 	}
 
+	/**
+	 * 获取 Xml As Binary Stream（`XmlAsBinaryStream`）。
+	 */
 	@Override
 	public @Nullable InputStream getXmlAsBinaryStream(ResultSet rs, String columnName) throws SQLException {
 		SQLXML xmlObject = rs.getSQLXML(columnName);
 		return (xmlObject != null ? xmlObject.getBinaryStream() : null);
 	}
 
+	/**
+	 * 获取 Xml As Binary Stream（`XmlAsBinaryStream`）。
+	 */
 	@Override
 	public @Nullable InputStream getXmlAsBinaryStream(ResultSet rs, int columnIndex) throws SQLException {
 		SQLXML xmlObject = rs.getSQLXML(columnIndex);
 		return (xmlObject != null ? xmlObject.getBinaryStream() : null);
 	}
 
+	/**
+	 * 获取 Xml As Character Stream（`XmlAsCharacterStream`）。
+	 */
 	@Override
 	public @Nullable Reader getXmlAsCharacterStream(ResultSet rs, String columnName) throws SQLException {
 		SQLXML xmlObject = rs.getSQLXML(columnName);
 		return (xmlObject != null ? xmlObject.getCharacterStream() : null);
 	}
 
+	/**
+	 * 获取 Xml As Character Stream（`XmlAsCharacterStream`）。
+	 */
 	@Override
 	public @Nullable Reader getXmlAsCharacterStream(ResultSet rs, int columnIndex) throws SQLException {
 		SQLXML xmlObject = rs.getSQLXML(columnIndex);
 		return (xmlObject != null ? xmlObject.getCharacterStream() : null);
 	}
 
+	/**
+	 * 获取 Xml As Source（`XmlAsSource`）。
+	 */
 	@Override
 	public @Nullable Source getXmlAsSource(ResultSet rs, String columnName, @Nullable Class<? extends Source> sourceClass)
 			throws SQLException {
@@ -105,6 +121,9 @@ public class Jdbc4SqlXmlHandler implements SqlXmlHandler {
 		return (sourceClass != null ? xmlObject.getSource(sourceClass) : xmlObject.getSource(DOMSource.class));
 	}
 
+	/**
+	 * 获取 Xml As Source（`XmlAsSource`）。
+	 */
 	@Override
 	public @Nullable Source getXmlAsSource(ResultSet rs, int columnIndex, @Nullable Class<? extends Source> sourceClass)
 			throws SQLException {
@@ -118,9 +137,12 @@ public class Jdbc4SqlXmlHandler implements SqlXmlHandler {
 
 
 	//-------------------------------------------------------------------------
-	// Convenience methods for building XML content
+	// 构建 XML 内容的便捷方法
 	//-------------------------------------------------------------------------
 
+	/**
+	 * 方法 `newSqlXmlValue`：完成本类中与「new Sql Xml Value」相关的职责。
+	 */
 	@Override
 	public SqlXmlValue newSqlXmlValue(final String value) {
 		return new AbstractJdbc4SqlXmlValue() {
@@ -131,6 +153,9 @@ public class Jdbc4SqlXmlHandler implements SqlXmlHandler {
 		};
 	}
 
+	/**
+	 * 方法 `newSqlXmlValue`：完成本类中与「new Sql Xml Value」相关的职责。
+	 */
 	@Override
 	public SqlXmlValue newSqlXmlValue(final XmlBinaryStreamProvider provider) {
 		return new AbstractJdbc4SqlXmlValue() {
@@ -141,6 +166,9 @@ public class Jdbc4SqlXmlHandler implements SqlXmlHandler {
 		};
 	}
 
+	/**
+	 * 方法 `newSqlXmlValue`：完成本类中与「new Sql Xml Value」相关的职责。
+	 */
 	@Override
 	public SqlXmlValue newSqlXmlValue(final XmlCharacterStreamProvider provider) {
 		return new AbstractJdbc4SqlXmlValue() {
@@ -151,6 +179,9 @@ public class Jdbc4SqlXmlHandler implements SqlXmlHandler {
 		};
 	}
 
+	/**
+	 * 方法 `newSqlXmlValue`：完成本类中与「new Sql Xml Value」相关的职责。
+	 */
 	@Override
 	public SqlXmlValue newSqlXmlValue(final Class<? extends Result> resultClass, final XmlResultProvider provider) {
 		return new AbstractJdbc4SqlXmlValue() {
@@ -161,6 +192,9 @@ public class Jdbc4SqlXmlHandler implements SqlXmlHandler {
 		};
 	}
 
+	/**
+	 * 方法 `newSqlXmlValue`：完成本类中与「new Sql Xml Value」相关的职责。
+	 */
 	@Override
 	public SqlXmlValue newSqlXmlValue(final Document document) {
 		return new AbstractJdbc4SqlXmlValue() {
@@ -173,7 +207,7 @@ public class Jdbc4SqlXmlHandler implements SqlXmlHandler {
 
 
 	/**
-	 * Internal base class for {@link SqlXmlValue} implementations.
+	 * {@link SqlXmlValue} 实现的内部基类。
 	 */
 	private abstract static class AbstractJdbc4SqlXmlValue implements SqlXmlValue {
 

@@ -27,30 +27,26 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.RowMapper;
 
 /**
- * Reusable RDBMS query in which concrete subclasses must implement
- * the abstract updateRow(ResultSet, int, context) method to update each
- * row of the JDBC ResultSet and optionally map contents into an object.
- *
- * <p>Subclasses can be constructed providing SQL, parameter types
- * and a DataSource. SQL will often vary between subclasses.
- *
+ * 可重用的 RDBMS 查询，其中具体子类必须实现抽象 updateRow(ResultSet, int, context) 方法来更新 JDBC ResultSet
+ * 的每一行，并可选择将内容映射到对象中。
+ * 可以构建 <p> 子类，提供 SQL、参数类型和数据源。 SQL 在子类之间通常会有所不同。
  * @author Thomas Risberg
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see org.springframework.jdbc.object.SqlQuery
  */
 public abstract class UpdatableSqlQuery<T> extends SqlQuery<T> {
 
 	/**
-	 * Constructor to allow use as a JavaBean.
+	 * 允许用作 JavaBean 的构造函数。
 	 */
 	public UpdatableSqlQuery() {
 		setUpdatableResults(true);
 	}
 
 	/**
-	 * Convenient constructor with DataSource and SQL string.
-	 * @param ds the DataSource to use to get connections
-	 * @param sql the SQL to run
+	 * 带有 DataSource 和 SQL 字符串的便捷构造函数。
+	 * @param ds 用于获取连接的数据源
+	 * @param sql 要运行的 SQL
 	 */
 	public UpdatableSqlQuery(DataSource ds, String sql) {
 		super(ds, sql);
@@ -59,8 +55,7 @@ public abstract class UpdatableSqlQuery<T> extends SqlQuery<T> {
 
 
 	/**
-	 * Implementation of the superclass template method. This invokes the subclass's
-	 * implementation of the {@code updateRow()} method.
+	 * 超类模板方法的实现。这将调用 {@code updateRow()} 方法的子类实现。
 	 */
 	@Override
 	protected RowMapper<T> newRowMapper(@Nullable Object @Nullable [] parameters, @Nullable Map<?, ?> context) {
@@ -68,26 +63,18 @@ public abstract class UpdatableSqlQuery<T> extends SqlQuery<T> {
 	}
 
 	/**
-	 * Subclasses must implement this method to update each row of the
-	 * ResultSet and optionally create object of the result type.
-	 * @param rs the ResultSet we're working through
-	 * @param rowNum row number (from 0) we're up to
-	 * @param context passed to the {@code execute()} method.
-	 * It can be {@code null} if no contextual information is need.  If you
-	 * need to pass in data for each row, you can pass in a HashMap with
-	 * the primary key of the row being the key for the HashMap.  That way
-	 * it is easy to locate the updates for each row
-	 * @return an object of the result type
-	 * @throws SQLException if there's an error updating data.
-	 * Subclasses can simply not catch SQLExceptions, relying on the
-	 * framework to clean up.
+	 * 子类必须实现此方法来更新 ResultSet 的每一行，并可以选择创建结果类型的对象。
+	 * @param rs 我们正在处理的 ResultSet
+	 * @param rowNum 我们要做的行号（从 0 开始）
+	 * @param context 传递给 {@code execute()} 方法。如果不需要上下文信息，可以是 {@code null}。如果需要传入每一行的数据，可以传入一个HashMap，以该行的主键作为HashMap的键。这样就可以轻松找到每一行的更新
+	 * @return 结果类型的对象
+	 * @throws SQLException 如果更新数据时出现错误。子类根本无法捕获 SQLException，只能依靠框架来清理。
 	 */
 	protected abstract T updateRow(ResultSet rs, int rowNum, @Nullable Map<?, ?> context) throws SQLException;
 
 
 	/**
-	 * Implementation of RowMapper that calls the enclosing
-	 * class's {@code updateRow()} method for each row.
+	 * RowMapper 的实现，为每一行调用封闭类的 {@code updateRow()} 方法。
 	 */
 	protected class RowMapperImpl implements RowMapper<T> {
 

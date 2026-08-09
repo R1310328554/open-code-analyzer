@@ -48,25 +48,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.ConcurrentLruCache;
 
 /**
- * Template class with a basic set of JDBC operations, allowing the use
- * of named parameters rather than traditional '?' placeholders.
- *
- * <p>This class delegates to a wrapped {@link #getJdbcOperations() JdbcTemplate}
- * once the substitution from named parameters to JDBC style '?' placeholders is
- * done at execution time. It also allows for expanding a {@link java.util.List}
- * of values to the appropriate number of placeholders.
- *
- * <p>An instance of this template class is thread-safe once configured.
- * The underlying {@link org.springframework.jdbc.core.JdbcTemplate} is
- * exposed to allow for convenient access to the traditional
- * {@link org.springframework.jdbc.core.JdbcTemplate} methods.
- *
- * <p><b>NOTE: As of 6.1, there is a unified JDBC access facade available in
- * the form of {@link org.springframework.jdbc.core.simple.JdbcClient}.</b>
- * {@code JdbcClient} provides a fluent API style for common JDBC queries/updates
- * with flexible use of indexed or named parameters. It delegates to a
- * {@code JdbcTemplate}/{@code NamedParameterJdbcTemplate} for actual execution.
- *
+ * 具有一组基本 JDBC 操作的模板类，允许使用命名参数而不是传统的“？”占位符。
+ * <p> 一旦从命名参数替换为 JDBC 样式“？”，该类就会委托给包装的 {@link #getJdbcOperations()
+ * JdbcTemplate}占位符是在执行时完成的。它还允许将 {@link java.util.List} 值扩展为适当数量的占位符。
+ * <p>一旦配置，该模板类的实例就是线程安全的。暴露底层 {@link org.springframework.jdbc.core.JdbcTemplate}，以便方便访问传统的
+ *  {@link org.springframework.jdbc.core.JdbcTemplate} 方法。
+ * <p><b>NOTE：从 6.1 开始，有一个统一的 JDBC 访问外观，以 {@link
+ * org.springframework.jdbc.core.simple.JdbcClient} 的形式提供。</b> {@code JdbcClient} 为常见的 JDBC
+ * 查询/更新提供了流畅的 API 风格，可以灵活地使用索引或命名参数。它委托给 {@code JdbcTemplate}/{@code
+ * NamedParameterJdbcTemplate} 来实际执行。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.0
@@ -79,30 +69,33 @@ import org.springframework.util.ConcurrentLruCache;
  */
 public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations {
 
-	/** Default maximum number of entries for this template's SQL cache: 256. */
+	/**
+	 */
 	public static final int DEFAULT_CACHE_LIMIT = 256;
 
 
-	/** The JdbcTemplate we are wrapping. */
+	/**
+	 */
 	private final JdbcOperations classicJdbcTemplate;
 
-	/** Cache of original SQL String to ParsedSql representation. */
+	/**
+	 */
 	private volatile ConcurrentLruCache<String, ParsedSql> parsedSqlCache;
 
 
 	/**
-	 * Create a new NamedParameterJdbcTemplate for the given {@link DataSource}.
-	 * <p>Creates a classic Spring {@link org.springframework.jdbc.core.JdbcTemplate} and wraps it.
-	 * @param dataSource the JDBC DataSource to access
+	 * 为给定的 {@link DataSource} 创建新的 NamedParameterJdbcTemplate。 <p>创建一个经典的Spring {@link
+	 * org.springframework.jdbc.core.JdbcTemplate}并包装它。
+	 * @param dataSource 要访问的 JDBC 数据源
 	 */
 	public NamedParameterJdbcTemplate(DataSource dataSource) {
 		this(new JdbcTemplate(dataSource));
 	}
 
 	/**
-	 * Create a new NamedParameterJdbcTemplate for the given classic
-	 * Spring {@link org.springframework.jdbc.core.JdbcTemplate}.
-	 * @param classicJdbcTemplate the classic Spring JdbcTemplate to wrap
+	 * 为给定的经典 Spring {@link org.springframework.jdbc.core.JdbcTemplate} 创建一个新的
+	 * NamedParameterJdbcTemplate。
+	 * @param classicJdbcTemplate 经典的 Spring JdbcTemplate 来包装
 	 */
 	public NamedParameterJdbcTemplate(JdbcOperations classicJdbcTemplate) {
 		Assert.notNull(classicJdbcTemplate, "JdbcTemplate must not be null");
@@ -111,9 +104,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 	}
 
 	/**
-	 * Copy constructor for a derived NamedParameterJdbcTemplate.
-	 * @param original the original NamedParameterJdbcTemplate to copy from
-	 * @param classicJdbcTemplate the actual JdbcTemplate delegate to use
+	 * 派生的 NamedParameterJdbcTemplate 的复制构造函数。
+	 * @param original 要从中复制的原始 NamedParameterJdbcTemplate
+	 * @param classicJdbcTemplate 实际使用的 JdbcTemplate 委托
 	 * @since 7.0
 	 */
 	public NamedParameterJdbcTemplate(NamedParameterJdbcTemplate original, JdbcTemplate classicJdbcTemplate) {
@@ -124,8 +117,7 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 
 
 	/**
-	 * Expose the classic Spring JdbcTemplate operations to allow invocation
-	 * of less commonly used methods.
+	 * 公开经典的 Spring JdbcTemplate 操作以允许调用不太常用的方法。
 	 */
 	@Override
 	public JdbcOperations getJdbcOperations() {
@@ -133,10 +125,8 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 	}
 
 	/**
-	 * Expose the classic Spring {@link JdbcTemplate} itself, if available,
-	 * in particular for passing it on to other {@code JdbcTemplate} consumers.
-	 * <p>If sufficient for the purposes at hand, {@link #getJdbcOperations()}
-	 * is recommended over this variant.
+	 * 公开经典的 Spring {@link JdbcTemplate} 本身（如果可用），特别是将其传递给其他 {@code JdbcTemplate} 使用者。 <p>
+	 * 如果足以满足当前的目的，则建议使用 {@link #getJdbcOperations()} 来替代此变体。
 	 * @since 5.0.3
 	 */
 	public JdbcTemplate getJdbcTemplate() {
@@ -145,21 +135,23 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 	}
 
 	/**
-	 * Specify the maximum number of entries for this template's SQL cache.
-	 * Default is 256. 0 indicates no caching, always parsing each statement.
+	 * 指定该模板的 SQL 缓存的最大条目数。默认值为 256。0 表示不缓存，始终解析每个语句。
 	 */
 	public void setCacheLimit(int cacheLimit) {
 		this.parsedSqlCache = new ConcurrentLruCache<>(cacheLimit, NamedParameterUtils::parseSqlStatement);
 	}
 
 	/**
-	 * Return the maximum number of entries for this template's SQL cache.
+	 * 返回此模板的 SQL 缓存的最大条目数。
 	 */
 	public int getCacheLimit() {
 		return this.parsedSqlCache.capacity();
 	}
 
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
 	public <T extends @Nullable Object> T execute(String sql, SqlParameterSource paramSource, PreparedStatementCallback<T> action)
 			throws DataAccessException {
@@ -167,6 +159,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return getJdbcOperations().execute(getPreparedStatementCreator(sql, paramSource), action);
 	}
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
 	public <T extends @Nullable Object> T execute(String sql, Map<String, ?> paramMap, PreparedStatementCallback<T> action)
 			throws DataAccessException {
@@ -174,11 +169,17 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return execute(sql, new MapSqlParameterSource(paramMap), action);
 	}
 
+	/**
+	 * 执行（方法 `execute`）。
+	 */
 	@Override
 	public <T extends @Nullable Object> T execute(String sql, PreparedStatementCallback<T> action) throws DataAccessException {
 		return execute(sql, EmptySqlParameterSource.INSTANCE, action);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, SqlParameterSource paramSource, ResultSetExtractor<T> rse)
 			throws DataAccessException {
@@ -186,6 +187,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return getJdbcOperations().query(getPreparedStatementCreator(sql, paramSource), rse);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, Map<String, ?> paramMap, ResultSetExtractor<T> rse)
 			throws DataAccessException {
@@ -193,11 +197,17 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return query(sql, new MapSqlParameterSource(paramMap), rse);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, ResultSetExtractor<T> rse) throws DataAccessException {
 		return query(sql, EmptySqlParameterSource.INSTANCE, rse);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public void query(String sql, SqlParameterSource paramSource, RowCallbackHandler rch)
 			throws DataAccessException {
@@ -205,6 +215,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		getJdbcOperations().query(getPreparedStatementCreator(sql, paramSource), rch);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public void query(String sql, Map<String, ?> paramMap, RowCallbackHandler rch)
 			throws DataAccessException {
@@ -212,11 +225,17 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		query(sql, new MapSqlParameterSource(paramMap), rch);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public void query(String sql, RowCallbackHandler rch) throws DataAccessException {
 		query(sql, EmptySqlParameterSource.INSTANCE, rch);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, SqlParameterSource paramSource, RowMapper<T> rowMapper)
 			throws DataAccessException {
@@ -224,6 +243,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return getJdbcOperations().query(getPreparedStatementCreator(sql, paramSource), rowMapper);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, Map<String, ?> paramMap, RowMapper<T> rowMapper)
 			throws DataAccessException {
@@ -231,11 +253,17 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return query(sql, new MapSqlParameterSource(paramMap), rowMapper);
 	}
 
+	/**
+	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 */
 	@Override
 	public <T> List<T> query(String sql, RowMapper<T> rowMapper) throws DataAccessException {
 		return query(sql, EmptySqlParameterSource.INSTANCE, rowMapper);
 	}
 
+	/**
+	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> Stream<T> queryForStream(String sql, SqlParameterSource paramSource, RowMapper<T> rowMapper)
 			throws DataAccessException {
@@ -243,6 +271,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return getJdbcOperations().queryForStream(getPreparedStatementCreator(sql, paramSource), rowMapper);
 	}
 
+	/**
+	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> Stream<T> queryForStream(String sql, Map<String, ?> paramMap, RowMapper<T> rowMapper)
 			throws DataAccessException {
@@ -250,6 +281,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return queryForStream(sql, new MapSqlParameterSource(paramMap), rowMapper);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, SqlParameterSource paramSource, RowMapper<T> rowMapper)
 			throws DataAccessException {
@@ -258,6 +292,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return DataAccessUtils.nullableSingleResult(results);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, Map<String, ?> paramMap, RowMapper<T>rowMapper)
 			throws DataAccessException {
@@ -265,6 +302,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return queryForObject(sql, new MapSqlParameterSource(paramMap), rowMapper);
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T> @Nullable T queryForObject(String sql, SqlParameterSource paramSource, Class<T> requiredType)
 			throws DataAccessException {
@@ -272,6 +312,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return queryForObject(sql, paramSource, new SingleColumnRowMapper<>(requiredType));
 	}
 
+	/**
+	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 */
 	@Override
 	public <T> @Nullable T queryForObject(String sql, Map<String, ?> paramMap, Class<T> requiredType)
 			throws DataAccessException {
@@ -279,6 +322,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return queryForObject(sql, paramMap, new SingleColumnRowMapper<>(requiredType));
 	}
 
+	/**
+	 * 方法 `queryForMap`：完成本类中与「query For Map」相关的职责。
+	 */
 	@Override
 	public Map<String, @Nullable Object> queryForMap(String sql, SqlParameterSource paramSource) throws DataAccessException {
 		Map<String, @Nullable Object> result = queryForObject(sql, paramSource, new ColumnMapRowMapper());
@@ -286,6 +332,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return result;
 	}
 
+	/**
+	 * 方法 `queryForMap`：完成本类中与「query For Map」相关的职责。
+	 */
 	@Override
 	public Map<String, @Nullable Object> queryForMap(String sql, Map<String, ?> paramMap) throws DataAccessException {
 		Map<String, @Nullable Object> result = queryForObject(sql, paramMap, new ColumnMapRowMapper());
@@ -293,6 +342,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return result;
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, SqlParameterSource paramSource, Class<T> elementType)
 			throws DataAccessException {
@@ -300,6 +352,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return query(sql, paramSource, new SingleColumnRowMapper<>(elementType));
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, Map<String, ?> paramMap, Class<T> elementType)
 			throws DataAccessException {
@@ -307,6 +362,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return queryForList(sql, new MapSqlParameterSource(paramMap), elementType);
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public List<Map<String, @Nullable Object>> queryForList(String sql, SqlParameterSource paramSource)
 			throws DataAccessException {
@@ -314,6 +372,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return query(sql, paramSource, new ColumnMapRowMapper());
 	}
 
+	/**
+	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 */
 	@Override
 	public List<Map<String, @Nullable Object>> queryForList(String sql, Map<String, ?> paramMap)
 			throws DataAccessException {
@@ -321,6 +382,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return queryForList(sql, new MapSqlParameterSource(paramMap));
 	}
 
+	/**
+	 * 方法 `queryForRowSet`：完成本类中与「query For Row Set」相关的职责。
+	 */
 	@Override
 	public SqlRowSet queryForRowSet(String sql, SqlParameterSource paramSource) throws DataAccessException {
 		SqlRowSet result = getJdbcOperations().query(
@@ -329,21 +393,33 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return result;
 	}
 
+	/**
+	 * 方法 `queryForRowSet`：完成本类中与「query For Row Set」相关的职责。
+	 */
 	@Override
 	public SqlRowSet queryForRowSet(String sql, Map<String, ?> paramMap) throws DataAccessException {
 		return queryForRowSet(sql, new MapSqlParameterSource(paramMap));
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(String sql, SqlParameterSource paramSource) throws DataAccessException {
 		return getJdbcOperations().update(getPreparedStatementCreator(sql, paramSource));
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(String sql, Map<String, ?> paramMap) throws DataAccessException {
 		return update(sql, new MapSqlParameterSource(paramMap));
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(String sql, SqlParameterSource paramSource, KeyHolder generatedKeyHolder)
 			throws DataAccessException {
@@ -351,6 +427,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return update(sql, paramSource, generatedKeyHolder, null);
 	}
 
+	/**
+	 * 更新（方法 `update`）。
+	 */
 	@Override
 	public int update(
 			String sql, SqlParameterSource paramSource, KeyHolder generatedKeyHolder, String @Nullable [] keyColumnNames)
@@ -367,6 +446,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 		return getJdbcOperations().update(psc, generatedKeyHolder);
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
 	public int[] batchUpdate(String sql, SqlParameterSource[] batchArgs) {
 		if (batchArgs.length == 0) {
@@ -391,16 +473,25 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 				});
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
 	public int[] batchUpdate(String sql, Map<String, ?>[] batchValues) {
 		return batchUpdate(sql, SqlParameterSourceUtils.createBatch(batchValues));
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
 	public int[] batchUpdate(String sql, SqlParameterSource[] batchArgs, KeyHolder generatedKeyHolder) {
 		return batchUpdate(sql, batchArgs, generatedKeyHolder, null);
 	}
 
+	/**
+	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 */
 	@Override
 	public int[] batchUpdate(String sql, SqlParameterSource[] batchArgs, KeyHolder generatedKeyHolder,
 			String @Nullable [] keyColumnNames) {
@@ -436,12 +527,12 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 
 
 	/**
-	 * Build a {@link PreparedStatementCreator} based on the given SQL and named parameters.
-	 * <p>Note: Directly called from all {@code query} variants. Delegates to the common
-	 * {@link #getPreparedStatementCreator(String, SqlParameterSource, Consumer)} method.
-	 * @param sql the SQL statement to execute
-	 * @param paramSource container of arguments to bind
-	 * @return the corresponding {@link PreparedStatementCreator}
+	 * 根据给定的 SQL 和命名参数构建 {@link PreparedStatementCreator}。 <p>注意：从所有 {@code query}
+	 * 变体直接调用。代表常见的 {@link #getPreparedStatementCreator(String, SqlParameterSource, Consumer)}
+	 * 方法。
+	 * @param sql 要执行的SQL语句
+	 * @param paramSource 要绑定的参数的容器
+	 * @return 对应{@link PreparedStatementCreator}
 	 * @see #getPreparedStatementCreator(String, SqlParameterSource, Consumer)
 	 */
 	protected PreparedStatementCreator getPreparedStatementCreator(String sql, SqlParameterSource paramSource) {
@@ -449,15 +540,12 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 	}
 
 	/**
-	 * Build a {@link PreparedStatementCreator} based on the given SQL and named parameters.
-	 * <p>Note: Used for the {@code update} variant with generated key handling, and also
-	 * delegated from {@link #getPreparedStatementCreator(String, SqlParameterSource)}.
-	 * @param sql the SQL statement to execute
-	 * @param paramSource container of arguments to bind
-	 * @param customizer callback for setting further properties on the
-	 * {@link PreparedStatementCreatorFactory} in use, applied before the
-	 * actual {@code newPreparedStatementCreator} call
-	 * @return the corresponding {@link PreparedStatementCreator}
+	 * 根据给定的 SQL 和命名参数构建 {@link PreparedStatementCreator}。 <p>Note：用于具有生成密钥处理的 {@code update}
+	 * 变体，也由 {@link #getPreparedStatementCreator(String, SqlParameterSource)} 委托。
+	 * @param sql 要执行的SQL语句
+	 * @param paramSource 要绑定的参数的容器
+	 * @param customizer 用于在正在使用的 {@link PreparedStatementCreatorFactory} 上设置更多属性的回调，在实际 {@code newPreparedStatementCreator} 调用之前应用
+	 * @return 对应{@link PreparedStatementCreator}
 	 * @since 5.0.5
 	 * @see #getParsedSql(String)
 	 * @see PreparedStatementCreatorFactory#PreparedStatementCreatorFactory(String, List)
@@ -476,10 +564,9 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 	}
 
 	/**
-	 * Obtain a parsed representation of the given SQL statement.
-	 * <p>The default implementation uses an LRU cache with an upper limit of 256 entries.
-	 * @param sql the original SQL statement
-	 * @return a representation of the parsed SQL statement
+	 * 获取给定 SQL 语句的解析表示。 <p>默认实现使用LRU缓存，上限为256个条目。
+	 * @param sql 原始SQL语句
+	 * @return 解析后的 SQL 语句的表示
 	 */
 	protected ParsedSql getParsedSql(String sql) {
 		Assert.notNull(sql, "SQL must not be null");
@@ -487,10 +574,10 @@ public class NamedParameterJdbcTemplate implements NamedParameterJdbcOperations 
 	}
 
 	/**
-	 * Build a {@link PreparedStatementCreatorFactory} based on the given SQL and named parameters.
-	 * @param parsedSql parsed representation of the given SQL statement
-	 * @param paramSource container of arguments to bind
-	 * @return the corresponding {@link PreparedStatementCreatorFactory}
+	 * 根据给定的 SQL 和命名参数构建 {@link PreparedStatementCreatorFactory}。
+	 * @param parsedSql 给定 SQL 语句的解析表示
+	 * @param paramSource 要绑定的参数的容器
+	 * @return 对应{@link PreparedStatementCreatorFactory}
 	 * @since 5.1.3
 	 * @see #getPreparedStatementCreator(String, SqlParameterSource, Consumer)
 	 * @see #getParsedSql(String)

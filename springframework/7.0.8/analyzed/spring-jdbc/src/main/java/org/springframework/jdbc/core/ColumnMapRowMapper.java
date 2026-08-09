@@ -27,18 +27,10 @@ import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
 /**
- * {@link RowMapper} implementation that creates a {@code java.util.Map}
- * for each row, representing all columns as key-value pairs: one
- * entry for each column, with the column name as key.
- *
- * <p>The Map implementation to use and the key to use for each column
- * in the column Map can be customized by overriding {@link #createColumnMap}
- * and {@link #getColumnKey}, respectively.
- *
- * <p><b>Note:</b> By default, {@code ColumnMapRowMapper} will try to build a linked Map
- * with case-insensitive keys, to preserve column order as well as allow any
- * casing to be used for column names.
- *
+ * {@link RowMapper} 实现为每一行创建一个 {@code java.util.Map}，将所有列表示为键值对：每列一个条目，以列名称作为键。
+ * <p> 可以通过分别重写 {@link #createColumnMap} 和 {@link #getColumnKey} 来自定义要使用的 Map 实现以及列 Map
+ * 中每一列要使用的键。
+ * <p><b>注意：</b> 默认情况下，{@code ColumnMapRowMapper} 将尝试使用不区分大小写的键构建链接映射，以保留列顺序并允许对列名称使用任何大小写。
  * @author Juergen Hoeller
  * @since 1.2
  * @see JdbcTemplate#queryForList(String)
@@ -46,6 +38,9 @@ import org.springframework.util.LinkedCaseInsensitiveMap;
  */
 public class ColumnMapRowMapper implements RowMapper<Map<String, @Nullable Object>> {
 
+	/**
+	 * 映射：Row（方法 `mapRow`）。
+	 */
 	@Override
 	public Map<String, @Nullable Object> mapRow(ResultSet rs, int rowNum) throws SQLException {
 		ResultSetMetaData rsmd = rs.getMetaData();
@@ -59,11 +54,9 @@ public class ColumnMapRowMapper implements RowMapper<Map<String, @Nullable Objec
 	}
 
 	/**
-	 * Create a Map instance to be used as column map.
-	 * <p>By default, a linked case-insensitive Map will be created.
-	 * @param columnCount the column count, to be used as initial
-	 * capacity for the Map
-	 * @return the new Map instance
+	 * 创建一个用作列图的 Map 实例。 <p> 默认情况下，将创建一个不区分大小写的链接映射。
+	 * @param columnCount 列数，用作 Map 的初始容量
+	 * @return 新的地图实例
 	 * @see org.springframework.util.LinkedCaseInsensitiveMap
 	 */
 	protected Map<String, @Nullable Object> createColumnMap(int columnCount) {
@@ -71,10 +64,9 @@ public class ColumnMapRowMapper implements RowMapper<Map<String, @Nullable Objec
 	}
 
 	/**
-	 * Determine the key to use for the given column in the column Map.
-	 * <p>By default, the supplied column name will be returned unmodified.
-	 * @param columnName the column name as returned by the ResultSet
-	 * @return the column key to use
+	 * 确定用于列映射中给定列的键。 <p> 默认情况下，提供的列名将不加修改地返回。
+	 * @param columnName ResultSet 返回的列名
+	 * @return 要使用的列键
 	 * @see java.sql.ResultSetMetaData#getColumnName
 	 */
 	protected String getColumnKey(String columnName) {
@@ -82,13 +74,11 @@ public class ColumnMapRowMapper implements RowMapper<Map<String, @Nullable Objec
 	}
 
 	/**
-	 * Retrieve a JDBC object value for the specified column.
-	 * <p>The default implementation uses the {@code getObject} method.
-	 * Additionally, this implementation includes a "hack" to get around Oracle
-	 * returning a non-standard object for their TIMESTAMP data type.
-	 * @param rs the ResultSet holding the data
-	 * @param index the column index
-	 * @return the Object returned
+	 * 检索指定列的 JDBC 对象值。 <p>默认实现使用{@code getObject}方法。此外，此实现还包括一个“hack”，用于绕过 Oracle 返回其 TIMESTAM
+	 * P 数据类型的非标准对象。
+	 * @param rs 保存数据的 ResultSet
+	 * @param index 列索引
+	 * @return 返回对象
 	 * @see org.springframework.jdbc.support.JdbcUtils#getResultSetValue
 	 */
 	protected @Nullable Object getColumnValue(ResultSet rs, int index) throws SQLException {

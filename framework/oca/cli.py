@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .annotate.pipeline import run_annotation_pipeline
+from .annotate.pipeline import run_annotation_pipeline, run_zh_localize_pipeline
 from .arch.generator import generate_architecture_docs
 from .fetch import fetch_source, sync_analyzed_from_original
 from .resolve import normalize_repo_url, resolve_version
@@ -152,7 +152,23 @@ def cmd_annotate(args: argparse.Namespace) -> int:
     cfg = load_config(args.config)
     layout = _layout_for(args, cfg, args.project, args.version)
     sync_analyzed_from_original(layout, force=args.force_sync)
-    # 需要复杂度数据
+
+    mode = getattr(args, "mode", "zh") or "zh"
+    modules = None
+    if getattr(args, "modules", None):
+        modules = [m.strip() for m in args.modules.split(",") if m.strip()]
+
+    if mode == "zh":
+        # 主路径：英译中 + 补齐字段/方法中文注释（直接改 analyzed 源码）
+        stats = run_zh_localize_pipeline(
+            layout,
+            modules=modules,
+            max_files=args.max_files,
+        )
+        print(f"[oca] zh-localize OK -> {stats}")
+        return 0
+
+    # 兼容旧的 OCA 附加块模式
     cpath = layout.reports / "complexity.json"
     if not cpath.exists() or args.refresh_complexity:
         hits_all = analyze_file_complexity(layout.original)
@@ -202,10 +218,12 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     args.project = project
     args.version = target.version
     args.source = "original"
-    args.force_sync = getattr(args, "force_sync", False)
+    args.force_sync = True  # 一键分析时以 original 为基线重建 analyzed
     args.refresh_complexity = True
     args.plan = getattr(args, "plan", None)
     args.max_files = getattr(args, "max_files", None)
+    args.mode = getattr(args, "mode", "zh")
+    args.modules = getattr(args, "modules", None)
 
     cmd_scan(args)
     cmd_complexity(args)
@@ -274,21 +292,37 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("version")
     s.set_defaults(func=cmd_arch)
 
-    s = sp.add_parser("annotate", help="同步 analyzed 并写入中文意图注释")
+    s = sp.add_parser(
+        "annotate",
+        help="同步 analyzed，并将英文注释译为中文、补齐字段/方法中文注释（直接改源码）",
+    )
     s.add_argument("project")
     s.add_argument("version")
-    s.add_argument("--plan", default=None, help="annotation-plan.json 路径")
+    s.add_argument(
+        "--mode",
+        choices=["zh", "oca-block"],
+        default="zh",
+        help="zh=英译中并补注释（默认）；oca-block=旧版附加解析块",
+    )
+    s.add_argument(
+        "--modules",
+        default=None,
+        help="仅处理指定模块，逗号分隔，如 spring-jdbc,spring-beans",
+    )
+    s.add_argument("--plan", default=None, help="annotation-plan.json 路径（oca-block 模式）")
     s.add_argument("--max-files", type=int, default=None)
-    s.add_argument("--force-sync", action="store_true")
+    s.add_argument("--force-sync", action="store_true", help="用 original 覆盖重建 analyzed")
     s.add_argument("--refresh-complexity", action="store_true")
     s.set_defaults(func=cmd_annotate)
 
-    s = sp.add_parser("analyze", help="一键全量分析：fetch→scan→complexity→arch→annotate")
+    s = sp.add_parser("analyze", help="一键全量分析：fetch→scan→complexity→arch→annotate(zh)")
     add_project_version(s)
     s.add_argument("--depth", type=int, default=None)
     s.add_argument("--plan", default=None)
     s.add_argument("--max-files", type=int, default=None)
     s.add_argument("--force-sync", action="store_true")
+    s.add_argument("--mode", choices=["zh", "oca-block"], default="zh")
+    s.add_argument("--modules", default=None)
     s.set_defaults(func=cmd_analyze)
 
     return p

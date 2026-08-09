@@ -34,24 +34,23 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.util.FileCopyUtils;
 
 /**
- * {@link LobCreator} implementation based on temporary LOBs, using JDBC's
- * {@link java.sql.Connection#createBlob()} /
- * {@link java.sql.Connection#createClob()} mechanism.
- *
- * <p>Used by DefaultLobHandler's {@link DefaultLobHandler#setCreateTemporaryLob} mode.
- * Can also be used directly to reuse the tracking and freeing of temporary LOBs.
- *
+ * {@link LobCreator}基于临时LOB的实现，使用JDBC的{@link java.sql.Connection#createBlob()} / {@link
+ * java.sql.Connection#createClob()}机制。
+ * <p>由DefaultLobHandler的{@link DefaultLobHandler#setCreateTemporaryLob}模式使用。也可直接用于重用临时 LOB
+ *  的跟踪和释放。
  * @author Juergen Hoeller
  * @since 3.2.2
  * @see DefaultLobHandler#setCreateTemporaryLob
  * @see java.sql.Connection#createBlob()
  * @see java.sql.Connection#createClob()
- * @deprecated as of 6.2, in favor of {@link org.springframework.jdbc.core.support.SqlBinaryValue}
- * and {@link org.springframework.jdbc.core.support.SqlCharacterValue}
+ * @deprecated 6.2，支持 {@link org.springframework.jdbc.core.support.SqlBinaryValue} 和 {@link org.springframework.jdbc.core.support.SqlCharacterValue}
  */
 @Deprecated(since = "6.2")
 public class TemporaryLobCreator implements LobCreator {
 
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	protected static final Log logger = LogFactory.getLog(TemporaryLobCreator.class);
 
 	private final Set<Blob> temporaryBlobs = new LinkedHashSet<>(1);
@@ -59,6 +58,9 @@ public class TemporaryLobCreator implements LobCreator {
 	private final Set<Clob> temporaryClobs = new LinkedHashSet<>(1);
 
 
+	/**
+	 * 设置 Blob As Bytes（`BlobAsBytes`）。
+	 */
 	@Override
 	public void setBlobAsBytes(PreparedStatement ps, int paramIndex, byte @Nullable [] content)
 			throws SQLException {
@@ -79,6 +81,9 @@ public class TemporaryLobCreator implements LobCreator {
 		}
 	}
 
+	/**
+	 * 设置 Blob As Binary Stream（`BlobAsBinaryStream`）。
+	 */
 	@Override
 	public void setBlobAsBinaryStream(
 			PreparedStatement ps, int paramIndex, @Nullable InputStream binaryStream, int contentLength)
@@ -106,6 +111,9 @@ public class TemporaryLobCreator implements LobCreator {
 		}
 	}
 
+	/**
+	 * 设置 Clob As String（`ClobAsString`）。
+	 */
 	@Override
 	public void setClobAsString(PreparedStatement ps, int paramIndex, @Nullable String content)
 			throws SQLException {
@@ -126,6 +134,9 @@ public class TemporaryLobCreator implements LobCreator {
 		}
 	}
 
+	/**
+	 * 设置 Clob As Ascii Stream（`ClobAsAsciiStream`）。
+	 */
 	@Override
 	public void setClobAsAsciiStream(
 			PreparedStatement ps, int paramIndex, @Nullable InputStream asciiStream, int contentLength)
@@ -153,6 +164,9 @@ public class TemporaryLobCreator implements LobCreator {
 		}
 	}
 
+	/**
+	 * 设置 Clob As Character Stream（`ClobAsCharacterStream`）。
+	 */
 	@Override
 	public void setClobAsCharacterStream(
 			PreparedStatement ps, int paramIndex, @Nullable Reader characterStream, int contentLength)
@@ -180,6 +194,9 @@ public class TemporaryLobCreator implements LobCreator {
 		}
 	}
 
+	/**
+	 * 关闭（方法 `close`）。
+	 */
 	@Override
 	public void close() {
 		for (Blob blob : this.temporaryBlobs) {

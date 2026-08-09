@@ -33,17 +33,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.support.JdbcUtils;
 
-/* ===== [OCA 中文解析] =====
-class GenericTableMetaDataProvider — 意图说明
-
-class `GenericTableMetaDataProvider`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/GenericTableMetaDataProvider.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * A generic implementation of the {@link TableMetaDataProvider} interface
- * which should provide enough features for all supported databases.
- *
+ * {@link TableMetaDataProvider} 接口的通用实现，应该为所有支持的数据库提供足够的功能。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -51,60 +42,60 @@ class `GenericTableMetaDataProvider`：请结合所属模块与调用方理解�
  */
 public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 
-	// [OCA] 字段 `logger`：类成员状态。
-	/** Logger available to subclasses. */
+	/**
+	 */
 	protected static final Log logger = LogFactory.getLog(TableMetaDataProvider.class);
 
-	/** The name of the user currently connected. */
+	/**
+	 */
 	private final @Nullable String userName;
 
-	/** The version of the database. */
+	/**
+	 */
 	private @Nullable String databaseVersion;
 
-	// [OCA] 字段 `tableColumnMetaDataUsed`：类成员状态。
-	/** Indicates whether column meta-data has been used. */
+	/**
+	 */
 	private boolean tableColumnMetaDataUsed = false;
 
-	// [OCA] 字段 `getGeneratedKeysSupported`：类成员状态。
-	/** Indicates whether generated keys retrieval is supported. */
+	/**
+	 */
 	private boolean getGeneratedKeysSupported = true;
 
-	// [OCA] 字段 `generatedKeysColumnNameArraySupported`：类成员状态。
-	/** Indicates whether the use of a String[] for generated keys is supported. */
+	/**
+	 */
 	private boolean generatedKeysColumnNameArraySupported = true;
 
-	// [OCA] 字段 `storesUpperCaseIdentifiers`：类成员状态。
-	/** Indicates whether the identifiers are uppercased. */
+	/**
+	 */
 	private boolean storesUpperCaseIdentifiers = true;
 
-	// [OCA] 字段 `storesLowerCaseIdentifiers`：类成员状态。
-	/** Indicates whether the identifiers are lowercased. */
+	/**
+	 */
 	private boolean storesLowerCaseIdentifiers = false;
 
-	// [OCA] 字段 `identifierQuoteString`：类成员状态。
-	/** The string used to quote SQL identifiers. */
+	/**
+	 */
 	private String identifierQuoteString = " ";
 
-	// [OCA] 字段 `tableParameterMetaData`：类成员状态。
-	/** Collection of TableParameterMetaData objects. */
+	/**
+	 */
 	private final List<TableParameterMetaData> tableParameterMetaData = new ArrayList<>();
 
 
 	/**
-	 * Constructor used to initialize with provided database meta-data.
-	 * @param databaseMetaData meta-data to be used
+	 * 用于使用提供的数据库元数据进行初始化的构造函数。
+	 * @param databaseMetaData 要使用的元数据
 	 */
 	protected GenericTableMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		this.userName = databaseMetaData.getUserName();
 	}
 
 
+	/**
+	 * 初始化：With Meta Data（方法 `initializeWithMetaData`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 initializeWithMetaData — 意图与阅读要点
-
-方法 `initializeWithMetaData` 复杂度较高（CCN≈11, NLOC≈43）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void initializeWithMetaData(DatabaseMetaData databaseMetaData) throws SQLException {
 		try {
 			setGetGeneratedKeysSupported(databaseMetaData.supportsGetGeneratedKeys());
@@ -153,6 +144,9 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 		}
 	}
 
+	/**
+	 * 初始化：With Table Column Meta Data（方法 `initializeWithTableColumnMetaData`）。
+	 */
 	@Override
 	public void initializeWithTableColumnMetaData(DatabaseMetaData databaseMetaData, @Nullable String catalogName,
 			@Nullable String schemaName, @Nullable String tableName) throws SQLException {
@@ -161,31 +155,49 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 		locateTableAndProcessMetaData(databaseMetaData, catalogName, schemaName, tableName);
 	}
 
+	/**
+	 * 获取 Table Parameter Meta Data（`TableParameterMetaData`）。
+	 */
 	@Override
 	public List<TableParameterMetaData> getTableParameterMetaData() {
 		return this.tableParameterMetaData;
 	}
 
+	/**
+	 * 方法 `tableNameToUse`：完成本类中与「table Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String tableNameToUse(@Nullable String tableName) {
 		return identifierNameToUse(tableName);
 	}
 
+	/**
+	 * 方法 `columnNameToUse`：完成本类中与「column Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String columnNameToUse(@Nullable String columnName) {
 		return identifierNameToUse(columnName);
 	}
 
+	/**
+	 * 方法 `catalogNameToUse`：完成本类中与「catalog Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String catalogNameToUse(@Nullable String catalogName) {
 		return identifierNameToUse(catalogName);
 	}
 
+	/**
+	 * 方法 `schemaNameToUse`：完成本类中与「schema Name To Use」相关的职责。
+	 */
 	@Override
 	public @Nullable String schemaNameToUse(@Nullable String schemaName) {
 		return identifierNameToUse(schemaName);
 	}
 
+	/**
+	 * 方法 `identifierNameToUse`：完成本类中与「identifier Name To Use」相关的职责。
+	 */
 	private @Nullable String identifierNameToUse(@Nullable String identifierName) {
 		if (identifierName == null) {
 			return null;
@@ -202,7 +214,7 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 	/**
-	 * This implementation delegates to {@link #catalogNameToUse}.
+	 * 该实现委托给 {@link #catalogNameToUse}。
 	 */
 	@Override
 	public @Nullable String metaDataCatalogNameToUse(@Nullable String catalogName) {
@@ -210,7 +222,7 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 	/**
-	 * This implementation delegates to {@link #schemaNameToUse}.
+	 * 该实现委托给 {@link #schemaNameToUse}。
 	 * @see #getDefaultSchema()
 	 */
 	@Override
@@ -219,81 +231,112 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 	/**
-	 * Provide access to the default schema for subclasses.
+	 * 提供对子类默认模式的访问。
 	 */
 	protected @Nullable String getDefaultSchema() {
 		return this.userName;
 	}
 
 	/**
-	 * Provide access to the version info for subclasses.
+	 * 提供对子类版本信息的访问。
 	 */
 	protected @Nullable String getDatabaseVersion() {
 		return this.databaseVersion;
 	}
 
+	/**
+	 * 判断是否 Table Column Meta Data Used。
+	 */
 	@Override
 	public boolean isTableColumnMetaDataUsed() {
 		return this.tableColumnMetaDataUsed;
 	}
 
+	/**
+	 * 设置 Get Generated Keys Supported（`GetGeneratedKeysSupported`）。
+	 */
 	public void setGetGeneratedKeysSupported(boolean getGeneratedKeysSupported) {
 		this.getGeneratedKeysSupported = getGeneratedKeysSupported;
 	}
 
+	/**
+	 * 判断是否 Get Generated Keys Supported。
+	 */
 	@Override
 	public boolean isGetGeneratedKeysSupported() {
 		return this.getGeneratedKeysSupported;
 	}
 
+	/**
+	 * 判断是否 Get Generated Keys Simulated。
+	 */
 	@Override
 	public boolean isGetGeneratedKeysSimulated(){
 		return false;
 	}
 
+	/**
+	 * 获取 Simple Query For Get Generated Key（`SimpleQueryForGetGeneratedKey`）。
+	 */
 	@Override
 	public @Nullable String getSimpleQueryForGetGeneratedKey(String tableName, String keyColumnName) {
 		return null;
 	}
 
+	/**
+	 * 设置 Generated Keys Column Name Array Supported（`GeneratedKeysColumnNameArraySupported`）。
+	 */
 	public void setGeneratedKeysColumnNameArraySupported(boolean generatedKeysColumnNameArraySupported) {
 		this.generatedKeysColumnNameArraySupported = generatedKeysColumnNameArraySupported;
 	}
 
+	/**
+	 * 判断是否 Generated Keys Column Name Array Supported。
+	 */
 	@Override
 	public boolean isGeneratedKeysColumnNameArraySupported() {
 		return this.generatedKeysColumnNameArraySupported;
 	}
 
+	/**
+	 * 设置 Stores Upper Case Identifiers（`StoresUpperCaseIdentifiers`）。
+	 */
 	public void setStoresUpperCaseIdentifiers(boolean storesUpperCaseIdentifiers) {
 		this.storesUpperCaseIdentifiers = storesUpperCaseIdentifiers;
 	}
 
+	/**
+	 * 判断是否 Stores Upper Case Identifiers。
+	 */
 	public boolean isStoresUpperCaseIdentifiers() {
 		return this.storesUpperCaseIdentifiers;
 	}
 
+	/**
+	 * 设置 Stores Lower Case Identifiers（`StoresLowerCaseIdentifiers`）。
+	 */
 	public void setStoresLowerCaseIdentifiers(boolean storesLowerCaseIdentifiers) {
 		this.storesLowerCaseIdentifiers = storesLowerCaseIdentifiers;
 	}
 
+	/**
+	 * 判断是否 Stores Lower Case Identifiers。
+	 */
 	public boolean isStoresLowerCaseIdentifiers() {
 		return this.storesLowerCaseIdentifiers;
 	}
 
+	/**
+	 * 获取 Identifier Quote String（`IdentifierQuoteString`）。
+	 */
 	@Override
 	public String getIdentifierQuoteString() {
 		return this.identifierQuoteString;
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-方法 locateTableAndProcessMetaData — 意图与阅读要点
-
-方法 `locateTableAndProcessMetaData` 复杂度较高（CCN≈9, NLOC≈35）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Method supporting the meta-data processing for a table.
+	 * 支持表的元数据处理的方法。
 	 */
 	private void locateTableAndProcessMetaData(DatabaseMetaData databaseMetaData,
 			@Nullable String catalogName, @Nullable String schemaName, @Nullable String tableName) {
@@ -333,13 +376,9 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 findTableMetaData — 意图与阅读要点
-
-方法 `findTableMetaData` 复杂度较高（CCN≈9, NLOC≈31）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 查找：Table Meta Data（方法 `findTableMetaData`）。
+	 */
 	private TableMetaData findTableMetaData(@Nullable String schemaName, @Nullable String tableName,
 			Map<String, TableMetaData> tableMeta) {
 
@@ -373,13 +412,8 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 processTableColumns — 意图与阅读要点
-
-方法 `processTableColumns` 复杂度较高（CCN≈11, NLOC≈46）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Method supporting the meta-data processing for a table's columns.
+	 * 支持表列元数据处理的方法。
 	 */
 	private void processTableColumns(DatabaseMetaData databaseMetaData, TableMetaData tmd) {
 		ResultSet tableColumns = null;
@@ -399,9 +433,9 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 				if (dataType == Types.DECIMAL) {
 					String typeName = tableColumns.getString("TYPE_NAME");
 					int decimalDigits = tableColumns.getInt("DECIMAL_DIGITS");
-					// Override a DECIMAL data type for no-decimal numerics
-					// (this is for better Oracle support where there have been issues
-					// using DECIMAL for certain inserts (see SPR-6912))
+					// 覆盖非十进制数字的 DECIMAL 数据类型
+					// （这是为了在出现问题时提供更好的 Oracle 支持
+					// 对某些插入使用 DECIMAL（请参阅 SPR-6912））
 					if ("NUMBER".equals(typeName) && decimalDigits == 0) {
 						dataType = Types.NUMERIC;
 						if (logger.isDebugEnabled()) {
@@ -424,7 +458,7 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 						"Consider specifying explicit column names -- for example, via SimpleJdbcInsert#usingColumns().",
 						ex);
 			}
-			// Clear the metadata so that we don't retain a partial list of column names
+			// 清除元数据，以便我们不保留部分列名列表
 			this.tableParameterMetaData.clear();
 		}
 		finally {
@@ -433,15 +467,8 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-record TableMetaData — 意图说明
-
-record `TableMetaData`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/GenericTableMetaDataProvider.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Record representing table meta-data.
+	 * 表示表元数据的记录。
 	 */
 	private record TableMetaData(@Nullable String catalogName, @Nullable String schemaName,
 			@Nullable String tableName) {

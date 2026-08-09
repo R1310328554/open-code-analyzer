@@ -21,14 +21,8 @@ import java.sql.Connection;
 import javax.sql.DataSource;
 
 /**
- * Extension of the {@code javax.sql.DataSource} interface, to be
- * implemented by special DataSources that return JDBC Connections
- * in an unwrapped fashion.
- *
- * <p>Classes using this interface can query whether the Connection
- * should be closed after an operation. Spring's DataSourceUtils and
- * JdbcTemplate classes automatically perform such a check.
- *
+ * {@code javax.sql.DataSource} 接口的扩展，由以未包装方式返回 JDBC 连接的特殊数据源实现。
+ * 使用此接口的<p>类可以查询操作后是否应关闭Connection。 Spring 的 DataSourceUtils 和 JdbcTemplate 类自动执行此类检查。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see SingleConnectionDataSource#shouldClose
@@ -38,13 +32,10 @@ import javax.sql.DataSource;
 public interface SmartDataSource extends DataSource {
 
 	/**
-	 * Should we close this Connection, obtained from this DataSource?
-	 * <p>Code that uses Connections from a SmartDataSource should always
-	 * perform a check via this method before invoking {@code close()}.
-	 * <p>Note that the JdbcTemplate class in the 'jdbc.core' package takes care of
-	 * releasing JDBC Connections, freeing application code of this responsibility.
-	 * @param con the Connection to check
-	 * @return whether the given Connection should be closed
+	 * 我们应该关闭从该数据源获取的连接吗？使用来自 SmartDataSource 的连接的 <p>Code 在调用 {@code close()} 之前应始终通过此方法执行检查。 
+	 * <p>请注意，“jdbc.core”包中的 JdbcTemplate 类负责释放 JDBC 连接，从而使应用程序代码摆脱此责任。
+	 * @param con 要检查的连接
+	 * @return 应关闭给定的连接
 	 * @see java.sql.Connection#close()
 	 */
 	boolean shouldClose(Connection con);

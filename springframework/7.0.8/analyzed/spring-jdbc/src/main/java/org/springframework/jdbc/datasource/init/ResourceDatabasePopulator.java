@@ -31,17 +31,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Populates, initializes, or cleans up a database using SQL scripts defined in
- * external resources.
- *
- * <ul>
- * <li>Call {@link #addScript} to add a single SQL script location.
- * <li>Call {@link #addScripts} to add multiple SQL script locations.
- * <li>Consult the setter methods in this class for further configuration options.
- * <li>Call {@link #populate} or {@link #execute} to initialize or clean up the
- * database using the configured scripts.
- * </ul>
- *
+ * 使用外部资源中定义的 SQL 脚本填充、初始化或清理数据库。
+ * <ul> <li>调用 {@link #addScript} 以添加单个 SQL 脚本位置。 <li>调用{@link #addScripts}添加多个SQL脚本位置。
+ * <li>请参阅此类中的 setter 方法以获取更多配置选项。 <li>调用 {@link #populate} 或 {@link #execute}
+ * 使用配置的脚本初始化或清理数据库。 OCAJAVA9文档
  * @author Keith Donald
  * @author Dave Syer
  * @author Juergen Hoeller
@@ -58,6 +51,7 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 
 	List<Resource> scripts = new ArrayList<>();
 
+	/** `sqlScriptEncoding`：该类的成员状态。 */
 	private @Nullable String sqlScriptEncoding;
 
 	private String separator = ScriptUtils.DEFAULT_STATEMENT_SEPARATOR;
@@ -68,23 +62,23 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 
 	private String blockCommentEndDelimiter = ScriptUtils.DEFAULT_BLOCK_COMMENT_END_DELIMITER;
 
+	/** `false`：该类的成员状态。 */
 	private boolean continueOnError = false;
 
+	/** `false`：该类的成员状态。 */
 	private boolean ignoreFailedDrops = false;
 
 
 	/**
-	 * Construct a new {@code ResourceDatabasePopulator} with default settings.
+	 * 使用默认设置构造一个新的 {@code ResourceDatabasePopulator}。
 	 * @since 4.0.3
 	 */
 	public ResourceDatabasePopulator() {
 	}
 
 	/**
-	 * Construct a new {@code ResourceDatabasePopulator} with default settings
-	 * for the supplied scripts.
-	 * @param scripts the scripts to execute to initialize or clean up the database
-	 * (never {@code null})
+	 * 使用所提供脚本的默认设置构造一个新的 {@code ResourceDatabasePopulator}。
+	 * @param scripts 执行初始化或清理数据库的脚本（绝不是 {@code null}）
 	 * @since 4.0.3
 	 */
 	public ResourceDatabasePopulator(Resource... scripts) {
@@ -92,15 +86,11 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Construct a new {@code ResourceDatabasePopulator} with the supplied values.
-	 * @param continueOnError flag to indicate that all failures in SQL should be
-	 * logged but not cause a failure
-	 * @param ignoreFailedDrops flag to indicate that a failed SQL {@code DROP}
-	 * statement can be ignored
-	 * @param sqlScriptEncoding the encoding for the supplied SQL scripts
-	 * (may be {@code null} or <em>empty</em> to indicate platform encoding)
-	 * @param scripts the scripts to execute to initialize or clean up the database
-	 * (never {@code null})
+	 * 使用提供的值构造一个新的 {@code ResourceDatabasePopulator}。
+	 * @param continueOnError 标志指示应记录 SQL 中的所有故障但不会导致故障
+	 * @param ignoreFailedDrops 标志指示可以忽略失败的 SQL {@code DROP} 语句
+	 * @param sqlScriptEncoding 提供的 SQL 脚本的编码（可能是 {@code null} 或 <em>empty</em> 来指示平台编码）
+	 * @param scripts 执行初始化或清理数据库的脚本（绝不是 {@code null}）
 	 * @since 4.0.3
 	 */
 	public ResourceDatabasePopulator(boolean continueOnError, boolean ignoreFailedDrops,
@@ -114,8 +104,8 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 
 
 	/**
-	 * Add a script to execute to initialize or clean up the database.
-	 * @param script the path to an SQL script (never {@code null})
+	 * 添加要执行的脚本以初始化或清理数据库。
+	 * @param script SQL 脚本的路径（绝不是 {@code null}）
 	 */
 	public void addScript(Resource script) {
 		Assert.notNull(script, "'script' must not be null");
@@ -123,8 +113,8 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Add multiple scripts to execute to initialize or clean up the database.
-	 * @param scripts the scripts to execute (never {@code null})
+	 * 添加多个要执行的脚本来初始化或清理数据库。
+	 * @param scripts 要执行的脚本（绝不是 {@code null}）
 	 */
 	public void addScripts(Resource... scripts) {
 		assertContentsOfScriptArray(scripts);
@@ -132,26 +122,26 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Set the scripts to execute to initialize or clean up the database,
-	 * replacing any previously added scripts.
-	 * @param scripts the scripts to execute (never {@code null})
+	 * 设置要执行的脚本以初始化或清理数据库，替换任何以前添加的脚本。
+	 * @param scripts 要执行的脚本（绝不是 {@code null}）
 	 */
 	public void setScripts(Resource... scripts) {
 		assertContentsOfScriptArray(scripts);
-		// Ensure that the list is modifiable
+		// 确保列表可修改
 		this.scripts = new ArrayList<>(Arrays.asList(scripts));
 	}
 
+	/**
+	 * 方法 `assertContentsOfScriptArray`：完成本类中与「assert Contents Of Script Array」相关的职责。
+	 */
 	private void assertContentsOfScriptArray(Resource... scripts) {
 		Assert.notNull(scripts, "'scripts' must not be null");
 		Assert.noNullElements(scripts, "'scripts' must not contain null elements");
 	}
 
 	/**
-	 * Specify the encoding for the configured SQL scripts,
-	 * if different from the platform encoding.
-	 * @param sqlScriptEncoding the encoding used in scripts
-	 * (may be {@code null} or empty to indicate platform encoding)
+	 * 如果与平台编码不同，请指定已配置 SQL 脚本的编码。
+	 * @param sqlScriptEncoding 脚本中使用的编码（可以是 {@code null} 或空以指示平台编码）
 	 * @see #addScript(Resource)
 	 */
 	public void setSqlScriptEncoding(@Nullable String sqlScriptEncoding) {
@@ -159,20 +149,17 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Specify the statement separator, if a custom one.
-	 * <p>Defaults to {@code ";"} if not specified and falls back to {@code "\n"}
-	 * as a last resort; may be set to {@link ScriptUtils#EOF_STATEMENT_SEPARATOR}
-	 * to signal that each script contains a single statement without a separator.
-	 * @param separator the script statement separator
+	 * 指定语句分隔符（如果是自定义分隔符）。 <p> 如果未指定，则默认为 {@code ";"}，并回退到 {@code "\n"} 作为最后的手段；可以设置为 {@link Sc
+	 * riptUtils#EOF_STATEMENT_SEPARATOR} 以表明每个脚本包含一个不带分隔符的语句。
+	 * @param separator 脚本语句分隔符
 	 */
 	public void setSeparator(String separator) {
 		this.separator = separator;
 	}
 
 	/**
-	 * Set the prefix that identifies single-line comments within the SQL scripts.
-	 * <p>Defaults to {@code "--"}.
-	 * @param commentPrefix the prefix for single-line comments
+	 * 设置标识 SQL 脚本中的单行注释的前缀。 <p>默认为 {@code "--"}。
+	 * @param commentPrefix 单行注释的前缀
 	 * @see #setCommentPrefixes(String...)
 	 */
 	public void setCommentPrefix(String commentPrefix) {
@@ -181,9 +168,8 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Set the prefixes that identify single-line comments within the SQL scripts.
-	 * <p>Defaults to {@code ["--"]}.
-	 * @param commentPrefixes the prefixes for single-line comments
+	 * 设置用于标识 SQL 脚本中的单行注释的前缀。 <p>默认为 {@code ["--"]}。
+	 * @param commentPrefixes 单行注释的前缀
 	 * @since 5.2
 	 */
 	public void setCommentPrefixes(String... commentPrefixes) {
@@ -193,11 +179,8 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Set the start delimiter that identifies block comments within the SQL
-	 * scripts.
-	 * <p>Defaults to {@code "/*"}.
-	 * @param blockCommentStartDelimiter the start delimiter for block comments
-	 * (never {@code null} or empty)
+	 * 设置标识 SQL 脚本中的块注释的起始分隔符。 <p>默认为 {@code "/*"}。
+	 * @param blockCommentStartDelimiter 块注释的起始分隔符（绝不是 {@code null} 或空）
 	 * @since 4.0.3
 	 * @see #setBlockCommentEndDelimiter
 	 */
@@ -207,11 +190,8 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Set the end delimiter that identifies block comments within the SQL
-	 * scripts.
-	 * <p>Defaults to <code>"*&#47;"</code>.
-	 * @param blockCommentEndDelimiter the end delimiter for block comments
-	 * (never {@code null} or empty)
+	 * 设置标识 SQL 脚本内的块注释的结束分隔符。 <p>默认为 <code>"*&#47;"</code>。
+	 * @param blockCommentEndDelimiter 块注释的结束分隔符（绝不是 {@code null} 或空）
 	 * @since 4.0.3
 	 * @see #setBlockCommentStartDelimiter
 	 */
@@ -221,21 +201,17 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Flag to indicate that all failures in SQL should be logged but not cause a failure.
-	 * <p>Defaults to {@code false}.
-	 * @param continueOnError {@code true} if script execution should continue on error
+	 * 指示应记录 SQL 中的所有故障但不会导致故障的标志。 <p>默认为 {@code false}。
+	 * @param continueOnError {@code true} 如果脚本执行出现错误应继续
 	 */
 	public void setContinueOnError(boolean continueOnError) {
 		this.continueOnError = continueOnError;
 	}
 
 	/**
-	 * Flag to indicate that a failed SQL {@code DROP} statement can be ignored.
-	 * <p>This is useful for a non-embedded database whose SQL dialect does not
-	 * support an {@code IF EXISTS} clause in a {@code DROP} statement.
-	 * <p>The default is {@code false} so that if the populator runs accidentally, it will
-	 * fail fast if a script starts with a {@code DROP} statement.
-	 * @param ignoreFailedDrops {@code true} if failed drop statements should be ignored
+	 * 指示可以忽略失败的 SQL {@code DROP} 语句的标志。 <p>这对于 SQL 方言不支持 {@code DROP} 语句中的 {@code IF EXISTS} 子
+	 * 句的非嵌入式数据库很有用。 <p>默认为 {@code false}，因此如果填充器意外运行，如果脚本以 {@code DROP} 语句开头，它将快速失败。
+	 * @param ignoreFailedDrops {@code true} 如果失败的删除语句应被忽略
 	 */
 	public void setIgnoreFailedDrops(boolean ignoreFailedDrops) {
 		this.ignoreFailedDrops = ignoreFailedDrops;
@@ -257,11 +233,10 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Execute this {@code ResourceDatabasePopulator} against the given
-	 * {@link DataSource}.
-	 * <p>Delegates to {@link DatabasePopulatorUtils#execute}.
-	 * @param dataSource the {@code DataSource} to execute against (never {@code null})
-	 * @throws ScriptException if an error occurs
+	 * 针对给定的 {@link DataSource} 执行此 {@code ResourceDatabasePopulator}。 <p>委托给 {@link
+	 * DatabasePopulatorUtils#execute}。
+	 * @param dataSource 要执行的 {@code DataSource}（绝不是 {@code null}）
+	 * @throws ScriptException 如果发生错误
 	 * @since 4.1
 	 * @see #populate(Connection)
 	 */

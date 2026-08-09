@@ -20,23 +20,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * An interface used by {@link JdbcTemplate} and
- * {@link org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
- * NamedParameterJdbcTemplate} for processing rows of a
- * {@link java.sql.ResultSet} on a per-row basis. Implementations of
- * this interface perform the actual work of processing each row
- * but don't need to worry about exception handling.
- * {@link java.sql.SQLException SQLExceptions} will be caught and handled
- * by the calling {@code JdbcTemplate} or {@code NamedParameterJdbcTemplate}.
- *
- * <p>In contrast to a {@link ResultSetExtractor}, a {@code RowCallbackHandler}
- * object is typically stateful: it keeps the result state within the
- * object, to be available for later inspection. See
- * {@link RowCountCallbackHandler} for a usage example.
- *
- * <p>Consider using a {@link RowMapper} instead if you need to map
- * exactly one result object per row, assembling them into a List.
- *
+ * {@link JdbcTemplate} 和 {@link
+ * org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
+ * NamedParameterJdbcTemplate} 使用的接口，用于按行处理 {@link java.sql.ResultSet}
+ * 的行。此接口的实现执行处理每一行的实际工作，但不需要担心异常处理。 {@link java.sql.SQLException SQLExceptions} 将由调用
+ * {@code JdbcTemplate} 或 {@code NamedParameterJdbcTemplate} 捕获并处理。
+ * <p> 与 {@link ResultSetExtractor} 相比，{@code RowCallbackHandler}
+ * 对象通常是有状态的：它将结果状态保留在对象内，以供以后检查。有关使用示例，请参阅 {@link RowCountCallbackHandler}。
+ * <p> 如果您需要精确地映射每行一个结果对象，并将它们组装到一个列表中，请考虑使用 {@link RowMapper}。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see JdbcTemplate
@@ -49,16 +40,10 @@ import java.sql.SQLException;
 public interface RowCallbackHandler {
 
 	/**
-	 * Implementations must implement this method to process each row of data
-	 * in the {@link ResultSet}. This method should not call {@code next()} on
-	 * the {@code ResultSet}; it is only supposed to extract values of the current
-	 * row.
-	 * <p>Exactly what the implementation chooses to do is up to it:
-	 * a trivial implementation might simply count rows, while another
-	 * implementation might build an XML document.
-	 * @param rs the {@code ResultSet} to process (pre-initialized for the current row)
-	 * @throws SQLException if an {@code SQLException} is encountered getting
-	 * column values (that is, there's no need to catch {@code SQLException})
+	 * 实现必须实现此方法来处理 {@link ResultSet} 中的每一行数据。此方法不应在 {@code ResultSet} 上调用 {@code next()}；它只应该提
+	 * 取当前行的值。 <p>具体实现选择做什么取决于它：一个简单的实现可能只是计算行数，而另一个实现可能会构建一个 XML 文档。
+	 * @param rs 要处理的 {@code ResultSet}（针对当前行预先初始化）
+	 * @throws SQLException 如果在获取列值时遇到 {@code SQLException}（即无需捕获 {@code SQLException}）
 	 */
 	void processRow(ResultSet rs) throws SQLException;
 

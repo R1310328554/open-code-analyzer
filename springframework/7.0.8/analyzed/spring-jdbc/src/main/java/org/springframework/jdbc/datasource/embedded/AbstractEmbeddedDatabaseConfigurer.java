@@ -26,18 +26,22 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Base class for {@link EmbeddedDatabaseConfigurer} implementations
- * providing common shutdown behavior through a "SHUTDOWN" statement.
- *
+ * {@link EmbeddedDatabaseConfigurer} 实现的基类通过“SHUTDOWN”语句提供常见的关闭行为。
  * @author Oliver Gierke
  * @author Juergen Hoeller
  * @since 3.0
  */
 abstract class AbstractEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigurer {
 
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 
+	/**
+	 * 方法 `shutdown`：完成本类中与「shutdown」相关的职责。
+	 */
 	@Override
 	public void shutdown(DataSource dataSource, String databaseName) {
 		Connection con = null;

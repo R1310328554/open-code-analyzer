@@ -51,11 +51,8 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.util.Assert;
 
 /**
- * Abstract class to provide base functionality for easy (batch) inserts
- * based on configuration options and database meta-data.
- *
- * <p>This class provides the processing arrangement for {@link SimpleJdbcInsert}.
- *
+ * 抽象类，提供基于配置选项和数据库元数据的轻松（批量）插入的基本功能。
+ * <p>该类提供{@link SimpleJdbcInsert}的处理安排。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -63,45 +60,51 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractJdbcInsert {
 
-	/** Logger available to subclasses. */
+	/**
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** Lower-level class used to execute SQL. */
+	/**
+	 */
 	private final JdbcTemplate jdbcTemplate;
 
-	/** Context used to retrieve and manage database meta-data. */
+	/**
+	 */
 	private final TableMetaDataContext tableMetaDataContext = new TableMetaDataContext();
 
-	/** List of column names to be used in insert statement. */
+	/**
+	 */
 	private final List<String> declaredColumns = new ArrayList<>();
 
-	/** The names of the columns holding the generated key. */
+	/**
+	 */
 	private String[] generatedKeyNames = new String[0];
 
 	/**
-	 * Has this operation been compiled? Compilation means at least checking
-	 * that a DataSource or JdbcTemplate has been provided.
+	 * 这个操作编译了吗？编译意味着至少检查是否已提供 DataSource 或 JdbcTemplate。
 	 */
 	private volatile boolean compiled;
 
-	/** The generated string used for insert statement. */
+	/**
+	 */
 	private String insertString = "";
 
-	/** The SQL type information for the insert columns. */
+	/**
+	 */
 	private int[] insertTypes = new int[0];
 
 
 	/**
-	 * Constructor to be used when initializing using a {@link DataSource}.
-	 * @param dataSource the {@code DataSource} to be used
+	 * 使用 {@link DataSource} 初始化时要使用的构造函数。
+	 * @param dataSource 要使用的 {@code DataSource}
 	 */
 	protected AbstractJdbcInsert(DataSource dataSource) {
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
 	/**
-	 * Constructor to be used when initializing using a {@link JdbcTemplate}.
-	 * @param jdbcTemplate the {@code JdbcTemplate} to use
+	 * 使用 {@link JdbcTemplate} 初始化时要使用的构造函数。
+	 * @param jdbcTemplate 要使用的 {@code JdbcTemplate}
 	 */
 	protected AbstractJdbcInsert(JdbcTemplate jdbcTemplate) {
 		Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
@@ -110,18 +113,18 @@ public abstract class AbstractJdbcInsert {
 
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with configuration properties
+	// 处理配置属性的方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Get the configured {@link JdbcTemplate}.
+	 * 获取配置的{@link JdbcTemplate}。
 	 */
 	public JdbcTemplate getJdbcTemplate() {
 		return this.jdbcTemplate;
 	}
 
 	/**
-	 * Set the name of the table for this insert.
+	 * 设置此插入的表名称。
 	 */
 	public void setTableName(@Nullable String tableName) {
 		checkIfConfigurationModificationIsAllowed();
@@ -129,14 +132,14 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Get the name of the table for this insert.
+	 * 获取此插入的表的名称。
 	 */
 	public @Nullable String getTableName() {
 		return this.tableMetaDataContext.getTableName();
 	}
 
 	/**
-	 * Set the name of the schema for this insert.
+	 * 设置此插入的架构名称。
 	 */
 	public void setSchemaName(@Nullable String schemaName) {
 		checkIfConfigurationModificationIsAllowed();
@@ -144,14 +147,14 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Get the name of the schema for this insert.
+	 * 获取此插入的架构名称。
 	 */
 	public @Nullable String getSchemaName() {
 		return this.tableMetaDataContext.getSchemaName();
 	}
 
 	/**
-	 * Set the name of the catalog for this insert.
+	 * 设置此插入的目录名称。
 	 */
 	public void setCatalogName(@Nullable String catalogName) {
 		checkIfConfigurationModificationIsAllowed();
@@ -159,14 +162,14 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Get the name of the catalog for this insert.
+	 * 获取此插入的目录名称。
 	 */
 	public @Nullable String getCatalogName() {
 		return this.tableMetaDataContext.getCatalogName();
 	}
 
 	/**
-	 * Set the names of the columns to be used.
+	 * 设置要使用的列的名称。
 	 */
 	public void setColumnNames(List<String> columnNames) {
 		checkIfConfigurationModificationIsAllowed();
@@ -175,14 +178,14 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Get the names of the columns used.
+	 * 获取所使用的列的名称。
 	 */
 	public List<String> getColumnNames() {
 		return Collections.unmodifiableList(this.declaredColumns);
 	}
 
 	/**
-	 * Specify the name of a single generated key column.
+	 * 指定单个生成的键列的名称。
 	 */
 	public void setGeneratedKeyName(String generatedKeyName) {
 		checkIfConfigurationModificationIsAllowed();
@@ -190,7 +193,7 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Set the names of any generated keys.
+	 * 设置任何生成的密钥的名称。
 	 */
 	public void setGeneratedKeyNames(String... generatedKeyNames) {
 		checkIfConfigurationModificationIsAllowed();
@@ -198,48 +201,44 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Get the names of any generated keys.
+	 * 获取任何生成的密钥的名称。
 	 */
 	public String[] getGeneratedKeyNames() {
 		return this.generatedKeyNames;
 	}
 
 	/**
-	 * Specify whether the parameter meta-data for the call should be used.
-	 * <p>The default is {@code true}.
+	 * 指定是否应使用调用的参数元数据。 <p>默认为{@code true}。
 	 */
 	public void setAccessTableColumnMetaData(boolean accessTableColumnMetaData) {
 		this.tableMetaDataContext.setAccessTableColumnMetaData(accessTableColumnMetaData);
 	}
 
 	/**
-	 * Specify whether the default for including synonyms should be changed.
-	 * <p>The default is {@code false}.
+	 * 指定是否应更改包含同义词的默认值。 <p>默认为{@code false}。
 	 */
 	public void setOverrideIncludeSynonymsDefault(boolean override) {
 		this.tableMetaDataContext.setOverrideIncludeSynonymsDefault(override);
 	}
 
 	/**
-	 * Get the insert string to be used.
+	 * 获取要使用的插入字符串。
 	 */
 	public String getInsertString() {
 		return this.insertString;
 	}
 
 	/**
-	 * Get the array of {@link java.sql.Types} to be used for insert.
+	 * 获取用于插入的 {@link java.sql.Types} 数组。
 	 */
 	public int[] getInsertTypes() {
 		return this.insertTypes;
 	}
 
 	/**
-	 * Specify whether SQL identifiers should be quoted.
-	 * <p>Defaults to {@code false}. If set to {@code true}, the identifier
-	 * quote string for the underlying database will be used to quote SQL
-	 * identifiers in generated SQL statements.
-	 * @param quoteIdentifiers whether identifiers should be quoted
+	 * 指定是否应将 SQL 标识符加引号。 <p>默认为 {@code false}。如果设置为 {@code true}，则底层数据库的标识符引用字符串将用于在生成的 SQL 语句
+	 * 中引用 SQL 标识符。
+	 * @param quoteIdentifiers 标识符是否应该加引号
 	 * @since 6.1
 	 * @see java.sql.DatabaseMetaData#getIdentifierQuoteString()
 	 */
@@ -248,7 +247,7 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Get the {@code quoteIdentifiers} flag.
+	 * 获取 {@code quoteIdentifiers} 标志。
 	 * @since 6.1
 	 * @see #setQuoteIdentifiers(boolean)
 	 */
@@ -258,15 +257,12 @@ public abstract class AbstractJdbcInsert {
 
 
 	//-------------------------------------------------------------------------
-	// Methods handling compilation issues
+	// 处理编译问题的方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Compile this JdbcInsert using provided parameters and meta-data plus other settings.
-	 * This finalizes the configuration for this object and subsequent attempts to compile are
-	 * ignored. This will be implicitly called the first time an un-compiled insert is executed.
-	 * @throws InvalidDataAccessApiUsageException if the object hasn't been correctly initialized,
-	 * for example if no DataSource has been provided
+	 * 使用提供的参数和元数据以及其他设置编译此 JdbcInsert。这最终确定了该对象的配置，并且随后的编译尝试将被忽略。这将在第一次执行未编译插入时隐式调用。
+	 * @throws InvalidDataAccessApiUsageException 如果对象尚未正确初始化，例如，如果未提供 DataSource
 	 */
 	public final synchronized void compile() throws InvalidDataAccessApiUsageException {
 		if (!isCompiled()) {
@@ -292,9 +288,7 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Delegate method to perform the actual compilation.
-	 * <p>Subclasses can override this template method to perform  their own compilation.
-	 * Invoked after this base class's compilation is complete.
+	 * 执行实际编译的委托方法。 <p>子类可以重写此模板方法来执行自己的编译。该基类编译完成后调用。
 	 */
 	protected void compileInternal() {
 		DataSource dataSource = getJdbcTemplate().getDataSource();
@@ -309,24 +303,21 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Hook method that subclasses may override to react to compilation.
-	 * <p>This implementation is empty.
+	 * 子类可以重写以对编译做出反应的钩子方法。 <p>这个实现是空的。
 	 */
 	protected void onCompileInternal() {
 	}
 
 	/**
-	 * Is this operation "compiled"?
-	 * @return whether this operation is compiled and ready to use
+	 * 这个操作是“编译”的吗？
+	 * @return 该操作已编译并可以使用
 	 */
 	public boolean isCompiled() {
 		return this.compiled;
 	}
 
 	/**
-	 * Check whether this operation has been compiled already;
-	 * lazily compile it if not already compiled.
-	 * <p>Automatically called by all {@code doExecute*(...)} methods.
+	 * 检查该操作是否已经编译；如果尚未编译，则延迟编译它。 <p> 由所有 {@code doExecute*(...)} 方法自动调用。
 	 */
 	protected void checkCompiled() {
 		if (!isCompiled()) {
@@ -336,8 +327,7 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Method to check whether we are allowed to make any configuration changes at this time.
-	 * <p>If the class has been compiled, then no further changes to the configuration are allowed.
+	 * 检查此时是否允许我们进行任何配置更改的方法。 <p>如果该类已编译，则不允许进一步更改配置。
 	 */
 	protected void checkIfConfigurationModificationIsAllowed() {
 		if (isCompiled()) {
@@ -348,13 +338,13 @@ public abstract class AbstractJdbcInsert {
 
 
 	//-------------------------------------------------------------------------
-	// Methods handling execution
+	// 处理执行的方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Delegate method that executes the insert using the passed-in Map of parameters.
-	 * @param args a Map with parameter names and values to be used in insert
-	 * @return the number of rows affected
+	 * 使用传入的参数映射执行插入的委托方法。
+	 * @param args 带有要在插入中使用的参数名称和值的映射
+	 * @return 受影响的行数
 	 */
 	protected int doExecute(Map<String, ?> args) {
 		checkCompiled();
@@ -363,9 +353,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Delegate method that executes the insert using the passed-in {@link SqlParameterSource}.
-	 * @param parameterSource parameter names and values to be used in insert
-	 * @return the number of rows affected
+	 * 使用传入的 {@link SqlParameterSource} 执行插入的委托方法。
+	 * @param parameterSource 插入中使用的参数名称和值
+	 * @return 受影响的行数
 	 */
 	protected int doExecute(SqlParameterSource parameterSource) {
 		checkCompiled();
@@ -374,7 +364,7 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Delegate method to execute the insert.
+	 * 执行插入的委托方法。
 	 */
 	private int executeInsertInternal(List<?> values) {
 		if (logger.isDebugEnabled()) {
@@ -384,10 +374,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Method that provides execution of the insert using the passed-in
-	 * Map of parameters and returning a generated key.
-	 * @param args a Map with parameter names and values to be used in insert
-	 * @return the key generated by the insert
+	 * 使用传入的参数映射执行插入并返回生成的键的方法。
+	 * @param args 带有要在插入中使用的参数名称和值的映射
+	 * @return 插入生成的密钥
 	 */
 	protected Number doExecuteAndReturnKey(Map<String, ?> args) {
 		checkCompiled();
@@ -396,10 +385,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Method that provides execution of the insert using the passed-in
-	 * {@link SqlParameterSource} and returning a generated key.
-	 * @param parameterSource parameter names and values to be used in insert
-	 * @return the key generated by the insert
+	 * 使用传入的 {@link SqlParameterSource} 执行插入并返回生成的密钥的方法。
+	 * @param parameterSource 插入中使用的参数名称和值
+	 * @return 插入生成的密钥
 	 */
 	protected Number doExecuteAndReturnKey(SqlParameterSource parameterSource) {
 		checkCompiled();
@@ -408,10 +396,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Method that provides execution of the insert using the passed-in
-	 * Map of parameters and returning all generated keys.
-	 * @param args a Map with parameter names and values to be used in insert
-	 * @return the KeyHolder containing keys generated by the insert
+	 * 使用传入的参数映射执行插入并返回所有生成的键的方法。
+	 * @param args 带有要在插入中使用的参数名称和值的映射
+	 * @return KeyHolder 包含插入生成的密钥
 	 */
 	protected KeyHolder doExecuteAndReturnKeyHolder(Map<String, ?> args) {
 		checkCompiled();
@@ -420,10 +407,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Method that provides execution of the insert using the passed-in
-	 * {@link SqlParameterSource} and returning all generated keys.
-	 * @param parameterSource parameter names and values to be used in insert
-	 * @return the KeyHolder containing keys generated by the insert
+	 * 使用传入的 {@link SqlParameterSource} 执行插入并返回所有生成的键的方法。
+	 * @param parameterSource 插入中使用的参数名称和值
+	 * @return KeyHolder 包含插入生成的密钥
 	 */
 	protected KeyHolder doExecuteAndReturnKeyHolder(SqlParameterSource parameterSource) {
 		checkCompiled();
@@ -432,7 +418,7 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Delegate method to execute the insert, generating a single key.
+	 * 委托方法执行插入，生成单个键。
 	 */
 	private Number executeInsertAndReturnKeyInternal(List<?> values) {
 		KeyHolder kh = executeInsertAndReturnKeyHolderInternal(values);
@@ -446,7 +432,7 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Delegate method to execute the insert, generating any number of keys.
+	 * 委托方法执行插入，生成任意数量的键。
 	 */
 	private KeyHolder executeInsertAndReturnKeyHolderInternal(List<?> values) {
 		if (logger.isDebugEnabled()) {
@@ -484,9 +470,9 @@ public abstract class AbstractJdbcInsert {
 					getTableName(), getGeneratedKeyNames()[0]);
 			Assert.state(keyQuery != null, "Query for simulating get generated keys must not be null");
 
-			// This is a hack to be able to get the generated key from a database that doesn't support
-			// get generated keys feature. HSQL is one, PostgreSQL is another. Postgres uses a RETURNING
-			// clause while HSQL uses a second query that has to be executed with the same connection.
+			// 这是一种能够从不支持的数据库中获取生成密钥的黑客攻击
+			// 获取生成的密钥功能。 HSQL 是其中之一，PostgreSQL 是另一个。 Postgres 使用 RETURNING
+			// 子句，而 HSQL 使用必须使用同一连接执行的第二个查询。
 
 			if (keyQuery.toUpperCase(Locale.ROOT).startsWith("RETURNING")) {
 				Long key = getJdbcTemplate().queryForObject(
@@ -497,7 +483,7 @@ public abstract class AbstractJdbcInsert {
 			}
 			else {
 				getJdbcTemplate().execute((ConnectionCallback<@Nullable Object>) con -> {
-					// Do the insert
+					// 执行插入操作
 					PreparedStatement ps = null;
 					try {
 						ps = con.prepareStatement(getInsertString());
@@ -507,7 +493,7 @@ public abstract class AbstractJdbcInsert {
 					finally {
 						JdbcUtils.closeStatement(ps);
 					}
-					//Get the key
+					// 拿到钥匙
 					Statement keyStmt = null;
 					ResultSet rs = null;
 					try {
@@ -533,9 +519,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Create a PreparedStatement to be used for an insert operation with generated keys.
-	 * @param con the Connection to use
-	 * @return the PreparedStatement
+	 * 创建一个PreparedStatement，用于使用生成的键进行插入操作。
+	 * @param con 要使用的连接
+	 * @return 准备好的声明
 	 */
 	private PreparedStatement prepareStatementForGeneratedKeys(Connection con) throws SQLException {
 		if (getGeneratedKeyNames().length < 1) {
@@ -559,9 +545,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Delegate method that executes a batch insert using the passed-in Maps of parameters.
-	 * @param batch maps with parameter names and values to be used in the batch insert
-	 * @return an array of number of rows affected
+	 * 使用传入的参数映射执行批量插入的委托方法。
+	 * @param batch 带有要在批量插入中使用的参数名称和值的映射
+	 * @return 受影响的行数数组
 	 */
 	@SuppressWarnings("unchecked")
 	protected int[] doExecuteBatch(Map<String, ?>... batch) {
@@ -574,10 +560,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Delegate method that executes a batch insert using the passed-in
-	 * {@link SqlParameterSource SqlParameterSources}.
-	 * @param batch parameter sources with names and values to be used in the batch insert
-	 * @return an array of number of rows affected
+	 * 使用传入的 {@link SqlParameterSource SqlParameterSources} 执行批量插入的委托方法。
+	 * @param batch 带有要在批量插入中使用的名称和值的参数源
+	 * @return 受影响的行数数组
 	 */
 	protected int[] doExecuteBatch(SqlParameterSource... batch) {
 		checkCompiled();
@@ -589,7 +574,7 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Delegate method to execute the batch insert.
+	 * 执行批量插入的委托方法。
 	 */
 	private int[] executeBatchInternal(final List<List<Object>> batchValues) {
 		if (logger.isDebugEnabled()) {
@@ -609,9 +594,9 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Internal implementation for setting parameter values.
-	 * @param preparedStatement the PreparedStatement
-	 * @param values the values to be set
+	 * 设置参数值的内部实现。
+	 * @param preparedStatement 准备好的声明
+	 * @param values 要设置的值
 	 */
 	private void setParameterValues(PreparedStatement preparedStatement, List<?> values, int @Nullable ... columnTypes)
 			throws SQLException {
@@ -629,20 +614,18 @@ public abstract class AbstractJdbcInsert {
 	}
 
 	/**
-	 * Match the provided in parameter values with registered parameters and parameters
-	 * defined via meta-data processing.
-	 * @param parameterSource the parameter values provided as a {@link SqlParameterSource}
-	 * @return a List of values
+	 * 将提供的参数值与注册参数和通过元数据处理定义的参数进行匹配。
+	 * @param parameterSource 以 {@link SqlParameterSource} 形式提供的参数值
+	 * @return 值列表
 	 */
 	protected List<Object> matchInParameterValuesWithInsertColumns(SqlParameterSource parameterSource) {
 		return this.tableMetaDataContext.matchInParameterValuesWithInsertColumns(parameterSource);
 	}
 
 	/**
-	 * Match the provided in parameter values with registered parameters and parameters
-	 * defined via meta-data processing.
-	 * @param args the parameter values provided as a Map
-	 * @return a List of values
+	 * 将提供的参数值与注册参数和通过元数据处理定义的参数进行匹配。
+	 * @param args 以 Map 形式提供的参数值
+	 * @return 值列表
 	 */
 	protected List<Object> matchInParameterValuesWithInsertColumns(Map<String, ?> args) {
 		return this.tableMetaDataContext.matchInParameterValuesWithInsertColumns(args);

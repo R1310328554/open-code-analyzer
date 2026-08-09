@@ -30,64 +30,55 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
 
-/* ===== [OCA 中文解析] =====
-class DatabaseStartupValidator — 意图说明
-
-class `DatabaseStartupValidator`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/support/DatabaseStartupValidator.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Bean that checks if a database has already started up. To be referenced
- * via "depends-on" from beans that depend on database startup, like a Hibernate
- * SessionFactory or custom data access objects that access a DataSource directly.
- *
- * <p>Useful to defer application initialization until a database has started up.
- * Particularly appropriate for waiting on a slowly starting Oracle database.
- *
+ * 检查数据库是否已经启动的 Bean。通过“depends-on”从依赖于数据库启动的 bean 进行引用，例如 Hibernate SessionFactory 或直接访问
+ * DataSource 的自定义数据访问对象。
+ * <p> 用于推迟应用程序初始化直到数据库启动。特别适合等待缓慢启动的 Oracle 数据库。
  * @author Juergen Hoeller
  * @author Marten Deinum
  * @since 18.12.2003
  */
 public class DatabaseStartupValidator implements InitializingBean {
 
-	// [OCA] 字段 `DEFAULT_INTERVAL`：类成员状态。
 	/**
-	 * The default interval.
+	 * 默认间隔。
 	 */
 	public static final int DEFAULT_INTERVAL = 1;
 
-	// [OCA] 字段 `DEFAULT_TIMEOUT`：类成员状态。
 	/**
-	 * The default timeout.
+	 * 默认超时。
 	 */
 	public static final int DEFAULT_TIMEOUT = 60;
 
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/** 来源相关状态（`dataSource`）。 */
 	private @Nullable DataSource dataSource;
 
+	/** `validationQuery`：该类的成员状态。 */
 	private @Nullable String validationQuery;
 
-	// [OCA] 字段 `interval`：类成员状态。
+	/** `DEFAULT_INTERVAL`：该类的成员状态。 */
 	private int interval = DEFAULT_INTERVAL;
 
-	// [OCA] 字段 `timeout`：类成员状态。
+	/** `DEFAULT_TIMEOUT`：该类的成员状态。 */
 	private int timeout = DEFAULT_TIMEOUT;
 
 
 	/**
-	 * Set the DataSource to validate.
+	 * 设置要验证的数据源。
 	 */
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 
 	/**
-	 * Set the SQL query string to use for validation.
-	 * @deprecated in favor of the JDBC 4.0 connection validation
+	 * 设置用于验证的 SQL 查询字符串。
+	 * @deprecated 支持 JDBC 4.0 连接验证
 	 */
 	@Deprecated(since = "5.3")
 	public void setValidationQuery(String validationQuery) {
@@ -95,16 +86,14 @@ public class DatabaseStartupValidator implements InitializingBean {
 	}
 
 	/**
-	 * Set the interval between validation runs (in seconds).
-	 * Default is {@value #DEFAULT_INTERVAL}.
+	 * 设置验证运行之间的间隔（以秒为单位）。默认为 {@value #DEFAULT_INTERVAL}。
 	 */
 	public void setInterval(int interval) {
 		this.interval = interval;
 	}
 
 	/**
-	 * Set the timeout (in seconds) after which a fatal exception
-	 * will be thrown. Default is {@value #DEFAULT_TIMEOUT}.
+	 * 设置超时（以秒为单位），超过该超时将引发致命异常。默认为 {@value #DEFAULT_TIMEOUT}。
 	 */
 	public void setTimeout(int timeout) {
 		this.timeout = timeout;
@@ -112,16 +101,9 @@ public class DatabaseStartupValidator implements InitializingBean {
 
 
 	/**
-	 * Check whether the validation query can be executed on a Connection
-	 * from the specified DataSource, with the specified interval between
-	 * checks, until the specified timeout.
+	 * 检查是否可以在来自指定数据源的连接上执行验证查询，检查之间具有指定的间隔，直到指定的超时。
 	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 afterPropertiesSet — 意图与阅读要点
-
-方法 `afterPropertiesSet` 复杂度较高（CCN≈15, NLOC≈66）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void afterPropertiesSet() {
 		if (this.dataSource == null) {
 			throw new IllegalArgumentException("Property 'dataSource' is required");
@@ -190,7 +172,7 @@ public class DatabaseStartupValidator implements InitializingBean {
 			}
 		}
 		catch (InterruptedException ex) {
-			// Re-interrupt current thread, to allow other threads to react.
+			// 重新中断当前线程，以允许其他线程做出反应。
 			Thread.currentThread().interrupt();
 		}
 	}

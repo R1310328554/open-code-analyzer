@@ -32,65 +32,27 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
-/* ===== [OCA 中文解析] =====
-class LazyConnectionDataSourceProxy — 意图说明
-
-代理相关：AOP/事务等横切能力的载体；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/datasource/LazyConnectionDataSourceProxy.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Proxy for a target DataSource, fetching actual JDBC Connections lazily,
- * i.e. not until first creation of a Statement. Connection initialization
- * properties like auto-commit mode, transaction isolation and read-only mode
- * will be kept and applied to the actual JDBC Connection as soon as an actual
- * Connection is fetched (if ever). Consequently, commit and rollback calls will
- * be ignored if no Statements have been created. As of 6.1.2, there is also
- * special support for a {@link #setReadOnlyDataSource read-only DataSource} to use
- * during a read-only transaction, in addition to the regular target DataSource.
- *
- * <p>This DataSource proxy allows to avoid fetching JDBC Connections from
- * a pool unless actually necessary. JDBC transaction control can happen
- * without fetching a Connection from the pool or communicating with the
- * database; this will be done lazily on first creation of a JDBC Statement.
- * As a bonus, this allows for taking the transaction-synchronized read-only
- * flag and/or isolation level into account in a routing DataSource (for example,
- * {@link org.springframework.jdbc.datasource.lookup.IsolationLevelDataSourceRouter}).
- *
- * <p><b>If you configure both a LazyConnectionDataSourceProxy and a
- * TransactionAwareDataSourceProxy, make sure that the latter is the outermost
- * DataSource.</b> In such a scenario, data access code will talk to the
- * transaction-aware DataSource, which will in turn work with the
- * LazyConnectionDataSourceProxy. As of 6.1.2, LazyConnectionDataSourceProxy will
- * initialize its default connection characteristics on first Connection access;
- * to enforce this on startup, call {@link #checkDefaultConnectionProperties()}.
- *
- * <p>Lazy fetching of physical JDBC Connections is particularly beneficial
- * in a generic transaction demarcation environment. It allows you to demarcate
- * transactions on all methods that could potentially perform data access,
- * without paying a performance penalty if no actual data access happens.
- *
- * <p>This DataSource proxy gives you behavior analogous to JTA and a
- * transactional JNDI DataSource (as provided by the Jakarta EE server), even
- * with a local transaction strategy like DataSourceTransactionManager or
- * HibernateTransactionManager. It does not add value with Spring's
- * JtaTransactionManager as transaction strategy.
- *
- * <p>Lazy fetching of JDBC Connections is also recommended for read-only
- * operations with Hibernate, in particular if the chances of resolving the
- * result in the second-level cache are high. This avoids the need to
- * communicate with the database at all for such read-only operations.
- * You will get the same effect with non-transactional reads, but lazy fetching
- * of JDBC Connections allows you to still perform reads in transactions.
- *
- * <p>As of 6.2.6, this DataSource proxy also suppresses a rollback attempt
- * in case of a timeout where the connection has been closed in the meantime.
- *
- * <p><b>NOTE:</b> This DataSource proxy needs to return wrapped Connections
- * (which implement the {@link ConnectionProxy} interface) in order to handle
- * lazy fetching of an actual JDBC Connection. Use {@link Connection#unwrap}
- * to retrieve the native JDBC Connection.
- *
+ * 目标数据源的代理，延迟获取实际的 JDBC 连接，即直到第一次创建语句时才获取。连接初始化属性（例如自动提交模式、事务隔离和只读模式）将被保留，并在获取实际连接（如果有）后立即
+ * 应用于实际的 JDBC 连接。因此，如果没有创建任何语句，提交和回滚调用将被忽略。从 6.1.2 开始，除了常规目标数据源之外，还特别支持在只读事务期间使用 {@link #s
+ * etReadOnlyDataSource read-only DataSource}。
+ * <p> 此数据源代理允许避免从池中获取 JDBC 连接，除非确实有必要。 JDBC 事务控制无需从池中获取连接或与数据库通信即可进行；这将在第一次创建 JDBC 语句时延迟完成
+ * 。作为奖励，这允许在路由数据源（例如 {@link org.springframework.jdbc.datasource.lookup.IsolationLevelDataS
+ * ourceRouter}）中考虑事务同步只读标志和/或隔离级别。
+ * <p><b>如果您同时配置 LazyConnectionDataSourceProxy 和
+ * TransactionAwareDataSourceProxy，请确保后者是最外层的 DataSource。</b> 在这种情况下，数据访问代码将与事务感知
+ * DataSource 通信，而事务感知 DataSource 将与 LazyConnectionDataSourceProxy 一起工作。从 6.1.2
+ * 开始，LazyConnectionDataSourceProxy 将在第一次连接访问时初始化其默认连接特性；要在启动时强制执行此操作，请调用 {@link
+ * #checkDefaultConnectionProperties()}。
+ * <p>L 物理 JDBC 连接的快速获取在通用事务划分环境中特别有用。它允许您在可能执行数据访问的所有方法上划分事务，如果没有发生实际的数据访问，则不会造成性能损失。
+ * <p>此数据源代理为您提供类似于 JTA 和事务性 JNDI 数据源（由 Jakarta EE 服务器提供）的行为，甚至使用
+ * DataSourceTransactionManager 或 HibernateTransactionManager 等本地事务策略。它不会使用 Spring 的
+ * JtaTransactionManager 作为事务策略来增加价值。
+ * 对于 Hibernate 的只读操作，还建议使用 <p>Lazy 获取 JDBC 连接，特别是当在二级缓存中解析结果的机会很高时。这根本不需要与数据库进行此类只读操作的通信。对
+ * 于非事务性读取，您将获得相同的效果，但 JDBC 连接的延迟获取允许您仍然在事务中执行读取。
+ * 在 6.2.6 的 <p>A 中，此数据源代理还会在连接同时关闭的超时情况下抑制回滚尝试。
+ * <p><b>NOTE:</b> 此数据源代理需要返回包装的连接（实现 {@link ConnectionProxy} 接口），以便处理实际 JDBC 连接的延迟获取。使用
+ * {@link Connection#unwrap} 检索本机 JDBC 连接。
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 1.1.4
@@ -101,8 +63,7 @@ class LazyConnectionDataSourceProxy — 意图说明
 public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 
 	/**
-	 * Map of constant names to constant values for the isolation constants
-	 * defined in {@link java.sql.Connection}.
+	 * {@link java.sql.Connection} 中定义的隔离常量的常量名称到常量值的映射。
 	 */
 	static final Map<String, Integer> constants = Map.of(
 			"TRANSACTION_READ_UNCOMMITTED", Connection.TRANSACTION_READ_UNCOMMITTED,
@@ -111,18 +72,23 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 			"TRANSACTION_SERIALIZABLE", Connection.TRANSACTION_SERIALIZABLE
 		);
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(LazyConnectionDataSourceProxy.class);
 
+	/** 来源相关状态（`readOnlyDataSource`）。 */
 	private @Nullable DataSource readOnlyDataSource;
 
+	/** `defaultAutoCommit`：该类的成员状态。 */
 	private volatile @Nullable Boolean defaultAutoCommit;
 
+	/** 事务相关状态（`defaultTransactionIsolation`）。 */
 	private volatile @Nullable Integer defaultTransactionIsolation;
 
 
 	/**
-	 * Create a new LazyConnectionDataSourceProxy.
+	 * 创建一个新的 LazyConnectionDataSourceProxy。
 	 * @see #setTargetDataSource
 	 * @see #setReadOnlyDataSource
 	 */
@@ -130,8 +96,8 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Create a new LazyConnectionDataSourceProxy.
-	 * @param targetDataSource the target DataSource
+	 * 创建一个新的 LazyConnectionDataSourceProxy。
+	 * @param targetDataSource 目标数据源
 	 * @see #setTargetDataSource
 	 */
 	public LazyConnectionDataSourceProxy(DataSource targetDataSource) {
@@ -141,14 +107,9 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 
 
 	/**
-	 * Specify a variant of the target DataSource to use for read-only transactions.
-	 * <p>If available, a Connection from such a read-only DataSource will be lazily
-	 * obtained within a Spring-managed transaction that has been marked as read-only.
-	 * The {@link Connection#setReadOnly} flag will be left untouched, expecting it
-	 * to be pre-configured as a default on the read-only DataSource, avoiding the
-	 * overhead of switching it at the beginning and end of every transaction.
-	 * Also, the default auto-commit and isolation level settings are expected to
-	 * match the default connection properties of the primary target DataSource.
+	 * 指定用于只读事务的目标数据源的变体。 <p>如果可用，来自此类只读数据源的连接将在已标记为只读的 Spring 管理事务中延迟获取。 {@link Connection#set
+	 * ReadOnly} 标志将保持不变，期望将其预先配置为只读数据源上的默认值，从而避免在每个事务开始和结束时切换它的开销。此外，默认的自动提交和隔离级别设置应与主要目标数据源的默
+	 * 认连接属性相匹配。
 	 * @since 6.1.2
 	 * @see #setTargetDataSource
 	 * @see #setDefaultAutoCommit
@@ -163,10 +124,7 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Set the default auto-commit mode to expose when no target Connection
-	 * has been fetched yet (when the actual JDBC Connection default is not known yet).
-	 * <p>If not specified, the default gets determined by checking lazily on first
-	 * access of a Connection.
+	 * 设置默认的自动提交模式，以在尚未获取目标连接时公开（当尚不知道实际的 JDBC 连接默认值时）。 <p>如果未指定，则默认值是通过在第一次访问连接时进行延迟检查来确定的。
 	 * @see java.sql.Connection#setAutoCommit
 	 */
 	public void setDefaultAutoCommit(boolean defaultAutoCommit) {
@@ -174,10 +132,9 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Set the default transaction isolation level by the name of the corresponding
-	 * constant in {@link java.sql.Connection} &mdash; for example,
-	 * {@code "TRANSACTION_SERIALIZABLE"}.
-	 * @param constantName name of the constant
+	 * 通过{@link java.sql.Connection}中对应常量的名称设置默认的事务隔离级别——例如，{@code
+	 * "TRANSACTION_SERIALIZABLE"}。
+	 * @param constantName 常量名称
 	 * @see #setDefaultTransactionIsolation
 	 * @see java.sql.Connection#TRANSACTION_READ_UNCOMMITTED
 	 * @see java.sql.Connection#TRANSACTION_READ_COMMITTED
@@ -192,14 +149,9 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Set the default transaction isolation level to expose when no target Connection
-	 * has been fetched yet (when the actual JDBC Connection default is not known yet).
-	 * <p>This property accepts the int constant value (for example, 8) as defined in the
-	 * {@link java.sql.Connection} interface; it is mainly intended for programmatic
-	 * use. Consider using the "defaultTransactionIsolationName" property for setting
-	 * the value by name (for example, {@code "TRANSACTION_SERIALIZABLE"}).
-	 * <p>If not specified, the default gets determined by checking lazily on first
-	 * access of a Connection.
+	 * 设置默认事务隔离级别，以在尚未获取目标连接时公开（当尚不知道实际的 JDBC 连接默认值时）。 <p> 该属性接受 {@link java.sql.Connection} 接口
+	 * 中定义的 int 常量值（例如 8）；它主要用于编程用途。考虑使用“defaultTransactionIsolationName”属性按名称设置值（例如 {@code "TR
+	 * ANSACTION_SERIALIZABLE"}）。 <p>如果未指定，则通过在第一次访问连接时延迟检查来确定默认值。
 	 * @see #setDefaultTransactionIsolationName
 	 * @see java.sql.Connection#setTransactionIsolation
 	 */
@@ -211,8 +163,7 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 
 
 	/**
-	 * Determine default auto-commit and transaction isolation
-	 * via a Connection from the target DataSource, if possible.
+	 * 如果可能，通过目标数据源的连接确定默认自动提交和事务隔离。
 	 * @since 6.1.2
 	 * @see #checkDefaultConnectionProperties(Connection)
 	 */
@@ -230,11 +181,9 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Check the default connection properties (auto-commit, transaction isolation),
-	 * keeping them to be able to expose them correctly without fetching an actual
-	 * JDBC Connection from the target DataSource later on.
-	 * @param con the Connection to use for checking
-	 * @throws SQLException if thrown by Connection methods
+	 * 检查默认连接属性（自动提交、事务隔离），使它们能够正确公开它们，而无需稍后从目标数据源获取实际的 JDBC 连接。
+	 * @param con 用于检查的连接
+	 * @throws SQLException 如果由 Connection 方法抛出
 	 */
 	protected void checkDefaultConnectionProperties(Connection con) throws SQLException {
 		if (this.defaultAutoCommit == null) {
@@ -246,14 +195,14 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Expose the default auto-commit value.
+	 * 公开默认的自动提交值。
 	 */
 	protected @Nullable Boolean defaultAutoCommit() {
 		return this.defaultAutoCommit;
 	}
 
 	/**
-	 * Expose the default transaction isolation value.
+	 * 公开默认的事务隔离值。
 	 */
 	protected @Nullable Integer defaultTransactionIsolation() {
 		return this.defaultTransactionIsolation;
@@ -261,11 +210,9 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 
 
 	/**
-	 * Return a Connection handle that lazily fetches an actual JDBC Connection
-	 * when asked for a Statement (or PreparedStatement or CallableStatement).
-	 * <p>The returned Connection handle implements the ConnectionProxy interface,
-	 * allowing to retrieve the underlying target Connection.
-	 * @return a lazy Connection handle
+	 * 返回一个连接句柄，当请求语句（或PreparedStatement或CallableStatement）时，该句柄会延迟获取实际的JDBC连接。 <p>返回的Connectio
+	 * n句柄实现了ConnectionProxy接口，允许检索底层目标Connection。
+	 * @return 惰性连接句柄
 	 * @see ConnectionProxy#getTargetConnection()
 	 */
 	@Override
@@ -278,13 +225,11 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 	}
 
 	/**
-	 * Return a Connection handle that lazily fetches an actual JDBC Connection
-	 * when asked for a Statement (or PreparedStatement or CallableStatement).
-	 * <p>The returned Connection handle implements the ConnectionProxy interface,
-	 * allowing to retrieve the underlying target Connection.
-	 * @param username the per-Connection username
-	 * @param password the per-Connection password
-	 * @return a lazy Connection handle
+	 * 返回一个连接句柄，当请求语句（或PreparedStatement或CallableStatement）时，该句柄会延迟获取实际的JDBC连接。 <p>返回的Connectio
+	 * n句柄实现了ConnectionProxy接口，允许检索底层目标Connection。
+	 * @param username 每个连接的用户名
+	 * @param password 每个连接的密码
+	 * @return 惰性连接句柄
 	 * @see ConnectionProxy#getTargetConnection()
 	 */
 	@Override
@@ -297,16 +242,8 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class LazyConnectionInvocationHandler — 意图说明
-
-class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-jdbc/src/main/java/org/springframework/jdbc/datasource/LazyConnectionDataSourceProxy.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Invocation handler that defers fetching an actual JDBC Connection
-	 * until first creation of a Statement.
+	 * 延迟获取实际 JDBC 连接直到首次创建语句的调用处理程序。
 	 */
 	private class LazyConnectionInvocationHandler implements InvocationHandler {
 
@@ -343,22 +280,22 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 
 		@Override
 		public @Nullable Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			// Invocation on ConnectionProxy interface coming in...
+			// 对 ConnectionProxy 接口的调用即将到来...
 
 			switch (method.getName()) {
 				case "equals" -> {
-					// We must avoid fetching a target Connection for "equals".
-					// Only consider equal when proxies are identical.
+					// 我们必须避免获取“等于”的目标连接。
+					// 仅当代理相同时才考虑相等。
 					return (proxy == args[0]);
 				}
 				case "hashCode" -> {
-					// We must avoid fetching a target Connection for "hashCode",
-					// and we must return the same hash code even when the target
-					// Connection has been fetched: use hashCode of Connection proxy.
+					// 我们必须避免获取“hashCode”的目标连接，
+					// 即使目标是相同的，我们也必须返回相同的哈希码
+					// 连接已获取：使用连接代理的 hashCode。
 					return System.identityHashCode(proxy);
 				}
 				case "getTargetConnection" -> {
-					// Handle getTargetConnection method: return underlying connection.
+					// 处理getTargetConnection方法：返回底层连接。
 					return getTargetConnection(method);
 				}
 				case "unwrap" -> {
@@ -374,9 +311,9 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 			}
 
 			if (!hasTargetConnection()) {
-				// No physical target Connection kept yet ->
-				// resolve transaction demarcation methods without fetching
-				// a physical JDBC Connection until absolutely necessary.
+				// 尚未保持物理目标连接 ->
+				// 解决事务划分方法而不需要获取
+				// 物理 JDBC 连接，直到绝对必要为止。
 
 				switch (method.getName()) {
 					case "toString" -> {
@@ -386,7 +323,7 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 						if (this.catalog != null) {
 							return this.catalog;
 						}
-						// Else fetch actual Connection and check there.
+						// 否则获取实际连接并检查那里。
 					}
 					case "setCatalog" -> {
 						this.catalog = (String) args[0];
@@ -396,7 +333,7 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 						if (this.schema != null) {
 							return this.schema;
 						}
-						// Else fetch actual Connection and check there.
+						// 否则获取实际连接并检查那里。
 					}
 					case "setSchema" -> {
 						this.schema = (String) args[0];
@@ -406,7 +343,7 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 						if (this.holdability != null) {
 							return this.holdability;
 						}
-						// Else fetch actual Connection and check there.
+						// 否则获取实际连接并检查那里。
 					}
 					case "setHoldability" -> {
 						this.holdability = (Integer) args[0];
@@ -423,8 +360,8 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 						if (this.transactionIsolation != null) {
 							return this.transactionIsolation;
 						}
-						// Else fetch actual Connection and check there,
-						// because we didn't have a default specified.
+						// 否则获取实际连接并检查那里，
+						// 因为我们没有指定默认值。
 					}
 					case "setTransactionIsolation" -> {
 						this.transactionIsolation = (Integer) args[0];
@@ -434,23 +371,23 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 						if (this.autoCommit != null) {
 							return this.autoCommit;
 						}
-						// Else fetch actual Connection and check there,
-						// because we didn't have a default specified.
+						// 否则获取实际连接并检查那里，
+						// 因为我们没有指定默认值。
 					}
 					case "setAutoCommit" -> {
 						this.autoCommit = (Boolean) args[0];
 						return null;
 					}
 					case "commit", "rollback" -> {
-						// Ignore: no statements created yet.
+						// 忽略：尚未创建任何语句。
 						return null;
 					}
 					case "getWarnings", "clearWarnings" -> {
-						// Ignore: no warnings to expose yet.
+						// 忽略：尚无要暴露的警告。
 						return null;
 					}
 					case "close" -> {
-						// Ignore: no target connection yet.
+						// 忽略：还没有目标连接。
 						this.closed = true;
 						return null;
 					}
@@ -459,8 +396,8 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 					}
 					default -> {
 						if (this.closed) {
-							// Connection proxy closed, without ever having fetched a
-							// physical JDBC Connection: throw corresponding SQLException.
+							// 连接代理已关闭，尚未获取
+							// 物理 JDBC 连接：抛出相应的 SQLException。
 							throw new SQLException("Illegal operation: connection is closed");
 						}
 					}
@@ -468,19 +405,19 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 			}
 
 			if (readOnlyDataSource != null && "setReadOnly".equals(method.getName())) {
-				// Suppress setReadOnly reset call in case of dedicated read-only DataSource
+				// 在专用只读数据源的情况下抑制 setReadOnly 重置调用
 				return null;
 			}
 
 
-			// Target Connection already fetched, or target Connection necessary for current operation
-			// -> invoke method on target connection.
+			// 已获取目标连接，或当前操作所需的目标连接
+			// -> 在目标连接上调用方法。
 			try {
 				Connection conToUse = getTargetConnection(method);
 
 				if ("rollback".equals(method.getName()) && conToUse.isClosed()) {
-					// Connection closed in the meantime, probably due to a resource timeout. Since a
-					// rollback attempt typically happens right before close, we leniently suppress it.
+					// 连接同时关闭，可能是由于资源超时。自从一个
+					// 回滚尝试通常发生在关闭之前，我们会宽容地抑制它。
 					return null;
 				}
 
@@ -492,31 +429,31 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 		}
 
 		/**
-		 * Return whether the proxy currently holds a target Connection.
+		 * 返回代理当前是否持有目标连接。
 		 */
 		private boolean hasTargetConnection() {
 			return (this.target != null);
 		}
 
 		/**
-		 * Return the target Connection, fetching it and initializing it if necessary.
+		 * 返回目标连接，获取它并在必要时初始化它。
 		 */
 		private Connection getTargetConnection(Method operation) throws Throwable {
 			Connection target = this.target;
 			if (target != null) {
-				// Target Connection already held -> return it.
+				// 目标连接已持有 -> 返回它。
 				if (logger.isTraceEnabled()) {
 					logger.trace("Using existing database connection for operation '" + operation.getName() + "'");
 				}
 				return target;
 			}
 
-			// No target Connection held -> fetch one.
+			// 没有持有目标连接 -> 获取一个。
 			if (logger.isTraceEnabled()) {
 				logger.trace("Connecting to database for operation '" + operation.getName() + "'");
 			}
 
-			// Fetch physical Connection from DataSource.
+			// 从数据源获取物理连接。
 			DataSource dataSource = getDataSourceToUse();
 			target = (this.username != null ? dataSource.getConnection(this.username, this.password) :
 					dataSource.getConnection());
@@ -524,7 +461,7 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 				throw new IllegalStateException("DataSource returned null from getConnection(): " + dataSource);
 			}
 
-			// Apply kept transaction settings, if any.
+			// 应用保留的事务设置（如果有）。
 			try {
 				if (this.catalog != null) {
 					target.setCatalog(this.catalog);
@@ -548,7 +485,7 @@ class `LazyConnectionInvocationHandler`：请结合所属模块与调用方理�
 			}
 			catch (Throwable settingsEx) {
 				logger.debug("Failed to apply transaction settings to JDBC Connection", settingsEx);
-				// Close Connection and do not set it as target.
+				// 关闭连接并且不将其设置为目标。
 				try {
 					target.close();
 				}

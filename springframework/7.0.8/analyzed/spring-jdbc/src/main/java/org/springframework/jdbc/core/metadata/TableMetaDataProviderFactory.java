@@ -26,26 +26,30 @@ import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
 /**
- * Factory used to create a {@link TableMetaDataProvider} implementation
- * based on the type of database being used.
- *
+ * 工厂用于根据所使用的数据库类型创建 {@link TableMetaDataProvider} 实现。
  * @author Thomas Risberg
  * @since 2.5
  */
 public final class TableMetaDataProviderFactory {
 
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(TableMetaDataProviderFactory.class);
 
 
+	/**
+	 * 创建 `TableMetaDataProviderFactory` 的新实例。
+	 */
 	private TableMetaDataProviderFactory() {
 	}
 
 
 	/**
-	 * Create a {@link TableMetaDataProvider} based on the database meta-data.
-	 * @param dataSource used to retrieve meta-data
-	 * @param context the class that holds configuration and meta-data
-	 * @return instance of the TableMetaDataProvider implementation to be used
+	 * 根据数据库元数据创建 {@link TableMetaDataProvider}。
+	 * @param dataSource 用于检索元数据
+	 * @param context 保存配置和元数据的类
+	 * @return 要使用的 TableMetaDataProvider 实现的
 	 */
 	public static TableMetaDataProvider createMetaDataProvider(DataSource dataSource, TableMetaDataContext context) {
 		try {

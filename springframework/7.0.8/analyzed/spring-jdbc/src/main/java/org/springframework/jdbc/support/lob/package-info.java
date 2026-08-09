@@ -1,6 +1,5 @@
 /**
- * Provides a strategy interface for Large OBject handling,
- * as well as a customizable default implementation.
+ * 提供用于大型对象处理的策略接口，以及可定制的默认实现。
  */
 @NullMarked
 package org.springframework.jdbc.support.lob;

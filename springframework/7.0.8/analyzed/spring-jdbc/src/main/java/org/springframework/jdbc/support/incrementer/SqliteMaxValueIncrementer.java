@@ -28,9 +28,8 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
- * {@link DataFieldMaxValueIncrementer} that increments the maximum value of a given table with
- * the equivalent of an auto-increment column, using an SQLite {@code select max(rowid)} query.
- *
+ * {@link DataFieldMaxValueIncrementer} 使用 SQLite {@code select max(rowid)}
+ * 查询来增加给定表的最大值，相当于自动增量列。
  * @author Luke Taylor
  * @author Juergen Hoeller
  * @since 7.0
@@ -38,7 +37,7 @@ import org.springframework.jdbc.support.JdbcUtils;
 public class SqliteMaxValueIncrementer extends AbstractColumnMaxValueIncrementer {
 
 	/**
-	 * Default constructor for bean property style usage.
+	 * bean 属性样式使用的默认构造函数。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -47,16 +46,19 @@ public class SqliteMaxValueIncrementer extends AbstractColumnMaxValueIncrementer
 	}
 
 	/**
-	 * Convenience constructor.
-	 * @param dataSource the DataSource to use
-	 * @param incrementerName the name of the sequence/table to use
-	 * @param columnName the name of the column in the sequence table to use
+	 * 方便构造函数。
+	 * @param dataSource 要使用的数据源
+	 * @param incrementerName 要使用的序列/表的名称
+	 * @param columnName 序列表中要使用的列的名称
 	 */
 	public SqliteMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName, columnName);
 	}
 
 
+	/**
+	 * 获取 Next Key（`NextKey`）。
+	 */
 	@Override
 	protected long getNextKey() {
 		Connection con = DataSourceUtils.getConnection(getDataSource());

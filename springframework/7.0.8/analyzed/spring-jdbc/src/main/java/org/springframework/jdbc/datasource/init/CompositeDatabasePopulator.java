@@ -26,9 +26,7 @@ import java.util.List;
 import org.springframework.util.Assert;
 
 /**
- * Composite {@link DatabasePopulator} that delegates to a list of given
- * {@code DatabasePopulator} implementations, executing all scripts.
- *
+ * 复合 {@link DatabasePopulator}，委托给给定 {@code DatabasePopulator} 实现的列表，执行所有脚本。
  * @author Dave Syer
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -41,7 +39,7 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 
 
 	/**
-	 * Create an empty {@code CompositeDatabasePopulator}.
+	 * 创建一个空的 {@code CompositeDatabasePopulator}。
 	 * @see #setPopulators
 	 * @see #addPopulators
 	 */
@@ -49,8 +47,8 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Create a {@code CompositeDatabasePopulator} with the given populators.
-	 * @param populators one or more populators to delegate to
+	 * 使用给定的填充程序创建 {@code CompositeDatabasePopulator}。
+	 * @param populators 委托给一个或多个填充者
 	 * @since 4.3
 	 */
 	public CompositeDatabasePopulator(Collection<DatabasePopulator> populators) {
@@ -59,8 +57,8 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Create a {@code CompositeDatabasePopulator} with the given populators.
-	 * @param populators one or more populators to delegate to
+	 * 使用给定的填充程序创建 {@code CompositeDatabasePopulator}。
+	 * @param populators 委托给一个或多个填充者
 	 * @since 4.3
 	 */
 	public CompositeDatabasePopulator(DatabasePopulator... populators) {
@@ -70,7 +68,7 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 
 
 	/**
-	 * Specify one or more populators to delegate to.
+	 * 指定要委托给的一个或多个填充器。
 	 */
 	public void setPopulators(DatabasePopulator... populators) {
 		Assert.notNull(populators, "DatabasePopulators must not be null");
@@ -79,13 +77,16 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * Add one or more populators to the list of delegates.
+	 * 将一个或多个填充者添加到代表列表中。
 	 */
 	public void addPopulators(DatabasePopulator... populators) {
 		Assert.notNull(populators, "DatabasePopulators must not be null");
 		this.populators.addAll(Arrays.asList(populators));
 	}
 
+	/**
+	 * 填充（方法 `populate`）。
+	 */
 	@Override
 	public void populate(Connection connection) throws SQLException, ScriptException {
 		Assert.notNull(connection, "Connection must not be null");

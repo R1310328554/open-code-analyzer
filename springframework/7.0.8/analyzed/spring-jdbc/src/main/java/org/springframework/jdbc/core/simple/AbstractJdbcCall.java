@@ -42,62 +42,64 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Abstract class to provide base functionality for easy stored procedure calls
- * based on configuration options and database meta-data.
- *
- * <p>This class provides the processing arrangement for {@link SimpleJdbcCall}.
- *
+ * 抽象类，为基于配置选项和数据库元数据的轻松存储过程调用提供基本功能。
+ * <p>该类提供{@link SimpleJdbcCall}的处理安排。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.5
  */
 public abstract class AbstractJdbcCall {
 
-	/** Logger available to subclasses. */
+	/**
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** Lower-level class used to execute SQL. */
+	/**
+	 */
 	private final JdbcTemplate jdbcTemplate;
 
-	/** Context used to retrieve and manage database meta-data. */
+	/**
+	 */
 	private final CallMetaDataContext callMetaDataContext = new CallMetaDataContext();
 
-	/** List of SqlParameter objects. */
+	/**
+	 */
 	private final List<SqlParameter> declaredParameters = new ArrayList<>();
 
-	/** List of RefCursor/ResultSet RowMapper objects. */
+	/**
+	 */
 	private final Map<String, RowMapper<?>> declaredRowMappers = new LinkedHashMap<>();
 
-	/** Lock for the compilation step. */
+	/**
+	 */
 	private final Lock compilationLock = new ReentrantLock();
 
 	/**
-	 * Has this operation been compiled? Compilation means at least checking
-	 * that a DataSource or JdbcTemplate has been provided.
+	 * 这个操作编译了吗？编译意味着至少检查是否已提供 DataSource 或 JdbcTemplate。
 	 */
 	private volatile boolean compiled;
 
-	/** The generated string used for call statement. */
+	/**
+	 */
 	private @Nullable String callString;
 
 	/**
-	 * A delegate enabling us to create CallableStatementCreators
-	 * efficiently, based on this class's declared parameters.
+	 * 委托使我们能够根据此类的声明参数高效地创建 CallableStatementCreators。
 	 */
 	private @Nullable CallableStatementCreatorFactory callableStatementFactory;
 
 
 	/**
-	 * Constructor to be used when initializing using a {@link DataSource}.
-	 * @param dataSource the DataSource to be used
+	 * 使用 {@link DataSource} 初始化时要使用的构造函数。
+	 * @param dataSource 要使用的数据源
 	 */
 	protected AbstractJdbcCall(DataSource dataSource) {
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
 	/**
-	 * Constructor to be used when initializing using a {@link JdbcTemplate}.
-	 * @param jdbcTemplate the JdbcTemplate to use
+	 * 使用 {@link JdbcTemplate} 初始化时要使用的构造函数。
+	 * @param jdbcTemplate 要使用的 JdbcTemplate
 	 */
 	protected AbstractJdbcCall(JdbcTemplate jdbcTemplate) {
 		Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
@@ -106,101 +108,98 @@ public abstract class AbstractJdbcCall {
 
 
 	/**
-	 * Get the configured {@link JdbcTemplate}.
+	 * 获取配置的{@link JdbcTemplate}。
 	 */
 	public JdbcTemplate getJdbcTemplate() {
 		return this.jdbcTemplate;
 	}
 
 	/**
-	 * Set the name of the stored procedure.
+	 * 设置存储过程的名称。
 	 */
 	public void setProcedureName(@Nullable String procedureName) {
 		this.callMetaDataContext.setProcedureName(procedureName);
 	}
 
 	/**
-	 * Get the name of the stored procedure.
+	 * 获取存储过程的名称。
 	 */
 	public @Nullable String getProcedureName() {
 		return this.callMetaDataContext.getProcedureName();
 	}
 
 	/**
-	 * Set the names of in parameters to be used.
+	 * 设置要使用的输入参数的名称。
 	 */
 	public void setInParameterNames(Set<String> inParameterNames) {
 		this.callMetaDataContext.setLimitedInParameterNames(inParameterNames);
 	}
 
 	/**
-	 * Get the names of in parameters to be used.
+	 * 获取要使用的 in 参数的名称。
 	 */
 	public Set<String> getInParameterNames() {
 		return this.callMetaDataContext.getLimitedInParameterNames();
 	}
 
 	/**
-	 * Set the catalog name to use.
+	 * 设置要使用的目录名称。
 	 */
 	public void setCatalogName(@Nullable String catalogName) {
 		this.callMetaDataContext.setCatalogName(catalogName);
 	}
 
 	/**
-	 * Get the catalog name used.
+	 * 获取使用的目录名称。
 	 */
 	public @Nullable String getCatalogName() {
 		return this.callMetaDataContext.getCatalogName();
 	}
 
 	/**
-	 * Set the schema name to use.
+	 * 设置要使用的架构名称。
 	 */
 	public void setSchemaName(@Nullable String schemaName) {
 		this.callMetaDataContext.setSchemaName(schemaName);
 	}
 
 	/**
-	 * Get the schema name used.
+	 * 获取使用的架构名称。
 	 */
 	public @Nullable String getSchemaName() {
 		return this.callMetaDataContext.getSchemaName();
 	}
 
 	/**
-	 * Specify whether this call is a function call.
-	 * The default is {@code false}.
+	 * 指定此调用是否是函数调用。默认为 {@code false}。
 	 */
 	public void setFunction(boolean function) {
 		this.callMetaDataContext.setFunction(function);
 	}
 
 	/**
-	 * Is this call a function call?
+	 * 这个调用是函数调用吗？
 	 */
 	public boolean isFunction() {
 		return this.callMetaDataContext.isFunction();
 	}
 
 	/**
-	 * Specify whether the call requires a return value.
-	 * The default is {@code false}.
+	 * 指定调用是否需要返回值。默认为 {@code false}。
 	 */
 	public void setReturnValueRequired(boolean returnValueRequired) {
 		this.callMetaDataContext.setReturnValueRequired(returnValueRequired);
 	}
 
 	/**
-	 * Does the call require a return value?
+	 * 调用需要返回值吗？
 	 */
 	public boolean isReturnValueRequired() {
 		return this.callMetaDataContext.isReturnValueRequired();
 	}
 
 	/**
-	 * Specify whether parameters should be bound by name.
-	 * The default is {@code false}.
+	 * 指定参数是否应按名称绑定。默认为 {@code false}。
 	 * @since 4.2
 	 */
 	public void setNamedBinding(boolean namedBinding) {
@@ -208,7 +207,7 @@ public abstract class AbstractJdbcCall {
 	}
 
 	/**
-	 * Should parameters be bound by name?
+	 * 参数应该按名称绑定吗？
 	 * @since 4.2
 	 */
 	public boolean isNamedBinding() {
@@ -216,22 +215,21 @@ public abstract class AbstractJdbcCall {
 	}
 
 	/**
-	 * Specify whether the parameter meta-data for the call should be used.
-	 * The default is {@code true}.
+	 * 指定是否应使用调用的参数元数据。默认为 {@code true}。
 	 */
 	public void setAccessCallParameterMetaData(boolean accessCallParameterMetaData) {
 		this.callMetaDataContext.setAccessCallParameterMetaData(accessCallParameterMetaData);
 	}
 
 	/**
-	 * Get the call string that should be used based on parameters and meta-data.
+	 * 根据参数和元数据获取应使用的调用字符串。
 	 */
 	public @Nullable String getCallString() {
 		return this.callString;
 	}
 
 	/**
-	 * Get the {@link CallableStatementCreatorFactory} being used.
+	 * 获取正在使用的 {@link CallableStatementCreatorFactory}。
 	 */
 	protected CallableStatementCreatorFactory getCallableStatementFactory() {
 		Assert.state(this.callableStatementFactory != null, "No CallableStatementCreatorFactory available");
@@ -240,12 +238,10 @@ public abstract class AbstractJdbcCall {
 
 
 	/**
-	 * Add a declared parameter to the list of parameters for the call.
-	 * <p>Only parameters declared as {@code SqlParameter} and {@code SqlInOutParameter} will
-	 * be used to provide input values. This is different from the {@code StoredProcedure}
-	 * class which - for backwards compatibility reasons - allows input values to be provided
-	 * for parameters declared as {@code SqlOutParameter}.
-	 * @param parameter the {@link SqlParameter} to add
+	 * 将声明的参数添加到调用的参数列表中。 <p>仅声明为 {@code SqlParameter} 和 {@code SqlInOutParameter}
+	 * 的参数将用于提供输入值。这与 {@code StoredProcedure} 类不同，出于向后兼容性的原因，{@code StoredProcedure} 类允许为声明为
+	 * {@code SqlOutParameter} 的参数提供输入值。
+	 * @param parameter 要添加的 {@link SqlParameter}
 	 */
 	public void addDeclaredParameter(SqlParameter parameter) {
 		if (isCompiled()) {
@@ -264,9 +260,9 @@ public abstract class AbstractJdbcCall {
 	}
 
 	/**
-	 * Add a {@link org.springframework.jdbc.core.RowMapper} for the specified parameter or column.
-	 * @param parameterName name of parameter or column
-	 * @param rowMapper the RowMapper implementation to use
+	 * 为指定的参数或列添加 {@link org.springframework.jdbc.core.RowMapper}。
+	 * @param parameterName 参数或列的名称
+	 * @param rowMapper 要使用的 RowMapper 实现
 	 */
 	public void addDeclaredRowMapper(String parameterName, RowMapper<?> rowMapper) {
 		if (isCompiled()) {
@@ -281,15 +277,12 @@ public abstract class AbstractJdbcCall {
 
 
 	//-------------------------------------------------------------------------
-	// Methods handling compilation issues
+	// 处理编译问题的方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Compile this JdbcCall using provided parameters and meta-data plus other settings.
-	 * <p>This finalizes the configuration for this object and subsequent attempts to compile are
-	 * ignored. This will be implicitly called the first time an un-compiled call is executed.
-	 * @throws org.springframework.dao.InvalidDataAccessApiUsageException if the object hasn't
-	 * been correctly initialized, for example if no DataSource has been provided
+	 * 使用提供的参数和元数据以及其他设置编译此 JdbcCall。 <p>这最终确定了该对象的配置，并且随后的编译尝试将被忽略。这将在第一次执行未编译的调用时被隐式调用。
+	 * @throws org.springframework.dao.InvalidDataAccessApiUsageException 如果对象尚未正确初始化，例如，如果未提供 DataSource
 	 */
 	public final void compile() throws InvalidDataAccessApiUsageException {
 		this.compilationLock.lock();
@@ -318,16 +311,14 @@ public abstract class AbstractJdbcCall {
 	}
 
 	/**
-	 * Delegate method to perform the actual compilation.
-	 * <p>Subclasses can override this template method to perform their own compilation.
-	 * Invoked after this base class's compilation is complete.
+	 * 执行实际编译的委托方法。 <p>子类可以重写此模板方法来执行自己的编译。该基类编译完成后调用。
 	 */
 	protected void compileInternal() {
 		DataSource dataSource = getJdbcTemplate().getDataSource();
 		Assert.state(dataSource != null, "No DataSource set");
 		this.callMetaDataContext.initializeMetaData(dataSource);
 
-		// Iterate over the declared RowMappers and register the corresponding SqlParameter
+		// 迭代声明的RowMappers并注册相应的SqlParameter
 		this.declaredRowMappers.forEach((key, value) -> this.declaredParameters.add(this.callMetaDataContext.createReturnResultSetParameter(key, value)));
 		this.callMetaDataContext.processParameters(this.declaredParameters);
 
@@ -343,24 +334,21 @@ public abstract class AbstractJdbcCall {
 	}
 
 	/**
-	 * Hook method that subclasses may override to react to compilation.
-	 * This implementation does nothing.
+	 * 子类可以重写以对编译做出反应的钩子方法。这个实现什么也不做。
 	 */
 	protected void onCompileInternal() {
 	}
 
 	/**
-	 * Is this operation "compiled"?
-	 * @return whether this operation is compiled and ready to use
+	 * 这个操作是“编译”的吗？
+	 * @return 该操作已编译并可以使用
 	 */
 	public boolean isCompiled() {
 		return this.compiled;
 	}
 
 	/**
-	 * Check whether this operation has been compiled already;
-	 * lazily compile it if not already compiled.
-	 * <p>Automatically called by all {@code doExecute(...)} methods.
+	 * 检查该操作是否已经编译；如果尚未编译，则延迟编译它。 <p> 由所有 {@code doExecute(...)} 方法自动调用。
 	 */
 	protected void checkCompiled() {
 		if (!isCompiled()) {
@@ -371,13 +359,13 @@ public abstract class AbstractJdbcCall {
 
 
 	//-------------------------------------------------------------------------
-	// Methods handling execution
+	// 处理执行的方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Delegate method that executes the call using the passed-in {@link SqlParameterSource}.
-	 * @param parameterSource parameter names and values to be used in call
-	 * @return a Map of out parameters
+	 * 使用传入的 {@link SqlParameterSource} 执行调用的委托方法。
+	 * @param parameterSource 调用中使用的参数名称和值
+	 * @return 输出参数图
 	 */
 	protected Map<String, @Nullable Object> doExecute(SqlParameterSource parameterSource) {
 		checkCompiled();
@@ -386,10 +374,9 @@ public abstract class AbstractJdbcCall {
 	}
 
 	/**
-	 * Delegate method that executes the call using the passed-in array of parameters.
-	 * @param args array of parameter values. The order of values must match the order
-	 * declared for the stored procedure.
-	 * @return a Map of out parameters
+	 * 使用传入的参数数组执行调用的委托方法。
+	 * @param args 参数值数组。值的顺序必须与为存储过程声明的顺序匹配。
+	 * @return 输出参数图
 	 */
 	protected Map<String, @Nullable Object> doExecute(Object... args) {
 		checkCompiled();
@@ -398,9 +385,9 @@ public abstract class AbstractJdbcCall {
 	}
 
 	/**
-	 * Delegate method that executes the call using the passed-in Map of parameters.
-	 * @param args a Map of parameter name and values
-	 * @return a Map of out parameters
+	 * 使用传入的参数映射执行调用的委托方法。
+	 * @param args 参数名称和值的映射
+	 * @return 输出参数图
 	 */
 	protected Map<String, @Nullable Object> doExecute(Map<String, ?> args) {
 		checkCompiled();
@@ -409,7 +396,7 @@ public abstract class AbstractJdbcCall {
 	}
 
 	/**
-	 * Delegate method to perform the actual call processing.
+	 * 委托方法执行实际的调用处理。
 	 */
 	private Map<String, @Nullable Object> executeCallInternal(Map<String, ?> args) {
 		CallableStatementCreator csc = getCallableStatementFactory().newCallableStatementCreator(args);
@@ -427,46 +414,41 @@ public abstract class AbstractJdbcCall {
 
 
 	/**
-	 * Get the name of a single out parameter or return value.
-	 * Used for functions or procedures with one out parameter.
+	 * 获取单个输出参数或返回值的名称。用于带有一个输出参数的函数或过程。
 	 */
 	protected @Nullable String getScalarOutParameterName() {
 		return this.callMetaDataContext.getScalarOutParameterName();
 	}
 
 	/**
-	 * Get a List of all the call parameters to be used for call.
-	 * This includes any parameters added based on meta-data processing.
+	 * 获取用于调用的所有调用参数的列表。这包括基于元数据处理添加的任何参数。
 	 */
 	protected List<SqlParameter> getCallParameters() {
 		return this.callMetaDataContext.getCallParameters();
 	}
 
 	/**
-	 * Match the provided in parameter values with registered parameters and
-	 * parameters defined via meta-data processing.
-	 * @param parameterSource the parameter values provided as a {@link SqlParameterSource}
-	 * @return a Map with parameter names and values
+	 * 将提供的参数值与注册参数和通过元数据处理定义的参数进行匹配。
+	 * @param parameterSource 以 {@link SqlParameterSource} 形式提供的参数值
+	 * @return 包含参数名称和值的映射
 	 */
 	protected Map<String, Object> matchInParameterValuesWithCallParameters(SqlParameterSource parameterSource) {
 		return this.callMetaDataContext.matchInParameterValuesWithCallParameters(parameterSource);
 	}
 
 	/**
-	 * Match the provided in parameter values with registered parameters and
-	 * parameters defined via meta-data processing.
-	 * @param args the parameter values provided as an array
-	 * @return a Map with parameter names and values
+	 * 将提供的参数值与注册参数和通过元数据处理定义的参数进行匹配。
+	 * @param args 以数组形式提供的参数值
+	 * @return 包含参数名称和值的映射
 	 */
 	private Map<String, ?> matchInParameterValuesWithCallParameters(Object[] args) {
 		return this.callMetaDataContext.matchInParameterValuesWithCallParameters(args);
 	}
 
 	/**
-	 * Match the provided in parameter values with registered parameters and
-	 * parameters defined via meta-data processing.
-	 * @param args the parameter values provided as a Map
-	 * @return a Map with parameter names and values
+	 * 将提供的参数值与注册参数和通过元数据处理定义的参数进行匹配。
+	 * @param args 以 Map 形式提供的参数值
+	 * @return 包含参数名称和值的映射
 	 */
 	protected Map<String, ?> matchInParameterValuesWithCallParameters(Map<String, ?> args) {
 		return this.callMetaDataContext.matchInParameterValuesWithCallParameters(args);

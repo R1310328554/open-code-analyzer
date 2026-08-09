@@ -28,23 +28,14 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
 /**
- * Interface specifying a basic set of JDBC operations.
- *
- * <p>Implemented by {@link JdbcTemplate}. Not often used directly, but a useful
- * option to enhance testability, as it can easily be mocked or stubbed.
- *
- * <p>Alternatively, the standard JDBC infrastructure can be mocked.
- * However, mocking this interface constitutes significantly less work.
- * As an alternative to a mock objects approach to testing data access code,
- * consider the powerful integration testing support provided via the
- * <em>Spring TestContext Framework</em>, in the {@code spring-test} artifact.
- *
- * <p><b>NOTE: As of 6.1, there is a unified JDBC access facade available in
- * the form of {@link org.springframework.jdbc.core.simple.JdbcClient}.</b>
- * {@code JdbcClient} provides a fluent API style for common JDBC queries/updates
- * with flexible use of indexed or named parameters. It delegates to
- * {@code JdbcOperations}/{@code NamedParameterJdbcOperations} for actual execution.
- *
+ * 指定一组基本 JDBC 操作的接口。
+ * <p>由{@link JdbcTemplate}实现。通常不直接使用，但它是增强可测试性的有用选项，因为它可以轻松地被模拟或存根。
+ * <p>或者，可以模拟标准 JDBC 基础结构。然而，模拟这个接口会显着减少工作量。作为测试数据访问代码的模拟对象方法的替代方法，请考虑通过 <em>Spring TestCon
+ * text Framework</em>（在 {@code spring-test} 工件中）提供的强大集成测试支持。
+ * <p><b>NOTE：从 6.1 开始，有一个统一的 JDBC 访问外观，以 {@link
+ * org.springframework.jdbc.core.simple.JdbcClient} 的形式提供。</b> {@code JdbcClient} 为常见的 JDBC
+ * 查询/更新提供了流畅的 API 风格，可以灵活地使用索引或命名参数。它委托给 {@code JdbcOperations}/{@code
+ * NamedParameterJdbcOperations} 来实际执行。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see JdbcTemplate
@@ -53,210 +44,162 @@ import org.springframework.jdbc.support.rowset.SqlRowSet;
 public interface JdbcOperations {
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with a plain java.sql.Connection
+	// 处理普通 java.sql.Connection 的方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Execute a JDBC data access operation, implemented as callback action
-	 * working on a JDBC Connection. This allows for implementing arbitrary
-	 * data access operations, within Spring's managed JDBC environment:
-	 * that is, participating in Spring-managed transactions and converting
-	 * JDBC SQLExceptions into Spring's DataAccessException hierarchy.
-	 * <p>The callback action can return a result object, for example a domain
-	 * object or a collection of domain objects.
-	 * @param action a callback object that specifies the action
-	 * @return a result object returned by the action, or {@code null} if none
-	 * @throws DataAccessException if there is any problem
+	 * 执行 JDBC 数据访问操作，作为在 JDBC 连接上工作的回调操作来实现。这允许在 Spring 的托管 JDBC 环境中实现任意数据访问操作：即参与 Spring 管理的事
+	 * 务并将 JDBC SQLException 转换为 Spring 的 DataAccessException 层次结构。 <p>回调操作可以返回结果对象，例如域对象或域对象的集
+	 * 合。
+	 * @param action 指定操作的回调对象
+	 * @return 操作返回的结果对象，如果没有则返回 {@code null}
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	<T extends @Nullable Object> T execute(ConnectionCallback<T> action) throws DataAccessException;
 
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with static SQL (java.sql.Statement)
+	// 处理静态 SQL 的方法 (java.sql.Statement)
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Execute a JDBC data access operation, implemented as callback action
-	 * working on a JDBC Statement. This allows for implementing arbitrary data
-	 * access operations on a single Statement, within Spring's managed JDBC
-	 * environment: that is, participating in Spring-managed transactions and
-	 * converting JDBC SQLExceptions into Spring's DataAccessException hierarchy.
-	 * <p>The callback action can return a result object, for example a domain
-	 * object or a collection of domain objects.
-	 * @param action a callback that specifies the action
-	 * @return a result object returned by the action, or {@code null} if none
-	 * @throws DataAccessException if there is any problem
+	 * 执行 JDBC 数据访问操作，作为作用于 JDBC 语句的回调操作来实现。这允许在 Spring 的托管 JDBC 环境中在单个语句上实现任意数据访问操作：即参与 Spring
+	 *  管理的事务并将 JDBC SQLException 转换为 Spring 的 DataAccessException 层次结构。 <p>回调操作可以返回结果对象，例如域对象或
+	 * 域对象的集合。
+	 * @param action 指定操作的回调
+	 * @return 操作返回的结果对象，如果没有则返回 {@code null}
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	<T extends @Nullable Object> T execute(StatementCallback<T> action) throws DataAccessException;
 
 	/**
-	 * Issue a single SQL execute, typically a DDL statement.
-	 * @param sql static SQL to execute
-	 * @throws DataAccessException if there is any problem
+	 * 发出单个 SQL 执行，通常是 DDL 语句。
+	 * @param sql 要执行的静态 SQL
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	void execute(String sql) throws DataAccessException;
 
 	/**
-	 * Execute a query given static SQL, reading the ResultSet with a
-	 * ResultSetExtractor.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@code query} method with {@code null} as argument array.
-	 * @param sql the SQL query to execute
-	 * @param rse a callback that will extract all rows of results
-	 * @return an arbitrary result object, as returned by the ResultSetExtractor
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 执行给定静态 SQL 的查询，使用 ResultSetExtractor 读取 ResultSet。 <p>U 使用 JDBC
+	 * 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使用重载的{@code query}方法并将{@code
+	 * null}作为参数数组。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rse 将提取所有结果行的回调
+	 * @return 任意结果对象，由 ResultSetExtractor 返回
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #query(String, ResultSetExtractor, Object...)
 	 */
 	<T extends @Nullable Object> T query(String sql, ResultSetExtractor<T> rse) throws DataAccessException;
 
 	/**
-	 * Execute a query given static SQL, reading the ResultSet on a per-row
-	 * basis with a RowCallbackHandler.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@code query} method with {@code null} as argument array.
-	 * @param sql the SQL query to execute
-	 * @param rch a callback that will extract results, one row at a time
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 执行给定静态 SQL 的查询，使用 RowCallbackHandler 按行读取 ResultSet。 <p>U 使用 JDBC
+	 * 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使用重载的{@code query}方法并将{@code
+	 * null}作为参数数组。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rch 将提取结果的回调，一次一行
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #query(String, RowCallbackHandler, Object...)
 	 */
 	void query(String sql, RowCallbackHandler rch) throws DataAccessException;
 
 	/**
-	 * Execute a query given static SQL, mapping each row to a result object
-	 * via a RowMapper.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@code query} method with {@code null} as argument array.
-	 * @param sql the SQL query to execute
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result List, containing mapped objects
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 执行给定静态 SQL 的查询，通过 RowMapper 将每一行映射到结果对象。 <p>U 使用 JDBC
+	 * 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使用重载的{@code query}方法并将{@code
+	 * null}作为参数数组。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果列表，包含映射对象
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #query(String, RowMapper, Object...)
 	 */
 	<T extends @Nullable Object> List<T> query(String sql, RowMapper<T> rowMapper) throws DataAccessException;
 
 	/**
-	 * Execute a query given static SQL, mapping each row to a result object
-	 * via a RowMapper, and turning it into an iterable and closeable Stream.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@code query} method with {@code null} as argument array.
-	 * @param sql the SQL query to execute
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result Stream, containing mapped objects, needing to be
-	 * closed once fully processed (for example, through a try-with-resources clause)
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 执行给定静态 SQL 的查询，通过 RowMapper 将每一行映射到结果对象，并将其转换为可迭代且可关闭的 Stream。 <p>U 使用 JDBC
+	 * 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使用重载的{@code query}方法并将{@code
+	 * null}作为参数数组。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果流，包含映射对象，完全处理后需要关闭（例如，通过 try-with-resources 子句）
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @since 5.3
 	 * @see #queryForStream(String, RowMapper, Object...)
 	 */
 	<T extends @Nullable Object> Stream<T> queryForStream(String sql, RowMapper<T> rowMapper) throws DataAccessException;
 
 	/**
-	 * Execute a query given static SQL, mapping a single result row to a
-	 * result object via a RowMapper.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@link #queryForObject(String, RowMapper, Object...)} method with
-	 * {@code null} as argument array.
-	 * @param sql the SQL query to execute
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the single mapped object (may be {@code null} if the given
-	 * {@link RowMapper} returned {@code null})
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 执行给定静态 SQL 的查询，通过 RowMapper 将单个结果行映射到结果对象。 <p>U 使用 JDBC
+	 * 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使用重载的{@link
+	 * #queryForObject(String, RowMapper, Object...)}方法并将{@code null}作为参数数组。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 单个映射对象（如果给定的 {@link RowMapper} 返回 {@code null}，则可能是 {@code null}）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #queryForObject(String, RowMapper, Object...)
 	 */
 	<T extends @Nullable Object> T queryForObject(String sql, RowMapper<T> rowMapper) throws DataAccessException;
 
 	/**
-	 * Execute a query for a result object, given static SQL.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@link #queryForObject(String, Class, Object...)} method with
-	 * {@code null} as argument array.
-	 * <p>This method is useful for running static SQL with a known outcome.
-	 * The query is expected to be a single row/single column query; the returned
-	 * result will be directly mapped to the corresponding object type.
-	 * @param sql the SQL query to execute
-	 * @param requiredType the type that the result object is expected to match
-	 * @return the result object of the required type, or {@code null} in case of SQL NULL
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws org.springframework.jdbc.IncorrectResultSetColumnCountException
-	 * if the query does not return a row containing a single column
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 给定静态 SQL，对结果对象执行查询。 <p>U 使用 JDBC 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使
+	 * 用重载的{@link #queryForObject(String, Class, Object...)}方法并将{@code null}作为参数数组。 <p>此方法对于运行具
+	 * 有已知结果的静态 SQL 非常有用。查询预计是单行/单列查询；返回的结果将直接映射到相应的对象类型。
+	 * @param sql 要执行的 SQL 查询
+	 * @param requiredType 结果对象期望匹配的类型
+	 * @return 所需类型的结果对象，或 {@code null}（如果 SQL NULL）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws org.springframework.jdbc.IncorrectResultSetColumnCountException 如果查询不返回包含单个列的行
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #queryForObject(String, Class, Object...)
 	 */
 	<T> @Nullable T queryForObject(String sql, Class<T> requiredType) throws DataAccessException;
 
 	/**
-	 * Execute a query for a result map, given static SQL.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@link #queryForMap(String, Object...)} method with {@code null}
-	 * as argument array.
-	 * <p>The query is expected to be a single row query; the result row will be
-	 * mapped to a Map (one entry for each column, using the column name as the key).
-	 * @param sql the SQL query to execute
-	 * @return the result Map (one entry per column, with column name as key)
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 给定静态 SQL，执行结果映射查询。 <p>U 使用 JDBC
+	 * 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使用重载的{@link #queryForMap(String,
+	 * Object...)}方法并将{@code null}作为参数数组。 <p>查询预计是单行查询；结果行将映射到一个 Map（每列一个条目，使用列名作为键）。
+	 * @param sql 要执行的 SQL 查询
+	 * @return 结果映射（每列一个条目，以列名作为键）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #queryForMap(String, Object...)
 	 * @see ColumnMapRowMapper
 	 */
 	Map<String, @Nullable Object> queryForMap(String sql) throws DataAccessException;
 
 	/**
-	 * Execute a query for a result list, given static SQL.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@code queryForList} method with {@code null} as argument array.
-	 * <p>The results will be mapped to a List (one entry for each row) of
-	 * result objects, each of them matching the specified element type.
-	 * @param sql the SQL query to execute
-	 * @param elementType the required type of element in the result list
-	 * (for example, {@code Integer.class})
-	 * @return a List of objects that match the specified element type
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 给定静态 SQL，执行结果列表的查询。 <p>U 使用 JDBC 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使
+	 * 用重载的{@code queryForList}方法并将{@code null}作为参数数组。 <p>的结果将映射到结果对象的列表（每行一个条目），每个结果对象都与指定的元素类
+	 * 型匹配。
+	 * @param sql 要执行的 SQL 查询
+	 * @param elementType 结果列表中所需的元素类型（例如 {@code Integer.class}）
+	 * @return 与指定元素类型匹配的对象列表
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #queryForList(String, Class, Object...)
 	 * @see SingleColumnRowMapper
 	 */
 	<T> List<@Nullable T> queryForList(String sql, Class<T> elementType) throws DataAccessException;
 
 	/**
-	 * Execute a query for a result list, given static SQL.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@code queryForList} method with {@code null} as argument array.
-	 * <p>The results will be mapped to a List (one entry for each row) of
-	 * Maps (one entry for each column using the column name as the key).
-	 * Each element in the list will be of the form returned by this interface's
-	 * {@code queryForMap} methods.
-	 * @param sql the SQL query to execute
-	 * @return a List that contains a Map per row
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 给定静态 SQL，执行结果列表的查询。 <p>U 使用 JDBC 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使
+	 * 用重载的{@code queryForList}方法并将{@code null}作为参数数组。 <p>的结果将被映射到一个List（每行一个条目）的Maps（每列一个条目，使用
+	 * 列名作为键）。列表中的每个元素都将采用此接口的 {@code queryForMap} 方法返回的形式。
+	 * @param sql 要执行的 SQL 查询
+	 * @return 每行包含一个 Map 的列表
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #queryForList(String, Object...)
 	 */
 	List<Map<String, @Nullable Object>> queryForList(String sql) throws DataAccessException;
 
 	/**
-	 * Execute a query for an SqlRowSet, given static SQL.
-	 * <p>Uses a JDBC Statement, not a PreparedStatement. If you want to
-	 * execute a static query with a PreparedStatement, use the overloaded
-	 * {@code queryForRowSet} method with {@code null} as argument array.
-	 * <p>The results will be mapped to an SqlRowSet which holds the data in a
-	 * disconnected fashion. This wrapper will translate any SQLExceptions thrown.
-	 * <p>Note that, for the default implementation, JDBC RowSet support needs to
-	 * be available at runtime: by default, a standard JDBC {@code CachedRowSet}
-	 * is used.
-	 * @param sql the SQL query to execute
-	 * @return an SqlRowSet representation (possibly a wrapper around a
-	 * {@code javax.sql.rowset.CachedRowSet})
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 在给定静态 SQL 的情况下，执行 SqlRowSet 的查询。 <p>U 使用 JDBC
+	 * 语句，而不是PreparedStatement。如果要使用PreparedStatement执行静态查询，请使用重载的{@code
+	 * queryForRowSet}方法并将{@code null}作为参数数组。 <p>的结果将被映射到一个SqlRowSet，它以断开连接的方式保存数据。该包装器将转换任何抛出的
+	 * SQLException。 <p> 请注意，对于默认实现，需要在运行时提供 JDBC RowSet 支持：默认情况下，使用标准 JDBC {@code
+	 * CachedRowSet}。
+	 * @param sql 要执行的 SQL 查询
+	 * @return SqlRowSet 表示（可能是 {@code javax.sql.rowset.CachedRowSet} 的包装器）
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #queryForRowSet(String, Object...)
 	 * @see SqlRowSetResultSetExtractor
 	 * @see javax.sql.rowset.CachedRowSet
@@ -264,403 +207,299 @@ public interface JdbcOperations {
 	SqlRowSet queryForRowSet(String sql) throws DataAccessException;
 
 	/**
-	 * Issue a single SQL update operation (such as an insert, update or delete statement).
-	 * @param sql static SQL to execute
-	 * @return the number of rows affected
-	 * @throws DataAccessException if there is any problem.
+	 * 发出单个 SQL 更新操作（例如插入、更新或删除语句）。
+	 * @param sql 要执行的静态 SQL
+	 * @return 受影响的行数
+	 * @throws DataAccessException 如果有任何问题。
 	 */
 	int update(String sql) throws DataAccessException;
 
 	/**
-	 * Issue multiple SQL updates on a single JDBC Statement using batching.
-	 * <p>Will fall back to separate updates on a single Statement if the JDBC
-	 * driver does not support batch updates.
-	 * @param sql defining an array of SQL statements that will be executed.
-	 * @return an array of the number of rows affected by each statement
-	 * @throws DataAccessException if there is any problem executing the batch
+	 * 使用批处理在单个 JDBC 语句上发出多个 SQL 更新。如果 JDBC 驱动程序不支持批量更新，<p> 将回退到单个语句上的单独更新。
+	 * @param sql 定义将要执行的 SQL 语句的数组。
+	 * @return 每个语句影响的行数数组
+	 * @throws DataAccessException 如果执行批处理有任何问题
 	 */
 	int[] batchUpdate(String... sql) throws DataAccessException;
 
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with prepared statements
+	// 处理准备好的语句的方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Execute a JDBC data access operation, implemented as callback action
-	 * working on a JDBC PreparedStatement. This allows for implementing arbitrary
-	 * data access operations on a single Statement, within Spring's managed JDBC
-	 * environment: that is, participating in Spring-managed transactions and
-	 * converting JDBC SQLExceptions into Spring's DataAccessException hierarchy.
-	 * <p>The callback action can return a result object, for example a domain
-	 * object or a collection of domain objects.
-	 * @param psc a callback that creates a PreparedStatement given a Connection
-	 * @param action a callback that specifies the action
-	 * @return a result object returned by the action, or {@code null} if none
-	 * @throws DataAccessException if there is any problem
+	 * 执行 JDBC 数据访问操作，作为作用于 JDBC PreparedStatement 的回调操作来实现。这允许在 Spring 的托管 JDBC 环境中在单个语句上实现任意数
+	 * 据访问操作：即参与 Spring 管理的事务并将 JDBC SQLException 转换为 Spring 的 DataAccessException 层次结构。 <p>回调操
+	 * 作可以返回结果对象，例如域对象或域对象的集合。
+	 * @param psc 给定连接创建一个PreparedStatement的回调
+	 * @param action 指定操作的回调
+	 * @return 操作返回的结果对象，如果没有则返回 {@code null}
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	<T extends @Nullable Object> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action) throws DataAccessException;
 
 	/**
-	 * Execute a JDBC data access operation, implemented as callback action
-	 * working on a JDBC PreparedStatement. This allows for implementing arbitrary
-	 * data access operations on a single Statement, within Spring's managed JDBC
-	 * environment: that is, participating in Spring-managed transactions and
-	 * converting JDBC SQLExceptions into Spring's DataAccessException hierarchy.
-	 * <p>The callback action can return a result object, for example a domain
-	 * object or a collection of domain objects.
-	 * @param sql the SQL to execute
-	 * @param action a callback that specifies the action
-	 * @return a result object returned by the action, or {@code null} if none
-	 * @throws DataAccessException if there is any problem
+	 * 执行 JDBC 数据访问操作，作为作用于 JDBC PreparedStatement 的回调操作来实现。这允许在 Spring 的托管 JDBC 环境中在单个语句上实现任意数
+	 * 据访问操作：即参与 Spring 管理的事务并将 JDBC SQLException 转换为 Spring 的 DataAccessException 层次结构。 <p>回调操
+	 * 作可以返回结果对象，例如域对象或域对象的集合。
+	 * @param sql 要执行的 SQL
+	 * @param action 指定操作的回调
+	 * @return 操作返回的结果对象，如果没有则返回 {@code null}
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	<T extends @Nullable Object> T execute(String sql, PreparedStatementCallback<T> action) throws DataAccessException;
 
 	/**
-	 * Query using a prepared statement, reading the ResultSet with a ResultSetExtractor.
-	 * <p>A PreparedStatementCreator can either be implemented directly or
-	 * configured through a PreparedStatementCreatorFactory.
-	 * @param psc a callback that creates a PreparedStatement given a Connection
-	 * @param rse a callback that will extract results
-	 * @return an arbitrary result object, as returned by the ResultSetExtractor
-	 * @throws DataAccessException if there is any problem
+	 * 使用准备好的语句进行查询，并使用 ResultSetExtractor 读取 ResultSet。 <p>APreparedStatementCreator
+	 * 可以直接实现，也可以通过PreparedStatementCreatorFactory 进行配置。
+	 * @param psc 给定连接创建一个PreparedStatement的回调
+	 * @param rse 将提取结果的回调
+	 * @return 任意结果对象，由 ResultSetExtractor 返回
+	 * @throws DataAccessException 如果有任何问题
 	 * @see PreparedStatementCreatorFactory
 	 */
 	<T extends @Nullable Object> T query(PreparedStatementCreator psc, ResultSetExtractor<T> rse) throws DataAccessException;
 
 	/**
-	 * Query using a prepared statement, reading the ResultSet with a ResultSetExtractor.
-	 * @param sql the SQL query to execute
-	 * @param pss a callback that knows how to set values on the prepared statement.
-	 * If this is {@code null}, the SQL will be assumed to contain no bind parameters.
-	 * Even if there are no bind parameters, this callback may be used to set the
-	 * fetch size and other performance options.
-	 * @param rse a callback that will extract results
-	 * @return an arbitrary result object, as returned by the ResultSetExtractor
-	 * @throws DataAccessException if there is any problem
+	 * 使用准备好的语句进行查询，并使用 ResultSetExtractor 读取 ResultSet。
+	 * @param sql 要执行的 SQL 查询
+	 * @param pss 知道如何在准备好的语句上设置值的回调。如果这是 {@code null}，则将假定 SQL 不包含绑定参数。即使没有绑定参数，此回调也可用于设置获取大小和其他性能选项。
+	 * @param rse 将提取结果的回调
+	 * @return 任意结果对象，由 ResultSetExtractor 返回
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	<T extends @Nullable Object> T query(String sql, @Nullable PreparedStatementSetter pss, ResultSetExtractor<T> rse)
 			throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of arguments
-	 * to bind to the query, reading the ResultSet with a ResultSetExtractor.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @param rse a callback that will extract results
-	 * @return an arbitrary result object, as returned by the ResultSetExtractor
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，使用 ResultSetExtractor 读取 ResultSet。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @param rse 将提取结果的回调
+	 * @return 任意结果对象，由 ResultSetExtractor 返回
+	 * @throws DataAccessException 如果查询失败
 	 * @see java.sql.Types
 	 */
 	<T extends @Nullable Object> T query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, ResultSetExtractor<T> rse) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of arguments
-	 * to bind to the query, reading the ResultSet with a ResultSetExtractor.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @param rse a callback that will extract results
-	 * @return an arbitrary result object, as returned by the ResultSetExtractor
-	 * @throws DataAccessException if the query fails
-	 * @deprecated in favor of {@link #query(String, ResultSetExtractor, Object...)}
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，使用 ResultSetExtractor 读取 ResultSet。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @param rse 将提取结果的回调
+	 * @return 任意结果对象，由 ResultSetExtractor 返回
+	 * @throws DataAccessException 如果查询失败
+	 * @deprecated {@link #query(String, ResultSetExtractor, Object...)} 的青睐
 	 */
 	@Deprecated(since = "5.3")
 	<T extends @Nullable Object> T query(String sql, @Nullable Object @Nullable [] args, ResultSetExtractor<T> rse) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of arguments
-	 * to bind to the query, reading the ResultSet with a ResultSetExtractor.
-	 * @param sql the SQL query to execute
-	 * @param rse a callback that will extract results
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return an arbitrary result object, as returned by the ResultSetExtractor
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，使用 ResultSetExtractor 读取 ResultSet。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rse 将提取结果的回调
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 任意结果对象，由 ResultSetExtractor 返回
+	 * @throws DataAccessException 如果查询失败
 	 * @since 3.0.1
 	 */
 	<T extends @Nullable Object> T query(String sql, ResultSetExtractor<T> rse, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Query using a prepared statement, reading the ResultSet on a per-row basis
-	 * with a RowCallbackHandler.
-	 * <p>A PreparedStatementCreator can either be implemented directly or
-	 * configured through a PreparedStatementCreatorFactory.
-	 * @param psc a callback that creates a PreparedStatement given a Connection
-	 * @param rch a callback that will extract results, one row at a time
-	 * @throws DataAccessException if there is any problem
+	 * 使用准备好的语句进行查询，使用 RowCallbackHandler 按行读取 ResultSet。 <p>APreparedStatementCreator
+	 * 可以直接实现，也可以通过PreparedStatementCreatorFactory 进行配置。
+	 * @param psc 给定连接创建一个PreparedStatement的回调
+	 * @param rch 将提取结果的回调，一次一行
+	 * @throws DataAccessException 如果有任何问题
 	 * @see PreparedStatementCreatorFactory
 	 */
 	void query(PreparedStatementCreator psc, RowCallbackHandler rch) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a
-	 * PreparedStatementSetter implementation that knows how to bind values to the
-	 * query, reading the ResultSet on a per-row basis with a RowCallbackHandler.
-	 * @param sql the SQL query to execute
-	 * @param pss a callback that knows how to set values on the prepared statement.
-	 * If this is {@code null}, the SQL will be assumed to contain no bind parameters.
-	 * Even if there are no bind parameters, this callback may be used to set the
-	 * fetch size and other performance options.
-	 * @param rch a callback that will extract results, one row at a time
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 和一个知道如何将值绑定到查询的PreparedStatementSetter 实现创建一条准备好的语句，并使用
+	 * RowCallbackHandler 按行读取 ResultSet。
+	 * @param sql 要执行的 SQL 查询
+	 * @param pss 知道如何在准备好的语句上设置值的回调。如果这是 {@code null}，则将假定 SQL 不包含绑定参数。即使没有绑定参数，此回调也可用于设置获取大小和其他性能选项。
+	 * @param rch 将提取结果的回调，一次一行
+	 * @throws DataAccessException 如果查询失败
 	 */
 	void query(String sql, @Nullable PreparedStatementSetter pss, RowCallbackHandler rch) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, reading the ResultSet on a per-row basis
-	 * with a RowCallbackHandler.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @param rch a callback that will extract results, one row at a time
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，使用 RowCallbackHandler 按行读取 ResultSet。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @param rch 将提取结果的回调，一次一行
+	 * @throws DataAccessException 如果查询失败
 	 * @see java.sql.Types
 	 */
 	void query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowCallbackHandler rch) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, reading the ResultSet on a per-row basis
-	 * with a RowCallbackHandler.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @param rch a callback that will extract results, one row at a time
-	 * @throws DataAccessException if the query fails
-	 * @deprecated in favor of {@link #query(String, RowCallbackHandler, Object...)}
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，使用 RowCallbackHandler 按行读取 ResultSet。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @param rch 将提取结果的回调，一次一行
+	 * @throws DataAccessException 如果查询失败
+	 * @deprecated {@link #query(String, RowCallbackHandler, Object...)} 的青睐
 	 */
 	@Deprecated(since = "5.3")
 	void query(String sql, @Nullable Object @Nullable [] args, RowCallbackHandler rch) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, reading the ResultSet on a per-row basis
-	 * with a RowCallbackHandler.
-	 * @param sql the SQL query to execute
-	 * @param rch a callback that will extract results, one row at a time
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，使用 RowCallbackHandler 按行读取 ResultSet。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rch 将提取结果的回调，一次一行
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @throws DataAccessException 如果查询失败
 	 * @since 3.0.1
 	 */
 	void query(String sql, RowCallbackHandler rch, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Query using a prepared statement, mapping each row to a result object
-	 * via a RowMapper.
-	 * <p>A PreparedStatementCreator can either be implemented directly or
-	 * configured through a PreparedStatementCreatorFactory.
-	 * @param psc a callback that creates a PreparedStatement given a Connection
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result List, containing mapped objects
-	 * @throws DataAccessException if there is any problem
+	 * 使用准备好的语句进行查询，通过 RowMapper 将每一行映射到结果对象。 <p>APreparedStatementCreator
+	 * 可以直接实现，也可以通过PreparedStatementCreatorFactory 进行配置。
+	 * @param psc 给定连接创建一个PreparedStatement的回调
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果列表，包含映射对象
+	 * @throws DataAccessException 如果有任何问题
 	 * @see PreparedStatementCreatorFactory
 	 */
 	<T extends @Nullable Object> List<T> query(PreparedStatementCreator psc, RowMapper<T> rowMapper) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a
-	 * PreparedStatementSetter implementation that knows how to bind values
-	 * to the query, mapping each row to a result object via a RowMapper.
-	 * @param sql the SQL query to execute
-	 * @param pss a callback that knows how to set values on the prepared statement.
-	 * If this is {@code null}, the SQL will be assumed to contain no bind parameters.
-	 * Even if there are no bind parameters, this callback may be used to set the
-	 * fetch size and other performance options.
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result List, containing mapped objects
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建一条准备好的语句，以及一个知道如何将值绑定到查询的PreparedStatementSetter 实现，通过 RowMapper 将每一行映
+	 * 射到结果对象。
+	 * @param sql 要执行的 SQL 查询
+	 * @param pss 知道如何在准备好的语句上设置值的回调。如果这是 {@code null}，则将假定 SQL 不包含绑定参数。即使没有绑定参数，此回调也可用于设置获取大小和其他性能选项。
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果列表，包含映射对象
+	 * @throws DataAccessException 如果查询失败
 	 */
 	<T extends @Nullable Object> List<T> query(String sql, @Nullable PreparedStatementSetter pss, RowMapper<T> rowMapper)
 			throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, mapping each row to a result object
-	 * via a RowMapper.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result List, containing mapped objects
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，通过 RowMapper 将每一行映射到结果对象。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果列表，包含映射对象
+	 * @throws DataAccessException 如果查询失败
 	 * @see java.sql.Types
 	 */
 	<T extends @Nullable Object> List<T> query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowMapper<T> rowMapper) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, mapping each row to a result object
-	 * via a RowMapper.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result List, containing mapped objects
-	 * @throws DataAccessException if the query fails
-	 * @deprecated in favor of {@link #query(String, RowMapper, Object...)}
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，通过 RowMapper 将每一行映射到结果对象。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果列表，包含映射对象
+	 * @throws DataAccessException 如果查询失败
+	 * @deprecated {@link #query(String, RowMapper, Object...)} 的青睐
 	 */
 	@Deprecated(since = "5.3")
 	<T extends @Nullable Object> List<T> query(String sql, @Nullable Object @Nullable [] args, RowMapper<T> rowMapper) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, mapping each row to a result object
-	 * via a RowMapper.
-	 * @param sql the SQL query to execute
-	 * @param rowMapper a callback that will map one object per row
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return the result List, containing mapped objects
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，通过 RowMapper 将每一行映射到结果对象。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 结果列表，包含映射对象
+	 * @throws DataAccessException 如果查询失败
 	 * @since 3.0.1
 	 */
 	<T extends @Nullable Object> List<T> query(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Query using a prepared statement, mapping each row to a result object
-	 * via a RowMapper, and turning it into an iterable and closeable Stream.
-	 * <p>A PreparedStatementCreator can either be implemented directly or
-	 * configured through a PreparedStatementCreatorFactory.
-	 * @param psc a callback that creates a PreparedStatement given a Connection
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result Stream, containing mapped objects, needing to be
-	 * closed once fully processed (for example, through a try-with-resources clause)
-	 * @throws DataAccessException if there is any problem
+	 * 使用准备好的语句进行查询，通过 RowMapper 将每一行映射到结果对象，并将其转换为可迭代且可关闭的 Stream。
+	 * <p>APreparedStatementCreator 可以直接实现，也可以通过PreparedStatementCreatorFactory 进行配置。
+	 * @param psc 给定连接创建一个PreparedStatement的回调
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果流，包含映射对象，完全处理后需要关闭（例如，通过 try-with-resources 子句）
+	 * @throws DataAccessException 如果有任何问题
 	 * @see PreparedStatementCreatorFactory
 	 * @since 5.3
 	 */
 	<T extends @Nullable Object> Stream<T> queryForStream(PreparedStatementCreator psc, RowMapper<T> rowMapper) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a
-	 * PreparedStatementSetter implementation that knows how to bind values
-	 * to the query, mapping each row to a result object via a RowMapper,
-	 * and turning it into an iterable and closeable Stream.
-	 * @param sql the SQL query to execute
-	 * @param pss a callback that knows how to set values on the prepared statement.
-	 * If this is {@code null}, the SQL will be assumed to contain no bind parameters.
-	 * Even if there are no bind parameters, this callback may be used to set the
-	 * fetch size and other performance options.
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the result Stream, containing mapped objects, needing to be
-	 * closed once fully processed (for example, through a try-with-resources clause)
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建一条准备好的语句，并知道如何将值绑定到查询，通过 RowMapper 将每一行映射到结果对象，并将其转换为可迭代和可关闭的 Stream。
+	 * @param sql 要执行的 SQL 查询
+	 * @param pss 知道如何在准备好的语句上设置值的回调。如果这是 {@code null}，则将假定 SQL 不包含绑定参数。即使没有绑定参数，此回调也可用于设置获取大小和其他性能选项。
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 结果流，包含映射对象，完全处理后需要关闭（例如，通过 try-with-resources 子句）
+	 * @throws DataAccessException 如果查询失败
 	 * @since 5.3
 	 */
 	<T extends @Nullable Object> Stream<T> queryForStream(String sql, @Nullable PreparedStatementSetter pss, RowMapper<T> rowMapper)
 			throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, mapping each row to a result object
-	 * via a RowMapper, and turning it into an iterable and closeable Stream.
-	 * @param sql the SQL query to execute
-	 * @param rowMapper a callback that will map one object per row
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return the result Stream, containing mapped objects, needing to be
-	 * closed once fully processed (for example, through a try-with-resources clause)
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，通过 RowMapper 将每一行映射到结果对象，并将其转换为可迭代和可关闭的 Stream。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 结果流，包含映射对象，完全处理后需要关闭（例如，通过 try-with-resources 子句）
+	 * @throws DataAccessException 如果查询失败
 	 * @since 5.3
 	 */
 	<T extends @Nullable Object> Stream<T> queryForStream(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args)
 			throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list
-	 * of arguments to bind to the query, mapping a single result row to a
-	 * result object via a RowMapper.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type)
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the single mapped object (may be {@code null} if the given
-	 * {@link RowMapper} returned {@code null})
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，通过 RowMapper 将单个结果行映射到结果对象。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 单个映射对象（如果给定的 {@link RowMapper} 返回 {@code null}，则可能是 {@code null}）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws DataAccessException 如果查询失败
 	 */
 	<T extends @Nullable Object> T queryForObject(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowMapper<T> rowMapper)
 			throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list
-	 * of arguments to bind to the query, mapping a single result row to a
-	 * result object via a RowMapper.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @param rowMapper a callback that will map one object per row
-	 * @return the single mapped object (may be {@code null} if the given
-	 * {@link RowMapper} returned {@code null})
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws DataAccessException if the query fails
-	 * @deprecated in favor of {@link #queryForObject(String, RowMapper, Object...)}
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，通过 RowMapper 将单个结果行映射到结果对象。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @return 单个映射对象（如果给定的 {@link RowMapper} 返回 {@code null}，则可能是 {@code null}）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws DataAccessException 如果查询失败
+	 * @deprecated {@link #queryForObject(String, RowMapper, Object...)} 的青睐
 	 */
 	@Deprecated(since = "5.3")
 	<T extends @Nullable Object> T queryForObject(String sql, @Nullable Object @Nullable [] args, RowMapper<T> rowMapper) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list
-	 * of arguments to bind to the query, mapping a single result row to a
-	 * result object via a RowMapper.
-	 * @param sql the SQL query to execute
-	 * @param rowMapper a callback that will map one object per row
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return the single mapped object (may be {@code null} if the given
-	 * {@link RowMapper} returned {@code null})
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，通过 RowMapper 将单个结果行映射到结果对象。
+	 * @param sql 要执行的 SQL 查询
+	 * @param rowMapper 将映射每行一个对象的回调
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 单个映射对象（如果给定的 {@link RowMapper} 返回 {@code null}，则可能是 {@code null}）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws DataAccessException 如果查询失败
 	 * @since 3.0.1
 	 */
 	<T extends @Nullable Object> T queryForObject(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result object.
-	 * <p>The query is expected to be a single row/single column query; the returned
-	 * result will be directly mapped to the corresponding object type.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @param requiredType the type that the result object is expected to match
-	 * @return the result object of the required type, or {@code null} in case of SQL NULL
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws org.springframework.jdbc.IncorrectResultSetColumnCountException
-	 * if the query does not return a row containing a single column
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建一个准备好的语句以及绑定到查询的参数列表，需要一个结果对象。 <p>查询预计是单行/单列查询；返回的结果将直接映射到相应的对象类型。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @param requiredType 结果对象期望匹配的类型
+	 * @return 所需类型的结果对象，或 {@code null}（如果 SQL NULL）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws org.springframework.jdbc.IncorrectResultSetColumnCountException 如果查询不返回包含单个列的行
+	 * @throws DataAccessException 如果查询失败
 	 * @see #queryForObject(String, Class)
 	 * @see java.sql.Types
 	 */
@@ -668,63 +507,42 @@ public interface JdbcOperations {
 			throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result object.
-	 * <p>The query is expected to be a single row/single column query; the returned
-	 * result will be directly mapped to the corresponding object type.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @param requiredType the type that the result object is expected to match
-	 * @return the result object of the required type, or {@code null} in case of SQL NULL
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws org.springframework.jdbc.IncorrectResultSetColumnCountException
-	 * if the query does not return a row containing a single column
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建一个准备好的语句以及绑定到查询的参数列表，需要一个结果对象。 <p>查询预计是单行/单列查询；返回的结果将直接映射到相应的对象类型。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @param requiredType 结果对象期望匹配的类型
+	 * @return 所需类型的结果对象，或 {@code null}（如果 SQL NULL）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws org.springframework.jdbc.IncorrectResultSetColumnCountException 如果查询不返回包含单个列的行
+	 * @throws DataAccessException 如果查询失败
 	 * @see #queryForObject(String, Class)
-	 * @deprecated in favor of {@link #queryForObject(String, Class, Object...)}
+	 * @deprecated {@link #queryForObject(String, Class, Object...)} 的青睐
 	 */
 	@Deprecated(since = "5.3")
 	<T> @Nullable T queryForObject(String sql, @Nullable Object @Nullable [] args, Class<T> requiredType) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result object.
-	 * <p>The query is expected to be a single row/single column query; the returned
-	 * result will be directly mapped to the corresponding object type.
-	 * @param sql the SQL query to execute
-	 * @param requiredType the type that the result object is expected to match
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return the result object of the required type, or {@code null} in case of SQL NULL
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws org.springframework.jdbc.IncorrectResultSetColumnCountException
-	 * if the query does not return a row containing a single column
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建一个准备好的语句以及绑定到查询的参数列表，需要一个结果对象。 <p>查询预计是单行/单列查询；返回的结果将直接映射到相应的对象类型。
+	 * @param sql 要执行的 SQL 查询
+	 * @param requiredType 结果对象期望匹配的类型
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 所需类型的结果对象，或 {@code null}（如果 SQL NULL）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws org.springframework.jdbc.IncorrectResultSetColumnCountException 如果查询不返回包含单个列的行
+	 * @throws DataAccessException 如果查询失败
 	 * @since 3.0.1
 	 * @see #queryForObject(String, Class)
 	 */
 	<T> @Nullable T queryForObject(String sql, Class<T> requiredType, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result map.
-	 * <p>The query is expected to be a single row query; the result row will be
-	 * mapped to a Map (one entry for each column, using the column name as the key).
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @return the result Map (one entry per column, with column name as key)
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，需要结果映射。 <p>查询预计是单行查询；结果行将映射到一个 Map（每列一个条目，使用列名作为键）。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @return 结果映射（每列一个条目，以列名作为键）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws DataAccessException 如果查询失败
 	 * @see #queryForMap(String)
 	 * @see ColumnMapRowMapper
 	 * @see java.sql.Types
@@ -732,41 +550,26 @@ public interface JdbcOperations {
 	Map<String, @Nullable Object> queryForMap(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result map.
-	 * <p>The {@code queryForMap} methods defined by this interface are appropriate
-	 * when you don't have a domain model. Otherwise, consider using one of the
-	 * {@code queryForObject} methods.
-	 * <p>The query is expected to be a single row query; the result row will be
-	 * mapped to a Map (one entry for each column, using the column name as the key).
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return the result Map (one entry for each column, using the
-	 * column name as the key)
-	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException
-	 * if the query does not return exactly one row
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，需要结果映射。 <p> 当您没有域模型时，此接口定义的 {@code queryForMap} 方法是合
+	 * 适的。否则，请考虑使用 {@code queryForObject} 方法之一。 <p>查询预计是单行查询；结果行将映射到一个 Map（每列一个条目，使用列名作为键）。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 结果映射（每列一个条目，使用列名作为键）
+	 * @throws org.springframework.dao.IncorrectResultSizeDataAccessException 如果查询没有返回恰好一行
+	 * @throws DataAccessException 如果查询失败
 	 * @see #queryForMap(String)
 	 * @see ColumnMapRowMapper
 	 */
 	Map<String, @Nullable Object> queryForMap(String sql, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result list.
-	 * <p>The results will be mapped to a List (one entry for each row) of
-	 * result objects, each of them matching the specified element type.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @param elementType the required type of element in the result list
-	 * (for example, {@code Integer.class})
-	 * @return a List of objects that match the specified element type
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，需要结果列表。 <p>结果将映射到结果对象的列表（每行一个条目），每个结果对象都与指定的元素类型匹配。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @param elementType 结果列表中所需的元素类型（例如 {@code Integer.class}）
+	 * @return 与指定元素类型匹配的对象列表
+	 * @throws DataAccessException 如果查询失败
 	 * @see #queryForList(String, Class)
 	 * @see SingleColumnRowMapper
 	 */
@@ -774,40 +577,26 @@ public interface JdbcOperations {
 			throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result list.
-	 * <p>The results will be mapped to a List (one entry for each row) of
-	 * result objects, each of them matching the specified element type.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @param elementType the required type of element in the result list
-	 * (for example, {@code Integer.class})
-	 * @return a List of objects that match the specified element type
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，需要结果列表。 <p>结果将映射到结果对象的列表（每行一个条目），每个结果对象都与指定的元素类型匹配。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @param elementType 结果列表中所需的元素类型（例如 {@code Integer.class}）
+	 * @return 与指定元素类型匹配的对象列表
+	 * @throws DataAccessException 如果查询失败
 	 * @see #queryForList(String, Class)
 	 * @see SingleColumnRowMapper
-	 * @deprecated in favor of {@link #queryForList(String, Class, Object...)}
+	 * @deprecated {@link #queryForList(String, Class, Object...)} 的青睐
 	 */
 	@Deprecated(since = "5.3")
 	<T> List<@Nullable T> queryForList(String sql, @Nullable Object @Nullable [] args, Class<T> elementType) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result list.
-	 * <p>The results will be mapped to a List (one entry for each row) of
-	 * result objects, each of them matching the specified element type.
-	 * @param sql the SQL query to execute
-	 * @param elementType the required type of element in the result list
-	 * (for example, {@code Integer.class})
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return a List of objects that match the specified element type
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，需要结果列表。 <p>结果将映射到结果对象的列表（每行一个条目），每个结果对象都与指定的元素类型匹配。
+	 * @param sql 要执行的 SQL 查询
+	 * @param elementType 结果列表中所需的元素类型（例如 {@code Integer.class}）
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 与指定元素类型匹配的对象列表
+	 * @throws DataAccessException 如果查询失败
 	 * @since 3.0.1
 	 * @see #queryForList(String, Class)
 	 * @see SingleColumnRowMapper
@@ -815,56 +604,38 @@ public interface JdbcOperations {
 	<T> List<@Nullable T> queryForList(String sql, Class<T> elementType, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result list.
-	 * <p>The results will be mapped to a List (one entry for each row) of
-	 * Maps (one entry for each column, using the column name as the key).
-	 * Each element in the list will be of the form returned by this interface's
-	 * {@code queryForMap} methods.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @return a List that contains a Map per row
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，需要结果列表。 <p>的结果会被映射到一个List（每行一个条目）的Maps（每列一个条目，使用列名作为
+	 * 键）。列表中的每个元素都将采用此接口的 {@code queryForMap} 方法返回的形式。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @return 每行包含一个 Map 的列表
+	 * @throws DataAccessException 如果查询失败
 	 * @see #queryForList(String)
 	 * @see java.sql.Types
 	 */
 	List<Map<String, @Nullable Object>> queryForList(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting a result list.
-	 * <p>The results will be mapped to a List (one entry for each row) of
-	 * Maps (one entry for each column, using the column name as the key).
-	 * Each element in the list will be of the form returned by this interface's
-	 * {@code queryForMap} methods.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return a List that contains a Map per row
-	 * @throws DataAccessException if the query fails
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句和绑定到查询的参数列表，需要结果列表。 <p>的结果会被映射到一个List（每行一个条目）的Maps（每列一个条目，使用列名作为
+	 * 键）。列表中的每个元素都将采用此接口的 {@code queryForMap} 方法返回的形式。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 每行包含一个 Map 的列表
+	 * @throws DataAccessException 如果查询失败
 	 * @see #queryForList(String)
 	 */
 	List<Map<String, @Nullable Object>> queryForList(String sql, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting an SqlRowSet.
-	 * <p>The results will be mapped to an SqlRowSet which holds the data in a
-	 * disconnected fashion. This wrapper will translate any SQLExceptions thrown.
-	 * <p>Note that, for the default implementation, JDBC RowSet support needs to
-	 * be available at runtime: by default, a standard JDBC {@code CachedRowSet}
-	 * is used.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @return an SqlRowSet representation (possibly a wrapper around a
-	 * {@code javax.sql.rowset.CachedRowSet})
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句以及绑定到查询的参数列表，需要 SqlRowSet。 <p> 结果将映射到 SqlRowSet，该 SqlRowSet 以断开连
+	 * 接的方式保存数据。该包装器将转换任何抛出的 SQLException。 <p> 请注意，对于默认实现，需要在运行时提供 JDBC RowSet 支持：默认情况下，使用标准 JD
+	 * BC {@code CachedRowSet}。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @return SqlRowSet 表示（可能是 {@code javax.sql.rowset.CachedRowSet} 的包装器）
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #queryForRowSet(String)
 	 * @see SqlRowSetResultSetExtractor
 	 * @see javax.sql.rowset.CachedRowSet
@@ -873,21 +644,13 @@ public interface JdbcOperations {
 	SqlRowSet queryForRowSet(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException;
 
 	/**
-	 * Query given SQL to create a prepared statement from SQL and a list of
-	 * arguments to bind to the query, expecting an SqlRowSet.
-	 * <p>The results will be mapped to an SqlRowSet which holds the data in a
-	 * disconnected fashion. This wrapper will translate any SQLExceptions thrown.
-	 * <p>Note that, for the default implementation, JDBC RowSet support needs to
-	 * be available at runtime: by default, a standard JDBC {@code CachedRowSet}
-	 * is used.
-	 * @param sql the SQL query to execute
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return an SqlRowSet representation (possibly a wrapper around a
-	 * {@code javax.sql.rowset.CachedRowSet})
-	 * @throws DataAccessException if there is any problem executing the query
+	 * 查询给定的 SQL，从 SQL 创建准备好的语句以及绑定到查询的参数列表，需要 SqlRowSet。 <p> 结果将映射到 SqlRowSet，该 SqlRowSet 以断开连
+	 * 接的方式保存数据。该包装器将转换任何抛出的 SQLException。 <p> 请注意，对于默认实现，需要在运行时提供 JDBC RowSet 支持：默认情况下，使用标准 JD
+	 * BC {@code CachedRowSet}。
+	 * @param sql 要执行的 SQL 查询
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return SqlRowSet 表示（可能是 {@code javax.sql.rowset.CachedRowSet} 的包装器）
+	 * @throws DataAccessException 如果执行查询有任何问题
 	 * @see #queryForRowSet(String)
 	 * @see SqlRowSetResultSetExtractor
 	 * @see javax.sql.rowset.CachedRowSet
@@ -895,29 +658,23 @@ public interface JdbcOperations {
 	SqlRowSet queryForRowSet(String sql, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Issue a single SQL update operation (such as an insert, update or delete
-	 * statement) using a PreparedStatementCreator to provide SQL and any
-	 * required parameters.
-	 * <p>A PreparedStatementCreator can either be implemented directly or
-	 * configured through a PreparedStatementCreatorFactory.
-	 * @param psc a callback that provides SQL and any necessary parameters
-	 * @return the number of rows affected
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用PreparedStatementCreator 发出单个SQL 更新操作（例如插入、更新或删除语句）以提供SQL 和任何所需的参数。 <p>APreparedStatem
+	 * entCreator 可以直接实现，也可以通过PreparedStatementCreatorFactory 进行配置。
+	 * @param psc 提供 SQL 和任何必要参数的回调
+	 * @return 受影响的行数
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 * @see PreparedStatementCreatorFactory
 	 */
 	int update(PreparedStatementCreator psc) throws DataAccessException;
 
 	/**
-	 * Issue an update statement using a PreparedStatementCreator to provide SQL and
-	 * any required parameters. Generated keys will be put into the given KeyHolder.
-	 * <p>Note that the given PreparedStatementCreator has to create a statement
-	 * with activated extraction of generated keys (a JDBC 3.0 feature). This can
-	 * either be done directly or through using a PreparedStatementCreatorFactory.
-	 * <p>This method requires support for generated keys in the JDBC driver.
-	 * @param psc a callback that provides SQL and any necessary parameters
-	 * @param generatedKeyHolder a KeyHolder that will hold the generated keys
-	 * @return the number of rows affected
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用PreparedStatementCreator 发出更新语句以提供SQL 和任何所需的参数。生成的密钥将被放入给定的 KeyHolder 中。 <p>请注意，给定的Pre
+	 * paredStatementCreator必须创建一个带有生成键的激活提取的语句（JDBC 3.0功能）。这可以直接完成，也可以通过使用PreparedStatementCre
+	 * atorFactory 完成。 <p>此方法需要支持 JDBC 驱动程序中生成的键。
+	 * @param psc 提供 SQL 和任何必要参数的回调
+	 * @param generatedKeyHolder 将保存生成的密钥的 KeyHolder
+	 * @return 受影响的行数
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 * @see PreparedStatementCreatorFactory
 	 * @see org.springframework.jdbc.support.GeneratedKeyHolder
 	 * @see java.sql.DatabaseMetaData#supportsGetGeneratedKeys()
@@ -925,78 +682,55 @@ public interface JdbcOperations {
 	int update(PreparedStatementCreator psc, KeyHolder generatedKeyHolder) throws DataAccessException;
 
 	/**
-	 * Issue an update statement using a PreparedStatementSetter to set bind parameters,
-	 * with given SQL. Simpler than using a PreparedStatementCreator as this method
-	 * will create the PreparedStatement: The PreparedStatementSetter just needs to
-	 * set parameters.
-	 * @param sql the SQL containing bind parameters
-	 * @param pss helper that sets bind parameters. If this is {@code null}
-	 * we run an update with static SQL.
-	 * @return the number of rows affected
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用PreparedStatementSetter 发出更新语句，以通过给定的SQL 设置绑定参数。比使用PreparedStatementCreator 更简单，因为此方法将
+	 * 创建PreparedStatement：PreparedStatementSetter 只需要设置参数。
+	 * @param sql 包含绑定参数的 SQL
+	 * @param pss 设置绑定参数的助手。如果这是 {@code null}，我们使用静态 SQL 运行更新。
+	 * @return 受影响的行数
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 */
 	int update(String sql, @Nullable PreparedStatementSetter pss) throws DataAccessException;
 
 	/**
-	 * Issue a single SQL update operation (such as an insert, update or delete statement)
-	 * via a prepared statement, binding the given arguments.
-	 * @param sql the SQL containing bind parameters
-	 * @param args arguments to bind to the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @return the number of rows affected
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 通过准备好的语句发出单个 SQL 更新操作（例如插入、更新或删除语句），绑定给定的参数。
+	 * @param sql 包含绑定参数的 SQL
+	 * @param args 绑定到查询的参数
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @return 受影响的行数
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 * @see java.sql.Types
 	 */
 	int update(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException;
 
 	/**
-	 * Issue a single SQL update operation (such as an insert, update or delete statement)
-	 * via a prepared statement, binding the given arguments.
-	 * @param sql the SQL containing bind parameters
-	 * @param args arguments to bind to the query
-	 * (leaving it to the PreparedStatement to guess the corresponding SQL type);
-	 * may also contain {@link SqlParameterValue} objects which indicate not
-	 * only the argument value but also the SQL type and optionally the scale
-	 * @return the number of rows affected
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 通过准备好的语句发出单个 SQL 更新操作（例如插入、更新或删除语句），绑定给定的参数。
+	 * @param sql 包含绑定参数的 SQL
+	 * @param args 绑定到查询的参数（让PreparedStatement猜测相应的SQL类型）；还可能包含 {@link SqlParameterValue} 对象，这些对象不仅指示参数值，还指示 SQL 类型和可选的比例
+	 * @return 受影响的行数
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 */
 	int update(String sql, @Nullable Object @Nullable ... args) throws DataAccessException;
 
 	/**
-	 * Issue multiple update statements on a single PreparedStatement,
-	 * using batch updates and a BatchPreparedStatementSetter to set values.
-	 * <p>Will fall back to separate updates on a single PreparedStatement
-	 * if the JDBC driver does not support batch updates.
-	 * @param sql defining PreparedStatement that will be reused.
-	 * All statements in the batch will use the same SQL.
-	 * @param pss object to set parameters on the PreparedStatement
-	 * created by this method
-	 * @return an array of the number of rows affected by each statement
-	 * (may also contain special JDBC-defined negative values for affected rows such as
-	 * {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED})
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用批量更新和 BatchPreparedStatementSetter 设置值，对单个PreparedStatement 发出多个更新语句。如果 JDBC
+	 * 驱动程序不支持批量更新，<p> 将回退到单个PreparedStatement 上的单独更新。
+	 * @param sql 定义将被重用的PreparedStatement。批处理中的所有语句将使用相同的 SQL。
+	 * @param pss 对象来设置由此方法创建的PreparedStatement的参数
+	 * @return 每个语句影响的行数数组（还可能包含受影响行的特殊 JDBC 定义负值，例如 {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED}）
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 */
 	int[] batchUpdate(String sql, BatchPreparedStatementSetter pss) throws DataAccessException;
 
 	/**
-	 * Issue multiple update statements on a single PreparedStatement,
-	 * using batch updates and a BatchPreparedStatementSetter to set values.
-	 * Generated keys will be put into the given KeyHolder.
-	 * <p>Note that the given PreparedStatementCreator has to create a statement
-	 * with activated extraction of generated keys (a JDBC 3.0 feature). This can
-	 * either be done directly or through using a PreparedStatementCreatorFactory.
-	 * <p>This method requires support for generated keys in the JDBC driver.
-	 * It will fall back to separate updates on a single PreparedStatement
-	 * if the JDBC driver does not support batch updates.
-	 * @param psc a callback that creates a PreparedStatement given a Connection
-	 * @param pss object to set parameters on the PreparedStatement
-	 * created by this method
-	 * @param generatedKeyHolder a KeyHolder that will hold the generated keys
-	 * @return an array of the number of rows affected by each statement
-	 * (may also contain special JDBC-defined negative values for affected rows such as
-	 * {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED})
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用批量更新和 BatchPreparedStatementSetter 设置值，对单个PreparedStatement 发出多个更新语句。生成的密钥将被放入给定的
+	 * KeyHolder 中。 <p>请注意，给定的PreparedStatementCreator必须创建一个带有生成键的激活提取的语句（JDBC
+	 * 3.0功能）。这可以直接完成，也可以通过使用PreparedStatementCreatorFactory 完成。 <p>此方法需要支持 JDBC 驱动程序中生成的键。如果
+	 * JDBC 驱动程序不支持批量更新，它将回退到对单个PreparedStatement 进行单独更新。
+	 * @param psc 给定连接创建一个PreparedStatement的回调
+	 * @param pss 对象来设置由此方法创建的PreparedStatement的参数
+	 * @param generatedKeyHolder 将保存生成的密钥的 KeyHolder
+	 * @return 每个语句影响的行数数组（还可能包含受影响行的特殊 JDBC 定义负值，例如 {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED}）
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 * @since 6.1
 	 * @see org.springframework.jdbc.support.GeneratedKeyHolder
 	 * @see java.sql.DatabaseMetaData#supportsGetGeneratedKeys()
@@ -1005,42 +739,33 @@ public interface JdbcOperations {
 			KeyHolder generatedKeyHolder) throws DataAccessException;
 
 	/**
-	 * Execute a batch using the supplied SQL statement with the batch of supplied arguments.
-	 * @param sql the SQL statement to execute
-	 * @param batchArgs the List of Object arrays containing the batch of arguments for the query
-	 * @return an array containing the numbers of rows affected by each update in the batch
-	 * (may also contain special JDBC-defined negative values for affected rows such as
-	 * {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED})
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用提供的 SQL 语句和一批提供的参数执行批处理。
+	 * @param sql 要执行的SQL语句
+	 * @param batchArgs 包含查询参数批次的对象数组列表
+	 * @return 包含批次中每次更新影响的行数的数组（还可能包含受影响行的特殊 JDBC 定义负值，例如 {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED}）
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 */
 	int[] batchUpdate(String sql, List<Object[]> batchArgs) throws DataAccessException;
 
 	/**
-	 * Execute a batch using the supplied SQL statement with the batch of supplied arguments.
-	 * @param sql the SQL statement to execute.
-	 * @param batchArgs the List of Object arrays containing the batch of arguments for the query
-	 * @param argTypes the SQL types of the arguments
-	 * (constants from {@code java.sql.Types})
-	 * @return an array containing the numbers of rows affected by each update in the batch
-	 * (may also contain special JDBC-defined negative values for affected rows such as
-	 * {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED})
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用提供的 SQL 语句和一批提供的参数执行批处理。
+	 * @param sql 要执行的 SQL 语句。
+	 * @param batchArgs 包含查询参数批次的对象数组列表
+	 * @param argTypes 参数的 SQL 类型（来自 {@code java.sql.Types} 的常量）
+	 * @return 包含批次中每次更新影响的行数的数组（还可能包含受影响行的特殊 JDBC 定义负值，例如 {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED}）
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 */
 	int[] batchUpdate(String sql, List<Object[]> batchArgs, int[] argTypes) throws DataAccessException;
 
 	/**
-	 * Execute multiple batches using the supplied SQL statement with the collect of supplied
-	 * arguments. The arguments' values will be set using the ParameterizedPreparedStatementSetter.
-	 * Each batch should be of size indicated in 'batchSize'.
-	 * @param sql the SQL statement to execute.
-	 * @param batchArgs the List of Object arrays containing the batch of arguments for the query
-	 * @param batchSize batch size
-	 * @param pss the ParameterizedPreparedStatementSetter to use
-	 * @return an array containing for each batch another array containing the numbers of
-	 * rows affected by each update in the batch
-	 * (may also contain special JDBC-defined negative values for affected rows such as
-	 * {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED})
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用提供的 SQL 语句和提供的参数集合来执行多个批处理。参数的值将使用 ParameterizedPreparedStatementSetter
+	 * 设置。每个批次的大小应在“batchSize”中指定。
+	 * @param sql 要执行的 SQL 语句。
+	 * @param batchArgs 包含查询参数批次的对象数组列表
+	 * @param batchSize 批量大小
+	 * @param pss 要使用的 ParameterizedPreparedStatementSetter
+	 * @return 每个批次包含另一个数组，该数组包含批次中每个更新影响的行数（还可能包含受影响行的特殊 JDBC 定义负值，例如 {@link java.sql.Statement#SUCCESS_NO_INFO}/{@link java.sql.Statement#EXECUTE_FAILED}）
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 * @since 3.1
 	 */
 	<T> int[][] batchUpdate(String sql, Collection<T> batchArgs, int batchSize,
@@ -1048,46 +773,37 @@ public interface JdbcOperations {
 
 
 	//-------------------------------------------------------------------------
-	// Methods dealing with callable statements
+	// 处理可调用语句的方法
 	//-------------------------------------------------------------------------
 
 	/**
-	 * Execute a JDBC data access operation, implemented as callback action
-	 * working on a JDBC CallableStatement. This allows for implementing arbitrary
-	 * data access operations on a single Statement, within Spring's managed JDBC
-	 * environment: that is, participating in Spring-managed transactions and
-	 * converting JDBC SQLExceptions into Spring's DataAccessException hierarchy.
-	 * <p>The callback action can return a result object, for example a domain
-	 * object or a collection of domain objects.
-	 * @param csc a callback that creates a CallableStatement given a Connection
-	 * @param action a callback that specifies the action
-	 * @return a result object returned by the action, or {@code null} if none
-	 * @throws DataAccessException if there is any problem
+	 * 执行 JDBC 数据访问操作，作为在 JDBC CallableStatement 上工作的回调操作来实现。这允许在 Spring 的托管 JDBC 环境中在单个语句上实现任意
+	 * 数据访问操作：即参与 Spring 管理的事务并将 JDBC SQLException 转换为 Spring 的 DataAccessException 层次结构。 <p>回调
+	 * 操作可以返回结果对象，例如域对象或域对象的集合。
+	 * @param csc 给定 Connection 创建 CallableStatement 的回调
+	 * @param action 指定操作的回调
+	 * @return 操作返回的结果对象，如果没有则返回 {@code null}
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	<T extends @Nullable Object> T execute(CallableStatementCreator csc, CallableStatementCallback<T> action) throws DataAccessException;
 
 	/**
-	 * Execute a JDBC data access operation, implemented as callback action
-	 * working on a JDBC CallableStatement. This allows for implementing arbitrary
-	 * data access operations on a single Statement, within Spring's managed JDBC
-	 * environment: that is, participating in Spring-managed transactions and
-	 * converting JDBC SQLExceptions into Spring's DataAccessException hierarchy.
-	 * <p>The callback action can return a result object, for example a domain
-	 * object or a collection of domain objects.
-	 * @param callString the SQL call string to execute
-	 * @param action a callback that specifies the action
-	 * @return a result object returned by the action, or {@code null} if none
-	 * @throws DataAccessException if there is any problem
+	 * 执行 JDBC 数据访问操作，作为在 JDBC CallableStatement 上工作的回调操作来实现。这允许在 Spring 的托管 JDBC 环境中在单个语句上实现任意
+	 * 数据访问操作：即参与 Spring 管理的事务并将 JDBC SQLException 转换为 Spring 的 DataAccessException 层次结构。 <p>回调
+	 * 操作可以返回结果对象，例如域对象或域对象的集合。
+	 * @param callString 要执行的 SQL 调用字符串
+	 * @param action 指定操作的回调
+	 * @return 操作返回的结果对象，如果没有则返回 {@code null}
+	 * @throws DataAccessException 如果有任何问题
 	 */
 	<T extends @Nullable Object> T execute(String callString, CallableStatementCallback<T> action) throws DataAccessException;
 
 	/**
-	 * Execute an SQL call using a CallableStatementCreator to provide SQL and
-	 * any required parameters.
-	 * @param csc a callback that provides SQL and any necessary parameters
-	 * @param declaredParameters list of declared SqlParameter objects
-	 * @return a Map of extracted out parameters
-	 * @throws DataAccessException if there is any problem issuing the update
+	 * 使用 CallableStatementCreator 执行 SQL 调用以提供 SQL 和任何所需的参数。
+	 * @param csc 提供 SQL 和任何必要参数的回调
+	 * @param declaredParameters 声明的 SqlParameter 对象的列表
+	 * @return 提取出的参数图
+	 * @throws DataAccessException 如果发布更新有任何问题
 	 */
 	Map<String, @Nullable Object> call(CallableStatementCreator csc, List<SqlParameter> declaredParameters)
 			throws DataAccessException;
