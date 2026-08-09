@@ -19,12 +19,16 @@ import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveClusterHyperLogLogCommands;
 
 /**
- * 
+ * 集群模式下 Spring Data Redis 响应式 HyperLogLog 命令适配器。
+ * <p>继承 {@link RedissonReactiveHyperLogLogCommands} 并实现 {@link ReactiveClusterHyperLogLogCommands}，
+ * 在集群拓扑下复用单机响应式命令实现。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveClusterHyperLogLogCommands extends RedissonReactiveHyperLogLogCommands implements ReactiveClusterHyperLogLogCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveClusterHyperLogLogCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
