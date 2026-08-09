@@ -21,34 +21,34 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Representation of the context of the invocation of a cache operation.
+ * 表示一次缓存操作调用的上下文。
  *
- * <p>The cache operation is static and independent of a particular invocation;
- * this interface gathers the operation and a particular invocation.
+ * <p>缓存操作本身是静态的，与具体调用无关；
+ * 本接口将操作定义与某次具体调用绑定在一起。
  *
  * @author Stephane Nicoll
  * @since 4.1
- * @param <O> the operation type
+ * @param <O> 操作类型
  */
 public interface CacheOperationInvocationContext<O extends BasicOperation> {
 
 	/**
-	 * Return the cache operation.
+	 * 返回缓存操作定义。
 	 */
 	O getOperation();
 
 	/**
-	 * Return the target instance on which the method was invoked.
+	 * 返回方法被调用时的目标实例。
 	 */
 	Object getTarget();
 
 	/**
-	 * Return the method which was invoked.
+	 * 返回被调用的方法。
 	 */
 	Method getMethod();
 
 	/**
-	 * Return the argument list used to invoke the method.
+	 * 返回调用方法时使用的参数列表。
 	 */
 	@Nullable Object[] getArgs();
 

@@ -24,9 +24,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Interface used by {@link CacheInterceptor}. Implementations know how to source
- * cache operation attributes, whether from configuration, metadata attributes at
- * source level, or elsewhere.
+ * 供 {@link CacheInterceptor} 使用的接口。实现类负责提供缓存操作属性，
+ * 来源可以是配置、源码级元数据注解或其他途径。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -35,17 +34,14 @@ import org.springframework.util.CollectionUtils;
 public interface CacheOperationSource {
 
 	/**
-	 * Determine whether the given class is a candidate for cache operations
-	 * in the metadata format of this {@code CacheOperationSource}.
-	 * <p>If this method returns {@code false}, the methods on the given class
-	 * will not get traversed for {@link #getCacheOperations} introspection.
-	 * Returning {@code false} is therefore an optimization for non-affected
-	 * classes, whereas {@code true} simply means that the class needs to get
-	 * fully introspected for each method on the given class individually.
-	 * @param targetClass the class to introspect
-	 * @return {@code false} if the class is known to have no cache operation
-	 * metadata at class or method level; {@code true} otherwise. The default
-	 * implementation returns {@code true}, leading to regular introspection.
+	 * 判断给定类是否为本 {@code CacheOperationSource} 元数据格式下的
+	 * 缓存操作候选类。
+	 * <p>若返回 {@code false}，则不会遍历该类的方法去执行
+	 * {@link #getCacheOperations} 内省，从而跳过无关类。
+	 * 返回 {@code true} 表示需要对该类的每个方法逐一完整内省。
+	 * @param targetClass 待内省的类
+	 * @return 若已知该类在类级或方法级均无缓存操作元数据则返回 {@code false}，
+	 * 否则返回 {@code true}。默认实现返回 {@code true}，即执行常规内省
 	 * @since 5.2
 	 * @see #hasCacheOperations
 	 */
@@ -54,10 +50,9 @@ public interface CacheOperationSource {
 	}
 
 	/**
-	 * Determine whether there are cache operations for the given method.
-	 * @param method the method to introspect
-	 * @param targetClass the target class (can be {@code null},
-	 * in which case the declaring class of the method must be used)
+	 * 判断给定方法是否存在缓存操作。
+	 * @param method 待内省的方法
+	 * @param targetClass 目标类（可为 {@code null}，此时使用方法声明类）
 	 * @since 6.2
 	 * @see #getCacheOperations
 	 */
@@ -66,12 +61,11 @@ public interface CacheOperationSource {
 	}
 
 	/**
-	 * Return the collection of cache operations for this method,
-	 * or {@code null} if the method contains no <em>cacheable</em> annotations.
-	 * @param method the method to introspect
-	 * @param targetClass the target class (can be {@code null}, in which case
-	 * the declaring class of the method must be used)
-	 * @return all cache operations for this method, or {@code null} if none found
+	 * 返回该方法对应的缓存操作集合；
+	 * 若方法不含任何<em>可缓存</em>注解则返回 {@code null}。
+	 * @param method 待内省的方法
+	 * @param targetClass 目标类（可为 {@code null}，此时使用方法声明类）
+	 * @return 该方法的全部缓存操作，未找到时返回 {@code null}
 	 */
 	@Nullable Collection<CacheOperation> getCacheOperations(Method method, @Nullable Class<?> targetClass);
 

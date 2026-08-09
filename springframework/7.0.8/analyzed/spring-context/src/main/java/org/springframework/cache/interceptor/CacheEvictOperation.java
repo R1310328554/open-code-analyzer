@@ -17,7 +17,7 @@
 package org.springframework.cache.interceptor;
 
 /**
- * Class describing a cache 'evict' operation.
+ * 描述缓存「驱逐」（evict）操作的类。
  *
  * @author Costin Leau
  * @author Marcin Kamionowski
@@ -25,13 +25,15 @@ package org.springframework.cache.interceptor;
  */
 public class CacheEvictOperation extends CacheOperation {
 
+	/** 是否清空整个缓存（而非仅按 key 驱逐）。 */
 	private final boolean cacheWide;
 
+	/** 是否在方法调用之前执行驱逐。 */
 	private final boolean beforeInvocation;
 
 
 	/**
-	 * Create a new {@link CacheEvictOperation} instance from the given builder.
+	 * 根据给定构建器创建新的 {@link CacheEvictOperation} 实例。
 	 * @since 4.3
 	 */
 	public CacheEvictOperation(CacheEvictOperation.Builder b) {
@@ -41,29 +43,35 @@ public class CacheEvictOperation extends CacheOperation {
 	}
 
 
+	/** 返回是否对整个缓存执行清空操作。 */
 	public boolean isCacheWide() {
 		return this.cacheWide;
 	}
 
+	/** 返回驱逐是否在方法调用之前执行。 */
 	public boolean isBeforeInvocation() {
 		return this.beforeInvocation;
 	}
 
 
 	/**
-	 * A builder that can be used to create a {@link CacheEvictOperation}.
+	 * 用于创建 {@link CacheEvictOperation} 的构建器。
 	 * @since 4.3
 	 */
 	public static class Builder extends CacheOperation.Builder {
 
+		/** 是否清空整个缓存。 */
 		private boolean cacheWide = false;
 
+		/** 是否在调用前驱逐。 */
 		private boolean beforeInvocation = false;
 
+		/** 设置是否清空整个缓存。 */
 		public void setCacheWide(boolean cacheWide) {
 			this.cacheWide = cacheWide;
 		}
 
+		/** 设置是否在方法调用前执行驱逐。 */
 		public void setBeforeInvocation(boolean beforeInvocation) {
 			this.beforeInvocation = beforeInvocation;
 		}

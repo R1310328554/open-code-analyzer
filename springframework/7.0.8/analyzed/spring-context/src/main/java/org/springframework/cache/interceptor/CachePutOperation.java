@@ -19,7 +19,7 @@ package org.springframework.cache.interceptor;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Class describing a cache 'put' operation.
+ * 描述缓存「写入」（put）操作的类。
  *
  * @author Costin Leau
  * @author Phillip Webb
@@ -28,11 +28,12 @@ import org.jspecify.annotations.Nullable;
  */
 public class CachePutOperation extends CacheOperation {
 
+	/** 满足条件时不写入缓存的 SpEL 表达式（unless）。 */
 	private final @Nullable String unless;
 
 
 	/**
-	 * Create a new {@link CachePutOperation} instance from the given builder.
+	 * 根据给定构建器创建新的 {@link CachePutOperation} 实例。
 	 * @since 4.3
 	 */
 	public CachePutOperation(CachePutOperation.Builder b) {
@@ -41,19 +42,22 @@ public class CachePutOperation extends CacheOperation {
 	}
 
 
+	/** 返回 unless 条件表达式。 */
 	public @Nullable String getUnless() {
 		return this.unless;
 	}
 
 
 	/**
-	 * A builder that can be used to create a {@link CachePutOperation}.
+	 * 用于创建 {@link CachePutOperation} 的构建器。
 	 * @since 4.3
 	 */
 	public static class Builder extends CacheOperation.Builder {
 
+		/** unless 条件表达式。 */
 		private @Nullable String unless;
 
+		/** 设置 unless 条件表达式。 */
 		public void setUnless(String unless) {
 			this.unless = unless;
 		}

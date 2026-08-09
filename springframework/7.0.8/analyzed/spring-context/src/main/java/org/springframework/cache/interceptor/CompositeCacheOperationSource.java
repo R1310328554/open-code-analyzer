@@ -26,8 +26,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Composite {@link CacheOperationSource} implementation that iterates
- * over a given array of {@code CacheOperationSource} instances.
+ * 组合式 {@link CacheOperationSource} 实现，遍历给定的
+ * {@code CacheOperationSource} 实例数组并聚合结果。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -36,12 +36,13 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class CompositeCacheOperationSource implements CacheOperationSource, Serializable {
 
+	/** 被组合的缓存操作来源数组。 */
 	private final CacheOperationSource[] cacheOperationSources;
 
 
 	/**
-	 * Create a new CompositeCacheOperationSource for the given sources.
-	 * @param cacheOperationSources the CacheOperationSource instances to combine
+	 * 根据给定来源创建新的 CompositeCacheOperationSource。
+	 * @param cacheOperationSources 要组合的 CacheOperationSource 实例
 	 */
 	public CompositeCacheOperationSource(CacheOperationSource... cacheOperationSources) {
 		Assert.notEmpty(cacheOperationSources, "CacheOperationSource array must not be empty");
@@ -49,8 +50,8 @@ public class CompositeCacheOperationSource implements CacheOperationSource, Seri
 	}
 
 	/**
-	 * Return the {@code CacheOperationSource} instances that this
-	 * {@code CompositeCacheOperationSource} combines.
+	 * 返回本 {@code CompositeCacheOperationSource} 所组合的
+	 * {@code CacheOperationSource} 实例。
 	 */
 	public final CacheOperationSource[] getCacheOperationSources() {
 		return this.cacheOperationSources;
@@ -59,6 +60,7 @@ public class CompositeCacheOperationSource implements CacheOperationSource, Seri
 
 	@Override
 	public boolean isCandidateClass(Class<?> targetClass) {
+		// 任一子来源认为候选则视为候选
 		for (CacheOperationSource source : this.cacheOperationSources) {
 			if (source.isCandidateClass(targetClass)) {
 				return true;

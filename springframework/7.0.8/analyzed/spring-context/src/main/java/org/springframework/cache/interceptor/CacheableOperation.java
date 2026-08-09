@@ -19,7 +19,7 @@ package org.springframework.cache.interceptor;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Class describing a cache 'cacheable' operation.
+ * 描述缓存「可读」（cacheable）操作的类。
  *
  * @author Costin Leau
  * @author Phillip Webb
@@ -28,13 +28,15 @@ import org.jspecify.annotations.Nullable;
  */
 public class CacheableOperation extends CacheOperation {
 
+	/** 满足条件时不使用缓存结果的 SpEL 表达式（unless）。 */
 	private final @Nullable String unless;
 
+	/** 是否以同步方式加载缓存（防止缓存击穿）。 */
 	private final boolean sync;
 
 
 	/**
-	 * Create a new {@link CacheableOperation} instance from the given builder.
+	 * 根据给定构建器创建新的 {@link CacheableOperation} 实例。
 	 * @since 4.3
 	 */
 	public CacheableOperation(CacheableOperation.Builder b) {
@@ -44,29 +46,35 @@ public class CacheableOperation extends CacheOperation {
 	}
 
 
+	/** 返回 unless 条件表达式。 */
 	public @Nullable String getUnless() {
 		return this.unless;
 	}
 
+	/** 返回是否启用同步缓存加载。 */
 	public boolean isSync() {
 		return this.sync;
 	}
 
 
 	/**
-	 * A builder that can be used to create a {@link CacheableOperation}.
+	 * 用于创建 {@link CacheableOperation} 的构建器。
 	 * @since 4.3
 	 */
 	public static class Builder extends CacheOperation.Builder {
 
+		/** unless 条件表达式。 */
 		private @Nullable String unless;
 
+		/** 是否同步加载。 */
 		private boolean sync;
 
+		/** 设置 unless 条件表达式。 */
 		public void setUnless(String unless) {
 			this.unless = unless;
 		}
 
+		/** 设置是否以同步方式加载缓存。 */
 		public void setSync(boolean sync) {
 			this.sync = sync;
 		}

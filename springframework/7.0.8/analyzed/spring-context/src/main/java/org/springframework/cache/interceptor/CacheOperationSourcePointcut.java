@@ -27,8 +27,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.util.ObjectUtils;
 
 /**
- * A {@code Pointcut} that matches if the underlying {@link CacheOperationSource}
- * has an operation for a given method.
+ * 当底层 {@link CacheOperationSource} 对给定方法存在缓存操作时匹配的 {@code Pointcut}。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -38,14 +37,17 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 final class CacheOperationSourcePointcut extends StaticMethodMatcherPointcut implements Serializable {
 
+	/** 用于查找缓存操作的来源。 */
 	private @Nullable CacheOperationSource cacheOperationSource;
 
 
+	/** 构造切点并安装类过滤器。 */
 	public CacheOperationSourcePointcut() {
 		setClassFilter(new CacheOperationSourceClassFilter());
 	}
 
 
+	/** 设置缓存操作来源。 */
 	public void setCacheOperationSource(@Nullable CacheOperationSource cacheOperationSource) {
 		this.cacheOperationSource = cacheOperationSource;
 	}
@@ -74,13 +76,14 @@ final class CacheOperationSourcePointcut extends StaticMethodMatcherPointcut imp
 
 
 	/**
-	 * {@link ClassFilter} that delegates to {@link CacheOperationSource#isCandidateClass}
-	 * for filtering classes whose methods are not worth searching to begin with.
+	 * 委托 {@link CacheOperationSource#isCandidateClass} 过滤类的 {@link ClassFilter}，
+	 * 用于在类级别排除无需搜索方法的类型。
 	 */
 	private final class CacheOperationSourceClassFilter implements ClassFilter {
 
 		@Override
 		public boolean matches(Class<?> clazz) {
+			// 排除 CacheManager 自身，避免对其方法应用缓存切面
 			if (CacheManager.class.isAssignableFrom(clazz)) {
 				return false;
 			}
