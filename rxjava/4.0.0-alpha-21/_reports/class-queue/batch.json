@@ -1,23 +1,6 @@
 {
-  "claimed_at": "2026-08-09T17:46:30Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableConcatMapCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableConcatMapMaybe.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableConcatMapMaybePublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableConcatMapSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableConcatMapSinglePublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableSwitchMapCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableSwitchMapCompletablePublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableSwitchMapMaybe.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableSwitchMapMaybePublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableSwitchMapSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/FlowableSwitchMapSinglePublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/MaterializeSingleObserver.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/MaybeFlatMapObservable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/MaybeFlatMapPublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/mixed/ObservableConcatMapCompletable.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 512,
-  "done": 495,
-  "note": "wave16a re-claim after false-complete (queue marks already present)"
+  "done": 495
 }
