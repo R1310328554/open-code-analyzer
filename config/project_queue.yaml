@@ -87,6 +87,8 @@ projects:
   - id: gin
     url: https://github.com/gin-gonic/gin
     languages: [go]
+    status: complete
+    version: "1.12.0"
   - id: harness
     url: https://github.com/harness/harness
     languages: [go]

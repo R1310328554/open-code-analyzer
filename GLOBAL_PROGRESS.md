@@ -6,14 +6,15 @@
 
 | 项目 | 版本 | done | pending |
 | --- | --- | ---: | ---: |
-| springframework | 7.0.8 | 707 | 784 |
-| springboot | 4.1.0 | 160 | 465 |
+| springframework | 7.0.8 | 707 | 744 |
+| springboot | 4.1.0 | 160 | 425 |
 | flask | 3.1.3 | 24 | 0 ✅ |
 | gson | gson-parent-2.14.0 | 97 | 0 ✅ |
 | hikaricp | dev-a4d93f4f8551 | 49 | 0 ✅ |
-| disruptor | 4.0.0 | 134 | 0 (+37 wave6 claimed) |
+| disruptor | 4.0.0 | 171 | 0 ✅ |
 | gin | 1.12.0 | 56 | 0 ✅ |
-| fastapi | 0.141.1 | 0 | 527 |
+| fastapi | 0.141.1 | 30 | 479 |
 | rxjava | 4.0.0-alpha-21 | 0 | 993 |
 
-下一步：fastapi / sentinel / redisson / rocketmq 精读。
+已完成：flask / gson / hikaricp / gin。进行中：springframework / springboot / fastapi / disruptor / rxjava。
+
