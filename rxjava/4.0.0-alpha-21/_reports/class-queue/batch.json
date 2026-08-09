@@ -1,22 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:34:07Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatten.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromAction.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromCallable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromFuture.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromRunnable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromSupplier.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeHide.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeIgnoreElement.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeIgnoreElementCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeIsEmpty.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeIsEmptySingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeJust.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeLift.java"
-  ],
+  "files": [],
   "remaining_pending": 572,
   "done": 435
 }
