@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:34:07Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDoOnEvent.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDoOnLifecycle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeDoOnTerminate.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeEmpty.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeEqualSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeError.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeErrorCallable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFilter.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFilterSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapBiSelector.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapIterableFlowable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapIterableObservable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapNotification.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatMapSingle.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFlatten.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromAction.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeFromCallable.java",
@@ -33,5 +18,5 @@
     "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeLift.java"
   ],
   "remaining_pending": 572,
-  "done": 405
+  "done": 435
 }
