@@ -20,6 +20,12 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+/**
+ * 可动态更新并通知 {@link PropertyListener} 的 {@link SentinelProperty} 实现。
+ * <p>使用 {@link CopyOnWriteArraySet} 保存监听器，值变更时回调 configUpdate。</p>
+ *
+ * @param <T> 配置值类型
+ */
 public class DynamicSentinelProperty<T> implements SentinelProperty<T> {
 
     protected Set<PropertyListener<T>> listeners = new CopyOnWriteArraySet<>();
@@ -70,6 +76,9 @@ public class DynamicSentinelProperty<T> implements SentinelProperty<T> {
         return oldValue.equals(newValue);
     }
 
+    /**
+     * 清空所有监听器。
+     */
     public void close() {
         listeners.clear();
     }

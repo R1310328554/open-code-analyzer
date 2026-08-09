@@ -29,6 +29,8 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.clusterbuilder.ClusterBuilderSlot;
 
 /**
+ * 定时聚合各资源 {@link MetricNode} 并写入指标日志文件的监听器。
+ *
  * @author jialiang.linjl
  */
 public class MetricTimerListener implements Runnable {

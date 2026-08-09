@@ -17,46 +17,44 @@ package com.alibaba.csp.sentinel.property;
 
 /**
  * <p>
- * This class holds current value of the config, and is responsible for informing all {@link PropertyListener}s
- * added on this when the config is updated.
+ * 保存配置的当前值，并在配置更新时通知所有已注册的 {@link PropertyListener}。
  * </p>
  * <p>
- * Note that not every {@link #updateValue(Object newValue)} invocation should inform the listeners, only when
- * {@code newValue} is not Equals to the old value, informing is needed.
+ * 注意：并非每次 {@link #updateValue(Object newValue)} 都需通知监听器，
+ * 仅当 {@code newValue} 与旧值不相等时才通知。
  * </p>
  *
- * @param <T> the target type.
+ * @param <T> 配置值类型
  * @author Carpenter Lee
  */
 public interface SentinelProperty<T> {
 
     /**
      * <p>
-     * Add a {@link PropertyListener} to this {@link SentinelProperty}. After the listener is added,
-     * {@link #updateValue(Object)} will inform the listener if needed.
+     * 向本 {@link SentinelProperty} 添加 {@link PropertyListener}。
+     * 添加后，{@link #updateValue(Object)} 在需要时会通知该监听器。
      * </p>
      * <p>
-     * This method can invoke multi times to add more than one listeners.
+     * 可多次调用以添加多个监听器。
      * </p>
      *
-     * @param listener listener to add.
+     * @param listener 要添加的监听器
      */
     void addListener(PropertyListener<T> listener);
 
     /**
-     * Remove the {@link PropertyListener} on this. After removing, {@link #updateValue(Object)}
-     * will not inform the listener.
+     * 移除本属性上的 {@link PropertyListener}。移除后 {@link #updateValue(Object)}
+     * 将不再通知该监听器。
      *
-     * @param listener the listener to remove.
+     * @param listener 要移除的监听器
      */
     void removeListener(PropertyListener<T> listener);
 
     /**
-     * Update the {@code newValue} as the current value of this property and inform all {@link PropertyListener}s
-     * added on this only when new {@code newValue} is not Equals to the old value.
+     * 将 {@code newValue} 更新为当前值；仅当新值与旧值不相等时通知所有 {@link PropertyListener}。
      *
-     * @param newValue the new value.
-     * @return true if the value in property has been updated, otherwise false
+     * @param newValue 新值
+     * @return 若属性值已更新返回 true，否则 false
      */
     boolean updateValue(T newValue);
 }

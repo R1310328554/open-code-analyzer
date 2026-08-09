@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Reads metrics data from log file.
+ * 从指标日志文件读取 {@link MetricNode} 数据。
  */
 class MetricsReader {
 
     /**
-     * Avoid OOM in any cases.
+     * 避免任何情况下 OOM。
      */
     private static final int MAX_LINES_RETURN = 100000;
 
@@ -39,7 +39,7 @@ class MetricsReader {
     }
 
     /**
-     * @return if should continue read, return true, else false.
+     * @return 若应继续读取返回 true，否则 false
      */
     boolean readMetricsInOneFileByEndTime(List<MetricNode> list, String fileName, long offset,
                                           long beginTimeMs, long endTimeMs, String identity) throws Exception {
@@ -54,12 +54,12 @@ class MetricsReader {
             while ((line = reader.readLine()) != null) {
                 MetricNode node = MetricNode.fromFatString(line);
                 long currentSecond = node.getTimestamp() / 1000;
-                // currentSecond should >= beginSecond, otherwise a wrong metric file must occur
+                // currentSecond 应 >= beginSecond，否则说明指标文件异常
                 if (currentSecond < beginSecond) {
                     return false;
                 }
                 if (currentSecond <= endSecond) {
-                    // read all
+                    // 读取全部
                     if (identity == null) {
                         list.add(node);
                     } else if (node.getResource().equals(identity)) {
@@ -116,8 +116,7 @@ class MetricsReader {
     }
 
     /**
-     * When identity is null, all metric between the time intervalMs will be read, otherwise, only the specific
-     * identity will be read.
+     * identity 为 null 时读取时间区间内全部指标，否则仅读取指定资源。
      */
     List<MetricNode> readMetricsByEndTime(List<String> fileNames, int pos, long offset,
                                           long beginTimeMs, long endTimeMs, String identity) throws Exception {

@@ -21,7 +21,7 @@ import com.alibaba.csp.sentinel.property.SimplePropertyListener;
 import com.alibaba.csp.sentinel.slots.clusterbuilder.ClusterBuilderSlot;
 
 /**
- * Holds statistic buckets count per second.
+ * 保存每秒统计桶（采样窗口）数量配置。
  *
  * @author jialiang.linjl
  * @author CarpenterLee
@@ -30,11 +30,10 @@ public class SampleCountProperty {
 
     /**
      * <p>
-     * Statistic buckets count per second. This variable determines sensitivity of the QPS calculation.
-     * DO NOT MODIFY this value directly, use {@link #updateSampleCount(int)}, otherwise the modification will not
-     * take effect.
+     * 每秒统计桶数量，决定 QPS 计算的灵敏度。
+     * 请勿直接修改此值，应使用 {@link #updateSampleCount(int)}，否则修改不会生效。
      * </p>
-     * Node that this value must be divisor of 1000.
+     * 注意：该值必须是 1000 的约数。
      */
     public static volatile int SAMPLE_COUNT = 2;
 
@@ -50,10 +49,10 @@ public class SampleCountProperty {
     }
 
     /**
-     * Update the {@link #SAMPLE_COUNT}. All {@link ClusterNode}s will be reset if newSampleCount
-     * is different from {@link #SAMPLE_COUNT}.
+     * 更新 {@link #SAMPLE_COUNT}。若 newSampleCount 与当前值不同，
+     * 将重置所有 {@link ClusterNode}。
      *
-     * @param newSampleCount New sample count to set. This value must be divisor of 1000.
+     * @param newSampleCount 新的采样数，必须是 1000 的约数
      */
     public static void updateSampleCount(int newSampleCount) {
         if (newSampleCount != SAMPLE_COUNT) {

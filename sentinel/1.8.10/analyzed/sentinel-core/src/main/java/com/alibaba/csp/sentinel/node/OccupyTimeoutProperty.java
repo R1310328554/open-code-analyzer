@@ -20,6 +20,8 @@ import com.alibaba.csp.sentinel.property.SentinelProperty;
 import com.alibaba.csp.sentinel.property.SimplePropertyListener;
 
 /**
+ * 优先级占用未来统计窗口令牌的最大等待超时配置。
+ *
  * @author jialiang.linjl
  * @author Carpenter Lee
  * @since 1.5.0
@@ -28,14 +30,14 @@ public class OccupyTimeoutProperty {
 
     /**
      * <p>
-     * Max occupy timeout in milliseconds. Requests with priority can occupy tokens of the future statistic
-     * window, and {@code occupyTimeout} limit the max time length that can be occupied.
+     * 最大占用超时（毫秒）。带优先级的请求可占用未来统计窗口的令牌，
+     * {@code occupyTimeout} 限制可占用的最大时长。
      * </p>
      * <p>
-     * Note that the timeout value should never be greeter than {@link IntervalProperty#INTERVAL}.
+     * 注意：超时值不应大于 {@link IntervalProperty#INTERVAL}。
      * </p>
-     * DO NOT MODIFY this value directly, use {@link #updateTimeout(int)},
-     * otherwise the modification will not take effect.
+     * 请勿直接修改此值，应使用 {@link #updateTimeout(int)}，
+     * 否则修改不会生效。
      */
     private static volatile int occupyTimeout = 500;
 
@@ -55,11 +57,11 @@ public class OccupyTimeoutProperty {
     }
 
     /**
-     * Update the timeout value.</br>
-     * Note that the time out should never greeter than {@link IntervalProperty#INTERVAL},
-     * or it will be ignored.
+     * 更新超时值。</br>
+     * 注意：超时值不应大于 {@link IntervalProperty#INTERVAL}，
+     * 否则将被忽略。
      *
-     * @param newInterval new value.
+     * @param newInterval 新超时值
      */
     public static void updateTimeout(int newInterval) {
         if (newInterval < 0) {
