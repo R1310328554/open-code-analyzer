@@ -721,3 +721,6 @@
 2026-08-09T18:32:06Z DONE spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlBinaryStreamProvider.java wave29b
 2026-08-09T18:32:06Z DONE spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlCharacterStreamProvider.java wave29b
 2026-08-09T18:32:06Z DONE spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlResultProvider.java wave29b
+2026-08-09T18:32:09Z DONE spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlFeatureNotImplementedException.java wave29a
+2026-08-09T18:32:09Z DONE spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlHandler.java wave29a
+2026-08-09T18:32:09Z DONE spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlValue.java wave29a
