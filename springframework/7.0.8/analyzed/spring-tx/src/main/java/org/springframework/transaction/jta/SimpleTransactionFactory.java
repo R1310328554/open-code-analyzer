@@ -25,10 +25,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Default implementation of the {@link TransactionFactory} strategy interface,
- * simply wrapping a standard JTA {@link jakarta.transaction.TransactionManager}.
+ * {@link TransactionFactory} 策略接口的默认实现，
+ * 简单包装标准 JTA {@link jakarta.transaction.TransactionManager}。
  *
- * <p>Does not support transaction names; simply ignores any specified name.
+ * <p>不支持事务名称；直接忽略任何指定名称。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -42,8 +42,8 @@ public class SimpleTransactionFactory implements TransactionFactory {
 
 
 	/**
-	 * Create a new SimpleTransactionFactory for the given TransactionManager.
-	 * @param transactionManager the JTA TransactionManager to wrap
+	 * 为给定 TransactionManager 创建新的 SimpleTransactionFactory。
+	 * @param transactionManager 要包装的 JTA TransactionManager
 	 */
 	public SimpleTransactionFactory(TransactionManager transactionManager) {
 		Assert.notNull(transactionManager, "TransactionManager must not be null");

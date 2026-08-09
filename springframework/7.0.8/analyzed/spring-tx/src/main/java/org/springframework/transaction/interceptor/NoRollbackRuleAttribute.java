@@ -17,8 +17,8 @@
 package org.springframework.transaction.interceptor;
 
 /**
- * Tag subclass of {@link RollbackRuleAttribute} that has the opposite behavior
- * to the {@code RollbackRuleAttribute} superclass.
+ * {@link RollbackRuleAttribute} 的标记子类，行为与
+ * {@code RollbackRuleAttribute} 超类相反。
  *
  * @author Rod Johnson
  * @author Sam Brannen
@@ -28,12 +28,9 @@ package org.springframework.transaction.interceptor;
 public class NoRollbackRuleAttribute extends RollbackRuleAttribute {
 
 	/**
-	 * Create a new instance of the {@code NoRollbackRuleAttribute} class
-	 * for the given {@code exceptionType}.
-	 * @param exceptionType exception type; must be {@link Throwable} or a subclass
-	 * of {@code Throwable}
-	 * @throws IllegalArgumentException if the supplied {@code exceptionType} is
-	 * not a {@code Throwable} type or is {@code null}
+	 * 为给定 {@code exceptionType} 创建新的 {@code NoRollbackRuleAttribute} 实例。
+	 * @param exceptionType 异常类型；必须是 {@link Throwable} 或其子类
+	 * @throws IllegalArgumentException 若 {@code exceptionType} 不是 {@code Throwable} 类型或为 {@code null}
 	 * @see RollbackRuleAttribute#RollbackRuleAttribute(Class)
 	 */
 	public NoRollbackRuleAttribute(Class<?> exceptionType) {
@@ -41,12 +38,9 @@ public class NoRollbackRuleAttribute extends RollbackRuleAttribute {
 	}
 
 	/**
-	 * Create a new instance of the {@code NoRollbackRuleAttribute} class
-	 * for the supplied {@code exceptionPattern}.
-	 * @param exceptionPattern the exception name pattern; can also be a fully
-	 * package-qualified class name
-	 * @throws IllegalArgumentException if the supplied {@code exceptionPattern}
-	 * is {@code null} or empty
+	 * 为给定 {@code exceptionPattern} 创建新的 {@code NoRollbackRuleAttribute} 实例。
+	 * @param exceptionPattern 异常名称模式；也可为全限定类名
+	 * @throws IllegalArgumentException 若 {@code exceptionPattern} 为 {@code null} 或空
 	 * @see RollbackRuleAttribute#RollbackRuleAttribute(String)
 	 */
 	public NoRollbackRuleAttribute(String exceptionPattern) {

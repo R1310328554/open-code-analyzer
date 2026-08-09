@@ -24,23 +24,21 @@ import org.springframework.beans.propertyeditors.PropertiesEditor;
 import org.springframework.util.StringUtils;
 
 /**
- * Property editor that converts a String into a {@link TransactionAttributeSource}.
- * The transaction attribute string must be parseable by the
- * {@link TransactionAttributeEditor} in this package.
+ * 将 String 转换为 {@link TransactionAttributeSource} 的属性编辑器。
+ * 事务属性字符串须可由本包中的 {@link TransactionAttributeEditor} 解析。
  *
- * <p>Strings are in property syntax, with the form:<br>
- * {@code <fully-qualified class name>.<method-name>=<transaction attribute string>}
+ * <p>字符串为属性语法，形式为：<br>
+ * {@code <全限定类名>.<方法名>=<事务属性字符串>}
  *
- * <p>For example:<br>
+ * <p>例如：<br>
  * {@code com.mycompany.mycode.MyClass.myMethod=PROPAGATION_MANDATORY,ISOLATION_DEFAULT}
  *
- * <p><b>NOTE:</b> The specified class must be the one where the methods are
- * defined; in case of implementing an interface, the interface class name.
+ * <p><b>注意：</b>指定类必须是定义方法的类；
+ * 若实现接口，则为接口类名。
  *
- * <p>Note: Will register all overloaded methods for a given name.
- * Does not support explicit registration of certain overloaded methods.
- * Supports "xxx*" mappings &mdash; for example, "notify*" will match against
- * "notify" and "notifyAll".
+ * <p>注意：将为给定名称注册所有重载方法。
+ * 不支持显式注册特定重载方法。
+ * 支持 "xxx*" 映射 &mdash; 例如 "notify*" 将匹配 "notify" 和 "notifyAll"。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -53,21 +51,21 @@ public class TransactionAttributeSourceEditor extends PropertyEditorSupport {
 	public void setAsText(String text) throws IllegalArgumentException {
 		MethodMapTransactionAttributeSource source = new MethodMapTransactionAttributeSource();
 		if (StringUtils.hasLength(text)) {
-			// Use properties editor to tokenize the hold string.
+			// 使用 Properties 编辑器对整串进行分词。
 			PropertiesEditor propertiesEditor = new PropertiesEditor();
 			propertiesEditor.setAsText(text);
 			Properties props = (Properties) propertiesEditor.getValue();
 
-			// Now we have properties, process each one individually.
+			// 得到 Properties 后逐个处理。
 			TransactionAttributeEditor tae = new TransactionAttributeEditor();
 			Enumeration<?> propNames = props.propertyNames();
 			while (propNames.hasMoreElements()) {
 				String name = (String) propNames.nextElement();
 				String value = props.getProperty(name);
-				// Convert value to a transaction attribute.
+				// 将值转换为事务属性。
 				tae.setAsText(value);
 				TransactionAttribute attr = (TransactionAttribute) tae.getValue();
-				// Register name and attribute.
+				// 注册名称与属性。
 				source.addTransactionalMethod(name, attr);
 			}
 		}

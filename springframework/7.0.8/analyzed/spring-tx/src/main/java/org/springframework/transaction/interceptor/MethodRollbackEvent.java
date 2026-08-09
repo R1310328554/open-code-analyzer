@@ -22,14 +22,13 @@ import org.springframework.context.event.MethodFailureEvent;
 import org.springframework.transaction.TransactionExecution;
 
 /**
- * Event published for every exception encountered that triggers a transaction rollback
- * through a proxy-triggered method invocation or a reactive publisher returned from it.
- * Can be listened to via an {@code ApplicationListener<MethodRollbackEvent>} bean or
- * an {@code @EventListener(MethodRollbackEvent.class)} method.
+ * 每当通过代理触发的方法调用或其返回的响应式 Publisher 中
+ * 遇到触发事务回滚的异常时发布的事件。
+ * 可通过 {@code ApplicationListener<MethodRollbackEvent>} Bean 或
+ * {@code @EventListener(MethodRollbackEvent.class)} 方法监听。
  *
- * <p>Note: This event gets published right <i>before</i> the actual transaction rollback.
- * As a consequence, the exposed {@link #getTransaction() transaction} reflects the state
- * of the transaction right before the rollback.
+ * <p>注意：该事件在实际事务回滚<i>之前</i>发布。
+ * 因此暴露的 {@link #getTransaction() 事务}反映回滚前的事务状态。
  *
  * @author Juergen Hoeller
  * @since 7.0.3
@@ -45,10 +44,10 @@ public class MethodRollbackEvent extends MethodFailureEvent {
 
 
 	/**
-	 * Create a new event for the given rolled-back method invocation.
-	 * @param invocation the transactional method invocation
-	 * @param failure the exception encountered that triggered a rollback
-	 * @param transaction the transaction status right before the rollback
+	 * 为给定已回滚的方法调用创建新事件。
+	 * @param invocation 事务方法调用
+	 * @param failure 触发回滚的异常
+	 * @param transaction 回滚前的事务状态
 	 */
 	public MethodRollbackEvent(MethodInvocation invocation, Throwable failure, TransactionExecution transaction) {
 		super(invocation, failure);
@@ -57,9 +56,8 @@ public class MethodRollbackEvent extends MethodFailureEvent {
 
 
 	/**
-	 * Return the exception encountered.
-	 * <p>This may be an exception thrown by the method or emitted by the
-	 * reactive publisher returned from the method.
+	 * 返回遇到的异常。
+	 * <p>可能是方法抛出的异常，或方法返回的响应式 Publisher 发出的异常。
 	 */
 	@Override
 	public Throwable getFailure() {
@@ -67,7 +65,7 @@ public class MethodRollbackEvent extends MethodFailureEvent {
 	}
 
 	/**
-	 * Return the corresponding transaction status.
+	 * 返回对应的事务状态。
 	 */
 	public TransactionExecution getTransaction() {
 		return this.transaction;

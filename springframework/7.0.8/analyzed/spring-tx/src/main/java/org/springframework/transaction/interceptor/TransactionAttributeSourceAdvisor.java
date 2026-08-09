@@ -25,12 +25,11 @@ import org.springframework.aop.support.AbstractPointcutAdvisor;
 import org.springframework.util.Assert;
 
 /**
- * Advisor driven by a {@link TransactionAttributeSource}, used to include
- * a {@link TransactionInterceptor} only for methods that are transactional.
+ * 由 {@link TransactionAttributeSource} 驱动的 Advisor，
+ * 仅对事务性方法包含 {@link TransactionInterceptor}。
  *
- * <p>Because the AOP framework caches advice calculations, this is normally
- * faster than just letting the TransactionInterceptor run and find out
- * itself that it has no work to do.
+ * <p>由于 AOP 框架缓存 advice 计算结果，
+ * 这通常比让 TransactionInterceptor 自行运行并发现无事可做更快。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -46,14 +45,14 @@ public class TransactionAttributeSourceAdvisor extends AbstractPointcutAdvisor {
 
 
 	/**
-	 * Create a new TransactionAttributeSourceAdvisor.
+	 * 创建新的 TransactionAttributeSourceAdvisor。
 	 */
 	public TransactionAttributeSourceAdvisor() {
 	}
 
 	/**
-	 * Create a new TransactionAttributeSourceAdvisor.
-	 * @param interceptor the transaction interceptor to use for this advisor
+	 * 创建新的 TransactionAttributeSourceAdvisor。
+	 * @param interceptor 本 Advisor 使用的事务拦截器
 	 */
 	public TransactionAttributeSourceAdvisor(TransactionInterceptor interceptor) {
 		setTransactionInterceptor(interceptor);
@@ -61,7 +60,7 @@ public class TransactionAttributeSourceAdvisor extends AbstractPointcutAdvisor {
 
 
 	/**
-	 * Set the transaction interceptor to use for this advisor.
+	 * 设置本 Advisor 使用的事务拦截器。
 	 */
 	public void setTransactionInterceptor(TransactionInterceptor interceptor) {
 		Assert.notNull(interceptor, "TransactionInterceptor must not be null");
@@ -70,8 +69,8 @@ public class TransactionAttributeSourceAdvisor extends AbstractPointcutAdvisor {
 	}
 
 	/**
-	 * Set the {@link ClassFilter} to use for this pointcut.
-	 * Default is {@link ClassFilter#TRUE}.
+	 * 设置本切点使用的 {@link ClassFilter}。
+	 * 默认为 {@link ClassFilter#TRUE}。
 	 */
 	public void setClassFilter(ClassFilter classFilter) {
 		this.pointcut.setClassFilter(classFilter);
