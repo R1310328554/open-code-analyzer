@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:10:24Z",
   "files": [
-    "redisson/src/main/java/org/redisson/api/RRemoteService.java",
-    "redisson/src/main/java/org/redisson/api/RRingBuffer.java",
-    "redisson/src/main/java/org/redisson/api/RRingBufferAsync.java",
-    "redisson/src/main/java/org/redisson/api/RRingBufferReactive.java",
-    "redisson/src/main/java/org/redisson/api/RRingBufferRx.java",
-    "redisson/src/main/java/org/redisson/api/RScheduledExecutorService.java",
-    "redisson/src/main/java/org/redisson/api/RScheduledExecutorServiceAsync.java",
-    "redisson/src/main/java/org/redisson/api/RScheduledFuture.java",
-    "redisson/src/main/java/org/redisson/api/RScript.java",
-    "redisson/src/main/java/org/redisson/api/RScriptAsync.java",
-    "redisson/src/main/java/org/redisson/api/RScriptReactive.java",
-    "redisson/src/main/java/org/redisson/api/RScriptRx.java",
-    "redisson/src/main/java/org/redisson/api/RSearch.java",
-    "redisson/src/main/java/org/redisson/api/RSearchAsync.java",
-    "redisson/src/main/java/org/redisson/api/RSearchReactive.java",
     "redisson/src/main/java/org/redisson/api/RSearchRx.java",
     "redisson/src/main/java/org/redisson/api/RSemaphore.java",
     "redisson/src/main/java/org/redisson/api/RSemaphoreAsync.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/api/RSetMultimapCacheNativeRx.java"
   ],
   "remaining_pending": 1352,
-  "done": 1440
+  "done": 1455
 }
