@@ -1,0 +1,4 @@
+PyYAML>=6.0
+javalang>=0.13.0
+lizard>=1.17.10
+rich>=13.0.0

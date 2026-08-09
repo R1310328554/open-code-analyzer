@@ -1,0 +1,60 @@
+# open-code-analyzer 默认配置
+
+project:
+  # 分析结果根目录：<root>/<project>/<version>/{original,analyzed,架构说明}
+  root: "."
+
+fetch:
+  # 仅浅克隆，不拉完整历史
+  depth: 1
+  # 若无 Release，回退到默认分支 tip
+  fallback_to_tip: true
+
+analysis:
+  # 语言自动探测；也可手动指定
+  languages: [auto]
+  # 忽略路径（相对 original）
+  ignore:
+    - "**/.git/**"
+    - "**/build/**"
+    - "**/target/**"
+    - "**/node_modules/**"
+    - "**/.gradle/**"
+    - "**/out/**"
+    - "**/*.min.js"
+    - "**/testdata/**"
+  # 复杂度阈值：超过才写方法内细粒度中文注释
+  complexity:
+    cyclomatic_min: 8
+    loc_min: 40
+    nesting_min: 3
+  # getter/setter/简单 equals/hashCode/toString 默认跳过方法级注释
+  skip_trivial_accessors: true
+  # 字段始终写简短中文含义（即使 trivial）
+  annotate_fields: true
+  # 输出语言
+  comment_language: zh-CN
+
+outputs:
+  original_dirname: original
+  analyzed_dirname: analyzed
+  arch_dirname: 架构说明
+  module_docs_dirname: 项目模块说明
+  # 静态分析中间产物
+  reports_dirname: _reports
+
+tools:
+  # 可选外部工具集成（存在则调用，不存在则跳过）
+  lizard: true
+  graphify: false
+  understand_anything: false
+
+llm:
+  # 若设置 OPENAI_API_KEY / ANTHROPIC_API_KEY 等，annotate 阶段可调用
+  enabled: auto
+  provider: auto
+  model: auto
+  # 批量注释时每批最大文件数
+  batch_size: 8
+  # 仅注释高复杂度/核心模块时优先
+  prioritize_complex: true

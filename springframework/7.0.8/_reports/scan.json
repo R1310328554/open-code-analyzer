@@ -1,0 +1,411 @@
+{
+  "root": "/workspace/springframework/7.0.8/original",
+  "total_files": 11286,
+  "code_files": 9573,
+  "languages": {
+    "java": 9154,
+    "xml": 691,
+    "asciidoc": 470,
+    "kotlin": 388,
+    "properties": 89,
+    "sql": 80,
+    "gradle": 34,
+    "yaml": 24,
+    "groovy": 17,
+    "javascript": 10,
+    "markdown": 8,
+    "ruby": 2,
+    "python": 2
+  },
+  "top_dirs": {
+    "spring-context": 1619,
+    "spring-test": 1506,
+    "spring-web": 1277,
+    "spring-core": 1157,
+    "framework-docs": 986,
+    "spring-webmvc": 731,
+    "spring-beans": 687,
+    "spring-webflux": 531,
+    "spring-jdbc": 440,
+    "spring-messaging": 373,
+    "spring-aop": 307,
+    "spring-websocket": 262,
+    "spring-tx": 247,
+    "spring-jms": 204,
+    "spring-expression": 197,
+    "spring-orm": 160,
+    "spring-context-support": 146,
+    "spring-r2dbc": 117,
+    "spring-core-test": 67,
+    "spring-aspects": 64,
+    "spring-oxm": 55,
+    "spring-context-indexer": 47,
+    "integration-tests": 46,
+    ".github": 20,
+    "src": 8,
+    "buildSrc": 5,
+    "gradle": 5,
+    "spring-instrument": 3,
+    "README.md": 1,
+    ".sdkmanrc": 1,
+    "settings.gradle": 1,
+    "import-into-intellij-idea.md": 1,
+    "build.gradle": 1,
+    ".editorconfig": 1,
+    ".gitattributes": 1,
+    "CONTRIBUTING.md": 1,
+    "gradlew.bat": 1,
+    ".gitignore": 1,
+    "gradlew": 1,
+    "gradle.properties": 1,
+    "LICENSE.txt": 1,
+    "import-into-eclipse.md": 1,
+    "SECURITY.md": 1,
+    "framework-api": 1,
+    "framework-bom": 1,
+    ".idea": 1,
+    "framework-platform": 1
+  },
+  "modules": [
+    {
+      "name": "buildSrc",
+      "path": "buildSrc",
+      "file_count": 5,
+      "code_files": 2,
+      "languages": {
+        "markdown": 1,
+        "gradle": 2,
+        "properties": 1,
+        "xml": 1
+      },
+      "description": "Spring Framework Build"
+    },
+    {
+      "name": "framework-docs",
+      "path": "framework-docs",
+      "file_count": 986,
+      "code_files": 413,
+      "languages": {
+        "yaml": 2,
+        "gradle": 1,
+        "xml": 78,
+        "kotlin": 195,
+        "java": 217,
+        "markdown": 1,
+        "asciidoc": 470
+      },
+      "description": ""
+    },
+    {
+      "name": "integration-tests",
+      "path": "integration-tests",
+      "file_count": 46,
+      "code_files": 30,
+      "languages": {
+        "gradle": 1,
+        "xml": 11,
+        "properties": 2,
+        "kotlin": 1,
+        "java": 28
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-aop",
+      "path": "spring-aop",
+      "file_count": 307,
+      "code_files": 287,
+      "languages": {
+        "gradle": 1,
+        "java": 283,
+        "xml": 13,
+        "kotlin": 3
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-aspects",
+      "path": "spring-aspects",
+      "file_count": 64,
+      "code_files": 41,
+      "languages": {
+        "gradle": 1,
+        "xml": 10,
+        "java": 40
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-beans",
+      "path": "spring-beans",
+      "file_count": 687,
+      "code_files": 594,
+      "languages": {
+        "gradle": 1,
+        "kotlin": 14,
+        "java": 579,
+        "xml": 68,
+        "properties": 11
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-context",
+      "path": "spring-context",
+      "file_count": 1619,
+      "code_files": 1283,
+      "languages": {
+        "gradle": 1,
+        "kotlin": 26,
+        "java": 1244,
+        "xml": 278,
+        "properties": 26,
+        "groovy": 12
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-context-indexer",
+      "path": "spring-context-indexer",
+      "file_count": 47,
+      "code_files": 46,
+      "languages": {
+        "gradle": 1,
+        "java": 45
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-context-support",
+      "path": "spring-context-support",
+      "file_count": 146,
+      "code_files": 130,
+      "languages": {
+        "gradle": 1,
+        "java": 128,
+        "xml": 13,
+        "sql": 1
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-core",
+      "path": "spring-core",
+      "file_count": 1157,
+      "code_files": 1120,
+      "languages": {
+        "gradle": 1,
+        "java": 1085,
+        "properties": 4,
+        "kotlin": 34,
+        "xml": 14
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-core-test",
+      "path": "spring-core-test",
+      "file_count": 67,
+      "code_files": 65,
+      "languages": {
+        "gradle": 1,
+        "java": 64
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-expression",
+      "path": "spring-expression",
+      "file_count": 197,
+      "code_files": 196,
+      "languages": {
+        "gradle": 1,
+        "java": 194,
+        "xml": 1,
+        "kotlin": 1
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-instrument",
+      "path": "spring-instrument",
+      "file_count": 3,
+      "code_files": 3,
+      "languages": {
+        "gradle": 1,
+        "java": 2
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-jdbc",
+      "path": "spring-jdbc",
+      "file_count": 440,
+      "code_files": 405,
+      "languages": {
+        "gradle": 1,
+        "xml": 29,
+        "kotlin": 5,
+        "java": 353,
+        "sql": 46
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-jms",
+      "path": "spring-jms",
+      "file_count": 204,
+      "code_files": 186,
+      "languages": {
+        "gradle": 1,
+        "java": 185,
+        "xml": 11,
+        "properties": 1
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-messaging",
+      "path": "spring-messaging",
+      "file_count": 373,
+      "code_files": 370,
+      "languages": {
+        "gradle": 1,
+        "kotlin": 8,
+        "java": 361,
+        "xml": 1
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-orm",
+      "path": "spring-orm",
+      "file_count": 160,
+      "code_files": 125,
+      "languages": {
+        "gradle": 1,
+        "properties": 1,
+        "java": 123,
+        "xml": 28,
+        "sql": 1
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-oxm",
+      "path": "spring-oxm",
+      "file_count": 55,
+      "code_files": 44,
+      "languages": {
+        "gradle": 1,
+        "java": 43,
+        "xml": 4
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-r2dbc",
+      "path": "spring-r2dbc",
+      "file_count": 117,
+      "code_files": 116,
+      "languages": {
+        "gradle": 1,
+        "kotlin": 6,
+        "java": 94,
+        "sql": 15
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-test",
+      "path": "spring-test",
+      "file_count": 1506,
+      "code_files": 1416,
+      "languages": {
+        "gradle": 1,
+        "kotlin": 26,
+        "java": 1365,
+        "xml": 49,
+        "javascript": 2,
+        "sql": 17,
+        "groovy": 5,
+        "yaml": 4,
+        "properties": 18
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-tx",
+      "path": "spring-tx",
+      "file_count": 247,
+      "code_files": 233,
+      "languages": {
+        "gradle": 1,
+        "xml": 8,
+        "kotlin": 5,
+        "java": 227
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-web",
+      "path": "spring-web",
+      "file_count": 1277,
+      "code_files": 1235,
+      "languages": {
+        "gradle": 1,
+        "xml": 7,
+        "properties": 5,
+        "kotlin": 32,
+        "java": 1202
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-webflux",
+      "path": "spring-webflux",
+      "file_count": 531,
+      "code_files": 489,
+      "languages": {
+        "gradle": 1,
+        "kotlin": 24,
+        "java": 459,
+        "xml": 2,
+        "properties": 3,
+        "ruby": 1,
+        "python": 1,
+        "javascript": 3
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-webmvc",
+      "path": "spring-webmvc",
+      "file_count": 731,
+      "code_files": 605,
+      "languages": {
+        "gradle": 1,
+        "properties": 15,
+        "kotlin": 8,
+        "java": 589,
+        "xml": 49,
+        "ruby": 1,
+        "python": 1,
+        "javascript": 5
+      },
+      "description": ""
+    },
+    {
+      "name": "spring-websocket",
+      "path": "spring-websocket",
+      "file_count": 262,
+      "code_files": 245,
+      "languages": {
+        "gradle": 1,
+        "java": 244,
+        "xml": 12
+      },
+      "description": ""
+    }
+  ]
+}
