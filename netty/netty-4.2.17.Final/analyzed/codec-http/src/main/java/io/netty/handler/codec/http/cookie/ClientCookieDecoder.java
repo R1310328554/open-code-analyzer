@@ -23,24 +23,21 @@ import java.util.Date;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A <a href="https://tools.ietf.org/html/rfc6265">RFC6265</a> compliant cookie decoder to be used client side.
- *
- * It will store the way the raw value was wrapped in {@link Cookie#setWrap(boolean)} so it can be
- * eventually sent back to the Origin server as is.
+ * 客户端 RFC6265 Cookie 解码器，用于解析 Set-Cookie 响应头。
+ * <p>
+ * 通过 {@link Cookie#setWrap(boolean)} 记录原始值是否带引号，
+ * 以便原样回传 Origin 服务器。
  *
  * @see ClientCookieEncoder
  */
 public final class ClientCookieDecoder extends CookieDecoder {
 
-    /**
-     * Strict encoder that validates that name and value chars are in the valid scope
-     * defined in RFC6265
-     */
+    /** 严格模式：校验 name/value 符合 RFC6265 字符范围。 */
+
     public static final ClientCookieDecoder STRICT = new ClientCookieDecoder(true);
 
-    /**
-     * Lax instance that doesn't validate name and value
-     */
+    /** 宽松模式：不校验 name/value 字符。 */
+
     public static final ClientCookieDecoder LAX = new ClientCookieDecoder(false);
 
     private ClientCookieDecoder(boolean strict) {
@@ -48,8 +45,7 @@ public final class ClientCookieDecoder extends CookieDecoder {
     }
 
     /**
-     * Decodes the specified Set-Cookie HTTP header value into a {@link Cookie}.
-     *
+     * 将 Set-Cookie 头值解码为 {@link Cookie}；空串返回 {@code null}。
      * @return the decoded {@link Cookie}
      */
     public Cookie decode(String header) {
@@ -63,15 +59,14 @@ public final class ClientCookieDecoder extends CookieDecoder {
 
         loop: for (int i = 0;;) {
 
-            // Skip spaces and separators.
+            // 跳过空白与分隔符
             for (;;) {
                 if (i == headerLen) {
                     break loop;
                 }
                 char c = header.charAt(i);
                 if (c == ',') {
-                    // Having multiple cookies in a single Set-Cookie header is
-                    // deprecated, modern browsers only parse the first one
+                    // 单头多 Cookie 已废弃，现代浏览器只解析第一个
                     break loop;
 
                 } else if (c == '\t' || c == '\n' || c == 0x0b || c == '\f'
@@ -90,23 +85,23 @@ public final class ClientCookieDecoder extends CookieDecoder {
             for (;;) {
                 char curChar = header.charAt(i);
                 if (curChar == ';') {
-                    // NAME; (no value till ';')
+                    // NAME;（无值，直到分号）
                     nameEnd = i;
                     valueBegin = valueEnd = -1;
                     break;
 
                 } else if (curChar == '=') {
-                    // NAME=VALUE
+                    // NAME=VALUE 形式
                     nameEnd = i;
                     i++;
                     if (i == headerLen) {
-                        // NAME= (empty value, i.e. nothing after '=')
+                        // NAME=（等号后无内容，空值）
                         valueBegin = valueEnd = 0;
                         break;
                     }
 
                     valueBegin = i;
-                    // NAME=VALUE;
+                    // NAME=VALUE; 到下一分号或串尾
                     int semiPos = header.indexOf(';', i);
                     valueEnd = i = semiPos > 0 ? semiPos : headerLen;
                     break;
@@ -115,7 +110,7 @@ public final class ClientCookieDecoder extends CookieDecoder {
                 }
 
                 if (i == headerLen) {
-                    // NAME (no value till the end of string)
+                    // NAME（无等号，到串尾）
                     nameEnd = headerLen;
                     valueBegin = valueEnd = -1;
                     break;
@@ -123,12 +118,12 @@ public final class ClientCookieDecoder extends CookieDecoder {
             }
 
             if (valueEnd > 0 && header.charAt(valueEnd - 1) == ',') {
-                // old multiple cookies separator, skipping it
+                // 旧式多 Cookie 逗号分隔符，跳过
                 valueEnd--;
             }
 
             if (cookieBuilder == null) {
-                // cookie name-value pair
+                // 首个 name-value 对 → 创建 Cookie
                 DefaultCookie cookie = initCookie(header, nameBegin, nameEnd, valueBegin, valueEnd);
 
                 if (cookie == null) {
@@ -137,7 +132,7 @@ public final class ClientCookieDecoder extends CookieDecoder {
 
                 cookieBuilder = new CookieBuilder(cookie, header);
             } else {
-                // cookie attribute
+                // 后续键值 → Cookie 属性
                 cookieBuilder.appendAttribute(nameBegin, nameEnd, valueBegin, valueEnd);
             }
         }
@@ -164,7 +159,7 @@ public final class ClientCookieDecoder extends CookieDecoder {
         }
 
         private long mergeMaxAgeAndExpires() {
-            // max age has precedence over expires
+            // Max-Age 优先于 Expires
             if (maxAge != Long.MIN_VALUE) {
                 return maxAge;
             } else if (isValueDefined(expiresStart, expiresEnd)) {
@@ -189,8 +184,7 @@ public final class ClientCookieDecoder extends CookieDecoder {
         }
 
         /**
-         * Parse and store a key-value pair. First one is considered to be the
-         * cookie name/value. Unknown attribute names are silently discarded.
+         * 解析并存储键值对；首对为 name/value，未知属性名静默忽略。
          *
          * @param keyStart
          *            where the key starts in the header
@@ -235,7 +229,7 @@ public final class ClientCookieDecoder extends CookieDecoder {
             try {
                 maxAge = Math.max(Long.parseLong(value), 0L);
             } catch (NumberFormatException e1) {
-                // ignore failure to parse -> treat as session cookie
+                // 解析失败视为会话 Cookie
             }
         }
 

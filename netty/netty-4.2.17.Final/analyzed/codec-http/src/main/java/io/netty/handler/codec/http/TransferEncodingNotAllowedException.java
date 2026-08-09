@@ -18,12 +18,13 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.DecoderException;
 
 /**
- * Thrown by {@link HttpObjectDecoder} when an HTTP message uses a protocol version older than {@code HTTP/1.1}
- * and includes an {@code Transfer-Encoding} header.
+ * HTTP/1.0 及以下消息携带 {@code Transfer-Encoding} 头时由 {@link HttpObjectDecoder} 抛出。
+ * <p>
+ * 按 RFC 9112，Transfer-Encoding 仅 HTTP/1.1 及更高版本允许。
  */
 public final class TransferEncodingNotAllowedException extends DecoderException {
     /**
-     * Create a new instance with the given message.
+     * 以指定消息创建异常实例。
      * @param message The exception message.
      */
     public TransferEncodingNotAllowedException(String message) {

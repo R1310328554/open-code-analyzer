@@ -33,24 +33,22 @@ import static io.netty.util.AsciiString.contentEquals;
 import static io.netty.util.AsciiString.contentEqualsIgnoreCase;
 
 /**
- * A variant of {@link HttpHeaders} which only supports read-only methods.
+ * 只读 {@link HttpHeaders} 实现，仅支持读操作。
  * <p>
- * Any array passed to this class may be used directly in the underlying data structures of this class. If these
- * arrays may be modified it is the caller's responsibility to supply this class with a copy of the array.
+ * 构造时传入的 name-value 数组可能被直接使用（不拷贝），
+ * 若外部可能修改数组，调用方须自行传入副本。
  * <p>
- * This may be a good alternative to {@link DefaultHttpHeaders} if your have a fixed set of headers which will not
- * change.
+ * 头集合固定不变时，比 {@link DefaultHttpHeaders} 更轻量。
  */
 @UnstableApi
 public final class ReadOnlyHttpHeaders extends HttpHeaders {
+    /** 交替存储 [name, value, name, value, ...] 的只读数组。 */
     private final CharSequence[] nameValuePairs;
 
     /**
-     * Create a new instance.
-     * @param validateHeaders {@code true} to validate the contents of each header name.
-     * @param nameValuePairs An array of the structure {@code [<name,value>,<name,value>,...]}.
-     *                      A copy will <strong>NOT</strong> be made of this array. If the contents of this array
-     *                      may be modified externally you are responsible for passing in a copy.
+     * 创建只读头集合。
+     * @param validateHeaders {@code true} 时校验每个头名。
+     * @param nameValuePairs 结构为 {@code [name, value, name, value, ...]} 的数组，<strong>不会</strong>拷贝。
      */
     public ReadOnlyHttpHeaders(boolean validateHeaders, CharSequence... nameValuePairs) {
         if ((nameValuePairs.length & 1) != 0) {
@@ -77,7 +75,7 @@ public final class ReadOnlyHttpHeaders extends HttpHeaders {
         for (int i = 0; i < nameValuePairs.length; i += 2) {
             CharSequence roName = nameValuePairs[i];
             if (AsciiString.hashCode(roName) == nameHash && contentEqualsIgnoreCase(roName, name)) {
-                // Suppress a warning out of bounds access since the constructor allows only pairs
+                // 构造器保证成对，抑制越界告警
                 return nameValuePairs[i + 1];
             }
         }
@@ -229,7 +227,7 @@ public final class ReadOnlyHttpHeaders extends HttpHeaders {
 
     @Override
     public HttpHeaders add(String name, Object value) {
-        throw new UnsupportedOperationException("read only");
+        throw new UnsupportedOperationException("read only"); // 只读，禁止修改
     }
 
     @Override

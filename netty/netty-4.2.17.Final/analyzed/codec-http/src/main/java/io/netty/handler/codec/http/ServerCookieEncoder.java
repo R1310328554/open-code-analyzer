@@ -21,18 +21,10 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * A <a href="https://tools.ietf.org/html/rfc6265">RFC6265</a> compliant cookie encoder to be used server side,
- * so some fields are sent (Version is typically ignored).
- *
- * As Netty's Cookie merges Expires and MaxAge into one single field, only Max-Age field is sent.
- *
- * Note that multiple cookies must be sent as separate "Set-Cookie" headers.
- *
- * <pre>
- * // Example
- * {@link HttpResponse} res = ...;
- * res.setHeader("Set-Cookie", {@link ServerCookieEncoder}.encode("JSESSIONID", "1234"));
- * </pre>
+ * 服务端 RFC6265 Cookie 编码器（已废弃）。
+ * <p>
+ * 委托 {@link io.netty.handler.codec.http.cookie.ServerCookieEncoder#LAX}；
+ * Expires/MaxAge 合并后仅发送 Max-Age；多个 Cookie 须分多条 Set-Cookie 头发送。
  *
  * @see ServerCookieDecoder
  *
@@ -42,8 +34,7 @@ import java.util.List;
 public final class ServerCookieEncoder {
 
     /**
-     * Encodes the specified cookie name-value pair into a Set-Cookie header value.
-     *
+     * 将 name-value 编码为单条 Set-Cookie 头值。
      * @param name the cookie name
      * @param value the cookie value
      * @return a single Set-Cookie header value
@@ -54,8 +45,7 @@ public final class ServerCookieEncoder {
     }
 
     /**
-     * Encodes the specified cookie into a Set-Cookie header value.
-     *
+     * 将 {@link Cookie} 编码为单条 Set-Cookie 头值。
      * @param cookie the cookie
      * @return a single Set-Cookie header value
      */
@@ -65,8 +55,7 @@ public final class ServerCookieEncoder {
     }
 
     /**
-     * Batch encodes cookies into Set-Cookie header values.
-     *
+     * 批量编码为多条 Set-Cookie 头值。
      * @param cookies a bunch of cookies
      * @return the corresponding bunch of Set-Cookie headers
      */
@@ -97,6 +86,7 @@ public final class ServerCookieEncoder {
         return io.netty.handler.codec.http.cookie.ServerCookieEncoder.LAX.encode(cookies);
     }
 
+    /** 工具类禁止实例化 */
     private ServerCookieEncoder() {
         // Unused
     }

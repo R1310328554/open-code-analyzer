@@ -18,36 +18,29 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.TooLongFrameException;
 
 /**
- * An {@link TooLongFrameException} which is thrown when the length of the
- * content decoded is greater than the allowed maximum.
+ * 解码正文长度超过允许上限时抛出的 {@link TooLongFrameException}。
+ * <p>
+ * 由 {@link HttpObjectDecoder} 等在超出 maxContentLength 时触发。
  */
 public final class TooLongHttpContentException extends TooLongFrameException {
 
     private static final long serialVersionUID = 3238341182129476117L;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建无消息异常实例。 */
     public TooLongHttpContentException() {
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带消息与原因的异常实例。 */
     public TooLongHttpContentException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带消息的异常实例。 */
     public TooLongHttpContentException(String message) {
         super(message);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带原因的异常实例。 */
     public TooLongHttpContentException(Throwable cause) {
         super(cause);
     }

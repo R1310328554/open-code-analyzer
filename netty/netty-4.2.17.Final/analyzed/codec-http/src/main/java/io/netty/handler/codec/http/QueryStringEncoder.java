@@ -26,8 +26,9 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 
 /**
- * Creates a URL-encoded URI from a path string and key-value parameter pairs.
- * This encoder is for one time use only.  Create a new instance for each URI.
+ * 由路径与键值参数对构建 URL 编码 URI。
+ * <p>
+ * 一次性编码器，每个 URI 应新建实例；空格编码为 {@code %20}（非 {@code +}）。
  *
  * <pre>
  * {@link QueryStringEncoder} encoder = new {@link QueryStringEncoder}("/hello");
@@ -45,27 +46,19 @@ public class QueryStringEncoder {
     private static final byte WRITE_UTF_UNKNOWN = (byte) '?';
     private static final char[] CHAR_MAP = "0123456789ABCDEF".toCharArray();
 
-    /**
-     * Creates a new encoder that encodes a URI that starts with the specified
-     * path string.  The encoder will encode the URI in UTF-8.
-     */
+    /** 以指定路径创建编码器，默认 UTF-8 编码。 */
     public QueryStringEncoder(String uri) {
         this(uri, HttpConstants.DEFAULT_CHARSET);
     }
 
-    /**
-     * Creates a new encoder that encodes a URI that starts with the specified
-     * path string in the specified charset.
-     */
+    /** 以指定路径与字符集创建编码器。 */
     public QueryStringEncoder(String uri, Charset charset) {
         ObjectUtil.checkNotNull(charset, "charset");
         uriBuilder = new StringBuilder(uri);
         this.charset = CharsetUtil.UTF_8.equals(charset) ? null : charset;
     }
 
-    /**
-     * Adds a parameter with the specified name and value to this encoder.
-     */
+    /** 追加 name=value 参数；首次追加前自动插入 {@code ?}，后续用 {@code &} 连接。 */
     public void addParam(String name, String value) {
         ObjectUtil.checkNotNull(name, "name");
         if (hasParams) {
@@ -90,37 +83,25 @@ public class QueryStringEncoder {
         }
     }
 
-    /**
-     * Returns the URL-encoded URI object which was created from the path string
-     * specified in the constructor and the parameters added by
-     * {@link #addParam(String, String)} method.
-     */
+    /** 返回 {@link URI} 形式的编码结果。 */
     public URI toUri() throws URISyntaxException {
         return new URI(toString());
     }
 
-    /**
-     * Returns the URL-encoded URI which was created from the path string
-     * specified in the constructor and the parameters added by
-     * {@link #addParam(String, String)} method.
-     */
+    /** 返回 URL 编码后的 URI 字符串。 */
     @Override
     public String toString() {
         return uriBuilder.toString();
     }
 
     /**
-     * Encode the String as per RFC 3986, Section 2.
-     * <p>
-     * There is a little different between the JDK's encode method : {@link URLEncoder#encode(String, String)}.
-     * The JDK's encoder encode the space to {@code +} and this method directly encode the blank to {@code %20}
-     * beyond that , this method reuse the {@link #uriBuilder} in this class rather then create a new one,
-     * thus generates less garbage for the GC.
+     * 按 RFC 3986 §2 编码；空格用 {@code %20} 而非 JDK {@link URLEncoder} 的 {@code +}。
+     * 复用 {@link #uriBuilder} 减少 GC 分配。
      *
      * @param s The String to encode
      */
     private void encodeNonUtf8Component(CharSequence s) {
-        //Don't allocate memory until needed
+        // 延迟分配缓冲，仅在遇到需编码字符时分配
         char[] buf = null;
 
         for (int i = 0, len = s.length(); i < len;) {
@@ -165,7 +146,7 @@ public class QueryStringEncoder {
 
     private void encodeUtf8Component(CharSequence s, int encodingStart, int len) {
         if (encodingStart > 0) {
-            // Append non-encoded characters directly first.
+            // 先追加无需编码的前缀
             uriBuilder.append(s, 0, encodingStart);
         }
         encodeUtf8ComponentSlow(s, encodingStart, len);
@@ -188,12 +169,12 @@ public class QueryStringEncoder {
                     appendEncoded(WRITE_UTF_UNKNOWN);
                     continue;
                 }
-                // Surrogate Pair consumes 2 characters.
+                // 代理对占 2 个 char
                 if (++i == s.length()) {
                     appendEncoded(WRITE_UTF_UNKNOWN);
                     break;
                 }
-                // Extra method to allow inlining the rest of writeUtf8 which is the most likely code path.
+                // 拆出方法以便内联 UTF-8 主路径
                 writeUtf8Surrogate(c, s.charAt(i));
             } else {
                 appendEncoded(0xe0 | (c >> 12));
@@ -210,7 +191,7 @@ public class QueryStringEncoder {
             return;
         }
         int codePoint = Character.toCodePoint(c, c2);
-        // See https://www.unicode.org/versions/Unicode7.0.0/ch03.pdf#G2630.
+        // 4 字节 UTF-8 编码（Unicode 7.0 §3）
         appendEncoded(0xf0 | (codePoint >> 18));
         appendEncoded(0x80 | ((codePoint >> 12) & 0x3f));
         appendEncoded(0x80 | ((codePoint >> 6) & 0x3f));
@@ -222,7 +203,7 @@ public class QueryStringEncoder {
     }
 
     /**
-     * Convert the given digit to a upper hexadecimal char.
+     * 将半字节转为大写十六进制字符。
      *
      * @param digit the number to convert to a character.
      * @return the {@code char} representation of the specified digit
@@ -233,12 +214,9 @@ public class QueryStringEncoder {
     }
 
     /**
-     * Determines whether the given character is a unreserved character.
+     * 判断字符是否为 RFC 3986 unreserved，无需百分号编码。
      * <p>
-     * unreserved characters do not need to be encoded, and include uppercase and lowercase
-     * letters, decimal digits, hyphen, period, underscore, and tilde.
-     * <p>
-     * unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~" / "*"
+     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~" / "*"
      *
      * @param ch the char to be judged whether it need to be encode
      * @return true or false

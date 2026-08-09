@@ -20,16 +20,21 @@ import static io.netty.handler.codec.http.cookie.CookieUtil.firstInvalidCookieVa
 import static io.netty.handler.codec.http.cookie.CookieUtil.unwrapValue;
 
 /**
- * Parent of Client and Server side cookie encoders
+ * 客户端与服务端 Cookie 编码器的抽象基类。
+ * <p>
+ * 严格模式下通过 {@link #validateCookie} 校验 name/value。
  */
 public abstract class CookieEncoder {
 
+    /** 是否严格校验 name/value 字符。 */
     protected final boolean strict;
 
+    /** @param strict 是否启用 RFC6265 严格校验 */
     protected CookieEncoder(boolean strict) {
         this.strict = strict;
     }
 
+    /** 严格模式下校验 Cookie name/value 字符与引号平衡。 */
     protected void validateCookie(String name, String value) {
         if (strict) {
             int pos;

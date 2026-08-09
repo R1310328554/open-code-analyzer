@@ -31,31 +31,20 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * A <a href="https://tools.ietf.org/html/rfc6265">RFC6265</a> compliant cookie encoder to be used client side, so
- * only name=value pairs are sent.
- *
- * Note that multiple cookies are supposed to be sent at once in a single "Cookie" header.
- *
- * <pre>
- * // Example
- * {@link HttpRequest} req = ...;
- * res.setHeader("Cookie", {@link ClientCookieEncoder}.encode("JSESSIONID", "1234"));
- * </pre>
+ * 客户端 RFC6265 Cookie 编码器，仅发送 name=value 对到 Cookie 请求头。
+ * <p>
+ * 多个 Cookie 合并为单条 Cookie 头，以 {@code ; } 分隔。
  *
  * @see ClientCookieDecoder
  */
 public final class ClientCookieEncoder extends CookieEncoder {
 
-    /**
-     * Strict encoder that validates that name and value chars are in the valid scope and (for methods that accept
-     * multiple cookies) sorts cookies into order of decreasing path length, as specified in RFC6265.
-     */
+    /** 严格模式：校验字符并按 RFC6265 按 path 长度降序排序。 */
+
     public static final ClientCookieEncoder STRICT = new ClientCookieEncoder(true);
 
-    /**
-     * Lax instance that doesn't validate name and value, and (for methods that accept multiple cookies) keeps
-     * cookies in the order in which they were given.
-     */
+    /** 宽松模式：不校验，多 Cookie 保持传入顺序。 */
+
     public static final ClientCookieEncoder LAX = new ClientCookieEncoder(false);
 
     private ClientCookieEncoder(boolean strict) {
@@ -63,8 +52,7 @@ public final class ClientCookieEncoder extends CookieEncoder {
     }
 
     /**
-     * Encodes the specified cookie into a Cookie header value.
-     *
+     * 将 name-value 编码为 Cookie 头值。
      * @param name
      *            the cookie name
      * @param value
@@ -76,8 +64,7 @@ public final class ClientCookieEncoder extends CookieEncoder {
     }
 
     /**
-     * Encodes the specified cookie into a Cookie header value.
-     *
+     * 将 {@link Cookie} 编码为 Cookie 头值。
      * @param cookie the specified cookie
      * @return a Rfc6265 style Cookie header value
      */
@@ -88,8 +75,7 @@ public final class ClientCookieEncoder extends CookieEncoder {
     }
 
     /**
-     * Sort cookies into decreasing order of path length, breaking ties by sorting into increasing chronological
-     * order of creation time, as recommended by RFC 6265.
+     * 按 path 长度降序排序（RFC 6265）；path 未指定视为最长。
      */
     // package-private for testing only.
     static final Comparator<Cookie> COOKIE_COMPARATOR = new Comparator<Cookie>() {
@@ -97,23 +83,17 @@ public final class ClientCookieEncoder extends CookieEncoder {
         public int compare(Cookie c1, Cookie c2) {
             String path1 = c1.path();
             String path2 = c2.path();
-            // Cookies with unspecified path default to the path of the request. We don't
-            // know the request path here, but we assume that the length of an unspecified
-            // path is longer than any specified path (i.e. pathless cookies come first),
-            // because setting cookies with a path longer than the request path is of
-            // limited use.
+            // path 未指定时视为 Integer.MAX_VALUE（优先于有 path 的 Cookie）
             int len1 = path1 == null ? Integer.MAX_VALUE : path1.length();
             int len2 = path2 == null ? Integer.MAX_VALUE : path2.length();
 
-            // Rely on Arrays.sort's stability to retain creation order in cases where
-            // cookies have same path length.
+            // 稳定排序保留同 path 长度下的创建顺序
             return len2 - len1;
         }
     };
 
     /**
-     * Encodes the specified cookies into a single Cookie header value.
-     *
+     * 将多个 Cookie 编码为单条 Cookie 头值；无 Cookie 时返回 {@code null}。
      * @param cookies
      *            some cookies
      * @return a Rfc6265 style Cookie header value, null if no cookies are passed.
@@ -143,8 +123,7 @@ public final class ClientCookieEncoder extends CookieEncoder {
     }
 
     /**
-     * Encodes the specified cookies into a single Cookie header value.
-     *
+     * 将 Collection 中 Cookie 编码为单条 Cookie 头值。
      * @param cookies
      *            some cookies
      * @return a Rfc6265 style Cookie header value, null if no cookies are passed.
@@ -174,8 +153,7 @@ public final class ClientCookieEncoder extends CookieEncoder {
     }
 
     /**
-     * Encodes the specified cookies into a single Cookie header value.
-     *
+     * 将 Iterable 中 Cookie 编码为单条 Cookie 头值。
      * @param cookies some cookies
      * @return a Rfc6265 style Cookie header value, null if no cookies are passed.
      */

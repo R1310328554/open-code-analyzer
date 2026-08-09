@@ -25,18 +25,23 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
- * Parent of Client and Server side cookie decoders
+ * 客户端与服务端 Cookie 解码器的抽象基类。
+ * <p>
+ * 提供 {@link #initCookie} 解析 name=value 并校验 RFC6265 字符范围。
  */
 public abstract class CookieDecoder {
 
     private final InternalLogger logger = InternalLoggerFactory.getInstance(getClass());
 
+    /** 是否严格校验 name/value 字符。 */
     private final boolean strict;
 
+    /** @param strict 是否启用 RFC6265 严格校验 */
     protected CookieDecoder(boolean strict) {
         this.strict = strict;
     }
 
+    /** 从头片段解析 Cookie name/value；无效时返回 {@code null} 并打 debug 日志。 */
     protected DefaultCookie initCookie(String header, int nameBegin, int nameEnd, int valueBegin, int valueEnd) {
         if (nameBegin == -1 || nameBegin == nameEnd) {
             logger.debug("Skipping cookie with null name");

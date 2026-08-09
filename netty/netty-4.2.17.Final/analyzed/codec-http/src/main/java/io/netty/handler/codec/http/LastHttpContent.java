@@ -20,13 +20,14 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.DecoderResult;
 
 /**
- * The last {@link HttpContent} which has trailing headers.
+ * 最后一段 {@link HttpContent}，可携带 trailing headers（分块传输尾部头）。
+ * <p>
+ * 在 chunked 编码中标志正文结束；{@link #EMPTY_LAST_CONTENT} 为零长度结束标记。
  */
 public interface LastHttpContent extends HttpContent {
 
-    /**
-     * The 'end of content' marker in chunked encoding.
-     */
+    /** chunked 编码的“内容结束”标记（空缓冲 + 空 trailing headers）。 */
+
     LastHttpContent EMPTY_LAST_CONTENT = new LastHttpContent() {
 
         @Override
@@ -72,7 +73,7 @@ public interface LastHttpContent extends HttpContent {
 
         @Override
         public void setDecoderResult(DecoderResult result) {
-            throw new UnsupportedOperationException("read only");
+            throw new UnsupportedOperationException("read only"); // 只读实例
         }
 
         @Override
@@ -116,6 +117,7 @@ public interface LastHttpContent extends HttpContent {
         }
     };
 
+    /** 返回分块传输尾部的 trailing headers。 */
     HttpHeaders trailingHeaders();
 
     @Override

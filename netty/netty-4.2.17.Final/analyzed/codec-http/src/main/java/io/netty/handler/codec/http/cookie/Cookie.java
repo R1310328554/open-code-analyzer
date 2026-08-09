@@ -16,130 +16,102 @@
 package io.netty.handler.codec.http.cookie;
 
 /**
- * An interface defining an
- * <a href="https://en.wikipedia.org/wiki/HTTP_cookie">HTTP cookie</a>.
+ * HTTP Cookie 接口，定义 name、value、domain、path、maxAge 等属性。
+ * <p>
+ * 实现类通常为 {@link DefaultCookie}；编解码见 {@link ClientCookieDecoder} 等。
  */
 public interface Cookie extends Comparable<Cookie> {
 
-    /**
-     * Constant for undefined MaxAge attribute value.
-     */
+    /** MaxAge 未指定时的常量值（{@link Long#MIN_VALUE}）。 */
+
     long UNDEFINED_MAX_AGE = Long.MIN_VALUE;
 
     /**
-     * Returns the name of this {@link Cookie}.
-     *
+     * 返回 Cookie 名称。
      * @return The name of this {@link Cookie}
      */
     String name();
 
     /**
-     * Returns the value of this {@link Cookie}.
-     *
+     * 返回 Cookie 值。
      * @return The value of this {@link Cookie}
      */
     String value();
 
     /**
-     * Sets the value of this {@link Cookie}.
-     *
+     * 设置 Cookie 值。
      * @param value The value to set
      */
     void setValue(String value);
 
     /**
-     * Returns true if the raw value of this {@link Cookie},
-     * was wrapped with double quotes in original Set-Cookie header.
-     *
+     * 原始 Set-Cookie 中 value 是否用双引号包裹。
      * @return If the value of this {@link Cookie} is to be wrapped
      */
     boolean wrap();
 
     /**
-     * Sets true if the value of this {@link Cookie}
-     * is to be wrapped with double quotes.
-     *
+     * 设置编码时 value 是否用双引号包裹。
      * @param wrap true if wrap
      */
     void setWrap(boolean wrap);
 
     /**
-     * Returns the domain of this {@link Cookie}.
-     *
+     * 返回 Cookie 的 Domain 属性。
      * @return The domain of this {@link Cookie}
      */
     String domain();
 
     /**
-     * Sets the domain of this {@link Cookie}.
-     *
+     * 设置 Domain 属性。
      * @param domain The domain to use
      */
     void setDomain(String domain);
 
     /**
-     * Returns the path of this {@link Cookie}.
-     *
+     * 返回 Cookie 的 Path 属性。
      * @return The {@link Cookie}'s path
      */
     String path();
 
     /**
-     * Sets the path of this {@link Cookie}.
-     *
+     * 设置 Path 属性。
      * @param path The path to use for this {@link Cookie}
      */
     void setPath(String path);
 
     /**
-     * Returns the maximum age of this {@link Cookie} in seconds or {@link Cookie#UNDEFINED_MAX_AGE} if unspecified
-     *
+     * 返回 Max-Age（秒）；未指定时返回 {@link Cookie#UNDEFINED_MAX_AGE}。
      * @return The maximum age of this {@link Cookie}
      */
     long maxAge();
 
     /**
-     * Sets the maximum age of this {@link Cookie} in seconds.
-     * If an age of {@code 0} is specified, this {@link Cookie} will be
-     * automatically removed by browser because it will expire immediately.
-     * If {@link Cookie#UNDEFINED_MAX_AGE} is specified, this {@link Cookie} will be removed when the
-     * browser is closed.
-     *
+     * 设置 Max-Age（秒）；{@code 0} 立即过期；{@link Cookie#UNDEFINED_MAX_AGE} 为会话 Cookie。
      * @param maxAge The maximum age of this {@link Cookie} in seconds
      */
     void setMaxAge(long maxAge);
 
     /**
-     * Checks to see if this {@link Cookie} is secure
-     *
+     * 是否设置了 Secure 属性（仅 HTTPS 发送）。
      * @return True if this {@link Cookie} is secure, otherwise false
      */
     boolean isSecure();
 
     /**
-     * Sets the security getStatus of this {@link Cookie}
-     *
+     * 设置 Secure 属性。
      * @param secure True if this {@link Cookie} is to be secure, otherwise false
      */
     void setSecure(boolean secure);
 
     /**
-     * Checks to see if this {@link Cookie} can only be accessed via HTTP.
-     * If this returns true, the {@link Cookie} cannot be accessed through
-     * client side script - But only if the browser supports it.
-     * For more information, please look <a href="https://owasp.org/www-community/HttpOnly">here</a>
-     *
+     * 是否 HttpOnly（禁止客户端脚本访问，需浏览器支持）。
      * @return True if this {@link Cookie} is HTTP-only or false if it isn't
      */
     boolean isHttpOnly();
 
     /**
-     * Determines if this {@link Cookie} is HTTP only.
-     * If set to true, this {@link Cookie} cannot be accessed by a client
-     * side script. However, this works only if the browser supports it.
-     * For information, please look
-     * <a href="https://owasp.org/www-community/HttpOnly">here</a>.
-     *
+     * 设置 HttpOnly 属性。
      * @param httpOnly True if the {@link Cookie} is HTTP only, otherwise false.
      */
     void setHttpOnly(boolean httpOnly);

@@ -34,7 +34,12 @@ import static io.netty.util.internal.StringUtil.SPACE;
 import static io.netty.util.internal.StringUtil.decodeHexByte;
 
 /**
- * Splits an HTTP query string into a path string and key-value parameter pairs.
+ * 将 HTTP 查询串拆分为路径字符串与键值参数对。
+ * <p>
+ * 一次性解码器，每个 URI 应新建实例；也支持解码
+ * {@code application/x-www-form-urlencoded} 表单正文。
+ * <p>
+ * 为缓解 HashDOS，默认最多解码 {@literal 1024} 组参数，可通过构造参数调整。
  * This decoder is for one time use only.  Create a new instance for each URI:
  * <pre>
  * {@link QueryStringDecoder} decoder = new {@link QueryStringDecoder}("/hello?recipient=world&x=1;y=2");
@@ -62,6 +67,7 @@ import static io.netty.util.internal.StringUtil.decodeHexByte;
  */
 public class QueryStringDecoder {
 
+    /** 默认最大参数对数（1024），用于缓解 HashDOS。 */
     private static final int DEFAULT_MAX_PARAMS = 1024;
 
     private final Charset charset;
@@ -73,18 +79,12 @@ public class QueryStringDecoder {
     private String path;
     private Map<String, List<String>> params;
 
-    /**
-     * Creates a new decoder that decodes the specified URI. The decoder will
-     * assume that the query string is encoded in UTF-8.
-     */
+    /** 解码指定 URI 字符串，查询串默认 UTF-8 编码。 */
     public QueryStringDecoder(String uri) {
         this(builder(), uri);
     }
 
-    /**
-     * Creates a new decoder that decodes the specified URI encoded in the
-     * specified charset.
-     */
+    /** 解码 URI；{@code hasPath=false} 时输入仅含查询部分（无路径）。 */
     public QueryStringDecoder(String uri, boolean hasPath) {
         this(builder().hasPath(hasPath), uri);
     }
@@ -167,7 +167,7 @@ public class QueryStringDecoder {
         this.semicolonIsNormalChar = builder.semicolonIsNormalChar;
         this.htmlQueryDecoding = builder.htmlQueryDecoding;
 
-        // `-1` means that path end index will be initialized lazily
+        // pathEndIdx 为 -1 表示路径结束位置延迟计算
         pathEndIdx = builder.hasPath ? -1 : 0;
     }
 
@@ -177,7 +177,7 @@ public class QueryStringDecoder {
             rawPath = EMPTY_STRING;
         }
         String rawQuery = uri.getRawQuery();
-        // Also take care of cut of things like "http://localhost"
+        // 处理无 query 的 URI（如 "http://localhost"）
         this.uri = rawQuery == null? rawPath : rawPath + '?' + rawQuery;
         this.charset = checkNotNull(builder.charset, "charset");
         this.maxParams = checkPositive(builder.maxParams, "maxParams");
@@ -191,16 +191,14 @@ public class QueryStringDecoder {
         return uri();
     }
 
-    /**
-     * Returns the uri used to initialize this {@link QueryStringDecoder}.
-     */
+    /** 返回构造时使用的原始 URI 字符串。 */
+
     public String uri() {
         return uri;
     }
 
-    /**
-     * Returns the decoded path string of the URI.
-     */
+    /** 返回 URL 解码后的路径部分。 */
+
     public String path() {
         if (path == null) {
             path = decodeComponent(uri, 0, pathEndIdx(), charset, false);
@@ -208,9 +206,8 @@ public class QueryStringDecoder {
         return path;
     }
 
-    /**
-     * Returns the decoded key-value parameter pairs of the URI.
-     */
+    /** 返回 URL 解码后的查询参数映射（同名多值用 List）。 */
+
     public Map<String, List<String>> parameters() {
         if (params == null) {
             params = decodeParams(uri, pathEndIdx(), charset, maxParams);
@@ -218,16 +215,14 @@ public class QueryStringDecoder {
         return params;
     }
 
-    /**
-     * Returns the raw path string of the URI.
-     */
+    /** 返回未解码的原始路径子串。 */
+
     public String rawPath() {
         return uri.substring(0, pathEndIdx());
     }
 
-    /**
-     * Returns raw query string of the URI.
-     */
+    /** 返回未解码的原始查询子串（不含 {@code ?}）。 */
+
     public String rawQuery() {
         int start = pathEndIdx() + 1;
         return start < uri.length() ? uri.substring(start) : EMPTY_STRING;
@@ -266,7 +261,7 @@ public class QueryStringDecoder {
                 if (semicolonIsNormalChar) {
                     continue;
                 }
-                // fall-through
+                // 分号作为参数分隔符（非 semicolonIsNormalChar 时）
             case '&':
                 if (addParam(s, nameStart, valueStart, i, params, charset)) {
                     paramsLimit--;
@@ -311,10 +306,9 @@ public class QueryStringDecoder {
     }
 
     /**
-     * Decodes a bit of a URL encoded by a browser.
+     * 解码浏览器 URL 编码片段；等价于 UTF-8 版 {@link #decodeComponent(String, Charset)}。
      * <p>
-     * This is equivalent to calling {@link #decodeComponent(String, Charset)}
-     * with the UTF-8 charset (recommended to comply with RFC 3986, Section 2).
+     * 推荐 UTF-8 以符合 RFC 3986 §2。
      * @param s The string to decode (can be empty).
      * @return The decoded string, or {@code s} if there's nothing to decode.
      * If the string to decode is {@code null}, returns an empty string.
@@ -326,9 +320,9 @@ public class QueryStringDecoder {
     }
 
     /**
-     * Decodes a bit of a URL encoded by a browser.
+     * 按 RFC 3986 §2 解码 URL 编码字符串；比 {@link URLDecoder} 快且 GC 压力更小。
      * <p>
-     * The string is expected to be encoded as per RFC 3986, Section 2.
+     * 无编码内容时直接返回原串，零分配。
      * This is the encoding used by JavaScript functions {@code encodeURI}
      * and {@code encodeURIComponent}, but not {@code escape}.  For example
      * in this encoding, &eacute; (in Unicode {@code U+00E9} or in UTF-8
@@ -371,7 +365,7 @@ public class QueryStringDecoder {
             return s.substring(from, toExcluded);
         }
 
-        // Each encoded byte takes 3 characters (e.g. "%20")
+        // 每个编码字节占 3 字符（如 "%20"）
         int decodedCapacity = (toExcluded - firstEscaped) / 3;
         byte[] buf = PlatformDependent.allocateUninitializedArray(decodedCapacity);
         int bufIdx;
@@ -427,8 +421,7 @@ public class QueryStringDecoder {
         }
 
         /**
-         * {@code true} by default. When set to {@code false}, the input string only contains the query component of
-         * the URI.
+         * 默认 {@code true}；为 {@code false} 时输入仅含查询部分（无路径）。
          *
          * @param hasPath Whether the URI contains a path
          * @return This builder
@@ -439,7 +432,7 @@ public class QueryStringDecoder {
         }
 
         /**
-         * Maximum number of query parameters allowed, to mitigate HashDOS. {@value DEFAULT_MAX_PARAMS} by default.
+         * 允许的最大参数对数（缓解 HashDOS），默认 {@value DEFAULT_MAX_PARAMS}。
          *
          * @param maxParams The maximum number of query parameters
          * @return This builder
@@ -450,8 +443,7 @@ public class QueryStringDecoder {
         }
 
         /**
-         * {@code false} by default. If set to {@code true}, instead of allowing query parameters to be separated by
-         * semicolons, treat the semicolon as a normal character in a query value.
+         * 默认 {@code false}；为 {@code true} 时分号视为普通字符而非参数分隔符。
          *
          * @param semicolonIsNormalChar Whether to treat semicolons as a normal character
          * @return This builder
@@ -462,7 +454,7 @@ public class QueryStringDecoder {
         }
 
         /**
-         * The charset to use for decoding percent escape sequences. {@link HttpConstants#DEFAULT_CHARSET} by default.
+         * 解码百分号转义序列使用的字符集，默认 {@link HttpConstants#DEFAULT_CHARSET}。
          *
          * @param charset The charset
          * @return This builder
@@ -473,12 +465,8 @@ public class QueryStringDecoder {
         }
 
         /**
-         * RFC 3986 (the URI standard) makes no mention of using '+' to encode a space in a URI query component. The
-         * whatwg HTML standard, however, defines the query to be encoded with the
-         * {@code application/x-www-form-urlencoded} serializer defined in the whatwg URL standard, which does use '+'
-         * to encode a space instead of {@code %20}.
-         * <p>This flag controls whether the decoding should happen according to HTML rules, which decodes the '+' to a
-         * space. The default is {@code true}.
+         * HTML 表单规则将 {@code +} 解码为空格（whatwg URL 标准）；
+         * RFC 3986 不使用 {@code +} 表示空格。默认 {@code true} 启用 HTML 规则。
          *
          * @param htmlQueryDecoding Whether to decode '+' to space
          * @return This builder
@@ -489,7 +477,7 @@ public class QueryStringDecoder {
         }
 
         /**
-         * Create a decoder that will lazily decode the given URI with the settings configured in this builder.
+         * 按本 builder 配置创建解码器，路径/参数延迟解析。
          *
          * @param uri The URI in String form
          * @return The decoder
