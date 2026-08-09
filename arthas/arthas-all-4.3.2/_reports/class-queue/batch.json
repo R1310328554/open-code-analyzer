@@ -15,23 +15,8 @@
     "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/Http2FrameRequest.java",
     "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/Http2Handler.java",
     "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/StreamObserver.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/annotation/GrpcMethod.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/annotation/GrpcService.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/constant/GrpcInvokeTypeEnum.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/executor/AbstractGrpcExecutor.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/executor/BiStreamExecutor.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/executor/ClientStreamExecutor.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/executor/GrpcExecutor.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/executor/GrpcExecutorFactory.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/executor/ServerStreamExecutor.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/executor/UnaryExecutor.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/service/ArthasSampleService.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/service/impl/ArthasSampleServiceImpl.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/utils/ByteUtil.java",
-    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/utils/ReflectUtil.java",
-    "labs/arthas-grpc-web-proxy/src/main/java/com/taobao/arthas/grpcweb/grpc/DemoBootstrap.java",
-    "labs/arthas-grpc-web-proxy/src/main/java/com/taobao/arthas/grpcweb/grpc/distribution/GrpcResultDistributorImpl.java"
+    "labs/arthas-grpc-server/src/main/java/com/taobao/arthas/grpc/server/handler/annotation/GrpcMethod.java"
   ],
   "remaining_pending": 135,
-  "done": 630
+  "done": 645
 }
