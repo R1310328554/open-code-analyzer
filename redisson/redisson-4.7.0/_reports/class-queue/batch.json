@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:19:52Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapCacheScanResultReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapEntriesDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapKeyDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapMergeDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapScanResult.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapScanResultReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapValueDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MapValueLeaseDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/MultiDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectFirstScoreReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectListReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectMapDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectMapEntryReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ObjectMapReplayDecoder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 452,
-  "done": 2355
+  "done": 2370
 }
