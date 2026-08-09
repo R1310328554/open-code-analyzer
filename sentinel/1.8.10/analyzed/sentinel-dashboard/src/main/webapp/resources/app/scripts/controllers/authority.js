@@ -1,5 +1,5 @@
 /**
- * Authority rule controller.
+ * 授权规则控制器，管理指定应用机器的黑白名单规则 CRUD。
  */
 angular.module('sentinelDashboardApp').controller('AuthorityRuleController', ['$scope', '$stateParams', 'AuthorityRuleService', 'ngDialog',
     'MachineService',
@@ -197,7 +197,7 @@ angular.module('sentinelDashboardApp').controller('AuthorityRuleController', ['$
             MachineService.getAppMachines($scope.app).success(
                 function (data) {
                     if (data.code == 0) {
-                        // $scope.machines = data.data;
+                        // 仅展示健康机器供选择
                         if (data.data) {
                             $scope.machines = [];
                             $scope.macsInputOptions = [];

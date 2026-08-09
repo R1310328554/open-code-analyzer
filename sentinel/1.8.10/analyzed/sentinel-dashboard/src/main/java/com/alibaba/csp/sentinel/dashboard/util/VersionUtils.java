@@ -22,7 +22,7 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.SentinelVersion;
 
 /**
- * Util class for parsing version.
+ * Sentinel 版本号解析工具，支持 {@code x.y.z-postfix} 格式。
  *
  * @author Eric Zhao
  * @since 0.2.1
@@ -30,11 +30,10 @@ import com.alibaba.csp.sentinel.dashboard.datasource.entity.SentinelVersion;
 public final class VersionUtils {
 
     /**
-     * Parse version of Sentinel from raw string.
+     * 从原始字符串解析 Sentinel 版本号。
      *
-     * @param verStr version string
-     * @return parsed {@link SentinelVersion} if the version is valid; empty if
-     * there is something wrong with the format
+     * @param verStr 版本字符串
+     * @return 格式合法时返回 {@link SentinelVersion}，否则 empty
      */
     public static Optional<SentinelVersion> parseVersion(String verStr) {
         if (StringUtil.isBlank(verStr)) {
@@ -44,14 +43,14 @@ public final class VersionUtils {
             String versionFull = verStr;
             SentinelVersion version = new SentinelVersion();
             
-            // postfix
+            // 解析后缀（如 -SNAPSHOT）
             int index = versionFull.indexOf("-");
             if (index == 0) {
-                // Start with "-"
+                // 以 "-" 开头，格式非法
                 return Optional.empty();
             }
             if (index == versionFull.length() - 1) {
-                // End with "-"
+                // 以 "-" 结尾，忽略空后缀
             } else if (index > 0) {
                 version.setPostfix(versionFull.substring(index + 1));
             }
@@ -60,7 +59,7 @@ public final class VersionUtils {
                 versionFull = versionFull.substring(0, index);
             }
             
-            // x.x.x
+            // 解析主版本号 x.y.z
             int segment = 0;
             int[] ver = new int[3];
             while (segment < ver.length) {
@@ -77,7 +76,7 @@ public final class VersionUtils {
             }
             
             if (ver[0] < 1) {
-                // Wrong format, return empty.
+                // 主版本号 < 1，格式非法
                 return Optional.empty();
             } else {
                 return Optional.of(version
@@ -86,7 +85,7 @@ public final class VersionUtils {
                         .setFixVersion(ver[2]));
             }
         } catch (Exception ex) {
-            // Parse fail, return empty.
+            // 解析异常，返回 empty
             return Optional.empty();
         }
     }

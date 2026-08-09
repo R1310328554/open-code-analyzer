@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * CompletableFuture 辅助工具，提供失败 Future 构造、批量等待与超时取值。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
@@ -32,12 +34,14 @@ public final class AsyncUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(AsyncUtils.class);
 
+    /** 构造已异常完成的 Future。 */
     public static <R> CompletableFuture<R> newFailedFuture(Throwable ex) {
         CompletableFuture<R> future = new CompletableFuture<>();
         future.completeExceptionally(ex);
         return future;
     }
 
+    /** 等待全部 Future 完成后收集非 null 结果（allOf 语义）。 */
     public static <R> CompletableFuture<List<R>> sequenceFuture(List<CompletableFuture<R>> futures) {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
             .thenApply(v -> futures.stream()
@@ -47,6 +51,7 @@ public final class AsyncUtils {
             );
     }
 
+    /** 并行等待各 Future 并收集非 null 结果，单个失败不影响其余。 */
     public static <R> CompletableFuture<List<R>> sequenceSuccessFuture(List<CompletableFuture<R>> futures) {
         return CompletableFuture.supplyAsync(() -> futures.parallelStream()
             .map(AsyncUtils::getValue)
@@ -55,6 +60,7 @@ public final class AsyncUtils {
         );
     }
 
+    /** 带 10 秒超时的阻塞取值，异常时记录日志并返回 null。 */
     public static <T> T getValue(CompletableFuture<T> future) {
         try {
             return future.get(10, TimeUnit.SECONDS);
@@ -64,6 +70,7 @@ public final class AsyncUtils {
         return null;
     }
 
+    /** 判断 Future 是否已成功完成（非异常、非取消）。 */
     public static boolean isSuccessFuture(CompletableFuture future) {
         return future.isDone() && !future.isCompletedExceptionally() && !future.isCancelled();
     }

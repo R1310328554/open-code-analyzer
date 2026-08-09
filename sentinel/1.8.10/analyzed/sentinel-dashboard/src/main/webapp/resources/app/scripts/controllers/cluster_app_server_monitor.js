@@ -1,3 +1,6 @@
+/**
+ * 集群令牌服务端监控控制器，展示各 Token Server 连接与限流状态。
+ */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('SentinelClusterAppServerMonitorController', ['$scope', '$stateParams', 'ngDialog',
@@ -6,7 +9,7 @@ app.controller('SentinelClusterAppServerMonitorController', ['$scope', '$statePa
         $scope.app = $stateParams.app;
         const UNSUPPORTED_CODE = 4041;
 
-        const CLUSTER_MODE_SERVER = 1;
+        const CLUSTER_MODE_SERVER = 1;  // 服务端模式
 
         $scope.tmp = {
             curChosenServer: {},

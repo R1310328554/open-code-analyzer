@@ -42,6 +42,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
+ * 集群配置查询与修改服务，封装客户端/服务端配置的拉取与推送。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -53,6 +55,7 @@ public class ClusterConfigService {
     @Autowired
     private AppManagement appManagement;
 
+    /** 修改集群令牌客户端配置并切换为 CLIENT 模式。 */
     public CompletableFuture<Void> modifyClusterClientConfig(ClusterClientModifyRequest request) {
         if (notClientRequestValid(request)) {
             throw new IllegalArgumentException("Invalid request");
@@ -71,6 +74,7 @@ public class ClusterConfigService {
             || config.getRequestTimeout() == null || config.getRequestTimeout() <= 0;
     }
 
+    /** 修改集群令牌服务端配置（命名空间、传输、流控）并切换为 SERVER 模式。 */
     public CompletableFuture<Void> modifyClusterServerConfig(ClusterServerModifyRequest request) {
         ServerTransportConfig transportConfig = request.getTransportConfig();
         ServerFlowConfig flowConfig = request.getFlowConfig();
@@ -94,10 +98,10 @@ public class ClusterConfigService {
     }
 
     /**
-     * Get cluster state list of all available machines of provided application.
+     * 获取指定应用所有健康机器的集群通用状态列表。
      *
-     * @param app application name
-     * @return cluster state list of all available machines of the application
+     * @param app 应用名
+     * @return 各机器的 {@link ClusterUniversalStatePairVO} 列表
      * @since 1.4.1
      */
     public CompletableFuture<List<ClusterUniversalStatePairVO>> getClusterUniversalState(String app) {

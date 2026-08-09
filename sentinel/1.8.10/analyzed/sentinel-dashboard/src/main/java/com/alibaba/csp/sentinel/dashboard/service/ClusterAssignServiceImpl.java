@@ -44,6 +44,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
+ * 集群令牌分配服务实现，负责解绑、模式切换与传输/流控/命名空间配置下发。
+ * <p>通过 {@link SentinelApiClient} 异步调用客户端 API，汇总失败机器集合。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
@@ -72,7 +75,7 @@ public class ClusterAssignServiceImpl implements ClusterAssignService {
                     e.getState().getClient().getClientConfig().getServerPort()))
                 .map(e -> e.getIp() + '@' + e.getCommandPort())
                 .collect(Collectors.toSet());
-            // Modify mode to NOT-STARTED for all associated token clients.
+            // 将所有关联令牌客户端模式切换为 NOT-STARTED。
             modifyToNonStarted(toModifySet, failedSet);
         } catch (Exception ex) {
             Throwable e = ex instanceof ExecutionException ? ex.getCause() : ex;
@@ -113,7 +116,7 @@ public class ClusterAssignServiceImpl implements ClusterAssignService {
             if (entity.getClientSet() != null) {
                 toModifySet.addAll(entity.getClientSet());
             }
-            // Modify mode to NOT-STARTED for all chosen token servers and associated token clients.
+            // 将所选令牌服务端及关联客户端模式切换为 NOT-STARTED。
             modifyToNonStarted(toModifySet, failedSet);
         } catch (Exception ex) {
             Throwable e = ex instanceof ExecutionException ? ex.getCause() : ex;
@@ -148,7 +151,7 @@ public class ClusterAssignServiceImpl implements ClusterAssignService {
         Set<String> failedServerSet = new HashSet<>();
         Set<String> failedClientSet = new HashSet<>();
 
-        // Assign server and apply config.
+        // 分配服务端角色并下发传输/流控/命名空间配置。
         clusterMap.stream()
             .filter(Objects::nonNull)
             .filter(ClusterAppAssignMap::getBelongToApp)
@@ -161,12 +164,12 @@ public class ClusterAssignServiceImpl implements ClusterAssignService {
             })
             .forEach(t -> handleFutureSync(t, failedServerSet));
 
-        // Assign client of servers and apply config.
+        // 为各服务端分配客户端并下发客户端配置。
         clusterMap.parallelStream()
             .filter(Objects::nonNull)
             .forEach(e -> applyAllClientConfigChange(app, e, failedClientSet));
 
-        // Unbind remaining (unassigned) machines.
+        // 解绑剩余未分配机器（切换为 NOT-STARTED）。
         applyAllRemainingMachineSet(app, remainingSet, failedClientSet);
 
         return new ClusterAppAssignResultVO()

@@ -28,6 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
+ * 流控规则动态发布器，将规则推送到应用下所有健康机器。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -39,6 +41,7 @@ public class FlowRuleApiPublisher implements DynamicRulePublisher<List<FlowRuleE
     @Autowired
     private AppManagement appManagement;
 
+    /** 向应用下每台健康机器推送流控规则列表。 */
     @Override
     public void publish(String app, List<FlowRuleEntity> rules) throws Exception {
         if (StringUtil.isBlank(app)) {
@@ -53,7 +56,7 @@ public class FlowRuleApiPublisher implements DynamicRulePublisher<List<FlowRuleE
             if (!machine.isHealthy()) {
                 continue;
             }
-            // TODO: parse the results
+            // TODO: 解析客户端返回结果并处理失败情况
             sentinelApiClient.setFlowRuleOfMachine(app, machine.getIp(), machine.getPort(), rules);
         }
     }

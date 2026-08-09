@@ -30,6 +30,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
+ * 流控规则动态数据源提供者，从应用健康机器拉取 {@link FlowRuleEntity} 列表。
+ * <p>优先选取最近心跳的健康机器作为数据源。
+ *
  * @author Eric Zhao
  */
 @Component("flowRuleDefaultProvider")
@@ -40,6 +43,7 @@ public class FlowRuleApiProvider implements DynamicRuleProvider<List<FlowRuleEnt
     @Autowired
     private AppManagement appManagement;
 
+    /** 从指定应用最近心跳的健康机器拉取流控规则。 */
     @Override
     public List<FlowRuleEntity> getRules(String appName) throws Exception {
         if (StringUtil.isBlank(appName)) {

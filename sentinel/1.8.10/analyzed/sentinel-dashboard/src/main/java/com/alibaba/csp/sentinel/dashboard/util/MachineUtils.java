@@ -21,10 +21,13 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.util.function.Tuple2;
 
 /**
+ * 机器标识解析工具，支持 {@code ip@commandPort} 格式拆分。
+ *
  * @author Eric Zhao
  */
 public final class MachineUtils {
 
+    /** 从机器标识解析命令端口，格式无效时返回 empty。 */
     public static Optional<Integer> parseCommandPort(String machineIp) {
         try {
             if (!machineIp.contains("@")) {
@@ -40,6 +43,7 @@ public final class MachineUtils {
         }
     }
 
+    /** 从机器标识解析 IP 与命令端口元组，格式无效时返回 empty。 */
     public static Optional<Tuple2<String, Integer>> parseCommandIpAndPort(String machineIp) {
         try {
             if (StringUtil.isEmpty(machineIp) || !machineIp.contains("@")) {

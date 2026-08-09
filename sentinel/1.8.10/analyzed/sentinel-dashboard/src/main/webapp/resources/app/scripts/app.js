@@ -6,7 +6,7 @@
  * @description
  * # sentinelDashboardApp
  *
- * Main module of the application.
+ * Sentinel Dashboard 前端主模块，注册路由、HTTP 拦截器与懒加载配置。
  */
 
 angular
@@ -27,7 +27,7 @@ angular
     var authInterceptor = {
       'responseError' : function(response) {
         if (response.status === 401) {
-          // If not auth, clear session in localStorage and jump to the login page
+          // 未授权时清除 localStorage 会话并跳转登录页
           $window.localStorage.removeItem('session_sentinel_admin');
           $state.go('login');
         }
@@ -38,7 +38,7 @@ angular
         return response;
       },
       'request' : function(config) {
-        // Resolved resource loading failure after configuring ContextPath
+        // 配置 ContextPath 后，为相对 URL 拼接 base 前缀
     	  var baseUrl = $window.document.getElementsByTagName('base')[0].href;
     	  config.url = baseUrl + config.url;
         return config;

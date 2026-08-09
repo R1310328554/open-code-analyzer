@@ -1,3 +1,6 @@
+/**
+ * 集群令牌客户端列表控制器，展示 Token Client 并支持修改连接配置。
+ */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('SentinelClusterAppTokenClientListController', ['$scope', '$stateParams', 'ngDialog',
@@ -6,9 +9,10 @@ app.controller('SentinelClusterAppTokenClientListController', ['$scope', '$state
         $scope.app = $stateParams.app;
 
         const UNSUPPORTED_CODE = 4041;
-        const CLUSTER_MODE_CLIENT = 0;
-        const CLUSTER_MODE_SERVER = 1;
+        const CLUSTER_MODE_CLIENT = 0;  // 客户端模式
+        const CLUSTER_MODE_SERVER = 1;    // 服务端模式
 
+        /** 预处理客户端 VO（当前无额外转换逻辑）。 */
         function processClientData(clientVO) {
 
         }

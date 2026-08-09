@@ -34,11 +34,15 @@ import com.alibaba.csp.sentinel.dashboard.domain.cluster.state.ClusterServerStat
 import com.alibaba.csp.sentinel.dashboard.domain.cluster.state.ClusterUniversalStatePairVO;
 
 /**
+ * 集群状态实体转换工具，将 {@link ClusterUniversalStatePairVO} 列表聚合为
+ * 服务端/客户端包装视图或 {@link ClusterGroupEntity} 分组。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public final class ClusterEntityUtils {
 
+    /** 将通用状态列表转换为应用维度令牌服务端状态包装视图。 */
     public static List<AppClusterServerStateWrapVO> wrapToAppClusterServerState(
         List<ClusterUniversalStatePairVO> list) {
         if (list == null || list.isEmpty()) {
@@ -46,7 +50,7 @@ public final class ClusterEntityUtils {
         }
         Map<String, AppClusterServerStateWrapVO> map = new HashMap<>();
         Set<String> tokenServerSet = new HashSet<>();
-        // Handle token servers that belong to current app.
+        // 处理归属当前应用的令牌服务端。
         for (ClusterUniversalStatePairVO stateVO : list) {
             int mode = stateVO.getState().getStateInfo().getMode();
 
@@ -68,7 +72,7 @@ public final class ClusterEntityUtils {
                 tokenServerSet.add(ip + ":" + serverStateVO.getPort());
             }
         }
-        // Handle token servers from other app.
+        // 处理来自其他应用、经客户端配置引用的外部令牌服务端。
         for (ClusterUniversalStatePairVO stateVO : list) {
             int mode = stateVO.getState().getStateInfo().getMode();
 
@@ -82,7 +86,7 @@ public final class ClusterEntityUtils {
                 if (tokenServerSet.contains(serverIp + ":" + serverPort)) {
                     continue;
                 }
-                // We are not able to get the commandPort of foreign token server directly.
+                // 外部令牌服务端的 commandPort 无法直接获取，仅用 ip:port 标识。
                 String serverId = String.format("%s:%d", serverIp, serverPort);
                 map.computeIfAbsent(serverId, v -> new AppClusterServerStateWrapVO()
                     .setId(serverId)
@@ -95,6 +99,7 @@ public final class ClusterEntityUtils {
         return new ArrayList<>(map.values());
     }
 
+    /** 将通用状态列表转换为应用维度令牌客户端状态包装视图。 */
     public static List<AppClusterClientStateWrapVO> wrapToAppClusterClientState(
         List<ClusterUniversalStatePairVO> list) {
         if (list == null || list.isEmpty()) {
@@ -119,6 +124,7 @@ public final class ClusterEntityUtils {
         return new ArrayList<>(map.values());
     }
 
+    /** 按服务端地址聚合客户端，生成集群分组实体列表。 */
     public static List<ClusterGroupEntity> wrapToClusterGroup(List<ClusterUniversalStatePairVO> list) {
         if (list == null || list.isEmpty()) {
             return new ArrayList<>();

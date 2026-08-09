@@ -1,3 +1,6 @@
+/**
+ * 集群令牌分配管理控制器：可视化编辑服务端-客户端映射并一键推送。
+ */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('SentinelClusterAppAssignManageController', ['$scope', '$stateParams', 'ngDialog',
@@ -6,9 +9,9 @@ app.controller('SentinelClusterAppAssignManageController', ['$scope', '$statePar
         $scope.app = $stateParams.app;
         const UNSUPPORTED_CODE = 4041;
 
-        const CLUSTER_MODE_CLIENT = 0;
-        const CLUSTER_MODE_SERVER = 1;
-        const DEFAULT_CLUSTER_SERVER_PORT = 18730;
+        const CLUSTER_MODE_CLIENT = 0;  // 客户端模式
+        const CLUSTER_MODE_SERVER = 1;    // 服务端模式
+        const DEFAULT_CLUSTER_SERVER_PORT = 18730;  // 默认 Token Server 端口
 
         $scope.tmp = {
             curClientChosen: [],

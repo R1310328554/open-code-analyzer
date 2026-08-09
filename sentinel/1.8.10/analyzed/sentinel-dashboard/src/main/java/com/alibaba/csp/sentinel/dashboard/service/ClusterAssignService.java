@@ -22,36 +22,38 @@ import com.alibaba.csp.sentinel.dashboard.domain.cluster.ClusterAppAssignResultV
 import com.alibaba.csp.sentinel.dashboard.domain.cluster.request.ClusterAppAssignMap;
 
 /**
+ * 集群令牌服务端/客户端分配服务接口，支持绑定、解绑与批量应用分配方案。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public interface ClusterAssignService {
 
     /**
-     * Unbind a specific cluster server and its clients.
+     * 解绑指定集群令牌服务端及其关联客户端。
      *
-     * @param app app name
-     * @param machineId valid machine ID ({@code host@commandPort})
-     * @return assign result
+     * @param app 应用名
+     * @param machineId 有效机器标识（{@code host@commandPort}）
+     * @return 分配操作结果
      */
     ClusterAppAssignResultVO unbindClusterServer(String app, String machineId);
 
     /**
-     * Unbind a set of cluster servers and its clients.
+     * 批量解绑多台集群令牌服务端及其关联客户端。
      *
-     * @param app app name
-     * @param machineIdSet set of valid machine ID ({@code host@commandPort})
-     * @return assign result
+     * @param app 应用名
+     * @param machineIdSet 机器标识集合（{@code host@commandPort}）
+     * @return 分配操作结果
      */
     ClusterAppAssignResultVO unbindClusterServers(String app, Set<String> machineIdSet);
 
     /**
-     * Apply cluster server and client assignment for provided app.
+     * 对指定应用应用完整的集群服务端/客户端分配方案。
      *
-     * @param app app name
-     * @param clusterMap cluster assign map (server -> clients)
-     * @param remainingSet unassigned set of machine ID
-     * @return assign result
+     * @param app 应用名
+     * @param clusterMap 集群分配映射（服务端 → 客户端集合）
+     * @param remainingSet 未分配机器标识集合
+     * @return 分配操作结果
      */
     ClusterAppAssignResultVO applyAssignToApp(String app, List<ClusterAppAssignMap> clusterMap,
                                               Set<String> remainingSet);
