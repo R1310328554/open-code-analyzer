@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+并行订阅多路 Publisher，任一路有新值时用 combiner 合并最新快照发射。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -29,6 +34,13 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableCombineLatest — 意图说明
+
+CombineLatestCoordinator 协调多路 request/onNext。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Combines the latest values from multiple sources through a function.
  *
@@ -71,7 +83,10 @@ extends Flowable<R> {
     }
 
     @SuppressWarnings("unchecked")
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
     @Override
+
     public void subscribeActual(Subscriber<? super R> s) {
         Publisher<? extends T>[] sources = array;
         int count;
@@ -114,6 +129,9 @@ extends Flowable<R> {
 
         coordinator.subscribe(sources, count);
     }
+
+    /** 内部 CombineLatestCoordinator。 */
+
 
     static final class CombineLatestCoordinator<T, R>
     extends BasicIntQueueSubscription<R> {
@@ -165,7 +183,12 @@ extends Flowable<R> {
             this.delayErrors = delayErrors;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -173,7 +196,12 @@ extends Flowable<R> {
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             cancelled = true;
             cancelAll();
@@ -368,6 +396,9 @@ extends Flowable<R> {
             }
         }
 
+        /** drain 循环：按 request 从队列取元素发射。 */
+
+
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -456,6 +487,9 @@ extends Flowable<R> {
         }
     }
 
+    /** 内部 CombineLatestInnerSubscriber。 */
+
+
     static final class CombineLatestInnerSubscriber<T>
     extends AtomicReference<Subscription>
             implements FlowableSubscriber<T> {
@@ -480,22 +514,42 @@ extends Flowable<R> {
             this.limit = prefetch - (prefetch >> 2);
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             SubscriptionHelper.setOnce(this, s, prefetch);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             parent.innerValue(index, t);
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             parent.innerError(index, t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             parent.innerComplete(index);
         }

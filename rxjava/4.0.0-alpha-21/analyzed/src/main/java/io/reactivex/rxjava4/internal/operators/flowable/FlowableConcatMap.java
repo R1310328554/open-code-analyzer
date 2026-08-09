@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+对每个上游元素映射 inner Publisher 并顺序串联订阅，前一 inner 完成后再订阅下一 inner。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -28,6 +33,16 @@ import io.reactivex.rxjava4.operators.QueueSubscription;
 import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.operators.SpscArrayQueue;
 
+/* ===== [OCA 中文解析] =====
+class FlowableConcatMap — 意图说明
+
+ConcatMapSubscriber 顺序切换 inner Publisher。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * ConcatMapSubscriber 顺序切换 inner Publisher。
+ */
 public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<T, R> {
 
     final Function<? super T, ? extends Publisher<? extends R>> mapper;
@@ -54,7 +69,12 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
         };
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super R> s) {
 
         if (FlowableScalarXMap.tryScalarXMapSubscribe(source, s, mapper)) {
@@ -142,7 +162,8 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
-        abstract void drain();
+        abstract /** drain 循环：按 request 从队列取元素发射。 */
+ void drain();
 
         abstract void subscribeActual();
 
@@ -165,12 +186,16 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
         }
 
         @Override
-        public final void innerComplete() {
+        public final /** inner 完成：更新状态并继续 drain/切换。 */
+ void innerComplete() {
             active = false;
             drain();
         }
 
     }
+
+    /** 内部 ConcatMapImmediate。 */
+
 
     static final class ConcatMapImmediate<T, R>
     extends BaseConcatMapSubscriber<T, R> {
@@ -195,7 +220,12 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
             downstream.onSubscribe(this);
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             inner.cancel();
             HalfSerializer.onError(downstream, t, this, errors);
@@ -207,17 +237,28 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
         }
 
         @Override
-        public void innerError(Throwable e) {
+        public /** inner 错误：按 delayError 策略合并或立即终止。 */
+ void innerError(Throwable e) {
             upstream.cancel();
             HalfSerializer.onError(downstream, e, this, errors);
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             inner.request(n);
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -230,6 +271,8 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
         }
 
         @Override
+        /** drain 循环：按 request 从队列取元素发射。 */
+
         void drain() {
             if (wip.getAndIncrement() == 0) {
                 for (;;) {
@@ -327,6 +370,9 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
         }
     }
 
+    /** 内部 SimpleScalarSubscription。 */
+
+
     static final class SimpleScalarSubscription<T>
     extends AtomicBoolean
     implements Subscription {
@@ -341,7 +387,12 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
             this.downstream = downstream;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (n > 0L && compareAndSet(false, true)) {
                 Subscriber<? super T> a = downstream;
@@ -350,11 +401,19 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
 
         }
     }
+
+    /** 内部 ConcatMapDelayed。 */
+
 
     static final class ConcatMapDelayed<T, R>
     extends BaseConcatMapSubscriber<T, R> {
@@ -379,7 +438,12 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
             downstream.onSubscribe(this);
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (errors.tryAddThrowableOrReport(t)) {
                 done = true;
@@ -393,7 +457,8 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
         }
 
         @Override
-        public void innerError(Throwable e) {
+        public /** inner 错误：按 delayError 策略合并或立即终止。 */
+ void innerError(Throwable e) {
             if (errors.tryAddThrowableOrReport(e)) {
                 if (!veryEnd) {
                     upstream.cancel();
@@ -404,12 +469,22 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             inner.request(n);
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -422,6 +497,8 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
         }
 
         @Override
+        /** drain 循环：按 request 从队列取元素发射。 */
+
         void drain() {
             if (getAndIncrement() == 0) {
 
@@ -533,10 +610,19 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
 
         void innerNext(T value);
 
+        /** inner 完成：更新状态并继续 drain/切换。 */
+
+
         void innerComplete();
+
+        /** inner 错误：按 delayError 策略合并或立即终止。 */
+
 
         void innerError(Throwable e);
     }
+
+    /** 内部 ConcatMapInner。 */
+
 
     static final class ConcatMapInner<R>
     extends SubscriptionArbiter
@@ -554,19 +640,34 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
             this.parent = parent;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             setSubscription(s);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(R t) {
             produced++;
 
             parent.innerNext(t);
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             long p = produced;
 
@@ -578,7 +679,12 @@ public final class FlowableConcatMap<T, R> extends AbstractFlowableWithUpstream<
             parent.innerError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             long p = produced;
 

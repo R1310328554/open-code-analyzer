@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+将上游每个元素经 mapper 转为 Iterable 后逐元素展开发射。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -30,6 +35,16 @@ import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.operators.SpscArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableFlattenIterable — 意图说明
+
+FlattenIterableSubscriber 迭代展开 Iterable。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * FlattenIterableSubscriber 迭代展开 Iterable。
+ */
 public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUpstream<T, R> {
 
     final Function<? super T, ? extends Iterable<? extends R>> mapper;
@@ -44,7 +59,10 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
     }
 
     @SuppressWarnings("unchecked")
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
     @Override
+
     public void subscribeActual(Subscriber<? super R> s) {
         if (source instanceof Supplier) {
             T v;
@@ -94,6 +112,9 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
         return new FlattenIterableSubscriber<>(downstream, mapper, prefetch);
     }
 
+    /** 内部 FlattenIterableSubscriber。 */
+
+
     static final class FlattenIterableSubscriber<T, R>
     extends BasicIntQueueSubscription<R>
     implements FlowableSubscriber<T> {
@@ -137,7 +158,12 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
             this.requested = new AtomicLong();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -176,7 +202,12 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done) {
                 return;
@@ -188,7 +219,12 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
             drain();
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (!done && ExceptionHelper.addThrowable(error, t)) {
                 done = true;
@@ -198,7 +234,12 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (done) {
                 return;
@@ -207,7 +248,12 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
             drain();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -215,7 +261,12 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -227,6 +278,9 @@ public final class FlowableFlattenIterable<T, R> extends AbstractFlowableWithUps
                 }
             }
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() != 0) {

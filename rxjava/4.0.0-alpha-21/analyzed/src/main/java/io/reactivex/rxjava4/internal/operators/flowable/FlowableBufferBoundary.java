@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+由 boundary Publisher 的开/关信号界定缓冲窗口，窗口关闭时将 Collection 批量发射。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -28,6 +33,16 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableBufferBoundary — 意图说明
+
+BoundarySubscriber 管理开/关边界与 buffer 发射。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * BoundarySubscriber 管理开/关边界与 buffer 发射。
+ */
 public final class FlowableBufferBoundary<T, U extends Collection<? super T>, Open, Close>
 extends AbstractFlowableWithUpstream<T, U> {
     final Supplier<U> bufferSupplier;
@@ -42,7 +57,12 @@ extends AbstractFlowableWithUpstream<T, U> {
         this.bufferSupplier = bufferSupplier;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super U> s) {
         BufferBoundarySubscriber<T, U, Open, Close> parent =
             new BufferBoundarySubscriber<>(
@@ -51,6 +71,9 @@ extends AbstractFlowableWithUpstream<T, U> {
         s.onSubscribe(parent);
         source.subscribe(parent);
     }
+
+    /** 内部 BufferBoundarySubscriber。 */
+
 
     static final class BufferBoundarySubscriber<T, C extends Collection<? super T>, Open, Close>
     extends AtomicInteger implements FlowableSubscriber<T>, Subscription {
@@ -103,7 +126,12 @@ extends AbstractFlowableWithUpstream<T, U> {
             this.errors = new AtomicThrowable();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.setOnce(this.upstream, s)) {
 
@@ -116,7 +144,12 @@ extends AbstractFlowableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             synchronized (this) {
                 Map<Long, C> bufs = buffers;
@@ -129,7 +162,12 @@ extends AbstractFlowableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (errors.tryAddThrowableOrReport(t)) {
                 subscribers.dispose();
@@ -141,7 +179,12 @@ extends AbstractFlowableWithUpstream<T, U> {
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             subscribers.dispose();
             synchronized (this) {
@@ -158,13 +201,23 @@ extends AbstractFlowableWithUpstream<T, U> {
             drain();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             BackpressureHelper.add(requested, n);
             drain();
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (SubscriptionHelper.cancel(upstream)) {
                 cancelled = true;
@@ -241,6 +294,9 @@ extends AbstractFlowableWithUpstream<T, U> {
             onError(ex);
         }
 
+        /** drain 循环：按 request 从队列取元素发射。 */
+
+
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -309,6 +365,9 @@ extends AbstractFlowableWithUpstream<T, U> {
             }
         }
 
+        /** 内部 BufferOpenSubscriber。 */
+
+
         static final class BufferOpenSubscriber<Open>
         extends AtomicReference<Subscription>
         implements FlowableSubscriber<Open>, Disposable {
@@ -322,39 +381,72 @@ extends AbstractFlowableWithUpstream<T, U> {
                 this.parent = parent;
             }
 
+            /** 校验 Subscription 并初始化内部状态。 */
+
+
             @Override
+
+
             public void onSubscribe(Subscription s) {
                 SubscriptionHelper.setOnce(this, s, Long.MAX_VALUE);
             }
 
+            /** 处理上游 onNext 并转发或缓存。 */
+
+
             @Override
+
+
             public void onNext(Open t) {
                 parent.open(t);
             }
 
+            /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
             @Override
+
+
             public void onError(Throwable t) {
                 lazySet(SubscriptionHelper.CANCELLED);
                 parent.boundaryError(this, t);
             }
 
+            /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
             @Override
+
+
             public void onComplete() {
                 lazySet(SubscriptionHelper.CANCELLED);
                 parent.openComplete(this);
             }
 
+            /** dispose 连接/inner 并清理状态。 */
+
+
             @Override
+
+
             public void dispose() {
                 SubscriptionHelper.cancel(this);
             }
 
+            /** 返回是否已 dispose。 */
+
+
             @Override
+
+
             public boolean isDisposed() {
                 return get() == SubscriptionHelper.CANCELLED;
             }
         }
     }
+
+    /** 内部 BufferCloseSubscriber。 */
+
 
     static final class BufferCloseSubscriber<T, C extends Collection<? super T>>
     extends AtomicReference<Subscription>
@@ -372,12 +464,22 @@ extends AbstractFlowableWithUpstream<T, U> {
             this.index = index;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             SubscriptionHelper.setOnce(this, s, Long.MAX_VALUE);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(Object t) {
             Subscription s = get();
             if (s != SubscriptionHelper.CANCELLED) {
@@ -387,7 +489,12 @@ extends AbstractFlowableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (get() != SubscriptionHelper.CANCELLED) {
                 lazySet(SubscriptionHelper.CANCELLED);
@@ -397,7 +504,12 @@ extends AbstractFlowableWithUpstream<T, U> {
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (get() != SubscriptionHelper.CANCELLED) {
                 lazySet(SubscriptionHelper.CANCELLED);
@@ -405,12 +517,22 @@ extends AbstractFlowableWithUpstream<T, U> {
             }
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             SubscriptionHelper.cancel(this);
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return get() == SubscriptionHelper.CANCELLED;
         }

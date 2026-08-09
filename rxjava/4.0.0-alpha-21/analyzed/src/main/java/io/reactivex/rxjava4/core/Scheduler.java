@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+RxJava 调度器抽象：定义 Runnable 的立即/延迟/周期调度 API，Worker 隔离顺序执行，支持 clock drift 与 RxJavaPlugins 钩子。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.core;
 
 import java.util.concurrent.*;
@@ -23,8 +28,15 @@ import io.reactivex.rxjava4.internal.schedulers.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import io.reactivex.rxjava4.schedulers.SchedulerRunnableIntrospection;
 
+/* ===== [OCA 中文解析] =====
+class Scheduler — 意图说明
+
+异步边界抽象：createWorker/scheduleDirect/now 等调度 API。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * A {@code Scheduler} is an object that specifies an API for scheduling
+ * Scheduler 定义 Runnable 的调度 API：
  * units of work provided in the form of {@link Runnable}s to be
  * executed without delay (effectively as soon as possible), after a specified time delay or periodically
  * and represents an abstraction over an asynchronous boundary that ensures
@@ -549,12 +561,22 @@ public abstract class Scheduler {
                 return this.decoratedRun;
             }
 
+            /** dispose 连接/inner 并清理状态。 */
+
+
             @Override
+
+
             public void dispose() {
                 sd.dispose();
             }
 
+            /** 返回是否已 dispose。 */
+
+
             @Override
+
+
             public boolean isDisposed() {
                 return sd.isDisposed();
             }
@@ -572,13 +594,25 @@ public abstract class Scheduler {
      * Implementation of a stateless, shutdown worker. For cleanup and termination purposes.
      * @since 4.0.0
      */
+    /** 内部 ShutdownWorker。 */
+
     static final class ShutdownWorker extends Worker {
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return true;
         }
@@ -589,6 +623,9 @@ public abstract class Scheduler {
         }
 
     }
+
+    /** 内部 PeriodicDirectTask。 */
+
 
     static final class PeriodicDirectTask
     implements Disposable, Runnable, SchedulerRunnableIntrospection {
@@ -620,13 +657,23 @@ public abstract class Scheduler {
             }
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             disposed = true;
             worker.dispose();
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return disposed;
         }
@@ -636,6 +683,13 @@ public abstract class Scheduler {
             return run;
         }
     }
+
+    /** 内部 DisposeTask。 */
+
+
+    /** 内部 DisposeTask。 */
+
+
 
     static final class DisposeTask implements Disposable, Runnable, SchedulerRunnableIntrospection {
 
@@ -670,7 +724,12 @@ public abstract class Scheduler {
             }
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             if (runner == Thread.currentThread() && w instanceof NewThreadWorker) {
                 ((NewThreadWorker)w).shutdown();
@@ -679,7 +738,12 @@ public abstract class Scheduler {
             }
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return w.isDisposed();
         }

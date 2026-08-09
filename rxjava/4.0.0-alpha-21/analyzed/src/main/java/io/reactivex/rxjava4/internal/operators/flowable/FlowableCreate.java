@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+通过 FlowableOnSubscribe 回调创建 Flowable，由创建者在 subscribe 时驱动 onNext/onError/onComplete。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -27,6 +32,16 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableCreate — 意图说明
+
+CreateSubscriber 包装 FlowableEmitter 与背压。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * CreateSubscriber 包装 FlowableEmitter 与背压。
+ */
 public final class FlowableCreate<T> extends Flowable<T> {
 
     final FlowableOnSubscribe<T> source;
@@ -38,7 +53,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
         this.backpressure = backpressure;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     public void subscribeActual(Subscriber<? super T> t) {
         BaseEmitter<T> emitter;
 
@@ -79,6 +99,8 @@ public final class FlowableCreate<T> extends Flowable<T> {
      *
      * @param <T> the value type
      */
+    /** 内部 SerializedEmitter。 */
+
     static final class SerializedEmitter<T>
     extends AtomicInteger
     implements FlowableEmitter<T> {
@@ -100,7 +122,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             this.queue = new SpscLinkedArrayQueue<>(16);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (emitter.isCancelled() || done) {
                 return;
@@ -126,7 +153,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             drainLoop();
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (!tryOnError(t)) {
                 RxJavaPlugins.onError(t);
@@ -149,7 +181,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             return false;
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (emitter.isCancelled() || done) {
                 return;
@@ -157,6 +194,9 @@ public final class FlowableCreate<T> extends Flowable<T> {
             done = true;
             drain();
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() == 0) {
@@ -254,7 +294,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             this.serial = new SequentialDisposable();
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             completeDownstream();
         }
@@ -357,6 +402,9 @@ public final class FlowableCreate<T> extends Flowable<T> {
         }
     }
 
+    /** 内部 MissingEmitter。 */
+
+
     static final class MissingEmitter<T> extends BaseEmitter<T> {
 
         @Serial
@@ -366,7 +414,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             super(downstream);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (isCancelled()) {
                 return;
@@ -420,6 +473,9 @@ public final class FlowableCreate<T> extends Flowable<T> {
         abstract void onOverflow();
     }
 
+    /** 内部 DropAsyncEmitter。 */
+
+
     static final class DropAsyncEmitter<T> extends NoOverflowBaseAsyncEmitter<T> {
 
         @Serial
@@ -436,6 +492,9 @@ public final class FlowableCreate<T> extends Flowable<T> {
 
     }
 
+    /** 内部 ErrorAsyncEmitter。 */
+
+
     static final class ErrorAsyncEmitter<T> extends NoOverflowBaseAsyncEmitter<T> {
 
         @Serial
@@ -451,6 +510,9 @@ public final class FlowableCreate<T> extends Flowable<T> {
         }
 
     }
+
+    /** 内部 BufferAsyncEmitter。 */
+
 
     static final class BufferAsyncEmitter<T> extends BaseEmitter<T> {
 
@@ -470,7 +532,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             this.wip = new AtomicInteger();
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done || isCancelled()) {
                 return;
@@ -496,7 +563,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             return true;
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             done = true;
             drain();
@@ -513,6 +585,9 @@ public final class FlowableCreate<T> extends Flowable<T> {
                 queue.clear();
             }
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (wip.getAndIncrement() != 0) {
@@ -591,6 +666,9 @@ public final class FlowableCreate<T> extends Flowable<T> {
         }
     }
 
+    /** 内部 LatestAsyncEmitter。 */
+
+
     static final class LatestAsyncEmitter<T> extends BaseEmitter<T> {
 
         @Serial
@@ -609,7 +687,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             this.wip = new AtomicInteger();
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done || isCancelled()) {
                 return;
@@ -634,7 +717,12 @@ public final class FlowableCreate<T> extends Flowable<T> {
             return true;
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             done = true;
             drain();
@@ -651,6 +739,9 @@ public final class FlowableCreate<T> extends Flowable<T> {
                 queue.lazySet(null);
             }
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (wip.getAndIncrement() != 0) {

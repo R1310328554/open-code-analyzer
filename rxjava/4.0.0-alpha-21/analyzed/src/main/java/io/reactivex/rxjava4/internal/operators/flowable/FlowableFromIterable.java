@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+从 Iterable 同步或异步拉取元素创建 Flowable，支持 backpressure 与 fusion 优化。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -26,15 +31,33 @@ import io.reactivex.rxjava4.internal.subscriptions.*;
 import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 import io.reactivex.rxjava4.operators.ConditionalSubscriber;
 
+/* ===== [OCA 中文解析] =====
+class FlowableFromIterable — 意图说明
+
+FromIterableSubscription 从 Iterable 拉取并 request。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * FromIterableSubscription 从 Iterable 拉取并 request。
+ */
 public final class FlowableFromIterable<T> extends Flowable<T> {
 
     final Iterable<? extends T> source;
 
+    /**
+     * @param source 上游 Iterable 数据源
+     */
     public FlowableFromIterable(Iterable<? extends T> source) {
         this.source = source;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     public void subscribeActual(Subscriber<? super T> s) {
         Iterator<? extends T> it;
         try {
@@ -48,6 +71,7 @@ public final class FlowableFromIterable<T> extends Flowable<T> {
         subscribe(s, it);
     }
 
+    /** 将 Iterator 订阅到 Subscriber，按 ConditionalSubscriber 选择实现。 */
     public static <T> void subscribe(Subscriber<? super T> s, Iterator<? extends T> it) {
         boolean hasNext;
         try {
@@ -75,8 +99,10 @@ public final class FlowableFromIterable<T> extends Flowable<T> {
         @Serial
         private static final long serialVersionUID = -2252972430506210021L;
 
+        /** 待迭代的 Iterator。 */
         Iterator<? extends T> iterator;
 
+        /** 是否已取消。 */
         volatile boolean cancelled;
 
         boolean once;
@@ -123,6 +149,7 @@ public final class FlowableFromIterable<T> extends Flowable<T> {
             iterator = null;
         }
 
+        /** 处理下游背压 request，从 Iterator 拉取元素。 */
         @Override
         public final void request(long n) {
             if (SubscriptionHelper.validate(n)) {
@@ -136,15 +163,21 @@ public final class FlowableFromIterable<T> extends Flowable<T> {
             }
         }
 
+        /** 取消迭代并标记 cancelled。 */
         @Override
         public final void cancel() {
             cancelled = true;
         }
 
+        /** 快速路径：一次性满足 request。 */
         abstract void fastPath();
 
+        /** 慢速路径：分批满足 request。 */
         abstract void slowPath(long r);
     }
+
+    /** 内部 IteratorSubscription。 */
+
 
     static final class IteratorSubscription<T> extends BaseRangeSubscription<T> {
 
@@ -282,6 +315,9 @@ public final class FlowableFromIterable<T> extends Flowable<T> {
         }
 
     }
+
+    /** 内部 IteratorConditionalSubscription。 */
+
 
     static final class IteratorConditionalSubscription<T> extends BaseRangeSubscription<T> {
 

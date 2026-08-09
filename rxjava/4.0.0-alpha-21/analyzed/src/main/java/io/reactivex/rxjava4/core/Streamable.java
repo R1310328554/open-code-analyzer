@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+RxJava 4 核心流式 API：基于 CompletionStage 的异步 pull 模型，定义 next/finish/cancel 与多种算子工厂方法。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.core;
 
 import java.util.*;
@@ -26,42 +31,27 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import io.reactivex.rxjava4.schedulers.Schedulers;
 import io.reactivex.rxjava4.subscribers.TestSubscriber;
 
-/// Represents a virtual-thread capable, multi-valued (a)synchronous sequence of values that
-/// builds upon the Java [CompletionStage]-based concurrency-coordination model.
+/// 基于 Java {@link CompletionStage} 的虚拟线程友好多值异步序列。
 ///
-/// The lifecycle of the sequence is as follows:
+/// 生命周期：consumer 调用 {@link #stream(StreamerCancellation)} →
+/// 循环 {@link Streamer#next()} → 最后必须 {@link Streamer#finish()} 释放上游资源。
+/// 取消通过 {@link StreamerCancellation} 传播；敏感源应以 {@link CancellationException} 异常完成 next。
 ///
-/// - consumer calls {@link #stream(StreamerCancellation)}
-/// - consumer calls {@link Streamer#next()} in a loop and consumer checks if what
-///   the {@link CompletionStage} outcome is:
-///   - if it succeeded with a boolean {@code true}, it is safe to call {@link Streamer#current()}.
-///   - if it succeeded with a boolean {@code false}, no further values are coming.
-///   - if it failed with a {@code Throwable}, no further values are coming and the error can be propagated further
-/// - consumer calls {@link Streamer#finish()}
+/// {@link Streamer} 方法须顺序、非重叠调用（类似 Reactive Streams §1.3）。
 ///
-/// It is always necessary to have the consumer call {@code finish} because that is responsible for cleaning up
-/// resources of the upstream.
-///
-/// Downstream cancellations are signaled via the [StreamerCancellation], where operators can register their own
-/// [Disposable]s that get disposed. Because dispose can happen at any time and asynchronously to the consumption loop,
-/// the sensitive sources must complete their waiting `CompletionStage` returned by `next` exceptionally via a
-/// [CancellationException]. This will unblock the loops and invoke the `finish` method of the lifecycle at
-/// the consumer thread. Depending on the operator, the `CancellationException` may not be propagated further.
-///
-/// If a source wishes to fail, it must signal the [Throwable] via the returned {@code CompletionStage} of {@code next}.
-/// If the `finish` also throws, its `Throwable` should be added as suppressed exception to the original `Throwable`.
-///
-/// The `Streamer` methods must be invoked sequentially and non-overlappingly, similar to the
-/// <a href='https://github.com/reactive-streams/reactive-streams-jvm#1.3'>Reactive Streams rule §1.3</a>.
-///
-/// This reactive type was modeled after the C# `IAsyncEnumerable` and `IAsyncEnumerator` interfaces. Unfortunately,
-/// Java never added any `async`/`await` infrastructure, plus `CompletionStage` doesn't even have any native way to blockingly
-/// join to it. Therefore, when running in a (virtual) blocking fashion, one may use the {@link Streamer#awaitNext()}
-/// or {@link Streamer#awaitFinish()} helper methods.
-///
-/// @param <T> the element type of the {@code Streamable} sequence.
+/// @param <T> Streamable 序列元素类型
 /// @since 4.0.0
 @FunctionalInterface
+/* ===== [OCA 中文解析] =====
+interface Streamable — 意图说明
+
+CompletionStage 驱动的流式 pull 接口与算子入口。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * CompletionStage 驱动的流式 pull 接口与算子入口。
+ */
 public interface Streamable<@NonNull T> {
 
     // oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
@@ -1109,7 +1099,7 @@ public interface Streamable<@NonNull T> {
     /**
      * Converts the streamable into a Flowable representation, running
      * on the default Executors.newVirtualThreadPerTaskExecutor() virtual thread.
-     * @return the new Flowable instance
+     * @return 新的 Flowable 实例
      */
     @CheckReturnValue
     @NonNull

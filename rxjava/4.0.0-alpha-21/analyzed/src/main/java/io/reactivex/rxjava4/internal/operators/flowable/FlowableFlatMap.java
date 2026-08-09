@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+对每个上游元素映射 inner Publisher 并并发订阅多路 inner，合并 emission 并处理背压与 delayError。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -28,6 +33,16 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableFlatMap — 意图说明
+
+FlatMapSubscriber 管理 inner 队列与 maxConcurrency。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * FlatMapSubscriber 管理 inner 队列与 maxConcurrency。
+ */
 public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T, U> {
     final Function<? super T, ? extends Publisher<? extends U>> mapper;
     final boolean delayErrors;
@@ -44,7 +59,12 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
         this.bufferSize = bufferSize;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super U> s) {
         if (FlowableScalarXMap.tryScalarXMapSubscribe(source, s, mapper)) {
             return;
@@ -57,6 +77,9 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             boolean delayErrors, int maxConcurrency, int bufferSize) {
         return new MergeSubscriber<>(s, mapper, delayErrors, maxConcurrency, bufferSize);
     }
+
+    /** 内部 MergeSubscriber。 */
+
 
     static final class MergeSubscriber<T, U> extends AtomicInteger implements FlowableSubscriber<T>, Subscription {
 
@@ -105,7 +128,12 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             subscribers.lazySet(EMPTY);
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -121,7 +149,10 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
         }
 
         @SuppressWarnings("unchecked")
+        /** 处理上游 onNext 并转发或缓存。 */
+
         @Override
+
         public void onNext(T t) {
             // safeguard against misbehaving sources
             if (done) {
@@ -303,7 +334,12 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             drainLoop();
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             // safeguard against misbehaving sources
             if (done) {
@@ -321,7 +357,12 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             // safeguard against misbehaving sources
             if (done) {
@@ -331,7 +372,12 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             drain();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -339,7 +385,12 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -353,6 +404,9 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
                 }
             }
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() == 0) {
@@ -576,6 +630,9 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
         }
     }
 
+    /** 内部 InnerSubscriber。 */
+
+
     static final class InnerSubscriber<T, U> extends AtomicReference<Subscription>
     implements FlowableSubscriber<U>, Disposable {
 
@@ -598,7 +655,12 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             this.limit = bufferSize >> 2;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.setOnce(this, s)) {
 
@@ -624,7 +686,12 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(U t) {
             if (fusionMode != QueueSubscription.ASYNC) {
                 parent.tryEmit(t, this);
@@ -633,13 +700,23 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             lazySet(SubscriptionHelper.CANCELLED);
             parent.innerError(this, t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             done = true;
             parent.drain();
@@ -657,12 +734,22 @@ public final class FlowableFlatMap<T, U> extends AbstractFlowableWithUpstream<T,
             }
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             SubscriptionHelper.cancel(this);
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return get() == SubscriptionHelper.CANCELLED;
         }

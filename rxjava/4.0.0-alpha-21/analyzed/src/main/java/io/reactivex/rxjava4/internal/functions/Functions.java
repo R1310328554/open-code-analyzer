@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+内部函数工具类：提供 emptyConsumer、identity、hashCode 等常用 Function/Predicate/Action 单例与组合辅助。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.functions;
 
 import java.util.*;
@@ -25,6 +30,13 @@ import io.reactivex.rxjava4.functions.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import io.reactivex.rxjava4.schedulers.Timed;
 
+/* ===== [OCA 中文解析] =====
+class Functions — 意图说明
+
+静态工具方法与常用函数式接口单例。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Utility methods to convert the BiFunction, Function3 .. Function9 instances to Function of Object array.
  */
@@ -354,6 +366,9 @@ public final class Functions {
         return new TimestampFunction<>(unit, scheduler);
     }
 
+    /** 内部 ToMapKeySelector。 */
+
+
     static final class ToMapKeySelector<K, T> implements BiConsumer<Map<K, T>, T> {
         private final Function<? super T, ? extends K> keySelector;
 
@@ -371,6 +386,9 @@ public final class Functions {
     public static <T, K> BiConsumer<Map<K, T>, T> toMapKeySelector(final Function<? super T, ? extends K> keySelector) {
         return new ToMapKeySelector<>(keySelector);
     }
+
+    /** 内部 ToMapKeyValueSelector。 */
+
 
     static final class ToMapKeyValueSelector<K, V, T> implements BiConsumer<Map<K, V>, T> {
         private final Function<? super T, ? extends V> valueSelector;
@@ -394,6 +412,9 @@ public final class Functions {
             final Function<? super T, ? extends V> valueSelector) {
         return new ToMapKeyValueSelector<>(valueSelector, keySelector);
     }
+
+    /** 内部 ToMultimapKeyValueSelector。 */
+
 
     static final class ToMultimapKeyValueSelector<K, V, T> implements BiConsumer<Map<K, Collection<V>>, T> {
         private final Function<? super K, ? extends Collection<? super V>> collectionFactory;
@@ -496,6 +517,9 @@ public final class Functions {
             }
         }
 
+    /** 内部 Array5Func。 */
+
+
     static final class Array5Func<T1, T2, T3, T4, T5, R> implements Function<Object[], R> {
         private final Function5<T1, T2, T3, T4, T5, R> f;
 
@@ -565,6 +589,13 @@ public final class Functions {
             }
         }
 
+    /** 内部 Identity。 */
+
+
+    /** 内部 Identity。 */
+
+
+
     static final class Identity implements Function<Object, Object> {
         @Override
         public Object apply(Object v) {
@@ -577,6 +608,13 @@ public final class Functions {
         }
     }
 
+    /** 内部 EmptyRunnable。 */
+
+
+    /** 内部 EmptyRunnable。 */
+
+
+
     static final class EmptyRunnable implements Runnable {
         @Override
         public void run() { }
@@ -586,6 +624,13 @@ public final class Functions {
             return "EmptyRunnable";
         }
     }
+
+    /** 内部 EmptyAction。 */
+
+
+    /** 内部 EmptyAction。 */
+
+
 
     static final class EmptyAction implements Action {
         @Override
@@ -597,6 +642,13 @@ public final class Functions {
         }
     }
 
+    /** 内部 EmptyConsumer。 */
+
+
+    /** 内部 EmptyConsumer。 */
+
+
+
     static final class EmptyConsumer implements Consumer<Object> {
         @Override
         public void accept(Object v) { }
@@ -607,12 +659,26 @@ public final class Functions {
         }
     }
 
+    /** 内部 ErrorConsumer。 */
+
+
+    /** 内部 ErrorConsumer。 */
+
+
+
     static final class ErrorConsumer implements Consumer<Throwable> {
         @Override
         public void accept(Throwable error) {
             RxJavaPlugins.onError(error);
         }
     }
+
+    /** 内部 OnErrorMissingConsumer。 */
+
+
+    /** 内部 OnErrorMissingConsumer。 */
+
+
 
     static final class OnErrorMissingConsumer implements Consumer<Throwable> {
         @Override
@@ -621,10 +687,24 @@ public final class Functions {
         }
     }
 
+    /** 内部 EmptyLongConsumer。 */
+
+
+    /** 内部 EmptyLongConsumer。 */
+
+
+
     static final class EmptyLongConsumer implements LongConsumer {
         @Override
         public void accept(long v) { }
     }
+
+    /** 内部 TruePredicate。 */
+
+
+    /** 内部 TruePredicate。 */
+
+
 
     static final class TruePredicate implements Predicate<Object> {
         @Override
@@ -633,6 +713,13 @@ public final class Functions {
         }
     }
 
+    /** 内部 FalsePredicate。 */
+
+
+    /** 内部 FalsePredicate。 */
+
+
+
     static final class FalsePredicate implements Predicate<Object> {
         @Override
         public boolean test(Object o) {
@@ -640,12 +727,26 @@ public final class Functions {
         }
     }
 
+    /** 内部 NullProvider。 */
+
+
+    /** 内部 NullProvider。 */
+
+
+
     static final class NullProvider implements Supplier<Object> {
         @Override
         public Object get() {
             return null;
         }
     }
+
+    /** 内部 MaxRequestSubscription。 */
+
+
+    /** 内部 MaxRequestSubscription。 */
+
+
 
     static final class MaxRequestSubscription implements Consumer<Subscription> {
         @Override

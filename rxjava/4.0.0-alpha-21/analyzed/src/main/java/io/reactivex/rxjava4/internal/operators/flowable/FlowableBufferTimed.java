@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+按 timespan/timeskip 定时收集元素到 Collection 并批量发射，支持 maxSize 与 Scheduler。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.util.*;
@@ -31,6 +36,16 @@ import io.reactivex.rxjava4.internal.subscriptions.*;
 import io.reactivex.rxjava4.internal.util.QueueDrainHelper;
 import io.reactivex.rxjava4.subscribers.SerializedSubscriber;
 
+/* ===== [OCA 中文解析] =====
+class FlowableBufferTimed — 意图说明
+
+TimedBufferSubscriber 管理 Scheduler 定时与 buffer。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * TimedBufferSubscriber 管理 Scheduler 定时与 buffer。
+ */
 public final class FlowableBufferTimed<T, U extends Collection<? super T>> extends AbstractFlowableWithUpstream<T, U> {
 
     final long timespan;
@@ -53,7 +68,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
         this.restartTimerOnMaxSize = restartTimerOnMaxSize;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super U> s) {
         if (timespan == timeskip && maxSize == Integer.MAX_VALUE) {
             source.subscribe(new BufferExactUnboundedSubscriber<>(
@@ -78,6 +98,9 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
                 bufferSupplier, timespan, timeskip, unit, w));
     }
 
+    /** 内部 BufferExactUnboundedSubscriber。 */
+
+
     static final class BufferExactUnboundedSubscriber<T, U extends Collection<? super T>>
     extends QueueDrainSubscriber<T, U, U> implements Subscription, Runnable, Disposable {
         final Supplier<U> bufferSupplier;
@@ -101,7 +124,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             this.scheduler = scheduler;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -132,7 +160,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             synchronized (this) {
                 U b = buffer;
@@ -142,7 +175,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             DisposableHelper.dispose(timer);
             synchronized (this) {
@@ -151,7 +189,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             downstream.onError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             DisposableHelper.dispose(timer);
             U b;
@@ -169,12 +212,22 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             }
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             requested(n);
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             cancelled = true;
             upstream.cancel();
@@ -213,16 +266,29 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             return true;
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             cancel();
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return timer.get() == DisposableHelper.DISPOSED;
         }
     }
+
+    /** 内部 BufferSkipBoundedSubscriber。 */
+
 
     static final class BufferSkipBoundedSubscriber<T, U extends Collection<? super T>>
     extends QueueDrainSubscriber<T, U, U> implements Subscription, Runnable {
@@ -247,7 +313,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             this.buffers = new LinkedList<>();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (!SubscriptionHelper.validate(this.upstream, s)) {
                 return;
@@ -277,7 +348,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             w.schedule(new RemoveFromBuffer(b), timespan, unit);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             synchronized (this) {
                 for (U b : buffers) {
@@ -286,7 +362,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             done = true;
             w.dispose();
@@ -294,7 +375,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             downstream.onError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             List<U> bs;
             synchronized (this) {
@@ -311,12 +397,22 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             }
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             requested(n);
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             cancelled = true;
             upstream.cancel();
@@ -380,6 +476,9 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
         }
     }
 
+    /** 内部 BufferExactBoundedSubscriber。 */
+
+
     static final class BufferExactBoundedSubscriber<T, U extends Collection<? super T>>
     extends QueueDrainSubscriber<T, U, U> implements Subscription, Runnable, Disposable {
         final Supplier<U> bufferSupplier;
@@ -413,7 +512,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             this.w = w;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (!SubscriptionHelper.validate(this.upstream, s)) {
                 return;
@@ -441,7 +545,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             s.request(Long.MAX_VALUE);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             U b;
             synchronized (this) {
@@ -484,7 +593,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             synchronized (this) {
                 buffer = null;
@@ -493,7 +607,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             w.dispose();
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             U b;
             synchronized (this) {
@@ -517,12 +636,22 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             return true;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             requested(n);
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -530,7 +659,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             }
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             synchronized (this) {
                 buffer = null;
@@ -539,7 +673,12 @@ public final class FlowableBufferTimed<T, U extends Collection<? super T>> exten
             w.dispose();
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return w.isDisposed();
         }

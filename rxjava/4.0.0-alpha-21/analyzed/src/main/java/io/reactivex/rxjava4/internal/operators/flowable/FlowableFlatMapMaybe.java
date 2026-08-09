@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+对每个上游元素映射 MaybeSource，onSuccess 值可用即向下游发射，支持 maxConcurrency。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -28,6 +33,13 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 
+/* ===== [OCA 中文解析] =====
+class FlowableFlatMapMaybe — 意图说明
+
+FlatMapMaybeSubscriber 合并多路 Maybe 结果。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Maps upstream values into MaybeSources and merges their signals into one sequence.
  * @param <T> the source value type
@@ -49,10 +61,18 @@ public final class FlowableFlatMapMaybe<T, R> extends AbstractFlowableWithUpstre
         this.maxConcurrency = maxConcurrency;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super R> s) {
         source.subscribe(new FlatMapMaybeSubscriber<>(s, mapper, delayErrors, maxConcurrency));
     }
+
+    /** 内部 FlatMapMaybeSubscriber。 */
+
 
     static final class FlatMapMaybeSubscriber<T, R>
     extends AtomicInteger
@@ -96,7 +116,12 @@ public final class FlowableFlatMapMaybe<T, R> extends AbstractFlowableWithUpstre
             this.queue = new AtomicReference<>();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -112,7 +137,12 @@ public final class FlowableFlatMapMaybe<T, R> extends AbstractFlowableWithUpstre
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             MaybeSource<? extends R> ms;
 
@@ -134,7 +164,12 @@ public final class FlowableFlatMapMaybe<T, R> extends AbstractFlowableWithUpstre
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             active.decrementAndGet();
             if (errors.tryAddThrowableOrReport(t)) {
@@ -145,13 +180,23 @@ public final class FlowableFlatMapMaybe<T, R> extends AbstractFlowableWithUpstre
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             active.decrementAndGet();
             drain();
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             cancelled = true;
             upstream.cancel();
@@ -159,7 +204,12 @@ public final class FlowableFlatMapMaybe<T, R> extends AbstractFlowableWithUpstre
             errors.tryTerminateAndReport();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -265,6 +315,9 @@ public final class FlowableFlatMapMaybe<T, R> extends AbstractFlowableWithUpstre
         static boolean checkTerminate(boolean d, SpscLinkedArrayQueue<?> q) {
             return d && (q == null || q.isEmpty());
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() == 0) {
@@ -377,22 +430,42 @@ public final class FlowableFlatMapMaybe<T, R> extends AbstractFlowableWithUpstre
                 innerSuccess(this, value);
             }
 
+            /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
             @Override
+
+
             public void onError(Throwable e) {
                 innerError(this, e);
             }
 
+            /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
             @Override
+
+
             public void onComplete() {
                 innerComplete(this);
             }
 
+            /** 返回是否已 dispose。 */
+
+
             @Override
+
+
             public boolean isDisposed() {
                 return DisposableHelper.isDisposed(get());
             }
 
+            /** dispose 连接/inner 并清理状态。 */
+
+
             @Override
+
+
             public void dispose() {
                 DisposableHelper.dispose(this);
             }

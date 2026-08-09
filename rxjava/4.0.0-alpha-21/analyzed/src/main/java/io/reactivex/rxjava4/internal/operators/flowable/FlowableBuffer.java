@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+按固定计数 size 或 skip 将上游元素收集到 Collection 后批量发射。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -26,6 +31,16 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableBuffer — 意图说明
+
+BufferExact/Skip/Overlap 等缓冲订阅者实现。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * BufferExact/Skip/Overlap 等缓冲订阅者实现。
+ */
 public final class FlowableBuffer<T, C extends Collection<? super T>> extends AbstractFlowableWithUpstream<T, C> {
     final int size;
 
@@ -40,7 +55,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
         this.bufferSupplier = bufferSupplier;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     public void subscribeActual(Subscriber<? super C> s) {
         if (size == skip) {
             source.subscribe(new PublisherBufferExactSubscriber<>(s, size, bufferSupplier));
@@ -50,6 +70,9 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             source.subscribe(new PublisherBufferOverlappingSubscriber<>(s, size, skip, bufferSupplier));
         }
     }
+
+    /** 内部 PublisherBufferExactSubscriber。 */
+
 
     static final class PublisherBufferExactSubscriber<T, C extends Collection<? super T>>
     implements FlowableSubscriber<T>, Subscription {
@@ -74,19 +97,34 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             this.bufferSupplier = bufferSupplier;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 upstream.request(BackpressureHelper.multiplyCap(n, size));
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             upstream.cancel();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -95,7 +133,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done) {
                 return;
@@ -128,7 +171,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (done) {
                 RxJavaPlugins.onError(t);
@@ -139,7 +187,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             downstream.onError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (done) {
                 return;
@@ -155,6 +208,9 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             downstream.onComplete();
         }
     }
+
+    /** 内部 PublisherBufferSkipSubscriber。 */
+
 
     static final class PublisherBufferSkipSubscriber<T, C extends Collection<? super T>>
     extends AtomicInteger
@@ -187,7 +243,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             this.bufferSupplier = bufferSupplier;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 if (get() == 0 && compareAndSet(0, 1)) {
@@ -204,12 +265,22 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             upstream.cancel();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -218,7 +289,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done) {
                 return;
@@ -256,7 +332,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             index = i;
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (done) {
                 RxJavaPlugins.onError(t);
@@ -269,7 +350,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             downstream.onError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (done) {
                 return;
@@ -286,6 +372,9 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             downstream.onComplete();
         }
     }
+
+    /** 内部 PublisherBufferOverlappingSubscriber。 */
+
 
     static final class PublisherBufferOverlappingSubscriber<T, C extends Collection<? super T>>
     extends AtomicLong
@@ -331,7 +420,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             return cancelled;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 if (QueueDrainHelper.postCompleteRequest(n, downstream, buffers, this, this)) {
@@ -353,13 +447,23 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             cancelled = true;
             upstream.cancel();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -368,7 +472,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done) {
                 return;
@@ -415,7 +524,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             index = i;
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (done) {
                 RxJavaPlugins.onError(t);
@@ -428,7 +542,12 @@ public final class FlowableBuffer<T, C extends Collection<? super T>> extends Ab
             downstream.onError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (done) {
                 return;

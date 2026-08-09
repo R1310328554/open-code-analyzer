@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+自动连接上游并缓存事件，支持多播 replay 与主动终止连接。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -23,8 +28,15 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableCache — 意图说明
+
+Multicaster 链表缓存事件并向新 Subscriber replay。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * An observable which auto-connects to another observable, caches the elements
+ * 自动连接上游并缓存元素，
  * from that observable but allows terminating the connection and completing the cache.
  *
  * @param <T> the source element type
@@ -78,7 +90,12 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
         this.multicaster = new Multicaster<>(capacityHint, n);
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super T> t) {
         CacheSubscription<T> consumer = new CacheSubscription<>(t, multicaster, head);
         t.onSubscribe(consumer);
@@ -114,6 +131,9 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
     /* public */ long cachedEventCount() {
         return multicaster.size;
     }
+
+    /** 内部 Multicaster。 */
+
 
     static final class Multicaster<T> extends AtomicReference<CacheSubscription<T>[]>
     implements FlowableSubscriber<T> {
@@ -305,12 +325,22 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
             }
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             s.request(Long.MAX_VALUE);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done) {
                 return;
@@ -334,7 +364,10 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
         }
 
         @SuppressWarnings("unchecked")
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
         @Override
+
         public void onError(Throwable t) {
             if (done) {
                 RxJavaPlugins.onError(t);
@@ -350,7 +383,10 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
         }
 
         @SuppressWarnings("unchecked")
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
         @Override
+
         public void onComplete() {
             if (done) {
                 return;
@@ -369,6 +405,8 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
      * {@code this} holds the work-in-progress counter for the serialized replay.
      * @param <T> the value type
      */
+    /** 内部 CacheSubscription。 */
+
     static final class CacheSubscription<T> extends AtomicInteger
     implements Subscription {
 
@@ -401,7 +439,12 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
             this.requested = new AtomicLong();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.addCancel(requested, n);
@@ -409,7 +452,12 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (requested.getAndSet(Long.MIN_VALUE) != Long.MIN_VALUE) {
                 parent.remove(this);
@@ -422,6 +470,8 @@ public final class FlowableCache<T> extends AbstractFlowableWithUpstream<T, T> {
      * part of a linked-node-list structure.
      * @param <T> the element type
      */
+    /** 内部 Node。 */
+
     static final class Node<T> {
 
         /**

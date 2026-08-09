@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+ConcatMap 的 Scheduler 变体：inner 订阅与事件在指定 Scheduler 上调度。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -29,6 +34,16 @@ import io.reactivex.rxjava4.operators.QueueSubscription;
 import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.operators.SpscArrayQueue;
 
+/* ===== [OCA 中文解析] =====
+class FlowableConcatMapScheduler — 意图说明
+
+在 Worker 上调度 inner 订阅与 drain。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * 在 Worker 上调度 inner 订阅与 drain。
+ */
 public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWithUpstream<T, R> {
 
     final Function<? super T, ? extends Publisher<? extends R>> mapper;
@@ -49,7 +64,12 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
         this.scheduler = scheduler;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super R> s) {
         switch (errorMode) {
         case BOUNDARY:
@@ -167,12 +187,16 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
         }
 
         @Override
-        public final void innerComplete() {
+        public final /** inner 完成：更新状态并继续 drain/切换。 */
+ void innerComplete() {
             active = false;
             schedule();
         }
 
     }
+
+    /** 内部 ConcatMapImmediate。 */
+
 
     static final class ConcatMapImmediate<T, R>
     extends BaseConcatMapSubscriber<T, R> {
@@ -197,7 +221,12 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
             downstream.onSubscribe(this);
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (errors.tryAddThrowableOrReport(t)) {
                 inner.cancel();
@@ -226,7 +255,8 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
         }
 
         @Override
-        public void innerError(Throwable e) {
+        public /** inner 错误：按 delayError 策略合并或立即终止。 */
+ void innerError(Throwable e) {
             if (errors.tryAddThrowableOrReport(e)) {
                 upstream.cancel();
 
@@ -237,12 +267,22 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
             }
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             inner.request(n);
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -366,6 +406,9 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
         }
     }
 
+    /** 内部 ConcatMapDelayed。 */
+
+
     static final class ConcatMapDelayed<T, R>
     extends BaseConcatMapSubscriber<T, R> {
 
@@ -389,7 +432,12 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
             downstream.onSubscribe(this);
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (errors.tryAddThrowableOrReport(t)) {
                 done = true;
@@ -403,7 +451,8 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
         }
 
         @Override
-        public void innerError(Throwable e) {
+        public /** inner 错误：按 delayError 策略合并或立即终止。 */
+ void innerError(Throwable e) {
             if (errors.tryAddThrowableOrReport(e)) {
                 if (!veryEnd) {
                     upstream.cancel();
@@ -414,12 +463,22 @@ public final class FlowableConcatMapScheduler<T, R> extends AbstractFlowableWith
             }
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             inner.request(n);
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
