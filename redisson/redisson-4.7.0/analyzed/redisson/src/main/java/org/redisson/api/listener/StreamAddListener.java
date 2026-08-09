@@ -18,10 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>xadd</b> event
- * published by Valkey or Redis when an element added into Stream.
+ * 监听 Valkey 或 Redis 发布的流<b>追加条目</b>（xadd）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain Et letters
+ * 当新元素被写入 Stream 时触发；需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code t} 字母。
  *
  * @author Nikita Koksharov
  */
@@ -29,9 +28,9 @@ import org.redisson.api.ObjectListener;
 public interface StreamAddListener extends ObjectListener {
 
     /**
-     * Invoked when a new entry is added to RStream object
+     * 当新条目被添加到 {@link org.redisson.api.RStream} 对象时触发。
      *
-     * @param name object name
+     * @param name 对象名称（键名）
      */
     void onAdd(String name);
 

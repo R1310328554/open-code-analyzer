@@ -18,21 +18,21 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>expired</b> event of {@link org.redisson.api.RSetCache} value.
+ * 监听 {@link org.redisson.api.RSetCache} 中带 TTL 的集合成员<b>过期</b>（expired）键空间事件。
  * <p>
- * Triggered when a value stored with a time to live is removed by the eviction process.
+ * 当设置了生存时间的成员被 Redis 淘汰进程移除时触发。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 集合元素类型
  */
 @FunctionalInterface
 public interface SetExpiredListener<V> extends ObjectListener {
 
     /**
-     * Invoked when value stored in RSetCache object expires.
+     * 当 {@link org.redisson.api.RSetCache} 中的成员因 TTL 到期而被移除时触发。
      *
-     * @param value expired value
+     * @param value 已过期的成员值
      */
     void onExpired(V value);
 

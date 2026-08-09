@@ -18,9 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>set</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的集合<b>整体赋值</b>（set）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain E$ letters
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code $} 字母。
  * 
  * @author Nikita Koksharov
  *
@@ -29,9 +29,9 @@ import org.redisson.api.ObjectListener;
 public interface SetObjectListener extends ObjectListener {
 
     /**
-     * Invoked on set object event
+     * 当集合对象被整体赋值或覆盖时触发。
      * 
-     * @param name - name of object
+     * @param name 对象名称（键名）
      */
     void onSet(String name);
     

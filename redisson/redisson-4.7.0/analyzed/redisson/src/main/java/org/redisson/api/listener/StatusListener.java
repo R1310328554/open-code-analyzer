@@ -18,7 +18,9 @@ package org.redisson.api.listener;
 import java.util.EventListener;
 
 /**
- * Listener for Valkey or Redis PubSub channel status changes
+ * 监听 Valkey 或 Redis Pub/Sub 频道订阅状态变更。
+ * <p>
+ * 在订阅成功、取消订阅以及重连或故障转移过程中触发回调。
  *
  * @author Nikita Koksharov
  *
@@ -27,17 +29,18 @@ import java.util.EventListener;
 public interface StatusListener extends EventListener {
 
     /**
-     * Executes then Redisson successfully subscribed to channel.
-     * Invoked during re-connection or failover process
+     * Redisson 成功订阅频道时调用。
+     * <p>
+     * 在重连或故障转移过程中也会触发。
      * 
-     * @param channel to subscribe
+     * @param channel 已订阅的频道名称
      */
     void onSubscribe(String channel);
 
     /**
-     * Executes then Redisson successfully unsubscribed from channel.
+     * Redisson 成功取消频道订阅时调用。
      * 
-     * @param channel to unsubscribe
+     * @param channel 已取消订阅的频道名称
      */
     void onUnsubscribe(String channel);
 

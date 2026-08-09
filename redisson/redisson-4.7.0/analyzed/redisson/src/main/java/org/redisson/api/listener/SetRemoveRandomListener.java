@@ -18,9 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>spop</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的集合<b>随机弹出</b>（spop）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain Es letters
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code s} 字母。
  *
  * @author Nikita Koksharov
  */
@@ -28,9 +28,9 @@ import org.redisson.api.ObjectListener;
 public interface SetRemoveRandomListener extends ObjectListener {
 
     /**
-     * Invoked when value randomly removed from RSet object
+     * 当成员被随机从 {@link org.redisson.api.RSet} 对象中弹出时触发。
      *
-     * @param name object name
+     * @param name 对象名称（键名）
      */
     void onRandomRemove(String name);
 
