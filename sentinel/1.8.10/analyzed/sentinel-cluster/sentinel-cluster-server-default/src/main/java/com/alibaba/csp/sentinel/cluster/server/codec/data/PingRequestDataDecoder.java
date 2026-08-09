@@ -20,6 +20,8 @@ import com.alibaba.csp.sentinel.cluster.codec.EntityDecoder;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * Ping 请求数据解码器，读取长度前缀的字符串 payload。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

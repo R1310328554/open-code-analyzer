@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.cluster.codec.EntityWriter;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 响应 payload 写入器注册表，按消息类型查找 {@link EntityWriter}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -30,6 +32,7 @@ public final class ResponseDataWriterRegistry {
 
     private static final Map<Integer, EntityWriter<Object, ByteBuf>> WRITER_MAP = new HashMap<>();
 
+    /** 注册指定类型的 payload 写入器；类型已存在时返回 false。 */
     public static <T> boolean addWriter(int type, EntityWriter<T, ByteBuf> writer) {
         if (WRITER_MAP.containsKey(type)) {
             return false;
@@ -38,10 +41,12 @@ public final class ResponseDataWriterRegistry {
         return true;
     }
 
+    /** 按消息类型获取 payload 写入器。 */
     public static EntityWriter<Object, ByteBuf> getWriter(int type) {
         return WRITER_MAP.get(type);
     }
 
+    /** 移除指定类型的 payload 写入器。 */
     public static boolean remove(int type) {
         return WRITER_MAP.remove(type) != null;
     }

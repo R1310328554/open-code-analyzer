@@ -22,7 +22,7 @@ import io.netty.buffer.ByteBuf;
 
 /**
  * <p>
- * Decoder for {@link FlowRequestData} from {@code ByteBuf} stream. The layout:
+ * 从 {@code ByteBuf} 流解码 {@link FlowRequestData}，字段布局如下：
  * </p>
  * <pre>
  * | flow ID (8) | count (4) | priority flag (1) |

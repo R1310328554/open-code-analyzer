@@ -26,6 +26,8 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 默认集群响应实体写入器，先写响应头再按类型委托 {@link ResponseDataWriterRegistry} 序列化 payload。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -37,6 +39,7 @@ public class DefaultResponseEntityWriter implements ResponseEntityWriter<Cluster
         EntityWriter<Object, ByteBuf> responseDataWriter = ResponseDataWriterRegistry.getWriter(type);
 
         if (responseDataWriter == null) {
+            // 找不到匹配 writer 时返回 BAD 状态。
             writeHead(response.setStatus(ClusterConstants.RESPONSE_STATUS_BAD), out);
             RecordLog.warn("[NettyResponseEncoder] Cannot find matching writer for type <{}>", response.getType());
             return;
@@ -45,6 +48,7 @@ public class DefaultResponseEntityWriter implements ResponseEntityWriter<Cluster
         responseDataWriter.writeTo(response.getData(), out);
     }
 
+    /** 写入响应头：请求 id、消息类型与状态码。 */
     private void writeHead(Response response, ByteBuf out) {
         out.writeInt(response.getId());
         out.writeByte(response.getType());

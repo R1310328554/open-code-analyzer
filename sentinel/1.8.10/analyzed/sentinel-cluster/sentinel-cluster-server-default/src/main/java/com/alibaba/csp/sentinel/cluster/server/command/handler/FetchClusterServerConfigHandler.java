@@ -26,6 +26,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.fastjson.JSONObject;
 
 /**
+ * 获取集群服务端配置的命令处理器，支持全局配置与命名空间级流控配置。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -41,6 +43,7 @@ public class FetchClusterServerConfigHandler implements CommandHandler<String> {
         return namespaceConfigResult(namespace);
     }
 
+    /** 返回指定命名空间的流控配置 JSON。 */
     private CommandResponse<String> namespaceConfigResult(/*@NonEmpty*/ String namespace) {
         ServerFlowConfig flowConfig = new ServerFlowConfig()
             .setExceedCount(ClusterServerConfigManager.getExceedCount(namespace))
@@ -52,6 +55,7 @@ public class FetchClusterServerConfigHandler implements CommandHandler<String> {
         return CommandResponse.ofSuccess(config.toJSONString());
     }
 
+    /** 返回全局传输、流控配置及已注册命名空间集合。 */
     private CommandResponse<String> globalConfigResult() {
         ServerTransportConfig transportConfig = new ServerTransportConfig()
             .setPort(ClusterServerConfigManager.getPort())

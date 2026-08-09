@@ -27,6 +27,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 /**
+ * Netty 入站请求解码器，委托全局 {@link RequestEntityDecoder} 将 {@link ByteBuf} 转为 {@link Request}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -41,7 +43,7 @@ public class NettyRequestDecoder extends ByteToMessageDecoder {
             return;
         }
 
-        // TODO: handle decode error here.
+        // TODO：此处应处理解码错误。
         Request request = requestDecoder.decode(in);
         if (request != null) {
             out.add(request);

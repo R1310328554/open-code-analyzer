@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.cluster.codec.EntityDecoder;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 请求 payload 解码器注册表，按消息类型查找 {@link EntityDecoder}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -30,6 +32,7 @@ public final class RequestDataDecodeRegistry {
 
     private static final Map<Integer, EntityDecoder<ByteBuf, ?>> DECODER_MAP = new HashMap<>();
 
+    /** 注册指定类型的 payload 解码器；类型已存在时返回 false。 */
     public static boolean addDecoder(int type, EntityDecoder<ByteBuf, ?> decoder) {
         if (DECODER_MAP.containsKey(type)) {
             return false;
@@ -38,10 +41,12 @@ public final class RequestDataDecodeRegistry {
         return true;
     }
 
+    /** 按消息类型获取 payload 解码器。 */
     public static EntityDecoder<ByteBuf, Object> getDecoder(int type) {
         return (EntityDecoder<ByteBuf, Object>)DECODER_MAP.get(type);
     }
 
+    /** 移除指定类型的 payload 解码器。 */
     public static boolean removeDecoder(int type) {
         return DECODER_MAP.remove(type) != null;
     }

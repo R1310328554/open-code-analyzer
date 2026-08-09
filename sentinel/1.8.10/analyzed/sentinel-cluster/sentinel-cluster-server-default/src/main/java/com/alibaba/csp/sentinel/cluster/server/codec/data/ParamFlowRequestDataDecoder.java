@@ -25,6 +25,8 @@ import com.alibaba.csp.sentinel.cluster.request.data.ParamFlowRequestData;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 热点参数流控请求数据解码器，解析 flowId、count 及变长参数列表。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  * @since 1.4.0
@@ -52,6 +54,7 @@ public class ParamFlowRequestDataDecoder implements EntityDecoder<ByteBuf, Param
         return null;
     }
 
+    /** 按类型标记解码单个参数值并追加到列表。 */
     private boolean decodeParam(ByteBuf source, List<Object> params) {
         byte paramType = source.readByte();
 
@@ -63,7 +66,7 @@ public class ParamFlowRequestDataDecoder implements EntityDecoder<ByteBuf, Param
                 int length = source.readInt();
                 byte[] bytes = new byte[length];
                 source.readBytes(bytes);
-                // TODO: take care of charset?
+                // TODO：需注意字符集？
                 params.add(new String(bytes));
                 return true;
             case ClusterConstants.PARAM_TYPE_BOOLEAN:

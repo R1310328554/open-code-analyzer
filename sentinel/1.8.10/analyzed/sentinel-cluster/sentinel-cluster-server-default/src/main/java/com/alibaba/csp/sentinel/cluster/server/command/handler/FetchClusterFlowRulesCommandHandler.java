@@ -24,6 +24,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 获取集群流控规则的命令处理器；未指定 namespace 时返回全部规则。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

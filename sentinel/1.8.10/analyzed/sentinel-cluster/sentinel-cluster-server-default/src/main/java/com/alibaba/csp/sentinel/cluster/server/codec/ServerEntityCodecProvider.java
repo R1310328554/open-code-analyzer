@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
+ * 集群服务端编解码 SPI 提供者，在类加载时解析并缓存全局请求解码器与响应写入器。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -33,6 +35,7 @@ public final class ServerEntityCodecProvider {
         resolveInstance();
     }
 
+    /** 通过 SPI 加载 {@link ResponseEntityWriter} 与 {@link RequestEntityDecoder} 实例。 */
     private static void resolveInstance() {
         ResponseEntityWriter writer = SpiLoader.of(ResponseEntityWriter.class).loadFirstInstance();
         if (writer == null) {
@@ -52,10 +55,12 @@ public final class ServerEntityCodecProvider {
         }
     }
 
+    /** @return 全局请求实体解码器，未解析成功时为 null */
     public static RequestEntityDecoder getRequestEntityDecoder() {
         return requestEntityDecoder;
     }
 
+    /** @return 全局响应实体写入器，未解析成功时为 null */
     public static ResponseEntityWriter getResponseEntityWriter() {
         return responseEntityWriter;
     }

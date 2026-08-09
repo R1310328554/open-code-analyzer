@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.cluster.response.data.FlowTokenResponseData;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 流控令牌响应数据写入器，序列化剩余配额（remainingCount）与等待时间（waitInMs）。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

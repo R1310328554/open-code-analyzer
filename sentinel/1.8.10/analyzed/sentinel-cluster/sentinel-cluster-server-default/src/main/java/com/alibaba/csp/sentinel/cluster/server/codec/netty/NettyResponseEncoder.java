@@ -29,6 +29,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
+ * Netty 出站响应编码器，委托全局 {@link ResponseEntityWriter} 将 {@link ClusterResponse} 写入 {@link ByteBuf}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -47,6 +49,7 @@ public class NettyResponseEncoder extends MessageToByteEncoder<ClusterResponse> 
     }
 
 
+    /** 无法解析全局 writer 时，仅写入 BAD 状态响应头。 */
     private void writeBadStatusHead(Response response, ByteBuf out) {
         out.writeInt(response.getId());
         out.writeByte(ClusterConstants.RESPONSE_STATUS_BAD);

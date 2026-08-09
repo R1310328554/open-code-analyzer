@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * Ping 响应数据写入器，将整型状态码写入 {@link ByteBuf}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

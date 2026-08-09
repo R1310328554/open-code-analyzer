@@ -24,6 +24,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 获取集群服务端指标快照的命令处理器，namespace 参数必填。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
