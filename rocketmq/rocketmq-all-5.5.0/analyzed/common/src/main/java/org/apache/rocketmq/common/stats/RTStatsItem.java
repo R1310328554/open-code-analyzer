@@ -21,19 +21,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 
 /**
- * A StatItem for response time, the only difference between from StatsItem is it has a different log output.
+ * 响应时间（RT）统计项：继承 {@link StatsItem}，日志输出使用 AVGRT 而非 TPS/SUM。
  */
 public class RTStatsItem extends StatsItem {
 
+    /** 构造 RT 统计项。 */
     public RTStatsItem(String statsName, String statsKey, ScheduledExecutorService scheduledExecutorService,
         Logger logger) {
         super(statsName, statsKey, scheduledExecutorService, logger);
     }
 
-    /**
-     *   For Response Time stat Item, the print detail should be a little different, TPS and SUM makes no sense.
-     *   And we give a name "AVGRT" rather than AVGPT for value getAvgpt()
-      */
+    /** RT 统计打印 TIMES 与 AVGRT，不含 SUM/TPS。 */
     @Override
     protected String statPrintDetail(StatsSnapshot ss) {
         return String.format("TIMES: %d AVGRT: %.2f", ss.getTimes(), ss.getAvgpt());

@@ -34,10 +34,14 @@ import org.apache.rocketmq.common.utils.ThreadUtils;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 线程池监控中心：创建受监控的线程池并周期性输出队列水位，必要时打印 jstack。
+ */
 public class ThreadPoolMonitor {
     private static Logger jstackLogger = LoggerFactory.getLogger(ThreadPoolMonitor.class);
     private static Logger waterMarkLogger = LoggerFactory.getLogger(ThreadPoolMonitor.class);
 
+    /** 已注册监控的全部线程池包装器。 */
     private static final List<ThreadPoolWrapper> MONITOR_EXECUTOR = new CopyOnWriteArrayList<>();
     private static final ScheduledExecutorService MONITOR_SCHEDULED = ThreadUtils.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("ThreadPoolMonitor-%d").build()
@@ -48,6 +52,7 @@ public class ThreadPoolMonitor {
     private static volatile long jstackPeriodTime = 60000;
     private static volatile long jstackTime = System.currentTimeMillis();
 
+    /** 配置 jstack/水位日志 Logger 及打印间隔。 */
     public static void config(Logger jstackLoggerConfig, Logger waterMarkLoggerConfig,
         boolean enablePrintJstack, long jstackPeriodTimeConfig, long threadPoolStatusPeriodTimeConfig) {
         jstackLogger = jstackLoggerConfig;
@@ -57,6 +62,7 @@ public class ThreadPoolMonitor {
         jstackPeriodTime = jstackPeriodTimeConfig;
     }
 
+    /** 创建带默认 DiscardOldest 拒绝策略的受监控线程池。 */
     public static ThreadPoolExecutor createAndMonitor(int corePoolSize,
                                                       int maximumPoolSize,
                                                       long keepAliveTime,
@@ -137,6 +143,7 @@ public class ThreadPoolMonitor {
         return executor;
     }
 
+    /** 遍历所有注册线程池，输出各监控指标并在超阈值时打印 jstack。 */
     public static void logThreadPoolStatus() {
         for (ThreadPoolWrapper threadPoolWrapper : MONITOR_EXECUTOR) {
             List<ThreadPoolStatusMonitor> monitors = threadPoolWrapper.getStatusPrinters();
@@ -157,11 +164,13 @@ public class ThreadPoolMonitor {
         }
     }
 
+    /** 启动周期性线程池状态采集任务。 */
     public static void init() {
         MONITOR_SCHEDULED.scheduleAtFixedRate(ThreadPoolMonitor::logThreadPoolStatus, 20,
                 threadPoolStatusPeriodTime, TimeUnit.MILLISECONDS);
     }
 
+    /** 关闭监控调度线程。 */
     public static void shutdown() {
         MONITOR_SCHEDULED.shutdown();
     }

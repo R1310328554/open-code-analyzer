@@ -28,8 +28,12 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 统计项集合：按 statsKey 管理 {@link StatsItem}/{@link RTStatsItem}，统一采样与打印调度。
+ */
 public class StatsItemSet {
     private static final Logger COMMERCIAL_LOG = LoggerFactory.getLogger(LoggerName.COMMERCIAL_LOGGER_NAME);
+    /** statsKey → 统计项映射表。 */
     private final ConcurrentMap<String/* key */, StatsItem> statsItemTable =
         new ConcurrentHashMap<>(128);
 
@@ -38,6 +42,7 @@ public class StatsItemSet {
 
     private final Logger logger;
 
+    /** 构造集合并立即注册采样与打印定时任务。 */
     public StatsItemSet(String statsName, ScheduledExecutorService scheduledExecutorService, Logger logger) {
         this.logger = logger;
         this.statsName = statsName;
@@ -45,6 +50,7 @@ public class StatsItemSet {
         this.init();
     }
 
+    /** 注册秒/分/时采样及分钟/小时/日打印的集合级定时任务。 */
     public void init() {
 
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
@@ -156,6 +162,7 @@ public class StatsItemSet {
         }
     }
 
+    /** 对普通统计项累加 value 与 times。 */
     public void addValue(final String statsKey, final int incValue, final int incTimes) {
         StatsItem statsItem = this.getAndCreateStatsItem(statsKey);
         statsItem.getValue().add(incValue);
@@ -163,6 +170,7 @@ public class StatsItemSet {
         statsItem.setLastUpdateTimestamp(System.currentTimeMillis());
     }
 
+    /** 对 RT 统计项累加 value 与 times。 */
     public void addRTValue(final String statsKey, final int incValue, final int incTimes) {
         StatsItem statsItem = this.getAndCreateRTStatsItem(statsKey);
         statsItem.getValue().add(incValue);
@@ -170,6 +178,7 @@ public class StatsItemSet {
         statsItem.setLastUpdateTimestamp(System.currentTimeMillis());
     }
 
+    /** 删除指定 key 的统计项。 */
     public void delValue(final String statsKey) {
         StatsItem statsItem = this.statsItemTable.get(statsKey);
         if (null != statsItem) {
@@ -177,6 +186,7 @@ public class StatsItemSet {
         }
     }
 
+    /** 删除 key 以 statsKey+separator 为前缀的统计项。 */
     public void delValueByPrefixKey(final String statsKey, String separator) {
         Iterator<Entry<String, StatsItem>> it = this.statsItemTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -207,14 +217,17 @@ public class StatsItemSet {
         }
     }
 
+    /** 获取或创建普通 {@link StatsItem}。 */
     public StatsItem getAndCreateStatsItem(final String statsKey) {
         return getAndCreateItem(statsKey, false);
     }
 
+    /** 获取或创建 {@link RTStatsItem}。 */
     public StatsItem getAndCreateRTStatsItem(final String statsKey) {
         return getAndCreateItem(statsKey, true);
     }
 
+    /** 按 rtItem 标志懒创建 StatsItem 或 RTStatsItem。 */
     public StatsItem getAndCreateItem(final String statsKey, boolean rtItem) {
         StatsItem statsItem = this.statsItemTable.get(statsKey);
         if (null == statsItem) {
@@ -234,6 +247,7 @@ public class StatsItemSet {
         return statsItem;
     }
 
+    /** 读取指定 key 的分钟级快照，不存在则返回空快照。 */
     public StatsSnapshot getStatsDataInMinute(final String statsKey) {
         StatsItem statsItem = this.statsItemTable.get(statsKey);
         if (null != statsItem) {
@@ -242,6 +256,7 @@ public class StatsItemSet {
         return new StatsSnapshot();
     }
 
+    /** 读取指定 key 的小时级快照。 */
     public StatsSnapshot getStatsDataInHour(final String statsKey) {
         StatsItem statsItem = this.statsItemTable.get(statsKey);
         if (null != statsItem) {
@@ -250,6 +265,7 @@ public class StatsItemSet {
         return new StatsSnapshot();
     }
 
+    /** 读取指定 key 的日级快照。 */
     public StatsSnapshot getStatsDataInDay(final String statsKey) {
         StatsItem statsItem = this.statsItemTable.get(statsKey);
         if (null != statsItem) {
@@ -258,11 +274,13 @@ public class StatsItemSet {
         return new StatsSnapshot();
     }
 
+    /** 直接查找统计项，不存在返回 null。 */
     public StatsItem getStatsItem(final String statsKey) {
         return this.statsItemTable.get(statsKey);
     }
 
 
+    /** 清理超过 maxStatsIdleTimeInMinutes 未更新的空闲统计项。 */
     public void cleanResource(int maxStatsIdleTimeInMinutes) {
         COMMERCIAL_LOG.info("CleanStatisticItemOld: kind:{}, size:{}", statsName, this.statsItemTable.size());
         Iterator<Entry<String, StatsItem>> it = this.statsItemTable.entrySet().iterator();

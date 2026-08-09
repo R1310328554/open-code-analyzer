@@ -17,41 +17,56 @@
 
 package org.apache.rocketmq.common.stats;
 
+/**
+ * 统计快照：保存某一时间窗口内的 SUM、TPS、调用次数与平均耗时。
+ */
 public class StatsSnapshot {
+    /** 窗口内累计值。 */
     private long sum;
+    /** 每秒吞吐量。 */
     private double tps;
 
+    /** 窗口内调用次数。 */
     private long times;
+    /** 平均单次耗时（per time）。 */
     private double avgpt;
 
+    /** 返回累计值。 */
     public long getSum() {
         return sum;
     }
 
+    /** 设置累计值。 */
     public void setSum(long sum) {
         this.sum = sum;
     }
 
+    /** 返回 TPS。 */
     public double getTps() {
         return tps;
     }
 
+    /** 设置 TPS。 */
     public void setTps(double tps) {
         this.tps = tps;
     }
 
+    /** 返回平均耗时。 */
     public double getAvgpt() {
         return avgpt;
     }
 
+    /** 设置平均耗时。 */
     public void setAvgpt(double avgpt) {
         this.avgpt = avgpt;
     }
 
+    /** 返回调用次数。 */
     public long getTimes() {
         return times;
     }
 
+    /** 设置调用次数。 */
     public void setTimes(long times) {
         this.times = times;
     }

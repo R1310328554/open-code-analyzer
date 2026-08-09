@@ -16,10 +16,15 @@
  */
 package org.apache.rocketmq.common.sysflag;
 
+/**
+ * 订阅系统标志：标记消费组是否属于单元化（Unit）部署。
+ */
 public class SubscriptionSysFlag {
 
+    /** 单元化消费组标志。 */
     private final static int FLAG_UNIT = 0x1 << 0;
 
+    /** 根据 unit 参数构建订阅系统标志。 */
     public static int buildSysFlag(final boolean unit) {
         int sysFlag = 0;
 
@@ -30,14 +35,17 @@ public class SubscriptionSysFlag {
         return sysFlag;
     }
 
+    /** 设置单元化标志位。 */
     public static int setUnitFlag(final int sysFlag) {
         return sysFlag | FLAG_UNIT;
     }
 
+    /** 清除单元化标志位。 */
     public static int clearUnitFlag(final int sysFlag) {
         return sysFlag & (~FLAG_UNIT);
     }
 
+    /** 是否包含单元化标志。 */
     public static boolean hasUnitFlag(final int sysFlag) {
         return (sysFlag & FLAG_UNIT) == FLAG_UNIT;
     }

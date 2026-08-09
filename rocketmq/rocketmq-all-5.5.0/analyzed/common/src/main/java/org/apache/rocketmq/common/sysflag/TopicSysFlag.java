@@ -16,12 +16,18 @@
  */
 package org.apache.rocketmq.common.sysflag;
 
+/**
+ * Topic 系统标志：标记 Topic 是否为单元化 Topic 及是否含单元订阅。
+ */
 public class TopicSysFlag {
 
+    /** 单元化 Topic 标志。 */
     private final static int FLAG_UNIT = 0x1 << 0;
 
+    /** Topic 含单元订阅标志。 */
     private final static int FLAG_UNIT_SUB = 0x1 << 1;
 
+    /** 根据 unit 与 hasUnitSub 构建 Topic 系统标志。 */
     public static int buildSysFlag(final boolean unit, final boolean hasUnitSub) {
         int sysFlag = 0;
 
@@ -36,26 +42,32 @@ public class TopicSysFlag {
         return sysFlag;
     }
 
+    /** 设置单元化 Topic 标志。 */
     public static int setUnitFlag(final int sysFlag) {
         return sysFlag | FLAG_UNIT;
     }
 
+    /** 清除单元化 Topic 标志。 */
     public static int clearUnitFlag(final int sysFlag) {
         return sysFlag & (~FLAG_UNIT);
     }
 
+    /** 是否为单元化 Topic。 */
     public static boolean hasUnitFlag(final int sysFlag) {
         return (sysFlag & FLAG_UNIT) == FLAG_UNIT;
     }
 
+    /** 设置单元订阅标志。 */
     public static int setUnitSubFlag(final int sysFlag) {
         return sysFlag | FLAG_UNIT_SUB;
     }
 
+    /** 清除单元订阅标志。 */
     public static int clearUnitSubFlag(final int sysFlag) {
         return sysFlag & (~FLAG_UNIT_SUB);
     }
 
+    /** 是否含单元订阅。 */
     public static boolean hasUnitSubFlag(final int sysFlag) {
         return (sysFlag & FLAG_UNIT_SUB) == FLAG_UNIT_SUB;
     }

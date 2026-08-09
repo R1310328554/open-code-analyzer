@@ -19,11 +19,17 @@ package org.apache.rocketmq.common.thread;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
+/**
+ * 线程池状态监控接口：定义指标名称、当前值及 jstack 触发条件。
+ */
 public interface ThreadPoolStatusMonitor {
 
+    /** 返回监控指标描述名。 */
     String describe();
 
+    /** 读取线程池当前指标值。 */
     double value(ThreadPoolExecutor executor);
 
+    /** 根据当前指标值判断是否需要打印 jstack。 */
     boolean needPrintJstack(ThreadPoolExecutor executor, double value);
 }

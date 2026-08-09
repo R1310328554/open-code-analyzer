@@ -25,15 +25,23 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.rocketmq.common.UtilAll;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 
+/**
+ * 滑动窗口统计项：秒/分/时/日多级采样，计算 TPS、SUM 与平均耗时。
+ */
 public class StatsItem {
+    /** 累计统计值（如字节数或耗时总和）。 */
     private final LongAdder value = new LongAdder();
 
+    /** 累计调用次数。 */
     private final LongAdder times = new LongAdder();
 
+    /** 分钟级采样快照链表（约 70 秒窗口）。 */
     private final LinkedList<CallSnapshot> csListMinute = new LinkedList<>();
 
+    /** 小时级采样快照链表。 */
     private final LinkedList<CallSnapshot> csListHour = new LinkedList<>();
 
+    /** 日级采样快照链表。 */
     private final LinkedList<CallSnapshot> csListDay = new LinkedList<>();
 
     private final String statsName;
@@ -43,6 +51,7 @@ public class StatsItem {
 
     private final Logger logger;
 
+    /** 构造统计项并绑定调度器与日志。 */
     public StatsItem(String statsName, String statsKey, ScheduledExecutorService scheduledExecutorService, Logger logger) {
         this.statsName = statsName;
         this.statsKey = statsKey;
@@ -50,6 +59,7 @@ public class StatsItem {
         this.logger = logger;
     }
 
+    /** 根据快照链表首尾差值计算 SUM、TPS、AVGPT 与 TIMES。 */
     private static StatsSnapshot computeStatsData(final LinkedList<CallSnapshot> csList) {
         StatsSnapshot statsSnapshot = new StatsSnapshot();
         synchronized (csList) {
@@ -78,18 +88,22 @@ public class StatsItem {
         return statsSnapshot;
     }
 
+    /** 返回分钟窗口聚合快照。 */
     public StatsSnapshot getStatsDataInMinute() {
         return computeStatsData(this.csListMinute);
     }
 
+    /** 返回小时窗口聚合快照。 */
     public StatsSnapshot getStatsDataInHour() {
         return computeStatsData(this.csListHour);
     }
 
+    /** 返回日窗口聚合快照。 */
     public StatsSnapshot getStatsDataInDay() {
         return computeStatsData(this.csListDay);
     }
 
+    /** 注册秒/分/时采样及分钟/小时/日打印的定时任务。 */
     public void init() {
 
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
@@ -153,6 +167,7 @@ public class StatsItem {
         }, Math.abs(UtilAll.computeNextMorningTimeMillis() - System.currentTimeMillis()) - 2000, 1000 * 60 * 60 * 24, TimeUnit.MILLISECONDS);
     }
 
+    /** 每 10 秒向分钟链表追加一次快照。 */
     public void samplingInSeconds() {
         synchronized (this.csListMinute) {
             if (this.csListMinute.size() == 0) {
@@ -166,6 +181,7 @@ public class StatsItem {
         }
     }
 
+    /** 每 10 分钟向小时链表追加一次快照。 */
     public void samplingInMinutes() {
         synchronized (this.csListHour) {
             if (this.csListHour.size() == 0) {
@@ -179,6 +195,7 @@ public class StatsItem {
         }
     }
 
+    /** 每小时向日链表追加一次快照。 */
     public void samplingInHour() {
         synchronized (this.csListDay) {
             if (this.csListDay.size() == 0) {
@@ -192,22 +209,26 @@ public class StatsItem {
         }
     }
 
+    /** 打印分钟级统计日志。 */
     public void printAtMinutes() {
         StatsSnapshot ss = computeStatsData(this.csListMinute);
         logger.info(String.format("[%s] [%s] Stats In One Minute, ", this.statsName, this.statsKey) + statPrintDetail(ss));
     }
 
+    /** 打印小时级统计日志。 */
     public void printAtHour() {
         StatsSnapshot ss = computeStatsData(this.csListHour);
         logger.info(String.format("[%s] [%s] Stats In One Hour, ", this.statsName, this.statsKey) + statPrintDetail(ss));
 
     }
 
+    /** 打印日级统计日志。 */
     public void printAtDay() {
         StatsSnapshot ss = computeStatsData(this.csListDay);
         logger.info(String.format("[%s] [%s] Stats In One Day, ", this.statsName, this.statsKey) + statPrintDetail(ss));
     }
 
+    /** 格式化 SUM/TPS/AVGPT 明细，子类可覆盖。 */
     protected String statPrintDetail(StatsSnapshot ss) {
         return String.format("SUM: %d TPS: %.2f AVGPT: %.2f",
                 ss.getSum(),
@@ -240,6 +261,7 @@ public class StatsItem {
     }
 }
 
+/** 某一时刻的 times 与 value 快照，用于滑动窗口差分计算。 */
 class CallSnapshot {
     private final long timestamp;
     private final long times;

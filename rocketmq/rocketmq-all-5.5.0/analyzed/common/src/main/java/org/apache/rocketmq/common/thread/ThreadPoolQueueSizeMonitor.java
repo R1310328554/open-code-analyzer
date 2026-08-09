@@ -19,24 +19,32 @@ package org.apache.rocketmq.common.thread;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
+/**
+ * 线程池队列长度监控：队列超过容量 85% 时触发 jstack 打印。
+ */
 public class ThreadPoolQueueSizeMonitor implements ThreadPoolStatusMonitor {
 
+    /** 队列最大容量，用于计算 85% 告警阈值。 */
     private final int maxQueueCapacity;
 
+    /** 指定队列容量上限构造监控器。 */
     public ThreadPoolQueueSizeMonitor(int maxQueueCapacity) {
         this.maxQueueCapacity = maxQueueCapacity;
     }
 
+    /** 监控指标名称：queueSize。 */
     @Override
     public String describe() {
         return "queueSize";
     }
 
+    /** 返回当前队列待执行任务数。 */
     @Override
     public double value(ThreadPoolExecutor executor) {
         return executor.getQueue().size();
     }
 
+    /** 队列长度超过容量 85% 时需要打印 jstack。 */
     @Override
     public boolean needPrintJstack(ThreadPoolExecutor executor, double value) {
         return value > maxQueueCapacity * 0.85;
