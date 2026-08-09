@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:32:51Z",
-  "files": [
-    "broker/src/main/java/org/apache/rocketmq/broker/longpolling/PollingHeader.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/longpolling/PollingResult.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/longpolling/PopCommandCallback.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/longpolling/PopLiteLongPollingService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/longpolling/PopRequest.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/longpolling/PullRequest.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/longpolling/PullRequestHoldService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/BrokerMetricsConstant.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/ConsumerAttr.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/InvocationStatus.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/LiteConsumerLagCalculator.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/PopMetricsConstant.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/PopMetricsManager.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/PopReviveMessageType.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/metrics/ProducerAttr.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1338,
-  "done": 135
+  "done": 150
 }
