@@ -23,17 +23,9 @@ import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
-/* ===== [OCA 中文解析] =====
-class AbstractPropertyAccessor — 意图说明
-
-class `AbstractPropertyAccessor`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/AbstractPropertyAccessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Abstract implementation of the {@link PropertyAccessor} interface.
- * Provides base implementations of all convenience methods, with the
- * implementation of actual property access left to subclasses.
+ * {@link PropertyAccessor} 接口的抽象实现。
+ * <p>为本接口上的便捷方法提供默认实现；真正的属性读写留给子类完成。
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -43,92 +35,111 @@ class `AbstractPropertyAccessor`：请结合所属模块与调用方理解其在
  */
 public abstract class AbstractPropertyAccessor extends TypeConverterSupport implements ConfigurablePropertyAccessor {
 
-	// [OCA] 字段 `extractOldValueForEditor`：类成员状态。
+	/** 是否在应用 PropertyEditor 前先取出属性的旧值（默认 false）。 */
 	private boolean extractOldValueForEditor = false;
 
-	// [OCA] 字段 `autoGrowNestedPaths`：类成员状态。
+	/** 嵌套路径上遇到 null 中间节点时，是否自动创建默认实例以继续访问（默认 false）。 */
 	private boolean autoGrowNestedPaths = false;
 
+	/**
+	 * 批量设置且 {@code ignoreUnknown=true} 时，临时抑制“属性不可写”异常的抛出。
+	 * <p>包可见，供同包访问器在真正抛出 {@link NotWritablePropertyException} 前检查。
+	 */
 	boolean suppressNotWritablePropertyException = false;
 
 
+	/**
+	 * 设置是否在应用编辑器前提取属性旧值。
+	 */
 	@Override
 	public void setExtractOldValueForEditor(boolean extractOldValueForEditor) {
 		this.extractOldValueForEditor = extractOldValueForEditor;
 	}
 
+	/**
+	 * 返回是否在应用编辑器前提取属性旧值。
+	 */
 	@Override
 	public boolean isExtractOldValueForEditor() {
 		return this.extractOldValueForEditor;
 	}
 
+	/**
+	 * 设置是否在嵌套路径上自动增长（为 null 中间节点创建默认实例）。
+	 */
 	@Override
 	public void setAutoGrowNestedPaths(boolean autoGrowNestedPaths) {
 		this.autoGrowNestedPaths = autoGrowNestedPaths;
 	}
 
+	/**
+	 * 返回是否在嵌套路径上自动增长。
+	 */
 	@Override
 	public boolean isAutoGrowNestedPaths() {
 		return this.autoGrowNestedPaths;
 	}
 
 
+	/**
+	 * 按 {@link PropertyValue} 写入单个属性（委托到名称/值重载）。
+	 */
 	@Override
 	public void setPropertyValue(PropertyValue pv) throws BeansException {
 		setPropertyValue(pv.getName(), pv.getValue());
 	}
 
+	/**
+	 * 将 Map 中的条目作为属性批量写入。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 setPropertyValues — 意图与阅读要点
-
-方法 `setPropertyValues` 复杂度较高（CCN≈12, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void setPropertyValues(Map<?, ?> map) throws BeansException {
 		setPropertyValues(new MutablePropertyValues(map));
 	}
 
+	/**
+	 * 批量写入属性；未知属性与无效嵌套路径均不忽略。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 setPropertyValues — 意图与阅读要点
-
-方法 `setPropertyValues` 复杂度较高（CCN≈12, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void setPropertyValues(PropertyValues pvs) throws BeansException {
 		setPropertyValues(pvs, false, false);
 	}
 
+	/**
+	 * 批量写入属性；可选择忽略未知（不可写）属性。
+	 * @param ignoreUnknown 为 true 时跳过 {@link NotWritablePropertyException}
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 setPropertyValues — 意图与阅读要点
-
-方法 `setPropertyValues` 复杂度较高（CCN≈12, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void setPropertyValues(PropertyValues pvs, boolean ignoreUnknown) throws BeansException {
 		setPropertyValues(pvs, ignoreUnknown, false);
 	}
 
+	/**
+	 * 批量写入属性的核心实现。
+	 * <p>逐个调用 {@link #setPropertyValue(PropertyValue)}：严重失败（如匹配字段缺失）直接抛出；
+	 * 较轻的访问异常可按策略忽略或汇总后一次性抛出。
+	 * @param pvs 待写入的属性集合
+	 * @param ignoreUnknown 为 true 时忽略不可写/未知属性
+	 * @param ignoreInvalid 为 true 时忽略嵌套路径上的 null 值异常
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 setPropertyValues — 意图与阅读要点
-
-方法 `setPropertyValues` 复杂度较高（CCN≈12, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void setPropertyValues(PropertyValues pvs, boolean ignoreUnknown, boolean ignoreInvalid)
 			throws BeansException {
 
+		// 收集单条属性访问失败，最后统一抛出批量异常
 		List<PropertyAccessException> propertyAccessExceptions = null;
+		// MutablePropertyValues 可直接取内部列表，避免再拷贝数组
 		List<PropertyValue> propertyValues = (pvs instanceof MutablePropertyValues mpvs ?
 				mpvs.getPropertyValueList() : Arrays.asList(pvs.getPropertyValues()));
 
 		if (ignoreUnknown) {
+			// 打开抑制开关，供子类在抛出 NotWritablePropertyException 前查询
 			this.suppressNotWritablePropertyException = true;
 		}
 		try {
 			for (PropertyValue pv : propertyValues) {
-				// setPropertyValue may throw any BeansException, which won't be caught
-				// here, if there is a critical failure such as no matching field.
-				// We can attempt to deal only with less serious exceptions.
+				// setPropertyValue 可能抛出任意 BeansException；若属于严重失败（例如没有匹配字段），
+				// 此处不会捕获，直接向外抛出。这里只处理相对较轻的异常。
 				try {
 					setPropertyValue(pv);
 				}
@@ -136,15 +147,16 @@ public abstract class AbstractPropertyAccessor extends TypeConverterSupport impl
 					if (!ignoreUnknown) {
 						throw ex;
 					}
-					// Otherwise, just ignore it and continue...
+					// 否则忽略该条，继续后续属性
 				}
 				catch (NullValueInNestedPathException ex) {
 					if (!ignoreInvalid) {
 						throw ex;
 					}
-					// Otherwise, just ignore it and continue...
+					// 否则忽略该条，继续后续属性
 				}
 				catch (PropertyAccessException ex) {
+					// 个别属性访问失败：先攒起来，循环结束后再抛复合异常
 					if (propertyAccessExceptions == null) {
 						propertyAccessExceptions = new ArrayList<>();
 					}
@@ -154,11 +166,12 @@ public abstract class AbstractPropertyAccessor extends TypeConverterSupport impl
 		}
 		finally {
 			if (ignoreUnknown) {
+				// 无论成功失败，都复位抑制标志，避免影响后续单次写入
 				this.suppressNotWritablePropertyException = false;
 			}
 		}
 
-		// If we encountered individual exceptions, throw the composite exception.
+		// 若存在单条访问异常，包装为批量更新异常一并抛出
 		if (propertyAccessExceptions != null) {
 			PropertyAccessException[] paeArray = propertyAccessExceptions.toArray(new PropertyAccessException[0]);
 			throw new PropertyBatchUpdateException(paeArray);
@@ -166,32 +179,30 @@ public abstract class AbstractPropertyAccessor extends TypeConverterSupport impl
 	}
 
 
-	// Redefined with public visibility.
+	/**
+	 * 重新声明为 public；默认实现返回 {@code null}，由子类按需覆盖。
+	 */
 	@Override
 	public @Nullable Class<?> getPropertyType(String propertyPath) {
 		return null;
 	}
 
 	/**
-	 * Actually get the value of a property.
-	 * @param propertyName name of the property to get the value of
-	 * @return the value of the property
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't readable
-	 * @throws PropertyAccessException if the property was valid but the
-	 * accessor method failed
+	 * 真正读取属性值（由子类实现）。
+	 * @param propertyName 要读取的属性名（可为嵌套路径）
+	 * @return 属性当前值
+	 * @throws InvalidPropertyException 属性不存在或不可读
+	 * @throws PropertyAccessException 属性合法但访问器方法执行失败
 	 */
 	@Override
 	public abstract @Nullable Object getPropertyValue(String propertyName) throws BeansException;
 
 	/**
-	 * Actually set a property value.
-	 * @param propertyName name of the property to set value of
-	 * @param value the new value
-	 * @throws InvalidPropertyException if there is no such property or
-	 * if the property isn't writable
-	 * @throws PropertyAccessException if the property was valid but the
-	 * accessor method failed or a type mismatch occurred
+	 * 真正写入属性值（由子类实现）。
+	 * @param propertyName 要写入的属性名（可为嵌套路径）
+	 * @param value 新值
+	 * @throws InvalidPropertyException 属性不存在或不可写
+	 * @throws PropertyAccessException 属性合法但访问器失败，或发生类型不匹配
 	 */
 	@Override
 	public abstract void setPropertyValue(String propertyName, @Nullable Object value) throws BeansException;

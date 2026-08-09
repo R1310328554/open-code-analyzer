@@ -5,3 +5,13 @@ spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractAut
 spring-beans/src/main/java/org/springframework/beans/factory/support/ConstructorResolver.java
 spring-beans/src/main/java/org/springframework/beans/factory/annotation/AutowiredAnnotationBeanPostProcessor.java
 spring-beans/src/main/java/org/springframework/beans/AbstractNestablePropertyAccessor.java
+spring-beans/src/main/java/org/springframework/beans/AbstractPropertyAccessor.java
+spring-beans/src/main/java/org/springframework/beans/BeanInfoFactory.java
+spring-beans/src/main/java/org/springframework/beans/BeanInstantiationException.java
+spring-beans/src/main/java/org/springframework/beans/BeanMetadataAttribute.java
+spring-beans/src/main/java/org/springframework/beans/BeanMetadataAttributeAccessor.java
+spring-beans/src/main/java/org/springframework/beans/BeanMetadataElement.java
+spring-beans/src/main/java/org/springframework/beans/BeanUtilsRuntimeHints.java
+spring-beans/src/main/java/org/springframework/beans/BeanWrapper.java
+spring-beans/src/main/java/org/springframework/beans/BeansException.java
+spring-beans/src/main/java/org/springframework/beans/ConfigurablePropertyAccessor.java

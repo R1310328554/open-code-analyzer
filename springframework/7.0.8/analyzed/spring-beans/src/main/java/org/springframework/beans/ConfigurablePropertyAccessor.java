@@ -21,11 +21,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.convert.ConversionService;
 
 /**
- * Interface that encapsulates configuration methods for a PropertyAccessor.
- * Also extends the PropertyEditorRegistry interface, which defines methods
- * for PropertyEditor management.
+ * 封装 {@link PropertyAccessor} 配置方法的接口。
+ * 同时继承 {@link PropertyEditorRegistry}，后者定义了 PropertyEditor 的管理方法。
  *
- * <p>Serves as base interface for {@link BeanWrapper}.
+ * <p>作为 {@link BeanWrapper} 的基础接口。
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -35,41 +34,40 @@ import org.springframework.core.convert.ConversionService;
 public interface ConfigurablePropertyAccessor extends PropertyAccessor, PropertyEditorRegistry, TypeConverter {
 
 	/**
-	 * Specify a {@link ConversionService} to use for converting
-	 * property values, as an alternative to JavaBeans PropertyEditors.
+	 * 指定用于转换属性值的 {@link ConversionService}，
+	 * 作为 JavaBeans PropertyEditor 的替代方案。
 	 */
 	void setConversionService(@Nullable ConversionService conversionService);
 
 	/**
-	 * Return the associated ConversionService, if any.
+	 * 返回关联的 ConversionService（若有）。
 	 */
 	@Nullable ConversionService getConversionService();
 
 	/**
-	 * Set whether to extract the old property value when applying a
-	 * property editor to a new value for a property.
+	 * 设置在将 PropertyEditor 应用于属性的新值时，
+	 * 是否先提取该属性的旧值。
 	 */
 	void setExtractOldValueForEditor(boolean extractOldValueForEditor);
 
 	/**
-	 * Return whether to extract the old property value when applying a
-	 * property editor to a new value for a property.
+	 * 返回在将 PropertyEditor 应用于属性的新值时，
+	 * 是否会先提取该属性的旧值。
 	 */
 	boolean isExtractOldValueForEditor();
 
 	/**
-	 * Set whether this instance should attempt to "auto-grow" a
-	 * nested path that contains a {@code null} value.
-	 * <p>If {@code true}, a {@code null} path location will be populated
-	 * with a default object value and traversed instead of resulting in a
-	 * {@link NullValueInNestedPathException}.
-	 * <p>Default is {@code false} on a plain accessor.
+	 * 设置当嵌套路径中存在 {@code null} 值时，
+	 * 本实例是否应尝试“自动生长”（auto-grow）该路径。
+	 * <p>若为 {@code true}，则会用默认对象值填充 {@code null} 路径位置并继续遍历，
+	 * 而不是抛出 {@link NullValueInNestedPathException}。
+	 * <p>普通 accessor 上的默认值为 {@code false}。
 	 * @since 4.1
 	 */
 	void setAutoGrowNestedPaths(boolean autoGrowNestedPaths);
 
 	/**
-	 * Return whether "auto-growing" of nested paths has been activated.
+	 * 返回嵌套路径的“自动生长”是否已启用。
 	 * @since 4.1
 	 */
 	boolean isAutoGrowNestedPaths();

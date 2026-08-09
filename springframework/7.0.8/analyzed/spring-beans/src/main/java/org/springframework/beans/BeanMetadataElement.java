@@ -19,8 +19,7 @@ package org.springframework.beans;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interface to be implemented by bean metadata elements
- * that carry a configuration source object.
+ * 由携带配置来源对象的 bean 元数据元素实现的接口。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -28,8 +27,7 @@ import org.jspecify.annotations.Nullable;
 public interface BeanMetadataElement {
 
 	/**
-	 * Return the configuration source {@code Object} for this metadata element
-	 * (may be {@code null}).
+	 * 返回此元数据元素的配置来源 {@code Object}（可能为 {@code null}）。
 	 */
 	default @Nullable Object getSource() {
 		return null;

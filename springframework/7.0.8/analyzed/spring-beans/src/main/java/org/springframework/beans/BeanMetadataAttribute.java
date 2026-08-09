@@ -22,26 +22,29 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Holder for a key-value style attribute that is part of a bean definition.
+ * Bean 定义中键值对形式属性的持有者。
  *
- * <p>Keeps track of the definition source in addition to the key-value pair.
+ * <p>除键值对本身外，还会记录该定义的来源信息。
  *
  * @author Juergen Hoeller
  * @since 2.5
  */
 public class BeanMetadataAttribute implements BeanMetadataElement {
 
+	/** 属性名称 */
 	private final String name;
 
+	/** 属性值（可能尚未完成类型转换） */
 	private final @Nullable Object value;
 
+	/** 配置来源对象 */
 	private @Nullable Object source;
 
 
 	/**
-	 * Create a new {@code AttributeValue} instance.
-	 * @param name the name of the attribute (never {@code null})
-	 * @param value the value of the attribute (possibly before type conversion)
+	 * 创建一个新的属性值实例。
+	 * @param name 属性名称（不得为 {@code null}）
+	 * @param value 属性值（可能尚未完成类型转换）
 	 */
 	public BeanMetadataAttribute(String name, @Nullable Object value) {
 		Assert.notNull(name, "Name must not be null");
@@ -51,27 +54,30 @@ public class BeanMetadataAttribute implements BeanMetadataElement {
 
 
 	/**
-	 * Return the name of the attribute.
+	 * 返回属性名称。
 	 */
 	public String getName() {
 		return this.name;
 	}
 
 	/**
-	 * Return the value of the attribute.
+	 * 返回属性值。
 	 */
 	public @Nullable Object getValue() {
 		return this.value;
 	}
 
 	/**
-	 * Set the configuration source {@code Object} for this metadata element.
-	 * <p>The exact type of the object will depend on the configuration mechanism used.
+	 * 设置该元数据元素的配置来源 {@code Object}。
+	 * <p>对象的具体类型取决于所用的配置机制。
 	 */
 	public void setSource(@Nullable Object source) {
 		this.source = source;
 	}
 
+	/**
+	 * 返回该元数据元素的配置来源。
+	 */
 	@Override
 	public @Nullable Object getSource() {
 		return this.source;

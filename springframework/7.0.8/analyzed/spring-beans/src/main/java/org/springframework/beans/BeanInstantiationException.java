@@ -22,8 +22,8 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown when instantiation of a bean failed.
- * Carries the offending bean class.
+ * Bean 实例化失败时抛出的异常。
+ * 携带出问题的 bean 类型。
  *
  * @author Juergen Hoeller
  * @since 1.2.8
@@ -31,27 +31,30 @@ import org.jspecify.annotations.Nullable;
 @SuppressWarnings("serial")
 public class BeanInstantiationException extends FatalBeanException {
 
+	/** 出问题的 bean 类型 */
 	private final Class<?> beanClass;
 
+	/** 出问题的构造器（若可知） */
 	private final @Nullable Constructor<?> constructor;
 
+	/** 用于构造 bean 的委托方法（若可知） */
 	private final @Nullable Method constructingMethod;
 
 
 	/**
-	 * Create a new BeanInstantiationException.
-	 * @param beanClass the offending bean class
-	 * @param msg the detail message
+	 * 创建一个新的 {@code BeanInstantiationException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param msg 详细消息
 	 */
 	public BeanInstantiationException(Class<?> beanClass, String msg) {
 		this(beanClass, msg, null);
 	}
 
 	/**
-	 * Create a new BeanInstantiationException.
-	 * @param beanClass the offending bean class
-	 * @param msg the detail message
-	 * @param cause the root cause
+	 * 创建一个新的 {@code BeanInstantiationException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param msg 详细消息
+	 * @param cause 根因
 	 */
 	public BeanInstantiationException(Class<?> beanClass, String msg, @Nullable Throwable cause) {
 		super("Failed to instantiate [" + beanClass.getName() + "]: " + msg, cause);
@@ -61,10 +64,10 @@ public class BeanInstantiationException extends FatalBeanException {
 	}
 
 	/**
-	 * Create a new BeanInstantiationException.
-	 * @param constructor the offending constructor
-	 * @param msg the detail message
-	 * @param cause the root cause
+	 * 创建一个新的 {@code BeanInstantiationException}。
+	 * @param constructor 出问题的构造器
+	 * @param msg 详细消息
+	 * @param cause 根因
 	 * @since 4.3
 	 */
 	public BeanInstantiationException(Constructor<?> constructor, @Nullable String msg, @Nullable Throwable cause) {
@@ -75,11 +78,11 @@ public class BeanInstantiationException extends FatalBeanException {
 	}
 
 	/**
-	 * Create a new BeanInstantiationException.
-	 * @param constructingMethod the delegate for bean construction purposes
-	 * (typically, but not necessarily, a static factory method)
-	 * @param msg the detail message
-	 * @param cause the root cause
+	 * 创建一个新的 {@code BeanInstantiationException}。
+	 * @param constructingMethod 用于构造 bean 的委托方法
+	 * （通常但不一定是静态工厂方法）
+	 * @param msg 详细消息
+	 * @param cause 根因
 	 * @since 4.3
 	 */
 	public BeanInstantiationException(Method constructingMethod, @Nullable String msg, @Nullable Throwable cause) {
@@ -91,17 +94,16 @@ public class BeanInstantiationException extends FatalBeanException {
 
 
 	/**
-	 * Return the offending bean class (never {@code null}).
-	 * @return the class that was to be instantiated
+	 * 返回出问题的 bean 类型（永不为 {@code null}）。
+	 * @return 本应被实例化的类型
 	 */
 	public Class<?> getBeanClass() {
 		return this.beanClass;
 	}
 
 	/**
-	 * Return the offending constructor, if known.
-	 * @return the constructor in use, or {@code null} in case of a
-	 * factory method or in case of default instantiation
+	 * 返回出问题的构造器（若可知）。
+	 * @return 正在使用的构造器；若走工厂方法或默认实例化，则为 {@code null}
 	 * @since 4.3
 	 */
 	public @Nullable Constructor<?> getConstructor() {
@@ -109,9 +111,9 @@ public class BeanInstantiationException extends FatalBeanException {
 	}
 
 	/**
-	 * Return the delegate for bean construction purposes, if known.
-	 * @return the method in use (typically a static factory method),
-	 * or {@code null} in case of constructor-based instantiation
+	 * 返回用于构造 bean 的委托方法（若可知）。
+	 * @return 正在使用的方法（通常是静态工厂方法）；
+	 * 若走基于构造器的实例化，则为 {@code null}
 	 * @since 4.3
 	 */
 	public @Nullable Method getConstructingMethod() {

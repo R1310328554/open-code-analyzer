@@ -22,24 +22,22 @@ import java.beans.IntrospectionException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Strategy interface for creating {@link BeanInfo} instances for Spring beans.
- * Can be used to plug in custom bean property resolution strategies (for example, for other
- * languages on the JVM) or more efficient {@link BeanInfo} retrieval algorithms.
+ * 为 Spring bean 创建 {@link BeanInfo} 的策略接口。
+ * 可插入自定义的 bean 属性解析策略（例如面向 JVM 上其他语言），
+ * 或采用更高效的 {@link BeanInfo} 获取算法。
  *
- * <p>BeanInfoFactories are instantiated by the {@link CachedIntrospectionResults},
- * by using the {@link org.springframework.core.io.support.SpringFactoriesLoader}
- * utility class.
+ * <p>各 BeanInfoFactory 由 {@link CachedIntrospectionResults} 通过
+ * {@link org.springframework.core.io.support.SpringFactoriesLoader}
+ * 工具类实例化。
  *
- * When a {@link BeanInfo} is to be created, the {@code CachedIntrospectionResults}
- * will iterate through the discovered factories, calling {@link #getBeanInfo(Class)}
- * on each one. If {@code null} is returned, the next factory will be queried.
- * If none of the factories support the class, a standard {@link BeanInfo} will be
- * created as a default.
+ * <p>需要创建 {@link BeanInfo} 时，{@code CachedIntrospectionResults}
+ * 会遍历已发现的工厂，依次调用 {@link #getBeanInfo(Class)}。
+ * 若返回 {@code null}，则继续询问下一个工厂。
+ * 若所有工厂都不支持该类，则回退为创建标准 {@link BeanInfo}。
  *
- * <p>Note that the {@link org.springframework.core.io.support.SpringFactoriesLoader}
- * sorts the {@code BeanInfoFactory} instances by
- * {@link org.springframework.core.annotation.Order @Order}, so that ones with a
- * higher precedence come first.
+ * <p>注意：{@link org.springframework.core.io.support.SpringFactoriesLoader}
+ * 会按 {@link org.springframework.core.annotation.Order @Order}
+ * 对 {@code BeanInfoFactory} 实例排序，优先级更高的排在前面。
  *
  * @author Arjen Poutsma
  * @since 3.2
@@ -49,10 +47,10 @@ import org.jspecify.annotations.Nullable;
 public interface BeanInfoFactory {
 
 	/**
-	 * Return the bean info for the given class, if supported.
-	 * @param beanClass the bean class
-	 * @return the BeanInfo, or {@code null} if the given class is not supported
-	 * @throws IntrospectionException in case of exceptions
+	 * 在支持的前提下，返回给定类的 BeanInfo。
+	 * @param beanClass bean 的 Class
+	 * @return BeanInfo；若该类不受支持则返回 {@code null}
+	 * @throws IntrospectionException 内省过程中出现异常时抛出
 	 */
 	@Nullable BeanInfo getBeanInfo(Class<?> beanClass) throws IntrospectionException;
 
