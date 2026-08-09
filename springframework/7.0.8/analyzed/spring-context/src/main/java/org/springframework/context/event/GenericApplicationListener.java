@@ -23,14 +23,14 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.core.ResolvableType;
 
 /**
- * Extended variant of the standard {@link ApplicationListener} interface,
- * exposing further metadata such as the supported event and source type.
+ * 标准 {@link ApplicationListener} 接口的扩展变体，
+ * 暴露更多元数据，例如支持的事件类型与源类型。
  *
- * <p>As of Spring Framework 4.2, this interface supersedes the Class-based
- * {@link SmartApplicationListener} with full handling of generic event types.
- * As of 5.3.5, it formally extends {@link SmartApplicationListener}, adapting
- * {@link #supportsEventType(Class)} to {@link #supportsEventType(ResolvableType)}
- * with a default method.
+ * <p>自 Spring Framework 4.2 起，本接口取代基于 Class 的
+ * {@link SmartApplicationListener}，完整支持泛型事件类型。
+ * 自 5.3.5 起正式继承 {@link SmartApplicationListener}，
+ * 通过默认方法将 {@link #supportsEventType(Class)} 委托给
+ * {@link #supportsEventType(ResolvableType)}。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -41,8 +41,8 @@ import org.springframework.core.ResolvableType;
 public interface GenericApplicationListener extends SmartApplicationListener {
 
 	/**
-	 * Overrides {@link SmartApplicationListener#supportsEventType(Class)} with
-	 * delegation to {@link #supportsEventType(ResolvableType)}.
+	 * 重写 {@link SmartApplicationListener#supportsEventType(Class)}，
+	 * 委托给 {@link #supportsEventType(ResolvableType)}。
 	 */
 	@Override
 	default boolean supportsEventType(Class<? extends ApplicationEvent> eventType) {
@@ -50,18 +50,18 @@ public interface GenericApplicationListener extends SmartApplicationListener {
 	}
 
 	/**
-	 * Determine whether this listener actually supports the given event type.
-	 * @param eventType the event type (never {@code null})
+	 * 判断本监听器是否实际支持给定事件类型。
+	 * @param eventType 事件类型（永不为 {@code null}）
 	 */
 	boolean supportsEventType(ResolvableType eventType);
 
 
 	/**
-	 * Create a new {@code ApplicationListener} for the given event type.
-	 * @param eventType the event to listen to
-	 * @param consumer the consumer to invoke when a matching event is fired
-	 * @param <E> the specific {@code ApplicationEvent} subclass to listen to
-	 * @return a corresponding {@code ApplicationListener} instance
+	 * 为给定事件类型创建新的 {@code ApplicationListener}。
+	 * @param eventType 要监听的事件类型
+	 * @param consumer 匹配事件触发时调用的消费者
+	 * @param <E> 要监听的特定 {@code ApplicationEvent} 子类
+	 * @return 对应的 {@code ApplicationListener} 实例
 	 * @since 6.1.3
 	 */
 	static <E extends ApplicationEvent> GenericApplicationListener forEventType(Class<E> eventType, Consumer<E> consumer) {

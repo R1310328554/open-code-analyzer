@@ -30,21 +30,19 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.util.Assert;
 
 /**
- * {@link MethodInterceptor Interceptor} that publishes an {@code ApplicationEvent} to
- * all {@code ApplicationListeners} registered with an {@code ApplicationEventPublisher}
- * after each <i>successful</i> method invocation.
+ * 在每次方法调用<i>成功</i>后，向 {@code ApplicationEventPublisher} 注册的所有
+ * {@code ApplicationListener} 发布 {@code ApplicationEvent} 的
+ * {@link MethodInterceptor Interceptor}。
  *
- * <p>Note that this interceptor is capable of publishing a custom event after each
- * <i>successful</i> method invocation, configured via the
- * {@link #setApplicationEventClass "applicationEventClass"} property. As of 7.0.3,
- * you can configure a {@link #setApplicationEventFactory factory function} instead,
- * implementing the primary {@link ApplicationEventFactory#onSuccess} method there.
+ * <p>本拦截器可在每次<i>成功</i>的方法调用后发布自定义事件，通过
+ * {@link #setApplicationEventClass "applicationEventClass"} 属性配置。
+ * 自 7.0.3 起，也可配置 {@link #setApplicationEventFactory 工厂函数}，
+ * 在其中实现主要的 {@link ApplicationEventFactory#onSuccess} 方法。
  *
- * <p>By default (as of 7.0.3), this interceptor publishes a {@link MethodFailureEvent}
- * for every exception encountered from a method invocation. This can be conveniently
- * tracked via an {@code ApplicationListener<MethodFailureEvent>} class or an
- * {@code @EventListener(MethodFailureEvent.class)} method. The failure event can be
- * customized through overriding the {@link ApplicationEventFactory#onFailure} method.
+ * <p>默认情况下（自 7.0.3 起），本拦截器会为方法调用抛出的每个异常发布
+ * {@link MethodFailureEvent}。可通过 {@code ApplicationListener<MethodFailureEvent>}
+ * 类或 {@code @EventListener(MethodFailureEvent.class)} 方法便捷地监听。
+ * 失败事件可通过重写 {@link ApplicationEventFactory#onFailure} 方法自定义。
  *
  * @author Dmitriy Kopylenko
  * @author Juergen Hoeller
@@ -58,19 +56,19 @@ import org.springframework.util.Assert;
 public class EventPublicationInterceptor
 		implements MethodInterceptor, ApplicationEventPublisherAware, InitializingBean {
 
+	/** 根据方法调用结果构建应用事件的工厂。 */
 	private ApplicationEventFactory applicationEventFactory = (invocation, returnValue) -> null;
 
+	/** 用于发布事件的事件发布器。 */
 	private @Nullable ApplicationEventPublisher applicationEventPublisher;
 
 
 	/**
-	 * Set the application event class to publish after each successful invocation.
-	 * <p>The event class <b>must</b> have a constructor with a single
-	 * {@code Object} argument for the event source. The interceptor
-	 * will pass in the invoked object.
-	 * @throws IllegalArgumentException if the supplied {@code Class} is
-	 * {@code null} or if it is not an {@code ApplicationEvent} subclass or
-	 * if it does not expose a constructor that takes a single {@code Object} argument
+	 * 设置在每次成功调用后要发布的应用事件类。
+	 * <p>事件类<b>必须</b>具有接受单个 {@code Object} 参数（事件源）的构造函数；
+	 * 拦截器将传入被调用的对象。
+	 * @throws IllegalArgumentException 若提供的 {@code Class} 为 {@code null}、
+	 * 不是 {@code ApplicationEvent} 子类，或未暴露接受单个 {@code Object} 参数的构造函数
 	 * @see #setApplicationEventFactory
 	 */
 	public void setApplicationEventClass(Class<? extends ApplicationEvent> applicationEventClass) {
@@ -90,8 +88,8 @@ public class EventPublicationInterceptor
 	}
 
 	/**
-	 * Specify a factory function for {@link ApplicationEvent} instances built from a
-	 * {@link MethodInvocation}, representing each <i>successful</i> method invocation.
+	 * 指定根据 {@link MethodInvocation} 构建 {@link ApplicationEvent} 的工厂函数，
+	 * 表示每次<i>成功</i>的方法调用。
 	 * @since 7.0.3
 	 * @see #setApplicationEventClass
 	 */
@@ -121,7 +119,7 @@ public class EventPublicationInterceptor
 			retVal = invocation.proceed();
 		}
 		catch (Throwable ex) {
-			// Publish event after failed invocation.
+			// 调用失败后发布事件。
 			ApplicationEvent event = this.applicationEventFactory.onFailure(invocation, ex);
 			if (event != null) {
 				this.applicationEventPublisher.publishEvent(event);
@@ -129,7 +127,7 @@ public class EventPublicationInterceptor
 			throw ex;
 		}
 
-		// Publish event after successful invocation.
+		// 调用成功后发布事件。
 		ApplicationEvent event = this.applicationEventFactory.onSuccess(invocation, retVal);
 		if (event != null) {
 			this.applicationEventPublisher.publishEvent(event);
@@ -139,30 +137,29 @@ public class EventPublicationInterceptor
 
 
 	/**
-	 * Callback interface for building an {@link ApplicationEvent} after a method invocation.
+	 * 在方法调用后构建 {@link ApplicationEvent} 的回调接口。
 	 * @since 7.0.3
 	 */
 	@FunctionalInterface
 	public interface ApplicationEventFactory {
 
 		/**
-		 * Build an {@link ApplicationEvent} for the given successful method invocation.
-		 * <p>This is the primary method to implement since there is no such default event.
-		 * This may also return {@code null} for not publishing an event on success at all.
-		 * @param invocation the successful method invocation
-		 * @param returnValue the value that the method returned, if any
-		 * @return the event to publish, or {@code null} for none
+		 * 为给定的成功方法调用构建 {@link ApplicationEvent}。
+		 * <p>这是需要实现的主要方法，因为成功时默认没有固定事件类型。
+		 * 也可返回 {@code null} 表示成功时不发布任何事件。
+		 * @param invocation 成功的方法调用
+		 * @param returnValue 方法返回值（若有）
+		 * @return 要发布的事件，或 {@code null} 表示不发布
 		 */
 		@Nullable ApplicationEvent onSuccess(MethodInvocation invocation, @Nullable Object returnValue);
 
 		/**
-		 * Build an {@link ApplicationEvent} for the given failed method invocation.
-		 * <p>The default implementation builds a common {@link MethodFailureEvent}.
-		 * This can be overridden to build a custom event instead, or to return
-		 * {@code null} for not publishing an event on failure at all.
-		 * @param invocation the failed method invocation
-		 * @param failure the exception thrown from the method
-		 * @return the event to publish, or {@code null} for none
+		 * 为给定的失败方法调用构建 {@link ApplicationEvent}。
+		 * <p>默认实现构建通用的 {@link MethodFailureEvent}。
+		 * 可重写以构建自定义事件，或返回 {@code null} 表示失败时不发布任何事件。
+		 * @param invocation 失败的方法调用
+		 * @param failure 方法抛出的异常
+		 * @return 要发布的事件，或 {@code null} 表示不发布
 		 */
 		default @Nullable ApplicationEvent onFailure(MethodInvocation invocation, Throwable failure) {
 			return new MethodFailureEvent(invocation, failure);

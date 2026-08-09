@@ -24,7 +24,7 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.util.ClassUtils;
 
 /**
- * Event indicating a method invocation that failed.
+ * 表示方法调用失败的事件。
  *
  * @author Juergen Hoeller
  * @since 7.0.3
@@ -33,13 +33,14 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public class MethodFailureEvent extends ApplicationEvent {
 
+	/** 方法调用抛出的异常。 */
 	private final Throwable failure;
 
 
 	/**
-	 * Create a new event for the given method invocation.
-	 * @param invocation the method invocation
-	 * @param failure the exception encountered
+	 * 为给定方法调用创建新事件。
+	 * @param invocation 方法调用
+	 * @param failure 遇到的异常
 	 */
 	public MethodFailureEvent(MethodInvocation invocation, Throwable failure) {
 		super(invocation);
@@ -48,7 +49,7 @@ public class MethodFailureEvent extends ApplicationEvent {
 
 
 	/**
-	 * Return the method invocation that triggered this event.
+	 * 返回触发本事件的方法调用。
 	 */
 	@Override
 	public MethodInvocation getSource() {
@@ -56,14 +57,14 @@ public class MethodFailureEvent extends ApplicationEvent {
 	}
 
 	/**
-	 * Return the method that triggered this event.
+	 * 返回触发本事件的方法。
 	 */
 	public Method getMethod() {
 		return getSource().getMethod();
 	}
 
 	/**
-	 * Return the exception encountered.
+	 * 返回遇到的异常。
 	 */
 	public Throwable getFailure() {
 		return this.failure;

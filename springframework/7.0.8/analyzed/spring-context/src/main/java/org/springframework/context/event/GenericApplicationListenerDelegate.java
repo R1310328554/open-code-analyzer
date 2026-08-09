@@ -22,16 +22,18 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.core.ResolvableType;
 
 /**
- * A {@link GenericApplicationListener} implementation that supports a single event type.
+ * 支持单一事件类型的 {@link GenericApplicationListener} 实现。
  *
  * @author Stephane Nicoll
  * @since 6.1.3
- * @param <E> the specific {@code ApplicationEvent} subclass to listen to
+ * @param <E> 要监听的特定 {@code ApplicationEvent} 子类
  */
 class GenericApplicationListenerDelegate<E extends ApplicationEvent> implements GenericApplicationListener {
 
+	/** 本监听器支持的事件类型。 */
 	private final Class<E> supportedEventType;
 
+	/** 事件触发时调用的消费者。 */
 	private final Consumer<E> consumer;
 
 

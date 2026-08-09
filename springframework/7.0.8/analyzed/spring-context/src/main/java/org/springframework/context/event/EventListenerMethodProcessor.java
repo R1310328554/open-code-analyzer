@@ -51,9 +51,9 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Registers {@link EventListener} methods as individual {@link ApplicationListener} instances.
- * Implements {@link BeanFactoryPostProcessor} (as of 5.1) primarily for early retrieval,
- * avoiding AOP checks for this processor bean and its {@link EventListenerFactory} delegates.
+ * 将 {@link EventListener} 标注的方法注册为独立的 {@link ApplicationListener} 实例。
+ * 实现 {@link BeanFactoryPostProcessor}（自 5.1 起），主要用于尽早获取 BeanFactory，
+ * 避免对本处理器及其 {@link EventListenerFactory} 委托执行 AOP 检查。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -67,16 +67,22 @@ public class EventListenerMethodProcessor
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/** 可配置的应用上下文，用于注册监听器。 */
 	private @Nullable ConfigurableApplicationContext applicationContext;
 
+	/** Bean 工厂，用于解析 Bean 与 SpEL 表达式。 */
 	private @Nullable ConfigurableListableBeanFactory beanFactory;
 
+	/** 按 {@link Order} 排序后的事件监听器工厂列表。 */
 	private @Nullable List<EventListenerFactory> eventListenerFactories;
 
+	/** SpEL 求值上下文，在 BeanFactory 就绪后绑定 Bean 解析器。 */
 	private final StandardEvaluationContext originalEvaluationContext;
 
+	/** {@code @EventListener} 条件表达式的求值器。 */
 	private final @Nullable EventExpressionEvaluator evaluator;
 
+	/** 已确认不含 {@code @EventListener} 的类，避免重复扫描。 */
 	private final Set<Class<?>> nonAnnotatedClasses = ConcurrentHashMap.newKeySet(64);
 
 
@@ -116,7 +122,7 @@ public class EventListenerMethodProcessor
 					type = AutoProxyUtils.determineTargetClass(beanFactory, beanName);
 				}
 				catch (Throwable ex) {
-					// An unresolvable bean type, probably from a lazy bean - let's ignore it.
+					// 无法解析的 Bean 类型（可能来自懒加载 Bean）——忽略。
 					if (logger.isDebugEnabled()) {
 						logger.debug("Could not resolve target class for bean with name '" + beanName + "'", ex);
 					}
@@ -131,7 +137,7 @@ public class EventListenerMethodProcessor
 							}
 						}
 						catch (Throwable ex) {
-							// An invalid scoped proxy arrangement - let's ignore it.
+							// 作用域代理配置无效——忽略。
 							if (logger.isDebugEnabled()) {
 								logger.debug("Could not resolve target bean for scoped proxy '" + beanName + "'", ex);
 							}
@@ -161,7 +167,7 @@ public class EventListenerMethodProcessor
 								AnnotatedElementUtils.findMergedAnnotation(method, EventListener.class));
 			}
 			catch (Throwable ex) {
-				// An unresolvable type in a method signature, probably from a lazy bean - let's ignore it.
+				// 方法签名中存在无法解析的类型（可能来自懒加载 Bean）——忽略。
 				if (logger.isDebugEnabled()) {
 					logger.debug("Could not resolve methods for bean with name '" + beanName + "'", ex);
 				}
@@ -174,7 +180,7 @@ public class EventListenerMethodProcessor
 				}
 			}
 			else {
-				// Non-empty set of methods
+				// 找到带注解的方法，逐个注册为 ApplicationListener。
 				ConfigurableApplicationContext context = this.applicationContext;
 				Assert.state(context != null, "No ApplicationContext set");
 				List<EventListenerFactory> factories = this.eventListenerFactories;
@@ -202,9 +208,8 @@ public class EventListenerMethodProcessor
 	}
 
 	/**
-	 * Determine whether the given class is an {@code org.springframework}
-	 * bean class that is not annotated as a user or test {@link Component}...
-	 * which indicates that there is no {@link EventListener} to be found there.
+	 * 判断给定类是否为未标注用户或测试 {@link Component} 的 {@code org.springframework}
+	 * 容器内部 Bean 类——此类上不会有 {@link EventListener}。
 	 * @since 5.1
 	 */
 	private static boolean isSpringContainerClass(Class<?> clazz) {

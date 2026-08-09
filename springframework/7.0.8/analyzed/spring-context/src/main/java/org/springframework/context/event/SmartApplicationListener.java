@@ -23,11 +23,11 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.core.Ordered;
 
 /**
- * Extended variant of the standard {@link ApplicationListener} interface,
- * exposing further metadata such as the supported event and source type.
+ * 标准 {@link ApplicationListener} 接口的扩展变体，
+ * 暴露更多元数据，例如支持的事件类型与源类型。
  *
- * <p>For full introspection of generic event types, consider implementing
- * the {@link GenericApplicationListener} interface instead.
+ * <p>若需完整内省泛型事件类型，请考虑实现
+ * {@link GenericApplicationListener} 接口。
  *
  * @author Juergen Hoeller
  * @since 3.0
@@ -37,23 +37,23 @@ import org.springframework.core.Ordered;
 public interface SmartApplicationListener extends ApplicationListener<ApplicationEvent>, Ordered {
 
 	/**
-	 * Determine whether this listener actually supports the given event type.
-	 * @param eventType the event type (never {@code null})
+	 * 判断本监听器是否实际支持给定事件类型。
+	 * @param eventType 事件类型（永不为 {@code null}）
 	 */
 	boolean supportsEventType(Class<? extends ApplicationEvent> eventType);
 
 	/**
-	 * Determine whether this listener actually supports the given source type.
-	 * <p>The default implementation always returns {@code true}.
-	 * @param sourceType the source type, or {@code null} if no source
+	 * 判断本监听器是否实际支持给定源类型。
+	 * <p>默认实现始终返回 {@code true}。
+	 * @param sourceType 源类型，若无源则为 {@code null}
 	 */
 	default boolean supportsSourceType(@Nullable Class<?> sourceType) {
 		return true;
 	}
 
 	/**
-	 * Determine this listener's order in a set of listeners for the same event.
-	 * <p>The default implementation returns {@link #LOWEST_PRECEDENCE}.
+	 * 确定本监听器在同一事件的监听器集合中的顺序。
+	 * <p>默认实现返回 {@link #LOWEST_PRECEDENCE}。
 	 */
 	@Override
 	default int getOrder() {
@@ -61,8 +61,8 @@ public interface SmartApplicationListener extends ApplicationListener<Applicatio
 	}
 
 	/**
-	 * Return an optional identifier for the listener.
-	 * <p>The default value is an empty String.
+	 * 返回监听器的可选标识符。
+	 * <p>默认值为空字符串。
 	 * @since 5.3.5
 	 * @see EventListener#id
 	 * @see ApplicationEventMulticaster#removeApplicationListeners

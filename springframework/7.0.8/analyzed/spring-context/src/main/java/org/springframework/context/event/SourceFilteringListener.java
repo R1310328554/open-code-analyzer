@@ -24,12 +24,11 @@ import org.springframework.core.Ordered;
 import org.springframework.core.ResolvableType;
 
 /**
- * {@link org.springframework.context.ApplicationListener} decorator that filters
- * events from a specified event source, invoking its delegate listener for
- * matching {@link org.springframework.context.ApplicationEvent} objects only.
+ * 过滤指定事件源的 {@link org.springframework.context.ApplicationListener} 装饰器，
+ * 仅对匹配的 {@link org.springframework.context.ApplicationEvent} 对象调用其委托监听器。
  *
- * <p>Can also be used as base class, overriding the {@link #onApplicationEventInternal}
- * method instead of specifying a delegate listener.
+ * <p>也可作为基类使用，重写 {@link #onApplicationEventInternal} 方法，
+ * 而非指定委托监听器。
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -37,17 +36,17 @@ import org.springframework.core.ResolvableType;
  */
 public class SourceFilteringListener implements GenericApplicationListener {
 
+	/** 本监听器只处理来自该源的事件。 */
 	private final Object source;
 
+	/** 实际处理事件的委托监听器（子类可省略）。 */
 	private @Nullable GenericApplicationListener delegate;
 
 
 	/**
-	 * Create a SourceFilteringListener for the given event source.
-	 * @param source the event source that this listener filters for,
-	 * only processing events from this source
-	 * @param delegate the delegate listener to invoke with event
-	 * from the specified source
+	 * 为给定事件源创建 SourceFilteringListener。
+	 * @param source 本监听器过滤的事件源，仅处理来自该源的事件
+	 * @param delegate 对来自指定源的事件进行调用的委托监听器
 	 */
 	public SourceFilteringListener(Object source, ApplicationListener<?> delegate) {
 		this.source = source;
@@ -56,11 +55,9 @@ public class SourceFilteringListener implements GenericApplicationListener {
 	}
 
 	/**
-	 * Create a SourceFilteringListener for the given event source,
-	 * expecting subclasses to override the {@link #onApplicationEventInternal}
-	 * method (instead of specifying a delegate listener).
-	 * @param source the event source that this listener filters for,
-	 * only processing events from this source
+	 * 为给定事件源创建 SourceFilteringListener，
+	 * 期望子类重写 {@link #onApplicationEventInternal} 方法（而非指定委托监听器）。
+	 * @param source 本监听器过滤的事件源，仅处理来自该源的事件
 	 */
 	protected SourceFilteringListener(Object source) {
 		this.source = source;
@@ -96,10 +93,9 @@ public class SourceFilteringListener implements GenericApplicationListener {
 
 
 	/**
-	 * Actually process the event, after having filtered according to the
-	 * desired event source already.
-	 * <p>The default implementation invokes the specified delegate, if any.
-	 * @param event the event to process (matching the specified source)
+	 * 在已按期望事件源过滤后，实际处理事件。
+	 * <p>默认实现调用指定的委托监听器（若有）。
+	 * @param event 要处理的事件（匹配指定源）
 	 */
 	protected void onApplicationEventInternal(ApplicationEvent event) {
 		if (this.delegate == null) {

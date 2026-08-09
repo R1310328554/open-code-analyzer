@@ -24,8 +24,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Represents an {@link AnnotatedElement} in a particular {@link Class}
- * and is suitable for use as a cache key.
+ * 表示特定 {@link Class} 中的 {@link AnnotatedElement}，
+ * 适合作为缓存键使用。
  *
  * @author Costin Leau
  * @author Stephane Nicoll
@@ -34,14 +34,15 @@ import org.springframework.util.ObjectUtils;
  */
 public final class AnnotatedElementKey implements Comparable<AnnotatedElementKey> {
 
+	/** 带注解的元素（方法、字段等）。 */
 	private final AnnotatedElement element;
 
+	/** 元素所属的目标类（可选）。 */
 	private final @Nullable Class<?> targetClass;
 
 
 	/**
-	 * Create a new instance with the specified {@link AnnotatedElement} and
-	 * optional target {@link Class}.
+	 * 使用指定的 {@link AnnotatedElement} 与可选的目标 {@link Class} 创建新实例。
 	 */
 	public AnnotatedElementKey(AnnotatedElement element, @Nullable Class<?> targetClass) {
 		Assert.notNull(element, "AnnotatedElement must not be null");

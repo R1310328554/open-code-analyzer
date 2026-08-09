@@ -31,17 +31,14 @@ import org.springframework.core.ResolvableType;
 import org.springframework.util.ErrorHandler;
 
 /**
- * Simple implementation of the {@link ApplicationEventMulticaster} interface.
+ * {@link ApplicationEventMulticaster} 接口的简单实现。
  *
- * <p>Multicasts all events to all registered listeners, leaving it up to
- * the listeners to ignore events that they are not interested in.
- * Listeners will usually perform corresponding {@code instanceof}
- * checks on the passed-in event object.
+ * <p>将所有事件多播给所有已注册监听器，由监听器自行忽略不感兴趣的事件。
+ * 监听器通常会对传入的事件对象执行相应的 {@code instanceof} 检查。
  *
- * <p>By default, all listeners are invoked in the calling thread.
- * This allows the danger of a rogue listener blocking the entire application,
- * but adds minimal overhead. Specify an alternative task executor to have
- * listeners executed in different threads, for example from a thread pool.
+ * <p>默认情况下，所有监听器在调用线程中执行。
+ * 这存在恶意监听器阻塞整个应用的风险，但开销最小。
+ * 可指定替代的任务执行器，让监听器在不同线程（例如线程池）中执行。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -51,21 +48,24 @@ import org.springframework.util.ErrorHandler;
  */
 public class SimpleApplicationEventMulticaster extends AbstractApplicationEventMulticaster {
 
+	/** 异步执行监听器的任务执行器（可选）。 */
 	private @Nullable Executor taskExecutor;
 
+	/** 监听器抛出异常时的错误处理器（可选）。 */
 	private @Nullable ErrorHandler errorHandler;
 
+	/** 延迟初始化的日志记录器，用于抑制 ClassCastException。 */
 	private volatile @Nullable Log lazyLogger;
 
 
 	/**
-	 * Create a new SimpleApplicationEventMulticaster.
+	 * 创建新的 SimpleApplicationEventMulticaster。
 	 */
 	public SimpleApplicationEventMulticaster() {
 	}
 
 	/**
-	 * Create a new SimpleApplicationEventMulticaster for the given BeanFactory.
+	 * 为给定 BeanFactory 创建新的 SimpleApplicationEventMulticaster。
 	 */
 	public SimpleApplicationEventMulticaster(BeanFactory beanFactory) {
 		setBeanFactory(beanFactory);
@@ -73,18 +73,17 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 
 
 	/**
-	 * Set a custom executor (typically a {@link org.springframework.core.task.TaskExecutor})
-	 * to invoke each listener with.
-	 * <p>Default is equivalent to {@link org.springframework.core.task.SyncTaskExecutor},
-	 * executing all listeners synchronously in the calling thread.
-	 * <p>Consider specifying an asynchronous task executor here to not block the caller
-	 * until all listeners have been executed. However, note that asynchronous execution
-	 * will not participate in the caller's thread context (class loader, transaction context)
-	 * unless the TaskExecutor explicitly supports this.
-	 * <p>{@link ApplicationListener} instances which declare no support for asynchronous
-	 * execution ({@link ApplicationListener#supportsAsyncExecution()} always run within
-	 * the original thread which published the event, for example, the transaction-synchronized
-	 * {@link org.springframework.transaction.event.TransactionalApplicationListener}.
+	 * 设置用于调用各监听器的自定义执行器（通常为
+	 * {@link org.springframework.core.task.TaskExecutor}）。
+	 * <p>默认等价于 {@link org.springframework.core.task.SyncTaskExecutor}，
+	 * 在调用线程中同步执行所有监听器。
+	 * <p>可在此指定异步任务执行器，避免调用方阻塞至所有监听器执行完毕。
+	 * 但请注意，异步执行不会参与调用方线程上下文（类加载器、事务上下文），
+	 * 除非 TaskExecutor 显式支持。
+	 * <p>声明不支持异步执行的 {@link ApplicationListener} 实例
+	 * （{@link ApplicationListener#supportsAsyncExecution()}）
+	 * 始终在发布事件的原始线程中运行，例如事务同步的
+	 * {@link org.springframework.transaction.event.TransactionalApplicationListener}。
 	 * @since 2.0
 	 * @see org.springframework.core.task.SyncTaskExecutor
 	 * @see org.springframework.core.task.SimpleAsyncTaskExecutor
@@ -94,7 +93,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	}
 
 	/**
-	 * Return the current task executor for this multicaster.
+	 * 返回本多播器当前使用的任务执行器。
 	 * @since 2.0
 	 */
 	protected @Nullable Executor getTaskExecutor() {
@@ -102,18 +101,14 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	}
 
 	/**
-	 * Set the {@link ErrorHandler} to invoke in case an exception is thrown
-	 * from a listener.
-	 * <p>Default is none, with a listener exception stopping the current
-	 * multicast and getting propagated to the publisher of the current event.
-	 * If a {@linkplain #setTaskExecutor task executor} is specified, each
-	 * individual listener exception will get propagated to the executor but
-	 * won't necessarily stop execution of other listeners.
-	 * <p>Consider setting an {@link ErrorHandler} implementation that catches
-	 * and logs exceptions (a la
-	 * {@link org.springframework.scheduling.support.TaskUtils#LOG_AND_SUPPRESS_ERROR_HANDLER})
-	 * or an implementation that logs exceptions while nevertheless propagating them
-	 * (for example, {@link org.springframework.scheduling.support.TaskUtils#LOG_AND_PROPAGATE_ERROR_HANDLER}).
+	 * 设置监听器抛出异常时调用的 {@link ErrorHandler}。
+	 * <p>默认无错误处理器：监听器异常会中断当前多播并传播给事件发布方。
+	 * 若指定了 {@linkplain #setTaskExecutor 任务执行器}，各监听器异常会传播给执行器，
+	 * 但不一定阻止其他监听器继续执行。
+	 * <p>可设置捕获并记录异常的 {@link ErrorHandler} 实现（类似
+	 * {@link org.springframework.scheduling.support.TaskUtils#LOG_AND_SUPPRESS_ERROR_HANDLER}），
+	 * 或记录异常同时仍传播的实现（例如
+	 * {@link org.springframework.scheduling.support.TaskUtils#LOG_AND_PROPAGATE_ERROR_HANDLER}）。
 	 * @since 4.1
 	 */
 	public void setErrorHandler(@Nullable ErrorHandler errorHandler) {
@@ -121,7 +116,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	}
 
 	/**
-	 * Return the current error handler for this multicaster.
+	 * 返回本多播器当前使用的错误处理器。
 	 * @since 4.1
 	 */
 	protected @Nullable ErrorHandler getErrorHandler() {
@@ -143,7 +138,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 					executor.execute(() -> invokeListener(listener, event));
 				}
 				catch (RejectedExecutionException ex) {
-					// Probably on shutdown -> invoke listener locally instead
+					// 可能正在关闭——改为在本地线程调用监听器
 					invokeListener(listener, event);
 				}
 			}
@@ -154,9 +149,9 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	}
 
 	/**
-	 * Invoke the given listener with the given event.
-	 * @param listener the ApplicationListener to invoke
-	 * @param event the current event to propagate
+	 * 使用给定事件调用监听器。
+	 * @param listener 要调用的 ApplicationListener
+	 * @param event 当前要传播的事件
 	 * @since 4.1
 	 */
 	protected void invokeListener(ApplicationListener<?> listener, ApplicationEvent event) {
@@ -184,8 +179,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 			if (msg == null || matchesClassCastMessage(msg, event.getClass()) ||
 					(event instanceof PayloadApplicationEvent payloadEvent &&
 							matchesClassCastMessage(msg, payloadEvent.getPayload().getClass()))) {
-				// Possibly a lambda-defined listener which we could not resolve the generic event type for
-				// -> let's suppress the exception.
+				// 可能是无法解析泛型事件类型的 lambda 监听器——抑制该异常。
 				Log loggerToUse = this.lazyLogger;
 				if (loggerToUse == null) {
 					loggerToUse = LogFactory.getLog(getClass());
@@ -202,20 +196,20 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	}
 
 	private boolean matchesClassCastMessage(String classCastMessage, Class<?> eventClass) {
-		// On Java 8, the message starts with the class name: "java.lang.String cannot be cast..."
+		// Java 8 上消息以类名开头："java.lang.String cannot be cast..."
 		if (classCastMessage.startsWith(eventClass.getName())) {
 			return true;
 		}
-		// On Java 11, the message starts with "class ..." a.k.a. Class.toString()
+		// Java 11 上消息以 "class ..." 开头，即 Class.toString()
 		if (classCastMessage.startsWith(eventClass.toString())) {
 			return true;
 		}
-		// On Java 9, the message used to contain the module name: "java.base/java.lang.String cannot be cast..."
+		// Java 9 上消息曾包含模块名："java.base/java.lang.String cannot be cast..."
 		int moduleSeparatorIndex = classCastMessage.indexOf('/');
 		if (moduleSeparatorIndex != -1 && classCastMessage.startsWith(eventClass.getName(), moduleSeparatorIndex + 1)) {
 			return true;
 		}
-		// Assuming an unrelated class cast failure...
+		// 假定是与事件无关的类型转换失败...
 		return false;
 	}
 
