@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:23:16Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/util/AppendOnlyLinkedArrayList.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/ArrayListSupplier.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/AtomicThrowable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/BackpressureHelper.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/BlockingHelper.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/BlockingIgnoringReceiver.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/ConnectConsumer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/EmptyComponent.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/EndConsumerHelper.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/ExceptionHelper.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/HalfSerializer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/HashMapSupplier.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/LinkedArrayList.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/ListAddBiConsumer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/MergerBiFunction.java",
     "src/main/java/io/reactivex/rxjava4/internal/util/NotificationLite.java",
     "src/main/java/io/reactivex/rxjava4/internal/util/ObservableQueueDrain.java",
     "src/main/java/io/reactivex/rxjava4/internal/util/OpenHashSet.java",
@@ -33,5 +18,5 @@
     "src/main/java/io/reactivex/rxjava4/observers/DisposableObserver.java"
   ],
   "remaining_pending": 182,
-  "done": 765
+  "done": 780
 }
