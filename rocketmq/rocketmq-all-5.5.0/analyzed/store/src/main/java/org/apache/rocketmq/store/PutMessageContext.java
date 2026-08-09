@@ -17,31 +17,43 @@
 
 package org.apache.rocketmq.store;
 
+/**
+ * 批量写消息上下文：关联 Topic-Queue 键、物理位置数组与批次大小。
+ */
 public class PutMessageContext {
+    /** Topic 与 Queue 组合键。 */
     private String topicQueueTableKey;
+    /** 各条消息在 CommitLog 中的物理偏移数组。 */
     private long[] phyPos;
+    /** 本批次消息条数。 */
     private int batchSize;
 
+    /** 指定 Topic-Queue 键构造上下文。 */
     public PutMessageContext(String topicQueueTableKey) {
         this.topicQueueTableKey = topicQueueTableKey;
     }
 
+    /** 返回 Topic-Queue 键。 */
     public String getTopicQueueTableKey() {
         return topicQueueTableKey;
     }
 
+    /** 返回物理偏移数组。 */
     public long[] getPhyPos() {
         return phyPos;
     }
 
+    /** 设置物理偏移数组。 */
     public void setPhyPos(long[] phyPos) {
         this.phyPos = phyPos;
     }
 
+    /** 返回批次大小。 */
     public int getBatchSize() {
         return batchSize;
     }
 
+    /** 设置批次大小。 */
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
     }

@@ -17,10 +17,12 @@
 package org.apache.rocketmq.store;
 
 /**
- * Used when trying to put message
+ * 写消息时使用的互斥锁抽象，由 ReentrantLock 或自旋锁实现。
  */
 public interface PutMessageLock {
+    /** 获取写锁。 */
     void lock();
 
+    /** 释放写锁。 */
     void unlock();
 }

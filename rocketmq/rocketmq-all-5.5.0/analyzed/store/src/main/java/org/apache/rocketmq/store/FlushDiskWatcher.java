@@ -25,15 +25,21 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.store.CommitLog.GroupCommitRequest;
 
+/**
+ * 刷盘超时监视线程：异步等待 GroupCommit 完成，超时则唤醒调用方。
+ */
 public class FlushDiskWatcher extends ServiceThread {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 待监视的组提交请求队列。 */
     private final LinkedBlockingQueue<GroupCommitRequest> commitRequests = new LinkedBlockingQueue<>();
 
+    /** 返回服务线程名称。 */
     @Override
     public String getServiceName() {
         return FlushDiskWatcher.class.getSimpleName();
     }
 
+    /** 循环取请求并轮询刷盘 Future，超时则返回 FLUSH_DISK_TIMEOUT。 */
     @Override
     public void run() {
         while (!isStopped()) {
@@ -50,7 +56,7 @@ public class FlushDiskWatcher extends ServiceThread {
                     request.wakeupCustomer(PutMessageStatus.FLUSH_DISK_TIMEOUT);
                     break;
                 }
-                // To avoid frequent thread switching, replace future.get with sleep here,
+                // 避免频繁线程切换，此处用 sleep 替代 future.get 轮询，
                 long sleepTime = (request.getDeadLine() - now) / 1_000_000;
                 sleepTime = Math.min(10, sleepTime);
                 if (sleepTime == 0) {
@@ -68,10 +74,12 @@ public class FlushDiskWatcher extends ServiceThread {
         }
     }
 
+    /** 提交一条刷盘监视请求。 */
     public void add(GroupCommitRequest request) {
         commitRequests.add(request);
     }
 
+    /** 返回待处理请求数量。 */
     public int queueSize() {
         return commitRequests.size();
     }

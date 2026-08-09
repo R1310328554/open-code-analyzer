@@ -31,16 +31,23 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 多路径 MappedFile 队列：CommitLog 可分布在多个磁盘路径，创建与加载时轮询选取。
+ */
 public class MultiPathMappedFileQueue extends MappedFileQueue {
 
+    /** 消息存储配置（含多路径与只读路径）。 */
     private final MessageStoreConfig config;
+    /** 磁盘空间已满路径集合供应器，创建文件时排除。 */
     private final Supplier<Set<String>> fullStorePathsSupplier;
 
+    /** 构造多路径队列（无 RunningFlags）。 */
     public MultiPathMappedFileQueue(MessageStoreConfig messageStoreConfig, int mappedFileSize,
         AllocateMappedFileService allocateMappedFileService,
         Supplier<Set<String>> fullStorePathsSupplier) {
         this(messageStoreConfig, mappedFileSize, allocateMappedFileService, fullStorePathsSupplier, null);
     }
+    /** 构造多路径队列并指定 RunningFlags。 */
     public MultiPathMappedFileQueue(MessageStoreConfig messageStoreConfig, int mappedFileSize,
                                     AllocateMappedFileService allocateMappedFileService,
                                     Supplier<Set<String>> fullStorePathsSupplier, RunningFlags runningFlags) {
@@ -50,11 +57,13 @@ public class MultiPathMappedFileQueue extends MappedFileQueue {
         this.fullStorePathsSupplier = fullStorePathsSupplier;
     }
 
+    /** 解析可写 CommitLog 存储路径集合。 */
     private Set<String> getPaths() {
         String[] paths = config.getStorePathCommitLog().trim().split(MixAll.MULTI_PATH_SPLITTER);
         return new HashSet<>(Arrays.asList(paths));
     }
 
+    /** 解析只读 CommitLog 路径集合。 */
     private Set<String> getReadonlyPaths() {
         String pathStr = config.getReadOnlyCommitLogStorePaths();
         if (StringUtils.isBlank(pathStr)) {
@@ -64,6 +73,7 @@ public class MultiPathMappedFileQueue extends MappedFileQueue {
         return new HashSet<>(Arrays.asList(paths));
     }
 
+    /** 从所有可写与只读路径加载 MappedFile。 */
     @Override
     public boolean load() {
         Set<String> storePathSet = getPaths();
@@ -81,6 +91,7 @@ public class MultiPathMappedFileQueue extends MappedFileQueue {
         return doLoad(files);
     }
 
+    /** 按 fileIdx 轮询选取路径并创建 MappedFile。 */
     @Override
     public MappedFile tryCreateMappedFile(long createOffset) {
         long fileIdx = createOffset / this.mappedFileSize;
@@ -91,13 +102,13 @@ public class MultiPathMappedFileQueue extends MappedFileQueue {
 
 
         HashSet<String> availableStorePath = new HashSet<>(storePath);
-        //do not create file in readonly store path.
+        // 不在只读路径上创建新文件
         availableStorePath.removeAll(readonlyPathSet);
 
-        //do not create file is space is nearly full.
+        // 磁盘空间将满的路径不创建新文件
         availableStorePath.removeAll(fullStorePaths);
 
-        //if no store path left, fall back to writable store path.
+        // 若无可用路径则回退到可写路径
         if (availableStorePath.isEmpty()) {
             availableStorePath = new HashSet<>(storePath);
             availableStorePath.removeAll(readonlyPathSet);
@@ -112,6 +123,7 @@ public class MultiPathMappedFileQueue extends MappedFileQueue {
         return doCreateMappedFile(nextFilePath, nextNextFilePath);
     }
 
+    /** 销毁所有 MappedFile 并清空各路径目录。 */
     @Override
     public void destroy() {
         for (MappedFile mf : this.mappedFiles) {

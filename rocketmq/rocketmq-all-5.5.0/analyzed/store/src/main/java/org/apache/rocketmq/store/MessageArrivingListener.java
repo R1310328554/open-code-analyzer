@@ -19,17 +19,20 @@ package org.apache.rocketmq.store;
 
 import java.util.Map;
 
+/**
+ * 消息到达监听器：ConsumeQueue 写入新索引时通知上层（如长轮询挂起服务）。
+ */
 public interface MessageArrivingListener {
 
     /**
-     * Notify that a new message arrives in a consume queue
-     * @param topic topic name
-     * @param queueId consume queue id
-     * @param logicOffset consume queue offset
-     * @param tagsCode message tags hash code
-     * @param msgStoreTime message store time
-     * @param filterBitMap message bloom filter
-     * @param properties message properties
+     * 消费队列有新消息到达时的回调通知。
+     * @param topic Topic 名称
+     * @param queueId 消费队列 ID
+     * @param logicOffset 消费队列逻辑 offset
+     * @param tagsCode 消息 Tag 哈希码
+     * @param msgStoreTime 消息存储时间戳
+     * @param filterBitMap 消息布隆过滤器位图
+     * @param properties 消息属性
      */
     void arriving(String topic, int queueId, long logicOffset, long tagsCode,
         long msgStoreTime, byte[] filterBitMap, Map<String, String> properties);

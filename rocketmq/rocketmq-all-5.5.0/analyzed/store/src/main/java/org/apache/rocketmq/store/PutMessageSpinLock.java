@@ -19,12 +19,14 @@ package org.apache.rocketmq.store;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Spin lock Implementation to put message, suggest using this with low race conditions
+ * 写消息自旋锁实现，适用于竞争较低的轻量场景。
  */
 public class PutMessageSpinLock implements PutMessageLock {
-    //true: Can lock, false : in lock.
+    // true 表示可获取锁，false 表示已锁定
+    /** 自旋锁状态位。 */
     private AtomicBoolean putMessageSpinLock = new AtomicBoolean(true);
 
+    /** CAS 自旋直到获取锁。 */
     @Override
     public void lock() {
         boolean flag;
@@ -34,6 +36,7 @@ public class PutMessageSpinLock implements PutMessageLock {
         while (!flag);
     }
 
+    /** CAS 释放锁。 */
     @Override
     public void unlock() {
         this.putMessageSpinLock.compareAndSet(false, true);

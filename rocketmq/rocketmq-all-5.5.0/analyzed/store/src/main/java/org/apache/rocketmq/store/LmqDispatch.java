@@ -23,9 +23,14 @@ import org.apache.rocketmq.common.message.MessageConst;
 import org.apache.rocketmq.common.message.MessageExtBrokerInner;
 import org.apache.rocketmq.store.exception.ConsumeQueueException;
 
+/**
+ * 轻量消息队列（LMQ）分发工具：写入多队列 offset 并在落盘后递增 LMQ offset。
+ */
 public class LmqDispatch {
+    /** LMQ offset 每次递增步长。 */
     private static final short VALUE_OF_EACH_INCREMENT = 1;
 
+    /** 为消息填充各 LMQ 队列当前 offset 到内部属性。 */
     public static void wrapLmqDispatch(MessageStore messageStore, final MessageExtBrokerInner msg)
         throws ConsumeQueueException {
         String lmqNames = msg.getProperty(MessageConst.PROPERTY_INNER_MULTI_DISPATCH);
@@ -43,6 +48,7 @@ public class LmqDispatch {
         msg.removeWaitStorePropertyString();
     }
 
+    /** 消息落盘后递增各 LMQ 队列 offset。 */
     public static void updateLmqOffsets(MessageStore messageStore, final MessageExtBrokerInner msgInner)
         throws ConsumeQueueException {
         String lmqNames = msgInner.getProperty(MessageConst.PROPERTY_INNER_MULTI_DISPATCH);

@@ -16,16 +16,24 @@
  */
 package org.apache.rocketmq.store;
 
+/**
+ * 写消息结果：封装 PutMessageStatus、AppendMessageResult 及是否远程写入标志。
+ */
 public class PutMessageResult {
+    /** 写消息状态码。 */
     private PutMessageStatus putMessageStatus;
+    /** CommitLog 追加结果。 */
     private AppendMessageResult appendMessageResult;
+    /** 是否为远程（Proxy）写入路径。 */
     private boolean remotePut = false;
 
+    /** 本地写入结果构造。 */
     public PutMessageResult(PutMessageStatus putMessageStatus, AppendMessageResult appendMessageResult) {
         this.putMessageStatus = putMessageStatus;
         this.appendMessageResult = appendMessageResult;
     }
 
+    /** 指定是否远程写入的构造。 */
     public PutMessageResult(PutMessageStatus putMessageStatus, AppendMessageResult appendMessageResult,
         boolean remotePut) {
         this.putMessageStatus = putMessageStatus;
@@ -33,6 +41,7 @@ public class PutMessageResult {
         this.remotePut = remotePut;
     }
 
+    /** 是否视为写入成功（含刷盘/同步超时等可接受状态）。 */
     public boolean isOk() {
         if (remotePut) {
             return putMessageStatus == PutMessageStatus.PUT_OK || putMessageStatus == PutMessageStatus.FLUSH_DISK_TIMEOUT
@@ -43,6 +52,7 @@ public class PutMessageResult {
 
     }
 
+    /** 返回追加结果。 */
     public AppendMessageResult getAppendMessageResult() {
         return appendMessageResult;
     }
@@ -51,6 +61,7 @@ public class PutMessageResult {
         this.appendMessageResult = appendMessageResult;
     }
 
+    /** 返回写消息状态。 */
     public PutMessageStatus getPutMessageStatus() {
         return putMessageStatus;
     }
@@ -59,6 +70,7 @@ public class PutMessageResult {
         this.putMessageStatus = putMessageStatus;
     }
 
+    /** 是否远程写入。 */
     public boolean isRemotePut() {
         return remotePut;
     }
@@ -67,6 +79,7 @@ public class PutMessageResult {
         this.remotePut = remotePut;
     }
 
+    /** 返回调试字符串。 */
     @Override
     public String toString() {
         return "PutMessageResult [putMessageStatus=" + putMessageStatus + ", appendMessageResult="

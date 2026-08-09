@@ -19,24 +19,26 @@ package org.apache.rocketmq.store;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+/**
+ * 消息过滤接口：支持基于 ConsumeQueue 扩展单元或 CommitLog 内容的匹配。
+ */
 public interface MessageFilter {
     /**
-     * match by tags code or filter bit map which is calculated when message received
-     * and stored in consume queue ext.
+     * 基于 Tag 哈希码或 ConsumeQueue 扩展单元中的布隆位图匹配。
      *
-     * @param tagsCode tagsCode
-     * @param cqExtUnit extend unit of consume queue
+     * @param tagsCode Tag 哈希码
+     * @param cqExtUnit ConsumeQueue 扩展单元
      */
     boolean isMatchedByConsumeQueue(final Long tagsCode,
         final ConsumeQueueExt.CqExtUnit cqExtUnit);
 
     /**
-     * match by message content which are stored in commit log.
-     * <br>{@code msgBuffer} and {@code properties} are not all null.If invoked in store,
-     * {@code properties} is null;If invoked in {@code PullRequestHoldService}, {@code msgBuffer} is null.
+     * 基于 CommitLog 中消息体内容匹配（如 SQL92 表达式）。
+     * <br>{@code msgBuffer} 与 {@code properties} 不会同时非 null：Store 内调用时 properties 为 null；
+     * {@code PullRequestHoldService} 内调用时 msgBuffer 为 null。
      *
-     * @param msgBuffer message buffer in commit log, may be null if not invoked in store.
-     * @param properties message properties, should decode from buffer if null by yourself.
+     * @param msgBuffer CommitLog 消息缓冲区，Store 外可能为 null
+     * @param properties 消息属性，为 null 时需自行从 buffer 解码
      */
     boolean isMatchedByCommitLog(final ByteBuffer msgBuffer,
         final Map<String, String> properties);

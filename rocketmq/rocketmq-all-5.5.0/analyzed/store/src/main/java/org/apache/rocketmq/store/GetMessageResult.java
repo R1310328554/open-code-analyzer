@@ -21,40 +21,60 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 拉取消息结果：封装状态、偏移区间、消息缓冲区列表及商业计费统计等。
+ */
 public class GetMessageResult {
 
+    /** 映射缓冲区结果列表（含物理偏移）。 */
     private final List<SelectMappedBufferResult> messageMapedList;
+    /** 消息 ByteBuffer 列表，供上层直接读取。 */
     private final List<ByteBuffer> messageBufferList;
+    /** 各消息在 ConsumeQueue 中的逻辑 offset。 */
     private final List<Long> messageQueueOffset;
 
+    /** 拉取结果状态码。 */
     private GetMessageStatus status;
+    /** 建议下次拉起的起始 offset。 */
     private long nextBeginOffset;
+    /** 队列最小可读 offset。 */
     private long minOffset;
+    /** 队列最大可读 offset。 */
     private long maxOffset;
 
+    /** 所有消息缓冲区总字节数。 */
     private int bufferTotalSize = 0;
 
+    /** 本次拉取的消息条数。 */
     private int messageCount = 0;
 
+    /** 是否建议从 Slave 拉取（主从延迟场景）。 */
     private boolean suggestPullingFromSlave = false;
 
+    /** 商业版计费消息条数（按块折算）。 */
     private int msgCount4Commercial = 0;
+    /** 商业版单条消息计费块大小（默认 4KB）。 */
     private int commercialSizePerMsg = 4 * 1024;
 
+    /** 冷数据总字节数统计。 */
     private long coldDataSum = 0L;
 
+    /** 被过滤掉的消息条数。 */
     private int filterMessageCount;
 
+    /** 无匹配逻辑队列时的空结果常量。 */
     public static final GetMessageResult NO_MATCH_LOGIC_QUEUE =
         new GetMessageResult(GetMessageStatus.NO_MATCHED_LOGIC_QUEUE, 0, 0, 0, Collections.emptyList(),
             Collections.emptyList(), Collections.emptyList());
 
+    /** 默认构造，预分配容量 100。 */
     public GetMessageResult() {
         messageMapedList = new ArrayList<>(100);
         messageBufferList = new ArrayList<>(100);
         messageQueueOffset = new ArrayList<>(100);
     }
 
+    /** 指定预分配容量的构造。 */
     public GetMessageResult(int resultSize) {
         messageMapedList = new ArrayList<>(resultSize);
         messageBufferList = new ArrayList<>(resultSize);
@@ -72,10 +92,12 @@ public class GetMessageResult {
         this.messageQueueOffset = messageQueueOffset;
     }
 
+    /** 返回拉取状态。 */
     public GetMessageStatus getStatus() {
         return status;
     }
 
+    /** 设置拉取状态。 */
     public void setStatus(GetMessageStatus status) {
         this.status = status;
     }
@@ -112,6 +134,7 @@ public class GetMessageResult {
         return messageBufferList;
     }
 
+    /** 追加一条消息（不含队列 offset）。 */
     public void addMessage(final SelectMappedBufferResult mapedBuffer) {
         this.messageMapedList.add(mapedBuffer);
         this.messageBufferList.add(mapedBuffer.getByteBuffer());
@@ -121,6 +144,7 @@ public class GetMessageResult {
         this.messageCount++;
     }
 
+    /** 追加一条消息并记录 ConsumeQueue offset。 */
     public void addMessage(final SelectMappedBufferResult mapedBuffer, final long queueOffset) {
         this.messageMapedList.add(mapedBuffer);
         this.messageBufferList.add(mapedBuffer.getByteBuffer());
@@ -132,11 +156,13 @@ public class GetMessageResult {
     }
 
 
+    /** 追加消息并按 batchNum 调整 messageCount（批量消息）。 */
     public void addMessage(final SelectMappedBufferResult mapedBuffer, final long queueOffset, final int batchNum) {
         addMessage(mapedBuffer, queueOffset);
         messageCount += batchNum - 1;
     }
 
+    /** 释放所有映射缓冲区引用。 */
     public void release() {
         for (SelectMappedBufferResult select : this.messageMapedList) {
             select.release();
@@ -187,6 +213,7 @@ public class GetMessageResult {
         this.filterMessageCount = filterMessageCount;
     }
 
+    /** 返回调试字符串。 */
     @Override
     public String toString() {
         return "GetMessageResult [status=" + status + ", nextBeginOffset=" + nextBeginOffset + ", minOffset="

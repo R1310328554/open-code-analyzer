@@ -19,16 +19,19 @@ package org.apache.rocketmq.store;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Exclusive lock implementation to put message
+ * 写消息可重入互斥锁实现，适用于竞争较激烈的场景。
  */
 public class PutMessageReentrantLock implements PutMessageLock {
+    /** 非公平可重入锁。 */
     private ReentrantLock putMessageNormalLock = new ReentrantLock(); // NonfairSync
 
+    /** 阻塞获取锁。 */
     @Override
     public void lock() {
         putMessageNormalLock.lock();
     }
 
+    /** 释放锁。 */
     @Override
     public void unlock() {
         putMessageNormalLock.unlock();
