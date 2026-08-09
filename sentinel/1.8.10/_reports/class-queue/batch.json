@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:40:53Z",
   "files": [
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/FetchSystemStatusCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/FetchTreeCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/InterceptingCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/ModifyRulesCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/OnOffGetCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/OnOffSetCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/SendMetricCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/VersionCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/cluster/FetchClusterModeCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/handler/cluster/ModifyClusterModeCommandHandler.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/command/vo/NodeVo.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/heartbeat/HeartbeatSenderProvider.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/transport/CommandCenter.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/transport/HeartbeatSender.java",
-    "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/transport/client/CommandClient.java",
     "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/transport/config/TransportConfig.java",
     "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/transport/endpoint/Endpoint.java",
     "sentinel-transport/sentinel-transport-common/src/main/java/com/alibaba/csp/sentinel/transport/endpoint/Protocol.java",
@@ -33,5 +18,5 @@
     "sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/codec/StringDecoder.java"
   ],
   "remaining_pending": 35,
-  "done": 885
+  "done": 900
 }
