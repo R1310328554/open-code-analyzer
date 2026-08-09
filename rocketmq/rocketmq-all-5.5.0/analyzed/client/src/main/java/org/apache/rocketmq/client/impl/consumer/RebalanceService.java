@@ -21,22 +21,32 @@ import org.apache.rocketmq.common.ServiceThread;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Rebalance 后台服务：周期性触发 {@link MQClientInstance#doRebalance()}，
+ * 协调消费组内队列分配与负载均衡。
+ */
 public class RebalanceService extends ServiceThread {
+    /** rebalance 已均衡时的等待间隔（毫秒）。 */
     private static long waitInterval =
         Long.parseLong(System.getProperty(
             "rocketmq.client.rebalance.waitInterval", "20000"));
+    /** rebalance 未均衡时的最小重试间隔（毫秒）。 */
     private static long minInterval =
         Long.parseLong(System.getProperty(
             "rocketmq.client.rebalance.minInterval", "1000"));
     private final Logger log = LoggerFactory.getLogger(RebalanceService.class);
+    /** 关联的客户端工厂。 */
     private final MQClientInstance mqClientFactory;
+    /** 上次 rebalance 时间戳。 */
     private long lastRebalanceTimestamp = System.currentTimeMillis();
 
+    /** 构造 rebalance 服务。 */
     public RebalanceService(MQClientInstance mqClientFactory) {
         this.mqClientFactory = mqClientFactory;
     }
 
     @Override
+    /** 主循环：按间隔触发 rebalance，未均衡时缩短等待。 */
     public void run() {
         log.info(this.getServiceName() + " service started");
 

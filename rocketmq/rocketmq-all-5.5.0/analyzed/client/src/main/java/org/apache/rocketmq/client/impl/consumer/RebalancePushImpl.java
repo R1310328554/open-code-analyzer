@@ -35,11 +35,17 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * Push 消费者 rebalance 实现：被动消费，负责计算 pull 起点、派发 pull/pop 请求及顺序消费解锁。
+ */
 public class RebalancePushImpl extends RebalanceImpl {
+    /** 顺序消费解锁延迟（毫秒），兼容旧行为。 */
     private final static long UNLOCK_DELAY_TIME_MILLS = Long.parseLong(System.getProperty("rocketmq.client.unlockDelayTimeMills", "20000"));
+    /** 关联的 Push 消费者实现。 */
     private final DefaultMQPushConsumerImpl defaultMQPushConsumerImpl;
 
 
+    /** 以 Push 消费者构造 rebalance 实现。 */
     public RebalancePushImpl(DefaultMQPushConsumerImpl defaultMQPushConsumerImpl) {
         this(null, null, null, null, defaultMQPushConsumerImpl);
     }
@@ -54,8 +60,8 @@ public class RebalancePushImpl extends RebalanceImpl {
     @Override
     public void messageQueueChanged(String topic, Set<MessageQueue> mqAll, Set<MessageQueue> mqDivided) {
         /*
-         * When rebalance result changed, should update subscription's version to notify broker.
-         * Fix: inconsistency subscription may lead to consumer miss messages.
+         * rebalance 结果变化时更新订阅 version 通知 Broker，
+         * 避免订阅不一致导致消费者漏消息。
          */
         SubscriptionData subscriptionData = this.subscriptionInner.get(topic);
         long newVersion = System.currentTimeMillis();
@@ -81,7 +87,7 @@ public class RebalancePushImpl extends RebalanceImpl {
             }
         }
 
-        // notify broker
+        // 通知 Broker 心跳
         this.getmQClientFactory().sendHeartbeatToAllBrokerWithLockV2(true);
 
         MessageQueueListener messageQueueListener = defaultMQPushConsumerImpl.getMessageQueueListener();
@@ -91,14 +97,15 @@ public class RebalancePushImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 移除多余队列：顺序消费需解锁，否则持久化 offset 后删除。 */
     public boolean removeUnnecessaryMessageQueue(final MessageQueue mq, final ProcessQueue pq) {
         if (this.defaultMQPushConsumerImpl.isConsumeOrderly()
             && MessageModel.CLUSTERING.equals(this.defaultMQPushConsumerImpl.messageModel())) {
 
-            // commit offset immediately
+            // 立即提交 offset
             this.defaultMQPushConsumerImpl.getOffsetStore().persist(mq);
 
-            // remove order message queue: unlock & remove
+            // 移除顺序消费队列：解锁并删除
             return tryRemoveOrderMessageQueue(mq, pq);
         } else {
             this.defaultMQPushConsumerImpl.getOffsetStore().persist(mq);
@@ -107,9 +114,10 @@ public class RebalancePushImpl extends RebalanceImpl {
         }
     }
 
+    /** 尝试移除顺序消费队列：无消费或超时后解锁并删除 offset。 */
     private boolean tryRemoveOrderMessageQueue(final MessageQueue mq, final ProcessQueue pq) {
         try {
-            // unlock & remove when no message is consuming or UNLOCK_DELAY_TIME_MILLS timeout (Backwards compatibility)
+            // 无消息消费中或超过 UNLOCK_DELAY_TIME_MILLS 时强制解锁并移除（向后兼容）
             boolean forceUnlock = pq.isDropped() && System.currentTimeMillis() > pq.getLastLockTimestamp() + UNLOCK_DELAY_TIME_MILLS;
             if (forceUnlock || pq.getConsumeLock().writeLock().tryLock(500, TimeUnit.MILLISECONDS)) {
                 try {
@@ -135,12 +143,14 @@ public class RebalancePushImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 判断是否由客户端执行 rebalance（客户端 rebalance/顺序/广播模式）。 */
     public boolean clientRebalance(String topic) {
-        // POPTODO order pop consume not implement yet
+        // POPTODO：顺序 POP 消费尚未实现
         return defaultMQPushConsumerImpl.getDefaultMQPushConsumer().isClientRebalance() || defaultMQPushConsumerImpl.isConsumeOrderly() || MessageModel.BROADCASTING.equals(messageModel);
     }
 
     @Override
+    /** 返回被动消费类型 {@link ConsumeType#CONSUME_PASSIVELY}。 */
     public ConsumeType consumeType() {
         return ConsumeType.CONSUME_PASSIVELY;
     }
@@ -163,6 +173,7 @@ public class RebalancePushImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 按 ConsumeFromWhere 与 offsetStore 计算 push 模式 pull 起始 offset。 */
     public long computePullFromWhereWithException(MessageQueue mq) throws MQClientException {
         long result = -1;
         final ConsumeFromWhere consumeFromWhere = this.defaultMQPushConsumerImpl.getDefaultMQPushConsumer().getConsumeFromWhere();
@@ -176,7 +187,7 @@ public class RebalancePushImpl extends RebalanceImpl {
                 if (lastOffset >= 0) {
                     result = lastOffset;
                 }
-                // First start,no offset
+                // 首次启动，无 offset
                 else if (-1 == lastOffset) {
                     if (mq.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
                         result = 0L;
@@ -199,7 +210,7 @@ public class RebalancePushImpl extends RebalanceImpl {
                 if (lastOffset >= 0) {
                     result = lastOffset;
                 } else if (-1 == lastOffset) {
-                    //the offset will be fixed by the OFFSET_ILLEGAL process
+                    // offset 将由 OFFSET_ILLEGAL 流程修正
                     result = 0L;
                 } else {
                     throw new MQClientException(ResponseCode.QUERY_NOT_FOUND, "Failed to query offset from offset " +
@@ -248,6 +259,7 @@ public class RebalancePushImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 根据 ConsumeFromWhere 返回 POP initMode（MIN 或 MAX）。 */
     public int getConsumeInitMode() {
         final ConsumeFromWhere consumeFromWhere = this.defaultMQPushConsumerImpl.getDefaultMQPushConsumer().getConsumeFromWhere();
         if (ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET == consumeFromWhere) {
@@ -258,6 +270,7 @@ public class RebalancePushImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 将 pull 请求立即或延迟提交到 {@link PullMessageService}。 */
     public void dispatchPullRequest(final List<PullRequest> pullRequestList, final long delay) {
         for (PullRequest pullRequest : pullRequestList) {
             if (delay <= 0) {
@@ -269,6 +282,7 @@ public class RebalancePushImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 将 POP 请求立即或延迟提交到 PullMessageService。 */
     public void dispatchPopPullRequest(final List<PopRequest> pullRequestList, final long delay) {
         for (PopRequest pullRequest : pullRequestList) {
             if (delay <= 0) {
@@ -280,11 +294,13 @@ public class RebalancePushImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 创建标准 ProcessQueue。 */
     public ProcessQueue createProcessQueue() {
         return new ProcessQueue();
     }
 
     @Override
+    /** 创建 PopProcessQueue。 */
     public PopProcessQueue createPopProcessQueue() {
         return new PopProcessQueue();
     }

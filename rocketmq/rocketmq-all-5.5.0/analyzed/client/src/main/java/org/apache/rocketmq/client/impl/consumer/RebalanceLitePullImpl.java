@@ -30,10 +30,15 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 
+/**
+ * Lite Pull 消费者 rebalance 实现：支持按 {@link ConsumeFromWhere} 计算起始 offset。
+ */
 public class RebalanceLitePullImpl extends RebalanceImpl {
 
+    /** 关联的 Lite Pull 消费者实现。 */
     private final DefaultLitePullConsumerImpl litePullConsumerImpl;
 
+    /** 以 Lite Pull 消费者构造 rebalance 实现。 */
     public RebalanceLitePullImpl(DefaultLitePullConsumerImpl litePullConsumerImpl) {
         this(null, null, null, null, litePullConsumerImpl);
     }
@@ -46,6 +51,7 @@ public class RebalanceLitePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 队列变更时通知 {@link MessageQueueListener}。 */
     public void messageQueueChanged(String topic, Set<MessageQueue> mqAll, Set<MessageQueue> mqDivided) {
         MessageQueueListener messageQueueListener = this.litePullConsumerImpl.getDefaultLitePullConsumer().getMessageQueueListener();
         if (messageQueueListener != null) {
@@ -58,6 +64,7 @@ public class RebalanceLitePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 移除多余队列：持久化并删除 offset。 */
     public boolean removeUnnecessaryMessageQueue(MessageQueue mq, ProcessQueue pq) {
         this.litePullConsumerImpl.getOffsetStore().persist(mq);
         this.litePullConsumerImpl.getOffsetStore().removeOffset(mq);
@@ -65,6 +72,7 @@ public class RebalanceLitePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 返回主动消费类型。 */
     public ConsumeType consumeType() {
         return ConsumeType.CONSUME_ACTIVELY;
     }
@@ -87,6 +95,7 @@ public class RebalanceLitePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 按 ConsumeFromWhere 策略计算首次/恢复 pull 起始 offset。 */
     public long computePullFromWhereWithException(MessageQueue mq) throws MQClientException {
         ConsumeFromWhere consumeFromWhere = litePullConsumerImpl.getDefaultLitePullConsumer().getConsumeFromWhere();
         long result = -1;
@@ -96,7 +105,7 @@ public class RebalanceLitePullImpl extends RebalanceImpl {
                 if (lastOffset >= 0) {
                     result = lastOffset;
                 } else if (-1 == lastOffset) {
-                    if (mq.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) { // First start, no offset
+                    if (mq.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) { // 首次启动，无 offset
                         result = 0L;
                     } else {
                         try {
@@ -154,11 +163,13 @@ public class RebalanceLitePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** Lite Pull 模式不支持 initMode。 */
     public int getConsumeInitMode() {
         throw new UnsupportedOperationException("no initMode for Pull");
     }
 
     @Override
+    /** Lite Pull 由用户主动拉取，不派发请求。 */
     public void dispatchPullRequest(final List<PullRequest> pullRequestList, final long delay) {
     }
 
@@ -168,6 +179,7 @@ public class RebalanceLitePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 创建标准 ProcessQueue。 */
     public ProcessQueue createProcessQueue() {
         return new ProcessQueue();
     }

@@ -52,24 +52,42 @@ import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Pull/POP API 封装：向 Broker 发起 pull/pop 请求，解码消息并执行过滤钩子。
+ */
 public class PullAPIWrapper {
     private static final Logger log = LoggerFactory.getLogger(PullAPIWrapper.class);
+    /** 客户端实例。 */
     private final MQClientInstance mQClientFactory;
+    /** 消费组名。 */
     private final String consumerGroup;
+    /** 是否单元化模式。 */
     private final boolean unitMode;
+    /** 队列 -> 建议拉取 Broker 节点 ID 映射。 */
     private ConcurrentMap<MessageQueue, AtomicLong/* brokerId */> pullFromWhichNodeTable =
         new ConcurrentHashMap<>(32);
+    /** 是否由用户指定连接 Broker。 */
     private volatile boolean connectBrokerByUser = false;
+    /** 用户指定时的默认 Broker ID。 */
     private volatile long defaultBrokerId = MixAll.MASTER_ID;
     private Random random = new Random(System.nanoTime());
+    /** 消息过滤钩子列表。 */
     private ArrayList<FilterMessageHook> filterMessageHookList = new ArrayList<>();
 
+    /** 构造 Pull API 封装。 */
     public PullAPIWrapper(MQClientInstance mQClientFactory, String consumerGroup, boolean unitMode) {
         this.mQClientFactory = mQClientFactory;
         this.consumerGroup = consumerGroup;
         this.unitMode = unitMode;
     }
 
+    /**
+     * 处理 pull 结果：解码二进制、标签过滤、执行钩子并填充消息属性。
+     *
+     * @param mq 消息队列
+     * @param pullResult pull 结果（须为 {@link PullResultExt}）
+     * @param subscriptionData 订阅数据
+     */
     public PullResult processPullResult(final MessageQueue mq, final PullResult pullResult,
         final SubscriptionData subscriptionData) {
         PullResultExt pullResultExt = (PullResultExt) pullResult;
@@ -152,6 +170,7 @@ public class PullAPIWrapper {
         return pullResult;
     }
 
+    /** 更新队列建议拉取的 Broker 节点 ID。 */
     public void updatePullFromWhichNode(final MessageQueue mq, final long brokerId) {
         AtomicLong suggest = this.pullFromWhichNodeTable.get(mq);
         if (null == suggest) {
@@ -161,10 +180,12 @@ public class PullAPIWrapper {
         }
     }
 
+    /** 是否注册了过滤钩子。 */
     public boolean hasHook() {
         return !this.filterMessageHookList.isEmpty();
     }
 
+    /** 依次执行所有 {@link FilterMessageHook}。 */
     public void executeHook(final FilterMessageContext context) {
         if (!this.filterMessageHookList.isEmpty()) {
             for (FilterMessageHook hook : this.filterMessageHookList) {
@@ -177,6 +198,9 @@ public class PullAPIWrapper {
         }
     }
 
+    /**
+     * 向 Broker 内核发起 pull 请求（含 maxSizeInBytes）。
+     */
     public PullResult pullKernelImpl(
         final MessageQueue mq,
         final String subExpression,
@@ -205,7 +229,7 @@ public class PullAPIWrapper {
 
         if (findBrokerResult != null) {
             {
-                // check version
+                // 校验 Broker 版本是否支持当前表达式类型
                 if (!ExpressionType.isTagType(expressionType)
                     && findBrokerResult.getBrokerVersion() < MQVersion.Version.V4_1_0_SNAPSHOT.ordinal()) {
                     throw new MQClientException("The broker[" + mq.getBrokerName() + ", "
@@ -281,6 +305,7 @@ public class PullAPIWrapper {
         );
     }
 
+    /** 重新计算应从哪个 Broker 节点拉取。 */
     public long recalculatePullFromWhichNode(final MessageQueue mq) {
         if (this.isConnectBrokerByUser()) {
             return this.defaultBrokerId;
@@ -294,6 +319,7 @@ public class PullAPIWrapper {
         return MixAll.MASTER_ID;
     }
 
+    /** 计算类过滤模式下应连接的 Filter Server 地址。 */
     private String computePullFromWhichFilterServer(final String topic, final String brokerAddr)
         throws MQClientException {
         ConcurrentMap<String, TopicRouteData> topicRouteTable = this.mQClientFactory.getTopicRouteTable();
@@ -310,10 +336,12 @@ public class PullAPIWrapper {
             + topic, null);
     }
 
+    /** 是否用户指定 Broker 连接。 */
     public boolean isConnectBrokerByUser() {
         return connectBrokerByUser;
     }
 
+    /** 设置是否用户指定 Broker。 */
     public void setConnectBrokerByUser(boolean connectBrokerByUser) {
         this.connectBrokerByUser = connectBrokerByUser;
 
@@ -329,32 +357,36 @@ public class PullAPIWrapper {
         return value;
     }
 
+    /** 注册消息过滤钩子列表。 */
     public void registerFilterMessageHook(ArrayList<FilterMessageHook> filterMessageHookList) {
         this.filterMessageHookList = filterMessageHookList;
     }
 
+    /** 返回默认 Broker ID。 */
     public long getDefaultBrokerId() {
         return defaultBrokerId;
     }
 
+    /** 设置默认 Broker ID。 */
     public void setDefaultBrokerId(long defaultBrokerId) {
         this.defaultBrokerId = defaultBrokerId;
     }
 
 
     /**
+     * 异步向 Broker 发起 POP 请求。
      *
-     * @param mq
-     * @param invisibleTime
-     * @param maxNums
-     * @param consumerGroup
-     * @param timeout
-     * @param popCallback
-     * @param poll
-     * @param initMode
-    //     * @param expressionType
-    //     * @param expression
-     * @param order
+     * @param mq 消息队列
+     * @param invisibleTime 消息不可见时长
+     * @param maxNums 最大消息数
+     * @param consumerGroup 消费组
+     * @param timeout 超时（毫秒）
+     * @param popCallback POP 回调
+     * @param poll 是否长轮询
+     * @param initMode 初始 offset 模式
+     * @param order 是否顺序消费
+     * @param expressionType 过滤表达式类型
+     * @param expression 过滤表达式
      * @throws MQClientException
      * @throws RemotingException
      * @throws InterruptedException
@@ -379,11 +411,11 @@ public class PullAPIWrapper {
             requestHeader.setExp(expression);
             requestHeader.setOrder(order);
             requestHeader.setBrokerName(mq.getBrokerName());
-            //give 1000 ms for server response
+            // 长轮询时为服务端响应预留时间
             if (poll) {
                 requestHeader.setPollTime(timeout);
                 requestHeader.setBornTime(System.currentTimeMillis());
-                // timeout + 10s, fix the too earlier timeout of client when long polling.
+                // 长轮询时 timeout 加 10s，避免客户端过早超时
                 timeout += 10 * 1000;
             }
             String brokerAddr = findBrokerResult.getBrokerAddr();

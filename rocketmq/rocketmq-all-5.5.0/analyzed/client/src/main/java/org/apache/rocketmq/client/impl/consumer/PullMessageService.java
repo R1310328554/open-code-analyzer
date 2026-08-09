@@ -28,23 +28,31 @@ import org.apache.rocketmq.common.utils.ThreadUtils;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 拉取消息后台服务：从请求队列取出 {@link PullRequest}/{@link PopRequest} 并分派给对应 Push 消费者执行。
+ */
 public class PullMessageService extends ServiceThread {
     private final Logger logger = LoggerFactory.getLogger(PullMessageService.class);
+    /** pull/pop 请求阻塞队列。 */
     private final LinkedBlockingQueue<MessageRequest> messageRequestQueue = new LinkedBlockingQueue<>();
 
+    /** 关联的客户端实例。 */
     private final MQClientInstance mQClientFactory;
     private final ScheduledExecutorService scheduledExecutorService = Executors
         .newSingleThreadScheduledExecutor(new ThreadFactoryImpl("PullMessageServiceScheduledThread"));
 
+    /** 构造拉取服务。 */
     public PullMessageService(MQClientInstance mQClientFactory) {
         this.mQClientFactory = mQClientFactory;
     }
 
+    /** 延迟提交 pull 请求。 */
     public void executePullRequestLater(final PullRequest pullRequest, final long timeDelay) {
         if (!isStopped()) {
             this.scheduledExecutorService.schedule(new Runnable() {
                 @Override
-                public void run() {
+                /** 主循环：从队列取请求并按模式分派 pull 或 pop。 */
+    public void run() {
                     PullMessageService.this.executePullRequestImmediately(pullRequest);
                 }
             }, timeDelay, TimeUnit.MILLISECONDS);
@@ -53,6 +61,7 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    /** 立即提交 pull 请求到队列。 */
     public void executePullRequestImmediately(final PullRequest pullRequest) {
         try {
             this.messageRequestQueue.put(pullRequest);
@@ -61,6 +70,7 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    /** 延迟提交 POP 请求。 */
     public void executePopPullRequestLater(final PopRequest popRequest, final long timeDelay) {
         if (!isStopped()) {
             this.scheduledExecutorService.schedule(new Runnable() {
@@ -74,6 +84,7 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    /** 立即提交 POP 请求到队列。 */
     public void executePopPullRequestImmediately(final PopRequest popRequest) {
         try {
             this.messageRequestQueue.put(popRequest);
@@ -82,6 +93,7 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    /** 延迟执行调度任务。 */
     public void executeTaskLater(final Runnable r, final long timeDelay) {
         if (!isStopped()) {
             this.scheduledExecutorService.schedule(r, timeDelay, TimeUnit.MILLISECONDS);
@@ -90,6 +102,7 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    /** 立即执行调度任务。 */
     public void executeTask(final Runnable r) {
         if (!isStopped()) {
             this.scheduledExecutorService.execute(r);
@@ -98,10 +111,12 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    /** 返回延迟调度线程池。 */
     public ScheduledExecutorService getScheduledExecutorService() {
         return scheduledExecutorService;
     }
 
+    /** 根据 pull 请求查找消费者并执行 pull。 */
     private void pullMessage(final PullRequest pullRequest) {
         final MQConsumerInner consumer = this.mQClientFactory.selectConsumer(pullRequest.getConsumerGroup());
         if (consumer != null) {
@@ -112,6 +127,7 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    /** 根据 POP 请求查找消费者并执行 pop。 */
     private void popMessage(final PopRequest popRequest) {
         final MQConsumerInner consumer = this.mQClientFactory.selectConsumer(popRequest.getConsumerGroup());
         if (consumer != null) {
@@ -144,6 +160,7 @@ public class PullMessageService extends ServiceThread {
     }
 
     @Override
+    /** 关闭服务并优雅停止调度线程池。 */
     public void shutdown(boolean interrupt) {
         super.shutdown(interrupt);
         ThreadUtils.shutdownGracefully(this.scheduledExecutorService, 1000, TimeUnit.MILLISECONDS);

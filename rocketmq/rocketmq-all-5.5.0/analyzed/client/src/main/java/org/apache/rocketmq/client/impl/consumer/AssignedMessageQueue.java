@@ -23,20 +23,29 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 已分配消息队列状态管理：维护 rebalance 后本消费者持有的队列及其
+ * {@link ProcessQueue}、拉取/消费 offset、暂停与 seek 状态。
+ */
 public class AssignedMessageQueue {
 
+    /** 消息队列 -> 队列状态映射。 */
     private final ConcurrentHashMap<MessageQueue, MessageQueueState> assignedMessageQueueState;
 
+    /** 关联的 rebalance 实现，用于复用已有 ProcessQueue。 */
     private RebalanceImpl rebalanceImpl;
 
+    /** 构造空的已分配队列表。 */
     public AssignedMessageQueue() {
         assignedMessageQueueState = new ConcurrentHashMap<>();
     }
 
+    /** 设置 rebalance 实现引用。 */
     public void setRebalanceImpl(RebalanceImpl rebalanceImpl) {
         this.rebalanceImpl = rebalanceImpl;
     }
 
+    /** 判断指定队列是否已暂停消费；未分配时视为已暂停。 */
     public boolean isPaused(MessageQueue messageQueue) {
         MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
         if (messageQueueState != null) {
@@ -45,6 +54,7 @@ public class AssignedMessageQueue {
         return true;
     }
 
+    /** 暂停指定队列集合的消费。 */
     public void pause(Collection<MessageQueue> messageQueues) {
         for (MessageQueue messageQueue : messageQueues) {
             MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
@@ -54,6 +64,7 @@ public class AssignedMessageQueue {
         }
     }
 
+    /** 恢复指定队列集合的消费。 */
     public void resume(Collection<MessageQueue> messageQueueCollection) {
         for (MessageQueue messageQueue : messageQueueCollection) {
             MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
@@ -63,6 +74,7 @@ public class AssignedMessageQueue {
         }
     }
 
+    /** 获取队列对应的 {@link ProcessQueue}。 */
     public ProcessQueue getProcessQueue(MessageQueue messageQueue) {
         MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
         if (messageQueueState != null) {
@@ -71,6 +83,7 @@ public class AssignedMessageQueue {
         return null;
     }
 
+    /** 获取队列当前拉取 offset，未分配时返回 -1。 */
     public long getPullOffset(MessageQueue messageQueue) {
         MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
         if (messageQueueState != null) {
@@ -79,6 +92,7 @@ public class AssignedMessageQueue {
         return -1;
     }
 
+    /** 更新拉取 offset；ProcessQueue 不匹配时不更新。 */
     public void updatePullOffset(MessageQueue messageQueue, long offset, ProcessQueue processQueue) {
         MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
         if (messageQueueState != null) {
@@ -89,6 +103,7 @@ public class AssignedMessageQueue {
         }
     }
 
+    /** 获取消费 offset，未分配时返回 -1。 */
     public long getConsumerOffset(MessageQueue messageQueue) {
         MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
         if (messageQueueState != null) {
@@ -97,6 +112,7 @@ public class AssignedMessageQueue {
         return -1;
     }
 
+    /** 更新消费 offset。 */
     public void updateConsumeOffset(MessageQueue messageQueue, long offset) {
         MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
         if (messageQueueState != null) {
@@ -104,6 +120,7 @@ public class AssignedMessageQueue {
         }
     }
 
+    /** 设置 seek 目标 offset。 */
     public void setSeekOffset(MessageQueue messageQueue, long offset) {
         MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
         if (messageQueueState != null) {
@@ -111,6 +128,7 @@ public class AssignedMessageQueue {
         }
     }
 
+    /** 获取 seek 目标 offset，未分配时返回 -1。 */
     public long getSeekOffset(MessageQueue messageQueue) {
         MessageQueueState messageQueueState = assignedMessageQueueState.get(messageQueue);
         if (messageQueueState != null) {
@@ -119,6 +137,7 @@ public class AssignedMessageQueue {
         return -1;
     }
 
+    /** 按 topic 更新已分配队列：移除不在 assigned 中的队列并标记 dropped。 */
     public void updateAssignedMessageQueue(String topic, Collection<MessageQueue> assigned) {
         synchronized (this.assignedMessageQueueState) {
             Iterator<Map.Entry<MessageQueue, MessageQueueState>> it = this.assignedMessageQueueState.entrySet().iterator();
@@ -135,6 +154,7 @@ public class AssignedMessageQueue {
         }
     }
 
+    /** 全量更新已分配队列列表。 */
     public void updateAssignedMessageQueue(Collection<MessageQueue> assigned) {
         synchronized (this.assignedMessageQueueState) {
             Iterator<Map.Entry<MessageQueue, MessageQueueState>> it = this.assignedMessageQueueState.entrySet().iterator();
@@ -164,6 +184,7 @@ public class AssignedMessageQueue {
         }
     }
 
+    /** 移除指定 topic 下所有已分配队列。 */
     public void removeAssignedMessageQueue(String topic) {
         synchronized (this.assignedMessageQueueState) {
             Iterator<Map.Entry<MessageQueue, MessageQueueState>> it = this.assignedMessageQueueState.entrySet().iterator();
@@ -176,16 +197,22 @@ public class AssignedMessageQueue {
         }
     }
 
+    /** 返回当前已分配的消息队列集合。 */
     public Set<MessageQueue> getAssignedMessageQueues() {
         return this.assignedMessageQueueState.keySet();
     }
 
+    /** 单队列运行时状态：ProcessQueue、offset 与暂停标志。 */
     private class MessageQueueState {
         private MessageQueue messageQueue;
         private ProcessQueue processQueue;
+        /** 是否暂停消费。 */
         private volatile boolean paused = false;
+        /** 当前拉取 offset。 */
         private volatile long pullOffset = -1;
+        /** 当前消费 offset。 */
         private volatile long consumeOffset = -1;
+        /** seek 目标 offset。 */
         private volatile long seekOffset = -1;
 
         private MessageQueueState(MessageQueue messageQueue, ProcessQueue processQueue) {

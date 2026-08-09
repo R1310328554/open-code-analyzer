@@ -21,16 +21,25 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 /**
- * Message lock,strictly ensure the single queue only one thread at a time consuming
+ * 消息队列消费锁：严格保证同一队列同一时刻仅一个线程消费。
+ * 支持按 shardingKey 索引细分锁对象。
  */
 public class MessageQueueLock {
+    /** 队列 -> (shardingKeyIndex -> 锁对象) 映射表。 */
     private ConcurrentMap<MessageQueue, ConcurrentMap<Integer, Object>> mqLockTable =
         new ConcurrentHashMap<>(32);
 
+    /** 获取队列默认锁对象（shardingKeyIndex 为 -1）。 */
     public Object fetchLockObject(final MessageQueue mq) {
         return fetchLockObject(mq, -1);
     }
 
+    /**
+     * 获取指定队列与 shardingKey 索引对应的锁对象。
+     *
+     * @param mq 消息队列
+     * @param shardingKeyIndex 分片键索引，-1 表示整队列锁
+     */
     public Object fetchLockObject(final MessageQueue mq, final int shardingKeyIndex) {
         ConcurrentMap<Integer, Object> objMap = this.mqLockTable.get(mq);
         if (null == objMap) {

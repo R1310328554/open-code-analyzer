@@ -18,6 +18,10 @@ package org.apache.rocketmq.client.impl.consumer;
 
 import org.apache.rocketmq.common.message.MessageRequestMode;
 
+/**
+ * 拉取/POP 请求统一接口，由 {@link PullMessageService} 队列调度。
+ */
 public interface MessageRequest {
+    /** 返回请求模式（PULL 或 POP）。 */
     MessageRequestMode getMessageRequestMode();
 }

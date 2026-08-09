@@ -20,18 +20,29 @@ import org.apache.rocketmq.common.constant.ConsumeInitMode;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.message.MessageRequestMode;
 
+/**
+ * POP 拉取请求：携带 topic、消费组、队列及 {@link PopProcessQueue} 等上下文。
+ */
 public class PopRequest implements MessageRequest {
+    /** Topic 名称。 */
     private String topic;
+    /** 消费组名。 */
     private String consumerGroup;
+    /** 目标消息队列。 */
     private MessageQueue messageQueue;
+    /** 关联的 POP 处理队列。 */
     private PopProcessQueue popProcessQueue;
+    /** 是否已优先加锁（顺序消费场景）。 */
     private boolean lockedFirst = false;
+    /** POP 初始 offset 模式。 */
     private int initMode = ConsumeInitMode.MAX;
 
+    /** 是否已优先加锁。 */
     public boolean isLockedFirst() {
         return lockedFirst;
     }
 
+    /** 设置优先加锁标志。 */
     public void setLockedFirst(boolean lockedFirst) {
         this.lockedFirst = lockedFirst;
     }
@@ -60,18 +71,22 @@ public class PopRequest implements MessageRequest {
         this.topic = topic;
     }
 
+    /** 返回 POP 处理队列。 */
     public PopProcessQueue getPopProcessQueue() {
         return popProcessQueue;
     }
 
+    /** 设置 POP 处理队列。 */
     public void setPopProcessQueue(PopProcessQueue popProcessQueue) {
         this.popProcessQueue = popProcessQueue;
     }
 
+    /** 返回 POP 初始模式。 */
     public int getInitMode() {
         return initMode;
     }
 
+    /** 设置 POP 初始模式。 */
     public void setInitMode(int initMode) {
         this.initMode = initMode;
     }
@@ -125,6 +140,7 @@ public class PopRequest implements MessageRequest {
     }
 
     @Override
+    /** 返回 {@link MessageRequestMode#POP}。 */
     public MessageRequestMode getMessageRequestMode() {
         return MessageRequestMode.POP;
     }

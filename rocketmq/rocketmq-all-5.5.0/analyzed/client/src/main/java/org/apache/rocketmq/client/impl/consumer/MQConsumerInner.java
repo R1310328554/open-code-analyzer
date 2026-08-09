@@ -25,30 +25,42 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
 /**
- * Consumer inner interface
+ * 消费者内部接口：供 {@link MQClientInstance} 与 rebalance/pull 服务调用。
  */
 public interface MQConsumerInner {
+    /** 消费组名。 */
     String groupName();
 
+    /** 消息模式（集群/广播）。 */
     MessageModel messageModel();
 
+    /** 消费类型（主动 pull / 被动 push）。 */
     ConsumeType consumeType();
 
+    /** 首次消费起始位置策略。 */
     ConsumeFromWhere consumeFromWhere();
 
+    /** 当前订阅集合。 */
     Set<SubscriptionData> subscriptions();
 
+    /** 执行 rebalance。 */
     void doRebalance();
 
+    /** 尝试 rebalance，返回是否已均衡。 */
     boolean tryRebalance();
 
+    /** 持久化消费位点。 */
     void persistConsumerOffset();
 
+    /** 更新 topic 的路由/队列订阅信息。 */
     void updateTopicSubscribeInfo(final String topic, final Set<MessageQueue> info);
 
+    /** 判断 topic 订阅信息是否需要更新。 */
     boolean isSubscribeTopicNeedUpdate(final String topic);
 
+    /** 是否单元化模式。 */
     boolean isUnitMode();
 
+    /** 返回消费者运行时信息快照。 */
     ConsumerRunningInfo consumerRunningInfo();
 }

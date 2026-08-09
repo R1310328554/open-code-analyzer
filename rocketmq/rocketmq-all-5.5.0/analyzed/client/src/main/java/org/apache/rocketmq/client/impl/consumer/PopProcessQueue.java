@@ -20,57 +20,72 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.rocketmq.remoting.protocol.body.PopProcessQueueInfo;
 
 /**
- * Queue consumption snapshot
+ * POP 消费队列快照：跟踪待 Ack 消息数、最近 pop 时间与丢弃状态。
  */
 public class PopProcessQueue {
 
+    /** POP 空闲超时阈值（毫秒），超时视为 pull 过期。 */
     private final static long PULL_MAX_IDLE_TIME = Long.parseLong(System.getProperty("rocketmq.client.pull.pullMaxIdleTime", "120000"));
 
+    /** 最近一次 pop 时间戳。 */
     private long lastPopTimestamp = System.currentTimeMillis();
+    /** 待 Ack 消息计数。 */
     private AtomicInteger waitAckCounter = new AtomicInteger(0);
+    /** 队列是否已丢弃（rebalance 移除等）。 */
     private volatile boolean dropped = false;
 
+    /** 返回最近 pop 时间戳。 */
     public long getLastPopTimestamp() {
         return lastPopTimestamp;
     }
 
+    /** 设置最近 pop 时间戳。 */
     public void setLastPopTimestamp(long lastPopTimestamp) {
         this.lastPopTimestamp = lastPopTimestamp;
     }
 
+    /** 增加待 Ack 计数（pop 到新消息时）。 */
     public void incFoundMsg(int count) {
         this.waitAckCounter.getAndAdd(count);
     }
 
     /**
-     * @return the value before decrement.
+     * 消息 Ack 后递减计数。
+     *
+     * @return 递减前的计数值
      */
     public int ack() {
         return this.waitAckCounter.getAndDecrement();
     }
 
+    /** 减少待 Ack 计数。 */
     public void decFoundMsg(int count) {
         this.waitAckCounter.addAndGet(count);
     }
 
+    /** 返回当前待 Ack 消息数。 */
     public int getWaiAckMsgCount() {
         return this.waitAckCounter.get();
     }
 
+    /** 队列是否已丢弃。 */
     public boolean isDropped() {
         return dropped;
     }
 
+    /** 设置丢弃标志。 */
     public void setDropped(boolean dropped) {
         this.dropped = dropped;
     }
 
+    /** 填充运行时监控信息结构体。 */
     public void fillPopProcessQueueInfo(final PopProcessQueueInfo info) {
         info.setWaitAckCount(getWaiAckMsgCount());
         info.setDroped(isDropped());
         info.setLastPopTimestamp(getLastPopTimestamp());
     }
 
+    /** 判断是否超过 POP 空闲超时未 pop。 */
     public boolean isPullExpired() {
         return (System.currentTimeMillis() - this.lastPopTimestamp) > PULL_MAX_IDLE_TIME;
     }

@@ -26,9 +26,14 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 
+/**
+ * Pull 消费者 rebalance 实现：主动拉取模式，不派发 pull 请求。
+ */
 public class RebalancePullImpl extends RebalanceImpl {
+    /** 关联的 Pull 消费者实现。 */
     private final DefaultMQPullConsumerImpl defaultMQPullConsumerImpl;
 
+    /** 以 Pull 消费者构造 rebalance 实现。 */
     public RebalancePullImpl(DefaultMQPullConsumerImpl defaultMQPullConsumerImpl) {
         this(null, null, null, null, defaultMQPullConsumerImpl);
     }
@@ -41,6 +46,7 @@ public class RebalancePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 队列变更时通知 {@link MessageQueueListener}。 */
     public void messageQueueChanged(String topic, Set<MessageQueue> mqAll, Set<MessageQueue> mqDivided) {
         MessageQueueListener messageQueueListener = this.defaultMQPullConsumerImpl.getDefaultMQPullConsumer().getMessageQueueListener();
         if (messageQueueListener != null) {
@@ -53,6 +59,7 @@ public class RebalancePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 移除多余队列：持久化并删除 offset。 */
     public boolean removeUnnecessaryMessageQueue(MessageQueue mq, ProcessQueue pq) {
         this.defaultMQPullConsumerImpl.getOffsetStore().persist(mq);
         this.defaultMQPullConsumerImpl.getOffsetStore().removeOffset(mq);
@@ -60,11 +67,13 @@ public class RebalancePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 返回主动消费类型 {@link ConsumeType#CONSUME_ACTIVELY}。 */
     public ConsumeType consumeType() {
         return ConsumeType.CONSUME_ACTIVELY;
     }
 
     @Override
+    /** 移除脏 offset 记录。 */
     public void removeDirtyOffset(final MessageQueue mq) {
         this.defaultMQPullConsumerImpl.getOffsetStore().removeOffset(mq);
     }
@@ -76,16 +85,19 @@ public class RebalancePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** Pull 模式不计算起始 offset，固定返回 0。 */
     public long computePullFromWhereWithException(MessageQueue mq) throws MQClientException {
         return 0;
     }
 
     @Override
+    /** Pull 模式不支持 initMode。 */
     public int getConsumeInitMode() {
         throw new UnsupportedOperationException("no initMode for Pull");
     }
 
     @Override
+    /** Pull 模式由用户主动拉取，不派发请求。 */
     public void dispatchPullRequest(final List<PullRequest> pullRequestList, final long delay) {
     }
 
@@ -94,11 +106,13 @@ public class RebalancePullImpl extends RebalanceImpl {
     }
 
     @Override
+    /** 创建标准 ProcessQueue。 */
     public ProcessQueue createProcessQueue() {
         return new ProcessQueue();
     }
 
     @Override
+    /** Pull 模式不支持 POP 队列。 */
     public PopProcessQueue createPopProcessQueue() {
         return null;
     }

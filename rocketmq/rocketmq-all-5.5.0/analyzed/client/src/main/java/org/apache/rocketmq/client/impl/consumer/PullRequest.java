@@ -19,17 +19,27 @@ package org.apache.rocketmq.client.impl.consumer;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.message.MessageRequestMode;
 
+/**
+ * Pull 拉取请求：描述消费组、目标队列、{@link ProcessQueue} 及下次拉取 offset。
+ */
 public class PullRequest implements MessageRequest {
+    /** 消费组名。 */
     private String consumerGroup;
+    /** 目标消息队列。 */
     private MessageQueue messageQueue;
+    /** 关联的处理队列。 */
     private ProcessQueue processQueue;
+    /** 下次 pull 起始 offset。 */
     private long nextOffset;
+    /** 此前是否已成功加锁（顺序消费）。 */
     private boolean previouslyLocked = false;
 
+    /** 返回此前加锁状态。 */
     public boolean isPreviouslyLocked() {
         return previouslyLocked;
     }
 
+    /** 设置此前加锁状态。 */
     public void setPreviouslyLocked(boolean previouslyLocked) {
         this.previouslyLocked = previouslyLocked;
     }
@@ -50,10 +60,12 @@ public class PullRequest implements MessageRequest {
         this.messageQueue = messageQueue;
     }
 
+    /** 返回下次 pull offset。 */
     public long getNextOffset() {
         return nextOffset;
     }
 
+    /** 设置下次 pull offset。 */
     public void setNextOffset(long nextOffset) {
         this.nextOffset = nextOffset;
     }
@@ -95,15 +107,18 @@ public class PullRequest implements MessageRequest {
             + ", nextOffset=" + nextOffset + "]";
     }
 
+    /** 返回 ProcessQueue。 */
     public ProcessQueue getProcessQueue() {
         return processQueue;
     }
 
+    /** 设置 ProcessQueue。 */
     public void setProcessQueue(ProcessQueue processQueue) {
         this.processQueue = processQueue;
     }
 
     @Override
+    /** 返回 {@link MessageRequestMode#PULL}。 */
     public MessageRequestMode getMessageRequestMode() {
         return MessageRequestMode.PULL;
     }
