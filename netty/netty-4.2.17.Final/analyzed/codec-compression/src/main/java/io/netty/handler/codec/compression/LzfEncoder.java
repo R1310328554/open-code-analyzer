@@ -28,37 +28,24 @@ import io.netty.util.internal.PlatformDependent;
 import static com.ning.compress.lzf.LZFChunk.MAX_CHUNK_LEN;
 
 /**
- * Compresses a {@link ByteBuf} using the LZF format.
+ * 使用 LZF 算法压缩 {@link ByteBuf}。
  * <p>
- * See original <a href="http://oldhome.schmorp.de/marc/liblzf.html">LZF package</a>
- * and <a href="https://github.com/ning/compress/wiki/LZFFormat">LZF format</a> for full description.
+ * 格式说明见 liblzf 与 LZF 规范文档。
  */
 public class LzfEncoder extends MessageToByteEncoder<ByteBuf> {
 
-    /**
-     * Minimum block size ready for compression. Blocks with length
-     * less than {@link #MIN_BLOCK_TO_COMPRESS} will write as uncompressed.
-     */
+    /** 可尝试压缩的最小块长；更短则按未压缩块写出。 */
     private static final int MIN_BLOCK_TO_COMPRESS = 16;
     private static final boolean DEFAULT_SAFE = !PlatformDependent.hasUnsafe();
 
-    /**
-     * Compress threshold for LZF format. When the amount of input data is less than compressThreshold,
-     * we will construct an uncompressed output according to the LZF format.
-     * <p>
-     * When the value is less than {@see ChunkEncoder#MIN_BLOCK_TO_COMPRESS}, since LZF will not compress data
-     * that is less than {@see ChunkEncoder#MIN_BLOCK_TO_COMPRESS}, compressThreshold will not work.
-     */
+    /** LZF 压缩阈值：输入小于该值时直接输出未压缩块。
+     * 若小于 {@see ChunkEncoder#MIN_BLOCK_TO_COMPRESS} 则阈值无效。 */
     private final int compressThreshold;
 
-    /**
-     * Underlying decoder in use.
-     */
+    /** 底层块编码器（字段名沿用历史命名）。 */
     private final ChunkEncoder encoder;
 
-    /**
-     * Object that handles details of buffer recycling.
-     */
+    /** 缓冲回收器。 */
     private final BufferRecycler recycler;
 
     /**
@@ -107,9 +94,7 @@ public class LzfEncoder extends MessageToByteEncoder<ByteBuf> {
      * Creates a new LZF encoder with specified total length of encoded chunk. You can configure it to encode
      * your data flow more efficient if you know the average size of messages that you send.
      *
-     * @param totalLength Expected total length of content to compress;
-     *                    only matters for outgoing messages that is smaller than maximum chunk size (64k),
-     *                    to optimize encoding hash tables.
+     * @param totalLength 预期待压缩总长度，用于优化小于 64KB 消息的内部哈希表。
      */
     public LzfEncoder(int totalLength) {
         this(DEFAULT_SAFE, totalLength);
@@ -120,9 +105,7 @@ public class LzfEncoder extends MessageToByteEncoder<ByteBuf> {
      *
      * @param totalLength           Expected total length of content to compress; only matters for outgoing messages
      *                              that is smaller than maximum chunk size (64k), to optimize encoding hash tables.
-     * @param compressThreshold     Compress threshold for LZF format. When the amount of input data is less than
-     *                              compressThreshold, we will construct an uncompressed output according
-     *                              to the LZF format.
+     * @param compressThreshold 输入小于该阈值时输出未压缩 LZF 块。
      */
     public LzfEncoder(int totalLength, int compressThreshold) {
         this(DEFAULT_SAFE, totalLength, compressThreshold);
@@ -180,7 +163,7 @@ public class LzfEncoder extends MessageToByteEncoder<ByteBuf> {
             inputPtr = 0;
         }
 
-        // Estimate may apparently under-count by one in some cases.
+        // 估算值在个别情况下可能少 1
         final int maxOutputLength = LZFEncoder.estimateMaxWorkspaceSize(length) + 1;
         out.ensureWritable(maxOutputLength);
         final byte[] output;
@@ -195,10 +178,10 @@ public class LzfEncoder extends MessageToByteEncoder<ByteBuf> {
 
         final int outputLength;
         if (length >= compressThreshold) {
-            // compress.
+            // 执行压缩
             outputLength = encodeCompress(input, inputPtr, length, output, outputPtr);
         } else {
-            // not compress.
+            // 输出未压缩块
             outputLength = encodeNonCompress(input, inputPtr, length, output, outputPtr);
         }
 
@@ -239,7 +222,7 @@ public class LzfEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Use lzf uncompressed format to encode a piece of input.
+     * 将输入按 LZF 未压缩格式编码。
      */
     private static int encodeNonCompress(byte[] input, int inputPtr, int length, byte[] output, int outputPtr) {
         return lzfEncodeNonCompress(input, inputPtr, length, output, outputPtr) - outputPtr;

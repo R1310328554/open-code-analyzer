@@ -31,20 +31,15 @@ import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
 /**
- * Compresses a {@link ByteBuf} using the deflate algorithm.
+ * 使用 JDK {@link Deflater} 对 {@link ByteBuf} 进行 deflate 压缩。
  */
 public class JdkZlibEncoder extends ZlibEncoder {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(JdkZlibEncoder.class);
 
-    /**
-     * Maximum initial size for temporary heap buffers used for the compressed output. Buffer may still grow beyond
-     * this if necessary.
-     */
+    /** 压缩输出临时堆缓冲的初始大小上限，必要时仍可扩容。 */
     private static final int MAX_INITIAL_OUTPUT_BUFFER_SIZE;
-    /**
-     * Max size for temporary heap buffers used to copy input data to heap.
-     */
+    /** 将输入复制到堆上时临时缓冲的最大尺寸。 */
     private static final int MAX_INPUT_BUFFER_SIZE;
 
     private final ZlibWrapper wrapper;
@@ -52,9 +47,7 @@ public class JdkZlibEncoder extends ZlibEncoder {
     private volatile boolean finished;
     private volatile ChannelHandlerContext ctx;
 
-    /*
-     * GZIP support
-     */
+    /* GZIP 支持 */
     private final CRC32 crc;
     private static final byte[] gzipHeader = {0x1f, (byte) 0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
     private boolean writeHeader = true;
@@ -223,7 +216,7 @@ public class JdkZlibEncoder extends ZlibEncoder {
         }
 
         if (uncompressed.hasArray()) {
-            // if it is backed by an array we not need to do a copy at all
+            // 若底层为数组则无需额外复制
             encodeSome(uncompressed, out);
         } else {
             int heapBufferSize = Math.min(len, MAX_INPUT_BUFFER_SIZE);
@@ -238,12 +231,12 @@ public class JdkZlibEncoder extends ZlibEncoder {
                 heapBuf.release();
             }
         }
-        // clear input so that we don't keep an unnecessary reference to the input array
+        // 清空输入引用，避免长期持有输入数组
         deflater.setInput(EmptyArrays.EMPTY_BYTES);
     }
 
     private void encodeSome(ByteBuf in, ByteBuf out) {
-        // both in and out are heap buffers, here
+        // 此处 in 与 out 均为堆缓冲
 
         byte[] inAry = in.array();
         int offset = in.arrayOffset() + in.readerIndex();
@@ -264,11 +257,10 @@ public class JdkZlibEncoder extends ZlibEncoder {
         for (;;) {
             deflate(out);
             if (!out.isWritable()) {
-                // The buffer is not writable anymore. Increase the capacity to make more room.
-                // Can't rely on needsInput here, it might return true even if there's still data to be written.
+                // 缓冲不可写时扩容；不能仅依赖 needsInput，可能仍有待写出数据
                 out.ensureWritable(out.writerIndex());
             } else if (deflater.needsInput()) {
-                // Consumed everything
+                // 输入已全部消费
                 break;
             }
         }
@@ -291,9 +283,9 @@ public class JdkZlibEncoder extends ZlibEncoder {
                     // no op
             }
         }
-        // sizeEstimate might overflow if close to 2G
+        // 接近 2GB 时 sizeEstimate 可能溢出
         if (sizeEstimate < 0 || sizeEstimate > MAX_INITIAL_OUTPUT_BUFFER_SIZE) {
-            // can always expand later
+            // 后续仍可继续扩容
             return ctx.alloc().heapBuffer(MAX_INITIAL_OUTPUT_BUFFER_SIZE);
         }
         return ctx.alloc().heapBuffer(sizeEstimate);
@@ -314,7 +306,7 @@ public class JdkZlibEncoder extends ZlibEncoder {
         finished = true;
         ByteBuf footer = ctx.alloc().heapBuffer();
         if (writeHeader && wrapper == ZlibWrapper.GZIP) {
-            // Write the GZIP header first if not written yet. (i.e. user wrote nothing.)
+            // 若尚未写出则先写 GZIP 头（用户未写入任何数据时）
             writeHeader = false;
             footer.writeBytes(gzipHeader);
         }
@@ -324,7 +316,7 @@ public class JdkZlibEncoder extends ZlibEncoder {
         while (!deflater.finished()) {
             deflate(footer);
             if (!footer.isWritable()) {
-                // no more space so write it to the channel and continue
+                // 空间不足则先写出再继续分配
                 ctx.write(footer);
                 footer = ctx.alloc().heapBuffer();
             }

@@ -36,15 +36,13 @@ import static io.netty.handler.codec.compression.Lz4Constants.MAGIC_NUMBER;
 import static io.netty.handler.codec.compression.Lz4Constants.MAX_BLOCK_SIZE;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded with the LZ4 format.
+ * 解压 LZ4 帧格式的 {@link ByteBuf}。
  *
- * See original <a href="https://github.com/Cyan4973/lz4">LZ4 Github project</a>
- * and <a href="https://fastcompression.blogspot.ru/2011/05/lz4-explained.html">LZ4 block format</a>
- * for full description.
+ * 格式说明见 <a href="https://github.com/Cyan4973/lz4">LZ4 项目</a>
+ * 与 <a href="https://fastcompression.blogspot.ru/2011/05/lz4-explained.html">LZ4 块格式</a>。
  *
- * Since the original LZ4 block format does not contains size of compressed block and size of original data
- * this encoder uses format like <a href="https://github.com/idelpivnitskiy/lz4-java">LZ4 Java</a> library
- * written by Adrien Grand and approved by Yann Collet (author of original LZ4 library).
+ * 原生 LZ4 块不含压缩/原始长度，本实现采用
+ * <a href="https://github.com/idelpivnitskiy/lz4-java">LZ4 Java</a> 的扩展帧格式。
  *
  *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *     * * * * * * * * * *
  *  * Magic * Token *  Compressed *  Decompressed *  Checksum *  +  *  LZ4 compressed *
@@ -53,9 +51,7 @@ import static io.netty.handler.codec.compression.Lz4Constants.MAX_BLOCK_SIZE;
  */
 public class Lz4FrameDecoder extends ByteToMessageDecoder {
     private final int maxDecompressedLength;
-    /**
-     * Current state of stream.
-     */
+    /** 当前流解析状态。 */
     private enum State {
         INIT_BLOCK,
         DECOMPRESS_DATA,
@@ -65,44 +61,29 @@ public class Lz4FrameDecoder extends ByteToMessageDecoder {
 
     private State currentState = State.INIT_BLOCK;
 
-    /**
-     * Underlying decompressor in use.
-     */
+    /** 底层 LZ4 安全解压器。 */
     private LZ4SafeDecompressor decompressor;
 
-    /**
-     * Underlying checksum calculator in use.
-     */
+    /** 底层块校验计算器（可为 null）。 */
     private ByteBufChecksum checksum;
 
-    /**
-     * Type of current block.
-     */
+    /** 当前块的类型标志。 */
     private int blockType;
 
-    /**
-     * Compressed length of current incoming block.
-     */
+    /** 当前块压缩数据长度。 */
     private int compressedLength;
 
-    /**
-     * Decompressed length of current incoming block.
-     */
+    /** 当前块解压后长度。 */
     private int decompressedLength;
 
-    /**
-     * Checksum value of current incoming block.
-     */
+    /** 当前块头部记录的校验和。 */
     private int currentChecksum;
 
     /**
      * Creates the fastest LZ4 decoder.
      *
-     * Note that by default, validation of the checksum header in each chunk is
-     * DISABLED for performance improvements. If performance is less of an issue,
-     * or if you would prefer the safety that checksum validation brings, please
-     * use the {@link #Lz4FrameDecoder(boolean)} constructor with the argument
-     * set to {@code true}.
+     * 默认关闭块头校验和以提升性能；若更重视完整性，
+     * 请使用 {@link #Lz4FrameDecoder(boolean)} 并传入 {@code true}。
      */
     public Lz4FrameDecoder() {
         this(false);
@@ -111,9 +92,8 @@ public class Lz4FrameDecoder extends ByteToMessageDecoder {
     /**
      * Creates a LZ4 decoder with fastest decoder instance available on your machine.
      *
-     * @param validateChecksums  if {@code true}, the checksum field will be validated against the actual
-     *                           uncompressed data, and if the checksums do not match, a suitable
-     *                           {@link DecompressionException} will be thrown
+     * @param validateChecksums  为 {@code true} 时校验块头 checksum 与解压数据是否一致，
+     *                           不一致则抛出 {@link DecompressionException}
      */
     public Lz4FrameDecoder(boolean validateChecksums) {
         this(LZ4Factory.fastestInstance(), validateChecksums);
@@ -125,9 +105,7 @@ public class Lz4FrameDecoder extends ByteToMessageDecoder {
      * @param validateChecksums  if {@code true}, the checksum field will be validated against the actual
      *                           uncompressed data, and if the checksums do not match, a suitable
      *                           {@link DecompressionException} will be thrown
-     * @param maxDecompressedLength
-     *                          maximum length of the decompressed block. If {@code 0} is given it uses {@code 32MB}
-     *                          by default.
+     * @param maxDecompressedLength 单块解压后最大长度；{@code 0} 表示默认 32MB。
      */
     public Lz4FrameDecoder(boolean validateChecksums, int maxDecompressedLength) {
         this(LZ4Factory.fastestInstance(), validateChecksums ? new Lz4XXHash32(DEFAULT_SEED) : null,
@@ -260,8 +238,7 @@ public class Lz4FrameDecoder extends ByteToMessageDecoder {
                 try {
                     switch (blockType) {
                         case BLOCK_TYPE_NON_COMPRESSED:
-                            // Just pass through, we not update the readerIndex yet as we do this outside of the
-                            // switch statement.
+                            // 未压缩块直接透传，readerIndex 在 switch 外统一推进
                             uncompressed = in.retainedSlice(in.readerIndex(), decompressedLength);
                             break;
                         case BLOCK_TYPE_COMPRESSED:
@@ -280,7 +257,7 @@ public class Lz4FrameDecoder extends ByteToMessageDecoder {
                                                 "actualDecompressedLength(%d) mismatch",
                                         decompressedLength, actualDecompressedLength));
                             }
-                            // Update the writerIndex now to reflect what we decompressed.
+                            // 更新 writerIndex 反映已解压字节数
                             uncompressed.writerIndex(uncompressed.writerIndex() + decompressedLength);
                             break;
                         default:
@@ -288,7 +265,7 @@ public class Lz4FrameDecoder extends ByteToMessageDecoder {
                                     "unexpected blockType: %d (expected: %d or %d)",
                                     blockType, BLOCK_TYPE_NON_COMPRESSED, BLOCK_TYPE_COMPRESSED));
                     }
-                    // Skip inbound bytes after we processed them.
+                    // 处理完毕后跳过已消费输入
                     in.skipBytes(compressedLength);
 
                     if (checksum != null) {
@@ -319,8 +296,7 @@ public class Lz4FrameDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Returns {@code true} if and only if the end of the compressed stream
-     * has been reached.
+     * 当且仅当已到达压缩流末尾时返回 {@code true}。
      */
     public boolean isClosed() {
         return currentState == State.FINISHED;

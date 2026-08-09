@@ -35,15 +35,9 @@ import static io.netty.handler.codec.compression.Lz4Constants.MAGIC_NUMBER;
 import static io.netty.handler.codec.compression.Lz4Constants.MAX_BLOCK_SIZE;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded with the LZ4 format.
+ * LZ4 帧格式的流式解压缩器（{@link InputBufferingDecompressor} 实现）。
  *
- * See original <a href="https://github.com/Cyan4973/lz4">LZ4 Github project</a>
- * and <a href="https://fastcompression.blogspot.ru/2011/05/lz4-explained.html">LZ4 block format</a>
- * for full description.
- *
- * Since the original LZ4 block format does not contains size of compressed block and size of original data
- * this encoder uses format like <a href="https://github.com/idelpivnitskiy/lz4-java">LZ4 Java</a> library
- * written by Adrien Grand and approved by Yann Collet (author of original LZ4 library).
+ * 帧布局与 {@link Lz4FrameDecoder} 相同：魔数 + Token + 长度 + 校验和 + LZ4 块。
  *
  *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *     * * * * * * * * * *
  *  * Magic * Token *  Compressed *  Decompressed *  Checksum *  +  *  LZ4 compressed *
@@ -54,9 +48,7 @@ import static io.netty.handler.codec.compression.Lz4Constants.MAX_BLOCK_SIZE;
 public final class Lz4FrameDecompressor extends InputBufferingDecompressor {
     private static final int DEFAULT_MAX_DECOMPRESSED_LENGTH = 256 * 1024;
 
-    /**
-     * Current state of stream.
-     */
+    /** 当前流状态。 */
     private enum State {
         INIT_BLOCK,
         DECOMPRESS_DATA,
@@ -65,36 +57,24 @@ public final class Lz4FrameDecompressor extends InputBufferingDecompressor {
 
     private State currentState = State.INIT_BLOCK;
 
-    /**
-     * Underlying decompressor in use.
-     */
+    /** 底层 LZ4 解压器。 */
     private LZ4SafeDecompressor decompressor;
 
-    /**
-     * Underlying checksum calculator in use.
-     */
+    /** 块校验器（可选）。 */
     private ByteBufChecksum checksum;
 
     private final int maxDecompressedLength;
 
-    /**
-     * Type of current block.
-     */
+    /** 当前块类型。 */
     private int blockType;
 
-    /**
-     * Compressed length of current incoming block.
-     */
+    /** 当前块压缩长度。 */
     private int compressedLength;
 
-    /**
-     * Decompressed length of current incoming block.
-     */
+    /** 当前块解压长度。 */
     private int decompressedLength;
 
-    /**
-     * Checksum value of current incoming block.
-     */
+    /** 当前块校验和。 */
     private int currentChecksum;
 
     Lz4FrameDecompressor(Builder builder, ByteBufAllocator allocator) {
@@ -262,12 +242,10 @@ public final class Lz4FrameDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * User customizable {@link LZ4Factory} instance
-         * which may be JNI bindings to the original C implementation, a pure Java implementation
-         * or a Java implementation that uses the {@link sun.misc.Unsafe}.
+         * 自定义 {@link LZ4Factory}（可为 JNI、纯 Java 或 Unsafe 实现）。
          *
-         * @param factory The factory to use
-         * @return This builder
+         * @param factory LZ4 工厂实例
+         * @return 本构建器
          */
         public Builder factory(LZ4Factory factory) {
             this.factory = ObjectUtil.checkNotNull(factory, "factory");
@@ -275,11 +253,10 @@ public final class Lz4FrameDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * The {@link Checksum} instance to use to check data for integrity. By default, no checksum validation is
-         * performed.
+         * 用于完整性校验的 {@link Checksum}，默认不校验。
          *
-         * @param checksum The checksum to use
-         * @return This builder
+         * @param checksum 校验实例
+         * @return 本构建器
          */
         public Builder checksum(Checksum checksum) {
             this.checksum = checksum;
@@ -287,20 +264,19 @@ public final class Lz4FrameDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * Enable checksum validation using the default checksum, xxhash.
+         * 启用默认 xxHash 校验。
          *
-         * @return This builder
+         * @return 本构建器
          */
         public Builder defaultChecksum() {
             return checksum(new Lz4XXHash32(DEFAULT_SEED));
         }
 
         /**
-         * Set the maximum allowed decompressed block length. The default is 256 KiB. Use {@code 0} to allow the
-         * LZ4 format maximum of 32 MiB.
+         * 设置单块解压后最大长度，默认 256 KiB；{@code 0} 表示 LZ4 上限 32 MiB。
          *
-         * @param maxDecompressedLength maximum decompressed block length
-         * @return This builder
+         * @param maxDecompressedLength 最大解压块长度
+         * @return 本构建器
          */
         public Builder maxDecompressedLength(int maxDecompressedLength) {
             this.maxDecompressedLength = maxDecompressedLength == 0 ? MAX_BLOCK_SIZE :

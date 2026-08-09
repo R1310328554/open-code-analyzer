@@ -30,11 +30,10 @@ import java.io.InputStream;
 import static lzma.sdk.lzma.Encoder.EMatchFinderTypeBT4;
 
 /**
- * Compresses a {@link ByteBuf} using the LZMA algorithm.
+ * 使用 LZMA 算法压缩 {@link ByteBuf}。
  *
- * See <a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Markov_chain_algorithm">LZMA</a>
- * and <a href="https://svn.python.org/projects/external/xz-5.0.5/doc/lzma-file-format.txt">LZMA format</a>
- * or documents in <a href="https://www.7-zip.org/sdk.html">LZMA SDK</a> archive.
+ * 格式见 <a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Markov_chain_algorithm">LZMA</a>
+ * 与 7-Zip SDK 文档。
  */
 public class LzmaFrameEncoder extends MessageToByteEncoder<ByteBuf> {
 
@@ -52,37 +51,21 @@ public class LzmaFrameEncoder extends MessageToByteEncoder<ByteBuf> {
     private static final int DEFAULT_LP = 0;
     private static final int DEFAULT_PB = 2;
 
-    /**
-     * Underlying LZMA encoder in use.
-     */
+    /** 底层 LZMA 编码器。 */
     private final Encoder encoder;
 
-    /**
-     * The Properties field contains three properties which are encoded using the following formula:
-     *
-     * <p>{@code Properties = (pb * 5 + lp) * 9 + lc}</p>
-     *
-     * The field consists of
-     *  <ol>
-     *      <li>the number of literal context bits (lc, [0, 8]);</li>
-     *      <li>the number of literal position bits (lp, [0, 4]);</li>
-     *      <li>the number of position bits (pb, [0, 4]).</li>
-     *  </ol>
-     */
+    /** Properties 字节：{@code (pb * 5 + lp) * 9 + lc}，含字面上下文位 lc、
+     *  字面位置位 lp 与位置位 pb。 */
     private final byte properties;
 
-    /**
-     * Dictionary Size is stored as an unsigned 32-bit little endian integer.
-     */
+    /** 字典大小，以小端 32 位无符号整数存储。 */
     private final int littleEndianDictionarySize;
 
-    /**
-     * For log warning only once.
-     */
+    /** 仅记录一次兼容性警告。 */
     private static boolean warningLogged;
 
     /**
-     * Creates LZMA encoder with default settings.
+     * 使用默认参数创建 LZMA 编码器。
      */
     public LzmaFrameEncoder() {
         this(MEDIUM_DICTIONARY_SIZE);
@@ -125,12 +108,7 @@ public class LzmaFrameEncoder extends MessageToByteEncoder<ByteBuf> {
      * @param dictionarySize
      *        available values [0, {@link java.lang.Integer#MAX_VALUE}],
      *        default value is {@value #MEDIUM_DICTIONARY_SIZE}.
-     * @param endMarkerMode
-     *        indicates should {@link LzmaFrameEncoder} use end of stream marker or not.
-     *        Note, that {@link LzmaFrameEncoder} always sets size of uncompressed data
-     *        in LZMA header, so EOS marker is unnecessary. But you may use it for
-     *        better portability. For full description see "LZMA Decoding modes" section
-     *        of LZMA-Specification.txt in official LZMA SDK.
+     * @param endMarkerMode 是否写入流结束标记；帧头已含未压缩长度，通常不需要 EOS。
      * @param numFastBytes
      *        available values [{@value #MIN_FAST_BYTES}, {@value #MAX_FAST_BYTES}].
      */
@@ -193,7 +171,7 @@ public class LzmaFrameEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Calculates maximum possible size of output buffer for not compressible data.
+     * 估算不可压缩数据时的最大输出缓冲尺寸。
      */
     private static int maxOutputBufferLength(int inputLength) {
         double factor;

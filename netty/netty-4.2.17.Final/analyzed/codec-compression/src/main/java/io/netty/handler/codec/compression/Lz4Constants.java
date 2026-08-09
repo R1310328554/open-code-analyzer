@@ -16,9 +16,7 @@
 package io.netty.handler.codec.compression;
 
 final class Lz4Constants {
-    /**
-     * Magic number of LZ4 block.
-     */
+    /** LZ4 块的魔数（"LZ4Block"）。 */
     static final long MAGIC_NUMBER = (long) 'L' << 56 |
                                      (long) 'Z' << 48 |
                                      (long) '4' << 40 |
@@ -28,45 +26,33 @@ final class Lz4Constants {
                                             'c' << 8  |
                                             'k';
 
-    /**
-     * Full length of LZ4 block header.
-     */
+    /** LZ4 块头的总长度（字节）。 */
     static final int HEADER_LENGTH = 8 +  // magic number
                                      1 +  // token
                                      4 +  // compressed length
                                      4 +  // decompressed length
                                      4;   // checksum
 
-    /**
-     * Offsets of header's parts.
-     */
+    /** 块头各字段在块内的字节偏移。 */
     static final int TOKEN_OFFSET = 8;
 
     static final int COMPRESSED_LENGTH_OFFSET = TOKEN_OFFSET + 1;
     static final int DECOMPRESSED_LENGTH_OFFSET = COMPRESSED_LENGTH_OFFSET + 4;
     static final int CHECKSUM_OFFSET = DECOMPRESSED_LENGTH_OFFSET + 4;
 
-    /**
-     * Base value for compression level.
-     */
+    /** 压缩级别编码的基准值。 */
     static final int COMPRESSION_LEVEL_BASE = 10;
 
-    /**
-     * LZ4 block sizes.
-     */
+    /** LZ4 块尺寸常量（最小、最大、默认）。 */
     static final int MIN_BLOCK_SIZE = 64;
-    static final int MAX_BLOCK_SIZE = 1 << COMPRESSION_LEVEL_BASE + 0x0F;   //  32 M
-    static final int DEFAULT_BLOCK_SIZE = 1 << 16;  // 64 KB
+    static final int MAX_BLOCK_SIZE = 1 << COMPRESSION_LEVEL_BASE + 0x0F;   // 32 MB
+    static final int DEFAULT_BLOCK_SIZE = 1 << 16;  // 64 KB 默认块大小
 
-    /**
-     * LZ4 block types.
-     */
+    /** LZ4 块类型：未压缩与已压缩。 */
     static final int BLOCK_TYPE_NON_COMPRESSED = 0x10;
     static final int BLOCK_TYPE_COMPRESSED = 0x20;
 
-    /**
-     * Default seed value for xxhash.
-     */
+    /** xxHash 校验的默认种子值。 */
     static final int DEFAULT_SEED = 0x9747b28c;
 
     private Lz4Constants() { }

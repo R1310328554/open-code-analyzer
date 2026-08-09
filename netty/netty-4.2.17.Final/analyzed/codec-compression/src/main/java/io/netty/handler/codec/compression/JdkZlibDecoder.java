@@ -27,7 +27,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 /**
- * Decompress a {@link ByteBuf} using the inflate algorithm.
+ * 使用 JDK {@link java.util.zip.Inflater} 对 {@link ByteBuf} 进行 inflate 解压缩。
  */
 public class JdkZlibDecoder extends ZlibDecoder {
     private static final int FHCRC = 0x02;
@@ -39,7 +39,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
     private Inflater inflater;
     private final byte[] dictionary;
 
-    // GZIP related
+    // GZIP 相关字段
     private final ByteBufChecksum crc;
     private final boolean decompressConcatenated;
 
@@ -81,8 +81,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
      * and the specified maximum buffer allocation.
      *
      * @param maxAllocation
-     *          Maximum size of the decompression buffer. Must be &gt;= 0.
-     *          If zero, maximum size is decided by the {@link ByteBufAllocator}.
+     *          解压缩缓冲最大尺寸，须 &gt;= 0；为 0 时由 {@link ByteBufAllocator} 决定。
      */
     public JdkZlibDecoder(int maxAllocation) {
         this(ZlibWrapper.ZLIB, null, false, maxAllocation);
@@ -115,8 +114,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
 
     /**
      * Creates a new instance with the specified wrapper.
-     * Be aware that only {@link ZlibWrapper#GZIP}, {@link ZlibWrapper#ZLIB} and {@link ZlibWrapper#NONE} are
-     * supported atm.
+     * 目前仅支持 {@link ZlibWrapper#GZIP}、{@link ZlibWrapper#ZLIB} 与 {@link ZlibWrapper#NONE}。
      *
      * @deprecated Use {@link JdkZlibDecoder#JdkZlibDecoder(ZlibWrapper, int)}.
      */
@@ -183,7 +181,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
                 crc = null;
                 break;
             case ZLIB_OR_NONE:
-                // Postpone the decision until decode(...) is called.
+                // 推迟到 decode(...) 调用时再判定 ZLIB 或 NONE
                 decideZlibOrNone = true;
                 crc = null;
                 break;
@@ -202,7 +200,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         needsRead = true;
         if (finished) {
-            // Skip data received after finished.
+            // 已完成时跳过后续数据
             in.skipBytes(in.readableBytes());
             return;
         }
@@ -213,7 +211,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
         }
 
         if (decideZlibOrNone) {
-            // First two bytes are needed to decide if it's a ZLIB stream.
+            // 需至少两字节判断是否为 ZLIB 流
             if (readableBytes < 2) {
                 return;
             }
@@ -270,8 +268,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
                         crc.update(outArray, outIndex, outputLength);
                     }
                     if (maxAllocation == 0 && decompressed.readableBytes() >= maxForwardBytes) {
-                        // Forward the buffer once it exceeds the threshold to bound memory
-                        // while avoiding excessive fireChannelRead calls.
+                        // 超过阈值即转发，限制内存并减少 fireChannelRead 次数
                         ByteBuf buffer = decompressed;
                         decompressed = null;
                         needsRead = false;
@@ -287,7 +284,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
 
                 if (inflater.finished()) {
                     if (crc == null) {
-                        finished = true; // Do not decode anymore.
+                        finished = true; // 不再解码
                     } else {
                         readFooter = true;
                     }
@@ -442,11 +439,10 @@ public class JdkZlibDecoder extends ZlibDecoder {
     }
 
     /**
-     * Skip bytes in the input if needed until we find the end marker {@code 0x00}.
-     * @param   in the input
-     * @param   flagMask the mask that should be present in the {@code flags} when we need to skip bytes.
-     * @return  {@code true} if the operation is complete and we can move to the next state, {@code false} if we need
-     *          the retry again once we have more readable bytes.
+     * 若标志位要求，跳过输入直至遇到结束标记 {@code 0x00}。
+     * @param   in 输入缓冲
+     * @param   flagMask 需要跳过时 {@code flags} 中应置位的掩码
+     * @return  完成则 {@code true} 可进入下一状态；可读字节不足则 {@code false} 待重试
      */
     private boolean skipIfNeeded(ByteBuf in, int flagMask) {
         if ((flags & flagMask) != 0) {
@@ -467,11 +463,10 @@ public class JdkZlibDecoder extends ZlibDecoder {
     }
 
     /**
-     * Read the GZIP footer.
+     * 读取 GZIP 尾部。
      *
-     * @param   in the input.
-     * @return  {@code true} if the footer could be read, {@code false} if the read could not be performed as
-     *          the input {@link ByteBuf} doesn't have enough readable bytes (8 bytes).
+     * @param   in 输入缓冲
+     * @return  成功读取为 {@code true}；可读字节不足 8 则为 {@code false}
      */
     private boolean readGZIPFooter(ByteBuf in) {
         if (in.readableBytes() < 8) {
@@ -492,11 +487,10 @@ public class JdkZlibDecoder extends ZlibDecoder {
     }
 
     /**
-     * Verifies CRC.
+     * 校验 CRC32。
      *
-     * @param   in the input.
-     * @return  {@code true} if verification could be performed, {@code false} if verification could not be performed as
-     *          the input {@link ByteBuf} doesn't have enough readable bytes (4 bytes).
+     * @param   in 输入缓冲
+     * @return  可读 4 字节并完成校验为 {@code true}，否则 {@code false}
      */
     private boolean verifyCrc(ByteBuf in) {
         if (in.readableBytes() < 4) {
@@ -529,8 +523,7 @@ public class JdkZlibDecoder extends ZlibDecoder {
     }
 
     /*
-     * Returns true if the cmf_flg parameter (think: first two bytes of a zlib stream)
-     * indicates that this is a zlib stream.
+     * 根据 cmf_flg（ZLIB 流前两字节）判断是否为 ZLIB 流。
      * <p>
      * You can lookup the details in the ZLIB RFC:
      * <a href="https://tools.ietf.org/html/rfc1950#section-2.2">RFC 1950</a>.

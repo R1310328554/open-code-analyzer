@@ -23,27 +23,26 @@ import io.netty.util.internal.SystemPropertyUtil;
 import java.util.Arrays;
 
 /**
- * Uncompresses an input {@link ByteBuf} encoded with Snappy compression into an
- * output {@link ByteBuf}.
+ * Snappy 压缩/解压缩核心实现，在输入/输出 {@link ByteBuf} 间编解码。
  * <p>
- * See <a href="https://github.com/google/snappy/blob/master/format_description.txt">snappy format</a>.
+ * 格式见 <a href="https://github.com/google/snappy/blob/master/format_description.txt">Snappy 规范</a>。
  */
 public final class Snappy {
 
     private static final int MAX_HT_SIZE = 1 << 14;
     private static final int MIN_COMPRESSIBLE_BYTES = 15;
 
-    // used as a return value to indicate that we haven't yet read our full preamble
+    // 表示序言（长度 varint）尚未读完整
     private static final int PREAMBLE_NOT_FULL = -1;
     private static final int NOT_ENOUGH_INPUT = -1;
 
-    // constants for the tag types
+    // 标签类型常量
     private static final int LITERAL = 0;
     private static final int COPY_1_BYTE_OFFSET = 1;
     private static final int COPY_2_BYTE_OFFSET = 2;
     private static final int COPY_4_BYTE_OFFSET = 3;
 
-    // Hash table used to compress, shared between subsequent call to .encode()
+    // 压缩用哈希表，可在多次 encode 间复用
     private static final FastThreadLocal<short[]> HASH_TABLE = new FastThreadLocal<short[]>();
 
     private static final boolean DEFAULT_REUSE_HASHTABLE =
@@ -80,7 +79,7 @@ public final class Snappy {
     }
 
     public void encode(final ByteBuf in, final ByteBuf out, final int length) {
-        // Write the preamble length to the output buffer
+        // 将未压缩长度 varint 写入输出
         for (int i = 0;; i ++) {
             int b = length >>> i * 7;
             if ((b & 0xFFFFFF80) != 0) {
@@ -114,15 +113,14 @@ public final class Snappy {
                     int bytesBetweenHashLookups = skip++ >> 5;
                     nextIndex = inIndex + bytesBetweenHashLookups;
 
-                    // We need at least 4 remaining bytes to read the hash
+                    // 至少需 4 字节才能计算哈希
                     if (nextIndex > length - 4) {
                         break outer;
                     }
 
                     nextHash = hash(in, nextIndex, shift);
 
-                    // equivalent to Short.toUnsignedInt
-                    // use unsigned short cast to avoid loss precision when 32767 <= length <= 65355
+                    // 等价于无符号 short；避免大偏移时精度丢失
                     candidate = baseIndex + (table[hash] & 0xffff);
 
                     table[hash] = (short) (inIndex - baseIndex);
@@ -158,31 +156,29 @@ public final class Snappy {
             }
         }
 
-        // If there are any remaining characters, write them out as a literal
+        // 剩余字节作为 literal 写出
         if (nextEmit < length) {
             encodeLiteral(in, out, length - nextEmit);
         }
     }
 
     /**
-     * Hashes the 4 bytes located at index, shifting the resulting hash into
-     * the appropriate range for our hash table.
+     * 对 index 处 4 字节求哈希并映射到哈希表范围。
      *
-     * @param in The input buffer to read 4 bytes from
-     * @param index The index to read at
-     * @param shift The shift value, for ensuring that the resulting value is
-     *     within the range of our hash table size
-     * @return A 32-bit hash of 4 bytes located at index
+     * @param in 输入缓冲
+     * @param index 起始索引
+     * @param shift 右移量，使结果落在表大小内
+     * @return 32 位哈希值
      */
     private static int hash(ByteBuf in, int index, int shift) {
         return in.getInt(index) * 0x1e35a7bd >>> shift;
     }
 
     /**
-     * Returns a short[] to be used as a hashtable
+     * 获取用于压缩的 short[] 哈希表。
      *
-     * @param hashTableSize the size for the hashtable
-     * @return An appropriately sized empty hashtable
+     * @param hashTableSize 表大小
+     * @return 适当大小的空表
      */
     private short[] getHashTable(int hashTableSize) {
         if (reuseHashtable) {
@@ -192,11 +188,10 @@ public final class Snappy {
     }
 
     /**
-     * Returns a short[] from a FastThreadLocal, zeroing for correctness
-     * creating a new one and resizing it if necessary
+     * 从 FastThreadLocal 获取哈希表，必要时扩容并清零。
      *
-     * @return An appropriately sized empty hashtable
-     * @param hashTableSize
+     * @param hashTableSize 所需表大小
+     * @return 空哈希表
      */
     public static short[] getHashTableFastThreadLocalArrayFill(int hashTableSize) {
         short[] hashTable = HASH_TABLE.get();
@@ -211,15 +206,13 @@ public final class Snappy {
     }
 
     /**
-     * Iterates over the supplied input buffer between the supplied minIndex and
-     * maxIndex to find how long our matched copy overlaps with an already-written
-     * literal value.
+     * 在输入缓冲中扫描，计算与已写入数据的匹配重复长度。
      *
-     * @param in The input buffer to scan over
-     * @param minIndex The index in the input buffer to start scanning from
-     * @param inIndex The index of the start of our copy
-     * @param maxIndex The length of our input buffer
-     * @return The number of bytes for which our candidate copy is a repeat of
+     * @param in 输入缓冲
+     * @param minIndex 候选匹配起点
+     * @param inIndex 当前输入位置
+     * @param maxIndex 输入上界
+     * @return 匹配字节数
      */
     private static int findMatchingLength(ByteBuf in, int minIndex, int inIndex, int maxIndex) {
         int matched = 0;
@@ -239,12 +232,10 @@ public final class Snappy {
     }
 
     /**
-     * Calculates the minimum number of bits required to encode a value.  This can
-     * then in turn be used to calculate the number of septets or octets (as
-     * appropriate) to use to encode a length parameter.
+     * 计算编码某值所需的最小比特数，用于确定长度字段字节数。
      *
-     * @param value The value to calculate the minimum number of bits required to encode
-     * @return The minimum number of bits required to encode the supplied value
+     * @param value 待编码数值
+     * @return 所需最小比特数
      */
     private static int bitsToEncode(int value) {
         int highestOneBit = Integer.highestOneBit(value);
@@ -257,13 +248,11 @@ public final class Snappy {
     }
 
     /**
-     * Writes a literal to the supplied output buffer by directly copying from
-     * the input buffer.  The literal is taken from the current readerIndex
-     * up to the supplied length.
+     * 将输入中一段原始字节作为 literal 写入输出。
      *
-     * @param in The input buffer to copy from
-     * @param out The output buffer to copy to
-     * @param length The length of the literal to copy
+     * @param in 源缓冲
+     * @param out 目标缓冲
+     * @param length literal 长度
      */
     static void encodeLiteral(ByteBuf in, ByteBuf out, int length) {
         if (length < 61) {
@@ -292,11 +281,11 @@ public final class Snappy {
     }
 
     /**
-     * Encodes a series of copies, each at most 64 bytes in length.
+     * 编码一系列 backward copy，每段最多 64 字节。
      *
-     * @param out The output buffer to write the copy pointer to
-     * @param offset The offset at which the original instance lies
-     * @param length The length of the original instance
+     * @param out 输出缓冲
+     * @param offset 回指偏移
+     * @param length 复制长度
      */
     private static void encodeCopy(ByteBuf out, int offset, int length) {
         while (length >= 68) {
@@ -318,11 +307,11 @@ public final class Snappy {
             case READING_PREAMBLE:
                 int uncompressedLength = readPreamble(in);
                 if (uncompressedLength == PREAMBLE_NOT_FULL) {
-                    // We've not yet read all of the preamble, so wait until we can
+                    // 序言未读完，等待更多输入
                     return;
                 }
                 if (uncompressedLength == 0) {
-                    // Should never happen, but it does mean we have nothing further to do
+                    // 不应出现；表示无后续数据
                     return;
                 }
                 out.ensureWritable(uncompressedLength);
@@ -350,7 +339,7 @@ public final class Snappy {
                     state = State.READING_TAG;
                     written += literalWritten;
                 } else {
-                    // Need to wait for more data
+                    // 等待更多输入数据
                     return;
                 }
                 break;
@@ -393,13 +382,10 @@ public final class Snappy {
     }
 
     /**
-     * Reads the length varint (a series of bytes, where the lower 7 bits
-     * are data and the upper bit is a flag to indicate more bytes to be
-     * read).
+     * 读取长度 varint（低 7 位为数据，最高位表示后续还有字节）。
      *
-     * @param in The input buffer to read the preamble from
-     * @return The calculated length based on the input buffer, or 0 if
-     *   no preamble is able to be calculated
+     * @param in 输入缓冲
+     * @return 解析出的长度；数据不足时返回 0
      */
     private static int readPreamble(ByteBuf in) {
         int length = 0;
@@ -420,13 +406,10 @@ public final class Snappy {
     }
 
     /**
-     * Get the length varint (a series of bytes, where the lower 7 bits
-     * are data and the upper bit is a flag to indicate more bytes to be
-     * read).
+     * 在不推进 readerIndex 的情况下预览序言长度 varint。
      *
-     * @param in The input buffer to get the preamble from
-     * @return The calculated length based on the input buffer, or 0 if
-     *   no preamble is able to be calculated
+     * @param in 输入缓冲
+     * @return 解析长度；无法完整读取时返回 0
      */
     int getPreamble(ByteBuf in) {
         if (state == State.READING_PREAMBLE) {
@@ -441,15 +424,12 @@ public final class Snappy {
     }
 
     /**
-     * Reads a literal from the input buffer directly to the output buffer.
-     * A "literal" is an uncompressed segment of data stored directly in the
-     * byte stream.
+     * 从输入读取 literal（未压缩原始段）并写入输出。
      *
-     * @param tag The tag that identified this segment as a literal is also
-     *            used to encode part of the length of the data
-     * @param in The input buffer to read the literal from
-     * @param out The output buffer to write the literal to
-     * @return The number of bytes appended to the output buffer, or -1 to indicate "try again later"
+     * @param tag 标识 literal 的标签，亦编码部分长度
+     * @param in 输入缓冲
+     * @param out 输出缓冲
+     * @return 写入字节数，或 -1 表示需更多输入
      */
     static int decodeLiteral(byte tag, ByteBuf in, ByteBuf out) {
         in.markReaderIndex();
@@ -494,17 +474,13 @@ public final class Snappy {
     }
 
     /**
-     * Reads a compressed reference offset and length from the supplied input
-     * buffer, seeks back to the appropriate place in the input buffer and
-     * writes the found data to the supplied output stream.
+     * 解码 1 字节偏移的 copy 指令，回指复制到输出。
      *
-     * @param tag The tag used to identify this as a copy is also used to encode
-     *     the length and part of the offset
-     * @param in The input buffer to read from
-     * @param out The output buffer to write to
-     * @return The number of bytes appended to the output buffer, or -1 to indicate
-     *     "try again later"
-     * @throws DecompressionException If the read offset is invalid
+     * @param tag 标签（含部分长度与偏移）
+     * @param in 输入
+     * @param out 输出
+     * @return 写入字节数或 -1
+     * @throws DecompressionException 偏移非法时
      */
     private static int decodeCopyWith1ByteOffset(byte tag, ByteBuf in, ByteBuf out, int writtenSoFar) {
         if (!in.isReadable()) {
@@ -546,9 +522,8 @@ public final class Snappy {
      *     the length and part of the offset
      * @param in The input buffer to read from
      * @param out The output buffer to write to
-     * @throws DecompressionException If the read offset is invalid
-     * @return The number of bytes appended to the output buffer, or -1 to indicate
-     *     "try again later"
+     * @throws DecompressionException 偏移非法时
+     * @return 写入字节数或 -1
      */
     private static int decodeCopyWith2ByteOffset(byte tag, ByteBuf in, ByteBuf out, int writtenSoFar) {
         if (in.readableBytes() < 2) {
@@ -626,13 +601,11 @@ public final class Snappy {
     }
 
     /**
-     * Validates that the offset extracted from a compressed reference is within
-     * the permissible bounds of an offset (0 < offset < Integer.MAX_VALUE), and does not
-     * exceed the length of the chunk currently read so far.
+     * 校验 copy 偏移：须 0 &lt; offset &lt; MAX_VALUE 且不超过已解压长度。
      *
-     * @param offset The offset extracted from the compressed reference
-     * @param chunkSizeSoFar The number of bytes read so far from this chunk
-     * @throws DecompressionException if the offset is invalid
+     * @param offset 回指偏移
+     * @param chunkSizeSoFar 当前块已输出字节数
+     * @throws DecompressionException 偏移非法
      */
     private static void validateOffset(int offset, int chunkSizeSoFar) {
         if (offset == 0) {
@@ -640,7 +613,7 @@ public final class Snappy {
         }
 
         if (offset < 0) {
-            // Due to arithmetic overflow
+            // 算术溢出导致为负
             throw new DecompressionException("Offset is greater than maximum value supported by this implementation");
         }
 
@@ -650,10 +623,9 @@ public final class Snappy {
     }
 
     /**
-     * Computes the CRC32C checksum of the supplied data and performs the "mask" operation
-     * on the computed checksum
+     * 计算 CRC32C 并对结果做 Snappy 规定的 mask 变换。
      *
-     * @param data The input data to calculate the CRC32C checksum of
+     * @param data 待校验数据
      */
     static int calculateChecksum(ByteBuf data) {
         return calculateChecksum(data, data.readerIndex(), data.readableBytes());
@@ -676,13 +648,11 @@ public final class Snappy {
     }
 
     /**
-     * Computes the CRC32C checksum of the supplied data, performs the "mask" operation
-     * on the computed checksum, and then compares the resulting masked checksum to the
-     * supplied checksum.
+     * 计算 mask 后的 CRC32C 并与期望值比较。
      *
-     * @param expectedChecksum The checksum decoded from the stream to compare against
-     * @param data The input data to calculate the CRC32C checksum of
-     * @throws DecompressionException If the calculated and supplied checksums do not match
+     * @param expectedChecksum 流中的期望校验和
+     * @param data 待校验数据
+     * @throws DecompressionException 不一致时
      */
     static void validateChecksum(int expectedChecksum, ByteBuf data) {
         validateChecksum(expectedChecksum, data, data.readerIndex(), data.readableBytes());
@@ -707,15 +677,10 @@ public final class Snappy {
     }
 
     /**
-     * From the spec:
-     * <p>
-     * "Checksums are not stored directly, but masked, as checksumming data and
-     * then its own checksum can be problematic. The masking is the same as used
-     * in Apache Hadoop: Rotate the checksum by 15 bits, then add the constant
-     * 0xa282ead8 (using wraparound as normal for unsigned integers)."
+     * 按规范对 CRC 做 mask：循环左移 15 位后加常数 0xa282ead8（无符号环绕）。
      *
-     * @param checksum The actual checksum of the data
-     * @return The masked checksum
+     * @param checksum 原始 CRC 值
+     * @return mask 后的校验和
      */
     static int maskChecksum(long checksum) {
         return (int) ((checksum >> 15 | checksum << 17) + 0xa282ead8);

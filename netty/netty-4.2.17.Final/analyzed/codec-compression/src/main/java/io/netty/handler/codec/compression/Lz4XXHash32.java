@@ -24,27 +24,13 @@ import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
 /**
- * A special-purpose {@link ByteBufChecksum} implementation for use with
- * {@link Lz4FrameEncoder} and {@link Lz4FrameDecoder}.
+ * 供 {@link Lz4FrameEncoder} 与 {@link Lz4FrameDecoder} 使用的专用 {@link ByteBufChecksum}。
  *
- * {@link StreamingXXHash32#asChecksum()} has a particularly nasty implementation
- * of {@link Checksum#update(int)} that allocates a single-element byte array for
- * every invocation.
+ * {@link StreamingXXHash32#asChecksum()} 的 {@link Checksum#update(int)} 每次分配单字节数组，
+ * 且无 {@link ByteBuffer} 重载，无法配合 Reflective/Slow 包装高效处理直接缓冲。
  *
- * In addition to that, it doesn't implement an overload that accepts a {@link ByteBuffer}
- * as an argument.
- *
- * Combined, this means that we can't use {@code ReflectiveByteBufChecksum} at all,
- * and can't use {@code SlowByteBufChecksum} because of its atrocious performance
- * with direct byte buffers (allocating an array and making a JNI call for every byte
- * checksummed might be considered sub-optimal by some).
- *
- * Block version of xxHash32 ({@link XXHash32}), however, does provide
- * {@link XXHash32#hash(ByteBuffer, int)} method that is efficient and does exactly
- * what we need, with a caveat that we can only invoke it once before having to reset.
- * This, however, is fine for our purposes, given the way we use it in
- * {@link Lz4FrameEncoder} and {@link Lz4FrameDecoder}:
- * {@code reset()}, followed by one {@code update()}, followed by {@code getValue()}.
+ * 块级 {@link XXHash32#hash} 一次计算整段数据，用法为 reset → 单次 update → getValue，
+ * 与 LZ4 帧编解码的块校验模式一致。
  */
 public final class Lz4XXHash32 extends ByteBufChecksum {
 
@@ -92,10 +78,7 @@ public final class Lz4XXHash32 extends ByteBufChecksum {
             throw new IllegalStateException();
         }
         /*
-         * If you look carefully, you'll notice that the most significant nibble
-         * is being discarded; we believe this to be a bug, but this is what
-         * StreamingXXHash32#asChecksum() implementation of getValue() does,
-         * so we have to retain this behaviour for compatibility reasons.
+         * 最高 4 位被丢弃（疑似 bug），但须与 StreamingXXHash32#asChecksum() 行为保持一致。
          */
         return value & 0xFFFFFFFL;
     }

@@ -32,15 +32,13 @@ import static com.ning.compress.lzf.LZFChunk.BYTE_Z;
 import static com.ning.compress.lzf.LZFChunk.HEADER_LEN_NOT_COMPRESSED;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded with the LZF format.
+ * 解压 LZF 格式 {@link ByteBuf} 的解码器。
  *
- * See original <a href="http://oldhome.schmorp.de/marc/liblzf.html">LZF package</a>
- * and <a href="https://github.com/ning/compress/wiki/LZFFormat">LZF format</a> for full description.
+ * 格式说明见 <a href="http://oldhome.schmorp.de/marc/liblzf.html">liblzf</a>
+ * 与 <a href="https://github.com/ning/compress/wiki/LZFFormat">LZF 规范</a>。
  */
 public class LzfDecoder extends ByteToMessageDecoder {
-    /**
-     * Current state of decompression.
-     */
+    /** 当前解压状态机阶段。 */
     private enum State {
         INIT_BLOCK,
         INIT_ORIGINAL_LENGTH,
@@ -50,42 +48,28 @@ public class LzfDecoder extends ByteToMessageDecoder {
 
     private State currentState = State.INIT_BLOCK;
 
-    /**
-     * Magic number of LZF chunk.
-     */
+    /** LZF 块魔数（"ZV"）。 */
     private static final short MAGIC_NUMBER = BYTE_Z << 8 | BYTE_V;
 
-    /**
-     * Underlying decoder in use.
-     */
+    /** 底层块解码器。 */
     private ChunkDecoder decoder;
 
-    /**
-     * Object that handles details of buffer recycling.
-     */
+    /** 缓冲回收器。 */
     private BufferRecycler recycler;
 
-    /**
-     * Length of current received chunk of data.
-     */
+    /** 当前块压缩数据长度。 */
     private int chunkLength;
 
-    /**
-     * Original length of current received chunk of data.
-     * It is equal to {@link #chunkLength} for non compressed chunks.
-     */
+    /** 当前块原始长度；未压缩块时等于 {@link #chunkLength}。 */
     private int originalLength;
 
-    /**
-     * Indicates is this chunk compressed or not.
-     */
+    /** 当前块是否为压缩块。 */
     private boolean isCompressed;
 
     /**
      * Creates a new LZF decoder with the most optimal available methods for underlying data access.
      * It will "unsafe" instance if one can be used on current JVM.
-     * It should be safe to call this constructor as implementations are dynamically loaded; however, on some
-     * non-standard platforms it may be necessary to use {@link #LzfDecoder(boolean)} with {@code true} param.
+     * 通常可安全使用；非标准平台可改用 {@link #LzfDecoder(boolean)} 并传入 {@code true}。
      */
     public LzfDecoder() {
         this(false);
@@ -95,10 +79,8 @@ public class LzfDecoder extends ByteToMessageDecoder {
      * Creates a new LZF decoder with specified decoding instance.
      *
      * @param safeInstance
-     *        If {@code true} decoder will use {@link ChunkDecoder} that only uses standard JDK access methods,
-     *        and should work on all Java platforms and JVMs.
-     *        Otherwise decoder will try to use highly optimized {@link ChunkDecoder} implementation that uses
-     *        Sun JDK's {@link sun.misc.Unsafe} class (which may be included by other JDK's as well).
+     *        为 {@code true} 时使用纯 JDK 的安全解码器；
+     *        否则尝试使用基于 {@link sun.misc.Unsafe} 的优化实现。
      */
     public LzfDecoder(boolean safeInstance) {
         decoder = safeInstance ?
@@ -138,9 +120,7 @@ public class LzfDecoder extends ByteToMessageDecoder {
                 }
                 chunkLength = in.readUnsignedShort();
 
-                // chunkLength can never exceed MAX_CHUNK_LEN as MAX_CHUNK_LEN is 64kb and readUnsignedShort can
-                // never return anything bigger as well. Let's add some check any way to make things easier in terms
-                // of debugging if we ever hit this because of an bug.
+                // chunkLength 理论上不会超过 MAX_CHUNK_LEN，此处便于调试
                 if (chunkLength > LZFChunk.MAX_CHUNK_LEN) {
                     throw new DecompressionException(String.format(
                             "chunk length exceeds maximum: %d (expected: =< %d)",

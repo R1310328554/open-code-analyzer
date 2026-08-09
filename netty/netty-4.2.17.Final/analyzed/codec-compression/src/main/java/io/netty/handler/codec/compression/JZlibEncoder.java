@@ -32,7 +32,7 @@ import io.netty.util.internal.ObjectUtil;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Compresses a {@link ByteBuf} using the deflate algorithm.
+ * 基于 JZlib 库，使用 deflate 算法压缩 {@link ByteBuf}。
  */
 public class JZlibEncoder extends ZlibEncoder {
 
@@ -44,11 +44,10 @@ public class JZlibEncoder extends ZlibEncoder {
     private static final int THREAD_POOL_DELAY_SECONDS = 10;
 
     /**
-     * Creates a new zlib encoder with the default compression level ({@code 6}),
-     * default window bits ({@code 15}), default memory level ({@code 8}),
-     * and the default wrapper ({@link ZlibWrapper#ZLIB}).
+     * 使用默认压缩级别（{@code 6}）、窗口位数（{@code 15}）、
+     * 内存级别（{@code 8}）及默认封装（{@link ZlibWrapper#ZLIB}）创建编码器。
      *
-     * @throws CompressionException if failed to initialize zlib
+     * @throws CompressionException 若 zlib 初始化失败
      */
     public JZlibEncoder() {
         this(6);
@@ -60,11 +59,9 @@ public class JZlibEncoder extends ZlibEncoder {
      * and the default wrapper ({@link ZlibWrapper#ZLIB}).
      *
      * @param compressionLevel
-     *        {@code 1} yields the fastest compression and {@code 9} yields the
-     *        best compression.  {@code 0} means no compression.  The default
-     *        compression level is {@code 6}.
+     *        {@code 1} 最快、{@code 9} 压缩率最高；{@code 0} 表示不压缩。默认 {@code 6}。
      *
-     * @throws CompressionException if failed to initialize zlib
+     * @throws CompressionException 若 zlib 初始化失败
      */
     public JZlibEncoder(int compressionLevel) {
         this(ZlibWrapper.ZLIB, compressionLevel);
@@ -107,17 +104,13 @@ public class JZlibEncoder extends ZlibEncoder {
      *        best compression.  {@code 0} means no compression.  The default
      *        compression level is {@code 6}.
      * @param windowBits
-     *        The base two logarithm of the size of the history buffer.  The
-     *        value should be in the range {@code 9} to {@code 15} inclusive.
-     *        Larger values result in better compression at the expense of
-     *        memory usage.  The default value is {@code 15}.
+     *        历史缓冲大小的以 2 为底的对数，取值 {@code 9}–{@code 15}；
+     *        越大压缩越好但占用内存越多，默认 {@code 15}。
      * @param memLevel
-     *        How much memory should be allocated for the internal compression
-     *        state.  {@code 1} uses minimum memory and {@code 9} uses maximum
-     *        memory.  Larger values result in better and faster compression
-     *        at the expense of memory usage.  The default value is {@code 8}
+     *        内部压缩状态占用内存：{@code 1} 最少、{@code 9} 最多；
+     *        越大压缩越快越好，默认 {@code 8}。
      *
-     * @throws CompressionException if failed to initialize zlib
+     * @throws CompressionException 若 zlib 初始化失败
      */
     public JZlibEncoder(ZlibWrapper wrapper, int compressionLevel, int windowBits, int memLevel) {
         ObjectUtil.checkInRange(compressionLevel, 0, 9, "compressionLevel");
@@ -148,9 +141,9 @@ public class JZlibEncoder extends ZlibEncoder {
      * {@link ZlibWrapper#ZLIB} because it is the only format that supports
      * the preset dictionary.
      *
-     * @param dictionary  the preset dictionary
+     * @param dictionary  预置字典
      *
-     * @throws CompressionException if failed to initialize zlib
+     * @throws CompressionException 若 zlib 初始化失败
      */
     public JZlibEncoder(byte[] dictionary) {
         this(6, dictionary);
@@ -272,7 +265,7 @@ public class JZlibEncoder extends ZlibEncoder {
         }
 
         try {
-            // Configure input.
+            // 配置输入
             boolean inHasArray = in.hasArray();
             z.avail_in = inputLength;
             if (inHasArray) {
@@ -286,7 +279,7 @@ public class JZlibEncoder extends ZlibEncoder {
             }
             int oldNextInIndex = z.next_in_index;
 
-            // Configure output.
+            // 配置输出
             int maxOutputLength = (int) Math.ceil(inputLength * 1.001) + 12 + wrapperOverhead;
             out.ensureWritable(maxOutputLength);
             z.avail_out = maxOutputLength;
@@ -294,7 +287,7 @@ public class JZlibEncoder extends ZlibEncoder {
             z.next_out_index = out.arrayOffset() + out.writerIndex();
             int oldNextOutIndex = z.next_out_index;
 
-            // Note that Z_PARTIAL_FLUSH has been deprecated.
+            // 注意 Z_PARTIAL_FLUSH 已弃用
             int resultCode;
             try {
                 resultCode = z.deflate(JZlib.Z_SYNC_FLUSH);
@@ -327,7 +320,7 @@ public class JZlibEncoder extends ZlibEncoder {
         ChannelFuture f = finishEncode(ctx, ctx.newPromise());
 
         if (!f.isDone()) {
-            // Ensure the channel is closed even if the write operation completes in time.
+            // 确保即使写操作及时完成也会关闭通道
             final Future<?> future = ctx.executor().schedule(new Runnable() {
                 @Override
                 public void run() {
@@ -338,7 +331,7 @@ public class JZlibEncoder extends ZlibEncoder {
             }, THREAD_POOL_DELAY_SECONDS, TimeUnit.SECONDS);
 
             f.addListener(f1 -> {
-                // Cancel the scheduled timeout.
+                // 取消已调度的超时关闭
                 future.cancel(true);
                 if (!promise.isDone()) {
                     ctx.close(promise);
@@ -369,14 +362,13 @@ public class JZlibEncoder extends ZlibEncoder {
             z.next_out_index = 0;
             z.avail_out = out.length;
 
-            // Write the ADLER32 checksum (stream footer).
+            // 写出 ADLER32 校验和（流尾）
             int resultCode = z.deflate(JZlib.Z_FINISH);
             if (resultCode != JZlib.Z_OK && resultCode != JZlib.Z_STREAM_END) {
                 promise.setFailure(ZlibUtil.deflaterException(z, "compression failure", resultCode));
                 return promise;
             } else if (z.next_out_index != 0) {
-                // Suppressed a warning above to be on the safe side
-                // even if z.next_out_index seems to be always 0 here
+                // 为保险起见抑制上方警告；此处 z.next_out_index 通常恒为 0
                 footer = Unpooled.wrappedBuffer(out, 0, z.next_out_index);
             } else {
                 footer = Unpooled.EMPTY_BUFFER;

@@ -49,15 +49,9 @@ import static io.netty.handler.codec.compression.Lz4Constants.MIN_BLOCK_SIZE;
 import static io.netty.handler.codec.compression.Lz4Constants.TOKEN_OFFSET;
 
 /**
- * Compresses a {@link ByteBuf} using the LZ4 format.
+ * 使用 LZ4 算法压缩 {@link ByteBuf}，输出带扩展头的帧格式。
  *
- * See original <a href="https://github.com/Cyan4973/lz4">LZ4 Github project</a>
- * and <a href="https://fastcompression.blogspot.ru/2011/05/lz4-explained.html">LZ4 block format</a>
- * for full description.
- *
- * Since the original LZ4 block format does not contains size of compressed block and size of original data
- * this encoder uses format like <a href="https://github.com/idelpivnitskiy/lz4-java">LZ4 Java</a> library
- * written by Adrien Grand and approved by Yann Collet (author of original LZ4 library).
+ * 每块结构：魔数 + Token + 压缩/原始长度 + xxHash 校验和 + LZ4 数据。
  *
  *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *     * * * * * * * * * *
  *  * Magic * Token *  Compressed *  Decompressed *  Checksum *  +  *  LZ4 compressed *
@@ -69,57 +63,38 @@ public class Lz4FrameEncoder extends MessageToByteEncoder<ByteBuf> {
 
     private final int blockSize;
 
-    /**
-     * Underlying compressor in use.
-     */
+    /** 底层 LZ4 压缩器。 */
     private final LZ4Compressor compressor;
 
-    /**
-     * Underlying checksum calculator in use.
-     */
+    /** 块校验计算器。 */
     private final ByteBufChecksum checksum;
 
-    /**
-     * Compression level of current LZ4 encoder (depends on {@link #blockSize}).
-     */
+    /** 由 {@link #blockSize} 推导的压缩级别（写入 Token）。 */
     private final int compressionLevel;
 
-    /**
-     * Inner byte buffer for outgoing data. It's capacity will be {@link #blockSize}.
-     */
+    /** 待压缩数据的内部缓冲，容量为 {@link #blockSize}。 */
     private ByteBuf buffer;
 
-    /**
-     * Maximum size for any buffer to write encoded (compressed) data into.
-     */
+    /** 单次编码输出缓冲的最大允许尺寸。 */
     private final int maxEncodeSize;
 
-    /**
-     * Indicates if the compressed stream has been finished.
-     */
+    /** 压缩流是否已结束（已写出结束块）。 */
     private volatile boolean finished;
 
-    /**
-     * Used to interact with its {@link ChannelPipeline} and other handlers.
-     */
+    /** 与 {@link ChannelPipeline} 交互的上下文引用。 */
     private volatile ChannelHandlerContext ctx;
 
     /**
-     * Creates the fastest LZ4 encoder with default block size (64 KB)
-     * and xxhash hashing for Java, based on Yann Collet's work available at
-     * <a href="https://github.com/Cyan4973/xxHash">Github</a>.
+     * 创建最快 LZ4 编码器：默认 64 KB 块大小，使用 xxHash 校验。
      */
     public Lz4FrameEncoder() {
         this(false);
     }
 
     /**
-     * Creates a new LZ4 encoder with hight or fast compression, default block size (64 KB)
-     * and xxhash hashing for Java, based on Yann Collet's work available at
-     * <a href="https://github.com/Cyan4973/xxHash">Github</a>.
+     * 创建 LZ4 编码器：可选高压缩或快速模式，默认 64 KB 块与 xxHash。
      *
-     * @param highCompressor  if {@code true} codec will use compressor which requires more memory
-     *                        and is slower but compresses more efficiently
+     * @param highCompressor  为 {@code true} 时使用高压缩模式（更慢、更省空间）
      */
     public Lz4FrameEncoder(boolean highCompressor) {
         this(LZ4Factory.fastestInstance(), highCompressor, DEFAULT_BLOCK_SIZE, new Lz4XXHash32(DEFAULT_SEED));
@@ -170,7 +145,7 @@ public class Lz4FrameEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Calculates compression level on the basis of block size.
+     * 根据块大小计算压缩级别。
      */
     private static int compressionLevel(int blockSize) {
         if (blockSize < MIN_BLOCK_SIZE || blockSize > MAX_BLOCK_SIZE) {
@@ -192,7 +167,7 @@ public class Lz4FrameEncoder extends MessageToByteEncoder<ByteBuf> {
         int targetBufSize = 0;
         int remaining = msg.readableBytes() + buffer.readableBytes();
 
-        // quick overflow check
+        // 快速溢出检查
         if (remaining < 0) {
             throw new EncoderException("too much data to allocate a buffer for compression");
         }
@@ -200,13 +175,11 @@ public class Lz4FrameEncoder extends MessageToByteEncoder<ByteBuf> {
         while (remaining > 0) {
             int curSize = Math.min(blockSize, remaining);
             remaining -= curSize;
-            // calculate the total compressed size of the current block (including header) and add to the total
+            // 累加当前块（含头）的最大压缩尺寸
             targetBufSize += compressor.maxCompressedLength(curSize) + HEADER_LENGTH;
         }
 
-        // in addition to just the raw byte count, the headers (HEADER_LENGTH) per block (configured via
-        // #blockSize) will also add to the targetBufSize, and the combination of those would never wrap around
-        // again to be >= 0, this is a good check for the overflow case.
+        // 除原始字节外每块还有 HEADER_LENGTH，合计溢出时 targetBufSize 会变负
         if (targetBufSize > maxEncodeSize || 0 > targetBufSize) {
             throw new EncoderException(String.format("requested encode buffer size (%d bytes) exceeds the maximum " +
                                                      "allowable size (%d bytes)", targetBufSize, maxEncodeSize));
@@ -226,15 +199,13 @@ public class Lz4FrameEncoder extends MessageToByteEncoder<ByteBuf> {
     /**
      * {@inheritDoc}
      *
-     * Encodes the input buffer into {@link #blockSize} chunks in the output buffer. Data is only compressed and
-     * written once we hit the {@link #blockSize}; else, it is copied into the backing {@link #buffer} to await
-     * more data.
+     * 将输入按 {@link #blockSize} 分块编码；未满块时先写入 {@link #buffer}，满块再压缩写出。
      */
     @Override
     protected void encode(ChannelHandlerContext ctx, ByteBuf in, ByteBuf out) throws Exception {
         if (finished) {
             if (!out.isWritable(in.readableBytes())) {
-                // out should be EMPTY_BUFFER because we should have allocated enough space above in allocateBuffer.
+                // 正常应在 allocateBuffer 中已分配足够空间
                 throw new IllegalStateException("encode finished and not enough space to write remaining data");
             }
             out.writeBytes(in);
@@ -269,7 +240,7 @@ public class Lz4FrameEncoder extends MessageToByteEncoder<ByteBuf> {
         try {
             ByteBuffer outNioBuffer = out.internalNioBuffer(idx + HEADER_LENGTH, out.writableBytes() - HEADER_LENGTH);
             int pos = outNioBuffer.position();
-            // We always want to start at position 0 as we take care of reusing the buffer in the encode(...) loop.
+            // 压缩输出 NIO 缓冲从 position 0 开始
             compressor.compress(buffer.internalNioBuffer(buffer.readerIndex(), flushableBytes), outNioBuffer);
             compressedLength = outNioBuffer.position() - pos;
         } catch (LZ4Exception e) {
@@ -328,16 +299,14 @@ public class Lz4FrameEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Returns {@code true} if and only if the compressed stream has been finished.
+     * 当且仅当压缩流已结束时返回 {@code true}。
      */
     public boolean isClosed() {
         return finished;
     }
 
     /**
-     * Close this {@link Lz4FrameEncoder} and so finish the encoding.
-     *
-     * The returned {@link ChannelFuture} will be notified once the operation completes.
+     * 关闭编码器并完成压缩，操作完成时通知 {@link ChannelFuture}。
      */
     public ChannelFuture close() {
         return close(ctx().newPromise());
@@ -383,7 +352,7 @@ public class Lz4FrameEncoder extends MessageToByteEncoder<ByteBuf> {
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         this.ctx = ctx;
-        // Ensure we use a heap based ByteBuf.
+        // 使用堆缓冲作为内部累积区
         buffer = Unpooled.wrappedBuffer(new byte[blockSize]);
         buffer.clear();
     }

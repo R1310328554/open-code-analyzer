@@ -24,6 +24,9 @@ import io.netty.util.internal.ObjectUtil;
 
 import java.util.List;
 
+/**
+ * 基于 JZlib 库的 {@link ByteBuf} 解压缩解码器，使用 deflate 算法。
+ */
 public class JZlibDecoder extends ZlibDecoder {
 
     private final Inflater z = new Inflater();
@@ -34,10 +37,10 @@ public class JZlibDecoder extends ZlibDecoder {
     private volatile boolean finished;
 
     /**
-     * Creates a new instance with the default wrapper ({@link ZlibWrapper#ZLIB}).
+     * 使用默认封装格式（{@link ZlibWrapper#ZLIB}）创建实例。
      *
-     * @throws DecompressionException if failed to initialize zlib
-     * @deprecated Use {@link JZlibDecoder#JZlibDecoder(int)}.
+     * @throws DecompressionException 若 zlib 初始化失败
+     * @deprecated 请使用 {@link JZlibDecoder#JZlibDecoder(int)}。
      */
     @Deprecated
     public JZlibDecoder() {
@@ -45,24 +48,23 @@ public class JZlibDecoder extends ZlibDecoder {
     }
 
     /**
-     * Creates a new instance with the default wrapper ({@link ZlibWrapper#ZLIB})
-     * and specified maximum buffer allocation.
+     * 使用默认封装格式（{@link ZlibWrapper#ZLIB}）及指定最大缓冲分配创建实例。
      *
      * @param maxAllocation
-     *          Maximum size of the decompression buffer. Must be &gt;= 0.
-     *          If zero, maximum size is decided by the {@link ByteBufAllocator}.
+     *          解压缩缓冲区的最大尺寸，须 &gt;= 0。
+     *          为 0 时由 {@link ByteBufAllocator} 决定上限。
      *
-     * @throws DecompressionException if failed to initialize zlib
+     * @throws DecompressionException 若 zlib 初始化失败
      */
     public JZlibDecoder(int maxAllocation) {
         this(ZlibWrapper.ZLIB, maxAllocation);
     }
 
     /**
-     * Creates a new instance with the specified wrapper.
+     * 使用指定封装格式创建实例。
      *
-     * @throws DecompressionException if failed to initialize zlib
-     * @deprecated Use {@link JZlibDecoder#JZlibDecoder(ZlibWrapper, int)}.
+     * @throws DecompressionException 若 zlib 初始化失败
+     * @deprecated 请使用 {@link JZlibDecoder#JZlibDecoder(ZlibWrapper, int)}。
      */
     @Deprecated
     public JZlibDecoder(ZlibWrapper wrapper) {
@@ -70,13 +72,13 @@ public class JZlibDecoder extends ZlibDecoder {
     }
 
     /**
-     * Creates a new instance with the specified wrapper and maximum buffer allocation.
+     * 使用指定封装格式及最大缓冲分配创建实例。
      *
      * @param maxAllocation
-     *          Maximum size of the decompression buffer. Must be &gt;= 0.
-     *          If zero, maximum size is decided by the {@link ByteBufAllocator}.
+     *          解压缩缓冲区的最大尺寸，须 &gt;= 0。
+     *          为 0 时由 {@link ByteBufAllocator} 决定上限。
      *
-     * @throws DecompressionException if failed to initialize zlib
+     * @throws DecompressionException 若 zlib 初始化失败
      */
     public JZlibDecoder(ZlibWrapper wrapper, int maxAllocation) {
         super(maxAllocation);
@@ -91,12 +93,11 @@ public class JZlibDecoder extends ZlibDecoder {
     }
 
     /**
-     * Creates a new instance with the specified preset dictionary. The wrapper
-     * is always {@link ZlibWrapper#ZLIB} because it is the only format that
-     * supports the preset dictionary.
+     * 使用指定预置字典创建实例。封装格式固定为 {@link ZlibWrapper#ZLIB}，
+     * 因为只有该格式支持预置字典。
      *
-     * @throws DecompressionException if failed to initialize zlib
-     * @deprecated Use {@link JZlibDecoder#JZlibDecoder(byte[], int)}.
+     * @throws DecompressionException 若 zlib 初始化失败
+     * @deprecated 请使用 {@link JZlibDecoder#JZlibDecoder(byte[], int)}。
      */
     @Deprecated
     public JZlibDecoder(byte[] dictionary) {
@@ -104,15 +105,13 @@ public class JZlibDecoder extends ZlibDecoder {
     }
 
     /**
-     * Creates a new instance with the specified preset dictionary and maximum buffer allocation.
-     * The wrapper is always {@link ZlibWrapper#ZLIB} because it is the only format that
-     * supports the preset dictionary.
+     * 使用指定预置字典及最大缓冲分配创建实例。封装格式固定为 {@link ZlibWrapper#ZLIB}。
      *
      * @param maxAllocation
-     *          Maximum size of the decompression buffer. Must be &gt;= 0.
-     *          If zero, maximum size is decided by the {@link ByteBufAllocator}.
+     *          解压缩缓冲区的最大尺寸，须 &gt;= 0。
+     *          为 0 时由 {@link ByteBufAllocator} 决定上限。
      *
-     * @throws DecompressionException if failed to initialize zlib
+     * @throws DecompressionException 若 zlib 初始化失败
      */
     public JZlibDecoder(byte[] dictionary, int maxAllocation) {
         super(maxAllocation);
@@ -126,8 +125,7 @@ public class JZlibDecoder extends ZlibDecoder {
     }
 
     /**
-     * Returns {@code true} if and only if the end of the compressed stream
-     * has been reached.
+     * 当且仅当已到达压缩流末尾时返回 {@code true}。
      */
     @Override
     public boolean isClosed() {
@@ -138,7 +136,7 @@ public class JZlibDecoder extends ZlibDecoder {
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         needsRead = true;
         if (finished) {
-            // Skip data received after finished.
+            // 已完成时跳过后续到达的数据
             in.skipBytes(in.readableBytes());
             return;
         }
@@ -149,7 +147,7 @@ public class JZlibDecoder extends ZlibDecoder {
         }
 
         try {
-            // Configure input.
+            // 配置输入缓冲
             z.avail_in = inputLength;
             if (in.hasArray()) {
                 z.next_in = in.array();
@@ -162,7 +160,7 @@ public class JZlibDecoder extends ZlibDecoder {
             }
             final int oldNextInIndex = z.next_in_index;
 
-            // Configure output.
+            // 配置输出缓冲
             ByteBuf decompressed = prepareDecompressBuffer(ctx, null, inputLength << 1);
 
             try {
@@ -173,14 +171,13 @@ public class JZlibDecoder extends ZlibDecoder {
                     z.next_out_index = decompressed.arrayOffset() + decompressed.writerIndex();
                     int oldNextOutIndex = z.next_out_index;
 
-                    // Decompress 'in' into 'out'
+                    // 将输入解压到输出缓冲
                     int resultCode = z.inflate(JZlib.Z_SYNC_FLUSH);
                     int outputLength = z.next_out_index - oldNextOutIndex;
                     if (outputLength > 0) {
                         decompressed.writerIndex(decompressed.writerIndex() + outputLength);
                         if (maxAllocation == 0 && decompressed.readableBytes() >= maxForwardBytes) {
-                            // If we don't limit the maximum allocations we should just
-                            // forward the buffer directly.
+                            // 未限制最大分配时，缓冲达到阈值后直接向下游转发
                             ByteBuf buffer = decompressed;
                             decompressed = null;
                             needsRead = false;
@@ -200,7 +197,7 @@ public class JZlibDecoder extends ZlibDecoder {
                         }
                         break;
                     case JZlib.Z_STREAM_END:
-                        finished = true; // Do not decode anymore.
+                        finished = true; // 不再继续解码
                         z.inflateEnd();
                         break loop;
                     case JZlib.Z_OK:
@@ -226,10 +223,8 @@ public class JZlibDecoder extends ZlibDecoder {
                 }
             }
         } finally {
-            // Deference the external references explicitly to tell the VM that
-            // the allocated byte arrays are temporary so that the call stack
-            // can be utilized.
-            // I'm not sure if the modern VMs do this optimization though.
+            // 显式解除对外部数组的引用，提示 VM 这些字节数组为临时分配
+            // 以便复用调用栈（现代 VM 是否仍做此优化尚不确定）
             z.next_in = null;
             z.next_out = null;
         }
@@ -237,7 +232,7 @@ public class JZlibDecoder extends ZlibDecoder {
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        // Discard bytes of the cumulation buffer if needed.
+        // 必要时丢弃累积缓冲中已读字节
         discardSomeReadBytes();
 
         if (needsRead && !ctx.channel().config().isAutoRead()) {

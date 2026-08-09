@@ -28,7 +28,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 /**
- * Decompress a {@link ByteBuf} using the inflate algorithm.
+ * 基于 JDK Inflater 的流式解压缩器，支持 ZLIB/GZIP/NONE 等封装格式。
  */
 @UnstableApi
 public final class JdkZlibDecompressor extends InputBufferingDecompressor {
@@ -38,19 +38,15 @@ public final class JdkZlibDecompressor extends InputBufferingDecompressor {
     private static final int FCOMMENT = 0x10;
     private static final int FRESERVED = 0xE0;
 
-    /**
-     * Smallest output buffer we hand to {@link Inflater#inflate(byte[], int, int)}. The number of remaining input
-     * bytes is only a hint for how much output to expect: the inflater may still hold decoded data that did not fit
-     * into the previous output buffer, and by then it may have consumed all input bytes already
-     * ({@link Inflater#getRemaining()} == 0). Inflating into a zero-sized buffer can never make progress.
-     */
+    /** 交给 {@link Inflater#inflate} 的最小输出缓冲。剩余输入字节数只是输出量提示；
+     *  inflater 可能仍持有未写出的解码数据且已耗尽输入，零长度缓冲无法推进解压。 */
     private static final int MIN_OUTPUT_BUFFER_SIZE = 512;
 
     private Inflater inflater;
     private final int maxAllocation;
     private final byte[] dictionary;
 
-    // GZIP related
+    // GZIP 相关
     private final ByteBufChecksum crc;
     private final boolean decompressConcatenated;
 
@@ -72,16 +68,9 @@ public final class JdkZlibDecompressor extends InputBufferingDecompressor {
     private boolean decideZlibOrNone;
     private boolean finished;
     private boolean gzipMemberFinished;
-    /**
-     * If this is true, part of the input buffer is still in use by the {@link #inflater}, so we shouldn't touch that
-     * buffer too much (e.g. compact it).
-     */
+    /** 为 true 表示 {@link #inflater} 仍引用部分输入缓冲，不宜 compact 等操作。 */
     private boolean inputBufferInInflater;
-    /**
-     * If this is true, the last {@link Inflater#inflate(byte[], int, int)} filled the output buffer completely, so
-     * the inflater may still hold decoded data even if {@link Inflater#needsInput()} reports that all input was
-     * consumed.
-     */
+    /** 为 true 表示上次 inflate 已写满输出缓冲，inflater 可能仍有待输出数据。 */
     private boolean inflaterHasPendingOutput;
 
     JdkZlibDecompressor(Builder builder, ByteBufAllocator allocator) {
@@ -103,7 +92,7 @@ public final class JdkZlibDecompressor extends InputBufferingDecompressor {
                 crc = null;
                 break;
             case ZLIB_OR_NONE:
-                // Postpone the decision until decode(...) is called.
+                // 推迟到 processInput 时再判定 ZLIB 或 NONE
                 decideZlibOrNone = true;
                 crc = null;
                 break;
@@ -243,9 +232,7 @@ public final class JdkZlibDecompressor extends InputBufferingDecompressor {
                     processInput(buf);
                 }
             }
-            // If we filled the whole buffer the inflater may still have decoded data left that it could not write.
-            // In that case we must ask for another output buffer, as needsInput() only tells us that all input
-            // bytes were consumed, not that all output was produced.
+            // 输出缓冲写满时 inflater 可能仍有未写出数据，需再次申请输出缓冲
             inflaterHasPendingOutput = outputLength == writableBytes && !inflater.finished();
             success = true;
             return decompressed;
@@ -491,10 +478,10 @@ public final class JdkZlibDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * Set the wrapper format for the deflated data. Defaults to {@link ZlibWrapper#ZLIB}.
+         * 设置 deflate 数据的封装格式，默认 {@link ZlibWrapper#ZLIB}。
          *
-         * @param wrapper The wrapper format
-         * @return This builder
+         * @param wrapper 封装格式
+         * @return 本构建器
          */
         public Builder wrapper(ZlibWrapper wrapper) {
             this.wrapper = Objects.requireNonNull(wrapper, "wrapper");
@@ -502,10 +489,10 @@ public final class JdkZlibDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * Set the preset dictionary to use. Defaults to no dictionary.
+         * 设置预置字典，默认无字典。
          *
-         * @param dictionary The dictionary
-         * @return This builder
+         * @param dictionary 字典字节数组
+         * @return 本构建器
          */
         public Builder dictionary(byte[] dictionary) {
             this.dictionary = dictionary;
@@ -513,10 +500,10 @@ public final class JdkZlibDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * Set the maximum output buffer size. Defaults to 1M.
+         * 设置最大输出缓冲尺寸，默认 1MB。
          *
-         * @param maxAllocation The maximum output buffer size.
-         * @return This builder
+         * @param maxAllocation 最大输出缓冲字节数
+         * @return 本构建器
          */
         public Builder maxAllocation(int maxAllocation) {
             this.maxAllocation = ObjectUtil.checkPositiveOrZero(maxAllocation, "maxAllocation");

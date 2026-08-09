@@ -30,16 +30,13 @@ import static com.ning.compress.lzf.LZFChunk.BYTE_Z;
 import static com.ning.compress.lzf.LZFChunk.HEADER_LEN_NOT_COMPRESSED;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded with the LZF format.
+ * LZF 格式的流式解压缩器。
  * <p>
- * See original <a href="http://oldhome.schmorp.de/marc/liblzf.html">LZF package</a>
- * and <a href="https://github.com/ning/compress/wiki/LZFFormat">LZF format</a> for full description.
+ * 块格式见 liblzf 与 ning/compress 文档。
  */
 @UnstableApi
 public final class LzfDecompressor extends InputBufferingDecompressor {
-    /**
-     * Current state of decompression.
-     */
+    /** 解压状态。 */
     private enum State {
         INIT_BLOCK,
         INIT_ORIGINAL_LENGTH,
@@ -49,27 +46,18 @@ public final class LzfDecompressor extends InputBufferingDecompressor {
 
     private State currentState = State.INIT_BLOCK;
 
-    /**
-     * Magic number of LZF chunk.
-     */
+    /** LZF 块魔数。 */
     private static final short MAGIC_NUMBER = BYTE_Z << 8 | BYTE_V;
 
     private final ChunkDecoder decoder;
 
-    /**
-     * Length of current received chunk of data.
-     */
+    /** 当前块压缩长度。 */
     private int chunkLength;
 
-    /**
-     * Original length of current received chunk of data.
-     * It is equal to {@link #chunkLength} for non compressed chunks.
-     */
+    /** 当前块原始长度。 */
     private int originalLength;
 
-    /**
-     * Indicates whether this chunk is compressed.
-     */
+    /** 当前块是否已压缩。 */
     private boolean isCompressed;
 
     LzfDecompressor(Builder builder, ByteBufAllocator allocator) {
@@ -231,13 +219,10 @@ public final class LzfDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * If {@code true} decoder will use {@link ChunkDecoder} that only uses standard JDK access methods,
-         * and should work on all Java platforms and JVMs.
-         * Otherwise decoder will try to use highly optimized {@link ChunkDecoder} implementation that uses
-         * Sun JDK's {@link sun.misc.Unsafe} class (which may be included by other JDK's as well).
+         * 为 {@code true} 时仅使用标准 JDK 安全解码器；否则尝试 Unsafe 优化实现。
          *
-         * @param safeInstance Whether to use the safe instance only
-         * @return This builder
+         * @param safeInstance 是否强制安全实例
+         * @return 本构建器
          */
         @UnstableApi
         public Builder safeInstance(boolean safeInstance) {
