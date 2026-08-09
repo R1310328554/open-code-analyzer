@@ -15,23 +15,8 @@
     "sentinel-demo/sentinel-demo-nacos-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/nacos/NacosConfigSender.java",
     "sentinel-demo/sentinel-demo-nacos-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/nacos/NacosDataSourceDemo.java",
     "sentinel-demo/sentinel-demo-okhttp/src/main/java/com/alibaba/csp/sentinel/demo/okhttp/OkHttpDemoApplication.java",
-    "sentinel-demo/sentinel-demo-okhttp/src/main/java/com/alibaba/csp/sentinel/demo/okhttp/controller/OkHttpTestController.java",
-    "sentinel-demo/sentinel-demo-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/demo/flow/param/ParamFlowQpsDemo.java",
-    "sentinel-demo/sentinel-demo-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/demo/flow/param/ParamFlowQpsRunner.java",
-    "sentinel-demo/sentinel-demo-quarkus/.mvn/wrapper/MavenWrapperDownloader.java",
-    "sentinel-demo/sentinel-demo-quarkus/src/main/java/com/alibaba/csp/sentinel/demo/quarkus/AppLifecycleBean.java",
-    "sentinel-demo/sentinel-demo-quarkus/src/main/java/com/alibaba/csp/sentinel/demo/quarkus/CustomExceptionMapper.java",
-    "sentinel-demo/sentinel-demo-quarkus/src/main/java/com/alibaba/csp/sentinel/demo/quarkus/GreetingFallback.java",
-    "sentinel-demo/sentinel-demo-quarkus/src/main/java/com/alibaba/csp/sentinel/demo/quarkus/GreetingResource.java",
-    "sentinel-demo/sentinel-demo-quarkus/src/main/java/com/alibaba/csp/sentinel/demo/quarkus/GreetingService.java",
-    "sentinel-demo/sentinel-demo-rocketmq/src/main/java/com/alibaba/csp/sentinel/demo/rocketmq/Constants.java",
-    "sentinel-demo/sentinel-demo-rocketmq/src/main/java/com/alibaba/csp/sentinel/demo/rocketmq/PullConsumerDemo.java",
-    "sentinel-demo/sentinel-demo-rocketmq/src/main/java/com/alibaba/csp/sentinel/demo/rocketmq/SyncProducer.java",
-    "sentinel-demo/sentinel-demo-servlet/src/main/java/com/alibaba/csp/sentinel/demo/servlet/config/SentinelConfig.java",
-    "sentinel-demo/sentinel-demo-servlet/src/main/java/com/alibaba/csp/sentinel/demo/servlet/controller/DefaultServlet.java",
-    "sentinel-demo/sentinel-demo-slot-spi/src/main/java/com/alibaba/csp/sentinel/demo/slot/DemoApplication.java",
-    "sentinel-demo/sentinel-demo-slot-spi/src/main/java/com/alibaba/csp/sentinel/demo/slot/DemoSlot.java"
+    "sentinel-demo/sentinel-demo-okhttp/src/main/java/com/alibaba/csp/sentinel/demo/okhttp/controller/OkHttpTestController.java"
   ],
   "remaining_pending": 185,
-  "done": 735
+  "done": 750
 }
