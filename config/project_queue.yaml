@@ -35,8 +35,12 @@ projects:
     url: https://github.com/alibaba/Sentinel
   - id: hikaricp
     url: https://github.com/brettwooldridge/HikariCP
+    status: complete
+    version: "dev-a4d93f4f8551"
   - id: disruptor
     url: https://github.com/LMAX-Exchange/disruptor
+    status: in_progress
+    version: "4.0.0"
 
   # —— Python ——
   - id: transformers
