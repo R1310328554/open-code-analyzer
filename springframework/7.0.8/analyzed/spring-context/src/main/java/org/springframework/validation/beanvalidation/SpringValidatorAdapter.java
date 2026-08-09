@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+JSR-303/380 Validator 与 Spring Validator 的双向适配器：DataBinder/MVC 使用 Spring 接口，底层委托 jakarta.validation.Validator。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.validation.beanvalidation;
 
 import java.io.Serializable;
@@ -47,14 +52,19 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.validation.SmartValidator;
 
+/* ===== [OCA 中文解析] =====
+class SpringValidatorAdapter — 意图说明
+
+桥接两层校验 API：validate(Object, Errors) 走 Spring，ConstraintViolation 转为 FieldError/ObjectError；同时实现 jakarta.validation.Validator 供需要原生 API 的代码使用。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * Adapter that takes a JSR-303 {@code javax.validator.Validator} and
- * exposes it as a Spring {@link org.springframework.validation.Validator}
- * while also exposing the original JSR-303 Validator interface itself.
+ * 将 JSR-303 {@code jakarta.validation.Validator} 适配为 Spring
+ * {@link org.springframework.validation.Validator}，同时暴露原生 JSR-303 接口。
  *
- * <p>Can be used as a programmatic wrapper. Also serves as base class for
- * {@link CustomValidatorBean} and {@link LocalValidatorFactoryBean},
- * and as the primary implementation of the {@link SmartValidator} interface.
+ * <p>可作为编程式包装器；也是 {@link CustomValidatorBean}、
+ * {@link LocalValidatorFactoryBean} 的基类，以及 {@link SmartValidator} 的主要实现。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -97,6 +107,11 @@ public class SpringValidatorAdapter implements SmartValidator, jakarta.validatio
 		return (this.targetValidator != null);
 	}
 
+	/* ===== [OCA 中文解析] =====
+	方法 validate — 意图与阅读要点
+
+	Spring Validator 入口：调用 targetValidator.validate，processConstraintViolations 把每个 Violation 映射为 FieldError（含 message code 与参数）。
+	===== [OCA 中文解析结束] ===== */
 	@Override
 	public void validate(Object target, Errors errors) {
 		if (this.targetValidator != null) {
@@ -104,6 +119,11 @@ public class SpringValidatorAdapter implements SmartValidator, jakarta.validatio
 		}
 	}
 
+	/* ===== [OCA 中文解析] =====
+	方法 validate (带 hints) — 意图与阅读要点
+
+	SmartValidator 扩展：hints 作为 Bean Validation 分组（Class<?>），支持 @Validated 的分组校验语义。
+	===== [OCA 中文解析结束] ===== */
 	@Override
 	public void validate(Object target, Errors errors, Object... validationHints) {
 		if (this.targetValidator != null) {

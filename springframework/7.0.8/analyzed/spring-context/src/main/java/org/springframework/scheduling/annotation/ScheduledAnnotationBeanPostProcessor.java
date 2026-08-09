@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+@Scheduled 注解的 Bean 后处理器：容器就绪后扫描带 @Scheduled 的方法，按 fixedRate/fixedDelay/cron 等表达式向 TaskScheduler 注册定时任务；与 @EnableScheduling / task:annotation-driven 配合使用。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.scheduling.annotation;
 
 import java.lang.reflect.Method;
@@ -82,15 +87,14 @@ import org.springframework.util.StringValueResolver;
 /* ===== [OCA 中文解析] =====
 class ScheduledAnnotationBeanPostProcessor — 意图说明
 
-处理器：容器生命周期中的扩展钩子；源文件: `spring-context/src/main/java/org/springframework/scheduling/annotation/ScheduledAnnotationBeanPostProcessor.java`
+定时任务注册器：在 afterSingletonsInstantiated 阶段汇总所有 @Scheduled 方法，解析 SpEL/占位符后创建 CronTask、FixedRateTask 等并交给 ScheduledTaskRegistrar。支持同步与异步（@Async）两种调度路径。
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Bean post-processor that registers methods annotated with
- * {@link Scheduled @Scheduled} to be invoked by a
- * {@link org.springframework.scheduling.TaskScheduler} according to the
- * "fixedRate", "fixedDelay", or "cron" expression provided via the annotation.
+ * 将标注 {@link Scheduled @Scheduled} 的方法注册为由
+ * {@link org.springframework.scheduling.TaskScheduler} 按注解中的
+ * "fixedRate"、"fixedDelay" 或 "cron" 表达式调度的 Bean 后处理器。
  *
  * <p>This post-processor is automatically registered by Spring's
  * {@code <task:annotation-driven>} XML element and also by the
@@ -122,7 +126,6 @@ public class ScheduledAnnotationBeanPostProcessor
 		Ordered, EmbeddedValueResolverAware, BeanNameAware, BeanFactoryAware, ApplicationContextAware,
 		SmartInitializingSingleton, DisposableBean, ApplicationListener<ApplicationContextEvent> {
 
-	// [OCA] 字段 `DEFAULT_TASK_SCHEDULER_BEAN_NAME`：类成员状态。
 	/**
 	 * The default name of the {@link TaskScheduler} bean to pick up: {@value}.
 	 * <p>Note that the initial lookup happens by type; this is just the fallback
@@ -132,17 +135,14 @@ public class ScheduledAnnotationBeanPostProcessor
 	public static final String DEFAULT_TASK_SCHEDULER_BEAN_NAME = TaskSchedulerRouter.DEFAULT_TASK_SCHEDULER_BEAN_NAME;
 
 
-	// [OCA] 字段 `REACTIVE_STREAMS_PRESENT`：类成员状态。
 	/**
 	 * Reactive Streams API present on the classpath?
 	 */
 	private static final boolean REACTIVE_STREAMS_PRESENT = ClassUtils.isPresent(
 			"org.reactivestreams.Publisher", ScheduledAnnotationBeanPostProcessor.class.getClassLoader());
 
-	// [OCA] 字段 `logger`：类成员状态。
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	// [OCA] 字段 `registrar`：类成员状态。
 	private final ScheduledTaskRegistrar registrar;
 
 	private @Nullable Object scheduler;
@@ -159,13 +159,10 @@ public class ScheduledAnnotationBeanPostProcessor
 
 	private final Set<Class<?>> nonAnnotatedClasses = ConcurrentHashMap.newKeySet(64);
 
-	// [OCA] 字段 `scheduledTasks`：类成员状态。
 	private final Map<Object, Set<ScheduledTask>> scheduledTasks = new IdentityHashMap<>(16);
 
-	// [OCA] 字段 `reactiveSubscriptions`：类成员状态。
 	private final Map<Object, List<Runnable>> reactiveSubscriptions = new IdentityHashMap<>(16);
 
-	// [OCA] 字段 `manualCancellationOnContextClose`：类成员状态。
 	private final Set<Object> manualCancellationOnContextClose = Collections.newSetFromMap(new IdentityHashMap<>(16));
 
 
@@ -244,6 +241,11 @@ public class ScheduledAnnotationBeanPostProcessor
 
 
 	@Override
+	/* ===== [OCA 中文解析] =====
+	方法 afterSingletonsInstantiated — 意图与阅读要点
+
+	所有单例就绪后的入口：遍历已收集的 @Scheduled 任务并 schedule；同时发现 SchedulingConfigurer Bean 以定制 registrar。容器关闭时会取消已注册任务。
+	===== [OCA 中文解析结束] ===== */
 	public void afterSingletonsInstantiated() {
 		// Remove resolved singleton classes from cache
 		this.nonAnnotatedClasses.clear();
@@ -288,11 +290,6 @@ public class ScheduledAnnotationBeanPostProcessor
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 postProcessAfterInitialization — 意图与阅读要点
-
-方法 `postProcessAfterInitialization` 复杂度较高（CCN≈15, NLOC≈36）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
 		if (bean instanceof AopInfrastructureBean || bean instanceof TaskScheduler ||
 				bean instanceof ScheduledExecutorService) {
@@ -346,6 +343,11 @@ public class ScheduledAnnotationBeanPostProcessor
 	 * @see #processScheduledSync(Scheduled, Method, Object)
 	 * @see #processScheduledAsync(Scheduled, Method, Object)
 	 */
+	/* ===== [OCA 中文解析] =====
+	方法 processScheduled — 意图与阅读要点
+
+	解析单个 @Scheduled：区分 sync/async，读取 cron/fixedDelay/fixedRate/initialDelay，支持 Duration 与 zone；最终构造 Runnable 并注册到 registrar。
+	===== [OCA 中文解析结束] ===== */
 	protected void processScheduled(Scheduled scheduled, Method method, Object bean) {
 		// Is the method a Kotlin suspending function? Throws if true and the reactor bridge isn't on the classpath.
 		// Does the method return a reactive type? Throws if true and it isn't a deferred Publisher type.
@@ -405,11 +407,6 @@ public class ScheduledAnnotationBeanPostProcessor
 		processScheduledTask(scheduled, task, method, bean);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 processScheduledTask — 意图与阅读要点
-
-方法 `processScheduledTask` 复杂度较高（CCN≈24, NLOC≈109）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Parse the {@code Scheduled} annotation and schedule the provided {@code Runnable}
 	 * accordingly. The Runnable can represent either a synchronous method invocation

@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+JTA 分布式事务 PlatformTransactionManager：委托 UserTransaction/TransactionManager 处理跨资源事务；适合 EE 容器或嵌入式 JTA 提供者。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.transaction.jta;
 
 import java.io.IOException;
@@ -57,15 +62,14 @@ import org.springframework.util.StringUtils;
 /* ===== [OCA 中文解析] =====
 class JtaTransactionManager — 意图说明
 
-事务抽象：边界、同步与管理器；源文件: `spring-tx/src/main/java/org/springframework/transaction/jta/JtaTransactionManager.java`
+JTA 与 Spring 事务抽象的桥接：doBegin/doCommit/doRollback 映射到 UserTransaction；REQUIRES_NEW 等需 TransactionManager.suspend/resume；自动探测常见 JNDI 位置。
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * {@link org.springframework.transaction.PlatformTransactionManager} implementation
- * for JTA, delegating to a backend JTA provider. This is typically used to delegate
- * to a Jakarta EE server's transaction coordinator, but may also be configured with a
- * local JTA provider which is embedded within the application.
+ * 面向 JTA 的 {@link org.springframework.transaction.PlatformTransactionManager} 实现，
+ * 委托后端 JTA 提供者。通常用于 Jakarta EE 服务器事务协调器，
+ * 也可配置应用内嵌的本地 JTA 提供者。
  *
  * <p>This transaction manager is appropriate for handling distributed transactions,
  * i.e. transactions that span multiple resources, and for controlling transactions on
@@ -119,7 +123,6 @@ class JtaTransactionManager — 意图说明
 public class JtaTransactionManager extends AbstractPlatformTransactionManager
 		implements TransactionFactory, InitializingBean, Serializable {
 
-	// [OCA] 字段 `DEFAULT_USER_TRANSACTION_NAME`：类成员状态。
 	/**
 	 * Default JNDI location for the JTA UserTransaction. Many Jakarta EE servers
 	 * also provide support for the JTA TransactionManager interface there.
@@ -128,7 +131,6 @@ public class JtaTransactionManager extends AbstractPlatformTransactionManager
 	 */
 	public static final String DEFAULT_USER_TRANSACTION_NAME = "java:comp/UserTransaction";
 
-	// [OCA] 字段 `FALLBACK_TRANSACTION_MANAGER_NAMES`：类成员状态。
 	/**
 	 * Fallback JNDI locations for the JTA TransactionManager. Applied if
 	 * the JTA UserTransaction does not implement the JTA TransactionManager
@@ -140,7 +142,6 @@ public class JtaTransactionManager extends AbstractPlatformTransactionManager
 			new String[] {"java:comp/TransactionManager", "java:appserver/TransactionManager",
 					"java:pm/TransactionManager", "java:/TransactionManager"};
 
-	// [OCA] 字段 `DEFAULT_TRANSACTION_SYNCHRONIZATION_REGISTRY_NAME`：类成员状态。
 	/**
 	 * Standard Jakarta EE JNDI location for the JTA TransactionSynchronizationRegistry.
 	 * Autodetected when available.
@@ -149,37 +150,30 @@ public class JtaTransactionManager extends AbstractPlatformTransactionManager
 			"java:comp/TransactionSynchronizationRegistry";
 
 
-	// [OCA] 字段 `jndiTemplate`：类成员状态。
 	private transient JndiTemplate jndiTemplate = new JndiTemplate();
 
 	private transient @Nullable UserTransaction userTransaction;
 
 	private @Nullable String userTransactionName;
 
-	// [OCA] 字段 `autodetectUserTransaction`：类成员状态。
 	private boolean autodetectUserTransaction = true;
 
-	// [OCA] 字段 `cacheUserTransaction`：类成员状态。
 	private boolean cacheUserTransaction = true;
 
-	// [OCA] 字段 `userTransactionObtainedFromJndi`：类成员状态。
 	private boolean userTransactionObtainedFromJndi = false;
 
 	private transient @Nullable TransactionManager transactionManager;
 
 	private @Nullable String transactionManagerName;
 
-	// [OCA] 字段 `autodetectTransactionManager`：类成员状态。
 	private boolean autodetectTransactionManager = true;
 
 	private transient @Nullable TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
 	private @Nullable String transactionSynchronizationRegistryName;
 
-	// [OCA] 字段 `autodetectTransactionSynchronizationRegistry`：类成员状态。
 	private boolean autodetectTransactionSynchronizationRegistry = true;
 
-	// [OCA] 字段 `allowCustomIsolationLevels`：类成员状态。
 	private boolean allowCustomIsolationLevels = false;
 
 
@@ -447,11 +441,6 @@ public class JtaTransactionManager extends AbstractPlatformTransactionManager
 		initTransactionSynchronizationRegistry();
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 initUserTransactionAndTransactionManager — 意图与阅读要点
-
-方法 `initUserTransactionAndTransactionManager` 复杂度较高（CCN≈11, NLOC≈28）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Initialize the UserTransaction as well as the TransactionManager handle.
 	 * @throws TransactionSystemException if initialization failed
@@ -839,6 +828,11 @@ public class JtaTransactionManager extends AbstractPlatformTransactionManager
 	}
 
 
+	/* ===== [OCA 中文解析] =====
+	方法 doBegin — 意图与阅读要点
+
+	开启 JTA 事务：设置 timeout/isolation（若支持），UserTransaction.begin；已有全局事务时按传播行为 join 或 suspend。
+	===== [OCA 中文解析结束] ===== */
 	@Override
 	protected void doBegin(Object transaction, TransactionDefinition definition) {
 		JtaTransactionObject txObject = (JtaTransactionObject) transaction;
@@ -1004,12 +998,12 @@ public class JtaTransactionManager extends AbstractPlatformTransactionManager
 		return true;
 	}
 
-	@Override
 	/* ===== [OCA 中文解析] =====
-方法 doCommit — 意图与阅读要点
+	方法 doCommit — 意图与阅读要点
 
-方法 `doCommit` 复杂度较高（CCN≈10, NLOC≈37）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
+	提交 JTA 事务：UserTransaction.commit；rollback-only 时改调 rollback；HeuristicMixed/HeuristicRollback 转为 UnexpectedRollbackException。
 	===== [OCA 中文解析结束] ===== */
+	@Override
 	protected void doCommit(DefaultTransactionStatus status) {
 		JtaTransactionObject txObject = (JtaTransactionObject) status.getTransaction();
 		try {
@@ -1054,6 +1048,11 @@ public class JtaTransactionManager extends AbstractPlatformTransactionManager
 		}
 	}
 
+	/* ===== [OCA 中文解析] =====
+	方法 doRollback — 意图与阅读要点
+
+	回滚 JTA 事务：UserTransaction.rollback；无活动事务时吞掉 IllegalStateException（已完成场景）。
+	===== [OCA 中文解析结束] ===== */
 	@Override
 	protected void doRollback(DefaultTransactionStatus status) {
 		JtaTransactionObject txObject = (JtaTransactionObject) status.getTransaction();

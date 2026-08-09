@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+定时任务注册表：收集 TriggerTask/CronTask/FixedRateTask 等，在 scheduleTasks 时统一提交到 TaskScheduler 或 ScheduledExecutorService。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.scheduling.config;
 
 import java.time.Duration;
@@ -43,19 +48,15 @@ import org.springframework.util.CollectionUtils;
 /* ===== [OCA 中文解析] =====
 class ScheduledTaskRegistrar — 意图说明
 
-class `ScheduledTaskRegistrar`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/scheduling/config/ScheduledTaskRegistrar.java`
+任务注册中心：维护已注册 ScheduledTask 列表，scheduleTasks 时按 Trigger/Cron 表达式调度到 TaskScheduler；SchedulingConfigurer 可编程式添加任务。
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Helper bean for registering tasks with a {@link TaskScheduler}, typically using cron
- * expressions.
+ * 向 {@link TaskScheduler} 注册定时任务的辅助 Bean，通常使用 cron 表达式。
  *
- * <p>{@code ScheduledTaskRegistrar} has a more prominent user-facing role when used in
- * conjunction with the {@link
- * org.springframework.scheduling.annotation.EnableAsync @EnableAsync} annotation and its
- * {@link org.springframework.scheduling.annotation.SchedulingConfigurer
- * SchedulingConfigurer} callback interface.
+ * <p>与 {@link org.springframework.scheduling.annotation.EnableAsync @EnableAsync} 及
+ * {@link org.springframework.scheduling.annotation.SchedulingConfigurer} 回调配合时，面向用户的角色更突出。
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -69,7 +70,6 @@ class `ScheduledTaskRegistrar`：请结合所属模块与调用方理解其在�
  */
 public class ScheduledTaskRegistrar implements ScheduledTaskHolder, InitializingBean, DisposableBean {
 
-	// [OCA] 字段 `CRON_DISABLED`：类成员状态。
 	/**
 	 * A special cron expression value that indicates a disabled trigger: {@value}.
 	 * <p>This is primarily meant for use with {@link #addCronTask(Runnable, String)}
@@ -98,10 +98,8 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 
 	private @Nullable List<DelayedTask> oneTimeTasks;
 
-	// [OCA] 字段 `unresolvedTasks`：类成员状态。
 	private final Map<Task, ScheduledTask> unresolvedTasks = new HashMap<>(16);
 
-	// [OCA] 字段 `scheduledTasks`：类成员状态。
 	private final Set<ScheduledTask> scheduledTasks = new LinkedHashSet<>(16);
 
 
@@ -421,16 +419,15 @@ public class ScheduledTaskRegistrar implements ScheduledTaskHolder, Initializing
 		scheduleTasks();
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 scheduleTasks — 意图与阅读要点
-
-方法 `scheduleTasks` 复杂度较高（CCN≈15, NLOC≈46）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Schedule all registered tasks against the underlying
-	 * {@linkplain #setTaskScheduler(TaskScheduler) task scheduler}.
+	 * 将所有已注册任务提交到底层 {@linkplain #setTaskScheduler(TaskScheduler) 任务调度器}。
 	 */
-	protected void scheduleTasks() {
+	/* ===== [OCA 中文解析] =====
+	方法 scheduleTasks — 意图与阅读要点
+
+	遍历 cronTasks/triggerTasks/fixedDelayTasks/fixedRateTasks/oneTimeTasks，分别调用 TaskScheduler 的 schedule 方法；已调度任务记录在 scheduledTasks 以便 destroy 时取消。
+	===== [OCA 中文解析结束] ===== */
+	public void scheduleTasks() {
 		if (this.taskScheduler == null) {
 			this.localExecutor = Executors.newSingleThreadScheduledExecutor();
 			this.taskScheduler = new ConcurrentTaskScheduler(this.localExecutor);

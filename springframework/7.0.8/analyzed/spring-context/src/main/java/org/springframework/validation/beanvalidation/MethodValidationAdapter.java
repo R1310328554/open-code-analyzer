@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+Spring 6.1+ 方法级 Bean Validation 适配器：对控制器/服务方法参数与返回值执行 jakarta.validation，把 ConstraintViolation 转为 MethodValidationResult。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.validation.beanvalidation;
 
 import java.lang.reflect.Method;
@@ -65,43 +70,35 @@ import org.springframework.validation.method.ParameterValidationResult;
 /* ===== [OCA 中文解析] =====
 class MethodValidationAdapter — 意图说明
 
-class `MethodValidationAdapter`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java`
+ExecutableValidator 的 Spring 封装：validateArguments/validateReturnValue 驱动 JSR-380 方法约束，Violation 映射为 ParameterValidationResult 供 MVC/WebFlux 处理。
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * {@link MethodValidator} that uses a Bean Validation
- * {@link jakarta.validation.Validator} for validation, and adapts
- * {@link ConstraintViolation}s to {@link MethodValidationResult}.
+ * 使用 Bean Validation {@link jakarta.validation.Validator} 进行校验、
+ * 并将 {@link ConstraintViolation} 适配为 {@link MethodValidationResult} 的
+ * {@link MethodValidator} 实现。
  *
  * @author Rossen Stoyanchev
  * @since 6.1
  */
 public class MethodValidationAdapter implements MethodValidator {
 
-	// [OCA] 字段 `emptyValidationResult`：类成员状态。
 	private static final MethodValidationResult emptyValidationResult = MethodValidationResult.emptyResult();
 
-	// [OCA] 字段 `defaultObjectNameResolver`：类成员状态。
 	private static final ObjectNameResolver defaultObjectNameResolver = new DefaultObjectNameResolver();
 
-	// [OCA] 字段 `resultComparator`：类成员状态。
 	private static final Comparator<ParameterValidationResult> resultComparator = new ResultComparator();
 
 
-	// [OCA] 字段 `validator`：类成员状态。
 	private final Supplier<Validator> validator;
 
-	// [OCA] 字段 `validatorAdapter`：类成员状态。
 	private final Supplier<SpringValidatorAdapter> validatorAdapter;
 
-	// [OCA] 字段 `messageCodesResolver`：类成员状态。
 	private MessageCodesResolver messageCodesResolver = new DefaultMessageCodesResolver();
 
-	// [OCA] 字段 `parameterNameDiscoverer`：类成员状态。
 	private ParameterNameDiscoverer parameterNameDiscoverer = DefaultParameterNameDiscoverer.getSharedInstance();
 
-	// [OCA] 字段 `objectNameResolver`：类成员状态。
 	private ObjectNameResolver objectNameResolver = defaultObjectNameResolver;
 
 
@@ -237,6 +234,11 @@ public class MethodValidationAdapter implements MethodValidator {
 	}
 
 	@Override
+	/* ===== [OCA 中文解析] =====
+	方法 validateArguments — 意图与阅读要点
+
+	方法入参校验：解析 @Validated 分组，调用 ExecutableValidator.validateParameters，Violation 按参数索引分组为 ParameterValidationResult。
+	===== [OCA 中文解析结束] ===== */
 	public final MethodValidationResult validateArguments(
 			Object target, Method method, MethodParameter @Nullable [] parameters,
 			@Nullable Object[] arguments, Class<?>[] groups) {
@@ -272,6 +274,11 @@ public class MethodValidationAdapter implements MethodValidator {
 	}
 
 	@Override
+	/* ===== [OCA 中文解析] =====
+	方法 validateReturnValue — 意图与阅读要点
+
+	返回值校验：对 @Valid 等方法级约束调用 validateReturnValue；常用于 @Validated 服务层或控制器方法返回值约束。
+	===== [OCA 中文解析结束] ===== */
 	public final MethodValidationResult validateReturnValue(
 			Object target, Method method, @Nullable MethodParameter returnType,
 			@Nullable Object returnValue, Class<?>[] groups) {
@@ -297,13 +304,6 @@ public class MethodValidationAdapter implements MethodValidator {
 		ExecutableValidator execVal = this.validator.get().forExecutables();
 		return execVal.validateReturnValue(target, method, returnValue, groups);
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 adaptViolations — 意图与阅读要点
-
-方法 `adaptViolations` 复杂度较高（CCN≈19, NLOC≈82）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
 
 	private MethodValidationResult adaptViolations(
 			Object target, Method method, Set<ConstraintViolation<Object>> violations,
@@ -445,13 +445,6 @@ public class MethodValidationAdapter implements MethodValidator {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-interface ObjectNameResolver — 意图说明
-
-解析器：名称/类型/占位符等到具体对象的转换；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Strategy to resolve the name of an {@code @Valid} method parameter to
 	 * use for its {@link BindingResult}.
@@ -468,13 +461,6 @@ interface ObjectNameResolver — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ParamValidationResultBuilder — 意图说明
-
-class `ParamValidationResultBuilder`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Builds a validation result for a value method parameter with constraints
 	 * declared directly on it.
@@ -523,13 +509,6 @@ class `ParamValidationResultBuilder`：请结合所属模块与调用方理解�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ParamErrorsBuilder — 意图说明
-
-class `ParamErrorsBuilder`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Builds a validation result for an {@link jakarta.validation.Valid @Valid}
 	 * annotated bean method parameter with cascaded constraints.
@@ -575,17 +554,6 @@ class `ParamErrorsBuilder`：请结合所属模块与调用方理解其在整体
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ViolationMessageSourceResolvable — 意图说明
-
-class `ViolationMessageSourceResolvable`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	@SuppressWarnings("serial")
 	private class ViolationMessageSourceResolvable extends DefaultMessageSourceResolvable {
 
@@ -609,13 +577,6 @@ class `ViolationMessageSourceResolvable`：请结合所属模块与调用方理�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class DefaultObjectNameResolver — 意图说明
-
-解析器：名称/类型/占位符等到具体对象的转换；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Default algorithm to select an object name, as described in {@link #setObjectNameResolver}.
 	 */
@@ -649,13 +610,6 @@ class DefaultObjectNameResolver — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ResultComparator — 意图说明
-
-class `ResultComparator`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Comparator for validation results, sorted by method parameter index first,
 	 * also falling back on container indexes if necessary for cascaded

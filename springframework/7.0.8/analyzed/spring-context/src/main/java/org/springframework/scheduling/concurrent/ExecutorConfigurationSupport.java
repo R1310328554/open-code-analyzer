@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+线程池/ExecutorService 配置的抽象基类：统一线程命名、池大小、拒绝策略、优雅关闭与虚拟线程开关；ThreadPoolTaskExecutor 等均继承此类。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.scheduling.concurrent;
 
 import java.util.concurrent.ExecutorService;
@@ -40,14 +45,20 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.VirtualThreadTaskExecutor;
 
+/* ===== [OCA 中文解析] =====
+class ExecutorConfigurationSupport — 意图说明
+
+Executor 生命周期模板：afterPropertiesSet 创建线程池，ContextClosedEvent 触发分阶段 shutdown，SmartLifecycle 控制启动/停止相位。子类实现 initializeExecutor 提供具体 ExecutorService。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * Base class for setting up a {@link java.util.concurrent.ExecutorService}
- * (typically a {@link java.util.concurrent.ThreadPoolExecutor} or
- * {@link java.util.concurrent.ScheduledThreadPoolExecutor}).
+ * 配置 {@link java.util.concurrent.ExecutorService} 的基类
+ * （通常为 {@link java.util.concurrent.ThreadPoolExecutor} 或
+ * {@link java.util.concurrent.ScheduledThreadPoolExecutor}）。
  *
- * <p>Defines common configuration settings and common lifecycle handling,
- * inheriting thread customization options (name, priority, etc) from
- * {@link org.springframework.util.CustomizableThreadCreator}.
+ * <p>定义通用配置与生命周期处理，线程命名/优先级等选项继承自
+ * {@link org.springframework.util.CustomizableThreadCreator}。
  *
  * @author Juergen Hoeller
  * @since 3.0
@@ -105,14 +116,9 @@ public abstract class ExecutorConfigurationSupport extends CustomizableThreadFac
 
 
 	/**
-	 * Specify whether to use virtual threads instead of platform threads.
-	 * This is off by default, setting up a traditional platform thread pool.
-	 * <p>Set this flag to {@code true} on Java 21 or higher for a tightly
-	 * managed thread pool setup with virtual threads. In contrast to
-	 * {@link SimpleAsyncTaskExecutor}, this is integrated with Spring's
-	 * lifecycle management for stopping and restarting execution threads,
-	 * including an early stop signal for a graceful shutdown arrangement.
-	 * <p>Specify either this or {@link #setThreadFactory}, not both.
+	 * 指定是否使用虚拟线程而非平台线程。默认关闭，创建传统平台线程池。
+	 * <p>在 Java 21+ 设为 {@code true} 可建立受管虚拟线程池；与 {@link SimpleAsyncTaskExecutor} 不同，本类集成 Spring 生命周期管理。
+	 * <p>须与 {@link #setThreadFactory} 二选一，不可同时设置。
 	 * @since 6.2
 	 * @see #setThreadFactory
 	 * @see VirtualThreadTaskExecutor#getVirtualThreadFactory()
@@ -288,6 +294,11 @@ public abstract class ExecutorConfigurationSupport extends CustomizableThreadFac
 	 * @see #initialize()
 	 */
 	@Override
+	/* ===== [OCA 中文解析] =====
+	方法 afterPropertiesSet — 意图与阅读要点
+
+	初始化线程池：校验 poolSize/queueCapacity，按 virtualThreads 选择 VirtualThreadTaskExecutor 或 ThreadPoolExecutor；设置 ThreadFactory 与 RejectedExecutionHandler。
+	===== [OCA 中文解析结束] ===== */
 	public void afterPropertiesSet() {
 		initialize();
 	}
@@ -361,6 +372,11 @@ public abstract class ExecutorConfigurationSupport extends CustomizableThreadFac
 	 * @see java.util.concurrent.ExecutorService#shutdownNow()
 	 * @see java.util.concurrent.ExecutorService#awaitTermination
 	 */
+	/* ===== [OCA 中文解析] =====
+	方法 shutdown — 意图与阅读要点
+
+	优雅关闭：先 shutdown 停止接收新任务，再 awaitTermination；超时后 shutdownNow。ContextClosedEvent 监听器会按 SmartLifecycle 相位协调多 Executor 关闭顺序。
+	===== [OCA 中文解析结束] ===== */
 	public void shutdown() {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Shutting down ExecutorService" + (this.beanName != null ? " '" + this.beanName + "'" : ""));

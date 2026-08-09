@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+Web 与通用场景的数据绑定核心：把请求参数/PropertyValues 写入目标对象（bind/construct），再经 Validator 校验并汇总到 BindingResult；allowedFields 等安全约束防 mass assignment。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.validation;
 
 import java.beans.PropertyEditor;
@@ -69,13 +74,13 @@ import org.springframework.validation.annotation.ValidationAnnotationUtils;
 /* ===== [OCA 中文解析] =====
 class DataBinder — 意图说明
 
-class `DataBinder`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/DataBinder.java`
+绑定 + 校验门面：bind 走 setter/字段注入，construct 走构造器绑定（6.1+）；Errors 收集 FieldError/ObjectError，MessageCodesResolver 生成 i18n 消息码。
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Binder that allows applying property values to a target object via constructor
- * and setter injection, and also supports validation and binding result analysis.
+ * 数据绑定器：通过构造器与 setter 注入把属性值应用到目标对象，
+ * 并支持校验与绑定结果分析。
  *
  * <p>The binding process can be customized by specifying allowed field patterns,
  * required fields, custom editors, etc.
@@ -136,22 +141,18 @@ class `DataBinder`：请结合所属模块与调用方理解其在整体架构�
  */
 public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 
-	// [OCA] 字段 `DEFAULT_OBJECT_NAME`：类成员状态。
 	/** Default object name used for binding: "target". */
 	public static final String DEFAULT_OBJECT_NAME = "target";
 
-	// [OCA] 字段 `DEFAULT_AUTO_GROW_COLLECTION_LIMIT`：类成员状态。
 	/** Default limit for array and collection growing: 256. */
 	public static final int DEFAULT_AUTO_GROW_COLLECTION_LIMIT = 256;
 
 
-	// [OCA] 字段 `logger`：类成员状态。
 	/**
 	 * We'll create a lot of DataBinder instances: Let's use a static logger.
 	 */
 	protected static final Log logger = LogFactory.getLog(DataBinder.class);
 
-	// [OCA] 字段 `NO_INDEX`：类成员状态。
 	/** Internal constant for constructor binding via "[]". */
 	private static final int NO_INDEX = -1;
 
@@ -160,29 +161,22 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 
 	@Nullable ResolvableType targetType;
 
-	// [OCA] 字段 `objectName`：类成员状态。
 	private final String objectName;
 
 	private @Nullable AbstractPropertyBindingResult bindingResult;
 
-	// [OCA] 字段 `directFieldAccess`：类成员状态。
 	private boolean directFieldAccess = false;
 
 	private @Nullable ExtendedTypeConverter typeConverter;
 
-	// [OCA] 字段 `declarativeBinding`：类成员状态。
 	private boolean declarativeBinding = false;
 
-	// [OCA] 字段 `ignoreUnknownFields`：类成员状态。
 	private boolean ignoreUnknownFields = true;
 
-	// [OCA] 字段 `ignoreInvalidFields`：类成员状态。
 	private boolean ignoreInvalidFields = false;
 
-	// [OCA] 字段 `autoGrowNestedPaths`：类成员状态。
 	private boolean autoGrowNestedPaths = true;
 
-	// [OCA] 字段 `autoGrowCollectionLimit`：类成员状态。
 	private int autoGrowCollectionLimit = DEFAULT_AUTO_GROW_COLLECTION_LIMIT;
 
 	private String @Nullable [] allowedFields;
@@ -197,10 +191,8 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 
 	private @Nullable MessageCodesResolver messageCodesResolver;
 
-	// [OCA] 字段 `bindingErrorProcessor`：类成员状态。
 	private BindingErrorProcessor bindingErrorProcessor = new DefaultBindingErrorProcessor();
 
-	// [OCA] 字段 `validators`：类成员状态。
 	private final List<Validator> validators = new ArrayList<>();
 
 	private @Nullable Predicate<Validator> excludedValidators;
@@ -898,6 +890,11 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @throws BeanInstantiationException in case of constructor failure
 	 * @since 6.1
 	 */
+	/* ===== [OCA 中文解析] =====
+	方法 construct — 意图与阅读要点
+
+	构造器绑定：按构造参数顺序从 ValueResolver 取值，支持嵌套与 @Name 解析；实例化后可选 validateConstructorArgument 做参数级校验。
+	===== [OCA 中文解析结束] ===== */
 	public void construct(ValueResolver valueResolver) {
 		Assert.state(this.target == null, "Target instance already available");
 		Assert.state(this.targetType != null, "Target type not set");
@@ -1181,13 +1178,6 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 		getBindingErrorProcessor().processPropertyAccessException(ex, getBindingResult());
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 validateConstructorArgument — 意图与阅读要点
-
-方法 `validateConstructorArgument` 复杂度较高（CCN≈11, NLOC≈31）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
 	private void validateConstructorArgument(
 			Class<?> constructorClass, String nestedPath, @Nullable String name, @Nullable Object value) {
 
@@ -1235,6 +1225,11 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @param pvs property values to bind
 	 * @see #doBind(org.springframework.beans.MutablePropertyValues)
 	 */
+	/* ===== [OCA 中文解析] =====
+	方法 bind — 意图与阅读要点
+
+	绑定主入口：过滤 allowed/disallowed 字段 → doBind 写入 PropertyAccessor → checkRequiredFields；类型转换经 TypeConverter/ConversionService，失败记入 BindingResult。
+	===== [OCA 中文解析结束] ===== */
 	public void bind(PropertyValues pvs) {
 		if (shouldNotBindPropertyValues()) {
 			return;
@@ -1263,6 +1258,11 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see #checkRequiredFields
 	 * @see #applyPropertyValues
 	 */
+	/* ===== [OCA 中文解析] =====
+	方法 doBind — 意图与阅读要点
+
+	逐 PropertyValue 应用：嵌套路径 autoGrow、Editor/Formatter 转换、PropertyAccessException 经 BindingErrorProcessor 转为 FieldError。
+	===== [OCA 中文解析结束] ===== */
 	protected void doBind(MutablePropertyValues mpvs) {
 		checkAllowedFields(mpvs);
 		checkRequiredFields(mpvs);
@@ -1331,11 +1331,6 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see BindingErrorProcessor#processMissingFieldError
 	 */
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
-	/* ===== [OCA 中文解析] =====
-方法 checkRequiredFields — 意图与阅读要点
-
-方法 `checkRequiredFields` 复杂度较高（CCN≈11, NLOC≈30）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	protected void checkRequiredFields(MutablePropertyValues mpvs) {
 		String[] requiredFields = getRequiredFields();
 		if (!ObjectUtils.isEmpty(requiredFields)) {
@@ -1401,6 +1396,11 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see #setValidator(Validator)
 	 * @see #getBindingResult()
 	 */
+	/* ===== [OCA 中文解析] =====
+	方法 validate — 意图与阅读要点
+
+	对当前 target 执行已注册 Validator，错误写入 BindingResult；Web 层通常在 bind 之后调用，@Valid 触发 Bean Validation 时也走类似路径。
+	===== [OCA 中文解析结束] ===== */
 	public void validate() {
 		Object target = getTarget();
 		Assert.state(target != null, "No target to validate");
@@ -1449,13 +1449,6 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-interface NameResolver — 意图说明
-
-解析器：名称/类型/占位符等到具体对象的转换；源文件: `spring-context/src/main/java/org/springframework/validation/DataBinder.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Strategy to determine the name of the value to bind to a method parameter.
 	 * Supported on constructor parameters with {@link #construct constructor binding}
@@ -1472,13 +1465,6 @@ interface NameResolver — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-interface ValueResolver — 意图说明
-
-解析器：名称/类型/占位符等到具体对象的转换；源文件: `spring-context/src/main/java/org/springframework/validation/DataBinder.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Strategy for {@link #construct constructor binding} to look up the values
 	 * to bind to a given constructor parameter.
@@ -1506,13 +1492,6 @@ interface ValueResolver — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ExtendedTypeConverter — 意图说明
-
-class `ExtendedTypeConverter`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/DataBinder.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * {@link SimpleTypeConverter} that is also {@link PropertyEditorRegistrar}.
 	 */

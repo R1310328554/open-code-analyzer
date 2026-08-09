@@ -63,13 +63,12 @@ import org.springframework.util.StringUtils;
 /* ===== [OCA 中文解析] =====
 class TransactionAspectSupport — 意图说明
 
-被 TransactionInterceptor / AspectJ 切面复用的事务边界控制逻辑。
+被 TransactionInterceptor / AspectJ 切面复用的事务边界控制逻辑：解析 TransactionAttribute、选择 Platform/Reactive TransactionManager、维护 TransactionInfo 线程栈以支持嵌套与传播行为。
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Base class for transactional aspects, such as the {@link TransactionInterceptor}
- * or an AspectJ aspect.
+ * 事务切面基类，如 {@link TransactionInterceptor} 或 AspectJ 切面。
  *
  * <p>This enables the underlying Spring transaction infrastructure to be used easily
  * to implement an aspect for any aspect system.
@@ -108,30 +107,25 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	// class for AspectJ aspects (which are not allowed to implement Serializable)!
 
 
-	// [OCA] 字段 `DEFAULT_TRANSACTION_MANAGER_KEY`：类成员状态。
 	/**
 	 * Key to use to store the default transaction manager.
 	 */
 	private static final Object DEFAULT_TRANSACTION_MANAGER_KEY = new Object();
 
-	// [OCA] 字段 `COROUTINES_FLOW_CLASS_NAME`：类成员状态。
 	private static final String COROUTINES_FLOW_CLASS_NAME = "kotlinx.coroutines.flow.Flow";
 
-	// [OCA] 字段 `REACTIVE_STREAMS_PRESENT`：类成员状态。
 	/**
 	 * Reactive Streams API present on the classpath?
 	 */
 	private static final boolean REACTIVE_STREAMS_PRESENT = ClassUtils.isPresent(
 			"org.reactivestreams.Publisher", TransactionAspectSupport.class.getClassLoader());
 
-	// [OCA] 字段 `VAVR_PRESENT`：类成员状态。
 	/**
 	 * Vavr library present on the classpath?
 	 */
 	private static final boolean VAVR_PRESENT = ClassUtils.isPresent(
 			"io.vavr.control.Try", TransactionAspectSupport.class.getClassLoader());
 
-	// [OCA] 字段 `transactionInfoHolder`：类成员状态。
 	/**
 	 * Holder to support the {@code currentTransactionStatus()} method,
 	 * and to support communication between different cooperating advices
@@ -186,7 +180,6 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	}
 
 
-	// [OCA] 字段 `logger`：类成员状态。
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final @Nullable ReactiveAdapterRegistry reactiveAdapterRegistry;
@@ -199,11 +192,9 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 	private @Nullable BeanFactory beanFactory;
 
-	// [OCA] 字段 `transactionManagerCache`：类成员状态。
 	private final ConcurrentMap<Object, TransactionManager> transactionManagerCache =
 			new ConcurrentReferenceHashMap<>(4);
 
-	// [OCA] 字段 `transactionSupportCache`：类成员状态。
 	private final ConcurrentMap<Method, ReactiveTransactionSupport> transactionSupportCache =
 			new ConcurrentReferenceHashMap<>(1024);
 
@@ -350,6 +341,11 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	 * @return the return value of the method, if any
 	 * @throws Throwable propagated from the target invocation
 	 */
+	/* ===== [OCA 中文解析] =====
+	方法 invokeWithinTransaction — 意图与阅读要点
+
+	主路径：获取 TransactionAttribute → createTransactionIfNecessary → 调回调 → completeTransactionAfterThrowing 或 commitTransactionAfterReturning。重点看传播行为导致的「挂起当前事务」分支；Reactive/Kotlin 协程走 ReactiveTransactionSupport 旁路。
+	===== [OCA 中文解析结束] ===== */
 	protected @Nullable Object invokeWithinTransaction(Method method, @Nullable Class<?> targetClass,
 			final InvocationCallback invocation) throws Throwable {
 
@@ -383,7 +379,6 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		if (txAttr == null || !(ptm instanceof CallbackPreferringPlatformTransactionManager cpptm)) {
 			// Standard transaction demarcation with getTransaction and commit/rollback calls.
 			TransactionInfo txInfo = createTransactionIfNecessary(ptm, txAttr, joinpointIdentification);
-			// [OCA] 按传播行为决定：新建 / 加入 / 挂起当前事务。理解 @Transactional 十有八九卡在这里。
 
 			Object retVal;
 			try {
@@ -427,7 +422,6 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			}
 
 			commitTransactionAfterReturning(txInfo);
-			// [OCA] 正常返回：提交（或在参与型传播下延迟到外层事务提交）。
 			return retVal;
 		}
 
@@ -631,6 +625,11 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	 * @see #getTransactionAttributeSource()
 	 */
 	@SuppressWarnings("serial")
+	/* ===== [OCA 中文解析] =====
+	方法 createTransactionIfNecessary — 意图与阅读要点
+
+	按 txAttr 调用 tm.getTransaction：REQUIRED 加入现有、REQUIRES_NEW 挂起并新建、NOT_SUPPORTED 挂起且不创建等；无名称时用 joinpointIdentification 作为事务名。
+	===== [OCA 中文解析结束] ===== */
 	protected TransactionInfo createTransactionIfNecessary(@Nullable PlatformTransactionManager tm,
 			@Nullable TransactionAttribute txAttr, final String joinpointIdentification) {
 
@@ -710,17 +709,17 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 completeTransactionAfterThrowing — 意图与阅读要点
-
-方法 `completeTransactionAfterThrowing` 复杂度较高（CCN≈8, NLOC≈37）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Handle a throwable, completing the transaction.
 	 * We may commit or roll back, depending on the configuration.
 	 * @param txInfo information about the current transaction
 	 * @param ex throwable encountered
 	 */
+	/* ===== [OCA 中文解析] =====
+	方法 completeTransactionAfterThrowing — 意图与阅读要点
+
+	异常收尾：txAttr.rollbackOn(ex) 决定 rollback 还是 commit；rollback 失败时 TransactionSystemException 保留原始应用异常。
+	===== [OCA 中文解析结束] ===== */
 	protected void completeTransactionAfterThrowing(
 			@Nullable TransactionInfo txInfo, InvocationCallback invocation, Throwable ex) {
 
@@ -776,15 +775,12 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 
 	/* ===== [OCA 中文解析] =====
-class TransactionInfo — 意图说明
+	class TransactionInfo — 意图说明
 
-事务抽象：边界、同步与管理器；源文件: `spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+	当前连接点的事务上下文：持有 TransactionManager、TransactionAttribute、TransactionStatus；bind/cleanup 维护 ThreadLocal 栈以支持嵌套调用。
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Opaque object used to hold transaction information. Subclasses
-	 * must pass it back to methods on this class, but not see its internals.
+	 * 保存事务信息的不透明对象。子类须将其传回本类方法，但不应访问内部细节。
 	 */
 	protected static final class TransactionInfo {
 
@@ -859,13 +855,6 @@ class TransactionInfo — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-interface InvocationCallback — 意图说明
-
-interface `InvocationCallback`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Simple callback interface for proceeding with the target invocation.
 	 * Concrete interceptors/aspects adapt this to their invocation mechanism.
@@ -891,13 +880,6 @@ interface `InvocationCallback`：请结合所属模块与调用方理解其在�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ThrowableHolder — 意图说明
-
-class `ThrowableHolder`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Internal holder class for a Throwable in a callback transaction model.
 	 */
@@ -907,13 +889,6 @@ class `ThrowableHolder`：请结合所属模块与调用方理解其在整体架
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ThrowableHolderException — 意图说明
-
-class `ThrowableHolderException`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Internal holder class for a Throwable, used as a RuntimeException to be
 	 * thrown from a TransactionCallback (and subsequently unwrapped again).
@@ -934,13 +909,6 @@ class `ThrowableHolderException`：请结合所属模块与调用方理解其在
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class VavrDelegate — 意图说明
-
-class `VavrDelegate`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Inner class to avoid a hard dependency on the Vavr library at runtime.
 	 */
@@ -963,13 +931,6 @@ class `VavrDelegate`：请结合所属模块与调用方理解其在整体架构
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ReactiveTransactionSupport — 意图说明
-
-事务抽象：边界、同步与管理器；源文件: `spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Delegate for Reactor-based management of transactional methods with a
 	 * reactive return type.
@@ -981,13 +942,6 @@ class ReactiveTransactionSupport — 意图说明
 		public ReactiveTransactionSupport(ReactiveAdapter adapter) {
 			this.adapter = adapter;
 		}
-
-		/* ===== [OCA 中文解析] =====
-方法 invokeWithinTransaction — 意图与阅读要点
-
-主路径：获取 TransactionAttribute → createTransactionIfNecessary → 调回调 → completeTransactionAfterThrowing 或 commitTransactionAfterReturning。重点看传播行为导致的「挂起当前事务」分支。
-
-		===== [OCA 中文解析结束] ===== */
 
 		public Object invokeWithinTransaction(Method method, @Nullable Class<?> targetClass,
 				InvocationCallback invocation, @Nullable TransactionAttribute txAttr, ReactiveTransactionManager rtm) {
@@ -1102,13 +1056,6 @@ class ReactiveTransactionSupport — 意图说明
 			return Mono.empty();
 		}
 
-		/* ===== [OCA 中文解析] =====
-方法 completeTransactionAfterThrowing — 意图与阅读要点
-
-方法 `completeTransactionAfterThrowing` 复杂度较高（CCN≈8, NLOC≈37）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-		===== [OCA 中文解析结束] ===== */
-
 		private Mono<Void> completeTransactionAfterThrowing(
 				@Nullable ReactiveTransactionInfo txInfo, InvocationCallback invocation, Throwable ex) {
 
@@ -1167,13 +1114,6 @@ class ReactiveTransactionSupport — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ReactiveTransactionInfo — 意图说明
-
-事务抽象：边界、同步与管理器；源文件: `spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Opaque object used to hold transaction information for reactive methods.
 	 */

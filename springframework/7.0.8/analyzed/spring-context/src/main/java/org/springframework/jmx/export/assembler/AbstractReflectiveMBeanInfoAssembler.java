@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+JMX MBeanInfo 反射组装基类：扫描托管 Bean 的 getter/setter/方法，生成 ModelMBean 属性与操作元数据；具体暴露哪些成员由子类 includeXXX 投票决定。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jmx.export.assembler;
 
 import java.beans.PropertyDescriptor;
@@ -40,24 +45,17 @@ import org.springframework.jmx.support.JmxUtils;
 /* ===== [OCA 中文解析] =====
 class AbstractReflectiveMBeanInfoAssembler — 意图说明
 
-class `AbstractReflectiveMBeanInfoAssembler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/jmx/export/assembler/AbstractReflectiveMBeanInfoAssembler.java`
+反射驱动的 MBean 元数据工厂：把 JavaBean 属性与 public 方法映射为 JMX Attribute/Operation。子类通过 includeReadAttribute/includeWriteAttribute/includeOperation 过滤暴露面，populateXXXDescriptor 可补充 Descriptor 细节。
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Builds on the {@link AbstractMBeanInfoAssembler} superclass to
- * add a basic algorithm for building metadata based on the
- * reflective metadata of the MBean class.
+ * 在 {@link AbstractMBeanInfoAssembler} 之上，基于 MBean 类的反射元数据
+ * 构建 ModelMBean 属性与操作信息的基础算法。
  *
- * <p>The logic for creating MBean metadata from the reflective metadata
- * is contained in this class, but this class makes no decisions as to
- * which methods and properties are to be exposed. Instead, it gives
- * subclasses a chance to 'vote' on each property or method through
- * the {@code includeXXX} methods.
+ * <p>本类负责「如何从反射得到 MBean 元数据」，但不决定暴露哪些成员；子类通过 {@code includeXXX} 方法对每个属性/方法「投票」。
  *
- * <p>Subclasses are also given the opportunity to populate attribute
- * and operation metadata with additional descriptors once the metadata
- * is assembled through the {@code populateXXXDescriptor} methods.
+ * <p>元数据组装完成后，子类还可通过 {@code populateXXXDescriptor} 向 Descriptor 写入额外信息。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -71,49 +69,41 @@ class `AbstractReflectiveMBeanInfoAssembler`：请结合所属模块与调用方
  */
 public abstract class AbstractReflectiveMBeanInfoAssembler extends AbstractMBeanInfoAssembler {
 
-	// [OCA] 字段 `FIELD_GET_METHOD`：类成员状态。
 	/**
 	 * Identifies a getter method in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_GET_METHOD = "getMethod";
 
-	// [OCA] 字段 `FIELD_SET_METHOD`：类成员状态。
 	/**
 	 * Identifies a setter method in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_SET_METHOD = "setMethod";
 
-	// [OCA] 字段 `FIELD_ROLE`：类成员状态。
 	/**
 	 * Constant identifier for the role field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_ROLE = "role";
 
-	// [OCA] 字段 `ROLE_GETTER`：类成员状态。
 	/**
 	 * Constant identifier for the getter role field value in a JMX {@link Descriptor}.
 	 */
 	protected static final String ROLE_GETTER = "getter";
 
-	// [OCA] 字段 `ROLE_SETTER`：类成员状态。
 	/**
 	 * Constant identifier for the setter role field value in a JMX {@link Descriptor}.
 	 */
 	protected static final String ROLE_SETTER = "setter";
 
-	// [OCA] 字段 `ROLE_OPERATION`：类成员状态。
 	/**
 	 * Identifies an operation (method) in a JMX {@link Descriptor}.
 	 */
 	protected static final String ROLE_OPERATION = "operation";
 
-	// [OCA] 字段 `FIELD_VISIBILITY`：类成员状态。
 	/**
 	 * Constant identifier for the visibility field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_VISIBILITY = "visibility";
 
-	// [OCA] 字段 `ATTRIBUTE_OPERATION_VISIBILITY`：类成员状态。
 	/**
 	 * Lowest visibility, used for operations that correspond to
 	 * accessors or mutators for attributes.
@@ -121,78 +111,65 @@ public abstract class AbstractReflectiveMBeanInfoAssembler extends AbstractMBean
 	 */
 	protected static final int ATTRIBUTE_OPERATION_VISIBILITY = 4;
 
-	// [OCA] 字段 `FIELD_CLASS`：类成员状态。
 	/**
 	 * Constant identifier for the class field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_CLASS = "class";
-	// [OCA] 字段 `FIELD_LOG`：类成员状态。
 	/**
 	 * Constant identifier for the log field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_LOG = "log";
 
-	// [OCA] 字段 `FIELD_LOG_FILE`：类成员状态。
 	/**
 	 * Constant identifier for the logfile field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_LOG_FILE = "logFile";
 
-	// [OCA] 字段 `FIELD_CURRENCY_TIME_LIMIT`：类成员状态。
 	/**
 	 * Constant identifier for the currency time limit field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_CURRENCY_TIME_LIMIT = "currencyTimeLimit";
 
-	// [OCA] 字段 `FIELD_DEFAULT`：类成员状态。
 	/**
 	 * Constant identifier for the default field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_DEFAULT = "default";
 
-	// [OCA] 字段 `FIELD_PERSIST_POLICY`：类成员状态。
 	/**
 	 * Constant identifier for the persistPolicy field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_PERSIST_POLICY = "persistPolicy";
 
-	// [OCA] 字段 `FIELD_PERSIST_PERIOD`：类成员状态。
 	/**
 	 * Constant identifier for the persistPeriod field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_PERSIST_PERIOD = "persistPeriod";
 
-	// [OCA] 字段 `FIELD_PERSIST_LOCATION`：类成员状态。
 	/**
 	 * Constant identifier for the persistLocation field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_PERSIST_LOCATION = "persistLocation";
 
-	// [OCA] 字段 `FIELD_PERSIST_NAME`：类成员状态。
 	/**
 	 * Constant identifier for the persistName field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_PERSIST_NAME = "persistName";
 
-	// [OCA] 字段 `FIELD_DISPLAY_NAME`：类成员状态。
 	/**
 	 * Constant identifier for the displayName field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_DISPLAY_NAME = "displayName";
 
-	// [OCA] 字段 `FIELD_UNITS`：类成员状态。
 	/**
 	 * Constant identifier for the units field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_UNITS = "units";
 
-	// [OCA] 字段 `FIELD_METRIC_TYPE`：类成员状态。
 	/**
 	 * Constant identifier for the metricType field in a JMX {@link Descriptor}.
 	 */
 	protected static final String FIELD_METRIC_TYPE = "metricType";
 
-	// [OCA] 字段 `FIELD_METRIC_CATEGORY`：类成员状态。
 	/**
 	 * Constant identifier for the custom metricCategory field in a JMX {@link Descriptor}.
 	 */
@@ -204,13 +181,11 @@ public abstract class AbstractReflectiveMBeanInfoAssembler extends AbstractMBean
 	 */
 	private @Nullable Integer defaultCurrencyTimeLimit;
 
-	// [OCA] 字段 `useStrictCasing`：类成员状态。
 	/**
 	 * Indicates whether strict casing is being used for attributes.
 	 */
 	private boolean useStrictCasing = true;
 
-	// [OCA] 字段 `exposeClassDescriptor`：类成员状态。
 	private boolean exposeClassDescriptor = false;
 
 	private @Nullable ParameterNameDiscoverer parameterNameDiscoverer =
@@ -324,11 +299,6 @@ public abstract class AbstractReflectiveMBeanInfoAssembler extends AbstractMBean
 	 * @see #populateAttributeDescriptor
 	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getAttributeInfo — 意图与阅读要点
-
-方法 `getAttributeInfo` 复杂度较高（CCN≈12, NLOC≈33）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	protected ModelMBeanAttributeInfo[] getAttributeInfo(Object managedBean, String beanKey) throws JMException {
 		PropertyDescriptor[] props = BeanUtils.getPropertyDescriptors(getClassToExpose(managedBean));
 		List<ModelMBeanAttributeInfo> infos = new ArrayList<>();
@@ -383,11 +353,6 @@ public abstract class AbstractReflectiveMBeanInfoAssembler extends AbstractMBean
 	 * @see #populateOperationDescriptor
 	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getOperationInfo — 意图与阅读要点
-
-方法 `getOperationInfo` 复杂度较高（CCN≈15, NLOC≈44）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	protected ModelMBeanOperationInfo[] getOperationInfo(Object managedBean, String beanKey) {
 		Method[] methods = getClassToExpose(managedBean).getMethods();
 		List<ModelMBeanOperationInfo> infos = new ArrayList<>();
@@ -485,12 +450,10 @@ public abstract class AbstractReflectiveMBeanInfoAssembler extends AbstractMBean
 
 
 	/**
-	 * Allows subclasses to vote on the inclusion of a particular attribute accessor.
-	 * @param method the accessor {@code Method}
-	 * @param beanKey the key associated with the MBean in the beans map
-	 * of the {@code MBeanExporter}
-	 * @return {@code true} if the accessor should be included in the management interface,
-	 * otherwise {@code false}
+	 * 允许子类对是否纳入某属性 accessor（getter）投票。
+	 * @param method accessor {@code Method}
+	 * @param beanKey {@code MBeanExporter} beans 映射中的 MBean 键
+	 * @return 应纳入管理接口时返回 {@code true}，否则 {@code false}
 	 */
 	protected abstract boolean includeReadAttribute(Method method, String beanKey);
 
@@ -505,11 +468,10 @@ public abstract class AbstractReflectiveMBeanInfoAssembler extends AbstractMBean
 	protected abstract boolean includeWriteAttribute(Method method, String beanKey);
 
 	/**
-	 * Allows subclasses to vote on the inclusion of a particular operation.
-	 * @param method the operation method
-	 * @param beanKey the key associated with the MBean in the beans map
-	 * of the {@code MBeanExporter}
-	 * @return whether the operation should be included in the management interface
+	 * 允许子类对是否纳入某操作方法投票。
+	 * @param method 操作方法
+	 * @param beanKey {@code MBeanExporter} beans 映射中的 MBean 键
+	 * @return 应纳入管理接口时返回 {@code true}
 	 */
 	protected abstract boolean includeOperation(Method method, String beanKey);
 
