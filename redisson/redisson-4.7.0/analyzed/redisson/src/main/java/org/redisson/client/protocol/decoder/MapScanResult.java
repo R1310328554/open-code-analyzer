@@ -22,7 +22,11 @@ import org.redisson.ScanResult;
 import org.redisson.client.RedisClient;
 
 /**
- * 
+ * Hash 结构 {@code HSCAN} 命令的扫描结果封装。
+ * <p>
+ * 包含下次迭代游标、当前批次的键值映射，
+ * 并实现 {@link ScanResult} 以支持集群环境下的客户端绑定。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -30,35 +34,44 @@ import org.redisson.client.RedisClient;
  */
 public class MapScanResult<K, V> implements ScanResult<Map.Entry<K, V>> {
 
+    /** 下次扫描起始游标，{@code "0"} 表示迭代结束。 */
     private final String pos;
+    /** 本批次扫描得到的键值映射。 */
     private final Map<K, V> values;
+    /** 执行扫描的 Redis 节点客户端（集群场景下由框架注入）。 */
     private RedisClient client;
 
+    /** 构造包含游标与键值映射的扫描结果。 */
     public MapScanResult(String pos, Map<K, V> values) {
         super();
         this.pos = pos;
         this.values = values;
     }
 
+    /** 以 Map 条目集合形式返回扫描值，供 {@link ScanResult} 接口使用。 */
     @Override
     public Collection<Map.Entry<K, V>> getValues() {
         return values.entrySet();
     }
     
+    /** 直接返回底层键值 Map。 */
     public Map<K, V> getMap() {
         return values;
     }
     
+    /** 返回下次扫描应使用的游标字符串。 */
     @Override
     public String getPos() {
         return pos;
     }
 
+    /** 绑定响应该扫描命令的 Redis 客户端。 */
     @Override
     public void setRedisClient(RedisClient client) {
         this.client = client;
     }
 
+    /** 获取绑定的 Redis 客户端，集群路由续扫时使用。 */
     @Override
     public RedisClient getRedisClient() {
         return client;

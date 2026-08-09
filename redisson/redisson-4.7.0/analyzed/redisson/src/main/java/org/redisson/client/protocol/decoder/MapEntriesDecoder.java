@@ -22,20 +22,30 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
+ * Map 键值对条目解码器（交替选择键/值解码器）。
+ * <p>
+ * 在扁平的 [key1, val1, key2, val2, ...] 数组上，
+ * 偶数索引用 {@link Codec#getMapKeyDecoder()}，奇数索引用 {@link Codec#getMapValueDecoder()}。
+ * 最终聚合逻辑委托给内部 {@link MultiDecoder}。
+ *
  * @author Nikita Koksharov
  */
 public class MapEntriesDecoder<T> implements MultiDecoder<Object> {
 
+    /** 负责将完整 parts 列表转为目标结构的委托解码器。 */
     private final MultiDecoder<Object> decoder;
 
+    /** 指定聚合解码器。 */
     public MapEntriesDecoder(MultiDecoder<Object> decoder) {
         this.decoder = decoder;
     }
 
+    /** 无委托时使用默认构造，decode 时需外部保证 decoder 非空。 */
     public MapEntriesDecoder() {
         this(null);
     }
 
+    /** 按索引奇偶切换 Map 键解码器与值解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
@@ -45,6 +55,7 @@ public class MapEntriesDecoder<T> implements MultiDecoder<Object> {
         }
     }
 
+    /** 将已解码的 parts 交给委托解码器完成最终转换。 */
     @Override
     public T decode(List<Object> parts, State state) {
         return (T) decoder.decode(parts, state);

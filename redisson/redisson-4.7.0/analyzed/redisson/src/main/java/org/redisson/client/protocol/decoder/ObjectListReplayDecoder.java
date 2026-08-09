@@ -23,30 +23,40 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * 
+ * 列表型 RESP 数组回放解码器。
+ * <p>
+ * 将已逐段解码的 parts 直接作为 {@code List<T>} 返回，
+ * 可选地在返回前反转顺序（如 {@code LRANGE} 倒序场景）。
+ *
  * @author Nikita Koksharov
  *
  * @param <T> type
  */
 public class ObjectListReplayDecoder<T> implements MultiDecoder<List<T>> {
 
+    /** 可选的自定义子字段解码器；为 null 时使用 {@link MultiDecoder} 默认策略。 */
     private final Decoder<Object> decoder;
+    /** 是否在返回前反转 parts 顺序。 */
     private final boolean reverse;
 
+    /** 默认正序返回。 */
     public ObjectListReplayDecoder() {
         this(false);
     }
 
+    /** 指定是否反转顺序。 */
     public ObjectListReplayDecoder(boolean reverse) {
         this(reverse, null);
     }
 
+    /** 同时指定反转标志与自定义子字段解码器。 */
     public ObjectListReplayDecoder(boolean reverse, Decoder<Object> decoder) {
         super();
         this.reverse = reverse;
         this.decoder = decoder;
     }
 
+    /** 按需反转后返回 parts 作为 List。 */
     @Override
     public List<T> decode(List<Object> parts, State state) {
         if (reverse) {
@@ -55,6 +65,7 @@ public class ObjectListReplayDecoder<T> implements MultiDecoder<List<T>> {
         return (List<T>) parts;
     }
 
+    /** 有自定义解码器时使用之，否则回退到接口默认实现。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (decoder != null) {

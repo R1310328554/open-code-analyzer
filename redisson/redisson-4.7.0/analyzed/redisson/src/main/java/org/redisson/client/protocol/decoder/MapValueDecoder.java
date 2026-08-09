@@ -22,25 +22,35 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
+ * 仅解码 Map 值字段的多段解码器包装器。
+ * <p>
+ * 所有嵌套字段统一使用 {@link Codec#getMapValueDecoder()}；
+ * 无委托解码器时直接返回原始 parts 列表。
+ *
  * @author Nikita Koksharov
  */
 public class MapValueDecoder<T> implements MultiDecoder<Object> {
 
+    /** 负责将完整 parts 列表转为目标结构的委托解码器，可为 null。 */
     private final MultiDecoder<Object> decoder;
 
+    /** 指定聚合解码器。 */
     public MapValueDecoder(MultiDecoder<Object> decoder) {
         this.decoder = decoder;
     }
 
+    /** 无委托时使用默认构造。 */
     public MapValueDecoder() {
         this(null);
     }
 
+    /** 始终返回 Map 值解码器，忽略 paramNum。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return codec.getMapValueDecoder();
     }
 
+    /** 有委托时交给其聚合；否则直接返回 parts 作为结果。 */
     @Override
     public T decode(List<Object> parts, State state) {
         if (decoder != null) {

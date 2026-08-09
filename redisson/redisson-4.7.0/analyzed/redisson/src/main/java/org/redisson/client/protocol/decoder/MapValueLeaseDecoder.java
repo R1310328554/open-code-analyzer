@@ -24,18 +24,21 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
- * Decodes {@code EVAL} response shaped like {@code {status, value, token, leaseAcquired}} where:
+ * 带租约信息的 {@code EVAL} 脚本回复解码器。
+ * <p>
+ * 解析形如 {@code {status, value, token, leaseAcquired}} 的四元组，其中：
  * <ul>
- *     <li>{@code status}: {@link Long}</li>
- *     <li>{@code value}: decoded using {@code codec.getMapValueDecoder()}</li>
- *     <li>{@code token}: {@link String}</li>
- *     <li>{@code leaseAcquired}: {@link Long} — {@code 1} if this script acquired the lease via {@code SET NX}</li>
+ *     <li>{@code status}：{@link Long} 状态码</li>
+ *     <li>{@code value}：通过 {@code codec.getMapValueDecoder()} 解码的业务值</li>
+ *     <li>{@code token}：{@link String} 租约令牌</li>
+ *     <li>{@code leaseAcquired}：{@link Long}，{@code 1} 表示脚本通过 {@code SET NX} 成功获取租约</li>
  * </ul>
  *
  * @author nhancdt2602
  */
 public class MapValueLeaseDecoder implements MultiDecoder<List<Object>> {
 
+    /** 按字段索引选择对应解码器：status/value/token/leaseAcquired。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size, List<Object> parts) {
         if (paramNum == 0) {
@@ -53,6 +56,7 @@ public class MapValueLeaseDecoder implements MultiDecoder<List<Object>> {
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size, parts);
     }
 
+    /** 四字段均已解码，直接返回 parts 列表。 */
     @Override
     public List<Object> decode(List<Object> parts, State state) {
         return parts;

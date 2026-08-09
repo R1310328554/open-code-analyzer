@@ -24,12 +24,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * 带过期信息的 Map 缓存 {@code HSCAN} 扫描结果回放解码器。
+ * <p>
+ * 将 Redis 返回的三段式数组 [游标, 键值映射, 空闲键列表]
+ * 组装为 {@link MapCacheScanResult}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MapCacheScanResultReplayDecoder implements MultiDecoder<MapCacheScanResult<Object, Object>> {
 
+    /** 从已解码子段提取游标、键值对与空闲键，构造扫描结果。 */
     @Override
     public MapCacheScanResult<Object, Object> decode(List<Object> parts, State state) {
         String pos = (String) parts.get(0);
@@ -38,6 +43,7 @@ public class MapCacheScanResultReplayDecoder implements MultiDecoder<MapCacheSca
         return new MapCacheScanResult<Object, Object>(pos, values, idleKeys);
     }
 
+    /** 扫描游标字段统一用 {@link StringCodec} 解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();

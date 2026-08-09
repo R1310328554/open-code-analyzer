@@ -25,12 +25,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 /**
- * 
+ * 扁平键值数组到 {@code Set<Entry>} 的回放解码器。
+ * <p>
+ * 将 [key1, val1, key2, val2, ...] 聚合为 {@link LinkedHashMap}，
+ * 最终返回其 {@link Map#entrySet()}，保持插入顺序。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ObjectMapEntryReplayDecoder implements MultiDecoder<Set<Entry<Object, Object>>> {
 
+    /** 偶数索引为键、奇数索引为值，分别选用对应 Map 解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
@@ -39,6 +44,7 @@ public class ObjectMapEntryReplayDecoder implements MultiDecoder<Set<Entry<Objec
         return codec.getMapKeyDecoder();
     }
 
+    /** 逐对填充 LinkedHashMap 并返回 entrySet。 */
     @Override
     public Set<Entry<Object, Object>> decode(List<Object> parts, State state) {
         Map<Object, Object> result = MultiDecoder.newLinkedHashMap(parts.size()/2);

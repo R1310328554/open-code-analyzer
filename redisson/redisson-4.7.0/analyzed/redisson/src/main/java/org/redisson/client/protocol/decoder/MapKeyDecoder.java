@@ -22,21 +22,30 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
+ * 仅解码 Map 键字段的多段解码器包装器。
+ * <p>
+ * 所有嵌套字段统一使用 {@link Codec#getMapKeyDecoder()}，
+ * 聚合逻辑委托给内部 {@link MultiDecoder}。
+ *
  * @author Nikita Koksharov
  */
 public class MapKeyDecoder<T> implements MultiDecoder<Object> {
 
+    /** 负责将完整 parts 列表转为目标结构的委托解码器。 */
     private final MultiDecoder<Object> decoder;
 
+    /** 指定聚合解码器。 */
     public MapKeyDecoder(MultiDecoder<Object> decoder) {
         this.decoder = decoder;
     }
 
+    /** 始终返回 Map 键解码器，忽略 paramNum。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return codec.getMapKeyDecoder();
     }
 
+    /** 将已解码的 parts 交给委托解码器完成最终转换。 */
     @Override
     public T decode(List<Object> parts, State state) {
         return (T) decoder.decode(parts, state);

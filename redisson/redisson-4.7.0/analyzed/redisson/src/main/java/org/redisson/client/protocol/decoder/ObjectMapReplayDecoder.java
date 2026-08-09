@@ -24,28 +24,38 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 
+ * 泛型 Map 回放解码器。
+ * <p>
+ * 将扁平 [key1, val1, key2, val2, ...] 数组聚合为 {@code Map<K, V>}，
+ * 支持键值对调（{@code swapKeyValue}）及固定 {@link Codec} 覆盖。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
 
+    /** 是否交换键值顺序（值作键、键作值）。 */
     private boolean swapKeyValue;
+    /** 可选的固定编解码器，为 null 时使用调用方传入的 codec。 */
     private final Codec codec;
 
+    /** 使用运行时传入的 codec。 */
     public ObjectMapReplayDecoder(Codec codec) {
         this.codec = codec;
     }
 
+    /** 无固定 codec，完全依赖 getDecoder 参数。 */
     public ObjectMapReplayDecoder() {
         this(null);
     }
 
+    /** 同时指定键值对调标志与固定 codec。 */
     public ObjectMapReplayDecoder(boolean swapKeyValue, Codec codec) {
         this.swapKeyValue = swapKeyValue;
         this.codec = codec;
     }
 
+    /** 偶数索引选键解码器，奇数索引选值解码器；优先使用构造时的 codec。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         Codec c = Optional.ofNullable(this.codec).orElse(codec);
@@ -55,6 +65,7 @@ public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
         return c.getMapKeyDecoder();
     }
 
+    /** 逐对写入 LinkedHashMap，swapKeyValue 时颠倒键值。 */
     @Override
     public Map<K, V> decode(List<Object> parts, State state) {
         Map<K, V> result = MultiDecoder.newLinkedHashMap(parts.size()/2);

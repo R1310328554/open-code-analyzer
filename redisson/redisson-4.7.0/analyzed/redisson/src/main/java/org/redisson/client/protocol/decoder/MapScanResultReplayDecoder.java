@@ -24,17 +24,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * Hash 结构 {@code HSCAN} 扫描结果回放解码器。
+ * <p>
+ * 将 Redis 返回的 [游标, 键值映射] 两段数组
+ * 组装为 {@link MapScanResult}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Object, Object>> {
 
+    /** 扫描游标字段统一用 {@link StringCodec} 解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     
+    /** 从已解码子段提取游标与键值映射，构造扫描结果。 */
     @Override
     public MapScanResult<Object, Object> decode(List<Object> parts, State state) {
         return new MapScanResult<>((String) parts.get(0), (Map<Object, Object>) parts.get(1));

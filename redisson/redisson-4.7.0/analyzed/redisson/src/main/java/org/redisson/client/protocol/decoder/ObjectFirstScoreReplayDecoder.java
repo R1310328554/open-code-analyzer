@@ -23,13 +23,18 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * 
+ * 有序集合回复中首个分值的回放解码器。
+ * <p>
+ * 适用于 {@code ZRANGEBYSCORE WITHSCORES} 等返回 [member, score, ...] 交替数组的场景，
+ * 聚合阶段仅提取最后一个元素（即首个 member 对应的 score）。
+ *
  * @author Nikita Koksharov
  *
  * 
  */
 public class ObjectFirstScoreReplayDecoder implements MultiDecoder<Double> {
 
+    /** 奇数索引为 score 字段，使用 {@link DoubleCodec} 解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
@@ -38,6 +43,7 @@ public class ObjectFirstScoreReplayDecoder implements MultiDecoder<Double> {
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 空回复返回 null；否则取 parts 末尾元素作为首个 score。 */
     @Override
     public Double decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
