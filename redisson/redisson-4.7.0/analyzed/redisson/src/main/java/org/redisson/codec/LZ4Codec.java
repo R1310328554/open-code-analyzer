@@ -30,13 +30,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * LZ4 compression codec.
- * Uses inner <code>Codec</code> to convert object to binary stream.
- * <code>Kryo5Codec</code> used by default.
- *
- * Fully thread-safe.
- *
- * https://github.com/jpountz/lz4-java
+ * 基于 LZ4 算法的压缩编解码器。
+ * <p>
+ * 先用内层 {@link Codec} 将对象序列化为二进制，再对字节流进行 LZ4 压缩；
+ * 默认内层编解码器为 {@link Kryo5Codec}。编解码器实例完全线程安全。
+ * <p>
+ * 实现基于 <a href="https://github.com/jpountz/lz4-java">lz4-java</a>。
  *
  * @see org.redisson.codec.Kryo5Codec
  *
@@ -45,27 +44,35 @@ import java.nio.ByteBuffer;
  */
 public class LZ4Codec extends BaseCodec {
 
+    /** 解压前原始长度占用的头部字节数（4 字节 int）。 */
     private static final int DECOMPRESSION_HEADER_SIZE = Integer.SIZE / 8;
+    /** 使用性能最优的 LZ4 工厂实例。 */
     private final LZ4Factory factory = LZ4Factory.fastestInstance();
 
+    /** 负责对象与二进制互转的内层编解码器。 */
     private final Codec innerCodec;
 
+    /** 默认使用 {@link Kryo5Codec} 作为内层编解码器。 */
     public LZ4Codec() {
         this(new Kryo5Codec());
     }
 
+    /** @param innerCodec 自定义内层编解码器 */
     public LZ4Codec(Codec innerCodec) {
         this.innerCodec = innerCodec;
     }
     
+    /** @param classLoader 用于 Kryo 反序列化的类加载器 */
     public LZ4Codec(ClassLoader classLoader) {
         this(new Kryo5Codec(classLoader));
     }
 
+    /** 在指定类加载器下复制现有编解码器配置。 */
     public LZ4Codec(ClassLoader classLoader, LZ4Codec codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
     
+    /** 值解码：先读原始长度、LZ4 解压，再委托内层解码器。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -85,6 +92,7 @@ public class LZ4Codec extends BaseCodec {
         }
     };
 
+    /** 值编码：内层序列化后写入原始长度前缀，再 LZ4 压缩。 */
     private final Encoder encoder = new Encoder() {
 
         @Override

@@ -22,15 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Codec used to decode expired entry events published by
- * {@link org.redisson.eviction.SetCacheEvictionTask}. Each message contains
- * a single set value encoded with the set's value codec.
+ * 带过期策略的 Set 缓存键空间事件编解码器。
+ * <p>
+ * 解码由 {@link org.redisson.eviction.SetCacheEvictionTask} 发布的过期条目事件；
+ * 每条消息包含一个集合元素，使用 Set 的值编解码器解析，返回单元素列表。
  *
  * @author Nikita Koksharov
  *
  */
 public class SetCacheEventCodec extends BaseEventCodec {
 
+    /** 解析 Set 缓存过期事件中的单个元素值。 */
     private final Decoder<Object> decoder = (buf, state) -> {
         List<Object> result = new ArrayList<Object>(1);
 
@@ -40,14 +42,17 @@ public class SetCacheEventCodec extends BaseEventCodec {
         return result;
     };
 
+    /** @param codec 内层值编解码器 @param osType 平台字节序类型 */
     public SetCacheEventCodec(Codec codec, OSType osType) {
         super(codec, osType);
     }
 
+    /** 在指定类加载器下复制编解码器。 */
     public SetCacheEventCodec(ClassLoader classLoader, SetCacheEventCodec codec) {
         super(newCodec(classLoader, codec), codec.osType);
     }
 
+    /** 通过反射构造带 ClassLoader 的内层编解码器副本。 */
     private static Codec newCodec(ClassLoader classLoader, SetCacheEventCodec codec) {
         try {
             return codec.codec.getClass().getConstructor(ClassLoader.class, codec.codec.getClass()).newInstance(classLoader, codec.codec);

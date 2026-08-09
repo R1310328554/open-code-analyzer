@@ -27,13 +27,12 @@ import org.xerial.snappy.Snappy;
 import java.io.IOException;
 
 /**
- * Google's Snappy compression codec.
- * Uses inner <code>Codec</code> to convert object to binary stream.
- * <code>Kryo5Codec</code> used by default.
+ * 基于 Google Snappy 的压缩编解码器（V2 实现）。
  * <p>
- * Based on <a href="https://github.com/xerial/snappy-java">https://github.com/xerial/snappy-java</a>
- *
- * Fully thread-safe.
+ * 先用内层 {@link Codec} 序列化对象，再对字节数组进行 Snappy 压缩/解压；
+ * 默认内层为 {@link Kryo5Codec}，完全线程安全。
+ * <p>
+ * 基于 <a href="https://github.com/xerial/snappy-java">snappy-java</a>。
  *
  * @see org.redisson.codec.Kryo5Codec
  *
@@ -42,24 +41,30 @@ import java.io.IOException;
  */
 public class SnappyCodecV2 extends BaseCodec {
 
+    /** 内层对象序列化编解码器。 */
     private final Codec innerCodec;
 
+    /** 默认内层为 {@link Kryo5Codec}。 */
     public SnappyCodecV2() {
         this(new Kryo5Codec());
     }
 
+    /** @param innerCodec 自定义内层编解码器 */
     public SnappyCodecV2(Codec innerCodec) {
         this.innerCodec = innerCodec;
     }
 
+    /** @param classLoader Kryo 反序列化类加载器 */
     public SnappyCodecV2(ClassLoader classLoader) {
         this(new Kryo5Codec(classLoader));
     }
     
+    /** 在指定类加载器下复制编解码器。 */
     public SnappyCodecV2(ClassLoader classLoader, SnappyCodecV2 codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
     
+    /** 解码：Snappy 解压后委托内层解码器。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         
         @Override
@@ -76,6 +81,7 @@ public class SnappyCodecV2 extends BaseCodec {
         }
     };
 
+    /** 编码：内层序列化后 Snappy 压缩。 */
     private final Encoder encoder = new Encoder() {
 
         @Override

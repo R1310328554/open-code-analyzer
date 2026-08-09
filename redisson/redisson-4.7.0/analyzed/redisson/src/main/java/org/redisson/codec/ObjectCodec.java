@@ -19,7 +19,10 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 /**
- * Object codec interface.
+ * 精简的对象编解码接口，仅暴露值级别的编码器与解码器。
+ * <p>
+ * 与完整 {@link org.redisson.client.codec.Codec} 不同，不包含 Map 键/值等细分编解码方法；
+ * 通常由 {@link ObjectCodecWrapper} 适配为 Redisson 标准 Codec。
  *
  * @author Nikita Koksharov
  *
@@ -27,16 +30,16 @@ import org.redisson.client.protocol.Encoder;
 public interface ObjectCodec {
 
     /**
-     * Returns object encoder
+     * 返回对象编码器。
      *
-     * @return encoder
+     * @return encoder 编码器实例
      */
     Encoder getEncoder();
 
     /**
-     * Returns object decoder
+     * 返回对象解码器。
      *
-     * @return decoder
+     * @return decoder 解码器实例
      */
     Decoder<Object> getDecoder();
 

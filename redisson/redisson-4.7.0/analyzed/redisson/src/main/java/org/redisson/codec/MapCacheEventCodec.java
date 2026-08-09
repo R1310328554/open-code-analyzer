@@ -21,12 +21,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ * 带过期策略的 Map 缓存键空间事件编解码器。
+ * <p>
+ * 解码 {@code RMapCache} 相关过期/淘汰事件消息，依次解析键、当前值，
+ * 若缓冲区仍有数据则继续读取旧值（更新场景），返回最多 3 个元素的列表。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MapCacheEventCodec extends BaseEventCodec {
 
+    /** 解析 Map 缓存事件：键、值，以及可选的旧值。 */
     private final Decoder<Object> decoder = (buf, state) -> {
         List<Object> result = new ArrayList<Object>(3);
 
@@ -44,14 +49,17 @@ public class MapCacheEventCodec extends BaseEventCodec {
         return result;
     };
 
+    /** @param codec 内层 Map 键值编解码器 @param osType 平台字节序类型 */
     public MapCacheEventCodec(Codec codec, OSType osType) {
         super(codec, osType);
     }
     
+    /** 在指定类加载器下复制编解码器，重建内层 Codec 实例。 */
     public MapCacheEventCodec(ClassLoader classLoader, MapCacheEventCodec codec) {
         super(newCodec(classLoader, codec), codec.osType);
     }
 
+    /** 通过反射构造带 ClassLoader 的内层编解码器副本。 */
     private static Codec newCodec(ClassLoader classLoader, MapCacheEventCodec codec) {
         try {
             return codec.codec.getClass().getConstructor(ClassLoader.class, codec.codec.getClass()).newInstance(classLoader, codec.codec);

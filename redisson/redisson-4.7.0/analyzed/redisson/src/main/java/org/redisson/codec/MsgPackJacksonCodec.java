@@ -20,23 +20,27 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * MsgPack binary codec
+ * 基于 Jackson 2 与 MessagePack 的二进制 JSON 编解码器。
  * <p>
- * Fully thread-safe.
+ * 继承 {@link JsonJacksonCodec}，使用 {@link MessagePackFactory} 输出紧凑二进制格式，
+ * 相比纯 JSON 体积更小、解析更快，完全线程安全。
  *
  * @author Nikita Koksharov
  *
  */
 public class MsgPackJacksonCodec extends JsonJacksonCodec {
 
+    /** 默认 MessagePack ObjectMapper。 */
     public MsgPackJacksonCodec() {
         super(new ObjectMapper(new MessagePackFactory()));
     }
     
+    /** @param classLoader 反序列化时使用的类加载器 */
     public MsgPackJacksonCodec(ClassLoader classLoader) {
         super(createObjectMapper(classLoader, new ObjectMapper(new MessagePackFactory())));
     }
     
+    /** 在指定类加载器下复制现有编解码器的 Mapper 配置。 */
     public MsgPackJacksonCodec(ClassLoader classLoader, MsgPackJacksonCodec codec) {
         super(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
     }

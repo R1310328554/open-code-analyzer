@@ -22,18 +22,25 @@ import org.redisson.client.protocol.Encoder;
 import java.util.Objects;
 
 /**
+ * 将 {@link ObjectCodec} 适配为 Redisson 标准 {@link org.redisson.client.codec.Codec} 的包装器。
+ * <p>
+ * 直接委托内层 {@link ObjectCodec} 的编码器与解码器，便于接入仅实现
+ * 值级编解码的自定义实现。
  *
  * @author Nikita Koksharov
  *
  */
 public class ObjectCodecWrapper extends BaseCodec {
 
+    /** 被包装的内层 ObjectCodec。 */
     private final ObjectCodec innerCodec;
 
+    /** @param innerCodec 内层对象编解码器 */
     public ObjectCodecWrapper(ObjectCodec innerCodec) {
         this.innerCodec = innerCodec;
     }
 
+    /** 在指定类加载器下复制内层编解码器。 */
     public ObjectCodecWrapper(ClassLoader classLoader, ObjectCodecWrapper codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }

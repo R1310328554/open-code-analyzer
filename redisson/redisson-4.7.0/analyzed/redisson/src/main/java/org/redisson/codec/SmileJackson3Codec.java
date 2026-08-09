@@ -19,23 +19,27 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.dataformat.smile.SmileFactory;
 
 /**
- * Smile binary codec.
+ * 基于 Jackson 3 的 Smile 二进制 JSON 编解码器。
  * <p>
- * Fully thread-safe.
+ * 继承 {@link JsonJackson3Codec}，使用 {@link SmileFactory} 输出 Smile 格式，
+ * 比文本 JSON 更紧凑，完全线程安全。
  *
  * @author Nikita Koksharov
  *
  */
 public class SmileJackson3Codec extends JsonJackson3Codec {
 
+    /** 默认 Smile ObjectMapper。 */
     public SmileJackson3Codec() {
         super(new ObjectMapper(new SmileFactory()));
     }
 
+    /** @param classLoader 反序列化类加载器 */
     public SmileJackson3Codec(ClassLoader classLoader) {
         super(createMapper(classLoader, new ObjectMapper(new SmileFactory())));
     }
 
+    /** 在指定类加载器下复制现有编解码器配置。 */
     public SmileJackson3Codec(ClassLoader classLoader, SmileJackson3Codec codec) {
         super(createMapper(classLoader, codec.mapObjectMapper.rebuild().build()));
     }

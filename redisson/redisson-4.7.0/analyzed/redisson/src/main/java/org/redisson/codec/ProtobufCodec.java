@@ -40,16 +40,29 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Protobuf / Protostuff 混合编解码器。
+ * <p>
+ * 对 {@link MessageLite} 及 Protostuff 可序列化类型使用原生 Protobuf 路径；
+ * 黑名单中的 JDK 容器等类型则回退到 {@link JsonJacksonCodec} 或自定义
+ * {@code blacklistCodec}，避免递归与不可序列化类型问题。
+ */
 public class ProtobufCodec extends BaseCodec {
+    /** Map 键类型，用于 Map 键编解码。 */
     private final Class<?> mapKeyClass;
+    /** Map 值类型，用于 Map 值编解码。 */
     private final Class<?> mapValueClass;
+    /** 普通值类型，用于值编解码。 */
     private final Class<?> valueClass;
 
+    /** 不使用 Protobuf 而改用 blacklistCodec 的类名集合。 */
     //classes in blacklist will not be serialized using protobuf ,but instead will use blacklistCodec
     private final Set<String> protobufBlacklist;
+    /** 黑名单类型的回退编解码器，默认为 JsonJacksonCodec。 */
     //default value is JsonJacksonCodec
     private final Codec blacklistCodec;
 
+    /** 仅指定 Map 键值类型的构造器。 */
     public ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass) {
         this(mapKeyClass, mapValueClass, null, null);
     }
@@ -61,6 +74,7 @@ public class ProtobufCodec extends BaseCodec {
         this(mapKeyClass, mapValueClass, null, blacklistCodec);
     }
 
+    /** 仅指定值类型的构造器。 */
     public ProtobufCodec(Class<?> valueClass) {
         this(null, null, valueClass, null);
     }
@@ -72,6 +86,7 @@ public class ProtobufCodec extends BaseCodec {
         this(null, null, valueClass, blacklistCodec);
     }
 
+    /** 内部构造：初始化黑名单与回退编解码器。 */
     private ProtobufCodec(Class<?> mapKeyClass, Class<?> mapValueClass, Class<?> valueClass, Codec blacklistCodec) {
         this.mapKeyClass = mapKeyClass;
         this.mapValueClass = mapValueClass;
@@ -93,10 +108,12 @@ public class ProtobufCodec extends BaseCodec {
         protobufBlacklist.add(HashMap.class.getName());
     }
 
+    /** 将指定类加入 Protobuf 黑名单。 */
     public void addBlacklist(Class<?> clazz) {
         protobufBlacklist.add(clazz.getName());
     }
 
+    /** 从黑名单移除指定类。 */
     public void removeBlacklist(Class<?> clazz) {
         protobufBlacklist.remove(clazz.getName());
     }
@@ -131,6 +148,7 @@ public class ProtobufCodec extends BaseCodec {
         return createEncoder(mapKeyClass, blacklistCodec.getMapKeyEncoder());
     }
 
+    /** 按类型创建解码器：黑名单类型走回退路径，否则 Protobuf/Protostuff。 */
     private Decoder<Object> createDecoder(Class<?> clazz, Decoder<Object> blacklistDecoder) {
         if (clazz == null) {
             throw new IllegalArgumentException("class to create protobuf decoder can not be null");
@@ -157,6 +175,7 @@ public class ProtobufCodec extends BaseCodec {
         };
     }
 
+    /** 按类型创建编码器：黑名单类型走回退路径，否则 Protobuf/Protostuff。 */
     private Encoder createEncoder(Class<?> clazz, Encoder blacklistEncoder) {
         if (clazz == null) {
             throw new IllegalArgumentException("class to create protobuf encoder can not be null");
@@ -180,6 +199,7 @@ public class ProtobufCodec extends BaseCodec {
         };
     }
 
+    /** Protostuff 序列化/反序列化工具方法。 */
     private static final class ProtostuffUtils {
 
         @SuppressWarnings("unchecked")
@@ -201,6 +221,7 @@ public class ProtobufCodec extends BaseCodec {
 
     }
 
+    /** 从 Jackson BasicSerializerFactory 提取 concrete 类型键集合，用于初始化黑名单。 */
     private abstract static class BasicSerializerFactoryConcreteGetter extends BasicSerializerFactory {
         protected BasicSerializerFactoryConcreteGetter(SerializerFactoryConfig config) {
             super(config);

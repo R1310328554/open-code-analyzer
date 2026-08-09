@@ -28,13 +28,12 @@ import java.io.DataInputStream;
 import java.io.IOException;
 
 /**
- * LZ4 compression codec.
- * Uses inner <code>Codec</code> to convert object to binary stream.
- * <code>Kryo5Codec</code> used by default.
- *
- * Fully thread-safe.
- *
- * https://github.com/apache/commons-compress
+ * 基于 Apache Commons Compress 的 LZ4 块压缩编解码器（V2 实现）。
+ * <p>
+ * 与 {@link LZ4Codec} 不同，本类使用 Block LZ4 流式压缩格式，
+ * 内层默认仍为 {@link Kryo5Codec}，完全线程安全。
+ * <p>
+ * 实现参考 <a href="https://github.com/apache/commons-compress">commons-compress</a>。
  *
  * @see Kryo5Codec
  *
@@ -43,24 +42,30 @@ import java.io.IOException;
  */
 public class LZ4CodecV2 extends BaseCodec {
 
+    /** 内层对象序列化编解码器。 */
     private final Codec innerCodec;
 
+    /** 默认内层为 {@link Kryo5Codec}。 */
     public LZ4CodecV2() {
         this(new Kryo5Codec());
     }
 
+    /** @param innerCodec 自定义内层编解码器 */
     public LZ4CodecV2(Codec innerCodec) {
         this.innerCodec = innerCodec;
     }
 
+    /** @param classLoader Kryo 反序列化类加载器 */
     public LZ4CodecV2(ClassLoader classLoader) {
         this(new Kryo5Codec(classLoader));
     }
 
+    /** 在指定类加载器下复制编解码器。 */
     public LZ4CodecV2(ClassLoader classLoader, LZ4CodecV2 codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
     
+    /** 解码：读取原始长度，Block LZ4 解压后委托内层解码。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -79,6 +84,7 @@ public class LZ4CodecV2 extends BaseCodec {
         }
     };
 
+    /** 编码：内层序列化、写入长度前缀，再 Block LZ4 压缩。 */
     private final Encoder encoder = new Encoder() {
 
         @Override

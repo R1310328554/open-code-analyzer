@@ -30,7 +30,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Json Jackson Type codec. Doesn't include `@class` field during data encoding, and doesn't require it for data decoding. 
+ * Jackson 3 强类型 JSON 编解码器。
+ * <p>
+ * 编码时不写入 {@code @class} 类型信息字段，解码时依赖构造时绑定的
+ * {@link Class} 或 {@link TypeReference}，适用于已知类型的 JSON 存储。
  * 
  * @author Nikita Koksharov
  * @author Andrej Kazakov
@@ -38,6 +41,7 @@ import java.io.OutputStream;
  */
 public class TypedJsonJackson3Codec extends JsonJackson3Codec {
 
+    /** 值/Map 键值共用的 JSON 编码器，不含类型元数据。 */
     private final Encoder encoder = in -> {
         ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
         try {
@@ -50,6 +54,7 @@ public class TypedJsonJackson3Codec extends JsonJackson3Codec {
         }
     };
 
+    /** 按 Class 或 TypeReference 创建强类型解码器。 */
     private Decoder<Object> createDecoder(final Class<?> valueClass, final TypeReference valueTypeReference) {
         return (buf, state) -> {
             if (valueClass != null) {
@@ -62,77 +67,100 @@ public class TypedJsonJackson3Codec extends JsonJackson3Codec {
         };
     }
 
+    /** 值解码器。 */
     private final Decoder<Object> valueDecoder;
+    /** Map 值解码器。 */
     private final Decoder<Object> mapValueDecoder;
+    /** Map 键解码器。 */
     private final Decoder<Object> mapKeyDecoder;
 
+    /** 值 TypeReference 绑定。 */
     private final TypeReference<?> valueTypeReference;
+    /** Map 键 TypeReference 绑定。 */
     private final TypeReference<?> mapKeyTypeReference;
+    /** Map 值 TypeReference 绑定。 */
     private final TypeReference<?> mapValueTypeReference;
 
+    /** 值 Class 绑定。 */
     private final Class<?> valueClass;
+    /** Map 键 Class 绑定。 */
     private final Class<?> mapKeyClass;
+    /** Map 值 Class 绑定。 */
     private final Class<?> mapValueClass;
 
+    /** @param valueClass 值类型 */
     public TypedJsonJackson3Codec(Class<?> valueClass) {
         this(null, null, null,
                 valueClass, null, null, new ObjectMapper(), false);
     }
 
+    /** @param valueClass 值类型 @param mapper 自定义 ObjectMapper */
     public TypedJsonJackson3Codec(Class<?> valueClass, ObjectMapper mapper) {
         this(valueClass, null, null, mapper);
     }
 
+    /** @param mapKeyClass Map 键类型 @param mapValueClass Map 值类型 */
     public TypedJsonJackson3Codec(Class<?> mapKeyClass, Class<?> mapValueClass) {
         this(null, mapKeyClass, mapValueClass, new ObjectMapper());
     }
 
+    /** @param mapKeyClass Map 键类型 @param mapValueClass Map 值类型 @param mapper ObjectMapper */
     public TypedJsonJackson3Codec(Class<?> mapKeyClass, Class<?> mapValueClass, ObjectMapper mapper) {
         this(null, mapKeyClass, mapValueClass, mapper);
     }
 
+    /** @param valueClass 值类型 @param mapKeyClass Map 键 @param mapValueClass Map 值 */
     public TypedJsonJackson3Codec(Class<?> valueClass, Class<?> mapKeyClass, Class<?> mapValueClass) {
         this(null, null, null,
                 valueClass, mapKeyClass, mapValueClass, new ObjectMapper(), false);
     }
 
+    /** 同时绑定值与 Map 键值类型及自定义 Mapper。 */
     public TypedJsonJackson3Codec(Class<?> valueClass, Class<?> mapKeyClass, Class<?> mapValueClass, ObjectMapper mapper) {
         this(null, null, null,
                 valueClass, mapKeyClass, mapValueClass, mapper, true);
     }
 
+    /** @param valueTypeReference 值泛型类型引用 */
     public TypedJsonJackson3Codec(TypeReference<?> valueTypeReference) {
         this(valueTypeReference, new ObjectMapper());
     }
 
+    /** @param valueTypeReference 值类型 @param mapper ObjectMapper */
     public TypedJsonJackson3Codec(TypeReference<?> valueTypeReference, ObjectMapper mapper) {
         this(valueTypeReference, null, null, mapper);
     }
 
+    /** @param mapKeyTypeReference Map 键 @param mapValueTypeReference Map 值 */
     public TypedJsonJackson3Codec(TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference) {
         this(null, mapKeyTypeReference, mapValueTypeReference);
     }
 
+    /** Map 键值 TypeReference 与自定义 Mapper。 */
     public TypedJsonJackson3Codec(TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference, ObjectMapper mapper) {
         this(null, mapKeyTypeReference, mapValueTypeReference, mapper);
     }
 
+    /** 同时绑定值与 Map 的 TypeReference。 */
     public TypedJsonJackson3Codec(TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference) {
         this(valueTypeReference, mapKeyTypeReference, mapValueTypeReference,
                 null, null, null, new ObjectMapper(), false);
     }
 
+    /** 全 TypeReference 绑定并指定 Mapper。 */
     public TypedJsonJackson3Codec(TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference, ObjectMapper mapper) {
         this(valueTypeReference, mapKeyTypeReference, mapValueTypeReference,
                 null, null, null, mapper, true);
     }
 
+    /** 在指定类加载器下复制编解码器。 */
     public TypedJsonJackson3Codec(ClassLoader classLoader, TypedJsonJackson3Codec codec) {
         this(codec.valueTypeReference, codec.mapKeyTypeReference, codec.mapValueTypeReference,
               codec.valueClass, codec.mapKeyClass, codec.mapValueClass,
                 createMapper(classLoader, codec.mapObjectMapper.rebuild().build()), false);
     }
 
+    /** 内部构造：初始化各解码器与类型绑定字段。 */
     TypedJsonJackson3Codec(TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference,
                            Class<?> valueClass, Class<?> mapKeyClass, Class<?> mapValueClass, ObjectMapper mapper, boolean copy) {
         super(mapper, copy);
@@ -148,6 +176,7 @@ public class TypedJsonJackson3Codec extends JsonJackson3Codec {
         this.valueTypeReference = valueTypeReference;
     }
     
+    /** 禁用 Jackson 默认的类型信息 inclusion（不写入 @class）。 */
     @Override
     protected void initTypeInclusion(JsonMapper.Builder builder) {
         // avoid type inclusion
