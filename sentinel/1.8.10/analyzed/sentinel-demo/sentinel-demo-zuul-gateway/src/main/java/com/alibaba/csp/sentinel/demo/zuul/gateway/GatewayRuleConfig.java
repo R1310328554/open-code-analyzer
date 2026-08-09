@@ -33,6 +33,9 @@ import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Zuul 1.x 网关演示规则配置：自定义 API 分组与 Gateway 流控规则。
+ * <p>生产环境建议通过动态数据源或 Dashboard 推送规则。</p>
+ *
  * @author Eric Zhao
  */
 @Configuration
@@ -40,12 +43,12 @@ public class GatewayRuleConfig {
 
     @PostConstruct
     public void doInit() {
-        // Prepare some gateway rules and API definitions (only for demo).
-        // It's recommended to leverage dynamic data source or the Sentinel dashboard to push the rules.
+        // 演示用网关规则与 API 定义；生产建议走动态数据源或 Dashboard
         initCustomizedApis();
         initGatewayRules();
     }
 
+    /** 注册自定义 API 分组：some_customized_api 与 another_customized_api。 */
     private void initCustomizedApis() {
         Set<ApiDefinition> definitions = new HashSet<>();
         ApiDefinition api1 = new ApiDefinition("some_customized_api")
@@ -64,6 +67,7 @@ public class GatewayRuleConfig {
         GatewayApiDefinitionManager.loadApiDefinitions(definitions);
     }
 
+    /** 加载路由级与 API 级 Gateway 流控规则（含参数限流）。 */
     private void initGatewayRules() {
         Set<GatewayFlowRule> rules = new HashSet<>();
         rules.add(new GatewayFlowRule("aliyun-product-route")

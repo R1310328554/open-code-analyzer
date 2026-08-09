@@ -24,6 +24,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 注册 Sentinel Zuul 1.x 过滤器：Pre/Post/Error 三阶段限流与降级。
+ *
  * @author Eric Zhao
  */
 @Configuration

@@ -10,6 +10,9 @@ import javax.inject.Inject;
 import com.netflix.zuul.filters.FilterRegistry;
 import com.netflix.zuul.filters.ZuulFilter;
 
+/**
+ * Zuul 2.x 过滤器注册服务：启动时将 Spring 容器中的 {@link ZuulFilter} 注册到 {@link FilterRegistry}。
+ */
 public class FiltersRegisteringService {
 
     private final List<ZuulFilter> filters;
@@ -26,6 +29,7 @@ public class FiltersRegisteringService {
     }
 
     @PostConstruct
+    /** {@link PostConstruct} 回调：将所有过滤器按名称注册。 */
     public void initialize() {
         for (ZuulFilter filter: filters) {
             this.filterRegistry.put(filter.filterName(), filter);

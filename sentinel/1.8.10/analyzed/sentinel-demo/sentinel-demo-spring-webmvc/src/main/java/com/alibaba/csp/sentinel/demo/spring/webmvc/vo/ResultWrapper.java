@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.demo.spring.webmvc.vo;
 import com.alibaba.fastjson.JSONObject;
 
 /**
+ * 统一 API 响应包装：限流时返回 code=-1 与提示消息。
+ *
  * @author kaizi2009
  */
 public class ResultWrapper {
@@ -46,10 +48,12 @@ public class ResultWrapper {
         this.message = message;
     }
 
+    /** 构造 Sentinel 限流响应。 */
     public static ResultWrapper blocked() {
         return new ResultWrapper(-1, "Blocked by Sentinel");
     }
 
+    /** 序列化为 JSON 字符串。 */
     public String toJsonString() {
         return JSONObject.toJSONString(this);
     }

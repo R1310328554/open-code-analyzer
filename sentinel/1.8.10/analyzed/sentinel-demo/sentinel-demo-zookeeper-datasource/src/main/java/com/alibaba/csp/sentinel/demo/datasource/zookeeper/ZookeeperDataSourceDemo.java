@@ -10,17 +10,17 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
 /**
- * Zookeeper ReadableDataSource Demo
+ * Zookeeper {@link ReadableDataSource} 演示：从 ZK 节点动态加载并热更新流控规则。
  *
  * @author guonanjun
  */
 public class ZookeeperDataSourceDemo {
 
     public static void main(String[] args) {
-        // 使用zookeeper的场景
+        // 方式一：直接指定 ZK 路径
         loadRules();
 
-        // 方便扩展的场景
+        // 方式二：使用 groupId/dataId（便于与 Nacos 切换）
         //loadRules2();
     }
 
@@ -39,16 +39,16 @@ public class ZookeeperDataSourceDemo {
     private static void loadRules2() {
 
         final String remoteAddress = "127.0.0.1:2181";
-        // 引入groupId和dataId的概念，是为了方便和Nacos进行切换
+        // groupId/dataId 便于与 Nacos 数据源切换
         final String groupId = "Sentinel-Demo";
         final String flowDataId = "SYSTEM-CODE-DEMO-FLOW";
         // final String degradeDataId = "SYSTEM-CODE-DEMO-DEGRADE";
         // final String systemDataId = "SYSTEM-CODE-DEMO-SYSTEM";
 
 
-        // 规则会持久化到zk的/groupId/flowDataId节点
-        // groupId和和flowDataId可以用/开头也可以不用
-        // 建议不用以/开头，目的是为了如果从Zookeeper切换到Nacos的话，只需要改数据源类名就可以
+        // 规则持久化到 /groupId/flowDataId 节点
+        // groupId 与 dataId 可带或不带前导 /
+        // 建议不以 / 开头，便于从 Zookeeper 切换到 Nacos 时仅改数据源类
         ReadableDataSource<String, List<FlowRule>> flowRuleDataSource = new ZookeeperDataSource<>(remoteAddress, groupId, flowDataId,
                 source -> JSON.parseObject(source, new TypeReference<List<FlowRule>>() {}));
         FlowRuleManager.register2Property(flowRuleDataSource.getProperty());

@@ -26,6 +26,8 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 /**
+ * WebFlux 演示业务服务：提供 Mono/Flux 响应式方法，供 {@link com.alibaba.csp.sentinel.demo.spring.webflux.controller.FooController} 限流演示。
+ *
  * @author Eric Zhao
  */
 @Service
@@ -35,16 +37,19 @@ public class FooService {
     private final ExecutorService pool = Executors.newFixedThreadPool(8);
     private final Scheduler scheduler = Schedulers.fromExecutor(pool);
 
+    /** 返回随机整数拼接 "d" 的单值 Mono。 */
     public Mono<String> emitSingle() {
         return Mono.just(ThreadLocalRandom.current().nextInt(0, 2000))
             .map(e -> e + "d");
     }
 
+    /** 从随机起点连续发射 10 个整数的 Flux。 */
     public Flux<Integer> emitMultiple() {
         int start = ThreadLocalRandom.current().nextInt(0, 6000);
         return Flux.range(start, 10);
     }
 
+    /** 在独立线程池上执行 2s 延迟任务，演示异步限流场景。 */
     public Mono<String> doSomethingSlow() {
         return Mono.fromCallable(() -> {
             Thread.sleep(2000);

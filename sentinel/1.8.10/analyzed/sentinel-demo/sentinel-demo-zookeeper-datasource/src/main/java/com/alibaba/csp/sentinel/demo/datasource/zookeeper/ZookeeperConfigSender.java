@@ -7,7 +7,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 
 /**
- * Zookeeper config sender for demo
+ * Zookeeper 规则推送工具：向 ZK 节点写入流控规则 JSON，供 {@link ZookeeperDataSourceDemo} 动态加载。
  *
  * @author guonanjun
  */

@@ -36,10 +36,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Add the JVM parameter to connect to the dashboard:</p>
+ * Spring MVC + Sentinel Transport 演示：暴露 HTTP API 供 Dashboard 拉取指标。
+ * <p>连接 Dashboard：</p>
  * {@code -Dcsp.sentinel.dashboard.server=127.0.0.1:8080 -Dproject.name=sentinel-demo-transport-spring-mvc}
- *
- * <p>Add the JVM parameter to tell dashboard your application port:</p>
+ * <p>指定应用 API 端口：</p>
  * {@code -Dcsp.sentinel.api.port=10000}
  *
  * @author shenbaoyong
@@ -54,6 +54,7 @@ public class TransportSpringMvcDemoApplication {
         SpringApplication.run(TransportSpringMvcDemoApplication.class);
     }
 
+    /** 加载 demo-hello-api 流控规则：QPS=1。 */
     public static void initFlowRules() {
         List<FlowRule> rules = new ArrayList<>();
         FlowRule rule = new FlowRule();
@@ -66,6 +67,7 @@ public class TransportSpringMvcDemoApplication {
 
     @GetMapping("/hello")
     @ResponseBody
+    /** GET /hello：受 Sentinel 保护的问候接口。 */
     public String hello() {
         Entry entry = null;
         try {
@@ -80,6 +82,7 @@ public class TransportSpringMvcDemoApplication {
         }
     }
 
+    /** 异步触发 Sentinel InitExecutor 初始化。 */
     private static void triggerSentinelInit() {
         new Thread(() -> InitExecutor.doInit()).start();
     }

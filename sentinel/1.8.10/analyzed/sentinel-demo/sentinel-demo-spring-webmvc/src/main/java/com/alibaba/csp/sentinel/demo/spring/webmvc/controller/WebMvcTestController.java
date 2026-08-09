@@ -26,7 +26,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.servlet.ModelAndView;
 
 /**
- * Test controller
+ * WebMvc 限流演示控制器：提供 hello、foo、async 等测试接口。
  *
  * @author kaizi2009
  */
@@ -35,6 +35,7 @@ public class WebMvcTestController {
 
     @GetMapping("/hello")
     @ResponseBody
+    /** GET /hello：简单问候接口。 */
     public String apiHello() {
         doBusiness();
         return "Hello!";
@@ -42,6 +43,7 @@ public class WebMvcTestController {
 
     @GetMapping("/err")
     @ResponseBody
+    /** GET /err：模拟业务错误响应。 */
     public String apiError() {
         doBusiness();
         return "Oops...";
@@ -49,6 +51,7 @@ public class WebMvcTestController {
 
     @GetMapping("/foo/{id}")
     @ResponseBody
+    /** GET /foo/{id}：带路径参数的问候接口。 */
     public String apiFoo(@PathVariable("id") Long id) {
         doBusiness();
         return "Hello " + id;
@@ -56,12 +59,14 @@ public class WebMvcTestController {
 
     @GetMapping("/exclude/{id}")
     @ResponseBody
+    /** GET /exclude/{id}：用于排除限流的测试接口。 */
     public String apiExclude(@PathVariable("id") Long id) {
         doBusiness();
         return "Exclude " + id;
     }
 
     @GetMapping("/forward")
+    /** GET /forward：视图转发演示。 */
     public ModelAndView apiForward() {
         ModelAndView mav = new ModelAndView();
         mav.setViewName("hello");
@@ -70,6 +75,7 @@ public class WebMvcTestController {
 
     @GetMapping("/async")
     @ResponseBody
+    /** GET /async：DeferredResult 异步响应演示。 */
     public DeferredResult<String> distribute() throws Exception {
         DeferredResult<String> result = new DeferredResult<>(4000L);
 
@@ -79,6 +85,7 @@ public class WebMvcTestController {
         return result;
     }
 
+    /** 模拟随机 0~100ms 业务耗时。 */
     private void doBusiness() {
         Random random = new Random(1);
         try {

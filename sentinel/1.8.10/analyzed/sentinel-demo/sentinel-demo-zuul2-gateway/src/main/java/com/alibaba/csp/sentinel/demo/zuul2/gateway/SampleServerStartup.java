@@ -27,6 +27,9 @@ import com.netflix.zuul.netty.server.ZuulServerChannelInitializer;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.group.ChannelGroup;
 
+/**
+ * Zuul 2.x 演示服务器启动类：配置 Netty 端口与 Channel 初始化。
+ */
 @Singleton
 public class SampleServerStartup extends BaseServerStartup {
 
@@ -43,9 +46,7 @@ public class SampleServerStartup extends BaseServerStartup {
         String mainPortName = "main";
         ChannelConfig channelConfig = BaseServerStartup.defaultChannelConfig(mainPortName);
         ServerSslConfig sslConfig;
-        /* These settings may need to be tweaked depending if you're running behind an ELB HTTP listener, TCP listener,
-         * or directly on the internet.
-         */
+        /* 以下配置需按部署环境调整：ELB HTTP/TCP 监听或直接暴露公网 */
         ChannelConfig channelDependencies = defaultChannelDependencies(mainPortName);
 
         channelConfig.set(CommonChannelConfigKeys.allowProxyHeadersWhen, StripUntrustedProxyHeadersHandler.AllowWhen.ALWAYS);

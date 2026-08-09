@@ -25,9 +25,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- * Spring configuration for global exception handler.
- * This will be activated when the {@code BlockExceptionHandler}
- * throws {@link BlockException directly}.
+ * Sentinel 限流全局异常处理：当 {@code BlockExceptionHandler} 直接抛出 {@link BlockException} 时生效。
  *
  * @author kaizi2009
  */
@@ -41,7 +39,7 @@ public class SentinelSpringMvcBlockHandlerConfig {
     @ResponseBody
     public ResultWrapper sentinelBlockHandler(BlockException e) {
         logger.warn("Blocked by Sentinel: {}", e.getRule());
-        // Return the customized result.
+        // 返回自定义限流响应
         return ResultWrapper.blocked();
     }
 }
