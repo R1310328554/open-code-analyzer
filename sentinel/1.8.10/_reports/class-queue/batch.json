@@ -33,5 +33,5 @@
     "sentinel-demo/sentinel-demo-cluster/sentinel-demo-cluster-embedded/src/main/java/com/alibaba/csp/sentinel/demo/cluster/app/config/AopConfig.java"
   ],
   "remaining_pending": 245,
-  "done": 660
+  "done": 675
 }
