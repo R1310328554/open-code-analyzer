@@ -27,6 +27,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+/**
+ * 机器发现门面组件，委托 {@link SimpleMachineDiscovery} 管理应用与机器注册表。
+ * <p>Spring 容器启动后通过 {@link #init()} 注入具体发现实现。
+ */
 @Component
 public class AppManagement implements MachineDiscovery {
 
@@ -35,6 +39,7 @@ public class AppManagement implements MachineDiscovery {
 
     private MachineDiscovery machineDiscovery;
 
+    /** 初始化时绑定 {@link SimpleMachineDiscovery} 实现。 */
     @PostConstruct
     public void init() {
         machineDiscovery = context.getBean(SimpleMachineDiscovery.class);
@@ -70,6 +75,7 @@ public class AppManagement implements MachineDiscovery {
         machineDiscovery.removeApp(app);
     }
 
+    /** 校验指定 IP 是否属于该应用下已注册的机器。 */
     public boolean isValidMachineOfApp(String app, String ip) {
         if (StringUtil.isEmpty(app)) {
             return false;

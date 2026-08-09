@@ -20,6 +20,9 @@ import java.util.Date;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRule;
 
 /**
+ * 熔断降级规则实体，字段与 {@link DegradeRule} 一一对应。
+ * <p>支持从客户端规则导入及 {@link #toRule()} 回写，含慢调用比例、统计窗口等 1.8+ 字段。
+ *
  * @author leyou
  */
 public class DegradeRuleEntity implements RuleEntity {
@@ -30,18 +33,27 @@ public class DegradeRuleEntity implements RuleEntity {
     private String ip;
     private Integer port;
 
+    /** 受保护资源名。 */
     private String resource;
+    /** 来源应用限制，默认 default。 */
     private String limitApp;
+    /** 熔断阈值（异常比例/慢调用比例/异常数等，取决于 grade）。 */
     private Double count;
+    /** 熔断时长（秒）。 */
     private Integer timeWindow;
+    /** 熔断策略 grade（慢调用比例/异常比例/异常数）。 */
     private Integer grade;
+    /** 触发熔断所需的最小请求数。 */
     private Integer minRequestAmount;
+    /** 慢调用比例阈值（慢调用比例模式）。 */
     private Double slowRatioThreshold;
+    /** 统计窗口长度（毫秒）。 */
     private Integer statIntervalMs;
 
     private Date gmtCreate;
     private Date gmtModified;
 
+    /** 从客户端 {@link DegradeRule} 拷贝字段并绑定 app/ip/port。 */
     public static DegradeRuleEntity fromDegradeRule(String app, String ip, Integer port, DegradeRule rule) {
         DegradeRuleEntity entity = new DegradeRuleEntity();
         entity.setApp(app);
@@ -179,6 +191,7 @@ public class DegradeRuleEntity implements RuleEntity {
         this.gmtModified = gmtModified;
     }
 
+    /** 组装 {@link DegradeRule}，可选字段仅在非 null 时写入。 */
     @Override
     public DegradeRule toRule() {
         DegradeRule rule = new DegradeRule();

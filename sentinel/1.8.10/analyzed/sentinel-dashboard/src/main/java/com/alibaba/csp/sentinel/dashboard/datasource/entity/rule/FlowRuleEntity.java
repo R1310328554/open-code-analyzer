@@ -21,6 +21,9 @@ import com.alibaba.csp.sentinel.slots.block.flow.ClusterFlowConfig;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 
 /**
+ * 流控规则实体，映射 {@link FlowRule} 的全部配置项。
+ * <p>含限流维度、流控效果、关联/链路策略及集群流控 {@link ClusterFlowConfig}。
+ *
  * @author leyou
  */
 public class FlowRuleEntity implements RuleEntity {
@@ -41,25 +44,21 @@ public class FlowRuleEntity implements RuleEntity {
      ***/
     private Integer strategy;
     private String refResource;
-    /**
-     * 0. default, 1. warm up, 2. rate limiter
-     */
+    /** 流控效果：0 直接拒绝，1 预热，2 匀速排队。 */
     private Integer controlBehavior;
     private Integer warmUpPeriodSec;
-    /**
-     * max queueing time in rate limiter behavior
-     */
+    /** 匀速排队模式下的最大排队等待时间（毫秒）。 */
     private Integer maxQueueingTimeMs;
 
+    /** 是否启用集群流控模式。 */
     private boolean clusterMode;
-    /**
-     * Flow rule config for cluster mode.
-     */
+    /** 集群流控模式下的 {@link ClusterFlowConfig} 配置。 */
     private ClusterFlowConfig clusterConfig;
 
     private Date gmtCreate;
     private Date gmtModified;
 
+    /** 从客户端 {@link FlowRule} 构建 Dashboard 实体。 */
     public static FlowRuleEntity fromFlowRule(String app, String ip, Integer port, FlowRule rule) {
         FlowRuleEntity entity = new FlowRuleEntity();
         entity.setApp(app);
@@ -223,6 +222,7 @@ public class FlowRuleEntity implements RuleEntity {
         this.gmtModified = gmtModified;
     }
 
+    /** 转换为 {@link FlowRule}，controlBehavior 等可选字段按需设置。 */
     @Override
     public FlowRule toRule() {
         FlowRule flowRule = new FlowRule();

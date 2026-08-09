@@ -27,13 +27,18 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import org.springframework.stereotype.Component;
 
 /**
+ * 基于内存 {@link ConcurrentHashMap} 的机器发现实现。
+ * <p>按应用名维护 {@link AppInfo}，支持心跳注册、机器/应用移除及列表查询。
+ *
  * @author leyou
  */
 @Component
 public class SimpleMachineDiscovery implements MachineDiscovery {
 
+    /** 应用名 → {@link AppInfo} 注册表。 */
     private final ConcurrentMap<String, AppInfo> apps = new ConcurrentHashMap<>();
 
+    /** 注册机器，不存在应用时自动创建 {@link AppInfo}。 */
     @Override
     public long addMachine(MachineInfo machineInfo) {
         AssertUtil.notNull(machineInfo, "machineInfo cannot be null");
@@ -42,6 +47,7 @@ public class SimpleMachineDiscovery implements MachineDiscovery {
         return 1;
     }
 
+    /** 从指定应用移除机器，应用不存在时返回 false。 */
     @Override
     public boolean removeMachine(String app, String ip, int port) {
         AssertUtil.assertNotBlank(app, "app name cannot be blank");
@@ -68,6 +74,7 @@ public class SimpleMachineDiscovery implements MachineDiscovery {
         return new HashSet<>(apps.values());
     }
 
+    /** 从注册表删除整个应用条目。 */
     @Override
     public void removeApp(String app) {
         AssertUtil.assertNotBlank(app, "app name cannot be blank");

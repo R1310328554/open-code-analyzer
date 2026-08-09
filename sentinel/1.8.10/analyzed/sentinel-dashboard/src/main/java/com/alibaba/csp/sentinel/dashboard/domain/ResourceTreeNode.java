@@ -23,11 +23,17 @@ import java.util.Map;
 import com.alibaba.csp.sentinel.command.vo.NodeVo;
 
 /**
+ * 资源调用树节点，用于 Dashboard 展示实时 QPS、RT 等指标。
+ * <p>由客户端 {@link NodeVo} 列表构建父子树，并支持关键字过滤可见性。
+ *
  * @author leyou
  */
 public class ResourceTreeNode {
+    /** 节点唯一 id。 */
     private String id;
+    /** 父节点 id，根节点为空。 */
     private String parentId;
+    /** 资源名称。 */
     private String resource;
 
     private Integer threadNum;
@@ -42,10 +48,12 @@ public class ResourceTreeNode {
     private Long oneMinuteException;
     private Long oneMinuteTotal;
 
+    /** 搜索过滤后是否在 UI 中可见。 */
     private boolean visible = true;
 
     private List<ResourceTreeNode> children = new ArrayList<>();
 
+    /** 将扁平 {@link NodeVo} 列表组装为单棵调用树根节点。 */
     public static ResourceTreeNode fromNodeVoList(List<NodeVo> nodeVos) {
         if (nodeVos == null || nodeVos.isEmpty()) {
             return null;
@@ -55,13 +63,13 @@ public class ResourceTreeNode {
         for (NodeVo vo : nodeVos) {
             ResourceTreeNode node = fromNodeVo(vo);
             map.put(node.id, node);
-            // real root
+            // 无 parentId 的节点为调用树根。
             if (node.parentId == null || node.parentId.isEmpty()) {
                 root = node;
             } else if (map.containsKey(node.parentId)) {
                 map.get(node.parentId).children.add(node);
             } else {
-                // impossible
+                // 父节点尚未出现，正常不应发生。
             }
         }
         return root;
@@ -86,16 +94,16 @@ public class ResourceTreeNode {
         return node;
     }
 
+    /** 对整棵树执行忽略大小写的资源名关键字过滤。 */
     public void searchIgnoreCase(String searchKey) {
         search(this, searchKey);
     }
 
     /**
-     * This node is visible only when searchKey matches this.resource or at least
-     * one of this's children is visible
+     * 递归标记可见性：资源名匹配或任一子节点可见则本节点可见。
      */
     private boolean search(ResourceTreeNode node, String searchKey) {
-        // empty matches all
+        // 空关键字视为匹配全部节点。
         if (searchKey == null || searchKey.isEmpty() ||
             node.resource.toLowerCase().contains(searchKey.toLowerCase())) {
             node.visible = true;

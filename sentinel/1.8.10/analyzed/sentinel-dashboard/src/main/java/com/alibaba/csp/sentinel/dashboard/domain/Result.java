@@ -16,16 +16,24 @@
 package com.alibaba.csp.sentinel.dashboard.domain;
 
 /**
+ * Dashboard REST API 统一响应包装。
+ * <p>包含 success、code、msg 与泛型 data 载荷。
+ *
  * @author leyou
  * @author Eric Zhao
  */
 public class Result<R> {
 
+    /** 请求是否成功。 */
     private boolean success;
+    /** 业务错误码，成功时通常为 0。 */
     private int code;
+    /** 提示或错误信息。 */
     private String msg;
+    /** 响应数据体。 */
     private R data;
 
+    /** 构造带数据的成功响应。 */
     public static <R> Result<R> ofSuccess(R data) {
         return new Result<R>()
             .setSuccess(true)
@@ -33,12 +41,14 @@ public class Result<R> {
             .setData(data);
     }
 
+    /** 构造仅含自定义消息的成功响应（无 data）。 */
     public static <R> Result<R> ofSuccessMsg(String msg) {
         return new Result<R>()
             .setSuccess(true)
             .setMsg(msg);
     }
 
+    /** 构造失败响应。 */
     public static <R> Result<R> ofFail(int code, String msg) {
         Result<R> result = new Result<>();
         result.setSuccess(false);
@@ -47,6 +57,7 @@ public class Result<R> {
         return result;
     }
 
+    /** 将异常类型与 message 写入 msg 的失败响应。 */
     public static <R> Result<R> ofThrowable(int code, Throwable throwable) {
         Result<R> result = new Result<>();
         result.setSuccess(false);

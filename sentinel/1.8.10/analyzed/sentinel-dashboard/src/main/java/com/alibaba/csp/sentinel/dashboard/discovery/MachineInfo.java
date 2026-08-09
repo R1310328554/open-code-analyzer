@@ -20,21 +20,31 @@ import java.util.Objects;
 import com.alibaba.csp.sentinel.dashboard.config.DashboardConfig;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
+/**
+ * Sentinel 客户端机器实例信息，含心跳时间与客户端版本。
+ * <p>实现 {@link Comparable} 以便在集合中按端口、应用名、IP 排序。
+ */
 public class MachineInfo implements Comparable<MachineInfo> {
 
+    /** 所属应用名。 */
     private String app = "";
+    /** 应用类型。 */
     private Integer appType = 0;
+    /** 主机名。 */
     private String hostname = "";
+    /** 机器 IP。 */
     private String ip = "";
+    /** 客户端端口，-1 表示尚未就绪。 */
     private Integer port = -1;
+    /** 最后一次心跳时间戳（毫秒）。 */
     private long lastHeartbeat;
+    /** 心跳协议版本号。 */
     private long heartbeatVersion;
 
-    /**
-     * Indicates the version of Sentinel client (since 0.2.0).
-     */
+    /** Sentinel 客户端版本号（0.2.0 起上报）。 */
     private String version;
 
+    /** 快速构造仅含 app/ip/port 的机器信息。 */
     public static MachineInfo of(String app, String ip, Integer port) {
         MachineInfo machineInfo = new MachineInfo();
         machineInfo.setApp(app);
@@ -43,6 +53,7 @@ public class MachineInfo implements Comparable<MachineInfo> {
         return machineInfo;
     }
 
+    /** @return {@code ip:port} 形式的主机端口字符串 */
     public String toHostPort() {
         return ip + ":" + port;
     }
@@ -104,15 +115,16 @@ public class MachineInfo implements Comparable<MachineInfo> {
         return this;
     }
     
+    /** 距上次心跳是否在 {@link DashboardConfig#getUnhealthyMachineMillis()} 以内。 */
     public boolean isHealthy() {
         long delta = System.currentTimeMillis() - lastHeartbeat;
         return delta < DashboardConfig.getUnhealthyMachineMillis();
     }
     
     /**
-     * whether dead should be removed
-     * 
-     * @return
+     * 是否超过自动移除阈值，应被从注册表清理。
+     *
+     * @return true 表示已“死亡”且应移除
      */
     public boolean isDead() {
         if (DashboardConfig.getAutoRemoveMachineMillis() > 0) {
@@ -130,6 +142,7 @@ public class MachineInfo implements Comparable<MachineInfo> {
         this.lastHeartbeat = lastHeartbeat;
     }
 
+    /** 先比端口，再比应用名（忽略大小写），最后比 IP。 */
     @Override
     public int compareTo(MachineInfo o) {
         if (this == o) {
@@ -175,9 +188,9 @@ public class MachineInfo implements Comparable<MachineInfo> {
     }
 
     /**
-     * Information for log
+     * 生成日志友好的单行描述。
      *
-     * @return
+     * @return {@code app|ip|port|version}
      */
     public String toLogString() {
         return app + "|" + ip + "|" + port + "|" + version;

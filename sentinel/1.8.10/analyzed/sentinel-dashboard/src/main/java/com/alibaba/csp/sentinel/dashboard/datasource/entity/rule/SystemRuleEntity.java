@@ -20,6 +20,9 @@ import com.alibaba.csp.sentinel.slots.system.SystemRule;
 import java.util.Date;
 
 /**
+ * 系统保护规则实体，对应 {@link SystemRule} 的全局阈值配置。
+ * <p>可限制系统负载、平均 RT、入口 QPS、线程数及 CPU 使用率等。
+ *
  * @author leyou
  */
 public class SystemRuleEntity implements RuleEntity {
@@ -29,15 +32,21 @@ public class SystemRuleEntity implements RuleEntity {
     private String app;
     private String ip;
     private Integer port;
+    /** 系统 LOAD 上限（-1 表示不启用）。 */
     private Double highestSystemLoad;
+    /** 所有入口平均 RT 上限（毫秒）。 */
     private Long avgRt;
+    /** 入口并发线程数上限。 */
     private Long maxThread;
+    /** 入口总 QPS 上限。 */
     private Double qps;
+    /** CPU 使用率上限（0~1）。 */
     private Double highestCpuUsage;
 
     private Date gmtCreate;
     private Date gmtModified;
 
+    /** 从客户端 {@link SystemRule} 拷贝阈值并绑定机器信息。 */
     public static SystemRuleEntity fromSystemRule(String app, String ip, Integer port, SystemRule rule) {
         SystemRuleEntity entity = new SystemRuleEntity();
         entity.setApp(app);
@@ -145,6 +154,7 @@ public class SystemRuleEntity implements RuleEntity {
         this.gmtModified = gmtModified;
     }
 
+    /** 组装 {@link SystemRule} 供客户端加载。 */
     @Override
     public SystemRule toRule() {
         SystemRule rule = new SystemRule();

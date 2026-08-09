@@ -25,19 +25,25 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 /**
+ * 热点参数流控规则实体，包装 {@link ParamFlowRule}。
+ * <p>通过 {@link JsonIgnore} getter 暴露参数索引、阈值、例外项及集群配置等字段。
+ *
  * @author Eric Zhao
  * @since 0.2.1
  */
 public class ParamFlowRuleEntity extends AbstractRuleEntity<ParamFlowRule> {
 
+    /** 无参构造，供 JSON 反序列化使用。 */
     public ParamFlowRuleEntity() {
     }
 
+    /** @param rule 非空的热点参数流控规则 */
     public ParamFlowRuleEntity(ParamFlowRule rule) {
         AssertUtil.notNull(rule, "Authority rule should not be null");
         this.rule = rule;
     }
 
+    /** 从客户端 {@link ParamFlowRule} 构建带机器绑定的 Dashboard 实体。 */
     public static ParamFlowRuleEntity fromParamFlowRule(String app, String ip, Integer port, ParamFlowRule rule) {
         ParamFlowRuleEntity entity = new ParamFlowRuleEntity(rule);
         entity.setApp(app);
@@ -64,6 +70,7 @@ public class ParamFlowRuleEntity extends AbstractRuleEntity<ParamFlowRule> {
         return rule.getGrade();
     }
 
+    /** @return 热点参数在方法参数列表中的索引 */
     @JsonIgnore
     @JSONField(serialize = false)
     public Integer getParamIdx() {
@@ -76,6 +83,7 @@ public class ParamFlowRuleEntity extends AbstractRuleEntity<ParamFlowRule> {
         return rule.getCount();
     }
 
+    /** @return 参数例外项列表（特定参数值单独限流） */
     @JsonIgnore
     @JSONField(serialize = false)
     public List<ParamFlowItem> getParamFlowItemList() {
@@ -106,6 +114,7 @@ public class ParamFlowRuleEntity extends AbstractRuleEntity<ParamFlowRule> {
         return rule.getDurationInSec();
     }
 
+    /** @return 是否启用集群热点参数流控 */
     @JsonIgnore
     @JSONField(serialize = false)
     public boolean isClusterMode() {

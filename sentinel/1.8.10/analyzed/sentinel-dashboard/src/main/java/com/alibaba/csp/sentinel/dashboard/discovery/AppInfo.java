@@ -24,12 +24,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.csp.sentinel.dashboard.config.DashboardConfig;
 
+/**
+ * 已注册 Sentinel 应用及其机器集合。
+ * <p>维护心跳状态，并依据 {@link DashboardConfig} 判定是否在侧栏展示或应被移除。
+ */
 public class AppInfo {
 
+    /** 应用名称。 */
     private String app = "";
 
+    /** 应用类型标识（客户端上报）。 */
     private Integer appType = 0;
 
+    /** 当前应用下已注册的机器集合（线程安全）。 */
     private Set<MachineInfo> machines = ConcurrentHashMap.newKeySet();
 
     public AppInfo() {}
@@ -60,9 +67,9 @@ public class AppInfo {
     }
 
     /**
-     * Get the current machines.
+     * 获取当前机器集合的副本，避免外部直接修改内部 Set。
      *
-     * @return a new copy of the current machines.
+     * @return 机器信息副本
      */
     public Set<MachineInfo> getMachines() {
         return new HashSet<>(machines);
@@ -73,11 +80,13 @@ public class AppInfo {
         return "AppInfo{" + "app='" + app + ", machines=" + machines + '}';
     }
 
+    /** 添加或更新机器（同 app/ip/port 先移除再插入）。 */
     public boolean addMachine(MachineInfo machineInfo) {
         machines.remove(machineInfo);
         return machines.add(machineInfo);
     }
 
+    /** 按 IP 与端口移除本应用下的机器。 */
     public synchronized boolean removeMachine(String ip, int port) {
         Iterator<MachineInfo> it = machines.iterator();
         while (it.hasNext()) {
@@ -90,18 +99,21 @@ public class AppInfo {
         return false;
     }
 
+    /** 按 IP 与端口查找机器。 */
     public Optional<MachineInfo> getMachine(String ip, int port) {
         return machines.stream()
             .filter(e -> e.getIp().equals(ip) && e.getPort().equals(port))
             .findFirst();
     }
 
+    /** 按 IP 查找第一台匹配机器（端口未指定时）。 */
     public Optional<MachineInfo> getMachine(String ip) {
         return machines.stream()
             .filter(e -> e.getIp().equals(ip))
             .findFirst();
     }
 
+    /** 依据阈值判断应用是否仍“存活”（存在健康机器或最近心跳未超时）。 */
     private boolean heartbeatJudge(final int threshold) {
         if (machines.size() == 0) {
             return false;
@@ -111,7 +123,7 @@ public class AppInfo {
                 .filter(MachineInfo::isHealthy)
                 .count();
             if (healthyCount == 0) {
-                // No healthy machines.
+                // 无健康机器时，看最近一次心跳是否仍在阈值内。
                 return machines.stream()
                     .max(Comparator.comparingLong(MachineInfo::getLastHeartbeat))
                     .map(e -> System.currentTimeMillis() - e.getLastHeartbeat() < threshold)
@@ -122,18 +134,19 @@ public class AppInfo {
     }
 
     /**
-     * Check whether current application has no healthy machines and should not be displayed.
+     * 是否应在 Dashboard 侧栏展示。
+     * <p>无健康机器且最后心跳超过 {@link DashboardConfig#getHideAppNoMachineMillis()} 时隐藏。
      *
-     * @return true if the application should be displayed in the sidebar, otherwise false
+     * @return true 表示应展示
      */
     public boolean isShown() {
         return heartbeatJudge(DashboardConfig.getHideAppNoMachineMillis());
     }
 
     /**
-     * Check whether current application has no healthy machines and should be removed.
+     * 是否应被从注册表移除（“死亡”应用）。
      *
-     * @return true if the application is dead and should be removed, otherwise false
+     * @return true 表示应移除
      */
     public boolean isDead() {
         return !heartbeatJudge(DashboardConfig.getRemoveAppNoMachineMillis());

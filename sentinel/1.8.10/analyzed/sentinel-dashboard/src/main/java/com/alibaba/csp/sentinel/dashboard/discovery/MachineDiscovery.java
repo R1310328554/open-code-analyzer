@@ -18,33 +18,42 @@ package com.alibaba.csp.sentinel.dashboard.discovery;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 机器与应用发现 SPI，供 Dashboard 查询注册表及增删机器。
+ */
 public interface MachineDiscovery {
 
+    /** 集群未启动时使用的占位应用名。 */
     String UNKNOWN_APP_NAME = "CLUSTER_NOT_STARTED";
 
+    /** @return 全部已注册应用名称列表 */
     List<String> getAppNames();
 
+    /** @return 应用摘要集合（含机器列表） */
     Set<AppInfo> getBriefApps();
 
+    /** @param app 应用名
+     * @return 应用详情，不存在时返回 null */
     AppInfo getDetailApp(String app);
 
     /**
-     * Remove the given app from the application registry.
+     * 从注册表移除整个应用及其全部机器。
      *
-     * @param app application name
+     * @param app 应用名称
      * @since 1.5.0
      */
     void removeApp(String app);
 
+    /** 注册或更新一台客户端机器心跳信息。 */
     long addMachine(MachineInfo machineInfo);
 
     /**
-     * Remove the given machine instance from the application registry.
+     * 从指定应用中移除一台机器。
      *
-     * @param app the application name of the machine
-     * @param ip machine IP
-     * @param port machine port
-     * @return true if removed, otherwise false
+     * @param app 应用名
+     * @param ip 机器 IP
+     * @param port 机器端口
+     * @return 移除成功返回 true
      * @since 1.5.0
      */
     boolean removeMachine(String app, String ip, int port);
