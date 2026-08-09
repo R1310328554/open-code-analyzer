@@ -37,10 +37,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /**
- * A thread gate, that uses an {@link java.util.concurrent.locks.AbstractQueuedSynchronizer}.
+ * 基于 {@link java.util.concurrent.locks.AbstractQueuedSynchronizer} 的可重复开关线程门闩。
  * <p>
- * This implementation allows you to create a latch with a default state (open or closed), and repeatedly open or close
- * the latch.
+ * 与 {@link java.util.concurrent.CountDownLatch} 不同，可多次 {@link #open()} / {@link #close()}；
+ * 打开时等待线程放行，关闭时新到达的线程阻塞。
  *
  * @author Manik Surtani (<a href="mailto:manik@jboss.org">manik@jboss.org</a>)
  * @since 4.0
@@ -50,20 +50,23 @@ public class ReclosableLatch extends AbstractQueuedSynchronizer {
 
    private static final long serialVersionUID = 1744280161777661090l;
 
-   // the following states are used in the AQS.
+   /** AQS 共享模式下的两种状态：打开 / 关闭。 */
    private static final int OPEN_STATE = 0, CLOSED_STATE = 1;
 
+   /** 默认构造为关闭状态。 */
    public ReclosableLatch() {
       setState(CLOSED_STATE);
    }
 
+   /** 指定初始为打开或关闭。 */
    public ReclosableLatch(boolean defaultOpen) {
       setState(defaultOpen ? OPEN_STATE : CLOSED_STATE);
    }
 
+   /** 打开状态时允许共享获取（返回 1），否则阻塞（返回 -1）。 */
    @Override
    public final int tryAcquireShared(int ignored) {
-      // return 1 if we allow the requestor to proceed, -1 if we want the requestor to block.
+      // 返回 1 表示放行，-1 表示需要阻塞
       return getState() == OPEN_STATE ? 1 : -1;
    }
 
@@ -74,23 +77,26 @@ public class ReclosableLatch extends AbstractQueuedSynchronizer {
       return true;
    }
 
+   /** 打开门闩并唤醒所有等待线程。 */
    public final void open() {
-      // do not use setState() directly since this won't notify parked threads.
+      // 须通过 releaseShared 触发 AQS 唤醒，不可直接 setState
       releaseShared(OPEN_STATE);
    }
 
+   /** 关闭门闩，后续 acquire 将阻塞。 */
    public final void close() {
       // do not use setState() directly since this won't notify parked threads.
       releaseShared(CLOSED_STATE);
    }
 
+   /** 当前是否处于打开状态。 */
    public boolean isOpened() {
       return getState() == OPEN_STATE;
    }
 
-   // waiting for an open state
+   /** 阻塞直到门闩打开（可响应中断）。 */
    public final void await() throws InterruptedException {
-      acquireSharedInterruptibly(1); // the 1 is a dummy value that is not used.
+      acquireSharedInterruptibly(1); // 参数 1 为占位，实际未使用
    }
 
    public final void awaitUninterruptibly() {

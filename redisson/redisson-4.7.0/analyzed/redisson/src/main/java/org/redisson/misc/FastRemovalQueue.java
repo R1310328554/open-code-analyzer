@@ -21,17 +21,23 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Thread-safe queue with O(1) complexity for removal operation.
+ * 线程安全队列，对任意元素的删除操作为 O(1) 均摊复杂度。
+ * <p>
+ * 内部用 {@link ConcurrentHashMap} 索引元素到链表节点，
+ * 用双向链表维护 FIFO 顺序；适合需要频繁按值移除的场景。
  *
  * @author Nikita Koksharov
  *
- * @param <E> element type
+ * @param <E> 元素类型
  */
 public final class FastRemovalQueue<E> implements Iterable<E> {
 
+    /** 元素 → 链表节点的 O(1) 查找索引。 */
     private final Map<E, Node<E>> index = new ConcurrentHashMap<>();
+    /** 维护 FIFO 顺序的双向链表。 */
     private final DoublyLinkedList<E> list = new DoublyLinkedList<>();
 
+    /** 追加元素到队尾；重复元素仅保留一份。 */
     public void add(E element) {
         Node<E> newNode = new Node<>(element);
         if (index.putIfAbsent(element, newNode) == null) {
@@ -39,6 +45,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         }
     }
 
+    /** 将已存在元素移到队尾（LRU 语义）；不存在则返回 false。 */
     public boolean moveToTail(E element) {
         Node<E> node = index.get(element);
         if (node != null) {
@@ -48,6 +55,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         return false;
     }
 
+    /** 按值 O(1) 移除元素。 */
     public boolean remove(E element) {
         Node<E> node = index.remove(element);
         if (node != null) {
@@ -64,6 +72,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         return index.size();
     }
 
+    /** 弹出队头元素；空队列返回 null。 */
     public E poll() {
         Node<E> node = list.removeFirst();
         if (node != null) {
@@ -83,10 +92,12 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         return list.iterator();
     }
 
+    /** 双向链表节点，含软删除标记。 */
     static class Node<E> {
         private final E value;
         private Node<E> prev;
         private volatile Node<E> next;
+        /** 逻辑删除标记，迭代时跳过已删节点。 */
         private volatile boolean deleted;
 
         Node(E value) {
@@ -106,7 +117,9 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         }
     }
 
+    /** 带锁保护的双向链表，支持 O(1) 头删、尾加与任意节点移除。 */
     static class DoublyLinkedList<E> implements Iterable<E> {
+        /** 串行化链表结构变更的轻量锁。 */
         private final WrappedLock lock = new WrappedLock();
         private Node<E> head;
         private Node<E> tail;
@@ -168,6 +181,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
             }
         }
 
+        /** 将节点从当前位置摘下并追加到队尾。 */
         public void moveToTail(Node<E> node) {
             lock.execute(() -> {
                 if (node.isDeleted()) {
@@ -182,6 +196,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
             });
         }
 
+        /** 移除并返回队头节点，同时标记为已删除。 */
         public Node<E> removeFirst() {
             return lock.execute(() -> {
                 Node<E> currentHead = head;

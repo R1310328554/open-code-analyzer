@@ -19,20 +19,28 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * 
+ * 不可变的哈希值包装，内部持有 {@code long[]} 摘要。
+ * <p>
+ * 使用 {@link Arrays#deepEquals} 比较内容，
+ * 适合作为 Map 键或缓存指纹标识。
+ *
  * @author Nikita Koksharov
  *
  */
 public final class HashValue {
 
+    /** 空哈希常量，表示零长度摘要。 */
     public static final HashValue EMPTY = new HashValue(new long[0]);
 
+    /** 哈希摘要数组（调用方不应修改）。 */
     private final long[] value;
 
+    /** 用 long 数组构造哈希值对象。 */
     public HashValue(long[] hash) {
         this.value = hash;
     }
     
+    /** 返回内部哈希数组副本的引用。 */
     public long[] getValue() {
         return value;
     }

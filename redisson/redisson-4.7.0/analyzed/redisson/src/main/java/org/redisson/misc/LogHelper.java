@@ -24,17 +24,25 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 
 /**
+ * 将 Redis 命令、参数等对象格式化为日志安全字符串。
+ * <p>
+ * 对 AUTH 密码、过长字符串/集合自动截断或脱敏，
+ * 避免日志泄露敏感信息或输出过大。
+ *
  * @author Philipp Marx
  */
 public final class LogHelper {
 
+    /** 集合日志最多展示的元素个数（可通过系统属性配置）。 */
     private static final int MAX_COLLECTION_LOG_SIZE = Integer.parseInt(System.getProperty("redisson.maxCollectionLogSize", "10"));
+    /** 字符串日志最大长度（可通过系统属性配置）。 */
     private static final int MAX_STRING_LOG_SIZE = Integer.parseInt(System.getProperty("redisson.maxStringLogSize", "1000"));
 //    private static final int MAX_BYTEBUF_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxByteBufLogSize", "1000"));
 
     private LogHelper() {
     }
     
+    /** 格式化 Redis 命令与参数；AUTH 命令隐藏密码。 */
     public static String toString(RedisCommand<?> command, Object... params) {
         if (RedisCommands.AUTH.equals(command)) {
             return "command: " + command + ", params: (password masked)";
@@ -42,6 +50,7 @@ public final class LogHelper {
         return "command: " + command + ", params: " + LogHelper.toString(params);
     }
     
+    /** 递归格式化任意对象为日志字符串。 */
     public static String toString(Object object) {
         if (object == null) {
             return "null";
@@ -59,7 +68,7 @@ public final class LogHelper {
             return cd.getCommand() + ", params: " + LogHelper.toString(cd.getParams()) + ", promise: " + cd.getPromise();
         } else if (object instanceof ByteBuf) {
             final ByteBuf byteBuf = (ByteBuf) object;
-            // can't be used due to Buffer Leak error is appeared in log
+            // 因可能触发 Buffer Leak 检测，暂不展开 ByteBuf 内容
 //            if (byteBuf.refCnt() > 0) {
 //                if (byteBuf.writerIndex() > MAX_BYTEBUF_LOG_SIZE) {
 //                    return new StringBuilder(byteBuf.toString(0, MAX_BYTEBUF_LOG_SIZE, CharsetUtil.UTF_8)).append("...").toString();
@@ -73,6 +82,7 @@ public final class LogHelper {
         }
     }
 
+    /** 截断过长字符串并追加省略号。 */
     private static String toStringString(String string) {
         if (string.length() > MAX_STRING_LOG_SIZE) {
             return new StringBuilder(string.substring(0, MAX_STRING_LOG_SIZE)).append("...").toString();
@@ -81,6 +91,7 @@ public final class LogHelper {
         }
     }
 
+    /** 格式化集合并限制最大元素数。 */
     private static String toCollectionString(Collection<?> collection) {
         if (collection.isEmpty()) {
             return "[]";
@@ -108,6 +119,7 @@ public final class LogHelper {
         return b.toString();
     }
 
+    /** 格式化数组并限制最大元素数。 */
     private static String toArrayString(Object array) {
         int length = Array.getLength(array) - 1;
         if (length == -1) {

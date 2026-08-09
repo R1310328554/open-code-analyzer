@@ -25,23 +25,34 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * 将多个 {@link AsyncIterator} 顺序拼接为一个异步迭代器。
+ * <p>
+ * 当前子迭代器耗尽后自动切换到下一个；
+ * 可选 {@code limit} 限制总共产出的元素个数。
  *
  * @author seakider
  *
  */
 public class CompositeAsyncIterator<T> implements AsyncIterator<T> {
+    /** 待遍历的子 AsyncIterator 列表迭代器。 */
     private final Iterator<AsyncIterator<T>> iterator;
+    /** 当前正在读取的子异步迭代器。 */
     private AsyncIterator<T> currentAsyncIterator;
+    /** 最大元素数；{@code <= 0} 表示无限制。 */
     private final int limit;
+    /** 已返回的元素计数。 */
     private int counter;
     
+    /** 用子迭代器列表与上限构造组合异步迭代器。 */
     public CompositeAsyncIterator(List<AsyncIterator<T>> asyncIterators, int limit) {
         this.iterator = asyncIterators.iterator();
         this.limit = limit;
     }
     
+    /** 异步判断是否存在下一元素，必要时递归切换子迭代器。 */
     @Override
     public CompletionStage<Boolean> hasNext() {
+        // 已达上限，直接返回 false
         if (limit > 0 && limit <= counter) {
             return CompletableFuture.completedFuture(false);
         }
@@ -63,6 +74,7 @@ public class CompositeAsyncIterator<T> implements AsyncIterator<T> {
         });
     }
     
+    /** 异步获取下一元素并在成功后递增计数器。 */
     @Override
     public CompletionStage<T> next() {
         CompletableFuture<T> result = new CompletableFuture<>();

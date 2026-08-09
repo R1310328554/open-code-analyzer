@@ -29,12 +29,10 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
 /**
- * Implementation of Random based on the xoshiro256** RNG. No-dependencies
- * Java port of the <a href="http://xoshiro.di.unimi.it/xoshiro256plusplus.c">original C code</a>,
- * which is public domain. This Java port is similarly dedicated to the public
- * domain.
+ * 基于 xoshiro256++ 算法的 {@link Random} 实现（无第三方依赖）。
  * <p>
- * This implementation is thread-safe.
+ * 移植自 <a href="http://xoshiro.di.unimi.it/xoshiro256plusplus.c">公开领域 C 源码</a>；
+ * 本 Java 版本同样置于公有领域。使用 {@link AtomicStampedReference} 保证线程安全。
  *
  * @see <a href="http://xoshiro.di.unimi.it/">http://xoshiro.di.unimi.it/</a>
  * @author David Blackman and Sebastiano Vigna &lt;vigna@acm.org> (original C code)
@@ -45,6 +43,7 @@ public final class RandomXoshiro256PlusPlus extends Random {
 
     private static final long serialVersionUID = -2837799889588687855L;
 
+    /** 用 {@link SecureRandom} 生成 256 位种子并构造实例。 */
     public static Random create() {
         SecureRandom secureRandom = new SecureRandom();
         byte[] seed = new byte[32];
@@ -57,8 +56,8 @@ public final class RandomXoshiro256PlusPlus extends Random {
         setState(s1, s2, s3, s4);
     }
 
-    // used to "stretch" seeds into a full 256-bit state; also makes
-    // it safe to pass in zero as a seed
+    // 用 splitmix64 将短种子扩展为完整 256 位状态；
+    // 也避免全零种子导致非法状态
     ////
     // what generator is used here is unimportant, as long as it's
     // from a different family, but splitmix64 happens to be an
@@ -77,6 +76,7 @@ public final class RandomXoshiro256PlusPlus extends Random {
         return z ^ (z >> 31);
     }
 
+    /** 用 splitmix64 链将单个 long 种子扩展为四词状态。 */
     @Override
     public void setSeed(long seed) {
         // update haveNextNextGaussian flag in super
@@ -99,6 +99,7 @@ public final class RandomXoshiro256PlusPlus extends Random {
         }
     }
 
+    /** 直接设置四词内部状态（CAS 更新）；全零非法。 */
     void setState(long s0, long s1, long s2, long s4) {
         if (s0 == 0 && s1 == 0 && s2 == 0 && s4 == 0)
             throw new IllegalArgumentException("xoshiro256++ state cannot be all zeroes");
@@ -114,7 +115,7 @@ public final class RandomXoshiro256PlusPlus extends Random {
         }
     }
 
-    // not called, implemented instead of just throwing for completeness
+    // 通常不被调用，为 API 完整性而实现
     @Override
     protected int next(int bits) {
         return (int) (nextLong() & ((1L << bits) - 1));
@@ -130,9 +131,10 @@ public final class RandomXoshiro256PlusPlus extends Random {
         return (int) nextLong(bound);
     }
 
+    /** 返回 {@code [0, bound)} 范围内的均匀随机 long。 */
     public long nextLong(long bound) {
         if (bound <= 0) throw new IllegalArgumentException("bound must be positive");
-        // clear sign bit for positive-only, modulo to bound
+        // 清除符号位保证非负，再对 bound 取模
         return (nextLong() & Long.MAX_VALUE) % bound;
     }
 
@@ -173,8 +175,10 @@ public final class RandomXoshiro256PlusPlus extends Random {
         }
     }
 
+    /** 带版本戳的原子状态引用，支持无锁 CAS 推进。 */
     AtomicStampedReference<long[]> stateRef;
 
+    /** xoshiro256++ 核心步进：CAS 更新四词状态并返回随机 long。 */
     @Override
     public long nextLong() {
         while (true) {

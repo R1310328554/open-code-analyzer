@@ -24,15 +24,25 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 
 /**
- * 
+ * 通过反射向任务对象注入依赖字段。
+ * <p>
+ * 扫描类层次上标注 {@link RInject} 且类型可赋值的字段并赋值；
+ * 常用于 MapReduce 任务、异步回调等需获取 {@link RedissonClient} 的组件。
+ *
  * @author Nikita Koksharov
  *
  */
 public class Injector {
 
+    /**
+     * 将 {@code value} 注入到 {@code task} 上所有匹配类型的 {@link RInject} 字段。
+     * <p>
+     * 沿继承链向上收集全部 declared fields。
+     */
     public static <T> void inject(Object task, Class<T> valueClass, T value) {
         List<Field> allFields = new ArrayList<Field>();
         Class<?> clazz = task.getClass();
+        // 沿继承链收集各层 declared fields
         while (true) {
             if (clazz != null) {
                 Field[] fields = clazz.getDeclaredFields();
@@ -60,6 +70,7 @@ public class Injector {
         }
     }
 
+    /** 便捷方法：向任务注入 {@link RedissonClient} 实例。 */
     public static void inject(Object task, RedissonClient redisson) {
         inject(task, RedissonClient.class, redisson);
     }

@@ -16,18 +16,24 @@
 package org.redisson.misc;
 
 /**
+ * 包装任意对象，{@link #equals} 与 {@link #hashCode} 均基于引用同一性（{@code ==}）。
+ * <p>
+ * 用于需要在集合中以对象身份而非 {@link Object#equals} 语义比较的场景。
  *
  * @author Nikita Koksharov
  *
  */
 public final class IdentityValue<T> {
 
+    /** 被包装的对象引用。 */
     private final T value;
 
+    /** 包装给定对象。 */
     public IdentityValue(T value) {
         this.value = value;
     }
 
+    /** 仅当同为 IdentityValue 且内部引用 {@code ==} 时相等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -36,6 +42,7 @@ public final class IdentityValue<T> {
         return value == that.value;
     }
 
+    /** 使用 {@link System#identityHashCode} 计算哈希。 */
     @Override
     public int hashCode() {
         return System.identityHashCode(value);

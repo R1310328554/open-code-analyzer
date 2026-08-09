@@ -25,39 +25,50 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- *
+ * 将 {@link CompletableFuture} 适配为 Redisson 的 {@link RFuture} 接口。
+ * <p>
+ * 所有 {@link CompletionStage} 方法均委托给内部 future；
+ * 便于在 Redisson API 与 JDK 异步组合 API 之间无缝切换。
  *
  * @author Nikita Koksharov
- * @param <V> value type
+ * @param <V> 异步结果值类型
  */
 public class CompletableFutureWrapper<V> implements RFuture<V> {
 
+    /** 返回已完成且值为 {@code null} 的包装实例。 */
     public static <T> CompletableFutureWrapper<T> completedNull() {
         return new CompletableFutureWrapper<>((T) null);
     }
 
+    /** 被包装的底层 CompletableFuture。 */
     private final CompletableFuture<V> future;
+    /** 链式组合时追踪的最后一个 future（预留扩展）。 */
     private CompletableFuture<V> lastFuture;
 
+    /** 用已完成的值构造包装器。 */
     public CompletableFutureWrapper(V value) {
         this(CompletableFuture.completedFuture(value));
     }
 
+    /** 用异常构造已失败的 future 包装器。 */
     public CompletableFutureWrapper(Throwable ex) {
         this(new CompletableFuture<>());
         this.future.completeExceptionally(ex);
     }
 
+    /** 从任意 CompletionStage 构造包装器。 */
     public CompletableFutureWrapper(CompletionStage<V> stage) {
         this.future = stage.toCompletableFuture();
         this.lastFuture = future;
     }
 
+    /** 直接包装已有的 CompletableFuture。 */
     public CompletableFutureWrapper(CompletableFuture<V> future) {
         this.future = future;
         this.lastFuture = future;
     }
 
+    /** 等待多个 future 全部完成后才完成的组合包装器。 */
     public CompletableFutureWrapper(List<CompletableFuture<?>> futures) {
         this.future = (CompletableFuture<V>) CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         this.lastFuture = future;
@@ -248,15 +259,18 @@ public class CompletableFutureWrapper<V> implements RFuture<V> {
         return future.exceptionally(fn);
     }
 
+    /** 暴露底层 CompletableFuture 供 JDK API 使用。 */
     @Override
     public CompletableFuture<V> toCompletableFuture() {
         return future;
     }
 
+    /** 若已完成则返回值，否则返回默认值。 */
     public V getNow(V valueIfAbsent) {
         return future.getNow(valueIfAbsent);
     }
 
+    /** 手动以正常结果完成 future。 */
     public boolean complete(V value) {
         return future.complete(value);
     }

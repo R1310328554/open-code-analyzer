@@ -26,20 +26,29 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
- * 
+ * 解析与表示 Redis / Valkey 连接 URI 的不可变值对象。
+ * <p>
+ * 支持 {@code redis://}、{@code rediss://}（SSL）、
+ * {@code redis+uds://}（Unix 域套接字）及 Valkey 对应 scheme；
+ * 可从 URI 中提取主机、端口、用户名与密码。
+ *
  * @author Nikita Koksharov
  *
  */
 public final class RedisURI {
 
+    /** 明文 Redis 协议前缀。 */
     public static final String REDIS_PROTOCOL= "redis://";
+    /** TLS 加密的 Redis 协议前缀。 */
     public static final String REDIS_SSL_PROTOCOL = "rediss://";
+    /** Redis Unix 域套接字协议前缀。 */
     public static final String REDIS_UDS_PROTOCOL= "redis+uds://";
 
     public static final String VALKEY_PROTOCOL= "valkey://";
     public static final String VALKEY_SSL_PROTOCOL = "valkeys://";
     public static final String VALKEY_UDS_PROTOCOL= "valkey+uds://";
 
+    /** URI scheme（如 redis、rediss、valkey 等）。 */
     private final String scheme;
     private final String host;
     private final int port;
@@ -47,6 +56,7 @@ public final class RedisURI {
     private String password;
     private int hashCode;
 
+    /** 判断字符串是否为支持的 Redis/Valkey URI 前缀。 */
     public static boolean isValid(String url) {
         return url.startsWith(REDIS_PROTOCOL)
                 || url.startsWith(REDIS_SSL_PROTOCOL)
@@ -72,6 +82,7 @@ public final class RedisURI {
         this.hashCode = Objects.hash(isSsl(), host, port);
     }
 
+    /** 从 URI 字符串解析主机、端口与认证信息。 */
     public RedisURI(String uri) {
         if (!isValid(uri)) {
             throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");
@@ -96,8 +107,7 @@ public final class RedisURI {
             if (url.getUserInfo() != null) {
                 String[] details = url.getUserInfo().split(":", 2);
                 if (details.length == 1) {
-                    // According to RFC 1738 section 3.1, the password can be omitted.
-                    // However, Redis CLI extends this URL semantic and uses the single auth component as password
+                    // RFC 1738 允许省略密码；Redis CLI 扩展语义：单段 userInfo 视为密码
                     password = URLDecoder.decode(details[0], StandardCharsets.UTF_8.toString());
                 } else if (details.length == 2) {
                     if (!details[0].isEmpty()) {
@@ -118,6 +128,7 @@ public final class RedisURI {
         this.hashCode = Objects.hash(isSsl(), host, port);
     }
 
+    /** 将 Redis URI 转为 java.net.URL 可解析的 http 形式（处理 IPv6 方括号）。 */
     private String parseUrl(String uri) {
         int hostStartIndex = uri.indexOf("://") + 3;
         String urlHost = "http://" + uri.substring(hostStartIndex);
@@ -143,6 +154,7 @@ public final class RedisURI {
         return password;
     }
 
+    /** 是否为 TLS（rediss / valkeys）连接。 */
     public boolean isSsl() {
         return "rediss".equals(scheme) || "valkeys".equals(scheme);
     }
@@ -155,10 +167,12 @@ public final class RedisURI {
         return port;
     }
 
+    /** 是否为 Unix 域套接字连接。 */
     public boolean isUDS() {
         return "redis+uds".equals(scheme) || "valkey+uds".equals(scheme);
     }
 
+    /** 主机部分是否为字面 IP 地址。 */
     public boolean isIP() {
         return NetUtil.createByteArrayFromIpAddressString(host) != null;
     }
@@ -170,6 +184,7 @@ public final class RedisURI {
         return host;
     }
     
+    /** 与 {@link InetSocketAddress} 比较主机名/IP 与端口是否一致。 */
     public boolean equals(InetSocketAddress entryAddr) {
         String ip = trimIpv6Brackets(getHost());
         if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(ip))
@@ -193,6 +208,7 @@ public final class RedisURI {
         return hashCode;
     }
 
+    /** 重建含明文凭据的 URI 字符串（日志慎用）。 */
     public String toURIString() {
         if (username != null && password != null) {
             return getScheme() + "://" + username + ":" + password + "@" + trimIpv6Brackets(host) + ":" + port;
@@ -202,6 +218,7 @@ public final class RedisURI {
         return getScheme() + "://" + trimIpv6Brackets(host) + ":" + port;
     }
 
+    /** 返回脱敏后的 URI 字符串（密码替换为 ***）。 */
     @Override
     public String toString() {
         if (username != null && password != null) {

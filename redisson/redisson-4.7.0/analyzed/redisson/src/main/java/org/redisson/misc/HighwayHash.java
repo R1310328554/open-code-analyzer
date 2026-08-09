@@ -31,8 +31,10 @@
 package org.redisson.misc;
 
 /**
- * HighwayHash algorithm. See <a href="https://github.com/google/highwayhash">
- * HighwayHash on GitHub</a>
+ * Google HighwayHash 算法的 Java 实现。
+ * <p>
+ * 支持增量更新与 64/128/256 位输出；
+ * 详见 <a href="https://github.com/google/highwayhash">HighwayHash on GitHub</a>。
  */
 @SuppressWarnings({"OperatorWrap", "BooleanExpressionComplexity", "UnnecessaryParentheses", "WhitespaceAfter", "ParameterName", "LocalVariableName"})
 public final class HighwayHash {
@@ -40,20 +42,23 @@ public final class HighwayHash {
   private final long[] v1 = new long[4];
   private final long[] mul0 = new long[4];
   private final long[] mul1 = new long[4];
+  /** 是否已 finalize，每个实例只能计算一次。 */
   private boolean done = false;
 
   /**
-   * @param key0 first 8 bytes of the key
-   * @param key1 next 8 bytes of the key
-   * @param key2 next 8 bytes of the key
-   * @param key3 last 8 bytes of the key
+   * 用四个 64 位字初始化哈希状态。
+   * @param key0 密钥前 8 字节
+   * @param key1 密钥第 2 个 8 字节
+   * @param key2 密钥第 3 个 8 字节
+   * @param key3 密钥最后 8 字节
    */
   public HighwayHash(long key0, long key1, long key2, long key3) {
     reset(key0, key1, key2, key3);
   }
 
   /**
-   * @param key array of size 4 with the key to initialize the hash with
+   * 用长度为 4 的 long 数组作为 256 位密钥初始化。
+   * @param key 长度为 4 的密钥数组
    */
   public HighwayHash(long[] key) {
     if (key.length != 4) {
@@ -63,10 +68,11 @@ public final class HighwayHash {
   }
 
   /**
-   * Updates the hash with 32 bytes of data. If you can read 4 long values
-   * from your data efficiently, prefer using update() instead for more speed.
-   * @param packet data array which has a length of at least pos + 32
-   * @param pos position in the array to read the first of 32 bytes from
+   * 用 32 字节数据块更新哈希状态。
+   * <p>
+   * 若可直接读取 4 个 long，优先调用 {@link #update(long, long, long, long)} 更快。
+   * @param packet 至少包含 pos + 32 字节的数据数组
+   * @param pos 起始读取位置
    */
   public void updatePacket(byte[] packet, int pos) {
     if (pos < 0) {
@@ -83,12 +89,11 @@ public final class HighwayHash {
   }
 
   /**
-   * Updates the hash with 32 bytes of data given as 4 longs. This function is
-   * more efficient than updatePacket when you can use it.
-   * @param a0 first 8 bytes in little endian 64-bit long
-   * @param a1 next 8 bytes in little endian 64-bit long
-   * @param a2 next 8 bytes in little endian 64-bit long
-   * @param a3 last 8 bytes in little endian 64-bit long
+   * 用 4 个 little-endian long 表示的 32 字节更新哈希（高效路径）。
+   * @param a0 第 1 个 8 字节
+   * @param a1 第 2 个 8 字节
+   * @param a2 第 3 个 8 字节
+   * @param a3 第 4 个 8 字节
    */
   public void update(long a0, long a1, long a2, long a3) {
     if (done) {
@@ -115,13 +120,13 @@ public final class HighwayHash {
 
 
   /**
-   * Updates the hash with the last 1 to 31 bytes of the data. You must use
-   * updatePacket first per 32 bytes of the data, if and only if 1 to 31 bytes
-   * of the data are not processed after that, updateRemainder must be used for
-   * those final bytes.
-   * @param bytes data array which has a length of at least pos + size_mod32
-   * @param pos position in the array to start reading size_mod32 bytes from
-   * @param size_mod32 the amount of bytes to read
+   * 处理最后 1～31 字节的尾部数据。
+   * <p>
+   * 须先对每个完整 32 字节块调用 {@link #updatePacket}，
+   * 再用本方法处理余数。
+   * @param bytes 至少包含 pos + size_mod32 字节的数据数组
+   * @param pos 起始位置
+   * @param size_mod32 待读字节数（1～31）
    */
   public void updateRemainder(byte[] bytes, int pos, int size_mod32) {
     if (pos < 0) {
@@ -159,12 +164,11 @@ public final class HighwayHash {
   }
 
   /**
-   * Computes the hash value after all bytes were processed. Invalidates the
-   * state.
+   * 完成全部输入后计算 64 位哈希并失效内部状态。
    *
-   * NOTE: The 64-bit HighwayHash algorithm is declared stable and no longer subject to change.
+   * NOTE: 64 位 HighwayHash 算法已冻结，不再变更。
    *
-   * @return 64-bit hash
+   * @return 64 位哈希值
    */
   public long finalize64() {
     permuteAndUpdate();
@@ -176,12 +180,11 @@ public final class HighwayHash {
   }
 
   /**
-   * Computes the hash value after all bytes were processed. Invalidates the
-   * state.
+   * 完成全部输入后计算 128 位哈希并失效内部状态。
    *
-   * NOTE: The 128-bit HighwayHash algorithm is not yet frozen and subject to change.
+   * NOTE: 128 位 HighwayHash 算法尚未冻结，可能变更。
    *
-   * @return array of size 2 containing 128-bit hash
+   * @return 长度为 2 的 long 数组，表示 128 位哈希
    */
   public long[] finalize128() {
     permuteAndUpdate();
@@ -259,8 +262,9 @@ public final class HighwayHash {
              ((v1 & 0xffL) << 48) | (v0 & 0xff00000000000000L);
   }
 
+  /** 从字节数组 little-endian 读取 64 位值。 */
   private long read64(byte[] src, int pos) {
-    // Mask with 0xffL so that it is 0..255 as long (byte can only be -128..127)
+    // 用 0xffL 掩码将 signed byte 转为 0..255 的无符号 long
     return (src[pos + 0] & 0xffL) | ((src[pos + 1] & 0xffL) << 8) |
         ((src[pos + 2] & 0xffL) << 16) | ((src[pos + 3] & 0xffL) << 24) |
         ((src[pos + 4] & 0xffL) << 32) | ((src[pos + 5] & 0xffL) << 40) |
@@ -340,6 +344,7 @@ public final class HighwayHash {
     return h.finalize256();
   }
 
+  /** 对整段字节数组按 32 字节块 + 余数完成哈希更新。 */
   private void processAll(byte[] data, int offset, int length) {
     int i;
     for (i = 0; i + 32 <= length; i += 32) {
