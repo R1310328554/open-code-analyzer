@@ -21,12 +21,20 @@ import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
 import java.util.Set;
 
+/**
+ * 父 Topic 元信息响应：TTL、关联 Group、LMQ 配额及 Lite Topic 数量。
+ */
 public class GetParentTopicInfoResponseBody extends RemotingSerializable {
 
+    /** 父 Topic 名。 */
     private String topic;
+    /** 消息存活时间（秒）。 */
     private int ttl;
+    /** 已订阅该 Topic 的 Group 集合。 */
     private Set<String> groups;
+    /** 已分配 LMQ 数量。 */
     private int lmqNum;
+    /** 下属 Lite Topic 数量。 */
     private int liteTopicCount;
 
     public String getTopic() {
@@ -37,6 +45,7 @@ public class GetParentTopicInfoResponseBody extends RemotingSerializable {
         this.topic = topic;
     }
 
+    /** 返回消息 TTL。 */
     public int getTtl() {
         return ttl;
     }
@@ -61,6 +70,7 @@ public class GetParentTopicInfoResponseBody extends RemotingSerializable {
         this.lmqNum = lmqNum;
     }
 
+    /** 返回 Lite Topic 数量。 */
     public int getLiteTopicCount() {
         return liteTopicCount;
     }

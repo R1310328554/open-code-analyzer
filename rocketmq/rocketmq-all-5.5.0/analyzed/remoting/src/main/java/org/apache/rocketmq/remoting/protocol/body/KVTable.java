@@ -19,13 +19,19 @@ package org.apache.rocketmq.remoting.protocol.body;
 import java.util.HashMap;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 通用键值表 Remoting 体，用于 Admin 接口传递字符串配置或统计项。
+ */
 public class KVTable extends RemotingSerializable {
+    /** 键值映射表。 */
     private HashMap<String, String> table = new HashMap<>();
 
+    /** 返回键值表。 */
     public HashMap<String, String> getTable() {
         return table;
     }
 
+    /** 设置键值表。 */
     public void setTable(HashMap<String, String> table) {
         this.table = table;
     }

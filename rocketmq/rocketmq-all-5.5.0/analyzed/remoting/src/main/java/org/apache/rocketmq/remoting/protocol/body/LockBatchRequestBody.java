@@ -23,10 +23,17 @@ import java.util.Set;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 顺序消费批量加锁请求：指定 Group、客户端及待锁定的 MessageQueue 集合。
+ */
 public class LockBatchRequestBody extends RemotingSerializable {
+    /** 消费者 Group。 */
     private String consumerGroup;
+    /** 发起加锁的客户端 ID。 */
     private String clientId;
+    /** 为 true 时仅在本 Broker 上加锁。 */
     private boolean onlyThisBroker = false;
+    /** 待加锁的 MessageQueue 集合。 */
     private Set<MessageQueue> mqSet = new HashSet<>();
 
     public String getConsumerGroup() {
@@ -45,6 +52,7 @@ public class LockBatchRequestBody extends RemotingSerializable {
         this.clientId = clientId;
     }
 
+    /** 返回是否仅锁当前 Broker。 */
     public boolean isOnlyThisBroker() {
         return onlyThisBroker;
     }
@@ -53,6 +61,7 @@ public class LockBatchRequestBody extends RemotingSerializable {
         this.onlyThisBroker = onlyThisBroker;
     }
 
+    /** 返回待锁队列集合。 */
     public Set<MessageQueue> getMqSet() {
         return mqSet;
     }
@@ -61,6 +70,7 @@ public class LockBatchRequestBody extends RemotingSerializable {
         this.mqSet = mqSet;
     }
 
+    /** 返回加锁请求可读字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

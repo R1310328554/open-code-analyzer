@@ -21,14 +21,23 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Broker 主从 HA 运行时快照：Master 身份、同步从节点数及各连接/客户端传输状态。
+ */
 public class HARuntimeInfo extends RemotingSerializable {
 
+    /** 当前节点是否为 Master。 */
     private boolean master;
+    /** Master CommitLog 最大物理偏移。 */
     private long masterCommitLogMaxOffset;
+    /** 处于同步状态的从节点数量。 */
     private int inSyncSlaveNums;
+    /** Master 侧各从节点 HA 连接详情。 */
     private List<HAConnectionRuntimeInfo> haConnectionInfo = new ArrayList<>();
+    /** 从节点 HA 客户端运行态（Master 侧为空对象）。 */
     private HAClientRuntimeInfo haClientRuntimeInfo = new HAClientRuntimeInfo();
 
+    /** 返回是否为 Master。 */
     public boolean isMaster() {
         return this.master;
     }
@@ -69,12 +78,19 @@ public class HARuntimeInfo extends RemotingSerializable {
         this.haClientRuntimeInfo = haClientRuntimeInfo;
     }
 
+    /** Master 视角下单条 HA 连接：从节点地址、复制进度与同步状态。 */
     public static class HAConnectionRuntimeInfo extends RemotingSerializable {
+        /** 从节点地址。 */
         private String addr;
+        /** 从节点已 ACK 的 CommitLog 偏移。 */
         private long slaveAckOffset;
+        /** 与 Master 最大偏移的差值。 */
         private long diff;
+        /** 是否判定为同步副本。 */
         private boolean inSync;
+        /** 每秒传输字节数。 */
         private long transferredByteInSecond;
+        /** 本次 HA 传输起始偏移。 */
         private long transferFromWhere;
 
         public String getAddr() {
@@ -126,13 +142,20 @@ public class HARuntimeInfo extends RemotingSerializable {
         }
     }
 
+    /** 从节点 HA 客户端：Master 地址、读写时间戳及复制进度。 */
     public static class HAClientRuntimeInfo extends RemotingSerializable {
+        /** 所连 Master 地址。 */
         private String masterAddr;
         private long transferredByteInSecond;
+        /** 本地已同步的最大偏移。 */
         private long maxOffset;
+        /** 最近一次从 Master 读取时间戳。 */
         private long lastReadTimestamp;
+        /** 最近一次写入本地 CommitLog 时间戳。 */
         private long lastWriteTimestamp;
+        /** Master 已刷盘偏移（从节点观测值）。 */
         private long masterFlushOffset;
+        /** HA 客户端是否已激活连接。 */
         private boolean isActivated = false;
 
         public String getMasterAddr() {

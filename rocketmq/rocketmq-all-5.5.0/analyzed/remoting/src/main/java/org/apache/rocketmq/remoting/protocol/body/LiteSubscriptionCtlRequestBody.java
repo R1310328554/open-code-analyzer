@@ -21,14 +21,20 @@ import java.util.Set;
 import org.apache.rocketmq.common.lite.LiteSubscriptionDTO;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Lite 订阅关系批量变更请求体，携带待增删的 {@link LiteSubscriptionDTO} 集合。
+ */
 public class LiteSubscriptionCtlRequestBody extends RemotingSerializable {
 
+    /** 待处理的 Lite 订阅项集合。 */
     private Set<LiteSubscriptionDTO> subscriptionSet;
 
+    /** 设置订阅项集合。 */
     public void setSubscriptionSet(Set<LiteSubscriptionDTO> subscriptionSet) {
         this.subscriptionSet = subscriptionSet;
     }
 
+    /** 返回订阅项集合。 */
     public Set<LiteSubscriptionDTO> getSubscriptionSet() {
         return subscriptionSet;
     }

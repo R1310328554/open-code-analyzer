@@ -19,15 +19,21 @@ package org.apache.rocketmq.remoting.protocol.body;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 消息拉取/推送模式配置序列化包装：Topic → Group → 模式请求体 三级映射。
+ */
 public class MessageRequestModeSerializeWrapper extends RemotingSerializable {
 
+    /** Topic →（Group → 拉取模式配置）并发映射。 */
     private ConcurrentHashMap<String/* Topic */, ConcurrentHashMap<String/* Group */, SetMessageRequestModeRequestBody>>
             messageRequestModeMap = new ConcurrentHashMap<>();
 
+    /** 返回消息请求模式映射表。 */
     public ConcurrentHashMap<String, ConcurrentHashMap<String, SetMessageRequestModeRequestBody>> getMessageRequestModeMap() {
         return messageRequestModeMap;
     }
 
+    /** 设置消息请求模式映射表。 */
     public void setMessageRequestModeMap(ConcurrentHashMap<String, ConcurrentHashMap<String, SetMessageRequestModeRequestBody>> messageRequestModeMap) {
         this.messageRequestModeMap = messageRequestModeMap;
     }

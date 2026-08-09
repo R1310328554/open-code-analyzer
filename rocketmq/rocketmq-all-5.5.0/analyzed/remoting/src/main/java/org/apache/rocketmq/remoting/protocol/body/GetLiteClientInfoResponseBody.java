@@ -21,16 +21,27 @@ import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
 import java.util.Set;
 
+/**
+ * Lite 消费客户端运行态响应：父 Topic、订阅 Group、最近访问/消费时间及 Lite Topic 集合。
+ */
 public class GetLiteClientInfoResponseBody extends RemotingSerializable {
 
+    /** 父 Topic 名。 */
     private String parentTopic;
+    /** 消费者 Group。 */
     private String group;
+    /** 客户端实例 ID。 */
     private String clientId;
+    /** 最近一次与 Broker 通信时间戳。 */
     private long lastAccessTime;
+    /** 最近一次成功消费时间戳。 */
     private long lastConsumeTime;
+    /** 已订阅 Lite Topic 数量。 */
     private int liteTopicCount;
+    /** 已订阅 Lite Topic 名称集合。 */
     private Set<String> liteTopicSet;
 
+    /** 返回父 Topic。 */
     public String getParentTopic() {
         return parentTopic;
     }
@@ -79,6 +90,7 @@ public class GetLiteClientInfoResponseBody extends RemotingSerializable {
         this.liteTopicCount = liteTopicCount;
     }
 
+    /** 返回 Lite Topic 集合。 */
     public Set<String> getLiteTopicSet() {
         return liteTopicSet;
     }

@@ -19,13 +19,19 @@ package org.apache.rocketmq.remoting.protocol.body;
 import java.util.HashSet;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 消费者 Group 名称列表，用于 Remoting 批量查询或管理接口。
+ */
 public class GroupList extends RemotingSerializable {
+    /** Group 名集合。 */
     private HashSet<String> groupList = new HashSet<>();
 
+    /** 返回 Group 集合。 */
     public HashSet<String> getGroupList() {
         return groupList;
     }
 
+    /** 设置 Group 集合。 */
     public void setGroupList(HashSet<String> groupList) {
         this.groupList = groupList;
     }

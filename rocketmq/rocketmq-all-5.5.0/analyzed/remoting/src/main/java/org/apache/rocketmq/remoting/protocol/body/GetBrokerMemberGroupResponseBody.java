@@ -19,14 +19,20 @@ package org.apache.rocketmq.remoting.protocol.body;
 
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 查询 Broker 成员组的 Remoting 响应体，封装同 brokerName 下各副本地址。
+ */
 public class GetBrokerMemberGroupResponseBody extends RemotingSerializable {
-    // Contains the broker member info of the same broker group
+    // 同一 Broker 组内各 brokerId 与地址映射
+    /** 成员组详情。 */
     private BrokerMemberGroup brokerMemberGroup;
 
+    /** 返回 Broker 成员组。 */
     public BrokerMemberGroup getBrokerMemberGroup() {
         return brokerMemberGroup;
     }
 
+    /** 设置 Broker 成员组。 */
     public void setBrokerMemberGroup(final BrokerMemberGroup brokerMemberGroup) {
         this.brokerMemberGroup = brokerMemberGroup;
     }

@@ -21,17 +21,28 @@ import org.apache.rocketmq.common.lite.LiteLagInfo;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.admin.OffsetWrapper;
 
+/**
+ * Lite 消费组积压与位点信息响应：汇总 lag、TopK 明细及可选 Lite Topic 位点。
+ */
 public class GetLiteGroupInfoResponseBody extends RemotingSerializable {
+    /** 消费者 Group。 */
     private String group;
+    /** 父 Topic 名。 */
     private String parentTopic;
+    /** 指定查询的 Lite Topic（可为空表示全组汇总）。 */
     private String liteTopic;
-    // total log info
+    // 全组汇总 lag 信息
+    /** 最早未消费消息时间戳，-1 表示无积压。 */
     private long earliestUnconsumedTimestamp = -1;
+    /** 全组消息积压条数。 */
     private long totalLagCount;
-    // lite topic detail info
+    // 单 Lite Topic 位点明细（指定 liteTopic 时填充）
+    /** 指定 Lite Topic 的位点包装（min/max/consumer 位点）。 */
     private OffsetWrapper liteTopicOffsetWrapper; // if lite topic specified
-    // topK info
+    // 积压 TopK 排行
+    /** 按积压条数降序的 TopK Lite Topic。 */
     private List<LiteLagInfo> lagCountTopK;
+    /** 按最早未消费时间排序的 TopK Lite Topic。 */
     private List<LiteLagInfo> lagTimestampTopK;
 
     public String getGroup() {
@@ -66,6 +77,7 @@ public class GetLiteGroupInfoResponseBody extends RemotingSerializable {
         this.earliestUnconsumedTimestamp = earliestUnconsumedTimestamp;
     }
 
+    /** 返回全组积压条数。 */
     public long getTotalLagCount() {
         return totalLagCount;
     }

@@ -22,14 +22,20 @@ import java.util.Set;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 顺序消费批量加锁响应：返回 Broker 成功锁定的 MessageQueue 集合。
+ */
 public class LockBatchResponseBody extends RemotingSerializable {
 
+    /** 加锁成功的 MessageQueue 集合。 */
     private Set<MessageQueue> lockOKMQSet = new HashSet<>();
 
+    /** 返回加锁成功队列。 */
     public Set<MessageQueue> getLockOKMQSet() {
         return lockOKMQSet;
     }
 
+    /** 设置加锁成功队列。 */
     public void setLockOKMQSet(Set<MessageQueue> lockOKMQSet) {
         this.lockOKMQSet = lockOKMQSet;
     }
