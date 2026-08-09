@@ -616,3 +616,8 @@ core/spring-boot/src/main/java/org/springframework/boot/convert/ApplicationConve
 core/spring-boot/src/main/java/org/springframework/boot/json/JsonValueWriter.java
 core/spring-boot/src/main/java/org/springframework/boot/logging/StandardStackTracePrinter.java
 core/spring-boot/src/main/java/org/springframework/boot/logging/log4j2/Log4J2LoggingSystem.java
+core/spring-boot/src/main/java/org/springframework/boot/logging/logback/LogbackLoggingSystem.java
+core/spring-boot/src/main/java/org/springframework/boot/logging/logback/SpringBootJoranConfigurator.java
+core/spring-boot/src/main/java/org/springframework/boot/ssl/pem/PemPrivateKeyParser.java
+core/spring-boot/src/main/java/org/springframework/boot/util/LambdaSafe.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletContextInitializerBeans.java
