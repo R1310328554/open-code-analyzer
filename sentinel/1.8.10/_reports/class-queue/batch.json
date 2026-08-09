@@ -15,23 +15,8 @@
     "sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/codec/StringEncoder.java",
     "sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/netty/HttpServer.java",
     "sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/netty/HttpServerHandler.java",
-    "sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/netty/HttpServerInitializer.java",
-    "sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/HttpHeartbeatSender.java",
-    "sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/client/HttpClientsFactory.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/command/SimpleHttpCommandCenter.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/command/exception/RequestException.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/command/http/HttpEventTask.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/command/http/StatusCode.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/HeartbeatMessage.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/SimpleHttpHeartbeatSender.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/client/SimpleHttpClient.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/client/SimpleHttpRequest.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/client/SimpleHttpResponse.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/client/SimpleHttpResponseParser.java",
-    "sentinel-transport/sentinel-transport-simple-http/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/client/SocketFactory.java",
-    "sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/command/SentinelApiHandler.java",
-    "sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/command/SentinelApiHandlerAdapter.java"
+    "sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/netty/HttpServerInitializer.java"
   ],
   "remaining_pending": 5,
-  "done": 915
+  "done": 930
 }
