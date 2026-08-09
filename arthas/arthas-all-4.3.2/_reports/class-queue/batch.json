@@ -15,23 +15,8 @@
     "core/src/main/java/com/taobao/arthas/core/shell/term/Tty.java",
     "core/src/main/java/com/taobao/arthas/core/shell/term/impl/CompletionAdaptor.java",
     "core/src/main/java/com/taobao/arthas/core/shell/term/impl/CompletionHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/FunctionInvocationHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/Helper.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/HttpTermServer.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/TelnetTermServer.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/TermImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/BasicHttpAuthenticatorHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/DirectoryBrowser.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/ExtHttpTtyConnection.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/HttpRequestHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/LocalTtyServerInitializer.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/NettyWebsocketTtyBootstrap.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/TtyServerInitializer.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/TtyWebSocketFrameHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/api/ApiAction.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/api/ApiException.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/api/ApiRequest.java"
+    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/FunctionInvocationHandler.java"
   ],
   "remaining_pending": 225,
-  "done": 540
+  "done": 555
 }
