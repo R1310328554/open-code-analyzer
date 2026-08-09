@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**
+ * 快捷键映射命令：读取 inputrc 配置，以表格形式展示当前 TTY 连接可用的键位与说明。
+ * <p>
  * A command to display all the keymap for the specified connection.
  *
  * @author ralf0131 2016-12-15 17:27.
@@ -71,6 +73,7 @@ public class KeymapCommand extends AnnotatedCommand {
         }
     }
 
+    /** 将 readline 转义序列转为可读快捷键描述（如 Ctrl、方向键） */
     private String translate(String key) {
         if (key.length() == 6 && key.startsWith("\"\\C-") && key.endsWith("\"")) {
             char ch = key.charAt(4);

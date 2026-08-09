@@ -28,6 +28,9 @@ import io.netty.handler.codec.base64.Base64;
 import io.netty.util.CharsetUtil;
 
 /**
+ * Base64 编解码命令：读取本地文件，编码或解码后输出到终端或指定文件。
+ * <p>
+ * 非 TTY 会话下对可读文件大小有额外限制，防止 HTTP API 传输过大数据。
  * 
  * @author hengyunabc 2021-01-05
  *
@@ -41,10 +44,14 @@ import io.netty.util.CharsetUtil;
         + Constants.WIKI + Constants.WIKI_HOME + "base64")
 public class Base64Command extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(Base64Command.class);
+    /** 位置参数指定的源文件路径 */
     private String file;
+    /** 单次处理文件大小上限（字节），默认 128KB */
     private int sizeLimit = 128 * 1024;
+    /** 允许配置的最大 sizeLimit 上限（8MB） */
     private static final int MAX_SIZE_LIMIT = 8 * 1024 * 1024;
 
+    /** true 表示解码，false 表示编码 */
     private boolean decode;
 
     private String input;
@@ -147,6 +154,7 @@ public class Base64Command extends AnnotatedCommand {
         process.end();
     }
 
+    /** 校验必填参数与 sizeLimit 是否在允许范围内 */
     private boolean verifyOptions(CommandProcess process) {
         if(this.file == null && this.input == null) {
             process.end(-1);

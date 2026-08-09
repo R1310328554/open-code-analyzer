@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 帮助命令：列出全部可用命令摘要，或展示指定命令的用法、选项与参数说明。
+ *
  * @author vlinux on 14/10/26.
  */
 @Name("help")
@@ -30,6 +32,7 @@ import java.util.List;
 @Description("Examples:\n" + " help\n" + " help sc\n" + " help sm\n" + " help watch")
 public class HelpCommand extends AnnotatedCommand {
 
+    /** 可选：要查看详情的命令名，为空则列出全部 */
     private String cmd;
 
     @Argument(index = 0, argName = "cmd", required = false)
@@ -50,10 +53,12 @@ public class HelpCommand extends AnnotatedCommand {
         process.end();
     }
 
+    /** 构建单命令详细帮助模型（含 usage、description、options、arguments） */
     public HelpModel createHelpDetailModel(Command targetCmd) {
         return new HelpModel(createCommandVO(targetCmd, true));
     }
 
+    /** 构建命令列表摘要帮助模型，跳过隐藏命令 */
     private HelpModel createHelpModel(List<Command> commands) {
         HelpModel helpModel = new HelpModel();
         for (Command command : commands) {
@@ -65,6 +70,7 @@ public class HelpCommand extends AnnotatedCommand {
         return helpModel;
     }
 
+    /** 将 Command 转为 HelpModel 使用的 VO；withDetail 为 true 时填充完整 CLI 元数据 */
     private CommandVO createCommandVO(Command command, boolean withDetail) {
         CLI cli = command.cli();
         CommandVO commandVO = new CommandVO();
@@ -142,6 +148,7 @@ public class HelpCommand extends AnnotatedCommand {
         CompletionUtils.complete(completion, names);
     }
 
+    /** 聚合当前 Session 下所有 CommandResolver 注册的命令 */
     private List<Command> allCommands(Session session) {
         List<CommandResolver> commandResolvers = session.getCommandResolvers();
         List<Command> commands = new ArrayList<Command>();
@@ -151,6 +158,7 @@ public class HelpCommand extends AnnotatedCommand {
         return commands;
     }
 
+    /** 按名称查找命令，未找到返回 null */
     private Command findCommand(List<Command> commands) {
         for (Command command : commands) {
             if (command.name().equals(cmd)) {

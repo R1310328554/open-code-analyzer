@@ -11,6 +11,8 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
+ * 管道 grep 命令的参数载体：单独执行时提示仅用于管道；实际过滤逻辑在 {@link com.taobao.arthas.core.shell.command.internal.GrepHandler}。
+ *
  * @see com.taobao.arthas.core.shell.command.internal.GrepHandler
  */
 @Name("grep")
@@ -25,43 +27,36 @@ import com.taobao.middleware.cli.annotations.Summary;
         " thread | grep -m 10 -e  \"TIMED_WAITING|WAITING\"\n"
         + Constants.WIKI + Constants.WIKI_HOME + "grep")
 public class GrepCommand extends AnnotatedCommand {
+    /** 匹配模式（字面量或正则，取决于 -e 选项） */
     private String pattern;
+    /** 是否忽略大小写（-i） */
     private boolean ignoreCase;
 
-    /**
-     * select non-matching lines
-     */
+    /** 反向匹配：输出不匹配的行（-v） */
     private boolean invertMatch;
 
+    /** 是否将 pattern 视为正则表达式（-e） */
     private boolean isRegEx = false;
 
-    /**
-     * print line number with output lines
-     */
+    /** 输出时附带行号（-n） */
     private boolean showLineNumber = false;
 
+    /** 仅统计匹配行数（-c） */
     private boolean count = false;
 
+    /** 是否去除行尾空白，默认 true */
     private boolean trimEnd;
 
-    /**
-     * print NUM lines of leading context
-     */
+    /** 匹配行前显示的上下文行数（-B） */
     private int beforeLines;
 
-    /**
-     * print NUM lines of trailing context
-     */
+    /** 匹配行后显示的上下文行数（-A） */
     private int afterLines;
 
-    /**
-     * print NUM lines of output context
-     */
+    /** 匹配行前后各显示的上下文行数（-C） */
     private int context;
 
-    /**
-     * stop after NUM selected lines
-     */
+    /** 最多输出多少条匹配行（-m） */
     private int maxCount;
 
     @Argument(index = 0, argName = "pattern", required = true)

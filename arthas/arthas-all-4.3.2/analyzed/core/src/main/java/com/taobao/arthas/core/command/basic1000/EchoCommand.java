@@ -10,6 +10,7 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
+ * 回显命令：将参数原样输出到标准输出，常用于管道调试或脚本占位。
  * 
  * @author hengyunabc
  *
@@ -20,6 +21,7 @@ import com.taobao.middleware.cli.annotations.Summary;
         "  echo 'abc'\n" +
         Constants.WIKI + Constants.WIKI_HOME + "echo")
 public class EchoCommand extends AnnotatedCommand {
+    /** 待输出的文本内容 */
     private String message;
 
     @Argument(argName = "message", index = 0, required = false)

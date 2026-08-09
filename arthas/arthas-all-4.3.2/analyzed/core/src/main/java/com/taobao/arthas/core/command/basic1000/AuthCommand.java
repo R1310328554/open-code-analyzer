@@ -23,6 +23,8 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
+ * 会话鉴权命令：校验用户名/密码，成功后将 {@link Subject} 写入 Session，供后续受保护命令使用。
+ * <p>
  * TODO 支持更多的鉴权方式。目前只支持 username/password的方式
  * 
  * @author hengyunabc 2021-03-03
@@ -40,8 +42,11 @@ import com.taobao.middleware.cli.annotations.Summary;
 public class AuthCommand extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(AuthCommand.class);
 
+    /** 待验证的用户名 */
     private String username;
+    /** 待验证的密码 */
     private String password;
+    /** 全局安全认证器，由 Bootstrap 初始化 */
     private SecurityAuthenticator authenticator = ArthasBootstrap.getInstance().getSecurityAuthenticator();
 
     @Argument(argName = "password", index = 0, required = false)

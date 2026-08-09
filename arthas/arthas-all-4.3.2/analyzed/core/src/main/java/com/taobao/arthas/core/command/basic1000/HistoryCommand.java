@@ -21,6 +21,9 @@ import io.termd.core.readline.Readline;
 import io.termd.core.util.Helper;
 
 /**
+ * 命令历史命令：TTY 下读取 readline 历史；HTTP API 下使用 {@link HistoryManager}。
+ * <p>
+ * 支持 -c 清空历史，或指定最近 n 条记录。
  *
  * @author hengyunabc 2018-11-18
  *
@@ -29,7 +32,9 @@ import io.termd.core.util.Helper;
 @Summary("Display command history")
 @Description(Constants.EXAMPLE + "  history\n" + "  history -c\n" + "  history 5\n")
 public class HistoryCommand extends AnnotatedCommand {
+    /** 是否清空历史（-c） */
     boolean clear = false;
+    /** 显示最近 n 条，-1 表示全部 */
     int n = -1;
 
     @Option(shortName = "c", longName = "clear", flag = true , acceptValue = false)

@@ -19,13 +19,20 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
+/**
+ * 文件内容查看命令：类似 Unix cat，按指定编码读取一个或多个本地文件并输出。
+ */
 @Name("cat")
 @Summary("Concatenate and print files")
 public class CatCommand extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(CatCommand.class);
+    /** 待读取的文件路径列表 */
     private List<String> files;
+    /** 文件字符编码，null 时使用 JVM 默认编码 */
     private String encoding;
+    /** 单文件读取大小上限（字节），默认 128KB */
     private Integer sizeLimit = 128 * 1024;
+    /** sizeLimit 可配置的最大值（8MB） */
     private int maxSizeLimit = 8 * 1024 * 1024;
 
     @Argument(argName = "files", index = 0)
@@ -52,6 +59,7 @@ public class CatCommand extends AnnotatedCommand {
             return;
         }
 
+        // 先校验所有路径是否存在且为普通文件
         for (String file : files) {
             File f = new File(file);
             if (!f.exists()) {
@@ -84,6 +92,7 @@ public class CatCommand extends AnnotatedCommand {
         process.end();
     }
 
+    /** 校验 sizeLimit 是否在允许范围内（非 TTY 会话有更严格上限） */
     private boolean verifyOptions(CommandProcess process) {
         if (sizeLimit > maxSizeLimit) {
             process.end(-1, "sizeLimit cannot be large than: " + maxSizeLimit);

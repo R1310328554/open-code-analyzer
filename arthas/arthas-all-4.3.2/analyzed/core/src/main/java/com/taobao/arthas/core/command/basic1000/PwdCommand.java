@@ -8,6 +8,9 @@ import com.taobao.arthas.core.shell.command.CommandProcess;
 import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Summary;
 
+/**
+ * 工作目录命令：返回 Agent 所在 JVM 进程的当前工作目录绝对路径。
+ */
 @Name("pwd")
 @Summary("Return working directory name")
 public class PwdCommand extends AnnotatedCommand {

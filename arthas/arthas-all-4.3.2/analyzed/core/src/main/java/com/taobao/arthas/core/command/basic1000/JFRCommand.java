@@ -30,6 +30,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Java Flight Recorder 命令：在目标 JVM 内启动、查询、转储或停止 JFR 录制。
+ * <p>
+ * 子命令 start / status / dump / stop，录制实例缓存在进程内 {@link #recordings} 映射中。
+ */
 @Name("jfr")
 @Summary("Java Flight Recorder Command")
 @Description(Constants.EXAMPLE +
@@ -45,6 +50,7 @@ import java.util.concurrent.TimeUnit;
         Constants.WIKI + Constants.WIKI_HOME + "jfr")
 public class JFRCommand extends AnnotatedCommand {
 
+    /** 子命令：start、status、dump、stop */
     private String cmd;
     private String name;
     private String settings;
@@ -56,7 +62,9 @@ public class JFRCommand extends AnnotatedCommand {
     private String maxSize;
     private Long recording;
     private String state;
+    /** 命令执行结果，汇总输出文本 */
     private JFRModel result = new JFRModel();
+    /** 本进程内已创建的 JFR Recording，按 id 索引 */
     private static Map<Long, Recording> recordings = new ConcurrentHashMap<Long, Recording>();
 
     @Argument(index = 0, argName = "cmd", required = true)
@@ -251,7 +259,7 @@ public class JFRCommand extends AnnotatedCommand {
                 result.setJfrOutput(" The result will be written to:\n" + filename);
             }
         } else if ("status".equals(cmd)) {
-            // list recording id = recording
+            // 按 recording id 查询单条，或列出全部/按 state 过滤
             if (getRecording() != null) {
                 Recording r = recordings.get(getRecording());
                 if (r == null) {
@@ -339,6 +347,7 @@ public class JFRCommand extends AnnotatedCommand {
         process.end();
     }
 
+    /** 解析带 k/M/G 后缀的磁盘大小字符串为字节数 */
     public long parseSize(String s) throws Exception {
         s = s.toLowerCase();
         if (s.endsWith("b")) {
@@ -358,6 +367,7 @@ public class JFRCommand extends AnnotatedCommand {
         }
     }
 
+    /** 解析 s/m/h/d 后缀的时间跨度为纳秒 */
     public long parseTimespan(String s) throws Exception {
         s = s.toLowerCase();
         if (s.endsWith("s")) {
@@ -377,6 +387,7 @@ public class JFRCommand extends AnnotatedCommand {
         }
     }
 
+    /** 按状态字符串（不区分大小写）筛选录制列表 */
     private List<Recording> findRecordingByState(String state) {
         List<Recording> resultRecordingList = new ArrayList<Recording>();
         Collection<Recording> recordingList = recordings.values();
@@ -388,6 +399,7 @@ public class JFRCommand extends AnnotatedCommand {
         return resultRecordingList;
     }
 
+    /** 将单条 Recording 的 id、名称、时长与状态追加到 result */
     private void printRecording(Recording recording) {
         String format = "Recording: recording=" + recording.getId() + " name=" + recording.getName() + "";
         result.setJfrOutput(format);
@@ -398,6 +410,7 @@ public class JFRCommand extends AnnotatedCommand {
         result.setJfrOutput(" (" + recording.getState().toString().toLowerCase() + ")\n");
     }
 
+    /** 未指定 -f 时，在 Arthas 输出目录或临时目录生成默认 .jfr 路径 */
     private String outputFile() throws IOException {
         if (this.filename == null) {
             File outputPath = ArthasBootstrap.getInstance().getOutputPath();

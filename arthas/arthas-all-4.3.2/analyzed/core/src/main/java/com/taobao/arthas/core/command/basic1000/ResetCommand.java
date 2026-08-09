@@ -18,6 +18,8 @@ import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 
 /**
+ * 重置增强命令：撤销 watch/trace/monitor 等字节码增强，恢复类到原始定义。
+ * <p>
  * 恢复所有增强类<br/>
  *
  * @author vlinux on 15/5/29.
@@ -29,7 +31,9 @@ import java.lang.instrument.UnmodifiableClassException;
         "  reset *List\n" +
         "  reset -E .*List\n")
 public class ResetCommand extends AnnotatedCommand {
+    /** 类名匹配模式，空表示全部增强类 */
     private String classPattern;
+    /** 是否使用正则匹配类名（-E），默认通配符 */
     private boolean isRegEx = false;
 
     @Argument(index = 0, argName = "class-pattern", required = false)

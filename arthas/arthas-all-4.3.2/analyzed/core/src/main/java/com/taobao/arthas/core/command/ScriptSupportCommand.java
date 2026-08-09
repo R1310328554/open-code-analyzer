@@ -3,13 +3,15 @@ package com.taobao.arthas.core.command;
 import com.taobao.arthas.core.advisor.Advice;
 
 /**
+ * 脚本增强命令的公共契约：定义脚本生命周期回调与输出接口，供 watch/trace 等命令的 Groovy 脚本使用。
+ * <p>
  * 脚本支持命令
  * Created by vlinux on 15/6/1.
  */
 public interface ScriptSupportCommand {
 
     /**
-     * 增强脚本监听器
+     * 增强脚本监听器：在方法进入、正常返回、异常抛出等切点触发用户脚本。
      */
     interface ScriptListener {
 
@@ -54,7 +56,7 @@ public interface ScriptSupportCommand {
     }
 
     /**
-     * 脚本监听器适配器
+     * 脚本监听器适配器：空实现，子类按需覆盖感兴趣的生命周期方法。
      */
     class ScriptListenerAdapter implements ScriptListener {
 
@@ -86,7 +88,7 @@ public interface ScriptSupportCommand {
 
 
     /**
-     * 输出器
+     * 脚本输出器：向终端或结果流写入文本，并支持提前结束脚本执行。
      */
     interface Output {
 
