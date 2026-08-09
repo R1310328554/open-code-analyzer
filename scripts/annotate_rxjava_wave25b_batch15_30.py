@@ -890,6 +890,7 @@ def isolated_index_commit(
         ["git", "-C", str(ROOT), "update-ref", "refs/heads/main", commit], check=True
     )
     index_file.unlink(missing_ok=True)
+    subprocess.run(["git", "-C", str(ROOT), "reset", "--hard", "HEAD"], check=True)
     return commit, tree_count
 
 
@@ -904,9 +905,13 @@ def push_main(retries: int = 4) -> None:
             ["git", "-C", str(ROOT), "rev-parse", "origin/main"], text=True
         ).strip()
         if local != remote:
-            subprocess.run(
-                ["git", "-C", str(ROOT), "pull", "--rebase", "origin", "main"], check=True
-            )
+            merge_base = subprocess.check_output(
+                ["git", "-C", str(ROOT), "merge-base", local, remote], text=True
+            ).strip()
+            if merge_base != remote:
+                raise RuntimeError(
+                    f"main diverged from origin/main (local={local[:8]} remote={remote[:8]})"
+                )
         r = subprocess.run(
             ["git", "-C", str(ROOT), "push", "-u", "origin", "main"],
             capture_output=True,
