@@ -16,17 +16,19 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Range-based vector similarity configuration step.
+ * 基于距离范围的向量相似度配置步骤。
+ * <p>
+ * 通过 epsilon 参数控制范围检索的精度。
  *
  * @author Nikita Koksharov
  */
 public interface VectorSimilarityRange extends VectorSimilarity {
 
     /**
-     * Sets the epsilon parameter for range search precision control.
+     * 设置范围搜索的 epsilon 精度控制参数。
      *
-     * @param epsilon precision control parameter
-     * @return vector similarity for further configuration
+     * @param epsilon 精度控制参数
+     * @return 向量相似度配置，可继续链式配置
      */
     VectorSimilarity epsilon(double epsilon);
 

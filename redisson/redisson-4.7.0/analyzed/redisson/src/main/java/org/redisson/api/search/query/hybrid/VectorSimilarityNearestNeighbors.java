@@ -16,35 +16,37 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * K-nearest neighbors vector similarity configuration step.
+ * K 近邻（KNN）向量相似度配置步骤。
+ * <p>
+ * 用于调优 HNSW 索引搜索参数及分布式 KNN 的分片候选比例。
  *
  * @author Nikita Koksharov
  */
 public interface VectorSimilarityNearestNeighbors extends VectorSimilarity {
 
     /**
-     * Sets the EF_RUNTIME parameter for HNSW index search.
-     * Controls the trade-off between search accuracy and speed.
+     * 设置 HNSW 索引搜索的 EF_RUNTIME 参数。
+     * 用于在搜索精度与速度之间权衡。
      *
-     * @param efRuntime EF_RUNTIME value
-     * @return vector similarity for further configuration
+     * @param efRuntime EF_RUNTIME 取值
+     * @return 向量相似度配置，可继续链式配置
      */
     VectorSimilarity efRuntime(int efRuntime);
 
     /**
-     * Sets the alias for the distance field returned in the result set.
+     * 设置结果集中距离字段的别名。
      *
-     * @param field distance field alias
-     * @return vector similarity for further configuration
+     * @param field 距离字段别名
+     * @return 向量相似度配置，可继续链式配置
      */
     VectorSimilarity yieldDistanceAs(String field);
 
     /**
-     * Sets the ratio of the shard K parameter for distributed KNN search.
-     * Determines how many extra candidates to fetch per shard.
+     * 设置分布式 KNN 搜索的分片 K 比例参数。
+     * 决定每个分片额外获取的候选数量。
      *
-     * @param ratio shard K ratio value
-     * @return vector similarity for further configuration
+     * @param ratio 分片 K 比例值
+     * @return 向量相似度配置，可继续链式配置
      */
     VectorSimilarity shardKRatio(double ratio);
 

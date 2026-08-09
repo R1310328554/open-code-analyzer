@@ -19,16 +19,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Search result object returned by
- * {@link org.redisson.api.RSearch#hybridSearch(String, HybridQueryArgs)} method
+ * {@link org.redisson.api.RSearch#hybridSearch(String, HybridQueryArgs)} 方法返回的混合搜索结果对象。
+ * <p>
+ * 包含匹配总数与每条结果的字段映射列表。
  *
  * @author Nikita Koksharov
  *
  */
 public final class HybridSearchResult {
 
+    /** 匹配结果总数。 */
     private final long total;
 
+    /** 结果列表，每项为字段名到值的映射。 */
     private final List<Map<String, String>> results;
 
     public HybridSearchResult(long total, List<Map<String, String>> scores) {
@@ -37,18 +40,18 @@ public final class HybridSearchResult {
     }
 
     /**
-     * Returns total number of results.
+     * 返回匹配结果的总数。
      *
-     * @return total number of results
+     * @return 结果总数
      */
     public long getTotal() {
         return total;
     }
 
     /**
-     * Returns result data
+     * 返回结果数据列表。
      *
-     * @return scores
+     * @return 字段映射列表
      */
     public List<Map<String, String>> getResults() {
         return results;

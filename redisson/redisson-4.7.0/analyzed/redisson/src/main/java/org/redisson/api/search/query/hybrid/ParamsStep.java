@@ -18,18 +18,20 @@ package org.redisson.api.search.query.hybrid;
 import java.util.Map;
 
 /**
- * Parameters step for defining query parameter substitution.
+ * 混合查询构建流程中的参数替换步骤。
+ * <p>
+ * 用于定义查询表达式中 $parameter_name 形式占位符的实际取值。
  *
  * @author Nikita Koksharov
  */
 public interface ParamsStep {
 
     /**
-     * Defines parameter substitution for the query.
-     * Parameters can be referenced in search expressions using $parameter_name.
+     * 定义查询参数替换映射。
+     * 参数可在搜索表达式中通过 $parameter_name 引用。
      *
-     * @param params map of parameter names to values
-     * @return sort step for further configuration
+     * @param params 参数名到值的映射
+     * @return 排序配置步骤
      */
     SortStep params(Map<String, Object> params);
 

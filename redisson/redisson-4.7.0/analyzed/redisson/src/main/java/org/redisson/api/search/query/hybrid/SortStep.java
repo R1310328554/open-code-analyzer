@@ -18,25 +18,27 @@ package org.redisson.api.search.query.hybrid;
 import org.redisson.api.SortOrder;
 
 /**
- * Sort step for configuring result ordering.
+ * 混合查询构建流程中的结果排序配置步骤。
+ * <p>
+ * 继承 {@link HybridQueryArgs}，完成排序后可继续配置分页、分组等参数。
  *
  * @author Nikita Koksharov
  */
 public interface SortStep extends HybridQueryArgs {
 
     /**
-     * Sorts the final results by specified fields.
+     * 按指定字段对最终结果排序。
      *
-     * @param fieldName field name
-     * @param order sorting order
-     * @return hybrid query args for further configuration
+     * @param fieldName 排序字段名
+     * @param order 排序方向
+     * @return 混合查询参数，可继续配置
      */
     HybridQueryArgs sortBy(String fieldName, SortOrder order);
 
     /**
-     * Disables sorting of results.
+     * 禁用结果排序。
      *
-     * @return hybrid query args for further configuration
+     * @return 混合查询参数，可继续配置
      */
     HybridQueryArgs noSort();
 

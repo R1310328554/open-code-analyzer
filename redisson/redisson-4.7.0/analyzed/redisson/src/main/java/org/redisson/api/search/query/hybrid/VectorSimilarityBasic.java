@@ -16,27 +16,27 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Vector similarity configuration for hybrid search.
+ * 混合搜索向量相似度的基础配置接口。
  * <p>
- * Supports range-based and K-nearest neighbors (KNN) vector search modes.
+ * 提供范围检索与 K 近邻（KNN）两种搜索模式的入口方法。
  *
  * @author Nikita Koksharov
  */
 public interface VectorSimilarityBasic extends VectorSimilarity {
 
     /**
-     * Creates a range-based vector similarity search configuration.
+     * 创建基于距离范围的向量相似度搜索配置。
      *
-     * @param radius maximum distance for vector matches
-     * @return range configuration step
+     * @param radius 向量匹配的最大距离
+     * @return 范围检索配置步骤
      */
     VectorSimilarityRange range(double radius);
 
     /**
-     * Creates a K-nearest neighbors vector similarity search configuration.
+     * 创建 K 近邻向量相似度搜索配置。
      *
-     * @param k number of nearest neighbors to find
-     * @return KNN configuration step
+     * @param k 要查找的最近邻数量
+     * @return KNN 配置步骤
      */
     VectorSimilarityNearestNeighbors nearestNeighbors(int k);
 

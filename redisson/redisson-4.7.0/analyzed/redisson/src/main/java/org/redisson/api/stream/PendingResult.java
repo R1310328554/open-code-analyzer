@@ -19,7 +19,9 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Result object for pending messages request.
+ * 消费者组待处理（pending）消息查询的汇总结果。
+ * <p>
+ * 包含待处理消息总数、ID 范围及各消费者的待处理计数。
  * 
  * @author Nikita Koksharov
  *
@@ -28,9 +30,13 @@ public class PendingResult implements Serializable {
 
     private static final long serialVersionUID = -5525031552305408248L;
     
+    /** 待处理消息总数。 */
     private long total;
+    /** 最小待处理消息 ID。 */
     private StreamMessageId lowestId;
+    /** 最大待处理消息 ID。 */
     private StreamMessageId highestId;
+    /** 各消费者名称对应的待处理消息数量。 */
     private Map<String, Long> consumerNames;
     
     public PendingResult() {
@@ -45,36 +51,36 @@ public class PendingResult implements Serializable {
     }
 
     /**
-     * Total amount of pending messages
+     * 返回待处理消息的总数。
      * 
-     * @return number
+     * @return 消息总数
      */
     public long getTotal() {
         return total;
     }
 
     /**
-     * Lowest stream id of pending messages
+     * 返回待处理消息中的最小 ID。
      * 
-     * @return number
+     * @return 最小消息 ID
      */
     public StreamMessageId getLowestId() {
         return lowestId;
     }
 
     /**
-     * Highest stream id of pending messages
+     * 返回待处理消息中的最大 ID。
      * 
-     * @return number
+     * @return 最大消息 ID
      */
     public StreamMessageId getHighestId() {
         return highestId;
     }
 
     /**
-     * Pending messages amount mapped by consumer name
+     * 返回按消费者名称分组的待处理消息数量映射。
      * 
-     * @return map
+     * @return 消费者名称到数量的映射
      */
     public Map<String, Long> getConsumerNames() {
         return consumerNames;

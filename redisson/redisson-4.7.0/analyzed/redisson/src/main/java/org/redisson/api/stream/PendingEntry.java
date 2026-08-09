@@ -16,16 +16,22 @@
 package org.redisson.api.stream;
 
 /**
- * Entry object for pending messages request.
+ * 待处理（pending）消息列表中的单条记录。
+ * <p>
+ * 描述消息 ID、所属消费者、空闲时长及投递次数等元数据。
  * 
  * @author Nikita Koksharov
  *
  */
 public class PendingEntry {
     
+    /** 消息 ID。 */
     private StreamMessageId id;
+    /** 当前持有该消息的消费者名称。 */
     private String consumerName;
+    /** 自上次投递以来经过的毫秒数。 */
     private long idleTime;
+    /** 消息被投递的总次数。 */
     private long deliveryCount;
     
     public PendingEntry(StreamMessageId id, String consumerName, long idleTime, long lastTimeDelivered) {
@@ -37,37 +43,36 @@ public class PendingEntry {
     }
     
     /**
-     * Returns stream id of message
+     * 返回消息在流中的 ID。
      * 
-     * @return id
+     * @return 消息 ID
      */
     public StreamMessageId getId() {
         return id;
     }
 
     /**
-     * Returns name of consumer
+     * 返回当前持有该消息的消费者名称。
      * 
-     * @return id
+     * @return 消费者名称
      */
     public String getConsumerName() {
         return consumerName;
     }
 
     /**
-     * Returns milliseconds amount have passed since the last time 
-     * the message was delivered to some consumer
+     * 返回自上次投递给消费者以来经过的毫秒数。
      * 
-     * @return number
+     * @return 空闲时长（毫秒）
      */
     public long getIdleTime() {
         return idleTime;
     }
 
     /**
-     * Returns number of times that a given message was delivered
+     * 返回该消息被投递的总次数。
      * 
-     * @return number
+     * @return 投递次数
      */
     public long getDeliveryCount() {
         return deliveryCount;

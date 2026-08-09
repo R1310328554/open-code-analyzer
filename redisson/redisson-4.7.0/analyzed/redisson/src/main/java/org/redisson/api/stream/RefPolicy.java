@@ -16,15 +16,21 @@
 package org.redisson.api.stream;
 
 /**
+ * 流消息引用处理策略枚举。
+ * <p>
+ * 控制在删除或转移消息时是否保留对其他流条目的引用。
  *
  * @author seakider
  *
  */
 public enum RefPolicy {
 
+    /** 保留所有引用。 */
     KEEPREF,
 
+    /** 删除所有引用。 */
     DELREF,
 
+    /** 仅删除已确认消息的引用。 */
     ACKED
 }

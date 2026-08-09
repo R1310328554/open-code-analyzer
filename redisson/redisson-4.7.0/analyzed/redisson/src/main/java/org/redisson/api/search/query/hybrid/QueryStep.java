@@ -16,33 +16,35 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Query step for configuring the text search component of hybrid search.
+ * 混合查询构建流程中的文本检索配置步骤。
+ * <p>
+ * 用于设置全文检索组件的打分算法、分数别名及向量相似度子查询。
  *
  * @author Nikita Koksharov
  */
 public interface QueryStep {
 
     /**
-     * Specifies the scoring algorithm for the text search component.
+     * 指定文本检索组件的打分算法。
      *
-     * @param scorer scoring algorithm name (e.g., "BM25")
-     * @return this step for further configuration
+     * @param scorer 打分算法名称（例如 "BM25"）
+     * @return 当前步骤，可继续链式配置
      */
     QueryStep scorer(String scorer);
 
     /**
-     * Assigns an alias to the search score for use in post-processing.
+     * 为检索分数指定别名，供后续融合或排序引用。
      *
-     * @param alias score alias name
-     * @return this step for further configuration
+     * @param alias 分数别名
+     * @return 当前步骤，可继续链式配置
      */
     QueryStep scoreAlias(String alias);
 
     /**
-     * Defines the vector similarity component of the hybrid query.
+     * 定义混合查询中的向量相似度组件。
      *
-     * @param value vector similarity configuration
-     * @return params step for further configuration
+     * @param value 向量相似度配置
+     * @return 参数配置步骤
      */
     ParamsStep vectorSimilarity(VectorSimilarity value);
 

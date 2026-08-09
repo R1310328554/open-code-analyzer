@@ -16,9 +16,9 @@
 package org.redisson.api.search.query.hybrid;
 
 /**
- * Vector similarity configuration for hybrid search.
+ * 混合搜索中的向量相似度配置。
  * <p>
- * Supports range-based and K-nearest neighbors (KNN) vector search modes.
+ * 支持基于距离范围的检索与 K 近邻（KNN）两种向量搜索模式。
  *
  * @author Nikita Koksharov
  */
@@ -29,18 +29,18 @@ public interface VectorSimilarity {
     }
 
     /**
-     * Assigns an alias to the vector similarity score.
+     * 为向量相似度分数指定别名。
      *
-     * @param value score alias name
-     * @return this instance for further configuration
+     * @param value 分数别名
+     * @return 当前实例，可继续链式配置
      */
     VectorSimilarity scoreAlias(String value);
 
     /**
-     * Applies pre-filtering to vector search results.
+     * 对向量搜索结果应用预过滤表达式。
      *
-     * @param value filter expression
-     * @return this instance for further configuration
+     * @param value 过滤表达式
+     * @return 当前实例，可继续链式配置
      */
     VectorSimilarity filter(String value);
 

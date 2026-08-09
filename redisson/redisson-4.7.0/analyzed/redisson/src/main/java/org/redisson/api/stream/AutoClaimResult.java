@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Result object for autoClaim request.
+ * {@code XAUTOCLAIM} 命令的完整返回结果对象。
+ * <p>
+ * 包含下次扫描起始 ID、已认领消息及其内容，以及因引用策略被删除的消息 ID 列表。
  *
  * @see RStream#autoClaim(String, String, long, TimeUnit, StreamMessageId, int)
  * @see RStreamAsync#autoClaimAsync(String, String, long, TimeUnit, StreamMessageId, int)
@@ -36,8 +38,11 @@ public final class AutoClaimResult<K, V> implements Serializable {
 
     private static final long serialVersionUID = -5525031552305408248L;
 
+    /** 下次 autoClaim 扫描的起始消息 ID。 */
     private StreamMessageId nextId;
+    /** 已认领的消息，键为消息 ID，值为字段映射。 */
     private Map<StreamMessageId, Map<K, V>> messages;
+    /** 因引用策略被删除的消息 ID 列表。 */
     private List<StreamMessageId> deletedIds;
 
     public AutoClaimResult() {
@@ -50,14 +55,29 @@ public final class AutoClaimResult<K, V> implements Serializable {
         this.deletedIds = deletedIds;
     }
 
+    /**
+     * 返回下次扫描的起始消息 ID。
+     *
+     * @return 起始 ID
+     */
     public StreamMessageId getNextId() {
         return nextId;
     }
 
+    /**
+     * 返回已认领的消息及其字段内容。
+     *
+     * @return 消息 ID 到字段映射的映射
+     */
     public Map<StreamMessageId, Map<K, V>> getMessages() {
         return messages;
     }
 
+    /**
+     * 返回被删除的消息 ID 列表。
+     *
+     * @return 已删除消息 ID 列表
+     */
     public List<StreamMessageId> getDeletedIds() {
         return deletedIds;
     }

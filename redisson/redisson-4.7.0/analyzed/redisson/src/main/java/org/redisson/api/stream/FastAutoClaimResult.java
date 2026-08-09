@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Result object for autoClaim request.
+ * {@code XAUTOCLAIM} 快速模式的返回结果对象。
+ * <p>
+ * 仅返回消息 ID 列表，不携带消息体，适用于只需转移所有权而不读取内容的场景。
  *
  * @see RStream#fastAutoClaim(String, String, long, TimeUnit, StreamMessageId, int)
  * @see RStreamAsync#fastAutoClaimAsync(String, String, long, TimeUnit, StreamMessageId, int)
@@ -35,7 +37,9 @@ public class FastAutoClaimResult implements Serializable {
 
     private static final long serialVersionUID = -5525031552305408248L;
 
+    /** 下次 autoClaim 扫描的起始消息 ID。 */
     private StreamMessageId nextId;
+    /** 已认领的消息 ID 列表。 */
     private List<StreamMessageId> ids;
 
     public FastAutoClaimResult() {
@@ -47,10 +51,20 @@ public class FastAutoClaimResult implements Serializable {
         this.ids = ids;
     }
 
+    /**
+     * 返回下次扫描的起始消息 ID。
+     *
+     * @return 起始 ID
+     */
     public StreamMessageId getNextId() {
         return nextId;
     }
 
+    /**
+     * 返回已认领的消息 ID 列表。
+     *
+     * @return 消息 ID 列表
+     */
     public List<StreamMessageId> getIds() {
         return ids;
     }
