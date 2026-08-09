@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.node;
 import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 
 /**
- * Builds new {@link DefaultNode} and {@link ClusterNode}.
+ * 构建新的 {@link DefaultNode} 与 {@link ClusterNode}。
  *
  * @author qinan.qn
  */
@@ -26,18 +26,18 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 public interface NodeBuilder {
 
     /**
-     * Create a new {@link DefaultNode} as tree node.
+     * 创建新的 {@link DefaultNode} 作为调用树节点。
      *
-     * @param id resource
-     * @param clusterNode the cluster node of the provided resource
-     * @return new created tree node
+     * @param id 资源
+     * @param clusterNode 该资源对应的集群节点
+     * @return 新创建的树节点
      */
     DefaultNode buildTreeNode(ResourceWrapper id, ClusterNode clusterNode);
 
     /**
-     * Create a new {@link ClusterNode} as universal statistic node for a single resource.
+     * 为单个资源创建新的 {@link ClusterNode} 作为全局统计节点。
      *
-     * @return new created cluster node
+     * @return 新创建的集群节点
      */
     ClusterNode buildClusterNode();
 }

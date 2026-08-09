@@ -15,6 +15,12 @@
  */
 package com.alibaba.csp.sentinel.property;
 
+/**
+ * {@link PropertyListener} 的简化抽象实现。
+ * <p>configLoad 默认委托给 configUpdate，便于只关心更新逻辑。</p>
+ *
+ * @param <T> 配置值类型
+ */
 public abstract class SimplePropertyListener<T> implements PropertyListener<T> {
 
     @Override

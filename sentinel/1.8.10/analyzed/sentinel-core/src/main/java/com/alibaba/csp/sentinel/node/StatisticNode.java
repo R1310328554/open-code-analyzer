@@ -27,58 +27,57 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
 import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
- * <p>The statistic node keep three kinds of real-time statistics metrics:</p>
+ * <p>统计节点维护三类实时统计指标：</p>
  * <ol>
- * <li>metrics in second level ({@code rollingCounterInSecond})</li>
- * <li>metrics in minute level ({@code rollingCounterInMinute})</li>
- * <li>thread count</li>
+ * <li>秒级指标（{@code rollingCounterInSecond}）</li>
+ * <li>分钟级指标（{@code rollingCounterInMinute}）</li>
+ * <li>线程数</li>
  * </ol>
  *
  * <p>
- * Sentinel use sliding window to record and count the resource statistics in real-time.
- * The sliding window infrastructure behind the {@link ArrayMetric} is {@code LeapArray}.
+ * Sentinel 使用滑动窗口实时记录并统计资源指标。
+ * {@link ArrayMetric} 背后的滑动窗口基础设施为 {@code LeapArray}。
  * </p>
  *
  * <p>
- * case 1: When the first request comes in, Sentinel will create a new window bucket of
- * a specified time-span to store running statics, such as total response time(rt),
- * incoming request(QPS), block request(bq), etc. And the time-span is defined by sample count.
+ * 场景 1：首个请求到达时，Sentinel 会创建新的时间窗口桶，
+ * 用于存储运行中的统计量（如总 RT、入站 QPS、阻断 QPS 等），
+ * 窗口跨度由采样数决定。
  * </p>
  * <pre>
  * 	0      100ms
- *  +-------+--→ Sliding Windows
+ *  +-------+--→ 滑动窗口
  * 	    ^
  * 	    |
  * 	  request
  * </pre>
  * <p>
- * Sentinel use the statics of the valid buckets to decide whether this request can be passed.
- * For example, if a rule defines that only 100 requests can be passed,
- * it will sum all qps in valid buckets, and compare it to the threshold defined in rule.
+ * Sentinel 汇总有效桶的统计量来判断请求是否可通过。
+ * 例如规则限定最多 100 次通过，则累加有效桶中的 QPS 并与阈值比较。
  * </p>
  *
- * <p>case 2: continuous requests</p>
+ * <p>场景 2：连续请求</p>
  * <pre>
  *  0    100ms    200ms    300ms
- *  +-------+-------+-------+-----→ Sliding Windows
+ *  +-------+-------+-------+-----→ 滑动窗口
  *                      ^
  *                      |
  *                   request
  * </pre>
  *
- * <p>case 3: requests keeps coming, and previous buckets become invalid</p>
+ * <p>场景 3：请求持续到达，旧桶失效</p>
  * <pre>
  *  0    100ms    200ms	  800ms	   900ms  1000ms    1300ms
- *  +-------+-------+ ...... +-------+-------+ ...... +-------+-----→ Sliding Windows
+ *  +-------+-------+ ...... +-------+-------+ ...... +-------+-----→ 滑动窗口
  *                                                      ^
  *                                                      |
  *                                                    request
  * </pre>
  *
- * <p>The sliding window should become:</p>
+ * <p>滑动窗口应变为：</p>
  * <pre>
  * 300ms     800ms  900ms  1000ms  1300ms
- *  + ...... +-------+ ...... +-------+-----→ Sliding Windows
+ *  + ...... +-------+ ...... +-------+-----→ 滑动窗口
  *                                                      ^
  *                                                      |
  *                                                    request
@@ -90,37 +89,37 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 public class StatisticNode implements Node {
 
     /**
-     * Holds statistics of the recent {@code INTERVAL} milliseconds. The {@code INTERVAL} is divided into time spans
-     * by given {@code sampleCount}.
+     * 保存最近 {@code INTERVAL} 毫秒内的统计量。
+     * {@code INTERVAL} 按 {@code sampleCount} 划分为多个时间片。
      */
     private transient volatile Metric rollingCounterInSecond = new ArrayMetric(SampleCountProperty.SAMPLE_COUNT,
         IntervalProperty.INTERVAL);
 
     /**
-     * Holds statistics of the recent 60 seconds. The windowLengthInMs is deliberately set to 1000 milliseconds,
-     * meaning each bucket per second, in this way we can get accurate statistics of each second.
+     * 保存最近 60 秒的统计量。窗口长度刻意设为 1000 毫秒，
+     * 即每秒一个桶，以便精确统计每一秒的数据。
      */
     private transient Metric rollingCounterInMinute = new ArrayMetric(60, 60 * 1000, false);
 
     /**
-     * The counter for thread count.
+     * 线程数计数器。
      */
     private LongAdder curThreadNum = new LongAdder();
 
     /**
-     * The last timestamp when metrics were fetched.
+     * 上次拉取指标时的时间戳。
      */
     private long lastFetchTime = -1;
 
     @Override
     public Map<Long, MetricNode> metrics() {
-        // The fetch operation is thread-safe under a single-thread scheduler pool.
+        // 在单线程调度池下，拉取操作是线程安全的。
         long currentTime = TimeUtil.currentTimeMillis();
         currentTime = currentTime - currentTime % 1000;
         Map<Long, MetricNode> metrics = new ConcurrentHashMap<>();
         List<MetricNode> nodesOfEverySecond = rollingCounterInMinute.details();
         long newLastFetchTime = lastFetchTime;
-        // Iterate metrics of all resources, filter valid metrics (not-empty and up-to-date).
+        // 遍历所有资源的指标，过滤有效（非空且最新）的指标。
         for (MetricNode node : nodesOfEverySecond) {
             if (isNodeInTime(node, currentTime) && isValidMetricNode(node)) {
                 metrics.put(node.getTimestamp(), node);
@@ -297,9 +296,9 @@ public class StatisticNode implements Node {
 
         int idx = 0;
         /*
-         * Note: here {@code currentPass} may be less than it really is NOW, because time difference
-         * since call rollingCounterInSecond.pass(). So in high concurrency, the following code may
-         * lead more tokens be borrowed.
+         * 注意：此处 {@code currentPass} 可能小于当前真实值，
+         * 因为从调用 rollingCounterInSecond.pass() 起已有时间差。
+         * 高并发下以下代码可能导致更多令牌被借用。
          */
         long currentPass = rollingCounterInSecond.pass();
         while (earliestTime < currentTime) {

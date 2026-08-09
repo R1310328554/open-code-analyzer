@@ -21,7 +21,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Metrics data for a specific resource at given {@code timestamp}.
+ * 给定 {@code timestamp} 下某资源的指标数据。
  *
  * @author jialiang.linjl
  * @author Carpenter Lee
@@ -30,7 +30,7 @@ public class MetricNode {
 
     private String resource;
     /**
-     * Resource classification (e.g. SQL or RPC)
+     * 资源分类（例如 SQL 或 RPC）
      * @since 1.7.0
      */
     private int classification;
@@ -150,13 +150,12 @@ public class MetricNode {
     }
 
     /**
-     * To formatting string. All "|" in {@link #resource} will be replaced with
-     * "_", format is: <br/>
+     * 格式化为紧凑字符串。{@link #resource} 中的 "|" 将替换为 "_"，格式为：<br/>
      * <code>
      * timestamp|resource|passQps|blockQps|successQps|exceptionQps|rt|occupiedPassQps
      * </code>
      *
-     * @return string format of this.
+     * @return 紧凑字符串表示
      */
     public String toThinString() {
         StringBuilder sb = new StringBuilder();
@@ -175,10 +174,10 @@ public class MetricNode {
     }
 
     /**
-     * Parse {@link MetricNode} from thin string, see {@link #toThinString()}
+     * 从紧凑字符串解析 {@link MetricNode}，见 {@link #toThinString()}。
      *
-     * @param line
-     * @return
+     * @param line 紧凑格式行
+     * @return 解析得到的 MetricNode
      */
     public static MetricNode fromThinString(String line) {
         MetricNode node = new MetricNode();
@@ -203,13 +202,12 @@ public class MetricNode {
     }
 
     /**
-     * To formatting string. All "|" in {@link MetricNode#resource} will be
-     * replaced with "_", format is: <br/>
+     * 格式化为完整字符串。{@link MetricNode#resource} 中的 "|" 将替换为 "_"，格式为：<br/>
      * <code>
      * timestamp|yyyy-MM-dd HH:mm:ss|resource|passQps|blockQps|successQps|exceptionQps|rt|occupiedPassQps\n
      * </code>
      *
-     * @return string format of this.
+     * @return 完整字符串表示
      */
 
     private static final DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -239,10 +237,10 @@ public class MetricNode {
     }
 
     /**
-     * Parse {@link MetricNode} from fat string, see {@link #toFatString()}
+     * 从完整字符串解析 {@link MetricNode}，见 {@link #toFatString()}。
      *
-     * @param line
-     * @return the {@link MetricNode} parsed.
+     * @param line 完整格式行
+     * @return 解析得到的 MetricNode
      */
     public static MetricNode fromFatString(String line) {
         String[] strs = line.split("\\|");

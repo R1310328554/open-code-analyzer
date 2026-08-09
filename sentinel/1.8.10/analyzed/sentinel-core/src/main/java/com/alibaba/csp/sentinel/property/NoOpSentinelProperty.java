@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.property;
 
 /**
- * A {@link SentinelProperty} that will never inform the {@link PropertyListener} on it.
+ * 空操作的 {@link SentinelProperty}，永远不会通知其上的 {@link PropertyListener}。
  *
  * @author leyou
  */

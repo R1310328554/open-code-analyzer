@@ -106,9 +106,8 @@ public class MetricSearcher {
     }
 
     /**
-     * Find metric between [beginTimeMs, endTimeMs], both side inclusive.
-     * When identity is null, all metric between the time intervalMs will be read, otherwise, only the specific
-     * identity will be read.
+     * 在 [beginTimeMs, endTimeMs] 区间内检索指标（两端均含）。
+     * identity 为 null 时读取区间内全部指标，否则仅读取指定资源。
      */
     public synchronized List<MetricNode> findByTimeAndResource(long beginTimeMs, long endTimeMs, String identity)
         throws Exception {
@@ -157,8 +156,8 @@ public class MetricSearcher {
     }
 
     /**
-     * The position we cached is useful only when {@code beginTimeMs} is >= {@code lastPosition.second}
-     * and the index file exists and the second we cached is same as in the index file.
+     * 仅当 {@code beginTimeMs} >= {@code lastPosition.second}、
+     * 索引文件存在且缓存的秒数与索引文件中一致时，缓存位置才有效。
      */
     private boolean validPosition(long beginTimeMs) {
         if (beginTimeMs / 1000 < lastPosition.second) {
@@ -167,7 +166,7 @@ public class MetricSearcher {
         if (lastPosition.indexFileName == null) {
             return false;
         }
-        // index file dose not exits
+        // 索引文件不存在
         if (!new File(lastPosition.indexFileName).exists()) {
             return false;
         }
@@ -176,7 +175,7 @@ public class MetricSearcher {
             in = new FileInputStream(lastPosition.indexFileName);
             in.getChannel().position(lastPosition.offsetInIndex);
             DataInputStream indexIn = new DataInputStream(in);
-            // timestamp(second) in the specific position == that we cached
+            // 指定位置的秒级时间戳与缓存一致
             return indexIn.readLong() == lastPosition.second;
         } catch (Exception e) {
             return false;
