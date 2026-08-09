@@ -21,132 +21,126 @@ import org.redisson.api.atomic.CompareAndDeleteArgs;
 import org.redisson.api.atomic.LongIncrementArgs;
 
 /**
- * RxJava2 interface for AtomicLong object
+ * {@link RAtomicLong} 的 RxJava 风格 API 接口。
+ * <p>各方法返回 RxJava3 的 {@link Single} 或 {@link Completable}。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RAtomicLongRx extends RExpirableRx {
 
     /**
-     * Atomically deletes the value if it satisfies the condition
-     * defined by the specified arguments.
+     * 若当前值满足 {@link CompareAndDeleteArgs} 定义的条件，则原子删除。
      *
-     * @param args compare and delete arguments
-     * @return {@code true} if deleted, {@code false} otherwise
+     * @param args 比较并删除参数
+     * @return 删除成功为 {@code true}，否则 {@code false}
      */
     Single<Boolean> compareAndDelete(CompareAndDeleteArgs args);
 
     /**
-     * Atomically sets the value to the given updated value
-     * only if the current value {@code ==} the expected value.
+     * 仅当当前值等于 {@code expect} 时，原子设置为 {@code update}（CAS）。
      *
-     * @param expect the expected value
-     * @param update the new value
-     * @return true if successful; or false if the actual value
-     *         was not equal to the expected value.
+     * @param expect 期望值
+     * @param update 新值
+     * @return 成功为 {@code true}；当前值与期望不符则为 {@code false}
      */
     Single<Boolean> compareAndSet(long expect, long update);
 
     /**
-     * Atomically adds the given value to the current value.
+     * 原子地将 {@code delta} 加到当前值上。
      *
-     * @param delta the value to add
-     * @return the updated value
+     * @param delta 增量
+     * @return 更新后的值
      */
     Single<Long> addAndGet(long delta);
 
     /**
-     * Atomically decrements the current value by one.
+     * 原子地将当前值减 1。
      *
-     * @return the updated value
+     * @return 更新后的值
      */
     Single<Long> decrementAndGet();
 
     /**
-     * Returns current value.
+     * 返回当前值。
      *
-     * @return the current value
+     * @return 当前值
      */
     Single<Long> get();
 
     /**
-     * Returns and deletes object
-     * 
-     * @return the current value
+     * 读取当前值并删除该 Redis 键。
+     *
+     * @return 删除前的值
      */
     Single<Long> getAndDelete();
     
     /**
-     * Atomically adds the given value to the current value.
+     * 原子地将 {@code delta} 加到当前值上并返回加之前的旧值。
      *
-     * @param delta the value to add
-     * @return the old value before the add
+     * @param delta 增量
+     * @return 相加前的旧值
      */
     Single<Long> getAndAdd(long delta);
 
     /**
-     * Atomically sets the given value and returns the old value.
+     * 原子地设置为 {@code newValue} 并返回旧值。
      *
-     * @param newValue the new value
-     * @return the old value
+     * @param newValue 新值
+     * @return 设置前的旧值
      */
     Single<Long> getAndSet(long newValue);
 
     /**
-     * Atomically increments the current value by one.
+     * 原子地将当前值加 1。
      *
-     * @return the updated value
+     * @return 更新后的值
      */
     Single<Long> incrementAndGet();
 
     /**
-     * Atomically increments the current value according to the specified arguments.
+     * 按 {@code args} 指定的步长与上界原子递增当前值。
      *
-     * @param args increment arguments
-     * @return the updated value
+     * @param args 递增参数（步长、上界等）
+     * @return 更新后的值
      */
     Single<Long> incrementAndGet(LongIncrementArgs args);
 
     /**
-     * Atomically increments the current value by one.
+     * 原子地将当前值加 1 并返回旧值。
      *
-     * @return the old value
+     * @return 加 1 前的旧值
      */
     Single<Long> getAndIncrement();
 
     /**
-     * Atomically decrements by one the current value.
+     * 原子地将当前值减 1 并返回旧值。
      *
-     * @return the previous value
+     * @return 减 1 前的旧值
      */
     Single<Long> getAndDecrement();
 
     /**
-     * Atomically sets the given value.
+     * 原子地设置为 {@code newValue}。
      *
-     * @param newValue the new value
-     * @return void
+     * @param newValue 新值
      */
     Completable set(long newValue);
     
     /**
-     * Atomically sets the given value if current value is less than
-     * the special value
+     * 仅当当前值小于 {@code less} 时，原子设置为 {@code value}。
      *
-     * @param less  compare value
-     * @param value newValue
-     * @return true when the value update is successful
+     * @param less 比较阈值
+     * @param value 新值
+     * @return 更新成功为 {@code true}
      */
     Single<Boolean> setIfLess(long less, long value);
     
     /**
-     * Atomically sets the given value if current value is greater than
-     * the special value
+     * 仅当当前值大于 {@code greater} 时，原子设置为 {@code value}。
      *
-     * @param greater  compare value
-     * @param value newValue
-     * @return true when the value update is successful
+     * @param greater 比较阈值
+     * @param value 新值
+     * @return 更新成功为 {@code true}
      */
     Single<Boolean> setIfGreater(long greater, long value);
 

@@ -21,43 +21,42 @@ import java.nio.channels.AsynchronousByteChannel;
 import java.nio.channels.SeekableByteChannel;
 
 /**
- * Binary stream holder stores a sequence of bytes.
- * Maximum size of stream is limited to 512Mb.
- * 
- * @author Nikita Koksharov
+ * 二进制流容器，在 Redis 中存储字节序列。
+ * <p>单个流最大容量为 512MB。
  *
+ * @author Nikita Koksharov
  */
 public interface RBinaryStream extends RBucket<byte[]> {
 
     /**
-     * Returns async channel object which allows to write and read binary stream.
-     * This object isn't thread-safe.
+     * 返回用于读写二进制流的异步 {@link AsynchronousByteChannel}。
+     * <p>该对象非线程安全。
      *
-     * @return channel object
+     * @return 异步字节通道
      */
     AsynchronousByteChannel getAsynchronousChannel();
 
     /**
-     * Returns channel object which allows to write and read binary stream.
-     * This object isn't thread-safe.
+     * 返回用于读写二进制流的可定位 {@link SeekableByteChannel}。
+     * <p>该对象非线程安全。
      *
-     * @return channel object
+     * @return 可定位字节通道
      */
     SeekableByteChannel getChannel();
 
     /**
-     * Returns inputStream object which allows to read binary stream.
-     * This object isn't thread-safe.
-     * 
-     * @return stream object
+     * 返回用于读取二进制流的 {@link InputStream}。
+     * <p>该对象非线程安全。
+     *
+     * @return 输入流
      */
     InputStream getInputStream();
 
     /**
-     * Returns outputStream object which allows to write binary stream.
-     * This object isn't thread-safe.
-     * 
-     * @return stream object
+     * 返回用于写入二进制流的 {@link OutputStream}。
+     * <p>该对象非线程安全。
+     *
+     * @return 输出流
      */
     OutputStream getOutputStream();
     

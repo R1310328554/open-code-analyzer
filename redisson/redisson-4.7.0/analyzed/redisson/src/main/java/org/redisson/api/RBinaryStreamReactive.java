@@ -20,41 +20,40 @@ import reactor.core.publisher.Mono;
 import java.nio.ByteBuffer;
 
 /**
- * Binary stream holder stores a sequence of bytes.
- * Maximum size of stream is limited to 512Mb.
- * 
- * @author Nikita Koksharov
+ * {@link RBinaryStream} 的 Reactor 风格 API 接口。
+ * <p>单个流最大容量为 512MB；支持按位置读写 {@link ByteBuffer}。
  *
+ * @author Nikita Koksharov
  */
 public interface RBinaryStreamReactive extends RBucketReactive<byte[]> {
 
     /**
-     * Returns current channel's position
+     * 返回当前读写位置（字节偏移）。
      *
-     * @return current position
+     * @return 当前位置
      */
     long position();
 
     /**
-     * Sets channel's position
+     * 设置读写位置。
      *
-     * @param newPosition - new position
+     * @param newPosition 新的字节偏移
      */
     void position(long newPosition);
 
     /**
-     * Reads a sequence of bytes into defined buffer.
+     * 从当前位置读取字节到 {@code buf}。
      *
-     * @param buf buffer object into which bytes are read
-     * @return amount of read bytes
+     * @param buf 目标缓冲区
+     * @return 实际读取的字节数
      */
     Mono<Integer> read(ByteBuffer buf);
 
     /**
-     * Writes a sequence of bytes from defined buffer.
+     * 将 {@code buf} 中的字节写入当前位置。
      *
-     * @param  buf buffer object from which bytes are transferred
-     * @return amount of written bytes
+     * @param buf 源缓冲区
+     * @return 实际写入的字节数
      */
     Mono<Integer> write(ByteBuffer buf);
 

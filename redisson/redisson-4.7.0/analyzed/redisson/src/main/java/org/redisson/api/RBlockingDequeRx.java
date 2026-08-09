@@ -23,110 +23,95 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * RxJava2 interface for Redis based BlockingDeque object
+ * {@link RBlockingDeque} 的 RxJava 风格 API 接口。
+ * <p>阻塞双端操作以 RxJava3 的 {@link Single}、{@link Maybe} 或 {@link Flowable} 暴露。
  *
  * @author Nikita Koksharov
- * @param <V> the type of elements held in this collection
+ * @param <V> 集合元素类型
  */
 public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
 
     /**
-     * Retrieves and removes first available head element of <b>any</b> queue in reactive mode,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue own.
+     * 响应式地从指定队列集合（含自身）中拉取首个可用<b>队头</b>元素并移除。
+     * <p>在 {@code timeout} 内无元素可用则结果为 {@code null}。
      *
-     * @param queueNames - names of queue
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param queueNames 候选队列名列表
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 取到的元素；超时为 {@code null}
      */
     Maybe<V> pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Retrieves and removes first available tail element of <b>any</b> queue in reactive mode,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue own.
-     * 
-     * @param queueNames - names of queue
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * 响应式地从指定队列集合（含自身）中拉取首个可用<b>队尾</b>元素并移除。
+     * <p>在 {@code timeout} 内无元素可用则结果为 {@code null}。
+     *
+     * @param queueNames 候选队列名列表
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 取到的元素；超时为 {@code null}
      */
     Maybe<V> pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Adds value to the head of queue.
-     * 
-     * @param e value
-     * @return void
+     * 阻塞地将元素插入队头。
+     *
+     * @param e 待插入元素
      */
     Completable putFirst(V e);
 
     /**
-     * Adds value to the tail of queue.
-     * 
-     * @param e value
-     * @return void
+     * 阻塞地将元素插入队尾。
+     *
+     * @param e 待插入元素
      */
     Completable putLast(V e);
 
     /**
-     * Retrieves and removes value at the tail of queue. If necessary waits up to defined <code>timeout</code> for an element become available.
-     * 
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the element at the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * 从队尾取出并移除元素；必要时阻塞等待至多 {@code timeout}。
+     *
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 队尾元素；超时为 {@code null}
      */
     Maybe<V> pollLast(long timeout, TimeUnit unit);
 
     /**
-     * Retrieves and removes value at the tail of queue. Waits for an element become available.
-     * 
-     * @return the tail element of this queue
+     * 阻塞地从队尾取出并移除元素，直至有元素可用。
+     *
+     * @return 队尾元素
      */
     Single<V> takeLast();
 
     /**
-     * Retrieves and removes value at the head of queue. If necessary waits up to defined <code>timeout</code> for an element become available.
-     * 
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the element at the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * 从队头取出并移除元素；必要时阻塞等待至多 {@code timeout}。
+     *
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 队头元素；超时为 {@code null}
      */
     Maybe<V> pollFirst(long timeout, TimeUnit unit);
 
     /**
-     * Retrieves and removes value at the head of queue. Waits for an element become available.
-     * 
-     * @return the head element of this queue
+     * 阻塞地从队头取出并移除元素，直至有元素可用。
+     *
+     * @return 队头元素
      */
     Single<V> takeFirst();
 
     /**
-     * Retrieves and removes continues stream of elements from the head of this queue. 
-     * Waits for next element become available.
-     * 
-     * @return stream of head elements
+     * 持续从队头阻塞取元素并移除，形成元素流。
+     * <p>每次等待下一个元素可用后再发射。
+     *
+     * @return 队头元素流
      */
     Flowable<V> takeFirstElements();
     
     /**
-     * Retrieves and removes continues stream of elements from the tail of this queue. 
-     * Waits for next element become available.
-     * 
-     * @return stream of tail elements
+     * 持续从队尾阻塞取元素并移除，形成元素流。
+     * <p>每次等待下一个元素可用后再发射。
+     *
+     * @return 队尾元素流
      */
     Flowable<V> takeLastElements();
     

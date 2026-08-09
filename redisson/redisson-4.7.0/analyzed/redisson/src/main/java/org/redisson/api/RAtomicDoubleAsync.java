@@ -19,144 +19,138 @@ import org.redisson.api.atomic.CompareAndDeleteArgs;
 import org.redisson.api.atomic.DoubleIncrementArgs;
 
 /**
- * Distributed implementation to the AtomicDouble
+ * {@link RAtomicDouble} 的异步 API 接口。
+ * <p>各方法返回 {@link RFuture}，基于 Redis {@code INCRBYFLOAT} 等命令实现分布式浮点原子操作。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RAtomicDoubleAsync extends RExpirableAsync {
 
     /**
-     * Atomically deletes the value if it satisfies the condition
-     * defined by the specified arguments.
+     * 若当前值满足 {@link CompareAndDeleteArgs} 定义的条件，则原子删除。
      *
-     * @param args compare and delete arguments
-     * @return {@code true} if deleted, {@code false} otherwise
+     * @param args 比较并删除参数
+     * @return 删除成功为 {@code true}，否则 {@code false}
      */
     RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs args);
 
     /**
-     * Atomically sets the value to the given updated value
-     * only if the current value {@code ==} the expected value.
+     * 仅当当前值等于 {@code expect} 时，原子设置为 {@code update}（CAS）。
      *
-     * @param expect the expected value
-     * @param update the new value
-     * @return true if successful; or false if the actual value
-     *         was not equal to the expected value.
+     * @param expect 期望值
+     * @param update 新值
+     * @return 成功为 {@code true}；当前值与期望不符则为 {@code false}
      */
     RFuture<Boolean> compareAndSetAsync(double expect, double update);
 
     /**
-     * Atomically adds the given value to the current value.
+     * 原子地将 {@code delta} 加到当前值上。
      *
-     * @param delta the value to add
-     * @return the updated value
+     * @param delta 增量
+     * @return 更新后的值
      */
     RFuture<Double> addAndGetAsync(double delta);
 
     /**
-     * Atomically decrements the current value by one.
+     * 原子地将当前值减 1。
      *
-     * @return the updated value
+     * @return 更新后的值
      */
     RFuture<Double> decrementAndGetAsync();
 
     /**
-     * Returns current value.
+     * 返回当前值。
      *
-     * @return current value
+     * @return 当前值
      */
     RFuture<Double> getAsync();
 
     /**
-     * Returns and deletes object
-     * 
-     * @return the current value
+     * 读取当前值并删除该 Redis 键。
+     *
+     * @return 删除前的值
      */
     RFuture<Double> getAndDeleteAsync();
     
     /**
-     * Atomically adds the given value to the current value.
+     * 原子地将 {@code delta} 加到当前值上并返回更新后的值。
      *
-     * @param delta the value to add
-     * @return the updated value
+     * @param delta 增量
+     * @return 更新后的值
      */
     RFuture<Double> getAndAddAsync(double delta);
 
     /**
-     * Atomically sets the given value and returns the old value.
+     * 原子地设置为 {@code newValue} 并返回旧值。
      *
-     * @param newValue the new value
-     * @return the old value
+     * @param newValue 新值
+     * @return 设置前的旧值
      */
     RFuture<Double> getAndSetAsync(double newValue);
 
     /**
-     * Atomically increments the current value by one.
+     * 原子地将当前值加 1。
      *
-     * @return the updated value
+     * @return 更新后的值
      */
     RFuture<Double> incrementAndGetAsync();
 
     /**
-     * Atomically increments the current value according to the specified arguments.
+     * 按 {@code args} 指定的步长与上界原子递增当前值。
      *
-     * @param args increment arguments
-     * @return the updated value
+     * @param args 递增参数（步长、上界等）
+     * @return 更新后的值
      */
     RFuture<Double> incrementAndGetAsync(DoubleIncrementArgs args);
 
     /**
-     * Atomically increments the current value by one.
+     * 原子地将当前值加 1 并返回旧值。
      *
-     * @return the old value
+     * @return 加 1 前的旧值
      */
     RFuture<Double> getAndIncrementAsync();
 
     /**
-     * Atomically decrements by one the current value.
+     * 原子地将当前值减 1 并返回旧值。
      *
-     * @return the previous value
+     * @return 减 1 前的旧值
      */
     RFuture<Double> getAndDecrementAsync();
 
     /**
-     * Atomically sets the given value.
+     * 原子地设置为 {@code newValue}。
      *
-     * @param newValue the new value
-     * @return void
+     * @param newValue 新值
      */
     RFuture<Void> setAsync(double newValue);
     
     /**
-     * Atomically sets the given value if current value is less than
-     * the special value
+     * 仅当当前值小于 {@code less} 时，原子设置为 {@code value}。
      *
-     * @param less  compare value
-     * @param value newValue
-     * @return true when the value update is successful
+     * @param less 比较阈值
+     * @param value 新值
+     * @return 更新成功为 {@code true}
      */
     RFuture<Boolean> setIfLessAsync(double less, double value);
     
     /**
-     * Atomically sets the given value if current value is greater than
-     * the special value
+     * 仅当当前值大于 {@code greater} 时，原子设置为 {@code value}。
      *
-     * @param greater  compare value
-     * @param value newValue
-     * @return true when the value update is successful
+     * @param greater 比较阈值
+     * @param value 新值
+     * @return 更新成功为 {@code true}
      */
     RFuture<Boolean> setIfGreaterAsync(double greater, double value);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.IncrByListener
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 

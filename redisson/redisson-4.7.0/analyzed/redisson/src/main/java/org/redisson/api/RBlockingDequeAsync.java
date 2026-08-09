@@ -22,97 +22,89 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed async implementation of {@link BlockingDeque}
+ * {@link RBlockingDeque} 的异步 API 接口。
+ * <p>各方法返回 {@link RFuture}，支持双端阻塞操作的非阻塞调用。
  *
  * @author Nikita Koksharov
- * @param <V> the type of elements held in this collection
+ * @param <V> 集合元素类型
  */
 public interface RBlockingDequeAsync<V> extends RDequeAsync<V>, RBlockingQueueAsync<V> {
 
     /**
-     * Retrieves and removes first available head element of <b>any</b> queue in async mode,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue own.
+     * 异步地从指定队列集合（含自身）中拉取首个可用<b>队头</b>元素并移除。
+     * <p>在 {@code timeout} 内无元素可用则结果为 {@code null}。
      *
-     * @param queueNames - names of queue
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param queueNames 候选队列名列表
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 取到的元素；超时为 {@code null}
      */
     RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Retrieves and removes first available tail element of <b>any</b> queue in async mode,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue own.
-     * 
-     * @param queueNames - names of queue
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * 异步地从指定队列集合（含自身）中拉取首个可用<b>队尾</b>元素并移除。
+     * <p>在 {@code timeout} 内无元素可用则结果为 {@code null}。
+     *
+     * @param queueNames 候选队列名列表
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 取到的元素；超时为 {@code null}
      */
     RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Adds value to the head of queue.
-     * 
-     * @param e value
-     * @return void
+     * 阻塞地将元素插入队头。
+     *
+     * @param e 待插入元素
      */
     RFuture<Void> putFirstAsync(V e);
 
     /**
-     * Adds value to the tail of queue.
-     * 
-     * @param e value
-     * @return void
+     * 阻塞地将元素插入队尾。
+     *
+     * @param e 待插入元素
      */
     RFuture<Void> putLastAsync(V e);
 
     /**
-     * Retrieves and removes value at the tail of queue. If necessary waits up to defined <code>timeout</code> for an element become available.
-     * 
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the element at the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * 从队尾取出并移除元素；必要时阻塞等待至多 {@code timeout}。
+     *
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 队尾元素；超时为 {@code null}
      */
     RFuture<V> pollLastAsync(long timeout, TimeUnit unit);
     
     /**
-     * Retrieves and removes value at the tail of queue. Waits for an element become available.
-     * 
-     * @return the tail element of this queue
+     * 阻塞地从队尾取出并移除元素，直至有元素可用。
+     *
+     * @return 队尾元素
      */
     RFuture<V> takeLastAsync();
 
     /**
-     * Retrieves and removes value at the head of queue. If necessary waits up to defined <code>timeout</code> for an element become available.
-     * 
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the element at the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * 从队头取出并移除元素；必要时阻塞等待至多 {@code timeout}。
+     *
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 队头元素；超时为 {@code null}
      */
     RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
     /**
-     * Retrieves and removes value at the head of queue. Waits for an element become available.
-     * 
-     * @return the head element of this queue
+     * 阻塞地从队头取出并移除元素，直至有元素可用。
+     *
+     * @return 队头元素
      */
     RFuture<V> takeFirstAsync();
 
+    /**
+     * 异步地按 {@link DequeMoveArgs} 在双端队列间迁移元素。
+     *
+     * @param timeout 最长等待时间
+     * @param args 迁移参数
+     * @return 迁移结果的 {@link RFuture}
+     */
     RFuture<V> moveAsync(Duration timeout, DequeMoveArgs args);
 
 }

@@ -25,84 +25,80 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * {@link BlockingDeque} backed by Redis
+ * 由 Redis 列表实现的分布式 {@link BlockingDeque}。
+ * <p>支持双端阻塞入队/出队、跨队列批量拉取及元素订阅。
  *
  * @author Nikita Koksharov
- * @param <V> the type of elements held in this collection
+ * @param <V> 集合元素类型
  */
 public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, RDeque<V>, RBlockingDequeAsync<V> {
 
     /**
-     * Retrieves and removes first available head element of <b>any</b> queue,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue own.
-     * 
-     * @param queueNames - names of queue
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
+     * 从指定队列集合（含自身）中阻塞拉取首个可用<b>队头</b>元素并移除。
+     * <p>在 {@code timeout} 内无元素可用则返回 {@code null}。
+     *
+     * @param queueNames 候选队列名列表
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 取到的元素；超时为 {@code null}
+     * @throws InterruptedException 等待被中断时
      */
     V pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException;
 
     /**
-     * Retrieves and removes first available tail element of <b>any</b> queue,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue own.
-     * 
-     * @param queueNames - names of queue
-     * @param timeout how long to wait before giving up, in units of
-     *        {@code unit}
-     * @param unit a {@code TimeUnit} determining how to interpret the
-     *        {@code timeout} parameter
-     * @return the head of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
-     * @throws InterruptedException if interrupted while waiting
+     * 从指定队列集合（含自身）中阻塞拉取首个可用<b>队尾</b>元素并移除。
+     * <p>在 {@code timeout} 内无元素可用则返回 {@code null}。
+     *
+     * @param queueNames 候选队列名列表
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 取到的元素；超时为 {@code null}
+     * @throws InterruptedException 等待被中断时
      */
     V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException;
 
+    /**
+     * 按 {@link DequeMoveArgs} 在双端队列间原子迁移元素。
+     *
+     * @param timeout 最长等待时间
+     * @param args 迁移参数
+     * @return 迁移的元素；超时可能为 {@code null}
+     */
     V move(Duration timeout, DequeMoveArgs args);
 
     /**
-     * Use {@link #subscribeOnFirstElements(Function)} instead.
+     * 已废弃，请改用 {@link #subscribeOnFirstElements(Function)}。
      *
-     * @param consumer - queue elements listener
-     * @return listenerId - id of listener
+     * @param consumer 队列元素监听器
+     * @return 监听器 ID
      */
     @Deprecated
     int subscribeOnFirstElements(Consumer<V> consumer);
 
     /**
-     * Use {@link #subscribeOnLastElements(Function)} instead.
+     * 已废弃，请改用 {@link #subscribeOnLastElements(Function)}。
      *
-     * @param consumer - queue elements listener
-     * @return listenerId - id of listener
+     * @param consumer 队列元素监听器
+     * @return 监听器 ID
      */
     @Deprecated
     int subscribeOnLastElements(Consumer<V> consumer);
 
     /**
-     * Use {@link #subscribeOnLastElements(Function)} instead.
-     * Continuously invokes {@link #takeFirstAsync()} method to get a new element.
-     * <p>
-     * NOTE: don't call blocking methods in the elements listener
+     * 订阅队头新元素；内部循环调用 {@link #takeFirstAsync()} 取元素。
+     * <p>注意：监听器内勿调用阻塞方法。
      *
-     * @param consumer - queue elements listener
-     * @return listenerId - id of listener
+     * @param consumer 异步元素处理器
+     * @return 监听器 ID
      */
     int subscribeOnFirstElements(Function<V, CompletionStage<Void>> consumer);
 
     /**
-     * Subscribes on last elements appeared in this queue.
-     * Continuously invokes {@link #takeLastAsync()} method to get a new element.
-     * <p>
-     * NOTE: don't call blocking methods in the elements listener
+     * 订阅队尾新元素；内部循环调用 {@link #takeLastAsync()} 取元素。
+     * <p>注意：监听器内勿调用阻塞方法。
      *
-     * @param consumer - queue elements listener
-     * @return listenerId - id of listener
+     * @param consumer 异步元素处理器
+     * @return 监听器 ID
      */
     int subscribeOnLastElements(Function<V, CompletionStage<Void>> consumer);
 
