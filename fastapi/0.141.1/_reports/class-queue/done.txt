@@ -480,3 +480,6 @@ docs_src/settings/app02_an_py310/test_main.py
 docs_src/settings/app02_py310/__init__.py
 docs_src/settings/app02_py310/config.py
 docs_src/settings/app02_py310/main.py
+docs_src/websockets_/__init__.py
+docs_src/websockets_/tutorial001_py310.py
+docs_src/websockets_/tutorial002_an_py310.py

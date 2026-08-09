@@ -568,3 +568,6 @@
 2026-08-09T18:13:18Z DONE docs_src/settings/app02_py310/__init__.py wave23a docs_src [0:10]
 2026-08-09T18:13:18Z DONE docs_src/settings/app02_py310/config.py wave23a docs_src [0:10]
 2026-08-09T18:13:18Z DONE docs_src/settings/app02_py310/main.py wave23a docs_src [0:10]
+2026-08-09T18:17:41Z DONE docs_src/websockets_/__init__.py wave24a docs_src [0:3]
+2026-08-09T18:17:41Z DONE docs_src/websockets_/tutorial001_py310.py wave24a docs_src [0:3]
+2026-08-09T18:17:41Z DONE docs_src/websockets_/tutorial002_an_py310.py wave24a docs_src [0:3]
