@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:15:34Z",
-  "files": [
-    "openmessaging/src/main/java/io/openmessaging/rocketmq/domain/SendResultImpl.java",
-    "openmessaging/src/main/java/io/openmessaging/rocketmq/producer/AbstractOMSProducer.java",
-    "openmessaging/src/main/java/io/openmessaging/rocketmq/producer/ProducerImpl.java",
-    "openmessaging/src/main/java/io/openmessaging/rocketmq/promise/DefaultPromise.java",
-    "openmessaging/src/main/java/io/openmessaging/rocketmq/promise/FutureState.java",
-    "openmessaging/src/main/java/io/openmessaging/rocketmq/utils/BeanUtils.java",
-    "openmessaging/src/main/java/io/openmessaging/rocketmq/utils/OMSUtil.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/CommandLineArgument.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/ProxyMode.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/ProxyStartup.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/auth/ProxyAuthenticationMetadataProvider.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/auth/ProxyAuthorizationMetadataProvider.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/AbstractCacheLoader.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/Address.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/ContextVariable.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 858,
-  "done": 615
+  "done": 630
 }
