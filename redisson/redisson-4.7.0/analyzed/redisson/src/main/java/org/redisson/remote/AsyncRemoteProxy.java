@@ -42,13 +42,20 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 异步远程服务调用动态代理：方法返回 {@link RFuture}。
+ * <p>
+ * 客户端将 {@link RemoteServiceRequest} 写入 Redis 请求队列，
+ * 可选等待 {@link RemoteServiceAck} 与 {@link RemoteServiceResponse}，
+ * 支持任务取消（{@link RemoteServiceCancelRequest}）。
+ * <p>
+ * 由 {@link BaseRemoteService#get} 在接口标注 {@link org.redisson.api.annotation.RRemoteAsync} 时创建。
+ *
  * @author Nikita Koksharov
  *
  */
 public class AsyncRemoteProxy extends BaseRemoteProxy {
 
-    protected final String cancelRequestMapName;
+    /** 取消请求写入的 Redis Map 键名。 */
     
     public AsyncRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
                             Codec codec, String executorId, String cancelRequestMapName, BaseRemoteService remoteService) {
@@ -56,10 +63,12 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         this.cancelRequestMapName = cancelRequestMapName;
     }
     
+    /** 远程接口方法允许的返回类型（子类可扩展 Mono 等）。 */
     protected List<Class<?>> permittedClasses() {
         return Arrays.asList(RFuture.class);
     }
     
+    /** 校验异步接口与同步接口方法签名一致，并创建 JDK 动态代理。 */
     public <T> T create(Class<T> remoteInterface, RemoteInvocationOptions options,
             Class<?> syncInterface) {
         for (Method m : remoteInterface.getMethods()) {
@@ -85,7 +94,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
             }
         }
         
-        // local copy of the options, to prevent mutation
+        // 拷贝 options，避免调用方后续修改影响本次调用
         RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
         InvocationHandler handler = (proxy, method, args) -> {
             if (method.getName().equals("toString")) {
@@ -104,9 +113,11 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
             String requestId = remoteService.generateRequestId(args);
             String requestQueueName = getRequestQueueName(syncInterface);
             Long ackTimeout = optionsCopy.getAckTimeoutInMillis();
+            // 构造远程调用请求并写入队列
             RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId, method.getName(),
                                                 remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
 
+            // 需要 ACK 时注册 ACK 轮询
             CompletableFuture<RemoteServiceAck> ackFuture;
             if (optionsCopy.isAckExpected()) {
                 ackFuture = pollResponse(optionsCopy.getAckTimeoutInMillis(), requestId, false);
@@ -122,6 +133,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                 responseFuture = null;
             }
 
+            // RemotePromise 封装可取消的异步结果
             RemotePromise<Object> result = createResultPromise(optionsCopy, requestId, requestQueueName,
                     ackTimeout);
             CompletableFuture<Boolean> addFuture = remoteService.addAsync(requestQueueName, request, result);
@@ -148,7 +160,8 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                         return;
                     }
 
-                            if (optionsCopy.isAckExpected()) {
+                            // 已发 ACK：通过 Lua setnx 标记取消并从请求队列移除
+                if (optionsCopy.isAckExpected()) {
                                 ackFuture.whenComplete((ack, ex) -> {
                                     if (ex != null) {
                                         if (responseFuture != null) {
@@ -159,6 +172,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                                         return;
                                     }
 
+                                    // ACK 超时：尝试二次轮询后再判定 RemoteServiceAckTimeoutException
                                     if (ack == null) {
                                         String ackName = remoteService.getAckName(requestId);
                                         CompletionStage<RemoteServiceAck> ackFutureAttempt =
@@ -194,10 +208,12 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[] { remoteInterface }, handler);
     }
 
+    /** 将 RemotePromise 包装为 {@link CompletableFutureWrapper}（RFuture）。 */
     protected Object convertResult(RemotePromise<Object> result, Class<?> returnType) {
         return new CompletableFutureWrapper<>(result);
     }
     
+    /** 收到 ACK 后删除 ACK 键，再等待执行结果。 */
     private void awaitResultAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> result,
             String ackName, CompletableFuture<RRemoteServiceResponse> responseFuture) {
         RFuture<Boolean> deleteFuture = new RedissonBucket<>(commandExecutor, ackName).deleteAsync();
@@ -213,7 +229,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     
     protected void awaitResultAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> result,
             CompletionStage<RRemoteServiceResponse> responseFuture) {
-        // poll for the response only if expected
+        // 不期望返回值时无需轮询响应队列
         if (!optionsCopy.isResultExpected()) {
             return;
         }
@@ -231,6 +247,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                 return;
             }
 
+            // 服务端确认取消
             if (res instanceof RemoteServiceCancelResponse) {
                 result.doCancel(true);
                 return;
@@ -246,6 +263,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         });
     }
 
+    /** 创建支持同步/异步 cancel 的 RemotePromise。 */
     private RemotePromise<Object> createResultPromise(RemoteInvocationOptions optionsCopy,
                                                       String requestId, String requestQueueName, Long ackTimeout) {
         RemotePromise<Object> result = new RemotePromise<Object>(requestId) {
@@ -387,6 +405,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         return promise.toCompletableFuture().thenApply(r -> promise.isCancelled());
     }
 
+    /** 向 cancel Map 写入 {@link RemoteServiceCancelRequest} 通知 Worker 中止执行。 */
     private void cancelExecution(RemoteInvocationOptions optionsCopy,
             boolean mayInterruptIfRunning, RemotePromise<Object> remotePromise, String cancelRequestMapName) {
         RMap<String, RemoteServiceCancelRequest> canceledRequests = new RedissonMap(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, cancelRequestMapName, null, null, null) {
@@ -398,7 +417,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         canceledRequests.fastPutAsync(remotePromise.getRequestId(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
         canceledRequests.expireAsync(60, TimeUnit.SECONDS);
         
-        // subscribe for async result if it's not expected before
+        // fire-and-forget 取消时仍短暂订阅响应以确认取消结果
         if (!optionsCopy.isResultExpected()) {
             RemoteInvocationOptions options = new RemoteInvocationOptions(optionsCopy);
             options.expectResultWithin(60, TimeUnit.SECONDS);

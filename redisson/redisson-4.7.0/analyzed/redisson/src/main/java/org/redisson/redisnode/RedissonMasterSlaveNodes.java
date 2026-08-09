@@ -25,35 +25,45 @@ import org.redisson.connection.ConnectionManager;
 import java.util.Collection;
 
 /**
+ * 主从复制拓扑的节点管理，实现 {@link RedisMasterSlave}。
+ * <p>
+ * 单主多从场景下 {@link #getMaster()} 返回首个 Master；
+ * 从节点列表通过 {@link NodeType#SLAVE} 过滤。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonMasterSlaveNodes extends RedissonBaseNodes implements RedisMasterSlave {
 
+    /** @param connectionManager 主从连接管理器 @param commandExecutor 命令执行器 */
     public RedissonMasterSlaveNodes(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
         super(connectionManager, commandExecutor);
     }
 
+    /** @return 当前拓扑中的主节点；无从节点配置时仍返回 Master */
     @Override
     public RedisMaster getMaster() {
         Collection<RedisMaster> list = getNodes(NodeType.MASTER);
+        // 无主节点条目时返回 null
         if (list.isEmpty()) {
             return null;
         }
         return list.iterator().next();
     }
 
+    /** @param address 主节点地址 @return 匹配的 Master 或 null */
     @Override
     public RedisMaster getMaster(String address) {
         return getNode(address, NodeType.MASTER);
     }
 
+    /** @return 全部从节点 */
     @Override
     public Collection<RedisSlave> getSlaves() {
         return getNodes(NodeType.SLAVE);
     }
 
+    /** @param address 从节点地址 @return 匹配的 Slave 或 null */
     @Override
     public RedisSlave getSlave(String address) {
         return getNode(address, NodeType.SLAVE);

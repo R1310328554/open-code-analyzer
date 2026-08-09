@@ -37,7 +37,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 /**
- * 
+ * 远程服务客户端代理基类：管理响应队列轮询与 ACK 重试。
+ * <p>
+ * 全局 {@link ResponseEntry} 映射按响应队列名索引待完成的
+ * {@link CompletableFuture}；后台 {@link #pollResponse} 从
+ * {@link RBlockingQueue} 异步取响应并匹配 requestId。
+ * <p>
+ * {@link AsyncRemoteProxy}、{@link SyncRemoteProxy} 等子类继承此类。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -45,10 +52,13 @@ public abstract class BaseRemoteProxy {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     
+    /** 命令执行器。 */
     final CommandAsyncExecutor commandExecutor;
+    /** 远程服务命名空间（Redis 键前缀）。 */
     private final String name;
+    /** 本客户端专属的响应队列名。 */
     final String responseQueueName;
-    private final Map<String, ResponseEntry> responses;
+    /** 全局响应等待表（由 ServiceManager 共享）。 */
     final Codec codec;
     final String executorId;
     final BaseRemoteService remoteService;
@@ -65,12 +75,14 @@ public abstract class BaseRemoteProxy {
         this.remoteService = remoteService;
     }
 
-    private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();
+    /** 远程接口 → 请求队列 Redis 键名缓存。 */
     
+    /** 请求队列键：{name:接口全限定名}，保证同 slot。 */
     public String getRequestQueueName(Class<?> remoteInterface) {
         return requestQueueNameCache.computeIfAbsent(remoteInterface, k -> "{" + name + ":" + k.getName() + "}");
     }
     
+    /** ACK 首次未到时用 Lua 竞争 ack 键，成功则延长轮询等待 Worker ACK。 */
     protected CompletionStage<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
                                                                      String ackName, String requestId) {
         RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteNoRetryAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -89,6 +101,7 @@ public abstract class BaseRemoteProxy {
         });
     }
 
+    /** 注册 requestId 对应的响应 Future，并启动/续跑响应队列消费。 */
     protected final <T extends RRemoteServiceResponse> CompletableFuture<T> pollResponse(long timeout,
                                                                                          String requestId, boolean insertFirst) {
         CompletableFuture<T> responseFuture = new CompletableFuture<T>();
@@ -123,6 +136,7 @@ public abstract class BaseRemoteProxy {
         return responseFuture;
     }
 
+    /** 响应等待超时：完成 Future 并清理 ResponseEntry 中的占位。 */
     private <T extends RRemoteServiceResponse> Timeout createResponseTimeout(long timeout, String requestId,
                                                                              CompletableFuture<T> responseFuture, Result res) {
         return commandExecutor.getServiceManager().newTimeout(t -> {
@@ -145,6 +159,7 @@ public abstract class BaseRemoteProxy {
                 }, timeout, TimeUnit.MILLISECONDS);
     }
 
+    /** Future 被取消时移除 ResponseEntry 中对应 Result 并取消 Netty 超时。 */
     private <T extends RRemoteServiceResponse> void addCancelHandling(String requestId, CompletableFuture<T> responseFuture) {
         responseFuture.whenComplete((res, ex) -> {
             if (!responseFuture.isCancelled()) {
@@ -176,6 +191,7 @@ public abstract class BaseRemoteProxy {
         });
     }
 
+    /** 从响应阻塞队列 pollAsync，60s 无消息则重新 poll。 */
     private void pollResponse(ResponseEntry owner) {
         if (responses.get(responseQueueName) != owner) {
             return;
@@ -211,6 +227,7 @@ public abstract class BaseRemoteProxy {
                 }
 
                 boolean isResultResponse = response instanceof RemoteServiceResponse;
+                // 结果响应到达时丢弃队列中积压的旧 ACK（#5146）
                 if (isResultResponse) {
                     // drain stale acks, see #5146 for details
                     while (list.size() > 1) {

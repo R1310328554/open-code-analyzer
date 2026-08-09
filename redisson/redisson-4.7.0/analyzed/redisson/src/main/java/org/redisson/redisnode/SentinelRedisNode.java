@@ -42,35 +42,49 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 单个 Redis Sentinel 节点的同步/异步运维 API 实现。
+ * <p>
+ * 实现 {@link RedisSentinel} 与 {@link RedisSentinelAsync}：
+ * PING、INFO、CONFIG、持久化，以及 SENTINEL 子命令
+ *（masters、slaves、failover 等）。
+ * <p>
+ * 每次命令通过 {@link #executeAsync} 建立临时连接并在完成后关闭。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
+    /** Sentinel 实例的 Redis 客户端。 */
     private final RedisClient client;
+    /** 异步命令服务（阻塞 get 与 eval 用）。 */
     private final CommandAsyncExecutor commandAsyncService;
 
+    /** @param client Sentinel 连接 @param commandAsyncService 命令执行器 */
     public SentinelRedisNode(RedisClient client, CommandAsyncExecutor commandAsyncService) {
         super();
         this.client = client;
         this.commandAsyncService = commandAsyncService;
     }
 
+    /** @return 底层 RedisClient */
     public RedisClient getClient() {
         return client;
     }
 
+    /** @return Sentinel 网络地址 */
     @Override
     public InetSocketAddress getAddr() {
         return client.getAddr();
     }
 
+    /** 同步 MEMORY STATS。 */
     @Override
     public Map<String, String> getMemoryStatistics() {
         return getMemoryStatisticsAsync().toCompletableFuture().join();
     }
 
+    /** 异步 MEMORY STATS。 */
     @Override
     public RFuture<Map<String, String>> getMemoryStatisticsAsync() {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.MEMORY_STATS);
@@ -122,11 +136,13 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
         return true;
     }
 
+    /** 建立临时连接执行单条命令，{@code defaultValue} 非 null 时异常返回默认值。 */
     private <T> RFuture<T> executeAsync(T defaultValue, Codec codec, long timeout, RedisCommand<T> command, Object... params) {
         CompletableFuture<RedisConnection> connectionFuture = client.connectAsync().toCompletableFuture();
         CompletableFuture<Object> f = connectionFuture.thenCompose(connection -> {
             return connection.async(timeout, codec, command, params);
         }).handle((r, e) -> {
+            // 无论成功失败，完成后关闭临时连接
             if (connectionFuture.isDone() && !connectionFuture.isCompletedExceptionally()) {
                 connectionFuture.getNow(null).closeAsync();
             }
@@ -163,8 +179,10 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
         return infoAsync(section).toCompletableFuture().join();
     }
 
+    /** 按 {@link InfoSection} 分发到对应 INFO 子命令。 */
     @Override
     public RFuture<Map<String, String>> infoAsync(InfoSection section) {
+        // 按 InfoSection 选择 Redis INFO 段落
         if (section == InfoSection.ALL) {
             return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.INFO_ALL);
         } else if (section == InfoSection.DEFAULT) {
@@ -193,6 +211,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
         throw new IllegalStateException();
     }
 
+    /** SENTINEL GET-MASTER-ADDR-BY-NAME 同步版。 */
     @Override
     public RedisURI getMasterAddr(String masterName) {
         return commandAsyncService.get(getMasterAddrAsync(masterName));
@@ -223,6 +242,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
         commandAsyncService.get(failoverAsync(masterName));
     }
 
+    /** 异步查询指定 master 名称对应的主节点地址。 */
     @Override
     public RFuture<RedisURI> getMasterAddrAsync(String masterName) {
         RedisStrictCommand<RedisURI> masterHostCommand = new RedisStrictCommand<>("SENTINEL", "GET-MASTER-ADDR-BY-NAME",
@@ -231,26 +251,31 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
         return executeAsync(null, StringCodec.INSTANCE, -1, masterHostCommand, masterName);
     }
 
+    /** SENTINEL SENTINELS：监控同一 master 的其他 Sentinel。 */
     @Override
     public RFuture<List<Map<String, String>>> getSentinelsAsync(String masterName) {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_SENTINELS, masterName);
     }
 
+    /** SENTINEL MASTERS：全部被监控的 master 列表。 */
     @Override
     public RFuture<List<Map<String, String>>> getMastersAsync() {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_MASTERS);
     }
 
+    /** SENTINEL SLAVES：指定 master 的从节点列表。 */
     @Override
     public RFuture<List<Map<String, String>>> getSlavesAsync(String masterName) {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_SLAVES, masterName);
     }
 
+    /** SENTINEL MASTER：单个 master 的监控状态。 */
     @Override
     public RFuture<Map<String, String>> getMasterAsync(String masterName) {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_MASTER, masterName);
     }
 
+    /** SENTINEL FAILOVER：触发手动故障转移。 */
     @Override
     public RFuture<Void> failoverAsync(String masterName) {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_FAILOVER, masterName);
@@ -266,11 +291,13 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
         setConfigAsync(parameter, value).toCompletableFuture().join();
     }
 
+    /** CONFIG GET 异步版。 */
     @Override
     public RFuture<Map<String, String>> getConfigAsync(String parameter) {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.CONFIG_GET_MAP, parameter);
     }
 
+    /** CONFIG SET 异步版。 */
     @Override
     public RFuture<Void> setConfigAsync(String parameter, String value) {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.CONFIG_SET, parameter, value);
@@ -331,6 +358,7 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
         return commandAsyncService.get(sizeAsync());
     }
 
+    /** DBSIZE 异步版（Sentinel 通常返回 0）。 */
     @Override
     public RFuture<Long> sizeAsync() {
         return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.DBSIZE);

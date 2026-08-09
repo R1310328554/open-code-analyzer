@@ -18,6 +18,10 @@ package org.redisson.remote;
 import java.io.Serializable;
 
 /**
+ * Worker 确认任务已取消的响应消息，实现 {@link RRemoteServiceResponse}。
+ * <p>
+ * {@link #isCanceled()} 为 true 表示取消成功；客户端收到后完成
+ * {@link org.redisson.executor.RemotePromise} 的 cancel 流程。
  * 
  * @author Nikita Koksharov
  *
@@ -26,21 +30,25 @@ public class RemoteServiceCancelResponse implements RRemoteServiceResponse, Seri
 
     private static final long serialVersionUID = -4356901222132702182L;
 
+    /** 请求 ID。 */
     private String id;
-    private boolean canceled;
+    /** 是否已成功取消。 */
 
     public RemoteServiceCancelResponse() {
     }
     
+    /** @param id 请求 ID @param canceled 取消是否生效 */
     public RemoteServiceCancelResponse(String id, boolean canceled) {
         this.canceled = canceled;
         this.id = id;
     }
     
+    /** @return 取消结果 */
     public boolean isCanceled() {
         return canceled;
     }
 
+    /** @return 请求 ID */
     @Override
     public String getId() {
         return id;

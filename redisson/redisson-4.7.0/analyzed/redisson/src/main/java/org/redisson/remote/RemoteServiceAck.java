@@ -18,7 +18,10 @@ package org.redisson.remote;
 import java.io.Serializable;
 
 /**
- * Worker sends this message when it has received a {@link RemoteServiceRequest}. 
+ * Worker 收到 {@link RemoteServiceRequest} 后发送的 ACK 消息。
+ * <p>
+ * 表示远程方法已开始执行（或至少已被 Worker 取走）；
+ * 客户端在 {@link RemoteInvocationOptions#isAckExpected()} 为 true 时等待此消息。
  * 
  * @author Nikita Koksharov
  *
@@ -27,15 +30,17 @@ public class RemoteServiceAck implements RRemoteServiceResponse, Serializable {
 
     private static final long serialVersionUID = -6332680404562746984L;
 
-    private String id;
+    /** 对应的请求 ID。 */
 
     public RemoteServiceAck() {
     }
 
+    /** @param id 请求 ID */
     public RemoteServiceAck(String id) {
         this.id = id;
     }
     
+    /** @return 请求 ID */
     @Override
     public String getId() {
         return id;

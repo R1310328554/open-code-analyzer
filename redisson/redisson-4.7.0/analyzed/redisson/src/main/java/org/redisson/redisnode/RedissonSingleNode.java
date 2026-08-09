@@ -24,16 +24,21 @@ import org.redisson.connection.ConnectionManager;
 import java.util.Collection;
 
 /**
+ * 单节点 Redis 部署的节点管理，实现 {@link RedisSingle}。
+ * <p>
+ * {@link #getInstance()} 返回唯一 Master 视图，适用于 standalone 模式。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonSingleNode extends RedissonBaseNodes implements RedisSingle {
 
+    /** @param connectionManager 单节点连接管理器 @param commandExecutor 命令执行器 */
     public RedissonSingleNode(ConnectionManager connectionManager, CommandAsyncExecutor commandExecutor) {
         super(connectionManager, commandExecutor);
     }
 
+    /** @return 唯一的 Redis 实例（Master 角色） */
     @Override
     public RedisMaster getInstance() {
         Collection<RedisMaster> list = getNodes(NodeType.MASTER);

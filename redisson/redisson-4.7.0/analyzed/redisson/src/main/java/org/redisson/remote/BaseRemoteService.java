@@ -46,13 +46,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * 分布式远程服务（RRemoteService）的核心基类。
+ * <p>
+ * 根据接口注解 {@link RRemoteAsync}、{@link RRemoteReactive}、{@link RRemoteRx}
+ * 或默认同步模式，创建对应 {@link BaseRemoteProxy} 并返回动态代理。
+ * <p>
+ * 管理请求/响应/取消相关的 Redis 键名、方法签名哈希与队列读写。
+ *
  * @author Nikita Koksharov
  *
  */
 public abstract class BaseRemoteService {
 
+    /** 接口 → 请求队列名缓存。 */
     private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();
+    /** 方法 → Murmur128 参数类型签名，用于远程方法匹配。 */
     private final ConcurrentMap<Method, long[]> methodSignaturesCache = new ConcurrentHashMap<>();
 
     protected final Codec codec;
@@ -60,10 +68,14 @@ public abstract class BaseRemoteService {
     protected final CommandAsyncExecutor commandExecutor;
     protected final String executorId;
 
+    /** 客户端取消请求 Map 键名。 */
     protected final String cancelRequestMapName;
+    /** Worker 取消响应 Map 键名。 */
     protected final String cancelResponseMapName;
+    /** 本 executorId 的响应队列名。 */
     protected final String responseQueueName;
 
+    /** 初始化编解码、映射后的服务名及取消/响应 Redis 键。 */
     public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId) {
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.name = commandExecutor.getServiceManager().getNameMapper().map(name);
@@ -74,10 +86,12 @@ public abstract class BaseRemoteService {
         this.responseQueueName = getResponseQueueName(executorId);
     }
 
+    /** @param executorId 客户端实例 ID @return 响应队列 Redis 键 */
     public String getResponseQueueName(String executorId) {
         return "{remote_response}:" + executorId;
     }
     
+    /** ACK 确认键：{name:remote}:requestId:ack */
     protected String getAckName(String requestId) {
         return "{" + name + ":remote" + "}:" + requestId + ":ack";
     }
@@ -86,6 +100,7 @@ public abstract class BaseRemoteService {
         return requestQueueNameCache.computeIfAbsent(remoteInterface, k -> "{" + name + ":" + k.getName() + "}");
     }
 
+    /** 使用服务 Codec 编码请求/响应体。 */
     protected ByteBuf encode(Object obj) {
         try {
             return codec.getValueEncoder().encode(obj);
@@ -94,6 +109,7 @@ public abstract class BaseRemoteService {
         }
     }
 
+    /** 默认远程调用选项（ACK + 结果超时均为默认）。 */
     public <T> T get(Class<T> remoteInterface) {
         return get(remoteInterface, RemoteInvocationOptions.defaults());
     }
@@ -109,8 +125,10 @@ public abstract class BaseRemoteService {
                 .expectResultWithin(executionTimeout, executionTimeUnit));
     }
 
+    /** 按接口注解选择 Async/Reactive/Rx/Sync 代理并 create。 */
     public <T> T get(Class<T> remoteInterface, RemoteInvocationOptions options) {
         for (Annotation annotation : remoteInterface.getAnnotations()) {
+            // @RRemoteAsync → AsyncRemoteProxy，返回 RFuture
             if (annotation.annotationType() == RRemoteAsync.class) {
                 Class<T> syncInterface = (Class<T>) ((RRemoteAsync) annotation).value();
                 AsyncRemoteProxy proxy = new AsyncRemoteProxy(commandExecutor, name, responseQueueName,
@@ -118,6 +136,7 @@ public abstract class BaseRemoteService {
                 return proxy.create(remoteInterface, options, syncInterface);
             }
 
+            // @RRemoteReactive → ReactiveRemoteProxy，返回 Mono
             if (annotation.annotationType() == RRemoteReactive.class) {
                 Class<T> syncInterface = (Class<T>) ((RRemoteReactive) annotation).value();
                 ReactiveRemoteProxy proxy = new ReactiveRemoteProxy(commandExecutor, name, responseQueueName,
@@ -137,10 +156,12 @@ public abstract class BaseRemoteService {
         return proxy.create(remoteInterface, options);
     }
 
+    /** 子类可覆盖：根据请求计算实际执行超时毫秒数。 */
     protected long getTimeout(Long executionTimeoutInMillis, RemoteServiceRequest request) {
         return executionTimeoutInMillis;
     }
 
+    /** 创建不触发 name 重映射的 RedissonMap（用于 cancel 等内部键）。 */
     protected <K, V> RMap<K, V> getMap(String name) {
         return new RedissonMap(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, name) {
             @Override
@@ -150,6 +171,7 @@ public abstract class BaseRemoteService {
         };
     }
     
+    /** 每 3s 轮询 cancel Map，直到读到取消请求或 Future 已完成。 */
     protected <T> void scheduleCheck(String mapName, String requestId, CompletableFuture<T> cancelRequest) {
         commandExecutor.getServiceManager().newTimeout(timeout -> {
             if (cancelRequest.isDone()) {
@@ -176,6 +198,7 @@ public abstract class BaseRemoteService {
         }, 3000, TimeUnit.MILLISECONDS);
     }
 
+    /** 生成全局唯一 requestId（默认与参数无关）。 */
     protected String generateRequestId(Object[] args) {
         return commandExecutor.getServiceManager().generateId();
     }
@@ -185,6 +208,7 @@ public abstract class BaseRemoteService {
 
     protected abstract CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId);
 
+    /** 对方法参数类型名拼接后 Murmur128，供 Worker 匹配重载。 */
     protected long[] getMethodSignature(Method method) {
         return methodSignaturesCache.computeIfAbsent(method, m -> {
             String str = Arrays.stream(m.getParameterTypes())

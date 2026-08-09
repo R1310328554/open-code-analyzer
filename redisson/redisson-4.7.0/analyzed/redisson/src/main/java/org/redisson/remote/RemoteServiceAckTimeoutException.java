@@ -16,11 +16,9 @@
 package org.redisson.remote;
 
 /**
- * Rises when remote method executor has not answered 
- * within Ack timeout.
+ * 在 ACK 超时时间内 Worker 未确认收到请求时抛出。
  * <p>
- * Method invocation has not been started in this case. 
- * So a new invocation attempt can be made. 
+ * 此时远程方法尚未开始执行，客户端可以安全重试调用。
  * 
  * @author Nikita Koksharov
  *
@@ -29,6 +27,7 @@ public class RemoteServiceAckTimeoutException extends RuntimeException {
 
     private static final long serialVersionUID = 1820133675653636587L;
 
+    /** @param message 超时详情（含 requestId 与毫秒数） */
     public RemoteServiceAckTimeoutException(String message) {
         super(message);
     }

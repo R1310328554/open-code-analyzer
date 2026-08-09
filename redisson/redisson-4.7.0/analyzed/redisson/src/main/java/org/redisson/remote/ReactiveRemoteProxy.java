@@ -26,17 +26,25 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 
+ * Reactor 风格远程服务代理：方法返回 {@link Mono}。
+ * <p>
+ * 继承 {@link AsyncRemoteProxy}，将 {@link CommandAsyncExecutor} 转为
+ * {@link CommandReactiveExecutor}，{@link #convertResult} 包装为 Mono。
+ * <p>
+ * 由 {@link BaseRemoteService#get} 在 {@link RRemoteReactive} 注解时创建。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ReactiveRemoteProxy extends AsyncRemoteProxy {
 
+    /** 必要时将 executor 包装为 {@link CommandReactiveExecutor}。 */
     public ReactiveRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
                                 Codec codec, String executorId, String cancelRequestMapName, BaseRemoteService remoteService) {
         super(convert(commandExecutor), name, responseQueueName, codec, executorId, cancelRequestMapName, remoteService);
     }
 
+    /** 已是 ReactiveExecutor 则直接返回，否则 create 包装。 */
     private static CommandAsyncExecutor convert(CommandAsyncExecutor commandExecutor) {
         if (commandExecutor instanceof CommandReactiveExecutor) {
             return commandExecutor;
@@ -44,11 +52,13 @@ public class ReactiveRemoteProxy extends AsyncRemoteProxy {
         return CommandReactiveExecutor.create(commandExecutor.getConnectionManager(), commandExecutor.getObjectBuilder());
     }
 
+    /** 响应式接口仅允许 Mono 返回类型。 */
     @Override
     protected List<Class<?>> permittedClasses() {
         return Arrays.asList(Mono.class);
     }
 
+    /** 通过 {@link CommandReactiveExecutor#reactive} 将 RemotePromise 转为 Mono。 */
     @Override
     protected Object convertResult(RemotePromise<Object> result, Class<?> returnType) {
         return ((CommandReactiveExecutor) commandExecutor).reactive(() -> new CompletableFutureWrapper<>(result));

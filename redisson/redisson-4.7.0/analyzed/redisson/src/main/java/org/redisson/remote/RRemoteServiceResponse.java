@@ -18,12 +18,17 @@ package org.redisson.remote;
 import java.io.Serializable;
 
 /**
- * 
+ * 远程服务响应消息的公共接口。
+ * <p>
+ * 实现类包括 {@link RemoteServiceAck}、{@link RemoteServiceResponse}、
+ * {@link RemoteServiceCancelResponse} 等，均通过响应队列回传并携带 requestId。
+ *
  * @author Nikita Koksharov
  *
  */
 public interface RRemoteServiceResponse extends Serializable {
 
+    /** @return 与 {@link RemoteServiceRequest} 对应的请求 ID */
     String getId();
     
 }
