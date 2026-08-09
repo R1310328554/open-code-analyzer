@@ -22,11 +22,11 @@ import io.reactivex.rxjava4.internal.operators.observable.ObservableReduceSeedSi
 import java.util.Objects;
 
 /**
- * Reduce a sequence of values, starting from a generated seed value and by using
- * an accumulator function and return the last accumulated value.
+ * 订阅时调用 seedSupplier 获取初始值，再用 reducer 累加上游元素，
+ * 委托 {@link ObservableReduceSeedSingle.ReduceSeedObserver} 完成归约。
  *
- * @param <T> the source value type
- * @param <R> the accumulated result type
+ * @param <T> 上游元素类型
+ * @param <R> 累积结果类型
  */
 public final class ObservableReduceWithSingle<T, R> extends Single<R> {
 
@@ -36,12 +36,18 @@ public final class ObservableReduceWithSingle<T, R> extends Single<R> {
 
     final BiFunction<R, ? super T, R> reducer;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param seedSupplier 提供初始累积值的 Supplier
+     * @param reducer 累加器 (acc, value) -> acc
+     */
     public ObservableReduceWithSingle(ObservableSource<T> source, Supplier<R> seedSupplier, BiFunction<R, ? super T, R> reducer) {
         this.source = source;
         this.seedSupplier = seedSupplier;
         this.reducer = reducer;
     }
 
+    /** 调用 seedSupplier 获取 seed 后订阅 ReduceSeedObserver。 */
     @Override
     protected void subscribeActual(SingleObserver<? super R> observer) {
         R seed;

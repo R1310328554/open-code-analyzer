@@ -26,19 +26,25 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.subjects.*;
 
 /**
- * Repeatedly subscribe to a source if a handler ObservableSource signals an item.
+ * 上游 onComplete 时向 handler 的 signaller 发信号；
+ * handler 返回的 ObservableSource 每 onNext 一次即重订阅上游。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class ObservableRepeatWhen<T> extends AbstractObservableWithUpstream<T, T> {
 
     final Function<? super Observable<Object>, ? extends ObservableSource<?>> handler;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param handler 接收完成信号 Observable 并返回控制重复的 ObservableSource
+     */
     public ObservableRepeatWhen(ObservableSource<T> source, Function<? super Observable<Object>, ? extends ObservableSource<?>> handler) {
         super(source);
         this.handler = handler;
     }
 
+    /** 创建 PublishSubject signaller，订阅 handler 与 RepeatWhenObserver。 */
     @Override
     protected void subscribeActual(Observer<? super T> observer) {
         Subject<Object> signaller = PublishSubject.create().toSerialized();
@@ -61,6 +67,7 @@ public final class ObservableRepeatWhen<T> extends AbstractObservableWithUpstrea
         parent.subscribeNext();
     }
 
+    /** 上游完成时 signaller.onNext；inner onNext 触发 subscribeNext 重订阅。 */
     static final class RepeatWhenObserver<T> extends AtomicInteger implements Observer<T>, Disposable {
 
         @Serial
@@ -108,6 +115,7 @@ public final class ObservableRepeatWhen<T> extends AbstractObservableWithUpstrea
             HalfSerializer.onError(downstream, e, this, error);
         }
 
+        /** 清空 upstream 引用，active=false，向 signaller 发完成信号。 */
         @Override
         public void onComplete() {
             DisposableHelper.replace(upstream, null);
@@ -140,6 +148,7 @@ public final class ObservableRepeatWhen<T> extends AbstractObservableWithUpstrea
             HalfSerializer.onComplete(downstream, this, error);
         }
 
+        /** wip 门控：active 为 false 时重新 subscribe 上游。 */
         void subscribeNext() {
             if (wip.getAndIncrement() == 0) {
 
@@ -156,6 +165,7 @@ public final class ObservableRepeatWhen<T> extends AbstractObservableWithUpstrea
             }
         }
 
+        /** handler 侧 Observer：onNext 触发 innerNext 重订阅。 */
         final class InnerRepeatObserver extends AtomicReference<Disposable> implements Observer<Object> {
 
             @Serial

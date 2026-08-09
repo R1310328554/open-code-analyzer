@@ -23,11 +23,11 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Reduce a sequence of values, starting from a seed value and by using
- * an accumulator function and return the last accumulated value.
+ * 从 seed 出发用 BiFunction 累加 Observable 元素，
+ * 完成后 onSuccess 最终累积值。
  *
- * @param <T> the source value type
- * @param <R> the accumulated result type
+ * @param <T> 上游元素类型
+ * @param <R> 累积结果类型
  */
 public final class ObservableReduceSeedSingle<T, R> extends Single<R> {
 
@@ -37,17 +37,24 @@ public final class ObservableReduceSeedSingle<T, R> extends Single<R> {
 
     final BiFunction<R, ? super T, R> reducer;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param seed 初始累积值
+     * @param reducer 累加器 (acc, value) -> acc
+     */
     public ObservableReduceSeedSingle(ObservableSource<T> source, R seed, BiFunction<R, ? super T, R> reducer) {
         this.source = source;
         this.seed = seed;
         this.reducer = reducer;
     }
 
+    /** 订阅 ReduceSeedObserver 从 seed 开始累加。 */
     @Override
     protected void subscribeActual(SingleObserver<? super R> observer) {
         source.subscribe(new ReduceSeedObserver<>(observer, reducer, seed));
     }
 
+    /** 每 onNext apply reducer；onComplete 时 onSuccess 当前 acc。 */
     static final class ReduceSeedObserver<T, R> implements Observer<T>, Disposable {
 
         final SingleObserver<? super R> downstream;
@@ -73,6 +80,7 @@ public final class ObservableReduceSeedSingle<T, R> extends Single<R> {
             }
         }
 
+        /** apply reducer 更新 acc；异常或 null 结果转 onError。 */
         @Override
         public void onNext(T value) {
             R v = this.value;

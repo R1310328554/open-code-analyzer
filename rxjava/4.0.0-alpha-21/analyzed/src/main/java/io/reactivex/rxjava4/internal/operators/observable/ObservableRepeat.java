@@ -20,13 +20,23 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.SequentialDisposable;
 
+/**
+ * 上游 onComplete 后按 count 次数重新订阅（Long.MAX_VALUE 表示无限）。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableRepeat<T> extends AbstractObservableWithUpstream<T, T> {
     final long count;
+    /**
+     * @param source 上游 Observable
+     * @param count 重复次数（含首次后的重订阅次数）
+     */
     public ObservableRepeat(Observable<T> source, long count) {
         super(source);
         this.count = count;
     }
 
+    /** 创建 RepeatObserver 并在 onComplete 时 subscribeNext 重订阅。 */
     @Override
     public void subscribeActual(Observer<? super T> observer) {
         SequentialDisposable sd = new SequentialDisposable();
@@ -36,6 +46,7 @@ public final class ObservableRepeat<T> extends AbstractObservableWithUpstream<T,
         rs.subscribeNext();
     }
 
+    /** 转发 onNext；onComplete 时递减 remaining 并重订阅或完成。 */
     static final class RepeatObserver<T> extends AtomicInteger implements Observer<T> {
 
         @Serial
@@ -80,9 +91,7 @@ public final class ObservableRepeat<T> extends AbstractObservableWithUpstream<T,
             }
         }
 
-        /**
-         * Subscribes to the source again via trampolining.
-         */
+        /** 通过 trampolining 再次订阅上游（missed 计数防重入）。 */
         void subscribeNext() {
             if (getAndIncrement() == 0) {
                 int missed = 1;

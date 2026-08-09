@@ -20,17 +20,22 @@ import io.reactivex.rxjava4.internal.observers.BasicIntQueueDisposable;
 import java.io.Serial;
 
 /**
- * Emits a range of integer values from start to end.
+ * 发射 [start, start+count) 范围内的 int 序列，支持 SYNC queue fusion。
  */
 public final class ObservableRange extends Observable<Integer> {
     private final int start;
     private final long end;
 
+    /**
+     * @param start 首个发射值（含）
+     * @param count 元素个数
+     */
     public ObservableRange(int start, int count) {
         this.start = start;
         this.end = (long)start + count;
     }
 
+    /** 创建 RangeDisposable 并同步 run 发射整数序列。 */
     @Override
     protected void subscribeActual(Observer<? super Integer> o) {
         RangeDisposable parent = new RangeDisposable(o, start, end);
@@ -38,6 +43,7 @@ public final class ObservableRange extends Observable<Integer> {
         parent.run();
     }
 
+    /** 同步迭代 [index, end) 或作为 fusion poll 源。 */
     static final class RangeDisposable
     extends BasicIntQueueDisposable<Integer> {
 
@@ -58,6 +64,7 @@ public final class ObservableRange extends Observable<Integer> {
             this.end = end;
         }
 
+        /** 非 fusion 路径：循环 onNext 直至 end 或 dispose，然后 onComplete。 */
         void run() {
             if (fused) {
                 return;
@@ -73,6 +80,7 @@ public final class ObservableRange extends Observable<Integer> {
             }
         }
 
+        /** fusion 路径：poll 下一 int，耗尽返回 null 并置 done。 */
         @Nullable
         @Override
         public Integer poll() {
@@ -106,6 +114,7 @@ public final class ObservableRange extends Observable<Integer> {
             return get() != 0;
         }
 
+        /** 请求 SYNC 时启用 fused 并返回 SYNC。 */
         @Override
         public int requestFusion(int mode) {
             if ((mode & SYNC) != 0) {

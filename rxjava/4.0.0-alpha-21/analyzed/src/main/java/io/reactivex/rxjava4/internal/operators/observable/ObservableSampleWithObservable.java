@@ -21,18 +21,29 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.observers.SerializedObserver;
 
-public final class ObservableSampleWithObservable<T> extends AbstractObservableWithUpstream<T, T> {
+/**
+ * 以 other Observable 的 onNext 为采样节拍，
+ * 每次节拍发射上游最新缓存值；emitLast 控制主流完成时是否发射末值。
+ *
+ * @param <T> 元素类型
+ */
 
     final ObservableSource<?> other;
 
     final boolean emitLast;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param other 采样节拍源
+     * @param emitLast 主流完成时是否发射最后一次缓存值
+     */
     public ObservableSampleWithObservable(ObservableSource<T> source, ObservableSource<?> other, boolean emitLast) {
         super(source);
         this.other = other;
         this.emitLast = emitLast;
     }
 
+    /** 按 emitLast 选择 SampleMainEmitLast 或 SampleMainNoLast。 */
     @Override
     public void subscribeActual(Observer<? super T> t) {
         SerializedObserver<T> serial = new SerializedObserver<>(t);
@@ -43,6 +54,7 @@ public final class ObservableSampleWithObservable<T> extends AbstractObservableW
         }
     }
 
+    /** 缓存上游最新值；sampler onNext 时 run/emit。 */
     abstract static class SampleMainObserver<T> extends AtomicReference<T>
     implements Observer<T>, Disposable {
 
@@ -72,6 +84,7 @@ public final class ObservableSampleWithObservable<T> extends AbstractObservableW
             }
         }
 
+        /** lazySet 缓存最新值，等待采样节拍 emit。 */
         @Override
         public void onNext(T t) {
             lazySet(t);
@@ -114,6 +127,7 @@ public final class ObservableSampleWithObservable<T> extends AbstractObservableW
             completion();
         }
 
+        /** getAndSet(null) 取出缓存值并 onNext。 */
         void emit() {
             T value = getAndSet(null);
             if (value != null) {
@@ -126,6 +140,7 @@ public final class ObservableSampleWithObservable<T> extends AbstractObservableW
         abstract void run();
     }
 
+    /** 采样源 Observer：onNext 触发 parent.run() 发射缓存值。 */
     record SamplerObserver<T>(SampleMainObserver<T> parent) implements Observer<Object> {
 
         @Override
@@ -149,6 +164,7 @@ public final class ObservableSampleWithObservable<T> extends AbstractObservableW
             }
         }
 
+    /** emitLast=false：主流完成即 onComplete，不强制 emit 末值。 */
     static final class SampleMainNoLast<T> extends SampleMainObserver<T> {
 
         @Serial
@@ -169,6 +185,7 @@ public final class ObservableSampleWithObservable<T> extends AbstractObservableW
         }
     }
 
+    /** emitLast=true：主流完成时 done=true，run 循环中 emit 末值后 onComplete。 */
     static final class SampleMainEmitLast<T> extends SampleMainObserver<T> {
 
         @Serial

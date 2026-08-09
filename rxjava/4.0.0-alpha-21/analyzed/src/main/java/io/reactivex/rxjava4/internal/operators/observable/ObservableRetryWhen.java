@@ -26,19 +26,25 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.subjects.*;
 
 /**
- * Repeatedly subscribe to a source if a handler ObservableSource signals an item.
+ * onError 时将异常推入 handler 的 signaller；
+ * handler 返回的 ObservableSource 每 onNext 一次即重订阅上游。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class ObservableRetryWhen<T> extends AbstractObservableWithUpstream<T, T> {
 
     final Function<? super Observable<Throwable>, ? extends ObservableSource<?>> handler;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param handler 接收 Throwable 信号 Observable 并返回控制重试的 ObservableSource
+     */
     public ObservableRetryWhen(ObservableSource<T> source, Function<? super Observable<Throwable>, ? extends ObservableSource<?>> handler) {
         super(source);
         this.handler = handler;
     }
 
+    /** 创建 PublishSubject&lt;Throwable&gt; signaller，订阅 handler 与 RepeatWhenObserver。 */
     @Override
     protected void subscribeActual(Observer<? super T> observer) {
         Subject<Throwable> signaller = PublishSubject.<Throwable>create().toSerialized();
@@ -61,6 +67,7 @@ public final class ObservableRetryWhen<T> extends AbstractObservableWithUpstream
         parent.subscribeNext();
     }
 
+    /** onError 时 signaller.onNext(e)；inner onNext 触发 subscribeNext 重订阅。 */
     static final class RepeatWhenObserver<T> extends AtomicInteger implements Observer<T>, Disposable {
 
         @Serial
@@ -102,6 +109,7 @@ public final class ObservableRetryWhen<T> extends AbstractObservableWithUpstream
             HalfSerializer.onNext(downstream, t, this, error);
         }
 
+        /** 清空 upstream，active=false，向 signaller 推送异常。 */
         @Override
         public void onError(Throwable e) {
             DisposableHelper.replace(upstream, null);
@@ -140,6 +148,7 @@ public final class ObservableRetryWhen<T> extends AbstractObservableWithUpstream
             HalfSerializer.onComplete(downstream, this, error);
         }
 
+        /** wip 门控：active 为 false 时重新 subscribe 上游。 */
         void subscribeNext() {
             if (wip.getAndIncrement() == 0) {
 
@@ -156,6 +165,7 @@ public final class ObservableRetryWhen<T> extends AbstractObservableWithUpstream
             }
         }
 
+        /** handler 侧 Observer：onNext 触发 innerNext 重订阅。 */
         final class InnerRepeatObserver extends AtomicReference<Disposable> implements Observer<Object> {
 
             @Serial

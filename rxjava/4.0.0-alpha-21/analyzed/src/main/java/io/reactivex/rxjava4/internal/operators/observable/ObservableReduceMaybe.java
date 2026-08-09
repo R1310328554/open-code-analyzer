@@ -23,10 +23,10 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Reduce a sequence of values into a single value via an aggregator function and emit the final value or complete
- * if the source is empty.
+ * 用 BiFunction 将 Observable 序列归约为单个值：
+ * 有元素则 onSuccess，空序列则 onComplete。
  *
- * @param <T> the source and result value type
+ * @param <T> 源与结果类型
  */
 public final class ObservableReduceMaybe<T> extends Maybe<T> {
 
@@ -34,16 +34,22 @@ public final class ObservableReduceMaybe<T> extends Maybe<T> {
 
     final BiFunction<T, T, T> reducer;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param reducer 两元素累加器 (acc, value) -> acc
+     */
     public ObservableReduceMaybe(ObservableSource<T> source, BiFunction<T, T, T> reducer) {
         this.source = source;
         this.reducer = reducer;
     }
 
+    /** 订阅 ReduceObserver 逐次 apply reducer。 */
     @Override
     protected void subscribeActual(MaybeObserver<? super T> observer) {
         source.subscribe(new ReduceObserver<>(observer, reducer));
     }
 
+    /** 首元素缓存为 acc，后续 apply reducer；终止时 onSuccess 或 onComplete。 */
     static final class ReduceObserver<T> implements Observer<T>, Disposable {
 
         final MaybeObserver<? super T> downstream;
@@ -70,6 +76,7 @@ public final class ObservableReduceMaybe<T> extends Maybe<T> {
             }
         }
 
+        /** 首值直接缓存，其后 apply reducer；null 结果转 onError。 */
         @Override
         public void onNext(T value) {
             if (!done) {
@@ -100,6 +107,7 @@ public final class ObservableReduceMaybe<T> extends Maybe<T> {
             downstream.onError(e);
         }
 
+        /** 有 acc 则 onSuccess，否则 onComplete。 */
         @Override
         public void onComplete() {
             if (done) {

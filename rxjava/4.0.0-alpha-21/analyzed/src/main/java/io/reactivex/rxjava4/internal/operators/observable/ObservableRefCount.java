@@ -24,11 +24,10 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Returns an observable sequence that stays connected to the source as long as
- * there is at least one subscription to the observable sequence.
+ * 对 {@link ConnectableObservable} 做引用计数：
+ * 订阅者数达 n 时 connect，归零后 reset（可配置 timeout 延迟断开）。
  *
- * @param <T>
- *            the value type
+ * @param <T> 元素类型
  */
 public final class ObservableRefCount<T> extends Observable<T> {
 
@@ -44,10 +43,18 @@ public final class ObservableRefCount<T> extends Observable<T> {
 
     RefConnection connection;
 
+    /** @param source 待引用计数的 ConnectableObservable（n=1，无 timeout） */
     public ObservableRefCount(ConnectableObservable<T> source) {
         this(source, 1, 0L, TimeUnit.NANOSECONDS, null);
     }
 
+    /**
+     * @param source ConnectableObservable 源
+     * @param n 触发 connect 所需的最小订阅者数
+     * @param timeout 最后订阅者取消后延迟 reset 的时间（0 表示立即）
+     * @param unit 时间单位
+     * @param scheduler 调度 timeout 的 Scheduler
+     */
     public ObservableRefCount(ConnectableObservable<T> source, int n, long timeout, TimeUnit unit,
             Scheduler scheduler) {
         this.source = source;
@@ -57,6 +64,7 @@ public final class ObservableRefCount<T> extends Observable<T> {
         this.scheduler = scheduler;
     }
 
+    /** 维护 RefConnection 引用计数，达 n 时 connect 上游。 */
     @Override
     protected void subscribeActual(Observer<? super T> observer) {
 
@@ -88,6 +96,7 @@ public final class ObservableRefCount<T> extends Observable<T> {
         }
     }
 
+    /** 订阅者 cancel：计数减一，归零且已 connect 时 timeout 或立即 reset。 */
     void cancel(RefConnection rc) {
         SequentialDisposable sd;
         synchronized (this) {
@@ -110,6 +119,7 @@ public final class ObservableRefCount<T> extends Observable<T> {
         sd.replace(scheduler.scheduleDirect(rc, timeout, unit));
     }
 
+    /** 上游终止：清理 timer，计数归零时 reset 并清空 connection。 */
     void terminated(RefConnection rc) {
         synchronized (this) {
             if (connection == rc) {
@@ -125,6 +135,7 @@ public final class ObservableRefCount<T> extends Observable<T> {
         }
     }
 
+    /** timeout 到期且仍无订阅者时 dispose 连接并 reset 上游。 */
     void timeout(RefConnection rc) {
         synchronized (this) {
             if (rc.subscriberCount == 0 && rc == connection) {
@@ -141,6 +152,7 @@ public final class ObservableRefCount<T> extends Observable<T> {
         }
     }
 
+    /** 引用计数状态：run 触发 timeout，accept 保存 connect Disposable。 */
     static final class RefConnection extends AtomicReference<Disposable>
     implements Runnable, Consumer<Disposable> {
 
@@ -166,6 +178,7 @@ public final class ObservableRefCount<T> extends Observable<T> {
             parent.timeout(this);
         }
 
+        /** connect 回调：保存 Disposable；若已 early disconnect 则 reset。 */
         @Override
         public void accept(Disposable t) {
             DisposableHelper.replace(this, t);
@@ -177,6 +190,7 @@ public final class ObservableRefCount<T> extends Observable<T> {
         }
     }
 
+    /** 转发上游事件；dispose/终止时更新 parent 引用计数。 */
     static final class RefCountObserver<T>
     extends AtomicBoolean implements Observer<T>, Disposable {
 

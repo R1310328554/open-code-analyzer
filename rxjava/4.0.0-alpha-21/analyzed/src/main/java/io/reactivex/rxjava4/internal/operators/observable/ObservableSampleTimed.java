@@ -24,13 +24,26 @@ import io.reactivex.rxjava4.functions.Consumer;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.observers.SerializedObserver;
 
-public final class ObservableSampleTimed<T> extends AbstractObservableWithUpstream<T, T> {
+/**
+ * 按固定周期采样上游最新值：定时 run 发射缓存值，
+ * 新值覆盖旧值时可经 onDropped 通知；emitLast 控制完成时是否发射末值。
+ *
+ * @param <T> 元素类型
+ */
     final long period;
     final TimeUnit unit;
     final Scheduler scheduler;
     final Consumer<? super T> onDropped;
     final boolean emitLast;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param period 采样周期
+     * @param unit 时间单位
+     * @param scheduler 调度定时任务的 Scheduler
+     * @param emitLast 完成时是否发射最后一次缓存值
+     * @param onDropped 被覆盖的旧值回调（可为 null）
+     */
     public ObservableSampleTimed(ObservableSource<T> source,
                                  long period,
                                  TimeUnit unit,
@@ -45,6 +58,7 @@ public final class ObservableSampleTimed<T> extends AbstractObservableWithUpstre
         this.onDropped = onDropped;
     }
 
+    /** 按 emitLast 选择 SampleTimedEmitLast 或 SampleTimedNoLast。 */
     @Override
     public void subscribeActual(Observer<? super T> t) {
         SerializedObserver<T> serial = new SerializedObserver<>(t);
@@ -55,6 +69,7 @@ public final class ObservableSampleTimed<T> extends AbstractObservableWithUpstre
         }
     }
 
+    /** 缓存最新值，schedulePeriodicallyDirect 触发 emit；onDropped 处理被覆盖值。 */
     abstract static class SampleTimedObserver<T> extends AtomicReference<T> implements Observer<T>, Disposable, Runnable {
 
         @Serial
@@ -89,6 +104,7 @@ public final class ObservableSampleTimed<T> extends AbstractObservableWithUpstre
             }
         }
 
+        /** getAndSet 新值；旧值非 null 时可选 onDropped.accept。 */
         @Override
         public void onNext(T t) {
             T oldValue = getAndSet(t);
@@ -131,6 +147,7 @@ public final class ObservableSampleTimed<T> extends AbstractObservableWithUpstre
             return upstream.isDisposed();
         }
 
+        /** 取出并清空缓存值，非 null 则 downstream.onNext。 */
         void emit() {
             T value = getAndSet(null);
             if (value != null) {
@@ -141,6 +158,7 @@ public final class ObservableSampleTimed<T> extends AbstractObservableWithUpstre
         abstract void complete();
     }
 
+    /** emitLast=false：定时 emit，完成时不强制发射末值。 */
     static final class SampleTimedNoLast<T> extends SampleTimedObserver<T> {
 
         @Serial
@@ -161,6 +179,7 @@ public final class ObservableSampleTimed<T> extends AbstractObservableWithUpstre
         }
     }
 
+    /** emitLast=true：完成与定时 tick 均尝试 emit 末值，wip 协调 onComplete。 */
     static final class SampleTimedEmitLast<T> extends SampleTimedObserver<T> {
 
         @Serial

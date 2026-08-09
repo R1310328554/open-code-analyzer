@@ -22,13 +22,24 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.BooleanSupplier;
 import io.reactivex.rxjava4.internal.disposables.SequentialDisposable;
 
+/**
+ * 上游 onComplete 后若 until 返回 false 则重新订阅，
+ * 直至 until 为 true 或 until 抛异常。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableRepeatUntil<T> extends AbstractObservableWithUpstream<T, T> {
     final BooleanSupplier until;
+    /**
+     * @param source 上游 Observable
+     * @param until 每次 onComplete 后判断是否停止重复
+     */
     public ObservableRepeatUntil(Observable<T> source, BooleanSupplier until) {
         super(source);
         this.until = until;
     }
 
+    /** 创建 RepeatUntilObserver 并在 until 为 false 时 subscribeNext。 */
     @Override
     public void subscribeActual(Observer<? super T> observer) {
         SequentialDisposable sd = new SequentialDisposable();
@@ -38,6 +49,7 @@ public final class ObservableRepeatUntil<T> extends AbstractObservableWithUpstre
         rs.subscribeNext();
     }
 
+    /** onComplete 时调用 stop.getAsBoolean() 决定重订阅或完成。 */
     static final class RepeatUntilObserver<T> extends AtomicInteger implements Observer<T> {
 
         @Serial
@@ -86,9 +98,7 @@ public final class ObservableRepeatUntil<T> extends AbstractObservableWithUpstre
             }
         }
 
-        /**
-         * Subscribes to the source again via trampolining.
-         */
+        /** 通过 trampolining 再次订阅上游。 */
         void subscribeNext() {
             if (getAndIncrement() == 0) {
                 int missed = 1;

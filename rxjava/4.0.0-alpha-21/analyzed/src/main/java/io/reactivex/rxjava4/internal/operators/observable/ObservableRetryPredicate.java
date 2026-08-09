@@ -22,9 +22,19 @@ import io.reactivex.rxjava4.exceptions.*;
 import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.disposables.SequentialDisposable;
 
-public final class ObservableRetryPredicate<T> extends AbstractObservableWithUpstream<T, T> {
+/**
+ * onError 时在剩余次数内用 Predicate 判定是否重试；
+ * count 为 Long.MAX_VALUE 表示次数不限（仍受 predicate 约束）。
+ *
+ * @param <T> 元素类型
+ */
     final Predicate<? super Throwable> predicate;
     final long count;
+    /**
+     * @param source 上游 Observable
+     * @param count 最大重试次数
+     * @param predicate 对异常是否继续重试
+     */
     public ObservableRetryPredicate(Observable<T> source,
             long count,
             Predicate<? super Throwable> predicate) {
@@ -33,6 +43,7 @@ public final class ObservableRetryPredicate<T> extends AbstractObservableWithUps
         this.count = count;
     }
 
+    /** 创建 RepeatObserver，onError 时递减 remaining 并 test predicate。 */
     @Override
     public void subscribeActual(Observer<? super T> observer) {
         SequentialDisposable sa = new SequentialDisposable();
@@ -42,6 +53,7 @@ public final class ObservableRetryPredicate<T> extends AbstractObservableWithUps
         rs.subscribeNext();
     }
 
+    /** remaining 为 0 直接 onError；否则 predicate.test 决定重订阅。 */
     static final class RepeatObserver<T> extends AtomicInteger implements Observer<T> {
 
         @Serial
@@ -101,9 +113,7 @@ public final class ObservableRetryPredicate<T> extends AbstractObservableWithUps
             downstream.onComplete();
         }
 
-        /**
-         * Subscribes to the source again via trampolining.
-         */
+        /** 通过 trampolining 再次订阅上游。 */
         void subscribeNext() {
             if (getAndIncrement() == 0) {
                 int missed = 1;

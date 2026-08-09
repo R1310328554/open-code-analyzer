@@ -22,8 +22,17 @@ import io.reactivex.rxjava4.exceptions.*;
 import io.reactivex.rxjava4.functions.BiPredicate;
 import io.reactivex.rxjava4.internal.disposables.SequentialDisposable;
 
-public final class ObservableRetryBiPredicate<T> extends AbstractObservableWithUpstream<T, T> {
+/**
+ * onError 时用 BiPredicate&lt;Integer, Throwable&gt; 判定是否重试；
+ * 第一个参数为当前重试次数（从 1 起）。
+ *
+ * @param <T> 元素类型
+ */
     final BiPredicate<? super Integer, ? super Throwable> predicate;
+    /**
+     * @param source 上游 Observable
+     * @param predicate (重试次数, 异常) -> 是否继续重试
+     */
     public ObservableRetryBiPredicate(
             Observable<T> source,
             BiPredicate<? super Integer, ? super Throwable> predicate) {
@@ -31,6 +40,7 @@ public final class ObservableRetryBiPredicate<T> extends AbstractObservableWithU
         this.predicate = predicate;
     }
 
+    /** 创建 RetryBiObserver，onError 时 test predicate 决定是否 subscribeNext。 */
     @Override
     public void subscribeActual(Observer<? super T> observer) {
         SequentialDisposable sa = new SequentialDisposable();
@@ -40,6 +50,7 @@ public final class ObservableRetryBiPredicate<T> extends AbstractObservableWithU
         rs.subscribeNext();
     }
 
+    /** onError 递增 retries 并 test predicate；true 则重订阅。 */
     static final class RetryBiObserver<T> extends AtomicInteger implements Observer<T> {
 
         @Serial
@@ -90,9 +101,7 @@ public final class ObservableRetryBiPredicate<T> extends AbstractObservableWithU
             downstream.onComplete();
         }
 
-        /**
-         * Subscribes to the source again via trampolining.
-         */
+        /** 通过 trampolining 再次订阅上游。 */
         void subscribeNext() {
             if (getAndIncrement() == 0) {
                 int missed = 1;

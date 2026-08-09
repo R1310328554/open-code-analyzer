@@ -25,20 +25,26 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.subjects.PublishSubject;
 
 /**
- * Shares a source Observable for the duration of a selector function.
- * @param <T> the input value type
- * @param <R> the output value type
+ * 在 selector 执行期间通过 {@link PublishSubject} 共享上游 Observable：
+ * selector 返回的 ObservableSource 与上游并行订阅，上游事件经 subject 转发。
+ * @param <T> 上游元素类型
+ * @param <R> selector 输出类型
  */
 public final class ObservablePublishSelector<T, R> extends AbstractObservableWithUpstream<T, R> {
 
     final Function<? super Observable<T>, ? extends ObservableSource<R>> selector;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param selector 接收共享 Observable 并返回目标 ObservableSource 的函数
+     */
     public ObservablePublishSelector(final ObservableSource<T> source,
                                               final Function<? super Observable<T>, ? extends ObservableSource<R>> selector) {
         super(source);
         this.selector = selector;
     }
 
+    /** 创建 PublishSubject，应用 selector 后并行订阅 target 与 source。 */
     @Override
     protected void subscribeActual(Observer<? super R> observer) {
         PublishSubject<T> subject = PublishSubject.create();
@@ -60,6 +66,7 @@ public final class ObservablePublishSelector<T, R> extends AbstractObservableWit
         source.subscribe(new SourceObserver<>(subject, o));
     }
 
+    /** 将上游事件转发至 subject，onSubscribe 绑定 target 的 Disposable。 */
     record SourceObserver<T>(PublishSubject<T> subject, AtomicReference<Disposable> target) implements Observer<T> {
 
         @Override
@@ -83,6 +90,7 @@ public final class ObservablePublishSelector<T, R> extends AbstractObservableWit
             }
         }
 
+    /** selector 侧下游 Observer：终止时 dispose 自身并转发信号。 */
     static final class TargetObserver<R>
     extends AtomicReference<Disposable> implements Observer<R>, Disposable {
         @Serial
@@ -110,12 +118,14 @@ public final class ObservablePublishSelector<T, R> extends AbstractObservableWit
             downstream.onNext(value);
         }
 
+        /** onError 时 dispose 自身再转发错误。 */
         @Override
         public void onError(Throwable e) {
             DisposableHelper.dispose(this);
             downstream.onError(e);
         }
 
+        /** onComplete 时 dispose 自身再转发完成。 */
         @Override
         public void onComplete() {
             DisposableHelper.dispose(this);
