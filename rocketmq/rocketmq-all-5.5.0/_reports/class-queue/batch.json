@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:20:03Z",
-  "files": [
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/ProtocolHandler.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/ProtocolNegotiationHandler.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/http2proxy/HAProxyMessageForwarder.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/http2proxy/Http2ProtocolProxyHandler.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/http2proxy/Http2ProxyBackendHandler.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/http2proxy/Http2ProxyFrontendHandler.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/remoting/RemotingProtocolHandler.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/ClusterServiceManager.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/LocalServiceManager.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/ServiceManager.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/ServiceManagerFactory.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/admin/AdminService.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/admin/DefaultAdminService.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/cert/TlsCertificateManager.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/channel/ChannelManager.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 768,
-  "done": 705
+  "done": 720
 }
