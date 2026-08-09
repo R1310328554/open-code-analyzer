@@ -1,6 +1,22 @@
 {
-  "claimed_at": null,
-  "files": [],
+  "claimed_at": "2026-08-09T19:33:23Z",
+  "files": [
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/ObjectListReplayDecoder2.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/ObjectMapEntryReplayDecoder.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/PointDecoder.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/PropertiesDecoder.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/PropertiesListDecoder.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedisClusterNodeDecoder.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonBaseReactive.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonConnectionFactory.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonExceptionConverter.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterGeoCommands.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterHashCommands.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterHyperLogLogCommands.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterKeyCommands.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterListCommands.java",
+    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterNumberCommands.java"
+  ],
   "remaining_pending": 1772,
-  "done": 1050
+  "done": 1035
 }
