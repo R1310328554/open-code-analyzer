@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+在指定 Scheduler 的工作线程上调度下游 onNext/onError/onComplete，支持背压预取与 delayError。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -30,12 +35,34 @@ import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.operators.SpscArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableObserveOn — 意图说明
+
+创建 Scheduler Worker 并将事件 post 到指定线程。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * 创建 Scheduler Worker 并将事件 post 到指定线程。
+ */
 public final class FlowableObserveOn<T> extends AbstractFlowableWithUpstream<T, T> {
 final Scheduler scheduler;
 
     final boolean delayError;
 
     final int prefetch;
+
+    /**
+
+     * 构造 FlowableObserveOn。
+
+     * @param Scheduler Scheduler 参数
+
+     * @param boolean boolean 参数
+
+     * @param int int 参数
+
+     */
 
     public FlowableObserveOn(
             Flowable<T> source,
@@ -48,7 +75,12 @@ final Scheduler scheduler;
         this.prefetch = prefetch;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     public void subscribeActual(Subscriber<? super T> s) {
         Worker worker = scheduler.createWorker();
 
@@ -246,6 +278,9 @@ final Scheduler scheduler;
         }
     }
 
+    /** 内部 ObserveOnSubscriber。 */
+
+
     static final class ObserveOnSubscriber<T> extends BaseObserveOnSubscriber<T> {
 
         @Serial
@@ -262,7 +297,12 @@ final Scheduler scheduler;
             this.downstream = actual;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -483,6 +523,9 @@ final Scheduler scheduler;
 
     }
 
+    /** 内部 ObserveOnConditionalSubscriber。 */
+
+
     static final class ObserveOnConditionalSubscriber<T>
     extends BaseObserveOnSubscriber<T> {
 
@@ -502,7 +545,12 @@ final Scheduler scheduler;
             this.downstream = actual;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;

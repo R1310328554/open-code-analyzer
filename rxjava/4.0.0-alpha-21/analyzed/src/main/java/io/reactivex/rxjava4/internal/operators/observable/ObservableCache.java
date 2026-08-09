@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+自动连接上游 Observable 并缓存事件，支持多播 replay 与主动终止连接/完成缓存。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.observable;
 
 import java.io.Serial;
@@ -19,6 +24,13 @@ import java.util.concurrent.atomic.*;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 
+/* ===== [OCA 中文解析] =====
+class ObservableCache — 意图说明
+
+Multicaster 链表节点缓存事件并向新 Observer replay。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * An observable which auto-connects to another observable, caches the elements
  * from that observable but allows terminating the connection and completing the cache.
@@ -66,6 +78,10 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
      * @param source the source to subscribe to for the first incoming observer
      * @param capacityHint the number of items expected (reduce allocation frequency)
      */
+    /**
+     * 构造 ObservableCache。
+     * @param int int 参数
+     */
     public ObservableCache(Observable<T> source, int capacityHint) {
         super(source);
         this.once = new AtomicBoolean();
@@ -74,7 +90,12 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
         this.multicaster = new Multicaster<>(capacityHint, n);
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Observer<? super T> t) {
         CacheDisposable<T> consumer = new CacheDisposable<>(t, multicaster, head);
         t.onSubscribe(consumer);
@@ -110,6 +131,9 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
     /* public */ long cachedEventCount() {
         return multicaster.size;
     }
+
+    /** 内部 Multicaster。 */
+
 
     static final class Multicaster<T> extends AtomicReference<CacheDisposable<T>[]> implements Observer<T> {
 
@@ -303,7 +327,12 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
             // we can't do much with the upstream disposable
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             int tailOffset = this.tailOffset;
             // if the current tail node is full, create a fresh node
@@ -324,7 +353,10 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
         }
 
         @SuppressWarnings("unchecked")
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
         @Override
+
         public void onError(Throwable t) {
             error = t;
             done = true;
@@ -336,7 +368,10 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
         }
 
         @SuppressWarnings("unchecked")
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
         @Override
+
         public void onComplete() {
             done = true;
             // No additional events will arrive, so now we can clear the 'tail' reference
@@ -352,6 +387,8 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
      * {@code this} holds the work-in-progress counter for the serialized replay.
      * @param <T> the value type
      */
+    /** 内部 CacheDisposable。 */
+
     static final class CacheDisposable<T> extends AtomicInteger
     implements Disposable {
 
@@ -383,7 +420,12 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
             this.node = head;
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             if (!disposed) {
                 disposed = true;
@@ -391,7 +433,12 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
             }
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return disposed;
         }
@@ -402,6 +449,8 @@ public final class ObservableCache<T> extends AbstractObservableWithUpstream<T, 
      * part of a linked-node-list structure.
      * @param <T> the element type
      */
+    /** 内部 Node。 */
+
     static final class Node<T> {
 
         /**

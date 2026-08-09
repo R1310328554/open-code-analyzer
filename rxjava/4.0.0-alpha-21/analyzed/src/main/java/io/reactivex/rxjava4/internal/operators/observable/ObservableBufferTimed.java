@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+Observable 版定时缓冲：按 timespan/timeskip 收集元素到 Collection 并批量发射。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.observable;
 
 import java.util.*;
@@ -29,6 +34,16 @@ import io.reactivex.rxjava4.internal.queue.MpscLinkedQueue;
 import io.reactivex.rxjava4.internal.util.QueueDrainHelper;
 import io.reactivex.rxjava4.observers.SerializedObserver;
 
+/* ===== [OCA 中文解析] =====
+class ObservableBufferTimed — 意图说明
+
+定时/计数缓冲 Observer 管理 Scheduler 与 buffer 发射。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * 定时/计数缓冲 Observer 管理 Scheduler 与 buffer 发射。
+ */
 public final class ObservableBufferTimed<T, U extends Collection<? super T>>
 extends AbstractObservableWithUpstream<T, U> {
 
@@ -39,6 +54,24 @@ extends AbstractObservableWithUpstream<T, U> {
     final Supplier<U> bufferSupplier;
     final int maxSize;
     final boolean restartTimerOnMaxSize;
+
+    /**
+
+     * 构造 ObservableBufferTimed。
+
+     * @param long long 参数
+
+     * @param long long 参数
+
+     * @param TimeUnit TimeUnit 参数
+
+     * @param Scheduler Scheduler 参数
+
+     * @param int int 参数
+
+     * @param boolean boolean 参数
+
+     */
 
     public ObservableBufferTimed(ObservableSource<T> source, long timespan, long timeskip, TimeUnit unit, Scheduler scheduler, Supplier<U> bufferSupplier, int maxSize,
                                  boolean restartTimerOnMaxSize) {
@@ -52,7 +85,12 @@ extends AbstractObservableWithUpstream<T, U> {
         this.restartTimerOnMaxSize = restartTimerOnMaxSize;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Observer<? super U> t) {
         if (timespan == timeskip && maxSize == Integer.MAX_VALUE) {
             source.subscribe(new BufferExactUnboundedObserver<>(
@@ -77,6 +115,9 @@ extends AbstractObservableWithUpstream<T, U> {
                 bufferSupplier, timespan, timeskip, unit, w));
 
     }
+
+    /** 内部 BufferExactUnboundedObserver。 */
+
 
     static final class BufferExactUnboundedObserver<T, U extends Collection<? super T>>
     extends QueueDrainObserver<T, U, U> implements Runnable, Disposable {
@@ -128,7 +169,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             synchronized (this) {
                 U b = buffer;
@@ -139,7 +185,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             synchronized (this) {
                 buffer = null;
@@ -148,7 +199,12 @@ extends AbstractObservableWithUpstream<T, U> {
             DisposableHelper.dispose(timer);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             U b;
             synchronized (this) {
@@ -165,13 +221,23 @@ extends AbstractObservableWithUpstream<T, U> {
             DisposableHelper.dispose(timer);
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             DisposableHelper.dispose(timer);
             upstream.dispose();
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return timer.get() == DisposableHelper.DISPOSED;
         }
@@ -211,6 +277,9 @@ extends AbstractObservableWithUpstream<T, U> {
             downstream.onNext(v);
         }
     }
+
+    /** 内部 BufferSkipBoundedObserver。 */
+
 
     static final class BufferSkipBoundedObserver<T, U extends Collection<? super T>>
     extends QueueDrainObserver<T, U, U> implements Runnable, Disposable {
@@ -262,7 +331,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             synchronized (this) {
                 for (U b : buffers) {
@@ -271,7 +345,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             done = true;
             clear();
@@ -279,7 +358,12 @@ extends AbstractObservableWithUpstream<T, U> {
             w.dispose();
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             List<U> bs;
             synchronized (this) {
@@ -296,7 +380,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             if (!cancelled) {
                 cancelled = true;
@@ -306,7 +395,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return cancelled;
         }
@@ -383,6 +477,9 @@ extends AbstractObservableWithUpstream<T, U> {
         }
     }
 
+    /** 内部 BufferExactBoundedObserver。 */
+
+
     static final class BufferExactBoundedObserver<T, U extends Collection<? super T>>
     extends QueueDrainObserver<T, U, U> implements Runnable, Disposable {
         final Supplier<U> bufferSupplier;
@@ -441,7 +538,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             U b;
             synchronized (this) {
@@ -483,7 +585,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             synchronized (this) {
                 buffer = null;
@@ -492,7 +599,12 @@ extends AbstractObservableWithUpstream<T, U> {
             w.dispose();
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             w.dispose();
 
@@ -516,7 +628,12 @@ extends AbstractObservableWithUpstream<T, U> {
             a.onNext(v);
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             if (!cancelled) {
                 cancelled = true;
@@ -528,7 +645,12 @@ extends AbstractObservableWithUpstream<T, U> {
             }
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return cancelled;
         }

@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+同时运行 MaybeSource 数组，各 inner 的 onSuccess 值可用即向下游发射，全部完成后 onComplete。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.maybe;
 
 import java.io.Serial;
@@ -27,6 +32,13 @@ import io.reactivex.rxjava4.internal.subscriptions.*;
 import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.SimpleQueue;
 
+/* ===== [OCA 中文解析] =====
+class MaybeMergeArray — 意图说明
+
+MergeMaybeObserver 合并多路 Maybe 并统一背压 drain。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Run all MaybeSources of an array at once and signal their values as they become available.
  *
@@ -40,7 +52,12 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
         this.sources = sources;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super T> s) {
         MaybeSource<? extends T>[] maybes = sources;
         int n = maybes.length;
@@ -66,6 +83,9 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
             source.subscribe(parent);
         }
     }
+
+    /** 内部 MergeMaybeObserver。 */
+
 
     static final class MergeMaybeObserver<T>
     extends BasicIntQueueSubscription<T> implements MaybeObserver<T> {
@@ -131,7 +151,12 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
             queue.clear();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -139,7 +164,12 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -161,7 +191,12 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
             drain();
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable e) {
             if (errors.tryAddThrowableOrReport(e)) {
                 set.dispose();
@@ -170,7 +205,12 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             queue.offer(NotificationLite.COMPLETE);
             drain();
@@ -285,6 +325,9 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
 
         }
 
+        /** drain 循环：按 request 从队列取元素发射。 */
+
+
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -312,6 +355,9 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
 
         int producerIndex();
     }
+
+    /** 内部 MpscFillOnceSimpleQueue。 */
+
 
     static final class MpscFillOnceSimpleQueue<T>
     extends AtomicReferenceArray<T>
@@ -401,6 +447,9 @@ public final class MaybeMergeArray<T> extends Flowable<T> {
             return producerIndex.get();
         }
     }
+
+    /** 内部 ClqSimpleQueue。 */
+
 
     static final class ClqSimpleQueue<T> extends ConcurrentLinkedQueue<T> implements SimpleQueueWithConsumerIndex<T> {
 

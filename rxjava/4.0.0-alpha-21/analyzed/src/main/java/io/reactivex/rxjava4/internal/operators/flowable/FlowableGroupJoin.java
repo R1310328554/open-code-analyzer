@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+GroupJoin 算子：左流元素与右流窗口配对，由 leftEnd/rightEnd 信号界定窗口生命周期并合并结果。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -30,6 +35,16 @@ import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import io.reactivex.rxjava4.processors.UnicastProcessor;
 
+/* ===== [OCA 中文解析] =====
+class FlowableGroupJoin — 意图说明
+
+协调左右流、窗口结束信号与 resultSelector 合并。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * 协调左右流、窗口结束信号与 resultSelector 合并。
+ */
 public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends AbstractFlowableWithUpstream<TLeft, R> {
 
     final Publisher<? extends TRight> other;
@@ -53,7 +68,12 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
         this.resultSelector = resultSelector;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super R> s) {
 
         GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
@@ -72,6 +92,9 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
 
     interface JoinSupport {
 
+        /** inner 错误：按 delayError 策略合并或立即终止。 */
+
+
         void innerError(Throwable ex);
 
         void innerComplete(LeftRightSubscriber sender);
@@ -82,6 +105,9 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
 
         void innerCloseError(Throwable ex);
     }
+
+    /** 内部 GroupJoinSubscription。 */
+
 
     static final class GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
     extends AtomicInteger implements Subscription, JoinSupport {
@@ -141,14 +167,24 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
             this.active = new AtomicInteger(2);
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (cancelled) {
                 return;
@@ -184,6 +220,9 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
             cancelAll();
             errorAll(a);
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() != 0) {
@@ -345,7 +384,8 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
         }
 
         @Override
-        public void innerError(Throwable ex) {
+        public /** inner 错误：按 delayError 策略合并或立即终止。 */
+ void innerError(Throwable ex) {
             if (ExceptionHelper.addThrowable(error, ex)) {
                 active.decrementAndGet();
                 drain();
@@ -387,6 +427,9 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
         }
     }
 
+    /** 内部 LeftRightSubscriber。 */
+
+
     static final class LeftRightSubscriber
     extends AtomicReference<Subscription>
     implements FlowableSubscriber<Object>, Disposable {
@@ -403,37 +446,70 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
             this.isLeft = isLeft;
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             SubscriptionHelper.cancel(this);
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return get() == SubscriptionHelper.CANCELLED;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             SubscriptionHelper.setOnce(this, s, Long.MAX_VALUE);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(Object t) {
             parent.innerValue(isLeft, t);
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             parent.innerError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             parent.innerComplete(this);
         }
 
     }
+
+    /** 内部 LeftRightEndSubscriber。 */
+
 
     static final class LeftRightEndSubscriber
     extends AtomicReference<Subscription>
@@ -455,34 +531,64 @@ public final class FlowableGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> exte
             this.index = index;
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             SubscriptionHelper.cancel(this);
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return get() == SubscriptionHelper.CANCELLED;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             SubscriptionHelper.setOnce(this, s, Long.MAX_VALUE);
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(Object t) {
             if (SubscriptionHelper.cancel(this)) {
                 parent.innerClose(isLeft, this);
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             parent.innerCloseError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             parent.innerClose(isLeft, this);
         }

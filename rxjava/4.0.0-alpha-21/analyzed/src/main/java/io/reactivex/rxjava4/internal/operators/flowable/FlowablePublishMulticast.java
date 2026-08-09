@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+通过 MulticastProcessor 多播上游，将热 Flowable 交给 selector 函数再映射为下游 Publisher。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -28,6 +33,13 @@ import io.reactivex.rxjava4.operators.QueueSubscription;
 import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowablePublishMulticast — 意图说明
+
+MulticastProcessor + selector 组合多播映射。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Multicasts a Flowable over a selector function.
  *
@@ -42,6 +54,16 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
 
     final boolean delayError;
 
+    /**
+
+     * 构造 FlowablePublishMulticast。
+
+     * @param int int 参数
+
+     * @param boolean boolean 参数
+
+     */
+
     public FlowablePublishMulticast(Flowable<T> source,
             Function<? super Flowable<T>, ? extends Publisher<? extends R>> selector, int prefetch,
             boolean delayError) {
@@ -51,7 +73,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
         this.delayError = delayError;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super R> s) {
         MulticastProcessor<T> mp = new MulticastProcessor<>(prefetch, delayError);
 
@@ -72,6 +99,9 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
         source.subscribe(mp);
     }
 
+    /** 内部 OutputCanceller。 */
+
+
     static final class OutputCanceller<R> implements FlowableSubscriber<R>, Subscription {
         final Subscriber<? super R> downstream;
 
@@ -84,7 +114,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             this.processor = processor;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -93,34 +128,62 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(R t) {
             downstream.onNext(t);
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             downstream.onError(t);
             processor.dispose();
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             downstream.onComplete();
             processor.dispose();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             upstream.request(n);
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             upstream.cancel();
             processor.dispose();
         }
     }
+
+    /** 内部 MulticastProcessor。 */
+
 
     static final class MulticastProcessor<T> extends Flowable<T> implements FlowableSubscriber<T> {
 
@@ -161,7 +224,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             this.subscribers = new AtomicReference<MulticastSubscription<T>[]>(EMPTY);
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.setOnce(this.upstream, s)) {
                 if (s instanceof QueueSubscription) {
@@ -206,7 +274,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             return upstream.get() == SubscriptionHelper.CANCELLED;
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done) {
                 return;
@@ -219,7 +292,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             drain();
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (done) {
                 RxJavaPlugins.onError(t);
@@ -230,7 +308,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             drain();
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (!done) {
                 done = true;
@@ -289,7 +372,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             }
         }
 
+        /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
         @Override
+
+
         protected void subscribeActual(Subscriber<? super T> s) {
             MulticastSubscription<T> ms = new MulticastSubscription<>(s, this);
             s.onSubscribe(ms);
@@ -308,6 +396,9 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
                 }
             }
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (wip.getAndIncrement() != 0) {
@@ -478,6 +569,9 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
         }
     }
 
+    /** 内部 MulticastSubscription。 */
+
+
     static final class MulticastSubscription<T>
     extends AtomicLong
     implements Subscription {
@@ -496,7 +590,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             this.parent = parent;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.addCancel(this, n);
@@ -504,7 +603,12 @@ public final class FlowablePublishMulticast<T, R> extends AbstractFlowableWithUp
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (getAndSet(Long.MIN_VALUE) != Long.MIN_VALUE) {
                 parent.remove(this);

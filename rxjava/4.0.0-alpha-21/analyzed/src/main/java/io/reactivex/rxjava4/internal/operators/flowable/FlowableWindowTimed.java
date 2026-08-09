@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+按时间跨度 timespan/timeskip 切分窗口，可选 maxSize 与 restartTimerOnMaxSize 控制计数上限与定时器重启。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -30,6 +35,16 @@ import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 import io.reactivex.rxjava4.operators.SimplePlainQueue;
 import io.reactivex.rxjava4.processors.UnicastProcessor;
 
+/* ===== [OCA 中文解析] =====
+class FlowableWindowTimed — 意图说明
+
+按时间策略选择 Unbounded/Bounded/Skip 等窗口订阅者。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * 按时间策略选择 Unbounded/Bounded/Skip 等窗口订阅者。
+ */
 public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T, Flowable<T>> {
     final long timespan;
     final long timeskip;
@@ -38,6 +53,26 @@ public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T
     final long maxSize;
     final int bufferSize;
     final boolean restartTimerOnMaxSize;
+
+    /**
+
+     * 构造 FlowableWindowTimed。
+
+     * @param long long 参数
+
+     * @param long long 参数
+
+     * @param TimeUnit TimeUnit 参数
+
+     * @param Scheduler Scheduler 参数
+
+     * @param long long 参数
+
+     * @param int int 参数
+
+     * @param boolean boolean 参数
+
+     */
 
     public FlowableWindowTimed(Flowable<T> source,
             long timespan, long timeskip, TimeUnit unit, Scheduler scheduler, long maxSize,
@@ -52,7 +87,12 @@ public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T
         this.restartTimerOnMaxSize = restartTimerOnMaxSize;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super Flowable<T>> downstream) {
         if (timespan == timeskip) {
             if (maxSize == Long.MAX_VALUE) {
@@ -167,8 +207,12 @@ public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T
 
         abstract void cleanupResources();
 
-        abstract void drain();
+        abstract /** drain 循环：按 request 从队列取元素发射。 */
+ void drain();
     }
+
+    /** 内部 WindowExactUnboundedSubscriber。 */
+
 
     static final class WindowExactUnboundedSubscriber<T>
             extends AbstractWindowSubscriber<T>
@@ -231,6 +275,8 @@ public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T
         }
 
         @Override
+        /** drain 循环：按 request 从队列取元素发射。 */
+
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -331,6 +377,9 @@ public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T
         }
     }
 
+    /** 内部 WindowExactBoundedSubscriber。 */
+
+
     static final class WindowExactBoundedSubscriber<T>
     extends AbstractWindowSubscriber<T>
     implements Runnable {
@@ -418,6 +467,8 @@ public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T
         }
 
         @Override
+        /** drain 循环：按 request 从队列取元素发射。 */
+
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -535,6 +586,9 @@ public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T
                 }
     }
 
+    /** 内部 WindowSkipSubscriber。 */
+
+
     static final class WindowSkipSubscriber<T>
     extends AbstractWindowSubscriber<T>
     implements Runnable {
@@ -593,6 +647,8 @@ public final class FlowableWindowTimed<T> extends AbstractFlowableWithUpstream<T
         }
 
         @Override
+        /** drain 循环：按 request 从队列取元素发射。 */
+
         void drain() {
             if (getAndIncrement() != 0) {
                 return;

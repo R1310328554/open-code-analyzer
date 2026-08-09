@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+对每个上游元素映射 inner Publisher 并只保留最新 inner 的订阅，取消先前 inner 的 emission。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -29,10 +34,30 @@ import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.operators.SpscArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableSwitchMap — 意图说明
+
+SwitchMapSubscriber 切换 inner 并处理背压与错误延迟。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * SwitchMapSubscriber 切换 inner 并处理背压与错误延迟。
+ */
 public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<T, R> {
     final Function<? super T, ? extends Publisher<? extends R>> mapper;
     final int bufferSize;
     final boolean delayErrors;
+
+    /**
+
+     * 构造 FlowableSwitchMap。
+
+     * @param int int 参数
+
+     * @param boolean boolean 参数
+
+     */
 
     public FlowableSwitchMap(Flowable<T> source,
             Function<? super T, ? extends Publisher<? extends R>> mapper, int bufferSize,
@@ -43,13 +68,21 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
         this.delayErrors = delayErrors;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super R> s) {
         if (FlowableScalarXMap.tryScalarXMapSubscribe(source, s, mapper)) {
             return;
         }
         source.subscribe(new SwitchMapSubscriber<>(s, mapper, bufferSize, delayErrors));
     }
+
+    /** 内部 SwitchMapSubscriber。 */
+
 
     static final class SwitchMapSubscriber<T, R> extends AtomicInteger implements FlowableSubscriber<T>, Subscription {
 
@@ -89,7 +122,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             this.errors = new AtomicThrowable();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -97,7 +135,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done) {
                 return;
@@ -135,7 +178,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (!done && errors.tryAddThrowable(t)) {
                 if (!delayErrors) {
@@ -148,7 +196,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (done) {
                 return;
@@ -157,7 +210,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             drain();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -169,7 +227,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -188,6 +251,9 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
                 a.cancel();
             }
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() != 0) {
@@ -329,6 +395,9 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
         }
     }
 
+    /** 内部 SwitchMapInnerSubscriber。 */
+
+
     static final class SwitchMapInnerSubscriber<T, R>
     extends AtomicReference<Subscription> implements FlowableSubscriber<R> {
 
@@ -350,7 +419,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             this.bufferSize = bufferSize;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.setOnce(this, s)) {
                 if (s instanceof QueueSubscription) {
@@ -379,7 +453,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(R t) {
             SwitchMapSubscriber<T, R> p = parent;
             if (index == p.unique) {
@@ -391,7 +470,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             SwitchMapSubscriber<T, R> p = parent;
             if (index == p.unique && p.errors.tryAddThrowable(t)) {
@@ -406,7 +490,12 @@ public final class FlowableSwitchMap<T, R> extends AbstractFlowableWithUpstream<
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             SwitchMapSubscriber<T, R> p = parent;
             if (index == p.unique) {

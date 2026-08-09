@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+Join 算子：左/右两路 Publisher 在 leftEnd/rightEnd 界定的时间窗口内配对发射。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -30,6 +35,16 @@ import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableJoin — 意图说明
+
+维护 Join 窗口队列并在匹配时发射组合结果。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * 维护 Join 窗口队列并在匹配时发射组合结果。
+ */
 public final class FlowableJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends AbstractFlowableWithUpstream<TLeft, R> {
 
     final Publisher<? extends TRight> other;
@@ -53,7 +68,12 @@ public final class FlowableJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends A
         this.resultSelector = resultSelector;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super R> s) {
 
         JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
@@ -69,6 +89,9 @@ public final class FlowableJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends A
         source.subscribe(left);
         other.subscribe(right);
     }
+
+    /** 内部 JoinSubscription。 */
+
 
     static final class JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
     extends AtomicInteger implements Subscription, JoinSupport {
@@ -128,14 +151,24 @@ public final class FlowableJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends A
             this.active = new AtomicInteger(2);
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (cancelled) {
                 return;
@@ -167,6 +200,9 @@ public final class FlowableJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends A
             cancelAll();
             errorAll(a);
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() != 0) {
@@ -357,7 +393,8 @@ public final class FlowableJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends A
         }
 
         @Override
-        public void innerError(Throwable ex) {
+        public /** inner 错误：按 delayError 策略合并或立即终止。 */
+ void innerError(Throwable ex) {
             if (ExceptionHelper.addThrowable(error, ex)) {
                 active.decrementAndGet();
                 drain();

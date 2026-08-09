@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+由 open 信号开启窗口，closingIndicator 返回的 Publisher 完成时关闭窗口。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -30,10 +35,28 @@ import io.reactivex.rxjava4.operators.SimplePlainQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import io.reactivex.rxjava4.processors.UnicastProcessor;
 
+/* ===== [OCA 中文解析] =====
+class FlowableWindowBoundarySelector — 意图说明
+
+WindowBoundaryMainSubscriber 管理开/关边界与 UnicastProcessor。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * WindowBoundaryMainSubscriber 管理开/关边界与 UnicastProcessor。
+ */
 public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowableWithUpstream<T, Flowable<T>> {
     final Publisher<B> open;
     final Function<? super B, ? extends Publisher<V>> closingIndicator;
     final int bufferSize;
+
+    /**
+
+     * 构造 FlowableWindowBoundarySelector。
+
+     * @param int int 参数
+
+     */
 
     public FlowableWindowBoundarySelector(
             Flowable<T> source,
@@ -45,11 +68,19 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
         this.bufferSize = bufferSize;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super Flowable<T>> s) {
         source.subscribe(new WindowBoundaryMainSubscriber<>(
                 s, open, closingIndicator, bufferSize));
     }
+
+    /** 内部 WindowBoundaryMainSubscriber。 */
+
 
     static final class WindowBoundaryMainSubscriber<T, B, V>
     extends AtomicInteger
@@ -100,7 +131,12 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
             this.requested = new AtomicLong();
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -113,13 +149,23 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             queue.offer(t);
             drain();
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             startSubscriber.cancel();
             resources.dispose();
@@ -129,7 +175,12 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             startSubscriber.cancel();
             resources.dispose();
@@ -137,14 +188,24 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
             drain();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (downstreamCancelled.compareAndSet(false, true)) {
                 if (windowCount.decrementAndGet() == 0) {
@@ -205,6 +266,9 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
                 drain();
             }
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() != 0) {
@@ -333,6 +397,9 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
 
         }
 
+        /** 内部 WindowStartSubscriber。 */
+
+
         static final class WindowStartSubscriber<B> extends AtomicReference<Subscription>
         implements FlowableSubscriber<B> {
 
@@ -345,24 +412,44 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
                 this.parent = parent;
             }
 
+            /** 校验 Subscription 并初始化内部状态。 */
+
+
             @Override
+
+
             public void onSubscribe(Subscription s) {
                 if (SubscriptionHelper.setOnce(this, s)) {
                     s.request(Long.MAX_VALUE);
                 }
             }
 
+            /** 处理上游 onNext 并转发或缓存。 */
+
+
             @Override
+
+
             public void onNext(B t) {
                 parent.open(t);
             }
 
+            /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
             @Override
+
+
             public void onError(Throwable t) {
                 parent.openError(t);
             }
 
+            /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
             @Override
+
+
             public void onComplete() {
                 parent.openComplete();
             }
@@ -371,6 +458,9 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
                 SubscriptionHelper.cancel(this);
             }
         }
+
+        /** 内部 WindowEndSubscriberIntercept。 */
+
 
         static final class WindowEndSubscriberIntercept<T, V> extends Flowable<T>
         implements FlowableSubscriber<V>, Disposable {
@@ -390,21 +480,36 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
                 this.once = new AtomicBoolean();
             }
 
+            /** 校验 Subscription 并初始化内部状态。 */
+
+
             @Override
+
+
             public void onSubscribe(Subscription s) {
                 if (SubscriptionHelper.setOnce(upstream, s)) {
                     s.request(Long.MAX_VALUE);
                 }
             }
 
+            /** 处理上游 onNext 并转发或缓存。 */
+
+
             @Override
+
+
             public void onNext(V t) {
                 if (SubscriptionHelper.cancel(upstream)) {
                     parent.close(this);
                 }
             }
 
+            /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
             @Override
+
+
             public void onError(Throwable t) {
                 if (isDisposed()) {
                     RxJavaPlugins.onError(t);
@@ -413,22 +518,42 @@ public final class FlowableWindowBoundarySelector<T, B, V> extends AbstractFlowa
                 }
             }
 
+            /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
             @Override
+
+
             public void onComplete() {
                 parent.close(this);
             }
 
+            /** dispose 连接/inner 并清理状态。 */
+
+
             @Override
+
+
             public void dispose() {
                 SubscriptionHelper.cancel(upstream);
             }
 
+            /** 返回是否已 dispose。 */
+
+
             @Override
+
+
             public boolean isDisposed() {
                 return upstream.get() == SubscriptionHelper.CANCELLED;
             }
 
+            /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
             @Override
+
+
             protected void subscribeActual(Subscriber<? super T> s) {
                 window.subscribe(s);
                 once.set(true);

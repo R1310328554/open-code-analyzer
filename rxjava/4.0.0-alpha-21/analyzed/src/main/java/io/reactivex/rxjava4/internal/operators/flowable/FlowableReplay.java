@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+ConnectableFlowable 重放：缓存上游事件供新订阅者 replay，支持多种 buffer 策略与 multicastSelector 工厂模式。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -30,6 +35,16 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import io.reactivex.rxjava4.schedulers.Timed;
 
+/* ===== [OCA 中文解析] =====
+class FlowableReplay — 意图说明
+
+ReplaySubscriber 与多种 ReplayBuffer 实现重放缓存。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * ReplaySubscriber 与多种 ReplayBuffer 实现重放缓存。
+ */
 public final class FlowableReplay<T> extends ConnectableFlowable<T> implements HasUpstreamPublisher<T> {
     /** The source observable. */
     final Flowable<T> source;
@@ -50,7 +65,7 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
      * @param <R> the result type
      * @param connectableFactory the factory that returns a ConnectableFlowable for each individual subscriber
      * @param selector the function that receives a Flowable and should return another Flowable that will be subscribed to
-     * @return the new Observable instance
+     * @return 新的 Flowable 实例
      */
     public static <U, R> Flowable<R> multicastSelector(
             final Supplier<? extends ConnectableFlowable<U>> connectableFactory,
@@ -140,12 +155,22 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
         this.bufferFactory = bufferFactory;
     }
 
+    /** 返回被包装的上游 Publisher。 */
+
+
     @Override
+
+
     public Publisher<T> source() {
         return source;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super T> s) {
         onSubscribe.subscribe(s);
     }
@@ -158,7 +183,12 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
         }
     }
 
+    /** 建立或复用共享连接并向 upstream 发起订阅。 */
+
+
     @Override
+
+
     public void connect(Consumer<? super Disposable> connection) {
         boolean doConnect;
         ReplaySubscriber<T> ps;
@@ -222,6 +252,8 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
     }
 
     @SuppressWarnings("rawtypes")
+    /** 内部 ReplaySubscriber。 */
+
     static final class ReplaySubscriber<T>
     extends AtomicReference<Subscription>
     implements FlowableSubscriber<T>, Disposable {
@@ -262,13 +294,21 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             this.shouldConnect = new AtomicBoolean();
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return subscribers.get() == TERMINATED;
         }
 
         @SuppressWarnings("unchecked")
+        /** dispose 连接/inner 并清理状态。 */
+
         @Override
+
         public void dispose() {
             subscribers.set(TERMINATED);
             current.compareAndSet(ReplaySubscriber.this, null);
@@ -359,7 +399,12 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             }
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription p) {
             if (SubscriptionHelper.setOnce(this, p)) {
                 manageRequests();
@@ -369,7 +414,12 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (!done) {
                 buffer.next(t);
@@ -380,7 +430,10 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
         }
 
         @SuppressWarnings("unchecked")
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
         @Override
+
         public void onError(Throwable e) {
             // The observer front is accessed serially as required by spec so
             // no need to CAS in the terminal value
@@ -396,7 +449,10 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
         }
 
         @SuppressWarnings("unchecked")
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
         @Override
+
         public void onComplete() {
             // The observer front is accessed serially as required by spec so
             // no need to CAS in the terminal value
@@ -457,6 +513,8 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
      * child subscriber in thread-safe manner.
      * @param <T> the value type
      */
+    /** 内部 InnerSubscription。 */
+
     static final class InnerSubscription<T> extends AtomicLong implements Subscription, Disposable {
 
         @Serial
@@ -493,7 +551,12 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             this.totalRequested = new AtomicLong();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             // ignore negative requests
             if (SubscriptionHelper.validate(n)) {
@@ -520,17 +583,32 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             return BackpressureHelper.producedCancel(this, n);
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return get() == CANCELLED;
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             dispose();
         }
 
+        /** dispose 连接/inner 并清理状态。 */
+
+
         @Override
+
+
         public void dispose() {
             if (getAndSet(CANCELLED) != CANCELLED) {
                 // remove this from the parent
@@ -589,6 +667,8 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
      *
      * @param <T> the value type
      */
+    /** 内部 UnboundedReplayBuffer。 */
+
     static final class UnboundedReplayBuffer<T> extends ArrayList<Object> implements ReplayBuffer<T> {
 
         @Serial
@@ -686,6 +766,8 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
     /**
      * Represents a node in a bounded replay buffer's linked list.
      */
+    /** 内部 Node。 */
+
     static final class Node extends AtomicReference<Node> {
 
         @Serial
@@ -951,6 +1033,8 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
      *
      * @param <T> the value type
      */
+    /** 内部 SizeBoundReplayBuffer。 */
+
     static final class SizeBoundReplayBuffer<T> extends BoundedReplayBuffer<T> {
 
         @Serial
@@ -978,6 +1062,8 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
      *
      * @param <T> the buffered value type
      */
+    /** 内部 SizeAndTimeBoundReplayBuffer。 */
+
     static final class SizeAndTimeBoundReplayBuffer<T> extends BoundedReplayBuffer<T> {
 
         @Serial
@@ -1091,6 +1177,9 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
         }
     }
 
+    /** 内部 MulticastFlowable。 */
+
+
     static final class MulticastFlowable<R, U> extends Flowable<R> {
         private final Supplier<? extends ConnectableFlowable<U>> connectableFactory;
         private final Function<? super Flowable<U>, ? extends Publisher<R>> selector;
@@ -1100,7 +1189,12 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             this.selector = selector;
         }
 
+        /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
         @Override
+
+
         protected void subscribeActual(Subscriber<? super R> child) {
             ConnectableFlowable<U> cf;
             try {
@@ -1149,6 +1243,9 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             }
         }
 
+    /** 内部 ScheduledReplayBufferSupplier。 */
+
+
     static final class ScheduledReplayBufferSupplier<T> implements Supplier<ReplayBuffer<T>> {
         private final int bufferSize;
         private final long maxAge;
@@ -1170,6 +1267,9 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             return new SizeAndTimeBoundReplayBuffer<>(bufferSize, maxAge, unit, scheduler, eagerTruncate);
         }
     }
+
+    /** 内部 ReplayPublisher。 */
+
 
     static final class ReplayPublisher<T> implements Publisher<T> {
         private final AtomicReference<ReplaySubscriber<T>> curr;
@@ -1236,6 +1336,9 @@ public final class FlowableReplay<T> extends ConnectableFlowable<T> implements H
             }
         }
     }
+
+    /** 内部 DefaultUnboundedFactory。 */
+
 
     static final class DefaultUnboundedFactory implements Supplier<Object> {
         @Override

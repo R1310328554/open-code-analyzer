@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+按 keySelector 将上游元素分组，为每个键发射独立的 GroupedFlowable；支持自定义 mapFactory 与组 eviction 队列。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -28,12 +33,32 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowableGroupBy — 意图说明
+
+按 key 分组并维护 GroupedUnicast 与背压队列。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * 按 key 分组并维护 GroupedUnicast 与背压队列。
+ */
 public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream<T, GroupedFlowable<K, V>> {
     final Function<? super T, ? extends K> keySelector;
     final Function<? super T, ? extends V> valueSelector;
     final int bufferSize;
     final boolean delayError;
     final Function<? super Consumer<Object>, ? extends Map<K, Object>> mapFactory;
+
+    /**
+
+     * 构造 FlowableGroupBy。
+
+     * @param int int 参数
+
+     * @param boolean boolean 参数
+
+     */
 
     public FlowableGroupBy(Flowable<T> source, Function<? super T, ? extends K> keySelector, Function<? super T, ? extends V> valueSelector,
             int bufferSize, boolean delayError, Function<? super Consumer<Object>, ? extends Map<K, Object>> mapFactory) {
@@ -72,7 +97,8 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
         source.subscribe(subscriber);
     }
 
-    public static final class GroupBySubscriber<T, K, V>
+    public /** 内部 GroupBySubscriber。 */
+ static final class GroupBySubscriber<T, K, V>
     extends AtomicLong
     implements FlowableSubscriber<T>, Subscription {
 
@@ -115,7 +141,12 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             this.evictedGroups = evictedGroups;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -124,7 +155,12 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (done) {
                 return;
@@ -205,7 +241,12 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
                     + "in order for the whole operator to be able to proceed.");
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (done) {
                 RxJavaPlugins.onError(t);
@@ -220,7 +261,12 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             downstream.onError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             if (!done) {
                 for (GroupedUnicast<K, V> g : groups.values()) {
@@ -235,14 +281,24 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             }
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(this, n);
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             // cancelling the main source means we don't want any more groups
             // but running groups still require new values
@@ -318,6 +374,9 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             }
         }
 
+    /** 内部 GroupedUnicast。 */
+
+
     static final class GroupedUnicast<K, T> extends GroupedFlowable<K, T> {
 
         final State<T, K> state;
@@ -332,7 +391,12 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             this.state = state;
         }
 
+        /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
         @Override
+
+
         protected void subscribeActual(Subscriber<? super T> s) {
             state.subscribe(s);
         }
@@ -349,6 +413,9 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             state.onComplete();
         }
     }
+
+    /** 内部 State。 */
+
 
     static final class State<T, K> extends BasicIntQueueSubscription<T> implements Publisher<T> {
 
@@ -388,7 +455,12 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             this.delayError = delayError;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -396,7 +468,12 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (cancelled.compareAndSet(false, true)) {
                 cancelParent();
@@ -460,6 +537,9 @@ public final class FlowableGroupBy<T, K, V> extends AbstractFlowableWithUpstream
         boolean tryAbandon() {
             return once.get() == FRESH && once.compareAndSet(FRESH, ABANDONED);
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() != 0) {

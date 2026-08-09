@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+按固定计数 size/skip 将上游切分为多个窗口 Flowable，支持 exact、skip 与 overlap 三种模式。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -25,12 +30,34 @@ import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 import io.reactivex.rxjava4.processors.UnicastProcessor;
 
+/* ===== [OCA 中文解析] =====
+class FlowableWindow — 意图说明
+
+按 size/skip 选择 WindowExact/Skip/Overlap 订阅者。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * 按 size/skip 选择 WindowExact/Skip/Overlap 订阅者。
+ */
 public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flowable<T>> {
     final long size;
 
     final long skip;
 
     final int bufferSize;
+
+    /**
+
+     * 构造 FlowableWindow。
+
+     * @param long long 参数
+
+     * @param long long 参数
+
+     * @param int int 参数
+
+     */
 
     public FlowableWindow(Flowable<T> source, long size, long skip,  int bufferSize) {
         super(source);
@@ -39,7 +66,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
         this.bufferSize = bufferSize;
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     public void subscribeActual(Subscriber<? super Flowable<T>> s) {
         if (skip == size) {
             source.subscribe(new WindowExactSubscriber<>(s, size, bufferSize));
@@ -50,6 +82,9 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             source.subscribe(new WindowOverlapSubscriber<>(s, size, skip, bufferSize));
         }
     }
+
+    /** 内部 WindowExactSubscriber。 */
+
 
     static final class WindowExactSubscriber<T>
     extends AtomicInteger
@@ -80,7 +115,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             this.bufferSize = bufferSize;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -88,7 +128,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             long i = index;
 
@@ -121,7 +166,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             Processor<T, T> w = window;
             if (w != null) {
@@ -132,7 +182,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             downstream.onError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             Processor<T, T> w = window;
             if (w != null) {
@@ -143,7 +198,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             downstream.onComplete();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 long u = BackpressureHelper.multiplyCap(size, n);
@@ -151,7 +211,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (once.compareAndSet(false, true)) {
                 run();
@@ -165,6 +230,9 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
     }
+
+    /** 内部 WindowSkipSubscriber。 */
+
 
     static final class WindowSkipSubscriber<T>
     extends AtomicInteger
@@ -201,7 +269,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             this.bufferSize = bufferSize;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -209,7 +282,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             long i = index;
 
@@ -247,7 +325,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             Processor<T, T> w = window;
             if (w != null) {
@@ -258,7 +341,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             downstream.onError(t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             Processor<T, T> w = window;
             if (w != null) {
@@ -269,7 +357,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             downstream.onComplete();
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 if (!firstRequest.get() && firstRequest.compareAndSet(false, true)) {
@@ -284,7 +377,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (once.compareAndSet(false, true)) {
                 run();
@@ -298,6 +396,9 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
     }
+
+    /** 内部 WindowOverlapSubscriber。 */
+
 
     static final class WindowOverlapSubscriber<T>
     extends AtomicInteger
@@ -351,7 +452,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             this.bufferSize = bufferSize;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
@@ -359,7 +465,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             long i = index;
 
@@ -404,7 +515,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             for (Processor<T, T> w : windows) {
                 w.onError(t);
@@ -416,7 +532,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             drain();
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             for (Processor<T, T> w : windows) {
                 w.onComplete();
@@ -426,6 +547,9 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             done = true;
             drain();
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (wip.getAndIncrement() != 0) {
@@ -516,7 +640,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             return false;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -534,7 +663,12 @@ public final class FlowableWindow<T> extends AbstractFlowableWithUpstream<T, Flo
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             cancelled = true;
             if (once.compareAndSet(false, true)) {

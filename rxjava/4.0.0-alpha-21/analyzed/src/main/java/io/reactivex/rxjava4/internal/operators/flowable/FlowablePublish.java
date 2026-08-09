@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+ConnectableFlowable 热连接：共享单一上游订阅并向多路 Subscriber 多播，上游终止后迟到订阅者仍可收到终止事件直至 dispose。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -27,6 +32,13 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/* ===== [OCA 中文解析] =====
+class FlowablePublish — 意图说明
+
+管理 PublishConnection 生命周期与 connect/disconnect。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
  * Shares a single underlying connection to the upstream Publisher
  * and multicasts events to all subscribed subscribers until the upstream
@@ -48,18 +60,36 @@ implements HasUpstreamPublisher<T> {
 
     final AtomicReference<PublishConnection<T>> current;
 
+    /**
+
+     * 构造 FlowablePublish。
+
+     * @param int int 参数
+
+     */
+
     public FlowablePublish(Publisher<T> source, int bufferSize) {
         this.source = source;
         this.bufferSize = bufferSize;
         this.current = new AtomicReference<>();
     }
 
+    /** 返回被包装的上游 Publisher。 */
+
+
     @Override
+
+
     public Publisher<T> source() {
         return source;
     }
 
+    /** 建立或复用共享连接并向 upstream 发起订阅。 */
+
+
     @Override
+
+
     public void connect(Consumer<? super Disposable> connection) {
         PublishConnection<T> conn;
         boolean doConnect = false;
@@ -91,7 +121,12 @@ implements HasUpstreamPublisher<T> {
         }
     }
 
+    /** 组装内部 Subscriber/Observer 并订阅上游。 */
+
+
     @Override
+
+
     protected void subscribeActual(Subscriber<? super T> s) {
         PublishConnection<T> conn;
 
@@ -138,6 +173,9 @@ implements HasUpstreamPublisher<T> {
         }
     }
 
+    /** 内部 PublishConnection。 */
+
+
     static final class PublishConnection<T>
     extends AtomicInteger
     implements FlowableSubscriber<T>, Disposable {
@@ -179,19 +217,32 @@ implements HasUpstreamPublisher<T> {
         }
 
         @SuppressWarnings("unchecked")
+        /** dispose 连接/inner 并清理状态。 */
+
         @Override
+
         public void dispose() {
             subscribers.getAndSet(TERMINATED);
             current.compareAndSet(this, null);
             SubscriptionHelper.cancel(upstream);
         }
 
+        /** 返回是否已 dispose。 */
+
+
         @Override
+
+
         public boolean isDisposed() {
             return subscribers.get() == TERMINATED;
         }
 
+        /** 校验 Subscription 并初始化内部状态。 */
+
+
         @Override
+
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.setOnce(this.upstream, s)) {
                 if (s instanceof QueueSubscription) {
@@ -220,7 +271,12 @@ implements HasUpstreamPublisher<T> {
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             // we expect upstream to honor backpressure requests
             if (sourceMode == QueueSubscription.NONE && !queue.offer(t)) {
@@ -232,7 +288,12 @@ implements HasUpstreamPublisher<T> {
             drain();
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             if (done) {
                 RxJavaPlugins.onError(t);
@@ -243,11 +304,19 @@ implements HasUpstreamPublisher<T> {
             }
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             done = true;
             drain();
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
             if (getAndIncrement() != 0) {
@@ -440,6 +509,9 @@ implements HasUpstreamPublisher<T> {
         }
     }
 
+    /** 内部 InnerSubscription。 */
+
+
     static final class InnerSubscription<T> extends AtomicLong
     implements Subscription {
 
@@ -457,7 +529,12 @@ implements HasUpstreamPublisher<T> {
             this.parent = parent;
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.addCancel(this, n);
@@ -465,7 +542,12 @@ implements HasUpstreamPublisher<T> {
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (getAndSet(Long.MIN_VALUE) != Long.MIN_VALUE) {
                 parent.remove(this);

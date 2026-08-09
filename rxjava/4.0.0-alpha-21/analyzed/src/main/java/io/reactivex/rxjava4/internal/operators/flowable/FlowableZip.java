@@ -11,6 +11,11 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+并行订阅多路 Publisher，在各路均有可用元素时调用 zipper 合并发射。
+===== [OCA 中文解析结束] ===== */
 package io.reactivex.rxjava4.internal.operators.flowable;
 
 import java.io.Serial;
@@ -29,6 +34,16 @@ import io.reactivex.rxjava4.operators.QueueSubscription;
 import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.operators.SpscArrayQueue;
 
+/* ===== [OCA 中文解析] =====
+class FlowableZip — 意图说明
+
+ZipCoordinator 协调多路 request/onNext 同步 zip。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * ZipCoordinator 协调多路 request/onNext 同步 zip。
+ */
 public final class FlowableZip<T, R> extends Flowable<R> {
 
     final Publisher<? extends T>[] sources;
@@ -36,6 +51,16 @@ public final class FlowableZip<T, R> extends Flowable<R> {
     final Function<? super Object[], ? extends R> zipper;
     final int bufferSize;
     final boolean delayError;
+
+    /**
+
+     * 构造 FlowableZip。
+
+     * @param int int 参数
+
+     * @param boolean boolean 参数
+
+     */
 
     public FlowableZip(Publisher<? extends T>[] sources,
             Iterable<? extends Publisher<? extends T>> sourcesIterable,
@@ -79,6 +104,9 @@ public final class FlowableZip<T, R> extends Flowable<R> {
 
         coordinator.subscribe(sources, count);
     }
+
+    /** 内部 ZipCoordinator。 */
+
 
     static final class ZipCoordinator<T, R>
     extends AtomicInteger
@@ -129,7 +157,12 @@ public final class FlowableZip<T, R> extends Flowable<R> {
             }
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (SubscriptionHelper.validate(n)) {
                 BackpressureHelper.add(requested, n);
@@ -137,7 +170,12 @@ public final class FlowableZip<T, R> extends Flowable<R> {
             }
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             if (!cancelled) {
                 cancelled = true;
@@ -158,6 +196,9 @@ public final class FlowableZip<T, R> extends Flowable<R> {
                 s.cancel();
             }
         }
+
+        /** drain 循环：按 request 从队列取元素发射。 */
+
 
         void drain() {
 
@@ -311,6 +352,9 @@ public final class FlowableZip<T, R> extends Flowable<R> {
         }
     }
 
+    /** 内部 ZipSubscriber。 */
+
+
     static final class ZipSubscriber<T, R> extends AtomicReference<Subscription> implements FlowableSubscriber<T>, Subscription {
 
         @Serial
@@ -337,7 +381,10 @@ public final class FlowableZip<T, R> extends Flowable<R> {
         }
 
         @SuppressWarnings("unchecked")
+        /** 校验 Subscription 并初始化内部状态。 */
+
         @Override
+
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.setOnce(this, s)) {
                 if (s instanceof QueueSubscription) {
@@ -366,7 +413,12 @@ public final class FlowableZip<T, R> extends Flowable<R> {
             }
         }
 
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
         @Override
+
+
         public void onNext(T t) {
             if (sourceMode != QueueSubscription.ASYNC) {
                 queue.offer(t);
@@ -374,23 +426,43 @@ public final class FlowableZip<T, R> extends Flowable<R> {
             parent.drain();
         }
 
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
         @Override
+
+
         public void onError(Throwable t) {
             parent.error(this, t);
         }
 
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
         @Override
+
+
         public void onComplete() {
             done = true;
             parent.drain();
         }
 
+        /** 取消订阅并释放资源。 */
+
+
         @Override
+
+
         public void cancel() {
             SubscriptionHelper.cancel(this);
         }
 
+        /** 处理下游背压 request。 */
+
+
         @Override
+
+
         public void request(long n) {
             if (sourceMode != QueueSubscription.SYNC) {
                 long p = produced + n;
