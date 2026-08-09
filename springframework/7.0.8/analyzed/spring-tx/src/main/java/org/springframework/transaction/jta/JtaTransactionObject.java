@@ -25,10 +25,10 @@ import org.springframework.transaction.support.SmartTransactionObject;
 import org.springframework.transaction.support.TransactionSynchronizationUtils;
 
 /**
- * JTA 事务对象，表示 {@link jakarta.transaction.UserTransaction}。
- * 由 Spring 的 {@link JtaTransactionManager} 用作事务对象。
+ * JTA transaction object, representing a {@link jakarta.transaction.UserTransaction}.
+ * Used as transaction object by Spring's {@link JtaTransactionManager}.
  *
- * <p>注意：这是 SPI 类，不供应用程序直接使用。
+ * <p>Note: This is an SPI class, not intended to be used by applications.
  *
  * @author Juergen Hoeller
  * @since 1.1
@@ -43,16 +43,16 @@ public class JtaTransactionObject implements SmartTransactionObject {
 
 
 	/**
-	 * 为给定 JTA UserTransaction 创建新的 JtaTransactionObject。
-	 * @param userTransaction 当前事务的 JTA UserTransaction
-	 * （共享对象或通过每次事务的新查找获得）
+	 * Create a new JtaTransactionObject for the given JTA UserTransaction.
+	 * @param userTransaction the JTA UserTransaction for the current transaction
+	 * (either a shared object or retrieved through a fresh per-transaction lookup)
 	 */
 	public JtaTransactionObject(UserTransaction userTransaction) {
 		this.userTransaction = userTransaction;
 	}
 
 	/**
-	 * 返回当前事务的 JTA UserTransaction 对象。
+	 * Return the JTA UserTransaction object for the current transaction.
 	 */
 	public final UserTransaction getUserTransaction() {
 		return this.userTransaction;
@@ -60,7 +60,7 @@ public class JtaTransactionObject implements SmartTransactionObject {
 
 
 	/**
-	 * 本实现检查 UserTransaction 的 rollback-only 标志。
+	 * This implementation checks the UserTransaction's rollback-only flag.
 	 */
 	@Override
 	public boolean isRollbackOnly() {
@@ -74,8 +74,8 @@ public class JtaTransactionObject implements SmartTransactionObject {
 	}
 
 	/**
-	 * 本实现触发 flush 回调，
-	 * 假定它们将刷新所有受影响的 ORM Session。
+	 * This implementation triggers flush callbacks,
+	 * assuming that they will flush all affected ORM sessions.
 	 * @see org.springframework.transaction.support.TransactionSynchronization#flush()
 	 */
 	@Override

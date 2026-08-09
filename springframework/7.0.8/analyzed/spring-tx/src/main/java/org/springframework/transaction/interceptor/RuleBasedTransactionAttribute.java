@@ -23,11 +23,12 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 通过应用若干正负回滚规则判定给定异常是否应导致事务回滚的
- * {@link TransactionAttribute} 实现。若无自定义回滚规则适用，
- * 本属性行为类似 DefaultTransactionAttribute（对运行时异常回滚）。
+ * TransactionAttribute implementation that works out whether a given exception
+ * should cause transaction rollback by applying a number of rollback rules,
+ * both positive and negative. If no custom rollback rules apply, this attribute
+ * behaves like DefaultTransactionAttribute (rolling back on runtime exceptions).
  *
- * <p>{@link TransactionAttributeEditor} 创建本类的对象。
+ * <p>{@link TransactionAttributeEditor} creates objects of this class.
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -37,10 +38,10 @@ import org.jspecify.annotations.Nullable;
 @SuppressWarnings("serial")
 public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute implements Serializable {
 
-	/** 描述字符串中“遇异常回滚”规则的前缀。 */
+	/** Prefix for rollback-on-exception rules in description strings. */
 	public static final String PREFIX_ROLLBACK_RULE = "-";
 
-	/** 描述字符串中“遇异常提交”规则的前缀。 */
+	/** Prefix for commit-on-exception rules in description strings. */
 	public static final String PREFIX_COMMIT_RULE = "+";
 
 
@@ -48,8 +49,8 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 
 
 	/**
-	 * 以默认设置创建新的 RuleBasedTransactionAttribute。
-	 * 可通过 Bean 属性 setter 修改。
+	 * Create a new RuleBasedTransactionAttribute, with default settings.
+	 * Can be modified through bean property setters.
 	 * @see #setPropagationBehavior
 	 * @see #setIsolationLevel
 	 * @see #setTimeout
@@ -61,7 +62,7 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 	}
 
 	/**
-	 * 拷贝构造函数。定义可通过 Bean 属性 setter 修改。
+	 * Copy constructor. Definition can be modified through bean property setters.
 	 * @see #setPropagationBehavior
 	 * @see #setIsolationLevel
 	 * @see #setTimeout
@@ -75,10 +76,11 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 	}
 
 	/**
-	 * 以给定传播行为创建新的 DefaultTransactionAttribute。
-	 * 可通过 Bean 属性 setter 修改。
-	 * @param propagationBehavior TransactionDefinition 接口中的传播常量之一
-	 * @param rollbackRules 要应用的 RollbackRuleAttribute 列表
+	 * Create a new DefaultTransactionAttribute with the given
+	 * propagation behavior. Can be modified through bean property setters.
+	 * @param propagationBehavior one of the propagation constants in the
+	 * TransactionDefinition interface
+	 * @param rollbackRules the list of RollbackRuleAttributes to apply
 	 * @see #setIsolationLevel
 	 * @see #setTimeout
 	 * @see #setReadOnly
@@ -90,8 +92,8 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 
 
 	/**
-	 * 设置要应用的 {@code RollbackRuleAttribute} 对象列表
-	 * （及/或 {@code NoRollbackRuleAttribute} 对象）。
+	 * Set the list of {@code RollbackRuleAttribute} objects
+	 * (and/or {@code NoRollbackRuleAttribute} objects) to apply.
 	 * @see RollbackRuleAttribute
 	 * @see NoRollbackRuleAttribute
 	 */
@@ -100,7 +102,8 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 	}
 
 	/**
-	 * 返回 {@code RollbackRuleAttribute} 对象列表（永不为 {@code null}）。
+	 * Return the list of {@code RollbackRuleAttribute} objects
+	 * (never {@code null}).
 	 */
 	public List<RollbackRuleAttribute> getRollbackRules() {
 		if (this.rollbackRules == null) {
@@ -111,8 +114,9 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 
 
 	/**
-	 * 胜出的规则为最浅规则（即继承层次中最接近异常的规则）。
-	 * 若无规则适用（-1），返回 {@code false}。
+	 * Winning rule is the shallowest rule (that is, the closest in the
+	 * inheritance hierarchy to the exception). If no rule applies (-1),
+	 * return {@code false}.
 	 * @see TransactionAttribute#rollbackOn(java.lang.Throwable)
 	 */
 	@Override
@@ -130,7 +134,7 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 			}
 		}
 
-		// 若无规则匹配，使用超类行为（对 unchecked 异常回滚）。
+		// User superclass behavior (rollback on unchecked) if no rule matches.
 		if (winner == null) {
 			return super.rollbackOn(ex);
 		}

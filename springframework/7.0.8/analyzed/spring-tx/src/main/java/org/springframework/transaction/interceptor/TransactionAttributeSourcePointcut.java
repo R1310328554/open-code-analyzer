@@ -28,8 +28,8 @@ import org.springframework.transaction.TransactionManager;
 import org.springframework.util.ObjectUtils;
 
 /**
- * 内部类，实现 {@code Pointcut}：当底层 {@link TransactionAttributeSource}
- * 对给定方法具有属性时匹配。
+ * Internal class that implements a {@code Pointcut} that matches if the underlying
+ * {@link TransactionAttributeSource} has an attribute for a given method.
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -74,8 +74,8 @@ final class TransactionAttributeSourcePointcut extends StaticMethodMatcherPointc
 
 
 	/**
-	 * 委托 {@link TransactionAttributeSource#isCandidateClass} 的 {@link ClassFilter}，
-	 * 用于过滤其方法从一开始就不值得搜索的类。
+	 * {@link ClassFilter} that delegates to {@link TransactionAttributeSource#isCandidateClass}
+	 * for filtering classes whose methods are not worth searching to begin with.
 	 */
 	private final class TransactionAttributeSourceClassFilter implements ClassFilter {
 
