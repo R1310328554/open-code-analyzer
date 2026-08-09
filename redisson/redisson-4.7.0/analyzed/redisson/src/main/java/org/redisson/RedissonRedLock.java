@@ -20,22 +20,20 @@ import java.util.List;
 import org.redisson.api.RLock;
 
 /**
- * RedLock locking algorithm implementation for multiple locks. 
- * It manages all locks as one.
- * 
+ * 多锁 RedLock 加锁算法实现，将多个 {@link RLock} 作为整体管理。
+ * <p>需在多数实例（N/2+1）上成功加锁才算获取成功。
+ *
  * @see <a href="http://redis.io/topics/distlock">http://redis.io/topics/distlock</a>
- *
  * @author Nikita Koksharov
- *
  */
 @Deprecated
 public class RedissonRedLock extends RedissonMultiLock {
 
     /**
-     * Creates instance with multiple {@link RLock} objects.
-     * Each RLock object could be created by own Redisson instance.
+     * 使用多个 {@link RLock} 创建 RedLock 实例。
+     * <p>每个 RLock 可由独立的 Redisson 实例创建。
      *
-     * @param locks - array of locks
+     * @param locks 锁数组
      */
     public RedissonRedLock(RLock... locks) {
         super(locks);

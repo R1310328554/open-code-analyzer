@@ -27,9 +27,11 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 与队列绑定的分布式信号量辅助类。
+ * <p>在 {@link RedissonSemaphore} 计数允许时，将元素 {@code RPUSH} 到指定队列；
+ * 用于限流生产或背压场景。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonQueueSemaphore extends RedissonSemaphore {
 

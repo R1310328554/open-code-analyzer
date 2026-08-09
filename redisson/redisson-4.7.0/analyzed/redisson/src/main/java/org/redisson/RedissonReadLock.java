@@ -28,10 +28,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 /**
- * Lock will be removed automatically if client disconnects.
+ * {@link RedissonReadWriteLock} 的读锁实现。
+ * <p>允许多个读线程同时持有；写锁独占时读锁不可获取。
+ * 客户端断开连接后锁会自动释放。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonReadLock extends RedissonLock implements RLock {
 

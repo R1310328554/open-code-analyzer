@@ -37,10 +37,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * <p>Distributed and concurrent implementation of priority blocking deque.
- *
- * <p>Queue size limited by Redis server memory amount. This is why {@link #remainingCapacity()} always
- * returns <code>Integer.MAX_VALUE</code>
+ * 优先级阻塞双端队列的分布式并发实现。
+ * <p>容量受 Redis 服务器内存限制，因此 {@link #remainingCapacity()} 始终返回
+ * {@code Integer.MAX_VALUE}。
+ * <p>阻塞操作委托内部 {@link RedissonPriorityBlockingQueue} 完成。
  *
  * @author Nikita Koksharov
  */

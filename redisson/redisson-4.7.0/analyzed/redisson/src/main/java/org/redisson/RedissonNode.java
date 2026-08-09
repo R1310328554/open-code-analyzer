@@ -39,9 +39,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Redisson 分布式 Worker 节点。
+ * <p>可独立启动或通过 YAML 配置运行，注册 MapReduce 与自定义
+ * {@link org.redisson.api.RExecutorService} Worker 以执行远程任务。
  *
+ * @author Nikita Koksharov
  */
 public final class RedissonNode {
 
@@ -111,8 +113,7 @@ public final class RedissonNode {
     }
     
     /**
-     * Shutdown Redisson node instance
-     * 
+     * 关闭 Redisson 节点实例。
      */
     public void shutdown() {
         if (hasRedissonInstance) {
@@ -121,7 +122,7 @@ public final class RedissonNode {
                     executor.shutdown();
                 }
             } catch (Exception e){
-                // skip
+                // 忽略异常
             }
 
             redisson.shutdown(0, 15, TimeUnit.SECONDS);
@@ -130,7 +131,7 @@ public final class RedissonNode {
     }
     
     /**
-     * Start Redisson node instance
+     * 启动 Redisson 节点实例。
      */
     public void start() {
         if (hasRedissonInstance) {
@@ -190,7 +191,7 @@ public final class RedissonNode {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
-                // skip
+                // 忽略异常
             }
             if (readConnection != null) {
                 entry.releaseRead(readConnection);
@@ -206,7 +207,7 @@ public final class RedissonNode {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
-                // skip
+                // 忽略异常
             }
             if (writeConnection != null) {
                 entry.releaseWrite(writeConnection);
@@ -218,31 +219,31 @@ public final class RedissonNode {
     }
 
     /**
-     * Create Redisson node instance with provided config
+     * 根据配置创建 Redisson 节点实例。
      *
-     * @param config of RedissonNode
-     * @return RedissonNode instance
+     * @param config RedissonNode 配置
+     * @return RedissonNode 实例
      */
     public static RedissonNode create(RedissonNodeConfig config) {
         return create(config, null);
     }
 
     /**
-     * Create Redisson node instance with provided config
+     * 根据 YAML 文件配置创建 Redisson 节点实例。
      *
-     * @param config of RedissonNode
-     * @return RedissonNode instance
+     * @param config RedissonNode 文件配置
+     * @return RedissonNode 实例
      */
     public static RedissonNode create(RedissonNodeFileConfig config) {
         return create(new RedissonNodeConfig(config), null);
     }
 
     /**
-     * Create Redisson node instance with provided config and Redisson instance
+     * 根据配置与已有 {@link RedissonClient} 创建 Redisson 节点实例。
      *
-     * @param config of RedissonNode
-     * @param redisson instance
-     * @return RedissonNode instance
+     * @param config RedissonNode 配置
+     * @param redisson 已存在的 Redisson 客户端；为 {@code null} 时由节点自行创建
+     * @return RedissonNode 实例
      */
     public static RedissonNode create(RedissonNodeConfig config, RedissonClient redisson) {
         return new RedissonNode(config, redisson);

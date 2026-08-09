@@ -30,11 +30,11 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.Queue}
+ * {@link java.util.Queue} 的分布式并发实现（Redis List）。
+ * <p>提供 {@code offer/poll/peek} 等 FIFO 语义及批量移动元素能力。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public class RedissonQueue<V> extends BaseRedissonList<V> implements RQueue<V> {
 

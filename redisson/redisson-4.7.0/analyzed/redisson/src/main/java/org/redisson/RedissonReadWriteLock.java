@@ -22,17 +22,12 @@ import org.redisson.api.RReadWriteLock;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * A {@code ReadWriteLock} maintains a pair of associated {@link
- * Lock locks}, one for read-only operations and one for writing.
- * The {@link #readLock read lock} may be held simultaneously by
- * multiple reader threads, so long as there are no writers.  The
- * {@link #writeLock write lock} is exclusive.
- *
- * Works in non-fair mode. Therefore order of read and write
- * locking is unspecified.
+ * {@link java.util.concurrent.locks.ReadWriteLock} 的分布式实现。
+ * <p>维护一对关联的 {@link Lock}：读锁供只读操作，写锁供写入操作。
+ * 无写锁时多个读线程可同时持有读锁；写锁互斥。
+ * <p>采用非公平模式，读写加锁顺序不作保证。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonReadWriteLock extends RedissonExpirable implements RReadWriteLock {
 

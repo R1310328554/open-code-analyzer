@@ -32,11 +32,11 @@ import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.Queue}
+ * 优先级双端队列的分布式并发实现（Redis Sorted Set）。
+ * <p>支持队首/队尾 peek、poll 及降序迭代；增删操作需通过 {@code add}/{@code put} 完成。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implements RPriorityDeque<V> {
 

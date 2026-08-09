@@ -36,10 +36,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
+ * 分布式模式主题（Pattern Topic）实现。
+ * <p>基于 Redis {@code PSUBSCRIBE/PUNSUBSCRIBE}，消息会投递给
+ * 集群中所有匹配该模式的监听器。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonPatternTopic implements RPatternTopic {
 

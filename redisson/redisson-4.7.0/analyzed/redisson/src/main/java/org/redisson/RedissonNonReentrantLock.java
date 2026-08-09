@@ -27,18 +27,13 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.locks.Lock} that is
- * <b>non-reentrant</b>. A thread that already holds the lock and attempts to
- * acquire it again throws {@link IllegalMonitorStateException}, both for
- * {@code lock()} and {@code tryLock()}. Other threads see the lock held and
- * contend for it as usual.
- * <p>
- * Lock will be removed automatically if client disconnects.
- * <p>
- * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order.
+ * {@link java.util.concurrent.locks.Lock} 的分布式<b>不可重入</b>锁实现。
+ * <p>已持有锁的线程再次加锁时，无论 {@code lock()} 还是 {@code tryLock()}
+ * 均抛出 {@link IllegalMonitorStateException}；其他线程正常竞争。
+ * <p>客户端断开连接后锁会自动释放。
+ * <p>采用<b>非公平</b>加锁，不保证获取顺序。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonNonReentrantLock extends RedissonLock {
 
@@ -92,13 +87,11 @@ public class RedissonNonReentrantLock extends RedissonLock {
     }
 
     /**
-     * The async path inside the future propagates {@code IllegalMonitorStateException}
-     * via {@code CompletionException}. The synchronous {@code get(future)} path,
-     * however, routes through {@link org.redisson.command.CommandAsyncService#convertException}
-     * which wraps any non-{@code RedisException} cause in a generic
-     * {@code RedisException}. Mirror the unwrap that {@link RedissonBaseLock#unlock()}
-     * already performs so callers of the sync {@code lock}/{@code tryLock} methods
-     * see {@code IllegalMonitorStateException} directly.
+     * 异步路径通过 {@code CompletionException} 传播 {@code IllegalMonitorStateException}；
+     * 同步 {@code get(future)} 路径经 {@link org.redisson.command.CommandAsyncService#convertException}
+     * 将非 {@code RedisException} 原因包装为通用 {@code RedisException}。
+     * 与 {@link RedissonBaseLock#unlock()} 的解包逻辑一致，使同步 {@code lock}/{@code tryLock}
+     * 调用方直接收到 {@code IllegalMonitorStateException}。
      */
     private static RuntimeException unwrapImse(RedisException e) {
         if (e.getCause() instanceof IllegalMonitorStateException) {

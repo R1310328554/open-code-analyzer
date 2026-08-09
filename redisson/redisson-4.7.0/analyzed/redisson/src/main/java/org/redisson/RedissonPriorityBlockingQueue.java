@@ -41,10 +41,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * <p>Distributed and concurrent implementation of {@link java.util.concurrent.PriorityBlockingQueue}.
- *
- * <p>Queue size limited by Redis server memory amount. This is why {@link #remainingCapacity()} always
- * returns <code>Integer.MAX_VALUE</code>
+ * {@link java.util.concurrent.PriorityBlockingQueue} 的分布式并发实现。
+ * <p>基于 Redis Sorted Set 维护优先级顺序，通过轮询 {@code LPOP} 实现阻塞取元素；
+ * 容量受 Redis 内存限制，{@link #remainingCapacity()} 恒为 {@code Integer.MAX_VALUE}。
  *
  * @author Nikita Koksharov
  */

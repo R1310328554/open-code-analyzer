@@ -27,10 +27,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 带过期能力的 {@link RedissonMultimap} 缓存辅助类。
+ * <p>通过 ZSET 记录各键的 TTL 截止时间，配合 {@link EvictionScheduler} 定期清理；
+ * 支持单键过期、整体过期及清除过期设置。
  *
- * @param <K> key type
+ * @author Nikita Koksharov
+ * @param <K> 键类型
  */
 class RedissonMultimapCache<K> {
 

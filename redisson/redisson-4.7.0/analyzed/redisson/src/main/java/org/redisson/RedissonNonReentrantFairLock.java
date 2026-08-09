@@ -28,15 +28,12 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.locks.Lock} that is
- * <b>fair</b> and <b>non-reentrant</b>. Acquisition order is FIFO across all
- * Redisson instances; a thread that already holds the lock and attempts to
- * acquire it again throws {@link IllegalMonitorStateException}, both for
- * {@code lock()} and {@code tryLock()}. Other threads contend for the lock
- * via the fair queue as usual.
+ * {@link java.util.concurrent.locks.Lock} 的分布式<b>公平</b><b>不可重入</b>锁实现。
+ * <p>所有 Redisson 实例间按 FIFO 公平排队；已持有锁的线程再次加锁时，
+ * 无论 {@code lock()} 还是 {@code tryLock()} 均抛出 {@link IllegalMonitorStateException}；
+ * 其他线程通过公平等待队列正常竞争。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonNonReentrantFairLock extends RedissonFairLock {
 
@@ -56,7 +53,7 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
         RFuture<T> raw;
         if (command == RedisCommands.EVAL_NULL_BOOLEAN) {
             raw = evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, command,
-                    // remove stale waiters
+                    // 移除超时的等待者
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
                         "if firstThreadId2 == false then " +
@@ -71,14 +68,14 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                         "end;" +
                     "end;" +
 
-                    // first acquire path
+                    // 首次获取锁路径
                     "if (redis.call('exists', KEYS[1]) == 0) " +
                         "and ((redis.call('exists', KEYS[2]) == 0) " +
                             "or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then " +
                         "redis.call('lpop', KEYS[2]);" +
                         "redis.call('zrem', KEYS[3], ARGV[2]);" +
 
-                        // decrease timeouts for all waiting in the queue
+                        // 为队列中所有等待者缩短超时时间
                         "local keys = redis.call('zrange', KEYS[3], 0, -1);" +
                         "for i = 1, #keys, 1 do " +
                             "redis.call('zincrby', KEYS[3], -tonumber(ARGV[4]), keys[i]);" +
@@ -88,7 +85,7 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                         "redis.call('pexpire', KEYS[1], ARGV[1]);" +
                         "return nil;" +
                     "end;" +
-                    // non-reentrant: same-thread reacquire is rejected
+                    // 不可重入：同线程再次获取被拒绝
                     "if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then " +
                         "return redis.error_reply(ARGV[5]);" +
                     "end;" +
@@ -98,7 +95,7 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                     RedissonNonReentrantLock.REENTRY_ERR);
         } else if (command == RedisCommands.EVAL_LONG) {
             raw = evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, command,
-                    // remove stale waiters
+                    // 移除超时的等待者
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
                         "if firstThreadId2 == false then " +
@@ -113,7 +110,7 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                         "end;" +
                     "end;" +
 
-                    // first acquire path
+                    // 首次获取锁路径
                     "if (redis.call('exists', KEYS[1]) == 0) " +
                         "and ((redis.call('exists', KEYS[2]) == 0) " +
                             "or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then " +
@@ -121,7 +118,7 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                         "redis.call('lpop', KEYS[2]);" +
                         "redis.call('zrem', KEYS[3], ARGV[2]);" +
 
-                        // decrease timeouts for all waiting in the queue
+                        // 为队列中所有等待者缩短超时时间
                         "local keys = redis.call('zrange', KEYS[3], 0, -1);" +
                         "for i = 1, #keys, 1 do " +
                             "redis.call('zincrby', KEYS[3], -tonumber(ARGV[3]), keys[i]);" +
@@ -132,19 +129,19 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                         "return nil;" +
                     "end;" +
 
-                    // non-reentrant: same-thread reacquire is rejected
+                    // 不可重入：同线程再次获取被拒绝
                     "if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then " +
                         "return redis.error_reply(ARGV[5]);" +
                     "end;" +
 
-                    // contention path: already in queue?
+                    // 竞争路径：是否已在等待队列中？
                     "local timeout = redis.call('zscore', KEYS[3], ARGV[2]);" +
                     "if timeout ~= false then " +
                         "local ttl = redis.call('pttl', KEYS[1]);" +
                         "return math.max(0, ttl); " +
                     "end;" +
 
-                    // enqueue
+                    // 入队
                     "local lastThreadId = redis.call('lindex', KEYS[2], -1);" +
                     "local ttl;" +
                     "if lastThreadId ~= false and lastThreadId ~= ARGV[2] and redis.call('zscore', KEYS[3], lastThreadId) ~= false then " +

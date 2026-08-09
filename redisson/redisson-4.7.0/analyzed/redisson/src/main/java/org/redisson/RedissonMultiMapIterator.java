@@ -27,12 +27,14 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link RedissonMultimap} 的条目迭代器抽象基类。
+ * <p>先 {@code HSCAN} 遍历 multimap 的外层键，再对每个键对应的集合执行内层扫描；
+ * {@link #next()} 返回 {@code Map.Entry<K,V>} 形式的键值对。
  *
- * @param <K> key type
- * @param <V> value type
- * @param <M> map type
+ * @author Nikita Koksharov
+ * @param <K> 键类型
+ * @param <V> 值类型
+ * @param <M> 迭代返回的映射条目类型
  */
 abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 

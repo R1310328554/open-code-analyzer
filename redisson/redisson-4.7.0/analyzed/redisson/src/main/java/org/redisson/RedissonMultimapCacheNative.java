@@ -26,10 +26,11 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 基于 Redis 7+ {@code HPEXPIRE} 的原生 multimap 过期辅助类。
+ * <p>对 hash 字段与对应 value 集合分别设置 TTL，无需额外 ZSET 调度。
  *
- * @param <K> key type
+ * @author Nikita Koksharov
+ * @param <K> 键类型
  */
 class RedissonMultimapCacheNative<K> {
 
