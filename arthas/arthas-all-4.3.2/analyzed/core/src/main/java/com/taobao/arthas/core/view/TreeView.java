@@ -8,11 +8,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 树形控件
+ * 树形命令行视图控件。
+ * <p>
+ * 通过 {@link #begin(String)} / {@link #end()} 构建调用树，
+ * 支持按节点统计耗时并以 ASCII 字符绘制层级结构；
+ * 可选高亮全局耗时最大的分支节点。
  * Created by vlinux on 15/5/26.
  */
 public class TreeView implements View {
 
+    /** 最后一个子节点的连接符前缀。 */
     private static final String STEP_FIRST_CHAR = "`---";
     private static final String STEP_NORMAL_CHAR = "+---";
     private static final String STEP_HAS_BOARD = "|   ";
@@ -32,12 +37,19 @@ public class TreeView implements View {
     private Node maxCost;
 
 
+    /**
+     * 创建带标题的根节点。
+     *
+     * @param isPrintCost 是否在节点旁输出耗时统计
+     * @param title 根节点显示文本
+     */
     public TreeView(boolean isPrintCost, String title) {
         this.root = new Node(title).markBegin().markEnd();
         this.current = root;
         this.isPrintCost = isPrintCost;
     }
 
+    /** 递归渲染整棵树并返回多行文本。 */
     @Override
     public String draw() {
 
@@ -54,7 +66,7 @@ public class TreeView implements View {
                 treeSB.append(prefix).append(isLast ? STEP_FIRST_CHAR : STEP_NORMAL_CHAR);
                 if (isPrintCost && !node.isRoot()) {
                     if (node == maxCost) {
-                        // the node with max cost will be highlighted
+                        // 全局最大耗时节点以红色高亮
                         treeSB.append(highlighted.a(node.toString()).reset().toString());
                     } else {
                         treeSB.append(node.toString());
@@ -73,7 +85,13 @@ public class TreeView implements View {
     }
 
     /**
-     * 递归遍历
+     * 深度优先递归遍历子树，通过回调逐行输出前缀与节点内容。
+     *
+     * @param deep 当前深度
+     * @param isLast 当前节点是否为同级最后一个
+     * @param prefix 已累积的 ASCII 前缀
+     * @param node 待遍历节点
+     * @param callback 每访问一个节点时触发的回调
      */
     private void recursive(int deep, boolean isLast, String prefix, Node node, Callback callback) {
         callback.callback(deep, isLast, prefix, node);
@@ -94,8 +112,9 @@ public class TreeView implements View {
     }
 
     /**
-     * 查找耗时最大的节点，便于后续高亮展示
-     * @param node
+     * 后序遍历查找 totalCost 最大的非根、非根子节点，供 draw 高亮。
+     *
+     * @param node 起始节点（通常为 root）
      */
     private void findMaxCostNode(Node node) {
         if (!node.isRoot() && !node.parent.isRoot()) {
@@ -116,8 +135,8 @@ public class TreeView implements View {
     /**
      * 创建一个分支节点
      *
-     * @param data 节点数据
-     * @return this
+     * @param data 分支节点标签；若同名子节点已存在则复用
+     * @return this，支持链式调用
      */
     public TreeView begin(String data) {
         Node n = current.find(data);
@@ -133,7 +152,8 @@ public class TreeView implements View {
     /**
      * 结束一个分支节点
      *
-     * @return this
+     * @return this，当前指针回退到父节点
+     * @throws IllegalStateException 当前已在根节点时调用
      */
     public TreeView end() {
         if (current.isRoot()) {
@@ -145,9 +165,11 @@ public class TreeView implements View {
     }
 
     /**
-     * 结束一个分支节点,并带上备注
+     * 结束当前分支并附加备注标记（如异常信息）。
      *
+     * @param mark 备注文本，多次标记会累加计数
      * @return this
+     * @throws IllegalStateException 当前已在根节点时调用
      */
     public TreeView end(String mark) {
         if (current.isRoot()) {
@@ -159,9 +181,8 @@ public class TreeView implements View {
     }
 
 
-    /**
-     * 树节点
-     */
+    /** 内部树节点，维护父子关系、耗时统计与备注。 */
+
     private static class Node {
 
         /**
@@ -242,11 +263,13 @@ public class TreeView implements View {
             return children.isEmpty();
         }
 
+        /** 记录进入节点时的纳秒时间戳。 */
         Node markBegin() {
             beginTimestamp = System.nanoTime();
             return this;
         }
 
+        /** 记录离开时间并累加 min/max/total 耗时与调用次数。 */
         Node markEnd() {
             endTimestamp = System.nanoTime();
 
@@ -263,23 +286,25 @@ public class TreeView implements View {
             return this;
         }
 
+        /** 为节点追加备注并递增标记计数。 */
         Node mark(String mark) {
             this.mark = mark;
             marks++;
             return this;
         }
 
+        /** 本次 begin/end 区间的纳秒耗时。 */
         long getCost() {
             return endTimestamp - beginTimestamp;
         }
 
-        /**
-         * convert nano-seconds to milli-seconds
-         */
+        /** 将纳秒转换为毫秒，供 toString 展示。 */
+
         double getCostInMillis(long nanoSeconds) {
             return nanoSeconds / 1000000.0;
         }
 
+        /** 格式化耗时：单次调用显示区间耗时，多次调用显示 min/max/total/count。 */
         public String toString() {
             StringBuilder sb = new StringBuilder();
             if (times <= 1) {
@@ -304,9 +329,8 @@ public class TreeView implements View {
     }
 
 
-    /**
-     * 遍历回调接口
-     */
+    /** draw 过程中每访问一个节点时触发的回调接口。 */
+
     private interface Callback {
 
         void callback(int deep, boolean isLast, String prefix, Node node);

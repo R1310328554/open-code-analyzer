@@ -14,6 +14,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * gRPC 响应封装：HTTP/2 头 + gRPC 消息体（压缩标志 + 长度 + Protobuf）。
+ * <p>
+ * 默认填充 content-type、grpc-encoding 等标准头；
+ * {@link #writeResponseData(Object)} 将 Protobuf 对象序列化为 gRPC 帧格式。
+ *
  * @author: FengYe
  * @date: 2024/9/5 02:05
  * @description: GrpcResponse
@@ -42,6 +47,7 @@ public class GrpcResponse<T> {
      */
     private Class<?> clazz;
 
+    // 实例初始化块：设置 gRPC 默认响应头
     {
         headers = new HashMap<>();
         headers.put("content-type", "application/grpc");
@@ -52,21 +58,25 @@ public class GrpcResponse<T> {
     public GrpcResponse() {
     }
 
+    /** 从 {@code @GrpcService}/{@code @GrpcMethod} 注解提取 service 与 method 名。 */
     public GrpcResponse(Method method) {
         this.service = method.getDeclaringClass().getAnnotation(GrpcService.class).value();
         this.method = method.getAnnotation(GrpcMethod.class).value();
     }
 
+    /** 返回带 HTTP 200 与自定义头的 DATA 帧前导 HEADERS。 */
     public Http2Headers getEndHeader() {
         Http2Headers endHeader = new DefaultHttp2Headers().status("200");
         headers.forEach(endHeader::set);
         return endHeader;
     }
 
+    /** 返回 grpc-status=0 的尾 HEADERS（结束流）。 */
     public Http2Headers getEndStreamHeader() {
         return new DefaultHttp2Headers().set("grpc-status", "0");
     }
 
+    /** 静态工厂：grpc-status=0 尾帧头。 */
     public static Http2Headers getDefaultEndStreamHeader() {
         return new DefaultHttp2Headers().set("grpc-status", "0");
     }
@@ -75,6 +85,11 @@ public class GrpcResponse<T> {
         return byteData;
     }
 
+    /**
+     * 将响应 Protobuf 对象编码为 gRPC 消息体（未压缩 + 4 字节长度 + payload）。
+     *
+     * @param response Protobuf 消息或 {@link arthas.grpc.common.ArthasGrpc.ErrorRes}
+     */
     public void writeResponseData(Object response) {
         byte[] encode = null;
         try {

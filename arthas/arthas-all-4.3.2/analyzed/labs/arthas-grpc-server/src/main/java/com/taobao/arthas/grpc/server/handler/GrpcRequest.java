@@ -12,6 +12,11 @@ import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
 
 /**
+ * 单条 gRPC 流上的请求上下文与消息缓冲。
+ * <p>
+ * 累积 HTTP/2 DATA 帧中的 gRPC 消息（5 字节前缀：压缩标志 + 长度），
+ * 支持 gzip 解压并按帧读取 Protobuf 字节。
+ *
  * @author: FengYe
  * @date: 2024/9/4 23:07
  * @description: GrpcRequest grpc 请求体
@@ -69,6 +74,11 @@ public class GrpcRequest<T> {
     private GrpcInvokeTypeEnum grpcType;
 
 
+    /**
+     * @param streamId HTTP/2 流 ID
+     * @param path gRPC 服务名（来自 :path 第一段）
+     * @param method 方法名（:path 第二段）
+     */
     public GrpcRequest(Integer streamId, String path, String method) {
         this.streamId = streamId;
         this.service = path;
@@ -76,6 +86,7 @@ public class GrpcRequest<T> {
         this.byteData = ByteUtil.newByteBuf();
     }
 
+    /** 追加 DATA 帧负载，必要时 gzip 解压后写入内部缓冲。 */
     public void writeData(ByteBuf byteBuf) {
         byte[] bytes = ByteUtil.getBytes(byteBuf);
         if (bytes.length == 0) {
@@ -91,7 +102,7 @@ public class GrpcRequest<T> {
     /**
      * 读取部分数据
      *
-     * @return
+     * @return 下一条 gRPC 消息体字节，无数据时返回 null
      */
     public synchronized byte[] readData() {
         if (byteData.readableBytes() == 0) {
@@ -104,10 +115,12 @@ public class GrpcRequest<T> {
         return bytes;
     }
 
+    /** 清空内部 ByteBuf 缓冲。 */
     public void clearData() {
         byteData.clear();
     }
 
+    /** 检测 gzip 魔数并解压，非 gzip 则原样返回。 */
     private byte[] decompressGzip(byte[] compressedData) {
         boolean isGzip = (compressedData.length > 2 && (compressedData[0] & 0xff) == 0x1f && (compressedData[1] & 0xff) == 0x8b);
         if (isGzip) {
@@ -131,6 +144,7 @@ public class GrpcRequest<T> {
         }
     }
 
+    /** 返回 {@code service.method} 路由键。 */
     public String getGrpcMethodKey() {
         return service + "." + method;
     }

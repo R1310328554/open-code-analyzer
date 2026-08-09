@@ -20,6 +20,12 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
+ * gRPC 方法路由与反射调用调度器。
+ * <p>
+ * 启动时扫描 {@code @GrpcService} 类，为每个 {@code @GrpcMethod} 绑定
+ * {@link MethodHandle} 及 Protobuf parseFrom/toByteArray 句柄，
+ * 运行时按 service.method 键分发 unary/流式调用。
+ *
  * @author: FengYe
  * @date: 2024/9/6 01:12
  * @description: GrpcDelegrate
@@ -28,8 +34,10 @@ public class GrpcDispatcher {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName());
 
+    /** 未指定包名时的默认服务实现扫描路径。 */
     public static final String DEFAULT_GRPC_SERVICE_PACKAGE_NAME = "com.taobao.arthas.grpc.server.service.impl";
 
+    /** service.method -> 已绑定实例的 gRPC 方法句柄。 */
     public static Map<String, MethodHandle> grpcInvokeMap = new HashMap<>();
 
 //    public static Map<String, StreamObserver> clientStreamInvokeMap = new HashMap<>();
@@ -44,6 +52,11 @@ public class GrpcDispatcher {
 
     public static Map<String, GrpcInvokeTypeEnum> grpcInvokeTypeMap = new HashMap<>();
 
+    /**
+     * 扫描包内 {@code @GrpcService} 类，注册方法句柄与 Protobuf 序列化句柄。
+     *
+     * @param grpcServicePackageName 扫描包名，null 时用 {@link #DEFAULT_GRPC_SERVICE_PACKAGE_NAME}
+     */
     public void loadGrpcService(String grpcServicePackageName) {
         List<Class<?>> classes = ReflectUtil.findClasses(Optional.ofNullable(grpcServicePackageName).orElse(DEFAULT_GRPC_SERVICE_PACKAGE_NAME));
         for (Class<?> clazz : classes) {
@@ -111,6 +124,7 @@ public class GrpcDispatcher {
         }
     }
 
+    /** 按 service/method 名执行 unary 调用（原始字节入参）。 */
     public GrpcResponse doUnaryExecute(String service, String method, byte[] arg) throws Throwable {
         MethodHandle methodHandle = grpcInvokeMap.get(generateGrpcMethodKey(service, method));
         MethodType type = grpcInvokeMap.get(generateGrpcMethodKey(service, method)).type();
@@ -124,6 +138,7 @@ public class GrpcDispatcher {
         return grpcResponse;
     }
 
+    /** 对 {@link GrpcRequest} 执行 unary 调用并封装 {@link GrpcResponse}。 */
     public GrpcResponse unaryExecute(GrpcRequest request) throws Throwable {
         MethodHandle methodHandle = grpcInvokeMap.get(request.getGrpcMethodKey());
         MethodType type = grpcInvokeMap.get(request.getGrpcMethodKey()).type();
@@ -137,17 +152,20 @@ public class GrpcDispatcher {
         return grpcResponse;
     }
 
+    /** 客户端流式：返回用于接收后续请求的 {@link StreamObserver}。 */
     public StreamObserver<GrpcRequest> clientStreamExecute(GrpcRequest request, StreamObserver<GrpcResponse> responseObserver) throws Throwable {
         MethodHandle methodHandle = grpcInvokeMap.get(request.getGrpcMethodKey());
         return (StreamObserver<GrpcRequest>) methodHandle.invoke(responseObserver);
     }
 
+    /** 服务端流式：解析首包请求后通过 responseObserver 推送多条响应。 */
     public void serverStreamExecute(GrpcRequest request, StreamObserver<GrpcResponse> responseObserver) throws Throwable {
         MethodHandle methodHandle = grpcInvokeMap.get(request.getGrpcMethodKey());
         Object req = requestParseFromMap.get(request.getGrpcMethodKey()).invoke(request.readData());
         methodHandle.invoke(req, responseObserver);
     }
 
+    /** 双向流式：返回客户端请求侧 StreamObserver。 */
     public StreamObserver<GrpcRequest> biStreamExecute(GrpcRequest request, StreamObserver<GrpcResponse> responseObserver) throws Throwable {
         MethodHandle methodHandle = grpcInvokeMap.get(request.getGrpcMethodKey());
         return (StreamObserver<GrpcRequest>) methodHandle.invoke(responseObserver);
@@ -156,19 +174,21 @@ public class GrpcDispatcher {
     /**
      * 获取指定 service method 对应的入参类型
      *
-     * @param serviceName
-     * @param methodName
-     * @return
+     * @param serviceName gRPC 服务名
+     * @param methodName 方法名
+     * @return 请求消息 Protobuf 类型
      */
     public static Class<?> getRequestClass(String serviceName, String methodName) {
         //protobuf 规范只能有单入参
         return Optional.ofNullable(grpcInvokeMap.get(generateGrpcMethodKey(serviceName, methodName))).orElseThrow(() -> new RuntimeException("The specified grpc method does not exist")).type().parameterArray()[0];
     }
 
+    /** 生成 {@code serviceName.methodName} 路由键。 */
     public static String generateGrpcMethodKey(String serviceName, String methodName) {
         return serviceName + "." + methodName;
     }
 
+    /** 根据注册表填充请求的 {@link GrpcInvokeTypeEnum} 并标记为首包数据。 */
     public static void checkGrpcType(GrpcRequest request) {
         request.setGrpcType(
                 Optional.ofNullable(grpcInvokeTypeMap.get(generateGrpcMethodKey(request.getService(), request.getMethod())))
@@ -177,6 +197,7 @@ public class GrpcDispatcher {
         request.setStreamFirstData(true);
     }
 
+    /** 递归解析泛型参数，获取 StreamObserver 内层 Protobuf 消息类型。 */
     public static Class<?> getInnerGenericClass(Type type) {
         if (type instanceof Class<?>) {
             return (Class<?>) type;

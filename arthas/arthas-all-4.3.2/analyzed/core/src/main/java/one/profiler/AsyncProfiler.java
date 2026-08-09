@@ -11,10 +11,10 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Java API for in-process profiling. Serves as a wrapper around
- * async-profiler native library. This class is a singleton.
- * The first call to {@link #getInstance()} initiates loading of
- * libasyncProfiler.so.
+ * async-profiler 进程内性能分析 Java API，封装本地库 libasyncProfiler.so。
+ * <p>
+ * 单例模式：首次调用 {@link #getInstance()} 时按平台加载本地库
+ * （支持 -agentpath 预加载、系统属性指定路径或内嵌 so 解压）。
  */
 public class AsyncProfiler implements AsyncProfilerMXBean {
     private static AsyncProfiler instance;
@@ -22,10 +22,17 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     private AsyncProfiler() {
     }
 
+    /** 使用默认路径加载本地库并返回单例。 */
     public static AsyncProfiler getInstance() {
         return getInstance(null);
     }
 
+    /**
+     * 获取单例；可显式指定本地库绝对路径。
+     *
+     * @param libPath 本地库路径，null 时走自动探测逻辑
+     * @return AsyncProfiler 单例
+     */
     public static synchronized AsyncProfiler getInstance(String libPath) {
         if (instance != null) {
             return instance;
@@ -36,7 +43,7 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
             System.load(libPath);
         } else {
             try {
-                // No need to load library, if it has been preloaded with -agentpath
+                // 若已通过 -agentpath 预加载，getVersion 不会抛 UnsatisfiedLinkError
                 profiler.getVersion();
             } catch (UnsatisfiedLinkError e) {
                 String libraryPath = System.getProperty("one.profiler.libraryPath");
@@ -62,6 +69,7 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
         return profiler;
     }
 
+    /** 从 classpath 资源解压对应平台的 libasyncProfiler.so 到临时文件。 */
     private static File extractEmbeddedLib() {
         String resourceName = "/" + getPlatformTag() + "/libasyncProfiler.so";
         InputStream in = AsyncProfiler.class.getResourceAsStream(resourceName);
@@ -91,6 +99,7 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
         }
     }
 
+    /** 根据 os.name / os.arch 返回内嵌 so 的资源目录标签。 */
     private static String getPlatformTag() {
         String os = System.getProperty("os.name").toLowerCase();
         String arch = System.getProperty("os.arch").toLowerCase();
@@ -113,11 +122,11 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Start profiling
+     * 启动采样分析并重置已采集数据。
      *
-     * @param event    Profiling event, see {@link Events}
-     * @param interval Sampling interval, e.g. nanoseconds for Events.CPU
-     * @throws IllegalStateException If profiler is already running
+     * @param event 采样事件类型，见 {@link Events}
+     * @param interval 采样间隔（如 CPU 事件为纳秒）
+     * @throws IllegalStateException 分析器已在运行时再次 start
      */
     @Override
     public void start(String event, long interval) throws IllegalStateException {
@@ -128,12 +137,11 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Start or resume profiling without resetting collected data.
-     * Note that event and interval may change since the previous profiling session.
+     * 启动或恢复采样，不重置已有样本；事件与间隔可与上次会话不同。
      *
-     * @param event    Profiling event, see {@link Events}
-     * @param interval Sampling interval, e.g. nanoseconds for Events.CPU
-     * @throws IllegalStateException If profiler is already running
+     * @param event 采样事件类型，见 {@link Events}
+     * @param interval 采样间隔
+     * @throws IllegalStateException 分析器已在运行时再次 resume
      */
     @Override
     public void resume(String event, long interval) throws IllegalStateException {
@@ -144,9 +152,9 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Stop profiling (without dumping results)
+     * 停止采样（不导出结果）。
      *
-     * @throws IllegalStateException If profiler is not running
+     * @throws IllegalStateException 分析器未在运行
      */
     @Override
     public void stop() throws IllegalStateException {
@@ -154,17 +162,17 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Get the number of samples collected during the profiling session
+     * 获取当前会话已采集的样本数。
      *
-     * @return Number of samples
+     * @return 样本数量
      */
     @Override
     public native long getSamples();
 
     /**
-     * Get profiler agent version, e.g. "1.0"
+     * 获取 profiler 代理版本号，如 "1.0"。
      *
-     * @return Version string
+     * @return 版本字符串
      */
     @Override
     public String getVersion() {
@@ -176,13 +184,12 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Execute an agent-compatible profiling command -
-     * the comma-separated list of arguments defined in arguments.cpp
+     * 执行与 agent 兼容的分析命令（逗号分隔参数，定义见 arguments.cpp）。
      *
-     * @param command Profiling command
-     * @return The command result
-     * @throws IllegalArgumentException If failed to parse the command
-     * @throws IOException              If failed to create output file
+     * @param command 分析命令字符串
+     * @return 命令执行结果
+     * @throws IllegalArgumentException 命令解析失败
+     * @throws IOException 输出文件创建失败
      */
     @Override
     public String execute(String command) throws IllegalArgumentException, IllegalStateException, IOException {
@@ -193,10 +200,10 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Dump profile in 'collapsed stacktraces' format
+     * 以 collapsed stacktraces 格式导出火焰图数据。
      *
-     * @param counter Which counter to display in the output
-     * @return Textual representation of the profile
+     * @param counter 输出使用的计数指标
+     * @return 文本格式的 profile
      */
     @Override
     public String dumpCollapsed(Counter counter) {
@@ -208,10 +215,10 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Dump collected stack traces
+     * 导出采集到的调用栈文本。
      *
-     * @param maxTraces Maximum number of stack traces to dump. 0 means no limit
-     * @return Textual representation of the profile
+     * @param maxTraces 最大栈条数，0 表示不限制
+     * @return 文本格式的 profile
      */
     @Override
     public String dumpTraces(int maxTraces) {
@@ -223,10 +230,10 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Dump flat profile, i.e. the histogram of the hottest methods
+     * 导出 flat profile（最热方法直方图）。
      *
-     * @param maxMethods Maximum number of methods to dump. 0 means no limit
-     * @return Textual representation of the profile
+     * @param maxMethods 最大方法数，0 表示不限制
+     * @return 文本格式的 profile
      */
     @Override
     public String dumpFlat(int maxMethods) {
@@ -238,11 +245,11 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Dump collected data in OTLP format.
+     * 以 OTLP 格式导出采集数据。
      * <p>
-     * This API is UNSTABLE and might change or be removed in the next version of async-profiler.
+     * 此 API 不稳定，可能在后续版本中变更或移除。
      *
-     * @return OTLP representation of the profile
+     * @return OTLP 二进制 profile
      */
     @Override
     public byte[] dumpOtlp() {
@@ -254,30 +261,29 @@ public class AsyncProfiler implements AsyncProfilerMXBean {
     }
 
     /**
-     * Add the given thread to the set of profiled threads.
-     * 'filter' option must be enabled to use this method.
+     * 将指定线程加入采样集合（需启用 filter 选项）。
      *
-     * @param thread Thread to include in profiling
+     * @param thread 待纳入采样的线程
      */
     public void addThread(Thread thread) {
         filterThread(thread, true);
     }
 
     /**
-     * Remove the given thread from the set of profiled threads.
-     * 'filter' option must be enabled to use this method.
+     * 将指定线程移出采样集合（需启用 filter 选项）。
      *
-     * @param thread Thread to exclude from profiling
+     * @param thread 待排除的线程
      */
     public void removeThread(Thread thread) {
         filterThread(thread, false);
     }
 
+    /** 对目标线程加锁后调用 native filterThread0，避免与线程状态变更竞态。 */
     private void filterThread(Thread thread, boolean enable) {
         if (thread == null || thread == Thread.currentThread()) {
             filterThread0(null, enable);
         } else {
-            // Need to take lock to avoid race condition with a thread state change
+            // 加锁避免与线程状态变更产生竞态
             synchronized (thread) {
                 Thread.State state = thread.getState();
                 if (state != Thread.State.NEW && state != Thread.State.TERMINATED) {

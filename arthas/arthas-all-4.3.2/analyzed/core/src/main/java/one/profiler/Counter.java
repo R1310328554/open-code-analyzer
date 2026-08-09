@@ -6,9 +6,13 @@
 package one.profiler;
 
 /**
- * Which metrics to use when generating profile in collapsed stack traces format.
+ * collapsed stacktraces 格式导出时使用的计数指标。
+ * <p>
+ * {@link #SAMPLES} 按采样次数计数；{@link #TOTAL} 按累计值（如 CPU 时间）计数。
  */
 public enum Counter {
+    /** 样本次数。 */
     SAMPLES,
+    /** 累计总量（如 CPU 纳秒）。 */
     TOTAL
 }
