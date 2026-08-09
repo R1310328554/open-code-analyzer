@@ -21,8 +21,8 @@ import java.beans.PropertyChangeEvent;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Thrown when a bean property getter or setter method throws an exception,
- * analogous to an InvocationTargetException.
+ * 当 bean 属性的 getter 或 setter 方法抛出异常时抛出，
+ * 类似于 {@code InvocationTargetException}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -31,15 +31,15 @@ import org.jspecify.annotations.Nullable;
 public class MethodInvocationException extends PropertyAccessException {
 
 	/**
-	 * Error code that a method invocation error will be registered with.
+	 * 方法调用错误注册时所使用的错误码。
 	 */
 	public static final String ERROR_CODE = "methodInvocation";
 
 
 	/**
-	 * Create a new MethodInvocationException.
-	 * @param propertyChangeEvent the PropertyChangeEvent that resulted in an exception
-	 * @param cause the Throwable raised by the invoked method
+	 * 创建一个新的 {@code MethodInvocationException}。
+	 * @param propertyChangeEvent 导致异常的 {@link PropertyChangeEvent}
+	 * @param cause 被调用方法抛出的 {@link Throwable}
 	 */
 	public MethodInvocationException(PropertyChangeEvent propertyChangeEvent, @Nullable Throwable cause) {
 		super(propertyChangeEvent,
@@ -47,6 +47,9 @@ public class MethodInvocationException extends PropertyAccessException {
 				cause);
 	}
 
+	/**
+	 * 返回本异常对应的错误码。
+	 */
 	@Override
 	public String getErrorCode() {
 		return ERROR_CODE;

@@ -35,47 +35,59 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class GenericTypeAwarePropertyDescriptor — 意图说明
-
-class `GenericTypeAwarePropertyDescriptor`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/GenericTypeAwarePropertyDescriptor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Extension of the standard JavaBeans {@link PropertyDescriptor} class,
- * overriding {@code getPropertyType()} such that a generically declared
- * type variable will be resolved against the containing bean class.
+ * 对标准 JavaBeans {@link PropertyDescriptor} 的扩展：
+ * 重写 {@code getPropertyType()}，使泛型声明的类型变量
+ * 能够针对所属 bean 类进行解析。
  *
  * @author Juergen Hoeller
  * @since 2.5.2
  */
 final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 
+	/** 所属 bean 的类型 */
 	private final Class<?> beanClass;
 
+	/** 读方法（getter），可能为 {@code null} */
 	private final @Nullable Method readMethod;
 
+	/** 写方法（setter），可能为 {@code null} */
 	private final @Nullable Method writeMethod;
 
+	/** 与当前写方法同名、参数个数相同的其他候选写方法（存在歧义时） */
 	private @Nullable Set<Method> ambiguousWriteMethods;
 
-	// [OCA] 字段 `ambiguousWriteMethodsLogged`：类成员状态。
+	/** 是否已针对写方法歧义打过调试日志 */
 	private volatile boolean ambiguousWriteMethodsLogged;
 
+	/** 写方法的第一个参数（绑定 containing class 后的 {@link MethodParameter}） */
 	private @Nullable MethodParameter writeMethodParameter;
 
+	/** 写方法参数的可解析类型（惰性缓存） */
 	private volatile @Nullable ResolvableType writeMethodType;
 
+	/** 读方法返回值的可解析类型 */
 	private @Nullable ResolvableType readMethodType;
 
+	/** 该属性的类型描述符（惰性缓存） */
 	private volatile @Nullable TypeDescriptor typeDescriptor;
 
+	/** 解析后的属性类型 */
 	private @Nullable Class<?> propertyType;
 
+	/** 专用 PropertyEditor 类型（若有） */
 	private final @Nullable Class<?> propertyEditorClass;
 
 
+	/**
+	 * 创建感知泛型的属性描述符。
+	 * @param beanClass 所属 bean 类型
+	 * @param propertyName 属性名
+	 * @param readMethod 读方法（可为 {@code null}）
+	 * @param writeMethod 写方法（可为 {@code null}）
+	 * @param propertyEditorClass 专用 PropertyEditor 类型（可为 {@code null}）
+	 * @throws IntrospectionException 内省失败时抛出
+	 */
 	public GenericTypeAwarePropertyDescriptor(Class<?> beanClass, String propertyName,
 			@Nullable Method readMethod, @Nullable Method writeMethod,
 			@Nullable Class<?> propertyEditorClass) throws IntrospectionException {
@@ -86,9 +98,8 @@ final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 		Method readMethodToUse = (readMethod != null ? BridgeMethodResolver.findBridgedMethod(readMethod) : null);
 		Method writeMethodToUse = (writeMethod != null ? BridgeMethodResolver.findBridgedMethod(writeMethod) : null);
 		if (writeMethodToUse == null && readMethodToUse != null) {
-			// Fallback: Original JavaBeans introspection might not have found matching setter
-			// method due to lack of bridge method resolution, in case of the getter using a
-			// covariant return type whereas the setter is defined for the concrete property type.
+			// 回退：原始 JavaBeans 内省可能因未解析桥接方法而找不到匹配的 setter，
+			// 典型场景是 getter 使用协变返回类型，而 setter 按具体属性类型声明。
 			Method candidate = ClassUtils.getMethodIfAvailable(
 					this.beanClass, "set" + StringUtils.capitalize(getName()), (Class<?>[]) null);
 			if (candidate != null && candidate.getParameterCount() == 1) {
@@ -100,9 +111,8 @@ final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 
 		if (this.writeMethod != null) {
 			if (this.readMethod == null) {
-				// Write method not matched against read method: potentially ambiguous through
-				// several overloaded variants, in which case an arbitrary winner has been chosen
-				// by the JDK's JavaBeans Introspector...
+				// 写方法未能与读方法配对：可能存在多个重载变体，
+				// JDK 的 JavaBeans Introspector 会任意选定其中一个“胜出者”……
 				Set<Method> ambiguousCandidates = new HashSet<>();
 				for (Method method : beanClass.getMethods()) {
 					if (method.getName().equals(this.writeMethod.getName()) &&
@@ -130,6 +140,9 @@ final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 	}
 
 
+	/**
+	 * 返回所属 bean 的类型。
+	 */
 	public Class<?> getBeanClass() {
 		return this.beanClass;
 	}
@@ -144,6 +157,10 @@ final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 		return this.writeMethod;
 	}
 
+	/**
+	 * 返回实际用于访问的写方法；若存在歧义候选，首次调用时打调试日志。
+	 * @return 写方法（永不为 {@code null}）
+	 */
 	public Method getWriteMethodForActualAccess() {
 		Assert.state(this.writeMethod != null, "No write method available");
 		if (this.ambiguousWriteMethods != null && !this.ambiguousWriteMethodsLogged) {
@@ -155,6 +172,11 @@ final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 		return this.writeMethod;
 	}
 
+	/**
+	 * 在存在歧义写方法时，按给定值类型挑选一个可用的回退写方法。
+	 * @param valueType 待写入值的类型（可为 {@code null}）
+	 * @return 匹配的回退写方法；无合适候选时返回 {@code null}
+	 */
 	public @Nullable Method getWriteMethodFallback(@Nullable Class<?> valueType) {
 		if (this.ambiguousWriteMethods != null) {
 			for (Method method : this.ambiguousWriteMethods) {
@@ -167,6 +189,10 @@ final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 		return null;
 	}
 
+	/**
+	 * 当且仅当恰好存在一个歧义写方法候选时，返回该唯一回退写方法。
+	 * @return 唯一候选；否则 {@code null}
+	 */
 	public @Nullable Method getUniqueWriteMethodFallback() {
 		if (this.ambiguousWriteMethods != null && this.ambiguousWriteMethods.size() == 1) {
 			return this.ambiguousWriteMethods.iterator().next();
@@ -174,15 +200,24 @@ final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 		return null;
 	}
 
+	/**
+	 * 是否拥有唯一、无歧义的写方法。
+	 */
 	public boolean hasUniqueWriteMethod() {
 		return (this.writeMethod != null && this.ambiguousWriteMethods == null);
 	}
 
+	/**
+	 * 返回写方法的参数描述（第一个参数）。
+	 */
 	public MethodParameter getWriteMethodParameter() {
 		Assert.state(this.writeMethodParameter != null, "No write method available");
 		return this.writeMethodParameter;
 	}
 
+	/**
+	 * 返回写方法参数的 {@link ResolvableType}（惰性解析并缓存）。
+	 */
 	public ResolvableType getWriteMethodType() {
 		ResolvableType writeMethodType = this.writeMethodType;
 		if (writeMethodType == null) {
@@ -192,11 +227,17 @@ final class GenericTypeAwarePropertyDescriptor extends PropertyDescriptor {
 		return writeMethodType;
 	}
 
+	/**
+	 * 返回读方法返回值的 {@link ResolvableType}。
+	 */
 	public ResolvableType getReadMethodType() {
 		Assert.state(this.readMethodType != null, "No read method available");
 		return this.readMethodType;
 	}
 
+	/**
+	 * 返回该属性的 {@link TypeDescriptor}（惰性构建并缓存）。
+	 */
 	public TypeDescriptor getTypeDescriptor() {
 		TypeDescriptor typeDescriptor = this.typeDescriptor;
 		if (typeDescriptor == null) {
