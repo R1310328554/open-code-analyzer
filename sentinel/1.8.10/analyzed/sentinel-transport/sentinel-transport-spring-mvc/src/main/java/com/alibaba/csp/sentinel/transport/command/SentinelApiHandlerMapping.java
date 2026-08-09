@@ -34,11 +34,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Spring MVC 命令 API 路由映射：将请求 URI 映射为 {@link SentinelApiHandler}。
+ * 监听 Spring Boot {@code WebServerInitializedEvent} 自动回填运行时端口。
+ *
  * @author shenbaoyong
  */
 public class SentinelApiHandlerMapping extends AbstractHandlerMapping implements ApplicationListener {
 
+    /** Spring Boot Web 容器就绪事件类名，用于运行时探测。 */
     private static final String SPRING_BOOT_WEB_SERVER_INITIALIZED_EVENT_CLASS = "org.springframework.boot.web.context.WebServerInitializedEvent";
+    /** 探测到的 WebServerInitializedEvent 类，非 Spring Boot 环境为 null。 */
     private static Class webServerInitializedEventClass;
 
     static {
@@ -50,15 +55,19 @@ public class SentinelApiHandlerMapping extends AbstractHandlerMapping implements
         }
     }
 
+    /** 命令名到 {@link CommandHandler} 的全局注册表。 */
     final static Map<String, CommandHandler> handlerMap = new ConcurrentHashMap<>();
 
+    /** 为 true 时不挂载拦截器，仅返回 handler 链。 */
     private boolean ignoreInterceptor = true;
 
+    /** 设置较低优先级，避免覆盖业务 HandlerMapping。 */
     public SentinelApiHandlerMapping() {
         setOrder(Ordered.LOWEST_PRECEDENCE - 10);
     }
 
     @Override
+    /** 按 URI（去掉前导 /）查找已注册命令，命中则返回 {@link SentinelApiHandler}。 */
     protected Object getHandlerInternal(HttpServletRequest request) throws Exception {
         String commandName = request.getRequestURI();
         if (commandName.startsWith("/")) {
@@ -69,14 +78,17 @@ public class SentinelApiHandlerMapping extends AbstractHandlerMapping implements
     }
 
     @Override
+    /** ignoreInterceptor 为 true 时跳过拦截器，否则走父类默认链。 */
     protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpServletRequest request) {
         return ignoreInterceptor ? new HandlerExecutionChain(handler) : super.getHandlerExecutionChain(handler, request);
     }
 
+    /** 设置是否在 Handler 链中忽略拦截器。 */
     public void setIgnoreInterceptor(boolean ignoreInterceptor) {
         this.ignoreInterceptor = ignoreInterceptor;
     }
 
+    /** 注册单个命令处理器，重复命令名会被忽略并打 warn 日志。 */
     public static void registerCommand(String commandName, CommandHandler handler) {
         if (StringUtil.isEmpty(commandName) || handler == null) {
             return;
@@ -90,6 +102,7 @@ public class SentinelApiHandlerMapping extends AbstractHandlerMapping implements
         handlerMap.put(commandName, handler);
     }
 
+    /** 批量注册命令处理器。 */
     public static void registerCommands(Map<String, CommandHandler> handlerMap) {
         if (handlerMap != null) {
             for (Map.Entry<String, CommandHandler> e : handlerMap.entrySet()) {
@@ -99,6 +112,7 @@ public class SentinelApiHandlerMapping extends AbstractHandlerMapping implements
     }
 
     @Override
+    /** Spring Boot 启动完成后从事件中解析 Web 端口并写入 {@link TransportConfig}。 */
     public void onApplicationEvent(ApplicationEvent applicationEvent) {
         if (webServerInitializedEventClass != null && webServerInitializedEventClass.isAssignableFrom(applicationEvent.getClass())) {
             Integer port = null;

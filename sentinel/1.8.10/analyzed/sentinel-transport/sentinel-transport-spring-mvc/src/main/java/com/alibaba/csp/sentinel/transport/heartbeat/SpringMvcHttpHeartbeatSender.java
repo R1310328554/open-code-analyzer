@@ -37,6 +37,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import java.util.List;
 
 /**
+ * Spring MVC 环境下基于 Apache HttpClient 的心跳发送器：向 Dashboard 发起 GET 注册本机信息。
+ * SPI 优先级 {@code ORDER_LOWEST - 100}，与 Netty 实现互斥加载。
+ *
  * @author Eric Zhao
  * @author Carpenter Lee
  * @author Leo Li
@@ -44,10 +47,13 @@ import java.util.List;
 @Spi(order = Spi.ORDER_LOWEST - 100)
 public class SpringMvcHttpHeartbeatSender implements HeartbeatSender {
 
+    /** Apache HttpClient 实例，按 Dashboard 协议（HTTP/HTTPS）创建。 */
     private final CloseableHttpClient client;
 
+    /** HTTP 200 视为心跳成功。 */
     private static final int OK_STATUS = 200;
 
+    /** 连接与读超时（毫秒）。 */
     private final int timeoutMs = 3000;
     private final RequestConfig requestConfig = RequestConfig.custom()
         .setConnectionRequestTimeout(timeoutMs)
@@ -55,8 +61,11 @@ public class SpringMvcHttpHeartbeatSender implements HeartbeatSender {
         .setSocketTimeout(timeoutMs)
         .build();
 
+    /** 首个 Dashboard 端点的通信协议。 */
     private final Protocol consoleProtocol;
+    /** Dashboard 主机名或 IP。 */
     private final String consoleHost;
+    /** Dashboard 端口。 */
     private final int consolePort;
 
     public SpringMvcHttpHeartbeatSender() {
@@ -94,7 +103,7 @@ public class SpringMvcHttpHeartbeatSender implements HeartbeatSender {
 
         HttpGet request = new HttpGet(uriBuilder.build());
         request.setConfig(requestConfig);
-        // Send heartbeat request.
+        // 发送心跳 GET 请求
         CloseableHttpResponse response = client.execute(request);
         response.close();
         int statusCode = response.getStatusLine().getStatusCode();
@@ -109,14 +118,17 @@ public class SpringMvcHttpHeartbeatSender implements HeartbeatSender {
     }
 
     @Override
+    /** @return 默认心跳间隔 5000 毫秒。 */
     public long intervalMs() {
         return 5000;
     }
 
+    /** 判断是否为 4xx 客户端错误状态码。 */
     private boolean clientErrorCode(int code) {
         return code > 399 && code < 500;
     }
 
+    /** 判断是否为 5xx 服务端错误状态码。 */
     private boolean serverErrorCode(int code) {
         return code > 499 && code < 600;
     }

@@ -23,24 +23,30 @@ import com.alibaba.csp.sentinel.transport.CommandCenter;
 import java.util.Map;
 
 /**
+ * Spring MVC 命令中心 SPI 实现：复用宿主 Web 容器，无需独立监听端口。
+ * 启动前将 SPI 加载的命令注册到 {@link SentinelApiHandlerMapping}。
+ *
  * @author shenbaoyong
  */
 @Spi(order = Spi.ORDER_LOWEST - 100)
 public class SpringMvcHttpCommandCenter implements CommandCenter {
 
     @Override
+    /** 端口由 Spring MVC 容器提供，此处无需额外启动逻辑。 */
     public void start() throws Exception {
 
     }
 
     @Override
+    /** 无独立资源需释放。 */
     public void stop() throws Exception {
 
     }
 
     @Override
+    /** 注册 SPI 加载的全部命令处理器到 HandlerMapping。 */
     public void beforeStart() throws Exception {
-        // Register handlers
+        // 注册 SPI 命令处理器
         Map<String, CommandHandler> handlers = CommandHandlerProvider.getInstance().namedHandlers();
         SentinelApiHandlerMapping.registerCommands(handlers);
     }
