@@ -54,6 +54,10 @@ import org.apache.rocketmq.store.queue.CqUnit;
 import org.apache.rocketmq.store.queue.ReferredIterator;
 import org.rocksdb.RocksDBException;
 
+/**
+ * POP 通知处理器：客户端查询 topic/queue 是否有新消息，
+ * 无消息时进入长轮询；CommitLog 写入时唤醒挂起请求。
+ */
 public class NotificationProcessor implements NettyRequestProcessor {
     private static final Logger POP_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
     private final BrokerController brokerController;
@@ -61,11 +65,13 @@ public class NotificationProcessor implements NettyRequestProcessor {
     private final PopLongPollingService popLongPollingService;
     private static final String BORN_TIME = "bornTime";
 
+    /** @param brokerController Broker 控制器 */
     public NotificationProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
         this.popLongPollingService = new PopLongPollingService(brokerController, this, true);
     }
 
+    /** 关闭 POP 长轮询服务。 */
     public void shutdown() throws Exception {
         this.popLongPollingService.shutdown();
     }
@@ -75,19 +81,21 @@ public class NotificationProcessor implements NettyRequestProcessor {
         return false;
     }
 
-    // When a new message is written to CommitLog, this method would be called.
-    // Suspended long polling will receive notification and be wakeup.
+    // CommitLog 写入新消息时调用，唤醒对应 topic@queue 上挂起的长轮询
+    /** 带消息元数据的通知：支持 Tag/SQL 过滤位图匹配后唤醒长轮询。 */
     public void notifyMessageArriving(final String topic, final int queueId, long offset,
         Long tagsCode, long msgStoreTime, byte[] filterBitMap, Map<String, String> properties) {
         this.popLongPollingService.notifyMessageArrivingWithRetryTopic(
             topic, queueId, offset, tagsCode, msgStoreTime, filterBitMap, properties);
     }
 
+    /** 简化通知：仅按 topic@queueId 唤醒长轮询。 */
     public void notifyMessageArriving(final String topic, final int queueId) {
         this.popLongPollingService.notifyMessageArrivingWithRetryTopic(topic, queueId);
     }
 
     @Override
+    /** 处理 Notification 请求：检查队列是否有消息，无则挂起长轮询。 */
     public RemotingCommand processRequest(final ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         Channel channel = ctx.channel();
@@ -280,6 +288,7 @@ public class NotificationProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 计算 POP 有效起始 offset：取 consumerOffset 与 bufferOffset 的较大值。 */
     private long getPopOffset(String topic, String cid, int queueId) {
         long offset = this.brokerController.getConsumerOffsetManager().queryOffset(cid, topic, queueId);
         if (offset < 0) {
@@ -297,6 +306,7 @@ public class NotificationProcessor implements NettyRequestProcessor {
         return bufferOffset < 0L ? offset : Math.max(bufferOffset, offset);
     }
 
+    /** 返回 POP 长轮询服务实例。 */
     public PopLongPollingService getPopLongPollingService() {
         return popLongPollingService;
     }

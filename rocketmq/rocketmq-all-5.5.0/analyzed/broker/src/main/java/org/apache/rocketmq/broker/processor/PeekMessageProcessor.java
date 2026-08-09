@@ -60,11 +60,16 @@ import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESPONSE_CODE;
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESULT;
 
+/**
+ * Peek 消息处理器：只读预览队列消息而不改变 POP 状态，
+ * 用于客户端探测可用消息量；支持重试 topic 与 PageCache 零拷贝传输。
+ */
 public class PeekMessageProcessor implements NettyRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
     private Random random = new Random(System.currentTimeMillis());
 
+    /** @param brokerController Broker 控制器 */
     public PeekMessageProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
     }
@@ -80,6 +85,7 @@ public class PeekMessageProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 校验权限与订阅后，从主 topic 与重试 topic 读取消息并返回。 */
     private RemotingCommand processRequest(final Channel channel, RemotingCommand request, boolean brokerAllowSuspend)
         throws RemotingCommandException {
         final long beginTimeMills = this.brokerController.getMessageStore().now();
@@ -229,6 +235,7 @@ public class PeekMessageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 从指定队列 peek 消息并累加到结果集，同时统计剩余消息数 restNum。 */
     private long peekMsgFromQueue(boolean isRetry, GetMessageResult getMessageResult,
         PeekMessageRequestHeader requestHeader, int queueId, long restNum, int reviveQid, Channel channel,
         long popTime) throws RemotingCommandException {
@@ -272,6 +279,7 @@ public class PeekMessageProcessor implements NettyRequestProcessor {
         return restNum;
     }
 
+    /** 计算 peek 起始 offset：consumerOffset 与 PopBuffer 最新 offset 取 max。 */
     private long getPopOffset(String topic, String cid, int queueId) {
         long offset = this.brokerController.getConsumerOffsetManager().queryOffset(cid, topic, queueId);
         if (offset < 0) {
@@ -286,6 +294,7 @@ public class PeekMessageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 堆模式合并 peek 结果并记录磁盘落后时间。 */
     private byte[] readGetMessageResult(final GetMessageResult getMessageResult, final String group, final String topic,
         final int queueId) {
         final ByteBuffer byteBuffer = ByteBuffer.allocate(getMessageResult.getBufferTotalSize());

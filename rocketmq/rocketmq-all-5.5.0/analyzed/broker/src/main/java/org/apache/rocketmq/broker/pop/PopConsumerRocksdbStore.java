@@ -38,6 +38,10 @@ import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 基于 RocksDB 的 POP 消费状态存储：使用 popState 列族持久化 {@link PopConsumerRecord}。
+ * Key 前缀为可见性超时时间戳，支持按时间范围扫描过期记录。
+ */
 public class PopConsumerRocksdbStore extends AbstractRocksDBStorage implements PopConsumerKVStore {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
@@ -47,12 +51,14 @@ public class PopConsumerRocksdbStore extends AbstractRocksDBStorage implements P
     private WriteOptions deleteOptions;
     protected ColumnFamilyHandle columnFamilyHandle;
 
+    /** @param filePath RocksDB 数据目录路径 */
     public PopConsumerRocksdbStore(String filePath) {
         super(filePath);
     }
 
     // https://www.cnblogs.com/renjc/p/rocksdb-class-db.html
     // https://github.com/johnzeng/rocksdb-doc-cn/blob/master/doc/RocksDB-Tuning-Guide.md
+    /** 初始化 DB/Write/Compact 选项，写路径开启 sync 保证 POP 状态可恢复。 */
     protected void initOptions() {
         this.options = RocksDBOptionsFactory.createDBOptions();
 
@@ -77,6 +83,7 @@ public class PopConsumerRocksdbStore extends AbstractRocksDBStorage implements P
     }
 
     @Override
+    /** 创建 popState 列族并打开数据库。 */
     protected boolean postLoad() {
         try {
             UtilAll.ensureDirOK(this.dbPath);
@@ -103,11 +110,13 @@ public class PopConsumerRocksdbStore extends AbstractRocksDBStorage implements P
         return true;
     }
 
+    /** 返回 RocksDB 数据目录。 */
     public String getFilePath() {
         return this.dbPath;
     }
 
     @Override
+    /** 批量 Put POP 记录到 popState 列族。 */
     public void writeRecords(List<PopConsumerRecord> consumerRecordList) {
         if (!consumerRecordList.isEmpty()) {
             try (WriteBatch writeBatch = new WriteBatch()) {
@@ -122,6 +131,7 @@ public class PopConsumerRocksdbStore extends AbstractRocksDBStorage implements P
     }
 
     @Override
+    /** 批量 Delete POP 记录（ACK 或超时清理时调用）。 */
     public void deleteRecords(List<PopConsumerRecord> consumerRecordList) {
         if (!consumerRecordList.isEmpty()) {
             try (WriteBatch writeBatch = new WriteBatch()) {
@@ -137,6 +147,7 @@ public class PopConsumerRocksdbStore extends AbstractRocksDBStorage implements P
 
     @Override
     // https://github.com/facebook/rocksdb/issues/10300
+    /** 按可见性超时时间范围扫描过期记录，利用 key 前缀索引加速迭代。 */
     public List<PopConsumerRecord> scanExpiredRecords(long lower, long upper, int maxCount) {
         // In RocksDB, we can use SstPartitionerFixedPrefixFactory in cfOptions
         // and new ColumnFamilyOptions().useFixedLengthPrefixExtractor() to
@@ -157,6 +168,7 @@ public class PopConsumerRocksdbStore extends AbstractRocksDBStorage implements P
     }
 
     @Override
+    /** 关闭 WriteOptions 与列族句柄。 */
     protected void preShutdown() {
         if (this.writeOptions != null) {
             this.writeOptions.close();

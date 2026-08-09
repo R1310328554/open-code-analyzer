@@ -33,6 +33,10 @@ import org.apache.rocketmq.common.lite.LiteUtil;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 队列级顺序消费锁释放通知管理器：在 lockFreeTimestamp 到达时
+ * 唤醒长轮询或 Lite 事件分发，避免顺序 POP 长时间空等。
+ */
 public class QueueLevelConsumerOrderInfoLockManager {
     private static final Logger POP_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
     private ConsumerOrderInfoManager consumerOrderInfoManager;
@@ -49,9 +53,8 @@ public class QueueLevelConsumerOrderInfoLockManager {
             TIMER_TICK_MS, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * when QueueLevelConsumerManager load from disk, recover data
-     */
+    /** 从磁盘恢复 orderInfo 后，为尚未到期的 lockFreeTimestamp 重建定时任务。 */
+    /** 遍历持久化表，为每个未到期的 lockFreeTimestamp 注册 HashedWheel 定时器。 */
     public void recover(Map<String/* topic@group*/, ConcurrentHashMap<Integer/*queueId*/, QueueLevelConsumerManager.OrderInfo>> table) {
         if (!this.brokerController.getBrokerConfig().isEnableNotifyAfterPopOrderLockRelease()) {
             return;
@@ -75,10 +78,12 @@ public class QueueLevelConsumerOrderInfoLockManager {
         }
     }
 
+    /** 从 OrderInfo 提取 lockFreeTimestamp 并更新定时任务。 */
     public void updateLockFreeTimestamp(String topic, String group, int queueId, QueueLevelConsumerManager.OrderInfo orderInfo) {
         this.updateLockFreeTimestamp(topic, group, queueId, orderInfo.getLockFreeTimestamp());
     }
 
+    /** 注册/刷新 lockFreeTimestamp 到期后的通知定时器，新任务会取消旧任务。 */
     public void updateLockFreeTimestamp(String topic, String group, int queueId, Long lockFreeTimestamp) {
         if (!this.brokerController.getBrokerConfig().isEnableNotifyAfterPopOrderLockRelease()) {
             return;
@@ -107,6 +112,7 @@ public class QueueLevelConsumerOrderInfoLockManager {
         }
     }
 
+    /** 锁释放到期：Lite topic 走事件分发，普通 topic 唤醒 POP 长轮询。 */
     protected void notifyLockIsFree(Key key) {
         try {
             if (LiteUtil.isLiteTopicQueue(key.topic)) {
@@ -119,6 +125,7 @@ public class QueueLevelConsumerOrderInfoLockManager {
         }
     }
 
+    /** 停止 HashedWheelTimer。 */
     public void shutdown() {
         this.timer.stop();
     }

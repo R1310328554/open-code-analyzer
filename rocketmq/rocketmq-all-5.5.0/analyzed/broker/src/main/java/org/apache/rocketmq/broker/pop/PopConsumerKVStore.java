@@ -18,44 +18,42 @@ package org.apache.rocketmq.broker.pop;
 
 import java.util.List;
 
+/**
+ * POP 消费状态 KV 存储抽象：负责 POP 投递记录的持久化、删除与过期扫描。
+ * 典型实现为 {@link PopConsumerRocksdbStore}。
+ */
 public interface PopConsumerKVStore {
 
-    /**
-     * Starts the storage service.
-     */
+    /** 启动存储服务。 */
     boolean start();
 
-    /**
-     * Shutdown the storage service.
-     */
+    /** 关闭存储服务。 */
     boolean shutdown();
 
     /**
-     * Gets the file path of the storage.
-     * @return The file path of the storage.
+     * 返回存储目录路径。
+     * @return 存储文件路径
      */
     String getFilePath();
 
     /**
-     * Writes a list of consumer records to the storage.
-     * @param consumerRecordList The list of consumer records to be written.
+     * 批量写入 POP 消费记录。
+     * @param consumerRecordList 待写入的记录列表
      */
     void writeRecords(List<PopConsumerRecord> consumerRecordList);
 
     /**
-     * Deletes a list of consumer records from the storage.
-     * @param consumerRecordList The list of consumer records to be deleted.
+     * 批量删除 POP 消费记录。
+     * @param consumerRecordList 待删除的记录列表
      */
     void deleteRecords(List<PopConsumerRecord> consumerRecordList);
 
     /**
-     * Scans and returns a list of expired consumer records within the specified time range.
-     * @param lowerTime The start time (inclusive) of the time range to search, in milliseconds.
-     * @param upperTime The end time (exclusive) of the time range to search, in milliseconds.
-     * @param maxCount The maximum number of records to return.
-     *                 Even if more records match the criteria, only this many will be returned.
-     * @return A list of expired consumer records within the specified time range.
-     *         If no matching records are found, an empty list is returned.
+     * 扫描可见性超时时间落在 [lowerTime, upperTime) 区间内的过期记录。
+     * @param lowerTime 扫描下界（含），毫秒时间戳
+     * @param upperTime 扫描上界（不含），毫秒时间戳
+     * @param maxCount 最多返回条数
+     * @return 过期记录列表；无匹配时返回空列表
      */
     List<PopConsumerRecord> scanExpiredRecords(long lowerTime, long upperTime, int maxCount);
 }

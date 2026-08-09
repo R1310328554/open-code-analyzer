@@ -28,6 +28,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * POP 在途消息计数器：按 topic@group → queueId 维护未 ACK 消息数，
+ * 供流控与监控使用；Broker 重启前的 popTime 不计入。
+ */
 public class PopInflightMessageCounter {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
@@ -36,10 +40,12 @@ public class PopInflightMessageCounter {
         new ConcurrentHashMap<>(512);
     private final BrokerController brokerController;
 
+    /** @param brokerController Broker 控制器，用于获取 shouldStartTime */
     public PopInflightMessageCounter(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
+    /** POP 成功后增加在途消息计数。 */
     public void incrementInFlightMessageNum(String topic, String group, int queueId, int num) {
         if (num <= 0) {
             return;
@@ -61,6 +67,7 @@ public class PopInflightMessageCounter {
         });
     }
 
+    /** ACK 或超时时减少在途计数；popTime 早于 shouldStartTime 则忽略。 */
     public void decrementInFlightMessageNum(String topic, String group, long popTime, int qId, int delta) {
         if (popTime < this.brokerController.getShouldStartTime()) {
             return;
@@ -68,6 +75,7 @@ public class PopInflightMessageCounter {
         decrementInFlightMessageNum(topic, group, qId, delta);
     }
 
+    /** 按 PopCheckPoint 递减在途计数（通常为 1）。 */
     public void decrementInFlightMessageNum(PopCheckPoint checkPoint) {
         if (checkPoint.getPopTime() < this.brokerController.getShouldStartTime()) {
             return;
@@ -90,6 +98,7 @@ public class PopInflightMessageCounter {
         });
     }
 
+    /** 按消费组名清除所有 topic 的在途计数（组删除时调用）。 */
     public void clearInFlightMessageNumByGroupName(String group) {
         Set<String> topicGroupKey = this.topicInFlightMessageNum.keySet();
         for (String key : topicGroupKey) {
@@ -104,6 +113,7 @@ public class PopInflightMessageCounter {
         }
     }
 
+    /** 按 topic 名清除所有消费组的在途计数（topic 删除时调用）。 */
     public void clearInFlightMessageNumByTopicName(String topic) {
         Set<String> topicGroupKey = this.topicInFlightMessageNum.keySet();
         for (String key : topicGroupKey) {
@@ -118,6 +128,7 @@ public class PopInflightMessageCounter {
         }
     }
 
+    /** 清除指定 topic@group@queueId 的在途计数。 */
     public void clearInFlightMessageNum(String topic, String group, int queueId) {
         topicInFlightMessageNum.computeIfPresent(buildKey(topic, group), (key, queueNum) -> {
             queueNum.computeIfPresent(queueId, (queueIdKey, counter) -> null);
@@ -128,6 +139,7 @@ public class PopInflightMessageCounter {
         });
     }
 
+    /** 查询指定队列当前在途 POP 消息数。 */
     public long getGroupPopInFlightMessageNum(String topic, String group, int queueId) {
         Map<Integer /* queueId */, AtomicLong> queueCounter = topicInFlightMessageNum.get(buildKey(topic, group));
         if (queueCounter == null) {

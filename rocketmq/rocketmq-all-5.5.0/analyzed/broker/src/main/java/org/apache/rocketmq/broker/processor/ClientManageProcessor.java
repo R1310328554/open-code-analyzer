@@ -45,16 +45,22 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.ProducerData;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 客户端管理处理器：处理心跳注册、注销与订阅配置校验。
+ * 维护 Producer/Consumer 与 Broker 之间的连接与会话状态。
+ */
 public class ClientManageProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
     private final ConcurrentMap<String /* ConsumerGroup */, Integer /* HeartbeatFingerprint */> consumerGroupHeartbeatTable = new ConcurrentHashMap<>();
 
+    /** @param brokerController Broker 控制器 */
     public ClientManageProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
     @Override
+    /** 分发 HEART_BEAT / UNREGISTER_CLIENT / CHECK_CLIENT_CONFIG 请求。 */
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         switch (request.getCode()) {
@@ -75,6 +81,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 处理 V1 心跳：注册 Consumer/Producer 并自动创建重试 topic。 */
     public RemotingCommand heartBeat(ChannelHandlerContext ctx, RemotingCommand request) {
         RemotingCommand response = RemotingCommand.createResponseCommand(null);
         HeartbeatData heartbeatData = HeartbeatData.decode(request.getBody(), HeartbeatData.class);
@@ -149,6 +156,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 处理 V2 心跳：支持 fingerprint 检测订阅变更与 withoutSub 轻量注册。 */
     private RemotingCommand heartBeatV2(ChannelHandlerContext ctx, HeartbeatData heartbeatData, ClientChannelInfo clientChannelInfo, RemotingCommand response) {
         boolean isSubChange = false;
         for (ConsumerData consumerData : heartbeatData.getConsumerDataSet()) {
@@ -204,6 +212,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 注销指定 Producer/Consumer 客户端连接。 */
     public RemotingCommand unregisterClient(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response =
@@ -242,6 +251,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 校验客户端订阅表达式能否在 Broker 侧编译通过。 */
     public RemotingCommand checkClientConfig(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
