@@ -21,11 +21,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Specifies that the method is a generic field getter for a Live Object.
+ * 标记该方法为 Live Object 的通用字段读取器。
  * <p>
- * The annotated method takes a single {@link String} argument - the name of the
- * field to read - and returns its value. Unlike the deprecated
- * {@link RFieldAccessor} annotation, the method may have any name.
+ * 被注解方法接受一个 {@link String} 参数（字段名）并返回其值。与已废弃的 {@link RFieldAccessor}
+ * 不同，方法名不必为 {@code get}。
  * Example:
  * <pre>
  *       &#064;RGetter

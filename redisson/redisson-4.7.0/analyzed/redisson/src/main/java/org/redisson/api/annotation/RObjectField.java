@@ -28,11 +28,9 @@ import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 /**
- * By default <code>namingScheme</code> and/or <code>codec</code> parameters specified in {@link REntity}
- * are applied for each Live Object field. 
+ * 默认情况下 {@link REntity} 上的 {@code namingScheme} 与 {@code codec} 会应用到每个 Live Object 字段。
  * 
- * This annotation allows to specify custom <code>namingScheme</code> and/or <code>codec</code> parameters 
- * for any Live Object field except that marked with {@link RId}.
+ * 本注解允许为除 {@link RId} 主键外的任意字段单独指定 {@code namingScheme} 和/或 {@code codec}。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
@@ -41,19 +39,18 @@ import org.redisson.liveobject.resolver.NamingScheme;
 public @interface RObjectField{
 
     /**
-     * (Optional) Live Object naming scheme. Defines how to assign key names for each instance of this class. 
-     * Used to create a reference to an existing Live Object and materialising a new one in redis. 
-     * Defaults to {@link DefaultNamingScheme} implementation.
+     * （可选）字段级 Live Object 命名方案；定义嵌套对象在 Redis 中的键名规则。
+     * 用于引用已有对象或物化新实例。默认为 {@link DefaultNamingScheme}。
      * 
-     * @return scheme
+     * @return 命名方案实现类
      */
     Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
 
     /**
-     * (Optional) Live Object state codec.
-     * <code>null</code> means to use codec specified in Redisson configuration
+     * （可选）字段级 Live Object 状态编解码器。
+     * 为 {@code null} 时使用 Redisson 配置中的默认 {@link Codec}。
      * 
-     * @return codec
+     * @return 编解码器实现类
      */
     Class<? extends Codec> codec() default DEFAULT.class;
     

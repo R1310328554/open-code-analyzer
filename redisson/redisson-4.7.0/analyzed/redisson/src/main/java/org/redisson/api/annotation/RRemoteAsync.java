@@ -21,14 +21,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation used to mark interface as asynchronous 
- * client interface for remote service interface. 
+ * 标记接口为远程服务的异步客户端代理；方法签名须与远程服务接口一致，
+ * 但返回类型必须为 {@code org.redisson.api.RFuture}。
  * <p>
- * All method signatures must match with remote service interface,
- * but return type must be <code>org.redisson.api.RFuture</code>.
- * <p>
- * It's not necessary to add all methods from remote service.
- * Add only those which are needed. 
+ * 不必声明远程服务的全部方法，仅添加需要调用的即可。
  * 
  * @see org.redisson.api.RFuture
  * 
@@ -40,9 +36,9 @@ import java.lang.annotation.Target;
 public @interface RRemoteAsync {
 
     /**
-     * Remote interface class used to register
+     * 注册远程服务时对应的远程接口类。
      * 
-     * @return class used to register
+     * @return 远程服务接口 Class
      */
     Class<?> value();
     

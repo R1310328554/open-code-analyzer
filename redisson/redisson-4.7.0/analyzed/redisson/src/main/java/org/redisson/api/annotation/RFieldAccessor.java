@@ -21,7 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Specifies that the method is a field accessor for Live Object.
+ * 标记该方法为 Live Object 的通用字段访问器（读/写）。
  * Example:
  * <pre>
  *       &#064;RFieldAccessor
@@ -34,11 +34,8 @@ import java.lang.annotation.Target;
  *       }
  * </pre>
  * 
- * @deprecated This annotation has been split into the more explicit
- *             {@link RGetter} and {@link RSetter} annotations, which also
- *             remove the requirement for the accessor methods to be named
- *             {@code get} and {@code set}. Use {@link RGetter} to mark a field
- *             getter and {@link RSetter} to mark a field setter instead.
+ * @deprecated 已拆分为更明确的 {@link RGetter} 与 {@link RSetter}，且不再要求方法必须命名为
+ *             {@code get}/{@code set}。请改用 {@link RGetter} 标记字段读取、{@link RSetter} 标记字段写入。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */

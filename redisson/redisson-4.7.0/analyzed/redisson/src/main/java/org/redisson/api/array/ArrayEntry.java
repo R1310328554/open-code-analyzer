@@ -19,9 +19,9 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * Array entry object.
+ * Redis 数组（{@code RArray}）中的索引-值条目。
  *
- * @param <V> value type
+ * @param <V> 元素值类型
  *
  * @author lamnt2008
  *
@@ -39,18 +39,18 @@ public final class ArrayEntry<V> implements Serializable {
     }
 
     /**
-     * Returns array index.
+     * 返回数组下标。
      *
-     * @return array index
+     * @return 数组下标
      */
     public long getIndex() {
         return index;
     }
 
     /**
-     * Returns value stored at array index.
+     * 返回该下标处存储的元素值。
      *
-     * @return value stored at array index
+     * @return 元素值
      */
     public V getValue() {
         return value;

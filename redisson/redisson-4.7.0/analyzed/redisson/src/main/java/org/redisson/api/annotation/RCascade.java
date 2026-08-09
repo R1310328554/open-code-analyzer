@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 import org.redisson.api.RCascadeType;
 
 /**
- * Specifies that the defined cascade types are applied to the object/objects contained in Live Object field.
+ * 指定对 Live Object 字段中所含对象应用的级联（Cascade）类型。
  * 
  * @author Nikita Koksharov
  *
@@ -33,9 +33,9 @@ import org.redisson.api.RCascadeType;
 public @interface RCascade {
 
     /**
-     * List of applied cascade types.
+     * 要应用的级联类型列表。
      * 
-     * @return value
+     * @return 级联类型数组
      */
     RCascadeType[] value();
     

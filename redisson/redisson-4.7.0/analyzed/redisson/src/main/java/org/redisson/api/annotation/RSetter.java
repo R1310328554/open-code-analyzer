@@ -21,11 +21,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Specifies that the method is a generic field setter for a Live Object.
+ * 标记该方法为 Live Object 的通用字段写入器。
  * <p>
- * The annotated method takes two arguments - the name of the field to write as a
- * {@link String} and the new value - and stores the value into that field. Unlike
- * the deprecated {@link RFieldAccessor} annotation, the method may have any name.
+ * 被注解方法接受两个参数：字段名（{@link String}）与新值，并将值写入对应字段。与已废弃的
+ * {@link RFieldAccessor} 不同，方法名不必为 {@code set}。
  * Example:
  * <pre>
  *       &#064;RSetter

@@ -28,7 +28,7 @@ import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 /**
- * Specifies that the class is a Live Object. 
+ * 标记该类为 Live Object（存于 Redis 的实时对象实体）。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
@@ -44,27 +44,26 @@ public @interface REntity {
     }
     
     /**
-     * (Optional) Live Object naming scheme. Defines how to assign key names for each instance of this class. 
-     * Used to create a reference to an existing Live Object and materialising a new one in redis. 
-     * Defaults to {@link DefaultNamingScheme} implementation.
+     * （可选）Live Object 命名方案；定义该类每个实例在 Redis 中的键名规则。
+     * 用于引用已有 Live Object 或在 Redis 中物化新实例。默认为 {@link DefaultNamingScheme}。
      * 
-     * @return value
+     * @return 命名方案实现类
      */
     Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
 
     /**
-     * (Optional) Live Object state codec. 
-     * <code>null</code> means to use codec specified in Redisson configuration
+     * （可选）Live Object 状态编解码器。
+     * 为 {@code null} 时使用 Redisson 配置中的默认 {@link Codec}。
      * 
-     * @return value
+     * @return 编解码器实现类
      */
     Class<? extends Codec> codec() default DEFAULT.class;
 
     /**
-     * (Optional) Live Object field transformation. 
-     * Defaults to {@link TransformationMode#ANNOTATION_BASED}
+     * （可选）Live Object 字段映射/transform 模式。
+     * 默认为 {@link TransformationMode#ANNOTATION_BASED}。
      * 
-     * @return value
+     * @return 字段转换模式
      */
     TransformationMode fieldTransformation() default TransformationMode.ANNOTATION_BASED;
     

@@ -16,10 +16,9 @@
 package org.redisson.api.array;
 
 /**
- * Full array information object.
+ * Redis 数组完整元信息对象。
  * <p>
- * Extends {@link ArrayInfo} with the extended statistics returned only when
- * full information is requested through {@code RArray.getFullInfo()}.
+ * 继承 {@link ArrayInfo}，在通过 {@code RArray.getFullInfo()} 请求完整信息时返回额外的切片统计字段。
  *
  * @author Nikita Koksharov
  *
@@ -35,9 +34,9 @@ public final class ArrayFullInfo extends ArrayInfo {
     private Double averageSparseSize;
 
     /**
-     * Returns number of dense slices.
+     * 返回稠密（dense）切片数量。
      *
-     * @return number of dense slices
+     * @return 稠密切片数
      */
     public Long getDenseSlices() {
         return denseSlices;
@@ -48,9 +47,9 @@ public final class ArrayFullInfo extends ArrayInfo {
     }
 
     /**
-     * Returns number of sparse slices.
+     * 返回稀疏（sparse）切片数量。
      *
-     * @return number of sparse slices
+     * @return 稀疏切片数
      */
     public Long getSparseSlices() {
         return sparseSlices;
@@ -61,9 +60,9 @@ public final class ArrayFullInfo extends ArrayInfo {
     }
 
     /**
-     * Returns average dense slice size.
+     * 返回稠密切片的平均大小。
      *
-     * @return average dense slice size
+     * @return 稠密切片平均大小
      */
     public Double getAverageDenseSize() {
         return averageDenseSize;
@@ -74,9 +73,9 @@ public final class ArrayFullInfo extends ArrayInfo {
     }
 
     /**
-     * Returns average dense slice fill ratio.
+     * 返回稠密切片的平均填充率。
      *
-     * @return average dense slice fill ratio
+     * @return 稠密切片平均填充率
      */
     public Double getAverageDenseFill() {
         return averageDenseFill;
@@ -87,9 +86,9 @@ public final class ArrayFullInfo extends ArrayInfo {
     }
 
     /**
-     * Returns average sparse slice size.
+     * 返回稀疏切片的平均大小。
      *
-     * @return average sparse slice size
+     * @return 稀疏切片平均大小
      */
     public Double getAverageSparseSize() {
         return averageSparseSize;

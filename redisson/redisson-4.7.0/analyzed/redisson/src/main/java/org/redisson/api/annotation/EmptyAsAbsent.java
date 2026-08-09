@@ -21,18 +21,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a Reactor {@code Mono}-returning method whose result, when the
- * underlying value is an empty {@link java.util.Map} or
- * {@link java.util.Collection}, should complete without emitting an
- * {@code onNext} signal.
+ * 标记返回 Reactor {@code Mono} 的方法：当底层结果为空的 {@link java.util.Map} 或
+ * {@link java.util.Collection} 时，{@code Mono} 应以空完成结束，而不发出 {@code onNext} 信号。
  *
- * <p>Without this annotation, a method returning {@code Mono<Map<K, V>>}
- * whose underlying operation yields an empty map will emit that empty map
- * via {@code onNext} and then complete. With this annotation, the same
- * operation completes the {@code Mono} empty &mdash; allowing reactive
- * pipelines to use {@code switchIfEmpty}, {@code defaultIfEmpty},
- * {@code flatMap}, and similar operators as intended for one-or-zero
- * publishers.
+ * <p>未加此注解时，返回 {@code Mono<Map<K, V>>} 的方法在底层得到空 Map 时会通过 {@code onNext}
+ * 发出该空 Map 再完成。加上此注解后，相同操作会以空 {@code Mono} 完成，便于响应式管道按
+ * “零或一”语义使用 {@code switchIfEmpty}、{@code defaultIfEmpty}、{@code flatMap} 等算子。
  *
  * @author Nikita Koksharov
  *

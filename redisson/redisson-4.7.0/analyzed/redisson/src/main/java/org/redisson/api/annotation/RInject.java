@@ -21,7 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Specifies that the field value is filled up with RedissonClient instance. 
+ * 标记该字段在 Live Object 实例化时自动注入 {@code RedissonClient} 引用。
  * 
  * @author Nikita Koksharov
  *
