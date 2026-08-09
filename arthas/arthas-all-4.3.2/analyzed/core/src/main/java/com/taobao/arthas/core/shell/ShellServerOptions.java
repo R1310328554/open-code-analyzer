@@ -5,25 +5,24 @@ import com.taobao.arthas.core.util.ArthasBanner;
 import java.lang.instrument.Instrumentation;
 
 /**
- * The configurations options for the shell server.
+ * {@link ShellServer} 的配置项：欢迎语、会话超时、连接超时与 JVM 信息。
+ * <p>
+ * 提供流式 setter；构造时使用 DEFAULT_* 常量作为默认值。
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class ShellServerOptions {
 
-    /**
-     * Default of how often, in ms, to check for expired sessions
-     */
+    /** 默认会话清理（Reaper）扫描间隔：60 秒 */
+
     public static final long DEFAULT_REAPER_INTERVAL = 60 * 1000; // 60 seconds
 
-    /**
-     * Default time, in ms, that a shell session lasts for without being accessed before expiring.
-     */
+    /** 默认 Shell 会话空闲超时：3 小时无访问则过期 */
+
     public static final long DEFAULT_SESSION_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours
 
-    /**
-     * Default time, in ms, that a server waits for a client to connect
-     */
+    /** 终端服务器等待客户端完成连接握手的最长时间：6 秒 */
+
     public static final long DEFAULT_CONNECTION_TIMEOUT = 6000; // 6 seconds
 
     public static final String DEFAULT_WELCOME_MESSAGE = ArthasBanner.welcome();
@@ -37,6 +36,7 @@ public class ShellServerOptions {
     private long pid;
     private Instrumentation instrumentation;
 
+    /** 使用欢迎语、会话/连接超时与 Reaper 间隔的默认值初始化 */
     public ShellServerOptions() {
         welcomeMessage = DEFAULT_WELCOME_MESSAGE;
         sessionTimeout = DEFAULT_SESSION_TIMEOUT;
@@ -88,7 +88,7 @@ public class ShellServerOptions {
     }
 
     /**
-     * Set the repear interval, i.e the period at which session eviction is performed.
+     * 设置会话驱逐扫描间隔（毫秒）。
      *
      * @param reaperInterval the new repeat interval
      * @return a reference to this, so the API can be used fluently
@@ -98,11 +98,13 @@ public class ShellServerOptions {
         return this;
     }
 
+    /** 设置目标 JVM 进程 PID，供欢迎语与诊断命令展示 */
     public ShellServerOptions setPid(long pid) {
         this.pid = pid;
         return this;
     }
 
+    /** 注入 {@link Instrumentation}，供 Shell 内增强类命令使用 */
     public ShellServerOptions setInstrumentation(Instrumentation instrumentation) {
         this.instrumentation = instrumentation;
         return this;

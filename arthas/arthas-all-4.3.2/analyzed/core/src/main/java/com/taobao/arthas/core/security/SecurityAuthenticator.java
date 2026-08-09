@@ -6,21 +6,23 @@ import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
 
 /**
- * A {@link SecurityAuthenticator} allows to plugin custom authenticators, such
- * as JAAS based or custom implementations.
+ * Arthas 安全认证器 SPI：可插拔 JAAS 或自定义实现。
+ * <p>
+ * 负责 realm 名称、角色类名配置，以及 {@link Principal} 的 login/logout 与角色提取。
  */
 public interface SecurityAuthenticator {
     
     
+    /** @return 是否要求客户端提供凭据（用户名密码或 Bearer） */
     boolean needLogin();
     
     /**
-     * Sets the name of the realm to use.
+     * 设置安全域（realm）名称。
      */
     void setName(String name);
 
     /**
-     * Gets the name of the realm.
+     * @return 当前 realm 名称
      */
     String getName();
 
@@ -38,7 +40,9 @@ public interface SecurityAuthenticator {
     void setRoleClassNames(String names);
 
     /**
-     * Attempts to login the {@link java.security.Principal} on this realm.
+     * 尝试将 {@link java.security.Principal} 登录到本 realm。
+     * <p>
+     * 成功时不抛异常并返回非 null {@link Subject}。
      * <p/>
      * The login is a success if no Exception is thrown, and a {@link Subject} is
      * returned.
@@ -52,7 +56,7 @@ public interface SecurityAuthenticator {
     Subject login(Principal principal) throws LoginException;
 
     /**
-     * Attempt to logout the subject.
+     * 注销已登录的 {@link Subject}。
      *
      * @param subject subject to logout
      * @throws LoginException is thrown if error logging out subject
@@ -60,7 +64,7 @@ public interface SecurityAuthenticator {
     void logout(Subject subject) throws LoginException;
 
     /**
-     * Gets the user roles from the given {@link Subject}
+     * 从 {@link Subject} 提取用户角色列表。
      *
      * @param subject the subject
      * @return <tt>null</tt> if no roles, otherwise a String with roles separated by

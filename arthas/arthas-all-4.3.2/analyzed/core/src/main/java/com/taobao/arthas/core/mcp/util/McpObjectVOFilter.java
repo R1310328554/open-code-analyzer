@@ -9,7 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * mcp specific ObjectVO serialization filter
+ * MCP 场景下 {@link ObjectVO} 的 Fastjson2 序列化过滤器。
+ * <p>
+ * 命令结果经 {@link JsonParser} 输出 JSON 时，将 ObjectVO 展开为文本或 JSON 视图，
+ * 避免 MCP 客户端收到不可读的对象包装结构。
  */
 public class McpObjectVOFilter implements ValueFilter {
     
@@ -19,7 +22,7 @@ public class McpObjectVOFilter implements ValueFilter {
     private static volatile boolean registered = false;
     
     /**
-     * Register this filter to JsonParser
+     * 向全局 {@link JsonParser} 注册本过滤器（双重检查锁，仅注册一次）。
      */
     public static void register() {
         if (!registered) {
@@ -39,7 +42,7 @@ public class McpObjectVOFilter implements ValueFilter {
             return null;
         }
         
-        // Direct type check instead of reflection
+        // 直接 instanceof 判断，避免反射开销
         if (value instanceof ObjectVO) {
             return handleObjectVO((ObjectVO) value);
         }
@@ -47,6 +50,7 @@ public class McpObjectVOFilter implements ValueFilter {
         return value;
     }
 
+    /** 根据 expand 标志与 {@link GlobalOptions#isUsingJson} 选择展开或 toString */
     private Object handleObjectVO(ObjectVO objectVO) {
         try {
             Object innerObject = objectVO.getObject();
@@ -97,6 +101,7 @@ public class McpObjectVOFilter implements ValueFilter {
         }
     }
 
+    /** 安全 toString；异常时返回 类名@hashCode 占位 */
     private String objectToString(Object object) {
         if (object == null) {
             return "null";

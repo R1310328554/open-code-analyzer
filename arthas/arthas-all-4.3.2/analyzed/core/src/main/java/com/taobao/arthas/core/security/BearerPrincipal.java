@@ -3,12 +3,16 @@ package com.taobao.arthas.core.security;
 import java.security.Principal;
 
 /**
- * Bearer Token {@link Principal}.
+ * Bearer Token 认证对应的 {@link Principal} 实现。
+ * <p>
+ * {@link #getName()} 固定返回 {@code bearer}；实际令牌通过 {@link #getToken()} 获取，
+ * 由 {@link SecurityAuthenticatorImpl} 与配置的 password 字段比对。
  */
 public final class BearerPrincipal implements Principal {
 
     private final String token;
 
+    /** @param token Authorization: Bearer 头中的令牌字符串 */
     public BearerPrincipal(String token) {
         this.token = token;
     }
@@ -18,6 +22,7 @@ public final class BearerPrincipal implements Principal {
         return "bearer";
     }
 
+    /** @return Bearer 令牌原文 */
     public String getToken() {
         return token;
     }
@@ -49,7 +54,7 @@ public final class BearerPrincipal implements Principal {
 
     @Override
     public String toString() {
-        // do not display the token for security reasons
+        // 安全原因：toString 不输出令牌内容
         return "BearerPrincipal[***]";
     }
 }

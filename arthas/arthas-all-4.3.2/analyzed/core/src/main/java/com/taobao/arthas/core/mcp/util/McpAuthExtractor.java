@@ -7,7 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MCP认证信息提取工具
+ * MCP HTTP 传输层认证信息提取工具。
+ * <p>
+ * 从 Netty Channel 属性或 HTTP 请求头读取已认证主体与用户 ID，
+ * 并定义写入 {@link com.taobao.arthas.mcp.server.protocol.server.McpTransportContext} 的标准键名。
  *
  * @author Yeaury
  */
@@ -15,6 +18,7 @@ public class McpAuthExtractor {
 
     private static final Logger logger = LoggerFactory.getLogger(McpAuthExtractor.class);
 
+    /** {@link McpTransportContext} 中存放认证主体（Principal）的键 */
     public static final String MCP_AUTH_SUBJECT_KEY = "mcp.auth.subject";
 
     /**
@@ -27,6 +31,7 @@ public class McpAuthExtractor {
      */
     public static final String USER_ID_HEADER = "X-User-Id";
 
+    /** Netty Channel 上缓存认证主体的 AttributeKey，与 HTTP 鉴权 Handler 配合使用 */
     public static final AttributeKey<Object> SUBJECT_ATTRIBUTE_KEY =
             AttributeKey.valueOf("arthas.auth.subject");
 
@@ -42,6 +47,7 @@ public class McpAuthExtractor {
         }
 
         try {
+            // 优先从 Channel 属性读取已由鉴权链写入的主体
             Object subject = ctx.channel().attr(SUBJECT_ATTRIBUTE_KEY).get();
             if (subject != null) {
                 logger.debug("Extracted auth subject from channel context: {}", subject.getClass().getSimpleName());

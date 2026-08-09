@@ -98,17 +98,27 @@ import io.netty.util.concurrent.EventExecutorGroup;
 
 
 /**
+ * Arthas Agent 引导类：Java Agent 入口，负责 Spy、配置、Shell/MCP 服务与增强生命周期。
+ * <p>
+ * 单例模式；构造时依次初始化 Fastjson、SpyAPI、环境配置、ClassLoader 增强、
+ * 绑定 Telnet/HTTP/MCP 端口并注册命令解析器。
+ *
  * @author vlinux on 15/5/2.
  * @author hengyunabc
  */
 public class ArthasBootstrap {
+    /** 需加入 BootstrapClassLoader 的 Spy 桥接 JAR 文件名 */
     private static final String ARTHAS_SPY_JAR = "arthas-spy.jar";
+    /** 外部扩展命令 JAR 默认扫描子目录名 */
     private static final String DEFAULT_COMMANDS_DIRECTORY = "commands";
     public static final String ARTHAS_HOME_PROPERTY = "arthas.home";
     private static String ARTHAS_HOME = null;
 
+    /** 配置文件 basename 系统属性键 */
     public static final String CONFIG_NAME_PROPERTY = "arthas.config.name";
+    /** 配置文件路径或目录系统属性键 */
     public static final String CONFIG_LOCATION_PROPERTY = "arthas.config.location";
+    /** 为 true 时 arthas.properties 优先级高于命令行/环境变量 */
     public static final String CONFIG_OVERRIDE_ALL = "arthas.config.overrideAll";
 
     private static ArthasBootstrap arthasBootstrap;
@@ -116,6 +126,7 @@ public class ArthasBootstrap {
     private ArthasEnvironment arthasEnvironment;
     private Configure configure;
 
+    /** Telnet/HTTP 是否已成功 bind 的标志（供 BindHandler 回调更新） */
     private AtomicBoolean isBindRef = new AtomicBoolean(false);
     private Instrumentation instrumentation;
     private InstrumentTransformer classLoaderInstrumentTransformer;
@@ -146,6 +157,7 @@ public class ArthasBootstrap {
     private HttpSessionManager httpSessionManager;
     private SecurityAuthenticator securityAuthenticator;
 
+    /** Agent 私有构造：按固定顺序完成各子系统初始化并 bind 服务 */
     private ArthasBootstrap(Instrumentation instrumentation, Map<String, String> args) throws Throwable {
         this.instrumentation = instrumentation;
 
@@ -195,6 +207,7 @@ public class ArthasBootstrap {
         Runtime.getRuntime().addShutdownHook(shutdown);
     }
 
+    /** 配置 Fastjson2：忽略 getter 异常、非 String Map key 转字符串 */
     private void initFastjson() {
         // ignore getter error #1661
         // #2081
@@ -206,6 +219,7 @@ public class ArthasBootstrap {
         this.historyManager = new HistoryManagerImpl();
     }
 
+    /** 将 arthas-spy.jar 加入 BootstrapClassLoader，使 SpyAPI 对业务 ClassLoader 可见 */
     private void initSpy() throws Throwable {
         // TODO init SpyImpl ?
 
@@ -231,6 +245,10 @@ public class ArthasBootstrap {
         }
     }
 
+    /**
+     * 按配置增强指定 ClassLoader#loadClass，使 java.arthas.* 由扩展类加载器加载。
+     * 解决部分容器 ClassLoader 无法加载 SpyAPI 的问题（见 issue #1596）。
+     */
     void enhanceClassLoader() throws IOException, UnmodifiableClassException {
         if (configure.getEnhanceLoaders() == null) {
             return;
@@ -412,6 +430,7 @@ public class ArthasBootstrap {
             }
 
             this.httpSessionManager = new HttpSessionManager();
+            // 监听 0.0.0.0 且无密码时强制生成随机密码，防止外网未授权接入
             if (IPUtils.isAllZeroIP(configure.getIp()) && StringUtils.isBlank(configure.getPassword())) {
                 // 当 listen 0.0.0.0 时，强制生成密码，防止被远程连接
                 String errorMsg = "Listening on 0.0.0.0 is very dangerous! External users can connect to your machine! "
@@ -483,7 +502,7 @@ public class ArthasBootstrap {
             //http api handler
             httpApiHandler = new HttpApiHandler(historyManager, sessionManager);
 
-            // Mcp Server
+            // 可选启动 MCP Server（Streamable HTTP 等）
             String mcpEndpoint = configure.getMcpEndpoint();
             String mcpProtocol = configure.getMcpProtocol();
             if (mcpEndpoint != null && !mcpEndpoint.trim().isEmpty()) {
@@ -828,10 +847,11 @@ public class ArthasBootstrap {
     /**
      * call reset() before destroy()
      */
+    /** 关闭 Shell、MCP、Tunnel、线程池与 Instrumentation Transformer，释放 Spy 引用 */
     public void destroy() {
         if (this.arthasMcpBootstrap != null) {
             try {
-                // stop 时需要主动关闭 mcp keep-alive 调度线程，避免 stop 后残留线程导致 ArthasClassLoader 无法回收
+                // stop 时关闭 MCP keep-alive 线程，避免 ArthasClassLoader 泄漏
                 this.arthasMcpBootstrap.shutdown();
             } catch (Throwable e) {
                 logger().error("stop mcp server error", e);

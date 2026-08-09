@@ -11,22 +11,18 @@ import com.taobao.arthas.core.shell.term.Term;
 import com.taobao.arthas.core.shell.term.TermServer;
 
 /**
- * The shell server.<p/>
+ * Arthas Shell 服务端抽象：聚合多个 {@link TermServer}（Telnet/HTTP 等）。
  * <p>
- * A shell server is associated with a collection of {@link TermServer term servers}: the {@link #registerTermServer(TermServer)}
- * method registers a term server. Term servers life cycle are managed by this server.<p/>
- * <p>
- * When a {@link TermServer term server} receives an incoming connection, a {@link com.taobao.arthas.core.shell.system.JobController} instance is created and
- * associated with this connection.<p/>
- * <p>
- * The {@link #createShell()} method can be used to create {@link com.taobao.arthas.core.shell.system.JobController} instance for testing purposes.
+ * 注册 {@link CommandResolver} 与 TermServer 后调用 {@link #listen} 异步启动；
+ * 每个入站连接会创建独立的 {@link Shell} 与 {@link com.taobao.arthas.core.shell.system.JobController}。
+ * {@link #createShell()} 可用于单元测试构造 Shell 实例。
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public abstract class ShellServer {
 
     /**
-     * Create a new shell server with default options.
+     * 使用指定 {@link ShellServerOptions} 创建 Shell 服务端实现。
      *
      * @param options the options
      * @return the created shell server
@@ -35,26 +31,23 @@ public abstract class ShellServer {
         return new ShellServerImpl(options);
     }
 
-    /**
-     * Create a new shell server with specific options.
-     *
+    /** 使用默认 {@link ShellServerOptions} 创建 Shell 服务端 */
+
      * @return the created shell server
      */
     public static ShellServer create() {
         return new ShellServerImpl(new ShellServerOptions());
     }
 
-    /**
-     * Register a command resolver for this server.
-     *
+    /** 注册命令解析器（内置或扩展命令），支持链式调用 */
+
      * @param resolver the resolver
      * @return a reference to this, so the API can be used fluently
      */
     public abstract ShellServer registerCommandResolver(CommandResolver resolver);
 
-    /**
-     * Register a term server to this shell server, the term server lifecycle methods are managed by this shell server.
-     *
+    /** 注册终端服务器；其生命周期由本 ShellServer 统一管理 */
+
      * @param termServer the term server to add
      * @return a reference to this, so the API can be used fluently
      */
@@ -75,9 +68,8 @@ public abstract class ShellServer {
      */
     public abstract Shell createShell();
 
-    /**
-     * Start the shell service, this is an asynchronous start.
-     */
+    /** 异步启动所有已注册 TermServer，完成后回调 NoOpHandler */
+
     public ShellServer listen() {
         return listen(new NoOpHandler<Future<Void>>());
     }
@@ -89,9 +81,8 @@ public abstract class ShellServer {
      */
     public abstract ShellServer listen(Handler<Future<Void>> listenHandler);
 
-    /**
-     * Close the shell server, this is an asynchronous close.
-     */
+    /** 异步关闭 Shell 服务 */
+
     public void close() {
         close(new NoOpHandler<Future<Void>>());
     }
@@ -103,13 +94,11 @@ public abstract class ShellServer {
      */
     public abstract void close(Handler<Future<Void>> completionHandler);
 
-    /**
-     * @return global job controller instance
-     */
+    /** @return 全局 JobController 单例（跨 Shell 共享） */
+
     public abstract JobControllerImpl getJobController();
 
-    /**
-     * @return get command manager instance
-     */
+    /** @return 内置与已注册解析器聚合的命令管理器 */
+
     public abstract InternalCommandManager getCommandManager();
 }
