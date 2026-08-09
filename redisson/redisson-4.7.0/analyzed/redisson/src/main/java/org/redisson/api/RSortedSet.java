@@ -21,19 +21,20 @@ import java.util.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Redis Sorted Set 同步 API；元素按 {@link Comparator} 排序。
+ * <p>支持阻塞弹出、MapReduce 及跨应用共享迭代器。
  *
- * @param <V> value type
+ * @author Nikita Koksharov
+ * @param <V> 元素类型
  */
 public interface RSortedSet<V> extends SortedSet<V>, RExpirable {
 
     /**
-     * Returns <code>RMapReduce</code> object associated with this object
+     * 返回与当前有序集合关联的 {@link RCollectionMapReduce} 实例。
      * 
-     * @param <KOut> output key
-     * @param <VOut> output value
-     * @return MapReduce instance
+     * @param <KOut> 输出键类型
+     * @param <VOut> 输出值类型
+     * @return MapReduce 实例
      */
     <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
 
@@ -42,152 +43,148 @@ public interface RSortedSet<V> extends SortedSet<V>, RExpirable {
     RFuture<Collection<V>> readAllAsync();
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回最小（队首）元素；集合为空时返回 {@code null}。
      *
-     * @return the head element,
-     *         or {@code null} if this sorted set is empty
+     * @return 队首元素；空集合时为 {@code null}
      */
     V pollFirst();
 
     /**
-     * Removes and returns the head elements of this sorted set.
+     * 移除并返回最小（队首）的多个元素。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param count - elements amount
-     * @return the head elements of this sorted set
+     * @param count 元素数量
+     * @return 队首元素集合
      */
     Collection<V> pollFirst(int count);
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回最小（队首）元素；集合为空时返回 {@code null}。
      *
-     * @param duration how long to wait before giving up
-     * @return the head element,
-     *         or {@code null} if this sorted set is empty
+     * @param duration 最长等待时间
+     * @return 队首元素；空集合时为 {@code null}
      */
     V pollFirst(Duration duration);
 
     /**
-     * Removes and returns the head elements.
+     * 在指定等待时间内移除并返回多个最小（队首）元素。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上</b>。
      *
-     * @param duration how long to wait before giving up
+     * @param duration 最长等待时间
      * @param count elements amount
-     * @return the head elements
+     * @return 队首元素列表
      */
     List<V> pollFirst(Duration duration, int count);
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回最小（队首）元素；集合为空时返回 {@code null}。
      *
-     * @return the head element,
-     *         or {@code null} if this sorted set is empty
+     * @return 队首元素；空集合时为 {@code null}
      */
     RFuture<V> pollFirstAsync();
 
     /**
-     * Removes and returns the head elements of this sorted set.
+     * 移除并返回最小（队首）的多个元素。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param count - elements amount
-     * @return the head elements of this sorted set
+     * @param count 元素数量
+     * @return 队首元素集合
      */
     RFuture<Collection<V>> pollFirstAsync(int count);
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回最小（队首）元素；集合为空时返回 {@code null}。
      *
-     * @param duration how long to wait before giving up
-     * @return the head element,
-     *         or {@code null} if this sorted set is empty
+     * @param duration 最长等待时间
+     * @return 队首元素；空集合时为 {@code null}
      */
     RFuture<V> pollFirstAsync(Duration duration);
 
     /**
-     * Removes and returns the head elements.
+     * 在指定等待时间内移除并返回多个最小（队首）元素。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上</b>。
      *
-     * @param duration how long to wait before giving up
+     * @param duration 最长等待时间
      * @param count elements amount
-     * @return the head elements
+     * @return 队首元素列表
      */
     RFuture<List<V>> pollFirstAsync(Duration duration, int count);
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回最大（队尾）元素；集合为空时返回 {@code null}。
      *
-     * @return the tail element or {@code null} if this sorted set is empty
+     * @return 队尾元素；空集合时为 {@code null}
      */
     V pollLast();
 
     /**
-     * Removes and returns the tail elements of this sorted set.
+     * 移除并返回最大（队尾）的多个元素。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param count - elements amount
-     * @return the tail elements of this sorted set
+     * @param count 元素数量
+     * @return 队尾元素集合
      */
     Collection<V> pollLast(int count);
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回最大（队尾）元素；集合为空时返回 {@code null}。
      *
-     * @param duration how long to wait before giving up
+     * @param duration 最长等待时间
      * @return the tail element,
      *         or {@code null} if this sorted set is empty
      */
     V pollLast(Duration duration);
 
     /**
-     * Removes and returns the tail elements.
+     * 在指定等待时间内移除并返回多个最大（队尾）元素。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上</b>。
      *
-     * @param duration how long to wait before giving up
+     * @param duration 最长等待时间
      * @param count elements amount
-     * @return the tail elements
+     * @return 队尾元素列表
      */
     List<V> pollLast(Duration duration, int count);
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回最大（队尾）元素；集合为空时返回 {@code null}。
      *
-     * @return the tail element or {@code null} if this sorted set is empty
+     * @return 队尾元素；空集合时为 {@code null}
      */
     RFuture<V> pollLastAsync();
 
     /**
-     * Removes and returns the tail elements of this sorted set.
+     * 移除并返回最大（队尾）的多个元素。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param count - elements amount
-     * @return the tail elements of this sorted set
+     * @param count 元素数量
+     * @return 队尾元素集合
      */
     RFuture<Collection<V>> pollLastAsync(int count);
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回最大（队尾）元素；集合为空时返回 {@code null}。
      *
-     * @param duration how long to wait before giving up
+     * @param duration 最长等待时间
      * @return the tail element,
      *         or {@code null} if this sorted set is empty
      */
     RFuture<V> pollLastAsync(Duration duration);
 
     /**
-     * Removes and returns the tail elements.
+     * 在指定等待时间内移除并返回多个最大（队尾）元素。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上</b>。
      *
-     * @param duration how long to wait before giving up
+     * @param duration 最长等待时间
      * @param count elements amount
-     * @return the tail elements
+     * @return 队尾元素列表
      */
     RFuture<List<V>> pollLastAsync(Duration duration, int count);
 
@@ -196,30 +193,27 @@ public interface RSortedSet<V> extends SortedSet<V>, RExpirable {
     RFuture<Boolean> removeAsync(Object value);
     
     /**
-     * Sets new comparator only if current set is empty
+     * 仅当当前有序集合为空时设置新的比较器。
      *
-     * @param comparator for values
-     * @return <code>true</code> if new comparator setted
-     *         <code>false</code> otherwise
+     * @param comparator 元素比较器
+     * @return 设置成功则为 true，否则 false
      */
     boolean trySetComparator(Comparator<? super V> comparator);
 
     /**
-     * Returns element iterator that can be shared across multiple applications.
-     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
-     * See {@linkplain RList#distributedIterator(String, int)} for creating different iterators.
-     * @param count batch size
-     * @return shared elements iterator
+     * 返回可在多应用间共享的元素迭代器；同一对象多次调用本方法共享同一游标。
+     * 需独立游标请使用 {@linkplain RList#distributedIterator(String, int)}。
+     * @param count 批次大小
+     * @return 共享元素迭代器
      */
     Iterator<V> distributedIterator(int count);
 
     /**
-     * Returns iterator over elements that match specified pattern. Iterator can be shared across multiple applications.
-     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
-     * Iterator name must be resolved to the same hash slot as list name.
-     * @param count batch size
-     * @param iteratorName redis object name to which cursor will be saved
-     * @return shared elements iterator
+     * 返回匹配指定模式的元素迭代器，可在多应用间共享。
+     * 迭代器名称须与集合名称解析到同一 hash slot。
+     * @param count 批次大小
+     * @param iteratorName 保存游标的 Redis 对象名
+     * @return 共享元素迭代器
      */
     Iterator<V> distributedIterator(String iteratorName, int count);
 

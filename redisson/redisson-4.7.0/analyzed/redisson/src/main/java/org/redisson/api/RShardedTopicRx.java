@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * RxJava3 interface for Sharded Topic. Messages are delivered to message listeners connected to the same Topic.
+ * Redis Cluster 分片主题的 RxJava3 API；消息投递至同一 Topic 上的监听器。
  *
  * @author Nikita Koksharov
  *

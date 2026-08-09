@@ -20,68 +20,56 @@ import java.util.Set;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for Set based Multimap
+ * 基于 Set 的 Multimap Reactor 响应式 API；同一键下值不可重复。
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 元素类型
  */
 public interface RSetMultimapReactive<K, V> extends RMultimapReactive<K, V> {
 
     /**
-     * Returns a view Set of the values associated with {@code key} in this
-     * multimap, if any. Note that when {@code containsKey(key)} is false, this
-     * returns an empty collection, not {@code null}.
+     * 返回与 {@code key} 关联的值集合视图；{@code containsKey(key)} 为 false 时
+     * 返回空集合而非 {@code null}。
      *
-     * <p>Changes to the returned collection will update the underlying multimap,
-     * and vice versa.
+     * <p>对返回集合的修改会同步到底层 multimap，反之亦然。
      * 
-     * @param key - map key
-     * @return set of values
+     * @param key 映射键
+     * @return 值集合
      */
     RSetReactive<V> get(K key);
  
     /**
-     * Returns all elements at once. Result Set is <b>NOT</b> backed by map,
-     * so changes are not reflected in map.
+     * 一次性返回全部元素；结果 Set 不关联底层 map，修改不会反映到 map。
      *
-     * @param key - map key
-     * @return set of values 
+     * @param key 映射键
+     * @return 值集合 
      */
     Mono<Set<V>> getAll(K key);
     
     /**
-     * Removes all values associated with the key {@code key}.
-     *
-     * <p>Once this method returns, {@code key} will not be mapped to any values
-     * <p>Use {@link RMultimapReactive#fastRemove} if values are not needed.</p>
+     * 移除与 {@code key} 关联的全部值；返回后 {@code key} 不再映射任何值。
+     * <p>若不需要返回值，请使用 {@link RMultimapReactive#fastRemove}。
      * 
-     * @param key - map key
-     * @return the values that were removed (possibly empty). The returned
-     *     set <i>may</i> be modifiable, but updating it will have no
-     *     effect on the multimap.
+     * @param key 映射键
+     * @return 被移除的值集合（可能为空）；修改返回值不影响 multimap
      */
     Mono<Set<V>> removeAll(Object key);
     
     /**
-     * Stores a collection of values with the same key, replacing any existing
-     * values for that key.
+     * 为指定键存储一组值，替换该键下已有值。
      *
-     * <p>If {@code values} is empty, this is equivalent to
-     * {@link #removeAll(Object)}.
+     * <p>{@code values} 为空时等价于 {@link #removeAll(Object)}。
      *
-     * @param key - map key
-     * @param values - map values
-     * @return set of replaced values, or an empty collection if no
-     *     values were previously associated with the key. Set
-     *     <i>may</i> be modifiable, but updating it will have no effect on the
-     *     multimap.
+     * @param key 映射键
+     * @param values 映射值集合
+     * @return 被替换的旧值集合；键无旧值时返回空集合
      */
     Mono<Set<V>> replaceValues(K key, Iterable<? extends V> values);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.MapPutListener
      * @see org.redisson.api.listener.MapRemoveListener
@@ -90,8 +78,8 @@ public interface RSetMultimapReactive<K, V> extends RMultimapReactive<K, V> {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     Mono<Integer> addListener(ObjectListener listener);
 

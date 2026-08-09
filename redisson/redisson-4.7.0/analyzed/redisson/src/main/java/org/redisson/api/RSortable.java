@@ -19,200 +19,201 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Redis {@code SORT} 命令同步 API。
+ * <p>支持对 List/Set 等数据结构排序读取、字典序排序及结果写入目标列表。
  *
- * @param <V> object type
+ * @author Nikita Koksharov
+ * @param <V> 对象类型
  */
 public interface RSortable<V> extends RSortableAsync<V> {
 
     /**
-     * Read data in sorted view
+     * 按排序顺序读取数据
      * 
-     * @param order for sorted data
-     * @return sorted collection
+     * @param order 排序方向
+     * @return 排序后的集合
      */
     V readSort(SortOrder order);
     
     /**
-     * Read data in sorted view
+     * 按排序顺序读取数据
      * 
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return sorted collection
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序后的集合
      */
     V readSort(SortOrder order, int offset, int count);
 
     /**
-     * Read data in sorted view
+     * 按排序顺序读取数据
      * 
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param order for sorted data
-     * @return sorted collection
+     * @param byPattern 用于生成排序键的模式
+     * @param order 排序方向
+     * @return 排序后的集合
      */
     V readSort(String byPattern, SortOrder order);
 
     /**
-     * Read data in sorted view
+     * 按排序顺序读取数据
      * 
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return sorted collection
+     * @param byPattern 用于生成排序键的模式
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序后的集合
      */
     V readSort(String byPattern, SortOrder order, int offset, int count);
 
     /**
-     * Read data in sorted view
+     * 按排序顺序读取数据
      *
-     * @param <T> object type
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param getPatterns that is used to load values by keys in sorted view
-     * @param order for sorted data
-     * @return sorted collection
+     * @param <T> 对象类型
+     * @param byPattern 用于生成排序键的模式
+     * @param getPatterns 按排序键加载值的 GET 模式列表
+     * @param order 排序方向
+     * @return 排序后的集合
      */
     <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order);
 
     /**
-     * Read data in sorted view
+     * 按排序顺序读取数据
      * 
-     * @param <T> object type
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param getPatterns that is used to load values by keys in sorted view
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return sorted collection
+     * @param <T> 对象类型
+     * @param byPattern 用于生成排序键的模式
+     * @param getPatterns 按排序键加载值的 GET 模式列表
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序后的集合
      */
     <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
 
     /**
-     * Read data in sorted view lexicographically
+     * 按排序顺序读取数据 lexicographically
      *
-     * @param order for sorted data
-     * @return sorted collection lexicographically
+     * @param order 排序方向
+     * @return 排序后的集合 lexicographically
      */
     V readSortAlpha(SortOrder order);
 
     /**
-     * Read data in sorted view lexicographically
+     * 按排序顺序读取数据 lexicographically
      *
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return sorted collection lexicographically
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序后的集合 lexicographically
      */
     V readSortAlpha(SortOrder order, int offset, int count);
 
     /**
-     * Read data in sorted view lexicographically
+     * 按排序顺序读取数据 lexicographically
      *
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param order for sorted data
-     * @return sorted collection lexicographically
+     * @param byPattern 用于生成排序键的模式
+     * @param order 排序方向
+     * @return 排序后的集合 lexicographically
      */
     V readSortAlpha(String byPattern, SortOrder order);
 
     /**
-     * Read data in sorted view lexicographically
+     * 按排序顺序读取数据 lexicographically
      *
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return sorted collection lexicographically
+     * @param byPattern 用于生成排序键的模式
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序后的集合 lexicographically
      */
     V readSortAlpha(String byPattern, SortOrder order, int offset, int count);
 
     /**
-     * Read data in sorted view lexicographically
+     * 按排序顺序读取数据 lexicographically
      *
-     * @param <T> object type
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param getPatterns that is used to load values by keys in sorted view
-     * @param order for sorted data
-     * @return sorted collection lexicographically
+     * @param <T> 对象类型
+     * @param byPattern 用于生成排序键的模式
+     * @param getPatterns 按排序键加载值的 GET 模式列表
+     * @param order 排序方向
+     * @return 排序后的集合 lexicographically
      */
     <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order);
 
     /**
-     * Read data in sorted view lexicographically
+     * 按排序顺序读取数据 lexicographically
      *
-     * @param <T> object type
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param getPatterns that is used to load values by keys in sorted view
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return sorted collection lexicographically
+     * @param <T> 对象类型
+     * @param byPattern 用于生成排序键的模式
+     * @param getPatterns 按排序键加载值的 GET 模式列表
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序后的集合 lexicographically
      */
     <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
 
     /**
-     * Sort data and store to <code>destName</code> list
+     * 排序后将结果写入 {@code destName} 列表
      * 
-     * @param destName list object destination 
-     * @param order for sorted data
-     * @return length of sorted data
+     * @param destName 目标列表名称 
+     * @param order 排序方向
+     * @return 排序结果长度
      */
     int sortTo(String destName, SortOrder order);
 
     /**
-     * Sort data and store to <code>destName</code> list
+     * 排序后将结果写入 {@code destName} 列表
      * 
-     * @param destName list object destination
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return length of sorted data
+     * @param destName 目标列表名称
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序结果长度
      */
     int sortTo(String destName, SortOrder order, int offset, int count);
     
     /**
-     * Sort data and store to <code>destName</code> list
+     * 排序后将结果写入 {@code destName} 列表
      * 
-     * @param destName list object destination
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param order for sorted data
-     * @return length of sorted data
+     * @param destName 目标列表名称
+     * @param byPattern 用于生成排序键的模式
+     * @param order 排序方向
+     * @return 排序结果长度
      */
     int sortTo(String destName, String byPattern, SortOrder order);
 
     /**
-     * Sort data and store to <code>destName</code> list
+     * 排序后将结果写入 {@code destName} 列表
      * 
-     * @param destName list object destination
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return length of sorted data
+     * @param destName 目标列表名称
+     * @param byPattern 用于生成排序键的模式
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序结果长度
      */
     int sortTo(String destName, String byPattern, SortOrder order, int offset, int count);
 
     /**
-     * Sort data and store to <code>destName</code> list
+     * 排序后将结果写入 {@code destName} 列表
      * 
-     * @param destName list object destination
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param getPatterns that is used to load values by keys in sorted view
-     * @param order for sorted data
-     * @return length of sorted data
+     * @param destName 目标列表名称
+     * @param byPattern 用于生成排序键的模式
+     * @param getPatterns 按排序键加载值的 GET 模式列表
+     * @param order 排序方向
+     * @return 排序结果长度
      */
     int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order);
 
     /**
-     * Sort data and store to <code>destName</code> list
+     * 排序后将结果写入 {@code destName} 列表
      * 
-     * @param destName list object destination
-     * @param byPattern that is used to generate the keys that are used for sorting
-     * @param getPatterns that is used to load values by keys in sorted view
-     * @param order for sorted data
-     * @param offset of sorted data
-     * @param count of sorted data
-     * @return length of sorted data
+     * @param destName 目标列表名称
+     * @param byPattern 用于生成排序键的模式
+     * @param getPatterns 按排序键加载值的 GET 模式列表
+     * @param order 排序方向
+     * @param offset 结果偏移量
+     * @param count 返回数量上限
+     * @return 排序结果长度
      */
     int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
     

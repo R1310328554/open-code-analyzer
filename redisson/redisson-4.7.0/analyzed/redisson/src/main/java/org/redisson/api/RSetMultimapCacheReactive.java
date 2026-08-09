@@ -16,12 +16,12 @@
 package org.redisson.api;
 
 /**
- * Reactive interface for {@link RSetMultimapCache} object.
+ * 带 TTL 的 Set Multimap {@link RSetMultimapCache} Reactor 响应式 API。
  *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 元素类型
  */
 public interface RSetMultimapCacheReactive<K, V> extends RSetMultimapReactive<K, V>, RMultimapCacheReactive<K, V> {
 

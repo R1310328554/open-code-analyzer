@@ -23,313 +23,295 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * RxJava2 interface for Redis based implementation of {@link java.util.Set}
+ * 基于 Redis 的 {@link java.util.Set} RxJava3 API；支持集合运算、随机元素与分布式锁绑定。
  *
  * @author Nikita Koksharov
  *
- * @param <V> type of value
+ * @param <V> 元素类型
  */
 public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
 
     /**
-     * Adds all elements contained in the specified collection.
-     * Returns number of added elements.
+     * 添加指定集合中的全部元素，返回实际新增数量。
      *
-     * @param c - collection of elements to add
-     * @return number of added elements
+     * @param c 待添加元素集合
+     * @return 新增元素数量
      */
     Single<Integer> addAllCounted(Collection<? extends V> c);
 
     /**
-     * Removes all elements contained in the specified collection.
-     * Returns number of removed elements.
+     * 移除指定集合中的全部元素，返回实际删除数量。
      *
-     * @param c - collection of elements to add
-     * @return number of removed elements
+     * @param c 待添加元素集合
+     * @return 删除元素数量
      */
     Single<Integer> removeAllCounted(Collection<? extends V> c);
 
     /**
-     * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的可过期许可信号量 {@link RPermitExpirableSemaphore}。
      * 
-     * @param value - set value
-     * @return RPermitExpirableSemaphore object
+     * @param value 集合元素值
+     * @return 可过期许可信号量
      */
     RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(V value);
 
     /**
-     * Returns <code>RSemaphore</code> instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的信号量 {@link RSemaphore}。
      * 
-     * @param value - set value
-     * @return RSemaphore object
+     * @param value 集合元素值
+     * @return 信号量
      */
     RSemaphoreRx getSemaphore(V value);
     
     /**
-     * Returns <code>RLock</code> instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的公平分布式锁 {@link RLock}。
      * 
-     * @param value - set value
-     * @return RLock object
+     * @param value 集合元素值
+     * @return 分布式锁
      */
     RLockRx getFairLock(V value);
     
     /**
-     * Returns <code>RReadWriteLock</code> instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的读写锁 {@link RReadWriteLock}。
      * 
-     * @param value - set value
-     * @return RReadWriteLock object
+     * @param value 集合元素值
+     * @return 读写锁
      */
     RReadWriteLockRx getReadWriteLock(V value);
     
     /**
-     * Returns lock instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的分布式锁 {@link RLock}。
      * 
-     * @param value - set value
-     * @return RLock object
+     * @param value 集合元素值
+     * @return 分布式锁
      */
     RLockRx getLock(V value);
     
     /**
-     * Returns elements iterator fetches elements in a batch.
-     * Batch size is defined by <code>count</code> param.
+     * 返回分批拉取元素的迭代器；批次大小由 {@code count} 指定。
      * 
-     * @param count - size of elements batch
-     * @return iterator
+     * @param count 每批元素数量
+     * @return 元素迭代器
      */
     Flowable<V> iterator(int count);
     
     /**
-     * Returns elements iterator fetches elements in a batch.
-     * Batch size is defined by <code>count</code> param.
+     * 返回分批拉取元素的迭代器；批次大小由 {@code count} 指定。
      * If pattern is not null then only elements match this pattern are loaded.
      * 
-     * @param pattern - search pattern
-     * @param count - size of elements batch
-     * @return iterator
+     * @param pattern 匹配模式
+     * @param count 每批元素数量
+     * @return 元素迭代器
      */
     Flowable<V> iterator(String pattern, int count);
     
     /**
-     * Returns elements iterator.
-     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
+     * 返回元素迭代器；{@code pattern} 非空时仅加载匹配元素。
      * 
-     * @param pattern - search pattern
-     * @return iterator
+     * @param pattern 匹配模式
+     * @return 元素迭代器
      */
     Flowable<V> iterator(String pattern);
     
     /**
-     * Removes and returns random elements limited by <code>amount</code>
+     * 随机移除并返回至多 {@code amount} 个元素。
      *
-     * @param amount of random elements
-     * @return random elements
+     * @param amount 随机元素数量
+     * @return 随机元素集合
      */
     Maybe<Set<V>> removeRandom(int amount);
     
     /**
-     * Removes and returns random element
+     * 随机移除并返回一个元素。
      *
-     * @return random element
+     * @return 随机元素
      */
     Maybe<V> removeRandom();
 
     /**
-     * Returns random element
+     * 随机返回一个元素（不移除）。
      *
-     * @return random element
+     * @return 随机元素
      */
     Maybe<V> random();
 
     /**
-     * Returns random elements from set limited by <code>count</code>
+     * 随机返回一个元素（不移除）。s from set limited by <code>count</code>
      *
-     * @param count - values amount to return
-     * @return random elements
+     * @param count 返回元素数量上限
+     * @return 随机元素集合
      */
     Maybe<Set<V>> random(int count);
 
 
     /**
-     * Move a member from this set to the given destination set in async mode.
+     * 将成员从当前集合移动到目标集合。
      *
-     * @param destination the destination set
-     * @param member the member to move
-     * @return true if the element is moved, false if the element is not a
-     * member of this set or no operation was performed
+     * @param destination 目标集合名称
+     * @param member 待移动成员
+     * @return 移动成功则为 true；元素不存在或未执行则为 false
      */
     Single<Boolean> move(String destination, V member);
 
     /**
-     * Read all elements at once
+     * 一次性读取全部元素。
      *
-     * @return values
+     * @return 元素集合
      */
     Maybe<Set<V>> readAll();
     
     /**
-     * Union sets specified by name and write to current set.
-     * If current set already exists, it is overwritten.
+     * 对指定集合与当前集合求并集，结果写入当前集合（覆盖已有内容）。
      *
-     * @param names - name of sets
-     * @return size of union
+     * @param names 参与运算的集合名称
+     * @return 并集写入后的集合大小
      */
     Single<Integer> union(String... names);
 
     /**
-     * Union sets specified by name with current set.
-     * Without current set state change.
+     * 对指定集合与当前集合求并集，返回结果但不修改当前集合。
      *
-     * @param names - name of sets
-     * @return size of union
+     * @param names 参与运算的集合名称
+     * @return 并集写入后的集合大小
      */
     Maybe<Set<V>> readUnion(String... names);
 
     /**
-     * Counts elements of set as a result of sets union with current set.
+     * 统计当前集合与指定集合并集的元素数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @return 元素数量
      */
     Single<Integer> countUnion(String... names);
 
     /**
-     * Counts elements of set as a result of sets union with current set.
+     * 统计当前集合与指定集合并集的元素数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @param limit - sets union limit
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @param limit 并集运算数量上限
+     * @return 元素数量
      */
     Single<Integer> countUnion(int limit, String... names);
 
     /**
-     * Counts elements of set as a result of sets union with current set.
-     * Returns an approximate value computed through HyperLogLog with
-     * 0.81% standard error instead of an exact one.
+     * 通过 HyperLogLog 近似统计并集元素数量（标准误差约 0.81%）。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @return approximate amount of elements
+     * @param names 参与运算的集合名称
+     * @return 近似元素数量
      */
     Single<Integer> countUnionApprox(String... names);
 
     /**
-     * Counts elements of set as a result of sets union with current set.
-     * Returns an approximate value computed through HyperLogLog with
-     * 0.81% standard error instead of an exact one.
+     * 通过 HyperLogLog 近似统计并集元素数量（标准误差约 0.81%）。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @param limit - sets union limit
-     * @return approximate amount of elements
+     * @param names 参与运算的集合名称
+     * @param limit 并集运算数量上限
+     * @return 近似元素数量
      */
     Single<Integer> countUnionApprox(int limit, String... names);
     
     /**
-     * Diff sets specified by name and write to current set.
-     * If current set already exists, it is overwritten.
+     * 对指定集合与当前集合求差集，结果写入当前集合（覆盖已有内容）。
      *
-     * @param names - name of sets
-     * @return size of diff
+     * @param names 参与运算的集合名称
+     * @return 差集写入后的集合大小
      */
     Single<Integer> diff(String... names);
     
     /**
-     * Diff sets specified by name with current set.
-     * Without current set state change.
+     * 对指定集合与当前集合求差集，返回结果但不修改当前集合。
      * 
-     * @param names - name of sets
-     * @return values
+     * @param names 参与运算的集合名称
+     * @return 元素集合
      */
     Maybe<Set<V>> readDiff(String... names);
 
     /**
-     * Counts elements of set as a result of sets difference with current set.
+     * 统计当前集合与指定集合差集的元素数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @return 元素数量
      */
     Single<Integer> countDiff(String... names);
 
     /**
-     * Counts elements of set as a result of sets difference with current set.
+     * 统计当前集合与指定集合差集的元素数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @param limit - sets difference limit
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @param limit 差集运算数量上限
+     * @return 元素数量
      */
     Single<Integer> countDiff(int limit, String... names);
     
     /**
-     * Intersection sets specified by name and write to current set.
-     * If current set already exists, it is overwritten.
+     * 对指定集合与当前集合求交集，结果写入当前集合（覆盖已有内容）。
      *
-     * @param names - name of sets
-     * @return size of intersection
+     * @param names 参与运算的集合名称
+     * @return 交集写入后的集合大小
      */
     Single<Integer> intersection(String... names);
 
     /**
-     * Counts elements of set as a result of sets intersection with current set.
+     * 统计当前集合与指定集合交集的元素数量。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @return 元素数量
      */
     Single<Integer> countIntersection(String... names);
 
     /**
-     * Counts elements of set as a result of sets intersection with current set.
+     * 统计当前集合与指定集合交集的元素数量。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @param limit - sets intersection limit
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @param limit 交集运算数量上限
+     * @return 元素数量
      */
     Single<Integer> countIntersection(int limit, String... names);
 
     /**
-     * Intersection sets specified by name with current set.
-     * Without current set state change.
+     * 对指定集合与当前集合求交集，返回结果但不修改当前集合。
      *
-     * @param names - name of sets
-     * @return values
+     * @param names 参与运算的集合名称
+     * @return 元素集合
      */
     Maybe<Set<V>> readIntersection(String... names);
 
     /**
-     * Tries to add elements only if none of them in set.
+     * 仅当所有元素均不在集合中时尝试批量添加。
      *
-     * @param values - values to add
-     * @return <code>true</code> if elements successfully added,
-     *          otherwise <code>false</code>.
+     * @param values 待添加元素
+     * @return 全部添加成功则为 true，否则 false
      */
     Single<Boolean> tryAdd(V... values);
 
     /**
-     * Check if each element is contained in the specified collection.
-     * Returns contained elements.
+     * 检查指定集合中哪些元素存在于当前集合，返回存在的元素。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param c - collection to check
-     * @return contained elements
+     * @param c 待检查集合
+     * @return 存在于当前集合的元素
      */
     Maybe<Set<V>> containsEach(Collection<V> c);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.SetAddListener
@@ -338,8 +320,8 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     Single<Integer> addListener(ObjectListener listener);
 

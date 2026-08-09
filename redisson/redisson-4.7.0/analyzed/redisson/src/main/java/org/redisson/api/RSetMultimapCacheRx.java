@@ -16,12 +16,12 @@
 package org.redisson.api;
 
 /**
- * Rx-ified version of {@link RSetMultimapCache}.
+ * 带 TTL 的 Set Multimap {@link RSetMultimapCache} RxJava3 API；支持为映射键设置过期时间。
  *
  * @author Marnix Kammer
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 元素类型
  */
 public interface RSetMultimapCacheRx<K, V> extends RSetMultimapRx<K, V>, RMultimapCacheRx<K, V> {
 

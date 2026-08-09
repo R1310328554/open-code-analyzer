@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Sharded Topic for Redis Cluster. Messages are delivered to message listeners connected to the same Topic.
+ * Redis Cluster 分片主题 API；使用 {@code SPUBLISH}/{@code SSUBSCRIBE}，消息投递至同一 Topic 上的监听器。
  *
  * @author Nikita Koksharov
  *
