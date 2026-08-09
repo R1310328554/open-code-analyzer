@@ -28,10 +28,10 @@ import io.reactivex.rxjava4.internal.util.BlockingHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * A Subscriber + Future that expects exactly one upstream value and provides it
- * via the (blocking) Future API.
+ * 同时实现 Subscriber 与 Future，期望恰好一个上游值，
+ * 并通过（阻塞）Future API 提供该值。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public final class FutureSubscriber<T> extends CountDownLatch
 implements FlowableSubscriber<T>, Future<T>, Subscription {
@@ -116,6 +116,7 @@ implements FlowableSubscriber<T>, Future<T>, Subscription {
         SubscriptionHelper.setOnce(this.upstream, s, Long.MAX_VALUE);
     }
 
+    /** 接收唯一元素；若收到多个元素则 cancel 上游并报告错误。 */
     @Override
     public void onNext(T t) {
         if (value != null) {
@@ -155,11 +156,13 @@ implements FlowableSubscriber<T>, Future<T>, Subscription {
         }
     }
 
+    /** 忽略：终止后 `this` 仅表示已完成的 Subscription。 */
     @Override
     public void cancel() {
         // ignoring as `this` means a finished Subscription only
     }
 
+    /** 忽略：终止后 `this` 仅表示已完成的 Subscription。 */
     @Override
     public void request(long n) {
         // ignoring as `this` means a finished Subscription only

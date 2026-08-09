@@ -14,18 +14,21 @@
 package io.reactivex.rxjava4.internal.subscribers;
 
 /**
- * Interface to allow the InnerQueuedSubscriber to call back a parent
- * with signals.
+ * 允许 InnerQueuedSubscriber 向父级回传信号的接口。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public interface InnerQueuedSubscriberSupport<T> {
 
+    /** 内部 subscriber 收到下一项时回调。 */
     void innerNext(InnerQueuedSubscriber<T> inner, T value);
 
+    /** 内部 subscriber 收到错误时回调。 */
     void innerError(InnerQueuedSubscriber<T> inner, Throwable e);
 
+    /** 内部 subscriber 完成时回调。 */
     void innerComplete(InnerQueuedSubscriber<T> inner);
 
+    /** 触发队列排空（drain）逻辑。 */
     void drain();
 }

@@ -22,30 +22,30 @@ import io.reactivex.rxjava4.operators.QueueSubscription;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Base class for a fuseable intermediate subscriber.
- * @param <T> the upstream value type
- * @param <R> the downstream value type
+ * 可融合（fuseable）中间 subscriber 的基类。
+ * @param <T> 上游值类型
+ * @param <R> 下游值类型
  */
 public abstract class BasicFuseableSubscriber<T, R> implements FlowableSubscriber<T>, QueueSubscription<R> {
 
-    /** The downstream subscriber. */
+    /** 下游 subscriber。 */
     protected final Subscriber<? super R> downstream;
 
-    /** The upstream subscription. */
+    /** 上游 subscription。 */
     protected Subscription upstream;
 
-    /** The upstream's QueueSubscription if not null. */
+    /** 上游的 QueueSubscription（非 null 时）。 */
     protected QueueSubscription<T> qs;
 
-    /** Flag indicating no further onXXX event should be accepted. */
+    /** 标志：不再接受 onXXX 事件。 */
     protected boolean done;
 
-    /** Holds the established fusion mode of the upstream. */
+    /** 保存上游已建立的融合模式。 */
     protected int sourceMode;
 
     /**
-     * Construct a BasicFuseableSubscriber by wrapping the given subscriber.
-     * @param downstream the subscriber, not null (not verified)
+     * 通过包装给定 subscriber 构造 BasicFuseableSubscriber。
+     * @param downstream subscriber，不可为 null（未校验）
      */
     public BasicFuseableSubscriber(Subscriber<? super R> downstream) {
         this.downstream = downstream;
@@ -73,15 +73,15 @@ public abstract class BasicFuseableSubscriber<T, R> implements FlowableSubscribe
     }
 
     /**
-     * Override this to perform actions before the call {@code actual.onSubscribe(this)} happens.
-     * @return true if onSubscribe should continue with the call
+     * 在调用 {@code actual.onSubscribe(this)} 之前执行操作，可覆盖本方法。
+     * @return 若应继续 onSubscribe 调用则为 true
      */
     protected boolean beforeDownstream() {
         return true;
     }
 
     /**
-     * Override this to perform actions after the call to {@code actual.onSubscribe(this)} happened.
+     * 在 {@code actual.onSubscribe(this)} 调用完成后执行操作，可覆盖本方法。
      */
     protected void afterDownstream() {
         // default no-op
@@ -102,8 +102,8 @@ public abstract class BasicFuseableSubscriber<T, R> implements FlowableSubscribe
     }
 
     /**
-     * Rethrows the throwable if it is a fatal exception or calls {@link #onError(Throwable)}.
-     * @param t the throwable to rethrow or signal to the actual subscriber
+     * 若为致命异常则重新抛出，否则调用 {@link #onError(Throwable)}。
+     * @param t 要重新抛出或向实际 subscriber 发出的异常
      */
     protected final void fail(Throwable t) {
         Exceptions.throwIfFatal(t);
@@ -121,14 +121,13 @@ public abstract class BasicFuseableSubscriber<T, R> implements FlowableSubscribe
     }
 
     /**
-     * Calls the upstream's QueueSubscription.requestFusion with the mode and
-     * saves the established mode in {@link #sourceMode} if that mode doesn't
-     * have the {@link QueueSubscription#BOUNDARY} flag set.
+     * 以给定 mode 调用上游 QueueSubscription.requestFusion，
+     * 若该 mode 未设置 {@link QueueSubscription#BOUNDARY} 标志，
+     * 则将已建立的模式保存到 {@link #sourceMode}。
      * <p>
-     * If the upstream doesn't support fusion ({@link #qs} is null), the method
-     * returns {@link QueueSubscription#NONE}.
-     * @param mode the fusion mode requested
-     * @return the established fusion mode
+     * 若上游不支持融合（{@link #qs} 为 null），返回 {@link QueueSubscription#NONE}。
+     * @param mode 请求的融合模式
+     * @return 已建立的融合模式
      */
     protected final int transitiveBoundaryFusion(int mode) {
         QueueSubscription<T> qs = this.qs;

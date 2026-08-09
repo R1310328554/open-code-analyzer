@@ -23,15 +23,23 @@ import io.reactivex.rxjava4.core.FlowableSubscriber;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.NotificationLite;
 
+/**
+ * 将 Reactive Streams 通知编码入阻塞 {@link Queue} 的 Subscriber，
+ * 同时实现 {@link Subscription} 以组合取消与背压。
+ *
+ * @param <T> 值类型
+ */
 public final class BlockingSubscriber<T> extends AtomicReference<Subscription> implements FlowableSubscriber<T>, Subscription {
 
     @Serial
     private static final long serialVersionUID = -4875965440900746268L;
 
+    /** 取消时入队的哨兵对象，唤醒阻塞消费者。 */
     public static final Object TERMINATED = new Object();
 
     final Queue<Object> queue;
 
+    /** @param queue 接收 NotificationLite 编码通知的队列 */
     public BlockingSubscriber(Queue<Object> queue) {
         this.queue = queue;
     }
@@ -70,6 +78,7 @@ public final class BlockingSubscriber<T> extends AtomicReference<Subscription> i
         }
     }
 
+    /** @return 若 subscription 已取消则为 true */
     public boolean isCancelled() {
         return get() == SubscriptionHelper.CANCELLED;
     }

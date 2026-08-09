@@ -14,17 +14,19 @@
 package io.reactivex.rxjava4.internal.subscribers;
 
 /**
- * Blocks until the upstream signals its last value or completes.
+ * 阻塞直到上游发出最后一个值或完成。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public final class BlockingLastSubscriber<T> extends BlockingBaseSubscriber<T> {
 
+    /** 持续覆盖 value 以保留最后一个元素。 */
     @Override
     public void onNext(T t) {
         value = t;
     }
 
+    /** 清空 value、记录 error 并 countDown。 */
     @Override
     public void onError(Throwable t) {
         value = null;

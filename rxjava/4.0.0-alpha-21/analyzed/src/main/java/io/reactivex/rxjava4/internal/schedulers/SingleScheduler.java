@@ -23,7 +23,8 @@ import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * A scheduler with a shared, single threaded underlying ScheduledExecutorService.
+ * 共享单线程 {@link ScheduledExecutorService} 的 Scheduler。
+ * 所有 {@link Worker} 与 direct 调度任务复用同一底层 executor。
  * @since 2.0
  */
 public final class SingleScheduler extends Scheduler {
@@ -31,7 +32,7 @@ public final class SingleScheduler extends Scheduler {
     final ThreadFactory threadFactory;
     final AtomicReference<ScheduledExecutorService> executor = new AtomicReference<>();
 
-    /** The name of the system property for setting the thread priority for this Scheduler. */
+    /** 设置本 Scheduler 线程优先级的系统属性键。 */
     private static final String KEY_SINGLE_PRIORITY = "rxjava4.single-priority";
 
     private static final String THREAD_NAME_PREFIX = "RxSingleScheduler";
@@ -54,10 +55,8 @@ public final class SingleScheduler extends Scheduler {
     }
 
     /**
-     * Constructs a SingleScheduler with the given ThreadFactory and prepares the
-     * single scheduler thread.
-     * @param threadFactory thread factory to use for creating worker threads. Note that this takes precedence over any
-     *                      system properties for configuring new thread creation. Cannot be null.
+     * 使用给定 {@link ThreadFactory} 构造并准备单线程 executor。
+     * @param threadFactory 创建 Worker 线程的工厂；优先于相关系统属性；不可为 null
      */
     public SingleScheduler(ThreadFactory threadFactory) {
         this.threadFactory = threadFactory;
@@ -157,6 +156,7 @@ public final class SingleScheduler extends Scheduler {
         }
     }
 
+    /** 绑定共享 executor 的 Worker；任务由 {@link CompositeDisposable} 统一管理。 */
     static final class ScheduledWorker extends Scheduler.Worker {
 
         final ScheduledExecutorService executor;
@@ -170,6 +170,7 @@ public final class SingleScheduler extends Scheduler {
             this.tasks = new CompositeDisposable();
         }
 
+        /** 在共享 executor 上调度任务；dispose 后返回 {@link EmptyDisposable#INSTANCE}。 */
         @NonNull
         @Override
         public Disposable schedule(@NonNull Runnable run, long delay, @NonNull TimeUnit unit) {
@@ -200,6 +201,7 @@ public final class SingleScheduler extends Scheduler {
             return sr;
         }
 
+        /** 标记 disposed 并 dispose 所有已登记任务。 */
         @Override
         public void dispose() {
             if (!disposed) {

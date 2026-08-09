@@ -27,6 +27,12 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.observers.LambdaConsumerIntrospection;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 带预取缓冲的 lambda {@link FlowableSubscriber}；
+ * 消费达到 limit 时向上游补 request，实现有界背压。
+ *
+ * @param <T> 元素类型
+ */
 public final class BoundedSubscriber<T> extends AtomicReference<Subscription>
         implements FlowableSubscriber<T>, Subscription, Disposable, LambdaConsumerIntrospection {
 
@@ -41,6 +47,13 @@ public final class BoundedSubscriber<T> extends AtomicReference<Subscription>
     int consumed;
     final int limit;
 
+    /**
+     * @param onNext 下一项回调
+     * @param onError 错误回调
+     * @param onComplete 完成回调
+     * @param onSubscribe 订阅回调
+     * @param bufferSize 预取缓冲大小
+     */
     public BoundedSubscriber(Consumer<? super T> onNext, Consumer<? super Throwable> onError,
                             Action onComplete, Consumer<? super Subscription> onSubscribe, int bufferSize) {
         super();
@@ -134,6 +147,7 @@ public final class BoundedSubscriber<T> extends AtomicReference<Subscription>
         SubscriptionHelper.cancel(this);
     }
 
+    /** 若 onError 不是默认的 ON_ERROR_MISSING 则返回 true。 */
     @Override
     public boolean hasCustomOnError() {
         return onError != Functions.ON_ERROR_MISSING;

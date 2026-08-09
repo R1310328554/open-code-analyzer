@@ -25,6 +25,10 @@ import io.reactivex.rxjava4.functions.*;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 对每个上游元素调用 {@link Predicate}；当 predicate 返回 false 或序列结束时 dispose 并触发完成。
+ * @param <T> 元素类型
+ */
 public final class ForEachWhileSubscriber<T>
 extends AtomicReference<Subscription>
 implements FlowableSubscriber<T>, Disposable {
@@ -40,6 +44,11 @@ implements FlowableSubscriber<T>, Disposable {
 
     boolean done;
 
+    /**
+     * @param onNext 对每个元素执行的 predicate
+     * @param onError 错误回调
+     * @param onComplete 完成回调
+     */
     public ForEachWhileSubscriber(Predicate<? super T> onNext,
             Consumer<? super Throwable> onError, Action onComplete) {
         this.onNext = onNext;
@@ -52,6 +61,7 @@ implements FlowableSubscriber<T>, Disposable {
         SubscriptionHelper.setOnce(this, s, Long.MAX_VALUE);
     }
 
+    /** 测试元素；若 predicate 返回 false 则 dispose 并调用 onComplete。 */
     @Override
     public void onNext(T t) {
         if (done) {

@@ -21,6 +21,11 @@ import io.reactivex.rxjava4.core.FlowableSubscriber;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.*;
 
+/**
+ * 使用 {@link CountDownLatch} 等待终止的阻塞 subscriber 基类。
+ *
+ * @param <T> 值类型
+ */
 public abstract class BlockingBaseSubscriber<T> extends CountDownLatch
 implements FlowableSubscriber<T> {
 
@@ -35,6 +40,7 @@ implements FlowableSubscriber<T> {
         super(1);
     }
 
+    /** 验证 subscription 并请求 {@code Long.MAX_VALUE}；取消时同步 cancel 上游。 */
     @Override
     public final void onSubscribe(Subscription s) {
         if (SubscriptionHelper.validate(this.upstream, s)) {
@@ -55,9 +61,9 @@ implements FlowableSubscriber<T> {
     }
 
     /**
-     * Block until the first value arrives and return it, otherwise
-     * return null for an empty source and rethrow any exception.
-     * @return the first value or null if the source is empty
+     * 阻塞直到首个值到达并返回；若源为空则返回 null，
+     * 若有异常则重新抛出。
+     * @return 首个值，或源为空时返回 null
      */
     public final T blockingGet() {
         if (getCount() != 0) {

@@ -21,10 +21,10 @@ import io.reactivex.rxjava4.internal.subscriptions.*;
 import java.io.Serial;
 
 /**
- * A subscriber, extending a DeferredScalarSubscription,
- *  that is unbounded-in and can generate 0 or 1 resulting value.
- * @param <T> the input value type
- * @param <R> the output value type
+ * 继承 {@link DeferredScalarSubscription} 的 subscriber：
+ * 无界请求上游，可生成 0 或 1 个结果值。
+ * @param <T> 输入值类型
+ * @param <R> 输出值类型
  */
 public abstract class DeferredScalarSubscriber<T, R> extends DeferredScalarSubscription<R>
 implements FlowableSubscriber<T> {
@@ -32,15 +32,15 @@ implements FlowableSubscriber<T> {
     @Serial
     private static final long serialVersionUID = 2984505488220891551L;
 
-    /** The upstream subscription. */
+    /** 上游 subscription。 */
     protected Subscription upstream;
 
-    /** Can indicate if there was at least on onNext call. */
+    /** 是否至少收到一次 onNext。 */
     protected boolean hasValue;
 
     /**
-     * Creates a DeferredScalarSubscriber instance and wraps a downstream Subscriber.
-     * @param downstream the downstream subscriber, not null (not verified)
+     * 创建 DeferredScalarSubscriber 实例并包装下游 Subscriber。
+     * @param downstream 下游 subscriber，非 null（未校验）
      */
     public DeferredScalarSubscriber(Subscriber<? super R> downstream) {
         super(downstream);
@@ -72,6 +72,7 @@ implements FlowableSubscriber<T> {
         }
     }
 
+    /** 取消自身并 cancel 上游 subscription。 */
     @Override
     public void cancel() {
         super.cancel();

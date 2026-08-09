@@ -44,10 +44,10 @@ import io.reactivex.rxjava4.observers.LambdaConsumerIntrospection;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Wraps lambda callbacks and when the upstream terminates or this subscriber gets disposed,
- * removes itself from a {@link io.reactivex.rxjava4.disposables.CompositeDisposable}.
+ * 包装 lambda 回调；上游终止或本 subscriber 被 dispose 时，
+ * 从 {@link io.reactivex.rxjava4.disposables.CompositeDisposable} 中移除自身。
  * <p>History: 0.18.0 @ RxJavaExtensions
- * @param <T> the element type consumed
+ * @param <T> 消费的元素类型
  * @since 3.1.0
  */
 public final class DisposableAutoReleaseSubscriber<T>
@@ -65,6 +65,12 @@ implements FlowableSubscriber<T>, Disposable, LambdaConsumerIntrospection {
 
     final Action onComplete;
 
+    /**
+     * @param composite 要从中移除自身的复合容器
+     * @param onNext 下一项回调
+     * @param onError 错误回调
+     * @param onComplete 完成回调
+     */
     public DisposableAutoReleaseSubscriber(
             DisposableContainer composite,
             Consumer<? super T> onNext,
@@ -126,6 +132,7 @@ implements FlowableSubscriber<T>, Disposable, LambdaConsumerIntrospection {
         removeSelf();
     }
 
+    /** 从 CompositeDisposable 中删除自身引用。 */
     void removeSelf() {
         DisposableContainer c = composite.getAndSet(null);
         if (c != null) {
@@ -138,6 +145,7 @@ implements FlowableSubscriber<T>, Disposable, LambdaConsumerIntrospection {
         return SubscriptionHelper.CANCELLED == get();
     }
 
+    /** 设置 subscription 并无界 request 上游。 */
     @Override
     public void onSubscribe(Subscription s) {
         if (SubscriptionHelper.setOnce(this, s)) {

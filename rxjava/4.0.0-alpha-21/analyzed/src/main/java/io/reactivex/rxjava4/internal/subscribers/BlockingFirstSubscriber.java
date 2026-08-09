@@ -16,12 +16,13 @@ package io.reactivex.rxjava4.internal.subscribers;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Blocks until the upstream signals its first value or completes.
+ * 阻塞直到上游发出首个值或完成。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public final class BlockingFirstSubscriber<T> extends BlockingBaseSubscriber<T> {
 
+    /** 保存首个值、取消上游并 countDown。 */
     @Override
     public void onNext(T t) {
         if (value == null) {
@@ -31,6 +32,7 @@ public final class BlockingFirstSubscriber<T> extends BlockingBaseSubscriber<T> 
         }
     }
 
+    /** 尚无值时记录 error；已有值则经 RxJavaPlugins 上报额外错误。 */
     @Override
     public void onError(Throwable t) {
         if (value == null) {

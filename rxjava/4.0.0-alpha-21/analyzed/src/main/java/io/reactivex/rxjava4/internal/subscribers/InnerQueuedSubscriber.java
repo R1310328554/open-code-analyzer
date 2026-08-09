@@ -25,10 +25,9 @@ import io.reactivex.rxjava4.operators.QueueSubscription;
 import io.reactivex.rxjava4.operators.SimpleQueue;
 
 /**
- * Subscriber that can fuse with the upstream and calls a support interface
- * whenever an event is available.
+ * 可与上游融合的 Subscriber，在有事件可用时回调支持接口。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public final class InnerQueuedSubscriber<T>
 extends AtomicReference<Subscription>
@@ -51,12 +50,17 @@ implements FlowableSubscriber<T>, Subscription {
 
     int fusionMode;
 
+    /**
+     * @param parent 父级支持接口
+     * @param prefetch 预取数量
+     */
     public InnerQueuedSubscriber(InnerQueuedSubscriberSupport<T> parent, int prefetch) {
         this.parent = parent;
         this.prefetch = prefetch;
         this.limit = prefetch - (prefetch >> 2);
     }
 
+    /** 尝试融合；SYNC 模式直接 innerComplete，否则创建队列并预取。 */
     @Override
     public void onSubscribe(Subscription s) {
         if (SubscriptionHelper.setOnce(this, s)) {
@@ -123,14 +127,17 @@ implements FlowableSubscriber<T>, Subscription {
         SubscriptionHelper.cancel(this);
     }
 
+    /** 若内部序列已完成则返回 true。 */
     public boolean isDone() {
         return done;
     }
 
+    /** 将内部序列标记为已完成。 */
     public void setDone() {
         this.done = true;
     }
 
+    /** @return 内部队列 */
     public SimpleQueue<T> queue() {
         return queue;
     }

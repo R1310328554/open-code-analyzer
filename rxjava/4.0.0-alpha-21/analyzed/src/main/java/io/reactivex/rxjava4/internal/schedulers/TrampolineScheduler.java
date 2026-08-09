@@ -23,12 +23,13 @@ import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Schedules work on the current thread but does not execute immediately. Work is put in a queue and executed
- * after the current unit of work is completed.
+ * 在当前线程上调度任务，但不立即执行；任务入队并在当前工作单元完成后按序运行。
+ * 单例 {@link #instance()} 供全局 trampoline 调度使用。
  */
 public final class TrampolineScheduler extends Scheduler {
     private static final TrampolineScheduler INSTANCE = new TrampolineScheduler();
 
+    /** @return 全局 TrampolineScheduler 单例 */
     public static TrampolineScheduler instance() {
         return INSTANCE;
     }
@@ -62,6 +63,7 @@ public final class TrampolineScheduler extends Scheduler {
         return EmptyDisposable.INSTANCE;
     }
 
+    /** 基于优先级队列在当前线程串行执行任务。 */
     static final class TrampolineWorker extends Scheduler.Worker {
         final PriorityBlockingQueue<TimedRunnable> queue = new PriorityBlockingQueue<>();
 
@@ -116,7 +118,7 @@ public final class TrampolineScheduler extends Scheduler {
 
                 return EmptyDisposable.INSTANCE;
             } else {
-                // queue wasn't empty, a parent is already processing so we just add to the end of the queue
+                // 队列非空，已有父级在处理，本任务仅入队等待
                 return Disposable.fromRunnable(new AppendToQueueTask(timedRunnable));
             }
         }
@@ -149,7 +151,7 @@ public final class TrampolineScheduler extends Scheduler {
     static final class TimedRunnable implements Comparable<TimedRunnable> {
         final Runnable run;
         final long execTime;
-        final int count; // In case if time between enqueueing took less than 1ms
+        final int count; // 入队间隔不足 1ms 时用于稳定排序
 
         volatile boolean disposed;
 
@@ -169,6 +171,7 @@ public final class TrampolineScheduler extends Scheduler {
         }
     }
 
+    /** 若执行时间未到则 sleep，到期后在 worker 未 dispose 时运行任务。 */
     static final class SleepingRunnable implements Runnable {
         private final Runnable run;
         private final TrampolineWorker worker;
