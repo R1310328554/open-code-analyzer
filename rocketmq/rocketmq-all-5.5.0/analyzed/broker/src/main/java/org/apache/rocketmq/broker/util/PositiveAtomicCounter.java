@@ -18,22 +18,26 @@ package org.apache.rocketmq.broker.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/** 始终返回非负值的 {@link AtomicInteger} 包装，高位溢出后按 {@link #MASK} 截断。 */
 public class PositiveAtomicCounter {
     private static final int MASK = 0x7FFFFFFF;
     private final AtomicInteger atom;
 
 
+    /** 以 0 初始化内部计数器。 */
     public PositiveAtomicCounter() {
         atom = new AtomicInteger(0);
     }
 
 
+    /** 自增并返回截断后的非负值。 */
     public final int incrementAndGet() {
         final int rt = atom.incrementAndGet();
         return rt & MASK;
     }
 
 
+    /** 返回当前原始 int 值（可能为负）。 */
     public int intValue() {
         return atom.intValue();
     }

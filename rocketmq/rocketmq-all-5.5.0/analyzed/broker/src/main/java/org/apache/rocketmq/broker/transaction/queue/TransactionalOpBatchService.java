@@ -22,6 +22,10 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 事务 Op 消息批量发送线程：按 {@code transactionOpBatchInterval}
+ * 唤醒 {@link TransactionalMessageServiceImpl#batchSendOpMessage()}。
+ */
 public class TransactionalOpBatchService extends ServiceThread {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
 
@@ -31,17 +35,21 @@ public class TransactionalOpBatchService extends ServiceThread {
     private long wakeupTimestamp = 0;
 
 
+    /** @param brokerController Broker 控制器
+     *  @param transactionalMessageService 队列模式事务服务实现 */
     public TransactionalOpBatchService(BrokerController brokerController,
                                        TransactionalMessageServiceImpl transactionalMessageService) {
         this.brokerController = brokerController;
         this.transactionalMessageService = transactionalMessageService;
     }
 
+    /** 返回本服务线程类名。 */
     @Override
     public String getServiceName() {
         return TransactionalOpBatchService.class.getSimpleName();
     }
 
+    /** 按 batch 间隔休眠，到期或提前唤醒时批量发送 Op。 */
     @Override
     public void run() {
         LOGGER.info("Start transaction op batch thread!");
@@ -58,6 +66,7 @@ public class TransactionalOpBatchService extends ServiceThread {
         LOGGER.info("End transaction op batch thread!");
     }
 
+    /** 调用事务服务批量刷写 Op 消息并更新下次唤醒时间。 */
     @Override
     protected void onWaitEnd() {
         wakeupTimestamp = transactionalMessageService.batchSendOpMessage();

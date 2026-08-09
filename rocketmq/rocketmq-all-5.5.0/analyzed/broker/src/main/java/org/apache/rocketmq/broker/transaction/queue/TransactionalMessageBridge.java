@@ -57,6 +57,10 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_CON
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_IS_SYSTEM;
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_TOPIC;
 
+/**
+ * 事务消息与 CommitLog 之间的桥接层：半消息/Op 消息的读写、
+ * offset 管理与回查所需的消息重建。
+ */
 public class TransactionalMessageBridge {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
 
@@ -65,6 +69,8 @@ public class TransactionalMessageBridge {
     private final MessageStore store;
     private final SocketAddress storeHost;
 
+    /** @param brokerController Broker 控制器
+     *  @param store 底层消息存储 */
     public TransactionalMessageBridge(BrokerController brokerController, MessageStore store) {
         try {
             this.brokerController = brokerController;
@@ -79,6 +85,7 @@ public class TransactionalMessageBridge {
 
     }
 
+    /** 查询事务系统消费组在指定队列上的消费位点；无记录时取最小 offset。 */
     public long fetchConsumeOffset(MessageQueue mq) {
         long offset = brokerController.getConsumerOffsetManager().queryOffset(TransactionalMessageUtil.buildConsumerGroup(),
             mq.getTopic(), mq.getQueueId());
@@ -88,6 +95,7 @@ public class TransactionalMessageBridge {
         return offset;
     }
 
+    /** 按 topic 配置构建可读队列集合。 */
     public Set<MessageQueue> fetchMessageQueues(String topic) {
         Set<MessageQueue> mqSet = new HashSet<>();
         TopicConfig topicConfig = selectTopicConfig(topic);
@@ -103,12 +111,14 @@ public class TransactionalMessageBridge {
         return mqSet;
     }
 
+    /** 提交事务系统消费组在指定队列上的消费位点。 */
     public void updateConsumeOffset(MessageQueue mq, long offset) {
         this.brokerController.getConsumerOffsetManager().commitOffset(
             RemotingHelper.parseSocketAddressAddr(this.storeHost), TransactionalMessageUtil.buildConsumerGroup(), mq.getTopic(),
             mq.getQueueId(), offset);
     }
 
+    /** 从半消息 topic 拉取消息。 */
     public PullResult getHalfMessage(int queueId, long offset, int nums) {
         String group = TransactionalMessageUtil.buildConsumerGroup();
         String topic = TransactionalMessageUtil.buildHalfTopic();
@@ -116,6 +126,7 @@ public class TransactionalMessageBridge {
         return getMessage(group, topic, queueId, offset, nums, sub);
     }
 
+    /** 从 Op 消息 topic 拉取消息。 */
     public PullResult getOpMessage(int queueId, long offset, int nums) {
         String group = TransactionalMessageUtil.buildConsumerGroup();
         String topic = TransactionalMessageUtil.buildOpTopic();
@@ -208,10 +219,12 @@ public class TransactionalMessageBridge {
         return foundList;
     }
 
+    /** 将业务消息改写为半消息并写入 CommitLog。 */
     public PutMessageResult putHalfMessage(MessageExtBrokerInner messageInner) {
         return store.putMessage(parseHalfMessageInner(messageInner));
     }
 
+    /** 异步写入半消息。 */
     public CompletableFuture<PutMessageResult> asyncPutHalfMessage(MessageExtBrokerInner messageInner) {
         return store.asyncPutMessage(parseHalfMessageInner(messageInner));
     }
@@ -236,6 +249,7 @@ public class TransactionalMessageBridge {
         return msgInner;
     }
 
+    /** 写入消息并更新 Broker 写入统计。 */
     public PutMessageResult putMessageReturnResult(MessageExtBrokerInner messageInner) {
         LOGGER.debug("[BUG-TO-FIX] Thread:{} msgID:{}", Thread.currentThread().getName(), messageInner.getMsgId());
         PutMessageResult result = store.putMessage(messageInner);
@@ -248,6 +262,7 @@ public class TransactionalMessageBridge {
         return result;
     }
 
+    /** 写入消息，成功返回 true。 */
     public boolean putMessage(MessageExtBrokerInner messageInner) {
         PutMessageResult putMessageResult = store.putMessage(messageInner);
         if (putMessageResult != null
@@ -260,6 +275,7 @@ public class TransactionalMessageBridge {
         }
     }
 
+    /** 重建半消息并保留免疫期 queueOffset 属性。 */
     public MessageExtBrokerInner renewImmunityHalfMessageInner(MessageExt msgExt) {
         MessageExtBrokerInner msgInner = renewHalfMessageInner(msgExt);
         String queueOffsetFromPrepare = msgExt.getUserProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED_QUEUE_OFFSET);
@@ -276,6 +292,7 @@ public class TransactionalMessageBridge {
         return msgInner;
     }
 
+    /** 从 {@link MessageExt} 重建 {@link MessageExtBrokerInner}（不修改 topic）。 */
     public MessageExtBrokerInner renewHalfMessageInner(MessageExt msgExt) {
         MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
         msgInner.setTopic(msgExt.getTopic());
@@ -321,6 +338,7 @@ public class TransactionalMessageBridge {
         return topicConfig;
     }
 
+    /** 向对应 queueId 的 Op topic 写入操作消息。 */
     public boolean writeOp(Integer queueId,Message message) {
         MessageQueue opQueue = opQueueMap.get(queueId);
         if (opQueue == null) {
@@ -347,14 +365,17 @@ public class TransactionalMessageBridge {
         return opQueue;
     }
 
+    /** 按 CommitLog 物理 offset 查找消息。 */
     public MessageExt lookMessageByOffset(final long commitLogOffset) {
         return this.store.lookMessageByOffset(commitLogOffset);
     }
 
+    /** 返回关联的 Broker 控制器。 */
     public BrokerController getBrokerController() {
         return brokerController;
     }
 
+    /** 通过 EscapeBridge 将消息写入远端 Broker（主从切换场景）。 */
     public boolean escapeMessage(MessageExtBrokerInner messageInner) {
         PutMessageResult putMessageResult = this.brokerController.getEscapeBridge().putMessage(messageInner);
         if (putMessageResult != null && putMessageResult.isOk()) {

@@ -23,18 +23,25 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 事务指标持久化后台线程：按 {@link BrokerController} 配置的间隔
+ * 调用 {@link TransactionalMessageService#getTransactionMetrics()} 落盘统计。
+ */
 public class TransactionMetricsFlushService extends ServiceThread {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
     private BrokerController brokerController;
+    /** @param brokerController 所属 Broker 控制器 */
     public TransactionMetricsFlushService(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
+    /** 返回线程服务名 {@code TransactionFlushService}。 */
     @Override
     public String getServiceName() {
         return "TransactionFlushService";
     }
 
+    /** 循环等待 flush 间隔到期后持久化事务指标。 */
     @Override
     public void run() {
         log.info(this.getServiceName() + " service start");

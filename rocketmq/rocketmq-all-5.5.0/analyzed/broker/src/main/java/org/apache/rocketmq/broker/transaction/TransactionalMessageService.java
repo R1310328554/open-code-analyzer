@@ -23,70 +23,70 @@ import org.apache.rocketmq.common.message.MessageExtBrokerInner;
 import org.apache.rocketmq.remoting.protocol.header.EndTransactionRequestHeader;
 import org.apache.rocketmq.store.PutMessageResult;
 
+/**
+ * Broker 端事务消息服务抽象：半消息写入、提交/回滚、回查与指标管理。
+ * 队列模式见 {@link org.apache.rocketmq.broker.transaction.queue.TransactionalMessageServiceImpl}，
+ * RocksDB 模式见 {@link org.apache.rocketmq.broker.transaction.rocksdb.TransactionalMessageRocksDBService}。
+ */
 public interface TransactionalMessageService {
 
     /**
-     * Process prepare message, in common, we should put this message to storage service.
+     * 同步写入半消息（Prepare）到存储。
      *
-     * @param messageInner Prepare(Half) message.
-     * @return Prepare message storage result.
+     * @param messageInner 半消息体
+     * @return 写入结果
      */
     PutMessageResult prepareMessage(MessageExtBrokerInner messageInner);
 
     /**
-     * Process prepare message in async manner, we should put this message to storage service
+     * 异步写入半消息；Future 在刷盘与副本同步完成后完成。
      *
-     * @param messageInner Prepare(Half) message.
-     * @return CompletableFuture of put result, will be completed at put success(flush and replica done)
+     * @param messageInner 半消息体
+     * @return 异步写入结果
      */
     CompletableFuture<PutMessageResult> asyncPrepareMessage(MessageExtBrokerInner messageInner);
 
     /**
-     * Delete prepare message when this message has been committed or rolled back.
+     * 提交或回滚后删除半消息。
      *
-     * @param messageExt
+     * @param messageExt 待删除的半消息
+     * @return 是否删除成功
      */
     boolean deletePrepareMessage(MessageExt messageExt);
 
     /**
-     * Invoked to process commit prepare message.
+     * 处理事务提交：将半消息转为正式消息。
      *
-     * @param requestHeader Commit message request header.
-     * @return Operate result contains prepare message and relative error code.
+     * @param requestHeader 结束事务请求头
+     * @return 操作结果（含半消息与错误码）
      */
     OperationResult commitMessage(EndTransactionRequestHeader requestHeader);
 
     /**
-     * Invoked to roll back prepare message.
+     * 处理事务回滚：丢弃半消息。
      *
-     * @param requestHeader Prepare message request header.
-     * @return Operate result contains prepare message and relative error code.
+     * @param requestHeader 结束事务请求头
+     * @return 操作结果（含半消息与错误码）
      */
     OperationResult rollbackMessage(EndTransactionRequestHeader requestHeader);
 
     /**
-     * Traverse uncommitted/unroll back half message and send check back request to producer to obtain transaction
-     * status.
+     * 扫描未决半消息并向 Producer 发送回查请求。
      *
-     * @param transactionTimeout The minimum time of the transactional message to be checked firstly, one message only
-     * exceed this time interval that can be checked.
-     * @param transactionCheckMax The maximum number of times the message was checked, if exceed this value, this
-     * message will be discarded.
-     * @param listener When the message is considered to be checked or discarded, the relative method of this class will
-     * be invoked.
+     * @param transactionTimeout 首次回查最小等待时间（毫秒）
+     * @param transactionCheckMax 最大回查次数，超限则丢弃
+     * @param listener 回查或丢弃时的回调
      */
     void check(long transactionTimeout, int transactionCheckMax, AbstractTransactionalMessageCheckListener listener);
 
     /**
-     * Open transaction service.
+     * 启动事务服务。
      *
-     * @return If open success, return true.
+     * @return 启动成功返回 true
      */
     boolean open();
 
-    /**
-     * Close transaction service.
-     */
+    /** 关闭事务服务。 */
     void close();
 
     TransactionMetrics getTransactionMetrics();

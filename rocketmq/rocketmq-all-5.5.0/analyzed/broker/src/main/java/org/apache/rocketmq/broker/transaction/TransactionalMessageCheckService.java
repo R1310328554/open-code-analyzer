@@ -22,15 +22,21 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 事务半消息回查调度线程：按 {@code transactionCheckInterval} 唤醒，
+ * 在 {@link #onWaitEnd()} 中触发 {@link TransactionalMessageService#check}。
+ */
 public class TransactionalMessageCheckService extends ServiceThread {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
 
     private BrokerController brokerController;
 
+    /** @param brokerController 所属 Broker 控制器 */
     public TransactionalMessageCheckService(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
+    /** 容器模式下返回 broker 标识前缀 + 类名。 */
     @Override
     public String getServiceName() {
         if (brokerController != null && brokerController.getBrokerConfig().isInBrokerContainer()) {
@@ -39,6 +45,7 @@ public class TransactionalMessageCheckService extends ServiceThread {
         return TransactionalMessageCheckService.class.getSimpleName();
     }
 
+    /** 按配置间隔 {@link #waitForRunning}，等待结束时执行回查。 */
     @Override
     public void run() {
         log.info("Start transaction check service thread!");
@@ -49,6 +56,7 @@ public class TransactionalMessageCheckService extends ServiceThread {
         log.info("End transaction check service thread!");
     }
 
+    /** 读取超时与最大回查次数，调用事务服务扫描半消息。 */
     @Override
     protected void onWaitEnd() {
         long timeout = brokerController.getBrokerConfig().getTransactionTimeOut();

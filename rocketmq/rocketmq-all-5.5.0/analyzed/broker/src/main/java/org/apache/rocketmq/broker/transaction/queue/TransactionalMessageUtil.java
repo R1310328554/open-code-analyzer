@@ -28,32 +28,41 @@ import org.apache.rocketmq.common.message.MessageExtBrokerInner;
 import org.apache.rocketmq.common.sysflag.MessageSysFlag;
 import org.apache.rocketmq.common.topic.TopicValidator;
 
+/** 事务消息 topic/消费组命名与半消息重建、免疫期计算的静态工具。 */
 public class TransactionalMessageUtil {
+    /** Op 消息删除标记 tag。 */
     public static final String REMOVE_TAG = "d";
     public static final Charset CHARSET = StandardCharsets.UTF_8;
     public static final String OFFSET_SEPARATOR = ",";
+    /** 半消息中记录客户端事务 ID 的用户属性键。 */
     public static final String TRANSACTION_ID = "__transactionId__";
 
+    /** 返回队列模式 Op 消息系统 topic。 */
     public static String buildOpTopic() {
         return TopicValidator.RMQ_SYS_TRANS_OP_HALF_TOPIC;
     }
 
+    /** 返回 RocksDB 模式 Op 消息系统 topic。 */
     public static String buildOpTopicForRocksDB() {
         return TopicValidator.RMQ_SYS_ROCKSDB_TRANS_OP_HALF_TOPIC;
     }
 
+    /** 返回队列模式半消息系统 topic。 */
     public static String buildHalfTopic() {
         return TopicValidator.RMQ_SYS_TRANS_HALF_TOPIC;
     }
 
+    /** 返回 RocksDB 模式半消息系统 topic。 */
     public static String buildHalfTopicForRocksDB() {
         return TopicValidator.RMQ_SYS_ROCKSDB_TRANS_HALF_TOPIC;
     }
 
+    /** 返回 Broker 内部事务扫描用的系统消费组。 */
     public static String buildConsumerGroup() {
         return MixAll.CID_SYS_RMQ_TRANS;
     }
 
+    /** 从半消息还原真实 topic/queue 并打上 TRANSACTION_PREPARED 标志。 */
     public static MessageExtBrokerInner buildTransactionalMessageFromHalfMessage(MessageExt msgExt) {
         final MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
         msgInner.setWaitStoreMsgOK(false);
@@ -83,6 +92,7 @@ public class TransactionalMessageUtil {
         return msgInner;
     }
 
+    /** 解析免疫期秒数字符串，返回不低于 transactionTimeout 的毫秒值。 */
     public static long getImmunityTime(String checkImmunityTimeStr, long transactionTimeout) {
         long checkImmunityTime = 0;
 
@@ -91,8 +101,8 @@ public class TransactionalMessageUtil {
         } catch (Throwable ignored) {
         }
 
-        //If a custom first check time is set, the minimum check time;
-        //The default check protection period is transactionTimeout
+        // 若配置了自定义首次回查免疫期，不得低于 transactionTimeout
+        // 默认免疫期等于 transactionTimeout
         if (checkImmunityTime < transactionTimeout) {
             checkImmunityTime = transactionTimeout;
         }

@@ -41,23 +41,20 @@ import org.apache.rocketmq.store.config.BrokerRole;
 import org.apache.rocketmq.store.queue.ConsumeQueueStoreInterface;
 import org.apache.rocketmq.store.timer.TimerMessageStore;
 
+/**
+ * Broker 入队前校验与消息变换工具：topic/存储状态检查、
+ * 定时/延迟/LMQ 配额处理及消息回退发送。
+ */
 public class HookUtils {
 
     protected static final Logger LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
     private static final AtomicLong PRINT_TIMES = new AtomicLong(0);
 
-    /**
-     * On Linux: The maximum length for a file name is 255 bytes.
-     * The maximum combined length of both the file name and path name is 4096 bytes.
-     * This length matches the PATH_MAX that is supported by the operating system.
-     * The Unicode representation of a character can occupy several bytes,
-     * so the maximum number of characters that comprises a path and file name can vary.
-     * The actual limitation is the number of bytes in the path and file components,
-     * which might correspond to an equal number of characters.
-     */
+    /** Linux 下单个文件名最大 255 字节；topic 名长度上限与此对齐。 */
     private static final Integer MAX_TOPIC_LENGTH = 255;
 
+    /** 入队前校验：存储可用性、Broker 角色、topic/body 合法性及页缓存压力。 */
     public static PutMessageResult checkBeforePutMessage(BrokerController brokerController, final MessageExt msg) {
         if (brokerController.getMessageStore().isShutdown()) {
             LOG.warn("message store has shutdown, so putMessage is forbidden");
@@ -109,6 +106,7 @@ public class HookUtils {
         return null;
     }
 
+    /** 校验内部批量消息标志与 ConsumeQueue 类型是否一致。 */
     public static PutMessageResult checkInnerBatch(BrokerController brokerController, final MessageExt msg) {
         if (msg.getProperties().containsKey(MessageConst.PROPERTY_INNER_NUM)
             && !MessageSysFlag.check(msg.getSysFlag(), MessageSysFlag.INNER_BATCH_FLAG)) {
@@ -127,6 +125,7 @@ public class HookUtils {
         return null;
     }
 
+    /** 非事务消息处理定时轮与 delayLevel 延迟投递变换。 */
     public static PutMessageResult handleScheduleMessage(BrokerController brokerController,
         final MessageExtBrokerInner msg) {
         final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());
@@ -135,7 +134,7 @@ public class HookUtils {
             if (!isRolledTimerMessage(msg)) {
                 if (checkIfTimerMessage(msg)) {
                     if (!brokerController.getMessageStoreConfig().isTimerWheelEnable()) {
-                        //wheel timer is not enabled, reject the message
+                        // 未启用定时轮时拒绝定时消息
                         return new PutMessageResult(PutMessageStatus.WHEEL_TIMER_NOT_ENABLE, null);
                     }
                     PutMessageResult transformRes = transformTimerMessage(brokerController, msg);
@@ -144,7 +143,7 @@ public class HookUtils {
                     }
                 }
             }
-            // Delay Delivery
+            // 延迟级别投递：改写 topic 为系统 schedule topic
             if (msg.getDelayTimeLevel() > 0) {
                 transformDelayLevelMessage(brokerController, msg);
             }
@@ -152,6 +151,7 @@ public class HookUtils {
         return null;
     }
 
+    /** 校验 LMQ 多路分发目标数量是否超过配额。 */
     public static PutMessageResult handleLmqQuota(BrokerController brokerController, final MessageExtBrokerInner msg) {
         if (!brokerController.getMessageStoreConfig().isEnableLmqQuota()
             || !brokerController.getMessageStoreConfig().isEnableLmq()
@@ -194,7 +194,7 @@ public class HookUtils {
             return false;
             //return this.defaultMessageStore.getMessageStoreConfig().isTimerInterceptDelayLevel();
         }
-        //double check
+        // 二次确认：排除 delayLevel 与 timer topic 冲突
         if (TimerMessageStore.TIMER_TOPIC.equals(msg.getTopic()) || null != msg.getProperty(MessageConst.PROPERTY_TIMER_OUT_MS)) {
             return false;
         }
@@ -203,7 +203,7 @@ public class HookUtils {
 
     private static PutMessageResult transformTimerMessage(BrokerController brokerController,
         MessageExtBrokerInner msg) {
-        //do transform
+        // 计算 deliverMs 并改写为 timer topic 消息
         int delayLevel = msg.getDelayTimeLevel();
         long deliverMs;
         try {
@@ -244,13 +244,14 @@ public class HookUtils {
         return null;
     }
 
+    /** 将 delayLevel 消息路由到 {@link TopicValidator#RMQ_SYS_SCHEDULE_TOPIC} 对应队列。 */
     public static void transformDelayLevelMessage(BrokerController brokerController, MessageExtBrokerInner msg) {
 
         if (msg.getDelayTimeLevel() > brokerController.getScheduleMessageService().getMaxDelayLevel()) {
             msg.setDelayTimeLevel(brokerController.getScheduleMessageService().getMaxDelayLevel());
         }
 
-        // Backup real topic, queueId
+        // 备份真实 topic 与 queueId 到用户属性
         MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());
         MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));
         msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));
@@ -259,6 +260,7 @@ public class HookUtils {
         msg.setQueueId(ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel()));
     }
 
+    /** 将消息列表逐条回发到指定 Broker 地址。 */
     public static boolean sendMessageBack(BrokerController brokerController, List<MessageExt> msgList,
         String brokerName, String brokerAddr) {
         try {

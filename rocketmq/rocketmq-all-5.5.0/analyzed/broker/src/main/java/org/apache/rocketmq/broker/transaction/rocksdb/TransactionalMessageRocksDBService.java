@@ -42,6 +42,10 @@ import org.apache.rocketmq.store.transaction.TransRocksDBRecord;
 import org.apache.rocketmq.store.transaction.TransMessageRocksDBStore;
 import static org.apache.rocketmq.store.rocksdb.MessageRocksDBStorage.TRANS_COLUMN_FAMILY;
 
+/**
+ * 基于 RocksDB 的事务半消息回查服务：扫描 {@link TransMessageRocksDBStore}
+ * 中的半消息记录，向 Producer 发送 {@link CheckTransactionStateRequestHeader}。
+ */
 public class TransactionalMessageRocksDBService {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
     private static final int MAX_BATCH_SIZE_FROM_ROCKSDB = 2000;
@@ -56,6 +60,8 @@ public class TransactionalMessageRocksDBService {
     private TransStatusCheckService transStatusService;
     private ExecutorService checkTranStatusTaskExecutor;
 
+    /** @param messageStore 消息存储（含 RocksDB 事务列族）
+     *  @param brokerController Broker 控制器 */
     public TransactionalMessageRocksDBService(final MessageStore messageStore, final BrokerController brokerController) {
         this.messageStore = messageStore;
         this.transMessageRocksDBStore = messageStore.getTransMessageRocksDBStore();
@@ -63,6 +69,7 @@ public class TransactionalMessageRocksDBService {
         this.brokerController = brokerController;
     }
 
+    /** 初始化线程池并启动 {@link TransStatusCheckService} 扫描线程。 */
     public void start() {
         if (this.state == RUNNING) {
             return;
@@ -85,6 +92,7 @@ public class TransactionalMessageRocksDBService {
             new CallerRunsPolicy());
     }
 
+    /** 停止扫描线程并关闭回查任务线程池。 */
     public void shutdown() {
         if (this.state != RUNNING || this.state == SHUTDOWN) {
             return;
@@ -99,6 +107,7 @@ public class TransactionalMessageRocksDBService {
         log.info("TransactionalMessageRocksDBService shutdown success");
     }
 
+    /** 分页扫描 RocksDB 事务列族并逐批回查。 */
     private void checkTransStatus() {
         long count = 0;
         byte[] lastKey = null;
@@ -123,6 +132,7 @@ public class TransactionalMessageRocksDBService {
         log.info("TransactionalMessageRocksDBService checkTransStatus count: {}", count);
     }
 
+    /** 对一批记录判断免疫期、回查次数并更新或删除。 */
     private void checkTransRecordsStatus(List<TransRocksDBRecord> trs) {
         if (CollectionUtils.isEmpty(trs)) {
             log.error("TransactionalMessageRocksDBService checkTransRecordsStatus, trs is empty");
@@ -171,6 +181,7 @@ public class TransactionalMessageRocksDBService {
         }
     }
 
+    /** 判断半消息是否已过免疫期（可发起回查）。 */
     private boolean isImmunityTimeExpired(MessageExt msgExt) {
         String immunityTimeStr = msgExt.getUserProperty(MessageConst.PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS);
         long immunityTime = brokerController.getBrokerConfig().getTransactionTimeOut();
@@ -199,6 +210,7 @@ public class TransactionalMessageRocksDBService {
         return brokerIdentifier;
     }
 
+    /** 在线程池中异步发送事务状态回查请求。 */
     private void resolveHalfMsg(final MessageExt msgExt) {
         if (checkTranStatusTaskExecutor != null) {
             checkTranStatusTaskExecutor.execute(new Runnable() {
@@ -216,6 +228,7 @@ public class TransactionalMessageRocksDBService {
         }
     }
 
+    /** 构造回查头并通过 Producer 通道发送 CheckTransactionState 请求。 */
     private void sendCheckMessage(MessageExt msgExt) {
         if (null == msgExt) {
             log.info("TransactionalMessageRocksDBService sendCheckMessage msgExt is null");
@@ -245,6 +258,7 @@ public class TransactionalMessageRocksDBService {
         }
     }
 
+    /** 周期性调用 {@link #checkTransStatus()} 的后台扫描线程。 */
     private class TransStatusCheckService extends ServiceThread {
         private final Logger log = TransactionalMessageRocksDBService.log;
         @Override

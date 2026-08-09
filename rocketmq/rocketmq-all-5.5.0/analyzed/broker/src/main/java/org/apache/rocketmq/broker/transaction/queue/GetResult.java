@@ -19,22 +19,27 @@ package org.apache.rocketmq.broker.transaction.queue;
 import org.apache.rocketmq.client.consumer.PullResult;
 import org.apache.rocketmq.common.message.MessageExt;
 
+/** 事务队列拉取结果封装：关联单条 {@link MessageExt} 与 {@link PullResult}。 */
 public class GetResult {
     private MessageExt msg;
     private PullResult pullResult;
 
+    /** 返回拉取到的单条消息。 */
     public MessageExt getMsg() {
         return msg;
     }
 
+    /** 设置拉取到的单条消息。 */
     public void setMsg(MessageExt msg) {
         this.msg = msg;
     }
 
+    /** 返回底层 Pull 结果（含 offset 与状态）。 */
     public PullResult getPullResult() {
         return pullResult;
     }
 
+    /** 设置底层 Pull 结果。 */
     public void setPullResult(PullResult pullResult) {
         this.pullResult = pullResult;
     }

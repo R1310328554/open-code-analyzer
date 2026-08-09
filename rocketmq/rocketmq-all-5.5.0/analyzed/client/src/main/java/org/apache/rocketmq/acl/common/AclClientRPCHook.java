@@ -23,18 +23,24 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+/**
+ * 客户端 ACL RPC 钩子：在请求发出前注入 AccessKey/SecurityToken
+ * 并计算 {@link SessionCredentials#SIGNATURE} 签名。
+ */
 public class AclClientRPCHook implements RPCHook {
     private final SessionCredentials sessionCredentials;
 
+    /** @param sessionCredentials ACL 会话凭证（accessKey/secretKey 等） */
     public AclClientRPCHook(SessionCredentials sessionCredentials) {
         this.sessionCredentials = sessionCredentials;
     }
 
+    /** 请求前写入凭证字段并附加 HMAC 签名。 */
     @Override
     public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
-        // Add AccessKey and SecurityToken into signature calculating.
+        // 将 AccessKey 与可选 SecurityToken 纳入签名字段
         request.addExtField(SessionCredentials.ACCESS_KEY, sessionCredentials.getAccessKey());
-        // The SecurityToken value is unnecessary,user can choose this one.
+        // SecurityToken 可选，临时凭证场景才需要
         if (sessionCredentials.getSecurityToken() != null) {
             request.addExtField(SessionCredentials.SECURITY_TOKEN, sessionCredentials.getSecurityToken());
         }
@@ -43,18 +49,21 @@ public class AclClientRPCHook implements RPCHook {
         request.addExtField(SessionCredentials.SIGNATURE, signature);
     }
 
+    /** 响应后钩子（当前无额外处理）。 */
     @Override
     public void doAfterResponse(String remoteAddr, RemotingCommand request, RemotingCommand response) {
 
     }
 
+    /** 将扩展字段排序为 TreeMap，供签名计算使用。 */
     protected SortedMap<String, String> parseRequestContent(RemotingCommand request) {
         request.makeCustomHeaderToNet();
         Map<String, String> extFields = request.getExtFields();
-        // Sort property
+        // 扩展字段按字典序排序以保证签名一致
         return new TreeMap<>(extFields);
     }
 
+    /** 返回绑定的会话凭证。 */
     public SessionCredentials getSessionCredentials() {
         return sessionCredentials;
     }
