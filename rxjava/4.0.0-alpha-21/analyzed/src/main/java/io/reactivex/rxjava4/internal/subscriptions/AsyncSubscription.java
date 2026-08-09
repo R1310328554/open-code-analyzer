@@ -22,10 +22,8 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * A subscription implementation that arbitrates exactly one other Subscription and can
- * hold a single disposable resource.
- *
- * <p>All methods are thread-safe.
+ * 异步 Subscription：仲裁单个 upstream Subscription，
+ * 并可持有单个 Disposable 资源；所有方法线程安全。
  */
 public final class AsyncSubscription extends AtomicLong implements Subscription, Disposable {
 
@@ -41,11 +39,13 @@ public final class AsyncSubscription extends AtomicLong implements Subscription,
         actual = new AtomicReference<>();
     }
 
+    /** 可选预置 Disposable 资源。 */
     public AsyncSubscription(Disposable resource) {
         this();
         this.resource.lazySet(resource);
     }
 
+    /** deferredRequest 转发或暂存 request。 */
     @Override
     public void request(long n) {
         SubscriptionHelper.deferredRequest(actual, this, n);
@@ -56,6 +56,7 @@ public final class AsyncSubscription extends AtomicLong implements Subscription,
         dispose();
     }
 
+    /** cancel actual 并 dispose resource。 */
     @Override
     public void dispose() {
         SubscriptionHelper.cancel(actual);
@@ -68,9 +69,9 @@ public final class AsyncSubscription extends AtomicLong implements Subscription,
     }
 
     /**
-     * Sets a new resource and disposes the currently held resource.
-     * @param r the new resource to set
-     * @return false if this AsyncSubscription has been cancelled/disposed
+     * 设置新 Disposable 并 dispose 旧资源。
+     * @param r 新资源
+     * @return 已 cancel/dispose 时 false
      * @see #replaceResource(Disposable)
      */
     public boolean setResource(Disposable r) {
@@ -78,17 +79,17 @@ public final class AsyncSubscription extends AtomicLong implements Subscription,
     }
 
     /**
-     * Replaces the currently held resource with the given new one without disposing the old.
-     * @param r the new resource to set
-     * @return false if this AsyncSubscription has been cancelled/disposed
+     * 替换 Disposable 资源，不 dispose 旧值。
+     * @param r 新资源
+     * @return 已 cancel/dispose 时 false
      */
     public boolean replaceResource(Disposable r) {
         return DisposableHelper.replace(resource, r);
     }
 
     /**
-     * Sets the given subscription if there isn't any subscription held.
-     * @param s the first and only subscription to set
+     * deferredSetOnce 设置唯一 upstream Subscription。
+     * @param s 首次设置的 Subscription
      */
     public void setSubscription(Subscription s) {
         SubscriptionHelper.deferredSetOnce(actual, this, s);

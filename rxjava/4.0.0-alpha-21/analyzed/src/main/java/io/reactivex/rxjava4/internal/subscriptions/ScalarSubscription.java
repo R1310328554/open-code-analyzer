@@ -22,23 +22,23 @@ import io.reactivex.rxjava4.annotations.Nullable;
 import io.reactivex.rxjava4.operators.QueueSubscription;
 
 /**
- * A Subscription that holds a constant value and emits it only when requested.
- * @param <T> the value type
+ * 标量 Subscription：持有常量 value，仅在首次 request 时 onNext+onComplete。
+ * @param <T> 元素类型
  */
 public final class ScalarSubscription<T> extends AtomicInteger implements QueueSubscription<T> {
 
     @Serial
     private static final long serialVersionUID = -3830916580126663321L;
-    /** The single value to emit, set to null. */
+    /** 待发射的常量值。 */
     final T value;
-    /** The actual subscriber. */
+    /** 下游 Subscriber。 */
     final Subscriber<? super T> subscriber;
 
-    /** No request has been issued yet. */
+    /** 状态：尚未 request。 */
     static final int NO_REQUEST = 0;
-    /** Request has been called.*/
+    /** 状态：已 request 并发射。 */
     static final int REQUESTED = 1;
-    /** Cancel has been called. */
+    /** 状态：已 cancel。 */
     static final int CANCELLED = 2;
 
     public ScalarSubscription(Subscriber<? super T> subscriber, T value) {
@@ -46,6 +46,7 @@ public final class ScalarSubscription<T> extends AtomicInteger implements QueueS
         this.value = value;
     }
 
+    /** 首次 request 时 onNext(value)+onComplete。 */
     @Override
     public void request(long n) {
         if (!SubscriptionHelper.validate(n)) {
@@ -62,6 +63,7 @@ public final class ScalarSubscription<T> extends AtomicInteger implements QueueS
 
     }
 
+    /** lazySet(CANCELLED)。 */
     @Override
     public void cancel() {
         lazySet(CANCELLED);
@@ -105,6 +107,7 @@ public final class ScalarSubscription<T> extends AtomicInteger implements QueueS
         lazySet(1);
     }
 
+    /** 支持 SYNC fusion。 */
     @Override
     public int requestFusion(int mode) {
         return mode & SYNC;

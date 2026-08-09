@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.concurrent.Flow.*;
 
 /**
- * Subscription implementation that ignores request but remembers the cancellation
- * which can be checked via isCancelled.
+ * 布尔取消 Subscription：request 仅做 validate，
+ * cancel 置 true，可通过 isCancelled 查询。
  */
 public final class BooleanSubscription extends AtomicBoolean implements Subscription {
 
@@ -32,14 +32,15 @@ public final class BooleanSubscription extends AtomicBoolean implements Subscrip
         SubscriptionHelper.validate(n);
     }
 
+    /** lazySet(true) 标记已取消。 */
     @Override
     public void cancel() {
         lazySet(true);
     }
 
     /**
-     * Returns true if this BooleanSubscription has been cancelled.
-     * @return true if this BooleanSubscription has been cancelled
+     * 是否已 cancel。
+     * @return 已取消则 true
      */
     public boolean isCancelled() {
         return get();

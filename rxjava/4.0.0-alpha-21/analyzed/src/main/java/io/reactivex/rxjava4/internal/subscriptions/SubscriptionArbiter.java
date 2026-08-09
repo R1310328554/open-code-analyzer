@@ -22,21 +22,18 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 
 /**
- * Arbitrates requests and cancellation between Subscriptions.
+ * Subscription 仲裁器：合并 missed request/produced/subscription 变更，
+ * 在 drainLoop 中串行应用到当前 actual Subscription。
  */
 public class SubscriptionArbiter extends AtomicInteger implements Subscription {
 
     @Serial
     private static final long serialVersionUID = -2189523197179400958L;
 
-    /**
-     * The current subscription which may null if no Subscriptions have been set.
-     */
+    /** 当前生效的 upstream Subscription，可为 null。 */
     Subscription actual;
 
-    /**
-     * The current outstanding request amount.
-     */
+    /** 当前累计未转发的 request 量。 */
     long requested;
 
     final AtomicReference<Subscription> missedSubscription;
@@ -51,6 +48,7 @@ public class SubscriptionArbiter extends AtomicInteger implements Subscription {
 
     protected boolean unbounded;
 
+    /** @param cancelOnReplace 替换 Subscription 时是否 cancel 旧值 */
     public SubscriptionArbiter(boolean cancelOnReplace) {
         this.cancelOnReplace = cancelOnReplace;
         missedSubscription = new AtomicReference<>();
@@ -59,8 +57,8 @@ public class SubscriptionArbiter extends AtomicInteger implements Subscription {
     }
 
     /**
-     * Atomically sets a new subscription.
-     * @param s the subscription to set, not null (verified)
+     * 设置新 Subscription；有积压 request 则转发。
+     * @param s 新 Subscription，非 null（已校验）
      */
     public final void setSubscription(Subscription s) {
         if (cancelled) {
@@ -99,6 +97,7 @@ public class SubscriptionArbiter extends AtomicInteger implements Subscription {
         drain();
     }
 
+    /** 累加 request 并 drain；达到 MAX_VALUE 时 unbounded。 */
     @Override
     public final void request(long n) {
         if (SubscriptionHelper.validate(n)) {
@@ -134,6 +133,7 @@ public class SubscriptionArbiter extends AtomicInteger implements Subscription {
         }
     }
 
+    /** 扣减已生产数量；负值时 reportMoreProduced。 */
     public final void produced(long n) {
         if (unbounded) {
             return;
@@ -164,6 +164,7 @@ public class SubscriptionArbiter extends AtomicInteger implements Subscription {
         drain();
     }
 
+    /** 置 cancelled 并 drain 取消 actual/missed。 */
     @Override
     public void cancel() {
         if (!cancelled) {
@@ -180,6 +181,7 @@ public class SubscriptionArbiter extends AtomicInteger implements Subscription {
         drainLoop();
     }
 
+    /** 合并 missed 字段并 request/cancel 当前 actual。 */
     final void drainLoop() {
         int missed = 1;
 
@@ -258,16 +260,16 @@ public class SubscriptionArbiter extends AtomicInteger implements Subscription {
     }
 
     /**
-     * Returns true if the arbiter runs in unbounded mode.
-     * @return true if the arbiter runs in unbounded mode
+     * 是否已进入无界 request 模式。
+     * @return unbounded 则 true
      */
     public final boolean isUnbounded() {
         return unbounded;
     }
 
     /**
-     * Returns true if the arbiter has been cancelled.
-     * @return true if the arbiter has been cancelled
+     * 是否已 cancel。
+     * @return 已取消则 true
      */
     public final boolean isCancelled() {
         return cancelled;

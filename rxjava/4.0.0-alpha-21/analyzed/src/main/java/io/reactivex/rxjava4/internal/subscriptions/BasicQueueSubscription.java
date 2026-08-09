@@ -19,15 +19,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import io.reactivex.rxjava4.operators.QueueSubscription;
 
 /**
- * Base class extending AtomicLong (wip or request accounting) and QueueSubscription (fusion).
+ * 基于 AtomicLong（request 累计）的 {@link QueueSubscription} 基类；
+ * offer 方法禁止调用。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public abstract class BasicQueueSubscription<T> extends AtomicLong implements QueueSubscription<T> {
 
     @Serial
     private static final long serialVersionUID = -6671519529404341862L;
 
+    /** 不支持入队，调用即抛 UnsupportedOperationException。 */
     @Override
     public final boolean offer(T e) {
         throw new UnsupportedOperationException("Should not be called!");

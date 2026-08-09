@@ -27,6 +27,10 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.observers.LambdaConsumerIntrospection;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 基于回调的 Flowable 订阅者：同时实现 {@link Subscription} 与 {@link Disposable}，
+ * 将 onNext/onError/onComplete/onSubscribe 委托给对应 {@link Consumer}/{@link Action}。
+ */
 public final class LambdaSubscriber<T> extends AtomicReference<Subscription>
         implements FlowableSubscriber<T>, Subscription, Disposable, LambdaConsumerIntrospection {
 
@@ -37,6 +41,7 @@ public final class LambdaSubscriber<T> extends AtomicReference<Subscription>
     final Action onComplete;
     final Consumer<? super Subscription> onSubscribe;
 
+    /** @param onNext/onError/onComplete/onSubscribe 各阶段回调 */
     public LambdaSubscriber(Consumer<? super T> onNext, Consumer<? super Throwable> onError,
             Action onComplete,
             Consumer<? super Subscription> onSubscribe) {
@@ -47,6 +52,7 @@ public final class LambdaSubscriber<T> extends AtomicReference<Subscription>
         this.onSubscribe = onSubscribe;
     }
 
+    /** setOnce 成功后调用 onSubscribe.accept(this)。 */
     @Override
     public void onSubscribe(Subscription s) {
         if (SubscriptionHelper.setOnce(this, s)) {
@@ -60,6 +66,7 @@ public final class LambdaSubscriber<T> extends AtomicReference<Subscription>
         }
     }
 
+    /** 未 dispose 时 accept(t)；异常则 cancel 并 onError。 */
     @Override
     public void onNext(T t) {
         if (!isDisposed()) {
@@ -73,6 +80,7 @@ public final class LambdaSubscriber<T> extends AtomicReference<Subscription>
         }
     }
 
+    /** 置 CANCELLED 后调用 onError；已取消则上报 RxJavaPlugins。 */
     @Override
     public void onError(Throwable t) {
         if (get() != SubscriptionHelper.CANCELLED) {
@@ -88,6 +96,7 @@ public final class LambdaSubscriber<T> extends AtomicReference<Subscription>
         }
     }
 
+    /** 置 CANCELLED 后运行 onComplete.run()。 */
     @Override
     public void onComplete() {
         if (get() != SubscriptionHelper.CANCELLED) {
@@ -101,26 +110,31 @@ public final class LambdaSubscriber<T> extends AtomicReference<Subscription>
         }
     }
 
+    /** 等价于 cancel()。 */
     @Override
     public void dispose() {
         cancel();
     }
 
+    /** 当前 Subscription 是否为 CANCELLED。 */
     @Override
     public boolean isDisposed() {
         return get() == SubscriptionHelper.CANCELLED;
     }
 
+    /** 转发 request 至上游 Subscription。 */
     @Override
     public void request(long n) {
         get().request(n);
     }
 
+    /** 调用 SubscriptionHelper.cancel(this)。 */
     @Override
     public void cancel() {
         SubscriptionHelper.cancel(this);
     }
 
+    /** 是否提供了非默认 ON_ERROR_MISSING 的 onError 回调。 */
     @Override
     public boolean hasCustomOnError() {
         return onError != Functions.ON_ERROR_MISSING;

@@ -23,6 +23,10 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 
+/**
+ * 订阅者资源包装：转发 Flowable 事件至 downstream，
+ * 同时持有 upstream Subscription 与可 dispose 的 Disposable 资源。
+ */
 public final class SubscriberResourceWrapper<T> extends AtomicReference<Disposable> implements FlowableSubscriber<T>, Disposable, Subscription {
 
     @Serial
@@ -32,10 +36,12 @@ public final class SubscriberResourceWrapper<T> extends AtomicReference<Disposab
 
     final AtomicReference<Subscription> upstream = new AtomicReference<>();
 
+    /** @param downstream 目标 Subscriber */
     public SubscriberResourceWrapper(Subscriber<? super T> downstream) {
         this.downstream = downstream;
     }
 
+    /** setOnce 成功后向下游传递 this 作为 Subscription。 */
     @Override
     public void onSubscribe(Subscription s) {
         if (SubscriptionHelper.setOnce(upstream, s)) {
@@ -48,18 +54,21 @@ public final class SubscriberResourceWrapper<T> extends AtomicReference<Disposab
         downstream.onNext(t);
     }
 
+    /** dispose 资源后转发 onError。 */
     @Override
     public void onError(Throwable t) {
         DisposableHelper.dispose(this);
         downstream.onError(t);
     }
 
+    /** dispose 资源后转发 onComplete。 */
     @Override
     public void onComplete() {
         DisposableHelper.dispose(this);
         downstream.onComplete();
     }
 
+    /** validate 后转发 request 至 upstream。 */
     @Override
     public void request(long n) {
         if (SubscriptionHelper.validate(n)) {
@@ -67,6 +76,7 @@ public final class SubscriberResourceWrapper<T> extends AtomicReference<Disposab
         }
     }
 
+    /** cancel upstream 并 DisposableHelper.dispose 资源。 */
     @Override
     public void dispose() {
         SubscriptionHelper.cancel(upstream);
@@ -79,11 +89,13 @@ public final class SubscriberResourceWrapper<T> extends AtomicReference<Disposab
         return upstream.get() == SubscriptionHelper.CANCELLED;
     }
 
+    /** 等价于 dispose()。 */
     @Override
     public void cancel() {
         dispose();
     }
 
+    /** 设置 Disposable 资源（DisposableHelper.set）。 */
     public void setResource(Disposable resource) {
         DisposableHelper.set(this, resource);
     }

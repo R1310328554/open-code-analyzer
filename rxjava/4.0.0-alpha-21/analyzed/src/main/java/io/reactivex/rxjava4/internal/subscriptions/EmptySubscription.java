@@ -19,10 +19,11 @@ import io.reactivex.rxjava4.annotations.Nullable;
 import io.reactivex.rxjava4.operators.QueueSubscription;
 
 /**
- * An empty subscription that does nothing other than validates the request amount.
+ * 空 Subscription 单例：request 仅 validate，cancel 无操作；
+ * 用于 error/complete 辅助方法向下游传递占位 Subscription。
  */
 public enum EmptySubscription implements QueueSubscription<Object> {
-    /** A singleton, stateless instance. */
+    /** 无状态单例 INSTANCE。 */
     INSTANCE;
 
     @Override
@@ -41,14 +42,10 @@ public enum EmptySubscription implements QueueSubscription<Object> {
     }
 
     /**
-     * Sets the empty subscription instance on the subscriber and then
-     * calls onError with the supplied error.
-     *
-     * <p>Make sure this is only called if the subscriber hasn't received a
-     * subscription already (there is no way of telling this).
-     *
-     * @param e the error to deliver to the subscriber
-     * @param s the target subscriber
+     * onSubscribe(INSTANCE) 后 onError(e)。
+     * <p>仅应在下游尚未收到 Subscription 时调用。
+     * @param e 错误
+     * @param s 目标 Subscriber
      */
     public static void error(Throwable e, Subscriber<?> s) {
         s.onSubscribe(INSTANCE);
@@ -56,13 +53,9 @@ public enum EmptySubscription implements QueueSubscription<Object> {
     }
 
     /**
-     * Sets the empty subscription instance on the subscriber and then
-     * calls onComplete.
-     *
-     * <p>Make sure this is only called if the subscriber hasn't received a
-     * subscription already (there is no way of telling this).
-     *
-     * @param s the target subscriber
+     * onSubscribe(INSTANCE) 后 onComplete。
+     * <p>仅应在下游尚未收到 Subscription 时调用。
+     * @param s 目标 Subscriber
      */
     public static void complete(Subscriber<?> s) {
         s.onSubscribe(INSTANCE);
@@ -85,6 +78,7 @@ public enum EmptySubscription implements QueueSubscription<Object> {
         // nothing to do
     }
 
+    /** 接受 ASYNC fusion（后续仍会 onComplete/onError）。 */
     @Override
     public int requestFusion(int mode) {
         return mode & ASYNC; // accept async mode: an onComplete or onError will be signaled after anyway

@@ -23,31 +23,31 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 
 /**
- * Relays signals from upstream according to downstream requests and allows
- * signaling a final value followed by onComplete in a backpressure-aware manner.
+ * 单值后置完成订阅者：按下游 request 转发上游信号，
+ * 支持在背压感知下发射最终值后 onComplete（如 reduce 末元素）。
  *
- * @param <T> the input value type
- * @param <R> the output value type
+ * @param <T> 上游输入类型
+ * @param <R> 下游输出类型
  */
 public abstract class SinglePostCompleteSubscriber<T, R> extends AtomicLong implements FlowableSubscriber<T>, Subscription {
     @Serial
     private static final long serialVersionUID = 7917814472626990048L;
 
-    /** The downstream consumer. */
+    /** 下游 Subscriber。 */
     protected final Subscriber<? super R> downstream;
 
-    /** The upstream subscription. */
+    /** 上游 Subscription。 */
     protected Subscription upstream;
 
-    /** The last value stored in case there is no request for it. */
+    /** 尚无 request 时暂存的最终值。 */
     protected R value;
 
-    /** Number of values emitted so far. */
+    /** 已向上游产生的元素计数（用于 produced 扣减）。 */
     protected long produced;
 
-    /** Masks out the 2^63 bit indicating a completed state. */
+    /** 掩码：最高位表示 complete 状态。 */
     static final long COMPLETE_MASK = Long.MIN_VALUE;
-    /** Masks out the lower 63 bit holding the current request amount. */
+    /** 掩码：低 63 位为当前 request 累计量。 */
     static final long REQUEST_MASK = Long.MAX_VALUE;
 
     public SinglePostCompleteSubscriber(Subscriber<? super R> downstream) {
@@ -63,8 +63,8 @@ public abstract class SinglePostCompleteSubscriber<T, R> extends AtomicLong impl
     }
 
     /**
-     * Signals the given value and an onComplete if the downstream is ready to receive the final value.
-     * @param n the value to emit
+     * 信号最终值：有 request 则立即 onNext+onComplete，否则暂存 value 并置 COMPLETE_MASK。
+     * @param n 待发射的最终值
      */
     protected final void complete(R n) {
         long p = produced;
@@ -93,13 +93,14 @@ public abstract class SinglePostCompleteSubscriber<T, R> extends AtomicLong impl
     }
 
     /**
-     * Called in case of multiple calls to complete.
-     * @param n the value dropped
+     * 多次 complete 时丢弃的值回调（默认无操作）。
+     * @param n 被丢弃的值
      */
     protected void onDrop(R n) {
         // default is no-op
     }
 
+    /** 合并 request 至 AtomicLong；若已 complete 则补发 value+onComplete。 */
     @Override
     public final void request(long n) {
         if (SubscriptionHelper.validate(n)) {
@@ -121,6 +122,7 @@ public abstract class SinglePostCompleteSubscriber<T, R> extends AtomicLong impl
         }
     }
 
+    /** 取消上游 Subscription。 */
     @Override
     public void cancel() {
         upstream.cancel();

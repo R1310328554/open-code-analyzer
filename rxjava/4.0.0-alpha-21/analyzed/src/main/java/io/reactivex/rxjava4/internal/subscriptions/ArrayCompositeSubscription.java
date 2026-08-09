@@ -21,26 +21,26 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 
 /**
- * A composite disposable with a fixed number of slots.
- *
- * <p>Note that since the implementation leaks the methods of AtomicReferenceArray, one must be
- * careful to only call setResource, replaceResource and dispose on it. All other methods may lead to undefined behavior
- * and should be used by internal means only.
+ * 固定槽位的 Subscription 复合容器（继承 AtomicReferenceArray）。
+ * <p>
+ * 对外仅应调用 setResource/replaceResource/dispose；
+ * 直接调用数组其它方法可能导致未定义行为。
  */
 public final class ArrayCompositeSubscription extends AtomicReferenceArray<Subscription> implements Disposable {
 
     @Serial
     private static final long serialVersionUID = 2746389416410565408L;
 
+    /** @param capacity 槽位数量 */
     public ArrayCompositeSubscription(int capacity) {
         super(capacity);
     }
 
     /**
-     * Sets the resource at the specified index and disposes the old resource.
-     * @param index the index of the resource to set
-     * @param resource the new resource
-     * @return true if the resource has been set, false if the composite has been disposed
+     * 在 index 设置 Subscription 并 cancel 旧值。
+     * @param index 槽位索引
+     * @param resource 新 Subscription
+     * @return 成功 true；已 dispose（CANCELLED）则 false
      */
     public boolean setResource(int index, Subscription resource) {
         for (;;) {
@@ -61,10 +61,10 @@ public final class ArrayCompositeSubscription extends AtomicReferenceArray<Subsc
     }
 
     /**
-     * Replaces the resource at the specified index and returns the old resource.
-     * @param index the index of the resource to replace
-     * @param resource the new resource
-     * @return the old resource, can be null
+     * 替换 index 处 Subscription 并返回旧值（不 cancel 旧值）。
+     * @param index 槽位索引
+     * @param resource 新 Subscription
+     * @return 旧 Subscription，可为 null
      */
     public Subscription replaceResource(int index, Subscription resource) {
         for (;;) {
@@ -81,6 +81,7 @@ public final class ArrayCompositeSubscription extends AtomicReferenceArray<Subsc
         }
     }
 
+    /** 将所有槽位置 CANCELLED 并 cancel 各 Subscription。 */
     @Override
     public void dispose() {
         if (get(0) != SubscriptionHelper.CANCELLED) {
@@ -97,6 +98,7 @@ public final class ArrayCompositeSubscription extends AtomicReferenceArray<Subsc
         }
     }
 
+    /** 槽位 0 是否为 CANCELLED。 */
     @Override
     public boolean isDisposed() {
         return get(0) == SubscriptionHelper.CANCELLED;

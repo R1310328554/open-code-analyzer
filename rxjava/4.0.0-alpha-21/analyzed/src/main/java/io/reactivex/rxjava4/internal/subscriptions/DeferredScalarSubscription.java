@@ -20,59 +20,51 @@ import io.reactivex.rxjava4.annotations.*;
 import java.io.Serial;
 
 /**
- * A subscription that signals a single value eventually.
+ * 延迟标量 Subscription：最终在 request 后发射单个值。
  * <p>
- * Note that the class leaks all methods of {@link java.util.concurrent.atomic.AtomicLong}.
- * Use {@link #complete(Object)} to signal the single value.
- * <p>
- * This atomic integer stores a bit field:<br>
- * bit 0: indicates that there is a value available<br>
- * bit 1: indicates that there was a request made<br>
- * bit 2: indicates there was a cancellation, exclusively set<br>
- * bit 3: indicates in fusion mode but no value yet, exclusively set<br>
- * bit 4: indicates in fusion mode and value is available, exclusively set<br>
- * bit 5: indicates in fusion mode and value has been consumed, exclusively set<br>
- * Where exclusively set means any other bits are 0 when that bit is set.
- * @param <T> the value type
+ * 通过 {@link #complete(Object)} 设置值；AtomicInteger 位域表示
+ * 有无 value/request/cancel 及 fusion 状态（FUSED_*）。
+ * @param <T> 元素类型
  */
 public class DeferredScalarSubscription<@NonNull T> extends BasicIntQueueSubscription<T> {
 
     @Serial
     private static final long serialVersionUID = -2151279923272604993L;
 
-    /** The Subscriber to emit the value to. */
+    /** 接收单值的下游 Subscriber。 */
     protected final Subscriber<? super T> downstream;
 
-    /** The value is stored here if there is no request yet or in fusion mode. */
+    /** 尚无 request 或 fusion 模式下暂存的值。 */
     protected T value;
 
-    /** Indicates this Subscription has no value and not requested yet. */
+    /** 状态：无 value、无 request。 */
     static final int NO_REQUEST_NO_VALUE = 0;
-    /** Indicates this Subscription has a value but not requested yet. */
+    /** 状态：有 value、无 request。 */
     static final int NO_REQUEST_HAS_VALUE = 1;
-    /** Indicates this Subscription has been requested but there is no value yet. */
+    /** 状态：有 request、无 value。 */
     static final int HAS_REQUEST_NO_VALUE = 2;
-    /** Indicates this Subscription has both request and value. */
+    /** 状态：有 request 且有 value，可立即发射。 */
     static final int HAS_REQUEST_HAS_VALUE = 3;
 
-    /** Indicates the Subscription has been cancelled. */
+    /** 状态：已 cancel。 */
     static final int CANCELLED = 4;
 
-    /** Indicates this Subscription is in fusion mode and is currently empty. */
+    /** fusion：空队列，等待 complete。 */
     static final int FUSED_EMPTY = 8;
-    /** Indicates this Subscription is in fusion mode and has a value. */
+    /** fusion：已有值，poll 可取。 */
     static final int FUSED_READY = 16;
-    /** Indicates this Subscription is in fusion mode and its value has been consumed. */
+    /** fusion：值已被 poll 消费。 */
     static final int FUSED_CONSUMED = 32;
 
     /**
-     * Creates a DeferredScalarSubscription by wrapping the given Subscriber.
-     * @param downstream the Subscriber to wrap, not null (not verified)
+     * 包装下游 Subscriber。
+     * @param downstream 目标 Subscriber（未校验非 null）
      */
     public DeferredScalarSubscription(Subscriber<? super T> downstream) {
         this.downstream = downstream;
     }
 
+    /** validate 后按状态机发射 value+onComplete 或置 HAS_REQUEST。 */
     @Override
     public final void request(long n) {
         if (SubscriptionHelper.validate(n)) {
@@ -105,10 +97,9 @@ public class DeferredScalarSubscription<@NonNull T> extends BasicIntQueueSubscri
     }
 
     /**
-     * Completes this subscription by indicating the given value should
-     * be emitted when the first request arrives.
-     * <p>Make sure this is called exactly once.
-     * @param v the value to signal, not null (not validated)
+     * 设置单值；有 request 则立即 onNext+onComplete，否则暂存。
+     * <p>应仅调用一次。
+     * @param v 待发射的值（未校验非 null）
      */
     public final void complete(T v) {
         int state = get();
@@ -151,6 +142,7 @@ public class DeferredScalarSubscription<@NonNull T> extends BasicIntQueueSubscri
         }
     }
 
+    /** 支持 ASYNC fusion 时置 FUSED_EMPTY。 */
     @Override
     public final int requestFusion(int mode) {
         if ((mode & ASYNC) != 0) {
@@ -160,6 +152,7 @@ public class DeferredScalarSubscription<@NonNull T> extends BasicIntQueueSubscri
         return NONE;
     }
 
+    /** FUSED_READY 时取出 value 并置 FUSED_CONSUMED。 */
     @Nullable
     @Override
     public final T poll() {
@@ -183,6 +176,7 @@ public class DeferredScalarSubscription<@NonNull T> extends BasicIntQueueSubscri
         value = null;
     }
 
+    /** 置 CANCELLED 并清空 value。 */
     @Override
     public void cancel() {
         set(CANCELLED);
@@ -198,9 +192,8 @@ public class DeferredScalarSubscription<@NonNull T> extends BasicIntQueueSubscri
     }
 
     /**
-     * Atomically sets a cancelled state and returns true if
-     * the current thread did it successfully.
-     * @return true if the current thread cancelled
+     * 原子置 cancel 并返回是否由当前线程首次取消。
+     * @return 当前线程成功取消则 true
      */
     public final boolean tryCancel() {
         return getAndSet(CANCELLED) != CANCELLED;

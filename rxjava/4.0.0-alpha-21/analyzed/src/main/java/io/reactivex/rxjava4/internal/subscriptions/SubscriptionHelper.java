@@ -23,12 +23,13 @@ import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Utility methods to validate Subscriptions in the various onSubscribe calls.
+ * Subscription 校验与原子设置工具：validate/set/setOnce/replace/cancel
+ * 及 deferredRequest/deferredSetOnce 等背压辅助方法。
  */
 public enum SubscriptionHelper implements Subscription {
     /**
-     * Represents a cancelled Subscription.
-     * <p>Don't leak this instance!
+     * 表示已取消的 Subscription 哨兵实例。
+     * <p>勿向外泄漏此单例！
      */
     CANCELLED
     ;
@@ -44,11 +45,10 @@ public enum SubscriptionHelper implements Subscription {
     }
 
     /**
-     * Verifies that current is null, next is not null, otherwise signals errors
-     * to the RxJavaPlugins and returns false.
-     * @param current the current Subscription, expected to be null
-     * @param next the next Subscription, expected to be non-null
-     * @return true if the validation succeeded
+     * 校验 current 为 null 且 next 非 null；否则上报错误。
+     * @param current 当前 Subscription，应为 null
+     * @param next 新 Subscription，应非 null
+     * @return 校验通过则 true
      */
     public static boolean validate(Subscription current, Subscription next) {
         if (next == null) {
@@ -63,18 +63,15 @@ public enum SubscriptionHelper implements Subscription {
         return true;
     }
 
-    /**
-     * Reports that the subscription is already set to the RxJavaPlugins error handler,
-     * which is an indication of a onSubscribe management bug.
-     */
+    /** 上报“Subscription already set”协议违规。 */
     public static void reportSubscriptionSet() {
         RxJavaPlugins.onError(new ProtocolViolationException("Subscription already set!"));
     }
 
     /**
-     * Validates that the n is positive.
-     * @param n the request amount
-     * @return false if n is non-positive.
+     * 校验 request 量 n 为正数。
+     * @param n request 量
+     * @return n 非正则 false
      */
     public static boolean validate(long n) {
         if (n <= 0) {
@@ -85,21 +82,18 @@ public enum SubscriptionHelper implements Subscription {
     }
 
     /**
-     * Reports to the plugin error handler that there were more values produced than requested, which
-     * is a sign of internal backpressure handling bug.
-     * @param n the overproduction amount
+     * 上报生产量超过 request 的协议违规。
+     * @param n 超产量
      */
     public static void reportMoreProduced(long n) {
         RxJavaPlugins.onError(new ProtocolViolationException("More produced than requested: " + n));
     }
 
     /**
-     * Atomically sets the subscription on the field and cancels the
-     * previous subscription if any.
-     * @param field the target field to set the new subscription on
-     * @param s the new subscription
-     * @return true if the operation succeeded, false if the target field
-     * holds the {@link #CANCELLED} instance.
+     * CAS 设置 Subscription 并 cancel 旧值。
+     * @param field 目标 AtomicReference
+     * @param s 新 Subscription
+     * @return 成功 true；field 已为 CANCELLED 则 false
      * @see #replace(AtomicReference, Subscription)
      */
     public static boolean set(AtomicReference<Subscription> field, Subscription s) {
@@ -121,12 +115,10 @@ public enum SubscriptionHelper implements Subscription {
     }
 
     /**
-     * Atomically sets the subscription on the field if it is still null.
-     * <p>If the field is not null and doesn't contain the {@link #CANCELLED}
-     * instance, the {@link #reportSubscriptionSet()} is called.
-     * @param field the target field
-     * @param s the new subscription to set
-     * @return true if the operation succeeded, false if the target field was not null.
+     * 仅在 field 为 null 时 CAS 设置；重复设置则 reportSubscriptionSet。
+     * @param field 目标 AtomicReference
+     * @param s 新 Subscription
+     * @return 首次设置成功则 true
      */
     public static boolean setOnce(AtomicReference<Subscription> field, Subscription s) {
         Objects.requireNonNull(s, "s is null");
@@ -141,12 +133,10 @@ public enum SubscriptionHelper implements Subscription {
     }
 
     /**
-     * Atomically sets the subscription on the field but does not
-     * cancel the previous subscription.
-     * @param field the target field to set the new subscription on
-     * @param s the new subscription
-     * @return true if the operation succeeded, false if the target field
-     * holds the {@link #CANCELLED} instance.
+     * CAS 替换 Subscription，不 cancel 旧值。
+     * @param field 目标 AtomicReference
+     * @param s 新 Subscription
+     * @return 成功 true；已为 CANCELLED 则 false
      * @see #set(AtomicReference, Subscription)
      */
     public static boolean replace(AtomicReference<Subscription> field, Subscription s) {
@@ -165,12 +155,9 @@ public enum SubscriptionHelper implements Subscription {
     }
 
     /**
-     * Atomically swaps in the common cancelled subscription instance
-     * and cancels the previous subscription if any.
-     * @param field the target field to dispose the contents of
-     * @return true if the swap from the non-cancelled instance to the
-     * common cancelled instance happened in the caller's thread (allows
-     * further one-time actions).
+     * getAndSet(CANCELLED) 并 cancel 原 Subscription。
+     * @param field 目标 AtomicReference
+     * @return 由调用线程完成 swap 则 true
      */
     public static boolean cancel(AtomicReference<Subscription> field) {
         Subscription current = field.get();
@@ -187,12 +174,11 @@ public enum SubscriptionHelper implements Subscription {
     }
 
     /**
-     * Atomically sets the new Subscription on the field and requests any accumulated amount
-     * from the requested field.
-     * @param field the target field for the new Subscription
-     * @param requested the current requested amount
-     * @param s the new Subscription, not null (verified)
-     * @return true if the Subscription was set the first time
+     * setOnce 后 flush requested 中积压的 request。
+     * @param field Subscription 字段
+     * @param requested 暂存 request 的 AtomicLong
+     * @param s 新 Subscription，非 null
+     * @return 首次设置成功则 true
      */
     public static boolean deferredSetOnce(AtomicReference<Subscription> field, AtomicLong requested,
             Subscription s) {
@@ -207,11 +193,10 @@ public enum SubscriptionHelper implements Subscription {
     }
 
     /**
-     * Atomically requests from the Subscription in the field if not null, otherwise accumulates
-     * the request amount in the requested field to be requested once the field is set to non-null.
-     * @param field the target field that may already contain a Subscription
-     * @param requested the current requested amount
-     * @param n the request amount, positive (verified)
+     * field 有 Subscription 则直接 request，否则累加至 requested。
+     * @param field 可能已持有 Subscription 的字段
+     * @param requested 暂存 request
+     * @param n 本次 request 量，为正
      */
     public static void deferredRequest(AtomicReference<Subscription> field, AtomicLong requested, long n) {
         Subscription s = field.get();
@@ -233,15 +218,11 @@ public enum SubscriptionHelper implements Subscription {
     }
 
     /**
-     * Atomically sets the subscription on the field if it is still null and issues a positive request
-     * to the given {@link Subscription}.
-     * <p>
-     * If the field is not null and doesn't contain the {@link #CANCELLED}
-     * instance, the {@link #reportSubscriptionSet()} is called.
-     * @param field the target field
-     * @param s the new subscription to set
-     * @param request the amount to request, positive (not verified)
-     * @return true if the operation succeeded, false if the target field was not null.
+     * setOnce 后立即 request 指定数量。
+     * @param field 目标字段
+     * @param s 新 Subscription
+     * @param request 初始 request 量
+     * @return 首次设置成功则 true
      * @since 2.1.11
      */
     public static boolean setOnce(AtomicReference<Subscription> field, Subscription s, long request) {

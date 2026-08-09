@@ -23,17 +23,14 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.*;
 
 /**
- * Ensures that the event flow between the upstream and downstream follow
- * the Reactive-Streams 1.0 specification by honoring the 3 additional rules
- * (which are omitted in standard operators due to performance reasons).
+ * 严格 Reactive-Streams 合规包装：强制执行标准算子为性能省略的附加规则。
  * <ul>
- * <li>§1.3: onNext should not be called concurrently until onSubscribe returns</li>
- * <li>§2.3: onError or onComplete must not call cancel</li>
- * <li>§3.9: negative requests should emit an onError(IllegalArgumentException)</li>
+ * <li>§1.3：onSubscribe 返回前不得并发 onNext</li>
+ * <li>§2.3：onError/onComplete 内不得 cancel</li>
+ * <li>§3.9：负 request 触发 onError(IllegalArgumentException)</li>
  * </ul>
- * In addition, if rule §2.12 (onSubscribe must be called at most once) is violated,
- * the sequence is cancelled an onError(IllegalStateException) is emitted.
- * @param <T> the value type
+ * 违反 §2.12（onSubscribe 至多一次）时 cancel 并 onError(IllegalStateException)。
+ * @param <T> 元素类型
  * @since 2.0.7
  */
 public class StrictSubscriber<T>
@@ -63,6 +60,7 @@ implements FlowableSubscriber<T>, Subscription {
         this.once = new AtomicBoolean();
     }
 
+    /** n<=0 时 cancel 并 onError；否则 deferredRequest 转发。 */
     @Override
     public void request(long n) {
         if (n <= 0) {
@@ -73,6 +71,7 @@ implements FlowableSubscriber<T>, Subscription {
         }
     }
 
+    /** 未完成时 cancel 上游。 */
     @Override
     public void cancel() {
         if (!done) {
@@ -80,6 +79,7 @@ implements FlowableSubscriber<T>, Subscription {
         }
     }
 
+    /** once CAS 成功则 deferredSetOnce；重复 onSubscribe 违反 §2.12。 */
     @Override
     public void onSubscribe(Subscription s) {
         if (once.compareAndSet(false, true)) {
@@ -94,17 +94,20 @@ implements FlowableSubscriber<T>, Subscription {
         }
     }
 
+    /** 通过 HalfSerializer 串行化向下游 onNext。 */
     @Override
     public void onNext(T t) {
         HalfSerializer.onNext(downstream, t, this, error);
     }
 
+    /** 置 done 后 HalfSerializer.onError（不调用 cancel）。 */
     @Override
     public void onError(Throwable t) {
         done = true;
         HalfSerializer.onError(downstream, t, this, error);
     }
 
+    /** 置 done 后 HalfSerializer.onComplete。 */
     @Override
     public void onComplete() {
         done = true;

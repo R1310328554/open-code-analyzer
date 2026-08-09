@@ -20,15 +20,17 @@ import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.operators.QueueSubscription;
 
 /**
- * Base class extending AtomicInteger (wip or request accounting) and QueueSubscription (fusion).
+ * 基于 AtomicInteger（wip 或状态位）的 {@link QueueSubscription} 基类，
+ * 用于 fusion 场景；offer 方法禁止调用。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public abstract class BasicIntQueueSubscription<@NonNull T> extends AtomicInteger implements QueueSubscription<T> {
 
     @Serial
     private static final long serialVersionUID = -6671519529404341862L;
 
+    /** 不支持入队，调用即抛 UnsupportedOperationException。 */
     @Override
     public final boolean offer(T e) {
         throw new UnsupportedOperationException("Should not be called!");
