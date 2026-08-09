@@ -18,6 +18,9 @@ package org.redisson.api.search.aggregate;
 import java.util.Arrays;
 
 /**
+ * 聚合分组（GROUP BY）配置入口。
+ * <p>
+ * 指定分组字段并挂载归约器，供 {@link AggregationBaseOptions#groupBy(GroupBy...)} 使用。
  *
  * @author Nikita Koksharov
  *
@@ -25,20 +28,20 @@ import java.util.Arrays;
 public interface GroupBy {
 
     /**
-     * Defines field names used to group.
+     * 指定用于分组的字段名。
      *
-     * @param names field names
-     * @return config object
+     * @param names 分组字段名
+     * @return 分组参数对象
      */
     static GroupBy fieldNames(String... names) {
         return new GroupParams(Arrays.asList(names));
     }
 
     /**
-     * Defines reducer objects.
+     * 为当前分组追加归约器。
      *
-     * @param reducers reducer objects
-     * @return
+     * @param reducers 归约器实例
+     * @return 当前分组配置
      */
     GroupBy reducers(Reducer... reducers);
 

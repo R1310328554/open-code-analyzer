@@ -16,7 +16,9 @@
 package org.redisson.api.search.index;
 
 /**
- * Field index for {@link org.redisson.api.RSearch#createIndex(String, IndexOptions, FieldIndex...)} method
+ * 搜索索引字段定义工厂，供 {@link org.redisson.api.RSearch#createIndex(String, IndexOptions, FieldIndex...)} 使用。
+ * <p>
+ * 提供数值、标签、文本、向量及地理等字段类型的静态构造入口。
  *
  * @author Nikita Koksharov
  *
@@ -24,80 +26,80 @@ package org.redisson.api.search.index;
 public interface FieldIndex {
 
     /**
-     * Returns numeric field index
+     * 创建数值字段索引。
      *
-     * @param fieldName field name
-     * @return options object
+     * @param fieldName 字段名
+     * @return 数值索引选项
      */
     static NumericIndex numeric(String fieldName) {
         return new NumericIndexParams(fieldName);
     }
 
     /**
-     * Returns tag field index
+     * 创建标签（TAG）字段索引。
      *
-     * @param fieldName field name
-     * @return options object
+     * @param fieldName 字段名
+     * @return 标签索引选项
      */
     static TagIndex tag(String fieldName) {
         return new TagIndexParams(fieldName);
     }
 
     /**
-     * Returns text field index
+     * 创建全文（TEXT）字段索引。
      *
-     * @param fieldName field name
-     * @return options object
+     * @param fieldName 字段名
+     * @return 文本索引选项
      */
     static TextIndex text(String fieldName) {
         return new TextIndexParams(fieldName);
     }
 
     /**
-     * Returns vector field index which uses FLAT indexing method
+     * 创建采用 FLAT 算法的向量字段索引。
      *
-     * @param fieldName field name
-     * @return options object
+     * @param fieldName 字段名
+     * @return FLAT 向量索引选项
      */
     static FlatVectorIndex flatVector(String fieldName) {
         return new FlatVectorIndexParams(fieldName);
     }
 
     /**
-     * Returns vector field index which uses HNSW indexing method
+     * 创建采用 HNSW 算法的向量字段索引。
      *
-     * @param fieldName field name
-     * @return options object
+     * @param fieldName 字段名
+     * @return HNSW 向量索引选项
      */
     static HNSWVectorIndex hnswVector(String fieldName) {
         return new HNSWVectorIndexParams(fieldName);
     }
 
     /**
-     * Returns vector field index which uses SVS-VAMANA indexing method
+     * 创建采用 SVS-VAMANA 算法的向量字段索引。
      *
-     * @param fieldName field name
-     * @return options object
+     * @param fieldName 字段名
+     * @return SVS-VAMANA 向量索引选项
      */
     static SVSVamanaVectorIndex svsVamanaVector(String fieldName) {
         return new SVSVamanaVectorIndexParams(fieldName);
     }
 
     /**
-     * Returns geo field index
+     * 创建地理坐标（GEO）字段索引。
      *
-     * @param fieldName field name
-     * @return options object
+     * @param fieldName 字段名
+     * @return 地理索引选项
      */
     static GeoIndex geo(String fieldName) {
         return new GeoIndexParams(fieldName);
     }
 
     /**
-     * Returns geoshape field index
+     * 创建地理形状（GEOSHAPE）字段索引。
      *
-     * @param fieldName field name
-     * @return options object
+     * @param fieldName 字段名
+     * @return 地理形状索引选项
      */
     static GeoShapeIndex geoShape(String fieldName) {
         return new GeoShapeIndexParams(fieldName);

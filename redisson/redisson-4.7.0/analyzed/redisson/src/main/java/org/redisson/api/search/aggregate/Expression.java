@@ -16,7 +16,10 @@
 package org.redisson.api.search.aggregate;
 
 /**
- * Expression that is applied on properties
+ * 聚合查询中对文档属性施加的计算表达式。
+ * <p>
+ * 通过 {@link AggregationBaseOptions#apply(Expression...)} 注册，表达式结果可指定别名供后续
+ * 分组、排序或加载使用。
  *
  * @author Nikita Koksharov
  *
@@ -26,15 +29,23 @@ public final class Expression {
     private final String value;
     private final String as;
 
+    /**
+     * 构造聚合表达式。
+     *
+     * @param expression 表达式字符串
+     * @param as 结果别名
+     */
     public Expression(String expression, String as) {
         this.value = expression;
         this.as = as;
     }
 
+    /** 返回表达式正文。 */
     public String getValue() {
         return value;
     }
 
+    /** 返回结果别名。 */
     public String getAs() {
         return as;
     }

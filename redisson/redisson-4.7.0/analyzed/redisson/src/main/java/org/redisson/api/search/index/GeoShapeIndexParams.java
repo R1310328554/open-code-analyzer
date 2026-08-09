@@ -16,6 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
+ * {@link GeoShapeIndex} 的参数实现。
  *
  * @author seakider
  *
@@ -56,22 +57,27 @@ public class GeoShapeIndexParams implements GeoShapeIndex {
         return this;
     }
 
+    /** 是否标记为不索引。 */
     public boolean isNoIndex() {
         return noIndex;
     }
 
+    /** 返回字段名。 */
     public String getFieldName() {
         return fieldName;
     }
 
+    /** 返回映射的属性别名。 */
     public String getAs() {
         return as;
     }
 
+    /** 是否索引缺失该属性的文档。 */
     public boolean isIndexMissing() {
         return indexMissing;
     }
 
+    /** 返回配置的坐标系。 */
     public CoordinateSystems getCoordinateSystems() {
         return coordinateSystems;
     }

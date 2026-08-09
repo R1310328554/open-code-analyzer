@@ -16,7 +16,9 @@
 package org.redisson.api.search.index;
 
 /**
- * Optional options object for vector field index which uses FLAT indexing method.
+ * FLAT 向量索引的可选参数阶段接口。
+ * <p>
+ * 在设定向量类型、维度与距离度量后，可进一步配置初始容量与块大小。
  *
  * @author Nikita Koksharov
  *
@@ -24,18 +26,18 @@ package org.redisson.api.search.index;
 public interface FlatVectorOptionalArgs extends FieldIndex {
 
     /**
-     * Defines initial vector capacity.
+     * 设置向量索引的初始容量。
      *
-     * @param value initial vector capacity
-     * @return vector options
+     * @param value 初始向量容量
+     * @return 当前向量选项
      */
     FlatVectorOptionalArgs initialCapacity(int value);
 
     /**
-     * Defines amount of vectors in a contiguous array.
+     * 设置连续数组中可容纳的向量数量（块大小）。
      *
-     * @param value amount of vectors
-     * @return vector options
+     * @param value 每个数组块中的向量数
+     * @return 当前向量选项
      */
     FlatVectorOptionalArgs blockSize(int value);
 

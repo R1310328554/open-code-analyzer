@@ -18,6 +18,9 @@ package org.redisson.api.search.aggregate;
 import java.time.Duration;
 
 /**
+ * 启用游标、可迭代拉取结果的聚合选项。
+ * <p>
+ * 构造时默认开启 {@code WITHCURSOR}，适合分批消费大型聚合结果集。
  *
  * @author seakider
  *
@@ -28,6 +31,7 @@ public final class IterableAggregationOptions extends AggregationBaseOptions<Ite
         withCursor = true;
     }
 
+    /** 返回默认的可迭代聚合选项实例。 */
     public static IterableAggregationOptions defaults() {
         return new IterableAggregationOptions();
     }

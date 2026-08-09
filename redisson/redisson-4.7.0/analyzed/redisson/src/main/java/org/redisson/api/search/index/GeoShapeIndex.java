@@ -16,41 +16,43 @@
 package org.redisson.api.search.index;
 
 /**
- * GeoShape field index options.
+ * 地理形状（GEOSHAPE）字段索引配置接口。
  *
  * @author seakider
  *
  */
 public interface GeoShapeIndex extends FieldIndex {
+
+    /** 坐标系类型：球面或平面。 */
     enum CoordinateSystems {SPHERICAL, FLAT}
 
     /**
-     * Defines the attribute associated to the field name
+     * 指定字段映射到的文档属性名。
      *
-     * @param as the associated attribute
-     * @return options object
+     * @param as 关联属性名
+     * @return 当前地理形状索引选项
      */
     GeoShapeIndex as(String as);
 
     /**
-     * Defines the coordinate systems to the field name
+     * 设置形状数据使用的坐标系。
      *
-     * @param coordinateSystems the coordinate systems
-     * @return options object
+     * @param coordinateSystems 坐标系
+     * @return 当前地理形状索引选项
      */
     GeoShapeIndex coordinateSystems(CoordinateSystems coordinateSystems);
 
     /**
-     * Defines to not index this attribute
+     * 标记该属性不参与索引。
      *
-     * @return options object
+     * @return 当前地理形状索引选项
      */
     GeoShapeIndex noIndex();
 
     /**
-     * Defines to index documents that don't contain this attribute
+     * 索引缺少该属性的文档。
      *
-     * @return options object
+     * @return 当前地理形状索引选项
      */
     GeoShapeIndex indexMissing();
 }

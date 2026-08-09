@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * {@link Reducer} 的具体参数载体，保存归约函数名与附加参数。
  *
  * @author Nikita Koksharov
  *
@@ -40,14 +41,17 @@ public final class ReducerParams implements Reducer {
         return this;
     }
 
+    /** 返回归约结果别名。 */
     public String getAs() {
         return as;
     }
 
+    /** 返回归约函数名（如 AVG、SUM）。 */
     public String getFunctionName() {
         return functionName;
     }
 
+    /** 返回归约函数的附加参数列表。 */
     public List<String> getArgs() {
         return args;
     }
