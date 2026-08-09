@@ -26,22 +26,30 @@ import org.redisson.client.RedisClient;
 import reactor.core.publisher.Flux;
 
 /**
- * 
+ * {@link RTimeSeries} 的 Reactor 响应式辅助类：
+ * 时间序列按时间戳排序存储，支持 SCAN 方式流式读取条目值。
+ * <p>
+ * 标签 {@code L} 用于多维时间序列分组（若底层实现支持）。
+ *
  * @author Nikita Koksharov
  *
- * @param <V> value type
- * @param <L> label type
+ * @param <V> 时间序列值类型
+ * @param <L> 标签类型
  */
 public class RedissonTimeSeriesReactive<V, L> {
 
+    /** 底层同步时间序列。 */
     private final RTimeSeries<V, L> instance;
+    /** 响应式客户端（预留扩展）。 */
     private final RedissonReactiveClient redisson;
 
+    /** @param instance 同步时间序列 @param redisson 响应式客户端 */
     public RedissonTimeSeriesReactive(RTimeSeries<V, L> instance, RedissonReactiveClient redisson) {
         this.instance = instance;
         this.redisson = redisson;
     }
 
+    /** 通过 {@link SetReactiveIterator} 分页 SCAN 时间序列条目值。 */
     public Publisher<V> iterator() {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override

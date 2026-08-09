@@ -23,30 +23,39 @@ import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 
 /**
- * 
+ * {@link RSetMultimap} 的 Reactor 响应式实现：
+ * 一个 key 对应一个 Set 值集合，{@link #get(Object)} 返回
+ * 该 key 下 Set 的 {@link RSetReactive} 视图。
+ *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> Multimap 键类型
+ * @param <V> Set 元素类型
  */
 public class RedissonSetMultimapReactive<K, V> {
 
+    /** 响应式客户端。 */
     private final RedissonReactiveClient redisson;
+    /** 响应式命令执行器。 */
     private final CommandReactiveExecutor commandExecutor;
+    /** 底层同步 Set Multimap。 */
     private final RedissonSetMultimap<K, V> instance;
     
+    /** 使用默认编解码按名称创建 Multimap。 */
     public RedissonSetMultimapReactive(CommandReactiveExecutor commandExecutor, String name, RedissonReactiveClient redisson) {
         this.instance = new RedissonSetMultimap<>(commandExecutor, name);
         this.redisson = redisson;
         this.commandExecutor = commandExecutor;
     }
 
+    /** 指定 {@link Codec} 创建 Multimap。 */
     public RedissonSetMultimapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RedissonReactiveClient redisson) {
         this.instance = new RedissonSetMultimap<>(codec, commandExecutor, name);
         this.redisson = redisson;
         this.commandExecutor = commandExecutor;
     }
 
+    /** 返回 key 对应 Set 的响应式代理。 */
     public RSetReactive<V> get(K key) {
         RSet<V> set = ((RSetMultimap<K, V>) instance).get(key);
         return ReactiveProxyBuilder.create(commandExecutor, set, 

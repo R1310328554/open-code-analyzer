@@ -21,18 +21,27 @@ import org.redisson.api.RSetReactive;
 import org.redisson.api.RedissonReactiveClient;
 
 /**
+ * 带过期策略的 {@link RSetMultimap} 响应式视图：
+ * 按 key 获取对应 {@link RSetReactive} 子集合。
+ * <p>
+ * 每个 key 映射一个 Redis Set；底层通过 {@link ReactiveProxyBuilder}
+ * 将同步 Set 异步方法适配为 Publisher。
  *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> Multimap 键类型
+ * @param <V> Set 元素类型
  */
 public class RedissonSetMultimapCacheReactive<K, V> {
 
+    /** 底层带缓存的 Set Multimap。 */
     private final RSetMultimap<K, V> instance;
+    /** 响应式命令执行器。 */
     private final CommandReactiveExecutor commandExecutor;
+    /** 响应式客户端。 */
     private final RedissonReactiveClient redisson;
 
+    /** @param instance 同步 Multimap @param commandExecutor 执行器 @param redisson 客户端 */
     public RedissonSetMultimapCacheReactive(RSetMultimap<K, V> instance, CommandReactiveExecutor commandExecutor,
                                             RedissonReactiveClient redisson) {
         this.instance = instance;
@@ -40,6 +49,7 @@ public class RedissonSetMultimapCacheReactive<K, V> {
         this.commandExecutor = commandExecutor;
     }
 
+    /** 获取指定 key 对应的响应式 Set 视图。 */
     public RSetReactive<V> get(K key) {
         RSet<V> set = instance.get(key);
         return ReactiveProxyBuilder.create(commandExecutor, set, new RedissonSetReactive<>(set, redisson), RSetReactive.class);
