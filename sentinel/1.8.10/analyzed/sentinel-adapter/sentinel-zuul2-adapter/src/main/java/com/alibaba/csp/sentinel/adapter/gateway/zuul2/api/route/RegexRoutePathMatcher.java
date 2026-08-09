@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 import com.netflix.zuul.message.http.HttpRequestMessage;
 
 /**
+ * 基于正则表达式的路由路径匹配器，用于匹配 {@link HttpRequestMessage} 入站请求路径。
+ *
  * @author wavesZh
  */
 public class RegexRoutePathMatcher implements Predicate<HttpRequestMessage> {

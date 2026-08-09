@@ -25,6 +25,8 @@ import com.alibaba.csp.sentinel.adapter.gateway.common.api.ApiDefinition;
 import com.alibaba.csp.sentinel.adapter.gateway.zuul2.api.matcher.HttpRequestMessageApiMatcher;
 
 /**
+ * Zuul2 网关自定义 API 匹配器管理器，维护 API 名称到 {@link HttpRequestMessageApiMatcher} 的映射。
+ *
  * @author wavesZh
  * @since 1.7.2
  */

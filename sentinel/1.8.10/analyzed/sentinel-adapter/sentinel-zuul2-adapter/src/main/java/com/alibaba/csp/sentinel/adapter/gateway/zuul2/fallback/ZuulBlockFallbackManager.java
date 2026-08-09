@@ -22,7 +22,7 @@ import java.util.Map;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * This provide fall back class manager.
+ * Zuul2 流控降级提供者管理器，按路由注册并查找 {@link ZuulBlockFallbackProvider}。
  *
  * @author tiger
  */
@@ -33,7 +33,7 @@ public class ZuulBlockFallbackManager {
     private static ZuulBlockFallbackProvider defaultFallbackProvider = new DefaultBlockFallbackProvider();
 
     /**
-     * Register special provider for different route.
+     * 为指定路由注册降级提供者；路由为 {@code *} 或 null 时设为默认提供者。
      */
     public static synchronized void registerProvider(ZuulBlockFallbackProvider provider) {
         AssertUtil.notNull(provider, "fallback provider cannot be null");

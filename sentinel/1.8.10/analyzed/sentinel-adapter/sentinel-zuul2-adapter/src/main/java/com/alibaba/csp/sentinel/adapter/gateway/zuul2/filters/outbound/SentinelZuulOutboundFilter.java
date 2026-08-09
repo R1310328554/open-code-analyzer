@@ -28,8 +28,7 @@ import com.netflix.zuul.message.http.HttpResponseMessage;
 import rx.Observable;
 
 /**
- * The Zuul outbound filter which will complete the Sentinel entries and
- * trace the exception that happened in previous filters.
+ * Zuul2 出站过滤器，完成 Sentinel Entry 退出并追踪前置过滤器中的异常。
  *
  * @author wavesZh
  */

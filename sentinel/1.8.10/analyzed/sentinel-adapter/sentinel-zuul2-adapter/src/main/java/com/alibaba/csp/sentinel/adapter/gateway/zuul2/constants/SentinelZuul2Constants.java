@@ -17,21 +17,23 @@
 package com.alibaba.csp.sentinel.adapter.gateway.zuul2.constants;
 
 /**
+ * Zuul2 适配器相关常量定义。
+ *
  * @author wavesZh
  */
 public class SentinelZuul2Constants {
     /**
-     * The default entrance (context) name when the routeId is empty.
+     * 当 routeId 为空时使用的默认入口（上下文）名称。
      */
     public static final String ZUUL_DEFAULT_CONTEXT = "zuul2_default_context";
     /**
-     * Zuul context key for keeping Sentinel entries.
+     * 在 Zuul 上下文中保存 Sentinel Entry 的键名。
      */
     public static final String ZUUL_CTX_SENTINEL_ENTRIES_KEY = "_sentinel_entries";
 
     public static final String ZUUL_CTX_SENTINEL_FALLBACK_ROUTE = "_sentinel_fallback_route";
     /**
-     * Indicate if request is blocked .
+     * 标记请求是否已被 Sentinel 拦截。
      */
     public static final String ZUUL_CTX_SENTINEL_BLOCKED_FLAG = "_sentinel_blocked_flag";
 

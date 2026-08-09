@@ -22,6 +22,8 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.PathMatcher;
 
 /**
+ * 基于 Ant 风格路径模式的路由匹配器，用于匹配 {@link HttpRequestMessage} 请求路径。
+ *
  * @author wavesZh
  */
 public class PrefixRoutePathMatcher implements Predicate<HttpRequestMessage> {

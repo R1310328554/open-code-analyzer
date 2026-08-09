@@ -26,6 +26,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 import com.netflix.zuul.message.http.HttpRequestMessage;
 
 /**
+ * 基于 {@link HttpRequestMessage} 的 API 匹配器，将 {@link ApiDefinition} 中的路径谓词转换为路由匹配谓词。
+ *
  * @author wavesZh
  */
 public class HttpRequestMessageApiMatcher extends AbstractApiMatcher<HttpRequestMessage> {

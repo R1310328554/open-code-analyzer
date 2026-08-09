@@ -47,7 +47,7 @@ import rx.schedulers.Schedulers;
 import static com.alibaba.csp.sentinel.adapter.gateway.common.SentinelGatewayConstants.*;
 
 /**
- * The Zuul inbound filter wrapped with Sentinel route and customized API group entries.
+ * Zuul2 入站过滤器，对路由 ID 与匹配的自定义 API 组执行 Sentinel 资源埋点。
  *
  * @author wavesZh
  */
@@ -59,11 +59,11 @@ public class SentinelZuulInboundFilter extends HttpInboundFilter {
 
     private final String blockedEndpointName;
     /**
-     * If the executor is null, flow control action will be performed on I/O thread
+     * 若 executor 为 null，流控检查将在 I/O 线程上执行。
      */
     private final Executor executor;
     /**
-     * If true, the rest of inbound filters will be skipped when the request is blocked.
+     * 为 true 时，请求被拦截后将跳过后续入站过滤器。
      */
     private final boolean fastError;
     private final Function<HttpRequestMessage, String> routeExtractor;
@@ -71,7 +71,7 @@ public class SentinelZuulInboundFilter extends HttpInboundFilter {
     private final GatewayParamParser<HttpRequestMessage> paramParser;
 
     /**
-     * Constructor of the inbound filter, which extracts the route from the context route VIP attribute by default.
+     * 入站过滤器构造器，默认从上下文的 route VIP 属性提取路由 ID。
      *
      * @param order the order of the filter
      */
@@ -88,7 +88,7 @@ public class SentinelZuulInboundFilter extends HttpInboundFilter {
     }
 
     /**
-     * Constructor of the inbound filter.
+     * 入站过滤器构造器。
      *
      * @param order the order of the filter
      * @param blockedEndpointName the endpoint to go when the request is blocked
@@ -161,7 +161,7 @@ public class SentinelZuulInboundFilter extends HttpInboundFilter {
             if (!holders.isEmpty()) {
                 context.put(SentinelZuul2Constants.ZUUL_CTX_SENTINEL_ENTRIES_KEY, holders);
             }
-            // clear context to avoid another request use incorrect context
+            // 清理上下文，避免后续请求复用错误的 Sentinel 上下文
             ContextUtil.exit();
         }
     }

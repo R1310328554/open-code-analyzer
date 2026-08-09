@@ -28,7 +28,7 @@ import com.netflix.zuul.message.http.HttpResponseMessage;
 import com.netflix.zuul.message.http.HttpResponseMessageImpl;
 
 /**
- * Default Endpoint for handling exception.
+ * 处理流控拦截异常的默认 Endpoint，根据降级提供者生成 HTTP 响应。
  *
  * @author wavesZh
  */

@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.adapter.gateway.zuul2.filters;
 import com.alibaba.csp.sentinel.Entry;
 
 /**
+ * Sentinel {@link Entry} 与热点参数的持有容器，供 Zuul2 过滤器在请求上下文中传递。
+ *
  * @author wavesZh
  */
 public class EntryHolder {

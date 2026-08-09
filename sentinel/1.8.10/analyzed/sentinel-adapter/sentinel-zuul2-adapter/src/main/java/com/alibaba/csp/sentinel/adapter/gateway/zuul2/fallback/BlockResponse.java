@@ -17,14 +17,14 @@
 package com.alibaba.csp.sentinel.adapter.gateway.zuul2.fallback;
 
 /**
- * Fall back response for {@link com.alibaba.csp.sentinel.slots.block.BlockException}
+ * {@link com.alibaba.csp.sentinel.slots.block.BlockException} 的降级响应体。
  *
  * @author tiger
  */
 public class BlockResponse {
 
     /**
-     * HTTP status code.
+     * HTTP 状态码。
      */
     private int code;
 
