@@ -14,6 +14,8 @@ import java.net.Socket;
 import java.net.URL;
 
 /**
+ * HTTP 与 Socket 网络请求工具，用于 Agent 侧调用远程 API 及 Pandora QOS 探测。
+ *
  * @author ralf0131 on 2015-11-11 15:39.
  */
 public class NetUtils {
@@ -26,9 +28,13 @@ public class NetUtils {
     private static final int READ_TIMEOUT = 3000;
 
     /**
-     * This implementation is based on Apache HttpClient.
-     * @param urlString the requested url
-     * @return the response string of given url
+     * 发起 HTTP GET 请求并解析响应（类似 Apache HttpClient 语义）。
+     * <p>
+     * 优先 Accept JSON；500 时尝试解析 {@code errorMsg} 字段；IO 失败时
+     * {@link Response#isSuccess()} 为 false。
+     *
+     * @param urlString 请求 URL
+     * @return 封装成功标志与正文内容的 Response
      */
     public static Response request(String urlString) {
         HttpURLConnection urlConnection = null;
@@ -38,7 +44,7 @@ public class NetUtils {
             urlConnection = (HttpURLConnection)url.openConnection();
             urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
             urlConnection.setReadTimeout(READ_TIMEOUT);;
-            // prefer json to text
+            // 优先接受 JSON，其次 plain text
             urlConnection.setRequestProperty("Accept", "application/json,text/plain;q=0.2");
             in = urlConnection.getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
@@ -68,11 +74,9 @@ public class NetUtils {
     }
 
     /**
-     * @deprecated
-     * This implementation is based on HttpURLConnection,
-     * which can not detail with status code other than 200.
-     * @param url the requested url
-     * @return the response string of given url
+     * @deprecated 基于 HttpURLConnection，无法妥善处理非 200 状态码
+     * @param url 请求 URL
+     * @return 响应正文；异常时返回 null
      */
     public static String simpleRequest(String url) {
         BufferedReader br = null;
@@ -114,18 +118,13 @@ public class NetUtils {
     }
 
     /**
-     * Only use this method when tomcat monitor version <= 1.0.1
-     * This will send http request to pandora qos port 12201,
-     * and display the response.
-     * Note that pandora qos response is not fully HTTP compatible under version 2.1.0,
-     * so we filtered some of the content and only display useful content.
-     * @param path the path relative to http://localhost:12201
-     *             e.g. /pandora/ls
-     *             For commands that requires arguments, use the following format
-     *             e.g. /pandora/find?arg0=RPCProtocolService
-     *             Note that the parameter name is never used in pandora qos,
-     *             so the name(e.g. arg0) is irrelevant.
-     * @return the qos response in string format
+     * 通过原始 Socket 访问 Pandora QOS（仅 tomcat monitor &lt;= 1.0.1 等旧场景）。
+     * <p>
+     * 向 {@code localhost:12201} 发送简易 HTTP GET，并从
+     * {@value #QOS_RESPONSE_START_LINE} 之后截取有效正文（兼容非标准 HTTP 响应）。
+     *
+     * @param path 相对路径，如 {@code /pandora/ls} 或 {@code /pandora/find?arg0=RPCProtocolService}
+     * @return QOS 响应封装
      */
     public static Response requestViaSocket(String path) {
         BufferedReader br = null;
@@ -164,25 +163,30 @@ public class NetUtils {
         }
     }
 
+    /** HTTP/Socket 请求结果：是否成功及响应正文 */
     public static class Response {
 
         private boolean success;
         private String content;
 
+        /** 指定成功标志与内容 */
         public Response(String content, boolean success) {
             this.success = success;
             this.content = content;
         }
 
+        /** 默认视为成功的响应 */
         public Response(String content) {
             this.content = content;
             this.success = true;
         }
 
+        /** @return 请求是否成功完成 */
         public boolean isSuccess() {
             return success;
         }
 
+        /** @return 响应正文或错误信息 */
         public String getContent() {
             return content;
         }
@@ -190,7 +194,11 @@ public class NetUtils {
 
 
     /**
-     * Test if a port is open on the give host
+     * 探测指定主机端口是否可建立 TCP 连接（监听中）。
+     *
+     * @param host 主机名或 IP
+     * @param port 端口号
+     * @return true 表示端口可达
      */
     public static boolean serverListening(String host, int port) {
         Socket s = null;

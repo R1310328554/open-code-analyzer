@@ -8,6 +8,12 @@ package com.taobao.arthas.core.util;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+/**
+ * 对象、数组与异常相关的通用判断与字符串化工具（Spring Framework 风格 API）。
+ * <p>
+ * 提供 null 安全的 equals/hashCode/toString、checked 异常与 throws 子句兼容性检查、
+ * 以及各基本类型数组的格式化输出，供命令层与 Spring 集成代码复用。
+ */
 public abstract class ObjectUtils {
     private static final int INITIAL_HASH = 7;
     private static final int MULTIPLIER = 31;
@@ -21,10 +27,12 @@ public abstract class ObjectUtils {
     public ObjectUtils() {
     }
 
+    /** 判断是否为 checked 异常（非 {@link RuntimeException} 且非 {@link Error}） */
     public static boolean isCheckedException(Throwable ex) {
         return !(ex instanceof RuntimeException) && !(ex instanceof Error);
     }
 
+    /** 判断异常是否与方法 throws 子句声明兼容（unchecked 异常恒为 true） */
     public static boolean isCompatibleWithThrowsClause(Throwable ex, Class... declaredExceptions) {
         if(!isCheckedException(ex)) {
             return true;
@@ -45,14 +53,17 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** 判断对象是否为数组实例 */
     public static boolean isArray(Object obj) {
         return obj != null && obj.getClass().isArray();
     }
 
+    /** 判断对象数组为 null 或长度为 0 */
     public static boolean isEmpty(Object[] array) {
         return array == null || array.length == 0;
     }
 
+    /** 在数组中 null 安全地查找元素（使用 {@link #nullSafeEquals}） */
     public static boolean containsElement(Object[] array, Object element) {
         if(array == null) {
             return false;
@@ -71,10 +82,12 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** 判断枚举常量集合是否包含指定名称（大小写敏感） */
     public static boolean containsConstant(Enum<?>[] enumValues, String constant) {
         return containsConstant(enumValues, constant, false);
     }
 
+    /** 判断枚举常量集合是否包含指定名称，可配置大小写 sensitivity */
     public static boolean containsConstant(Enum<?>[] enumValues, String constant, boolean caseSensitive) {
         Enum[] var3 = enumValues;
         int var4 = enumValues.length;
@@ -100,6 +113,7 @@ public abstract class ObjectUtils {
         return true;
     }
 
+    /** 将任意数组或 Object[] 统一转为 Object[]；非数组抛 IllegalArgumentException */
     public static Object[] toObjectArray(Object source) {
         if(source instanceof Object[]) {
             return (Object[])((Object[])source);
@@ -124,6 +138,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** null 安全的 equals，数组类型按元素逐段比较 */
     public static boolean nullSafeEquals(Object o1, Object o2) {
         if(o1 == o2) {
             return true;
@@ -176,6 +191,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** null 安全的 hashCode；数组按元素递归哈希 */
     public static int nullSafeHashCode(Object obj) {
         if(obj == null) {
             return 0;
@@ -222,6 +238,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** Object[] 的 null 安全哈希（31 倍增算法） */
     public static int nullSafeHashCode(Object[] array) {
         if(array == null) {
             return 0;
@@ -239,6 +256,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** boolean[] 的 null 安全哈希 */
     public static int nullSafeHashCode(boolean[] array) {
         if(array == null) {
             return 0;
@@ -256,6 +274,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** byte[] 的 null 安全哈希 */
     public static int nullSafeHashCode(byte[] array) {
         if(array == null) {
             return 0;
@@ -273,6 +292,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** char[] 的 null 安全哈希 */
     public static int nullSafeHashCode(char[] array) {
         if(array == null) {
             return 0;
@@ -290,6 +310,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** double[] 的 null 安全哈希 */
     public static int nullSafeHashCode(double[] array) {
         if(array == null) {
             return 0;
@@ -307,6 +328,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** float[] 的 null 安全哈希 */
     public static int nullSafeHashCode(float[] array) {
         if(array == null) {
             return 0;
@@ -324,6 +346,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** int[] 的 null 安全哈希 */
     public static int nullSafeHashCode(int[] array) {
         if(array == null) {
             return 0;
@@ -341,6 +364,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** long[] 的 null 安全哈希 */
     public static int nullSafeHashCode(long[] array) {
         if(array == null) {
             return 0;
@@ -358,6 +382,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** short[] 的 null 安全哈希 */
     public static int nullSafeHashCode(short[] array) {
         if(array == null) {
             return 0;
@@ -375,38 +400,47 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** boolean 值的哈希（与 Boolean.hashCode 一致） */
     public static int hashCode(boolean bool) {
         return bool?1231:1237;
     }
 
+    /** double 值的哈希 */
     public static int hashCode(double dbl) {
         return hashCode(Double.doubleToLongBits(dbl));
     }
 
+    /** float 值的哈希 */
     public static int hashCode(float flt) {
         return Float.floatToIntBits(flt);
     }
 
+    /** long 值的哈希（高低位异或） */
     public static int hashCode(long lng) {
         return (int)(lng ^ lng >>> 32);
     }
 
+    /** 返回 {@code ClassName@hexIdentity} 形式的调试字符串 */
     public static String identityToString(Object obj) {
         return obj == null?"":obj.getClass().getName() + "@" + getIdentityHexString(obj);
     }
 
+    /** 返回对象 identityHashCode 的十六进制字符串 */
     public static String getIdentityHexString(Object obj) {
         return Integer.toHexString(System.identityHashCode(obj));
     }
 
+    /** 用于 UI 展示：null 转为空串，否则 nullSafeToString */
     public static String getDisplayString(Object obj) {
         return obj == null?"":nullSafeToString(obj);
     }
 
+    /** null 时返回 {@code "null"}，否则返回 {@link Class#getName()} */
     public static String nullSafeClassName(Object obj) {
         return obj != null?obj.getClass().getName():"null";
     }
 
+    /** null 安全 toString，数组格式化为 {@code {a, b}} 形式 */
     public static String nullSafeToString(Object obj) {
         if(obj == null) {
             return "null";
@@ -436,6 +470,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** Object[] 格式化为 {@code {elem1, elem2}} */
     public static String nullSafeToString(Object[] array) {
         if(array == null) {
             return "null";
@@ -460,6 +495,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** boolean[] 格式化输出 */
     public static String nullSafeToString(boolean[] array) {
         if(array == null) {
             return "null";
@@ -484,6 +520,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** byte[] 格式化输出 */
     public static String nullSafeToString(byte[] array) {
         if(array == null) {
             return "null";
@@ -508,6 +545,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** char[] 格式化输出（字符加单引号） */
     public static String nullSafeToString(char[] array) {
         if(array == null) {
             return "null";
@@ -532,6 +570,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** double[] 格式化输出 */
     public static String nullSafeToString(double[] array) {
         if(array == null) {
             return "null";
@@ -556,6 +595,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** float[] 格式化输出 */
     public static String nullSafeToString(float[] array) {
         if(array == null) {
             return "null";
@@ -580,6 +620,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** int[] 格式化输出 */
     public static String nullSafeToString(int[] array) {
         if(array == null) {
             return "null";
@@ -604,6 +645,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** long[] 格式化输出 */
     public static String nullSafeToString(long[] array) {
         if(array == null) {
             return "null";
@@ -628,6 +670,7 @@ public abstract class ObjectUtils {
         }
     }
 
+    /** short[] 格式化输出 */
     public static String nullSafeToString(short[] array) {
         if(array == null) {
             return "null";

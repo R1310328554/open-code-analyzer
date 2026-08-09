@@ -15,17 +15,17 @@ import java.util.Properties;
 
 import com.taobao.arthas.common.ArthasConstants;
 
+/**
+ * 文件读写与 Shell 命令历史持久化工具（部分逻辑源自 Commons IO）。
+ */
 public class FileUtils {
 
     /**
-     * Writes a byte array to a file creating the file if it does not exist.
-     * <p>
-     * NOTE: As from v1.3, the parent directories of the file will be created
-     * if they do not exist.
+     * 将字节数组写入文件；文件不存在则创建，并自动创建父目录。
      *
-     * @param file  the file to write to
-     * @param data  the content to write to the file
-     * @throws IOException in case of an I/O error
+     * @param file  目标文件
+     * @param data  待写入内容
+     * @throws IOException I/O 异常
      * @since 1.1
      */
     public static void writeByteArrayToFile(File file, byte[] data) throws IOException {
@@ -33,13 +33,12 @@ public class FileUtils {
     }
 
     /**
-     * Writes a byte array to a file creating the file if it does not exist.
+     * 将字节数组写入文件，可选择追加模式。
      *
-     * @param file  the file to write to
-     * @param data  the content to write to the file
-     * @param append if {@code true}, then bytes will be added to the
-     * end of the file rather than overwriting
-     * @throws IOException in case of an I/O error
+     * @param file  目标文件
+     * @param data  待写入内容
+     * @param append 为 {@code true} 时在文件末尾追加，否则覆盖
+     * @throws IOException I/O 异常
      * @since IO 2.1
      */
     public static void writeByteArrayToFile(File file, byte[] data, boolean append) throws IOException {
@@ -50,25 +49,14 @@ public class FileUtils {
     }
 
     /**
-     * Opens a {@link FileOutputStream} for the specified file, checking and
-     * creating the parent directory if it does not exist.
+     * 打开文件的 {@link FileOutputStream}，必要时创建父目录与文件本身。
      * <p>
-     * At the end of the method either the stream will be successfully opened,
-     * or an exception will have been thrown.
-     * <p>
-     * The parent directory will be created if it does not exist.
-     * The file will be created if it does not exist.
-     * An exception is thrown if the file object exists but is a directory.
-     * An exception is thrown if the file exists but cannot be written to.
-     * An exception is thrown if the parent directory cannot be created.
+     * 若路径已存在且为目录、或不可写、或父目录创建失败，则抛出 {@link IOException}。
      *
-     * @param file  the file to open for output, must not be {@code null}
-     * @param append if {@code true}, then bytes will be added to the
-     * end of the file rather than overwriting
-     * @return a new {@link FileOutputStream} for the specified file
-     * @throws IOException if the file object is a directory
-     * @throws IOException if the file cannot be written to
-     * @throws IOException if a parent directory needs creating but that fails
+     * @param file  输出目标，不能为 {@code null}
+     * @param append 是否追加写入
+     * @return 新打开的 FileOutputStream
+     * @throws IOException 路径为目录、不可写或 mkdirs 失败
      * @since 2.1
      */
     public static FileOutputStream openOutputStream(File file, boolean append) throws IOException {
@@ -90,15 +78,19 @@ public class FileUtils {
         return new FileOutputStream(file, append);
     }
 
+    /** 判断是否为 auth 命令（需脱敏密码，仅保留命令名） */
     private static boolean isAuthCommand(String command) {
         // 需要改写 auth command, TODO 更准确应该是用mask去掉密码信息
         return command != null && command.trim().startsWith(ArthasConstants.AUTH);
     }
 
     /**
-     * save the command history to the given file, data will be overridden.
-     * @param history the command history, each represented by an int array
-     * @param file the file to save the history
+     * 将终端命令历史（code point 数组形式）覆盖写入文件。
+     * <p>
+     * auth 命令行会被替换为 {@link ArthasConstants#AUTH}，避免明文密码落盘。
+     *
+     * @param history 历史记录，每条为 int[] code points
+     * @param file 目标文件
      */
     public static void saveCommandHistory(List<int[]> history, File file) {
         try (OutputStream out = new BufferedOutputStream(openOutputStream(file, false))) {
@@ -117,6 +109,7 @@ public class FileUtils {
         // ignore
     }
 
+    /** 从文件加载命令历史（code point 列表）；失败时返回已读部分或空列表 */
     public static List<int[]> loadCommandHistory(File file) {
         BufferedReader br = null;
         List<int[]> history = new ArrayList<>();
@@ -141,9 +134,10 @@ public class FileUtils {
     }
 
     /**
-     * save the command history to the given file, data will be overridden.
-     * @param history the command history
-     * @param file the file to save the history
+     * 将字符串形式的命令历史覆盖写入文件（跳过空行，auth 命令脱敏）。
+     *
+     * @param history 命令字符串列表
+     * @param file 目标文件
      */
     public static void saveCommandHistoryString(List<String> history, File file) {
         try (OutputStream out = new BufferedOutputStream(openOutputStream(file, false))) {
@@ -162,6 +156,7 @@ public class FileUtils {
         // ignore
     }
 
+    /** 从文件加载字符串命令历史（忽略空行） */
     public static List<String> loadCommandHistoryString(File file) {
         BufferedReader br = null;
         List<String> history = new ArrayList<>();
@@ -187,6 +182,14 @@ public class FileUtils {
         return history;
     }
 
+    /**
+     * 按指定字符集读取整个文本文件为字符串。
+     *
+     * @param file 源文件
+     * @param encoding 字符集
+     * @return 文件全文
+     * @throws IOException 读取失败
+     */
     public static String readFileToString(File file, Charset encoding) throws IOException {
         try (FileInputStream stream = new FileInputStream(file)) {
             Reader reader = new BufferedReader(new InputStreamReader(stream, encoding));
@@ -200,6 +203,7 @@ public class FileUtils {
         }
     }
 
+    /** 从路径加载 {@link Properties} 配置文件 */
     public static Properties readProperties(String file) throws IOException {
         Properties properties = new Properties();
 
@@ -215,9 +219,10 @@ public class FileUtils {
     }
 
     /**
-     * Check if the given path is a directory or not exists.
-     * @param path path of file.
-     * @return {@code true} if the path is not exist or is an existing directory, otherwise returns {@code false}.
+     * 判断路径不存在或为目录（用于校验输出路径不会误覆盖普通文件）。
+     *
+     * @param path 文件系统路径
+     * @return {@code true} 表示路径不存在或已是目录
      */
     public static boolean isDirectoryOrNotExist(String path) {
         File file = new File(path);

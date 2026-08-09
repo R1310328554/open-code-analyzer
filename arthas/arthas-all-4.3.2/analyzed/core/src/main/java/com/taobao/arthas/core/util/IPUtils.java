@@ -5,6 +5,8 @@ import java.net.NetworkInterface;
 import java.util.Enumeration;
 
 /**
+ * 本机 IP 与操作系统类型检测工具。
+ *
  * @author weipeng2k 2015-01-30 15:06:47
  */
 public class IPUtils {
@@ -13,9 +15,9 @@ public class IPUtils {
     private static final String OS_NAME = "os.name";
 
     /**
-     * check: whether current operating system is windows
+     * 判断当前操作系统是否为 Windows。
      *
-     * @return true---is windows
+     * @return true 表示 Windows
      */
     public static boolean isWindowsOS() {
         String osName = System.getProperty(OS_NAME);
@@ -23,10 +25,12 @@ public class IPUtils {
     }
 
     /**
-     * get IP address, automatically distinguish the operating system.（windows or
-     * linux）
+     * 获取本机 IP 地址，自动区分 Windows 与 Linux/Unix 策略。
+     * <p>
+     * Windows 直接使用 {@link InetAddress#getLocalHost()}；非 Windows 若 localHost
+     * 为回环地址则遍历网卡，选取 site-local 且非 loopback 的 IPv4 地址。
      *
-     * @return String
+     * @return 本机 IP 字符串，无法解析时返回 null
      */
     public static String getLocalIP() {
         InetAddress ip = null;
@@ -34,7 +38,7 @@ public class IPUtils {
             if (isWindowsOS()) {
                 ip = InetAddress.getLocalHost();
             } else {
-                // scan all NetWorkInterfaces if it's loopback address
+                // 非 Windows：若 getLocalHost 不是回环则直接使用，否则扫描网卡
                 if (!InetAddress.getLocalHost().isLoopbackAddress()) {
                     ip = InetAddress.getLocalHost();
                 } else {
@@ -45,12 +49,11 @@ public class IPUtils {
                             break;
                         }
                         NetworkInterface ni = netInterfaces.nextElement();
-                        // ----------特定情况，可以考虑用ni.getName判断
-                        // iterator all IPs
+                        // 遍历该网卡下所有 IP
                         Enumeration<InetAddress> ips = ni.getInetAddresses();
                         while (ips.hasMoreElements()) {
                             ip = ips.nextElement();
-                            // IP starts with 127. is loopback address
+                            // 127.x 为回环；含 ':' 为 IPv6，此处只取 IPv4 site-local
                             if (ip.isSiteLocalAddress() && !ip.isLoopbackAddress()
                                     && !ip.getHostAddress().contains(":")) {
                                 bFindIP = true;
@@ -68,6 +71,12 @@ public class IPUtils {
     }
 
 
+    /**
+     * 判断 IP 字符串是否仅由 0、点号或冒号组成（如 0.0.0.0、::）。
+     *
+     * @param ipStr IP 字符串
+     * @return true 表示“全零”占位地址
+     */
     public static boolean isAllZeroIP(String ipStr) {
         if (ipStr == null || ipStr.isEmpty()) {
             return false;

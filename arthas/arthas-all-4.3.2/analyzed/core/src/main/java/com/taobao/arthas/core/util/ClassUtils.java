@@ -23,12 +23,21 @@ import com.taobao.text.ui.TableElement;
 import static com.taobao.text.Decoration.bold;
 
 /**
+ * 类、方法、ClassLoader 信息的 VO 构建与终端表格渲染工具。
+ * <p>
+ * 供 sc/sm/classloader 等命令将反射元数据转为 {@link ClassDetailVO}、
+ * {@link MethodVO} 等模型，并通过 {@link TableElement} 在 TTY 上格式化输出。
  *
  * @author hengyunabc 2018-10-18
- *
  */
 public class ClassUtils {
 
+    /**
+     * 从 {@link CodeSource} 提取 class 文件所在路径（jar 或目录）。
+     *
+     * @param cs ProtectionDomain 的 CodeSource
+     * @return 文件路径；缺失时返回 {@link Constants#EMPTY_STRING}
+     */
     public static String getCodeSource(final CodeSource cs) {
         if (null == cs || null == cs.getLocation() || null == cs.getLocation().getFile()) {
             return com.taobao.arthas.core.util.Constants.EMPTY_STRING;
@@ -37,14 +46,23 @@ public class ClassUtils {
         return cs.getLocation().getFile();
     }
 
+    /** 判断是否为 Lambda 合成类（synthetic 且类名含 {@code $$Lambda}） */
     public static boolean isLambdaClass(Class<?> clazz) {
         return clazz.isSynthetic() && clazz.getName().contains("$$Lambda");
     }
 
+    /** 渲染类详情表格（不含字段列表） */
     public static Element renderClassInfo(ClassDetailVO clazz) {
         return renderClassInfo(clazz, false);
     }
 
+    /**
+     * 将 {@link ClassDetailVO} 渲染为终端表格。
+     *
+     * @param clazz 类详情 VO
+     * @param isPrintField 是否在表格中输出 fields 行
+     * @return 可写入 TTY 的 {@link Element}
+     */
     public static Element renderClassInfo(ClassDetailVO clazz, boolean isPrintField) {
         TableElement table = new TableElement().leftCellPadding(1).rightCellPadding(1);
 
@@ -74,6 +92,14 @@ public class ClassUtils {
         return table;
     }
 
+    /**
+     * 从 {@link Class} 反射对象构建完整 {@link ClassDetailVO}。
+     *
+     * @param clazz 目标类
+     * @param withFields 是否填充字段信息
+     * @param expand 字段展开层级（传给 TypeRenderUtils）
+     * @return 类详情 VO
+     */
     public static ClassDetailVO createClassInfo(Class clazz, boolean withFields, Integer expand) {
         CodeSource cs = clazz.getProtectionDomain().getCodeSource();
         ClassDetailVO classInfo = new ClassDetailVO();
@@ -102,18 +128,27 @@ public class ClassUtils {
         return classInfo;
     }
 
+    /** 构建仅含名称与 ClassLoader 信息的精简 {@link ClassVO} */
     public static ClassVO createSimpleClassInfo(Class clazz) {
         ClassVO classInfo = new ClassVO();
         fillSimpleClassVO(clazz, classInfo);
         return classInfo;
     }
 
+    /** 向已有 {@link ClassVO} 填充类名、ClassLoader 描述与 hash */
     public static void fillSimpleClassVO(Class clazz, ClassVO classInfo) {
         classInfo.setName(StringUtils.classname(clazz));
         classInfo.setClassloader(TypeRenderUtils.getClassloader(clazz));
         classInfo.setClassLoaderHash(StringUtils.classLoaderHash(clazz));
     }
 
+    /**
+     * 从 {@link Method} 构建 {@link MethodVO}。
+     *
+     * @param method 反射 Method
+     * @param clazz 声明类
+     * @param detail true 时填充修饰符、参数、返回值等详情
+     */
     public static MethodVO createMethodInfo(Method method, Class clazz, boolean detail) {
         MethodVO methodVO = new MethodVO();
         methodVO.setDeclaringClass(clazz.getName());
@@ -131,6 +166,13 @@ public class ClassUtils {
         return methodVO;
     }
 
+    /**
+     * 从 {@link Constructor} 构建 {@link MethodVO}（methodName 固定为 {@code <init>}）。
+     *
+     * @param constructor 反射构造器
+     * @param clazz 声明类
+     * @param detail 是否填充详细元数据
+     */
     public static MethodVO createMethodInfo(Constructor constructor, Class clazz, boolean detail) {
         MethodVO methodVO = new MethodVO();
         methodVO.setDeclaringClass(clazz.getName());
@@ -147,6 +189,7 @@ public class ClassUtils {
         return methodVO;
     }
 
+    /** 将方法 VO 渲染为终端详情表格 */
     public static Element renderMethod(MethodVO method) {
         TableElement table = new TableElement().leftCellPadding(1).rightCellPadding(1);
         table.row(label("declaring-class").style(bold.bold()), label(method.getDeclaringClass()))
@@ -160,6 +203,7 @@ public class ClassUtils {
         return table;
     }
 
+    /** 将构造器 VO 渲染为终端详情表格 */
     public static Element renderConstructor(MethodVO constructor) {
         TableElement table = new TableElement().leftCellPadding(1).rightCellPadding(1);
         table.row(label("declaring-class").style(bold.bold()), label(constructor.getDeclaringClass()))
@@ -172,6 +216,7 @@ public class ClassUtils {
         return table;
     }
 
+    /** 将 Class 数组转为可读类名数组 */
     public static String[] getClassNameList(Class[] classes) {
         List<String> list = new ArrayList<String>();
         for (Class anInterface : classes) {
@@ -180,6 +225,7 @@ public class ClassUtils {
         return list.toArray(new String[0]);
     }
 
+    /** 批量将 Class 集合转为 {@link ClassVO} 列表 */
     public static List<ClassVO> createClassVOList(Collection<Class<?>> matchedClasses) {
         List<ClassVO> classVOs = new ArrayList<ClassVO>(matchedClasses.size());
         for (Class<?> aClass : matchedClasses) {
@@ -189,6 +235,7 @@ public class ClassUtils {
         return classVOs;
     }
 
+    /** 从 ClassLoader 构建 {@link ClassLoaderVO}（含 hash、名称、父加载器） */
     public static ClassLoaderVO createClassLoaderVO(ClassLoader classLoader) {
         ClassLoaderVO classLoaderVO = new ClassLoaderVO();
         classLoaderVO.setHash(classLoaderHash(classLoader));
@@ -198,6 +245,12 @@ public class ClassUtils {
         return classLoaderVO;
     }
 
+    /**
+     * 将 ClassLoader 描述文本中的换行、制表符转义为可单行展示的形式。
+     *
+     * @param value 原始 toString 等文本
+     * @return 转义后的字符串；null 入参返回 null
+     */
     public static String formatClassLoaderText(String value) {
         if (value == null) {
             return null;
@@ -208,6 +261,7 @@ public class ClassUtils {
                 .replace("\t", "    ");
     }
 
+    /** 批量构建 ClassLoaderVO 列表 */
     public static List<ClassLoaderVO> createClassLoaderVOList(Collection<ClassLoader> classLoaders) {
         List<ClassLoaderVO> classLoaderVOList = new ArrayList<ClassLoaderVO>();
         for (ClassLoader classLoader : classLoaders) {
@@ -216,6 +270,7 @@ public class ClassUtils {
         return classLoaderVOList;
     }
 
+    /** 取类所属 ClassLoader 的十六进制 hash；无 ClassLoader 时返回 {@code "null"} */
     public static String classLoaderHash(Class<?> clazz) {
         if (clazz == null || clazz.getClassLoader() == null) {
             return "null";
@@ -223,6 +278,7 @@ public class ClassUtils {
         return Integer.toHexString(clazz.getClassLoader().hashCode());
     }
 
+    /** 取 ClassLoader 的十六进制 hash；null 时返回 {@code "null"} */
     public static String classLoaderHash(ClassLoader classLoader) {
         if (classLoader == null ) {
             return "null";
@@ -230,6 +286,7 @@ public class ClassUtils {
         return Integer.toHexString(classLoader.hashCode());
     }
 
+    /** 将匹配的类列表渲染为 NAME / HASHCODE / CLASSLOADER 三列表格 */
     public static Element renderMatchedClasses(Collection<ClassVO> matchedClasses) {
         TableElement table = new TableElement().leftCellPadding(1).rightCellPadding(1);
         table.row(new LabelElement("NAME").style(Decoration.bold.bold()),

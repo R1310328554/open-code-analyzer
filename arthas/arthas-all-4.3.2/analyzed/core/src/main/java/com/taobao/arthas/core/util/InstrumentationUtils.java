@@ -9,13 +9,22 @@ import com.alibaba.arthas.deps.org.slf4j.Logger;
 import com.alibaba.arthas.deps.org.slf4j.LoggerFactory;
 
 /**
- * 
- * @author hengyunabc 2020-05-25
+ * {@link Instrumentation} 字节码增强辅助：注册 Transformer 并对指定类批量 retransform。
+ * <p>
+ * 自动跳过 Lambda 合成类（JDK 不支持对其 retransform，见 arthas#1512）。
  *
+ * @author hengyunabc 2020-05-25
  */
 public class InstrumentationUtils {
     private static final Logger logger = LoggerFactory.getLogger(InstrumentationUtils.class);
 
+    /**
+     * 临时注册 {@code transformer} 并对 {@code classes} 中每个类执行 retransform，finally 中移除 Transformer。
+     *
+     * @param inst Instrumentation
+     * @param transformer 可重入的 ClassFileTransformer
+     * @param classes 待增强的已加载类集合
+     */
     public static void retransformClasses(Instrumentation inst, ClassFileTransformer transformer,
             Set<Class<?>> classes) {
         try {
@@ -40,6 +49,12 @@ public class InstrumentationUtils {
         }
     }
 
+    /**
+     * 按类名集合触发已加载类的 retransform（不注册新 Transformer，依赖已有 agent 逻辑）。
+     *
+     * @param inst Instrumentation
+     * @param classes 全限定类名集合
+     */
     public static void trigerRetransformClasses(Instrumentation inst, Collection<String> classes) {
         for (Class<?> clazz : inst.getAllLoadedClasses()) {
             if (classes.contains(clazz.getName())) {

@@ -12,26 +12,27 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 
+/**
+ * 流读写辅助工具（源自 Apache Commons IO，供 Agent 内嵌使用）。
+ */
 public class IOUtils {
 
     private static final int EOF = -1;
 
     /**
-     * The default buffer size ({@value}) to use for
-     * {@link #copyLarge(InputStream, OutputStream)}
+     * {@link #copyLarge(InputStream, OutputStream)} 使用的默认缓冲区大小（{@value} 字节）。
      */
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 
     /**
-     * Get the contents of an <code>InputStream</code> as a <code>byte[]</code>.
+     * 将 {@link InputStream} 全部读入并返回 {@code byte[]}。
      * <p>
-     * This method buffers the input internally, so there is no need to use a
-     * <code>BufferedInputStream</code>.
+     * 内部自带缓冲，无需额外包装 {@code BufferedInputStream}。
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @return the requested byte array
-     * @throws NullPointerException if the input is null
-     * @throws IOException if an I/O error occurs
+     * @param input  输入流
+     * @return 字节数组
+     * @throws NullPointerException input 为 null
+     * @throws IOException I/O 错误
      */
     public static byte[] toByteArray(InputStream input) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -41,22 +42,15 @@ public class IOUtils {
 
 
     /**
-     * Copy bytes from an <code>InputStream</code> to an
-     * <code>OutputStream</code>.
+     * 将输入流复制到输出流（缓冲复制）。
      * <p>
-     * This method buffers the input internally, so there is no need to use a
-     * <code>BufferedInputStream</code>.
-     * <p>
-     * Large streams (over 2GB) will return a bytes copied value of
-     * <code>-1</code> after the copy has completed since the correct
-     * number of bytes cannot be returned as an int. For large streams
-     * use the <code>copyLarge(InputStream, OutputStream)</code> method.
+     * 超过 2GB 时返回值可能为 {@code -1}，大流请使用 {@link #copyLarge}。
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
-     * @return the number of bytes copied, or -1 if &gt; Integer.MAX_VALUE
-     * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @param input  输入流
+     * @param output  输出流
+     * @return 复制的字节数，或超过 int 上限时为 -1
+     * @throws NullPointerException 入参或出参为 null
+     * @throws IOException I/O 错误
      * @since 1.1
      */
     public static int copy(InputStream input, OutputStream output) throws IOException {
@@ -68,19 +62,13 @@ public class IOUtils {
     }
 
     /**
-     * Copy bytes from a large (over 2GB) <code>InputStream</code> to an
-     * <code>OutputStream</code>.
-     * <p>
-     * This method buffers the input internally, so there is no need to use a
-     * <code>BufferedInputStream</code>.
-     * <p>
-     * The buffer size is given by {@link #DEFAULT_BUFFER_SIZE}.
+     * 大文件流复制（支持超过 2GB），使用 {@link #DEFAULT_BUFFER_SIZE} 缓冲。
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
-     * @return the number of bytes copied
-     * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @param input  输入流
+     * @param output  输出流
+     * @return 复制的总字节数
+     * @throws NullPointerException 入参或出参为 null
+     * @throws IOException I/O 错误
      * @since 1.3
      */
     public static long copyLarge(InputStream input, OutputStream output)
@@ -89,19 +77,14 @@ public class IOUtils {
     }
 
     /**
-     * Copy bytes from a large (over 2GB) <code>InputStream</code> to an
-     * <code>OutputStream</code>.
-     * <p>
-     * This method uses the provided buffer, so there is no need to use a
-     * <code>BufferedInputStream</code>.
-     * <p>
+     * 使用调用方提供的 buffer 将输入流复制到输出流。
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
-     * @param buffer the buffer to use for the copy
-     * @return the number of bytes copied
-     * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @param input  输入流
+     * @param output  输出流
+     * @param buffer 复制用缓冲区
+     * @return 复制的总字节数
+     * @throws NullPointerException 入参或出参为 null
+     * @throws IOException I/O 错误
      * @since 2.2
      */
     public static long copyLarge(InputStream input, OutputStream output, byte[] buffer)
@@ -116,16 +99,12 @@ public class IOUtils {
     }
 
     /**
-     * Get the contents of an <code>InputStream</code> as a String
-     * using the default character encoding of the platform.
-     * <p>
-     * This method buffers the input internally, so there is no need to use a
-     * <code>BufferedInputStream</code>.
+     * 按平台默认编码将 {@link InputStream} 读成字符串（按行拼接，行间保留 {@code \n}）。
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @return the requested String
-     * @throws NullPointerException if the input is null
-     * @throws IOException if an I/O error occurs
+     * @param input  输入流
+     * @return 文本内容
+     * @throws NullPointerException input 为 null
+     * @throws IOException I/O 错误
      */
     public static String toString(InputStream input) throws IOException {
         BufferedReader br = null;
