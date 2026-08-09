@@ -150,3 +150,13 @@ docs_src/custom_docs_ui/tutorial002_py310.py
 docs_src/custom_request_and_route/__init__.py
 docs_src/custom_request_and_route/tutorial001_an_py310.py
 docs_src/custom_request_and_route/tutorial001_py310.py
+docs_src/custom_request_and_route/tutorial002_an_py310.py
+docs_src/custom_request_and_route/tutorial002_py310.py
+docs_src/custom_request_and_route/tutorial003_py310.py
+docs_src/custom_response/__init__.py
+docs_src/custom_response/tutorial001_py310.py
+docs_src/custom_response/tutorial001b_py310.py
+docs_src/custom_response/tutorial002_py310.py
+docs_src/custom_response/tutorial003_py310.py
+docs_src/custom_response/tutorial004_py310.py
+docs_src/custom_response/tutorial005_py310.py
