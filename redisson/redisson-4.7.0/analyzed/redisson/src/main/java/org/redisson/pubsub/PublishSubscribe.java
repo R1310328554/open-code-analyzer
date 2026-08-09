@@ -27,20 +27,31 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * 
+ * 内部 Pub/Sub 订阅模板：管理 entryName → {@link PubSubEntry} 映射，
+ * 协调 {@link PublishSubscribeService} 完成 SUBSCRIBE/UNSUBSCRIBE。
+ * 子类实现 {@link #createEntry} 与 {@link #onMessage} 处理具体业务消息。
+ *
  * @author Nikita Koksharov
  *
+ * @param <E> PubSub 条目类型
  */
 abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
+    /** 逻辑 entry 名称到本地 PubSub 条目的映射。 */
     private final ConcurrentMap<String, E> entries = new ConcurrentHashMap<>();
+    /** 全局 Pub/Sub 连接与锁管理。 */
     private final PublishSubscribeService service;
 
+    /** @param service 注入 PublishSubscribeService */
     PublishSubscribe(PublishSubscribeService service) {
         super();
         this.service = service;
     }
 
+    /**
+     * 递减 entry 引用计数；归零时从 map 移除并 UNSUBSCRIBE Redis 频道。
+     * 通过 per-channel {@link AsyncSemaphore} 串行化订阅变更。
+     */
     public void unsubscribe(E entry, String entryName, String channelName) {
         ChannelName cn = new ChannelName(channelName);
         AsyncSemaphore semaphore = service.getSemaphore(cn);
@@ -57,16 +68,23 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         });
     }
 
+    /** 使用默认 subscriptionTimeout 为 promise 设置超时。 */
     public void timeout(CompletableFuture<?> promise) {
         service.timeout(promise);
     }
 
+    /** 为订阅 promise 设置指定毫秒超时。 */
     public void timeout(CompletableFuture<?> promise, long timeout) {
         service.timeout(promise, timeout);
     }
+    /** 订阅频道，默认 permits=1。 */
     public CompletableFuture<E> subscribe(String entryName, String channelName) {
         return subscribe(entryName, channelName, 1);
     }
+    /**
+     * 订阅 Redis 频道并返回 entry Future。
+     * 若 entry 已存在则复用并 acquire(permits)；否则创建、SUBSCRIBE 并注册 listener。
+     */
     public CompletableFuture<E> subscribe(String entryName, String channelName, int permits) {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
         CompletableFuture<E> newPromise = new CompletableFuture<>();
@@ -77,6 +95,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 return;
             }
 
+            // 已有 entry：增加引用并等待其 promise
             E entry = entries.get(entryName);
             if (entry != null) {
                 entry.acquire(permits);
@@ -91,6 +110,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 return;
             }
 
+            // 新建 entry 并尝试放入 map
             E value = createEntry(newPromise);
             value.acquire(permits);
 
@@ -108,6 +128,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 return;
             }
 
+            // 向 Redis SUBSCRIBE 并绑定 LongCodec 消息监听
             RedisPubSubListener<Object> listener = createListener(channelName, value);
             CompletableFuture<PubSubConnectionEntry> s = service.subscribeNoTimeout(LongCodec.INSTANCE, channelName, semaphore, listener);
             newPromise.whenComplete((r, e) -> {
@@ -133,10 +154,13 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         return newPromise;
     }
 
+    /** 子类创建具体 PubSub 条目实例。 */
     protected abstract E createEntry(CompletableFuture<E> newPromise);
 
+    /** 子类处理频道 Long 载荷。 */
     protected abstract void onMessage(E value, Long message);
 
+    /** 包装 onMessage，过滤非目标频道。 */
     private RedisPubSubListener<Object> createListener(String channelName, E value) {
         RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
 

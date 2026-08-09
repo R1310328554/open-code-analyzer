@@ -34,19 +34,28 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 
+ * 响应式批处理命令服务：组合 {@link CommandBatchService} 与 {@link CommandReactiveService}，
+ * 将多条 Redis 命令攒批后通过 {@link #executeAsync()} 一次性提交。
+ * {@link #reactive} 会立即 subscribe 以触发批内命令入队。
+ *
  * @author Nikita Koksharov
  *
  */
 public class CommandReactiveBatchService extends CommandReactiveService implements BatchService {
 
+    /** 底层异步批处理实现。 */
     private final CommandBatchService batchService;
 
+    /** 创建 REACTIVE 引用类型的批处理服务。 */
     public CommandReactiveBatchService(ConnectionManager connectionManager, CommandReactiveExecutor commandExecutor, BatchOptions options) {
         super(connectionManager, commandExecutor.getObjectBuilder());
         batchService = new CommandBatchService(commandExecutor, options, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
 
+    /**
+     * 包装 supplier：首次 call 时 transfer 到共享 CompletableFuture，
+     * 并 subscribe Mono 以驱动批命令注册。
+     */
     @Override
     public <R> Mono<R> reactive(Callable<CompletionStage<R>> supplier) {
         Mono<R> mono = super.reactive(new Callable<CompletionStage<R>>() {
@@ -54,6 +63,7 @@ public class CommandReactiveBatchService extends CommandReactiveService implemen
             final AtomicBoolean lock = new AtomicBoolean();
             @Override
             public RFuture<R> call() throws Exception {
+                // 批内每条 reactive 调用仅执行一次 supplier
                 if (lock.compareAndSet(false, true)) {
                     transfer(supplier.call().toCompletableFuture(), future);
                 }
@@ -75,15 +85,18 @@ public class CommandReactiveBatchService extends CommandReactiveService implemen
         return batchService.async(readOnlyMode, nodeSource, codec, command, params, ignoreRedirect, noRetry);
     }
 
+    /** 提交批处理并返回聚合结果 Future。 */
     public RFuture<BatchResult<?>> executeAsync() {
         return batchService.executeAsync();
     }
 
+    /** 批模式禁用 eval 脚本缓存。 */
     @Override
     protected boolean isEvalCacheActive() {
         return false;
     }
 
+    /** 丢弃未执行的批命令。 */
     public RFuture<Void> discardAsync() {
         return batchService.discardAsync();
     }

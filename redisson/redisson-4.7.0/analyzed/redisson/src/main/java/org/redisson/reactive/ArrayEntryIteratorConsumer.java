@@ -24,13 +24,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongConsumer;
 
 /**
- * Backpressure-aware page consumer for {@link RArray} iteration on the Reactor facade.
+ * Reactor 侧 {@link RArray} 迭代的背压感知分页消费者。
  * <p>
- * The array stores values by sparse non-negative index, so iteration is performed via
- * keyset pagination over {@code ARSCAN}: each batch is fetched from the index following
- * the last entry of the previous batch, with {@code count} used as the page size hint.
- * A single in-flight chain is kept regardless of how many times {@code accept(long)} is
- * invoked by upstream request replenishment.
+ * 数组按稀疏非负索引存值，通过 {@code ARSCAN} 键集分页：每批从上一批末索引之后拉取，
+ * {@code count} 为页大小提示。无论上游 {@code accept(long)} 调用多少次，
+ * 仅保持一条在途异步链，避免并发 scan。
  *
  * @author Nikita Koksharov
  *
@@ -38,17 +36,25 @@ import java.util.function.LongConsumer;
  */
 public class ArrayEntryIteratorConsumer<V> implements LongConsumer {
 
+    /** Reactor 下游 sink。 */
     private final FluxSink<ArrayEntry<V>> emitter;
+    /** 待迭代的 Redis 数组。 */
     private final RArray<V> array;
+    /** ARSCAN 每批 hint 数量。 */
     private final int count;
 
+    /** 下一批 scan 起始索引。 */
     private long nextStart;
+    /** 数组最大有效索引（length-1）。 */
     private long endBound;
+    /** 是否已异步解析 length。 */
     private boolean endResolved;
+    /** 迭代是否已结束。 */
     private boolean finished;
 
     private final AtomicLong requested = new AtomicLong();
 
+    /** @param count ARSCAN 页大小 hint */
     public ArrayEntryIteratorConsumer(FluxSink<ArrayEntry<V>> emitter, RArray<V> array, int count) {
         this.emitter = emitter;
         this.array = array;
@@ -57,6 +63,7 @@ public class ArrayEntryIteratorConsumer<V> implements LongConsumer {
 
     @Override
     public void accept(long value) {
+        // 单链守卫：仅当 prior requested==0 时启动 nextValues
         // Single-chain guard: addAndGet(value) == value iff prior counter was 0,
         // i.e. no chain is currently running.
         if (requested.addAndGet(value) == value) {
@@ -64,11 +71,13 @@ public class ArrayEntryIteratorConsumer<V> implements LongConsumer {
         }
     }
 
+    /** 异步拉取下一页或完成流。 */
     private void nextValues() {
         if (finished) {
             emitter.complete();
             return;
         }
+        // 首次：异步获取数组 length 确定上界
         if (!endResolved) {
             array.lengthAsync().whenComplete((len, e) -> {
                 if (e != null) {
@@ -86,6 +95,7 @@ public class ArrayEntryIteratorConsumer<V> implements LongConsumer {
             emitter.complete();
             return;
         }
+        // ARSCAN 分页拉取
         array.scanAsync(nextStart, endBound, count).whenComplete((page, e) -> {
             if (e != null) {
                 emitter.error(e);
@@ -105,6 +115,7 @@ public class ArrayEntryIteratorConsumer<V> implements LongConsumer {
         });
     }
 
+    /** 取本页最后一条的索引，作为下批起点。 */
     private long lastIndex(List<ArrayEntry<V>> page) {
         return page.get(page.size() - 1).getIndex();
     }

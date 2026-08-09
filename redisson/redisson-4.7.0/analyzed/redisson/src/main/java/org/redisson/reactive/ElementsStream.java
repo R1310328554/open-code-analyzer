@@ -24,12 +24,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 
+ * 将「每次 call 返回 {@link RFuture}」的工厂转为 Reactor {@link Flux}：
+ * 按下游 request(n) 串行拉取 n 个元素，前一个完成后再发起下一个。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ElementsStream {
 
+    /** 递归/链式 take：完成一个 Future 后若 counter>0 继续下一个。 */
     private static <V> void take(Callable<RFuture<V>> factory, FluxSink<V> emitter, AtomicLong counter, AtomicReference<RFuture<V>> futureRef) {
         RFuture<V> future;
         try {
@@ -46,6 +49,7 @@ public class ElementsStream {
             }
             
             emitter.next(res);
+            // 已满足本次 request 数量则停止
             if (counter.decrementAndGet() == 0) {
                 return;
             }
@@ -54,6 +58,7 @@ public class ElementsStream {
         });
     }
     
+    /** 创建背压 Flux：onRequest 驱动串行 RFuture 链。 */
     public static <V> Flux<V> takeElements(Callable<RFuture<V>> callable) {
         return Flux.create(emitter -> {
             AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
@@ -61,6 +66,7 @@ public class ElementsStream {
                 AtomicLong counter = new AtomicLong(n);
                 take(callable, emitter, counter, futureRef);
             });
+            // 取消订阅时中断当前在途 Future
             emitter.onDispose(() -> {
                 futureRef.get().cancel(true);
             });

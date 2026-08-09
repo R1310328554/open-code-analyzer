@@ -37,24 +37,33 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 单条 Redis Pub/Sub 连接的订阅状态：维护频道→监听器队列、
+ * 剩余可订阅频道配额，以及 SUBSCRIBE/UNSUBSCRIBE 的异步编排。
+ * 由 {@link PublishSubscribeService} 创建并复用空闲连接。
  *
  * @author Nikita Koksharov
  *
  */
 public class PubSubConnectionEntry {
 
+    /** 本连接剩余可 SUBSCRIBE 的频道槽位（初始为 subscriptionsPerConnection）。 */
     private final AtomicInteger subscribedChannelsAmount;
+    /** 底层 Netty Pub/Sub 连接。 */
     private final RedisPubSubConnection conn;
 
+    /** 等待 SUBSCRIBE 成功 ACK 的 per-channel 监听器。 */
     private final Map<ChannelName, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<>();
+    /** 频道 → 业务 RedisPubSubListener 队列。 */
     private final Map<ChannelName, Queue<RedisPubSubListener<?>>> channelListeners = new ConcurrentHashMap<>();
 
+    /** getListeners 无订阅时返回的空队列占位。 */
     private static final Queue<RedisPubSubListener<?>> EMPTY_QUEUE = new ArrayDeque<>(0);
 
     private final ServiceManager serviceManager;
     private final PublishSubscribeService subscribeService;
     private final MasterSlaveEntry entry;
 
+    /** SUBSCRIBE/SSUBSCRIBE/PSUBSCRIBE 到对应 UNSUBSCRIBE 命令映射。 */
     private static final Map<PubSubType, PubSubType> SUBSCRIBE2UNSUBSCRIBE = new HashMap<>();
 
     static {
@@ -63,6 +72,7 @@ public class PubSubConnectionEntry {
         SUBSCRIBE2UNSUBSCRIBE.put(PubSubType.PSUBSCRIBE, PubSubType.PUNSUBSCRIBE);
     }
 
+    /** 绑定连接、主从条目，并初始化频道配额计数器。 */
     public PubSubConnectionEntry(RedisPubSubConnection conn, ConnectionManager connectionManager, MasterSlaveEntry entry) {
         super();
         this.conn = conn;
@@ -76,6 +86,7 @@ public class PubSubConnectionEntry {
         return entry;
     }
 
+    /** 返回指定频道上注册的监听器数量。 */
     public int countListeners(ChannelName channelName) {
         return channelListeners.getOrDefault(channelName, EMPTY_QUEUE).size();
     }
@@ -88,6 +99,7 @@ public class PubSubConnectionEntry {
         return channelListeners.getOrDefault(channelName, EMPTY_QUEUE);
     }
 
+    /** 向频道追加监听器并同步注册到底层 connection。 */
     public void addListener(ChannelName channelName, RedisPubSubListener<?> listener) {
         if (listener == null) {
             return;
@@ -104,7 +116,7 @@ public class PubSubConnectionEntry {
         });
     }
 
-    // TODO optimize
+    /** 按用户 EventListener 引用查找并移除包装监听器。 */
     public boolean removeListener(ChannelName channelName, EventListener msgListener) {
         Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
         for (RedisPubSubListener<?> listener : listeners) {
@@ -124,6 +136,7 @@ public class PubSubConnectionEntry {
         return false;
     }
 
+    /** 按 identityHashCode 移除监听器。 */
     public boolean removeListener(ChannelName channelName, int listenerId) {
         Queue<RedisPubSubListener<?>> listeners = channelListeners.getOrDefault(channelName, EMPTY_QUEUE);
         for (RedisPubSubListener<?> listener : listeners) {
@@ -147,10 +160,12 @@ public class PubSubConnectionEntry {
         return false;
     }
 
+    /** 比较监听器 identityHashCode。 */
     private boolean hasId(EventListener listener, int listenerId) {
         return System.identityHashCode(listener) == listenerId;
     }
 
+    /** 从 map 与 connection 双向移除监听器；队列为空时删除频道键。 */
     public void removeListener(ChannelName channelName, RedisPubSubListener<?> listener) {
         channelListeners.computeIfPresent(channelName, (k, queue) -> {
             if (queue.remove(listener) && queue.isEmpty()) {
@@ -162,6 +177,7 @@ public class PubSubConnectionEntry {
         conn.removeListener(channelName, listener);
     }
 
+    /** CAS 占用一个订阅槽位；返回剩余数，-1 表示已满。 */
     public int tryAcquire() {
         while (true) {
             int value = subscribedChannelsAmount.get();
@@ -175,19 +191,26 @@ public class PubSubConnectionEntry {
         }
     }
 
+    /** 释放一个订阅槽位（UNSUBSCRIBE 后）。 */
     public int release() {
         return subscribedChannelsAmount.incrementAndGet();
     }
 
+    /** 是否尚未占用任何频道槽位（可整连接复用）。 */
     public boolean isFree() {
         return subscribedChannelsAmount.get() == serviceManager.getConfig().getSubscriptionsPerConnection();
     }
 
+    /**
+     * 批量 SUBSCRIBE：先 addListeners 等待 ACK，再发 Redis 命令；
+     * 失败时自动 UNSUBSCRIBE 已订阅频道并 completeExceptionally。
+     */
     public void subscribe(Codec codec, List<ChannelName> channelNames, CompletableFuture<PubSubConnectionEntry> pm,
                           PubSubType type, AsyncSemaphore lock, RedisPubSubListener<?>[] listeners) {
         CompletableFuture<PubSubConnectionEntry> pp = new CompletableFuture<>();
         pp.whenComplete((r, e) -> {
             if (e != null) {
+                // 订阅失败：回滚已 SUBSCRIBE 的频道
                 PubSubType unsubscribeType = SUBSCRIBE2UNSUBSCRIBE.get(type);
 
                 List<CompletableFuture<?>> futures = new ArrayList<>(channelNames.size());
@@ -235,6 +258,7 @@ public class PubSubConnectionEntry {
         });
     }
 
+    /** 获取或创建等待 SUBSCRIBE 状态 ACK 的 SubscribeListener。 */
     private SubscribeListener getSubscribeFuture(ChannelName channel, PubSubType type) {
         return subscribeChannelListeners.computeIfAbsent(channel, k -> {
             SubscribeListener listener = new SubscribeListener(channel, type);
@@ -243,6 +267,7 @@ public class PubSubConnectionEntry {
         });
     }
 
+    /** 发送 UNSUBSCRIBE 并在 ACK 后清理本 entry 上该频道全部监听器。 */
     public void unsubscribe(PubSubType commandType, ChannelName channel, RedisPubSubListener<?> listener) {
         AtomicBoolean executed = new AtomicBoolean();
         conn.addListener(channel, new BaseRedisPubSubListener() {
@@ -266,6 +291,7 @@ public class PubSubConnectionEntry {
                 return;
             }
 
+            // 超时未收到 ACK 时模拟 status 消息推进状态机
             serviceManager.newTimeout(timeout -> {
                 if (executed.get()) {
                     return;
@@ -275,6 +301,7 @@ public class PubSubConnectionEntry {
         });
     }
 
+    /** UNSUBSCRIBE 成功后移除频道全部 listener 与 SubscribeListener。 */
     private void removeListeners(ChannelName channel) {
         conn.removeDisconnectListener(channel);
 
@@ -299,6 +326,10 @@ public class PubSubConnectionEntry {
         return "PubSubConnectionEntry [subscribedChannelsAmount=" + subscribedChannelsAmount + ", conn=" + conn + "]";
     }
 
+    /**
+     * 批量注册监听器并等待全部 SUBSCRIBE ACK；
+     * 若 promise 已被其他线程完成则回滚并 UNSUBSCRIBE 空频道。
+     */
     public CompletableFuture<Void> addListeners(List<ChannelName> channelNames,
                                                 CompletableFuture<PubSubConnectionEntry> promise,
                                                 PubSubType type, AsyncSemaphore lock,
@@ -322,6 +353,7 @@ public class PubSubConnectionEntry {
                 return;
             }
 
+            // 竞态：其他订阅先完成，需撤销本次 listener
             if (!promise.complete(this)) {
                 List<CompletableFuture<Void>> ffs = new ArrayList<>();
                 for (ChannelName channelName : channelNames) {
@@ -355,6 +387,7 @@ public class PubSubConnectionEntry {
         return list.getSuccessFuture();
     }
 
+    /** 移除监听器；频道无 listener 时触发 UNSUBSCRIBE。 */
     public CompletableFuture<Void> release(PubSubType type, ChannelName channelName, RedisPubSubListener<?>... listeners) {
         List<CompletableFuture<Void>> ffs = new ArrayList<>();
         for (RedisPubSubListener<?> listener : listeners) {

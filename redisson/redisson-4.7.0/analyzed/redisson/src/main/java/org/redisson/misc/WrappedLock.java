@@ -20,14 +20,18 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 /**
+ * {@link ReentrantLock} 的薄封装：通过 {@link #execute(Runnable)} /
+ * {@link #execute(Supplier)} 保证 try/finally 解锁，简化临界区代码。
  *
  * @author Nikita Koksharov
  *
  */
 public final class WrappedLock {
 
+    /** 底层可重入互斥锁。 */
     private final Lock lock = new ReentrantLock();
 
+    /** 在锁保护下执行无返回值任务。 */
     public void execute(Runnable r) {
         lock.lock();
         try {
@@ -37,6 +41,7 @@ public final class WrappedLock {
         }
     }
 
+    /** 在锁保护下执行有返回值任务。 */
     public <T> T execute(Supplier<T> r) {
         lock.lock();
         try {

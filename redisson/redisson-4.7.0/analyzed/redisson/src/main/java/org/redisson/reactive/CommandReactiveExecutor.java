@@ -25,17 +25,21 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * 响应式命令执行器：在 {@link CommandAsyncExecutor} 基础上提供
+ * {@link Mono} 包装的 {@link #reactive}，供 RReactive* 对象使用。
  *
  * @author Nikita Koksharov
  *
  */
 public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
+    /** 将 CompletionStage 工厂包装为背压感知的 Mono。 */
     <R> Mono<R> reactive(Callable<CompletionStage<R>> supplier);
 
     @Override
     CommandReactiveExecutor copy(ObjectParams objectParams);
 
+    /** 工厂：创建默认 {@link CommandReactiveService} 实例。 */
     static CommandReactiveExecutor create(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         return new CommandReactiveService(connectionManager, objectBuilder);
     }

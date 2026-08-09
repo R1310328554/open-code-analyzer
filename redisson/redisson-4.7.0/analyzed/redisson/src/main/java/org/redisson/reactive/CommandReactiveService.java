@@ -28,6 +28,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * {@link CommandReactiveExecutor} 默认实现：继承 {@link CommandAsyncService}，
+ * 通过 Flux.create + onRequest 将异步 Redis 调用适配为 Reactor {@link Mono}。
  *
  * @author Nikita Koksharov
  *
@@ -38,6 +40,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         super(executor, trackChanges);
     }
 
+    /** 以 REACTIVE 引用类型构造。 */
     CommandReactiveService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         super(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.REACTIVE);
     }
@@ -56,6 +59,10 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         return new CommandReactiveService(this, objectParams);
     }
 
+    /**
+     * onRequest 时调用 supplier 获取 CompletionStage；
+     * dispose 时 cancel Future；完成时 emit next + complete。
+     */
     @Override
     public <R> Mono<R> reactive(Callable<CompletionStage<R>> supplier) {
         return Flux.<R>create(emitter -> {
@@ -68,12 +75,14 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
                     return;
                 }
                 
+                // 订阅取消时中断底层 Redis 操作
                 emitter.onDispose(() -> {
                     future.toCompletableFuture().cancel(true);
                 });
 
                 future.whenComplete((v, e) -> {
                     if (e != null) {
+                        //  unwrap CompletionException 便于下游处理
                         if (e instanceof CompletionException) {
                             e = e.getCause();
                         }

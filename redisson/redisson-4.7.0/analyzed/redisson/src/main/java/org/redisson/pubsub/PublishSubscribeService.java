@@ -47,15 +47,25 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
+ * Redisson 全局 Pub/Sub 调度中心：管理订阅连接池、per-channel 异步锁、
+ * 锁/信号量/CountDownLatch 专用 {@link PublishSubscribe} 子系统，
+ * 以及 CLIENT TRACKING 与 keyspace 多节点订阅。
+ * <p>
+ * 核心索引：{@link #name2entry}（频道→连接集合）、
+ * {@link #name2PubSubConnection}（PubSubKey→主连接）、
+ * {@link #entry2PubSubConnection}（主从条目→空闲连接队列）。
  *
  * @author Nikita Koksharov
  *
  */
 public class PublishSubscribeService {
 
+    /** 频道名 + 主从条目的复合键，用于集群内定位订阅连接。 */
     public static class PubSubKey {
 
+        /** Redis 频道（或模式）名。 */
         private final ChannelName channelName;
+        /** 所属 MasterSlave 拓扑条目。 */
         private final MasterSlaveEntry entry;
 
         public PubSubKey(ChannelName channelName, MasterSlaveEntry entry) {
@@ -93,8 +103,10 @@ public class PublishSubscribeService {
         }
     }
 
+    /** 某 MasterSlave 条目下可复用的空闲 PubSub 连接队列。 */
     public static class PubSubEntry {
 
+        /** 尚有剩余订阅槽位的连接，按 FIFO 复用。 */
         Queue<PubSubConnectionEntry> entries = new ConcurrentLinkedQueue<>();
 
         public Queue<PubSubConnectionEntry> getEntries() {
@@ -104,30 +116,45 @@ public class PublishSubscribeService {
 
     private static final Logger log = LoggerFactory.getLogger(PublishSubscribeService.class);
 
+    /** 连接与槽位路由。 */
     private final ConnectionManager connectionManager;
 
+    /** 主从/集群配置（订阅超时、重试等）。 */
     private final MasterSlaveServersConfig config;
 
+    /** 按 channelName hash 分片的订阅变更锁（50 路）。 */
     private final AsyncSemaphore[] locks = new AsyncSemaphore[50];
 
+    /** 保护空闲 PubSub 连接队列的全局锁。 */
     private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
 
+    /** 频道 → 持有该频道订阅的连接集合。 */
     private final Map<ChannelName, Collection<PubSubConnectionEntry>> name2entry = new ConcurrentHashMap<>();
+    /** (频道, 主从条目) → 主 PubSub 连接条目。 */
     private final ConcurrentMap<PubSubKey, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<>();
+    /** 主从条目 → 空闲可复用连接池。 */
     private final ConcurrentMap<MasterSlaveEntry, PubSubEntry> entry2PubSubConnection = new ConcurrentHashMap<>();
+    /** (频道, 客户端连接池条目) → 绑定连接（CLIENT TRACKING 等）。 */
     private final Map<Tuple<ChannelName, ClientConnectionsEntry>, PubSubConnectionEntry> key2connection = new ConcurrentHashMap<>();
 
+    /** 分布式信号量 Pub/Sub 门面。 */
     private final SemaphorePubSub semaphorePubSub = new SemaphorePubSub(this);
 
+    /** CountDownLatch Pub/Sub 门面。 */
     private final CountDownLatchPubSub countDownLatchPubSub = new CountDownLatchPubSub(this);
 
+    /** 分布式锁 Pub/Sub 门面。 */
     private final LockPubSub lockPubSub = new LockPubSub(this);
 
+    /** 已开启 CLIENT TRACKING 的 PubSub 连接集合。 */
     private final Set<PubSubConnectionEntry> trackedEntries = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    /** Redis 7+ 分片订阅（SSUBSCRIBE）是否可用。 */
     private boolean shardingSupported = false;
+    /** PSUBSCRIBE 模式订阅是否可用。 */
     private boolean patternSupported = true;
 
+    /** 初始化 50 路 channel 锁与配置引用。 */
     public PublishSubscribeService(ConnectionManager connectionManager) {
         super();
         this.connectionManager = connectionManager;
@@ -137,18 +164,22 @@ public class PublishSubscribeService {
         }
     }
 
+    /** @return 锁专用 Pub/Sub */
     public LockPubSub getLockPubSub() {
         return lockPubSub;
     }
 
+    /** @return CountDownLatch Pub/Sub */
     public CountDownLatchPubSub getCountDownLatchPubSub() {
         return countDownLatchPubSub;
     }
 
+    /** @return 信号量 Pub/Sub */
     public SemaphorePubSub getSemaphorePubSub() {
         return semaphorePubSub;
     }
 
+    /** 统计多个频道上的监听器总数（取每频道首个连接）。 */
     public int countListeners(List<ChannelName> channelNames) {
         int result = 0;
         for (ChannelName channelName : channelNames) {
@@ -165,6 +196,10 @@ public class PublishSubscribeService {
         return name2entry.containsKey(channelName);
     }
 
+    /**
+     * 模式订阅 PSUBSCRIBE；keyspace 多实体模式下向所有 MasterSlave 条目各订一次，
+     * 并通过 statusCounter 合并 onStatus 回调。
+     */
     public CompletableFuture<Collection<PubSubConnectionEntry>> psubscribe(ChannelName channelName, Codec codec, RedisPubSubListener<?>... listeners) {
         if (isMultiEntity(channelName)) {
             Collection<MasterSlaveEntry> entrySet = connectionManager.getEntrySet();
@@ -206,12 +241,15 @@ public class PublishSubscribeService {
         return f.thenApply(res -> new ArrayList<>(Collections.singletonList(res)));
     }
 
+    /** 非单节点配置且为 keyspace 频道时需多节点订阅。 */
     public boolean isMultiEntity(ChannelName channelName) {
         return !connectionManager.getServiceManager().getCfg().isSingleConfig() && channelName.isKeyspace();
     }
 
+    /** FlushListener identityHashCode → 各节点 entryListener id 集合。 */
     private final Map<Integer, Collection<Integer>> flushListeners = new ConcurrentHashMap<>();
 
+    /** 订阅 __redis__:invalidate 频道以接收 CLIENT TRACKING 刷盘通知。 */
     public CompletableFuture<Integer> subscribe(CommandAsyncExecutor commandExecutor, FlushListener listener) {
         int listenerId = System.identityHashCode(listener);
 
@@ -236,6 +274,7 @@ public class PublishSubscribeService {
         return registerClientTrackingListener(commandExecutor, ffs, listenerId, null);
     }
 
+    /** 订阅 tracking 频道接收键变更字符串通知。 */
     public CompletableFuture<Integer> subscribe(CommandAsyncExecutor commandExecutor, TrackingListener listener) {
         int listenerId = System.identityHashCode(listener);
 
@@ -260,6 +299,9 @@ public class PublishSubscribeService {
         return registerClientTrackingListener(commandExecutor, ffs, listenerId, null);
     }
 
+    /**
+     * 全部节点 SUBSCRIBE 成功后，对未 tracking 的连接执行 CLIENT TRACKING ON REDIRECT。
+     */
     private CompletableFuture<Integer> registerClientTrackingListener(CommandAsyncExecutor commandExecutor,
                                                                       List<CompletableFuture<PubSubConnectionEntry>> ffs,
                                                                       int listenerId,
@@ -295,6 +337,7 @@ public class PublishSubscribeService {
         });
     }
 
+    /** 移除 Flush/Tracking 监听器并 UNSUBSCRIBE 对应 entryListener。 */
     public CompletableFuture<Void> removeFlushListenerAsync(int listenerId) {
         Collection<Integer> ids = flushListeners.remove(listenerId);
         if (ids == null) {
@@ -309,6 +352,7 @@ public class PublishSubscribeService {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
+    /** 按 key 定向订阅 tracking 变更（过滤 msg 等于 key）。 */
     public CompletableFuture<Integer> subscribe(String key, Codec codec,
                                                 CommandAsyncExecutor commandExecutor, TrackingListener listener) {
         MasterSlaveEntry entry = connectionManager.getEntry(key);
@@ -340,6 +384,7 @@ public class PublishSubscribeService {
         return registerClientTrackingListener(commandExecutor, ffs, listenerId, key);
     }
 
+    /** 对涉及的全部 channel 锁 acquire，返回汇总信号量与锁集合。 */
     private Tuple<AsyncSemaphore, Set<AsyncSemaphore>> acquire(List<ChannelName> channelNames) {
         AsyncSemaphore result = new AsyncSemaphore(0);
         Set<AsyncSemaphore> locks = new HashSet<>();
@@ -362,10 +407,15 @@ public class PublishSubscribeService {
         return new Tuple<>(result, locks);
     }
 
+    /** 单频道 SUBSCRIBE 便捷重载。 */
     public CompletableFuture<List<PubSubConnectionEntry>> subscribe(Codec codec, ChannelName channelName, RedisPubSubListener<?>... listeners) {
         return subscribe(codec, ChannelName.newList(channelName), listeners);
     }
 
+    /**
+     * 批量 SUBSCRIBE；多实体 keyspace 时 fan-out 到所有节点。
+     * 单槽位模式解析 slot 对应 MasterSlaveEntry 后订阅。
+     */
     public CompletableFuture<List<PubSubConnectionEntry>> subscribe(Codec codec, List<ChannelName> channelNames, RedisPubSubListener<?>... listeners) {
         if (isMultiEntity(channelNames.get(0))) {
             Collection<MasterSlaveEntry> entrySet = connectionManager.getEntrySet();
@@ -406,6 +456,7 @@ public class PublishSubscribeService {
         return f.thenApply(res -> new ArrayList<>(Collections.singletonList(res)));
     }
 
+    /** 分片频道 SSUBSCRIBE（Redis 7 集群）。 */
     public CompletableFuture<PubSubConnectionEntry> ssubscribe(Codec codec, List<ChannelName> channelNames, RedisPubSubListener<?>... listeners) {
         MasterSlaveEntry entry = getEntry(channelNames.get(0));
         if (entry == null) {
@@ -415,6 +466,10 @@ public class PublishSubscribeService {
         return subscribe(PubSubType.SSUBSCRIBE, codec, new ArrayList<>(channelNames), entry, null, listeners);
     }
 
+    /**
+     * 带 subscriptionTimeout 的订阅入口：先 acquire 多 channel 锁，
+     * 再调用 subscribeNoTimeout 并设置 promise 超时。
+     */
     private CompletableFuture<PubSubConnectionEntry> subscribe(PubSubType type, Codec codec, List<ChannelName> channelNames,
                                                                MasterSlaveEntry entry, ClientConnectionsEntry clientEntry,
                                                                RedisPubSubListener<?>... listeners) {
@@ -446,6 +501,7 @@ public class PublishSubscribeService {
         return promise;
     }
 
+    /** 内部锁/信号量用：无全局超时，按 shardingSupported 选 SUBSCRIBE 或 SSUBSCRIBE。 */
     CompletableFuture<PubSubConnectionEntry> subscribeNoTimeout(Codec codec, String channelName,
                                                                 AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
         MasterSlaveEntry entry = getEntry(new ChannelName(channelName));
@@ -468,14 +524,17 @@ public class PublishSubscribeService {
         return promise;
     }
 
+    /** 按 channelName hash 选取 50 路锁之一。 */
     AsyncSemaphore getSemaphore(ChannelName channelName) {
         return locks[Math.abs(channelName.hashCode() % locks.length)];
     }
 
+    /** 使用配置默认 subscriptionTimeout。 */
     void timeout(CompletableFuture<?> promise) {
         timeout(promise, config.getSubscriptionTimeout());
     }
 
+    /** 超时未完成则 completeExceptionally(RedisTimeoutException)。 */
     void timeout(CompletableFuture<?> promise, long timeout) {
         Timeout task = connectionManager.getServiceManager().newTimeout(t -> {
             promise.completeExceptionally(new RedisTimeoutException(
@@ -487,6 +546,7 @@ public class PublishSubscribeService {
         });
     }
 
+    /** 连接获取失败时按 retryAttempts/retryDelay 重试 subscribeNoTimeout。 */
     private void trySubscribe(Codec codec, List<ChannelName> channelNames,
                               CompletableFuture<PubSubConnectionEntry> promise, PubSubType type,
                               AsyncSemaphore lock, AtomicInteger attempts, RedisPubSubListener<?>... listeners) {
@@ -520,6 +580,10 @@ public class PublishSubscribeService {
         subscribeNoTimeout(codec, channelNames, entry, null, promise, type, lock, attempts, listeners);
     }
 
+    /**
+     * 核心订阅逻辑：先 addListeners 复用已有连接；否则从空闲池取连接或 connect 新连接，
+     * 再调用 PubSubConnectionEntry.subscribe 发送 Redis SUBSCRIBE。
+     */
     private void subscribeNoTimeout(Codec codec, List<ChannelName> channelNames, MasterSlaveEntry entry,
                                     ClientConnectionsEntry clientEntry, CompletableFuture<PubSubConnectionEntry> promise,
                                     PubSubType type, AsyncSemaphore lock, AtomicInteger attempts, RedisPubSubListener<?>... listeners) {
@@ -538,6 +602,7 @@ public class PublishSubscribeService {
 
                 PubSubEntry freePubSubConnections = entry2PubSubConnection.getOrDefault(entry, new PubSubEntry());
 
+                // 尝试复用同 MasterSlave 条目下的空闲 PubSub 连接
                 PubSubConnectionEntry freeEntry = freePubSubConnections.getEntries().peek();
                 if (freeEntry != null && clientEntry != null) {
                     if (!clientEntry.getClient().equals(freeEntry.getConnection().getRedisClient())) {
@@ -584,6 +649,10 @@ public class PublishSubscribeService {
         });
     }
 
+    /**
+     * 若频道已在 name2PubSubConnection/key2connection 中注册，则向旧 entry 追加 listener
+     * 并从待订阅列表移除；返回 true 表示已全部复用完成。
+     */
     private CompletableFuture<Boolean> addListeners(List<ChannelName> channelNames, MasterSlaveEntry entry,
                                                     ClientConnectionsEntry clientEntry, PubSubType type,
                                                     RedisPubSubListener<?>[] listeners, PubSubConnectionEntry freeEntry,
@@ -662,11 +731,13 @@ public class PublishSubscribeService {
         });
     }
 
+    /** 按 channel 名计算 slot 并返回写 MasterSlaveEntry。 */
     private MasterSlaveEntry getEntry(ChannelName channelName) {
         int slot = connectionManager.calcSlot(channelName.getName());
         return connectionManager.getWriteEntry(slot);
     }
 
+    /** 从 MasterSlaveEntry 申请新 PubSub 连接，创建 PubSubConnectionEntry 并 subscribe。 */
     private void connect(Codec codec, List<ChannelName> channelNames,
                          MasterSlaveEntry msEntry, ClientConnectionsEntry clientEntry,
                          CompletableFuture<PubSubConnectionEntry> promise,
@@ -724,6 +795,7 @@ public class PublishSubscribeService {
         });
     }
 
+    /** 按 shardingSupported 选择 UNSUBSCRIBE/SUNSUBSCRIBE 并 unsubscribeLocked。 */
     CompletableFuture<Void> unsubscribeLocked(ChannelName channelName) {
         Collection<PubSubConnectionEntry> coll = name2entry.get(channelName);
         if (coll == null || coll.isEmpty()) {
@@ -741,6 +813,7 @@ public class PublishSubscribeService {
         return unsubscribeLocked(topicType, channelName, coll.iterator().next());
     }
 
+    /** 从索引 remove 后发送 UNSUBSCRIBE，ACK 后 release 连接回池或归还连接管理器。 */
     CompletableFuture<Void> unsubscribeLocked(PubSubType topicType, ChannelName channelName, PubSubConnectionEntry ce) {
         remove(channelName, ce);
 
@@ -774,6 +847,7 @@ public class PublishSubscribeService {
         return result;
     }
 
+    /** 清理 name2PubSubConnection、key2connection、name2entry 及 tracking 引用计数。 */
     private void remove(ChannelName channelName, PubSubConnectionEntry entry) {
         name2PubSubConnection.remove(new PubSubKey(channelName, entry.getEntry()));
 
@@ -796,6 +870,7 @@ public class PublishSubscribeService {
         });
     }
 
+    /** 递增连接槽位；完全空闲则归还连接，否则放回 entry2PubSubConnection 队列。 */
     private void release(PubSubConnectionEntry entry) {
         entry.release();
         if (entry.isFree()) {
@@ -815,6 +890,7 @@ public class PublishSubscribeService {
         }
     }
 
+    /** MasterSlave 条目下线时清理其全部 PubSub 状态。 */
     public void remove(MasterSlaveEntry entry) {
         entry2PubSubConnection.remove(entry);
         name2entry.values().removeIf(v -> {
@@ -823,6 +899,7 @@ public class PublishSubscribeService {
         });
     }
 
+    /** 在 per-channel 锁保护下 UNSUBSCRIBE 并返回原频道 codec。 */
     public CompletableFuture<Codec> unsubscribe(ChannelName channelName, PubSubType topicType) {
         Collection<PubSubConnectionEntry> coll = name2entry.get(channelName);
         if (coll == null || coll.isEmpty()) {
@@ -861,6 +938,7 @@ public class PublishSubscribeService {
         });
     }
 
+    /** 集群 slot 迁移后，对该 slot 全部订阅先 UNSUBSCRIBE 再 SUBSCRIBE 重建。 */
     public void reattachPubSub(int slot) {
         name2PubSubConnection.entrySet().stream()
                 .filter(e -> connectionManager.calcSlot(e.getKey().getChannelName().getName()) == slot)
@@ -890,6 +968,7 @@ public class PublishSubscribeService {
                 });
     }
 
+    /** 单条 PubSub 连接重连后，按 channels/sharded/pattern 三套 map 重挂 listener。 */
     public void reattachPubSub(RedisPubSubConnection redisPubSubConnection) {
         MasterSlaveEntry en = connectionManager.getEntry(redisPubSubConnection.getRedisClient());
         if (en == null) {
@@ -901,6 +980,7 @@ public class PublishSubscribeService {
         reattachPubSubListeners(redisPubSubConnection.getPatternChannels().keySet(), en, PubSubType.PUNSUBSCRIBE);
     }
 
+    /** 逐频道 unsubscribe 再 subscribe，失败 1 秒后重试。 */
     private void reattachPubSubListeners(Set<ChannelName> channels, MasterSlaveEntry en, PubSubType topicType) {
         for (ChannelName channelName : channels) {
             PubSubConnectionEntry entry = name2PubSubConnection.get(new PubSubKey(channelName, en));
@@ -933,6 +1013,7 @@ public class PublishSubscribeService {
         }
     }
 
+    /** 重连后普通 SUBSCRIBE 重订阅，失败定时重试。 */
     private void subscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
                            Codec subscribeCodec) {
         if (connectionManager.getServiceManager().isShuttingDown()) {
@@ -1025,6 +1106,7 @@ public class PublishSubscribeService {
         });
     }
 
+    /** 异步按 EventListener 引用移除监听器，无 listener 时 UNSUBSCRIBE。 */
     public CompletableFuture<Void> removeListenerAsync(PubSubType type, List<ChannelName> channelNames, EventListener listener) {
         return removeListenerAsync(type, channelNames, (channelName, entry) -> {
             entry.removeListener(channelName, listener);
@@ -1107,6 +1189,7 @@ public class PublishSubscribeService {
         return result;
     }
 
+    /** 移除频道上全部 listener 并 UNSUBSCRIBE。 */
     public CompletableFuture<Void> removeAllListenersAsync(PubSubType type, ChannelName... channelNames) {
         List<CompletableFuture<Void>> fs = new ArrayList<>();
         for (ChannelName channelName : channelNames) {
@@ -1151,6 +1234,7 @@ public class PublishSubscribeService {
         return CompletableFuture.allOf(fs.toArray(new CompletableFuture[0]));
     }
 
+    /** 探测 PUBSUB NUMPAT，失败则禁用模式订阅。 */
     public void checkPatternSupport(RedisConnection connection) {
         try {
             connection.sync(RedisCommands.PUBSUB_NUMPAT);
@@ -1159,6 +1243,7 @@ public class PublishSubscribeService {
         }
     }
 
+    /** AUTO 模式探测 PUBSUB SHARDNUMSUB；ON 强制启用分片订阅。 */
     public void checkShardingSupport(ShardedSubscriptionMode mode, RedisConnection connection) {
         if (mode == ShardedSubscriptionMode.AUTO) {
             try {
@@ -1186,6 +1271,7 @@ public class PublishSubscribeService {
         return shardingSupported;
     }
 
+    /** 分片模式下返回 SPUBLISH，否则 PUBLISH。 */
     public String getPublishCommand() {
         if (shardingSupported) {
             return RedisCommands.SPUBLISH.getName();
