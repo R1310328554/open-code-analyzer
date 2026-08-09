@@ -29,6 +29,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 基于 {@link ServerWebExchange} 的 API 匹配器，将 {@link ApiDefinition} 中的路径谓词转换为路由匹配谓词。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

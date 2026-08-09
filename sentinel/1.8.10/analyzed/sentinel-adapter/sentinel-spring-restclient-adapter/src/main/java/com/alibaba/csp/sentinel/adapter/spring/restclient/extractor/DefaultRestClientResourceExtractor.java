@@ -20,19 +20,18 @@ import java.net.URI;
 import org.springframework.http.HttpRequest;
 
 /**
- * Default resource extractor for RestClient.
+ * RestClient 默认资源名提取器。
  * 
- * <p>Extracts resource name in format: {@code METHOD:scheme://host[:port]/path}
+ * <p>资源名格式：{@code METHOD:scheme://host[:port]/path}
  * 
- * <p>Examples:
+ * <p>示例：
  * <ul>
  *   <li>{@code GET:https://httpbin.org/get}</li>
  *   <li>{@code POST:http://localhost:8080/api/users}</li>
  *   <li>{@code GET:http://localhost:8080/api/users/123}</li>
  * </ul>
  *
- * <p>Note: Query parameters are not included in the resource name by default.
- * Use a custom extractor if you need query parameters.
+ * <p>注意：默认不包含查询参数。如需包含查询参数，请使用自定义提取器。
  *
  * @author QHT, uuuyuqi
  */

@@ -22,7 +22,7 @@ import com.alibaba.csp.sentinel.adapter.spring.restclient.fallback.RestClientFal
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * Configuration for Sentinel RestClient interceptor.
+ * Sentinel RestClient 拦截器配置，管理资源名前缀、资源提取器与降级处理器。
  *
  * @author QHT, uuuyuqi
  */

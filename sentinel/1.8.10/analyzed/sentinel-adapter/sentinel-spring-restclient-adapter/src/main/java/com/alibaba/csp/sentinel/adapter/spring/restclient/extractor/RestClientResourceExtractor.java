@@ -18,14 +18,14 @@ package com.alibaba.csp.sentinel.adapter.spring.restclient.extractor;
 import org.springframework.http.HttpRequest;
 
 /**
- * Extractor for RestClient resource name.
+ * RestClient 资源名提取器接口。
  *
  * @author QHT, uuuyuqi
  */
 public interface RestClientResourceExtractor {
 
     /**
-     * Extracts the resource name from the HTTP request.
+     * 从 HTTP 请求中提取 Sentinel 资源名。
      *
      * @param request HTTP request entity
      * @return the resource name of current request
