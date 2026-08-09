@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:55:11Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/RCountDownLatch.java",
-    "redisson/src/main/java/org/redisson/api/RCountDownLatchAsync.java",
-    "redisson/src/main/java/org/redisson/api/RCountDownLatchReactive.java",
-    "redisson/src/main/java/org/redisson/api/RCountDownLatchRx.java",
-    "redisson/src/main/java/org/redisson/api/RCuckooFilter.java",
-    "redisson/src/main/java/org/redisson/api/RCuckooFilterAsync.java",
-    "redisson/src/main/java/org/redisson/api/RCuckooFilterReactive.java",
-    "redisson/src/main/java/org/redisson/api/RCuckooFilterRx.java",
-    "redisson/src/main/java/org/redisson/api/RDelayedQueue.java",
-    "redisson/src/main/java/org/redisson/api/RDeque.java",
-    "redisson/src/main/java/org/redisson/api/RDequeAsync.java",
-    "redisson/src/main/java/org/redisson/api/RDequeReactive.java",
-    "redisson/src/main/java/org/redisson/api/RDequeRx.java",
-    "redisson/src/main/java/org/redisson/api/RDestroyable.java",
-    "redisson/src/main/java/org/redisson/api/RDoubleAdder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1502,
-  "done": 1305
+  "done": 1320
 }
