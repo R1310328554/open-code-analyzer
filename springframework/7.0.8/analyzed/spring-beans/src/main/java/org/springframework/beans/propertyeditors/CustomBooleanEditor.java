@@ -22,23 +22,14 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class CustomBooleanEditor — 意图说明
-
-class `CustomBooleanEditor`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/propertyeditors/CustomBooleanEditor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Property editor for Boolean/boolean properties.
+ * Boolean/boolean 属性编辑器。
  *
- * <p>This is not meant to be used as system PropertyEditor but rather as
- * locale-specific Boolean editor within custom controller code, to parse
- * UI-caused boolean strings into boolean properties of beans and check
- * them in the UI form.
+ * <p>本类并非用作系统级 PropertyEditor，而是作为自定义控制器代码中的
+ * 区域特定布尔编辑器，用于将 UI 提交的布尔字符串解析为 Bean 的布尔属性，
+ * 并在 UI 表单中回显。
  *
- * <p>In web MVC code, this editor will typically be registered with
- * {@code binder.registerCustomEditor} calls.
+ * <p>在 Web MVC 代码中，通常通过 {@code binder.registerCustomEditor} 注册本编辑器。
  *
  * @author Juergen Hoeller
  * @since 10.06.2003
@@ -46,88 +37,62 @@ class `CustomBooleanEditor`：请结合所属模块与调用方理解其在整�
  */
 public class CustomBooleanEditor extends PropertyEditorSupport {
 
-	// [OCA] 字段 `VALUE_TRUE`：类成员状态。
-	/**
-	 * Value of {@code "true"}.
-	 */
+	/** {@code "true"} 的值。 */
 	public static final String VALUE_TRUE = "true";
 
-	// [OCA] 字段 `VALUE_FALSE`：类成员状态。
-	/**
-	 * Value of {@code "false"}.
-	 */
+	/** {@code "false"} 的值。 */
 	public static final String VALUE_FALSE = "false";
 
-	// [OCA] 字段 `VALUE_ON`：类成员状态。
-	/**
-	 * Value of {@code "on"}.
-	 */
+	/** {@code "on"} 的值。 */
 	public static final String VALUE_ON = "on";
 
-	// [OCA] 字段 `VALUE_OFF`：类成员状态。
-	/**
-	 * Value of {@code "off"}.
-	 */
+	/** {@code "off"} 的值。 */
 	public static final String VALUE_OFF = "off";
 
-	// [OCA] 字段 `VALUE_YES`：类成员状态。
-	/**
-	 * Value of {@code "yes"}.
-	 */
+	/** {@code "yes"} 的值。 */
 	public static final String VALUE_YES = "yes";
 
-	// [OCA] 字段 `VALUE_NO`：类成员状态。
-	/**
-	 * Value of {@code "no"}.
-	 */
+	/** {@code "no"} 的值。 */
 	public static final String VALUE_NO = "no";
 
-	// [OCA] 字段 `VALUE_1`：类成员状态。
-	/**
-	 * Value of {@code "1"}.
-	 */
+	/** {@code "1"} 的值。 */
 	public static final String VALUE_1 = "1";
 
-	// [OCA] 字段 `VALUE_0`：类成员状态。
-	/**
-	 * Value of {@code "0"}.
-	 */
+	/** {@code "0"} 的值。 */
 	public static final String VALUE_0 = "0";
 
-
+	/** 自定义的"真"字符串表示；{@code null} 时使用内置默认值。 */
 	private final @Nullable String trueString;
 
+	/** 自定义的"假"字符串表示；{@code null} 时使用内置默认值。 */
 	private final @Nullable String falseString;
 
-	// [OCA] 字段 `allowEmpty`：类成员状态。
+	/** 是否允许空字符串解析为 {@code null}。 */
 	private final boolean allowEmpty;
 
 
 	/**
-	 * Create a new CustomBooleanEditor instance, with "true"/"on"/"yes"
-	 * and "false"/"off"/"no" as recognized String values.
-	 * <p>The "allowEmpty" parameter states if an empty String should
-	 * be allowed for parsing, i.e. get interpreted as null value.
-	 * Else, an IllegalArgumentException gets thrown in that case.
-	 * @param allowEmpty if empty strings should be allowed
+	 * 创建新的 CustomBooleanEditor 实例，默认识别
+	 * "true"/"on"/"yes" 和 "false"/"off"/"no" 字符串值。
+	 * <p>{@code allowEmpty} 指定解析时是否允许空字符串，
+	 * 即是否将其解释为 {@code null} 值；否则将抛出 IllegalArgumentException。
+	 * @param allowEmpty 是否允许空字符串
 	 */
 	public CustomBooleanEditor(boolean allowEmpty) {
 		this(null, null, allowEmpty);
 	}
 
 	/**
-	 * Create a new CustomBooleanEditor instance,
-	 * with configurable String values for true and false.
-	 * <p>The "allowEmpty" parameter states if an empty String should
-	 * be allowed for parsing, i.e. get interpreted as null value.
-	 * Else, an IllegalArgumentException gets thrown in that case.
-	 * @param trueString the String value that represents true:
-	 * for example, "true" (VALUE_TRUE), "on" (VALUE_ON),
-	 * "yes" (VALUE_YES) or some custom value
-	 * @param falseString the String value that represents false:
-	 * for example, "false" (VALUE_FALSE), "off" (VALUE_OFF),
-	 * "no" (VALUE_NO) or some custom value
-	 * @param allowEmpty if empty strings should be allowed
+	 * 创建新的 CustomBooleanEditor 实例，可配置真/假的字符串表示。
+	 * <p>{@code allowEmpty} 指定解析时是否允许空字符串，
+	 * 即是否将其解释为 {@code null} 值；否则将抛出 IllegalArgumentException。
+	 * @param trueString 表示"真"的字符串值：
+	 * 例如 "true"（VALUE_TRUE）、"on"（VALUE_ON）、
+	 * "yes"（VALUE_YES）或自定义值
+	 * @param falseString 表示"假"的字符串值：
+	 * 例如 "false"（VALUE_FALSE）、"off"（VALUE_OFF）、
+	 * "no"（VALUE_NO）或自定义值
+	 * @param allowEmpty 是否允许空字符串
 	 * @see #VALUE_TRUE
 	 * @see #VALUE_FALSE
 	 * @see #VALUE_ON
@@ -142,16 +107,15 @@ public class CustomBooleanEditor extends PropertyEditorSupport {
 	}
 
 
+	/**
+	 * 将文本解析为布尔值。
+	 * <p>依次匹配自定义真/假字符串，或内置的 true/on/yes/1 与 false/off/no/0。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 setAsText — 意图与阅读要点
-
-方法 `setAsText` 复杂度较高（CCN≈18, NLOC≈25）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void setAsText(@Nullable String text) throws IllegalArgumentException {
 		String input = (text != null ? text.trim() : null);
 		if (this.allowEmpty && !StringUtils.hasLength(input)) {
-			// Treat empty String as null value.
+			// 将空字符串视为 null 值
 			setValue(null);
 		}
 		else if (this.trueString != null && this.trueString.equalsIgnoreCase(input)) {
@@ -175,6 +139,9 @@ public class CustomBooleanEditor extends PropertyEditorSupport {
 		}
 	}
 
+	/**
+	 * 将布尔值格式化为字符串表示。
+	 */
 	@Override
 	public String getAsText() {
 		if (Boolean.TRUE.equals(getValue())) {

@@ -24,12 +24,11 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Property editor for {@link Class java.lang.Class}, to enable the direct
- * population of a {@code Class} property without recourse to having to use a
- * String class name property as bridge.
+ * {@link Class java.lang.Class} 属性编辑器，用于直接填充 {@code Class} 属性，
+ * 无需借助字符串类名属性作为桥梁。
  *
- * <p>Also supports "java.lang.String[]"-style array class names, in contrast to the
- * standard {@link Class#forName(String)} method.
+ * <p>与标准 {@link Class#forName(String)} 不同，还支持
+ * {@code "java.lang.String[]"} 形式的数组类名。
  *
  * @author Juergen Hoeller
  * @author Rick Evans
@@ -39,26 +38,30 @@ import org.springframework.util.StringUtils;
  */
 public class ClassEditor extends PropertyEditorSupport {
 
+	/** 用于加载类的 ClassLoader。 */
 	private final @Nullable ClassLoader classLoader;
 
 
 	/**
-	 * Create a default ClassEditor, using the thread context ClassLoader.
+	 * 创建默认 ClassEditor，使用线程上下文 ClassLoader。
 	 */
 	public ClassEditor() {
 		this(null);
 	}
 
 	/**
-	 * Create a default ClassEditor, using the given ClassLoader.
-	 * @param classLoader the ClassLoader to use
-	 * (or {@code null} for the thread context ClassLoader)
+	 * 创建默认 ClassEditor，使用指定的 ClassLoader。
+	 * @param classLoader 要使用的 ClassLoader
+	 *（或 {@code null} 表示使用线程上下文 ClassLoader）
 	 */
 	public ClassEditor(@Nullable ClassLoader classLoader) {
 		this.classLoader = (classLoader != null ? classLoader : ClassUtils.getDefaultClassLoader());
 	}
 
 
+	/**
+	 * 将类名文本解析为 Class 对象；空文本对应 {@code null}。
+	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasText(text)) {
@@ -69,6 +72,9 @@ public class ClassEditor extends PropertyEditorSupport {
 		}
 	}
 
+	/**
+	 * 将 Class 对象格式化为完全限定类名字符串。
+	 */
 	@Override
 	public String getAsText() {
 		Class<?> clazz = (Class<?>) getValue();

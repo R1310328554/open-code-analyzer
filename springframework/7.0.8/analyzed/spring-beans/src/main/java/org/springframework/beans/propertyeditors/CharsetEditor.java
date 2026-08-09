@@ -22,11 +22,11 @@ import java.nio.charset.Charset;
 import org.springframework.util.StringUtils;
 
 /**
- * Editor for {@code java.nio.charset.Charset}, translating charset
- * String representations into Charset objects and back.
+ * {@code java.nio.charset.Charset} 属性编辑器，
+ * 在字符集字符串表示与 Charset 对象之间双向转换。
  *
- * <p>Expects the same syntax as Charset's {@link java.nio.charset.Charset#name()},
- * for example, {@code UTF-8}, {@code ISO-8859-16}, etc.
+ * <p>期望的语法与 Charset 的 {@link java.nio.charset.Charset#name()} 相同，
+ * 例如 {@code UTF-8}、{@code ISO-8859-16} 等。
  *
  * @author Arjen Poutsma
  * @author Sam Brannen
@@ -35,6 +35,9 @@ import org.springframework.util.StringUtils;
  */
 public class CharsetEditor extends PropertyEditorSupport {
 
+	/**
+	 * 将字符集名称文本解析为 Charset 对象；空文本对应 {@code null}。
+	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasText(text)) {
@@ -45,6 +48,9 @@ public class CharsetEditor extends PropertyEditorSupport {
 		}
 	}
 
+	/**
+	 * 将 Charset 对象格式化为字符集名称字符串。
+	 */
 	@Override
 	public String getAsText() {
 		Charset value = (Charset) getValue();

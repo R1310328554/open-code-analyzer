@@ -24,16 +24,13 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
- * Editor for a {@link Character}, to populate a property
- * of type {@code Character} or {@code char} from a String value.
+ * {@link Character} 属性编辑器，用于从字符串填充 {@code Character} 或 {@code char} 类型属性。
  *
- * <p>Note that the JDK does not contain a default
- * {@link java.beans.PropertyEditor property editor} for {@code char}!
- * {@link org.springframework.beans.BeanWrapperImpl} will register this
- * editor by default.
+ * <p>注意：JDK 未为 {@code char} 提供默认的
+ * {@link java.beans.PropertyEditor 属性编辑器}！
+ * {@link org.springframework.beans.BeanWrapperImpl} 会默认注册本编辑器。
  *
- * <p>Also supports conversion from a Unicode character sequence; for example,
- * {@code u0041} ('A').
+ * <p>同时支持 Unicode 字符序列转换，例如 {@code u0041}（'A'）。
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -44,37 +41,36 @@ import org.springframework.util.StringUtils;
  */
 public class CharacterEditor extends PropertyEditorSupport {
 
-	/**
-	 * The prefix that identifies a string as being a Unicode character sequence.
-	 */
+	/** 标识字符串为 Unicode 字符序列的前缀。 */
 	private static final String UNICODE_PREFIX = "\\u";
 
-	/**
-	 * The length of a Unicode character sequence.
-	 */
+	/** Unicode 字符序列的长度。 */
 	private static final int UNICODE_LENGTH = 6;
 
-
+	/** 是否允许空字符串解析为 {@code null}。 */
 	private final boolean allowEmpty;
 
 
 	/**
-	 * Create a new CharacterEditor instance.
-	 * <p>The "allowEmpty" parameter controls whether an empty String is to be
-	 * allowed in parsing, i.e. be interpreted as the {@code null} value when
-	 * {@link #setAsText(String) text is being converted}. If {@code false},
-	 * an {@link IllegalArgumentException} will be thrown at that time.
-	 * @param allowEmpty if empty strings are to be allowed
+	 * 创建新的 CharacterEditor 实例。
+	 * <p>{@code allowEmpty} 控制解析时是否允许空字符串，
+	 * 即调用 {@link #setAsText(String)} 转换文本时是否将其解释为 {@code null} 值。
+	 * 若为 {@code false}，遇到空字符串时将抛出 {@link IllegalArgumentException}。
+	 * @param allowEmpty 是否允许空字符串
 	 */
 	public CharacterEditor(boolean allowEmpty) {
 		this.allowEmpty = allowEmpty;
 	}
 
 
+	/**
+	 * 将文本解析为单个字符值。
+	 * <p>支持空字符串（若允许）、单字符文本及 {@code \uXXXX} 形式的 Unicode 序列。
+	 */
 	@Override
 	public void setAsText(@Nullable String text) throws IllegalArgumentException {
 		if (this.allowEmpty && !StringUtils.hasLength(text)) {
-			// Treat empty String as null value.
+			// 将空字符串视为 null 值
 			setValue(null);
 		}
 		else if (text == null) {
@@ -92,16 +88,21 @@ public class CharacterEditor extends PropertyEditorSupport {
 		}
 	}
 
+	/**
+	 * 将字符值格式化为字符串。
+	 */
 	@Override
 	public String getAsText() {
 		Object value = getValue();
 		return (value != null ? value.toString() : "");
 	}
 
+	/** 判断给定序列是否为 {@code \uXXXX} 形式的 Unicode 字符序列。 */
 	private static boolean isUnicodeCharacterSequence(String sequence) {
 		return (sequence.startsWith(UNICODE_PREFIX) && sequence.length() == UNICODE_LENGTH);
 	}
 
+	/** 将 Unicode 字符序列解析为字符并设置值。 */
 	private void setAsUnicode(String text) {
 		int code = HexFormat.fromHexDigits(text, UNICODE_PREFIX.length(), text.length());
 		setValue((char) code);

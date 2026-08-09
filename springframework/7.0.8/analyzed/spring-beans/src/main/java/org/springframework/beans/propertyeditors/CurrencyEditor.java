@@ -22,8 +22,8 @@ import java.util.Currency;
 import org.springframework.util.StringUtils;
 
 /**
- * Editor for {@code java.util.Currency}, translating currency codes into Currency
- * objects. Exposes the currency code as text representation of a Currency object.
+ * {@code java.util.Currency} 属性编辑器，
+ * 将货币代码转换为 Currency 对象，并以货币代码作为文本表示。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -32,6 +32,9 @@ import org.springframework.util.StringUtils;
  */
 public class CurrencyEditor extends PropertyEditorSupport {
 
+	/**
+	 * 将货币代码文本解析为 Currency 对象。
+	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasText(text)) {
@@ -40,6 +43,9 @@ public class CurrencyEditor extends PropertyEditorSupport {
 		setValue(Currency.getInstance(text));
 	}
 
+	/**
+	 * 将 Currency 对象格式化为货币代码字符串。
+	 */
 	@Override
 	public String getAsText() {
 		Currency value = (Currency) getValue();

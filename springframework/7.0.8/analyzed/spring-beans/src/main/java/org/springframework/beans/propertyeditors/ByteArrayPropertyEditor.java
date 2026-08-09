@@ -21,8 +21,9 @@ import java.beans.PropertyEditorSupport;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Editor for byte arrays. Strings will simply be converted to
- * their corresponding byte representations.
+ * 字节数组（{@code byte[]}）属性编辑器。
+ *
+ * <p>将字符串直接转换为其对应的字节表示。
  *
  * @author Juergen Hoeller
  * @since 1.0.1
@@ -30,11 +31,17 @@ import org.jspecify.annotations.Nullable;
  */
 public class ByteArrayPropertyEditor extends PropertyEditorSupport {
 
+	/**
+	 * 将文本转换为字节数组；{@code null} 文本对应 {@code null} 值。
+	 */
 	@Override
 	public void setAsText(@Nullable String text) {
 		setValue(text != null ? text.getBytes() : null);
 	}
 
+	/**
+	 * 将字节数组转换回字符串表示。
+	 */
 	@Override
 	public String getAsText() {
 		byte[] value = (byte[]) getValue();

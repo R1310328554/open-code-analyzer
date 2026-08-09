@@ -26,11 +26,11 @@ import org.springframework.core.io.ResourceEditor;
 import org.springframework.util.Assert;
 
 /**
- * Editor for {@code org.xml.sax.InputSource}, converting from a
- * Spring resource location String to a SAX InputSource object.
+ * {@code org.xml.sax.InputSource} 属性编辑器，
+ * 将 Spring 资源位置字符串转换为 SAX InputSource 对象。
  *
- * <p>Supports Spring-style URL notation: any fully qualified standard URL
- * ("file:", "http:", etc) and Spring's special "classpath:" pseudo-URL.
+ * <p>支持 Spring 风格的 URL 表示法：任意完全限定的标准 URL
+ *（"file:"、"http:" 等）以及 Spring 特有的 "classpath:" 伪 URL。
  *
  * @author Juergen Hoeller
  * @since 3.0.3
@@ -42,21 +42,20 @@ import org.springframework.util.Assert;
  */
 public class InputSourceEditor extends PropertyEditorSupport {
 
+	/** 底层用于解析资源位置的 ResourceEditor。 */
 	private final ResourceEditor resourceEditor;
 
 
 	/**
-	 * Create a new InputSourceEditor,
-	 * using the default ResourceEditor underneath.
+	 * 创建新的 InputSourceEditor，底层使用默认 ResourceEditor。
 	 */
 	public InputSourceEditor() {
 		this.resourceEditor = new ResourceEditor();
 	}
 
 	/**
-	 * Create a new InputSourceEditor,
-	 * using the given ResourceEditor underneath.
-	 * @param resourceEditor the ResourceEditor to use
+	 * 创建新的 InputSourceEditor，底层使用给定 ResourceEditor。
+	 * @param resourceEditor 要使用的 ResourceEditor
 	 */
 	public InputSourceEditor(ResourceEditor resourceEditor) {
 		Assert.notNull(resourceEditor, "ResourceEditor must not be null");
@@ -64,6 +63,9 @@ public class InputSourceEditor extends PropertyEditorSupport {
 	}
 
 
+	/**
+	 * 将 Spring 资源位置文本解析为 InputSource 对象。
+	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		this.resourceEditor.setAsText(text);
@@ -77,6 +79,9 @@ public class InputSourceEditor extends PropertyEditorSupport {
 		}
 	}
 
+	/**
+	 * 将 InputSource 对象格式化为系统标识（URL）字符串。
+	 */
 	@Override
 	public String getAsText() {
 		InputSource value = (InputSource) getValue();

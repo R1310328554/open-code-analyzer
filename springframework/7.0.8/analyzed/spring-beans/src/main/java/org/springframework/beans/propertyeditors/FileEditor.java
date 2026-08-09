@@ -27,22 +27,20 @@ import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Editor for {@code java.io.File}, to directly populate a File property
- * from a Spring resource location.
+ * {@code java.io.File} 属性编辑器，从 Spring 资源位置直接填充 File 属性。
  *
- * <p>Supports Spring-style URL notation: any fully qualified standard URL
- * ("file:", "http:", etc) and Spring's special "classpath:" pseudo-URL.
+ * <p>支持 Spring 风格的 URL 表示法：任意完全限定的标准 URL
+ *（"file:"、"http:" 等）以及 Spring 特有的 "classpath:" 伪 URL。
  *
- * <p><b>NOTE:</b> The behavior of this editor has changed in Spring 2.0.
- * Previously, it created a File instance directly from a filename.
- * As of Spring 2.0, it takes a standard Spring resource location as input;
- * this is consistent with URLEditor and InputStreamEditor now.
+ * <p><b>注意：</b>本编辑器的行为在 Spring 2.0 中已变更。
+ * 此前它直接从文件名创建 File 实例。
+ * 自 Spring 2.0 起，它接受标准 Spring 资源位置作为输入；
+ * 这与 URLEditor 和 InputStreamEditor 的行为一致。
  *
- * <p><b>NOTE:</b> In Spring 2.5 the following modification was made.
- * If a file name is specified without a URL prefix or without an absolute path
- * then we try to locate the file using standard ResourceLoader semantics.
- * If the file was not found, then a File instance is created assuming the file
- * name refers to a relative file location.
+ * <p><b>注意：</b>Spring 2.5 做了如下修改。
+ * 若指定的文件名没有 URL 前缀或不是绝对路径，
+ * 则尝试使用标准 ResourceLoader 语义定位文件。
+ * 若文件未找到，则创建 File 实例，假定文件名指向相对文件位置。
  *
  * @author Juergen Hoeller
  * @author Thomas Risberg
@@ -55,19 +53,20 @@ import org.springframework.util.StringUtils;
  */
 public class FileEditor extends PropertyEditorSupport {
 
+	/** 底层用于解析资源位置的 ResourceEditor。 */
 	private final ResourceEditor resourceEditor;
 
 
 	/**
-	 * Create a new FileEditor, using a default ResourceEditor underneath.
+	 * 创建新的 FileEditor，底层使用默认 ResourceEditor。
 	 */
 	public FileEditor() {
 		this.resourceEditor = new ResourceEditor();
 	}
 
 	/**
-	 * Create a new FileEditor, using the given ResourceEditor underneath.
-	 * @param resourceEditor the ResourceEditor to use
+	 * 创建新的 FileEditor，底层使用给定 ResourceEditor。
+	 * @param resourceEditor 要使用的 ResourceEditor
 	 */
 	public FileEditor(ResourceEditor resourceEditor) {
 		Assert.notNull(resourceEditor, "ResourceEditor must not be null");
@@ -75,6 +74,11 @@ public class FileEditor extends PropertyEditorSupport {
 	}
 
 
+	/**
+	 * 将 Spring 资源位置文本解析为 File 对象。
+	 * <p>优先处理无 "file:" 前缀的绝对文件路径（向后兼容），
+	 * 否则通过 ResourceEditor 解析资源位置。
+	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (!StringUtils.hasText(text)) {
@@ -82,8 +86,7 @@ public class FileEditor extends PropertyEditorSupport {
 			return;
 		}
 
-		// Check whether we got an absolute file path without "file:" prefix.
-		// For backwards compatibility, we'll consider those as straight file path.
+		// 检查是否为无 "file:" 前缀的绝对文件路径（向后兼容，直接作为文件路径处理）
 		File file = null;
 		if (!ResourceUtils.isUrl(text)) {
 			file = new File(text);
@@ -93,11 +96,11 @@ public class FileEditor extends PropertyEditorSupport {
 			}
 		}
 
-		// Proceed with standard resource location parsing.
+		// 按标准资源位置解析流程处理
 		this.resourceEditor.setAsText(text);
 		Resource resource = (Resource) this.resourceEditor.getValue();
 
-		// If it's a URL or a path pointing to an existing resource, use it as-is.
+		// 若为 URL 或指向已存在资源的路径，直接获取 File
 		if (file == null || resource.exists()) {
 			try {
 				setValue(resource.getFile());
@@ -108,11 +111,14 @@ public class FileEditor extends PropertyEditorSupport {
 			}
 		}
 		else {
-			// Set a relative File reference and hope for the best.
+			// 创建相对 File 引用
 			setValue(file);
 		}
 	}
 
+	/**
+	 * 将 File 对象格式化为文件路径字符串。
+	 */
 	@Override
 	public String getAsText() {
 		File value = (File) getValue();

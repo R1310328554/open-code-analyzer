@@ -26,12 +26,11 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Property editor for an array of {@link Class Classes}, to enable
- * the direct population of a {@code Class[]} property without having to
- * use a {@code String} class name property as bridge.
+ * {@link Class} 数组属性编辑器，用于直接填充 {@code Class[]} 属性，
+ * 无需借助字符串类名属性作为桥梁。
  *
- * <p>Also supports "java.lang.String[]"-style array class names, in contrast
- * to the standard {@link Class#forName(String)} method.
+ * <p>与标准 {@link Class#forName(String)} 不同，还支持
+ * {@code "java.lang.String[]"} 形式的数组类名。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -39,28 +38,30 @@ import org.springframework.util.StringUtils;
  */
 public class ClassArrayEditor extends PropertyEditorSupport {
 
+	/** 用于加载类的 ClassLoader。 */
 	private final @Nullable ClassLoader classLoader;
 
 
 	/**
-	 * Create a default {@code ClassEditor}, using the thread
-	 * context {@code ClassLoader}.
+	 * 创建默认的 {@code ClassArrayEditor}，使用线程上下文 {@code ClassLoader}。
 	 */
 	public ClassArrayEditor() {
 		this(null);
 	}
 
 	/**
-	 * Create a default {@code ClassArrayEditor}, using the given
-	 * {@code ClassLoader}.
-	 * @param classLoader the {@code ClassLoader} to use
-	 * (or pass {@code null} for the thread context {@code ClassLoader})
+	 * 创建默认的 {@code ClassArrayEditor}，使用指定的 {@code ClassLoader}。
+	 * @param classLoader 要使用的 {@code ClassLoader}
+	 *（或传入 {@code null} 以使用线程上下文 {@code ClassLoader}）
 	 */
 	public ClassArrayEditor(@Nullable ClassLoader classLoader) {
 		this.classLoader = (classLoader != null ? classLoader : ClassUtils.getDefaultClassLoader());
 	}
 
 
+	/**
+	 * 将逗号分隔的类名文本解析为 Class 数组；空文本对应 {@code null}。
+	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasText(text)) {
@@ -77,6 +78,9 @@ public class ClassArrayEditor extends PropertyEditorSupport {
 		}
 	}
 
+	/**
+	 * 将 Class 数组格式化为逗号分隔的完全限定类名字符串。
+	 */
 	@Override
 	public String getAsText() {
 		Class<?>[] classes = (Class[]) getValue();

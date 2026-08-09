@@ -21,8 +21,9 @@ import java.beans.PropertyEditorSupport;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Editor for char arrays. Strings will simply be converted to
- * their corresponding char representations.
+ * 字符数组（{@code char[]}）属性编辑器。
+ *
+ * <p>将字符串直接转换为其对应的字符表示。
  *
  * @author Juergen Hoeller
  * @since 1.2.8
@@ -30,11 +31,17 @@ import org.jspecify.annotations.Nullable;
  */
 public class CharArrayPropertyEditor extends PropertyEditorSupport {
 
+	/**
+	 * 将文本转换为字符数组；{@code null} 文本对应 {@code null} 值。
+	 */
 	@Override
 	public void setAsText(@Nullable String text) {
 		setValue(text != null ? text.toCharArray() : null);
 	}
 
+	/**
+	 * 将字符数组转换回字符串表示。
+	 */
 	@Override
 	public String getAsText() {
 		char[] value = (char[]) getValue();

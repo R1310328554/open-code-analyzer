@@ -28,8 +28,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Property editor for Maps, converting any source Map
- * to a given target Map type.
+ * Map 属性编辑器，将任意源 Map 转换为目标 Map 类型。
  *
  * @author Juergen Hoeller
  * @since 2.0.1
@@ -38,17 +37,17 @@ import org.springframework.util.ReflectionUtils;
  */
 public class CustomMapEditor extends PropertyEditorSupport {
 
+	/** 目标 Map 类型。 */
 	@SuppressWarnings("rawtypes")
 	private final Class<? extends Map> mapType;
 
+	/** 是否将传入的 {@code null} 转换为空 Map。 */
 	private final boolean nullAsEmptyMap;
 
 
 	/**
-	 * Create a new CustomMapEditor for the given target type,
-	 * keeping an incoming {@code null} as-is.
-	 * @param mapType the target type, which needs to be a
-	 * sub-interface of Map or a concrete Map class
+	 * 为给定目标类型创建新的 CustomMapEditor，传入的 {@code null} 保持原样。
+	 * @param mapType 目标类型，须为 Map 的子接口或具体实现类
 	 * @see java.util.Map
 	 * @see java.util.HashMap
 	 * @see java.util.TreeMap
@@ -60,18 +59,13 @@ public class CustomMapEditor extends PropertyEditorSupport {
 	}
 
 	/**
-	 * Create a new CustomMapEditor for the given target type.
-	 * <p>If the incoming value is of the given type, it will be used as-is.
-	 * If it is a different Map type or an array, it will be converted
-	 * to a default implementation of the given Map type.
-	 * If the value is anything else, a target Map with that single
-	 * value will be created.
-	 * <p>The default Map implementations are: TreeMap for SortedMap,
-	 * and LinkedHashMap for Map.
-	 * @param mapType the target type, which needs to be a
-	 * sub-interface of Map or a concrete Map class
-	 * @param nullAsEmptyMap ap whether to convert an incoming {@code null}
-	 * value to an empty Map (of the appropriate type)
+	 * 为给定目标类型创建新的 CustomMapEditor。
+	 * <p>若传入值已是目标类型，则直接使用。
+	 * 若为其他 Map 类型，则转换为目标 Map 类型的默认实现。
+	 * 若为其他类型，则创建仅含该单个值的目标 Map。
+	 * <p>默认实现为：SortedMap 对应 TreeMap，Map 对应 LinkedHashMap。
+	 * @param mapType 目标类型，须为 Map 的子接口或具体实现类
+	 * @param nullAsEmptyMap 是否将传入的 {@code null} 转换为空 Map（对应类型）
 	 * @see java.util.Map
 	 * @see java.util.TreeMap
 	 * @see java.util.LinkedHashMap
@@ -89,7 +83,7 @@ public class CustomMapEditor extends PropertyEditorSupport {
 
 
 	/**
-	 * Convert the given text value to a Map with a single element.
+	 * 将给定文本值转换为仅含单个元素的 Map。
 	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
@@ -97,7 +91,7 @@ public class CustomMapEditor extends PropertyEditorSupport {
 	}
 
 	/**
-	 * Convert the given value to a Map of the target type.
+	 * 将给定值转换为目标类型的 Map。
 	 */
 	@Override
 	public void setValue(@Nullable Object value) {
@@ -105,11 +99,11 @@ public class CustomMapEditor extends PropertyEditorSupport {
 			super.setValue(createMap(this.mapType, 0));
 		}
 		else if (value == null || (this.mapType.isInstance(value) && !alwaysCreateNewMap())) {
-			// Use the source value as-is, as it matches the target type.
+			// 源值类型已匹配目标类型，直接使用
 			super.setValue(value);
 		}
 		else if (value instanceof Map<?, ?> source) {
-			// Convert Map elements.
+			// 转换 Map 元素
 			Map<Object, Object> target = createMap(this.mapType, source.size());
 			source.forEach((key, val) -> target.put(convertKey(key), convertValue(val)));
 			super.setValue(target);
@@ -120,11 +114,10 @@ public class CustomMapEditor extends PropertyEditorSupport {
 	}
 
 	/**
-	 * Create a Map of the given type, with the given
-	 * initial capacity (if supported by the Map type).
-	 * @param mapType a sub-interface of Map
-	 * @param initialCapacity the initial capacity
-	 * @return the new Map instance
+	 * 创建指定类型的 Map，并设置初始容量（若目标类型支持）。
+	 * @param mapType Map 的子接口
+	 * @param initialCapacity 初始容量
+	 * @return 新的 Map 实例
 	 */
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	protected Map<Object, Object> createMap(Class<? extends Map> mapType, int initialCapacity) {
@@ -146,10 +139,8 @@ public class CustomMapEditor extends PropertyEditorSupport {
 	}
 
 	/**
-	 * Return whether to always create a new Map,
-	 * even if the type of the passed-in Map already matches.
-	 * <p>Default is "false"; can be overridden to enforce creation of a
-	 * new Map, for example to convert elements in any case.
+	 * 是否始终创建新的 Map，即使传入的 Map 类型已匹配。
+	 * <p>默认为 {@code false}；可覆盖以强制创建新 Map，例如始终转换元素。
 	 * @see #convertKey
 	 * @see #convertValue
 	 */
@@ -158,16 +149,14 @@ public class CustomMapEditor extends PropertyEditorSupport {
 	}
 
 	/**
-	 * Hook to convert each encountered Map key.
-	 * The default implementation simply returns the passed-in key as-is.
-	 * <p>Can be overridden to perform conversion of certain keys,
-	 * for example from String to Integer.
-	 * <p>Only called if actually creating a new Map!
-	 * This is by default not the case if the type of the passed-in Map
-	 * already matches. Override {@link #alwaysCreateNewMap()} to
-	 * enforce creating a new Map in every case.
-	 * @param key the source key
-	 * @return the key to be used in the target Map
+	 * 转换每个遇到的 Map 键的钩子方法。
+	 * <p>默认实现直接返回传入键。
+	 * <p>可覆盖以转换特定键，例如从 String 转为 Integer。
+	 * <p>仅在实际创建新 Map 时调用！
+	 * 若传入 Map 类型已匹配，默认不会调用。
+	 * 覆盖 {@link #alwaysCreateNewMap()} 可强制每次都创建新 Map。
+	 * @param key 源键
+	 * @return 目标 Map 中使用的键
 	 * @see #alwaysCreateNewMap
 	 */
 	protected Object convertKey(Object key) {
@@ -175,16 +164,14 @@ public class CustomMapEditor extends PropertyEditorSupport {
 	}
 
 	/**
-	 * Hook to convert each encountered Map value.
-	 * The default implementation simply returns the passed-in value as-is.
-	 * <p>Can be overridden to perform conversion of certain values,
-	 * for example from String to Integer.
-	 * <p>Only called if actually creating a new Map!
-	 * This is by default not the case if the type of the passed-in Map
-	 * already matches. Override {@link #alwaysCreateNewMap()} to
-	 * enforce creating a new Map in every case.
-	 * @param value the source value
-	 * @return the value to be used in the target Map
+	 * 转换每个遇到的 Map 值的钩子方法。
+	 * <p>默认实现直接返回传入值。
+	 * <p>可覆盖以转换特定值，例如从 String 转为 Integer。
+	 * <p>仅在实际创建新 Map 时调用！
+	 * 若传入 Map 类型已匹配，默认不会调用。
+	 * 覆盖 {@link #alwaysCreateNewMap()} 可强制每次都创建新 Map。
+	 * @param value 源值
+	 * @return 目标 Map 中使用的值
 	 * @see #alwaysCreateNewMap
 	 */
 	protected Object convertValue(Object value) {
@@ -193,8 +180,7 @@ public class CustomMapEditor extends PropertyEditorSupport {
 
 
 	/**
-	 * This implementation returns {@code null} to indicate that
-	 * there is no appropriate text representation.
+	 * 本实现返回 {@code null}，表示没有合适的文本表示。
 	 */
 	@Override
 	public @Nullable String getAsText() {
