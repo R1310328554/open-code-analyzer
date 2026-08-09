@@ -17,11 +17,20 @@
 
 package org.apache.rocketmq.remoting.protocol.body;
 
+/**
+ * 直接消费（ConsumeMessageDirectly）结果码：标识 Broker 端模拟消费时的处理结论。
+ */
 public enum CMResult {
+    /** 消费成功。 */
     CR_SUCCESS,
+    /** 稍后重试。 */
     CR_LATER,
+    /** 事务回滚。 */
     CR_ROLLBACK,
+    /** 事务提交。 */
     CR_COMMIT,
+    /** 消费抛出异常。 */
     CR_THROW_EXCEPTION,
+    /** 监听器返回 null。 */
     CR_RETURN_NULL,
 }

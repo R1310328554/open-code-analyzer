@@ -22,23 +22,32 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 消费位点持久化包装：topic@group → queueId → offset 及 {@link DataVersion}。
+ */
 public class ConsumerOffsetSerializeWrapper extends RemotingSerializable {
+    /** topic@group → (queueId → 消费位点)。 */
     private ConcurrentMap<String/* topic@group */, ConcurrentMap<Integer, Long>> offsetTable =
         new ConcurrentHashMap<>(512);
+    /** 位点表版本号，用于增量同步。 */
     private DataVersion dataVersion;
 
+    /** 返回位点表。 */
     public ConcurrentMap<String, ConcurrentMap<Integer, Long>> getOffsetTable() {
         return offsetTable;
     }
 
+    /** 设置位点表。 */
     public void setOffsetTable(ConcurrentMap<String, ConcurrentMap<Integer, Long>> offsetTable) {
         this.offsetTable = offsetTable;
     }
 
+    /** 返回数据版本。 */
     public DataVersion getDataVersion() {
         return dataVersion;
     }
 
+    /** 设置数据版本。 */
     public void setDataVersion(DataVersion dataVersion) {
         this.dataVersion = dataVersion;
     }

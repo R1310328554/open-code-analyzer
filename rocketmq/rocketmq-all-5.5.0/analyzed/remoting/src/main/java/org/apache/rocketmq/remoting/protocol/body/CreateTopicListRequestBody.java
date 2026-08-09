@@ -21,20 +21,28 @@ import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 批量创建 Topic 请求体：携带 {@link TopicConfig} 列表。
+ */
 public class CreateTopicListRequestBody extends RemotingSerializable {
+    /** 待创建的 Topic 配置列表（非空）。 */
     @CFNotNull
     private List<TopicConfig> topicConfigList;
 
+    /** 默认构造，供反序列化使用。 */
     public CreateTopicListRequestBody() {}
 
+    /** 以配置列表初始化。 */
     public CreateTopicListRequestBody(List<TopicConfig> topicConfigList) {
         this.topicConfigList = topicConfigList;
     }
 
+    /** 返回 Topic 配置列表。 */
     public List<TopicConfig> getTopicConfigList() {
         return topicConfigList;
     }
 
+    /** 设置 Topic 配置列表。 */
     public void setTopicConfigList(List<TopicConfig> topicConfigList) {
         this.topicConfigList = topicConfigList;
     }

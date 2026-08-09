@@ -25,26 +25,36 @@ import java.util.Set;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 
+/**
+ * NameServer 集群路由快照：Broker 地址表与集群-Broker 归属关系。
+ */
 public class ClusterInfo extends RemotingSerializable {
+    /** brokerName → {@link BrokerData} 地址映射。 */
     private Map<String/* brokerName */, BrokerData> brokerAddrTable;
+    /** clusterName → brokerName 集合。 */
     private Map<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
 
+    /** 返回 Broker 地址表。 */
     public Map<String, BrokerData> getBrokerAddrTable() {
         return brokerAddrTable;
     }
 
+    /** 设置 Broker 地址表。 */
     public void setBrokerAddrTable(Map<String, BrokerData> brokerAddrTable) {
         this.brokerAddrTable = brokerAddrTable;
     }
 
+    /** 返回集群归属表。 */
     public Map<String, Set<String>> getClusterAddrTable() {
         return clusterAddrTable;
     }
 
+    /** 设置集群归属表。 */
     public void setClusterAddrTable(Map<String, Set<String>> clusterAddrTable) {
         this.clusterAddrTable = clusterAddrTable;
     }
 
+    /** 收集指定集群下全部 Broker 服务地址。 */
     public String[] retrieveAllAddrByCluster(String cluster) {
         List<String> addrs = new ArrayList<>();
         if (clusterAddrTable.containsKey(cluster)) {
@@ -60,10 +70,12 @@ public class ClusterInfo extends RemotingSerializable {
         return addrs.toArray(new String[] {});
     }
 
+    /** 返回所有已注册集群名称。 */
     public String[] retrieveAllClusterNames() {
         return clusterAddrTable.keySet().toArray(new String[] {});
     }
 
+    /** 比较两张路由表是否一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -74,6 +86,7 @@ public class ClusterInfo extends RemotingSerializable {
         return Objects.equal(brokerAddrTable, info.brokerAddrTable) && Objects.equal(clusterAddrTable, info.clusterAddrTable);
     }
 
+    /** 基于两张路由表计算哈希。 */
     @Override
     public int hashCode() {
         return Objects.hashCode(brokerAddrTable, clusterAddrTable);

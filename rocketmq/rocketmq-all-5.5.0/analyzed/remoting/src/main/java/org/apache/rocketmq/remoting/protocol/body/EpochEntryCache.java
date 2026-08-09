@@ -20,13 +20,23 @@ import java.util.List;
 import org.apache.rocketmq.remoting.protocol.EpochEntry;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Broker Epoch 条目缓存：集群/Broker 标识、Epoch 列表及最大 CommitLog 位点。
+ * 用于 Controller 模式下副本同步状态上报。
+ */
 public class EpochEntryCache extends RemotingSerializable {
+    /** 所属集群名称。 */
     private String clusterName;
+    /** Broker 逻辑名称。 */
     private String brokerName;
+    /** Broker 副本 ID（0 通常为 Master）。 */
     private long brokerId;
+    /** Epoch 条目列表（leader epoch 与起始位点）。 */
     private List<EpochEntry> epochList;
+    /** 当前最大 CommitLog 位点。 */
     private long maxOffset;
 
+    /** 全字段构造。 */
     public EpochEntryCache(String clusterName, String brokerName, long brokerId, List<EpochEntry> epochList, long maxOffset) {
         this.clusterName = clusterName;
         this.brokerName = brokerName;
@@ -35,46 +45,57 @@ public class EpochEntryCache extends RemotingSerializable {
         this.maxOffset = maxOffset;
     }
 
+    /** 返回集群名称。 */
     public String getClusterName() {
         return clusterName;
     }
 
+    /** 设置集群名称。 */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }
 
+    /** 返回 Broker 名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }
 
+    /** 返回 Broker ID。 */
     public long getBrokerId() {
         return brokerId;
     }
 
+    /** 设置 Broker ID。 */
     public void setBrokerId(long brokerId) {
         this.brokerId = brokerId;
     }
 
+    /** 返回 Epoch 列表。 */
     public List<EpochEntry> getEpochList() {
         return this.epochList;
     }
 
+    /** 设置 Epoch 列表。 */
     public void setEpochList(List<EpochEntry> epochList) {
         this.epochList = epochList;
     }
 
+    /** 返回最大位点。 */
     public long getMaxOffset() {
         return maxOffset;
     }
 
+    /** 设置最大位点。 */
     public void setMaxOffset(long maxOffset) {
         this.maxOffset = maxOffset;
     }
 
+    /** 返回调试字符串。 */
     @Override
     public String toString() {
         return "EpochEntryCache{" +

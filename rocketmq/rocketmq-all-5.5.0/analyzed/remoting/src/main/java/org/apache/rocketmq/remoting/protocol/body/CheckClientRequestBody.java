@@ -20,41 +20,56 @@ package org.apache.rocketmq.remoting.protocol.body;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 客户端订阅一致性校验请求体：携带 clientId、消费组与订阅信息供 Broker 比对。
+ */
 public class CheckClientRequestBody extends RemotingSerializable {
 
+    /** 客户端唯一标识。 */
     private String clientId;
+    /** 消费组名称。 */
     private String group;
+    /** 待校验的订阅数据。 */
     private SubscriptionData subscriptionData;
+    /** 命名空间（多租户隔离）。 */
     private String namespace;
 
+    /** 返回客户端 ID。 */
     public String getClientId() {
         return clientId;
     }
 
+    /** 设置客户端 ID。 */
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
 
+    /** 返回消费组。 */
     public String getGroup() {
         return group;
     }
 
+    /** 设置消费组。 */
     public void setGroup(String group) {
         this.group = group;
     }
 
+    /** 返回订阅数据。 */
     public SubscriptionData getSubscriptionData() {
         return subscriptionData;
     }
 
+    /** 设置订阅数据。 */
     public void setSubscriptionData(SubscriptionData subscriptionData) {
         this.subscriptionData = subscriptionData;
     }
 
+    /** 返回命名空间。 */
     public String getNamespace() {
         return namespace;
     }
 
+    /** 设置命名空间。 */
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }

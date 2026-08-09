@@ -27,28 +27,46 @@ import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 消费者运行时诊断快照：属性、订阅、ProcessQueue、Pop 队列及性能指标。
+ * 提供订阅一致性、Rebalance 与 ProcessQueue 阻塞分析工具方法。
+ */
 public class ConsumerRunningInfo extends RemotingSerializable {
+    /** 属性键：NameServer 地址。 */
     public static final String PROP_NAMESERVER_ADDR = "PROP_NAMESERVER_ADDR";
+    /** 属性键：消费线程池核心数。 */
     public static final String PROP_THREADPOOL_CORE_SIZE = "PROP_THREADPOOL_CORE_SIZE";
+    /** 属性键：是否顺序消费。 */
     public static final String PROP_CONSUME_ORDERLY = "PROP_CONSUMEORDERLY";
+    /** 属性键：消费类型。 */
     public static final String PROP_CONSUME_TYPE = "PROP_CONSUME_TYPE";
+    /** 属性键：客户端版本。 */
     public static final String PROP_CLIENT_VERSION = "PROP_CLIENT_VERSION";
+    /** 属性键：消费者启动时间戳。 */
     public static final String PROP_CONSUMER_START_TIMESTAMP = "PROP_CONSUMER_START_TIMESTAMP";
 
+    /** 客户端运行时属性集合。 */
     private Properties properties = new Properties();
 
+    /** 当前订阅集合（有序）。 */
     private TreeSet<SubscriptionData> subscriptionSet = new TreeSet<>();
 
+    /** Push/Pull 模式 ProcessQueue 表。 */
     private TreeMap<MessageQueue, ProcessQueueInfo> mqTable = new TreeMap<>();
 
+    /** Pop 模式 ProcessQueue 表。 */
     private TreeMap<MessageQueue, PopProcessQueueInfo> mqPopTable = new TreeMap<>();
 
+    /** Topic → 消费性能指标。 */
     private TreeMap<String/* Topic */, ConsumeStatus> statusTable = new TreeMap<>();
 
+    /** 用户自定义扩展信息。 */
     private TreeMap<String, String> userConsumerInfo = new TreeMap<>();
 
+    /** 消费线程 jstack 快照。 */
     private String jstack;
 
+    /** 校验同组各客户端订阅是否一致（Push 且启动超过 2 分钟时生效）。 */
     public static boolean analyzeSubscription(final TreeMap<String/* clientId */, ConsumerRunningInfo> criTable) {
         ConsumerRunningInfo prev = criTable.firstEntry().getValue();
 
@@ -74,7 +92,7 @@ public class ConsumerRunningInfo extends RemotingSerializable {
                     boolean equals = current.getSubscriptionSet().equals(prev.getSubscriptionSet());
 
                     if (!equals) {
-                        // Different subscription in the same group of consumer
+                        // 同组消费者订阅不一致
                         return false;
                     }
 
@@ -95,6 +113,7 @@ public class ConsumerRunningInfo extends RemotingSerializable {
         return true;
     }
 
+    /** 判断是否为 Push（被动）消费类型。 */
     public static boolean isPushType(ConsumerRunningInfo consumerRunningInfo) {
         String property = consumerRunningInfo.getProperties().getProperty(ConsumerRunningInfo.PROP_CONSUME_TYPE);
 
@@ -104,10 +123,12 @@ public class ConsumerRunningInfo extends RemotingSerializable {
         return ConsumeType.valueOf(property) == ConsumeType.CONSUME_PASSIVELY;
     }
 
+    /** Rebalance 一致性分析（当前恒返回 true）。 */
     public static boolean analyzeRebalance(final TreeMap<String/* clientId */, ConsumerRunningInfo> criTable) {
         return true;
     }
 
+    /** 分析 ProcessQueue 锁/消费阻塞并生成诊断文本。 */
     public static String analyzeProcessQueue(final String clientId, ConsumerRunningInfo info) {
         StringBuilder sb = new StringBuilder();
         boolean push = false;
@@ -165,42 +186,52 @@ public class ConsumerRunningInfo extends RemotingSerializable {
         return sb.toString();
     }
 
+    /** 返回运行时属性。 */
     public Properties getProperties() {
         return properties;
     }
 
+    /** 设置运行时属性。 */
     public void setProperties(Properties properties) {
         this.properties = properties;
     }
 
+    /** 返回订阅集合。 */
     public TreeSet<SubscriptionData> getSubscriptionSet() {
         return subscriptionSet;
     }
 
+    /** 设置订阅集合。 */
     public void setSubscriptionSet(TreeSet<SubscriptionData> subscriptionSet) {
         this.subscriptionSet = subscriptionSet;
     }
 
+    /** 返回 ProcessQueue 表。 */
     public TreeMap<MessageQueue, ProcessQueueInfo> getMqTable() {
         return mqTable;
     }
 
+    /** 设置 ProcessQueue 表。 */
     public void setMqTable(TreeMap<MessageQueue, ProcessQueueInfo> mqTable) {
         this.mqTable = mqTable;
     }
 
+    /** 返回性能指标表。 */
     public TreeMap<String, ConsumeStatus> getStatusTable() {
         return statusTable;
     }
 
+    /** 设置性能指标表。 */
     public void setStatusTable(TreeMap<String, ConsumeStatus> statusTable) {
         this.statusTable = statusTable;
     }
 
+    /** 返回用户扩展信息。 */
     public TreeMap<String, String> getUserConsumerInfo() {
         return userConsumerInfo;
     }
 
+    /** 格式化为管理端可读的完整诊断报告。 */
     public String formatString() {
         StringBuilder sb = new StringBuilder();
 
@@ -344,18 +375,22 @@ public class ConsumerRunningInfo extends RemotingSerializable {
         return sb.toString();
     }
 
+    /** 返回 jstack 文本。 */
     public String getJstack() {
         return jstack;
     }
 
+    /** 设置 jstack 文本。 */
     public void setJstack(String jstack) {
         this.jstack = jstack;
     }
 
+    /** 返回 Pop ProcessQueue 表。 */
     public TreeMap<MessageQueue, PopProcessQueueInfo> getMqPopTable() {
         return mqPopTable;
     }
 
+    /** 设置 Pop ProcessQueue 表。 */
     public void setMqPopTable(
         TreeMap<MessageQueue, PopProcessQueueInfo> mqPopTable) {
         this.mqPopTable = mqPopTable;
