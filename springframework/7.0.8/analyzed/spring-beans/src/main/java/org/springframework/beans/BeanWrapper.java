@@ -19,22 +19,18 @@ package org.springframework.beans;
 import java.beans.PropertyDescriptor;
 
 /**
- * The central interface of Spring's low-level JavaBeans infrastructure.
+ * Spring 底层 JavaBeans 基础设施的核心接口。
  *
- * <p>Typically not used directly but rather implicitly via a
- * {@link org.springframework.beans.factory.BeanFactory} or a
- * {@link org.springframework.validation.DataBinder}.
+ * <p>通常不会直接使用，而是通过 {@link org.springframework.beans.factory.BeanFactory}
+ * 或 {@link org.springframework.validation.DataBinder} 间接发挥作用。
  *
- * <p>Provides operations to analyze and manipulate standard JavaBeans:
- * the ability to get and set property values (individually or in bulk),
- * get property descriptors, and query the readability/writability of properties.
+ * <p>提供对标准 JavaBeans 的分析与操作：可单独或批量读写属性值、
+ * 获取属性描述符，以及查询属性是否可读/可写。
  *
- * <p>This interface supports <b>nested properties</b> enabling the setting
- * of properties on subproperties to an unlimited depth.
+ * <p>本接口支持 <b>嵌套属性</b>，可对子属性路径无限深度地设值。
  *
- * <p>A BeanWrapper's default for the "extractOldValueForEditor" setting
- * is "false", to avoid side effects caused by getter method invocations.
- * Turn this to "true" to expose present property values to custom editors.
+ * <p>BeanWrapper 上 {@code extractOldValueForEditor} 的默认值为 {@code false}，
+ * 以免调用 getter 产生副作用。若需把当前属性值交给自定义编辑器，可将其设为 {@code true}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -49,42 +45,41 @@ import java.beans.PropertyDescriptor;
 public interface BeanWrapper extends ConfigurablePropertyAccessor {
 
 	/**
-	 * Specify a limit for array and collection auto-growing.
-	 * <p>Default is unlimited on a plain BeanWrapper.
+	 * 设置数组与集合自动扩容的上限。
+	 * <p>普通 BeanWrapper 默认无上限。
 	 * @since 4.1
 	 */
 	void setAutoGrowCollectionLimit(int autoGrowCollectionLimit);
 
 	/**
-	 * Return the limit for array and collection auto-growing.
+	 * 返回数组与集合自动扩容的上限。
 	 * @since 4.1
 	 */
 	int getAutoGrowCollectionLimit();
 
 	/**
-	 * Return the bean instance wrapped by this object.
+	 * 返回本对象所包装的 bean 实例。
 	 */
 	Object getWrappedInstance();
 
 	/**
-	 * Return the type of the wrapped bean instance.
+	 * 返回所包装 bean 实例的类型。
 	 */
 	Class<?> getWrappedClass();
 
 	/**
-	 * Obtain the PropertyDescriptors for the wrapped object
-	 * (as determined by standard JavaBeans introspection).
-	 * @return the PropertyDescriptors for the wrapped object
+	 * 获取被包装对象的全部 PropertyDescriptor
+	 * （由标准 JavaBeans 内省确定）。
+	 * @return 被包装对象的 PropertyDescriptor 数组
 	 */
 	PropertyDescriptor[] getPropertyDescriptors();
 
 	/**
-	 * Obtain the property descriptor for a specific property
-	 * of the wrapped object.
-	 * @param propertyName the property to obtain the descriptor for
-	 * (may be a nested path, but not an indexed/mapped property)
-	 * @return the property descriptor for the specified property
-	 * @throws InvalidPropertyException if there is no such property
+	 * 获取被包装对象上指定属性的 PropertyDescriptor。
+	 * @param propertyName 要获取描述符的属性名
+	 * （可以是嵌套路径，但不能是索引/映射属性）
+	 * @return 指定属性的 PropertyDescriptor
+	 * @throws InvalidPropertyException 若不存在该属性
 	 */
 	PropertyDescriptor getPropertyDescriptor(String propertyName) throws InvalidPropertyException;
 
