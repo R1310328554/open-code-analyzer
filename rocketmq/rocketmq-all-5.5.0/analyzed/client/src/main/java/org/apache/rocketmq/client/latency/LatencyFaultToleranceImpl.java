@@ -31,13 +31,20 @@ import org.apache.rocketmq.client.common.ThreadLocalIndex;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 延迟故障容错默认实现：维护 Broker 故障项表，按延迟隔离并在后台探测恢复。
+ */
 public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> {
     private final static Logger log = LoggerFactory.getLogger(MQFaultStrategy.class);
+    /** Broker 名称 → 故障项映射表。 */
     private final ConcurrentHashMap<String, FaultItem> faultItemTable = new ConcurrentHashMap<String, FaultItem>(16);
+    /** 单次探测超时（毫秒）。 */
     private int detectTimeout = 200;
+    /** 每个 Broker 的探测间隔（毫秒）。 */
     private int detectInterval = 2000;
     private final ThreadLocalIndex whichItemWorst = new ThreadLocalIndex();
 
+    /** 是否启用后台探测器。 */
     private volatile boolean startDetectorEnable = false;
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
         @Override
@@ -46,8 +53,10 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         }
     });
 
+    /** Broker 名称解析器，用于获取探测地址。 */
     private final Resolver resolver;
 
+    /** 远程服务可达性探测器。 */
     private final ServiceDetector serviceDetector;
 
     public LatencyFaultToleranceImpl(Resolver resolver, ServiceDetector serviceDetector) {
@@ -56,6 +65,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
     }
 
     @Override
+    /** 遍历故障表，对到期项执行一次可达性探测。 */
     public void detectByOneRound() {
         for (Map.Entry<String, FaultItem> item : this.faultItemTable.entrySet()) {
             FaultItem brokerItem = item.getValue();
@@ -79,6 +89,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
     }
 
     @Override
+    /** 启动定时任务，每 3 秒执行一轮探测（需 startDetectorEnable 为 true）。 */
     public void startDetector() {
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -95,11 +106,13 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
     }
 
     @Override
+    /** 关闭探测线程池。 */
     public void shutdown() {
         this.scheduledExecutorService.shutdown();
     }
 
     @Override
+    /** 更新或创建故障项，记录延迟、隔离时长与可达性。 */
     public void updateFaultItem(final String name, final long currentLatency, final long notAvailableDuration,
                                 final boolean reachable) {
         FaultItem old = this.faultItemTable.get(name);
@@ -123,6 +136,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
     }
 
     @Override
+    /** 判断 Broker 隔离期是否已过；无记录视为可用。 */
     public boolean isAvailable(final String name) {
         final FaultItem faultItem = this.faultItemTable.get(name);
         if (faultItem != null) {
@@ -132,6 +146,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
     }
 
     @Override
+    /** 判断 Broker 是否可达；无记录视为可达。 */
     public boolean isReachable(final String name) {
         final FaultItem faultItem = this.faultItemTable.get(name);
         if (faultItem != null) {
@@ -155,6 +170,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         this.startDetectorEnable = startDetectorEnable;
     }
     @Override
+    /** 随机打乱后返回第一个可达 Broker，兜底选路用。 */
     public String pickOneAtLeast() {
         final Enumeration<FaultItem> elements = this.faultItemTable.elements();
         List<FaultItem> tmpList = new LinkedList<FaultItem>();
@@ -193,6 +209,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         this.detectInterval = detectInterval;
     }
 
+    /** 单个 Broker 的故障状态：延迟、隔离截止时间、可达标志。 */
     public class FaultItem implements Comparable<FaultItem> {
         private final String name;
         private volatile long currentLatency;
@@ -204,6 +221,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
             this.name = name;
         }
 
+        /** 延长隔离截止时间（仅当新截止时间更晚时生效）。 */
         public void updateNotAvailableDuration(long notAvailableDuration) {
             if (notAvailableDuration > 0 && System.currentTimeMillis() + notAvailableDuration > this.startTimestamp) {
                 this.startTimestamp = System.currentTimeMillis() + notAvailableDuration;
@@ -212,6 +230,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         }
 
         @Override
+        /** 比较优先级：可用性优先，其次延迟低、隔离期短者优先。 */
         public int compareTo(final FaultItem other) {
             if (this.isAvailable() != other.isAvailable()) {
                 if (this.isAvailable()) {
@@ -245,10 +264,12 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
             this.checkStamp = checkStamp;
         }
 
+        /** 当前时间是否已过隔离截止时间。 */
         public boolean isAvailable() {
             return System.currentTimeMillis() >= startTimestamp;
         }
 
+        /** 返回可达标志。 */
         public boolean isReachable() {
             return reachableFlag;
         }

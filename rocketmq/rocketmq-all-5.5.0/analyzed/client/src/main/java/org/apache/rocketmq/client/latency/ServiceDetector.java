@@ -17,14 +17,15 @@
 package org.apache.rocketmq.client.latency;
 
 /**
- * Detect whether the remote service state is normal.
+ * 远程服务探测器：检测 Broker 等远端节点是否恢复正常。
  */
 public interface ServiceDetector {
 
     /**
-     * Check if the remote service is normal.
-     * @param endpoint Service endpoint to check against
-     * @return true if the service is back to normal; false otherwise.
+     * 探测远端服务是否可用。
+     * @param endpoint 待检测的服务端点地址
+     * @param timeoutMillis 超时毫秒数
+     * @return true 表示服务已恢复
      */
     boolean detect(String endpoint, long timeoutMillis);
 }

@@ -17,90 +17,88 @@
 
 package org.apache.rocketmq.client.latency;
 
+/**
+ * 延迟故障容错接口：根据发送延迟与可达性动态隔离 Broker，
+ * 并在恢复后重新纳入选路范围。
+ *
+ * @param <T> 故障项标识类型，通常为 Broker 名称。
+ */
 public interface LatencyFaultTolerance<T> {
     /**
-     * Update brokers' states, to decide if they are good or not.
+     * 更新 Broker 故障项：记录当前延迟、不可用时长及可达性。
      *
-     * @param name Broker's name.
-     * @param currentLatency Current message sending process's latency.
-     * @param notAvailableDuration Corresponding not available time, ms. The broker will be not available until it
-     * spends such time.
-     * @param reachable To decide if this broker is reachable or not.
+     * @param name Broker 名称
+     * @param currentLatency 本次发送耗时（毫秒）
+     * @param notAvailableDuration 隔离时长（毫秒），到期前视为不可用
+     * @param reachable 当前是否网络可达
      */
     void updateFaultItem(final T name, final long currentLatency, final long notAvailableDuration,
                          final boolean reachable);
 
     /**
-     * To check if this broker is available.
+     * 判断 Broker 是否可用（隔离期已过）。
      *
-     * @param name Broker's name.
-     * @return boolean variable, if this is true, then the broker is available.
+     * @param name Broker 名称
+     * @return true 表示可用
      */
     boolean isAvailable(final T name);
 
     /**
-     * To check if this broker is reachable.
+     * 判断 Broker 是否可达（网络探测正常）。
      *
-     * @param name Broker's name.
-     * @return boolean variable, if this is true, then the broker is reachable.
+     * @param name Broker 名称
+     * @return true 表示可达
      */
     boolean isReachable(final T name);
 
     /**
-     * Remove the broker in this fault item table.
+     * 从故障表中移除指定 Broker。
      *
-     * @param name broker's name.
+     * @param name Broker 名称
      */
     void remove(final T name);
 
     /**
-     * The worst situation, no broker can be available. Then choose random one.
+     * 兜底策略：无可用 Broker 时随机选取一个可达项。
      *
-     * @return A random mq will be returned.
+     * @return 随机 Broker 名称，无则 null
      */
     T pickOneAtLeast();
 
-    /**
-     * Start a new thread, to detect the broker's reachable tag.
-     */
+    /** 启动后台探测线程，周期性检测 Broker 可达性。 */
     void startDetector();
 
-    /**
-     * Shutdown threads that started by LatencyFaultTolerance.
-     */
+    /** 关闭探测线程池。 */
     void shutdown();
 
-    /**
-     * A function reserved, just detect by once, won't create a new thread.
-     */
+    /** 执行一轮可达性探测，不创建新线程。 */
     void detectByOneRound();
 
     /**
-     * Use it to set the detect timeout bound.
+     * 设置单次探测超时（毫秒）。
      *
-     * @param detectTimeout timeout bound
+     * @param detectTimeout 超时上限
      */
     void setDetectTimeout(final int detectTimeout);
 
     /**
-     * Use it to set the detector's detector interval for each broker (each broker will be detected once during this
-     * time)
+     * 设置每个 Broker 的探测间隔（毫秒）。
      *
-     * @param detectInterval each broker's detecting interval
+     * @param detectInterval 探测周期
      */
     void setDetectInterval(final int detectInterval);
 
     /**
-     * Use it to set the detector work or not.
+     * 启用或禁用后台探测器。
      *
-     * @param startDetectorEnable set the detector's work status
+     * @param startDetectorEnable 是否启动探测
      */
     void setStartDetectorEnable(final boolean startDetectorEnable);
 
     /**
-     * Use it to judge if the detector enabled.
+     * 探测器是否已启用。
      *
-     * @return is the detector should be started.
+     * @return true 表示应启动探测
      */
     boolean isStartDetectorEnable();
 }

@@ -19,8 +19,13 @@ package org.apache.rocketmq.client.producer;
 
 import org.apache.rocketmq.common.message.Message;
 
+/**
+ * Request-Reply 异步回调：接收响应消息或异常。
+ */
 public interface RequestCallback {
+    /** 收到 Broker 响应消息时调用。 */
     void onSuccess(final Message message);
 
+    /** 请求失败或超时时调用。 */
     void onException(final Throwable e);
 }

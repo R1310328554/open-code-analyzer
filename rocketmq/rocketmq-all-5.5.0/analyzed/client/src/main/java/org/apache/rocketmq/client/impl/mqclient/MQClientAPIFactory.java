@@ -33,15 +33,27 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.RemotingClient;
 import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 
+/**
+ * MQClientAPI 工厂：按配置创建并管理多个 {@link MQClientAPIExt} 实例，
+ * 负责 NameServer 地址初始化、客户端启动/关闭及负载均衡选取。
+ */
 public class MQClientAPIFactory implements StartAndShutdown {
 
+    /** 已创建的客户端 API 实例数组。 */
     private MQClientAPIExt[] clients;
+    /** 客户端实例名前缀。 */
     private final String namePrefix;
+    /** 并行客户端数量，大于 1 时 getClient 随机选取。 */
     private final int clientNum;
+    /** 入站 Remoting 请求处理器。 */
     private final ClientRemotingProcessor clientRemotingProcessor;
+    /** RPC 钩子，用于鉴权等扩展。 */
     private final RPCHook rpcHook;
+    /** 定时任务线程池，用于域名模式下周期性拉取 NameServer 地址。 */
     private final ScheduledExecutorService scheduledExecutorService;
+    /** NameServer 访问配置（地址或域名模式）。 */
     private final NameserverAccessConfig nameserverAccessConfig;
+    /** 可选的 RemotingClient 创建器，便于测试或自定义实现。 */
     private final ObjectCreator<RemotingClient> remotingClientCreator;
 
     public MQClientAPIFactory(
@@ -75,6 +87,7 @@ public class MQClientAPIFactory implements StartAndShutdown {
         this.init();
     }
 
+    /** 初始化系统属性：关闭 VIP 通道，并设置 NameServer 地址或域名。 */
     protected void init() {
         System.setProperty(ClientConfig.SEND_MESSAGE_WITH_VIP_CHANNEL_PROPERTY, "false");
         if (StringUtils.isEmpty(nameserverAccessConfig.getNamesrvDomain())) {
@@ -88,6 +101,7 @@ public class MQClientAPIFactory implements StartAndShutdown {
         }
     }
 
+    /** 返回一个客户端实例；多实例时随机负载均衡。 */
     public MQClientAPIExt getClient() {
         if (clients.length == 1) {
             return this.clients[0];
@@ -97,6 +111,7 @@ public class MQClientAPIFactory implements StartAndShutdown {
     }
 
     @Override
+    /** 创建并启动 clientNum 个 MQClientAPIExt 实例。 */
     public void start() throws Exception {
         this.clients = new MQClientAPIExt[this.clientNum];
 
@@ -106,6 +121,7 @@ public class MQClientAPIFactory implements StartAndShutdown {
     }
 
     @Override
+    /** 并行关闭所有客户端实例。 */
     public void shutdown() throws Exception {
         AsyncShutdownHelper helper = new AsyncShutdownHelper();
         for (int i = 0; i < this.clientNum; i++) {
@@ -114,6 +130,7 @@ public class MQClientAPIFactory implements StartAndShutdown {
         helper.shutdown().await(Integer.MAX_VALUE, TimeUnit.SECONDS);
     }
 
+    /** 创建单个 MQClientAPIExt：配置 Netty、注册 NameServer 并启动。 */
     protected MQClientAPIExt createAndStart(String instanceName) {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setInstanceName(instanceName);
@@ -147,12 +164,14 @@ public class MQClientAPIFactory implements StartAndShutdown {
         return mqClientAPIExt;
     }
 
+    /** NameServer 地址变更时通知所有客户端更新。 */
     public void onNameServerAddressChange(String namesrvAddress) {
         for (MQClientAPIExt client : clients) {
             client.onNameServerAddressChange(namesrvAddress);
         }
     }
 
+    /** 返回全部客户端实例数组。 */
     public MQClientAPIExt[] getClients() {
         return clients;
     }

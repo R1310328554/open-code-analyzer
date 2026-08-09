@@ -35,10 +35,17 @@ import org.apache.rocketmq.common.ThreadFactoryImpl;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Request-Reply 全局单例：维护 correlationId → RequestResponseFuture 映射，
+ * 并定时扫描超时请求触发回调。
+ */
 public class RequestFutureHolder {
     private static final Logger log = LoggerFactory.getLogger(RequestFutureHolder.class);
+    /** 单例实例。 */
     private static final RequestFutureHolder INSTANCE = new RequestFutureHolder();
+    /** 请求 ID → 异步 Future 映射表。 */
     private ConcurrentHashMap<String, RequestResponseFuture> requestFutureTable = new ConcurrentHashMap<>();
+    /** 引用此 Holder 的 Producer 集合，用于引用计数式启停扫描任务。 */
     private final Set<DefaultMQProducerImpl> producerSet = new HashSet<>();
     private ScheduledExecutorService scheduledExecutorService = null;
 
@@ -46,6 +53,7 @@ public class RequestFutureHolder {
         return requestFutureTable;
     }
 
+    /** 扫描并移除超时请求，触发 onException 回调。 */
     private void scanExpiredRequest() {
         final List<RequestResponseFuture> rfList = new LinkedList<>();
         Iterator<Map.Entry<String, RequestResponseFuture>> it = requestFutureTable.entrySet().iterator();
@@ -71,6 +79,7 @@ public class RequestFutureHolder {
         }
     }
 
+    /** Producer 启动时注册并懒启动超时扫描定时任务（3s 后首次，每 1s 执行）。 */
     public synchronized void startScheduledTask(DefaultMQProducerImpl producer) {
         this.producerSet.add(producer);
         if (null == scheduledExecutorService) {
@@ -90,6 +99,7 @@ public class RequestFutureHolder {
         }
     }
 
+    /** Producer 关闭时注销；无引用后关闭扫描线程池。 */
     public synchronized void shutdown(DefaultMQProducerImpl producer) {
         this.producerSet.remove(producer);
         if (this.producerSet.size() <= 0 && null != this.scheduledExecutorService) {
@@ -101,6 +111,7 @@ public class RequestFutureHolder {
 
     private RequestFutureHolder() {}
 
+    /** 返回全局单例。 */
     public static RequestFutureHolder getInstance() {
         return INSTANCE;
     }

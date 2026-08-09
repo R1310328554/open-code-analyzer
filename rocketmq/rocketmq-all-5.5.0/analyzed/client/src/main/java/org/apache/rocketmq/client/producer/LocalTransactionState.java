@@ -16,8 +16,14 @@
  */
 package org.apache.rocketmq.client.producer;
 
+/**
+ * 本地事务执行结果：Producer 回查时告知 Broker 提交、回滚或未知。
+ */
 public enum LocalTransactionState {
+    /** 提交事务消息，对消费者可见。 */
     COMMIT_MESSAGE,
+    /** 回滚事务消息，丢弃该消息。 */
     ROLLBACK_MESSAGE,
+    /** 事务状态未知，等待 Broker 再次回查。 */
     UNKNOW,
 }

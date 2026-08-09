@@ -16,7 +16,11 @@
  */
 package org.apache.rocketmq.client.latency;
 
+/**
+ * 名称解析器：将 Broker 名称解析为可探测的网络地址。
+ */
 public interface Resolver {
 
+    /** 解析 Broker 名称，返回地址；无法解析时返回 null。 */
     String resolve(String name);
 }

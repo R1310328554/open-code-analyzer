@@ -20,6 +20,10 @@ import java.util.List;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 消息队列选择器：Producer 发送时根据消息内容与参数自定义目标队列。
+ */
 public interface MessageQueueSelector {
+    /** 从候选队列中选取一个目标 MessageQueue。 */
     MessageQueue select(final List<MessageQueue> mqs, final Message msg, final Object arg);
 }

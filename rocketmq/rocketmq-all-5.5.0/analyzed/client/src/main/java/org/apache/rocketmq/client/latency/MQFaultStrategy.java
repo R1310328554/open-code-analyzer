@@ -23,13 +23,21 @@ import org.apache.rocketmq.client.impl.producer.TopicPublishInfo.QueueFilter;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.utils.StartAndShutdown;
 
+/**
+ * 发送端故障策略：结合延迟隔离与 Broker 可达性，在选队列时优先避开故障 Broker。
+ */
 public class MQFaultStrategy implements StartAndShutdown {
+    /** 底层延迟故障容错实现。 */
     private LatencyFaultTolerance<String> latencyFaultTolerance;
+    /** 是否启用发送延迟故障隔离。 */
     private volatile boolean sendLatencyFaultEnable;
     private volatile boolean startDetectorEnable;
+    /** 延迟分级阈值（毫秒），用于映射隔离时长。 */
     private long[] latencyMax = {50L, 100L, 550L, 1800L, 3000L, 5000L, 15000L};
+    /** 与 latencyMax 对应的隔离时长（毫秒）。 */
     private long[] notAvailableDuration = {0L, 0L, 2000L, 5000L, 6000L, 10000L, 30000L};
 
+    /** 过滤上次发送失败的 Broker，避免连续重试同一节点。 */
     public static class BrokerFilter implements QueueFilter {
         private String lastBrokerName;
 
@@ -51,12 +59,14 @@ public class MQFaultStrategy implements StartAndShutdown {
         }
     };
 
+    /** 仅保留可达 Broker 的队列。 */
     private QueueFilter reachableFilter = new QueueFilter() {
         @Override public boolean filter(MessageQueue mq) {
             return latencyFaultTolerance.isReachable(mq.getBrokerName());
         }
     };
 
+    /** 仅保留可用（隔离期已过）Broker 的队列。 */
     private QueueFilter availableFilter = new QueueFilter() {
         @Override public boolean filter(MessageQueue mq) {
             return latencyFaultTolerance.isAvailable(mq.getBrokerName());
@@ -64,6 +74,7 @@ public class MQFaultStrategy implements StartAndShutdown {
     };
 
 
+    /** 根据 ClientConfig 创建默认 LatencyFaultToleranceImpl。 */
     public MQFaultStrategy(ClientConfig cc, Resolver fetcher, ServiceDetector serviceDetector) {
         this.latencyFaultTolerance = new LatencyFaultToleranceImpl(fetcher, serviceDetector);
         this.latencyFaultTolerance.setDetectInterval(cc.getDetectInterval());
@@ -72,7 +83,7 @@ public class MQFaultStrategy implements StartAndShutdown {
         this.setSendLatencyFaultEnable(cc.isSendLatencyEnable());
     }
 
-    // For unit test.
+    /** 单元测试用：注入自定义 LatencyFaultTolerance。 */
     public MQFaultStrategy(ClientConfig cc, LatencyFaultTolerance<String> tolerance) {
         this.setStartDetectorEnable(cc.isStartDetectorEnable());
         this.setSendLatencyFaultEnable(cc.isSendLatencyEnable());
@@ -140,6 +151,7 @@ public class MQFaultStrategy implements StartAndShutdown {
         this.latencyFaultTolerance.shutdown();
     }
 
+    /** 按故障策略选取队列：先可用、再可达、最后兜底轮询。 */
     public MessageQueue selectOneMessageQueue(final TopicPublishInfo tpInfo, final String lastBrokerName, final boolean resetIndex) {
         BrokerFilter brokerFilter = threadBrokerFilter.get();
         brokerFilter.setLastBrokerName(lastBrokerName);
@@ -167,6 +179,7 @@ public class MQFaultStrategy implements StartAndShutdown {
         return tpInfo.selectOneMessageQueue();
     }
 
+    /** 发送完成后更新 Broker 故障项；isolation 为 true 时使用固定 10s 隔离。 */
     public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation,
                                 final boolean reachable) {
         if (this.sendLatencyFaultEnable) {
@@ -175,6 +188,7 @@ public class MQFaultStrategy implements StartAndShutdown {
         }
     }
 
+    /** 按延迟分级查表得到对应隔离时长。 */
     private long computeNotAvailableDuration(final long currentLatency) {
         for (int i = latencyMax.length - 1; i >= 0; i--) {
             if (currentLatency >= latencyMax[i]) {

@@ -21,13 +21,19 @@ import org.apache.rocketmq.client.impl.ClientRemotingProcessor;
 import org.apache.rocketmq.client.impl.factory.MQClientInstance;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 空实现的客户端 Remoting 处理器：收到服务端请求时直接返回 null，不做任何业务处理。
+ * 用于仅需出站通信、无需处理入站指令的轻量客户端场景。
+ */
 public class DoNothingClientRemotingProcessor extends ClientRemotingProcessor {
 
+    /** 以 MQClient 实例构造，委托父类注册 Remoting 回调。 */
     public DoNothingClientRemotingProcessor(MQClientInstance mqClientFactory) {
         super(mqClientFactory);
     }
 
     @Override
+    /** 忽略入站请求，始终返回 null 表示不响应。 */
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) {
         return null;
     }

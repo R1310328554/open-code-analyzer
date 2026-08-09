@@ -22,20 +22,31 @@ import org.apache.rocketmq.client.producer.TransactionListener;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.remoting.protocol.header.CheckTransactionStateRequestHeader;
 
+/**
+ * Producer 内部接口：供 MQClientInstance 回调，管理 Topic 路由、
+ * 事务状态回查监听及单元化模式等内部协作能力。
+ */
 public interface MQProducerInner {
+    /** 返回当前 Producer 负责发布的 Topic 集合。 */
     Set<String> getPublishTopicList();
 
+    /** 判断指定 Topic 的路由信息是否需要刷新。 */
     boolean isPublishTopicNeedUpdate(final String topic);
 
+    /** 返回旧版事务回查监听器（已废弃接口）。 */
     TransactionCheckListener checkListener();
+    /** 返回新版事务回查监听器。 */
     TransactionListener getCheckListener();
 
+    /** Broker 发起事务状态回查时的回调入口。 */
     void checkTransactionState(
         final String addr,
         final MessageExt msg,
         final CheckTransactionStateRequestHeader checkRequestHeader);
 
+    /** 更新 Topic 的发布路由信息。 */
     void updateTopicPublishInfo(final String topic, final TopicPublishInfo info);
 
+    /** 是否处于单元化部署模式。 */
     boolean isUnitMode();
 }
