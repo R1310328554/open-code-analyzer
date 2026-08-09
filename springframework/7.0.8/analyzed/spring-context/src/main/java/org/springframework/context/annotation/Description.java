@@ -23,8 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Adds a textual description to bean definitions derived from
- * {@link org.springframework.stereotype.Component} or {@link Bean}.
+ * 为源自 {@link org.springframework.stereotype.Component} 或 {@link Bean} 的 Bean 定义添加文本描述。
  *
  * @author Juergen Hoeller
  * @since 4.0
@@ -36,7 +35,7 @@ import java.lang.annotation.Target;
 public @interface Description {
 
 	/**
-	 * The textual description to associate with the bean definition.
+	 * 要关联到 Bean 定义的文本描述。
 	 */
 	String value();
 

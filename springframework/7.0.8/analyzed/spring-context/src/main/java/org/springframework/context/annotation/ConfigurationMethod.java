@@ -21,36 +21,47 @@ import org.springframework.beans.factory.parsing.ProblemReporter;
 import org.springframework.core.type.MethodMetadata;
 
 /**
- * Base class for a {@link Configuration @Configuration} class method.
+ * {@link Configuration @Configuration} 类方法的基类。
  *
  * @author Chris Beams
  * @since 3.1
  */
 abstract class ConfigurationMethod {
 
+	/** 方法元数据。 */
 	protected final MethodMetadata metadata;
 
+	/** 所属配置类。 */
 	protected final ConfigurationClass configurationClass;
 
 
+	/**
+	 * 构造配置方法描述。
+	 * @param metadata 方法元数据
+	 * @param configurationClass 所属配置类
+	 */
 	public ConfigurationMethod(MethodMetadata metadata, ConfigurationClass configurationClass) {
 		this.metadata = metadata;
 		this.configurationClass = configurationClass;
 	}
 
 
+	/** 返回方法元数据。 */
 	public MethodMetadata getMetadata() {
 		return this.metadata;
 	}
 
+	/** 返回所属配置类。 */
 	public ConfigurationClass getConfigurationClass() {
 		return this.configurationClass;
 	}
 
+	/** 返回该方法在配置类资源中的位置信息。 */
 	public Location getResourceLocation() {
 		return new Location(this.configurationClass.getResource(), this.metadata);
 	}
 
+	/** 校验方法定义；子类可覆盖以报告具体问题。 */
 	void validate(ProblemReporter problemReporter) {
 	}
 

@@ -40,9 +40,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 /**
- * Represents a user-defined {@link Configuration @Configuration} class.
- * <p>Includes a set of {@link Bean} methods, including all such methods
- * defined in the ancestry of the class, in a 'flattened-out' manner.
+ * 表示用户定义的 {@link Configuration @Configuration} 类。
+ * <p>包含一组 {@link Bean} 方法，以“扁平化”方式涵盖该类继承层次中定义的全部此类方法。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -53,33 +52,43 @@ import org.springframework.util.MultiValueMap;
  */
 final class ConfigurationClass {
 
+	/** 配置类的注解元数据。 */
 	private final AnnotationMetadata metadata;
 
+	/** 配置类对应的资源（类文件或描述性资源）。 */
 	private final Resource resource;
 
+	/** 配置类在容器中的 Bean 名称；导入类可能暂无名称。 */
 	private @Nullable String beanName;
 
+	/** 是否通过组件扫描注册。 */
 	private boolean scanned = false;
 
+	/** 导入本配置类的其他配置类集合。 */
 	private final Set<ConfigurationClass> importedBy = new LinkedHashSet<>(1);
 
+	/** 本配置类中声明的 {@link Bean} 方法。 */
 	private final Set<BeanMethod> beanMethods = new LinkedHashSet<>();
 
+	/** {@link ImportResource} 导入的资源路径及其对应读取器类型。 */
 	private final Map<String, Class<? extends BeanDefinitionReader>> importedResources =
 			new LinkedHashMap<>();
 
+	/** 源类名到 {@link BeanRegistrar} 的映射。 */
 	private final MultiValueMap<String, BeanRegistrar> beanRegistrars = new LinkedMultiValueMap<>();
 
+	/** {@link ImportBeanDefinitionRegistrar} 及其导入方元数据。 */
 	private final Map<ImportBeanDefinitionRegistrar, AnnotationMetadata> importBeanDefinitionRegistrars =
 			new LinkedHashMap<>();
 
+	/** 因条件不匹配等原因跳过的 Bean 方法名集合。 */
 	final Set<String> skippedBeanMethods = new HashSet<>();
 
 
 	/**
-	 * Create a new {@link ConfigurationClass} with the given name.
-	 * @param metadataReader reader used to parse the underlying {@link Class}
-	 * @param beanName must not be {@code null}
+	 * 创建带指定名称的新 {@link ConfigurationClass}。
+	 * @param metadataReader 用于解析底层 {@link Class} 的读取器
+	 * @param beanName 不得为 {@code null}
 	 */
 	ConfigurationClass(MetadataReader metadataReader, String beanName) {
 		Assert.notNull(beanName, "Bean name must not be null");
@@ -89,11 +98,10 @@ final class ConfigurationClass {
 	}
 
 	/**
-	 * Create a new {@link ConfigurationClass} representing a class that was imported
-	 * using the {@link Import} annotation or automatically processed as a nested
-	 * configuration class (if importedBy is not {@code null}).
-	 * @param metadataReader reader used to parse the underlying {@link Class}
-	 * @param importedBy the configuration class importing this one
+	 * 创建表示通过 {@link Import} 导入或作为嵌套配置类自动处理的新 {@link ConfigurationClass}
+	 *（当 importedBy 非 {@code null} 时）。
+	 * @param metadataReader 用于解析底层 {@link Class} 的读取器
+	 * @param importedBy 导入本类的配置类
 	 * @since 3.1.1
 	 */
 	ConfigurationClass(MetadataReader metadataReader, ConfigurationClass importedBy) {
@@ -103,9 +111,9 @@ final class ConfigurationClass {
 	}
 
 	/**
-	 * Create a new {@link ConfigurationClass} with the given name.
-	 * @param clazz the underlying {@link Class} to represent
-	 * @param beanName name of the {@code @Configuration} class bean
+	 * 创建带指定名称的新 {@link ConfigurationClass}。
+	 * @param clazz 要表示的底层 {@link Class}
+	 * @param beanName {@code @Configuration} 类 Bean 的名称
 	 */
 	ConfigurationClass(Class<?> clazz, String beanName) {
 		Assert.notNull(beanName, "Bean name must not be null");
@@ -115,11 +123,10 @@ final class ConfigurationClass {
 	}
 
 	/**
-	 * Create a new {@link ConfigurationClass} representing a class that was imported
-	 * using the {@link Import} annotation or automatically processed as a nested
-	 * configuration class (if imported is {@code true}).
-	 * @param clazz the underlying {@link Class} to represent
-	 * @param importedBy the configuration class importing this one
+	 * 创建表示通过 {@link Import} 导入或作为嵌套配置类自动处理的新 {@link ConfigurationClass}
+	 *（当 imported 为 {@code true} 时）。
+	 * @param clazz 要表示的底层 {@link Class}
+	 * @param importedBy 导入本类的配置类
 	 * @since 3.1.1
 	 */
 	ConfigurationClass(Class<?> clazz, ConfigurationClass importedBy) {
@@ -129,10 +136,10 @@ final class ConfigurationClass {
 	}
 
 	/**
-	 * Create a new {@link ConfigurationClass} with the given name.
-	 * @param metadata the metadata for the underlying class to represent
-	 * @param beanName name of the {@code @Configuration} class bean
-	 * @param scanned whether the underlying class has been registered through a scan
+	 * 创建带指定名称的新 {@link ConfigurationClass}。
+	 * @param metadata 要表示的底层类的元数据
+	 * @param beanName {@code @Configuration} 类 Bean 的名称
+	 * @param scanned 底层类是否已通过扫描注册
 	 * @since 6.2
 	 */
 	ConfigurationClass(AnnotationMetadata metadata, String beanName, boolean scanned) {
@@ -144,28 +151,33 @@ final class ConfigurationClass {
 	}
 
 
+	/** 返回注解元数据。 */
 	AnnotationMetadata getMetadata() {
 		return this.metadata;
 	}
 
+	/** 返回关联资源。 */
 	Resource getResource() {
 		return this.resource;
 	}
 
+	/** 返回配置类的简短类名。 */
 	String getSimpleName() {
 		return ClassUtils.getShortName(getMetadata().getClassName());
 	}
 
+	/** 设置 Bean 名称。 */
 	void setBeanName(@Nullable String beanName) {
 		this.beanName = beanName;
 	}
 
+	/** 返回 Bean 名称。 */
 	@Nullable String getBeanName() {
 		return this.beanName;
 	}
 
 	/**
-	 * Return whether this configuration class has been registered through a scan.
+	 * 返回本配置类是否已通过扫描注册。
 	 * @since 6.2
 	 */
 	boolean isScanned() {
@@ -173,8 +185,7 @@ final class ConfigurationClass {
 	}
 
 	/**
-	 * Return whether this configuration class was registered via @{@link Import} or
-	 * automatically registered due to being nested within another configuration class.
+	 * 返回本配置类是否通过 @{@link Import} 注册，或因嵌套于其他配置类而自动注册。
 	 * @since 3.1.1
 	 * @see #getImportedBy()
 	 */
@@ -183,7 +194,7 @@ final class ConfigurationClass {
 	}
 
 	/**
-	 * Merge the imported-by declarations from the given configuration class into this one.
+	 * 将另一配置类的 imported-by 声明合并到本类。
 	 * @since 4.0.5
 	 */
 	void mergeImportedBy(ConfigurationClass otherConfigClass) {
@@ -191,8 +202,7 @@ final class ConfigurationClass {
 	}
 
 	/**
-	 * Return the configuration classes that imported this class,
-	 * or an empty Set if this configuration was not imported.
+	 * 返回导入本类的配置类集合；若未被导入则返回空 Set。
 	 * @since 4.0.5
 	 * @see #isImported()
 	 */
@@ -200,14 +210,17 @@ final class ConfigurationClass {
 		return this.importedBy;
 	}
 
+	/** 登记一个 Bean 方法。 */
 	void addBeanMethod(BeanMethod method) {
 		this.beanMethods.add(method);
 	}
 
+	/** 返回全部 Bean 方法。 */
 	Set<BeanMethod> getBeanMethods() {
 		return this.beanMethods;
 	}
 
+	/** 是否存在非静态 Bean 方法。 */
 	boolean hasNonStaticBeanMethods() {
 		for (BeanMethod beanMethod : this.beanMethods) {
 			if (!beanMethod.getMetadata().isStatic()) {
@@ -217,35 +230,42 @@ final class ConfigurationClass {
 		return false;
 	}
 
+	/** 登记导入的资源及其 BeanDefinitionReader 类型。 */
 	void addImportedResource(String importedResource, Class<? extends BeanDefinitionReader> readerClass) {
 		this.importedResources.put(importedResource, readerClass);
 	}
 
+	/** 返回导入的资源映射。 */
 	Map<String, Class<? extends BeanDefinitionReader>> getImportedResources() {
 		return this.importedResources;
 	}
 
+	/** 登记 BeanRegistrar 及其源类名。 */
 	void addBeanRegistrar(String sourceClassName, BeanRegistrar beanRegistrar) {
 		this.beanRegistrars.add(sourceClassName, beanRegistrar);
 	}
 
+	/** 返回 BeanRegistrar 映射。 */
 	public MultiValueMap<String, BeanRegistrar> getBeanRegistrars() {
 		return this.beanRegistrars;
 	}
 
+	/** 登记 ImportBeanDefinitionRegistrar 及其导入方元数据。 */
 	void addImportBeanDefinitionRegistrar(ImportBeanDefinitionRegistrar registrar, AnnotationMetadata importingClassMetadata) {
 		this.importBeanDefinitionRegistrars.put(registrar, importingClassMetadata);
 	}
 
+	/** 返回 ImportBeanDefinitionRegistrar 映射。 */
 	Map<ImportBeanDefinitionRegistrar, AnnotationMetadata> getImportBeanDefinitionRegistrars() {
 		return this.importBeanDefinitionRegistrars;
 	}
 
+	/** 校验配置类及其 Bean 方法的合法性，通过 problemReporter 报告问题。 */
 	@SuppressWarnings("NullAway") // Reflection
 	void validate(ProblemReporter problemReporter) {
 		Map<String, @Nullable Object> attributes = this.metadata.getAnnotationAttributes(Configuration.class.getName());
 
-		// A configuration class may not be final (CGLIB limitation) unless it does not have to proxy bean methods
+		// 配置类不得为 final（CGLIB 限制），除非无需代理 Bean 方法
 		if (attributes != null && (Boolean) attributes.get("proxyBeanMethods") && hasNonStaticBeanMethods() &&
 				this.metadata.isFinal()) {
 			problemReporter.error(new FinalConfigurationProblem());
@@ -255,7 +275,7 @@ final class ConfigurationClass {
 			beanMethod.validate(problemReporter);
 		}
 
-		// A configuration class may not contain overloaded bean methods unless it declares enforceUniqueMethods=false
+		// 除非 enforceUniqueMethods=false，配置类不得包含重载 Bean 方法
 		if (attributes != null && (Boolean) attributes.get("enforceUniqueMethods")) {
 			Map<String, MethodMetadata> beanMethodsByName = new LinkedHashMap<>();
 			for (BeanMethod beanMethod : this.beanMethods) {
@@ -286,7 +306,7 @@ final class ConfigurationClass {
 
 
 	/**
-	 * Configuration classes must be non-final to accommodate CGLIB subclassing.
+	 * 配置类必须为 non-final，以支持 CGLIB 子类化。
 	 */
 	private class FinalConfigurationProblem extends Problem {
 
@@ -298,8 +318,7 @@ final class ConfigurationClass {
 
 
 	/**
-	 * Configuration classes are not allowed to contain overloaded bean methods
-	 * by default (as of 6.0).
+	 * 默认情况下（自 6.0 起）配置类不允许包含重载 Bean 方法。
 	 */
 	private class BeanMethodOverloadingProblem extends Problem {
 

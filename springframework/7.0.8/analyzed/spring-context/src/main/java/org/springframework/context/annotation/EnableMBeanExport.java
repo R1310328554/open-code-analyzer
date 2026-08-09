@@ -26,15 +26,12 @@ import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
 import org.springframework.jmx.support.RegistrationPolicy;
 
 /**
- * Enables default exporting of all standard {@code MBean}s from the Spring context, as
- * well as all {@code @ManagedResource} annotated beans.
+ * 启用从 Spring 上下文默认导出全部标准 {@code MBean}，以及全部 {@code @ManagedResource} 标注的 Bean。
  *
- * <p>The resulting {@link org.springframework.jmx.export.MBeanExporter MBeanExporter}
- * bean is defined under the name "mbeanExporter". Alternatively, consider defining a
- * custom {@link AnnotationMBeanExporter} bean explicitly.
+ * <p>生成的 {@link org.springframework.jmx.export.MBeanExporter MBeanExporter}
+ * Bean 名称为 "mbeanExporter"。也可显式定义自定义 {@link AnnotationMBeanExporter} Bean。
  *
- * <p>This annotation is modeled after and functionally equivalent to Spring XML's
- * {@code <context:mbean-export/>} element.
+ * <p>本注解在功能上对应 Spring XML 的 {@code <context:mbean-export/>} 元素。
  *
  * @author Phillip Webb
  * @since 3.2
@@ -47,20 +44,18 @@ import org.springframework.jmx.support.RegistrationPolicy;
 public @interface EnableMBeanExport {
 
 	/**
-	 * The default domain to use when generating JMX ObjectNames.
+	 * 生成 JMX ObjectName 时使用的默认域。
 	 */
 	String defaultDomain() default "";
 
 	/**
-	 * The bean name of the MBeanServer to which MBeans should be exported. Default is to
-	 * use the platform's default MBeanServer.
+	 * 导出 MBean 所面向的 MBeanServer 的 Bean 名称。默认使用平台默认 MBeanServer。
 	 */
 	String server() default "";
 
 	/**
-	 * The policy to use when attempting to register an MBean under an
-	 * {@link javax.management.ObjectName} that already exists. Defaults to
-	 * {@link RegistrationPolicy#FAIL_ON_EXISTING}.
+	 * 在已存在的 {@link javax.management.ObjectName} 下尝试注册 MBean 时使用的策略。
+	 * 默认为 {@link RegistrationPolicy#FAIL_ON_EXISTING}。
 	 */
 	RegistrationPolicy registration() default RegistrationPolicy.FAIL_ON_EXISTING;
 }

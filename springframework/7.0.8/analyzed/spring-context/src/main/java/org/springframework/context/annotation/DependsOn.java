@@ -23,25 +23,18 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Beans on which the current bean depends. Any beans specified are guaranteed to be
- * created by the container before this bean. Used infrequently in cases where a bean
- * does not explicitly depend on another through properties or constructor arguments,
- * but rather depends on the side effects of another bean's initialization.
+ * 当前 Bean 所依赖的其他 Bean。指定的 Bean 保证由容器在本 Bean 之前创建。
+ * 用于 Bean 未通过属性或构造参数显式依赖另一 Bean、而是依赖另一 Bean 初始化副作用的少见场景。
  *
- * <p>A depends-on declaration can specify both an initialization-time dependency and,
- * in the case of singleton beans only, a corresponding destruction-time dependency.
- * Dependent beans that define a depends-on relationship with a given bean are destroyed
- * first, prior to the given bean itself being destroyed. Thus, a depends-on declaration
- * can also control shutdown order.
+ * <p>depends-on 声明可同时指定初始化时依赖；对于单例 Bean，还可指定对应的销毁时依赖。
+ * 与给定 Bean 存在 depends-on 关系的依赖 Bean 会先被销毁，随后才销毁给定 Bean 本身。
+ * 因此 depends-on 也可控制关闭顺序。
  *
- * <p>May be used on any class directly or indirectly annotated with
- * {@link org.springframework.stereotype.Component} or on methods annotated
- * with {@link Bean}.
+ * <p>可用于直接或间接标注 {@link org.springframework.stereotype.Component} 的任意类，
+ * 或标注 {@link Bean} 的方法。
  *
- * <p>Using {@link DependsOn} at the class level has no effect unless component-scanning
- * is being used. If a {@link DependsOn}-annotated class is declared via XML,
- * {@link DependsOn} annotation metadata is ignored, and
- * {@code <bean depends-on="..."/>} is respected instead.
+ * <p>在类级别使用 {@link DependsOn} 除非启用组件扫描则无效果。若通过 XML 声明带
+ * {@link DependsOn} 的类，注解元数据会被忽略，转而遵循 {@code <bean depends-on="..."/>}。
  *
  * @author Juergen Hoeller
  * @since 3.0

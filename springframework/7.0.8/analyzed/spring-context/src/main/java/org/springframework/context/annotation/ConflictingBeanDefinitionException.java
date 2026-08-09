@@ -17,8 +17,7 @@
 package org.springframework.context.annotation;
 
 /**
- * Marker subclass of {@link IllegalStateException}, allowing for explicit
- * catch clauses in calling code.
+ * {@link IllegalStateException} 的标记子类，便于调用方编写显式 catch 分支。
  *
  * @author Chris Beams
  * @since 3.1

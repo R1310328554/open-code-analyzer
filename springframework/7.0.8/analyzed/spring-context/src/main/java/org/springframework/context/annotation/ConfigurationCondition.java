@@ -17,11 +17,10 @@
 package org.springframework.context.annotation;
 
 /**
- * A {@link Condition} that offers more fine-grained control when used with
- * {@code @Configuration}. Allows certain conditions to adapt when they match
- * based on the configuration phase. For example, a condition that checks if a bean
- * has already been registered might choose to only be evaluated during the
- * {@link ConfigurationPhase#REGISTER_BEAN REGISTER_BEAN} {@link ConfigurationPhase}.
+ * 与 {@code @Configuration} 配合使用时提供更细粒度控制的 {@link Condition}。
+ * 允许某些条件根据配置阶段在匹配时自适应。例如，检查某 Bean 是否已注册的条件
+ * 可选择在 {@link ConfigurationPhase#REGISTER_BEAN REGISTER_BEAN}
+ * {@link ConfigurationPhase} 阶段才进行评估。
  *
  * @author Phillip Webb
  * @since 4.0
@@ -30,30 +29,26 @@ package org.springframework.context.annotation;
 public interface ConfigurationCondition extends Condition {
 
 	/**
-	 * Return the {@link ConfigurationPhase} in which the condition should be evaluated.
+	 * 返回条件应被评估的 {@link ConfigurationPhase}。
 	 */
 	ConfigurationPhase getConfigurationPhase();
 
 
 	/**
-	 * The various configuration phases where the condition could be evaluated.
+	 * 条件可被评估的各个配置阶段。
 	 */
 	enum ConfigurationPhase {
 
 		/**
-		 * The {@link Condition} should be evaluated as a {@code @Configuration}
-		 * class is being parsed.
-		 * <p>If the condition does not match at this point, the {@code @Configuration}
-		 * class will not be added.
+		 * 在解析 {@code @Configuration} 类时评估 {@link Condition}。
+		 * <p>若此阶段条件不匹配，该 {@code @Configuration} 类将不会被加入。
 		 */
 		PARSE_CONFIGURATION,
 
 		/**
-		 * The {@link Condition} should be evaluated when adding a regular
-		 * (non {@code @Configuration}) bean. The condition will not prevent
-		 * {@code @Configuration} classes from being added.
-		 * <p>At the time that the condition is evaluated, all {@code @Configuration}
-		 * classes will have been parsed.
+		 * 在添加普通（非 {@code @Configuration}）Bean 时评估 {@link Condition}。
+		 * 该条件不会阻止 {@code @Configuration} 类被加入。
+		 * <p>评估条件时，所有 {@code @Configuration} 类均已解析完毕。
 		 */
 		REGISTER_BEAN
 	}

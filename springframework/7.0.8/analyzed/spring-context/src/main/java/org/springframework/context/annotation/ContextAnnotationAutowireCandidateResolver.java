@@ -37,18 +37,9 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 
-/* ===== [OCA 中文解析] =====
-class ContextAnnotationAutowireCandidateResolver — 意图说明
-
-解析器：名称/类型/占位符等到具体对象的转换；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ContextAnnotationAutowireCandidateResolver.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Complete implementation of the
- * {@link org.springframework.beans.factory.support.AutowireCandidateResolver} strategy
- * interface, providing support for qualifier annotations as well as for lazy resolution
- * driven by the {@link Lazy} annotation in the {@code context.annotation} package.
+ * {@link org.springframework.beans.factory.support.AutowireCandidateResolver} 策略接口的完整实现，
+ * 除支持限定符注解外，还支持由 {@code context.annotation} 包中 {@link Lazy} 注解驱动的延迟解析。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -56,30 +47,26 @@ class ContextAnnotationAutowireCandidateResolver — 意图说明
  */
 public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotationAutowireCandidateResolver {
 
+	/** 若依赖点带 {@link Lazy}，返回延迟解析代理；否则返回 {@code null}。 */
 	@Override
 	public @Nullable Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, @Nullable String beanName) {
 		return (isLazy(descriptor) ? buildLazyResolutionProxy(descriptor, beanName) : null);
 	}
 
+	/** 若依赖点带 {@link Lazy}，返回延迟解析代理的 Class；否则返回 {@code null}。 */
 	@Override
 	public @Nullable Class<?> getLazyResolutionProxyClass(DependencyDescriptor descriptor, @Nullable String beanName) {
 		return (isLazy(descriptor) ? (Class<?>) buildLazyResolutionProxy(descriptor, beanName, true) : null);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 isLazy — 意图与阅读要点
-
-方法 `isLazy` 复杂度较高（CCN≈11, NLOC≈22）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/** 判断依赖描述是否应延迟解析（直接或元注解上的 {@link Lazy#value()} 为 true）。 */
 	protected boolean isLazy(DependencyDescriptor descriptor) {
 		for (Annotation ann : descriptor.getAnnotations()) {
-			// Directly present?
+			// 注解直接存在？
 			if (ann instanceof Lazy lazy && lazy.value()) {
 				return true;
 			}
-			// Meta-present?
+			// 元注解存在？
 			Lazy lazy = AnnotationUtils.findAnnotation(ann.annotationType(), Lazy.class);
 			if (lazy != null && lazy.value()) {
 				return true;
@@ -98,10 +85,12 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 		return false;
 	}
 
+	/** 构建延迟解析代理实例。 */
 	protected Object buildLazyResolutionProxy(DependencyDescriptor descriptor, @Nullable String beanName) {
 		return buildLazyResolutionProxy(descriptor, beanName, false);
 	}
 
+	/** 构建延迟解析代理（实例或仅 Class）。 */
 	private Object buildLazyResolutionProxy(
 			DependencyDescriptor descriptor, @Nullable String beanName, boolean classOnly) {
 
@@ -122,17 +111,7 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class LazyDependencyTargetSource — 意图说明
-
-class `LazyDependencyTargetSource`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ContextAnnotationAutowireCandidateResolver.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
+	/** 延迟依赖的 TargetSource：首次访问时才真正解析依赖。 */
 	@SuppressWarnings("serial")
 	private static class LazyDependencyTargetSource implements TargetSource, Serializable {
 
@@ -142,6 +121,7 @@ class `LazyDependencyTargetSource`：请结合所属模块与调用方理解其�
 
 		private final @Nullable String beanName;
 
+		/** 可缓存时保存已解析目标，避免重复解析。 */
 		private transient volatile @Nullable Object cachedTarget;
 
 		public LazyDependencyTargetSource(DefaultListableBeanFactory beanFactory,
@@ -169,6 +149,7 @@ class `LazyDependencyTargetSource`：请结合所属模块与调用方理解其�
 					this.descriptor, this.beanName, autowiredBeanNames, null);
 
 			if (target == null) {
+				// 可选依赖缺失：集合类型返回空集合，否则抛异常
 				Class<?> type = getTargetClass();
 				if (Map.class == type) {
 					target = Collections.emptyMap();
@@ -185,6 +166,7 @@ class `LazyDependencyTargetSource`：请结合所属模块与调用方理解其�
 				}
 			}
 			else {
+				// 集合类型包装为不可变视图
 				if (target instanceof Map<?, ?> map && Map.class == getTargetClass()) {
 					target = Collections.unmodifiableMap(map);
 				}
@@ -199,6 +181,7 @@ class `LazyDependencyTargetSource`：请结合所属模块与调用方理解其�
 				}
 			}
 
+			// 仅当所有自动装配 Bean 均为单例且存在于工厂中时才缓存
 			boolean cacheable = false;
 			if (!autowiredBeanNames.isEmpty()) {
 				cacheable = true;

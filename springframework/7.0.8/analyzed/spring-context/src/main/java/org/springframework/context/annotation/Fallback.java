@@ -23,16 +23,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a bean qualifies as a fallback autowire candidate.
- * This is a companion and alternative to the {@link Primary} annotation.
+ * 指示 Bean 可作为自动装配的备选候选。
+ * 这是 {@link Primary} 注解的配套与替代方案。
  *
- * <p>If all beans but one among multiple matching candidates are marked
- * as a fallback, the remaining bean will be selected.
+ * <p>若多个匹配候选中除一个外均标记为 fallback，则选中剩余的那个 Bean。
  *
- * <p>Just like primary beans, fallback beans only have an effect when
- * finding multiple candidates for single injection points.
- * All type-matching beans are included when autowiring arrays,
- * collections, maps, or ObjectProvider streams.
+ * <p>与 primary Bean 类似，fallback Bean 仅在单注入点存在多个候选时生效。
+ * 自动装配数组、集合、Map 或 ObjectProvider 流时，所有类型匹配的 Bean 均会纳入。
  *
  * @author Juergen Hoeller
  * @since 6.2

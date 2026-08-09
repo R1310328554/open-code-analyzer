@@ -22,10 +22,8 @@ import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.core.type.MethodMetadata;
 
 /**
- * Extended variant of {@link BeanNameGenerator} for
- * {@link Configuration @Configuration} class purposes, not only covering
- * bean name generation for component and configuration classes themselves
- * but also for {@link Bean @Bean} methods.
+ * {@link BeanNameGenerator} 的扩展变体，面向 {@link Configuration @Configuration} 类场景，
+ * 不仅覆盖组件类与配置类自身的 Bean 名称生成，也覆盖 {@link Bean @Bean} 方法。
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -36,12 +34,10 @@ import org.springframework.core.type.MethodMetadata;
 public interface ConfigurationBeanNameGenerator extends BeanNameGenerator {
 
 	/**
-	 * Derive a default bean name for the given {@link Bean @Bean} method,
-	 * taking into account the specified {@link Bean#name() name} attribute.
-	 * @param beanMethod the method metadata for the {@link Bean @Bean} method
-	 * @param beanName the {@link Bean#name() name} attribute or {@code null} if
-	 * none is specified
-	 * @return the default bean name to use
+	 * 为给定 {@link Bean @Bean} 方法推导默认 Bean 名称，同时考虑指定的 {@link Bean#name() name} 属性。
+	 * @param beanMethod {@link Bean @Bean} 方法的方法元数据
+	 * @param beanName {@link Bean#name() name} 属性值；若未指定则为 {@code null}
+	 * @return 要使用的默认 Bean 名称
 	 */
 	String deriveBeanName(MethodMetadata beanMethod, @Nullable String beanName);
 

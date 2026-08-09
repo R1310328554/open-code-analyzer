@@ -41,15 +41,8 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.stereotype.Component;
 
-/* ===== [OCA 中文解析] =====
-class ConfigurationClassUtils — 意图说明
-
-class `ConfigurationClassUtils`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Utilities for identifying and configuring {@link Configuration} classes.
+ * 用于识别与配置 {@link Configuration} 类的工具类。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -59,32 +52,33 @@ class `ConfigurationClassUtils`：请结合所属模块与调用方理解其在�
  */
 public abstract class ConfigurationClassUtils {
 
+	/** full 模式：需 CGLIB 增强以代理 {@code @Bean} 方法。 */
 	static final String CONFIGURATION_CLASS_FULL = "full";
 
+	/** lite 模式：不代理 {@code @Bean} 方法。 */
 	static final String CONFIGURATION_CLASS_LITE = "lite";
 
 	/**
-	 * When set to {@link Boolean#TRUE}, this attribute signals that the bean class
-	 * for the given {@link BeanDefinition} should be considered as a candidate
-	 * configuration class in 'lite' mode by default.
-	 * <p>For example, a class registered directly with an {@code ApplicationContext}
-	 * should always be considered a configuration class candidate.
+	 * 设为 {@link Boolean#TRUE} 时，表示给定 {@link BeanDefinition} 的 Bean 类
+	 * 默认应作为 lite 模式的配置类候选。
+	 * <p>例如，直接向 {@code ApplicationContext} 注册的类应始终视为配置类候选。
 	 * @since 6.0.10
 	 */
 	static final String CANDIDATE_ATTRIBUTE =
 			Conventions.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "candidate");
 
+	/** BeanDefinition 上记录 full/lite 配置类模式的属性名。 */
 	static final String CONFIGURATION_CLASS_ATTRIBUTE =
 			Conventions.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
 
+	/** BeanDefinition 上记录 {@code @Order} 值的属性名。 */
 	static final String ORDER_ATTRIBUTE =
 			Conventions.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "order");
 
 
-	// [OCA] 字段 `logger`：类成员状态。
 	private static final Log logger = LogFactory.getLog(ConfigurationClassUtils.class);
 
-	// [OCA] 字段 `candidateIndicators`：类成员状态。
+	/** 标识配置类候选的典型注解名称集合。 */
 	private static final Set<String> candidateIndicators = Set.of(
 			Component.class.getName(),
 			ComponentScan.class.getName(),
@@ -93,8 +87,8 @@ public abstract class ConfigurationClassUtils {
 
 
 	/**
-	 * Initialize a configuration class proxy for the specified class.
-	 * @param userClass the configuration class to initialize
+	 * 为指定类初始化配置类代理（CGLIB 增强）。
+	 * @param userClass 要初始化的配置类
 	 */
 	@SuppressWarnings("unused") // Used by AOT-optimized generated code
 	public static Class<?> initializeConfigurationClass(Class<?> userClass) {
@@ -105,12 +99,11 @@ public abstract class ConfigurationClassUtils {
 
 
 	/**
-	 * Check whether the given bean definition is a candidate for a configuration class
-	 * (or a nested component class declared within a configuration/component class,
-	 * to be auto-registered as well), and mark it accordingly.
-	 * @param beanDef the bean definition to check
-	 * @param metadataReaderFactory the current factory in use by the caller
-	 * @return whether the candidate qualifies as (any kind of) configuration class
+	 * 检查给定 Bean 定义是否为配置类候选（或配置/组件类内声明的嵌套组件类，亦会自动注册），
+	 * 并相应标记。
+	 * @param beanDef 待检查的 Bean 定义
+	 * @param metadataReaderFactory 调用方当前使用的元数据读取器工厂
+	 * @return 候选是否符合（任意类型的）配置类
 	 */
 	static boolean checkConfigurationClassCandidate(
 			BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
@@ -123,12 +116,11 @@ public abstract class ConfigurationClassUtils {
 		AnnotationMetadata metadata;
 		if (beanDef instanceof AnnotatedBeanDefinition annotatedBd &&
 				className.equals(annotatedBd.getMetadata().getClassName())) {
-			// Can reuse the pre-parsed metadata from the given BeanDefinition...
+			// 可复用 BeanDefinition 中已解析的元数据
 			metadata = annotatedBd.getMetadata();
 		}
 		else if (beanDef instanceof AbstractBeanDefinition abstractBd && abstractBd.hasBeanClass()) {
-			// Check already loaded Class if present...
-			// since we possibly can't even load the class file for this Class.
+			// 若 Class 已加载，直接检查（可能无法加载类文件）
 			Class<?> beanClass = abstractBd.getBeanClass();
 			if (BeanFactoryPostProcessor.class.isAssignableFrom(beanClass) ||
 					BeanPostProcessor.class.isAssignableFrom(beanClass) ||
@@ -164,7 +156,7 @@ public abstract class ConfigurationClassUtils {
 			return false;
 		}
 
-		// It's a full or lite configuration candidate... Let's determine the order value, if any.
+		// 已是 full/lite 候选：解析并记录 order 值（若有）
 		Integer order = getOrder(metadata);
 		if (order != null) {
 			beanDef.setAttribute(ORDER_ATTRIBUTE, order);
@@ -174,29 +166,28 @@ public abstract class ConfigurationClassUtils {
 	}
 
 	/**
-	 * Check the given metadata for a configuration class candidate
-	 * (or nested component class declared within a configuration/component class).
-	 * @param metadata the metadata of the annotated class
-	 * @return {@code true} if the given class is to be registered for
-	 * configuration class processing; {@code false} otherwise
+	 * 检查给定元数据是否为配置类候选（或配置/组件类内声明的嵌套组件类）。
+	 * @param metadata 带注解类的元数据
+	 * @return 若该类应参与配置类处理则为 {@code true}，否则为 {@code false}
 	 */
 	static boolean isConfigurationCandidate(AnnotationMetadata metadata) {
-		// Do not consider an interface or an annotation...
+		// 接口与纯注解类型不考虑
 		if (metadata.isInterface()) {
 			return false;
 		}
 
-		// Any of the typical annotations found?
+		// 是否带有典型指示注解？
 		for (String indicator : candidateIndicators) {
 			if (metadata.isAnnotated(indicator)) {
 				return true;
 			}
 		}
 
-		// Finally, let's look for @Bean methods...
+		// 最后检查是否存在 @Bean 方法
 		return hasBeanMethods(metadata);
 	}
 
+	/** 元数据是否声明了 @Bean 方法。 */
 	static boolean hasBeanMethods(AnnotationMetadata metadata) {
 		try {
 			return metadata.hasAnnotatedMethods(Bean.class.getName());
@@ -210,10 +201,9 @@ public abstract class ConfigurationClassUtils {
 	}
 
 	/**
-	 * Determine the order for the given configuration class metadata.
-	 * @param metadata the metadata of the annotated class
-	 * @return the {@code @Order} annotation value on the configuration class,
-	 * or {@code Ordered.LOWEST_PRECEDENCE} if none declared
+	 * 确定给定配置类元数据的 order 值。
+	 * @param metadata 带注解类的元数据
+	 * @return 配置类上 {@code @Order} 注解的值；未声明则返回 {@code Ordered.LOWEST_PRECEDENCE}
 	 * @since 5.0
 	 */
 	public static @Nullable Integer getOrder(AnnotationMetadata metadata) {
@@ -222,11 +212,9 @@ public abstract class ConfigurationClassUtils {
 	}
 
 	/**
-	 * Determine the order for the given configuration class bean definition,
-	 * as set by {@link #checkConfigurationClassCandidate}.
-	 * @param beanDef the bean definition to check
-	 * @return the {@link Order @Order} annotation value on the configuration class,
-	 * or {@link Ordered#LOWEST_PRECEDENCE} if none declared
+	 * 确定给定配置类 Bean 定义的 order 值（由 {@link #checkConfigurationClassCandidate} 设置）。
+	 * @param beanDef 待检查的 Bean 定义
+	 * @return 配置类上 {@link Order @Order} 注解的值，未声明则为 {@link Ordered#LOWEST_PRECEDENCE}
 	 * @since 4.2
 	 */
 	public static int getOrder(BeanDefinition beanDef) {
