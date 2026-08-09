@@ -16,10 +16,11 @@
 package org.redisson.api;
 
 /**
- * RPriorityBlockingDeque backed by Redis
+ * 基于 Redis 实现的优先级阻塞双端队列。
+ * <p>组合 {@link RBlockingDeque} 的阻塞语义与 {@link RPriorityDeque} 的优先级排序能力。
  *
  * @author Nikita Koksharov
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public interface RPriorityBlockingDeque<V> extends RBlockingDeque<V>, RPriorityDeque<V> {
 

@@ -19,43 +19,36 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Asynchronous interface for Semaphore object with lease time parameter support for each acquired permit.
- * 
- * <p>Each permit identified by own id and could be released only using its id.
- * Permit id is a 128-bits unique random identifier generated each time during acquiring.
- *   
- * <p>Works in non-fair mode. Therefore order of acquiring is unpredictable.
- * 
- * @author Nikita Koksharov
+ * 支持租约时间的可过期信号量异步 API。
+ * <p>每次 acquire 生成 128 位唯一 permitId，释放时必须携带对应 ID。
+ * <p>非公平模式，各方法返回 {@link RFuture}。
  *
+ * @author Nikita Koksharov
  */
 public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
 
     /**
-     * Acquires a permit and returns its id.
-     * Waits if necessary until a permit became available.
+     * 获取一个许可并返回其 ID；必要时阻塞等待直到许可可用。
      * 
-     * @return permit id
+     * @return 许可 ID
      */
     RFuture<String> acquireAsync();
     
     /**
-     * Acquires defined amount of <code>permits</code> and returns their ids.
-     * Waits if necessary until all permits became available.
+     * 异步获取指定数量许可并返回 ID 列表；必要时等待全部可用。
      *
-     * @param permits the number of permits to acquire
-     * @return permits ids
+     * @param permits 待获取许可数量
+     * @return 许可 ID 列表
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
     RFuture<List<String>> acquireAsync(int permits);
     
     /**
-     * Acquires a permit with defined <code>leaseTime</code> and return its id.
-     * Waits if necessary until a permit became available.
+     * 获取带租约时间的许可并返回 ID；必要时阻塞等待。
      * 
-     * @param leaseTime permit lease time
-     * @param unit time unit
-     * @return permit id
+     * @param leaseTime 许可租约时间
+     * @param unit 时间单位
+     * @return 许可 ID
      */
     RFuture<String> acquireAsync(long leaseTime, TimeUnit unit);
     
@@ -63,102 +56,94 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
      * Acquires defined amount of <code>permits</code> and return their ids.
      * Waits if necessary until all permits became available.
      *
-     * @param permits the number of permits to acquire
-     * @param leaseTime permit lease time
-     * @param unit time unit
-     * @return permits ids
+     * @param permits 待获取许可数量
+     * @param leaseTime 许可租约时间
+     * @param unit 时间单位
+     * @return 许可 ID 列表
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
     RFuture<List<String>> acquireAsync(int permits, long leaseTime, TimeUnit unit);
     
     /**
-     * Tries to acquire currently available permit and return its id.
+     * 尝试立即获取当前可用许可并返回 ID。
      *
-     * @return permit id if a permit was acquired and {@code null}
+     * @return 许可 ID if a permit was acquired and {@code null}
      *         otherwise
      */
     RFuture<String> tryAcquireAsync();
 
     /**
-     * Tries to acquire defined amount of currently available <code>permits</code> and returns their ids.
+     * 尝试异步获取指定数量的当前可用许可并返回 ID 列表。
      *
-     * @param permits the number of permits to acquire
-     * @return permits ids if permits were acquired and empty list
+     * @param permits 待获取许可数量
+     * @return 许可 ID 列表 if permits were acquired and empty list
      *         otherwise
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
     RFuture<List<String>> tryAcquireAsync(int permits);
 
     /**
-     * Tries to acquire currently available permit and return its id.
+     * 尝试立即获取当前可用许可并返回 ID。
      * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
      * 
-     * @param waitTime the maximum time to wait
+     * @param waitTime 最大等待时间
      * @param unit the time unit
-     * @return permit id if a permit was acquired and {@code null}
+     * @return 许可 ID if a permit was acquired and {@code null}
      *         if the waiting time elapsed before a permit was acquired
      */
     RFuture<String> tryAcquireAsync(long waitTime, TimeUnit unit);
 
     /**
-     * Tries to acquire currently available permit
-     * with defined <code>leaseTime</code> and return its id.
-     * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
+     * 尝试获取带租约的许可；必要时最多等待 {@code waitTime}。
      * 
-     * @param waitTime the maximum time to wait
-     * @param leaseTime permit lease time, use -1 to make it permanent
+     * @param waitTime 最大等待时间
+     * @param leaseTime 许可租约时间, use -1 to make it permanent
      * @param unit the time unit
-     * @return permit id if a permit was acquired and <code>null</code>
+     * @return 许可 ID if a permit was acquired and <code>null</code>
      *         if the waiting time elapsed before a permit was acquired
      */
     RFuture<String> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit);
 
     /**
-     * Tries to acquire defined amount of currently available <code>permits</code>
-     * with defined <code>leaseTime</code> and returns their ids.
-     * Waits up to defined <code>waitTime</code> if necessary until permits became available.
+     * 异步尝试获取指定数量且带租约的许可；必要时最多等待 {@code waitTime}。
      *
-     * @param permits the number of permits to acquire
-     * @param waitTime the maximum time to wait
-     * @param leaseTime permit lease time, use -1 to make it permanent
+     * @param permits 待获取许可数量
+     * @param waitTime 最大等待时间
+     * @param leaseTime 许可租约时间, use -1 to make it permanent
      * @param unit the time unit
-     * @return permits ids if permits were acquired and empty list
+     * @return 许可 ID 列表 if permits were acquired and empty list
      *         if the waiting time elapsed before permit were acquired
      * @throws IllegalArgumentException if <code>permits</code> is negative
      */
     RFuture<List<String>> tryAcquireAsync(int permits, long waitTime, long leaseTime, TimeUnit unit);
 
     /**
-     * Tries to release permit by its id.
+     * 尝试按 ID 释放许可。
      *
-     * @param permitId permit id
-     * @return <code>true</code> if a permit has been released and <code>false</code>
-     *         otherwise
+     * @param permitId 许可 ID
+     * @return 释放成功则为 true，否则 false
      */
     RFuture<Boolean> tryReleaseAsync(String permitId);
 
     /**
-     * Tries to release defined permits by their ids.
+     * 异步尝试按 ID 列表批量释放许可。
      *
-     * @param permitsIds - permits ids
-     * @return amount of released permits
+     * @param permitsIds 许可 ID 列表
+     * @return 成功释放的许可数量
      * @throws IllegalArgumentException if <code>permitsIds</code> is null or empty
      */
     RFuture<Integer> tryReleaseAsync(List<String> permitsIds);
 
     /**
-     * Releases a permit by its id. Increases the number of available permits.
-     * Throws an exception if permit id doesn't exist or has already been released.
+     * 按 ID 释放许可并增加可用计数；ID 无效或已释放时抛出异常。
      * 
-     * @param permitId - permit id
-     * @return void
+     * @param permitId 许可 ID
+     * @return 无返回值
      */
     RFuture<Void> releaseAsync(String permitId);
 
     /**
-     * Releases permits by their ids.
-     * Increases the number of available permits.
-     * Throws an exception if permits ids don't exist or have already been released.
+     * 异步按 ID 列表释放许可；无效 ID 时抛出异常。
      *
      * @param permitsIds - permit id
      * @throws IllegalArgumentException if <code>permitsIds</code> is null or empty
@@ -166,66 +151,64 @@ public interface RPermitExpirableSemaphoreAsync extends RExpirableAsync {
     RFuture<Void> releaseAsync(List<String> permitsIds);
 
     /**
-     * Returns number of available permits.
+     * 返回当前可用许可数量。
      *
-     * @return number of permits
+     * @return 许可总数
      */
     RFuture<Integer> availablePermitsAsync();
 
     /**
-     * Returns the number of permits.
+     * 返回信号量许可总数。
      *
-     * @return number of permits
+     * @return 许可总数
      */
     RFuture<Integer> getPermitsAsync();
 
     /**
-     * Returns the number of acquired permits.
+     * 返回当前已被占用的许可数量。
      *
-     * @return number of acquired permits
+     * @return 已占用许可数
      */
     RFuture<Integer> acquiredPermitsAsync();
 
     /**
-     * Tries to set number of available permits.
+     * 尝试设置可用许可数量（仅首次有效）。
      *
-     * @param permits - number of permits
-     * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
+     * @param permits 许可数量
+     * @return 设置成功则为 true，否则 false  
      */
     RFuture<Boolean> trySetPermitsAsync(int permits);
 
     /**
-     * Sets the number of permits to the provided value.
-     * Calculates the <code>delta</code> between the given <code>permits</code> value and the
-     * current number of permits, then increases the number of available permits by <code>delta</code>.
+     * 将许可总数设为给定值；按与当前值的差值调整可用许可数。
      *
-     * @param permits - number of permits
+     * @param permits 许可数量
      */
     RFuture<Void> setPermitsAsync(int permits);
 
     /**
-     * Increases or decreases the number of available permits by defined value. 
+     * 按给定增量增加或减少可用许可数量。 
      *
-     * @param permits amount of permits to add/remove
-     * @return void
+     * @param permits 增减的许可数量
+     * @return 无返回值
      */
     RFuture<Void> addPermitsAsync(int permits);
     
     /**
-     * Overrides and updates lease time for defined permit id.
+     * 覆盖并更新指定 permitId 的租约时间。
      * 
-     * @param permitId permit id
-     * @param leaseTime permit lease time, use -1 to make it permanent
+     * @param permitId 许可 ID
+     * @param leaseTime 许可租约时间, use -1 to make it permanent
      * @param unit the time unit
-     * @return <code>true</code> if permits has been updated successfully, otherwise <code>false</code>.
+     * @return 更新成功则为 true，否则 false
      */
     RFuture<Boolean> updateLeaseTimeAsync(String permitId, long leaseTime, TimeUnit unit);
     
     /**
-     * Returns lease time of the permitId
+     * 返回指定 permitId 的剩余租约时间（毫秒）
      *
-     * @param permitId permit id
-     * @return lease time in millis or -1 if no lease time specified
+     * @param permitId 许可 ID
+     * @return 租约毫秒数；无租约则为 -1
      * @throws IllegalArgumentException if permit id doesn't exist or has already been released.
      */
     RFuture<Long> getLeaseTimeAsync(String permitId);

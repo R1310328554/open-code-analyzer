@@ -23,53 +23,51 @@ import org.redisson.api.listener.PatternStatusListener;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for Pattern based observer for Publish Subscribe object.
+ * 基于模式的 Redis 发布/订阅 Topic Reactor API。
+ * <p>各方法返回 {@link Mono}；{@link #getPatternNames()} 同步返回模式列表。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RPatternTopicReactive {
 
     /**
-     * Get topic channel patterns
+     * 返回 Topic 订阅的模式（Pattern）列表
      *
-     * @return list of topic names
+     * @return 模式名称列表
      */
     List<String> getPatternNames();
 
     /**
-     * Subscribes to this topic.
-     * <code>MessageListener.onMessage</code> is called when any message
-     * is published on this topic.
+     * 订阅该模式 Topic；任意匹配频道发布消息时触发 {@code MessageListener.onMessage}。
      * 
      * @param <T> type of message
-     * @param type - type of message
-     * @param listener - message listener
-     * @return local JVM unique listener id
+     * @param type 消息类型
+     * @param listener 消息监听器
+     * @return 本地 JVM 唯一监听器 ID
      * @see org.redisson.api.listener.MessageListener
      */
     <T> Mono<Integer> addListener(Class<T> type, PatternMessageListener<T> listener);
 
     /**
-     * Subscribes to status changes of this topic
+     * 订阅该 Topic 的连接/订阅状态变化
      *
-     * @param listener - message listener
-     * @return local JVM unique listener id
+     * @param listener 消息监听器
+     * @return 本地 JVM 唯一监听器 ID
      * @see org.redisson.api.listener.StatusListener
      */
     Mono<Integer> addListener(PatternStatusListener listener);
 
     /**
-     * Removes the listener by <code>id</code> for listening this topic
+     * 按监听器 ID 移除 Topic 监听器
      *
-     * @param listenerId - message listener id
+     * @param listenerId 监听器 ID
      */
     Mono<Void> removeListener(int listenerId);
 
 
     /**
-     * Returns  active topic list of this pattern
-     * @return all actives channel of this pattern
+     * 返回当前匹配该模式的活跃频道列表
+     * @return 活跃频道列表
      */
     Mono<List<String>> getActiveTopics();
 

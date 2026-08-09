@@ -19,28 +19,28 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * Base RxJava2 interface for Lock object listener
+ * 可监听对象事件的 RxJava3 API 接口。
+ * <p>注册监听器返回 {@link Single}，移除返回 {@link Completable}。
  *
  * @author seakider
- *
  */
 public interface RObservableRx {
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器
      *
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     Single<Integer> addListener(ObjectListener listener);
 
     /**
-     * Removes object event listener
+     * 移除对象事件监听器
      *
-     * @param listenerId - listener id
+     * @param listenerId 监听器 ID
      */
     Completable removeListener(int listenerId);
 }

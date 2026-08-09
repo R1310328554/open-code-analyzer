@@ -20,100 +20,100 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.client.codec.Codec;
 
 /**
- * Base interface for all Redisson objects
+ * 所有 Redisson 对象的同步 API 基类接口。
+ * <p>继承 {@link RObjectAsync}，提供元数据查询、DUMP/RESTORE、迁移复制及键生命周期管理等通用能力。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RObject extends RObjectAsync {
 
     /**
-     * Returns number of seconds spent since last write or read operation over this object.
+     * 返回自上次读写操作以来经过的秒数。
      *
-     * @return number of seconds
+     * @return 空闲秒数
      */
     Long getIdleTime();
 
     /**
-     * Returns count of references over this object.
+     * 返回该对象的引用计数。
      *
-     * @return count of reference
+     * @return 引用计数
      */
     int getReferenceCount();
 
     /**
-     * Returns the logarithmic access frequency counter over this object.
+     * 返回该对象的对数访问频率计数器。
      *
-     * @return frequency counter
+     * @return 访问频率计数
      */
     int getAccessFrequency();
 
     /**
-     * Returns the internal encoding for the Redis object
+     * 返回 Redis 对象在服务端使用的内部编码类型
      *
-     * @return internal encoding
+     * @return 内部编码类型
      */
     ObjectEncoding getInternalEncoding();
     /**
-     * Returns bytes amount used by object in Redis memory.
+     * 返回该对象在 Redis 内存中占用的字节数。
      * 
-     * @return size in bytes
+     * @return 内存占用字节数
      */
     long sizeInMemory();
     
     /**
-     * Restores object using its state returned by {@link #dump()} method.
+     * 使用 {@link #dump()} 返回的状态快照恢复对象。
      * 
-     * @param state - state of object
+     * @param state 对象状态快照
      */
     void restore(byte[] state);
     
     /**
-     * Restores object using its state returned by {@link #dump()} method and set time to live for it.
+     * 使用 {@link #dump()} 返回的状态恢复对象，并设置存活时间（TTL）。
      * 
-     * @param state - state of object
-     * @param timeToLive - time to live of the object
-     * @param timeUnit - time unit
+     * @param state 对象状态快照
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
      */
     void restore(byte[] state, long timeToLive, TimeUnit timeUnit);
     
     /**
-     * Restores and replaces object if it already exists.
+     * 恢复对象；若键已存在则覆盖替换。
      * 
-     * @param state - state of the object
+     * @param state 对象状态快照
      */
     void restoreAndReplace(byte[] state);
 
     /**
-     * Restores and replaces object if it already exists and set time to live for it.
+     * 恢复并替换已存在的对象，同时设置存活时间（TTL）。
      * 
-     * @param state - state of the object
-     * @param timeToLive - time to live of the object
-     * @param timeUnit - time unit
+     * @param state 对象状态快照
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
      */
     void restoreAndReplace(byte[] state, long timeToLive, TimeUnit timeUnit);
     
     /**
-     * Returns dump of object
+     * 返回对象的序列化快照（DUMP 格式）
      * 
-     * @return dump
+     * @return 序列化快照字节数组
      */
     byte[] dump();
     
     /**
-     * Update the last access time of an object. 
+     * 更新对象的最后访问时间。 
      * 
-     * @return <code>true</code> if object was touched else <code>false</code>
+     * @return 成功更新访问时间则为 true，否则 false
      */
     boolean touch();
     
     /**
-     * Copy object from source Redis instance to destination Redis instance
+     * 将对象从源 Redis 实例复制到目标 Redis 实例
      *
-     * @param host - destination host
-     * @param port - destination port
-     * @param database - destination database
-     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @param host 目标主机
+     * @param port 目标端口
+     * @param database 目标数据库编号
+     * @param timeout 与目标实例通信的最大空闲时间（毫秒）
      */
     void migrate(String host, int port, int database, long timeout);
 
@@ -128,116 +128,115 @@ public interface RObject extends RObjectAsync {
     void copy(String host, int port, int database, long timeout);
 
     /**
-     * Copy this object instance to the new instance with a defined name.
+     * 将当前对象复制到指定名称的新键。
      *
-     * @param destination name of the destination instance
-     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     * @param destination 目标实例键名
+     * @return 复制成功则为 true，否则 false
      */
     boolean copy(String destination);
 
     /**
-     * Copy this object instance to the new instance with a defined name and database.
+     * 将当前对象复制到指定名称与数据库编号的新键。
      *
-     * @param destination name of the destination instance
-     * @param database database number
-     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     * @param destination 目标实例键名
+     * @param database 目标数据库编号
+     * @return 复制成功则为 true，否则 false
      */
     boolean copy(String destination, int database);
 
     /**
-     * Copy this object instance to the new instance with a defined name, and replace it if it already exists.
+     * 复制到指定名称的新键；若目标键已存在则覆盖。
      *
-     * @param destination name of the destination instance
-     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     * @param destination 目标实例键名
+     * @return 复制成功则为 true，否则 false
      */
     boolean copyAndReplace(String destination);
 
     /**
-     * Copy this object instance to the new instance with a defined name and database, and replace it if it already exists.
+     * 复制到指定名称与数据库的新键；若目标键已存在则覆盖。
      *
-     * @param destination name of the destination instance
-     * @param database database number
-     * @return <code>true</code> if this object instance was copied else <code>false</code>
+     * @param destination 目标实例键名
+     * @param database 目标数据库编号
+     * @return 复制成功则为 true，否则 false
      */
     boolean copyAndReplace(String destination, int database);
 
     /**
-     * Move object to another database
+     * 将对象移动到另一个 Redis 数据库
      *
-     * @param database - Redis database number
-     * @return <code>true</code> if key was moved else <code>false</code>
+     * @param database Redis 数据库编号
+     * @return 移动成功则为 true，否则 false
      */
     boolean move(int database);
 
     /**
-     * Returns name of object
+     * 返回对象在 Redis 中的键名
      *
-     * @return name - name of object
+     * @return 对象键名
      */
     String getName();
 
     /**
-     * Deletes the object
+     * 删除该对象
      * 
-     * @return <code>true</code> if it was exist and deleted else <code>false</code>
+     * @return 存在且已删除则为 true，否则 false
      */
     boolean delete();
 
     /**
-     * Delete the objects.
-     * Actual removal will happen later asynchronously.
+     * 异步删除对象；实际内存回收稍后执行。
      * <p>
-     * Requires Redis 4.0+
+     * 需要 Redis 4.0+
      * 
-     * @return <code>true</code> if it was exist and deleted else <code>false</code>
+     * @return 存在且已删除则为 true，否则 false
      */
     boolean unlink();
     
     /**
-     * Rename current object key to <code>newName</code>
+     * 将当前对象键重命名为 {@code newName}
      *
-     * @param newName - new name of object
+     * @param newName 新键名
      */
     void rename(String newName);
 
     /**
-     * Rename current object key to <code>newName</code>
+     * 将当前对象键重命名为 {@code newName}
      * only if new key doesn't exist.
      *
-     * @param newName - new name of object
-     * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
+     * @param newName 新键名
+     * @return 重命名成功则为 true，否则 false
      */
     boolean renamenx(String newName);
 
     /**
-     * Check object existence
+     * 检查对象是否存在
      *
-     * @return <code>true</code> if object exists and <code>false</code> otherwise
+     * @return 存在则为 true，否则 false
      */
     boolean isExists();
 
     /**
-     * Returns the underlying Codec used by this RObject
+     * 返回该对象使用的 {@link Codec} 编解码器
      * 
-     * @return Codec of object
+     * @return 编解码器
      */
     Codec getCodec();
     
     /**
-     * Adds object event listener
+     * 注册对象事件监听器
      * 
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      * 
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
     
     /**
-     * Removes object event listener
+     * 移除对象事件监听器
      * 
-     * @param listenerId - listener id
+     * @param listenerId 监听器 ID
      */
     void removeListener(int listenerId);
 

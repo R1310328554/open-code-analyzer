@@ -16,28 +16,28 @@
 package org.redisson.api;
 
 /**
- * interface for Lock object listener
+ * 可监听对象事件的同步 API 接口。
+ * <p>用于注册过期、删除等 Redis 键空间通知监听器，常见于锁等对象。
  *
  * @author seakider
- *
  */
 public interface RObservable {
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器
      *
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 
     /**
-     * Removes object event listener
+     * 移除对象事件监听器
      *
-     * @param listenerId - listener id
+     * @param listenerId 监听器 ID
      */
     void removeListener(int listenerId);
 }

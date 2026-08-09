@@ -16,27 +16,27 @@
 package org.redisson.api;
 
 /**
- * Async interface for Lock object listener
+ * 可监听对象事件的异步 API 接口。
+ * <p>各方法返回 {@link RFuture}，用于异步注册/移除事件监听器。
  *
  * @author seakider
- *
  */
 public interface RObservableAsync {
     /**
-     * Adds object event listener
+     * 注册对象事件监听器
      *
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 
     /**
-     * Removes object event listener
+     * 移除对象事件监听器
      *
-     * @param listenerId - listener id
+     * @param listenerId 监听器 ID
      */
     RFuture<Void> removeListenerAsync(int listenerId);
 }

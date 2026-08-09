@@ -21,65 +21,63 @@ import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 
 /**
- * Pattern based observer for Publish Subscribe object.
+ * 基于模式（Pattern）的 Redis 发布/订阅 Topic 同步 API。
+ * <p>通过 PSUBSCRIBE 订阅匹配通配符的多个频道，支持消息与连接状态监听。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RPatternTopic {
 
     /**
-     * Get topic channel patterns
+     * 返回 Topic 订阅的模式（Pattern）列表
      *
-     * @return list of topic names
+     * @return 模式名称列表
      */
     List<String> getPatternNames();
 
     /**
-     * Subscribes to this topic.
-     * <code>MessageListener.onMessage</code> is called when any message
-     * is published on this topic.
+     * 订阅该模式 Topic；任意匹配频道发布消息时触发 {@code MessageListener.onMessage}。
      * 
      * @param <T> type of message
-     * @param type - type of message
-     * @param listener - message listener
-     * @return local JVM unique listener id
+     * @param type 消息类型
+     * @param listener 消息监听器
+     * @return 本地 JVM 唯一监听器 ID
      * @see org.redisson.api.listener.MessageListener
      */
     <T> int addListener(Class<T> type, PatternMessageListener<T> listener);
 
     /**
-     * Subscribes to status changes of this topic
+     * 订阅该 Topic 的连接/订阅状态变化
      *
-     * @param listener - message listener
-     * @return local JVM unique listener id
+     * @param listener 消息监听器
+     * @return 本地 JVM 唯一监听器 ID
      * @see org.redisson.api.listener.StatusListener
      */
     int addListener(PatternStatusListener listener);
 
     /**
-     * Removes the listeners by <code>ids</code> for listening this topic
+     * 按监听器 ID 批量移除 Topic 监听器
      *
-     * @param ids listener ids
+     * @param ids 监听器 ID 列表
      */
     void removeListener(Integer... ids);
 
     /**
-     * Removes the listener by its instance
+     * 按监听器实例移除 Topic 监听器
      *
-     * @param listener - listener instance
+     * @param listener 监听器实例
      */
     void removeListener(PatternMessageListener<?> listener);
     
     /**
-     * Removes all listeners from this topic
+     * 移除该 Topic 上的全部监听器
      */
     void removeAllListeners();
 
     /**
-     * Removes all listeners from this topic
+     * 移除该 Topic 上的全部监听器
      *
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> removeAllListenersAsync();
     
@@ -88,23 +86,23 @@ public interface RPatternTopic {
     <T> RFuture<Integer> addListenerAsync(Class<T> type, PatternMessageListener<T> listener);
 
     /**
-     * Removes the listeners by <code>ids</code> for listening this topic
+     * 按监听器 ID 批量移除 Topic 监听器
      *
-     * @param ids listener ids
-     * @return void
+     * @param ids 监听器 ID 列表
+     * @return 无返回值
      */
     RFuture<Void> removeListenerAsync(Integer... ids);
 
     /**
-     * Returns  active topic list of this pattern
-     * @return all actives channel of this pattern
+     * 返回当前匹配该模式的活跃频道列表
+     * @return 活跃频道列表
      */
     RFuture<List<String>> getActiveTopicsAsync();
 
 
     /**
-     * Returns active topic list of this pattern
-     * @return all actives topic of this pattern
+     * 返回当前匹配该模式的活跃 Topic 列表
+     * @return 活跃 Topic 列表
      */
     List<String> getActiveTopics();
 

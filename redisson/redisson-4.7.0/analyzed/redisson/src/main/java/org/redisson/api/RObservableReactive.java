@@ -18,28 +18,28 @@ package org.redisson.api;
 import reactor.core.publisher.Mono;
 
 /**
- * Base Reactive interface for Lock object listener
+ * 可监听对象事件的 Reactor 响应式 API 接口。
+ * <p>各方法返回 {@link Mono}，用于响应式注册/移除事件监听器。
  *
  * @author seakider
- *
  */
 public interface RObservableReactive {
     /**
-     * Adds object event listener
+     * 注册对象事件监听器
      *
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     Mono<Integer> addListener(ObjectListener listener);
 
     /**
-     * Removes object event listener
+     * 移除对象事件监听器
      *
-     * @param listenerId - listener id
-     * @return void
+     * @param listenerId 监听器 ID
+     * @return 无返回值
      */
     Mono<Void> removeListener(int listenerId);
 }
