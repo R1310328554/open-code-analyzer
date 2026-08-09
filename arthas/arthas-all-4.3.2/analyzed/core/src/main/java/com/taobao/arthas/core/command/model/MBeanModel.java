@@ -5,16 +5,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Model of 'mbean'
+ * mbean 命令的结构化结果：JMX MBean 枚举、元数据及属性快照。
+ * <p>
+ * 仅列出名称时使用 {@link #mbeanNames}；
+ * 带 -m 时填充 {@link #mbeanMetadata}（MBeanInfo）；
+ * 带属性读取时 {@link #mbeanAttribute} 以 ObjectName 为 key 映射属性列表。
  *
  * @author gongdewei 2020/4/26
  */
 public class MBeanModel extends ResultModel {
 
+    /** 匹配到的 MBean ObjectName 字符串列表 */
     private List<String> mbeanNames;
 
+    /** ObjectName → MBeanInfo 元数据（属性/操作/通知描述） */
     private Map<String, MBeanInfo> mbeanMetadata;
 
+    /** ObjectName → 已读取的属性值列表 */
     private Map<String, List<MBeanAttributeVO>> mbeanAttribute;
 
     public MBeanModel() {
