@@ -46,40 +46,59 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Arthas MCP Server
- * Used to expose HTTP service after Arthas startup
+ * Arthas MCP 服务器：在 Arthas 启动后通过 HTTP 暴露 MCP 协议服务。
+ * <p>
+ * 支持 STREAMABLE（流式会话 + 任务）与 STATELESS（无状态）两种传输模式；
+ * 自动扫描 {@link #ARTHAS_TOOL_BASE_PACKAGE} 下的工具并按 taskSupport 分类注册。
  */
 public class ArthasMcpServer {
     private static final Logger logger = LoggerFactory.getLogger(ArthasMcpServer.class);
 
-    /**
-     * Arthas tool base package in core module
-     */
+    /** core 模块中 Arthas MCP 工具类的扫描根包 */
     public static final String ARTHAS_TOOL_BASE_PACKAGE = "com.taobao.arthas.core.mcp.tool.function";
+    /** MCP 组件优雅关闭的最大等待秒数 */
     private static final long MCP_COMPONENT_STOP_TIMEOUT_SECONDS = 5L;
+    /** 任务线程池关闭的最大等待秒数 */
     private static final long MCP_TASK_EXECUTOR_STOP_TIMEOUT_SECONDS = 5L;
 
+    /** STREAMABLE 模式 Netty 服务器 */
     private McpNettyServer streamableServer;
+    /** STATELESS 模式 Netty 服务器 */
     private McpStatelessNettyServer statelessServer;
 
+    /** MCP HTTP 端点路径 */
     private final String mcpEndpoint;
+    /** 当前启用的传输协议 */
     private final ServerProtocol protocol;
 
+    /** Arthas 命令执行器 */
     private final CommandExecutor commandExecutor;
+    /** STREAMABLE 模式下的命令会话管理器 */
     private ArthasCommandSessionManager sessionManager;
 
+    /** 统一 MCP HTTP 请求分发器 */
     private McpHttpRequestHandler unifiedMcpHandler;
 
+    /** STREAMABLE 模式专用处理器 */
     private McpStreamableHttpRequestHandler streamableHandler;
 
+    /** STATELESS 模式专用处理器 */
     private McpStatelessHttpRequestHandler statelessHandler;
 
     // MCP Task 专用线程池，大小与 maxConcurrentTaskSessions 对齐，
     // 避免 I/O 密集型任务污染 ForkJoinPool.commonPool
     private ExecutorService taskExecutor;
 
+    /** 默认 MCP HTTP 端点 */
     public static final String DEFAULT_MCP_ENDPOINT = "/mcp";
     
+    /**
+     * 构造 MCP 服务器（尚未启动，需调用 {@link #start()}）。
+     *
+     * @param mcpEndpoint     端点路径，{@code null} 时使用 {@link #DEFAULT_MCP_ENDPOINT}
+     * @param commandExecutor 命令执行器
+     * @param protocol        协议名，无效值回退为 STREAMABLE
+     */
     public ArthasMcpServer(String mcpEndpoint, CommandExecutor commandExecutor, String protocol) {
         this.mcpEndpoint = mcpEndpoint != null ? mcpEndpoint : DEFAULT_MCP_ENDPOINT;
         this.commandExecutor = commandExecutor;
@@ -95,6 +114,7 @@ public class ArthasMcpServer {
         this.protocol = resolvedProtocol;
     }
 
+    /** 返回统一 MCP HTTP 请求处理器（两种模式共用入口） */
     public McpHttpRequestHandler getMcpRequestHandler() {
         return unifiedMcpHandler;
     }
@@ -322,14 +342,10 @@ public class ArthasMcpServer {
         }
     }
     
-    /**
-     * Default keep-alive interval for MCP server (15 seconds)
-     */
+    /** MCP 服务器默认 keep-alive 间隔（15 秒） */
     public static final Duration DEFAULT_KEEP_ALIVE_INTERVAL = Duration.ofSeconds(15);
     
-    /**
-     * Create HTTP transport provider
-     */
+    /** 创建 STREAMABLE 模式的 Netty HTTP 传输提供者 */
     private NettyStreamableServerTransportProvider createStreamableHttpTransportProvider(McpServerProperties properties) {
         return NettyStreamableServerTransportProvider.builder()
                 .mcpEndpoint(properties.getMcpEndpoint())
@@ -338,6 +354,7 @@ public class ArthasMcpServer {
                 .build();
     }
 
+    /** 创建 STATELESS 模式的 Netty HTTP 传输层 */
     private NettyStatelessServerTransport createStatelessHttpTransport(McpServerProperties properties) {
         return NettyStatelessServerTransport.builder()
                 .mcpEndpoint(properties.getMcpEndpoint())
@@ -376,6 +393,7 @@ public class ArthasMcpServer {
         return builder.build();
     }
 
+    /** 依次关闭统一处理器、流式/无状态服务器及任务线程池 */
     public void stop() {
         logger.info("Stopping Arthas MCP server...");
         if (unifiedMcpHandler != null) {
@@ -397,6 +415,7 @@ public class ArthasMcpServer {
         logger.info("Arthas MCP server stopped completely");
     }
 
+    /** 带超时的 MCP 组件优雅关闭，失败时记录警告并继续整体停机流程 */
     private void closeMcpComponent(String componentName, Supplier<CompletableFuture<Void>> closeAction) {
         try {
             CompletableFuture<Void> closeFuture = closeAction.get();
@@ -418,6 +437,7 @@ public class ArthasMcpServer {
         }
     }
 
+    /** 关闭 MCP 任务专用线程池，超时则 {@link ThreadPoolExecutor#shutdownNow()} */
     private void stopTaskExecutor() {
         if (taskExecutor == null) {
             return;
@@ -449,6 +469,7 @@ public class ArthasMcpServer {
     }
 
 
+    /** 为 MCP 异步任务创建具名守护线程（{@code mcp-task-N}） */
     private static class McpTaskThreadFactory implements ThreadFactory {
         private final AtomicInteger counter = new AtomicInteger(0);
 

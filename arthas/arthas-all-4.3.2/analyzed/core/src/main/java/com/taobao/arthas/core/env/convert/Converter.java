@@ -17,23 +17,24 @@
 package com.taobao.arthas.core.env.convert;
 
 /**
- * A converter converts a source object of type S to a target of type T.
- * Implementations of this interface are thread-safe and can be shared.
- *
- * <p>Implementations may additionally implement {@link ConditionalConverter}.
+ * 类型转换器接口：将源类型 {@code S} 的对象转换为目标类型 {@code T}。
+ * <p>
+ * 实现类须线程安全，可在 {@link DefaultConversionService} 中共享注册。
+ * 可选实现 {@link ConditionalConverter} 以声明条件转换能力。
  *
  * @author Keith Donald
  * @since 3.0
- * @param <S> The source type
- * @param <T> The target type
+ * @param <S> 源类型
+ * @param <T> 目标类型
  */
 public interface Converter<S, T> {
 
 	/**
-	 * Convert the source of type S to target type T.
-	 * @param source the source object to convert, which must be an instance of S (never {@code null})
-	 * @return the converted object, which must be an instance of T (potentially {@code null})
-	 * @throws IllegalArgumentException if the source could not be converted to the desired target type
+	 * 将类型 {@code S} 的源对象转换为目标类型 {@code T}。
+	 * @param source 待转换的源对象，必须是 {@code S} 的实例（永不为 {@code null}）
+	 * @param targetType 目标类型
+	 * @return 转换后的对象，必须是 {@code T} 的实例（可能为 {@code null}）
+	 * @throws IllegalArgumentException 源对象无法转换为目标类型时抛出
 	 */
 	T convert(S source, Class<T> targetType);
 

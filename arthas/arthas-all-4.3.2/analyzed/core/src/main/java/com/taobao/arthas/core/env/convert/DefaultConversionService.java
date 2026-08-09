@@ -5,15 +5,24 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * {@link ConfigurableConversionService} 的默认实现。
+ * <p>
+ * 启动时注册常用 {@link String} → 标量/枚举/数组/InetAddress 转换器，
+ * 通过 {@link ConvertiblePair} 键在 {@link ConcurrentHashMap} 中查找。
+ */
 public class DefaultConversionService implements ConfigurableConversionService {
 
+    /** 源-目标类型对到转换器的全局映射表 */
     private static ConcurrentHashMap<ConvertiblePair, Converter> converters = new ConcurrentHashMap<ConvertiblePair, Converter>();
 
+    /** 构造时注册内置转换器 */
     public DefaultConversionService() {
         addDefaultConverter();
 
     }
 
+    /** 注册 String 到各目标类型的默认转换器 */
     private void addDefaultConverter() {
         converters.put(new ConvertiblePair(String.class, Integer.class), new StringToIntegerConverter());
         converters.put(new ConvertiblePair(String.class, Long.class), new StringToLongConverter());
@@ -28,12 +37,14 @@ public class DefaultConversionService implements ConfigurableConversionService {
 
     }
 
+    /** 判断 sourceType 能否转换为 targetType（含枚举与数组的泛化匹配） */
     @Override
     public boolean canConvert(Class<?> sourceType, Class<?> targetType) {
         if (sourceType == targetType) {
             return true;
         }
 
+        // 基本类型先映射为包装类再查表
         if (targetType.isPrimitive()) {
             targetType = objectiveClass(targetType);
         }
@@ -53,6 +64,7 @@ public class DefaultConversionService implements ConfigurableConversionService {
         return false;
     }
 
+    /** 查找转换器并执行转换；无匹配时原样返回 source */
     @Override
     public <T> T convert(Object source, Class<T> targetType) {
 
@@ -77,21 +89,21 @@ public class DefaultConversionService implements ConfigurableConversionService {
     }
 
     /**
-     * Get an array class of the given class.
+     * 获取给定组件类型的数组 Class 对象。
      *
-     * @param klass to get an array class of
-     * @param <C>   the targeted class
-     * @return an array class of the given class
+     * @param klass 组件类型
+     * @param <C>   组件类型泛型
+     * @return {@code C[]} 对应的 Class
      */
     public static <C> Class<C[]> arrayClass(Class<C> klass) {
         return (Class<C[]>) Array.newInstance(klass, 0).getClass();
     }
 
     /**
-     * Get the class that extends {@link Object} that represent the given class.
+     * 将基本类型或基本类型数组映射为对应的包装类/对象数组 Class。
      *
-     * @param klass to get the object class of
-     * @return the class that extends Object class and represent the given class
+     * @param klass 基本类型、数组或普通 Class
+     * @return 继承 {@link Object} 的等价 Class
      */
     public static Class<?> objectiveClass(Class<?> klass) {
         Class<?> component = klass.getComponentType();

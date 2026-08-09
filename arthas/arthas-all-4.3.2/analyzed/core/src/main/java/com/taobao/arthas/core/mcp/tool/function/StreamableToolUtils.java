@@ -14,8 +14,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 同步工具的工具类
- * 提供同步执行命令并收集所有结果的功能
+ * 流式（Streamable）MCP 工具的工具类。
+ * <p>
+ * 提供异步命令结果的轮询收集、进度通知、错误检测与取消支持；
+ * 供 {@link AbstractArthasTool#executeStreamable} 及各类需持续输出的 MCP 工具调用。
  * 
  * @author Yeaury
  */
@@ -31,6 +33,7 @@ public final class StreamableToolUtils {
 
     private static final int MAX_ERROR_RETRIES = 10;            // 最大错误重试次数
 
+    /** 命令完成判定：连续检测到 {@code ALLOW_INPUT} 的最小次数 */
     public static final int MIN_ALLOW_INPUT_COUNT_TO_COMPLETE = 2;
 
     /**
@@ -44,6 +47,7 @@ public final class StreamableToolUtils {
         boolean isCancelled();
     }
 
+    /** 工具类不可实例化 */
     private StreamableToolUtils() {
     }
 
@@ -189,6 +193,7 @@ public final class StreamableToolUtils {
         }
     }
 
+    /** 检测命令是否进入“允许输入”完成态（{@link InputStatus#ALLOW_INPUT}） */
     private static boolean checkCommandCompletion(Map<String, Object> results, int currentAllowInputCount) {
         if (results == null) {
             return false;
@@ -201,7 +206,7 @@ public final class StreamableToolUtils {
         }
 
         for (Object result : resultList) {
-            // Direct type check instead of reflection
+            // 直接类型判断，避免反射开销
             if (result instanceof InputStatusModel) {
                 InputStatusModel inputStatusModel = (InputStatusModel) result;
                 InputStatus inputStatus = inputStatusModel.getInputStatus();
@@ -232,7 +237,7 @@ public final class StreamableToolUtils {
         for (Object result : resultList) {
             String message = null;
             
-            // Direct type checks instead of reflection
+            // 直接类型判断各类消息模型，提取错误文本
             if (result instanceof MessageModel) {
                 message = ((MessageModel) result).getMessage();
             } else if (result instanceof EnhancerModel) {
@@ -251,6 +256,7 @@ public final class StreamableToolUtils {
         return null;
     }
     
+    /** 根据关键字与异常类名启发式判断消息是否为错误 */
     private static boolean isErrorMessage(String message) {
         return message.matches(".*\\b(failed|error|exception)\\b.*") || 
                message.contains("Malformed OGNL expression") || 
@@ -260,6 +266,7 @@ public final class StreamableToolUtils {
                message.matches(".*Error.*");
     }
 
+    /** 过滤掉辅助性模型（状态/欢迎/会话等），只保留命令业务结果 */
     private static Map<String, Object> filterCommandSpecificResults(Map<String, Object> results) {
         if (results == null) {
             return new HashMap<>();
@@ -273,7 +280,7 @@ public final class StreamableToolUtils {
             return filteredResults;
         }
         
-        // Filter out auxiliary model types using direct type checks
+        // 过滤辅助模型类型（直接类型判断）
         List<Object> filteredResultList = resultList.stream()
             .filter(result -> !isAuxiliaryModel(result))
             .collect(Collectors.toList());
@@ -284,9 +291,7 @@ public final class StreamableToolUtils {
         return filteredResults;
     }
     
-    /**
-     * Check if the result is an auxiliary model type that should be filtered out
-     */
+    /** 判断结果对象是否为应过滤的辅助模型 */
     private static boolean isAuxiliaryModel(Object result) {
         return result instanceof InputStatusModel
             || result instanceof StatusModel
@@ -297,6 +302,7 @@ public final class StreamableToolUtils {
             || result instanceof EnhancerModel;
     }
 
+    /** 从过滤后的结果 Map 中提取 results 列表 */
     private static List<Object> getCommandSpecificResults(Map<String, Object> filteredResults) {
         if (filteredResults == null) {
             return new ArrayList<>();
@@ -326,6 +332,7 @@ public final class StreamableToolUtils {
         }
     }
 
+    /** 构造标准错误响应 Map（{@code error=true, stage=final}） */
     public static Map<String, Object> createErrorResponse(String message) {
         Map<String, Object> response = new HashMap<>();
         response.put("error", true);
@@ -335,6 +342,7 @@ public final class StreamableToolUtils {
         return response;
     }
 
+    /** 构造带已收集结果的错误响应 */
     public static Map<String, Object> createErrorResponseWithResults(String message, List<Object> collectedResults, int resultCount) {
         Map<String, Object> response = createErrorResponse(message);
         response.put("results", collectedResults != null ? collectedResults : new ArrayList<>());
@@ -342,6 +350,7 @@ public final class StreamableToolUtils {
         return response;
     }
 
+    /** 构造用户取消任务时的结果 Map */
     private static Map<String, Object> createCancelledResult(List<Object> allResults, int totalResultCount) {
         Map<String, Object> result = new HashMap<>();
         result.put("results", allResults);
@@ -353,6 +362,7 @@ public final class StreamableToolUtils {
         return result;
     }
 
+    /** 构造命令正常结束（或超时）的最终结果 Map */
     private static Map<String, Object> createFinalResult(List<Object> allResults, int totalResultCount, boolean timedOut, long timeoutMs) {
         Map<String, Object> finalResult = new HashMap<>();
         finalResult.put("results", allResults);
@@ -369,6 +379,7 @@ public final class StreamableToolUtils {
         return finalResult;
     }
 
+    /** 构造成功完成响应，合并轮询收集的 results */
     public static Map<String, Object> createCompletedResponse(String message, Map<String, Object> results) {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "completed");

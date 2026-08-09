@@ -17,13 +17,14 @@
 package com.taobao.arthas.core.env.convert;
 
 /**
- * Simply calls {@link Object#toString()} to convert a source Object to a String.
+ * 对象到字符串的转换器：直接调用 {@link Object#toString()}。
  *
  * @author Keith Donald
  * @since 3.0
  */
 final class ObjectToStringConverter implements Converter<Object, String> {
 
+	/** 将任意对象转为字符串表示 */
 	public String convert(Object source, Class<String> targetType) {
 		return source.toString();
 	}

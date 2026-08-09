@@ -6,7 +6,10 @@ import com.taobao.arthas.mcp.server.tool.annotation.Tool;
 import com.taobao.arthas.mcp.server.tool.annotation.ToolParam;
 
 /**
- * Options MCP Tool: 查看和修改 Arthas 全局开关选项
+ * {@code options} MCP 工具：查看或修改 Arthas 全局开关选项。
+ * <p>
+ * 对应 Arthas 交互式命令 {@code options}，通过 {@link AbstractArthasTool#executeSync}
+ * 同步执行并返回 JSON 结果。
  */
 public class OptionsTool extends AbstractArthasTool {
 
@@ -23,6 +26,14 @@ public class OptionsTool extends AbstractArthasTool {
                 "- json-format: 是否使用 JSON 格式输出（默认 false）\n" +
                 "- strict: 是否启用严格模式，禁止设置对象属性（默认 true）"
     )
+    /**
+     * 执行 options 命令：无参列出全部，仅 name 查值，name+value 修改。
+     *
+     * @param name        选项名（如 unsafe、json-format）
+     * @param value       新值，修改时使用
+     * @param toolContext MCP 工具上下文
+     * @return JSON 格式的命令输出
+     */
     public String options(
             @ToolParam(description = "选项名称，如: unsafe, dump, json-format, strict 等", required = false)
             String name,

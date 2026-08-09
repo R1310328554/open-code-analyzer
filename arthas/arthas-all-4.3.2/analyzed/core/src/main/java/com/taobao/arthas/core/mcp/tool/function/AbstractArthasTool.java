@@ -16,15 +16,21 @@ import java.util.Map;
 import static com.taobao.arthas.core.mcp.tool.function.StreamableToolUtils.*;
 
 /**
- * Arthas工具的抽象基类
+ * Arthas MCP 工具的抽象基类。
+ * <p>
+ * 封装同步/流式命令执行、工具上下文解析、命令行参数拼接及异步启动重试等公共逻辑；
+ * 具体工具子类只需构建 Arthas 命令字符串并调用 {@link #executeSync} 或 {@link #executeStreamable}。
  */
 public abstract class AbstractArthasTool {
     
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    /** 默认命令超时秒数，与 {@link StreamableToolUtils#DEFAULT_TIMEOUT_MS} 对齐 */
     public static final int DEFAULT_TIMEOUT_SECONDS = (int) (StreamableToolUtils.DEFAULT_TIMEOUT_MS / 1000);
 
+    /** 异步命令启动失败时的重试间隔（毫秒） */
     private static final long DEFAULT_ASYNC_START_RETRY_INTERVAL_MS = 100L;
+    /** 等待异步命令成功启动的最大时长（毫秒） */
     private static final long DEFAULT_ASYNC_START_MAX_WAIT_MS = 3000L;
     
     /**
@@ -96,6 +102,7 @@ public abstract class AbstractArthasTool {
         }
     }
 
+    /** 同步执行 Arthas 命令并返回 JSON 字符串结果 */
     protected String executeSync(ToolContext toolContext, String commandStr) {
         try {
             ToolExecutionContext execContext = new ToolExecutionContext(toolContext, false);
@@ -112,6 +119,14 @@ public abstract class AbstractArthasTool {
         }
     }
 
+    /**
+     * 流式执行 Arthas 命令：异步启动后轮询收集结果，支持进度通知与任务取消。
+     *
+     * @param expectedResultCount 预期结果条数（可为 {@code null}）
+     * @param pollIntervalMs      轮询间隔毫秒
+     * @param timeoutMs           总超时毫秒
+     * @param successMessage      成功时的自定义消息
+     */
     protected String executeStreamable(ToolContext toolContext, String commandStr,
                                      Integer expectedResultCount, Integer pollIntervalMs,
                                      Integer timeoutMs,
@@ -127,7 +142,7 @@ public abstract class AbstractArthasTool {
                 execContext.getCommandContext().setSessionAuth(execContext.getAuthSubject());
             }
 
-            // Set userId to session before async execution for stat reporting
+            // 将 MCP 已认证用户 ID 写入 session，供统计上报使用
             if (execContext.getUserId() != null) {
                 execContext.getCommandContext().setSessionUserId(execContext.getUserId());
             }
@@ -219,6 +234,7 @@ public abstract class AbstractArthasTool {
         };
     }
 
+    /** 判断异步命令是否已成功启动（{@code success=true}） */
     private static boolean isAsyncExecutionStarted(Map<String, Object> asyncResult) {
         if (asyncResult == null) {
             return false;
@@ -227,6 +243,7 @@ public abstract class AbstractArthasTool {
         return Boolean.TRUE.equals(success);
     }
 
+    /** 判断异步启动错误是否可重试（如 session 中已有 Job 在运行） */
     private static boolean isRetryableAsyncStartError(Map<String, Object> asyncResult) {
         if (asyncResult == null) {
             return false;
@@ -243,6 +260,7 @@ public abstract class AbstractArthasTool {
         return message.contains("Another job is running") || message.contains("Another command is executing");
     }
 
+    /** 带重试的异步命令启动：遇可重试错误时 interrupt 旧 Job 后短暂 sleep 再试 */
     private static Map<String, Object> executeAsyncWithRetry(ToolExecutionContext execContext, String commandStr, Integer timeoutMs) {
         long maxWaitMs = DEFAULT_ASYNC_START_MAX_WAIT_MS;
         if (timeoutMs != null && timeoutMs > 0) {
@@ -278,23 +296,27 @@ public abstract class AbstractArthasTool {
         return asyncResult;
     }
 
+    /** 以基础命令名初始化 StringBuilder（如 {@code "options"}） */
     protected StringBuilder buildCommand(String baseCommand) {
         return new StringBuilder(baseCommand);
     }
 
+    /** 追加 {@code -flag value} 形式的命令行参数（value 非空时） */
     protected void addParameter(StringBuilder cmd, String flag, String value) {
         if (value != null && !value.trim().isEmpty()) {
             cmd.append(" ").append(flag).append(" ").append(value.trim());
         }
     }
 
+    /** 追加单引号包裹的参数值，防止命令注入 */
     protected void addParameter(StringBuilder cmd, String value) {
         if (value != null && !value.trim().isEmpty()) {
-            // Safely quote the value to prevent command injection
+            // 转义单引号，安全引用参数值
             cmd.append(" '").append(value.trim().replace("'", "'\\''")).append("'");
         }
     }
 
+    /** 条件为 true 时追加开关 flag（如 {@code -v}） */
     protected void addFlag(StringBuilder cmd, String flag, Boolean condition) {
         if (Boolean.TRUE.equals(condition)) {
             cmd.append(" ").append(flag);
@@ -310,10 +332,12 @@ public abstract class AbstractArthasTool {
         }
     }
 
+    /** 正整数时使用给定值，否则返回默认值 */
     protected int getDefaultValue(Integer value, int defaultValue) {
         return (value != null && value > 0) ? value : defaultValue;
     }
 
+    /** 非空非空白字符串时使用 trim 后的值，否则返回默认值 */
     protected String getDefaultValue(String value, String defaultValue) {
         return (value != null && !value.trim().isEmpty()) ? value.trim() : defaultValue;
     }

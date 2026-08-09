@@ -20,7 +20,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Converts String to a Boolean.
+ * 字符串到 {@link Boolean} 的转换器。
+ * <p>
+ * 支持 {@code true/on/yes/1} 与 {@code false/off/no/0}（不区分大小写）；
+ * 空字符串或仅空白返回 {@code null}。
  *
  * @author Keith Donald
  * @author Juergen Hoeller
@@ -28,8 +31,10 @@ import java.util.Set;
  */
 final class StringToBooleanConverter implements Converter<String, Boolean> {
 
+	/** 解析为 {@code true} 的字符串集合 */
 	private static final Set<String> trueValues = new HashSet<String>(4);
 
+	/** 解析为 {@code false} 的字符串集合 */
 	private static final Set<String> falseValues = new HashSet<String>(4);
 
 	static {
@@ -44,6 +49,7 @@ final class StringToBooleanConverter implements Converter<String, Boolean> {
 		falseValues.add("0");
 	}
 
+	/** 按预定义字面量解析布尔值，无法识别时抛出 {@link IllegalArgumentException} */
 	public Boolean convert(String source, Class<Boolean> targetType) {
 		String value = source.trim();
 		if ("".equals(value)) {
