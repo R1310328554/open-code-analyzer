@@ -32,16 +32,20 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式数值命令实现。
+ * <p>封装 INCR/DECR、INCRBYFLOAT 及 hash 字段 HINCRBYFLOAT。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveNumberCommands extends RedissonBaseReactive implements ReactiveNumberCommands {
 
+    /** 注入响应式命令执行器。 */
     public RedissonReactiveNumberCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** INCR：字符串 key 原子加一。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> incr(Publisher<KeyCommand> keys) {
         return execute(keys, key -> {
@@ -54,6 +58,7 @@ public class RedissonReactiveNumberCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** INCRBYFLOAT：按浮点增量递增。 */
     @Override
     public <T extends Number> Flux<NumericResponse<IncrByCommand<T>, T>> incrBy(Publisher<IncrByCommand<T>> commands) {
         return execute(commands, key -> {
@@ -70,6 +75,7 @@ public class RedissonReactiveNumberCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** DECR：字符串 key 原子减一。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> decr(Publisher<KeyCommand> keys) {
         return execute(keys, key -> {
@@ -82,6 +88,7 @@ public class RedissonReactiveNumberCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** DECRBY：通过 INCRBYFLOAT 负增量实现递减。 */
     @Override
     public <T extends Number> Flux<NumericResponse<DecrByCommand<T>, T>> decrBy(Publisher<DecrByCommand<T>> commands) {
         return execute(commands, key -> {
@@ -98,6 +105,7 @@ public class RedissonReactiveNumberCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** HINCRBYFLOAT：hash 字段按浮点增量递增。 */
     @Override
     public <T extends Number> Flux<NumericResponse<HIncrByCommand<T>, T>> hIncrBy(
             Publisher<HIncrByCommand<T>> commands) {

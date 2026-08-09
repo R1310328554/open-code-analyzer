@@ -28,7 +28,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 
+ * 阻塞有序集合弹出响应解码器：将 BZPOPMIN/BZPOPMAX 等返回的 key/member/score 三元组
+ * 解析为 {@link Set}{@code <}{@link Tuple}{@code >}。
+ * <p>每 3 个元素为一组：下标 0 为 key（解码时跳过）、1 为 member、2 为 score；
+ * {@code paramNum == 2} 时使用 {@link DoubleCodec} 解析 score。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -36,15 +40,18 @@ public class ScoredSortedSetBlockingReplayDecoder implements MultiDecoder<Set<Tu
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
+        // 三元组中第三项为 score，使用 DoubleCodec。
         if (paramNum == 2) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 按 key/member/score 步长 3 遍历，提取 member 与 score 构造 {@link DefaultTuple}。 */
     @Override
     public Set<Tuple> decode(List<Object> parts, State state) {
         Set<Tuple> result = new LinkedHashSet<Tuple>();
+        // 跳过每组首元素 key，取 i+1 member 与 i+2 score。
         for (int i = 0; i < parts.size(); i += 3) {
             result.add(new DefaultTuple((byte[])parts.get(i+1), ((Number)parts.get(i+2)).doubleValue()));
         }
