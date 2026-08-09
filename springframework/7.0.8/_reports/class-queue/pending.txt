@@ -48,12 +48,6 @@ spring-beans/src/main/java/org/springframework/beans/propertyeditors/URIEditor.j
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/URLEditor.java
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/UUIDEditor.java
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/ZoneIdEditor.java
-spring-beans/src/main/java/org/springframework/beans/support/ArgumentConvertingMethodInvoker.java
-spring-beans/src/main/java/org/springframework/beans/support/MutableSortDefinition.java
-spring-beans/src/main/java/org/springframework/beans/support/PagedListHolder.java
-spring-beans/src/main/java/org/springframework/beans/support/PropertyComparator.java
-spring-beans/src/main/java/org/springframework/beans/support/ResourceEditorRegistrar.java
-spring-beans/src/main/java/org/springframework/beans/support/SortDefinition.java
 spring-context/src/main/java/org/springframework/cache/Cache.java
 spring-context/src/main/java/org/springframework/cache/CacheManager.java
 spring-context/src/main/java/org/springframework/cache/annotation/AbstractCachingConfiguration.java

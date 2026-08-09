@@ -29,19 +29,11 @@ import org.springframework.util.Assert;
 import org.springframework.util.MethodInvoker;
 import org.springframework.util.ReflectionUtils;
 
-/* ===== [OCA 中文解析] =====
-class ArgumentConvertingMethodInvoker — 意图说明
-
-class `ArgumentConvertingMethodInvoker`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/support/ArgumentConvertingMethodInvoker.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Subclass of {@link MethodInvoker} that tries to convert the given
- * arguments for the actual target method via a {@link TypeConverter}.
+ * {@link MethodInvoker} 的子类，尝试通过 {@link TypeConverter} 将给定参数
+ * 转换为实际目标方法所需的类型。
  *
- * <p>Supports flexible argument conversions, in particular for
- * invoking a specific overloaded method.
+ * <p>支持灵活的参数类型转换，尤其适用于调用特定的重载方法。
  *
  * @author Juergen Hoeller
  * @since 1.1
@@ -51,15 +43,14 @@ public class ArgumentConvertingMethodInvoker extends MethodInvoker {
 
 	private @Nullable TypeConverter typeConverter;
 
-	// [OCA] 字段 `useDefaultConverter`：类成员状态。
 	private boolean useDefaultConverter = true;
 
 
 	/**
-	 * Set a TypeConverter to use for argument type conversion.
-	 * <p>Default is a {@link org.springframework.beans.SimpleTypeConverter}.
-	 * Can be overridden with any TypeConverter implementation, typically
-	 * a pre-configured SimpleTypeConverter or a BeanWrapperImpl instance.
+	 * 设置用于参数类型转换的 TypeConverter。
+	 * <p>默认为 {@link org.springframework.beans.SimpleTypeConverter}。
+	 * 可替换为任意 TypeConverter 实现，通常为预配置的 SimpleTypeConverter
+	 * 或 BeanWrapperImpl 实例。
 	 * @see org.springframework.beans.SimpleTypeConverter
 	 * @see org.springframework.beans.BeanWrapperImpl
 	 */
@@ -69,11 +60,10 @@ public class ArgumentConvertingMethodInvoker extends MethodInvoker {
 	}
 
 	/**
-	 * Return the TypeConverter used for argument type conversion.
-	 * <p>Can be cast to {@link org.springframework.beans.PropertyEditorRegistry}
-	 * if direct access to the underlying PropertyEditors is desired
-	 * (provided that the present TypeConverter actually implements the
-	 * PropertyEditorRegistry interface).
+	 * 返回用于参数类型转换的 TypeConverter。
+	 * <p>若当前 TypeConverter 实际实现了 PropertyEditorRegistry 接口，
+	 * 可强制转换为 {@link org.springframework.beans.PropertyEditorRegistry}，
+	 * 以便直接访问底层 PropertyEditor。
 	 */
 	public @Nullable TypeConverter getTypeConverter() {
 		if (this.typeConverter == null && this.useDefaultConverter) {
@@ -83,23 +73,21 @@ public class ArgumentConvertingMethodInvoker extends MethodInvoker {
 	}
 
 	/**
-	 * Obtain the default TypeConverter for this method invoker.
-	 * <p>Called if no explicit TypeConverter has been specified.
-	 * The default implementation builds a
-	 * {@link org.springframework.beans.SimpleTypeConverter}.
-	 * Can be overridden in subclasses.
+	 * 获取此 MethodInvoker 的默认 TypeConverter。
+	 * <p>在未显式指定 TypeConverter 时调用。
+	 * 默认实现会构建一个 {@link org.springframework.beans.SimpleTypeConverter}。
+	 * 子类可覆盖。
 	 */
 	protected TypeConverter getDefaultTypeConverter() {
 		return new SimpleTypeConverter();
 	}
 
 	/**
-	 * Register the given custom property editor for all properties of the given type.
-	 * <p>Typically used in conjunction with the default
-	 * {@link org.springframework.beans.SimpleTypeConverter}; will work with any
-	 * TypeConverter that implements the PropertyEditorRegistry interface as well.
-	 * @param requiredType type of the property
-	 * @param propertyEditor editor to register
+	 * 为给定类型的所有属性注册自定义 PropertyEditor。
+	 * <p>通常与默认的 {@link org.springframework.beans.SimpleTypeConverter} 配合使用；
+	 * 也适用于实现了 PropertyEditorRegistry 接口的任意 TypeConverter。
+	 * @param requiredType 属性类型
+	 * @param propertyEditor 要注册的编辑器
 	 * @see #setTypeConverter
 	 * @see org.springframework.beans.PropertyEditorRegistry#registerCustomEditor
 	 */
@@ -114,29 +102,28 @@ public class ArgumentConvertingMethodInvoker extends MethodInvoker {
 
 
 	/**
-	 * This implementation looks for a method with matching parameter types.
+	 * 查找参数类型匹配的方法。
 	 * @see #doFindMatchingMethod
 	 */
 	@Override
 	protected @Nullable Method findMatchingMethod() {
 		Method matchingMethod = super.findMatchingMethod();
-		// Second pass: look for method where arguments can be converted to parameter types.
+		// 第二轮：查找可通过类型转换匹配参数的方法
 		if (matchingMethod == null) {
-			// Interpret argument array as individual method arguments.
+			// 将参数数组视为独立的方法参数
 			matchingMethod = doFindMatchingMethod(getArguments());
 		}
 		if (matchingMethod == null) {
-			// Interpret argument array as single method argument of array type.
+			// 将参数数组视为单个数组类型的方法参数
 			matchingMethod = doFindMatchingMethod(new Object[] {getArguments()});
 		}
 		return matchingMethod;
 	}
 
 	/**
-	 * Actually find a method with matching parameter type, i.e. where each
-	 * argument value is assignable to the corresponding parameter type.
-	 * @param arguments the argument values to match against method parameters
-	 * @return a matching method, or {@code null} if none
+	 * 实际查找参数类型匹配的方法，即每个参数值均可赋值给对应参数类型。
+	 * @param arguments 用于与方法参数匹配的参数值
+	 * @return 匹配的方法，若无则返回 {@code null}
 	 */
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	protected @Nullable Method doFindMatchingMethod(@Nullable Object[] arguments) {
@@ -152,19 +139,19 @@ public class ArgumentConvertingMethodInvoker extends MethodInvoker {
 			@Nullable Object[] argumentsToUse = null;
 			for (Method candidate : candidates) {
 				if (candidate.getName().equals(targetMethod)) {
-					// Check if the inspected method has the correct number of parameters.
+					// 检查候选方法的参数个数是否正确
 					int parameterCount = candidate.getParameterCount();
 					if (parameterCount == argCount) {
 						Class<?>[] paramTypes = candidate.getParameterTypes();
 						@Nullable Object[] convertedArguments = new Object[argCount];
 						boolean match = true;
 						for (int j = 0; j < argCount && match; j++) {
-							// Verify that the supplied argument is assignable to the method parameter.
+							// 验证提供的参数是否可赋值给方法参数类型
 							try {
 								convertedArguments[j] = converter.convertIfNecessary(arguments[j], paramTypes[j]);
 							}
 							catch (TypeMismatchException ex) {
-								// Ignore -> simply doesn't match.
+								// 忽略 —— 表示不匹配
 								match = false;
 							}
 						}

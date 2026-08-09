@@ -267,3 +267,9 @@ spring-beans/src/main/java/org/springframework/beans/factory/support/InstanceSup
 spring-beans/src/main/java/org/springframework/beans/factory/support/InstantiationStrategy.java
 spring-beans/src/main/java/org/springframework/beans/factory/support/LookupOverride.java
 spring-beans/src/main/java/org/springframework/beans/factory/support/ManagedArray.java
+spring-beans/src/main/java/org/springframework/beans/support/ArgumentConvertingMethodInvoker.java
+spring-beans/src/main/java/org/springframework/beans/support/MutableSortDefinition.java
+spring-beans/src/main/java/org/springframework/beans/support/PagedListHolder.java
+spring-beans/src/main/java/org/springframework/beans/support/PropertyComparator.java
+spring-beans/src/main/java/org/springframework/beans/support/ResourceEditorRegistrar.java
+spring-beans/src/main/java/org/springframework/beans/support/SortDefinition.java
