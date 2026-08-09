@@ -1,0 +1,129 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.maybe;
+
+import java.io.Serial;
+import java.util.concurrent.atomic.AtomicReference;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.disposables.Disposable;
+import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
+
+/**
+ * 主源 onComplete（空）时订阅备用 {@link MaybeSource}；
+ * onSuccess/onError 直接转发。
+ *
+ * @param <T> 元素类型
+ */
+public final class MaybeSwitchIfEmpty<T> extends AbstractMaybeWithUpstream<T, T> {
+
+    final MaybeSource<? extends T> other;
+
+    /**
+     * @param source 主 MaybeSource
+     * @param other 主源为空时的备用 MaybeSource
+     */
+    public MaybeSwitchIfEmpty(MaybeSource<T> source, MaybeSource<? extends T> other) {
+        super(source);
+        this.other = other;
+    }
+
+    /** 包装为 SwitchIfEmptyMaybeObserver。 */
+    @Override
+    protected void subscribeActual(MaybeObserver<? super T> observer) {
+        source.subscribe(new SwitchIfEmptyMaybeObserver<>(observer, other));
+    }
+
+    /** onComplete 且未 dispose 时 CAS 清空并订阅 other。 */
+    static final class SwitchIfEmptyMaybeObserver<T>
+    extends AtomicReference<Disposable>
+    implements MaybeObserver<T>, Disposable {
+
+        @Serial
+        private static final long serialVersionUID = -2223459372976438024L;
+
+        final MaybeObserver<? super T> downstream;
+
+        final MaybeSource<? extends T> other;
+
+        SwitchIfEmptyMaybeObserver(MaybeObserver<? super T> actual, MaybeSource<? extends T> other) {
+            this.downstream = actual;
+            this.other = other;
+        }
+
+        @Override
+        public void dispose() {
+            DisposableHelper.dispose(this);
+        }
+
+        @Override
+        public boolean isDisposed() {
+            return DisposableHelper.isDisposed(get());
+        }
+
+        @Override
+        public void onSubscribe(Disposable d) {
+            if (DisposableHelper.setOnce(this, d)) {
+                downstream.onSubscribe(this);
+            }
+        }
+
+        @Override
+        public void onSuccess(T value) {
+            downstream.onSuccess(value);
+        }
+
+        @Override
+        public void onError(Throwable e) {
+            downstream.onError(e);
+        }
+
+        /** compareAndSet 成功后 other.subscribe(OtherMaybeObserver)。 */
+        @Override
+        public void onComplete() {
+            Disposable d = get();
+            if (d != DisposableHelper.DISPOSED) {
+                if (compareAndSet(d, null)) {
+                    other.subscribe(new OtherMaybeObserver<T>(downstream, this));
+                }
+            }
+        }
+
+        /** 备用 Maybe 信号 relay 到 downstream。 */
+        record OtherMaybeObserver<T>(MaybeObserver<? super T> downstream,
+                                     AtomicReference<Disposable> parent) implements MaybeObserver<T> {
+
+            @Override
+                    public void onSubscribe(Disposable d) {
+                        DisposableHelper.setOnce(parent, d);
+                    }
+
+                    @Override
+                    public void onSuccess(T value) {
+                        downstream.onSuccess(value);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        downstream.onError(e);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        downstream.onComplete();
+                    }
+                }
+
+    }
+}
