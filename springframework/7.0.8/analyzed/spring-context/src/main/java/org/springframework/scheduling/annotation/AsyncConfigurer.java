@@ -23,18 +23,17 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 
 /**
- * Interface to be implemented for customizing the {@link Executor} instance used when
- * processing async method invocations or the {@link AsyncUncaughtExceptionHandler}
- * instance used to process exceptions thrown from async methods with a {@code void}
- * return type.
+ * 用于自定义处理异步方法调用时使用的 {@link Executor} 实例，
+ * 或处理 {@code void} 返回类型异步方法所抛出异常的
+ * {@link AsyncUncaughtExceptionHandler} 实例的接口。
  *
- * <p>Typically implemented by @{@link org.springframework.context.annotation.Configuration
- * Configuration} classes annotated with @{@link EnableAsync}.
- * See the @{@link EnableAsync} javadoc for usage examples.
+ * <p>通常由标注 @{@link EnableAsync} 的
+ * @{@link org.springframework.context.annotation.Configuration Configuration} 类实现。
+ * 用法示例见 @{@link EnableAsync} 的 javadoc。
  *
- * <p><b>NOTE: An {@code AsyncConfigurer} will get initialized early.</b>
- * Do not inject common dependencies into autowired fields directly; instead, consider
- * declaring a lazy {@link org.springframework.beans.factory.ObjectProvider} for those.
+ * <p><b>注意：{@code AsyncConfigurer} 会较早初始化。</b>
+ * 请勿直接向自动装配字段注入常见依赖；
+ * 可考虑为这些依赖声明惰性 {@link org.springframework.beans.factory.ObjectProvider}。
  *
  * @author Chris Beams
  * @author Stephane Nicoll
@@ -45,17 +44,15 @@ import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 public interface AsyncConfigurer {
 
 	/**
-	 * The {@link Executor} instance to be used when processing async
-	 * method invocations.
+	 * 处理异步方法调用时使用的 {@link Executor} 实例。
 	 */
 	default @Nullable Executor getAsyncExecutor() {
 		return null;
 	}
 
 	/**
-	 * The {@link AsyncUncaughtExceptionHandler} instance to be used
-	 * when an exception is thrown during an asynchronous method execution
-	 * with {@code void} return type.
+	 * 在 {@code void} 返回类型的异步方法执行抛出异常时使用的
+	 * {@link AsyncUncaughtExceptionHandler} 实例。
 	 */
 	default @Nullable AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
 		return null;

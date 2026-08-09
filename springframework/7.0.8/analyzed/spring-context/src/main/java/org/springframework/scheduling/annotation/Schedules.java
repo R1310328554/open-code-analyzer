@@ -25,15 +25,13 @@ import java.lang.annotation.Target;
 import org.springframework.aot.hint.annotation.Reflective;
 
 /**
- * Container annotation that aggregates several {@link Scheduled} annotations.
+ * 聚合多个 {@link Scheduled} 注解的容器注解。
  *
- * <p>Can be used natively, declaring several nested {@link Scheduled} annotations.
- * Can also be used in conjunction with Java's support for repeatable annotations,
- * where {@link Scheduled @Scheduled} can simply be declared several times on the
- * same method, implicitly generating this container annotation.
+ * <p>可原生使用，声明多个嵌套 {@link Scheduled} 注解。
+ * 也可与 Java 可重复注解支持配合：在同一方法上多次声明
+ * {@link Scheduled @Scheduled}，将隐式生成本容器注解。
  *
- * <p>This annotation may be used as a <em>meta-annotation</em> to create custom
- * <em>composed annotations</em>.
+ * <p>本注解可作为<em>元注解</em>创建自定义<em>组合注解</em>。
  *
  * @author Juergen Hoeller
  * @since 4.0

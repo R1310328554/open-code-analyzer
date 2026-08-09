@@ -20,9 +20,8 @@ import org.springframework.context.annotation.AdviceMode;
 import org.springframework.context.annotation.AdviceModeImportSelector;
 
 /**
- * Selects which implementation of {@link AbstractAsyncConfiguration} should
- * be used based on the value of {@link EnableAsync#mode} on the importing
- * {@code @Configuration} class.
+ * 根据导入 {@code @Configuration} 类上 {@link EnableAsync#mode} 的值
+ * 选择应使用的 {@link AbstractAsyncConfiguration} 实现。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -37,9 +36,8 @@ public class AsyncConfigurationSelector extends AdviceModeImportSelector<EnableA
 
 
 	/**
-	 * Returns {@link ProxyAsyncConfiguration} or {@code AspectJAsyncConfiguration}
-	 * for {@code PROXY} and {@code ASPECTJ} values of {@link EnableAsync#mode()},
-	 * respectively.
+	 * 分别对 {@link EnableAsync#mode()} 的 {@code PROXY} 与 {@code ASPECTJ} 值
+	 * 返回 {@link ProxyAsyncConfiguration} 或 {@code AspectJAsyncConfiguration}。
 	 */
 	@Override
 	public String[] selectImports(AdviceMode adviceMode) {

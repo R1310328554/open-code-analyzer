@@ -35,22 +35,21 @@ import org.springframework.scheduling.SchedulingTaskExecutor;
 import org.springframework.util.ClassUtils;
 
 /**
- * Adapter that takes a {@code java.util.concurrent.Executor} and exposes
- * a Spring {@link org.springframework.core.task.TaskExecutor} for it.
- * Also detects an extended {@code java.util.concurrent.ExecutorService}, adapting
- * the {@link org.springframework.core.task.AsyncTaskExecutor} interface accordingly.
+ * 接受 {@code java.util.concurrent.Executor} 并为其暴露
+ * Spring {@link org.springframework.core.task.TaskExecutor} 的适配器。
+ * 也检测扩展的 {@code java.util.concurrent.ExecutorService}，
+ * 相应适配 {@link org.springframework.core.task.AsyncTaskExecutor} 接口。
  *
- * <p>Autodetects a JSR-236 {@link jakarta.enterprise.concurrent.ManagedExecutorService}
- * in order to expose {@link jakarta.enterprise.concurrent.ManagedTask} adapters for it,
- * exposing a long-running hint based on {@link SchedulingAwareRunnable} and an identity
- * name based on the given Runnable/Callable's {@code toString()}. For JSR-236 style
- * lookup in a Jakarta EE environment, consider using {@link DefaultManagedTaskExecutor}.
+ * <p>自动检测 JSR-236 {@link jakarta.enterprise.concurrent.ManagedExecutorService}，
+ * 为其暴露 {@link jakarta.enterprise.concurrent.ManagedTask} 适配器，
+ * 基于 {@link SchedulingAwareRunnable} 提供 long-running 提示，
+ * 基于给定 Runnable/Callable 的 {@code toString()} 提供 identity 名称。
+ * 在 Jakarta EE 环境中进行 JSR-236 风格查找，请考虑 {@link DefaultManagedTaskExecutor}。
  *
- * <p>Note that there is a pre-built {@link ThreadPoolTaskExecutor} that allows
- * for defining a {@link java.util.concurrent.ThreadPoolExecutor} in bean style,
- * exposing it as a Spring {@link org.springframework.core.task.TaskExecutor} directly.
- * This is a convenient alternative to a raw ThreadPoolExecutor definition with
- * a separate definition of the present adapter class.
+ * <p>注意存在预构建的 {@link ThreadPoolTaskExecutor}，
+ * 允许以 Bean 风格定义 {@link java.util.concurrent.ThreadPoolExecutor}，
+ * 直接暴露为 Spring {@link org.springframework.core.task.TaskExecutor}。
+ * 这比原始 ThreadPoolExecutor 定义加单独本适配器类定义更方便。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -91,10 +90,9 @@ public class ConcurrentTaskExecutor implements AsyncTaskExecutor, SchedulingTask
 
 
 	/**
-	 * Create a new ConcurrentTaskExecutor, using a single thread executor as default.
+	 * 创建新的 ConcurrentTaskExecutor，默认使用单线程执行器。
 	 * @see java.util.concurrent.Executors#newSingleThreadExecutor()
-	 * @deprecated in favor of {@link #ConcurrentTaskExecutor(Executor)} with an
-	 * externally provided Executor
+	 * @deprecated 请使用带外部提供 Executor 的 {@link #ConcurrentTaskExecutor(Executor)}
 	 */
 	@Deprecated(since = "6.1")
 	public ConcurrentTaskExecutor() {
@@ -103,10 +101,10 @@ public class ConcurrentTaskExecutor implements AsyncTaskExecutor, SchedulingTask
 	}
 
 	/**
-	 * Create a new ConcurrentTaskExecutor, using the given {@link java.util.concurrent.Executor}.
-	 * <p>Autodetects a JSR-236 {@link jakarta.enterprise.concurrent.ManagedExecutorService}
-	 * in order to expose {@link jakarta.enterprise.concurrent.ManagedTask} adapters for it.
-	 * @param executor the {@link java.util.concurrent.Executor} to delegate to
+	 * 使用给定 {@link java.util.concurrent.Executor} 创建新的 ConcurrentTaskExecutor。
+	 * <p>自动检测 JSR-236 {@link jakarta.enterprise.concurrent.ManagedExecutorService}，
+	 * 为其暴露 {@link jakarta.enterprise.concurrent.ManagedTask} 适配器。
+	 * @param executor 委托的 {@link java.util.concurrent.Executor}
 	 */
 	public ConcurrentTaskExecutor(@Nullable Executor executor) {
 		if (executor != null) {
@@ -116,9 +114,9 @@ public class ConcurrentTaskExecutor implements AsyncTaskExecutor, SchedulingTask
 
 
 	/**
-	 * Specify the {@link java.util.concurrent.Executor} to delegate to.
-	 * <p>Autodetects a JSR-236 {@link jakarta.enterprise.concurrent.ManagedExecutorService}
-	 * in order to expose {@link jakarta.enterprise.concurrent.ManagedTask} adapters for it.
+	 * 指定委托的 {@link java.util.concurrent.Executor}。
+	 * <p>自动检测 JSR-236 {@link jakarta.enterprise.concurrent.ManagedExecutorService}，
+	 * 为其暴露 {@link jakarta.enterprise.concurrent.ManagedTask} 适配器。
 	 */
 	public final void setConcurrentExecutor(Executor executor) {
 		this.concurrentExecutor = executor;
@@ -126,20 +124,17 @@ public class ConcurrentTaskExecutor implements AsyncTaskExecutor, SchedulingTask
 	}
 
 	/**
-	 * Return the {@link java.util.concurrent.Executor} that this adapter delegates to.
+	 * 返回本适配器委托的 {@link java.util.concurrent.Executor}。
 	 */
 	public final Executor getConcurrentExecutor() {
 		return this.concurrentExecutor;
 	}
 
 	/**
-	 * Specify a custom {@link TaskDecorator} to be applied to any {@link Runnable}
-	 * about to be executed.
-	 * <p>Note that such a decorator is not necessarily being applied to the
-	 * user-supplied {@code Runnable}/{@code Callable} but rather to the actual
-	 * execution callback (which may be a wrapper around the user-supplied task).
-	 * <p>The primary use case is to set some execution context around the task's
-	 * invocation, or to provide some monitoring/statistics for task execution.
+	 * 指定应用于即将执行的 {@link Runnable} 的自定义 {@link TaskDecorator}。
+	 * <p>注意装饰器不一定应用于用户提供的 {@code Runnable}/{@code Callable}，
+	 * 而是实际执行回调（可能是用户任务的包装）。
+	 * <p>主要用例是在任务调用周围设置执行上下文，或提供任务执行监控/统计。
 	 * @since 4.3
 	 */
 	public final void setTaskDecorator(TaskDecorator taskDecorator) {
@@ -186,10 +181,9 @@ public class ConcurrentTaskExecutor implements AsyncTaskExecutor, SchedulingTask
 
 
 	/**
-	 * TaskExecutorAdapter subclass that wraps all provided Runnables and Callables
-	 * with a JSR-236 ManagedTask, exposing a long-running hint based on
-	 * {@link SchedulingAwareRunnable} and an identity name based on the task's
-	 * {@code toString()} representation.
+	 * TaskExecutorAdapter 子类，将所有提供的 Runnable 与 Callable
+	 * 包装为 JSR-236 ManagedTask，基于 {@link SchedulingAwareRunnable} 提供 long-running 提示，
+	 * 基于任务 {@code toString()} 表示提供 identity 名称。
 	 */
 	private static class ManagedTaskExecutorAdapter extends TaskExecutorAdapter {
 
@@ -215,9 +209,8 @@ public class ConcurrentTaskExecutor implements AsyncTaskExecutor, SchedulingTask
 
 
 	/**
-	 * Delegate that wraps a given Runnable/Callable  with a JSR-236 ManagedTask,
-	 * exposing a long-running hint based on {@link SchedulingAwareRunnable}
-	 * and a given identity name.
+	 * 将给定 Runnable/Callable 包装为 JSR-236 ManagedTask 的委托，
+	 * 基于 {@link SchedulingAwareRunnable} 提供 long-running 提示及给定 identity 名称。
 	 */
 	protected static class ManagedTaskBuilder {
 

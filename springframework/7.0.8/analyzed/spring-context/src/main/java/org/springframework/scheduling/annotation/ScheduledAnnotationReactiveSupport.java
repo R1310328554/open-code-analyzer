@@ -51,8 +51,8 @@ import org.springframework.util.StringUtils;
 import static org.springframework.scheduling.support.ScheduledTaskObservationDocumentation.TASKS_SCHEDULED_EXECUTION;
 
 /**
- * Helper class for @{@link ScheduledAnnotationBeanPostProcessor} to support reactive
- * cases without a dependency on optional classes.
+ * 供 @{@link ScheduledAnnotationBeanPostProcessor} 使用的辅助类，
+ * 在不依赖可选类的情况下支持响应式场景。
  *
  * @author Simon Baslé
  * @author Brian Clozel
@@ -70,16 +70,13 @@ abstract class ScheduledAnnotationReactiveSupport {
 
 
 	/**
-	 * Checks that if the method is reactive, it can be scheduled. Methods are considered
-	 * eligible for reactive scheduling if they either return an instance of a type that
-	 * can be converted to {@code Publisher} or are a Kotlin suspending function.
-	 * If the method doesn't match these criteria, this check returns {@code false}.
-	 * <p>For scheduling of Kotlin suspending functions, the Coroutine-Reactor bridge
-	 * {@code kotlinx.coroutines.reactor} must be present at runtime (in order to invoke
-	 * suspending functions as a {@code Publisher}). Provided that is the case, this
-	 * method returns {@code true}. Otherwise, it throws an {@code IllegalStateException}.
-	 * @throws IllegalStateException if the method is reactive but Reactor and/or the
-	 * Kotlin coroutines bridge are not present at runtime
+	 * 检查响应式方法是否可调度。若方法返回可转换为 {@code Publisher} 的类型
+	 * 或为 Kotlin 挂起函数，则视为符合响应式调度条件。
+	 * 若不符合，返回 {@code false}。
+	 * <p>调度 Kotlin 挂起函数时，运行时须存在 Coroutine-Reactor 桥接
+	 * {@code kotlinx.coroutines.reactor}（以 {@code Publisher} 形式调用挂起函数）。
+	 * 满足条件时返回 {@code true}，否则抛出 {@code IllegalStateException}。
+	 * @throws IllegalStateException 方法为响应式但运行时缺少 Reactor 和/或 Kotlin 协程桥接
 	 */
 	public static boolean isReactive(Method method) {
 		if (KotlinDetector.isSuspendingFunction(method)) {
@@ -108,14 +105,11 @@ abstract class ScheduledAnnotationReactiveSupport {
 	}
 
 	/**
-	 * Create a {@link Runnable} for the Scheduled infrastructure, allowing for scheduled
-	 * subscription to the publisher produced by a reactive method.
-	 * <p>Note that the reactive method is invoked once, but the resulting {@code Publisher}
-	 * is subscribed to repeatedly, once per each invocation of the {@code Runnable}.
-	 * <p>In the case of a fixed-delay configuration, the subscription inside the
-	 * {@link Runnable} is turned into a blocking call in order to maintain fixed-delay
-	 * semantics (i.e. the task blocks until completion of the Publisher, and the
-	 * delay is applied until the next iteration).
+	 * 为定时基础设施创建 {@link Runnable}，允许对响应式方法产生的 Publisher 进行定时订阅。
+	 * <p>响应式方法仅调用一次，但产生的 {@code Publisher} 在每次 {@code Runnable}
+	 * 调用时重复订阅。
+	 * <p>固定延迟配置下，{@link Runnable} 内的订阅转为阻塞调用以维持固定延迟语义
+	 * （任务阻塞直至 Publisher 完成，延迟应用于下次迭代前）。
 	 */
 	public static Runnable createSubscriptionRunnable(Method method, Object targetBean, Scheduled scheduled,
 			Supplier<ObservationRegistry> observationRegistrySupplier, List<Runnable> subscriptionTrackerRegistry) {
@@ -130,13 +124,12 @@ abstract class ScheduledAnnotationReactiveSupport {
 	}
 
 	/**
-	 * Turn the invocation of the provided {@code Method} into a {@code Publisher},
-	 * either by reflectively invoking it and converting the result to a {@code Publisher}
-	 * via {@link ReactiveAdapterRegistry} or by converting a Kotlin suspending function
-	 * into a {@code Publisher} via {@link CoroutinesUtils}.
-	 * <p>The {@link #isReactive(Method)} check is a precondition to calling this method.
-	 * If Reactor is present at runtime, the {@code Publisher} is additionally converted
-	 * to a {@code Flux} with a checkpoint String, allowing for better debugging.
+	 * 将给定 {@code Method} 的调用转为 {@code Publisher}：
+	 * 反射调用并通过 {@link ReactiveAdapterRegistry} 转换结果，
+	 * 或通过 {@link CoroutinesUtils} 将 Kotlin 挂起函数转为 {@code Publisher}。
+	 * <p>调用本方法前须通过 {@link #isReactive(Method)} 检查。
+	 * 若运行时存在 Reactor，{@code Publisher}  additionally 转为带 checkpoint 字符串的
+	 * {@code Flux}，便于调试。
 	 */
 	static Publisher<?> getPublisherFor(Method method, Object bean) {
 		if (KotlinDetector.isSuspendingFunction(method)) {
@@ -182,8 +175,8 @@ abstract class ScheduledAnnotationReactiveSupport {
 
 
 	/**
-	 * Utility implementation of {@code Runnable} that subscribes to a {@code Publisher}
-	 * or subscribes-then-blocks if {@code shouldBlock} is set to {@code true}.
+	 * 订阅 {@code Publisher} 的 {@code Runnable} 工具实现；
+	 * 若 {@code shouldBlock} 为 {@code true} 则订阅后阻塞。
 	 */
 	static final class SubscribingRunnable implements SchedulingAwareRunnable {
 
@@ -265,9 +258,8 @@ abstract class ScheduledAnnotationReactiveSupport {
 
 
 	/**
-	 * A {@code Subscriber} which keeps track of its {@code Subscription} and exposes the
-	 * capacity to cancel the subscription as a {@code Runnable}. Can optionally support
-	 * blocking if a {@code CountDownLatch} is supplied during construction.
+	 * 跟踪其 {@code Subscription} 并将取消订阅能力暴露为 {@code Runnable} 的
+	 * {@code Subscriber}。构造时提供 {@code CountDownLatch} 时可选择支持阻塞。
 	 */
 	private static final class TrackingSubscriber implements Subscriber<Object>, Runnable {
 

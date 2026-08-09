@@ -29,9 +29,8 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 /**
- * Enables Spring's scheduled task execution capability, similar to
- * functionality found in Spring's {@code <task:*>} XML namespace. To be used
- * on {@link Configuration @Configuration} classes as follows:
+ * 启用 Spring 定时任务执行能力，类似于 Spring {@code <task:*>} XML 命名空间中的功能。
+ * 在 {@link Configuration @Configuration} 类上按如下方式使用：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -41,8 +40,8 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  *     // various &#064;Bean definitions
  * }</pre>
  *
- * <p>This enables detection of {@link Scheduled @Scheduled} annotations on any
- * Spring-managed bean in the container. For example, given a class {@code MyTask}:
+ * <p>这将在容器中任何 Spring 管理的 Bean 上检测 {@link Scheduled @Scheduled} 注解。
+ * 例如给定类 {@code MyTask}：
  *
  * <pre class="code">
  * package com.myco.tasks;
@@ -55,8 +54,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  *     }
  * }</pre>
  *
- * <p>the following configuration would ensure that {@code MyTask.work()} is called
- * once every 1000 ms:
+ * <p>以下配置将确保每 1000 ms 调用一次 {@code MyTask.work()}：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -69,9 +67,8 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  *     }
  * }</pre>
  *
- * <p>Alternatively, if {@code MyTask} were annotated with {@code @Component}, the
- * following configuration would ensure that its {@code @Scheduled} method is
- * invoked at the desired interval:
+ * <p>或者，若 {@code MyTask} 标注 {@code @Component}，
+ * 以下配置将确保其 {@code @Scheduled} 方法按期望间隔调用：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -80,8 +77,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  * public class AppConfig {
  * }</pre>
  *
- * <p>Methods annotated with {@code @Scheduled} may even be declared directly within
- * {@code @Configuration} classes:
+ * <p>标注 {@code @Scheduled} 的方法甚至可直接在 {@code @Configuration} 类中声明：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -94,18 +90,15 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  *     }
  * }</pre>
  *
- * <p>By default, Spring will search for an associated scheduler definition: either
- * a unique {@link org.springframework.scheduling.TaskScheduler} bean in the context,
- * or a {@code TaskScheduler} bean named "taskScheduler" otherwise; the same lookup
- * will also be performed for a {@link java.util.concurrent.ScheduledExecutorService}
- * bean. If neither of the two is resolvable, a local single-threaded default
- * scheduler will be created and used within the registrar.
+ * <p>默认情况下，Spring 将查找关联的调度器定义：
+ * 上下文中唯一的 {@link org.springframework.scheduling.TaskScheduler} Bean，
+ * 否则名为 "taskScheduler" 的 {@code TaskScheduler} Bean；
+ * 对 {@link java.util.concurrent.ScheduledExecutorService} Bean 也执行相同查找。
+ * 若两者均不可解析，将在注册器内创建并使用本地单线程默认调度器。
  *
- * <p>When more control is desired, a {@code @Configuration} class may implement
- * {@link SchedulingConfigurer}. This allows access to the underlying
- * {@link ScheduledTaskRegistrar} instance. For example, the following example
- * demonstrates how to customize the {@link Executor} used to execute scheduled
- * tasks:
+ * <p>需要更多控制时，{@code @Configuration} 类可实现 {@link SchedulingConfigurer}。
+ * 这允许访问底层 {@link ScheduledTaskRegistrar} 实例。
+ * 例如以下示例演示如何自定义执行定时任务的 {@link Executor}：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -123,14 +116,12 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  *     }
  * }</pre>
  *
- * <p>Note in the example above the use of {@code @Bean(destroyMethod="shutdown")}.
- * This ensures that the task executor is properly shut down when the Spring
- * application context itself is closed.
+ * <p>注意上例使用 {@code @Bean(destroyMethod="shutdown")}，
+ * 确保 Spring 应用上下文关闭时任务执行器正确关闭。
  *
- * <p>Implementing {@code SchedulingConfigurer} also allows for fine-grained
- * control over task registration via the {@code ScheduledTaskRegistrar}.
- * For example, the following configures the execution of a particular bean
- * method per a custom {@code Trigger} implementation:
+ * <p>实现 {@code SchedulingConfigurer} 还可通过 {@code ScheduledTaskRegistrar}
+ * 精细控制任务注册。例如以下配置按自定义 {@code Trigger} 实现
+ * 执行特定 Bean 方法：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -157,8 +148,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  *     }
  * }</pre>
  *
- * <p>For reference, the example above can be compared to the following Spring XML
- * configuration:
+ * <p>作为参考，上例可与以下 Spring XML 配置对比：
  *
  * <pre class="code">
  * &lt;beans&gt;
@@ -176,17 +166,14 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
  * &lt;/beans&gt;
  * </pre>
  *
- * <p>The examples are equivalent save that in XML a <em>fixed-rate</em> period is used
- * instead of a custom <em>{@code Trigger}</em> implementation; this is because the
- * {@code task:} namespace {@code scheduled} cannot easily expose such support. This is
- * but one demonstration how the code-based approach allows for maximum configurability
- * through direct access to the actual component.
+ * <p>示例等价，仅 XML 使用<em>固定速率</em>周期而非自定义<em>{@code Trigger}</em> 实现；
+ * 因为 {@code task:} 命名空间的 {@code scheduled} 不易暴露此类支持。
+ * 这展示了基于代码的方式通过直接访问实际组件实现最大可配置性。
  *
- * <p><b>Note: {@code @EnableScheduling} applies to its local application context only,
- * allowing for selective scheduling of beans at different levels.</b> Please redeclare
- * {@code @EnableScheduling} in each individual context, for example, the common root web
- * application context and any separate {@code DispatcherServlet} application contexts,
- * if you need to apply its behavior at multiple levels.
+ * <p><b>注意：{@code @EnableScheduling} 仅作用于其本地应用上下文，
+ * 允许在不同层级选择性调度 Bean。</b> 若需在多个层级应用其行为，
+ * 请在各独立上下文中重新声明 {@code @EnableScheduling}，
+ * 例如公共根 Web 应用上下文及独立的 {@code DispatcherServlet} 应用上下文。
  *
  * @author Chris Beams
  * @author Juergen Hoeller

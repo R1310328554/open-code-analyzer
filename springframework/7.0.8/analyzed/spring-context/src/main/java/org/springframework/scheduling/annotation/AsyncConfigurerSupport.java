@@ -23,13 +23,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 
 /**
- * A convenience {@link AsyncConfigurer} that implements all methods
- * so that the defaults are used. Provides a backward compatible alternative
- * of implementing {@link AsyncConfigurer} directly.
+ * 便捷 {@link AsyncConfigurer}，实现全部方法以使用默认值。
+ * 提供直接实现 {@link AsyncConfigurer} 的向后兼容替代方案。
  *
  * @author Stephane Nicoll
  * @since 4.1
- * @deprecated as of 6.0 in favor of implementing {@link AsyncConfigurer} directly
+ * @deprecated 自 6.0 起，请直接实现 {@link AsyncConfigurer}
  */
 @Deprecated(since = "6.0")
 public class AsyncConfigurerSupport implements AsyncConfigurer {

@@ -25,28 +25,22 @@ import java.lang.annotation.Target;
 import org.springframework.aot.hint.annotation.Reflective;
 
 /**
- * Annotation that marks a method as a candidate for <i>asynchronous</i> execution.
+ * 标记方法为<i>异步</i>执行候选的注解。
  *
- * <p>Can also be used at the type level, in which case all the type's methods are
- * considered as asynchronous. Note, however, that {@code @Async} is not supported
- * on methods declared within a
- * {@link org.springframework.context.annotation.Configuration @Configuration} class.
+ * <p>也可用于类型级别，此时该类型的所有方法均视为异步。
+ * 但 {@code @Async} 不支持
+ * {@link org.springframework.context.annotation.Configuration @Configuration} 类中声明的方法。
  *
- * <p>In terms of target method signatures, any parameter types are supported.
- * However, the return type is constrained to either {@code void} or
- * {@link java.util.concurrent.Future}. In the latter case, you may declare the
- * more specific {@link java.util.concurrent.CompletableFuture} type which allows
- * for richer interaction with the asynchronous task and for immediate composition
- * with further processing steps.
+ * <p>目标方法签名支持任意参数类型，
+ * 但返回类型须为 {@code void} 或 {@link java.util.concurrent.Future}。
+ * 后者可声明更具体的 {@link java.util.concurrent.CompletableFuture}，
+ * 以便与异步任务 richer 交互并立即组合后续处理步骤。
  *
- * <p>A {@code Future} handle returned from the proxy will be an actual asynchronous
- * {@code (Completable)Future} that can be used to track the result of the
- * asynchronous method execution. However, since the target method needs to implement
- * the same signature, it will have to return a temporary {@code Future} handle that
- * just passes a value after computation in the execution thread: typically through
- * {@link java.util.concurrent.CompletableFuture#completedFuture(Object)}. The
- * provided value will be exposed to the caller through the actual asynchronous
- * {@code Future} handle at runtime.
+ * <p>代理返回的 {@code Future} 句柄为真正的异步 {@code (Completable)Future}，
+ * 可用于跟踪异步方法执行结果。由于目标方法须实现相同签名，
+ * 它须返回在执行线程中计算后传递值的临时 {@code Future} 句柄：
+ * 通常通过 {@link java.util.concurrent.CompletableFuture#completedFuture(Object)}。
+ * 提供的值将在运行时通过真正的异步 {@code Future} 句柄暴露给调用方。
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -61,19 +55,15 @@ import org.springframework.aot.hint.annotation.Reflective;
 public @interface Async {
 
 	/**
-	 * A qualifier value for the specified asynchronous operation(s).
-	 * <p>May be used to determine the target executor to be used when executing
-	 * the asynchronous operation(s), matching the qualifier value (or the bean
-	 * name) of a specific {@link java.util.concurrent.Executor Executor} or
+	 * 指定异步操作的限定符值。
+	 * <p>可用于确定执行异步操作时使用的目标执行器，
+	 * 匹配特定 {@link java.util.concurrent.Executor Executor} 或
 	 * {@link org.springframework.core.task.TaskExecutor TaskExecutor}
-	 * bean definition.
-	 * <p>When specified in a class-level {@code @Async} annotation, indicates that the
-	 * given executor should be used for all methods within the class. Method-level use
-	 * of {@code Async#value} always overrides any qualifier value configured at
-	 * the class level.
-	 * <p>The qualifier value will be resolved dynamically if supplied as a SpEL
-	 * expression (for example, {@code "#{environment['myExecutor']}"}) or a
-	 * property placeholder (for example, {@code "${my.app.myExecutor}"}).
+	 * Bean 定义的限定符值（或 Bean 名称）。
+	 * <p>在类级 {@code @Async} 中指定时，表示该类内所有方法均使用该执行器。
+	 * 方法级 {@code Async#value} 始终覆盖类级配置的限定符值。
+	 * <p>若限定符值为 SpEL 表达式（如 {@code "#{environment['myExecutor']}"}）
+	 * 或属性占位符（如 {@code "${my.app.myExecutor}"}），将动态解析。
 	 * @since 3.1.2
 	 */
 	String value() default "";

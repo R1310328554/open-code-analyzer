@@ -24,17 +24,17 @@ import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A pass-through {@code Future} handle that can be used for method signatures
- * which are declared with a {@code Future} return type for asynchronous execution.
+ * 透传 {@code Future} 句柄，可用于声明 {@code Future} 返回类型
+ * 以支持异步执行的方法签名。
  *
  * @author Juergen Hoeller
  * @author Rossen Stoyanchev
  * @since 3.0
- * @param <V> the value type
+ * @param <V> 值类型
  * @see Async
  * @see #forValue(Object)
  * @see #forExecutionException(Throwable)
- * @deprecated as of 6.0, in favor of {@link CompletableFuture}
+ * @deprecated 自 6.0 起，请使用 {@link CompletableFuture}
  */
 @Deprecated(since = "6.0")
 public class AsyncResult<V> implements Future<V> {
@@ -45,8 +45,8 @@ public class AsyncResult<V> implements Future<V> {
 
 
 	/**
-	 * Create a new AsyncResult holder.
-	 * @param value the value to pass through
+	 * 创建新的 AsyncResult 持有者。
+	 * @param value 要透传的值
 	 */
 	public AsyncResult(@Nullable V value) {
 		this(value, null);
@@ -93,8 +93,8 @@ public class AsyncResult<V> implements Future<V> {
 
 
 	/**
-	 * Create a new async result which exposes the given value from {@link Future#get()}.
-	 * @param value the value to expose
+	 * 创建新的异步结果，从 {@link Future#get()} 暴露给定值。
+	 * @param value 要暴露的值
 	 * @since 4.2
 	 * @see Future#get()
 	 */
@@ -103,10 +103,10 @@ public class AsyncResult<V> implements Future<V> {
 	}
 
 	/**
-	 * Create a new async result which exposes the given exception as an
-	 * {@link ExecutionException} from {@link Future#get()}.
-	 * @param ex the exception to expose (either an pre-built {@link ExecutionException}
-	 * or a cause to be wrapped in an {@link ExecutionException})
+	 * 创建新的异步结果，从 {@link Future#get()} 将给定异常
+	 * 作为 {@link ExecutionException} 暴露。
+	 * @param ex 要暴露的异常（可为预构建的 {@link ExecutionException}
+	 * 或将被包装为 {@link ExecutionException} 的原因）
 	 * @since 4.2
 	 * @see ExecutionException
 	 */

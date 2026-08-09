@@ -26,14 +26,13 @@ import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
 /**
- * Specialization of {@link AsyncExecutionInterceptor} that delegates method execution to
- * an {@code Executor} based on the {@link Async} annotation.
+ * {@link AsyncExecutionInterceptor} 的特化实现，根据 {@link Async} 注解
+ * 将方法执行委托给 {@code Executor}。
  *
- * <p>Specifically designed to support use of the {@link Async#value()} executor
- * qualifier mechanism.
+ * <p>专门支持 {@link Async#value()} 执行器限定符机制。
  *
- * <p>Supports detecting qualifier metadata via {@code @Async} at the method or
- * declaring class level. See {@link #getExecutorQualifier(Method)} for details.
+ * <p>支持在方法或声明类级别通过 {@code @Async} 检测限定符元数据。
+ * 详见 {@link #getExecutorQualifier(Method)}。
  *
  * @author Chris Beams
  * @author Stephane Nicoll
@@ -44,24 +43,21 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 public class AnnotationAsyncExecutionInterceptor extends AsyncExecutionInterceptor {
 
 	/**
-	 * Create a new {@code AnnotationAsyncExecutionInterceptor} with the given executor
-	 * and a simple {@link AsyncUncaughtExceptionHandler}.
-	 * @param defaultExecutor the executor to be used by default if no more specific
-	 * executor has been qualified at the method level using {@link Async#value()};
-	 * a local executor for this interceptor will be built otherwise
+	 * 使用给定执行器及简单 {@link AsyncUncaughtExceptionHandler} 创建新的
+	 * {@code AnnotationAsyncExecutionInterceptor}。
+	 * @param defaultExecutor 当方法级 {@link Async#value()} 未指定更具体执行器时使用的默认执行器；
+	 * 否则将为本拦截器构建本地执行器
 	 */
 	public AnnotationAsyncExecutionInterceptor(@Nullable Executor defaultExecutor) {
 		super(defaultExecutor);
 	}
 
 	/**
-	 * Create a new {@code AnnotationAsyncExecutionInterceptor} with the given executor.
-	 * @param defaultExecutor the executor to be used by default if no more specific
-	 * executor has been qualified at the method level using {@link Async#value()};
-	 * a local executor for this interceptor will be built otherwise
-	 * @param exceptionHandler the {@link AsyncUncaughtExceptionHandler} to use to
-	 * handle exceptions thrown by asynchronous method executions with {@code void}
-	 * return type
+	 * 使用给定执行器创建新的 {@code AnnotationAsyncExecutionInterceptor}。
+	 * @param defaultExecutor 当方法级 {@link Async#value()} 未指定更具体执行器时使用的默认执行器；
+	 * 否则将为本拦截器构建本地执行器
+	 * @param exceptionHandler 用于处理 {@code void} 返回类型异步方法执行
+	 * 所抛出异常的 {@link AsyncUncaughtExceptionHandler}
 	 */
 	public AnnotationAsyncExecutionInterceptor(@Nullable Executor defaultExecutor, AsyncUncaughtExceptionHandler exceptionHandler) {
 		super(defaultExecutor, exceptionHandler);
@@ -69,14 +65,13 @@ public class AnnotationAsyncExecutionInterceptor extends AsyncExecutionIntercept
 
 
 	/**
-	 * Return the qualifier or bean name of the executor to be used when executing the
-	 * given method, specified via {@link Async#value} at the method or declaring
-	 * class level. If {@code @Async} is specified at both the method and class level, the
-	 * method's {@code value} takes precedence (even if empty string, indicating that
-	 * the default executor should be used preferentially).
-	 * @param method the method to inspect for executor qualifier metadata
-	 * @return the qualifier if specified, otherwise an empty string indicating that the
-	 * {@linkplain #setExecutor(Executor) default executor} should be used
+	 * 返回执行给定方法时使用的执行器限定符或 Bean 名称，
+	 * 由方法或声明类级别的 {@link Async#value} 指定。
+	 * 若方法与类级别均标注 {@code @Async}，方法上的 {@code value} 优先
+	 * （即使为空字符串，也表示优先使用默认执行器）。
+	 * @param method 待检查执行器限定符元数据的方法
+	 * @return 已指定时返回限定符，否则返回空字符串表示应使用
+	 * {@linkplain #setExecutor(Executor) 默认执行器}
 	 * @see #determineAsyncExecutor(Method)
 	 */
 	@Override

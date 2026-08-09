@@ -28,42 +28,32 @@ import org.springframework.aot.hint.annotation.Reflective;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 /**
- * Annotation that marks a method to be scheduled. For periodic tasks, exactly one
- * of the {@link #cron}, {@link #fixedDelay}, or {@link #fixedRate} attributes
- * must be specified, and additionally an optional {@link #initialDelay}.
- * For a one-time task, it is sufficient to just specify an {@link #initialDelay}.
+ * 标记方法为定时任务的注解。对于周期性任务，须指定 {@link #cron}、
+ * {@link #fixedDelay} 或 {@link #fixedRate} 之一，并可额外指定 {@link #initialDelay}。
+ * 对于一次性任务，仅指定 {@link #initialDelay} 即可。
  *
- * <p>The annotated method must not accept arguments. It will typically have
- * a {@code void} return type; if not, the returned value will be ignored
- * when called through the scheduler.
+ * <p>标注方法不得接受参数。通常返回类型为 {@code void}；
+ * 否则通过调度器调用时将忽略返回值。
  *
- * <p>Methods that return a reactive {@code Publisher} or a type which can be adapted
- * to {@code Publisher} by the default {@code ReactiveAdapterRegistry} are supported.
- * The {@code Publisher} must support multiple subsequent subscriptions. The returned
- * {@code Publisher} is only produced once, and the scheduling infrastructure then
- * periodically subscribes to it according to configuration. Values emitted by
- * the publisher are ignored. Errors are logged at {@code WARN} level, which
- * doesn't prevent further iterations. If a fixed delay is configured, the
- * subscription is blocked in order to respect the fixed delay semantics.
+ * <p>支持返回响应式 {@code Publisher} 或可经默认 {@code ReactiveAdapterRegistry}
+ * 适配为 {@code Publisher} 类型的方法。{@code Publisher} 须支持多次后续订阅。
+ * 返回的 {@code Publisher} 仅产生一次，调度基础设施随后按配置周期性订阅。
+ * 发布者发出的值被忽略。错误以 {@code WARN} 级别记录，不阻止后续迭代。
+ * 若配置固定延迟，订阅将被阻塞以遵守固定延迟语义。
  *
- * <p>Kotlin suspending functions are also supported, provided the coroutine-reactor
- * bridge ({@code kotlinx.coroutine.reactor}) is present at runtime. This bridge is
- * used to adapt the suspending function to a {@code Publisher} which is treated
- * the same way as in the reactive method case (see above).
+ * <p>也支持 Kotlin 挂起函数，前提是运行时存在协程-reactor 桥接
+ * （{@code kotlinx.coroutine.reactor}）。该桥接将挂起函数适配为 {@code Publisher}，
+ * 处理方式与响应式方法情况相同（见上文）。
  *
- * <p>Processing of {@code @Scheduled} annotations is performed by registering a
- * {@link ScheduledAnnotationBeanPostProcessor}. This can be done manually or,
- * more conveniently, through the {@code <task:annotation-driven/>} XML element
- * or {@link EnableScheduling @EnableScheduling} annotation.
+ * <p>{@code @Scheduled} 注解的处理通过注册 {@link ScheduledAnnotationBeanPostProcessor} 完成。
+ * 可手动注册，或更方便地通过 {@code <task:annotation-driven/>} XML 元素
+ * 或 {@link EnableScheduling @EnableScheduling} 注解。
  *
- * <p>This annotation can be used as a <em>{@linkplain Repeatable repeatable}</em>
- * annotation. If several scheduled declarations are found on the same method,
- * each of them will be processed independently, with a separate trigger firing
- * for each of them. As a consequence, such co-located schedules may overlap
- * and execute multiple times in parallel or in immediate succession.
+ * <p>本注解可作为<em>{@linkplain Repeatable 可重复}</em>注解使用。
+ * 若同一方法上存在多个定时声明，将独立处理，各自触发独立触发器。
+ * 因此此类共存调度可能重叠，并行或连续多次执行。
  *
- * <p>This annotation may be used as a <em>meta-annotation</em> to create custom
- * <em>composed annotations</em> with attribute overrides.
+ * <p>本注解可作为<em>元注解</em>创建带属性覆盖的自定义<em>组合注解</em>。
  *
  * @author Mark Fisher
  * @author Juergen Hoeller
@@ -84,9 +74,9 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 public @interface Scheduled {
 
 	/**
-	 * A special cron expression value that indicates a disabled trigger: {@value}.
-	 * <p>This is primarily meant for use with <code>${...}</code> placeholders,
-	 * allowing for external disabling of corresponding scheduled methods.
+	 * 表示禁用触发器的特殊 cron 表达式值：{@value}。
+	 * <p>主要用于 <code>${...}</code> 占位符，
+	 * 允许从外部禁用对应定时方法。
 	 * @since 5.1
 	 * @see ScheduledTaskRegistrar#CRON_DISABLED
 	 */
@@ -94,11 +84,9 @@ public @interface Scheduled {
 
 
 	/**
-	 * A cron-like expression, extending the usual UN*X definition to include triggers
-	 * on the second, minute, hour, day of month, month, and day of week.
-	 * <p>For example, {@code "0 * * * * MON-FRI"} means once per minute on weekdays
-	 * (at the top of the minute - the 0th second).
-	 * <p>The fields read from left to right are interpreted as follows.
+	 * 类 cron 表达式，扩展常规 UN*X 定义，包含秒、分、时、日、月、周触发。
+	 * <p>例如 {@code "0 * * * * MON-FRI"} 表示工作日每分钟一次（整分第 0 秒）。
+	 * <p>从左到右各字段含义如下。
 	 * <ul>
 	 * <li>second</li>
 	 * <li>minute</li>
@@ -107,19 +95,17 @@ public @interface Scheduled {
 	 * <li>month</li>
 	 * <li>day of week</li>
 	 * </ul>
-	 * <p>The special value {@link #CRON_DISABLED "-"} indicates a disabled cron
-	 * trigger, primarily meant for externally specified values resolved by a
-	 * <code>${...}</code> placeholder.
-	 * @return an expression that can be parsed to a cron schedule
+	 * <p>特殊值 {@link #CRON_DISABLED "-"} 表示禁用的 cron 触发器，
+	 * 主要用于由 <code>${...}</code> 占位符解析的外部指定值。
+	 * @return 可解析为 cron 调度的表达式
 	 * @see org.springframework.scheduling.support.CronExpression#parse(String)
 	 */
 	String cron() default "";
 
 	/**
-	 * A time zone for which the cron expression will be resolved. By default, this
-	 * attribute is the empty String (i.e. the scheduler's time zone will be used).
-	 * @return a zone id accepted by {@link java.util.TimeZone#getTimeZone(String)},
-	 * or an empty String to indicate the scheduler's default time zone
+	 * cron 表达式解析使用的时区。默认为空字符串（即使用调度器时区）。
+	 * @return {@link java.util.TimeZone#getTimeZone(String)} 接受的区域 ID，
+	 * 或空字符串表示调度器默认时区
 	 * @since 4.0
 	 * @see org.springframework.scheduling.support.CronTrigger#CronTrigger(String, java.util.TimeZone)
 	 * @see java.util.TimeZone
@@ -127,16 +113,15 @@ public @interface Scheduled {
 	String zone() default "";
 
 	/**
-	 * Execute the annotated method with a fixed period between invocations.
-	 * <p>The time unit is milliseconds by default but can be overridden via
-	 * {@link #timeUnit}.
-	 * @return the period
+	 * 以固定周期执行标注方法（两次调用间隔固定）。
+	 * <p>时间单位默认为毫秒，可通过 {@link #timeUnit} 覆盖。
+	 * @return 周期
 	 */
 	long fixedRate() default -1;
 
 	/**
-	 * Execute the annotated method with a fixed period between invocations.
-	 * <p>The duration String can be in several formats:
+	 * 以固定周期执行标注方法。
+	 * <p>持续时间字符串可为多种格式：
 	 * <ul>
 	 * <li>a plain integer &mdash; which is interpreted to represent a duration in
 	 * milliseconds by default unless overridden via {@link #timeUnit()} (prefer
@@ -147,23 +132,21 @@ public @interface Scheduled {
 	 * &mdash; using the {@link #timeUnit()} as fallback if the string doesn't contain an explicit unit</li>
 	 * <li>one of the above, with Spring-style "${...}" placeholders as well as SpEL expressions</li>
 	 * </ul>
-	 * @return the period as a String value &mdash; for example a placeholder,
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} compliant value
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE simple format} compliant value
+	 * @return 周期字符串值 &mdash; 例如占位符、
+	 * {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} 兼容值
+	 * 或 {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE 简单格式}兼容值
 	 * @since 3.2.2
 	 * @see #fixedRate()
 	 */
 	String fixedRateString() default "";
 
 	/**
-	 * Execute the annotated method with a fixed period between the end of the
-	 * last invocation and the start of the next.
-	 * <p>The time unit is milliseconds by default but can be overridden via
-	 * {@link #timeUnit}.
-	 * <p><b>NOTE: With virtual threads, fixed rates and cron triggers are recommended
-	 * over fixed delays.</b> Fixed-delay tasks operate on a single scheduler thread
-	 * with {@link org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler}.
-	 * @return the delay
+	 * 在上次调用结束与下次调用开始之间以固定延迟执行标注方法。
+	 * <p>时间单位默认为毫秒，可通过 {@link #timeUnit} 覆盖。
+	 * <p><b>注意：使用虚拟线程时，推荐固定速率与 cron 触发器而非固定延迟。</b>
+	 * 固定延迟任务在 {@link org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler}
+	 * 的单调度器线程上运行。
+	 * @return 延迟
 	 */
 	long fixedDelay() default -1;
 
@@ -183,20 +166,18 @@ public @interface Scheduled {
 	 * <p><b>NOTE: With virtual threads, fixed rates and cron triggers are recommended
 	 * over fixed delays.</b> Fixed-delay tasks operate on a single scheduler thread
 	 * with {@link org.springframework.scheduling.concurrent.SimpleAsyncTaskScheduler}.
-	 * @return the delay as a String value &mdash; for example a placeholder,
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} compliant value
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE simple format} compliant value
+	 * @return 延迟字符串值 &mdash; 例如占位符、
+	 * {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} 兼容值
+	 * 或 {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE 简单格式}兼容值
 	 * @since 3.2.2
 	 * @see #fixedDelay()
 	 */
 	String fixedDelayString() default "";
 
 	/**
-	 * Number of units of time to delay before the first execution of a
-	 * {@link #fixedRate} or {@link #fixedDelay} task.
-	 * <p>The time unit is milliseconds by default but can be overridden via
-	 * {@link #timeUnit}.
-	 * @return the initial
+	 * {@link #fixedRate} 或 {@link #fixedDelay} 任务首次执行前的延迟时间单位数。
+	 * <p>时间单位默认为毫秒，可通过 {@link #timeUnit} 覆盖。
+	 * @return 初始延迟
 	 * @since 3.2
 	 */
 	long initialDelay() default -1;
@@ -215,34 +196,33 @@ public @interface Scheduled {
 	 * &mdash; using the {@link #timeUnit()} as fallback if the string doesn't contain an explicit unit</li>
 	 * <li>one of the above, with Spring-style "${...}" placeholders as well as SpEL expressions</li>
 	 * </ul>
-	 * @return the initial delay as a String value &mdash; for example a placeholder,
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} compliant value
-	 * or a {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE simple format} compliant value
+	 * @return 初始延迟字符串值 &mdash; 例如占位符、
+	 * {@link org.springframework.format.annotation.DurationFormat.Style#ISO8601 java.time.Duration} 兼容值
+	 * 或 {@link org.springframework.format.annotation.DurationFormat.Style#SIMPLE 简单格式}兼容值
 	 * @since 3.2.2
 	 * @see #initialDelay()
 	 */
 	String initialDelayString() default "";
 
 	/**
-	 * The {@link TimeUnit} to use for {@link #fixedDelay}, {@link #fixedDelayString},
-	 * {@link #fixedRate}, {@link #fixedRateString}, {@link #initialDelay}, and
-	 * {@link #initialDelayString}.
-	 * <p>The default is {@link TimeUnit#MILLISECONDS}.
-	 * <p>This attribute is ignored for {@linkplain #cron() cron expressions}
-	 * and for {@link java.time.Duration} values supplied via {@link #fixedDelayString},
-	 * {@link #fixedRateString}, or {@link #initialDelayString}.
-	 * @return the {@code TimeUnit} to use
+	 * {@link #fixedDelay}、{@link #fixedDelayString}、{@link #fixedRate}、
+	 * {@link #fixedRateString}、{@link #initialDelay} 及 {@link #initialDelayString}
+	 * 使用的 {@link TimeUnit}。
+	 * <p>默认为 {@link TimeUnit#MILLISECONDS}。
+	 * <p>对 {@linkplain #cron() cron 表达式}及通过 {@link #fixedDelayString}、
+	 * {@link #fixedRateString} 或 {@link #initialDelayString} 提供的
+	 * {@link java.time.Duration} 值，本属性被忽略。
+	 * @return 使用的 {@code TimeUnit}
 	 * @since 5.3.10
 	 */
 	TimeUnit timeUnit() default TimeUnit.MILLISECONDS;
 
 	/**
-	 * A qualifier for determining a scheduler to run this scheduled method on.
-	 * <p>Defaults to an empty String, suggesting the default scheduler.
-	 * <p>May be used to determine the target scheduler to be used,
-	 * matching the qualifier value (or the bean name) of a specific
-	 * {@link org.springframework.scheduling.TaskScheduler} or
-	 * {@link java.util.concurrent.ScheduledExecutorService} bean definition.
+	 * 确定运行此定时方法的调度器的限定符。
+	 * <p>默认为空字符串，表示默认调度器。
+	 * <p>可用于确定目标调度器，
+	 * 匹配特定 {@link org.springframework.scheduling.TaskScheduler} 或
+	 * {@link java.util.concurrent.ScheduledExecutorService} Bean 定义的限定符值（或 Bean 名称）。
 	 * @since 6.1
 	 * @see org.springframework.scheduling.SchedulingAwareRunnable#getQualifier()
 	 */
