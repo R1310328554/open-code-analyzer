@@ -20,19 +20,20 @@ import java.io.IOException;
 import java.io.Writer;
 
 /**
- * 定义涉及为 XML 输入提供 {@code Writer} 数据的处理的接口。
+ * 通过 {@code Writer} 提供 XML 输入数据的回调接口。
+ *
  * @author Thomas Risberg
  * @since 2.5.5
  * @see java.io.Writer
- * @deprecated 6.2，支持直接使用 {@link java.sql.SQLXML}
+ * @deprecated 自 6.2 起弃用，推荐直接使用 {@link java.sql.SQLXML}
  */
 @Deprecated(since = "6.2")
 public interface XmlCharacterStreamProvider {
 
 	/**
-	 * 实现必须实现此方法才能为 {@code Writer} 提供 XML 内容。
-	 * @param writer 用于提供 XML 输入的 {@code Writer} 对象
-	 * @throws IOException 如果在提供 XML 时发生 I/O 错误
+	 * 实现类须向给定 {@code Writer} 写入 XML 内容。
+	 * @param writer 用于提供 XML 输入的 {@code Writer}
+	 * @throws IOException 写入 XML 时发生 I/O 错误
 	 */
 	void provideXml(Writer writer) throws IOException;
 

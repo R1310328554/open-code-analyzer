@@ -19,18 +19,19 @@ package org.springframework.jdbc.support.xml;
 import javax.xml.transform.Result;
 
 /**
- * 定义涉及为 XML 输入提供 {@code Result} 数据的处理的接口。
+ * 通过 {@code Result} 提供 XML 输入数据的回调接口。
+ *
  * @author Thomas Risberg
  * @since 2.5.5
  * @see javax.xml.transform.Result
- * @deprecated 6.2，支持直接使用 {@link java.sql.SQLXML}
+ * @deprecated 自 6.2 起弃用，推荐直接使用 {@link java.sql.SQLXML}
  */
 @Deprecated(since = "6.2")
 public interface XmlResultProvider {
 
 	/**
-	 * 实现必须实现此方法才能为 {@code Result} 提供 XML 内容。实现将根据所使用的 {@code Result} 实现而有所不同。
-	 * @param result 用于提供 XML 输入的 {@code Result} 对象
+	 * 实现类须向给定 {@code Result} 写入 XML 内容；具体写法取决于所用的 {@code Result} 实现。
+	 * @param result 用于提供 XML 输入的 {@code Result}
 	 */
 	void provideXml(Result result);
 

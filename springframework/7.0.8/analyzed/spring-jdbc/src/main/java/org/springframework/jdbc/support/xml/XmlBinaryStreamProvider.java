@@ -20,19 +20,20 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * 定义涉及为 XML 输入提供 {@code OutputStream} 数据的处理的接口。
+ * 通过 {@code OutputStream} 提供 XML 输入数据的回调接口。
+ *
  * @author Thomas Risberg
  * @since 2.5.5
  * @see java.io.OutputStream
- * @deprecated 6.2，支持直接使用 {@link java.sql.SQLXML}
+ * @deprecated 自 6.2 起弃用，推荐直接使用 {@link java.sql.SQLXML}
  */
 @Deprecated(since = "6.2")
 public interface XmlBinaryStreamProvider {
 
 	/**
-	 * 实现必须实现此方法才能为 {@code OutputStream} 提供 XML 内容。
-	 * @param outputStream 用于提供 XML 输入的 {@code OutputStream} 对象
-	 * @throws IOException 如果在提供 XML 时发生 I/O 错误
+	 * 实现类须向给定 {@code OutputStream} 写入 XML 内容。
+	 * @param outputStream 用于提供 XML 输入的 {@code OutputStream}
+	 * @throws IOException 写入 XML 时发生 I/O 错误
 	 */
 	void provideXml(OutputStream outputStream) throws IOException;
 
