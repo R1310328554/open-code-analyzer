@@ -19,11 +19,13 @@ package org.springframework.jdbc.support.xml;
 import org.springframework.jdbc.support.SqlValue;
 
 /**
- * {@link org.springframework.jdbc.support.SqlValue} 的子接口，专门指示将 XML 数据传递到指定列。
+ * {@link org.springframework.jdbc.support.SqlValue} 的子接口，
+ * 专门用于向指定列传入 XML 数据。
+ *
  * @author Thomas Risberg
  * @since 2.5.5
  * @see org.springframework.jdbc.support.SqlValue
- * @deprecated 6.2，支持直接 {@link SqlValue} 实现
+ * @deprecated 自 6.2 起弃用，推荐直接使用 {@link SqlValue} 实现
  */
 @Deprecated(since = "6.2")
 public interface SqlXmlValue extends SqlValue {

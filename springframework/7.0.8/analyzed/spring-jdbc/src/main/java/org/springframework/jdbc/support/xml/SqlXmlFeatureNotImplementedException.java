@@ -22,17 +22,20 @@ import java.sql.ResultSet;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 
 /**
- * 当底层实现不支持 API 请求的功能时抛出异常。
+ * 当底层实现不支持 API 所请求的特性时抛出的异常。
+ *
  * @author Thomas Risberg
  * @since 2.5.5
- * @deprecated 6.2，支持直接使用 {@link ResultSet#getSQLXML} 和 {@link Connection#createSQLXML()}，可能与自定义 {@link org.springframework.jdbc.support.SqlValue} 实现结合使用
+ * @deprecated 自 6.2 起弃用，推荐直接使用 {@link ResultSet#getSQLXML} 和
+ * {@link Connection#createSQLXML()}，必要时结合自定义
+ * {@link org.springframework.jdbc.support.SqlValue} 实现
  */
 @Deprecated(since = "6.2")
 @SuppressWarnings("serial")
 public class SqlXmlFeatureNotImplementedException extends InvalidDataAccessApiUsageException {
 
 	/**
-	 * SqlXmlFeatureNotImplementedException 的构造函数。
+	 * 构造 SqlXmlFeatureNotImplementedException。
 	 * @param msg 详细消息
 	 */
 	public SqlXmlFeatureNotImplementedException(String msg) {
@@ -40,9 +43,9 @@ public class SqlXmlFeatureNotImplementedException extends InvalidDataAccessApiUs
 	}
 
 	/**
-	 * SqlXmlFeatureNotImplementedException 的构造函数。
+	 * 构造 SqlXmlFeatureNotImplementedException。
 	 * @param msg 详细消息
-	 * @param cause 根本原因来自于所使用的数据访问 API
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public SqlXmlFeatureNotImplementedException(String msg, Throwable cause) {
 		super(msg, cause);
