@@ -17,11 +17,9 @@
 package org.springframework.dao;
 
 /**
- * Data access exception thrown when a previously failed operation might be able
- * to succeed if the application performs some recovery steps and retries the entire
- * transaction or in the case of a distributed transaction, the transaction branch.
- * At a minimum, the recovery operation must include closing the current connection
- * and getting a new connection.
+ * 当先前失败的操作在应用执行某些恢复步骤并重试整个事务
+ *（分布式事务情况下为事务分支）后可能成功时抛出的数据访问异常。
+ * 恢复操作至少须包括关闭当前连接并获取新连接。
  *
  * @author Thomas Risberg
  * @since 2.5
@@ -31,18 +29,17 @@ package org.springframework.dao;
 public class RecoverableDataAccessException extends DataAccessException {
 
 	/**
-	 * Constructor for RecoverableDataAccessException.
-	 * @param msg the detail message
+	 * RecoverableDataAccessException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public RecoverableDataAccessException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for RecoverableDataAccessException.
-	 * @param msg the detail message
-	 * @param cause the root cause (usually from using an underlying
-	 * data access API such as JDBC)
+	 * RecoverableDataAccessException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 根因（通常来自底层数据访问 API，如 JDBC）
 	 */
 	public RecoverableDataAccessException(String msg, Throwable cause) {
 		super(msg, cause);

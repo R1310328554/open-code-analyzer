@@ -34,9 +34,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.NumberUtils;
 
 /**
- * Miscellaneous utility methods for DAO implementations.
+ * DAO 实现的杂项工具方法。
  *
- * <p>Useful with any data access technology.
+ * <p>适用于任何数据访问技术。
  *
  * @author Juergen Hoeller
  * @since 1.0.2
@@ -44,13 +44,12 @@ import org.springframework.util.NumberUtils;
 public abstract class DataAccessUtils {
 
 	/**
-	 * Return a single result object from the given Collection.
-	 * <p>Returns {@code null} if 0 result objects found;
-	 * throws an exception if more than 1 element found.
-	 * @param results the result Collection (can be {@code null})
-	 * @return the single result object, or {@code null} if none
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * element has been found in the given Collection
+	 * 从给定 Collection 返回单个结果对象。
+	 * <p>若找到 0 个结果对象则返回 {@code null}；
+	 * 若找到多于 1 个元素则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}）
+	 * @return 单个结果对象，若无则返回 {@code null}
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个元素时
 	 */
 	public static <T> @Nullable T singleResult(@Nullable Collection<T> results) throws IncorrectResultSizeDataAccessException {
 		if (CollectionUtils.isEmpty(results)) {
@@ -63,13 +62,12 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a single result object from the given Stream.
-	 * <p>Returns {@code null} if 0 result objects found;
-	 * throws an exception if more than 1 element found.
-	 * @param results the result Stream (can be {@code null})
-	 * @return the single result object, or {@code null} if none
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * element has been found in the given Stream
+	 * 从给定 Stream 返回单个结果对象。
+	 * <p>若找到 0 个结果对象则返回 {@code null}；
+	 * 若找到多于 1 个元素则抛出异常。
+	 * @param results 结果 Stream（可为 {@code null}）
+	 * @return 单个结果对象，若无则返回 {@code null}
+	 * @throws IncorrectResultSizeDataAccessException 给定 Stream 中找到多于一个元素时
 	 * @since 6.1
 	 */
 	public static <T> @Nullable T singleResult(@Nullable Stream<T> results) throws IncorrectResultSizeDataAccessException {
@@ -86,13 +84,12 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a single result object from the given Iterator.
-	 * <p>Returns {@code null} if 0 result objects found;
-	 * throws an exception if more than 1 element found.
-	 * @param results the result Iterator (can be {@code null})
-	 * @return the single result object, or {@code null} if none
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * element has been found in the given Iterator
+	 * 从给定 Iterator 返回单个结果对象。
+	 * <p>若找到 0 个结果对象则返回 {@code null}；
+	 * 若找到多于 1 个元素则抛出异常。
+	 * @param results 结果 Iterator（可为 {@code null}）
+	 * @return 单个结果对象，若无则返回 {@code null}
+	 * @throws IncorrectResultSizeDataAccessException 给定 Iterator 中找到多于一个元素时
 	 * @since 6.1
 	 */
 	public static <T> @Nullable T singleResult(@Nullable Iterator<T> results) throws IncorrectResultSizeDataAccessException {
@@ -107,13 +104,12 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a single result object from the given Collection.
-	 * <p>Returns {@code Optional.empty()} if 0 result objects found;
-	 * throws an exception if more than 1 element found.
-	 * @param results the result Collection (can be {@code null})
-	 * @return the single optional result object, or {@code Optional.empty()} if none
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * element has been found in the given Collection
+	 * 从给定 Collection 返回单个结果对象。
+	 * <p>若找到 0 个结果对象则返回 {@code Optional.empty()}；
+	 * 若找到多于 1 个元素则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}）
+	 * @return 单个可选结果对象，若无则返回 {@code Optional.empty()}
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个元素时
 	 * @since 6.1
 	 */
 	public static <T> Optional<T> optionalResult(@Nullable Collection<? extends @Nullable T> results)
@@ -123,13 +119,12 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a single result object from the given Stream.
-	 * <p>Returns {@code Optional.empty()} if 0 result objects found;
-	 * throws an exception if more than 1 element found.
-	 * @param results the result Stream (can be {@code null})
-	 * @return the single optional result object, or {@code Optional.empty()} if none
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * element has been found in the given Stream
+	 * 从给定 Stream 返回单个结果对象。
+	 * <p>若找到 0 个结果对象则返回 {@code Optional.empty()}；
+	 * 若找到多于 1 个元素则抛出异常。
+	 * @param results 结果 Stream（可为 {@code null}）
+	 * @return 单个可选结果对象，若无则返回 {@code Optional.empty()}
+	 * @throws IncorrectResultSizeDataAccessException 给定 Stream 中找到多于一个元素时
 	 * @since 6.1
 	 */
 	public static <T> Optional<T> optionalResult(@Nullable Stream<T> results) throws IncorrectResultSizeDataAccessException {
@@ -137,13 +132,12 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a single result object from the given Iterator.
-	 * <p>Returns {@code Optional.empty()} if 0 result objects found;
-	 * throws an exception if more than 1 element found.
-	 * @param results the result Iterator (can be {@code null})
-	 * @return the single optional result object, or {@code Optional.empty()} if none
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * element has been found in the given Iterator
+	 * 从给定 Iterator 返回单个结果对象。
+	 * <p>若找到 0 个结果对象则返回 {@code Optional.empty()}；
+	 * 若找到多于 1 个元素则抛出异常。
+	 * @param results 结果 Iterator（可为 {@code null}）
+	 * @return 单个可选结果对象，若无则返回 {@code Optional.empty()}
+	 * @throws IncorrectResultSizeDataAccessException 给定 Iterator 中找到多于一个元素时
 	 * @since 6.1
 	 */
 	public static <T> Optional<T> optionalResult(@Nullable Iterator<T> results) throws IncorrectResultSizeDataAccessException {
@@ -151,15 +145,13 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a single result object from the given Collection.
-	 * <p>Throws an exception if 0 or more than 1 element found.
-	 * @param results the result Collection (can be {@code null}
-	 * but is not expected to contain {@code null} elements)
-	 * @return the single result object
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * element has been found in the given Collection
-	 * @throws EmptyResultDataAccessException if no element at all
-	 * has been found in the given Collection
+	 * 从给定 Collection 返回单个结果对象。
+	 * <p>若找到 0 个或多于 1 个元素则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}，
+	 * 但不应包含 {@code null} 元素）
+	 * @return 单个结果对象
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个元素时
+	 * @throws EmptyResultDataAccessException 给定 Collection 中未找到任何元素时
 	 */
 	public static <T extends @Nullable Object> @NonNull T requiredSingleResult(@Nullable Collection<T> results)
 			throws IncorrectResultSizeDataAccessException {
@@ -178,15 +170,13 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a single result object from the given Collection.
-	 * <p>Throws an exception if 0 or more than 1 element found.
-	 * @param results the result Collection (can be {@code null}
-	 * and is also expected to contain {@code null} elements)
-	 * @return the single result object
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * element has been found in the given Collection
-	 * @throws EmptyResultDataAccessException if no element at all
-	 * has been found in the given Collection
+	 * 从给定 Collection 返回单个结果对象。
+	 * <p>若找到 0 个或多于 1 个元素则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}，
+	 * 且可能包含 {@code null} 元素）
+	 * @return 单个结果对象
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个元素时
+	 * @throws EmptyResultDataAccessException 给定 Collection 中未找到任何元素时
 	 * @since 5.0.2
 	 */
 	public static <T extends @Nullable Object> T nullableSingleResult(@Nullable Collection<T> results)
@@ -204,13 +194,12 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a unique result object from the given Collection.
-	 * <p>Returns {@code null} if 0 result objects found;
-	 * throws an exception if more than 1 instance found.
-	 * @param results the result Collection (can be {@code null})
-	 * @return the unique result object, or {@code null} if none
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * result object has been found in the given Collection
+	 * 从给定 Collection 返回唯一结果对象。
+	 * <p>若找到 0 个结果对象则返回 {@code null}；
+	 * 若找到多于 1 个实例则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}）
+	 * @return 唯一结果对象，若无则返回 {@code null}
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个结果对象时
 	 * @see org.springframework.util.CollectionUtils#hasUniqueObject
 	 */
 	public static <T> @Nullable T uniqueResult(@Nullable Collection<T> results) throws IncorrectResultSizeDataAccessException {
@@ -224,15 +213,13 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a unique result object from the given Collection.
-	 * <p>Throws an exception if 0 or more than 1 instance found.
-	 * @param results the result Collection (can be {@code null}
-	 * but is not expected to contain {@code null} elements)
-	 * @return the unique result object
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * result object has been found in the given Collection
-	 * @throws EmptyResultDataAccessException if no result object at all
-	 * has been found in the given Collection
+	 * 从给定 Collection 返回唯一结果对象。
+	 * <p>若找到 0 个或多于 1 个实例则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}，
+	 * 但不应包含 {@code null} 元素）
+	 * @return 唯一结果对象
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个结果对象时
+	 * @throws EmptyResultDataAccessException 给定 Collection 中未找到任何结果对象时
 	 * @see org.springframework.util.CollectionUtils#hasUniqueObject
 	 */
 	public static <T> T requiredUniqueResult(@Nullable Collection<T> results) throws IncorrectResultSizeDataAccessException {
@@ -250,19 +237,15 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a unique result object from the given Collection.
-	 * Throws an exception if 0 or more than 1 result objects found,
-	 * of if the unique result object is not convertible to the
-	 * specified required type.
-	 * @param results the result Collection (can be {@code null}
-	 * but is not expected to contain {@code null} elements)
-	 * @return the unique result object
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * result object has been found in the given Collection
-	 * @throws EmptyResultDataAccessException if no result object
-	 * at all has been found in the given Collection
-	 * @throws TypeMismatchDataAccessException if the unique object does
-	 * not match the specified required type
+	 * 从给定 Collection 返回唯一结果对象。
+	 * 若找到 0 个或多于 1 个结果对象，或唯一结果对象无法转换为
+	 * 指定所需类型，则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}，
+	 * 但不应包含 {@code null} 元素）
+	 * @return 唯一结果对象
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个结果对象时
+	 * @throws EmptyResultDataAccessException 给定 Collection 中未找到任何结果对象时
+	 * @throws TypeMismatchDataAccessException 唯一对象与指定所需类型不匹配时
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T objectResult(@Nullable Collection<?> results, @Nullable Class<T> requiredType)
@@ -291,18 +274,14 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a unique int result from the given Collection.
-	 * Throws an exception if 0 or more than 1 result objects found,
-	 * of if the unique result object is not convertible to an int.
-	 * @param results the result Collection (can be {@code null}
-	 * but is not expected to contain {@code null} elements)
-	 * @return the unique int result
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * result object has been found in the given Collection
-	 * @throws EmptyResultDataAccessException if no result object
-	 * at all has been found in the given Collection
-	 * @throws TypeMismatchDataAccessException if the unique object
-	 * in the collection is not convertible to an int
+	 * 从给定 Collection 返回唯一 int 结果。
+	 * 若找到 0 个或多于 1 个结果对象，或唯一结果对象无法转换为 int，则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}，
+	 * 但不应包含 {@code null} 元素）
+	 * @return 唯一 int 结果
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个结果对象时
+	 * @throws EmptyResultDataAccessException 给定 Collection 中未找到任何结果对象时
+	 * @throws TypeMismatchDataAccessException 集合中唯一对象无法转换为 int 时
 	 */
 	public static int intResult(@Nullable Collection<?> results)
 			throws IncorrectResultSizeDataAccessException, TypeMismatchDataAccessException {
@@ -311,18 +290,14 @@ public abstract class DataAccessUtils {
 	}
 
 	/**
-	 * Return a unique long result from the given Collection.
-	 * Throws an exception if 0 or more than 1 result objects found,
-	 * of if the unique result object is not convertible to a long.
-	 * @param results the result Collection (can be {@code null}
-	 * but is not expected to contain {@code null} elements)
-	 * @return the unique long result
-	 * @throws IncorrectResultSizeDataAccessException if more than one
-	 * result object has been found in the given Collection
-	 * @throws EmptyResultDataAccessException if no result object
-	 * at all has been found in the given Collection
-	 * @throws TypeMismatchDataAccessException if the unique object
-	 * in the collection is not convertible to a long
+	 * 从给定 Collection 返回唯一 long 结果。
+	 * 若找到 0 个或多于 1 个结果对象，或唯一结果对象无法转换为 long，则抛出异常。
+	 * @param results 结果 Collection（可为 {@code null}，
+	 * 但不应包含 {@code null} 元素）
+	 * @return 唯一 long 结果
+	 * @throws IncorrectResultSizeDataAccessException 给定 Collection 中找到多于一个结果对象时
+	 * @throws EmptyResultDataAccessException 给定 Collection 中未找到任何结果对象时
+	 * @throws TypeMismatchDataAccessException 集合中唯一对象无法转换为 long 时
 	 */
 	public static long longResult(@Nullable Collection<?> results)
 			throws IncorrectResultSizeDataAccessException, TypeMismatchDataAccessException {
@@ -332,12 +307,10 @@ public abstract class DataAccessUtils {
 
 
 	/**
-	 * Return a translated exception if this is appropriate,
-	 * otherwise return the given exception as-is.
-	 * @param rawException an exception that we may wish to translate
-	 * @param pet the PersistenceExceptionTranslator to use to perform the translation
-	 * @return a translated persistence exception if translation is possible,
-	 * or the raw exception if it is not
+	 * 若合适则返回转换后的异常，否则原样返回给定异常。
+	 * @param rawException 可能需要转换的异常
+	 * @param pet 用于执行转换的 PersistenceExceptionTranslator
+	 * @return 若可转换则返回转换后的持久化异常，否则返回原始异常
 	 */
 	public static RuntimeException translateIfNecessary(
 			RuntimeException rawException, PersistenceExceptionTranslator pet) {

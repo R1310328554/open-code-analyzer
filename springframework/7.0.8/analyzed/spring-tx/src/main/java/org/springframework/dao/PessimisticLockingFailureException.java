@@ -19,14 +19,12 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown on a pessimistic locking violation.
- * Thrown by Spring's SQLException translation mechanism
- * if a corresponding database error is encountered.
+ * 发生悲观锁冲突时抛出的异常。
+ * 若遇到对应的数据库错误，由 Spring 的 SQLException 转换机制抛出。
  *
- * <p>Serves as a superclass for more specific exceptions, for example,
- * {@link CannotAcquireLockException}. However, it is generally
- * recommended to handle {@code PessimisticLockingFailureException}
- * itself instead of relying on specific exception subclasses.
+ * <p>作为更具体异常（例如 {@link CannotAcquireLockException}）的父类。
+ * 但通常建议直接处理 {@code PessimisticLockingFailureException}，
+ * 而非依赖特定异常子类。
  *
  * @author Thomas Risberg
  * @since 1.2
@@ -36,17 +34,17 @@ import org.jspecify.annotations.Nullable;
 public class PessimisticLockingFailureException extends ConcurrencyFailureException {
 
 	/**
-	 * Constructor for PessimisticLockingFailureException.
-	 * @param msg the detail message
+	 * PessimisticLockingFailureException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public PessimisticLockingFailureException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for PessimisticLockingFailureException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * PessimisticLockingFailureException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public PessimisticLockingFailureException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

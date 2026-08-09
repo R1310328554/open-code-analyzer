@@ -17,8 +17,7 @@
 package org.springframework.dao;
 
 /**
- * Data access exception thrown when a resource fails temporarily
- * and the operation can be retried.
+ * 当资源暂时失败且操作可重试时抛出的数据访问异常。
  *
  * @author Thomas Risberg
  * @since 2.5
@@ -28,17 +27,17 @@ package org.springframework.dao;
 public class TransientDataAccessResourceException extends TransientDataAccessException {
 
 	/**
-	 * Constructor for TransientDataAccessResourceException.
-	 * @param msg the detail message
+	 * TransientDataAccessResourceException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public TransientDataAccessResourceException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for TransientDataAccessResourceException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * TransientDataAccessResourceException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public TransientDataAccessResourceException(String msg, Throwable cause) {
 		super(msg, cause);

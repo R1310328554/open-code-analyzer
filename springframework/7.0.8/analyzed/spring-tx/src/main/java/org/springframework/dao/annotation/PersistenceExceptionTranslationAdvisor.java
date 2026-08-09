@@ -28,9 +28,9 @@ import org.springframework.dao.support.PersistenceExceptionTranslationIntercepto
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 
 /**
- * Spring AOP exception translation aspect for use at Repository or DAO layer level.
- * Translates native persistence exceptions into Spring's DataAccessException hierarchy,
- * based on a given PersistenceExceptionTranslator.
+ * 用于 Repository 或 DAO 层的 Spring AOP 异常转换切面。
+ * 基于给定 PersistenceExceptionTranslator，
+ * 将原生持久化异常转换为 Spring 的 DataAccessException 层次结构。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -47,9 +47,9 @@ public class PersistenceExceptionTranslationAdvisor extends AbstractPointcutAdvi
 
 
 	/**
-	 * Create a new PersistenceExceptionTranslationAdvisor.
-	 * @param persistenceExceptionTranslator the PersistenceExceptionTranslator to use
-	 * @param repositoryAnnotationType the annotation type to check for
+	 * 创建新的 PersistenceExceptionTranslationAdvisor。
+	 * @param persistenceExceptionTranslator 要使用的 PersistenceExceptionTranslator
+	 * @param repositoryAnnotationType 要检查的注解类型
 	 */
 	public PersistenceExceptionTranslationAdvisor(
 			PersistenceExceptionTranslator persistenceExceptionTranslator,
@@ -60,10 +60,9 @@ public class PersistenceExceptionTranslationAdvisor extends AbstractPointcutAdvi
 	}
 
 	/**
-	 * Create a new PersistenceExceptionTranslationAdvisor.
-	 * @param beanFactory the ListableBeanFactory to obtaining all
-	 * PersistenceExceptionTranslators from
-	 * @param repositoryAnnotationType the annotation type to check for
+	 * 创建新的 PersistenceExceptionTranslationAdvisor。
+	 * @param beanFactory 用于获取所有 PersistenceExceptionTranslator 的 ListableBeanFactory
+	 * @param repositoryAnnotationType 要检查的注解类型
 	 */
 	PersistenceExceptionTranslationAdvisor(
 			ListableBeanFactory beanFactory, Class<? extends Annotation> repositoryAnnotationType) {

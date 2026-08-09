@@ -30,13 +30,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * AOP Alliance MethodInterceptor that provides persistence exception translation
- * based on a given PersistenceExceptionTranslator.
+ * 基于给定 PersistenceExceptionTranslator 提供持久化异常转换的
+ * AOP Alliance MethodInterceptor。
  *
- * <p>Delegates to the given {@link PersistenceExceptionTranslator} to translate
- * a RuntimeException thrown into Spring's DataAccessException hierarchy
- * (if appropriate). If the RuntimeException in question is declared on the
- * target method, it is always propagated as-is (with no translation applied).
+ * <p>委托给定 {@link PersistenceExceptionTranslator} 将抛出的 RuntimeException
+ * 转换为 Spring 的 DataAccessException 层次结构（若适用）。
+ * 若所涉 RuntimeException 在目标方法上声明，则始终原样传播（不应用转换）。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -54,17 +53,17 @@ public class PersistenceExceptionTranslationInterceptor
 
 
 	/**
-	 * Create a new PersistenceExceptionTranslationInterceptor.
-	 * Needs to be configured with a PersistenceExceptionTranslator afterwards.
+	 * 创建新的 PersistenceExceptionTranslationInterceptor。
+	 * 之后须配置 PersistenceExceptionTranslator。
 	 * @see #setPersistenceExceptionTranslator
 	 */
 	public PersistenceExceptionTranslationInterceptor() {
 	}
 
 	/**
-	 * Create a new PersistenceExceptionTranslationInterceptor
-	 * for the given PersistenceExceptionTranslator.
-	 * @param pet the PersistenceExceptionTranslator to use
+	 * 为给定 PersistenceExceptionTranslator 创建新的
+	 * PersistenceExceptionTranslationInterceptor。
+	 * @param pet 要使用的 PersistenceExceptionTranslator
 	 */
 	public PersistenceExceptionTranslationInterceptor(PersistenceExceptionTranslator pet) {
 		Assert.notNull(pet, "PersistenceExceptionTranslator must not be null");
@@ -72,10 +71,9 @@ public class PersistenceExceptionTranslationInterceptor
 	}
 
 	/**
-	 * Create a new PersistenceExceptionTranslationInterceptor, autodetecting
-	 * PersistenceExceptionTranslators in the given BeanFactory.
-	 * @param beanFactory the ListableBeanFactory to obtaining all
-	 * PersistenceExceptionTranslators from
+	 * 创建新的 PersistenceExceptionTranslationInterceptor，
+	 * 自动检测给定 BeanFactory 中的 PersistenceExceptionTranslator。
+	 * @param beanFactory 用于获取所有 PersistenceExceptionTranslator 的 ListableBeanFactory
 	 */
 	public PersistenceExceptionTranslationInterceptor(ListableBeanFactory beanFactory) {
 		Assert.notNull(beanFactory, "ListableBeanFactory must not be null");
@@ -84,9 +82,9 @@ public class PersistenceExceptionTranslationInterceptor
 
 
 	/**
-	 * Specify the PersistenceExceptionTranslator to use.
-	 * <p>Default is to autodetect all PersistenceExceptionTranslators
-	 * in the containing BeanFactory, using them in a chain.
+	 * 指定要使用的 PersistenceExceptionTranslator。
+	 * <p>默认为自动检测所在 BeanFactory 中所有 PersistenceExceptionTranslator，
+	 * 以链式方式使用。
 	 * @see #detectPersistenceExceptionTranslators
 	 */
 	public void setPersistenceExceptionTranslator(PersistenceExceptionTranslator pet) {
@@ -94,16 +92,14 @@ public class PersistenceExceptionTranslationInterceptor
 	}
 
 	/**
-	 * Specify whether to always translate the exception ("true"), or whether throw the
-	 * raw exception when declared, i.e. when the originating method signature's exception
-	 * declarations allow for the raw exception to be thrown ("false").
-	 * <p>Default is "false". Switch this flag to "true" in order to always translate
-	 * applicable exceptions, independent of the originating method signature.
-	 * <p>Note that the originating method does not have to declare the specific exception.
-	 * Any base class will do as well, even {@code throws Exception}: As long as the
-	 * originating method does explicitly declare compatible exceptions, the raw exception
-	 * will be rethrown. If you would like to avoid throwing raw exceptions in any case,
-	 * switch this flag to "true".
+	 * 指定是否始终转换异常（"true"），或在已声明时抛出原始异常（"false"），
+	 * 即源方法签名的异常声明允许抛出原始异常时。
+	 * <p>默认为 "false"。设为 "true" 可始终转换适用异常，
+	 * 不受源方法签名影响。
+	 * <p>注意，源方法不必声明特定异常。
+	 * 任何基类均可，甚至 {@code throws Exception}：只要源方法显式声明兼容异常，
+	 * 原始异常将被重新抛出。若希望任何情况下都避免抛出原始异常，
+	 * 请将本标志设为 "true"。
 	 */
 	public void setAlwaysTranslate(boolean alwaysTranslate) {
 		this.alwaysTranslate = alwaysTranslate;
@@ -160,10 +156,10 @@ public class PersistenceExceptionTranslationInterceptor
 	}
 
 	/**
-	 * Detect all PersistenceExceptionTranslators in the given BeanFactory.
-	 * @param bf the ListableBeanFactory to obtain PersistenceExceptionTranslators from
-	 * @return a chained PersistenceExceptionTranslator, combining all
-	 * PersistenceExceptionTranslators found in the given bean factory
+	 * 检测给定 BeanFactory 中所有 PersistenceExceptionTranslator。
+	 * @param bf 用于获取 PersistenceExceptionTranslator 的 ListableBeanFactory
+	 * @return 链式 PersistenceExceptionTranslator，组合给定 Bean 工厂中找到的所有
+	 * PersistenceExceptionTranslator
 	 * @see ChainedPersistenceExceptionTranslator
 	 */
 	protected PersistenceExceptionTranslator detectPersistenceExceptionTranslators(ListableBeanFactory bf) {

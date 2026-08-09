@@ -37,10 +37,8 @@ import org.springframework.transaction.jta.TransactionFactory;
 import org.springframework.util.Assert;
 
 /**
- * Abstract base implementation of the JCA 1.7
- * {@link jakarta.resource.spi.endpoint.MessageEndpointFactory} interface,
- * providing transaction management capabilities as well as ClassLoader
- * exposure for endpoint invocations.
+ * JCA 1.7 {@link jakarta.resource.spi.endpoint.MessageEndpointFactory} 接口的
+ * 抽象基类实现，提供事务管理能力以及端点调用时的 ClassLoader 暴露。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -48,7 +46,7 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractMessageEndpointFactory implements MessageEndpointFactory, BeanNameAware {
 
-	/** Logger available to subclasses. */
+	/** 子类可用的 Logger。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private @Nullable TransactionFactory transactionFactory;
@@ -61,15 +59,13 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 
 
 	/**
-	 * Set the XA transaction manager to use for wrapping endpoint
-	 * invocations, enlisting the endpoint resource in each such transaction.
-	 * <p>The passed-in object may be a transaction manager which implements
-	 * Spring's {@link org.springframework.transaction.jta.TransactionFactory}
-	 * interface, or a plain {@link jakarta.transaction.TransactionManager}.
-	 * <p>If no transaction manager is specified, the endpoint invocation
-	 * will simply not be wrapped in an XA transaction. Check out your
-	 * resource provider's ActivationSpec documentation for local
-	 * transaction options of your particular provider.
+	 * 设置用于包装端点调用的 XA 事务管理器，
+	 * 在每次此类事务中登记端点资源。
+	 * <p>传入对象可以是实现 Spring
+	 * {@link org.springframework.transaction.jta.TransactionFactory} 接口的
+	 * 事务管理器，或普通 {@link jakarta.transaction.TransactionManager}。
+	 * <p>若未指定事务管理器，端点调用将不会包装在 XA 事务中。
+	 * 请查阅资源提供者 ActivationSpec 文档了解特定提供者的本地事务选项。
 	 * @see #setTransactionName
 	 * @see #setTransactionTimeout
 	 */
@@ -88,12 +84,11 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 	}
 
 	/**
-	 * Set the Spring TransactionFactory to use for wrapping endpoint
-	 * invocations, enlisting the endpoint resource in each such transaction.
-	 * <p>Alternatively, specify an appropriate transaction manager through
-	 * the {@link #setTransactionManager "transactionManager"} property.
-	 * <p>If no transaction factory is specified, the endpoint invocation
-	 * will simply not be wrapped in an XA transaction. Check out your
+	 * 设置用于包装端点调用的 Spring TransactionFactory，
+	 * 在每次此类事务中登记端点资源。
+	 * <p>也可通过 {@link #setTransactionManager "transactionManager"} 属性
+	 * 指定合适的事务管理器。
+	 * <p>若未指定事务工厂，端点调用将不会包装在 XA 事务中。 Check out your
 	 * resource provider's ActivationSpec documentation for local
 	 * transaction options of your particular provider.
 	 * @see #setTransactionName
@@ -104,27 +99,25 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 	}
 
 	/**
-	 * Specify the name of the transaction, if any.
-	 * <p>Default is none. A specified name will be passed on to the transaction
-	 * manager, allowing to identify the transaction in a transaction monitor.
+	 * 指定事务名称（若有）。
+	 * <p>默认为无。指定名称将传递给事务管理器，
+	 * 以便在事务监视器中识别该事务。
 	 */
 	public void setTransactionName(String transactionName) {
 		this.transactionName = transactionName;
 	}
 
 	/**
-	 * Specify the transaction timeout, if any.
-	 * <p>Default is -1: rely on the transaction manager's default timeout.
-	 * Specify a concrete timeout to restrict the maximum duration of each
-	 * endpoint invocation.
+	 * 指定事务超时（若有）。
+	 * <p>默认为 -1：依赖事务管理器的默认超时。
+	 * 指定具体超时以限制每次端点调用的最大持续时间。
 	 */
 	public void setTransactionTimeout(int transactionTimeout) {
 		this.transactionTimeout = transactionTimeout;
 	}
 
 	/**
-	 * Set the name of this message endpoint. Populated with the bean name
-	 * automatically when defined within Spring's bean factory.
+	 * 设置本消息端点的名称。在 Spring Bean 工厂中定义时自动填充 Bean 名称。
 	 */
 	@Override
 	public void setBeanName(String beanName) {
@@ -133,8 +126,8 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 
 
 	/**
-	 * Implementation of the JCA 1.7 {@code #getActivationName()} method,
-	 * returning the bean name as set on this MessageEndpointFactory.
+	 * JCA 1.7 {@code #getActivationName()} 方法的实现，
+	 * 返回本 MessageEndpointFactory 上设置的 Bean 名称。
 	 * @see #setBeanName
 	 */
 	@Override
@@ -143,8 +136,8 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 	}
 
 	/**
-	 * Implementation of the JCA 1.7 {@code #getEndpointClass()} method,
-	 * returning {@code null} in order to indicate a synthetic endpoint type.
+	 * JCA 1.7 {@code #getEndpointClass()} 方法的实现，
+	 * 返回 {@code null} 以表示合成端点类型。
 	 */
 	@Override
 	public @Nullable Class<?> getEndpointClass() {
@@ -152,8 +145,7 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 	}
 
 	/**
-	 * This implementation returns {@code true} if a transaction manager
-	 * has been specified; {@code false} otherwise.
+	 * 若已指定事务管理器则返回 {@code true}；否则返回 {@code false}。
 	 * @see #setTransactionManager
 	 * @see #setTransactionFactory
 	 */
@@ -163,9 +155,9 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 	}
 
 	/**
-	 * The standard JCA 1.5 version of {@code createEndpoint}.
-	 * <p>This implementation delegates to {@link #createEndpointInternal()},
-	 * initializing the endpoint's XAResource before the endpoint gets invoked.
+	 * 标准 JCA 1.5 版本的 {@code createEndpoint}。
+	 * <p>本实现委托 {@link #createEndpointInternal()}，
+	 * 在端点被调用前初始化端点的 XAResource。
 	 */
 	@Override
 	public MessageEndpoint createEndpoint(XAResource xaResource) throws UnavailableException {
@@ -175,9 +167,9 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 	}
 
 	/**
-	 * The alternative JCA 1.6 version of {@code createEndpoint}.
-	 * <p>This implementation delegates to {@link #createEndpointInternal()},
-	 * ignoring the specified timeout. It is only here for JCA 1.6 compliance.
+	 * JCA 1.6 替代版本的 {@code createEndpoint}。
+	 * <p>本实现委托 {@link #createEndpointInternal()}，
+	 * 忽略指定超时。仅用于 JCA 1.6 合规。
 	 */
 	@Override
 	public MessageEndpoint createEndpoint(XAResource xaResource, long timeout) throws UnavailableException {
@@ -187,17 +179,15 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 	}
 
 	/**
-	 * Create the actual endpoint instance, as a subclass of the
-	 * {@link AbstractMessageEndpoint} inner class of this factory.
-	 * @return the actual endpoint instance (never {@code null})
-	 * @throws UnavailableException if no endpoint is available at present
+	 * 创建实际端点实例，作为本工厂 {@link AbstractMessageEndpoint} 内部类的子类。
+	 * @return 实际端点实例（永不为 {@code null}）
+	 * @throws UnavailableException 当前无可用端点时
 	 */
 	protected abstract AbstractMessageEndpoint createEndpointInternal() throws UnavailableException;
 
 
 	/**
-	 * Inner class for actual endpoint implementations, based on template
-	 * method to allow for any kind of concrete endpoint implementation.
+	 * 实际端点实现的内部类，基于模板方法以支持任意具体端点实现。
 	 */
 	protected abstract class AbstractMessageEndpoint implements MessageEndpoint {
 
@@ -208,22 +198,20 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 		private @Nullable ClassLoader previousContextClassLoader;
 
 		/**
-		 * Initialize this endpoint's TransactionDelegate.
-		 * @param xaResource the XAResource for this endpoint
+		 * 初始化本端点的 TransactionDelegate。
+		 * @param xaResource 本端点的 XAResource
 		 */
 		void initXAResource(XAResource xaResource) {
 			this.transactionDelegate = new TransactionDelegate(xaResource);
 		}
 
 		/**
-		 * This {@code beforeDelivery} implementation starts a transaction,
-		 * if necessary, and exposes the endpoint ClassLoader as current
-		 * thread context ClassLoader.
-		 * <p>Note that the JCA 1.7 specification does not require a ResourceAdapter
-		 * to call this method before invoking the concrete endpoint. If this method
-		 * has not been called (check {@link #hasBeforeDeliveryBeenCalled()}), the
-		 * concrete endpoint method should call {@code beforeDelivery} and its
-		 * sibling {@link #afterDelivery()} explicitly, as part of its own processing.
+		 * 本 {@code beforeDelivery} 实现必要时启动事务，
+		 * 并将端点 ClassLoader 暴露为当前线程上下文 ClassLoader。
+		 * <p>注意，JCA 1.7 规范不要求 ResourceAdapter
+		 * 在调用具体端点前调用此方法。若未调用（检查 {@link #hasBeforeDeliveryBeenCalled()}），
+		 * 具体端点方法应在其自身处理中显式调用 {@code beforeDelivery}
+		 * 及其对应方法 {@link #afterDelivery()}。
 		 */
 		@Override
 		public void beforeDelivery(@Nullable Method method) throws ResourceException {
@@ -241,27 +229,23 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 		}
 
 		/**
-		 * Template method for exposing the endpoint's ClassLoader
-		 * (typically the ClassLoader that the message listener class
-		 * has been loaded with).
-		 * @return the endpoint ClassLoader (never {@code null})
+		 * 暴露端点 ClassLoader 的模板方法
+		 *（通常为消息监听器类加载时使用的 ClassLoader）。
+		 * @return 端点 ClassLoader（永不为 {@code null}）
 		 */
 		protected abstract ClassLoader getEndpointClassLoader();
 
 		/**
-		 * Return whether the {@link #beforeDelivery} method of this endpoint
-		 * has already been called.
+		 * 返回本端点的 {@link #beforeDelivery} 方法是否已被调用。
 		 */
 		protected final boolean hasBeforeDeliveryBeenCalled() {
 			return this.beforeDeliveryCalled;
 		}
 
 		/**
-		 * Callback method for notifying the endpoint base class
-		 * that the concrete endpoint invocation led to an exception.
-		 * <p>To be invoked by subclasses in case of the concrete
-		 * endpoint throwing an exception.
-		 * @param ex the exception thrown from the concrete endpoint
+		 * 通知端点基类具体端点调用导致异常的回调方法。
+		 * <p>在具体端点抛出异常时由子类调用。
+		 * @param ex 具体端点抛出的异常
 		 */
 		protected void onEndpointException(Throwable ex) {
 			Assert.state(this.transactionDelegate != null, "Not initialized");
@@ -270,8 +254,8 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 		}
 
 		/**
-		 * This {@code afterDelivery} implementation resets the thread context
-		 * ClassLoader and completes the transaction, if any.
+		 * 本 {@code afterDelivery} 实现重置线程上下文 ClassLoader
+		 * 并完成事务（若有）。
 		 * <p>Note that the JCA 1.7 specification does not require a ResourceAdapter
 		 * to call this method after invoking the concrete endpoint. See the
 		 * explanation in {@link #beforeDelivery}'s javadoc.
@@ -307,8 +291,7 @@ public abstract class AbstractMessageEndpointFactory implements MessageEndpointF
 
 
 	/**
-	 * Private inner class that performs the actual transaction handling,
-	 * including enlistment of the endpoint's XAResource.
+	 * 执行实际事务处理（包括登记端点 XAResource）的私有内部类。
 	 */
 	private class TransactionDelegate {
 

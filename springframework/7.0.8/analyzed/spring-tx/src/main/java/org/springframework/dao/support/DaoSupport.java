@@ -23,10 +23,9 @@ import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
- * Generic base class for DAOs, defining template methods for DAO initialization.
+ * DAO 的通用基类，定义 DAO 初始化的模板方法。
  *
- * <p>Extended by Spring's specific DAO support classes, such as:
- * JdbcDaoSupport, JdoDaoSupport, etc.
+ * <p>由 Spring 特定 DAO 支持类扩展，例如 JdbcDaoSupport、JdoDaoSupport 等。
  *
  * @author Juergen Hoeller
  * @since 1.2.2
@@ -36,7 +35,7 @@ import org.springframework.beans.factory.InitializingBean;
 @Deprecated(since = "7.0", forRemoval = true)
 public abstract class DaoSupport implements InitializingBean {
 
-	/** Logger available to subclasses. */
+	/** 子类可用的 Logger。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 
@@ -55,18 +54,17 @@ public abstract class DaoSupport implements InitializingBean {
 	}
 
 	/**
-	 * Abstract subclasses must override this to check their configuration.
-	 * <p>Implementors should be marked as {@code final} if concrete subclasses
-	 * are not supposed to override this template method themselves.
-	 * @throws IllegalArgumentException in case of illegal configuration
+	 * 抽象子类必须重写此方法以检查其配置。
+	 * <p>若具体子类不应自行重写此模板方法，实现者应标记为 {@code final}。
+	 * @throws IllegalArgumentException 配置非法时
 	 */
 	protected abstract void checkDaoConfig() throws IllegalArgumentException;
 
 	/**
-	 * Concrete subclasses can override this for custom initialization behavior.
-	 * Gets called after population of this instance's bean properties.
-	 * @throws Exception if DAO initialization fails
-	 * (will be rethrown as a BeanInitializationException)
+	 * 具体子类可重写此方法以实现自定义初始化行为。
+	 * 在本实例 Bean 属性填充后调用。
+	 * @throws Exception DAO 初始化失败时
+	 *（将重新抛出为 BeanInitializationException）
 	 * @see org.springframework.beans.factory.BeanInitializationException
 	 */
 	protected void initDao() throws Exception {

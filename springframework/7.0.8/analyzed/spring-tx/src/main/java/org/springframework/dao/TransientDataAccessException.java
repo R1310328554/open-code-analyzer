@@ -19,9 +19,8 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Root of the hierarchy of data access exceptions that are considered transient -
- * where a previously failed operation might be able to succeed when the operation
- * is retried without any intervention by application-level functionality.
+ * 被视为瞬态的数据访问异常层次结构的根类——
+ * 先前失败的操作在无需应用层干预、仅重试操作时可能成功。
  *
  * @author Thomas Risberg
  * @since 2.5
@@ -31,18 +30,17 @@ import org.jspecify.annotations.Nullable;
 public abstract class TransientDataAccessException extends DataAccessException {
 
 	/**
-	 * Constructor for TransientDataAccessException.
-	 * @param msg the detail message
+	 * TransientDataAccessException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public TransientDataAccessException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for TransientDataAccessException.
-	 * @param msg the detail message
-	 * @param cause the root cause (usually from using an underlying
-	 * data access API such as JDBC)
+	 * TransientDataAccessException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 根因（通常来自底层数据访问 API，如 JDBC）
 	 */
 	public TransientDataAccessException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

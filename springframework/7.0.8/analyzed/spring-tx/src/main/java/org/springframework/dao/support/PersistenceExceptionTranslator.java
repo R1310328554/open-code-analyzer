@@ -21,12 +21,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessException;
 
 /**
- * Interface implemented by Spring integrations with data access technologies
- * that throw runtime exceptions, such as JPA and Hibernate.
+ * 由与抛出运行时异常的数据访问技术（如 JPA 和 Hibernate）
+ * 集成的 Spring 组件实现的接口。
  *
- * <p>This allows consistent usage of combined exception translation functionality,
- * without forcing a single translator to understand every single possible type
- * of exception.
+ * <p>允许一致地使用组合异常转换功能，
+ * 而无需单个转换器理解所有可能的异常类型。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -36,20 +35,17 @@ import org.springframework.dao.DataAccessException;
 public interface PersistenceExceptionTranslator {
 
 	/**
-	 * Translate the given runtime exception thrown by a persistence framework to a
-	 * corresponding exception from Spring's generic
-	 * {@link org.springframework.dao.DataAccessException} hierarchy, if possible.
-	 * <p>Do not translate exceptions that are not understood by this translator:
-	 * for example, if coming from another persistence framework, or resulting
-	 * from user code or otherwise unrelated to persistence.
-	 * <p>Of particular importance is the correct translation to
-	 * DataIntegrityViolationException, for example on constraint violation.
-	 * Implementations may use Spring JDBC's sophisticated exception translation
-	 * to provide further information in the event of SQLException as a root cause.
-	 * @param ex a RuntimeException to translate
-	 * @return the corresponding DataAccessException (or {@code null} if the
-	 * exception could not be translated, as in this case it may result from
-	 * user code rather than from an actual persistence problem)
+	 * 若可能，将持久化框架抛出的给定运行时异常转换为
+	 * Spring 通用 {@link org.springframework.dao.DataAccessException} 层次结构中
+	 * 对应的异常。
+	 * <p>不要转换本转换器无法理解的异常：
+	 * 例如来自其他持久化框架、用户代码或与持久化无关的异常。
+	 * <p>正确转换为 DataIntegrityViolationException（例如约束违例）尤为重要。
+	 * 实现可在根因为 SQLException 时利用 Spring JDBC 的精细异常转换
+	 * 提供更多信息。
+	 * @param ex 要转换的 RuntimeException
+	 * @return 对应的 DataAccessException（若无法转换则返回 {@code null}，
+	 * 此时异常可能来自用户代码而非实际持久化问题）
 	 * @see org.springframework.dao.DataIntegrityViolationException
 	 * @see org.springframework.jdbc.support.SQLExceptionTranslator
 	 */

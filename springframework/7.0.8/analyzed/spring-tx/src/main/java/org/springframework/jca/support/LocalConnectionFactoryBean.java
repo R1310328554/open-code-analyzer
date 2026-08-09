@@ -25,9 +25,8 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
- * {@link org.springframework.beans.factory.FactoryBean} that creates
- * a local JCA connection factory in "non-managed" mode (as defined by the
- * Java Connector Architecture specification). This is a direct alternative
+ * {@link org.springframework.beans.factory.FactoryBean} 以“非托管”模式
+ *（Java Connector Architecture 规范定义）创建本地 JCA 连接工厂。 This is a direct alternative
  * to a {@link org.springframework.jndi.JndiObjectFactoryBean} definition that
  * obtains a connection factory handle from a Jakarta EE server's naming environment.
  *
@@ -77,8 +76,7 @@ public class LocalConnectionFactoryBean implements FactoryBean<Object>, Initiali
 
 
 	/**
-	 * Set the JCA ManagerConnectionFactory that should be used to create
-	 * the desired connection factory.
+	 * 设置用于创建所需连接工厂的 JCA ManagedConnectionFactory。
 	 * <p>The ManagerConnectionFactory will usually be set up as separate bean
 	 * (potentially as inner bean), populated with JavaBean properties:
 	 * a ManagerConnectionFactory is encouraged to follow the JavaBean pattern
@@ -97,8 +95,7 @@ public class LocalConnectionFactoryBean implements FactoryBean<Object>, Initiali
 	}
 
 	/**
-	 * Set the JCA ConnectionManager that should be used to create the
-	 * desired connection factory.
+	 * 设置用于创建所需连接工厂的 JCA ConnectionManager。
 	 * <p>A ConnectionManager implementation for local usage is often
 	 * included with a JCA connector. Such an included ConnectionManager
 	 * might be set as default, with no need to explicitly specify one.

@@ -25,31 +25,27 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 
 /**
- * Bean post-processor that automatically applies persistence exception translation to any
- * bean marked with Spring's @{@link org.springframework.stereotype.Repository Repository}
- * annotation, adding a corresponding {@link PersistenceExceptionTranslationAdvisor} to
- * the exposed proxy (either an existing AOP proxy or a newly generated proxy that
- * implements all of the target's interfaces).
+ * Bean 后处理器，自动对标记 Spring @{@link org.springframework.stereotype.Repository Repository}
+ * 注解的 Bean 应用持久化异常转换，
+ * 向暴露的代理（现有 AOP 代理或新生成、实现目标全部接口的代理）
+ * 添加对应的 {@link PersistenceExceptionTranslationAdvisor}。
  *
- * <p>Translates native resource exceptions to Spring's
- * {@link org.springframework.dao.DataAccessException DataAccessException} hierarchy.
- * Autodetects beans that implement the
+ * <p>将原生资源异常转换为 Spring 的
+ * {@link org.springframework.dao.DataAccessException DataAccessException} 层次结构。
+ * 自动检测实现
  * {@link org.springframework.dao.support.PersistenceExceptionTranslator
- * PersistenceExceptionTranslator} interface, which are subsequently asked to translate
- * candidate exceptions.
+ * PersistenceExceptionTranslator} 接口的 Bean，并委托其转换候选异常。
  *
- * <p>All of Spring's applicable resource factories (for example,
- * {@link org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean})
- * implement the {@code PersistenceExceptionTranslator} interface out of the box.
- * As a consequence, all that is usually needed to enable automatic exception
- * translation is marking all affected beans (such as Repositories or DAOs)
- * with the {@code @Repository} annotation, along with defining this post-processor
- * as a bean in the application context.
+ * <p>Spring 所有适用的资源工厂（例如
+ * {@link org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean}）
+ * 均开箱实现 {@code PersistenceExceptionTranslator} 接口。
+ * 因此，启用自动异常转换通常只需为所有受影响的 Bean（如 Repository 或 DAO）
+ * 标记 {@code @Repository} 注解，并在应用上下文中定义本后处理器。
  *
- * <p>{@code PersistenceExceptionTranslator} beans are sorted according to Spring's
- * dependency ordering rules: see {@link org.springframework.core.Ordered} and
- * {@link org.springframework.core.annotation.Order}. Note that such beans will
- * get retrieved from any scope, not just singleton scope.
+ * <p>{@code PersistenceExceptionTranslator} Bean 按 Spring 依赖排序规则排序：
+ * 参见 {@link org.springframework.core.Ordered} 和
+ * {@link org.springframework.core.annotation.Order}。注意，此类 Bean 可从任意作用域检索，
+ * 不限于单例作用域。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -66,12 +62,11 @@ public class PersistenceExceptionTranslationPostProcessor extends AbstractBeanFa
 
 
 	/**
-	 * Set the 'repository' annotation type.
-	 * The default repository annotation type is the {@link Repository} annotation.
-	 * <p>This setter property exists so that developers can provide their own
-	 * (non-Spring-specific) annotation type to indicate that a class has a
-	 * repository role.
-	 * @param repositoryAnnotationType the desired annotation type
+	 * 设置“repository”注解类型。
+	 * 默认 repository 注解类型为 {@link Repository} 注解。
+	 * <p>提供此 setter 以便开发者使用自定义（非 Spring 专用）注解类型
+	 * 标识类具有 repository 角色。
+	 * @param repositoryAnnotationType 所需的注解类型
 	 */
 	public void setRepositoryAnnotationType(Class<? extends Annotation> repositoryAnnotationType) {
 		Assert.notNull(repositoryAnnotationType, "'repositoryAnnotationType' must not be null");

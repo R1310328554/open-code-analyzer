@@ -19,9 +19,8 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown on mismatch between Java type and database type:
- * for example on an attempt to set an object of the wrong type
- * in an RDBMS column.
+ * Java 类型与数据库类型不匹配时抛出的异常：
+ * 例如尝试在 RDBMS 列中设置错误类型的对象。
  *
  * @author Rod Johnson
  */
@@ -29,17 +28,17 @@ import org.jspecify.annotations.Nullable;
 public class TypeMismatchDataAccessException extends InvalidDataAccessResourceUsageException {
 
 	/**
-	 * Constructor for TypeMismatchDataAccessException.
-	 * @param msg the detail message
+	 * TypeMismatchDataAccessException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public TypeMismatchDataAccessException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for TypeMismatchDataAccessException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * TypeMismatchDataAccessException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public TypeMismatchDataAccessException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

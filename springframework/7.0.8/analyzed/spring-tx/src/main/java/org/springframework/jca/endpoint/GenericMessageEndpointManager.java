@@ -28,14 +28,12 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.util.Assert;
 
 /**
- * Generic bean that manages JCA 1.7 message endpoints within a Spring
- * application context, activating and deactivating the endpoint as part
- * of the application context's lifecycle.
+ * 在 Spring 应用上下文中管理 JCA 1.7 消息端点的通用 Bean，
+ * 作为应用上下文生命周期的一部分激活和停用端点。
  *
- * <p>This class is completely generic in that it may work with any
- * ResourceAdapter, any MessageEndpointFactory, and any ActivationSpec.
- * It can be configured in standard bean style, for example through
- * Spring's XML bean definition format, as follows:
+ * <p>本类完全通用，可与任意 ResourceAdapter、
+ * MessageEndpointFactory 和 ActivationSpec 配合工作。
+ * 可按标准 Bean 风格配置，例如通过 Spring XML Bean 定义格式，如下所示：
  *
  * <pre class="code">
  * &lt;bean class="org.springframework.jca.endpoint.GenericMessageEndpointManager"&gt;
@@ -168,22 +166,21 @@ public class GenericMessageEndpointManager implements SmartLifecycle, Initializi
 
 
 	/**
-	 * Set the JCA ResourceAdapter to manage endpoints for.
+	 * 设置要管理端点的 JCA ResourceAdapter。
 	 */
 	public void setResourceAdapter(@Nullable ResourceAdapter resourceAdapter) {
 		this.resourceAdapter = resourceAdapter;
 	}
 
 	/**
-	 * Return the JCA ResourceAdapter to manage endpoints for.
+	 * 返回要管理端点的 JCA ResourceAdapter。
 	 */
 	public @Nullable ResourceAdapter getResourceAdapter() {
 		return this.resourceAdapter;
 	}
 
 	/**
-	 * Set the JCA MessageEndpointFactory to activate, pointing to a
-	 * MessageListener object that the endpoints will delegate to.
+	 * 设置要激活的 JCA MessageEndpointFactory，指向端点将委托的 MessageListener 对象。
 	 * <p>A MessageEndpointFactory instance may be shared across multiple
 	 * endpoints (i.e. multiple GenericMessageEndpointManager instances),
 	 * with different {@link #setActivationSpec ActivationSpec} objects applied.
@@ -194,41 +191,39 @@ public class GenericMessageEndpointManager implements SmartLifecycle, Initializi
 	}
 
 	/**
-	 * Return the JCA MessageEndpointFactory to activate.
+	 * 返回要激活的 JCA MessageEndpointFactory。
 	 */
 	public @Nullable MessageEndpointFactory getMessageEndpointFactory() {
 		return this.messageEndpointFactory;
 	}
 
 	/**
-	 * Set the JCA ActivationSpec to use for activating the endpoint.
-	 * <p>Note that this ActivationSpec instance should not be shared
-	 * across multiple ResourceAdapter instances.
+	 * 设置用于激活端点的 JCA ActivationSpec。
+	 * <p>注意，此 ActivationSpec 实例不应在多个 ResourceAdapter 实例间共享。
 	 */
 	public void setActivationSpec(@Nullable ActivationSpec activationSpec) {
 		this.activationSpec = activationSpec;
 	}
 
 	/**
-	 * Return the JCA ActivationSpec to use for activating the endpoint.
+	 * 返回用于激活端点的 JCA ActivationSpec。
 	 */
 	public @Nullable ActivationSpec getActivationSpec() {
 		return this.activationSpec;
 	}
 
 	/**
-	 * Set whether to auto-start the endpoint activation after this endpoint
-	 * manager has been initialized and the context has been refreshed.
-	 * <p>Default is "true". Turn this flag off to defer the endpoint
-	 * activation until an explicit {@link #start()} call.
+	 * 设置本端点管理器初始化且上下文刷新后是否自动启动端点激活。
+	 * <p>默认为 "true"。关闭此标志可推迟端点激活，
+	 * 直至显式调用 {@link #start()}。
 	 */
 	public void setAutoStartup(boolean autoStartup) {
 		this.autoStartup = autoStartup;
 	}
 
 	/**
-	 * Return the value for the 'autoStartup' property.	If "true", this
-	 * endpoint manager will start upon a ContextRefreshedEvent.
+	 * 返回 'autoStartup' 属性值。若为 "true"，
+	 * 本端点管理器将在 ContextRefreshedEvent 时启动。
 	 */
 	@Override
 	public boolean isAutoStartup() {
@@ -236,18 +231,16 @@ public class GenericMessageEndpointManager implements SmartLifecycle, Initializi
 	}
 
 	/**
-	 * Specify the phase in which this endpoint manager should be started
-	 * and stopped. The startup order proceeds from lowest to highest, and
-	 * the shutdown order is the reverse of that. By default, this value is
-	 * {@code Integer.MAX_VALUE} meaning that this endpoint manager starts
-	 * as late as possible and stops as soon as possible.
+	 * 指定本端点管理器应启动和停止的阶段。
+	 * 启动顺序从低到高，关闭顺序相反。
+	 * 默认值为 {@code Integer.MAX_VALUE}，表示尽可能晚启动、尽可能早停止。
 	 */
 	public void setPhase(int phase) {
 		this.phase = phase;
 	}
 
 	/**
-	 * Return the phase in which this endpoint manager will be started and stopped.
+	 * 返回本端点管理器将启动和停止的阶段。
 	 */
 	@Override
 	public int getPhase() {
@@ -255,8 +248,7 @@ public class GenericMessageEndpointManager implements SmartLifecycle, Initializi
 	}
 
 	/**
-	 * Prepares the message endpoint, and automatically activates it
-	 * if the "autoStartup" flag is set to "true".
+	 * 准备消息端点，若 "autoStartup" 标志为 "true" 则自动激活。
 	 */
 	@Override
 	public void afterPropertiesSet() throws ResourceException {
@@ -281,7 +273,7 @@ public class GenericMessageEndpointManager implements SmartLifecycle, Initializi
 	}
 
 	/**
-	 * Activates the configured message endpoint.
+	 * 激活已配置的消息端点。
 	 */
 	@Override
 	public void start() {
@@ -301,7 +293,7 @@ public class GenericMessageEndpointManager implements SmartLifecycle, Initializi
 	}
 
 	/**
-	 * Deactivates the configured message endpoint.
+	 * 停用已配置的消息端点。
 	 */
 	@Override
 	public void stop() {
@@ -324,7 +316,7 @@ public class GenericMessageEndpointManager implements SmartLifecycle, Initializi
 	}
 
 	/**
-	 * Return whether the configured message endpoint is currently active.
+	 * 返回已配置的消息端点当前是否处于活动状态。
 	 */
 	@Override
 	public boolean isRunning() {
@@ -332,7 +324,7 @@ public class GenericMessageEndpointManager implements SmartLifecycle, Initializi
 	}
 
 	/**
-	 * Deactivates the message endpoint, preparing it for shutdown.
+	 * 停用消息端点，为关闭做准备。
 	 */
 	@Override
 	public void destroy() {

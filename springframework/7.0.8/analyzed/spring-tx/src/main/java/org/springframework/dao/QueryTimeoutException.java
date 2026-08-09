@@ -19,12 +19,11 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception to be thrown on a query timeout. This could have different causes depending on
- * the database API in use but most likely thrown after the database interrupts or stops
- * the processing of a query before it has completed.
+ * 查询超时时抛出的异常。具体原因取决于所用数据库 API，
+ * 最可能是在数据库中断或停止尚未完成的查询处理时抛出。
  *
- * <p>This exception can be thrown by user code trapping the native database exception or
- * by exception translation.
+ * <p>本异常可由捕获原生数据库异常的用户代码抛出，
+ * 也可由异常转换机制抛出。
  *
  * @author Thomas Risberg
  * @since 3.1
@@ -33,17 +32,17 @@ import org.jspecify.annotations.Nullable;
 public class QueryTimeoutException extends TransientDataAccessException {
 
 	/**
-	 * Constructor for QueryTimeoutException.
-	 * @param msg the detail message
+	 * QueryTimeoutException 的构造方法。
+	 * @param msg 详细消息
 	 */
 	public QueryTimeoutException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for QueryTimeoutException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * QueryTimeoutException 的构造方法。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public QueryTimeoutException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);
