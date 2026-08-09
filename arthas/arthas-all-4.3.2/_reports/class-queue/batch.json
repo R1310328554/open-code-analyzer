@@ -15,23 +15,8 @@
     "core/src/main/java/com/taobao/arthas/core/shell/command/ExitStatus.java",
     "core/src/main/java/com/taobao/arthas/core/shell/command/ShellInternalCommandResolver.java",
     "core/src/main/java/com/taobao/arthas/core/shell/command/impl/AnnotatedCommandImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/impl/CommandBuilderImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/CloseFunction.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/GrepHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/PlainTextHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/RedirectHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/StatisticsFunction.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/StdoutHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/TeeHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/TermHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/command/internal/WordCountHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/future/Future.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/handlers/BindHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/handlers/Handler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/handlers/NoOpHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/handlers/command/CommandInterruptHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/handlers/server/SessionClosedHandler.java"
+    "core/src/main/java/com/taobao/arthas/core/shell/command/impl/CommandBuilderImpl.java"
   ],
   "remaining_pending": 285,
-  "done": 480
+  "done": 495
 }
