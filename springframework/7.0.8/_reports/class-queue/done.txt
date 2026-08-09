@@ -526,3 +526,13 @@ spring-context/src/main/java/org/springframework/format/annotation/DateTimeForma
 spring-context/src/main/java/org/springframework/format/annotation/DurationFormat.java
 spring-context/src/main/java/org/springframework/format/annotation/NumberFormat.java
 spring-context/src/main/java/org/springframework/format/datetime/DateFormatter.java
+spring-context/src/main/java/org/springframework/context/expression/BeanExpressionContextAccessor.java
+spring-context/src/main/java/org/springframework/context/expression/BeanFactoryAccessor.java
+spring-context/src/main/java/org/springframework/context/expression/BeanFactoryResolver.java
+spring-context/src/main/java/org/springframework/context/expression/CachedExpressionEvaluator.java
+spring-context/src/main/java/org/springframework/context/expression/EnvironmentAccessor.java
+spring-context/src/main/java/org/springframework/context/expression/MapAccessor.java
+spring-context/src/main/java/org/springframework/context/expression/MethodBasedEvaluationContext.java
+spring-context/src/main/java/org/springframework/context/expression/StandardBeanExpressionResolver.java
+spring-context/src/main/java/org/springframework/context/i18n/LocaleContext.java
+spring-context/src/main/java/org/springframework/context/i18n/LocaleContextHolder.java
