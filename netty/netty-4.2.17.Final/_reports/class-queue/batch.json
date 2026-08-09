@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T23:30:24Z",
   "files": [
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZstdDecompressor.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZstdEncoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ZstdOptions.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/AbstractDnsMessage.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/AbstractDnsOptPseudoRrRecord.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/AbstractDnsRecord.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DatagramDnsQuery.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DatagramDnsQueryDecoder.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DatagramDnsQueryEncoder.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DatagramDnsResponse.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DatagramDnsResponseDecoder.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DatagramDnsResponseEncoder.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DefaultDnsOptEcsRecord.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DefaultDnsPtrRecord.java",
-    "codec-dns/src/main/java/io/netty/handler/codec/dns/DefaultDnsQuery.java",
     "codec-dns/src/main/java/io/netty/handler/codec/dns/DefaultDnsQuestion.java",
     "codec-dns/src/main/java/io/netty/handler/codec/dns/DefaultDnsRawRecord.java",
     "codec-dns/src/main/java/io/netty/handler/codec/dns/DefaultDnsRecordDecoder.java",
@@ -33,5 +18,5 @@
     "codec-dns/src/main/java/io/netty/handler/codec/dns/DnsQuestion.java"
   ],
   "remaining_pending": 1568,
-  "done": 330
+  "done": 345
 }
