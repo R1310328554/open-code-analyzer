@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:20:03Z",
   "files": [
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/activity/ClientManagerActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/activity/ConsumerManagerActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/activity/GetTopicRouteActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/activity/PopMessageActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/activity/PullMessageActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/activity/RecallMessageActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/activity/SendMessageActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/activity/TransactionActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/channel/RemotingChannel.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/channel/RemotingChannelManager.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/common/RemotingConverter.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/pipeline/AuthenticationPipeline.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/pipeline/AuthorizationPipeline.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/pipeline/ContextInitPipeline.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/pipeline/RequestPipeline.java",
     "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/ProtocolHandler.java",
     "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/ProtocolNegotiationHandler.java",
     "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/protocol/http2proxy/HAProxyMessageForwarder.java",
@@ -33,5 +18,5 @@
     "proxy/src/main/java/org/apache/rocketmq/proxy/service/channel/ChannelManager.java"
   ],
   "remaining_pending": 768,
-  "done": 690
+  "done": 705
 }
