@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:26:31Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSamplePublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSampleTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableScalarXMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableScan.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableScanSeed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSequenceEqual.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSequenceEqualSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSerialized.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSingleMaybe.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSingleSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSkip.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSkipLast.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSkipLastTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSkipUntil.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSkipWhile.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSubscribeOn.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSwitchIfEmpty.java",
@@ -33,5 +18,5 @@
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTimeout.java"
   ],
   "remaining_pending": 632,
-  "done": 345
+  "done": 375
 }
