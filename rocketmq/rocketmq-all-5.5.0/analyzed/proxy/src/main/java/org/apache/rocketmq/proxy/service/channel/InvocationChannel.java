@@ -25,18 +25,27 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.rocketmq.proxy.config.ConfigurationManager;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 调用通道：维护 opaque 与 {@link InvocationContextInterface} 的在途请求映射，
+ * 响应到达时完成对应 CompletableFuture。
+ */
 public class InvocationChannel extends SimpleChannel {
+    /** opaque 到在途调用上下文的并发映射表。 */
     protected final ConcurrentMap<Integer, InvocationContextInterface> inFlightRequestMap;
 
+    /** 以远端/本地地址构造调用通道。 */
     public InvocationChannel(String remoteAddress, String localAddress) {
         super(remoteAddress, localAddress);
         this.inFlightRequestMap = new ConcurrentHashMap<>();
     }
 
     @Override
+    /** 写出响应时按 opaque 查找并触发上下文回调。 */
+    @Override
     public ChannelFuture writeAndFlush(Object msg) {
         if (msg instanceof RemotingCommand) {
             RemotingCommand responseCommand = (RemotingCommand) msg;
+            // 按 opaque 取出在途上下文并处理响应
             InvocationContextInterface context = inFlightRequestMap.remove(responseCommand.getOpaque());
             if (null != context) {
                 context.handle(responseCommand);
@@ -47,26 +56,35 @@ public class InvocationChannel extends SimpleChannel {
     }
 
     @Override
+    /** 存在在途请求时视为可写。 */
+    @Override
     public boolean isWritable() {
         return inFlightRequestMap.size() > 0;
     }
 
+    @Override
+    /** 注册 opaque 对应的在途调用上下文。 */
     @Override
     public void registerInvocationContext(int opaque, InvocationContextInterface context) {
         inFlightRequestMap.put(opaque, context);
     }
 
     @Override
+    /** 移除指定 opaque 的在途上下文。 */
+    @Override
     public void eraseInvocationContext(int opaque) {
         inFlightRequestMap.remove(opaque);
     }
 
+    @Override
+    /** 扫描并清理超时的在途请求。 */
     @Override
     public void clearExpireContext() {
         Iterator<Map.Entry<Integer, InvocationContextInterface>> iterator = inFlightRequestMap.entrySet().iterator();
         int count = 0;
         while (iterator.hasNext()) {
             Map.Entry<Integer, InvocationContextInterface> entry = iterator.next();
+            // 按配置的超时秒数判定是否过期
             if (entry.getValue().expired(ConfigurationManager.getProxyConfig().getChannelExpiredInSeconds())) {
                 iterator.remove();
                 count++;

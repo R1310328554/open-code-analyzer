@@ -49,8 +49,13 @@ import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicConfigAndQueueMapping;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 集群模式元数据服务：通过 Guava LoadingCache 缓存 Topic 配置、
+ * 订阅组、用户与 ACL，按需从 Broker 拉取。
+ */
 public class ClusterMetadataService extends AbstractStartAndShutdown implements MetadataService {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 拉取元数据的默认 RPC 超时（毫秒）。 */
     private static final long DEFAULT_TIMEOUT = 3000;
 
     private final TopicRouteService topicRouteService;
@@ -58,16 +63,20 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
 
     protected final ThreadPoolExecutor cacheRefreshExecutor;
 
+    /** Topic 配置与队列映射缓存。 */
     protected final LoadingCache<String, TopicConfigAndQueueMapping> topicConfigCache;
     protected final static TopicConfigAndQueueMapping EMPTY_TOPIC_CONFIG = new TopicConfigAndQueueMapping();
 
+    /** 订阅组配置缓存。 */
     protected final LoadingCache<String, SubscriptionGroupConfig> subscriptionGroupConfigCache;
     protected final static SubscriptionGroupConfig EMPTY_SUBSCRIPTION_GROUP_CONFIG = new SubscriptionGroupConfig();
 
+    /** 认证用户缓存。 */
     protected final LoadingCache<String, User> userCache;
 
     protected final static User EMPTY_USER = new User();
 
+    /** ACL 授权缓存。 */
     protected final LoadingCache<String, Acl> aclCache;
 
     protected final static Acl EMPTY_ACL = new Acl();
@@ -75,6 +84,7 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
     protected final Random random = new Random();
 
 
+    /** 初始化各元数据缓存与刷新线程池。 */
     public ClusterMetadataService(TopicRouteService topicRouteService, MQClientAPIFactory mqClientAPIFactory) {
         this.topicRouteService = topicRouteService;
         this.mqClientAPIFactory = mqClientAPIFactory;
@@ -117,6 +127,8 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
     }
 
     @Override
+    /** 从缓存读取 Topic 消息类型，缺失时返回 UNSPECIFIED。 */
+    @Override
     public TopicMessageType getTopicMessageType(ProxyContext ctx, String topic) {
         TopicConfigAndQueueMapping topicConfigAndQueueMapping;
         try {
@@ -131,6 +143,8 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
     }
 
     @Override
+    /** 从缓存读取订阅组配置。 */
+    @Override
     public SubscriptionGroupConfig getSubscriptionGroupConfig(ProxyContext ctx, String group) {
         SubscriptionGroupConfig config;
         try {
@@ -144,6 +158,8 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
         return config;
     }
 
+    @Override
+    /** 异步从缓存获取认证用户。 */
     @Override
     public CompletableFuture<User> getUser(ProxyContext ctx, String username) {
         CompletableFuture<User> result = new CompletableFuture<>();
@@ -276,9 +292,11 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
         }
     }
 
+    /** 随机选取 Topic 路由中的一个 Broker 用于元数据拉取。 */
     protected Optional<BrokerData> findOneBroker(String topic) throws Exception {
         try {
             List<BrokerData> brokerDatas = topicRouteService.getAllMessageQueueView(ProxyContext.createForInner(this.getClass()), topic).getTopicRouteData().getBrokerDatas();
+            // 随机跳过若干 Broker 以负载均衡
             int skipNum = random.nextInt(brokerDatas.size());
             return brokerDatas.stream().skip(skipNum).findFirst();
         } catch (Exception e) {

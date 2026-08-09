@@ -32,10 +32,15 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 集群模式消费者管理器：注册/注销时同步心跳至 Broker。
+ */
 public class ClusterConsumerManager extends ConsumerManager implements StartAndShutdown {
 
+    /** 心跳同步器，将消费者注册信息推送到 Broker。 */
     protected HeartbeatSyncer heartbeatSyncer;
 
+    /** 构造集群消费者管理器并初始化 HeartbeatSyncer。 */
     public ClusterConsumerManager(TopicRouteService topicRouteService, AdminService adminService,
                                   MQClientAPIFactory mqClientAPIFactory, ConsumerIdsChangeListener consumerIdsChangeListener, long channelExpiredTimeout, RPCHook rpcHook) {
         super(consumerIdsChangeListener, channelExpiredTimeout);
@@ -43,14 +48,19 @@ public class ClusterConsumerManager extends ConsumerManager implements StartAndS
     }
 
     @Override
+    /** 注册消费者前先通知 HeartbeatSyncer 同步订阅信息。 */
+    @Override
     public boolean registerConsumer(String group, ClientChannelInfo clientChannelInfo,
         ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere,
         Set<SubscriptionData> subList, boolean isNotifyConsumerIdsChangedEnable, boolean updateSubscription) {
+        // 向 Broker 同步消费者注册与订阅
         this.heartbeatSyncer.onConsumerRegister(group, clientChannelInfo, consumeType, messageModel, consumeFromWhere, subList);
         return super.registerConsumer(group, clientChannelInfo, consumeType, messageModel, consumeFromWhere, subList,
             isNotifyConsumerIdsChangedEnable, updateSubscription);
     }
 
+    @Override
+    /** 注销消费者前先通知 HeartbeatSyncer。 */
     @Override
     public void unregisterConsumer(String group, ClientChannelInfo clientChannelInfo,
         boolean isNotifyConsumerIdsChangedEnable) {
@@ -59,10 +69,14 @@ public class ClusterConsumerManager extends ConsumerManager implements StartAndS
     }
 
     @Override
+    /** 关闭 HeartbeatSyncer。 */
+    @Override
     public void shutdown() throws Exception {
         this.heartbeatSyncer.shutdown();
     }
 
+    @Override
+    /** 启动 HeartbeatSyncer。 */
     @Override
     public void start() throws Exception {
         this.heartbeatSyncer.start();

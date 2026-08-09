@@ -36,7 +36,7 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 /**
- * SimpleChannel is used to handle writeAndFlush situation in processor
+ * 轻量 Netty 通道实现，供 Processor 场景下 writeAndFlush 使用。
  *
  * @see io.netty.channel.ChannelHandlerContext#writeAndFlush
  * @see io.netty.channel.Channel#writeAndFlush
@@ -47,15 +47,17 @@ public class SimpleChannel extends AbstractChannel {
     protected final String remoteAddress;
     protected final String localAddress;
 
+    /** 最近一次访问时间，用于 isActive 判定。 */
     protected long lastAccessTime;
+    /** 关联的 Handler 上下文，委托 writeAndFlush。 */
     protected ChannelHandlerContext channelHandlerContext;
 
     /**
-     * Creates a new instance.
+     * 创建 SimpleChannel 实例。
      *
-     * @param parent        the parent of this channel. {@code null} if there's no parent.
-     * @param remoteAddress Remote address
-     * @param localAddress  Local address
+     * @param parent        父通道，无父通道时为 {@code null}
+     * @param remoteAddress 远端地址
+     * @param localAddress  本地地址
      */
     public SimpleChannel(Channel parent, String remoteAddress, String localAddress) {
         this(parent, null, remoteAddress, localAddress);
@@ -69,6 +71,7 @@ public class SimpleChannel extends AbstractChannel {
         this.channelHandlerContext = new SimpleChannelHandlerContext(this);
     }
 
+    /** 以远端/本地地址字符串构造通道。 */
     public SimpleChannel(String remoteAddress, String localAddress) {
         this(null, remoteAddress, localAddress);
     }
@@ -83,6 +86,7 @@ public class SimpleChannel extends AbstractChannel {
         return false;
     }
 
+    /** 将 host:port 字符串解析为 SocketAddress。 */
     private static SocketAddress parseSocketAddress(String address) {
         if (Strings.isNullOrEmpty(address)) {
             return null;
@@ -159,6 +163,8 @@ public class SimpleChannel extends AbstractChannel {
     }
 
     @Override
+    /** 120 秒内有访问则视为活跃。 */
+    @Override
     public boolean isActive() {
         return (System.currentTimeMillis() - lastAccessTime) <= 120L * 1000;
     }
@@ -168,6 +174,8 @@ public class SimpleChannel extends AbstractChannel {
         return null;
     }
 
+    @Override
+    /** 默认立即成功的 writeAndFlush，子类可覆盖。 */
     @Override
     public ChannelFuture writeAndFlush(Object msg) {
         DefaultChannelPromise promise = new DefaultChannelPromise(this, GlobalEventExecutor.INSTANCE);
@@ -180,10 +188,12 @@ public class SimpleChannel extends AbstractChannel {
         return true;
     }
 
+    /** 刷新最近访问时间戳。 */
     public void updateLastAccessTime() {
         this.lastAccessTime = System.currentTimeMillis();
     }
 
+    /** 基类空实现，由 {@link InvocationChannel} 覆盖。 */
     public void registerInvocationContext(int opaque, InvocationContextInterface context) {
 
     }
@@ -192,6 +202,7 @@ public class SimpleChannel extends AbstractChannel {
 
     }
 
+    /** 基类空实现，子类负责清理超时在途请求。 */
     public void clearExpireContext() {
 
     }

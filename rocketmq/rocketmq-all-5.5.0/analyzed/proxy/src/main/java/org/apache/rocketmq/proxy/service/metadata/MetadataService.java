@@ -25,13 +25,20 @@ import org.apache.rocketmq.common.attribute.TopicMessageType;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * Proxy 元数据服务接口：提供 Topic 类型、订阅组、用户与 ACL 查询。
+ */
 public interface MetadataService {
 
+    /** 查询 Topic 消息类型。 */
     TopicMessageType getTopicMessageType(ProxyContext ctx, String topic);
 
+    /** 查询订阅组配置。 */
     SubscriptionGroupConfig getSubscriptionGroupConfig(ProxyContext ctx, String group);
 
+    /** 异步查询认证用户。 */
     CompletableFuture<User> getUser(ProxyContext ctx, String username);
 
+    /** 异步查询 ACL 授权信息。 */
     CompletableFuture<Acl> getAcl(ProxyContext ctx, Subject subject);
 }

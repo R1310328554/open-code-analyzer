@@ -52,15 +52,24 @@ import org.apache.rocketmq.remoting.protocol.header.RecallMessageRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.SendMessageRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.UpdateConsumerOffsetRequestHeader;
 
+/**
+ * 集群模式消息服务：通过 {@link MQClientAPIFactory} 异步调用 Broker 完成
+ * 发送、拉取、Pop、Ack 等消息操作。
+ */
 public class ClusterMessageService implements MessageService {
+    /** Topic 路由服务，解析 Broker 地址。 */
     protected final TopicRouteService topicRouteService;
+    /** MQ 客户端工厂，封装与 Broker 的 RPC。 */
     protected final MQClientAPIFactory mqClientAPIFactory;
 
+    /** 注入路由服务与 MQ 客户端工厂。 */
     public ClusterMessageService(TopicRouteService topicRouteService, MQClientAPIFactory mqClientAPIFactory) {
         this.topicRouteService = topicRouteService;
         this.mqClientAPIFactory = mqClientAPIFactory;
     }
 
+    @Override
+    /** 向指定 Broker 队列异步发送单条或多条消息。 */
     @Override
     public CompletableFuture<List<SendResult>> sendMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         List<Message> msgList, SendMessageRequestHeader requestHeader, long timeoutMillis) {
@@ -80,6 +89,8 @@ public class ClusterMessageService implements MessageService {
     }
 
     @Override
+    /** 按 ReceiptHandle 解析 Broker 并异步发送消息回退请求。 */
+    @Override
     public CompletableFuture<RemotingCommand> sendMessageBack(ProxyContext ctx, ReceiptHandle handle, String messageId,
         ConsumerSendMsgBackRequestHeader requestHeader, long timeoutMillis) {
         return this.mqClientAPIFactory.getClient().sendMessageBackAsync(
@@ -89,6 +100,8 @@ public class ClusterMessageService implements MessageService {
         );
     }
 
+    @Override
+    /** 单向提交或回滚事务。 */
     @Override
     public CompletableFuture<Void> endTransactionOneway(ProxyContext ctx, String brokerName,
         EndTransactionRequestHeader requestHeader,
@@ -108,6 +121,8 @@ public class ClusterMessageService implements MessageService {
         return future;
     }
 
+    @Override
+    /** 异步 Pop 消费消息。 */
     @Override
     public CompletableFuture<PopResult> popMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         PopMessageRequestHeader requestHeader, long timeoutMillis) {
@@ -146,6 +161,8 @@ public class ClusterMessageService implements MessageService {
     }
 
     @Override
+    /** 异步确认单条 Pop 消息。 */
+    @Override
     public CompletableFuture<AckResult> ackMessage(ProxyContext ctx, ReceiptHandle handle, String messageId,
         AckMessageRequestHeader requestHeader, long timeoutMillis) {
         return this.mqClientAPIFactory.getClient().ackMessageAsync(
@@ -169,6 +186,8 @@ public class ClusterMessageService implements MessageService {
         );
     }
 
+    @Override
+    /** 异步拉取消息。 */
     @Override
     public CompletableFuture<PullResult> pullMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         PullMessageRequestHeader requestHeader, long timeoutMillis) {
@@ -281,6 +300,7 @@ public class ClusterMessageService implements MessageService {
         }
     }
 
+    /** 根据 ReceiptHandle 中的 brokerName 解析 Broker 地址。 */
     protected String resolveBrokerAddrInReceiptHandle(ProxyContext ctx, ReceiptHandle handle) {
         try {
             return this.topicRouteService.getBrokerAddr(ctx, handle.getBrokerName());
@@ -289,6 +309,7 @@ public class ClusterMessageService implements MessageService {
         }
     }
 
+    /** 根据 brokerName 解析 Broker 地址，失败抛 ProxyException。 */
     protected String resolveBrokerAddr(ProxyContext ctx, String brokerName) {
         try {
             return this.topicRouteService.getBrokerAddr(ctx, brokerName);

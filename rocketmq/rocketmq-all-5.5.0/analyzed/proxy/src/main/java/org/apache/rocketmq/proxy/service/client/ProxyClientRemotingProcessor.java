@@ -37,11 +37,17 @@ import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.protocol.header.CheckTransactionStateRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.NotifyUnsubscribeLiteRequestHeader;
 
+/**
+ * Proxy 侧客户端 Remoting 处理器：转发事务回查与 Lite 退订通知。
+ */
 public class ProxyClientRemotingProcessor extends ClientRemotingProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 生产者通道管理器，用于事务回查转发。 */
     private final ProducerManager producerManager;
+    /** 消费者管理器，用于 Lite 退订通知转发。 */
     private final ClusterConsumerManager consumerManager;
 
+    /** 注入生产者与消费者管理器。 */
     public ProxyClientRemotingProcessor(ProducerManager producerManager, ClusterConsumerManager consumerManager) {
         super(null);
         this.producerManager = producerManager;
@@ -49,16 +55,20 @@ public class ProxyClientRemotingProcessor extends ClientRemotingProcessor {
     }
 
     @Override
+    /** 按请求码分发至事务回查或 Lite 退订处理。 */
+    @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
-        if (request.getCode() == RequestCode.CHECK_TRANSACTION_STATE) {
+        if (request.getCode() == RequestCode.CHECK_TRANSACTION_STATE) { // 事务状态回查
             return this.checkTransactionState(ctx, request);
-        } else if (request.getCode() == RequestCode.NOTIFY_UNSUBSCRIBE_LITE) {
+        } else if (request.getCode() == RequestCode.NOTIFY_UNSUBSCRIBE_LITE) { // Lite 退订通知
             return this.notifyUnsubscribeLite(ctx, request);
         }
         return null;
     }
 
+    @Override
+    /** 解码消息并将事务回查请求转发至对应生产者通道。 */
     @Override
     public RemotingCommand checkTransactionState(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
@@ -71,6 +81,7 @@ public class ProxyClientRemotingProcessor extends ClientRemotingProcessor {
                     (CheckTransactionStateRequestHeader) request.decodeCommandCustomHeader(CheckTransactionStateRequestHeader.class);
                 request.writeCustomHeader(requestHeader);
                 request.addExtField(ProxyUtils.BROKER_ADDR, NetworkUtil.socketAddress2String(ctx.channel().remoteAddress()));
+                // 查找生产者组可用通道并转发
                 Channel channel = this.producerManager.getAvailableChannel(group);
                 if (channel != null) {
                     channel.writeAndFlush(request);
@@ -83,8 +94,9 @@ public class ProxyClientRemotingProcessor extends ClientRemotingProcessor {
     }
 
     /**
-     * one way, return null response
+     * 单向通知，返回 null 响应
      */
+    /** 将 Lite 退订通知转发至目标消费者通道。 */
     public RemotingCommand notifyUnsubscribeLite(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         NotifyUnsubscribeLiteRequestHeader requestHeader =
@@ -96,6 +108,7 @@ public class ProxyClientRemotingProcessor extends ClientRemotingProcessor {
             log.warn("notifyUnsubscribeLite clientId or group is null. {}", requestHeader);
             return null;
         }
+        // 按消费组与 clientId 定位消费者通道
         ClientChannelInfo channelInfo = consumerManager.findChannel(group, clientId);
         if (channelInfo == null) {
             log.warn("notifyUnsubscribeLite channelInfo is null. {}", requestHeader);

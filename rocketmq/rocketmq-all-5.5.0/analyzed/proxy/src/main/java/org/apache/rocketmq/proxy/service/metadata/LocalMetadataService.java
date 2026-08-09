@@ -27,13 +27,20 @@ import org.apache.rocketmq.common.attribute.TopicMessageType;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 本地（Local）模式元数据服务：直接从嵌入的 {@link BrokerController} 读取配置。
+ */
 public class LocalMetadataService implements MetadataService {
+    /** 本地 Broker 控制器，提供 Topic/订阅/认证元数据。 */
     private final BrokerController brokerController;
 
+    /** @param brokerController 本地 Broker 控制器 */
     public LocalMetadataService(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
+    @Override
+    /** 从本地 Broker TopicConfigManager 读取消息类型。 */
     @Override
     public TopicMessageType getTopicMessageType(ProxyContext ctx, String topic) {
         TopicConfig topicConfig = brokerController.getTopicConfigManager().selectTopicConfig(topic);
@@ -44,15 +51,21 @@ public class LocalMetadataService implements MetadataService {
     }
 
     @Override
+    /** 从本地订阅组表读取配置。 */
+    @Override
     public SubscriptionGroupConfig getSubscriptionGroupConfig(ProxyContext ctx, String group) {
         return this.brokerController.getSubscriptionGroupManager().getSubscriptionGroupTable().get(group);
     }
 
     @Override
+    /** 从本地 AuthenticationMetadataManager 获取用户。 */
+    @Override
     public CompletableFuture<User> getUser(ProxyContext ctx, String username) {
         return this.brokerController.getAuthenticationMetadataManager().getUser(username);
     }
 
+    @Override
+    /** 从本地 AuthorizationMetadataManager 获取 ACL。 */
     @Override
     public CompletableFuture<Acl> getAcl(ProxyContext ctx, Subject subject) {
         return this.brokerController.getAuthorizationMetadataManager().getAcl(subject);

@@ -21,15 +21,27 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 本地 Remoting 命令封装：便捷创建带自定义头的请求命令。
+ */
 public class LocalRemotingCommand extends RemotingCommand {
 
+    /**
+     * 创建本地 Remoting 请求命令。
+     *
+     * @param code 请求码
+     * @param customHeader 自定义请求头
+     * @param language 语言标识
+     */
     public static LocalRemotingCommand createRequestCommand(int code, CommandCustomHeader customHeader, String language) {
         LocalRemotingCommand cmd = new LocalRemotingCommand();
         cmd.setCode(code);
         cmd.setLanguage(LanguageCode.getCode(language));
         cmd.writeCustomHeader(customHeader);
+        // 初始化扩展字段并序列化自定义头
         cmd.setExtFields(new HashMap<>());
         setCmdVersion(cmd);
+        // 将自定义头编码到网络格式
         cmd.makeCustomHeaderToNet();
         return cmd;
     }

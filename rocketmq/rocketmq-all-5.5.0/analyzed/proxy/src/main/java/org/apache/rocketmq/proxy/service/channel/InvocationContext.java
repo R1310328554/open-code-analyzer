@@ -21,22 +21,31 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 单次 Remoting 调用的上下文：持有响应 CompletableFuture 与创建时间戳。
+ */
 public class InvocationContext implements InvocationContextInterface {
+    /** 异步响应 Future，由 handle 完成。 */
     private final CompletableFuture<RemotingCommand> response;
+    /** 上下文创建时间，用于超时判定。 */
     private final long timestamp = System.currentTimeMillis();
 
+    /** @param resp 待完成的响应 Future */
     public InvocationContext(CompletableFuture<RemotingCommand> resp) {
         this.response = resp;
     }
 
+    /** 判断自创建起是否已超过 expiredTimeSec 秒。 */
     public boolean expired(long expiredTimeSec) {
         return System.currentTimeMillis() - timestamp >= Duration.ofSeconds(expiredTimeSec).toMillis();
     }
 
+    /** 返回关联的响应 Future。 */
     public CompletableFuture<RemotingCommand> getResponse() {
         return response;
     }
 
+    /** 收到响应后以 remotingCommand 完成 Future。 */
     public void handle(RemotingCommand remotingCommand) {
         response.complete(remotingCommand);
     }

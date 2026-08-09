@@ -19,8 +19,13 @@ package org.apache.rocketmq.proxy.service.channel;
 
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 在途 Remoting 调用上下文接口：处理响应并支持超时检测。
+ */
 public interface InvocationContextInterface {
+    /** 收到 Broker 响应时回调。 */
     void handle(RemotingCommand remotingCommand);
 
+    /** @param expiredTimeSec 超时阈值（秒） */
     boolean expired(long expiredTimeSec);
 }

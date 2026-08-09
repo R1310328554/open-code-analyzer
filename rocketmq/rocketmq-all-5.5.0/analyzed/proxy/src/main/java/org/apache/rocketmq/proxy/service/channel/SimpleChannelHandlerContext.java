@@ -31,14 +31,22 @@ import io.netty.util.concurrent.EventExecutor;
 import java.net.SocketAddress;
 import org.apache.commons.lang3.NotImplementedException;
 
+/**
+ * SimpleChannel 的最小 {@link ChannelHandlerContext} 实现，
+ * 仅委托 channel 的 writeAndFlush，其余方法未实现。
+ */
 public class SimpleChannelHandlerContext implements ChannelHandlerContext {
 
+    /** 关联的 SimpleChannel 实例。 */
     private final Channel channel;
 
+    /** @param channel 底层通道 */
     public SimpleChannelHandlerContext(Channel channel) {
         this.channel = channel;
     }
 
+    @Override
+    /** 返回关联通道。 */
     @Override
     public Channel channel() {
         return channel;
@@ -190,10 +198,14 @@ public class SimpleChannelHandlerContext implements ChannelHandlerContext {
     }
 
     @Override
+    /** 委托底层 channel 写出并刷新。 */
+    @Override
     public ChannelFuture writeAndFlush(Object msg, ChannelPromise promise) {
         return channel.writeAndFlush(msg, promise);
     }
 
+    @Override
+    /** 委托底层 channel 写出并刷新。 */
     @Override
     public ChannelFuture writeAndFlush(Object msg) {
         return channel.writeAndFlush(msg);
@@ -239,6 +251,8 @@ public class SimpleChannelHandlerContext implements ChannelHandlerContext {
         throw new NotImplementedException("Not implemented");
     }
 
+    @Override
+    /** 本实现不支持属性，恒返回 false。 */
     @Override
     public <T> boolean hasAttr(AttributeKey<T> attributeKey) {
         return false;

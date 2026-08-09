@@ -19,20 +19,28 @@ package org.apache.rocketmq.proxy.service.message;
 
 import org.apache.rocketmq.common.consumer.ReceiptHandle;
 
+/**
+ * Pop 消费回执与 messageId 的绑定封装，用于批量 Ack。
+ */
 public class ReceiptHandleMessage {
 
+    /** Pop 消费回执句柄。 */
     private final ReceiptHandle receiptHandle;
+    /** 关联的消息 ID。 */
     private final String messageId;
 
+    /** @param receiptHandle Pop 回执 @param messageId 消息 ID */
     public ReceiptHandleMessage(ReceiptHandle receiptHandle, String messageId) {
         this.receiptHandle = receiptHandle;
         this.messageId = messageId;
     }
 
+    /** 返回 Pop 回执句柄。 */
     public ReceiptHandle getReceiptHandle() {
         return receiptHandle;
     }
 
+    /** 返回消息 ID。 */
     public String getMessageId() {
         return messageId;
     }
