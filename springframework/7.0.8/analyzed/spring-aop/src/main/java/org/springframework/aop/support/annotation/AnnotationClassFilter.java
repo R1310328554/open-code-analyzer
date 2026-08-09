@@ -25,7 +25,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.Assert;
 
 /**
- * Simple ClassFilter that looks for a specific annotation being present on a class.
+ * 简单的 ClassFilter，查找类上是否存在特定注解。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -39,20 +39,19 @@ public class AnnotationClassFilter implements ClassFilter {
 
 
 	/**
-	 * Create a new AnnotationClassFilter for the given annotation type.
-	 * @param annotationType the annotation type to look for
+	 * 为给定注解类型创建新的 AnnotationClassFilter。
+	 * @param annotationType 要查找的注解类型
 	 */
 	public AnnotationClassFilter(Class<? extends Annotation> annotationType) {
 		this(annotationType, false);
 	}
 
 	/**
-	 * Create a new AnnotationClassFilter for the given annotation type.
-	 * @param annotationType the annotation type to look for
-	 * @param checkInherited whether to also check the superclasses and
-	 * interfaces as well as meta-annotations for the annotation type
-	 * (i.e. whether to use {@link AnnotatedElementUtils#hasAnnotation}
-	 * semantics instead of standard Java {@link Class#isAnnotationPresent})
+	 * 为给定注解类型创建新的 AnnotationClassFilter。
+	 * @param annotationType 要查找的注解类型
+	 * @param checkInherited 是否还检查超类、接口及元注解
+	 * （即是否使用 {@link AnnotatedElementUtils#hasAnnotation}
+	 * 语义而非标准 Java {@link Class#isAnnotationPresent}）
 	 */
 	public AnnotationClassFilter(Class<? extends Annotation> annotationType, boolean checkInherited) {
 		Assert.notNull(annotationType, "Annotation type must not be null");

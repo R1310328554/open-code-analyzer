@@ -25,23 +25,19 @@ import org.springframework.aop.ProxyMethodInvocation;
 import org.springframework.util.Assert;
 
 /**
- * Convenient implementation of the
- * {@link org.springframework.aop.IntroductionInterceptor} interface.
+ * {@link org.springframework.aop.IntroductionInterceptor} 接口的便捷实现。
  *
- * <p>Subclasses merely need to extend this class and implement the interfaces
- * to be introduced themselves. In this case the delegate is the subclass
- * instance itself. Alternatively a separate delegate may implement the
- * interface, and be set via the delegate bean property.
+ * <p>子类只需继承本类并实现要引入的接口即可，
+ * 此时委托即为子类实例本身。也可由独立委托实现接口，
+ * 并通过 delegate bean 属性设置。
  *
- * <p>Delegates or subclasses may implement any number of interfaces.
- * All interfaces except IntroductionInterceptor are picked up from
- * the subclass or delegate by default.
+ * <p>委托或子类可实现任意数量接口。
+ * 默认从子类或委托收集除 IntroductionInterceptor 外的所有接口。
  *
- * <p>The {@code suppressInterface} method can be used to suppress interfaces
- * implemented by the delegate but which should not be introduced to the owning
- * AOP proxy.
+ * <p>可使用 {@code suppressInterface} 方法抑制委托已实现、
+ * 但不应引入到所属 AOP 代理的接口。
  *
- * <p>An instance of this class is serializable if the delegate is.
+ * <p>若委托可序列化，则本类实例也可序列化。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -54,25 +50,24 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 		implements IntroductionInterceptor {
 
 	/**
-	 * Object that actually implements the interfaces.
-	 * May be "this" if a subclass implements the introduced interfaces.
+	 * 实际实现接口的对象。
+	 * 若子类实现引入接口，则可为 "this"。
 	 */
 	private @Nullable Object delegate;
 
 
 	/**
-	 * Construct a new DelegatingIntroductionInterceptor, providing
-	 * a delegate that implements the interfaces to be introduced.
-	 * @param delegate the delegate that implements the introduced interfaces
+	 * 构造新的 DelegatingIntroductionInterceptor，
+	 * 提供实现要引入接口的委托。
+	 * @param delegate 实现引入接口的委托
 	 */
 	public DelegatingIntroductionInterceptor(Object delegate) {
 		init(delegate);
 	}
 
 	/**
-	 * Construct a new DelegatingIntroductionInterceptor.
-	 * The delegate will be the subclass, which must implement
-	 * additional interfaces.
+	 * 构造新的 DelegatingIntroductionInterceptor。
+	 * 委托为子类本身，子类须实现额外接口。
 	 */
 	protected DelegatingIntroductionInterceptor() {
 		init(this);
@@ -80,36 +75,34 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 
 
 	/**
-	 * Both constructors use this init method, as it is impossible to pass
-	 * a "this" reference from one constructor to another.
-	 * @param delegate the delegate object
+	 * 两个构造函数均使用此 init 方法，
+	 * 因无法将 "this" 引用从一个构造函数传给另一个。
+	 * @param delegate 委托对象
 	 */
 	private void init(Object delegate) {
 		Assert.notNull(delegate, "Delegate must not be null");
 		this.delegate = delegate;
 		implementInterfacesOnObject(delegate);
 
-		// We don't want to expose the control interface
+		// 不暴露控制接口
 		suppressInterface(IntroductionInterceptor.class);
 		suppressInterface(DynamicIntroductionAdvice.class);
 	}
 
 
 	/**
-	 * Subclasses may need to override this if they want to perform custom
-	 * behavior in around advice. However, subclasses should invoke this
-	 * method, which handles introduced interfaces and forwarding to the target.
+	 * 若子类需在环绕通知中执行自定义行为，可覆盖本方法。
+	 * 但子类应调用本方法，以处理引入接口及向目标转发。
 	 */
 	@Override
 	public @Nullable Object invoke(MethodInvocation mi) throws Throwable {
 		if (isMethodOnIntroducedInterface(mi)) {
-			// Using the following method rather than direct reflection, we
-			// get correct handling of InvocationTargetException
-			// if the introduced method throws an exception.
+			// 使用以下方法而非直接反射，
+			// 可在引入方法抛出异常时正确处理 InvocationTargetException。
 			Object retVal = AopUtils.invokeJoinpointUsingReflection(this.delegate, mi.getMethod(), mi.getArguments());
 
-			// Massage return value if possible: if the delegate returned itself,
-			// we really want to return the proxy.
+			// 尽可能调整返回值：若委托返回自身，
+			// 实际应返回代理。
 			if (retVal == this.delegate && mi instanceof ProxyMethodInvocation pmi) {
 				Object proxy = pmi.getProxy();
 				if (mi.getMethod().getReturnType().isInstance(proxy)) {
@@ -123,14 +116,13 @@ public class DelegatingIntroductionInterceptor extends IntroductionInfoSupport
 	}
 
 	/**
-	 * Proceed with the supplied {@link org.aopalliance.intercept.MethodInterceptor}.
-	 * Subclasses can override this method to intercept method invocations on the
-	 * target object which is useful when an introduction needs to monitor the object
-	 * that it is introduced into. This method is <strong>never</strong> called for
-	 * {@link MethodInvocation MethodInvocations} on the introduced interfaces.
+	 * 继续执行提供的 {@link org.aopalliance.intercept.MethodInterceptor}。
+	 * 子类可覆盖本方法以拦截目标对象上的方法调用，
+	 * 适用于引入需监控被引入对象的情况。
+	 * 对引入接口上的 {@link MethodInvocation MethodInvocation} <strong>永不</strong>调用本方法。
 	 */
 	protected @Nullable Object doProceed(MethodInvocation mi) throws Throwable {
-		// If we get here, just pass the invocation on.
+		// 执行到此则直接传递调用。
 		return mi.proceed();
 	}
 

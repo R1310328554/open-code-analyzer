@@ -26,8 +26,8 @@ import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
- * Convenient base class for Advisors that are also static pointcuts.
- * Serializable if Advice and subclass are.
+ * 同时作为静态切入点的 Advisor 的便捷基类。
+ * 若 Advice 与子类可序列化，则本类也可序列化。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -42,16 +42,16 @@ public abstract class StaticMethodMatcherPointcutAdvisor extends StaticMethodMat
 
 
 	/**
-	 * Create a new StaticMethodMatcherPointcutAdvisor,
-	 * expecting bean-style configuration.
+	 * 创建新的 StaticMethodMatcherPointcutAdvisor，
+	 * 预期使用 bean 风格配置。
 	 * @see #setAdvice
 	 */
 	public StaticMethodMatcherPointcutAdvisor() {
 	}
 
 	/**
-	 * Create a new StaticMethodMatcherPointcutAdvisor for the given advice.
-	 * @param advice the Advice to use
+	 * 为给定 advice 创建新的 StaticMethodMatcherPointcutAdvisor。
+	 * @param advice 要使用的 Advice
 	 */
 	public StaticMethodMatcherPointcutAdvisor(Advice advice) {
 		Assert.notNull(advice, "Advice must not be null");

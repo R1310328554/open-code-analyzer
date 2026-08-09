@@ -23,8 +23,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.MethodMatcher;
 
 /**
- * Convenient abstract superclass for static method matchers, which don't care
- * about arguments at runtime.
+ * 静态方法匹配器的便捷抽象超类，
+ * 在运行时不考虑参数。
  *
  * @author Rod Johnson
  */
@@ -37,7 +37,7 @@ public abstract class StaticMethodMatcher implements MethodMatcher {
 
 	@Override
 	public final boolean matches(Method method, Class<?> targetClass, @Nullable Object... args) {
-		// should never be invoked because isRuntime() returns false
+		// 不应被调用，因 isRuntime() 返回 false
 		throw new UnsupportedOperationException("Illegal MethodMatcher usage");
 	}
 

@@ -27,14 +27,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.PatternMatchUtils;
 
 /**
- * Pointcut bean for simple method name matches, as an alternative to regular
- * expression patterns.
+ * 简单方法名匹配的切入点 bean，作为正则表达式模式的替代。
  *
- * <p>Each configured method name can be an exact method name or a method name
- * pattern (see {@link #isMatch(String, String)} for details on the supported
- * pattern styles).
+ * <p>每个配置的方法名可为精确方法名或方法名模式
+ * （支持的模式风格见 {@link #isMatch(String, String)}）。
  *
- * <p>Does not handle overloaded methods: all methods with a given name will be eligible.
+ * <p>不处理重载方法：给定名称的所有方法均符合条件。
  *
  * @author Juergen Hoeller
  * @author Rod Johnson
@@ -51,8 +49,8 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 
 
 	/**
-	 * Convenience method for configuring a single method name pattern.
-	 * <p>Use either this method or {@link #setMappedNames(String...)}, but not both.
+	 * 配置单个方法名模式的便捷方法。
+	 * <p>使用本方法或 {@link #setMappedNames(String...)} 之一，不可同时使用。
 	 * @see #setMappedNames
 	 */
 	public void setMappedName(String mappedNamePattern) {
@@ -60,8 +58,8 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	}
 
 	/**
-	 * Set the method name patterns defining methods to match.
-	 * <p>Matching will be the union of all these; if any match, the pointcut matches.
+	 * 设置定义要匹配方法的方法名模式。
+	 * <p>匹配为所有模式的并集；任一匹配则切入点匹配。
 	 * @see #setMappedName(String)
 	 */
 	public void setMappedNames(String... mappedNamePatterns) {
@@ -69,13 +67,11 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	}
 
 	/**
-	 * Add another method name pattern, in addition to those already configured.
-	 * <p>Like the "set" methods, this method is for use when configuring proxies,
-	 * before a proxy is used.
-	 * <p><b>NOTE:</b> This method does not work after the proxy is in use, since
-	 * advice chains will be cached.
-	 * @param mappedNamePattern the additional method name pattern
-	 * @return this pointcut to allow for method chaining
+	 * 在已配置模式之外再添加一个方法名模式。
+	 * <p>与 "set" 方法类似，本方法用于配置代理、代理使用前。
+	 * <p><b>注意：</b>代理使用后本方法无效，因 advice 链会被缓存。
+	 * @param mappedNamePattern 额外的方法名模式
+	 * @return 本切入点，支持方法链式调用
 	 * @see #setMappedNames(String...)
 	 * @see #setMappedName(String)
 	 */
@@ -96,13 +92,13 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	}
 
 	/**
-	 * Determine if the given method name matches the mapped name pattern.
-	 * <p>The default implementation checks for {@code xxx*}, {@code *xxx},
-	 * {@code *xxx*}, and {@code xxx*yyy} matches, as well as direct equality.
-	 * <p>Can be overridden in subclasses.
-	 * @param methodName the method name to check
-	 * @param mappedNamePattern the method name pattern
-	 * @return {@code true} if the method name matches the pattern
+	 * 判断给定方法名是否匹配映射名模式。
+	 * <p>默认实现检查 {@code xxx*}、{@code *xxx}、
+	 * {@code *xxx*}、{@code xxx*yyy} 匹配及直接相等。
+	 * <p>子类可覆盖。
+	 * @param methodName 待检查的方法名
+	 * @param mappedNamePattern 方法名模式
+	 * @return 方法名是否匹配模式
 	 * @see PatternMatchUtils#simpleMatch(String, String)
 	 */
 	protected boolean isMatch(String methodName, String mappedNamePattern) {

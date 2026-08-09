@@ -22,8 +22,8 @@ import org.springframework.aop.ClassFilter;
 import org.springframework.aop.Pointcut;
 
 /**
- * Convenient class for name-match method pointcuts that hold an Advice,
- * making them an Advisor.
+ * 持有 Advice 的方法名匹配切入点的便捷类，
+ * 使其成为 Advisor。
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -44,8 +44,8 @@ public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvis
 
 
 	/**
-	 * Set the {@link ClassFilter} to use for this pointcut.
-	 * Default is {@link ClassFilter#TRUE}.
+	 * 设置本切入点使用的 {@link ClassFilter}。
+	 * 默认为 {@link ClassFilter#TRUE}。
 	 * @see NameMatchMethodPointcut#setClassFilter
 	 */
 	public void setClassFilter(ClassFilter classFilter) {
@@ -53,8 +53,8 @@ public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvis
 	}
 
 	/**
-	 * Convenience method when we have only a single method name to match.
-	 * Use either this method or {@code setMappedNames}, not both.
+	 * 仅匹配单个方法名时的便捷方法。
+	 * 使用本方法或 {@code setMappedNames} 之一，不可同时使用。
 	 * @see #setMappedNames
 	 * @see NameMatchMethodPointcut#setMappedName
 	 */
@@ -63,9 +63,8 @@ public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvis
 	}
 
 	/**
-	 * Set the method names defining methods to match.
-	 * Matching will be the union of all these; if any match,
-	 * the pointcut matches.
+	 * 设置定义要匹配方法的方法名。
+	 * 匹配为所有名称的并集；任一匹配则切入点匹配。
 	 * @see NameMatchMethodPointcut#setMappedNames
 	 */
 	public void setMappedNames(String... mappedNames) {
@@ -73,11 +72,10 @@ public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvis
 	}
 
 	/**
-	 * Add another eligible method name, in addition to those already named.
-	 * Like the set methods, this method is for use when configuring proxies,
-	 * before a proxy is used.
-	 * @param name the name of the additional method that will match
-	 * @return this pointcut to allow for multiple additions in one line
+	 * 在已命名方法之外再添加一个符合条件的方法名。
+	 * 与 set 方法类似，本方法用于配置代理、代理使用前。
+	 * @param name 将匹配的额外方法名
+	 * @return 本切入点，支持一行内多次添加
 	 * @see NameMatchMethodPointcut#addMethodName
 	 */
 	public NameMatchMethodPointcut addMethodName(String name) {
