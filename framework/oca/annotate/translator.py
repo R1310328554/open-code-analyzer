@@ -18,7 +18,7 @@ def _mostly_chinese(text: str) -> bool:
 class ZhTranslator:
     """带磁盘缓存的英→中翻译器。"""
 
-    def __init__(self, cache_path: Path, *, sleep_s: float = 0.08):
+    def __init__(self, cache_path: Path, *, sleep_s: float = 0.02):
         self.cache_path = cache_path
         ensure_dir(cache_path.parent)
         self.sleep_s = sleep_s
