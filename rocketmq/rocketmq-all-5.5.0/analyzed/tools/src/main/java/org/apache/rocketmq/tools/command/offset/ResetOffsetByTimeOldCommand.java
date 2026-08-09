@@ -32,8 +32,12 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * resetOffsetByTimeOld 子命令：按时间戳重置消费位点（需重启客户端）。
+ */
 public class ResetOffsetByTimeOldCommand implements SubCommand {
 
+    /** 调用旧版 resetOffsetByTimestampOld 并打印各队列回滚统计。 */
     public static void resetOffset(DefaultMQAdminExt defaultMQAdminExt, String clusterName, String consumerGroup,
         String topic,
         long timestamp, boolean force, String timeStampStr)
@@ -68,34 +72,36 @@ public class ResetOffsetByTimeOldCommand implements SubCommand {
     }
 
     @Override
+    /** 返回子命令名 resetOffsetByTimeOld。 */
     public String commandName() {
         return "resetOffsetByTimeOld";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Reset consumer offset by timestamp(execute this command required client restart).";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "group", true, "set the consumer group");
+        Option opt = new Option("g", "group", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "set the topic");
+        opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("s", "timestamp", true, "set the timestamp[currentTimeMillis|yyyy-MM-dd#HH:mm:ss:SSS]");
+        opt = new Option("s", "timestamp", true, "目标时间戳（毫秒或 yyyy-MM-dd#HH:mm:ss:SSS）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("f", "force", true, "set the force rollback by timestamp switch[true|false]");
+        opt = new Option("f", "force", true, "是否强制按时间回滚，默认 true");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "Cluster name or lmq parent topic, lmq is used to find the route.");
+        opt = new Option("c", "cluster", true, "集群名或 LMQ 父 Topic，用于解析路由");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -103,6 +109,7 @@ public class ResetOffsetByTimeOldCommand implements SubCommand {
     }
 
     @Override
+    /** 解析时间戳与 force 参数后调用 {@link #resetOffset}。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

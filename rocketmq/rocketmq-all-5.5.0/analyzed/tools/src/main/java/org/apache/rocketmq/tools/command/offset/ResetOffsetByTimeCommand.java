@@ -31,53 +31,58 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * resetOffsetByTime 子命令：按时间戳重置消费位点（无需重启客户端）。
+ */
 public class ResetOffsetByTimeCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 resetOffsetByTime。 */
     public String commandName() {
         return "resetOffsetByTime";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Reset consumer offset by timestamp(without client restart).";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "group", true, "set the consumer group");
+        Option opt = new Option("g", "group", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "set the topic");
+        opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("s", "timestamp", true, "set the timestamp[now|currentTimeMillis|yyyy-MM-dd#HH:mm:ss:SSS]");
+        opt = new Option("s", "timestamp", true, "目标时间戳（now|毫秒|yyyy-MM-dd#HH:mm:ss:SSS）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("f", "force", true, "set the force rollback by timestamp switch[true|false]. Deprecated.");
+        opt = new Option("f", "force", true, "是否强制按时间回滚，默认 true（已废弃）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cplus", false, "reset c++ client offset. Deprecated.");
+        opt = new Option("c", "cplus", false, "是否重置 C++ 客户端 offset（已废弃）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "broker", true, "broker addr");
+        opt = new Option("b", "broker", true, "Broker 地址（与 -q 配合单队列重置）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("q", "queue", true, "queue id");
+        opt = new Option("q", "queue", true, "队列 ID（需配合 -b）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("o", "offset", true, "Expect queue offset, not support old version broker");
+        opt = new Option("o", "offset", true, "期望队列 offset，旧版 Broker 不支持");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "Cluster name or lmq parent topic, lmq is used to find the route.");
+        opt = new Option("c", "cluster", true, "集群名或 LMQ 父 Topic，用于解析路由");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -85,6 +90,7 @@ public class ResetOffsetByTimeCommand implements SubCommand {
     }
 
     @Override
+    /** 解析时间戳后全量或单队列重置；消费者离线时回退旧版命令。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

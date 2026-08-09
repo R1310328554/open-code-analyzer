@@ -37,7 +37,11 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * statsAll 子命令：输出全集群 Topic 与各消费组的 TPS 与堆积统计。
+ */
 public class StatsAllSubCommand implements SubCommand {
+    /** 汇总 Topic 入站 TPS/24h 消息量及各消费组出站与堆积。 */
     public static void printTopicDetail(final DefaultMQAdminExt admin, final String topic, final boolean activeTopic)
         throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
         TopicRouteData topicRouteData = admin.examineTopicRouteInfo(topic);
@@ -121,6 +125,7 @@ public class StatsAllSubCommand implements SubCommand {
         }
     }
 
+    /** 优先取日/时/分钟统计 sum 作为近 24 小时消息量。 */
     public static long compute24HourSum(BrokerStatsData bsd) {
         if (bsd.getStatsDay().getSum() != 0) {
             return bsd.getStatsDay().getSum();
@@ -138,22 +143,24 @@ public class StatsAllSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回子命令名 statsAll。 */
     public String commandName() {
         return "statsAll";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Topic and Consumer tps stats.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("a", "activeTopic", false, "print active topic only");
+        Option opt = new Option("a", "activeTopic", false, "仅输出近 24h 有流量的 Topic");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "print select topic only");
+        opt = new Option("t", "topic", true, "仅统计指定 Topic");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -161,6 +168,7 @@ public class StatsAllSubCommand implements SubCommand {
     }
 
     @Override
+    /** 遍历 Topic 列表（跳过重试/DLQ），调用 printTopicDetail 输出表格。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 

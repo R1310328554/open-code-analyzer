@@ -31,38 +31,44 @@ import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 
+/**
+ * checkRocksdbCqWriteProgress 子命令：校验 RocksDB 消费队列与文件 CQ 写入是否一致。
+ */
 public class CheckRocksdbCqWriteProgressCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 checkRocksdbCqWriteProgress。 */
     public String commandName() {
         return "checkRocksdbCqWriteProgress";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "check if rocksdb cq is same as file cq";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("c", "cluster", true, "cluster name");
+        Option opt = new Option("c", "cluster", true, "集群名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("n", "nameserverAddr", true, "nameserverAddr");
+        opt = new Option("n", "nameserverAddr", true, "NameServer 地址");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "topic name");
+        opt = new Option("t", "topic", true, "Topic 名（可选）");
         options.addOption(opt);
 
-        opt = new Option("cf", "checkFrom", true, "check from time");
+        opt = new Option("cf", "checkFrom", true, "校验起始时间戳，默认 30 天前");
         options.addOption(opt);
 
         return options;
     }
 
     @Override
+    /** 遍历集群 Broker 触发 RocksDB CQ 写入进度校验。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 

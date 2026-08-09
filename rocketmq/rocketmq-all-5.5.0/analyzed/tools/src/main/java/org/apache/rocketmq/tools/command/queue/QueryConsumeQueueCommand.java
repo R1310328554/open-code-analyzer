@@ -32,8 +32,12 @@ import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 
+/**
+ * queryCq 子命令：按索引区间查询 Broker 消费队列（CQ）条目。
+ */
 public class QueryConsumeQueueCommand implements SubCommand {
 
+    /** 本地调试入口，演示 queryCq 参数解析与执行。 */
     public static void main(String[] args) {
         QueryConsumeQueueCommand cmd = new QueryConsumeQueueCommand();
 
@@ -46,38 +50,40 @@ public class QueryConsumeQueueCommand implements SubCommand {
     }
 
     @Override
+    /** 返回子命令名 queryCq。 */
     public String commandName() {
         return "queryCq";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query cq command.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("q", "queue", true, "queue num, ie. 1");
+        opt = new Option("q", "queue", true, "队列 ID");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("i", "index", true, "start queue index.");
+        opt = new Option("i", "index", true, "起始队列索引");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "count", true, "how many.");
+        opt = new Option("c", "count", true, "查询条数，默认 10");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "broker", true, "broker addr.");
+        opt = new Option("b", "broker", true, "Broker 地址（省略则从路由取首个）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("g", "consumer", true, "consumer group.");
+        opt = new Option("g", "consumer", true, "消费组名（可选，用于过滤数据）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -85,6 +91,7 @@ public class QueryConsumeQueueCommand implements SubCommand {
     }
 
     @Override
+    /** 调用 queryConsumeQueue 并打印订阅、过滤与队列数据。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 

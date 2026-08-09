@@ -36,27 +36,33 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * topicList 子命令：从 NameServer 拉取全部 Topic 列表。
+ */
 public class TopicListSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 topicList。 */
     public String commandName() {
         return "topicList";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Fetch all topic list from name server.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("c", "clusterModel", false, "clusterModel");
+        Option opt = new Option("c", "clusterModel", false, "集群模式：输出 Topic 所属集群与消费组");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** -c 时表格输出集群/Topic/消费组；否则仅列出 Topic 名。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -116,6 +122,7 @@ public class TopicListSubCommand implements SubCommand {
         }
     }
 
+    /** 根据 Topic 路由首个 Broker 反查所属集群名。 */
     private String findTopicBelongToWhichCluster(final String topic, final ClusterInfo clusterInfo,
         final DefaultMQAdminExt defaultMQAdminExt) throws RemotingException, MQClientException,
         InterruptedException {

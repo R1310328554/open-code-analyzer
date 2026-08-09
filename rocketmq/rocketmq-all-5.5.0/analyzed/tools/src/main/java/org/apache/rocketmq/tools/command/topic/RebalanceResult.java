@@ -22,13 +22,19 @@ import java.util.List;
 import java.util.Map;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * allocateMQ 命令的 JSON 输出载体：IP 到已分配 {@link MessageQueue} 列表的映射。
+ */
 public class RebalanceResult {
+    /** 各消费者 IP 对应的队列分配结果。 */
     private Map<String/*ip*/, List<MessageQueue>> result = new HashMap<>();
 
+    /** 返回 IP 到队列列表的映射。 */
     public Map<String, List<MessageQueue>> getResult() {
         return result;
     }
 
+    /** 设置 IP 到队列列表的映射。 */
     public void setResult(final Map<String, List<MessageQueue>> result) {
         this.result = result;
     }

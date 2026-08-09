@@ -25,27 +25,33 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * topicClusterList 子命令：查询 Topic 所属的全部集群名。
+ */
 public class TopicClusterSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 topicClusterList。 */
     public String commandName() {
         return "topicClusterList";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get cluster info for topic.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 调用 getTopicClusterList 并逐行打印集群名。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);

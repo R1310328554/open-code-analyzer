@@ -33,24 +33,29 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * allocateMQ 子命令：模拟平均负载策略为 IP 列表分配 {@link MessageQueue}。
+ */
 public class AllocateMQSubCommand implements SubCommand {
     @Override
+    /** 返回子命令名 allocateMQ。 */
     public String commandName() {
         return "allocateMQ";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Allocate MQ.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("i", "ipList", true, "ipList");
+        opt = new Option("i", "ipList", true, "消费者 IP 列表，逗号分隔");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -58,6 +63,7 @@ public class AllocateMQSubCommand implements SubCommand {
     }
 
     @Override
+    /** 按 {@link AllocateMessageQueueAveragely} 分配队列并以 JSON 输出。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt adminExt = new DefaultMQAdminExt(rpcHook);
         adminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

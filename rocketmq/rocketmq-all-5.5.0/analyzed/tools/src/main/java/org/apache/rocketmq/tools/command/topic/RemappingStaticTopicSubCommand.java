@@ -38,14 +38,19 @@ import org.apache.rocketmq.tools.admin.MQAdminUtils;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * remappingStaticTopic 子命令：重映射静态 Topic 的队列到目标 Broker/集群。
+ */
 public class RemappingStaticTopicSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 remappingStaticTopic。 */
     public String commandName() {
         return "remappingStaticTopic";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Remapping static topic.";
     }
@@ -56,24 +61,24 @@ public class RemappingStaticTopicSubCommand implements SubCommand {
 
         Option opt = null;
 
-        opt = new Option("c", "clusters", true, "remapping static topic to clusters, comma separated");
+        opt = new Option("c", "clusters", true, "目标集群名，逗号分隔（与 -b 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("b", "brokers", true, "remapping static topic to brokers, comma separated");
+        opt = new Option("b", "brokers", true, "目标 Broker 名，逗号分隔（与 -c 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("t", "topic", true, "topic name");
+        opt = new Option("t", "topic", true, "静态 Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("mf", "mapFile", true, "The mapping data file name ");
+        opt = new Option("mf", "mapFile", true, "映射数据文件路径（可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("fr", "forceReplace", true, "Force replace the old mapping");
+        opt = new Option("fr", "forceReplace", true, "是否强制替换旧映射");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -81,6 +86,7 @@ public class RemappingStaticTopicSubCommand implements SubCommand {
     }
 
 
+    /** 从映射文件解码配置并调用 remappingStaticTopic 提交变更。 */
     public void executeFromFile(final CommandLine commandLine, final Options options,
                                 RPCHook rpcHook) throws SubCommandException {
 
@@ -115,6 +121,7 @@ public class RemappingStaticTopicSubCommand implements SubCommand {
 
 
     @Override
+    /** 解析目标 Broker/集群，生成新映射并提交；支持 -f 从文件导入。 */
     public void execute(final CommandLine commandLine, final Options options,
                         RPCHook rpcHook) throws SubCommandException {
         if (!commandLine.hasOption('t')) {

@@ -30,32 +30,37 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * cloneGroupOffset 子命令：将源消费组的消费位点复制到目标消费组。
+ */
 public class CloneGroupOffsetCommand implements SubCommand {
     @Override
+    /** 返回子命令名 cloneGroupOffset。 */
     public String commandName() {
         return "cloneGroupOffset";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Clone offset from other group.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("s", "srcGroup", true, "set source consumer group");
+        Option opt = new Option("s", "srcGroup", true, "源消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("d", "destGroup", true, "set destination consumer group");
+        opt = new Option("d", "destGroup", true, "目标消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "set the topic");
+        opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("o", "offline", true, "the group or the topic is offline");
+        opt = new Option("o", "offline", true, "消费组或 Topic 是否离线");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -65,6 +70,7 @@ public class CloneGroupOffsetCommand implements SubCommand {
     }
 
     @Override
+    /** 读取源组各队列消费位点，写入目标组对应 Broker 队列。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         String srcGroup = commandLine.getOptionValue("s").trim();
         String destGroup = commandLine.getOptionValue("d").trim();

@@ -32,7 +32,11 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * deleteTopic 子命令：从 Broker 与 NameServer 删除 Topic。
+ */
 public class DeleteTopicSubCommand implements SubCommand {
+    /** 从集群 Master Broker 与 NameServer 删除指定 Topic。 */
     public static void deleteTopic(final DefaultMQAdminExt adminExt,
         final String clusterName,
         final String topic
@@ -53,22 +57,24 @@ public class DeleteTopicSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回子命令名 deleteTopic。 */
     public String commandName() {
         return "deleteTopic";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Delete topic from broker and NameServer.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "待删除 Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "delete topic from which cluster");
+        opt = new Option("c", "clusterName", true, "Topic 所在集群名");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -76,6 +82,7 @@ public class DeleteTopicSubCommand implements SubCommand {
     }
 
     @Override
+    /** 校验 -c 集群参数后调用 {@link #deleteTopic}。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt adminExt = new DefaultMQAdminExt(rpcHook);
         adminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

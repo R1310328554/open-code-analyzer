@@ -32,39 +32,45 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * skipAccumulatedMessage 子命令：跳过当前全部堆积未消费消息。
+ */
 public class SkipAccumulationSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 skipAccumulatedMessage。 */
     public String commandName() {
         return "skipAccumulatedMessage";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Skip all messages that are accumulated (not consumed) currently.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "group", true, "set the consumer group");
+        Option opt = new Option("g", "group", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "set the topic");
+        opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("f", "force", true, "set the force rollback by timestamp switch[true|false]");
+        opt = new Option("f", "force", true, "是否强制跳过堆积，默认 true");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "Cluster name or lmq parent topic, lmq is used to find the route.");
+        opt = new Option("c", "cluster", true, "集群名或 LMQ 父 Topic，用于解析路由");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 以 timestamp=-1 重置 offset；消费者离线时走旧版 API。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         long timestamp = -1;
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);

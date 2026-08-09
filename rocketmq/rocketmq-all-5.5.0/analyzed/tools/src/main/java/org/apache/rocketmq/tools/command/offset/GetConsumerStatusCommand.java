@@ -28,28 +28,33 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getConsumerStatus 子命令：从消费端客户端拉取各队列当前消费位点。
+ */
 public class GetConsumerStatusCommand implements SubCommand {
     @Override
+    /** 返回子命令名 getConsumerStatus。 */
     public String commandName() {
         return "getConsumerStatus";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "get consumer status from client.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "group", true, "set the consumer group");
+        Option opt = new Option("g", "group", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "set the topic");
+        opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("i", "originClientId", true, "set the consumer clientId");
+        opt = new Option("i", "originClientId", true, "可选，指定客户端 clientId");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -57,6 +62,7 @@ public class GetConsumerStatusCommand implements SubCommand {
     }
 
     @Override
+    /** 调用 getConsumeStatus 并表格输出 clientId、Broker、队列与 offset。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

@@ -29,26 +29,32 @@ import org.apache.rocketmq.tools.command.MQAdminStartup;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * producer 子命令：查询 Broker 上已连接的生产者实例与状态。
+ */
 public class ProducerSubCommand implements SubCommand {
 
+    /** 本地调试入口，默认连接 127.0.0.1:9876 与指定 Broker。 */
     public static void main(String[] args) {
         System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, "127.0.0.1:9876");
         MQAdminStartup.main(new String[]{new ProducerSubCommand().commandName(), "-b", "127.0.0.1:10911"});
     }
 
     @Override
+    /** 返回子命令名 producer。 */
     public String commandName() {
         return "producer";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query producer's instances, connection, status, etc.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "broker", true, "broker address");
+        Option opt = new Option("b", "broker", true, "目标 Broker 地址");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -56,6 +62,7 @@ public class ProducerSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取 Broker 全部生产者组并逐实例打印连接信息。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
