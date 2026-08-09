@@ -20,12 +20,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
- * A utility class for scheduling regular keep-alive calls to maintain connections. It
- * sends periodic keep-alive, ping, messages to connected mcp clients to prevent idle
- * timeouts.
+ * 定时向 MCP 客户端发送 keep-alive（ping）消息，防止空闲连接被超时断开。
+ * <p>
+ * 通过 {@link Supplier} 获取当前活跃会话集合，按固定间隔向每个会话发送 ping 请求。
  *
- * The pings are sent to all active mcp sessions at regular intervals.
- *
+ * @see McpSession
+ * @see McpSchema#METHOD_PING
  */
 public class KeepAliveScheduler {
 
@@ -34,35 +34,34 @@ public class KeepAliveScheduler {
     private static final TypeReference<Object> OBJECT_TYPE_REF = new TypeReference<Object>() {
     };
 
-    /** Initial delay before the first keepAlive call */
+    /** 首次 keep-alive 调用前的初始延迟。 */
     private final Duration initialDelay;
 
-    /** Interval between subsequent keepAlive calls */
+    /** 后续 keep-alive 调用之间的间隔。 */
     private final Duration interval;
 
-    /** The scheduler used for executing keepAlive calls */
+    /** 执行 keep-alive 任务的调度器。 */
     private final ScheduledExecutorService scheduler;
 
-    /** Whether this scheduler owns the executor and should shut it down */
+    /** 本调度器是否拥有 executor 并在 shutdown 时负责关闭它。 */
     private final boolean ownsExecutor;
 
-    /** The current state of the scheduler */
+    /** 调度器当前是否处于运行状态。 */
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
-    /** The current scheduled task */
+    /** 当前已调度的定时任务句柄。 */
     private volatile ScheduledFuture<?> currentTask;
 
-    /** Supplier for McpSession instances */
+    /** 提供当前 {@link McpSession} 实例集合的供应器。 */
     private final Supplier<? extends Collection<? extends McpSession>> mcpSessions;
 
     /**
-     * Creates a KeepAliveScheduler with a custom scheduler, initial delay, interval and a
-     * supplier for McpSession instances.
-     * @param scheduler The scheduler to use for executing keepAlive calls
-     * @param ownsExecutor Whether this scheduler owns the executor and should shut it down
-     * @param initialDelay Initial delay before the first keepAlive call
-     * @param interval Interval between subsequent keepAlive calls
-     * @param mcpSessions Supplier for McpSession instances
+     * 创建 KeepAliveScheduler。
+     * @param scheduler 执行 keep-alive 的调度器
+     * @param ownsExecutor 是否由本调度器负责关闭 executor
+     * @param initialDelay 首次 keep-alive 前的延迟
+     * @param interval 后续 keep-alive 间隔
+     * @param mcpSessions 会话集合供应器
      */
     private KeepAliveScheduler(ScheduledExecutorService scheduler, boolean ownsExecutor, Duration initialDelay,
                             Duration interval, Supplier<? extends Collection<? extends McpSession>> mcpSessions) {
@@ -73,13 +72,15 @@ public class KeepAliveScheduler {
         this.mcpSessions = mcpSessions;
     }
 
+    /** 创建 Builder，需传入会话集合供应器。 */
     public static Builder builder(Supplier<? extends Collection<? extends McpSession>> mcpSessions) {
         return new Builder(mcpSessions);
     }
 
     /**
-     * Starts regular keepAlive calls with sessions supplier.
-     * @return This scheduler instance for method chaining
+     * 启动定时 keep-alive 任务。
+     * @return 当前实例，支持链式调用
+     * @throws IllegalStateException 调度器已在运行时
      */
     public KeepAliveScheduler start() {
         if (this.isRunning.compareAndSet(false, true)) {
@@ -99,9 +100,7 @@ public class KeepAliveScheduler {
         }
     }
 
-    /**
-     * Sends keep-alive pings to all active sessions.
-     */
+    /** 向所有活跃会话发送 keep-alive ping 请求。 */
     private void sendKeepAlivePings() {
         try {
             Collection<? extends McpSession> sessions = this.mcpSessions.get();
@@ -133,6 +132,7 @@ public class KeepAliveScheduler {
         }
     }
 
+    /** 停止定时任务，但不关闭 executor（除非调用 {@link #shutdown()}）。 */
     public void stop() {
         if (this.currentTask != null && !this.currentTask.isCancelled()) {
             this.currentTask.cancel(false);
@@ -141,10 +141,14 @@ public class KeepAliveScheduler {
         this.isRunning.set(false);
     }
 
+    /** 返回调度器是否正在运行。 */
     public boolean isRunning() {
         return this.isRunning.get();
     }
 
+    /**
+     * 停止调度并关闭 executor（仅当 {@link #ownsExecutor} 为 true 时）。
+     */
     public void shutdown() {
         stop();
         if (this.ownsExecutor && !this.scheduler.isShutdown()) {
@@ -161,6 +165,7 @@ public class KeepAliveScheduler {
         }
     }
 
+    /** Builder 模式构建 {@link KeepAliveScheduler}。 */
     public static class Builder {
 
         private ScheduledExecutorService scheduler;
@@ -174,6 +179,7 @@ public class KeepAliveScheduler {
             this.mcpSessions = mcpSessions;
         }
 
+        /** 指定外部调度器（不由 Builder 创建，故 ownsExecutor 为 false）。 */
         public Builder scheduler(ScheduledExecutorService scheduler) {
             Assert.notNull(scheduler, "Scheduler must not be null");
             this.scheduler = scheduler;
@@ -181,18 +187,23 @@ public class KeepAliveScheduler {
             return this;
         }
 
+        /** 设置首次 keep-alive 前的初始延迟。 */
         public Builder initialDelay(Duration initialDelay) {
             Assert.notNull(initialDelay, "Initial delay must not be null");
             this.initialDelay = initialDelay;
             return this;
         }
 
+        /** 设置 keep-alive 调用间隔，默认 30 秒。 */
         public Builder interval(Duration interval) {
             Assert.notNull(interval, "Interval must not be null");
             this.interval = interval;
             return this;
         }
 
+        /**
+         * 构建调度器；未指定 scheduler 时自动创建单线程守护调度器。
+         */
         public KeepAliveScheduler build() {
             if (this.scheduler == null) {
                 this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
