@@ -18,16 +18,18 @@ package io.netty.handler.codec.http;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@link HttpMessage} implementation.
+ * 默认 {@link HttpMessage} 抽象基类。
+ * <p>
+ * 持有 HTTP 协议版本与 {@link HttpHeaders}，供请求/响应子类复用。
  */
 public abstract class DefaultHttpMessage extends DefaultHttpObject implements HttpMessage {
     private static final int HASH_CODE_PRIME = 31;
+    /** HTTP 协议版本。 */
     private HttpVersion version;
+    /** 消息头部。 */
     private final HttpHeaders headers;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 以默认头部工厂创建消息。 */
     protected DefaultHttpMessage(final HttpVersion version) {
         this(version, DefaultHttpHeadersFactory.headersFactory());
     }
@@ -61,6 +63,7 @@ public abstract class DefaultHttpMessage extends DefaultHttpObject implements Ht
         this.headers = checkNotNull(headers, "headers");
     }
 
+    /** 返回消息头部（可变）。 */
     @Override
     public HttpHeaders headers() {
         return headers;
@@ -99,6 +102,7 @@ public abstract class DefaultHttpMessage extends DefaultHttpObject implements Ht
                super.equals(o);
     }
 
+    /** 设置协议版本并返回 this 以支持链式调用。 */
     @Override
     public HttpMessage setProtocolVersion(HttpVersion version) {
         this.version = checkNotNull(version, "version");

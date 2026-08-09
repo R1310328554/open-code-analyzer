@@ -25,28 +25,26 @@ import static io.netty.handler.codec.http.DefaultHttpHeadersFactory.trailersFact
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Default implementation of a {@link FullHttpResponse}.
+ * {@link FullHttpResponse} 的默认实现。
+ * <p>
+ * 将状态行、头部、正文与 trailing headers 合并为一条完整 HTTP 响应消息。
  */
 public class DefaultFullHttpResponse extends DefaultHttpResponse implements FullHttpResponse {
 
+    /** 响应正文缓冲。 */
     private final ByteBuf content;
+    /** chunked 编码的尾部头。 */
     private final HttpHeaders trailingHeaders;
 
-    /**
-     * Used to cache the value of the hash code and avoid {@link IllegalReferenceCountException}.
-     */
+    /** 缓存 hashCode，避免在 {@link ByteBuf} 已释放时触发 {@link IllegalReferenceCountException}。 */
     private int hash;
 
-    /**
-     * Create an empty HTTP response with the given HTTP version and status.
-     */
+    /** 创建无正文的 HTTP 响应。 */
     public DefaultFullHttpResponse(HttpVersion version, HttpResponseStatus status) {
         this(version, status, Unpooled.buffer(0), headersFactory(), trailersFactory());
     }
 
-    /**
-     * Create an HTTP response with the given HTTP version, status, and contents.
-     */
+    /** 创建含指定正文的 HTTP 响应。 */
     public DefaultFullHttpResponse(HttpVersion version, HttpResponseStatus status, ByteBuf content) {
         this(version, status, content, headersFactory(), trailersFactory());
     }
@@ -222,7 +220,7 @@ public class DefaultFullHttpResponse extends DefaultHttpResponse implements Full
                 try {
                     hash = 31 + content().hashCode();
                 } catch (IllegalReferenceCountException ignored) {
-                    // Handle race condition between checking refCnt() == 0 and using the object.
+                    // 检查 refCnt 与使用 content 之间可能存在竞态
                     hash = 31;
                 }
             } else {

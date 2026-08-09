@@ -40,7 +40,9 @@ import static io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER;
 import static io.netty.util.AsciiString.CASE_SENSITIVE_HASHER;
 
 /**
- * Default implementation of {@link HttpHeaders}.
+ * {@link HttpHeaders} 的默认实现。
+ * <p>
+基于 {@link DefaultHeadersImpl} 存储键值对，默认启用名称/值校验以防 HTTP 响应拆分攻击（CWE-113）。
  */
 public class DefaultHttpHeaders extends HttpHeaders {
     private static final BiPredicate<CharSequence, CharSequence> CASE_INSENSITIVE_CONTAINS =
@@ -50,12 +52,13 @@ public class DefaultHttpHeaders extends HttpHeaders {
             (value, expected) ->
                     HttpHeaders.containsCommaSeparatedTrimmed(value, expected, false);
 
+    /** 底层通用 Headers 存储。 */
     private final DefaultHeaders<CharSequence, CharSequence, ?> headers;
 
     /**
-     * Create a new, empty HTTP headers object.
+     * 创建空的 HTTP 头部集合，添加时校验名称与值。
      * <p>
-     * Header names and values are validated as they are added, to ensure they are compliant with the HTTP protocol.
+     * 确保头部符合 HTTP 协议，防止恶意 CRLF 注入。
      */
     public DefaultHttpHeaders() {
         this(nameValidator(true), valueValidator(true));
@@ -160,6 +163,7 @@ public class DefaultHttpHeaders extends HttpHeaders {
         this.headers = headers;
     }
 
+    /** 返回底层 {@link Headers} 实现，供高级操作使用。 */
     public Headers<CharSequence, CharSequence, ?> unwrap() {
         return headers;
     }
@@ -425,6 +429,7 @@ public class DefaultHttpHeaders extends HttpHeaders {
         return headers.hashCode(CASE_SENSITIVE_HASHER);
     }
 
+    /** 深拷贝当前头部集合。 */
     @Override
     public HttpHeaders copy() {
         return new DefaultHttpHeaders(headers.copy());
@@ -444,6 +449,7 @@ public class DefaultHttpHeaders extends HttpHeaders {
                 DefaultHttpHeadersFactory.headersFactory().withNameValidation(false).getNameValidator();
     }
 
+    /** 将 Date/Calendar 等类型转换为 HTTP 头字符串。 */
     private static class HeaderValueConverter extends CharSequenceValueConverter {
         static final HeaderValueConverter INSTANCE = new HeaderValueConverter();
 

@@ -20,15 +20,16 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link HttpContent} implementation.
+ * 默认 {@link HttpContent} 实现。
+ * <p>
+ * 表示 HTTP 消息中的一段正文分块（chunk），持有 {@link ByteBuf} 并支持引用计数。
  */
 public class DefaultHttpContent extends DefaultHttpObject implements HttpContent {
 
+    /** 本分块的正文数据。 */
     private final ByteBuf content;
 
-    /**
-     * Creates a new instance with the specified chunk content.
-     */
+    /** 以指定正文缓冲创建 HTTP 内容分块。 */
     public DefaultHttpContent(ByteBuf content) {
         this.content = ObjectUtil.checkNotNull(content, "content");
     }

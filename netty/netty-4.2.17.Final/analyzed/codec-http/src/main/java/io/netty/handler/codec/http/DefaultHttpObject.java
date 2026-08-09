@@ -18,15 +18,20 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.DecoderResult;
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * 默认 {@link HttpObject} 基类，持有解码结果 {@link DecoderResult}。
+ */
 public class DefaultHttpObject implements HttpObject {
 
     private static final int HASH_CODE_PRIME = 31;
+    /** HTTP 解码器对该对象的解析结果，默认成功。 */
     private DecoderResult decoderResult = DecoderResult.SUCCESS;
 
     protected DefaultHttpObject() {
-        // Disallow direct instantiation
+        // 禁止直接实例化，仅供子类继承
     }
 
+    /** 返回解码结果（成功或失败详情）。 */
     @Override
     public DecoderResult decoderResult() {
         return decoderResult;
@@ -38,6 +43,7 @@ public class DefaultHttpObject implements HttpObject {
         return decoderResult();
     }
 
+    /** 由解码器设置解析结果。 */
     @Override
     public void setDecoderResult(DecoderResult decoderResult) {
         this.decoderResult = ObjectUtil.checkNotNull(decoderResult, "decoderResult");

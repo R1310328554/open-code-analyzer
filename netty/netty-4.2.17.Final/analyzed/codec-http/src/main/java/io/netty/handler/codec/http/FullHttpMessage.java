@@ -18,8 +18,9 @@ package io.netty.handler.codec.http;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Combines {@link HttpMessage} and {@link LastHttpContent} into one
- * message. So it represent a <i>complete</i> http message.
+ * 将 {@link HttpMessage} 与 {@link LastHttpContent} 合并为一条<i>完整</i> HTTP 消息。
+ * <p>
+包含起始行、头部、正文及 trailing headers，适用于非 chunked 或已聚合的场景。
  */
 public interface FullHttpMessage extends HttpMessage, LastHttpContent {
     @Override

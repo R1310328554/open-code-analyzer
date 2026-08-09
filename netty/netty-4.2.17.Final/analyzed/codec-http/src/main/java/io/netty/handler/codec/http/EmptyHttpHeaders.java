@@ -22,10 +22,17 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+/**
+ * 不可变的空 {@link HttpHeaders} 单例。
+ * <p>
+ * 所有读操作返回空/null/默认值，写操作抛出 {@link UnsupportedOperationException}。
+ */
 public class EmptyHttpHeaders extends HttpHeaders {
+    /** 空 CharSequence 条目迭代器，供 {@link #iteratorCharSequence()} 复用。 */
     static final Iterator<Entry<CharSequence, CharSequence>> EMPTY_CHARS_ITERATOR =
             Collections.<Entry<CharSequence, CharSequence>>emptyList().iterator();
 
+    /** 全局空头部单例，推荐使用此常量。 */
     public static final EmptyHttpHeaders INSTANCE = instance();
 
     /**
@@ -110,7 +117,7 @@ public class EmptyHttpHeaders extends HttpHeaders {
 
     @Override
     public HttpHeaders add(String name, Object value) {
-        throw new UnsupportedOperationException("read only");
+        throw new UnsupportedOperationException("read only"); // 空头部不可修改
     }
 
     @Override
@@ -169,8 +176,9 @@ public class EmptyHttpHeaders extends HttpHeaders {
     }
 
     /**
-     * This class is needed to break a cyclic static initialization loop between {@link HttpHeaders} and
-     * {@link EmptyHttpHeaders}.
+     * 打破 {@link HttpHeaders} 与 {@link EmptyHttpHeaders} 之间的循环静态初始化。
+     * <p>
+     * 延迟创建单例，避免 {@link HttpHeaders#EMPTY_HEADERS} 为 null。
      */
     @Deprecated
     private static final class InstanceInitializer {

@@ -25,27 +25,25 @@ import static io.netty.handler.codec.http.DefaultHttpHeadersFactory.trailersFact
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Default implementation of {@link FullHttpRequest}.
+ * {@link FullHttpRequest} 的默认实现。
+ * <p>
+ * 将请求行、头部与正文合并为一条完整 HTTP 请求消息，并持有 {@link ByteBuf} 正文及可选的 trailing headers。
  */
 public class DefaultFullHttpRequest extends DefaultHttpRequest implements FullHttpRequest {
+    /** 请求正文缓冲。 */
     private final ByteBuf content;
+    /** chunked 编码的尾部头。 */
     private final HttpHeaders trailingHeader;
 
-    /**
-     * Used to cache the value of the hash code and avoid {@link IllegalReferenceCountException}.
-     */
+    /** 缓存 hashCode，避免在 {@link ByteBuf} 已释放时触发 {@link IllegalReferenceCountException}。 */
     private int hash;
 
-    /**
-     * Create a full HTTP response with the given HTTP version, method, and URI.
-     */
+    /** 创建无正文的完整 HTTP 请求。 */
     public DefaultFullHttpRequest(HttpVersion httpVersion, HttpMethod method, String uri) {
         this(httpVersion, method, uri, Unpooled.buffer(0), headersFactory(), trailersFactory());
     }
 
-    /**
-     * Create a full HTTP response with the given HTTP version, method, URI, and contents.
-     */
+    /** 创建含指定正文的完整 HTTP 请求。 */
     public DefaultFullHttpRequest(HttpVersion httpVersion, HttpMethod method, String uri, ByteBuf content) {
         this(httpVersion, method, uri, content, headersFactory(), trailersFactory());
     }
@@ -203,7 +201,7 @@ public class DefaultFullHttpRequest extends DefaultHttpRequest implements FullHt
                 try {
                     hash = 31 + content().hashCode();
                 } catch (IllegalReferenceCountException ignored) {
-                    // Handle race condition between checking refCnt() == 0 and using the object.
+                    // 检查 refCnt 与使用 content 之间可能存在竞态
                     hash = 31;
                 }
             } else {

@@ -18,8 +18,9 @@ package io.netty.handler.codec.http;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Combination of a {@link HttpResponse} and {@link FullHttpMessage}.
- * So it represent a <i>complete</i> http response.
+ * 组合 {@link HttpResponse} 与 {@link FullHttpMessage}，表示一条<i>完整</i> HTTP 响应。
+ * <p>
+包含状态、头部、正文及 trailing headers。
  */
 public interface FullHttpResponse extends HttpResponse, FullHttpMessage {
     @Override

@@ -22,23 +22,28 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * The default {@link Cookie} implementation.
- *
+ * 默认 {@link Cookie} 实现（已废弃）。
+ * <p>
+ * 继承 {@link io.netty.handler.codec.http.cookie.DefaultCookie}，保留旧版 getter/setter API 及 RFC 2965 扩展字段（comment、ports、version 等）。
  * @deprecated Use {@link io.netty.handler.codec.http.cookie.DefaultCookie} instead.
  */
 @Deprecated
 public class DefaultCookie extends io.netty.handler.codec.http.cookie.DefaultCookie implements Cookie {
 
+    /** RFC 2965 注释字段。 */
     private String comment;
+    /** RFC 2965 注释 URL。 */
     private String commentUrl;
+    /** 是否丢弃（不持久化）会话 Cookie。 */
     private boolean discard;
+    /** 限定 Cookie 生效的端口集合。 */
     private Set<Integer> ports = Collections.emptySet();
+    /** ports 的只读视图缓存。 */
     private Set<Integer> unmodifiablePorts = ports;
+    /** Cookie 协议版本（0/1）。 */
     private int version;
 
-    /**
-     * Creates a new cookie with the specified name and value.
-     */
+    /** 以指定名称与值创建 Cookie。 */
     public DefaultCookie(String name, String value) {
         super(name, value);
     }
@@ -137,11 +142,13 @@ public class DefaultCookie extends io.netty.handler.codec.http.cookie.DefaultCoo
 
         int[] portsCopy = ports.clone();
         if (portsCopy.length == 0) {
+            // 空端口列表表示不限制端口
             unmodifiablePorts = this.ports = Collections.emptySet();
         } else {
             Set<Integer> newPorts = new TreeSet<Integer>();
             for (int p: portsCopy) {
                 if (p <= 0 || p > 65535) {
+                    // 端口必须在 1–65535 范围内
                     throw new IllegalArgumentException("port out of range: " + p);
                 }
                 newPorts.add(Integer.valueOf(p));

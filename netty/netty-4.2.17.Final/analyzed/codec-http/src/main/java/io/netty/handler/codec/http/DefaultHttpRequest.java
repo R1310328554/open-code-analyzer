@@ -19,16 +19,21 @@ import static io.netty.handler.codec.http.DefaultHttpHeadersFactory.headersFacto
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@link HttpRequest} implementation.
+ * 默认 {@link HttpRequest} 实现。
+ * <p>
+ * 包含 HTTP 方法、URI 与头部；可选校验请求行 token 合法性。
  */
 public class DefaultHttpRequest extends DefaultHttpMessage implements HttpRequest {
     private static final int HASH_CODE_PRIME = 31;
+    /** HTTP 方法（GET/POST 等）。 */
     private HttpMethod method;
+    /** 请求 URI 或路径。 */
     private String uri;
+    /** 是否在构造/setter 时校验请求行 token。 */
     private final boolean validateRequestLine;
 
     /**
-     * Creates a new instance.
+     * 创建 HTTP 请求实例。
      *
      * @param httpVersion the HTTP version of the request
      * @param method      the HTTP method of the request
@@ -94,6 +99,7 @@ public class DefaultHttpRequest extends DefaultHttpMessage implements HttpReques
         this.uri = checkNotNull(uri, "uri");
         this.validateRequestLine = validateRequestLine;
         if (validateRequestLine) {
+            // 校验 method 与 uri 不含非法字符
             HttpUtil.validateRequestLineTokens(method, uri);
         }
     }
@@ -164,7 +170,7 @@ public class DefaultHttpRequest extends DefaultHttpMessage implements HttpReques
         DefaultHttpRequest other = (DefaultHttpRequest) o;
 
         return method().equals(other.method()) &&
-               uri().equalsIgnoreCase(other.uri()) &&
+               uri().equalsIgnoreCase(other.uri()) && // URI 比较忽略大小写
                super.equals(o);
     }
 

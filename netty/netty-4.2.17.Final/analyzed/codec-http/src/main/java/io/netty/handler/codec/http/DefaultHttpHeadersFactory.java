@@ -21,10 +21,10 @@ import io.netty.handler.codec.DefaultHeaders.ValueValidator;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A builder of {@link HttpHeadersFactory} instances, that itself implements {@link HttpHeadersFactory}.
- * The builder is immutable, and every {@code with-} method produce a new, modified instance.
+ * {@link HttpHeadersFactory} 的不可变构建器，自身也实现工厂接口。
  * <p>
- * The default builder you most likely want to start with is {@link DefaultHttpHeadersFactory#headersFactory()}.
+每个 {@code with-} 方法返回新实例；推荐从 {@link DefaultHttpHeadersFactory#headersFactory()} 开始。
+可配置名称/值校验、多值头合并及 trailer 专用规则。
  */
 public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
     private static final NameValidator<CharSequence> DEFAULT_NAME_VALIDATOR = new NameValidator<CharSequence>() {
@@ -79,8 +79,11 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
     private static final DefaultHttpHeadersFactory DEFAULT_NO_VALIDATION =
             new DefaultHttpHeadersFactory(NO_NAME_VALIDATOR, NO_VALUE_VALIDATOR, false);
 
+    /** 头部名称校验器。 */
     private final NameValidator<CharSequence> nameValidator;
+    /** 头部值校验器。 */
     private final ValueValidator<CharSequence> valueValidator;
+    /** 是否将同名多值头合并为逗号分隔的单行。 */
     private final boolean combiningHeaders;
 
     /**
@@ -100,25 +103,24 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
     }
 
     /**
-     * Get the default implementation of {@link HttpHeadersFactory} for creating headers.
+     * 获取创建普通 HTTP 头的默认工厂，启用推荐校验。
      * <p>
-     * This {@link DefaultHttpHeadersFactory} creates {@link HttpHeaders} instances that has the
-     * recommended header validation enabled.
+     * 创建的 {@link HttpHeaders} 实例会校验 token 字符与非法值。
      */
     public static DefaultHttpHeadersFactory headersFactory() {
         return DEFAULT;
     }
 
     /**
-     * Get the default implementation of {@link HttpHeadersFactory} for creating trailers.
+     * 获取创建 trailing headers 的默认工厂。
      * <p>
-     * This {@link DefaultHttpHeadersFactory} creates {@link HttpHeaders} instances that has the
-     * validation enabled that is recommended for trailers.
+     * 额外禁止 Content-Length、Transfer-Encoding、Trailer 等不允许出现在 trailer 中的头。
      */
     public static DefaultHttpHeadersFactory trailersFactory() {
         return DEFAULT_TRAILER;
     }
 
+    /** 根据当前配置创建新的 {@link HttpHeaders} 实例。 */
     @Override
     public HttpHeaders newHeaders() {
         if (isCombiningHeaders()) {
@@ -127,6 +129,7 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
         return new DefaultHttpHeaders(getNameValidator(), getValueValidator());
     }
 
+    /** 创建容量为 2 的空头部实例（适合预期条目很少的场景）。 */
     @Override
     public HttpHeaders newEmptyHeaders() {
         if (isCombiningHeaders()) {

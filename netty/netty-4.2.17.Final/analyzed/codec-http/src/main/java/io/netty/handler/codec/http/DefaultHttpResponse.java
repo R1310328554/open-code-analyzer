@@ -21,14 +21,17 @@ import static io.netty.handler.codec.http.DefaultHttpHeadersFactory.headersFacto
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@link HttpResponse} implementation.
+ * 默认 {@link HttpResponse} 实现。
+ * <p>
+ * 持有 HTTP 状态码、协议版本与头部。
  */
 public class DefaultHttpResponse extends DefaultHttpMessage implements HttpResponse {
 
+    /** HTTP 响应状态（如 200 OK）。 */
     private HttpResponseStatus status;
 
     /**
-     * Creates a new instance.
+     * 创建 HTTP 响应实例。
      *
      * @param version the HTTP version of this response
      * @param status  the status of this response
@@ -107,6 +110,7 @@ public class DefaultHttpResponse extends DefaultHttpMessage implements HttpRespo
         return status;
     }
 
+    /** 设置响应状态并返回 this。 */
     @Override
     public HttpResponse setStatus(HttpResponseStatus status) {
         this.status = ObjectUtil.checkNotNull(status, "status");

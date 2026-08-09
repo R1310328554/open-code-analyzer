@@ -25,21 +25,20 @@ import static io.netty.handler.codec.http.DefaultHttpHeadersFactory.trailersFact
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@link LastHttpContent} implementation.
+ * 默认 {@link LastHttpContent} 实现。
+ * <p>
+ * 表示 HTTP 消息的最后一块正文，可附带 chunked 编码的 trailing headers。
  */
 public class DefaultLastHttpContent extends DefaultHttpContent implements LastHttpContent {
+    /** chunked 尾部头（如扩展字段）。 */
     private final HttpHeaders trailingHeaders;
 
-    /**
-     * Create a new empty, last HTTP content message.
-     */
+    /** 创建无正文的最后一块 HTTP 内容。 */
     public DefaultLastHttpContent() {
         this(Unpooled.buffer(0));
     }
 
-    /**
-     * Create a new last HTTP content message with the given contents.
-     */
+    /** 以指定正文创建最后一块 HTTP 内容。 */
     public DefaultLastHttpContent(ByteBuf content) {
         this(content, trailersFactory());
     }
@@ -135,7 +134,7 @@ public class DefaultLastHttpContent extends DefaultHttpContent implements LastHt
         buf.append(StringUtil.NEWLINE);
         appendHeaders(buf);
 
-        // Remove the last newline.
+        // 去掉末尾多余换行
         buf.setLength(buf.length() - StringUtil.NEWLINE.length());
         return buf.toString();
     }
