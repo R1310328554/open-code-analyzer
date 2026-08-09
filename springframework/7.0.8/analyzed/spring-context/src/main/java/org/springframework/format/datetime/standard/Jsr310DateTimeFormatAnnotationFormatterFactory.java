@@ -39,8 +39,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.util.StringUtils;
 
 /**
- * Formats fields annotated with the {@link DateTimeFormat} annotation using the
- * JSR-310 <code>java.time</code> package.
+ * 使用 JSR-310 <code>java.time</code> 包格式化标注了 {@link DateTimeFormat} 注解的字段。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -110,10 +109,10 @@ public class Jsr310DateTimeFormatAnnotationFormatterFactory extends EmbeddedValu
 	}
 
 	/**
-	 * Factory method used to create a {@link DateTimeFormatter}.
-	 * @param annotation the format annotation for the field
-	 * @param fieldType the declared type of the field
-	 * @return a {@link DateTimeFormatter} instance
+	 * 用于创建 {@link DateTimeFormatter} 的工厂方法。
+	 * @param annotation 字段上的格式注解
+	 * @param fieldType 字段的声明类型
+	 * @return {@link DateTimeFormatter} 实例
 	 */
 	protected DateTimeFormatter getFormatter(DateTimeFormat annotation, Class<?> fieldType) {
 		DateTimeFormatterFactory factory = new DateTimeFormatterFactory();

@@ -26,20 +26,11 @@ import org.springframework.format.annotation.DurationFormat;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class DurationFormatterUtils — 意图说明
-
-class `DurationFormatterUtils`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/format/datetime/standard/DurationFormatterUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Support {@code Duration} parsing and printing in several styles, as listed in
- * {@link DurationFormat.Style}.
+ * 支持按 {@link DurationFormat.Style} 所列多种样式解析与打印 {@code Duration}。
  *
- * <p>Some styles may not enforce any unit to be present, defaulting to {@code DurationFormat.Unit#MILLIS}
- * in that case. Methods in this class offer overloads that take a {@link DurationFormat.Unit} to
- * be used as a fall-back instead of the ultimate MILLIS default.
+ * <p>部分样式可能不强制要求出现单位，此时默认使用 {@code DurationFormat.Unit#MILLIS}。
+ * 本类方法提供接受 {@link DurationFormat.Unit} 的重载，用作回退单位而非最终的 MILLIS 默认值。
  *
  * @author Phillip Webb
  * @author Valentine Wu
@@ -48,34 +39,30 @@ class `DurationFormatterUtils`：请结合所属模块与调用方理解其在�
  */
 public abstract class DurationFormatterUtils {
 
-	// [OCA] 字段 `ISO_8601_PATTERN`：类成员状态。
 	private static final Pattern ISO_8601_PATTERN = Pattern.compile("^[+-]?[pP].*$");
 
-	// [OCA] 字段 `SIMPLE_PATTERN`：类成员状态。
 	private static final Pattern SIMPLE_PATTERN = Pattern.compile("^([+-]?\\d+)([a-zA-Z]{0,2})$");
 
-	// [OCA] 字段 `COMPOSITE_PATTERN`：类成员状态。
 	private static final Pattern COMPOSITE_PATTERN = Pattern.compile("^([+-]?)\\(?\\s?(\\d+d)?\\s?(\\d+h)?\\s?(\\d+m)?" +
 			"\\s?(\\d+s)?\\s?(\\d+ms)?\\s?(\\d+us)?\\s?(\\d+ns)?\\)?$");
 
 
 	/**
-	 * Print the specified duration in the specified style.
-	 * @param value the value to print
-	 * @param style the style to print in
-	 * @return the printed result
+	 * 以指定样式打印 Duration。
+	 * @param value 要打印的值
+	 * @param style 打印样式
+	 * @return 打印结果
 	 */
 	public static String print(Duration value, DurationFormat.Style style) {
 		return print(value, style, null);
 	}
 
 	/**
-	 * Print the specified duration in the specified style using the given unit.
-	 * @param value the value to print
-	 * @param style the style to print in
-	 * @param unit the unit to use for printing, if relevant ({@code null} will default
-	 * to ms)
-	 * @return the printed result
+	 * 以指定样式和单位打印 Duration。
+	 * @param value 要打印的值
+	 * @param style 打印样式
+	 * @param unit 打印时使用的单位（若相关；{@code null} 时默认为毫秒）
+	 * @return 打印结果
 	 */
 	public static String print(Duration value, DurationFormat.Style style, DurationFormat.@Nullable Unit unit) {
 		return switch (style) {
@@ -86,22 +73,21 @@ public abstract class DurationFormatterUtils {
 	}
 
 	/**
-	 * Parse the given value to a duration.
-	 * @param value the value to parse
-	 * @param style the style in which to parse
-	 * @return a duration
+	 * 将给定值解析为 Duration。
+	 * @param value 要解析的值
+	 * @param style 解析样式
+	 * @return Duration 实例
 	 */
 	public static Duration parse(String value, DurationFormat.Style style) {
 		return parse(value, style, null);
 	}
 
 	/**
-	 * Parse the given value to a duration.
-	 * @param value the value to parse
-	 * @param style the style in which to parse
-	 * @param unit the duration unit to use if the value doesn't specify one ({@code null}
-	 * will default to ms)
-	 * @return a duration
+	 * 将给定值解析为 Duration。
+	 * @param value 要解析的值
+	 * @param style 解析样式
+	 * @param unit 值未指定单位时使用的时长单位（{@code null} 时默认为毫秒）
+	 * @return Duration 实例
 	 */
 	public static Duration parse(String value, DurationFormat.Style style, DurationFormat.@Nullable Unit unit) {
 		Assert.hasText(value, () -> "Value must not be empty");
@@ -113,10 +99,10 @@ public abstract class DurationFormatterUtils {
 	}
 
 	/**
-	 * Detect the style from the given source value.
-	 * @param value the source value
-	 * @return the duration style
-	 * @throws IllegalArgumentException if the value is not a known style
+	 * 根据给定源值检测样式。
+	 * @param value 源值
+	 * @return Duration 样式
+	 * @throws IllegalArgumentException 若值不属于任何已知样式
 	 */
 	public static DurationFormat.Style detect(String value) {
 		Assert.notNull(value, "Value must not be null");
@@ -134,24 +120,21 @@ public abstract class DurationFormatterUtils {
 	}
 
 	/**
-	 * Detect the style then parse the value to return a duration.
-	 * @param value the value to parse
-	 * @return the parsed duration
-	 * @throws IllegalArgumentException if the value is not a known style or cannot be
-	 * parsed
+	 * 检测样式后将值解析为 Duration。
+	 * @param value 要解析的值
+	 * @return 解析得到的 Duration
+	 * @throws IllegalArgumentException 若值不属于任何已知样式或无法解析
 	 */
 	public static Duration detectAndParse(String value) {
 		return detectAndParse(value, null);
 	}
 
 	/**
-	 * Detect the style then parse the value to return a duration.
-	 * @param value the value to parse
-	 * @param unit the duration unit to use if the value doesn't specify one ({@code null}
-	 * will default to ms)
-	 * @return the parsed duration
-	 * @throws IllegalArgumentException if the value is not a known style or cannot be
-	 * parsed
+	 * 检测样式后将值解析为 Duration。
+	 * @param value 要解析的值
+	 * @param unit 值未指定单位时使用的时长单位（{@code null} 时默认为毫秒）
+	 * @return 解析得到的 Duration
+	 * @throws IllegalArgumentException 若值不属于任何已知样式或无法解析
 	 */
 	public static Duration detectAndParse(String value, DurationFormat.@Nullable Unit unit) {
 		return parse(value, detect(value), unit);
@@ -187,13 +170,6 @@ public abstract class DurationFormatterUtils {
 			throw new IllegalArgumentException("'" + text + "' is not a valid simple duration", ex);
 		}
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 printComposite — 意图与阅读要点
-
-方法 `printComposite` 复杂度较高（CCN≈11, NLOC≈42）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
 
 	private static String printComposite(Duration duration) {
 		if (duration.isZero()) {

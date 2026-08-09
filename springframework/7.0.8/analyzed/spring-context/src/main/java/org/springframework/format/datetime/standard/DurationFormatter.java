@@ -26,9 +26,8 @@ import org.springframework.format.Formatter;
 import org.springframework.format.annotation.DurationFormat;
 
 /**
- * {@link Formatter} implementation for a JSR-310 {@link Duration},
- * following JSR-310's parsing rules for a Duration by default and
- * supporting additional {@code DurationFormat.Style} styles.
+ * JSR-310 {@link Duration} 的 {@link Formatter} 实现，默认遵循 JSR-310 对 Duration 的解析规则，
+ * 并支持额外的 {@code DurationFormat.Style} 样式。
  *
  * @author Juergen Hoeller
  * @since 6.2
@@ -42,33 +41,29 @@ public class DurationFormatter implements Formatter<Duration> {
 	private final DurationFormat.@Nullable Unit defaultUnit;
 
 	/**
-	 * Create a {@code DurationFormatter} following JSR-310's parsing rules for a Duration
-	 * (the {@link DurationFormat.Style#ISO8601 ISO-8601} style).
+	 * 创建遵循 JSR-310 Duration 解析规则（{@link DurationFormat.Style#ISO8601 ISO-8601} 样式）的 {@code DurationFormatter}。
 	 */
 	DurationFormatter() {
 		this(DurationFormat.Style.ISO8601);
 	}
 
 	/**
-	 * Create a {@code DurationFormatter} in a specific {@link DurationFormat.Style}.
-	 * <p>When a unit is needed but cannot be determined (for example, printing a Duration in the
-	 * {@code SIMPLE} style), {@code DurationFormat.Unit#MILLIS} is used.
+	 * 以指定 {@link DurationFormat.Style} 创建 {@code DurationFormatter}。
+	 * <p>当需要单位但无法确定时（例如在 {@code SIMPLE} 样式下打印 Duration），
+	 * 将使用 {@code DurationFormat.Unit#MILLIS}。
 	 */
 	public DurationFormatter(DurationFormat.Style style) {
 		this(style, null);
 	}
 
 	/**
-	 * Create a {@code DurationFormatter} in a specific {@link DurationFormat.Style} with an
-	 * optional {@code DurationFormat.Unit}.
-	 * <p>If a {@code defaultUnit} is specified, it may be used in parsing cases when no
-	 * unit is present in the string (provided the style allows for such a case). It will
-	 * also be used as the representation's resolution when printing in the
-	 * {@link DurationFormat.Style#SIMPLE} style. Otherwise, the style defines its default
-	 * unit.
+	 * 以指定 {@link DurationFormat.Style} 和可选的 {@code DurationFormat.Unit} 创建 {@code DurationFormatter}。
+	 * <p>若指定了 {@code defaultUnit}，在字符串中未出现单位时可用于解析（前提是样式允许此类情况）。
+	 * 在 {@link DurationFormat.Style#SIMPLE} 样式下打印时，也作为表示的分辨率单位。
+	 * 否则由样式定义其默认单位。
 	 *
-	 * @param style the {@code DurationStyle} to use
-	 * @param defaultUnit the {@code DurationFormat.Unit} to fall back to when parsing and printing
+	 * @param style 要使用的 {@code DurationStyle}
+	 * @param defaultUnit 解析与打印时回退使用的 {@code DurationFormat.Unit}
 	 */
 	public DurationFormatter(DurationFormat.Style style, DurationFormat.@Nullable Unit defaultUnit) {
 		this.style = style;

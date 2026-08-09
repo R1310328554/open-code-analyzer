@@ -23,8 +23,8 @@ import java.util.Locale;
 import org.springframework.format.Printer;
 
 /**
- * {@link Printer} implementation for a JSR-310 {@link java.time.temporal.TemporalAccessor},
- * using a {@link java.time.format.DateTimeFormatter}) (the contextual one, if available).
+ * JSR-310 {@link java.time.temporal.TemporalAccessor} 的 {@link Printer} 实现，
+ * 使用 {@link java.time.format.DateTimeFormatter}（若可用则使用上下文中的格式化器）。
  *
  * @author Juergen Hoeller
  * @since 4.0
@@ -37,8 +37,8 @@ public final class TemporalAccessorPrinter implements Printer<TemporalAccessor> 
 
 
 	/**
-	 * Create a new TemporalAccessorPrinter.
-	 * @param formatter the base DateTimeFormatter instance
+	 * 创建新的 TemporalAccessorPrinter。
+	 * @param formatter 基础 DateTimeFormatter 实例
 	 */
 	public TemporalAccessorPrinter(DateTimeFormatter formatter) {
 		this.formatter = formatter;

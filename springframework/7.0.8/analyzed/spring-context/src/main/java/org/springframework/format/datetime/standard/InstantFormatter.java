@@ -24,11 +24,9 @@ import java.util.Locale;
 import org.springframework.format.Formatter;
 
 /**
- * {@link Formatter} implementation for a JSR-310 {@link java.time.Instant},
- * following JSR-310's parsing rules for an Instant (that is, not using a
- * configurable {@link java.time.format.DateTimeFormatter}): accepting the
- * default {@code ISO_INSTANT} format as well as {@code RFC_1123_DATE_TIME}
- * (which is commonly used for HTTP date header values).
+ * JSR-310 {@link java.time.Instant} 的 {@link Formatter} 实现，遵循 JSR-310 对 Instant 的解析规则
+ *（即不使用可配置的 {@link java.time.format.DateTimeFormatter}）：接受默认的 {@code ISO_INSTANT} 格式，
+ * 以及常用于 HTTP 日期头值的 {@code RFC_1123_DATE_TIME}。
  *
  * @author Juergen Hoeller
  * @author Andrei Nevedomskii
