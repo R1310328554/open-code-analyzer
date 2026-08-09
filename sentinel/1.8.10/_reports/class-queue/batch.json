@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:08:29Z",
-  "files": [
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/rule/FlowRuleApiProvider.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/rule/FlowRuleApiPublisher.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/service/ClusterAssignService.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/service/ClusterAssignServiceImpl.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/service/ClusterConfigService.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/util/AsyncUtils.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/util/ClusterEntityUtils.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/util/MachineUtils.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/util/VersionUtils.java",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/app.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/authority.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_assign_manage.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_server_manage.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_server_monitor.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/controllers/cluster_app_token_client_list.js"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 305,
-  "done": 645
+  "done": 660
 }
