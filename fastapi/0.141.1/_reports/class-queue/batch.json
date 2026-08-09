@@ -1,17 +1,17 @@
 {
   "claimed_at": "2026-08-09T17:40:23Z",
   "files": [
-    "docs_src/python_types/__init__.py",
-    "docs_src/python_types/tutorial001_py310.py",
-    "docs_src/python_types/tutorial002_py310.py",
-    "docs_src/python_types/tutorial003_py310.py",
-    "docs_src/python_types/tutorial004_py310.py",
-    "docs_src/python_types/tutorial005_py310.py",
-    "docs_src/python_types/tutorial006_py310.py",
-    "docs_src/python_types/tutorial007_py310.py",
-    "docs_src/python_types/tutorial008_py310.py",
-    "docs_src/python_types/tutorial008b_py310.py"
+    "docs_src/query_params/tutorial001_py310.py",
+    "docs_src/query_params/tutorial002_py310.py",
+    "docs_src/query_params/tutorial003_py310.py",
+    "docs_src/query_params/tutorial004_py310.py",
+    "docs_src/query_params/tutorial005_py310.py",
+    "docs_src/query_params/tutorial006_py310.py",
+    "docs_src/query_params_str_validations/__init__.py",
+    "docs_src/query_params_str_validations/tutorial001_py310.py",
+    "docs_src/query_params_str_validations/tutorial002_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial002_py310.py"
   ],
   "remaining_pending": 167,
-  "done": 332
+  "done": 342
 }
