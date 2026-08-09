@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.util;
 import java.util.Collection;
 
 /**
- * Util class for checking arguments.
+ * 参数校验工具类，不满足条件时抛出 {@link IllegalArgumentException} 或 {@link IllegalStateException}。
  *
  * @author Eric Zhao
  */

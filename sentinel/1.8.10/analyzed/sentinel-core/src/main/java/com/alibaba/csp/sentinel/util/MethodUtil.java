@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /***
- * Util class for processing {@link Method}.
+ * 处理 {@link Method} 的工具类，解析并缓存方法签名。
  *
  * @author youji.zj
  */
@@ -31,10 +31,10 @@ public final class MethodUtil {
     private static final Object LOCK = new Object();
 
     /**
-     * Parse and resolve the method name, then cache to the map.
+     * 解析并生成方法名，随后缓存到映射中。
      *
-     * @param method method instance
-     * @return resolved method name
+     * @param method 方法实例
+     * @return 解析后的方法名
      */
     public static String resolveMethodName(Method method) {
         if (method == null) {
@@ -71,7 +71,7 @@ public final class MethodUtil {
     }
 
     /**
-     * For test.
+     * 供测试使用。
      */
     static void clearMethodMap() {
         methodNameMap.clear();

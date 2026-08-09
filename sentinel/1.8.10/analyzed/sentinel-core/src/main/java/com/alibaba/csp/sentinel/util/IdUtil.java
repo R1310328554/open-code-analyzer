@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.util;
 
 /**
+ * 资源 ID 处理工具类，用于截断并规范化资源标识字符串。
+ *
  * @author qinan.qn
  */
 public final class IdUtil {

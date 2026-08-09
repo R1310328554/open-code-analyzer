@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.util.function;
 
 /**
- * BiConsumer interface from JDK 8.
+ * JDK 8 中的 BiConsumer 函数式接口，接受两个参数且无返回值。
  */
 public interface BiConsumer<T, U> {
 

@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.spi;
 
 /**
- * Error thrown when something goes wrong while loading Provider via {@link SpiLoader}.
+ * 通过 {@link SpiLoader} 加载 Provider 时发生错误所抛出的异常。
  *
  * @author cdfive
  */

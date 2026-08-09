@@ -23,7 +23,7 @@ import java.util.Enumeration;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
- * Get host name and ip of the host.
+ * 获取本机主机名与 IP 地址的工具类。
  *
  * @author leyou
  */
@@ -34,7 +34,7 @@ public final class HostNameUtil {
 
     static {
         try {
-            // Init the host information.
+            // 初始化主机信息。
             resolveHost();
         } catch (Exception e) {
             RecordLog.info("Failed to get local host", e);
@@ -46,7 +46,7 @@ public final class HostNameUtil {
         hostName = addr.getHostName();
         ip = addr.getHostAddress();
         if (addr.isLoopbackAddress()) {
-            // find the first IPv4 Address that not loopback
+            // 查找第一个非回环的 IPv4 地址
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
                 NetworkInterface in = interfaces.nextElement();

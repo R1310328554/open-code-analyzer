@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.util;
 
 /***
- * Util class providing operations on {@link String}.
+ * 提供 {@link String} 常用操作的工具类。
  *
  * @author youji.zj
  */
@@ -82,16 +82,16 @@ public final class StringUtil {
         int index2 = start;
         int tmpLen = length;
 
-        // Extract these first so we detect NPEs the same as the java.lang.String version
+        // 先提取这些变量，以便与 java.lang.String 版本一样检测 NPE
         final int srcLen = cs.length() - thisStart;
         final int otherLen = substring.length() - start;
 
-        // Check for invalid parameters
+        // 校验非法参数
         if (thisStart < 0 || start < 0 || length < 0) {
             return false;
         }
 
-        // Check that the regions are long enough
+        // 校验区域长度是否足够
         if (srcLen < length || otherLen < length) {
             return false;
         }
@@ -108,7 +108,7 @@ public final class StringUtil {
                 return false;
             }
 
-            // The same check as in String.regionMatches():
+            // 与 String.regionMatches() 相同的比较逻辑：
             if (Character.toUpperCase(c1) != Character.toUpperCase(c2)
                 && Character.toLowerCase(c1) != Character.toLowerCase(c2)) {
                 return false;

@@ -29,7 +29,7 @@ import java.util.Properties;
 
 /**
  * <p>
- * Util class for loading configuration from file or command arguments.
+ * 从文件或命令行参数加载配置的工具类。
  * </p>
  *
  * @author lianglin
@@ -40,11 +40,11 @@ public final class ConfigUtil {
     public static final String CLASSPATH_FILE_FLAG = "classpath:";
 
     /**
-     * <p>Load the properties from provided file.</p>
-     * <p>Currently it supports reading from classpath file or local file.</p>
+     * <p>从指定文件加载 Properties。</p>
+     * <p>当前支持从 classpath 文件或本地文件读取。</p>
      *
-     * @param fileName valid file path
-     * @return the retrieved properties from the file; null if the file not exist
+     * @param fileName 有效的文件路径
+     * @return 从文件读取的 Properties；文件不存在时返回 null
      */
     public static Properties loadProperties(String fileName) {
         if (StringUtil.isNotBlank(fileName)) {
@@ -138,8 +138,8 @@ public final class ConfigUtil {
     }
 
     private static Charset getCharset() {
-        // avoid static loop dependencies: SentinelConfig -> SentinelConfigLoader -> ConfigUtil -> SentinelConfig
-        // so not use SentinelConfig.charset()
+        // 避免静态循环依赖：SentinelConfig -> SentinelConfigLoader -> ConfigUtil -> SentinelConfig
+        // 故不使用 SentinelConfig.charset()
         return Charset.forName(System.getProperty("csp.sentinel.charset", StandardCharsets.UTF_8.name()));
     }
 

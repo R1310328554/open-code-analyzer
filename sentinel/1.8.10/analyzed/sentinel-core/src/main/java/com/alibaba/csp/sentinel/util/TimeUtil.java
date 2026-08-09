@@ -25,15 +25,14 @@ import com.alibaba.csp.sentinel.slots.statistic.base.WindowWrap;
 import com.alibaba.csp.sentinel.util.function.Tuple2;
 
 /**
- * <p>Provides millisecond-level time of OS.</p>
+ * <p>提供操作系统毫秒级时间戳。</p>
  * <p>
- * Here we should see that not all the time TimeUtil should
- * keep looping 1_000 times every second (Actually about 800/s due to some losses).
+ * 并非始终需要每秒循环 1_000 次（实际约 800 次/秒，存在损耗）：
  * <pre>
- * * In idle conditions it just acts as System.currentTimeMillis();
- * * In busy conditions (significantly more than 1_000/s) it keeps loop to reduce costs.
+ * * 空闲时行为等同 System.currentTimeMillis()；
+ * * 高负载时（显著超过 1_000 次/秒）持续循环以降低开销。
  * </pre>
- * For detail design and proposals please goto
+ * 详细设计与方案请参阅
  * <a href="https://github.com/alibaba/Sentinel/issues/1702#issuecomment-692151160">https://github.com/alibaba/Sentinel/issues/1702</a>
  *
  * @author qinan.qn
@@ -71,7 +70,7 @@ public final class TimeUtil implements Runnable {
     private LeapArray<Statistic> statistics;
 
     /**
-     * thread private variables
+     * 线程私有变量
      */
     private long lastCheck = 0;
 
@@ -107,7 +106,7 @@ public final class TimeUtil implements Runnable {
     @Override
     public void run() {
         while (true) {
-            // Mechanism optimized since 1.8.2
+            // 自 1.8.2 起优化的机制
             this.check();
             if (this.state == STATE.RUNNING) {
                 this.currentTimeMillis = System.currentTimeMillis();
@@ -135,20 +134,20 @@ public final class TimeUtil implements Runnable {
     }
 
     /**
-     * Current running state
+     * 当前运行状态。
      *
-     * @return
+     * @return 当前状态
      */
     public STATE getState() {
         return state;
     }
 
     /**
-     * Current qps statistics (including reads and writes request)
-     * excluding current working time window for accurate result.
+     * 当前 QPS 统计（含读与写请求），
+     * 排除当前工作窗口以获得更准确的结果。
      *
-     * @param now
-     * @return
+     * @param now 当前时间戳
+     * @return 读/写 QPS 元组
      */
     public Tuple2<Long, Long> currentQps(long now) {
         List<WindowWrap<Statistic>> list = this.statistics.listAll();
@@ -170,12 +169,12 @@ public final class TimeUtil implements Runnable {
     }
 
     /**
-     * Check and operate the state if necessary.
-     * ATTENTION: It's called in daemon thread.
+     * 按需检查并切换运行状态。
+     * 注意：在守护线程中调用。
      */
     private void check() {
         long now = currentTime(true);
-        // every period
+        // 每个检查周期
         if (now - this.lastCheck < CHECK_INTERVAL) {
             return;
         }
@@ -207,9 +206,9 @@ public final class TimeUtil implements Runnable {
     }
 
     /**
-     * Current timestamp in milliseconds.
+     * 当前毫秒时间戳。
      *
-     * @return
+     * @return 毫秒时间戳
      */
     public long getTime() {
         return this.currentTime(false);

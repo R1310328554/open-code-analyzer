@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.util;
 import com.alibaba.csp.sentinel.config.SentinelConfig;
 
 /**
+ * 应用名工具类，从 {@link com.alibaba.csp.sentinel.config.SentinelConfig} 读取当前应用名。
+ *
  * @author Eric Zhao
  * @author leyou
  */

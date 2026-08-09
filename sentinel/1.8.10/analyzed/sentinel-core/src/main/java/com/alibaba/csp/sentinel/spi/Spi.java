@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.spi;
 import java.lang.annotation.*;
 
 /**
- * Annotation for Provider class of SPI.
+ * 标注 SPI Provider 实现类的注解。
  *
  * @see SpiLoader
  * @author cdfive
@@ -29,22 +29,22 @@ import java.lang.annotation.*;
 public @interface Spi {
 
     /**
-     * Alias name of Provider class
+     * Provider 实现类的别名
      */
     String value() default "";
 
     /**
-     * Whether create singleton instance
+     * 是否创建单例实例
      */
     boolean isSingleton() default true;
 
     /**
-     * Whether is the default Provider
+     * 是否为默认 Provider
      */
     boolean isDefault() default false;
 
     /**
-     * Order priority of Provider class
+     * Provider 实现类的排序优先级
      */
     int order() default 0;
 

@@ -18,8 +18,8 @@ package com.alibaba.csp.sentinel.util;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
- * Get version of Sentinel from {@code MANIFEST.MF} file.
- * 
+ * 从 {@code MANIFEST.MF} 读取 Sentinel 版本号的工具类。
+ *
  * @author jason
  * @since 0.2.1
  */
@@ -53,17 +53,17 @@ public final class VersionUtil {
     }
 
     /**
-     * Convert version in string like x.y.z or x.y.z.b into number<br />
-     * Each segment has one byte space(unsigned)<br />
-     * eg.<br />
+     * 将 x.y.z 或 x.y.z.b 格式的版本字符串转换为整数。<br />
+     * 每段占一字节（无符号）。<br />
+     * 例如：<br />
      * <pre>
      * 1.2.3.4 => 01 02 03 04
      * 1.2.3   => 01 02 03 00
      * 1.2     => 01 02 00 00
      * 1       => 01 00 00 00
      * </pre>
-     * 
-     * @return
+     *
+     * @return 编码后的版本整数
      */
     public static int fromVersionString(String verStr) {
         if (verStr == null || verStr.length() < 1) {
@@ -76,7 +76,7 @@ public final class VersionUtil {
         int pos;
         do {
             if (index >= versions.length) {
-                // More dots than "x.y.z.b" contains
+                // 分段数超过 "x.y.z.b" 格式允许的上限
                 return 0;
             }
             pos = verStr.indexOf('.', cur);
@@ -85,12 +85,12 @@ public final class VersionUtil {
             } else if (cur < pos) {
                 segment = verStr.substring(cur, pos);
             } else {
-                // Illegal format
+                // 非法格式
                 return 0;
             }
             versions[index] = parseInt(segment);
             if (versions[index] < 0 || versions[index] > 255) {
-                // Out of range [0, 255]
+                // 超出 [0, 255] 范围
                 return 0;
             }
             cur = pos + 1;

@@ -26,6 +26,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.sun.management.OperatingSystemMXBean;
 
 /**
+ * 系统状态监听器，周期性采集系统负载与 CPU 使用率，供 {@link SystemRuleManager} 判定系统保护规则。
+ *
  * @author jialiang.linjl
  */
 public class SystemStatusListener implements Runnable {
@@ -53,16 +55,14 @@ public class SystemStatusListener implements Runnable {
             currentLoad = osBean.getSystemLoadAverage();
 
             /*
-             * Java Doc copied from {@link OperatingSystemMXBean#getSystemCpuLoad()}:</br>
-             * Returns the "recent cpu usage" for the whole system. This value is a double in the [0.0,1.0] interval.
-             * A value of 0.0 means that all CPUs were idle during the recent period of time observed, while a value
-             * of 1.0 means that all CPUs were actively running 100% of the time during the recent period being
-             * observed. All values between 0.0 and 1.0 are possible depending of the activities going on in the
-             * system. If the system recent cpu usage is not available, the method returns a negative value.
+             * 摘自 {@link OperatingSystemMXBean#getSystemCpuLoad()} 的 JavaDoc：</br>
+             * 返回整个系统"近期 CPU 使用率"，取值区间为 [0.0, 1.0] 的 double。
+             * 0.0 表示观测期内所有 CPU 均空闲；1.0 表示所有 CPU 在观测期内 100% 满负荷运行。
+             * 0.0 到 1.0 之间的值取决于系统当前活动。若无法获取近期 CPU 使用率，则返回负值。
              */
             double systemCpuUsage = osBean.getSystemCpuLoad();
 
-            // calculate process cpu usage to support application running in container environment
+            // 计算进程 CPU 使用率，以支持容器环境中的应用
             RuntimeMXBean runtimeBean = ManagementFactory.getPlatformMXBean(RuntimeMXBean.class);
             long newProcessCpuTime = osBean.getProcessCpuTime();
             long newProcessUpTime = runtimeBean.getUptime();

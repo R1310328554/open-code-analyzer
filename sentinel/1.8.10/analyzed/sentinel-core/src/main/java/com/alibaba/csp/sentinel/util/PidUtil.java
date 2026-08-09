@@ -18,17 +18,17 @@ package com.alibaba.csp.sentinel.util;
 import java.lang.management.ManagementFactory;
 
 /**
- * Util class providing pid of current process.
+ * 提供当前进程 PID 的工具类。
  */
 public final class PidUtil {
 
     /**
-     * Resolve and get current process ID.
+     * 解析并获取当前进程 ID。
      *
-     * @return current process ID
+     * @return 当前进程 ID
      */
     public static int getPid() {
-        // Note: this will trigger local host resolve, which might be slow.
+        // 注意：此操作会触发本机解析，可能较慢。
         String name = ManagementFactory.getRuntimeMXBean().getName();
         return Integer.parseInt(name.split("@")[0]);
     }
