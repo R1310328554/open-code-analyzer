@@ -15,23 +15,8 @@
     "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/GetNamesrvConfigCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/UpdateKvConfigCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/UpdateNamesrvConfigCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/WipeWritePermSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/offset/CloneGroupOffsetCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/offset/GetConsumerStatusCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/offset/ResetOffsetByTimeCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/offset/ResetOffsetByTimeOldCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/offset/SkipAccumulationSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/producer/ProducerSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/queue/CheckRocksdbCqWriteProgressCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/queue/QueryConsumeQueueCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/stats/StatsAllSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/AllocateMQSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/DeleteTopicSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/RebalanceResult.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/RemappingStaticTopicSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/TopicClusterSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/TopicListSubCommand.java"
+    "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/WipeWritePermSubCommand.java"
   ],
   "remaining_pending": 138,
-  "done": 1320
+  "done": 1335
 }
