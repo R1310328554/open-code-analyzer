@@ -408,3 +408,13 @@
 2026-08-09T17:33:28Z DONE docs_src/pydantic_v1_in_v2/tutorial002_an_py310.py wave15b numeric_validations/pydantic_v1 [10:20]
 2026-08-09T17:33:28Z DONE docs_src/pydantic_v1_in_v2/tutorial003_an_py310.py wave15b numeric_validations/pydantic_v1 [10:20]
 2026-08-09T17:33:28Z DONE docs_src/pydantic_v1_in_v2/tutorial004_an_py310.py wave15b numeric_validations/pydantic_v1 [10:20]
+2026-08-09T17:41:41Z DONE docs_src/python_types/tutorial009_py310.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/python_types/tutorial010_py310.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/python_types/tutorial011_py310.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/python_types/tutorial013_py310.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/query_param_models/__init__.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/query_param_models/tutorial001_an_py310.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/query_param_models/tutorial001_py310.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/query_param_models/tutorial002_an_py310.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/query_param_models/tutorial002_py310.py wave16b
+2026-08-09T17:41:41Z DONE docs_src/query_params/__init__.py wave16b

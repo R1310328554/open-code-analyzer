@@ -10,18 +10,8 @@
     "docs_src/python_types/tutorial006_py310.py",
     "docs_src/python_types/tutorial007_py310.py",
     "docs_src/python_types/tutorial008_py310.py",
-    "docs_src/python_types/tutorial008b_py310.py",
-    "docs_src/python_types/tutorial009_py310.py",
-    "docs_src/python_types/tutorial010_py310.py",
-    "docs_src/python_types/tutorial011_py310.py",
-    "docs_src/python_types/tutorial013_py310.py",
-    "docs_src/query_param_models/__init__.py",
-    "docs_src/query_param_models/tutorial001_an_py310.py",
-    "docs_src/query_param_models/tutorial001_py310.py",
-    "docs_src/query_param_models/tutorial002_an_py310.py",
-    "docs_src/query_param_models/tutorial002_py310.py",
-    "docs_src/query_params/__init__.py"
+    "docs_src/python_types/tutorial008b_py310.py"
   ],
   "remaining_pending": 167,
-  "done": 322
+  "done": 332
 }
