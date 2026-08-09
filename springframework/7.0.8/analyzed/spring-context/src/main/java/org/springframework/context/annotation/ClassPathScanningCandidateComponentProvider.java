@@ -63,27 +63,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
-/* ===== [OCA 中文解析] =====
-class ClassPathScanningCandidateComponentProvider — 意图说明
-
-class `ClassPathScanningCandidateComponentProvider`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ClassPathScanningCandidateComponentProvider.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * A component provider that scans for candidate components starting from a
- * specified base package. Can use the {@linkplain CandidateComponentsIndex component
- * index}, if it is available, and scans the classpath otherwise.
+ * 从指定基础包起扫描候选组件的提供者。
+ * <p>若存在 {@linkplain CandidateComponentsIndex 组件索引}则优先使用索引，否则回退到 classpath 扫描。
  *
- * <p>Candidate components are identified by applying exclude and include filters.
- * {@link AnnotationTypeFilter} and {@link AssignableTypeFilter} include filters
- * for an annotation/target-type that is annotated with {@link Indexed} are
- * supported: if any other include filter is specified, the index is ignored and
- * classpath scanning is used instead.
+ * <p>通过 include/exclude 过滤器识别候选组件。
+ * 对标注了 {@link Indexed} 的注解或目标类型，支持 {@link AnnotationTypeFilter} 与
+ * {@link AssignableTypeFilter} 作为 include 过滤器；若配置了其他 include 过滤器，
+ * 则忽略索引并改用 classpath 扫描。
  *
- * <p>This implementation is based on Spring's
- * {@link org.springframework.core.type.classreading.MetadataReader MetadataReader}
- * facility, backed by an ASM {@link org.springframework.asm.ClassReader ClassReader}.
+ * <p>实现基于 Spring 的 {@link org.springframework.core.type.classreading.MetadataReader MetadataReader}，
+ * 底层由 ASM {@link org.springframework.asm.ClassReader ClassReader} 支撑。
  *
  * @author Mark Fisher
  * @author Juergen Hoeller
@@ -99,33 +89,31 @@ class `ClassPathScanningCandidateComponentProvider`：请结合所属模块与�
  */
 public class ClassPathScanningCandidateComponentProvider implements EnvironmentCapable, ResourceLoaderAware {
 
+	/** 默认 classpath 资源匹配模式：所有 {@code .class} 文件。 */
 	static final String DEFAULT_RESOURCE_PATTERN = "**/*.class";
 
-	// [OCA] 字段 `IGNORE_CLASSFORMAT_PROPERTY_NAME`：类成员状态。
 	/**
-	 * System property that instructs Spring to ignore class format exceptions during
-	 * classpath scanning, in particular for unsupported class file versions.
-	 * By default, such a class format mismatch leads to a classpath scanning failure.
+	 * 系统属性：classpath 扫描时忽略类格式异常（例如不支持的 class 文件版本）。
+	 * 默认情况下类格式不匹配会导致扫描失败。
 	 * @since 6.1.2
 	 * @see ClassFormatException
 	 */
 	public static final String IGNORE_CLASSFORMAT_PROPERTY_NAME = "spring.classformat.ignore";
 
-	// [OCA] 字段 `shouldIgnoreClassFormatException`：类成员状态。
+	/** 是否根据系统属性忽略类格式异常。 */
 	private static final boolean shouldIgnoreClassFormatException =
 			SpringProperties.getFlag(IGNORE_CLASSFORMAT_PROPERTY_NAME);
 
 
-	// [OCA] 字段 `logger`：类成员状态。
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	// [OCA] 字段 `resourcePattern`：类成员状态。
+	/** 扫描时追加到每个基础包名后的资源模式。 */
 	private String resourcePattern = DEFAULT_RESOURCE_PATTERN;
 
-	// [OCA] 字段 `includeFilters`：类成员状态。
+	/** include 类型过滤器列表（按添加顺序匹配）。 */
 	private final List<TypeFilter> includeFilters = new ArrayList<>();
 
-	// [OCA] 字段 `excludeFilters`：类成员状态。
+	/** exclude 类型过滤器列表（新添加的过滤器优先匹配）。 */
 	private final List<TypeFilter> excludeFilters = new ArrayList<>();
 
 	private @Nullable Environment environment;
@@ -136,22 +124,22 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 	private @Nullable MetadataReaderFactory metadataReaderFactory;
 
+	/** 候选组件索引（若 classpath 上存在 {@code META-INF/spring.components}）。 */
 	private @Nullable CandidateComponentsIndex componentsIndex;
 
 
 	/**
-	 * Protected constructor for flexible subclass initialization.
+	 * 受保护构造器，供子类灵活初始化。
 	 * @since 4.3.6
 	 */
 	protected ClassPathScanningCandidateComponentProvider() {
 	}
 
 	/**
-	 * Create a ClassPathScanningCandidateComponentProvider with a {@link StandardEnvironment}.
-	 * @param useDefaultFilters whether to register the default filters for the
-	 * {@link Component @Component}, {@link Repository @Repository},
-	 * {@link Service @Service}, and {@link Controller @Controller}
-	 * stereotype annotations
+	 * 使用 {@link StandardEnvironment} 创建扫描提供者。
+	 * @param useDefaultFilters 是否注册 {@link Component @Component}、
+	 * {@link Repository @Repository}、{@link Service @Service}、
+	 * {@link Controller @Controller} 等构造型注解的默认过滤器
 	 * @see #registerDefaultFilters()
 	 */
 	public ClassPathScanningCandidateComponentProvider(boolean useDefaultFilters) {
@@ -159,12 +147,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Create a ClassPathScanningCandidateComponentProvider with the given {@link Environment}.
-	 * @param useDefaultFilters whether to register the default filters for the
-	 * {@link Component @Component}, {@link Repository @Repository},
-	 * {@link Service @Service}, and {@link Controller @Controller}
-	 * stereotype annotations
-	 * @param environment the Environment to use
+	 * 使用给定 {@link Environment} 创建扫描提供者。
+	 * @param useDefaultFilters 是否注册 {@link Component @Component}、
+	 * {@link Repository @Repository}、{@link Service @Service}、
+	 * {@link Controller @Controller} 等构造型注解的默认过滤器
+	 * @param environment 使用的 Environment
 	 * @see #registerDefaultFilters()
 	 */
 	public ClassPathScanningCandidateComponentProvider(boolean useDefaultFilters, Environment environment) {
@@ -177,8 +164,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 
 	/**
-	 * Set the resource pattern to use when scanning the classpath.
-	 * This value will be appended to each base package name.
+	 * 设置 classpath 扫描使用的资源模式，会追加到每个基础包名之后。
 	 * @see #findCandidateComponents(String)
 	 * @see #DEFAULT_RESOURCE_PATTERN
 	 */
@@ -188,25 +174,24 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Add an include type filter to the <i>end</i> of the inclusion list.
+	 * 将 include 类型过滤器追加到 inclusion 列表末尾。
 	 */
 	public void addIncludeFilter(TypeFilter includeFilter) {
 		this.includeFilters.add(includeFilter);
 	}
 
 	/**
-	 * Add an exclude type filter to the <i>front</i> of the exclusion list.
+	 * 将 exclude 类型过滤器插入 exclusion 列表头部。
 	 */
 	public void addExcludeFilter(TypeFilter excludeFilter) {
 		this.excludeFilters.add(0, excludeFilter);
 	}
 
 	/**
-	 * Reset the configured type filters.
-	 * @param useDefaultFilters whether to re-register the default filters for
-	 * the {@link Component @Component}, {@link Repository @Repository},
-	 * {@link Service @Service}, and {@link Controller @Controller}
-	 * stereotype annotations
+	 * 重置已配置的类型过滤器。
+	 * @param useDefaultFilters 是否重新注册 {@link Component @Component}、
+	 * {@link Repository @Repository}、{@link Service @Service}、
+	 * {@link Controller @Controller} 等构造型注解的默认过滤器
 	 * @see #registerDefaultFilters()
 	 */
 	public void resetFilters(boolean useDefaultFilters) {
@@ -218,12 +203,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Register the default filter for {@link Component @Component}.
-	 * <p>This will implicitly register all annotations that have the
-	 * {@link Component @Component} meta-annotation including the
-	 * {@link Repository @Repository}, {@link Service @Service}, and
-	 * {@link Controller @Controller} stereotype annotations.
-	 * <p>Also supports JSR-330's {@link jakarta.inject.Named} annotation if available.
+	 * 注册 {@link Component @Component} 的默认过滤器。
+	 * <p>会隐式注册所有带 {@link Component @Component} 元注解的注解，
+	 * 包括 {@link Repository @Repository}、{@link Service @Service}、
+	 * {@link Controller @Controller} 等构造型注解。
+	 * <p>若可用，也支持 JSR-330 的 {@link jakarta.inject.Named} 注解。
 	 */
 	@SuppressWarnings("unchecked")
 	protected void registerDefaultFilters() {
@@ -240,10 +224,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Set the Environment to use when resolving placeholders and evaluating
-	 * {@link Conditional @Conditional}-annotated component classes.
-	 * <p>The default is a {@link StandardEnvironment}.
-	 * @param environment the Environment to use
+	 * 设置用于解析占位符及评估 {@link Conditional @Conditional} 组件类的 Environment。
+	 * <p>默认为 {@link StandardEnvironment}。
+	 * @param environment 使用的 Environment
 	 */
 	public void setEnvironment(Environment environment) {
 		Assert.notNull(environment, "Environment must not be null");
@@ -260,17 +243,16 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Return the {@link BeanDefinitionRegistry} used by this scanner, if any.
+	 * 返回本扫描器使用的 {@link BeanDefinitionRegistry}（若有）。
 	 */
 	protected @Nullable BeanDefinitionRegistry getRegistry() {
 		return null;
 	}
 
 	/**
-	 * Set the {@link ResourceLoader} to use for resource locations.
-	 * This will typically be a {@link ResourcePatternResolver} implementation.
-	 * <p>Default is a {@code PathMatchingResourcePatternResolver}, also capable of
-	 * resource pattern resolving through the {@code ResourcePatternResolver} interface.
+	 * 设置用于定位资源的 {@link ResourceLoader}，通常为 {@link ResourcePatternResolver} 实现。
+	 * <p>默认为 {@code PathMatchingResourcePatternResolver}，亦可通过
+	 * {@code ResourcePatternResolver} 接口解析资源模式。
 	 * @see org.springframework.core.io.support.ResourcePatternResolver
 	 * @see org.springframework.core.io.support.PathMatchingResourcePatternResolver
 	 */
@@ -282,7 +264,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Return the ResourceLoader that this component provider uses.
+	 * 返回本组件提供者使用的 ResourceLoader。
 	 */
 	public final ResourceLoader getResourceLoader() {
 		return getResourcePatternResolver();
@@ -296,18 +278,17 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Set the {@link MetadataReaderFactory} to use.
-	 * <p>Default is a {@link CachingMetadataReaderFactory} for the specified
-	 * {@linkplain #setResourceLoader resource loader}.
-	 * <p>Call this setter method <i>after</i> {@link #setResourceLoader} in order
-	 * for the given MetadataReaderFactory to override the default factory.
+	 * 设置要使用的 {@link MetadataReaderFactory}。
+	 * <p>默认为针对 {@linkplain #setResourceLoader 资源加载器} 的
+	 * {@link CachingMetadataReaderFactory}。
+	 * <p>若需覆盖默认工厂，应在 {@link #setResourceLoader} 之后调用本方法。
 	 */
 	public void setMetadataReaderFactory(MetadataReaderFactory metadataReaderFactory) {
 		this.metadataReaderFactory = metadataReaderFactory;
 	}
 
 	/**
-	 * Return the MetadataReaderFactory used by this component provider.
+	 * 返回本组件提供者使用的 MetadataReaderFactory。
 	 */
 	public final MetadataReaderFactory getMetadataReaderFactory() {
 		if (this.metadataReaderFactory == null) {
@@ -318,11 +299,12 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 
 	/**
-	 * Scan the component index or class path for candidate components.
-	 * @param basePackage the package to check for annotated classes
-	 * @return a corresponding Set of autodetected bean definitions
+	 * 扫描组件索引或 classpath 以查找候选组件。
+	 * @param basePackage 待检查注解类的基础包
+	 * @return 自动检测到的 BeanDefinition 集合
 	 */
 	public Set<BeanDefinition> findCandidateComponents(String basePackage) {
+		// 1. 索引可用且过滤器兼容时，优先走索引路径
 		if (this.componentsIndex != null && indexSupportsIncludeFilters()) {
 			if (this.componentsIndex.hasScannedPackage(basePackage)) {
 				return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
@@ -331,13 +313,13 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 				this.componentsIndex.registerScan(basePackage);
 			}
 		}
+		// 2. 回退到 classpath 扫描
 		return scanCandidateComponents(basePackage);
 	}
 
 	/**
-	 * Determine if the component index can be used by this instance.
-	 * @return {@code true} if the index is available and the configuration of this
-	 * instance is supported by it, {@code false} otherwise
+	 * 判断本实例能否使用组件索引。
+	 * @return 索引可用且当前配置被其支持时为 {@code true}，否则为 {@code false}
 	 * @since 5.0
 	 */
 	private boolean indexSupportsIncludeFilters() {
@@ -350,9 +332,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Determine if the specified include {@link TypeFilter} is supported by the index.
-	 * @param filter the filter to check
-	 * @return whether the index supports this include filter
+	 * 判断指定 include {@link TypeFilter} 是否被索引支持。
+	 * @param filter 待检查的过滤器
+	 * @return 索引是否支持该 include 过滤器
 	 * @since 5.0
 	 * @see #registerCandidateTypeForIncludeFilter(String, TypeFilter)
 	 * @see #extractStereotype(TypeFilter)
@@ -370,9 +352,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Register the given class as a candidate type with the runtime-populated index, if any.
-	 * @param className the fully-qualified class name of the candidate type
-	 * @param filter the include filter to introspect for the associated stereotype
+	 * 将给定类注册为运行时填充索引中的候选类型（若有索引）。
+	 * @param className 候选类型的全限定类名
+	 * @param filter 用于提取关联构造型注解的 include 过滤器
 	 */
 	private void registerCandidateTypeForIncludeFilter(String className, TypeFilter filter) {
 		if (this.componentsIndex != null) {
@@ -392,9 +374,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Extract the stereotype to use for the specified compatible filter.
-	 * @param filter the filter to handle
-	 * @return the stereotype in the index matching this filter
+	 * 从兼容的过滤器中提取索引所用的构造型标识。
+	 * @param filter 待处理的过滤器
+	 * @return 索引中与该过滤器匹配的构造型名称
 	 * @since 5.0
 	 * @see #indexSupportsIncludeFilter(TypeFilter)
 	 */
@@ -408,21 +390,16 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		return null;
 	}
 
+	/** 判断注解类型是否可作为索引中的构造型键（{@link Indexed} 或 jakarta 命名空间）。 */
 	private boolean isStereotypeAnnotationForIndex(Class<? extends Annotation> annotationType) {
 		return (AnnotationUtils.isAnnotationDeclaredLocally(Indexed.class, annotationType) ||
 				annotationType.getName().startsWith("jakarta."));
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 addCandidateComponentsFromIndex — 意图与阅读要点
-
-方法 `addCandidateComponentsFromIndex` 复杂度较高（CCN≈10, NLOC≈42）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
 	private Set<BeanDefinition> addCandidateComponentsFromIndex(CandidateComponentsIndex index, String basePackage) {
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
+			// 1. 按各 include 过滤器从索引收集候选类型名
 			Set<String> types = new HashSet<>();
 			for (TypeFilter filter : this.includeFilters) {
 				String stereotype = extractStereotype(filter);
@@ -433,6 +410,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 			}
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
+			// 2. 逐个读取元数据并应用过滤器与条件评估
 			for (String type : types) {
 				MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(type);
 				if (isCandidateComponent(metadataReader)) {
@@ -463,21 +441,16 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		return candidates;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 scanCandidateComponents — 意图与阅读要点
-
-方法 `scanCandidateComponents` 复杂度较高（CCN≈17, NLOC≈66）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
 	private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
+			// 1. 构造包搜索路径并加载所有匹配资源
 			String packageSearchPattern = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPattern);
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
+			// 2. 遍历每个 .class 资源
 			for (Resource resource : resources) {
 				String filename = resource.getFilename();
 				if (filename != null && filename.contains(ClassUtils.CGLIB_CLASS_SEPARATOR)) {
@@ -540,29 +513,28 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 
 	/**
-	 * Resolve the specified base package into a pattern specification for
-	 * the package search path.
-	 * <p>The default implementation resolves placeholders against system properties,
-	 * and converts a "."-based package path to a "/"-based resource path.
-	 * @param basePackage the base package as specified by the user
-	 * @return the pattern specification to be used for package searching
+	 * 将基础包名解析为包搜索路径的模式规格。
+	 * <p>默认实现先对系统属性解析占位符，再将 {@code .} 分隔的包路径转为 {@code /} 分隔的资源路径。
+	 * @param basePackage 用户指定的基础包
+	 * @return 用于包搜索的模式规格
 	 */
 	protected String resolveBasePackage(String basePackage) {
 		return ClassUtils.convertClassNameToResourcePath(getEnvironment().resolveRequiredPlaceholders(basePackage));
 	}
 
 	/**
-	 * Determine whether the given class does not match any exclude filter
-	 * and does match at least one include filter.
-	 * @param metadataReader the ASM ClassReader for the class
-	 * @return whether the class qualifies as a candidate component
+	 * 判断给定类是否不匹配任何 exclude 过滤器且至少匹配一个 include 过滤器。
+	 * @param metadataReader 该类的 ASM ClassReader
+	 * @return 是否可作为候选组件
 	 */
 	protected boolean isCandidateComponent(MetadataReader metadataReader) throws IOException {
+		// 1. exclude 过滤器优先：任一匹配则排除
 		for (TypeFilter filter : this.excludeFilters) {
 			if (filter.match(metadataReader, getMetadataReaderFactory())) {
 				return false;
 			}
 		}
+		// 2. include 过滤器：匹配后还需通过 @Conditional 评估
 		for (TypeFilter filter : this.includeFilters) {
 			if (filter.match(metadataReader, getMetadataReaderFactory())) {
 				registerCandidateTypeForIncludeFilter(metadataReader.getClassMetadata().getClassName(), filter);
@@ -573,10 +545,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Determine whether the given class is a candidate component based on any
-	 * {@code @Conditional} annotations.
-	 * @param metadataReader the ASM ClassReader for the class
-	 * @return whether the class qualifies as a candidate component
+	 * 根据 {@code @Conditional} 注解判断给定类是否可作为候选组件。
+	 * @param metadataReader 该类的 ASM ClassReader
+	 * @return 是否可作为候选组件
 	 */
 	private boolean isConditionMatch(MetadataReader metadataReader) {
 		if (this.conditionEvaluator == null) {
@@ -587,13 +558,12 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	}
 
 	/**
-	 * Determine whether the given bean definition qualifies as a candidate component.
-	 * <p>The default implementation checks whether the class is not dependent on an
-	 * enclosing class as well as whether the class is either concrete (and therefore
-	 * not an interface) or has {@link Lookup @Lookup} methods.
-	 * <p>Can be overridden in subclasses.
-	 * @param beanDefinition the bean definition to check
-	 * @return whether the bean definition qualifies as a candidate component
+	 * 判断给定 BeanDefinition 是否可作为候选组件。
+	 * <p>默认实现检查类是否不依赖外部类，且为具体类（非接口）或
+	 * 带有 {@link Lookup @Lookup} 方法的抽象类。
+	 * <p>子类可覆盖。
+	 * @param beanDefinition 待检查的 BeanDefinition
+	 * @return 是否可作为候选组件
 	 */
 	protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
 		AnnotationMetadata metadata = beanDefinition.getMetadata();
@@ -603,7 +573,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 
 	/**
-	 * Clear the local metadata cache, if any, removing all cached class metadata.
+	 * 清除本地元数据缓存（若有），移除所有已缓存的类元数据。
 	 */
 	public void clearCache() {
 		if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory cmrf) {
