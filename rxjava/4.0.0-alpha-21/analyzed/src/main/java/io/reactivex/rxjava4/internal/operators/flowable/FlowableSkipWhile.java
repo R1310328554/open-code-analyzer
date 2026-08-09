@@ -16,57 +16,72 @@ package io.reactivex.rxjava4.internal.operators.flowable;
 import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.exceptions.Exceptions;
+import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 
 /**
- * 跳过上游前 n 个元素，之后原样转发。
+ * 跳过 {@link Predicate} 为 true 的连续前缀元素，
+ * 从首个 false 元素起向下游转发。
  * @param <T> 元素类型
  */
-public final class FlowableSkip<T> extends AbstractFlowableWithUpstream<T, T> {
-    final long n;
+public final class FlowableSkipWhile<T> extends AbstractFlowableWithUpstream<T, T> {
+    final Predicate<? super T> predicate;
     /**
      * @param source 上游 Flowable
-     * @param n 要跳过的元素个数
+     * @param predicate 为 true 时跳过该元素
      */
-    public FlowableSkip(Flowable<T> source, long n) {
+    public FlowableSkipWhile(Flowable<T> source, Predicate<? super T> predicate) {
         super(source);
-        this.n = n;
+        this.predicate = predicate;
     }
 
+    /** 订阅 SkipWhileSubscriber。 */
     @Override
     protected void subscribeActual(Subscriber<? super T> s) {
-        source.subscribe(new SkipSubscriber<>(s, n));
+        source.subscribe(new SkipWhileSubscriber<>(s, predicate));
     }
 
-    /** 递减 remaining 计数，为 0 后开始转发 onNext。 */
-    static final class SkipSubscriber<T> implements FlowableSubscriber<T>, Subscription {
+    /** 跳过阶段 request(1) 逐元素测试；结束后透传 onNext。 */
+    static final class SkipWhileSubscriber<T> implements FlowableSubscriber<T>, Subscription {
         final Subscriber<? super T> downstream;
-        long remaining;
-
+        final Predicate<? super T> predicate;
         Subscription upstream;
-
-        SkipSubscriber(Subscriber<? super T> actual, long n) {
+        boolean notSkipping;
+        SkipWhileSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
             this.downstream = actual;
-            this.remaining = n;
+            this.predicate = predicate;
         }
 
-        /** 向 upstream 预 request remaining 个以跳过前 n 个元素。 */
         @Override
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
-                long n = remaining;
                 this.upstream = s;
                 downstream.onSubscribe(this);
-                s.request(n);
             }
         }
 
+        /** predicate 为 true 则丢弃并 request(1)；false 起转发。 */
         @Override
         public void onNext(T t) {
-            if (remaining != 0L) {
-                remaining--;
-            } else {
+            if (notSkipping) {
                 downstream.onNext(t);
+            } else {
+                boolean b;
+                try {
+                    b = predicate.test(t);
+                } catch (Throwable e) {
+                    Exceptions.throwIfFatal(e);
+                    upstream.cancel();
+                    downstream.onError(e);
+                    return;
+                }
+                if (b) {
+                    upstream.request(1);
+                } else {
+                    notSkipping = true;
+                    downstream.onNext(t);
+                }
             }
         }
 
@@ -89,5 +104,6 @@ public final class FlowableSkip<T> extends AbstractFlowableWithUpstream<T, T> {
         public void cancel() {
             upstream.cancel();
         }
+
     }
 }

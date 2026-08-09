@@ -25,10 +25,11 @@ import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 
 /**
- * 跳过最近 time 时间窗口内的元素，仅发射更早的元素。
+ * 按时间窗口与数量限制缓存元素，上游终止后发射仍有效的末尾项。
  * @param <T> 元素类型
  */
-public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream<T, T> {
+public final class FlowableTakeLastTimed<T> extends AbstractFlowableWithUpstream<T, T> {
+    final long count;
     final long time;
     final TimeUnit unit;
     final Scheduler scheduler;
@@ -37,14 +38,18 @@ public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream
 
     /**
      * @param source 上游 Flowable
+     * @param count 最大保留元素数（Long.MAX_VALUE 为不限）
      * @param time 时间窗口长度
      * @param unit 时间单位
-     * @param scheduler 用于时间戳的调度器
-     * @param bufferSize 时间戳队列缓冲大小
-     * @param delayError 是否在队列排空后再转发 onError
+     * @param scheduler 提供 now 时间戳
+     * @param bufferSize 内部队列容量
+     * @param delayError true 时先发射缓存再 onError
      */
-    public FlowableSkipLastTimed(Flowable<T> source, long time, TimeUnit unit, Scheduler scheduler, int bufferSize, boolean delayError) {
+    public FlowableTakeLastTimed(Flowable<T> source,
+            long count, long time, TimeUnit unit, Scheduler scheduler,
+            int bufferSize, boolean delayError) {
         super(source);
+        this.count = count;
         this.time = time;
         this.unit = unit;
         this.scheduler = scheduler;
@@ -54,15 +59,16 @@ public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream
 
     @Override
     protected void subscribeActual(Subscriber<? super T> s) {
-        source.subscribe(new SkipLastTimedSubscriber<>(s, time, unit, scheduler, bufferSize, delayError));
+        source.subscribe(new TakeLastTimedSubscriber<>(s, count, time, unit, scheduler, bufferSize, delayError));
     }
 
-    /** 带时间戳队列：仅 emit 时间戳早于 now-time 的元素。 */
-    static final class SkipLastTimedSubscriber<T> extends AtomicInteger implements FlowableSubscriber<T>, Subscription {
+    /** Spsc 队列存 (timestamp, value)；done 后 drain。 */
+    static final class TakeLastTimedSubscriber<T> extends AtomicInteger implements FlowableSubscriber<T>, Subscription {
 
         @Serial
         private static final long serialVersionUID = -5677354903406201275L;
         final Subscriber<? super T> downstream;
+        final long count;
         final long time;
         final TimeUnit unit;
         final Scheduler scheduler;
@@ -78,8 +84,9 @@ public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream
         volatile boolean done;
         Throwable error;
 
-        SkipLastTimedSubscriber(Subscriber<? super T> actual, long time, TimeUnit unit, Scheduler scheduler, int bufferSize, boolean delayError) {
+        TakeLastTimedSubscriber(Subscriber<? super T> actual, long count, long time, TimeUnit unit, Scheduler scheduler, int bufferSize, boolean delayError) {
             this.downstream = actual;
+            this.count = count;
             this.time = time;
             this.unit = unit;
             this.scheduler = scheduler;
@@ -98,15 +105,20 @@ public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream
 
         @Override
         public void onNext(T t) {
+            final SpscLinkedArrayQueue<Object> q = queue;
+
             long now = scheduler.now(unit);
 
-            queue.offer(now, t);
+            q.offer(now, t);
 
-            drain();
+            trim(now, q);
         }
 
         @Override
         public void onError(Throwable t) {
+            if (delayError) {
+                trim(scheduler.now(unit), queue);
+            }
             error = t;
             done = true;
             drain();
@@ -114,8 +126,26 @@ public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream
 
         @Override
         public void onComplete() {
+            trim(scheduler.now(unit), queue);
             done = true;
             drain();
+        }
+
+        /** 移除超出时间窗口或超过 count 的队首元素对。 */
+        void trim(long now, SpscLinkedArrayQueue<Object> q) {
+            long time = this.time;
+            long c = count;
+            boolean unbounded = c == Long.MAX_VALUE;
+
+            while (!q.isEmpty()) {
+                long ts = (Long)q.peek();
+                if (ts < now - time || (!unbounded && (q.size() >> 1) > c)) {
+                    q.poll();
+                    q.poll();
+                } else {
+                    break;
+                }
+            }
         }
 
         @Override
@@ -138,7 +168,7 @@ public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream
             }
         }
 
-        /** 从队列取出已超出时间窗口的元素并向下游发射。 */
+        /** 按背压从队列取出 value 发射；处理 delayError 终止路径。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -149,47 +179,43 @@ public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream
             final Subscriber<? super T> a = downstream;
             final SpscLinkedArrayQueue<Object> q = queue;
             final boolean delayError = this.delayError;
-            final TimeUnit unit = this.unit;
-            final Scheduler scheduler = this.scheduler;
-            final long time = this.time;
 
             for (;;) {
 
-                long r = requested.get();
-                long e = 0L;
+                if (done) {
+                    boolean empty = q.isEmpty();
 
-                while (e != r) {
-                    boolean d = done;
-
-                    Long ts = (Long)q.peek();
-
-                    boolean empty = ts == null;
-
-                    long now = scheduler.now(unit);
-
-                    if (!empty && ts > now - time) {
-                        empty = true;
-                    }
-
-                    if (checkTerminated(d, empty, a, delayError)) {
+                    if (checkTerminated(empty, a, delayError)) {
                         return;
                     }
 
-                    if (empty) {
-                        break;
+                    long r = requested.get();
+                    long e = 0L;
+
+                    for (;;) {
+                        Object ts = q.peek(); // the timestamp long
+                        empty = ts == null;
+
+                        if (checkTerminated(empty, a, delayError)) {
+                            return;
+                        }
+
+                        if (r == e) {
+                            break;
+                        }
+
+                        q.poll();
+                        @SuppressWarnings("unchecked")
+                        T o = (T)q.poll();
+
+                        a.onNext(o);
+
+                        e++;
                     }
 
-                    q.poll();
-                    @SuppressWarnings("unchecked")
-                    T v = (T)q.poll();
-
-                    a.onNext(v);
-
-                    e++;
-                }
-
-                if (e != 0L) {
-                    BackpressureHelper.produced(requested, e);
+                    if (e != 0L) {
+                        BackpressureHelper.produced(requested, e);
+                    }
                 }
 
                 missed = addAndGet(-missed);
@@ -199,34 +225,32 @@ public final class FlowableSkipLastTimed<T> extends AbstractFlowableWithUpstream
             }
         }
 
-        /** 按 delayError 策略在 done/empty 时转发 onError 或 onComplete。 */
-        boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, boolean delayError) {
+        /** 取消/错误/完成时的统一终止判断。 */
+        boolean checkTerminated(boolean empty, Subscriber<? super T> a, boolean delayError) {
             if (cancelled) {
                 queue.clear();
                 return true;
             }
-            if (d) {
-                if (delayError) {
-                    if (empty) {
-                        Throwable e = error;
-                        if (e != null) {
-                            a.onError(e);
-                        } else {
-                            a.onComplete();
-                        }
-                        return true;
-                    }
-                } else {
+            if (delayError) {
+                if (empty) {
                     Throwable e = error;
                     if (e != null) {
-                        queue.clear();
                         a.onError(e);
-                        return true;
-                    } else
-                    if (empty) {
+                    } else {
                         a.onComplete();
-                        return true;
                     }
+                    return true;
+                }
+            } else {
+                Throwable e = error;
+                if (e != null) {
+                    queue.clear();
+                    a.onError(e);
+                    return true;
+                } else
+                if (empty) {
+                    a.onComplete();
+                    return true;
                 }
             }
             return false;

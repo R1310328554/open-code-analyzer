@@ -16,21 +16,30 @@ package io.reactivex.rxjava4.internal.operators.flowable;
 import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.core.Flowable;
-import io.reactivex.rxjava4.subscribers.SerializedSubscriber;
+import io.reactivex.rxjava4.internal.operators.flowable.FlowableTake.TakeSubscriber;
 
 /**
- * 序列化下游事件，保证 onNext/onError/onComplete 不会并发交错。
+ * 对任意 {@link Publisher} 源应用 take(limit)，复用 {@link TakeSubscriber}。
+ * <p>History: 2.0.7 - experimental
  * @param <T> 元素类型
+ * @since 2.1
  */
-public final class FlowableSerialized<T> extends AbstractFlowableWithUpstream<T, T> {
-    /** @param source 上游 Flowable */
-    public FlowableSerialized(Flowable<T> source) {
-        super(source);
+public final class FlowableTakePublisher<T> extends Flowable<T> {
+
+    final Publisher<T> source;
+    final long limit;
+    /**
+     * @param source 上游 Publisher
+     * @param limit 最多发射的元素个数
+     */
+    public FlowableTakePublisher(Publisher<T> source, long limit) {
+        this.source = source;
+        this.limit = limit;
     }
 
-    /** 用 {@link SerializedSubscriber} 包装下游以保证事件串行。 */
+    /** 委托 {@link FlowableTake.TakeSubscriber} 限制元素数。 */
     @Override
     protected void subscribeActual(Subscriber<? super T> s) {
-        source.subscribe(new SerializedSubscriber<>(s));
+        source.subscribe(new TakeSubscriber<>(s, limit));
     }
 }

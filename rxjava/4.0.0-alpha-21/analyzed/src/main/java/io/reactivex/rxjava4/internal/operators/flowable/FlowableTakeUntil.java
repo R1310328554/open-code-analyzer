@@ -21,27 +21,26 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.*;
-import io.reactivex.rxjava4.operators.ConditionalSubscriber;
 
 /**
- * 在 other 发出首个信号前跳过上游所有元素，之后原样转发。
- * @param <T> 上游元素类型
- * @param <U> 门控信号类型
+ * 转发主序列元素直至 {@code other} 发出任意信号（onNext/onComplete/onError）。
+ * @param <T> 主序列元素类型
+ * @param <U> other 序列元素类型
  */
-public final class FlowableSkipUntil<T, U> extends AbstractFlowableWithUpstream<T, T> {
-    final Publisher<U> other;
+public final class FlowableTakeUntil<T, U> extends AbstractFlowableWithUpstream<T, T> {
+    final Publisher<? extends U> other;
     /**
-     * @param source 上游 Flowable
-     * @param other 门控 Publisher（其 onNext/onComplete 打开 gate）
+     * @param source 主序列 Flowable
+     * @param other 触发终止的 Publisher
      */
-    public FlowableSkipUntil(Flowable<T> source, Publisher<U> other) {
+    public FlowableTakeUntil(Flowable<T> source, Publisher<? extends U> other) {
         super(source);
         this.other = other;
     }
 
     @Override
     protected void subscribeActual(Subscriber<? super T> child) {
-        SkipUntilMainSubscriber<T> parent = new SkipUntilMainSubscriber<>(child);
+        TakeUntilMainSubscriber<T> parent = new TakeUntilMainSubscriber<>(child);
         child.onSubscribe(parent);
 
         other.subscribe(parent.other);
@@ -49,28 +48,26 @@ public final class FlowableSkipUntil<T, U> extends AbstractFlowableWithUpstream<
         source.subscribe(parent);
     }
 
-    /** gate 打开前丢弃上游元素；打开后通过 HalfSerializer 转发。 */
-    static final class SkipUntilMainSubscriber<T> extends AtomicInteger
-    implements ConditionalSubscriber<T>, Subscription {
+    /** HalfSerializer 协调主/other 两路终止。 */
+    static final class TakeUntilMainSubscriber<T> extends AtomicInteger implements FlowableSubscriber<T>, Subscription {
+
         @Serial
-        private static final long serialVersionUID = -6270983465606289181L;
+        private static final long serialVersionUID = -4945480365982832967L;
 
         final Subscriber<? super T> downstream;
 
-        final AtomicReference<Subscription> upstream;
-
         final AtomicLong requested;
 
-        final OtherSubscriber other;
+        final AtomicReference<Subscription> upstream;
 
         final AtomicThrowable error;
 
-        volatile boolean gate;
+        final OtherSubscriber other;
 
-        SkipUntilMainSubscriber(Subscriber<? super T> downstream) {
+        TakeUntilMainSubscriber(Subscriber<? super T> downstream) {
             this.downstream = downstream;
-            this.upstream = new AtomicReference<>();
             this.requested = new AtomicLong();
+            this.upstream = new AtomicReference<>();
             this.other = new OtherSubscriber();
             this.error = new AtomicThrowable();
         }
@@ -82,25 +79,13 @@ public final class FlowableSkipUntil<T, U> extends AbstractFlowableWithUpstream<
 
         @Override
         public void onNext(T t) {
-            if (!tryOnNext(t)) {
-                upstream.get().request(1);
-            }
-        }
-
-        /** gate 为 true 时转发元素；否则返回 false 并 request(1) 丢弃。 */
-        @Override
-        public boolean tryOnNext(T t) {
-            if (gate) {
-                HalfSerializer.onNext(downstream, t, this, error);
-                return true;
-            }
-            return false;
+            HalfSerializer.onNext(downstream, t, this, error);
         }
 
         @Override
         public void onError(Throwable t) {
             SubscriptionHelper.cancel(other);
-            HalfSerializer.onError(downstream, t, SkipUntilMainSubscriber.this, error);
+            HalfSerializer.onError(downstream, t, this, error);
         }
 
         @Override
@@ -120,34 +105,36 @@ public final class FlowableSkipUntil<T, U> extends AbstractFlowableWithUpstream<
             SubscriptionHelper.cancel(other);
         }
 
-        /** 门控 subscriber：onNext/onComplete 时将 gate 置 true。 */
-        final class OtherSubscriber extends AtomicReference<Subscription>
-        implements FlowableSubscriber<Object> {
+        /** other 任一路径终止时 cancel 主序列并完成下游。 */
+        final class OtherSubscriber extends AtomicReference<Subscription> implements FlowableSubscriber<Object> {
 
             @Serial
-            private static final long serialVersionUID = -5592042965931999169L;
+            private static final long serialVersionUID = -3592821756711087922L;
 
             @Override
             public void onSubscribe(Subscription s) {
                 SubscriptionHelper.setOnce(this, s, Long.MAX_VALUE);
             }
 
+            /** other onNext 即视为终止信号。 */
             @Override
             public void onNext(Object t) {
-                gate = true;
-                get().cancel();
+                SubscriptionHelper.cancel(this);
+                onComplete();
             }
 
             @Override
             public void onError(Throwable t) {
                 SubscriptionHelper.cancel(upstream);
-                HalfSerializer.onError(downstream, t, SkipUntilMainSubscriber.this, error);
+                HalfSerializer.onError(downstream, t, TakeUntilMainSubscriber.this, error);
             }
 
             @Override
             public void onComplete() {
-                gate = true;
+                SubscriptionHelper.cancel(upstream);
+                HalfSerializer.onComplete(downstream, TakeUntilMainSubscriber.this, error);
             }
+
         }
     }
 }

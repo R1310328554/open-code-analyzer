@@ -17,46 +17,43 @@ import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.exceptions.Exceptions;
-import io.reactivex.rxjava4.functions.BiFunction;
+import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
-import java.util.Objects;
-
 /**
- * 累积 scan：首元素直接发射，后续用 {@link BiFunction} 累积并发射。
+ * 仅发射 {@link Predicate} 为 true 的连续前缀；
+ * 遇首个 false 时 cancel 上游并 onComplete（不发射该元素）。
  * @param <T> 元素类型
  */
-public final class FlowableScan<T> extends AbstractFlowableWithUpstream<T, T> {
-    final BiFunction<T, T, T> accumulator;
+public final class FlowableTakeWhile<T> extends AbstractFlowableWithUpstream<T, T> {
+    final Predicate<? super T> predicate;
     /**
      * @param source 上游 Flowable
-     * @param accumulator 累积函数（前一累积值, 当前元素）→ 新累积值
+     * @param predicate 为 true 时继续发射
      */
-    public FlowableScan(Flowable<T> source, BiFunction<T, T, T> accumulator) {
+    public FlowableTakeWhile(Flowable<T> source, Predicate<? super T> predicate) {
         super(source);
-        this.accumulator = accumulator;
+        this.predicate = predicate;
     }
 
     @Override
     protected void subscribeActual(Subscriber<? super T> s) {
-        source.subscribe(new ScanSubscriber<>(s, accumulator));
+        source.subscribe(new TakeWhileSubscriber<>(s, predicate));
     }
 
-    /** 维护累积值 value，首元素直接发射，其后 apply accumulator。 */
-    static final class ScanSubscriber<T> implements FlowableSubscriber<T>, Subscription {
+    /** predicate false 时丢弃当前元素并结束。 */
+    static final class TakeWhileSubscriber<T> implements FlowableSubscriber<T>, Subscription {
         final Subscriber<? super T> downstream;
-        final BiFunction<T, T, T> accumulator;
+        final Predicate<? super T> predicate;
 
         Subscription upstream;
 
-        T value;
-
         boolean done;
 
-        ScanSubscriber(Subscriber<? super T> actual, BiFunction<T, T, T> accumulator) {
+        TakeWhileSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
             this.downstream = actual;
-            this.accumulator = accumulator;
+            this.predicate = predicate;
         }
 
         @Override
@@ -67,32 +64,30 @@ public final class FlowableScan<T> extends AbstractFlowableWithUpstream<T, T> {
             }
         }
 
-        /** value 为 null 时直接发射首元素，否则累积后发射。 */
+        /** 测试 predicate；false 则 cancel 并完成。 */
         @Override
         public void onNext(T t) {
             if (done) {
                 return;
             }
-            final Subscriber<? super T> a = downstream;
-            T v = value;
-            if (v == null) {
-                value = t;
-                a.onNext(t);
-            } else {
-                T u;
-
-                try {
-                    u = Objects.requireNonNull(accumulator.apply(v, t), "The value returned by the accumulator is null");
-                } catch (Throwable e) {
-                    Exceptions.throwIfFatal(e);
-                    upstream.cancel();
-                    onError(e);
-                    return;
-                }
-
-                value = u;
-                a.onNext(u);
+            boolean b;
+            try {
+                b = predicate.test(t);
+            } catch (Throwable e) {
+                Exceptions.throwIfFatal(e);
+                upstream.cancel();
+                onError(e);
+                return;
             }
+
+            if (!b) {
+                done = true;
+                upstream.cancel();
+                downstream.onComplete();
+                return;
+            }
+
+            downstream.onNext(t);
         }
 
         @Override

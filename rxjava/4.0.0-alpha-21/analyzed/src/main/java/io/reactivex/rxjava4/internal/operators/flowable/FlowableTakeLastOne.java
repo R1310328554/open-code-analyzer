@@ -13,49 +13,41 @@
 
 package io.reactivex.rxjava4.internal.operators.flowable;
 
-import java.io.Serial;
-import java.util.ArrayDeque;
-
 import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.core.*;
-import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
+import io.reactivex.rxjava4.internal.subscriptions.*;
+
+import java.io.Serial;
 
 /**
- * 跳过序列末尾 skip 个元素（滑动窗口：队列满后才发射队首）。
+ * 仅保留并发射上游最后一个元素（{@link DeferredScalarSubscription}）。
  * @param <T> 元素类型
  */
-public final class FlowableSkipLast<T> extends AbstractFlowableWithUpstream<T, T> {
-    final int skip;
+public final class FlowableTakeLastOne<T> extends AbstractFlowableWithUpstream<T, T> {
 
-    /**
-     * @param source 上游 Flowable
-     * @param skip 末尾要跳过的元素个数
-     */
-    public FlowableSkipLast(Flowable<T> source, int skip) {
+    /** @param source 上游 Flowable */
+    public FlowableTakeLastOne(Flowable<T> source) {
         super(source);
-        this.skip = skip;
     }
 
+    /** 订阅 TakeLastOneSubscriber。 */
     @Override
     protected void subscribeActual(Subscriber<? super T> s) {
-        source.subscribe(new SkipLastSubscriber<>(s, skip));
+        source.subscribe(new TakeLastOneSubscriber<>(s));
     }
 
-    /** 固定大小 deque：满时 poll 队首发射，否则向上游 request(1)。 */
-    static final class SkipLastSubscriber<T> extends ArrayDeque<T> implements FlowableSubscriber<T>, Subscription {
+    /** 每次 onNext 覆盖 value；onComplete 时 complete 或空完成。 */
+    static final class TakeLastOneSubscriber<T> extends DeferredScalarSubscription<T>
+    implements FlowableSubscriber<T> {
 
         @Serial
-        private static final long serialVersionUID = -3807491841935125653L;
-        final Subscriber<? super T> downstream;
-        final int skip;
+        private static final long serialVersionUID = -5467847744262967226L;
 
         Subscription upstream;
 
-        SkipLastSubscriber(Subscriber<? super T> actual, int skip) {
-            super(skip);
-            this.downstream = actual;
-            this.skip = skip;
+        TakeLastOneSubscriber(Subscriber<? super T> downstream) {
+            super(downstream);
         }
 
         @Override
@@ -63,37 +55,35 @@ public final class FlowableSkipLast<T> extends AbstractFlowableWithUpstream<T, T
             if (SubscriptionHelper.validate(this.upstream, s)) {
                 this.upstream = s;
                 downstream.onSubscribe(this);
+                s.request(Long.MAX_VALUE);
             }
         }
 
-        /** 队列满时发射队首；始终 offer 新元素。 */
         @Override
         public void onNext(T t) {
-            if (skip == size()) {
-                downstream.onNext(poll());
-            } else {
-                upstream.request(1);
-            }
-            offer(t);
+            value = t;
         }
 
         @Override
         public void onError(Throwable t) {
+            value = null;
             downstream.onError(t);
         }
 
+        /** 有缓存值则 complete(v)，否则 onComplete。 */
         @Override
         public void onComplete() {
-            downstream.onComplete();
-        }
-
-        @Override
-        public void request(long n) {
-            upstream.request(n);
+            T v = value;
+            if (v != null) {
+                complete(v);
+            } else {
+                downstream.onComplete();
+            }
         }
 
         @Override
         public void cancel() {
+            super.cancel();
             upstream.cancel();
         }
     }
