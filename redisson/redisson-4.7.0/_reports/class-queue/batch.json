@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T21:23:47Z",
   "files": [
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/StringListReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/StringMapDataDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/StringMapReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/StringReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/TDigestInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/TimeLongObjectDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/TimeSeriesEntryReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/TimeSeriesFirstEntryReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/TimeSeriesSingleEntryReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/TopKInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/TopKListDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/TopKListWithCountDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/UnboundedListMultiDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/VectorInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/pubsub/Message.java",
     "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubMessage.java",
     "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubMessageDecoder.java",
     "redisson/src/main/java/org/redisson/client/protocol/pubsub/PubSubPatternMessage.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/codec/CborJacksonCodec.java"
   ],
   "remaining_pending": 392,
-  "done": 2400
+  "done": 2415
 }
