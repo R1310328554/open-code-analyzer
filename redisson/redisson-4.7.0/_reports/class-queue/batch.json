@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:49:46Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/LockOptions.java",
-    "redisson/src/main/java/org/redisson/api/MapCacheOptions.java",
-    "redisson/src/main/java/org/redisson/api/MapOptions.java",
-    "redisson/src/main/java/org/redisson/api/Message.java",
-    "redisson/src/main/java/org/redisson/api/MessageArgs.java",
-    "redisson/src/main/java/org/redisson/api/MessageParams.java",
-    "redisson/src/main/java/org/redisson/api/MigrateMode.java",
-    "redisson/src/main/java/org/redisson/api/NodeType.java",
-    "redisson/src/main/java/org/redisson/api/ObjectEncoding.java",
-    "redisson/src/main/java/org/redisson/api/ObjectListener.java",
-    "redisson/src/main/java/org/redisson/api/RArray.java",
-    "redisson/src/main/java/org/redisson/api/RArrayAsync.java",
-    "redisson/src/main/java/org/redisson/api/RArrayReactive.java",
-    "redisson/src/main/java/org/redisson/api/RArrayRx.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicDouble.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1562,
-  "done": 1245
+  "done": 1260
 }
