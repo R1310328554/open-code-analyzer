@@ -15,23 +15,8 @@
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/MachineRegistryController.java",
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/MetricController.java",
     "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/ParamFlowRuleController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/ResourceController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/SystemController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/VersionController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/cluster/ClusterAssignController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/cluster/ClusterConfigController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/gateway/GatewayApiController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/v2/FlowControllerV2.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/ApplicationEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/MachineEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/MetricEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/MetricPositionEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/SentinelVersion.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/gateway/ApiDefinitionEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/gateway/ApiPredicateItemEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/gateway/GatewayFlowRuleEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/datasource/entity/gateway/GatewayParamFlowItemEntity.java"
+    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/ResourceController.java"
   ],
   "remaining_pending": 395,
-  "done": 540
+  "done": 555
 }
