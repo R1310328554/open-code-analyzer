@@ -20,16 +20,25 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 基于 {@link Reference} 的 {@link Map} 适配器，将值包装为引用类型存储。
+ * <p>
+ * 子类通过 {@link #fold(Object)} 决定使用软引用还是弱引用；对外 API 仍暴露强类型 {@code V}，
+ * 读写时自动完成引用与实体的转换。
+ */
 abstract class ReferenceMap<K, V> implements Map<K, V> {
 
+    /** 底层委托 Map，值类型为 {@link Reference}。 */
     private final Map<K, Reference<V>> delegate;
 
     protected ReferenceMap(Map<K, Reference<V>> delegate) {
         this.delegate = delegate;
     }
 
+    /** 将强引用值折叠为具体 {@link Reference} 实现（由子类提供）。 */
     abstract Reference<V> fold(V value);
 
+    /** 从引用中解包出强引用值；引用为 null 或已被 GC 回收时返回 null。 */
     private V unfold(Reference<V> ref) {
         if (ref == null) {
             return null;
@@ -55,6 +64,7 @@ abstract class ReferenceMap<K, V> implements Map<K, V> {
 
     @Override
     public boolean containsValue(Object value) {
+        // 需遍历并解引用所有条目，本实现不支持
         throw new UnsupportedOperationException();
     }
 

@@ -19,6 +19,11 @@ import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 
+/**
+ * 使用 {@link WeakReference} 存储值的 {@link ReferenceMap} 实现。
+ * <p>
+ * 仅当键仍被强引用持有时值才可能存活；键消失后值可被 GC 回收。
+ */
 final class WeakReferenceMap<K, V> extends ReferenceMap<K, V> {
 
     WeakReferenceMap(Map<K, Reference<V>> delegate) {

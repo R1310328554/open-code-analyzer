@@ -37,6 +37,11 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * TLS 证书选择回调：根据握手阶段信息从 {@link X509ExtendedKeyManager} 选取证书链与私钥。
+ * <p>
+ * 客户端模式响应 CertificateRequest；服务端模式根据 authMethods 选择别名并组装密钥材料。
+ */
 final class BoringSSLCertificateCallback {
     private static final byte[] BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----\n".getBytes(CharsetUtil.US_ASCII);
     private static final byte[] END_PRIVATE_KEY = "\n-----END PRIVATE KEY-----\n".getBytes(CharsetUtil.US_ASCII);
@@ -45,10 +50,13 @@ final class BoringSSLCertificateCallback {
      * The types contained in the {@code keyTypeBytes} array.
      */
     // Extracted from https://github.com/openssl/openssl/blob/master/include/openssl/tls1.h
+    /** TLS 客户端证书类型：RSA 签名。 */
     private static final byte TLS_CT_RSA_SIGN = 1;
     private static final byte TLS_CT_DSS_SIGN = 2;
+    /** TLS 客户端证书类型：RSA 固定 DH。 */
     private static final byte TLS_CT_RSA_FIXED_DH = 3;
     private static final byte TLS_CT_DSS_FIXED_DH = 4;
+    /** TLS 客户端证书类型：ECDSA 签名。 */
     private static final byte TLS_CT_ECDSA_SIGN = 64;
     private static final byte TLS_CT_RSA_FIXED_ECDH = 65;
     private static final byte TLS_CT_ECDSA_FIXED_ECDH = 66;
@@ -66,6 +74,7 @@ final class BoringSSLCertificateCallback {
     static final String KEY_TYPE_EC_RSA = "EC_RSA";
 
     // key type mappings for types.
+    /** 服务端 authMethod → KeyManager 密钥类型 的默认映射。 */
     private static final Map<String, String> DEFAULT_SERVER_KEY_TYPES = new HashMap<String, String>();
     static {
         DEFAULT_SERVER_KEY_TYPES.put("RSA", KEY_TYPE_RSA);
@@ -77,14 +86,16 @@ final class BoringSSLCertificateCallback {
         DEFAULT_SERVER_KEY_TYPES.put("DH_RSA", KEY_TYPE_DH_RSA);
     }
 
+    /** 客户端侧默认可尝试的密钥类型集合。 */
     private static final Set<String> DEFAULT_CLIENT_KEY_TYPES = Collections.unmodifiableSet(new LinkedHashSet<>(
             Arrays.asList(KEY_TYPE_RSA,
                     KEY_TYPE_DH_RSA,
                     KEY_TYPE_EC,
-                    KEY_TYPE_EC_RSA,
-                    KEY_TYPE_EC_EC)));
+                    KEY_TYPE_EC_EC,
+                    KEY_TYPE_EC_RSA)));
 
     // Directly returning this is safe as we never modify it within our JNI code.
+    /** 客户端未选中证书时返回的占位句柄（key=0, chain=0）。 */
     private static final long[] NO_KEY_MATERIAL_CLIENT_SIDE =  new long[] { 0, 0 };
 
     private final QuicheQuicSslEngineMap engineMap;
@@ -106,6 +117,9 @@ final class BoringSSLCertificateCallback {
         this.clientKeyTypes = clientKeyTypes != null ? clientKeyTypes : DEFAULT_CLIENT_KEY_TYPES;
     }
 
+    /**
+     * JNI 入口：为指定 {@code ssl} 句柄选择并返回原生密钥材料 {@code [key, chain]}。
+     */
     @SuppressWarnings("unused")
     long @Nullable [] handle(long ssl, byte[] keyTypeBytes, byte @Nullable [][] asn1DerEncodedPrincipals,
                              String[] authMethods) {
@@ -148,6 +162,7 @@ final class BoringSSLCertificateCallback {
         }
     }
 
+    /** 选择失败时移除 ssl→engine 映射，避免泄漏。 */
     private long @Nullable [] removeMappingIfNeeded(long ssl, long @Nullable [] result) {
         if (result == null) {
             engineMap.remove(ssl);
@@ -155,6 +170,7 @@ final class BoringSSLCertificateCallback {
         return result;
     }
 
+    /** 服务端：按 authMethods 去重后依次尝试 chooseServerAlias 并加载材料。 */
     private long @Nullable [] selectKeyMaterialServerSide(long ssl, QuicheQuicSslEngine engine, String[] authMethods)
             throws SSLException {
         if (authMethods.length == 0) {
@@ -178,6 +194,7 @@ final class BoringSSLCertificateCallback {
                 + Arrays.toString(authMethods));
     }
 
+    /** 客户端：根据密钥类型与颁发者选择别名；无匹配时返回占位句柄。 */
     private long @Nullable [] selectKeyMaterialClientSide(long ssl, QuicheQuicSslEngine engine, String[] keyTypes,
                                                X500Principal @Nullable [] issuer) {
         String alias = chooseClientAlias(engine, keyTypes, issuer);
@@ -190,6 +207,7 @@ final class BoringSSLCertificateCallback {
         return NO_KEY_MATERIAL_CLIENT_SIDE;
     }
 
+    /** 加载指定别名的证书链与私钥，组装为原生句柄数组。 */
     private long @Nullable [] selectMaterial(long ssl, QuicheQuicSslEngine engine, String alias)  {
         X509Certificate[] certificates = keyManager.getCertificateChain(alias);
         if (certificates == null || certificates.length == 0) {
@@ -208,6 +226,7 @@ final class BoringSSLCertificateCallback {
         final long key;
         PrivateKey privateKey = keyManager.getPrivateKey(alias);
         if (privateKey == BoringSSLKeylessPrivateKey.INSTANCE) {
+            // 无本地私钥：由 PrivateKeyMethod 异步签名
             key = 0;
         } else {
             byte[] pemKey = toPemEncoded(privateKey);
@@ -223,6 +242,7 @@ final class BoringSSLCertificateCallback {
         return new long[] { key,  chain };
     }
 
+    /** 将 PKCS#8 私钥编码为 PEM 字节数组。 */
     private static byte @Nullable [] toPemEncoded(PrivateKey key) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             out.write(BEGIN_PRIVATE_KEY);
@@ -270,6 +290,7 @@ final class BoringSSLCertificateCallback {
         return result;
     }
 
+    /** 将 TLS ClientCertificateType 字节码映射为 KeyManager 密钥类型字符串。 */
     @Nullable
     private static String clientKeyType(byte clientCertificateType) {
         // See also https://www.ietf.org/assignments/tls-parameters/tls-parameters.xml

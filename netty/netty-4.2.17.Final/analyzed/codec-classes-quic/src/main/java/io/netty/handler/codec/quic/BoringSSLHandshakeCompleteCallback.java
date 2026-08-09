@@ -15,6 +15,9 @@
  */
 package io.netty.handler.codec.quic;
 
+/**
+ * TLS 握手完成回调：将原生层会话信息转发给对应的 {@link QuicheQuicSslEngine}。
+ */
 final class BoringSSLHandshakeCompleteCallback {
 
     private final QuicheQuicSslEngineMap map;
@@ -23,6 +26,9 @@ final class BoringSSLHandshakeCompleteCallback {
         this.map = map;
     }
 
+    /**
+     * JNI 入口：握手成功后由原生层调用，更新引擎会话状态。
+     */
     @SuppressWarnings("unused")
     void handshakeComplete(long ssl, byte[] id, String cipher, String protocol, byte[] peerCertificate,
                            byte[][] peerCertificateChain, long creationTime, long timeout, byte[] applicationProtocol,

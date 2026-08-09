@@ -29,11 +29,11 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
- * Decodes a received {@link ByteBuf} into a {@link String}.  Please
- * note that this decoder must be used with a proper {@link ByteToMessageDecoder}
- * such as {@link DelimiterBasedFrameDecoder} or {@link LineBasedFrameDecoder}
- * if you are using a stream-based transport such as TCP/IP.  A typical setup for a
- * text-based line protocol in a TCP/IP socket would be:
+ * 将收到的 {@link ByteBuf} 解码为 {@link String}。
+ * <p>
+ * 在 TCP/IP 等流式传输上使用时，须配合 {@link ByteToMessageDecoder}（如
+ * {@link DelimiterBasedFrameDecoder} 或 {@link LineBasedFrameDecoder}）先完成帧切分。
+ * 典型文本行协议配置：
  * <pre>
  * {@link ChannelPipeline} pipeline = ...;
  *
@@ -44,8 +44,7 @@ import java.util.List;
  * // Encoder
  * pipeline.addLast("stringEncoder", new {@link StringEncoder}(CharsetUtil.UTF_8));
  * </pre>
- * and then you can use a {@link String} instead of a {@link ByteBuf}
- * as a message:
+ * 之后可直接以 {@link String} 作为消息：
  * <pre>
  * void channelRead({@link ChannelHandlerContext} ctx, {@link String} msg) {
  *     ch.write("Did you say '" + msg + "'?\n");
@@ -56,17 +55,18 @@ import java.util.List;
 public class StringDecoder extends MessageToMessageDecoder<ByteBuf> {
 
     // TODO Use CharsetDecoder instead.
+    /** 解码所用字符集。 */
     private final Charset charset;
 
     /**
-     * Creates a new instance with the current system character set.
+     * 使用当前系统默认字符集创建实例。
      */
     public StringDecoder() {
         this(Charset.defaultCharset());
     }
 
     /**
-     * Creates a new instance with the specified character set.
+     * 使用指定字符集创建实例。
      */
     public StringDecoder(Charset charset) {
         super(ByteBuf.class);

@@ -26,8 +26,12 @@ import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.CertificateRevokedException;
 import java.security.cert.X509Certificate;
 
+/**
+ * 对端证书验证回调：委托 {@link X509TrustManager} 校验证书链，并将 Java 异常映射为 OpenSSL X509 错误码。
+ */
 final class BoringSSLCertificateVerifyCallback {
 
+    /** 运行时是否可用 {@link X509ExtendedTrustManager}（需 JDK 类存在）。 */
     private static final boolean TRY_USING_EXTENDED_TRUST_MANAGER;
     static {
         boolean tryUsingExtendedTrustManager;
@@ -48,6 +52,9 @@ final class BoringSSLCertificateVerifyCallback {
         this.manager = manager;
     }
 
+    /**
+     * JNI 入口：验证 DER 证书链，返回 {@link BoringSSL#X509_V_OK} 或具体错误码。
+     */
     @SuppressWarnings("unused")
     int verify(long ssl, byte[][] x509, String authAlgorithm) {
         final QuicheQuicSslEngine engine = engineMap.get(ssl);
@@ -95,6 +102,7 @@ final class BoringSSLCertificateVerifyCallback {
         }
     }
 
+    /** 遍历异常链，将吊销/有效期等原因映射为 OpenSSL 错误码。 */
     private static int translateToError(Throwable cause) {
         if (cause instanceof CertificateRevokedException) {
             return BoringSSL.X509_V_ERR_CERT_REVOKED;

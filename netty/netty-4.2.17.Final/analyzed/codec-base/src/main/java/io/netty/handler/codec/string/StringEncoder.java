@@ -29,8 +29,9 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
- * Encodes the requested {@link String} into a {@link ByteBuf}.
- * A typical setup for a text-based line protocol in a TCP/IP socket would be:
+ * 将 {@link String} 编码为 {@link ByteBuf}。
+ * <p>
+ * 基于 TCP/IP 的文本行协议典型配置如下：
  * <pre>
  * {@link ChannelPipeline} pipeline = ...;
  *
@@ -41,8 +42,7 @@ import java.util.List;
  * // Encoder
  * pipeline.addLast("stringEncoder", new {@link StringEncoder}(CharsetUtil.UTF_8));
  * </pre>
- * and then you can use a {@link String} instead of a {@link ByteBuf}
- * as a message:
+ * 之后可直接以 {@link String} 作为消息读写：
  * <pre>
  * void channelRead({@link ChannelHandlerContext} ctx, {@link String} msg) {
  *     ch.write("Did you say '" + msg + "'?\n");
@@ -52,17 +52,18 @@ import java.util.List;
 @Sharable
 public class StringEncoder extends MessageToMessageEncoder<CharSequence> {
 
+    /** 编码所用字符集。 */
     private final Charset charset;
 
     /**
-     * Creates a new instance with the current system character set.
+     * 使用当前系统默认字符集创建实例。
      */
     public StringEncoder() {
         this(Charset.defaultCharset());
     }
 
     /**
-     * Creates a new instance with the specified character set.
+     * 使用指定字符集创建实例。
      */
     public StringEncoder(Charset charset) {
         super(CharSequence.class);

@@ -19,6 +19,11 @@ import io.netty.util.concurrent.Future;
 
 import javax.net.ssl.SSLEngine;
 
+/**
+ * 异步私钥操作接口：签名与解密在 Java 侧异步完成，通过 {@link Future} 回传结果。
+ * <p>
+ * 适用于 HSM、远程 KMS 等无法同步访问私钥的场景。
+ */
 public interface BoringSSLAsyncPrivateKeyMethod {
     int SSL_SIGN_RSA_PKCS1_SHA1 = BoringSSLPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA1;
     int SSL_SIGN_RSA_PKCS1_SHA256 = BoringSSLPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_SHA256;
@@ -35,7 +40,7 @@ public interface BoringSSLAsyncPrivateKeyMethod {
     int SSL_SIGN_RSA_PKCS1_MD5_SHA1 = BoringSSLPrivateKeyMethod.SSL_SIGN_RSA_PKCS1_MD5_SHA1;
 
     /**
-     * Signs the input with the given key and notifies the returned {@link Future} with the signed bytes.
+     * 使用指定算法对摘要签名，完成后通过 {@link Future} 通知签名结果字节。
      *
      * @param engine                the {@link SSLEngine}
      * @param signatureAlgorithm    the algorithm to use for signing
@@ -46,7 +51,7 @@ public interface BoringSSLAsyncPrivateKeyMethod {
     Future<byte[]> sign(SSLEngine engine, int signatureAlgorithm, byte[] input);
 
     /**
-     * Decrypts the input with the given key and notifies the returned {@link Future} with the decrypted bytes.
+     * 使用私钥解密输入数据，完成后通过 {@link Future} 通知解密结果字节。
      *
      * @param engine                the {@link SSLEngine}
      * @param input                 the input which should be decrypted

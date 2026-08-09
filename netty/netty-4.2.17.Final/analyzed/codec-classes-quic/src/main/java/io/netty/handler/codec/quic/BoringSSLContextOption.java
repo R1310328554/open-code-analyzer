@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * {@link SslContextOption}s that are specific to BoringSSL.
+ * BoringSSL 专有的 {@link SslContextOption} 配置项。
  *
  * @param <T>   the type of the value.
  */
@@ -31,7 +31,7 @@ public final class BoringSSLContextOption<T> extends SslContextOption<T> {
     }
 
     /**
-     * Set the groups that should be used. This will override curves set with {@code -Djdk.tls.namedGroups}.
+     * 设置 TLS 密钥交换组（曲线）列表，覆盖 {@code -Djdk.tls.namedGroups}。
      * <p>
      * See <a href="https://github.com/google/boringssl/blob/master/include/openssl/ssl.h#L2632">
      *     SSL_CTX_set1_groups_list</a>.
@@ -39,7 +39,7 @@ public final class BoringSSLContextOption<T> extends SslContextOption<T> {
     public static final BoringSSLContextOption<String[]> GROUPS = new BoringSSLContextOption<>("GROUPS");
 
     /**
-     * Set the signature algorithms that should be used.
+     * 设置 TLS 握手使用的签名算法列表。
      * <p>
      * See <a href="https://github.com/google/boringssl/blob/master/include/openssl/ssl.h#L5166">
      *     SSL_CTX_set1_sigalgs</a>.
@@ -48,13 +48,13 @@ public final class BoringSSLContextOption<T> extends SslContextOption<T> {
             new BoringSSLContextOption<>("SIGNATURE_ALGORITHMS");
 
     /**
-     * Set the supported client key/certificate types used in BoringSSLCertificateCallback
+     * 配置 {@link BoringSSLCertificateCallback} 支持的客户端密钥/证书类型集合。
      */
     public static final BoringSSLContextOption<Set<String>> CLIENT_KEY_TYPES =
             new BoringSSLContextOption<>("CLIENT_KEY_TYPES");
 
     /**
-     * Set the supported server key/certificate types used in BoringSSLCertificateCallback
+     * 配置 {@link BoringSSLCertificateCallback} 服务端 authMethod → 密钥类型 映射。
      */
     public static final BoringSSLContextOption<Map<String, String>> SERVER_KEY_TYPES =
             new BoringSSLContextOption<>("SERVER_KEY_TYPES");

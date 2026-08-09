@@ -30,8 +30,9 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
- * Apply a line separator to the requested {@link String} and encode it into a {@link ByteBuf}.
- * A typical setup for a text-based line protocol in a TCP/IP socket would be:
+ * 为 {@link String} 追加行分隔符并编码为 {@link ByteBuf}。
+ * <p>
+ * 基于 TCP/IP 的文本行协议典型配置如下：
  * <pre>
  * {@link ChannelPipeline} pipeline = ...;
  *
@@ -42,8 +43,7 @@ import java.util.List;
  * // Encoder
  * pipeline.addLast("lineEncoder", new {@link LineEncoder}(LineSeparator.UNIX, CharsetUtil.UTF_8));
  * </pre>
- * and then you can use a {@link String} instead of a {@link ByteBuf}
- * as a message:
+ * 之后可直接以 {@link String} 作为消息读写：
  * <pre>
  * void channelRead({@link ChannelHandlerContext} ctx, {@link String} msg) {
  *     ch.write("Did you say '" + msg + "'?");
@@ -53,32 +53,34 @@ import java.util.List;
 @Sharable
 public class LineEncoder extends MessageToMessageEncoder<CharSequence> {
 
+    /** 字符集，用于将字符串编码为字节。 */
     private final Charset charset;
+    /** 行分隔符的字节形式（已按 charset 编码）。 */
     private final byte[] lineSeparator;
 
     /**
-     * Creates a new instance with the current system line separator and UTF-8 charset encoding.
+     * 使用当前系统行分隔符与 UTF-8 字符集创建实例。
      */
     public LineEncoder() {
         this(LineSeparator.DEFAULT, CharsetUtil.UTF_8);
     }
 
     /**
-     * Creates a new instance with the specified line separator and UTF-8 charset encoding.
+     * 使用指定行分隔符与 UTF-8 字符集创建实例。
      */
     public LineEncoder(LineSeparator lineSeparator) {
         this(lineSeparator, CharsetUtil.UTF_8);
     }
 
     /**
-     * Creates a new instance with the specified character set.
+     * 使用指定字符集与默认行分隔符创建实例。
      */
     public LineEncoder(Charset charset) {
         this(LineSeparator.DEFAULT, charset);
     }
 
     /**
-     * Creates a new instance with the specified line separator and character set.
+     * 使用指定行分隔符与字符集创建实例。
      */
     public LineEncoder(LineSeparator lineSeparator, Charset charset) {
         super(CharSequence.class);
@@ -88,6 +90,7 @@ public class LineEncoder extends MessageToMessageEncoder<CharSequence> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) throws Exception {
+        // 预分配含行分隔符长度的缓冲区，再写入分隔符字节
         ByteBuf buffer = ByteBufUtil.encodeString(ctx.alloc(), CharBuffer.wrap(msg), charset, lineSeparator.length);
         buffer.writeBytes(lineSeparator);
         out.add(buffer);

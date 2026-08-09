@@ -21,36 +21,37 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
- * A class to represent line separators in different environments.
+ * 表示不同平台/约定下的行分隔符。
  */
 public final class LineSeparator {
 
     /**
-     * The default line separator in the current system.
+     * 当前操作系统的默认行分隔符。
      */
     public static final LineSeparator DEFAULT = new LineSeparator(StringUtil.NEWLINE);
 
     /**
-     * The Unix line separator(LF)
+     * Unix 行分隔符（LF，{@code \n}）。
      */
     public static final LineSeparator UNIX = new LineSeparator("\n");
 
     /**
-     * The Windows line separator(CRLF)
+     * Windows 行分隔符（CRLF，{@code \r\n}）。
      */
     public static final LineSeparator WINDOWS = new LineSeparator("\r\n");
 
+    /** 行分隔符字符串值。 */
     private final String value;
 
     /**
-     * Create {@link LineSeparator} with the specified {@code lineSeparator} string.
+     * 使用指定 {@code lineSeparator} 字符串创建 {@link LineSeparator}。
      */
     public LineSeparator(String lineSeparator) {
         this.value = ObjectUtil.checkNotNull(lineSeparator, "lineSeparator");
     }
 
     /**
-     * Return the string value of this line separator.
+     * 返回行分隔符的字符串形式。
      */
     public String value() {
         return value;
@@ -74,7 +75,7 @@ public final class LineSeparator {
     }
 
     /**
-     * Return a <a href="https://en.wikipedia.org/wiki/Hex_dump">hex dump</a> of the line separator in UTF-8 encoding.
+     * 以 UTF-8 编码返回行分隔符的 <a href="https://en.wikipedia.org/wiki/Hex_dump">十六进制转储</a>。
      */
     @Override
     public String toString() {

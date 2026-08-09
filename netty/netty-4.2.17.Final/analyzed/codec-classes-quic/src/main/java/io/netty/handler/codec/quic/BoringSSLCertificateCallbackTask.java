@@ -16,7 +16,9 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Execute {@link BoringSSLCertificateCallback#handle(long, byte[], byte[][], String[])}.
+ * 在 Netty 事件循环中执行 {@link BoringSSLCertificateCallback#handle(long, byte[], byte[][], String[])}。
+ * <p>
+ * 将 OpenSSL 证书回调从 JNI 线程卸载到 Java 侧，并在任务结束后释放原生 key/chain 句柄。
  */
 final class BoringSSLCertificateCallbackTask extends BoringSSLTask {
     private final byte[] keyTypeBytes;
@@ -25,7 +27,9 @@ final class BoringSSLCertificateCallbackTask extends BoringSSLTask {
     private final BoringSSLCertificateCallback callback;
 
     // Accessed via JNI.
+    /** 原生 EVP_PKEY 句柄，供 JNI 读取。 */
     private long key;
+    /** 原生证书链 CRYPTO_BUFFER 栈句柄。 */
     private long chain;
 
     BoringSSLCertificateCallbackTask(long ssl, byte[] keyTypeBytes, byte[][] asn1DerEncodedPrincipals,

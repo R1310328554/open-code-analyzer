@@ -19,6 +19,11 @@ import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.util.Map;
 
+/**
+ * 使用 {@link SoftReference} 存储值的 {@link ReferenceMap} 实现。
+ * <p>
+ * 内存紧张时 JVM 可回收软引用指向的对象，适合对象反序列化缓存等场景。
+ */
 final class SoftReferenceMap<K, V> extends ReferenceMap<K, V> {
 
     SoftReferenceMap(Map<K, Reference<V>> delegate) {

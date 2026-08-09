@@ -17,7 +17,7 @@ package io.netty.handler.codec.quic;
 
 
 /**
- * Execute {@link BoringSSLCertificateVerifyCallback#verify(long, byte[][], String)}.
+ * 在 Netty 事件循环中执行 {@link BoringSSLCertificateVerifyCallback#verify(long, byte[][], String)}。
  */
 final class BoringSSLCertificateVerifyCallbackTask extends BoringSSLTask {
     private final byte[][] x509;
