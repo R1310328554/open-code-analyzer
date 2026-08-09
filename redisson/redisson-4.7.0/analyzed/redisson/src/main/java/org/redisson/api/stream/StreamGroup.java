@@ -16,18 +16,26 @@
 package org.redisson.api.stream;
 
 /**
- * Object containing details about Stream Group
+ * 流消费者组详情对象。
+ * <p>
+ * 包含组名称、消费者数、待处理消息数及最后投递 ID 等统计信息。
  * 
  * @author Nikita Koksharov
  *
  */
 public final class StreamGroup {
 
+    /** 消费者组名称。 */
     private final String name;
+    /** 组内消费者数量。 */
     private final int consumers;
+    /** 待处理消息数量。 */
     private final int pending;
+    /** 最后投递的消息 ID。 */
     private final StreamMessageId lastDeliveredId;
+    /** 组已读取的条目数。 */
     private final int entriesRead;
+    /** 仍待投递的条目数（滞后量）。 */
     private final int lag;
     
     public StreamGroup(String name, int consumers, int pending, StreamMessageId lastDeliveredId) {
@@ -44,54 +52,54 @@ public final class StreamGroup {
     }
 
     /**
-     * Returns last delivered StreamMessageId for this group
+     * 返回该组最后投递的消息 ID。
      * 
-     * @return StreamMessageId object
+     * @return 消息 ID 对象
      */
     public StreamMessageId getLastDeliveredId() {
         return lastDeliveredId;
     }
     
     /**
-     * Returns current customers amount for this group
+     * 返回该组当前消费者数量。
      * 
-     * @return customers amount
+     * @return 消费者数量
      */
     public int getConsumers() {
         return consumers;
     }
     
     /**
-     * Returns name of this group
+     * 返回消费者组名称。
      * 
-     * @return name of group
+     * @return 组名称
      */
     public String getName() {
         return name;
     }
     
     /**
-     * Returns amount of pending messages for this group
+     * 返回该组的待处理消息数量。
      * 
-     * @return amount of pending messages 
+     * @return 待处理消息数
      */
     public int getPending() {
         return pending;
     }
 
     /**
-     * Returns amount of entries that the group had read
+     * 返回该组已读取的条目数量。
      *
-     * @return amount of read entries
+     * @return 已读条目数
      */
     public int getEntriesRead() {
         return entriesRead;
     }
 
     /**
-     * Returns amount of entries that are still waiting for delivery
+     * 返回仍待投递的条目数量（滞后量）。
      *
-     * @return amount of entries for delivery
+     * @return 待投递条目数
      */
     public int getLag() {
         return lag;

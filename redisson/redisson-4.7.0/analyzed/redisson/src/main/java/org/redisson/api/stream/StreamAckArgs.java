@@ -16,7 +16,9 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for RStream.ack() method.
+ * {@link org.redisson.api.RStream#ack} 方法的参数对象。
+ * <p>
+ * 用于指定消费者组及待确认的消息 ID。
  *
  * @author seakider
  *
@@ -24,10 +26,10 @@ package org.redisson.api.stream;
 public interface StreamAckArgs extends StreamReferencesArgs<StreamAckArgs> {
 
     /**
-     * Defines group name of messages to acknowledges and conditionally deletes
+     * 指定要确认（并可选择性删除）的消息所属消费者组。
      *
-     * @param groupName name of group
-     * @return arguments object
+     * @param groupName 消费者组名称
+     * @return 参数对象
      */
     static StreamMessageIdArgs<StreamAckArgs> group(String groupName) {
         return new StreamAckParams(groupName);

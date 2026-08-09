@@ -18,12 +18,14 @@ package org.redisson.api.stream;
 import java.util.Map;
 
 /**
- * Object containing details about Stream
+ * 流详情信息对象。
+ * <p>
+ * 包含流长度、基数树统计、消费者组数量及首尾条目等元数据。
  *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public final class StreamInfo<K, V> {
 
@@ -38,18 +40,18 @@ public final class StreamInfo<K, V> {
         }
 
         /**
-         * Returns StreamMessageId of this stream entry.
+         * 返回该流条目的消息 ID。
          *
-         * @return StreamMessageId object
+         * @return 消息 ID 对象
          */
         public StreamMessageId getId() {
             return id;
         }
 
         /**
-         * Returns data stored in this stream entry
+         * 返回该流条目存储的数据。
          *
-         * @return Map object
+         * @return 数据映射
          */
         public Map<K, V> getData() {
             return data;
@@ -57,21 +59,31 @@ public final class StreamInfo<K, V> {
 
     }
 
+    /** 流当前长度。 */
     int length;
+    /** 基数树分配的键数量。 */
     int radixTreeKeys;
+    /** 基数树节点数量。 */
     int radixTreeNodes;
+    /** 消费者组数量。 */
     int groups;
+    /** 最后生成的消息 ID。 */
     StreamMessageId lastGeneratedId;
+    /** 首条流条目。 */
     Entry<K, V> firstEntry;
+    /** 末条流条目。 */
     Entry<K, V> lastEntry;
+    /** 已删除条目的最大 ID。 */
     StreamMessageId maxDeletedEntryId;
+    /** 流生命周期内写入的条目总数。 */
     int entriesAdded;
+    /** 记录的首条消息 ID。 */
     StreamMessageId recordedFirstEntryId;
 
     /**
-     * Returns length of the stream
+     * 返回流当前长度。
      *
-     * @return length of the stream
+     * @return 流长度
      */
     public int getLength() {
         return length;
@@ -81,9 +93,9 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns amount of keys allocated by Radix tree of the stream.
+     * 返回流基数树分配的键数量。
      *
-     * @return amount of keys
+     * @return 键数量
      */
     public int getRadixTreeKeys() {
         return radixTreeKeys;
@@ -93,9 +105,9 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns amount of nodes allocated by Radix tree of the stream.
+     * 返回流基数树节点数量。
      *
-     * @return amount of nodes
+     * @return 节点数量
      */
     public int getRadixTreeNodes() {
         return radixTreeNodes;
@@ -105,9 +117,9 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns amount of groups belonging to the stream
+     * 返回该流所属的消费者组数量。
      *
-     * @return amount of groups
+     * @return 组数量
      */
     public int getGroups() {
         return groups;
@@ -117,9 +129,9 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns last StreamMessageId used by the stream
+     * 返回流最后使用的消息 ID。
      *
-     * @return StreamMessageId object
+     * @return 消息 ID 对象
      */
     public StreamMessageId getLastGeneratedId() {
         return lastGeneratedId;
@@ -129,9 +141,9 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns first stream entry
+     * 返回首条流条目。
      *
-     * @return stream entry
+     * @return 流条目
      */
     public Entry<K, V> getFirstEntry() {
         return firstEntry;
@@ -141,9 +153,9 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns last stream entry
+     * 返回末条流条目。
      *
-     * @return stream entry
+     * @return 流条目
      */
     public Entry<K, V> getLastEntry() {
         return lastEntry;
@@ -153,11 +165,11 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns the maximal entry ID that was deleted from the stream
+     * 返回从流中删除的最大条目 ID。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上版本。</b>
      *
-     * @return StreamMessageId object
+     * @return 消息 ID 对象
      */
     public StreamMessageId getMaxDeletedEntryId() {
         return maxDeletedEntryId;
@@ -168,11 +180,11 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns the count of all entries added to the stream during its lifetime
+     * 返回流生命周期内写入的条目总数。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上版本。</b>
      *
-     * @return entries count
+     * @return 条目总数
      */
     public int getEntriesAdded() {
         return entriesAdded;
@@ -183,11 +195,11 @@ public final class StreamInfo<K, V> {
     }
 
     /**
-     * Returns the first ID what was added to the stream
+     * 返回写入流的首条消息 ID。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上版本。</b>
      *
-     * @return StreamMessageId object
+     * @return 消息 ID 对象
      */
     public StreamMessageId getRecordedFirstEntryId() {
         return recordedFirstEntryId;

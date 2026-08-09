@@ -16,6 +16,7 @@
 package org.redisson.api.stream;
 
 /**
+ * 待处理消息查询的数量限制参数接口。
  *
  * @author seakider
  *
@@ -23,10 +24,10 @@ package org.redisson.api.stream;
 public interface StreamCountArgs {
 
     /**
-     * Defines messages count limit.
+     * 设置返回的消息数量上限。
      *
-     * @param count amount of messages
-     * @return next options
+     * @param count 消息数量
+     * @return 后续选项
      */
     StreamPendingRangeArgs count(int count);
 }

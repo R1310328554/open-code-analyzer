@@ -16,16 +16,22 @@
 package org.redisson.api.stream;
 
 /**
- * Object containing details about Stream Consumer
+ * 流消费者详情对象。
+ * <p>
+ * 包含消费者名称、待处理消息数、空闲时长及非活跃时长等统计信息。
  *
  * @author Nikita Koksharov
  *
  */
 public final class StreamConsumer {
 
+    /** 消费者名称。 */
     private final String name;
+    /** 待处理消息数量。 */
     private final int pending;
+    /** 自上次消费以来的空闲毫秒数。 */
     private final long idleTime;
+    /** 自上次成功交互以来的非活跃毫秒数。 */
     private final long inactive;
 
     public StreamConsumer(String name, int pending, long idleTime, long inactive) {
@@ -36,38 +42,38 @@ public final class StreamConsumer {
     }
 
     /**
-     * Returns amount of pending messages for this consumer
+     * 返回该消费者的待处理消息数量。
      *
-     * @return amount of pending messages
+     * @return 待处理消息数
      */
     public int getPending() {
         return pending;
     }
 
     /**
-     * Returns name of this consumer
+     * 返回消费者名称。
      *
-     * @return name of consumer
+     * @return 消费者名称
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Returns idle time in milliseconds since which this consumer hasn't consumed messages
+     * 返回自该消费者未消费消息以来的空闲时长（毫秒）。
      *
-     * @return idle time in milliseconds
+     * @return 空闲时长（毫秒）
      */
     public long getIdleTime() {
         return idleTime;
     }
 
     /**
-     * Returns time in milliseconds since the last successful interaction of this consumer
+     * 返回自该消费者上次成功交互以来的时长（毫秒）。
      * <p>
-     * Requires <b>Redis 7.2.0 and higher.</b>
+     * 需要 <b>Redis 7.2.0 及以上版本。</b>
      *
-     * @return time in milliseconds
+     * @return 非活跃时长（毫秒）
      */
     public long getInactive() {
         return inactive;

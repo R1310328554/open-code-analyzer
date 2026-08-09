@@ -20,7 +20,9 @@ import org.redisson.api.RStream;
 import java.util.Objects;
 
 /**
- * Stream Message ID object 
+ * 流消息 ID 对象。
+ * <p>
+ * 封装 Redis Stream 消息的时间戳-序列号标识及特殊占位常量。
  * 
  * @author Nikita Koksharov
  *
@@ -28,54 +30,54 @@ import java.util.Objects;
 public final class StreamMessageId {
 
     /**
-     * Defines id to receive Stream entries never delivered to any other consumer.
-     * <p> 
-     * Used in {@link RStream#readGroup} method
+     * 接收从未投递给其他消费者的新消息。
+     * <p>
+     * 用于 {@link RStream#readGroup} 方法
      */
     public static final StreamMessageId NEVER_DELIVERED = new StreamMessageId(-1);
 
     /**
-     * Defines auto-generated id.
+     * 由 Redis 自动生成消息 ID。
      * <p>
-     * Used in {@link RStream#add} method
+     * 用于 {@link RStream#add} 方法
      */
     public static final StreamMessageId AUTO_GENERATED = new StreamMessageId(-1);
 
     /**
-     * Defines minimal id.
+     * 表示最小消息 ID。
      * <p>
-     * Used in {@link RStream#range} methods
+     * 用于 {@link RStream#range} 方法
      */
     public static final StreamMessageId MIN = new StreamMessageId(-1);
     
     /**
-     * Defines maximal id.
+     * 表示最大消息 ID。
      * <p>
-     * Used in {@link RStream#range} methods
+     * 用于 {@link RStream#range} 方法
      */
     public static final StreamMessageId MAX = new StreamMessageId(-1);
     
     /**
-     * Defines id to receive Stream entries added since method invocation.
+     * 接收自调用时刻起写入的新消息。
      * <p>
-     * Used in {@link RStream#read}, {@link RStream#createGroup} methods
+     * 用于 {@link RStream#read}、{@link RStream#createGroup} 方法
      */
     public static final StreamMessageId NEWEST = new StreamMessageId(-1);
 
     /**
-     * Defines id to receive the latest Stream entry.
+     * 接收最新的流条目。
      * <p>
-     * Used in {@link RStream#read}, {@link RStream#createGroup} methods
+     * 用于 {@link RStream#read}、{@link RStream#createGroup} 方法
      * <p>
-     * Requires Redis 7.4+
+     * 需要 Redis 7.4 及以上版本
      *
      */
     public static final StreamMessageId LAST = new StreamMessageId(-1);
 
     /**
-     * Defines id to receive all Stream entries.
+     * 接收所有流条目。
      * <p>
-     * Used in {@link RStream#read}, {@link RStream#createGroup} methods
+     * 用于 {@link RStream#read}、{@link RStream#createGroup} 方法
      */
     public static final StreamMessageId ALL = new StreamMessageId(-1);
     
@@ -101,18 +103,18 @@ public final class StreamMessageId {
     }
     
     /**
-     * Returns first part of ID
+     * 返回 ID 的第一部分（毫秒时间戳）。
      * 
-     * @return first part of ID
+     * @return ID 第一部分
      */
     public long getId0() {
         return id0;
     }
 
     /**
-     * Returns second part of ID
+     * 返回 ID 的第二部分（序列号）。
      * 
-     * @return second part of ID
+     * @return ID 第二部分
      */
     public long getId1() {
         return id1;

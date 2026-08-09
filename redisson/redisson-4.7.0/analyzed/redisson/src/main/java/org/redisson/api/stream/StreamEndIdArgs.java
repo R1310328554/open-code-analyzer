@@ -16,24 +16,25 @@
 package org.redisson.api.stream;
 
 /**
+ * 定义范围查询结束 ID 的参数接口。
  *
  * @author seakider
  *
  */
 public interface StreamEndIdArgs<T> {
     /**
-     * Defines endId in range inclusive
+     * 设置范围结束 ID（含边界）。
      *
-     * @param endId
-     * @return next options
+     * @param endId 结束消息 ID
+     * @return 后续选项
      */
     T endId(StreamMessageId endId);
 
     /**
-     * Defines endId in range exclusive
+     * 设置范围结束 ID（不含边界）。
      *
-     * @param endId
-     * @return next options
+     * @param endId 结束消息 ID
+     * @return 后续选项
      */
     T endIdExclusive(StreamMessageId endId);
 }

@@ -16,7 +16,9 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for idempotent stream production.
+ * 流幂等写入的参数对象。
+ * <p>
+ * 支持自动或显式指定幂等 ID，避免重复写入。
  *
  * @author Nikita Koksharov
  *
@@ -24,25 +26,23 @@ package org.redisson.api.stream;
 public interface StreamIdempotentArgs<T> {
 
     /**
-     * Defines IDMPAUTO mode. Redis automatically generates a unique
-     * idempotent ID based on the message content for the producer.
+     * 启用 IDMPAUTO 模式：Redis 根据消息内容为生产者自动生成唯一幂等 ID。
      * <p>
-     * Requires <b>Redis 8.6.0 and higher.</b>
+     * 需要 <b>Redis 8.6.0 及以上版本。</b>
      *
-     * @return arguments object
+     * @return 参数对象
      */
     T autoId();
 
     /**
-     * Defines IDMP mode with an explicit idempotent ID for the producer.
-     * If this producer/idempotent ID combination was already used,
-     * the command returns the ID of the existing entry instead of
-     * creating a duplicate.
+     * 启用 IDMP 模式：为生产者指定显式幂等 ID。
      * <p>
-     * Requires <b>Redis 8.6.0 and higher.</b>
+     * 若该生产者与幂等 ID 组合已存在，则返回已有条目 ID 而非创建重复项。
+     * <p>
+     * 需要 <b>Redis 8.6.0 及以上版本。</b>
      *
-     * @param idempotentId - idempotent identifier
-     * @return arguments object
+     * @param idempotentId 幂等标识
+     * @return 参数对象
      */
     T idempotentId(String idempotentId);
 

@@ -16,6 +16,7 @@
 package org.redisson.api.stream;
 
 /**
+ * 定义待操作消息 ID 列表的参数接口。
  *
  * @author seakider
  *
@@ -23,10 +24,10 @@ package org.redisson.api.stream;
 public interface StreamMessageIdArgs<T> {
 
     /**
-     * Defines id of messages
+     * 指定一条或多条消息 ID。
      *
-     * @param ids id of messages
-     * @return arguments object
+     * @param ids 消息 ID 数组
+     * @return 参数对象
      */
     T ids(StreamMessageId... ids);
 }

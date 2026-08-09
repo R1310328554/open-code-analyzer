@@ -20,7 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Arguments object for RStream.add() method.
+ * {@link org.redisson.api.RStream#add} 方法的参数对象。
+ * <p>
+ * 支持配置待写入条目、裁剪策略及幂等生产选项。
  *
  * @author Nikita Koksharov
  *
@@ -28,61 +30,61 @@ import java.util.Map;
 public interface StreamAddArgs<K, V> {
 
     /**
-     * Define to not create stream automatically if it doesn't exist.
+     * 若流不存在则不自动创建。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     StreamAddArgs<K, V> noMakeStream();
 
     /**
-     * Defines strict trimming.
+     * 启用严格裁剪（精确达到阈值）。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     StreamTrimStrategyArgs<StreamAddArgs<K, V>> trim();
 
     /**
-     * Defines non-strict trimming.
+     * 启用非严格裁剪（允许略超阈值）。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     StreamTrimStrategyArgs<StreamAddArgs<K, V>> trimNonStrict();
 
     /**
-     * Defines idempotent message production for the given producer.
-     * Prevents duplicate entries when a producer resends a message
-     * after a network error or crash.
+     * 为指定生产者配置幂等消息写入。
      * <p>
-     * Requires <b>Redis 8.6.0 and higher.</b>
+     * 网络故障或崩溃后重发时避免产生重复条目。
+     * <p>
+     * 需要 <b>Redis 8.6.0 及以上版本。</b>
      *
-     * @param producerId - unique producer identifier
-     * @return arguments object
+     * @param producerId 唯一生产者标识
+     * @return 参数对象
      */
     StreamIdempotentArgs<StreamAddArgs<K, V>> idempotentProducerId(String producerId);
 
     /**
-     * Defines entry to add
+     * 定义单条待写入条目。
      *
-     * @param k1 key to add
-     * @param v1 value to add
-     * @param <K> key type
-     * @param <V> value type
-     * @return arguments object
+     * @param k1 键
+     * @param v1 值
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <K, V> StreamAddArgs<K, V> entry(K k1, V v1) {
         return entries(Collections.singletonMap(k1, v1));
     }
 
     /**
-     * Defines entries to add
+     * 定义两条待写入条目。
      *
-     * @param k1 1st key to add
-     * @param v1 1st value to add
-     * @param k2 2nd key to add
-     * @param v2 2nd value to add
-     * @param <K> key type
-     * @param <V> value type
-     * @return arguments object
+     * @param k1 第 1 个键
+     * @param v1 第 1 个值
+     * @param k2 第 2 个键
+     * @param v2 第 2 个值
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <K, V> StreamAddArgs<K, V> entries(K k1, V v1, K k2, V v2) {
         Map<K, V> map = new HashMap<>();
@@ -92,17 +94,17 @@ public interface StreamAddArgs<K, V> {
     }
 
     /**
-     * Defines entries to add
+     * 定义三条待写入条目。
      *
-     * @param k1 1st key to add
-     * @param v1 1st value to add
-     * @param k2 2nd key to add
-     * @param v2 2nd value to add
-     * @param k3 3rd key to add
-     * @param v3 3rd value to add
-     * @param <K> key type
-     * @param <V> value type
-     * @return arguments object
+     * @param k1 第 1 个键
+     * @param v1 第 1 个值
+     * @param k2 第 2 个键
+     * @param v2 第 2 个值
+     * @param k3 第 3 个键
+     * @param v3 第 3 个值
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <K, V> StreamAddArgs<K, V> entries(K k1, V v1, K k2, V v2, K k3, V v3) {
         Map<K, V> map = new HashMap<>();
@@ -113,19 +115,19 @@ public interface StreamAddArgs<K, V> {
     }
 
     /**
-     * Defines entries to add
+     * 定义四条待写入条目。
      *
-     * @param k1 1st key to add
-     * @param v1 1st value to add
-     * @param k2 2nd key to add
-     * @param v2 2nd value to add
-     * @param k3 3rd key to add
-     * @param v3 3rd value to add
-     * @param k4 4th key to add
-     * @param v4 4th key to add
-     * @param <K> key type
-     * @param <V> value type
-     * @return arguments object
+     * @param k1 第 1 个键
+     * @param v1 第 1 个值
+     * @param k2 第 2 个键
+     * @param v2 第 2 个值
+     * @param k3 第 3 个键
+     * @param v3 第 3 个值
+     * @param k4 第 4 个键
+     * @param v4 第 4 个值
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <K, V> StreamAddArgs<K, V> entries(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
         Map<K, V> map = new HashMap<>();
@@ -137,21 +139,21 @@ public interface StreamAddArgs<K, V> {
     }
 
     /**
-     * Defines entries to add
+     * 定义五条待写入条目。
      *
-     * @param k1 1st key to add
-     * @param v1 1st value to add
-     * @param k2 2nd key to add
-     * @param v2 2nd value to add
-     * @param k3 3rd key to add
-     * @param v3 3rd value to add
-     * @param k4 4th key to add
-     * @param v4 4th key to add
-     * @param k5 5th key to add
-     * @param v5 5th key to add
-     * @param <K> key type
-     * @param <V> value type
-     * @return arguments object
+     * @param k1 第 1 个键
+     * @param v1 第 1 个值
+     * @param k2 第 2 个键
+     * @param v2 第 2 个值
+     * @param k3 第 3 个键
+     * @param v3 第 3 个值
+     * @param k4 第 4 个键
+     * @param v4 第 4 个值
+     * @param k5 第 5 个键
+     * @param v5 第 5 个值
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <K, V> StreamAddArgs<K, V> entries(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5) {
         Map<K, V> map = new HashMap<>();
@@ -164,12 +166,12 @@ public interface StreamAddArgs<K, V> {
     }
 
     /**
-     * Defines entries to add
+     * 通过映射定义待写入条目。
      *
-     * @param entries entries map to add
-     * @param <K> key type
-     * @param <V> value type
-     * @return arguments object
+     * @param entries 条目映射
+     * @param <K> 键类型
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <K, V> StreamAddArgs<K, V> entries(Map<K, V> entries) {
         return new StreamAddParams<K, V>(entries);

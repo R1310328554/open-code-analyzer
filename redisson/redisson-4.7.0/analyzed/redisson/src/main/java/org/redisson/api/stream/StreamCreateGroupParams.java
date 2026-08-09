@@ -16,15 +16,20 @@
 package org.redisson.api.stream;
 
 /**
+ * {@link StreamCreateGroupArgs} 的实现类，承载创建消费者组参数。
  *
  * @author Nikita Koksharov
  *
  */
 public final class StreamCreateGroupParams implements StreamCreateGroupArgs {
 
+    /** 消费者组名称。 */
     private final String name;
+    /** 是否在流不存在时自动创建。 */
     private boolean makeStream;
+    /** entries_read 参数值。 */
     private int entriesRead;
+    /** 组起始消息 ID，默认为最新。 */
     private StreamMessageId id = StreamMessageId.NEWEST;
 
     public StreamCreateGroupParams(String value) {

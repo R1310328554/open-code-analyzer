@@ -16,7 +16,9 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for {@link org.redisson.api.RStream#createGroup(StreamCreateGroupArgs)} method.
+ * {@link org.redisson.api.RStream#createGroup(StreamCreateGroupArgs)} 方法的参数对象。
+ * <p>
+ * 用于配置消费者组名称、起始消息 ID 及是否自动创建流等选项。
  *
  * @author Nikita Koksharov
  *
@@ -24,40 +26,41 @@ package org.redisson.api.stream;
 public interface StreamCreateGroupArgs {
 
     /**
-     * Defines entries_read argument
+     * 设置 entries_read 参数。
      *
-     * @param amount entries_read argument
-     * @return arguments object
+     * @param amount entries_read 值
+     * @return 参数对象
      */
     StreamCreateGroupArgs entriesRead(int amount);
 
     /**
-     * Defines whether a stream should be created if it doesn't exist.
+     * 若流不存在则自动创建。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     StreamCreateGroupArgs makeStream();
 
     /**
-     * Defines Stream Message ID.
-     * Only new messages after defined stream <code>id</code> will
-     * be available for consumers of this group.
+     * 设置流消息 ID。
      * <p>
-     * {@link StreamMessageId#NEWEST} is used for messages arrived since the moment of group creation
+     * 仅该 ID 之后的新消息对该组消费者可见。
      * <p>
-     * {@link StreamMessageId#ALL} is used for all messages added before and after the moment of group creation
+     * {@link StreamMessageId#NEWEST} 表示自创建组时起的新消息
+     * <p>
+     * {@link StreamMessageId#ALL} 表示创建组前后所有消息
      *
-     * @param id Stream Message ID
-     * @return arguments object
+     * @param id 流消息 ID
+     * @return 参数对象
      */
     StreamCreateGroupArgs id(StreamMessageId id);
 
     /**
-     * Defines name of group.
-     * Only new messages will be available for consumers of this group.
+     * 定义消费者组名称。
+     * <p>
+     * 仅新消息对该组消费者可见。
      *
-     * @param value name of group
-     * @return arguments object
+     * @param value 组名称
+     * @return 参数对象
      */
     static StreamCreateGroupArgs name(String value) {
         return new StreamCreateGroupParams(value);

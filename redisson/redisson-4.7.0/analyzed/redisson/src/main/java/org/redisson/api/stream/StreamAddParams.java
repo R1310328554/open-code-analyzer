@@ -18,6 +18,7 @@ package org.redisson.api.stream;
 import java.util.Map;
 
 /**
+ * {@link StreamAddArgs} 的实现类，承载流写入与裁剪参数。
  *
  * @author Nikita Koksharov
  *
@@ -28,15 +29,23 @@ public final class StreamAddParams<K, V> extends BaseReferencesParams<StreamTrim
                                                     StreamTrimReferencesArgs<StreamAddArgs<K, V>>,
                                                     StreamIdempotentArgs<StreamAddArgs<K, V>>  {
 
+    /** 待写入的条目映射。 */
     private final Map<K, V> entries;
+    /** 是否禁止自动创建流。 */
     private boolean noMakeStream;
+    /** 是否启用严格裁剪。 */
     private boolean trimStrict;
 
+    /** 最大长度阈值。 */
     private int maxLen;
+    /** 裁剪的最小消息 ID。 */
     private StreamMessageId minId;
+    /** 裁剪条目数量上限。 */
     private int limit;
 
+    /** 幂等生产者标识。 */
     private String producerId;
+    /** 显式幂等 ID。 */
     private String idempotentId;
 
     StreamAddParams(Map<K, V> entries) {

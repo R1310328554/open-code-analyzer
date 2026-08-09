@@ -16,12 +16,15 @@
 package org.redisson.api.stream;
 
 /**
+ * {@link StreamAckArgs} 的实现类，承载消息确认参数。
  *
  * @author seakider
  *
  */
 public class StreamAckParams extends BaseReferencesParams<StreamAckArgs> implements StreamAckArgs, StreamMessageIdArgs<StreamAckArgs> {
+    /** 消费者组名称。 */
     private final String groupName;
+    /** 待确认的消息 ID 数组。 */
     private StreamMessageId[] ids;
 
     public StreamAckParams(String groupName) {
