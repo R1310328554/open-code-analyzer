@@ -1,4 +1,3 @@
-spring-beans/src/main/java/org/springframework/beans/factory/support/ConstructorResolver.java
 spring-beans/src/main/java/org/springframework/beans/factory/annotation/AutowiredAnnotationBeanPostProcessor.java
 spring-beans/src/main/java/org/springframework/beans/AbstractNestablePropertyAccessor.java
 spring-beans/src/main/java/org/springframework/beans/AbstractPropertyAccessor.java
