@@ -1,27 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:26:59Z",
-  "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/HsqlSequenceMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/MariaDBSequenceMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/MySQLIdentityColumnMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/MySQLMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/OracleSequenceMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/PostgresSequenceMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/SqlServerMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/SqlServerSequenceMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/SqliteMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/SybaseAnywhereMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/SybaseMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/AbstractLobHandler.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/LobCreator.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/LobHandler.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/PassThroughBlob.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/PassThroughClob.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/TemporaryLobCreator.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/ResultSetWrappingSqlRowSetMetaData.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/SqlRowSetMetaData.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/Jdbc4SqlXmlHandler.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 64,
-  "done": 1407
+  "done": 1427
 }
