@@ -17,9 +17,9 @@ package io.netty.handler.codec;
 import io.netty.util.HashingStrategy;
 
 /**
- * A concrete implementation of {@link DefaultHeaders} that allows for direct instantiation.
- * @param <K> the type of the header name.
- * @param <V> the type of the header value.
+ * 可直接实例化的 {@link DefaultHeaders} 具体实现。
+  * @param <K> header 名称类型。
+  * @param <V> header 值类型。
  */
 public final class DefaultHeadersImpl<K, V> extends DefaultHeaders<K, V, DefaultHeadersImpl<K, V>> {
     public DefaultHeadersImpl(HashingStrategy<K> nameHashingStrategy,

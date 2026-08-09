@@ -22,16 +22,16 @@ import io.netty.util.ByteProcessor;
 import java.util.List;
 
 /**
- * A decoder that splits the received {@link ByteBuf}s on line endings.
+ * 按行尾切分入站 {@link ByteBuf} 的解码器。
  * <p>
- * Both {@code "\n"} and {@code "\r\n"} are handled.
+ * 同时支持 {@code "\n"} 与 {@code "\r\n"}。
  * <p>
  * The byte stream is expected to be in UTF-8 character encoding or ASCII. The current implementation
  * uses direct {@code byte} to {@code char} cast and then compares that {@code char} to a few low range
  * ASCII characters like {@code '\n'} or {@code '\r'}. UTF-8 is not using low range [0..0x7F]
  * byte values for multibyte codepoint representations therefore fully supported by this implementation.
  * <p>
- * For a more general delimiter-based decoder, see {@link DelimiterBasedFrameDecoder}.
+ * 更通用的分隔符解码见 {@link DelimiterBasedFrameDecoder}。
  * <p>
  * Users should be aware that used as is, the lenient approach on lone {@code '\n} might result on a parser
  * diffenrencial on line based protocols requiring the use of {@code "\r\n"} delimiters like SMTP and can
@@ -39,45 +39,49 @@ import java.util.List;
  * <a href="https://sec-consult.com/blog/detail/smtp-smuggling-spoofing-e-mails-worldwide/">SMTP smuggling</a>.
  * Validating afterward the end of line pattern can be a possible mitigation.
  */
+/**
+ * 按行尾（{@code \n} 或 {@code \r\n}）切分 {@link ByteBuf} 的解码器。
+ * <p>
+ * 假定 UTF-8 或 ASCII；对单独 {@code \n} 较宽松，严格协议（如 SMTP）需额外校验行尾。
+ * @see DelimiterBasedFrameDecoder
+ */
 public class LineBasedFrameDecoder extends ByteToMessageDecoder {
 
-    /** Maximum length of a frame we're willing to decode.  */
+    /** 允许解码的最大帧长度。*/
+    /** 允许解码的最大帧长度。*/
     private final int maxLength;
-    /** Whether or not to throw an exception as soon as we exceed maxLength. */
+    /** 超出 maxLength 时是否立即抛异常。*/
+    /** 超出 maxLength 时是否立即抛异常。*/
     private final boolean failFast;
+    /** 解码帧是否剥离行分隔符。 */
+    /** 解码帧是否剥离行分隔符。 */
     private final boolean stripDelimiter;
 
-    /** True if we're discarding input because we're already over maxLength.  */
+    /** 因已超出 maxLength 而丢弃输入时为 true。*/
+    /** 因已超出 maxLength 而丢弃输入时为 true。*/
     private boolean discarding;
     private int discardedBytes;
 
-    /** Last scan position. */
+    /** 上次扫描位置。 */
+    /** 上次扫描位置。 */
     private int offset;
 
     /**
-     * Creates a new decoder.
-     * @param maxLength  the maximum length of the decoded frame.
-     *                   A {@link TooLongFrameException} is thrown if
-     *                   the length of the frame exceeds this value.
+     * 创建新的解码器。
+      * @param maxLength  解码帧允许的最大长度。
+     *                   若帧长度超过此值则抛出 {@link TooLongFrameException}。
      */
     public LineBasedFrameDecoder(final int maxLength) {
         this(maxLength, true, false);
     }
 
     /**
-     * Creates a new decoder.
-     * @param maxLength  the maximum length of the decoded frame.
-     *                   A {@link TooLongFrameException} is thrown if
-     *                   the length of the frame exceeds this value.
-     * @param stripDelimiter  whether the decoded frame should strip out the
-     *                        delimiter or not
-     * @param failFast  If <tt>true</tt>, a {@link TooLongFrameException} is
-     *                  thrown as soon as the decoder notices the length of the
-     *                  frame will exceed <tt>maxFrameLength</tt> regardless of
-     *                  whether the entire frame has been read.
-     *                  If <tt>false</tt>, a {@link TooLongFrameException} is
-     *                  thrown after the entire frame that exceeds
-     *                  <tt>maxFrameLength</tt> has been read.
+     * 创建新的解码器。
+      * @param maxLength  解码帧允许的最大长度。
+     *                   若帧长度超过此值则抛出 {@link TooLongFrameException}。
+      * @param stripDelimiter  解码后的帧是否剥离分隔符
+      * @param failFast  为 {@code true} 时，一旦检测到帧将超出 {@code maxFrameLength} 即抛出 {@link TooLongFrameException}；
+     * 为 {@code false} 时，读完整个超长帧后再抛出。
      */
     public LineBasedFrameDecoder(final int maxLength, final boolean stripDelimiter, final boolean failFast) {
         this.maxLength = maxLength;
@@ -94,12 +98,11 @@ public class LineBasedFrameDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Create a frame out of the {@link ByteBuf} and return it.
+     * 从 {@link ByteBuf} 提取一帧并返回。
      *
-     * @param   ctx             the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to
-     * @param   buffer          the {@link ByteBuf} from which to read data
-     * @return  frame           the {@link ByteBuf} which represent the frame or {@code null} if no frame could
-     *                          be created.
+      * @param   ctx             本 {@link ByteToMessageDecoder} 所属的 {@link ChannelHandlerContext}
+      * @param   buffer          待读取的 {@link ByteBuf}
+     * @return frame 表示帧的 {@link ByteBuf}；数据不足时 {@code null}
      */
     protected Object decode(ChannelHandlerContext ctx, ByteBuf buffer) throws Exception {
         final int eol = findEndOfLine(buffer);
@@ -149,7 +152,7 @@ public class LineBasedFrameDecoder extends ByteToMessageDecoder {
             } else {
                 discardedBytes += buffer.readableBytes();
                 buffer.readerIndex(buffer.writerIndex());
-                // We skip everything in the buffer, we need to set the offset to 0 again.
+                // 跳过整个缓冲区，重置 offset 为 0
                 offset = 0;
             }
             return null;
@@ -167,8 +170,7 @@ public class LineBasedFrameDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Returns the index in the buffer of the end of line found.
-     * Returns -1 if no end of line was found in the buffer.
+     * 返回缓冲区中换行符位置；未找到返回 -1。
      */
     private int findEndOfLine(final ByteBuf buffer) {
         int totalLength = buffer.readableBytes();

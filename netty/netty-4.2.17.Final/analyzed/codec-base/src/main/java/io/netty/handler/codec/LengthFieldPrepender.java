@@ -27,8 +27,7 @@ import java.util.List;
 
 
 /**
- * An encoder that prepends the length of the message.  The length value is
- * prepended as a binary form.
+ * 在消息前追加二进制长度字段的编码器。
  * <p>
  * For example, <tt>{@link LengthFieldPrepender}(2)</tt> will encode the
  * following 12-bytes string:
@@ -55,90 +54,84 @@ import java.util.List;
 @Sharable
 public class LengthFieldPrepender extends MessageToMessageEncoder<ByteBuf> {
 
+    /** 长度字段字节序。 */
+    /** 长度字段字节序。 */
     private final ByteOrder byteOrder;
+    /** 长度字段占用字节数（1/2/3/4/8）。 */
+    /** 长度字段占用字节数（1/2/3/4/8）。 */
     private final int lengthFieldLength;
+    /** 长度值是否包含长度字段自身。 */
+    /** 长度值是否包含长度字段自身。 */
     private final boolean lengthIncludesLengthFieldLength;
+    /** 写入长度前的补偿调整量。 */
+    /** 写入长度前的补偿调整量。 */
     private final int lengthAdjustment;
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
-     * @param lengthFieldLength the length of the prepended length field.
-     *                          Only 1, 2, 3, 4, and 8 are allowed.
+      * @param lengthFieldLength 前置长度字段的字节数；仅允许 1、2、3、4、8。
      *
      * @throws IllegalArgumentException
-     *         if {@code lengthFieldLength} is not 1, 2, 3, 4, or 8
+     *         若 {@code lengthFieldLength} 不是 1、2、3、4 或 8
      */
     public LengthFieldPrepender(int lengthFieldLength) {
         this(lengthFieldLength, false);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
-     * @param lengthFieldLength the length of the prepended length field.
-     *                          Only 1, 2, 3, 4, and 8 are allowed.
+      * @param lengthFieldLength 前置长度字段的字节数；仅允许 1、2、3、4、8。
      * @param lengthIncludesLengthFieldLength
-     *                          if {@code true}, the length of the prepended
-     *                          length field is added to the value of the
-     *                          prepended length field.
+     *                          为 {@code true} 时，长度值包含长度字段自身字节数。
      *
      * @throws IllegalArgumentException
-     *         if {@code lengthFieldLength} is not 1, 2, 3, 4, or 8
+     *         若 {@code lengthFieldLength} 不是 1、2、3、4 或 8
      */
     public LengthFieldPrepender(int lengthFieldLength, boolean lengthIncludesLengthFieldLength) {
         this(lengthFieldLength, 0, lengthIncludesLengthFieldLength);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
-     * @param lengthFieldLength the length of the prepended length field.
-     *                          Only 1, 2, 3, 4, and 8 are allowed.
-     * @param lengthAdjustment  the compensation value to add to the value
-     *                          of the length field
+      * @param lengthFieldLength 前置长度字段的字节数；仅允许 1、2、3、4、8。
+      * @param lengthAdjustment  写入长度字段前加到长度值上的补偿量
      *
      * @throws IllegalArgumentException
-     *         if {@code lengthFieldLength} is not 1, 2, 3, 4, or 8
+     *         若 {@code lengthFieldLength} 不是 1、2、3、4 或 8
      */
     public LengthFieldPrepender(int lengthFieldLength, int lengthAdjustment) {
         this(lengthFieldLength, lengthAdjustment, false);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
-     * @param lengthFieldLength the length of the prepended length field.
-     *                          Only 1, 2, 3, 4, and 8 are allowed.
-     * @param lengthAdjustment  the compensation value to add to the value
-     *                          of the length field
+      * @param lengthFieldLength 前置长度字段的字节数；仅允许 1、2、3、4、8。
+      * @param lengthAdjustment  写入长度字段前加到长度值上的补偿量
      * @param lengthIncludesLengthFieldLength
-     *                          if {@code true}, the length of the prepended
-     *                          length field is added to the value of the
-     *                          prepended length field.
+     *                          为 {@code true} 时，长度值包含长度字段自身字节数。
      *
      * @throws IllegalArgumentException
-     *         if {@code lengthFieldLength} is not 1, 2, 3, 4, or 8
+     *         若 {@code lengthFieldLength} 不是 1、2、3、4 或 8
      */
     public LengthFieldPrepender(int lengthFieldLength, int lengthAdjustment, boolean lengthIncludesLengthFieldLength) {
         this(ByteOrder.BIG_ENDIAN, lengthFieldLength, lengthAdjustment, lengthIncludesLengthFieldLength);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
-     * @param byteOrder         the {@link ByteOrder} of the length field
-     * @param lengthFieldLength the length of the prepended length field.
-     *                          Only 1, 2, 3, 4, and 8 are allowed.
-     * @param lengthAdjustment  the compensation value to add to the value
-     *                          of the length field
+      * @param byteOrder         长度字段的 {@link ByteOrder}
+      * @param lengthFieldLength 前置长度字段的字节数；仅允许 1、2、3、4、8。
+      * @param lengthAdjustment  写入长度字段前加到长度值上的补偿量
      * @param lengthIncludesLengthFieldLength
-     *                          if {@code true}, the length of the prepended
-     *                          length field is added to the value of the
-     *                          prepended length field.
+     *                          为 {@code true} 时，长度值包含长度字段自身字节数。
      *
      * @throws IllegalArgumentException
-     *         if {@code lengthFieldLength} is not 1, 2, 3, 4, or 8
+     *         若 {@code lengthFieldLength} 不是 1、2、3、4 或 8
      */
     public LengthFieldPrepender(
             ByteOrder byteOrder, int lengthFieldLength,

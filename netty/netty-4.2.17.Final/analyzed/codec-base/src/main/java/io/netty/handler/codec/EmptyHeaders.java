@@ -22,7 +22,11 @@ import java.util.Set;
 
 import static io.netty.handler.codec.DefaultHeaders.HASH_CODE_SEED;
 
+/**
+ * 始终为空的只读 {@link Headers} 实现；修改操作抛出 {@link UnsupportedOperationException}。
+ */
 public class EmptyHeaders<K, V, T extends Headers<K, V, T>> implements Headers<K, V, T> {
+    // --- 读取：始终无数据 ---
     @Override
     public V get(K name) {
         return null;
@@ -233,6 +237,7 @@ public class EmptyHeaders<K, V, T extends Headers<K, V, T>> implements Headers<K
         return defaultValue;
     }
 
+    // --- 包含性检查：恒为 false ---
     @Override
     public boolean contains(K name) {
         return false;
@@ -293,6 +298,7 @@ public class EmptyHeaders<K, V, T extends Headers<K, V, T>> implements Headers<K
         return false;
     }
 
+    // --- 规模与名称 ---
     @Override
     public int size() {
         return 0;
@@ -308,9 +314,10 @@ public class EmptyHeaders<K, V, T extends Headers<K, V, T>> implements Headers<K
         return Collections.emptySet();
     }
 
+    // --- 修改操作：只读，一律拒绝 ---
     @Override
     public T add(K name, V value) {
-        throw new UnsupportedOperationException("read only");
+        throw new UnsupportedOperationException("read only"); // 只读，禁止修改
     }
 
     @Override
@@ -473,6 +480,7 @@ public class EmptyHeaders<K, V, T extends Headers<K, V, T>> implements Headers<K
         throw new UnsupportedOperationException("read only");
     }
 
+    // --- 删除：空集合上 remove 恒为 false ---
     @Override
     public boolean remove(K name) {
         return false;
@@ -484,15 +492,16 @@ public class EmptyHeaders<K, V, T extends Headers<K, V, T>> implements Headers<K
     }
 
     /**
-     * Equivalent to {@link #getAll(Object)} but no intermediate list is generated.
-     * @param name the name of the header to retrieve
-     * @return an {@link Iterator} of header values corresponding to {@code name}.
+     * 等价于 {@link #getAll(Object)}，但不生成中间 {@link List}。
+      * @param name 要获取的 header 名称
+     * @return 对应 {@code name} 的 header 值 {@link Iterator}。
      */
     public Iterator<V> valueIterator(@SuppressWarnings("unused") K name) {
         List<V> empty = Collections.emptyList();
         return empty.iterator();
     }
 
+    // --- 迭代与相等性 ---
     @Override
     public Iterator<Entry<K, V>> iterator() {
         List<Entry<K, V>> empty = Collections.emptyList();
@@ -519,6 +528,8 @@ public class EmptyHeaders<K, V, T extends Headers<K, V, T>> implements Headers<K
         return new StringBuilder(getClass().getSimpleName()).append('[').append(']').toString();
     }
 
+    /** 链式返回类型转换辅助。 */
+    /** 链式返回类型转换辅助。 */
     @SuppressWarnings("unchecked")
     private T thisT() {
         return (T) this;

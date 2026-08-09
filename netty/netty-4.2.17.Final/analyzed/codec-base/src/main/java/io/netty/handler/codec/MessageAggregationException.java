@@ -17,14 +17,21 @@
 package io.netty.handler.codec;
 
 /**
- * Raised by {@link MessageAggregator} when aggregation fails due to an unexpected message sequence.
+ * 当 {@link MessageAggregator} 因意外消息序列导致聚合失败时抛出。
+ */
+/**
+ * {@link MessageAggregator} 因意外消息序列导致聚合失败时抛出。
  */
 public class MessageAggregationException extends IllegalStateException {
 
     private static final long serialVersionUID = -1995826182950310255L;
 
+    /** 创建无消息实例。 */
+    /** 创建无消息实例。 */
     public MessageAggregationException() { }
 
+    /** @param s 异常消息 */
+    /** @param s 异常消息 */
     public MessageAggregationException(String s) {
         super(s);
     }

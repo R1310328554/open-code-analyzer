@@ -19,13 +19,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 /**
- * A set of commonly used delimiters for {@link DelimiterBasedFrameDecoder}.
+ * 供 {@link DelimiterBasedFrameDecoder} 使用的常用分隔符集合。
  */
 public final class Delimiters {
 
     /**
-     * Returns a {@code NUL (0x00)} delimiter, which could be used for
-     * Flash XML socket or any similar protocols.
+     * 返回 {@code NUL (0x00)} 分隔符，适用于 Flash XML socket 等协议。
      */
     public static ByteBuf[] nulDelimiter() {
         return new ByteBuf[] {
@@ -33,8 +32,7 @@ public final class Delimiters {
     }
 
     /**
-     * Returns {@code CR ('\r')} and {@code LF ('\n')} delimiters, which could
-     * be used for text-based line protocols.
+     * 返回 {@code CR+LF} 与单独 {@code LF} 分隔符，适用于文本行协议。
      */
     public static ByteBuf[] lineDelimiter() {
         return new ByteBuf[] {
@@ -44,6 +42,6 @@ public final class Delimiters {
     }
 
     private Delimiters() {
-        // Unused
+        // 工具类，禁止实例化
     }
 }

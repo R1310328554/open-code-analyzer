@@ -31,7 +31,7 @@ import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * An abstract {@link ChannelHandler} that aggregates a series of message objects into a single aggregated message.
+ * 将一系列消息聚合为单一完整消息的抽象 {@link ChannelHandler}。
  * <p>
  * 'A series of messages' is composed of the following:
  * <ul>
@@ -44,34 +44,42 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
  * another start message.
  * </p>
  *
- * @param <I> the type that covers both start message and content message
- * @param <S> the type of the start message
- * @param <C> the type of the content message (must be a subtype of {@link ByteBufHolder})
- * @param <O> the type of the aggregated message (must be a subtype of {@code S} and {@link ByteBufHolder})
+  * @param <I> the type that covers both start message and content message
+  * @param <S> the type of the start message
+  * @param <C> the type of the content message (must be a subtype of {@link ByteBufHolder})
+  * @param <O> the type of the aggregated message (must be a subtype of {@code S} and {@link ByteBufHolder})
  */
 public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends ByteBufHolder>
         extends MessageToMessageDecoder<I> {
 
+    /** 累积 {@link CompositeByteBuf} 默认最大组件数。 */
+    /** 累积 {@link CompositeByteBuf} 默认最大组件数。 */
     private static final int DEFAULT_MAX_COMPOSITEBUFFER_COMPONENTS = 1024;
 
+    /** 聚合内容最大字节数。 */
+    /** 聚合内容最大字节数。 */
     private final int maxContentLength;
+    /** 正在聚合的当前消息。 */
+    /** 正在聚合的当前消息。 */
     private O currentMessage;
+    /** 是否正在处理超大消息。 */
+    /** 是否正在处理超大消息。 */
     private boolean handlingOversizedMessage;
 
     private int maxCumulationBufferComponents = DEFAULT_MAX_COMPOSITEBUFFER_COMPONENTS;
     private ChannelHandlerContext ctx;
     private ChannelFutureListener continueResponseWriteListener;
 
+    /** 是否处于聚合过程中。 */
+    /** 是否处于聚合过程中。 */
     private boolean aggregating;
     private boolean handleIncompleteAggregateDuringClose = true;
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
      * @param maxContentLength
-     *        the maximum length of the aggregated content.
-     *        If the length of the aggregated content exceeds this value,
-     *        {@link #handleOversizedMessage(ChannelHandlerContext, Object)} will be called.
+     *        聚合内容的最大字节数；超出时调用 {@link #handleOversizedMessage(ChannelHandlerContext, Object)}。
      */
     protected MessageAggregator(int maxContentLength) {
         validateMaxContentLength(maxContentLength);
@@ -90,7 +98,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
 
     @Override
     public boolean acceptInboundMessage(Object msg) throws Exception {
-        // No need to match last and full types because they are subset of first and middle types.
+        // 无需单独匹配 last/full 类型，它们属于 first/middle 的子集
         if (!super.acceptInboundMessage(msg)) {
             return false;
         }
@@ -112,7 +120,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
     }
 
     /**
-     * Returns {@code true} if and only if the specified message is a start message. Typically, this method is
+     * 当且仅当指定消息为起始消息时返回 {@code true}。 Typically, this method is
      * implemented as a single {@code return} statement with {@code instanceof}:
      * <pre>
      * return msg instanceof MyStartMessage;
@@ -121,7 +129,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
     protected abstract boolean isStartMessage(I msg) throws Exception;
 
     /**
-     * Returns {@code true} if and only if the specified message is a content message. Typically, this method is
+     * 当且仅当指定消息为内容分片时返回 {@code true}。 Typically, this method is
      * implemented as a single {@code return} statement with {@code instanceof}:
      * <pre>
      * return msg instanceof MyContentMessage;
@@ -130,7 +138,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
     protected abstract boolean isContentMessage(I msg) throws Exception;
 
     /**
-     * Returns {@code true} if and only if the specified message is the last content message. Typically, this method is
+     * 当且仅当指定消息为最后一个内容分片时返回 {@code true}。 Typically, this method is
      * implemented as a single {@code return} statement with {@code instanceof}:
      * <pre>
      * return msg instanceof MyLastContentMessage;
@@ -143,13 +151,13 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
     protected abstract boolean isLastContentMessage(C msg) throws Exception;
 
     /**
-     * Returns {@code true} if and only if the specified message is already aggregated.  If this method returns
+     * 当且仅当指定消息已完整聚合时返回 {@code true}。  If this method returns
      * {@code true}, this handler will simply forward the message to the next handler as-is.
      */
     protected abstract boolean isAggregated(I msg) throws Exception;
 
     /**
-     * Returns the maximum allowed length of the aggregated message in bytes.
+     * 返回聚合消息允许的最大字节数。
      */
     public final int maxContentLength() {
         return maxContentLength;
@@ -188,7 +196,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
     }
 
     /**
-     * @deprecated This method will be removed in future releases.
+     * @deprecated 未来版本将移除此方法。
      */
     @Deprecated
     public final boolean isHandlingOversizedMessage() {
@@ -216,11 +224,11 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
             @SuppressWarnings("unchecked")
             S m = (S) msg;
 
-            // Send the continue response if necessary (e.g. 'Expect: 100-continue' header)
+            // 必要时发送 continue 响应（如 HTTP Expect: 100-continue）
             // Check before content length. Failing an expectation may result in a different response being sent.
             Object continueResponse = newContinueResponse(m, maxContentLength, ctx.pipeline());
             if (continueResponse != null) {
-                // Cache the write listener for reuse.
+                // 缓存写完成监听器以便复用
                 ChannelFutureListener listener = continueResponseWriteListener;
                 if (listener == null) {
                     continueResponseWriteListener = listener = future -> {
@@ -230,7 +238,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
                     };
                 }
 
-                // Make sure to call this before writing, otherwise reference counts may be invalid.
+                // 必须在写入前调用，否则引用计数可能无效
                 boolean closeAfterWrite = closeAfterContinueResponse(continueResponse);
                 handlingOversizedMessage = ignoreContentAfterContinueResponse(continueResponse);
 
@@ -245,7 +253,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
                     return;
                 }
             } else if (isContentLengthInvalid(m, maxContentLength)) {
-                // if content length is set, preemptively close if it's too large
+                // 若已声明 Content-Length 且过大，提前走超大消息处理
                 invokeHandleOversizedMessage(ctx, m);
                 return;
             }
@@ -262,7 +270,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
                 return;
             }
 
-            // A streamed message - initialize the cumulative buffer, and wait for incoming chunks.
+            // 流式消息：初始化累积缓冲区，等待后续分片
             CompositeByteBuf content = ctx.alloc().compositeBuffer(maxCumulationBufferComponents);
             if (m instanceof ByteBufHolder) {
                 appendPartialContent(content, ((ByteBufHolder) m).content());
@@ -270,17 +278,17 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
             currentMessage = beginAggregation(m, content);
         } else if (isContentMessage(msg)) {
             if (currentMessage == null) {
-                // it is possible that a TooLongFrameException was already thrown but we can still discard data
+                // 可能已抛出 TooLongFrameException，但仍可丢弃数据直至下一消息
                 // until the begging of the next request/response.
                 return;
             }
 
-            // Merge the received chunk into the content of the current message.
+            // 将收到的分片合并到当前消息内容
             CompositeByteBuf content = (CompositeByteBuf) currentMessage.content();
 
             @SuppressWarnings("unchecked")
             final C m = (C) msg;
-            // Handle oversized message.
+            // 处理超大消息
             if (content.readableBytes() > maxContentLength - m.content().readableBytes()) {
                 // By convention, full message type extends first message type.
                 @SuppressWarnings("unchecked")
@@ -289,10 +297,10 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
                 return;
             }
 
-            // Append the content of the chunk.
+            // 追加分片内容
             appendPartialContent(content, m.content());
 
-            // Give the subtypes a chance to merge additional information such as trailing headers.
+            // 允许子类合并附加信息（如 trailing headers）
             aggregate(currentMessage, m);
 
             final boolean last;
@@ -314,7 +322,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
             if (last) {
                 finishAggregation0(currentMessage);
 
-                // All done
+                // 聚合完成，输出完整消息
                 out.add(currentMessage);
                 currentMessage = null;
             }
@@ -330,52 +338,49 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
     }
 
     /**
-     * Determine if the message {@code start}'s content length is known, and if it greater than
-     * {@code maxContentLength}.
-     * @param start The message which may indicate the content length.
-     * @param maxContentLength The maximum allowed content length.
+     * 判断起始消息是否已知内容长度且超过 {@code maxContentLength}。
+      * @param start 可能携带内容长度的起始消息。
+      * @param maxContentLength 允许的最大内容长度。
      * @return {@code true} if the message {@code start}'s content length is known, and if it greater than
      * {@code maxContentLength}. {@code false} otherwise.
      */
     protected abstract boolean isContentLengthInvalid(S start, int maxContentLength) throws Exception;
 
     /**
-     * Returns the 'continue response' for the specified start message if necessary. For example, this method is
+     * 必要时返回起始消息对应的 continue 响应（如 HTTP 100-continue）。 For example, this method is
      * useful to handle an HTTP 100-continue header.
      *
-     * @return the 'continue response', or {@code null} if there's no message to send
+     * @return continue 响应；无需发送时为 {@code null}
      */
     protected abstract Object newContinueResponse(S start, int maxContentLength, ChannelPipeline pipeline)
             throws Exception;
 
     /**
-     * Determine if the channel should be closed after the result of
-     * {@link #newContinueResponse(Object, int, ChannelPipeline)} is written.
-     * @param msg The return value from {@link #newContinueResponse(Object, int, ChannelPipeline)}.
+     * 判断写入 {@link #newContinueResponse(Object, int, ChannelPipeline)} 结果后是否应关闭通道。
+      * @param msg The return value from {@link #newContinueResponse(Object, int, ChannelPipeline)}.
      * @return {@code true} if the channel should be closed after the result of
      * {@link #newContinueResponse(Object, int, ChannelPipeline)} is written. {@code false} otherwise.
      */
     protected abstract boolean closeAfterContinueResponse(Object msg) throws Exception;
 
     /**
-     * Determine if all objects for the current request/response should be ignored or not.
-     * Messages will stop being ignored the next time {@link #isContentMessage(Object)} returns {@code true}.
+     * 判断是否忽略当前请求/响应的后续对象；下次 {@link #isContentMessage(Object)} 为真时停止忽略。
      *
-     * @param msg The return value from {@link #newContinueResponse(Object, int, ChannelPipeline)}.
+      * @param msg The return value from {@link #newContinueResponse(Object, int, ChannelPipeline)}.
      * @return {@code true} if all objects for the current request/response should be ignored or not.
      * {@code false} otherwise.
      */
     protected abstract boolean ignoreContentAfterContinueResponse(Object msg) throws Exception;
 
     /**
-     * Creates a new aggregated message from the specified start message and the specified content.  If the start
+     * 由起始消息与内容缓冲区创建新的聚合消息。  If the start
      * message implements {@link ByteBufHolder}, its content is appended to the specified {@code content}.
      * This aggregator will continue to append the received content to the specified {@code content}.
      */
     protected abstract O beginAggregation(S start, ByteBuf content) throws Exception;
 
     /**
-     * Transfers the information provided by the specified content message to the specified aggregated message.
+     * 将内容分片的附加信息合并到聚合消息（内容字节已追加）。
      * Note that the content of the specified content message has been appended to the content of the specified
      * aggregated message already, so that you don't need to.  Use this method to transfer the additional information
      * that the content message provides to {@code aggregated}.
@@ -388,7 +393,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
     }
 
     /**
-     * Invoked when the specified {@code aggregated} message is about to be passed to the next handler in the pipeline.
+     * 聚合消息即将传递给下游 handler 时调用。
      */
     protected void finishAggregation(O aggregated) throws Exception { }
 
@@ -405,11 +410,11 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
     }
 
     /**
-     * Invoked when an incoming request exceeds the maximum content length.  The default behvaior is to trigger an
+     * 入站请求超出最大内容长度时调用。  The default behvaior is to trigger an
      * {@code exceptionCaught()} event with a {@link TooLongFrameException}.
      *
-     * @param ctx the {@link ChannelHandlerContext}
-     * @param oversized the accumulated message up to this point, whose type is {@code S} or {@code O}
+      * @param ctx  {@link ChannelHandlerContext}
+      * @param oversized 截至当前的累积消息，类型为 {@code S} 或 {@code O}
      */
     protected void handleOversizedMessage(ChannelHandlerContext ctx, S oversized) throws Exception {
         ctx.fireExceptionCaught(
@@ -418,7 +423,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        // We might need keep reading the channel until the full message is aggregated.
+        // 可能需要持续 read 直至消息完全聚合
         //
         // See https://github.com/netty/netty/issues/6583
         if (currentMessage != null && !ctx.channel().config().isAutoRead()) {
@@ -434,7 +439,7 @@ public abstract class MessageAggregator<I, S, C extends ByteBufHolder, O extends
                     new PrematureChannelClosureException("Channel closed while still aggregating message"));
         }
         try {
-            // release current message if it is not null as it may be a left-over
+            // 释放可能残留的 currentMessage
             super.channelInactive(ctx);
         } finally {
             releaseCurrentMessage();

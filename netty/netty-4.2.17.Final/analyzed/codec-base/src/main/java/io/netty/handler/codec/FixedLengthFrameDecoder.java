@@ -23,8 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import java.util.List;
 
 /**
- * A decoder that splits the received {@link ByteBuf}s by the fixed number
- * of bytes. For example, if you received the following four fragmented packets:
+ * 按固定字节数切分入站 {@link ByteBuf} 的解码器。 For example, if you received the following four fragmented packets:
  * <pre>
  * +---+----+------+----+
  * | A | BC | DEFG | HI |
@@ -38,14 +37,21 @@ import java.util.List;
  * +-----+-----+-----+
  * </pre>
  */
+/**
+ * 按固定字节数切分入站 {@link ByteBuf} 的帧解码器。
+ * <p>
+ * 例如收到 A、BC、DEFG、HI 四段，{@code FixedLengthFrameDecoder(3)} 输出 ABC、DEF、GHI。
+ */
 public class FixedLengthFrameDecoder extends ByteToMessageDecoder {
 
+    /** 每帧固定字节数。 */
+    /** 每帧固定字节数。 */
     private final int frameLength;
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
-     * @param frameLength the length of the frame
+      * @param frameLength 帧长度
      */
     public FixedLengthFrameDecoder(int frameLength) {
         checkPositive(frameLength, "frameLength");
@@ -61,12 +67,11 @@ public class FixedLengthFrameDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Create a frame out of the {@link ByteBuf} and return it.
+     * 从 {@link ByteBuf} 提取一帧并返回。
      *
-     * @param   ctx             the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to
-     * @param   in              the {@link ByteBuf} from which to read data
-     * @return  frame           the {@link ByteBuf} which represent the frame or {@code null} if no frame could
-     *                          be created.
+      * @param   ctx             本 {@link ByteToMessageDecoder} 所属的 {@link ChannelHandlerContext}
+      * @param   in              待读取的 {@link ByteBuf}
+     * @return frame 表示帧的 {@link ByteBuf}；数据不足时 {@code null}
      */
     protected Object decode(
             @SuppressWarnings("UnusedParameters") ChannelHandlerContext ctx, ByteBuf in) throws Exception {

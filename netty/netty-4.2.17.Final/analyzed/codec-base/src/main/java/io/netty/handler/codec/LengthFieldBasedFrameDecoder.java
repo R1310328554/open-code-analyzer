@@ -194,16 +194,24 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
     private final int lengthAdjustment;
     private final int initialBytesToStrip;
     private final boolean failFast;
+    /** 是否正在丢弃超长帧。 */
+    /** 是否正在丢弃超长帧。 */
     private boolean discardingTooLongFrame;
+    /** 已识别的超长帧长度（用于 failFast=false 时延迟抛错）。 */
+    /** 已识别的超长帧长度（用于 failFast=false 时延迟抛错）。 */
     private long tooLongFrameLength;
+    /** 仍需丢弃的字节数。 */
+    /** 仍需丢弃的字节数。 */
     private long bytesToDiscard;
+    /** 已解析的帧长度（-1 表示尚未就绪）。 */
+    /** 已解析的帧长度（-1 表示尚未就绪）。 */
     private int frameLengthInt = -1;
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
      * @param maxFrameLength
-     *        the maximum length of the frame.  If the length of the frame is
+     *        the maximum length of the frame.  If 帧长度 is
      *        greater than this value, {@link TooLongFrameException} will be
      *        thrown.
      * @param lengthFieldOffset
@@ -218,10 +226,10 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
      * @param maxFrameLength
-     *        the maximum length of the frame.  If the length of the frame is
+     *        the maximum length of the frame.  If 帧长度 is
      *        greater than this value, {@link TooLongFrameException} will be
      *        thrown.
      * @param lengthFieldOffset
@@ -244,10 +252,10 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
      * @param maxFrameLength
-     *        the maximum length of the frame.  If the length of the frame is
+     *        the maximum length of the frame.  If 帧长度 is
      *        greater than this value, {@link TooLongFrameException} will be
      *        thrown.
      * @param lengthFieldOffset
@@ -260,7 +268,7 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
      *        the number of first bytes to strip out from the decoded frame
      * @param failFast
      *        If <tt>true</tt>, a {@link TooLongFrameException} is thrown as
-     *        soon as the decoder notices the length of the frame will exceed
+     *        soon as the decoder notices 帧长度 will exceed
      *        <tt>maxFrameLength</tt> regardless of whether the entire frame
      *        has been read.  If <tt>false</tt>, a {@link TooLongFrameException}
      *        is thrown after the entire frame that exceeds <tt>maxFrameLength</tt>
@@ -275,12 +283,12 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      *
      * @param byteOrder
-     *        the {@link ByteOrder} of the length field
+     *        长度字段的 {@link ByteOrder}
      * @param maxFrameLength
-     *        the maximum length of the frame.  If the length of the frame is
+     *        the maximum length of the frame.  If 帧长度 is
      *        greater than this value, {@link TooLongFrameException} will be
      *        thrown.
      * @param lengthFieldOffset
@@ -293,7 +301,7 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
      *        the number of first bytes to strip out from the decoded frame
      * @param failFast
      *        If <tt>true</tt>, a {@link TooLongFrameException} is thrown as
-     *        soon as the decoder notices the length of the frame will exceed
+     *        soon as the decoder notices 帧长度 will exceed
      *        <tt>maxFrameLength</tt> regardless of whether the entire frame
      *        has been read.  If <tt>false</tt>, a {@link TooLongFrameException}
      *        is thrown after the entire frame that exceeds <tt>maxFrameLength</tt>
@@ -387,12 +395,11 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Create a frame out of the {@link ByteBuf} and return it.
+     * 从 {@link ByteBuf} 提取一帧并返回。
      *
-     * @param   ctx             the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to
-     * @param   in              the {@link ByteBuf} from which to read data
-     * @return  frame           the {@link ByteBuf} which represent the frame or {@code null} if no frame could
-     *                          be created.
+      * @param   ctx             本 {@link ByteToMessageDecoder} 所属的 {@link ChannelHandlerContext}
+      * @param   in              待读取的 {@link ByteBuf}
+     * @return frame 表示帧的 {@link ByteBuf}；数据不足时 {@code null}
      */
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
         long frameLength = 0;
@@ -449,7 +456,7 @@ public class LengthFieldBasedFrameDecoder extends ByteToMessageDecoder {
      * decode the length field encoded differently.  Note that this method must not modify the state of the specified
      * buffer (e.g. {@code readerIndex}, {@code writerIndex}, and the content of the buffer.)
      *
-     * @throws DecoderException if failed to decode the specified region
+      * @throws DecoderException if failed to decode the specified region
      */
     protected long getUnadjustedFrameLength(ByteBuf buf, int offset, int length, ByteOrder order) {
         buf = buf.order(order);

@@ -16,34 +16,37 @@
 package io.netty.handler.codec;
 
 /**
- * An {@link CodecException} which is thrown by an encoder.
+ * 编码器抛出的 {@link CodecException}。
+ */
+/**
+ * 编码器抛出的 {@link CodecException}。
  */
 public class EncoderException extends CodecException {
 
     private static final long serialVersionUID = -5086121160476476774L;
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      */
     public EncoderException() {
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      */
     public EncoderException(String message, Throwable cause) {
         super(message, cause);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      */
     public EncoderException(String message) {
         super(message);
     }
 
     /**
-     * Creates a new instance.
+     * 创建新实例。
      */
     public EncoderException(Throwable cause) {
         super(cause);

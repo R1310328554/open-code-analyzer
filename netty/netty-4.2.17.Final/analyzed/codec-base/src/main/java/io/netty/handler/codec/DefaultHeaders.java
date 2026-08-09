@@ -35,33 +35,41 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * Default implementation of {@link Headers};
+ * {@link Headers} 的默认实现；
  *
- * @param <K> the type of the header name.
- * @param <V> the type of the header value.
- * @param <T> the type to use for return values when the intention is to return {@code this} object.
+  * @param <K> header 名称类型。
+  * @param <V> header 值类型。
+  * @param <T> 需要链式返回 {@code this} 时使用的返回类型。
  */
 public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers<K, V, T> {
     /**
-     * Constant used to seed the hash code generation. Could be anything but this was borrowed from murmur3.
+     * 哈希码生成的种子常量（取自 murmur3）。
      */
     static final int HASH_CODE_SEED = 0xc2b2ae35;
 
+    /** 哈希桶数组。 */
+    /** 哈希桶数组。 */
     private final HeaderEntry<K, V>[] entries;
+    /** 全局插入顺序链表哨兵头节点。 */
+    /** 全局插入顺序链表哨兵头节点。 */
     protected final HeaderEntry<K, V> head;
 
+    /** 哈希索引掩码（{@code entries.length - 1}）。 */
+    /** 哈希索引掩码（{@code entries.length - 1}）。 */
     private final byte hashMask;
     private final ValueConverter<V> valueConverter;
     private final NameValidator<K> nameValidator;
     private final ValueValidator<V> valueValidator;
     private final HashingStrategy<K> hashingStrategy;
+    /** 当前 header 条目总数。 */
+    /** 当前 header 条目总数。 */
     int size;
 
     public interface NameValidator<K> {
         /**
-         * Verify that {@code name} is valid.
-         * @param name The name to validate.
-         * @throws RuntimeException if {@code name} is not valid.
+         * 验证 {@code name} 是否合法。
+          * @param name 待验证的名称。
+          * @throws RuntimeException 若 {@code name} 不合法
          */
         void validateName(K name);
 
@@ -76,10 +84,9 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
 
     public interface ValueValidator<V> {
         /**
-         * Validate the given value. If the validation fails, then an implementation specific runtime exception may be
-         * thrown.
+         * 验证给定值；失败时可能抛出实现相关的运行时异常。
          *
-         * @param value The value to validate.
+          * @param value 待验证的值。
          */
         void validate(V value);
 
@@ -111,12 +118,11 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
     }
 
     /**
-     * Create a new instance.
-     * @param nameHashingStrategy Used to hash and equality compare names.
-     * @param valueConverter Used to convert values to/from native types.
-     * @param nameValidator Used to validate name elements.
-     * @param arraySizeHint A hint as to how large the hash data structure should be.
-     * The next positive power of two will be used. An upper bound may be enforced.
+     * 创建新实例。
+      * @param nameHashingStrategy 用于名称的哈希与相等比较。
+      * @param valueConverter 用于值与原生类型互转。
+      * @param nameValidator 用于校验名称元素。
+      * @param arraySizeHint 哈希表规模提示；将取不小于该值的 2 的幂，且可能有上限。
      */
     @SuppressWarnings("unchecked")
     public DefaultHeaders(HashingStrategy<K> nameHashingStrategy,
@@ -126,13 +132,12 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
     }
 
     /**
-     * Create a new instance.
-     * @param nameHashingStrategy Used to hash and equality compare names.
-     * @param valueConverter Used to convert values to/from native types.
-     * @param nameValidator Used to validate name elements.
-     * @param arraySizeHint A hint as to how large the hash data structure should be.
-     * The next positive power of two will be used. An upper bound may be enforced.
-     * @param valueValidator The validation strategy for entry values.
+     * 创建新实例。
+      * @param nameHashingStrategy 用于名称的哈希与相等比较。
+      * @param valueConverter 用于值与原生类型互转。
+      * @param nameValidator 用于校验名称元素。
+      * @param arraySizeHint 哈希表规模提示；将取不小于该值的 2 的幂，且可能有上限。
+      * @param valueValidator 条目值的校验策略。
      */
     @SuppressWarnings("unchecked")
     public DefaultHeaders(HashingStrategy<K> nameHashingStrategy, ValueConverter<V> valueConverter,
@@ -141,24 +146,18 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
         this.nameValidator = checkNotNull(nameValidator, "nameValidator");
         hashingStrategy = checkNotNull(nameHashingStrategy, "nameHashingStrategy");
         this.valueValidator = checkNotNull(valueValidator, "valueValidator");
-        // Enforce a bound of [2, 128] because hashMask is a byte. The max possible value of hashMask is one less
-        // than the length of this array, and we want the mask to be > 0.
+        // hashMask 为 byte，桶数限制在 [2,128] 且为 2 的幂
         entries = new HeaderEntry[findNextPositivePowerOfTwo(max(2, min(arraySizeHint, 128)))];
         hashMask = (byte) (entries.length - 1);
         head = new HeaderEntry<K, V>();
     }
 
     /**
-     * Returns {@code true} if there exists a header with the given {@code name} for which the
-     * supplied {@code valuePredicate} returns {@code true} when invoked with the stored header
-     * value as the first argument and {@code predicateArg} as the second argument.
-     * <p>
-     * Matching is performed by invoking {@code valuePredicate.test(storedValue, predicateArg)}
-     * on each stored header value for {@code name}.
+     * 若存在指定 {@code name} 的 header，且 {@code valuePredicate.test(存储值, predicateArg)} 为真则返回 {@code true}。
      *
-     * @param name           the header name to search for (must not be {@code null})
-     * @param predicateArg   argument passed as the second parameter to {@code valuePredicate} (may be {@code null})
-     * @param valuePredicate predicate used to test stored header values (must not be {@code null})
+      * @param name           要搜索的 header 名称（非 null）
+      * @param predicateArg   传给 {@code valuePredicate} 的第二个参数（可为 null）
+      * @param valuePredicate 用于测试存储 header 值的谓词（非 null）
      */
     public boolean containsAny(K name, V predicateArg, BiPredicate<? super V, ? super V> valuePredicate) {
         checkNotNull(name, "name");
@@ -183,7 +182,7 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
         int i = index(h);
         HeaderEntry<K, V> e = entries[i];
         V value = null;
-        // loop until the first header was found
+        // 遍历桶链表（同名多值时保留最后一个）
         while (e != null) {
             if (e.hash == h && hashingStrategy.equals(name, e.key)) {
                 value = e.value;
@@ -257,9 +256,9 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
     }
 
     /**
-     * Equivalent to {@link #getAll(Object)} but no intermediate list is generated.
-     * @param name the name of the header to retrieve
-     * @return an {@link Iterator} of header values corresponding to {@code name}.
+     * 等价于 {@link #getAll(Object)}，但不生成中间 {@link List}。
+      * @param name 要获取的 header 名称
+     * @return 对应 {@code name} 的 header 值 {@link Iterator}。
      */
     public Iterator<V> valueIterator(K name) {
         return new ValueIterator(name);
@@ -490,20 +489,20 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
             HeaderEntry<? extends K, ? extends V> e = defaultHeaders.head.after;
             if (defaultHeaders.hashingStrategy == hashingStrategy &&
                     defaultHeaders.nameValidator == nameValidator) {
-                // Fastest copy
+                // 最快路径：单元素
                 while (e != defaultHeaders.head) {
                     add0(e.hash, index(e.hash), e.key, e.value);
                     e = e.after;
                 }
             } else {
-                // Fast copy
+                // 较快路径：两元素
                 while (e != defaultHeaders.head) {
                     add(e.key, e.value);
                     e = e.after;
                 }
             }
         } else {
-            // Slow copy
+            // 慢路径：多元素复制
             for (Entry<? extends K, ? extends V> header : headers) {
                 add(header.getKey(), header.getValue());
             }
@@ -996,9 +995,9 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
     }
 
     /**
-     * Test this object for equality against {@code h2}.
-     * @param h2 The object to check equality for.
-     * @param valueHashingStrategy Defines how values will be compared for equality.
+     * 与 {@code h2} 比较是否相等。
+      * @param h2 The object to check equality for.
+      * @param valueHashingStrategy Defines how values will be compared for equality.
      * @return {@code true} if this object equals {@code h2} given {@code valueHashingStrategy}.
      * {@code false} otherwise.
      */
@@ -1029,7 +1028,7 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
     /**
      * Generate a hash code for this object given a {@link HashingStrategy} to generate hash codes for
      * individual values.
-     * @param valueHashingStrategy Defines how values will be hashed.
+      * @param valueHashingStrategy Defines how values will be hashed.
      */
     public final int hashCode(HashingStrategy<V> valueHashingStrategy) {
         int result = HASH_CODE_SEED;
@@ -1049,12 +1048,12 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
     }
 
     /**
-     * Call out to the given {@link NameValidator} to validate the given name.
+     * 调用给定 {@link NameValidator} 校验名称。
      *
-     * @param validator the validator to use
-     * @param forAdd {@code true } if this validation is for adding to the headers, or {@code false} if this is for
+      * @param validator the validator to use
+      * @param forAdd {@code true } if this validation is for adding to the headers, or {@code false} if this is for
      * setting (overwriting) the given header.
-     * @param name the name to validate.
+      * @param name the name to validate.
      */
     protected void validateName(NameValidator<K> validator, boolean forAdd, K name) {
         validator.validateName(name);
@@ -1089,7 +1088,7 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
     }
 
     private void add0(int h, int i, K name, V value) {
-        // Update the hash table.
+        // 更新哈希表
         entries[i] = newHeaderEntry(h, name, value, entries[i]);
         ++size;
     }
@@ -1138,7 +1137,7 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
             entries[i] = entry.next;
             previous = entries[i];
         } else if (previous == null) {
-            // If we don't have any existing starting point, then start from the beginning.
+            // 无起始点时从头遍历
             previous = firstEntry;
             HeaderEntry<K, V> next = firstEntry.next;
             while (next != null && next != entry) {
@@ -1314,7 +1313,7 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
     }
 
     /**
-     * Returns a deep copy of this instance.
+     * 返回本实例的深拷贝。
      */
     public DefaultHeaders<K, V, T> copy() {
         DefaultHeaders<K, V, T> copy = new DefaultHeaders<K, V, T>(
@@ -1405,11 +1404,11 @@ public class DefaultHeaders<K, V, T extends Headers<K, V, T>> implements Headers
         protected final K key;
         protected V value;
         /**
-         * In bucket linked list
+         * 哈希桶链表节点
          */
         protected HeaderEntry<K, V> next;
         /**
-         * Overall insertion order linked list
+         * 全局插入顺序链表
          */
         protected HeaderEntry<K, V> before, after;
 

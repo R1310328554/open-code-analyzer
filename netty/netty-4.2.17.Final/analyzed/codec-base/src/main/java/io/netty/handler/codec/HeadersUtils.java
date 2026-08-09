@@ -25,7 +25,7 @@ import java.util.Set;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Provides utility methods related to {@link Headers}.
+ * 提供与 {@link Headers} 相关的工具方法。
  */
 public final class HeadersUtils {
 
@@ -33,9 +33,9 @@ public final class HeadersUtils {
     }
 
     /**
-     * {@link Headers#get(Object)} and convert each element of {@link List} to a {@link String}.
-     * @param name the name of the header to retrieve
-     * @return a {@link List} of header values or an empty {@link List} if no values are found.
+     * 调用 {@link Headers#get(Object)} 并将 {@link List} 各元素转为 {@link String}。
+      * @param name 要获取的 header 名称
+     * @return header 值列表；无值时返回空 {@link List}。
      */
     public static <K, V> List<String> getAllAsString(Headers<K, V, ?> headers, K name) {
         final List<V> allNames = headers.getAll(name);
@@ -54,9 +54,9 @@ public final class HeadersUtils {
     }
 
     /**
-     * {@link Headers#get(Object)} and convert the result to a {@link String}.
-     * @param headers the headers to get the {@code name} from
-     * @param name the name of the header to retrieve
+     * 调用 {@link Headers#get(Object)} 并将结果转为 {@link String}。
+      * @param headers 要读取 header 的 Headers 对象
+      * @param name 要获取的 header 名称
      * @return the first header value if the header is found. {@code null} if there's no such entry.
      */
     public static <K, V> String getAsString(Headers<K, V, ?> headers, K name) {
@@ -65,7 +65,7 @@ public final class HeadersUtils {
     }
 
     /**
-     * {@link Headers#iterator()} which converts each {@link Entry}'s key and value to a {@link String}.
+     * 遍历 {@link Headers}，将各 {@link Entry} 的键值转为 {@link String}。
      */
     public static Iterator<Entry<String, String>> iteratorAsString(
             Iterable<Entry<CharSequence, CharSequence>> headers) {
@@ -73,11 +73,11 @@ public final class HeadersUtils {
     }
 
     /**
-     * Helper for implementing toString for {@link DefaultHeaders} and wrappers such as DefaultHttpHeaders.
-     * @param headersClass the class of headers
-     * @param headersIt the iterator on the actual headers
-     * @param size the size of the iterator
-     * @return a String representation of the headers
+     * 辅助实现 {@link DefaultHeaders} 及 DefaultHttpHeaders 等包装类的 toString。
+      * @param headersClass Headers 类
+      * @param headersIt 实际 header 条目迭代器
+      * @param size 迭代器元素个数
+     * @return Headers 的字符串表示
      */
     public static <K, V> String toString(Class<?> headersClass, Iterator<Entry<K, V>> headersIt, int size) {
         String simpleName = headersClass.getSimpleName();
@@ -98,9 +98,9 @@ public final class HeadersUtils {
     }
 
     /**
-     * {@link Headers#names()} and convert each element of {@link Set} to a {@link String}.
-     * @param headers the headers to get the names from
-     * @return a {@link Set} of header values or an empty {@link Set} if no values are found.
+     * 调用 {@link Headers#names()} 并将 {@link Set} 各元素转为 {@link String}。
+      * @param headers 要读取名称集合的 Headers 对象
+     * @return header 名称集合；无值时返回空 {@link Set}。
      */
     public static Set<String> namesAsString(Headers<CharSequence, CharSequence, ?> headers) {
         return new DelegatingNameSet(headers);
