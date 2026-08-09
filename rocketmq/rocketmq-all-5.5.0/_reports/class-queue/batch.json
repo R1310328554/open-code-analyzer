@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:18:37Z",
-  "files": [
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/provider/AuthenticationMetadataProvider.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/provider/AuthenticationProvider.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/provider/DefaultAuthenticationProvider.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/provider/LocalAuthenticationMetadataProvider.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/strategy/AbstractAuthenticationStrategy.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/strategy/AuthenticationStrategy.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/strategy/StatefulAuthenticationStrategy.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authentication/strategy/StatelessAuthenticationStrategy.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/AuthorizationEvaluator.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/builder/AuthorizationContextBuilder.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/chain/AclAuthorizationHandler.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/chain/UserAuthorizationHandler.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/context/AuthorizationContext.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/context/DefaultAuthorizationContext.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/enums/Decision.java"
-  ],
-  "remaining_pending": 1473,
-  "done": 15
+  "claimed_at": null,
+  "files": [],
+  "remaining_pending": 1458,
+  "done": 30
 }
