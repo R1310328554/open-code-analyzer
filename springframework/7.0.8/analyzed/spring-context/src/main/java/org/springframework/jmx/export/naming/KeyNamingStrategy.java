@@ -34,15 +34,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * {@code ObjectNamingStrategy} implementation that builds
- * {@code ObjectName} instances from the key used in the
- * "beans" map passed to {@code MBeanExporter}.
+ * 根据传入 {@code MBeanExporter} 的 "beans" 映射中的键构建
+ * {@code ObjectName} 实例的 {@code ObjectNamingStrategy} 实现。
  *
- * <p>Can also check object name mappings, given as {@code Properties}
- * or as {@code mappingLocations} of properties files. The key used
- * to look up is the key used in {@code MBeanExporter}'s "beans" map.
- * If no mapping is found for a given key, the key itself is used to
- * build an {@code ObjectName}.
+ * <p>还可检查以 {@code Properties} 或 {@code mappingLocations}
+ * 属性文件形式提供的 ObjectName 映射。查找时使用 {@code MBeanExporter}
+ * "beans" 映射中的键；若未找到映射，则直接使用该键构建 {@code ObjectName}。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -55,49 +52,45 @@ import org.springframework.util.CollectionUtils;
 public class KeyNamingStrategy implements ObjectNamingStrategy, InitializingBean {
 
 	/**
-	 * {@code Log} instance for this class.
+	 * 本类的 {@code Log} 实例。
 	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	/**
-	 * Stores the mappings of bean key to {@code ObjectName}.
+	 * 存储 Bean 键到 {@code ObjectName} 的映射。
 	 */
 	private @Nullable Properties mappings;
 
 	/**
-	 * Stores the {@code Resource}s containing properties that should be loaded
-	 * into the final merged set of {@code Properties} used for {@code ObjectName}
-	 * resolution.
+	 * 存储应加载到最终合并 {@code Properties} 集合中的 {@code Resource}，
+	 * 用于 {@code ObjectName} 解析。
 	 */
 	private Resource @Nullable [] mappingLocations;
 
 	/**
-	 * Stores the result of merging the {@code mappings} {@code Properties}
-	 * with the properties stored in the resources defined by {@code mappingLocations}.
+	 * 存储将 {@code mappings} {@code Properties} 与
+	 * {@code mappingLocations} 所定义资源中的属性合并后的结果。
 	 */
 	private @Nullable Properties mergedMappings;
 
 
 	/**
-	 * Set local properties, containing object name mappings, for example, via
-	 * the "props" tag in XML bean definitions. These can be considered
-	 * defaults, to be overridden by properties loaded from files.
+	 * 设置包含 ObjectName 映射的本地属性，例如通过 XML Bean 定义中的 "props" 标签。
+	 * 可视为默认值，会被从文件加载的属性覆盖。
 	 */
 	public void setMappings(Properties mappings) {
 		this.mappings = mappings;
 	}
 
 	/**
-	 * Set a location of a properties file to be loaded,
-	 * containing object name mappings.
+	 * 设置要加载的属性文件位置，其中包含 ObjectName 映射。
 	 */
 	public void setMappingLocation(Resource location) {
 		this.mappingLocations = new Resource[] {location};
 	}
 
 	/**
-	 * Set location of properties files to be loaded,
-	 * containing object name mappings.
+	 * 设置要加载的属性文件位置列表，其中包含 ObjectName 映射。
 	 */
 	public void setMappingLocations(Resource... mappingLocations) {
 		this.mappingLocations = mappingLocations;
@@ -105,9 +98,8 @@ public class KeyNamingStrategy implements ObjectNamingStrategy, InitializingBean
 
 
 	/**
-	 * Merges the {@code Properties} configured in the {@code mappings} and
-	 * {@code mappingLocations} into the final {@code Properties} instance
-	 * used for {@code ObjectName} resolution.
+	 * 将 {@code mappings} 与 {@code mappingLocations} 中配置的
+	 * {@code Properties} 合并为用于 {@code ObjectName} 解析的最终 {@code Properties} 实例。
 	 */
 	@Override
 	public void afterPropertiesSet() throws IOException {
@@ -126,8 +118,7 @@ public class KeyNamingStrategy implements ObjectNamingStrategy, InitializingBean
 
 
 	/**
-	 * Attempts to retrieve the {@code ObjectName} via the given key, trying to
-	 * find a mapped value in the mappings first.
+	 * 尝试通过给定键获取 {@code ObjectName}，优先在映射中查找对应值。
 	 */
 	@Override
 	public ObjectName getObjectName(Object managedBean, @Nullable String beanKey) throws MalformedObjectNameException {

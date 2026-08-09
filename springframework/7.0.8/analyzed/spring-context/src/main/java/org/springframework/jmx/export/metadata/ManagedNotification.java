@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
- * Metadata that indicates a JMX notification emitted by a bean.
+ * 指示 Bean 发出的 JMX 通知的元数据。
  *
  * @author Rob Harrop
  * @since 2.0
@@ -36,50 +36,49 @@ public class ManagedNotification {
 
 
 	/**
-	 * Set a single notification type, or a list of notification types
-	 * as comma-delimited String.
+	 * 设置单个通知类型，或以逗号分隔字符串形式设置多个通知类型。
 	 */
 	public void setNotificationType(String notificationType) {
 		this.notificationTypes = StringUtils.commaDelimitedListToStringArray(notificationType);
 	}
 
 	/**
-	 * Set a list of notification types.
+	 * 设置通知类型列表。
 	 */
 	public void setNotificationTypes(String @Nullable ... notificationTypes) {
 		this.notificationTypes = notificationTypes;
 	}
 
 	/**
-	 * Return the list of notification types.
+	 * 返回通知类型列表。
 	 */
 	public String @Nullable [] getNotificationTypes() {
 		return this.notificationTypes;
 	}
 
 	/**
-	 * Set the name of this notification.
+	 * 设置该通知的名称。
 	 */
 	public void setName(@Nullable String name) {
 		this.name = name;
 	}
 
 	/**
-	 * Return the name of this notification.
+	 * 返回该通知的名称。
 	 */
 	public @Nullable String getName() {
 		return this.name;
 	}
 
 	/**
-	 * Set a description for this notification.
+	 * 设置该通知的描述信息。
 	 */
 	public void setDescription(@Nullable String description) {
 		this.description = description;
 	}
 
 	/**
-	 * Return a description for this notification.
+	 * 返回该通知的描述信息。
 	 */
 	public @Nullable String getDescription() {
 		return this.description;

@@ -22,7 +22,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Utility methods for converting Spring JMX metadata into their plain JMX equivalents.
+ * 将 Spring JMX 元数据转换为标准 JMX 等效形式的工具方法。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -31,8 +31,8 @@ import org.springframework.util.StringUtils;
 public abstract class JmxMetadataUtils {
 
 	/**
-	 * Convert the supplied {@link ManagedNotification} into the corresponding
-	 * {@link javax.management.modelmbean.ModelMBeanNotificationInfo}.
+	 * 将给定 {@link ManagedNotification} 转换为对应的
+	 * {@link javax.management.modelmbean.ModelMBeanNotificationInfo}。
 	 */
 	public static ModelMBeanNotificationInfo convertToModelMBeanNotificationInfo(ManagedNotification notificationInfo) {
 		String[] notifTypes = notificationInfo.getNotificationTypes();

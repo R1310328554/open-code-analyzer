@@ -19,9 +19,8 @@ package org.springframework.jmx.export.metadata;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Metadata indicating that instances of an annotated class
- * are to be registered with a JMX server.
- * Only valid when used on a {@code Class}.
+ * 指示带注解类的实例应注册到 JMX 服务器的元数据。
+ * 仅当用于 {@code Class} 时有效。
  *
  * @author Rob Harrop
  * @since 1.2
@@ -47,14 +46,14 @@ public class ManagedResource extends AbstractJmxAttribute {
 
 
 	/**
-	 * Set the JMX ObjectName of this managed resource.
+	 * 设置该受管资源的 JMX ObjectName。
 	 */
 	public void setObjectName(@Nullable String objectName) {
 		this.objectName = objectName;
 	}
 
 	/**
-	 * Return the JMX ObjectName of this managed resource.
+	 * 返回该受管资源的 JMX ObjectName。
 	 */
 	public @Nullable String getObjectName() {
 		return this.objectName;

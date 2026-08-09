@@ -17,8 +17,8 @@
 package org.springframework.jmx.export.metadata;
 
 /**
- * Metadata that indicates to expose a given method as JMX operation.
- * Only valid when used on a method that is not a JavaBean getter or setter.
+ * 指示将给定方法暴露为 JMX 操作的元数据。
+ * 仅当用于非 JavaBean getter 或 setter 的方法时有效。
  *
  * @author Rob Harrop
  * @since 1.2

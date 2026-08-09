@@ -21,8 +21,7 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interface used by the {@code MetadataMBeanInfoAssembler} to
- * read source-level metadata from a managed resource's class.
+ * 供 {@code MetadataMBeanInfoAssembler} 从受管资源类读取源码级元数据的接口。
  *
  * @author Rob Harrop
  * @author Jennifer Hickey
@@ -33,57 +32,51 @@ import org.jspecify.annotations.Nullable;
 public interface JmxAttributeSource {
 
 	/**
-	 * Implementations should return an instance of {@link ManagedResource}
-	 * if the supplied {@code Class} has the corresponding metadata.
-	 * @param clazz the class to read the resource data from
-	 * @return the resource, or {@code null} if not found
-	 * @throws InvalidMetadataException in case of invalid metadata
+	 * 若给定 {@code Class} 具有相应元数据，实现应返回 {@link ManagedResource} 实例。
+	 * @param clazz 读取资源数据的类
+	 * @return 资源元数据，未找到时返回 {@code null}
+	 * @throws InvalidMetadataException 元数据无效时
 	 */
 	@Nullable ManagedResource getManagedResource(Class<?> clazz) throws InvalidMetadataException;
 
 	/**
-	 * Implementations should return an instance of {@link ManagedAttribute}
-	 * if the supplied {@code Method} has the corresponding metadata.
-	 * @param method the method to read the attribute data from
-	 * @return the attribute, or {@code null} if not found
-	 * @throws InvalidMetadataException in case of invalid metadata
+	 * 若给定 {@code Method} 具有相应元数据，实现应返回 {@link ManagedAttribute} 实例。
+	 * @param method 读取属性数据的方法
+	 * @return 属性元数据，未找到时返回 {@code null}
+	 * @throws InvalidMetadataException 元数据无效时
 	 */
 	@Nullable ManagedAttribute getManagedAttribute(Method method) throws InvalidMetadataException;
 
 	/**
-	 * Implementations should return an instance of {@link ManagedMetric}
-	 * if the supplied {@code Method} has the corresponding metadata.
-	 * @param method the method to read the metric data from
-	 * @return the metric, or {@code null} if not found
-	 * @throws InvalidMetadataException in case of invalid metadata
+	 * 若给定 {@code Method} 具有相应元数据，实现应返回 {@link ManagedMetric} 实例。
+	 * @param method 读取指标数据的方法
+	 * @return 指标元数据，未找到时返回 {@code null}
+	 * @throws InvalidMetadataException 元数据无效时
 	 */
 	@Nullable ManagedMetric getManagedMetric(Method method) throws InvalidMetadataException;
 
 	/**
-	 * Implementations should return an instance of {@link ManagedOperation}
-	 * if the supplied {@code Method} has the corresponding metadata.
-	 * @param method the method to read the operation data from
-	 * @return the operation, or {@code null} if not found
-	 * @throws InvalidMetadataException in case of invalid metadata
+	 * 若给定 {@code Method} 具有相应元数据，实现应返回 {@link ManagedOperation} 实例。
+	 * @param method 读取操作数据的方法
+	 * @return 操作元数据，未找到时返回 {@code null}
+	 * @throws InvalidMetadataException 元数据无效时
 	 */
 	@Nullable ManagedOperation getManagedOperation(Method method) throws InvalidMetadataException;
 
 	/**
-	 * Implementations should return an array of {@link ManagedOperationParameter
-	 * ManagedOperationParameters} if the supplied {@code Method} has the corresponding
-	 * metadata.
-	 * @param method the {@code Method} to read the metadata from
-	 * @return the parameter information, or an empty array if no metadata is found
-	 * @throws InvalidMetadataException in case of invalid metadata
+	 * 若给定 {@code Method} 具有相应元数据，实现应返回 {@link ManagedOperationParameter
+	 * ManagedOperationParameters} 数组。
+	 * @param method 读取元数据的 {@code Method}
+	 * @return 参数信息，未找到元数据时返回空数组
+	 * @throws InvalidMetadataException 元数据无效时
 	 */
 	@Nullable ManagedOperationParameter[] getManagedOperationParameters(Method method) throws InvalidMetadataException;
 
 	/**
-	 * Implementations should return an array of {@link ManagedNotification ManagedNotifications}
-	 * if the supplied {@code Class} has the corresponding metadata.
-	 * @param clazz the {@code Class} to read the metadata from
-	 * @return the notification information, or an empty array if no metadata is found
-	 * @throws InvalidMetadataException in case of invalid metadata
+	 * 若给定 {@code Class} 具有相应元数据，实现应返回 {@link ManagedNotification ManagedNotifications} 数组。
+	 * @param clazz 读取元数据的 {@code Class}
+	 * @return 通知信息，未找到元数据时返回空数组
+	 * @throws InvalidMetadataException 元数据无效时
 	 */
 	@Nullable ManagedNotification[] getManagedNotifications(Class<?> clazz) throws InvalidMetadataException;
 

@@ -39,15 +39,14 @@ import org.springframework.jmx.JmxException;
 import org.springframework.util.CollectionUtils;
 
 /**
- * {@link FactoryBean} that creates a JSR-160 {@link JMXConnectorServer},
- * optionally registers it with the {@link MBeanServer}, and then starts it.
+ * 创建 JSR-160 {@link JMXConnectorServer} 的 {@link FactoryBean}，
+ * 可选地将其注册到 {@link MBeanServer}，然后启动它。
  *
- * <p>The {@code JMXConnectorServer} can be started in a separate thread by setting the
- * {@code threaded} property to {@code true}. You can configure this thread to be a
- * daemon thread by setting the {@code daemon} property to {@code true}.
+ * <p>将 {@code threaded} 属性设为 {@code true} 可在独立线程中启动 {@code JMXConnectorServer}。
+ * 将 {@code daemon} 属性设为 {@code true} 可将该线程配置为守护线程。
  *
- * <p>The {@code JMXConnectorServer} is correctly shut down when an instance of this
- * class is destroyed on shutdown of the containing {@code ApplicationContext}.
+ * <p>当包含的 {@code ApplicationContext} 关闭导致本类实例销毁时，
+ * {@code JMXConnectorServer} 会被正确关闭。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -58,7 +57,7 @@ import org.springframework.util.CollectionUtils;
 public class ConnectorServerFactoryBean extends MBeanRegistrationSupport
 		implements FactoryBean<JMXConnectorServer>, InitializingBean, DisposableBean {
 
-	/** The default service URL. */
+	/** 默认服务 URL。 */
 	public static final String DEFAULT_SERVICE_URL = "service:jmx:jmxmp://localhost:9875";
 
 
@@ -78,23 +77,23 @@ public class ConnectorServerFactoryBean extends MBeanRegistrationSupport
 
 
 	/**
-	 * Set the service URL for the {@code JMXConnectorServer}.
+	 * 设置 {@code JMXConnectorServer} 的服务 URL。
 	 */
 	public void setServiceUrl(String serviceUrl) {
 		this.serviceUrl = serviceUrl;
 	}
 
 	/**
-	 * Set the environment properties used to construct the {@code JMXConnectorServer}
-	 * as {@code java.util.Properties} (String key/value pairs).
+	 * 以 {@code java.util.Properties}（字符串键值对）形式设置
+	 * 构造 {@code JMXConnectorServer} 所用的环境属性。
 	 */
 	public void setEnvironment(@Nullable Properties environment) {
 		CollectionUtils.mergePropertiesIntoMap(environment, this.environment);
 	}
 
 	/**
-	 * Set the environment properties used to construct the {@code JMXConnector}
-	 * as a {@code Map} of String keys and arbitrary Object values.
+	 * 以字符串键与任意 Object 值的 {@code Map} 形式设置
+	 * 构造 {@code JMXConnector} 所用的环境属性。
 	 */
 	public void setEnvironmentMap(@Nullable Map<String, ?> environment) {
 		if (environment != null) {
@@ -103,32 +102,30 @@ public class ConnectorServerFactoryBean extends MBeanRegistrationSupport
 	}
 
 	/**
-	 * Set an MBeanServerForwarder to be applied to the {@code JMXConnectorServer}.
+	 * 设置要应用于 {@code JMXConnectorServer} 的 MBeanServerForwarder。
 	 */
 	public void setForwarder(MBeanServerForwarder forwarder) {
 		this.forwarder = forwarder;
 	}
 
 	/**
-	 * Set the {@code ObjectName} used to register the {@code JMXConnectorServer}
-	 * itself with the {@code MBeanServer}, as {@code ObjectName} instance
-	 * or as {@code String}.
-	 * @throws MalformedObjectNameException if the {@code ObjectName} is malformed
+	 * 设置用于将 {@code JMXConnectorServer} 自身注册到 {@code MBeanServer} 的
+	 * {@code ObjectName}，可为 {@code ObjectName} 实例或 {@code String}。
+	 * @throws MalformedObjectNameException {@code ObjectName} 格式错误时
 	 */
 	public void setObjectName(Object objectName) throws MalformedObjectNameException {
 		this.objectName = ObjectNameManager.getInstance(objectName);
 	}
 
 	/**
-	 * Set whether the {@code JMXConnectorServer} should be started in a separate thread.
+	 * 设置 {@code JMXConnectorServer} 是否应在独立线程中启动。
 	 */
 	public void setThreaded(boolean threaded) {
 		this.threaded = threaded;
 	}
 
 	/**
-	 * Set whether any threads started for the {@code JMXConnectorServer} should be
-	 * started as daemon threads.
+	 * 设置为 {@code JMXConnectorServer} 启动的线程是否应作为守护线程启动。
 	 */
 	public void setDaemon(boolean daemon) {
 		this.daemon = daemon;
@@ -136,13 +133,11 @@ public class ConnectorServerFactoryBean extends MBeanRegistrationSupport
 
 
 	/**
-	 * Start the connector server. If the {@code threaded} flag is set to {@code true},
-	 * the {@code JMXConnectorServer} will be started in a separate thread.
-	 * If the {@code daemon} flag is set to {@code true}, that thread will be
-	 * started as a daemon thread.
-	 * @throws JMException if a problem occurred when registering the connector server
-	 * with the {@code MBeanServer}
-	 * @throws IOException if there is a problem starting the connector server
+	 * 启动连接器服务器。若 {@code threaded} 标志为 {@code true}，
+	 * {@code JMXConnectorServer} 将在独立线程中启动。
+	 * 若 {@code daemon} 标志为 {@code true}，该线程将作为守护线程启动。
+	 * @throws JMException 向 {@code MBeanServer} 注册连接器服务器时发生问题时
+	 * @throws IOException 启动连接器服务器时发生问题时
 	 */
 	@Override
 	public void afterPropertiesSet() throws JMException, IOException {
@@ -221,9 +216,9 @@ public class ConnectorServerFactoryBean extends MBeanRegistrationSupport
 
 
 	/**
-	 * Stop the {@code JMXConnectorServer} managed by an instance of this class.
-	 * Automatically called on {@code ApplicationContext} shutdown.
-	 * @throws IOException if there is an error stopping the connector server
+	 * 停止本类实例管理的 {@code JMXConnectorServer}。
+	 * 在 {@code ApplicationContext} 关闭时自动调用。
+	 * @throws IOException 停止连接器服务器时发生错误
 	 */
 	@Override
 	public void destroy() throws IOException {

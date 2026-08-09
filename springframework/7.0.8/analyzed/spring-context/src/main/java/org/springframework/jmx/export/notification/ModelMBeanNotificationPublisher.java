@@ -26,10 +26,9 @@ import javax.management.modelmbean.ModelMBeanNotificationBroadcaster;
 import org.springframework.util.Assert;
 
 /**
- * {@link NotificationPublisher} implementation that uses the infrastructure
- * provided by the {@link ModelMBean} interface to track
+ * 使用 {@link ModelMBean} 接口提供的基础设施跟踪
  * {@link javax.management.NotificationListener javax.management.NotificationListeners}
- * and send {@link Notification Notifications} to those listeners.
+ * 并向这些监听器发送 {@link Notification Notifications} 的 {@link NotificationPublisher} 实现。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -41,30 +40,28 @@ import org.springframework.util.Assert;
 public class ModelMBeanNotificationPublisher implements NotificationPublisher {
 
 	/**
-	 * The {@link ModelMBean} instance wrapping the managed resource into which this
-	 * {@code NotificationPublisher} will be injected.
+	 * 包装受管资源的 {@link ModelMBean} 实例，本 {@code NotificationPublisher} 将注入其中。
 	 */
 	private final ModelMBeanNotificationBroadcaster modelMBean;
 
 	/**
-	 * The {@link ObjectName} associated with the {@link ModelMBean modelMBean}.
+	 * 与 {@link ModelMBean modelMBean} 关联的 {@link ObjectName}。
 	 */
 	private final ObjectName objectName;
 
 	/**
-	 * The managed resource associated with the {@link ModelMBean modelMBean}.
+	 * 与 {@link ModelMBean modelMBean} 关联的受管资源。
 	 */
 	private final Object managedResource;
 
 
 	/**
-	 * Create a new instance of the {@link ModelMBeanNotificationPublisher} class
-	 * that will publish all {@link javax.management.Notification Notifications}
-	 * to the supplied {@link ModelMBean}.
-	 * @param modelMBean the target {@link ModelMBean}; must not be {@code null}
-	 * @param objectName the {@link ObjectName} of the source {@link ModelMBean}
-	 * @param managedResource the managed resource exposed by the supplied {@link ModelMBean}
-	 * @throws IllegalArgumentException if any of the parameters is {@code null}
+	 * 创建 {@link ModelMBeanNotificationPublisher} 新实例，
+	 * 将所有 {@link javax.management.Notification Notifications} 发布到给定 {@link ModelMBean}。
+	 * @param modelMBean 目标 {@link ModelMBean}；不得为 {@code null}
+	 * @param objectName 源 {@link ModelMBean} 的 {@link ObjectName}
+	 * @param managedResource 给定 {@link ModelMBean} 暴露的受管资源
+	 * @throws IllegalArgumentException 任一参数为 {@code null} 时
 	 */
 	public ModelMBeanNotificationPublisher(
 			ModelMBeanNotificationBroadcaster modelMBean, ObjectName objectName, Object managedResource) {
@@ -79,11 +76,10 @@ public class ModelMBeanNotificationPublisher implements NotificationPublisher {
 
 
 	/**
-	 * Send the supplied {@link Notification} using the wrapped
-	 * {@link ModelMBean} instance.
-	 * @param notification the {@link Notification} to be sent
-	 * @throws IllegalArgumentException if the supplied {@code notification} is {@code null}
-	 * @throws UnableToSendNotificationException if the supplied {@code notification} could not be sent
+	 * 使用包装的 {@link ModelMBean} 实例发送给定 {@link Notification}。
+	 * @param notification 要发送的 {@link Notification}
+	 * @throws IllegalArgumentException 给定 {@code notification} 为 {@code null} 时
+	 * @throws UnableToSendNotificationException 无法发送给定 {@code notification} 时
 	 */
 	@Override
 	public void sendNotification(Notification notification) {
@@ -103,12 +99,10 @@ public class ModelMBeanNotificationPublisher implements NotificationPublisher {
 	}
 
 	/**
-	 * Replaces the notification source if necessary to do so.
-	 * From the {@link Notification javadoc}:
-	 * <i>"It is strongly recommended that notification senders use the object name
-	 * rather than a reference to the MBean object as the source."</i>
-	 * @param notification the {@link Notification} whose
-	 * {@link javax.management.Notification#getSource()} might need massaging
+	 * 必要时替换通知源。
+	 * 摘自 {@link Notification javadoc}：
+	 * <i>"强烈建议通知发送者使用 ObjectName 而非 MBean 对象引用作为源。"</i>
+	 * @param notification 其 {@link javax.management.Notification#getSource()} 可能需要调整的 {@link Notification}
 	 */
 	private void replaceNotificationSourceIfNecessary(Notification notification) {
 		if (notification.getSource() == null || notification.getSource().equals(this.managedResource)) {
