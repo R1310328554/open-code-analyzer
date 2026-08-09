@@ -287,3 +287,17 @@ spring-beans/src/main/java/org/springframework/beans/propertyeditors/URIEditor.j
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/URLEditor.java
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/UUIDEditor.java
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/ZoneIdEditor.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/DelegatingEntityResolver.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/DocumentDefaultsDefinition.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/DocumentLoader.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/NamespaceHandler.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/NamespaceHandlerResolver.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/NamespaceHandlerSupport.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/ParserContext.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/PluggableSchemaResolver.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/ResourceEntityResolver.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/SimpleConstructorNamespaceHandler.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/SimplePropertyNamespaceHandler.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/UtilNamespaceHandler.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/XmlBeanDefinitionStoreException.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/XmlReaderContext.java
