@@ -21,10 +21,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * {@link DemoService} 的 Provider 实现：随机 sleep 模拟耗时。
+ *
  * @author cdfive
  */
 public class DemoServiceImpl implements DemoService {
 
+    /** 打印请求并随机休眠 0~49ms 后返回问候语。 */
     @Override
     public String sayHello(Integer index, String name, int year) {
         System.out.println("[" + index + "][Provider]receive request: " + name + "," + year);

@@ -16,9 +16,12 @@
 package com.alibaba.csp.sentinel.demo.sofa.rpc.service;
 
 /**
+ * SOFARPC 演示服务接口。
+ *
  * @author cdfive
  */
 public interface DemoService {
 
+    /** 问候 RPC，index 为调用序号，供 Consumer 压测与流控观测。 */
     String sayHello(Integer index, String name, int year);
 }

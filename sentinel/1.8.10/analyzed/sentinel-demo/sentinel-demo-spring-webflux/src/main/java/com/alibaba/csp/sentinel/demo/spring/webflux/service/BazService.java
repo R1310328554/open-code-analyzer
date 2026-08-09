@@ -21,8 +21,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 /**
- * <p>A sample service for interacting with Redis via reactive Redis client.</p>
- * <p>To play this service, you need a Redis instance running in local.</p>
+ * 基于 {@link ReactiveRedisTemplate} 的响应式 Redis 读写服务。
+ * <p>运行前需在本地启动 Redis 实例。</p>
  *
  * @author Eric Zhao
  */
@@ -32,6 +32,7 @@ public class BazService {
     @Autowired
     private ReactiveRedisTemplate<String, String> template;
 
+    /** 按 id 读取键 sentinel-reactor-test:{id}，不存在时返回 not_found。 */
     public Mono<String> getById(Long id) {
         if (id == null || id <= 0) {
             return Mono.error(new IllegalArgumentException("invalid id: " + id));
@@ -41,6 +42,7 @@ public class BazService {
             .switchIfEmpty(Mono.just("not_found"));
     }
 
+    /** 向 sentinel-reactor-test:{id} 写入 value。 */
     public Mono<Boolean> setValue(Long id, String value) {
         if (id == null || id <= 0 || value == null) {
             return Mono.error(new IllegalArgumentException("invalid parameters"));

@@ -23,9 +23,9 @@ import com.alipay.sofa.rpc.config.ConsumerConfig;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Demo consumer of SOFARPC.
+ * SOFARPC Consumer 演示：bolt 直连 Provider 循环调用 {@link DemoService}。
  *
- * Interact with Sentinel Dashboard, add the following VM arguments:
+ * 对接 Sentinel Dashboard 时可添加 JVM 参数：
  * <pre>
  * -Dproject.name=DemoProvider -Dcsp.sentinel.dashboard.server=localhost:8080
  * </pre>
@@ -44,8 +44,7 @@ public class DemoConsumer {
             .setDirectUrl("bolt://127.0.0.1:12001")
             .setInvokeType(RpcConstants.INVOKER_TYPE_SYNC);
 
-        // 设置是否启用Sentinel,默认启用
-        // 也可在rpc-config.json全局设置
+        // 是否启用 Sentinel（默认启用），亦可在 rpc-config.json 全局配置
 //        consumerConfig.setParameter("sofa.rpc.sentinel.enabled", "false");
 
         DemoService helloService = consumerConfig.refer();

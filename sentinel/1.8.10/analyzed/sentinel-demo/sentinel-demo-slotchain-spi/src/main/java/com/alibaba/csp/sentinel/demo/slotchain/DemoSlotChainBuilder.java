@@ -26,17 +26,14 @@ import com.alibaba.csp.sentinel.spi.SpiLoader;
 import java.util.List;
 
 /**
- * A demo {@link SlotChainBuilder} for build custom slot chain.
- * Two ways to build slot chain are demonstrated.
+ * 演示如何通过 {@link SlotChainBuilder} SPI 构建自定义 ProcessorSlot 链。
+ * 源码中还保留了另一种逐 Slot 加载的写法（已注释）。
  *
- * Pay attention to that `ProcessorSlotChain` is not a SPI, but the `SlotChainBuilder`.
+ * 注意 {@code ProcessorSlotChain} 本身不是 SPI，可扩展的是 {@code SlotChainBuilder}。
+ * 多数场景只需自定义 {@code ProcessorSlot}，可参考 {@code sentinel-demo-slot-spi} 模块。
  *
- * Most of the time, we don't need to customize `SlotChainBuilder`,
- * maybe customize `ProcessorSlot` is enough, refer to `sentinel-demo-slot-spi` module.
- *
- * Note that the sentinel's default slots and the order of them are very important, be careful when customizing,
- * refer to the constants for slot order definitions in {@link Constants}.
- * You may also refer to {@link DefaultSlotChainBuilder}.
+ * Sentinel 默认 Slot 及其顺序非常关键，定制时务必参考 {@link Constants} 中的顺序常量
+ * 及 {@link DefaultSlotChainBuilder} 的默认实现。
  *
  * @author cdfive
  */
@@ -48,8 +45,7 @@ public class DemoSlotChainBuilder implements SlotChainBuilder {
         ProcessorSlotChain chain = new DefaultProcessorSlotChain();
 
         List<ProcessorSlot> sortedSlotList = SpiLoader.of(ProcessorSlot.class).loadInstanceListSorted();
-        // Filter out `DegradeSlot`
-        // Test for `DemoDegradeRuleApplication`, the demo will not be blocked by `DegradeException`
+        // 移除 DegradeSlot：配合 DemoDegradeRuleApplication，降级规则不会触发 DegradeException
         sortedSlotList.removeIf(o -> DegradeSlot.class.equals(o.getClass()));
         for (ProcessorSlot slot : sortedSlotList) {
             if (!(slot instanceof AbstractLinkedProcessorSlot)) {
@@ -64,9 +60,8 @@ public class DemoSlotChainBuilder implements SlotChainBuilder {
     }
 
     /**
-     * Another way to build the slot chain, add slot one by one with `SpiLoader#loadInstance`.
-     * Note that the sentinel's default slots and the order of them are very important, be careful when customizing,
-     * refer to the constants for slot order definitions in {@link com.alibaba.csp.sentinel.Constants}.
+     * 另一种构建方式：通过 {@code SpiLoader#loadInstance} 逐个添加 Slot。
+     * 默认 Slot 顺序同样重要，详见 {@link com.alibaba.csp.sentinel.Constants}。
      */
     /*
     @Override

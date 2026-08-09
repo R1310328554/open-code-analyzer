@@ -19,13 +19,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * <p>A demo for Spring Cloud Gateway.</p>
+ * Spring Cloud Gateway 与 Sentinel 适配演示入口。
  *
- * <p>To integrate with Sentinel dashboard, you can run the demo with the parameters (an example):
+ * <p>对接 Dashboard 示例 JVM 参数：</p>
  * <code>-Dproject.name=spring-cloud-gateway -Dcsp.sentinel.dashboard.server=localhost:8080
  * -Dcsp.sentinel.api.port=8720 -Dcsp.sentinel.app.type=1
  * </code>
- * </p>
  *
  * @author Eric Zhao
  */

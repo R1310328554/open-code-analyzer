@@ -21,9 +21,9 @@ import com.alipay.sofa.rpc.config.ProviderConfig;
 import com.alipay.sofa.rpc.config.ServerConfig;
 
 /**
- * Demo provider of SOFARPC
+ * SOFARPC Provider 演示：在 bolt:12001 导出 {@link DemoService}。
  *
- * Interact with Sentinel Dashboard, add the following VM arguments:
+ * 对接 Sentinel Dashboard 时可添加 JVM 参数：
  * <pre>
  * -Dproject.name=DemoProvider -Dcsp.sentinel.dashboard.server=localhost:8080
  * </pre>
@@ -43,8 +43,7 @@ public class DemoProvider {
                 .setRef(new DemoServiceImpl())
                 .setServer(serverConfig);
 
-        // 设置是否启用Sentinel,默认启用
-        // 也可在rpc-config.json全局设置
+        // 是否启用 Sentinel（默认启用），亦可在 rpc-config.json 全局配置
 //        providerConfig.setParameter("sofa.rpc.sentinel.enabled", "false");
 
         providerConfig.export();

@@ -29,6 +29,8 @@ import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.web.reactive.result.view.ViewResolver;
 
 /**
+ * WebFlux Sentinel 适配配置：注册 {@link SentinelWebFluxFilter} 与阻塞异常处理器。
+ *
  * @author Eric Zhao
  */
 public class WebFluxConfig {
@@ -45,14 +47,14 @@ public class WebFluxConfig {
     @Bean
     @Order(-1)
     public SentinelBlockExceptionHandler sentinelBlockExceptionHandler() {
-        // Register the block exception handler for Spring WebFlux.
+        // 注册 WebFlux 专用的 Sentinel 阻塞异常处理器
         return new SentinelBlockExceptionHandler(viewResolvers, serverCodecConfigurer);
     }
 
     @Bean
     @Order(-1)
     public SentinelWebFluxFilter sentinelWebFluxFilter() {
-        // Register the Sentinel WebFlux filter.
+        // 注册 Sentinel WebFlux 过滤器，对入站请求自动创建资源
         return new SentinelWebFluxFilter();
     }
 }

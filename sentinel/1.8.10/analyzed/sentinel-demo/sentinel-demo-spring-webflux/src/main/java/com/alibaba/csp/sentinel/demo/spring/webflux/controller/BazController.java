@@ -28,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 /**
+ * Redis 读写 REST 接口，通过 {@link SentinelReactorTransformer} 对 Mono Publisher 限流。
+ *
  * @author Eric Zhao
  */
 @RestController
@@ -37,12 +39,14 @@ public class BazController {
     @Autowired
     private BazService bazService;
 
+    /** GET /baz/{id}：按 id 读取 Redis 值，资源名 BazService:getById。 */
     @GetMapping("/{id}")
     public Mono<String> apiGetValue(@PathVariable("id") Long id) {
         return bazService.getById(id)
             .transform(new SentinelReactorTransformer<>("BazService:getById"));
     }
 
+    /** POST /baz/{id}：写入 Redis，资源名 BazService:setValue。 */
     @PostMapping("/{id}")
     public Mono<Boolean> apiSetValue(@PathVariable("id") Long id, @RequestBody String value) {
         return bazService.setValue(id, value)

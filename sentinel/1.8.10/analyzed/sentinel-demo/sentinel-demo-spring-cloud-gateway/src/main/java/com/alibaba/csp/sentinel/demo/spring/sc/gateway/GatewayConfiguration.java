@@ -44,6 +44,8 @@ import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.web.reactive.result.view.ViewResolver;
 
 /**
+ * Spring Cloud Gateway 与 Sentinel 集成配置：注册过滤器、异常处理器及网关流控规则。
+ *
  * @author Eric Zhao
  */
 @Configuration
@@ -61,7 +63,7 @@ public class GatewayConfiguration {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SentinelGatewayBlockExceptionHandler sentinelGatewayBlockExceptionHandler() {
-        // Register the block exception handler for Spring Cloud Gateway.
+        // 注册 Gateway 专用的 Sentinel 阻塞异常处理器
         return new SentinelGatewayBlockExceptionHandler(viewResolvers, serverCodecConfigurer);
     }
 
@@ -71,12 +73,14 @@ public class GatewayConfiguration {
         return new SentinelGatewayFilter();
     }
 
+    /** 容器启动后加载自定义 API 分组与 Gateway 流控规则。 */
     @PostConstruct
     public void doInit() {
         initCustomizedApis();
         initGatewayRules();
     }
 
+    /** 注册 some_customized_api / another_customized_api 两组 API 定义。 */
     private void initCustomizedApis() {
         Set<ApiDefinition> definitions = new HashSet<>();
         ApiDefinition api1 = new ApiDefinition("some_customized_api")
@@ -95,6 +99,7 @@ public class GatewayConfiguration {
         GatewayApiDefinitionManager.loadApiDefinitions(definitions);
     }
 
+    /** 加载路由级与自定义 API 级 {@link GatewayFlowRule}（含热点参数示例）。 */
     private void initGatewayRules() {
         Set<GatewayFlowRule> rules = new HashSet<>();
         rules.add(new GatewayFlowRule("aliyun_route")

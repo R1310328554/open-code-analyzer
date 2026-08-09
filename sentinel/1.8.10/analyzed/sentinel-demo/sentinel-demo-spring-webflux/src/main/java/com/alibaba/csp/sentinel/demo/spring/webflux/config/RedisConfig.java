@@ -23,11 +23,14 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
+ * 响应式 Redis 客户端配置，供 {@link com.alibaba.csp.sentinel.demo.spring.webflux.service.BazService} 使用。
+ *
  * @author Eric Zhao
  */
 @Configuration
 public class RedisConfig {
 
+    /** 创建 String 类型的 {@link ReactiveRedisTemplate} Bean。 */
     @Bean
     public ReactiveRedisTemplate<String, String> stringReactiveRedisTemplate(ReactiveRedisConnectionFactory connectionFactory){
         RedisSerializationContext<String, String> serializationContext = RedisSerializationContext

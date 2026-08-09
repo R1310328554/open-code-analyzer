@@ -28,9 +28,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Demo for degrade rule using custom SlotChainBuilder {@link DemoSlotChainBuilder}.
+ * 基于自定义 {@link DemoSlotChainBuilder} 的熔断降级规则演示。
  *
- * You will see this in sentinel-record.log, indicating that the custom slot chain builder is activated:
+ * 激活后 sentinel-record.log 会出现：
  * [SlotChainProvider] Global slot chain builder resolved: com.alibaba.csp.sentinel.demo.slotchain.DemoSlotChainBuilder
  *
  * @author cdfive
@@ -58,15 +58,16 @@ public class DemoDegradeRuleApplication {
         }
     }
 
+    /** 加载慢调用比例熔断规则到 {@link DegradeRuleManager}。 */
     private static void initDegradeRule() {
         List<DegradeRule> rules = new ArrayList<>();
         DegradeRule rule = new DegradeRule(RESOURCE_KEY)
                 .setGrade(CircuitBreakerStrategy.SLOW_REQUEST_RATIO.getType())
-                // Max allowed response time
+                // 慢调用判定阈值（毫秒）
                 .setCount(20)
-                // Retry timeout (in second)
+                // 熔断恢复窗口（秒）
                 .setTimeWindow(10)
-                // Circuit breaker opens when slow request ratio > 20%
+                // 慢调用比例超过 20% 时打开熔断器
                 .setSlowRatioThreshold(0.2)
                 .setMinRequestAmount(10)
                 .setStatIntervalMs(20000);

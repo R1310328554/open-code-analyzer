@@ -31,9 +31,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Demo for flow rule using custom SlotChainBuilder {@link DemoSlotChainBuilder}.
+ * 基于自定义 {@link DemoSlotChainBuilder} 的 QPS 流控规则演示。
  *
- * You will see this in sentinel-record.log, indicating that the custom slot chain builder is activated:
+ * 激活后 sentinel-record.log 会出现：
  * [SlotChainProvider] Global slot chain builder resolved: com.alibaba.csp.sentinel.demo.slotchain.DemoSlotChainBuilder
  *
  * @author cdfive
@@ -61,11 +61,12 @@ public class DemoFlowRuleApplication {
         }
     }
 
+    /** 为资源 abc 加载 QPS=5 的 {@link FlowRule}。 */
     private static void initFlowQpsRule() {
         List<FlowRule> rules = new ArrayList<FlowRule>();
         FlowRule rule1 = new FlowRule();
         rule1.setResource(RESOURCE_KEY);
-        // set limit qps to 5
+        // QPS 阈值设为 5
         rule1.setCount(5);
         rule1.setGrade(RuleConstant.FLOW_GRADE_QPS);
         rule1.setLimitApp("default");
