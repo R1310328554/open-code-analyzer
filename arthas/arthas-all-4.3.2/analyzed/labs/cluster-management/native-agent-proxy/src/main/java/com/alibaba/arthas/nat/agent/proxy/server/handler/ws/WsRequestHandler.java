@@ -22,14 +22,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * WebSocket 代理处理器：解析目标 Agent 地址，建立出站连接并双向转发帧。
+ *
  * @description: hello world
  * @author：flzjkl
  * @date: 2024-10-20 11:26
  */
 public class WsRequestHandler {
     private static final Logger logger = LoggerFactory.getLogger(WsRequestHandler.class);
+    /** 入站 Channel → 出站 Channel 映射 */
     private final ConcurrentHashMap<Channel, Channel> channelMappings = new ConcurrentHashMap<>();
 
+    /**
+     * 处理 WebSocket 帧：关闭帧直接断开；否则确保出站连接已建立后转发。
+     */
     public void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
         if (frame instanceof CloseWebSocketFrame) {
             closeOutboundChannel(ctx.channel());
@@ -45,6 +51,9 @@ public class WsRequestHandler {
         }
     }
 
+    /**
+     * 懒连接目标 Native Agent WebSocket 端点，握手成功后缓存映射并转发首帧。
+     */
     private void connectToDestinationServer(ChannelHandlerContext ctx, WebSocketFrame frame) {
         String nativeAgentAddress = (String) ctx.channel().attr(AttributeKey.valueOf("nativeAgentAddress")).get();
         Bootstrap b = new Bootstrap();
@@ -77,6 +86,7 @@ public class WsRequestHandler {
         });
     }
 
+    /** 将 WebSocket 帧写入出站 Channel（保留引用计数） */
     private void forwardWebSocketFrame(WebSocketFrame frame, Channel outboundChannel) {
         if (outboundChannel != null && outboundChannel.isActive()) {
             outboundChannel.writeAndFlush(frame.retain()).addListener(future -> {
@@ -89,6 +99,7 @@ public class WsRequestHandler {
         }
     }
 
+    /** 关闭并移除入站 Channel 对应的出站连接 */
     private void closeOutboundChannel(Channel inboundChannel) {
         Channel outboundChannel = channelMappings.remove(inboundChannel);
         if (outboundChannel != null) {
@@ -97,17 +108,21 @@ public class WsRequestHandler {
         }
     }
 
+    /** 入站 Channel 失活时清理出站连接 */
     public void channelInactive(ChannelHandlerContext ctx) {
         logger.info("Channel inactive, closing outbound channel");
         closeOutboundChannel(ctx.channel());
     }
 
+    /**
+     * 处理 WebSocket 升级握手：从查询参数提取 nativeAgentAddress 并写入 Channel 属性。
+     */
     public void handleWebSocketUpgrade(ChannelHandlerContext ctx, FullHttpRequest request) {
         URI uri = null;
         try {
             uri = new URI(request.uri());
         } catch (URISyntaxException e) {
-            // 处理异常
+            // URI 解析失败，忽略本次升级
             return;
         }
 
@@ -124,6 +139,7 @@ public class WsRequestHandler {
         ctx.fireChannelRead(request.retain());
     }
 
+    /** 解析 URL 查询字符串为键值对 */
     private Map<String, String> parseQueryString(String query) {
         Map<String, String> params = new HashMap<>();
         if (query != null) {
@@ -135,7 +151,7 @@ public class WsRequestHandler {
                     String value = URLDecoder.decode(pair.substring(idx + 1), "UTF-8");
                     params.put(key, value);
                 } catch (UnsupportedEncodingException e) {
-                    // 处理异常
+                    // 解码失败，跳过该参数
                 }
             }
         }

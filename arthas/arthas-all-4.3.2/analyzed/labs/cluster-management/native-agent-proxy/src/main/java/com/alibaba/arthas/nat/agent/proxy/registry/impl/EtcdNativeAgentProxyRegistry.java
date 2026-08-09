@@ -22,6 +22,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 基于 etcd 的 {@link NativeAgentProxyRegistry} 实现，通过租约续期保证 Proxy 节点存活。
+ *
  * @description: Etcd native agent proxy register implements NativeAgentProxyRegistry
  * @author：flzjkl
  * @date: 2024-10-20 18:54
@@ -38,7 +40,7 @@ public class EtcdNativeAgentProxyRegistry implements NativeAgentProxyRegistry {
 
     @Override
     public void register(String address, String k, String v) {
-        // Etcd client
+        // 创建 etcd 客户端并探测连通性
         Client client = null;
         client = Client.builder().endpoints("http://" + address).connectTimeout(Duration.ofSeconds(CONNECTION_TIME_OUT_SECONDS)).build();
         KV kvClient = client.getKVClient();
@@ -53,7 +55,7 @@ public class EtcdNativeAgentProxyRegistry implements NativeAgentProxyRegistry {
             throw new RuntimeException(e);
         }
 
-        // Create lease
+        // 申请租约并启动 keepAlive 续期
         Lease leaseClient = null;
         LeaseGrantResponse leaseGrantResponse = null;
         try {
@@ -81,7 +83,7 @@ public class EtcdNativeAgentProxyRegistry implements NativeAgentProxyRegistry {
             }
         });
 
-        // Register native agent proxy synchronously
+        // 同步写入 Proxy 注册键，绑定租约 ID
         try {
             ByteSequence key = ByteSequence.from(NativeAgentConstants.NATIVE_AGENT_PROXY_KEY + "/" + k, StandardCharsets.UTF_8);
             ByteSequence value = ByteSequence.from(v, StandardCharsets.UTF_8);

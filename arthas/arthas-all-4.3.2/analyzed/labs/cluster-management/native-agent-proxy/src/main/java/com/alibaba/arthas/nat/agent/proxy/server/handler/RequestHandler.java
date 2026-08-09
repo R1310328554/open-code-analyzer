@@ -10,6 +10,8 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
 /**
+ * 统一请求分发器：根据消息类型将 HTTP 或 WebSocket 流量路由至对应处理器。
+ *
  * @description: RequestHandler
  * @author：flzjkl
  * @date: 2024-10-19 9:34
@@ -40,6 +42,7 @@ public class RequestHandler extends SimpleChannelInboundHandler<Object> {
         ctx.close();
     }
 
+    /** 判断 HTTP 请求是否为 WebSocket 协议升级握手 */
     private boolean isWebSocketUpgrade(FullHttpRequest request) {
         return "Upgrade".equalsIgnoreCase(request.headers().get(HttpHeaderNames.CONNECTION)) &&
                 "WebSocket".equalsIgnoreCase(request.headers().get(HttpHeaderNames.UPGRADE));

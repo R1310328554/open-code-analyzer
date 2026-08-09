@@ -9,6 +9,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 基于 ZooKeeper 的 {@link NativeAgentProxyRegistry} 实现，以临时节点注册 Proxy 地址。
+ *
  * @description: Zookeeper native agent proxy register implements NativeAgentProxyRegistry
  * @author：flzjkl
  * @date: 2024-10-20 18:21
@@ -23,7 +25,7 @@ public class ZookeeperNativeAgentProxyRegistry implements NativeAgentProxyRegist
 
     @Override
     public void register(String address, String k, String v) {
-        // Create zookeeper client
+        // 创建 ZooKeeper 客户端并等待 SyncConnected
         ZooKeeper zk = null;
         AtomicBoolean createResult = new AtomicBoolean(false);
         try {
@@ -46,11 +48,11 @@ public class ZookeeperNativeAgentProxyRegistry implements NativeAgentProxyRegist
         }
 
         try {
-            // Create a service node. If the parent node does not exist, create the parent node first
+            // 父节点不存在时先创建持久节点
             if (zk.exists(NATIVE_AGENT_PROXY_KEY, false) == null) {
                 zk.create(NATIVE_AGENT_PROXY_KEY, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
-            // The EPHEMERAL mode is used to create child nodes, which means that the nodes are automatically removed at the end of the session
+            // 以 EPHEMERAL 模式创建子节点，会话结束自动删除
             String path = zk.create(NATIVE_AGENT_PROXY_KEY + "/" + k, v.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
             logger.info("native agent proxy registered at: " + path);
         } catch (KeeperException | InterruptedException e) {

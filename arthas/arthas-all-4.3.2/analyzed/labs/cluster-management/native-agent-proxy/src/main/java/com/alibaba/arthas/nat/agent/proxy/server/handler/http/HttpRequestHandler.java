@@ -8,6 +8,8 @@ import io.netty.handler.codec.http.*;
 import java.net.URI;
 
 /**
+ * Native Agent Proxy HTTP 入口：按方法与路径路由至业务或 OPTIONS 预检处理器。
+ *
  * @description: Native Agent Proxy HttpRequestHandler
  * @author：flzjkl
  * @date: 2024-10-20 11:26
@@ -17,6 +19,9 @@ public class HttpRequestHandler {
     private static HttpNativeAgentHandler httpNativeAgentHandler = new HttpNativeAgentHandler();
     private static HttpOptionRequestHandler httpOptionRequestHandler = new HttpOptionRequestHandler();
 
+    /**
+     * 解析 URI 路径与 HTTP 方法，分发请求并在响应后关闭连接。
+     */
     public void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         String path = new URI(request.uri()).getPath();
         HttpMethod method = request.method();

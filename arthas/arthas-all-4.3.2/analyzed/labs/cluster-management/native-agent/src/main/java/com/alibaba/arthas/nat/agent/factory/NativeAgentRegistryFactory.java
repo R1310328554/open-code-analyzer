@@ -11,13 +11,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Native Agent 注册中心工厂，通过 SPI 配置加载 {@link NativeAgentRegistry} 各实现并缓存。
+ *
  * @description: NativeAgentRegistryFactory create all the realization of the registry
  * @author：flzjkl
  * @date: 2024-09-15 16:22
  */
 public class NativeAgentRegistryFactory {
 
+    /** SPI 配置文件路径，键为注册类型名，值为实现类全限定名 */
     private static final String FILE_PATH = "META-INF/arthas/com.alibaba.arthas.native.agent.NativeAgentRegistryFactory";
+    /** 注册类型名 → 注册实现实例 */
     private static Map<String, NativeAgentRegistry> registrationMap = new ConcurrentHashMap<>();
     private static volatile NativeAgentRegistryFactory nativeAgentRegistryFactory;
 
@@ -26,6 +30,9 @@ public class NativeAgentRegistryFactory {
         loadRegister2Map(registrationConfigMap);
     }
 
+    /**
+     * 获取工厂单例（双重检查锁）。
+     */
     public static NativeAgentRegistryFactory getNativeAgentClientRegisterFactory() {
         if (nativeAgentRegistryFactory == null) {
             synchronized (NativeAgentRegistryFactory.class) {
@@ -37,6 +44,9 @@ public class NativeAgentRegistryFactory {
         return nativeAgentRegistryFactory;
     }
 
+    /**
+     * 反射实例化 SPI 配置中的各 {@link NativeAgentRegistry} 实现并写入缓存。
+     */
     private void loadRegister2Map(Map<String, String> registrationConfigMap) {
         for (Map.Entry<String, String> entry : registrationConfigMap.entrySet()) {
             String name = entry.getKey();
@@ -53,6 +63,12 @@ public class NativeAgentRegistryFactory {
         }
     }
 
+    /**
+     * 读取 classpath 下 SPI 配置文件，解析 key=value 行。
+     *
+     * @param filePath 资源路径
+     * @return 配置键值对
+     */
     public Map<String, String> readConfigInfo (String filePath) {
         Map<String, String> registrationConfigMap = new ConcurrentHashMap<>();
         ClassLoader classLoader = NativeAgentRegistryFactory.class.getClassLoader();
@@ -78,6 +94,11 @@ public class NativeAgentRegistryFactory {
         return registrationConfigMap;
     }
 
+    /**
+     * 按注册类型名获取对应的 {@link NativeAgentRegistry} 实现。
+     *
+     * @param name 注册类型（如 etcd、zookeeper）
+     */
     public NativeAgentRegistry getServiceRegistration(String name) {
         return registrationMap.get(name);
     }

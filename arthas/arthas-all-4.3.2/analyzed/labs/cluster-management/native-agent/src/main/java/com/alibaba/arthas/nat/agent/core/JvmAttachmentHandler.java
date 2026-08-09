@@ -11,6 +11,8 @@ import java.io.File;
 import static com.alibaba.arthas.nat.agent.core.ArthasHomeHandler.ARTHAS_HOME_DIR;
 
 /**
+ * JVM Attach 处理器：通过 {@link VirtualMachine} 向目标进程加载 Arthas Agent。
+ *
  * @description: attach jvm via java agent
  * @author：flzjkl
  * @date: 2024-07-01 11:37
@@ -20,6 +22,12 @@ public class JvmAttachmentHandler {
     private static final Logger logger = LoggerFactory.getLogger(JvmAttachmentHandler.class);
     private static final String ARTHAS_AGENT_JAR = "arthas-agent.jar";
 
+    /**
+     * 附加到指定 PID 的 JVM 并加载 Arthas Agent，返回 HTTP 服务端口。
+     *
+     * @param pid 目标 Java 进程 PID
+     * @return Arthas HTTP 监听端口字符串
+     */
     public static String attachJvmByPid (Integer pid) throws Exception {
         VirtualMachine vm = null;
         try {

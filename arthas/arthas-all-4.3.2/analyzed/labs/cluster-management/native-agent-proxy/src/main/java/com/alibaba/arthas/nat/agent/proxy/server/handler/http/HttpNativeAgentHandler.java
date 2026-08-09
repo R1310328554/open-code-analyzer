@@ -22,14 +22,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Native Agent Proxy HTTP 业务处理器：列举 Agent、转发进程查询与监控请求。
+ *
  * @description: HttpNativeAgentHandler
  * @author：flzjkl
  * @date: 2024-08-01 7:32
  */
 public class HttpNativeAgentHandler {
 
+    /** 本地缓存（预留） */
     private Map<Long, String> localCache = new ConcurrentHashMap<>();
 
+    /**
+     * 根据请求体 operation 字段分发到具体业务逻辑。
+     */
     public FullHttpResponse handle(ChannelHandlerContext ctx, FullHttpRequest request) {
         String content = request.content().toString(StandardCharsets.UTF_8);
         Map<String, Object> bodyMap = JSON.parseObject(content, new TypeReference<Map<String, Object>>() {
@@ -55,6 +61,11 @@ public class HttpNativeAgentHandler {
 
 
 
+    /**
+     * 将请求透传至目标 Native Agent 的 /api/native-agent 接口。
+     *
+     * @param address 目标 Agent 地址（ip:port）
+     */
     private FullHttpResponse forwardRequest(FullHttpRequest request, String address) {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
@@ -89,7 +100,7 @@ public class HttpNativeAgentHandler {
                 fullHttpResponse.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS, "GET, POST, PUT, DELETE, OPTIONS");
                 fullHttpResponse.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, "X-Requested-With, Content-Type, Authorization");
 
-                // 设置其他必要的头部
+                // 设置 Content-Type 与 Content-Length
                 fullHttpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
                 fullHttpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, fullHttpResponse.content().readableBytes());
                 return fullHttpResponse;
@@ -110,6 +121,9 @@ public class HttpNativeAgentHandler {
         }
     }
 
+    /**
+     * 从 Agent 注册中心查询所有 Native Agent 并组装为 DTO 列表返回。
+     */
     private FullHttpResponse doListNativeAgent(ChannelHandlerContext ctx, FullHttpRequest request) {
         NativeAgentDiscoveryFactory nativeAgentDiscoveryFactory = NativeAgentDiscoveryFactory.getNativeAgentDiscoveryFactory();
         NativeAgentDiscovery nativeAgentDiscovery = nativeAgentDiscoveryFactory.getNativeAgentDiscovery(NativeAgentProxyBootstrap.agentRegistrationType);
@@ -137,7 +151,7 @@ public class HttpNativeAgentHandler {
         response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS, "GET, POST, PUT, DELETE, OPTIONS");
         response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, "X-Requested-With, Content-Type, Authorization");
 
-        // 设置其他必要的头部
+        // 设置 Content-Type 与 Content-Length
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
         response.headers().set(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
 

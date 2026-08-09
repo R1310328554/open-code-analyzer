@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
 /**
+ * Native Agent Proxy 启动入口：解析 CLI 参数、向注册中心登记自身地址，并启动 HTTP/WebSocket 服务。
+ *
  * @description: Native Agent Proxy Bootstrap
  * @author：flzjkl
  * @date: 2024-10-19 8:54
@@ -84,10 +86,10 @@ public class NativeAgentProxyBootstrap {
     }
 
     public static void main(String[] args) {
-        // Print welcome message
+        // 打印欢迎信息
         WelcomeUtil.printProxyWelcomeMsg();
 
-        // Startup parameter analysis
+        // 解析启动参数
         logger.info("read input config...");
         NativeAgentProxyBootstrap nativeAgentProxyBootstrap = new NativeAgentProxyBootstrap();
         CLI cli = CLIConfigurator.define(NativeAgentProxyBootstrap.class);
@@ -101,7 +103,7 @@ public class NativeAgentProxyBootstrap {
         logger.info("read input success!");
 
 
-        // Register native agent proxy
+        // 向管理端注册中心登记 Proxy 地址
         try {
             logger.info("register native agent proxy...");
             NativeAgentProxyRegistryFactory registerFactory = NativeAgentProxyRegistryFactory.getNativeAgentProxyRegistryFactory();
@@ -117,7 +119,7 @@ public class NativeAgentProxyBootstrap {
             System.exit(1);
         }
 
-        // Start the http/ws server
+        // 启动 HTTP/WebSocket Netty 服务
         logger.info("start the server... port:{}", nativeAgentProxyBootstrap.getPortOrDefault());
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workGroup = new NioEventLoopGroup();
@@ -150,6 +152,7 @@ public class NativeAgentProxyBootstrap {
 
     }
 
+    /** 返回监听端口，未指定时使用默认值 2233 */
     public int getPortOrDefault() {
         if (this.port == null) {
             return DEFAULT_NATIVE_AGENT_PROXY_PORT;
