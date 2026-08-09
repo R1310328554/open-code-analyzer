@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:44:56Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/RedissonReference.java",
-    "redisson/src/main/java/org/redisson/RedissonReliableTopic.java",
-    "redisson/src/main/java/org/redisson/RedissonRingBuffer.java",
-    "redisson/src/main/java/org/redisson/RedissonScript.java",
-    "redisson/src/main/java/org/redisson/RedissonSetMultimapCache.java",
-    "redisson/src/main/java/org/redisson/RedissonSetMultimapCacheNative.java",
-    "redisson/src/main/java/org/redisson/RedissonSetMultimapIterator.java",
-    "redisson/src/main/java/org/redisson/RedissonShardedTopic.java",
-    "redisson/src/main/java/org/redisson/RedissonShutdownException.java",
-    "redisson/src/main/java/org/redisson/RedissonSpinLock.java",
-    "redisson/src/main/java/org/redisson/RedissonSubSortedSet.java",
-    "redisson/src/main/java/org/redisson/RedissonTDigest.java",
-    "redisson/src/main/java/org/redisson/RedissonTopK.java",
-    "redisson/src/main/java/org/redisson/RedissonTopic.java",
-    "redisson/src/main/java/org/redisson/RedissonWriteLock.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1622,
-  "done": 1185
+  "done": 1200
 }
