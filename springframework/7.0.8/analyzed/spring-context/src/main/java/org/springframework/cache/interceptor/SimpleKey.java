@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * A simple key as returned from the {@link SimpleKeyGenerator}.
+ * 由 {@link SimpleKeyGenerator} 返回的简单缓存键。
  *
  * @author Phillip Webb
  * @author Juergen Hoeller
@@ -38,25 +38,26 @@ import org.springframework.util.Assert;
 public class SimpleKey implements Serializable {
 
 	/**
-	 * An empty key.
+	 * 空键。
 	 */
 	public static final SimpleKey EMPTY = new SimpleKey();
 
 
+	/** 键元素数组。 */
 	private final @Nullable Object[] params;
 
-	// Effectively final, just re-calculated on deserialization
+	// 逻辑上为 final，反序列化时重新计算
 	private transient int hashCode;
 
 
 	/**
-	 * Create a new {@link SimpleKey} instance.
-	 * @param elements the elements of the key
+	 * 创建新的 {@link SimpleKey} 实例。
+	 * @param elements 键的元素
 	 */
 	public SimpleKey(@Nullable Object... elements) {
 		Assert.notNull(elements, "Elements must not be null");
 		this.params = elements.clone();
-		// Pre-calculate hashCode field
+		// 预计算 hashCode 字段
 		this.hashCode = calculateHash(this.params);
 	}
 
@@ -68,7 +69,7 @@ public class SimpleKey implements Serializable {
 
 	@Override
 	public final int hashCode() {
-		// Expose pre-calculated hashCode field
+		// 暴露预计算的 hashCode 字段
 		return this.hashCode;
 	}
 
@@ -79,13 +80,12 @@ public class SimpleKey implements Serializable {
 
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 		ois.defaultReadObject();
-		// Re-calculate hashCode field on deserialization
+		// 反序列化时重新计算 hashCode 字段
 		this.hashCode = calculateHash(this.params);
 	}
 
 	/**
-	 * Calculate the hash of the key using its elements and
-	 * mix the result with the finalising function of MurmurHash3.
+	 * 使用键元素计算哈希值，并以 MurmurHash3 的最终混合函数混合结果。
 	 */
 	private static int calculateHash(@Nullable Object[] params) {
 		int hash = Arrays.deepHashCode(params);

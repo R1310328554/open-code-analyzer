@@ -26,9 +26,9 @@ import org.springframework.cache.Cache;
 import org.springframework.util.Assert;
 
 /**
- * A {@link CacheErrorHandler} implementation that logs error messages.
+ * 记录错误消息的 {@link CacheErrorHandler} 实现。
  *
- * <p>Can be used when underlying cache errors should be ignored.
+ * <p>当底层缓存错误应被忽略时可使用本实现。
  *
  * @author Adam Ostrožlík
  * @author Stephane Nicoll
@@ -38,27 +38,27 @@ import org.springframework.util.Assert;
  */
 public class LoggingCacheErrorHandler implements CacheErrorHandler {
 
+	/** 日志记录器。 */
 	private final Log logger;
 
+	/** 是否记录堆栈跟踪。 */
 	private final boolean logStackTraces;
 
 
 	/**
-	 * Create a {@code LoggingCacheErrorHandler} that uses the default logging
-	 * category and does not log stack traces.
-	 * <p>The default logging category is
-	 * "{@code org.springframework.cache.interceptor.LoggingCacheErrorHandler}".
+	 * 创建使用默认日志类别且不记录堆栈跟踪的 {@code LoggingCacheErrorHandler}。
+	 * <p>默认日志类别为
+	 * "{@code org.springframework.cache.interceptor.LoggingCacheErrorHandler}"。
 	 */
 	public LoggingCacheErrorHandler() {
 		this(false);
 	}
 
 	/**
-	 * Create a {@code LoggingCacheErrorHandler} that uses the default logging
-	 * category and the supplied {@code logStackTraces} flag.
-	 * <p>The default logging category is
-	 * "{@code org.springframework.cache.interceptor.LoggingCacheErrorHandler}".
-	 * @param logStackTraces whether to log stack traces
+	 * 创建使用默认日志类别及给定 {@code logStackTraces} 标志的 {@code LoggingCacheErrorHandler}。
+	 * <p>默认日志类别为
+	 * "{@code org.springframework.cache.interceptor.LoggingCacheErrorHandler}"。
+	 * @param logStackTraces 是否记录堆栈跟踪
 	 * @since 5.3.22
 	 */
 	public LoggingCacheErrorHandler(boolean logStackTraces) {
@@ -66,10 +66,9 @@ public class LoggingCacheErrorHandler implements CacheErrorHandler {
 	}
 
 	/**
-	 * Create a {@code LoggingCacheErrorHandler} that uses the supplied
-	 * {@link Log logger} and {@code logStackTraces} flag.
-	 * @param logger the logger to use
-	 * @param logStackTraces whether to log stack traces
+	 * 创建使用给定 {@link Log logger} 及 {@code logStackTraces} 标志的 {@code LoggingCacheErrorHandler}。
+	 * @param logger 要使用的日志记录器
+	 * @param logStackTraces 是否记录堆栈跟踪
 	 */
 	public LoggingCacheErrorHandler(Log logger, boolean logStackTraces) {
 		Assert.notNull(logger, "'logger' must not be null");
@@ -78,12 +77,10 @@ public class LoggingCacheErrorHandler implements CacheErrorHandler {
 	}
 
 	/**
-	 * Create a {@code LoggingCacheErrorHandler} that uses the supplied
-	 * {@code loggerName} and {@code logStackTraces} flag.
-	 * @param loggerName the name of the logger to use. The name will be passed
-	 * to the underlying logger implementation through Commons Logging, getting
-	 * interpreted as log category according to the logger's configuration.
-	 * @param logStackTraces whether to log stack traces
+	 * 创建使用给定 {@code loggerName} 及 {@code logStackTraces} 标志的 {@code LoggingCacheErrorHandler}。
+	 * @param loggerName 要使用的日志记录器名称。名称将通过 Commons Logging 传递给底层日志实现，
+	 * 并根据日志配置解释为日志类别。
+	 * @param logStackTraces 是否记录堆栈跟踪
 	 * @since 5.3.24
 	 * @see org.apache.commons.logging.LogFactory#getLog(String)
 	 * @see java.util.logging.Logger#getLogger(String)
@@ -125,8 +122,8 @@ public class LoggingCacheErrorHandler implements CacheErrorHandler {
 
 
 	/**
-	 * Get the logger for this {@code LoggingCacheErrorHandler}.
-	 * @return the logger
+	 * 获取本 {@code LoggingCacheErrorHandler} 的日志记录器。
+	 * @return 日志记录器
 	 * @since 5.3.22
 	 */
 	protected final Log getLogger() {
@@ -134,8 +131,8 @@ public class LoggingCacheErrorHandler implements CacheErrorHandler {
 	}
 
 	/**
-	 * Get the {@code logStackTraces} flag for this {@code LoggingCacheErrorHandler}.
-	 * @return {@code true} if this {@code LoggingCacheErrorHandler} logs stack traces
+	 * 获取本 {@code LoggingCacheErrorHandler} 的 {@code logStackTraces} 标志。
+	 * @return 若本 {@code LoggingCacheErrorHandler} 记录堆栈跟踪则为 {@code true}
 	 * @since 5.3.22
 	 */
 	protected final boolean isLogStackTraces() {
@@ -143,12 +140,11 @@ public class LoggingCacheErrorHandler implements CacheErrorHandler {
 	}
 
 	/**
-	 * Log the cache error message in the given supplier.
-	 * <p>If {@link #isLogStackTraces()} is {@code true}, the given
-	 * {@code exception} will be logged as well.
-	 * <p>The default implementation logs the message as a warning.
-	 * @param messageSupplier the message supplier
-	 * @param exception the exception thrown by the cache provider
+	 * 记录给定 supplier 提供的缓存错误消息。
+	 * <p>若 {@link #isLogStackTraces()} 为 {@code true}，也会记录给定 {@code exception}。
+	 * <p>默认实现以警告级别记录消息。
+	 * @param messageSupplier 消息 supplier
+	 * @param exception 缓存提供者抛出的异常
 	 * @since 5.3.22
 	 * @see #isLogStackTraces()
 	 * @see #getLogger()

@@ -21,8 +21,7 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Cache key generator. Used for creating a key based on the given method
- * (used as context) and its parameters.
+ * 缓存键生成器。根据给定方法（作为上下文）及其参数创建缓存键。
  *
  * @author Costin Leau
  * @author Chris Beams
@@ -33,11 +32,11 @@ import org.jspecify.annotations.Nullable;
 public interface KeyGenerator {
 
 	/**
-	 * Generate a key for the given method and its parameters.
-	 * @param target the target instance
-	 * @param method the method being called
-	 * @param params the method parameters (with any var-args expanded)
-	 * @return a generated key
+	 * 为给定方法及其参数生成缓存键。
+	 * @param target 目标实例
+	 * @param method 被调用的方法
+	 * @param params 方法参数（可变参数已展开）
+	 * @return 生成的缓存键
 	 */
 	Object generate(Object target, Method method, @Nullable Object... params);
 

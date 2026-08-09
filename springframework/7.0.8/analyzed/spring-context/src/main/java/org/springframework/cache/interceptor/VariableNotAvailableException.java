@@ -19,8 +19,7 @@ package org.springframework.cache.interceptor;
 import org.springframework.expression.EvaluationException;
 
 /**
- * An internal {@link EvaluationException} which signals that a given variable
- * used in an expression is not available in the context.
+ * 内部 {@link EvaluationException}，表示表达式中使用的变量在上下文中不可用。
  *
  * @author Stephane Nicoll
  * @since 4.0.6

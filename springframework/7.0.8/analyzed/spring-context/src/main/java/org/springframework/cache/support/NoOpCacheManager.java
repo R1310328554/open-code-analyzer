@@ -27,12 +27,10 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
 /**
- * A basic, no operation {@link CacheManager} implementation suitable
- * for disabling caching, typically used for backing cache declarations
- * without an actual backing store.
+ * 适用于禁用缓存的基本无操作 {@link CacheManager} 实现，
+ * 通常用于支撑无实际底层存储的缓存声明。
  *
- * <p>This implementation will simply accept any items into the cache,
- * not actually storing them.
+ * <p>本实现接受任何放入缓存的项，但不实际存储。
  *
  * @author Costin Leau
  * @author Stephane Nicoll
@@ -42,6 +40,7 @@ import org.springframework.cache.CacheManager;
  */
 public class NoOpCacheManager implements CacheManager {
 
+	/** 缓存名称到 NoOpCache 实例的映射。 */
 	private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(16);
 
 

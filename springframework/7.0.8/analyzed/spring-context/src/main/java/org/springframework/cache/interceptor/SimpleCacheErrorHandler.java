@@ -21,8 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.cache.Cache;
 
 /**
- * A simple {@link CacheErrorHandler} that does not handle the
- * exception at all, simply throwing it back at the client.
+ * 简单的 {@link CacheErrorHandler}，不处理异常，直接将其抛回调用方。
  *
  * @author Stephane Nicoll
  * @since 4.1
