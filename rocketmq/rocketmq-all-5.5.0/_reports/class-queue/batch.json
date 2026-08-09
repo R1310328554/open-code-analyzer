@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:46:47Z",
   "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/route/QueueData.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/route/TopicRouteData.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/statictopic/LogicQueueMappingItem.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/statictopic/TopicConfigAndQueueMapping.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/statictopic/TopicQueueMappingContext.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/statictopic/TopicQueueMappingDetail.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/statictopic/TopicQueueMappingInfo.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/statictopic/TopicQueueMappingOne.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/statictopic/TopicRemappingDetailWrapper.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/CustomizedRetryPolicy.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/ExponentialRetryPolicy.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/GroupForbidden.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/GroupRetryPolicy.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/GroupRetryPolicyType.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/RetryPolicy.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/SimpleSubscriptionData.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/subscription/SubscriptionGroupConfig.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/topic/OffsetMovedEvent.java",
@@ -33,5 +18,5 @@
     "remoting/src/main/java/org/apache/rocketmq/remoting/rpc/TopicQueueRequestHeader.java"
   ],
   "remaining_pending": 408,
-  "done": 1050
+  "done": 1065
 }
