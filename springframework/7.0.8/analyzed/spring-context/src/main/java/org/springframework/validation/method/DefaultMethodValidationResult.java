@@ -23,7 +23,7 @@ import org.springframework.context.MessageSourceResolvable;
 import org.springframework.util.Assert;
 
 /**
- * Default {@link MethodValidationResult} implementation as a simple container.
+ * 默认 {@link MethodValidationResult} 实现，作为简单容器。
  *
  * @author Rossen Stoyanchev
  * @since 6.1

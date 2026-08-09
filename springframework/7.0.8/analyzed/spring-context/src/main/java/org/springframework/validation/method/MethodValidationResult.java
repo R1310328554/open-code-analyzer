@@ -24,11 +24,9 @@ import org.springframework.context.MessageSourceResolvable;
 import org.springframework.validation.Errors;
 
 /**
- * Container for method validation results with validation errors from the
- * underlying library adapted to {@link MessageSourceResolvable}s and grouped
- * by method parameter as {@link ParameterValidationResult}. For method parameters
- * with nested validation errors, the validation result is of type
- * {@link ParameterErrors} and implements {@link Errors}.
+ * 方法校验结果容器，底层库的校验错误适配为 {@link MessageSourceResolvable}，
+ * 并按方法参数分组为 {@link ParameterValidationResult}。
+ * 对于存在嵌套校验错误的方法参数，校验结果类型为 {@link ParameterErrors} 并实现 {@link Errors}。
  *
  * @author Rossen Stoyanchev
  * @since 6.1
@@ -36,31 +34,30 @@ import org.springframework.validation.Errors;
 public interface MethodValidationResult {
 
 	/**
-	 * Return the target of the method invocation to which validation was applied.
+	 * 返回应用校验的方法调用的目标对象。
 	 */
 	Object getTarget();
 
 	/**
-	 * Return the method to which validation was applied.
+	 * 返回应用校验的方法。
 	 */
 	Method getMethod();
 
 	/**
-	 * Whether the violations are for a return value.
-	 * If true the violations are from validating a return value.
-	 * If false the violations are from validating method arguments.
+	 * 违例是否针对返回值。
+	 * 若为 true，违例来自返回值校验；若为 false，违例来自方法参数校验。
 	 */
 	boolean isForReturnValue();
 
 	/**
-	 * Whether the result contains any validation errors.
+	 * 结果是否包含任何校验错误。
 	 */
 	default boolean hasErrors() {
 		return !getParameterValidationResults().isEmpty();
 	}
 
 	/**
-	 * Return a single list with all errors from all validation results.
+	 * 返回包含所有校验结果中全部错误的单一列表。
 	 * @see #getParameterValidationResults()
 	 * @see ParameterValidationResult#getResolvableErrors()
 	 */
@@ -71,10 +68,8 @@ public interface MethodValidationResult {
 	}
 
 	/**
-	 * Return all validation results per method parameter, including both
-	 * {@link #getValueResults()} and {@link #getBeanResults()}.
-	 * <p>Use {@link #getCrossParameterValidationResults()} for access to errors
-	 * from cross-parameter validation.
+	 * 返回每个方法参数的所有校验结果，包括 {@link #getValueResults()} 和 {@link #getBeanResults()}。
+	 * <p>使用 {@link #getCrossParameterValidationResults()} 访问跨参数校验的错误。
 	 * @since 6.2
 	 * @see #getValueResults()
 	 * @see #getBeanResults()
@@ -82,10 +77,9 @@ public interface MethodValidationResult {
 	List<ParameterValidationResult> getParameterValidationResults();
 
 	/**
-	 * Return the subset of {@link #getParameterValidationResults() allValidationResults}
-	 * that includes method parameters with validation errors directly on method
-	 * argument values. This excludes {@link #getBeanResults() beanResults} with
-	 * nested errors on their fields and properties.
+	 * 返回 {@link #getParameterValidationResults() allValidationResults} 的子集，
+	 * 包含方法参数值上直接存在校验错误的方法参数。
+	 * 排除字段和属性上存在嵌套错误的 {@link #getBeanResults() beanResults}。
 	 */
 	default List<ParameterValidationResult> getValueResults() {
 		return getParameterValidationResults().stream()
@@ -94,10 +88,9 @@ public interface MethodValidationResult {
 	}
 
 	/**
-	 * Return the subset of {@link #getParameterValidationResults() allValidationResults}
-	 * that includes Object method parameters with nested errors on their fields
-	 * and properties. This excludes {@link #getValueResults() valueResults} with
-	 * validation errors directly on method arguments.
+	 * 返回 {@link #getParameterValidationResults() allValidationResults} 的子集，
+	 * 包含字段和属性上存在嵌套错误的 Object 方法参数。
+	 * 排除方法参数上直接存在校验错误的 {@link #getValueResults() valueResults}。
 	 */
 	default List<ParameterErrors> getBeanResults() {
 		return getParameterValidationResults().stream()
@@ -107,18 +100,18 @@ public interface MethodValidationResult {
 	}
 
 	/**
-	 * Return errors from cross-parameter validation.
+	 * 返回跨参数校验的错误。
 	 * @since 6.2
 	 */
 	List<MessageSourceResolvable> getCrossParameterValidationResults();
 
 
 	/**
-	 * Factory method to create a {@link MethodValidationResult} instance.
-	 * @param target the target Object
-	 * @param method the target method
-	 * @param results method validation results, expected to be non-empty
-	 * @return the created instance
+	 * 创建 {@link MethodValidationResult} 实例的工厂方法。
+	 * @param target 目标对象
+	 * @param method 目标方法
+	 * @param results 方法校验结果，预期非空
+	 * @return 创建的实例
 	 */
 	static MethodValidationResult create(Object target, Method method, List<ParameterValidationResult> results) {
 		return create(target, method, results, Collections.emptyList());
@@ -129,7 +122,7 @@ public interface MethodValidationResult {
 	 * @param target the target Object
 	 * @param method the target method
 	 * @param results method validation results, expected to be non-empty
-	 * @param crossParameterErrors cross-parameter validation errors
+	 * @param crossParameterErrors 跨参数校验错误
 	 * @return the created instance
 	 * @since 6.2
 	 */
@@ -141,9 +134,8 @@ public interface MethodValidationResult {
 	}
 
 	/**
-	 * Factory method to create a {@link MethodValidationResult} instance with
-	 * 0 errors, suitable to use as a constant. Getters for a target object or
-	 * method are not supported.
+	 * 创建含 0 个错误的 {@link MethodValidationResult} 实例的工厂方法，
+	 * 适合用作常量。不支持目标对象或方法的 getter。
 	 */
 	static MethodValidationResult emptyResult() {
 		return new EmptyMethodValidationResult();

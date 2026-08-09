@@ -33,9 +33,8 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.util.Assert;
 
 /**
- * Simple {@link BeanPostProcessor} that checks JSR-303 constraint annotations
- * in Spring-managed beans, throwing an initialization exception in case of
- * constraint violations right before calling the bean's init method (if any).
+ * 简单的 {@link BeanPostProcessor}，检查 Spring 托管 Bean 中的 JSR-303 约束注解，
+ * 在调用 Bean 的 init 方法（若有）之前，若存在约束违规则抛出初始化异常。
  *
  * @author Juergen Hoeller
  * @since 3.0
@@ -48,17 +47,17 @@ public class BeanValidationPostProcessor implements BeanPostProcessor, Initializ
 
 
 	/**
-	 * Set the JSR-303 Validator to delegate to for validating beans.
-	 * <p>Default is the default ValidatorFactory's default Validator.
+	 * 设置用于校验 Bean 的 JSR-303 Validator 委托对象。
+	 * <p>默认为默认 ValidatorFactory 的默认 Validator。
 	 */
 	public void setValidator(Validator validator) {
 		this.validator = validator;
 	}
 
 	/**
-	 * Set the JSR-303 ValidatorFactory to delegate to for validating beans,
-	 * using its default Validator.
-	 * <p>Default is the default ValidatorFactory's default Validator.
+	 * 设置用于校验 Bean 的 JSR-303 ValidatorFactory 委托对象，
+	 * 使用其默认 Validator。
+	 * <p>默认为默认 ValidatorFactory 的默认 Validator。
 	 * @see jakarta.validation.ValidatorFactory#getValidator()
 	 */
 	public void setValidatorFactory(ValidatorFactory validatorFactory) {
@@ -66,11 +65,9 @@ public class BeanValidationPostProcessor implements BeanPostProcessor, Initializ
 	}
 
 	/**
-	 * Choose whether to perform validation after bean initialization
-	 * (i.e. after init methods) instead of before (which is the default).
-	 * <p>Default is "false" (before initialization). Switch this to "true"
-	 * (after initialization) if you would like to give init methods a chance
-	 * to populate constrained fields before they get validated.
+	 * 选择是在 Bean 初始化之后（即 init 方法之后）而非之前（默认）执行校验。
+	 * <p>默认为 "false"（初始化之前）。若希望 init 方法有机会
+	 * 在校验前填充受约束字段，可设为 "true"（初始化之后）。
 	 */
 	public void setAfterInitialization(boolean afterInitialization) {
 		this.afterInitialization = afterInitialization;
@@ -102,8 +99,8 @@ public class BeanValidationPostProcessor implements BeanPostProcessor, Initializ
 
 
 	/**
-	 * Perform validation of the given bean.
-	 * @param bean the bean instance to validate
+	 * 执行给定 Bean 的校验。
+	 * @param bean 要校验的 Bean 实例
 	 * @see jakarta.validation.Validator#validate
 	 */
 	protected void doValidate(Object bean) {

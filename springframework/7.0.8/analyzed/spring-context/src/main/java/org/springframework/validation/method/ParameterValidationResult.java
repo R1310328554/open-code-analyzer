@@ -28,20 +28,17 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Store and expose the results of method validation for a method parameter.
+ * 存储并暴露方法参数的方法校验结果。
  * <ul>
- * <li>Validation errors directly on method parameter values are exposed as a
- * list of {@link MessageSourceResolvable}s.
- * <li>Nested validation errors on an Object method parameter are exposed as
- * {@link org.springframework.validation.Errors} by the subclass
- * {@link ParameterErrors}.
+ * <li>方法参数值上的直接校验错误以 {@link MessageSourceResolvable} 列表暴露。
+ * <li>Object 方法参数上的嵌套校验错误由子类 {@link ParameterErrors}
+ * 以 {@link org.springframework.validation.Errors} 形式暴露。
  * </ul>
  *
- * <p>When the method parameter is a container such as a {@link List}, array,
- * or {@link java.util.Map}, then a separate {@link ParameterValidationResult}
- * is created for each element with errors. In that case, the properties
- * {@link #getContainer() container}, {@link #getContainerIndex() containerIndex},
- * and {@link #getContainerKey() containerKey} provide additional context.
+ * <p>当方法参数为 {@link List}、数组或 {@link java.util.Map} 等容器时，
+ * 为每个有错误的元素创建单独的 {@link ParameterValidationResult}。
+ * 此时 {@link #getContainer() container}、{@link #getContainerIndex() containerIndex}
+ * 和 {@link #getContainerKey() containerKey} 属性提供额外上下文。
  *
  * @author Rossen Stoyanchev
  * @since 6.1
@@ -64,7 +61,7 @@ public class ParameterValidationResult {
 
 
 	/**
-	 * Create a {@code ParameterValidationResult}.
+	 * 创建 {@code ParameterValidationResult}。
 	 */
 	public ParameterValidationResult(
 			MethodParameter param, @Nullable Object arg, Collection<? extends MessageSourceResolvable> errors,
@@ -84,36 +81,32 @@ public class ParameterValidationResult {
 
 
 	/**
-	 * The method parameter the validation results are for.
+	 * 校验结果所属的方法参数。
 	 */
 	public MethodParameter getMethodParameter() {
 		return this.methodParameter;
 	}
 
 	/**
-	 * The method argument value that was validated.
+	 * 已校验的方法参数值。
 	 */
 	public @Nullable Object getArgument() {
 		return this.argument;
 	}
 
 	/**
-	 * List of {@link MessageSourceResolvable} representations adapted from the
-	 * validation errors of the validation library.
+	 * 从校验库的校验错误适配而来的 {@link MessageSourceResolvable} 表示列表。
 	 * <ul>
-	 * <li>For a constraints directly on a method parameter, error codes are
-	 * based on the names of the constraint annotation, the object, the method,
-	 * the parameter, and parameter type, for example,
+	 * <li>对于方法参数上的直接约束，错误代码基于约束注解名、对象、方法、
+	 * 参数及参数类型，例如
 	 * {@code ["Max.myObject#myMethod.myParameter", "Max.myParameter", "Max.int", "Max"]}.
 	 * Arguments include the parameter itself as a {@link MessageSourceResolvable}, for example,
 	 * {@code ["myObject#myMethod.myParameter", "myParameter"]}, followed by actual
 	 * constraint annotation attributes (i.e. excluding "message", "groups" and
 	 * "payload") in alphabetical order of attribute names.
-	 * <li>For cascaded constraints via {@link jakarta.validation.Validator @Valid}
-	 * on a bean method parameter, this method returns
-	 * {@link org.springframework.validation.FieldError field errors} that you
-	 * can also access more conveniently through methods of the
-	 * {@link ParameterErrors} sub-class.
+	 * <li>对于 Bean 方法参数上通过 {@link jakarta.validation.Validator @Valid}
+	 * 的级联约束，本方法返回 {@link org.springframework.validation.FieldError 字段错误}，
+	 * 也可通过 {@link ParameterErrors} 子类的方法更方便地访问。
 	 * </ul>
 	 */
 	public List<MessageSourceResolvable> getResolvableErrors() {
@@ -121,40 +114,36 @@ public class ParameterValidationResult {
 	}
 
 	/**
-	 * When {@code @Valid} is declared on a container of elements such as
-	 * {@link java.util.Collection}, {@link java.util.Map},
-	 * {@link java.util.Optional}, and others, this method returns the container
-	 * of the validated {@link #getArgument() argument}, while
-	 * {@link #getContainerIndex()} and {@link #getContainerKey()} provide
-	 * information about the index or key if applicable.
+	 * 当在 {@link java.util.Collection}、{@link java.util.Map}、
+	 * {@link java.util.Optional} 等元素容器上声明 {@code @Valid} 时，
+	 * 本方法返回已校验 {@link #getArgument() argument} 的容器，
+	 * 而 {@link #getContainerIndex()} 和 {@link #getContainerKey()} 提供索引或键信息（若适用）。
 	 */
 	public @Nullable Object getContainer() {
 		return this.container;
 	}
 
 	/**
-	 * When {@code @Valid} is declared on an indexed container of elements such as
-	 * {@link List} or array, this method returns the index of the validated
-	 * {@link #getArgument() argument}.
+	 * 当在 {@link List} 或数组等索引元素容器上声明 {@code @Valid} 时，
+	 * 本方法返回已校验 {@link #getArgument() argument} 的索引。
 	 */
 	public @Nullable Integer getContainerIndex() {
 		return this.containerIndex;
 	}
 
 	/**
-	 * When {@code @Valid} is declared on a container of elements referenced by
-	 * key such as {@link java.util.Map}, this method returns the key of the
-	 * validated {@link #getArgument() argument}.
+	 * 当在 {@link java.util.Map} 等按键引用元素的容器上声明 {@code @Valid} 时，
+	 * 本方法返回已校验 {@link #getArgument() argument} 的键。
 	 */
 	public @Nullable Object getContainerKey() {
 		return this.containerKey;
 	}
 
 	/**
-	 * Unwrap the source behind the given error. For Jakarta Bean validation the
-	 * source is a {@link jakarta.validation.ConstraintViolation}.
-	 * @param sourceType the expected source type
-	 * @return the source object of the given type
+	 * 解包给定错误背后的源对象。对于 Jakarta Bean Validation，
+	 * 源对象是 {@link jakarta.validation.ConstraintViolation}。
+	 * @param sourceType 预期的源类型
+	 * @return 给定类型的源对象
 	 * @since 6.2
 	 */
 	@SuppressWarnings("unchecked")

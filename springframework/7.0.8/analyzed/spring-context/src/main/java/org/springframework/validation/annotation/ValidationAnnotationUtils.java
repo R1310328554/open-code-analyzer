@@ -26,9 +26,9 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 
 /**
- * Utility class for handling validation annotations.
+ * 处理校验注解的工具类。
  *
- * <p>Mainly for internal use within the framework.
+ * <p>主要供框架内部使用。
  *
  * @author Christoph Dreis
  * @author Juergen Hoeller
@@ -42,15 +42,14 @@ public abstract class ValidationAnnotationUtils {
 
 
 	/**
-	 * Determine any validation hints for the given annotation.
-	 * <p>This implementation checks for Spring's
-	 * {@link org.springframework.validation.annotation.Validated},
-	 * {@code @jakarta.validation.Valid}, and custom annotations whose
-	 * name starts with "Valid" which may optionally declare validation
-	 * hints through the "value" attribute.
-	 * @param ann the annotation (potentially a validation annotation)
-	 * @return the validation hints to apply (possibly an empty array),
-	 * or {@code null} if this annotation does not trigger any validation
+	 * 确定给定注解的校验提示。
+	 * <p>本实现检查 Spring 的
+	 * {@link org.springframework.validation.annotation.Validated}、
+	 * {@code @jakarta.validation.Valid}，以及名称以 "Valid" 开头的自定义注解，
+	 * 后者可通过 "value" 属性可选地声明校验提示。
+	 * @param ann 注解（可能是校验注解）
+	 * @return 要应用的校验提示（可能为空数组），
+	 * 若本注解不触发任何校验则返回 {@code null}
 	 */
 	public static Object @Nullable [] determineValidationHints(Annotation ann) {
 		// Direct presence of @Validated ?
@@ -83,11 +82,10 @@ public abstract class ValidationAnnotationUtils {
 	}
 
 	/**
-	 * Determine the applicable validation groups from an
+	 * 从方法上的
 	 * {@link org.springframework.validation.annotation.Validated @Validated}
-	 * annotation either on the method, or on the containing target class of
-	 * the method, or for an AOP proxy without a target (with all behavior in
-	 * advisors), also check on proxied interfaces.
+	 * 注解、方法所属目标类，或对于无目标对象的 AOP 代理（行为全在 advisor 中）
+	 * 还检查被代理接口，确定适用的校验分组。
 	 * @since 7.0.4
 	 */
 	public static Class<?>[] determineValidationGroups(Object target, Method method) {

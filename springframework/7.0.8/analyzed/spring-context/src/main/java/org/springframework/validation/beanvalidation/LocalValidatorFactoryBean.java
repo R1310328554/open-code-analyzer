@@ -57,28 +57,20 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
 
-/* ===== [OCA 中文解析] =====
-class LocalValidatorFactoryBean — 意图说明
-
-工厂：封装复杂创建逻辑；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/LocalValidatorFactoryBean.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * This is the central class for {@code jakarta.validation} (JSR-303) setup in a Spring
- * application context: It bootstraps a {@code jakarta.validation.ValidationFactory} and
- * exposes it through the Spring {@link org.springframework.validation.Validator} interface
- * as well as through the JSR-303 {@link jakarta.validation.Validator} interface and the
- * {@link jakarta.validation.ValidatorFactory} interface itself.
+ * Spring 应用上下文中 {@code jakarta.validation}（JSR-303）设置的核心类：
+ * 引导 {@code jakarta.validation.ValidationFactory}，
+ * 并通过 Spring {@link org.springframework.validation.Validator} 接口、
+ * JSR-303 {@link jakarta.validation.Validator} 接口以及
+ * {@link jakarta.validation.ValidatorFactory} 接口本身暴露。
  *
- * <p>When talking to an instance of this bean through the Spring or JSR-303 Validator interfaces,
- * you'll be talking to the default Validator of the underlying ValidatorFactory. This is very
- * convenient in that you don't have to perform yet another call on the factory, assuming that
- * you will almost always use the default Validator anyway. This can also be injected directly
- * into any target dependency of type {@link org.springframework.validation.Validator}!
+ * <p>通过 Spring 或 JSR-303 Validator 接口与本 Bean 实例交互时，
+ * 实际使用的是底层 ValidatorFactory 的默认 Validator。
+ * 这非常便利，无需再对工厂进行额外调用，因为几乎总是使用默认 Validator。
+ * 也可直接注入到类型为 {@link org.springframework.validation.Validator} 的任意目标依赖！
  *
- * <p>This class is also being used by Spring's MVC configuration namespace, in case of the
- * {@code jakarta.validation} API being present but no explicit Validator having been configured.
+ * <p>当存在 {@code jakarta.validation} API 但未显式配置 Validator 时，
+ * Spring MVC 配置命名空间也使用本类。
  *
  * @author Juergen Hoeller
  * @author Sebastien Deleuze
@@ -106,7 +98,6 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 
 	private Resource @Nullable [] mappingLocations;
 
-	// [OCA] 字段 `validationPropertyMap`：类成员状态。
 	private final Map<String, String> validationPropertyMap = new HashMap<>();
 
 	private @Nullable Consumer<Configuration<?>> configurationInitializer;
@@ -117,8 +108,8 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 
 
 	/**
-	 * Specify the desired provider class, if any.
-	 * <p>If not specified, JSR-303's default search mechanism will be used.
+	 * 指定所需的提供者类（若有）。
+	 * <p>未指定时使用 JSR-303 的默认搜索机制。
 	 * @see jakarta.validation.Validation#byProvider(Class)
 	 * @see jakarta.validation.Validation#byDefaultProvider()
 	 */
@@ -128,8 +119,8 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 	/**
-	 * Specify a JSR-303 {@link ValidationProviderResolver} for bootstrapping the
-	 * provider of choice, as an alternative to {@code META-INF} driven resolution.
+	 * 指定 JSR-303 {@link ValidationProviderResolver} 以引导所选提供者，
+ * 作为 {@code META-INF} 驱动解析的替代方案。
 	 * @since 4.3
 	 */
 	public void setValidationProviderResolver(ValidationProviderResolver validationProviderResolver) {
@@ -137,17 +128,15 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 	/**
-	 * Specify a custom MessageInterpolator to use for this ValidatorFactory
-	 * and its exposed default Validator.
+	 * 指定本 ValidatorFactory 及其暴露的默认 Validator 使用的自定义 MessageInterpolator。
 	 */
 	public void setMessageInterpolator(MessageInterpolator messageInterpolator) {
 		this.messageInterpolator = messageInterpolator;
 	}
 
 	/**
-	 * Specify a custom Spring MessageSource for resolving validation messages,
-	 * instead of relying on JSR-303's default "ValidationMessages.properties" bundle
-	 * in the classpath. This may refer to a Spring context's shared "messageSource" bean,
+	 * 指定自定义 Spring MessageSource 解析校验消息，
+	 * 而非依赖类路径中 JSR-303 默认的 "ValidationMessages.properties" 资源包。 This may refer to a Spring context's shared "messageSource" bean,
 	 * or to some special MessageSource setup for validation purposes only.
 	 * <p><b>NOTE:</b> This feature requires Hibernate Validator 4.3 or higher on the classpath.
 	 * You may nevertheless use a different validation provider but Hibernate Validator's
@@ -168,25 +157,23 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 	/**
-	 * Specify a custom TraversableResolver to use for this ValidatorFactory
-	 * and its exposed default Validator.
+	 * 指定本 ValidatorFactory 及其暴露的默认 Validator 使用的自定义 TraversableResolver。
 	 */
 	public void setTraversableResolver(TraversableResolver traversableResolver) {
 		this.traversableResolver = traversableResolver;
 	}
 
 	/**
-	 * Specify a custom ConstraintValidatorFactory to use for this ValidatorFactory.
-	 * <p>Default is a {@link SpringConstraintValidatorFactory}, delegating to the
-	 * containing ApplicationContext for creating autowired ConstraintValidator instances.
+	 * 指定本 ValidatorFactory 使用的自定义 ConstraintValidatorFactory。
+	 * <p>默认为 {@link SpringConstraintValidatorFactory}，
+	 * 委托包含的 ApplicationContext 创建可自动装配的 ConstraintValidator 实例。
 	 */
 	public void setConstraintValidatorFactory(ConstraintValidatorFactory constraintValidatorFactory) {
 		this.constraintValidatorFactory = constraintValidatorFactory;
 	}
 
 	/**
-	 * Set the ParameterNameDiscoverer to use for resolving method and constructor
-	 * parameter names if needed for message interpolation.
+	 * 设置 ParameterNameDiscoverer，用于在消息插值需要时解析方法和构造器参数名。
 	 * <p>Default is Hibernate Validator's own internal use of standard Java reflection.
 	 * This may be overridden with a custom subclass or a Spring-controlled
 	 * {@link org.springframework.core.DefaultParameterNameDiscoverer} if necessary.
@@ -196,14 +183,14 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 	/**
-	 * Specify resource locations to load XML constraint mapping files from, if any.
+	 * 指定加载 XML 约束映射文件的资源位置（若有）。
 	 */
 	public void setMappingLocations(Resource... mappingLocations) {
 		this.mappingLocations = mappingLocations;
 	}
 
 	/**
-	 * Specify bean validation properties to be passed to the validation provider.
+	 * 指定传递给校验提供者的 Bean 校验属性。
 	 * <p>Can be populated with a String "value" (parsed via PropertiesEditor)
 	 * or a "props" element in XML bean definitions.
 	 * @see jakarta.validation.Configuration#addProperty(String, String)
@@ -213,7 +200,7 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 	/**
-	 * Specify bean validation properties to be passed to the validation provider as a Map.
+	 * 以 Map 形式指定传递给校验提供者的 Bean 校验属性。
 	 * <p>Can be populated with a "map" or "props" element in XML bean definitions.
 	 * @see jakarta.validation.Configuration#addProperty(String, String)
 	 */
@@ -224,8 +211,8 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 	/**
-	 * Allow Map access to the bean validation properties to be passed to the validation provider,
-	 * with the option to add or override specific entries.
+	 * 允许以 Map 方式访问传递给校验提供者的 Bean 校验属性，
+	 * 并可添加或覆盖特定条目。
 	 * <p>Useful for specifying entries directly, for example via "validationPropertyMap[myKey]".
 	 */
 	public Map<String, String> getValidationPropertyMap() {
@@ -233,9 +220,9 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 	/**
-	 * Specify a callback for customizing the Bean Validation {@code Configuration} instance,
-	 * as an alternative to overriding the {@link #postProcessConfiguration(Configuration)}
-	 * method in custom {@code LocalValidatorFactoryBean} subclasses.
+	 * 指定用于定制 Bean Validation {@code Configuration} 实例的回调，
+	 * 作为在自定义 {@code LocalValidatorFactoryBean} 子类中
+	 * 覆盖 {@link #postProcessConfiguration(Configuration)} 方法的替代方案。
 	 * <p>This enables convenient customizations for application purposes. Infrastructure
 	 * extensions may keep overriding the {@link #postProcessConfiguration} template method.
 	 * @since 5.3.19
@@ -252,11 +239,6 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 
 	@Override
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	/* ===== [OCA 中文解析] =====
-方法 afterPropertiesSet — 意图与阅读要点
-
-方法 `afterPropertiesSet` 复杂度较高（CCN≈16, NLOC≈73）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void afterPropertiesSet() {
 		Configuration<?> configuration;
 		if (this.providerClass != null) {
@@ -374,11 +356,9 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 	/**
-	 * Post-process the given Bean Validation configuration,
-	 * adding to or overriding any of its settings.
-	 * <p>Invoked right before building the {@link ValidatorFactory}.
-	 * @param configuration the Configuration object, pre-populated with
-	 * settings driven by LocalValidatorFactoryBean's properties
+	 * 后处理给定 Bean Validation 配置，添加或覆盖其任何设置。
+	 * <p>在构建 {@link ValidatorFactory} 之前调用。
+	 * @param configuration Configuration 对象，已预填充 LocalValidatorFactoryBean 属性驱动的设置
 	 */
 	protected void postProcessConfiguration(Configuration<?> configuration) {
 	}
@@ -463,15 +443,8 @@ public class LocalValidatorFactoryBean extends SpringValidatorAdapter
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class HibernateValidatorDelegate — 意图说明
-
-class `HibernateValidatorDelegate`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/LocalValidatorFactoryBean.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Inner class to avoid a hard-coded Hibernate Validator dependency.
+	 * 内部类，避免硬编码 Hibernate Validator 依赖。
 	 */
 	private static class HibernateValidatorDelegate {
 

@@ -21,13 +21,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * {@link LocalValidatorFactoryBean} subclass that simply turns
- * {@link org.springframework.validation.Validator} calls into no-ops
- * in case of no Bean Validation provider being available.
+ * {@link LocalValidatorFactoryBean} 子类，在无 Bean Validation 提供者可用时
+ * 将 {@link org.springframework.validation.Validator} 调用变为空操作。
  *
- * <p>This is the actual class used by Spring's MVC configuration namespace,
- * in case of the {@code jakarta.validation} API being present but no explicit
- * Validator having been configured.
+ * <p>当存在 {@code jakarta.validation} API 但未显式配置 Validator 时，
+ * 这是 Spring MVC 配置命名空间实际使用的类。
  *
  * @author Juergen Hoeller
  * @since 4.0.1

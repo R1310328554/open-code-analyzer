@@ -23,7 +23,8 @@ import org.springframework.context.MessageSourceResolvable;
 import org.springframework.util.Assert;
 
 /**
- * Exception that is a {@link MethodValidationResult}.
+ * 同时实现 {@link MethodValidationResult} 的运行时异常。
+ * 在方法校验失败且未提供替代处理时抛出。
  *
  * @author Rossen Stoyanchev
  * @since 6.1
@@ -35,6 +36,7 @@ public class MethodValidationException extends RuntimeException implements Metho
 	private final MethodValidationResult validationResult;
 
 
+	/** 使用给定方法校验结果构造异常。 @param validationResult 方法校验结果（必填） */
 	public MethodValidationException(MethodValidationResult validationResult) {
 		super(validationResult.toString());
 		Assert.notNull(validationResult, "MethodValidationResult is required");

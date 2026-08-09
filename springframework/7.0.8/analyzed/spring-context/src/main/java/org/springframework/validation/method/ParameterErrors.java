@@ -26,12 +26,11 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 
 /**
- * Extension of {@link ParameterValidationResult} created for Object method
- * parameters or return values with nested errors on their properties.
+ * {@link ParameterValidationResult} 的扩展，
+ * 为属性上存在嵌套错误的 Object 方法参数或返回值创建。
  *
- * <p>The base class method {@link #getResolvableErrors()} returns
- * {@link Errors#getAllErrors()}, but this subclass provides access to the same
- * as {@link FieldError}s.
+ * <p>基类方法 {@link #getResolvableErrors()} 返回
+ * {@link Errors#getAllErrors()}，但本子类以 {@link FieldError} 形式提供相同访问。
  *
  * @author Rossen Stoyanchev
  * @since 6.1
@@ -42,7 +41,7 @@ public class ParameterErrors extends ParameterValidationResult implements Errors
 
 
 	/**
-	 * Create a {@code ParameterErrors}.
+	 * 创建 {@code ParameterErrors}。
 	 */
 	public ParameterErrors(
 			MethodParameter parameter, @Nullable Object argument, Errors errors,

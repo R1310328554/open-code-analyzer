@@ -23,7 +23,8 @@ import java.util.List;
 import org.springframework.context.MessageSourceResolvable;
 
 /**
- * {@link MethodValidationResult} with an empty list of results.
+ * 结果列表为空的 {@link MethodValidationResult} 实现。
+ * 适合作为无校验错误的常量使用；目标对象和方法的 getter 不支持。
  *
  * @author Rossen Stoyanchev
  * @since 6.1

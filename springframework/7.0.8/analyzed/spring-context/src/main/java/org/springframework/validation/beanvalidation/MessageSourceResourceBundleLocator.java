@@ -26,8 +26,8 @@ import org.springframework.context.support.MessageSourceResourceBundle;
 import org.springframework.util.Assert;
 
 /**
- * Implementation of Hibernate Validator's {@link ResourceBundleLocator} interface,
- * exposing a Spring {@link MessageSource} as localized {@link MessageSourceResourceBundle}.
+ * Hibernate Validator {@link ResourceBundleLocator} 接口的实现，
+ * 将 Spring {@link MessageSource} 暴露为本地化的 {@link MessageSourceResourceBundle}。
  *
  * @author Juergen Hoeller
  * @since 3.0.4
@@ -41,8 +41,8 @@ public class MessageSourceResourceBundleLocator implements ResourceBundleLocator
 
 
 	/**
-	 * Build a MessageSourceResourceBundleLocator for the given MessageSource.
-	 * @param messageSource the Spring MessageSource to wrap
+	 * 为给定 MessageSource 构建 MessageSourceResourceBundleLocator。
+	 * @param messageSource 要包装的 Spring MessageSource
 	 */
 	public MessageSourceResourceBundleLocator(MessageSource messageSource) {
 		Assert.notNull(messageSource, "MessageSource must not be null");

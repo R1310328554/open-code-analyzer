@@ -53,22 +53,19 @@ import org.springframework.validation.method.ParameterErrors;
 import org.springframework.validation.method.ParameterValidationResult;
 
 /**
- * An AOP Alliance {@link MethodInterceptor} implementation that delegates to a
- * JSR-303 provider for performing method-level validation on annotated methods.
+ * AOP Alliance {@link MethodInterceptor} 实现，
+ * 委托 JSR-303 提供者对带注解方法执行方法级校验。
  *
- * <p>Applicable methods have {@link jakarta.validation.Constraint} annotations on
- * their parameters and/or on their return value (in the latter case specified at
- * the method level, typically as inline annotation).
+ * <p>适用方法的参数和/或返回值（后者在方法级指定，通常为内联注解）
+ * 带有 {@link jakarta.validation.Constraint} 注解。
  *
  * <p>For example: {@code public @NotNull Object myValidMethod(@NotNull String arg1, @Max(10) int arg2)}
  *
- * <p>In case of validation errors, the interceptor can raise
- * {@link ConstraintViolationException}, or adapt the violations to
- * {@link MethodValidationResult} and raise {@link MethodValidationException}.
+ * <p>校验出错时，拦截器可抛出 {@link ConstraintViolationException}，
+ * 或将违例适配为 {@link MethodValidationResult} 并抛出 {@link MethodValidationException}。
  *
- * <p>Validation groups can be specified through Spring's {@link Validated} annotation
- * at the type level of the containing target class, applying to all public service methods
- * of that class. By default, JSR-303 will validate against its default group only.
+ * <p>可通过 Spring 的 {@link Validated} 注解在包含目标类的类型级指定校验分组，
+ * 应用于该类的所有 public 服务方法。默认情况下，JSR-303 仅针对默认分组校验。
  *
  * @author Juergen Hoeller
  * @author Rossen Stoyanchev
@@ -88,32 +85,31 @@ public class MethodValidationInterceptor implements MethodInterceptor {
 
 
 	/**
-	 * Create a new MethodValidationInterceptor using a default JSR-303 validator underneath.
+	 * 使用底层默认 JSR-303 校验器创建新的 MethodValidationInterceptor。
 	 */
 	public MethodValidationInterceptor() {
 		this(new MethodValidationAdapter(), false);
 	}
 
 	/**
-	 * Create a new MethodValidationInterceptor using the given JSR-303 ValidatorFactory.
-	 * @param validatorFactory the JSR-303 ValidatorFactory to use
+	 * 使用给定 JSR-303 ValidatorFactory 创建新的 MethodValidationInterceptor。
+	 * @param validatorFactory 要使用的 JSR-303 ValidatorFactory
 	 */
 	public MethodValidationInterceptor(ValidatorFactory validatorFactory) {
 		this(new MethodValidationAdapter(validatorFactory), false);
 	}
 
 	/**
-	 * Create a new MethodValidationInterceptor using the given JSR-303 Validator.
-	 * @param validator the JSR-303 Validator to use
+	 * 使用给定 JSR-303 Validator 创建新的 MethodValidationInterceptor。
+	 * @param validator 要使用的 JSR-303 Validator
 	 */
 	public MethodValidationInterceptor(Validator validator) {
 		this(new MethodValidationAdapter(validator), false);
 	}
 
 	/**
-	 * Create a new MethodValidationInterceptor for the supplied
-	 * (potentially lazily initialized) Validator.
-	 * @param validator a Supplier for the Validator to use
+	 * 为所提供的（可能延迟初始化的）Validator 创建新的 MethodValidationInterceptor。
+	 * @param validator 要使用的 Validator 的 Supplier
 	 * @since 6.0
 	 */
 	public MethodValidationInterceptor(Supplier<Validator> validator) {
@@ -124,9 +120,9 @@ public class MethodValidationInterceptor implements MethodInterceptor {
 	 * Create a new MethodValidationInterceptor for the supplied
 	 * (potentially lazily initialized) Validator.
 	 * @param validator a Supplier for the Validator to use
-	 * @param adaptViolations whether to adapt {@link ConstraintViolation}s, and
-	 * if {@code true}, raise {@link MethodValidationException}, of if
-	 * {@code false} raise {@link ConstraintViolationException} instead
+	 * @param adaptViolations 是否适配 {@link ConstraintViolation}；
+	 * 若为 {@code true} 则抛出 {@link MethodValidationException}，
+	 * 若为 {@code false} 则抛出 {@link ConstraintViolationException}
 	 * @since 6.1
 	 */
 	public MethodValidationInterceptor(Supplier<Validator> validator, boolean adaptViolations) {
@@ -216,12 +212,12 @@ public class MethodValidationInterceptor implements MethodInterceptor {
 	}
 
 	/**
-	 * Determine the validation groups to validate against for the given method invocation.
-	 * <p>Default are the validation groups as specified in the {@link Validated} annotation
-	 * on the method, or on the containing target class of the method, or for an AOP proxy
-	 * without a target (with all behavior in advisors), also check on proxied interfaces.
-	 * @param invocation the current MethodInvocation
-	 * @return the applicable validation groups as a Class array
+	 * 确定给定方法调用要针对的校验分组。
+	 * <p>默认为 {@link Validated} 注解在方法上、
+	 * 方法所属目标类上指定的校验分组，
+	 * 或对于无目标对象的 AOP 代理（行为全在 advisor 中）还检查被代理接口。
+	 * @param invocation 当前 MethodInvocation
+	 * @return 适用的校验分组，以 Class 数组形式
 	 */
 	protected Class<?>[] determineValidationGroups(MethodInvocation invocation) {
 		Object target = getTarget(invocation);
@@ -230,7 +226,7 @@ public class MethodValidationInterceptor implements MethodInterceptor {
 
 
 	/**
-	 * Helper class to decorate reactive arguments with async validation.
+	 * 辅助类，为响应式参数装饰异步校验。
 	 */
 	private static final class ReactorValidationHelper {
 

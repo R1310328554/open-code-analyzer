@@ -51,16 +51,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
-/* ===== [OCA 中文解析] =====
-class BeanValidationBeanRegistrationAotProcessor — 意图说明
-
-处理器：容器生命周期中的扩展钩子；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/BeanValidationBeanRegistrationAotProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * AOT {@code BeanRegistrationAotProcessor} that adds additional hints
- * required for {@link ConstraintValidator}s.
+ * AOT {@code BeanRegistrationAotProcessor}，为 {@link ConstraintValidator} 添加额外提示。
  *
  * @author Sebastien Deleuze
  * @author Juergen Hoeller
@@ -68,11 +60,9 @@ class BeanValidationBeanRegistrationAotProcessor — 意图说明
  */
 class BeanValidationBeanRegistrationAotProcessor implements BeanRegistrationAotProcessor {
 
-	// [OCA] 字段 `BEAN_VALIDATION_PRESENT`：类成员状态。
 	private static final boolean BEAN_VALIDATION_PRESENT = ClassUtils.isPresent(
 			"jakarta.validation.Validation", BeanValidationBeanRegistrationAotProcessor.class.getClassLoader());
 
-	// [OCA] 字段 `logger`：类成员状态。
 	private static final Log logger = LogFactory.getLog(BeanValidationBeanRegistrationAotProcessor.class);
 
 
@@ -85,15 +75,8 @@ class BeanValidationBeanRegistrationAotProcessor implements BeanRegistrationAotP
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class BeanValidationDelegate — 意图说明
-
-class `BeanValidationDelegate`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/BeanValidationBeanRegistrationAotProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Inner class to avoid a hard dependency on the Bean Validation API at runtime.
+	 * 内部类，避免运行时对 Bean Validation API 的硬依赖。
 	 */
 	private static class BeanValidationDelegate {
 
@@ -125,13 +108,6 @@ class `BeanValidationDelegate`：请结合所属模块与调用方理解其在�
 			}
 			return null;
 		}
-
-		/* ===== [OCA 中文解析] =====
-方法 processAheadOfTime — 意图与阅读要点
-
-方法 `processAheadOfTime` 复杂度较高（CCN≈18, NLOC≈62）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-		===== [OCA 中文解析结束] ===== */
 
 		private static void processAheadOfTime(Class<?> clazz, Set<Class<?>> visitedClasses, Set<Class<?>> validatedClasses,
 				Set<Class<? extends ConstraintValidator<?, ?>>> constraintValidatorClasses) {
@@ -238,17 +214,6 @@ class `BeanValidationDelegate`：请结合所属模块与调用方理解其在�
 			}
 		}
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class AotContribution — 意图说明
-
-class `AotContribution`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/validation/beanvalidation/BeanValidationBeanRegistrationAotProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private static class AotContribution implements BeanRegistrationAotContribution {

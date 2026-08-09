@@ -40,25 +40,22 @@ import org.springframework.validation.method.MethodValidationException;
 import org.springframework.validation.method.MethodValidationResult;
 
 /**
- * A convenient {@link BeanPostProcessor} implementation that delegates to a
- * JSR-303 provider for performing method-level validation on annotated methods.
+ * 便捷的 {@link BeanPostProcessor} 实现，委托 JSR-303 提供者
+ * 对带注解方法执行方法级校验。
  *
- * <p>Applicable methods have JSR-303 constraint annotations on their parameters
- * and/or on their return value (in the latter case specified at the method level,
- * typically as inline annotation), for example:
+ * <p>适用方法的参数和/或返回值（后者在方法级指定，通常为内联注解）
+ * 带有 JSR-303 约束注解，例如：
  *
  * <pre class="code">
  * public @NotNull Object myValidMethod(@NotNull String arg1, @Max(10) int arg2)
  * </pre>
  *
- * <p>In case of validation errors, the interceptor can raise
- * {@link ConstraintViolationException}, or adapt the violations to
- * {@link MethodValidationResult} and raise {@link MethodValidationException}.
+ * <p>校验出错时，拦截器可抛出 {@link ConstraintViolationException}，
+ * 或将违例适配为 {@link MethodValidationResult} 并抛出 {@link MethodValidationException}。
  *
- * <p>Target classes with such annotated methods need to be annotated with Spring's
- * {@link Validated} annotation at the type level, for their methods to be searched for
- * inline constraint annotations. Validation groups can be specified through {@code @Validated}
- * as well. By default, JSR-303 will validate against its default group only.
+ * <p>含此类注解方法的目标类需在类型级标注 Spring 的 {@link Validated} 注解，
+ * 以便搜索内联约束注解。也可通过 {@code @Validated} 指定校验分组。
+ * 默认情况下，JSR-303 仅针对默认分组校验。
  *
  * @author Juergen Hoeller
  * @since 3.1
@@ -78,12 +75,11 @@ public class MethodValidationPostProcessor extends AbstractBeanFactoryAwareAdvis
 
 
 	/**
-	 * Set the 'validated' annotation type.
-	 * The default validated annotation type is the {@link Validated} annotation.
-	 * <p>This setter property exists so that developers can provide their own
-	 * (non-Spring-specific) annotation type to indicate that a class is supposed
-	 * to be validated in the sense of applying method validation.
-	 * @param validatedAnnotationType the desired annotation type
+	 * 设置 "validated" 注解类型。
+	 * 默认 validated 注解类型为 {@link Validated} 注解。
+	 * <p>此 setter 属性使开发者可提供自己的（非 Spring 专用）注解类型，
+	 * 表示类应进行方法校验意义上的校验。
+	 * @param validatedAnnotationType 所需的注解类型
 	 */
 	public void setValidatedAnnotationType(Class<? extends Annotation> validatedAnnotationType) {
 		Assert.notNull(validatedAnnotationType, "'validatedAnnotationType' must not be null");
@@ -91,9 +87,9 @@ public class MethodValidationPostProcessor extends AbstractBeanFactoryAwareAdvis
 	}
 
 	/**
-	 * Set the JSR-303 ValidatorFactory to delegate to for validating methods,
-	 * using its default Validator.
-	 * <p>Default is the default ValidatorFactory's default Validator.
+	 * 设置用于校验方法的 JSR-303 ValidatorFactory 委托对象，
+	 * 使用其默认 Validator。
+	 * <p>默认为默认 ValidatorFactory 的默认 Validator。
 	 * @see jakarta.validation.ValidatorFactory#getValidator()
 	 */
 	public void setValidatorFactory(ValidatorFactory validatorFactory) {
@@ -101,15 +97,15 @@ public class MethodValidationPostProcessor extends AbstractBeanFactoryAwareAdvis
 	}
 
 	/**
-	 * Set the JSR-303 Validator to delegate to for validating methods.
-	 * <p>Default is the default ValidatorFactory's default Validator.
+	 * 设置用于校验方法的 JSR-303 Validator 委托对象。
+	 * <p>默认为默认 ValidatorFactory 的默认 Validator。
 	 */
 	public void setValidator(Validator validator) {
 		this.validator = () -> validator;
 	}
 
 	/**
-	 * Set a lazily initialized Validator to delegate to for validating methods.
+	 * 设置用于校验方法的延迟初始化 Validator 委托对象。
 	 * @since 6.0
 	 * @see #setValidator
 	 */
@@ -118,11 +114,10 @@ public class MethodValidationPostProcessor extends AbstractBeanFactoryAwareAdvis
 	}
 
 	/**
-	 * Whether to adapt {@link ConstraintViolation}s to {@link MethodValidationResult}.
-	 * <p>By default {@code false} in which case
-	 * {@link jakarta.validation.ConstraintViolationException} is raised in case of
-	 * violations. When set to {@code true}, {@link MethodValidationException}
-	 * is raised instead with the method validation results.
+	 * 是否将 {@link ConstraintViolation} 适配为 {@link MethodValidationResult}。
+	 * <p>默认为 {@code false}，此时违例时抛出
+	 * {@link jakarta.validation.ConstraintViolationException}。
+	 * 设为 {@code true} 时，改为抛出带方法校验结果的 {@link MethodValidationException}。
 	 * @since 6.1
 	 */
 	public void setAdaptConstraintViolations(boolean adaptViolations) {
@@ -137,11 +132,9 @@ public class MethodValidationPostProcessor extends AbstractBeanFactoryAwareAdvis
 	}
 
 	/**
-	 * Create AOP advice for method validation purposes, to be applied
-	 * with a pointcut for the specified 'validated' annotation.
-	 * @param validator a Supplier for the Validator to use
-	 * @return the interceptor to use (typically, but not necessarily,
-	 * a {@link MethodValidationInterceptor} or subclass thereof)
+	 * 创建用于方法校验的 AOP 通知，与指定 "validated" 注解的切点配合应用。
+	 * @param validator 要使用的 Validator 的 Supplier
+	 * @return 要使用的拦截器（通常但不一定是 {@link MethodValidationInterceptor} 或其子类）
 	 * @since 6.0
 	 */
 	protected Advice createMethodValidationAdvice(Supplier<Validator> validator) {

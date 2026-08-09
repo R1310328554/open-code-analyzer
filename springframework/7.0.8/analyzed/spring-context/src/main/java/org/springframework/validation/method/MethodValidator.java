@@ -23,9 +23,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.MethodParameter;
 
 /**
- * Contract to apply method validation and handle the results.
- * Exposes methods that return {@link MethodValidationResult}, and methods that
- * handle the results, by default raising {@link MethodValidationException}.
+ * 应用方法校验并处理结果的契约。
+ * 暴露返回 {@link MethodValidationResult} 的方法，
+ * 以及处理结果的方法，默认抛出 {@link MethodValidationException}。
  *
  * @author Rossen Stoyanchev
  * @since 6.1
@@ -33,38 +33,37 @@ import org.springframework.core.MethodParameter;
 public interface MethodValidator {
 
 	/**
-	 * Determine the applicable validation groups. By default, obtained from an
+	 * 确定适用的校验分组。默认从方法或类级的
 	 * {@link org.springframework.validation.annotation.Validated @Validated}
-	 * annotation on the method, or on the class level.
-	 * @param target the target Object
-	 * @param method the target method
-	 * @return the applicable validation groups as a {@code Class} array
-	 * @deprecated in favor of
+	 * 注解获取。
+	 * @param target 目标对象
+	 * @param method 目标方法
+	 * @return 适用的校验分组，以 {@code Class} 数组形式
+	 * @deprecated 推荐使用
 	 * {@link org.springframework.validation.annotation.ValidationAnnotationUtils#determineValidationGroups(Object, Method)}
 	 */
 	@Deprecated(since = "7.0.4", forRemoval = true)
 	Class<?>[] determineValidationGroups(Object target, Method method);
 
 	/**
-	 * Validate the given method arguments and return validation results.
-	 * @param target the target Object
-	 * @param method the target method
-	 * @param parameters the parameters, if already created and available
-	 * @param arguments the candidate argument values to validate
+	 * 校验给定方法参数并返回校验结果。
+	 * @param target 目标对象
+	 * @param method 目标方法
+	 * @param parameters 参数（若已创建且可用）
+	 * @param arguments 要校验的候选参数值
 	 * @param groups validation groups from
 	 * {@link org.springframework.validation.annotation.ValidationAnnotationUtils#determineValidationGroups(Object, Method)}
-	 * @return the result of validation
+	 * @return 校验结果
 	 */
 	MethodValidationResult validateArguments(
 			Object target, Method method, MethodParameter @Nullable [] parameters,
 			@Nullable Object[] arguments, Class<?>[] groups);
 
 	/**
-	 * Delegate to {@link #validateArguments} and handle the validation result,
-	 * by default raising {@link MethodValidationException} in case of errors.
-	 * Implementations may provide alternative handling, for example, injecting
-	 * {@link org.springframework.validation.Errors} into the method.
-	 * @throws MethodValidationException in case of unhandled errors.
+	 * 委托 {@link #validateArguments} 并处理校验结果，
+	 * 默认在出错时抛出 {@link MethodValidationException}。
+	 * 实现可提供替代处理方式，例如将 {@link org.springframework.validation.Errors} 注入方法。
+	 * @throws MethodValidationException 存在未处理错误时
 	 */
 	default void applyArgumentValidation(
 			Object target, Method method, MethodParameter @Nullable [] parameters,
@@ -77,11 +76,11 @@ public interface MethodValidator {
 	}
 
 	/**
-	 * Validate the given return value and return validation results.
-	 * @param target the target Object
-	 * @param method the target method
-	 * @param returnType the return parameter, if already created and available
-	 * @param returnValue the return value to validate
+	 * 校验给定返回值并返回校验结果。
+	 * @param target 目标对象
+	 * @param method 目标方法
+	 * @param returnType 返回参数（若已创建且可用）
+	 * @param returnValue 要校验的返回值
 	 * @param groups validation groups from
 	 * {@link org.springframework.validation.annotation.ValidationAnnotationUtils#determineValidationGroups(Object, Method)}
 	 * @return the result of validation
@@ -91,10 +90,10 @@ public interface MethodValidator {
 			@Nullable Object returnValue, Class<?>[] groups);
 
 	/**
-	 * Delegate to {@link #validateReturnValue} and handle the validation result,
-	 * by default raising {@link MethodValidationException} in case of errors.
-	 * Implementations may provide alternative handling.
-	 * @throws MethodValidationException in case of unhandled errors.
+	 * 委托 {@link #validateReturnValue} 并处理校验结果，
+	 * 默认在出错时抛出 {@link MethodValidationException}。
+	 * 实现可提供替代处理方式。
+	 * @throws MethodValidationException 存在未处理错误时
 	 */
 	default void applyReturnValueValidation(
 			Object target, Method method, @Nullable MethodParameter returnType,
