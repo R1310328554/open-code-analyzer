@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:27:48Z",
   "files": [
-    "redisson-spring/redisson-spring-data/redisson-spring-data-40/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStringCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-40/src/main/java/org/redisson/spring/data/connection/RedissonReactiveZSetCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-40/src/main/java/org/redisson/spring/data/connection/RedissonStreamCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonClusterConnection.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonConnection.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveHashCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveKeyCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStreamCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStringCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveZSetCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonStreamCommands.java",
-    "redisson-tomcat/redisson-tomcat-10/src/main/java/org/redisson/tomcat/RedissonSession.java",
-    "redisson-tomcat/redisson-tomcat-10/src/main/java/org/redisson/tomcat/RedissonSessionManager.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/RedissonSession.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/RedissonSessionManager.java",
     "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/RedissonSession.java",
     "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/RedissonSessionManager.java",
     "redisson-tomcat/redisson-tomcat-8/src/main/java/org/redisson/tomcat/RedissonSession.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/RedissonBucket.java"
   ],
   "remaining_pending": 1142,
-  "done": 1650
+  "done": 1665
 }
