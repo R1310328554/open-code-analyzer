@@ -34,16 +34,9 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class SpringCacheAnnotationParser — 意图说明
-
-class `SpringCacheAnnotationParser`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/cache/annotation/SpringCacheAnnotationParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Strategy implementation for parsing Spring's {@link Caching}, {@link Cacheable},
- * {@link CacheEvict}, and {@link CachePut} annotations.
+ * 解析 Spring {@link Caching}、{@link Cacheable}、{@link CacheEvict} 与
+ * {@link CachePut} 注解的策略实现。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -56,6 +49,7 @@ class `SpringCacheAnnotationParser`：请结合所属模块与调用方理解其
 @SuppressWarnings("serial")
 public class SpringCacheAnnotationParser implements CacheAnnotationParser, Serializable {
 
+	/** 所有缓存操作相关注解类型。 */
 	private static final Set<Class<? extends Annotation>> CACHE_OPERATION_ANNOTATIONS =
 			Set.of(Cacheable.class, CacheEvict.class, CachePut.class, Caching.class);
 
@@ -80,7 +74,7 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 	private @Nullable Collection<CacheOperation> parseCacheAnnotations(DefaultCacheConfig cachingConfig, AnnotatedElement ae) {
 		Collection<CacheOperation> ops = parseCacheAnnotations(cachingConfig, ae, false);
 		if (ops != null && ops.size() > 1) {
-			// More than one operation found -> local declarations override interface-declared ones...
+			// 发现多个操作 → 本地声明优先于接口声明
 			Collection<CacheOperation> localOps = parseCacheAnnotations(cachingConfig, ae, true);
 			if (localOps != null) {
 				return localOps;
@@ -195,10 +189,10 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 
 
 	/**
-	 * Validates the specified {@link CacheOperation}.
-	 * <p>Throws an {@link IllegalStateException} if the state of the operation is
-	 * invalid. As there might be multiple sources for default values, this ensures
-	 * that the operation is in a proper state before being returned.
+	 * 校验指定的 {@link CacheOperation}。
+	 * <p>若操作状态非法则抛出 {@link IllegalStateException}。
+	 * 由于默认值可能来自多处（注解本身与类级 {@link CacheConfig}），
+	 * 返回前需确保操作处于合法状态。
 	 * @param ae the annotated element of the cache operation
 	 * @param operation the {@link CacheOperation} to validate
 	 */
@@ -229,28 +223,27 @@ public class SpringCacheAnnotationParser implements CacheAnnotationParser, Seria
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class DefaultCacheConfig — 意图说明
-
-class `DefaultCacheConfig`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/cache/annotation/SpringCacheAnnotationParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Provides default settings for a given set of cache operations.
+	 * 为给定目标类提供缓存操作的默认配置（来自类级 {@link CacheConfig}）。
 	 */
 	private static class DefaultCacheConfig {
 
+		/** 承载 {@link CacheConfig} 元数据的目标类。 */
 		private final Class<?> target;
 
+		/** 类级默认缓存名称。 */
 		private String @Nullable [] cacheNames;
 
+		/** 类级默认 KeyGenerator Bean 名称。 */
 		private @Nullable String keyGenerator;
 
+		/** 类级默认 CacheManager Bean 名称。 */
 		private @Nullable String cacheManager;
 
+		/** 类级默认 CacheResolver Bean 名称。 */
 		private @Nullable String cacheResolver;
 
+		/** 是否已从 {@link CacheConfig} 加载默认值。 */
 		private boolean initialized = false;
 
 		public DefaultCacheConfig(Class<?> target) {
@@ -258,7 +251,7 @@ class `DefaultCacheConfig`：请结合所属模块与调用方理解其在整体
 		}
 
 		/**
-		 * Apply the defaults to the specified {@link CacheOperation.Builder}.
+		 * 将默认值应用到指定的 {@link CacheOperation.Builder}。
 		 * @param builder the operation builder to update
 		 */
 		public void applyDefault(CacheOperation.Builder builder) {
@@ -282,7 +275,7 @@ class `DefaultCacheConfig`：请结合所属模块与调用方理解其在整体
 			}
 
 			if (StringUtils.hasText(builder.getCacheManager()) || StringUtils.hasText(builder.getCacheResolver())) {
-				// One of these is set so we should not inherit anything
+				// 操作已显式指定其一，不再继承类级默认值
 			}
 			else if (StringUtils.hasText(this.cacheResolver)) {
 				builder.setCacheResolver(this.cacheResolver);

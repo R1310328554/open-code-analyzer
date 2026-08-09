@@ -26,17 +26,13 @@ import org.springframework.context.expression.MethodBasedEvaluationContext;
 import org.springframework.core.ParameterNameDiscoverer;
 
 /**
- * Cache-specific evaluation context that adds method parameters as SpEL
- * variables, in a lazy manner. The lazy nature avoids unnecessary
- * parsing of a class's byte code for parameter discovery.
+ * 缓存专用的 SpEL 求值上下文：以惰性方式将方法参数暴露为 SpEL 变量，
+ * 避免在不需要时解析字节码以发现参数名。
  *
- * <p>Also defines a set of "unavailable variables" (i.e. variables that should
- * lead to an exception as soon as they are accessed). This can be useful
- * to verify a condition does not match even when not all potential variables
- * are present.
+ * <p>同时维护一组「不可用变量」——一旦访问即抛出异常。
+ * 这有助于在并非所有潜在变量都已就绪时，仍能验证 condition 表达式不应匹配。
  *
- * <p>To limit the creation of objects, an ugly constructor is used
- * (rather than a dedicated 'closure'-like class for deferred execution).
+ * <p>为减少对象创建，使用包级可见构造器（而非单独的延迟执行闭包类）。
  *
  * @author Costin Leau
  * @author Stephane Nicoll
@@ -45,6 +41,7 @@ import org.springframework.core.ParameterNameDiscoverer;
  */
 class CacheEvaluationContext extends MethodBasedEvaluationContext {
 
+	/** 标记为不可用的 SpEL 变量名集合；访问时抛出 {@link VariableNotAvailableException}。 */
 	private final Set<String> unavailableVariables = new HashSet<>(1);
 
 
@@ -56,11 +53,10 @@ class CacheEvaluationContext extends MethodBasedEvaluationContext {
 
 
 	/**
-	 * Add the specified variable name as unavailable for this context.
-	 * <p>Any expression trying to access this variable should lead to an exception.
-	 * <p>This permits the validation of expressions that could potentially access
-	 * a variable even when such a variable isn't available yet. Any expression
-	 * trying to use that variable should therefore fail to evaluate.
+	 * 将指定变量名标记为不可用。
+	 * <p>任何试图访问该变量的表达式都应导致求值失败。
+	 * <p>这允许在变量尚未可用时，仍能校验可能引用该变量的表达式。
+	 * @param name the variable name
 	 */
 	public void addUnavailableVariable(String name) {
 		this.unavailableVariables.add(name);
@@ -68,7 +64,7 @@ class CacheEvaluationContext extends MethodBasedEvaluationContext {
 
 
 	/**
-	 * Load the param information only when needed.
+	 * 仅在需要时才加载方法参数信息（惰性求值）。
 	 */
 	@Override
 	public @Nullable Object lookupVariable(String name) {

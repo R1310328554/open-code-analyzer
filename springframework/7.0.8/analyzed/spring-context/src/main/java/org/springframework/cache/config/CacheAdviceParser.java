@@ -41,8 +41,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
 /**
- * {@link org.springframework.beans.factory.xml.BeanDefinitionParser
- * BeanDefinitionParser} for the {@code <tx:advice/>} tag.
+ * {@code <cache:advice/>} 标签的
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionParser BeanDefinitionParser}。
+ * 将 XML 声明的缓存操作映射为 {@link CacheInterceptor} Bean 定义。
  *
  * @author Costin Leau
  * @author Phillip Webb
@@ -73,12 +74,12 @@ class CacheAdviceParser extends AbstractSingleBeanDefinitionParser {
 
 		List<Element> cacheDefs = DomUtils.getChildElementsByTagName(element, DEFS_ELEMENT);
 		if (!cacheDefs.isEmpty()) {
-			// Using attributes source.
+			// 使用 XML 属性源（<caching> 子元素）
 			List<RootBeanDefinition> attributeSourceDefinitions = parseDefinitionsSources(cacheDefs, parserContext);
 			builder.addPropertyValue("cacheOperationSources", attributeSourceDefinitions);
 		}
 		else {
-			// Assume annotations source.
+			// 未声明 <caching> 时，默认使用注解源
 			builder.addPropertyValue("cacheOperationSources",
 					new RootBeanDefinition("org.springframework.cache.annotation.AnnotationCacheOperationSource"));
 		}
@@ -87,7 +88,6 @@ class CacheAdviceParser extends AbstractSingleBeanDefinitionParser {
 	private List<RootBeanDefinition> parseDefinitionsSources(List<Element> definitions, ParserContext parserContext) {
 		ManagedList<RootBeanDefinition> defs = new ManagedList<>(definitions.size());
 
-		// extract default param for the definition
 		for (Element element : definitions) {
 			defs.add(parseDefinitionSource(element, parserContext));
 		}
@@ -97,7 +97,7 @@ class CacheAdviceParser extends AbstractSingleBeanDefinitionParser {
 
 	private RootBeanDefinition parseDefinitionSource(Element definition, ParserContext parserContext) {
 		Props prop = new Props(definition);
-		// add cacheable first
+		// 先处理 cacheable 操作
 
 		ManagedMap<TypedStringValue, Collection<CacheOperation>> cacheOpMap = new ManagedMap<>();
 		cacheOpMap.setSource(parserContext.extractSource(definition));
@@ -171,20 +171,26 @@ class CacheAdviceParser extends AbstractSingleBeanDefinitionParser {
 
 
 	/**
-	 * Simple, reusable class used for overriding defaults.
+	 * 简单可复用类，用于从父级 {@code <caching>} 元素继承默认属性并覆盖子元素声明。
 	 */
 	private static class Props {
 
+		/** 父级默认 key SpEL 表达式。 */
 		private final String key;
 
+		/** 父级默认 KeyGenerator Bean 名称。 */
 		private final String keyGenerator;
 
+		/** 父级默认 CacheManager Bean 名称。 */
 		private final String cacheManager;
 
+		/** 父级默认 condition SpEL 表达式。 */
 		private final String condition;
 
+		/** 父级默认方法名（子元素可覆盖）。 */
 		private final String method;
 
+		/** 父级默认缓存名称数组。 */
 		private String @Nullable [] caches;
 
 		Props(Element root) {
@@ -203,7 +209,6 @@ class CacheAdviceParser extends AbstractSingleBeanDefinitionParser {
 		<T extends CacheOperation.Builder> T merge(Element element, ReaderContext readerCtx, T builder) {
 			String cache = element.getAttribute("cache");
 
-			// sanity check
 			String[] localCaches = this.caches;
 			if (StringUtils.hasText(cache)) {
 				localCaches = StringUtils.commaDelimitedListToStringArray(cache.trim());

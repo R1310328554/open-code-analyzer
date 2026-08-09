@@ -30,21 +30,19 @@ import org.springframework.core.serializer.support.SerializationDelegate;
 import org.springframework.util.Assert;
 
 /**
- * Simple {@link org.springframework.cache.Cache} implementation based on the core
- * JDK {@code java.util.concurrent} package.
+ * 基于 JDK {@code java.util.concurrent} 包的简单 {@link org.springframework.cache.Cache} 实现。
  *
- * <p>Useful for testing or simple caching scenarios, typically in combination
- * with {@link org.springframework.cache.support.SimpleCacheManager} or
- * dynamically through {@link ConcurrentMapCacheManager}.
+ * <p>适用于测试或简单缓存场景，通常与
+ * {@link org.springframework.cache.support.SimpleCacheManager} 配合使用，
+ * 或通过 {@link ConcurrentMapCacheManager} 动态创建。
  *
- * <p>Supports the  {@link #retrieve(Object)} and {@link #retrieve(Object, Supplier)}
- * operations in a best-effort fashion, relying on default {@link CompletableFuture}
- * execution (typically within the JVM's {@link ForkJoinPool#commonPool()}).
+ * <p>以尽力而为的方式支持 {@link #retrieve(Object)} 与
+ * {@link #retrieve(Object, Supplier)}，依赖默认的 {@link CompletableFuture}
+ * 执行（通常在 JVM 的 {@link ForkJoinPool#commonPool()} 中）。
  *
- * <p><b>Note:</b> As {@link ConcurrentHashMap} (the default implementation used)
- * does not allow for {@code null} values to be stored, this class will replace
- * them with a predefined internal object. This behavior can be changed through the
- * {@link #ConcurrentMapCache(String, ConcurrentMap, boolean)} constructor.
+ * <p><b>注意：</b>默认底层存储 {@link ConcurrentHashMap} 不允许 {@code null} 值，
+ * 本类会将用户传入的 {@code null} 替换为预定义的内部占位对象。
+ * 可通过 {@link #ConcurrentMapCache(String, ConcurrentMap, boolean)} 构造器改变此行为。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -54,15 +52,18 @@ import org.springframework.util.Assert;
  */
 public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 
+	/** 缓存逻辑名称。 */
 	private final String name;
 
+	/** 底层并发 Map 存储。 */
 	private final ConcurrentMap<Object, Object> store;
 
+	/** 非 {@code null} 时启用按值存储（序列化副本）；否则存引用。 */
 	private final @Nullable SerializationDelegate serialization;
 
 
 	/**
-	 * Create a new ConcurrentMapCache with the specified name.
+	 * 创建指定名称的 ConcurrentMapCache。
 	 * @param name the name of the cache
 	 */
 	public ConcurrentMapCache(String name) {
@@ -70,7 +71,7 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	}
 
 	/**
-	 * Create a new ConcurrentMapCache with the specified name.
+	 * 创建指定名称的 ConcurrentMapCache。
 	 * @param name the name of the cache
 	 * @param allowNullValues whether to accept and convert {@code null}
 	 * values for this cache
@@ -80,8 +81,7 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	}
 
 	/**
-	 * Create a new ConcurrentMapCache with the specified name and the
-	 * given internal {@link ConcurrentMap} to use.
+	 * 使用指定名称和内部 {@link ConcurrentMap} 创建 ConcurrentMapCache。
 	 * @param name the name of the cache
 	 * @param store the ConcurrentMap to use as an internal store
 	 * @param allowNullValues whether to allow {@code null} values
@@ -92,10 +92,8 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	}
 
 	/**
-	 * Create a new ConcurrentMapCache with the specified name and the
-	 * given internal {@link ConcurrentMap} to use. If the
-	 * {@link SerializationDelegate} is specified,
-	 * {@link #isStoreByValue() store-by-value} is enabled
+	 * 使用指定名称、内部 {@link ConcurrentMap} 和序列化委托创建 ConcurrentMapCache。
+	 * 若指定了 {@link SerializationDelegate}，则启用 {@link #isStoreByValue() 按值存储}。
 	 * @param name the name of the cache
 	 * @param store the ConcurrentMap to use as an internal store
 	 * @param allowNullValues whether to allow {@code null} values
@@ -117,9 +115,8 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 
 
 	/**
-	 * Return whether this cache stores a copy of each entry ({@code true}) or
-	 * a reference ({@code false}, default). If store by value is enabled, each
-	 * entry in the cache must be serializable.
+	 * 返回是否按值存储（{@code true}，序列化副本）还是存引用（{@code false}，默认）。
+	 * 按值存储时，每个条目必须可序列化。
 	 * @since 4.3
 	 */
 	public final boolean isStoreByValue() {
@@ -144,6 +141,7 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> @Nullable T get(Object key, Callable<T> valueLoader) {
+		// computeIfAbsent 保证同一 key 只加载一次
 		return (T) fromStoreValue(this.store.computeIfAbsent(key, k -> {
 			try {
 				return toStoreValue(valueLoader.call());

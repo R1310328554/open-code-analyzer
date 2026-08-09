@@ -32,20 +32,18 @@ import org.springframework.cache.CacheManager;
 import org.springframework.core.serializer.support.SerializationDelegate;
 
 /**
- * {@link CacheManager} implementation that lazily builds {@link ConcurrentMapCache}
- * instances for each {@link #getCache} request. Also supports a 'static' mode where
- * the set of cache names is pre-defined through {@link #setCacheNames}, with no
- * dynamic creation of further cache regions at runtime.
+ * 为每次 {@link #getCache} 请求惰性创建 {@link ConcurrentMapCache} 的
+ * {@link CacheManager} 实现。也支持通过 {@link #setCacheNames} 预定义缓存名称的
+ * 「静态」模式，运行时不再动态创建新缓存区域。
  *
- * <p>Supports the asynchronous {@link Cache#retrieve(Object)} and
- * {@link Cache#retrieve(Object, Supplier)} operations through basic
- * {@code CompletableFuture} adaptation, with early-determined cache misses.
+ * <p>通过基本的 {@code CompletableFuture} 适配支持异步的
+ * {@link Cache#retrieve(Object)} 与 {@link Cache#retrieve(Object, Supplier)} 操作，
+ * 可提前判定缓存未命中。
  *
- * <p>Note: This is by no means a sophisticated CacheManager; it comes with no
- * cache configuration options. However, it may be useful for testing or simple
- * caching scenarios. For advanced local caching needs, consider
- * {@link org.springframework.cache.caffeine.CaffeineCacheManager} or
- * {@link org.springframework.cache.jcache.JCacheCacheManager}.
+ * <p>注意：这并非功能完备的 CacheManager，不提供丰富的缓存配置选项。
+ * 适用于测试或简单场景；高级本地缓存需求请考虑
+ * {@link org.springframework.cache.caffeine.CaffeineCacheManager} 或
+ * {@link org.springframework.cache.jcache.JCacheCacheManager}。
  *
  * @author Juergen Hoeller
  * @since 3.1
@@ -53,27 +51,30 @@ import org.springframework.core.serializer.support.SerializationDelegate;
  */
 public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderAware {
 
+	/** 缓存名称 → {@link Cache} 实例的注册表。 */
 	private final ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<>(16);
 
+	/** {@code true} 时允许按名称动态创建缓存；{@code false} 为静态模式。 */
 	private volatile boolean dynamic = true;
 
+	/** 是否为所有缓存接受并转换 {@code null} 值。 */
 	private boolean allowNullValues = true;
 
+	/** 是否按值存储（序列化副本）而非存引用。 */
 	private boolean storeByValue = false;
 
+	/** 按值存储时使用的序列化委托；依赖 {@link #setBeanClassLoader} 注入类加载器。 */
 	private @Nullable SerializationDelegate serialization;
 
 
 	/**
-	 * Construct a dynamic ConcurrentMapCacheManager,
-	 * lazily creating cache instances as they are being requested.
+	 * 构造动态 ConcurrentMapCacheManager，按需惰性创建缓存实例。
 	 */
 	public ConcurrentMapCacheManager() {
 	}
 
 	/**
-	 * Construct a static ConcurrentMapCacheManager,
-	 * managing caches for the specified cache names only.
+	 * 构造静态 ConcurrentMapCacheManager，仅管理指定名称的缓存。
 	 */
 	public ConcurrentMapCacheManager(String... cacheNames) {
 		setCacheNames(Arrays.asList(cacheNames));
@@ -81,15 +82,11 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 
 
 	/**
-	 * Specify the set of cache names for this CacheManager's 'static' mode.
-	 * <p>The number of caches and their names will be fixed after a call
-	 * to this method, with no creation of further cache regions at runtime.
-	 * <p>Note that this method replaces existing caches of the given names
-	 * and prevents the creation of further cache regions from here on - but
-	 * does <i>not</i> remove unrelated existing caches. For a full reset,
-	 * consider calling {@link #resetCaches()} before calling this method.
-	 * <p>Calling this method with a {@code null} collection argument resets
-	 * the mode to 'dynamic', allowing for further creation of caches again.
+	 * 指定本 CacheManager 在「静态」模式下管理的缓存名称集合。
+	 * <p>调用后缓存数量与名称固定，运行时不再创建新区域。
+	 * <p>注意：此方法会替换同名已有缓存，并阻止后续动态创建——但不会删除无关的已有缓存。
+	 * 若需完全重置，可先调用 {@link #resetCaches()}。
+	 * <p>传入 {@code null} 可恢复为「动态」模式，允许再次动态创建缓存。
 	 * @see #resetCaches()
 	 */
 	public void setCacheNames(@Nullable Collection<String> cacheNames) {
@@ -105,50 +102,42 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	}
 
 	/**
-	 * Specify whether to accept and convert {@code null} values for all caches
-	 * in this cache manager.
-	 * <p>Default is "true", despite ConcurrentHashMap itself not supporting {@code null}
-	 * values. An internal holder object will be used to store user-level {@code null}s.
-	 * <p>Note: A change of the null-value setting will reset all existing caches,
-	 * if any, to reconfigure them with the new null-value requirement.
+	 * 设置是否为所有缓存接受并转换 {@code null} 值。
+	 * <p>默认为 {@code true}，尽管 ConcurrentHashMap 本身不支持 {@code null}；
+	 * 内部会使用占位对象存储用户级 {@code null}。
+	 * <p>注意：更改此设置会重建所有已有缓存实例。
 	 */
 	public void setAllowNullValues(boolean allowNullValues) {
 		if (allowNullValues != this.allowNullValues) {
 			this.allowNullValues = allowNullValues;
-			// Need to recreate all Cache instances with the new null-value configuration...
+			// 需要以新的 null 值策略重建所有 Cache 实例
 			recreateCaches();
 		}
 	}
 
 	/**
-	 * Return whether this cache manager accepts and converts {@code null} values
-	 * for all of its caches.
+	 * 返回本缓存管理器是否为所有缓存接受并转换 {@code null} 值。
 	 */
 	public boolean isAllowNullValues() {
 		return this.allowNullValues;
 	}
 
 	/**
-	 * Specify whether this cache manager stores a copy of each entry ({@code true}
-	 * or the reference ({@code false} for all of its caches.
-	 * <p>Default is "false" so that the value itself is stored and no serializable
-	 * contract is required on cached values.
-	 * <p>Note: A change of the store-by-value setting will reset all existing caches,
-	 * if any, to reconfigure them with the new store-by-value requirement.
+	 * 设置是否为所有缓存按值存储（{@code true}，序列化副本）还是存引用（{@code false}）。
+	 * <p>默认为 {@code false}，即直接存储值本身，不要求可序列化。
+	 * <p>注意：更改此设置会重建所有已有缓存实例。
 	 * @since 4.3
 	 */
 	public void setStoreByValue(boolean storeByValue) {
 		if (storeByValue != this.storeByValue) {
 			this.storeByValue = storeByValue;
-			// Need to recreate all Cache instances with the new store-by-value configuration...
+			// 需要以新的按值存储策略重建所有 Cache 实例
 			recreateCaches();
 		}
 	}
 
 	/**
-	 * Return whether this cache manager stores a copy of each entry or
-	 * a reference for all its caches. If store by value is enabled, any
-	 * cache entry must be serializable.
+	 * 返回是否为所有缓存按值存储。按值存储时，每个条目必须可序列化。
 	 * @since 4.3
 	 */
 	public boolean isStoreByValue() {
@@ -158,7 +147,7 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	@Override
 	public void setBeanClassLoader(ClassLoader classLoader) {
 		this.serialization = new SerializationDelegate(classLoader);
-		// Need to recreate all Cache instances with new ClassLoader in store-by-value mode...
+		// 按值存储模式下，需要用新 ClassLoader 重建所有 Cache 实例
 		if (isStoreByValue()) {
 			recreateCaches();
 		}
@@ -180,8 +169,8 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	}
 
 	/**
-	 * Reset this cache manager's caches, removing them completely for on-demand
-	 * re-creation in 'dynamic' mode, or simply clearing their entries otherwise.
+	 * 重置本缓存管理器的所有缓存：动态模式下完全移除以便按需重建，
+	 * 静态模式下仅清空条目。
 	 * @since 6.2.14
 	 */
 	@Override
@@ -193,7 +182,7 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	}
 
 	/**
-	 * Remove the specified cache from this cache manager.
+	 * 从本缓存管理器中移除指定名称的缓存。
 	 * @param name the name of the cache
 	 * @since 6.1.15
 	 */
@@ -201,6 +190,7 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 		this.cacheMap.remove(name);
 	}
 
+	/** 以当前配置重建 {@code cacheMap} 中所有缓存实例。 */
 	private void recreateCaches() {
 		for (Map.Entry<String, Cache> entry : this.cacheMap.entrySet()) {
 			entry.setValue(createConcurrentMapCache(entry.getKey()));
@@ -208,7 +198,7 @@ public class ConcurrentMapCacheManager implements CacheManager, BeanClassLoaderA
 	}
 
 	/**
-	 * Create a new ConcurrentMapCache instance for the specified cache name.
+	 * 为指定缓存名称创建新的 ConcurrentMapCache 实例。
 	 * @param name the name of the cache
 	 * @return the ConcurrentMapCache (or a decorator thereof)
 	 */

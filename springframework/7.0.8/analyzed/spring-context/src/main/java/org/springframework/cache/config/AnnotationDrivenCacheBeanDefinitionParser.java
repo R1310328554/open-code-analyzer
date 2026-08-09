@@ -33,21 +33,15 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link org.springframework.beans.factory.xml.BeanDefinitionParser}
- * implementation that allows users to easily configure all the
- * infrastructure beans required to enable annotation-driven cache
- * demarcation.
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionParser} 实现，
+ * 便于用户配置启用注解驱动缓存所需的全部基础设施 Bean。
  *
- * <p>By default, all proxies are created as JDK proxies. This may cause
- * some problems if you are injecting objects as concrete classes rather
- * than interfaces. To overcome this restriction you can set the
- * '{@code proxy-target-class}' attribute to '{@code true}', which will
- * result in class-based proxies being created.
+ * <p>默认所有代理均为 JDK 动态代理。若以具体类而非接口注入 Bean，
+ * 可能遇到问题；可将 {@code proxy-target-class} 属性设为 {@code true} 以使用 CGLIB 类代理。
  *
- * <p>If the JSR-107 API and Spring's JCache implementation are present,
- * the necessary infrastructure beans required to handle methods annotated
- * with {@code CacheResult}, {@code CachePut}, {@code CacheRemove} or
- * {@code CacheRemoveAll} are also registered.
+ * <p>若类路径存在 JSR-107 API 与 Spring JCache 实现，还会注册处理
+ * {@code CacheResult}、{@code CachePut}、{@code CacheRemove}、{@code CacheRemoveAll}
+ * 注解所需的基础设施 Bean。
  *
  * @author Costin Leau
  * @author Stephane Nicoll
@@ -61,8 +55,10 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 	private static final String JCACHE_ASPECT_CLASS_NAME =
 			"org.springframework.cache.aspectj.JCacheCacheAspect";
 
+	/** 类路径是否存在 JSR-107 {@code javax.cache.Cache}。 */
 	private static final boolean JSR_107_PRESENT;
 
+	/** 类路径是否存在 Spring JCache 实现。 */
 	private static final boolean JCACHE_IMPL_PRESENT;
 
 	static {
@@ -74,19 +70,18 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 
 
 	/**
-	 * Parses the '{@code <cache:annotation-driven>}' tag. Will
-	 * {@link AopNamespaceUtils#registerAutoProxyCreatorIfNecessary
-	 * register an AutoProxyCreator} with the container as necessary.
+	 * 解析 {@code <cache:annotation-driven>} 标签。
+	 * 必要时向容器 {@link AopNamespaceUtils#registerAutoProxyCreatorIfNecessary 注册 AutoProxyCreator}。
 	 */
 	@Override
 	public @Nullable BeanDefinition parse(Element element, ParserContext parserContext) {
 		String mode = element.getAttribute("mode");
 		if ("aspectj".equals(mode)) {
-			// mode="aspectj"
+			// mode="aspectj"：注册 AspectJ 切面而非 Spring AOP Advisor
 			registerCacheAspect(element, parserContext);
 		}
 		else {
-			// mode="proxy"
+			// mode="proxy"（默认）：注册 Spring AOP Advisor 链
 			registerCacheAdvisor(element, parserContext);
 		}
 
@@ -109,9 +104,9 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 	}
 
 	/**
-	 * Parse the cache resolution strategy to use. If a 'cache-resolver' attribute
-	 * is set, it is injected. Otherwise the 'cache-manager' is set. If {@code setBoth}
-	 * is {@code true}, both service are actually injected.
+	 * 解析缓存解析策略：若声明了 {@code cache-resolver} 属性则注入解析器；
+	 * 否则注入 {@code cache-manager}。{@code setBoth} 为 {@code true} 时两者都注入
+	 * （JSR-107 场景需要）。
 	 */
 	private static void parseCacheResolution(Element element, BeanDefinition def, boolean setBoth) {
 		String name = element.getAttribute("cache-resolver");
@@ -134,7 +129,7 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 
 
 	/**
-	 * Configure the necessary infrastructure to support the Spring's caching annotations.
+	 * 配置支持 Spring 缓存注解所需的基础设施 Bean。
 	 */
 	private static class SpringCachingConfigurer {
 
@@ -142,13 +137,13 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 			if (!parserContext.getRegistry().containsBeanDefinition(CacheManagementConfigUtils.CACHE_ADVISOR_BEAN_NAME)) {
 				Object eleSource = parserContext.extractSource(element);
 
-				// Create the CacheOperationSource definition.
+				// 创建 CacheOperationSource 定义
 				RootBeanDefinition sourceDef = new RootBeanDefinition("org.springframework.cache.annotation.AnnotationCacheOperationSource");
 				sourceDef.setSource(eleSource);
 				sourceDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 				String sourceName = parserContext.getReaderContext().registerWithGeneratedName(sourceDef);
 
-				// Create the CacheInterceptor definition.
+				// 创建 CacheInterceptor 定义
 				RootBeanDefinition interceptorDef = new RootBeanDefinition(CacheInterceptor.class);
 				interceptorDef.setSource(eleSource);
 				interceptorDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
@@ -158,7 +153,7 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 				interceptorDef.getPropertyValues().add("cacheOperationSources", new RuntimeBeanReference(sourceName));
 				String interceptorName = parserContext.getReaderContext().registerWithGeneratedName(interceptorDef);
 
-				// Create the CacheAdvisor definition.
+				// 创建 CacheAdvisor 定义
 				RootBeanDefinition advisorDef = new RootBeanDefinition(BeanFactoryCacheOperationSourceAdvisor.class);
 				advisorDef.setSource(eleSource);
 				advisorDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
@@ -178,7 +173,7 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 		}
 
 		/**
-		 * Registers a cache aspect.
+		 * 注册缓存 AspectJ 切面。
 		 * <pre class="code">
 		 * &lt;bean id="cacheAspect" class="org.springframework.cache.aspectj.AnnotationCacheAspect" factory-method="aspectOf"&gt;
 		 *   &lt;property name="cacheManager" ref="cacheManager"/&gt;
@@ -200,7 +195,7 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 
 
 	/**
-	 * Configure the necessary infrastructure to support the standard JSR-107 caching annotations.
+	 * 配置支持标准 JSR-107 缓存注解所需的基础设施 Bean。
 	 */
 	private static class JCacheCachingConfigurer {
 
@@ -208,11 +203,11 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 			if (!parserContext.getRegistry().containsBeanDefinition(CacheManagementConfigUtils.JCACHE_ADVISOR_BEAN_NAME)) {
 				Object source = parserContext.extractSource(element);
 
-				// Create the CacheOperationSource definition.
+				// 创建 JCache OperationSource 定义
 				BeanDefinition sourceDef = createJCacheOperationSourceBeanDefinition(element, source);
 				String sourceName = parserContext.getReaderContext().registerWithGeneratedName(sourceDef);
 
-				// Create the CacheInterceptor definition.
+				// 创建 JCacheInterceptor 定义
 				RootBeanDefinition interceptorDef =
 						new RootBeanDefinition("org.springframework.cache.jcache.interceptor.JCacheInterceptor");
 				interceptorDef.setSource(source);
@@ -221,7 +216,7 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 				parseErrorHandler(element, interceptorDef);
 				String interceptorName = parserContext.getReaderContext().registerWithGeneratedName(interceptorDef);
 
-				// Create the CacheAdvisor definition.
+				// 创建 JCache Advisor 定义
 				RootBeanDefinition advisorDef = new RootBeanDefinition(
 						"org.springframework.cache.jcache.interceptor.BeanFactoryJCacheOperationSourceAdvisor");
 				advisorDef.setSource(source);
@@ -266,8 +261,8 @@ class AnnotationDrivenCacheBeanDefinitionParser implements BeanDefinitionParser 
 					new RootBeanDefinition("org.springframework.cache.jcache.interceptor.DefaultJCacheOperationSource");
 			sourceDef.setSource(eleSource);
 			sourceDef.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-			// JSR-107 support should create an exception cache resolver with the cache manager
-			// and there is no way to set that exception cache resolver from the namespace
+			// JSR-107 需要同时注入 cacheManager 与 cacheResolver（异常缓存解析器依赖 cacheManager）
+			// 命名空间无法单独配置该异常缓存解析器
 			parseCacheResolution(element, sourceDef, true);
 			CacheNamespaceHandler.parseKeyGenerator(element, sourceDef);
 			return sourceDef;

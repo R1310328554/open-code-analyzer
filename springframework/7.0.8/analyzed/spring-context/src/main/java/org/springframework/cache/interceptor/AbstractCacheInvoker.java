@@ -26,8 +26,8 @@ import org.springframework.cache.Cache;
 import org.springframework.util.function.SingletonSupplier;
 
 /**
- * A base component for invoking {@link Cache} operations and using a
- * configurable {@link CacheErrorHandler} when an exception occurs.
+ * 调用 {@link Cache} 操作的基础组件，发生异常时使用可配置的
+ * {@link CacheErrorHandler} 处理。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -37,6 +37,7 @@ import org.springframework.util.function.SingletonSupplier;
  */
 public abstract class AbstractCacheInvoker {
 
+	/** 缓存异常处理器；默认使用 {@link SimpleCacheErrorHandler}（直接抛出异常）。 */
 	protected SingletonSupplier<CacheErrorHandler> errorHandler;
 
 
@@ -50,16 +51,15 @@ public abstract class AbstractCacheInvoker {
 
 
 	/**
-	 * Set the {@link CacheErrorHandler} instance to use to handle errors
-	 * thrown by the cache provider. By default, a {@link SimpleCacheErrorHandler}
-	 * is used who throws any exception as is.
+	 * 设置用于处理缓存提供者异常的 {@link CacheErrorHandler} 实例。
+	 * 默认使用 {@link SimpleCacheErrorHandler}，即原样抛出异常。
 	 */
 	public void setErrorHandler(CacheErrorHandler errorHandler) {
 		this.errorHandler = SingletonSupplier.of(errorHandler);
 	}
 
 	/**
-	 * Return the {@link CacheErrorHandler} to use.
+	 * 返回当前使用的 {@link CacheErrorHandler}。
 	 */
 	public CacheErrorHandler getErrorHandler() {
 		return this.errorHandler.obtain();
@@ -67,10 +67,8 @@ public abstract class AbstractCacheInvoker {
 
 
 	/**
-	 * Execute {@link Cache#get(Object)} on the specified {@link Cache} and
-	 * invoke the error handler if an exception occurs. Return {@code null}
-	 * if the handler does not throw any exception, which simulates a cache
-	 * miss in case of error.
+	 * 在指定 {@link Cache} 上执行 {@link Cache#get(Object)}；
+	 * 异常时委托错误处理器，若处理器未重新抛出则返回 {@code null} 模拟缓存未命中。
 	 * @see Cache#get(Object)
 	 */
 	protected Cache.@Nullable ValueWrapper doGet(Cache cache, Object key) {
@@ -79,15 +77,13 @@ public abstract class AbstractCacheInvoker {
 		}
 		catch (RuntimeException ex) {
 			getErrorHandler().handleCacheGetError(ex, cache, key);
-			return null;  // If the exception is handled, return a cache miss
+			return null;  // 异常被处理后，当作缓存未命中
 		}
 	}
 
 	/**
-	 * Execute {@link Cache#get(Object, Callable)} on the specified
-	 * {@link Cache} and invoke the error handler if an exception occurs.
-	 * Invokes the {@code valueLoader} if the handler does not throw any
-	 * exception, which simulates a cache read-through in case of error.
+	 * 在指定 {@link Cache} 上执行 {@link Cache#get(Object, Callable)}；
+	 * 异常时委托错误处理器，若处理器未重新抛出则调用 {@code valueLoader} 模拟 read-through。
 	 * @since 6.2
 	 * @see Cache#get(Object, Callable)
 	 */
@@ -111,10 +107,8 @@ public abstract class AbstractCacheInvoker {
 
 
 	/**
-	 * Execute {@link Cache#retrieve(Object)} on the specified {@link Cache}
-	 * and invoke the error handler if an exception occurs.
-	 * Returns {@code null} if the handler does not throw any exception, which
-	 * simulates a cache miss in case of error.
+	 * 在指定 {@link Cache} 上执行 {@link Cache#retrieve(Object)}；
+	 * 异常时委托错误处理器，若处理器未重新抛出则返回 {@code null} 模拟缓存未命中。
 	 * @since 6.2
 	 * @see Cache#retrieve(Object)
 	 */
@@ -129,10 +123,8 @@ public abstract class AbstractCacheInvoker {
 	}
 
 	/**
-	 * Execute {@link Cache#retrieve(Object, Supplier)} on the specified
-	 * {@link Cache} and invoke the error handler if an exception occurs.
-	 * Invokes the {@code valueLoader} if the handler does not throw any
-	 * exception, which simulates a cache read-through in case of error.
+	 * 在指定 {@link Cache} 上执行 {@link Cache#retrieve(Object, Supplier)}；
+	 * 异常时委托错误处理器，若处理器未重新抛出则调用 {@code valueLoader} 模拟 read-through。
 	 * @since 6.2
 	 * @see Cache#retrieve(Object, Supplier)
 	 */
@@ -147,8 +139,7 @@ public abstract class AbstractCacheInvoker {
 	}
 
 	/**
-	 * Execute {@link Cache#put(Object, Object)} on the specified {@link Cache}
-	 * and invoke the error handler if an exception occurs.
+	 * 在指定 {@link Cache} 上执行 {@link Cache#put(Object, Object)}，异常时委托错误处理器。
 	 */
 	protected void doPut(Cache cache, Object key, @Nullable Object value) {
 		try {
@@ -160,8 +151,8 @@ public abstract class AbstractCacheInvoker {
 	}
 
 	/**
-	 * Execute {@link Cache#evict(Object)}/{@link Cache#evictIfPresent(Object)} on the
-	 * specified {@link Cache} and invoke the error handler if an exception occurs.
+	 * 在指定 {@link Cache} 上执行 {@link Cache#evict(Object)} 或
+	 * {@link Cache#evictIfPresent(Object)}（由 {@code immediate} 决定），异常时委托错误处理器。
 	 */
 	protected void doEvict(Cache cache, Object key, boolean immediate) {
 		try {
@@ -178,8 +169,8 @@ public abstract class AbstractCacheInvoker {
 	}
 
 	/**
-	 * Execute {@link Cache#clear()} on the specified {@link Cache} and
-	 * invoke the error handler if an exception occurs.
+	 * 在指定 {@link Cache} 上执行 {@link Cache#clear()} 或 {@link Cache#invalidate()}，
+	 * 由 {@code immediate} 决定，异常时委托错误处理器。
 	 */
 	protected void doClear(Cache cache, boolean immediate) {
 		try {

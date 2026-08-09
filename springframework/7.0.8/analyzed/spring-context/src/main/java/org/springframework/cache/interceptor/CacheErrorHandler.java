@@ -23,14 +23,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.cache.Cache;
 
 /**
- * A strategy for handling cache-related errors. In most cases, any
- * exception thrown by the provider should simply be thrown back at
- * the client but, in some circumstances, the infrastructure may need
- * to handle cache-provider exceptions in a different way.
+ * 缓存相关异常的处理策略。多数情况下，缓存提供者抛出的异常应直接向上抛出；
+ * 但在某些场景下，基础设施需要以不同方式消化这些异常。
  *
- * <p>Typically, failing to retrieve an object from the cache with
- * a given id can be transparently managed as a cache miss by not
- * throwing back such exception.
+ * <p>典型用法：按 key 从缓存读取失败时，可不向上抛出异常，而是透明地当作缓存未命中处理。
  *
  * @author Stephane Nicoll
  * @since 4.1
@@ -38,15 +34,11 @@ import org.springframework.cache.Cache;
 public interface CacheErrorHandler {
 
 	/**
-	 * Handle the given runtime exception thrown by the cache provider when
-	 * retrieving an item with the specified {@code key}, possibly
-	 * rethrowing it as a fatal exception.
-	 * <p>Note that for a default {@code @Cacheable} setup, this will be called
-	 * after an initial cache access failure, whereas the subsequent put step may
-	 * independently fail and be handled in {@link #handleCachePutError} still.
-	 * However, for {@code @Cacheable(sync=true)}, there is only a combined get step
-	 * with {@code handleCacheGetError} being called in case of failure; there won't
-	 * be a separate put attempt after initial cache access failure anymore.
+	 * 处理缓存提供者在按 {@code key} 读取条目时抛出的运行时异常，可选择重新抛出为致命异常。
+	 * <p>对于默认的 {@code @Cacheable} 配置，初次缓存访问失败后会调用此方法；
+	 * 随后的 put 步骤可能独立失败并由 {@link #handleCachePutError} 处理。
+	 * 对于 {@code @Cacheable(sync=true)}，仅有合并的 get 步骤，失败时只调用
+	 * {@code handleCacheGetError}，初次访问失败后不再单独尝试 put。
 	 * @param exception the exception thrown by the cache provider
 	 * @param cache the cache
 	 * @param key the key used to get the item
@@ -56,9 +48,7 @@ public interface CacheErrorHandler {
 	void handleCacheGetError(RuntimeException exception, Cache cache, Object key);
 
 	/**
-	 * Handle the given runtime exception thrown by the cache provider when
-	 * updating an item with the specified {@code key} and {@code value},
-	 * possibly rethrowing it as a fatal exception.
+	 * 处理缓存提供者在按 {@code key} 和 {@code value} 更新条目时抛出的运行时异常。
 	 * @param exception the exception thrown by the cache provider
 	 * @param cache the cache
 	 * @param key the key used to update the item
@@ -68,9 +58,7 @@ public interface CacheErrorHandler {
 	void handleCachePutError(RuntimeException exception, Cache cache, Object key, @Nullable Object value);
 
 	/**
-	 * Handle the given runtime exception thrown by the cache provider when
-	 * clearing an item with the specified {@code key}, possibly rethrowing
-	 * it as a fatal exception.
+	 * 处理缓存提供者在按 {@code key} 清除条目时抛出的运行时异常。
 	 * @param exception the exception thrown by the cache provider
 	 * @param cache the cache
 	 * @param key the key used to clear the item
@@ -78,9 +66,7 @@ public interface CacheErrorHandler {
 	void handleCacheEvictError(RuntimeException exception, Cache cache, Object key);
 
 	/**
-	 * Handle the given runtime exception thrown by the cache provider when
-	 * clearing the specified {@link Cache}, possibly rethrowing it as a
-	 * fatal exception.
+	 * 处理缓存提供者在清空整个 {@link Cache} 时抛出的运行时异常。
 	 * @param exception the exception thrown by the cache provider
 	 * @param cache the cache to clear
 	 */

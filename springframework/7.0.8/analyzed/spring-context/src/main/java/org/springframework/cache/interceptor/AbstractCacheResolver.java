@@ -28,9 +28,8 @@ import org.springframework.cache.CacheManager;
 import org.springframework.util.Assert;
 
 /**
- * A base {@link CacheResolver} implementation that requires the concrete
- * implementation to provide the collection of cache name(s) based on the
- * invocation context.
+ * {@link CacheResolver} 的基础实现：要求子类根据调用上下文提供缓存名称集合，
+ * 本类负责通过 {@link CacheManager} 将名称解析为 {@link Cache} 实例。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -38,18 +37,19 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractCacheResolver implements CacheResolver, InitializingBean {
 
+	/** 用于按名称查找 {@link Cache} 的缓存管理器。 */
 	private @Nullable CacheManager cacheManager;
 
 
 	/**
-	 * Construct a new {@code AbstractCacheResolver}.
+	 * 构造新的 {@code AbstractCacheResolver}。
 	 * @see #setCacheManager
 	 */
 	protected AbstractCacheResolver() {
 	}
 
 	/**
-	 * Construct a new {@code AbstractCacheResolver} for the given {@link CacheManager}.
+	 * 使用给定 {@link CacheManager} 构造 {@code AbstractCacheResolver}。
 	 * @param cacheManager the CacheManager to use
 	 */
 	protected AbstractCacheResolver(CacheManager cacheManager) {
@@ -58,14 +58,14 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 
 
 	/**
-	 * Set the {@link CacheManager} that this instance should use.
+	 * 设置本实例使用的 {@link CacheManager}。
 	 */
 	public void setCacheManager(CacheManager cacheManager) {
 		this.cacheManager = cacheManager;
 	}
 
 	/**
-	 * Return the {@link CacheManager} that this instance uses.
+	 * 返回本实例使用的 {@link CacheManager}。
 	 */
 	public CacheManager getCacheManager() {
 		Assert.state(this.cacheManager != null, "No CacheManager set");
@@ -97,9 +97,8 @@ public abstract class AbstractCacheResolver implements CacheResolver, Initializi
 	}
 
 	/**
-	 * Provide the name of the cache(s) to resolve against the current cache manager.
-	 * <p>It is acceptable to return {@code null} to indicate that no cache could
-	 * be resolved for this invocation.
+	 * 根据当前缓存管理器，提供本次调用应使用的缓存名称。
+	 * <p>可返回 {@code null} 表示本次调用无需解析任何缓存。
 	 * @param context the context of the particular invocation
 	 * @return the cache name(s) to resolve, or {@code null} if no cache should be resolved
 	 */

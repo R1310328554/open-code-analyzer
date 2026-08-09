@@ -21,8 +21,8 @@ import org.springframework.aop.Pointcut;
 import org.springframework.aop.support.AbstractBeanFactoryPointcutAdvisor;
 
 /**
- * Advisor driven by a {@link CacheOperationSource}, used to include a
- * cache advice bean for methods that are cacheable.
+ * 由 {@link CacheOperationSource} 驱动的 Advisor，为可缓存方法织入
+ * {@link CacheInterceptor} 通知。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -33,13 +33,13 @@ import org.springframework.aop.support.AbstractBeanFactoryPointcutAdvisor;
 @SuppressWarnings("serial")
 public class BeanFactoryCacheOperationSourceAdvisor extends AbstractBeanFactoryPointcutAdvisor {
 
+	/** 根据缓存操作元数据匹配目标方法的切点。 */
 	private final CacheOperationSourcePointcut pointcut = new CacheOperationSourcePointcut();
 
 
 	/**
-	 * Set the cache operation attribute source which is used to find cache
-	 * attributes. This should usually be identical to the source reference
-	 * set on the cache interceptor itself.
+	 * 设置用于查找缓存操作属性的来源，通常应与
+	 * {@link CacheInterceptor} 上配置的来源一致。
 	 * @see CacheInterceptor#setCacheOperationSource
 	 */
 	public void setCacheOperationSource(CacheOperationSource cacheOperationSource) {
@@ -47,8 +47,8 @@ public class BeanFactoryCacheOperationSourceAdvisor extends AbstractBeanFactoryP
 	}
 
 	/**
-	 * Set the {@link ClassFilter} to use for this pointcut.
-	 * Default is {@link ClassFilter#TRUE}.
+	 * 设置此切点使用的 {@link ClassFilter}。
+	 * 默认为 {@link ClassFilter#TRUE}（匹配所有类）。
 	 */
 	public void setClassFilter(ClassFilter classFilter) {
 		this.pointcut.setClassFilter(classFilter);

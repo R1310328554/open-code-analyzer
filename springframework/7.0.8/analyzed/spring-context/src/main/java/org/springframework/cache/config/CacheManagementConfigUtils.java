@@ -17,34 +17,26 @@
 package org.springframework.cache.config;
 
 /**
- * Configuration constants for internal sharing across subpackages.
+ * 缓存管理 XML 配置子包之间共享的内部常量。
  *
  * @author Juergen Hoeller
  * @since 4.1
  */
 public abstract class CacheManagementConfigUtils {
 
-	/**
-	 * The name of the cache advisor bean.
-	 */
+	/** Spring 缓存 Advisor Bean 的注册名称。 */
 	public static final String CACHE_ADVISOR_BEAN_NAME =
 			"org.springframework.cache.config.internalCacheAdvisor";
 
-	/**
-	 * The name of the cache aspect bean.
-	 */
+	/** Spring 缓存 AspectJ 切面 Bean 的注册名称。 */
 	public static final String CACHE_ASPECT_BEAN_NAME =
 			"org.springframework.cache.config.internalCacheAspect";
 
-	/**
-	 * The name of the JCache advisor bean.
-	 */
+	/** JSR-107 JCache Advisor Bean 的注册名称。 */
 	public static final String JCACHE_ADVISOR_BEAN_NAME =
 			"org.springframework.cache.config.internalJCacheAdvisor";
 
-	/**
-	 * The name of the JCache advisor bean.
-	 */
+	/** JSR-107 JCache AspectJ 切面 Bean 的注册名称。 */
 	public static final String JCACHE_ASPECT_BEAN_NAME =
 			"org.springframework.cache.config.internalJCacheAspect";
 
