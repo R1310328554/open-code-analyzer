@@ -36,8 +36,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.function.SingletonSupplier;
 
 /**
- * Abstract base {@code @Configuration} class providing common structure
- * for enabling Spring's annotation-driven cache management capability.
+ * 抽象基类 {@code @Configuration}，为启用 Spring 基于注解的缓存管理能力提供通用结构。
  *
  * @author Chris Beams
  * @author Stephane Nicoll
@@ -48,23 +47,29 @@ import org.springframework.util.function.SingletonSupplier;
 @Configuration(proxyBeanMethods = false)
 public abstract class AbstractCachingConfiguration implements ImportAware {
 
+	/** {@code @EnableCaching} 注解属性。 */
 	protected @Nullable AnnotationAttributes enableCaching;
 
+	/** 缓存管理器供应者。 */
 	@SuppressWarnings("NullAway.Init")
 	protected Supplier<@Nullable CacheManager> cacheManager;
 
+	/** 缓存解析器供应者。 */
 	@SuppressWarnings("NullAway.Init")
 	protected Supplier<@Nullable CacheResolver> cacheResolver;
 
+	/** 键生成器供应者。 */
 	@SuppressWarnings("NullAway.Init")
 	protected Supplier<@Nullable KeyGenerator> keyGenerator;
 
+	/** 缓存错误处理器供应者。 */
 	@SuppressWarnings("NullAway.Init")
 	protected Supplier<@Nullable CacheErrorHandler> errorHandler;
 
 
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
+		// 从导入元数据读取 @EnableCaching 属性
 		this.enableCaching = AnnotationAttributes.fromMap(
 				importMetadata.getAnnotationAttributes(EnableCaching.class.getName()));
 		if (this.enableCaching == null) {
@@ -76,10 +81,12 @@ public abstract class AbstractCachingConfiguration implements ImportAware {
 	@Autowired
 	void setConfigurers(ObjectProvider<CachingConfigurer> configurers) {
 		Supplier<@Nullable CachingConfigurer> configurer = () -> {
+			// 收集所有 CachingConfigurer 候选
 			List<CachingConfigurer> candidates = configurers.stream().toList();
 			if (CollectionUtils.isEmpty(candidates)) {
 				return null;
 			}
+			// 仅允许唯一实现
 			if (candidates.size() > 1) {
 				throw new IllegalStateException(candidates.size() + " implementations of " +
 						"CachingConfigurer were found when only 1 was expected. " +
@@ -92,7 +99,7 @@ public abstract class AbstractCachingConfiguration implements ImportAware {
 	}
 
 	/**
-	 * Extract the configuration from the nominated {@link CachingConfigurer}.
+	 * 从指定的 {@link CachingConfigurer} 提取配置。
 	 */
 	protected void useCachingConfigurer(CachingConfigurerSupplier cachingConfigurerSupplier) {
 		this.cacheManager = cachingConfigurerSupplier.adapt(CachingConfigurer::cacheManager);
@@ -111,13 +118,11 @@ public abstract class AbstractCachingConfiguration implements ImportAware {
 		}
 
 		/**
-		 * Adapt the {@link CachingConfigurer} supplier to another supplier
-		 * provided by the specified mapping function. If the underlying
-		 * {@link CachingConfigurer} is {@code null}, {@code null} is returned
-		 * and the mapping function is not invoked.
-		 * @param provider the provider to use to adapt the supplier
-		 * @param <T> the type of the supplier
-		 * @return another supplier mapped by the specified function
+		 * 将 {@link CachingConfigurer} 供应者适配为指定映射函数提供的另一供应者。
+		 * 若底层 {@link CachingConfigurer} 为 {@code null}，则返回 {@code null} 且不调用映射函数。
+		 * @param provider 用于适配供应者的提供者
+		 * @param <T> 供应者类型
+		 * @return 由指定函数映射的另一供应者
 		 */
 		public <T> Supplier<@Nullable T> adapt(Function<CachingConfigurer, @Nullable T> provider) {
 			return () -> {

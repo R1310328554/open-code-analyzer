@@ -21,9 +21,9 @@ import java.util.Collection;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Spring's central cache manager SPI.
+ * Spring 中央缓存管理器 SPI。
  *
- * <p>Allows for retrieving named {@link Cache} regions.
+ * <p>允许按名称获取 {@link Cache} 区域。
  *
  * @author Costin Leau
  * @author Sam Brannen
@@ -33,42 +33,36 @@ import org.jspecify.annotations.Nullable;
 public interface CacheManager {
 
 	/**
-	 * Get the cache associated with the given name.
-	 * <p>Note that the cache may be lazily created at runtime if the
-	 * native provider supports it.
-	 * @param name the cache identifier (must not be {@code null})
-	 * @return the associated cache, or {@code null} if such a cache
-	 * does not exist or could be not created
+	 * 获取与给定名称关联的缓存。
+	 * <p>注意，若原生提供者支持，缓存可能在运行时惰性创建。
+	 * @param name 缓存标识符（不得为 {@code null}）
+	 * @return 关联的缓存，或若不存在或无法创建则返回 {@code null}
 	 */
 	@Nullable Cache getCache(String name);
 
 	/**
-	 * Get a collection of the cache names known by this manager.
-	 * @return the names of all caches known by the cache manager
+	 * 获取本管理器已知的缓存名称集合。
+	 * @return 缓存管理器已知的所有缓存名称
 	 */
 	Collection<String> getCacheNames();
 
 	/**
-	 * Remove all registered caches from this cache manager if possible,
-	 * re-creating them on demand. After this call, {@link #getCacheNames()}
-	 * will possibly be empty and the cache provider will have dropped all
-	 * cache management state.
-	 * <p>Alternatively, an implementation may perform an equivalent reset
-	 * on fixed existing cache regions without actually dropping the cache.
-	 * This behavior will be indicated by {@link #getCacheNames()} still
-	 * exposing a non-empty set of names, whereas the corresponding cache
-	 * regions will not contain cache entries anymore.
-	 * <p>The default implementation calls {@link Cache#clear} on all
-	 * registered caches, retaining all caches as registered, satisfying
-	 * the alternative implementation path above. Custom implementations
-	 * may either drop the actual caches (re-creating them on demand) or
-	 * perform a more exhaustive reset at the actual cache provider level.
+	 * 若可能，从本缓存管理器移除所有已注册缓存，并按需重新创建。
+	 * 调用后，{@link #getCacheNames()} 可能为空，缓存提供者将丢弃所有缓存管理状态。
+	 * <p>或者，实现可对固定现有缓存区域执行等效重置而不实际丢弃缓存。
+	 * 此行为表现为 {@link #getCacheNames()} 仍暴露非空名称集，
+	 * 而对应缓存区域不再包含缓存条目。
+	 * <p>默认实现对所有已注册缓存调用 {@link Cache#clear}，保留所有已注册缓存，
+	 * 满足上述替代实现路径。自定义实现可丢弃实际缓存（按需重新创建），
+	 * 或在实际缓存提供者级别执行更彻底的重置。
 	 * @since 7.0.2
 	 * @see Cache#clear()
 	 */
 	default void resetCaches() {
+		// 遍历所有已知缓存名称
 		for (String cacheName : getCacheNames()) {
 			Cache cache = getCache(cacheName);
+			// 对每个缓存执行清空
 			if (cache != null) {
 				cache.clear();
 			}

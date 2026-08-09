@@ -24,13 +24,12 @@ import org.springframework.cache.interceptor.CacheResolver;
 import org.springframework.cache.interceptor.KeyGenerator;
 
 /**
- * An implementation of {@link CachingConfigurer} with empty methods allowing
- * subclasses to override only the methods they're interested in.
+ * {@link CachingConfigurer} 的实现，提供空方法以便子类仅覆盖感兴趣的方法。
  *
  * @author Stephane Nicoll
  * @since 4.1
  * @see CachingConfigurer
- * @deprecated as of 6.0 in favor of implementing {@link CachingConfigurer} directly
+ * @deprecated 自 6.0 起弃用，建议直接实现 {@link CachingConfigurer}
  */
 @Deprecated(since = "6.0")
 public class CachingConfigurerSupport implements CachingConfigurer {

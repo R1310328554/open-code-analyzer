@@ -24,18 +24,17 @@ import org.springframework.cache.interceptor.CacheResolver;
 import org.springframework.cache.interceptor.KeyGenerator;
 
 /**
- * Interface to be implemented for explicitly specifying how caches are resolved
- * and how keys are generated for annotation-driven cache management.
+ * 为基于注解的缓存管理显式指定如何解析缓存及如何生成键的接口。
  *
- * <p>Typically implemented by @{@link org.springframework.context.annotation.Configuration
- * Configuration} classes annotated with @{@link EnableCaching}.
- * See @{@link EnableCaching} for general examples and context; see
- * {@link #cacheManager()}, {@link #cacheResolver()}, {@link #keyGenerator()},
- * and {@link #errorHandler()} for detailed instructions.
+ * <p>通常由带有 @{@link org.springframework.context.annotation.Configuration
+ * Configuration} 注解并实现 @{@link EnableCaching} 的配置类实现。
+ * 一般示例和上下文参见 @{@link EnableCaching}；详细说明参见
+ * {@link #cacheManager()}、{@link #cacheResolver()}、{@link #keyGenerator()}
+ * 和 {@link #errorHandler()}。
  *
- * <p><b>NOTE: A {@code CachingConfigurer} will get initialized early.</b>
- * Do not inject common dependencies into autowired fields directly; instead, consider
- * declaring a lazy {@link org.springframework.beans.factory.ObjectProvider} for those.
+ * <p><b>注意：{@code CachingConfigurer} 将较早初始化。</b>
+ * 不要直接向自动装配字段注入常见依赖；可考虑为这些依赖声明惰性
+ * {@link org.springframework.beans.factory.ObjectProvider}。
  *
  * @author Chris Beams
  * @author Stephane Nicoll
@@ -45,14 +44,12 @@ import org.springframework.cache.interceptor.KeyGenerator;
 public interface CachingConfigurer {
 
 	/**
-	 * Return the cache manager bean to use for annotation-driven cache
-	 * management. A default {@link CacheResolver} will be initialized
-	 * behind the scenes with this cache manager. For more fine-grained
-	 * management of the cache resolution, consider setting the
-	 * {@link CacheResolver} directly.
-	 * <p>Implementations must explicitly declare
-	 * {@link org.springframework.context.annotation.Bean @Bean} so that
-	 * the cache manager participates in the lifecycle of the context, for example,
+	 * 返回用于基于注解的缓存管理的缓存管理器 Bean。
+	 * 将在此缓存管理器背后初始化默认 {@link CacheResolver}。
+	 * 若要更精细地管理缓存解析，可考虑直接设置 {@link CacheResolver}。
+	 * <p>实现必须显式声明
+	 * {@link org.springframework.context.annotation.Bean @Bean}，以便缓存管理器
+	 * 参与上下文生命周期，例如：
 	 * <pre class="code">
 	 * &#064;Configuration
 	 * &#064;EnableCaching
@@ -65,21 +62,19 @@ public interface CachingConfigurer {
 	 *     // ...
 	 * }
 	 * </pre>
-	 * See @{@link EnableCaching} for more complete examples.
+	 * 更完整示例参见 @{@link EnableCaching}。
 	 */
 	default @Nullable CacheManager cacheManager() {
 		return null;
 	}
 
 	/**
-	 * Return the {@link CacheResolver} bean to use to resolve regular caches for
-	 * annotation-driven cache management. This is an alternative and more powerful
-	 * option of specifying the {@link CacheManager} to use.
-	 * <p>If both a {@link #cacheManager()} and {@code cacheResolver()} are set,
-	 * the cache manager is ignored.
-	 * <p>Implementations must explicitly declare
-	 * {@link org.springframework.context.annotation.Bean @Bean} so that
-	 * the cache resolver participates in the lifecycle of the context, for example,
+	 * 返回用于为基于注解的缓存管理解析常规缓存的 {@link CacheResolver} Bean。
+	 * 这是指定所用 {@link CacheManager} 的替代且更强大的选项。
+	 * <p>若同时设置了 {@link #cacheManager()} 和 {@code cacheResolver()}，则忽略缓存管理器。
+	 * <p>实现必须显式声明
+	 * {@link org.springframework.context.annotation.Bean @Bean}，以便缓存解析器
+	 * 参与上下文生命周期，例如：
 	 * <pre class="code">
 	 * &#064;Configuration
 	 * &#064;EnableCaching
@@ -92,27 +87,26 @@ public interface CachingConfigurer {
 	 *     // ...
 	 * }
 	 * </pre>
-	 * See {@link EnableCaching} for more complete examples.
+	 * 更完整示例参见 {@link EnableCaching}。
 	 */
 	default @Nullable CacheResolver cacheResolver() {
 		return null;
 	}
 
 	/**
-	 * Return the key generator bean to use for annotation-driven cache management.
-	 * <p>By default, {@link org.springframework.cache.interceptor.SimpleKeyGenerator}
-	 * is used.
-	 * See @{@link EnableCaching} for more complete examples.
+	 * 返回用于基于注解的缓存管理的键生成器 Bean。
+	 * <p>默认使用 {@link org.springframework.cache.interceptor.SimpleKeyGenerator}。
+	 * 更完整示例参见 @{@link EnableCaching}。
 	 */
 	default @Nullable KeyGenerator keyGenerator() {
 		return null;
 	}
 
 	/**
-	 * Return the {@link CacheErrorHandler} to use to handle cache-related errors.
-	 * <p>By default, {@link org.springframework.cache.interceptor.SimpleCacheErrorHandler}
-	 * is used, which throws the exception back at the client.
-	 * See @{@link EnableCaching} for more complete examples.
+	 * 返回用于处理缓存相关错误的 {@link CacheErrorHandler}。
+	 * <p>默认使用 {@link org.springframework.cache.interceptor.SimpleCacheErrorHandler}，
+	 * 将异常抛回客户端。
+	 * 更完整示例参见 @{@link EnableCaching}。
 	 */
 	default @Nullable CacheErrorHandler errorHandler() {
 		return null;

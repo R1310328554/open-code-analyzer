@@ -27,11 +27,9 @@ import org.springframework.aot.hint.annotation.Reflective;
 import org.springframework.core.annotation.AliasFor;
 
 /**
- * Annotation indicating that a method (or all methods on a class) triggers a
- * {@link org.springframework.cache.Cache#evict(Object) cache evict} operation.
+ * 指示方法（或类上所有方法）触发 {@link org.springframework.cache.Cache#evict(Object) 缓存驱逐} 操作的注解。
  *
- * <p>This annotation may be used as a <em>meta-annotation</em> to create custom
- * <em>composed annotations</em> with attribute overrides.
+ * <p>可作为<em>元注解</em>使用，以创建带属性覆盖的自定义<em>组合注解</em>。
  *
  * @author Costin Leau
  * @author Stephane Nicoll
@@ -49,17 +47,15 @@ import org.springframework.core.annotation.AliasFor;
 public @interface CacheEvict {
 
 	/**
-	 * Alias for {@link #cacheNames}.
-	 * <p>Intended to be used when no other attributes are needed, for example:
-	 * {@code @CacheEvict("books")}.
+	 * {@link #cacheNames} 的别名。
+	 * <p>适用于无需其他属性时，例如：{@code @CacheEvict("books")}。
 	 */
 	@AliasFor("cacheNames")
 	String[] value() default {};
 
 	/**
-	 * Names of the caches to use for the cache eviction operation.
-	 * <p>Names may be used to determine the target cache (or caches), matching
-	 * the qualifier value or bean name of a specific bean definition.
+	 * 用于缓存驱逐操作的缓存名称。
+	 * <p>名称可用于确定目标缓存，匹配特定 Bean 定义的限定符值或 Bean 名称。
 	 * @since 4.2
 	 * @see #value
 	 * @see CacheConfig#cacheNames
@@ -68,89 +64,70 @@ public @interface CacheEvict {
 	String[] cacheNames() default {};
 
 	/**
-	 * Spring Expression Language (SpEL) expression for computing the key dynamically.
-	 * <p>Default is {@code ""}, meaning all method parameters are considered as a key,
-	 * unless a custom {@link #keyGenerator} has been set.
-	 * <p>The SpEL expression evaluates against a dedicated context that provides the
-	 * following meta-data:
+	 * 用于动态计算键的 Spring 表达式语言（SpEL）表达式。
+	 * <p>默认为 {@code ""}，表示所有方法参数均视为键，除非设置了自定义 {@link #keyGenerator}。
+	 * <p>SpEL 表达式针对提供以下元数据的专用上下文求值：
 	 * <ul>
-	 * <li>{@code #result} for a reference to the result of the method invocation, which
-	 * can only be used if {@link #beforeInvocation()} is {@code false}. For supported
-	 * wrappers such as {@code Optional}, {@code #result} refers to the actual object,
-	 * not the wrapper</li>
-	 * <li>{@code #root.method}, {@code #root.target}, and {@code #root.caches} for
-	 * references to the {@link java.lang.reflect.Method method}, target object, and
-	 * affected cache(s) respectively.</li>
-	 * <li>Shortcuts for the method name ({@code #root.methodName}) and target class
-	 * ({@code #root.targetClass}) are also available.
-	 * <li>Method arguments can be accessed by index. For instance the second argument
-	 * can be accessed via {@code #root.args[1]}, {@code #p1} or {@code #a1}. Arguments
-	 * can also be accessed by name if that information is available.</li>
+	 * <li>{@code #result} 引用方法调用结果，仅当 {@link #beforeInvocation()} 为 {@code false} 时可用。
+	 * 对于 {@code Optional} 等支持的包装类型，{@code #result} 引用实际对象而非包装器</li>
+	 * <li>{@code #root.method}、{@code #root.target} 和 {@code #root.caches} 分别引用
+	 * {@link java.lang.reflect.Method method}、目标对象和受影响的缓存</li>
+	 * <li>方法名（{@code #root.methodName}）和目标类（{@code #root.targetClass}）的快捷方式也可用</li>
+	 * <li>方法参数可通过索引访问。例如第二个参数可通过 {@code #root.args[1]}、{@code #p1}
+	 * 或 {@code #a1} 访问。若有信息可用，也可按名称访问参数</li>
 	 * </ul>
 	 */
 	String key() default "";
 
 	/**
-	 * The bean name of the custom {@link org.springframework.cache.interceptor.KeyGenerator}
-	 * to use.
-	 * <p>Mutually exclusive with the {@link #key} attribute.
+	 * 要使用的自定义 {@link org.springframework.cache.interceptor.KeyGenerator} 的 Bean 名称。
+	 * <p>与 {@link #key} 属性互斥。
 	 * @see CacheConfig#keyGenerator
 	 */
 	String keyGenerator() default "";
 
 	/**
-	 * The bean name of the custom {@link org.springframework.cache.CacheManager} to use to
-	 * create a default {@link org.springframework.cache.interceptor.CacheResolver} if none
-	 * is set already.
-	 * <p>Mutually exclusive with the {@link #cacheResolver} attribute.
+	 * 用于创建默认 {@link org.springframework.cache.interceptor.CacheResolver} 的
+	 * 自定义 {@link org.springframework.cache.CacheManager} 的 Bean 名称（若尚未设置）。
+	 * <p>与 {@link #cacheResolver} 属性互斥。
 	 * @see org.springframework.cache.interceptor.SimpleCacheResolver
 	 * @see CacheConfig#cacheManager
 	 */
 	String cacheManager() default "";
 
 	/**
-	 * The bean name of the custom {@link org.springframework.cache.interceptor.CacheResolver}
-	 * to use.
+	 * 要使用的自定义 {@link org.springframework.cache.interceptor.CacheResolver} 的 Bean 名称。
 	 * @see CacheConfig#cacheResolver
 	 */
 	String cacheResolver() default "";
 
 	/**
-	 * Spring Expression Language (SpEL) expression used for making the cache
-	 * eviction operation conditional. Evict that cache if the condition evaluates
-	 * to {@code true}.
-	 * <p>Default is {@code ""}, meaning the cache eviction is always performed.
-	 * <p>The SpEL expression evaluates against a dedicated context that provides the
-	 * following meta-data:
+	 * 用于使缓存驱逐操作条件化的 Spring 表达式语言（SpEL）表达式。
+	 * 若条件求值为 {@code true} 则驱逐缓存。
+	 * <p>默认为 {@code ""}，表示始终执行缓存驱逐。
+	 * <p>SpEL 表达式针对提供以下元数据的专用上下文求值：
 	 * <ul>
-	 * <li>{@code #root.method}, {@code #root.target}, and {@code #root.caches} for
-	 * references to the {@link java.lang.reflect.Method method}, target object, and
-	 * affected cache(s) respectively.</li>
-	 * <li>Shortcuts for the method name ({@code #root.methodName}) and target class
-	 * ({@code #root.targetClass}) are also available.
-	 * <li>Method arguments can be accessed by index. For instance the second argument
-	 * can be accessed via {@code #root.args[1]}, {@code #p1} or {@code #a1}. Arguments
-	 * can also be accessed by name if that information is available.</li>
+	 * <li>{@code #root.method}、{@code #root.target} 和 {@code #root.caches} 分别引用
+	 * {@link java.lang.reflect.Method method}、目标对象和受影响的缓存</li>
+	 * <li>方法名（{@code #root.methodName}）和目标类（{@code #root.targetClass}）的快捷方式也可用</li>
+	 * <li>方法参数可通过索引访问。例如第二个参数可通过 {@code #root.args[1]}、{@code #p1}
+	 * 或 {@code #a1} 访问。若有信息可用，也可按名称访问参数</li>
 	 * </ul>
 	 */
 	String condition() default "";
 
 	/**
-	 * Whether all the entries inside the cache(s) are removed.
-	 * <p>By default, only the value under the associated key is removed.
-	 * <p>Note that setting this parameter to {@code true} and specifying a
-	 * {@link #key} is not allowed.
+	 * 是否移除缓存内所有条目。
+	 * <p>默认仅移除关联键下的值。
+	 * <p>注意，将此参数设为 {@code true} 同时指定 {@link #key} 是不允许的。
 	 */
 	boolean allEntries() default false;
 
 	/**
-	 * Whether the eviction should occur before the method is invoked.
-	 * <p>Setting this attribute to {@code true}, causes the eviction to
-	 * occur irrespective of the method outcome (i.e., whether it threw an
-	 * exception or not).
-	 * <p>Defaults to {@code false}, meaning that the cache eviction operation
-	 * will occur <em>after</em> the advised method is invoked successfully (i.e.
-	 * only if the invocation did not throw an exception).
+	 * 驱逐是否应在方法调用之前发生。
+	 * <p>将此属性设为 {@code true} 时，无论方法结果如何（即是否抛出异常）都会执行驱逐。
+	 * <p>默认为 {@code false}，表示缓存驱逐操作将在被通知方法成功调用<em>之后</em>发生
+	 * （即仅当调用未抛出异常时）。
 	 */
 	boolean beforeInvocation() default false;
 

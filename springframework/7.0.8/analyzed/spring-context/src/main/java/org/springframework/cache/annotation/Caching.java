@@ -26,10 +26,9 @@ import java.lang.annotation.Target;
 import org.springframework.aot.hint.annotation.Reflective;
 
 /**
- * Group annotation for multiple cache annotations (of different or the same type).
+ * 用于组合多个缓存注解（不同类型或相同类型）的分组注解。
  *
- * <p>This annotation may be used as a <em>meta-annotation</em> to create custom
- * <em>composed annotations</em> with attribute overrides.
+ * <p>可作为<em>元注解</em>使用，以创建带属性覆盖的自定义<em>组合注解</em>。
  *
  * @author Costin Leau
  * @author Chris Beams

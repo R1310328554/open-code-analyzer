@@ -23,15 +23,13 @@ import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interface that defines common cache operations.
+ * 定义通用缓存操作的接口。
  *
- * <p>Serves primarily as an SPI for Spring's annotation-based caching
- * model ({@link org.springframework.cache.annotation.Cacheable} and co)
- * and secondarily as an API for direct usage in applications.
+ * <p>主要作为 Spring 基于注解的缓存模型（{@link org.springframework.cache.annotation.Cacheable} 等）
+ * 的 SPI，其次也可在应用中直接作为 API 使用。
  *
- * <p><b>Note:</b> Due to the generic use of caching, it is recommended
- * that implementations allow storage of {@code null} values
- * (for example to cache methods that return {@code null}).
+ * <p><b>注意：</b>鉴于缓存的通用用途，建议实现允许存储 {@code null} 值
+ *（例如缓存返回 {@code null} 的方法）。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -43,93 +41,71 @@ import org.jspecify.annotations.Nullable;
 public interface Cache {
 
 	/**
-	 * Return the cache name.
+	 * 返回缓存名称。
 	 */
 	String getName();
 
 	/**
-	 * Return the underlying native cache provider.
+	 * 返回底层原生缓存提供者。
 	 */
 	Object getNativeCache();
 
 	/**
-	 * Return the value to which this cache maps the specified key.
-	 * <p>Returns {@code null} if the cache contains no mapping for this key;
-	 * otherwise, the cached value (which may be {@code null} itself) will
-	 * be returned in a {@link ValueWrapper}.
-	 * @param key the key whose associated value is to be returned
-	 * @return the value to which this cache maps the specified key,
-	 * contained within a {@link ValueWrapper} which may also hold
-	 * a cached {@code null} value. A straight {@code null} being
-	 * returned means that the cache contains no mapping for this key.
+	 * 返回此缓存将指定键映射到的值。
+	 * <p>若缓存不包含该键的映射则返回 {@code null}；
+	 * 否则，缓存的值（其本身可能为 {@code null}）将封装在 {@link ValueWrapper} 中返回。
+	 * @param key 要返回其关联值的键
+	 * @return 此缓存将指定键映射到的值，封装在 {@link ValueWrapper} 中，
+	 * 其中也可能持有缓存的 {@code null} 值。直接返回 {@code null} 表示
+	 * 缓存不包含该键的映射。
 	 * @see #get(Object, Class)
 	 * @see #get(Object, Callable)
 	 */
 	@Nullable ValueWrapper get(Object key);
 
 	/**
-	 * Return the value to which this cache maps the specified key,
-	 * generically specifying a type that return value will be cast to.
-	 * <p>Note: This variant of {@code get} does not allow for differentiating
-	 * between a cached {@code null} value and no cache entry found at all.
-	 * Use the standard {@link #get(Object)} variant for that purpose instead.
-	 * @param key the key whose associated value is to be returned
-	 * @param type the required type of the returned value (may be
-	 * {@code null} to bypass a type check; in case of a {@code null}
-	 * value found in the cache, the specified type is irrelevant)
-	 * @return the value to which this cache maps the specified key
-	 * (which may be {@code null} itself), or also {@code null} if
-	 * the cache contains no mapping for this key
-	 * @throws IllegalStateException if a cache entry has been found
-	 * but failed to match the specified type
+	 * 返回此缓存将指定键映射到的值，并泛式指定返回值的类型。
+	 * <p>注意：此 {@code get} 变体无法区分缓存的 {@code null} 值与完全无缓存条目。
+	 * 为此目的请使用标准 {@link #get(Object)} 变体。
+	 * @param key 要返回其关联值的键
+	 * @param type 返回值的所需类型（可为 {@code null} 以跳过类型检查；
+	 * 若在缓存中发现 {@code null} 值，指定类型无关紧要）
+	 * @return 此缓存将指定键映射到的值（其本身可能为 {@code null}），
+	 * 或若缓存不包含该键的映射则也为 {@code null}
+	 * @throws IllegalStateException 若找到缓存条目但无法匹配指定类型
 	 * @since 4.0
 	 * @see #get(Object)
 	 */
 	<T> @Nullable T get(Object key, @Nullable Class<T> type);
 
 	/**
-	 * Return the value to which this cache maps the specified key, obtaining
-	 * that value from {@code valueLoader} if necessary. This method provides
-	 * a simple substitute for the conventional "if cached, return; otherwise
-	 * create, cache and return" pattern.
-	 * <p>If possible, implementations should ensure that the loading operation
-	 * is synchronized so that the specified {@code valueLoader} is only called
-	 * once in case of concurrent access on the same key.
-	 * <p>If the {@code valueLoader} throws an exception, it is wrapped in
-	 * a {@link ValueRetrievalException}
-	 * @param key the key whose associated value is to be returned
-	 * @return the value to which this cache maps the specified key
-	 * @throws ValueRetrievalException if the {@code valueLoader} throws an exception
+	 * 返回此缓存将指定键映射到的值，必要时从 {@code valueLoader} 获取。
+	 * 此方法为常见的「若已缓存则返回，否则创建、缓存并返回」模式提供简单替代。
+	 * <p>若可能，实现应确保加载操作同步，以便在并发访问同一键时
+	 * 指定的 {@code valueLoader} 仅被调用一次。
+	 * <p>若 {@code valueLoader} 抛出异常，将封装为 {@link ValueRetrievalException}。
+	 * @param key 要返回其关联值的键
+	 * @return 此缓存将指定键映射到的值
+	 * @throws ValueRetrievalException 若 {@code valueLoader} 抛出异常
 	 * @since 4.3
 	 * @see #get(Object)
 	 */
 	<T> @Nullable T get(Object key, Callable<T> valueLoader);
 
 	/**
-	 * Return the value to which this cache maps the specified key,
-	 * wrapped in a {@link CompletableFuture}. This operation must not block
-	 * but is allowed to return a completed {@link CompletableFuture} if the
-	 * corresponding value is immediately available.
-	 * <p>Can return {@code null} if the cache can immediately determine that
-	 * it contains no mapping for this key (for example, through an in-memory key map).
-	 * Otherwise, the cached value will be returned in the {@link CompletableFuture},
-	 * with {@code null} indicating a late-determined cache miss. A nested
-	 * {@link ValueWrapper} potentially indicates a nullable cached value;
-	 * the cached value may also be represented as a plain element if null
-	 * values are not supported. Calling code needs to be prepared to handle
-	 * all those variants of the result returned by this method.
-	 * @param key the key whose associated value is to be returned
-	 * @return the value to which this cache maps the specified key, contained
-	 * within a {@link CompletableFuture} which may also be empty when a cache
-	 * miss has been late-determined. A straight {@code null} being returned
-	 * means that the cache immediately determined that it contains no mapping
-	 * for this key. A {@link ValueWrapper} contained within the
-	 * {@code CompletableFuture} indicates a cached value that is potentially
-	 * {@code null}; this is sensible in a late-determined scenario where a regular
-	 * CompletableFuture-contained {@code null} indicates a cache miss. However,
-	 * a cache may also return a plain value if it does not support the actual
-	 * caching of {@code null} values, avoiding the extra level of value wrapping.
-	 * Spring's cache processing can deal with all such implementation strategies.
+	 * 返回此缓存将指定键映射到的值，封装在 {@link CompletableFuture} 中。
+	 * 此操作不得阻塞，但允许在对应值立即可用时返回已完成的 {@link CompletableFuture}。
+	 * <p>若缓存可立即确定不包含该键的映射（例如通过内存键映射），可返回 {@code null}。
+	 * 否则，缓存值将在 {@link CompletableFuture} 中返回，{@code null} 表示迟确定的缓存未命中。
+	 * 嵌套的 {@link ValueWrapper} 可能表示可空的缓存值；若不支持 {@code null} 值，
+	 * 缓存值也可能以普通元素表示。调用代码需能处理此方法返回结果的所有变体。
+	 * @param key 要返回其关联值的键
+	 * @return 此缓存将指定键映射到的值，封装在 {@link CompletableFuture} 中，
+	 * 迟确定缓存未命中时也可能为空。直接返回 {@code null} 表示缓存立即确定
+	 * 不包含该键的映射。{@code CompletableFuture} 中包含的 {@link ValueWrapper}
+	 * 表示可能为 {@code null} 的缓存值；在迟确定场景中，普通 CompletableFuture
+	 * 中的 {@code null} 表示缓存未命中。若实现不支持实际缓存 {@code null} 值，
+	 * 缓存也可能返回普通值以避免额外的值包装层。Spring 的缓存处理可应对所有这些实现策略。
 	 * @since 6.1
 	 * @see #retrieve(Object, Supplier)
 	 */
@@ -139,22 +115,17 @@ public interface Cache {
 	}
 
 	/**
-	 * Return the value to which this cache maps the specified key, obtaining
-	 * that value from {@code valueLoader} if necessary. This method provides
-	 * a simple substitute for the conventional "if cached, return; otherwise
-	 * create, cache and return" pattern, based on {@link CompletableFuture}.
-	 * This operation must not block.
-	 * <p>If possible, implementations should ensure that the loading operation
-	 * is synchronized so that the specified {@code valueLoader} is only called
-	 * once in case of concurrent access on the same key.
-	 * <p>Null values always indicate a user-level {@code null} value with this
-	 * method. The provided {@link CompletableFuture} handle produces a value
-	 * or raises an exception. If the {@code valueLoader} raises an exception,
-	 * it will be propagated to the returned {@code CompletableFuture} handle.
-	 * @param key the key whose associated value is to be returned
-	 * @return the value to which this cache maps the specified key, contained
-	 * within a {@link CompletableFuture} which will never be {@code null}.
-	 * The provided future is expected to produce a value or raise an exception.
+	 * 返回此缓存将指定键映射到的值，必要时从 {@code valueLoader} 获取。
+	 * 此方法基于 {@link CompletableFuture} 为常见的「若已缓存则返回，否则创建、缓存并返回」
+	 * 模式提供简单替代。此操作不得阻塞。
+	 * <p>若可能，实现应确保加载操作同步，以便在并发访问同一键时
+	 * 指定的 {@code valueLoader} 仅被调用一次。
+	 * <p>使用此方法时，{@code null} 值始终表示用户级的 {@code null} 值。
+	 * 提供的 {@link CompletableFuture} 句柄产生值或抛出异常。若 {@code valueLoader}
+	 * 抛出异常，将传播到返回的 {@code CompletableFuture} 句柄。
+	 * @param key 要返回其关联值的键
+	 * @return 此缓存将指定键映射到的值，封装在永不为 {@code null} 的
+	 * {@link CompletableFuture} 中。提供的 future 应产生值或抛出异常。
 	 * @since 6.1
 	 * @see #retrieve(Object)
 	 * @see #get(Object, Callable)
@@ -165,28 +136,23 @@ public interface Cache {
 	}
 
 	/**
-	 * Associate the specified value with the specified key in this cache.
-	 * <p>If the cache previously contained a mapping for this key, the old
-	 * value is replaced by the specified value.
-	 * <p>Actual registration may be performed in an asynchronous or deferred
-	 * fashion, with subsequent lookups possibly not seeing the entry yet.
-	 * This may for example be the case with transactional cache decorators.
-	 * Use {@link #putIfAbsent} for guaranteed immediate registration.
-	 * <p>If the cache is supposed to be compatible with {@link CompletableFuture}
-	 * and reactive interactions, the put operation needs to be effectively
-	 * non-blocking, with any backend write-through happening asynchronously.
-	 * This goes along with a cache implemented and configured to support
-	 * {@link #retrieve(Object)} and {@link #retrieve(Object, Supplier)}.
-	 * @param key the key with which the specified value is to be associated
-	 * @param value the value to be associated with the specified key
+	 * 在此缓存中将指定值与指定键关联。
+	 * <p>若缓存先前包含该键的映射，旧值将被指定值替换。
+	 * <p>实际注册可能异步或延迟执行，后续查找可能尚看不到条目。
+	 * 例如事务性缓存装饰器可能出现此情况。使用 {@link #putIfAbsent} 可保证立即注册。
+	 * <p>若缓存需与 {@link CompletableFuture} 及响应式交互兼容，
+	 * put 操作需实质上非阻塞，任何后端写穿异步发生。这与支持
+	 * {@link #retrieve(Object)} 和 {@link #retrieve(Object, Supplier)} 的
+	 * 缓存实现及配置一致。
+	 * @param key 要与指定值关联的键
+	 * @param value 要与指定键关联的值
 	 * @see #putIfAbsent(Object, Object)
 	 */
 	void put(Object key, @Nullable Object value);
 
 	/**
-	 * Atomically associate the specified value with the specified key in this cache
-	 * if it is not set already.
-	 * <p>This is equivalent to:
+	 * 若尚未设置，则原子地将指定值与指定键在此缓存中关联。
+	 * <p>等价于：
 	 * <pre><code>
 	 * ValueWrapper existingValue = cache.get(key);
 	 * if (existingValue == null) {
@@ -194,24 +160,22 @@ public interface Cache {
 	 * }
 	 * return existingValue;
 	 * </code></pre>
-	 * except that the action is performed atomically. While all out-of-the-box
-	 * {@link CacheManager} implementations are able to perform the put atomically,
-	 * the operation may also be implemented in two steps, for example, with a check for
-	 * presence and a subsequent put, in a non-atomic way. Check the documentation
-	 * of the native cache implementation that you are using for more details.
-	 * <p>The default implementation delegates to {@link #get(Object)} and
-	 * {@link #put(Object, Object)} along the lines of the code snippet above.
-	 * @param key the key with which the specified value is to be associated
-	 * @param value the value to be associated with the specified key
-	 * @return the value to which this cache maps the specified key (which may be
-	 * {@code null} itself), or also {@code null} if the cache did not contain any
-	 * mapping for that key prior to this call. Returning {@code null} is therefore
-	 * an indicator that the given {@code value} has been associated with the key.
+	 * 但操作以原子方式执行。虽然所有开箱即用的 {@link CacheManager} 实现
+	 * 都能原子执行 put，操作也可能分两步非原子实现（例如先检查存在再 put）。
+	 * 有关更多细节，请查阅所用原生缓存实现的文档。
+	 * <p>默认实现沿上述代码片段思路委托给 {@link #get(Object)} 和 {@link #put(Object, Object)}。
+	 * @param key 要与指定值关联的键
+	 * @param value 要与指定键关联的值
+	 * @return 此缓存将指定键映射到的值（其本身可能为 {@code null}），
+	 * 或若调用前缓存不包含该键的任何映射则也为 {@code null}。
+	 * 因此返回 {@code null} 表示给定 {@code value} 已与键关联。
 	 * @since 4.1
 	 * @see #put(Object, Object)
 	 */
 	default @Nullable ValueWrapper putIfAbsent(Object key, @Nullable Object value) {
+		// 先尝试获取已有值
 		ValueWrapper existingValue = get(key);
+		// 不存在时才写入
 		if (existingValue == null) {
 			put(key, value);
 		}
@@ -219,34 +183,26 @@ public interface Cache {
 	}
 
 	/**
-	 * Evict the mapping for this key from this cache if it is present.
-	 * <p>Actual eviction may be performed in an asynchronous or deferred
-	 * fashion, with subsequent lookups possibly still seeing the entry.
-	 * This may for example be the case with transactional cache decorators.
-	 * Use {@link #evictIfPresent} for guaranteed immediate removal.
-	 * <p>If the cache is supposed to be compatible with {@link CompletableFuture}
-	 * and reactive interactions, the evict operation needs to be effectively
-	 * non-blocking, with any backend write-through happening asynchronously.
-	 * This goes along with a cache implemented and configured to support
-	 * {@link #retrieve(Object)} and {@link #retrieve(Object, Supplier)}.
-	 * @param key the key whose mapping is to be removed from the cache
+	 * 若存在则从本缓存中驱逐该键的映射。
+	 * <p>实际驱逐可能异步或延迟执行，后续查找可能仍能看到条目。
+	 * 例如事务性缓存装饰器可能出现此情况。使用 {@link #evictIfPresent} 可保证立即移除。
+	 * <p>若缓存需与 {@link CompletableFuture} 及响应式交互兼容，
+	 * evict 操作需实质上非阻塞，任何后端写穿异步发生。这与支持
+	 * {@link #retrieve(Object)} 和 {@link #retrieve(Object, Supplier)} 的
+	 * 缓存实现及配置一致。
+	 * @param key 要从缓存中移除其映射的键
 	 * @see #evictIfPresent(Object)
 	 */
 	void evict(Object key);
 
 	/**
-	 * Evict the mapping for this key from this cache if it is present,
-	 * expecting the key to be immediately invisible for subsequent lookups.
-	 * <p>The default implementation delegates to {@link #evict(Object)},
-	 * returning {@code false} for not-determined prior presence of the key.
-	 * Cache providers and in particular cache decorators are encouraged
-	 * to perform immediate eviction if possible (for example, in case of generally
-	 * deferred cache operations within a transaction) and to reliably
-	 * determine prior presence of the given key.
-	 * @param key the key whose mapping is to be removed from the cache
-	 * @return {@code true} if the cache was known to have a mapping for
-	 * this key before, {@code false} if it did not (or if prior presence
-	 * could not be determined)
+	 * 若存在则从本缓存中驱逐该键的映射，并期望该键对后续查找立即不可见。
+	 * <p>默认实现委托给 {@link #evict(Object)}，对先前键存在性不确定时返回 {@code false}。
+	 * 缓存提供者及尤其是缓存装饰器，若可能应执行立即驱逐（例如在事务中通常延迟缓存操作时），
+	 * 并可靠地确定给定键先前是否存在。
+	 * @param key 要从缓存中移除其映射的键
+	 * @return 若此前已知缓存包含该键的映射则为 {@code true}，
+	 * 若不存在或无法确定先前存在则为 {@code false}
 	 * @since 5.2
 	 * @see #evict(Object)
 	 */
@@ -256,26 +212,21 @@ public interface Cache {
 	}
 
 	/**
-	 * Clear the cache through removing all mappings.
-	 * <p>Actual clearing may be performed in an asynchronous or deferred
-	 * fashion, with subsequent lookups possibly still seeing the entries.
-	 * This may for example be the case with transactional cache decorators.
-	 * Use {@link #invalidate()} for guaranteed immediate removal of entries.
-	 * <p>If the cache is supposed to be compatible with {@link CompletableFuture}
-	 * and reactive interactions, the clear operation needs to be effectively
-	 * non-blocking, with any backend write-through happening asynchronously.
-	 * This goes along with a cache implemented and configured to support
-	 * {@link #retrieve(Object)} and {@link #retrieve(Object, Supplier)}.
+	 * 通过移除所有映射来清空缓存。
+	 * <p>实际清空可能异步或延迟执行，后续查找可能仍能看到条目。
+	 * 例如事务性缓存装饰器可能出现此情况。使用 {@link #invalidate()} 可保证立即移除条目。
+	 * <p>若缓存需与 {@link CompletableFuture} 及响应式交互兼容，
+	 * clear 操作需实质上非阻塞，任何后端写穿异步发生。这与支持
+	 * {@link #retrieve(Object)} 和 {@link #retrieve(Object, Supplier)} 的
+	 * 缓存实现及配置一致。
 	 * @see #invalidate()
 	 */
 	void clear();
 
 	/**
-	 * Invalidate the cache through removing all mappings, expecting all
-	 * entries to be immediately invisible for subsequent lookups.
-	 * @return {@code true} if the cache was known to have mappings before,
-	 * {@code false} if it did not (or if prior presence of entries could
-	 * not be determined)
+	 * 通过移除所有映射使缓存失效，并期望所有条目对后续查找立即不可见。
+	 * @return 若此前已知缓存包含映射则为 {@code true}，
+	 * 若不存在或无法确定先前存在则为 {@code false}
 	 * @since 5.2
 	 * @see #clear()
 	 */
@@ -286,21 +237,20 @@ public interface Cache {
 
 
 	/**
-	 * A (wrapper) object representing a cache value.
+	 * 表示缓存值的（包装）对象。
 	 */
 	@FunctionalInterface
 	interface ValueWrapper {
 
 		/**
-		 * Return the actual value in the cache.
+		 * 返回缓存中的实际值。
 		 */
 		@Nullable Object get();
 	}
 
 
 	/**
-	 * Wrapper exception to be thrown from {@link #get(Object, Callable)}
-	 * in case of the value loader callback failing with an exception.
+	 * 当值加载器回调失败时，从 {@link #get(Object, Callable)} 抛出的包装异常。
 	 * @since 4.3
 	 */
 	@SuppressWarnings("serial")

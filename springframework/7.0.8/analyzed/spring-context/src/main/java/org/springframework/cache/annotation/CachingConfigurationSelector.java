@@ -26,11 +26,10 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Selects which implementation of {@link AbstractCachingConfiguration} should
- * be used based on the value of {@link EnableCaching#mode} on the importing
- * {@code @Configuration} class.
+ * 根据导入 {@code @Configuration} 类上 {@link EnableCaching#mode} 的值，
+ * 选择应使用哪个 {@link AbstractCachingConfiguration} 实现。
  *
- * <p>Detects the presence of JSR-107 and enables JCache support accordingly.
+ * <p>检测 JSR-107 是否存在并据此启用 JCache 支持。
  *
  * @author Chris Beams
  * @author Stephane Nicoll
@@ -62,9 +61,9 @@ public class CachingConfigurationSelector extends AdviceModeImportSelector<Enabl
 
 
 	/**
-	 * Returns {@link ProxyCachingConfiguration} or {@code AspectJCachingConfiguration}
-	 * for {@code PROXY} and {@code ASPECTJ} values of {@link EnableCaching#mode()},
-	 * respectively. Potentially includes corresponding JCache configuration as well.
+	 * 对于 {@link EnableCaching#mode()} 的 {@code PROXY} 和 {@code ASPECTJ} 值，
+	 * 分别返回 {@link ProxyCachingConfiguration} 或 {@code AspectJCachingConfiguration}。
+	 * 若可用，可能还包括相应的 JCache 配置。
 	 */
 	@Override
 	public String[] selectImports(AdviceMode adviceMode) {
@@ -75,13 +74,14 @@ public class CachingConfigurationSelector extends AdviceModeImportSelector<Enabl
 	}
 
 	/**
-	 * Return the imports to use if the {@link AdviceMode} is set to {@link AdviceMode#PROXY}.
-	 * <p>Take care of adding the necessary JSR-107 import if it is available.
+	 * 若 {@link AdviceMode} 设为 {@link AdviceMode#PROXY}，返回要使用的导入。
+	 * <p>若 JSR-107 可用，负责添加必要的 JSR-107 导入。
 	 */
 	private String[] getProxyImports() {
 		List<String> result = new ArrayList<>(3);
 		result.add(AutoProxyRegistrar.class.getName());
 		result.add(ProxyCachingConfiguration.class.getName());
+		// 若 JSR-107 及 JCache 实现可用，添加 JCache 代理配置
 		if (JSR_107_PRESENT && JCACHE_IMPL_PRESENT) {
 			result.add(PROXY_JCACHE_CONFIGURATION_CLASS);
 		}
@@ -89,12 +89,13 @@ public class CachingConfigurationSelector extends AdviceModeImportSelector<Enabl
 	}
 
 	/**
-	 * Return the imports to use if the {@link AdviceMode} is set to {@link AdviceMode#ASPECTJ}.
-	 * <p>Take care of adding the necessary JSR-107 import if it is available.
+	 * 若 {@link AdviceMode} 设为 {@link AdviceMode#ASPECTJ}，返回要使用的导入。
+	 * <p>若 JSR-107 可用，负责添加必要的 JSR-107 导入。
 	 */
 	private String[] getAspectJImports() {
 		List<String> result = new ArrayList<>(2);
 		result.add(CACHE_ASPECT_CONFIGURATION_CLASS_NAME);
+		// 若 JSR-107 及 JCache 实现可用，添加 AspectJ JCache 配置
 		if (JSR_107_PRESENT && JCACHE_IMPL_PRESENT) {
 			result.add(JCACHE_ASPECT_CONFIGURATION_CLASS_NAME);
 		}

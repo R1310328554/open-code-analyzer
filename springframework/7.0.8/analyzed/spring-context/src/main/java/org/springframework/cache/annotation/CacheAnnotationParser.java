@@ -24,10 +24,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.cache.interceptor.CacheOperation;
 
 /**
- * Strategy interface for parsing known caching annotation types.
- * {@link AnnotationCacheOperationSource} delegates to such parsers
- * for supporting specific annotation types such as Spring's own
- * {@link Cacheable}, {@link CachePut} and{@link CacheEvict}.
+ * 解析已知缓存注解类型的策略接口。
+ * {@link AnnotationCacheOperationSource} 委托此类解析器以支持特定注解类型，
+ * 例如 Spring 自身的 {@link Cacheable}、{@link CachePut} 和 {@link CacheEvict}。
  *
  * @author Costin Leau
  * @author Stephane Nicoll
@@ -39,17 +38,14 @@ import org.springframework.cache.interceptor.CacheOperation;
 public interface CacheAnnotationParser {
 
 	/**
-	 * Determine whether the given class is a candidate for cache operations
-	 * in the annotation format of this {@code CacheAnnotationParser}.
-	 * <p>If this method returns {@code false}, the methods on the given class
-	 * will not get traversed for {@code #parseCacheAnnotations} introspection.
-	 * Returning {@code false} is therefore an optimization for non-affected
-	 * classes, whereas {@code true} simply means that the class needs to get
-	 * fully introspected for each method on the given class individually.
-	 * @param targetClass the class to introspect
-	 * @return {@code false} if the class is known to have no cache operation
-	 * annotations at class or method level; {@code true} otherwise. The default
-	 * implementation returns {@code true}, leading to regular introspection.
+	 * 判断给定类是否为本 {@code CacheAnnotationParser} 注解格式下
+	 * 缓存操作的候选类。
+	 * <p>若返回 {@code false}，给定类上的方法将不会为 {@code #parseCacheAnnotations}
+	 * 自省而遍历。因此 {@code false} 是对不受影响类的优化；
+	 * {@code true} 表示需对给定类上每个方法单独完整自省。
+	 * @param targetClass 要自省的类
+	 * @return 若已知类在类或方法级别无缓存操作注解则为 {@code false}；
+	 * 否则为 {@code true}。默认实现返回 {@code true}，即进行常规自省。
 	 * @since 5.2
 	 */
 	default boolean isCandidateClass(Class<?> targetClass) {
@@ -57,23 +53,21 @@ public interface CacheAnnotationParser {
 	}
 
 	/**
-	 * Parse the cache definition for the given class,
-	 * based on an annotation type understood by this parser.
-	 * <p>This essentially parses a known cache annotation into Spring's metadata
-	 * attribute class. Returns {@code null} if the class is not cacheable.
-	 * @param type the annotated class
-	 * @return the configured caching operation, or {@code null} if none found
+	 * 基于本解析器理解的注解类型，解析给定类的缓存定义。
+	 * <p>实质上将已知缓存注解解析为 Spring 的元数据属性类。
+	 * 若类不可缓存则返回 {@code null}。
+	 * @param type 带注解的类
+	 * @return 已配置的缓存操作，或若未找到则为 {@code null}
 	 * @see AnnotationCacheOperationSource#findCacheOperations(Class)
 	 */
 	@Nullable Collection<CacheOperation> parseCacheAnnotations(Class<?> type);
 
 	/**
-	 * Parse the cache definition for the given method,
-	 * based on an annotation type understood by this parser.
-	 * <p>This essentially parses a known cache annotation into Spring's metadata
-	 * attribute class. Returns {@code null} if the method is not cacheable.
-	 * @param method the annotated method
-	 * @return the configured caching operation, or {@code null} if none found
+	 * 基于本解析器理解的注解类型，解析给定方法的缓存定义。
+	 * <p>实质上将已知缓存注解解析为 Spring 的元数据属性类。
+	 * 若方法不可缓存则返回 {@code null}。
+	 * @param method 带注解的方法
+	 * @return 已配置的缓存操作，或若未找到则为 {@code null}
 	 * @see AnnotationCacheOperationSource#findCacheOperations(Method)
 	 */
 	@Nullable Collection<CacheOperation> parseCacheAnnotations(Method method);

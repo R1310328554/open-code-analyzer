@@ -27,10 +27,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
 
 /**
- * Enables Spring's annotation-driven cache management capability, similar to the
- * support found in Spring's {@code <cache:*>} XML namespace. To be used together
- * with @{@link org.springframework.context.annotation.Configuration Configuration}
- * classes as follows:
+ * 启用 Spring 基于注解的缓存管理能力，类似于 Spring {@code <cache:*>} XML 命名空间中的支持。
+ * 与 @{@link org.springframework.context.annotation.Configuration Configuration} 类一起使用，如下所示：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -52,8 +50,7 @@ import org.springframework.core.Ordered;
  *     }
  * }</pre>
  *
- * <p>For reference, the example above can be compared to the following Spring XML
- * configuration:
+ * <p>作为参考，上述示例可与以下 Spring XML 配置对比：
  *
  * <pre class="code">
  * &lt;beans&gt;
@@ -75,30 +72,23 @@ import org.springframework.core.Ordered;
  * &lt;/beans&gt;
  * </pre>
  *
- * In both of the scenarios above, {@code @EnableCaching} and {@code
- * <cache:annotation-driven/>} are responsible for registering the necessary Spring
- * components that power annotation-driven cache management, such as the
- * {@link org.springframework.cache.interceptor.CacheInterceptor CacheInterceptor} and the
- * proxy- or AspectJ-based advice that weaves the interceptor into the call stack when
- * {@link org.springframework.cache.annotation.Cacheable @Cacheable} methods are invoked.
+ * 在上述两种场景中，{@code @EnableCaching} 和 {@code <cache:annotation-driven/>} 负责注册
+ * 支撑基于注解缓存管理所需的 Spring 组件，例如
+ * {@link org.springframework.cache.interceptor.CacheInterceptor CacheInterceptor}，
+ * 以及在调用 {@link org.springframework.cache.annotation.Cacheable @Cacheable} 方法时
+ * 将拦截器织入调用栈的基于代理或 AspectJ 的通知。
  *
- * <p>If the JSR-107 API and Spring's JCache implementation are present, the necessary
- * components to manage standard cache annotations are also registered. This creates the
- * proxy- or AspectJ-based advice that weaves the interceptor into the call stack when
- * methods annotated with {@code CacheResult}, {@code CachePut}, {@code CacheRemove} or
- * {@code CacheRemoveAll} are invoked.
+ * <p>若 JSR-107 API 和 Spring 的 JCache 实现存在，还将注册管理标准缓存注解所需的组件。
+ * 这创建了在调用带有 {@code CacheResult}、{@code CachePut}、{@code CacheRemove} 或
+ * {@code CacheRemoveAll} 注解的方法时，将拦截器织入调用栈的基于代理或 AspectJ 的通知。
  *
- * <p><strong>A bean of type {@link org.springframework.cache.CacheManager CacheManager}
- * must be registered</strong>, as there is no reasonable default that the framework can
- * use as a convention. And whereas the {@code <cache:annotation-driven>} element assumes
- * a bean <em>named</em> "cacheManager", {@code @EnableCaching} searches for a cache
- * manager bean <em>by type</em>. Therefore, naming of the cache manager bean method is
- * not significant.
+ * <p><strong>必须注册 {@link org.springframework.cache.CacheManager CacheManager} 类型的 Bean</strong>，
+ * 因为框架无法使用合理的默认值作为约定。而 {@code <cache:annotation-driven>} 元素假定
+ * <em>名为</em> "cacheManager" 的 Bean，{@code @EnableCaching} 则<em>按类型</em>搜索缓存管理器 Bean。
+ * 因此，缓存管理器 Bean 方法的命名并不重要。
  *
- * <p>For those that wish to establish a more direct relationship between
- * {@code @EnableCaching} and the exact cache manager bean to be used,
- * the {@link CachingConfigurer} callback interface may be implemented.
- * Notice the {@code @Override}-annotated methods below:
+ * <p>对于希望在 {@code @EnableCaching} 与要使用的确切缓存管理器 Bean 之间建立更直接关系的情况，
+ * 可实现 {@link CachingConfigurer} 回调接口。注意下面带 {@code @Override} 注解的方法：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -127,31 +117,25 @@ import org.springframework.core.Ordered;
  *     }
  * }</pre>
  *
- * This approach may be desirable simply because it is more explicit, or it may be
- * necessary in order to distinguish between two {@code CacheManager} beans present in the
- * same container.
+ * 这种方式可能仅因更明确而可取，或在同一容器中存在两个 {@code CacheManager} Bean
+ * 需要区分时可能是必要的。
  *
- * <p>Notice also the {@code keyGenerator} method in the example above. This allows for
- * customizing the strategy for cache key generation, per Spring's {@link
- * org.springframework.cache.interceptor.KeyGenerator KeyGenerator} SPI. Normally,
- * {@code @EnableCaching} will configure Spring's
- * {@link org.springframework.cache.interceptor.SimpleKeyGenerator SimpleKeyGenerator}
- * for this purpose, but when implementing {@code CachingConfigurer}, a custom key
- * generator can be specified.
+ * <p>另注意上述示例中的 {@code keyGenerator} 方法。这允许按 Spring 的
+ * {@link org.springframework.cache.interceptor.KeyGenerator KeyGenerator} SPI
+ * 自定义缓存键生成策略。通常 {@code @EnableCaching} 会为此配置 Spring 的
+ * {@link org.springframework.cache.interceptor.SimpleKeyGenerator SimpleKeyGenerator}，
+ * 但实现 {@code CachingConfigurer} 时可指定自定义键生成器。
  *
- * <p>{@link CachingConfigurer} offers additional customization options:
- * see the {@link CachingConfigurer} javadoc for further details.
+ * <p>{@link CachingConfigurer} 还提供其他自定义选项：更多细节参见 {@link CachingConfigurer} 的 javadoc。
  *
- * <p>The {@link #mode} attribute controls how advice is applied: If the mode is
- * {@link AdviceMode#PROXY} (the default), then the other attributes control the behavior
- * of the proxying. Please note that proxy mode allows for interception of calls through
- * the proxy only; local calls within the same class cannot get intercepted that way.
+ * <p>{@link #mode} 属性控制如何应用缓存通知：若模式为 {@link AdviceMode#PROXY}（默认），
+ * 则其他属性控制代理行为。请注意，代理模式仅允许通过代理拦截调用；
+ * 同一类内的本地调用无法被拦截，本地调用中带缓存注解的方法将被忽略，
+ * 因为 Spring 拦截器在此运行时场景下甚至不会启动。
  *
- * <p>Note that if the {@linkplain #mode} is set to {@link AdviceMode#ASPECTJ}, then the
- * value of the {@link #proxyTargetClass} attribute will be ignored. Note also that in
- * this case the {@code spring-aspects} module JAR must be present on the classpath, with
- * compile-time weaving or load-time weaving applying the aspect to the affected classes.
- * There is no proxy involved in such a scenario; local calls will be intercepted as well.
+ * <p>注意，若 {@linkplain #mode} 设为 {@link AdviceMode#ASPECTJ}，则 {@link #proxyTargetClass}
+ * 属性的值将被忽略。另请注意，此情况下 classpath 上必须存在 {@code spring-aspects} 模块 JAR，
+ * 并通过编译时织入或加载时织入将切面应用于受影响的类。此场景不涉及代理；本地调用也会被拦截。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -168,39 +152,30 @@ import org.springframework.core.Ordered;
 public @interface EnableCaching {
 
 	/**
-	 * Indicate whether subclass-based (CGLIB) proxies are to be created as opposed
-	 * to standard Java interface-based proxies. The default is {@code false}. <strong>
-	 * Applicable only if {@link #mode()} is set to {@link AdviceMode#PROXY}</strong>.
-	 * <p>Note that setting this attribute to {@code true} will affect <em>all</em>
-	 * Spring-managed beans requiring proxying, not just those marked with {@code @Cacheable}.
-	 * For example, other beans marked with Spring's {@code @Transactional} annotation will
-	 * be upgraded to subclass proxying at the same time. This approach has no negative
-	 * impact in practice unless one is explicitly expecting one type of proxy vs another,
-	 * for example, in tests.
-	 * <p>It is usually recommendable to rely on a global default proxy configuration
-	 * instead, with specific proxy requirements for certain beans expressed through
-	 * a {@link org.springframework.context.annotation.Proxyable} annotation on
-	 * the affected bean classes.
+	 * 指示是否创建基于子类的（CGLIB）代理，而非标准 Java 接口代理。默认为 {@code false}。<strong>
+	 * 仅当 {@link #mode()} 设为 {@link AdviceMode#PROXY} 时适用</strong>。
+	 * <p>注意，将此属性设为 {@code true} 将影响<em>所有</em>需要代理的 Spring 管理 Bean，
+	 * 而不仅是带 {@code @Cacheable} 的 Bean。例如，同时带 Spring {@code @Transactional}
+	 * 注解的其他 Bean 也将同时升级为子类代理。除非明确期望某种代理类型而非另一种
+	 * （例如在测试中），实践中通常无负面影响。
+	 * <p>通常建议依赖全局默认代理配置，对特定 Bean 的代理需求通过受影响 Bean 类上的
+	 * {@link org.springframework.context.annotation.Proxyable} 注解表达。
 	 * @see org.springframework.aop.config.AopConfigUtils#forceAutoProxyCreatorToUseClassProxying
 	 */
 	boolean proxyTargetClass() default false;
 
 	/**
-	 * Indicate how caching advice should be applied.
-	 * <p><b>The default is {@link AdviceMode#PROXY}.</b>
-	 * Please note that proxy mode allows for interception of calls through the proxy
-	 * only. Local calls within the same class cannot get intercepted that way;
-	 * a caching annotation on such a method within a local call will be ignored
-	 * since Spring's interceptor does not even kick in for such a runtime scenario.
-	 * For a more advanced mode of interception, consider switching this to
-	 * {@link AdviceMode#ASPECTJ}.
+	 * 指示如何应用缓存通知。
+	 * <p><b>默认为 {@link AdviceMode#PROXY}。</b>
+	 * 请注意，代理模式仅允许通过代理拦截调用。同一类内的本地调用无法被拦截；
+	 * 本地调用中带缓存注解的方法将被忽略，因为 Spring 拦截器在此运行时场景下甚至不会启动。
+	 * 若要更高级的拦截模式，可考虑切换为 {@link AdviceMode#ASPECTJ}。
 	 */
 	AdviceMode mode() default AdviceMode.PROXY;
 
 	/**
-	 * Indicate the ordering of the execution of the caching advisor
-	 * when multiple advices are applied at a specific joinpoint.
-	 * <p>The default is {@link Ordered#LOWEST_PRECEDENCE}.
+	 * 指示在特定连接点应用多个通知时缓存 advisor 的执行顺序。
+	 * <p>默认为 {@link Ordered#LOWEST_PRECEDENCE}。
 	 */
 	int order() default Ordered.LOWEST_PRECEDENCE;
 
