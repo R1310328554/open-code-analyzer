@@ -16,6 +16,10 @@
  */
 package org.apache.rocketmq.common.statistics;
 
+/**
+ * 判断统计项是否仍“在线”，用于空闲清理时保留活跃项。
+ */
 public interface StatisticsItemStateGetter {
+    /** 返回 {@code item} 是否仍应保留（如连接未断开）。 */
     boolean online(StatisticsItem item);
 }

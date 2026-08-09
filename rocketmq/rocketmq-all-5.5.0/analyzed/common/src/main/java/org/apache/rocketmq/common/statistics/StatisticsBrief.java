@@ -21,20 +21,33 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 分桶直方图统计摘要：维护 max/min/avg/total 及 TP 分位值。
+ * 桶边界由 {@code topPercentileMeta} 二维数组定义。
+ */
 public class StatisticsBrief {
+    /** {@code topPercentileMeta} 每行中区间上界索引。 */
     public static final int META_RANGE_INDEX = 0;
+    /** {@code topPercentileMeta} 每行中桶数量索引。 */
     public static final int META_SLOT_NUM_INDEX = 1;
 
-    // TopPercentile
+    // 分位直方图元数据与计数
+    /** 分位桶元数据：每行 [rangeMax, slotNum]。 */
     private long[][] topPercentileMeta;
+    /** 各桶采样计数。 */
     private AtomicInteger[] counts;
+    /** 总采样次数。 */
     private AtomicLong totalCount;
 
-    // max min avg total
+    // 全局 max/min/total 聚合
+    /** 采样最大值。 */
     private long max;
+    /** 采样最小值。 */
     private long min;
+    /** 采样值累加和。 */
     private long total;
 
+    /** 以分位桶元数据构造摘要对象。 */
     public StatisticsBrief(long[][] topPercentileMeta) {
         if (!isLegalMeta(topPercentileMeta)) {
             throw new IllegalArgumentException("illegal topPercentileMeta");
@@ -46,6 +59,7 @@ public class StatisticsBrief {
         reset();
     }
 
+    /** 清零各桶计数与 max/min/total。 */
     public void reset() {
         for (int i = 0; i < counts.length; i++) {
             if (counts[i] == null) {
@@ -63,6 +77,7 @@ public class StatisticsBrief {
         }
     }
 
+    /** 校验元数据非空且每行长度为 2。 */
     private static boolean isLegalMeta(long[][] meta) {
         if (ArrayUtils.isEmpty(meta)) {
             return false;
@@ -77,6 +92,7 @@ public class StatisticsBrief {
         return true;
     }
 
+    /** 根据元数据计算总桶数。 */
     private static int slotNum(long[][] meta) {
         int ret = 1;
         for (long[] line : meta) {
@@ -85,6 +101,7 @@ public class StatisticsBrief {
         return ret;
     }
 
+    /** 记录一次采样并更新桶计数与 max/min/total。 */
     public void sample(long value) {
         int index = getSlotIndex(value);
         counts[index].incrementAndGet();
@@ -97,10 +114,12 @@ public class StatisticsBrief {
         }
     }
 
+    /** 返回 TP99.9 分位估计值。 */
     public long tp999() {
         return getTPValue(0.999f);
     }
 
+    /** 按给定比例（0~1）估算 TP 分位值。 */
     public long getTPValue(float ratio) {
         if (ratio <= 0 || ratio >= 1) {
             ratio = 0.99f;
@@ -121,6 +140,7 @@ public class StatisticsBrief {
         return 0;
     }
 
+    /** 由桶索引反推该桶代表的分位值。 */
     private long getSlotTPValue(int index) {
         int slotNumLeft = index;
         for (int i = 0; i < topPercentileMeta.length; i++) {
@@ -137,10 +157,11 @@ public class StatisticsBrief {
                 slotNumLeft -= slotNum;
             }
         }
-        // MAX_VALUE: the last slot
+        // 末桶上界为 Integer.MAX_VALUE
         return Integer.MAX_VALUE;
     }
 
+    /** 将采样值映射到桶索引。 */
     private int getSlotIndex(long num) {
         int index = 0;
         for (int i = 0; i < topPercentileMeta.length; i++) {
@@ -157,27 +178,27 @@ public class StatisticsBrief {
         return index;
     }
 
-    /**
-     * Getters
-     *
-     * @return
-     */
+    /** 返回采样最大值。 */
     public long getMax() {
         return max;
     }
 
+    /** 无采样时返回 0，否则返回最小值。 */
     public long getMin() {
         return totalCount.get() > 0 ? min : 0;
     }
 
+    /** 返回采样值累加和。 */
     public long getTotal() {
         return total;
     }
 
+    /** 返回总采样次数。 */
     public long getCnt() {
         return totalCount.get();
     }
 
+    /** 返回采样平均值，无采样时为 0。 */
     public double getAvg() {
         return totalCount.get() != 0 ? ((double)total) / totalCount.get() : 0;
     }

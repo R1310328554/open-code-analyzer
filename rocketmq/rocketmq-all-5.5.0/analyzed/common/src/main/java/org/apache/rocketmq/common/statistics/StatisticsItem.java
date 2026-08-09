@@ -23,23 +23,28 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
- * Statistics Item
+ * 单条统计项：按 kind/object 维度累加多项计数，支持拦截器与快照差分。
  */
 public class StatisticsItem {
+    /** 统计类别（如 RPC、Topic）。 */
     private String statKind;
+    /** 统计对象键（如方法名、Topic 名）。 */
     private String statObject;
 
+    /** 各子项名称。 */
     private String[] itemNames;
+    /** 各子项累加器。 */
     private AtomicLong[] itemAccumulates;
+    /** 调用/更新次数。 */
     private AtomicLong invokeTimes;
 
+    /** 可选拦截器（如分位摘要）。 */
     private Interceptor interceptor;
 
-    /**
-     * last timestamp when the item was updated
-     */
+    /** 最近一次更新的时间戳（毫秒）。 */
     private AtomicLong lastTimeStamp;
 
+    /** 构造统计项并初始化各子项累加器。 */
     public StatisticsItem(String statKind, String statObject, String... itemNames) {
         if (itemNames == null || itemNames.length <= 0) {
             throw new InvalidParameterException("StatisticsItem \"itemNames\" is empty");
@@ -59,6 +64,7 @@ public class StatisticsItem {
         this.lastTimeStamp = new AtomicLong(System.currentTimeMillis());
     }
 
+    /** 递增各子项并刷新 invokeTimes、lastTimeStamp，通知拦截器。 */
     public void incItems(long... itemIncs) {
         int len = Math.min(itemIncs.length, itemAccumulates.length);
         for (int i = 0; i < len; i++) {
@@ -73,6 +79,7 @@ public class StatisticsItem {
         }
     }
 
+    /** 是否从未调用或各子项均为 0。 */
     public boolean allZeros() {
         if (invokeTimes.get() == 0) {
             return true;
@@ -86,30 +93,37 @@ public class StatisticsItem {
         return true;
     }
 
+    /** 返回统计类别。 */
     public String getStatKind() {
         return statKind;
     }
 
+    /** 返回统计对象键。 */
     public String getStatObject() {
         return statObject;
     }
 
+    /** 返回子项名称数组。 */
     public String[] getItemNames() {
         return itemNames;
     }
 
+    /** 返回各子项累加器。 */
     public AtomicLong[] getItemAccumulates() {
         return itemAccumulates;
     }
 
+    /** 返回调用次数。 */
     public AtomicLong getInvokeTimes() {
         return invokeTimes;
     }
 
+    /** 返回最后更新时间戳。 */
     public AtomicLong getLastTimeStamp() {
         return lastTimeStamp;
     }
 
+    /** 按名称取子项累加器，未知项返回零值 AtomicLong。 */
     public AtomicLong getItemAccumulate(String itemName) {
         int index = ArrayUtils.indexOf(itemNames, itemName);
         if (index < 0) {
@@ -119,11 +133,9 @@ public class StatisticsItem {
     }
 
     /**
-     * get snapshot
-     * <p>
-     * Warning: no guarantee of itemAccumulates consistency
+     * 获取当前快照（各累加器可能非原子一致）。
      *
-     * @return
+     * @return 独立副本
      */
     public StatisticsItem snapshot() {
         StatisticsItem ret = new StatisticsItem(statKind, statObject, itemNames);
@@ -140,10 +152,10 @@ public class StatisticsItem {
     }
 
     /**
-     * subtract another StatisticsItem
+     * 与另一统计项做差，得到区间增量。
      *
-     * @param item
-     * @return
+     * @param item 被减项（同 kind/object/itemNames）
+     * @return 差分后的新 StatisticsItem
      */
     public StatisticsItem subtract(StatisticsItem item) {
         if (item == null) {
@@ -164,10 +176,12 @@ public class StatisticsItem {
         return ret;
     }
 
+    /** 返回拦截器。 */
     public Interceptor getInterceptor() {
         return interceptor;
     }
 
+    /** 设置拦截器。 */
     public void setInterceptor(Interceptor interceptor) {
         this.interceptor = interceptor;
     }

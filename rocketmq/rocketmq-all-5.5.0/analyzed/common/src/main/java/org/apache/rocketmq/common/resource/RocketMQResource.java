@@ -19,10 +19,16 @@ package org.apache.rocketmq.common.resource;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+/**
+ * 标记 RocketMQ 资源字段或参数的类型注解，
+ * 配合 {@link ResourceType} 用于资源解析与注入。
+ */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RocketMQResource {
 
+    /** 资源类型。 */
     ResourceType value();
 
+    /** 多值资源的分隔符，默认空串表示不分隔。 */
     String splitter() default "";
 }

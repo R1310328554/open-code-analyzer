@@ -20,13 +20,16 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * interceptor to generate statistics brief
+ * {@link Interceptor} 实现：将 {@link StatisticsItem} 指定项写入 {@link StatisticsBrief} 分位摘要。
  */
 public class StatisticsBriefInterceptor implements Interceptor {
+    /** 各 brief 对应 StatisticsItem 项下标。 */
     private int[] indexOfItems;
 
+    /** 与 briefMetas 一一对应的摘要实例。 */
     private StatisticsBrief[] statisticsBriefs;
 
+    /** 绑定统计项与 brief 元数据，校验项名存在于 item。 */
     public StatisticsBriefInterceptor(StatisticsItem item, Pair<String, long[][]>[] briefMetas) {
         indexOfItems = new int[briefMetas.length];
         statisticsBriefs = new StatisticsBrief[briefMetas.length];
@@ -41,6 +44,7 @@ public class StatisticsBriefInterceptor implements Interceptor {
         }
     }
 
+    /** 按映射下标将增量采样到对应 {@link StatisticsBrief}。 */
     @Override
     public void inc(long... itemValues) {
         for (int i = 0; i < indexOfItems.length; i++) {
@@ -51,6 +55,7 @@ public class StatisticsBriefInterceptor implements Interceptor {
         }
     }
 
+    /** 重置全部 brief 采样状态。 */
     @Override
     public void reset() {
         for (StatisticsBrief brief : statisticsBriefs) {
@@ -58,18 +63,22 @@ public class StatisticsBriefInterceptor implements Interceptor {
         }
     }
 
+    /** 返回项下标映射。 */
     public int[] getIndexOfItems() {
         return indexOfItems;
     }
 
+    /** 设置项下标映射。 */
     public void setIndexOfItems(int[] indexOfItems) {
         this.indexOfItems = indexOfItems;
     }
 
+    /** 返回摘要数组。 */
     public StatisticsBrief[] getStatisticsBriefs() {
         return statisticsBriefs;
     }
 
+    /** 设置摘要数组。 */
     public void setStatisticsBriefs(StatisticsBrief[] statisticsBriefs) {
         this.statisticsBriefs = statisticsBriefs;
     }

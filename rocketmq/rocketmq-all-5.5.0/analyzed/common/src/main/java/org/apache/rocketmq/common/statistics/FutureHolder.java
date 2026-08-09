@@ -22,9 +22,16 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/**
+ * 按键分组持有 {@link Future} 任务，支持批量取消与移除。
+ *
+ * @param <T> 分组键类型
+ */
 public class FutureHolder<T> {
+    /** 键到 Future 队列的映射。 */
     private ConcurrentMap<T, BlockingQueue<Future>> futureMap = new ConcurrentHashMap<>(8);
 
+    /** 将 Future 登记到键 {@code t} 对应的队列。 */
     public void addFuture(T t, Future future) {
         BlockingQueue<Future> list = futureMap.get(t);
         if (list == null) {
@@ -37,11 +44,13 @@ public class FutureHolder<T> {
         list.add(future);
     }
 
+    /** 取消键 {@code t} 下全部 Future 并移除映射。 */
     public void removeAllFuture(T t) {
         cancelAll(t, false);
         futureMap.remove(t);
     }
 
+    /** 取消键 {@code t} 下全部 Future，可选是否中断运行中任务。 */
     private void cancelAll(T t, boolean mayInterruptIfRunning) {
         BlockingQueue<Future> list = futureMap.get(t);
         if (list != null) {

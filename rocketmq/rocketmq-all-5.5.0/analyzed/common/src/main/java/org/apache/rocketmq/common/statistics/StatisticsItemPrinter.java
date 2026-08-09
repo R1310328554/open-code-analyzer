@@ -18,24 +18,33 @@ package org.apache.rocketmq.common.statistics;
 
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 
+/**
+ * 通过 {@link Logger} 输出格式化后的 {@link StatisticsItem}。
+ */
 public class StatisticsItemPrinter {
+    /** 输出目标 Logger。 */
     private Logger log;
 
+    /** 统计项格式化器。 */
     private StatisticsItemFormatter formatter;
 
+    /** 指定格式化器与 Logger。 */
     public StatisticsItemPrinter(StatisticsItemFormatter formatter, Logger log) {
         this.formatter = formatter;
         this.log = log;
     }
 
+    /** 更换输出 Logger。 */
     public void log(Logger log) {
         this.log = log;
     }
 
+    /** 更换格式化器。 */
     public void formatter(StatisticsItemFormatter formatter) {
         this.formatter = formatter;
     }
 
+    /** 输出 prefix + 格式化统计项 + 后缀到 log.info。 */
     public void print(String prefix, StatisticsItem statItem, String... suffixs) {
         StringBuilder suffix = new StringBuilder();
         for (String str : suffixs) {
@@ -45,6 +54,6 @@ public class StatisticsItemPrinter {
         if (log != null) {
             log.info("{}{}{}", prefix, formatter.format(statItem), suffix.toString());
         }
-        // System.out.printf("%s %s%s%s\n", new Date().toString(), prefix, formatter.format(statItem), suffix.toString());
+        // 调试时可改用标准输出
     }
 }

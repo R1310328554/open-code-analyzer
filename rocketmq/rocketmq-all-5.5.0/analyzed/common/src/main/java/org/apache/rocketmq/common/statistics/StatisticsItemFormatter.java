@@ -18,7 +18,11 @@ package org.apache.rocketmq.common.statistics;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 将 {@link StatisticsItem} 格式化为管道分隔单行：kind|object|各项累加|invokeTimes。
+ */
 public class StatisticsItemFormatter {
+    /** 格式化统计项为日志字符串。 */
     public String format(StatisticsItem statItem) {
         final String separator = "|";
         StringBuilder sb = new StringBuilder();

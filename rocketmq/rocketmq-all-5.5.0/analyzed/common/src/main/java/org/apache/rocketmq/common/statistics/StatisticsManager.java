@@ -26,49 +26,54 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.rocketmq.common.utils.ThreadUtils;
 
+/**
+ * 统计中心：按 kind/key 维护 {@link StatisticsItem}，自动调度打印与空闲清理。
+ */
 public class StatisticsManager {
 
-    /**
-     * Set of Statistics Kind Metadata
-     */
+    /** 统计类别名 -> 元数据。 */
     private Map<String, StatisticsKindMeta> kindMetaMap;
 
-    /**
-     * item names to calculate statistics brief
-     */
+    /** 分位 brief 配置：项名 -> topPercentileMeta。 */
     private Pair<String, long[][]>[] briefMetas;
 
-    /**
-     * Statistics
-     */
+    /** kind -> objectKey -> 统计项实例。 */
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, StatisticsItem>> statsTable
         = new ConcurrentHashMap<>();
 
+    /** 统计项最大空闲毫秒数，超时且非 online 则移除。 */
     private static final int MAX_IDLE_TIME = 10 * 60 * 1000;
+    /** 后台清理空闲统计项的单线程调度器。 */
     private final ScheduledExecutorService executor = ThreadUtils.newSingleThreadScheduledExecutor(
         "StatisticsManagerCleaner", true);
 
+    /** 可选：判定统计项是否仍在线。 */
     private StatisticsItemStateGetter statisticsItemStateGetter;
 
+    /** 空元数据表并启动清理任务。 */
     public StatisticsManager() {
         kindMetaMap = new HashMap<>();
         start();
     }
 
+    /** 以给定 kind 元数据构造并启动清理。 */
     public StatisticsManager(Map<String, StatisticsKindMeta> kindMeta) {
         this.kindMetaMap = kindMeta;
         start();
     }
 
+    /** 注册统计类别并初始化 statsTable 槽位。 */
     public void addStatisticsKindMeta(StatisticsKindMeta kindMeta) {
         kindMetaMap.put(kindMeta.getName(), kindMeta);
         statsTable.putIfAbsent(kindMeta.getName(), new ConcurrentHashMap<>(16));
     }
 
+    /** 设置分位 brief 元数据，供新建项挂载拦截器。 */
     public void setBriefMeta(Pair<String, long[][]>[] briefMetas) {
         this.briefMetas = briefMetas;
     }
 
+    /** 启动周期性空闲项清理任务。 */
     private void start() {
         int maxIdleTime = MAX_IDLE_TIME;
         executor.scheduleAtFixedRate(new Runnable() {
@@ -87,7 +92,7 @@ public class StatisticsManager {
 
                     HashMap<String, StatisticsItem> tmpItemMap = new HashMap<>(itemMap);
                     for (StatisticsItem item : tmpItemMap.values()) {
-                        // remove when expired
+                        // 超时且非 online 则移除
                         if (System.currentTimeMillis() - item.getLastTimeStamp().get() > MAX_IDLE_TIME
                             && (statisticsItemStateGetter == null || !statisticsItemStateGetter.online(item))) {
                             remove(item);
@@ -99,18 +104,18 @@ public class StatisticsManager {
     }
 
     /**
-     * Increment a StatisticsItem
+     * 递增指定 kind/key 的统计项；不存在则懒创建并调度打印。
      *
-     * @param kind
-     * @param key
-     * @param itemAccumulates
+     * @param kind 统计类别
+     * @param key 统计对象键
+     * @param itemAccumulates 各子项增量
      */
     public boolean inc(String kind, String key, long... itemAccumulates) {
         ConcurrentHashMap<String, StatisticsItem> itemMap = statsTable.get(kind);
         if (itemMap != null) {
             StatisticsItem item = itemMap.get(key);
 
-            // if not exist, create and schedule
+            // 不存在则创建并注册定时打印
             if (item == null) {
                 item = new StatisticsItem(kind, key, kindMetaMap.get(kind).getItemNames());
                 item.setInterceptor(new StatisticsBriefInterceptor(item, briefMetas));
@@ -122,7 +127,7 @@ public class StatisticsManager {
                 }
             }
 
-            // do increment
+            // 执行累加
             item.incItems(itemAccumulates);
 
             return true;
@@ -131,10 +136,12 @@ public class StatisticsManager {
         return false;
     }
 
+    /** 将新统计项交给对应 kind 的 ScheduledPrinter。 */
     private void scheduleStatisticsItem(StatisticsItem item) {
         kindMetaMap.get(item.getStatKind()).getScheduledPrinter().schedule(item);
     }
 
+    /** 从 statsTable 移除并取消定时任务。 */
     public void remove(StatisticsItem item) {
         ConcurrentHashMap<String, StatisticsItem> itemMap = statsTable.get(item.getStatKind());
         if (itemMap != null) {
@@ -147,14 +154,17 @@ public class StatisticsManager {
         }
     }
 
+    /** 返回在线状态判定器。 */
     public StatisticsItemStateGetter getStatisticsItemStateGetter() {
         return statisticsItemStateGetter;
     }
 
+    /** 设置在线状态判定器。 */
     public void setStatisticsItemStateGetter(StatisticsItemStateGetter statisticsItemStateGetter) {
         this.statisticsItemStateGetter = statisticsItemStateGetter;
     }
 
+    /** 关闭清理调度线程池。 */
     public void shutdown() {
         executor.shutdown();
     }

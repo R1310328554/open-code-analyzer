@@ -17,15 +17,16 @@
 package org.apache.rocketmq.common.statistics;
 
 /**
- * interceptor
+ * 统计项拦截器：在 {@link StatisticsItem} 增量更新时同步采样或重置。
  */
 public interface Interceptor {
     /**
-     * increase multiple values
+     * 按项递增多个增量值。
      *
-     * @param deltas
+     * @param deltas 各统计项增量
      */
     void inc(long... deltas);
 
+    /** 重置拦截器内部采样状态。 */
     void reset();
 }

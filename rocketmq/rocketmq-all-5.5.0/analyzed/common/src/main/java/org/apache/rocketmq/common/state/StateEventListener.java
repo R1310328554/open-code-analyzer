@@ -17,6 +17,10 @@
 
 package org.apache.rocketmq.common.state;
 
+/**
+ * 状态事件监听器：接收并处理类型为 {@code T} 的状态变更事件。
+ */
 public interface StateEventListener<T> {
+    /** 触发并分发状态事件。 */
     void fireEvent(T event);
 }

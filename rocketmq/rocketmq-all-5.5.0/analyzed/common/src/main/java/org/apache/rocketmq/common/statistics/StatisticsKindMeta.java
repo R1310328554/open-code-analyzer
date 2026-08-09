@@ -17,33 +17,42 @@
 package org.apache.rocketmq.common.statistics;
 
 /**
- * Statistics Kind Metadata
+ * 统计类别元数据：名称、子项列表及关联的定时打印机。
  */
 public class StatisticsKindMeta {
+    /** 统计类别名。 */
     private String name;
+    /** 该类别下各子项名称。 */
     private String[] itemNames;
+    /** 该类别统计项注册时使用的定时打印机。 */
     private StatisticsItemScheduledPrinter scheduledPrinter;
 
+    /** 返回类别名。 */
     public String getName() {
         return name;
     }
 
+    /** 设置类别名。 */
     public void setName(String name) {
         this.name = name;
     }
 
+    /** 返回子项名称数组。 */
     public String[] getItemNames() {
         return itemNames;
     }
 
+    /** 设置子项名称数组。 */
     public void setItemNames(String[] itemNames) {
         this.itemNames = itemNames;
     }
 
+    /** 返回定时打印机。 */
     public StatisticsItemScheduledPrinter getScheduledPrinter() {
         return scheduledPrinter;
     }
 
+    /** 设置定时打印机。 */
     public void setScheduledPrinter(StatisticsItemScheduledPrinter scheduledPrinter) {
         this.scheduledPrinter = scheduledPrinter;
     }

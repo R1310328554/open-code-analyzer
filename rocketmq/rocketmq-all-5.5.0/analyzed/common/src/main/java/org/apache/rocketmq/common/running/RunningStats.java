@@ -16,10 +16,18 @@
  */
 package org.apache.rocketmq.common.running;
 
+/**
+ * Broker 运行时监控指标键：CommitLog/ConsumeQueue 磁盘占用与偏移等。
+ */
 public enum RunningStats {
+    /** CommitLog 最大物理偏移。 */
     commitLogMaxOffset,
+    /** CommitLog 最小物理偏移。 */
     commitLogMinOffset,
+    /** CommitLog 磁盘使用率。 */
     commitLogDiskRatio,
+    /** ConsumeQueue 磁盘使用率。 */
     consumeQueueDiskRatio,
+    /** 定时消息队列偏移。 */
     scheduleMessageOffset,
 }
