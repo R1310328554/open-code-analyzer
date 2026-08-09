@@ -240,13 +240,3 @@ docs_src/frontend/tutorial006_py310.py
 docs_src/generate_clients/__init__.py
 docs_src/generate_clients/tutorial001_py310.py
 docs_src/generate_clients/tutorial002_py310.py
-docs_src/generate_clients/tutorial003_py310.py
-docs_src/generate_clients/tutorial004_py310.py
-docs_src/graphql_/__init__.py
-docs_src/graphql_/tutorial001_py310.py
-docs_src/handling_errors/__init__.py
-docs_src/handling_errors/tutorial001_py310.py
-docs_src/handling_errors/tutorial002_py310.py
-docs_src/handling_errors/tutorial003_py310.py
-docs_src/handling_errors/tutorial004_py310.py
-docs_src/handling_errors/tutorial005_py310.py
