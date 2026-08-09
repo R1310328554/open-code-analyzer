@@ -25,30 +25,30 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.common.MixAll;
 
 /**
- * The class describes that a typical broker cluster's (in replication) details: the cluster (in sharding) name
- * that it belongs to, and all the single instance information for this cluster.
+ * Broker 路由数据：描述 Broker 组所属集群、各 brokerId 实例地址及可用区信息。
  */
 public class BrokerData implements Comparable<BrokerData> {
+    /** 所属集群（分片）名称。 */
     private String cluster;
+    /** Broker 组名称。 */
     private String brokerName;
 
-    /**
-     * The container that store the all single instances for the current broker replication cluster.
-     * The key is the brokerId, and the value is the address of the single broker instance.
-     */
+    /** brokerId → 实例地址映射（含 Master 与 Slave）。 */
     private HashMap<Long, String> brokerAddrs;
+    /** 可用区名称。 */
     private String zoneName;
+    /** 随机数生成器（Master 不可用时选 Slave）。 */
     private final Random random = new Random();
 
-    /**
-     * Enable acting master or not, used for old version HA adaption,
-     */
+    /** 是否允许 Acting Master（兼容旧版 HA）。 */
     private boolean enableActingMaster = false;
 
+    /** 默认构造。 */
     public BrokerData() {
 
     }
 
+    /** 拷贝构造。 */
     public BrokerData(BrokerData brokerData) {
         this.cluster = brokerData.cluster;
         this.brokerName = brokerData.brokerName;
@@ -59,12 +59,14 @@ public class BrokerData implements Comparable<BrokerData> {
         this.enableActingMaster = brokerData.enableActingMaster;
     }
 
+    /** 指定集群、Broker 组与地址映射的构造。 */
     public BrokerData(String cluster, String brokerName, HashMap<Long, String> brokerAddrs) {
         this.cluster = cluster;
         this.brokerName = brokerName;
         this.brokerAddrs = brokerAddrs;
     }
 
+    /** 指定集群、Broker 组、地址映射与 Acting Master 标志的构造。 */
     public BrokerData(String cluster, String brokerName, HashMap<Long, String> brokerAddrs,
         boolean enableActingMaster) {
         this.cluster = cluster;
@@ -73,6 +75,7 @@ public class BrokerData implements Comparable<BrokerData> {
         this.enableActingMaster = enableActingMaster;
     }
 
+    /** 指定集群、Broker 组、地址映射、Acting Master 与可用区的构造。 */
     public BrokerData(String cluster, String brokerName, HashMap<Long, String> brokerAddrs, boolean enableActingMaster,
         String zoneName) {
         this.cluster = cluster;
@@ -83,10 +86,9 @@ public class BrokerData implements Comparable<BrokerData> {
     }
 
     /**
-     * Selects a (preferably master) broker address from the registered list. If the master's address cannot be found, a
-     * slave broker address is selected in a random manner.
+     * 从已注册地址中选取 Broker 地址：优先 Master，不可用时随机选 Slave。
      *
-     * @return Broker address.
+     * @return Broker 地址
      */
     public String selectBrokerAddr() {
         String masterAddress = this.brokerAddrs.get(MixAll.MASTER_ID);
@@ -99,38 +101,47 @@ public class BrokerData implements Comparable<BrokerData> {
         return masterAddress;
     }
 
+    /** 返回 brokerId 地址映射。 */
     public HashMap<Long, String> getBrokerAddrs() {
         return brokerAddrs;
     }
 
+    /** 设置 brokerId 地址映射。 */
     public void setBrokerAddrs(HashMap<Long, String> brokerAddrs) {
         this.brokerAddrs = brokerAddrs;
     }
 
+    /** 返回集群名称。 */
     public String getCluster() {
         return cluster;
     }
 
+    /** 设置集群名称。 */
     public void setCluster(String cluster) {
         this.cluster = cluster;
     }
 
+    /** 返回是否启用 Acting Master。 */
     public boolean isEnableActingMaster() {
         return enableActingMaster;
     }
 
+    /** 设置 Acting Master 标志。 */
     public void setEnableActingMaster(boolean enableActingMaster) {
         this.enableActingMaster = enableActingMaster;
     }
 
+    /** 返回可用区名称。 */
     public String getZoneName() {
         return zoneName;
     }
 
+    /** 设置可用区名称。 */
     public void setZoneName(String zoneName) {
         this.zoneName = zoneName;
     }
 
+    /** 基于 brokerName 与地址映射计算哈希码。 */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -140,6 +151,7 @@ public class BrokerData implements Comparable<BrokerData> {
         return result;
     }
 
+    /** 比较 brokerName 与地址映射是否相等。 */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -162,20 +174,24 @@ public class BrokerData implements Comparable<BrokerData> {
         return StringUtils.equals(brokerName, other.brokerName);
     }
 
+    /** 返回含 brokerName 与地址映射的调试字符串。 */
     @Override
     public String toString() {
         return "BrokerData [brokerName=" + brokerName + ", brokerAddrs=" + brokerAddrs + ", enableActingMaster=" + enableActingMaster + "]";
     }
 
+    /** 按 brokerName 字典序比较。 */
     @Override
     public int compareTo(BrokerData o) {
         return this.brokerName.compareTo(o.getBrokerName());
     }
 
+    /** 返回 Broker 组名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 组名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }

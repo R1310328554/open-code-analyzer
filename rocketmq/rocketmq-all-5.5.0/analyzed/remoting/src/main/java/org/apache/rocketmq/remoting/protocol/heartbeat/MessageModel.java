@@ -21,28 +21,25 @@
 package org.apache.rocketmq.remoting.protocol.heartbeat;
 
 /**
- * Message model
+ * 消息模型枚举：广播、集群与 Lite 选择性消费。
  */
 public enum MessageModel {
-    /**
-     * broadcast
-     */
+    /** 广播模式：每条消息投递到组内所有消费者。 */
     BROADCASTING("BROADCASTING"),
-    /**
-     * clustering
-     */
+    /** 集群模式：同组内消息负载均衡消费。 */
     CLUSTERING("CLUSTERING"),
-    /**
-     * for lite consumer
-     */
+    /** Lite 消费者的选择性消费模式。 */
     LITE_SELECTIVE("LITE_SELECTIVE");
 
+    /** 模式中文标识串。 */
     private String modeCN;
 
+    /** 指定模式标识串。 */
     MessageModel(String modeCN) {
         this.modeCN = modeCN;
     }
 
+    /** 返回模式标识串。 */
     public String getModeCN() {
         return modeCN;
     }

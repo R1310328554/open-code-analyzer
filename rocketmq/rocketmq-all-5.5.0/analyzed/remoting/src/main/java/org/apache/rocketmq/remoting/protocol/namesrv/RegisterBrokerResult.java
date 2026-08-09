@@ -19,31 +19,43 @@ package org.apache.rocketmq.remoting.protocol.namesrv;
 
 import org.apache.rocketmq.remoting.protocol.body.KVTable;
 
+/**
+ * Broker 注册 NameServer 的结果体：HA 地址、Master 地址与 KV 配置表。
+ */
 public class RegisterBrokerResult {
+    /** HA 高可用服务地址。 */
     private String haServerAddr;
+    /** Master Broker 地址。 */
     private String masterAddr;
+    /** NameServer 返回的 KV 配置表。 */
     private KVTable kvTable;
 
+    /** 返回 HA 服务地址。 */
     public String getHaServerAddr() {
         return haServerAddr;
     }
 
+    /** 设置 HA 服务地址。 */
     public void setHaServerAddr(String haServerAddr) {
         this.haServerAddr = haServerAddr;
     }
 
+    /** 返回 Master 地址。 */
     public String getMasterAddr() {
         return masterAddr;
     }
 
+    /** 设置 Master 地址。 */
     public void setMasterAddr(String masterAddr) {
         this.masterAddr = masterAddr;
     }
 
+    /** 返回 KV 配置表。 */
     public KVTable getKvTable() {
         return kvTable;
     }
 
+    /** 设置 KV 配置表。 */
     public void setKvTable(KVTable kvTable) {
         this.kvTable = kvTable;
     }

@@ -20,17 +20,24 @@
  */
 package org.apache.rocketmq.remoting.protocol.heartbeat;
 
+/**
+ * 心跳中的生产者数据：仅包含生产者组名称。
+ */
 public class ProducerData {
+    /** 生产者组名称。 */
     private String groupName;
 
+    /** 返回生产者组名称。 */
     public String getGroupName() {
         return groupName;
     }
 
+    /** 设置生产者组名称。 */
     public void setGroupName(String groupName) {
         this.groupName = groupName;
     }
 
+    /** 返回含 groupName 的调试字符串。 */
     @Override
     public String toString() {
         return "ProducerData [groupName=" + groupName + "]";

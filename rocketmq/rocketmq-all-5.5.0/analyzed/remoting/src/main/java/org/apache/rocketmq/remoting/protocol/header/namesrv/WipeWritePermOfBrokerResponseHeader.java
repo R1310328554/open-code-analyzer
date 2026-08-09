@@ -20,18 +20,25 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 清除 Broker 写权限的响应头：返回受影响的 Topic 数量。
+ */
 public class WipeWritePermOfBrokerResponseHeader implements CommandCustomHeader {
+    /** 被撤销写权限的 Topic 数量。 */
     @CFNotNull
     private Integer wipeTopicCount;
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回受影响的 Topic 数量。 */
     public Integer getWipeTopicCount() {
         return wipeTopicCount;
     }
 
+    /** 设置受影响的 Topic 数量。 */
     public void setWipeTopicCount(Integer wipeTopicCount) {
         this.wipeTopicCount = wipeTopicCount;
     }

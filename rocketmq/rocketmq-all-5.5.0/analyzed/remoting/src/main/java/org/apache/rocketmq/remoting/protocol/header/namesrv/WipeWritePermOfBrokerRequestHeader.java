@@ -24,20 +24,27 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 清除 Broker 写权限的请求头：指定 Broker 组名，NameServer 将撤销其 Topic 写权限。
+ */
 @RocketMQAction(value = RequestCode.WIPE_WRITE_PERM_OF_BROKER, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class WipeWritePermOfBrokerRequestHeader implements CommandCustomHeader {
+    /** 目标 Broker 组名称。 */
     @CFNotNull
     private String brokerName;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 Broker 组名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 组名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }

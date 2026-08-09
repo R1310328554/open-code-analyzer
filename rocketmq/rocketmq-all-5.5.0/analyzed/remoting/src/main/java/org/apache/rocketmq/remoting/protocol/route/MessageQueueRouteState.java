@@ -16,11 +16,18 @@
  */
 package org.apache.rocketmq.remoting.protocol.route;
 
+/**
+ * 消息队列路由状态枚举：ordinal 顺序固定，勿随意调整。
+ */
 public enum MessageQueueRouteState {
+    /** 路由已过期。 */
     // do not change below order, since ordinal() is used
     Expired,
+    /** 只读状态。 */
     ReadOnly,
+    /** 正常可读可写。 */
     Normal,
+    /** 只写状态。 */
     WriteOnly,
     ;
 }

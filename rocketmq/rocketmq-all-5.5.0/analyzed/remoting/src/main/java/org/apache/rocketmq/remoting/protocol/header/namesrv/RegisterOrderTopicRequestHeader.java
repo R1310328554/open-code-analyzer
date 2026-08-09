@@ -24,29 +24,39 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 向 NameServer 注册顺序 Topic 的请求头：携带 Topic 名与顺序 Topic 配置串。
+ */
 public class RegisterOrderTopicRequestHeader implements CommandCustomHeader {
+    /** 顺序 Topic 名称。 */
     @CFNotNull
     private String topic;
+    /** 顺序 Topic 配置串（队列与 Broker 映射描述）。 */
     @CFNotNull
     private String orderTopicString;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回顺序 Topic 配置串。 */
     public String getOrderTopicString() {
         return orderTopicString;
     }
 
+    /** 设置顺序 Topic 配置串。 */
     public void setOrderTopicString(String orderTopicString) {
         this.orderTopicString = orderTopicString;
     }

@@ -26,93 +26,124 @@ import org.apache.rocketmq.common.filter.ExpressionType;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * 订阅数据：描述 Topic、过滤表达式、Tag/SQL 集合及订阅版本。
+ */
 public class SubscriptionData implements Comparable<SubscriptionData> {
+    /** 订阅全部 Tag 的通配符常量。 */
     public final static String SUB_ALL = "*";
+    /** 是否启用类过滤模式。 */
     private boolean classFilterMode = false;
+    /** 订阅 Topic 名称。 */
     private String topic;
+    /** 订阅表达式串（Tag 或 SQL92）。 */
     private String subString;
+    /** 解析后的 Tag 集合。 */
     private Set<String> tagsSet = new HashSet<>();
+    /** Tag 哈希码集合（加速匹配）。 */
     private Set<Integer> codeSet = new HashSet<>();
+    /** 订阅版本号（变更时递增）。 */
     private long subVersion = System.currentTimeMillis();
+    /** 表达式类型（Tag/SQL92 等）。 */
     private String expressionType = ExpressionType.TAG;
 
+    /** 类过滤源码（不参与 JSON 序列化）。 */
     @JSONField(serialize = false)
     private String filterClassSource;
 
+    /** 默认构造。 */
     public SubscriptionData() {
 
     }
 
+    /** 指定 Topic 与订阅串的构造。 */
     public SubscriptionData(String topic, String subString) {
         super();
         this.topic = topic;
         this.subString = subString;
     }
 
+    /** 返回类过滤源码。 */
     public String getFilterClassSource() {
         return filterClassSource;
     }
 
+    /** 设置类过滤源码。 */
     public void setFilterClassSource(String filterClassSource) {
         this.filterClassSource = filterClassSource;
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回订阅表达式串。 */
     public String getSubString() {
         return subString;
     }
 
+    /** 设置订阅表达式串。 */
     public void setSubString(String subString) {
         this.subString = subString;
     }
 
+    /** 返回 Tag 集合。 */
     public Set<String> getTagsSet() {
         return tagsSet;
     }
 
+    /** 设置 Tag 集合。 */
     public void setTagsSet(Set<String> tagsSet) {
         this.tagsSet = tagsSet;
     }
 
+    /** 返回订阅版本号。 */
     public long getSubVersion() {
         return subVersion;
     }
 
+    /** 设置订阅版本号。 */
     public void setSubVersion(long subVersion) {
         this.subVersion = subVersion;
     }
 
+    /** 返回 Tag 哈希码集合。 */
     public Set<Integer> getCodeSet() {
         return codeSet;
     }
 
+    /** 设置 Tag 哈希码集合。 */
     public void setCodeSet(Set<Integer> codeSet) {
         this.codeSet = codeSet;
     }
 
+    /** 返回是否类过滤模式。 */
     public boolean isClassFilterMode() {
         return classFilterMode;
     }
 
+    /** 设置类过滤模式标志。 */
     public void setClassFilterMode(boolean classFilterMode) {
         this.classFilterMode = classFilterMode;
     }
 
+    /** 返回表达式类型。 */
     public String getExpressionType() {
         return expressionType;
     }
 
+    /** 设置表达式类型。 */
     public void setExpressionType(String expressionType) {
         this.expressionType = expressionType;
     }
 
+    /** 基于 Topic、表达式与 Tag 集合计算哈希码。 */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -126,6 +157,7 @@ public class SubscriptionData implements Comparable<SubscriptionData> {
         return result;
     }
 
+    /** 比较订阅 Topic、表达式、版本与 Tag 集合是否相等。 */
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -167,6 +199,7 @@ public class SubscriptionData implements Comparable<SubscriptionData> {
         return true;
     }
 
+    /** 返回含 Topic、表达式与 Tag 集合的调试字符串。 */
     @Override
     public String toString() {
         return "SubscriptionData [classFilterMode=" + classFilterMode + ", topic=" + topic + ", subString="
@@ -174,6 +207,7 @@ public class SubscriptionData implements Comparable<SubscriptionData> {
             + ", expressionType=" + expressionType + "]";
     }
 
+    /** 按 topic@subString 字典序比较。 */
     @Override
     public int compareTo(SubscriptionData other) {
         String thisValue = this.topic + "@" + this.subString;
