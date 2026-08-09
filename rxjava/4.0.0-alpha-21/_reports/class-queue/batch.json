@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:07:29Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDelay.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDelayWithCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDelayWithObservable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDelayWithPublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDelayWithSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDematerialize.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDetach.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoAfterSuccess.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoAfterTerminate.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoFinally.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnDispose.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnError.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnEvent.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnLifecycle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnSubscribe.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnSuccess.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnTerminate.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleEquals.java",
@@ -33,5 +18,5 @@
     "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFromSupplier.java"
   ],
   "remaining_pending": 332,
-  "done": 645
+  "done": 660
 }
