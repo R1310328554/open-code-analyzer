@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:02:45Z",
-  "files": [
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/ToolCallback.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/ToolCallbackCreateTaskHandler.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/ToolCallbackProvider.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/ToolContext.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/ToolContextKeys.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/annotation/Tool.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/annotation/ToolParam.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/definition/ToolDefinition.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/definition/ToolDefinitions.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/execution/DefaultToolCallResultConverter.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/execution/DefaultToolExecutionExceptionProcessor.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/execution/ToolCallResultConverter.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/execution/ToolExecutionException.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/execution/ToolExecutionExceptionProcessor.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/tool/util/JsonSchemaGenerator.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 705,
-  "done": 75
+  "done": 90
 }
