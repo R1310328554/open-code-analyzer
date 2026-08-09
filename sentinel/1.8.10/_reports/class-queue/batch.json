@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:11:43Z",
-  "files": [
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/services/metricservice.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/services/param_flow_service.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/services/systemservice.js",
-    "sentinel-dashboard/src/main/webapp/resources/app/scripts/services/version_service.js",
-    "sentinel-dashboard/src/main/webapp/resources/gulpfile.js",
-    "sentinel-dashboard/src/main/webapp/resources/lib/js/angular.min.js",
-    "sentinel-dashboard/src/main/webapp/resources/lib/js/bootstrap.min.js",
-    "sentinel-dashboard/src/main/webapp/resources/lib/js/g2.min.js",
-    "sentinel-dashboard/src/main/webapp/resources/lib/js/jquery.min.js",
-    "sentinel-demo/sentinel-demo-annotation-cdi-interceptor/src/main/java/com/alibaba/csp/sentinel/demo/annotation/cdi/interceptor/DemoApplication.java",
-    "sentinel-demo/sentinel-demo-annotation-cdi-interceptor/src/main/java/com/alibaba/csp/sentinel/demo/annotation/cdi/interceptor/ExceptionUtil.java",
-    "sentinel-demo/sentinel-demo-annotation-cdi-interceptor/src/main/java/com/alibaba/csp/sentinel/demo/annotation/cdi/interceptor/TestService.java",
-    "sentinel-demo/sentinel-demo-annotation-cdi-interceptor/src/main/java/com/alibaba/csp/sentinel/demo/annotation/cdi/interceptor/TestServiceImpl.java",
-    "sentinel-demo/sentinel-demo-annotation-spring-aop/src/main/java/com/alibaba/csp/sentinel/demo/annotation/aop/DemoApplication.java",
-    "sentinel-demo/sentinel-demo-annotation-spring-aop/src/main/java/com/alibaba/csp/sentinel/demo/annotation/aop/config/AopConfiguration.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 275,
-  "done": 675
+  "done": 690
 }
