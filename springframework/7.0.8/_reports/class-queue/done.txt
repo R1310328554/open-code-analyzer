@@ -315,3 +315,11 @@ spring-beans/src/main/java/org/springframework/beans/propertyeditors/CustomMapEd
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/CustomNumberEditor.java
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/FileEditor.java
 spring-beans/src/main/java/org/springframework/beans/propertyeditors/InputSourceEditor.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractBeanDefinition.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/BeanDefinitionValueResolver.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/DisposableBeanAdapter.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/PropertiesBeanDefinitionReader.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/RootBeanDefinition.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/StaticListableBeanFactory.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/BeanDefinitionParserDelegate.java
+spring-beans/src/main/java/org/springframework/beans/factory/xml/XmlBeanDefinitionReader.java
