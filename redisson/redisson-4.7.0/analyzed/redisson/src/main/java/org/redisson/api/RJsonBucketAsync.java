@@ -20,28 +20,29 @@ import org.redisson.codec.JsonCodec;
 import java.util.List;
 
 /**
- * Redis JSON datatype interface. Data is stored as JSON object in Redis
+ * {@link RJsonBucket} 异步 API；各方法返回 {@link RFuture}。
+ * <p>数据以 Redis JSON 对象存储，支持 JSONPath 部分更新。
  *
  * @author Nikita Koksharov
- * @param <V> the type of object
+ * @param <V> 对象类型
  */
 public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
 
     /**
-     * Get Json object/objects by JSONPath
+     * 按 JSONPath 获取 JSON 对象。
      *
-     * @param codec object codec
-     * @param paths JSON paths
-     * @return object
+     * @param codec 对象编解码器
+     * @param paths JSON 路径
+     * @return 对象
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> RFuture<T> getAsync(JsonCodec codec, String... paths);
 
     /**
-     * Sets Json object by JSONPath only if previous value is empty
+     * 仅当 JSONPath 处原值为空时写入 JSON 对象。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @return {@code true} if successful, or {@code false} if
      *         value was already set
@@ -51,7 +52,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Use {@link #setIfAbsentAsync(String, Object)} instead
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @return {@code true} if successful, or {@code false} if
      *         value was already set
@@ -60,9 +61,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     RFuture<Boolean> trySetAsync(String path, Object value);
 
     /**
-     * Sets Json object by JSONPath only if previous value is non-empty
+     * 仅当 JSONPath 处原值非空时写入 JSON 对象。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @return {@code true} if successful, or {@code false} if
      *         element wasn't set
@@ -70,13 +71,11 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     RFuture<Boolean> setIfExistsAsync(String path, Object value);
 
     /**
-     * Atomically sets the value to the given updated value
-     * by given JSONPath, only if serialized state of
-     * the current value equals to serialized state of the expected value.
+     * 仅当 JSONPath 处当前值序列化状态等于期望值时，原子写入新值。
      *
-     * @param path JSON path
-     * @param expect the expected value
-     * @param update the new value
+     * @param path JSON 路径
+     * @param expect 期望值
+     * @param update 新值
      * @return {@code true} if successful; or {@code false} if the actual value
      *         was not equal to the expected value.
      */
@@ -86,8 +85,8 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
      * Retrieves current value of element specified by JSONPath
      * and replaces it with <code>newValue</code>.
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @param newValue value to set
      * @return previous value
      */
@@ -96,30 +95,30 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Stores object into element by specified JSONPath.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to set
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> setAsync(String path, Object value);
 
     /**
      * Stores object into element by specified JSONPath using FPHA argument
      * to enforce floating-point array precision.
-     * Requires <b>Redis 8.8.0 or higher.</b>
+     * 需要 <b>Redis 8.8.0 及以上</b>。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to set
      * @param fphaType floating-point precision type
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> setAsync(String path, Object value, FPHAType fphaType);
 
     /**
-     * Sets Json object by JSONPath only if previous value is empty,
+     * 仅当 JSONPath 处原值为空时写入 JSON 对象。,
      * using FPHA argument to enforce floating-point array precision.
-     * Requires <b>Redis 8.8.0 or higher.</b>
+     * 需要 <b>Redis 8.8.0 及以上</b>。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @param fphaType floating-point precision type
      * @return {@code true} if successful, or {@code false} if
@@ -128,11 +127,11 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     RFuture<Boolean> setIfAbsentAsync(String path, Object value, FPHAType fphaType);
 
     /**
-     * Sets Json object by JSONPath only if previous value is non-empty,
+     * 仅当 JSONPath 处原值非空时写入 JSON 对象。,
      * using FPHA argument to enforce floating-point array precision.
-     * Requires <b>Redis 8.8.0 or higher.</b>
+     * 需要 <b>Redis 8.8.0 及以上</b>。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @param fphaType floating-point precision type
      * @return {@code true} if successful, or {@code false} if
@@ -143,16 +142,16 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Returns size of string data by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return size of string
      */
     RFuture<Long> stringSizeAsync(String path);
 
     /**
      * Returns list of string data size by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of string data sizes
      */
     RFuture<List<Long>> stringSizeMultiAsync(String path);
@@ -161,7 +160,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
      * Appends string data to element specified by JSONPath.
      * Returns new size of string data.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value data
      * @return size of string data
      */
@@ -170,9 +169,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Appends string data to elements specified by JSONPath.
      * Returns new size of string data.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value data
      * @return list of string data sizes
      */
@@ -182,7 +181,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
      * Appends values to array specified by JSONPath.
      * Returns new size of array.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param values values to append
      * @return size of array
      */
@@ -191,9 +190,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Appends values to arrays specified by JSONPath.
      * Returns new size of arrays.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param values values to append
      * @return list of arrays size
      */
@@ -201,9 +200,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
 
     /**
      * Returns index of object in array specified by JSONPath.
-     * -1 means object not found.
+     * 返回 {@code -1} 表示未找到。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to search
      * @return index in array
      */
@@ -211,10 +210,10 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
 
     /**
      * Returns index of object in arrays specified by JSONPath.
-     * -1 means object not found.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 返回 {@code -1} 表示未找到。
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to search
      * @return list of index in arrays
      */
@@ -223,9 +222,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Returns index of object in array specified by JSONPath
      * in range between <code>start</code> (inclusive) and <code>end</code> (exclusive) indexes.
-     * -1 means object not found.
+     * 返回 {@code -1} 表示未找到。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to search
      * @param start start index, inclusive
      * @param end end index, exclusive
@@ -236,10 +235,10 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Returns index of object in arrays specified by JSONPath
      * in range between <code>start</code> (inclusive) and <code>end</code> (exclusive) indexes.
-     * -1 means object not found.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 返回 {@code -1} 表示未找到。
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to search
      * @param start start index, inclusive
      * @param end end index, exclusive
@@ -251,7 +250,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
      * Inserts values into array specified by JSONPath.
      * Values are inserted at defined <code>index</code>.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param index array index at which values are inserted
      * @param values values to insert
      * @return size of array
@@ -261,9 +260,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Inserts values into arrays specified by JSONPath.
      * Values are inserted at defined <code>index</code>.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param index array index at which values are inserted
      * @param values values to insert
      * @return list of arrays size
@@ -273,16 +272,16 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Returns size of array specified by JSONPath.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return size of array
      */
     RFuture<Long> arraySizeAsync(String path);
 
     /**
      * Returns size of arrays specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of arrays size
      */
     RFuture<List<Long>> arraySizeMultiAsync(String path);
@@ -290,71 +289,71 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Polls last element of array specified by JSONPath.
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return last element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> RFuture<T> arrayPollLastAsync(JsonCodec codec, String path);
 
     /**
      * Polls last element of arrays specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return list of last elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> RFuture<List<T>> arrayPollLastMultiAsync(JsonCodec codec, String path);
 
     /**
      * Polls first element of array specified by JSONPath.
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return first element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> RFuture<T> arrayPollFirstAsync(JsonCodec codec, String path);
 
     /**
      * Polls first element of arrays specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return list of first elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> RFuture<List<T>> arrayPollFirstMultiAsync(JsonCodec codec, String path);
 
     /**
      * Pops element located at index of array specified by JSONPath.
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @param index array index
      * @return element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> RFuture<T> arrayPopAsync(JsonCodec codec, String path, long index);
 
     /**
      * Pops elements located at index of arrays specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @param index array index
      * @return list of elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> RFuture<List<T>> arrayPopMultiAsync(JsonCodec codec, String path, long index);
 
@@ -362,7 +361,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
      * Trims array specified by JSONPath in range
      * between <code>start</code> (inclusive) and <code>end</code> (inclusive) indexes.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param start start index, inclusive
      * @param end end index, inclusive
      * @return length of array
@@ -372,9 +371,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Trims arrays specified by JSONPath in range
      * between <code>start</code> (inclusive) and <code>end</code> (inclusive) indexes.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param start start index, inclusive
      * @param end end index, inclusive
      * @return length of array
@@ -382,7 +381,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     RFuture<List<Long>> arrayTrimMultiAsync(String path, long start, long end);
 
     /**
-     * Clears json container.
+     * 清空 JSON 容器。
      *
      * @return number of cleared containers
      */
@@ -390,9 +389,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
 
     /**
      * Clears json container specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return number of cleared containers
      */
     RFuture<Long> clearAsync(String path);
@@ -400,7 +399,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Increments the current value specified by JSONPath by <code>delta</code>.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param delta increment value
      * @return the updated value
      */
@@ -408,9 +407,9 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
 
     /**
      * Increments the current values specified by JSONPath by <code>delta</code>.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param delta increment value
      * @return list of updated value
      */
@@ -419,7 +418,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Merges object into element by the specified JSONPath.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to merge
      */
     RFuture<Void> mergeAsync(String path, Object value);
@@ -427,22 +426,22 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Returns keys amount in JSON container
      *
-     * @return keys amount
+     * @return 键集合 amount
      */
     RFuture<Long> countKeysAsync();
 
     /**
      * Returns keys amount in JSON container specified by JSONPath
      *
-     * @param path JSON path
-     * @return keys amount
+     * @param path JSON 路径
+     * @return 键集合 amount
      */
     RFuture<Long> countKeysAsync(String path);
 
     /**
      * Returns list of keys amount in JSON containers specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of keys amount
      */
     RFuture<List<Long>> countKeysMultiAsync(String path);
@@ -457,7 +456,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Returns list of keys in JSON container specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of keys
      */
     RFuture<List<String>> getKeysAsync(String path);
@@ -465,7 +464,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Returns list of keys in JSON containers specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of keys
      */
     RFuture<List<List<String>>> getKeysMultiAsync(String path);
@@ -473,7 +472,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Toggle boolean value specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return new boolean value
      */
     RFuture<Boolean> toggleAsync(String path);
@@ -481,7 +480,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Toggle boolean values specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of boolean values
      */
     RFuture<List<Boolean>> toggleMultiAsync(String path);
@@ -496,7 +495,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Returns type of element specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return type of element
      */
     RFuture<JsonType> getTypeAsync(String path);
@@ -504,7 +503,7 @@ public interface RJsonBucketAsync<V> extends RBucketAsync<V> {
     /**
      * Deletes JSON elements specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return number of deleted elements
      */
     RFuture<Long> deleteAsync(String path);

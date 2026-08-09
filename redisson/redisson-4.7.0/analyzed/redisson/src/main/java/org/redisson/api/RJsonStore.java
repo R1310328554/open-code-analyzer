@@ -24,36 +24,32 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * JSON Store which stores each entry as key and value. Both are POJO objects.
- * Value is stored as JSON datatype in Redis.
- * <p>
- * The implementation is available in Redisson PRO only.
+ * JSON Store {@link RJsonStore}：每条目以键值对存储，值以 Redis JSON 类型持久化。
+ * <p>实现仅 Redisson PRO 提供；支持 JSONPath、TTL 与批量操作。
  *
  * @author Nikita Koksharov
- *
- * @param <K> the type of key
- * @param <V> the type of value
- *
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
 
     /**
      * Gets value by specified key and JSONPath
      *
-     * @param key entry key
+     * @param key 条目键
      * @param codec entry value codec
-     * @param paths JSON paths
-     * @return entry value
+     * @param paths JSON 路径
+     * @return 条目值
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> T get(K key, JsonCodec codec, String... paths);
 
     /**
      * Sets value by specified key and JSONPath only if previous value is empty.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value entry value
      * @return {@code true} if successful, or {@code false} if
      *         value was already set
@@ -63,8 +59,8 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Sets value by specified key and JSONPath only if previous value is non-empty.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value object
      * @return {@code true} if successful, or {@code false} if
      *         element wasn't set
@@ -76,10 +72,10 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * by specified key and JSONPath, only if serialized state of
      * the current value equals to serialized state of the expected value.
      *
-     * @param key entry key
-     * @param path JSON path
-     * @param expect the expected value
-     * @param update the new value
+     * @param key 条目键
+     * @param path JSON 路径
+     * @param expect 期望值
+     * @param update 新值
      * @return {@code true} if successful; or {@code false} if the actual value
      *         was not equal to the expected value.
      */
@@ -89,9 +85,9 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * Retrieves current value stored by specified key and JSONPath then
      * replaces it with new value.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param codec entry value codec
-     * @param path JSON path
+     * @param path JSON 路径
      * @param newValue value to set
      * @return previous value
      */
@@ -100,8 +96,8 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Stores value by specified key and JSONPath.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value value to set
      */
     void set(K key, String path, Object value);
@@ -109,18 +105,18 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns size of string data by specified key and JSONPath
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @return size of string
      */
     Long stringSize(K key, String path);
 
     /**
      * Returns list of string data size by specified key and JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @return list of string data sizes
      */
     List<Long> stringSizeMulti(K key, String path);
@@ -129,8 +125,8 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * Appends string data to element specified by specified key and JSONPath.
      * Returns new size of string data.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value data
      * @return size of string data
      */
@@ -139,10 +135,10 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Appends string data to elements specified by specified key and JSONPath.
      * Returns new size of string data.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value data
      * @return list of string data sizes
      */
@@ -152,8 +148,8 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * Appends values to array by specified key and JSONPath.
      * Returns new size of array.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param values values to append
      * @return size of array
      */
@@ -162,10 +158,10 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Appends values to arrays by specified key and JSONPath.
      * Returns new size of arrays.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param values values to append
      * @return list of arrays size
      */
@@ -173,10 +169,10 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
 
     /**
      * Returns index of object in array by specified key and JSONPath.
-     * -1 means object not found.
+     * 返回 {@code -1} 表示未找到。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value value to search
      * @return index in array
      */
@@ -184,11 +180,11 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
 
     /**
      * Returns index of object in arrays by specified key and JSONPath.
-     * -1 means object not found.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 返回 {@code -1} 表示未找到。
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value value to search
      * @return list of index in arrays
      */
@@ -197,10 +193,10 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns index of object in array by specified key and JSONPath
      * in range between <code>start</code> (inclusive) and <code>end</code> (exclusive) indexes.
-     * -1 means object not found.
+     * 返回 {@code -1} 表示未找到。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value value to search
      * @param start start index, inclusive
      * @param end end index, exclusive
@@ -211,11 +207,11 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns index of object in arrays by specified key and JSONPath
      * in range between <code>start</code> (inclusive) and <code>end</code> (exclusive) indexes.
-     * -1 means object not found.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 返回 {@code -1} 表示未找到。
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value value to search
      * @param start start index, inclusive
      * @param end end index, exclusive
@@ -227,8 +223,8 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * Inserts values into array by specified key and JSONPath.
      * Values are inserted at defined <code>index</code>.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param index array index at which values are inserted
      * @param values values to insert
      * @return size of array
@@ -238,10 +234,10 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Inserts values into arrays by specified key and JSONPath.
      * Values are inserted at defined <code>index</code>.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param index array index at which values are inserted
      * @param values values to insert
      * @return list of arrays size
@@ -251,18 +247,18 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns size of array by specified key and JSONPath.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @return size of array
      */
     long arraySize(K key, String path);
 
     /**
      * Returns size of arrays by specified key and JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @return list of arrays size
      */
     List<Long> arraySizeMulti(K key, String path);
@@ -270,77 +266,77 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Polls last element of array by specified key and JSONPath.
      *
-     * @param key entry key
-     * @param codec object codec
-     * @param path JSON path
+     * @param key 条目键
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return last element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> T arrayPollLast(K key, JsonCodec codec, String path);
 
     /**
      * Polls last element of arrays by specified key and JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param codec object codec
-     * @param path JSON path
+     * @param key 条目键
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return list of last elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> List<T> arrayPollLastMulti(K key, JsonCodec codec, String path);
 
     /**
      * Polls first element of array by specified key and JSONPath.
      *
-     * @param key entry key
-     * @param codec object codec
-     * @param path JSON path
+     * @param key 条目键
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return first element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> T arrayPollFirst(K key, JsonCodec codec, String path);
 
     /**
      * Polls first element of arrays by specified key and JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param codec object codec
-     * @param path JSON path
+     * @param key 条目键
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return list of first elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> List<T> arrayPollFirstMulti(K key, JsonCodec codec, String path);
 
     /**
      * Pops element located at index of array by specified key and JSONPath.
      *
-     * @param key entry key
-     * @param codec object codec
-     * @param path JSON path
+     * @param key 条目键
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @param index array index
      * @return element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> T arrayPop(K key, JsonCodec codec, String path, long index);
 
     /**
      * Pops elements located at index of arrays by specified key and JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param codec object codec
-     * @param path JSON path
+     * @param key 条目键
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @param index array index
      * @return list of elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> List<T> arrayPopMulti(K key, JsonCodec codec, String path, long index);
 
@@ -348,8 +344,8 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * Trims array by specified key and JSONPath in range
      * between <code>start</code> (inclusive) and <code>end</code> (inclusive) indexes.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param start start index, inclusive
      * @param end end index, inclusive
      * @return length of array
@@ -359,10 +355,10 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Trims arrays by specified key and JSONPath in range
      * between <code>start</code> (inclusive) and <code>end</code> (inclusive) indexes.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param start start index, inclusive
      * @param end end index, inclusive
      * @return length of array
@@ -372,7 +368,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Clears value by specified key
      *
-     * @param key entry key
+     * @param key 条目键
      * @return {@code true} if successful, or {@code false} if
      *         entry doesn't exist
      */
@@ -388,9 +384,9 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
 
     /**
      * Clears json container by specified keys and JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param keys entry keys
      * @return number of cleared containers
      */
@@ -399,8 +395,8 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Increments the current value specified by key and JSONPath.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param delta increment value
      * @return the updated value
      */
@@ -408,10 +404,10 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
 
     /**
      * Increments the current values specified by key and JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param delta increment value
      * @return list of updated value
      */
@@ -420,8 +416,8 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Merges value into element by the specified key and JSONPath.
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @param value value to merge
      */
     void merge(K key, String path, Object value);
@@ -429,25 +425,25 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns keys amount in JSON container by specified key
      *
-     * @param key entry key
-     * @return keys amount
+     * @param key 条目键
+     * @return 键集合 amount
      */
     long countKeys(K key);
 
     /**
      * Returns keys amount in JSON container specified by key and JSONPath
      *
-     * @param key entry key
-     * @param path JSON path
-     * @return keys amount
+     * @param key 条目键
+     * @param path JSON 路径
+     * @return 键集合 amount
      */
     long countKeys(K key, String path);
 
     /**
      * Returns list of keys amount in JSON containers specified by key and JSONPath
      *
-     * @param key entry key
-     * @param path JSON path
+     * @param key 条目键
+     * @param path JSON 路径
      * @return list of keys amount
      */
     List<Long> countKeysMulti(K key, String path);
@@ -462,7 +458,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns list of keys in JSON container by specified key and JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of keys
      */
     List<String> getKeys(K key, String path);
@@ -470,7 +466,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns list of keys in JSON containers by specified key and JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of keys
      */
     List<List<String>> getKeysMulti(K key, String path);
@@ -478,7 +474,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Toggle boolean value by specified key and JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return new boolean value
      */
     boolean toggle(K key, String path);
@@ -486,7 +482,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Toggle boolean values by specified key and JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of boolean values
      */
     List<Boolean> toggleMulti(K key, String path);
@@ -501,7 +497,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns type of element specified by key and JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return type of element
      */
     JsonType getType(K key, String path);
@@ -509,7 +505,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Deletes entry by specified key
      *
-     * @param key entry key
+     * @param key 条目键
      * @return {@code true} if successful, or {@code false} if
      *         entry doesn't exist
      */
@@ -526,7 +522,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Deletes JSON elements specified by keys and JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param keys entry keys
      * @return number of deleted elements
      */
@@ -535,7 +531,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Returns size of entry in bytes specified by key.
      *
-     * @param key entry key
+     * @param key 条目键
      * @return entry size
      */
     long sizeInMemory(K key);
@@ -543,7 +539,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Retrieves value by specified key.
      *
-     * @param key entry key
+     * @param key 条目键
      * @return element
      */
     V get(K key);
@@ -559,7 +555,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Retrieves values by specified keys and JSONPath.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param keys entry keys
      * @return map with entries where value mapped by key
      */
@@ -568,7 +564,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Retrieves entry value by specified key and removes it.
      *
-     * @param key entry key
+     * @param key 条目键
      * @return element
      */
     V getAndDelete(K key);
@@ -576,7 +572,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Sets value only if entry doesn't exist.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param value value to set
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
@@ -586,7 +582,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Sets value with defined duration only if entry doesn't exist.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param value value to set
      * @param duration expiration duration
      * @return {@code true} if successful, or {@code false} if
@@ -597,7 +593,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Sets value only if entry already exists.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param value value to set
      * @return {@code true} if successful, or {@code false} if
      *         element wasn't set
@@ -607,7 +603,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Sets <code>value</code> with expiration <code>duration</code> only if entry already exists.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param value value to set
      * @param duration expiration duration
      * @return {@code true} if successful, or {@code false} if
@@ -620,9 +616,9 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * by specified key only if serialized state of the current value equals
      * to serialized state of the expected value.
      *
-     * @param key entry key
-     * @param expect the expected value
-     * @param update the new value
+     * @param key 条目键
+     * @param expect 期望值
+     * @param update 新值
      * @return {@code true} if successful; or {@code false} if the actual value
      *         was not equal to the expected value.
      */
@@ -631,7 +627,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Retrieves current value by specified key and replaces it with new value.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param newValue value to set
      * @return previous value
      */
@@ -641,7 +637,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * Retrieves current value by specified key and replaces it
      * with value and defines expiration <code>duration</code>.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param value value to set
      * @param duration expiration duration
      * @return previous value
@@ -653,7 +649,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param key entry key
+     * @param key 条目键
      * @param duration of object time to live interval
      * @return value
      */
@@ -664,7 +660,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param key entry key
+     * @param key 条目键
      * @param time of exact object expiration moment
      * @return value
      */
@@ -675,7 +671,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param key entry key
+     * @param key 条目键
      * @return value
      */
     V getAndClearExpire(K key);
@@ -683,7 +679,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Stores value by specified key.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param value value to set
      */
     void set(K key, V value);
@@ -706,7 +702,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     /**
      * Stores value by specified key with defined expiration duration.
      *
-     * @param key entry key
+     * @param key 条目键
      * @param value value to set
      * @param duration expiration duration
      */
@@ -730,21 +726,21 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     void setAndKeepTTL(K key, V value);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      * @see org.redisson.api.listener.SetObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 
     /**
      * Remaining time to live of map entry associated with a <code>key</code>.
      *
-     * @param key - map key
+     * @param key 映射键
      * @return time in milliseconds
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
@@ -752,7 +748,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     long remainTimeToLive(K key);
 
     /**
-     * Returns key set of this map.
+     * 返回本 Map 的键集合视图。
      * Keys are loaded in batch. Batch size is <code>10</code>.
      *
      * @see #readAllKeySet()
@@ -762,7 +758,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     Set<K> keySet();
 
     /**
-     * Returns key set of this map.
+     * 返回本 Map 的键集合视图。
      * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
      *
      * @see #readAllKeySet()
@@ -773,7 +769,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     Set<K> keySet(int count);
 
     /**
-     * Returns key set of this map.
+     * 返回本 Map 的键集合视图。
      * If <code>pattern</code> is not null then only keys match this pattern are loaded.
      * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
      * <p>
@@ -797,7 +793,7 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     Set<K> keySet(String pattern, int count);
 
     /**
-     * Returns key set of this map.
+     * 返回本 Map 的键集合视图。
      * If <code>pattern</code> is not null then only keys match this pattern are loaded.
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
@@ -819,19 +815,18 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     Set<K> keySet(String pattern);
 
     /**
-     * Returns <code>true</code> if this map contains map entry
-     * mapped by specified <code>key</code>, otherwise <code>false</code>
+     * 若包含指定 {@code key} 的映射条目则返回 {@code true}，否则 {@code false}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return <code>true</code> if this map contains map entry
      *          mapped by specified <code>key</code>, otherwise <code>false</code>
      */
     boolean containsKey(Object key);
 
     /**
-     * Read all keys at once
+     * 一次性读取全部键。
      *
-     * @return keys
+     * @return 键集合
      */
     Set<K> readAllKeySet();
 
@@ -843,49 +838,49 @@ public interface RJsonStore<K, V> extends RExpirable, RJsonStoreAsync<K, V> {
     int size();
 
     /**
-     * Returns <code>RCountDownLatch</code> instance associated with key
+     * 返回与键关联的 {@link RCountDownLatch}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return countdownlatch
      */
     RCountDownLatch getCountDownLatch(K key);
 
     /**
-     * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
+     * 返回与键关联的 {@link RPermitExpirableSemaphore}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return permitExpirableSemaphore
      */
     RPermitExpirableSemaphore getPermitExpirableSemaphore(K key);
 
     /**
-     * Returns <code>RSemaphore</code> instance associated with key
+     * 返回与键关联的 {@link RSemaphore}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return semaphore
      */
     RSemaphore getSemaphore(K key);
 
     /**
-     * Returns <code>RLock</code> instance associated with key
+     * 返回与键关联的 {@link RLock}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return fairlock
      */
     RLock getFairLock(K key);
 
     /**
-     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 返回与键关联的 {@link RReadWriteLock}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return readWriteLock
      */
     RReadWriteLock getReadWriteLock(K key);
 
     /**
-     * Returns <code>RLock</code> instance associated with key
+     * 返回与键关联的 {@link RLock}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return lock
      */
     RLock getLock(K key);

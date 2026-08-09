@@ -25,57 +25,53 @@ import org.redisson.api.map.MapWriter;
 import org.redisson.api.mapreduce.RMapReduce;
 
 /**
- * Redis based implementation of {@link java.util.concurrent.ConcurrentMap}
- * and {@link java.util.Map}
- * <p>
- * This map uses serialized state of key instead of hashCode or equals methods.
- * This map doesn't allow to store <code>null</code> as key or value.
+ * 基于 Redis 的 {@link java.util.concurrent.ConcurrentMap} 与 {@link java.util.Map} API。
+ * <p>使用键序列化状态而非 hashCode/equals；不允许 {@code null} 键或值。
+ * 支持 MapLoader/MapWriter、MapReduce 与 per-key 分布式锁。
  *
  * @author Nikita Koksharov
- *
- * @param <K> map key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V>, RDestroyable {
 
     /**
-     * Loads all map entries to this Redis map using {@link org.redisson.api.map.MapLoader}.
+     * 使用 {@link org.redisson.api.map.MapLoader} 加载全部映射条目。
      * 
-     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
-     * @param parallelism - parallelism level, used to increase speed of process execution
+     * @param replaceExistingValues 是否替换已有值  
+     * @param parallelism 并行度
      */
     void loadAll(boolean replaceExistingValues, int parallelism);
     
     /**
-     * Loads map entries using {@link org.redisson.api.map.MapLoader} whose keys are listed in defined <code>keys</code> parameter.
+     * 使用 {@link org.redisson.api.map.MapLoader} 加载指定 {@code keys} 的条目。
      * 
-     * @param keys - map keys
-     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.
-     * @param parallelism - parallelism level, used to increase speed of process execution
+     * @param keys 键集合
+     * @param replaceExistingValues 是否替换已有值
+     * @param parallelism 并行度
      */
     void loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
     
     /**
-     * Returns the value mapped by defined <code>key</code> or {@code null} if value is absent.
+     * 返回 {@code key} 映射的值；不存在时返回 {@code null}。
      * <p>
      * If map doesn't contain value for specified key and {@link MapLoader} is defined 
      * then value will be loaded in read-through mode. 
      *
-     * @param key the key
+     * @param key 键
      * @return the value mapped by defined <code>key</code> or {@code null} if value is absent
      */
     @Override
     V get(Object key);
     
     /**
-     * Stores the specified <code>value</code> mapped by specified <code>key</code>.
-     * Returns previous value if map entry with specified <code>key</code> already existed.
+     * 存储 {@code key}-{@code value}；键已存在时返回旧值。
      * <p>
      * If {@link MapWriter} is defined then map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
-     * @return previous associated value
+     * @param key 映射键
+     * @param value 映射值
+     * @return 先前关联的值
      */
     @Override
     V put(K key, V value);
@@ -86,8 +82,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>null</code> if key is a new one in the hash and value was set.
      *         Previous value if key already exists in the hash and change hasn't been made.
      */
@@ -100,8 +96,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>null</code> if key doesn't exist in the hash and value hasn't been set.
      *         Previous value if key already exists in the hash and new value has been stored.
      */
@@ -124,7 +120,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Map<K, V> randomEntries(int count);
 
     /**
-     * Returns <code>RMapReduce</code> object associated with this map
+     * 返回与本 Map 关联的 {@link RMapReduce}。
      * 
      * @param <KOut> output key
      * @param <VOut> output value
@@ -133,49 +129,49 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     <KOut, VOut> RMapReduce<K, V, KOut, VOut> mapReduce();
 
     /**
-     * Returns <code>RCountDownLatch</code> instance associated with key
+     * 返回与键关联的 {@link RCountDownLatch}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return countdownlatch
      */
     RCountDownLatch getCountDownLatch(K key);
     
     /**
-     * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
+     * 返回与键关联的 {@link RPermitExpirableSemaphore}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return permitExpirableSemaphore
      */
     RPermitExpirableSemaphore getPermitExpirableSemaphore(K key);
 
     /**
-     * Returns <code>RSemaphore</code> instance associated with key
+     * 返回与键关联的 {@link RSemaphore}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return semaphore
      */
     RSemaphore getSemaphore(K key);
     
     /**
-     * Returns <code>RLock</code> instance associated with key
+     * 返回与键关联的 {@link RLock}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return fairlock
      */
     RLock getFairLock(K key);
     
     /**
-     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 返回与键关联的 {@link RReadWriteLock}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return readWriteLock
      */
     RReadWriteLock getReadWriteLock(K key);
     
     /**
-     * Returns <code>RLock</code> instance associated with key
+     * 返回与键关联的 {@link RLock}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return lock
      */
     RLock getLock(K key);
@@ -183,7 +179,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     /**
      * Returns size of value mapped by specified <code>key</code> in bytes
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return size of value
      */
     int valueSize(K key);
@@ -204,17 +200,16 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * {@link org.redisson.client.codec.LongCodec}
      *
-     * @param key - map key
+     * @param key 映射键
      * @param delta the value to add
      * @return the updated value
      */
     V addAndGet(K key, Number delta);
 
     /**
-     * Returns <code>true</code> if this map contains map entry
-     * mapped by specified <code>key</code>, otherwise <code>false</code>
+     * 若包含指定 {@code key} 的映射条目则返回 {@code true}，否则 {@code false}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return <code>true</code> if this map contains map entry
      *          mapped by specified <code>key</code>, otherwise <code>false</code>
      */
@@ -225,7 +220,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * Returns <code>true</code> if this map contains any map entry
      * with specified <code>value</code>, otherwise <code>false</code>
      *
-     * @param value - map value
+     * @param value 映射值
      * @return <code>true</code> if this map contains any map entry
      *          with specified <code>value</code>, otherwise <code>false</code>
      */
@@ -237,7 +232,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
      *
-     * @param key - map key
+     * @param key 映射键
      * @return deleted value, <code>null</code> if map entry doesn't exist
      */
     @Override
@@ -249,9 +244,9 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then new <code>value</code>is written in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
-     * @return previous associated value 
+     * @param key 映射键
+     * @param value 映射值
+     * @return 先前关联的值 
      *         or <code>null</code> if there is no map entry stored before and doesn't store new map entry
      */
     @Override
@@ -263,7 +258,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then <code>newValue</code>is written in write-through mode.
      * 
-     * @param key - map key
+     * @param key 映射键
      * @param oldValue - map old value
      * @param newValue - map new value
      * @return <code>true</code> if value has been replaced otherwise <code>false</code>.
@@ -276,8 +271,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if map entry has been removed otherwise <code>false</code>.
      */
     @Override
@@ -326,7 +321,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then <code>keys</code>are deleted in write-through mode.
      *
-     * @param keys - map keys
+     * @param keys 键集合
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
     long fastRemove(K... keys);
@@ -342,8 +337,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
@@ -360,8 +355,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if key exists and value was updated.
      *         <code>false</code> if key doesn't exists and value wasn't updated.
      */
@@ -379,8 +374,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if key is a new one in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and change hasn't been made.
      */
@@ -398,29 +393,29 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if key already exists in the hash and new value has been stored.
      *         <code>false</code> if key doesn't exist in the hash and value hasn't been set.
      */
     boolean fastPutIfExists(K key, V value);
 
     /**
-     * Read all keys at once
+     * 一次性读取全部键。
      *
-     * @return keys
+     * @return 键集合
      */
     Set<K> readAllKeySet();
 
     /**
-     * Read all values at once
+     * 一次性读取全部值。
      *
-     * @return values
+     * @return 值集合
      */
     Collection<V> readAllValues();
 
     /**
-     * Read all map entries at once
+     * 一次性读取全部键值对。
      *
      * @return entries
      */
@@ -434,7 +429,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Map<K, V> readAllMap();
     
     /**
-     * Returns key set of this map. 
+     * 返回本 Map 的键集合视图。 
      * Keys are loaded in batch. Batch size is <code>10</code>.
      * 
      * @see #readAllKeySet()
@@ -445,7 +440,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Set<K> keySet();
 
     /**
-     * Returns key set of this map.
+     * 返回本 Map 的键集合视图。
      * Keys are loaded in batch. Batch size is defined by <code>count</code> param. 
      * 
      * @see #readAllKeySet()
@@ -456,7 +451,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Set<K> keySet(int count);
     
     /**
-     * Returns key set of this map.
+     * 返回本 Map 的键集合视图。
      * If <code>pattern</code> is not null then only keys match this pattern are loaded.
      * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
      * <p>
@@ -480,7 +475,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Set<K> keySet(String pattern, int count);
     
     /**
-     * Returns key set of this map. 
+     * 返回本 Map 的键集合视图。 
      * If <code>pattern</code> is not null then only keys match this pattern are loaded.
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
@@ -507,7 +502,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * 
      * @see #readAllValues()
      * 
-     * @return values collection
+     * @return 值集合 collection
      */
     @Override
     Collection<V> values();
@@ -537,7 +532,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @see #readAllValues()
      * 
      * @param keyPattern - key pattern
-     * @return values collection
+     * @return 值集合 collection
      */
     Collection<V> values(String keyPattern);
 
@@ -567,7 +562,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * 
      * @param keyPattern - key pattern
      * @param count - size of values batch
-     * @return values collection
+     * @return 值集合 collection
      */
     Collection<V> values(String keyPattern, int count);
     
@@ -578,7 +573,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @see #readAllValues()
      * 
      * @param count - size of values batch
-     * @return values collection
+     * @return 值集合 collection
      */
     Collection<V> values(int count);
     
@@ -588,7 +583,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * 
      * @see #readAllEntrySet()
      *  
-     * @return map entries collection
+     * @return 键值对集合 collection
      */
     @Override
     Set<java.util.Map.Entry<K, V>> entrySet();
@@ -618,7 +613,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @see #readAllEntrySet()
      * 
      * @param keyPattern key pattern
-     * @return map entries collection
+     * @return 键值对集合 collection
      */
     Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern);
     
@@ -648,7 +643,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * 
      * @param keyPattern key pattern
      * @param count size of entries batch
-     * @return map entries collection
+     * @return 键值对集合 collection
      */
     Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern, int count);
 
@@ -659,12 +654,12 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @see #readAllEntrySet()
      * 
      * @param count - size of entries batch
-     * @return map entries collection
+     * @return 键值对集合 collection
      */
     Set<java.util.Map.Entry<K, V>> entrySet(int count);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.MapPutListener
@@ -672,8 +667,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 

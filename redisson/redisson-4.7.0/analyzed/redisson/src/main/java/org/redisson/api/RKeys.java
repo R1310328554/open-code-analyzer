@@ -24,80 +24,81 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Redis 键空间管理 API {@link RKeys}。
+ * <p>封装 SCAN、过期/TTL、MIGRATE/COPY、跨库 MOVE 及键计数等操作。
  *
+ * @author Nikita Koksharov
  */
 public interface RKeys extends RKeysAsync {
 
     /**
-     * Use {@link #getKeys(KeysScanOptions)} instead.
+     * 请改用 {@link #getKeys(KeysScanOptions)}。
      *
-     * @param limit - limit of keys amount
+     * @param limit 键数量上限
      * @return Iterable object
      */
     @Deprecated
     Iterable<String> getKeysWithLimit(int limit);
 
     /**
-     * Use {@link #getKeys(KeysScanOptions)} instead.
+     * 请改用 {@link #getKeys(KeysScanOptions)}。
      *
-     * @param limit - limit of keys amount
-     * @param pattern - match pattern
+     * @param limit 键数量上限
+     * @param pattern 匹配模式
      * @return Iterable object
      */
     @Deprecated
     Iterable<String> getKeysWithLimit(String pattern, int limit);
 
     /**
-     * Move object to another database
+     * 将对象移动到另一 Redis 数据库。
      *
-     * @param name of object
-     * @param database - Redis database number
+     * @param name 对象名称
+     * @param database Redis 数据库编号
      * @return <code>true</code> if key was moved else <code>false</code>
      */
     boolean move(String name, int database);
     
     /**
-     * Transfer object from source Redis instance to destination Redis instance
+     * 将对象从源 Redis 实例迁移到目标实例。
      * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
-     * @param name of object
-     * @param host - destination host
-     * @param port - destination port
+     * @param name 对象名称
+     * @param host 目标主机
+     * @param port 目标端口
      * @param database - destination database
-     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @param timeout 通信最大空闲毫秒数 in any moment of the communication with the destination instance in milliseconds
      */
     @Deprecated
     void migrate(String name, String host, int port, int database, long timeout);
 
     /**
-     * Transfer object from source Redis instance to destination Redis instance
+     * 将对象从源 Redis 实例迁移到目标实例。
      *
-     * @param migrateArgs migrateArgs
+     * @param migrateArgs 迁移参数
      */
     void migrate(MigrateArgs migrateArgs);
 
     /**
-     * Copy object from source Redis instance to destination Redis instance
+     * 将对象从源 Redis 实例复制到目标实例。
      * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
-     * @param name of object
-     * @param host - destination host
-     * @param port - destination port
+     * @param name 对象名称
+     * @param host 目标主机
+     * @param port 目标端口
      * @param database - destination database
-     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @param timeout 通信最大空闲毫秒数 in any moment of the communication with the destination instance in milliseconds
      *
      */
     @Deprecated
     void copy(String name, String host, int port, int database, long timeout);
     
     /**
-     * Use {@link #expire(Duration, String...)} instead.
+     * 请改用 {@link #expire(Duration, String...)}。
      *
-     * @param name of object
-     * @param timeToLive - timeout before object will be deleted
-     * @param timeUnit - timeout time unit
+     * @param name 对象名称
+     * @param timeToLive 过期时长
+     * @param timeUnit 时间单位
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     @Deprecated
@@ -114,9 +115,9 @@ public interface RKeys extends RKeysAsync {
     long expire(Duration duration, String... names);
 
     /**
-     * Use {@link #expireAt(Instant, String...)} instead.
+     * 请改用 {@link #expireAt(Instant, String...)}。
      * 
-     * @param name of object
+     * @param name 对象名称
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
@@ -136,7 +137,7 @@ public interface RKeys extends RKeysAsync {
     /**
      * Clear an expire timeout or expire date for object.
      * 
-     * @param name of object
+     * @param name 对象名称
      * @return <code>true</code> if timeout was removed
      *         <code>false</code> if object does not exist or does not have an associated timeout
      */
@@ -204,18 +205,18 @@ public interface RKeys extends RKeysAsync {
     int getSlot(String key);
 
     /**
-     * Use {@link #getKeys(KeysScanOptions)} instead.
+     * 请改用 {@link #getKeys(KeysScanOptions)}。
      * 
-     * @param pattern - match pattern
+     * @param pattern 匹配模式
      * @return Iterable object
      */
     @Deprecated
     Iterable<String> getKeysByPattern(String pattern);
 
     /**
-     * Use {@link #getKeys(KeysScanOptions)} instead.
+     * 请改用 {@link #getKeys(KeysScanOptions)}。
      *
-     * @param pattern - match pattern
+     * @param pattern 匹配模式
      * @param count - keys loaded per request to Redis
      * @return Iterable object
      */
@@ -239,7 +240,7 @@ public interface RKeys extends RKeysAsync {
     Iterable<String> getKeys(KeysScanOptions options);
 
     /**
-     * Use {@link #getKeys(KeysScanOptions)} instead.
+     * 请改用 {@link #getKeys(KeysScanOptions)}。
      *
      * @param count - keys loaded per request to Redis
      * @return Iterable object
@@ -308,7 +309,7 @@ public interface RKeys extends RKeysAsync {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern - match pattern 
+     * @param pattern 匹配模式 
      * @return number of removed keys
      */
     long deleteByPattern(String pattern);
@@ -323,7 +324,7 @@ public interface RKeys extends RKeysAsync {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern - match pattern
+     * @param pattern 匹配模式
      * @return number of removed keys
      */
     long unlinkByPattern(String pattern);
@@ -406,8 +407,8 @@ public interface RKeys extends RKeysAsync {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 

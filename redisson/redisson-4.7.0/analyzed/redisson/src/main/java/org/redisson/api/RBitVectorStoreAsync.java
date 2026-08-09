@@ -22,15 +22,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Distributed store of 64-bit vectors mapped by keys,
- * with bitmask-based filtering.
- * <p>
- * This object is thread-safe.
+ * 64 位向量存储 {@link RBitVectorStore} 异步 API；各方法返回 {@link RFuture}。
+ * <p>支持位掩码过滤、原子位更新与匹配迭代。
  *
- * @param <K> the type of keys identifying stored vectors
- *
+ * @param <K> 标识向量的键类型
  * @author Nikita Koksharov
- *
  */
 public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
 
@@ -52,31 +48,30 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * Equivalent to {@link #idsAsync()} but with a caller-specified batch size used when
      * fetching keys from the server.
      *
-     * @param chunkSize the number of keys to fetch per round-trip
+     * @param chunkSize 每轮拉取的键数量
      * @return an iterable over all stored keys
      */
     AsyncIterator<K> idsAsync(int chunkSize);
 
     /**
-     * Returns {@code true} if a vector is stored under the given key.
+     * 若给定键下已存储向量则返回 {@code true}。
      *
-     * @param id the key to test
+     * @param id 待检测的键
      * @return {@code true} if a vector exists for {@code id}, {@code false} otherwise
      */
     RFuture<Boolean> containsAsync(K id);
 
     /**
-     * Returns the number of vectors currently stored.
+     * 返回当前存储的向量数量。
      *
      * @return the count of stored entries
      */
     RFuture<Long> sizeAsync();
 
     /**
-     * Returns the vector stored under the given key, or {@code null} if no vector
-     * is stored for that key.
+     * 返回给定键下的向量；无向量时返回 {@code null}。
      *
-     * @param id the key whose vector to retrieve
+     * @param id 待读取的键
      * @return the stored vector, or {@code null} if {@code id} is not present
      */
     RFuture<Long> getAsync(K id);
@@ -92,10 +87,10 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
     RFuture<Map<K, Long>> getAsync(Set<K> ids);
 
     /**
-     * Stores a vector under the given key, overwriting any previous value.
+     * 在给定键下存储向量，覆盖已有值。
      *
-     * @param id     the key under which to store
-     * @param vector the 64-bit vector value
+     * @param id 存储键
+     * @param vector 64 位向量值
      * @return the previously stored vector, or {@code null} if {@code id} was new
      */
     RFuture<Long> putAsync(K id, long vector);
@@ -109,9 +104,9 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
     RFuture<Void> putAsync(Map<K, Long> entries);
 
     /**
-     * Removes the vector stored under the given key.
+     * 移除给定键下存储的向量。
      *
-     * @param id the key to remove
+     * @param id 待移除的键
      * @return {@code true} if a vector was present and removed, {@code false} if
      *         {@code id} was not present
      */
@@ -137,8 +132,8 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * {@code target == 0L}, the predicate is trivially true and the result equals
      * {@link #sizeAsync()}.
      *
-     * @param mask   the bitmask selecting which bits to compare
-     * @param target the required bit pattern within the masked positions
+     * @param mask 参与比较的位掩码
+     * @param target 掩码位上的目标模式
      * @return the count of matching vectors
      */
     RFuture<Long> countMatchExactAsync(long mask, long target);
@@ -162,7 +157,7 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * iterator without consuming it fully relies on the configured TTL (see
      * {@link MatchExactArgs#chunkFetchTTL(java.time.Duration)}) to clean up.
      *
-     * @param args the mask, target, and iteration parameters
+     * @param args 掩码、目标与迭代参数
      * @return an iterable over keys whose vectors match the predicate
      */
     AsyncIterator<K> matchExactAsync(MatchExactArgs args);
@@ -174,7 +169,7 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * When {@code mask == 0L} the predicate is trivially true and the result equals
      * {@link #sizeAsync()}.
      *
-     * @param mask the bitmask to test against
+     * @param mask 位掩码
      * @return the count of matching vectors
      */
     RFuture<Long> countMatchAllAsync(long mask);
@@ -185,7 +180,7 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * <p>
      * See {@link #matchExactAsync(MatchExactArgs)} for iteration semantics and tuning.
      *
-     * @param args the mask and iteration parameters
+     * @param args 掩码与迭代参数
      * @return an iterable over keys whose vectors match the predicate
      */
     AsyncIterator<K> matchAllAsync(MatchArgs args);
@@ -196,7 +191,7 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * <p>
      * When {@code mask == 0L} the predicate is trivially false and the result is {@code 0}.
      *
-     * @param mask the bitmask to test against
+     * @param mask 位掩码
      * @return the count of matching vectors
      */
     RFuture<Long> countMatchAnyAsync(long mask);
@@ -211,7 +206,7 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * <p>
      * See {@link #matchExactAsync(MatchExactArgs)} for iteration semantics and tuning.
      *
-     * @param args the mask and iteration parameters
+     * @param args 掩码与迭代参数
      * @return an iterable over keys whose vectors match the predicate
      */
     AsyncIterator<K> matchAnyAsync(MatchArgs args);
@@ -223,7 +218,7 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * When {@code mask == 0L} the predicate is trivially true and the result equals
      * {@link #sizeAsync()}.
      *
-     * @param mask the bitmask to test against
+     * @param mask 位掩码
      * @return the count of matching vectors
      */
     RFuture<Long> countMatchNoneAsync(long mask);
@@ -237,7 +232,7 @@ public interface RBitVectorStoreAsync<K> extends RExpirableAsync {
      * <p>
      * See {@link #matchExactAsync(MatchExactArgs)} for iteration semantics and tuning.
      *
-     * @param args the mask and iteration parameters
+     * @param args 掩码与迭代参数
      * @return an iterable over keys whose vectors match the predicate
      */
     AsyncIterator<K> matchNoneAsync(MatchArgs args);

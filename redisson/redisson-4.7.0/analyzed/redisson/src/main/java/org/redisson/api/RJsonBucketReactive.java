@@ -21,28 +21,29 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 /**
- * Redis JSON datatype holder. Data is stored as JSON object in Redis
+ * {@link RJsonBucket} Reactor 响应式 API。
+ * <p>数据以 Redis JSON 对象存储，支持 JSONPath 部分更新。
  *
  * @author Nikita Koksharov
- * @param <V> the type of object
+ * @param <V> 对象类型
  */
 public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
 
     /**
-     * Get Json object/objects by JSONPath
+     * 按 JSONPath 获取 JSON 对象。
      *
-     * @param codec object codec
-     * @param paths JSON paths
-     * @return object
+     * @param codec 对象编解码器
+     * @param paths JSON 路径
+     * @return 对象
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> Mono<T> get(JsonCodec codec, String... paths);
 
     /**
-     * Sets Json object by JSONPath only if previous value is empty
+     * 仅当 JSONPath 处原值为空时写入 JSON 对象。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @return {@code true} if successful, or {@code false} if
      *         value was already set
@@ -50,9 +51,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     Mono<Boolean> setIfAbsent(String path, Object value);
 
     /**
-     * Use {@link #setIfAbsent(String, Object)} instead
+     * 请改用 {@link #setIfAbsent(String, Object)}
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @return {@code true} if successful, or {@code false} if
      *         value was already set
@@ -61,9 +62,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     Mono<Boolean> trySet(String path, Object value);
 
     /**
-     * Sets Json object by JSONPath only if previous value is non-empty
+     * 仅当 JSONPath 处原值非空时写入 JSON 对象。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @return {@code true} if successful, or {@code false} if
      *         element wasn't set
@@ -73,21 +74,21 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Stores object into element by specified JSONPath using FPHA argument
      * to enforce floating-point array precision.
-     * Requires <b>Redis 8.8.0 or higher.</b>
+     * 需要 <b>Redis 8.8.0 及以上</b>。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to set
      * @param fphaType floating-point precision type
-     * @return void
+     * @return 无返回值
      */
     Mono<Void> set(String path, Object value, FPHAType fphaType);
 
     /**
-     * Sets Json object by JSONPath only if previous value is empty,
+     * 仅当 JSONPath 处原值为空时写入 JSON 对象。,
      * using FPHA argument to enforce floating-point array precision.
-     * Requires <b>Redis 8.8.0 or higher.</b>
+     * 需要 <b>Redis 8.8.0 及以上</b>。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @param fphaType floating-point precision type
      * @return {@code true} if successful, or {@code false} if
@@ -96,11 +97,11 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     Mono<Boolean> setIfAbsent(String path, Object value, FPHAType fphaType);
 
     /**
-     * Sets Json object by JSONPath only if previous value is non-empty,
+     * 仅当 JSONPath 处原值非空时写入 JSON 对象。,
      * using FPHA argument to enforce floating-point array precision.
-     * Requires <b>Redis 8.8.0 or higher.</b>
+     * 需要 <b>Redis 8.8.0 及以上</b>。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value object
      * @param fphaType floating-point precision type
      * @return {@code true} if successful, or {@code false} if
@@ -109,13 +110,11 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     Mono<Boolean> setIfExists(String path, Object value, FPHAType fphaType);
 
     /**
-     * Atomically sets the value to the given updated value
-     * by given JSONPath, only if serialized state of
-     * the current value equals to serialized state of the expected value.
+     * 仅当 JSONPath 处当前值序列化状态等于期望值时，原子写入新值。
      *
-     * @param path JSON path
-     * @param expect the expected value
-     * @param update the new value
+     * @param path JSON 路径
+     * @param expect 期望值
+     * @param update 新值
      * @return {@code true} if successful; or {@code false} if the actual value
      *         was not equal to the expected value.
      */
@@ -125,8 +124,8 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * Retrieves current value of element specified by JSONPath
      * and replaces it with <code>newValue</code>.
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @param newValue value to set
      * @return previous value
      */
@@ -135,25 +134,25 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Stores object into element by specified JSONPath.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to set
-     * @return void
+     * @return 无返回值
      */
     Mono<Void> set(String path, Object value);
 
     /**
      * Returns size of string data by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return size of string
      */
     Mono<Long> stringSize(String path);
 
     /**
      * Returns list of string data size by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of string data sizes
      */
     Mono<List<Long>> stringSizeMulti(String path);
@@ -162,7 +161,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * Appends string data to element specified by JSONPath.
      * Returns new size of string data.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value data
      * @return size of string data
      */
@@ -171,9 +170,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Appends string data to elements specified by JSONPath.
      * Returns new size of string data.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value data
      * @return list of string data sizes
      */
@@ -183,7 +182,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * Appends values to array specified by JSONPath.
      * Returns new size of array.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param values values to append
      * @return size of array
      */
@@ -192,9 +191,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Appends values to arrays specified by JSONPath.
      * Returns new size of arrays.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param values values to append
      * @return list of arrays size
      */
@@ -202,9 +201,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
 
     /**
      * Returns index of object in array specified by JSONPath.
-     * -1 means object not found.
+     * 返回 {@code -1} 表示未找到。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to search
      * @return index in array
      */
@@ -212,10 +211,10 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
 
     /**
      * Returns index of object in arrays specified by JSONPath.
-     * -1 means object not found.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 返回 {@code -1} 表示未找到。
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to search
      * @return list of index in arrays
      */
@@ -224,9 +223,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Returns index of object in array specified by JSONPath
      * in range between <code>start</code> (inclusive) and <code>end</code> (exclusive) indexes.
-     * -1 means object not found.
+     * 返回 {@code -1} 表示未找到。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to search
      * @param start start index, inclusive
      * @param end end index, exclusive
@@ -237,10 +236,10 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Returns index of object in arrays specified by JSONPath
      * in range between <code>start</code> (inclusive) and <code>end</code> (exclusive) indexes.
-     * -1 means object not found.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 返回 {@code -1} 表示未找到。
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to search
      * @param start start index, inclusive
      * @param end end index, exclusive
@@ -252,7 +251,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * Inserts values into array specified by JSONPath.
      * Values are inserted at defined <code>index</code>.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param index array index at which values are inserted
      * @param values values to insert
      * @return size of array
@@ -262,9 +261,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Inserts values into arrays specified by JSONPath.
      * Values are inserted at defined <code>index</code>.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param index array index at which values are inserted
      * @param values values to insert
      * @return list of arrays size
@@ -274,16 +273,16 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Returns size of array specified by JSONPath.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return size of array
      */
     Mono<Long> arraySize(String path);
 
     /**
      * Returns size of arrays specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of arrays size
      */
     Mono<List<Long>> arraySizeMulti(String path);
@@ -291,71 +290,71 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Polls last element of array specified by JSONPath.
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return last element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> Mono<T> arrayPollLast(JsonCodec codec, String path);
 
     /**
      * Polls last element of arrays specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return list of last elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> Mono<List<T>> arrayPollLastMulti(JsonCodec codec, String path);
 
     /**
      * Polls first element of array specified by JSONPath.
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return first element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> Mono<T> arrayPollFirst(JsonCodec codec, String path);
 
     /**
      * Polls first element of arrays specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @return list of first elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> Mono<List<T>> arrayPollFirstMulti(JsonCodec codec, String path);
 
     /**
      * Pops element located at index of array specified by JSONPath.
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @param index array index
      * @return element
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> Mono<T> arrayPop(JsonCodec codec, String path, Long index);
 
     /**
      * Pops elements located at index of arrays specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param codec object codec
-     * @param path JSON path
+     * @param codec 对象编解码器
+     * @param path JSON 路径
      * @param index array index
      * @return list of elements
      *
-     * @param <T> the type of object
+     * @param <T> 对象类型
      */
     <T> Mono<List<T>> arrayPopMulti(JsonCodec codec, String path, Long index);
 
@@ -363,7 +362,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
      * Trims array specified by JSONPath in range
      * between <code>start</code> (inclusive) and <code>end</code> (inclusive) indexes.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param start start index, inclusive
      * @param end end index, inclusive
      * @return length of array
@@ -373,9 +372,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Trims arrays specified by JSONPath in range
      * between <code>start</code> (inclusive) and <code>end</code> (inclusive) indexes.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param start start index, inclusive
      * @param end end index, inclusive
      * @return length of array
@@ -383,7 +382,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     Mono<List<Long>> arrayTrimMulti(String path, Long start, Long end);
 
     /**
-     * Clears json container.
+     * 清空 JSON 容器。
      *
      * @return number of cleared containers
      */
@@ -391,9 +390,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
 
     /**
      * Clears json container specified by JSONPath.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return number of cleared containers
      */
     Mono<Long> clear(String path);
@@ -401,7 +400,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Increments the current value specified by JSONPath by <code>delta</code>.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param delta increment value
      * @return the updated value
      */
@@ -409,9 +408,9 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
 
     /**
      * Increments the current values specified by JSONPath by <code>delta</code>.
-     * Compatible only with enhanced syntax starting with '$' character.
+     * 仅兼容以 {@code $} 开头的增强 JSONPath 语法。
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param delta increment value
      * @return list of updated value
      */
@@ -420,7 +419,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Merges object into element by the specified JSONPath.
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @param value value to merge
      */
     Mono<Void> merge(String path, Object value);
@@ -428,22 +427,22 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Returns keys amount in JSON container
      *
-     * @return keys amount
+     * @return 键集合 amount
      */
     Mono<Long> countKeys();
 
     /**
      * Returns keys amount in JSON container specified by JSONPath
      *
-     * @param path JSON path
-     * @return keys amount
+     * @param path JSON 路径
+     * @return 键集合 amount
      */
     Mono<Long> countKeys(String path);
 
     /**
      * Returns list of keys amount in JSON containers specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of keys amount
      */
     Mono<List<Long>> countKeysMulti(String path);
@@ -458,7 +457,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Returns list of keys in JSON container specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of keys
      */
     Mono<List<String>> getKeys(String path);
@@ -466,7 +465,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Returns list of keys in JSON containers specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of keys
      */
     Mono<List<List<String>>> getKeysMulti(String path);
@@ -474,7 +473,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Toggle Mono<Boolean> value specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return new Mono<Boolean> value
      */
     Mono<Boolean> toggle(String path);
@@ -482,7 +481,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Toggle Mono<Boolean> values specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return list of Mono<Boolean> values
      */
     Mono<List<Boolean>> toggleMulti(String path);
@@ -497,7 +496,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Returns type of element specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return type of element
      */
     Mono<JsonType> getType(String path);
@@ -505,7 +504,7 @@ public interface RJsonBucketReactive<V> extends RBucketReactive<V> {
     /**
      * Deletes JSON elements specified by JSONPath
      *
-     * @param path JSON path
+     * @param path JSON 路径
      * @return number of deleted elements
      */
     Mono<Long> delete(String path);
