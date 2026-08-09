@@ -1,6 +1,27 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 147,
+  "claimed_at": "2026-08-09T17:50:18Z",
+  "files": [
+    "docs_src/query_params_str_validations/tutorial007_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial007_py310.py",
+    "docs_src/query_params_str_validations/tutorial008_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial008_py310.py",
+    "docs_src/query_params_str_validations/tutorial009_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial009_py310.py",
+    "docs_src/query_params_str_validations/tutorial010_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial010_py310.py",
+    "docs_src/query_params_str_validations/tutorial011_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial011_py310.py",
+    "docs_src/query_params_str_validations/tutorial012_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial012_py310.py",
+    "docs_src/query_params_str_validations/tutorial013_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial013_py310.py",
+    "docs_src/query_params_str_validations/tutorial014_an_py310.py",
+    "docs_src/query_params_str_validations/tutorial014_py310.py",
+    "docs_src/query_params_str_validations/tutorial015_an_py310.py",
+    "docs_src/request_files/__init__.py",
+    "docs_src/request_files/tutorial001_02_an_py310.py",
+    "docs_src/request_files/tutorial001_02_py310.py"
+  ],
+  "remaining_pending": 127,
   "done": 362
 }
