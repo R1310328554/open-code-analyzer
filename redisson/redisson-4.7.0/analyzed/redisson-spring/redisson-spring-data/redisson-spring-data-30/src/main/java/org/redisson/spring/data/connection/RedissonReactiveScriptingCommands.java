@@ -34,12 +34,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Spring Data Redis 响应式 Lua 脚本命令实现。
+ * <p>封装 SCRIPT FLUSH/LOAD/EXISTS 及 EVAL/EVALSHA；
+ * {@link ReturnType} 映射为对应 {@link RedisCommand} 与解码器。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveScriptingCommands extends RedissonBaseReactive implements ReactiveScriptingCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveScriptingCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
@@ -87,12 +91,14 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
         return m.flatMapMany(v -> Flux.fromIterable(v));
     }
 
+    /** 将 Spring {@link ReturnType} 映射为 Redisson {@link RedisCommand}。 */
     protected RedisCommand<?> toCommand(ReturnType returnType, String name) {
         RedisCommand<?> c = null; 
         if (returnType == ReturnType.BOOLEAN) {
             c = org.redisson.api.RScript.ReturnType.BOOLEAN.getCommand();
         } else if (returnType == ReturnType.INTEGER) {
             c = org.redisson.api.RScript.ReturnType.LONG.getCommand();
+        // MULTI 返回列表，MULTI/VALUE 使用 BinaryConvertor 解码。
         } else if (returnType == ReturnType.MULTI) {
             c = org.redisson.api.RScript.ReturnType.LIST.getCommand();
             return new RedisCommand(c, name, new BinaryConvertor());
@@ -116,6 +122,7 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
         return convert(m);
     }
 
+    /** 将脚本返回值中的 byte[] 与嵌套列表元素包装为 {@link ByteBuffer}。 */
     protected <T> Flux<T> convert(Mono<T> m) {
         return (Flux<T>) m.map(e -> {
             if (e.getClass().isArray()) {

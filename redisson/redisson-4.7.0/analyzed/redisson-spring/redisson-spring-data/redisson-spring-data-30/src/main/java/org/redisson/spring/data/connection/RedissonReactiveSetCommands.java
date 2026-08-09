@@ -50,12 +50,16 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 Set 命令实现。
+ * <p>封装 SADD/SREM、SPOP、SCARD/SISMEMBER、SINTER/SUNION/SDIFF 及 STORE 变体、
+ * SSCAN、SRANDMEMBER、SMEMBERS 等集合操作。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveSetCommands extends RedissonBaseReactive implements ReactiveSetCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveSetCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
