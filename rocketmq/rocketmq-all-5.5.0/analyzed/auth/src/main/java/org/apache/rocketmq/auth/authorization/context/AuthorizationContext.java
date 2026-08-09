@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * 授权上下文基类：承载通道 ID、RPC 代码与可扩展键值信息。
+ */
 public abstract class AuthorizationContext {
 
     private String channelId;
@@ -28,6 +31,7 @@ public abstract class AuthorizationContext {
 
     private Map<String, Object> extInfo;
 
+    /** 按 key 读取扩展属性，key 为空或不存在时返回 null。 */
     @SuppressWarnings("unchecked")
     public <T> T getExtInfo(String key) {
         if (StringUtils.isBlank(key)) {
@@ -43,6 +47,7 @@ public abstract class AuthorizationContext {
         return (T) value;
     }
 
+    /** 写入扩展属性；key 或 value 为空时忽略。 */
     public void setExtInfo(String key, Object value) {
         if (StringUtils.isBlank(key) || value == null) {
             return;
@@ -53,6 +58,7 @@ public abstract class AuthorizationContext {
         this.extInfo.put(key, value);
     }
 
+    /** 判断扩展属性是否存在且非 null。 */
     public boolean hasExtInfo(String key) {
         Object value = getExtInfo(key);
         return value != null;

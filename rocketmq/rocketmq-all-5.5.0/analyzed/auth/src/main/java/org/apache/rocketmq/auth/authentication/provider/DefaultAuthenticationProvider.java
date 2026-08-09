@@ -33,13 +33,19 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 默认认证提供者：组装 {@link DefaultAuthenticationContextBuilder} 与
+ * {@link DefaultAuthenticationHandler} 责任链，并在完成后写审计日志。
+ */
 public class DefaultAuthenticationProvider implements AuthenticationProvider<DefaultAuthenticationContext> {
 
+    /** 认证审计专用 Logger。 */
     protected final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_AUTH_AUDIT_LOGGER_NAME);
     protected AuthConfig authConfig;
     protected Supplier<?> metadataService;
     protected AuthenticationContextBuilder<DefaultAuthenticationContext> authenticationContextBuilder;
 
+    /** 保存配置并创建默认上下文构建器。 */
     @Override
     public void initialize(AuthConfig config, Supplier<?> metadataService) {
         this.authConfig = config;
@@ -47,27 +53,32 @@ public class DefaultAuthenticationProvider implements AuthenticationProvider<Def
         this.authenticationContextBuilder = new DefaultAuthenticationContextBuilder();
     }
 
+    /** 执行认证链，无论成功失败均触发审计日志。 */
     @Override
     public CompletableFuture<Void> authenticate(DefaultAuthenticationContext context) {
         return this.newHandlerChain().handle(context)
             .whenComplete((nil, ex) -> doAuditLog(context, ex));
     }
 
+    /** 构建 gRPC 场景的 {@link DefaultAuthenticationContext}。 */
     @Override
     public DefaultAuthenticationContext newContext(Metadata metadata, GeneratedMessageV3 request) {
         return this.authenticationContextBuilder.build(metadata, request);
     }
 
+    /** 构建 Remoting 场景的 {@link DefaultAuthenticationContext}。 */
     @Override
     public DefaultAuthenticationContext newContext(ChannelHandlerContext context, RemotingCommand command) {
         return this.authenticationContextBuilder.build(context, command);
     }
 
+    /** 创建仅含 {@link DefaultAuthenticationHandler} 的单节点责任链。 */
     protected HandlerChain<DefaultAuthenticationContext, CompletableFuture<Void>> newHandlerChain() {
         return HandlerChain.<DefaultAuthenticationContext, CompletableFuture<Void>>create()
             .addNext(new DefaultAuthenticationHandler(this.authConfig, metadataService));
     }
 
+    /** 用户名非空时记录认证成功（debug）或失败（info）审计。 */
     protected void doAuditLog(DefaultAuthenticationContext context, Throwable ex) {
         if (StringUtils.isBlank(context.getUsername())) {
             return;

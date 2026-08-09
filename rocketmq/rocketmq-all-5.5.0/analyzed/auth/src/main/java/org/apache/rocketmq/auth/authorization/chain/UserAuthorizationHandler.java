@@ -31,14 +31,19 @@ import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.common.chain.Handler;
 import org.apache.rocketmq.common.chain.HandlerChain;
 
+/**
+ * 用户授权前置处理器：校验用户存在且未禁用；SUPER 用户跳过下游 ACL 检查。
+ */
 public class UserAuthorizationHandler implements Handler<DefaultAuthorizationContext, CompletableFuture<Void>> {
 
     private final AuthenticationMetadataProvider authenticationMetadataProvider;
 
+    /** 绑定认证元数据 Provider 以查询用户状态。 */
     public UserAuthorizationHandler(AuthConfig config, Supplier<?> metadataService) {
         this.authenticationMetadataProvider = AuthenticationFactory.getMetadataProvider(config, metadataService);
     }
 
+    /** 非 USER 主体直接传递；SUPER 用户短路；否则继续责任链。 */
     @Override
     public CompletableFuture<Void> handle(DefaultAuthorizationContext context, HandlerChain<DefaultAuthorizationContext, CompletableFuture<Void>> chain) {
         if (!context.getSubject().isSubject(SubjectType.USER)) {
@@ -52,6 +57,7 @@ public class UserAuthorizationHandler implements Handler<DefaultAuthorizationCon
         });
     }
 
+    /** 加载用户并校验存在性与 {@link UserStatus#DISABLE} 状态。 */
     private CompletableFuture<User> getUser(Subject subject) {
         if (this.authenticationMetadataProvider == null) {
             throw new AuthorizationException("The authenticationMetadataProvider is not configured");

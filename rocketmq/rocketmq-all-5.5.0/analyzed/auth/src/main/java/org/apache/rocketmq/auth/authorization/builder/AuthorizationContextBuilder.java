@@ -23,9 +23,14 @@ import java.util.List;
 import org.apache.rocketmq.auth.authorization.context.DefaultAuthorizationContext;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 授权上下文构建器：将 gRPC 或 Remoting 请求解析为 {@link DefaultAuthorizationContext} 列表。
+ */
 public interface AuthorizationContextBuilder {
 
+    /** 从 gRPC Metadata 与 Protobuf 消息提取待授权资源与动作。 */
     List<DefaultAuthorizationContext> build(Metadata metadata, GeneratedMessageV3 message);
 
+    /** 从 Netty 通道与 Remoting 命令构建授权上下文。 */
     List<DefaultAuthorizationContext> build(ChannelHandlerContext context, RemotingCommand command);
 }

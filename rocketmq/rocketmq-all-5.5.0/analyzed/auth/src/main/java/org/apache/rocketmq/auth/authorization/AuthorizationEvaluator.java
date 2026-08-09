@@ -24,18 +24,24 @@ import org.apache.rocketmq.auth.authorization.factory.AuthorizationFactory;
 import org.apache.rocketmq.auth.authorization.strategy.AuthorizationStrategy;
 import org.apache.rocketmq.auth.config.AuthConfig;
 
+/**
+ * 授权评估入口：通过 {@link AuthorizationFactory} 获取策略并对上下文列表逐条评估。
+ */
 public class AuthorizationEvaluator {
 
     private final AuthorizationStrategy authorizationStrategy;
 
+    /** 使用默认元数据服务（null）构造。 */
     public AuthorizationEvaluator(AuthConfig authConfig) {
         this(authConfig, null);
     }
 
+    /** 指定元数据服务 Supplier 构造授权策略。 */
     public AuthorizationEvaluator(AuthConfig authConfig, Supplier<?> metadataService) {
         this.authorizationStrategy = AuthorizationFactory.getStrategy(authConfig, metadataService);
     }
 
+    /** 对非空上下文列表依次调用策略 {@code evaluate}。 */
     public void evaluate(List<AuthorizationContext> contexts) {
         if (CollectionUtils.isEmpty(contexts)) {
             return;

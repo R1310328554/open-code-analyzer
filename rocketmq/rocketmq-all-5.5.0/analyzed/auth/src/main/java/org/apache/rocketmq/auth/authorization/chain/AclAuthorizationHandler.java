@@ -39,18 +39,24 @@ import org.apache.rocketmq.common.chain.HandlerChain;
 import org.apache.rocketmq.common.resource.ResourcePattern;
 import org.apache.rocketmq.common.resource.ResourceType;
 
+/**
+ * ACL 授权处理器：加载主体 ACL，匹配 CUSTOM/DEFAULT 策略条目并判定 ALLOW/DENY。
+ */
 public class AclAuthorizationHandler implements Handler<DefaultAuthorizationContext, CompletableFuture<Void>> {
 
     private final AuthorizationMetadataProvider authorizationMetadataProvider;
 
+    /** 使用默认元数据 Provider 构造。 */
     public AclAuthorizationHandler(AuthConfig config) {
         this.authorizationMetadataProvider = AuthorizationFactory.getMetadataProvider(config);
     }
 
+    /** 指定元数据服务 Supplier 获取 ACL 数据。 */
     public AclAuthorizationHandler(AuthConfig config, Supplier<?> metadataService) {
         this.authorizationMetadataProvider = AuthorizationFactory.getMetadataProvider(config, metadataService);
     }
 
+    /** 异步加载 ACL，匹配策略条目；无匹配或 DENY 时抛出 {@link AuthorizationException}。 */
     @Override
     public CompletableFuture<Void> handle(DefaultAuthorizationContext context,
         HandlerChain<DefaultAuthorizationContext, CompletableFuture<Void>> chain) {
@@ -62,21 +68,22 @@ public class AclAuthorizationHandler implements Handler<DefaultAuthorizationCont
                 throwException(context, "no matched policies.");
             }
 
-            // 1. get the defined acl entries which match the request.
+            // 1. 查找与请求资源、动作、来源 IP 匹配的 ACL 条目
             PolicyEntry matchedEntry = matchPolicyEntries(context, acl);
 
-            // 2. if no matched acl entries, return deny
+            // 2. 无匹配条目则拒绝
             if (matchedEntry == null) {
                 throwException(context, "no matched policies.");
             }
 
-            // 3. judge is the entries has denied decision.
+            // 3. 匹配条目为 DENY 则拒绝
             if (matchedEntry.getDecision() == Decision.DENY) {
                 throwException(context, "the decision is deny.");
             }
         });
     }
 
+    /** 优先 CUSTOM 策略，否则回退 DEFAULT；返回排序后最高优先级条目。 */
     private PolicyEntry matchPolicyEntries(DefaultAuthorizationContext context, Acl acl) {
         List<PolicyEntry> policyEntries = new ArrayList<>();
 
@@ -107,6 +114,7 @@ public class AclAuthorizationHandler implements Handler<DefaultAuthorizationCont
         return policyEntries.get(0);
     }
 
+    /** 按资源、动作与环境（来源 IP）过滤策略条目。 */
     private List<PolicyEntry> matchPolicyEntries(DefaultAuthorizationContext context, List<PolicyEntry> entries) {
         if (CollectionUtils.isEmpty(entries)) {
             return null;
@@ -118,6 +126,7 @@ public class AclAuthorizationHandler implements Handler<DefaultAuthorizationCont
             .collect(Collectors.toList());
     }
 
+    /** 比较优先级：LITERAL > PREFIXED > ANY，同模式 PREFIX 越长越优先，DENY 优于 ALLOW。 */
     private int comparePolicyEntries(PolicyEntry o1, PolicyEntry o2) {
         int compare = 0;
         Resource r1 = o1.getResource();
@@ -151,7 +160,7 @@ public class AclAuthorizationHandler implements Handler<DefaultAuthorizationCont
             return compare;
         }
 
-        // the decision deny has higher priority
+        // DENY 决策优先级高于 ALLOW
         Decision d1 = o1.getDecision();
         Decision d2 = o2.getDecision();
 
@@ -161,6 +170,7 @@ public class AclAuthorizationHandler implements Handler<DefaultAuthorizationCont
         return 0;
     }
 
+    /** 构造并抛出带主体、资源、来源 IP 的授权失败异常。 */
     private static void throwException(DefaultAuthorizationContext context, String detail) {
         throw new AuthorizationException("{} has no permission to access {} from {}, " + detail,
             context.getSubject().getSubjectKey(), context.getResource().getResourceKey(), context.getSourceIp());

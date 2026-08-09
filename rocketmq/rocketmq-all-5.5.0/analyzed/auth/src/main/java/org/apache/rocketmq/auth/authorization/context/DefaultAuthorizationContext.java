@@ -22,6 +22,9 @@ import org.apache.rocketmq.auth.authentication.model.Subject;
 import org.apache.rocketmq.auth.authorization.model.Resource;
 import org.apache.rocketmq.common.action.Action;
 
+/**
+ * 默认授权上下文：包含主体、资源、动作列表与来源 IP。
+ */
 public class DefaultAuthorizationContext extends AuthorizationContext {
 
     private Subject subject;
@@ -32,6 +35,7 @@ public class DefaultAuthorizationContext extends AuthorizationContext {
 
     private String sourceIp;
 
+    /** 单动作工厂方法。 */
     public static DefaultAuthorizationContext of(Subject subject, Resource resource, Action action, String sourceIp) {
         DefaultAuthorizationContext context = new DefaultAuthorizationContext();
         context.setSubject(subject);
@@ -41,6 +45,7 @@ public class DefaultAuthorizationContext extends AuthorizationContext {
         return context;
     }
 
+    /** 多动作工厂方法。 */
     public static DefaultAuthorizationContext of(Subject subject, Resource resource, List<Action> actions, String sourceIp) {
         DefaultAuthorizationContext context = new DefaultAuthorizationContext();
         context.setSubject(subject);
@@ -50,10 +55,12 @@ public class DefaultAuthorizationContext extends AuthorizationContext {
         return context;
     }
 
+    /** 返回主体标识键，主体为空时返回 null。 */
     public String getSubjectKey() {
         return this.subject != null ? this.subject.getSubjectKey() : null;
     }
 
+    /** 返回资源标识键，资源为空时返回 null。 */
     public String getResourceKey() {
         return this.resource != null ? this.resource.getResourceKey() : null;
     }

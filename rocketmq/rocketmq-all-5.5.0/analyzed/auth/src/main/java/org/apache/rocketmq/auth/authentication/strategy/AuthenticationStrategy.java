@@ -18,7 +18,11 @@ package org.apache.rocketmq.auth.authentication.strategy;
 
 import org.apache.rocketmq.auth.authentication.context.AuthenticationContext;
 
+/**
+ * 认证策略 SPI：对 {@link AuthenticationContext} 执行一次认证评估。
+ */
 public interface AuthenticationStrategy {
 
+    /** 评估并可能抛出 {@link org.apache.rocketmq.auth.authentication.exception.AuthenticationException}。 */
     void evaluate(AuthenticationContext context);
 }

@@ -19,10 +19,15 @@ package org.apache.rocketmq.auth.authorization.enums;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * ACL 策略决策：允许或拒绝访问。
+ */
 public enum Decision {
 
+    /** 允许访问。 */
     ALLOW((byte) 1, "Allow"),
 
+    /** 拒绝访问。 */
     DENY((byte) 2, "Deny");
 
     @JSONField(value = true)
@@ -34,6 +39,7 @@ public enum Decision {
         this.name = name;
     }
 
+    /** 按名称（忽略大小写）解析决策枚举。 */
     public static Decision getByName(String name) {
         for (Decision decision : Decision.values()) {
             if (StringUtils.equalsIgnoreCase(decision.getName(), name)) {

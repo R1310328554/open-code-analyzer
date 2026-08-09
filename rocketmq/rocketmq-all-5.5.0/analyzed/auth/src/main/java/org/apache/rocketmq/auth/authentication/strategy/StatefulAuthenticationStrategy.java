@@ -28,10 +28,15 @@ import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.common.Pair;
 import org.apache.rocketmq.common.constant.CommonConstants;
 
+/**
+ * 有状态认证策略：按 channelId（及用户名）缓存认证结果，减少重复校验开销。
+ */
 public class StatefulAuthenticationStrategy extends AbstractAuthenticationStrategy {
 
+    /** 缓存键为 channelId 或 channelId#username，值为成功标志与异常。 */
     protected Cache<String, Pair<Boolean, AuthenticationException>> authCache;
 
+    /** 按配置创建带过期与容量上限的 Caffeine 缓存。 */
     public StatefulAuthenticationStrategy(AuthConfig authConfig, Supplier<?> metadataService) {
         super(authConfig, metadataService);
         this.authCache = Caffeine.newBuilder()
@@ -40,6 +45,7 @@ public class StatefulAuthenticationStrategy extends AbstractAuthenticationStrate
             .build();
     }
 
+    /** 无 channelId 时直接认证；否则命中缓存或执行后缓存结果。 */
     @Override
     public void evaluate(AuthenticationContext context) {
         if (StringUtils.isBlank(context.getChannelId())) {
@@ -59,6 +65,7 @@ public class StatefulAuthenticationStrategy extends AbstractAuthenticationStrate
         }
     }
 
+    /** 构建缓存键：channelId 或 channelId#username。 */
     private String buildKey(AuthenticationContext context) {
         if (context instanceof DefaultAuthenticationContext) {
             DefaultAuthenticationContext ctx = (DefaultAuthenticationContext) context;

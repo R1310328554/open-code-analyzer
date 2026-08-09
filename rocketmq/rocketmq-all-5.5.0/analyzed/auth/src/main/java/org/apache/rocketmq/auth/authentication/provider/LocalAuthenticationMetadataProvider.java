@@ -37,8 +37,12 @@ import org.apache.rocketmq.common.config.ConfigRocksDBStorage;
 import org.apache.rocketmq.common.thread.ThreadPoolMonitor;
 import org.rocksdb.RocksDB;
 
+/**
+ * 本地 RocksDB 用户元数据提供者：JSON 序列化用户记录，Caffeine 缓存加速读路径。
+ */
 public class LocalAuthenticationMetadataProvider implements AuthenticationMetadataProvider {
 
+    /** RocksDB 默认列族名，用于存储用户键值。 */
     private final static String AUTH_METADATA_COLUMN_FAMILY = new String(RocksDB.DEFAULT_COLUMN_FAMILY,
         StandardCharsets.UTF_8);
 
@@ -48,6 +52,7 @@ public class LocalAuthenticationMetadataProvider implements AuthenticationMetada
 
     protected ThreadPoolExecutor cacheRefreshExecutor;
 
+    /** 打开 users 目录下 RocksDB，并按配置初始化 Caffeine 用户缓存。 */
     @Override
     public void initialize(AuthConfig authConfig, Supplier<?> metadataService) {
         this.storage = ConfigRocksDBStorage.getStore(authConfig.getAuthConfigPath() + File.separator + "users", false);
@@ -72,6 +77,7 @@ public class LocalAuthenticationMetadataProvider implements AuthenticationMetada
             .build(new UserCacheLoader(this.storage));
     }
 
+    /** 写入用户 JSON 到 RocksDB，刷 WAL 并失效缓存。 */
     @Override
     public CompletableFuture<Void> createUser(User user) {
         try {
@@ -86,6 +92,7 @@ public class LocalAuthenticationMetadataProvider implements AuthenticationMetada
         return CompletableFuture.completedFuture(null);
     }
 
+    /** 从 RocksDB 删除用户并失效缓存。 */
     @Override
     public CompletableFuture<Void> deleteUser(String username) {
         try {
@@ -98,6 +105,7 @@ public class LocalAuthenticationMetadataProvider implements AuthenticationMetada
         return CompletableFuture.completedFuture(null);
     }
 
+    /** 覆盖写入用户信息并失效缓存。 */
     @Override
     public CompletableFuture<Void> updateUser(User user) {
         try {
@@ -112,6 +120,7 @@ public class LocalAuthenticationMetadataProvider implements AuthenticationMetada
         return CompletableFuture.completedFuture(null);
     }
 
+    /** 经 Caffeine 缓存读取用户；未命中时返回 null。 */
     @Override
     public CompletableFuture<User> getUser(String username) {
         User user = this.userCache.get(username);
@@ -121,6 +130,7 @@ public class LocalAuthenticationMetadataProvider implements AuthenticationMetada
         return CompletableFuture.completedFuture(user);
     }
 
+    /** 全表扫描用户，可选按用户名子串过滤。 */
     @Override
     public CompletableFuture<List<User>> listUser(String filter) {
         List<User> result = new ArrayList<>();
@@ -141,6 +151,7 @@ public class LocalAuthenticationMetadataProvider implements AuthenticationMetada
         return future;
     }
 
+    /** 关闭 RocksDB 存储与缓存刷新线程池。 */
     @Override
     public void shutdown() {
         if (this.storage != null) {
@@ -151,14 +162,17 @@ public class LocalAuthenticationMetadataProvider implements AuthenticationMetada
         }
     }
 
+    /** Caffeine {@link CacheLoader}：从 RocksDB 加载用户，空值用 {@link #EMPTY_USER} 占位。 */
     private static class UserCacheLoader implements CacheLoader<String, User> {
         private final ConfigRocksDBStorage storage;
+        /** 表示用户不存在的哨兵对象，避免缓存穿透。 */
         public static final User EMPTY_USER = new User();
 
         public UserCacheLoader(ConfigRocksDBStorage storage) {
             this.storage = storage;
         }
 
+        /** 按用户名从 RocksDB 反序列化 {@link User}。 */
         @Override
         public User load(String username) {
             try {

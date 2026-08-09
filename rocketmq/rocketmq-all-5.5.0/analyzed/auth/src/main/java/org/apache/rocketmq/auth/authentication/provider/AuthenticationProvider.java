@@ -24,13 +24,20 @@ import java.util.function.Supplier;
 import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 认证提供者 SPI：封装上下文构建与认证责任链执行，支持 gRPC 与 Remoting 两种入口。
+ */
 public interface AuthenticationProvider<AuthenticationContext> {
 
+    /** 注入配置与元数据服务，初始化上下文构建器。 */
     void initialize(AuthConfig config, Supplier<?> metadataService);
 
+    /** 对给定上下文执行认证责任链。 */
     CompletableFuture<Void> authenticate(AuthenticationContext context);
 
+    /** 从 gRPC Metadata 与 Protobuf 请求构建认证上下文。 */
     AuthenticationContext newContext(Metadata metadata, GeneratedMessageV3 request);
 
+    /** 从 Netty 通道与 Remoting 命令构建认证上下文。 */
     AuthenticationContext newContext(ChannelHandlerContext context, RemotingCommand command);
 }

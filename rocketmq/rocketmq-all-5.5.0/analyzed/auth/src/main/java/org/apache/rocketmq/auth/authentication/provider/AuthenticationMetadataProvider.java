@@ -22,19 +22,29 @@ import java.util.function.Supplier;
 import org.apache.rocketmq.auth.authentication.model.User;
 import org.apache.rocketmq.auth.config.AuthConfig;
 
+/**
+ * 认证元数据提供者：负责用户 CRUD 与查询，供管理接口与鉴权链使用。
+ */
 public interface AuthenticationMetadataProvider {
 
+    /** 初始化存储后端与缓存，绑定 {@link AuthConfig} 与可选元数据服务。 */
     void initialize(AuthConfig authConfig, Supplier<?> metadataService);
 
+    /** 关闭 RocksDB 与后台线程等资源。 */
     void shutdown();
 
+    /** 创建用户并持久化。 */
     CompletableFuture<Void> createUser(User user);
 
+    /** 按用户名删除用户。 */
     CompletableFuture<Void> deleteUser(String username);
 
+    /** 更新已有用户信息。 */
     CompletableFuture<Void> updateUser(User user);
 
+    /** 按用户名查询单个用户。 */
     CompletableFuture<User> getUser(String username);
 
+    /** 列出用户；filter 非空时按用户名子串过滤。 */
     CompletableFuture<List<User>> listUser(String filter);
 }

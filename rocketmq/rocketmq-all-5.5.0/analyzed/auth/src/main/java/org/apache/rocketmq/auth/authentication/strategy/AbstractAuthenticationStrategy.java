@@ -27,12 +27,17 @@ import org.apache.rocketmq.auth.authentication.provider.AuthenticationProvider;
 import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.common.utils.ExceptionUtils;
 
+/**
+ * 认证策略抽象基类：解析白名单 RPC、获取 {@link AuthenticationProvider} 并同步执行认证。
+ */
 public abstract class AbstractAuthenticationStrategy implements AuthenticationStrategy {
 
     protected final AuthConfig authConfig;
+    /** 免认证 RPC 代码集合，来自配置的逗号分隔白名单。 */
     protected final Set<String> authenticationWhiteSet = new HashSet<>();
     protected final AuthenticationProvider<AuthenticationContext> authenticationProvider;
 
+    /** 初始化 Provider 并解析 {@code authenticationWhitelist} 配置。 */
     public AbstractAuthenticationStrategy(AuthConfig authConfig, Supplier<?> metadataService) {
         this.authConfig = authConfig;
         this.authenticationProvider = AuthenticationFactory.getProvider(authConfig);
@@ -47,6 +52,7 @@ public abstract class AbstractAuthenticationStrategy implements AuthenticationSt
         }
     }
 
+    /** 认证开关关闭、Provider 缺失或 RPC 在白名单内时跳过；否则阻塞等待认证完成。 */
     protected void doEvaluate(AuthenticationContext context) {
         if (context == null) {
             return;
