@@ -16,13 +16,18 @@
 package com.alibaba.csp.sentinel.demo.annotation.cdi.interceptor;
 
 /**
+ * CDI 演示服务接口，定义带 Sentinel 注解绑定的测试方法。
+ *
  * @author Eric Zhao
  */
 public interface TestService {
 
+    /** 无参测试方法，演示 blockHandler 限流回调。 */
     void test();
 
+    /** 带 long 参数，演示 fallback 降级。 */
     String hello(long s);
 
+    /** 带 String 参数，演示 defaultFallback 与 exceptionsToIgnore。 */
     String helloAnother(String name);
 }

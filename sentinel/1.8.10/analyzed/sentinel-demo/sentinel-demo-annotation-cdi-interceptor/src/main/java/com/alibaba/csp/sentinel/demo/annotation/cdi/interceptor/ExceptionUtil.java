@@ -18,17 +18,15 @@ package com.alibaba.csp.sentinel.demo.annotation.cdi.interceptor;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
+ * CDI 演示用 BlockException 处理工具类，供 {@code @SentinelResourceBinding} 的 blockHandler 引用。
+ *
  * @author Eric Zhao
  */
 public final class ExceptionUtil {
 
     public static void handleException(BlockException ex) {
-        // Handler method that handles BlockException when blocked.
-        // The method parameter list should match original method, with the last additional
-        // parameter with type BlockException. The return type should be same as the original method.
-        // The block handler method should be located in the same class with original method by default.
-        // If you want to use method in other classes, you can set the blockHandlerClass
-        // with corresponding Class (Note the method in other classes must be static).
+        // 被限流时调用的 blockHandler：参数列表与原方法一致，末尾追加 BlockException；
+        // 返回类型须与原方法相同；默认须与原方法同类，跨类引用时需 blockHandlerClass 且方法为 static。
         System.out.println("Oops: " + ex.getClass().getCanonicalName());
     }
 }

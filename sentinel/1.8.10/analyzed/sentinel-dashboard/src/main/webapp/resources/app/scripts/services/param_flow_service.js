@@ -1,9 +1,10 @@
 /**
- * Parameter flow control service.
- * 
+ * 热点参数限流 Angular 服务：规则 CRUD 及前端表单校验。
+ *
  * @author Eric Zhao
  */
 angular.module('sentinelDashboardApp').service('ParamFlowService', ['$http', function ($http) {
+  /** 拉取指定机器上的 ParamFlow 规则列表。 */
   this.queryMachineRules = function(app, ip, port) {
     var param = {
       app: app,
@@ -17,6 +18,7 @@ angular.module('sentinelDashboardApp').service('ParamFlowService', ['$http', fun
     });
   };
 
+  /** 新增热点参数限流规则。 */
   this.addNewRule = function(rule) {
     return $http({
       url: '/paramFlow/rule',
@@ -25,6 +27,7 @@ angular.module('sentinelDashboardApp').service('ParamFlowService', ['$http', fun
     });
   };
 
+  /** 按 ID 更新热点参数限流规则。 */
   this.saveRule = function (entity) {
     return $http({
       url: '/paramFlow/rule/' + entity.id,
@@ -33,6 +36,7 @@ angular.module('sentinelDashboardApp').service('ParamFlowService', ['$http', fun
     });
   };
 
+  /** 按 ID 删除热点参数限流规则。 */
   this.deleteRule = function (entity) {
     return $http({
       url: '/paramFlow/rule/' + entity.id,
@@ -40,27 +44,33 @@ angular.module('sentinelDashboardApp').service('ParamFlowService', ['$http', fun
     });
   };
 
+    /** 判断参数类型是否为数值型（int/double/float/long/short）。 */
     function isNumberClass(classType) {
         return classType === 'int' || classType === 'double' ||
             classType === 'float' || classType === 'long' || classType === 'short';
     }
 
+  /** 判断参数类型是否为 byte。 */
     function isByteClass(classType) {
         return classType === 'byte';
     }
 
+    /** 校验数值未定义、空或非负整数（用于例外项 count）。 */
     function notNumberAtLeastZero(num) {
         return num === undefined || num === '' || isNaN(num) || num < 0;
     }
 
+    /** 校验数值未定义、空或 NaN（用于数值型参数 object）。 */
     function notGoodNumber(num) {
         return num === undefined || num === '' || isNaN(num);
     }
 
+    /** 校验数值是否在 (l, r) 开区间内（byte 参数范围 -128~127）。 */
     function notGoodNumberBetweenExclusive(num, l ,r) {
         return num === undefined || num === '' || isNaN(num) || num < l || num > r;
     }
 
+    /** 校验单条热点参数例外项：object、classType 与 count 是否合法。 */
     function notValidParamItem(curExItem) {
         if (isNumberClass(curExItem.classType) && notGoodNumber(curExItem.object)) {
             return true;
@@ -72,6 +82,7 @@ angular.module('sentinelDashboardApp').service('ParamFlowService', ['$http', fun
             notNumberAtLeastZero(curExItem.count);
     }
 
+  /** 提交前校验规则：资源名、限流模式、阈值、参数索引及例外项列表。 */
   this.checkRuleValid = function (rule) {
       if (!rule.resource || rule.resource === '') {
           alert('资源名称不能为空');

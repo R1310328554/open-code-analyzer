@@ -1,6 +1,8 @@
+/** 系统保护规则 Angular 服务：LOAD/RT/线程数/QPS/CPU 阈值管理。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.service('SystemService', ['$http', function ($http) {
+  /** 拉取指定机器上的系统保护规则列表。 */
   this.queryMachineRules = function (app, ip, port) {
     var param = {
       app: app,
@@ -14,21 +16,22 @@ app.service('SystemService', ['$http', function ($http) {
     });
   };
 
+  /** 新增系统保护规则，按 grade 映射 highestSystemLoad/avgRt 等字段。 */
   this.newRule = function (rule) {
     var param = {
       app: rule.app,
       ip: rule.ip,
       port: rule.port
     };
-    if (rule.grade == 0) {// avgLoad
+    if (rule.grade == 0) {// 系统负载（avgLoad）
       param.highestSystemLoad = rule.highestSystemLoad;
-    } else if (rule.grade == 1) {// avgRt
+    } else if (rule.grade == 1) {// 平均 RT（avgRt）
       param.avgRt = rule.avgRt;
-    } else if (rule.grade == 2) {// maxThread
+    } else if (rule.grade == 2) {// 最大线程数（maxThread）
       param.maxThread = rule.maxThread;
-    } else if (rule.grade == 3) {// qps
+    } else if (rule.grade == 3) {// 入口 QPS（qps）
       param.qps = rule.qps;
-    } else if (rule.grade == 4) {// cpu
+    } else if (rule.grade == 4) {// CPU 使用率（cpu）
       param.highestCpuUsage = rule.highestCpuUsage;
     }
 
@@ -39,6 +42,7 @@ app.service('SystemService', ['$http', function ($http) {
     });
   };
 
+  /** 按 ID 保存系统保护规则修改。 */
   this.saveRule = function (rule) {
     var param = {
       id: rule.id,
@@ -62,6 +66,7 @@ app.service('SystemService', ['$http', function ($http) {
     });
   };
 
+  /** 按 ID 与应用名删除系统保护规则。 */
   this.deleteRule = function (rule) {
     var param = {
       id: rule.id,

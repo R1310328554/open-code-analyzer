@@ -21,11 +21,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Spring AOP 配置：注册 {@link SentinelResourceAspect} 以拦截 {@code @SentinelResource}。
+ *
  * @author Eric Zhao
  */
 @Configuration
 public class AopConfiguration {
 
+    /** 声明 Sentinel 资源切面 Bean，启用注解方式的流控/降级。 */
     @Bean
     public SentinelResourceAspect sentinelResourceAspect() {
         return new SentinelResourceAspect();

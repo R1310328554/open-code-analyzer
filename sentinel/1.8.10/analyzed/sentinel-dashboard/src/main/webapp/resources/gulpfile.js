@@ -1,12 +1,14 @@
 const gulp = require('gulp');
 const plugins = require('gulp-load-plugins')();
 const open = require('open');
+/** 路径配置：源码、开发临时目录与生产输出目录。 */
 const app = {
   srcPath: 'app/', // 源代码
   devPath: 'tmp/', // 开发打包
   prdPath: 'dist/' // 生产打包
 };
 
+/** 第三方 JS 依赖列表，合并为 app.vendor.js。 */
 const JS_LIBS = [
   'node_modules/angular-ui-router/release/angular-ui-router.js',
   'node_modules/oclazyload/dist/ocLazyLoad.min.js',
@@ -26,6 +28,7 @@ const JS_LIBS = [
   'app/scripts/libs/treeTable.js',
 ];
 
+/** 应用 CSS 与第三方样式列表，合并为 app.css。 */
 const CSS_APP = [
   'node_modules/angular-loading-bar/build/loading-bar.min.css',
   'node_modules/bootstrap-switch/dist/css/bootstrap3/bootstrap-switch.css',
@@ -40,6 +43,7 @@ const CSS_APP = [
   'app/styles/main.css'
 ];
 
+/** 业务 JS 模块列表（服务/控制器等），合并为 app.js。 */
 const JS_APP = [
   'app/scripts/app.js',
   'app/scripts/filters/filters.js',
@@ -60,6 +64,7 @@ const JS_APP = [
   'app/scripts/services/gateway/flow_service.js',
 ];
 
+/** lib 任务：合并并压缩 vendor JS 到 tmp 与 dist。 */
 gulp.task('lib', function () {
   gulp.src(JS_LIBS)
     .pipe(plugins.concat('app.vendor.js'))
@@ -73,6 +78,7 @@ gulp.task('lib', function () {
 * css任务
 * 在src下创建style文件夹，里面存放less文件。 
 */
+/** css 任务：合并并压缩样式到 tmp 与 dist。 */
 gulp.task('css', function () {
   gulp.src(CSS_APP)
     .pipe(plugins.concat('app.css'))
@@ -86,6 +92,7 @@ gulp.task('css', function () {
 * js任务
 * 在src目录下创建script文件夹，里面存放所有的js文件
 */
+/** js 任务：合并并压缩业务脚本到 tmp 与 dist。 */
 gulp.task('js', function () {
   gulp.src(JS_APP)
     .pipe(plugins.concat('app.js'))
@@ -99,6 +106,7 @@ gulp.task('js', function () {
 * js任务
 * 在src目录下创建script文件夹，里面存放所有的js文件
 */
+/** jshint 任务：对 JS_APP 做静态语法检查。 */
 gulp.task('jshint', function () {
   gulp.src(JS_APP)
     .pipe(plugins.jshint())
@@ -106,15 +114,18 @@ gulp.task('jshint', function () {
 });
 
 // 每次发布的时候，可能需要把之前目录内的内容清除，避免旧的文件对新的容有所影响。 需要在每次发布前删除dist和build目录
+/** clean 任务：发布前清空 tmp 与 dist，避免旧文件残留。 */
 gulp.task('clean', function () {
   gulp.src([app.devPath, app.prdPath])
     .pipe(plugins.clean());
 });
 
 // 总任务
+/** build 总任务：清理 → 检查 → 打包 lib/js/css。 */
 gulp.task('build', ['clean', 'jshint', 'lib', 'js', 'css']);
 
 // 服务
+/** serve 任务：build 后启动 connect 静态服务并监听文件变更。 */
 gulp.task('serve', ['build'], function () {
   plugins.connect.server({ //启动一个服务器
     root: [app.devPath], // 服务器从哪个路径开始读取，默认从开发路径读取
@@ -131,4 +142,5 @@ gulp.task('serve', ['build'], function () {
 });
 
 // 定义default任务
+/** 默认任务：启动开发服务器。 */
 gulp.task('default', ['serve']);

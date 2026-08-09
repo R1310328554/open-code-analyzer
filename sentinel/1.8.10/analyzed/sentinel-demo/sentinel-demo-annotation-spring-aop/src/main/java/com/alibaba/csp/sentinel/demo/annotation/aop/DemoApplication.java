@@ -19,11 +19,14 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
+ * Spring AOP 注解适配演示入口，启动 Spring Boot 容器。
+ *
  * @author Eric Zhao
  */
 @SpringBootApplication
 public class DemoApplication {
 
+    /** 启动 Spring Boot，加载 AOP 切面与 Sentinel 注解拦截。 */
     public static void main(String[] args) {
         SpringApplication.run(DemoApplication.class, args);
     }
