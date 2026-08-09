@@ -1441,3 +1441,13 @@ spring-context/src/main/java/org/springframework/context/support/PostProcessorRe
 spring-context/src/main/java/org/springframework/context/support/ReloadableResourceBundleMessageSource.java
 spring-context/src/main/java/org/springframework/jmx/access/MBeanClientInterceptor.java
 spring-context/src/main/java/org/springframework/jmx/export/MBeanExporter.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/AbstractReflectiveMBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/scheduling/annotation/ScheduledAnnotationBeanPostProcessor.java
+spring-context/src/main/java/org/springframework/scheduling/concurrent/ExecutorConfigurationSupport.java
+spring-context/src/main/java/org/springframework/scheduling/config/ScheduledTaskRegistrar.java
+spring-context/src/main/java/org/springframework/scripting/support/ScriptFactoryPostProcessor.java
+spring-context/src/main/java/org/springframework/validation/DataBinder.java
+spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java
+spring-context/src/main/java/org/springframework/validation/beanvalidation/SpringValidatorAdapter.java
+spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java
+spring-tx/src/main/java/org/springframework/transaction/jta/JtaTransactionManager.java

@@ -1,17 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:33:10Z",
-  "files": [
-    "spring-context/src/main/java/org/springframework/jmx/export/assembler/AbstractReflectiveMBeanInfoAssembler.java",
-    "spring-context/src/main/java/org/springframework/scheduling/annotation/ScheduledAnnotationBeanPostProcessor.java",
-    "spring-context/src/main/java/org/springframework/scheduling/concurrent/ExecutorConfigurationSupport.java",
-    "spring-context/src/main/java/org/springframework/scheduling/config/ScheduledTaskRegistrar.java",
-    "spring-context/src/main/java/org/springframework/scripting/support/ScriptFactoryPostProcessor.java",
-    "spring-context/src/main/java/org/springframework/validation/DataBinder.java",
-    "spring-context/src/main/java/org/springframework/validation/beanvalidation/MethodValidationAdapter.java",
-    "spring-context/src/main/java/org/springframework/validation/beanvalidation/SpringValidatorAdapter.java",
-    "spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java",
-    "spring-tx/src/main/java/org/springframework/transaction/jta/JtaTransactionManager.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 38,
-  "done": 1443
+  "done": 1453
 }
