@@ -1,22 +1,22 @@
 {
   "claimed_at": "2026-08-09T17:24:10Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableMapNotification.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableMapPublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableMaterialize.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableMergeWithCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableMergeWithMaybe.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableMergeWithSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableNever.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureBuffer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureBufferStrategy.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureDrop.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureError.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureLatest.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureReduce.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureReduceWith.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnErrorComplete.java"
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnErrorNext.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnErrorReturn.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRange.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRangeLong.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReduce.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReduceMaybe.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReduceSeedSingle.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReduceWithSingle.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRefCount.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRepeat.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRepeatUntil.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRepeatWhen.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRetryBiPredicate.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRetryPredicate.java",
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRetryWhen.java"
   ],
   "remaining_pending": 662,
-  "done": 330
+  "done": 345
 }

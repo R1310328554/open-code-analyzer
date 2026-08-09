@@ -1,0 +1,290 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.flowable;
+
+import java.io.Serial;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static java.util.concurrent.Flow.*;
+
+import io.reactivex.rxjava4.annotations.Nullable;
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.exceptions.*;
+import io.reactivex.rxjava4.functions.*;
+import io.reactivex.rxjava4.internal.subscriptions.*;
+import io.reactivex.rxjava4.internal.util.BackpressureHelper;
+import io.reactivex.rxjava4.operators.*;
+
+/**
+ * 以有界或无界队列缓冲上游过量元素，按下游 request 逐批 drain。
+ * @param <T> 元素类型
+ */
+public final class FlowableOnBackpressureBuffer<T> extends AbstractFlowableWithUpstream<T, T> {
+    final int bufferSize;
+    final boolean unbounded;
+    final boolean delayError;
+    final Consumer<? super T> onDropped;
+
+    /**
+     * @param source 上游 Flowable
+     * @param bufferSize 缓冲区容量
+     * @param unbounded true 时使用可扩容无界队列
+     * @param delayError true 时先 drain 队列再转发错误
+     * @param onDropped 缓冲区满时被丢弃元素的回调
+     */
+    public FlowableOnBackpressureBuffer(Flowable<T> source, int bufferSize, boolean unbounded,
+            boolean delayError, Consumer<? super T> onDropped) {
+        super(source);
+        this.bufferSize = bufferSize;
+        this.unbounded = unbounded;
+        this.delayError = delayError;
+        this.onDropped = onDropped;
+    }
+
+    /** 订阅上游并以 BackpressureBufferSubscriber 缓冲过量元素。 */
+    @Override
+    protected void subscribeActual(Subscriber<? super T> s) {
+        source.subscribe(new BackpressureBufferSubscriber<>(s, bufferSize, unbounded, delayError, onDropped));
+    }
+
+    /** 有界/无界 SPSC 队列缓冲并按 request drain 的 subscriber。 */
+    static final class BackpressureBufferSubscriber<T> extends BasicIntQueueSubscription<T> implements FlowableSubscriber<T> {
+
+        @Serial
+        private static final long serialVersionUID = -2514538129242366402L;
+
+        final Subscriber<? super T> downstream;
+        final SimplePlainQueue<T> queue;
+        final boolean delayError;
+        final Consumer<? super T> onDropped;
+
+        Subscription upstream;
+
+        volatile boolean cancelled;
+
+        volatile boolean done;
+        Throwable error;
+
+        final AtomicLong requested = new AtomicLong();
+
+        boolean outputFused;
+
+        BackpressureBufferSubscriber(Subscriber<? super T> actual, int bufferSize,
+                boolean unbounded, boolean delayError, Consumer<? super T> onDropped) {
+            this.downstream = actual;
+            this.delayError = delayError;
+            this.onDropped = onDropped;
+
+            SimplePlainQueue<T> q;
+
+            if (unbounded) {
+                q = new SpscLinkedArrayQueue<>(bufferSize);
+            } else {
+                q = new SpscArrayQueue<>(bufferSize);
+            }
+
+            this.queue = q;
+        }
+
+        /** 向上游请求 Long.MAX_VALUE 以接收全部元素。 */
+        @Override
+        public void onSubscribe(Subscription s) {
+            if (SubscriptionHelper.validate(this.upstream, s)) {
+                this.upstream = s;
+                downstream.onSubscribe(this);
+                s.request(Long.MAX_VALUE);
+            }
+        }
+
+        /** 入队；队列满时 cancel 上游并触发 MissingBackpressureException。 */
+        @Override
+        public void onNext(T t) {
+            if (!queue.offer(t)) {
+                upstream.cancel();
+                MissingBackpressureException ex = new MissingBackpressureException("Buffer is full");
+                try {
+                    onDropped.accept(t);
+                } catch (Throwable e) {
+                    Exceptions.throwIfFatal(e);
+                    ex.initCause(e);
+                }
+                onError(ex);
+                return;
+            }
+            if (outputFused) {
+                downstream.onNext(null);
+            } else {
+                drain();
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            error = t;
+            done = true;
+            if (outputFused) {
+                downstream.onError(t);
+            } else {
+                drain();
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            done = true;
+            if (outputFused) {
+                downstream.onComplete();
+            } else {
+                drain();
+            }
+        }
+
+        @Override
+        public void request(long n) {
+            if (!outputFused) {
+                if (SubscriptionHelper.validate(n)) {
+                    BackpressureHelper.add(requested, n);
+                    drain();
+                }
+            }
+        }
+
+        @Override
+        public void cancel() {
+            if (!cancelled) {
+                cancelled = true;
+                upstream.cancel();
+
+                if (!outputFused && getAndIncrement() == 0) {
+                    queue.clear();
+                }
+            }
+        }
+
+        /** 按 requested 从队列 poll 并向下游 onNext。 */
+        void drain() {
+            if (getAndIncrement() == 0) {
+                int missed = 1;
+                final SimplePlainQueue<T> q = queue;
+                final Subscriber<? super T> a = downstream;
+                for (;;) {
+
+                    if (checkTerminated(done, q.isEmpty(), a)) {
+                        return;
+                    }
+
+                    long r = requested.get();
+
+                    long e = 0L;
+
+                    while (e != r) {
+                        boolean d = done;
+                        T v = q.poll();
+                        boolean empty = v == null;
+
+                        if (checkTerminated(d, empty, a)) {
+                            return;
+                        }
+
+                        if (empty) {
+                            break;
+                        }
+
+                        a.onNext(v);
+
+                        e++;
+                    }
+
+                    if (e == r) {
+                        boolean d = done;
+                        boolean empty = q.isEmpty();
+
+                        if (checkTerminated(d, empty, a)) {
+                            return;
+                        }
+                    }
+
+                    if (e != 0L) {
+                        if (r != Long.MAX_VALUE) {
+                            requested.addAndGet(-e);
+                        }
+                    }
+
+                    missed = addAndGet(-missed);
+                    if (missed == 0) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        /** 根据 cancelled/done/delayError 决定终止或继续 drain。 */
+        boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a) {
+            if (cancelled) {
+                queue.clear();
+                return true;
+            }
+            if (d) {
+                if (delayError) {
+                    if (empty) {
+                        Throwable e = error;
+                        if (e != null) {
+                            a.onError(e);
+                        } else {
+                            a.onComplete();
+                        }
+                        return true;
+                    }
+                } else {
+                    Throwable e = error;
+                    if (e != null) {
+                        queue.clear();
+                        a.onError(e);
+                        return true;
+                    } else
+                    if (empty) {
+                        a.onComplete();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public int requestFusion(int mode) {
+            if ((mode & ASYNC) != 0) {
+                outputFused = true;
+                return ASYNC;
+            }
+            return NONE;
+        }
+
+        @Nullable
+        @Override
+        public T poll() {
+            return queue.poll();
+        }
+
+        @Override
+        public void clear() {
+            queue.clear();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return queue.isEmpty();
+        }
+    }
+}
