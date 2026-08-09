@@ -16,15 +16,16 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
+ * IO 辅助工具：流复制、关闭、ZIP 解压及路径父子关系校验。
  *
  * @author hengyunabc 2018-11-06
- *
  */
 public class IOUtils {
 
     private IOUtils() {
     }
 
+    /** 将输入流按 UTF-8 读成字符串 */
     public static String toString(InputStream inputStream) throws IOException {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
@@ -35,6 +36,7 @@ public class IOUtils {
         return result.toString("UTF-8");
     }
 
+    /** 1024 字节缓冲循环复制 in → out */
     public static void copy(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[1024];
         int len;
@@ -44,9 +46,9 @@ public class IOUtils {
     }
 
     /**
-     * @return a byte[] containing the information contained in the specified
-     *         InputStream.
-     * @throws java.io.IOException
+     * 读取输入流全部内容为字节数组。
+     * @return 字节数组
+     * @throws java.io.IOException 读失败
      */
     public static byte[] getBytes(InputStream input) throws IOException {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
@@ -71,6 +73,7 @@ public class IOUtils {
         return close((Closeable) output);
     }
 
+    /** 安全关闭 Closeable，异常作为返回值而非抛出（便于 finally 链式处理） */
     public static IOException close(final Closeable closeable) {
         try {
             if (closeable != null) {
@@ -82,7 +85,7 @@ public class IOUtils {
         return null;
     }
 
-    // support jdk6
+    // JDK6 无 ZipFile implements AutoCloseable，单独提供 close
     public static IOException close(final ZipFile zip) {
         try {
             if (zip != null) {
@@ -94,6 +97,7 @@ public class IOUtils {
         return null;
     }
 
+    /** 规范路径下判断 child 是否在 parent 目录树内（防 Zip Slip） */
     public static boolean isSubFile(File parent, File child) throws IOException {
         return child.getCanonicalPath().startsWith(parent.getCanonicalPath() + File.separator);
     }
@@ -102,6 +106,7 @@ public class IOUtils {
         return isSubFile(new File(parent), new File(child));
     }
 
+    /** 解压 ZIP 到目标目录，校验条目路径不逃逸出 extractFolder */
     public static void unzip(String zipFile, String extractFolder) throws IOException {
         File file = new File(zipFile);
         ZipFile zip = null;

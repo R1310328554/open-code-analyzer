@@ -22,35 +22,47 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 
+/**
+ * Telnet 输入流：在独立线程或调用线程中解析 IAC 协议，将用户数据放入环形队列供 {@link #read()} 消费。
+ * <p>
+ * 负责 WILL/WONT/DO/DONT 协商、子选项（如 TERMINAL-TYPE）及 CR/LF 转换。
+ */
 final class TelnetInputStream extends BufferedInputStream implements Runnable
 {
-    /** End of file has been reached */
+    /** 已到达流末尾 */
     private static final int EOF = -1;
 
-    /** Read would block */
+    /** 非阻塞读时暂无数据 */
     private static final int WOULD_BLOCK = -2;
 
-    // TODO should these be private enums?
+    // Telnet 协议解析状态机（IAC 及其后续字节）
     static final int _STATE_DATA = 0, _STATE_IAC = 1, _STATE_WILL = 2,
                      _STATE_WONT = 3, _STATE_DO = 4, _STATE_DONT = 5,
                      _STATE_SB = 6, _STATE_SE = 7, _STATE_CR = 8, _STATE_IAC_SB = 9;
 
+    /** 是否已 EOF，由 __queue 锁保护 */
     private boolean __hasReachedEOF; // @GuardedBy("__queue")
+    /** 流是否已关闭 */
     private volatile boolean __isClosed;
     private boolean __readIsWaiting;
     private int __receiveState, __queueHead, __queueTail, __bytesAvailable;
+    /** 环形缓冲队列，存放已解析的用户数据字节 */
     private final int[] __queue;
+    /** 所属 Telnet 客户端，用于协商与 AYT 处理 */
     private final TelnetClient __client;
+    /** 后台读线程；非线程模式时为 null */
     private final Thread __thread;
     private IOException __ioException;
 
-    /* TERMINAL-TYPE option (start)*/
+    /* TERMINAL-TYPE 子选项缓冲 (start)*/
+    /** 子协商数据暂存区（IAC SB … IAC SE 之间） */
     private final int __suboption[] = new int[512];
     private int __suboption_count = 0;
     /* TERMINAL-TYPE option (end)*/
 
     private volatile boolean __threaded;
 
+    /** 构造输入流；{@code readerThread} 为 true 时启用后台读线程。 */
     TelnetInputStream(InputStream input, TelnetClient client,
                       boolean readerThread)
     {
@@ -79,6 +91,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
         this(input, client, true);
     }
 
+    /** 启动后台读线程并提高优先级，避免与主线程争用导致死锁。 */
     void _start()
     {
         if(__thread == null) {
@@ -107,13 +120,10 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
     // as a processDo/Will/etc. command invoked from TelnetInputStream
     // tries to write.
     /**
-     * Get the next byte of data.
-     * IAC commands are processed internally and do not return data.
+     * 从底层流读取并解析下一字节；IAC 命令在内部消化，不返回给调用方。
      *
-     * @param mayBlock true if method is allowed to block
-     * @return the next byte of data,
-     * or -1 (EOF) if end of stread reached,
-     * or -2 (WOULD_BLOCK) if mayBlock is false and there is no data available
+     * @param mayBlock 是否允许阻塞等待
+     * @return 用户数据字节，或 EOF(-1)、WOULD_BLOCK(-2)
      */
     private int __read(boolean mayBlock) throws IOException
     {
@@ -122,7 +132,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
         while (true)
         {
 
-            // If there is no more data AND we were told not to block,
+            // 非阻塞且底层无数据时直接返回 WOULD_BLOCK
             // just return WOULD_BLOCK (-2). (More efficient than exception.)
             if(!mayBlock && super.available() == 0) {
                 return WOULD_BLOCK;
@@ -185,6 +195,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
                 break;
 
             case _STATE_IAC:
+                // 解析 IAC 后的命令字节
                 switch (ch)
                 {
                 case TelnetCommand.WILL:
@@ -299,6 +310,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
     // TelnetOutputStream writing through the telnet client at same time
     // as a processDo/Will/etc. command invoked from TelnetInputStream
     // tries to write. Returns true if buffer was previously empty.
+    /** 将解析出的用户字节写入环形队列；队列满时等待消费者。返回写入前队列是否为空。 */
     private boolean __processChar(int ch) throws InterruptedException
     {
         // Critical section because we're altering __bytesAvailable,
@@ -347,6 +359,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
         return bufferWasEmpty;
     }
 
+    /** 从队列取一字节；线程模式下阻塞等待后台线程填充。 */
     @Override
     public int read() throws IOException
     {
@@ -547,6 +560,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
         return false;
     }
 
+    /** 返回队列中可读字节数；线程模式下不叠加底层 available（NET-466）。 */
     @Override
     public int available() throws IOException
     {
@@ -564,6 +578,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
 
     // Cannot be synchronized.  Will cause deadlock if run() is blocked
     // in read because BufferedInputStream read() is synchronized.
+    /** 关闭底层流并通知读线程退出，不等待线程结束。 */
     @Override
     public void close() throws IOException
     {
@@ -588,6 +603,7 @@ final class TelnetInputStream extends BufferedInputStream implements Runnable
 
     }
 
+    /** 后台线程主循环：持续 __read 并 __processChar，首字节入队时通知 InputListener。 */
     @Override
     public void run()
     {

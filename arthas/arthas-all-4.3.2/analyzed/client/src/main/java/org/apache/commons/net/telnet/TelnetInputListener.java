@@ -18,8 +18,9 @@
 package org.apache.commons.net.telnet;
 
 /***
- * Listener interface used for notification that incoming data is
- * available to be read.
+ * Telnet 输入监听器：当 {@link TelnetClient} 输入流有新数据可读时触发回调。
+ * <p>
+ * 配合 {@link TelnetClient#registerInputListener} 注册，用于异步通知上层读取。
  *
  * @see TelnetClient
  * @since 3.0
@@ -28,8 +29,7 @@ public interface TelnetInputListener
 {
 
     /***
-     * Callback method invoked when new incoming data is available on a
-     * {@link TelnetClient}'s {@link TelnetClient#getInputStream input stream}.
+     * 输入流有新数据到达时的回调；调用方应在此方法中读取 {@link TelnetClient#getInputStream}。
      *
      * @see TelnetClient#registerInputListener
      ***/

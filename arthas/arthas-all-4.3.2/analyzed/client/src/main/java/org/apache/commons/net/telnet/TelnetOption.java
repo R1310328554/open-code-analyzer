@@ -18,11 +18,9 @@
 package org.apache.commons.net.telnet;
 
 /***
- * The TelnetOption class cannot be instantiated and only serves as a
- * storehouse for telnet option constants.
+ * Telnet 选项常量表（不可实例化），对应 RFC 855 定义的选项码。
  * <p>
- * Details regarding Telnet option specification can be found in RFC 855.
- *
+ * 提供选项码与可读名称的映射及合法性校验。
  *
  * @see org.apache.commons.net.telnet.Telnet
  * @see org.apache.commons.net.telnet.TelnetClient
@@ -30,11 +28,13 @@ package org.apache.commons.net.telnet;
 
 public class TelnetOption
 {
-    /*** The maximum value an option code can have.  This value is 255. ***/
+    /** 选项码最大值 255 */
     public static final int MAX_OPTION_VALUE = 255;
 
+    /** 二进制传输模式 */
     public static final int BINARY = 0;
 
+    /** 回显 */
     public static final int ECHO = 1;
 
     public static final int PREPARE_TO_RECONNECT = 2;
@@ -81,6 +81,7 @@ public class TelnetOption
 
     public static final int SEND_LOCATION = 23;
 
+    /** 终端类型（RFC 1091） */
     public static final int TERMINAL_TYPE = 24;
 
     public static final int END_OF_RECORD = 25;
@@ -95,6 +96,7 @@ public class TelnetOption
 
     public static final int X3_PAD = 30;
 
+    /** 窗口尺寸 NAWS（RFC 1073） */
     public static final int WINDOW_SIZE = 31;
 
     public static final int TERMINAL_SPEED = 32;
@@ -156,11 +158,10 @@ public class TelnetOption
 
 
     /***
-     * Returns the string representation of the telnet protocol option
-     * corresponding to the given option code.
+     * 将选项码转为可读名称；未分配则返回 UNASSIGNED。
      *
-     * @param code The option code of the telnet protocol option
-     * @return The string representation of the telnet protocol option.
+     * @param code 选项码
+     * @return 选项名称字符串
      ***/
     public static final String getOption(int code)
     {
@@ -176,18 +177,17 @@ public class TelnetOption
 
 
     /***
-     * Determines if a given option code is valid.  Returns true if valid,
-     * false if not.
+     * 判断选项码是否在已知范围内。
      *
-     * @param code  The option code to test.
-     * @return True if the option code is valid, false if not.
+     * @param code 待测选项码
+     * @return 合法为 true
      **/
     public static final boolean isValidOption(int code)
     {
         return (code <= __LAST_OPTION);
     }
 
-    // Cannot be instantiated
+    // 工具类，禁止实例化
     private TelnetOption()
     { }
 }

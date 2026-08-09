@@ -18,13 +18,11 @@
 package org.apache.commons.net.telnet;
 
 /***
- * Implements the telnet terminal type option RFC 1091.
+ * 终端类型选项处理器（RFC 1091）：响应 SEND 子协商并回复 IS + 终端名。
  ***/
 public class TerminalTypeOptionHandler extends TelnetOptionHandler
 {
-    /***
-     * Terminal type
-     ***/
+    /** 协商使用的终端类型字符串（如 VT100、xterm） */
     private final String termType;
 
     /***
@@ -78,12 +76,11 @@ public class TerminalTypeOptionHandler extends TelnetOptionHandler
     }
 
     /***
-     * Implements the abstract method of TelnetOptionHandler.
+     * 收到 TERMINAL-TYPE SEND 时构造 IS 响应，携带 {@link #termType} 各字符。
      * <p>
-     * @param suboptionData - the sequence received, without IAC SB &amp; IAC SE
-     * @param suboptionLength - the length of data in suboption_data
-     * <p>
-     * @return terminal type information
+     * @param suboptionData 子协商数据
+     * @param suboptionLength 长度
+     * @return 终端类型子协商序列
      ***/
     @Override
     public int[] answerSubnegotiation(int suboptionData[], int suboptionLength)

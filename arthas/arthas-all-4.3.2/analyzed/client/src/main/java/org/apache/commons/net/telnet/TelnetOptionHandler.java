@@ -18,28 +18,19 @@
 package org.apache.commons.net.telnet;
 
 /***
- * The TelnetOptionHandler class is the base class to be used
- * for implementing handlers for telnet options.
+ * Telnet 选项处理器基类：管理本地/远端 WILL/DO 的初始值、接受策略及子协商响应。
  * <p>
- * TelnetOptionHandler implements basic option handling
- * functionality and defines abstract methods that must be
- * implemented to define subnegotiation behaviour.
+ * 子类覆盖 {@link #answerSubnegotiation} 等以处理 TERMINAL-TYPE、NAWS 等子选项。
  ***/
 public abstract class TelnetOptionHandler
 {
-    /***
-     * Option code
-     ***/
+    /** 本处理器对应的选项码 */
     private int optionCode = -1;
 
-    /***
-     * true if the option should be activated on the local side
-     ***/
+    /** 连接建立后是否主动发送 WILL（本地启用） */
     private boolean initialLocal = false;
 
-    /***
-     * true if the option should be activated on the remote side
-     ***/
+    /** 连接建立后是否主动发送 DO（要求远端启用） */
     private boolean initialRemote = false;
 
     /***
@@ -63,16 +54,13 @@ public abstract class TelnetOptionHandler
     private boolean willFlag = false;
 
     /***
-     * Constructor for the TelnetOptionHandler. Allows defining desired
-     * initial setting for local/remote activation of this option and
-     * behaviour in case a local/remote activation request for this
-     * option is received.
+     * 构造选项处理器，配置连接时的主动协商与对端请求的默认应答策略。
      * <p>
-     * @param optcode - Option code.
-     * @param initlocal - if set to true, a WILL is sent upon connection.
-     * @param initremote - if set to true, a DO is sent upon connection.
-     * @param acceptlocal - if set to true, any DO request is accepted.
-     * @param acceptremote - if set to true, any WILL request is accepted.
+     * @param optcode 选项码
+     * @param initlocal 为 true 时连接后发送 WILL
+     * @param initremote 为 true 时连接后发送 DO
+     * @param acceptlocal 为 true 时接受对端 DO
+     * @param acceptremote 为 true 时接受对端 WILL
      ***/
     public TelnetOptionHandler(int optcode,
                                 boolean initlocal,
@@ -187,50 +175,27 @@ public abstract class TelnetOptionHandler
     }
 
     /***
-     * Method called upon reception of a subnegotiation for this option
-     * coming from the other end.
+     * 收到对端子协商（IAC SB … IAC SE 内载荷）时调用；默认无响应。
      * <p>
-     * This implementation returns null, and
-     * must be overridden by the actual TelnetOptionHandler to specify
-     * which response must be sent for the subnegotiation request.
-     * <p>
-     * @param suboptionData - the sequence received, without IAC SB &amp; IAC SE
-     * @param suboptionLength - the length of data in suboption_data
-     * <p>
-     * @return response to be sent to the subnegotiation sequence. TelnetClient
-     * will add IAC SB &amp; IAC SE. null means no response
+     * @param suboptionData 子协商字节序列（不含 SB/SE）
+     * @param suboptionLength 有效长度
+     * @return 应答载荷，由 TelnetClient 包裹 SB/SE；null 表示不回复
      ***/
     public int[] answerSubnegotiation(int suboptionData[], int suboptionLength) {
         return null;
     }
 
     /***
-     * This method is invoked whenever this option is acknowledged active on
-     * the local end (TelnetClient sent a WILL, remote side sent a DO).
-     * The method is used to specify a subnegotiation sequence that will be
-     * sent by TelnetClient when the option is activated.
-     * <p>
-     * This implementation returns null, and must be overridden by
-     * the actual TelnetOptionHandler to specify
-     * which response must be sent for the subnegotiation request.
-     * @return subnegotiation sequence to be sent by TelnetClient. TelnetClient
-     * will add IAC SB &amp; IAC SE. null means no subnegotiation.
+     * 本地选项被确认激活（已发 WILL 且对端 DO）后，可返回主动发起的子协商序列。
+     * @return 子协商载荷；null 表示不发送
      ***/
     public int[] startSubnegotiationLocal() {
         return null;
     }
 
     /***
-     * This method is invoked whenever this option is acknowledged active on
-     * the remote end (TelnetClient sent a DO, remote side sent a WILL).
-     * The method is used to specify a subnegotiation sequence that will be
-     * sent by TelnetClient when the option is activated.
-     * <p>
-     * This implementation returns null, and must be overridden by
-     * the actual TelnetOptionHandler to specify
-     * which response must be sent for the subnegotiation request.
-     * @return subnegotiation sequence to be sent by TelnetClient. TelnetClient
-     * will add IAC SB &amp; IAC SE. null means no subnegotiation.
+     * 远端选项被确认激活（已发 DO 且对端 WILL）后，可返回主动发起的子协商序列。
+     * @return 子协商载荷；null 表示不发送
      ***/
     public int[] startSubnegotiationRemote() {
         return null;

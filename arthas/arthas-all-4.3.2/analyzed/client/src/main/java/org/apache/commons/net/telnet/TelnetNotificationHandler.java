@@ -18,32 +18,32 @@
 package org.apache.commons.net.telnet;
 
 /***
- * The TelnetNotificationHandler interface can be used to handle
- * notification of options negotiation commands received on a telnet
- * session.
+ * Telnet 选项协商通知接口：远端发送 DO/DONT/WILL/WONT 等命令时回调。
  * <p>
- * The user can implement this interface and register a
- * TelnetNotificationHandler by using the registerNotificationHandler()
- * of TelnetClient to be notified of option negotiation commands.
+ * 实现本接口并通过 {@link TelnetClient#registerNotificationHandler} 注册即可监听协商过程。
  ***/
 
 public interface TelnetNotificationHandler
 {
+    /** 远端请求本地启用某选项（DO） */
     /***
      * The remote party sent a DO command.
      ***/
     public static final int RECEIVED_DO =   1;
 
+    /** 远端请求本地关闭某选项（DONT） */
     /***
      * The remote party sent a DONT command.
      ***/
     public static final int RECEIVED_DONT = 2;
 
+    /** 远端声明将启用某选项（WILL） */
     /***
      * The remote party sent a WILL command.
      ***/
     public static final int RECEIVED_WILL = 3;
 
+    /** 远端声明将关闭某选项（WONT） */
     /***
      * The remote party sent a WONT command.
      ***/
@@ -56,13 +56,10 @@ public interface TelnetNotificationHandler
     public static final int RECEIVED_COMMAND = 5;
 
     /***
-     * Callback method called when TelnetClient receives an
-     * command or option negotiation command
+     * 收到协商或 Telnet 命令时的回调。
      *
-     * @param negotiation_code - type of (negotiation) command received
-     * (RECEIVED_DO, RECEIVED_DONT, RECEIVED_WILL, RECEIVED_WONT, RECEIVED_COMMAND)
-     *
-     * @param option_code - code of the option negotiated, or the command code itself (e.g. NOP).
+     * @param negotiation_code 协商类型（RECEIVED_DO 等）
+     * @param option_code 选项码或命令码（如 NOP）
      ***/
     public void receivedNegotiation(int negotiation_code, int option_code);
 }

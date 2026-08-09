@@ -21,24 +21,22 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Wraps an output stream.
+ * Telnet 输出流：按 ASCII/二进制模式转换换行并转义 IAC（双写 255）。
  * <p>
- * In binary mode, the only conversion is to double IAC.
- * <p>
- * In ASCII mode, if convertCRtoCRLF is true (currently always true), any CR is converted to CRLF.
- * IACs are doubled.
- * Also a bare LF is converted to CRLF and a bare CR is converted to CR\0
+ * ASCII 模式下 CR→CRLF、裸 LF→CRLF、裸 CR→CR\0，符合 RFC 854。
  * <p>
  ***/
 
 
 final class TelnetOutputStream extends OutputStream
 {
+    /** 所属 Telnet 客户端，发送经其同步 */
     private final TelnetClient __client;
     // TODO there does not appear to be any way to change this value - should it be a ctor parameter?
     private final boolean __convertCRtoCRLF = true;
     private boolean __lastWasCR = false;
 
+    /** 绑定 Telnet 客户端 */
     TelnetOutputStream(TelnetClient client)
     {
         __client = client;
@@ -46,11 +44,10 @@ final class TelnetOutputStream extends OutputStream
 
 
     /***
-     * Writes a byte to the stream.
+     * 写入一字节；ASCII 模式下处理 CR/LF 与 IAC 转义。
      * <p>
-     * @param ch The byte to write.
-     * @exception IOException If an error occurs while writing to the underlying
-     *            stream.
+     * @param ch 待写字节
+     * @exception IOException 底层写失败
      ***/
     @Override
     public void write(int ch) throws IOException
@@ -60,6 +57,7 @@ final class TelnetOutputStream extends OutputStream
         {
             ch &= 0xff;
 
+            // 非二进制即 ASCII 模式：按 RFC854 转换行结束符
             if (__client._requestedWont(TelnetOption.BINARY)) // i.e. ASCII
             {
                 if (__lastWasCR)
@@ -149,6 +147,7 @@ final class TelnetOutputStream extends OutputStream
         }
     }
 
+    /** 刷新 Telnet 客户端输出缓冲 */
     /*** Flushes the stream. ***/
     @Override
     public void flush() throws IOException
@@ -156,6 +155,7 @@ final class TelnetOutputStream extends OutputStream
         __client._flushOutputStream();
     }
 
+    /** 关闭 Telnet 客户端输出流 */
     /*** Closes the stream. ***/
     @Override
     public void close() throws IOException

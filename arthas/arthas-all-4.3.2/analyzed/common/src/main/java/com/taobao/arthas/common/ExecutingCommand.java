@@ -8,8 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * A class for executing on the command line and returning the result of
- * execution.
+ * 本地 shell 命令执行工具：{@link Runtime#exec} 并逐行收集标准输出。
+ * <p>
+ * 失败时记录 trace 日志并返回空列表，不抛异常。
  *
  * @author alessandro[at]perucchi[dot]org
  */
@@ -19,12 +20,10 @@ public class ExecutingCommand {
     }
 
     /**
-     * Executes a command on the native command line and returns the result.
+     * 按空格拆分命令字符串并执行。
      *
-     * @param cmdToRun
-     *            Command to run
-     * @return A list of Strings representing the result of the command, or empty
-     *         string if the command failed
+     * @param cmdToRun 完整命令行
+     * @return  stdout 行列表；失败时为空
      */
     public static List<String> runNative(String cmdToRun) {
         String[] cmd = cmdToRun.split(" ");
@@ -32,13 +31,10 @@ public class ExecutingCommand {
     }
 
     /**
-     * Executes a command on the native command line and returns the result line by
-     * line.
+     * 执行命令数组并读取 stdout 至进程结束。
      *
-     * @param cmdToRunWithArgs
-     *            Command to run and args, in an array
-     * @return A list of Strings representing the result of the command, or empty
-     *         string if the command failed
+     * @param cmdToRunWithArgs 命令及参数数组
+     * @return 输出行列表
      */
     public static List<String> runNative(String[] cmdToRunWithArgs) {
         Process p = null;
@@ -77,26 +73,21 @@ public class ExecutingCommand {
     }
 
     /**
-     * Return first line of response for selected command.
+     * 执行命令并返回首行输出。
      *
-     * @param cmd2launch
-     *            String command to be launched
-     * @return String or empty string if command failed
+     * @param cmd2launch 命令字符串
+     * @return 第一行或空串
      */
     public static String getFirstAnswer(String cmd2launch) {
         return getAnswerAt(cmd2launch, 0);
     }
 
     /**
-     * Return response on selected line index (0-based) after running selected
-     * command.
+     * 执行命令并返回指定行（0 起）的输出。
      *
-     * @param cmd2launch
-     *            String command to be launched
-     * @param answerIdx
-     *            int index of line in response of the command
-     * @return String whole line in response or empty string if invalid index or
-     *         running of command fails
+     * @param cmd2launch 命令字符串
+     * @param answerIdx 行索引
+     * @return 该行文本或空串
      */
     public static String getAnswerAt(String cmd2launch, int answerIdx) {
         List<String> sa = ExecutingCommand.runNative(cmd2launch);

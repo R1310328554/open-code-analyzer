@@ -23,29 +23,37 @@ import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
+ * 线程安全的 {@link EventListener} 列表，基于 {@link CopyOnWriteArrayList}。
+ * <p>
+ * 用于 Commons Net 内部注册/遍历监听器，迭代时快照副本避免并发修改异常。
  */
 
 public class ListenerList implements Serializable, Iterable<EventListener>
 {
     private static final long serialVersionUID = -1934227607974228213L;
 
+    /** 写时复制结构的监听器集合 */
     private final CopyOnWriteArrayList<EventListener> __listeners;
 
+    /** 创建空监听器列表 */
     public ListenerList()
     {
         __listeners = new CopyOnWriteArrayList<EventListener>();
     }
 
+    /** 注册监听器 */
     public void addListener(EventListener listener)
     {
             __listeners.add(listener);
     }
 
+    /** 移除监听器 */
     public  void removeListener(EventListener listener)
     {
             __listeners.remove(listener);
     }
 
+    /** 当前监听器数量 */
     public int getListenerCount()
     {
         return __listeners.size();

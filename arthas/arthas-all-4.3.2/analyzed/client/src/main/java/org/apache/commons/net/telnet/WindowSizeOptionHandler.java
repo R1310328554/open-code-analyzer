@@ -18,20 +18,16 @@
 package org.apache.commons.net.telnet;
 
 /***
- * Implements the telnet window size option RFC 1073.
+ * 窗口尺寸选项 NAWS 处理器（RFC 1073）：本地激活后向服务端上报列×行。
  * @version $Id: WindowSizeOptionHandler.java 1697293 2015-08-24 01:01:00Z sebb $
  * @since 2.0
  ***/
 public class WindowSizeOptionHandler extends TelnetOptionHandler
 {
-    /***
-     * Horizontal Size
-     ***/
+    /** 终端宽度（列） */
     private int m_nWidth = 80;
 
-    /***
-     * Vertical Size
-     ***/
+    /** 终端高度（行） */
     private int m_nHeight = 24;
 
     /***
@@ -96,10 +92,9 @@ public class WindowSizeOptionHandler extends TelnetOptionHandler
     }
 
     /***
-     * Implements the abstract method of TelnetOptionHandler.
-     * This will send the client Height and Width to the server.
+     * 本地 NAWS 激活后构造子协商：4 字节宽高，遇 0xFF 需双写转义。
      * <p>
-     * @return array to send to remote system
+     * @return 发往远端的窗口尺寸字节序列
      ***/
     @Override
     public int[] startSubnegotiationLocal()
@@ -126,9 +121,7 @@ public class WindowSizeOptionHandler extends TelnetOptionHandler
             nResponseSize += 1;
         }
 
-        //
-        // allocate response array
-        //
+        // 按可能出现的 0xFF 转义预分配应答数组
         int response[] = new int[nResponseSize];
 
         //

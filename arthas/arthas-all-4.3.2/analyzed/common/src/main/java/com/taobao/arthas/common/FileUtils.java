@@ -7,26 +7,24 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * 
+ * 精简版文件工具：临时目录、字节数组读写及安全打开输出流。
+ *
  * @see org.apache.commons.io.FileUtils
  * @author hengyunabc 2020-05-03
- *
  */
 public class FileUtils {
 
+	/** 返回 JVM 系统属性 {@code java.io.tmpdir} 对应目录 */
 	public static File getTempDirectory() {
 		return new File(System.getProperty("java.io.tmpdir"));
 	}
 
 	/**
-	 * Writes a byte array to a file creating the file if it does not exist.
-	 * <p>
-	 * NOTE: As from v1.3, the parent directories of the file will be created if
-	 * they do not exist.
+	 * 将字节数组写入文件；不存在则创建，必要时创建父目录。
 	 *
-	 * @param file the file to write to
-	 * @param data the content to write to the file
-	 * @throws IOException in case of an I/O error
+	 * @param file 目标文件
+	 * @param data 内容
+	 * @throws IOException I/O 错误
 	 * @since 1.1
 	 */
 	public static void writeByteArrayToFile(final File file, final byte[] data) throws IOException {
@@ -110,6 +108,14 @@ public class FileUtils {
 	 * @throws IOException if a parent directory needs creating but that fails
 	 * @since 2.1
 	 */
+	/**
+	 * 打开文件输出流；校验可写性并在缺失时创建父目录。
+	 *
+	 * @param file 目标文件
+	 * @param append 是否追加
+	 * @return 新 FileOutputStream
+	 * @throws IOException 目录或权限错误
+	 */
 	public static FileOutputStream openOutputStream(final File file, final boolean append) throws IOException {
 		if (file.exists()) {
 			if (file.isDirectory()) {
@@ -130,12 +136,11 @@ public class FileUtils {
 	}
 	
     /**
-     * Reads the contents of a file into a byte array.
-     * The file is always closed.
+     * 读取整个文件为字节数组，并在 finally 中关闭流。
      *
-     * @param file the file to read, must not be {@code null}
-     * @return the file contents, never {@code null}
-     * @throws IOException in case of an I/O error
+     * @param file 待读文件，非 null
+     * @return 文件内容
+     * @throws IOException I/O 错误
      * @since 1.1
      */
     public static byte[] readFileToByteArray(final File file) throws IOException {

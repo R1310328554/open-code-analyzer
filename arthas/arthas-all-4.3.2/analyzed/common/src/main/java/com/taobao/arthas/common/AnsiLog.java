@@ -5,7 +5,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 
 /**
- *
+ * 带 ANSI 颜色的控制台日志工具，级别映射 java.util.logging。
  * <pre>
  * FINEST  -> TRACE
  * FINER   -> DEBUG
@@ -18,10 +18,10 @@ import java.util.regex.Matcher;
  *
  * @see org.slf4j.bridge.SLF4JBridgeHandler
  * @author hengyunabc 2017-05-03
- *
  */
 public abstract class AnsiLog {
 
+    /** 是否启用 ANSI 颜色（控制台且非 Windows CMD 时通常为 true） */
     static boolean enableColor;
 
     /**
@@ -29,6 +29,7 @@ public abstract class AnsiLog {
      */
     private static volatile PrintStream out = System.out;
 
+    /** 全局最低输出级别，默认 CONFIG（对应 info） */
     public static java.util.logging.Level LEVEL = java.util.logging.Level.CONFIG;
 
     private static final String RESET = "\033[0m";
@@ -79,6 +80,7 @@ public abstract class AnsiLog {
     private AnsiLog() {
     }
 
+    /** 当前是否启用彩色输出 */
     public static boolean enableColor() {
         return enableColor;
     }
@@ -105,11 +107,11 @@ public abstract class AnsiLog {
     }
 
     /**
-     * set logger Level
+     * 设置全局日志级别并返回旧级别。
      *
      * @see java.util.logging.Level
-     * @param level
-     * @return
+     * @param level 新级别
+     * @return 之前的级别
      */
     public static Level level(Level level) {
         Level old = LEVEL;
@@ -194,6 +196,7 @@ public abstract class AnsiLog {
         return "\033[" + colorCode + "m" + msg + RESET;
     }
 
+    /** 输出 TRACE 级别日志（FINEST） */
     public static void trace(String msg) {
         if (canLog(Level.FINEST)) {
             if (enableColor) {
@@ -216,6 +219,7 @@ public abstract class AnsiLog {
         }
     }
 
+    /** 输出 DEBUG 级别日志（FINER） */
     public static void debug(String msg) {
         if (canLog(Level.FINER)) {
             if (enableColor) {
@@ -238,6 +242,7 @@ public abstract class AnsiLog {
         }
     }
 
+    /** 输出 INFO 级别日志（CONFIG） */
     public static void info(String msg) {
         if (canLog(Level.CONFIG)) {
             if (enableColor) {
@@ -260,6 +265,7 @@ public abstract class AnsiLog {
         }
     }
 
+    /** 输出 WARN 级别日志（WARNING） */
     public static void warn(String msg) {
         if (canLog(Level.WARNING)) {
             if (enableColor) {
@@ -282,6 +288,7 @@ public abstract class AnsiLog {
         }
     }
 
+    /** 输出 ERROR 级别日志（SEVERE） */
     public static void error(String msg) {
         if (canLog(Level.SEVERE)) {
             if (enableColor) {
@@ -317,6 +324,7 @@ public abstract class AnsiLog {
         return null;
     }
 
+    /** 判断给定级别是否不低于当前全局 LEVEL */
     private static boolean canLog(Level level) {
         return level.intValue() >= LEVEL.intValue();
     }
