@@ -19,9 +19,8 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Root of the hierarchy of data access exceptions that are considered non-transient -
- * where a retry of the same operation would fail unless the cause of the Exception
- * is corrected.
+ * 被视为非瞬态的数据访问异常层次结构的根类——
+ * 除非修正异常原因，否则重试相同操作仍会失败。
  *
  * @author Thomas Risberg
  * @since 2.5
@@ -31,18 +30,17 @@ import org.jspecify.annotations.Nullable;
 public abstract class NonTransientDataAccessException extends DataAccessException {
 
 	/**
-	 * Constructor for NonTransientDataAccessException.
-	 * @param msg the detail message
+	 * NonTransientDataAccessException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public NonTransientDataAccessException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for NonTransientDataAccessException.
-	 * @param msg the detail message
-	 * @param cause the root cause (usually from using an underlying
-	 * data access API such as JDBC)
+	 * NonTransientDataAccessException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 根因（通常来自底层数据访问 API，如 JDBC）
 	 */
 	public NonTransientDataAccessException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

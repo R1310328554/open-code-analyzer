@@ -19,11 +19,11 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown on failure to acquire a lock during an update,
- * for example during a "select for update" statement.
+ * 更新过程中获取锁失败时抛出，
+ * 例如在 "select for update" 语句执行期间。
  *
- * <p>Consider handling the general {@link PessimisticLockingFailureException}
- * instead, semantically including a wider range of locking-related failures.
+ * <p>建议改为处理通用的 {@link PessimisticLockingFailureException}，
+ * 其语义涵盖更广的锁相关失败。
  *
  * @author Rod Johnson
  */
@@ -31,17 +31,17 @@ import org.jspecify.annotations.Nullable;
 public class CannotAcquireLockException extends PessimisticLockingFailureException {
 
 	/**
-	 * Constructor for CannotAcquireLockException.
-	 * @param msg the detail message
+	 * CannotAcquireLockException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public CannotAcquireLockException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for CannotAcquireLockException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * CannotAcquireLockException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public CannotAcquireLockException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

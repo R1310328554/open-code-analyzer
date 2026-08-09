@@ -19,8 +19,7 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Data access exception thrown when a result was expected to have at least
- * one row (or element) but zero rows (or elements) were actually returned.
+ * 预期结果至少包含一行（或一个元素），但实际返回零行（或零元素）时抛出的数据访问异常。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -30,27 +29,27 @@ import org.jspecify.annotations.Nullable;
 public class EmptyResultDataAccessException extends IncorrectResultSizeDataAccessException {
 
 	/**
-	 * Constructor for EmptyResultDataAccessException.
-	 * @param expectedSize the expected result size
+	 * EmptyResultDataAccessException 构造函数。
+	 * @param expectedSize 预期结果大小
 	 */
 	public EmptyResultDataAccessException(int expectedSize) {
 		super(expectedSize, 0);
 	}
 
 	/**
-	 * Constructor for EmptyResultDataAccessException.
-	 * @param msg the detail message
-	 * @param expectedSize the expected result size
+	 * EmptyResultDataAccessException 构造函数。
+	 * @param msg 详细消息
+	 * @param expectedSize 预期结果大小
 	 */
 	public EmptyResultDataAccessException(@Nullable String msg, int expectedSize) {
 		super(msg, expectedSize, 0);
 	}
 
 	/**
-	 * Constructor for EmptyResultDataAccessException.
-	 * @param msg the detail message
-	 * @param expectedSize the expected result size
-	 * @param ex the wrapped exception
+	 * EmptyResultDataAccessException 构造函数。
+	 * @param msg 详细消息
+	 * @param expectedSize 预期结果大小
+	 * @param ex 被包装的异常
 	 */
 	public EmptyResultDataAccessException(@Nullable String msg, int expectedSize, Throwable ex) {
 		super(msg, expectedSize, 0, ex);

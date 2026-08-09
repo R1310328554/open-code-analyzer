@@ -19,7 +19,7 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Data access exception thrown when a resource fails completely and the failure is permanent.
+ * 资源完全不可用且失败为永久性时抛出的数据访问异常。
  *
  * @author Thomas Risberg
  * @since 2.5
@@ -29,17 +29,17 @@ import org.jspecify.annotations.Nullable;
 public class NonTransientDataAccessResourceException extends NonTransientDataAccessException {
 
 	/**
-	 * Constructor for NonTransientDataAccessResourceException.
-	 * @param msg the detail message
+	 * NonTransientDataAccessResourceException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public NonTransientDataAccessResourceException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for NonTransientDataAccessResourceException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * NonTransientDataAccessResourceException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public NonTransientDataAccessResourceException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

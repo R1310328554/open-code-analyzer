@@ -17,10 +17,8 @@
 package org.springframework.dao;
 
 /**
- * Data access exception thrown when something unintended appears to have
- * happened with an update, but the transaction hasn't already been rolled back.
- * Thrown, for example, when we wanted to update 1 row in an RDBMS but actually
- * updated 3.
+ * update 操作出现非预期情况但事务尚未回滚时抛出的数据访问异常。
+ * 例如，在 RDBMS 中预期更新 1 行却实际更新了 3 行。
  *
  * @author Rod Johnson
  */
@@ -28,17 +26,17 @@ package org.springframework.dao;
 public class IncorrectUpdateSemanticsDataAccessException extends InvalidDataAccessResourceUsageException {
 
 	/**
-	 * Constructor for IncorrectUpdateSemanticsDataAccessException.
-	 * @param msg the detail message
+	 * IncorrectUpdateSemanticsDataAccessException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public IncorrectUpdateSemanticsDataAccessException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for IncorrectUpdateSemanticsDataAccessException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the underlying API, such as JDBC
+	 * IncorrectUpdateSemanticsDataAccessException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 底层 API（如 JDBC）的根因
 	 */
 	public IncorrectUpdateSemanticsDataAccessException(String msg, Throwable cause) {
 		super(msg, cause);
@@ -46,10 +44,10 @@ public class IncorrectUpdateSemanticsDataAccessException extends InvalidDataAcce
 
 
 	/**
-	 * Return whether data was updated.
-	 * If this method returns {@code false}, there is nothing to roll back.
-	 * <p>The default implementation always returns {@code true}.
-	 * This can be overridden in subclasses.
+	 * 返回数据是否已被更新。
+	 * 若返回 {@code false}，则无需回滚。
+	 * <p>默认实现始终返回 {@code true}；
+	 * 子类可覆盖。
 	 */
 	public boolean wasDataUpdated() {
 		return true;

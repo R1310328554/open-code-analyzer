@@ -19,11 +19,10 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown on an optimistic locking violation.
+ * 发生乐观锁冲突时抛出。
  *
- * <p>This exception will be thrown either by O/R mapping tools
- * or by custom DAO implementations. Optimistic locking failure
- * is typically <i>not</i> detected by the database itself.
+ * <p>本异常由 O/R 映射工具或自定义 DAO 实现抛出。
+ * 乐观锁失败通常<i>不会</i>由数据库本身检测。
  *
  * @author Rod Johnson
  * @see PessimisticLockingFailureException
@@ -32,17 +31,17 @@ import org.jspecify.annotations.Nullable;
 public class OptimisticLockingFailureException extends ConcurrencyFailureException {
 
 	/**
-	 * Constructor for OptimisticLockingFailureException.
-	 * @param msg the detail message
+	 * OptimisticLockingFailureException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public OptimisticLockingFailureException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for OptimisticLockingFailureException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * OptimisticLockingFailureException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public OptimisticLockingFailureException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

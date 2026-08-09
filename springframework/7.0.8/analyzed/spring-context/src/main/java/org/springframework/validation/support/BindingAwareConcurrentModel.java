@@ -24,16 +24,13 @@ import org.springframework.ui.ConcurrentModel;
 import org.springframework.validation.BindingResult;
 
 /**
- * Subclass of {@link ConcurrentModel} that automatically removes
- * the {@link BindingResult} object when its corresponding
- * target attribute is replaced through regular {@link Map} operations.
+ * {@link ConcurrentModel} 的子类，当对应目标属性通过常规 {@link Map} 操作被替换时，
+ * 自动移除关联的 {@link BindingResult} 对象。
  *
- * <p>This is the class exposed to handler methods by Spring WebFlux,
- * typically consumed through a declaration of the
- * {@link org.springframework.ui.Model} interface as a parameter type.
- * There is typically no need to create it within user code.
- * If necessary a handler method can return a regular {@code java.util.Map},
- * likely a {@code java.util.ConcurrentMap}, for a pre-determined model.
+ * <p>Spring WebFlux 向处理器方法暴露的 model 类，
+ * 通常通过将 {@link org.springframework.ui.Model} 接口声明为参数类型来使用。
+ * 用户代码一般无需自行创建；若确有需要，处理器方法也可返回
+ * 普通 {@code java.util.Map}（通常为 {@code java.util.ConcurrentMap}）作为预定 model。
  *
  * @author Rossen Stoyanchev
  * @since 5.0

@@ -19,16 +19,14 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown when an attempt to execute an SQL statement fails to map
- * the given data, typically but no limited to an insert or update data
- * results in violation of an integrity constraint. Note that this
- * is not purely a relational concept; integrity constraints such
- * as unique primary keys are required by most database types.
+ * 执行 SQL 语句时无法正确映射给定数据而抛出，
+ * 通常（但不限于）指 insert 或 update 违反完整性约束。
+ * 注意：这并非纯粹的关系型概念；
+ * 唯一主键等完整性约束为大多数数据库类型所要求。
  *
- * <p>Serves as a superclass for more specific exceptions, for example,
- * {@link DuplicateKeyException}. However, it is generally
- * recommended to handle {@code DataIntegrityViolationException}
- * itself instead of relying on specific exception subclasses.
+ * <p>作为更具体异常（如 {@link DuplicateKeyException}）的超类。
+ * 但通常建议直接处理 {@code DataIntegrityViolationException}，
+ * 而非依赖特定异常子类。
  *
  * @author Rod Johnson
  */
@@ -36,17 +34,17 @@ import org.jspecify.annotations.Nullable;
 public class DataIntegrityViolationException extends NonTransientDataAccessException {
 
 	/**
-	 * Constructor for DataIntegrityViolationException.
-	 * @param msg the detail message
+	 * DataIntegrityViolationException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public DataIntegrityViolationException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for DataIntegrityViolationException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * DataIntegrityViolationException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public DataIntegrityViolationException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

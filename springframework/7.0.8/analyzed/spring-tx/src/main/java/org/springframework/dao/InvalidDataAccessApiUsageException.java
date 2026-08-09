@@ -19,11 +19,10 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown on incorrect usage of the API, such as failing to
- * "compile" a query object that needed compilation before execution.
+ * API 使用不当（如未在执行前“编译”需编译的查询对象）时抛出。
  *
- * <p>This represents a problem in our Java data access framework,
- * not the underlying data access infrastructure.
+ * <p>表示 Java 数据访问框架层面的问题，
+ * 而非底层数据访问基础设施的问题。
  *
  * @author Rod Johnson
  */
@@ -31,17 +30,17 @@ import org.jspecify.annotations.Nullable;
 public class InvalidDataAccessApiUsageException extends NonTransientDataAccessException {
 
 	/**
-	 * Constructor for InvalidDataAccessApiUsageException.
-	 * @param msg the detail message
+	 * InvalidDataAccessApiUsageException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public InvalidDataAccessApiUsageException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for InvalidDataAccessApiUsageException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * InvalidDataAccessApiUsageException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public InvalidDataAccessApiUsageException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

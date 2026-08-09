@@ -19,10 +19,10 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown on various data access concurrency failures.
+ * 各类数据访问并发失败时抛出的异常。
  *
- * <p>This exception provides subclasses for specific types of failure,
- * in particular optimistic locking versus pessimistic locking.
+ * <p>本异常提供针对具体失败类型的子类，
+ * 尤其是乐观锁与悲观锁相关失败。
  *
  * @author Thomas Risberg
  * @since 1.1
@@ -33,17 +33,17 @@ import org.jspecify.annotations.Nullable;
 public class ConcurrencyFailureException extends TransientDataAccessException {
 
 	/**
-	 * Constructor for ConcurrencyFailureException.
-	 * @param msg the detail message
+	 * ConcurrencyFailureException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public ConcurrencyFailureException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for ConcurrencyFailureException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * ConcurrencyFailureException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public ConcurrencyFailureException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

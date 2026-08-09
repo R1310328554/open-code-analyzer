@@ -19,13 +19,12 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown when an attempt to insert or update data
- * results in violation of a primary key or unique constraint.
- * Note that this is not necessarily a purely relational concept;
- * unique primary keys are required by most database types.
+ * insert 或 update 违反主键或唯一约束时抛出。
+ * 注意：这并非必然为纯粹的关系型概念；
+ * 唯一主键为大多数数据库类型所要求。
  *
- * <p>Consider handling the general {@link DataIntegrityViolationException}
- * instead, semantically including a wider range of constraint violations.
+ * <p>建议改为处理通用的 {@link DataIntegrityViolationException}，
+ * 其语义涵盖更广的约束违反。
  *
  * @author Thomas Risberg
  */
@@ -33,17 +32,17 @@ import org.jspecify.annotations.Nullable;
 public class DuplicateKeyException extends DataIntegrityViolationException {
 
 	/**
-	 * Constructor for DuplicateKeyException.
-	 * @param msg the detail message
+	 * DuplicateKeyException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public DuplicateKeyException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for DuplicateKeyException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * DuplicateKeyException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public DuplicateKeyException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);

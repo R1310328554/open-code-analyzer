@@ -19,9 +19,9 @@ package org.springframework.dao;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Root for exceptions thrown when we use a data access resource incorrectly.
- * Thrown for example on specifying bad SQL when using a RDBMS.
- * Resource-specific subclasses are supplied by concrete data access packages.
+ * 不正确使用数据访问资源时抛出的异常的根类。
+ * 例如，在 RDBMS 中指定错误 SQL 时抛出。
+ * 具体数据访问包提供针对特定资源的子类。
  *
  * @author Rod Johnson
  */
@@ -29,17 +29,17 @@ import org.jspecify.annotations.Nullable;
 public class InvalidDataAccessResourceUsageException extends NonTransientDataAccessException {
 
 	/**
-	 * Constructor for InvalidDataAccessResourceUsageException.
-	 * @param msg the detail message
+	 * InvalidDataAccessResourceUsageException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public InvalidDataAccessResourceUsageException(@Nullable String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for InvalidDataAccessResourceUsageException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the data access API in use
+	 * InvalidDataAccessResourceUsageException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用数据访问 API 的根因
 	 */
 	public InvalidDataAccessResourceUsageException(@Nullable String msg, @Nullable Throwable cause) {
 		super(msg, cause);
