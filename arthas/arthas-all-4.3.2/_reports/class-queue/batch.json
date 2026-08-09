@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T22:40:35Z",
   "files": [
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/api/ApiResponse.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/api/ApiState.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/api/HttpApiHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/api/ObjectVOFilter.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/session/HttpSession.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/session/HttpSessionManager.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/session/LRUCache.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/http/session/SimpleHttpSession.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/httptelnet/HttpTelnetTermServer.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/httptelnet/NettyHttpTelnetBootstrap.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/httptelnet/NettyHttpTelnetTtyBootstrap.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/httptelnet/ProtocolDetectHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/util/ArrayUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/util/ArthasBanner.java",
-    "core/src/main/java/com/taobao/arthas/core/util/ArthasCheckUtils.java",
     "core/src/main/java/com/taobao/arthas/core/util/ClassLoaderUtils.java",
     "core/src/main/java/com/taobao/arthas/core/util/ClassUtils.java",
     "core/src/main/java/com/taobao/arthas/core/util/CommandUtils.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/com/taobao/arthas/core/util/RegexCacheManager.java"
   ],
   "remaining_pending": 195,
-  "done": 570
+  "done": 585
 }
