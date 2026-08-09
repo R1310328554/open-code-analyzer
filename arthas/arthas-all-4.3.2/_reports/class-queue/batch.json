@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:43:13Z",
-  "files": [
-    "core/src/main/java/com/taobao/arthas/core/util/matcher/RegexMatcher.java",
-    "core/src/main/java/com/taobao/arthas/core/util/matcher/TrueMatcher.java",
-    "core/src/main/java/com/taobao/arthas/core/util/matcher/WildcardMatcher.java",
-    "core/src/main/java/com/taobao/arthas/core/util/metrics/RateCounter.java",
-    "core/src/main/java/com/taobao/arthas/core/util/metrics/SumRateCounter.java",
-    "core/src/main/java/com/taobao/arthas/core/util/reflect/ArthasReflectUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/util/reflect/FieldUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/util/usage/StyledUsageFormatter.java",
-    "core/src/main/java/com/taobao/arthas/core/view/Ansi.java",
-    "core/src/main/java/com/taobao/arthas/core/view/ClassInfoView.java",
-    "core/src/main/java/com/taobao/arthas/core/view/KVView.java",
-    "core/src/main/java/com/taobao/arthas/core/view/LadderView.java",
-    "core/src/main/java/com/taobao/arthas/core/view/MethodInfoView.java",
-    "core/src/main/java/com/taobao/arthas/core/view/ObjectView.java",
-    "core/src/main/java/com/taobao/arthas/core/view/TableView.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 165,
-  "done": 615
+  "done": 630
 }
