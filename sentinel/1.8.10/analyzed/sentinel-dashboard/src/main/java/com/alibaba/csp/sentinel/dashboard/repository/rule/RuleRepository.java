@@ -20,57 +20,57 @@ import java.util.List;
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 
 /**
- * Interface to store and find rules.
+ * 规则存储与查询接口，支持按 ID、机器与应用维度访问。
  *
  * @author leyou
  */
 public interface RuleRepository<T, ID> {
 
     /**
-     * Save one.
+     * 保存单条规则。
      *
-     * @param entity
-     * @return
+     * @param entity 规则实体
+     * @return 保存后的实体
      */
     T save(T entity);
 
     /**
-     * Save all.
+     * 全量保存规则（先清空再写入）。
      *
-     * @param rules
-     * @return rules saved.
+     * @param rules 规则列表
+     * @return 已保存的规则列表
      */
     List<T> saveAll(List<T> rules);
 
     /**
-     * Delete by id
+     * 按 ID 删除规则。
      *
-     * @param id
-     * @return entity deleted
+     * @param id 规则 ID
+     * @return 被删除的实体
      */
     T delete(ID id);
 
     /**
-     * Find by id.
+     * 按 ID 查询规则。
      *
-     * @param id
-     * @return
+     * @param id 规则 ID
+     * @return 规则实体，不存在时返回 null
      */
     T findById(ID id);
 
     /**
-     * Find all by machine.
+     * 查询指定机器上的全部规则。
      *
-     * @param machineInfo
-     * @return
+     * @param machineInfo 机器信息
+     * @return 规则列表
      */
     List<T> findAllByMachine(MachineInfo machineInfo);
 
     /**
-     * Find all by application.
+     * 查询指定应用下的全部规则。
      *
-     * @param appName valid app name
-     * @return all rules of the application
+     * @param appName 有效应用名
+     * @return 该应用的全部规则
      * @since 1.4.0
      */
     List<T> findAllByApp(String appName);

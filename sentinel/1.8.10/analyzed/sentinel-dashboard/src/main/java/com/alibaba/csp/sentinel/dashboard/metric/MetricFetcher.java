@@ -62,22 +62,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Fetch metric of machines.
+ * 机器监控指标拉取器，定时从各 Sentinel 客户端异步拉取 metric 并聚合写入仓库。
  *
  * @author leyou
  */
 @Component
 public class MetricFetcher {
 
+    /** 客户端返回无指标数据时的响应前缀。 */
     public static final String NO_METRICS = "No metrics";
+    /** HTTP 成功状态码。 */
     private static final int HTTP_OK = 200;
+    /** 首次拉取时回溯的最长时间窗口（毫秒）。 */
     private static final long MAX_LAST_FETCH_INTERVAL_MS = 1000 * 15;
+    /** 单次拉取的时间跨度（秒）。 */
     private static final long FETCH_INTERVAL_SECOND = 6;
     private static final Charset DEFAULT_CHARSET = Charset.forName(SentinelConfig.charset());
     private final static String METRIC_URL_PATH = "metric";
     private static Logger logger = LoggerFactory.getLogger(MetricFetcher.class);
+    /** 调度任务执行间隔（秒）。 */
     private final long intervalSecond = 1;
 
+    /** 各应用上次拉取结束时间戳（毫秒）。 */
     private Map<String, AtomicLong> appLastFetchTime = new ConcurrentHashMap<>();
 
     @Autowired
@@ -147,7 +153,7 @@ public class MetricFetcher {
     }
 
     /**
-     * Traverse each APP, and then pull the metric of all machines for that APP.
+     * 遍历所有应用，为每个应用拉取其全部机器的监控指标。
      */
     private void fetchAllApp() {
         List<String> apps = appManagement.getAppNames();
@@ -166,14 +172,14 @@ public class MetricFetcher {
     }
 
     /**
-     * fetch metric between [startTime, endTime], both side inclusive
+     * 拉取指定应用在 [startTime, endTime] 区间内的指标（闭区间）。
      */
     private void fetchOnce(String app, long startTime, long endTime, int maxWaitSeconds) {
         if (maxWaitSeconds <= 0) {
             throw new IllegalArgumentException("maxWaitSeconds must > 0, but " + maxWaitSeconds);
         }
         AppInfo appInfo = appManagement.getDetailApp(app);
-        // auto remove for app
+        // 应用已失效则自动移除
         if (appInfo.isDead()) {
             logger.info("Dead app removed: {}", app);
             appManagement.removeApp(app);
@@ -191,11 +197,11 @@ public class MetricFetcher {
         final AtomicLong fail = new AtomicLong();
 
         long start = System.currentTimeMillis();
-        /** app_resource_timeSecond -> metric */
+        /** 聚合键 app_resource_timeSecond -> 指标实体 */
         final Map<String, MetricEntity> metricMap = new ConcurrentHashMap<>(16);
         final CountDownLatch latch = new CountDownLatch(machines.size());
         for (final MachineInfo machine : machines) {
-            // auto remove
+            // 机器已失效则自动移除
             if (machine.isDead()) {
                 latch.countDown();
                 appManagement.getDetailApp(app).removeMachine(machine.getIp(), machine.getPort());
@@ -264,19 +270,19 @@ public class MetricFetcher {
         if (appLastFetchTime.containsKey(app)) {
             lastFetchMs = Math.max(lastFetchMs, appLastFetchTime.get(app).get() + 1000);
         }
-        // trim milliseconds
+        // 截断毫秒部分，对齐到秒级
         lastFetchMs = lastFetchMs / 1000 * 1000;
         long endTime = lastFetchMs + FETCH_INTERVAL_SECOND * 1000;
         if (endTime > now - 1000 * 2) {
-            // too near
+            // 距当前时间过近，跳过本次拉取
             return;
         }
-        // update last_fetch in advance.
+        // 提前更新上次拉取时间，避免并发重复拉取
         appLastFetchTime.computeIfAbsent(app, a -> new AtomicLong()).set(endTime);
         final long finalLastFetchMs = lastFetchMs;
         final long finalEndTime = endTime;
         try {
-            // do real fetch async
+            // 异步提交实际拉取任务
             fetchWorker.submit(() -> {
                 try {
                     fetchOnce(app, finalLastFetchMs, finalEndTime, 5);
@@ -328,7 +334,7 @@ public class MetricFetcher {
                     continue;
                 }
                 /*
-                 * aggregation metrics by app_resource_timeSecond, ignore ip and port.
+                 * 按 app_resource_timeSecond 聚合指标，忽略 ip 与 port。
                  */
                 String key = buildMetricKey(machine.getApp(), node.getResource(), node.getTimestamp());
 

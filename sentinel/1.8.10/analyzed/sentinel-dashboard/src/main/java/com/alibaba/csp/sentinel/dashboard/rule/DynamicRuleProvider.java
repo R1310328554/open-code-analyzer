@@ -16,10 +16,19 @@
 package com.alibaba.csp.sentinel.dashboard.rule;
 
 /**
+ * 动态规则读取接口，从外部配置中心拉取指定应用的规则。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface DynamicRuleProvider<T> {
 
+    /**
+     * 获取指定应用的规则。
+     *
+     * @param appName 应用名
+     * @return 规则数据
+     * @throws Exception 读取失败时抛出
+     */
     T getRules(String appName) throws Exception;
 }

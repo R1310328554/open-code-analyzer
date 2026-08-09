@@ -18,43 +18,43 @@ package com.alibaba.csp.sentinel.dashboard.repository.metric;
 import java.util.List;
 
 /**
- * Repository interface for aggregated metrics data.
+ * 聚合监控指标仓库接口，定义保存与按应用/资源/时间区间查询能力。
  *
- * @param <T> type of metrics
+ * @param <T> 指标实体类型
  * @author Eric Zhao
  */
 public interface MetricsRepository<T> {
 
     /**
-     * Save the metric to the storage repository.
+     * 保存单条指标到仓库。
      *
-     * @param metric metric data to save
+     * @param metric 待保存的指标数据
      */
     void save(T metric);
 
     /**
-     * Save all metrics to the storage repository.
+     * 批量保存指标到仓库。
      *
-     * @param metrics metrics to save
+     * @param metrics 待保存的指标集合
      */
     void saveAll(Iterable<T> metrics);
 
     /**
-     * Get all metrics by {@code appName} and {@code resourceName} between a period of time.
+     * 按应用名、资源名与时间区间查询全部指标。
      *
-     * @param app       application name for Sentinel
-     * @param resource  resource name
-     * @param startTime start timestamp
-     * @param endTime   end timestamp
-     * @return all metrics in query conditions
+     * @param app       Sentinel 应用名
+     * @param resource  资源名
+     * @param startTime 起始时间戳
+     * @param endTime   结束时间戳
+     * @return 满足条件的指标列表
      */
     List<T> queryByAppAndResourceBetween(String app, String resource, long startTime, long endTime);
 
     /**
-     * List resource name of provided application name.
+     * 列出指定应用下的资源名，通常按近期限流量排序。
      *
-     * @param app application name
-     * @return list of resources
+     * @param app 应用名
+     * @return 资源名列表
      */
     List<String> listResourcesOfApp(String app);
 }

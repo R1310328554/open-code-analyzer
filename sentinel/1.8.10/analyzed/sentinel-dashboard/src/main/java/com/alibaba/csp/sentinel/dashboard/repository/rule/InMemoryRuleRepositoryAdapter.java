@@ -25,18 +25,24 @@ import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 规则内存仓库抽象适配器，按机器、应用与全局 ID 三级索引管理 {@link RuleEntity}。
+ *
  * @author leyou
  */
 public abstract class InMemoryRuleRepositoryAdapter<T extends RuleEntity> implements RuleRepository<T, Long> {
 
     /**
-     * {@code <machine, <id, rule>>}
+     * 机器维度索引：{@code <machine, <id, rule>>}。
      */
+    /** 按机器索引的规则映射。 */
     private Map<MachineInfo, Map<Long, T>> machineRules = new ConcurrentHashMap<>(16);
+    /** 全局 ID -> 规则映射。 */
     private Map<Long, T> allRules = new ConcurrentHashMap<>(16);
 
+    /** 按应用名索引的规则映射。 */
     private Map<String, Map<Long, T>> appRules = new ConcurrentHashMap<>(16);
 
+    /** 单仓库最大规则数上限（预留常量）。 */
     private static final int MAX_RULES_SIZE = 10000;
 
     @Override
@@ -59,7 +65,7 @@ public abstract class InMemoryRuleRepositoryAdapter<T extends RuleEntity> implem
 
     @Override
     public List<T> saveAll(List<T> rules) {
-        // TODO: check here.
+        // TODO: 此处需补充校验逻辑
         allRules.clear();
         machineRules.clear();
         appRules.clear();
@@ -116,14 +122,15 @@ public abstract class InMemoryRuleRepositoryAdapter<T extends RuleEntity> implem
         appRules.clear();
     }
 
+    /** 保存前预处理钩子，子类可覆写以注入集群配置等。 */
     protected T preProcess(T entity) {
         return entity;
     }
 
     /**
-     * Get next unused id.
+     * 获取下一个未使用的规则 ID。
      *
-     * @return next unused id
+     * @return 下一个未使用的 ID
      */
     abstract protected long nextId();
 }

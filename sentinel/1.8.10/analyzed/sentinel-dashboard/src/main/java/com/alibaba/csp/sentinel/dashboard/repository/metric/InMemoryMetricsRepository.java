@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 /**
- * Caches metrics data in a period of time in memory.
+ * 内存监控指标仓库，按应用/资源/时间戳缓存近期 metric 并支持区间查询与资源排行。
  *
  * @author Carpenter Lee
  * @author Eric Zhao
@@ -39,13 +39,16 @@ import java.util.stream.Collectors;
 @Component
 public class InMemoryMetricsRepository implements MetricsRepository<MetricEntity> {
 
+    /** 单条指标最大存活时间（毫秒），超出后由 LRU 淘汰。 */
     private static final long MAX_METRIC_LIVE_TIME_MS = 1000 * 60 * 5;
 
     /**
-     * {@code app -> resource -> timestamp -> metric}
+     * 三级索引：{@code app -> resource -> timestamp -> metric}。
      */
+    /** 全量指标缓存。 */
     private Map<String, Map<String, LinkedHashMap<Long, MetricEntity>>> allMetrics = new ConcurrentHashMap<>();
 
+    /** 读写锁，保证并发访问安全。 */
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
 
@@ -60,7 +63,7 @@ public class InMemoryMetricsRepository implements MetricsRepository<MetricEntity
                     .computeIfAbsent(entity.getResource(), e -> new LinkedHashMap<Long, MetricEntity>() {
                         @Override
                         protected boolean removeEldestEntry(Entry<Long, MetricEntity> eldest) {
-                            // Metric older than {@link #MAX_METRIC_LIVE_TIME_MS} will be removed.
+                            // 超过 {@link #MAX_METRIC_LIVE_TIME_MS} 的指标将被 LRU 淘汰
                             return eldest.getKey() < TimeUtil.currentTimeMillis() - MAX_METRIC_LIVE_TIME_MS;
                         }
                     }).put(entity.getTimestamp().getTime(), entity);
@@ -117,7 +120,7 @@ public class InMemoryMetricsRepository implements MetricsRepository<MetricEntity
         if (StringUtil.isBlank(app)) {
             return results;
         }
-        // resource -> timestamp -> metric
+        // resource -> timestamp -> metric 二级索引
         Map<String, LinkedHashMap<Long, MetricEntity>> resourceMap = allMetrics.get(app);
         if (resourceMap == null) {
             return results;
@@ -145,7 +148,7 @@ public class InMemoryMetricsRepository implements MetricsRepository<MetricEntity
                     }
                 }
             }
-            // Order by last minute b_qps DESC.
+            // 按最近一分钟 block QPS 降序排列
             return resourceCount.entrySet()
                     .stream()
                     .sorted((o1, o2) -> {

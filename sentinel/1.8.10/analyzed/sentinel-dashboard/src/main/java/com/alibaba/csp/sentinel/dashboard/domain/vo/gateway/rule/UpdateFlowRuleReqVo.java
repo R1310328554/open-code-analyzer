@@ -16,31 +16,41 @@
 package com.alibaba.csp.sentinel.dashboard.domain.vo.gateway.rule;
 
 /**
- * Value Object for update gateway flow rule.
+ * 更新网关流控规则的请求值对象，携带阈值、统计窗口与参数流控项。
  *
  * @author cdfive
  * @since 1.7.0
  */
 public class UpdateFlowRuleReqVo {
 
+    /** 规则 ID。 */
     private Long id;
 
+    /** 应用名。 */
     private String app;
 
+    /** 限流阈值类型（QPS/线程数等）。 */
     private Integer grade;
 
+    /** 限流阈值。 */
     private Double count;
 
+    /** 统计窗口长度。 */
     private Long interval;
 
+    /** 统计窗口单位。 */
     private Integer intervalUnit;
 
+    /** 流控行为（直接拒绝/匀速排队等）。 */
     private Integer controlBehavior;
 
+    /** 突发流量额外许可数。 */
     private Integer burst;
 
+    /** 匀速排队最大等待时间（毫秒）。 */
     private Integer maxQueueingTimeoutMs;
 
+    /** 参数流控项配置。 */
     private GatewayParamFlowItemVo paramItem;
 
     public Long getId() {

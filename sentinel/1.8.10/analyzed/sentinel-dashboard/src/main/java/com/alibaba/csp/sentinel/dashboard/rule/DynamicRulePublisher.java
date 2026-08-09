@@ -16,17 +16,19 @@
 package com.alibaba.csp.sentinel.dashboard.rule;
 
 /**
+ * 动态规则发布接口，将规则推送至外部配置中心。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface DynamicRulePublisher<T> {
 
     /**
-     * Publish rules to remote rule configuration center for given application name.
+     * 将规则发布到远程配置中心。
      *
-     * @param app app name
-     * @param rules list of rules to push
-     * @throws Exception if some error occurs
+     * @param app 应用名
+     * @param rules 待推送的规则
+     * @throws Exception 发布失败时抛出
      */
     void publish(String app, T rules) throws Exception;
 }

@@ -22,14 +22,18 @@ import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.DegradeRuleEnti
 import org.springframework.stereotype.Component;
 
 /**
+ * 熔断降级规则内存仓库，基于 {@link InMemoryRuleRepositoryAdapter} 持久化 {@link DegradeRuleEntity}。
+ *
  * @author leyou
  */
 @Component
 public class InMemDegradeRuleStore extends InMemoryRuleRepositoryAdapter<DegradeRuleEntity> {
 
+    /** 自增 ID 生成器。 */
     private static AtomicLong ids = new AtomicLong(0);
 
     @Override
+    /** @return 下一个未使用的规则 ID */
     protected long nextId() {
         return ids.incrementAndGet();
     }

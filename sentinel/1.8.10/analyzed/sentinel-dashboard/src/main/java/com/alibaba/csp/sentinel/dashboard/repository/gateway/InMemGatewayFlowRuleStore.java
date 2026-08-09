@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Store {@link GatewayFlowRuleEntity} in memory.
+ * 网关流控规则内存仓库，基于 {@link InMemoryRuleRepositoryAdapter} 持久化 {@link GatewayFlowRuleEntity}。
  *
  * @author cdfive
  * @since 1.7.0
@@ -30,9 +30,11 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class InMemGatewayFlowRuleStore extends InMemoryRuleRepositoryAdapter<GatewayFlowRuleEntity> {
 
+    /** 自增 ID 生成器。 */
     private static AtomicLong ids = new AtomicLong(0);
 
     @Override
+    /** @return 下一个未使用的规则 ID */
     protected long nextId() {
         return ids.incrementAndGet();
     }

@@ -22,14 +22,18 @@ import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.SystemRuleEntit
 import org.springframework.stereotype.Component;
 
 /**
+ * 系统保护规则内存仓库，基于 {@link InMemoryRuleRepositoryAdapter} 持久化 {@link SystemRuleEntity}。
+ *
  * @author leyou
  */
 @Component
 public class InMemSystemRuleStore extends InMemoryRuleRepositoryAdapter<SystemRuleEntity> {
 
+    /** 自增 ID 生成器。 */
     private static AtomicLong ids = new AtomicLong(0);
 
     @Override
+    /** @return 下一个未使用的规则 ID */
     protected long nextId() {
         return ids.incrementAndGet();
     }

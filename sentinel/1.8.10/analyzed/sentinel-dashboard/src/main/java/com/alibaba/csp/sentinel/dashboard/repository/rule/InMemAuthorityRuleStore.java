@@ -22,7 +22,7 @@ import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.AuthorityRuleEn
 import org.springframework.stereotype.Component;
 
 /**
- * In-memory storage for authority rules.
+ * 授权规则内存仓库，基于 {@link InMemoryRuleRepositoryAdapter} 持久化 {@link AuthorityRuleEntity}。
  *
  * @author Eric Zhao
  * @since 0.2.1
@@ -30,9 +30,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class InMemAuthorityRuleStore extends InMemoryRuleRepositoryAdapter<AuthorityRuleEntity> {
 
+    /** 自增 ID 生成器。 */
     private static AtomicLong ids = new AtomicLong(0);
 
     @Override
+    /** @return 下一个未使用的规则 ID */
     protected long nextId() {
         return ids.incrementAndGet();
     }

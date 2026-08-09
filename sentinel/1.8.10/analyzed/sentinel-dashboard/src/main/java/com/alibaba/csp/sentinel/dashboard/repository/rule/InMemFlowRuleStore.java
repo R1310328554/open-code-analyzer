@@ -23,16 +23,18 @@ import com.alibaba.csp.sentinel.slots.block.flow.ClusterFlowConfig;
 import org.springframework.stereotype.Component;
 
 /**
- * Store {@link FlowRuleEntity} in memory.
+ * 流控规则内存仓库，集群模式下自动设置 {@link ClusterFlowConfig#flowId}。
  *
  * @author leyou
  */
 @Component
 public class InMemFlowRuleStore extends InMemoryRuleRepositoryAdapter<FlowRuleEntity> {
 
+    /** 自增 ID 生成器。 */
     private static AtomicLong ids = new AtomicLong(0);
 
     @Override
+    /** @return 下一个未使用的规则 ID */
     protected long nextId() {
         return ids.incrementAndGet();
     }
@@ -45,7 +47,7 @@ public class InMemFlowRuleStore extends InMemoryRuleRepositoryAdapter<FlowRuleEn
                 config = new ClusterFlowConfig();
                 entity.setClusterConfig(config);
             }
-            // Set cluster rule id.
+            // 设置集群流控规则 ID
             config.setFlowId(entity.getId());
         }
         return entity;
