@@ -1,0 +1,51 @@
+/**
+ * Copyright (c) 2013-2026 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson.api.search.query.hybrid;
+
+/**
+ * K-nearest neighbors vector similarity configuration step.
+ *
+ * @author Nikita Koksharov
+ */
+public interface VectorSimilarityNearestNeighbors extends VectorSimilarity {
+
+    /**
+     * Sets the EF_RUNTIME parameter for HNSW index search.
+     * Controls the trade-off between search accuracy and speed.
+     *
+     * @param efRuntime EF_RUNTIME value
+     * @return vector similarity for further configuration
+     */
+    VectorSimilarity efRuntime(int efRuntime);
+
+    /**
+     * Sets the alias for the distance field returned in the result set.
+     *
+     * @param field distance field alias
+     * @return vector similarity for further configuration
+     */
+    VectorSimilarity yieldDistanceAs(String field);
+
+    /**
+     * Sets the ratio of the shard K parameter for distributed KNN search.
+     * Determines how many extra candidates to fetch per shard.
+     *
+     * @param ratio shard K ratio value
+     * @return vector similarity for further configuration
+     */
+    VectorSimilarity shardKRatio(double ratio);
+
+}

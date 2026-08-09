@@ -1,0 +1,108 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.observers;
+
+import io.reactivex.rxjava4.core.Observer;
+import io.reactivex.rxjava4.disposables.Disposable;
+import io.reactivex.rxjava4.exceptions.Exceptions;
+import io.reactivex.rxjava4.functions.*;
+import io.reactivex.rxjava4.internal.disposables.*;
+import io.reactivex.rxjava4.plugins.RxJavaPlugins;
+
+/**
+ * 包装下游 {@link Observer}，并在订阅与 dispose 时调用用户提供的 lambda 回调。
+ * @param <T> 元素类型
+ */
+public final class DisposableLambdaObserver<T> implements Observer<T>, Disposable {
+    final Observer<? super T> downstream;
+    final Consumer<? super Disposable> onSubscribe;
+    final Action onDispose;
+
+    Disposable upstream;
+
+    /**
+     * @param actual 下游 Observer
+     * @param onSubscribe 订阅时回调
+     * @param onDispose dispose 时回调
+     */
+    public DisposableLambdaObserver(Observer<? super T> actual,
+            Consumer<? super Disposable> onSubscribe,
+            Action onDispose) {
+        this.downstream = actual;
+        this.onSubscribe = onSubscribe;
+        this.onDispose = onDispose;
+    }
+
+    @Override
+    public void onSubscribe(Disposable d) {
+        // 这样在使用 doOnSubscribe 验证行为的测试中，多次 onSubscribe 调用才会显现
+        try {
+            onSubscribe.accept(d);
+        } catch (Throwable e) {
+            Exceptions.throwIfFatal(e);
+            d.dispose();
+            this.upstream = DisposableHelper.DISPOSED;
+            EmptyDisposable.error(e, downstream);
+            return;
+        }
+        if (DisposableHelper.validate(this.upstream, d)) {
+            this.upstream = d;
+            downstream.onSubscribe(this);
+        }
+    }
+
+    @Override
+    public void onNext(T t) {
+        downstream.onNext(t);
+    }
+
+    @Override
+    public void onError(Throwable t) {
+        if (upstream != DisposableHelper.DISPOSED) {
+            upstream = DisposableHelper.DISPOSED;
+            downstream.onError(t);
+        } else {
+            RxJavaPlugins.onError(t);
+        }
+    }
+
+    @Override
+    public void onComplete() {
+        if (upstream != DisposableHelper.DISPOSED) {
+            upstream = DisposableHelper.DISPOSED;
+            downstream.onComplete();
+        }
+    }
+
+    /** 调用 onDispose 回调并 dispose 上游。 */
+    @Override
+    public void dispose() {
+        Disposable d = upstream;
+        if (d != DisposableHelper.DISPOSED) {
+            upstream = DisposableHelper.DISPOSED;
+            try {
+                onDispose.run();
+            } catch (Throwable e) {
+                Exceptions.throwIfFatal(e);
+                RxJavaPlugins.onError(e);
+            }
+            d.dispose();
+        }
+    }
+
+    @Override
+    public boolean isDisposed() {
+        return upstream.isDisposed();
+    }
+}

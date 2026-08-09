@@ -1,0 +1,90 @@
+/*
+ * Copyright 2002-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.beans.factory.config;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.Assert;
+
+/**
+ * 在 bean 定义内求值表达式时使用的上下文对象。
+ *
+ * @author Juergen Hoeller
+ * @since 3.0
+ */
+public class BeanExpressionContext {
+
+	/** 关联的可配置 BeanFactory。 */
+	private final ConfigurableBeanFactory beanFactory;
+
+	/** 当前作用域（可为 null）。 */
+	private final @Nullable Scope scope;
+
+
+	public BeanExpressionContext(ConfigurableBeanFactory beanFactory, @Nullable Scope scope) {
+		Assert.notNull(beanFactory, "BeanFactory must not be null");
+		this.beanFactory = beanFactory;
+		this.scope = scope;
+	}
+
+	/** 返回关联的 BeanFactory。 */
+	public final ConfigurableBeanFactory getBeanFactory() {
+		return this.beanFactory;
+	}
+
+	/** 返回当前作用域。 */
+	public final @Nullable Scope getScope() {
+		return this.scope;
+	}
+
+
+	/**
+	 * 判断指定键是否对应可用对象（bean 或作用域上下文对象）。
+	 */
+	public boolean containsObject(String key) {
+		return (this.beanFactory.containsBean(key) ||
+				(this.scope != null && this.scope.resolveContextualObject(key) != null));
+	}
+
+	/**
+	 * 获取指定键对应的对象：优先从 BeanFactory 获取 bean，否则从作用域解析。
+	 */
+	public @Nullable Object getObject(String key) {
+		if (this.beanFactory.containsBean(key)) {
+			return this.beanFactory.getBean(key);
+		}
+		else if (this.scope != null) {
+			return this.scope.resolveContextualObject(key);
+		}
+		else {
+			return null;
+		}
+	}
+
+
+	@Override
+	public boolean equals(@Nullable Object other) {
+		return (this == other || (other instanceof BeanExpressionContext that &&
+				this.beanFactory == that.beanFactory && this.scope == that.scope));
+	}
+
+	@Override
+	public int hashCode() {
+		return this.beanFactory.hashCode();
+	}
+
+}

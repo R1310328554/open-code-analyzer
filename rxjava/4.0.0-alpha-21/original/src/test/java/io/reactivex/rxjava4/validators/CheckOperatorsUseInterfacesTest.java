@@ -1,0 +1,204 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.validators;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.lang.reflect.*;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Flow.Publisher;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.core.Observable;
+import io.reactivex.rxjava4.functions.*;
+import io.reactivex.rxjava4.parallel.ParallelFlowable;
+
+/**
+ * Verify that an operator method uses base interfaces as its direct input or
+ * has lambdas returning base interfaces.
+ */
+public class CheckOperatorsUseInterfacesTest extends RxJavaTest {
+
+    @Test
+    public void checkFlowable() {
+        checkClass(Flowable.class);
+    }
+
+    @Test
+    public void checkObservable() {
+        checkClass(Observable.class);
+    }
+
+    @Test
+    public void checkMaybe() {
+        checkClass(Maybe.class);
+    }
+
+    @Test
+    public void checkSingle() {
+        checkClass(Single.class);
+    }
+
+    @Test
+    public void checkCompletable() {
+        checkClass(Completable.class);
+    }
+
+    @Test
+    public void checkParallelFlowable() {
+        checkClass(ParallelFlowable.class);
+    }
+
+    void checkClass(Class<?> clazz) {
+        StringBuilder error = new StringBuilder();
+        int errors = 0;
+
+        for (Method method : clazz.getMethods()) {
+            if (method.getDeclaringClass() == clazz) {
+                int parameterIndex = 1;
+                for (Parameter param : method.getParameters()) {
+                    Class<?> type = param.getType();
+                    if (type.isArray()) {
+                        type = type.getComponentType();
+                    }
+                    if (CLASSES.contains(type)) {
+                        errors++;
+                        error.append("Non-interface input parameter #")
+                        .append(parameterIndex)
+                        .append(": ")
+                        .append(type)
+                        .append("\r\n")
+                        .append("    ")
+                        .append(method)
+                        .append("\r\n")
+                        ;
+                    }
+                    if (CAN_RETURN.contains(type)) {
+                        Type gtype = method.getGenericParameterTypes()[parameterIndex - 1];
+                        if (gtype instanceof GenericArrayType) {
+                            gtype = ((GenericArrayType)gtype).getGenericComponentType();
+                        }
+                        ParameterizedType parameterType = (ParameterizedType)gtype;
+                        for (;;) {
+                            Type[] parameterArgTypes = parameterType.getActualTypeArguments();
+                            Type argType = parameterArgTypes[parameterArgTypes.length - 1];
+                            if (argType instanceof GenericArrayType) {
+                                argType = ((GenericArrayType)argType).getGenericComponentType();
+                            }
+                            if (argType instanceof ParameterizedType lastArg) {
+
+                                if (CLASSES.contains(lastArg.getRawType())) {
+                                    errors++;
+                                    error.append("Non-interface lambda return #")
+                                    .append(parameterIndex)
+                                    .append(": ")
+                                    .append(type)
+                                    .append("\r\n")
+                                    .append("    ")
+                                    .append(method)
+                                    .append("\r\n")
+                                    ;
+                                }
+
+                                if (CAN_RETURN.contains(lastArg.getRawType())) {
+                                    parameterType = lastArg;
+                                    continue;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    parameterIndex++;
+                }
+            }
+        }
+
+        if (errors != 0) {
+            error.insert(0, "Found " + errors + " issues\r\n");
+            fail(error.toString());
+        }
+    }
+
+    public void method1(Flowable<?> f) {
+        // self-test
+        assertNull(f);
+    }
+
+    public void method2(Callable<Flowable<?>> c) {
+        // self-test
+        assertNull(c);
+    }
+
+    public void method3(Supplier<Publisher<Flowable<?>>> c) {
+        // self-test
+        assertNull(c);
+    }
+
+    public void method4(Flowable<?>[] array) {
+        // self-test
+        assertNull(array);
+    }
+
+    public void method5(Callable<Flowable<?>[]> c) {
+        // self-test
+        assertNull(c);
+    }
+
+    public void method6(Callable<Publisher<Flowable<?>[]>> c) {
+        // self-test
+        assertNull(c);
+    }
+
+    @Test
+    public void methodCalls() {
+        method1(null);
+        method2(null);
+        method3(null);
+        method4(null);
+        method5(null);
+        method6(null);
+    }
+
+    @Test
+    public void checkSelf() {
+        try {
+            checkClass(CheckOperatorsUseInterfacesTest.class);
+            throw new RuntimeException("Should have failed");
+        } catch (AssertionError expected) {
+            assertTrue(expected.toString().contains("method1"), expected.toString());
+            assertTrue(expected.toString().contains("method2"), expected.toString());
+            assertTrue(expected.toString().contains("method3"), expected.toString());
+            assertTrue(expected.toString().contains("method4"), expected.toString());
+            assertTrue(expected.toString().contains("method5"), expected.toString());
+            assertTrue(expected.toString().contains("method6"), expected.toString());
+        }
+    }
+
+    static final Set<Type> CLASSES = new HashSet<>(Arrays.asList(
+            Flowable.class, Observable.class,
+            Maybe.class, Single.class,
+            Completable.class
+    ));
+
+    static final Set<Type> CAN_RETURN = new HashSet<>(Arrays.asList(
+            Callable.class, Supplier.class,
+            Function.class, BiFunction.class, Function3.class, Function4.class,
+            Function5.class, Function6.class, Function7.class, Function8.class,
+            Function9.class,
+            Publisher.class, ObservableSource.class, MaybeSource.class, SingleSource.class
+    ));
+}

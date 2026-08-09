@@ -1,0 +1,337 @@
+/**
+ * Copyright (c) 2013-2026 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
+import org.redisson.api.ObjectListener;
+import org.redisson.api.RAtomicDouble;
+import org.redisson.api.RFuture;
+import org.redisson.api.atomic.CompareAndDeleteArgs;
+import org.redisson.api.atomic.BaseIncrementParams;
+import org.redisson.api.atomic.DoubleIncrementArgs;
+import org.redisson.api.atomic.DoubleIncrementParams;
+import org.redisson.api.listener.IncrByListener;
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.command.CommandAsyncExecutor;
+
+/**
+ * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
+ *
+ * @author Nikita Koksharov
+ *
+ */
+public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDouble {
+
+    public RedissonAtomicDouble(CommandAsyncExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
+    }
+
+    @Override
+    public boolean compareAndDelete(CompareAndDeleteArgs args) {
+        return get(compareAndDeleteAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs args) {
+        Objects.requireNonNull(args, "Args can't be null");
+
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+              "local currValue = redis.call('get', KEYS[1]); "
+                  + "if currValue == false then "
+                      + "return 0; "
+                  + "end; "
+
+                  + "currValue = tonumber(currValue); "
+                  + "local threshold = tonumber(ARGV[1]); "
+                  + "local op = ARGV[2]; "
+                  + "local match = false; "
+                  + "if op == '<' then match = currValue < threshold; "
+                  + "elseif op == '<=' then match = currValue <= threshold; "
+                  + "elseif op == '>' then match = currValue > threshold; "
+                  + "elseif op == '>=' then match = currValue >= threshold; "
+                  + "elseif op == '==' then match = currValue == threshold; "
+                  + "elseif op == '~=' then match = currValue ~= threshold; "
+                  + "end; "
+                  + "if match then "
+                      + "redis.call('del', KEYS[1]); "
+                      + "return 1; "
+                  + "end; "
+                  + "return 0;",
+                Collections.singletonList(getRawName()),
+                BigDecimal.valueOf(args.getThreshold().doubleValue()).toPlainString(),
+                args.getCondition().getOperator());
+    }
+
+    @Override
+    public double addAndGet(double delta) {
+        return get(addAndGetAsync(delta));
+    }
+
+    @Override
+    public RFuture<Double> addAndGetAsync(double delta) {
+        if (delta == 0) {
+            return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCRBYFLOAT, getRawName(), 0);
+        }
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCRBYFLOAT, getRawName(), BigDecimal.valueOf(delta).toPlainString());
+    }
+
+    @Override
+    public boolean compareAndSet(double expect, double update) {
+        return get(compareAndSetAsync(expect, update));
+    }
+
+    @Override
+    public RFuture<Boolean> compareAndSetAsync(double expect, double update) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                  "local value = redis.call('get', KEYS[1]);"
+                + "if (value == false and tonumber(ARGV[1]) == 0) or (tonumber(value) == tonumber(ARGV[1])) then "
+                     + "redis.call('set', KEYS[1], ARGV[2]); "
+                     + "return 1 "
+                   + "else "
+                     + "return 0 end",
+                Collections.<Object>singletonList(getRawName()), BigDecimal.valueOf(expect).toPlainString(), BigDecimal.valueOf(update).toPlainString());
+    }
+
+    @Override
+    public double decrementAndGet() {
+        return get(decrementAndGetAsync());
+    }
+
+    @Override
+    public RFuture<Double> decrementAndGetAsync() {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCRBYFLOAT, getRawName(), -1);
+    }
+
+    @Override
+    public double get() {
+        return get(getAsync());
+    }
+
+    @Override
+    public double getAndDelete() {
+        return get(getAndDeleteAsync());
+    }
+    
+    @Override
+    public RFuture<Double> getAndDeleteAsync() {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_DOUBLE,
+                   "local currValue = redis.call('get', KEYS[1]); "
+                 + "redis.call('del', KEYS[1]); "
+                 + "return currValue; ",
+                Collections.<Object>singletonList(getRawName()));
+    }
+    
+    @Override
+    public RFuture<Double> getAsync() {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GET_DOUBLE, getRawName());
+    }
+
+    @Override
+    public double getAndAdd(double delta) {
+        return get(getAndAddAsync(delta));
+    }
+
+    @Override
+    public RFuture<Double> getAndAddAsync(final double delta) {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisStrictCommand<Double>("INCRBYFLOAT", obj -> Double.parseDouble(obj.toString()) - delta), getRawName(), BigDecimal.valueOf(delta).toPlainString());
+    }
+
+
+    @Override
+    public double getAndSet(double newValue) {
+        return get(getAndSetAsync(newValue));
+    }
+
+    @Override
+    public RFuture<Double> getAndSetAsync(double newValue) {
+        return commandExecutor.writeAsync(getRawName(), DoubleCodec.INSTANCE, RedisCommands.GETSET_DOUBLE, getRawName(), BigDecimal.valueOf(newValue).toPlainString());
+    }
+
+    @Override
+    public double incrementAndGet() {
+        return get(incrementAndGetAsync());
+    }
+
+    @Override
+    public RFuture<Double> incrementAndGetAsync() {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCRBYFLOAT, getRawName(), 1);
+    }
+
+    @Override
+    public double incrementAndGet(DoubleIncrementArgs args) {
+        return get(incrementAndGetAsync(args));
+    }
+
+    @Override
+    public RFuture<Double> incrementAndGetAsync(DoubleIncrementArgs args) {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCREX_DOUBLE, createIncrementParams(args));
+    }
+
+    private Object[] createIncrementParams(DoubleIncrementArgs args) {
+        Objects.requireNonNull(args, "Args can't be null");
+        DoubleIncrementParams incrementParams = (DoubleIncrementParams) args;
+
+        List<Object> params = new ArrayList<>();
+        params.add(getRawName());
+        params.add("BYFLOAT");
+        if (incrementParams.getIncrement() != null) {
+            params.add(toPlainString(incrementParams.getIncrement()));
+        } else {
+            params.add("1");
+        }
+        if (incrementParams.getLowerBound() != null) {
+            params.add("LBOUND");
+            params.add(toPlainString(incrementParams.getLowerBound()));
+        }
+        if (incrementParams.getUpperBound() != null) {
+            params.add("UBOUND");
+            params.add(toPlainString(incrementParams.getUpperBound()));
+        }
+        if (incrementParams.isSaturate()) {
+            params.add("SATURATE");
+        }
+        addExpirationParams(incrementParams, params);
+        return params.toArray();
+    }
+
+    private String toPlainString(Number value) {
+        if (value instanceof Double || value instanceof Float) {
+            return BigDecimal.valueOf(value.doubleValue()).toPlainString();
+        }
+        return BigDecimal.valueOf(value.longValue()).toPlainString();
+    }
+
+    private void addExpirationParams(BaseIncrementParams<?> args, List<Object> params) {
+        if (args.getTimeToLive() != null) {
+            params.add("PX");
+            params.add(args.getTimeToLive().toMillis());
+        } else if (args.getExpireAt() != null) {
+            params.add("PXAT");
+            params.add(args.getExpireAt().toEpochMilli());
+        } else if (args.isPersist()) {
+            params.add("PERSIST");
+        }
+        if (args.isExpireIfNotSet()) {
+            params.add("ENX");
+        }
+    }
+
+    @Override
+    public double getAndIncrement() {
+        return getAndAdd(1);
+    }
+
+    @Override
+    public RFuture<Double> getAndIncrementAsync() {
+        return getAndAddAsync(1);
+    }
+
+    @Override
+    public double getAndDecrement() {
+        return getAndAdd(-1);
+    }
+
+    @Override
+    public RFuture<Double> getAndDecrementAsync() {
+        return getAndAddAsync(-1);
+    }
+
+    @Override
+    public void set(double newValue) {
+        get(setAsync(newValue));
+    }
+
+    @Override
+    public RFuture<Void> setAsync(double newValue) {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.SET, getRawName(), BigDecimal.valueOf(newValue).toPlainString());
+    }
+    
+    @Override
+    public boolean setIfLess(double less, double value) {
+        return get(setIfLessAsync(less, value));
+    }
+    
+    @Override
+    public RFuture<Boolean> setIfLessAsync(double less, double value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local currValue = redis.call('get', KEYS[1]); "
+                        + "currValue = currValue == false and 0 or tonumber(currValue);"
+                        + "if currValue < tonumber(ARGV[1]) then "
+                            + "redis.call('set', KEYS[1], ARGV[2]); "
+                            + "return 1;"
+                        + "end; "
+                        + "return 0;",
+                Collections.<Object>singletonList(getRawName()), less, value);
+    }
+    
+    @Override
+    public boolean setIfGreater(double greater, double value) {
+        return get(setIfGreaterAsync(greater, value));
+    }
+    
+    @Override
+    public RFuture<Boolean> setIfGreaterAsync(double greater, double value) {
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local currValue = redis.call('get', KEYS[1]); "
+                        + "currValue = currValue == false and 0 or tonumber(currValue);"
+                        + "if currValue > tonumber(ARGV[1]) then "
+                            + "redis.call('set', KEYS[1], ARGV[2]); "
+                            + "return 1;"
+                        + "end; "
+                        + "return 0;",
+                Collections.<Object>singletonList(getRawName()), greater, value);
+    }
+    
+    public String toString() {
+        return Double.toString(get());
+    }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof IncrByListener) {
+            return addListener("__keyevent@*:incrby", (IncrByListener) listener, IncrByListener::onChange);
+        }
+        return super.addListener(listener);
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof IncrByListener) {
+            return addListenerAsync("__keyevent@*:incrby", (IncrByListener) listener, IncrByListener::onChange);
+        }
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        removeListener(listenerId, "__keyevent@*:incrby");
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        return removeListenerAsync(listenerId, "__keyevent@*:incrby");
+    }
+
+}

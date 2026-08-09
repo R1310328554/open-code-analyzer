@@ -1,0 +1,7 @@
+{
+  "project": "fastapi",
+  "version": "0.141.1",
+  "git_ref": "0.141.1",
+  "repo_url": "https://github.com/fastapi/fastapi",
+  "source": "release"
+}

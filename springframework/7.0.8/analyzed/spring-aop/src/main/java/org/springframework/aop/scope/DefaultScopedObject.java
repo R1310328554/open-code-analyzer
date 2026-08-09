@@ -1,0 +1,72 @@
+/*
+ * Copyright 2002-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.aop.scope;
+
+import java.io.Serializable;
+
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.util.Assert;
+
+/**
+ * {@link ScopedObject} 接口的默认实现。
+ * <p>S简单地将调用委托给底层{@link ConfigurableBeanFactory bean factory} ({@link ConfigurableBeanFact
+ * ory#getBean(String)}/ {@link ConfigurableBeanFactory#destroyScopedBean(String)})。
+ * @author Juergen Hoeller
+ * @since 2.0
+ * @see org.springframework.beans.factory.BeanFactory#getBean
+ * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#destroyScopedBean
+ */
+@SuppressWarnings("serial")
+public class DefaultScopedObject implements ScopedObject, Serializable {
+
+	/** 底层 BeanFactory 引用。 */
+	private final ConfigurableBeanFactory beanFactory;
+
+	/** 名称相关状态（`targetBeanName`）。 */
+	private final String targetBeanName;
+
+
+	/**
+	 * 创建 {@link DefaultScopedObject} 类的新实例。
+	 * @param beanFactory 保存作用域目标对象的 {@link ConfigurableBeanFactory}
+	 * @param targetBeanName 目标 bean 的名称
+	 */
+	public DefaultScopedObject(ConfigurableBeanFactory beanFactory, String targetBeanName) {
+		Assert.notNull(beanFactory, "BeanFactory must not be null");
+		Assert.hasText(targetBeanName, "'targetBeanName' must not be empty");
+		this.beanFactory = beanFactory;
+		this.targetBeanName = targetBeanName;
+	}
+
+
+	/**
+	 * 获取 Target Object（`TargetObject`）。
+	 */
+	@Override
+	public Object getTargetObject() {
+		return this.beanFactory.getBean(this.targetBeanName);
+	}
+
+	/**
+	 * 移除：From Scope（方法 `removeFromScope`）。
+	 */
+	@Override
+	public void removeFromScope() {
+		this.beanFactory.destroyScopedBean(this.targetBeanName);
+	}
+
+}

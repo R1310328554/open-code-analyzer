@@ -1,0 +1,7 @@
+{
+  "project": "springboot",
+  "version": "4.1.0",
+  "git_ref": "v4.1.0",
+  "repo_url": "https://github.com/spring-projects/spring-boot",
+  "source": "explicit"
+}

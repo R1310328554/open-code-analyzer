@@ -1,0 +1,233 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.subscribers;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.*;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.exceptions.*;
+import io.reactivex.rxjava4.internal.functions.Functions;
+import io.reactivex.rxjava4.internal.operators.flowable.FlowableInternalHelper;
+import io.reactivex.rxjava4.internal.subscriptions.BooleanSubscription;
+import io.reactivex.rxjava4.plugins.RxJavaPlugins;
+import io.reactivex.rxjava4.processors.PublishProcessor;
+import io.reactivex.rxjava4.testsupport.*;
+
+public class LambdaSubscriberTest extends RxJavaTest {
+
+    @Test
+    public void onSubscribeThrows() {
+        final List<Object> received = new ArrayList<>();
+
+        LambdaSubscriber<Object> subscriber = new LambdaSubscriber<>(received::add,
+                received::add, () -> received.add(100), _ -> {
+                    throw new TestException();
+                });
+
+        assertFalse(subscriber.isDisposed());
+
+        Flowable.just(1).subscribe(subscriber);
+
+        assertTrue(received.getFirst() instanceof TestException, received.toString());
+        assertEquals(1, received.size(), received.toString());
+
+        assertTrue(subscriber.isDisposed());
+    }
+
+    @Test
+    public void onNextThrows() {
+        final List<Object> received = new ArrayList<>();
+
+        LambdaSubscriber<Object> subscriber = new LambdaSubscriber<>(_ -> {
+            throw new TestException();
+        },
+                received::add, () -> received.add(100), s -> s.request(Long.MAX_VALUE));
+
+        assertFalse(subscriber.isDisposed());
+
+        Flowable.just(1).subscribe(subscriber);
+
+        assertTrue(received.getFirst() instanceof TestException, received.toString());
+        assertEquals(1, received.size(), received.toString());
+
+        assertTrue(subscriber.isDisposed());
+    }
+
+    @Test
+    public void onErrorThrows() {
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+
+        try {
+            final List<Object> received = new ArrayList<>();
+
+            LambdaSubscriber<Object> subscriber = new LambdaSubscriber<>(received::add,
+                    _ -> {
+                        throw new TestException("Inner");
+                    }, () -> received.add(100), s -> s.request(Long.MAX_VALUE));
+
+            assertFalse(subscriber.isDisposed());
+
+            Flowable.<Integer>error(new TestException("Outer")).subscribe(subscriber);
+
+            assertTrue(received.isEmpty(), received.toString());
+
+            assertTrue(subscriber.isDisposed());
+
+            TestHelper.assertError(errors, 0, CompositeException.class);
+            List<Throwable> ce = TestHelper.compositeList(errors.getFirst());
+            TestHelper.assertError(ce, 0, TestException.class, "Outer");
+            TestHelper.assertError(ce, 1, TestException.class, "Inner");
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void onCompleteThrows() {
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+
+        try {
+            final List<Object> received = new ArrayList<>();
+
+            LambdaSubscriber<Object> subscriber = new LambdaSubscriber<>(received::add,
+                    received::add, () -> {
+                        throw new TestException();
+                    }, s -> s.request(Long.MAX_VALUE));
+
+            assertFalse(subscriber.isDisposed());
+
+            Flowable.<Integer>empty().subscribe(subscriber);
+
+            assertTrue(received.isEmpty(), received.toString());
+
+            assertTrue(subscriber.isDisposed());
+
+            TestHelper.assertUndeliverable(errors, 0, TestException.class);
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void badSourceOnSubscribe() {
+        Flowable<Integer> source = Flowable.fromPublisher(s -> {
+            BooleanSubscription s1 = new BooleanSubscription();
+            s.onSubscribe(s1);
+            BooleanSubscription s2 = new BooleanSubscription();
+            s.onSubscribe(s2);
+
+            assertFalse(s1.isCancelled());
+            assertTrue(s2.isCancelled());
+
+            s.onNext(1);
+            s.onComplete();
+        });
+
+        final List<Object> received = new ArrayList<>();
+
+        LambdaSubscriber<Object> subscriber = new LambdaSubscriber<>(received::add,
+                received::add, () -> received.add(100), s -> s.request(Long.MAX_VALUE));
+
+        source.subscribe(subscriber);
+
+        assertEquals(Arrays.asList(1, 100), received);
+    }
+
+    @Test
+    @SuppressUndeliverable
+    public void badSourceEmitAfterDone() {
+        Flowable<Integer> source = Flowable.fromPublisher(s -> {
+            BooleanSubscription s1 = new BooleanSubscription();
+            s.onSubscribe(s1);
+
+            s.onNext(1);
+            s.onComplete();
+            s.onNext(2);
+            s.onError(new TestException());
+            s.onComplete();
+        });
+
+        final List<Object> received = new ArrayList<>();
+
+        LambdaSubscriber<Object> subscriber = new LambdaSubscriber<>(received::add,
+                received::add, () -> received.add(100), s -> s.request(Long.MAX_VALUE));
+
+        source.subscribe(subscriber);
+
+        assertEquals(Arrays.asList(1, 100), received);
+    }
+
+    @Test
+    public void onNextThrowsCancelsUpstream() {
+        PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        final List<Throwable> errors = new ArrayList<>();
+
+        pp.subscribe(_ -> {
+            throw new TestException();
+        }, errors::add);
+
+        assertTrue(pp.hasSubscribers(), "No observers?!");
+        assertTrue(errors.isEmpty(), "Has errors already?!");
+
+        pp.onNext(1);
+
+        assertFalse(pp.hasSubscribers(), "Has observers?!");
+        assertFalse(errors.isEmpty(), "No errors?!");
+
+        assertTrue(errors.getFirst() instanceof TestException, errors.toString());
+    }
+
+    @Test
+    public void onSubscribeThrowsCancelsUpstream() {
+        PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        final List<Throwable> errors = new ArrayList<>();
+
+        pp.subscribe(new LambdaSubscriber<>(_ -> {
+        }, errors::add, () -> {
+        }, _ -> {
+            throw new TestException();
+        }));
+
+        assertFalse(pp.hasSubscribers(), "Has observers?!");
+        assertFalse(errors.isEmpty(), "No errors?!");
+
+        assertTrue(errors.getFirst() instanceof TestException, errors.toString());
+    }
+
+    @Test
+    public void onErrorMissingShouldReportNoCustomOnError() {
+        LambdaSubscriber<Integer> subscriber = new LambdaSubscriber<>(Functions.<Integer>emptyConsumer(),
+                Functions.ON_ERROR_MISSING,
+                Functions.EMPTY_ACTION,
+                FlowableInternalHelper.RequestMax.INSTANCE);
+
+        assertFalse(subscriber.hasCustomOnError());
+    }
+
+    @Test
+    public void customOnErrorShouldReportCustomOnError() {
+        LambdaSubscriber<Integer> subscriber = new LambdaSubscriber<>(Functions.<Integer>emptyConsumer(),
+                Functions.<Throwable>emptyConsumer(),
+                Functions.EMPTY_ACTION,
+                FlowableInternalHelper.RequestMax.INSTANCE);
+
+        assertTrue(subscriber.hasCustomOnError());
+    }
+}

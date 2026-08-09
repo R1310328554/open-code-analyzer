@@ -1,0 +1,1093 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.parallel;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.Flow.*;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.exceptions.*;
+import io.reactivex.rxjava4.functions.*;
+import io.reactivex.rxjava4.internal.functions.Functions;
+import io.reactivex.rxjava4.internal.util.*;
+import io.reactivex.rxjava4.plugins.RxJavaPlugins;
+import io.reactivex.rxjava4.processors.UnicastProcessor;
+import io.reactivex.rxjava4.schedulers.Schedulers;
+import io.reactivex.rxjava4.subscribers.TestSubscriber;
+import io.reactivex.rxjava4.testsupport.*;
+
+public class ParallelFlowableTest extends RxJavaTest {
+
+    @Test
+    public void sequentialMode() {
+        Flowable<Integer> source = Flowable.range(1, 1000000).hide();
+        for (int i = 1; i < 33; i++) {
+            Flowable<Integer> result = ParallelFlowable.from(source, i)
+            .map(v -> v + 1)
+            .sequential()
+            ;
+
+            TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+
+            result.subscribe(ts);
+
+            ts
+            .assertSubscribed()
+            .assertValueCount(1000000)
+            .assertComplete()
+            .assertNoErrors()
+            ;
+        }
+
+    }
+
+    @Test
+    public void sequentialModeFused() {
+        Flowable<Integer> source = Flowable.range(1, 1000000);
+        for (int i = 1; i < 33; i++) {
+            Flowable<Integer> result = ParallelFlowable.from(source, i)
+            .map(v -> v + 1)
+            .sequential()
+            ;
+
+            TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+
+            result.subscribe(ts);
+
+            ts
+            .assertSubscribed()
+            .assertValueCount(1000000)
+            .assertComplete()
+            .assertNoErrors()
+            ;
+        }
+
+    }
+
+    @Test
+    public void parallelMode() {
+        Flowable<Integer> source = Flowable.range(1, 1000000).hide();
+        int ncpu = Math.max(8, Runtime.getRuntime().availableProcessors());
+        for (int i = 1; i < ncpu + 1; i++) {
+
+            ExecutorService exec = Executors.newFixedThreadPool(i);
+
+            Scheduler scheduler = Schedulers.from(exec);
+
+            try {
+                Flowable<Integer> result = ParallelFlowable.from(source, i)
+                .runOn(scheduler)
+                .map(v -> v + 1)
+                .sequential()
+                ;
+
+                TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+
+                result.subscribe(ts);
+
+                ts.awaitDone(10, TimeUnit.SECONDS);
+
+                ts
+                .assertSubscribed()
+                .assertValueCount(1000000)
+                .assertComplete()
+                .assertNoErrors()
+                ;
+            } finally {
+                exec.shutdown();
+            }
+        }
+
+    }
+
+    @Test
+    public void parallelModeFused() {
+        Flowable<Integer> source = Flowable.range(1, 1000000);
+        int ncpu = Math.max(8, Runtime.getRuntime().availableProcessors());
+        for (int i = 1; i < ncpu + 1; i++) {
+
+            ExecutorService exec = Executors.newFixedThreadPool(i);
+
+            Scheduler scheduler = Schedulers.from(exec);
+
+            try {
+                Flowable<Integer> result = ParallelFlowable.from(source, i)
+                .runOn(scheduler)
+                .map(v -> v + 1)
+                .sequential()
+                ;
+
+                TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+
+                result.subscribe(ts);
+
+                ts.awaitDone(10, TimeUnit.SECONDS);
+
+                ts
+                .assertSubscribed()
+                .assertValueCount(1000000)
+                .assertComplete()
+                .assertNoErrors()
+                ;
+            } finally {
+                exec.shutdown();
+            }
+        }
+
+    }
+
+    @Test
+    public void reduceFull() {
+        for (int i = 1; i <= Runtime.getRuntime().availableProcessors() * 2; i++) {
+            TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+            Flowable.range(1, 10)
+            .parallel(i)
+            .reduce(Integer::sum)
+            .subscribe(ts);
+
+            ts.assertResult(55);
+        }
+    }
+
+    @Test
+    public void parallelReduceFull() {
+        int m = 100000;
+        for (int n = 1; n <= m; n *= 10) {
+//            System.out.println(n);
+            for (int i = 1; i <= Runtime.getRuntime().availableProcessors(); i++) {
+//                System.out.println("  " + i);
+
+                ExecutorService exec = Executors.newFixedThreadPool(i);
+
+                Scheduler scheduler = Schedulers.from(exec);
+
+                try {
+                    TestSubscriber<Long> ts = new TestSubscriber<>();
+
+                    Flowable.range(1, n)
+                    .map(v -> (long)v)
+                    .parallel(i)
+                    .runOn(scheduler)
+                    .reduce(Long::sum)
+                    .subscribe(ts);
+
+                    ts.awaitDone(500, TimeUnit.SECONDS);
+
+                    long e = ((long)n) * (1 + n) / 2;
+
+                    ts.assertResult(e);
+                } finally {
+                    exec.shutdown();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void toSortedList() {
+        TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+
+        Flowable.fromArray(10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+        .parallel()
+        .toSortedList(Functions.naturalComparator())
+        .subscribe(ts);
+
+        ts.assertResult(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+    }
+
+    @Test
+    public void sorted() {
+        TestSubscriber<Integer> ts = new TestSubscriber<>(0);
+
+        Flowable.fromArray(10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+        .parallel()
+        .sorted(Functions.naturalComparator())
+        .subscribe(ts);
+
+        ts.assertNoValues();
+
+        ts.request(2);
+
+        ts.assertValues(1, 2);
+
+        ts.request(5);
+
+        ts.assertValues(1, 2, 3, 4, 5, 6, 7);
+
+        ts.request(3);
+
+        ts.assertResult(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    }
+
+    @Test
+    public void collect() {
+        Supplier<List<Integer>> as = ArrayList::new;
+
+        TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+        Flowable.range(1, 10)
+        .parallel()
+        .collect(as, List::add)
+        .sequential()
+        .flatMapIterable((Function<List<Integer>, Iterable<Integer>>) v -> v)
+        .subscribe(ts);
+
+        ts
+        .assertNoErrors()
+        .assertComplete();
+
+        TestHelper.assertValueSet(ts, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    }
+
+    @Test
+    public void from() {
+        TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+
+        ParallelFlowable.fromArray(Flowable.range(1, 5), Flowable.range(6, 5))
+        .sequential()
+        .subscribe(ts);
+
+        ts
+        .assertNoErrors()
+        .assertComplete();
+
+        TestHelper.assertValueSet(ts, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    }
+
+    @Test
+    public void concatMapUnordered() {
+        TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+
+        Flowable.range(1, 5)
+        .parallel()
+        .concatMap((Function<Integer, Publisher<Integer>>) v -> Flowable.range(v * 10 + 1, 3))
+        .sequential()
+        .subscribe(ts);
+
+        ts
+        .assertNoErrors()
+        .assertComplete();
+
+        TestHelper.assertValueSet(ts, 11, 12, 13, 21, 22, 23, 31, 32, 33, 41, 42, 43, 51, 52, 53);
+    }
+
+    @Test
+    public void flatMapUnordered() {
+        TestSubscriberEx<Integer> ts = new TestSubscriberEx<>();
+
+        Flowable.range(1, 5)
+        .parallel()
+        .flatMap((Function<Integer, Publisher<Integer>>) v -> Flowable.range(v * 10 + 1, 3))
+        .sequential()
+        .subscribe(ts);
+
+        ts
+        .assertNoErrors()
+        .assertComplete();
+
+        TestHelper.assertValueSet(ts, 11, 12, 13, 21, 22, 23, 31, 32, 33, 41, 42, 43, 51, 52, 53);
+    }
+
+    @Test
+    public void collectAsyncFused() {
+        ExecutorService exec = Executors.newFixedThreadPool(3);
+
+        Scheduler s = Schedulers.from(exec);
+
+        try {
+            Supplier<List<Integer>> as = ArrayList::new;
+            TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+
+            Flowable.range(1, 100000)
+            .parallel(3)
+            .runOn(s)
+            .collect(as, List::add)
+            .doOnNext(v -> System.out.println(v.size()))
+            .sequential()
+            .subscribe(ts);
+
+            ts.awaitDone(5, TimeUnit.SECONDS);
+            ts.assertValueCount(3)
+            .assertNoErrors()
+            .assertComplete()
+            ;
+
+            List<List<Integer>> list = ts.values();
+
+            assertEquals(100000, list.get(0).size() + list.get(1).size() + list.get(2).size());
+        } finally {
+            exec.shutdown();
+        }
+    }
+
+    @Test
+    public void collectAsync() {
+        ExecutorService exec = Executors.newFixedThreadPool(3);
+
+        Scheduler s = Schedulers.from(exec);
+
+        try {
+            Supplier<List<Integer>> as = ArrayList::new;
+            TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+
+            Flowable.range(1, 100000).hide()
+            .parallel(3)
+            .runOn(s)
+            .collect(as, List::add)
+            .doOnNext(v -> System.out.println(v.size()))
+            .sequential()
+            .subscribe(ts);
+
+            ts.awaitDone(5, TimeUnit.SECONDS);
+            ts.assertValueCount(3)
+            .assertNoErrors()
+            .assertComplete()
+            ;
+
+            List<List<Integer>> list = ts.values();
+
+            assertEquals(100000, list.get(0).size() + list.get(1).size() + list.get(2).size());
+        } finally {
+            exec.shutdown();
+        }
+    }
+
+    @Test
+    public void collectAsync2() {
+        ExecutorService exec = Executors.newFixedThreadPool(3);
+
+        Scheduler s = Schedulers.from(exec);
+
+        try {
+            Supplier<List<Integer>> as = ArrayList::new;
+            TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+
+            Flowable.range(1, 100000).hide()
+            .observeOn(s)
+            .parallel(3)
+            .runOn(s)
+            .collect(as, List::add)
+            .doOnNext(v -> System.out.println(v.size()))
+            .sequential()
+            .subscribe(ts);
+
+            ts.awaitDone(5, TimeUnit.SECONDS);
+            ts.assertValueCount(3)
+            .assertNoErrors()
+            .assertComplete()
+            ;
+
+            List<List<Integer>> list = ts.values();
+
+            assertEquals(100000, list.get(0).size() + list.get(1).size() + list.get(2).size());
+        } finally {
+            exec.shutdown();
+        }
+    }
+
+    @Test
+    public void collectAsync3() {
+        ExecutorService exec = Executors.newFixedThreadPool(3);
+
+        Scheduler s = Schedulers.from(exec);
+
+        try {
+            Supplier<List<Integer>> as = ArrayList::new;
+            TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+
+            Flowable.range(1, 100000).hide()
+            .observeOn(s)
+            .parallel(3)
+            .runOn(s)
+            .collect(as, List::add)
+            .doOnNext(v -> System.out.println(v.size()))
+            .sequential()
+            .subscribe(ts);
+
+            ts.awaitDone(5, TimeUnit.SECONDS);
+            ts.assertValueCount(3)
+            .assertNoErrors()
+            .assertComplete()
+            ;
+
+            List<List<Integer>> list = ts.values();
+
+            assertEquals(100000, list.get(0).size() + list.get(1).size() + list.get(2).size());
+        } finally {
+            exec.shutdown();
+        }
+    }
+
+    @Test
+    public void collectAsync3Fused() {
+        ExecutorService exec = Executors.newFixedThreadPool(3);
+
+        Scheduler s = Schedulers.from(exec);
+
+        try {
+            Supplier<List<Integer>> as = ArrayList::new;
+            TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+
+            Flowable.range(1, 100000)
+            .observeOn(s)
+            .parallel(3)
+            .runOn(s)
+            .collect(as, List::add)
+            .doOnNext(v -> System.out.println(v.size()))
+            .sequential()
+            .subscribe(ts);
+
+            ts.awaitDone(5, TimeUnit.SECONDS);
+            ts.assertValueCount(3)
+            .assertNoErrors()
+            .assertComplete()
+            ;
+
+            List<List<Integer>> list = ts.values();
+
+            assertEquals(100000, list.get(0).size() + list.get(1).size() + list.get(2).size());
+        } finally {
+            exec.shutdown();
+        }
+    }
+
+    @Test
+    public void collectAsync3Take() {
+        ExecutorService exec = Executors.newFixedThreadPool(4);
+
+        Scheduler s = Schedulers.from(exec);
+
+        try {
+            Supplier<List<Integer>> as = ArrayList::new;
+            TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+
+            Flowable.range(1, 100000)
+            .take(1000)
+            .observeOn(s)
+            .parallel(3)
+            .runOn(s)
+            .collect(as, List::add)
+            .doOnNext(v -> System.out.println(v.size()))
+            .sequential()
+            .subscribe(ts);
+
+            ts.awaitDone(5, TimeUnit.SECONDS);
+            ts.assertValueCount(3)
+            .assertNoErrors()
+            .assertComplete()
+            ;
+
+            List<List<Integer>> list = ts.values();
+
+            assertEquals(1000, list.get(0).size() + list.get(1).size() + list.get(2).size());
+        } finally {
+            exec.shutdown();
+        }
+    }
+
+    @Test
+    public void collectAsync4Take() {
+        ExecutorService exec = Executors.newFixedThreadPool(3);
+
+        Scheduler s = Schedulers.from(exec);
+
+        try {
+            Supplier<List<Integer>> as = ArrayList::new;
+            TestSubscriber<List<Integer>> ts = new TestSubscriber<>();
+
+            UnicastProcessor<Integer> up = UnicastProcessor.create();
+
+            for (int i = 0; i < 1000; i++) {
+                up.onNext(i);
+            }
+
+            up
+            .take(1000)
+            .observeOn(s)
+            .parallel(3)
+            .runOn(s)
+            .collect(as, List::add)
+            .doOnNext(v -> System.out.println(v.size()))
+            .sequential()
+            .subscribe(ts);
+
+            ts.awaitDone(5, TimeUnit.SECONDS);
+            ts.assertValueCount(3)
+            .assertNoErrors()
+            .assertComplete()
+            ;
+
+            List<List<Integer>> list = ts.values();
+
+            assertEquals(1000, list.get(0).size() + list.get(1).size() + list.get(2).size());
+        } finally {
+            exec.shutdown();
+        }
+    }
+
+    @Test
+    public void emptySourceZeroRequest() {
+        TestSubscriber<Object> ts = new TestSubscriber<>(0);
+
+        Flowable.range(1, 3).parallel(3).sequential().subscribe(ts);
+
+        ts.request(1);
+
+        ts.assertValue(1);
+    }
+
+    @Test
+    public void parallelismAndPrefetch() {
+        for (int parallelism = 1; parallelism <= 8; parallelism++) {
+            for (int prefetch = 1; prefetch <= 1024; prefetch *= 2) {
+                Flowable.range(1, 1024 * 1024)
+                .parallel(parallelism, prefetch)
+                .map(Functions.<Integer>identity())
+                .sequential()
+                .to(TestHelper.<Integer>testConsumer())
+                .assertSubscribed()
+                .assertValueCount(1024 * 1024)
+                .assertNoErrors()
+                .assertComplete();
+            }
+        }
+    }
+
+    @Test
+    public void parallelismAndPrefetchAsync() {
+        for (int parallelism = 1; parallelism <= 8; parallelism *= 2) {
+            for (int prefetch = 1; prefetch <= 1024; prefetch *= 2) {
+                System.out.println("parallelismAndPrefetchAsync >> " + parallelism + ", " + prefetch);
+
+                Flowable.range(1, 1024 * 1024)
+                .parallel(parallelism, prefetch)
+                .runOn(Schedulers.computation())
+                .map(Functions.<Integer>identity())
+                .sequential(prefetch)
+                .to(TestHelper.<Integer>testConsumer())
+                .withTag("parallelism = " + parallelism + ", prefetch = " + prefetch)
+                .awaitDone(30, TimeUnit.SECONDS)
+                .assertSubscribed()
+                .assertValueCount(1024 * 1024)
+                .assertNoErrors()
+                .assertComplete();
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void badParallelismStage() {
+        TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+        Flowable.range(1, 10)
+        .parallel(2)
+        .subscribe(new Subscriber[] { ts });
+
+        ts.assertFailure(IllegalArgumentException.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void badParallelismStage2() {
+        TestSubscriber<Integer> ts1 = new TestSubscriber<>();
+        TestSubscriber<Integer> ts2 = new TestSubscriber<>();
+        TestSubscriber<Integer> ts3 = new TestSubscriber<>();
+
+        Flowable.range(1, 10)
+        .parallel(2)
+        .subscribe(new Subscriber[] { ts1, ts2, ts3 });
+
+        ts1.assertFailure(IllegalArgumentException.class);
+        ts2.assertFailure(IllegalArgumentException.class);
+        ts3.assertFailure(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void filter() {
+        TestSubscriberEx<Integer> ts = Flowable.range(1, 20)
+        .parallel()
+        .runOn(Schedulers.computation())
+        .filter(v -> v % 2 == 0)
+        .sequential()
+        .to(TestHelper.<Integer>testConsumer())
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertNoErrors()
+        .assertComplete();
+
+        TestHelper.assertValueSet(ts, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20);
+    }
+
+    @Test
+    public void filterThrows() throws Exception {
+        final boolean[] cancelled = { false };
+        Flowable.range(1, 20).concatWith(Flowable.<Integer>never())
+        .doOnCancel(() -> cancelled[0] = true)
+        .parallel()
+        .runOn(Schedulers.computation())
+        .filter(v -> {
+            if (v == 10) {
+                throw new TestException();
+            }
+            return v % 2 == 0;
+        })
+        .sequential()
+        .test()
+        .awaitDone(5, TimeUnit.SECONDS)
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        Thread.sleep(100);
+
+        assertTrue(cancelled[0]);
+    }
+
+    @Test
+    public void doAfterNext() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel()
+        .doAfterNext(_ -> count[0]++)
+        .sequential()
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    public void doOnNextThrows() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel()
+        .doOnNext(v -> {
+            if (v == 3) {
+                throw new TestException();
+            } else {
+                count[0]++;
+            }
+        })
+        .sequential()
+        .test()
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        assertTrue(count[0] < 5, "" + count[0]);
+    }
+
+    @Test
+    public void doAfterNextThrows() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel()
+        .doAfterNext(v -> {
+            if (v == 3) {
+                throw new TestException();
+            } else {
+                count[0]++;
+            }
+        })
+        .sequential()
+        .test()
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        assertTrue(count[0] < 5, "" + count[0]);
+    }
+
+    @Test
+    public void errorNotRepeating() throws Exception {
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            Flowable.error(new TestException())
+            .parallel()
+            .runOn(Schedulers.computation())
+            .sequential()
+            .test()
+            .awaitDone(5, TimeUnit.SECONDS)
+            .assertFailure(TestException.class)
+            ;
+
+            Thread.sleep(300);
+
+            for (Throwable ex : errors) {
+                ex.printStackTrace();
+            }
+            assertTrue(errors.isEmpty(), errors.toString());
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void doOnError() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .map(v -> {
+            if (v == 3) {
+                throw new TestException();
+            }
+            return v;
+        })
+        .doOnError(e -> {
+            if (e instanceof TestException) {
+                count[0]++;
+            }
+        })
+        .sequential()
+        .test()
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        assertEquals(1, count[0]);
+    }
+
+    @Test
+    public void doOnErrorThrows() {
+        TestSubscriberEx<Integer> ts = Flowable.range(1, 5)
+        .parallel(2)
+        .map(v -> {
+            if (v == 3) {
+                throw new TestException();
+            }
+            return v;
+        })
+        .doOnError(e -> {
+            if (e instanceof TestException) {
+                throw new IOException();
+            }
+        })
+        .sequential()
+        .to(TestHelper.<Integer>testConsumer())
+        .assertError(CompositeException.class)
+        .assertNotComplete();
+
+        List<Throwable> errors = TestHelper.errorList(ts);
+        TestHelper.assertError(errors, 0, TestException.class);
+        TestHelper.assertError(errors, 1, IOException.class);
+    }
+
+    @Test
+    public void doOnComplete() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .doOnComplete(() -> count[0]++)
+        .sequential()
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+
+        assertEquals(2, count[0]);
+    }
+
+    @Test
+    public void doAfterTerminate() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .doAfterTerminated(() -> count[0]++)
+        .sequential()
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+
+        assertEquals(2, count[0]);
+    }
+
+    @Test
+    public void doOnSubscribe() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .doOnSubscribe(_ -> count[0]++)
+        .sequential()
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+
+        assertEquals(2, count[0]);
+    }
+
+    @Test
+    public void doOnRequest() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .doOnRequest(_ -> count[0]++)
+        .sequential()
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+
+        assertEquals(2, count[0]);
+    }
+
+    @Test
+    public void doOnCancel() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .doOnCancel(() -> count[0]++)
+        .sequential()
+        .take(2)
+        .test()
+        .assertResult(1, 2);
+
+        assertEquals(2, count[0]);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void fromPublishers() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            ParallelFlowable.fromArray(new Publisher[0]);
+        });
+    }
+
+    @Test
+    public void to() {
+        Flowable.range(1, 5)
+        .parallel()
+        .to(ParallelFlowable::sequential)
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    public void toThrows() {
+        assertThrows(TestException.class, () -> {
+            Flowable.range(1, 5)
+            .parallel()
+            .to((ParallelFlowableConverter<Integer, Flowable<Integer>>) _ -> {
+                throw new TestException();
+            });
+        });
+    }
+
+    @Test
+    public void compose() {
+        Flowable.range(1, 5)
+        .parallel()
+        .compose(pf -> pf.map(v -> v + 1))
+        .sequential()
+        .test()
+        .assertResult(2, 3, 4, 5, 6);
+    }
+
+    @Test
+    public void flatMapDelayError() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .flatMap((Function<Integer, Flowable<Integer>>) v -> {
+            if (v == 3) {
+                return Flowable.error(new TestException());
+            }
+            return Flowable.just(v);
+        }, true)
+        .doOnError(e -> {
+            if (e instanceof TestException) {
+                count[0]++;
+            }
+        })
+        .sequential()
+        .test()
+        .assertValues(1, 2, 4, 5)
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        assertEquals(1, count[0]);
+    }
+
+    @Test
+    public void flatMapDelayErrorMaxConcurrency() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .flatMap((Function<Integer, Flowable<Integer>>) v -> {
+            if (v == 3) {
+                return Flowable.error(new TestException());
+            }
+            return Flowable.just(v);
+        }, true, 1)
+        .doOnError(e -> {
+            if (e instanceof TestException) {
+                count[0]++;
+            }
+        })
+        .sequential()
+        .test()
+        .assertValues(1, 2, 4, 5)
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        assertEquals(1, count[0]);
+    }
+
+    @Test
+    public void concatMapDelayError() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .concatMapDelayError((Function<Integer, Flowable<Integer>>) v -> {
+            if (v == 3) {
+                return Flowable.error(new TestException());
+            }
+            return Flowable.just(v);
+        }, true)
+        .doOnError(e -> {
+            if (e instanceof TestException) {
+                count[0]++;
+            }
+        })
+        .sequential()
+        .test()
+        .assertValues(1, 2, 4, 5)
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        assertEquals(1, count[0]);
+    }
+
+    @Test
+    public void concatMapDelayErrorPrefetch() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .concatMapDelayError((Function<Integer, Flowable<Integer>>) v -> {
+            if (v == 3) {
+                return Flowable.error(new TestException());
+            }
+            return Flowable.just(v);
+        }, 1, true)
+        .doOnError(e -> {
+            if (e instanceof TestException) {
+                count[0]++;
+            }
+        })
+        .sequential()
+        .test()
+        .assertValues(1, 2, 4, 5)
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        assertEquals(1, count[0]);
+    }
+
+    @Test
+    public void concatMapDelayErrorBoundary() {
+        final int[] count = { 0 };
+
+        Flowable.range(1, 5)
+        .parallel(2)
+        .concatMapDelayError((Function<Integer, Flowable<Integer>>) v -> {
+            if (v == 3) {
+                return Flowable.error(new TestException());
+            }
+            return Flowable.just(v);
+        }, false)
+        .doOnError(e -> {
+            if (e instanceof TestException) {
+                count[0]++;
+            }
+        })
+        .sequential()
+        .test()
+        .assertValues(1, 2)
+        .assertError(TestException.class)
+        .assertNotComplete();
+
+        assertEquals(1, count[0]);
+    }
+
+    public static void checkSubscriberCount(ParallelFlowable<?> source) {
+        int n = source.parallelism();
+
+        @SuppressWarnings("unchecked")
+        TestSubscriber<Object>[] consumers = new TestSubscriber[n + 1];
+
+        for (int i = 0; i <= n; i++) {
+            consumers[i] = new TestSubscriber<>();
+        }
+
+        source.subscribe(consumers);
+
+        for (int i = 0; i <= n; i++) {
+            consumers[i].awaitDone(5, TimeUnit.SECONDS)
+            .assertFailure(IllegalArgumentException.class);
+        }
+    }
+
+    @Test
+    public void checkAddBiConsumer() {
+        TestHelper.checkEnum(ListAddBiConsumer.class);
+    }
+
+    @Test
+    public void mergeBiFunction() throws Exception {
+        MergerBiFunction<Integer> f = new MergerBiFunction<>(Functions.<Integer>naturalComparator());
+
+        assertEquals(0, f.apply(Collections.<Integer>emptyList(), Collections.<Integer>emptyList()).size());
+
+        assertEquals(Arrays.asList(1, 2), f.apply(Collections.<Integer>emptyList(), Arrays.asList(1, 2)));
+
+        for (int i = 0; i < 4; i++) {
+            int k = 0;
+            List<Integer> list1 = new ArrayList<>();
+            for (int j = 0; j < i; j++) {
+                list1.add(k++);
+            }
+
+            List<Integer> list2 = new ArrayList<>();
+            for (int j = i; j < 4; j++) {
+                list2.add(k++);
+            }
+
+            assertEquals(Arrays.asList(0, 1, 2, 3), f.apply(list1, list2));
+        }
+    }
+
+    @Test
+    public void concatMapSubscriberCount() {
+        ParallelFlowableTest.checkSubscriberCount(Flowable.range(1, 5).parallel()
+        .concatMap(Functions.justFunction(Flowable.just(1))));
+    }
+
+    @Test
+    public void flatMapSubscriberCount() {
+        ParallelFlowableTest.checkSubscriberCount(Flowable.range(1, 5).parallel()
+        .flatMap(Functions.justFunction(Flowable.just(1))));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void fromArraySubscriberCount() {
+        ParallelFlowableTest.checkSubscriberCount(ParallelFlowable.fromArray(new Publisher[] { Flowable.just(1) }));
+    }
+}

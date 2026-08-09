@@ -1,0 +1,95 @@
+/*
+ * Copyright 2002-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.scripting;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.core.NestedRuntimeException;
+
+/**
+ * 脚本编译失败时抛出的异常。
+ *
+ * @author Juergen Hoeller
+ * @since 2.0
+ */
+@SuppressWarnings("serial")
+public class ScriptCompilationException extends NestedRuntimeException {
+
+	private final @Nullable ScriptSource scriptSource;
+
+
+	/**
+	 * ScriptCompilationException 构造函数。
+	 * @param msg 详细消息
+	 */
+	public ScriptCompilationException(String msg) {
+		super(msg);
+		this.scriptSource = null;
+	}
+
+	/**
+	 * ScriptCompilationException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 根因（通常来自底层脚本编译 API）
+	 */
+	public ScriptCompilationException(String msg, Throwable cause) {
+		super(msg, cause);
+		this.scriptSource = null;
+	}
+
+	/**
+	 * ScriptCompilationException 构造函数。
+	 * @param scriptSource 出错脚本的来源
+	 * @param msg 详细消息
+	 * @since 4.2
+	 */
+	public ScriptCompilationException(ScriptSource scriptSource, String msg) {
+		super("Could not compile " + scriptSource + ": " + msg);
+		this.scriptSource = scriptSource;
+	}
+
+	/**
+	 * ScriptCompilationException 构造函数。
+	 * @param scriptSource 出错脚本的来源
+	 * @param cause 根因（通常来自底层脚本编译 API）
+	 */
+	public ScriptCompilationException(ScriptSource scriptSource, Throwable cause) {
+		super("Could not compile " + scriptSource, cause);
+		this.scriptSource = scriptSource;
+	}
+
+	/**
+	 * ScriptCompilationException 构造函数。
+	 * @param scriptSource 出错脚本的来源
+	 * @param msg 详细消息
+	 * @param cause 根因（通常来自底层脚本编译 API）
+	 */
+	public ScriptCompilationException(ScriptSource scriptSource, String msg, Throwable cause) {
+		super("Could not compile " + scriptSource + ": " + msg, cause);
+		this.scriptSource = scriptSource;
+	}
+
+
+	/**
+	 * 返回出错脚本的来源。
+	 * @return 脚本来源，若不可用则为 {@code null}
+	 */
+	public @Nullable ScriptSource getScriptSource() {
+		return this.scriptSource;
+	}
+
+}

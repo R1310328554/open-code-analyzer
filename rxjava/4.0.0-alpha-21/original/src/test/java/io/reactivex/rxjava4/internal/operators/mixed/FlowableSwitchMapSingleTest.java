@@ -1,0 +1,487 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.mixed;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.List;
+import java.util.concurrent.Flow.Subscriber;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.disposables.Disposable;
+import io.reactivex.rxjava4.exceptions.*;
+import io.reactivex.rxjava4.functions.Function;
+import io.reactivex.rxjava4.internal.functions.Functions;
+import io.reactivex.rxjava4.internal.subscriptions.BooleanSubscription;
+import io.reactivex.rxjava4.plugins.RxJavaPlugins;
+import io.reactivex.rxjava4.processors.PublishProcessor;
+import io.reactivex.rxjava4.subjects.SingleSubject;
+import io.reactivex.rxjava4.subscribers.TestSubscriber;
+import io.reactivex.rxjava4.testsupport.*;
+
+public class FlowableSwitchMapSingleTest extends RxJavaTest {
+
+    @Test
+    public void simple() {
+        Flowable.range(1, 5)
+        .switchMapSingle((Function<Integer, SingleSource<Integer>>) Single::just)
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    public void mainError() {
+        Flowable.error(new TestException())
+        .switchMapSingle(Functions.justFunction(Single.never()))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void innerError() {
+        Flowable.just(1)
+        .switchMapSingle(Functions.justFunction(Single.error(new TestException())))
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void doubleOnSubscribe() {
+        TestHelper.checkDoubleOnSubscribeFlowable(f -> f
+                .switchMapSingle(Functions.justFunction(Single.never()))
+        );
+    }
+
+    @Test
+    public void limit() {
+        Flowable.range(1, 5)
+        .switchMapSingle(Single::just)
+        .take(3)
+        .test()
+        .assertResult(1, 2, 3);
+    }
+
+    @Test
+    public void switchOver() {
+        PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        final SingleSubject<Integer> ss1 = SingleSubject.create();
+        final SingleSubject<Integer> ss2 = SingleSubject.create();
+
+        TestSubscriber<Integer> ts = pp.switchMapSingle((Function<Integer, SingleSource<Integer>>) v -> {
+                    if (v == 1) {
+                        return ss1;
+                    }
+                    return ss2;
+                }).test();
+
+        ts.assertEmpty();
+
+        pp.onNext(1);
+
+        ts.assertEmpty();
+
+        assertTrue(ss1.hasObservers());
+
+        pp.onNext(2);
+
+        assertFalse(ss1.hasObservers());
+        assertTrue(ss2.hasObservers());
+
+        ss2.onError(new TestException());
+
+        assertFalse(pp.hasSubscribers());
+
+        ts.assertFailure(TestException.class);
+    }
+
+    @Test
+    public void switchOverDelayError() {
+        PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        final SingleSubject<Integer> ss1 = SingleSubject.create();
+        final SingleSubject<Integer> ss2 = SingleSubject.create();
+
+        TestSubscriber<Integer> ts = pp.switchMapSingleDelayError((Function<Integer, SingleSource<Integer>>) v -> {
+                    if (v == 1) {
+                        return ss1;
+                    }
+                    return ss2;
+                }).test();
+
+        ts.assertEmpty();
+
+        pp.onNext(1);
+
+        ts.assertEmpty();
+
+        assertTrue(ss1.hasObservers());
+
+        pp.onNext(2);
+
+        assertFalse(ss1.hasObservers());
+        assertTrue(ss2.hasObservers());
+
+        ss2.onError(new TestException());
+
+        ts.assertEmpty();
+
+        assertTrue(pp.hasSubscribers());
+
+        pp.onComplete();
+
+        ts.assertFailure(TestException.class);
+    }
+
+    @Test
+    public void mainErrorInnerCompleteDelayError() {
+        PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        final SingleSubject<Integer> ss = SingleSubject.create();
+
+        TestSubscriber<Integer> ts = pp.switchMapSingleDelayError((Function<Integer, SingleSource<Integer>>) _ -> ss).test();
+
+        ts.assertEmpty();
+
+        pp.onNext(1);
+
+        ts.assertEmpty();
+
+        assertTrue(ss.hasObservers());
+
+        pp.onError(new TestException());
+
+        assertTrue(ss.hasObservers());
+
+        ts.assertEmpty();
+
+        ss.onSuccess(1);
+
+        ts.assertFailure(TestException.class, 1);
+    }
+
+    @Test
+    public void mainErrorInnerSuccessDelayError() {
+        PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        final SingleSubject<Integer> ss = SingleSubject.create();
+
+        TestSubscriber<Integer> ts = pp.switchMapSingleDelayError((Function<Integer, SingleSource<Integer>>) _ -> ss).test();
+
+        ts.assertEmpty();
+
+        pp.onNext(1);
+
+        ts.assertEmpty();
+
+        assertTrue(ss.hasObservers());
+
+        pp.onError(new TestException());
+
+        assertTrue(ss.hasObservers());
+
+        ts.assertEmpty();
+
+        ss.onSuccess(1);
+
+        ts.assertFailure(TestException.class, 1);
+    }
+
+    @Test
+    public void mapperCrash() {
+        Flowable.just(1)
+        .switchMapSingle(_ -> {
+                    throw new TestException();
+                })
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void disposeBeforeSwitchInOnNext() {
+        final TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+        Flowable.just(1)
+        .switchMapSingle(_ -> {
+                    ts.cancel();
+                    return Single.just(1);
+                }).subscribe(ts);
+
+        ts.assertEmpty();
+    }
+
+    @Test
+    public void disposeOnNextAfterFirst() {
+        final TestSubscriber<Integer> ts = new TestSubscriber<>();
+
+        Flowable.just(1, 2)
+        .switchMapSingle((Function<Integer, SingleSource<Integer>>) v -> {
+            if (v == 2) {
+                ts.cancel();
+            }
+            return Single.just(1);
+        }).subscribe(ts);
+
+        ts.assertValue(1)
+        .assertNoErrors()
+        .assertNotComplete();
+    }
+
+    @Test
+    public void cancel() {
+        PublishProcessor<Integer> pp = PublishProcessor.create();
+
+        final SingleSubject<Integer> ss = SingleSubject.create();
+
+        TestSubscriber<Integer> ts = pp.switchMapSingleDelayError((Function<Integer, SingleSource<Integer>>) _ -> ss).test();
+
+        ts.assertEmpty();
+
+        pp.onNext(1);
+
+        ts.assertEmpty();
+
+        assertTrue(pp.hasSubscribers());
+        assertTrue(ss.hasObservers());
+
+        ts.cancel();
+
+        assertFalse(pp.hasSubscribers());
+        assertFalse(ss.hasObservers());
+    }
+
+    @Test
+    public void mainErrorAfterTermination() {
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            new Flowable<Integer>() /* NFI */ {
+                @Override
+                protected void subscribeActual(Subscriber<? super Integer> s) {
+                    s.onSubscribe(new BooleanSubscription());
+                    s.onNext(1);
+                    s.onError(new TestException("outer"));
+                }
+            }
+            .switchMapSingle((Function<Integer, SingleSource<Integer>>) _ -> Single.error(new TestException("inner")))
+            .to(TestHelper.<Integer>testConsumer())
+            .assertFailureAndMessage(TestException.class, "inner");
+
+            TestHelper.assertUndeliverable(errors, 0, TestException.class, "outer");
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void innerErrorAfterTermination() {
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            final AtomicReference<SingleObserver<? super Integer>> moRef = new AtomicReference<>();
+
+            TestSubscriberEx<Integer> ts = new Flowable<Integer>() /* NFI */ {
+                @Override
+                protected void subscribeActual(Subscriber<? super Integer> s) {
+                    s.onSubscribe(new BooleanSubscription());
+                    s.onNext(1);
+                    s.onError(new TestException("outer"));
+                }
+            }
+            .switchMapSingle((Function<Integer, SingleSource<Integer>>) _ -> new Single<>() /* NFI */ {
+                @Override
+                protected void subscribeActual(
+                        SingleObserver<? super Integer> observer) {
+                    observer.onSubscribe(Disposable.empty());
+                    moRef.set(observer);
+                }
+            })
+            .to(TestHelper.<Integer>testConsumer());
+
+            ts.assertFailureAndMessage(TestException.class, "outer");
+
+            moRef.get().onError(new TestException("inner"));
+
+            TestHelper.assertUndeliverable(errors, 0, TestException.class, "inner");
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void nextCancelRace() {
+        for (int i = 0; i < TestHelper.RACE_LONG_LOOPS; i++) {
+
+            final PublishProcessor<Integer> pp = PublishProcessor.create();
+
+            final SingleSubject<Integer> ss = SingleSubject.create();
+
+            final TestSubscriber<Integer> ts = pp.switchMapSingleDelayError((Function<Integer, SingleSource<Integer>>) _ -> ss).test();
+
+            Runnable r1 = () -> pp.onNext(1);
+
+            Runnable r2 = ts::cancel;
+
+            TestHelper.race(r1, r2);
+
+            ts.assertNoErrors()
+            .assertNotComplete();
+        }
+    }
+
+    @Test
+    public void nextInnerErrorRace() {
+        final TestException ex = new TestException();
+
+        for (int i = 0; i < TestHelper.RACE_LONG_LOOPS; i++) {
+
+            List<Throwable> errors = TestHelper.trackPluginErrors();
+            try {
+                final PublishProcessor<Integer> pp = PublishProcessor.create();
+
+                final SingleSubject<Integer> ss = SingleSubject.create();
+
+                final TestSubscriberEx<Integer> ts = pp.switchMapSingleDelayError((Function<Integer, SingleSource<Integer>>) v -> {
+                    if (v == 1) {
+                        return ss;
+                    }
+                    return Single.never();
+                }).to(TestHelper.<Integer>testConsumer());
+
+                pp.onNext(1);
+
+                Runnable r1 = () -> pp.onNext(2);
+
+                Runnable r2 = () -> ss.onError(ex);
+
+                TestHelper.race(r1, r2);
+
+                if (!ts.errors().isEmpty()) {
+                    assertTrue(errors.isEmpty());
+                    ts.assertFailure(TestException.class);
+                } else if (!errors.isEmpty()) {
+                    TestHelper.assertUndeliverable(errors, 0, TestException.class);
+                }
+            } finally {
+                RxJavaPlugins.reset();
+            }
+        }
+    }
+
+    @Test
+    public void mainErrorInnerErrorRace() {
+        final TestException ex = new TestException();
+        final TestException ex2 = new TestException();
+
+        for (int i = 0; i < TestHelper.RACE_LONG_LOOPS; i++) {
+
+            List<Throwable> errors = TestHelper.trackPluginErrors();
+            try {
+                final PublishProcessor<Integer> pp = PublishProcessor.create();
+
+                final SingleSubject<Integer> ss = SingleSubject.create();
+
+                final TestSubscriber<Integer> ts = pp.switchMapSingleDelayError((Function<Integer, SingleSource<Integer>>) v -> {
+                    if (v == 1) {
+                        return ss;
+                    }
+                    return Single.never();
+                }).test();
+
+                pp.onNext(1);
+
+                Runnable r1 = () -> pp.onError(ex);
+
+                Runnable r2 = () -> ss.onError(ex2);
+
+                TestHelper.race(r1, r2);
+
+                ts.assertError(e -> e instanceof TestException || e instanceof CompositeException);
+
+                if (!errors.isEmpty()) {
+                    TestHelper.assertUndeliverable(errors, 0, TestException.class);
+                }
+            } finally {
+                RxJavaPlugins.reset();
+            }
+        }
+    }
+
+    @Test
+    public void nextInnerSuccessRace() {
+        for (int i = 0; i < TestHelper.RACE_LONG_LOOPS; i++) {
+
+            final PublishProcessor<Integer> pp = PublishProcessor.create();
+
+            final SingleSubject<Integer> ss = SingleSubject.create();
+
+            final TestSubscriber<Integer> ts = pp.switchMapSingleDelayError((Function<Integer, SingleSource<Integer>>) v -> {
+                if (v == 1) {
+                        return ss;
+                }
+                return Single.never();
+            }).test();
+
+            pp.onNext(1);
+
+            Runnable r1 = () -> pp.onNext(2);
+
+            Runnable r2 = () -> ss.onSuccess(3);
+
+            TestHelper.race(r1, r2);
+
+            ts.assertNoErrors()
+            .assertNotComplete();
+        }
+    }
+
+    @Test
+    public void requestMoreOnNext() {
+        var ts = new TestSubscriber<Integer>(1) /* NFI */ {
+            @Override
+            public void onNext(Integer t) {
+                super.onNext(t);
+                requestMore(1);
+            }
+        };
+        Flowable.range(1, 5)
+        .switchMapSingle(Functions.justFunction(Single.just(1)))
+        .subscribe(ts);
+
+        ts.assertResult(1, 1, 1, 1, 1);
+    }
+
+    @Test
+    public void backpressured() {
+        Flowable.just(1)
+        .switchMapSingle(Functions.justFunction(Single.just(1)))
+        .test(0)
+        .assertEmpty()
+        .requestMore(1)
+        .assertResult(1);
+    }
+
+    @Test
+    public void undeliverableUponCancel() {
+        TestHelper.checkUndeliverableUponCancel((FlowableConverter<Integer, Flowable<Integer>>) upstream ->
+            upstream.switchMapSingle((Function<Integer, Single<Integer>>) v -> Single.just(v).hide()));
+    }
+
+    @Test
+    public void undeliverableUponCancelDelayError() {
+        TestHelper.checkUndeliverableUponCancel((FlowableConverter<Integer, Flowable<Integer>>) upstream ->
+            upstream.switchMapSingleDelayError((Function<Integer, Single<Integer>>) v -> Single.just(v).hide()));
+    }
+}

@@ -1,0 +1,87 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.core;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.concurrent.*;
+
+import org.junit.jupiter.api.*;
+
+import io.reactivex.rxjava4.schedulers.Schedulers;
+
+public class SchedulerMainTest {
+    private static final String DRIFT_USE_NANOTIME = "rxjava4.scheduler.use-nanotime";
+
+    @AfterEach
+    public void cleanup() {
+        // reset value to default in order to not influence other tests
+        Scheduler.IS_DRIFT_USE_NANOTIME = false;
+    }
+
+    @Test
+    public void driftUseNanoTimeNotSetByDefault() {
+        assertFalse(Scheduler.IS_DRIFT_USE_NANOTIME);
+        assertFalse(Boolean.getBoolean(DRIFT_USE_NANOTIME));
+    }
+
+    @Test
+    public void computeNow_currentTimeMillis() {
+        TimeUnit unit = TimeUnit.MILLISECONDS;
+        assertTrue(isInRange(System.currentTimeMillis(), Scheduler.computeNow(unit), unit, 250, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void computeNow_nanoTime() {
+        TimeUnit unit = TimeUnit.NANOSECONDS;
+        Scheduler.IS_DRIFT_USE_NANOTIME = true;
+
+        assertFalse(isInRange(System.currentTimeMillis(), Scheduler.computeNow(unit), unit, 250, TimeUnit.MILLISECONDS));
+        assertTrue(isInRange(System.nanoTime(), Scheduler.computeNow(unit), TimeUnit.NANOSECONDS, 250, TimeUnit.MILLISECONDS));
+    }
+
+    private boolean isInRange(long start, long stop, TimeUnit source, long maxDiff, TimeUnit diffUnit) {
+        long diff = Math.abs(stop - start);
+        return diffUnit.convert(diff, source) <= maxDiff;
+    }
+
+    @Test
+    public void clockDriftCalculation() {
+        assertEquals(100_000_000L, Scheduler.computeClockDrift(100, "milliseconds"));
+
+        assertEquals(2_000_000_000L, Scheduler.computeClockDrift(2, "seconds"));
+
+        assertEquals(180_000_000_000L, Scheduler.computeClockDrift(3, "minutes"));
+
+        assertEquals(240_000_000_000L, Scheduler.computeClockDrift(4, "random"));
+
+        assertEquals(300_000_000_000L, Scheduler.computeClockDrift(5, null));
+    }
+
+    @Test
+    public void toExecutorServiceWithoutWorkerExecutes() throws Exception {
+        // The no-arg toExecutorService() must return a usable ExecutorService that falls back to
+        // scheduleDirect() when there is no worker; it previously passed null for the worker store,
+        // so every method threw NullPointerException on first use.
+        ExecutorService exec = Schedulers.single().toExecutorService();
+        try {
+            CountDownLatch latch = new CountDownLatch(1);
+            exec.execute(latch::countDown);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertFalse(exec.isShutdown());
+        } finally {
+            exec.shutdown();
+        }
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "claimed_at": "2026-08-09T15:55:44Z",
+  "files": [
+    "src/flask/app.py",
+    "src/flask/cli.py",
+    "src/flask/ctx.py",
+    "src/flask/helpers.py",
+    "src/flask/sansio/app.py",
+    "src/flask/sansio/blueprints.py",
+    "src/flask/sansio/scaffold.py"
+  ],
+  "remaining_pending": 0
+}

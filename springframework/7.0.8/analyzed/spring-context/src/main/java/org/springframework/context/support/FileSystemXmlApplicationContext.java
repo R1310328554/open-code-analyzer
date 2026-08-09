@@ -1,0 +1,154 @@
+/*
+ * Copyright 2002-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.context.support;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+
+/**
+ * 独立的 XML 应用上下文，从文件系统或 URL 加载上下文定义文件，
+ * 将普通路径解释为相对文件系统位置（例如 "mydir/myfile.txt"）。
+ * 适用于测试框架以及独立运行环境。
+ *
+ * <p><b>注意：</b>普通路径始终相对于当前 JVM 工作目录解析，
+ * 即使以斜杠开头也是如此。（这与 Servlet 容器中的语义一致。）
+ * <b>请使用显式的 "file:" 前缀以强制使用绝对文件路径。</b>
+ *
+ * <p>可通过 {@link #getConfigLocations} 覆盖默认配置位置。
+ * 配置位置可以是具体文件（如 "/myfiles/context.xml"），
+ * 也可以是 Ant 风格模式（如 "/myfiles/*-context.xml"），
+ * 模式细节参见 {@link org.springframework.util.AntPathMatcher} 的 JavaDoc。
+ *
+ * <p>注意：存在多个配置位置时，后加载文件中的 Bean 定义会覆盖先加载文件中的定义。
+ * 可借此通过额外的 XML 文件有意覆盖某些 Bean 定义。
+ *
+ * <p><b>这是简单的一站式便捷 {@link ApplicationContext}。
+ * 若需更灵活的上下文装配，可考虑将 {@link GenericApplicationContext}
+ * 与 {@link org.springframework.beans.factory.xml.XmlBeanDefinitionReader} 组合使用。</b>
+ *
+ * @author Rod Johnson
+ * @author Juergen Hoeller
+ * @see #getResource
+ * @see #getResourceByPath
+ * @see GenericApplicationContext
+ */
+public class FileSystemXmlApplicationContext extends AbstractXmlApplicationContext {
+
+	/**
+	 * 创建用于 Bean 风格配置的新 FileSystemXmlApplicationContext。
+	 * @see #setConfigLocation
+	 * @see #setConfigLocations
+	 * @see #afterPropertiesSet()
+	 */
+	public FileSystemXmlApplicationContext() {
+	}
+
+	/**
+	 * 创建用于 Bean 风格配置的新 FileSystemXmlApplicationContext。
+	 * @param parent 父上下文
+	 * @see #setConfigLocation
+	 * @see #setConfigLocations
+	 * @see #afterPropertiesSet()
+	 */
+	public FileSystemXmlApplicationContext(ApplicationContext parent) {
+		super(parent);
+	}
+
+	/**
+	 * 创建新的 FileSystemXmlApplicationContext，从给定 XML 文件加载定义并自动刷新上下文。
+	 * @param configLocation 文件路径
+	 * @throws BeansException 若上下文创建失败
+	 */
+	public FileSystemXmlApplicationContext(String configLocation) throws BeansException {
+		this(new String[] {configLocation}, true, null);
+	}
+
+	/**
+	 * 创建新的 FileSystemXmlApplicationContext，从给定 XML 文件加载定义并自动刷新上下文。
+	 * @param configLocations 文件路径数组
+	 * @throws BeansException 若上下文创建失败
+	 */
+	public FileSystemXmlApplicationContext(String... configLocations) throws BeansException {
+		this(configLocations, true, null);
+	}
+
+	/**
+	 * 创建带指定父上下文的新 FileSystemXmlApplicationContext，
+	 * 从给定 XML 文件加载定义并自动刷新上下文。
+	 * @param configLocations 文件路径数组
+	 * @param parent 父上下文
+	 * @throws BeansException 若上下文创建失败
+	 */
+	public FileSystemXmlApplicationContext(String[] configLocations, ApplicationContext parent) throws BeansException {
+		this(configLocations, true, parent);
+	}
+
+	/**
+	 * 创建新的 FileSystemXmlApplicationContext，从给定 XML 文件加载定义。
+	 * @param configLocations 文件路径数组
+	 * @param refresh 是否自动刷新上下文（加载全部 Bean 定义并创建全部单例）；
+	 * 也可在进一步配置上下文后手动调用 refresh
+	 * @throws BeansException 若上下文创建失败
+	 * @see #refresh()
+	 */
+	public FileSystemXmlApplicationContext(String[] configLocations, boolean refresh) throws BeansException {
+		this(configLocations, refresh, null);
+	}
+
+	/**
+	 * 创建带指定父上下文的新 FileSystemXmlApplicationContext，
+	 * 从给定 XML 文件加载定义。
+	 * @param configLocations 文件路径数组
+	 * @param refresh 是否自动刷新上下文（加载全部 Bean 定义并创建全部单例）；
+	 * 也可在进一步配置上下文后手动调用 refresh
+	 * @param parent 父上下文
+	 * @throws BeansException 若上下文创建失败
+	 * @see #refresh()
+	 */
+	public FileSystemXmlApplicationContext(
+			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
+			throws BeansException {
+
+		super(parent);
+		setConfigLocations(configLocations);
+		if (refresh) {
+			refresh();
+		}
+	}
+
+
+	/**
+	 * 将资源路径解析为文件系统路径。
+	 * <p>注意：即使给定路径以斜杠开头，也会相对于当前 JVM 工作目录解析。
+	 * 这与 Servlet 容器中的语义一致。
+	 * @param path 资源路径
+	 * @return 资源句柄
+	 * @see org.springframework.web.context.support.XmlWebApplicationContext#getResourceByPath
+	 */
+	@Override
+	protected Resource getResourceByPath(String path) {
+		if (path.startsWith("/")) {
+			path = path.substring(1);
+		}
+		return new FileSystemResource(path);
+	}
+
+}

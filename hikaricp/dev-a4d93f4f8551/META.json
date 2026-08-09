@@ -1,0 +1,7 @@
+{
+  "project": "hikaricp",
+  "version": "dev-a4d93f4f8551",
+  "git_ref": "dev",
+  "repo_url": "https://github.com/brettwooldridge/HikariCP",
+  "source": "tip"
+}

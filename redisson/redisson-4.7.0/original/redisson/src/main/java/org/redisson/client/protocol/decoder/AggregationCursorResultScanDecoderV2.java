@@ -1,0 +1,63 @@
+/**
+ * Copyright (c) 2013-2026 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson.client.protocol.decoder;
+
+import org.redisson.api.search.aggregate.AggregationEntry;
+import org.redisson.client.handler.State;
+
+import java.util.*;
+
+/**
+ *
+ * @author seakider
+ *
+ */
+public class AggregationCursorResultScanDecoderV2 implements MultiDecoder<ListScanResult<AggregationEntry>> {
+
+    @Override
+    public ListScanResult<AggregationEntry> decode(List<Object> parts, State state) {
+        List<Object> attrs = (List<Object>) parts.get(0);
+        String cursorId = String.valueOf(parts.get(1));
+
+        // FT.AGGREGATE WITHCURSOR returns the legacy RESP2-flat shape ([count, doc1, doc2, ...])
+        // unless the FORMAT argument is used, even on a RESP3 connection.
+        if (!attrs.isEmpty() && attrs.get(0) instanceof Long) {
+            long total = (Long) attrs.get(0);
+            List<AggregationEntry> docs = new ArrayList<>(Math.max(0, attrs.size() - 1));
+            for (int i = 1; i < attrs.size(); i++) {
+                docs.add(new AggregationEntry(total, (Map<String, Object>) attrs.get(i)));
+            }
+            return new ListScanResult<>(cursorId, docs);
+        }
+
+        Map<String, Object> m = new HashMap<>();
+        for (int i = 0; i < attrs.size(); i++) {
+            if (i % 2 != 0) {
+                m.put(attrs.get(i-1).toString(), attrs.get(i));
+            }
+        }
+
+        Long total = (Long) m.get("total_results");
+        List<Map<String, Object>> results = (List<Map<String, Object>>) m.get("results");
+        List<AggregationEntry> docs = new ArrayList<>(results.size());
+        for (Map<String, Object> result : results) {
+            Map<String, Object> map = (Map<String, Object>) result.get("extra_attributes");
+            docs.add(new AggregationEntry(total, map));
+        }
+
+        return new ListScanResult<>(cursorId, docs);
+    }
+}

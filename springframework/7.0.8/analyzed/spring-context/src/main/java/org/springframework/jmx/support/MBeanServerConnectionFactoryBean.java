@@ -1,0 +1,206 @@
+/*
+ * Copyright 2002-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.jmx.support;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import javax.management.MBeanServerConnection;
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.remote.JMXServiceURL;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.aop.TargetSource;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.target.AbstractLazyCreationTargetSource;
+import org.springframework.beans.factory.BeanClassLoaderAware;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.CollectionUtils;
+
+/**
+ * 创建 JMX 1.2 {@code MBeanServerConnection} 以连接通过 {@code JMXServerConnector}
+ * 暴露的远程 {@code MBeanServer} 的 {@link FactoryBean}。
+ * 将 {@code MBeanServerConnection} 暴露为 Bean 引用。
+ *
+ * @author Rob Harrop
+ * @author Juergen Hoeller
+ * @since 1.2
+ * @see MBeanServerFactoryBean
+ * @see ConnectorServerFactoryBean
+ * @see org.springframework.jmx.access.MBeanClientInterceptor#setServer
+ * @see org.springframework.jmx.access.NotificationListenerRegistrar#setServer
+ */
+public class MBeanServerConnectionFactoryBean
+		implements FactoryBean<MBeanServerConnection>, BeanClassLoaderAware, InitializingBean, DisposableBean {
+
+	private @Nullable JMXServiceURL serviceUrl;
+
+	private final Map<String, Object> environment = new HashMap<>();
+
+	private boolean connectOnStartup = true;
+
+	private @Nullable ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
+
+	private @Nullable JMXConnector connector;
+
+	private @Nullable MBeanServerConnection connection;
+
+	private @Nullable JMXConnectorLazyInitTargetSource connectorTargetSource;
+
+
+	/** 设置远程 {@code MBeanServer} 的服务 URL。 */
+	public void setServiceUrl(String url) throws MalformedURLException {
+		this.serviceUrl = new JMXServiceURL(url);
+	}
+
+	/**
+	 * 以 {@code java.util.Properties}（String 键值对）设置构造 {@code JMXConnector} 的环境属性。
+	 */
+	public void setEnvironment(Properties environment) {
+		CollectionUtils.mergePropertiesIntoMap(environment, this.environment);
+	}
+
+	/**
+	 * 以 String 键与任意 Object 值的 {@code Map} 设置构造 {@code JMXConnector} 的环境属性。
+	 */
+	public void setEnvironmentMap(@Nullable Map<String, ?> environment) {
+		if (environment != null) {
+			this.environment.putAll(environment);
+		}
+	}
+
+	/**
+	 * 设置是否在启动时连接服务器。默认为 {@code true}。
+	 * <p>可关闭以允许 JMX 服务器延迟启动，此时首次访问时才获取 JMX 连接器。
+	 */
+	public void setConnectOnStartup(boolean connectOnStartup) {
+		this.connectOnStartup = connectOnStartup;
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.beanClassLoader = classLoader;
+	}
+
+
+	/**
+	 * 根据给定设置创建 {@code JMXConnector} 并暴露关联的 {@code MBeanServerConnection}。
+	 */
+	@Override
+	public void afterPropertiesSet() throws IOException {
+		if (this.serviceUrl == null) {
+			throw new IllegalArgumentException("Property 'serviceUrl' is required");
+		}
+
+		if (this.connectOnStartup) {
+			connect();
+		}
+		else {
+			createLazyConnection();
+		}
+	}
+
+	/** 使用配置的服务 URL 与环境属性连接远程 {@code MBeanServer}。 */
+	private void connect() throws IOException {
+		Assert.state(this.serviceUrl != null, "No JMXServiceURL set");
+		this.connector = JMXConnectorFactory.connect(this.serviceUrl, this.environment);
+		this.connection = this.connector.getMBeanServerConnection();
+	}
+
+	/** 为 {@code JMXConnector} 与 {@code MBeanServerConnection} 创建懒加载代理。 */
+	private void createLazyConnection() {
+		this.connectorTargetSource = new JMXConnectorLazyInitTargetSource();
+		TargetSource connectionTargetSource = new MBeanServerConnectionLazyInitTargetSource();
+
+		this.connector = (JMXConnector)
+				new ProxyFactory(JMXConnector.class, this.connectorTargetSource).getProxy(this.beanClassLoader);
+		this.connection = (MBeanServerConnection)
+				new ProxyFactory(MBeanServerConnection.class, connectionTargetSource).getProxy(this.beanClassLoader);
+	}
+
+
+	@Override
+	public @Nullable MBeanServerConnection getObject() {
+		return this.connection;
+	}
+
+	@Override
+	public Class<? extends MBeanServerConnection> getObjectType() {
+		return (this.connection != null ? this.connection.getClass() : MBeanServerConnection.class);
+	}
+
+	@Override
+	public boolean isSingleton() {
+		return true;
+	}
+
+
+	/** 关闭底层 {@code JMXConnector}。 */
+	@Override
+	public void destroy() throws IOException {
+		if (this.connector != null &&
+				(this.connectorTargetSource == null || this.connectorTargetSource.isInitialized())) {
+			this.connector.close();
+		}
+	}
+
+
+	/**
+	 * 使用配置的服务 URL 与环境属性懒加载创建 {@code JMXConnector}。
+	 * @see MBeanServerConnectionFactoryBean#setServiceUrl(String)
+	 * @see MBeanServerConnectionFactoryBean#setEnvironment(java.util.Properties)
+	 */
+	private class JMXConnectorLazyInitTargetSource extends AbstractLazyCreationTargetSource {
+
+		@Override
+		protected Object createObject() throws Exception {
+			Assert.state(serviceUrl != null, "No JMXServiceURL set");
+			return JMXConnectorFactory.connect(serviceUrl, environment);
+		}
+
+		@Override
+		public Class<?> getTargetClass() {
+			return JMXConnector.class;
+		}
+	}
+
+
+	/** 懒加载创建 {@code MBeanServerConnection}。 */
+	private class MBeanServerConnectionLazyInitTargetSource extends AbstractLazyCreationTargetSource {
+
+		@Override
+		protected Object createObject() throws Exception {
+			Assert.state(connector != null, "JMXConnector not initialized");
+			return connector.getMBeanServerConnection();
+		}
+
+		@Override
+		public Class<?> getTargetClass() {
+			return MBeanServerConnection.class;
+		}
+	}
+
+}

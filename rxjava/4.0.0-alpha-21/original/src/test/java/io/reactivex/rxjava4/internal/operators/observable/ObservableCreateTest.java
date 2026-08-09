@@ -1,0 +1,630 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.observable;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.jupiter.api.Test;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.disposables.Disposable;
+import io.reactivex.rxjava4.exceptions.TestException;
+import io.reactivex.rxjava4.observers.TestObserver;
+import io.reactivex.rxjava4.plugins.RxJavaPlugins;
+import io.reactivex.rxjava4.testsupport.*;
+
+public class ObservableCreateTest extends RxJavaTest {
+
+    @Test
+    @SuppressUndeliverable
+    public void basic() {
+        final Disposable d = Disposable.empty();
+
+        Observable.<Integer>create(e -> {
+            e.setDisposable(d);
+
+            e.onNext(1);
+            e.onNext(2);
+            e.onNext(3);
+            e.onComplete();
+            e.onError(new TestException());
+            e.onNext(4);
+            e.onError(new TestException());
+            e.onComplete();
+        })
+        .test()
+        .assertResult(1, 2, 3);
+
+        assertTrue(d.isDisposed());
+    }
+
+    @Test
+    @SuppressUndeliverable
+    public void basicWithCancellable() {
+        final Disposable d1 = Disposable.empty();
+        final Disposable d2 = Disposable.empty();
+
+        Observable.<Integer>create(e -> {
+            e.setDisposable(d1);
+            e.setCancellable(d2::dispose);
+
+            e.onNext(1);
+            e.onNext(2);
+            e.onNext(3);
+            e.onComplete();
+            e.onError(new TestException());
+            e.onNext(4);
+            e.onError(new TestException());
+            e.onComplete();
+        })
+        .test()
+        .assertResult(1, 2, 3);
+
+        assertTrue(d1.isDisposed());
+        assertTrue(d2.isDisposed());
+    }
+
+    @Test
+    @SuppressUndeliverable
+    public void basicWithError() {
+        final Disposable d = Disposable.empty();
+
+        Observable.<Integer>create(e -> {
+            e.setDisposable(d);
+
+            e.onNext(1);
+            e.onNext(2);
+            e.onNext(3);
+            e.onError(new TestException());
+            e.onComplete();
+            e.onNext(4);
+            e.onError(new TestException());
+        })
+        .test()
+        .assertFailure(TestException.class, 1, 2, 3);
+
+        assertTrue(d.isDisposed());
+    }
+
+    @Test
+    @SuppressUndeliverable
+    public void basicSerialized() {
+        final Disposable d = Disposable.empty();
+
+        Observable.<Integer>create(e -> {
+            e = e.serialize();
+
+            e.setDisposable(d);
+
+            e.onNext(1);
+            e.onNext(2);
+            e.onNext(3);
+            e.onComplete();
+            e.onError(new TestException());
+            e.onNext(4);
+            e.onError(new TestException());
+            e.onComplete();
+        })
+        .test()
+        .assertResult(1, 2, 3);
+
+        assertTrue(d.isDisposed());
+    }
+
+    @Test
+    @SuppressUndeliverable
+    public void basicWithErrorSerialized() {
+        final Disposable d = Disposable.empty();
+
+        Observable.<Integer>create(e -> {
+            e = e.serialize();
+
+            e.setDisposable(d);
+
+            e.onNext(1);
+            e.onNext(2);
+            e.onNext(3);
+            e.onError(new TestException());
+            e.onComplete();
+            e.onNext(4);
+            e.onError(new TestException());
+        })
+        .test()
+        .assertFailure(TestException.class, 1, 2, 3);
+
+        assertTrue(d.isDisposed());
+    }
+
+    @Test
+    public void wrap() {
+        Observable.wrap((ObservableSource<Integer>) observer -> {
+            observer.onSubscribe(Disposable.empty());
+            observer.onNext(1);
+            observer.onNext(2);
+            observer.onNext(3);
+            observer.onNext(4);
+            observer.onNext(5);
+            observer.onComplete();
+        })
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    public void unsafe() {
+        Observable.unsafeCreate((ObservableSource<Integer>) observer -> {
+            observer.onSubscribe(Disposable.empty());
+            observer.onNext(1);
+            observer.onNext(2);
+            observer.onNext(3);
+            observer.onNext(4);
+            observer.onNext(5);
+            observer.onComplete();
+        })
+        .test()
+        .assertResult(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    public void unsafeWithObservable() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            Observable.unsafeCreate(Observable.just(1));
+        });
+    }
+
+    @Test
+    @SuppressUndeliverable
+    public void createNullValue() {
+        final Throwable[] error = { null };
+
+        Observable.create((ObservableOnSubscribe<Integer>) e -> {
+            try {
+                e.onNext(null);
+                e.onNext(1);
+                e.onError(new TestException());
+                e.onComplete();
+            } catch (Throwable ex) {
+                error[0] = ex;
+            }
+        })
+        .test()
+        .assertFailure(NullPointerException.class);
+
+        assertNull(error[0]);
+    }
+
+    @Test
+    @SuppressUndeliverable
+    public void createNullValueSerialized() {
+        final Throwable[] error = { null };
+
+        Observable.create((ObservableOnSubscribe<Integer>) e -> {
+            e = e.serialize();
+            try {
+                e.onNext(null);
+                e.onNext(1);
+                e.onError(new TestException());
+                e.onComplete();
+            } catch (Throwable ex) {
+                error[0] = ex;
+            }
+        })
+        .test()
+        .assertFailure(NullPointerException.class);
+
+        assertNull(error[0]);
+    }
+
+    @Test
+    public void callbackThrows() {
+        Observable.create(_ -> {
+            throw new TestException();
+        })
+        .test()
+        .assertFailure(TestException.class);
+    }
+
+    @Test
+    public void nullValue() {
+        Observable.create(e -> e.onNext(null))
+        .test()
+        .assertFailure(NullPointerException.class);
+    }
+
+    @Test
+    public void nullThrowable() {
+        Observable.create(e -> e.onError(null))
+        .test()
+        .assertFailure(NullPointerException.class);
+    }
+
+    @Test
+    public void nullValueSync() {
+        Observable.create(e -> e.serialize().onNext(null))
+        .test()
+        .assertFailure(NullPointerException.class);
+    }
+
+    @Test
+    public void nullThrowableSync() {
+        Observable.create(e -> e.serialize().onError(null))
+        .test()
+        .assertFailure(NullPointerException.class);
+    }
+
+    @Test
+    public void onErrorCrash() {
+        Observable.create(e -> {
+            Disposable d = Disposable.empty();
+            e.setDisposable(d);
+            try {
+                e.onError(new IOException());
+                fail("Should have thrown");
+            } catch (TestException ex) {
+                // expected
+            }
+            assertTrue(d.isDisposed());
+        })
+        .subscribe(new Observer<>() /* NFI */ {
+            @Override
+            public void onSubscribe(Disposable d) {
+            }
+
+            @Override
+            public void onNext(Object value) {
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                throw new TestException();
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+    }
+
+    @Test
+    public void onCompleteCrash() {
+        Observable.create(e -> {
+            Disposable d = Disposable.empty();
+            e.setDisposable(d);
+            try {
+                e.onComplete();
+                fail("Should have thrown");
+            } catch (TestException ex) {
+                // expected
+            }
+            assertTrue(d.isDisposed());
+        })
+        .subscribe(new Observer<>() /* NFI */ {
+            @Override
+            public void onSubscribe(Disposable d) {
+            }
+
+            @Override
+            public void onNext(Object value) {
+            }
+
+            @Override
+            public void onError(Throwable e) {
+            }
+
+            @Override
+            public void onComplete() {
+                throw new TestException();
+            }
+        });
+    }
+
+    @Test
+    public void serialized() {
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            Observable.create(e -> {
+                ObservableEmitter<Object> f = e.serialize();
+
+                assertSame(f, f.serialize());
+
+                assertFalse(f.isDisposed());
+
+                final int[] calls = { 0 };
+
+                f.setCancellable(() -> calls[0]++);
+
+                e.onComplete();
+
+                assertTrue(f.isDisposed());
+
+                assertEquals(1, calls[0]);
+            })
+            .test()
+            .assertResult();
+
+            assertTrue(errors.isEmpty(), errors.toString());
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void serializedConcurrentOnNext() {
+        Observable.create(e -> {
+            final ObservableEmitter<Object> f = e.serialize();
+
+            Runnable r1 = () -> {
+                for (int i = 0; i < TestHelper.RACE_DEFAULT_LOOPS; i++) {
+                    f.onNext(1);
+                }
+            };
+
+            TestHelper.race(r1, r1);
+        })
+        .take(TestHelper.RACE_DEFAULT_LOOPS)
+        .to(TestHelper.<Object>testConsumer())
+        .assertSubscribed()
+        .assertValueCount(TestHelper.RACE_DEFAULT_LOOPS)
+        .assertComplete()
+        .assertNoErrors();
+    }
+
+    @Test
+    public void serializedConcurrentOnNextOnError() {
+        Observable.create(e -> {
+            final ObservableEmitter<Object> f = e.serialize();
+
+            Runnable r1 = () -> {
+                for (int i = 0; i < 1000; i++) {
+                    f.onNext(1);
+                }
+            };
+
+            Runnable r2 = () -> {
+                for (int i = 0; i < 100; i++) {
+                    f.onNext(1);
+                }
+                f.onError(new TestException());
+            };
+
+            TestHelper.race(r1, r2);
+        })
+        .to(TestHelper.<Object>testConsumer())
+        .assertSubscribed()
+        .assertNotComplete()
+        .assertError(TestException.class);
+    }
+
+    @Test
+    public void serializedConcurrentOnNextOnComplete() {
+        TestObserverEx<Object> to = Observable.create(e -> {
+            final ObservableEmitter<Object> f = e.serialize();
+
+            Runnable r1 = () -> {
+                for (int i = 0; i < 1000; i++) {
+                    f.onNext(1);
+                }
+            };
+
+            Runnable r2 = () -> {
+                for (int i = 0; i < 100; i++) {
+                    f.onNext(1);
+                }
+                f.onComplete();
+            };
+
+            TestHelper.race(r1, r2);
+        })
+        .to(TestHelper.<Object>testConsumer())
+        .assertSubscribed()
+        .assertComplete()
+        .assertNoErrors();
+
+        int c = to.values().size();
+        assertTrue(c >= 100, "" + c);
+    }
+
+    @Test
+    public void onErrorRace() {
+        Observable<Object> source = Observable.create(e -> {
+            final ObservableEmitter<Object> f = e.serialize();
+
+            final TestException ex = new TestException();
+
+            Runnable r1 = () -> f.onError(null);
+
+            Runnable r2 = () -> f.onError(ex);
+
+            TestHelper.race(r1, r2);
+        });
+
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+
+        try {
+            for (int i = 0; i < TestHelper.RACE_DEFAULT_LOOPS; i++) {
+                source
+                .test()
+                .assertFailure(Throwable.class);
+            }
+        } finally {
+            RxJavaPlugins.reset();
+        }
+        assertFalse(errors.isEmpty());
+    }
+
+    @Test
+    public void onCompleteRace() {
+        Observable<Object> source = Observable.create(e -> {
+            final ObservableEmitter<Object> f = e.serialize();
+
+            Runnable r1 = f::onComplete;
+
+            Runnable r2 = f::onComplete;
+
+            TestHelper.race(r1, r2);
+        });
+
+        for (int i = 0; i < TestHelper.RACE_DEFAULT_LOOPS; i++) {
+            source
+            .test()
+            .assertResult();
+        }
+    }
+
+    @Test
+    public void tryOnError() {
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            final Boolean[] response = { null };
+            Observable.create(e -> {
+                e.onNext(1);
+                response[0] = e.tryOnError(new TestException());
+            })
+            .take(1)
+            .test()
+            .assertResult(1);
+
+            assertFalse(response[0]);
+
+            assertTrue(errors.isEmpty(), errors.toString());
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void tryOnErrorSerialized() {
+        List<Throwable> errors = TestHelper.trackPluginErrors();
+        try {
+            final Boolean[] response = { null };
+            Observable.create(e -> {
+                e = e.serialize();
+                e.onNext(1);
+                response[0] = e.tryOnError(new TestException());
+            })
+            .take(1)
+            .test()
+            .assertResult(1);
+
+            assertFalse(response[0]);
+
+            assertTrue(errors.isEmpty(), errors.toString());
+        } finally {
+            RxJavaPlugins.reset();
+        }
+    }
+
+    @Test
+    public void emitterHasToString() {
+        Observable.create(emitter -> {
+            assertTrue(emitter.toString().contains(ObservableCreate.CreateEmitter.class.getSimpleName()));
+            assertTrue(emitter.serialize().toString().contains(ObservableCreate.CreateEmitter.class.getSimpleName()));
+        }).test().assertEmpty();
+    }
+
+    @Test
+    public void emptySerialized() {
+        Observable.create(emitter -> emitter.serialize().onComplete())
+        .test()
+        .assertResult();
+    }
+
+    @Test
+    public void serializedDisposedBeforeOnNext() {
+        TestObserver<Object> to = new TestObserver<>();
+
+        Observable.create(emitter -> {
+            to.dispose();
+            emitter.serialize().onNext(1);
+        })
+        .subscribe(to);
+
+        to.assertEmpty();
+    }
+
+    @Test
+    public void serializedOnNextAfterComplete() {
+        TestObserver<Object> to = new TestObserver<>();
+
+        Observable.create(emitter -> {
+            emitter = emitter.serialize();
+
+            emitter.onComplete();
+            emitter.onNext(1);
+        })
+        .subscribe(to);
+
+        to.assertResult();
+    }
+
+    @Test
+    public void serializedEnqueueAndDrainRace() throws Throwable {
+        for (int i = 0; i < TestHelper.RACE_DEFAULT_LOOPS; i++) {
+            TestObserver<Integer> to = new TestObserver<>();
+            AtomicReference<ObservableEmitter<Integer>> ref = new AtomicReference<>();
+
+            CountDownLatch cdl = new CountDownLatch(1);
+
+            Observable.<Integer>create(emitter -> {
+                emitter = emitter.serialize();
+                ref.set(emitter);
+                emitter.onNext(1);
+            })
+            .doOnNext(v -> {
+                if (v == 1) {
+                    TestHelper.raceOther(() -> ref.get().onNext(2), cdl);
+                    ref.get().onNext(3);
+                }
+            })
+            .subscribe(to);
+
+            cdl.await();
+
+            to.assertValueCount(3);
+        }
+    }
+
+    @Test
+    public void serializedDrainDoneButNotEmpty() throws Throwable {
+        for (int i = 0; i < TestHelper.RACE_DEFAULT_LOOPS; i++) {
+            TestObserver<Integer> to = new TestObserver<>();
+            AtomicReference<ObservableEmitter<Integer>> ref = new AtomicReference<>();
+
+            CountDownLatch cdl = new CountDownLatch(1);
+
+            Observable.<Integer>create(emitter -> {
+                emitter = emitter.serialize();
+                ref.set(emitter);
+                emitter.onNext(1);
+            })
+            .doOnNext(v -> {
+                if (v == 1) {
+                    TestHelper.raceOther(() -> {
+                        ref.get().onNext(2);
+                        ref.get().onComplete();
+                    }, cdl);
+                    ref.get().onNext(3);
+                }
+            })
+            .subscribe(to);
+
+            cdl.await();
+        }
+    }
+}

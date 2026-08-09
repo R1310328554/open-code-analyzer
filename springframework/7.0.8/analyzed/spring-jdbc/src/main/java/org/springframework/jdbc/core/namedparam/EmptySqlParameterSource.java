@@ -1,0 +1,74 @@
+/*
+ * Copyright 2002-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.jdbc.core.namedparam;
+
+import org.jspecify.annotations.Nullable;
+
+/**
+ * {@link SqlParameterSource} 接口的简单空实现。
+ * @author Juergen Hoeller
+ * @since 3.2.2
+ */
+public class EmptySqlParameterSource implements SqlParameterSource {
+
+	/**
+	 * {@link EmptySqlParameterSource} 的共享实例。
+	 */
+	public static final EmptySqlParameterSource INSTANCE = new EmptySqlParameterSource();
+
+
+	/**
+	 * 判断是否包含/具备 Value。
+	 */
+	@Override
+	public boolean hasValue(String paramName) {
+		return false;
+	}
+
+	/**
+	 * 获取 Value（`Value`）。
+	 */
+	@Override
+	public @Nullable Object getValue(String paramName) throws IllegalArgumentException {
+		throw new IllegalArgumentException("This SqlParameterSource is empty");
+	}
+
+	/**
+	 * 获取 Sql Type（`SqlType`）。
+	 */
+	@Override
+	public int getSqlType(String paramName) {
+		return TYPE_UNKNOWN;
+	}
+
+	/**
+	 * 获取 Type Name（`TypeName`）。
+	 */
+	@Override
+	public @Nullable String getTypeName(String paramName) {
+		return null;
+	}
+
+	/**
+	 * 获取 Parameter Names（`ParameterNames`）。
+	 */
+	@Override
+	public String @Nullable [] getParameterNames() {
+		return null;
+	}
+
+}

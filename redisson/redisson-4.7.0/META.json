@@ -1,0 +1,7 @@
+{
+  "project": "redisson",
+  "version": "redisson-4.7.0",
+  "git_ref": "redisson-4.7.0",
+  "repo_url": "https://github.com/redisson/redisson",
+  "source": "release"
+}

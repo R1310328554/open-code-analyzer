@@ -1,0 +1,108 @@
+/*
+ * Copyright 2002-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.beans.factory.config;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.TypeConverter;
+import org.springframework.core.ResolvableType;
+
+/**
+ * 共享 List 实例的简单工厂。支持通过 XML Bean 定义中的 "list" 元素集中配置 List。
+ *
+ * @author Juergen Hoeller
+ * @since 09.12.2003
+ * @see SetFactoryBean
+ * @see MapFactoryBean
+ */
+public class ListFactoryBean extends AbstractFactoryBean<List<Object>> {
+
+	/** 源 List，通常通过 XML "list" 元素填充。 */
+	private @Nullable List<?> sourceList;
+
+	/** 目标 List 实现类。 */
+	@SuppressWarnings("rawtypes")
+	private @Nullable Class<? extends List> targetListClass;
+
+
+	/**
+	 * 设置源 List，通常通过 XML "list" 元素填充。
+	 */
+	public void setSourceList(List<?> sourceList) {
+		this.sourceList = sourceList;
+	}
+
+	/**
+	 * 设置目标 List 使用的类。在 Spring 应用上下文中定义时，
+	 * 可使用完全限定类名填充。
+	 * <p>默认为 {@code java.util.ArrayList}。
+	 * @see java.util.ArrayList
+	 */
+	@SuppressWarnings("rawtypes")
+	public void setTargetListClass(@Nullable Class<? extends List> targetListClass) {
+		if (targetListClass == null) {
+			throw new IllegalArgumentException("'targetListClass' must not be null");
+		}
+		if (!List.class.isAssignableFrom(targetListClass)) {
+			throw new IllegalArgumentException("'targetListClass' must implement [java.util.List]");
+		}
+		this.targetListClass = targetListClass;
+	}
+
+
+	@Override
+	@SuppressWarnings("rawtypes")
+	public Class<List> getObjectType() {
+		return List.class;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected List<Object> createInstance() {
+		if (this.sourceList == null) {
+			throw new IllegalArgumentException("'sourceList' is required");
+		}
+		List<Object> result = null;
+		// 实例化目标 List 类型，或使用默认 ArrayList
+		if (this.targetListClass != null) {
+			result = BeanUtils.instantiateClass(this.targetListClass);
+		}
+		else {
+			result = new ArrayList<>(this.sourceList.size());
+		}
+		// 若目标类型声明了泛型元素类型，则进行类型转换
+		Class<?> valueType = null;
+		if (this.targetListClass != null) {
+			valueType = ResolvableType.forClass(this.targetListClass).asCollection().resolveGeneric();
+		}
+		if (valueType != null) {
+			TypeConverter converter = getBeanTypeConverter();
+			for (Object elem : this.sourceList) {
+				result.add(converter.convertIfNecessary(elem, valueType));
+			}
+		}
+		else {
+			result.addAll(this.sourceList);
+		}
+		return result;
+	}
+
+}
