@@ -16,5 +16,4 @@
 | fastapi | 0.141.1 | 30 | 479 |
 | rxjava | 4.0.0-alpha-21 | 0 | 993 |
 
-已完成：flask / gson / hikaricp / gin。进行中：springframework / springboot / fastapi / disruptor / rxjava。
-
+已完成：flask / gson / hikaricp / disruptor / gin。进行中：springframework / springboot / fastapi / rxjava。

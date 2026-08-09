@@ -41,7 +41,7 @@ projects:
     version: "dev-a4d93f4f8551"
   - id: disruptor
     url: https://github.com/LMAX-Exchange/disruptor
-    status: in_progress
+    status: complete
     version: "4.0.0"
 
   # —— Python ——
