@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.slots.block.flow.tokenbucket;
 
 /**
+ * 默认令牌桶实现，首次请求到达时才填充初始令牌。
+ *
  * @author LearningGp
  */
 public class DefaultTokenBucket extends AbstractTokenBucket{

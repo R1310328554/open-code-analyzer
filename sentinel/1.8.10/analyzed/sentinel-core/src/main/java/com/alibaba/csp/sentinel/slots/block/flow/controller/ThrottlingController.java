@@ -25,6 +25,9 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
+ * 匀速排队流控控制器，严格限制请求间隔以实现均匀放行。
+ * 由 Sentinel 1.x 的 RateLimitController 重构而来。
+ *
  * @author Eric Zhao
  * @author jialiang.linjl
  * @since 2.0

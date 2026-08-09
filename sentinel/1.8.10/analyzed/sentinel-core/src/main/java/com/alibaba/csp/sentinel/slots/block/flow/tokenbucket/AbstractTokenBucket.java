@@ -19,28 +19,30 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
+ * 令牌桶算法的抽象基类，负责按时间间隔补充令牌并支持消费。
+ *
  * @author LearningGp
  */
 public class AbstractTokenBucket implements TokenBucket{
     protected final long MAX_UNIT_PRODUCE_NUM = Long.MAX_VALUE;
 
     /**
-     * Number of tokens left in the bucket
+     * 桶中剩余令牌数
      */
     protected volatile long currentTokenNum;
 
     /**
-     * Time of next production token
+     * 下次生产令牌的时间戳
      */
     protected volatile long nextProduceTime;
 
     /**
-     * Number of tokens produced per unit of time
+     * 每个时间单位生产的令牌数
      */
     protected final long unitProduceNum;
 
     /**
-     * Maximum number of tokens stored in the bucket
+     * 桶中可存储的最大令牌数
      */
     protected final long maxTokenNum;
 

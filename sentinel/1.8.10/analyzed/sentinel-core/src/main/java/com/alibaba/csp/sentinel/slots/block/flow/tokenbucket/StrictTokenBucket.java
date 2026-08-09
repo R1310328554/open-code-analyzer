@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.slots.block.flow.tokenbucket;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
+ * 严格令牌桶实现，通过锁保证刷新与消费操作的线程安全。
+ *
  * @author LearningGp
  */
 public class StrictTokenBucket extends AbstractTokenBucket{

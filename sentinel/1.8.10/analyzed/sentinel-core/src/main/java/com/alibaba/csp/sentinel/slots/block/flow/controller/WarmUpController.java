@@ -23,40 +23,30 @@ import com.alibaba.csp.sentinel.slots.block.flow.TrafficShapingController;
 
 /**
  * <p>
- * The principle idea comes from Guava. However, the calculation of Guava is
- * rate-based, which means that we need to translate rate to QPS.
+ * 核心思想源自 Guava，但 Guava 基于速率计算，需将速率换算为 QPS。
  * </p>
  *
  * <p>
- * Requests arriving at the pulse may drag down long idle systems even though it
- * has a much larger handling capability in stable period. It usually happens in
- * scenarios that require extra time for initialization, e.g. DB establishes a connection,
- * connects to a remote service, and so on. That’s why we need “warm up”.
+ * 脉冲式到达的请求可能拖垮长期空闲的系统，尽管其在稳定期具备更大处理能力。
+ * 常见于需要额外初始化时间的场景，如数据库建连、连接远程服务等，因此需要"预热"。
  * </p>
  *
  * <p>
- * Sentinel's "warm-up" implementation is based on the Guava's algorithm.
- * However, Guava’s implementation focuses on adjusting the request interval,
- * which is similar to leaky bucket. Sentinel pays more attention to
- * controlling the count of incoming requests per second without calculating its interval,
- * which resembles token bucket algorithm.
+ * Sentinel 的预热实现基于 Guava 算法，但 Guava 侧重调整请求间隔（类似漏桶），
+ * 而 Sentinel 更关注每秒入站请求数的控制（不计算间隔），更接近令牌桶算法。
  * </p>
  *
  * <p>
- * The remaining tokens in the bucket is used to measure the system utility.
- * Suppose a system can handle b requests per second. Every second b tokens will
- * be added into the bucket until the bucket is full. And when system processes
- * a request, it takes a token from the bucket. The more tokens left in the
- * bucket, the lower the utilization of the system; when the token in the token
- * bucket is above a certain threshold, we call it in a "saturation" state.
+ * 桶中剩余令牌用于衡量系统利用率。假设系统每秒可处理 b 个请求，
+ * 每秒向桶中补充 b 个令牌直至满桶；处理请求时从桶中取令牌。
+ * 剩余令牌越多，系统利用率越低；令牌数超过某阈值时称为"饱和"状态。
  * </p>
  *
  * <p>
- * Base on Guava’s theory, there is a linear equation we can write this in the
- * form y = m * x + b where y (a.k.a y(x)), or qps(q)), is our expected QPS
- * given a saturated period (e.g. 3 minutes in), m is the rate of change from
- * our cold (minimum) rate to our stable (maximum) rate, x (or q) is the
- * occupied token.
+ * 基于 Guava 理论，可用线性方程 y = m * x + b 描述，
+ * 其中 y（即 y(x) 或 qps(q)）为饱和期内的期望 QPS，
+ * m 为从冷启动（最低）速率到稳定（最高）速率的变化率，
+ * x（或 q）为已占用的令牌数。
  * </p>
  *
  * @author jialiang.linjl

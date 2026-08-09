@@ -29,16 +29,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * </p>
- * This class will try to build the calling traces via
+ * <p>
+ * 该类通过以下方式构建调用链路：
  * <ol>
- * <li>adding a new {@link DefaultNode} if needed as the last child in the context.
- * The context's last node is the current node or the parent node of the context. </li>
- * <li>setting itself to the context current node.</li>
+ * <li>在上下文的最后一个节点（当前节点或父节点）下按需添加新的 {@link DefaultNode} 作为末级子节点。</li>
+ * <li>将自身设为上下文的当前节点。</li>
  * </ol>
  * </p>
  *
- * <p>It works as follow:</p>
+ * <p>工作流程如下：</p>
  * <pre>
  * ContextUtil.enter("entrance1", "appA");
  * Entry nodeA = SphU.entry("nodeA");
@@ -48,7 +47,7 @@ import java.util.Map;
  * ContextUtil.exit();
  * </pre>
  *
- * Above code will generate the following invocation structure in memory:
+ * 上述代码将在内存中生成如下调用结构：
  *
  * <pre>
  *
@@ -62,21 +61,18 @@ import java.util.Map;
  * </pre>
  *
  * <p>
- * Here the {@link EntranceNode} represents "entrance1" given by
- * {@code ContextUtil.enter("entrance1", "appA")}.
+ * 此处 {@link EntranceNode} 表示 {@code ContextUtil.enter("entrance1", "appA")} 指定的 "entrance1"。
  * </p>
  * <p>
- * Both DefaultNode(nodeA) and ClusterNode(nodeA) holds statistics of "nodeA", which is given
- * by {@code SphU.entry("nodeA")}
+ * DefaultNode(nodeA) 与 ClusterNode(nodeA) 均持有 "nodeA" 的统计信息，
+ * "nodeA" 由 {@code SphU.entry("nodeA")} 指定
  * </p>
  * <p>
- * The {@link ClusterNode} is uniquely identified by the ResourceId; the {@link DefaultNode}
- * is identified by both the resource id and {@link Context}. In other words, one resource
- * id will generate multiple {@link DefaultNode} for each distinct context, but only one
- * {@link ClusterNode}.
+ * {@link ClusterNode} 由 ResourceId 唯一标识；{@link DefaultNode} 由资源 id 与 {@link Context} 共同标识。
+ * 换言之，同一资源 id 在不同上下文中会生成多个 {@link DefaultNode}，但仅对应一个 {@link ClusterNode}。
  * </p>
  * <p>
- * the following code shows one resource id in two different context:
+ * 以下代码展示同一资源 id 在两个不同上下文中的情况：
  * </p>
  *
  * <pre>
@@ -111,12 +107,11 @@ import java.util.Map;
  * </pre>
  *
  * <p>
- * As we can see, two {@link DefaultNode} are created for "nodeA" in two context, but only one
- * {@link ClusterNode} is created.
+ * 可见 "nodeA" 在两个上下文中各创建一个 {@link DefaultNode}，但仅创建一个 {@link ClusterNode}。
  * </p>
  *
  * <p>
- * We can also check this structure by calling: <br/>
+ * 也可通过以下命令查看该结构：<br/>
  * {@code curl http://localhost:8719/tree?type=root}
  * </p>
  *
@@ -128,7 +123,7 @@ import java.util.Map;
 public class NodeSelectorSlot extends AbstractLinkedProcessorSlot<Object> {
 
     /**
-     * {@link DefaultNode}s of the same resource in different context.
+     * 同一资源在不同上下文中的 {@link DefaultNode} 映射。
      */
     private volatile Map<String, DefaultNode> map = new HashMap<String, DefaultNode>(10);
 

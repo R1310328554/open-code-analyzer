@@ -29,32 +29,29 @@ import java.util.Collection;
 
 /**
  * <p>
- * Combined the runtime statistics collected from the previous
- * slots (NodeSelectorSlot, ClusterNodeBuilderSlot, and StatisticSlot), FlowSlot
- * will use pre-set rules to decide whether the incoming requests should be
- * blocked.
+ * 结合前序 Slot（{@link com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot}、
+ * {@link com.alibaba.csp.sentinel.slots.clusterbuilder.ClusterBuilderSlot} 与
+ * {@link com.alibaba.csp.sentinel.slots.statistic.StatisticSlot}）采集的运行时统计信息，
+ * FlowSlot 依据预设规则判定入站请求是否应被阻断。
  * </p>
  *
  * <p>
- * {@code SphU.entry(resourceName)} will throw {@code FlowException} if any rule is
- * triggered. Users can customize their own logic by catching {@code FlowException}.
+ * 若任意规则被触发，{@code SphU.entry(resourceName)} 将抛出 {@code FlowException}。
+ * 用户可通过捕获 {@code FlowException} 自定义处理逻辑。
  * </p>
  *
  * <p>
- * One resource can have multiple flow rules. FlowSlot traverses these rules
- * until one of them is triggered or all rules have been traversed.
+ * 一个资源可配置多条流控规则。FlowSlot 依次遍历这些规则，直到某条被触发或全部遍历完毕。
  * </p>
  *
  * <p>
- * Each {@link FlowRule} is mainly composed of these factors: grade, strategy, path. We
- * can combine these factors to achieve different effects.
+ * 每条 {@link FlowRule} 主要由 grade、strategy、path 等因素组成，
+ * 可组合这些因素实现不同的流控效果。
  * </p>
  *
  * <p>
- * The grade is defined by the {@code grade} field in {@link FlowRule}. Here, 0 for thread
- * isolation and 1 for request count shaping (QPS). Both thread count and request
- * count are collected in real runtime, and we can view these statistics by
- * following command:
+ * grade 由 {@link FlowRule} 的 {@code grade} 字段定义：0 表示线程隔离，1 表示请求数整形（QPS）。
+ * 线程数与请求数均在运行时实时采集，可通过以下命令查看统计：
  * </p>
  *
  * <pre>
@@ -65,71 +62,58 @@ import java.util.Collection;
  * </pre>
  *
  * <ul>
- * <li>{@code thread} for the count of threads that is currently processing the resource</li>
- * <li>{@code pass} for the count of incoming request within one second</li>
- * <li>{@code blocked} for the count of requests blocked within one second</li>
- * <li>{@code success} for the count of the requests successfully handled by Sentinel within one second</li>
- * <li>{@code RT} for the average response time of the requests within a second</li>
- * <li>{@code total} for the sum of incoming requests and blocked requests within one second</li>
- * <li>{@code 1m-pass} is for the count of incoming requests within one minute</li>
- * <li>{@code 1m-block} is for the count of a request blocked within one minute</li>
- * <li>{@code 1m-all} is the total of incoming and blocked requests within one minute</li>
- * <li>{@code exception} is for the count of business (customized) exceptions in one second</li>
+ * <li>{@code thread}：当前正在处理该资源的线程数</li>
+ * <li>{@code pass}：一秒内通过的请求数</li>
+ * <li>{@code blocked}：一秒内被阻断的请求数</li>
+ * <li>{@code success}：一秒内由 Sentinel 成功处理的请求数</li>
+ * <li>{@code RT}：一秒内请求的平均响应时间</li>
+ * <li>{@code total}：一秒内入站请求与被阻断请求的总和</li>
+ * <li>{@code 1m-pass}：一分钟内通过的请求数</li>
+ * <li>{@code 1m-block}：一分钟内被阻断的请求数</li>
+ * <li>{@code 1m-all}：一分钟内入站与被阻断请求的总和</li>
+ * <li>{@code exception}：一秒内业务（自定义）异常数</li>
  * </ul>
  *
- * This stage is usually used to protect resources from occupying. If a resource
- * takes long time to finish, threads will begin to occupy. The longer the
- * response takes, the more threads occupy.
+ * 该阶段通常用于防止资源被长时间占用。若资源处理耗时较长，线程会持续占用；
+ * 响应越慢，占用的线程越多。
  *
- * Besides counter, thread pool or semaphore can also be used to achieve this.
+ * 除计数器外，也可使用线程池或信号量实现并发控制：
  *
- * - Thread pool: Allocate a thread pool to handle these resource. When there is
- * no more idle thread in the pool, the request is rejected without affecting
- * other resources.
+ * - 线程池：为资源分配专用线程池；池中无空闲线程时直接拒绝，不影响其他资源。
  *
- * - Semaphore: Use semaphore to control the concurrent count of the threads in
- * this resource.
+ * - 信号量：用信号量控制该资源的并发线程数。
  *
- * The benefit of using thread pool is that, it can walk away gracefully when
- * time out. But it also bring us the cost of context switch and additional
- * threads. If the incoming requests is already served in a separated thread,
- * for instance, a Servlet HTTP request, it will almost double the threads count if
- * using thread pool.
+ * 线程池的优势是超时可优雅退出，但会带来上下文切换与额外线程开销。
+ * 若入站请求已在独立线程中处理（如 Servlet HTTP 请求），使用线程池几乎会使线程数翻倍。
  *
- * <h3>Traffic Shaping</h3>
+ * <h3>流量整形</h3>
  * <p>
- * When QPS exceeds the threshold, Sentinel will take actions to control the incoming request,
- * and is configured by {@code controlBehavior} field in flow rules.
+ * 当 QPS 超过阈值时，Sentinel 将按流控规则中的 {@code controlBehavior} 字段对入站请求采取控制动作。
  * </p>
  * <ol>
- * <li>Immediately reject ({@code RuleConstant.CONTROL_BEHAVIOR_DEFAULT})</li>
+ * <li>直接拒绝（{@code RuleConstant.CONTROL_BEHAVIOR_DEFAULT}）</li>
  * <p>
- * This is the default behavior. The exceeded request is rejected immediately
- * and the FlowException is thrown
+ * 默认行为：超限请求立即被拒绝并抛出 FlowException。
  * </p>
  *
- * <li>Warmup ({@code RuleConstant.CONTROL_BEHAVIOR_WARM_UP})</li>
+ * <li>预热（{@code RuleConstant.CONTROL_BEHAVIOR_WARM_UP}）</li>
  * <p>
- * If the load of system has been low for a while, and a large amount of
- * requests comes, the system might not be able to handle all these requests at
- * once. However if we steady increase the incoming request, the system can warm
- * up and finally be able to handle all the requests.
- * This warmup period can be configured by setting the field {@code warmUpPeriodSec} in flow rules.
+ * 若系统长期低负载后突然涌入大量请求，可能无法一次性全部处理。
+ * 通过逐步增加入站请求，系统可预热并最终承载全部流量。
+ * 预热时长可通过流控规则中的 {@code warmUpPeriodSec} 配置。
  * </p>
  *
- * <li>Uniform Rate Limiting ({@code RuleConstant.CONTROL_BEHAVIOR_RATE_LIMITER})</li>
+ * <li>匀速排队（{@code RuleConstant.CONTROL_BEHAVIOR_RATE_LIMITER}）</li>
  * <p>
- * This strategy strictly controls the interval between requests.
- * In other words, it allows requests to pass at a stable, uniform rate.
+ * 该策略严格控制请求间隔，以稳定、均匀的速率放行请求。
  * </p>
  * <img src="https://raw.githubusercontent.com/wiki/alibaba/Sentinel/image/uniform-speed-queue.png" style="max-width:
  * 60%;"/>
  * <p>
- * This strategy is an implement of <a href="https://en.wikipedia.org/wiki/Leaky_bucket">leaky bucket</a>.
- * It is used to handle the request at a stable rate and is often used in burst traffic (e.g. message handling).
- * When a large number of requests beyond the system’s capacity arrive
- * at the same time, the system using this strategy will handle requests and its
- * fixed rate until all the requests have been processed or time out.
+ * 该策略是<a href="https://en.wikipedia.org/wiki/Leaky_bucket">漏桶算法</a>的实现，
+ * 以恒定速率处理请求，常用于突发流量（如消息处理）场景。
+ * 当超出系统容量的大量请求同时到达时，系统以固定速率处理，
+ * 直至全部完成或超时。
  * </p>
  * </ol>
  *
@@ -146,9 +130,9 @@ public class FlowSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
     }
 
     /**
-     * Package-private for test.
+     * 包内可见，供测试使用。
      *
-     * @param checker flow rule checker
+     * @param checker 流控规则校验器
      * @since 1.6.1
      */
     FlowSlot(FlowRuleChecker checker) {

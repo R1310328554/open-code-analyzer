@@ -25,8 +25,8 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.spi.Spi;
 
 /**
- * A {@link com.alibaba.csp.sentinel.slotchain.ProcessorSlot} that is response for logging block exceptions
- * to provide concrete logs for troubleshooting.
+ * 负责记录阻断异常的 {@link com.alibaba.csp.sentinel.slotchain.ProcessorSlot}，
+ * 输出具体日志以便排查问题。
  */
 @Spi(order = Constants.ORDER_LOG_SLOT)
 public class LogSlot extends AbstractLinkedProcessorSlot<DefaultNode> {

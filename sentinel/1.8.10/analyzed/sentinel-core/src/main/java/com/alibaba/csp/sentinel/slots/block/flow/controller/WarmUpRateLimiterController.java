@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.node.Node;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
+ * 预热与匀速排队结合的流控控制器。
+ *
  * @author jialiang.linjl
  * @since 1.4.0
  */

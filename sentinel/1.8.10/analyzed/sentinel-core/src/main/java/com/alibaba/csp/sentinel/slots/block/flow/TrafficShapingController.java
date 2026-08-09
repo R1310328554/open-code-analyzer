@@ -18,28 +18,28 @@ package com.alibaba.csp.sentinel.slots.block.flow;
 import com.alibaba.csp.sentinel.node.Node;
 
 /**
- * A universal interface for traffic shaping controller.
+ * 流量整形控制器的通用接口。
  *
  * @author jialiang.linjl
  */
 public interface TrafficShapingController {
 
     /**
-     * Check whether given resource entry can pass with provided count.
+     * 校验给定资源入口在指定数量下是否可通过。
      *
-     * @param node resource node
-     * @param acquireCount count to acquire
-     * @param prioritized whether the request is prioritized
-     * @return true if the resource entry can pass; false if it should be blocked
+     * @param node 资源节点
+     * @param acquireCount 要获取的配额数
+     * @param prioritized 是否为优先级请求
+     * @return 可通过返回 true；应被阻断返回 false
      */
     boolean canPass(Node node, int acquireCount, boolean prioritized);
 
     /**
-     * Check whether given resource entry can pass with provided count.
+     * 校验给定资源入口在指定数量下是否可通过。
      *
-     * @param node resource node
-     * @param acquireCount count to acquire
-     * @return true if the resource entry can pass; false if it should be blocked
+     * @param node 资源节点
+     * @param acquireCount 要获取的配额数
+     * @return 可通过返回 true；应被阻断返回 false
      */
     boolean canPass(Node node, int acquireCount);
 }

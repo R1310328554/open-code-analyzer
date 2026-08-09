@@ -20,6 +20,9 @@ import com.alibaba.csp.sentinel.eagleeye.StatLogger;
 import com.alibaba.csp.sentinel.log.LogBase;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
+/**
+ * 阻断异常日志工具类，将流控/降级等阻断事件写入 sentinel-block.log。
+ */
 public class EagleEyeLogUtil {
 
     public static final String FILE_NAME = "sentinel-block.log";
@@ -41,6 +44,16 @@ public class EagleEyeLogUtil {
             .buildSingleton();
     }
 
+    /**
+     * 记录一次阻断事件。
+     *
+     * @param resource      资源名
+     * @param exceptionName 异常类名
+     * @param ruleLimitApp  规则限流应用
+     * @param origin        调用来源
+     * @param ruleId        规则 ID
+     * @param count         阻断数量
+     */
     public static void log(String resource, String exceptionName, String ruleLimitApp, String origin, Long ruleId, int count) {
         String ruleIdString = StringUtil.EMPTY;
         if (ruleId != null) {

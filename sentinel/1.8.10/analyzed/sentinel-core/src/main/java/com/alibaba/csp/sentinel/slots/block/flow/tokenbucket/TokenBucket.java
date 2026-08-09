@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.slots.block.flow.tokenbucket;
 
 /**
+ * 令牌桶接口，定义令牌消费与刷新操作。
+ *
  * @author LearningGp
  */
 public interface TokenBucket {
