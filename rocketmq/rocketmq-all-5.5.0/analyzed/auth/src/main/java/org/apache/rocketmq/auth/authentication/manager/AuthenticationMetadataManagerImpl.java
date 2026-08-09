@@ -32,18 +32,24 @@ import org.apache.rocketmq.auth.authorization.provider.AuthorizationMetadataProv
 import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.common.utils.ExceptionUtils;
 
+/**
+ * {@link AuthenticationMetadataManager} 默认实现：委托 Provider 持久化用户，
+ * 并在启动时初始化配置中的默认用户与内部客户端凭证。
+ */
 public class AuthenticationMetadataManagerImpl implements AuthenticationMetadataManager {
 
     private final AuthenticationMetadataProvider authenticationMetadataProvider;
 
     private final AuthorizationMetadataProvider authorizationMetadataProvider;
 
+    /** 装配认证/授权元数据提供者并执行 {@link #initUser}。 */
     public AuthenticationMetadataManagerImpl(AuthConfig authConfig) {
         this.authenticationMetadataProvider = AuthenticationFactory.getMetadataProvider(authConfig);
         this.authorizationMetadataProvider = AuthorizationFactory.getMetadataProvider(authConfig);
         this.initUser(authConfig);
     }
 
+    /** 依次关闭认证与授权元数据提供者。 */
     @Override
     public void shutdown() {
         if (this.authenticationMetadataProvider != null) {
@@ -54,6 +60,7 @@ public class AuthenticationMetadataManagerImpl implements AuthenticationMetadata
         }
     }
 
+    /** 解析 initAuthenticationUser 与 innerClientAuthenticationCredentials 并幂等创建用户。 */
     @Override
     public void initUser(AuthConfig authConfig) {
         if (authConfig == null) {
@@ -89,6 +96,7 @@ public class AuthenticationMetadataManagerImpl implements AuthenticationMetadata
         }
     }
 
+    /** 校验后创建用户，默认类型 NORMAL、状态 ENABLE。 */
     @Override
     public CompletableFuture<Void> createUser(User user) {
         CompletableFuture<Void> result = new CompletableFuture<>();
@@ -112,6 +120,7 @@ public class AuthenticationMetadataManagerImpl implements AuthenticationMetadata
         return result;
     }
 
+    /** 合并更新密码、用户类型与状态。 */
     @Override
     public CompletableFuture<Void> updateUser(User user) {
         CompletableFuture<Void> result = new CompletableFuture<>();
@@ -138,6 +147,7 @@ public class AuthenticationMetadataManagerImpl implements AuthenticationMetadata
         return result;
     }
 
+    /** 并行删除用户记录与对应 ACL。 */
     @Override
     public CompletableFuture<Void> deleteUser(String username) {
         CompletableFuture<Void> result = new CompletableFuture<>();
@@ -154,6 +164,7 @@ public class AuthenticationMetadataManagerImpl implements AuthenticationMetadata
         return result;
     }
 
+    /** 按用户名查询用户。 */
     @Override
     public CompletableFuture<User> getUser(String username) {
         CompletableFuture<User> result = new CompletableFuture<>();
@@ -168,6 +179,7 @@ public class AuthenticationMetadataManagerImpl implements AuthenticationMetadata
         return result;
     }
 
+    /** 列出符合过滤条件的用户。 */
     @Override
     public CompletableFuture<List<User>> listUser(String filter) {
         CompletableFuture<List<User>> result = new CompletableFuture<>();
@@ -179,6 +191,7 @@ public class AuthenticationMetadataManagerImpl implements AuthenticationMetadata
         return result;
     }
 
+    /** 查询用户并判断是否为超级用户。 */
     @Override
     public CompletableFuture<Boolean> isSuperUser(String username) {
         return this.getUser(username).thenApply(user -> {

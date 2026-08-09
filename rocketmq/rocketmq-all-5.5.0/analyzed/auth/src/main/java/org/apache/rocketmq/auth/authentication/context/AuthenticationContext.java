@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * 认证上下文抽象基类：承载通道 ID、RPC 标识及扩展信息。
+ */
 public abstract class AuthenticationContext {
 
     private String channelId;
@@ -28,22 +31,27 @@ public abstract class AuthenticationContext {
 
     private Map<String, Object> extInfo;
 
+    /** 返回 Netty 通道 ID。 */
     public String getChannelId() {
         return channelId;
     }
 
+    /** 设置 Netty 通道 ID。 */
     public void setChannelId(String channelId) {
         this.channelId = channelId;
     }
 
+    /** 返回 RPC 方法标识（gRPC 全名或 Remoting code）。 */
     public String getRpcCode() {
         return rpcCode;
     }
 
+    /** 设置 RPC 方法标识。 */
     public void setRpcCode(String rpcCode) {
         this.rpcCode = rpcCode;
     }
 
+    /** 按 key 读取扩展信息；key 为空或不存在时返回 null。 */
     @SuppressWarnings("unchecked")
     public <T> T getExtInfo(String key) {
         if (StringUtils.isBlank(key)) {
@@ -59,6 +67,7 @@ public abstract class AuthenticationContext {
         return (T) value;
     }
 
+    /** 写入单条扩展信息；key 或 value 无效时忽略。 */
     public void setExtInfo(String key, Object value) {
         if (StringUtils.isBlank(key) || value == null) {
             return;
@@ -69,15 +78,18 @@ public abstract class AuthenticationContext {
         this.extInfo.put(key, value);
     }
 
+    /** 判断指定 key 的扩展信息是否存在且非 null。 */
     public boolean hasExtInfo(String key) {
         Object value = getExtInfo(key);
         return value != null;
     }
 
+    /** 返回扩展信息映射（可能为 null）。 */
     public Map<String, Object> getExtInfo() {
         return extInfo;
     }
 
+    /** 批量设置扩展信息映射。 */
     public void setExtInfo(Map<String, Object> extInfo) {
         this.extInfo = extInfo;
     }

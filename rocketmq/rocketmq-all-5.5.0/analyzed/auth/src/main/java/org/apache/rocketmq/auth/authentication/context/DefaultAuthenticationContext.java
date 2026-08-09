@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.auth.authentication.context;
 
+/**
+ * 默认认证上下文：包含用户名、待签名内容与客户端提交的签名。
+ */
 public class DefaultAuthenticationContext extends AuthenticationContext {
 
     private String username;
@@ -24,26 +27,32 @@ public class DefaultAuthenticationContext extends AuthenticationContext {
 
     private String signature;
 
+    /** 返回认证用户名（accessKey）。 */
     public String getUsername() {
         return username;
     }
 
+    /** 设置认证用户名。 */
     public void setUsername(String username) {
         this.username = username;
     }
 
+    /** 返回参与签名的原始字节内容。 */
     public byte[] getContent() {
         return content;
     }
 
+    /** 设置参与签名的原始字节内容。 */
     public void setContent(byte[] content) {
         this.content = content;
     }
 
+    /** 返回客户端提交的签名字符串。 */
     public String getSignature() {
         return signature;
     }
 
+    /** 设置客户端提交的签名字符串。 */
     public void setSignature(String signature) {
         this.signature = signature;
     }

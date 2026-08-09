@@ -31,20 +31,26 @@ import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.common.chain.Handler;
 import org.apache.rocketmq.common.chain.HandlerChain;
 
+/**
+ * 默认认证责任链处理器：加载用户、校验状态并用 {@link AclSigner} 比对签名。
+ */
 public class DefaultAuthenticationHandler implements Handler<DefaultAuthenticationContext, CompletableFuture<Void>> {
 
     private final AuthenticationMetadataProvider authenticationMetadataProvider;
 
+    /** 根据配置初始化 {@link AuthenticationMetadataProvider}。 */
     public DefaultAuthenticationHandler(AuthConfig config, Supplier<?> metadataService) {
         this.authenticationMetadataProvider = AuthenticationFactory.getMetadataProvider(config, metadataService);
     }
 
+    /** 异步获取用户后执行 {@link #doAuthenticate}。 */
     @Override
     public CompletableFuture<Void> handle(DefaultAuthenticationContext context,
         HandlerChain<DefaultAuthenticationContext, CompletableFuture<Void>> chain) {
         return getUser(context).thenAccept(user -> doAuthenticate(context, user));
     }
 
+    /** 校验 username 非空后从元数据提供者加载 {@link User}。 */
     protected CompletableFuture<User> getUser(DefaultAuthenticationContext context) {
         if (this.authenticationMetadataProvider == null) {
             throw new AuthenticationException("The authenticationMetadataProvider is not configured");
@@ -55,6 +61,7 @@ public class DefaultAuthenticationHandler implements Handler<DefaultAuthenticati
         return this.authenticationMetadataProvider.getUser(context.getUsername());
     }
 
+    /** 校验用户存在、未禁用，并用 {@link MessageDigest#isEqual} 比对签名。 */
     protected void doAuthenticate(DefaultAuthenticationContext context, User user) {
         if (user == null) {
             throw new AuthenticationException("User:{} is not found.", context.getUsername());

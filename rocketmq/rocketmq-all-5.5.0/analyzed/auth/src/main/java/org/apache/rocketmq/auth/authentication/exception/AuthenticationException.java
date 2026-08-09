@@ -18,16 +18,20 @@ package org.apache.rocketmq.auth.authentication.exception;
 
 import org.slf4j.helpers.MessageFormatter;
 
+/** 认证失败时抛出的运行时异常，支持 SLF4J 风格占位符消息。 */
 public class AuthenticationException extends RuntimeException {
 
+    /** 使用固定消息构造异常。 */
     public AuthenticationException(String message) {
         super(message);
     }
 
+    /** 使用消息与根因构造异常。 */
     public AuthenticationException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** 使用 {@link MessageFormatter} 格式化占位符消息后构造异常。 */
     public AuthenticationException(String messagePattern, Object... argArray) {
         super(MessageFormatter.arrayFormat(messagePattern, argArray).getMessage());
     }

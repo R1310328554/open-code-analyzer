@@ -22,18 +22,25 @@ import org.apache.rocketmq.auth.authentication.factory.AuthenticationFactory;
 import org.apache.rocketmq.auth.authentication.strategy.AuthenticationStrategy;
 import org.apache.rocketmq.auth.config.AuthConfig;
 
+/**
+ * 认证评估器：根据 {@link AuthConfig} 装配 {@link AuthenticationStrategy}，
+ * 对 {@link AuthenticationContext} 执行认证流程。
+ */
 public class AuthenticationEvaluator {
 
     private final AuthenticationStrategy authenticationStrategy;
 
+    /** 使用默认元数据服务创建评估器。 */
     public AuthenticationEvaluator(AuthConfig authConfig) {
         this(authConfig, null);
     }
 
+    /** 指定元数据服务 Supplier 创建评估器。 */
     public AuthenticationEvaluator(AuthConfig authConfig, Supplier<?> metadataService) {
         this.authenticationStrategy = AuthenticationFactory.getStrategy(authConfig, metadataService);
     }
 
+    /** 对给定上下文执行认证；context 为 null 时直接返回。 */
     public void evaluate(AuthenticationContext context) {
         if (context == null) {
             return;

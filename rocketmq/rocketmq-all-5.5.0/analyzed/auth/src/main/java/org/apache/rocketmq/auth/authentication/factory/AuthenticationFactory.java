@@ -36,6 +36,10 @@ import org.apache.rocketmq.auth.authentication.strategy.StatelessAuthenticationS
 import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 认证组件工厂：按 {@link AuthConfig} 缓存并创建 Provider、MetadataProvider、
+ * Evaluator 与 {@link AuthenticationStrategy} 实例。
+ */
 public class AuthenticationFactory {
 
     private static final Map<String, Object> INSTANCE_MAP = new HashMap<>();
@@ -44,6 +48,7 @@ public class AuthenticationFactory {
     private static final String EVALUATOR_PREFIX = "EVALUATOR_";
 
     @SuppressWarnings("unchecked")
+    /** 获取（或创建并缓存）{@link AuthenticationProvider} 实例。 */
     public static AuthenticationProvider<AuthenticationContext> getProvider(AuthConfig config) {
         if (config == null) {
             return null;
@@ -62,15 +67,18 @@ public class AuthenticationFactory {
         });
     }
 
+    /** 获取元数据提供者（无外部 metadataService）。 */
     public static AuthenticationMetadataProvider getMetadataProvider(AuthConfig config) {
         return getMetadataProvider(config, null);
     }
 
+    /** 创建 {@link AuthenticationMetadataManagerImpl} 管理用户元数据。 */
     public static AuthenticationMetadataManager getMetadataManager(AuthConfig config) {
         return new AuthenticationMetadataManagerImpl(config);
     }
 
     @SuppressWarnings("unchecked")
+    /** 获取元数据提供者并传入 metadataService 完成 initialize。 */
     public static AuthenticationMetadataProvider getMetadataProvider(AuthConfig config, Supplier<?> metadataService) {
         if (config == null) {
             return null;
@@ -91,15 +99,18 @@ public class AuthenticationFactory {
         });
     }
 
+    /** 获取（或缓存）{@link AuthenticationEvaluator}。 */
     public static AuthenticationEvaluator getEvaluator(AuthConfig config) {
         return computeIfAbsent(EVALUATOR_PREFIX + config.getConfigName(), key -> new AuthenticationEvaluator(config));
     }
 
+    /** 获取带 metadataService 的 {@link AuthenticationEvaluator}。 */
     public static AuthenticationEvaluator getEvaluator(AuthConfig config, Supplier<?> metadataService) {
         return computeIfAbsent(EVALUATOR_PREFIX + config.getConfigName(), key -> new AuthenticationEvaluator(config, metadataService));
     }
 
     @SuppressWarnings("unchecked")
+    /** 反射创建 {@link AuthenticationStrategy}，默认 {@link StatelessAuthenticationStrategy}。 */
     public static AuthenticationStrategy getStrategy(AuthConfig config, Supplier<?> metadataService) {
         try {
             Class<? extends AuthenticationStrategy> clazz = StatelessAuthenticationStrategy.class;
@@ -112,6 +123,7 @@ public class AuthenticationFactory {
         }
     }
 
+    /** 通过 Provider 从 gRPC 请求构建 {@link AuthenticationContext}。 */
     public static AuthenticationContext newContext(AuthConfig config, Metadata metadata, GeneratedMessageV3 request) {
         AuthenticationProvider<AuthenticationContext> authenticationProvider = getProvider(config);
         if (authenticationProvider == null) {
@@ -120,6 +132,7 @@ public class AuthenticationFactory {
         return authenticationProvider.newContext(metadata, request);
     }
 
+    /** 通过 Provider 从 Remoting 命令构建 {@link AuthenticationContext}。 */
     public static AuthenticationContext newContext(AuthConfig config, ChannelHandlerContext context,
         RemotingCommand command) {
         AuthenticationProvider<AuthenticationContext> authenticationProvider = getProvider(config);

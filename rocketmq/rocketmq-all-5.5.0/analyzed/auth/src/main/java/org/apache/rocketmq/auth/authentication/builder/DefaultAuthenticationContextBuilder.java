@@ -39,11 +39,18 @@ import org.apache.rocketmq.common.constant.CommonConstants;
 import org.apache.rocketmq.common.constant.GrpcConstants;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * {@link AuthenticationContextBuilder} 默认实现：解析 gRPC Authorization 头
+ * 或 Remoting 扩展字段中的 ACL 凭证与签名。
+ */
 public class DefaultAuthenticationContextBuilder implements AuthenticationContextBuilder<DefaultAuthenticationContext> {
 
+    /** Authorization 头中 Credential 键名。 */
     private static final String CREDENTIAL = "Credential";
+    /** Authorization 头中 Signature 键名。 */
     private static final String SIGNATURE = "Signature";
 
+    /** 解析 gRPC Authorization 头中的 Credential/Signature 与 datetime 作为签名内容。 */
     @Override
     public DefaultAuthenticationContext build(Metadata metadata, GeneratedMessageV3 request) {
         try {
@@ -95,6 +102,7 @@ public class DefaultAuthenticationContextBuilder implements AuthenticationContex
         }
     }
 
+    /** 从 Remoting 扩展字段提取 accessKey/signature，并组合请求体作为签名内容。 */
     @Override
     public DefaultAuthenticationContext build(ChannelHandlerContext context, RemotingCommand request) {
         HashMap<String, String> fields = request.getExtFields();
@@ -109,7 +117,7 @@ public class DefaultAuthenticationContextBuilder implements AuthenticationContex
         }
         result.setUsername(fields.get(SessionCredentials.ACCESS_KEY));
         result.setSignature(fields.get(SessionCredentials.SIGNATURE));
-        // Content
+        // 组装待签名字节：排除 signature 字段，旧版本跳过 UNIQUE_MSG_QUERY_FLAG
         SortedMap<String, String> map = new TreeMap<>();
         for (Map.Entry<String, String> entry : fields.entrySet()) {
             if (request.getVersion() <= MQVersion.Version.V4_9_3.ordinal() &&
@@ -124,6 +132,7 @@ public class DefaultAuthenticationContextBuilder implements AuthenticationContex
         return result;
     }
 
+    /** 将十六进制签名字符串解码后转为 Base64。 */
     public String hexToBase64(String input) throws DecoderException {
         byte[] bytes = Hex.decodeHex(input);
         return Base64.encodeBase64String(bytes);

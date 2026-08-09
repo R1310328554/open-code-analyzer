@@ -19,10 +19,13 @@ package org.apache.rocketmq.auth.authentication.enums;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
 
+/** 用户账号启用/禁用状态。 */
 public enum UserStatus {
 
+    /** 账号已启用。 */
     ENABLE((byte) 1, "enable"),
 
+    /** 账号已禁用，认证将被拒绝。 */
     DISABLE((byte) 2, "disable");
 
     @JSONField(value = true)
@@ -35,6 +38,7 @@ public enum UserStatus {
         this.name = name;
     }
 
+    /** 按名称（忽略大小写）查找用户状态。 */
     public static UserStatus getByName(String name) {
         for (UserStatus subjectType : UserStatus.values()) {
             if (StringUtils.equalsIgnoreCase(subjectType.getName(), name)) {
@@ -44,10 +48,12 @@ public enum UserStatus {
         return null;
     }
 
+    /** 返回持久化用的数值编码。 */
     public byte getCode() {
         return code;
     }
 
+    /** 返回可读名称。 */
     public String getName() {
         return name;
     }

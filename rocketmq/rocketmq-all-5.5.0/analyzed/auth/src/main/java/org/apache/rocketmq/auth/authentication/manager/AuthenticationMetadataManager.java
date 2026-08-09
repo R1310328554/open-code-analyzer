@@ -21,21 +21,32 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.rocketmq.auth.authentication.model.User;
 import org.apache.rocketmq.auth.config.AuthConfig;
 
+/**
+ * 认证元数据管理接口：用户 CRUD 及超级用户判定。
+ */
 public interface AuthenticationMetadataManager {
 
+    /** 关闭底层元数据提供者。 */
     void shutdown();
 
+    /** 根据配置初始化默认用户与内部客户端凭证。 */
     void initUser(AuthConfig authConfig);
 
+    /** 创建新用户。 */
     CompletableFuture<Void> createUser(User user);
 
+    /** 更新已有用户的密码、类型或状态。 */
     CompletableFuture<Void> updateUser(User user);
 
+    /** 删除用户并同步清理 ACL。 */
     CompletableFuture<Void> deleteUser(String username);
 
+    /** 按用户名查询用户。 */
     CompletableFuture<User> getUser(String username);
 
+    /** 按过滤条件列出用户。 */
     CompletableFuture<List<User>> listUser(String filter);
 
+    /** 判断用户是否为 {@link UserType#SUPER}。 */
     CompletableFuture<Boolean> isSuperUser(String username);
 }

@@ -21,17 +21,25 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.auth.authentication.enums.SubjectType;
 import org.apache.rocketmq.common.constant.CommonConstants;
 
+/**
+ * 授权主体抽象：提供 subjectKey 与 {@link SubjectType}，
+ * 支持从 "Type:Name" 格式字符串反序列化。
+ */
 public interface Subject {
 
+    /** 返回 "SubjectType:identifier" 格式的主体键，不参与 JSON 序列化。 */
     @JSONField(serialize = false)
     String getSubjectKey();
 
+    /** 返回主体类型枚举。 */
     SubjectType getSubjectType();
 
+    /** 判断当前主体是否属于指定类型。 */
     default boolean isSubject(SubjectType subjectType) {
         return subjectType == this.getSubjectType();
     }
 
+    /** 解析 subjectKey 并构造对应 {@link Subject} 实例（当前支持 User）。 */
     @SuppressWarnings("unchecked")
     static <T extends Subject> T of(String subjectKey) {
         String type = StringUtils.substringBefore(subjectKey, CommonConstants.COLON);

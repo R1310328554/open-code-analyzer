@@ -19,8 +19,10 @@ package org.apache.rocketmq.auth.authentication.enums;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
 
+/** 授权主体类型枚举，用于解析 subjectKey 前缀。 */
 public enum SubjectType {
 
+    /** 普通用户主体。 */
     USER((byte) 1, "User");
 
     @JSONField(value = true)
@@ -32,6 +34,7 @@ public enum SubjectType {
         this.name = name;
     }
 
+    /** 按名称（忽略大小写）查找主体类型。 */
     public static SubjectType getByName(String name) {
         for (SubjectType subjectType : SubjectType.values()) {
             if (StringUtils.equalsIgnoreCase(subjectType.getName(), name)) {
@@ -41,10 +44,12 @@ public enum SubjectType {
         return null;
     }
 
+    /** 返回持久化用的数值编码。 */
     public byte getCode() {
         return code;
     }
 
+    /** 返回可读名称。 */
     public String getName() {
         return name;
     }

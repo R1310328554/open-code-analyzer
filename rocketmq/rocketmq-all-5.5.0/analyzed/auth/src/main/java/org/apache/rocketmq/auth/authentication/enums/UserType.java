@@ -19,10 +19,13 @@ package org.apache.rocketmq.auth.authentication.enums;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
 
+/** 用户类型：超级用户拥有更高权限。 */
 public enum UserType {
 
+    /** 超级用户，可绕过部分 ACL 限制。 */
     SUPER((byte) 1, "Super"),
 
+    /** 普通用户。 */
     NORMAL((byte) 2, "Normal");
 
     @JSONField(value = true)
@@ -35,6 +38,7 @@ public enum UserType {
         this.name = name;
     }
 
+    /** 按名称（忽略大小写）查找用户类型。 */
     public static UserType getByName(String name) {
         for (UserType subjectType : UserType.values()) {
             if (StringUtils.equalsIgnoreCase(subjectType.getName(), name)) {
@@ -44,10 +48,12 @@ public enum UserType {
         return null;
     }
 
+    /** 返回持久化用的数值编码。 */
     public byte getCode() {
         return code;
     }
 
+    /** 返回可读名称。 */
     public String getName() {
         return name;
     }

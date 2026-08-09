@@ -21,9 +21,16 @@ import io.grpc.Metadata;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 认证上下文构建器：从 gRPC 或 Remoting 请求中提取认证所需字段。
+ *
+ * @param <AuthenticationContext> 构建的目标上下文类型
+ */
 public interface AuthenticationContextBuilder<AuthenticationContext> {
 
+    /** 从 gRPC {@link Metadata} 与 Protobuf 请求构建认证上下文。 */
     AuthenticationContext build(Metadata metadata, GeneratedMessageV3 request);
 
+    /** 从 Netty 通道上下文与 {@link RemotingCommand} 构建认证上下文。 */
     AuthenticationContext build(ChannelHandlerContext context, RemotingCommand request);
 }
