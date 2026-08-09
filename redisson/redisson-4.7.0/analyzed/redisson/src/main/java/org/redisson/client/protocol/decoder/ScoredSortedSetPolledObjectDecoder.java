@@ -24,12 +24,18 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * 
+ * 阻塞弹出有序集合（BZPOPMIN/BZPOPMAX 等）的单条结果解码器。
+ * <p>
+ * 响应形如 {@code [key, member, score]} 三元组；
+ * 本解码器仅返回 member（索引 1），空响应返回 null。
+ * paramNum 0 为 key（String）、2 为 score（Double），member 走默认 codec。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ScoredSortedSetPolledObjectDecoder implements MultiDecoder<Object> {
 
+    /** 非空时取 parts[1] 作为弹出的 member 对象。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (!parts.isEmpty()) {
@@ -38,6 +44,7 @@ public class ScoredSortedSetPolledObjectDecoder implements MultiDecoder<Object> 
         return null;
     }
 
+    /** key 用 StringCodec，score 用 DoubleCodec，member 用默认解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum == 0) {

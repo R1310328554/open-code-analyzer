@@ -22,13 +22,18 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 
+ * 集合型 RESP 数组回放解码器。
+ * <p>
+ * 将已逐段解码的 parts 直接包装为 {@link LinkedHashSet}，
+ * 保留 Redis 返回元素的顺序并自动去重。
+ *
  * @author Nikita Koksharov
  *
  * @param <T> value type
  */
 public class ObjectSetReplayDecoder<T> implements MultiDecoder<Set<T>> {
 
+    /** 用 parts 构造 LinkedHashSet，维持服务端顺序。 */
     @Override
     public Set<T> decode(List<Object> parts, State state) {
         return new LinkedHashSet(parts);

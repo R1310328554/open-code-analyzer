@@ -25,6 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 带附加属性的有序集合条目列表解码器。
+ * <p>
+ * 解析扁平三元组 {@code [member, score, attributes]} 序列，
+ * 每三条记录组装为一个 {@link ScoreAttributesEntry}。
+ * 中间 score 字段（索引 % 3 == 1）使用 {@link DoubleCodec} 解码。
  *
  * @author seakider
  *
@@ -32,6 +37,7 @@ import java.util.List;
  */
 public class ScoredAttributesReplayDecoder<T> implements MultiDecoder<List<ScoreAttributesEntry<T>>> {
 
+    /** 每三条中的第二条（score）固定用 DoubleCodec，其余走默认 codec。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 3 == 1) {
@@ -41,6 +47,7 @@ public class ScoredAttributesReplayDecoder<T> implements MultiDecoder<List<Score
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
 
+    /** 步长 3 遍历 parts，构造 ScoreAttributesEntry 列表。 */
     @Override
     public List<ScoreAttributesEntry<T>> decode(List<Object> parts, State state) {
         List<ScoreAttributesEntry<T>> result = new ArrayList<>();

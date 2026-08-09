@@ -24,13 +24,18 @@ import org.redisson.client.protocol.ScoredEntry;
 import java.util.List;
 
 /**
- * 
+ * 单条有序集合条目回放解码器（V2）。
+ * <p>
+ * 解析仅含一对 {@code [member, score]} 的短响应，
+ * 直接构造单个 {@link ScoredEntry}；奇数索引 score 用 {@link DoubleCodec}。
+ *
  * @author Nikita Koksharov
  *
  * @param <T> type
  */
 public class ScoredSortedSetReplayDecoderV2<T> implements MultiDecoder<ScoredEntry<T>> {
 
+    /** 奇数索引为 score，偶数索引为 member。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
@@ -39,6 +44,7 @@ public class ScoredSortedSetReplayDecoderV2<T> implements MultiDecoder<ScoredEnt
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 从 [member, score] 构造单个 ScoredEntry。 */
     @Override
     public ScoredEntry<T> decode(List<Object> parts, State state) {
         return new ScoredEntry<T>(((Number) parts.get(1)).doubleValue(), (T) parts.get(0));

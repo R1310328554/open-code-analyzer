@@ -21,13 +21,18 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * 
+ * 有序集合扫描（ZSCAN）游标结果解码器。
+ * <p>
+ * 继承 {@link ObjectListReplayDecoder} 的列表回放能力，
+ * 针对 WITHSCORES 响应在奇数索引处注入 {@link DoubleCodec} 解码 score。
+ *
  * @author Nikita Koksharov
  *
  * @param <T> type
  */
 public class ScoredSortedSetScanDecoder<T> extends ObjectListReplayDecoder<T> {
 
+    /** 奇数索引为 score（Double），偶数索引沿用父类 member 解码策略。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {

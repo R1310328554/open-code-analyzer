@@ -25,13 +25,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ * 有序集合条目列表回放解码器。
+ * <p>
+ * 将扁平 {@code [member, score, member, score, ...]} 数组转为
+ * {@code List<ScoredEntry<T>>}；奇数索引（score）使用 {@link DoubleCodec}。
+ *
  * @author Nikita Koksharov
  *
  * @param <T> type
  */
 public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<ScoredEntry<T>>> {
 
+    /** 奇数索引为 score，偶数索引为 member（默认 codec）。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
@@ -40,6 +45,7 @@ public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<Scored
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 步长 2 遍历 parts，组装 ScoredEntry 列表。 */
     @Override
     public List<ScoredEntry<T>> decode(List<Object> parts, State state) {
         List<ScoredEntry<T>> result = new ArrayList<>();

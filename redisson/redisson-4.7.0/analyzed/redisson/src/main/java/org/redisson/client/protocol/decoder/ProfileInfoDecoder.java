@@ -21,20 +21,23 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Helper used by {@link SearchProfileResultDecoder} and
- * {@link AggregateProfileResultDecoder} to convert a flat list of alternating
- * keys and values into a {@link Map}. This encoding is used both by the
- * {@code FT.PROFILE} profile information section and by RESP3 maps that have
- * been flattened by {@link ObjectListReplayDecoder}.
+ * 搜索性能剖析（Profile）信息的扁平列表转 Map 工具类。
+ * <p>
+ * 供 {@link SearchProfileResultDecoder} 与 {@link AggregateProfileResultDecoder}
+ * 共用：将交替排列的 key/value 扁平列表转为 {@link Map}。
+ * 该编码既用于 {@code FT.PROFILE} 的 profile 信息段，也用于经
+ * {@link ObjectListReplayDecoder} 展平后的 RESP3 Map。
  *
  * @author Nikita Koksharov
  *
  */
 final class ProfileInfoDecoder {
 
+    /** 工具类禁止实例化。 */
     private ProfileInfoDecoder() {
     }
 
+    /** 按步长 2 遍历 parts，将 [k0,v0,k1,v1,...] 聚合为 LinkedHashMap。 */
     static Map<String, Object> toMap(List<Object> parts) {
         if (parts == null || parts.isEmpty()) {
             return Collections.emptyMap();

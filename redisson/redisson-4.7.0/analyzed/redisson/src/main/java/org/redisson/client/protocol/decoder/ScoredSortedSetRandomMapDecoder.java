@@ -25,12 +25,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * 有序集合随机成员（ZRANDMEMBER WITHSCORES）Map 解码器。
+ * <p>
+ * 继承 {@link ObjectMapReplayDecoder} 的扁平 [member, score, ...] 解析，
+ * 并针对 RESP3 嵌套 Map 列表做特殊处理：将多个 Map 条目合并为单一 Map。
+ * 奇数索引（score）固定使用 {@link DoubleCodec}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ScoredSortedSetRandomMapDecoder extends ObjectMapReplayDecoder<Object, Object> {
 
+    /** 偶数索引走父类 codec 策略，奇数索引（score）用 DoubleCodec。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 == 0) {
@@ -39,6 +45,7 @@ public class ScoredSortedSetRandomMapDecoder extends ObjectMapReplayDecoder<Obje
         return DoubleCodec.INSTANCE.getValueDecoder();
     }
 
+    /** RESP3 嵌套 Map 列表时展平合并，否则委托父类扁平解析。 */
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         if (!parts.isEmpty() && parts.get(0) instanceof Map) {

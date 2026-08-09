@@ -24,12 +24,18 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * 嵌套键值对 Map 回放解码器（第二版）。
+ * <p>
+ * 与 {@link ObjectMapReplayDecoder} 处理扁平 [k1,v1,k2,v2,...] 不同，
+ * 本解码器接收外层 List，其中每个元素为 {@code [key, value]} 二元组，
+ * 过滤 null 后聚合为保持插入顺序的 {@code Map<Object, Object>}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ObjectMapReplayDecoder2 implements MultiDecoder<Map<Object, Object>> {
 
+    /** 将嵌套 [[k,v],...] 结构转为 LinkedHashMap，重复键保留首次出现。 */
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         List<List<Object>> list = (List<List<Object>>) (Object) parts;

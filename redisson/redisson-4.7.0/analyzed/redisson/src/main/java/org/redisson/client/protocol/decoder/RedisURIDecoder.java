@@ -24,23 +24,31 @@ import org.redisson.misc.RedisURI;
 import java.util.List;
 
 /**
- * 
+ * Redis 节点地址（host + port）解码器。
+ * <p>
+ * 将 {@code [host, port]} 字符串对组装为 {@link RedisURI}，
+ * scheme 由构造参数指定（如 {@code redis}、{@code rediss}）。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedisURIDecoder implements MultiDecoder<RedisURI> {
 
+    /** URI 协议前缀，例如 redis 或 rediss。 */
     private final String scheme;
 
+    /** 指定连接协议 scheme。 */
     public RedisURIDecoder(String scheme) {
         this.scheme = scheme;
     }
 
+    /** host 与 port 均按字符串解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     
+    /** 解析 host/port 构造 RedisURI，空响应返回 null。 */
     @Override
     public RedisURI decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

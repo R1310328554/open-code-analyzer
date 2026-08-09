@@ -25,18 +25,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ * 有序集合扫描（ZSCAN）结果解码器。
+ * <p>
+ * 解析 {@code [cursor, [member, score, member, score, ...]]} 结构，
+ * 将游标与 {@link ScoredEntry} 列表封装为 {@link ListScanResult}。
+ * 所有字段均按字符串解码（游标与 member）。
+ *
  * @author Nikita Koksharov
  *
  * @param <T> type
  */
 public class ScoredEntryScanDecoder<T> implements MultiDecoder<ListScanResult<ScoredEntry<T>>> {
 
+    /** 游标与 member 均使用 StringCodec。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     
+    /** 提取 cursor 并步长 2 解析 member/score 对。 */
     @Override
     public ListScanResult<ScoredEntry<T>> decode(List<Object> parts, State state) {
         List<ScoredEntry<T>> result = new ArrayList<>();

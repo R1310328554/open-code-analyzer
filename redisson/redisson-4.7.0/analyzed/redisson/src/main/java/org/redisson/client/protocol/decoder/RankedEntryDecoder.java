@@ -25,12 +25,17 @@ import org.redisson.client.protocol.RankedEntry;
 import java.util.List;
 
 /**
- * 
+ * 带排名的有序集合条目解码器。
+ * <p>
+ * 解析 {@code [rank, score]} 二元组为 {@link RankedEntry}：
+ * 偶数索引用 {@link LongCodec} 解码排名，奇数索引用 {@link DoubleCodec} 解码分值。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RankedEntryDecoder implements MultiDecoder<RankedEntry<?>> {
 
+    /** 奇数索引为 score（Double），偶数索引为 rank（Long）。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
@@ -39,6 +44,7 @@ public class RankedEntryDecoder implements MultiDecoder<RankedEntry<?>> {
         return LongCodec.INSTANCE.getValueDecoder();
     }
 
+    /** 将 [rank, score] 组装为 RankedEntry，空列表返回 null。 */
     @Override
     public RankedEntry<?> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

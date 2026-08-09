@@ -25,14 +25,20 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * Redis Stream 待处理汇总（XPENDING 概览）解码器。
+ * <p>
+ * 解析 {@code [total, min_id, max_id, [[consumer, count], ...]]} 结构，
+ * 组装为 {@link PendingResult}，含各消费者的待处理消息计数。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PendingResultDecoder implements MultiDecoder<Object> {
 
+    /** 流消息 ID 转换器，用于 min/max 边界 ID。 */
     private final StreamIdConvertor convertor = new StreamIdConvertor();
 
+    /** 汇总待处理总数、ID 范围及按消费者分组的计数。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
