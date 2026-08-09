@@ -258,16 +258,15 @@ public class ResourceBundleMessageSource extends AbstractResourceBasedMessageSou
 	}
 
 	/**
-	 * Load a property-based resource bundle from the given reader.
-	 * <p>This will be called in case of a {@linkplain #setDefaultCharset "defaultCharset"},
-	 * including {@link ResourceBundleMessageSource}'s default ISO-8859-1 encoding.
-	 * Note that this method can only be called with a {@code ResourceBundle.Control}:
-	 * When running on the JDK 9+ module path where such control handles are not
-	 * supported, any overrides in custom subclasses will effectively get ignored.
-	 * <p>The default implementation returns a {@link PropertyResourceBundle}.
-	 * @param reader the reader for the target resource
-	 * @return the fully loaded bundle
-	 * @throws IOException in case of I/O failure
+	 * 从给定 Reader 加载基于属性的资源包。
+	 * <p>在设置了 {@linkplain #setDefaultCharset "defaultCharset"} 时调用，
+	 * 包括 ResourceBundleMessageSource 默认的 ISO-8859-1 编码。
+	 * 注意此方法仅能在有 {@code ResourceBundle.Control} 时调用：
+	 * 在 JDK 9+ 模块路径上不支持此类控制句柄时，自定义子类中的覆盖实际上被忽略。
+	 * <p>默认实现返回 {@link PropertyResourceBundle}。
+	 * @param reader 目标资源的 Reader
+	 * @return 完全加载的 bundle
+	 * @throws IOException I/O 失败时
 	 * @since 4.2
 	 * @see #loadBundle(InputStream)
 	 * @see PropertyResourceBundle#PropertyResourceBundle(Reader)
@@ -277,19 +276,16 @@ public class ResourceBundleMessageSource extends AbstractResourceBasedMessageSou
 	}
 
 	/**
-	 * Load a property-based resource bundle from the given input stream,
-	 * picking up the default properties encoding on JDK 9+.
-	 * <p>This will only be called with {@linkplain #setDefaultCharset "defaultCharset"}
-	 * set to {@code null}, explicitly enforcing the platform default encoding
-	 * (which is UTF-8 with an ISO-8859-1 fallback on JDK 9+ but configurable
-	 * through the "java.util.PropertyResourceBundle.encoding" system property).
-	 * Note that this method can only be called with a {@code ResourceBundle.Control}:
-	 * When running on the JDK 9+ module path where such control handles are not
-	 * supported, any overrides in custom subclasses will effectively get ignored.
-	 * <p>The default implementation returns a {@link PropertyResourceBundle}.
-	 * @param inputStream the input stream for the target resource
-	 * @return the fully loaded bundle
-	 * @throws IOException in case of I/O failure
+	 * 从给定输入流加载基于属性的资源包，在 JDK 9+ 上使用默认 properties 编码。
+	 * <p>仅在 {@linkplain #setDefaultCharset "defaultCharset"} 设为 {@code null} 时调用，
+	 * 显式强制平台默认编码（JDK 9+ 上为 UTF-8 并回退 ISO-8859-1，
+	 * 可通过 "java.util.PropertyResourceBundle.encoding" 系统属性配置）。
+	 * 注意此方法仅能在有 {@code ResourceBundle.Control} 时调用：
+	 * 在 JDK 9+ 模块路径上不支持此类控制句柄时，自定义子类中的覆盖实际上被忽略。
+	 * <p>默认实现返回 {@link PropertyResourceBundle}。
+	 * @param inputStream 目标资源的输入流
+	 * @return 完全加载的 bundle
+	 * @throws IOException I/O 失败时
 	 * @since 5.1
 	 * @see #loadBundle(Reader)
 	 * @see PropertyResourceBundle#PropertyResourceBundle(InputStream)
@@ -299,14 +295,12 @@ public class ResourceBundleMessageSource extends AbstractResourceBasedMessageSou
 	}
 
 	/**
-	 * Return a MessageFormat for the given bundle and code,
-	 * fetching already generated MessageFormats from the cache.
-	 * @param bundle the ResourceBundle to work on
-	 * @param code the message code to retrieve
-	 * @param locale the Locale to use to build the MessageFormat
-	 * @return the resulting MessageFormat, or {@code null} if no message
-	 * defined for the given code
-	 * @throws MissingResourceException if thrown by the ResourceBundle
+	 * 返回给定 bundle 与代码的 MessageFormat，从缓存获取已生成的实例。
+	 * @param bundle 要操作的 ResourceBundle
+	 * @param code 要检索的消息代码
+	 * @param locale 构建 MessageFormat 使用的区域
+	 * @return 得到的 MessageFormat，给定代码未定义消息则为 {@code null}
+	 * @throws MissingResourceException 若 ResourceBundle 抛出
 	 */
 	protected @Nullable MessageFormat getMessageFormat(ResourceBundle bundle, String code, Locale locale)
 			throws MissingResourceException {
@@ -340,15 +334,13 @@ public class ResourceBundleMessageSource extends AbstractResourceBasedMessageSou
 	}
 
 	/**
-	 * Efficiently retrieve the String value for the specified key,
-	 * or return {@code null} if not found.
-	 * <p>As of 4.2, the default implementation checks {@code containsKey}
-	 * before it attempts to call {@code getString} (which would require
-	 * catching {@code MissingResourceException} for key not found).
-	 * <p>Can be overridden in subclasses.
-	 * @param bundle the ResourceBundle to perform the lookup in
-	 * @param key the key to look up
-	 * @return the associated value, or {@code null} if none
+	 * 高效检索指定键的字符串值，未找到则返回 {@code null}。
+	 * <p>自 4.2 起，默认实现先调用 {@code containsKey} 再调用 {@code getString}
+	 * （否则需捕获键未找到的 {@code MissingResourceException}）。
+	 * <p>子类可覆盖。
+	 * @param bundle 执行查找的 ResourceBundle
+	 * @param key 要查找的键
+	 * @return 关联值，无则为 {@code null}
 	 * @since 4.2
 	 * @see ResourceBundle#getString(String)
 	 * @see ResourceBundle#containsKey(String)
@@ -359,15 +351,14 @@ public class ResourceBundleMessageSource extends AbstractResourceBasedMessageSou
 				return bundle.getString(key);
 			}
 			catch (MissingResourceException ex) {
-				// Assume key not found for some other reason
-				// -> do NOT throw the exception to allow for checking parent message source.
+				// 假定因其他原因未找到键，不抛异常以便检查父消息源
 			}
 		}
 		return null;
 	}
 
 	/**
-	 * Show the configuration of this MessageSource.
+	 * 显示本 MessageSource 的配置信息。
 	 */
 	@Override
 	public String toString() {
@@ -376,9 +367,8 @@ public class ResourceBundleMessageSource extends AbstractResourceBasedMessageSou
 
 
 	/**
-	 * Custom implementation of {@code ResourceBundle.Control}, adding support
-	 * for custom file encodings, deactivating the fallback to the system locale
-	 * and activating ResourceBundle's native cache, if desired.
+	 * {@code ResourceBundle.Control} 的自定义实现，增加自定义文件编码支持、
+	 * 禁用回退到系统区域，并按需激活 ResourceBundle 原生缓存。
 	 */
 	private class MessageSourceControl extends ResourceBundle.Control {
 
@@ -386,7 +376,7 @@ public class ResourceBundleMessageSource extends AbstractResourceBasedMessageSou
 		public @Nullable ResourceBundle newBundle(String baseName, Locale locale, String format, ClassLoader loader, boolean reload)
 				throws IllegalAccessException, InstantiationException, IOException {
 
-			// Special handling of default encoding
+			// 默认编码的特殊处理
 			if (format.equals("java.properties")) {
 				String bundleName = toBundleName(baseName, locale);
 				final String resourceName = toResourceName(bundleName, "properties");
@@ -424,7 +414,7 @@ public class ResourceBundleMessageSource extends AbstractResourceBasedMessageSou
 				}
 			}
 			else {
-				// Delegate handling of "java.class" format to standard Control
+				// 将 "java.class" 格式委托给标准 Control
 				return super.newBundle(baseName, locale, format, loader, reload);
 			}
 		}
