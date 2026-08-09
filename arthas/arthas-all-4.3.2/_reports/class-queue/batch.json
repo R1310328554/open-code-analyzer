@@ -15,23 +15,8 @@
     "core/src/main/java/com/taobao/arthas/core/mcp/ArthasMcpServer.java",
     "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/AbstractArthasTool.java",
     "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/StreamableToolUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/basic1000/OptionsTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/basic1000/StopTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/basic1000/VersionTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/basic1000/ViewFileTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/DashboardTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/GetStaticTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/HeapdumpTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/JvmTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/MBeanTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/MemoryTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/OgnlTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/PerfCounterTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/SysEnvTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/SysPropTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/ThreadTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/VMOptionTool.java"
+    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/basic1000/OptionsTool.java"
   ],
   "remaining_pending": 345,
-  "done": 420
+  "done": 435
 }
