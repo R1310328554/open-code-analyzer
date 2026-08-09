@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:35:44Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/RMapAsync.java",
-    "redisson/src/main/java/org/redisson/api/RMapCache.java",
-    "redisson/src/main/java/org/redisson/api/RMapCacheAsync.java",
-    "redisson/src/main/java/org/redisson/api/RMapCacheNative.java",
-    "redisson/src/main/java/org/redisson/api/RMapCacheNativeAsync.java",
-    "redisson/src/main/java/org/redisson/api/RMapCacheNativeReactive.java",
-    "redisson/src/main/java/org/redisson/api/RMapCacheNativeRx.java",
-    "redisson/src/main/java/org/redisson/api/RMapCacheReactive.java",
-    "redisson/src/main/java/org/redisson/api/RMapCacheRx.java",
-    "redisson/src/main/java/org/redisson/api/RMapReactive.java",
-    "redisson/src/main/java/org/redisson/api/RMapRx.java",
-    "redisson/src/main/java/org/redisson/api/RPermitExpirableSemaphoreRx.java",
-    "redisson/src/main/java/org/redisson/api/RScoredSortedSet.java",
-    "redisson/src/main/java/org/redisson/api/RScoredSortedSetAsync.java",
-    "redisson/src/main/java/org/redisson/api/RScoredSortedSetReactive.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1052,
-  "done": 1755
+  "done": 1770
 }
