@@ -19,14 +19,15 @@ import io.micronaut.context.annotation.EachProperty;
 import io.micronaut.context.annotation.Parameter;
 
 /**
- * Micronaut Cache settings.
+ * {@code redisson.caches-native.<name>} Native Map 缓存的 Micronaut 配置绑定。
+ * <p>使用 {@link RMapCacheNative}，适合服务端原生过期语义。
  *
  * @author Nikita Koksharov
- *
  */
 @EachProperty("redisson.caches-native")
 public class RedissonCacheNativeConfiguration extends BaseCacheConfiguration {
 
+    /** @param name 配置键后缀，即 Native 缓存逻辑名称 */
     public RedissonCacheNativeConfiguration(@Parameter String name) {
         super(name);
     }

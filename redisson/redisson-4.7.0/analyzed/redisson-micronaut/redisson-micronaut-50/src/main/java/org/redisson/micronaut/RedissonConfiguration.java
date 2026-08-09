@@ -30,17 +30,19 @@ import org.redisson.connection.ConnectionListener;
 import java.util.Collection;
 
 /**
+ * Micronaut {@link ConfigurationProperties} 绑定的 Redisson {@link Config}（Micronaut 5.x）。
+ * <p>构造时扫描 {@code redisson.*} 属性自动选择服务器模式并绑定子配置。
  *
  * @author Nikita Koksharov
- *
  */
 @ConfigurationProperties("redisson")
 @Requires(missingBeans = Config.class)
 @Requires(property = "redisson")
 public class RedissonConfiguration extends Config {
 
+    /** 根据 application 配置初始化部署模式与 codec/nettyHook 等扩展组件。 */
     @Inject
-    public RedissonConfiguration(Environment propertyResolver) {
+    public RedissonConfiguration(PropertySourcePropertyResolver propertyResolver) {
         Collection<String> props = propertyResolver.getProperties("redisson", StringConvention.CAMEL_CASE).keySet();
         for (String prop : props) {
             if (prop.startsWith("clusterServersConfig")) {
@@ -78,36 +80,42 @@ public class RedissonConfiguration extends Config {
         }
     }
 
+    /** Micronaut 绑定入口：{@code redisson.single-server-config.*}。 */
     @Override
     @ConfigurationBuilder("singleServerConfig")
     public SingleServerConfig getSingleServerConfig() {
         return super.getSingleServerConfig();
     }
 
+    /** Micronaut 绑定入口：{@code redisson.cluster-servers-config.*}。 */
     @Override
     @ConfigurationBuilder(value = "clusterServersConfig")
     public ClusterServersConfig getClusterServersConfig() {
         return super.getClusterServersConfig();
     }
 
+    /** Micronaut 绑定入口：{@code redisson.replicated-servers-config.*}。 */
     @Override
     @ConfigurationBuilder(value = "replicatedServersConfig")
     public ReplicatedServersConfig getReplicatedServersConfig() {
         return super.getReplicatedServersConfig();
     }
 
+    /** Micronaut 绑定入口：{@code redisson.sentinel-servers-config.*}。 */
     @Override
     @ConfigurationBuilder(value = "sentinelServersConfig")
     public SentinelServersConfig getSentinelServersConfig() {
         return super.getSentinelServersConfig();
     }
 
+    /** Micronaut 绑定入口：{@code redisson.master-slave-servers-config.*}。 */
     @Override
     @ConfigurationBuilder(value = "masterSlaveServersConfig")
     public MasterSlaveServersConfig getMasterSlaveServersConfig() {
         return super.getMasterSlaveServersConfig();
     }
 
+    /** 通过反射按类名实例化 {@link Codec} 并设置到配置。 */
     public Config setCodec(String className) {
         try {
             Codec codec = (Codec) Class.forName(className).getDeclaredConstructor().newInstance();
@@ -117,6 +125,7 @@ public class RedissonConfiguration extends Config {
         }
     }
 
+    /** 通过反射按类名实例化 {@link NettyHook} 并设置到配置。 */
     public Config setNettyHook(String className) {
         try {
             NettyHook nettyHook = (NettyHook) Class.forName(className).getDeclaredConstructor().newInstance();
@@ -126,6 +135,7 @@ public class RedissonConfiguration extends Config {
         }
     }
 
+    /** 通过反射按类名实例化 {@link AddressResolverGroupFactory} 并设置到配置。 */
     public Config setAddressResolverGroupFactory(String className) {
         try {
             AddressResolverGroupFactory value = (AddressResolverGroupFactory) Class.forName(className).getDeclaredConstructor().newInstance();
@@ -135,6 +145,7 @@ public class RedissonConfiguration extends Config {
         }
     }
 
+    /** 通过反射按类名实例化 {@link ConnectionListener} 并设置到配置。 */
     public Config setConnectionListener(String className) {
         try {
             ConnectionListener connectionListener = (ConnectionListener) Class.forName(className).getDeclaredConstructor().newInstance();
