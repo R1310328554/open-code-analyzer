@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/RSortableAsync.java",
     "redisson/src/main/java/org/redisson/api/RSortableReactive.java",
     "redisson/src/main/java/org/redisson/api/RSortableRx.java",
-    "redisson/src/main/java/org/redisson/api/RSortedSet.java",
-    "redisson/src/main/java/org/redisson/api/RTDigest.java",
-    "redisson/src/main/java/org/redisson/api/RTDigestAsync.java",
-    "redisson/src/main/java/org/redisson/api/RTDigestReactive.java",
-    "redisson/src/main/java/org/redisson/api/RTDigestRx.java",
-    "redisson/src/main/java/org/redisson/api/RTopK.java",
-    "redisson/src/main/java/org/redisson/api/RTopKAsync.java",
-    "redisson/src/main/java/org/redisson/api/RTopKReactive.java",
-    "redisson/src/main/java/org/redisson/api/RTopKRx.java",
-    "redisson/src/main/java/org/redisson/api/RTopic.java",
-    "redisson/src/main/java/org/redisson/api/RTopicAsync.java",
-    "redisson/src/main/java/org/redisson/api/RTopicReactive.java",
-    "redisson/src/main/java/org/redisson/api/RTopicRx.java",
-    "redisson/src/main/java/org/redisson/api/RTransaction.java",
-    "redisson/src/main/java/org/redisson/api/RTransactionReactive.java",
-    "redisson/src/main/java/org/redisson/api/RTransactionRx.java"
+    "redisson/src/main/java/org/redisson/api/RSortedSet.java"
   ],
   "remaining_pending": 1322,
-  "done": 1470
+  "done": 1485
 }
