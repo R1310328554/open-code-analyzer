@@ -20,28 +20,8 @@
     "spring-aop/src/main/java/org/springframework/aop/framework/CoroutinesUtils.java",
     "spring-aop/src/main/java/org/springframework/aop/framework/DefaultAdvisorChainFactory.java",
     "spring-aop/src/main/java/org/springframework/aop/framework/DefaultAopProxyFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/InterceptorAndDynamicMethodMatcher.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/JdkDynamicAopProxy.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/ObjenesisCglibAopProxy.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/ProxyConfig.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/ProxyCreatorSupport.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/ProxyFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/ProxyProcessorSupport.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/ReflectiveMethodInvocation.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/AdvisorAdapter.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/AdvisorAdapterRegistrationManager.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/AdvisorAdapterRegistry.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/AfterReturningAdviceAdapter.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/AfterReturningAdviceInterceptor.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/DefaultAdvisorAdapterRegistry.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/GlobalAdvisorAdapterRegistry.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/MethodBeforeAdviceAdapter.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/MethodBeforeAdviceInterceptor.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/ThrowsAdviceAdapter.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/ThrowsAdviceInterceptor.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/adapter/UnknownAdviceTypeException.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/autoproxy/AbstractAdvisorAutoProxyCreator.java"
+    "spring-aop/src/main/java/org/springframework/aop/framework/InterceptorAndDynamicMethodMatcher.java"
   ],
   "remaining_pending": 344,
-  "done": 1107
+  "done": 1127
 }

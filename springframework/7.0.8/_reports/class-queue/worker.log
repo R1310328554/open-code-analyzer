@@ -398,3 +398,23 @@
 2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/MethodBeforeAdvice.java wave19a
 2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/MethodMatcher.java wave19a
 2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/Pointcut.java wave19a
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/JdkDynamicAopProxy.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/ObjenesisCglibAopProxy.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/ProxyConfig.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/ProxyCreatorSupport.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/ProxyFactory.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/ProxyProcessorSupport.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/ReflectiveMethodInvocation.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/AdvisorAdapter.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/AdvisorAdapterRegistrationManager.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/AdvisorAdapterRegistry.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/AfterReturningAdviceAdapter.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/AfterReturningAdviceInterceptor.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/DefaultAdvisorAdapterRegistry.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/GlobalAdvisorAdapterRegistry.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/MethodBeforeAdviceAdapter.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/MethodBeforeAdviceInterceptor.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/ThrowsAdviceAdapter.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/ThrowsAdviceInterceptor.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/adapter/UnknownAdviceTypeException.java wave21b [20:40]
+2026-08-09T18:00:40Z DONE spring-aop/src/main/java/org/springframework/aop/framework/autoproxy/AbstractAdvisorAutoProxyCreator.java wave21b [20:40]
