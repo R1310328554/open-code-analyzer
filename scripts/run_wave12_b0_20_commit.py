@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Chinese-annotate Spring Framework 7.0.8 wave-12 batch [0:20]."""
+"""Re-annotate Spring Framework 7.0.8 wave-12 [0:20]."""
 from __future__ import annotations
 
 import importlib.util
@@ -15,7 +15,7 @@ ORIGINAL = VER / "original"
 ANALYZED = VER / "analyzed"
 QUEUE = VER / "_reports/class-queue"
 SCRIPTS = ROOT / "scripts"
-# Wave-12 slice [0:20] — fixed list (batch.json may advance to later waves).
+
 BATCH_FILES = [
     "spring-context/src/main/java/org/springframework/scheduling/concurrent/DefaultManagedTaskExecutor.java",
     "spring-context/src/main/java/org/springframework/scheduling/concurrent/DefaultManagedTaskScheduler.java",
@@ -39,8 +39,6 @@ BATCH_FILES = [
     "spring-context/src/main/java/org/springframework/scheduling/config/IntervalTask.java",
 ]
 
-FILE_REPLACEMENTS: dict[str, list[tuple[str, str]]] = {}
-
 
 def _load_module(name: str, attr: str) -> dict:
     path = SCRIPTS / name
@@ -51,20 +49,16 @@ def _load_module(name: str, attr: str) -> dict:
     return getattr(mod, attr)
 
 
+FILE_REPLACEMENTS: dict[str, list[tuple[str, str]]] = {}
 for mod_name, attr in [
     ("wave12_b0_20_default_managed.py", "DEFAULT_MANAGED_REPLACEMENTS"),
     ("wave12_b0_20_small_concurrent.py", "SMALL_CONCURRENT_REPLACEMENTS"),
     ("wave12_b0_20_config.py", "CONFIG_REPLACEMENTS"),
     ("wave12_b0_20_large_a.py", "LARGE_A_REPLACEMENTS"),
     ("wave12_b0_20_large_b.py", "LARGE_B_REPLACEMENTS"),
+    ("wave12_b0_20_large_c.py", "LARGE_C_REPLACEMENTS"),
 ]:
     FILE_REPLACEMENTS.update(_load_module(mod_name, attr))
-
-# ThreadPoolTaskExecutor, ThreadPoolTaskScheduler, SimpleAsyncTaskScheduler
-try:
-    FILE_REPLACEMENTS.update(_load_module("wave12_b0_20_large_c.py", "LARGE_C_REPLACEMENTS"))
-except Exception:
-    pass
 
 
 def apply_replacements(text: str, replacements: list[tuple[str, str]]) -> str:
@@ -116,11 +110,14 @@ def main() -> int:
         except Exception as e:
             failures.append(f"{rel}: {e}")
             print(f"FAIL {rel}: {e}")
-    if ok == len(BATCH_FILES) and not failures:
-        mark_batch_done(BATCH_FILES)
-        print(f"Marked {ok} files done")
+
+    if ok != len(BATCH_FILES) or failures:
+        print(json.dumps({"ok": ok, "failures": failures}, ensure_ascii=False, indent=2))
+        return 1
+
+    mark_batch_done(BATCH_FILES)
     print(json.dumps({"ok": ok, "failures": failures}, ensure_ascii=False, indent=2))
-    return 1 if failures else 0
+    return 0
 
 
 if __name__ == "__main__":
