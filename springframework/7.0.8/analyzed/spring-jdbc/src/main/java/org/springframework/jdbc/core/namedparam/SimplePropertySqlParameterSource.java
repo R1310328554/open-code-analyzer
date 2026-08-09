@@ -29,17 +29,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * {@link SqlParameterSource} implementation that obtains parameter values
- * from bean properties of a given JavaBean object, from component accessors
- * of a record class, or from raw field access.
+ * 从给定 JavaBean 的 bean 属性、record 类的组件访问器
+ * 或原始字段访问获取参数值的 {@link SqlParameterSource} 实现。
  *
- * <p>This is a more flexible variant of {@link BeanPropertySqlParameterSource},
- * with the limitation that it is not able to enumerate its
- * {@link #getParameterNames() parameter names}.
+ * <p>这是 {@link BeanPropertySqlParameterSource} 更灵活的变体，
+ * 限制在于无法枚举其 {@link #getParameterNames() 参数名称}。
  *
- * <p>In terms of its fallback property discovery algorithm, this class is
- * similar to {@link org.springframework.validation.SimpleErrors} which is
- * also just used for property retrieval purposes (rather than binding).
+ * <p>在回退属性发现算法方面，本类与
+ * {@link org.springframework.validation.SimpleErrors} 类似，
+ * 同样仅用于属性检索（而非绑定）。
  *
  * @author Juergen Hoeller
  * @since 6.1
@@ -58,8 +56,8 @@ public class SimplePropertySqlParameterSource extends AbstractSqlParameterSource
 
 
 	/**
-	 * Create a new SqlParameterSource for the given bean, record or field holder.
-	 * @param paramObject the bean, record or field holder instance to wrap
+	 * 为给定 bean、record 或字段持有者创建新的 SqlParameterSource。
+	 * @param paramObject 要包装的 bean、record 或字段持有者实例
 	 */
 	public SimplePropertySqlParameterSource(Object paramObject) {
 		Assert.notNull(paramObject, "Parameter object must not be null");
@@ -88,7 +86,7 @@ public class SimplePropertySqlParameterSource extends AbstractSqlParameterSource
 	}
 
 	/**
-	 * Derives a default SQL type from the corresponding property type.
+	 * 从对应属性类型推导默认 SQL 类型。
 	 * @see StatementCreatorUtils#javaTypeToSqlParameterType
 	 */
 	@Override

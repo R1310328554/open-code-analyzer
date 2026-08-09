@@ -27,11 +27,10 @@ import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.util.Assert;
 
 /**
- * Abstract base class for {@link SqlParameterSource} implementations.
- * Provides registration of SQL types per parameter and a friendly
- * {@link #toString() toString} representation enumerating all parameters for
- * a {@code SqlParameterSource} implementing {@link #getParameterNames()}.
- * Concrete subclasses must implement {@link #hasValue} and {@link #getValue}.
+ * {@link SqlParameterSource} 实现的抽象基类。
+ * 提供按参数注册 SQL 类型，并为实现了 {@link #getParameterNames()} 的
+ * {@code SqlParameterSource} 提供友好的 {@link #toString() toString} 表示，
+ * 枚举所有参数。具体子类必须实现 {@link #hasValue} 和 {@link #getValue}。
  *
  * @author Juergen Hoeller
  * @author Jens Schauder
@@ -48,9 +47,9 @@ public abstract class AbstractSqlParameterSource implements SqlParameterSource {
 
 
 	/**
-	 * Register an SQL type for the given parameter.
-	 * @param paramName the name of the parameter
-	 * @param sqlType the SQL type of the parameter
+	 * 为给定参数注册 SQL 类型。
+	 * @param paramName 参数名称
+	 * @param sqlType 参数的 SQL 类型
 	 */
 	public void registerSqlType(String paramName, int sqlType) {
 		Assert.notNull(paramName, "Parameter name must not be null");
@@ -58,9 +57,9 @@ public abstract class AbstractSqlParameterSource implements SqlParameterSource {
 	}
 
 	/**
-	 * Register an SQL type for the given parameter.
-	 * @param paramName the name of the parameter
-	 * @param typeName the type name of the parameter
+	 * 为给定参数注册类型名称。
+	 * @param paramName 参数名称
+	 * @param typeName 参数的类型名称
 	 */
 	public void registerTypeName(String paramName, String typeName) {
 		Assert.notNull(paramName, "Parameter name must not be null");
@@ -68,10 +67,9 @@ public abstract class AbstractSqlParameterSource implements SqlParameterSource {
 	}
 
 	/**
-	 * Return the SQL type for the given parameter, if registered.
-	 * @param paramName the name of the parameter
-	 * @return the SQL type of the parameter,
-	 * or {@code TYPE_UNKNOWN} if not registered
+	 * 返回给定参数已注册的 SQL 类型。
+	 * @param paramName 参数名称
+	 * @return 参数的 SQL 类型，未注册时返回 {@code TYPE_UNKNOWN}
 	 */
 	@Override
 	public int getSqlType(String paramName) {
@@ -80,10 +78,9 @@ public abstract class AbstractSqlParameterSource implements SqlParameterSource {
 	}
 
 	/**
-	 * Return the type name for the given parameter, if registered.
-	 * @param paramName the name of the parameter
-	 * @return the type name of the parameter,
-	 * or {@code null} if not registered
+	 * 返回给定参数已注册的类型名称。
+	 * @param paramName 参数名称
+	 * @return 参数的类型名称，未注册时返回 {@code null}
 	 */
 	@Override
 	public @Nullable String getTypeName(String paramName) {
@@ -93,8 +90,8 @@ public abstract class AbstractSqlParameterSource implements SqlParameterSource {
 
 
 	/**
-	 * Enumerate the parameter names and values with their corresponding SQL type if available,
-	 * or just return the simple {@code SqlParameterSource} implementation class name otherwise.
+	 * 枚举参数名称和值及其对应的 SQL 类型（若有），
+	 * 否则仅返回 {@code SqlParameterSource} 实现类的简单类名。
 	 * @since 5.2
 	 * @see #getParameterNames()
 	 */

@@ -26,22 +26,18 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.support.KeyHolder;
 
 /**
- * A {@code SimpleJdbcInsert} is a multi-threaded, reusable object providing easy
- * (batch) insert capabilities for a table. It provides meta-data processing to
- * simplify the code needed to construct a basic insert statement. All you need
- * to provide is the name of the table and a {@code Map} containing the column
- * names and the column values.
+ * {@code SimpleJdbcInsert} 是为表提供简便（批量）插入能力的多线程、可复用对象。
+ * 它提供元数据处理，简化构建基本 insert 语句所需的代码。
+ * 只需提供表名和包含列名与列值的 {@code Map}。
  *
- * <p>The meta-data processing is based on the {@code DatabaseMetaData} provided
- * by the JDBC driver. As long as the JDBC driver can provide the names of the columns
- * for a specified table then we can rely on this auto-detection feature. If that
- * is not the case, then the column names must be specified explicitly.
+ * <p>元数据处理基于 JDBC 驱动提供的 {@code DatabaseMetaData}。
+ * 只要 JDBC 驱动能为指定表提供列名，即可依赖此自动检测特性。
+ * 否则须显式指定列名。
  *
- * <p>The actual (batch) insert is handled using Spring's {@link JdbcTemplate}.
+ * <p>实际（批量）插入通过 Spring 的 {@link JdbcTemplate} 处理。
  *
- * <p>Many of the configuration methods return the current instance of the
- * {@code SimpleJdbcInsert} to provide the ability to chain multiple ones together
- * in a "fluent" API style.
+ * <p>许多配置方法返回 {@code SimpleJdbcInsert} 当前实例，
+ * 以便以"流式" API 风格链式调用。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -53,9 +49,8 @@ import org.springframework.jdbc.support.KeyHolder;
 public class SimpleJdbcInsert extends AbstractJdbcInsert implements SimpleJdbcInsertOperations {
 
 	/**
-	 * Constructor that accepts the JDBC {@link DataSource} to use when creating
-	 * the {@link JdbcTemplate}.
-	 * @param dataSource the {@code DataSource} to use
+	 * 接受 JDBC {@link DataSource} 的构造函数，用于创建 {@link JdbcTemplate}。
+	 * @param dataSource 要使用的 {@code DataSource}
 	 * @see org.springframework.jdbc.core.JdbcTemplate#setDataSource
 	 */
 	public SimpleJdbcInsert(DataSource dataSource) {
@@ -63,8 +58,8 @@ public class SimpleJdbcInsert extends AbstractJdbcInsert implements SimpleJdbcIn
 	}
 
 	/**
-	 * Alternative constructor that accepts the {@link JdbcTemplate} to be used.
-	 * @param jdbcTemplate the {@code JdbcTemplate} to use
+	 * 接受 {@link JdbcTemplate} 的替代构造函数。
+	 * @param jdbcTemplate 要使用的 {@code JdbcTemplate}
 	 * @see org.springframework.jdbc.core.JdbcTemplate#setDataSource
 	 */
 	public SimpleJdbcInsert(JdbcTemplate jdbcTemplate) {

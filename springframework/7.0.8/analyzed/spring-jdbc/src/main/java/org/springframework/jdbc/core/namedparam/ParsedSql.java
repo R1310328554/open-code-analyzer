@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Holds information about a parsed SQL statement.
+ * 保存已解析 SQL 语句的信息。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -42,15 +42,15 @@ public class ParsedSql {
 
 
 	/**
-	 * Create a new instance of the {@link ParsedSql} class.
-	 * @param originalSql the SQL statement that is being (or is to be) parsed
+	 * 创建 {@link ParsedSql} 类的新实例。
+	 * @param originalSql 正在（或将要）解析的 SQL 语句
 	 */
 	ParsedSql(String originalSql) {
 		this.originalSql = originalSql;
 	}
 
 	/**
-	 * Return the SQL statement that is being parsed.
+	 * 返回正在解析的 SQL 语句。
 	 */
 	String getOriginalSql() {
 		return this.originalSql;
@@ -58,10 +58,10 @@ public class ParsedSql {
 
 
 	/**
-	 * Add a named parameter parsed from this SQL statement.
-	 * @param parameterName the name of the parameter
-	 * @param startIndex the start index in the original SQL String
-	 * @param endIndex the end index in the original SQL String
+	 * 添加从此 SQL 语句解析出的命名参数。
+	 * @param parameterName 参数名称
+	 * @param startIndex 原始 SQL 字符串中的起始索引
+	 * @param endIndex 原始 SQL 字符串中的结束索引
 	 */
 	void addNamedParameter(String parameterName, int startIndex, int endIndex) {
 		this.parameterNames.add(parameterName);
@@ -69,65 +69,63 @@ public class ParsedSql {
 	}
 
 	/**
-	 * Return all the parameters (bind variables) in the parsed SQL statement.
-	 * Repeated occurrences of the same parameter name are included here.
+	 * 返回已解析 SQL 语句中的所有参数（绑定变量）。
+	 * 同一参数名的重复出现也包含在内。
 	 */
 	List<String> getParameterNames() {
 		return this.parameterNames;
 	}
 
 	/**
-	 * Return the parameter indexes for the specified parameter.
-	 * @param parameterPosition the position of the parameter
-	 * (as index in the parameter names List)
-	 * @return the start index and end index, combined into
-	 * an int array of length 2
+	 * 返回指定参数的索引。
+	 * @param parameterPosition 参数位置（参数名称列表中的索引）
+	 * @return 起始索引和结束索引，合并为长度为 2 的 int 数组
 	 */
 	int[] getParameterIndexes(int parameterPosition) {
 		return this.parameterIndexes.get(parameterPosition);
 	}
 
 	/**
-	 * Set the count of named parameters in the SQL statement.
-	 * Each parameter name counts once; repeated occurrences do not count here.
+	 * 设置 SQL 语句中命名参数的数量。
+	 * 每个参数名只计一次，重复出现不计入。
 	 */
 	void setNamedParameterCount(int namedParameterCount) {
 		this.namedParameterCount = namedParameterCount;
 	}
 
 	/**
-	 * Return the count of named parameters in the SQL statement.
-	 * Each parameter name counts once; repeated occurrences do not count here.
+	 * 返回 SQL 语句中命名参数的数量。
+	 * 每个参数名只计一次，重复出现不计入。
 	 */
 	int getNamedParameterCount() {
 		return this.namedParameterCount;
 	}
 
 	/**
-	 * Set the count of all the unnamed parameters in the SQL statement.
+	 * 设置 SQL 语句中所有未命名参数的数量。
 	 */
 	void setUnnamedParameterCount(int unnamedParameterCount) {
 		this.unnamedParameterCount = unnamedParameterCount;
 	}
 
 	/**
-	 * Return the count of all the unnamed parameters in the SQL statement.
+	 * 返回 SQL 语句中所有未命名参数的数量。
 	 */
 	int getUnnamedParameterCount() {
 		return this.unnamedParameterCount;
 	}
 
 	/**
-	 * Set the total count of all the parameters in the SQL statement.
-	 * Repeated occurrences of the same parameter name do count here.
+	 * 设置 SQL 语句中所有参数的总数。
+	 * 同一参数名的重复出现也计入。
 	 */
 	void setTotalParameterCount(int totalParameterCount) {
 		this.totalParameterCount = totalParameterCount;
 	}
 
 	/**
-	 * Return the total count of all the parameters in the SQL statement.
-	 * Repeated occurrences of the same parameter name do count here.
+	 * 返回 SQL 语句中所有参数的总数。
+	 * 同一参数名的重复出现也计入。
 	 */
 	int getTotalParameterCount() {
 		return this.totalParameterCount;
@@ -135,7 +133,7 @@ public class ParsedSql {
 
 
 	/**
-	 * Exposes the original SQL String.
+	 * 暴露原始 SQL 字符串。
 	 */
 	@Override
 	public String toString() {

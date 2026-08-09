@@ -22,8 +22,8 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Sybase specific implementation for the {@link CallMetaDataProvider} interface.
- * This class is intended for internal use by the Simple JDBC classes.
+ * {@link CallMetaDataProvider} 接口的 Sybase 专用实现。
+ * 本类供 Simple JDBC 类内部使用。
  *
  * @author Thomas Risberg
  * @author Giuseppe Milicia

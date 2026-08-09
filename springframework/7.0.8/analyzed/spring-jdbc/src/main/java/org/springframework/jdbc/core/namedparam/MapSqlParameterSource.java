@@ -27,14 +27,14 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link SqlParameterSource} implementation that holds a given Map of parameters.
+ * 持有给定参数 Map 的 {@link SqlParameterSource} 实现。
  *
- * <p>This class is intended for passing in a simple Map of parameter values
- * to the methods of the {@link NamedParameterJdbcTemplate} class.
+ * <p>本类用于向 {@link NamedParameterJdbcTemplate} 类的方法
+ * 传入简单的参数值 Map。
  *
- * <p>The {@code addValue} methods on this class will make adding several values
- * easier. The methods return a reference to the {@link MapSqlParameterSource}
- * itself, so you can chain several method calls together within a single statement.
+ * <p>本类的 {@code addValue} 方法便于添加多个值。
+ * 方法返回 {@link MapSqlParameterSource} 自身引用，
+ * 可在单条语句中链式调用多个方法。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -50,18 +50,17 @@ public class MapSqlParameterSource extends AbstractSqlParameterSource {
 
 
 	/**
-	 * Create an empty MapSqlParameterSource,
-	 * with values to be added via {@code addValue}.
+	 * 创建空的 MapSqlParameterSource，
+	 * 值通过 {@code addValue} 添加。
 	 * @see #addValue(String, Object)
 	 */
 	public MapSqlParameterSource() {
 	}
 
 	/**
-	 * Create a new MapSqlParameterSource, with one value
-	 * comprised of the supplied arguments.
-	 * @param paramName the name of the parameter
-	 * @param value the value of the parameter
+	 * 创建新的 MapSqlParameterSource，包含一个由给定参数组成的值。
+	 * @param paramName 参数名称
+	 * @param value 参数值
 	 * @see #addValue(String, Object)
 	 */
 	public MapSqlParameterSource(String paramName, @Nullable Object value) {
@@ -69,8 +68,8 @@ public class MapSqlParameterSource extends AbstractSqlParameterSource {
 	}
 
 	/**
-	 * Create a new MapSqlParameterSource based on a Map.
-	 * @param values a Map holding existing parameter values (can be {@code null})
+	 * 基于 Map 创建新的 MapSqlParameterSource。
+	 * @param values 持有现有参数值的 Map（可为 {@code null}）
 	 */
 	public MapSqlParameterSource(@Nullable Map<String, ?> values) {
 		addValues(values);
@@ -78,11 +77,10 @@ public class MapSqlParameterSource extends AbstractSqlParameterSource {
 
 
 	/**
-	 * Add a parameter to this parameter source.
-	 * @param paramName the name of the parameter
-	 * @param value the value of the parameter
-	 * @return a reference to this parameter source,
-	 * so it's possible to chain several calls together
+	 * 向此参数源添加参数。
+	 * @param paramName 参数名称
+	 * @param value 参数值
+	 * @return 此参数源的引用，便于链式调用
 	 */
 	public MapSqlParameterSource addValue(String paramName, @Nullable Object value) {
 		Assert.notNull(paramName, "Parameter name must not be null");
@@ -94,12 +92,11 @@ public class MapSqlParameterSource extends AbstractSqlParameterSource {
 	}
 
 	/**
-	 * Add a parameter to this parameter source.
-	 * @param paramName the name of the parameter
-	 * @param value the value of the parameter
-	 * @param sqlType the SQL type of the parameter
-	 * @return a reference to this parameter source,
-	 * so it's possible to chain several calls together
+	 * 向此参数源添加参数。
+	 * @param paramName 参数名称
+	 * @param value 参数值
+	 * @param sqlType 参数的 SQL 类型
+	 * @return 此参数源的引用，便于链式调用
 	 */
 	public MapSqlParameterSource addValue(String paramName, @Nullable Object value, int sqlType) {
 		Assert.notNull(paramName, "Parameter name must not be null");
@@ -109,13 +106,12 @@ public class MapSqlParameterSource extends AbstractSqlParameterSource {
 	}
 
 	/**
-	 * Add a parameter to this parameter source.
-	 * @param paramName the name of the parameter
-	 * @param value the value of the parameter
-	 * @param sqlType the SQL type of the parameter
-	 * @param typeName the type name of the parameter
-	 * @return a reference to this parameter source,
-	 * so it's possible to chain several calls together
+	 * 向此参数源添加参数。
+	 * @param paramName 参数名称
+	 * @param value 参数值
+	 * @param sqlType 参数的 SQL 类型
+	 * @param typeName 参数的类型名称
+	 * @return 此参数源的引用，便于链式调用
 	 */
 	public MapSqlParameterSource addValue(String paramName, @Nullable Object value, int sqlType, String typeName) {
 		Assert.notNull(paramName, "Parameter name must not be null");
@@ -126,10 +122,9 @@ public class MapSqlParameterSource extends AbstractSqlParameterSource {
 	}
 
 	/**
-	 * Add a Map of parameters to this parameter source.
-	 * @param values a Map holding existing parameter values (can be {@code null})
-	 * @return a reference to this parameter source,
-	 * so it's possible to chain several calls together
+	 * 向此参数源添加参数 Map。
+	 * @param values 持有现有参数值的 Map（可为 {@code null}）
+	 * @return 此参数源的引用，便于链式调用
 	 */
 	public MapSqlParameterSource addValues(@Nullable Map<String, ?> values) {
 		if (values != null) {
@@ -144,7 +139,7 @@ public class MapSqlParameterSource extends AbstractSqlParameterSource {
 	}
 
 	/**
-	 * Return whether this parameter source has been configured with any values.
+	 * 返回此参数源是否已配置任何值。
 	 * @since 6.1
 	 */
 	public boolean hasValues() {
@@ -152,7 +147,7 @@ public class MapSqlParameterSource extends AbstractSqlParameterSource {
 	}
 
 	/**
-	 * Expose the current parameter values as read-only Map.
+	 * 以只读 Map 形式暴露当前参数值。
 	 */
 	public Map<String, Object> getValues() {
 		return Collections.unmodifiableMap(this.values);

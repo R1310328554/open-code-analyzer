@@ -22,9 +22,8 @@ import java.sql.SQLException;
 import org.springframework.jdbc.core.InterruptibleBatchPreparedStatementSetter;
 
 /**
- * Abstract implementation of the {@link InterruptibleBatchPreparedStatementSetter}
- * interface, combining the check for available values and setting of those
- * into a single callback method {@link #setValuesIfAvailable}.
+ * {@link InterruptibleBatchPreparedStatementSetter} 接口的抽象实现，
+ * 将可用值检查和值设置合并为单一回调方法 {@link #setValuesIfAvailable}。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -37,8 +36,8 @@ public abstract class AbstractInterruptibleBatchPreparedStatementSetter
 
 
 	/**
-	 * This implementation calls {@link #setValuesIfAvailable}
-	 * and sets this instance's exhaustion flag accordingly.
+	 * 本实现调用 {@link #setValuesIfAvailable}
+	 * 并据此设置本实例的耗尽标志。
 	 */
 	@Override
 	public final void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -46,7 +45,7 @@ public abstract class AbstractInterruptibleBatchPreparedStatementSetter
 	}
 
 	/**
-	 * This implementation return this instance's current exhaustion flag.
+	 * 本实现返回本实例当前的耗尽标志。
 	 */
 	@Override
 	public final boolean isBatchExhausted(int i) {
@@ -54,8 +53,8 @@ public abstract class AbstractInterruptibleBatchPreparedStatementSetter
 	}
 
 	/**
-	 * This implementation returns {@code Integer.MAX_VALUE}.
-	 * Can be overridden in subclasses to lower the maximum batch size.
+	 * 本实现返回 {@code Integer.MAX_VALUE}。
+	 * 子类可覆盖以降低最大批大小。
 	 */
 	@Override
 	public int getBatchSize() {
@@ -64,15 +63,13 @@ public abstract class AbstractInterruptibleBatchPreparedStatementSetter
 
 
 	/**
-	 * Check for available values and set them on the given PreparedStatement.
-	 * If no values are available anymore, return {@code false}.
-	 * @param ps the PreparedStatement we'll invoke setter methods on
-	 * @param i index of the statement we're issuing in the batch, starting from 0
-	 * @return whether there were values to apply (that is, whether the applied
-	 * parameters should be added to the batch and this method should be called
-	 * for a further iteration)
-	 * @throws SQLException if an SQLException is encountered
-	 * (i.e. there is no need to catch SQLException)
+	 * 检查可用值并将其设置到给定 PreparedStatement 上。
+	 * 若无更多可用值，返回 {@code false}。
+	 * @param ps 将调用 setter 方法的 PreparedStatement
+	 * @param i 批中当前语句的索引，从 0 开始
+	 * @return 是否有值可应用（即应用的参数是否应加入批中，
+	 * 以及是否应再次调用本方法进行下一轮迭代）
+	 * @throws SQLException 遇到 SQLException 时抛出（无需捕获）
 	 */
 	protected abstract boolean setValuesIfAvailable(PreparedStatement ps, int i) throws SQLException;
 

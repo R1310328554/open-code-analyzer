@@ -27,8 +27,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.SqlParameterValue;
 
 /**
- * Class that provides helper methods for the use of {@link SqlParameterSource},
- * in particular with {@link NamedParameterJdbcTemplate}.
+ * 为 {@link SqlParameterSource} 的使用提供辅助方法的类，
+ * 尤其配合 {@link NamedParameterJdbcTemplate} 使用。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -37,11 +37,10 @@ import org.springframework.jdbc.core.SqlParameterValue;
 public abstract class SqlParameterSourceUtils {
 
 	/**
-	 * Create an array of {@link SqlParameterSource} objects populated with data
-	 * from the values passed in (either a {@link Map} or a bean object).
-	 * This will define what is included in a batch operation.
-	 * @param candidates object array of objects containing the values to be used
-	 * @return an array of {@link SqlParameterSource}
+	 * 创建 {@link SqlParameterSource} 对象数组，用传入值（{@link Map} 或 bean 对象）填充。
+	 * 这将定义批操作中包含的内容。
+	 * @param candidates 包含待使用值的对象数组
+	 * @return {@link SqlParameterSource} 数组
 	 * @see MapSqlParameterSource
 	 * @see BeanPropertySqlParameterSource
 	 * @see NamedParameterJdbcTemplate#batchUpdate(String, SqlParameterSource[])
@@ -51,11 +50,10 @@ public abstract class SqlParameterSourceUtils {
 	}
 
 	/**
-	 * Create an array of {@link SqlParameterSource} objects populated with data
-	 * from the values passed in (either a {@link Map} or a bean object).
-	 * This will define what is included in a batch operation.
-	 * @param candidates collection of objects containing the values to be used
-	 * @return an array of {@link SqlParameterSource}
+	 * 创建 {@link SqlParameterSource} 对象数组，用传入值（{@link Map} 或 bean 对象）填充。
+	 * 这将定义批操作中包含的内容。
+	 * @param candidates 包含待使用值的集合
+	 * @return {@link SqlParameterSource} 数组
 	 * @since 5.0.2
 	 * @see MapSqlParameterSource
 	 * @see BeanPropertySqlParameterSource
@@ -74,10 +72,10 @@ public abstract class SqlParameterSourceUtils {
 	}
 
 	/**
-	 * Create an array of {@link MapSqlParameterSource} objects populated with data from
-	 * the values passed in. This will define what is included in a batch operation.
-	 * @param valueMaps array of {@link Map} instances containing the values to be used
-	 * @return an array of {@link SqlParameterSource}
+	 * 创建 {@link MapSqlParameterSource} 对象数组，用传入值填充。
+	 * 这将定义批操作中包含的内容。
+	 * @param valueMaps 包含待使用值的 {@link Map} 实例数组
+	 * @return {@link SqlParameterSource} 数组
 	 * @see MapSqlParameterSource
 	 * @see NamedParameterJdbcTemplate#batchUpdate(String, Map[])
 	 */
@@ -90,10 +88,10 @@ public abstract class SqlParameterSourceUtils {
 	}
 
 	/**
-	 * Create a wrapped value if parameter has type information, plain object if not.
-	 * @param source the source of parameter values and type information
-	 * @param parameterName the name of the parameter
-	 * @return the value object
+	 * 若参数有类型信息则创建包装值，否则返回普通对象。
+	 * @param source 参数值和类型信息的来源
+	 * @param parameterName 参数名称
+	 * @return 值对象
 	 * @see SqlParameterValue
 	 */
 	public static @Nullable Object getTypedValue(SqlParameterSource source, String parameterName) {
@@ -107,9 +105,9 @@ public abstract class SqlParameterSourceUtils {
 	}
 
 	/**
-	 * Create a Map of case-insensitive parameter names together with the original name.
-	 * @param parameterSource the source of parameter names
-	 * @return the Map that can be used for case-insensitive matching of parameter names
+	 * 创建不区分大小写的参数名称与原始名称的 Map。
+	 * @param parameterSource 参数名称来源
+	 * @return 可用于不区分大小写匹配参数名称的 Map
 	 */
 	public static Map<String, String> extractCaseInsensitiveParameterNames(SqlParameterSource parameterSource) {
 		Map<String, String> caseInsensitiveParameterNames = new HashMap<>();

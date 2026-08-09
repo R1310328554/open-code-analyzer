@@ -26,16 +26,16 @@ import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.util.Assert;
 
 /**
- * Abstract {@link PreparedStatementCallback} implementation that manages a {@link LobCreator}.
- * Typically used as inner class, with access to surrounding method arguments.
+ * 管理 {@link LobCreator} 的抽象 {@link PreparedStatementCallback} 实现。
+ * 通常作为内部类使用，可访问外围方法参数。
  *
- * <p>Delegates to the {@code setValues} template method for setting values
- * on the PreparedStatement, using a given LobCreator for BLOB/CLOB arguments.
+ * <p>委托 {@code setValues} 模板方法在 PreparedStatement 上设置值，
+ * 使用给定 LobCreator 处理 BLOB/CLOB 参数。
  *
- * <p>A usage example with {@link org.springframework.jdbc.core.JdbcTemplate}:
+ * <p>与 {@link org.springframework.jdbc.core.JdbcTemplate} 配合使用的示例：
  *
- * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);  // reusable object
- * LobHandler lobHandler = new DefaultLobHandler();  // reusable object
+ * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);  // 可复用对象
+ * LobHandler lobHandler = new DefaultLobHandler();  // 可复用对象
  *
  * jdbcTemplate.execute(
  *     "INSERT INTO imagedb (image_name, content, description) VALUES (?, ?, ?)",
@@ -51,7 +51,7 @@ import org.springframework.util.Assert;
  * @author Juergen Hoeller
  * @since 1.0.2
  * @see org.springframework.jdbc.support.lob.LobCreator
- * @deprecated as of 6.2, in favor of {@link SqlBinaryValue} and {@link SqlCharacterValue}
+ * @deprecated 自 6.2 起弃用，建议使用 {@link SqlBinaryValue} 和 {@link SqlCharacterValue}
  */
 @Deprecated(since = "6.2")
 public abstract class AbstractLobCreatingPreparedStatementCallback implements PreparedStatementCallback<Integer> {
@@ -60,9 +60,8 @@ public abstract class AbstractLobCreatingPreparedStatementCallback implements Pr
 
 
 	/**
-	 * Create a new AbstractLobCreatingPreparedStatementCallback for the
-	 * given LobHandler.
-	 * @param lobHandler the LobHandler to create LobCreators with
+	 * 为给定 LobHandler 创建新的 AbstractLobCreatingPreparedStatementCallback。
+	 * @param lobHandler 用于创建 LobCreator 的 LobHandler
 	 */
 	public AbstractLobCreatingPreparedStatementCallback(LobHandler lobHandler) {
 		Assert.notNull(lobHandler, "LobHandler must not be null");
@@ -79,12 +78,12 @@ public abstract class AbstractLobCreatingPreparedStatementCallback implements Pr
 	}
 
 	/**
-	 * Set values on the given PreparedStatement, using the given
-	 * LobCreator for BLOB/CLOB arguments.
-	 * @param ps the PreparedStatement to use
-	 * @param lobCreator the LobCreator to use
-	 * @throws SQLException if thrown by JDBC methods
-	 * @throws DataAccessException in case of custom exceptions
+	 * 在给定 PreparedStatement 上设置值，
+	 * 使用给定 LobCreator 处理 BLOB/CLOB 参数。
+	 * @param ps 要使用的 PreparedStatement
+	 * @param lobCreator 要使用的 LobCreator
+	 * @throws SQLException JDBC 方法抛出时
+	 * @throws DataAccessException 自定义异常时
 	 */
 	protected abstract void setValues(PreparedStatement ps, LobCreator lobCreator)
 			throws SQLException, DataAccessException;
