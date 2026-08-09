@@ -122,17 +122,3 @@ tieredstore/src/main/java/org/apache/rocketmq/tieredstore/index/IndexStoreServic
 tools/src/main/java/org/apache/rocketmq/tools/admin/DefaultMQAdminExt.java
 tools/src/main/java/org/apache/rocketmq/tools/admin/DefaultMQAdminExtImpl.java
 tools/src/main/java/org/apache/rocketmq/tools/admin/MQAdminExt.java
-tools/src/main/java/org/apache/rocketmq/tools/command/topic/TopicRouteSubCommand.java
-tools/src/main/java/org/apache/rocketmq/tools/command/topic/TopicStatusSubCommand.java
-tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateOrderConfCommand.java
-tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateStaticTopicSubCommand.java
-tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicListSubCommand.java
-tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicPermSubCommand.java
-tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicSubCommand.java
-tools/src/main/java/org/apache/rocketmq/tools/monitor/DefaultMonitorListener.java
-tools/src/main/java/org/apache/rocketmq/tools/monitor/DeleteMsgsEvent.java
-tools/src/main/java/org/apache/rocketmq/tools/monitor/FailedMsgs.java
-tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorConfig.java
-tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorListener.java
-tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorService.java
-tools/src/main/java/org/apache/rocketmq/tools/monitor/UndoneMsgs.java
