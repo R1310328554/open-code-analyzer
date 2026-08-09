@@ -34,7 +34,7 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
 
 /**
- * Candidate components index loading mechanism for internal use within the framework.
+ * 框架内部使用的候选组件索引加载机制。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -43,19 +43,17 @@ import org.springframework.util.ConcurrentReferenceHashMap;
 public final class CandidateComponentsIndexLoader {
 
 	/**
-	 * The location to look for components.
-	 * <p>Can be present in multiple JAR files.
+	 * 查找组件资源的位置。
+	 * <p>可存在于多个 JAR 文件中。
 	 */
 	public static final String COMPONENTS_RESOURCE_LOCATION = "META-INF/spring.components";
 
 	/**
-	 * System property that instructs Spring to ignore the components index, i.e.
-	 * to always return {@code null} from {@link #loadIndex(ClassLoader)}.
-	 * <p>The default is "false", allowing for regular use of the index. Switching this
-	 * flag to {@code true} fulfills a corner case scenario when an index is partially
-	 * available for some libraries (or use cases) but couldn't be built for the whole
-	 * application. In this case, the application context fallbacks to a regular
-	 * classpath arrangement (i.e. as though no index were present at all).
+	 * 指示 Spring 忽略组件索引的系统属性，即
+	 * 使 {@link #loadIndex(ClassLoader)} 始终返回 {@code null}。
+	 * <p>默认为 {@code false}，允许正常使用索引。将此标志设为 {@code true}
+	 * 适用于部分库（或场景）有索引但整个应用无法构建索引的边角情况：
+	 * 此时应用上下文将回退到常规类路径扫描（如同索引不存在）。
 	 */
 	public static final String IGNORE_INDEX = "spring.index.ignore";
 
@@ -64,6 +62,7 @@ public final class CandidateComponentsIndexLoader {
 
 	private static final Log logger = LogFactory.getLog(CandidateComponentsIndexLoader.class);
 
+	/** 按 ClassLoader 缓存已加载的索引。 */
 	private static final ConcurrentMap<ClassLoader, CandidateComponentsIndex> cache =
 			new ConcurrentReferenceHashMap<>();
 
@@ -73,13 +72,12 @@ public final class CandidateComponentsIndexLoader {
 
 
 	/**
-	 * Load and instantiate the {@link CandidateComponentsIndex} from
-	 * {@value #COMPONENTS_RESOURCE_LOCATION}, using the given class loader. If no
-	 * index is available, return {@code null}.
-	 * @param classLoader the ClassLoader to use for loading (can be {@code null} to use the default)
-	 * @return the index to use or {@code null} if no index was found
-	 * @throws IllegalArgumentException if any module index cannot
-	 * be loaded or if an error occurs while creating {@link CandidateComponentsIndex}
+	 * 从 {@value #COMPONENTS_RESOURCE_LOCATION} 加载并实例化
+	 * {@link CandidateComponentsIndex}，使用给定类加载器。若无可用索引则返回 {@code null}。
+	 * @param classLoader 用于加载的 ClassLoader（可为 {@code null} 以使用默认加载器）
+	 * @return 要使用的索引，或 {@code null} 表示未找到索引
+	 * @throws IllegalArgumentException 若任一模块索引无法加载，
+	 * 或在创建 {@link CandidateComponentsIndex} 时发生错误
 	 */
 	public static @Nullable CandidateComponentsIndex loadIndex(@Nullable ClassLoader classLoader) {
 		ClassLoader classLoaderToUse = classLoader;
@@ -119,14 +117,13 @@ public final class CandidateComponentsIndexLoader {
 
 
 	/**
-	 * Programmatically add the given index instance for the given ClassLoader,
-	 * replacing a file-determined index with a programmatically composed index.
-	 * <p>The index instance will usually be pre-populated for AOT runtime setups
-	 * or test scenarios with pre-configured results for runtime-attempted scans.
-	 * Alternatively, it may be empty for it to get populated during AOT processing
-	 * or a test run, for subsequent introspection the index-recorded candidate types.
-	 * @param classLoader the ClassLoader to add the index for
-	 * @param index the associated CandidateComponentsIndex instance
+	 * 为给定 ClassLoader 以编程方式添加索引实例，
+	 * 用编程式组装的索引替换由文件确定的索引。
+	 * <p>索引实例通常预先填充，用于 AOT 运行时设置或
+	 * 预配置运行时扫描结果的测试场景。也可为空索引，
+	 * 在 AOT 处理或测试运行期间填充，供后续内省索引记录的候选类型。
+	 * @param classLoader 要添加索引的 ClassLoader
+	 * @param index 关联的 CandidateComponentsIndex 实例
 	 * @since 7.0
 	 */
 	public static void addIndex(ClassLoader classLoader, CandidateComponentsIndex index) {
@@ -134,7 +131,7 @@ public final class CandidateComponentsIndexLoader {
 	}
 
 	/**
-	 * Clear the runtime index cache.
+	 * 清空运行时索引缓存。
 	 * @since 7.0
 	 */
 	public static void clearCache() {

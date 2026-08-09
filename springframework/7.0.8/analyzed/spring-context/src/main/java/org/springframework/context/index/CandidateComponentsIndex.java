@@ -29,22 +29,21 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 /**
- * Provide access to the candidates that are defined in {@code META-INF/spring.components}
- * component index files (see {@link #CandidateComponentsIndex(List)}) or registered
- * programmatically (see {@link #CandidateComponentsIndex()}).
+ * 提供对 {@code META-INF/spring.components} 组件索引文件中定义的候选类型
+ * （参见 {@link #CandidateComponentsIndex(List)}），或以编程方式注册的候选类型
+ * （参见 {@link #CandidateComponentsIndex()}）的访问能力。
  *
- * <p>An arbitrary number of stereotypes can be registered (and queried) on the index: a
- * typical example is the fully qualified name of an annotation that flags the class for
- * a certain use case. The following call returns all the {@code @Component}
- * <b>candidate</b> types for the {@code com.example} package (and its sub-packages):
+ * <p>索引上可注册（并查询）任意数量的构造型（stereotype）：
+ * 典型示例是标记某类用于特定场景的注解全限定名。以下调用返回
+ * {@code com.example} 包（及其子包）中所有 {@code @Component}
+ * <b>候选</b>类型：
  * <pre class="code">
  * Set&lt;String&gt; candidates = index.getCandidateTypes(
  *         "com.example", "org.springframework.stereotype.Component");
  * </pre>
  *
- * <p>The {@code type} is usually the fully qualified name of a class, though this is
- * not a rule. Similarly, the {@code stereotype} is usually the fully qualified name of
- * an annotation type, but it can be any marker really.
+ * <p>{@code type} 通常是类的全限定名，但并非硬性规则。同样，{@code stereotype}
+ * 通常是注解类型的全限定名，但也可以是任意标记。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -54,15 +53,18 @@ public class CandidateComponentsIndex {
 
 	private static final AntPathMatcher pathMatcher = new AntPathMatcher(".");
 
+	/** 已注册的扫描基础包（或包模式）。 */
 	private final Set<String> registeredScans = new LinkedHashSet<>();
 
+	/** 构造型到候选类型条目的索引。 */
 	private final MultiValueMap<String, Entry> index = new LinkedMultiValueMap<>();
 
+	/** 索引是否来自完整解析的索引文件（而非编程式填充）。 */
 	private final boolean complete;
 
 
 	/**
-	 * Create a new index instance from parsed component index files.
+	 * 根据已解析的组件索引文件创建新索引实例。
 	 */
 	CandidateComponentsIndex(List<Properties> content) {
 		for (Properties entry : content) {
@@ -77,7 +79,7 @@ public class CandidateComponentsIndex {
 	}
 
 	/**
-	 * Create a new index instance for programmatic population.
+	 * 创建用于编程式填充的新索引实例。
 	 * @since 7.0
 	 * @see #registerScan(String...)
 	 * @see #registerCandidateType(String, String...)
@@ -88,8 +90,7 @@ public class CandidateComponentsIndex {
 
 
 	/**
-	 * Programmatically register the given base packages (or base package patterns)
-	 * as scanned.
+	 * 以编程方式将给定基础包（或基础包模式）注册为已扫描。
 	 * @since 7.0
 	 * @see #registerCandidateType(String, String...)
 	 */
@@ -98,7 +99,7 @@ public class CandidateComponentsIndex {
 	}
 
 	/**
-	 * Return the registered base packages (or base package patterns).
+	 * 返回已注册的基础包（或基础包模式）。
 	 * @since 7.0
 	 * @see #registerScan(String...)
 	 */
@@ -107,8 +108,7 @@ public class CandidateComponentsIndex {
 	}
 
 	/**
-	 * Determine whether this index contains an entry for the given base package
-	 * (or base package pattern).
+	 * 判断本索引是否包含给定基础包（或基础包模式）的条目。
 	 * @since 7.0
 	 */
 	public boolean hasScannedPackage(String packageName) {
@@ -117,10 +117,9 @@ public class CandidateComponentsIndex {
 	}
 
 	/**
-	 * Programmatically register one or more stereotypes for the given candidate type.
-	 * <p>Note that the containing packages for candidates are not automatically
-	 * considered scanned packages. Make sure to call {@link #registerScan(String...)}
-	 * with the scan-specific base package accordingly.
+	 * 以编程方式为给定候选类型注册一个或多个构造型。
+	 * <p>注意：候选类型所在包不会自动视为已扫描包。请确保调用
+	 * {@link #registerScan(String...)} 注册相应的扫描基础包。
 	 * @since 7.0
 	 * @see #registerScan(String...)
 	 */
@@ -131,7 +130,7 @@ public class CandidateComponentsIndex {
 	}
 
 	/**
-	 * Return the registered stereotype packages (or base package patterns).
+	 * 返回已注册的构造型集合（或基础包模式）。
 	 * @since 7.0
 	 */
 	public Set<String> getRegisteredStereotypes() {
@@ -139,11 +138,11 @@ public class CandidateComponentsIndex {
 	}
 
 	/**
-	 * Return the candidate types that are associated with the specified stereotype.
-	 * @param basePackage the package to check for candidates
-	 * @param stereotype the stereotype to use
-	 * @return the candidate types associated with the specified {@code stereotype}
-	 * or an empty set if none has been found for the specified {@code basePackage}
+	 * 返回与指定构造型关联的候选类型。
+	 * @param basePackage 要检查候选类型的包
+	 * @param stereotype 要使用的构造型
+	 * @return 与指定 {@code stereotype} 关联的候选类型；
+	 * 若指定 {@code basePackage} 下未找到则返回空集合
 	 */
 	public Set<String> getCandidateTypes(String basePackage, String stereotype) {
 		List<Entry> candidates = this.index.get(stereotype);

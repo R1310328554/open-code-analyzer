@@ -20,9 +20,8 @@ import io.micrometer.context.ThreadLocalAccessor;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Adapt {@link LocaleContextHolder} to the {@link ThreadLocalAccessor} contract
- * to assist the Micrometer Context Propagation library with {@link LocaleContext}
- * propagation.
+ * 将 {@link LocaleContextHolder} 适配为 {@link ThreadLocalAccessor} 契约，
+ * 协助 Micrometer Context Propagation 库传播 {@link LocaleContext}。
  *
  * @author Tadaya Tsuyukubo
  * @since 6.2
@@ -30,8 +29,7 @@ import org.jspecify.annotations.Nullable;
 public class LocaleContextThreadLocalAccessor implements ThreadLocalAccessor<LocaleContext> {
 
 	/**
-	 * Key under which this accessor is registered in
-	 * {@link io.micrometer.context.ContextRegistry}.
+	 * 本访问器在 {@link io.micrometer.context.ContextRegistry} 中注册时使用的键。
 	 */
 	public static final String KEY = LocaleContextThreadLocalAccessor.class.getName() + ".KEY";
 
