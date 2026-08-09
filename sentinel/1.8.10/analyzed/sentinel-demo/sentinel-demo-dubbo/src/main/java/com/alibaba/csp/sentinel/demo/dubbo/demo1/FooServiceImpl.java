@@ -21,16 +21,20 @@ import com.alibaba.csp.sentinel.demo.dubbo.FooService;
 import com.alibaba.dubbo.config.annotation.Service;
 
 /**
+ * {@link com.alibaba.csp.sentinel.demo.dubbo.FooService} Provider 实现（demo1）。
+ *
  * @author Eric Zhao
  */
 @Service
 public class FooServiceImpl implements FooService {
 
+    /** 返回带当前时间的问候语。 */
     @Override
     public String sayHello(String name) {
         return String.format("Hello, %s at %s", name, LocalDateTime.now());
     }
 
+    /** 返回当前时间字符串。 */
     @Override
     public String doAnother() {
         return LocalDateTime.now().toString();

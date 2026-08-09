@@ -25,7 +25,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- * Please add the following VM arguments:
+ * Alibaba Dubbo Provider 演示（demo1）：启动时加载 sayHello 方法 QPS=10 流控规则。
+ * <p>启动前请添加 VM 参数：</p>
  * <pre>
  * -Djava.net.preferIPv4Stack=true
  * -Dcsp.sentinel.api.port=8720
@@ -40,7 +41,7 @@ public class FooProviderBootstrap {
     private static final String INTERFACE_RES_KEY = "com.alibaba.csp.sentinel.demo.dubbo.FooService";
 
     public static void main(String[] args) {
-        // Users don't need to manually call this method.
+        // 一般无需手动调用；此处仅为 eager 初始化 Sentinel
         InitExecutor.doInit();
 
         initFlowRule();
@@ -52,6 +53,7 @@ public class FooProviderBootstrap {
         System.out.println("Service provider is ready");
     }
 
+    /** 为 sayHello 方法资源加载 QPS=10 的流控规则。 */
     private static void initFlowRule() {
         FlowRule flowRule = new FlowRule();
         flowRule.setResource(RES_KEY);

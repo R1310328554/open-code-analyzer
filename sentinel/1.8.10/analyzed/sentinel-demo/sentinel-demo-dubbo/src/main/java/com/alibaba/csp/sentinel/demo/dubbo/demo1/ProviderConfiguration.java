@@ -24,12 +24,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Dubbo Provider Spring 配置（demo1）：应用名、组播注册中心与 dubbo 协议。
+ *
  * @author Eric Zhao
  */
 @Configuration
 @DubboComponentScan("com.alibaba.csp.sentinel.demo.dubbo.demo1")
 public class ProviderConfiguration {
 
+    /** 注册 Dubbo 应用 demo-provider。 */
     @Bean
     public ApplicationConfig applicationConfig() {
         ApplicationConfig applicationConfig = new ApplicationConfig();
@@ -37,6 +40,7 @@ public class ProviderConfiguration {
         return applicationConfig;
     }
 
+    /** 使用组播注册中心 224.5.6.7:1234。 */
     @Bean
     public RegistryConfig registryConfig() {
         RegistryConfig registryConfig = new RegistryConfig();
@@ -44,6 +48,7 @@ public class ProviderConfiguration {
         return registryConfig;
     }
 
+    /** dubbo 协议监听 25758 端口。 */
     @Bean
     public ProtocolConfig protocolConfig() {
         ProtocolConfig protocolConfig = new ProtocolConfig();

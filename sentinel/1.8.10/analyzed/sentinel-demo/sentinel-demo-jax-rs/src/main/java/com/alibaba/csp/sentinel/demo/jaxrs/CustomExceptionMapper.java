@@ -23,12 +23,15 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 /**
+ * JAX-RS 全局异常映射：将未捕获异常转为 HTTP 500 与固定错误消息。
+ *
  * @author sea
  */
 @Component
 @Provider
 @Priority(javax.ws.rs.Priorities.USER - 1)
 public class CustomExceptionMapper implements ExceptionMapper<Throwable> {
+    /** 返回 500 状态与 "Unknown Server Error" 响应体。 */
     @Override
     public Response toResponse(Throwable exception) {
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

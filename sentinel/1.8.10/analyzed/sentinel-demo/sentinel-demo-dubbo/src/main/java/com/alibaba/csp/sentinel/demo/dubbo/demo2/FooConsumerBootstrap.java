@@ -32,7 +32,8 @@ import com.alibaba.dubbo.rpc.RpcResult;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- * Please add the following VM arguments:
+ * Alibaba Dubbo Consumer 演示（demo2）：并发线程数流控 + 多线程压测 sayHello/doAnother。
+ * <p>启动前请添加 VM 参数：</p>
  * <pre>
  * -Djava.net.preferIPv4Stack=true
  * -Dcsp.sentinel.api.port=8721
@@ -64,7 +65,7 @@ public class FooConsumerBootstrap {
                     String message = service.sayHello("Eric");
                     System.out.println("Success: " + message);
                 } catch (SentinelRpcException ex) {
-                    System.out.println("Blocked");
+                    System.out.println("Blocked"); // 被 Sentinel 限流
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -73,6 +74,7 @@ public class FooConsumerBootstrap {
         }
     }
 
+    /** 为 sayHello 方法资源加载并发线程数=5 的流控规则。 */
     private static void initFlowRule() {
         FlowRule flowRule = new FlowRule();
         flowRule.setResource(RES_KEY);
@@ -82,10 +84,9 @@ public class FooConsumerBootstrap {
         FlowRuleManager.loadRules(Collections.singletonList(flowRule));
     }
 
+    /** 演示用 Consumer Fallback 注册（本 main 未调用）。 */
     private static void registerFallback() {
-        // Register fallback handler for consumer.
-        // If you only want to handle degrading, you need to
-        // check the type of BlockException.
+        // 注册 Consumer Fallback；若仅处理熔断，需判断 BlockException 类型
         DubboAdapterGlobalConfig.setConsumerFallback((a, b, ex) ->
             new RpcResult("Error: " + ex.getClass().getTypeName()));
     }

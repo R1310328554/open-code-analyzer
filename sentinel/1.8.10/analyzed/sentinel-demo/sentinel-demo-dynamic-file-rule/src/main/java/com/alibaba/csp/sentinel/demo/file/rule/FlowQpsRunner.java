@@ -25,7 +25,8 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
- * Flow Rule demo.
+ * 文件动态规则演示用的 QPS 压测 Runner：
+ * 对资源 abc 持续 {@link SphU#entry} 并每秒统计 pass/block。
  *
  * @author Carpenter Lee
  */
@@ -41,6 +42,7 @@ class FlowQpsRunner {
     private static final int threadCount = 1;
     private static int seconds = 60 + 40;
 
+    /** 启动压测线程，随机间隔 0–50ms 发起 entry 请求。 */
     public void simulateTraffic() {
         for (int i = 0; i < threadCount; i++) {
             Thread t = new Thread(new RunTask());
@@ -49,6 +51,7 @@ class FlowQpsRunner {
         }
     }
 
+    /** 启动定时统计线程，每秒输出 pass/block QPS。 */
     public void tick() {
         Thread timer = new Thread(new TimerTask());
         timer.setName("sentinel-timer-task");
@@ -63,12 +66,12 @@ class FlowQpsRunner {
 
                 try {
                     entry = SphU.entry(KEY);
-                    // token acquired, means pass
+                    // 成功获取令牌，计为通过
                     pass.addAndGet(1);
                 } catch (BlockException e1) {
                     block.incrementAndGet();
                 } catch (Exception e2) {
-                    // biz exception
+                    // 业务异常（本 demo 未模拟）
                 } finally {
                     total.incrementAndGet();
                     if (entry != null) {
@@ -80,7 +83,7 @@ class FlowQpsRunner {
                 try {
                     TimeUnit.MILLISECONDS.sleep(random2.nextInt(50));
                 } catch (InterruptedException e) {
-                    // ignore
+                    // 忽略中断
                 }
             }
         }
@@ -90,7 +93,7 @@ class FlowQpsRunner {
         @Override
         public void run() {
             long start = System.currentTimeMillis();
-            System.out.println("begin to statistic!!!");
+            System.out.println("begin to statistic!!!"); // 开始每秒统计
 
             long oldTotal = 0;
             long oldPass = 0;

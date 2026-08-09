@@ -20,7 +20,8 @@ import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
 
 /**
- * Etcd config sender for demo.
+ * Etcd 规则写入工具：向 etcd 写入 sentinel_demo_rule_key 流控规则 JSON，
+ * 供 {@link EtcdDataSourceDemo} 读取验证。
  *
  * @author lianglin
  * @since 1.7.0
@@ -50,7 +51,7 @@ public class EtcdConfigSender {
         client.getKVClient()
                 .put(ByteSequence.from(rule_key.getBytes()), ByteSequence.from(rule.getBytes()));
 
-        System.out.println("setting rule success");
+        System.out.println("setting rule success"); // 规则写入成功
         Thread.sleep(10000);
 
     }

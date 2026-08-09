@@ -17,14 +17,12 @@ import java.util.List;
 
 /**
  * <p>
- * This Demo shows how to use {@link FileInJarReadableDataSource} to read {@link Rule}s from jarfile. The
- * {@link FileInJarReadableDataSource} will automatically fetches the backend file every 3 seconds, and
- * inform the listener if the file is updated.
+ * 演示使用 {@link FileInJarReadableDataSource} 从 JAR 内读取 {@link Rule}。
+ * 数据源每 3 秒轮询 JAR 内文件，变更时通知监听器。
  * </p>
  * <p>
- * Each {@link ReadableDataSource} has a {@link SentinelProperty} to hold the deserialized config data.
- * {@link PropertyListener} will listen to the {@link SentinelProperty} instead of the datasource.
- * {@link Converter} is used for telling how to deserialize the data.
+ * 每个 {@link ReadableDataSource} 持有 {@link SentinelProperty}；
+ * {@link PropertyListener} 监听 Property；{@link Converter} 负责反序列化。
  * </p>
  * <p>
  * {@link FlowRuleManager#register2Property(SentinelProperty)},
@@ -46,18 +44,17 @@ public class JarFileDataSourceDemo {
         JarFileDataSourceDemo demo = new JarFileDataSourceDemo();
         demo.listenRules();
 
-        // Start to require tokens, rate will be limited by rule of FlowRule.json in jar.
+        // 启动压测，速率由 JAR 内 FlowRule.json 限制
         FlowQpsRunner runner = new FlowQpsRunner();
         runner.simulateTraffic();
         runner.tick();
     }
 
     private void listenRules() throws Exception {
-        // Modify the path with your real path.
+        // 请按实际构建产物路径修改 jarPath
         String jarPath = System.getProperty("user.dir") + "/sentinel-demo/sentinel-demo-dynamic-file-rule/target/"
             + "sentinel-demo-dynamic-file-rule.jar";
-        // eg: if flowRuleInJarName full path is 'sentinel-demo-dynamic-file-rule.jar!/classes/FlowRule.json',
-        // your flowRuleInJarName is 'classes/FlowRule.json'
+        // 例：完整路径为 jar!/classes/FlowRule.json 时，flowRuleInJarPath 填 classes/FlowRule.json
         String flowRuleInJarPath = "FlowRule.json";
 
         FileInJarReadableDataSource<List<FlowRule>> flowRuleDataSource = new FileInJarReadableDataSource<>(

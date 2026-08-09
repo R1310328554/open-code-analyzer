@@ -35,25 +35,22 @@ import com.alibaba.fastjson.TypeReference;
 
 /**
  * <p>
- * This Demo shows how to use {@link FileRefreshableDataSource} to read {@link Rule}s from file. The
- * {@link FileRefreshableDataSource} will automatically fetches the backend file every 3 seconds, and
- * inform the listener if the file is updated.
+ * 演示使用 {@link FileRefreshableDataSource} 从本地文件读取 {@link Rule}。
+ * 数据源每 3 秒轮询文件，变更时通知 {@link PropertyListener}。
  * </p>
  * <p>
- * Each {@link ReadableDataSource} has a {@link SentinelProperty} to hold the deserialized config data.
- * {@link PropertyListener} will listen to the {@link SentinelProperty} instead of the datasource.
- * {@link Converter} is used for telling how to deserialize the data.
+ * 每个 {@link ReadableDataSource} 持有 {@link SentinelProperty} 保存反序列化后的配置；
+ * {@link PropertyListener} 监听 Property 而非数据源本身；
+ * {@link Converter} 负责 JSON 反序列化。
  * </p>
  * <p>
- * {@link FlowRuleManager#register2Property(SentinelProperty)},
- * {@link DegradeRuleManager#register2Property(SentinelProperty)},
- * {@link SystemRuleManager#register2Property(SentinelProperty)} could be called for listening the
- * {@link Rule}s change.
+ * 可调用 {@link FlowRuleManager#register2Property}、
+ * {@link DegradeRuleManager#register2Property}、
+ * {@link SystemRuleManager#register2Property} 监听规则热更新。
  * </p>
  * <p>
- * For other kinds of data source, such as <a href="https://github.com/alibaba/nacos">Nacos</a>,
- * Zookeeper, Git, or even CSV file, We could implement {@link ReadableDataSource} interface to read these
- * configs.
+ * 其他数据源（如 <a href="https://github.com/alibaba/nacos">Nacos</a>、Zookeeper、Git、CSV）
+ * 可实现 {@link ReadableDataSource} 接口接入。
  * </p>
  *
  * @author Carpenter Lee
@@ -65,9 +62,7 @@ public class FileDataSourceDemo {
         FileDataSourceDemo demo = new FileDataSourceDemo();
         demo.listenRules();
 
-        /*
-         * Start to require tokens, rate will be limited by rule in FlowRule.json
-         */
+        /* 启动 QPS 压测，速率由 FlowRule.json 中的规则限制 */
         FlowQpsRunner runner = new FlowQpsRunner();
         runner.simulateTraffic();
         runner.tick();
@@ -79,18 +74,18 @@ public class FileDataSourceDemo {
         String degradeRulePath = URLDecoder.decode(classLoader.getResource("DegradeRule.json").getFile(), "UTF-8");
         String systemRulePath = URLDecoder.decode(classLoader.getResource("SystemRule.json").getFile(), "UTF-8");
 
-        // Data source for FlowRule
+        // 流控规则文件数据源
         FileRefreshableDataSource<List<FlowRule>> flowRuleDataSource = new FileRefreshableDataSource<>(
             flowRulePath, flowRuleListParser);
         FlowRuleManager.register2Property(flowRuleDataSource.getProperty());
 
-        // Data source for DegradeRule
+        // 熔断规则文件数据源
         FileRefreshableDataSource<List<DegradeRule>> degradeRuleDataSource
             = new FileRefreshableDataSource<>(
             degradeRulePath, degradeRuleListParser);
         DegradeRuleManager.register2Property(degradeRuleDataSource.getProperty());
 
-        // Data source for SystemRule
+        // 系统保护规则文件数据源
         FileRefreshableDataSource<List<SystemRule>> systemRuleDataSource
             = new FileRefreshableDataSource<>(
             systemRulePath, systemRuleListParser);

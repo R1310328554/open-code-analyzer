@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.demo.jaxrs;
 
 /**
+ * JAX-RS 演示用简单 POJO：携带 id 与 msg 字段。
+ *
  * @author sea
  */
 public class HelloEntity {
@@ -24,30 +26,37 @@ public class HelloEntity {
 
     String msg;
 
+    /** 无参构造。 */
     public HelloEntity() {
     }
 
+    /** 仅设置 msg 的构造。 */
     public HelloEntity(String msg) {
         this.msg = msg;
     }
 
+    /** 设置 id 与 msg 的构造。 */
     public HelloEntity(Long id, String msg) {
         this.id = id;
         this.msg = msg;
     }
 
+    /** 返回实体 id。 */
     public Long getId() {
         return id;
     }
 
+    /** 设置实体 id。 */
     public void setId(Long id) {
         this.id = id;
     }
 
+    /** 返回消息内容。 */
     public String getMsg() {
         return msg;
     }
 
+    /** 设置消息内容。 */
     public void setMsg(String msg) {
         this.msg = msg;
     }

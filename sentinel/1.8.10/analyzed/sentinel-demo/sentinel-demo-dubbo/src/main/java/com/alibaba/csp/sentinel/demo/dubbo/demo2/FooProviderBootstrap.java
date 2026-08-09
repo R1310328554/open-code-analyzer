@@ -20,7 +20,8 @@ import com.alibaba.csp.sentinel.init.InitExecutor;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- * Please add the following VM arguments:
+ * Alibaba Dubbo Provider 演示（demo2）：无本地流控规则，供 Consumer 侧限流测试。
+ * <p>启动前请添加 VM 参数：</p>
  * <pre>
  * -Djava.net.preferIPv4Stack=true
  * -Dcsp.sentinel.api.port=8720
@@ -32,7 +33,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 public class FooProviderBootstrap {
 
     public static void main(String[] args) {
-        // Users don't need to manually call this method.
+        // 一般无需手动调用；此处仅为 eager 初始化 Sentinel
         InitExecutor.doInit();
 
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();

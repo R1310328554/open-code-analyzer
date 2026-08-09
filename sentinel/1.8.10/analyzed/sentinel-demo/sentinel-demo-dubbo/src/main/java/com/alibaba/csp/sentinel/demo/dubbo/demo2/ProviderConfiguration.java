@@ -24,6 +24,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Dubbo Provider Spring 配置（demo2）：扫描 demo2 包下 {@code @Service} 实现。
+ *
  * @author Eric Zhao
  */
 @Configuration
@@ -44,6 +46,7 @@ public class ProviderConfiguration {
         return registryConfig;
     }
 
+    /** dubbo 协议监听 25758 端口，与 demo1 配置一致。 */
     @Bean
     public ProtocolConfig protocolConfig() {
         ProtocolConfig protocolConfig = new ProtocolConfig();

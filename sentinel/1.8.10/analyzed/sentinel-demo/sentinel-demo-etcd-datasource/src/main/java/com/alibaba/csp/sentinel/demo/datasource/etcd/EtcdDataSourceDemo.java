@@ -26,6 +26,8 @@ import com.alibaba.fastjson.JSON;
 import java.util.List;
 
 /**
+ * Etcd 动态数据源演示：从 etcd 读取流控规则并注册到 {@link FlowRuleManager}。
+ *
  * @author lianglin
  * @since 1.7.0
  */
@@ -43,7 +45,9 @@ public class EtcdDataSourceDemo {
         SentinelConfig.setConfig(EtcdConfig.CHARSET, "utf-8");
         SentinelConfig.setConfig(EtcdConfig.AUTH_ENABLE, "true");
 
+        // 创建 EtcdDataSource，key 为 sentinel_demo_rule_key
         ReadableDataSource<String, List<FlowRule>> flowRuleEtcdDataSource = new EtcdDataSource<>(rule_key, (rule) -> JSON.parseArray(rule, FlowRule.class));
+        // 注册 Property，etcd 规则变更时自动热更新
         FlowRuleManager.register2Property(flowRuleEtcdDataSource.getProperty());
         List<FlowRule> rules = FlowRuleManager.getRules();
         System.out.println(rules);
