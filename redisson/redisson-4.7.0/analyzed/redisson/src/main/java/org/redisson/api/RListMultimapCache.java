@@ -16,12 +16,12 @@
 package org.redisson.api;
 
 /**
- * List based Multimap. Stores insertion order and allows duplicates for values mapped to key.
+ * 带 per-key TTL 的 List Multimap。
+ * <p>保持插入顺序，允许同一键下值重复；继承 {@link RMultimapCache} 过期能力。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RListMultimapCache<K, V> extends RListMultimap<K, V>, RMultimapCache<K, V>, RDestroyable {
 

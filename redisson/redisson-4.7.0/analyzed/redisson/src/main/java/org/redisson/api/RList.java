@@ -22,134 +22,131 @@ import java.util.List;
 import java.util.RandomAccess;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.List}
+ * 分布式并发 {@link java.util.List} 实现。
+ * <p>基于 Redis {@code LIST} 命令，支持跨 JVM 共享与并发访问。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<List<V>>, RandomAccess {
 
     /**
-     * Loads elements by specified <code>indexes</code>
+     * 按指定下标批量加载元素。
      * 
-     * @param indexes of elements
-     * @return list of elements
+     * @param indexes 元素下标
+     * @return 元素列表
      */
     List<V> get(int... indexes);
 
     /**
-     * Returns element iterator that can be shared across multiple applications.
-     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
-     * See {@linkplain RList#distributedIterator(String, int)} for creating different iterators.
-     * @param count batch size
-     * @return shared elements iterator
+     * 返回可在多应用间共享的元素迭代器。
+     * 同一对象上多次调用本方法将复用同一共享迭代器。
+     * 需独立迭代器请使用 {@linkplain RList#distributedIterator(String, int)}。
+     * @param count 每批拉取数量
+     * @return 共享元素迭代器
      */
     Iterator<V> distributedIterator(int count);
 
     /**
-     * Returns iterator over elements that match specified pattern. Iterator can be shared across multiple applications.
-     * Creating multiple iterators on the same object with this method will result in a single shared iterator.
-     * Iterator name must be resolved to the same hash slot as list name.
-     * @param count batch size
-     * @param iteratorName redis object name to which cursor will be saved
-     * @return shared elements iterator
+     * 返回匹配指定模式的元素迭代器，可在多应用间共享。
+     * 同一对象上多次调用将复用同一共享迭代器。
+     * 迭代器名称须与 list 名称路由到同一 hash slot。
+     * @param count 每批拉取数量
+     * @param iteratorName 保存游标的 Redis 对象名
+     * @return 共享元素迭代器
      */
     Iterator<V> distributedIterator(String iteratorName, int count);
 
     /**
-     * Returns <code>RMapReduce</code> object associated with this map
+     * 返回与此 List 关联的 {@code RMapReduce} 对象。
      * 
-     * @param <KOut> output key
-     * @param <VOut> output value
-     * @return MapReduce instance
+     * @param <KOut> 输出键类型
+     * @param <VOut> 输出值类型
+     * @return MapReduce 实例
      */
     <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
     
     /**
-     * Add <code>element</code> after <code>elementToFind</code>
+     * 在 {@code elementToFind} 之后插入 {@code element}。
      * 
-     * @param elementToFind - object to find
-     * @param element - object to add
-     * @return new list size
+     * @param elementToFind 定位元素
+     * @param element 待插入元素
+     * @return 插入后列表长度
      */
     int addAfter(V elementToFind, V element);
     
     /**
-     * Add <code>element</code> before <code>elementToFind</code>
+     * 在 {@code elementToFind} 之前插入 {@code element}。
      * 
-     * @param elementToFind - object to find
-     * @param element - object to add
-     * @return new list size
+     * @param elementToFind 定位元素
+     * @param element 待插入元素
+     * @return 插入后列表长度
      */
     int addBefore(V elementToFind, V element);
     
     /**
-     * Set <code>element</code> at <code>index</code>.
-     * Works faster than {@link #set(int, Object)} but 
-     * doesn't return previous element.
+     * 在 {@code index} 处设置元素（快速版，不返回旧值）。
+     * 比 {@link #set(int, Object)} 更快，但不返回被替换元素。
      * 
-     * @param index - index of object
-     * @param element - object to set
+     * @param index 下标
+     * @param element 新元素
      */
     void fastSet(int index, V element);
 
     RList<V> subList(int fromIndex, int toIndex);
 
     /**
-     * Read all elements at once
+     * 一次性读取全部元素。
      *
-     * @return list of values
+     * @return 元素列表
      */
     List<V> readAll();
 
     /**
-     * Trim list and remains elements only in specified range
-     * <code>fromIndex</code>, inclusive, and <code>toIndex</code>, inclusive.
+     * 裁剪列表，仅保留 {@code fromIndex} 到 {@code toIndex}（均含）区间内的元素。
      *
-     * @param fromIndex - from index
-     * @param toIndex - to index
+     * @param fromIndex 起始下标
+     * @param toIndex 结束下标
      */
     void trim(int fromIndex, int toIndex);
 
     /**
-     * Returns range of values from 0 index to <code>toIndex</code>. Indexes are zero based. 
-     * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 返回从 0 到 {@code toIndex} 的元素区间（下标从 0 起）。
+     * {@code -1} 表示最后一个元素，{@code -2} 表示倒数第二个，依此类推。
      * 
-     * @param toIndex - end index
-     * @return elements
+     * @param toIndex 结束下标
+     * @return 元素列表
      */
     List<V> range(int toIndex);
     
     /**
-     * Returns range of values from <code>fromIndex</code> to <code>toIndex</code> index including.
-     * Indexes are zero based. <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 返回 {@code fromIndex} 到 {@code toIndex}（均含）的元素区间。
+     * 下标从 0 起；{@code -1} 表示最后一个元素，{@code -2} 表示倒数第二个。
      * 
-     * @param fromIndex - start index
-     * @param toIndex - end index
-     * @return elements
+     * @param fromIndex 起始下标
+     * @param toIndex 结束下标
+     * @return 元素列表
      */
     List<V> range(int fromIndex, int toIndex);
     
     /**
-     * Remove object by specified index
+     * 按指定下标快速移除元素（不返回值）。
      * 
-     * @param index - index of object
+     * @param index 元素下标
      */
     void fastRemove(int index);
     
     /**
-     * Removes up to <code>count</code> occurrences of <code>element</code> 
+     * 移除至多 {@code count} 个与 {@code element} 相等的元素。
      * 
-     * @param element - element to find
-     * @param count - amount occurrences
-     * @return {@code true} if at least one element removed; 
-     *      or {@code false} if element isn't found
+     * @param element 待移除元素
+     * @param count 最多移除个数
+     * @return 至少移除一个时为 {@code true}；未找到时为 {@code false}
      */
     boolean remove(Object element, int count);
 
     /**
-     * Adds object event listener
+     * 注册 List 对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.ExpiredObjectListener
@@ -160,8 +157,8 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      * @see org.redisson.api.listener.ListRemoveListener
      * @see org.redisson.api.listener.ListTrimListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 }

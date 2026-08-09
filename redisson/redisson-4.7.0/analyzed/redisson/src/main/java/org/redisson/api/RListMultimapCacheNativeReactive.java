@@ -16,16 +16,14 @@
 package org.redisson.api;
 
 /**
- * List based Multimap with ability to set TTL per entry.
- * Stores insertion order and allows duplicates for values mapped to key.
- * Uses Redis native commands for entry expiration and not a scheduled eviction task.
+ * 支持 per-entry TTL 的 List Multimap（Redis 原生过期）。
+ * <p>保持插入顺序，允许值重复；使用 Redis 原生键 TTL，而非定时驱逐任务。
  * <p>
  * Requires <b>Redis 7.4.0 and higher.</b>
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RListMultimapCacheNativeReactive<K, V> extends RListMultimapReactive<K, V>, RMultimapCacheReactive<K, V> {
 

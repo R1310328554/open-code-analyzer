@@ -20,68 +20,59 @@ import java.util.List;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * RxJava2 interface for List based Multimap object
- * 
- * @author Nikita Koksharov
+ * 基于 List 的 Multimap RxJava API。
+ * <p>保持插入顺序，允许同一键下值重复；各方法返回 {@link Single}。
  *
- * @param <K> key type
- * @param <V> value type
+ * @author Nikita Koksharov
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RListMultimapRx<K, V> extends RMultimapRx<K, V> {
 
     /**
-     * Returns a view List of the values associated with {@code key} in this
-     * multimap, if any. Note that when {@code containsKey(key)} is false, this
-     * returns an empty collection, not {@code null}.
+     * 返回与 {@code key} 关联的值列表视图。
+     * 当 {@code containsKey(key)} 为 false 时返回空集合而非 {@code null}。
      *
-     * <p>Changes to the returned collection will update the underlying multimap,
-     * and vice versa.
+     * <p>对返回集合的修改会反映到底层 multimap，反之亦然。
      * 
-     * @param key - map key
-     * @return list of values
+     * @param key 映射键
+     * @return 值列表
      */
     RListRx<V> get(K key);
  
     /**
-     * Returns all elements at once. Result Set is <b>NOT</b> backed by map,
-     * so changes are not reflected in map.
+     * 一次性返回指定键的全部元素。
+     * 结果列表<b>不</b>与底层 map 绑定，修改结果不会影响 multimap。
      *
-     * @param key - map key
-     * @return list of values 
+     * @param key 映射键
+     * @return 值列表
      */
     Single<List<V>> getAll(K key);
     
     /**
-     * Removes all values associated with the key {@code key}.
+     * 移除与 {@code key} 关联的全部值。
      *
-     * <p>Once this method returns, {@code key} will not be mapped to any values
-     * <p>Use {@link RMultimapReactive#fastRemove} if values are not needed.</p>
+     * <p>方法返回后 {@code key} 不再映射任何值。
+     * <p>若不需要返回值，可使用 {@link RMultimapReactive#fastRemove}。</p>
      * 
-     * @param key - map key
-     * @return the values that were removed (possibly empty). The returned
-     *     list <i>may</i> be modifiable, but updating it will have no
-     *     effect on the multimap.
+     * @param key 映射键
+     * @return 被移除的值列表（可能为空）；修改返回列表不影响 multimap。
      */
     Single<List<V>> removeAll(Object key);
     
     /**
-     * Stores a collection of values with the same key, replacing any existing
-     * values for that key.
+     * 用 {@code values} 替换指定键的全部已有值。
      *
-     * <p>If {@code values} is empty, this is equivalent to
-     * {@link #removeAll(Object)}.
+     * <p>若 {@code values} 为空，等价于 {@link #removeAll(Object)}。
      *
-     * @param key - map key
-     * @param values - map values
-     * @return list of replaced values, or an empty collection if no
-     *     values were previously associated with the key. List
-     *     <i>may</i> be modifiable, but updating it will have no effect on the
-     *     multimap.
+     * @param key 映射键
+     * @param values 新值集合
+     * @return 被替换的旧值列表；修改返回列表不影响 multimap。
      */
     Single<List<V>> replaceValues(K key, Iterable<? extends V> values);
 
     /**
-     * Adds object event listener
+     * 注册 ListMultimap 对象事件监听器。
      *
      * @see org.redisson.api.listener.MapPutListener
      * @see org.redisson.api.listener.MapRemoveListener
@@ -90,8 +81,8 @@ public interface RListMultimapRx<K, V> extends RMultimapRx<K, V> {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     @Override
     Single<Integer> addListener(ObjectListener listener);

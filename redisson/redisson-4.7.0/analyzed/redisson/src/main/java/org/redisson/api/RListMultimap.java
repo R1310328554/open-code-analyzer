@@ -18,21 +18,20 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * List based Multimap. Stores insertion order and allows duplicates for values mapped to key.
+ * 基于 List 的 Multimap，保持插入顺序且允许同一键下值重复。
+ * <p>每个键对应一个 {@link RList}，底层由 Redis Hash + List 实现。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RListMultimap<K, V> extends RMultimap<K, V> {
 
     /**
      * {@inheritDoc}
      *
-     * <p>Because a {@code RListMultimap} may has duplicates among values mapped by key and stores insertion order
-     * method returns a {@link List}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultimap} interface.
+     * <p>因 {@code RListMultimap} 允许同一键下值重复且保持插入顺序，
+     * 本方法返回 {@link List} 而非 {@link RMultimap} 接口声明的 {@link java.util.Collection}。
      */
     @Override
     RList<V> get(K key);
@@ -59,16 +58,15 @@ public interface RListMultimap<K, V> extends RMultimap<K, V> {
     /**
      * {@inheritDoc}
      *
-     * <p>Because a {@code RListMultimap} may has duplicates among values mapped by key and stores insertion order
-     * method returns a {@link List}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultimap} interface.
+     * <p>因 {@code RListMultimap} 允许同一键下值重复且保持插入顺序，
+     * 本方法返回 {@link List} 而非 {@link RMultimap} 接口声明的 {@link java.util.Collection}。
      *
      */
     @Override
     List<V> replaceValues(K key, Iterable<? extends V> values);
 
     /**
-     * Adds object event listener
+     * 注册 ListMultimap 对象事件监听器。
      *
      * @see org.redisson.api.listener.MapPutListener
      * @see org.redisson.api.listener.MapRemoveListener
@@ -77,15 +75,15 @@ public interface RListMultimap<K, V> extends RMultimap<K, V> {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     @Override
     int addListener(ObjectListener listener);
 
 
     /**
-     * Adds object event listener
+     * 异步注册 ListMultimap 对象事件监听器。
      *
      * @see org.redisson.api.listener.MapPutListener
      * @see org.redisson.api.listener.MapRemoveListener
@@ -94,8 +92,8 @@ public interface RListMultimap<K, V> extends RMultimap<K, V> {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     @Override
     RFuture<Integer> addListenerAsync(ObjectListener listener);

@@ -16,12 +16,12 @@
 package org.redisson.api;
 
 /**
- * Rx-ified version of {@link RListMultimapCache}.
+ * {@link RListMultimapCache} 的 RxJava API。
+ * <p>各方法返回 {@link Single} 或 {@link io.reactivex.rxjava3.core.Completable}。
  *
  * @author Marnix Kammer
- *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RListMultimapCacheRx<K, V> extends RListMultimapRx<K, V>, RMultimapCacheRx<K, V> {
 

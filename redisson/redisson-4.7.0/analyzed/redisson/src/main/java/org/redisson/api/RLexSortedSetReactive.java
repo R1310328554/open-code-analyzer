@@ -20,135 +20,135 @@ import java.util.Collection;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for sorted set contained values of String type.
- * 
- * @author Nikita Koksharov
+ * 元素为 {@link String} 的字典序有序集合（lex sorted set）Reactor API。
+ * <p>各方法返回 {@link Mono}；基于 Redis lex 范围命令。
  *
+ * @author Nikita Koksharov
  */
 public interface RLexSortedSetReactive extends RScoredSortedSetReactive<String>, RCollectionReactive<String> {
 
     /**
-     * Removes values range starting with <code>fromElement</code> and ending with <code>toElement</code>.
+     * 移除 {@code fromElement} 到 {@code toElement} 之间的 lex 区间元素。
      * 
-     * @param fromElement - start element
-     * @param fromInclusive - start element inclusive
-     * @param toElement - end element
-     * @param toInclusive - end element inclusive
-     * @return number of elements removed
+     * @param fromElement 起始元素
+     * @param fromInclusive 起始边界是否包含
+     * @param toElement 结束元素
+     * @param toInclusive 结束边界是否包含
+     * @return 移除的元素数量
      */
     Mono<Integer> removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     /**
-     * Removes tail values range starting with <code>fromElement</code>.
+     * 移除从 {@code fromElement} 开始的尾部 lex 区间元素。
      * 
-     * @param fromElement - start element
-     * @param fromInclusive - start element inclusive
-     * @return number of elements removed
+     * @param fromElement 起始元素
+     * @param fromInclusive 起始边界是否包含
+     * @return 移除的元素数量
      */
     Mono<Integer> removeRangeTail(String fromElement, boolean fromInclusive);
 
     /**
-     * Removes head values range ending with <code>toElement</code>.
+     * 移除以 {@code toElement} 结束的头部 lex 区间元素。
      * 
-     * @param toElement - end element
-     * @param toInclusive - end element inclusive
-     * @return number of elements removed
+     * @param toElement 结束元素
+     * @param toInclusive 结束边界是否包含
+     * @return 移除的元素数量
      */
     Mono<Integer> removeRangeHead(String toElement, boolean toInclusive);
 
     /**
-     * Returns the number of tail values starting with <code>fromElement</code>.
+     * 统计从 {@code fromElement} 开始的尾部 lex 区间元素数量。
      * 
-     * @param fromElement - start element
-     * @param fromInclusive - start element inclusive
-     * @return number of elements
+     * @param fromElement 起始元素
+     * @param fromInclusive 起始边界是否包含
+     * @return 元素数量
      */
     Mono<Integer> countTail(String fromElement, boolean fromInclusive);
 
     /**
-     * Returns the number of head values ending with <code>toElement</code>.
+     * 统计以 {@code toElement} 结束的头部 lex 区间元素数量。
      * 
-     * @param toElement - end element
-     * @param toInclusive - end element inclusive
-     * @return number of elements
+     * @param toElement 结束元素
+     * @param toInclusive 结束边界是否包含
+     * @return 元素数量
      */
     Mono<Integer> countHead(String toElement, boolean toInclusive);
 
     /**
-     * Returns tail values range starting with <code>fromElement</code>.
+     * 返回从 {@code fromElement} 开始的尾部 lex 区间元素。
      * 
-     * @param fromElement - start element
-     * @param fromInclusive - start element inclusive
-     * @return collection of elements
+     * @param fromElement 起始元素
+     * @param fromInclusive 起始边界是否包含
+     * @return 元素集合
      */
     Mono<Collection<String>> rangeTail(String fromElement, boolean fromInclusive);
 
     /**
-     * Returns head values range ending with <code>toElement</code>.
+     * 返回以 {@code toElement} 结束的头部 lex 区间元素。
      * 
-     * @param toElement - end element
-     * @param toInclusive - end element inclusive
-     * @return collection of elements
+     * @param toElement 结束元素
+     * @param toInclusive 结束边界是否包含
+     * @return 元素集合
      */
     Mono<Collection<String>> rangeHead(String toElement, boolean toInclusive);
 
     /**
-     * Returns values range starting with <code>fromElement</code> and ending with <code>toElement</code>.
+     * 返回 {@code fromElement} 到 {@code toElement} 之间的 lex 区间元素。
      * 
-     * @param fromElement - start element
-     * @param fromInclusive - start element inclusive
-     * @param toElement - end element
-     * @param toInclusive - end element inclusive
-     * @return collection of elements
+     * @param fromElement 起始元素
+     * @param fromInclusive 起始边界是否包含
+     * @param toElement 结束元素
+     * @param toInclusive 结束边界是否包含
+     * @return 元素集合
      */
     Mono<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     /**
-     * Returns tail values range starting with <code>fromElement</code>. 
-     * Returned collection limited by <code>count</code> and starts with <code>offset</code>.
+     * 返回从 {@code fromElement} 开始的尾部 lex 区间元素。
+     * 结果集合受 {@code count} 限制，从 {@code offset} 起返回。
      * 
-     * @param fromElement - start element
-     * @param fromInclusive - start element inclusive
-     * @param offset - offset of result collection
-     * @param count - amount of result collection
-     * @return collection of elements
+     * @param fromElement 起始元素
+     * @param fromInclusive 起始边界是否包含
+     * @param offset 结果集合偏移量
+     * @param count 返回数量
+     * @return 元素集合
      */
     Mono<Collection<String>> rangeTail(String fromElement, boolean fromInclusive, int offset, int count);
 
     /**
-     * Returns head values range ending with <code>toElement</code>.
-     * Returned collection limited by <code>count</code> and starts with <code>offset</code>.
+     * 返回以 {@code toElement} 结束的头部 lex 区间元素。
+     * 结果集合受 {@code count} 限制，从 {@code offset} 起返回。
      * 
-     * @param toElement - end element
-     * @param toInclusive - end element inclusive
-     * @param offset - offset of result collection
-     * @param count - amount of result collection
-     * @return collection of elements
+     * @param toElement 结束元素
+     * @param toInclusive 结束边界是否包含
+     * @param offset 结果集合偏移量
+     * @param count 返回数量
+     * @return 元素集合
      */
     Mono<Collection<String>> rangeHead(String toElement, boolean toInclusive, int offset, int count);
 
     /**
-     * Returns values range starting with <code>fromElement</code> and ending with <code>toElement</code>.
-     * Returned collection limited by <code>count</code> and starts with <code>offset</code>.
+     * 返回 {@code fromElement} 到 {@code toElement} 之间的 lex 区间元素。
+     * 结果集合受 {@code count} 限制，从 {@code offset} 起返回。
      * 
-     * @param fromElement - start element
-     * @param fromInclusive - start element inclusive
-     * @param toElement - end element
-     * @param toInclusive - end element inclusive
-     * @param offset - offset of result collection
-     * @param count - amount of result collection
-     * @return collection of elements
+     * @param fromElement 起始元素
+     * @param fromInclusive 起始边界是否包含
+     * @param toElement 结束元素
+     * @param toInclusive 结束边界是否包含
+     * @param offset 结果集合偏移量
+     * @param count 返回数量
+     * @return 元素集合
      */
     Mono<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
     /**
-     * Returns the number of elements between <code>fromElement</code> and <code>toElement</code>.
+     * 统计 {@code fromElement} 到 {@code toElement} 之间的 lex 区间元素数量。
      * 
-     * @param fromElement - start element
-     * @param fromInclusive - start element inclusive
-     * @param toElement - end element
-     * @param toInclusive - end element inclusive
-     * @return number of elements
+     * @param fromElement 起始元素
+     * @param fromInclusive 起始边界是否包含
+     * @param toElement 结束元素
+     * @param toInclusive 结束边界是否包含
+     * @return 元素数量
      */
     Mono<Integer> count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 

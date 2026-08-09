@@ -16,12 +16,12 @@
 package org.redisson.api;
 
 /**
- * Reactive interface for {@link RListMultimapCache} object.
+ * {@link RListMultimapCache} 的 Reactor API。
+ * <p>各方法返回 {@link Mono} 或 {@link reactor.core.publisher.Flux}。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RListMultimapCacheReactive<K, V> extends RListMultimapReactive<K, V>, RMultimapCacheReactive<K, V> {
 
