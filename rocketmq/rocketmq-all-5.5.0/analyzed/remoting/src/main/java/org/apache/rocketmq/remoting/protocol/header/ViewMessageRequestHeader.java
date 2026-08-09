@@ -29,29 +29,39 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 按消息 ID 查看消息内容的请求头：指定 Topic 与物理 offset 定位单条消息。
+ */
 @RocketMQAction(value = RequestCode.VIEW_MESSAGE_BY_ID, action = Action.GET)
 public class ViewMessageRequestHeader implements CommandCustomHeader {
+    /** 目标 Topic 名称。 */
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 消息在 CommitLog 中的物理 offset。 */
     @CFNotNull
     private Long offset;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回物理 offset。 */
     public Long getOffset() {
         return offset;
     }
 
+    /** 设置物理 offset。 */
     public void setOffset(Long offset) {
         this.offset = offset;
     }

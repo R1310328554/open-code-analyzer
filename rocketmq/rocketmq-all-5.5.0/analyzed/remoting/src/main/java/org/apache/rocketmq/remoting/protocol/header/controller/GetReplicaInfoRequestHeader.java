@@ -23,26 +23,35 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * Controller 查询副本信息的请求头：按 Broker 组名获取 Master 与副本状态。
+ */
 @RocketMQAction(value = RequestCode.CONTROLLER_GET_REPLICA_INFO, resource = ResourceType.CLUSTER, action = Action.GET)
 public class GetReplicaInfoRequestHeader implements CommandCustomHeader {
+    /** 目标 Broker 组名称。 */
     private String brokerName;
 
+    /** 默认构造。 */
     public GetReplicaInfoRequestHeader() {
     }
 
+    /** 指定 Broker 组名的构造。 */
     public GetReplicaInfoRequestHeader(String brokerName) {
         this.brokerName = brokerName;
     }
 
 
+    /** 返回 Broker 组名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 组名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }
 
+    /** 返回含 Broker 组名的调试字符串。 */
     @Override
     public String toString() {
         return "GetReplicaInfoRequestHeader{" +
@@ -50,6 +59,7 @@ public class GetReplicaInfoRequestHeader implements CommandCustomHeader {
                 '}';
     }
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }

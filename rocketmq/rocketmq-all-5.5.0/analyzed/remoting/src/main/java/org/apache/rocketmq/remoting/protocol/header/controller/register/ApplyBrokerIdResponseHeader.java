@@ -20,21 +20,29 @@ package org.apache.rocketmq.remoting.protocol.header.controller.register;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * Broker 申请 brokerId 的响应头：确认集群与 Broker 组名称。
+ */
 public class ApplyBrokerIdResponseHeader implements CommandCustomHeader {
 
+    /** 集群名称。 */
     private String clusterName;
 
+    /** Broker 组名称。 */
     private String brokerName;
 
+    /** 默认构造。 */
     public ApplyBrokerIdResponseHeader() {
     }
 
+    /** 指定集群与 Broker 组名的构造。 */
     public ApplyBrokerIdResponseHeader(String clusterName, String brokerName) {
         this.clusterName = clusterName;
         this.brokerName = brokerName;
     }
 
 
+    /** 返回含集群与 Broker 组名的调试字符串。 */
     @Override
     public String toString() {
         return "ApplyBrokerIdResponseHeader{" +
@@ -43,23 +51,28 @@ public class ApplyBrokerIdResponseHeader implements CommandCustomHeader {
                 '}';
     }
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回集群名称。 */
     public String getClusterName() {
         return clusterName;
     }
 
+    /** 设置集群名称。 */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }
 
+    /** 返回 Broker 组名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 组名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }

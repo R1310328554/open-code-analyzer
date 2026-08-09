@@ -25,23 +25,31 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 向 Controller 查询下一个可用 brokerId 的请求头：指定集群与 Broker 组名。
+ */
 @RocketMQAction(value = RequestCode.CONTROLLER_GET_NEXT_BROKER_ID, resource = ResourceType.CLUSTER, action = Action.GET)
 public class GetNextBrokerIdRequestHeader implements CommandCustomHeader {
 
+    /** 目标集群名称。 */
     @RocketMQResource(ResourceType.CLUSTER)
     private String clusterName;
 
+    /** 目标 Broker 组名称。 */
     private String brokerName;
 
+    /** 默认构造。 */
     public GetNextBrokerIdRequestHeader() {
 
     }
 
+    /** 指定集群与 Broker 组名的构造。 */
     public GetNextBrokerIdRequestHeader(String clusterName, String brokerName) {
         this.clusterName = clusterName;
         this.brokerName = brokerName;
     }
 
+    /** 返回含集群与 Broker 组名的调试字符串。 */
     @Override
     public String toString() {
         return "GetNextBrokerIdRequestHeader{" +
@@ -50,23 +58,28 @@ public class GetNextBrokerIdRequestHeader implements CommandCustomHeader {
                 '}';
     }
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回集群名称。 */
     public String getClusterName() {
         return clusterName;
     }
 
+    /** 返回 Broker 组名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 组名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }
 
+    /** 设置集群名称。 */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }

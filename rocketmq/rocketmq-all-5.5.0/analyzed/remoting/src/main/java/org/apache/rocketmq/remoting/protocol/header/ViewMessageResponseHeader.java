@@ -23,8 +23,12 @@ package org.apache.rocketmq.remoting.protocol.header;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 查看消息内容的响应头：消息体由 Remoting 响应体承载，本头无额外字段。
+ */
 public class ViewMessageResponseHeader implements CommandCustomHeader {
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }

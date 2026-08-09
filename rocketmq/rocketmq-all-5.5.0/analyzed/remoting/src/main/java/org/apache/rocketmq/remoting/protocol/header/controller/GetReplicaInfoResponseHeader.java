@@ -19,39 +19,53 @@ package org.apache.rocketmq.remoting.protocol.header.controller;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * Controller 查询副本信息的响应头：返回 Master brokerId、地址与 epoch。
+ */
 public class GetReplicaInfoResponseHeader implements CommandCustomHeader {
 
+    /** Master 的 brokerId。 */
     private Long masterBrokerId;
+    /** Master 的网络地址。 */
     private String masterAddress;
+    /** Master 的 epoch 版本号。 */
     private Integer masterEpoch;
 
+    /** 默认构造。 */
     public GetReplicaInfoResponseHeader() {
     }
 
+    /** 返回 Master 地址。 */
     public String getMasterAddress() {
         return masterAddress;
     }
 
+    /** 设置 Master 地址。 */
     public void setMasterAddress(String masterAddress) {
         this.masterAddress = masterAddress;
     }
 
+    /** 返回 Master epoch。 */
     public Integer getMasterEpoch() {
         return masterEpoch;
     }
 
+    /** 设置 Master epoch。 */
     public void setMasterEpoch(Integer masterEpoch) {
         this.masterEpoch = masterEpoch;
     }
 
+    /** 返回 Master brokerId。 */
     public Long getMasterBrokerId() {
         return masterBrokerId;
     }
 
+    /** 设置 Master brokerId。 */
     public void setMasterBrokerId(Long masterBrokerId) {
         this.masterBrokerId = masterBrokerId;
     }
 
+    /** 返回含 Master 信息的调试字符串。 */
     @Override
     public String toString() {
         return "GetReplicaInfoResponseHeader{" +
@@ -61,6 +75,7 @@ public class GetReplicaInfoResponseHeader implements CommandCustomHeader {
                 '}';
     }
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }

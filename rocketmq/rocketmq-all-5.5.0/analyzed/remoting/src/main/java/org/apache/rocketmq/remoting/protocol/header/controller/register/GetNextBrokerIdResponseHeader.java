@@ -20,27 +20,37 @@ package org.apache.rocketmq.remoting.protocol.header.controller.register;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 查询下一个可用 brokerId 的响应头：返回集群、Broker 组名与分配的 nextBrokerId。
+ */
 public class GetNextBrokerIdResponseHeader implements CommandCustomHeader {
 
+    /** 集群名称。 */
     private String clusterName;
 
+    /** Broker 组名称。 */
     private String brokerName;
 
+    /** Controller 分配的下一个 brokerId。 */
     private Long nextBrokerId;
 
+    /** 默认构造。 */
     public GetNextBrokerIdResponseHeader() {
     }
 
+    /** 指定集群与 Broker 组名的构造（nextBrokerId 为空）。 */
     public GetNextBrokerIdResponseHeader(String clusterName, String brokerName) {
         this(clusterName, brokerName, null);
     }
 
+    /** 指定集群、Broker 组名与 nextBrokerId 的构造。 */
     public GetNextBrokerIdResponseHeader(String clusterName, String brokerName, Long nextBrokerId) {
         this.clusterName = clusterName;
         this.brokerName = brokerName;
         this.nextBrokerId = nextBrokerId;
     }
 
+    /** 返回含集群、Broker 组名与 nextBrokerId 的调试字符串。 */
     @Override
     public String toString() {
         return "GetNextBrokerIdResponseHeader{" +
@@ -50,31 +60,38 @@ public class GetNextBrokerIdResponseHeader implements CommandCustomHeader {
                 '}';
     }
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 设置 nextBrokerId。 */
     public void setNextBrokerId(Long nextBrokerId) {
         this.nextBrokerId = nextBrokerId;
     }
 
+    /** 返回 nextBrokerId。 */
     public Long getNextBrokerId() {
         return nextBrokerId;
     }
 
+    /** 返回集群名称。 */
     public String getClusterName() {
         return clusterName;
     }
 
+    /** 设置集群名称。 */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }
 
+    /** 返回 Broker 组名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 组名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }
