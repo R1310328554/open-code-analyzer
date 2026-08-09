@@ -45,7 +45,19 @@ def main() -> int:
         cur = json.loads(qp.current.read_text(encoding="utf-8"))
         if cur.get("file") in done_set:
             qp.current.unlink(missing_ok=True)
-    print(json.dumps({"marked": len(files), "done_total": len(done), "pending": len(pending)}, ensure_ascii=False))
+    batch_path = q / "batch.json"
+    batch_remaining: list[str] = []
+    if batch_path.exists():
+        batch = json.loads(batch_path.read_text(encoding="utf-8"))
+        marked = set(files)
+        batch_remaining = [x for x in batch.get("files", []) if x not in marked and x not in done_set]
+        batch["files"] = batch_remaining
+        batch["done"] = len(done)
+        batch["remaining_pending"] = len(pending)
+        if not batch_remaining:
+            batch["claimed_at"] = None
+        batch_path.write_text(json.dumps(batch, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"marked": len(files), "done_total": len(done), "pending": len(pending), "batch_remaining": len(batch_remaining)}, ensure_ascii=False))
     return 0
 
 

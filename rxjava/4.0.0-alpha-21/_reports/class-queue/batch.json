@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T17:54:27Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/core/Completable.java",
-    "src/main/java/io/reactivex/rxjava4/core/Flowable.java",
-    "src/main/java/io/reactivex/rxjava4/core/Maybe.java",
-    "src/main/java/io/reactivex/rxjava4/core/Observable.java",
-    "src/main/java/io/reactivex/rxjava4/core/Scheduler.java",
-    "src/main/java/io/reactivex/rxjava4/core/Single.java",
-    "src/main/java/io/reactivex/rxjava4/core/Streamable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/functions/Functions.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableBuffer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableBufferBoundary.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableBufferTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableCache.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableCombineLatest.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableConcatMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableConcatMapScheduler.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 452,
   "done": 555
 }

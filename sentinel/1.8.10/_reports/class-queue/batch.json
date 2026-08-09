@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T17:53:46Z",
-  "files": [
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/log/jul/MessageFormatter.java",
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/node/metric/MetricWriter.java",
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/slots/statistic/base/LeapArray.java",
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/spi/SpiLoader.java",
-    "sentinel-cluster/sentinel-cluster-server-default/src/main/java/com/alibaba/csp/sentinel/cluster/flow/rule/ClusterFlowRuleManager.java",
-    "sentinel-cluster/sentinel-cluster-server-default/src/main/java/com/alibaba/csp/sentinel/cluster/server/config/ClusterServerConfigManager.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/client/CommandNotFoundException.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/client/SentinelApiClient.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/config/AuthConfiguration.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/config/AuthProperties.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/config/DashboardConfig.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/config/WebConfig.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/AppController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/AuthController.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/controller/AuthorityRuleController.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 425,
   "done": 540
 }

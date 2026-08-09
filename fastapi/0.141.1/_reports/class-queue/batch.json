@@ -1,17 +1,6 @@
 {
-  "claimed_at": "2026-08-09T17:50:18Z",
-  "files": [
-    "docs_src/request_files/tutorial001_03_an_py310.py",
-    "docs_src/request_files/tutorial001_03_py310.py",
-    "docs_src/request_files/tutorial001_an_py310.py",
-    "docs_src/request_files/tutorial001_py310.py",
-    "docs_src/request_files/tutorial002_an_py310.py",
-    "docs_src/request_files/tutorial002_py310.py",
-    "docs_src/request_files/tutorial003_an_py310.py",
-    "docs_src/request_files/tutorial003_py310.py",
-    "docs_src/request_form_models/__init__.py",
-    "docs_src/request_form_models/tutorial001_an_py310.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 127,
   "done": 382
 }
