@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T22:19:21Z",
   "files": [
-    "core/src/main/java/com/taobao/arthas/core/command/model/VersionModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/VmToolModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/model/WatchModel.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/AbstractTraceAdviceListener.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/DashboardCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/DashboardInterruptHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/EnhancerCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/GroovyAdviceListener.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/GroovyScriptCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/HeapDumpCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/JvmCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/LineCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/LineCommandAdviceListener.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/MBeanCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/monitor200/MemoryCommand.java",
     "core/src/main/java/com/taobao/arthas/core/command/monitor200/MonitorAdviceListener.java",
     "core/src/main/java/com/taobao/arthas/core/command/monitor200/MonitorCommand.java",
     "core/src/main/java/com/taobao/arthas/core/command/monitor200/MonitorData.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/com/taobao/arthas/core/command/monitor200/TimeTunnelTable.java"
   ],
   "remaining_pending": 465,
-  "done": 300
+  "done": 315
 }
