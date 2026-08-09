@@ -25,6 +25,10 @@ import org.apache.rocketmq.tools.monitor.DefaultMonitorListener;
 import org.apache.rocketmq.tools.monitor.MonitorConfig;
 import org.apache.rocketmq.tools.monitor.MonitorService;
 
+/**
+ * startMonitoring 子命令：启动 RocketMQ 集群监控服务。
+ * <p>使用默认 {@link MonitorConfig} 与 {@link DefaultMonitorListener} 持续采集指标。
+ */
 public class StartMonitoringSubCommand implements SubCommand {
 
     @Override
@@ -33,18 +37,22 @@ public class StartMonitoringSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Start Monitoring.";
     }
 
     @Override
+    /** 本命令无需额外 CLI 参数。 */
     public Options buildCommandlineOptions(Options options) {
         return options;
     }
 
     @Override
+    /** 创建并启动 {@link MonitorService}，阻塞运行直至异常退出。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         try {
+            // 以默认配置与监听器启动监控服务
             MonitorService monitorService =
                 new MonitorService(new MonitorConfig(), new DefaultMonitorListener(), rpcHook);
 

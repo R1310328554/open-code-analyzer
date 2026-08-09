@@ -34,6 +34,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getConsumerConfig 子命令：按订阅组名查询各 Broker 上的消费组配置。
+ * <p>通过反射打印 {@link SubscriptionGroupConfig} 全部非空字段。
+ */
 public class GetConsumerConfigSubCommand implements SubCommand {
 
     @Override
@@ -42,19 +46,21 @@ public class GetConsumerConfigSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get consumer config by subscription group name.";
     }
 
     @Override
     public Options buildCommandlineOptions(final Options options) {
-        Option opt = new Option("g", "groupName", true, "subscription group name");
+        Option opt = new Option("g", "groupName", true, "待查询的订阅组（消费组）名称");
         opt.setRequired(true);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 遍历集群全部 Broker，拉取并打印订阅组配置字段。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt adminExt = new DefaultMQAdminExt(rpcHook);
@@ -70,6 +76,7 @@ public class GetConsumerConfigSubCommand implements SubCommand {
             List<ConsumerConfigInfo> consumerConfigInfoList = new ArrayList<>();
             ClusterInfo clusterInfo = adminExt.examineBrokerClusterInfo();
             Map<String, Set<String>> clusterAddrTable = clusterInfo.getClusterAddrTable();
+            // 遍历路由表中的每个 Broker
             for (Entry<String, BrokerData> brokerEntry : clusterInfo.getBrokerAddrTable().entrySet()) {
                 String clusterName = this.getClusterName(brokerEntry.getKey(), clusterAddrTable);
                 String brokerAddress = brokerEntry.getValue().selectBrokerAddr();
@@ -86,6 +93,7 @@ public class GetConsumerConfigSubCommand implements SubCommand {
                 System.out.printf("=============================%s:%s=============================\n",
                     info.getClusterName(), info.getBrokerName());
                 SubscriptionGroupConfig config = info.getSubscriptionGroupConfig();
+                // 反射遍历配置对象全部字段并打印
                 Field[] fields = config.getClass().getDeclaredFields();
                 for (Field field : fields) {
                     field.setAccessible(true);
@@ -103,6 +111,7 @@ public class GetConsumerConfigSubCommand implements SubCommand {
         }
     }
 
+    /** 根据 Broker 名反查所属集群名。 */
     private String getClusterName(String brokeName, Map<String, Set<String>> clusterAddrTable) {
         for (Map.Entry<String, Set<String>> entry : clusterAddrTable.entrySet()) {
             Set<String> brokerNameSet = entry.getValue();
@@ -114,6 +123,7 @@ public class GetConsumerConfigSubCommand implements SubCommand {
     }
 }
 
+/** 封装单个 Broker 上的消费组配置查询结果。 */
 class ConsumerConfigInfo {
     private String clusterName;
 
@@ -121,6 +131,7 @@ class ConsumerConfigInfo {
 
     private SubscriptionGroupConfig subscriptionGroupConfig;
 
+    /** 构造消费组配置信息条目。 */
     public ConsumerConfigInfo(String clusterName, String brokerName, SubscriptionGroupConfig subscriptionGroupConfig) {
         this.clusterName = clusterName;
         this.brokerName = brokerName;

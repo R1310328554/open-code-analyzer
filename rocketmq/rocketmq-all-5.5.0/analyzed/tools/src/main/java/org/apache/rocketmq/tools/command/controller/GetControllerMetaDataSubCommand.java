@@ -26,6 +26,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getControllerMetaData 子命令：查询 Controller 集群元数据。
+ * <p>输出 Controller 组名、Leader 信息及 Peer 列表。
+ */
 public class GetControllerMetaDataSubCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -33,30 +37,34 @@ public class GetControllerMetaDataSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get controller cluster's metadata.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("a", "controllerAddress", true, "the address of controller");
+        Option opt = new Option("a", "controllerAddress", true, "Controller 节点地址");
         opt.setRequired(true);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 拉取 Controller 元数据并打印组名、Leader 与 Peer 信息。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
         String controllerAddress = commandLine.getOptionValue('a').trim();
         try {
             defaultMQAdminExt.start();
+            // 获取 Controller 集群元数据响应
             final GetMetaDataResponseHeader metaData = defaultMQAdminExt.getControllerMetaData(controllerAddress);
             System.out.printf("\n#ControllerGroup\t%s", metaData.getGroup());
             System.out.printf("\n#ControllerLeaderId\t%s", metaData.getControllerLeaderId());
             System.out.printf("\n#ControllerLeaderAddress\t%s", metaData.getControllerLeaderAddress());
             final String peers = metaData.getPeers();
+            // 打印各 Peer Controller 地址
             if (StringUtils.isNotEmpty(peers)) {
                 final String[] peerList = peers.split(";");
                 for (String peer : peerList) {

@@ -35,6 +35,10 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateSubGroupList 子命令：从 JSON 文件批量创建或更新订阅组配置。
+ * <p>文件内容为 {@link SubscriptionGroupConfig} 数组。
+ */
 public class UpdateSubGroupListSubCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -42,6 +46,7 @@ public class UpdateSubGroupListSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Update or create subscription group in batch";
     }
@@ -49,16 +54,16 @@ public class UpdateSubGroupListSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
         final OptionGroup optionGroup = new OptionGroup();
-        Option opt = new Option("b", "brokerAddr", true, "create groups to which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "create groups to which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
         opt = new Option("f", "filename", true,
-            "Path to a file with a list of org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig in json format");
+            "订阅组配置 JSON 文件路径（SubscriptionGroupConfig 数组）");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -66,6 +71,7 @@ public class UpdateSubGroupListSubCommand implements SubCommand {
     }
 
     @Override
+    /** 读取 JSON 文件并批量提交订阅组配置到 Broker 或集群。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
         final DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -80,6 +86,7 @@ public class UpdateSubGroupListSubCommand implements SubCommand {
                 return;
             }
             final byte[] groupConfigListBytes = Files.readAllBytes(filePath);
+            // 解析 JSON 为订阅组配置列表
             final List<SubscriptionGroupConfig> groupConfigs = JSON.parseArray(groupConfigListBytes, SubscriptionGroupConfig.class);
             if (null == groupConfigs || groupConfigs.isEmpty()) {
                 return;
@@ -99,6 +106,7 @@ public class UpdateSubGroupListSubCommand implements SubCommand {
 
                 defaultMQAdminExt.start();
 
+                // 集群模式：向各 Master Broker 批量提交配置
                 Set<String> masterSet =
                     CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String brokerAddress : masterSet) {

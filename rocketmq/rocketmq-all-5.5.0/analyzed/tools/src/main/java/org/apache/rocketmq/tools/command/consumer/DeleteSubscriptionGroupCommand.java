@@ -28,6 +28,10 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * deleteSubGroup 子命令：从 Broker 或集群删除订阅组（消费组）。
+ * <p>集群模式下可同时清理重试 Topic 与死信 Topic。
+ */
 public class DeleteSubscriptionGroupCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -35,25 +39,26 @@ public class DeleteSubscriptionGroupCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Delete subscription group from broker.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "delete subscription group from which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "delete subscription group from which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("g", "groupName", true, "subscription group name");
+        opt = new Option("g", "groupName", true, "待删除的订阅组（消费组）名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("r", "removeOffset", true, "remove offset");
+        opt = new Option("r", "removeOffset", true, "是否同时删除消费位点（true/false）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -61,11 +66,12 @@ public class DeleteSubscriptionGroupCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数并在目标 Broker 或集群上删除订阅组。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt adminExt = new DefaultMQAdminExt(rpcHook);
         adminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
         try {
-            // groupName
+            // 解析订阅组名与是否清理位点
             String groupName = commandLine.getOptionValue('g').trim();
             boolean cleanOffset = false;
             if (commandLine.hasOption('r')) {
@@ -88,6 +94,7 @@ public class DeleteSubscriptionGroupCommand implements SubCommand {
                 String clusterName = commandLine.getOptionValue('c').trim();
                 adminExt.start();
 
+                // 集群模式：遍历各 Master Broker 删除订阅组
                 Set<String> masterSet = CommandUtil.fetchMasterAddrByClusterName(adminExt, clusterName);
                 for (String master : masterSet) {
                     adminExt.deleteSubscriptionGroup(master, groupName, cleanOffset);
@@ -96,6 +103,7 @@ public class DeleteSubscriptionGroupCommand implements SubCommand {
                         groupName, master, clusterName);
                 }
 
+                // 清理该消费组对应的重试 Topic 与死信 Topic
                 try {
                     adminExt.deleteTopic(MixAll.RETRY_GROUP_TOPIC_PREFIX + groupName, clusterName);
                     adminExt.deleteTopic(MixAll.DLQ_GROUP_TOPIC_PREFIX + groupName, clusterName);

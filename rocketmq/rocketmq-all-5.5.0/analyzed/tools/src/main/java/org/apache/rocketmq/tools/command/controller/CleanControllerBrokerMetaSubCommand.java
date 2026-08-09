@@ -28,6 +28,10 @@ import org.apache.rocketmq.tools.command.SubCommandException;
 
 import java.util.Arrays;
 
+/**
+ * cleanBrokerMetadata 子命令：清理 Controller 上指定 Broker 副本的元数据。
+ * <p>可指定待清理的 brokerControllerId 列表，或清理存活 Broker。
+ */
 public class CleanControllerBrokerMetaSubCommand implements SubCommand {
 
     @Override
@@ -36,6 +40,7 @@ public class CleanControllerBrokerMetaSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Clean metadata of broker on controller.";
     }
@@ -43,23 +48,23 @@ public class CleanControllerBrokerMetaSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
 
-        Option opt = new Option("a", "controllerAddress", true, "The address of controller");
+        Option opt = new Option("a", "controllerAddress", true, "Controller 节点地址");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerControllerIdsToClean", true, "The brokerController id list which requires to clean metadata. eg: 1;2;3, means that clean broker-1, broker-2 and broker-3");
+        opt = new Option("b", "brokerControllerIdsToClean", true, "待清理的 brokerControllerId 列表，如 1;2;3");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("bn", "brokerName", true, "The broker name of the replicas that require to be manipulated");
+        opt = new Option("bn", "brokerName", true, "待操作的 Broker 副本组名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "The clusterName of broker");
+        opt = new Option("c", "clusterName", true, "Broker 所属集群名（非存活清理时必填）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("l", "cleanLivingBroker", false, "Whether clean up living brokers,default value is false");
+        opt = new Option("l", "cleanLivingBroker", false, "是否清理存活 Broker 元数据（默认 false）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -67,6 +72,7 @@ public class CleanControllerBrokerMetaSubCommand implements SubCommand {
     }
 
     @Override
+    /** 校验参数并调用 cleanControllerBrokerData 清理 Controller 元数据。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
 
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -93,6 +99,7 @@ public class CleanControllerBrokerMetaSubCommand implements SubCommand {
             isCleanLivingBroker = true;
         }
 
+        // 非存活清理模式下 clusterName 不能为空
         if (!isCleanLivingBroker && StringUtils.isEmpty(clusterName)) {
             throw new IllegalArgumentException("cleanLivingBroker option is false, clusterName option can not be empty.");
         }

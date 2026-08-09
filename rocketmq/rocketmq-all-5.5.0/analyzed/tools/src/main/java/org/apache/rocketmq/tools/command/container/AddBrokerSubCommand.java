@@ -25,6 +25,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * addBroker 子命令：向 Broker 容器（Container）动态添加 Broker 实例。
+ * <p>通过指定配置文件路径启动新的 Broker 进程。
+ */
 public class AddBrokerSubCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -32,17 +36,18 @@ public class AddBrokerSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Add a broker to specified container.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("c", "brokerContainerAddr", true, "Broker container address");
+        Option opt = new Option("c", "brokerContainerAddr", true, "Broker 容器地址");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerConfigPath", true, "Broker config path");
+        opt = new Option("b", "brokerConfigPath", true, "新 Broker 配置文件路径");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -50,6 +55,7 @@ public class AddBrokerSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数并调用 addBrokerToContainer 动态添加 Broker。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);

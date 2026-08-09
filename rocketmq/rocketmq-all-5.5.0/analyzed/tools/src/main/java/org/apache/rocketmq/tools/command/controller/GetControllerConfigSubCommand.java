@@ -30,6 +30,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getControllerConfig 子命令：查询 Controller 集群的运行配置。
+ * <p>支持传入多个 Controller 地址（分号分隔）。
+ */
 public class GetControllerConfigSubCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -37,13 +41,14 @@ public class GetControllerConfigSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get controller config.";
     }
 
     @Override
     public Options buildCommandlineOptions(final Options options) {
-        Option opt = new Option("a", "controllerAddress", true, "Controller address list, eg: 192.168.0.1:9878;192.168.0.2:9878");
+        Option opt = new Option("a", "controllerAddress", true, "Controller 地址列表，如 192.168.0.1:9878;192.168.0.2:9878");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -51,12 +56,13 @@ public class GetControllerConfigSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取各 Controller 配置并以键值对形式打印。 */
     public void execute(final CommandLine commandLine, final Options options,
         final RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
         try {
-            // servers
+            // 解析分号分隔的 Controller 地址列表
             String servers = commandLine.getOptionValue('a');
             List<String> serverList = null;
             if (servers != null && servers.length() > 0) {
@@ -69,6 +75,7 @@ public class GetControllerConfigSubCommand implements SubCommand {
 
             defaultMQAdminExt.start();
 
+            // 向各 Controller 拉取配置
             Map<String, Properties> controllerConfigs = defaultMQAdminExt.getControllerConfig(serverList);
 
             for (Map.Entry<String, Properties> controllerConfigEntry : controllerConfigs.entrySet()) {

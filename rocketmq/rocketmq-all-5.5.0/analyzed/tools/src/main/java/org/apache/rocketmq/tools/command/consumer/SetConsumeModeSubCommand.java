@@ -29,6 +29,10 @@ import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
 
+/**
+ * setConsumeMode 子命令：为指定 Topic 与消费组设置消息拉取模式（PULL/POP）。
+ * <p>POP 模式可配置共享队列数量 popShareQueueNum。
+ */
 public class SetConsumeModeSubCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -37,6 +41,7 @@ public class SetConsumeModeSubCommand implements SubCommand {
 
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Set consume message mode. pull/pop etc.";
     }
@@ -44,27 +49,27 @@ public class SetConsumeModeSubCommand implements SubCommand {
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "create subscription group to which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "create subscription group to which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("t", "topicName", true, "topic name");
+        opt = new Option("t", "topicName", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("g", "groupName", true, "consumer group name");
+        opt = new Option("g", "groupName", true, "消费组名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("m", "mode", true, "consume mode. PULL/POP");
+        opt = new Option("m", "mode", true, "消费模式：PULL 或 POP");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("q", "popShareQueueNum", true, "num of queue which share in pop mode");
+        opt = new Option("q", "popShareQueueNum", true, "POP 模式下共享队列数量（可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -73,6 +78,7 @@ public class SetConsumeModeSubCommand implements SubCommand {
 
 
     @Override
+    /** 解析 CLI 参数并调用 setMessageRequestMode 设置消费模式。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook)
             throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -109,6 +115,7 @@ public class SetConsumeModeSubCommand implements SubCommand {
                 String clusterName = commandLine.getOptionValue('c').trim();
 
                 defaultMQAdminExt.start();
+                // 集群模式：遍历各 Master Broker 设置消费模式
                 Set<String> masterSet =
                         CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String addr : masterSet) {

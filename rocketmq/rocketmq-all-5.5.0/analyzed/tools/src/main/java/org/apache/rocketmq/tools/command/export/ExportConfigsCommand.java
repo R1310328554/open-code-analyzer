@@ -35,6 +35,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+/**
+ * exportConfigs 子命令：导出指定集群的 Broker 运行配置与规模信息。
+ * <p>输出 configs.json，含 brokerConfigs 与 clusterScale。
+ */
 public class ExportConfigsCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -42,24 +46,26 @@ public class ExportConfigsCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Export configs.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("c", "clusterName", true, "choose a cluster to export");
+        Option opt = new Option("c", "clusterName", true, "待导出的集群名");
         opt.setRequired(true);
         options.addOption(opt);
 
         opt = new Option("f", "filePath", true,
-            "export configs.json path | default /tmp/rocketmq/export");
+            "导出目录路径，默认 /tmp/rocketmq/export");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 收集 NameServer 与 Broker 配置并写入 configs.json。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook)
         throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -72,10 +78,10 @@ public class ExportConfigsCommand implements SubCommand {
 
             defaultMQAdminExt.start();
             Map<String, Object> result = new HashMap<>();
-            // name servers
+            // 获取 NameServer 地址列表
             List<String> nameServerAddressList = defaultMQAdminExt.getNameServerAddressList();
 
-            //broker
+            // 遍历集群 Master/Slave 并收集 Broker 配置
             int masterBrokerSize = 0;
             int slaveBrokerSize = 0;
             Map<String, Properties> brokerConfigs = new HashMap<>();
@@ -108,6 +114,7 @@ public class ExportConfigsCommand implements SubCommand {
     }
 
 
+    /** 从完整 Broker 配置中筛选需要导出的关键属性。 */
     private Properties needBrokerProprties(Properties properties) {
         List<String> propertyKeys = Arrays.asList(
                 "brokerClusterName",

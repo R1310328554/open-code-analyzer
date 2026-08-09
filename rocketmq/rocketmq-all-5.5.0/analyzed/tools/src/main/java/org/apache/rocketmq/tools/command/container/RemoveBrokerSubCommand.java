@@ -25,6 +25,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * removeBroker 子命令：从 Broker 容器中移除指定 Broker 实例。
+ * <p>通过 clusterName:brokerName:brokerId 三元组标识目标 Broker。
+ */
 public class RemoveBrokerSubCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -32,17 +36,18 @@ public class RemoveBrokerSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Remove a broker from specified container.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("c", "brokerContainerAddr", true, "Broker container address");
+        Option opt = new Option("c", "brokerContainerAddr", true, "Broker 容器地址");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerIdentity", true, "Information to identify a broker: clusterName:brokerName:brokerId(dLedgerId for dLedger)");
+        opt = new Option("b", "brokerIdentity", true, "Broker 标识：clusterName:brokerName:brokerId（dLedger 用 dLedgerId）");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -50,6 +55,7 @@ public class RemoveBrokerSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 Broker 标识并调用 removeBrokerFromContainer 移除实例。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -58,6 +64,7 @@ public class RemoveBrokerSubCommand implements SubCommand {
         try {
             defaultMQAdminExt.start();
             String brokerContainerAddr = commandLine.getOptionValue('c').trim();
+            // 解析 clusterName:brokerName:brokerId 三元组
             String[] brokerIdentities = commandLine.getOptionValue('b').trim().split(":");
             String clusterName = brokerIdentities[0].trim();
             String brokerName = brokerIdentities[1].trim();

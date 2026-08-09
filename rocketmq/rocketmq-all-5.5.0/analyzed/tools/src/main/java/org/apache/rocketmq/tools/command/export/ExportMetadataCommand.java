@@ -37,8 +37,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * exportMetadata 子命令：导出 Topic 与订阅组元数据。
+ * <p>支持按 Broker 或集群导出，可仅导出 Topic 或订阅组。
+ */
 public class ExportMetadataCommand implements SubCommand {
 
+    /** 默认导出目录路径。 */
     private static final String DEFAULT_FILE_PATH = "/tmp/rocketmq/export";
 
     @Override
@@ -47,39 +52,41 @@ public class ExportMetadataCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Export metadata.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("c", "clusterName", true, "choose a cluster to export");
+        Option opt = new Option("c", "clusterName", true, "待导出的集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "choose a broker to export");
+        opt = new Option("b", "brokerAddr", true, "待导出的 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("f", "filePath", true, "export metadata.json path | default /tmp/rocketmq/export");
+        opt = new Option("f", "filePath", true, "导出目录路径，默认 /tmp/rocketmq/export");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", false, "only export topic metadata");
+        opt = new Option("t", "topic", false, "仅导出 Topic 元数据");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("g", "subscriptionGroup", false, "only export subscriptionGroup metadata");
+        opt = new Option("g", "subscriptionGroup", false, "仅导出订阅组元数据");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "specialTopic", false, "need retryTopic and dlqTopic");
+        opt = new Option("s", "specialTopic", false, "是否包含重试 Topic 与死信 Topic");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 按 Broker 或集群导出 Topic/订阅组元数据到 JSON 文件。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook)
         throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -113,6 +120,7 @@ public class ExportMetadataCommand implements SubCommand {
             } else if (commandLine.hasOption('c')) {
                 String clusterName = commandLine.getOptionValue('c').trim();
 
+                // 集群模式：遍历各 Master 合并 Topic 与订阅组元数据
                 Set<String> masterSet =
                     CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName);
 

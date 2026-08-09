@@ -28,6 +28,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * electMaster 子命令：通过 Controller 触发指定 Broker 副本 Master 选举。
+ * <p>输出新 Master 地址、Epoch 及同步状态集信息。
+ */
 public class ReElectMasterSubCommand implements SubCommand {
 
     @Override
@@ -36,25 +40,26 @@ public class ReElectMasterSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Re-elect the specified broker as master.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("a", "controllerAddress", true, "The address of controller");
+        Option opt = new Option("a", "controllerAddress", true, "Controller 节点地址");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerId", true, "The id of the broker which requires to become master");
+        opt = new Option("b", "brokerId", true, "期望成为 Master 的 Broker ID");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("bn", "brokerName", true, "The broker name of the replicas that require to be manipulated");
+        opt = new Option("bn", "brokerName", true, "待操作的 Broker 副本组名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "the clusterName of broker");
+        opt = new Option("c", "clusterName", true, "Broker 所属集群名");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -62,6 +67,7 @@ public class ReElectMasterSubCommand implements SubCommand {
     }
 
     @Override
+    /** 调用 electMaster 触发 Master 选举并打印结果。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
 
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -73,6 +79,7 @@ public class ReElectMasterSubCommand implements SubCommand {
 
         try {
             defaultMQAdminExt.start();
+            // 向 Controller 发起 Master 选举请求
             final Pair<ElectMasterResponseHeader, BrokerMemberGroup> pair = defaultMQAdminExt.electMaster(controllerAddress, clusterName, brokerName, brokerId);
             final ElectMasterResponseHeader metaData = pair.getObject1();
             final BrokerMemberGroup brokerMemberGroup = pair.getObject2();

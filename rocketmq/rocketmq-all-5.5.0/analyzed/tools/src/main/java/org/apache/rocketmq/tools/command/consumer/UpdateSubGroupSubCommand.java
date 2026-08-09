@@ -33,6 +33,10 @@ import org.apache.rocketmq.tools.command.SubCommandException;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * updateSubGroup 子命令：创建或更新单个订阅组（消费组）配置。
+ * <p>支持消费开关、广播/顺序消费、重试策略及自定义属性等参数。
+ */
 public class UpdateSubGroupSubCommand implements SubCommand {
 
     @Override
@@ -41,45 +45,46 @@ public class UpdateSubGroupSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Update or create subscription group.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "create subscription group to which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "create subscription group to which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("g", "groupName", true, "consumer group name");
+        opt = new Option("g", "groupName", true, "消费组名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("s", "consumeEnable", true, "consume enable");
+        opt = new Option("s", "consumeEnable", true, "是否允许消费（true/false）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("m", "consumeFromMinEnable", true, "from min offset");
+        opt = new Option("m", "consumeFromMinEnable", true, "是否从最小位点开始消费");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("d", "consumeBroadcastEnable", true, "broadcast");
+        opt = new Option("d", "consumeBroadcastEnable", true, "是否启用广播消费");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("o", "consumeMessageOrderly", true, "consume message orderly");
+        opt = new Option("o", "consumeMessageOrderly", true, "是否顺序消费消息");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("q", "retryQueueNums", true, "retry queue nums");
+        opt = new Option("q", "retryQueueNums", true, "重试队列数量");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("r", "retryMaxTimes", true, "retry max times");
+        opt = new Option("r", "retryMaxTimes", true, "最大重试次数");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -102,7 +107,7 @@ public class UpdateSubGroupSubCommand implements SubCommand {
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option(null, "attributes", true, "attribute(+a=b,+c=d,-e)");
+        opt = new Option(null, "attributes", true, "自定义属性（+a=b,+c=d,-e 格式）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -110,6 +115,7 @@ public class UpdateSubGroupSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数构建 SubscriptionGroupConfig 并提交到 Broker 或集群。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -121,7 +127,7 @@ public class UpdateSubGroupSubCommand implements SubCommand {
             subscriptionGroupConfig.setConsumeBroadcastEnable(false);
             subscriptionGroupConfig.setConsumeFromMinEnable(false);
 
-            // groupName
+            // 设置消费组名称
             subscriptionGroupConfig.setGroupName(commandLine.getOptionValue('g').trim());
 
             // consumeEnable
@@ -204,6 +210,7 @@ public class UpdateSubGroupSubCommand implements SubCommand {
                 String clusterName = commandLine.getOptionValue('c').trim();
 
                 defaultMQAdminExt.start();
+                // 集群模式：向各 Master Broker 提交订阅组配置
                 Set<String> masterSet =
                     CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String addr : masterSet) {
