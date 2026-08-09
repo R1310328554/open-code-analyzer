@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:37:30Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/iterator/RedissonBaseIterator.java",
-    "redisson/src/main/java/org/redisson/iterator/RedissonBaseMapIterator.java",
-    "redisson/src/main/java/org/redisson/iterator/RedissonListIterator.java",
-    "redisson/src/main/java/org/redisson/iterator/RedissonMapIterator.java",
-    "redisson/src/main/java/org/redisson/iterator/RedissonMapKeyIterator.java",
-    "redisson/src/main/java/org/redisson/jcache/JCache.java",
-    "redisson/src/main/java/org/redisson/jcache/JCacheEntry.java",
-    "redisson/src/main/java/org/redisson/jcache/JCacheEntryEvent.java",
-    "redisson/src/main/java/org/redisson/jcache/JCacheEventCodec.java",
-    "redisson/src/main/java/org/redisson/jcache/JCacheMBeanServerBuilder.java",
-    "redisson/src/main/java/org/redisson/jcache/JCacheManager.java",
-    "redisson/src/main/java/org/redisson/jcache/JCachingProvider.java",
-    "redisson/src/main/java/org/redisson/jcache/JMutableEntry.java",
-    "redisson/src/main/java/org/redisson/jcache/bean/EmptyStatisticsMXBean.java",
-    "redisson/src/main/java/org/redisson/jcache/bean/JCacheManagementMXBean.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 212,
-  "done": 2595
+  "done": 2610
 }
