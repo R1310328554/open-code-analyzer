@@ -21,9 +21,10 @@ import org.redisson.client.protocol.Encoder;
 import java.io.IOException;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨节点广播：更新 Session 中单个属性的值。
+ * <p>构造时将值编码为 {@code byte[]} 以便 Redis 发布/订阅传输。
  *
+ * @author Nikita Koksharov
  */
 public class AttributeUpdateMessage extends AttributeMessage {
 
@@ -33,6 +34,10 @@ public class AttributeUpdateMessage extends AttributeMessage {
     public AttributeUpdateMessage() {
     }
     
+    /** @param name 属性名
+     *  @param value 新属性值
+     *  @param encoder Redisson 编码器
+     */
     public AttributeUpdateMessage(String nodeId, String sessionId, String name, Object value, Encoder encoder) throws IOException {
         super(nodeId, sessionId);
         this.name = name;
@@ -43,6 +48,7 @@ public class AttributeUpdateMessage extends AttributeMessage {
         return name;
     }
     
+    /** 使用给定解码器还原属性值。 */
     public Object getValue(Decoder<?> decoder) throws IOException, ClassNotFoundException {
     	return toObject(decoder, value);
     }

@@ -46,9 +46,11 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
+ * 基于 Redisson 的 Micronaut {@link SessionStore} 实现（Micronaut 5.x）。
+ * <p>Session 数据存于 Redis {@link RMap}；监听键过期/删除与创建 Topic，
+ * 可选跨节点广播属性变更。
  *
  * @author Nikita Koksharov
- *
  */
 @Singleton
 @Primary
@@ -56,6 +58,7 @@ import java.util.concurrent.CompletableFuture;
 @Replaces(InMemorySessionStore.class)
 public class RedissonSessionStore implements SessionStore<RedissonSession>, PatternMessageListener<String>, MessageListener<String> {
 
+    /** 启用 Redisson Session 的配置键：{@code micronaut.session.http.redisson.enabled}。 */
     public static final String ENABLED = SessionSettings.HTTP + ".redisson.enabled";
 
     private static final String SESSION_PREFIX = "redisson:session:";
@@ -75,6 +78,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
     private RedissonHttpSessionConfiguration sessionConfiguration;
     private final ApplicationEventPublisher eventPublisher;
 
+    /** 注册 Redis 键事件与 Session 创建监听器；启用广播时订阅属性更新 Topic。 */
     public RedissonSessionStore(
             RedissonClient redisson,
             SessionIdGenerator sessionIdGenerator,
@@ -139,25 +143,30 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
 
     }
 
+    /** Session 创建事件 Topic 的 Redis 通道名前缀。 */
     String getEventsChannelPrefix() {
         return sessionConfiguration.getKeyPrefix() + "sessions:created:";
     }
 
+    /** Session 过期通知键前缀（预留扩展）。 */
     String getExpiredKeyPrefix() {
         return sessionConfiguration.getKeyPrefix() + "sessions:expires:";
     }
 
+    /** 生成新 ID 并构造 {@link RedissonSession}。 */
     @Override
     public RedissonSession newSession() {
         return new RedissonSession(this, sessionIdGenerator.generateId(),
                 sessionConfiguration.getUpdateMode(), sessionConfiguration.getMaxInactiveInterval());
     }
 
+    /** 从 Redis 加载 Session；不存在或已过期返回空 Optional。 */
     @Override
     public CompletableFuture<Optional<RedissonSession>> findSession(String id) {
         return loadSession(id, false);
     }
 
+    /** 加载并调用 {@link RedissonSession#delete()}；Session 不存在返回 {@code false}。 */
     @Override
     public CompletableFuture<Boolean> deleteSession(String id) {
         return loadSession(id, false).thenCompose(optional -> {
@@ -169,6 +178,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
         }).toCompletableFuture();
     }
 
+    /** 持久化 Session；新 Session 额外发布创建 Topic 消息。 */
     @Override
     public CompletableFuture<RedissonSession> save(RedissonSession session) {
         CompletableFuture<RedissonSession> f = session.save();
@@ -180,6 +190,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
         });
     }
 
+    /** 处理 Redis {@code __keyevent@*:del/expired} 通知，发布 Session 删除/过期事件。 */
     @Override
     public void onMessage(CharSequence pattern, CharSequence channel, String body) {
         if (deletedTopic.getPatternNames().contains(pattern.toString())) {
@@ -207,6 +218,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
         }
     }
 
+    /** 异步读取 Redis Map 并构造 Session；{@code useExpired} 为 true 时不校验过期。 */
     private CompletableFuture<Optional<RedissonSession>> loadSession(String id, boolean useExpired) {
         RMap<CharSequence, Object> map = getMap(id);
 
@@ -224,6 +236,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
         }).toCompletableFuture();
     }
 
+    /** 处理 Session 创建 Topic 消息，发布 {@link SessionCreatedEvent}。 */
     @Override
     public void onMessage(CharSequence channel, String id) {
         loadSession(id, true).whenComplete((r, e) -> {
@@ -233,6 +246,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
         });
     }
 
+    /** 获取 Session 属性变更广播 Topic（支持分片 Topic）。 */
     public RTopic getTopic() {
         String keyPrefix = sessionConfiguration.getKeyPrefix();
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
@@ -240,6 +254,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
         return getTopic(name, getCodec());
     }
 
+    /** 按名称创建 Topic；Redis 支持分片时使用 {@link RShardedTopic}。 */
     private RTopic getTopic(String name, Codec codec) {
         PublishSubscribeService ss = ((Redisson) redisson).getCommandExecutor().getConnectionManager().getSubscribeService();
         if (ss.isShardingSupported()) {
@@ -248,18 +263,22 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
         return redisson.getTopic(name, codec);
     }
 
+    /** 本 Micronaut 实例的唯一节点 ID（过滤自身广播消息）。 */
     public String getNodeId() {
         return nodeId;
     }
 
+    /** 创建 Redisson 批处理以合并 Session 写操作。 */
     public RBatch createBatch() {
         return redisson.createBatch();
     }
 
+    /** 返回 Session 配置编解码器，未指定时使用 Redisson 全局 Codec。 */
     private Codec getCodec() {
         return Optional.ofNullable(sessionConfiguration.getCodec()).orElse(redisson.getConfig().getCodec());
     }
 
+    /** 获取 Session 属性 Redis Map（键名含前缀与 Session ID）。 */
     public RMap<CharSequence, Object> getMap(String sessionId) {
         String keyPrefix = sessionConfiguration.getKeyPrefix();
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
@@ -267,6 +286,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
         return redisson.getMap(name, new CompositeCodec(StringCodec.INSTANCE, getCodec(), getCodec()));
     }
 
+    /** 获取 Session 生命周期通知桶（配合 Redis 键事件触发 Micronaut 事件）。 */
     public RBucket<Integer> getNotificationBucket(String sessionId) {
         String keyPrefix = sessionConfiguration.getKeyPrefix();
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";

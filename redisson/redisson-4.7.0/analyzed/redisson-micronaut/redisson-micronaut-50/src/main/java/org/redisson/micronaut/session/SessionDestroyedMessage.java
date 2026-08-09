@@ -16,15 +16,17 @@
 package org.redisson.micronaut.session;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨节点广播：通知其他 Micronaut 实例 Session 已销毁。
  *
+ * @author Nikita Koksharov
  */
 public class SessionDestroyedMessage extends AttributeMessage {
 
     public SessionDestroyedMessage() {
     }
 
+    /** @param nodeId 销毁 Session 的节点
+     *  @param sessionId 已销毁 Session ID */
     public SessionDestroyedMessage(String nodeId, String sessionId) {
         super(nodeId, sessionId);
     }

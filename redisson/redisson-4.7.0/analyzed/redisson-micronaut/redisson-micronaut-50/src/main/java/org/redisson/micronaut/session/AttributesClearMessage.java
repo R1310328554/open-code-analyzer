@@ -16,15 +16,17 @@
 package org.redisson.micronaut.session;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨节点广播：清空指定 Session 的全部属性。
  *
+ * @author Nikita Koksharov
  */
 public class AttributesClearMessage extends AttributeMessage {
 
     public AttributesClearMessage() {
     }
 
+    /** @param nodeId 发起清空的节点
+     *  @param sessionId 目标 Session */
     public AttributesClearMessage(String nodeId, String sessionId) {
         super(nodeId, sessionId);
     }
