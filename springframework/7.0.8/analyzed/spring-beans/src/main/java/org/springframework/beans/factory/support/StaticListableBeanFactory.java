@@ -46,27 +46,18 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class StaticListableBeanFactory — 意图说明
-
-Bean 工厂：存在与获取 Bean 实例的核心入口；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/support/StaticListableBeanFactory.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Static {@link org.springframework.beans.factory.BeanFactory} implementation
- * which allows one to register existing singleton instances programmatically.
+ * 静态 {@link org.springframework.beans.factory.BeanFactory} 实现，
+ * 允许以编程方式注册已有的单例实例。
  *
- * <p>Does not have support for prototype beans or aliases.
+ * <p>不支持 prototype Bean 或别名。
  *
- * <p>Serves as an example for a simple implementation of the
- * {@link org.springframework.beans.factory.ListableBeanFactory} interface,
- * managing existing bean instances rather than creating new ones based on bean
- * definitions, and not implementing any extended SPI interfaces (such as
- * {@link org.springframework.beans.factory.config.ConfigurableBeanFactory}).
+ * <p>作为 {@link org.springframework.beans.factory.ListableBeanFactory} 接口
+ * 的简单实现示例，管理已有 Bean 实例而非基于 Bean 定义创建新实例，
+ * 也不实现任何扩展 SPI 接口（如
+ * {@link org.springframework.beans.factory.config.ConfigurableBeanFactory}）。
  *
- * <p>For a full-fledged factory based on bean definitions, have a look at
- * {@link DefaultListableBeanFactory}.
+ * <p>若需要基于 Bean 定义的完整工厂，请参阅 {@link DefaultListableBeanFactory}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -76,21 +67,19 @@ Bean 工厂：存在与获取 Bean 实例的核心入口；源文件: `spring-be
  */
 public class StaticListableBeanFactory implements ListableBeanFactory {
 
-	// [OCA] 字段 `beans`：类成员状态。
-	/** Map from bean name to bean instance. */
+	/** 从 Bean 名称到 Bean 实例的映射。 */
 	private final Map<String, Object> beans;
 
 
 	/**
-	 * Create a regular {@code StaticListableBeanFactory}, to be populated
-	 * with singleton bean instances through {@link #addBean} calls.
+	 * 创建常规的 {@code StaticListableBeanFactory}，通过 {@link #addBean} 调用填充单例 Bean 实例。
 	 */
 	public StaticListableBeanFactory() {
 		this.beans = new LinkedHashMap<>();
 	}
 
 	/**
-	 * Create a {@code StaticListableBeanFactory} wrapping the given {@code Map}.
+	 * 创建包装给定 {@code Map} 的 {@code StaticListableBeanFactory}。
 	 * <p>Note that the given {@code Map} may be pre-populated with beans;
 	 * or new, still allowing for beans to be registered via {@link #addBean};
 	 * or {@link java.util.Collections#emptyMap()} for a dummy factory which
@@ -106,7 +95,7 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 
 
 	/**
-	 * Add a new singleton bean.
+	 * 添加新的单例 Bean。
 	 * <p>Will overwrite any existing instance for the given name.
 	 * @param name the name of the bean
 	 * @param bean the bean instance
@@ -121,32 +110,24 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 	//---------------------------------------------------------------------
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBean — 意图与阅读要点
-
-方法 `getBean` 复杂度较高（CCN≈10, NLOC≈27）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public Object getBean(String name) throws BeansException {
 		return getBean(name, (Class<?>) null);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBean — 意图与阅读要点
-
-方法 `getBean` 复杂度较高（CCN≈10, NLOC≈27）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> T getBean(String name, @Nullable Class<T> requiredType) throws BeansException {
 		String beanName = BeanFactoryUtils.transformedBeanName(name);
 		Object bean = obtainBean(beanName);
 
 		if (BeanFactoryUtils.isFactoryDereference(name)) {
+			// 请求 FactoryBean 本身（&beanName 语法）
 			if (!(bean instanceof FactoryBean)) {
 				throw new BeanIsNotAFactoryException(beanName, bean.getClass());
 			}
 		}
 		else if (bean instanceof FactoryBean<?> factoryBean) {
+			// 从 FactoryBean 获取暴露的对象
 			try {
 				Object exposedObject =
 						(factoryBean instanceof SmartFactoryBean<?> smartFactoryBean && requiredType != null ?
@@ -168,11 +149,6 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBean — 意图与阅读要点
-
-方法 `getBean` 复杂度较高（CCN≈10, NLOC≈27）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public Object getBean(String name, @Nullable Object @Nullable ... args) throws BeansException {
 		if (!ObjectUtils.isEmpty(args)) {
 			throw new UnsupportedOperationException(
@@ -181,6 +157,7 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 		return getBean(name);
 	}
 
+	/** 从内部 Map 获取 Bean，不存在时抛出异常。 */
 	private Object obtainBean(String beanName) {
 		Object bean = this.beans.get(beanName);
 		if (bean == null) {
@@ -191,11 +168,6 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBean — 意图与阅读要点
-
-方法 `getBean` 复杂度较高（CCN≈10, NLOC≈27）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> T getBean(Class<T> requiredType) throws BeansException {
 		String[] beanNames = getBeanNamesForType(requiredType);
 		if (beanNames.length == 1) {
@@ -210,11 +182,6 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBean — 意图与阅读要点
-
-方法 `getBean` 复杂度较高（CCN≈10, NLOC≈27）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> T getBean(Class<T> requiredType, @Nullable Object @Nullable ... args) throws BeansException {
 		if (!ObjectUtils.isEmpty(args)) {
 			throw new UnsupportedOperationException(
@@ -224,31 +191,16 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanProvider — 意图与阅读要点
-
-方法 `getBeanProvider` 复杂度较高（CCN≈8, NLOC≈58）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> ObjectProvider<T> getBeanProvider(Class<T> requiredType) throws BeansException {
 		return getBeanProvider(ResolvableType.forRawClass(requiredType), true);
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanProvider — 意图与阅读要点
-
-方法 `getBeanProvider` 复杂度较高（CCN≈8, NLOC≈58）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> ObjectProvider<T> getBeanProvider(ResolvableType requiredType) {
 		return getBeanProvider(requiredType, true);
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanProvider — 意图与阅读要点
-
-方法 `getBeanProvider` 复杂度较高（CCN≈8, NLOC≈58）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> ObjectProvider<T> getBeanProvider(ParameterizedTypeReference<T> requiredType) {
 		return getBeanProvider(ResolvableType.forType(requiredType), true);
 	}
@@ -298,6 +250,7 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 		return typeToMatch.isInstance(bean);
 	}
 
+	/** 判断 FactoryBean 暴露的对象类型是否与目标类型匹配。 */
 	private boolean isTypeMatch(FactoryBean<?> factoryBean, Class<?> typeToMatch) throws NoSuchBeanDefinitionException {
 		if (factoryBean instanceof SmartFactoryBean<?> smartFactoryBean) {
 			return smartFactoryBean.supportsType(typeToMatch);
@@ -347,22 +300,12 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanProvider — 意图与阅读要点
-
-方法 `getBeanProvider` 复杂度较高（CCN≈8, NLOC≈58）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> ObjectProvider<T> getBeanProvider(Class<T> requiredType, boolean allowEagerInit) {
 		return getBeanProvider(ResolvableType.forRawClass(requiredType), allowEagerInit);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanProvider — 意图与阅读要点
-
-方法 `getBeanProvider` 复杂度较高（CCN≈8, NLOC≈58）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> ObjectProvider<T> getBeanProvider(ResolvableType requiredType, boolean allowEagerInit) {
 		return new ObjectProvider<>() {
 			@Override
@@ -423,21 +366,11 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanNamesForType — 意图与阅读要点
-
-方法 `getBeanNamesForType` 复杂度较高（CCN≈13, NLOC≈22）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public String[] getBeanNamesForType(@Nullable ResolvableType type) {
 		return getBeanNamesForType(type, true, true);
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanNamesForType — 意图与阅读要点
-
-方法 `getBeanNamesForType` 复杂度较高（CCN≈13, NLOC≈22）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public String[] getBeanNamesForType(@Nullable ResolvableType type,
 			boolean includeNonSingletons, boolean allowEagerInit) {
 
@@ -449,6 +382,7 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 			String beanName = entry.getKey();
 			Object beanInstance = entry.getValue();
 			if (beanInstance instanceof FactoryBean<?> factoryBean && !isFactoryType) {
+				// FactoryBean：按暴露对象类型匹配
 				if ((includeNonSingletons || factoryBean.isSingleton()) &&
 						(type == null || (clazz != null && isTypeMatch(factoryBean, clazz)))) {
 					matches.add(beanName);
@@ -464,42 +398,22 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanNamesForType — 意图与阅读要点
-
-方法 `getBeanNamesForType` 复杂度较高（CCN≈13, NLOC≈22）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public String[] getBeanNamesForType(@Nullable Class<?> type) {
 		return getBeanNamesForType(ResolvableType.forClass(type));
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeanNamesForType — 意图与阅读要点
-
-方法 `getBeanNamesForType` 复杂度较高（CCN≈13, NLOC≈22）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public String[] getBeanNamesForType(@Nullable Class<?> type, boolean includeNonSingletons, boolean allowEagerInit) {
 		return getBeanNamesForType(ResolvableType.forClass(type), includeNonSingletons, allowEagerInit);
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getBeansOfType — 意图与阅读要点
-
-方法 `getBeansOfType` 复杂度较高（CCN≈12, NLOC≈24）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> Map<String, T> getBeansOfType(@Nullable Class<T> type) throws BeansException {
 		return getBeansOfType(type, true, true);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	/* ===== [OCA 中文解析] =====
-方法 getBeansOfType — 意图与阅读要点
-
-方法 `getBeansOfType` 复杂度较高（CCN≈12, NLOC≈24）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public <T> Map<String, T> getBeansOfType(@Nullable Class<T> type, boolean includeNonSingletons, boolean allowEagerInit)
 			throws BeansException {
 
@@ -510,6 +424,7 @@ public class StaticListableBeanFactory implements ListableBeanFactory {
 			String beanName = entry.getKey();
 			Object beanInstance = entry.getValue();
 			if (beanInstance instanceof FactoryBean<?> factoryBean && !isFactoryType) {
+				// FactoryBean：按暴露对象类型匹配
 				if ((includeNonSingletons || factoryBean.isSingleton()) &&
 						(type == null || isTypeMatch(factoryBean, type))) {
 					matches.put(beanName, getBean(beanName, type));

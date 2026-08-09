@@ -44,20 +44,13 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class DisposableBeanAdapter — 意图说明
-
-class `DisposableBeanAdapter`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/support/DisposableBeanAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Adapter that implements the {@link DisposableBean} and {@link Runnable}
- * interfaces performing various destruction steps on a given bean instance:
+ * 实现 {@link DisposableBean} 和 {@link Runnable} 接口的适配器，
+ * 对给定 Bean 实例执行多种销毁步骤：
  * <ul>
- * <li>DestructionAwareBeanPostProcessors;
- * <li>the bean implementing DisposableBean itself;
- * <li>a custom destroy method specified on the bean definition.
+ * <li>DestructionAwareBeanPostProcessor；
+ * <li>Bean 自身实现 DisposableBean；
+ * <li>Bean 定义中指定的自定义销毁方法。
  * </ul>
  *
  * @author Juergen Hoeller
@@ -74,43 +67,46 @@ class `DisposableBeanAdapter`：请结合所属模块与调用方理解其在整
 @SuppressWarnings("serial")
 class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 
-	// [OCA] 字段 `DESTROY_METHOD_NAME`：类成员状态。
+	/** 标准销毁方法名：destroy。 */
 	private static final String DESTROY_METHOD_NAME = "destroy";
 
-	// [OCA] 字段 `CLOSE_METHOD_NAME`：类成员状态。
+	/** 推断销毁方法候选名：close。 */
 	private static final String CLOSE_METHOD_NAME = "close";
 
-	// [OCA] 字段 `SHUTDOWN_METHOD_NAME`：类成员状态。
+	/** 推断销毁方法候选名：shutdown。 */
 	private static final String SHUTDOWN_METHOD_NAME = "shutdown";
 
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/** 日志记录器。 */
 	private static final Log logger = LogFactory.getLog(DisposableBeanAdapter.class);
 
-	// [OCA] 字段 `REACTIVE_STREAMS_PRESENT`：类成员状态。
+	/** 运行时是否可用 Reactive Streams API。 */
 	private static final boolean REACTIVE_STREAMS_PRESENT = ClassUtils.isPresent(
 			"org.reactivestreams.Publisher", DisposableBeanAdapter.class.getClassLoader());
 
 
-	// [OCA] 字段 `bean`：类成员状态。
+	/** 待销毁的 Bean 实例。 */
 	private final Object bean;
 
-	// [OCA] 字段 `beanName`：类成员状态。
+	/** Bean 名称。 */
 	private final String beanName;
 
-	// [OCA] 字段 `nonPublicAccessAllowed`：类成员状态。
+	/** 是否允许访问非 public 方法。 */
 	private final boolean nonPublicAccessAllowed;
 
-	// [OCA] 字段 `invokeDisposableBean`：类成员状态。
+	/** 是否调用 DisposableBean.destroy()。 */
 	private final boolean invokeDisposableBean;
 
-	// [OCA] 字段 `invokeAutoCloseable`：类成员状态。
+	/** 是否调用 AutoCloseable.close()。 */
 	private boolean invokeAutoCloseable;
 
+	/** 自定义销毁方法名称数组。 */
 	private String @Nullable [] destroyMethodNames;
 
+	/** 已解析的自定义销毁方法数组。 */
 	private transient Method @Nullable [] destroyMethods;
 
+	/** 适用的销毁感知 BeanPostProcessor 列表。 */
 	private final @Nullable List<DestructionAwareBeanPostProcessor> beanPostProcessors;
 
 
@@ -132,6 +128,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 		this.invokeDisposableBean = (bean instanceof DisposableBean &&
 				!beanDefinition.hasAnyExternallyManagedDestroyMethod(DESTROY_METHOD_NAME));
 
+		// 推断或解析自定义销毁方法
 		String[] destroyMethodNames = inferDestroyMethodsIfNecessary(bean.getClass(), beanDefinition);
 		if (!ObjectUtils.isEmpty(destroyMethodNames) &&
 				!(this.invokeDisposableBean && DESTROY_METHOD_NAME.equals(destroyMethodNames[0])) &&
@@ -211,18 +208,15 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 destroy — 意图与阅读要点
-
-方法 `destroy` 复杂度较高（CCN≈18, NLOC≈59）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void destroy() {
+		// 1. 调用 DestructionAwareBeanPostProcessor
 		if (!CollectionUtils.isEmpty(this.beanPostProcessors)) {
 			for (DestructionAwareBeanPostProcessor processor : this.beanPostProcessors) {
 				processor.postProcessBeforeDestruction(this.bean, this.beanName);
 			}
 		}
 
+		// 2. 调用 DisposableBean.destroy()
 		if (this.invokeDisposableBean) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Invoking destroy() on bean with name '" + this.beanName + "'");
@@ -244,6 +238,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 			}
 		}
 
+		// 3. 调用 AutoCloseable.close() 或自定义销毁方法
 		if (this.invokeAutoCloseable) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Invoking close() on bean with name '" + this.beanName + "'");
@@ -311,11 +306,6 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 				BeanUtils.findMethodWithMinimalParameters(clazz.getMethods(), name));
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 invokeCustomDestroyMethod — 意图与阅读要点
-
-方法 `invokeCustomDestroyMethod` 复杂度较高（CCN≈11, NLOC≈37）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Invoke the specified custom destroy method on the given bean.
 	 * <p>This implementation invokes a no-arg method if found, else checking
@@ -522,13 +512,6 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ReactiveDestroyMethodHandler — 意图说明
-
-class `ReactiveDestroyMethodHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/support/DisposableBeanAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Inner class to avoid a hard dependency on the Reactive Streams API at runtime.
 	 */
@@ -547,13 +530,6 @@ class `ReactiveDestroyMethodHandler`：请结合所属模块与调用方理解�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class DestroyMethodSubscriber — 意图说明
-
-class `DestroyMethodSubscriber`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/support/DisposableBeanAdapter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Reactive Streams Subscriber for destroy method completion.
 	 */

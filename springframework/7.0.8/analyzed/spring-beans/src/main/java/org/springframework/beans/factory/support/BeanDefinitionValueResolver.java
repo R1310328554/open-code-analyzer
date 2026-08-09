@@ -48,21 +48,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class BeanDefinitionValueResolver — 意图说明
-
-Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/support/BeanDefinitionValueResolver.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Helper class for use in bean factory implementations,
- * resolving values contained in bean definition objects
- * into the actual values applied to the target bean instance.
+ * Bean 工厂实现中使用的辅助类，将 Bean 定义对象中的值解析为
+ * 实际应用到目标 Bean 实例上的值。
  *
- * <p>Operates on an {@link AbstractBeanFactory} and a plain
- * {@link org.springframework.beans.factory.config.BeanDefinition} object.
- * Used by {@link AbstractAutowireCapableBeanFactory}.
+ * <p>在 {@link AbstractBeanFactory} 和普通
+ * {@link org.springframework.beans.factory.config.BeanDefinition} 对象上操作。
+ * 由 {@link AbstractAutowireCapableBeanFactory} 使用。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -72,22 +64,22 @@ Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spri
  */
 public class BeanDefinitionValueResolver {
 
-	// [OCA] 字段 `beanFactory`：类成员状态。
+	/** 用于解析 Bean 引用的自动装配 Bean 工厂。 */
 	private final AbstractAutowireCapableBeanFactory beanFactory;
 
-	// [OCA] 字段 `beanName`：类成员状态。
+	/** 当前正在装配的 Bean 名称。 */
 	private final String beanName;
 
-	// [OCA] 字段 `beanDefinition`：类成员状态。
+	/** 当前正在装配的 Bean 定义。 */
 	private final BeanDefinition beanDefinition;
 
-	// [OCA] 字段 `typeConverter`：类成员状态。
+	/** 用于类型转换（如 {@link TypedStringValue}）的类型转换器。 */
 	private final TypeConverter typeConverter;
 
 
 	/**
-	 * Create a BeanDefinitionValueResolver for the given BeanFactory and BeanDefinition,
-	 * using the given {@link TypeConverter}.
+	 * 为给定的 BeanFactory 和 BeanDefinition 创建 BeanDefinitionValueResolver，
+	 * 使用指定的 {@link TypeConverter}。
 	 * @param beanFactory the BeanFactory to resolve against
 	 * @param beanName the name of the bean that we work on
 	 * @param beanDefinition the BeanDefinition of the bean that we work on
@@ -103,8 +95,8 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Create a BeanDefinitionValueResolver for the given BeanFactory and BeanDefinition
-	 * using a default {@link TypeConverter}.
+	 * 为给定的 BeanFactory 和 BeanDefinition 创建 BeanDefinitionValueResolver，
+	 * 使用默认的 {@link TypeConverter}。
 	 * @param beanFactory the BeanFactory to resolve against
 	 * @param beanName the name of the bean that we work on
 	 * @param beanDefinition the BeanDefinition of the bean that we work on
@@ -122,8 +114,8 @@ public class BeanDefinitionValueResolver {
 
 
 	/**
-	 * Given a PropertyValue, return a value, resolving any references to other
-	 * beans in the factory if necessary. The value could be:
+	 * 给定一个 PropertyValue，返回解析后的值，必要时解析对工厂中其他 Bean 的引用。
+	 * 值可能是：
 	 * <li>A BeanDefinition, which leads to the creation of a corresponding
 	 * new bean instance. Singleton flags and names of such "inner beans"
 	 * are always ignored: Inner beans are anonymous prototypes.
@@ -140,8 +132,7 @@ public class BeanDefinitionValueResolver {
 	 * @return the resolved object
 	 */
 	public @Nullable Object resolveValueIfNecessary(Object argName, @Nullable Object value) {
-		// We must check each value to see whether it requires a runtime reference
-		// to another bean to be resolved.
+		// 逐一检查每个值，判断是否需要解析对另一个 Bean 的运行时引用
 		if (value instanceof RuntimeBeanReference ref) {
 			return resolveReference(argName, ref);
 		}
@@ -155,7 +146,7 @@ public class BeanDefinitionValueResolver {
 			return refName;
 		}
 		else if (value instanceof BeanDefinitionHolder bdHolder) {
-			// Resolve BeanDefinitionHolder: contains BeanDefinition with name and aliases.
+			// 解析 BeanDefinitionHolder：包含带名称和别名的 BeanDefinition
 			return resolveInnerBean(bdHolder.getBeanName(), bdHolder.getBeanDefinition(),
 					(name, mbd) -> resolveInnerBeanValue(argName, name, mbd));
 		}
@@ -175,7 +166,7 @@ public class BeanDefinitionValueResolver {
 			return result;
 		}
 		else if (value instanceof ManagedArray managedArray) {
-			// May need to resolve contained runtime references.
+			// 可能需要解析其中的运行时引用
 			Class<?> elementType = managedArray.resolvedElementType;
 			if (elementType == null) {
 				String elementTypeName = managedArray.getElementTypeName();
@@ -185,7 +176,7 @@ public class BeanDefinitionValueResolver {
 						managedArray.resolvedElementType = elementType;
 					}
 					catch (Throwable ex) {
-						// Improve the message by showing the context.
+						// 在异常信息中展示上下文，便于定位问题
 						throw new BeanCreationException(
 								this.beanDefinition.getResourceDescription(), this.beanName,
 								"Error resolving array type for " + argName, ex);
@@ -198,19 +189,19 @@ public class BeanDefinitionValueResolver {
 			return resolveManagedArray(argName, (List<?>) value, elementType);
 		}
 		else if (value instanceof ManagedList<?> managedList) {
-			// May need to resolve contained runtime references.
+			// 可能需要解析其中的运行时引用
 			return resolveManagedList(argName, managedList);
 		}
 		else if (value instanceof ManagedSet<?> managedSet) {
-			// May need to resolve contained runtime references.
+			// 可能需要解析其中的运行时引用
 			return resolveManagedSet(argName, managedSet);
 		}
 		else if (value instanceof ManagedMap<?, ?> managedMap) {
-			// May need to resolve contained runtime references.
+			// 可能需要解析其中的运行时引用
 			return resolveManagedMap(argName, managedMap);
 		}
 		else if (value instanceof ManagedProperties original) {
-			// Properties original = managedProperties;
+			// 将 ManagedProperties 转换为标准 Properties，并解析键值中的表达式
 			Properties copy = new Properties();
 			original.forEach((propKey, propValue) -> {
 				if (propKey instanceof TypedStringValue typedStringValue) {
@@ -229,7 +220,7 @@ public class BeanDefinitionValueResolver {
 			return copy;
 		}
 		else if (value instanceof TypedStringValue typedStringValue) {
-			// Convert value to target type here.
+			// 将字符串值转换为目标类型
 			Object valueObject = evaluate(typedStringValue);
 			try {
 				Class<?> resolvedTargetType = resolveTargetType(typedStringValue);
@@ -241,7 +232,7 @@ public class BeanDefinitionValueResolver {
 				}
 			}
 			catch (Throwable ex) {
-				// Improve the message by showing the context.
+				// 在异常信息中展示上下文，便于定位问题
 				throw new BeanCreationException(
 						this.beanDefinition.getResourceDescription(), this.beanName,
 						"Error converting typed String value for " + argName, ex);
@@ -256,8 +247,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Resolve an inner bean definition and invoke the specified {@code resolver}
-	 * on its merged bean definition.
+	 * 解析内部 Bean 定义，并对其合并后的 Bean 定义调用指定的 {@code resolver}。
 	 * @param innerBeanName the inner bean name (or {@code null} to assign one)
 	 * @param innerBd the inner raw bean definition
 	 * @param resolver the function to invoke to resolve
@@ -275,7 +265,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Evaluate the given value as an expression, if necessary.
+	 * 如有必要，将给定值作为表达式求值。
 	 * @param value the candidate value (may be an expression)
 	 * @return the resolved value
 	 */
@@ -288,7 +278,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Evaluate the given value as an expression, if necessary.
+	 * 如有必要，将给定值作为表达式求值。
 	 * @param value the original value (may be an expression)
 	 * @return the resolved value if necessary, or the original value
 	 */
@@ -315,7 +305,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Evaluate the given String value as an expression, if necessary.
+	 * 如有必要，将给定字符串值作为表达式求值。
 	 * @param value the original value (may be an expression)
 	 * @return the resolved value if necessary, or the original String value
 	 */
@@ -324,7 +314,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Resolve the target type in the given TypedStringValue.
+	 * 解析给定 TypedStringValue 中的目标类型。
 	 * @param value the TypedStringValue to resolve
 	 * @return the resolved target type (or {@code null} if none specified)
 	 * @throws ClassNotFoundException if the specified type cannot be resolved
@@ -338,7 +328,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Resolve a reference to another bean in the factory.
+	 * 解析对工厂中另一个 Bean 的引用。
 	 */
 	private @Nullable Object resolveReference(Object argName, RuntimeBeanReference ref) {
 		try {
@@ -390,7 +380,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Resolve an inner bean definition.
+	 * 解析内部 Bean 定义并创建实例。
 	 * @param argName the name of the argument that the inner bean is defined for
 	 * @param innerBeanName the name of the inner bean
 	 * @param mbd the merged bean definition for the inner bean
@@ -398,14 +388,13 @@ public class BeanDefinitionValueResolver {
 	 */
 	private @Nullable Object resolveInnerBeanValue(Object argName, String innerBeanName, RootBeanDefinition mbd) {
 		try {
-			// Check given bean name whether it is unique. If not already unique,
-			// add counter - increasing the counter until the name is unique.
+			// 检查给定 Bean 名称是否唯一；若不唯一则递增计数器直至唯一
 			String actualInnerBeanName = innerBeanName;
 			if (mbd.isSingleton()) {
 				actualInnerBeanName = adaptInnerBeanName(innerBeanName);
 			}
 			this.beanFactory.registerContainedBean(actualInnerBeanName, this.beanName);
-			// Guarantee initialization of beans that the inner bean depends on.
+			// 确保内部 Bean 所依赖的 Bean 已初始化
 			String[] dependsOn = mbd.getDependsOn();
 			if (dependsOn != null) {
 				for (String dependsOnBean : dependsOn) {
@@ -413,7 +402,7 @@ public class BeanDefinitionValueResolver {
 					this.beanFactory.getBean(dependsOnBean);
 				}
 			}
-			// Actually create the inner bean instance now...
+			// 实际创建内部 Bean 实例
 			Object innerBean = this.beanFactory.createBean(actualInnerBeanName, mbd, null);
 			if (innerBean instanceof FactoryBean<?> factoryBean) {
 				boolean synthetic = mbd.isSynthetic();
@@ -435,8 +424,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * Checks the given bean name whether it is unique. If not already unique,
-	 * a counter is added, increasing the counter until the name is unique.
+	 * 检查给定 Bean 名称是否唯一。若不唯一，则添加递增计数器直至名称唯一。
 	 * @param innerBeanName the original name for the inner bean
 	 * @return the adapted name for the inner bean
 	 */
@@ -452,7 +440,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * For each element in the managed array, resolve reference if necessary.
+	 * 对托管数组中的每个元素，必要时解析引用。
 	 */
 	private Object resolveManagedArray(Object argName, List<?> ml, Class<?> elementType) {
 		Object resolved = Array.newInstance(elementType, ml.size());
@@ -463,7 +451,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * For each element in the managed list, resolve reference if necessary.
+	 * 对托管列表中的每个元素，必要时解析引用。
 	 */
 	private List<?> resolveManagedList(Object argName, List<?> ml) {
 		List<Object> resolved = new ArrayList<>(ml.size());
@@ -474,7 +462,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * For each element in the managed set, resolve reference if necessary.
+	 * 对托管集合中的每个元素，必要时解析引用。
 	 */
 	private Set<?> resolveManagedSet(Object argName, Set<?> ms) {
 		Set<Object> resolved = CollectionUtils.newLinkedHashSet(ms.size());
@@ -487,7 +475,7 @@ public class BeanDefinitionValueResolver {
 	}
 
 	/**
-	 * For each element in the managed map, resolve reference if necessary.
+	 * 对托管 Map 中的每个键值，必要时解析引用。
 	 */
 	private Map<?, ?> resolveManagedMap(Object argName, Map<?, ?> mm) {
 		Map<Object, Object> resolved = CollectionUtils.newLinkedHashMap(mm.size());
@@ -500,20 +488,15 @@ public class BeanDefinitionValueResolver {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class KeyedArgName — 意图说明
-
-class `KeyedArgName`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/support/BeanDefinitionValueResolver.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Holder class used for delayed toString building.
+	 * 用于延迟构建 toString 的持有者类。
 	 */
 	private static class KeyedArgName {
 
+		/** 参数名称。 */
 		private final Object argName;
 
+		/** 集合或 Map 中的键/索引。 */
 		private final Object key;
 
 		public KeyedArgName(Object argName, Object key) {
