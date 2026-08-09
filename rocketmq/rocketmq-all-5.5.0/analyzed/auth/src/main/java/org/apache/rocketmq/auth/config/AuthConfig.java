@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.auth.config;
 
+/**
+ * RocketMQ 认证与授权统一配置：开关、Provider/Strategy 类名、白名单及各类缓存参数。
+ */
 public class AuthConfig implements Cloneable {
 
     private String configName;
@@ -24,6 +27,7 @@ public class AuthConfig implements Cloneable {
 
     private String authConfigPath;
 
+    /** 是否启用认证。 */
     private boolean authenticationEnabled = false;
 
     private String authenticationProvider;
@@ -38,6 +42,7 @@ public class AuthConfig implements Cloneable {
 
     private String innerClientAuthenticationCredentials;
 
+    /** 是否启用授权。 */
     private boolean authorizationEnabled = false;
 
     private String authorizationProvider;
@@ -48,6 +53,7 @@ public class AuthConfig implements Cloneable {
 
     private String authorizationWhitelist;
 
+    /** 是否从 v1 Plain ACL 配置迁移至新认证授权模型。 */
     private boolean migrateAuthFromV1Enabled = false;
 
     private int userCacheMaxNum = 1000;
@@ -62,14 +68,17 @@ public class AuthConfig implements Cloneable {
 
     private int aclCacheRefreshSecond = 60;
 
+    /** 有状态认证缓存最大条目数。 */
     private int statefulAuthenticationCacheMaxNum = 10000;
 
     private int statefulAuthenticationCacheExpiredSecond = 60;
 
+    /** 有状态授权缓存最大条目数。 */
     private int statefulAuthorizationCacheMaxNum = 10000;
 
     private int statefulAuthorizationCacheExpiredSecond = 60;
 
+    /** 浅拷贝当前配置实例。 */
     @Override
     public AuthConfig clone() {
         try {

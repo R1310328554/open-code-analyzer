@@ -21,10 +21,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * v1 Plain ACL YAML 根对象：全局白名单、账号列表与数据版本。
+ */
 public class PlainAccessData implements Serializable {
     private static final long serialVersionUID = -7971775135605117152L;
 
+    /** 全局远程地址白名单。 */
     private List<String> globalWhiteRemoteAddresses = new ArrayList<>();
+    /** Plain 账号配置列表。 */
     private List<PlainAccessConfig> accounts = new ArrayList<>();
     private List<DataVersion> dataVersion = new ArrayList<>();
 
@@ -52,6 +57,7 @@ public class PlainAccessData implements Serializable {
         this.dataVersion = dataVersion;
     }
 
+    /** ACL 配置数据版本：时间戳与递增计数器。 */
     public static class DataVersion implements Serializable {
         private static final long serialVersionUID = 6437361970079056954L;
         private long timestamp;

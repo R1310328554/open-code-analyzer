@@ -40,12 +40,16 @@ import org.apache.rocketmq.store.ha.HAConnectionState;
 import org.apache.rocketmq.store.ha.HAConnectionStateNotificationRequest;
 import org.apache.rocketmq.store.timer.TimerCheckpoint;
 
+/**
+ * Broker 上线前准备服务：隔离模式下等待 HA 握手完成并同步元数据后再对外提供服务。
+ */
 public class BrokerPreOnlineService extends ServiceThread {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
 
     private int waitBrokerIndex = 0;
 
+    /** 绑定 Broker 控制器。 */
     public BrokerPreOnlineService(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
@@ -58,6 +62,7 @@ public class BrokerPreOnlineService extends ServiceThread {
         return BrokerPreOnlineService.class.getSimpleName();
     }
 
+    /** 循环执行上线准备，非隔离或成功后退出。 */
     @Override
     public void run() {
         LOGGER.info(this.getServiceName() + " service started");
@@ -82,6 +87,7 @@ public class BrokerPreOnlineService extends ServiceThread {
         LOGGER.info(this.getServiceName() + " service end");
     }
 
+    /** 向 HA 服务注册握手完成通知并返回 Future。 */
     CompletableFuture<Boolean> waitForHaHandshakeComplete(String brokerAddr) {
         LOGGER.info("wait for handshake completion with {}", brokerAddr);
         HAConnectionStateNotificationRequest request =
@@ -108,6 +114,7 @@ public class BrokerPreOnlineService extends ServiceThread {
         return true;
     }
 
+    /** Master 按 brokerId 顺序等待各副本 HA 握手并反向同步元数据。 */
     private boolean prepareForMasterOnline(BrokerMemberGroup brokerMemberGroup) {
         List<Long> brokerIdList = new ArrayList<>(brokerMemberGroup.getBrokerAddrs().keySet());
         Collections.sort(brokerIdList);
@@ -149,6 +156,7 @@ public class BrokerPreOnlineService extends ServiceThread {
         }
     }
 
+    /** 从对端拉取较新的消费位点、延迟队列偏移与定时器检查点并持久化。 */
     private boolean syncMetadataReverse(String brokerAddr) {
         try {
             LOGGER.info("Get metadata reverse from {}", brokerAddr);
@@ -204,6 +212,7 @@ public class BrokerPreOnlineService extends ServiceThread {
         return true;
     }
 
+    /** Slave 获取 Master HA 地址，完成握手后启动服务。 */
     private boolean prepareForSlaveOnline(BrokerMemberGroup brokerMemberGroup) {
         BrokerSyncInfo brokerSyncInfo;
         try {
@@ -245,6 +254,7 @@ public class BrokerPreOnlineService extends ServiceThread {
         return true;
     }
 
+    /** 同步 Broker 成员组并按 Master/Slave/无 Master 分支处理上线流程。 */
     private boolean prepareForBrokerOnline() {
         BrokerMemberGroup brokerMemberGroup;
         try {

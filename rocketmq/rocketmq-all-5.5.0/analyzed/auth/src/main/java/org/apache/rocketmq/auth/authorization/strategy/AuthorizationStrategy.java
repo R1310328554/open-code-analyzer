@@ -18,7 +18,11 @@ package org.apache.rocketmq.auth.authorization.strategy;
 
 import org.apache.rocketmq.auth.authorization.context.AuthorizationContext;
 
+/**
+ * 授权策略 SPI：对 {@link AuthorizationContext} 执行一次授权评估。
+ */
 public interface AuthorizationStrategy {
 
+    /** 评估并可能抛出 {@link org.apache.rocketmq.auth.authorization.exception.AuthorizationException}。 */
     void evaluate(AuthorizationContext context);
 }

@@ -17,5 +17,8 @@
 
 package org.apache.rocketmq.auth.migration.v1;
 
+/**
+ * v1 ACL 访问资源标记接口，供 Plain 权限模型实现类继承。
+ */
 public interface AccessResource {
 }

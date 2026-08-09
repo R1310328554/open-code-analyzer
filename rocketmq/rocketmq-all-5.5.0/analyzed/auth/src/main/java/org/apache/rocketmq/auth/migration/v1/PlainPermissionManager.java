@@ -34,6 +34,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * v1 Plain ACL 文件管理器：扫描 conf/acl 目录下 YAML 并聚合为 {@link AclConfig}。
+ */
 public class PlainPermissionManager {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
@@ -47,12 +50,14 @@ public class PlainPermissionManager {
     private List<String> fileList = new ArrayList<>();
 
 
+    /** 初始化默认 ACL 目录与 plain_acl.yml 路径并加载配置。 */
     public PlainPermissionManager() {
         this.defaultAclDir = MixAll.dealFilePath(fileHome + File.separator + "conf" + File.separator + "acl");
         this.defaultAclFile = MixAll.dealFilePath(fileHome + File.separator + System.getProperty("rocketmq.acl.plain.file", "conf" + File.separator + "plain_acl.yml"));
         load();
     }
 
+    /** 递归收集目录下所有 .yml/.yaml ACL 文件路径。 */
     public List<String> getAllAclFiles(String path) {
         if (!new File(path).exists()) {
             log.info("The default acl dir {} is not exist", path);
@@ -75,6 +80,7 @@ public class PlainPermissionManager {
         return allAclFileFullPath;
     }
 
+    /** 确保默认 ACL 文件存在并刷新 fileList。 */
     public void load() {
         if (fileHome == null || fileHome.isEmpty()) {
             return;
@@ -88,9 +94,7 @@ public class PlainPermissionManager {
         }
     }
 
-    /**
-     * Currently GlobalWhiteAddress is defined in {@link #defaultAclFile}, so make sure it exists.
-     */
+    /** 确保默认 plain_acl.yml 存在（全局白名单定义于此文件）。 */
     private void assureAclConfigFilesExist() {
         final Path defaultAclFilePath = Paths.get(this.defaultAclFile);
         if (!Files.exists(defaultAclFilePath)) {
@@ -105,6 +109,7 @@ public class PlainPermissionManager {
         }
     }
 
+    /** 合并所有 YAML 中的账号与白名单，按 AccessKey 去重后返回。 */
     public AclConfig getAllAclConfig() {
         AclConfig aclConfig = new AclConfig();
         List<PlainAccessConfig> configs = new ArrayList<>();

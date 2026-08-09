@@ -20,23 +20,31 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * v1 Plain ACL 单账号配置：AccessKey、SecretKey、默认权限及 topic/group 细粒度权限。
+ */
 public class PlainAccessConfig  implements Serializable {
     private static final long serialVersionUID = -4517357000307227637L;
 
+    /** 访问密钥标识，对应 v2 用户名。 */
     private String accessKey;
 
+    /** 访问密钥，对应 v2 用户密码。 */
     private String secretKey;
 
     private String whiteRemoteAddress;
 
+    /** 是否为超级管理员账号。 */
     private boolean admin;
 
     private String defaultTopicPerm;
 
     private String defaultGroupPerm;
 
+    /** Topic 级权限列表，格式 topicName=perm。 */
     private List<String> topicPerms;
 
+    /** Consumer Group 级权限列表，格式 groupName=perm。 */
     private List<String> groupPerms;
 
     public String getAccessKey() {

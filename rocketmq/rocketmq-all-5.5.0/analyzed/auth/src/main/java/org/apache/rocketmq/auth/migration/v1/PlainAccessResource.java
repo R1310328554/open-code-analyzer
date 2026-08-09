@@ -23,9 +23,12 @@ import org.apache.rocketmq.common.MixAll;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * v1 Plain 访问资源：承载 AccessKey、资源权限映射及签名校验相关字段。
+ */
 public class PlainAccessResource implements AccessResource {
 
-    // Identify the user
+    // 用户身份标识字段
     private String accessKey;
 
     private String secretKey;
@@ -38,6 +41,7 @@ public class PlainAccessResource implements AccessResource {
 
     private byte defaultGroupPerm = 1;
 
+    /** 资源名到权限字节的映射表。 */
     private Map<String, Byte> resourcePermMap;
 
     private int requestCode;
@@ -54,6 +58,7 @@ public class PlainAccessResource implements AccessResource {
     public PlainAccessResource() {
     }
 
+    /** 从重试 Topic 名解析 Consumer Group。 */
     public static String getGroupFromRetryTopic(String retryTopic) {
         if (retryTopic == null) {
             return null;
@@ -61,6 +66,7 @@ public class PlainAccessResource implements AccessResource {
         return KeyBuilder.parseGroup(retryTopic);
     }
 
+    /** 由 Consumer Group 生成重试 Topic 名。 */
     public static String getRetryTopic(String group) {
         if (group == null) {
             return null;
@@ -68,6 +74,7 @@ public class PlainAccessResource implements AccessResource {
         return MixAll.getRetryTopic(group);
     }
 
+    /** 向资源权限映射表添加一条记录。 */
     public void addResourceAndPerm(String resource, byte perm) {
         if (resource == null) {
             return;

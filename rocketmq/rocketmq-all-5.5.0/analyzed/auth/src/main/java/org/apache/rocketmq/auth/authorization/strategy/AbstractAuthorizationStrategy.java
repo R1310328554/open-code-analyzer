@@ -27,12 +27,17 @@ import org.apache.rocketmq.auth.authorization.provider.AuthorizationProvider;
 import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.common.utils.ExceptionUtils;
 
+/**
+ * 授权策略抽象基类：解析白名单 RPC、获取 {@link AuthorizationProvider} 并同步执行授权。
+ */
 public abstract class AbstractAuthorizationStrategy implements AuthorizationStrategy {
 
     protected final AuthConfig authConfig;
+    /** 免授权 RPC 代码集合，来自配置的逗号分隔白名单。 */
     protected final Set<String> authorizationWhiteSet = new HashSet<>();
     protected final AuthorizationProvider<AuthorizationContext> authorizationProvider;
 
+    /** 初始化 Provider 并解析 {@code authorizationWhitelist} 配置。 */
     public AbstractAuthorizationStrategy(AuthConfig authConfig, Supplier<?> metadataService) {
         this.authConfig = authConfig;
         this.authorizationProvider = AuthorizationFactory.getProvider(authConfig);
@@ -47,6 +52,7 @@ public abstract class AbstractAuthorizationStrategy implements AuthorizationStra
         }
     }
 
+    /** 授权开关关闭、Provider 缺失或 RPC 在白名单内时跳过；否则阻塞等待授权完成。 */
     public void doEvaluate(AuthorizationContext context) {
         if (context == null) {
             return;

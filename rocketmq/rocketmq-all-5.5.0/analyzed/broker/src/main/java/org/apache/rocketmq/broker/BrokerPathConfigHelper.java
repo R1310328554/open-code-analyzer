@@ -19,7 +19,11 @@ package org.apache.rocketmq.broker;
 
 import java.io.File;
 
+/**
+ * Broker 持久化配置文件路径辅助类：topic、消费位点、订阅组等 JSON 路径。
+ */
 public class BrokerPathConfigHelper {
+    /** Broker 主配置文件路径，可通过 {@link #setBrokerConfigPath} 覆盖。 */
     private static String brokerConfigPath = System.getProperty("user.home") + File.separator + "store"
         + File.separator + "config" + File.separator + "broker.properties";
 
@@ -31,6 +35,7 @@ public class BrokerPathConfigHelper {
         brokerConfigPath = path;
     }
 
+    /** 返回 topic 配置 JSON 路径。 */
     public static String getTopicConfigPath(final String rootDir) {
         return getConfigDir(rootDir) + "topics.json";
     }
@@ -39,6 +44,7 @@ public class BrokerPathConfigHelper {
         return getConfigDir(rootDir) + "topicQueueMapping.json";
     }
 
+    /** 返回消费位点持久化 JSON 路径。 */
     public static String getConsumerOffsetPath(final String rootDir) {
         return getConfigDir(rootDir) + "consumerOffset.json";
     }
@@ -51,6 +57,7 @@ public class BrokerPathConfigHelper {
         return getConfigDir(rootDir) + "consumerOrderInfo.json";
     }
 
+    /** 返回订阅组配置 JSON 路径。 */
     public static String getSubscriptionGroupPath(final String rootDir) {
         return getConfigDir(rootDir) + "subscriptionGroup.json";
     }
@@ -72,6 +79,7 @@ public class BrokerPathConfigHelper {
         return getConfigDir(rootDir) + "messageRequestMode.json";
     }
 
+    /** 返回 rootDir 下 config 子目录路径（含尾部分隔符）。 */
     private static String getConfigDir(final String rootDir) {
         return rootDir + File.separator + "config" + File.separator;
     }

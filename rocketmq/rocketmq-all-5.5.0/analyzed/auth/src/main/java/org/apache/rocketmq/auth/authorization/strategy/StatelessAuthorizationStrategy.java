@@ -20,12 +20,17 @@ import java.util.function.Supplier;
 import org.apache.rocketmq.auth.authorization.context.AuthorizationContext;
 import org.apache.rocketmq.auth.config.AuthConfig;
 
+/**
+ * 无状态授权策略：每次请求均完整执行 {@link #doEvaluate}，不做结果缓存。
+ */
 public class StatelessAuthorizationStrategy extends AbstractAuthorizationStrategy {
 
+    /** 委托基类初始化 Provider 与白名单。 */
     public StatelessAuthorizationStrategy(AuthConfig authConfig, Supplier<?> metadataService) {
         super(authConfig, metadataService);
     }
 
+    /** 直接调用基类授权逻辑。 */
     @Override
     public void evaluate(AuthorizationContext context) {
         super.doEvaluate(context);

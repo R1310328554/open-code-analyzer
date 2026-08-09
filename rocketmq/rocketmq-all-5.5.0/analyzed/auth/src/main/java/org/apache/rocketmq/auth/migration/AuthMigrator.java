@@ -49,6 +49,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * ACL v1 至 v2 迁移器：读取 Plain ACL YAML，将 AccessKey 转为 {@link User} 并生成 {@link Acl}。
+ */
 public class AuthMigrator {
 
     protected static final Logger LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
@@ -61,6 +64,7 @@ public class AuthMigrator {
 
     private final AuthorizationMetadataManager authorizationMetadataManager;
 
+    /** 绑定配置并初始化 Plain 权限管理器与元数据 Manager。 */
     public AuthMigrator(AuthConfig authConfig) {
         this.authConfig = authConfig;
         this.plainPermissionManager = new PlainPermissionManager();
@@ -68,6 +72,7 @@ public class AuthMigrator {
         this.authorizationMetadataManager = AuthorizationFactory.getMetadataManager(authConfig);
     }
 
+    /** 迁移开关开启时遍历所有 PlainAccessConfig 并逐条迁移。 */
     public void migrate() {
         if (!authConfig.isMigrateAuthFromV1Enabled()) {
             return;
@@ -84,6 +89,7 @@ public class AuthMigrator {
         }
     }
 
+    /** 用户已存在则跳过，否则创建用户与 ACL。 */
     private void doMigrate(PlainAccessConfig accessConfig) {
         this.isUserExisted(accessConfig.getAccessKey()).thenCompose(existed -> {
             if (existed) {
@@ -100,6 +106,7 @@ public class AuthMigrator {
         return createUser(accessConfig).thenCompose(nil -> createAcl(accessConfig));
     }
 
+    /** 将 AccessKey/SecretKey 映射为 {@link User}，admin 标记转为 SUPER 类型。 */
     private CompletableFuture<Void> createUser(PlainAccessConfig accessConfig) {
         User user = new User();
         user.setUsername(accessConfig.getAccessKey());
@@ -112,6 +119,7 @@ public class AuthMigrator {
         return this.authenticationMetadataManager.createUser(user);
     }
 
+    /** 解析 topic/group 权限字符串，组装 CUSTOM 与 DEFAULT 策略并创建 ACL。 */
     private CompletableFuture<Void> createAcl(PlainAccessConfig config) {
         Subject subject = User.of(config.getAccessKey());
         List<Policy> policies = new ArrayList<>();
@@ -190,6 +198,7 @@ public class AuthMigrator {
         return this.authorizationMetadataManager.createAcl(acl);
     }
 
+    /** 将 v1 权限字符串解析为 {@link Decision}，空或 deny 为 DENY。 */
     private Decision parseDecision(String str) {
         if (StringUtils.isBlank(str)) {
             return Decision.DENY;
@@ -197,6 +206,7 @@ public class AuthMigrator {
         return StringUtils.equals(str, AclConstants.DENY) ? Decision.DENY : Decision.ALLOW;
     }
 
+    /** 将 pub/sub/deny 等 v1 权限码映射为 {@link Action} 列表。 */
     private List<Action> parseActions(String str) {
         List<Action> result = new ArrayList<>();
         if (StringUtils.isBlank(str)) {

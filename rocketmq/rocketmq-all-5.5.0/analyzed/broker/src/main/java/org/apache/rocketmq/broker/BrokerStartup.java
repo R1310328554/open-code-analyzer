@@ -42,14 +42,19 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * Broker 进程启动入口：解析命令行、加载配置、构建 {@link BrokerController} 并注册关闭钩子。
+ */
 public class BrokerStartup {
 
     public static Logger log;
 
+    /** 创建控制器并启动 Broker。 */
     public static void main(String[] args) {
         start(createBrokerController(args));
     }
 
+    /** 启动控制器并打印 boot success 提示。 */
     public static BrokerController start(BrokerController controller) {
         try {
             controller.start();
@@ -79,6 +84,7 @@ public class BrokerStartup {
         }
     }
 
+    /** 解析 -c/-p/-m 等命令行选项并填充 {@link ConfigContext}。 */
     public static ConfigContext parseCmdLine(String[] args) throws Exception {
         Options options = ServerUtil.buildCommandlineOptions(new Options());
         CommandLine commandLine = ServerUtil.parseCmdLine(
@@ -117,6 +123,7 @@ public class BrokerStartup {
         return configContext;
     }
 
+    /** 从 properties 文件加载 Broker/Netty/Store/Auth 配置。 */
     public static ConfigContext configFileToConfigContext(String filePath) throws Exception {
         SystemConfigFileHelper systemConfigFileHelper = new SystemConfigFileHelper();
         BrokerConfig brokerConfig = new BrokerConfig();
@@ -155,6 +162,7 @@ public class BrokerStartup {
             .build();
     }
 
+    /** 校验环境、设置 HA 端口与 Broker 角色，创建并初始化 {@link BrokerController}。 */
     public static BrokerController buildBrokerController(ConfigContext configContext) {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
@@ -186,7 +194,7 @@ public class BrokerStartup {
             }
         }
 
-        // Set broker role according to ha config
+        // 根据 HA 角色（ASYNC/SYNC_MASTER 或 SLAVE）设置 brokerId
         if (!brokerConfig.isEnableControllerMode()) {
             switch (messageStoreConfig.getBrokerRole()) {
                 case ASYNC_MASTER:
@@ -269,6 +277,7 @@ public class BrokerStartup {
         };
     }
 
+    /** 完整创建流程：解析参数、构建控制器、initialize 并注册 shutdown hook。 */
     public static BrokerController createBrokerController(String[] args) {
         try {
             ConfigContext configContext = parseCmdLine(args);
@@ -313,6 +322,7 @@ public class BrokerStartup {
         return options;
     }
 
+    /** Broker 配置文件加载辅助类。 */
     public static class SystemConfigFileHelper {
         private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfigFileHelper.class);
 
@@ -321,6 +331,7 @@ public class BrokerStartup {
         public SystemConfigFileHelper() {
         }
 
+        /** 从已设置的 file 路径读取 properties。 */
         public Properties loadConfig() throws Exception {
             Properties properties = new Properties();
             try (InputStream in = new BufferedInputStream(Files.newInputStream(Paths.get(file)))) {

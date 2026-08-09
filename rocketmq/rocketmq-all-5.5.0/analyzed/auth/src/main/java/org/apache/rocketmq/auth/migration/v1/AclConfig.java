@@ -18,10 +18,15 @@ package org.apache.rocketmq.auth.migration.v1;
 
 import java.util.List;
 
+/**
+ * v1 Plain ACL 聚合配置：全局白名单地址与账号列表。
+ */
 public class AclConfig {
 
+    /** 全局 IP 白名单地址列表。 */
     private List<String> globalWhiteAddrs;
 
+    /** Plain 账号及其 topic/group 权限配置。 */
     private List<PlainAccessConfig> plainAccessConfigs;
 
 
