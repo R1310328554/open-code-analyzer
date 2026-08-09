@@ -29,37 +29,45 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * checkMsgSendRT 子命令：向指定 Topic 循环发送测试消息并统计 RT。
+ */
 public class CheckMsgSendRTCommand implements SubCommand {
+    /** 最近一次发送命中的 Broker 名。 */
     private static String brokerName = "";
+    /** 最近一次发送命中的队列 ID。 */
     private static int queueId = 0;
 
     @Override
+    /** 返回子命令名 checkMsgSendRT。 */
     public String commandName() {
         return "checkMsgSendRT";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Check message send response time.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "目标 Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("a", "amount", true, "message amount | default 100");
+        opt = new Option("a", "amount", true, "发送条数，默认 100");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "size", true, "message size | default 128 Byte");
+        opt = new Option("s", "size", true, "消息体大小（字节），默认 128");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 轮询队列发送测试消息，逐条打印 RT 并计算平均耗时。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQProducer producer = new DefaultMQProducer(rpcHook);
         producer.setProducerGroup(Long.toString(System.currentTimeMillis()));
@@ -124,6 +132,7 @@ public class CheckMsgSendRTCommand implements SubCommand {
         }
     }
 
+    /** 生成指定长度的测试字符串。 */
     public String getStringBySize(long size) {
         StringBuilder res = new StringBuilder();
         for (int i = 0; i < size; i++) {

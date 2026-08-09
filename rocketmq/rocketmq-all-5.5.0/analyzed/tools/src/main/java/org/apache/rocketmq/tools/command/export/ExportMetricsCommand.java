@@ -49,32 +49,38 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+/**
+ * exportMetrics 子命令：采集集群各 Broker 运行时指标并写入 metrics.json。
+ */
 public class ExportMetricsCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 exportMetrics。 */
     public String commandName() {
         return "exportMetrics";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Export metrics.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("c", "clusterName", true, "choose a cluster to export");
+        Option opt = new Option("c", "clusterName", true, "待导出指标的集群名");
         opt.setRequired(true);
         options.addOption(opt);
 
         opt = new Option("f", "filePath", true,
-            "export metrics.json path | default /tmp/rocketmq/export");
+            "metrics.json 输出目录，默认 /tmp/rocketmq/export");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 遍历集群 Broker，汇总 TPS/磁盘/版本等指标并写入 JSON 文件。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook)
         throws SubCommandException {
 
@@ -145,6 +151,7 @@ public class ExportMetricsCommand implements SubCommand {
 
     }
 
+    /** 收集 Broker 与客户端版本信息。 */
     private Map<String, Object> getRuntimeVersion(DefaultMQAdminExt defaultMQAdminExt,
         SubscriptionGroupWrapper subscriptionGroupWrapper) {
         Map<String, Object> runtimeVersionMap = new HashMap();
@@ -168,6 +175,7 @@ public class ExportMetricsCommand implements SubCommand {
         return runtimeVersionMap;
     }
 
+    /** 提取 CPU 线程数与内存等运行环境指标。 */
     private Map<String, Object> getRuntimeEnv(KVTable kvTable, Properties properties) {
         Map<String, Object> runtimeEnvMap = new HashMap<>();
         runtimeEnvMap.put("cpuNum", properties.getProperty("clientCallbackExecutorThreads"));
@@ -175,6 +183,7 @@ public class ExportMetricsCommand implements SubCommand {
         return runtimeEnvMap;
     }
 
+    /** 汇总磁盘占用、TPS、日消息量、Topic/Group 数量等配额指标。 */
     private Map<String, Object> getRuntimeQuota(KVTable kvTable, DefaultMQAdminExt defaultMQAdminExt, String brokerAddr,
         Map<String, Double> totalTpsMap, Map<String, Long> totalOneDayNumMap,
         SubscriptionGroupWrapper subscriptionGroupWrapper)
@@ -268,6 +277,7 @@ public class ExportMetricsCommand implements SubCommand {
         return runtimeQuotaMap;
     }
 
+    /** 初始化集群级 TPS 与日消息量累加器为零。 */
     private void initTotalMap(Map<String, Double> totalTpsMap, Map<String, Long> totalOneDayNumMap) {
         totalTpsMap.put("totalNormalInTps", 0.0);
         totalTpsMap.put("totalNormalOutTps", 0.0);

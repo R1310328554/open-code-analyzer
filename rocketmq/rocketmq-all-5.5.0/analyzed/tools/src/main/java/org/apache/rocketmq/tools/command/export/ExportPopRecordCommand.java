@@ -28,14 +28,19 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * exportPopRecord 子命令：导出 Broker 上 POP 消费模式的消费记录。
+ */
 public class ExportPopRecordCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 exportPopRecord。 */
     public String commandName() {
         return "exportPopRecord";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Export pop consumer record";
     }
@@ -43,21 +48,22 @@ public class ExportPopRecordCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
         Option opt = new Option(
-            "c", "clusterName", true, "choose one cluster to export");
+            "c", "clusterName", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "choose one broker to export");
+        opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("d", "dryRun", true, "no actual changes will be made");
+        opt = new Option("d", "dryRun", true, "演练模式：为 false 时才实际导出");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 按 -b 单 Broker 或 -c 整集群调用 exportPopRecords 导出记录。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
 
         DefaultMQAdminExt adminExt = new DefaultMQAdminExt(rpcHook);
@@ -94,6 +100,7 @@ public class ExportPopRecordCommand implements SubCommand {
         }
     }
 
+    /** 对单个 Broker 执行 POP 记录导出并打印结果。 */
     private void export(DefaultMQAdminExt adminExt, String brokerAddr, String brokerName, boolean dryRun) {
         try {
             if (!dryRun) {

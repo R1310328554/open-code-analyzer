@@ -29,14 +29,19 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getBrokerLiteInfo 子命令：查询 Broker 上 LMQ/Lite 消息存储的运行时摘要。
+ */
 public class GetBrokerLiteInfoSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 getBrokerLiteInfo。 */
     public String commandName() {
         return "getBrokerLiteInfo";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get broker lite info.";
     }
@@ -45,16 +50,16 @@ public class GetBrokerLiteInfoSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("b", "brokerAddr", true, "Broker address");
+        Option opt = new Option("b", "brokerAddr", true, "Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "Cluster name");
+        opt = new Option("c", "cluster", true, "集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("d", "showDetail", false, "Show topic and group detail info");
+        opt = new Option("d", "showDetail", false, "是否输出 Topic/Group 元数据详情");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -62,6 +67,7 @@ public class GetBrokerLiteInfoSubCommand implements SubCommand {
     }
 
     @Override
+    /** 按 Broker 或集群拉取 Lite 存储统计并表格输出。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -96,6 +102,7 @@ public class GetBrokerLiteInfoSubCommand implements SubCommand {
         }
     }
 
+    /** 打印 Lite Broker 信息表头。 */
     static void printHeader() {
         System.out.printf("%-30s %-17s %-10s %-14s %-20s %-17s %-15s %-18s %-15s%n",
             "#Broker",
@@ -110,6 +117,7 @@ public class GetBrokerLiteInfoSubCommand implements SubCommand {
         );
     }
 
+    /** 输出单行 Lite 统计；showDetail 时附加 Topic/Group 元数据 JSON。 */
     static void printRow(
         GetBrokerLiteInfoResponseBody responseBody,
         String brokerAddr,

@@ -28,21 +28,26 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getParentTopicInfo 子命令：查询 LMQ 父 Topic 在各 Broker 上的 TTL 与 Lite 统计。
+ */
 public class GetParentTopicInfoSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 getParentTopicInfo。 */
     public String commandName() {
         return "getParentTopicInfo";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get parent topic info.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("p", "parentTopic", true, "Parent topic name");
+        Option opt = new Option("p", "parentTopic", true, "LMQ 父 Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -50,6 +55,7 @@ public class GetParentTopicInfoSubCommand implements SubCommand {
     }
 
     @Override
+    /** 遍历父 Topic 路由，输出各 Broker 的 TTL、Lite 数量与关联消费组。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

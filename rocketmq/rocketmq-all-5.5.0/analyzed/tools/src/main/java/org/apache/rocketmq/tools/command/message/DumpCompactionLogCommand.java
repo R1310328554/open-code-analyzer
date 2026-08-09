@@ -35,20 +35,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * dumpCompactionLog 子命令：解析 Broker 压缩日志文件并逐条输出 {@link MessageExt}。
+ */
 public class DumpCompactionLogCommand implements SubCommand {
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Parse compaction log to message.";
     }
 
     @Override
+    /** 返回子命令名 dumpCompactionLog。 */
     public String commandName() {
         return "dumpCompactionLog";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("f", "file", true, "to dump file name");
+        Option opt = new Option("f", "file", true, "待解析的压缩日志文件路径");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -56,6 +61,7 @@ public class DumpCompactionLogCommand implements SubCommand {
     }
 
     @Override
+    /** 内存映射读取日志文件，按长度前缀逐条解码消息并打印。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook)
             throws SubCommandException {
         if (commandLine.hasOption("f")) {

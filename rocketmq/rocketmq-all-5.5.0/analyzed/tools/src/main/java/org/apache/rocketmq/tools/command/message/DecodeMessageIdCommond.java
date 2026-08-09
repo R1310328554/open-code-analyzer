@@ -25,26 +25,32 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * DecodeMessageId 子命令：解析 RocketMQ 唯一消息 ID 中的 IP 与生成时间。
+ */
 public class DecodeMessageIdCommond implements SubCommand {
     @Override
+    /** 返回子命令名 DecodeMessageId。 */
     public String commandName() {
         return "DecodeMessageId";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "decode unique message ID";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("i", "messageId", true, "unique message ID");
+        Option opt = new Option("i", "messageId", true, "待解析的唯一消息 ID");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 从 messageId 提取生产者 IP 与近似生成时间并打印。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         String messageId = commandLine.getOptionValue('i').trim();

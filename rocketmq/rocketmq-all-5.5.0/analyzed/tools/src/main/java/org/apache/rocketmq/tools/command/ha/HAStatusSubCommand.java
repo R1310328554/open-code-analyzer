@@ -32,29 +32,34 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * haStatus 子命令：查询 Broker 主从 HA 复制运行时状态与连接详情。
+ */
 public class HAStatusSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 haStatus。 */
     public String commandName() {
         return "haStatus";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Fetch ha runtime status data.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("c", "clusterName", true, "which cluster");
+        Option opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "which broker to fetch");
+        opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("i", "interval", true, "the interval(second) of get info");
+        opt = new Option("i", "interval", true, "轮询间隔（秒），指定后持续刷新输出");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -62,6 +67,7 @@ public class HAStatusSubCommand implements SubCommand {
     }
 
     @Override
+    /** 启动管理客户端，按 -i 决定是否循环拉取 HA 状态。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -92,6 +98,7 @@ public class HAStatusSubCommand implements SubCommand {
         }
     }
 
+    /** 按 -b 单 Broker 或 -c 集群 Master 逐一打印 HA 状态。 */
     private void innerExec(CommandLine commandLine, Options options,
         DefaultMQAdminExt defaultMQAdminExt) throws Exception {
         if (commandLine.hasOption('b')) {
@@ -111,6 +118,7 @@ public class HAStatusSubCommand implements SubCommand {
 
     }
 
+    /** 区分 Master/Slave 角色，输出复制偏移、传输速率与同步状态。 */
     private void printStatus(String brokerAddr, DefaultMQAdminExt defaultMQAdminExt) throws Exception {
         HARuntimeInfo haRuntimeInfo = defaultMQAdminExt.getBrokerHAStatus(brokerAddr);
 

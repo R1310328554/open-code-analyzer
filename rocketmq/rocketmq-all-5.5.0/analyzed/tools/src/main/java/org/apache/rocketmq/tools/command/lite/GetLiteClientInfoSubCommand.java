@@ -28,33 +28,38 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getLiteClientInfo 子命令：查询 LMQ 父 Topic 下指定客户端的 Lite 消费信息。
+ */
 public class GetLiteClientInfoSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 getLiteClientInfo。 */
     public String commandName() {
         return "getLiteClientInfo";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get lite client info.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("p", "parentTopic", true, "Parent topic name");
+        Option opt = new Option("p", "parentTopic", true, "LMQ 父 Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("g", "group", true, "Consumer group");
+        opt = new Option("g", "group", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "clientId", true, "Client id");
+        opt = new Option("c", "clientId", true, "客户端 clientId");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("s", "showDetail", false, "Show details");
+        opt = new Option("s", "showDetail", false, "是否列出已订阅的 Lite Topic 集合");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -62,6 +67,7 @@ public class GetLiteClientInfoSubCommand implements SubCommand {
     }
 
     @Override
+    /** 遍历父 Topic 路由上各 Broker，拉取指定客户端 Lite 消费状态。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -100,6 +106,7 @@ public class GetLiteClientInfoSubCommand implements SubCommand {
         }
     }
 
+    /** 打印 Lite 客户端信息表头。 */
     static void printHeader() {
         System.out.printf("%-30s %-20s %-30s %-30s %n",
             "#Broker",
@@ -109,6 +116,7 @@ public class GetLiteClientInfoSubCommand implements SubCommand {
         );
     }
 
+    /** 输出单行客户端 Lite Topic 数与最近访问/消费时间。 */
     static void printRow(
         GetLiteClientInfoResponseBody responseBody,
         String brokerName,

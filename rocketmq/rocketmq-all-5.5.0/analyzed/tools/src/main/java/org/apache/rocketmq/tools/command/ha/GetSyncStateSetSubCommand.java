@@ -32,32 +32,37 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getSyncStateSet 子命令：从 Controller 拉取 Broker 同步副本集（SyncStateSet）信息。
+ */
 public class GetSyncStateSetSubCommand implements SubCommand {
     @Override
+    /** 返回子命令名 getSyncStateSet。 */
     public String commandName() {
         return "getSyncStateSet";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Fetch syncStateSet for target brokers.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("a", "controllerAddress", true, "the address of controller");
+        Option opt = new Option("a", "controllerAddress", true, "Controller 地址（必填）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerName", true, "which broker to fetch");
+        opt = new Option("b", "brokerName", true, "目标 Broker 名（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("i", "interval", true, "the interval(second) of get info");
+        opt = new Option("i", "interval", true, "轮询间隔（秒），指定后持续刷新输出");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -65,6 +70,7 @@ public class GetSyncStateSetSubCommand implements SubCommand {
     }
 
     @Override
+    /** 启动管理客户端，按 -i 决定是否循环拉取 SyncStateSet。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -95,6 +101,7 @@ public class GetSyncStateSetSubCommand implements SubCommand {
         }
     }
 
+    /** 按 -b 或 -c 解析目标 Broker 并打印同步副本集。 */
     private void innerExec(CommandLine commandLine, Options options,
                            DefaultMQAdminExt defaultMQAdminExt) throws Exception {
         String controllerAddress = commandLine.getOptionValue('a').trim().split(";")[0];
@@ -112,6 +119,7 @@ public class GetSyncStateSetSubCommand implements SubCommand {
         }
     }
 
+    /** 调用 getInSyncStateData 并格式化输出 InSync/NotInSync 副本列表。 */
     private void printData(String controllerAddress, List<String> brokerNames,
                            DefaultMQAdminExt defaultMQAdminExt) throws Exception {
         if (brokerNames.size() > 0) {

@@ -35,33 +35,38 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getLiteGroupInfo 子命令：查询 LMQ 消费组在各 Broker 上的堆积与 TopK 统计。
+ */
 public class GetLiteGroupInfoSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 getLiteGroupInfo。 */
     public String commandName() {
         return "getLiteGroupInfo";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get lite group info.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("p", "parentTopic", true, "Parent topic name");
+        Option opt = new Option("p", "parentTopic", true, "LMQ 父 Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("g", "group", true, "Consumer group");
+        opt = new Option("g", "group", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("l", "liteTopic", true, "query lite topic detail");
+        opt = new Option("l", "liteTopic", true, "指定 Lite Topic 查询单条偏移详情");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("k", "topK", true, "topK value of each broker");
+        opt = new Option("k", "topK", true, "各 Broker 返回的 TopK 条数，默认 20");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -69,6 +74,7 @@ public class GetLiteGroupInfoSubCommand implements SubCommand {
     }
 
     @Override
+    /** 汇总各 Broker 堆积量，按 lag 数量或时间输出 TopK Lite Topic。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -159,6 +165,7 @@ public class GetLiteGroupInfoSubCommand implements SubCommand {
         }
     }
 
+    /** 指定 -l 时输出单 Lite Topic 在各 Broker 上的偏移与堆积。 */
     private static void printOffsetWrapper(boolean queryByLiteTopic, String brokerName, OffsetWrapper offsetWrapper) {
         if (!queryByLiteTopic) {
             return;

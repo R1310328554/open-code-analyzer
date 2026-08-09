@@ -31,28 +31,36 @@ import org.apache.rocketmq.tools.command.SubCommandException;
 
 import java.util.Set;
 
+/**
+ * consumeMessage 子命令：以 Pull 方式拉取并打印 Topic 消息（支持队列/偏移/时间过滤）。
+ */
 public class ConsumeMessageCommand implements SubCommand {
 
+    /** 待消费的 Topic 名。 */
     private String topic = null;
+    /** 最多拉取的消息条数，默认 128。 */
     private long messageCount = 128;
+    /** Pull 消费者实例，可复用。 */
     private DefaultMQPullConsumer defaultMQPullConsumer;
 
 
+    /** 消费模式：按 Topic 全队列、指定队列或指定偏移拉取。 */
     public enum ConsumeType {
         /**
-         * Topic only
+         * 仅按 Topic 遍历全部队列
          */
         DEFAULT,
         /**
-         * Topic brokerName queueId set
+         * 指定 brokerName 与 queueId
          */
         BYQUEUE,
         /**
-         * Topic brokerName queueId offset set
+         * 指定 brokerName、queueId 与起始 offset
          */
         BYOFFSET
     }
 
+    /** 解析毫秒时间戳或 yyyy-MM-dd#HH:mm:ss:SSS 格式字符串。 */
     private static long timestampFormat(final String value) {
         long timestamp;
         try {
@@ -64,48 +72,50 @@ public class ConsumeMessageCommand implements SubCommand {
         return timestamp;
     }
     @Override
+    /** 返回子命令名 consumeMessage。 */
     public String commandName() {
         return "consumeMessage";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Consume message.";
     }
 
     @Override
     public Options buildCommandlineOptions(final Options options) {
-        Option opt = new Option("t", "topic", true, "Topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerName", true, "Broker name");
+        opt = new Option("b", "brokerName", true, "Broker 名（与 -i 配合）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("i", "queueId", true, "Queue Id");
+        opt = new Option("i", "queueId", true, "队列 ID（需先指定 -b）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("o", "offset", true, "Queue offset");
+        opt = new Option("o", "offset", true, "起始队列偏移（需先指定 -i）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("g", "consumerGroup", true, "Consumer group name");
+        opt = new Option("g", "consumerGroup", true, "Pull 消费组名");
         opt.setRequired(false);
         options.addOption(opt);
 
         opt = new Option("s", "beginTimestamp ", true,
-                "Begin timestamp[currentTimeMillis|yyyy-MM-dd#HH:mm:ss:SSS]");
+                "起始时间戳（毫秒或 yyyy-MM-dd#HH:mm:ss:SSS）");
         opt.setRequired(false);
         options.addOption(opt);
 
         opt = new Option("e", "endTimestamp ", true,
-                "End timestamp[currentTimeMillis|yyyy-MM-dd#HH:mm:ss:SSS]");
+                "结束时间戳（毫秒或 yyyy-MM-dd#HH:mm:ss:SSS）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "MessageNumber", true, "Number of message to be consumed");
+        opt = new Option("c", "MessageNumber", true, "最多消费的消息条数");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -115,6 +125,7 @@ public class ConsumeMessageCommand implements SubCommand {
     }
 
     @Override
+    /** 解析消费模式与时间范围，按 DEFAULT/BYQUEUE/BYOFFSET 拉取消息。 */
     public void execute(final CommandLine commandLine, final Options options, RPCHook rpcHook) throws SubCommandException {
         if (defaultMQPullConsumer == null) {
             defaultMQPullConsumer = new DefaultMQPullConsumer(MixAll.TOOLS_CONSUMER_GROUP, rpcHook);
@@ -212,6 +223,7 @@ public class ConsumeMessageCommand implements SubCommand {
         }
     }
 
+    /** 在指定偏移区间内循环 Pull 并打印消息内容。 */
     private void pullMessageByQueue(MessageQueue mq, long minOffset, long maxOffset) {
         READQ:
         for (long offset = minOffset; offset <= maxOffset; ) {
@@ -246,6 +258,7 @@ public class ConsumeMessageCommand implements SubCommand {
         }
     }
 
+    /** 遍历 Topic 全部队列，按时间与条数限制拉取消息。 */
     private void executeDefault(long timeValueBegin, long timeValueEnd) {
         try {
             Set<MessageQueue> mqs = defaultMQPullConsumer.fetchSubscribeMessageQueues(topic);
@@ -277,6 +290,7 @@ public class ConsumeMessageCommand implements SubCommand {
         }
     }
 
+    /** 在指定 Broker/队列/偏移上按时间窗口拉取消息。 */
     private void executeByCondition(String brokerName, String queueId, long offset, long timeValueBegin, long timeValueEnd) {
         MessageQueue mq = new MessageQueue(topic, brokerName, Integer.parseInt(queueId));
         try {

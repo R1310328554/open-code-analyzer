@@ -26,33 +26,38 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * triggerLiteDispatch 子命令：手动触发 LMQ 消费组的 Lite 消息分发。
+ */
 public class TriggerLiteDispatchSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 triggerLiteDispatch。 */
     public String commandName() {
         return "triggerLiteDispatch";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Trigger Lite Dispatch.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("p", "parentTopic", true, "Parent topic name");
+        Option opt = new Option("p", "parentTopic", true, "LMQ 父 Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("g", "group", true, "Consumer group");
+        opt = new Option("g", "group", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "clientId", true, "clientId (optional)");
+        opt = new Option("c", "clientId", true, "可选，限定单个客户端 clientId");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerName", true, "brokerName (optional)");
+        opt = new Option("b", "brokerName", true, "可选，限定单个 Broker 名");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -60,6 +65,7 @@ public class TriggerLiteDispatchSubCommand implements SubCommand {
     }
 
     @Override
+    /** 遍历路由 Broker，调用 triggerLiteDispatch 触发 Lite 分发并打印结果。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

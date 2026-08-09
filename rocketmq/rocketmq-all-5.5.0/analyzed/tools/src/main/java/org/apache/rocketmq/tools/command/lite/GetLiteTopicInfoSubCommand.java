@@ -33,29 +33,34 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * getLiteTopicInfo 子命令：查询 LMQ 父 Topic 下单个 Lite Topic 的偏移与订阅者信息。
+ */
 public class GetLiteTopicInfoSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 getLiteTopicInfo。 */
     public String commandName() {
         return "getLiteTopicInfo";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get lite topic info.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("p", "parentTopic", true, "Parent topic name");
+        Option opt = new Option("p", "parentTopic", true, "LMQ 父 Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("l", "liteTopic", true, "Lite topic name");
+        opt = new Option("l", "liteTopic", true, "Lite Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("s", "showClientId", false, "Show all clientId");
+        opt = new Option("s", "showClientId", false, "是否列出全部订阅 clientId@group");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -63,6 +68,7 @@ public class GetLiteTopicInfoSubCommand implements SubCommand {
     }
 
     @Override
+    /** 遍历路由上各 Broker，输出 Lite Topic 偏移区间与分片/订阅数。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
