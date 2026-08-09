@@ -15,23 +15,8 @@
     "common/src/main/java/com/taobao/arthas/common/concurrent/ReusableIterator.java",
     "core/src/main/java/com/taobao/arthas/core/Arthas.java",
     "core/src/main/java/com/taobao/arthas/core/GlobalOptions.java",
-    "core/src/main/java/com/taobao/arthas/core/Option.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/AccessPoint.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/Advice.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/AdviceListener.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/AdviceListenerAdapter.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/AdviceListenerManager.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/AdviceWeaver.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/ArthasMethod.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/Enhancer.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/InvokeTraceable.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/LineEnhanceOptions.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/SpyImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/SpyInterceptors.java",
-    "core/src/main/java/com/taobao/arthas/core/advisor/TransformerManager.java",
-    "core/src/main/java/com/taobao/arthas/core/command/BuiltinCommandPack.java",
-    "core/src/main/java/com/taobao/arthas/core/command/CommandExecutorImpl.java"
+    "core/src/main/java/com/taobao/arthas/core/Option.java"
   ],
   "remaining_pending": 615,
-  "done": 150
+  "done": 165
 }
