@@ -6,113 +6,64 @@ import com.taobao.arthas.core.shell.session.Session;
 import com.taobao.arthas.core.shell.term.Tty;
 
 /**
- * A job executed in a {@link JobController}, grouping one or several process.<p/>
- *
- * The job life cycle can be controlled with the {@link #run}, {@link #resume} and {@link #suspend} and {@link #interrupt}
- * methods.
+ * 在 {@link JobController} 中执行的任务，可包含一个或多个 {@link Process} 管道阶段。
+ * <p>
+ * 生命周期由 {@link #run}、{@link #resume}、{@link #suspend}、{@link #interrupt} 控制，
+ * 支持前台/后台切换及超时设置。
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public interface Job {
 
-    /**
-     * @return the job id
-     */
+    /** @return 任务在控制器内的数字 id */
     int id();
 
-    /**
-     * @return the job exec status
-     */
+    /** @return 当前 {@link ExecStatus} 执行状态 */
     ExecStatus status();
 
-    /**
-     * @return the execution line of the job, i.e the shell command line that launched this job
-     */
+    /** @return 启动该 Job 的完整 Shell 命令行 */
     String line();
 
 
-    /**
-     * Run the job, before running the job a {@link Tty} must be set.
-     *
-     * @return this object
-     */
+    /** 以前台方式运行 Job（须先绑定 {@link Tty}） */
     Job run();
 
-    /**
-     * Run the job, before running the job a {@link Tty} must be set.
-     *
-     * @return this object
-     */
+    /** 运行 Job；foreground 为 false 时在后台执行 */
     Job run(boolean foreground);
 
-    /**
-     * Attempt to interrupt the job.
-     *
-     * @return true if the job is actually interrupted
-     */
+    /** 尝试中断 Job；真正中断时返回 true */
     boolean interrupt();
 
-    /**
-     * Resume the job to foreground.
-     */
+    /** 恢复 Job 并切换到前台 */
     Job resume();
 
-    /**
-     * @return true if the job is running in background
-     */
+    /** @return 是否在后台运行 */
     boolean isRunInBackground();
 
-    /**
-     * Send the job to background.
-     *
-     * @return this object
-     */
+    /** 将 Job 送入后台（Ctrl+Z 语义） */
     Job toBackground();
 
-    /**
-     * Send the job to foreground.
-     *
-     * @return this object
-     */
+    /** 将 Job 切换到前台 */
     Job toForeground();
 
-    /**
-     * Resume the job.
-     *
-     * @param foreground true when the job is resumed in foreground
-     */
+    /** 恢复已挂起的 Job；foreground 控制是否占前台 */
     Job resume(boolean foreground);
 
-    /**
-     * Resume the job.
-     *
-     * @return this object
-     */
+    /** 恢复 Job（默认前台） */
     Job suspend();
 
-    /**
-     * Terminate the job.
-     */
+    /** 终止 Job 并释放资源 */
     void terminate();
 
-    /**
-     * @return the first process in the job
-     */
+    /** @return Job 管道中的首个 Process */
     Process process();
 
-    /**
-     * @return the date with job timeout
-     */
+    /** @return Job 超时时间点，未设置时为 null */
     Date timeoutDate();
 
-    /**
-     * Set the date with job timeout
-     * @param date the date with job timeout
-     */
+    /** 设置 Job 超时时间 */
     void setTimeoutDate(Date date);
 
-    /**
-     * @return the session this job belongs to
-     */
+    /** @return 所属 {@link Session} */
     Session getSession();
 }

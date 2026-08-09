@@ -1,30 +1,24 @@
 package com.taobao.arthas.core.shell.system;
 
 /**
- * The status of an execution.
+ * Job 执行状态枚举，描述任务在生命周期中的当前阶段。
+ * <p>
+ * 与 {@link Job} 的 run/suspend/terminate 操作配合，供 jobs 命令展示状态。
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public enum ExecStatus {
 
-    /**
-     * The job is ready, it can be running or terminated.
-     */
+    /** 已就绪，可转为 RUNNING 或直接 TERMINATED */
     READY,
 
-    /**
-     * The job is running, it can be stopped or terminated.
-     */
+    /** 正在运行，可 suspend 或 terminate */
     RUNNING,
 
-    /**
-     * The job is stopped, it can be running or terminated.
-     */
+    /** 已挂起（停止），可 resume 或 terminate */
     STOPPED,
 
-    /**
-     * The job is terminated.
-     */
+    /** 已终止，不可再恢复 */
     TERMINATED
 
 

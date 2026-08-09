@@ -39,24 +39,36 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * {@link ShellServer} 默认实现：管理 TermServer、会话池与全局 Job 控制器。
+ * <p>
+ * 监听多个终端入口（Telnet/WebSocket），为每条连接创建 {@link ShellImpl}；
+ * 定时回收空闲会话，关闭时依次停止 TermServer 并终止所有 Job。
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class ShellServerImpl extends ShellServer {
 
     private static final Logger logger = LoggerFactory.getLogger(ShellServerImpl.class);
 
+    /** 已注册的命令解析器列表，支持运行时追加 */
     private final CopyOnWriteArrayList<CommandResolver> resolvers;
+    /** 聚合所有 CommandResolver 的内部命令管理器 */
     private final InternalCommandManager commandManager;
+    /** 待启动/已注册的终端服务列表（Telnet、HTTP 等） */
     private final List<TermServer> termServers;
+    /** 会话空闲超时毫秒数，超时且无 Job 时回收 */
     private final long timeoutMillis;
+    /** 会话回收定时器执行间隔（毫秒） */
     private final long reaperInterval;
     private String welcomeMessage;
     private Instrumentation instrumentation;
     private long pid;
     private boolean closed = true;
+    /** 活跃 Shell 会话表，键为会话 id */
     private final Map<String, ShellImpl> sessions;
     private final Future<Void> sessionsClosed = Future.future();
     private ScheduledExecutorService scheduledExecutorService;
+    /** 全局 Job 控制器，跨会话共享后台任务视图 */
     private JobControllerImpl jobController = new GlobalJobControllerImpl();
 
     public ShellServerImpl(ShellServerOptions options) {
@@ -70,7 +82,7 @@ public class ShellServerImpl extends ShellServer {
         this.instrumentation = options.getInstrumentation();
         this.pid = options.getPid();
 
-        // Register builtin commands so they are listed in help
+        // 注册内置命令解析器，使 help 能列出 exit/jobs 等命令
         resolvers.add(new BuiltinCommandResolver());
     }
 
@@ -86,9 +98,10 @@ public class ShellServerImpl extends ShellServer {
         return this;
     }
 
+    /** 新终端连接入口：创建 Shell、初始化 readline 并加入会话表 */
     public void handleTerm(Term term) {
         synchronized (this) {
-            // That might happen with multiple ser
+            // 多 TermServer 竞态时服务器可能已关闭，直接拒绝连接
             if (closed) {
                 term.close();
                 return;
@@ -100,10 +113,11 @@ public class ShellServerImpl extends ShellServer {
         session.setWelcome(welcomeMessage);
         session.closedFuture.setHandler(new SessionClosedHandler(this, session));
         session.init();
-        sessions.put(session.id, session); // Put after init so the close handler on the connection is set
-        session.readline(); // Now readline
+        sessions.put(session.id, session); // init 后再注册，确保 close handler 已绑定
+        session.readline(); // 启动交互式命令行
     }
 
+    /** 若已连接 Tunnel，用 agent id 刷新欢迎 Banner */
     private void tryUpdateWelcomeMessage() {
         TunnelClient tunnelClient = ArthasBootstrap.getInstance().getTunnelClient();
         if (tunnelClient != null) {
@@ -139,11 +153,12 @@ public class ShellServerImpl extends ShellServer {
         return this;
     }
 
+    /** 扫描并关闭超时且无活跃 Job 的空闲会话 */
     private void evictSessions() {
         long now = System.currentTimeMillis();
         Set<ShellImpl> toClose = new HashSet<ShellImpl>();
         for (ShellImpl session : sessions.values()) {
-            // do not close if there is still job running,
+            // 仍有 Job 运行时不关闭（如 trace 长时间等待触发条件）
             // e.g. trace command might wait for a long time before condition is met
             if (now - session.lastAccessedTime() > timeoutMillis && session.jobs().size() == 0) {
                 toClose.add(session);
@@ -157,6 +172,7 @@ public class ShellServerImpl extends ShellServer {
         }
     }
 
+    /** 启动守护线程定时执行 {@link #evictSessions} */
     public synchronized void setTimer() {
         if (!closed && reaperInterval > 0) {
             scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
@@ -181,12 +197,13 @@ public class ShellServerImpl extends ShellServer {
         this.closed = closed;
     }
 
+    /** 从会话表移除 Shell：先终止前台 Job，再关闭连接并通知全部会话已关闭 */
     public void removeSession(ShellImpl shell) {
         boolean completeSessionClosed;
 
         Job job = shell.getForegroundJob();
         if (job != null) {
-            // close shell's foreground job
+            // 会话断开时终止其前台 Job，避免孤儿进程
             job.terminate();
             logger.info("Session {} closed, so terminate foreground job, id: {}, line: {}",
                         shell.session().getSessionId(), job.id(), job.line());
@@ -208,6 +225,7 @@ public class ShellServerImpl extends ShellServer {
     }
 
     @Override
+    /** 创建新的 ShellImpl；服务器已关闭时抛 IllegalStateException */
     public synchronized ShellImpl createShell(Term term) {
         if (closed) {
             throw new IllegalStateException("Closed");
@@ -253,10 +271,12 @@ public class ShellServerImpl extends ShellServer {
         }
     }
 
+    /** @return 全局 Job 控制器实例 */
     public JobControllerImpl getJobController() {
         return jobController;
     }
 
+    /** @return 内部命令管理器 */
     public InternalCommandManager getCommandManager() {
         return commandManager;
     }

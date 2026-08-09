@@ -8,50 +8,48 @@ import java.lang.instrument.Instrumentation;
 import java.util.List;
 
 /**
- * A shell session.
+ * Shell 会话上下文接口，以键值对存储 PID、Instrumentation、TTY 等运行时属性。
+ * <p>
+ * 同时提供乐观锁（{@link #tryLock}）用于命令执行互斥，以及前台 Job 与结果分发器引用。
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author gongdewei 2020-03-23
  */
 public interface Session {
+    /** Session 中存储 {@link InternalCommandManager} 的键 */
     String COMMAND_MANAGER = "arthas-command-manager";
+    /** 目标 JVM 进程 PID 的键 */
     String PID = "pid";
+    /** Java {@link Instrumentation} 实例的键 */
     String INSTRUMENTATION = "instrumentation";
+    /** 会话唯一 id 的键 */
     String ID = "id";
+    /** 所属 {@link ShellServer} 的键 */
     String SERVER = "server";
+    /** 登录用户标识的键 */
     String USER_ID = "userId";
     /**
      * 会话静默模式，不输出连接欢迎信息。
      */
     String QUIET = "arthas-session-quiet";
-    /**
-     * The tty this session related to.
-     */
+    /** 关联 TTY/Term 对象的键 */
     String TTY = "tty";
 
-    /**
-     * Session create time
-     */
+    /** 会话创建时间戳（毫秒）的键 */
     String CREATE_TIME = "createTime";
 
-    /**
-     * Session last active time
-     */
+    /** 会话最后活跃时间戳的键 */
     String LAST_ACCESS_TIME = "lastAccessedTime";
 
-    /**
-     * Command Result Distributor
-     */
+    /** 命令结果共享分发器的键 */
     String RESULT_DISTRIBUTOR = "resultDistributor";
 
-    /**
-     * The executing foreground job
-     */
+    /** 当前前台 Job 引用的键 */
     String FOREGROUND_JOB = "foregroundJob";
 
 
     /**
-     * Put some data in a session
+     * 向会话写入键值；obj 为 null 时等价于 remove。
      *
      * @param key the key for the data
      * @param obj the data
@@ -60,7 +58,7 @@ public interface Session {
     Session put(String key, Object obj);
 
     /**
-     * Get some data from the session
+     * 按 key 读取会话属性。
      *
      * @param key the key of the data
      * @return the data
@@ -68,121 +66,64 @@ public interface Session {
     <T> T get(String key);
 
     /**
-     * Remove some data from the session
+     * 移除并返回指定 key 的值。
      *
      * @param key the key of the data
      * @return the data that was there or null if none there
      */
     <T> T remove(String key);
 
-    /**
-     * Check if the session has been already locked
-     *
-     * @return locked or not
-     */
+    /** @return 会话是否已被某命令持有锁 */
     boolean isLocked();
 
-    /**
-     * Unlock the session
-     *
-     */
+    /** 释放会话锁；非持有者调用将抛异常 */
     void unLock();
 
-    /**
-     * Try to fetch the current session's lock
-     *
-     * @return success or not
-     */
+    /** 尝试获取会话锁，成功返回 true（CAS 语义） */
     boolean tryLock();
 
-    /**
-     * Check current lock's sequence id
-     *
-     * @return lock's sequence id
-     */
+    /** @return 当前锁序号，-1 表示未锁定 */
     int getLock();
 
-    /**
-     * Get session id
-     * @return session id
-     */
+    /** @return 会话唯一标识 */
     String getSessionId();
 
-    /**
-     * Get Java PID
-     *
-     * @return java pid
-     */
+    /** @return 附加的目标 JVM 进程号 */
     long getPid();
 
-    /**
-     * Get all registered command resolvers
-     *
-     * @return command resolvers
-     */
+    /** @return 当前可用的命令解析器列表 */
     List<CommandResolver> getCommandResolvers();
 
-    /**
-     * Get java instrumentation
-     *
-     * @return instrumentation instance
-     */
+    /** @return Java Instrumentation，用于类增强与诊断 */
     Instrumentation getInstrumentation();
 
-    /**
-     * Update session last access time
-     * @param time new time
-     */
+    /** 更新最后活跃时间，供超时回收判断 */
     void setLastAccessTime(long time);
 
-    /**
-     * Get session last access time
-     * @return session last access time
-     */
+    /** @return 最后活跃时间戳（毫秒） */
     long getLastAccessTime();
 
-    /**
-     * Get session create time
-     * @return session create time
-     */
+    /** @return 会话创建时间戳（毫秒） */
     long getCreateTime();
 
-    /**
-     * Update session's command result distributor
-     * @param resultDistributor
-     */
+    /** 设置命令结果共享分发器（Web 多消费者场景） */
     void setResultDistributor(SharingResultDistributor resultDistributor);
 
-    /**
-     * Get session's command result distributor
-     * @return
-     */
+    /** @return 结果分发器，未设置时为 null */
     SharingResultDistributor getResultDistributor();
 
-    /**
-     * Set the foreground job
-     */
+    /** 记录当前前台 Job 引用 */
     void setForegroundJob(Job job);
 
-    /**
-     * Get the foreground job
-     */
+    /** @return 前台 Job，空闲时为 null */
     Job getForegroundJob();
 
-    /**
-     * Whether the session is tty term
-     */
+    /** @return 是否绑定真实 TTY 终端（相对纯 API 会话） */
     boolean isTty();
 
-    /**
-     * Get user id
-     * @return user id
-     */
+    /** @return 当前登录用户 id */
     String getUserId();
 
-    /**
-     * Set user id
-     * @param userId user id
-     */
+    /** 设置登录用户 id */
     void setUserId(String userId);
 }
