@@ -15,23 +15,8 @@
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PullMessageRequestHeader.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/PullMessageResponseHeader.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryConsumeQueueRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryConsumeTimeSpanRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryConsumerOffsetRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryConsumerOffsetResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryCorrectionOffsetHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryMessageResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QuerySubscriptionByConsumerRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryTopicConsumeByWhoRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryTopicsByConsumerRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/RecallMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/RecallMessageResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/RemoveBrokerRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ReplyMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ResetMasterFlushOffsetHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ResetOffsetRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ResumeCheckHalfMessageRequestHeader.java"
+    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/QueryConsumeTimeSpanRequestHeader.java"
   ],
   "remaining_pending": 498,
-  "done": 960
+  "done": 975
 }
