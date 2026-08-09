@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:05:26Z",
-  "files": [
-    "arthas-model/src/main/java/com/taobao/arthas/core/command/model/WelcomeModel.java",
-    "arthas-spring-boot-starter/src/main/java/com/alibaba/arthas/spring/ArthasConfiguration.java",
-    "arthas-spring-boot-starter/src/main/java/com/alibaba/arthas/spring/ArthasProperties.java",
-    "arthas-spring-boot-starter/src/main/java/com/alibaba/arthas/spring/StringUtils.java",
-    "arthas-spring-boot-starter/src/main/java/com/alibaba/arthas/spring/endpoints/ArthasEndPoint.java",
-    "arthas-spring-boot-starter/src/main/java/com/alibaba/arthas/spring/endpoints/ArthasEndPointAutoConfiguration.java",
-    "arthas-vmtool/src/main/java/arthas/VmTool.java",
-    "arthas-vmtool/src/main/java/arthas/VmToolMXBean.java",
-    "boot/src/main/java/com/taobao/arthas/boot/Bootstrap.java",
-    "boot/src/main/java/com/taobao/arthas/boot/DownloadUtils.java",
-    "boot/src/main/java/com/taobao/arthas/boot/ProcessUtils.java",
-    "client/src/main/java/com/taobao/arthas/client/IOUtil.java",
-    "client/src/main/java/com/taobao/arthas/client/TelnetConsole.java",
-    "client/src/main/java/org/apache/commons/net/DatagramSocketClient.java",
-    "client/src/main/java/org/apache/commons/net/DatagramSocketFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 675,
-  "done": 105
+  "done": 120
 }
