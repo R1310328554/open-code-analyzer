@@ -15,23 +15,8 @@
     "proxy/src/main/java/org/apache/rocketmq/proxy/auth/ProxyAuthorizationMetadataProvider.java",
     "proxy/src/main/java/org/apache/rocketmq/proxy/common/AbstractCacheLoader.java",
     "proxy/src/main/java/org/apache/rocketmq/proxy/common/Address.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/ContextVariable.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/MessageReceiptHandle.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/ProxyContext.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/ProxyException.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/ProxyExceptionCode.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/ReceiptHandleGroup.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/ReceiptHandleGroupKey.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/RenewEvent.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/RenewStrategyPolicy.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/channel/ChannelHelper.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/utils/FilterUtils.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/utils/GrpcUtils.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/common/utils/ProxyUtils.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/config/ConfigFile.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/config/Configuration.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/config/ConfigurationManager.java"
+    "proxy/src/main/java/org/apache/rocketmq/proxy/common/ContextVariable.java"
   ],
   "remaining_pending": 858,
-  "done": 600
+  "done": 615
 }
