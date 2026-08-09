@@ -1422,3 +1422,4 @@
 2026-08-09T20:20:04Z DONE store/src/main/java/org/apache/rocketmq/store/DefaultMessageStore.java wave49b [15:30]
 2026-08-09T20:20:04Z DONE store/src/main/java/org/apache/rocketmq/store/MappedFileQueue.java wave49b [15:30]
 2026-08-09T20:20:04Z DONE store/src/main/java/org/apache/rocketmq/store/MessageExtEncoder.java wave49b [15:30]
+2026-08-09T20:20:44Z CLAIM rocketmq rocketmq-all-5.5.0 wave50 n=30 remaining_pending=4
