@@ -5,8 +5,7 @@ import com.lmax.disruptor.EventPoller;
 import com.lmax.disruptor.RingBuffer;
 
 /**
- * Alternative usage of EventPoller, here we wrap it around BatchedEventPoller
- * to achieve Disruptor's batching. this speeds up the polling feature
+ * EventPoller 的批量拉取用法：本地缓冲一批事件以加速轮询消费。
  */
 public class PullWithBatchedPoller
 {
@@ -20,10 +19,10 @@ public class PullWithBatchedPoller
 
         Object value = poller.poll();
 
-        // Value could be null if no events are available.
+        // 无可用事件时 value 可能为 null
         if (null != value)
         {
-            // Process value.
+            // 处理取出的值
         }
     }
 
@@ -43,10 +42,10 @@ public class PullWithBatchedPoller
         {
             if (polledData.getMsgCount() > 0)
             {
-                return polledData.pollMessage(); // we just fetch from our local
+                return polledData.pollMessage(); // 步骤：优先从本地缓冲取
             }
 
-            loadNextValues(poller, polledData); // we try to load from the ring
+            loadNextValues(poller, polledData); // 步骤：本地为空时从 RingBuffer 批量加载
             return polledData.getMsgCount() > 0 ? polledData.pollMessage() : null;
         }
 
@@ -71,12 +70,7 @@ public class PullWithBatchedPoller
 
             public T copyOfData()
             {
-                // Copy the data out here. In this case we have a single reference
-                // object, so the pass by
-                // reference is sufficient. But if we were reusing a byte array,
-                // then we
-                // would need to copy
-                // the actual contents.
+                // 此处拷贝数据；单引用对象传引用即可，复用 byte[] 时需深拷贝内容。
                 return data;
             }
 

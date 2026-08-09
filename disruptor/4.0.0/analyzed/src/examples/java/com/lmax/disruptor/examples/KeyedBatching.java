@@ -1,3 +1,7 @@
+/**
+ * 按 key 分组批处理示例：key 变化或达到批大小时刷新批次。
+ */
+
 package com.lmax.disruptor.examples;
 
 import com.lmax.disruptor.EventHandler;
@@ -14,6 +18,7 @@ public class KeyedBatching implements EventHandler<KeyedBatching.KeyedEvent>
     @Override
     public void onEvent(final KeyedEvent event, final long sequence, final boolean endOfBatch)
     {
+        // 步骤：key 变化时先处理已有批次
         if (!batch.isEmpty() && event.key != key)
         {
             processBatch(batch);
@@ -22,6 +27,7 @@ public class KeyedBatching implements EventHandler<KeyedBatching.KeyedEvent>
         batch.add(event.data);
         key = event.key;
 
+        // 步骤：批末或达到上限时刷新
         if (endOfBatch || batch.size() >= MAX_BATCH_SIZE)
         {
             processBatch(batch);
@@ -30,10 +36,11 @@ public class KeyedBatching implements EventHandler<KeyedBatching.KeyedEvent>
 
     private void processBatch(final List<Object> batch)
     {
-        // do work.
+        // 处理当前批次
         batch.clear();
     }
 
+    /** 带 key 与 data 的分组事件。 */
     public static class KeyedEvent
     {
         long key;

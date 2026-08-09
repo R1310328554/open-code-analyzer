@@ -1,3 +1,7 @@
+/**
+ * 运行时动态添加与移除 BatchEventProcessor 的示例。
+ */
+
 package com.lmax.disruptor.examples;
 
 import com.lmax.disruptor.BatchEventProcessor;
@@ -14,6 +18,7 @@ import java.util.concurrent.Executors;
 
 public class DynamicallyAddHandler
 {
+    /** 带关闭 latch 的动态处理器，onShutdown 时通知等待方。 */
     private static class DynamicHandler implements EventHandler<StubEvent>
     {
         private final CountDownLatch shutdownLatch = new CountDownLatch(1);
@@ -45,12 +50,12 @@ public class DynamicallyAddHandler
     {
         ExecutorService executor = Executors.newCachedThreadPool(DaemonThreadFactory.INSTANCE);
 
-        // Build a disruptor and start it.
+        // 步骤：构建 Disruptor 并启动，获取 RingBuffer
         Disruptor<StubEvent> disruptor = new Disruptor<>(
                 StubEvent.EVENT_FACTORY, 1024, DaemonThreadFactory.INSTANCE);
         RingBuffer<StubEvent> ringBuffer = disruptor.start();
 
-        // Construct 2 batch event processors.
+        // 步骤：手动构造两个 BatchEventProcessor
         DynamicHandler handler1 = new DynamicHandler();
         BatchEventProcessor<StubEvent> processor1 =
                 new BatchEventProcessorBuilder().build(ringBuffer, ringBuffer.newBarrier(), handler1);
@@ -59,20 +64,20 @@ public class DynamicallyAddHandler
         BatchEventProcessor<StubEvent> processor2 =
                 new BatchEventProcessorBuilder().build(ringBuffer, ringBuffer.newBarrier(processor1.getSequence()), handler2);
 
-        // Dynamically add both sequences to the ring buffer
+        // 步骤：将两个处理器的序号动态注册为门控序号
         ringBuffer.addGatingSequences(processor1.getSequence(), processor2.getSequence());
 
-        // Start the new batch processors.
+        // 步骤：在线程池中启动处理器
         executor.execute(processor1);
         executor.execute(processor2);
 
-        // Remove a processor.
+        // 步骤：移除其中一个处理器
 
-        // Stop the processor
+        // 停止 processor2
         processor2.halt();
-        // Wait for shutdown the complete
+        // 等待 onShutdown 完成
         handler2.awaitShutdown();
-        // Remove the gating sequence from the ring buffer
+        // 从 RingBuffer 移除对应门控序号
         ringBuffer.removeGatingSequence(processor2.getSequence());
     }
 }

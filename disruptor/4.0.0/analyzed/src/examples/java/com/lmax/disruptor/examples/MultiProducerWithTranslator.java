@@ -1,3 +1,7 @@
+/**
+ * 多生产者通过 EventTranslatorThreeArg 发布三参数事件的示例。
+ */
+
 package com.lmax.disruptor.examples;
 
 import com.lmax.disruptor.BlockingWaitStrategy;
@@ -19,6 +23,7 @@ public class MultiProducerWithTranslator
     {
     }
 
+    /** 承载 message、transportable 与 streamName 的事件槽位。 */
     private static class ObjectBox
     {
         IMessage message;
@@ -43,6 +48,7 @@ public class MultiProducerWithTranslator
         }
     }
 
+    /** 三参数 EventTranslator，将发布参数写入 ObjectBox。 */
     public static class Publisher implements EventTranslatorThreeArg<ObjectBox, IMessage, ITransportable, String>
     {
         @Override
@@ -54,6 +60,7 @@ public class MultiProducerWithTranslator
         }
     }
 
+    /** 消费 ObjectBox 事件的占位处理器。 */
     public static class Consumer implements EventHandler<ObjectBox>
     {
         @Override

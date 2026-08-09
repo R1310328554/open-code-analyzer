@@ -1,3 +1,7 @@
+/**
+ * 提前释放序号示例：在逻辑工作块完成时手动推进 sequenceCallback。
+ */
+
 package com.lmax.disruptor.examples;
 
 import com.lmax.disruptor.EventHandler;
@@ -25,6 +29,7 @@ public class EarlyReleaseHandler implements EventHandler<LongEvent>
         boolean logicalChunkOfWorkComplete = isLogicalChunkOfWorkComplete();
         if (logicalChunkOfWorkComplete)
         {
+            // 步骤：逻辑块完成时提前释放已处理序号
             sequenceCallback.set(sequence);
         }
 
@@ -33,17 +38,14 @@ public class EarlyReleaseHandler implements EventHandler<LongEvent>
 
     private boolean isLogicalChunkOfWorkComplete()
     {
-        // Ret true or false based on whatever criteria is required for the smaller
-        // chunk.  If this is doing I/O, it may be after flushing/syncing to disk
-        // or at the end of DB batch+commit.
-        // Or it could simply be working off a smaller batch size.
+        // 按更小工作块的完成条件返回 true/false，例如刷盘、DB 提交或自定义批大小。
 
         return --batchRemaining == -1;
     }
 
     private void processEvent(final LongEvent event)
     {
-        // Do processing
+        // 处理事件
     }
 }
 // end::example[]

@@ -1,3 +1,7 @@
+/**
+ * 带超时 shutdown 并通过 CountDownLatch 等待 handler 关闭完成的示例。
+ */
+
 package com.lmax.disruptor.examples;
 
 import com.lmax.disruptor.EventHandler;
@@ -13,6 +17,7 @@ public class WaitForShutdown
 {
     private static volatile int value = 0;
 
+    /** 在 onShutdown 中递减 latch 的处理器。 */
     private static class Handler implements EventHandler<LongEvent>
     {
         private final CountDownLatch latch;
@@ -55,8 +60,10 @@ public class WaitForShutdown
         disruptor.getRingBuffer().get(next).set(next);
         disruptor.getRingBuffer().publish(next);
 
+        // 步骤：带超时请求关闭 Disruptor
         disruptor.shutdown(10, TimeUnit.SECONDS);
 
+        // 等待两个 handler 均完成 onShutdown
         shutdownLatch.await();
 
         System.out.println(value);

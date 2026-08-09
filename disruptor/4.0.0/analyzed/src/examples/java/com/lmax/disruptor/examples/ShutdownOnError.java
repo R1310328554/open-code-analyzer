@@ -1,3 +1,7 @@
+/**
+ * 事件处理异常时通过 ExceptionHandler 决定是否终止 Disruptor 的示例。
+ */
+
 package com.lmax.disruptor.examples;
 
 import com.lmax.disruptor.EventFactory;
@@ -23,7 +27,7 @@ public class ShutdownOnError
         @Override
         public void onEvent(final Event event, final long sequence, final boolean endOfBatch)
         {
-            // do work, if a failure occurs throw exception.
+            // 执行业务逻辑，失败时抛出异常
         }
     }
 
@@ -39,6 +43,7 @@ public class ShutdownOnError
         @Override
         public void handleEventException(final Throwable ex, final long sequence, final Event event)
         {
+            // 步骤：致命异常重新抛出以触发 Disruptor 关闭
             if (execeptionIsFatal(ex))
             {
                 throw new RuntimeException(ex);
@@ -47,7 +52,7 @@ public class ShutdownOnError
 
         private boolean execeptionIsFatal(final Throwable ex)
         {
-            // Do what is appropriate here.
+            // 按业务规则判定异常是否致命
             return true;
         }
 

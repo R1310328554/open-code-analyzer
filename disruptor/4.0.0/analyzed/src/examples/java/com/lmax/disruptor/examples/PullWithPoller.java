@@ -1,3 +1,7 @@
+/**
+ * 使用 EventPoller 单条拉取事件的示例。
+ */
+
 package com.lmax.disruptor.examples;
 
 import com.lmax.disruptor.EventFactory;
@@ -17,9 +21,7 @@ public class PullWithPoller
 
         public T copyOfData()
         {
-            // Copy the data out here.  In this case we have a single reference object, so the pass by
-            // reference is sufficient.  But if we were reusing a byte array, then we would need to copy
-            // the actual contents.
+            // 此处拷贝数据；单引用对象传引用即可，复用 byte[] 时需深拷贝内容。
             return data;
         }
     }
@@ -32,10 +34,10 @@ public class PullWithPoller
 
         Object value = getNextValue(poller);
 
-        // Value could be null if no events are available.
+        // 无可用事件时 value 可能为 null
         if (null != value)
         {
-            // Process value.
+            // 处理取出的值
         }
     }
 
@@ -48,7 +50,7 @@ public class PullWithPoller
                 {
                     out[0] = event.copyOfData();
 
-                    // Return false so that only one event is processed at a time.
+                    // 返回 false 表示每次 poll 只处理一条事件
                     return false;
                 });
 

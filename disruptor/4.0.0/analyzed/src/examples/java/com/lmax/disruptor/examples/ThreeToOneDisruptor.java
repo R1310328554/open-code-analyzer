@@ -1,3 +1,7 @@
+/**
+ * 三并行转换后汇聚到单一 CollatingHandler 的示例。
+ */
+
 package com.lmax.disruptor.examples;
 
 
@@ -8,6 +12,7 @@ import com.lmax.disruptor.util.DaemonThreadFactory;
 
 public class ThreeToOneDisruptor
 {
+    /** 输入与一个固定长度 output 数组的事件载体。 */
     public static class DataEvent
     {
         Object input;
@@ -21,6 +26,7 @@ public class ThreeToOneDisruptor
         public static final EventFactory<DataEvent> FACTORY = () -> new DataEvent(3);
     }
 
+    /** 并行转换处理器，写入 output 的指定索引。 */
     public static class TransformingHandler implements EventHandler<DataEvent>
     {
         private final int outputIndex;
@@ -33,17 +39,18 @@ public class ThreeToOneDisruptor
         @Override
         public void onEvent(final DataEvent event, final long sequence, final boolean endOfBatch)
         {
-            // Do Stuff.
+            // 步骤：将 input 转换后写入 output[outputIndex]
             event.output[outputIndex] = doSomething(event.input);
         }
 
         private Object doSomething(final Object input)
         {
-            // Do required transformation here....
+            // 在此执行具体转换
             return input;
         }
     }
 
+    /** 汇聚处理器：三路 output 齐备后执行 collate。 */
     public static class CollatingHandler implements EventHandler<DataEvent>
     {
         @Override
@@ -54,7 +61,7 @@ public class ThreeToOneDisruptor
 
         private void collate(final Object[] output)
         {
-            // Do required collation here....
+            // 在此执行汇聚逻辑
         }
     }
 

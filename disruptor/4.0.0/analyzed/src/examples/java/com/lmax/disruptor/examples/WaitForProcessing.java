@@ -1,3 +1,7 @@
+/**
+ * 等待特定消费者或 RingBuffer 空闲的处理同步示例。
+ */
+
 package com.lmax.disruptor.examples;
 
 import com.lmax.disruptor.EventHandler;
@@ -9,6 +13,7 @@ import com.lmax.disruptor.util.DaemonThreadFactory;
 
 public class WaitForProcessing
 {
+    /** 占位消费者，用于演示序号等待。 */
     public static class Consumer implements EventHandler<LongEvent>
     {
         @Override
@@ -28,6 +33,7 @@ public class WaitForProcessing
         disruptor.handleEventsWith(firstConsumer).then(lastConsumer);
         final RingBuffer<LongEvent> ringBuffer = disruptor.getRingBuffer();
 
+        // 步骤：发布一条带偏移赋值的事件
         EventTranslator<LongEvent> translator = (event, sequence) -> event.set(sequence - 4);
 
         ringBuffer.tryPublishEvent(translator);
@@ -41,7 +47,7 @@ public class WaitForProcessing
     {
         while (ringBuffer.getBufferSize() - ringBuffer.remainingCapacity() != 0)
         {
-            // Wait for priocessing...
+            // 等待 RingBuffer 中事件全部被消费
         }
     }
 
@@ -52,6 +58,7 @@ public class WaitForProcessing
     {
         long lastPublishedValue;
         long sequenceValueFor;
+        // 步骤：轮询直到 lastConsumer 追上已发布游标
         do
         {
             lastPublishedValue = ringBuffer.getCursor();
