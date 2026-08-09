@@ -140,3 +140,13 @@ docs_src/body_updates/tutorial001_py310.py
 docs_src/body_updates/tutorial002_py310.py
 docs_src/conditional_openapi/__init__.py
 docs_src/conditional_openapi/tutorial001_py310.py
+docs_src/cookie_params/tutorial001_an_py310.py
+docs_src/cookie_params/tutorial001_py310.py
+docs_src/cors/__init__.py
+docs_src/cors/tutorial001_py310.py
+docs_src/custom_docs_ui/__init__.py
+docs_src/custom_docs_ui/tutorial001_py310.py
+docs_src/custom_docs_ui/tutorial002_py310.py
+docs_src/custom_request_and_route/__init__.py
+docs_src/custom_request_and_route/tutorial001_an_py310.py
+docs_src/custom_request_and_route/tutorial001_py310.py
