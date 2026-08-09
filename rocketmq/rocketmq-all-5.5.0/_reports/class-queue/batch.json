@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:29:01Z",
   "files": [
-    "broker/src/main/java/org/apache/rocketmq/broker/config/v2/ConfigStorage.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/config/v2/RecordPrefix.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/config/v2/SerializationType.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/config/v2/SubscriptionGroupManagerV2.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/config/v2/TableId.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/config/v2/TablePrefix.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/config/v2/TopicConfigManagerV2.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/dledger/DLedgerRoleChangeHandler.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/failover/EscapeBridge.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/filter/CommitLogDispatcherCalcBitMap.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/filter/ConsumerFilterData.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/filter/ExpressionForRetryMessageFilter.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/filter/ExpressionMessageFilter.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/filter/MessageEvaluationContext.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/latency/BrokerFastFailure.java",
     "broker/src/main/java/org/apache/rocketmq/broker/lite/AbstractLiteLifecycleManager.java",
     "broker/src/main/java/org/apache/rocketmq/broker/lite/LiteCtlListener.java",
     "broker/src/main/java/org/apache/rocketmq/broker/lite/LiteLifecycleManager.java",
@@ -33,5 +18,5 @@
     "broker/src/main/java/org/apache/rocketmq/broker/longpolling/NotifyMessageArrivingListener.java"
   ],
   "remaining_pending": 1368,
-  "done": 90
+  "done": 105
 }
