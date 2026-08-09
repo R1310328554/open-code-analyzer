@@ -1,27 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:16:52Z",
-  "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/AbstractLobStreamingResultSetExtractor.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/AbstractSqlTypeValue.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/JdbcBeanDefinitionReader.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/JdbcDaoSupport.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/SqlBinaryValue.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/SqlCharacterValue.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/SqlLobValue.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/AbstractDataSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/AbstractDriverBasedDataSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/ConnectionHandle.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/ConnectionHolder.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/ConnectionProxy.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/DelegatingDataSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/DriverManagerDataSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/IsolationLevelDataSourceAdapter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/JdbcTransactionObjectSupport.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/ShardingKeyDataSourceAdapter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/ShardingKeyProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/SimpleConnectionHandle.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/SimpleDriverDataSource.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 144,
-  "done": 1327
+  "done": 1347
 }
