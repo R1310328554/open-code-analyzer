@@ -21,14 +21,12 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 /**
- * {@link QuicCodecBuilder} that configures and builds a {@link ChannelHandler} that should be added to the
- * {@link io.netty.channel.ChannelPipeline} of a {@code QUIC} client.
+ * 面向 QUIC 客户端的 {@link QuicCodecBuilder}，用于配置并构建应加入
+ * {@code QUIC} 客户端 {@link io.netty.channel.ChannelPipeline} 的 {@link ChannelHandler}。
  */
 public final class QuicClientCodecBuilder extends QuicCodecBuilder<QuicClientCodecBuilder> {
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建新的客户端编解码器构建器实例。 */
     public QuicClientCodecBuilder() {
         super(false);
     }
@@ -37,11 +35,13 @@ public final class QuicClientCodecBuilder extends QuicCodecBuilder<QuicClientCod
         super(builder);
     }
 
+    /** 克隆当前构建器，复制全部配置。 */
     @Override
     public QuicClientCodecBuilder clone() {
         return new QuicClientCodecBuilder(this);
     }
 
+    /** 根据 Quiche 配置与 SSL 上下文构建 {@link QuicheQuicClientCodec}。 */
     @Override
     ChannelHandler build(QuicheConfig config,
                                    Function<QuicChannel, ? extends QuicSslEngine> sslEngineProvider,

@@ -27,7 +27,7 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Abstract base class for {@code QUIC} codec builders.
+ * {@code QUIC} 编解码器构建器的抽象基类，封装 Quiche 传输参数与 SSL 配置。
  *
  * @param <B> the type of the {@link QuicCodecBuilder}.
  */
@@ -60,7 +60,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
 
     private Executor sslTaskExecutor;
 
-    // package-private for testing only
+    /** 仅包内/测试可见：协商使用的 QUIC 协议版本。 */
     int version;
 
     QuicCodecBuilder(boolean server) {
@@ -102,7 +102,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Returns itself.
+     * 返回构建器自身，供链式调用。
      *
      * @return itself.
      */
@@ -112,8 +112,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Sets the {@link FlushStrategy} that will be used to detect when an automatic flush
-     * should happen.
+     * 设置自动 flush 检测策略 {@link FlushStrategy}。
      *
      * @param flushStrategy   the strategy to use.
      * @return                the instance itself.
@@ -124,9 +123,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Sets the congestion control algorithm to use.
-     *
-     * The default is {@link QuicCongestionControlAlgorithm#CUBIC}.
+     * 设置拥塞控制算法，默认为 {@link QuicCongestionControlAlgorithm#CUBIC}。
      *
      * @param congestionControlAlgorithm    the {@link QuicCongestionControlAlgorithm} to use.
      * @return                              the instance itself.
@@ -137,9 +134,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Sets initial congestion window size in terms of packet count.
-     *
-     * The default value is 10.
+     * 以报文个数设置初始拥塞窗口大小，默认 10 个报文。
      *
      * @param numPackets number of packets for the initial congestion window
      * @return
@@ -150,10 +145,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Set if <a href="https://tools.ietf.org/html/draft-thomson-quic-bit-grease-00">greasing</a> should be enabled
-     * or not.
-     *
-     * The default value is {@code true}.
+     * 是否启用 <a href="https://tools.ietf.org/html/draft-thomson-quic-bit-grease-00">GREASE</a> 位填充，默认 {@code true}。
      *
      * @param enable    {@code true} if enabled, {@code false} otherwise.
      * @return          the instance itself.
@@ -167,7 +159,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * See <a href="https://docs.rs/quiche/0.6.0/quiche/struct.Config.html#method.set_max_idle_timeout">
      *     set_max_idle_timeout</a>.
      *
-     * The default value is infinite, that is, no timeout is used.
+     * 默认无超时（无限空闲时间）。
      *
      * @param amount    the maximum idle timeout.
      * @param unit      the {@link TimeUnit}.
@@ -182,7 +174,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * See <a href="https://github.com/cloudflare/quiche/blob/35e38d987c1e53ef2bd5f23b754c50162b5adac8/src/lib.rs#L669">
      *     set_max_send_udp_payload_size</a>.
      *
-     * The default and minimum value is 1200.
+     * 默认且最小值为 1200 字节。
      *
      * @param size    the maximum payload size that is advertised to the remote peer.
      * @return        the instance itself.
@@ -196,7 +188,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * See <a href="https://github.com/cloudflare/quiche/blob/35e38d987c1e53ef2bd5f23b754c50162b5adac8/src/lib.rs#L662">
      *     set_max_recv_udp_payload_size</a>.
      *
-     * The default value is 65527.
+     * 默认值为 65527 字节。
      *
      * @param size    the maximum payload size that is advertised to the remote peer.
      * @return        the instance itself.
@@ -210,7 +202,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * See <a href="https://docs.rs/quiche/0.6.0/quiche/struct.Config.html#method.set_initial_max_data">
      *     set_initial_max_data</a>.
      *
-     * The default value is 0.
+     * 默认值为 0。
      *
      * @param value   the initial maximum data limit.
      * @return        the instance itself.
@@ -300,7 +292,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * <a href="https://docs.rs/quiche/0.6.0/quiche/struct.Config.html#method.set_ack_delay_exponent">
      *     set_ack_delay_exponent</a>.
      *
-     * The default value is 3.
+     * 默认值为 3。
      *
      * @param value   the delay exponent used for ACKs.
      * @return        the instance itself.
@@ -315,7 +307,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * <a href="https://docs.rs/quiche/0.6.0/quiche/struct.Config.html#method.set_max_ack_delay">
      *     set_max_ack_delay</a>.
      *
-     * The default value is 25 milliseconds.
+     * 默认 25 毫秒。
      *
      * @param amount    the max ack delay.
      * @param unit      the {@link TimeUnit}.
@@ -331,7 +323,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * <a href="https://docs.rs/quiche/0.6.0/quiche/struct.Config.html#method.set_disable_active_migration">
      *     set_disable_active_migration</a>.
      *
-     * The default value is {@code true}.
+     * 默认禁用主动迁移（{@code disable_active_migration=true}）。
      *
      * @param enable  {@code true} if migration should be enabled, {@code false} otherwise.
      * @return        the instance itself.
@@ -346,7 +338,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * <a href="https://docs.rs/quiche/0.6.0/quiche/struct.Config.html#method.enable_hystart">
      *     enable_hystart</a>.
      *
-     * The default value is {@code true}.
+     * 默认启用 Hystart 慢启动优化。
      *
      * @param enable  {@code true} if Hystart should be enabled.
      * @return        the instance itself.
@@ -361,9 +353,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
      * <a href="https://docs.rs/quiche/latest/quiche/struct.Config.html#method.discover_pmtu">
      *     discover_pmtu</a>.
      *
-     * Configures whether to do path MTU discovery.
-     *
-     * The default value is {@code false}.
+     * 是否启用路径 MTU 发现（PMTU），默认 {@code false}。
      *
      * @param enable  {@code true} if path MTU discovery should be enabled.
      * @return        the instance itself.
@@ -374,9 +364,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Sets the local connection id length that is used.
-     *
-     * The default is 20, which is also the maximum that is supported.
+     * 设置本地生成的连接 ID 长度，默认 20（亦为支持的最大值）。
      *
      * @param value   the length of local generated connections ids.
      * @return        the instance itself.
@@ -387,9 +375,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Allows to configure the {@code QUIC version} that should be used.
-     *
-     * The default value is the latest supported version by the underlying library.
+     * 配置使用的 {@code QUIC} 协议版本，默认为底层库支持的最新版本。
      *
      * @param version the {@code QUIC version} to use.
      * @return        the instance itself.
@@ -400,8 +386,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * If configured this will enable <a href="https://tools.ietf.org/html/draft-ietf-quic-datagram-01">
-     *     Datagram support.</a>
+     * 启用 <a href="https://tools.ietf.org/html/draft-ietf-quic-datagram-01">Datagram 扩展</a> 并配置收发队列长度。
      * @param recvQueueLen  the RECV queue length.
      * @param sendQueueLen  the SEND queue length.
      * @return              the instance itself.
@@ -416,9 +401,8 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * The {@link QuicSslContext} that will be used to create {@link QuicSslEngine}s for {@link QuicChannel}s.
-     *
-     * If you need a more flexible way to provide {@link QuicSslEngine}s use {@link #sslEngineProvider(Function)}.
+     * 指定用于为 {@link QuicChannel} 创建 {@link QuicSslEngine} 的 {@link QuicSslContext}。
+     * 更灵活时可改用 {@link #sslEngineProvider(Function)}。
      *
      * @param sslContext    the context.
      * @return              the instance itself.
@@ -432,8 +416,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * The {@link Function} that will return the {@link QuicSslEngine} that should be used for the
-     * {@link QuicChannel}.
+     * 设置按 {@link QuicChannel} 动态提供 {@link QuicSslEngine} 的 {@link Function}。
      *
      * @param sslEngineProvider    the provider.
      * @return                      the instance itself.
@@ -444,7 +427,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Allow to configure a {@link Executor} that will be used to run expensive SSL operations.
+     * 配置执行昂贵 SSL 操作的 {@link Executor}，避免阻塞 I/O 线程。
      *
      * @param sslTaskExecutor       the {@link Executor} that will be used to offload expensive SSL operations.
      * @return                      the instance itself.
@@ -455,7 +438,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Allows to configure the {@code active connect id limit} that should be used.
+     * 配置 active connection ID 数量上限。
      *
      * @param limit     the limit to use.
      * @return          the instance itself.
@@ -467,7 +450,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Allows to configure the {@code active connect id limit} that should be used.
+     * 配置无状态重置令牌（stateless reset token，须为 16 字节）。
      *
      * @param token     the token to use.
      * @return          the instance itself.
@@ -491,9 +474,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
                 activeConnectionIdLimit, statelessResetToken);
     }
 
-    /**
-     * Validate the configuration before building the codec.
-     */
+    /** 构建编解码器前校验配置（如 SSL 提供者非空）。 */
     protected void validate() {
         if (sslEngineProvider == null) {
             throw new IllegalStateException("sslEngineProvider can't be null");
@@ -501,8 +482,7 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Builds the QUIC codec that should be added to the {@link io.netty.channel.ChannelPipeline} of the underlying
-     * {@link io.netty.channel.Channel} which is used as transport for QUIC.
+     * 构建应加入底层传输 {@link io.netty.channel.Channel} pipeline 的 QUIC 编解码 {@link ChannelHandler}。
      *
      * @return the {@link ChannelHandler} which acts as QUIC codec.
      */
@@ -518,14 +498,14 @@ public abstract class QuicCodecBuilder<B extends QuicCodecBuilder<B>> {
     }
 
     /**
-     * Clone the builder
+     * 克隆构建器，复制当前全部配置。
      *
      * @return the new instance that is a clone if this instance.
      */
     public abstract B clone();
 
     /**
-     * Builds the QUIC codec.
+     * 子类实现：根据 Quiche 配置与 SSL 上下文构建具体 QUIC 编解码器。
      *
      * @param config                the {@link QuicheConfig} that should be used.
      * @param sslContextProvider    the context provider

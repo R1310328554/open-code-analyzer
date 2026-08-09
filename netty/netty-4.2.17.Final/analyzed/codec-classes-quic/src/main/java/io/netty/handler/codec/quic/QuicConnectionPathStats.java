@@ -18,88 +18,55 @@ package io.netty.handler.codec.quic;
 import java.net.InetSocketAddress;
 
 /**
- * Statistics about a path of the {@code QUIC} connection.
- * If unknown by the implementation it might return {@code -1} values
- * for the various methods.
+ * QUIC 连接某条路径（path）的统计指标。
+ * 实现未知时，各方法可能返回 {@code -1}。
  */
 public interface QuicConnectionPathStats {
-    /**
-     * @return The local address used by this path.
-     */
+    /** @return 此路径使用的本地地址。 */
     InetSocketAddress localAddress();
 
-    /**
-     * @return The peer address seen by this path.
-     */
+    /** @return 此路径观测到的对端地址。 */
     InetSocketAddress peerAddress();
 
-    /**
-     * @return The validation state of the path.
-     */
+    /** @return 路径验证状态。 */
     long validationState();
 
-    /**
-     * @return Whether this path is active.
-     */
+    /** @return 此路径当前是否活跃。 */
     boolean active();
 
-    /**
-     * @return The number of QUIC packets received on this path.
-     */
+    /** @return 此路径收到的 QUIC 报文数。 */
     long recv();
 
-    /**
-     * @return The number of QUIC packets sent on this path.
-     */
+    /** @return 此路径发送的 QUIC 报文数。 */
     long sent();
 
-    /**
-     * @return The number of QUIC packets that were lost on this path.
-     */
+    /** @return 此路径丢失的 QUIC 报文数。 */
     long lost();
 
-    /**
-     * @return The number of sent QUIC packets with retransmitted data on this path.
-     */
+    /** @return 此路径上含重传数据的发送报文数。 */
     long retrans();
 
-    /**
-     * @return The estimated round-trip time of the path (in nanoseconds).
-     */
+    /** @return 路径估计往返时延 RTT（纳秒）。 */
     long rtt();
 
-    /**
-     * @return The size of the path's congestion window in bytes.
-     */
+    /** @return 路径拥塞窗口 cwnd 大小（字节）。 */
     long cwnd();
 
-    /**
-     * @return The number of sent bytes on this path.
-     */
+    /** @return 此路径发送的字节数。 */
     long sentBytes();
 
-    /**
-     * @return The number of received bytes on this path.
-     */
+    /** @return 此路径接收的字节数。 */
     long recvBytes();
 
-    /**
-     * @return The number of bytes lost on this path.
-     */
+    /** @return 此路径丢失的字节数。 */
     long lostBytes();
 
-    /**
-     * @return The number of stream bytes retransmitted on this path.
-     */
+    /** @return 此路径上流数据重传字节数。 */
     long streamRetransBytes();
 
-    /**
-     * @return The current PMTU for the path.
-     */
+    /** @return 路径当前 PMTU（路径 MTU）。 */
     long pmtu();
 
-    /**
-     * @return The most recent data delivery rate estimate in bytes/s.
-     */
+    /** @return 最近估计的数据交付速率（字节/秒）。 */
     long deliveryRate();
 }

@@ -25,15 +25,14 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * A {@link QuicConnectionAddress} that can be used to connect too.
+ * 表示 QUIC 连接标识的 {@link SocketAddress}，可用于客户端连接目标寻址。
  */
 public final class QuicConnectionAddress extends SocketAddress {
 
     static final QuicConnectionAddress NULL_LEN = new QuicConnectionAddress(EmptyArrays.EMPTY_BYTES);
 
     /**
-     * Special {@link QuicConnectionAddress} that should be used when the connection address should be generated
-     * and chosen on the fly.
+     * 临时连接地址：由协议栈在握手时动态生成并选择连接 ID。
      */
     public static final QuicConnectionAddress EPHEMERAL = new QuicConnectionAddress(null, false);
 
@@ -42,7 +41,7 @@ public final class QuicConnectionAddress extends SocketAddress {
     private final ByteBuffer connId;
 
     /**
-     * Create a new instance
+     * 使用指定连接 ID 字节数组创建地址。
      *
      * @param connId the connection id to use.
      */
@@ -51,11 +50,10 @@ public final class QuicConnectionAddress extends SocketAddress {
     }
 
     /**
-     * Create a new instance
+     * 使用 {@link ByteBuffer} 形式的连接 ID 创建地址。
      *
      * @param connId the connection id to use.
      */
-    public QuicConnectionAddress(ByteBuffer connId) {
         this(connId.duplicate(), true);
     }
 
@@ -113,8 +111,7 @@ public final class QuicConnectionAddress extends SocketAddress {
     }
 
     /**
-     * Return a random generated {@link QuicConnectionAddress} of a given length
-     * that can be used to connect a {@link QuicChannel}
+     * 生成指定长度的随机 {@link QuicConnectionAddress}，可用于连接 {@link QuicChannel}。
      *
      * @param length    the length of the {@link QuicConnectionAddress} to generate.
      * @return          the generated address.
@@ -124,8 +121,7 @@ public final class QuicConnectionAddress extends SocketAddress {
     }
 
     /**
-     * Return a random generated {@link QuicConnectionAddress} of maximum size
-     * that can be used to connect a {@link QuicChannel}
+     * 生成最大长度的随机 {@link QuicConnectionAddress}，可用于连接 {@link QuicChannel}。
      *
      * @return the generated address.
      */

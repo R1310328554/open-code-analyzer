@@ -24,11 +24,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * QUIC 客户端 TLS 会话缓存，行为与 JDK {@code SSLSessionContext} 类似，
+ * 支持 0-RTT 等场景下的会话复用。
+ */
 final class QuicClientSessionCache {
 
     private static final int DEFAULT_CACHE_SIZE;
     static {
-        // Respect the same system property as the JDK implementation to make it easy to switch between implementations.
+        // 与 JDK 实现共用同一系统属性，便于在两种实现间切换
         int cacheSize = SystemPropertyUtil.getInt("javax.net.ssl.sessionCacheSize", 20480);
         if (cacheSize >= 0) {
             DEFAULT_CACHE_SIZE = cacheSize;
@@ -39,8 +43,8 @@ final class QuicClientSessionCache {
 
     private final AtomicInteger maximumCacheSize = new AtomicInteger(DEFAULT_CACHE_SIZE);
 
-    // Let's use the same default value as OpenSSL does.
-    // See https://www.openssl.org/docs/man1.1.1/man3/SSL_get_default_timeout.html
+    // 默认超时与 OpenSSL 一致（300 秒）
+    // 参见 https://www.openssl.org/docs/man1.1.1/man3/SSL_get_default_timeout.html
     private final AtomicInteger sessionTimeout = new AtomicInteger(300);
     private int sessionCounter;
 
@@ -61,8 +65,8 @@ final class QuicClientSessionCache {
         HostPort hostPort = keyFor(host, port);
         if (hostPort != null) {
             synchronized (sessions) {
-                // Mimic what OpenSSL is doing and expunge every 255 new sessions
-                // See https://www.openssl.org/docs/man1.0.2/man3/SSL_CTX_flush_sessions.html
+                // 模仿 OpenSSL：每保存 255 个新会话后清理一次过期项
+                // 参见 https://www.openssl.org/docs/man1.0.2/man3/SSL_CTX_flush_sessions.html
                 if (++sessionCounter == 255) {
                     sessionCounter = 0;
                     expungeInvalidSessions();
@@ -73,7 +77,7 @@ final class QuicClientSessionCache {
         }
     }
 
-    // Only used for testing.
+    /** 仅用于测试：检查指定主机/端口是否存在缓存会话。 */
     boolean hasSession(@Nullable String host, int port) {
         HostPort hostPort = keyFor(host, port);
         if (hostPort != null) {
@@ -94,7 +98,7 @@ final class QuicClientSessionCache {
                     return null;
                 }
                 if (sessionHolder.isSingleUse()) {
-                    // Remove session as it should only be re-used once.
+                    // 单次使用会话，取出后立即移除
                     sessions.remove(hostPort);
                 }
             }
@@ -117,8 +121,7 @@ final class QuicClientSessionCache {
     void setSessionTimeout(int seconds) {
         int oldTimeout = sessionTimeout.getAndSet(seconds);
         if (oldTimeout > seconds) {
-            // Drain the whole cache as this way we can use the ordering of the LinkedHashMap to detect early
-            // if there are any other sessions left that are invalid.
+            // 缩短超时时清空整个缓存，以便利用 LinkedHashMap 顺序快速淘汰无效会话
             clear();
         }
     }
@@ -130,7 +133,7 @@ final class QuicClientSessionCache {
     void setSessionCacheSize(int size) {
         long oldSize = maximumCacheSize.getAndSet(size);
         if (oldSize > size || size == 0) {
-            // Just keep it simple for now and drain the whole cache.
+            // 缩小容量或设为 0 时直接清空缓存，实现简单可靠
             clear();
         }
     }
@@ -139,9 +142,7 @@ final class QuicClientSessionCache {
         return maximumCacheSize.get();
     }
 
-    /**
-     * Clear the cache and free all cached SSL_SESSION*.
-     */
+    /** 清空缓存并释放所有已缓存的 SSL 会话。 */
     void clear() {
         synchronized (sessions) {
             sessions.clear();
@@ -158,9 +159,8 @@ final class QuicClientSessionCache {
         Iterator<Map.Entry<HostPort, SessionHolder>> iterator = sessions.entrySet().iterator();
         while (iterator.hasNext()) {
             SessionHolder sessionHolder = iterator.next().getValue();
-            // As we use a LinkedHashMap we can break the while loop as soon as we find a valid session.
-            // This is true as we always drain the cache as soon as we change the timeout to a smaller value as
-            // it was set before. This way its true that the insertion order matches the timeout order.
+            // LinkedHashMap 按插入顺序遍历，遇到首个仍有效的会话即可停止
+            // 缩短超时时会整体清空，因此插入顺序与超时顺序一致
             if (sessionHolder.isValid(now)) {
                 break;
             }
@@ -206,9 +206,7 @@ final class QuicClientSessionCache {
         }
     }
 
-    /**
-     * Host / Port tuple used to find a session in the cache.
-     */
+    /** 缓存键：主机名与端口的组合。 */
     private static final class HostPort {
         private final int hash;
         private final String host;
@@ -217,7 +215,7 @@ final class QuicClientSessionCache {
         HostPort(@Nullable String host, int port) {
             this.host = host;
             this.port = port;
-            // Calculate a hashCode that does ignore case.
+            // 计算忽略主机名大小写的 hashCode
             this.hash = 31 * AsciiString.hashCode(host) + port;
         }
 

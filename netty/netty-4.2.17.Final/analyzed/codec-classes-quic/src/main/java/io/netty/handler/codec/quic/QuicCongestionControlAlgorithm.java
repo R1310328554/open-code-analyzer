@@ -16,10 +16,13 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Available congestion control algorithms to use.
+ * QUIC 可选的拥塞控制算法。
  */
 public enum QuicCongestionControlAlgorithm {
+    /** 经典 Reno 算法。 */
     RENO,
+    /** 默认的 CUBIC 算法。 */
     CUBIC,
+    /** BBR 带宽/延迟估计算法。 */
     BBR
 }

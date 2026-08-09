@@ -20,19 +20,20 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.channels.ClosedChannelException;
 
 /**
- * Special {@link QuicClosedChannelException} which also provides extra info if the close was a result of a
- * {@link QuicConnectionCloseEvent} that was triggered by the remote peer.
+ * QUIC 通道关闭异常，当远端触发 {@link QuicConnectionCloseEvent} 导致关闭时，
+ * 可通过 {@link #event()} 获取额外关闭详情。
  */
 public final class QuicClosedChannelException extends ClosedChannelException {
 
     private final QuicConnectionCloseEvent event;
 
+    /** 构造异常，可选携带引发关闭的 {@link QuicConnectionCloseEvent}。 */
     QuicClosedChannelException(@Nullable QuicConnectionCloseEvent event) {
         this.event = event;
     }
 
     /**
-     * Returns the {@link QuicConnectionCloseEvent} that caused the closure or {@code null} if none was received.
+     * 返回导致通道关闭的 {@link QuicConnectionCloseEvent}；若未收到则为 {@code null}。
      *
      * @return the event.
      */

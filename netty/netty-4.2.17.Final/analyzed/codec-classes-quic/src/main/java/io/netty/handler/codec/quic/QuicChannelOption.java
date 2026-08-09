@@ -18,31 +18,31 @@ package io.netty.handler.codec.quic;
 import io.netty.channel.ChannelOption;
 
 /**
- * {@link ChannelOption}s specific to QUIC.
+ * QUIC 专用的 {@link ChannelOption} 选项集合。
  */
 public final class QuicChannelOption<T> extends ChannelOption<T> {
 
     /**
-     * If set to {@code true} the {@link QuicStreamChannel} will read {@link QuicStreamFrame}s and fire it through
-     * the pipeline, if {@code false} it will read {@link io.netty.buffer.ByteBuf} and translate the FIN flag to
-     * events.
+     * 为 {@code true} 时，{@link QuicStreamChannel} 读取 {@link QuicStreamFrame} 并沿 pipeline 向下游传播；
+     * 为 {@code false} 时读取 {@link io.netty.buffer.ByteBuf}，并将 FIN 标志转换为相应事件。
      */
     public static final ChannelOption<Boolean> READ_FRAMES =
             valueOf(QuicChannelOption.class, "READ_FRAMES");
 
     /**
-     * Enable <a href="https://quiclog.github.io/internet-drafts/draft-marx-qlog-main-schema.html">qlog</a>
-     * for a {@link QuicChannel}.
+     * 为 {@link QuicChannel} 启用
+     * <a href="https://quiclog.github.io/internet-drafts/draft-marx-qlog-main-schema.html">qlog</a> 日志。
      */
     public static final ChannelOption<QLogConfiguration> QLOG = valueOf(QuicChannelOption.class, "QLOG");
 
     /**
-     * Use <a href="https://blog.cloudflare.com/accelerating-udp-packet-transmission-for-quic/">GSO</a>
-     * for QUIC packets if possible.
+     * 在可用时为 QUIC 报文启用
+     * <a href="https://blog.cloudflare.com/accelerating-udp-packet-transmission-for-quic/">GSO</a>（通用分段卸载）。
      */
     public static final ChannelOption<SegmentedDatagramPacketAllocator> SEGMENTED_DATAGRAM_PACKET_ALLOCATOR =
             valueOf(QuicChannelOption.class, "SEGMENTED_DATAGRAM_PACKET_ALLOCATOR");
 
+    /** 私有构造，禁止外部实例化。 */
     @SuppressWarnings({ "deprecation" })
     private QuicChannelOption() {
         super(null);

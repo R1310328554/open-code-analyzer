@@ -16,8 +16,7 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Marker interface for events that will be passed through the {@link io.netty.channel.ChannelPipeline} via
- * {@link io.netty.channel.ChannelPipeline#fireUserEventTriggered(Object)} to notify the user about {@code QUIC}
- * specific events.
+ * QUIC 用户事件标记接口；事件经 {@link io.netty.channel.ChannelPipeline#fireUserEventTriggered(Object)}
+ * 在 {@link io.netty.channel.ChannelPipeline} 中传播，用于通知应用层 QUIC 特有状态变化。
  */
 public interface QuicEvent { }

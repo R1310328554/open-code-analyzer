@@ -18,8 +18,9 @@ package io.netty.handler.codec.quic;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Used when the remote peer supports the
- * <a href="https://tools.ietf.org/html/draft-ietf-quic-datagram-01">QUIC DATAGRAM extension.</a>
+ * 远端支持
+ * <a href="https://tools.ietf.org/html/draft-ietf-quic-datagram-01">QUIC DATAGRAM 扩展</a>
+ * 时触发，通知本地可发送的最大 datagram 载荷长度。
  */
 public final class QuicDatagramExtensionEvent implements QuicExtensionEvent {
 
@@ -30,8 +31,7 @@ public final class QuicDatagramExtensionEvent implements QuicExtensionEvent {
     }
 
     /**
-     * The maximum datagram payload length the peer will accept. If you try to write bigger datagrams the write will
-     * fail.
+     * 对端可接受的最大 datagram 载荷长度；超出此长度的写入将失败。
      *
      * @return the max length.
      */

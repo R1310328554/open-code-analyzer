@@ -18,9 +18,9 @@ package io.netty.handler.codec.quic;
 import java.util.Arrays;
 
 /**
- * Event that is generated if the remote peer sends a
- * <a href="https://www.rfc-editor.org/rfc/rfc9000#name-connection_close-frames">CLOSE_CONNECTION frame</a>.
- * This allows to inspect the various details of the cause of the close.
+ * 远端发送
+ * <a href="https://www.rfc-editor.org/rfc/rfc9000#name-connection_close-frames">CONNECTION_CLOSE 帧</a>
+ * 时产生的事件，便于检查连接关闭原因与错误码。
  */
 public final class QuicConnectionCloseEvent implements QuicEvent {
 
@@ -35,7 +35,7 @@ public final class QuicConnectionCloseEvent implements QuicEvent {
     }
 
     /**
-     * Return {@code true} if this was an application close, {@code false} otherwise.
+     * 若为应用层主动关闭则返回 {@code true}，否则为传输层关闭。
      *
      * @return  if this is an application close.
      */
@@ -44,7 +44,7 @@ public final class QuicConnectionCloseEvent implements QuicEvent {
     }
 
     /**
-     * Return the error that was provided for the close.
+     * 返回关闭帧携带的错误码。
      *
      * @return the error.
      */
@@ -53,8 +53,7 @@ public final class QuicConnectionCloseEvent implements QuicEvent {
     }
 
     /**
-     * Returns {@code true} if a <a href="https://www.rfc-editor.org/rfc/rfc9001#section-4.8">TLS error</a>
-     * is contained.
+     * 若错误码表示 <a href="https://www.rfc-editor.org/rfc/rfc9001#section-4.8">TLS 错误</a> 则返回 {@code true}。
      * @return {@code true} if this is an {@code TLS error}, {@code false} otherwise.
      */
     public boolean isTlsError() {
@@ -62,7 +61,7 @@ public final class QuicConnectionCloseEvent implements QuicEvent {
     }
 
     /**
-     * Returns the reason for the close, which may be empty if no reason was given as part of the close.
+     * 返回关闭原因字节数组；远端未提供时可能为空数组。
      *
      * @return  the reason.
      */
@@ -80,8 +79,7 @@ public final class QuicConnectionCloseEvent implements QuicEvent {
     }
 
     /**
-     * Extract the contained {@code TLS error} from the {@code QUIC error}. If the given {@code QUIC error} does not
-     * contain a {@code TLS error} it will return {@code -1}.
+     * 从 QUIC 错误码中提取内嵌的 TLS 错误码；若无 TLS 错误则返回 {@code -1}。
      *
      * @param error the {@code QUIC error}
      * @return      the {@code TLS error} or {@code -1} if there was no {@code TLS error} contained.

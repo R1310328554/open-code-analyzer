@@ -30,49 +30,39 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
- * Special {@link io.netty.channel.ChannelHandler} that should be used to init {@link Channel}s that will be used
- * for QUIC while <a href="https://man7.org/linux/man-pages/man7/socket.7.html">SO_REUSEPORT</a> is used to
- * bind to same {@link java.net.InetSocketAddress} multiple times. This is necessary to ensure QUIC packets are always
- * dispatched to the correct codec that keeps the mapping for the connection id.
- * This implementation use a very simple mapping strategy by encoding the index of the internal datastructure that
- * keeps track of the different {@link ChannelHandlerContext}s into the destination connection id. This way once a
- * {@code QUIC} packet is received its possible to forward it to the right codec.
- * Subclasses might change how encoding / decoding of the index is done by overriding {@link #decodeIndex(ByteBuf)}
- * and {@link #newIdGenerator(int)}.
+ * 在多个 {@link Channel} 通过
+ * <a href="https://man7.org/linux/man-pages/man7/socket.7.html">SO_REUSEPORT</a>
+ * 绑定同一 {@link java.net.InetSocketAddress} 时，用于 QUIC 报文分发的 {@link io.netty.channel.ChannelHandler}。
  * <p>
- * It is important that the same {@link QuicCodecDispatcher} instance is shared between all the {@link Channel}s that
- * are bound to the same {@link java.net.InetSocketAddress} and use {@code SO_REUSEPORT}.
+ * 将内部 {@link ChannelHandlerContext} 列表索引编码进目的连接 ID，
+ * 收到报文后解码索引并转发到对应 codec，保证连接 ID 映射正确。
+ * 子类可覆盖 {@link #decodeIndex(ByteBuf)} 与 {@link #newIdGenerator(int)} 自定义编解码策略。
  * <p>
- * An alternative way to handle this would be to do the "routing" to the correct socket in an {@code epbf} program
- * by implementing your own {@link QuicConnectionIdGenerator} that issue ids that can be understood and handled by the
- * {@code epbf} program to route the packet to the correct socket.
- *
+ * 同一地址上所有复用端口的 {@link Channel} 必须共享同一 {@link QuicCodecDispatcher} 实例。
+ * <p>
+ * 也可在 eBPF 程序中实现路由，配合自定义 {@link QuicConnectionIdGenerator} 生成可路由的连接 ID。
  */
 public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
-    // 20 is the max as per RFC.
-    // See https://datatracker.ietf.org/doc/html/rfc9000#section-17.2
+    // RFC 9000 规定本地连接 ID 最大长度为 20
+    // 参见 https://datatracker.ietf.org/doc/html/rfc9000#section-17.2
     private static final int MAX_LOCAL_CONNECTION_ID_LENGTH = 20;
 
-    // Use a CopyOnWriteArrayList as modifications to the List should only happen during bootstrapping and teardown
-    // of the channels.
+    // 仅在启动/拆除阶段修改列表，使用 CopyOnWriteArrayList 保证读路径无锁
     private final List<ChannelHandlerContextDispatcher> contextList = new CopyOnWriteArrayList<>();
     private final int localConnectionIdLength;
 
-    /**
-     * Create a new instance using the default connection id length.
-     */
+    /** 使用默认连接 ID 长度（20）创建分发器。 */
     protected QuicCodecDispatcher() {
         this(MAX_LOCAL_CONNECTION_ID_LENGTH);
     }
 
     /**
-     * Create a new instance
+     * 指定本地连接 ID 长度创建分发器，须在 10 到 20 之间（预留 2 字节编码索引）。
      *
      * @param localConnectionIdLength   the local connection id length. This must be between 10 and 20.
      */
     protected QuicCodecDispatcher(int localConnectionIdLength) {
-        // Let's use 10 as a minimum to ensure we still have some bytes left for randomness as we already use
-        // 2 of the bytes to encode the index.
+        // 最小长度 10：2 字节存索引，其余字节保留随机性
         this.localConnectionIdLength = ObjectUtil.checkInRange(localConnectionIdLength,
                 10, MAX_LOCAL_CONNECTION_ID_LENGTH, "localConnectionIdLength");
     }
@@ -93,8 +83,7 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
             QuicConnectionIdGenerator idGenerator = newIdGenerator((short) idx);
             initChannel(ctx.channel(), localConnectionIdLength, idGenerator);
         } catch (Exception e) {
-            // Null out on exception and rethrow. We not remove the element as the indices need to be
-            // stable.
+            // 异常时将槽位置 null 但不删除，以保持索引稳定
             contextList.set(idx, null);
             throw e;
         }
@@ -107,7 +96,7 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
         for (int idx = 0; idx < contextList.size(); idx++) {
             ChannelHandlerContextDispatcher ctxDispatcher = contextList.get(idx);
             if (ctxDispatcher != null && ctxDispatcher.ctx.equals(ctx)) {
-                // null out, so we can collect the ChannelHandlerContext that was stored in the List.
+                // 置 null 以便 GC 回收已移除的 ChannelHandlerContext
                 contextList.set(idx, null);
                 break;
             }
@@ -128,23 +117,21 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
                 }
             }
         }
-        // We were not be-able to dispatch to a specific ChannelHandlerContext, just forward and let the
-        // Quic*Codec handle it directly.
+        // 无法分发到具体 codec 时向上游传递，由 Quic*Codec 自行处理
         ctx.fireChannelRead(msg);
     }
 
     @Override
     public final void channelReadComplete(ChannelHandlerContext ctx) {
-        // Loop over all ChannelHandlerContextDispatchers and ensure fireChannelReadComplete() is called if required.
-        // We use and old style for loop as CopyOnWriteArrayList implements RandomAccess and so we can
-        // reduce the object creations.
+        // 遍历所有 dispatcher，必要时触发 fireChannelReadComplete；
+        // CopyOnWriteArrayList 支持 RandomAccess，用索引 for 循环减少迭代器分配
         boolean dispatchForOwnContextAlready = false;
         for (int i = 0; i < contextList.size(); i++) {
             ChannelHandlerContextDispatcher ctxDispatcher = contextList.get(i);
             if (ctxDispatcher != null) {
                 boolean fired = ctxDispatcher.fireChannelReadCompleteIfNeeded();
                 if (fired && !dispatchForOwnContextAlready) {
-                    // Check if we dispatched to ctx so if we didnt at the end we can do it manually.
+                    // 记录是否已向当前 ctx 分发，以便末尾补发 readComplete
                     dispatchForOwnContextAlready = ctx.equals(ctxDispatcher.ctx);
                 }
             }
@@ -155,9 +142,8 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * Init the {@link Channel} and add all the needed {@link io.netty.channel.ChannelHandler} to the pipeline.
-     * This also included building the {@code QUIC} codec via {@link QuicCodecBuilder} sub-type using the given local
-     * connection id length and {@link QuicConnectionIdGenerator}.
+     * 初始化 {@link Channel} pipeline，使用给定连接 ID 长度与 {@link QuicConnectionIdGenerator}
+     * 通过 {@link QuicCodecBuilder} 子类构建 QUIC 编解码器并加入所需 handler。
      *
      * @param channel                   the {@link Channel} to init.
      * @param localConnectionIdLength   the local connection id length that must be used with the
@@ -170,12 +156,9 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
                                         QuicConnectionIdGenerator idGenerator) throws Exception;
 
     /**
-     * Return the idx that was encoded into the connectionId via the {@link QuicConnectionIdGenerator} before,
-     * or {@code -1} if decoding was not successful.
+     * 从目的连接 ID 解码先前嵌入的 codec 索引；失败返回 {@code -1}。
      * <p>
-     * Subclasses may override this. In this case {@link #newIdGenerator(int)} should be overridden as well
-     * to implement the encoding scheme for the encoding side.
-     *
+     * 子类可覆盖；同时应覆盖 {@link #newIdGenerator(int)} 以保持编解码一致。
      *
      * @param connectionId  the destination connection id of the {@code QUIC} connection.
      * @return              the index or -1.
@@ -185,22 +168,21 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * Return the destination connection id or {@code null} if decoding was not possible.
+     * 从 UDP 载荷解析目的连接 ID；无法解析时返回 {@code null}。
      *
      * @param buffer    the buffer
      * @return          the id or {@code null}.
      */
-    // Package-private for testing
+    /** 包内/测试可见：从报文缓冲区切片目的连接 ID。 */
     @Nullable
     static ByteBuf getDestinationConnectionId(ByteBuf buffer, int localConnectionIdLength) throws QuicException {
         if (buffer.readableBytes() > Byte.BYTES) {
             int offset = buffer.readerIndex();
             boolean shortHeader = hasShortHeader(buffer);
             offset += Byte.BYTES;
-            // We are only interested in packets with short header as these the packets that
-            // are exchanged after the server did provide the connection id that the client should use.
+            // 仅处理短头报文（握手完成后客户端使用的连接 ID）
             if (shortHeader) {
-                // See https://www.rfc-editor.org/rfc/rfc9000.html#section-17.3
+                // 参见 RFC 9000 §17.3 短头 1-RTT 报文格式
                 // 1-RTT Packet {
                 //  Header Form (1) = 0,
                 //  Fixed Bit (1) = 1,
@@ -218,34 +200,29 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
         return null;
     }
 
-    // Package-private for testing
-    static boolean hasShortHeader(ByteBuf buffer) {
+    /** 包内/测试可见：判断是否为 QUIC 短头报文。 */
         return QuicHeaderParser.hasShortHeader(buffer.getByte(buffer.readerIndex()));
     }
 
-    // Package-private for testing
-    static int decodeIdx(ByteBuf connectionId) {
+    /** 包内/测试可见：从连接 ID 前 2 字节解码无符号 short 索引。 */
         if (connectionId.readableBytes() >= 2) {
             return connectionId.getUnsignedShort(connectionId.readerIndex());
         }
         return -1;
     }
 
-    // Package-private for testing
-    static ByteBuffer encodeIdx(ByteBuffer buffer, int idx) {
-        // Allocate a new buffer and prepend it with the index.
+    /** 包内/测试可见：在连接 ID 前 prepend 2 字节索引。 */
+        // 分配新缓冲区并在首部写入索引
         ByteBuffer b = ByteBuffer.allocate(buffer.capacity() + Short.BYTES);
-        // We encode it as unsigned short.
+        // 以无符号 short 编码索引
         b.putShort((short) idx).put(buffer).flip();
         return b;
     }
 
     /**
-     * Returns a {@link QuicConnectionIdGenerator} that will encode the given index into all the
-     * ids that it produces.
+     * 返回在生成的每个连接 ID 中嵌入指定索引的 {@link QuicConnectionIdGenerator}。
      * <p>
-     * Subclasses may override this. In this case {@link #decodeIndex(ByteBuf)} should be overridden as well
-     * to implement the encoding scheme for the decoding side.
+     * 子类可覆盖；解码侧应同步覆盖 {@link #decodeIndex(ByteBuf)}。
      *
      * @param idx       the index to encode into each id.
      * @return          the {@link QuicConnectionIdGenerator}.
@@ -294,7 +271,7 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
 
         @Override
         public boolean isIdempotent() {
-            // Return false as the id might be different because of the idx that is encoded into it.
+            // 嵌入索引后相同输入可能产生不同 ID，故非幂等
             return false;
         }
     }
@@ -314,8 +291,7 @@ public abstract class QuicCodecDispatcher extends ChannelInboundHandlerAdapter {
 
         boolean fireChannelReadCompleteIfNeeded() {
             if (getAndSet(false)) {
-                // There was a fireChannelRead() before, let's call fireChannelReadComplete()
-                // so the user is aware that we might be done with the reading loop.
+                // 此前已 fireChannelRead，补发 readComplete 通知读循环可能结束
                 ctx.fireChannelReadComplete();
                 return true;
             }

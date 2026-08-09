@@ -16,52 +16,33 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Statistics about the {@code QUIC} connection. If unknown by the implementation it might return {@code -1} values
- * for the various methods.
+ * QUIC 连接级统计指标；实现未知时各方法可能返回 {@code -1}。
  */
 public interface QuicConnectionStats {
-    /**
-     * @return The number of QUIC packets received on the connection.
-     */
+    /** @return 连接收到的 QUIC 报文总数。 */
     long recv();
 
-    /**
-     * @return The number of QUIC packets sent on this connection.
-     */
+    /** @return 连接发送的 QUIC 报文总数。 */
     long sent();
 
-    /**
-     * @return The number of QUIC packets that were lost.
-     */
+    /** @return 连接丢失的 QUIC 报文数。 */
     long lost();
 
-    /**
-     * @return The number of sent QUIC packets with retransmitted data.
-     */
+    /** @return 含重传数据的发送报文数。 */
     long retrans();
 
-    /**
-     * @return The number of sent bytes.
-     */
+    /** @return 发送字节总数。 */
     long sentBytes();
 
-    /**
-     * @return The number of received bytes.
-     */
+    /** @return 接收字节总数。 */
     long recvBytes();
 
-    /**
-     * @return  The number of bytes lost.
-     */
+    /** @return 丢失字节总数。 */
     long lostBytes();
 
-    /**
-     * @return  The number of stream bytes retransmitted.
-     */
+    /** @return 流数据重传字节总数。 */
     long streamRetransBytes();
 
-    /**
-     * @return   The number of known paths for the connection.
-     */
+    /** @return 连接已知路径（path）数量。 */
     long pathsCount();
 }

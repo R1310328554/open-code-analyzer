@@ -18,7 +18,7 @@ package io.netty.handler.codec.quic;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception produced while processing {@code QUIC}.
+ * QUIC 协议处理过程中抛出的异常，可携带 {@link QuicTransportError} 传输错误码。
  */
 public class QuicException extends Exception {
 
@@ -50,7 +50,8 @@ public class QuicException extends Exception {
     }
 
     /**
-     * Returns the {@link QuicTransportError} which was the cause of the {@link QuicException}.
+     * 返回导致此 {@link QuicException} 的 {@link QuicTransportError}；
+     * 若由其他原因引起则为 {@code null}。
      *
      * @return  the {@link QuicTransportError} that caused this {@link QuicException} or {@code null} if
      *          it was caused by something different.

@@ -18,14 +18,12 @@ package io.netty.handler.codec.quic;
 import java.nio.ByteBuffer;
 
 /**
- * Creates new connection id instances.
+ * 生成 QUIC 连接 ID（Connection ID）的工厂接口。
  */
 public interface QuicConnectionIdGenerator {
     /**
-     * Creates a new connection id with the given length. This method may not be supported by
-     * a sign id generator implementation as a sign id generator should always have an input
-     * to sign with, otherwise this method may generate the same id which may cause some
-     * unpredictable issues when we use it.
+     * 生成指定长度的新连接 ID。签名型生成器可能不支持无输入调用，
+     * 否则可能重复生成相同 ID 并引发不可预期问题。
      *
      * @param length    the length of the id.
      * @return          the id.
@@ -33,8 +31,7 @@ public interface QuicConnectionIdGenerator {
     ByteBuffer newId(int length);
 
     /**
-     * Creates a new connection id with the given length. The given input may be used to sign or
-     * seed the id, or may be ignored (depending on the implementation).
+     * 基于给定输入生成指定长度的连接 ID；实现可选择签名、种子或直接忽略输入。
      *
      * @param input     the input which may be used to generate the id.
      * @param length    the length of the id.
@@ -43,8 +40,7 @@ public interface QuicConnectionIdGenerator {
     ByteBuffer newId(ByteBuffer input, int length);
 
     /**
-     * Creates a new connection id with the given length. The given source connection id and destionation connection id
-     * may be used to sign or seed the id, or may be ignored (depending on the implementation).
+     * 基于源/目的连接 ID 生成新 ID；实现可选择用于签名或种子，也可能忽略。
      *
      * @param scid      the source connection id which may be used to generate the id.
      * @param dcid      the destination connection id which may be used to generate the id.
@@ -56,22 +52,21 @@ public interface QuicConnectionIdGenerator {
     }
 
     /**
-     * Returns the maximum length of a connection id.
+     * 返回本生成器支持的最大连接 ID 长度。
      *
      * @return the maximum length of a connection id that is supported.
      */
     int maxConnectionIdLength();
 
     /**
-     * Returns true if the implementation is idempotent, which means we will get the same id
-     * with the same input ByteBuffer. Otherwise, returns false.
+     * 若相同输入始终产生相同 ID（幂等）则返回 {@code true}，否则返回 {@code false}。
      *
      * @return whether the implementation is idempotent.
      */
     boolean isIdempotent();
 
     /**
-     * Return a {@link QuicConnectionIdGenerator} which randomly generates new connection ids.
+     * 返回基于安全随机数生成连接 ID 的 {@link QuicConnectionIdGenerator}。
      *
      * @return a {@link QuicConnectionIdGenerator} which randomly generated ids.
      */
@@ -80,7 +75,7 @@ public interface QuicConnectionIdGenerator {
     }
 
     /**
-     * Return a {@link QuicConnectionIdGenerator} which generates new connection ids by signing the given input.
+     * 返回通过对输入签名生成连接 ID 的 {@link QuicConnectionIdGenerator}。
      *
      * @return a {@link QuicConnectionIdGenerator} which generates ids by signing the given input.
      */
