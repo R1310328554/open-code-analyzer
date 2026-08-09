@@ -16,13 +16,19 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster.state;
 
 /**
+ * 集群通用状态视图，同时携带模式摘要、客户端状态与服务端状态。
+ * <p>Dashboard 查询单台机器集群信息时的顶层聚合对象。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ClusterUniversalStateVO {
 
+    /** 运行模式与可用性摘要。 */
     private ClusterStateSimpleEntity stateInfo;
+    /** 集群令牌客户端状态（客户端模式下有效）。 */
     private ClusterClientStateVO client;
+    /** 集群令牌服务端状态（服务端模式下有效）。 */
     private ClusterServerStateVO server;
 
     public ClusterClientStateVO getClient() {

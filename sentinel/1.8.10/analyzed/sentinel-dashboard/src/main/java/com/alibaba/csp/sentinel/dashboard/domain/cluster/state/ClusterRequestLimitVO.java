@@ -16,13 +16,18 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster.state;
 
 /**
+ * 命名空间级集群请求限流视图，展示当前 QPS 与允许的最大 QPS。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public class ClusterRequestLimitVO {
 
+    /** 限流所属命名空间。 */
     private String namespace;
+    /** 当前统计窗口内的 QPS。 */
     private Double currentQps;
+    /** 该命名空间允许的最大 QPS 上限。 */
     private Double maxAllowedQps;
 
     public String getNamespace() {

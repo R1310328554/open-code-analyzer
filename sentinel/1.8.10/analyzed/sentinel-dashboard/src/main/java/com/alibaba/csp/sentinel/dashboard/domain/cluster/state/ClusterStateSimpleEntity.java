@@ -16,14 +16,20 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster.state;
 
 /**
+ * 集群运行模式与可用性摘要实体，供 Dashboard 快速展示客户端/服务端是否就绪。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ClusterStateSimpleEntity {
 
+    /** 集群运行模式（未启用/客户端/服务端等）。 */
     private Integer mode;
+    /** 状态最后变更时间戳（毫秒）。 */
     private Long lastModified;
+    /** 客户端组件是否可用。 */
     private Boolean clientAvailable;
+    /** 服务端组件是否可用。 */
     private Boolean serverAvailable;
 
     public Integer getMode() {

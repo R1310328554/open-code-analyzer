@@ -21,20 +21,32 @@ import java.util.List;
 import com.alibaba.csp.sentinel.dashboard.discovery.MachineInfo;
 
 /**
+ * 机器信息视图对象，供 Dashboard API 返回客户端实例列表。
+ * <p>由 {@link MachineInfo} 转换而来，含心跳与健康状态。
+ *
  * @author leyou
  */
 public class MachineInfoVo {
 
+    /** 所属应用名。 */
     private String app;
+    /** 主机名。 */
     private String hostname;
+    /** 机器 IP。 */
     private String ip;
+    /** 客户端端口。 */
     private int port;
+    /** 心跳协议版本号。 */
     private long heartbeatVersion;
+    /** 最后一次心跳时间戳（毫秒）。 */
     private long lastHeartbeat;
+    /** 当前是否健康（心跳未超时）。 */
     private boolean healthy;
 
+    /** Sentinel 客户端版本号。 */
     private String version;
 
+    /** 批量将 {@link MachineInfo} 列表转换为 VO 列表。 */
     public static List<MachineInfoVo> fromMachineInfoList(List<MachineInfo> machines) {
         List<MachineInfoVo> list = new ArrayList<>();
         for (MachineInfo machine : machines) {
@@ -43,6 +55,7 @@ public class MachineInfoVo {
         return list;
     }
 
+    /** 从单条 {@link MachineInfo} 拷贝字段构建 VO。 */
     public static MachineInfoVo fromMachineInfo(MachineInfo machine) {
         MachineInfoVo vo = new MachineInfoVo();
         vo.setApp(machine.getApp());

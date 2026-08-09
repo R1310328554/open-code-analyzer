@@ -18,14 +18,14 @@ package com.alibaba.csp.sentinel.dashboard.domain.cluster.state;
 import com.alibaba.csp.sentinel.dashboard.domain.cluster.ClusterClientInfoVO;
 
 /**
+ * 集群令牌客户端状态视图，封装 {@link ClusterClientInfoVO} 客户端配置与运行信息。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ClusterClientStateVO {
 
-    /**
-     * Cluster token client state.
-     */
+    /** 集群令牌客户端配置与状态信息。 */
     private ClusterClientInfoVO clientConfig;
 
     public ClusterClientInfoVO getClientConfig() {

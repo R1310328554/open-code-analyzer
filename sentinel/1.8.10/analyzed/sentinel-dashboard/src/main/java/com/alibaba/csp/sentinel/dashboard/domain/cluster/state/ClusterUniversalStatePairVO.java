@@ -16,18 +16,27 @@
 package com.alibaba.csp.sentinel.dashboard.domain.cluster.state;
 
 /**
+ * 单台机器的集群通用状态对，绑定 IP、命令端口与 {@link ClusterUniversalStateVO}。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public class ClusterUniversalStatePairVO {
 
+    /** 机器 IP 地址。 */
     private String ip;
+    /** Sentinel 命令端口。 */
     private Integer commandPort;
 
+    /** 该机器的集群通用状态详情。 */
     private ClusterUniversalStateVO state;
 
+    /** 无参构造，供 JSON 反序列化使用。 */
     public ClusterUniversalStatePairVO() {}
 
+    /** @param ip 机器 IP
+     * @param commandPort 命令端口
+     * @param state 集群通用状态 */
     public ClusterUniversalStatePairVO(String ip, Integer commandPort, ClusterUniversalStateVO state) {
         this.ip = ip;
         this.commandPort = commandPort;

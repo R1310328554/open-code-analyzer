@@ -16,37 +16,50 @@
 package com.alibaba.csp.sentinel.dashboard.domain.vo.gateway.rule;
 
 /**
- * Value Object for add gateway flow rule.
+ * 新增网关流控规则请求体，含资源标识、限流阈值、统计窗口及可选参数流控项。
  *
  * @author cdfive
  * @since 1.7.0
  */
 public class AddFlowRuleReqVo {
 
+    /** 目标应用名。 */
     private String app;
 
+    /** 目标客户端机器 IP。 */
     private String ip;
 
+    /** 目标客户端机器端口。 */
     private Integer port;
 
+    /** 受流控资源名（路由 ID 或 API 分组名）。 */
     private String resource;
 
+    /** 资源模式（路由/API 分组等，见 {@code SentinelGatewayConstants}）。 */
     private Integer resourceMode;
 
+    /** 限流维度（QPS/并发线程数等）。 */
     private Integer grade;
 
+    /** 限流阈值。 */
     private Double count;
 
+    /** 统计窗口长度。 */
     private Long interval;
 
+    /** 统计窗口时间单位。 */
     private Integer intervalUnit;
 
+    /** 流控效果（直接拒绝/匀速排队等）。 */
     private Integer controlBehavior;
 
+    /** 突发流量允许额外通过的请求数。 */
     private Integer burst;
 
+    /** 匀速排队模式下的最大排队超时（毫秒）。 */
     private Integer maxQueueingTimeoutMs;
 
+    /** 可选的参数流控匹配项。 */
     private GatewayParamFlowItemVo paramItem;
 
     public String getApp() {

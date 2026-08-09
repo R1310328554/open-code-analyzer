@@ -22,27 +22,40 @@ import java.util.List;
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.MetricEntity;
 
 /**
+ * 监控指标视图对象，展示单条资源在某时刻的 QPS、RT 等统计数据。
+ * <p>可由 {@link MetricEntity} 或客户端上报的管道分隔行解析得到。
+ *
  * @author leyou
  */
 public class MetricVo implements Comparable<MetricVo> {
+    /** 指标记录主键。 */
     private Long id;
+    /** 所属应用名。 */
     private String app;
+    /** 指标统计时刻（毫秒时间戳）。 */
     private Long timestamp;
+    /** 记录创建时间（毫秒）。 */
     private Long gmtCreate = System.currentTimeMillis();
+    /** 受监控资源名。 */
     private String resource;
+    /** 通过 QPS。 */
     private Long passQps;
+    /** 被限流 QPS。 */
     private Long blockQps;
+    /** 成功 QPS。 */
     private Long successQps;
+    /** 异常 QPS。 */
     private Long exceptionQps;
-    /**
-     * average rt
-     */
+    /** 平均响应时间（毫秒）。 */
     private Double rt;
+    /** 聚合样本数量。 */
     private Integer count;
 
+    /** 无参构造。 */
     public MetricVo() {
     }
 
+    /** 将 {@link MetricEntity} 集合批量转换为 VO 列表。 */
     public static List<MetricVo> fromMetricEntities(Collection<MetricEntity> entities) {
         List<MetricVo> list = new ArrayList<>();
         if (entities != null) {
@@ -58,7 +71,7 @@ public class MetricVo implements Comparable<MetricVo> {
      *
      * @param entities 通过hashCode查找到的MetricEntities
      * @param identity 真正需要查找的资源名
-     * @return
+     * @return 匹配 identity 的指标 VO 列表
      */
     public static List<MetricVo> fromMetricEntities(Collection<MetricEntity> entities, String identity) {
         List<MetricVo> list = new ArrayList<>();
@@ -72,6 +85,7 @@ public class MetricVo implements Comparable<MetricVo> {
         return list;
     }
 
+    /** 从单条 {@link MetricEntity} 构建 VO，RT 按 successQps 加权平均。 */
     public static MetricVo fromMetricEntity(MetricEntity entity) {
         MetricVo vo = new MetricVo();
         vo.id = entity.getId();
@@ -92,6 +106,7 @@ public class MetricVo implements Comparable<MetricVo> {
         return vo;
     }
 
+    /** 解析客户端上报的管道分隔指标行（timestamp|resource|pass|block|exception|rt|success）。 */
     public static MetricVo parse(String line) {
         String[] strs = line.split("\\|");
         long timestamp = Long.parseLong(strs[0]);
@@ -201,6 +216,7 @@ public class MetricVo implements Comparable<MetricVo> {
         this.count = count;
     }
 
+    /** 按 timestamp 升序排序。 */
     @Override
     public int compareTo(MetricVo o) {
         return Long.compare(this.timestamp, o.timestamp);

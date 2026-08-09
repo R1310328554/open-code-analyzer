@@ -18,17 +18,20 @@ package com.alibaba.csp.sentinel.dashboard.domain.vo.gateway.api;
 import java.util.List;
 
 /**
- * Value Object for update gateway api.
+ * 更新网关 API 定义请求体，按 id 定位规则并替换谓词列表。
  *
  * @author cdfive
  * @since 1.7.0
  */
 public class UpdateApiReqVo {
 
+    /** Dashboard 侧 API 定义主键 id。 */
     private Long id;
 
+    /** 所属应用名。 */
     private String app;
 
+    /** 更新后的 URL 匹配谓词项列表。 */
     private List<ApiPredicateItemVo> predicateItems;
 
     public Long getId() {

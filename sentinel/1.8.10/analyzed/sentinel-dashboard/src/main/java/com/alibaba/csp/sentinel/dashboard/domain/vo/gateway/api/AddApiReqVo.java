@@ -18,21 +18,26 @@ package com.alibaba.csp.sentinel.dashboard.domain.vo.gateway.api;
 import java.util.List;
 
 /**
- * Value Object for add gateway api.
+ * 新增网关 API 定义请求体，指定目标机器与 API 名称及 URL 匹配谓词列表。
  *
  * @author cdfive
  * @since 1.7.0
  */
 public class AddApiReqVo {
 
+    /** 目标应用名。 */
     private String app;
 
+    /** 目标客户端机器 IP。 */
     private String ip;
 
+    /** 目标客户端机器端口。 */
     private Integer port;
 
+    /** 网关 API 名称（唯一标识）。 */
     private String apiName;
 
+    /** URL 匹配谓词项列表。 */
     private List<ApiPredicateItemVo> predicateItems;
 
     public String getApp() {

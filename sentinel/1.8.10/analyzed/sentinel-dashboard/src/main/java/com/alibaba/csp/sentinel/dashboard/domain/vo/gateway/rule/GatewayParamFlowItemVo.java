@@ -16,19 +16,24 @@
 package com.alibaba.csp.sentinel.dashboard.domain.vo.gateway.rule;
 
 /**
- * Value Object for add or update gateway flow rule.
+ * 网关参数流控匹配项视图，定义参数解析策略、字段名、模式与匹配方式。
+ * <p>用于 {@link AddFlowRuleReqVo} 中按请求参数维度细化限流。
  *
  * @author cdfive
  * @since 1.7.0
  */
 public class GatewayParamFlowItemVo {
 
+    /** 参数解析策略（Header/URL 参数/客户端 IP 等）。 */
     private Integer parseStrategy;
 
+    /** 待解析的字段名（如 Header 名或参数名）。 */
     private String fieldName;
 
+    /** 参数值匹配模式。 */
     private String pattern;
 
+    /** 参数值匹配策略（精确/包含/正则等）。 */
     private Integer matchStrategy;
 
     public Integer getParseStrategy() {
