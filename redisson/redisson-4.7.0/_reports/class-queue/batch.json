@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/client/protocol/decoder/AggregationResultDecoderV2.java",
     "redisson/src/main/java/org/redisson/client/protocol/decoder/ArrayBooleanDecoder.java",
     "redisson/src/main/java/org/redisson/client/protocol/decoder/ArrayEntryDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ArrayFullInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ArrayInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/AutoClaimDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/AutoClaimMapReplayDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/BloomFilterInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/BloomFilterInfoSingleDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/BloomFilterScanDumpInfoDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ClusterNodesDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/CodecDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ContainsDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/ContainsSetDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/FastAutoClaimDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/GcraResultDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/GeoDistanceDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/GeoPositionDecoder.java",
-    "redisson/src/main/java/org/redisson/client/protocol/decoder/GeoPositionMapDecoder.java"
+    "redisson/src/main/java/org/redisson/client/protocol/decoder/ArrayFullInfoDecoder.java"
   ],
   "remaining_pending": 482,
-  "done": 2310
+  "done": 2325
 }
