@@ -19,8 +19,8 @@ package org.springframework.transaction;
 import java.util.Collection;
 
 /**
- * Common configuration interface for transaction manager implementations.
- * Provides registration facilities for {@link TransactionExecutionListener}.
+ * 事务管理器实现的通用配置接口。
+ * 提供 {@link TransactionExecutionListener} 的注册能力。
  *
  * @author Juergen Hoeller
  * @since 6.1
@@ -30,21 +30,21 @@ import java.util.Collection;
 public interface ConfigurableTransactionManager extends TransactionManager {
 
 	/**
-	 * Set the transaction execution listeners for begin/commit/rollback callbacks
-	 * from this transaction manager.
+	 * 设置本事务管理器的 begin/commit/rollback 回调
+	 * 所用的事务执行监听器。
 	 * @see #addListener
 	 */
 	void setTransactionExecutionListeners(Collection<TransactionExecutionListener> listeners);
 
 	/**
-	 * Return the registered transaction execution listeners for this transaction manager.
+	 * 返回本事务管理器已注册的事务执行监听器。
 	 * @see #setTransactionExecutionListeners
 	 */
 	Collection<TransactionExecutionListener> getTransactionExecutionListeners();
 
 	/**
-	 * Conveniently register the given listener for begin/commit/rollback callbacks
-	 * from this transaction manager.
+	 * 便捷注册给定监听器，用于本事务管理器的
+	 * begin/commit/rollback 回调。
 	 * @see #getTransactionExecutionListeners()
 	 */
 	default void addListener(TransactionExecutionListener listener) {

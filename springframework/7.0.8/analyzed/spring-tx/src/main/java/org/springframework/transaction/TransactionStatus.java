@@ -19,16 +19,14 @@ package org.springframework.transaction;
 import java.io.Flushable;
 
 /**
- * Representation of an ongoing {@link PlatformTransactionManager} transaction.
- * Extends the common {@link TransactionExecution} interface.
+ * 进行中的 {@link PlatformTransactionManager} 事务的表示。
+ * 扩展通用 {@link TransactionExecution} 接口。
  *
- * <p>Transactional code can use this to retrieve status information,
- * and to programmatically request a rollback (instead of throwing
- * an exception that causes an implicit rollback).
+ * <p>事务代码可用其获取状态信息，
+ * 并以编程方式请求回滚（而非抛出导致隐式回滚的异常）。
  *
- * <p>Includes the {@link SavepointManager} interface to provide access
- * to savepoint management facilities. Note that savepoint management
- * is only available if supported by the underlying transaction manager.
+ * <p>包含 {@link SavepointManager} 接口以提供保存点管理能力。
+ * 注意，仅当底层事务管理器支持时保存点管理才可用。
  *
  * @author Juergen Hoeller
  * @since 27.03.2003
@@ -40,12 +38,11 @@ import java.io.Flushable;
 public interface TransactionStatus extends TransactionExecution, SavepointManager, Flushable {
 
 	/**
-	 * Return whether this transaction internally carries a savepoint,
-	 * that is, has been created as nested transaction based on a savepoint.
-	 * <p>This method is mainly here for diagnostic purposes, alongside
-	 * {@link #isNewTransaction()}. For programmatic handling of custom
-	 * savepoints, use the operations provided by {@link SavepointManager}.
-	 * <p>The default implementation returns {@code false}.
+	 * 返回本事务内部是否携带保存点，
+	 * 即是否基于保存点创建为嵌套事务。
+	 * <p>本方法主要用于诊断，与 {@link #isNewTransaction()} 配合使用。
+	 * 编程式处理自定义保存点请使用 {@link SavepointManager} 提供的操作。
+	 * <p>默认实现返回 {@code false}。
 	 * @see #isNewTransaction()
 	 * @see #createSavepoint()
 	 * @see #rollbackToSavepoint(Object)
@@ -56,13 +53,11 @@ public interface TransactionStatus extends TransactionExecution, SavepointManage
 	}
 
 	/**
-	 * Flush the underlying session to the datastore, if applicable:
-	 * for example, all affected Hibernate/JPA sessions.
-	 * <p>This is effectively just a hint and may be a no-op if the underlying
-	 * transaction manager does not have a flush concept. A flush signal may
-	 * get applied to the primary resource or to transaction synchronizations,
-	 * depending on the underlying resource.
-	 * <p>The default implementation is empty, considering flush as a no-op.
+	 * 若适用，将底层会话刷新到数据存储：
+	 * 例如所有受影响的 Hibernate/JPA 会话。
+	 * <p>这实际上只是提示；若底层事务管理器无 flush 概念可能为空操作。
+	 * flush 信号可能应用于主资源或事务同步，取决于底层资源。
+	 * <p>默认实现为空，将 flush 视为空操作。
 	 */
 	@Override
 	default void flush() {

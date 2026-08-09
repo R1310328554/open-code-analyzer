@@ -17,8 +17,7 @@
 package org.springframework.transaction;
 
 /**
- * Exception thrown when a transaction can't be created using an
- * underlying transaction API such as JTA.
+ * 使用底层事务 API（如 JTA）无法创建事务时抛出。
  *
  * @author Rod Johnson
  * @since 17.03.2003
@@ -27,17 +26,17 @@ package org.springframework.transaction;
 public class CannotCreateTransactionException extends TransactionException {
 
 	/**
-	 * Constructor for CannotCreateTransactionException.
-	 * @param msg the detail message
+	 * CannotCreateTransactionException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public CannotCreateTransactionException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for CannotCreateTransactionException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the transaction API in use
+	 * CannotCreateTransactionException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用事务 API 的根因
 	 */
 	public CannotCreateTransactionException(String msg, Throwable cause) {
 		super(msg, cause);
