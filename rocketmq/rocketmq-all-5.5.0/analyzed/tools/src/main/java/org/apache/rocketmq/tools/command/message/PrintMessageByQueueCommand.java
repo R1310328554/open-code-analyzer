@@ -38,8 +38,13 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * printMsgByQueue 子命令：按指定 Broker 与队列 ID 拉取并打印 Topic 消息。
+ * <p>支持时间范围过滤、Tag 统计及消息体打印。
+ */
 public class PrintMessageByQueueCommand implements SubCommand {
 
+    /** 将毫秒时间戳或 yyyy-MM-dd#HH:mm:ss:SSS 格式字符串解析为 long。 */
     public static long timestampFormat(final String value) {
         long timestamp = 0;
         try {
@@ -52,6 +57,7 @@ public class PrintMessageByQueueCommand implements SubCommand {
         return timestamp;
     }
 
+    /** 按 Tag 统计消息数量（calByTag 为 true 时生效）。 */
     private static void calculateByTag(final List<MessageExt> msgs, final Map<String, AtomicLong> tagCalmap,
         final boolean calByTag) {
         if (!calByTag)
@@ -70,6 +76,7 @@ public class PrintMessageByQueueCommand implements SubCommand {
         }
     }
 
+    /** 打印各 Tag 的消息计数汇总。 */
     private static void printCalculateByTag(final Map<String, AtomicLong> tagCalmap, final boolean calByTag) {
         if (!calByTag)
             return;
@@ -86,6 +93,7 @@ public class PrintMessageByQueueCommand implements SubCommand {
         }
     }
 
+    /** 按指定字符集打印消息 ID、属性及可选消息体。 */
     public static void printMessage(final List<MessageExt> msgs, final String charsetName, boolean printMsg,
         boolean printBody) {
         if (!printMsg)
@@ -107,49 +115,50 @@ public class PrintMessageByQueueCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Print Message Detail by queueId.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("a", "brokerName ", true, "broker name");
+        opt = new Option("a", "brokerName ", true, "Broker 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("i", "queueId ", true, "queue id");
+        opt = new Option("i", "queueId ", true, "队列 ID");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "charsetName ", true, "CharsetName(eg: UTF-8,GBK)");
+        opt = new Option("c", "charsetName ", true, "消息体字符集（如 UTF-8、GBK）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "subExpression ", true, "Subscribe Expression(eg: TagA || TagB)");
+        opt = new Option("s", "subExpression ", true, "订阅表达式（如 TagA || TagB）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "beginTimestamp ", true, "Begin timestamp[currentTimeMillis|yyyy-MM-dd#HH:mm:ss:SSS]");
+        opt = new Option("b", "beginTimestamp ", true, "起始时间戳（毫秒或 yyyy-MM-dd#HH:mm:ss:SSS）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("e", "endTimestamp ", true, "End timestamp[currentTimeMillis|yyyy-MM-dd#HH:mm:ss:SSS]");
+        opt = new Option("e", "endTimestamp ", true, "结束时间戳（毫秒或 yyyy-MM-dd#HH:mm:ss:SSS）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("p", "print msg", true, "print msg. eg: true | false(default)");
+        opt = new Option("p", "print msg", true, "是否打印消息详情（true/false，默认 false）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("d", "printBody ", true, "print body. eg: true | false(default)");
+        opt = new Option("d", "printBody ", true, "是否打印消息体（true/false，默认 false）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("f", "calculate", true, "calculate by tag. eg: true | false(default)");
+        opt = new Option("f", "calculate", true, "是否按 Tag 统计消息数（true/false，默认 false）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -157,6 +166,7 @@ public class PrintMessageByQueueCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取指定队列消息并按选项打印或统计。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(MixAll.TOOLS_CONSUMER_GROUP, rpcHook);
 
@@ -194,6 +204,7 @@ public class PrintMessageByQueueCommand implements SubCommand {
             }
 
             final Map<String, AtomicLong> tagCalmap = new HashMap<>();
+            // 从 minOffset 逐批拉取直至 maxOffset
             READQ:
             for (long offset = minOffset; offset < maxOffset; ) {
                 try {
@@ -223,6 +234,7 @@ public class PrintMessageByQueueCommand implements SubCommand {
         }
     }
 
+    /** Tag 消息计数条目，用于排序输出。 */
     static class TagCountBean implements Comparable<TagCountBean> {
         private String tag;
         private AtomicLong count;

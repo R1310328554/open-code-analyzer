@@ -28,6 +28,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateNamesrvConfig 子命令：更新 NameServer 运行配置项。
+ * <p>通过 key/value 指定单个配置，支持多个 NameServer 地址。
+ */
 public class UpdateNamesrvConfigCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -35,17 +39,18 @@ public class UpdateNamesrvConfigCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Update configs of name server.";
     }
 
     @Override
     public Options buildCommandlineOptions(final Options options) {
-        Option opt = new Option("k", "key", true, "config key");
+        Option opt = new Option("k", "key", true, "配置项键名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("v", "value", true, "config value");
+        opt = new Option("v", "value", true, "配置项值");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -53,19 +58,19 @@ public class UpdateNamesrvConfigCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 key/value 并调用 updateNameServerConfig 更新配置。 */
     public void execute(final CommandLine commandLine, final Options options,
         final RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
         try {
-            // key name
+            // 解析配置键名与值
             String key = commandLine.getOptionValue('k').trim();
-            // key name
             String value = commandLine.getOptionValue('v').trim();
             Properties properties = new Properties();
             properties.put(key, value);
 
-            // servers
+            // 解析分号分隔的 NameServer 地址列表
             String servers = commandLine.getOptionValue('n');
             List<String> serverList = null;
             if (servers != null && servers.length() > 0) {

@@ -43,7 +43,12 @@ import org.apache.rocketmq.tools.admin.api.MessageTrack;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * queryMsgById 子命令：按消息 ID 查询消息详情。
+ * <p>支持重发、直接推送消费及消息体格式化输出。
+ */
 public class QueryMsgByIdSubCommand implements SubCommand {
+    /** 按 msgId 查询消息并打印详情。 */
     public static void queryById(final DefaultMQAdminExt admin, final String clusterName, final String topic,
         final String msgId, final Charset msgBodyCharset) throws MQClientException,
         RemotingException, MQBrokerException, InterruptedException, IOException {
@@ -56,6 +61,7 @@ public class QueryMsgByIdSubCommand implements SubCommand {
         printMsg(admin, msg, null);
     }
 
+    /** 打印消息元数据、消费轨迹及可选消息体。 */
     public static void printMsg(final DefaultMQAdminExt admin, final MessageExt msg,
         final Charset msgBodyCharset) throws IOException {
         if (msg == null) {
@@ -163,6 +169,7 @@ public class QueryMsgByIdSubCommand implements SubCommand {
         }
     }
 
+    /** 将消息体写入 /tmp/rocketmq/msgbodys 临时文件并返回路径。 */
     private static String createBodyFile(MessageExt msg) throws IOException {
         DataOutputStream dos = null;
         try {
@@ -187,41 +194,42 @@ public class QueryMsgByIdSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query Message by Id.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("i", "msgId", true, "Message Id");
+        opt = new Option("i", "msgId", true, "消息 ID（支持逗号分隔多个）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("g", "consumerGroup", true, "consumer group name");
+        opt = new Option("g", "consumerGroup", true, "消费组名称（与 -d 配合直接推送）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("d", "clientId", true, "The consumer's client id");
+        opt = new Option("d", "clientId", true, "消费者 clientId（与 -g 配合直接推送）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "sendMessage", true, "resend message");
+        opt = new Option("s", "sendMessage", true, "是否重发消息（true/false）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("u", "unitName", true, "unit name");
+        opt = new Option("u", "unitName", true, "单元名称（重发时使用）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("f", "bodyFormat", true, "print message body by the specified format");
+        opt = new Option("f", "bodyFormat", true, "消息体字符集格式（如 UTF-8）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "Cluster name or lmq parent topic, lmq is used to find the route.");
+        opt = new Option("c", "cluster", true, "集群名或 LMQ 父 Topic（用于路由查找）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -229,6 +237,7 @@ public class QueryMsgByIdSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析参数并查询、重发或直接推送消息。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -289,6 +298,7 @@ public class QueryMsgByIdSubCommand implements SubCommand {
         }
     }
 
+    /** 向 Push 消费者直接推送指定消息。 */
     private void pushMsg(final DefaultMQAdminExt defaultMQAdminExt, final String clusterName,
         final String consumerGroup, final String clientId,
         final String topic, final String msgId) {
@@ -312,7 +322,7 @@ public class QueryMsgByIdSubCommand implements SubCommand {
         try {
             MessageExt msg = defaultMQAdminExt.queryMessage(clusterName, topic, msgId);
             if (msg != null) {
-                // resend msg by id
+                // 按 msgId 查询原消息并重发
                 System.out.printf("prepare resend msg. originalMsgId=%s", msgId);
                 SendResult result = defaultMQProducer.send(msg);
                 System.out.printf("%s", result);

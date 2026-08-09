@@ -24,6 +24,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * deleteKvConfig 子命令：从 NameServer 删除指定 KV 配置项。
+ * <p>通过 namespace 与 key 定位待删除的配置。
+ */
 public class DeleteKvConfigCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -31,30 +35,31 @@ public class DeleteKvConfigCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Delete KV config.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("s", "namespace", true, "set the namespace");
+        Option opt = new Option("s", "namespace", true, "KV 配置命名空间");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("k", "key", true, "set the key name");
+        opt = new Option("k", "key", true, "配置项键名");
         opt.setRequired(true);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 解析 namespace/key 并调用 deleteKvConfig 删除配置。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
         try {
-            // namespace
+            // 解析命名空间与键名
             String namespace = commandLine.getOptionValue('s').trim();
-            // key name
             String key = commandLine.getOptionValue('k').trim();
 
             defaultMQAdminExt.start();

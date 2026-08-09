@@ -33,8 +33,13 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * printMsg 子命令：遍历 Topic 全部队列拉取并打印消息详情。
+ * <p>支持时间范围、Tag 过滤及 LMQ 父 Topic 路由。
+ */
 public class PrintMessageSubCommand implements SubCommand {
 
+    /** 将毫秒时间戳或日期字符串解析为 long。 */
     public static long timestampFormat(final String value) {
         long timestamp = 0;
         try {
@@ -46,6 +51,7 @@ public class PrintMessageSubCommand implements SubCommand {
         return timestamp;
     }
 
+    /** 打印消息 ID、属性及可选消息体内容。 */
     public static void printMessage(final List<MessageExt> msgs, final String charsetName, boolean printBody) {
         for (MessageExt msg : msgs) {
             try {
@@ -62,45 +68,46 @@ public class PrintMessageSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Print Message Detail.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "charsetName ", true, "CharsetName(eg: UTF-8,GBK)");
+        opt = new Option("c", "charsetName ", true, "消息体字符集（如 UTF-8、GBK）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "subExpression ", true, "Subscribe Expression(eg: TagA || TagB)");
+        opt = new Option("s", "subExpression ", true, "订阅表达式（如 TagA || TagB）");
         opt.setRequired(false);
         options.addOption(opt);
 
         opt =
             new Option("b", "beginTimestamp ", true,
-                "Begin timestamp[currentTimeMillis|yyyy-MM-dd#HH:mm:ss:SSS]");
+                "起始时间戳（毫秒或 yyyy-MM-dd#HH:mm:ss:SSS）");
         opt.setRequired(false);
         options.addOption(opt);
 
         opt =
             new Option("e", "endTimestamp ", true,
-                "End timestamp[currentTimeMillis|yyyy-MM-dd#HH:mm:ss:SSS]");
+                "结束时间戳（毫秒或 yyyy-MM-dd#HH:mm:ss:SSS）");
         opt.setRequired(false);
         options.addOption(opt);
 
         opt =
             new Option("d", "printBody ", true,
-                "print body");
+                "是否打印消息体");
         opt.setRequired(false);
         options.addOption(opt);
 
         opt =
             new Option("l", "lmqParentTopic", true,
-                "Lmq parent topic, lmq is used to find the route.");
+                "LMQ 父 Topic，用于查找路由信息");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -108,6 +115,7 @@ public class PrintMessageSubCommand implements SubCommand {
     }
 
     @Override
+    /** 遍历 Topic 各队列拉取消息并打印。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(MixAll.TOOLS_CONSUMER_GROUP, rpcHook);
 
@@ -128,6 +136,7 @@ public class PrintMessageSubCommand implements SubCommand {
             consumer.start();
 
             Set<MessageQueue> mqs;
+            // LMQ 模式：通过父 Topic 获取队列再替换为目标 Topic
             if (lmqParentTopic != null) {
                 mqs = consumer.fetchSubscribeMessageQueues(lmqParentTopic);
                 mqs.forEach(mq -> mq.setTopic(topic));
@@ -152,6 +161,7 @@ public class PrintMessageSubCommand implements SubCommand {
 
                 System.out.printf("minOffset=%s, maxOffset=%s, %s%n", minOffset, maxOffset, mq);
 
+                // 逐批拉取当前队列消息
                 READQ:
                 for (long offset = minOffset; offset < maxOffset; ) {
                     try {
@@ -185,13 +195,14 @@ public class PrintMessageSubCommand implements SubCommand {
         }
     }
 
+    /** 若 Broker 地址缺失，通过 routeTopic 刷新路由表。 */
     public void fillBrokerAddrIfNotExist(DefaultMQPullConsumer defaultMQPullConsumer, MessageQueue messageQueue,
         String routeTopic) {
 
         FindBrokerResult findBrokerResult = defaultMQPullConsumer.getDefaultMQPullConsumerImpl().getRebalanceImpl().getmQClientFactory()
             .findBrokerAddressInSubscribe(messageQueue.getBrokerName(), 0, false);
         if (findBrokerResult == null) {
-            // use lmq parent topic to fill up broker addr table
+            // 使用 LMQ 父 Topic 补全 Broker 地址表
             defaultMQPullConsumer.getDefaultMQPullConsumerImpl().getRebalanceImpl().getmQClientFactory()
                 .updateTopicRouteInfoFromNameServer(routeTopic);
         }

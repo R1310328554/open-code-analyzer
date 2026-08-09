@@ -30,6 +30,10 @@ import org.apache.rocketmq.tools.command.SubCommandException;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * sendMessage 子命令：向指定 Topic 发送一条测试消息。
+ * <p>支持指定 Broker/队列、Key/Tag 及消息轨迹开关。
+ */
 public class SendMessageCommand implements SubCommand {
 
     private DefaultMQProducer producer;
@@ -40,43 +44,45 @@ public class SendMessageCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Send a message.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "Topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("p", "body", true, "UTF-8 string format of the message body");
+        opt = new Option("p", "body", true, "消息体（UTF-8 字符串）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("k", "key", true, "Message keys");
+        opt = new Option("k", "key", true, "消息 Key");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "tags", true, "Message tags");
+        opt = new Option("c", "tags", true, "消息 Tag");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "broker", true, "Send message to target broker");
+        opt = new Option("b", "broker", true, "目标 Broker 名称（与 -i 配合指定队列）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("i", "qid", true, "Send message to target queue");
+        opt = new Option("i", "qid", true, "目标队列 ID（需同时指定 -b）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("m", "msgTraceEnable", true, "Message Trace Enable, Default: false");
+        opt = new Option("m", "msgTraceEnable", true, "是否启用消息轨迹（默认 false）");
         opt.setRequired(false);
         options.addOption(opt);
 
         return options;
     }
 
+    /** 创建 DefaultMQProducer 单例。 */
     private DefaultMQProducer createProducer(RPCHook rpcHook, boolean msgTraceEnable) {
         if (this.producer != null) {
             return producer;
@@ -88,6 +94,7 @@ public class SendMessageCommand implements SubCommand {
     }
 
     @Override
+    /** 构建 Message 并发送到指定 Topic 或队列。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         Message msg = null;
         String topic = commandLine.getOptionValue('t').trim();

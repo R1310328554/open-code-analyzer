@@ -31,6 +31,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * queryMsgByOffset 子命令：按队列位点精确查询单条消息。
+ * <p>支持 LMQ routeTopic 路由及消息体格式化输出。
+ */
 public class QueryMsgByOffsetSubCommand implements SubCommand {
 
     @Override
@@ -39,39 +43,41 @@ public class QueryMsgByOffsetSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query Message by offset.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerName", true, "Broker Name");
+        opt = new Option("b", "brokerName", true, "Broker 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("i", "queueId", true, "Queue Id");
+        opt = new Option("i", "queueId", true, "队列 ID");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("o", "offset", true, "Queue Offset");
+        opt = new Option("o", "offset", true, "队列消费位点");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("f", "bodyFormat", true, "print message body by the specified format");
+        opt = new Option("f", "bodyFormat", true, "消息体字符集格式（如 UTF-8）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("r", "routeTopic", true, "the topic which is used to find route info");
+        opt = new Option("r", "routeTopic", true, "用于查找路由的 Topic（LMQ 场景）");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 按位点拉取单条消息并打印详情。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         DefaultMQPullConsumer defaultMQPullConsumer = new DefaultMQPullConsumer(MixAll.TOOLS_CONSUMER_GROUP, rpcHook);
@@ -99,7 +105,7 @@ public class QueryMsgByOffsetSubCommand implements SubCommand {
             defaultMQAdminExt.start();
 
             if (StringUtils.isNotEmpty(routeTopic) && !routeTopic.equals(topic)) {
-                // try to find route info by route topic, to support LMQ
+                // 通过 routeTopic 预拉取以刷新 LMQ 路由信息
                 defaultMQPullConsumer.pull(new MessageQueue(routeTopic, brokerName, 0), "*", 0, 1);
             }
             PullResult pullResult = defaultMQPullConsumer.pull(mq, "*", Long.parseLong(offset), 1);

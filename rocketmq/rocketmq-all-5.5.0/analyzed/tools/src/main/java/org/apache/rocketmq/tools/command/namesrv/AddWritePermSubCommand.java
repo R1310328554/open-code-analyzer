@@ -26,6 +26,10 @@ import org.apache.rocketmq.tools.command.SubCommandException;
 
 import java.util.List;
 
+/**
+ * addWritePerm 子命令：为指定 Broker 在所有 NameServer 上恢复写权限。
+ * <p>Broker 被禁止写入后，可通过此命令重新开放 Topic 写权限。
+ */
 public class AddWritePermSubCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -33,19 +37,21 @@ public class AddWritePermSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Add write perm of broker in all name server you defined in the -n param.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerName", true, "broker name");
+        Option opt = new Option("b", "brokerName", true, "目标 Broker 名称");
         opt.setRequired(true);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 遍历全部 NameServer 为 Broker 添加写权限。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

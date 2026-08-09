@@ -51,6 +51,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * rocksDBConfigToJson 子命令：将 Broker RocksDB KV 配置导出为 JSON。
+ * <p>支持 RPC 模式（远程 Broker）与本地模式（直接读取 RocksDB 目录）。
+ */
 public class RocksDBConfigToJsonCommand implements SubCommand {
 
     @Override
@@ -59,6 +63,7 @@ public class RocksDBConfigToJsonCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Convert RocksDB kv config (topics/subscriptionGroups/consumerOffsets) to json. " +
             "[rpc mode] Use [-n, -c, -b, -t] to send Request to broker ( version >= 5.3.2 ) or [local mode] use [-p, -t, -j, -e] to load RocksDB. " +
@@ -67,45 +72,45 @@ public class RocksDBConfigToJsonCommand implements SubCommand {
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option configTypeOption = new Option("t", "configType", true, "Name of kv config, e.g. " +
-            "topics/subscriptionGroups/consumerOffsets. Required in local mode and default all in rpc mode.");
+        Option configTypeOption = new Option("t", "configType", true, "KV 配置类型：topics/subscriptionGroups/consumerOffsets（本地模式必填，RPC 模式默认全部）");
         options.addOption(configTypeOption);
 
         // [local mode] options
         Option pathOption = new Option("p", "configPath", true,
-            "[local mode] Absolute path to the metadata config directory");
+            "[本地模式] 元数据配置目录绝对路径");
         options.addOption(pathOption);
 
         Option exportPathOption = new Option("e", "exportFile", true,
-            "[local mode] Absolute file path for exporting, auto backup existing file, not directory. If exportFile is provided, will export Json file and ignore [-j].");
+            "[本地模式] 导出 JSON 文件绝对路径（自动备份已有文件）");
         options.addOption(exportPathOption);
 
         Option jsonEnableOption = new Option("j", "jsonEnable", true,
-            "[local mode] Json format enable, Default: true. If exportFile is provided, will export Json file and ignore [-j].");
+            "[本地模式] 是否 JSON 格式化输出（默认 true）");
         options.addOption(jsonEnableOption);
 
         // [rpc mode] options
         Option nameserverOption = new Option("n", "nameserverAddr", true,
-            "[rpc mode] nameserverAddr. If nameserverAddr and clusterName are provided, will ignore [-p, -e, -j, -b] args");
+            "[RPC 模式] NameServer 地址（与 cluster 配合导出集群全部 Broker）");
         options.addOption(nameserverOption);
 
         Option clusterOption = new Option("c", "cluster", true,
-            "[rpc mode] Cluster name. If nameserverAddr and clusterName are provided, will ignore [-p, -e, -j, -b] args");
+            "[RPC 模式] 集群名称");
         options.addOption(clusterOption);
 
         Option brokerAddrOption = new Option("b", "brokerAddr", true,
-            "[rpc mode] Broker address. If brokerAddr is provided, will ignore [-p, -e, -j] args");
+            "[RPC 模式] 单个 Broker 地址");
         options.addOption(brokerAddrOption);
 
         return options;
     }
 
     @Override
+    /** 根据参数选择 RPC 或本地模式导出 RocksDB 配置。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         List<ExportRocksDBConfigToJsonRequestHeader.ConfigType> typeList = getConfigTypeList(commandLine);
 
         if (commandLine.hasOption("nameserverAddr")) {
-            // [rpc mode] call all brokers in cluster to export to json file
+            // RPC 模式：调用集群全部 Broker 导出 JSON
             System.out.print("Use [rpc mode] call all brokers in cluster to export to json file \n");
             checkRequiredArgsProvided(commandLine, "rpc mode", "cluster");
             handleRpcMode(commandLine, rpcHook, typeList);
@@ -114,7 +119,7 @@ public class RocksDBConfigToJsonCommand implements SubCommand {
             System.out.print("Use [rpc mode] call broker to export to json file \n");
             handleRpcMode(commandLine, rpcHook, typeList);
         } else if (commandLine.hasOption("configPath")) {
-            // [local mode] load rocksdb to print or export file
+            // 本地模式：直接加载 RocksDB 打印或导出文件
             System.out.print("Use [local mode] load rocksdb to print or export file \n");
             checkRequiredArgsProvided(commandLine, "local mode", "configType");
             handleLocalMode(commandLine);
@@ -123,6 +128,7 @@ public class RocksDBConfigToJsonCommand implements SubCommand {
         }
     }
 
+    /** 本地模式：读取 RocksDB 并打印或写入导出文件。 */
     private void handleLocalMode(CommandLine commandLine) {
         ExportRocksDBConfigToJsonRequestHeader.ConfigType type = Objects.requireNonNull(getConfigTypeList(commandLine)).get(0);
         String path = commandLine.getOptionValue("configPath").trim();
@@ -187,6 +193,7 @@ public class RocksDBConfigToJsonCommand implements SubCommand {
         }
     }
 
+    /** 从 RocksDB 目录加载 Topic/订阅组配置并转为 JSON Map。 */
     private static Map<String, JSONObject> getConfigMapFromRocksDB(String path,
         ExportRocksDBConfigToJsonRequestHeader.ConfigType configType) {
 
@@ -242,6 +249,7 @@ public class RocksDBConfigToJsonCommand implements SubCommand {
         return null;
     }
 
+    /** RPC 模式：异步调用 Broker exportRocksDBConfigToJson。 */
     private void handleRpcMode(CommandLine commandLine, RPCHook rpcHook,
         List<ExportRocksDBConfigToJsonRequestHeader.ConfigType> type) {
         String nameserverAddr = commandLine.hasOption('n') ? commandLine.getOptionValue("nameserverAddr").trim() : null;
@@ -327,6 +335,7 @@ public class RocksDBConfigToJsonCommand implements SubCommand {
         return null;
     }
 
+    /** 消费位点 RocksDB 序列化包装类。 */
     static class RocksDBOffsetSerializeWrapper {
         private ConcurrentMap<Integer, Long> offsetTable = new ConcurrentHashMap<>(16);
 

@@ -32,6 +32,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * queryMsgByKey 子命令：按消息 Key 或 Tag 索引查询消息列表。
+ * <p>支持时间范围、分页（lastKey）及最大返回条数限制。
+ */
 public class QueryMsgByKeySubCommand implements SubCommand {
 
     @Override
@@ -40,41 +44,42 @@ public class QueryMsgByKeySubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query Message by Key.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "Topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("k", "msgKey", true, "Message Key");
+        opt = new Option("k", "msgKey", true, "消息 Key 或 Tag 值");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("b", "beginTimestamp", true, "Begin timestamp(ms). default:0, eg:1676730526212");
+        opt = new Option("b", "beginTimestamp", true, "起始时间戳（毫秒，默认 0）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("e", "endTimestamp", true, "End timestamp(ms). default:Long.MAX_VALUE, eg:1676730526212");
+        opt = new Option("e", "endTimestamp", true, "结束时间戳（毫秒，默认 Long.MAX_VALUE）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("m", "maxNum", true, "The maximum number of messages returned by the query, default:64");
+        opt = new Option("m", "maxNum", true, "最大返回消息数（默认 64）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "Cluster name or lmq parent topic, lmq is used to find the route.");
+        opt = new Option("c", "cluster", true, "集群名或 LMQ 父 Topic（用于路由查找）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("p", "keyType", true, "Index key type, default index key type is K, you can use K for keys OR T for tags");
+        opt = new Option("p", "keyType", true, "索引类型：K（Key）或 T（Tag），默认 K");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("l", "lastKey", true, "Last Key");
+        opt = new Option("l", "lastKey", true, "分页游标（上一页最后一条的 indexKey）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -82,6 +87,7 @@ public class QueryMsgByKeySubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数并调用 queryByKey 查询消息。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 
@@ -126,6 +132,7 @@ public class QueryMsgByKeySubCommand implements SubCommand {
         }
     }
 
+    /** 按 Key/Tag 索引查询并打印消息 ID、队列 ID 与位点。 */
     private void queryByKey(final DefaultMQAdminExt admin, final String cluster, final String topic, final String key, int maxNum, long begin,
         long end, String keyType, String lastKey)
         throws MQClientException, InterruptedException, RemotingException {

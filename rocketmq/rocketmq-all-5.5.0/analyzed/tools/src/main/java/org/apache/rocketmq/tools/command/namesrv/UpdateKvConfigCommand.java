@@ -24,6 +24,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateKvConfig 子命令：创建或更新 NameServer KV 配置项。
+ * <p>通过 namespace、key、value 三元组写入配置。
+ */
 public class UpdateKvConfigCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -31,36 +35,36 @@ public class UpdateKvConfigCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Create or update KV config.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("s", "namespace", true, "set the namespace");
+        Option opt = new Option("s", "namespace", true, "KV 配置命名空间");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("k", "key", true, "set the key name");
+        opt = new Option("k", "key", true, "配置项键名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("v", "value", true, "set the key value");
+        opt = new Option("v", "value", true, "配置项值");
         opt.setRequired(true);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 解析参数并调用 createAndUpdateKvConfig 写入配置。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
         try {
-            // namespace
+            // 解析命名空间、键名与值
             String namespace = commandLine.getOptionValue('s').trim();
-            // key name
             String key = commandLine.getOptionValue('k').trim();
-            // key name
             String value = commandLine.getOptionValue('v').trim();
 
             if (commandLine.hasOption('n')) {

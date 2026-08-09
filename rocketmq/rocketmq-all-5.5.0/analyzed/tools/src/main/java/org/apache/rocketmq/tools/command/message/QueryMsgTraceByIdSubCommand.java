@@ -36,27 +36,31 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * queryMsgTraceById 子命令：按消息 ID 查询消息轨迹（Trace）。
+ * <p>解析 Trace Topic 中的 Pub/Sub 记录并格式化输出。
+ */
 public class QueryMsgTraceByIdSubCommand implements SubCommand {
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("i", "msgId", true, "Message Id");
+        Option opt = new Option("i", "msgId", true, "消息 ID");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "traceTopic", true, "The name value of message trace topic");
+        opt = new Option("t", "traceTopic", true, "消息轨迹 Topic 名称（默认系统 Trace Topic）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "beginTimestamp", true, "Begin timestamp(ms). default:0, eg:1676730526212");
+        opt = new Option("b", "beginTimestamp", true, "起始时间戳（毫秒，默认 0）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("e", "endTimestamp", true, "End timestamp(ms). default:Long.MAX_VALUE, eg:1676730526212");
+        opt = new Option("e", "endTimestamp", true, "结束时间戳（毫秒，默认 Long.MAX_VALUE）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "maxNum", true, "The maximum number of messages returned by the query, default:64");
+        opt = new Option("c", "maxNum", true, "最大返回消息数（默认 64）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -64,6 +68,7 @@ public class QueryMsgTraceByIdSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query a message trace.";
     }
@@ -79,6 +84,7 @@ public class QueryMsgTraceByIdSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析参数并查询消息轨迹。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -113,6 +119,7 @@ public class QueryMsgTraceByIdSubCommand implements SubCommand {
         }
     }
 
+    /** 从 Trace Topic 查询并解码 TraceView 列表。 */
     private void queryTraceByMsgId(final DefaultMQAdminExt admin, String traceTopic, String msgId, int maxNum,
         long begin, long end)
         throws MQClientException, InterruptedException {
@@ -128,6 +135,7 @@ public class QueryMsgTraceByIdSubCommand implements SubCommand {
         this.printMessageTrace(traceViews);
     }
 
+    /** 按 Pub/Sub 分组打印消息轨迹详情。 */
     private void printMessageTrace(List<TraceView> traceViews) {
         Map<String, List<TraceView>> consumerTraceMap = new HashMap<>(16);
         for (TraceView traceView : traceViews) {

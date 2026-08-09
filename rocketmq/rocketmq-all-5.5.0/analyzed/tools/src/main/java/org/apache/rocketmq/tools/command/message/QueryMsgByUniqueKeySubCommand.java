@@ -38,10 +38,15 @@ import org.apache.rocketmq.tools.admin.api.MessageTrack;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * queryMsgByUniqueKey 子命令：按消息唯一键（UniqKey）查询消息。
+ * <p>支持时间范围、展示全部匹配项及直接推送消费。
+ */
 public class QueryMsgByUniqueKeySubCommand implements SubCommand {
 
     private DefaultMQAdminExt defaultMQAdminExt;
 
+    /** 创建并启动 DefaultMQAdminExt 单例。 */
     private DefaultMQAdminExt createMQAdminExt(RPCHook rpcHook) throws SubCommandException {
         if (this.defaultMQAdminExt != null) {
             return defaultMQAdminExt;
@@ -57,6 +62,7 @@ public class QueryMsgByUniqueKeySubCommand implements SubCommand {
         }
     }
 
+    /** 按 UniqKey 查询消息并按 showAll 决定展示条数。 */
     public static void queryById(final DefaultMQAdminExt admin, final String clusterName, final String topic, final String msgId, final boolean showAll, final String startTime, final String endTime) throws MQClientException, InterruptedException, IOException {
         QueryResult queryResult = null;
         if (!StringUtils.isEmpty(startTime) && !StringUtils.isEmpty(endTime)) {
@@ -79,6 +85,7 @@ public class QueryMsgByUniqueKeySubCommand implements SubCommand {
         }
     }
 
+    /** 打印单条消息元数据及消费轨迹。 */
     private static void showMessage(final DefaultMQAdminExt admin, MessageExt msg, int index) throws IOException {
         String bodyTmpFilePath = createBodyFile(msg, index);
 
@@ -116,6 +123,7 @@ public class QueryMsgByUniqueKeySubCommand implements SubCommand {
         }
     }
 
+    /** 将消息体写入临时文件，多条时追加 index 后缀。 */
     private static String createBodyFile(MessageExt msg, int index) throws IOException {
         DataOutputStream dos = null;
         try {
@@ -144,41 +152,42 @@ public class QueryMsgByUniqueKeySubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query Message by Unique key.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("i", "msgId", true, "Message Id");
+        Option opt = new Option("i", "msgId", true, "消息 UniqKey / msgId");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("g", "consumerGroup", true, "consumer group name");
+        opt = new Option("g", "consumerGroup", true, "消费组名称（与 -d 配合直接推送）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("d", "clientId", true, "The consumer's client id");
+        opt = new Option("d", "clientId", true, "消费者 clientId");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "The topic of msg");
+        opt = new Option("t", "topic", true, "消息所属 Topic");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("a", "showAll", false, "Print all message, the limit is 32");
+        opt = new Option("a", "showAll", false, "打印全部匹配消息（最多 32 条）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "Cluster name or lmq parent topic, lmq is used to find the route.");
+        opt = new Option("c", "cluster", true, "集群名或 LMQ 父 Topic");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "startTime", true, "startTime");
+        opt = new Option("s", "startTime", true, "查询起始时间戳（毫秒）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("e", "endTime", true, "endTime");
+        opt = new Option("e", "endTime", true, "查询结束时间戳（毫秒）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -186,6 +195,7 @@ public class QueryMsgByUniqueKeySubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析参数并查询或直接推送消息。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
 
         try {

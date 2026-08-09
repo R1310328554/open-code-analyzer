@@ -30,6 +30,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getNamesrvConfig 子命令：查询 NameServer 运行配置。
+ * <p>支持指定多个 NameServer 地址（分号分隔）。
+ */
 public class GetNamesrvConfigCommand implements SubCommand {
 
     @Override
@@ -38,22 +42,25 @@ public class GetNamesrvConfigCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get configs of name server.";
     }
 
     @Override
+    /** 本命令无需额外 CLI 参数（NameServer 地址通过全局 -n 传入）。 */
     public Options buildCommandlineOptions(final Options options) {
         return options;
     }
 
     @Override
+    /** 拉取各 NameServer 配置并以键值对形式打印。 */
     public void execute(final CommandLine commandLine, final Options options,
         final RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
         try {
-            // servers
+            // 解析分号分隔的 NameServer 地址列表
             String servers = commandLine.getOptionValue('n');
             List<String> serverList = null;
             if (servers != null && servers.length() > 0) {
