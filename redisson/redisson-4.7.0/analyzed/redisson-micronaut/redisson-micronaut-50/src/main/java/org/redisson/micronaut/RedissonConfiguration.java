@@ -42,7 +42,7 @@ public class RedissonConfiguration extends Config {
 
     /** 根据 application 配置初始化部署模式与 codec/nettyHook 等扩展组件。 */
     @Inject
-    public RedissonConfiguration(PropertySourcePropertyResolver propertyResolver) {
+    public RedissonConfiguration(Environment propertyResolver) {
         Collection<String> props = propertyResolver.getProperties("redisson", StringConvention.CAMEL_CASE).keySet();
         for (String prop : props) {
             if (prop.startsWith("clusterServersConfig")) {
