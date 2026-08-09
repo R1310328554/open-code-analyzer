@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:29:17Z",
-  "files": [
-    "sentinel-extension/sentinel-datasource-consul/src/main/java/com/alibaba/csp/sentinel/datasource/consul/ConsulDataSource.java",
-    "sentinel-extension/sentinel-datasource-etcd/src/main/java/com/alibaba/csp/sentinel/datasource/etcd/EtcdConfig.java",
-    "sentinel-extension/sentinel-datasource-etcd/src/main/java/com/alibaba/csp/sentinel/datasource/etcd/EtcdDataSource.java",
-    "sentinel-extension/sentinel-datasource-eureka/src/main/java/com/alibaba/csp/sentinel/datasource/eureka/EurekaDataSource.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/AbstractDataSource.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/AutoRefreshDataSource.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/Converter.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/EmptyDataSource.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/FileInJarReadableDataSource.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/FileRefreshableDataSource.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/FileWritableDataSource.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/ReadableDataSource.java",
-    "sentinel-extension/sentinel-datasource-extension/src/main/java/com/alibaba/csp/sentinel/datasource/WritableDataSource.java",
-    "sentinel-extension/sentinel-datasource-nacos/src/main/java/com/alibaba/csp/sentinel/datasource/nacos/NacosDataSource.java",
-    "sentinel-extension/sentinel-datasource-redis/src/main/java/com/alibaba/csp/sentinel/datasource/redis/RedisDataSource.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 125,
-  "done": 810
+  "done": 825
 }
