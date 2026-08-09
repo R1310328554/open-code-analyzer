@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:10:21Z",
-  "files": [
-    "core/src/main/java/com/taobao/arthas/core/command/Constants.java",
-    "core/src/main/java/com/taobao/arthas/core/command/ScriptSupportCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/AuthCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/Base64Command.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/CatCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/ClsCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/EchoCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/GrepCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/HelpCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/HistoryCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/JFRCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/KeymapCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/OptionsCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/PwdCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/ResetCommand.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 585,
-  "done": 195
+  "done": 210
 }
