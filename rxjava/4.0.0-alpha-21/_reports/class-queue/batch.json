@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:14:39Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/ComputationScheduler.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/DisposeOnCancel.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/ImmediateThinScheduler.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/InstantPeriodicTask.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/NewThreadScheduler.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/NewThreadWorker.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/NonBlockingThread.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/RxThreadFactory.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/ScheduledDirectPeriodicTask.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/ScheduledDirectTask.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/ScheduledRunnable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/SchedulerMultiWorkerSupport.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/SchedulerPoolFactory.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/SchedulerToExecutorService.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/SharedScheduler.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 242,
-  "done": 720
+  "done": 735
 }
