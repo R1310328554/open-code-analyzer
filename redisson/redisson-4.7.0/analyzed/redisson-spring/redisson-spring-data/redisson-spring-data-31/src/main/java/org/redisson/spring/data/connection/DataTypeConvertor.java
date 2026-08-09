@@ -19,12 +19,14 @@ import org.redisson.client.protocol.convertor.Convertor;
 import org.springframework.data.redis.connection.DataType;
 
 /**
- * 
+ * Redis {@code TYPE} 命令返回值到 Spring {@link DataType} 的转换器。
+ *
  * @author Nikita Koksharov
  *
  */
 public class DataTypeConvertor implements Convertor<DataType> {
 
+    /** 将 Redis 类型码字符串解析为 {@link DataType} 枚举。 */
     @Override
     public DataType convert(Object obj) {
         String val = obj.toString();

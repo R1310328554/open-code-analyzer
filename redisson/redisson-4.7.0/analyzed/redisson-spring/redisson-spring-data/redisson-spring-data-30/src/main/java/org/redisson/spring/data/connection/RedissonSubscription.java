@@ -35,22 +35,35 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 /**
+ * Spring Data Redis Pub/Sub {@link AbstractSubscription} 的 Redisson 实现。
+ * <p>通过 {@link PublishSubscribeService} 管理频道/模式订阅，
+将 Redisson 消息转为 {@link DefaultMessage} 回调 {@link MessageListener}；
+若监听器为 {@link SubscriptionListener}，则同步订阅/取消订阅状态事件。
+ * <p>以 {@link CompletableFuture} 追踪各频道/模式订阅状态，
+并对 {@code SynchronizingMessageListener} 使用 {@link ReclosableLatch} 等待首次全部取消订阅。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonSubscription extends AbstractSubscription {
 
+    /** 已完成的占位 Future，用于已订阅频道的回调合并。 */
     private static final CompletableFuture<Void> COMPLETED = new CompletableFuture<>();
 
+    /** 可重入门闩：全部频道/模式取消订阅后 open，供 SynchronizingMessageListener 同步等待。 */
     private final ReclosableLatch latch = new ReclosableLatch();
 
+    /** 频道名 → 订阅完成 Future，供重复订阅与回调去重。 */
     private final Map<ChannelName, CompletableFuture<Void>> subscribed = new ConcurrentHashMap<>();
+    /** 模式名 → PSUBSCRIBE 完成 Future。 */
     private final Map<ChannelName, CompletableFuture<Void>> psubscribed = new ConcurrentHashMap<>();
 
+    /** 异步 Redis 命令执行器。 */
     private final CommandAsyncExecutor commandExecutor;
+    /** Redisson Pub/Sub 订阅服务。 */
     private final PublishSubscribeService subscribeService;
 
+    /** 绑定异步命令执行器与 Spring 消息监听器。 */
     public RedissonSubscription(CommandAsyncExecutor commandExecutor, MessageListener listener) {
         super(listener, null, null);
         this.commandExecutor = commandExecutor;
@@ -58,9 +71,12 @@ public class RedissonSubscription extends AbstractSubscription {
     }
 
     @Override
+    /** SUBSCRIBE：仅订阅尚未注册的频道，并可选等待 SynchronizingMessageListener 同步点。 */
     protected void doSubscribe(byte[]... channels) {
+        // 是否已有活跃订阅（决定是否需要 latch 等待）。
         boolean hasSubscriptionsBefore = !(subscribed.isEmpty() & psubscribed.isEmpty());
 
+        // 过滤已订阅频道，收集本次需新订阅的条目。
         Map<ChannelName, CompletableFuture<Void>> tosubscribe = getNonSubscribed(channels, subscribed, (l, ch) -> {
             ((SubscriptionListener) getListener()).onChannelSubscribed(ch, 1);
         });
@@ -73,6 +89,7 @@ public class RedissonSubscription extends AbstractSubscription {
             CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, channel, new BaseRedisPubSubListener() {
                 @Override
                 public void onMessage(CharSequence ch, Object message) {
+                    // 忽略非目标频道的回调（连接复用时可能收到其他频道消息）。
                     if (!Arrays.equals(((ChannelName) ch).getName(), channel.getName())) {
                         return;
                     }
@@ -88,6 +105,7 @@ public class RedissonSubscription extends AbstractSubscription {
                         return;
                     }
 
+                    // SUBSCRIBE 确认：完成对应频道的 CompletableFuture。
                     if (getListener() instanceof SubscriptionListener
                             && type == PubSubType.SUBSCRIBE) {
                         CompletableFuture<Void> callback = subscribed.getOrDefault(channel, COMPLETED);
@@ -95,6 +113,7 @@ public class RedissonSubscription extends AbstractSubscription {
                     }
                     super.onStatus(type, ch);
 
+                    // 全部频道与模式取消后释放 latch。
                     if (type == PubSubType.UNSUBSCRIBE) {
                         subscribed.remove(channel);
                         if (subscribed.isEmpty() && psubscribed.isEmpty()) {
@@ -119,6 +138,7 @@ public class RedissonSubscription extends AbstractSubscription {
             return;
         }
 
+        // RedisMessageListenerContainer 同步修复：等待首次全部 UNSUBSCRIBE。
         // fix for RedisMessageListenerContainer
         if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
             try {
@@ -130,6 +150,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 返回尚未订阅的频道/模式；已订阅则异步回调 {@link SubscriptionListener}。 */
     private Map<ChannelName, CompletableFuture<Void>> getNonSubscribed(byte[][] channels,
                                                                        Map<ChannelName, CompletableFuture<Void>> subscribed,
                                                                        BiConsumer<SubscriptionListener, byte[]> consumer) {
@@ -137,6 +158,7 @@ public class RedissonSubscription extends AbstractSubscription {
         for (byte[] ch : channels) {
             CompletableFuture<Void> f = new CompletableFuture<>();
             ChannelName n = new ChannelName(ch);
+            // putIfAbsent 成功表示新订阅，否则合并到已有 Future。
             CompletableFuture<Void> cf = subscribed.putIfAbsent(n, f);
             if (cf == null) {
                 tosubscribe.put(n, f);
@@ -159,6 +181,7 @@ public class RedissonSubscription extends AbstractSubscription {
     }
 
     @Override
+    /** UNSUBSCRIBE：取消指定频道；{@link SubscriptionListener} 时回调 onChannelUnsubscribed。 */
     protected void doUnsubscribe(boolean all, byte[]... channels) {
         for (byte[] channel : channels) {
             CompletableFuture<Codec> f = subscribeService.unsubscribe(new ChannelName(channel), PubSubType.UNSUBSCRIBE);
@@ -173,6 +196,7 @@ public class RedissonSubscription extends AbstractSubscription {
     }
 
     @Override
+    /** PSUBSCRIBE：按模式订阅，逻辑同 {@link #doSubscribe}。 */
     protected void doPsubscribe(byte[]... patterns) {
         boolean hasSubscriptionsBefore = !(subscribed.isEmpty() & psubscribed.isEmpty());
 
@@ -189,6 +213,7 @@ public class RedissonSubscription extends AbstractSubscription {
             CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(channel, ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
                 @Override
                 public void onPatternMessage(CharSequence pattern, CharSequence ch, Object message) {
+                    // 忽略非目标 pattern 的回调。
                     if (!Arrays.equals(((ChannelName) pattern).getName(), channel.getName())) {
                         return;
                     }
@@ -204,12 +229,14 @@ public class RedissonSubscription extends AbstractSubscription {
                         return;
                     }
 
+                    // PSUBSCRIBE 确认：完成对应模式的 CompletableFuture。
                     if (getListener() instanceof SubscriptionListener
                             && type == PubSubType.PSUBSCRIBE) {
                         CompletableFuture<Void> callback = psubscribed.getOrDefault(channel, COMPLETED);
                         callback.complete(null);
                     }
                     super.onStatus(type, pattern);
+                    // 模式取消后若全部订阅清空则释放 latch。
                     if (type == PubSubType.PUNSUBSCRIBE) {
                         psubscribed.remove(channel);
                         if (subscribed.isEmpty() && psubscribed.isEmpty()) {
@@ -244,6 +271,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 将 String 或 byte[] 载荷统一为字节数组。 */
     private byte[] toBytes(Object message) {
         if (message instanceof String) {
             return  ((String) message).getBytes();
@@ -252,6 +280,7 @@ public class RedissonSubscription extends AbstractSubscription {
     }
 
     @Override
+    /** PUNSUBSCRIBE：取消指定模式；{@link SubscriptionListener} 时回调 onPatternUnsubscribed。 */
     protected void doPUnsubscribe(boolean all, byte[]... patterns) {
         for (byte[] pattern : patterns) {
             CompletableFuture<Codec> f = subscribeService.unsubscribe(new ChannelName(pattern), PubSubType.PUNSUBSCRIBE);
@@ -266,6 +295,7 @@ public class RedissonSubscription extends AbstractSubscription {
     }
 
     @Override
+    /** 关闭时取消所有频道与模式订阅。 */
     protected void doClose() {
         doUnsubscribe(false, getChannels().toArray(new byte[getChannels().size()][]));
         doPUnsubscribe(false, getPatterns().toArray(new byte[getPatterns().size()][]));

@@ -30,23 +30,30 @@ import org.springframework.data.redis.connection.RedisServer;
 import org.springframework.data.redis.connection.convert.Converters;
 
 /**
- * 
+ * Spring Data Redis {@link RedisSentinelConnection} 的 Redisson 实现。
+ * <p>通过底层 {@link RedisConnection} 同步发送 Sentinel 管理命令
+（failover、monitor、masters/slaves 查询等）。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonSentinelConnection implements RedisSentinelConnection {
 
+    /** 底层 Sentinel Redis 连接。 */
     private final RedisConnection connection;
     
+    /** 绑定已连通的 Sentinel {@link RedisConnection}。 */
     public RedissonSentinelConnection(RedisConnection connection) {
         this.connection = connection;
     }
 
+    /** 对指定 master 执行 {@code SENTINEL FAILOVER}。 */
     @Override
     public void failover(NamedNode master) {
         connection.sync(RedisCommands.SENTINEL_FAILOVER, master.getName());
     }
 
+    /** 将 Sentinel 返回的 map 列表转为 {@link RedisServer} 集合。 */
     private static List<RedisServer> toRedisServersList(List<Map<String, String>> source) {
         List<RedisServer> servers = new ArrayList<RedisServer>(source.size());
         for (Map<String, String> info : source) {
@@ -55,29 +62,34 @@ public class RedissonSentinelConnection implements RedisSentinelConnection {
         return servers;
     }
     
+    /** 查询所有被监控的 master 并转为 {@link RedisServer} 列表。 */
     @Override
     public Collection<RedisServer> masters() {
         List<Map<String, String>> masters = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_MASTERS);
         return toRedisServersList(masters);
     }
 
+    /** 查询指定 master 下的 replica 节点。 */
     @Override
-    public Collection<RedisServer> replicas(NamedNode master) {
+    public Collection<RedisServer> slaves(NamedNode master) {
         List<Map<String, String>> slaves = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, master.getName());
         return toRedisServersList(slaves);
     }
 
+    /** SENTINEL REMOVE：取消对 master 的监控。 */
     @Override
     public void remove(NamedNode master) {
         connection.sync(RedisCommands.SENTINEL_REMOVE, master.getName());
     }
 
+    /** 向 Sentinel 注册新的 master 监控（host/port/quorum）。 */
     @Override
     public void monitor(RedisServer master) {
         connection.sync(RedisCommands.SENTINEL_MONITOR, master.getName(), master.getHost(), 
                                     master.getPort().intValue(), master.getQuorum().intValue());
     }
 
+    /** 异步关闭底层连接。 */
     @Override
     public void close() throws IOException {
         connection.closeAsync();
