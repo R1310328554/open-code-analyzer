@@ -1866,3 +1866,4 @@
 2026-08-09T20:39:55Z DONE redisson/src/main/java/org/redisson/api/bloomfilter/ErrorRateBloomFilterInitArgs.java wave60a [0:15]
 2026-08-09T20:39:55Z DONE redisson/src/main/java/org/redisson/api/bloomfilter/OptionalBloomFilterInitArgs.java wave60a [0:15]
 2026-08-09T20:39:55Z DONE redisson/src/main/java/org/redisson/api/bloomfilter/OptionalBloomFilterInsertArgs.java wave60a [0:15]
+2026-08-09T20:40:10Z CLAIM redisson redisson-4.7.0 wave61 n=30 remaining_pending=992
