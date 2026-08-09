@@ -56,18 +56,23 @@ import java.util.stream.Collectors;
 import static org.redisson.client.protocol.RedisCommands.ZRANDMEMBER;
 
 /**
+ * Spring Data Redis 响应式 ZSet 命令实现。
+ * <p>封装 ZADD/ZREM、ZRANGE/ZREVRANGE、ZSCAN、ZUNIONSTORE/ZINTERSTORE
+等有序集合操作。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveZSetCommands extends RedissonBaseReactive implements ReactiveZSetCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveZSetCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
     private static final RedisCommand<Double> ZADD_FLOAT = new RedisCommand<>("ZADD", new DoubleNullSafeReplayConvertor());
 
+    /** ZADD：向有序集合添加 member 及 score。 */
     @Override
     public Flux<NumericResponse<ZAddCommand, Number>> zAdd(Publisher<ZAddCommand> commands) {
         return execute(commands, command -> {
@@ -109,6 +114,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** ZREM：从有序集合移除 member。 */
     @Override
     public Flux<NumericResponse<ZRemCommand, Long>> zRem(Publisher<ZRemCommand> commands) {
         return execute(commands, command -> {
@@ -125,6 +131,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** ZINCRBY：有序集合 member 的 score 自增。 */
     @Override
     public Flux<NumericResponse<ZIncrByCommand, Double>> zIncrBy(Publisher<ZIncrByCommand> commands) {
         return execute(commands, command -> {
@@ -140,6 +147,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** ZRANK：返回 member 正序排名（0 起）。 */
     @Override
     public Flux<NumericResponse<ZRankCommand, Long>> zRank(Publisher<ZRankCommand> commands) {
         return execute(commands, command -> {
@@ -171,6 +179,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<Set<Object>> ZREVRANGE = new RedisCommand<>("ZREVRANGE", new ObjectSetReplayDecoder<Object>());
 
+    /** ZRANGE：按 rank 区间正序返回 member。 */
     @Override
     public Flux<CommandResponse<ZRangeCommand, Flux<Tuple>>> zRange(Publisher<ZRangeCommand> commands) {
         return execute(commands, command -> {
@@ -225,6 +234,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     private static final RedisCommand<Set<Tuple>> ZREVRANGEBYSCORE_V2 = new RedisCommand<Set<Tuple>>("ZREVRANGEBYSCORE",
             new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
+    /** ZRANGEBYSCORE：按 score 区间正序返回 member。 */
     @Override
     public Flux<CommandResponse<ZRangeByScoreCommand, Flux<Tuple>>> zRangeByScore(
             Publisher<ZRangeByScoreCommand> commands) {
@@ -293,6 +303,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<ListScanResult<Tuple>> ZSCAN = new RedisCommand<>("ZSCAN", new ListMultiDecoder2(new ScoredSortedSetScanDecoder<Object>(), new ScoredSortedSetScanReplayDecoder()));
 
+    /** ZSCAN：增量迭代有序集合 member。 */
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<Tuple>>> zScan(Publisher<KeyScanCommand> commands) {
         return execute(commands, command -> {
@@ -376,6 +387,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         return s.toString();
     }
 
+    /** ZCOUNT：统计 score 区间内 member 数量。 */
     @Override
     public Flux<NumericResponse<ZCountCommand, Long>> zCount(Publisher<ZCountCommand> commands) {
         return execute(commands, command -> {
@@ -391,6 +403,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** ZCARD：返回有序集合基数。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> zCard(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
@@ -403,6 +416,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** ZSCORE：返回 member 的 score。 */
     @Override
     public Flux<NumericResponse<ZScoreCommand, Double>> zScore(Publisher<ZScoreCommand> commands) {
         return execute(commands, command -> {
@@ -419,6 +433,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZREMRANGEBYRANK = new RedisStrictCommand<Long>("ZREMRANGEBYRANK");
 
+    /** ZREMRANGEBYRANK：按 rank 区间删除 member。 */
     @Override
     public Flux<NumericResponse<ZRemRangeByRankCommand, Long>> zRemRangeByRank(
             Publisher<ZRemRangeByRankCommand> commands) {
@@ -437,6 +452,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZREMRANGEBYSCORE = new RedisStrictCommand<Long>("ZREMRANGEBYSCORE");
 
+    /** ZREMRANGEBYSCORE：按 score 区间删除 member。 */
     @Override
     public Flux<NumericResponse<ZRemRangeByScoreCommand, Long>> zRemRangeByScore(
             Publisher<ZRemRangeByScoreCommand> commands) {
@@ -455,6 +471,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZUNIONSTORE = new RedisStrictCommand<Long>("ZUNIONSTORE");
 
+    /** ZUNIONSTORE：有序集合并集写入目标 key。 */
     @Override
     public Flux<NumericResponse<ZAggregateStoreCommand, Long>> zUnionStore(Publisher<? extends ZAggregateStoreCommand> commands) {
         return execute(commands, command -> {
@@ -484,6 +501,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZINTERSTORE = new RedisStrictCommand<Long>("ZINTERSTORE");
 
+    /** ZINTERSTORE：有序集合交集写入目标 key。 */
     @Override
     public Flux<NumericResponse<ZAggregateStoreCommand, Long>> zInterStore(Publisher<? extends ZAggregateStoreCommand> commands) {
         return execute(commands, command -> {
@@ -514,6 +532,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     private static final RedisCommand<Set<Object>> ZRANGEBYLEX = new RedisCommand<Set<Object>>("ZRANGEBYLEX", new ObjectSetReplayDecoder<Object>());
     private static final RedisCommand<Set<Object>> ZREVRANGEBYLEX = new RedisCommand<Set<Object>>("ZREVRANGEBYLEX", new ObjectSetReplayDecoder<Object>());
 
+    /** ZRANGEBYLEX：按字典序区间返回 member。 */
     @Override
     public Flux<CommandResponse<ZRangeByLexCommand, Flux<ByteBuffer>>> zRangeByLex(
             Publisher<ZRangeByLexCommand> commands) {
@@ -599,6 +618,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZREMRANGEBYLEX = new RedisStrictCommand<>("ZREMRANGEBYLEX");
 
+    /** zRemRangeByLex：有序集合命令。 */
     @Override
     public Flux<NumericResponse<ZRemRangeByLexCommand, Long>> zRemRangeByLex(Publisher<ZRemRangeByLexCommand> commands) {
         return execute(commands, command -> {
@@ -624,6 +644,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     private static final RedisCommand<Set<Tuple>> ZPOPMAX_V2 = new RedisCommand<>("ZPOPMAX",
             new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
+    /** zPop：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZPopCommand, Flux<Tuple>>> zPop(Publisher<ZPopCommand> commands) {
         return execute(commands, command -> {
@@ -652,6 +673,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     private static final RedisCommand<Set<Tuple>> BZPOPMIN = new RedisCommand<>("BZPOPMIN", new ScoredSortedSetBlockingReplayDecoder());
     private static final RedisCommand<Set<Tuple>> BZPOPMAX = new RedisCommand<>("BZPOPMAX", new ScoredSortedSetBlockingReplayDecoder());
 
+    /** bZPop：Redis 命令实现。 */
     @Override
     public Flux<CommandResponse<BZPopCommand, Flux<Tuple>>> bZPop(Publisher<BZPopCommand> commands) {
         return execute(commands, command -> {
@@ -674,6 +696,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** zRandMember：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZRandMemberCommand, Flux<ByteBuffer>>> zRandMember(Publisher<ZRandMemberCommand> commands) {
         return execute(commands, command -> {
@@ -693,6 +716,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     private static final RedisCommand<Set<Tuple>> ZRANDMEMBER_SCORE_V2 = new RedisCommand<>("ZRANDMEMBER",
                             new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
+    /** zRandMemberWithScore：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZRandMemberCommand, Flux<Tuple>>> zRandMemberWithScore(Publisher<ZRandMemberCommand> commands) {
         return execute(commands, command -> {
@@ -712,6 +736,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** zDiff：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZDiffCommand, Flux<ByteBuffer>>> zDiff(Publisher<? extends ZDiffCommand> commands) {
         return execute(commands, command -> {
@@ -732,6 +757,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<Set<Tuple>> ZDIFF_SCORE = new RedisCommand<>("ZDIFF", new ScoredSortedSetReplayDecoder());
 
+    /** zDiffWithScores：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZDiffCommand, Flux<Tuple>>> zDiffWithScores(Publisher<? extends ZDiffCommand> commands) {
         return execute(commands, command -> {
@@ -753,6 +779,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZDIFFSTORE = new RedisStrictCommand<>("ZDIFFSTORE");
 
+    /** zDiffStore：有序集合命令。 */
     @Override
     public Flux<NumericResponse<ZDiffStoreCommand, Long>> zDiffStore(Publisher<ZDiffStoreCommand> commands) {
         return execute(commands, command -> {
@@ -773,6 +800,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** zUnion：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZAggregateCommand, Flux<ByteBuffer>>> zUnion(Publisher<? extends ZAggregateCommand> commands) {
         return execute(commands, command -> {
@@ -801,6 +829,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<Set<Tuple>> ZUNION_SCORE = new RedisCommand<>("ZUNION", new ScoredSortedSetReplayDecoder());
 
+    /** zUnionWithScores：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZAggregateCommand, Flux<Tuple>>> zUnionWithScores(Publisher<? extends ZAggregateCommand> commands) {
         return execute(commands, command -> {
@@ -828,6 +857,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** zInter：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZAggregateCommand, Flux<ByteBuffer>>> zInter(Publisher<? extends ZAggregateCommand> commands) {
         return execute(commands, command -> {
@@ -856,6 +886,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<Set<Tuple>> ZINTER_SCORE = new RedisCommand<>("ZINTER", new ScoredSortedSetReplayDecoder());
 
+    /** zInterWithScores：有序集合命令。 */
     @Override
     public Flux<CommandResponse<ZAggregateCommand, Flux<Tuple>>> zInterWithScores(Publisher<? extends ZAggregateCommand> commands) {
         return execute(commands, command -> {
