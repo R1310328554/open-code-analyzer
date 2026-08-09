@@ -31,6 +31,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * topicRoute 子命令：查询 Topic 路由信息。
+ * <p>支持 JSON 输出或表格列表格式展示 Broker、队列数与权限。
+ */
 public class TopicRouteSubCommand implements SubCommand {
 
     private static final String FORMAT = "%-45s %-32s %-50s %-10s %-11s %-5s%n";
@@ -41,23 +45,25 @@ public class TopicRouteSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Examine topic route info.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("l", "list", false, "Use list format to print data");
+        opt = new Option("l", "list", false, "以表格列表格式输出（默认 JSON）");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 查询 Topic 路由并按选项打印 JSON 或表格。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -77,7 +83,9 @@ public class TopicRouteSubCommand implements SubCommand {
         }
     }
 
+    /** 按 JSON 或表格格式打印路由数据及队列汇总。 */
     private void printData(TopicRouteData topicRouteData, boolean useListFormat) {
+        // 未指定 -l 时输出完整 JSON
         if (!useListFormat) {
             System.out.printf("%s%n", topicRouteData.toJson(true));
             return;
@@ -105,6 +113,7 @@ public class TopicRouteSubCommand implements SubCommand {
                     queueData.getReadQueueNums(), queueData.getWriteQueueNums(), queueData.getPerm());
         }
 
+        // 打印分隔线后输出队列数汇总
         for (int i = 0; i < 158; i++) {
             System.out.print("-");
         }

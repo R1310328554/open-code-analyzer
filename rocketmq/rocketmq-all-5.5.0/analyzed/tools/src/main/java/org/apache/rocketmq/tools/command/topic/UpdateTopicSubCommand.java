@@ -33,6 +33,10 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateTopic 子命令：创建或更新单个 Topic 配置。
+ * <p>支持队列数、权限、顺序消息、单元化及自定义属性。
+ */
 public class UpdateTopicSubCommand implements SubCommand {
 
     @Override
@@ -41,6 +45,7 @@ public class UpdateTopicSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Update or create topic.";
     }
@@ -49,44 +54,44 @@ public class UpdateTopicSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("b", "brokerAddr", true, "create topic to which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "create topic to which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名称");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("a", "attributes", true, "attribute(+a=b,+c=d,-e)");
+        opt = new Option("a", "attributes", true, "Topic 属性（+key=val 增改，-key 删除）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "topic name");
+        opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("r", "readQueueNums", true, "set read queue nums");
+        opt = new Option("r", "readQueueNums", true, "读队列数量");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("w", "writeQueueNums", true, "set write queue nums");
+        opt = new Option("w", "writeQueueNums", true, "写队列数量");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("p", "perm", true, "set topic's permission(2|4|6), intro[2:W 4:R; 6:RW]");
+        opt = new Option("p", "perm", true, "Topic 权限（2=写，4=读，6=读写）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("o", "order", true, "set topic's order(true|false)");
+        opt = new Option("o", "order", true, "是否顺序 Topic（true/false）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("u", "unit", true, "is unit topic (true|false)");
+        opt = new Option("u", "unit", true, "是否单元化 Topic（true/false）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "hasUnitSub", true, "has unit sub (true|false)");
+        opt = new Option("s", "hasUnitSub", true, "是否含单元订阅（true/false）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -94,6 +99,7 @@ public class UpdateTopicSubCommand implements SubCommand {
     }
 
     @Override
+    /** 构建 TopicConfig 并下发至 Broker 或集群，顺序 Topic 同步 orderConf。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -111,17 +117,17 @@ public class UpdateTopicSubCommand implements SubCommand {
                 topicConfig.setAttributes(attributes);
             }
 
-            // readQueueNums
+            // 解析读队列数（默认 8）
             if (commandLine.hasOption('r')) {
                 topicConfig.setReadQueueNums(Integer.parseInt(commandLine.getOptionValue('r').trim()));
             }
 
-            // writeQueueNums
+            // 解析写队列数（默认 8）
             if (commandLine.hasOption('w')) {
                 topicConfig.setWriteQueueNums(Integer.parseInt(commandLine.getOptionValue('w').trim()));
             }
 
-            // perm
+            // 解析 Topic 读写权限
             if (commandLine.hasOption('p')) {
                 topicConfig.setPerm(Integer.parseInt(commandLine.getOptionValue('p').trim()));
             }
@@ -145,6 +151,7 @@ public class UpdateTopicSubCommand implements SubCommand {
             }
             topicConfig.setOrder(isOrder);
 
+            // 向单个 Broker 创建或更新 Topic
             if (commandLine.hasOption('b')) {
                 String addr = commandLine.getOptionValue('b').trim();
 
@@ -162,6 +169,7 @@ public class UpdateTopicSubCommand implements SubCommand {
                 System.out.printf("%s%n", topicConfig);
                 return;
 
+            // 向集群全部 Master 创建 Topic 并设置顺序配置
             } else if (commandLine.hasOption('c')) {
                 String clusterName = commandLine.getOptionValue('c').trim();
 

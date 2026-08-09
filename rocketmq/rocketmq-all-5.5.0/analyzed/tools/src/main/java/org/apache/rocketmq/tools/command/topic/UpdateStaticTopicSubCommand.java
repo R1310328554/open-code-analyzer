@@ -39,6 +39,10 @@ import org.apache.rocketmq.tools.admin.MQAdminUtils;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateStaticTopic 子命令：创建或更新静态 Topic（固定队列数）。
+ * <p>支持按集群/Broker 重映射队列，或从映射文件导入配置。
+ */
 public class UpdateStaticTopicSubCommand implements SubCommand {
 
     @Override
@@ -47,6 +51,7 @@ public class UpdateStaticTopicSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Update or create static topic, which has fixed number of queues.";
     }
@@ -57,28 +62,28 @@ public class UpdateStaticTopicSubCommand implements SubCommand {
 
         Option opt = null;
 
-        opt = new Option("c", "clusters", true, "remapping static topic to clusters, comma separated");
+        opt = new Option("c", "clusters", true, "目标集群列表（逗号分隔）");
         optionGroup.addOption(opt);
 
-        opt = new Option("b", "brokers", true, "remapping static topic to brokers, comma separated");
+        opt = new Option("b", "brokers", true, "目标 Broker 列表（逗号分隔）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("t", "topic", true, "topic name");
+        opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("qn", "totalQueueNum", true, "total queue num");
+        opt = new Option("qn", "totalQueueNum", true, "静态 Topic 总队列数");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("mf", "mapFile", true, "The mapping data file name");
+        opt = new Option("mf", "mapFile", true, "队列映射数据文件路径");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("fr", "forceReplace", true, "Force replace the old mapping");
+        opt = new Option("fr", "forceReplace", true, "是否强制替换已有映射（true/false）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -87,6 +92,7 @@ public class UpdateStaticTopicSubCommand implements SubCommand {
 
 
 
+    /** 从映射文件解码配置并更新各 Broker 的静态 Topic 映射。 */
     public void executeFromFile(final CommandLine commandLine, final Options options,
                         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -99,7 +105,7 @@ public class UpdateStaticTopicSubCommand implements SubCommand {
             String mapData = MixAll.file2String(mapFileName);
             TopicRemappingDetailWrapper wrapper = TopicRemappingDetailWrapper.decode(mapData.getBytes(StandardCharsets.UTF_8),
                 TopicRemappingDetailWrapper.class);
-            //double check the config
+            // 校验 Topic 名称、epoch 与队列数一致性
             TopicQueueMappingUtils.checkNameEpochNumConsistence(topic, wrapper.getBrokerConfigMap());
             boolean force = false;
             if (commandLine.hasOption("fr") && Boolean.parseBoolean(commandLine.getOptionValue("fr").trim())) {
@@ -120,6 +126,7 @@ public class UpdateStaticTopicSubCommand implements SubCommand {
 
 
     @Override
+    /** 计算新队列映射、备份旧配置并下发至目标 Broker。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         if (!commandLine.hasOption('t')) {
@@ -172,7 +179,7 @@ public class UpdateStaticTopicSubCommand implements SubCommand {
                 }
             }
 
-            //get the existed topic config and mapping
+            // 读取已有 Topic 配置与队列映射
 
             brokerConfigMap = MQAdminUtils.examineTopicConfigAll(topic, defaultMQAdminExt);
             int queueNum = Integer.parseInt(commandLine.getOptionValue("qn").trim());
@@ -187,10 +194,10 @@ public class UpdateStaticTopicSubCommand implements SubCommand {
                 String oldMappingDataFile = TopicQueueMappingUtils.writeToTemp(oldWrapper, false);
                 System.out.printf("The old mapping data is written to file " + oldMappingDataFile + "\n");
             }
-            //add the existed brokers to target brokers
+            // 将已有 Broker 并入目标集合以保证映射完整
             targetBrokers.addAll(brokerConfigMap.keySet());
 
-            //calculate the new data
+            // 计算新的队列映射并写入临时文件供审阅
             TopicRemappingDetailWrapper newWrapper = TopicQueueMappingUtils.createTopicConfigMapping(topic, queueNum, targetBrokers, brokerConfigMap);
 
             {

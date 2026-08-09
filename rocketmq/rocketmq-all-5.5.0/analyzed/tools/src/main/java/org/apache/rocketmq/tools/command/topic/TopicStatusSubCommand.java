@@ -33,6 +33,10 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * topicStatus 子命令：查询 Topic 各队列位点与写入 TPS。
+ * <p>支持通过集群或 LMQ 父 Topic 路由聚合多 Broker 统计。
+ */
 public class TopicStatusSubCommand implements SubCommand {
 
     @Override
@@ -41,23 +45,25 @@ public class TopicStatusSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Examine topic Status info.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("t", "topic", true, "topic name");
+        Option opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "cluster name or lmq parent topic, lmq is used to find the route.");
+        opt = new Option("c", "cluster", true, "集群名或 LMQ 父 Topic（用于路由查找）");
         opt.setRequired(false);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 查询 Topic 各队列 min/max 位点及最后更新时间。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -70,6 +76,7 @@ public class TopicStatusSubCommand implements SubCommand {
             defaultMQAdminExt.start();
             String topic = commandLine.getOptionValue('t').trim();
 
+            // 指定集群时遍历 Broker 聚合位点表
             if (commandLine.hasOption('c')) {
                 String cluster = commandLine.getOptionValue('c').trim();
                 TopicRouteData topicRouteData = defaultMQAdminExt.examineTopicRouteInfo(cluster);
@@ -114,6 +121,7 @@ public class TopicStatusSubCommand implements SubCommand {
                 );
             }
             System.out.printf("%n");
+            // 打印 Topic 写入 TPS
             System.out.printf("Topic Put TPS: %s%n", topicStatsTable.getTopicPutTps());
         } catch (Exception e) {
             throw new SubCommandException(this.getClass().getSimpleName() + " command failed", e);

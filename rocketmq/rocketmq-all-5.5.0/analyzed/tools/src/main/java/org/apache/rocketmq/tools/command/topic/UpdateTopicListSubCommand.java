@@ -35,6 +35,10 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateTopicList 子命令：从 JSON 文件批量创建或更新 Topic。
+ * <p>支持指定单个 Broker 或整个集群的全部 Master。
+ */
 public class UpdateTopicListSubCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -42,6 +46,7 @@ public class UpdateTopicListSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "create or update topic in batch";
     }
@@ -49,14 +54,14 @@ public class UpdateTopicListSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
         final OptionGroup optionGroup = new OptionGroup();
-        Option opt = new Option("b", "brokerAddr", true, "create topic to which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址");
         optionGroup.addOption(opt);
-        opt = new Option("c", "clusterName", true, "create topic to which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名称");
         optionGroup.addOption(opt);
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("f", "filename", true, "Path to a file with list of org.apache.rocketmq.common.TopicConfig in json format");
+        opt = new Option("f", "filename", true, "TopicConfig 列表 JSON 文件路径");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -64,6 +69,7 @@ public class UpdateTopicListSubCommand implements SubCommand {
     }
 
     @Override
+    /** 读取 JSON 文件并向 Broker 或集群批量提交 Topic 配置。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
         final DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -74,6 +80,7 @@ public class UpdateTopicListSubCommand implements SubCommand {
 
         try {
             final Path filePath = Paths.get(fileName);
+            // 文件不存在时提前退出
             if (!Files.exists(filePath)) {
                 System.out.printf("the file path %s does not exists%n", fileName);
                 return;
@@ -84,6 +91,7 @@ public class UpdateTopicListSubCommand implements SubCommand {
                 return;
             }
 
+            // 向单个 Broker 提交批量 Topic 配置
             if (commandLine.hasOption('b')) {
                 String brokerAddress = commandLine.getOptionValue('b').trim();
                 defaultMQAdminExt.start();
@@ -93,6 +101,7 @@ public class UpdateTopicListSubCommand implements SubCommand {
                     brokerAddress);
                 return;
 
+            // 向集群全部 Master 逐一提交配置
             } else if (commandLine.hasOption('c')) {
                 final String clusterName = commandLine.getOptionValue('c').trim();
 

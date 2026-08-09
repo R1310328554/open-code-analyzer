@@ -35,6 +35,10 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateTopicPerm 子命令：更新 Topic 读写权限。
+ * <p>权限值：2=写、4=读、6=读写；可指定 Broker 或整个集群。
+ */
 public class UpdateTopicPermSubCommand implements SubCommand {
 
     @Override
@@ -43,25 +47,26 @@ public class UpdateTopicPermSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Update topic perm.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "create topic to which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "create topic to which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名称");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "topic name");
+        opt = new Option("t", "topic", true, "Topic 名称");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("p", "perm", true, "set topic's permission(2|4|6), intro[2:W; 4:R; 6:RW]");
+        opt = new Option("p", "perm", true, "Topic 权限（2=写，4=读，6=读写）");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -69,6 +74,7 @@ public class UpdateTopicPermSubCommand implements SubCommand {
     }
 
     @Override
+    /** 读取路由信息并更新指定 Broker 或集群的 Topic 权限。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
 
@@ -95,7 +101,7 @@ public class UpdateTopicPermSubCommand implements SubCommand {
             topicConfig.setWriteQueueNums(queueData.getWriteQueueNums());
             topicConfig.setReadQueueNums(queueData.getReadQueueNums());
             topicConfig.setTopicSysFlag(queueData.getTopicSysFlag());
-            //new perm
+            // 解析并设置新的读写权限位
             int perm;
             if (commandLine.hasOption('p')) {
                 perm = Integer.parseInt(commandLine.getOptionValue('p').trim());
@@ -108,6 +114,7 @@ public class UpdateTopicPermSubCommand implements SubCommand {
                 String brokerAddr = commandLine.getOptionValue('b').trim();
                 List<BrokerData> brokerDatas = topicRouteData.getBrokerDatas();
                 String brokerName = null;
+                // 按 Master Broker 地址反查 brokerName
                 for (BrokerData data : brokerDatas) {
                     HashMap<Long, String> brokerAddrs = data.getBrokerAddrs();
                     if (brokerAddrs == null || brokerAddrs.size() == 0) {
@@ -147,6 +154,7 @@ public class UpdateTopicPermSubCommand implements SubCommand {
                     return;
                 }
 
+            // 向集群全部 Master 批量更新权限
             } else if (commandLine.hasOption('c')) {
                 String clusterName = commandLine.getOptionValue('c').trim();
                 Set<String> masterSet =
