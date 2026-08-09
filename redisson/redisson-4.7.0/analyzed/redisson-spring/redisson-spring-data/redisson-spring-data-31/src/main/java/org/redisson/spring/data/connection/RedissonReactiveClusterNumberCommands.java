@@ -19,16 +19,12 @@ import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveClusterNumberCommands;
 
 /**
- * 集群模式下 Spring Data Redis 响应式 数值 命令适配器。
- * <p>继承 {@link RedissonReactiveNumberCommands} 并实现 {@link ReactiveClusterNumberCommands}，
-在集群拓扑下复用单机响应式命令实现。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveClusterNumberCommands extends RedissonReactiveNumberCommands implements ReactiveClusterNumberCommands {
 
-    /** 注入响应式命令执行器。 */
     public RedissonReactiveClusterNumberCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }

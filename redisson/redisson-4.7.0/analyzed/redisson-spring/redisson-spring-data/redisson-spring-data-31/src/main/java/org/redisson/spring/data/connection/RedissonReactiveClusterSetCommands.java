@@ -19,16 +19,12 @@ import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveClusterSetCommands;
 
 /**
- * 集群模式下 Spring Data Redis 响应式 Set 命令适配器。
- * <p>继承 {@link RedissonReactiveSetCommands} 并实现 {@link ReactiveClusterSetCommands}，
-在集群拓扑下复用单机响应式命令实现。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveClusterSetCommands extends RedissonReactiveSetCommands implements ReactiveClusterSetCommands {
 
-    /** 注入响应式命令执行器。 */
     RedissonReactiveClusterSetCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }

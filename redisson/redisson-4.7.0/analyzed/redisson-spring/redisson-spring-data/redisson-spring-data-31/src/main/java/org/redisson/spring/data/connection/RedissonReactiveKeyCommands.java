@@ -41,15 +41,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Spring Data Redis 响应式 Key 命令实现。
- * <p>封装 EXISTS、TYPE、KEYS、SCAN、RENAME、DEL、UNLINK、EXPIRE、TTL、MOVE 及 OBJECT 等通用 key 操作。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements ReactiveKeyCommands {
 
-    /** 注入响应式命令执行器。 */
     public RedissonReactiveKeyCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }

@@ -34,15 +34,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Spring Data Redis 响应式 HyperLogLog 命令实现。
- * <p>封装 PFADD、PFCOUNT、PFMERGE，通过 {@link RedissonBaseReactive#write} 路由。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveHyperLogLogCommands extends RedissonBaseReactive implements ReactiveHyperLogLogCommands {
 
-    /** 注入响应式命令执行器。 */
     RedissonReactiveHyperLogLogCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
