@@ -988,3 +988,18 @@
 2026-08-09T18:03:10Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSkipWhile.java wave20a [0:15]
 2026-08-09T18:03:10Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSubscribeOn.java wave20a [0:15]
 2026-08-09T18:03:10Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSwitchIfEmpty.java wave20a [0:15]
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSwitchMap.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTake.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeLast.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeLastOne.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeLastTimed.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeUntil.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeUntilPredicate.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeWhile.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableThrottleFirstTimed.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableThrottleLatest.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimeInterval.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimeout.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimeoutTimed.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimer.java wave20b
+2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableToList.java wave20b

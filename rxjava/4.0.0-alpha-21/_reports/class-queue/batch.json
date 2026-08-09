@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:01:57Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSwitchMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTake.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeLast.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeLastOne.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeLastTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeUntil.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeUntilPredicate.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeWhile.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableThrottleFirstTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableThrottleLatest.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimeInterval.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimeout.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimeoutTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableToList.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 392,
-  "done": 600
+  "done": 615
 }
