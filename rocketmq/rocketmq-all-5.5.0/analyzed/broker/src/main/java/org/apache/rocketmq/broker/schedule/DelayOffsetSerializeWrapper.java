@@ -21,10 +21,15 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 延迟消息各级别消费位点序列化包装：level → offset 表及 DataVersion。
+ */
 public class DelayOffsetSerializeWrapper extends RemotingSerializable {
+    /** 延迟级别 → 已消费物理 offset。 */
     private ConcurrentMap<Integer /* level */, Long/* offset */> offsetTable =
         new ConcurrentHashMap<>(32);
 
+    /** 位点表数据版本，用于主从同步与持久化。 */
     private DataVersion dataVersion;
 
     public ConcurrentMap<Integer, Long> getOffsetTable() {

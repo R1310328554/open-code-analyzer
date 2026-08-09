@@ -20,12 +20,16 @@ package org.apache.rocketmq.broker.processor;
 import org.apache.rocketmq.broker.mqtrace.SendMessageContext;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 发送消息异步回调：在 Broker 完成发送处理后通知调用方。
+ */
 public interface SendMessageCallback {
     /**
-     * On send complete.
+     * 发送完成时回调。
      *
-     * @param ctx send context
-     * @param response send response
+     * @param ctx 发送追踪上下文
+     * @param response 发送响应命令
      */
+    /** 发送处理结束（成功或失败）时触发。 */
     void onComplete(SendMessageContext ctx, RemotingCommand response);
 }

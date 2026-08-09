@@ -47,6 +47,10 @@ import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESPONSE_CODE;
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESULT;
 
+/**
+ * 消息查询处理器：按 key/时间范围索引查询，或按物理 offset 查看单条消息；
+ * 命中结果经 PageCache 零拷贝（QueryMessageTransfer / OneMessageTransfer）回传。
+ */
 public class QueryMessageProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
@@ -59,9 +63,9 @@ public class QueryMessageProcessor implements NettyRequestProcessor {
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         switch (request.getCode()) {
-            case RequestCode.QUERY_MESSAGE:
+            case RequestCode.QUERY_MESSAGE:  // 按索引查询消息
                 return this.queryMessage(ctx, request);
-            case RequestCode.VIEW_MESSAGE_BY_ID:
+            case RequestCode.VIEW_MESSAGE_BY_ID:  // 按 commitLog offset 查看单条
                 return this.viewMessageById(ctx, request);
             default:
                 break;
@@ -75,6 +79,7 @@ public class QueryMessageProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 解析索引类型（key/unique），调用 MessageStore 查询并通过 FileRegion 流式返回。 */
     public RemotingCommand queryMessage(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response =
@@ -136,10 +141,11 @@ public class QueryMessageProcessor implements NettyRequestProcessor {
         }
 
         response.setCode(ResponseCode.QUERY_NOT_FOUND);
-        response.setRemark("can not find message, maybe time range not correct");
+        response.setRemark("can not find message, maybe time range not correct");  // 索引未命中或时间范围有误
         return response;
     }
 
+    /** 按物理 offset 读取单条消息并零拷贝传输。 */
     public RemotingCommand viewMessageById(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -181,7 +187,7 @@ public class QueryMessageProcessor implements NettyRequestProcessor {
             return null;
         } else {
             response.setCode(ResponseCode.SYSTEM_ERROR);
-            response.setRemark("can not find message by the offset, " + requestHeader.getOffset());
+            response.setRemark("can not find message by the offset, " + requestHeader.getOffset());  // offset 无效
         }
 
         return response;

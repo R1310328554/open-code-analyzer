@@ -31,12 +31,16 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.header.CheckTransactionStateRequestHeader;
 
+/**
+ * 事务消息回查监听器抽象基类：异步向 Producer 发送 CHECK_TRANSACTION_STATE 请求，
+ * 子类实现 resolveDiscardMsg 处理超限回查消息。
+ */
 public abstract class AbstractTransactionalMessageCheckListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.TRANSACTION_LOGGER_NAME);
 
     private BrokerController brokerController;
 
-    //queue nums of topic TRANS_CHECK_MAX_TIME_TOPIC
+    // TRANS_CHECK_MAX_TIME_TOPIC 队列数
     protected final static int TCMT_QUEUE_NUMS = 1;
 
     private volatile ExecutorService executorService;
@@ -48,6 +52,7 @@ public abstract class AbstractTransactionalMessageCheckListener {
         this.brokerController = brokerController;
     }
 
+    /** 构造回查请求头，恢复真实 topic/queueId 并向 Producer 通道发送。 */
     public void sendCheckMessage(MessageExt msgExt) throws Exception {
         CheckTransactionStateRequestHeader checkTransactionStateRequestHeader = new CheckTransactionStateRequestHeader();
         checkTransactionStateRequestHeader.setTopic(msgExt.getTopic());
@@ -69,6 +74,7 @@ public abstract class AbstractTransactionalMessageCheckListener {
         }
     }
 
+    /** 在线程池中异步执行半消息回查。 */
     public void resolveHalfMsg(final MessageExt msgExt) {
         if (executorService != null) {
             executorService.execute(new Runnable() {
@@ -104,7 +110,7 @@ public abstract class AbstractTransactionalMessageCheckListener {
     }
 
     /**
-     * Inject brokerController for this listener
+     * 注入 BrokerController 并初始化回查线程池
      *
      * @param brokerController
      */
@@ -114,10 +120,10 @@ public abstract class AbstractTransactionalMessageCheckListener {
     }
 
     /**
-     * In order to avoid check back unlimited, we will discard the message that have been checked more than a certain
-     * number of times.
+     * 避免无限回查：超过最大回查次数时丢弃半消息（由子类实现）。
      *
-     * @param msgExt Message to be discarded.
+     * @param msgExt 待丢弃的半消息
      */
+    /** 回查次数超限时丢弃半消息的具体实现。 */
     public abstract void resolveDiscardMsg(MessageExt msgExt);
 }

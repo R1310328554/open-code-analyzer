@@ -18,11 +18,17 @@ package org.apache.rocketmq.broker.transaction;
 
 import org.apache.rocketmq.common.message.MessageExt;
 
+/**
+ * 事务操作结果：携带半消息、响应码与备注，供 EndTransaction 等流程使用。
+ */
 public class OperationResult {
+    /** 关联的半事务（prepare）消息。 */
     private MessageExt prepareMessage;
 
+    /** Remoting 响应码。 */
     private int responseCode;
 
+    /** 响应备注或错误描述。 */
     private String responseRemark;
 
     public void setPrepareMessage(MessageExt prepareMessage) {

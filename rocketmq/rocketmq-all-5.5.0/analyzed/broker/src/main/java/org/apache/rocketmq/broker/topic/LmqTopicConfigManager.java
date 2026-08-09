@@ -21,12 +21,16 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.common.constant.PermName;
 
+/**
+ * Lite/LMQ Topic 配置管理器：LMQ topic 按需生成单队列读写配置，不参与持久化更新。
+ */
 public class LmqTopicConfigManager extends TopicConfigManager {
     public LmqTopicConfigManager(BrokerController brokerController) {
         super(brokerController);
     }
 
     @Override
+    /** LMQ topic 返回单队列默认配置，否则走常规 Topic 表。 */
     public TopicConfig selectTopicConfig(final String topic) {
         if (MixAll.isLmq(topic)) {
             return simpleLmqTopicConfig(topic);
@@ -42,11 +46,13 @@ public class LmqTopicConfigManager extends TopicConfigManager {
         super.updateTopicConfig(topicConfig);
     }
 
+    /** 构造 LMQ 单队列 TopicConfig（1 读 1 写，读写权限）。 */
     private TopicConfig simpleLmqTopicConfig(String topic) {
         return new TopicConfig(topic, 1, 1, PermName.PERM_READ | PermName.PERM_WRITE);
     }
 
     @Override
+    /** LMQ topic 恒视为存在。 */
     public boolean containsTopic(String topic) {
         if (MixAll.isLmq(topic)) {
             return true;

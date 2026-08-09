@@ -44,6 +44,10 @@ import org.apache.rocketmq.remoting.protocol.ResponseCode;
 import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
+/**
+ * Broker 侧 Topic 路由缓存：定时从 NameServer 拉取路由，维护发布/订阅 MessageQueue 视图，
+ * 供 Pop 分配、Escape Bridge 等场景使用。
+ */
 public class TopicRouteInfoManager {
 
     private static final long GET_TOPIC_ROUTE_TIMEOUT = 3000L;
@@ -51,11 +55,14 @@ public class TopicRouteInfoManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
     private final Lock lockNamesrv = new ReentrantLock();
+    /** Topic → 完整路由数据（含 queue mapping）。 */
     private final ConcurrentMap<String/* Topic */, TopicRouteData> topicRouteTable = new ConcurrentHashMap<>();
+    /** Broker 名 → (brokerId → 地址) 映射。 */
     private final ConcurrentMap<String/* Broker Name */, HashMap<Long/* brokerId */, String/* address */>> brokerAddrTable =
         new ConcurrentHashMap<>();
     private final ConcurrentMap<String/* topic */, TopicPublishInfo> topicPublishInfoTable = new ConcurrentHashMap<>();
 
+    /** Topic → 订阅侧 MessageQueue 集合（Pop 分配用）。 */
     private final ConcurrentHashMap<String, Set<MessageQueue>> topicSubscribeInfoTable = new ConcurrentHashMap<>();
 
     private ScheduledExecutorService scheduledExecutorService;
@@ -65,6 +72,7 @@ public class TopicRouteInfoManager {
         this.brokerController = brokerController;
     }
 
+    /** 启动定时任务，按配置间隔从 NameServer 刷新路由。 */
     public void start() {
         this.scheduledExecutorService = ThreadUtils.newSingleThreadScheduledExecutor(new ThreadFactoryImpl("TopicRouteInfoManagerScheduledThread"));
 
@@ -114,7 +122,7 @@ public class TopicRouteInfoManager {
                     log.error("updateTopicRouteInfoFromNameServer Exception", e);
                     if (!NamespaceUtil.isRetryTopic(topic)
                         && ResponseCode.TOPIC_NOT_EXIST == e.getResponseCode()) {
-                        // clean no used topic
+                        // Topic 不存在时清理本地订阅缓存
                         cleanNoneRouteTopic(topic);
                     }
                 } finally {
@@ -193,6 +201,7 @@ public class TopicRouteInfoManager {
         }
     }
 
+    /** 查找发布路由，本地无效时触发 NameServer 拉取。 */
     public TopicPublishInfo tryToFindTopicPublishInfo(final String topic) {
         TopicPublishInfo topicPublishInfo = this.topicPublishInfoTable.get(topic);
         if (null == topicPublishInfo || !topicPublishInfo.ok()) {
@@ -247,6 +256,7 @@ public class TopicRouteInfoManager {
 
     }
 
+    /** 获取订阅 MessageQueue 集合，缺失时主动刷新路由。 */
     public Set<MessageQueue> getTopicSubscribeInfo(String topic) {
         Set<MessageQueue> queues = topicSubscribeInfoTable.get(topic);
         if (null == queues || queues.isEmpty()) {

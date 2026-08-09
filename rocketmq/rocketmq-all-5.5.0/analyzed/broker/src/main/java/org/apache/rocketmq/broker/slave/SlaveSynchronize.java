@@ -42,9 +42,14 @@ import org.apache.rocketmq.store.config.StorePathConfigHelper;
 import org.apache.rocketmq.store.timer.TimerCheckpoint;
 import org.apache.rocketmq.store.timer.TimerMetrics;
 
+/**
+ * Slave Broker 元数据同步器：定期从 Master 拉取 Topic、消费位点、延迟位点、
+ * 订阅组、MessageRequestMode 及 Timer 相关配置并本地持久化。
+ */
 public class SlaveSynchronize {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
+    /** 当前 Master Broker 地址。 */
     private volatile String masterAddr = null;
 
     public SlaveSynchronize(BrokerController brokerController) {
@@ -62,6 +67,7 @@ public class SlaveSynchronize {
         }
     }
 
+    /** 依次同步 Topic、消费位点、延迟位点、订阅组、请求模式及 Timer 指标。 */
     public void syncAll() {
         this.syncTopicConfig();
         this.syncConsumerOffset();
@@ -86,7 +92,7 @@ public class SlaveSynchronize {
                     ConcurrentMap<String, TopicConfig> newTopicConfigTable = topicWrapper.getTopicConfigTable();
                     ConcurrentMap<String, TopicConfig> topicConfigTable = topicConfigManager.getTopicConfigTable();
 
-                    //delete
+                    // 删除 Master 已移除的 Topic
                     Iterator<Map.Entry<String, TopicConfig>> iterator = topicConfigTable.entrySet().iterator();
                     while (iterator.hasNext()) {
                         Map.Entry<String, TopicConfig> entry = iterator.next();
@@ -96,7 +102,7 @@ public class SlaveSynchronize {
                         }
                     }
 
-                    //update
+                    // 合并 Master 最新 Topic 配置
                     newTopicConfigTable.values().forEach(topicConfigManager::putTopicConfig);
                     topicConfigManager.setDataVersion(topicWrapper.getDataVersion());
                     topicConfigManager.persist();
@@ -229,6 +235,7 @@ public class SlaveSynchronize {
         }
     }
 
+    /** 同步 Timer 检查点（lastReadTime、masterTimerQueueOffset）。 */
     public void syncTimerCheckPoint() {
         String masterAddrBak = this.masterAddr;
         if (masterAddrBak != null) {
@@ -248,6 +255,7 @@ public class SlaveSynchronize {
         }
     }
 
+    /** 同步 Timer 计量指标 timingCount。 */
     private void syncTimerMetrics() {
         String masterAddrBak = this.masterAddr;
         if (masterAddrBak != null) {

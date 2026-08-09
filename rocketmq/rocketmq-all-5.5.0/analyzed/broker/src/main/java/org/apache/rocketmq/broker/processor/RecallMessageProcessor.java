@@ -41,7 +41,12 @@ import org.apache.rocketmq.store.timer.TimerMessageStore;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * 定时消息撤回处理器：校验 recallHandle 后将删除指令写入 Timer 系统 Topic，
+ * 由 TimerMessageStore 在目标时刻撤销原定时消息。
+ */
 public class RecallMessageProcessor implements NettyRequestProcessor {
+    /** 撤回指令内部消息 Tag。 */
     private static final String RECALL_MESSAGE_TAG = "_RECALL_TAG_";
     private final BrokerController brokerController;
 
@@ -59,13 +64,13 @@ public class RecallMessageProcessor implements NettyRequestProcessor {
 
         if (!brokerController.getBrokerConfig().isRecallMessageEnable()) {
             response.setCode(ResponseCode.NO_PERMISSION);
-            response.setRemark("recall failed, operation is forbidden");
+            response.setRemark("recall failed, operation is forbidden");  // 未开启 recallMessageEnable
             return response;
         }
 
         if (BrokerRole.SLAVE == brokerController.getMessageStoreConfig().getBrokerRole()) {
             response.setCode(ResponseCode.SLAVE_NOT_AVAILABLE);
-            response.setRemark("recall failed, broker service not available");
+            response.setRemark("recall failed, broker service not available");  // Slave 或 Broker 尚未就绪
             return response;
         }
 
@@ -116,7 +121,7 @@ public class RecallMessageProcessor implements NettyRequestProcessor {
         if (timeLeft <= 0
             || timeLeft >= brokerController.getMessageStoreConfig().getTimerMaxDelaySec() * 1000L) {
             response.setCode(ResponseCode.ILLEGAL_OPERATION);
-            response.setRemark("recall failed, timestamp invalid");
+            response.setRemark("recall failed, timestamp invalid");  // 撤回时间戳超出 Timer 允许范围
             return response;
         }
 
@@ -127,6 +132,7 @@ public class RecallMessageProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 构造 Timer 删除指令消息：携带 uniqKey、deliverMs 与原 messageId。 */
     public MessageExtBrokerInner buildMessage(ChannelHandlerContext ctx, RecallMessageRequestHeader requestHeader,
         RecallMessageHandle.HandleV1 handle) {
         MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
@@ -152,6 +158,7 @@ public class RecallMessageProcessor implements NettyRequestProcessor {
         return msgInner;
     }
 
+    /** 处理落盘结果：成功时更新统计并返回撤回指令 msgId。 */
     public void handlePutMessageResult(PutMessageResult putMessageResult, RemotingCommand request,
         RemotingCommand response, MessageExt message, ChannelHandlerContext ctx, long beginTimeMillis) {
         if (null == putMessageResult) {
@@ -163,7 +170,7 @@ public class RecallMessageProcessor implements NettyRequestProcessor {
         switch (putMessageResult.getPutMessageStatus()) {
             case PUT_OK:
                 this.brokerController.getBrokerStatsManager().incTopicPutNums(
-                    message.getTopic(), putMessageResult.getAppendMessageResult().getMsgNum(), 1); // system timer topic
+                    message.getTopic(), putMessageResult.getAppendMessageResult().getMsgNum(), 1); // 系统 Timer Topic 统计
                 this.brokerController.getBrokerStatsManager().incTopicPutSize(
                     message.getTopic(), putMessageResult.getAppendMessageResult().getWroteBytes());
                 this.brokerController.getBrokerStatsManager().incBrokerPutNums(

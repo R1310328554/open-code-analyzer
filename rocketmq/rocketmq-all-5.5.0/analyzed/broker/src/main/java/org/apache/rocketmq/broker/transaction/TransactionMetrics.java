@@ -44,9 +44,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 
+/**
+ * 事务消息计量：按 Topic 累计半消息/事务消息数量及时间戳，持久化到独立配置文件。
+ */
 public class TransactionMetrics extends ConfigManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
+    /** Topic → 事务消息计数与时间戳。 */
     private ConcurrentMap<String, Metric> transactionCounts =
             new ConcurrentHashMap<>(1024);
 
@@ -58,6 +62,7 @@ public class TransactionMetrics extends ConfigManager {
         this.configPath = configPath;
     }
 
+    /** 递增指定 Topic 事务计数并刷新 dataVersion。 */
     public long addAndGet(String topic, int value) {
         Metric pair = getTopicPair(topic);
         getDataVersion().nextVersion();
@@ -138,6 +143,7 @@ public class TransactionMetrics extends ConfigManager {
         this.dataVersion = dataVersion;
     }
 
+    /** 清理指定 Topic 集合中的事务计量（跳过系统 Topic）。 */
     public void cleanMetrics(Set<String> topics) {
         if (topics == null || topics.isEmpty()) {
             return;
@@ -152,11 +158,12 @@ public class TransactionMetrics extends ConfigManager {
             if (!topics.contains(topic)) {
                 continue;
             }
-            // in the input topics set, then remove it.
+            // 命中输入 Topic 集合时移除对应计量项
             iterator.remove();
         }
     }
 
+    /** 事务计量持久化包装：transactionCount 表 + dataVersion。 */
     public static class TransactionMetricsSerializeWrapper extends RemotingSerializable {
         private ConcurrentMap<String, Metric> transactionCount =
                 new ConcurrentHashMap<>(1024);
@@ -183,7 +190,7 @@ public class TransactionMetrics extends ConfigManager {
     @Override
     public synchronized void persist() {
         try {
-            // bak metrics file
+            // 先原子备份旧 metrics 文件
             String config = configFilePath();
             String backup = config + ".bak";
             File configFile = new File(config);
@@ -193,7 +200,7 @@ public class TransactionMetrics extends ConfigManager {
                 // atomic move
                 Files.move(configFile.toPath(), bakFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
 
-                // sync the directory, ensure that the bak file is visible
+                // fsync 目录，确保备份文件可见
                 MixAll.fsyncDirectory(Paths.get(bakFile.getParent()));
             }
 
@@ -202,7 +209,7 @@ public class TransactionMetrics extends ConfigManager {
                 Files.createDirectories(dir.toPath());
             }
 
-            // persist metrics file
+            // 写入新 metrics 并 force 刷盘
             StringWriter stringWriter = new StringWriter();
             write0(stringWriter);
             try (RandomAccessFile randomAccessFile = new RandomAccessFile(config, "rw")) {
@@ -216,6 +223,7 @@ public class TransactionMetrics extends ConfigManager {
         }
     }
 
+    /** 单 Topic 事务计数（AtomicLong）及最后更新时间戳。 */
     public static class Metric {
         private AtomicLong count;
         private long timeStamp;

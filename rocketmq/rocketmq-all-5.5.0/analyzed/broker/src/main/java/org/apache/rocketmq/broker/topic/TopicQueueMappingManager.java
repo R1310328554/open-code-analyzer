@@ -50,15 +50,20 @@ import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
 import static org.apache.rocketmq.remoting.protocol.RemotingCommand.buildErrorResponse;
 
+/**
+ * 静态 Topic 逻辑队列映射管理器：维护 topic → TopicQueueMappingDetail，
+ * 支持 epoch 校验、映射合并及 RPC 请求重写（全局 queueId → 物理 queueId）。
+ */
 public class TopicQueueMappingManager extends ConfigManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
     private transient final Lock lock = new ReentrantLock();
 
-    //this data version should be equal to the TopicConfigManager
+    // 映射 dataVersion 应与 TopicConfigManager 保持一致
     private final DataVersion dataVersion = new DataVersion();
     private transient BrokerController brokerController;
 
+    /** topic → 逻辑队列映射详情。 */
     private final ConcurrentMap<String, TopicQueueMappingDetail> topicQueueMappingTable = new ConcurrentHashMap<>();
 
 
@@ -66,6 +71,7 @@ public class TopicQueueMappingManager extends ConfigManager {
         this.brokerController = brokerController;
     }
 
+    /** 更新映射：force 合并旧项，isClean 允许清理，flush 控制是否立即持久化。 */
     public void updateTopicQueueMapping(TopicQueueMappingDetail newDetail, boolean force, boolean isClean, boolean flush) throws Exception {
         boolean locked = false;
         boolean updated = false;
@@ -93,7 +99,7 @@ public class TopicQueueMappingManager extends ConfigManager {
                 return;
             }
             if (force) {
-                //bakeup the old items
+                // force 模式下保留旧队列映射项
                 oldDetail.getHostedQueues().forEach((queueId, items) -> {
                     newDetail.getHostedQueues().putIfAbsent(queueId, items);
                 });
@@ -101,7 +107,7 @@ public class TopicQueueMappingManager extends ConfigManager {
                 updated = true;
                 return;
             }
-            //do more check
+            // 非 force 时校验 epoch、scope 及映射链不可变性
             if (newDetail.getEpoch() < oldDetail.getEpoch()) {
                 throw new RuntimeException(String.format("Can't accept data with small epoch %d < %d", newDetail.getEpoch(), oldDetail.getEpoch()));
             }
@@ -207,9 +213,9 @@ public class TopicQueueMappingManager extends ConfigManager {
         return buildTopicQueueMappingContext(requestHeader, false);
     }
 
-    //Do not return a null context
+    // 永不返回 null，非静态 Topic 时 mappingDetail 为 null
     public TopicQueueMappingContext buildTopicQueueMappingContext(TopicRequestHeader requestHeader, boolean selectOneWhenMiss) {
-        // if lo is set to false explicitly, it maybe the forwarded request
+        // lo=false 表示转发请求，不做静态 Topic 重写
         if (requestHeader.getLo() != null
                 && Boolean.FALSE.equals(requestHeader.getLo())) {
             return new TopicQueueMappingContext(requestHeader.getTopic(), null, null, null, null);
@@ -222,7 +228,7 @@ public class TopicQueueMappingManager extends ConfigManager {
 
         TopicQueueMappingDetail mappingDetail = getTopicQueueMapping(topic);
         if (mappingDetail == null) {
-            //it is not static topic
+            // 非静态 Topic，返回空映射上下文
             return new TopicQueueMappingContext(topic, null, null, null, null);
         }
         assert mappingDetail.getBname().equals(this.brokerController.getBrokerConfig().getBrokerName());
@@ -231,7 +237,7 @@ public class TopicQueueMappingManager extends ConfigManager {
             return new TopicQueueMappingContext(topic, null, mappingDetail, null, null);
         }
 
-        //If not find mappingItem, it encounters some errors
+        // 找不到 mappingItem 时返回仅含 globalId 的上下文
         if (globalId < 0 && !selectOneWhenMiss) {
             return new TopicQueueMappingContext(topic, globalId, mappingDetail, null, null);
         }
@@ -259,6 +265,7 @@ public class TopicQueueMappingManager extends ConfigManager {
     }
 
 
+    /** 静态 Topic 请求重写：将全局 queueId 替换为 leader 物理 queueId。 */
     public  RemotingCommand rewriteRequestForStaticTopic(TopicQueueRequestHeader requestHeader, TopicQueueMappingContext mappingContext) {
         try {
             if (mappingContext.getMappingDetail() == null) {

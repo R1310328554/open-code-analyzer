@@ -48,6 +48,10 @@ import org.apache.rocketmq.remoting.rpc.RpcRequest;
 import org.apache.rocketmq.remoting.rpc.RpcResponse;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * 静态 Topic 逻辑队列映射清理服务：定时移除已消费完毕的历史映射项，
+ * 以及 leader 已迁移到其他 Broker 的冗余映射链。
+ */
 public class TopicQueueMappingCleanService extends ServiceThread {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
@@ -77,7 +81,7 @@ public class TopicQueueMappingCleanService extends ServiceThread {
 
     @Override
     public void run() {
-        log.info("Start topic queue mapping clean service thread!");
+        log.info("Start topic queue mapping clean service thread!");  // 每 5 分钟执行一轮清理
         while (!this.isStopped()) {
             try {
                 this.waitForRunning(5L * 60 * 1000);
@@ -100,6 +104,7 @@ public class TopicQueueMappingCleanService extends ServiceThread {
 
 
 
+    /** 清理 maxOffset==minOffset 或 maxOffset==0 的最早逻辑队列映射项。 */
     public void cleanItemExpired() {
         String when = messageStoreConfig.getDeleteWhen();
         if (!UtilAll.isItTimeToDo(when)) {
@@ -168,11 +173,11 @@ public class TopicQueueMappingCleanService extends ServiceThread {
                         }
                         TopicOffset topicOffset = topicStats.getOffsetTable().get(new MessageQueue(topic, earlistItem.getBname(), earlistItem.getQueueId()));
                         if (topicOffset == null) {
-                            //this may should not happen
+                            // 正常情况下不应出现 topicOffset 为空
                             log.error("Get null topicOffset for {} {}",topic,  earlistItem);
                             continue;
                         }
-                        //ignore the maxOffset < 0, which may in case of some error
+                        // 忽略 maxOffset<0 的异常统计
                         if (topicOffset.getMaxOffset() == topicOffset.getMinOffset()
                             || topicOffset.getMaxOffset() == 0) {
                             List<LogicQueueMappingItem> newItems = new ArrayList<>(items);
@@ -209,6 +214,7 @@ public class TopicQueueMappingCleanService extends ServiceThread {
         }
     }
 
+    /** 当真实 leader 已不在本 Broker 时，删除本地多余的二代以上映射链。 */
     public void cleanItemListMoreThanSecondGen() {
         String when = messageStoreConfig.getDeleteWhen();
         if (!UtilAll.isItTimeToDo(when)) {
@@ -247,11 +253,11 @@ public class TopicQueueMappingCleanService extends ServiceThread {
                     if (qid2CurrLeaderBroker.isEmpty()) {
                         continue;
                     }
-                    //find the topic route
+                    // 从 NameServer 获取 Topic 路由以定位真实 leader
                     TopicRouteData topicRouteData = brokerOuterAPI.getTopicRouteInfoFromNameServer(topic, brokerConfig.getForwardTimeout());
                     clientMetadata.freshTopicRoute(topic, topicRouteData);
                     Map<Integer, String> qid2RealLeaderBroker = new HashMap<>();
-                    //fine the real leader
+                    // 解析各逻辑队列当前真实 leader Broker
                     for (Map.Entry<Integer, String> entry : qid2CurrLeaderBroker.entrySet()) {
                         qid2RealLeaderBroker.put(entry.getKey(), clientMetadata.getBrokerNameFromMessageQueue(new MessageQueue(topic, TopicQueueMappingUtils.getMockBrokerName(mappingDetail.getScope()), entry.getKey())));
                     }
@@ -301,7 +307,7 @@ public class TopicQueueMappingCleanService extends ServiceThread {
                         if (!realLeaderBroker.equals(leaderItem.getBname())) {
                             continue;
                         }
-                        //all the check is ok
+                        // 校验通过后，移除 leader 已外迁的本地映射项
                         if (!realLeaderBroker.equals(currLeaderBroker)) {
                             ids2delete.add(qId);
                         }

@@ -52,11 +52,16 @@ import org.apache.rocketmq.remoting.protocol.body.SetMessageRequestModeRequestBo
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 队列分配查询处理器：响应 QUERY_ASSIGNMENT / SET_MESSAGE_REQUEST_MODE，
+ * 按消费模式与负载均衡策略为客户端计算 MessageQueue 分配结果。
+ */
 public class QueryAssignmentProcessor implements NettyRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
     private final BrokerController brokerController;
 
+    /** 负载均衡策略名 → 策略实例（平均分配、环形平均等）。 */
     private final ConcurrentHashMap<String, AllocateMessageQueueStrategy> name2LoadStrategy = new ConcurrentHashMap<>();
 
     private MessageRequestModeManager messageRequestModeManager;
@@ -64,8 +69,7 @@ public class QueryAssignmentProcessor implements NettyRequestProcessor {
     public QueryAssignmentProcessor(final BrokerController brokerController) {
         this.brokerController = brokerController;
 
-        //register strategy
-        //NOTE: init with broker's log instead of init with ClientLogger.getLog();
+        // 注册内置负载均衡策略（使用 Broker 日志而非 ClientLogger）
         AllocateMessageQueueAveragely allocateMessageQueueAveragely = new AllocateMessageQueueAveragely();
         name2LoadStrategy.put(allocateMessageQueueAveragely.getName(), allocateMessageQueueAveragely);
         AllocateMessageQueueAveragelyByCircle allocateMessageQueueAveragelyByCircle = new AllocateMessageQueueAveragelyByCircle();
@@ -79,9 +83,9 @@ public class QueryAssignmentProcessor implements NettyRequestProcessor {
     public RemotingCommand processRequest(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         switch (request.getCode()) {
-            case RequestCode.QUERY_ASSIGNMENT:
+            case RequestCode.QUERY_ASSIGNMENT:  // 查询客户端队列分配
                 return this.queryAssignment(ctx, request);
-            case RequestCode.SET_MESSAGE_REQUEST_MODE:
+            case RequestCode.SET_MESSAGE_REQUEST_MODE:  // 设置 Pull/Pop 请求模式
                 return this.setMessageRequestMode(ctx, request);
             default:
                 break;
@@ -117,7 +121,7 @@ public class QueryAssignmentProcessor implements NettyRequestProcessor {
             setMessageRequestModeRequestBody.setConsumerGroup(consumerGroup);
 
             if (topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
-                // retry topic must be pull mode
+                // 重试 Topic 强制 Pull 模式
                 setMessageRequestModeRequestBody.setMode(MessageRequestMode.PULL);
             } else {
                 setMessageRequestModeRequestBody.setMode(brokerController.getBrokerConfig().getDefaultMessageRequestMode());
@@ -151,8 +155,7 @@ public class QueryAssignmentProcessor implements NettyRequestProcessor {
     }
 
     /**
-     * Returns empty set means the client should clear all load assigned to it before, null means invalid result and the
-     * client should skip the update logic
+     * 返回空集表示客户端应清空此前分配；null 表示无效结果，客户端应跳过更新。
      *
      * @param topic
      * @param consumerGroup
@@ -242,23 +245,24 @@ public class QueryAssignmentProcessor implements NettyRequestProcessor {
         return assignedQueueSet;
     }
 
+    /** Pop 模式下的队列分配：支持共享队列与 queueId=-1 的全队列 Pop。 */
     public List<MessageQueue> allocate4Pop(AllocateMessageQueueStrategy allocateMessageQueueStrategy,
         final String consumerGroup, final String clientId, List<MessageQueue> mqAll, List<String> cidAll,
         int popShareQueueNum) {
 
         List<MessageQueue> allocateResult;
         if (popShareQueueNum <= 0 || popShareQueueNum >= cidAll.size() - 1) {
-            //each client pop all messagequeue
+            // popShareQueueNum 无效时，每个 client Pop 全部逻辑队列
             allocateResult = new ArrayList<>(mqAll.size());
             for (MessageQueue mq : mqAll) {
-                //must create new MessageQueue in case of change cache in AssignmentManager
+                // 必须新建 MessageQueue（queueId=-1），避免 AssignmentManager 缓存被修改
                 MessageQueue newMq = new MessageQueue(mq.getTopic(), mq.getBrokerName(), -1);
                 allocateResult.add(newMq);
             }
 
         } else {
             if (cidAll.size() <= mqAll.size()) {
-                //consumer working in pop mode could share the MessageQueues assigned to the N (N = popWorkGroupSize) consumer following it in the cid list
+                // Pop 模式下可共享后续 N 个 consumer 的队列分配
                 allocateResult = allocateMessageQueueStrategy.allocate(consumerGroup, clientId, mqAll, cidAll);
                 int index = cidAll.indexOf(clientId);
                 if (index >= 0) {
@@ -270,7 +274,7 @@ public class QueryAssignmentProcessor implements NettyRequestProcessor {
                     }
                 }
             } else {
-                //make sure each cid is assigned
+                // consumer 数多于队列数时，保证每个 cid 至少分到一条队列
                 allocateResult = allocate(consumerGroup, clientId, mqAll, cidAll);
             }
         }
@@ -313,7 +317,7 @@ public class QueryAssignmentProcessor implements NettyRequestProcessor {
         final String topic = requestBody.getTopic();
         if (topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
             response.setCode(ResponseCode.NO_PERMISSION);
-            response.setRemark("retry topic is not allowed to set mode");
+            response.setRemark("retry topic is not allowed to set mode");  // 重试 Topic 禁止切换请求模式
             return response;
         }
         TopicConfig topicConfig = this.brokerController.getTopicConfigManager().selectTopicConfig(topic);

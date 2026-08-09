@@ -54,6 +54,10 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_IS_
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_MESSAGE_TYPE;
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_TOPIC;
 
+/**
+ * 请求-回复消息处理器：接收 SEND_REPLY_MESSAGE 请求，
+ * 按 PROPERTY_MESSAGE_REPLY_TO_CLIENT 将回复推回原始 Producer 通道，可选持久化。
+ */
 public class ReplyMessageProcessor extends AbstractSendMessageProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
@@ -84,11 +88,11 @@ public class ReplyMessageProcessor extends AbstractSendMessageProcessor {
         SendMessageRequestHeaderV2 requestHeaderV2 = null;
         SendMessageRequestHeader requestHeader = null;
         switch (request.getCode()) {
-            case RequestCode.SEND_REPLY_MESSAGE_V2:
+            case RequestCode.SEND_REPLY_MESSAGE_V2:  // V2 协议回复发送
                 requestHeaderV2 =
                     (SendMessageRequestHeaderV2) request
                         .decodeCommandCustomHeader(SendMessageRequestHeaderV2.class);
-            case RequestCode.SEND_REPLY_MESSAGE:
+            case RequestCode.SEND_REPLY_MESSAGE:  // V1 协议回复发送
                 if (null == requestHeaderV2) {
                     requestHeader =
                         (SendMessageRequestHeader) request
@@ -149,10 +153,10 @@ public class ReplyMessageProcessor extends AbstractSendMessageProcessor {
         msgInner.setStoreHost(this.getStoreHost());
         msgInner.setReconsumeTimes(requestHeader.getReconsumeTimes() == null ? 0 : requestHeader.getReconsumeTimes());
 
-        PushReplyResult pushReplyResult = this.pushReplyMessage(ctx, requestHeader, msgInner);
+        // 先向原 Producer 通道推送回复，再可选落盘
         this.handlePushReplyResult(pushReplyResult, response, responseHeader, queueIdInt);
 
-        if (this.brokerController.getBrokerConfig().isStoreReplyMessageEnable()) {
+        // storeReplyMessageEnable 为 true 时额外持久化回复消息
             PutMessageResult putMessageResult = this.brokerController.getMessageStore().putMessage(msgInner);
             this.handlePutMessageResult(putMessageResult, request, msgInner, responseHeader, sendMessageContext, queueIdInt, BrokerMetricsManager.getMessageType(requestHeader));
         }
@@ -160,6 +164,7 @@ public class ReplyMessageProcessor extends AbstractSendMessageProcessor {
         return response;
     }
 
+    /** 根据 replyToClient 属性查找 Producer 通道并同步推送回复。 */
     private PushReplyResult pushReplyMessage(final ChannelHandlerContext ctx,
         final SendMessageRequestHeader requestHeader,
         final Message msg) {
@@ -234,7 +239,7 @@ public class ReplyMessageProcessor extends AbstractSendMessageProcessor {
         } else {
             response.setCode(ResponseCode.SUCCESS);
             response.setRemark(null);
-            //set to zero to avoid client decoding exception
+            // msgId/offset 置零，避免客户端解码异常
             responseHeader.setMsgId("0");
             responseHeader.setQueueId(queueIdInt);
             responseHeader.setQueueOffset(0L);
@@ -339,6 +344,7 @@ public class ReplyMessageProcessor extends AbstractSendMessageProcessor {
         }
     }
 
+    /** 回复推送结果：是否成功及失败原因。 */
     class PushReplyResult {
         boolean pushOk;
         String remark;

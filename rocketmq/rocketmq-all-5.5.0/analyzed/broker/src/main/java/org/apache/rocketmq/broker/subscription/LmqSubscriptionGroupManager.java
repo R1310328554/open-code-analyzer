@@ -20,6 +20,9 @@ import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * Lite/LMQ 订阅组管理器：LMQ group 动态生成默认配置，禁止持久化变更。
+ */
 public class LmqSubscriptionGroupManager extends SubscriptionGroupManager {
 
     public LmqSubscriptionGroupManager(BrokerController brokerController) {
@@ -27,6 +30,7 @@ public class LmqSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** LMQ group 返回内存默认配置，否则委托父类查询。 */
     public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) {
         if (MixAll.isLmq(group)) {
             SubscriptionGroupConfig subscriptionGroupConfig = new SubscriptionGroupConfig();
@@ -37,6 +41,7 @@ public class LmqSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** LMQ group 跳过更新，避免写入持久化表。 */
     public void updateSubscriptionGroupConfig(final SubscriptionGroupConfig config) {
         if (config == null || MixAll.isLmq(config.getGroupName())) {
             return;
@@ -45,6 +50,7 @@ public class LmqSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** LMQ group 恒视为存在。 */
     public boolean containsSubscriptionGroup(String group) {
         if (MixAll.isLmq(group)) {
             return true;
