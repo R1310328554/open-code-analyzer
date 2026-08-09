@@ -26,3 +26,17 @@ deprecated.go
 doc.go
 errors.go
 fs.go
+render/msgpack.go
+render/protobuf.go
+render/reader.go
+render/redirect.go
+render/render.go
+render/text.go
+render/toml.go
+render/xml.go
+render/yaml.go
+response_writer.go
+routergroup.go
+tree.go
+utils.go
+version.go
