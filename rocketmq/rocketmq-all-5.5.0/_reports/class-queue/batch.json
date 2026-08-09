@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:49:18Z",
-  "files": [
-    "client/src/main/java/org/apache/rocketmq/client/impl/mqclient/DoNothingClientRemotingProcessor.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/mqclient/MQClientAPIFactory.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/producer/MQProducerInner.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/producer/TopicPublishInfo.java",
-    "client/src/main/java/org/apache/rocketmq/client/latency/LatencyFaultTolerance.java",
-    "client/src/main/java/org/apache/rocketmq/client/latency/LatencyFaultToleranceImpl.java",
-    "client/src/main/java/org/apache/rocketmq/client/latency/MQFaultStrategy.java",
-    "client/src/main/java/org/apache/rocketmq/client/latency/Resolver.java",
-    "client/src/main/java/org/apache/rocketmq/client/latency/ServiceDetector.java",
-    "client/src/main/java/org/apache/rocketmq/client/lock/ReadWriteCASLock.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/LocalTransactionState.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/MQProducer.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/MessageQueueSelector.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/RequestCallback.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/RequestFutureHolder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1188,
-  "done": 285
+  "done": 300
 }
