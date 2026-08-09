@@ -20,12 +20,17 @@ import org.redisson.client.handler.State;
 import java.util.List;
 
 /**
- * 
+ * 列表迭代器回放解码器。
+ * <p>
+ * 将 Redis 返回的两元素数组（当前元素 + 列表剩余长度）解析为
+ * {@link ListIteratorResult}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ListIteratorReplayDecoder implements MultiDecoder<ListIteratorResult<Object>> {
 
+    /** parts[0] 为元素，parts[1] 为剩余列表长度。 */
     @Override
     public ListIteratorResult<Object> decode(List<Object> parts, State state) {
         return new ListIteratorResult<>(parts.get(0), Long.parseLong(parts.get(1).toString()));

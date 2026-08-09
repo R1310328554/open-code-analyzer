@@ -16,26 +16,32 @@
 package org.redisson.client.protocol.decoder;
 
 /**
- * 
+ * 列表迭代单步结果：当前元素及其后剩余元素个数。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class ListIteratorResult<V> {
 
+    /** 当前迭代的列表元素。 */
     private final V element;
+    /** 该元素之后列表中仍有的元素数量。 */
     private final long size;
 
+    /** 构造一步迭代快照。 */
     public ListIteratorResult(V element, long size) {
         super();
         this.element = element;
         this.size = size;
     }
 
+    /** 返回当前元素。 */
     public V getElement() {
         return element;
     }
 
+    /** 返回剩余元素个数（不含当前元素）。 */
     public long getSize() {
         return size;
     }

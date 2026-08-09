@@ -19,7 +19,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * RMapCache 条目扫描结果，在 {@link MapScanResult} 基础上附加空闲键列表。
+ * <p>
+ * 用于带 TTL/最大空闲时间的 Map 缓存 SCAN 命令，同时返回
+ * 键值映射与需淘汰的空闲键。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -27,13 +31,16 @@ import java.util.Map;
  */
 public class MapCacheScanResult<K, V> extends MapScanResult<K, V> {
 
+    /** 达到空闲阈值的键。 */
     private final List<K> idleKeys;
 
+    /** 构造带空闲键信息的 Map 扫描页。 */
     public MapCacheScanResult(String pos, Map<K, V> values, List<K> idleKeys) {
         super(pos, values);
         this.idleKeys = idleKeys;
     };
 
+    /** 返回空闲时间超限的键列表。 */
     public List<K> getIdleKeys() {
         return idleKeys;
     }

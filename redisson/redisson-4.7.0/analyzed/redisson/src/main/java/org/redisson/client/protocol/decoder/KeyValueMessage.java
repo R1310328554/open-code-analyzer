@@ -16,7 +16,8 @@
 package org.redisson.client.protocol.decoder;
 
 /**
- * 
+ * 简单的键值对消息载体，用于 Pub/Sub 或协议层传递单条 KV 数据。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -24,19 +25,24 @@ package org.redisson.client.protocol.decoder;
  */
 public class KeyValueMessage<K, V> {
 
+    /** 消息键。 */
     private K key;
+    /** 消息值。 */
     private V value;
 
+    /** 构造不可变语义上的键值对（字段本身可变）。 */
     public KeyValueMessage(K key, V value) {
         super();
         this.key = key;
         this.value = value;
     }
 
+    /** 返回键。 */
     public K getKey() {
         return key;
     }
 
+    /** 返回值。 */
     public V getValue() {
         return value;
     }

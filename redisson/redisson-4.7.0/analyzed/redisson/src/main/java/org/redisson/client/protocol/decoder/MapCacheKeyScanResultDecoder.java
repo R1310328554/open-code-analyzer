@@ -23,12 +23,17 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
- * 
+ * RMapCache 键扫描回放解码器。
+ * <p>
+ * 将 Redis 三元素数组（游标、键列表、空闲键列表）解析为
+ * {@link MapCacheKeyScanResult}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MapCacheKeyScanResultDecoder implements MultiDecoder<MapCacheKeyScanResult<Object>> {
 
+    /** parts[0] 游标，[1] 键列表，[2] 空闲键列表。 */
     @Override
     public MapCacheKeyScanResult<Object> decode(List<Object> parts, State state) {
         String pos = (String) parts.get(0);
@@ -37,6 +42,7 @@ public class MapCacheKeyScanResultDecoder implements MultiDecoder<MapCacheKeySca
         return new MapCacheKeyScanResult<>(pos, values, idleKeys);
     }
 
+    /** 字段值使用字符串解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();

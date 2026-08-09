@@ -23,17 +23,23 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * 
+ * 长整型占位解码器（第二段 Long 回复）。
+ * <p>
+ * 空列表时返回 {@code 0L}，非空时返回 {@code null}（由外层组合解码器处理实际值）。
+ * 所有字段均通过 {@link LongCodec} 解码。
+ *
  * @author Nikita Koksharov
  *
  */
 public class Long2MultiDecoder implements MultiDecoder<Object> {
 
+    /** 统一使用 Long 编解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return LongCodec.INSTANCE.getValueDecoder();
     }
 
+    /** 空回复视为 0，否则交由上层处理。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

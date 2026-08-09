@@ -21,17 +21,25 @@ import org.redisson.ScanResult;
 import org.redisson.client.RedisClient;
 
 /**
- * 
+ * 列表型 SCAN 迭代结果，实现 {@link ScanResult} 接口。
+ * <p>
+ * 包含游标位置 {@code pos}、本次扫描到的值列表，以及可选的
+ * 执行扫描的 {@link RedisClient} 引用（用于集群路由）。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class ListScanResult<V> implements ScanResult<V> {
 
+    /** SCAN 游标，{@code "0"} 表示迭代结束。 */
     private final String pos;
+    /** 本批次扫描到的元素列表。 */
     private final List<V> values;
+    /** 执行该 SCAN 的 Redis 客户端（集群场景下回填）。 */
     private RedisClient client;
 
+    /** 构造一次 SCAN 页结果。 */
     public ListScanResult(String pos, List<V> values) {
         this.pos = pos;
         this.values = values;

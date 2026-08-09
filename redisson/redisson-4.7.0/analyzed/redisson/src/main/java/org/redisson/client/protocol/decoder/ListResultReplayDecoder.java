@@ -25,17 +25,23 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * 
+ * 列表形式的 Map 回放解码器。
+ * <p>
+ * 将 Redis 返回的 Map 对象数组转为不可变语义的 {@link List}，
+ * 各元素均为 {@code Map<Object, Object>}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ListResultReplayDecoder implements MultiDecoder<List<Map<Object, Object>>> {
 
+    /** 所有字段统一用字符串值解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     
+    /** 将 parts 中每个 Map 元素收集为 List。 */
     @Override
     @SuppressWarnings("unchecked")
     public List<Map<Object, Object>> decode(List<Object> parts, State state) {

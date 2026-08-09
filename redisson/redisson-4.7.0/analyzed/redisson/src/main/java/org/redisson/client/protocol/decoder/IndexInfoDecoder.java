@@ -22,13 +22,20 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * RediSearch 索引元信息（FT.INFO）解码器。
+ * <p>
+ * 将键值对列表或已嵌套的 Map 结构转换为 {@link IndexInfo} 或中间 Map；
+ * 顶层（{@code state.getLevel() == 0}）时填充文档数、倒排索引大小等统计字段。
  *
  * @author Nikita Koksharov
  *
  */
 public class IndexInfoDecoder implements MultiDecoder<Object> {
+
+    /** 按层级决定返回 {@link IndexInfo} 或键值 Map。 */
     @Override
     public Object decode(List<Object> parts, State state) {
+        // 已是 Map 或非成对键值列表时直接透传
         if (!parts.isEmpty() && (parts.get(0) instanceof Map || !isKeyValueList(parts))) {
             return parts;
         }
@@ -75,10 +82,12 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
         return result;
     }
 
+    /** 判断是否为偶数长度的键值交替列表。 */
     private boolean isKeyValueList(List<Object> parts) {
         return parts.size() % 2 == 0;
     }
 
+    /** 将属性值转为 Long；nan/inf 视为 0。 */
     private Long toLong(Map<String, Object> result, String prop) {
         Object val = result.getOrDefault(prop, "nan");
         String valstring = val.toString();
@@ -94,6 +103,7 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
         return Long.valueOf(valstring);
     }
 
+    /** 将属性值转为 Double；nan 为 0，±inf 保留无穷大符号。 */
     private Double toDouble(Map<String, Object> result, String prop) {
         Object val = result.getOrDefault(prop, "nan");
         String valstring = val.toString();

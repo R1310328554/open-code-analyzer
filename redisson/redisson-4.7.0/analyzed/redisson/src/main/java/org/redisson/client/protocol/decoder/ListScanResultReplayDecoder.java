@@ -23,17 +23,22 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
- * 
+ * 列表 SCAN 回放解码器。
+ * <p>
+ * 将 Redis 两元素数组（游标 + 值列表）解析为 {@link ListScanResult}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ListScanResultReplayDecoder implements MultiDecoder<ListScanResult<Object>> {
 
+    /** 字段值使用字符串解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     
+    /** parts[0] 为游标，parts[1] 为扫描到的对象列表。 */
     @Override
     public ListScanResult<Object> decode(List<Object> parts, State state) {
         return new ListScanResult<>((String) parts.get(0), (List<Object>) parts.get(1));
