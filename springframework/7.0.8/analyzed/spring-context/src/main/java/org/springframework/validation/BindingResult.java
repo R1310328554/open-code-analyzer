@@ -24,15 +24,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.PropertyEditorRegistry;
 
 /**
- * General interface that represents binding results. Extends the
- * {@link Errors} interface for error registration capabilities,
- * allowing for a {@link Validator} to be applied, and adds
- * binding-specific analysis and model building.
+ * 表示绑定结果的通用接口。扩展 {@link Errors} 接口以支持错误注册，
+ * 便于应用 {@link Validator}，并增加绑定相关的分析与模型构建能力。
  *
- * <p>Serves as result holder for a {@link DataBinder}, obtained via
- * the {@link DataBinder#getBindingResult()} method. BindingResult
- * implementations can also be used directly, for example to invoke
- * a {@link Validator} on it (for example, as part of a unit test).
+ * <p>作为 {@link DataBinder} 的结果持有者，
+ * 通过 {@link DataBinder#getBindingResult()} 获取。
+ * BindingResult 实现也可直接使用，例如对其调用 {@link Validator}（如单元测试中）。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -46,31 +43,28 @@ import org.springframework.beans.PropertyEditorRegistry;
 public interface BindingResult extends Errors {
 
 	/**
-	 * Prefix for the name of the BindingResult instance in a model,
-	 * followed by the object name.
+	 * 模型中 BindingResult 实例名称的前缀，后接对象名。
 	 */
 	String MODEL_KEY_PREFIX = BindingResult.class.getName() + ".";
 
 
 	/**
-	 * Return the wrapped target object, which may be a bean, an object with
-	 * public fields, a Map - depending on the concrete binding strategy.
+	 * 返回被包装的目标对象，可能是 bean、含 public 字段的对象或 Map，
+	 * 取决于具体绑定策略。
 	 */
 	@Nullable Object getTarget();
 
 	/**
-	 * Return a model Map for the obtained state, exposing a BindingResult
-	 * instance as '{@link #MODEL_KEY_PREFIX MODEL_KEY_PREFIX} + objectName'
-	 * and the object itself as 'objectName'.
-	 * <p>Note that the Map is constructed every time you're calling this method.
-	 * Adding things to the map and then re-calling this method will not work.
-	 * <p>The attributes in the model Map returned by this method are usually
-	 * included in the {@link org.springframework.web.servlet.ModelAndView}
-	 * for a form view that uses Spring's {@code bind} tag in a JSP,
-	 * which needs access to the BindingResult instance. Spring's pre-built
-	 * form controllers will do this for you when rendering a form view.
-	 * When building the ModelAndView instance yourself, you need to include
-	 * the attributes from the model Map returned by this method.
+	 * 返回当前状态的 model Map，以
+	 * '{@link #MODEL_KEY_PREFIX MODEL_KEY_PREFIX} + objectName' 暴露 BindingResult 实例，
+	 * 以 'objectName' 暴露对象本身。
+	 * <p>注意：每次调用本方法都会重新构造 Map；
+	 * 向 Map 添加内容后再调用本方法不会生效。
+	 * <p>本方法返回的 model Map 属性通常包含在
+	 * {@link org.springframework.web.servlet.ModelAndView} 中，
+	 * 供 JSP 中使用 Spring {@code bind} 标签的表单视图访问 BindingResult。
+	 * Spring 预置表单控制器在渲染表单视图时会自动处理；
+	 * 自行构建 ModelAndView 时需包含本方法返回 model Map 中的属性。
 	 * @see #getObjectName()
 	 * @see #MODEL_KEY_PREFIX
 	 * @see org.springframework.web.servlet.ModelAndView
@@ -79,50 +73,48 @@ public interface BindingResult extends Errors {
 	Map<String, Object> getModel();
 
 	/**
-	 * Extract the raw field value for the given field.
-	 * Typically used for comparison purposes.
-	 * @param field the field to check
-	 * @return the current value of the field in its raw form, or {@code null} if not known
+	 * 提取给定字段的原始字段值，通常用于比较。
+	 * @param field 要检查的字段
+	 * @return 字段当前原始值，未知时返回 {@code null}
 	 */
 	@Nullable Object getRawFieldValue(String field);
 
 	/**
-	 * Find a custom property editor for the given type and property.
-	 * @param field the path of the property (name or nested path), or
-	 * {@code null} if looking for an editor for all properties of the given type
-	 * @param valueType the type of the property (can be {@code null} if a property
-	 * is given but should be specified in any case for consistency checking)
-	 * @return the registered editor, or {@code null} if none
+	 * 查找给定类型与属性的自定义属性编辑器。
+	 * @param field 属性路径（名称或嵌套路径），
+	 * 若查找给定类型所有属性的编辑器则为 {@code null}
+	 * @param valueType 属性类型（若已给定属性可为 {@code null}，
+	 * 但为一致性检查仍应指定）
+	 * @return 已注册的编辑器，无则返回 {@code null}
 	 */
 	@Nullable PropertyEditor findEditor(@Nullable String field, @Nullable Class<?> valueType);
 
 	/**
-	 * Return the underlying PropertyEditorRegistry.
-	 * @return the PropertyEditorRegistry, or {@code null} if none
-	 * available for this BindingResult
+	 * 返回底层 PropertyEditorRegistry。
+	 * @return PropertyEditorRegistry，本 BindingResult 无可用实例时返回 {@code null}
 	 */
 	@Nullable PropertyEditorRegistry getPropertyEditorRegistry();
 
 	/**
-	 * Resolve the given error code into message codes.
-	 * <p>Calls the configured {@link MessageCodesResolver} with appropriate parameters.
-	 * @param errorCode the error code to resolve into message codes
-	 * @return the resolved message codes
+	 * 将给定错误码解析为消息码。
+	 * <p>以适当参数调用已配置的 {@link MessageCodesResolver}。
+	 * @param errorCode 要解析为消息码的错误码
+	 * @return 解析后的消息码
 	 */
 	String[] resolveMessageCodes(String errorCode);
 
 	/**
-	 * Resolve the given error code into message codes for the given field.
-	 * <p>Calls the configured {@link MessageCodesResolver} with appropriate parameters.
-	 * @param errorCode the error code to resolve into message codes
-	 * @param field the field to resolve message codes for
-	 * @return the resolved message codes
+	 * 将给定错误码解析为指定字段的消息码。
+	 * <p>以适当参数调用已配置的 {@link MessageCodesResolver}。
+	 * @param errorCode 要解析为消息码的错误码
+	 * @param field 要解析消息码的字段
+	 * @return 解析后的消息码
 	 */
 	String[] resolveMessageCodes(String errorCode, String field);
 
 	/**
-	 * Add a custom {@link ObjectError} or {@link FieldError} to the errors list.
-	 * <p>Intended to be used by cooperating strategies such as {@link BindingErrorProcessor}.
+	 * 向错误列表添加自定义 {@link ObjectError} 或 {@link FieldError}。
+	 * <p>供 {@link BindingErrorProcessor} 等协作策略使用。
 	 * @see ObjectError
 	 * @see FieldError
 	 * @see BindingErrorProcessor
@@ -130,32 +122,28 @@ public interface BindingResult extends Errors {
 	void addError(ObjectError error);
 
 	/**
-	 * Record the given value for the specified field.
-	 * <p>To be used when a target object cannot be constructed, making
-	 * the original field values available through {@link #getFieldValue}.
-	 * In case of a registered error, the rejected value will be exposed
-	 * for each affected field.
-	 * @param field the field to record the value for
-	 * @param type the type of the field
-	 * @param value the original value
+	 * 记录指定字段的给定值。
+	 * <p>在无法构造目标对象时使用，使原始字段值可通过 {@link #getFieldValue} 获取。
+	 * 若已注册错误，每个受影响字段将暴露被拒绝的值。
+	 * @param field 要记录值的字段
+	 * @param type 字段类型
+	 * @param value 原始值
 	 * @since 5.0.4
 	 */
 	default void recordFieldValue(String field, Class<?> type, @Nullable Object value) {
 	}
 
 	/**
-	 * Mark the specified disallowed field as suppressed.
-	 * <p>The data binder invokes this for each field value that was
-	 * detected to target a disallowed field.
+	 * 将指定的不允许字段标记为已抑制。
+	 * <p>数据绑定器对每个检测到指向不允许字段的字段值调用本方法。
 	 * @see DataBinder#setAllowedFields
 	 */
 	default void recordSuppressedField(String field) {
 	}
 
 	/**
-	 * Return the list of fields that were suppressed during the bind process.
-	 * <p>Can be used to determine whether any field values were targeting
-	 * disallowed fields.
+	 * 返回绑定过程中被抑制的字段列表。
+	 * <p>可用于判断是否有字段值指向了不允许的字段。
 	 * @see DataBinder#setAllowedFields
 	 */
 	default String[] getSuppressedFields() {

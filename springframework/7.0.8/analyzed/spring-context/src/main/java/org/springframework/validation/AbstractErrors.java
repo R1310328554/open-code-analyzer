@@ -29,9 +29,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
- * Abstract implementation of the {@link Errors} interface.
- * Provides nested path handling but does not define concrete management
- * of {@link ObjectError ObjectErrors} and {@link FieldError FieldErrors}.
+ * {@link Errors} 接口的抽象实现。
+ * 提供嵌套路径处理，但不定义 {@link ObjectError ObjectErrors}
+ * 与 {@link FieldError FieldErrors} 的具体管理方式。
  *
  * @author Juergen Hoeller
  * @author Rossen Stoyanchev
@@ -75,8 +75,8 @@ public abstract class AbstractErrors implements Errors, Serializable {
 	}
 
 	/**
-	 * Actually set the nested path.
-	 * Delegated to by setNestedPath and pushNestedPath.
+	 * 实际设置嵌套路径。
+	 * 由 setNestedPath 与 pushNestedPath 委托调用。
 	 */
 	protected void doSetNestedPath(@Nullable String nestedPath) {
 		if (nestedPath == null) {
@@ -90,8 +90,7 @@ public abstract class AbstractErrors implements Errors, Serializable {
 	}
 
 	/**
-	 * Transform the given field into its full path,
-	 * regarding the nested path of this instance.
+	 * 根据本实例的嵌套路径，将给定字段转换为完整路径。
 	 */
 	protected String fixedField(@Nullable String field) {
 		if (StringUtils.hasLength(field)) {
@@ -105,10 +104,10 @@ public abstract class AbstractErrors implements Errors, Serializable {
 	}
 
 	/**
-	 * Determine the canonical field name for the given field.
-	 * <p>The default implementation simply returns the field name as-is.
-	 * @param field the original field name
-	 * @return the canonical field name
+	 * 确定给定字段的规范字段名。
+	 * <p>默认实现直接原样返回字段名。
+	 * @param field 原始字段名
+	 * @return 规范字段名
 	 */
 	protected String canonicalFieldName(String field) {
 		return field;
@@ -128,16 +127,16 @@ public abstract class AbstractErrors implements Errors, Serializable {
 	}
 
 	/**
-	 * Check whether the given FieldError matches the given field.
-	 * @param field the field that we are looking up FieldErrors for
-	 * @param fieldError the candidate FieldError
-	 * @return whether the FieldError matches the given field
+	 * 检查给定 {@link FieldError} 是否与给定字段匹配。
+	 * @param field 要查找 FieldError 的字段
+	 * @param fieldError 候选 FieldError
+	 * @return 该 FieldError 是否与给定字段匹配
 	 */
 	protected boolean isMatchingFieldError(String field, FieldError fieldError) {
 		if (field.equals(fieldError.getField())) {
 			return true;
 		}
-		// Optimization: use charAt and regionMatches instead of endsWith and startsWith (SPR-11304)
+		// 优化：使用 charAt 与 regionMatches 替代 endsWith 与 startsWith（SPR-11304）
 		int endIndex = field.length() - 1;
 		return (endIndex >= 0 && field.charAt(endIndex) == '*' &&
 				(endIndex == 0 || field.regionMatches(0, fieldError.getField(), 0, endIndex)));

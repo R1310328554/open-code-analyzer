@@ -30,10 +30,9 @@ import org.springframework.core.convert.support.ConvertingPropertyEditorAdapter;
 import org.springframework.util.Assert;
 
 /**
- * Abstract base class for {@link BindingResult} implementations that work with
- * Spring's {@link org.springframework.beans.PropertyAccessor} mechanism.
- * Pre-implements field access through delegation to the corresponding
- * PropertyAccessor methods.
+ * 基于 Spring {@link org.springframework.beans.PropertyAccessor} 机制的
+ * {@link BindingResult} 实现抽象基类。
+ * 通过委托对应 PropertyAccessor 方法预实现字段访问。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -48,8 +47,8 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 
 
 	/**
-	 * Create a new AbstractPropertyBindingResult instance.
-	 * @param objectName the name of the target object
+	 * 创建新的 AbstractPropertyBindingResult 实例。
+	 * @param objectName 目标对象名称
 	 * @see DefaultMessageCodesResolver
 	 */
 	protected AbstractPropertyBindingResult(String objectName) {
@@ -66,7 +65,7 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 	}
 
 	/**
-	 * Returns the underlying PropertyAccessor.
+	 * 返回底层 PropertyAccessor。
 	 * @see #getPropertyAccessor()
 	 */
 	@Override
@@ -75,7 +74,7 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 	}
 
 	/**
-	 * Returns the canonical property name.
+	 * 返回规范属性名。
 	 * @see org.springframework.beans.PropertyAccessorUtils#canonicalPropertyName
 	 */
 	@Override
@@ -84,7 +83,7 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 	}
 
 	/**
-	 * Determines the field type from the property type.
+	 * 根据属性类型确定字段类型。
 	 * @see #getPropertyAccessor()
 	 */
 	@Override
@@ -94,7 +93,7 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 	}
 
 	/**
-	 * Fetches the field value from the PropertyAccessor.
+	 * 从 PropertyAccessor 获取字段值。
 	 * @see #getPropertyAccessor()
 	 */
 	@Override
@@ -103,7 +102,7 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 	}
 
 	/**
-	 * Formats the field value based on registered PropertyEditors.
+	 * 基于已注册的 PropertyEditor 格式化字段值。
 	 * @see #getCustomEditor
 	 */
 	@Override
@@ -132,9 +131,9 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 	}
 
 	/**
-	 * Retrieve the custom PropertyEditor for the given field, if any.
-	 * @param fixedField the fully qualified field name
-	 * @return the custom PropertyEditor, or {@code null}
+	 * 获取给定字段的自定义 PropertyEditor（若有）。
+	 * @param fixedField 完全限定字段名
+	 * @return 自定义 PropertyEditor，或 {@code null}
 	 */
 	protected @Nullable PropertyEditor getCustomEditor(String fixedField) {
 		Class<?> targetType = getPropertyAccessor().getPropertyType(fixedField);
@@ -146,8 +145,7 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 	}
 
 	/**
-	 * This implementation exposes a PropertyEditor adapter for a Formatter,
-	 * if applicable.
+	 * 本实现会在适用时暴露 Formatter 对应的 PropertyEditor 适配器。
 	 */
 	@Override
 	public @Nullable PropertyEditor findEditor(@Nullable String field, @Nullable Class<?> valueType) {
@@ -176,12 +174,10 @@ public abstract class AbstractPropertyBindingResult extends AbstractBindingResul
 
 
 	/**
-	 * Provide the PropertyAccessor to work with, according to the
-	 * concrete strategy of access.
-	 * <p>Note that a PropertyAccessor used by a BindingResult should
-	 * always have its "extractOldValueForEditor" flag set to "true"
-	 * by default, since this is typically possible without side effects
-	 * for model objects that serve as data binding target.
+	 * 按具体访问策略提供要使用的 PropertyAccessor。
+	 * <p>注意：BindingResult 使用的 PropertyAccessor 默认应将
+	 * {@code extractOldValueForEditor} 标志设为 {@code true}，
+	 * 因为作为数据绑定目标的模型对象通常可无副作用地提取旧值。
 	 * @see ConfigurablePropertyAccessor#setExtractOldValueForEditor
 	 */
 	public abstract ConfigurablePropertyAccessor getPropertyAccessor();

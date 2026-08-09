@@ -29,17 +29,17 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
- * Default implementation of the {@link MessageCodesResolver} interface.
+ * {@link MessageCodesResolver} 接口的默认实现。
  *
- * <p>Will create two message codes for an object error, in the following order (when
- * using the {@link Format#PREFIX_ERROR_CODE prefixed}
- * {@link #setMessageCodeFormatter(MessageCodeFormatter) formatter}):
+ * <p>对对象错误将按以下顺序创建两条消息码
+ *（使用 {@link Format#PREFIX_ERROR_CODE 前缀}
+ * {@link #setMessageCodeFormatter(MessageCodeFormatter) 格式化器} 时）：
  * <ul>
  * <li>1.: code + "." + object name
  * <li>2.: code
  * </ul>
  *
- * <p>Will create four message codes for a field specification, in the following order:
+ * <p>对字段规格将按以下顺序创建四条消息码：
  * <ul>
  * <li>1.: code + "." + object name + "." + field
  * <li>2.: code + "." + field
@@ -47,43 +47,42 @@ import org.springframework.util.StringUtils;
  * <li>4.: code
  * </ul>
  *
- * <p>For example, in case of code "typeMismatch", object name "user", field "age":
+ * <p>例如 errorCode 为 "typeMismatch"、object name 为 "user"、field 为 "age" 时：
  * <ul>
- * <li>1. try "typeMismatch.user.age"
- * <li>2. try "typeMismatch.age"
- * <li>3. try "typeMismatch.int"
- * <li>4. try "typeMismatch"
+ * <li>1. 尝试 "typeMismatch.user.age"
+ * <li>2. 尝试 "typeMismatch.age"
+ * <li>3. 尝试 "typeMismatch.int"
+ * <li>4. 尝试 "typeMismatch"
  * </ul>
  *
- * <p>This resolution algorithm thus can be leveraged for example to show
- * specific messages for binding errors like "required" and "typeMismatch":
+ * <p>因此该解析算法可用于为 "required"、"typeMismatch" 等绑定错误
+ * 显示不同粒度的消息：
  * <ul>
- * <li>at the object + field level ("age" field, but only on "user");
- * <li>at the field level (all "age" fields, no matter which object name);
- * <li>or at the general level (all fields, on any object).
+ * <li>对象 + 字段级别（"age" 字段，但仅限 "user" 对象）；
+ * <li>字段级别（所有 "age" 字段，不限对象名）；
+ * <li>或通用级别（任意对象上的所有字段）。
  * </ul>
  *
- * <p>In case of array, {@link List} or {@link java.util.Map} properties,
- * both codes for specific elements and for the whole collection are
- * generated. Assuming a field "name" of an array "groups" in object "user":
+ * <p>对于数组、{@link List} 或 {@link java.util.Map} 属性，
+ * 会同时生成针对特定元素与整个集合的 codes。
+ * 假设 object "user" 中数组 "groups" 的字段 "name"：
  * <ul>
- * <li>1. try "typeMismatch.user.groups[0].name"
- * <li>2. try "typeMismatch.user.groups.name"
- * <li>3. try "typeMismatch.groups[0].name"
- * <li>4. try "typeMismatch.groups.name"
- * <li>5. try "typeMismatch.name"
- * <li>6. try "typeMismatch.java.lang.String"
- * <li>7. try "typeMismatch"
+ * <li>1. 尝试 "typeMismatch.user.groups[0].name"
+ * <li>2. 尝试 "typeMismatch.user.groups.name"
+ * <li>3. 尝试 "typeMismatch.groups[0].name"
+ * <li>4. 尝试 "typeMismatch.groups.name"
+ * <li>5. 尝试 "typeMismatch.name"
+ * <li>6. 尝试 "typeMismatch.java.lang.String"
+ * <li>7. 尝试 "typeMismatch"
  * </ul>
  *
- * <p>By default the {@code errorCode}s will be placed at the beginning of constructed
- * message strings. The {@link #setMessageCodeFormatter(MessageCodeFormatter)
- * messageCodeFormatter} property can be used to specify an alternative concatenation
- * {@link MessageCodeFormatter format}.
+ * <p>默认 {@code errorCode} 置于构造消息串的开头。
+ * 可通过 {@link #setMessageCodeFormatter(MessageCodeFormatter) messageCodeFormatter}
+ * 属性指定替代的 {@link MessageCodeFormatter 拼接格式}。
  *
- * <p>In order to group all codes into a specific category within your resource bundles,
- * for example, "validation.typeMismatch.name" instead of the default "typeMismatch.name",
- * consider specifying a {@link #setPrefix prefix} to be applied.
+ * <p>若要在资源包中将所有 codes 归入特定类别，
+ * 例如 "validation.typeMismatch.name" 而非默认 "typeMismatch.name"，
+ * 可指定要应用的 {@link #setPrefix prefix}。
  *
  * @author Juergen Hoeller
  * @author Phillip Webb
@@ -94,7 +93,7 @@ import org.springframework.util.StringUtils;
 public class DefaultMessageCodesResolver implements MessageCodesResolver, Serializable {
 
 	/**
-	 * The separator that this implementation uses when resolving message codes.
+	 * 本实现解析消息码时使用的分隔符。
 	 */
 	public static final String CODE_SEPARATOR = ".";
 
@@ -107,25 +106,25 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 
 
 	/**
-	 * Specify a prefix to be applied to any code built by this resolver.
-	 * <p>Default is none. Specify, for example, "validation." to get
-	 * error codes like "validation.typeMismatch.name".
+	 * 指定本解析器构建的任意 code 要应用的前缀。
+	 * <p>默认无前缀。例如指定 "validation." 可得到
+	 * "validation.typeMismatch.name" 等错误码。
 	 */
 	public void setPrefix(@Nullable String prefix) {
 		this.prefix = (prefix != null ? prefix : "");
 	}
 
 	/**
-	 * Return the prefix to be applied to any code built by this resolver.
-	 * <p>Returns an empty String in case of no prefix.
+	 * 返回本解析器构建的任意 code 要应用的前缀。
+	 * <p>无前缀时返回空字符串。
 	 */
 	protected String getPrefix() {
 		return this.prefix;
 	}
 
 	/**
-	 * Specify the format for message codes built by this resolver.
-	 * <p>The default is {@link Format#PREFIX_ERROR_CODE}.
+	 * 指定本解析器构建消息码的格式。
+	 * <p>默认为 {@link Format#PREFIX_ERROR_CODE}。
 	 * @since 3.2
 	 * @see Format
 	 */
@@ -140,13 +139,11 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	/**
-	 * Build the code list for the given code and field: an
-	 * object/field-specific code, a field-specific code, a plain error code.
-	 * <p>Arrays, Lists and Maps are resolved both for specific elements and
-	 * the whole collection.
-	 * <p>See the {@link DefaultMessageCodesResolver class level javadoc} for
-	 * details on the generated codes.
-	 * @return the list of codes
+	 * 为给定 code 与 field 构建 code 列表：
+	 * 对象/字段特定 code、字段特定 code、纯 error code。
+	 * <p>数组、List 与 Map 会同时解析特定元素与整个集合。
+	 * <p>生成 codes 的详情见 {@link DefaultMessageCodesResolver 类级 JavaDoc}。
+	 * @return code 列表
 	 */
 	@Override
 	public String[] resolveMessageCodes(String errorCode, String objectName, String field, @Nullable Class<?> fieldType) {
@@ -177,8 +174,7 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	/**
-	 * Add both keyed and non-keyed entries for the supplied {@code field}
-	 * to the supplied field list.
+	 * 将给定 {@code field} 的带键与不带键条目均添加到给定字段列表。
 	 */
 	protected void buildFieldList(String field, List<String> fieldList) {
 		fieldList.add(field);
@@ -198,10 +194,10 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	/**
-	 * Post-process the given message code, built by this resolver.
-	 * <p>The default implementation applies the specified prefix, if any.
-	 * @param code the message code as built by this resolver
-	 * @return the final message code to be returned
+	 * 对本解析器构建的给定消息码进行后处理。
+	 * <p>默认实现应用指定前缀（若有）。
+	 * @param code 本解析器构建的消息码
+	 * @return 最终返回的消息码
 	 * @see #setPrefix
 	 */
 	protected String postProcessMessageCode(String code) {
@@ -210,14 +206,14 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 
 
 	/**
-	 * Common message code formats.
+	 * 常见消息码格式。
 	 * @see MessageCodeFormatter
 	 * @see DefaultMessageCodesResolver#setMessageCodeFormatter(MessageCodeFormatter)
 	 */
 	public enum Format implements MessageCodeFormatter {
 
 		/**
-		 * Prefix the error code at the beginning of the generated message code. for example:
+		 * 将 errorCode 前缀到生成的消息码开头，例如：
 		 * {@code errorCode + "." + object name + "." + field}
 		 */
 		PREFIX_ERROR_CODE {
@@ -228,7 +224,7 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 		},
 
 		/**
-		 * Postfix the error code at the end of the generated message code. for example:
+		 * 将 errorCode 后缀到生成的消息码末尾，例如：
 		 * {@code object name + "." + field + "." + errorCode}
 		 */
 		POSTFIX_ERROR_CODE {
@@ -239,9 +235,8 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 		};
 
 		/**
-		 * Concatenate the given elements, delimiting each with
-		 * {@link DefaultMessageCodesResolver#CODE_SEPARATOR}, skipping zero-length or
-		 * null elements altogether.
+		 * 拼接给定元素，以 {@link DefaultMessageCodesResolver#CODE_SEPARATOR} 分隔，
+		 * 完全跳过零长度或 null 元素。
 		 */
 		public static String toDelimitedString(@Nullable String... elements) {
 			StringJoiner rtn = new StringJoiner(CODE_SEPARATOR);

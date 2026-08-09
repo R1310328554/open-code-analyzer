@@ -22,11 +22,11 @@ import org.springframework.beans.ConfigurablePropertyAccessor;
 import org.springframework.beans.PropertyAccessorFactory;
 
 /**
- * Special implementation of the Errors and BindingResult interfaces,
- * supporting registration and evaluation of binding errors on value objects.
- * Performs direct field access instead of going through JavaBean getters.
+ * Errors 与 BindingResult 接口的特殊实现，
+ * 支持在值对象上注册并评估绑定错误。
+ * 直接访问字段，而非通过 JavaBean getter。
  *
- * <p>Since Spring 4.1 this implementation is able to traverse nested fields.
+ * <p>自 Spring 4.1 起，本实现可遍历嵌套字段。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -45,19 +45,19 @@ public class DirectFieldBindingResult extends AbstractPropertyBindingResult {
 
 
 	/**
-	 * Create a new {@code DirectFieldBindingResult} for the given target.
-	 * @param target the target object to bind onto
-	 * @param objectName the name of the target object
+	 * 为给定目标创建新的 {@code DirectFieldBindingResult}。
+	 * @param target 要绑定到的目标对象
+	 * @param objectName 目标对象名称
 	 */
 	public DirectFieldBindingResult(@Nullable Object target, String objectName) {
 		this(target, objectName, true);
 	}
 
 	/**
-	 * Create a new {@code DirectFieldBindingResult} for the given target.
-	 * @param target the target object to bind onto
-	 * @param objectName the name of the target object
-	 * @param autoGrowNestedPaths whether to "auto-grow" a nested path that contains a null value
+	 * 为给定目标创建新的 {@code DirectFieldBindingResult}。
+	 * @param target 要绑定到的目标对象
+	 * @param objectName 目标对象名称
+	 * @param autoGrowNestedPaths 是否对含 null 值的嵌套路径进行“自动扩展”
 	 */
 	public DirectFieldBindingResult(@Nullable Object target, String objectName, boolean autoGrowNestedPaths) {
 		super(objectName);
@@ -72,8 +72,8 @@ public class DirectFieldBindingResult extends AbstractPropertyBindingResult {
 	}
 
 	/**
-	 * Returns the DirectFieldAccessor that this instance uses.
-	 * Creates a new one if none existed before.
+	 * 返回本实例使用的 DirectFieldAccessor。
+	 * 若此前不存在则创建新实例。
 	 * @see #createDirectFieldAccessor()
 	 */
 	@Override
@@ -87,7 +87,7 @@ public class DirectFieldBindingResult extends AbstractPropertyBindingResult {
 	}
 
 	/**
-	 * Create a new DirectFieldAccessor for the underlying target object.
+	 * 为底层目标对象创建新的 DirectFieldAccessor。
 	 * @see #getTarget()
 	 */
 	protected ConfigurablePropertyAccessor createDirectFieldAccessor() {

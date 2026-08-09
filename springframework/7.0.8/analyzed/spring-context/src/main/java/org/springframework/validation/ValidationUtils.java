@@ -25,11 +25,10 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Utility class offering convenient methods for invoking a {@link Validator}
- * and for rejecting empty fields.
+ * 提供调用 {@link Validator} 与拒绝空字段便捷方法的工具类。
  *
- * <p>Checks for an empty field in {@code Validator} implementations can become
- * one-liners when using {@link #rejectIfEmpty} or {@link #rejectIfEmptyOrWhitespace}.
+ * <p>在 {@code Validator} 实现中检查空字段时，
+ * 使用 {@link #rejectIfEmpty} 或 {@link #rejectIfEmptyOrWhitespace} 可简化为一行代码。
  *
  * @author Juergen Hoeller
  * @author Dmitriy Kopylenko
@@ -43,29 +42,25 @@ public abstract class ValidationUtils {
 
 
 	/**
-	 * Invoke the given {@link Validator} for the supplied object and
-	 * {@link Errors} instance.
-	 * @param validator the {@code Validator} to be invoked
-	 * @param target the object to bind the parameters to
-	 * @param errors the {@link Errors} instance that should store the errors
-	 * @throws IllegalArgumentException if either of the {@code Validator} or {@code Errors}
-	 * arguments is {@code null}, or if the supplied {@code Validator} does not
-	 * {@link Validator#supports(Class) support} the validation of the supplied object's type
+	 * 对给定对象与 {@link Errors} 实例调用给定 {@link Validator}。
+	 * @param validator 要调用的 {@code Validator}
+	 * @param target 要绑定参数的对象
+	 * @param errors 应存储错误的 {@link Errors} 实例
+	 * @throws IllegalArgumentException 若 {@code Validator} 或 {@code Errors} 参数为 {@code null}，
+	 * 或提供的 {@code Validator} 不 {@link Validator#supports(Class) 支持} 给定对象类型的校验
 	 */
 	public static void invokeValidator(Validator validator, Object target, Errors errors) {
 		invokeValidator(validator, target, errors, (Object[]) null);
 	}
 
 	/**
-	 * Invoke the given {@link Validator}/{@link SmartValidator} for the supplied object and
-	 * {@link Errors} instance.
-	 * @param validator the {@code Validator} to be invoked
-	 * @param target the object to bind the parameters to
-	 * @param errors the {@link Errors} instance that should store the errors
-	 * @param validationHints one or more hint objects to be passed to the validation engine
-	 * @throws IllegalArgumentException if either of the {@code Validator} or {@code Errors}
-	 * arguments is {@code null}, or if the supplied {@code Validator} does not
-	 * {@link Validator#supports(Class) support} the validation of the supplied object's type
+	 * 对给定对象与 {@link Errors} 实例调用给定 {@link Validator}/{@link SmartValidator}。
+	 * @param validator 要调用的 {@code Validator}
+	 * @param target 要绑定参数的对象
+	 * @param errors 应存储错误的 {@link Errors} 实例
+	 * @param validationHints 要传递给校验引擎的一个或多个 hint 对象
+	 * @throws IllegalArgumentException 若 {@code Validator} 或 {@code Errors} 参数为 {@code null}，
+	 * 或提供的 {@code Validator} 不 {@link Validator#supports(Class) 支持} 给定对象类型的校验
 	 */
 	public static void invokeValidator(
 			Validator validator, Object target, Errors errors, Object @Nullable ... validationHints) {
@@ -101,69 +96,56 @@ public abstract class ValidationUtils {
 
 
 	/**
-	 * Reject the given field with the given error code if the value is empty.
-	 * <p>An 'empty' value in this context means either {@code null} or
-	 * the empty string "".
-	 * <p>The object whose field is being validated does not need to be passed
-	 * in because the {@link Errors} instance can resolve field values by itself
-	 * (it will usually hold an internal reference to the target object).
-	 * @param errors the {@code Errors} instance to register errors on
-	 * @param field the field name to check
-	 * @param errorCode the error code, interpretable as message key
+	 * 若值为空，以给定 errorCode 拒绝给定字段。
+	 * <p>此上下文中“空”指 {@code null} 或空字符串 ""。
+	 * <p>无需传入被校验字段所属对象，
+	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * @param errors 要注册错误的 {@code Errors} 实例
+	 * @param field 要检查的字段名
+	 * @param errorCode 错误码，可解释为消息键
 	 */
 	public static void rejectIfEmpty(Errors errors, String field, String errorCode) {
 		rejectIfEmpty(errors, field, errorCode, null, null);
 	}
 
 	/**
-	 * Reject the given field with the given error code and default message
-	 * if the value is empty.
-	 * <p>An 'empty' value in this context means either {@code null} or
-	 * the empty string "".
-	 * <p>The object whose field is being validated does not need to be passed
-	 * in because the {@link Errors} instance can resolve field values by itself
-	 * (it will usually hold an internal reference to the target object).
-	 * @param errors the {@code Errors} instance to register errors on
-	 * @param field the field name to check
-	 * @param errorCode error code, interpretable as message key
-	 * @param defaultMessage fallback default message
+	 * 若值为空，以给定 errorCode 与 defaultMessage 拒绝给定字段。
+	 * <p>此上下文中“空”指 {@code null} 或空字符串 ""。
+	 * <p>无需传入被校验字段所属对象，
+	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * @param errors 要注册错误的 {@code Errors} 实例
+	 * @param field 要检查的字段名
+	 * @param errorCode 错误码，可解释为消息键
+	 * @param defaultMessage 后备默认消息
 	 */
 	public static void rejectIfEmpty(Errors errors, String field, String errorCode, String defaultMessage) {
 		rejectIfEmpty(errors, field, errorCode, null, defaultMessage);
 	}
 
 	/**
-	 * Reject the given field with the given error code and error arguments
-	 * if the value is empty.
-	 * <p>An 'empty' value in this context means either {@code null} or
-	 * the empty string "".
-	 * <p>The object whose field is being validated does not need to be passed
-	 * in because the {@link Errors} instance can resolve field values by itself
-	 * (it will usually hold an internal reference to the target object).
-	 * @param errors the {@code Errors} instance to register errors on
-	 * @param field the field name to check
-	 * @param errorCode the error code, interpretable as message key
-	 * @param errorArgs the error arguments, for argument binding via MessageFormat
-	 * (can be {@code null})
+	 * 若值为空，以给定 errorCode 与 errorArgs 拒绝给定字段。
+	 * <p>此上下文中“空”指 {@code null} 或空字符串 ""。
+	 * <p>无需传入被校验字段所属对象，
+	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * @param errors 要注册错误的 {@code Errors} 实例
+	 * @param field 要检查的字段名
+	 * @param errorCode 错误码，可解释为消息键
+	 * @param errorArgs 错误参数，用于 MessageFormat 参数绑定（可为 {@code null}）
 	 */
 	public static void rejectIfEmpty(Errors errors, String field, String errorCode, Object[] errorArgs) {
 		rejectIfEmpty(errors, field, errorCode, errorArgs, null);
 	}
 
 	/**
-	 * Reject the given field with the given error code, error arguments
-	 * and default message if the value is empty.
-	 * <p>An 'empty' value in this context means either {@code null} or
-	 * the empty string "".
-	 * <p>The object whose field is being validated does not need to be passed
-	 * in because the {@link Errors} instance can resolve field values by itself
-	 * (it will usually hold an internal reference to the target object).
-	 * @param errors the {@code Errors} instance to register errors on
-	 * @param field the field name to check
-	 * @param errorCode the error code, interpretable as message key
-	 * @param errorArgs the error arguments, for argument binding via MessageFormat
-	 * (can be {@code null})
-	 * @param defaultMessage fallback default message
+	 * 若值为空，以给定 errorCode、errorArgs 与 defaultMessage 拒绝给定字段。
+	 * <p>此上下文中“空”指 {@code null} 或空字符串 ""。
+	 * <p>无需传入被校验字段所属对象，
+	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * @param errors 要注册错误的 {@code Errors} 实例
+	 * @param field 要检查的字段名
+	 * @param errorCode 错误码，可解释为消息键
+	 * @param errorArgs 错误参数，用于 MessageFormat 参数绑定（可为 {@code null}）
+	 * @param defaultMessage 后备默认消息
 	 */
 	public static void rejectIfEmpty(Errors errors, String field, String errorCode,
 			Object @Nullable [] errorArgs, @Nullable String defaultMessage) {
@@ -176,33 +158,27 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * Reject the given field with the given error code if the value is empty
-	 * or just contains whitespace.
-	 * <p>An 'empty' value in this context means either {@code null},
-	 * the empty string "", or consisting wholly of whitespace.
-	 * <p>The object whose field is being validated does not need to be passed
-	 * in because the {@link Errors} instance can resolve field values by itself
-	 * (it will usually hold an internal reference to the target object).
-	 * @param errors the {@code Errors} instance to register errors on
-	 * @param field the field name to check
-	 * @param errorCode the error code, interpretable as message key
+	 * 若值为空或仅含空白，以给定 errorCode 拒绝给定字段。
+	 * <p>此上下文中“空”指 {@code null}、空字符串 "" 或全为空白字符。
+	 * <p>无需传入被校验字段所属对象，
+	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * @param errors 要注册错误的 {@code Errors} 实例
+	 * @param field 要检查的字段名
+	 * @param errorCode 错误码，可解释为消息键
 	 */
 	public static void rejectIfEmptyOrWhitespace(Errors errors, String field, String errorCode) {
 		rejectIfEmptyOrWhitespace(errors, field, errorCode, null, null);
 	}
 
 	/**
-	 * Reject the given field with the given error code and default message
-	 * if the value is empty or just contains whitespace.
-	 * <p>An 'empty' value in this context means either {@code null},
-	 * the empty string "", or consisting wholly of whitespace.
-	 * <p>The object whose field is being validated does not need to be passed
-	 * in because the {@link Errors} instance can resolve field values by itself
-	 * (it will usually hold an internal reference to the target object).
-	 * @param errors the {@code Errors} instance to register errors on
-	 * @param field the field name to check
-	 * @param errorCode the error code, interpretable as message key
-	 * @param defaultMessage fallback default message
+	 * 若值为空或仅含空白，以给定 errorCode 与 defaultMessage 拒绝给定字段。
+	 * <p>此上下文中“空”指 {@code null}、空字符串 "" 或全为空白字符。
+	 * <p>无需传入被校验字段所属对象，
+	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * @param errors 要注册错误的 {@code Errors} 实例
+	 * @param field 要检查的字段名
+	 * @param errorCode 错误码，可解释为消息键
+	 * @param defaultMessage 后备默认消息
 	 */
 	public static void rejectIfEmptyOrWhitespace(
 			Errors errors, String field, String errorCode, String defaultMessage) {
@@ -211,18 +187,14 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * Reject the given field with the given error code and error arguments
-	 * if the value is empty or just contains whitespace.
-	 * <p>An 'empty' value in this context means either {@code null},
-	 * the empty string "", or consisting wholly of whitespace.
-	 * <p>The object whose field is being validated does not need to be passed
-	 * in because the {@link Errors} instance can resolve field values by itself
-	 * (it will usually hold an internal reference to the target object).
-	 * @param errors the {@code Errors} instance to register errors on
-	 * @param field the field name to check
-	 * @param errorCode the error code, interpretable as message key
-	 * @param errorArgs the error arguments, for argument binding via MessageFormat
-	 * (can be {@code null})
+	 * 若值为空或仅含空白，以给定 errorCode 与 errorArgs 拒绝给定字段。
+	 * <p>此上下文中“空”指 {@code null}、空字符串 "" 或全为空白字符。
+	 * <p>无需传入被校验字段所属对象，
+	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * @param errors 要注册错误的 {@code Errors} 实例
+	 * @param field 要检查的字段名
+	 * @param errorCode 错误码，可解释为消息键
+	 * @param errorArgs 错误参数，用于 MessageFormat 参数绑定（可为 {@code null}）
 	 */
 	public static void rejectIfEmptyOrWhitespace(
 			Errors errors, String field, String errorCode, Object @Nullable [] errorArgs) {
@@ -231,19 +203,15 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * Reject the given field with the given error code, error arguments
-	 * and default message if the value is empty or just contains whitespace.
-	 * <p>An 'empty' value in this context means either {@code null},
-	 * the empty string "", or consisting wholly of whitespace.
-	 * <p>The object whose field is being validated does not need to be passed
-	 * in because the {@link Errors} instance can resolve field values by itself
-	 * (it will usually hold an internal reference to the target object).
-	 * @param errors the {@code Errors} instance to register errors on
-	 * @param field the field name to check
-	 * @param errorCode the error code, interpretable as message key
-	 * @param errorArgs the error arguments, for argument binding via MessageFormat
-	 * (can be {@code null})
-	 * @param defaultMessage fallback default message
+	 * 若值为空或仅含空白，以给定 errorCode、errorArgs 与 defaultMessage 拒绝给定字段。
+	 * <p>此上下文中“空”指 {@code null}、空字符串 "" 或全为空白字符。
+	 * <p>无需传入被校验字段所属对象，
+	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * @param errors 要注册错误的 {@code Errors} 实例
+	 * @param field 要检查的字段名
+	 * @param errorCode 错误码，可解释为消息键
+	 * @param errorArgs 错误参数，用于 MessageFormat 参数绑定（可为 {@code null}）
+	 * @param defaultMessage 后备默认消息
 	 */
 	public static void rejectIfEmptyOrWhitespace(
 			Errors errors, String field, String errorCode, Object @Nullable [] errorArgs, @Nullable String defaultMessage) {

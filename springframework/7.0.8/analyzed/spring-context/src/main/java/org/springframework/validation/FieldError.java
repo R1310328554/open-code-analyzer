@@ -22,11 +22,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Encapsulates a field error, that is, a reason for rejecting a specific
- * field value.
+ * 封装字段错误，即拒绝特定字段值的原因。
  *
- * <p>See the {@link DefaultMessageCodesResolver} javadoc for details on
- * how a message code list is built for a {@code FieldError}.
+ * <p>关于 {@code FieldError} 消息码列表的构建方式，
+ * 详见 {@link DefaultMessageCodesResolver} 的 JavaDoc。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -44,25 +43,25 @@ public class FieldError extends ObjectError {
 
 
 	/**
-	 * Create a new FieldError instance.
-	 * @param objectName the name of the affected object
-	 * @param field the affected field of the object
-	 * @param defaultMessage the default message to be used to resolve this message
+	 * 创建新的 FieldError 实例。
+	 * @param objectName 受影响对象的名称
+	 * @param field 受影响对象的字段
+	 * @param defaultMessage 用于解析本消息的默认消息
 	 */
 	public FieldError(String objectName, String field, String defaultMessage) {
 		this(objectName, field, null, false, null, null, defaultMessage);
 	}
 
 	/**
-	 * Create a new FieldError instance.
-	 * @param objectName the name of the affected object
-	 * @param field the affected field of the object
-	 * @param rejectedValue the rejected field value
-	 * @param bindingFailure whether this error represents a binding failure
-	 * (like a type mismatch); else, it is a validation failure
-	 * @param codes the codes to be used to resolve this message
-	 * @param arguments the array of arguments to be used to resolve this message
-	 * @param defaultMessage the default message to be used to resolve this message
+	 * 创建新的 FieldError 实例。
+	 * @param objectName 受影响对象的名称
+	 * @param field 受影响对象的字段
+	 * @param rejectedValue 被拒绝的字段值
+	 * @param bindingFailure 本错误是否表示绑定失败（如类型不匹配）；
+	 * 否则为校验失败
+	 * @param codes 用于解析本消息的 codes
+	 * @param arguments 用于解析本消息的参数数组
+	 * @param defaultMessage 用于解析本消息的默认消息
 	 */
 	public FieldError(String objectName, String field, @Nullable Object rejectedValue, boolean bindingFailure,
 			String @Nullable [] codes, Object @Nullable [] arguments, @Nullable String defaultMessage) {
@@ -76,22 +75,22 @@ public class FieldError extends ObjectError {
 
 
 	/**
-	 * Return the affected field of the object.
+	 * 返回受影响对象的字段。
 	 */
 	public String getField() {
 		return this.field;
 	}
 
 	/**
-	 * Return the rejected field value.
+	 * 返回被拒绝的字段值。
 	 */
 	public @Nullable Object getRejectedValue() {
 		return this.rejectedValue;
 	}
 
 	/**
-	 * Return whether this error represents a binding failure
-	 * (like a type mismatch); otherwise it is a validation failure.
+	 * 返回本错误是否表示绑定失败（如类型不匹配）；
+	 * 否则为校验失败。
 	 */
 	public boolean isBindingFailure() {
 		return this.bindingFailure;

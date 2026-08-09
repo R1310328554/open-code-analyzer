@@ -31,16 +31,12 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * A simple implementation of the {@link Errors} interface, managing global
- * errors and field errors for a top-level target object. Flexibly retrieves
- * field values through bean property getter methods, and automatically
- * falls back to raw field access if necessary.
+ * {@link Errors} 接口的简单实现，管理顶层目标对象的全局错误与字段错误。
+ * 通过 bean 属性 getter 灵活获取字段值，必要时自动回退到原始字段访问。
  *
- * <p>Note that this {@link Errors} implementation comes without support for
- * nested paths. It is exclusively designed for the validation of individual
- * top-level objects, not aggregating errors from multiple sources.
- * If this is insufficient for your purposes, use a binding-capable
- * {@link Errors} implementation such as {@link BeanPropertyBindingResult}.
+ * <p>注意：本 {@link Errors} 实现不支持嵌套路径，
+ * 专用于校验单个顶层对象，不聚合多源错误。
+ * 若不足，请使用支持绑定的 {@link Errors} 实现，如 {@link BeanPropertyBindingResult}。
  *
  * @author Juergen Hoeller
  * @since 6.1
@@ -61,9 +57,9 @@ public class SimpleErrors implements Errors, Serializable {
 
 
 	/**
-	 * Create a new {@link SimpleErrors} holder for the given target,
-	 * using the simple name of the target class as the object name.
-	 * @param target the target to wrap
+	 * 为给定目标创建新的 {@link SimpleErrors} 持有者，
+	 * 以目标类的简单类名作为对象名。
+	 * @param target 要包装的目标
 	 */
 	public SimpleErrors(Object target) {
 		Assert.notNull(target, "Target must not be null");
@@ -72,9 +68,9 @@ public class SimpleErrors implements Errors, Serializable {
 	}
 
 	/**
-	 * Create a new {@link SimpleErrors} holder for the given target.
-	 * @param target the target to wrap
-	 * @param objectName the name of the target object for error reporting
+	 * 为给定目标创建新的 {@link SimpleErrors} 持有者。
+	 * @param target 要包装的目标
+	 * @param objectName 用于错误报告的目标对象名称
 	 */
 	public SimpleErrors(Object target, String objectName) {
 		Assert.notNull(target, "Target must not be null");

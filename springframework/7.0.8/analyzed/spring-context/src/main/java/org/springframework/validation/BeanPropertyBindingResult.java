@@ -25,15 +25,12 @@ import org.springframework.beans.ConfigurablePropertyAccessor;
 import org.springframework.beans.PropertyAccessorFactory;
 
 /**
- * Default implementation of the {@link Errors} and {@link BindingResult}
- * interfaces, for the registration and evaluation of binding errors on
- * JavaBean objects.
+ * {@link Errors} 与 {@link BindingResult} 接口的默认实现，
+ * 用于在 JavaBean 对象上注册并评估绑定错误。
  *
- * <p>Performs standard JavaBean property access, also supporting nested
- * properties. Normally, application code will work with the
- * {@code Errors} interface or the {@code BindingResult} interface.
- * A {@link DataBinder} returns its {@code BindingResult} via
- * {@link DataBinder#getBindingResult()}.
+ * <p>执行标准 JavaBean 属性访问，并支持嵌套属性。
+ * 通常应用代码使用 {@code Errors} 或 {@code BindingResult} 接口。
+ * {@link DataBinder} 通过 {@link DataBinder#getBindingResult()} 返回其 BindingResult。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -54,20 +51,20 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 
 
 	/**
-	 * Create a new {@code BeanPropertyBindingResult} for the given target.
-	 * @param target the target bean to bind onto
-	 * @param objectName the name of the target object
+	 * 为给定目标创建新的 {@code BeanPropertyBindingResult}。
+	 * @param target 要绑定到的目标 bean
+	 * @param objectName 目标对象名称
 	 */
 	public BeanPropertyBindingResult(@Nullable Object target, String objectName) {
 		this(target, objectName, true, Integer.MAX_VALUE);
 	}
 
 	/**
-	 * Create a new {@code BeanPropertyBindingResult} for the given target.
-	 * @param target the target bean to bind onto
-	 * @param objectName the name of the target object
-	 * @param autoGrowNestedPaths whether to "auto-grow" a nested path that contains a null value
-	 * @param autoGrowCollectionLimit the limit for array and collection auto-growing
+	 * 为给定目标创建新的 {@code BeanPropertyBindingResult}。
+	 * @param target 要绑定到的目标 bean
+	 * @param objectName 目标对象名称
+	 * @param autoGrowNestedPaths 是否对含 null 值的嵌套路径进行“自动扩展”
+	 * @param autoGrowCollectionLimit 数组与集合自动扩展的上限
 	 */
 	public BeanPropertyBindingResult(@Nullable Object target, String objectName,
 			boolean autoGrowNestedPaths, int autoGrowCollectionLimit) {
@@ -85,8 +82,8 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 	}
 
 	/**
-	 * Returns the {@link BeanWrapper} that this instance uses.
-	 * Creates a new one if none existed before.
+	 * 返回本实例使用的 {@link BeanWrapper}。
+	 * 若此前不存在则创建新实例。
 	 * @see #createBeanWrapper()
 	 */
 	@Override
@@ -101,7 +98,7 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 	}
 
 	/**
-	 * Create a new {@link BeanWrapper} for the underlying target object.
+	 * 为底层目标对象创建新的 {@link BeanWrapper}。
 	 * @see #getTarget()
 	 */
 	protected BeanWrapper createBeanWrapper() {

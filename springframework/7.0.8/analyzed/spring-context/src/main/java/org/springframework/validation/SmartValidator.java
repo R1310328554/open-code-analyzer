@@ -19,8 +19,7 @@ package org.springframework.validation;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Extended variant of the {@link Validator} interface, adding support for
- * validation 'hints'.
+ * {@link Validator} 接口的扩展变体，增加对校验“提示（hints）”的支持。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -29,32 +28,27 @@ import org.jspecify.annotations.Nullable;
 public interface SmartValidator extends Validator {
 
 	/**
-	 * Validate the supplied {@code target} object, which must be of a type of {@link Class}
-	 * for which the {@link #supports(Class)} method typically returns {@code true}.
-	 * <p>The supplied {@link Errors errors} instance can be used to report any
-	 * resulting validation errors.
-	 * <p><b>This variant of {@code validate()} supports validation hints, such as
-	 * validation groups against a JSR-303 provider</b> (in which case, the provided hint
-	 * objects need to be annotation arguments of type {@code Class}).
-	 * <p>Note: Validation hints may get ignored by the actual target {@code Validator},
-	 * in which case this method should behave just like its regular
-	 * {@link #validate(Object, Errors)} sibling.
-	 * @param target the object that is to be validated
-	 * @param errors contextual state about the validation process
-	 * @param validationHints one or more hint objects to be passed to the validation engine
+	 * 校验提供的 {@code target} 对象，其类型须为 {@link #supports(Class)} 通常返回 {@code true} 的类型。
+	 * <p>提供的 {@link Errors errors} 实例可用于报告产生的校验错误。
+	 * <p><b>本 {@code validate()} 变体支持校验提示，
+	 * 例如针对 JSR-303 提供者的校验组</b>（此时提供的 hint 对象须为 {@code Class} 类型的注解参数）。
+	 * <p>注意：实际目标 {@code Validator} 可能忽略校验提示，
+	 * 此时本方法行为应与常规 {@link #validate(Object, Errors)} 相同。
+	 * @param target 要校验的对象
+	 * @param errors 校验过程的上下文状态
+	 * @param validationHints 要传递给校验引擎的一个或多个 hint 对象
 	 * @see jakarta.validation.Validator#validate(Object, Class[])
 	 */
 	void validate(Object target, Errors errors, Object... validationHints);
 
 	/**
-	 * Validate the supplied value for the specified field on the target type,
-	 * reporting the same validation errors as if the value would be bound to
-	 * the field on an instance of the target class.
-	 * @param targetType the target type
-	 * @param fieldName the name of the field
-	 * @param value the candidate value
-	 * @param errors contextual state about the validation process
-	 * @param validationHints one or more hint objects to be passed to the validation engine
+	 * 校验目标类型上指定字段的给定值，
+	 * 报告与将该值绑定到目标类实例字段时相同的校验错误。
+	 * @param targetType 目标类型
+	 * @param fieldName 字段名
+	 * @param value 候选值
+	 * @param errors 校验过程的上下文状态
+	 * @param validationHints 要传递给校验引擎的一个或多个 hint 对象
 	 * @since 5.1
 	 * @see jakarta.validation.Validator#validateValue(Class, String, Object, Class[])
 	 */
@@ -65,13 +59,11 @@ public interface SmartValidator extends Validator {
 	}
 
 	/**
-	 * Return a contained validator instance of the specified type, unwrapping
-	 * as far as necessary.
-	 * @param type the class of the object to return
-	 * @param <T> the type of the object to return
-	 * @return a validator instance of the specified type; {@code null} if there
-	 * isn't a nested validator; an exception may be raised if the specified
-	 * validator type does not match.
+	 * 返回指定类型的内部校验器实例，必要时逐层解包。
+	 * @param type 要返回的对象的 Class
+	 * @param <T> 要返回的对象类型
+	 * @return 指定类型的校验器实例；无嵌套校验器时返回 {@code null}；
+	 * 指定校验器类型不匹配时可能抛出异常。
 	 * @since 6.1
 	 */
 	default <T> @Nullable T unwrap(@Nullable Class<T> type) {

@@ -22,13 +22,13 @@ import java.util.function.Predicate;
 import org.springframework.util.Assert;
 
 /**
- * Validator instance returned by {@link Validator#forInstanceOf(Class, BiConsumer)}
- * and {@link Validator#forType(Class, BiConsumer)}.
+ * 由 {@link Validator#forInstanceOf(Class, BiConsumer)} 与
+ * {@link Validator#forType(Class, BiConsumer)} 返回的 Validator 实例。
  *
  * @author Toshiaki Maki
  * @author Arjen Poutsma
  * @since 6.1
- * @param <T> the target object type
+ * @param <T> 目标对象类型
  */
 final class TypedValidator<T> implements Validator {
 

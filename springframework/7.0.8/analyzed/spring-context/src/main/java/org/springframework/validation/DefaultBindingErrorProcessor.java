@@ -27,14 +27,12 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Default {@link BindingErrorProcessor} implementation.
+ * 默认 {@link BindingErrorProcessor} 实现。
  *
- * <p>Uses the "required" error code and the field name to resolve message codes
- * for a missing field error.
+ * <p>对缺失字段错误，使用 "required" 错误码与字段名解析消息码。
  *
- * <p>Creates a {@code FieldError} for each {@code PropertyAccessException}
- * given, using the {@code PropertyAccessException}'s error code ("typeMismatch",
- * "methodInvocation") for resolving message codes.
+ * <p>对每个 {@code PropertyAccessException} 创建 {@code FieldError}，
+ * 使用异常的 errorCode（"typeMismatch"、"methodInvocation"）解析消息码。
  *
  * @author Alef Arendsen
  * @author Juergen Hoeller
@@ -50,9 +48,7 @@ import org.springframework.util.StringUtils;
 public class DefaultBindingErrorProcessor implements BindingErrorProcessor {
 
 	/**
-	 * Error code that a missing field error (i.e. a required field not
-	 * found in the list of property values) will be registered with:
-	 * "required".
+	 * 缺失字段错误（即必填字段未出现在属性值列表中）注册时使用的错误码："required"。
 	 */
 	public static final String MISSING_FIELD_ERROR_CODE = "required";
 
@@ -83,13 +79,13 @@ public class DefaultBindingErrorProcessor implements BindingErrorProcessor {
 	}
 
 	/**
-	 * Return FieldError arguments for a binding error on the given field.
-	 * Invoked for each missing required field and each type mismatch.
-	 * <p>The default implementation returns a single argument indicating the field name
-	 * (of type DefaultMessageSourceResolvable, with "objectName.field" and "field" as codes).
-	 * @param objectName the name of the target object
-	 * @param field the field that caused the binding error
-	 * @return the Object array that represents the FieldError arguments
+	 * 返回给定字段绑定错误的 FieldError 参数。
+	 * 对每个缺失必填字段与类型不匹配都会调用。
+	 * <p>默认实现返回单个参数表示字段名
+	 * （类型为 DefaultMessageSourceResolvable，codes 为 "objectName.field" 与 "field"）。
+	 * @param objectName 目标对象名称
+	 * @param field 导致绑定错误的字段
+	 * @return 表示 FieldError 参数的 Object 数组
 	 * @see org.springframework.validation.FieldError#getArguments
 	 * @see org.springframework.context.support.DefaultMessageSourceResolvable
 	 */
@@ -100,7 +96,7 @@ public class DefaultBindingErrorProcessor implements BindingErrorProcessor {
 
 
 	/**
-	 * Subclass of {@code FieldError} with Spring-style default message rendering.
+	 * 采用 Spring 风格默认消息渲染的 {@code FieldError} 子类。
 	 */
 	@SuppressWarnings("serial")
 	private static class BindingFieldError extends FieldError implements Serializable {

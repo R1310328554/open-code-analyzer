@@ -22,6 +22,10 @@ VALIDATION_REST_REPLACEMENTS: dict[str, list[tuple[str, str]]] = {
             "\t/**\n\t * Check whether the given FieldError matches the given field.\n\t * @param field the field that we are looking up FieldErrors for\n\t * @param fieldError the candidate FieldError\n\t * @return whether the FieldError matches the given field\n\t */",
             "\t/**\n\t * 检查给定 {@link FieldError} 是否与给定字段匹配。\n\t * @param field 要查找 FieldError 的字段\n\t * @param fieldError 候选 FieldError\n\t * @return 该 FieldError 是否与给定字段匹配\n\t */",
         ),
+        (
+            "\t\t// Optimization: use charAt and regionMatches instead of endsWith and startsWith (SPR-11304)",
+            "\t\t// 优化：使用 charAt 与 regionMatches 替代 endsWith 与 startsWith（SPR-11304）",
+        ),
     ],
     "AbstractPropertyBindingResult.java": [
         (

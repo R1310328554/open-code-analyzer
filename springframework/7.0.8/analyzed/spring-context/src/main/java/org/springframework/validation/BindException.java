@@ -26,14 +26,12 @@ import org.springframework.beans.PropertyEditorRegistry;
 import org.springframework.util.Assert;
 
 /**
- * Thrown when binding errors are considered fatal. Implements the
- * {@link BindingResult} interface (and its super-interface {@link Errors})
- * to allow for the direct analysis of binding errors.
+ * 当绑定错误被视为致命时抛出。实现 {@link BindingResult} 接口
+ * （及其超接口 {@link Errors}），以便直接分析绑定错误。
  *
- * <p>As of Spring 2.0, this is a special-purpose class. Normally,
- * application code will work with the {@link BindingResult} interface,
- * or with a {@link DataBinder} that in turn exposes a BindingResult via
- * {@link org.springframework.validation.DataBinder#getBindingResult()}.
+ * <p>自 Spring 2.0 起，这是专用类。通常应用代码使用 {@link BindingResult} 接口，
+ * 或使用 {@link DataBinder}，后者通过
+ * {@link org.springframework.validation.DataBinder#getBindingResult()} 暴露 BindingResult。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -49,8 +47,8 @@ public class BindException extends Exception implements BindingResult {
 
 
 	/**
-	 * Create a new BindException instance for a BindingResult.
-	 * @param bindingResult the BindingResult instance to wrap
+	 * 为 BindingResult 创建新的 BindException 实例。
+	 * @param bindingResult 要包装的 BindingResult 实例
 	 */
 	public BindException(BindingResult bindingResult) {
 		Assert.notNull(bindingResult, "BindingResult must not be null");
@@ -58,9 +56,9 @@ public class BindException extends Exception implements BindingResult {
 	}
 
 	/**
-	 * Create a new BindException instance for a target bean.
-	 * @param target the target bean to bind onto
-	 * @param objectName the name of the target object
+	 * 为目标 bean 创建新的 BindException 实例。
+	 * @param target 要绑定到的目标 bean
+	 * @param objectName 目标对象名称
 	 * @see BeanPropertyBindingResult
 	 */
 	public BindException(Object target, String objectName) {
@@ -70,7 +68,7 @@ public class BindException extends Exception implements BindingResult {
 
 
 	/**
-	 * Return the BindingResult that this BindException wraps.
+	 * 返回本 BindException 所包装的 BindingResult。
 	 */
 	public final BindingResult getBindingResult() {
 		return this.bindingResult;
@@ -284,7 +282,7 @@ public class BindException extends Exception implements BindingResult {
 
 
 	/**
-	 * Returns diagnostic information about the errors held in this object.
+	 * 返回本对象所持有错误的诊断信息。
 	 */
 	@Override
 	public String getMessage() {

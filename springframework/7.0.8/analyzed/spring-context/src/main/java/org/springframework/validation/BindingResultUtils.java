@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Convenience methods for looking up BindingResults in a model Map.
+ * 在 model Map 中查找 BindingResult 的便捷方法。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -32,11 +32,11 @@ import org.springframework.util.Assert;
 public abstract class BindingResultUtils {
 
 	/**
-	 * Find the BindingResult for the given name in the given model.
-	 * @param model the model to search
-	 * @param name the name of the target object to find a BindingResult for
-	 * @return the BindingResult, or {@code null} if none found
-	 * @throws IllegalStateException if the attribute found is not of type BindingResult
+	 * 在给定 model 中查找指定名称的 BindingResult。
+	 * @param model 要搜索的 model
+	 * @param name 要查找 BindingResult 的目标对象名称
+	 * @return BindingResult，未找到时返回 {@code null}
+	 * @throws IllegalStateException 若找到的属性不是 BindingResult 类型
 	 */
 	public static @Nullable BindingResult getBindingResult(Map<?, ?> model, String name) {
 		Assert.notNull(model, "Model map must not be null");
@@ -54,11 +54,11 @@ public abstract class BindingResultUtils {
 	}
 
 	/**
-	 * Find a required BindingResult for the given name in the given model.
-	 * @param model the model to search
-	 * @param name the name of the target object to find a BindingResult for
-	 * @return the BindingResult (never {@code null})
-	 * @throws IllegalStateException if no BindingResult found
+	 * 在给定 model 中查找必需的 BindingResult。
+	 * @param model 要搜索的 model
+	 * @param name 要查找 BindingResult 的目标对象名称
+	 * @return BindingResult（永不为 {@code null}）
+	 * @throws IllegalStateException 若未找到 BindingResult
 	 */
 	public static BindingResult getRequiredBindingResult(Map<?, ?> model, String name) {
 		BindingResult bindingResult = getBindingResult(model, name);
