@@ -1,6 +1,27 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 27,
+  "claimed_at": "2026-08-09T18:14:24Z",
+  "files": [
+    "docs_src/sql_databases/tutorial001_py310.py",
+    "docs_src/sql_databases/tutorial002_an_py310.py",
+    "docs_src/sql_databases/tutorial002_py310.py",
+    "docs_src/static_files/__init__.py",
+    "docs_src/static_files/tutorial001_py310.py",
+    "docs_src/stream_data/__init__.py",
+    "docs_src/stream_data/tutorial001_py310.py",
+    "docs_src/stream_data/tutorial002_py310.py",
+    "docs_src/stream_json_lines/__init__.py",
+    "docs_src/stream_json_lines/tutorial001_py310.py",
+    "docs_src/strict_content_type/__init__.py",
+    "docs_src/strict_content_type/tutorial001_py310.py",
+    "docs_src/sub_applications/__init__.py",
+    "docs_src/sub_applications/tutorial001_py310.py",
+    "docs_src/templates/__init__.py",
+    "docs_src/templates/static/__init__.py",
+    "docs_src/templates/templates/__init__.py",
+    "docs_src/templates/tutorial001_py310.py",
+    "docs_src/using_request_directly/__init__.py",
+    "docs_src/using_request_directly/tutorial001_py310.py"
+  ],
+  "remaining_pending": 7,
   "done": 482
 }
