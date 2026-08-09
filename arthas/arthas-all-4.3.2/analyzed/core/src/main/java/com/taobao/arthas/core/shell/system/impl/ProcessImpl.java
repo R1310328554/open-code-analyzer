@@ -32,6 +32,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * {@link Process} 默认实现：驱动单条 Arthas 命令的完整生命周期。
+ * <p>
+ * 内部维护 {@link CommandProcessImpl} 供命令 handler 交互，管理 TTY 前后台切换、
+ * AdviceWeaver 注册/注销及 stdout handler 链输出。
+ *
  * @author beiwei30 on 10/11/2016.
  * @author gongdewei 2020-03-26
  */
@@ -39,30 +44,60 @@ public class ProcessImpl implements Process {
 
     private static final Logger logger = LoggerFactory.getLogger(ProcessImpl.class);
 
+    /** 命令定义（含 CLI 解析器与 processHandler） */
     private Command commandContext;
+    /** 命令执行入口 handler */
     private Handler<CommandProcess> handler;
+    /** 命令参数 token 列表 */
     private List<CliToken> args;
+    /** 关联终端 */
     private Tty tty;
+    /** Shell 会话 */
     private Session session;
+    /** 中断信号回调 */
     private Handler<Void> interruptHandler;
+    /** 挂起回调 */
     private Handler<Void> suspendHandler;
+    /** 恢复回调 */
     private Handler<Void> resumeHandler;
+    /** 正常结束回调 */
     private Handler<Void> endHandler;
+    /** 切后台回调 */
     private Handler<Void> backgroundHandler;
+    /** 切前台回调 */
     private Handler<Void> foregroundHandler;
+    /** 进程终止回调（传递 exitCode） */
     private Handler<Integer> terminatedHandler;
+    /** 逻辑前台标志（CommandProcess 可见） */
     private boolean foreground;
+    /** 当前执行状态 */
     private volatile ExecStatus processStatus;
+    /** 是否占用 TTY 前台（控制 stdin/resize） */
     private boolean processForeground;
+    /** 标准输入 handler */
     private Handler<String> stdinHandler;
+    /** 终端 resize handler */
     private Handler<Void> resizeHandler;
+    /** 退出码 */
     private Integer exitCode;
+    /** 命令运行时上下文 */
     private CommandProcessImpl process;
+    /** 启动时间 */
     private Date startTime;
+    /** stdout 输出链封装 */
     private ProcessOutput processOutput;
+    /** 所属 Job id */
     private int jobId;
+    /** 结构化结果分发器 */
     private ResultDistributor resultDistributor;
 
+    /**
+     * @param commandContext 命令定义
+     * @param args 参数 token
+     * @param handler 命令 processHandler
+     * @param processOutput stdout handler 链
+     * @param resultDistributor 结果分发器，可为 null
+     */
     public ProcessImpl(Command commandContext, List<CliToken> args, Handler<CommandProcess> handler,
                        ProcessOutput processOutput, ResultDistributor resultDistributor) {
         this.commandContext = commandContext;
@@ -74,52 +109,62 @@ public class ProcessImpl implements Process {
     }
 
     @Override
+    /** @return 进程退出码 */
     public Integer exitCode() {
         return exitCode;
     }
 
     @Override
+    /** @return 当前 {@link ExecStatus} */
     public ExecStatus status() {
         return processStatus;
     }
 
     @Override
+    /** 绑定 TTY 终端 */
     public synchronized Process setTty(Tty tty) {
         this.tty = tty;
         return this;
     }
 
     @Override
+    /** @return 关联 TTY */
     public synchronized Tty getTty() {
         return tty;
     }
 
     @Override
+    /** 设置所属 Job id */
     public void setJobId(int jobId) {
         this.jobId = jobId;
     }
 
     @Override
+    /** 绑定 Shell Session */
     public synchronized Process setSession(Session session) {
         this.session = session;
         return this;
     }
 
     @Override
+    /** @return Shell Session */
     public synchronized Session getSession() {
         return session;
     }
 
     @Override
+    /** @return 命令执行次数 */
     public int times() {
         return process.times().get();
     }
 
+    /** @return 进程启动时间 */
     public Date startTime() {
         return startTime;
     }
 
     @Override
+    /** @return 重定向缓存路径 */
     public String cacheLocation() {
         if (processOutput != null) {
             return processOutput.cacheLocation;
@@ -128,17 +173,20 @@ public class ProcessImpl implements Process {
     }
 
     @Override
+    /** 注册终止回调 */
     public Process terminatedHandler(Handler<Integer> handler) {
         terminatedHandler = handler;
         return this;
     }
 
     @Override
+    /** 中断进程（无完成回调） */
     public boolean interrupt() {
         return interrupt(null);
     }
 
     @Override
+    /** 中断进程并在完成后回调 */
     public boolean interrupt(final Handler<Void> completionHandler) {
         if (processStatus == ExecStatus.RUNNING || processStatus == ExecStatus.STOPPED || processStatus == ExecStatus.TERMINATED) {
             final Handler<Void> handler = interruptHandler;
@@ -173,6 +221,7 @@ public class ProcessImpl implements Process {
     }
 
     @Override
+    /** 从 STOPPED 恢复为 RUNNING */
     public synchronized void resume(boolean fg, Handler<Void> completionHandler) {
         if (processStatus == ExecStatus.STOPPED) {
             updateStatus(ExecStatus.RUNNING, null, fg, resumeHandler, terminatedHandler, completionHandler);
@@ -190,6 +239,7 @@ public class ProcessImpl implements Process {
     }
 
     @Override
+    /** 挂起 RUNNING 进程为 STOPPED */
     public synchronized void suspend(Handler<Void> completionHandler) {
         if (processStatus == ExecStatus.RUNNING) {
             updateStatus(ExecStatus.STOPPED, null, false, suspendHandler, terminatedHandler, completionHandler);
@@ -207,6 +257,7 @@ public class ProcessImpl implements Process {
     }
 
     @Override
+    /** 运行中进程切到后台，释放 TTY stdin */
     public void toBackground(Handler<Void> completionHandler) {
         if (processStatus == ExecStatus.RUNNING) {
             if (processForeground) {
@@ -223,6 +274,7 @@ public class ProcessImpl implements Process {
     }
 
     @Override
+    /** 后台进程切到前台，绑定 stdin/resize */
     public void toForeground(Handler<Void> completionHandler) {
         if (processStatus == ExecStatus.RUNNING) {
             if (!processForeground) {
@@ -239,12 +291,14 @@ public class ProcessImpl implements Process {
     }
 
     @Override
+    /** 终止进程并触发 terminatedHandler */
     public void terminate(Handler<Void> completionHandler) {
         if (!terminate(-10, completionHandler, null)) {
             throw new IllegalStateException("Cannot terminate terminated process");
         }
     }
 
+    /** 内部终止逻辑：写 StatusModel、close 输出、unregister Advice */
     private synchronized boolean terminate(int exitCode, Handler<Void> completionHandler, String message) {
         if (processStatus != ExecStatus.TERMINATED) {
             //add status message
@@ -262,6 +316,7 @@ public class ProcessImpl implements Process {
         }
     }
 
+    /** 附加结构化结果并设置 jobId */
     private void appendResult(ResultModel result) {
         result.setJobId(jobId);
         if (resultDistributor != null) {
@@ -269,6 +324,7 @@ public class ProcessImpl implements Process {
         }
     }
 
+    /** 统一状态迁移：更新 TTY 绑定并依次调用 lifecycle handler */
     private void updateStatus(ExecStatus statusUpdate, Integer exitCodeUpdate, boolean foregroundUpdate,
                               Handler<Void> handler, Handler<Integer> terminatedHandler,
                               Handler<Void> completionHandler) {
@@ -317,6 +373,7 @@ public class ProcessImpl implements Process {
     }
 
     @Override
+    /** 启动命令：解析 CLI、创建 CommandProcessImpl 并提交线程池执行 */
     public synchronized void run(boolean fg) {
         if (processStatus != ExecStatus.READY) {
             throw new IllegalStateException("Cannot run proces in " + processStatus + " state");
@@ -371,6 +428,7 @@ public class ProcessImpl implements Process {
         ArthasBootstrap.getInstance().execute(task);
     }
 
+    /** 在线程池中执行命令 handler 的任务 */
     private class CommandProcessTask implements Runnable {
 
         private CommandProcess process;
@@ -380,6 +438,7 @@ public class ProcessImpl implements Process {
         }
 
         @Override
+        /** 调用命令 handler；异常时 end(1) 并提示查看日志 */
         public void run() {
             try {
                 handler.handle(process);
@@ -391,14 +450,20 @@ public class ProcessImpl implements Process {
         }
     }
 
+    /** {@link CommandProcess} 实现：命令 handler 与 Process/TTY 的交互面 */
     private class CommandProcessImpl implements CommandProcess {
 
         private final Process process;
         private final Tty tty;
+        /** 解析后的字符串参数 */
         private List<String> args2;
+        /** middleware-cli 解析结果 */
         private CommandLine commandLine;
+        /** 命令执行轮次计数（watch/trace 等） */
         private AtomicInteger times = new AtomicInteger();
+        /** 已注册的 AdviceListener */
         private AdviceListener listener = null;
+        /** 关联的 ClassFileTransformer */
         private ClassFileTransformer transformer;
 
         public CommandProcessImpl(Process process, Tty tty) {
@@ -469,6 +534,7 @@ public class ProcessImpl implements Process {
         }
 
         @Override
+        /** 经 stdout handler 链写出文本 */
         public CommandProcess write(String data) {
             if (processStatus != ExecStatus.RUNNING) {
                 throw new IllegalStateException(
@@ -544,6 +610,7 @@ public class ProcessImpl implements Process {
         }
 
         @Override
+        /** 注册 Advice 监听与 transformer，ProcessAware 自动绑定 Process */
         public void register(AdviceListener adviceListener, ClassFileTransformer transformer) {
             if (adviceListener instanceof ProcessAware) {
                 ProcessAware processAware = (ProcessAware) adviceListener;
@@ -559,6 +626,7 @@ public class ProcessImpl implements Process {
         }
 
         @Override
+        /** 移除 transformer 并按 ProcessAware 规则 unReg Advice */
         public void unregister() {
             if (transformer != null) {
                 ArthasBootstrap.getInstance().getTransformerManager().removeTransformer(transformer);
@@ -610,6 +678,7 @@ public class ProcessImpl implements Process {
         }
 
         @Override
+        /** 追加结构化结果到 ResultDistributor */
         public void appendResult(ResultModel result) {
             if (processStatus != ExecStatus.RUNNING) {
                 throw new IllegalStateException(
@@ -619,14 +688,23 @@ public class ProcessImpl implements Process {
         }
     }
 
+    /** 命令 stdout 输出链：经 Function 链处理后写入终端或文件 */
     static class ProcessOutput {
 
+        /** 实时输出 handler 链（至 StatisticsFunction 为止） */
         private List<Function<String, String>> stdoutHandlerChain;
+        /** 统计类 handler（close 时 flush 汇总结果） */
         private StatisticsFunction statisticsHandler = null;
+        /** Statistics 之后的 flush 链 */
         private List<Function<String, String>> flushHandlerChain = null;
+        /** 重定向缓存路径 */
         private String cacheLocation;
+        /** 终端引用（echoTips 等） */
         private Tty term;
 
+        /**
+         * 拆分 handler 链：StatisticsFunction 之前为实时输出，之后为 close 时 flush。
+         */
         public ProcessOutput(List<Function<String, String>> stdoutHandlerChain, String cacheLocation, Tty term) {
             // this.stdoutHandlerChain = stdoutHandlerChain;
 
@@ -650,6 +728,7 @@ public class ProcessImpl implements Process {
             this.term = term;
         }
 
+        /** 逐 handler 变换并输出数据 */
         private void write(String data) {
             if (stdoutHandlerChain != null) {
                 //hotspot, reduce memory fragment (foreach/iterator)
@@ -661,6 +740,7 @@ public class ProcessImpl implements Process {
             }
         }
 
+        /** 关闭输出链：flush 统计结果并调用 CloseFunction */
         private void close() {
             if (statisticsHandler != null && flushHandlerChain != null) {
                 String data = statisticsHandler.result();

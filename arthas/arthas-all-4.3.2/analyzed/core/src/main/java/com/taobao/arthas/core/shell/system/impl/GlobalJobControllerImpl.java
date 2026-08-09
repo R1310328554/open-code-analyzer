@@ -20,15 +20,20 @@ import com.taobao.arthas.core.shell.term.Term;
 
 
 /**
- * 全局的Job Controller，不应该存在启停的概念，不需要在连接的断开时关闭，
- * 
+ * 全局 Job 控制器：随 Arthas Agent 生命周期存在，不因单个 Shell 连接断开而销毁。
+ * <p>
+ * 在 {@link JobControllerImpl} 基础上为每个 Job 注册超时定时任务，
+ * 到期自动 {@link Job#terminate()}，并解析 {@link GlobalOptions#jobTimeout} 配置。
+ *
  * @author gehui 2017年7月31日 上午11:55:41
  */
 public class GlobalJobControllerImpl extends JobControllerImpl {
+    /** jobId → 超时定时任务，removeJob 时 cancel */
     private Map<Integer, JobTimeoutTask> jobTimeoutTaskMap = new ConcurrentHashMap<Integer, JobTimeoutTask>();
     private static final Logger logger = LoggerFactory.getLogger(GlobalJobControllerImpl.class);
 
     @Override
+    /** 全局控制器不因 Shell 关闭而终止 Job，立即完成 completionHandler */
     public void close(final Handler<Void> completionHandler) {
         if (completionHandler != null) {
             completionHandler.handle(null);
@@ -36,6 +41,7 @@ public class GlobalJobControllerImpl extends JobControllerImpl {
     }
 
     @Override
+    /** 清理所有超时任务并终止全部 Job（Agent  shutdown 时调用） */
     public void close() {
         jobTimeoutTaskMap.clear();
         for (Job job : jobs()) {
@@ -44,6 +50,7 @@ public class GlobalJobControllerImpl extends JobControllerImpl {
     }
 
     @Override
+    /** 移除 Job 时同步取消对应的超时定时任务 */
     public boolean removeJob(int id) {
         JobTimeoutTask jobTimeoutTask = jobTimeoutTaskMap.remove(id);
         if (jobTimeoutTask != null) {
@@ -53,11 +60,12 @@ public class GlobalJobControllerImpl extends JobControllerImpl {
     }
 
     @Override
+    /** 创建 Job 并注册超时调度，将 timeoutDate 写入 Job */
     public Job createJob(InternalCommandManager commandManager, List<CliToken> tokens, Session session, JobListener jobHandler, Term term, ResultDistributor resultDistributor) {
         final Job job = super.createJob(commandManager, tokens, session, jobHandler, term, resultDistributor);
 
         /*
-         * 达到超时时间将会停止job
+         * 达到超时时间将会停止 job
          */
         JobTimeoutTask jobTimeoutTask = new JobTimeoutTask(job);
         long jobTimeoutInSecond = getJobTimeoutInSecond();
@@ -69,6 +77,7 @@ public class GlobalJobControllerImpl extends JobControllerImpl {
         return job;
     }
 
+    /** 解析 {@link GlobalOptions#jobTimeout}，支持 h/d/m/s 后缀，失败时默认 1 天 */
     private long getJobTimeoutInSecond() {
         long result = -1;
         String jobTimeoutConfig = GlobalOptions.jobTimeout.trim();
@@ -104,6 +113,7 @@ public class GlobalJobControllerImpl extends JobControllerImpl {
         return result;
     }
 
+    /** Job 超时 Runnable：到期后 terminate 对应 Job */
     private static class JobTimeoutTask implements Runnable {
         private Job job;
 
@@ -112,6 +122,7 @@ public class GlobalJobControllerImpl extends JobControllerImpl {
         }
 
         @Override
+        /** 超时触发：终止 Job 并清空引用防止重复执行 */
         public void run() {
             try {
                 if (job != null) {
@@ -128,6 +139,7 @@ public class GlobalJobControllerImpl extends JobControllerImpl {
             }
         }
 
+        /** 取消超时：Job 正常结束时由 removeJob 调用 */
         public void cancel() {
             job = null;
         }

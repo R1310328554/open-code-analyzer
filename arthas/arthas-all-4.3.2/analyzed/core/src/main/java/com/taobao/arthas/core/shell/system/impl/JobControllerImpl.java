@@ -37,31 +37,44 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * {@link JobController} 默认实现：管理 Shell 会话内的 Job 集合，负责创建、关闭与权限校验。
+ * <p>
+ * 解析命令行 token 构建 {@link ProcessImpl}，支持管道 {@code |}、重定向 {@code >}/{@code >>}、
+ * 后台 {@code &} 及 stdout handler 链组装。
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author hengyunabc 2019-05-14
  * @author gongdewei 2020-03-23
  */
 public class JobControllerImpl implements JobController {
 
+    /** 按 jobId 排序的活跃 Job 表 */
     private final SortedMap<Integer, JobImpl> jobs = new TreeMap<Integer, JobImpl>();
+    /** Job id 自增生成器 */
     private final AtomicInteger idGenerator = new AtomicInteger(0);
+    /** 控制器是否已关闭 */
     private boolean closed = false;
 
     public JobControllerImpl() {
     }
 
+    /** @return 当前所有 Job 的快照集合 */
     public synchronized Set<Job> jobs() {
         return new HashSet<Job>(jobs.values());
     }
 
+    /** @param id Job 数字 id */
+    /** @return 指定 id 的 Job，不存在时为 null */
     public synchronized Job getJob(int id) {
         return jobs.get(id);
     }
 
+    /** 从控制器移除 Job；子类可在移除前做额外清理 */
     synchronized boolean removeJob(int id) {
         return jobs.remove(id) != null;
     }
 
+    /** 校验 Session 是否已通过 auth；未登录时仅允许 auth 命令 */
     private void checkPermission(Session session, CliToken token) {
         if (ArthasBootstrap.getInstance().getSecurityAuthenticator().needLogin()) {
             // 检查session是否有 Subject
@@ -77,6 +90,7 @@ public class JobControllerImpl implements JobController {
     }
 
     @Override
+    /** 解析 token 创建 Job 与 Process，注册到 jobs 表 */
     public Job createJob(InternalCommandManager commandManager, List<CliToken> tokens, Session session, JobListener jobHandler, Term term, ResultDistributor resultDistributor) {
         checkPermission(session, tokens.get(0));
         int jobId = idGenerator.incrementAndGet();
@@ -92,6 +106,7 @@ public class JobControllerImpl implements JobController {
         return job;
     }
 
+    /** 统计当前将结果重定向到缓存文件的 Job 数量（上限 8） */
     private int getRedirectJobCount() {
         int count = 0;
         for (Job job : jobs.values()) {
@@ -103,6 +118,7 @@ public class JobControllerImpl implements JobController {
     }
 
     @Override
+    /** 关闭控制器：终止全部 Job，全部 terminateFuture 完成后回调 */
     public void close(final Handler<Void> completionHandler) {
         List<JobImpl> jobs;
         synchronized (this) {
@@ -134,14 +150,14 @@ public class JobControllerImpl implements JobController {
     }
 
     /**
-     * Try to create a process from the command line tokens.
+     * 从 CLI token 列表创建 {@link Process}：取首个文本 token 作为命令名。
      *
-     * @param line the command line tokens
-     * @param commandManager command manager
-     * @param jobId job id
-     * @param term term
-     * @param resultDistributor
-     * @return the created process
+     * @param line 命令行 token 列表
+     * @param commandManager 命令管理器
+     * @param jobId 分配的 job id
+     * @param term 终端
+     * @param resultDistributor 结果分发器
+     * @return 创建的 Process
      */
     private Process createProcess(Session session, List<CliToken> line, InternalCommandManager commandManager, int jobId, Term term, ResultDistributor resultDistributor) {
         try {
@@ -165,6 +181,7 @@ public class JobControllerImpl implements JobController {
         }
     }
 
+    /** 检测行尾 {@code &} 并移除，表示后台运行 */
     private boolean runInBackground(List<CliToken> tokens) {
         boolean runInBackground = false;
         CliToken last = TokenUtils.findLastTextToken(tokens);
@@ -175,6 +192,9 @@ public class JobControllerImpl implements JobController {
         return runInBackground;
     }
 
+    /**
+     * 构建命令 Process：解析管道与重定向，组装 stdout handler 链。
+     */
     private Process createCommandProcess(Command command, ListIterator<CliToken> tokens, int jobId, Term term, ResultDistributor resultDistributor) throws IOException {
         List<CliToken> remaining = new ArrayList<CliToken>();
         List<CliToken> pipelineTokens = new ArrayList<CliToken>();
@@ -228,6 +248,7 @@ public class JobControllerImpl implements JobController {
         return process;
     }
 
+    /** 从重定向 token 之后读取目标文件名 */
     private String getRedirectFileName(ListIterator<CliToken> tokens) {
         while (tokens.hasNext()) {
             CliToken token = tokens.next();
@@ -238,6 +259,7 @@ public class JobControllerImpl implements JobController {
         return null;
     }
 
+    /** 将管道段 token 解析为 StdoutHandler 并加入输出链 */
     private void injectHandler(List<Function<String, String>> stdoutHandlerChain, List<CliToken> pipelineTokens) {
         if (!pipelineTokens.isEmpty()) {
             StdoutHandler handler = StdoutHandler.inject(pipelineTokens);
@@ -249,6 +271,7 @@ public class JobControllerImpl implements JobController {
     }
 
     @Override
+    /** 无回调的 close，委托给 {@link #close(Handler)} */
     public void close() {
         close(null);
     }
