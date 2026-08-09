@@ -16,18 +16,19 @@
 package org.redisson.api;
 
 /**
- * Floating-point homogeneous array precision type for JSON.SET FPHA argument.
- * Requires <b>Redis 8.8.0 or higher.</b>
+ * {@code JSON.SET} 命令 {@code FPHA} 参数的浮点同质数组精度类型。
+ * <p>
+ * 需要 <b>Redis 8.8.0 或更高版本</b>。
  *
  * @author Triet Nguyen
  */
 public enum FPHAType {
-    /** Brain Float 16-bit precision. */
+    /** Brain Float 16 位精度（BF16）。 */
     BF16,
-    /** 16-bit floating-point precision. */
+    /** 16 位浮点精度（FP16）。 */
     FP16,
-    /** 32-bit floating-point precision. */
+    /** 32 位浮点精度（FP32）。 */
     FP32,
-    /** 64-bit floating-point precision. */
+    /** 64 位浮点精度（FP64）。 */
     FP64
 }

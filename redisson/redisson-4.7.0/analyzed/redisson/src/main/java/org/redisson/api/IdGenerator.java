@@ -16,24 +16,23 @@
 package org.redisson.api;
 
 /**
- * Identifier generator
+ * 分布式任务标识生成器，供 {@link ExecutorOptions} 等组件使用。
  *
  * @author Nikita Koksharov
- *
  */
 public interface IdGenerator {
 
     /**
-     * Generates identifier
+     * 生成唯一任务标识。
      *
-     * @return identifier
+     * @return 任务标识字符串
      */
     String generateId();
 
     /**
-     * Returns random identifier generator. Used by default.
+     * 返回随机标识生成器（默认实现）。
      *
-     * @return random identifier generator
+     * @return 随机 {@link IdGenerator} 实例
      */
     static IdGenerator random() {
         return new RandomIdGenerator();

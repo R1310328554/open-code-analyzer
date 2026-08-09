@@ -16,21 +16,16 @@
 package org.redisson.api;
 
 /**
- * Function execution mode.
+ * Redis 函数 {@code FCALL} 的执行模式，映射为只读或读写命令。
  *
  * @author Nikita Koksharov
- *
  */
 public enum FunctionMode {
 
-    /**
-     * Execute function as read operation
-     */
+    /** 以只读操作执行函数（{@code FCALL_RO}）。 */
     READ,
 
-    /**
-     * Execute function as read operation
-     */
+    /** 以写操作执行函数（{@code FCALL}）。 */
     WRITE
 
 }

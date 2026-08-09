@@ -16,15 +16,14 @@
 package org.redisson.api;
 
 /**
- * Result returned by {@link RLeasedMap#getWithLease(Object, java.time.Duration)} method.
+ * {@link RLeasedMap#getWithLease(Object, java.time.Duration)} 的查询结果。
  * <p>
- * If the entry is present in cache then {@link #getValue()} returns the value and {@link #getLeaseToken()} is {@code null}.
- * If the entry is absent then {@link #getValue()} is {@code null} and {@link #getLeaseToken()} returns the lease token,
- * or {@code null} if no lease information is available.
+ * 缓存命中时 {@link #getValue()} 返回值且 {@link #getLeaseToken()} 为 {@code null}；
+ * 未命中时 {@link #getValue()} 为 {@code null}，{@link #getLeaseToken()} 返回租约令牌
+（无租约信息时亦为 {@code null}）。
  *
  * @author nhancdt2602
- *
- * @param <V> value type
+ * @param <V> 值类型
  */
 public final class LeaseGetResult<V> {
 
@@ -32,46 +31,35 @@ public final class LeaseGetResult<V> {
     private final boolean leaseAcquired;
     private final String leaseToken;
 
+    /** @param value 缓存值；未命中为 {@code null}
+     *  @param leaseAcquired 是否在未命中时成功获取租约
+     *  @param leaseToken 租约令牌；命中或无租约时为 {@code null} */
     public LeaseGetResult(V value, boolean leaseAcquired, String leaseToken) {
         this.value = value;
         this.leaseAcquired = leaseAcquired;
         this.leaseToken = leaseToken;
     }
 
-    /**
-     * Returns cached value or {@code null} if cache miss happened.
-     *
-     * @return value or {@code null}
-     */
+    /** @return 缓存值；未命中时 {@code null} */
+
     public V getValue() {
         return value;
     }
 
-    /**
-     * Returns {@code true} if there was no cached value for this lookup ({@link #getValue()} is {@code null}).
-     *
-     * @return {@code true} on cache miss, {@code false} if a value was present
-     */
+    /** @return 缓存未命中（{@link #getValue()} 为 {@code null}）时为 {@code true} */
+
     public boolean isCacheMiss() {
         return value == null;
     }
 
-    /**
-     * Returns {@code true} if lease has been acquired on cache miss.
-     * <p>
-     * If {@link #getValue()} is not {@code null} then this method always returns {@code false}.
-     *
-     * @return {@code true} if acquired, otherwise {@code false}
-     */
+    /** @return 未命中且成功获取租约时为 {@code true}；命中时恒为 {@code false} */
+
     public boolean isLeaseAcquired() {
         return leaseAcquired;
     }
 
-    /**
-     * Returns lease token if cache miss happened, otherwise {@code null}.
-     *
-     * @return lease token or {@code null}
-     */
+    /** @return 未命中时的租约令牌；命中或无租约信息时为 {@code null} */
+
     public String getLeaseToken() {
         return leaseToken;
     }

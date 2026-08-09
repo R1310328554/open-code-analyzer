@@ -16,20 +16,19 @@
 package org.redisson.api;
 
 /**
- * Redisson Object Event listener for <b>deleted</b> event published by Redis.
+ * Redis 发布<b>删除</b>键空间事件时触发的 Redisson 对象监听器。
  * <p>
- * Redis notify-keyspace-events setting should contain Eg letters
- * 
- * @author Nikita Koksharov
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code g} 字母。
  *
+ * @author Nikita Koksharov
  */
 @FunctionalInterface
 public interface DeletedObjectListener extends ObjectListener {
 
     /**
-     * Invoked on deleted event
-     * 
-     * @param name - name of object
+     * 对象被删除时回调。
+     *
+     * @param name 被删除对象的 Redis 键名
      */
     void onDeleted(String name);
     

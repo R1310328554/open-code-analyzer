@@ -19,10 +19,11 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
- * Rate configuration of {@link RGcra} object.
+ * {@link RGcra} 分布式 GCRA 限流器的速率配置快照。
+ * <p>
+ * 由 {@link RGcra#trySetRate} 或 {@link RGcra#setRate} 设置。
  *
  * @author Nikita Koksharov
- *
  */
 public final class GcraConfig {
 
@@ -30,38 +31,29 @@ public final class GcraConfig {
     private final long tokensPerPeriod;
     private final Duration period;
 
+    /** @param maxBurst 最大突发令牌数
+     *  @param tokensPerPeriod 每周期补充令牌数
+     *  @param period 补充周期 */
     public GcraConfig(long maxBurst, long tokensPerPeriod, Duration period) {
         this.maxBurst = maxBurst;
         this.tokensPerPeriod = tokensPerPeriod;
         this.period = period;
     }
 
-    /**
-     * Returns maximum burst size set through
-     * {@link RGcra#trySetRate(long, long, Duration)} or {@link RGcra#setRate(long, long, Duration)} method.
-     *
-     * @return maximum burst size
-     */
+    /** @return 最大突发令牌容量 */
+
     public long getMaxBurst() {
         return maxBurst;
     }
 
-    /**
-     * Returns token replenishment rate per period set through
-     * {@link RGcra#trySetRate(long, long, Duration)} or {@link RGcra#setRate(long, long, Duration)} method.
-     *
-     * @return token amount replenished per period
-     */
+    /** @return 每个补充周期恢复的令牌数 */
+
     public long getTokensPerPeriod() {
         return tokensPerPeriod;
     }
 
-    /**
-     * Returns replenishment period set through
-     * {@link RGcra#trySetRate(long, long, Duration)} or {@link RGcra#setRate(long, long, Duration)} method.
-     *
-     * @return replenishment period
-     */
+    /** @return 令牌补充周期 */
+
     public Duration getPeriod() {
         return period;
     }

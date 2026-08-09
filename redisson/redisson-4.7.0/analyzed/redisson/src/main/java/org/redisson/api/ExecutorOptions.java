@@ -18,10 +18,11 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration for ExecutorService.
- * 
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RExecutorService} 的可选配置。
+ * <p>
+ * 控制任务重试间隔与任务标识生成策略。
  *
+ * @author Nikita Koksharov
  */
 @Deprecated
 public final class ExecutorOptions {
@@ -33,44 +34,41 @@ public final class ExecutorOptions {
     private ExecutorOptions() {
     }
     
+    /** @return 使用默认参数的 {@link ExecutorOptions} 实例 */
     public static ExecutorOptions defaults() {
         return new ExecutorOptions();
     }
     
+    /** @return 任务重试间隔（毫秒） */
     public long getTaskRetryInterval() {
         return taskRetryInterval;
     }
     
     /**
-     * Defines task retry interval at the end of which task
-     * is executed again by ExecutorService worker.
+     * 设置任务重试间隔：自任务开始起若仍未标记完成（成功或失败），
+     * 则 Worker 在该间隔后重新执行。
      * <p>
-     * Counted from the task start moment.
-     * Applied only if the task was in progress but for some reason
-     * wasn't marked as completed (successful or unsuccessful).
-     * <p>
-     * Set <code>0</code> to disable.
-     * <p>
-     * Default is <code>5 minutes</code>
-     * 
-     * @param timeout value
-     * @param unit value
-     * @return self instance
+     * 设为 {@code 0} 禁用重试；默认 {@code 5} 分钟。
+     *
+     * @param timeout 间隔数值
+     * @param unit 时间单位
+     * @return 当前实例（链式调用）
      */
     public ExecutorOptions taskRetryInterval(long timeout, TimeUnit unit) {
         this.taskRetryInterval = unit.toMillis(timeout);
         return this;
     }
 
+    /** @return 任务标识生成器 */
     public IdGenerator getIdGenerator() {
         return idGenerator;
     }
 
     /**
-     * Defines identifier generator
+     * 设置任务标识生成器。
      *
-     * @param idGenerator identifier generator
-     * @return self instance
+     * @param idGenerator 标识生成器实现
+     * @return 当前实例（链式调用）
      */
     public ExecutorOptions idGenerator(IdGenerator idGenerator) {
         this.idGenerator = idGenerator;

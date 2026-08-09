@@ -16,20 +16,16 @@
 package org.redisson.api;
 
 /**
+ * 缓存驱逐策略枚举，用于 {@link org.redisson.api.RMapCache} 等带容量限制的集合。
  *
  * @author Nikita Koksharov
- *
  */
 public enum EvictionMode {
 
-        /**
-         * Least Recently Used eviction algorithm.
-         */
+        /** 最近最少使用（LRU）驱逐算法。 */
         LRU,
 
-        /**
-         * Least Frequently Used eviction algorithm.
-         */
+        /** 最不经常使用（LFU）驱逐算法。 */
         LFU,
 
 }

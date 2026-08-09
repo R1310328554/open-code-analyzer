@@ -18,10 +18,11 @@ package org.redisson.api;
 import java.util.Objects;
 
 /**
- * Result returned by Redis {@code GCRA} command.
+ * Redis {@code GCRA} 命令的限流判定结果。
+ * <p>
+ * 表示请求令牌是否被限流，以及当前可用令牌与重试等待时间。
  *
  * @author Su Ko
- *
  */
 public final class GcraResult {
 
@@ -31,6 +32,11 @@ public final class GcraResult {
     private final long retryAfterSeconds;
     private final long fullBurstAfterSeconds;
 
+    /** @param limited 是否被限流
+     *  @param maxTokens 最大令牌容量
+     *  @param availableTokens 当前可用令牌数
+     *  @param retryAfterSeconds 获取所需令牌需等待的秒数
+     *  @param fullBurstAfterSeconds 恢复满突发容量需等待的秒数 */
     public GcraResult(boolean limited, long maxTokens, long availableTokens,
                       long retryAfterSeconds, long fullBurstAfterSeconds) {
         this.limited = limited;
@@ -40,47 +46,32 @@ public final class GcraResult {
         this.fullBurstAfterSeconds = fullBurstAfterSeconds;
     }
 
-    /**
-     * Returns {@code true} if the requested tokens can't be acquired.
-     *
-     * @return {@code true} if rate limit has been exceeded
-     */
+    /** @return 若请求令牌无法获取则为 {@code true}（已触发限流） */
+
     public boolean isLimited() {
         return limited;
     }
 
-    /**
-     * Returns maximum token amount available for burst.
-     *
-     * @return maximum token amount
-     */
+    /** @return 最大突发令牌容量 */
+
     public long getMaxTokens() {
         return maxTokens;
     }
 
-    /**
-     * Returns token amount currently available.
-     *
-     * @return available token amount
-     */
+    /** @return 当前可用令牌数 */
+
     public long getAvailableTokens() {
         return availableTokens;
     }
 
-    /**
-     * Returns number of seconds to wait before the requested tokens can be acquired.
-     *
-     * @return retry interval in seconds
-     */
+    /** @return 获取所需令牌前需等待的秒数 */
+
     public long getRetryAfterSeconds() {
         return retryAfterSeconds;
     }
 
-    /**
-     * Returns number of seconds to wait before the full burst capacity is restored.
-     *
-     * @return full burst restore interval in seconds
-     */
+    /** @return 恢复满突发容量前需等待的秒数 */
+
     public long getFullBurstAfterSeconds() {
         return fullBurstAfterSeconds;
     }

@@ -16,23 +16,28 @@
 package org.redisson.api;
 
 /**
- * Json data type
+ * RedisJSON 文档节点类型，对应 {@code JSON.TYPE} 返回值。
  *
  * @author Nikita Koksharov
- *
  */
 public enum JsonType {
 
+    /** 布尔类型。 */
     BOOLEAN,
 
+    /** 字符串类型。 */
     STRING,
 
+    /** 浮点数值类型。 */
     NUMBER,
 
+    /** 整数类型。 */
     INTEGER,
 
+    /** JSON 对象类型。 */
     OBJECT,
 
+    /** JSON 数组类型。 */
     ARRAY
 
 }

@@ -18,36 +18,46 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * Encapsulates information about Redis functions library.
+ * 封装 Redis {@code FUNCTION LIST} 返回的函数库元数据。
+ * <p>
+ * 包含库名、引擎、源码及库内各函数的名称、描述与标志位。
  *
  * @author Nikita Koksharov
- *
  */
 public class FunctionLibrary {
 
+    /** 函数标志：禁止写、允许 OOM、允许 stale 读、禁止集群执行等。 */
     public enum Flag {NO_WRITES, ALLOW_OOM, ALLOW_STALE, NO_CLUSTER}
 
+    /** 函数库内单个函数的元数据。 */
     public static class Function {
 
         private final String name;
         private final String description;
         private final List<Flag> flags;
 
+        /** @param name 函数名
+         *  @param description 描述
+         *  @param flags 标志位列表 */
         public Function(String name, String description, List<Flag> flags) {
             this.name = name;
             this.description = description;
             this.flags = flags;
         }
 
+        /** @return 函数标志位列表 */
         public List<Flag> getFlags() {
             return flags;
         }
 
+        /** @return 函数描述 */
         public String getDescription() {
             return description;
         }
 
-        public String getName() {
+        /** @return 函数名 */
+        /** @return 函数库名称 */
+    public String getName() {
             return name;
         }
     }
@@ -58,6 +68,10 @@ public class FunctionLibrary {
     private final String code;
     private final List<Function> functions;
 
+    /** @param name 库名
+     *  @param engine 引擎（如 {@code lua}）
+     *  @param code 库源码
+     *  @param functions 库内函数列表 */
     public FunctionLibrary(String name, String engine, String code, List<Function> functions) {
         this.name = name;
         this.engine = engine;
@@ -69,14 +83,17 @@ public class FunctionLibrary {
         return name;
     }
 
+    /** @return 执行引擎名称 */
     public String getEngine() {
         return engine;
     }
 
+    /** @return 函数库 Lua 源码 */
     public String getCode() {
         return code;
     }
 
+    /** @return 库内函数元数据列表 */
     public List<Function> getFunctions() {
         return functions;
     }

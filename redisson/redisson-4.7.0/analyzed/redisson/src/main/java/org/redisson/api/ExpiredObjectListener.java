@@ -16,20 +16,19 @@
 package org.redisson.api;
 
 /**
- * Redisson Object Event listener for <b>expired</b> event published by Redis.
+ * Redis 发布<b>过期</b>键空间事件时触发的 Redisson 对象监听器。
  * <p>
- * Redis notify-keyspace-events setting should contain Ex letters
- * 
- * @author Nikita Koksharov
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code x} 字母。
  *
+ * @author Nikita Koksharov
  */
 @FunctionalInterface
 public interface ExpiredObjectListener extends ObjectListener {
 
     /**
-     * Invoked on expired event
-     * 
-     * @param name - name of object
+     * 对象 TTL 到期时回调。
+     *
+     * @param name 过期对象的 Redis 键名
      */
     void onExpired(String name);
     

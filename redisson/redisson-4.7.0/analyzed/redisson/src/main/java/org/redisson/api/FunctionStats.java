@@ -20,78 +20,68 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Encapsulates information about currently running
- * Redis function and available execution engines.
+ * 封装 {@code FUNCTION STATS} 返回的运行中函数与各引擎统计信息。
  *
  * @author Nikita Koksharov
- *
  */
 public class FunctionStats {
 
+    /** 单个函数引擎（如 {@code lua}）的库与函数计数。 */
     public static class Engine {
 
         private final Long libraries;
         private final Long functions;
 
+        /** @param libraries 已加载库数量
+         *  @param functions 已注册函数数量 */
         public Engine(Long libraries, Long functions) {
             this.libraries = libraries;
             this.functions = functions;
         }
 
-        /**
-         * Returns libraries amount
-         *
-         * @return libraries amount
-         */
+        /** @return 已加载函数库数量 */
+
         public Long getLibraries() {
             return libraries;
         }
 
-        /**
-         * Returns functions amount
-         *
-         * @return functions amount
-         */
+        /** @return 已注册函数数量 */
+
         public Long getFunctions() {
             return functions;
         }
     }
 
+    /** 当前正在执行的函数及其调用参数与运行时长。 */
     public static class RunningFunction {
 
         private final String name;
         private final List<Object> command;
         private final Duration duration;
 
+        /** @param name 函数名
+         *  @param command FCALL 命令参数列表
+         *  @param duration 已运行时长 */
         public RunningFunction(String name, List<Object> command, Duration duration) {
             this.name = name;
             this.command = command;
             this.duration = duration;
         }
 
-        /**
-         * Returns name of running function
-         *
-         * @return name
-         */
+        /** @return 正在执行的函数名 */
+
         public String getName() {
             return name;
         }
 
-        /**
-         * Returns arguments of running function
-         *
-         * @return arguments
-         */
+        /** @return FCALL 命令参数列表 */
+
         public List<Object> getCommand() {
             return command;
         }
 
-        /**
-         * Returns runtime duration of running function
-         *
-         * @return runtime duration
-         */
+        /** @return 函数已运行时长 */
+
         public Duration getDuration() {
             return duration;
         }
@@ -100,25 +90,21 @@ public class FunctionStats {
     private final RunningFunction runningFunction;
     private final Map<String, Engine> engines;
 
+    /** @param runningFunction 当前运行中的函数；无则为 {@code null}
+     *  @param engines 按引擎名索引的统计信息 */
     public FunctionStats(RunningFunction runningFunction, Map<String, Engine> engines) {
         this.runningFunction = runningFunction;
         this.engines = engines;
     }
 
-    /**
-     * Returns currently running fuction otherwise {@code null}
-     *
-     * @return running function
-     */
+    /** @return 当前运行中的函数；无则 {@code null} */
+
     public RunningFunction getRunningFunction() {
         return runningFunction;
     }
 
-    /**
-     * Returns engine objects mapped by function engine name
-     *
-     * @return engine objects
-     */
+    /** @return 按引擎名映射的 {@link Engine} 统计信息 */
+
     public Map<String, Engine> getEngines() {
         return engines;
     }

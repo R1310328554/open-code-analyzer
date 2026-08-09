@@ -16,28 +16,35 @@
 package org.redisson.api;
 
 /**
+ * 简单的键值对容器，用于 API 层传递 {@code Map.Entry} 风格数据。
  *
  * @author Nikita Koksharov
- *
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class Entry<K, V> {
 
     private K key;
     private V value;
 
+    /** 无参构造，供序列化框架使用。 */
     public Entry() {
 
     }
 
+    /** @param key 键
+     *  @param value 值 */
     public Entry(K key, V  value) {
         this.key = key;
         this.value = value;
     }
 
+    /** @return 值 */
     public V getValue() {
         return value;
     }
 
+    /** @return 键 */
     public K getKey() {
         return key;
     }

@@ -19,49 +19,31 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 
 /**
- * Function result type.
+ * {@code FCALL} 返回值类型，决定使用的 Redis 命令与解码方式。
  *
  * @author Nikita Koksharov
- *
  */
 public enum FunctionResult {
 
-    /**
-     * Result is a value of Boolean type
-     */
+    /** 返回 {@code Boolean} 类型。 */
     BOOLEAN(RedisCommands.FCALL_BOOLEAN_SAFE),
 
-    /**
-     * Result is a value of Long type
-     */
+    /** 返回 {@code Long} 类型。 */
     LONG(RedisCommands.FCALL_LONG),
 
-    /**
-     * Result is a value of List type
-     */
+    /** 返回 {@code List} 类型。 */
     LIST(RedisCommands.FCALL_LIST),
 
-    /**
-     * Result is a value of plain String type
-     */
+    /** 返回普通 {@code String} 类型。 */
     STRING(RedisCommands.FCALL_STRING),
 
-    /**
-     * Result is a value of user defined type
-     */
+    /** 返回用户自定义类型（由 {@link org.redisson.client.codec.Codec} 解码）。 */
     VALUE(RedisCommands.FCALL_OBJECT),
 
-    /**
-     * Result is a value of Map Value type. Codec.getMapValueDecoder() and Codec.getMapValueEncoder()
-     * methods are used for data deserialization or serialization.
-     */
+    /** 返回 Map 值类型；使用 {@code Codec.getMapValueDecoder/Encoder()} 编解码。 */
     MAPVALUE(RedisCommands.FCALL_MAP_VALUE),
 
-    /**
-     * Result is a value of List type, which consists of objects of Map Value type.
-     * Codec.getMapValueDecoder() and Codec.getMapValueEncoder()
-     * methods are used for data deserialization or serialization.
-     */
+    /** 返回 Map 值类型的 {@code List}；使用 {@code Codec.getMapValueDecoder/Encoder()} 编解码。 */
     MAPVALUELIST(RedisCommands.FCALL_MAP_VALUE_LIST);
 
     private final RedisCommand<?> command;
@@ -70,6 +52,7 @@ public enum FunctionResult {
         this.command = command;
     }
 
+    /** @return 对应的 {@code FCALL_*} Redis 命令 */
     public RedisCommand<?> getCommand() {
         return command;
     }
