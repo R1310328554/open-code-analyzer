@@ -516,3 +516,13 @@ spring-context/src/main/java/org/springframework/context/annotation/Proxyable.ja
 spring-context/src/main/java/org/springframework/context/annotation/ReflectiveScan.java
 spring-context/src/main/java/org/springframework/context/annotation/ResourceElementResolver.java
 spring-context/src/main/java/org/springframework/context/annotation/Role.java
+spring-context/src/main/java/org/springframework/format/AnnotationFormatterFactory.java
+spring-context/src/main/java/org/springframework/format/Formatter.java
+spring-context/src/main/java/org/springframework/format/FormatterRegistrar.java
+spring-context/src/main/java/org/springframework/format/FormatterRegistry.java
+spring-context/src/main/java/org/springframework/format/Parser.java
+spring-context/src/main/java/org/springframework/format/Printer.java
+spring-context/src/main/java/org/springframework/format/annotation/DateTimeFormat.java
+spring-context/src/main/java/org/springframework/format/annotation/DurationFormat.java
+spring-context/src/main/java/org/springframework/format/annotation/NumberFormat.java
+spring-context/src/main/java/org/springframework/format/datetime/DateFormatter.java
