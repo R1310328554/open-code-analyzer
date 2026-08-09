@@ -21,6 +21,9 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 
 /***
+ * 协议命令监听器示例实现：将命令/回复流量打印到指定输出流，便于调试。
+ * <p>
+ * /***
  * This is a support class for some of the example programs.  It is
  * a sample implementation of the ProtocolCommandListener interface
  * which just prints out to a specified stream all command/reply traffic.
@@ -30,7 +33,9 @@ import java.io.PrintWriter;
 
 public class PrintCommandListener implements ProtocolCommandListener
 {
+    /** 命令与回复的输出目标。 */
     private final PrintWriter __writer;
+    /** 为 true 时隐藏 USER/PASS/LOGIN 等凭据内容。 */
     private final boolean __nologin;
     private final char __eolMarker;
     private final boolean __directionMarker;
@@ -147,6 +152,7 @@ public class PrintCommandListener implements ProtocolCommandListener
     }
 
     @Override
+        // 发送方向：可选打印 "> " 前缀并处理登录脱敏
     public void protocolCommandSent(ProtocolCommandEvent event)
     {
         if (__directionMarker) {
@@ -188,6 +194,7 @@ public class PrintCommandListener implements ProtocolCommandListener
     }
 
     @Override
+        // 接收方向：可选打印 "< " 前缀
     public void protocolReplyReceived(ProtocolCommandEvent event)
     {
         if (__directionMarker) {

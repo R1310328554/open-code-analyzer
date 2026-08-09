@@ -19,6 +19,11 @@ package org.apache.commons.net;
 import java.util.EventObject;
 
 /***
+ * 协议命令/回复事件：记录发往服务器或从服务器收到的 ASCII 文本消息。
+ * <p>
+ * 与 {@link org.apache.commons.net.ProtocolCommandListener} 配合用于协议调试。
+ * <p>
+ * /***
  * There exists a large class of IETF protocols that work by sending an
  * ASCII text command and arguments to a server, and then receiving an
  * ASCII text reply.  For debugging and other purposes, it is extremely
@@ -36,7 +41,9 @@ public class ProtocolCommandEvent extends EventObject
 {
     private static final long serialVersionUID = 403743538418947240L;
 
+    /** 回复码（仅回复事件有效）。 */
     private final int __replyCode;
+    /** true 表示本事件对应已发送的命令。 */
     private final boolean __isCommand;
     private final String __message, __command;
 

@@ -23,6 +23,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /***
+ * Telnet 客户端（RFC 854 NVT）：提供自动化 Telnet 会话的输入/输出流。
+ * <p>
+ * 先 {@link org.apache.commons.net.SocketClient#connect} 连接，再通过
+ * {@link #getInputStream}/{@link #getOutputStream} 读写；结束须调用 {@link #disconnect}。
+ * <p>
+ * /***
  * The TelnetClient class implements the simple network virtual
  * terminal (NVT) for the Telnet protocol according to RFC 854.  It
  * does not implement any of the extra Telnet options because it
@@ -43,8 +49,10 @@ import java.io.OutputStream;
 
 public class TelnetClient extends Telnet
 {
+    /** 经 TelnetInputStream 包装后的应用层输入流。 */
     private InputStream __input;
     private OutputStream __output;
+    /** 是否启用独立读线程以即时处理选项协商。 */
     protected boolean readerThread = true;
     private TelnetInputListener inputListener;
 
@@ -89,6 +97,7 @@ public class TelnetClient extends Telnet
      * @exception IOException  If an error occurs during connection setup.
      ***/
     @Override
+        // 建立 TelnetInputStream/TelnetOutputStream 并可选启动读线程
     protected void _connectAction_() throws IOException
     {
         super._connectAction_();
@@ -402,6 +411,7 @@ public class TelnetClient extends Telnet
     }
 
     // Notify input listener
+        // 读线程检测到可读数据时回调 TelnetInputListener
     void notifyInputListener() {
         TelnetInputListener listener;
         synchronized (this) {

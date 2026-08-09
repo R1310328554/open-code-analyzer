@@ -18,6 +18,9 @@
 package org.apache.commons.net.telnet;
 
 /***
+ * 抑制 Go-Ahead 选项处理器（RFC 858）：半双工模式下减少 GA 信号干扰。
+ * <p>
+ * /***
  * Implements the telnet suppress go ahead option RFC 858.
  ***/
 public class SuppressGAOptionHandler extends TelnetOptionHandler

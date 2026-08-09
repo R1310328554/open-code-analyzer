@@ -33,6 +33,11 @@ import javax.net.SocketFactory;
 
 
 /**
+ * TCP 客户端抽象基类：封装套接字连接、超时、工厂注入与协议命令监听。
+ * <p>
+ * 子类应通过 {@link #_socketFactory_} 创建 Socket，以便替换 SSL/代理等实现。
+ * <p>
+ * /**
  * The SocketClient provides the basic operations that are required of
  * client objects accessing sockets.  It is meant to be
  * subclassed to avoid having to rewrite the same code over and over again
@@ -58,9 +63,10 @@ public abstract class SocketClient
      * The end of line character sequence used by most IETF protocols.  That
      * is a carriage return followed by a newline: "\r\n"
      */
+    /** IETF 协议常用的行结束符：回车加换行。 */
     public static final String NETASCII_EOL = "\r\n";
 
-    /** The default SocketFactory shared by all SocketClient instances. */
+    /** 所有 SocketClient 实例共享的默认 Socket 工厂。 */
     private static final SocketFactory __DEFAULT_SOCKET_FACTORY =
             SocketFactory.getDefault();
 
@@ -77,7 +83,7 @@ public abstract class SocketClient
     /** The timeout to use after opening a socket. */
     protected int _timeout_;
 
-    /** The socket used for the connection. */
+    /** 当前连接使用的 TCP 套接字。 */
     protected Socket _socket_;
 
     /** The hostname used for the connection (null = no hostname supplied). */
@@ -92,7 +98,7 @@ public abstract class SocketClient
     /** The socket's OutputStream. */
     protected OutputStream _output_;
 
-    /** The socket's SocketFactory. */
+    /** 用于创建连接套接字的工厂（可替换为自定义实现）。 */
     protected SocketFactory _socketFactory_;
 
     /** The socket's ServerSocket Factory. */
@@ -153,6 +159,7 @@ public abstract class SocketClient
      * initialization of the aforementioned protected variables.
      * @throws IOException (SocketException) if a problem occurs with the socket
      */
+        // 连接建立后：设置超时并绑定输入/输出流
     protected void _connectAction_() throws IOException
     {
         _socket_.setSoTimeout(_timeout_);
@@ -318,6 +325,7 @@ public abstract class SocketClient
      * <p>
      * @exception IOException  If there is an error closing the socket.
      */
+        // 静默关闭套接字与流，重置连接状态
     public void disconnect() throws IOException
     {
         closeQuietly(_socket_);
@@ -834,6 +842,7 @@ public abstract class SocketClient
      * @param proxy the new proxy for connections.
      * @since 3.2
      */
+        // 通过 DefaultSocketFactory 注入代理并记录 connProxy
     public void setProxy(Proxy proxy) {
         setSocketFactory(new DefaultSocketFactory(proxy));
         connProxy = proxy;

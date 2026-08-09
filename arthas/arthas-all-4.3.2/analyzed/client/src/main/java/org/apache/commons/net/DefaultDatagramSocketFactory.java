@@ -22,6 +22,11 @@ import java.net.InetAddress;
 import java.net.SocketException;
 
 /***
+ * 默认 DatagramSocket 工厂：直接封装 {@link java.net.DatagramSocket} 构造方法。
+ * <p>
+ * 作为 {@link org.apache.commons.net.DatagramSocketClient} 的默认工厂实现。
+ * <p>
+ * /***
  * DefaultDatagramSocketFactory implements the DatagramSocketFactory
  * interface by simply wrapping the java.net.DatagramSocket
  * constructors.  It is the default DatagramSocketFactory used by
@@ -34,6 +39,7 @@ import java.net.SocketException;
  * @see DatagramSocketClient#setDatagramSocketFactory
  ***/
 
+    /** 在本地主机任意可用端口创建 UDP 套接字。 */
 public class DefaultDatagramSocketFactory implements DatagramSocketFactory
 {
 

@@ -19,6 +19,11 @@ package org.apache.commons.net;
 import java.util.EventListener;
 
 /***
+ * 协议命令监听器：在发送命令或收到回复时接收 {@link ProtocolCommandEvent} 通知。
+ * <p>
+ * 实现本接口并注册到 {@link org.apache.commons.net.ftp.FTPClient} 等客户端即可跟踪协议流量。
+ * <p>
+ * /***
  * There exists a large class of IETF protocols that work by sending an
  * ASCII text command and arguments to a server, and then receiving an
  * ASCII text reply.  For debugging and other purposes, it is extremely

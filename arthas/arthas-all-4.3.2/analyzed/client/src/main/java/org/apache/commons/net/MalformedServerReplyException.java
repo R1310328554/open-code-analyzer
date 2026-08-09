@@ -20,6 +20,11 @@ package org.apache.commons.net;
 import java.io.IOException;
 
 /***
+ * 服务器响应无法解析时抛出的异常。
+ * <p>
+ * NetComponents 对非标准回复尽量宽容，但在无法继续处理时会抛出本异常。
+ * <p>
+ * /***
  * This exception is used to indicate that the reply from a server
  * could not be interpreted.  Most of the NetComponents classes attempt
  * to be as lenient as possible when receiving server replies.  Many
@@ -37,7 +42,7 @@ public class MalformedServerReplyException extends IOException
 
     private static final long serialVersionUID = 6006765264250543945L;
 
-    /*** Constructs a MalformedServerReplyException with no message ***/
+    /** 构造无详细消息的异常实例。 */
     public MalformedServerReplyException()
     {
         super();

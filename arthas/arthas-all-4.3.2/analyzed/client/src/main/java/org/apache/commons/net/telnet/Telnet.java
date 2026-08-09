@@ -25,8 +25,10 @@ import java.util.Arrays;
 
 import org.apache.commons.net.SocketClient;
 
-class Telnet extends SocketClient
+
+    /** Telnet 协议核心实现：选项协商、子协商、AYT 与间谍流支持。 */class Telnet extends SocketClient
 {
+    /** 调试开关：为 true 时输出协商与子协商日志。 */
     static final boolean debug =  /*true;*/ false;
 
     static final boolean debugoptions =  /*true;*/ false;
@@ -59,8 +61,10 @@ class Telnet extends SocketClient
                                   _REQUESTED_WILL_MASK = 0x04, _REQUESTED_DO_MASK = 0x08;
 
     /* public */
+    /** Telnet 默认端口 23。 */
     static final int DEFAULT_PORT =  23;
 
+    /** 选项协商状态：DO/WILL 响应计数与位掩码选项表。 */
     int[] _doResponse, _willResponse, _options;
 
     /* TERMINAL-TYPE option (start)*/
@@ -412,6 +416,7 @@ class Telnet extends SocketClient
      * @param option - option code to be set.
      * @throws IOException - Exception in I/O.
      **/
+        // 收到 DO：根据 OptionHandler 或终端类型决定是否接受
     void _processDo(int option) throws IOException
     {
         if (debugoptions)
@@ -825,6 +830,7 @@ class Telnet extends SocketClient
      * @throws IOException - Exception in I/O.
      ***/
     @Override
+        // 每次连接重置选项状态，启用缓冲流并发送初始 WILL/DO 请求
     protected void _connectAction_() throws IOException
     {
         /* (start). BUGFIX: clean the option info for each connection*/

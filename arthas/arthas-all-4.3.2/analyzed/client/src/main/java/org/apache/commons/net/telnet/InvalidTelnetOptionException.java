@@ -18,6 +18,9 @@
 package org.apache.commons.net.telnet;
 
 /***
+ * 无效 Telnet 选项码异常：向 {@link TelnetClient#addOptionHandler} 注册非法选项时抛出。
+ * <p>
+ * /***
  * The InvalidTelnetOptionException is the exception that is
  * thrown whenever a TelnetOptionHandler with an invlaid
  * option code is registered in TelnetClient with addOptionHandler.
@@ -27,9 +30,7 @@ public class InvalidTelnetOptionException extends Exception
 
     private static final long serialVersionUID = -2516777155928793597L;
 
-    /***
-     * Option code
-     ***/
+    /** 引发异常的选项码。 */
     private final int optionCode;
 
     /***

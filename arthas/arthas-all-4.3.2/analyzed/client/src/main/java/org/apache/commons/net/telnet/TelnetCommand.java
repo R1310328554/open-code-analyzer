@@ -18,6 +18,11 @@
 package org.apache.commons.net.telnet;
 
 /**
+ * Telnet 命令码常量表（RFC 854）：IAC、DO/DONT、WILL/WONT、SB/SE 等。
+ * <p>
+ * 本类不可实例化，仅作为命令整型常量与名称解析的容器。
+ * <p>
+ * /**
  * The TelnetCommand class cannot be instantiated and only serves as a
  * storehouse for telnet command constants.
  * @see org.apache.commons.net.telnet.Telnet
@@ -29,12 +34,15 @@ public final class TelnetCommand
     /*** The maximum value a command code can have.  This value is 255. ***/
     public static final int MAX_COMMAND_VALUE = 255;
 
+    /** 解释为命令（IAC），值为 255。 */
     /*** Interpret As Command code.  Value is 255 according to RFC 854. ***/
     public static final int IAC = 255;
 
+    /** 拒绝使用选项（DONT），值为 254。 */
     /*** Don't use option code.  Value is 254 according to RFC 854. ***/
     public static final int DONT = 254;
 
+    /** 请求对方启用选项（DO），值为 253。 */
     /*** Request to use option code.  Value is 253 according to RFC 854. ***/
     public static final int DO = 253;
 

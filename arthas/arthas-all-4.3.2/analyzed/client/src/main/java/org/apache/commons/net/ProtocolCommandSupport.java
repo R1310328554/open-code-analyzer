@@ -23,6 +23,11 @@ import java.util.EventListener;
 import org.apache.commons.net.util.ListenerList;
 
 /***
+ * 协议命令监听器管理器：维护监听器列表并触发 {@link ProtocolCommandEvent}。
+ * <p>
+ * 可将注册/注销与事件分发委托给本类，避免客户端重复实现。
+ * <p>
+ * /***
  * ProtocolCommandSupport is a convenience class for managing a list of
  * ProtocolCommandListeners and firing ProtocolCommandEvents.  You can
  * simply delegate ProtocolCommandEvent firing and listener
@@ -37,6 +42,7 @@ public class ProtocolCommandSupport implements Serializable
 {
     private static final long serialVersionUID = -8017692739988399978L;
 
+    /** 事件源对象（通常为 SocketClient 子类）。 */
     private final Object __source;
     private final ListenerList __listeners;
 
@@ -64,6 +70,7 @@ public class ProtocolCommandSupport implements Serializable
      * @param message The entire command string verbatim as sent to the server,
      *        including all arguments.
      ***/
+        // 构造命令事件并通知所有已注册监听器
     public void fireCommandSent(String command, String message)
     {
         ProtocolCommandEvent event;

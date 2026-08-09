@@ -18,6 +18,9 @@
 package org.apache.commons.net.telnet;
 
 /***
+ * Telnet 回显选项处理器（RFC 857）：控制本地/远端是否回显输入字符。
+ * <p>
+ * /***
  * Implements the telnet echo option RFC 857.
  ***/
 public class EchoOptionHandler extends TelnetOptionHandler

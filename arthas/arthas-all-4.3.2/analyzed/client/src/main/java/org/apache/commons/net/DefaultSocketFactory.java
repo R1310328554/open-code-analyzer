@@ -28,6 +28,11 @@ import java.net.UnknownHostException;
 import javax.net.SocketFactory;
 
 /***
+ * 默认 Socket 工厂：封装 {@link java.net.Socket} 与 {@link java.net.ServerSocket} 构造。
+ * <p>
+ * 支持可选 {@link java.net.Proxy}，供 {@link org.apache.commons.net.SocketClient} 使用。
+ * <p>
+ * /***
  * DefaultSocketFactory implements the SocketFactory interface by
  * simply wrapping the java.net.Socket and java.net.ServerSocket
  * constructors.  It is the default SocketFactory used by
@@ -42,12 +47,13 @@ import javax.net.SocketFactory;
 
 public class DefaultSocketFactory extends SocketFactory
 {
-    /** The proxy to use when creating new sockets. */
+    /** 创建新 Socket 时使用的代理；为 null 则直连。 */
     private final Proxy connProxy;
 
     /**
      * The default constructor.
      */
+        // 无代理的默认构造
     public DefaultSocketFactory()
     {
         this(null);

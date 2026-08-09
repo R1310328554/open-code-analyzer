@@ -18,6 +18,9 @@
 package org.apache.commons.net.telnet;
 
 /***
+ * 简单 Telnet 选项处理器：适用于无需子协商（subnegotiation）的选项。
+ * <p>
+ * /***
  * Simple option handler that can be used for options
  * that don't require subnegotiation.
  ***/
