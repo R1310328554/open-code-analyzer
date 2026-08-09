@@ -33,41 +33,57 @@ import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
 /**
- * Use short variable name to speed up FastJson deserialization process.
+ * 发送消息请求头 V2：字段名缩短以加速 FastJson 反序列化。
+ * 字段 a~n 分别对应 V1 中的 producerGroup、topic、defaultTopic 等。
  */
 @RocketMQAction(value = RequestCode.SEND_MESSAGE_V2, action = Action.PUB)
 public class SendMessageRequestHeaderV2 extends TopicQueueRequestHeader implements CommandCustomHeader, FastCodesHeader {
+    /** 生产者组（字段 a，对应 V1 producerGroup）。 */
     @CFNotNull
-    private String a; // producerGroup;
+    private String a; // producerGroup
+    /** Topic 名称（字段 b）。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
-    private String b; // topic;
+    private String b; // topic
+    /** 默认 Topic 名（字段 c）。 */
     @CFNotNull
-    private String c; // defaultTopic;
+    private String c; // defaultTopic
+    /** 默认队列数（字段 d）。 */
     @CFNotNull
-    private Integer d; // defaultTopicQueueNums;
+    private Integer d; // defaultTopicQueueNums
+    /** 队列 ID（字段 e）。 */
     @CFNotNull
-    private Integer e; // queueId;
+    private Integer e; // queueId
+    /** 系统标志位（字段 f）。 */
     @CFNotNull
-    private Integer f; // sysFlag;
+    private Integer f; // sysFlag
+    /** born 时间戳（字段 g）。 */
     @CFNotNull
-    private Long g; // bornTimestamp;
+    private Long g; // bornTimestamp
+    /** 消息 flag（字段 h）。 */
     @CFNotNull
-    private Integer h; // flag;
+    private Integer h; // flag
+    /** 用户属性（字段 i），可为空。 */
     @CFNullable
-    private String i; // properties;
+    private String i; // properties
+    /** 重试消费次数（字段 j），可为空。 */
     @CFNullable
-    private Integer j; // reconsumeTimes;
+    private Integer j; // reconsumeTimes
+    /** 单元化模式（字段 k），可为空。 */
     @CFNullable
-    private Boolean k; // unitMode;
+    private Boolean k; // unitMode
 
+    /** 最大重试次数（字段 l，对应 V1 maxReconsumeTimes）。 */
     private Integer l; // consumeRetryTimes
 
+    /** 是否批量（字段 m），可为空。 */
     @CFNullable
-    private Boolean m; //batch
+    private Boolean m; // batch
+    /** Broker 名称（字段 n），可为空。 */
     @CFNullable
     private String n; // brokerName
 
+    /** 将 V2 请求头转换为 V1 格式。 */
     public static SendMessageRequestHeader createSendMessageRequestHeaderV1(final SendMessageRequestHeaderV2 v2) {
         SendMessageRequestHeader v1 = new SendMessageRequestHeader();
         v1.setProducerGroup(v2.a);
@@ -87,6 +103,7 @@ public class SendMessageRequestHeaderV2 extends TopicQueueRequestHeader implemen
         return v1;
     }
 
+    /** 将 V1 请求头转换为 V2 格式。 */
     public static SendMessageRequestHeaderV2 createSendMessageRequestHeaderV2(final SendMessageRequestHeader v1) {
         SendMessageRequestHeaderV2 v2 = new SendMessageRequestHeaderV2();
         v2.a = v1.getProducerGroup();
@@ -106,10 +123,12 @@ public class SendMessageRequestHeaderV2 extends TopicQueueRequestHeader implemen
         return v2;
     }
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 将短字段名键值对编码写入 ByteBuf。 */
     @Override
     public void encode(ByteBuf out) {
         writeIfNotNull(out, "a", a);
@@ -128,6 +147,7 @@ public class SendMessageRequestHeaderV2 extends TopicQueueRequestHeader implemen
         writeIfNotNull(out, "n", n);
     }
 
+    /** 从字段映射解码并填充各短名字段。 */
     @Override
     public void decode(HashMap<String, String> fields) throws RemotingCommandException {
 
@@ -202,110 +222,137 @@ public class SendMessageRequestHeaderV2 extends TopicQueueRequestHeader implemen
         }
     }
 
+    /** 返回字段 a（producerGroup）。 */
     public String getA() {
         return a;
     }
 
+    /** 设置字段 a。 */
     public void setA(String a) {
         this.a = a;
     }
 
+    /** 返回字段 b（topic）。 */
     public String getB() {
         return b;
     }
 
+    /** 设置字段 b。 */
     public void setB(String b) {
         this.b = b;
     }
 
+    /** 返回字段 c（defaultTopic）。 */
     public String getC() {
         return c;
     }
 
+    /** 设置字段 c。 */
     public void setC(String c) {
         this.c = c;
     }
 
+    /** 返回字段 d（defaultTopicQueueNums）。 */
     public Integer getD() {
         return d;
     }
 
+    /** 设置字段 d。 */
     public void setD(Integer d) {
         this.d = d;
     }
 
+    /** 返回字段 e（queueId）。 */
     public Integer getE() {
         return e;
     }
 
+    /** 设置字段 e。 */
     public void setE(Integer e) {
         this.e = e;
     }
 
+    /** 返回字段 f（sysFlag）。 */
     public Integer getF() {
         return f;
     }
 
+    /** 设置字段 f。 */
     public void setF(Integer f) {
         this.f = f;
     }
 
+    /** 返回字段 g（bornTimestamp）。 */
     public Long getG() {
         return g;
     }
 
+    /** 设置字段 g。 */
     public void setG(Long g) {
         this.g = g;
     }
 
+    /** 返回字段 h（flag）。 */
     public Integer getH() {
         return h;
     }
 
+    /** 设置字段 h。 */
     public void setH(Integer h) {
         this.h = h;
     }
 
+    /** 返回字段 i（properties）。 */
     public String getI() {
         return i;
     }
 
+    /** 设置字段 i。 */
     public void setI(String i) {
         this.i = i;
     }
 
+    /** 返回字段 j（reconsumeTimes）。 */
     public Integer getJ() {
         return j;
     }
 
+    /** 设置字段 j。 */
     public void setJ(Integer j) {
         this.j = j;
     }
 
+    /** 返回字段 k（unitMode）。 */
     public Boolean isK() {
         return k;
     }
 
+    /** 设置字段 k。 */
     public void setK(Boolean k) {
         this.k = k;
     }
 
+    /** 返回字段 l（maxReconsumeTimes）。 */
     public Integer getL() {
         return l;
     }
 
+    /** 设置字段 l。 */
     public void setL(final Integer l) {
         this.l = l;
     }
 
+    /** 返回字段 m（batch）。 */
     public Boolean isM() {
         return m;
     }
 
+    /** 设置字段 m。 */
     public void setM(Boolean m) {
         this.m = m;
     }
 
+    /** 返回含全部短字段的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)
@@ -326,21 +373,25 @@ public class SendMessageRequestHeaderV2 extends TopicQueueRequestHeader implemen
             .toString();
     }
 
+    /** 返回队列 ID（字段 e）。 */
     @Override
     public Integer getQueueId() {
         return e;
     }
 
+    /** 设置队列 ID（写入字段 e）。 */
     @Override
     public void setQueueId(Integer queueId) {
         this.e = queueId;
     }
 
+    /** 返回 Topic 名称（字段 b）。 */
     @Override
     public String getTopic() {
         return b;
     }
 
+    /** 设置 Topic 名称（写入字段 b）。 */
     @Override
     public void setTopic(String topic) {
         this.b = topic;

@@ -31,69 +31,90 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * 按时间戳搜索队列 offset 的请求头：在指定 Topic/队列上查找最接近给定时间的消费位点。
+ * boundaryType 控制取不大于（LOWER）或不小于（UPPER）目标时间的 offset。
+ */
 @RocketMQAction(value = RequestCode.SEARCH_OFFSET_BY_TIMESTAMP, action = Action.GET)
 public class SearchOffsetRequestHeader extends TopicQueueRequestHeader {
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** Lite Topic 名称，可为空。 */
     private String liteTopic;
+    /** 消息队列 ID。 */
     @CFNotNull
     private Integer queueId;
+    /** 目标时间戳（毫秒）。 */
     @CFNotNull
     private Long timestamp;
 
+    /** 边界类型：LOWER 取不大于目标时间的 offset，UPPER 取不小于的 offset。 */
     private BoundaryType boundaryType;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 Topic 名称。 */
     @Override
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     @Override
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回 Lite Topic 名称。 */
     public String getLiteTopic() {
         return liteTopic;
     }
 
+    /** 设置 Lite Topic 名称。 */
     public void setLiteTopic(String liteTopic) {
         this.liteTopic = liteTopic;
     }
 
+    /** 返回队列 ID。 */
     @Override
     public Integer getQueueId() {
         return queueId;
     }
 
+    /** 设置队列 ID。 */
     @Override
     public void setQueueId(Integer queueId) {
         this.queueId = queueId;
     }
 
+    /** 返回目标时间戳。 */
     public Long getTimestamp() {
         return timestamp;
     }
 
+    /** 设置目标时间戳。 */
     public void setTimestamp(Long timestamp) {
         this.timestamp = timestamp;
     }
 
+    /** 返回边界类型，未设置时默认 LOWER。 */
     public BoundaryType getBoundaryType() {
-        // default return LOWER
+        // 默认返回 LOWER
         return boundaryType == null ? BoundaryType.LOWER : boundaryType;
     }
 
+    /** 设置边界类型。 */
     public void setBoundaryType(BoundaryType boundaryType) {
         this.boundaryType = boundaryType;
     }
 
+    /** 返回含 Topic、队列、时间戳及边界类型的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

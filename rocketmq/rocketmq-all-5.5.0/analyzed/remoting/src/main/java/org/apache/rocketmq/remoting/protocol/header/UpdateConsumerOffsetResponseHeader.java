@@ -23,7 +23,11 @@ package org.apache.rocketmq.remoting.protocol.header;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 更新消费位点的响应头：无额外字段，表示 Broker 已接受位点提交。
+ */
 public class UpdateConsumerOffsetResponseHeader implements CommandCustomHeader {
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

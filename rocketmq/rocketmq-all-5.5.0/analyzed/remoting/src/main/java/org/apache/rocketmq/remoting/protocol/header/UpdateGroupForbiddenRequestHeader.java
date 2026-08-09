@@ -29,42 +29,56 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 更新并查询消费组禁读状态的请求头：设置某消费组对 Topic 的可读权限。
+ * readable 为 false 时禁止该组消费指定 Topic。
+ */
 @RocketMQAction(value = RequestCode.UPDATE_AND_GET_GROUP_FORBIDDEN, action = Action.UPDATE)
 public class UpdateGroupForbiddenRequestHeader extends TopicRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String  group;
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String  topic;
 
+    /** 是否允许读取，false 表示禁读，可为空。 */
     private Boolean readable;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回消费组名称。 */
     public String getGroup() {
         return group;
     }
 
+    /** 设置消费组名称。 */
     public void setGroup(String group) {
         this.group = group;
     }
 
+    /** 返回是否可读。 */
     public Boolean getReadable() {
         return readable;
     }
 
+    /** 设置是否可读。 */
     public void setReadable(Boolean readable) {
         this.readable = readable;
     }

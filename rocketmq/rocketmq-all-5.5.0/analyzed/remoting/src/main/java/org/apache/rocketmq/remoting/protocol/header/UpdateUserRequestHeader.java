@@ -23,27 +23,37 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 更新用户信息的请求头：指定待更新的用户名。
+ * 具体用户凭证与权限由请求 body 携带。
+ */
 @RocketMQAction(value = RequestCode.AUTH_UPDATE_USER, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class UpdateUserRequestHeader implements CommandCustomHeader {
 
+    /** 待更新的用户名。 */
     private String username;
 
+    /** 无参构造。 */
     public UpdateUserRequestHeader() {
     }
 
+    /** 按用户名构造。 */
     public UpdateUserRequestHeader(String username) {
         this.username = username;
     }
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回用户名。 */
     public String getUsername() {
         return username;
     }
 
+    /** 设置用户名。 */
     public void setUsername(String username) {
         this.username = username;
     }

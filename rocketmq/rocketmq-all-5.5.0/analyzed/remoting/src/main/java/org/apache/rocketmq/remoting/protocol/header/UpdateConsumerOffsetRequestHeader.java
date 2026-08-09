@@ -30,59 +30,76 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * 更新消费位点的请求头：消费端主动提交某队列的消费进度至 Broker。
+ */
 @RocketMQAction(value = RequestCode.UPDATE_CONSUMER_OFFSET, action = Action.SUB)
 public class UpdateConsumerOffsetRequestHeader extends TopicQueueRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 消息队列 ID。 */
     @CFNotNull
     private Integer queueId;
+    /** 待提交的消费位点（逻辑 offset）。 */
     @CFNotNull
     private Long commitOffset;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回 Topic 名称。 */
     @Override
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     @Override
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回队列 ID。 */
     @Override
     public Integer getQueueId() {
         return queueId;
     }
 
+    /** 设置队列 ID。 */
     @Override
     public void setQueueId(Integer queueId) {
         this.queueId = queueId;
     }
 
+    /** 返回待提交位点。 */
     public Long getCommitOffset() {
         return commitOffset;
     }
 
+    /** 设置待提交位点。 */
     public void setCommitOffset(Long commitOffset) {
         this.commitOffset = commitOffset;
     }
 
+    /** 返回含消费组、Topic、队列及位点的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

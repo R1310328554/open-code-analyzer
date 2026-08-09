@@ -23,8 +23,13 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 批量解锁消息队列的请求头：消费端批量 ACK 后通知 Broker 释放队列锁。
+ * 具体待解锁队列列表由 Rpc 上下文 body 携带，本头仅作权限校验。
+ */
 @RocketMQAction(value = RequestCode.UNLOCK_BATCH_MQ, action = Action.SUB)
 public class UnlockBatchMqRequestHeader extends RpcRequestHeader {
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

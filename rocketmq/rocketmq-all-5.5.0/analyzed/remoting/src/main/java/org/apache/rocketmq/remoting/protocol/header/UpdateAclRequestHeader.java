@@ -23,27 +23,37 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 更新 ACL 配置的请求头：指定待更新的 ACL 主体（subject）。
+ * 具体 ACL 规则内容由请求 body 携带。
+ */
 @RocketMQAction(value = RequestCode.AUTH_UPDATE_ACL, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class UpdateAclRequestHeader implements CommandCustomHeader {
 
+    /** ACL 主体标识（如用户或资源名）。 */
     private String subject;
 
+    /** 无参构造。 */
     public UpdateAclRequestHeader() {
     }
 
+    /** 按 ACL 主体构造。 */
     public UpdateAclRequestHeader(String subject) {
         this.subject = subject;
     }
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 ACL 主体。 */
     public String getSubject() {
         return subject;
     }
 
+    /** 设置 ACL 主体。 */
     public void setSubject(String subject) {
         this.subject = subject;
     }

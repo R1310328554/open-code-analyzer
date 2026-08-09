@@ -20,8 +20,12 @@ package org.apache.rocketmq.remoting.protocol.header;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 注销客户端的响应头：无额外字段，仅表示操作完成。
+ */
 public class UnregisterClientResponseHeader implements CommandCustomHeader {
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

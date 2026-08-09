@@ -24,18 +24,25 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 按时间戳搜索 offset 的响应头：返回匹配到的队列消费位点。
+ */
 public class SearchOffsetResponseHeader implements CommandCustomHeader {
+    /** 搜索到的逻辑 offset。 */
     @CFNotNull
     private Long offset;
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回搜索到的 offset。 */
     public Long getOffset() {
         return offset;
     }
 
+    /** 设置搜索到的 offset。 */
     public void setOffset(Long offset) {
         this.offset = offset;
     }
