@@ -37,23 +37,35 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+/**
+ * 默认分层元数据存储：Topic/Queue/FileSegment 内存表持久化至 tieredStoreMetadata.json。
+ */
 public class DefaultMetadataStore extends ConfigManager implements MetadataStore {
 
+    /** 初始哈希表容量。 */
     private static final int DEFAULT_CAPACITY = 1024;
+    /** 配置文件目录名。 */
     private static final String DEFAULT_CONFIG_NAME = "config";
+    /** 元数据 JSON 文件名。 */
     private static final String DEFAULT_FILE_NAME = "tieredStoreMetadata.json";
 
+    /** Topic 自增序列号。 */
     private final AtomicLong topicSequenceNumber;
+    /** 存储配置。 */
     private final MessageStoreConfig storeConfig;
+    /** Topic 名 → 元数据。 */
     private final ConcurrentMap<String /* topic */, TopicMetadata> topicMetadataTable;
+    /** Topic → (queueId → QueueMetadata)。 */
     private final ConcurrentMap<String /* topic */, ConcurrentMap<Integer, QueueMetadata>> queueMetadataTable;
 
-    // Declare concurrent mapping tables to store file segment metadata
-    // Key: filePath -> Value: <baseOffset, metadata>
+    /** CommitLog 文件段元数据：filePath → (baseOffset → metadata)。 */
     private final ConcurrentMap<String, ConcurrentMap<Long, FileSegmentMetadata>> commitLogFileSegmentTable;
+    /** ConsumeQueue 文件段元数据表。 */
     private final ConcurrentMap<String, ConcurrentMap<Long, FileSegmentMetadata>> consumeQueueFileSegmentTable;
+    /** Index 文件段元数据表。 */
     private final ConcurrentMap<String, ConcurrentMap<Long, FileSegmentMetadata>> indexFileSegmentTable;
 
+    /** 构造并 load 持久化元数据。 */
     public DefaultMetadataStore(MessageStoreConfig storeConfig) {
         this.storeConfig = storeConfig;
         this.topicSequenceNumber = new AtomicLong(-1L);
@@ -65,11 +77,13 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         this.load();
     }
 
+    /** 序列化为 JSON 字符串。 */
     @Override
     public String encode() {
         return this.encode(false);
     }
 
+    /** 可选 PrettyFormat 的 JSON 编码。 */
     @Override
     public String encode(boolean prettyFormat) {
         TieredMetadataSerializeWrapper dataWrapper = new TieredMetadataSerializeWrapper();
@@ -86,16 +100,19 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         return JSON.toJSONString(dataWrapper);
     }
 
+    /** 返回 tieredStoreMetadata.json 路径。 */
     @Override
     public String configFilePath() {
         return Paths.get(storeConfig.getStorePathRootDir(), DEFAULT_CONFIG_NAME, DEFAULT_FILE_NAME).toString();
     }
 
+    /** 从磁盘加载元数据。 */
     @Override
     public boolean load() {
         return super.load();
     }
 
+    /** 从 JSON 反序列化各元数据表。 */
     @Override
     public void decode(String jsonString) {
         if (jsonString != null) {
@@ -116,16 +133,19 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public TopicMetadata getTopic(String topic) {
         return topicMetadataTable.get(topic);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void iterateTopic(Consumer<TopicMetadata> callback) {
         topicMetadataTable.values().forEach(callback);
     }
 
+    /** {@inheritDoc} 已存在则返回旧值。 */
     @Override
     public TopicMetadata addTopic(String topic, long reserveTime) {
         TopicMetadata old = getTopic(topic);
@@ -138,6 +158,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         return metadata;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void updateTopic(TopicMetadata topicMetadata) {
         TopicMetadata metadata = getTopic(topicMetadata.getTopic());
@@ -149,6 +170,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         persist();
     }
 
+    /** {@inheritDoc} 同时删除下属 Queue 元数据。 */
     @Override
     public void deleteTopic(String topic) {
         topicMetadataTable.remove(topic);
@@ -156,11 +178,13 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         persist();
     }
 
+    /** {@inheritDoc} */
     @Override
     public QueueMetadata getQueue(MessageQueue mq) {
         return queueMetadataTable.getOrDefault(mq.getTopic(), new ConcurrentHashMap<>()).get(mq.getQueueId());
     }
 
+    /** {@inheritDoc} */
     @Override
     public void iterateQueue(String topic, Consumer<QueueMetadata> callback) {
         ConcurrentMap<Integer, QueueMetadata> metadataConcurrentMap = queueMetadataTable.get(topic);
@@ -169,6 +193,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public QueueMetadata addQueue(MessageQueue mq, long baseOffset) {
         QueueMetadata old = getQueue(mq);
@@ -182,6 +207,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         return metadata;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void updateQueue(QueueMetadata metadata) {
         MessageQueue queue = metadata.getQueue();
@@ -195,6 +221,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void deleteQueue(MessageQueue mq) {
         if (queueMetadataTable.containsKey(mq.getTopic())) {
@@ -203,6 +230,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         persist();
     }
 
+    /** 测试用：按文件类型返回段元数据表。 */
     @VisibleForTesting
     public Map<String, ConcurrentMap<Long, FileSegmentMetadata>> getTableByFileType(
         FileSegmentType fileType) {
@@ -218,6 +246,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         return new HashMap<>();
     }
 
+    /** {@inheritDoc} */
     @Override
     public FileSegmentMetadata getFileSegment(
         String basePath, FileSegmentType fileType, long baseOffset) {
@@ -226,6 +255,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
             .map(fileMap -> fileMap.get(baseOffset)).orElse(null);
     }
 
+    /** {@inheritDoc} 写入后 persist。 */
     @Override
     public void updateFileSegment(FileSegmentMetadata fileSegmentMetadata) {
         FileSegmentType fileType =
@@ -236,6 +266,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         persist();
     }
 
+    /** {@inheritDoc} 遍历三类文件段。 */
     @Override
     public void iterateFileSegment(Consumer<FileSegmentMetadata> callback) {
         commitLogFileSegmentTable
@@ -246,12 +277,14 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
             .forEach((filePath, map) -> map.forEach((offset, metadata) -> callback.accept(metadata)));
     }
 
+    /** {@inheritDoc} */
     @Override
     public void iterateFileSegment(String basePath, FileSegmentType fileType, Consumer<FileSegmentMetadata> callback) {
         this.getTableByFileType(fileType).getOrDefault(basePath, new ConcurrentHashMap<>())
             .forEach((offset, metadata) -> callback.accept(metadata));
     }
 
+    /** {@inheritDoc} 删除路径下全部段。 */
     @Override
     public void deleteFileSegment(String filePath, FileSegmentType fileType) {
         Map<String, ConcurrentMap<Long, FileSegmentMetadata>> offsetTable = this.getTableByFileType(fileType);
@@ -261,6 +294,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         persist();
     }
 
+    /** {@inheritDoc} 删除指定 baseOffset 段。 */
     @Override
     public void deleteFileSegment(String basePath, FileSegmentType fileType, long baseOffset) {
         ConcurrentMap<Long, FileSegmentMetadata> offsetTable = this.getTableByFileType(fileType).get(basePath);
@@ -270,6 +304,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         persist();
     }
 
+    /** {@inheritDoc} 清空全部表并 persist。 */
     @Override
     public void destroy() {
         topicSequenceNumber.set(0L);
@@ -281,6 +316,7 @@ public class DefaultMetadataStore extends ConfigManager implements MetadataStore
         persist();
     }
 
+    /** JSON 序列化包装类，承载全部元数据表。 */
     static class TieredMetadataSerializeWrapper extends RemotingSerializable {
 
         private AtomicLong topicSerialNumber = new AtomicLong(0L);

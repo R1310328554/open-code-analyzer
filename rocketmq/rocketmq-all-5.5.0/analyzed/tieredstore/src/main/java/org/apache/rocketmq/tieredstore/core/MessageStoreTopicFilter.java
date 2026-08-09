@@ -25,16 +25,22 @@ import org.apache.rocketmq.common.PopAckConstants;
 import org.apache.rocketmq.common.topic.TopicValidator;
 import org.apache.rocketmq.tieredstore.MessageStoreConfig;
 
+/**
+ * 基于配置与内置规则的 Topic 过滤器：排除系统 Topic、Revive 前缀、集群/ Broker 名及 LMQ。
+ */
 public class MessageStoreTopicFilter implements MessageStoreFilter {
 
+    /** Topic 黑名单集合。 */
     private final Set<String> topicBlackSet;
 
+    /** 初始化黑名单，默认包含集群名与 Broker 名。 */
     public MessageStoreTopicFilter(MessageStoreConfig storeConfig) {
         this.topicBlackSet = new HashSet<>();
         this.topicBlackSet.add(storeConfig.getBrokerClusterName());
         this.topicBlackSet.add(storeConfig.getBrokerName());
     }
 
+    /** {@inheritDoc} 空白名、系统 Topic、Revive 前缀、黑名单及 LMQ 均返回 true。 */
     @Override
     public boolean filterTopic(String topicName) {
         if (StringUtils.isBlank(topicName)) {
@@ -46,6 +52,7 @@ public class MessageStoreTopicFilter implements MessageStoreFilter {
             MixAll.isLmq(topicName);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void addTopicToBlackList(String topicName) {
         this.topicBlackSet.add(topicName);

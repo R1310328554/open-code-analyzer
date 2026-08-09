@@ -24,12 +24,19 @@ import org.apache.rocketmq.tieredstore.common.FileSegmentType;
 import org.apache.rocketmq.tieredstore.metadata.MetadataStore;
 import org.apache.rocketmq.tieredstore.provider.FileSegmentFactory;
 
+/**
+ * 分层扁平文件工厂：创建 CommitLog、ConsumeQueue 与 Index 三类 FlatAppendFile。
+ */
 public class FlatFileFactory {
 
+    /** 元数据存储。 */
     private final MetadataStore metadataStore;
+    /** 消息存储配置。 */
     private final MessageStoreConfig storeConfig;
+    /** 底层文件段工厂。 */
     private final FileSegmentFactory fileSegmentFactory;
 
+    /** 测试用构造，使用默认 MessageStoreExecutor。 */
     @VisibleForTesting
     public FlatFileFactory(MetadataStore metadataStore, MessageStoreConfig storeConfig) {
         this.metadataStore = metadataStore;
@@ -37,6 +44,7 @@ public class FlatFileFactory {
         this.fileSegmentFactory = new FileSegmentFactory(metadataStore, storeConfig, new MessageStoreExecutor());
     }
 
+    /** 指定 executor 的完整构造。 */
     public FlatFileFactory(MetadataStore metadataStore,
         MessageStoreConfig storeConfig, MessageStoreExecutor executor) {
 
@@ -45,22 +53,27 @@ public class FlatFileFactory {
         this.fileSegmentFactory = new FileSegmentFactory(metadataStore, storeConfig, executor);
     }
 
+    /** 返回存储配置。 */
     public MessageStoreConfig getStoreConfig() {
         return storeConfig;
     }
 
+    /** 返回元数据存储。 */
     public MetadataStore getMetadataStore() {
         return metadataStore;
     }
 
+    /** 创建 CommitLog 扁平文件。 */
     public FlatCommitLogFile createFlatFileForCommitLog(String filePath) {
         return new FlatCommitLogFile(this.fileSegmentFactory, filePath);
     }
 
+    /** 创建 ConsumeQueue 扁平文件。 */
     public FlatConsumeQueueFile createFlatFileForConsumeQueue(String filePath) {
         return new FlatConsumeQueueFile(this.fileSegmentFactory, filePath);
     }
 
+    /** 创建 Index 扁平文件。 */
     public FlatAppendFile createFlatFileForIndexFile(String filePath) {
         return new FlatAppendFile(this.fileSegmentFactory, FileSegmentType.INDEX, filePath);
     }

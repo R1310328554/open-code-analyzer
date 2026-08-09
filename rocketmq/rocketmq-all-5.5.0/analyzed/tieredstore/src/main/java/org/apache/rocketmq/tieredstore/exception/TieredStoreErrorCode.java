@@ -16,45 +16,32 @@
  */
 package org.apache.rocketmq.tieredstore.exception;
 
+/**
+ * 分层存储错误码枚举。
+ */
 public enum TieredStoreErrorCode {
 
-    /**
-     * Error code for an invalid offset.
-     */
+    /** 非法偏移量。 */
     ILLEGAL_OFFSET,
 
-    /**
-     * Error code for an invalid parameter.
-     */
+    /** 非法参数。 */
     ILLEGAL_PARAM,
 
-    /**
-     * Error code for an incorrect download length.
-     */
+    /** 下载长度不正确。 */
     DOWNLOAD_LENGTH_NOT_CORRECT,
 
-    /**
-     * Error code for no new data found in the storage system.
-     */
+    /** 存储系统中无新数据。 */
     NO_NEW_DATA,
 
-    /**
-     * Error code for a storage provider error.
-     */
+    /** 存储提供方错误。 */
     STORAGE_PROVIDER_ERROR,
 
-    /**
-     * Error code for an input/output error.
-     */
+    /** 输入/输出错误。 */
     IO_ERROR,
 
-    /**
-     * Segment has been sealed
-     */
+    /** 文件段已封存，不可再写入。 */
     SEGMENT_SEALED,
 
-    /**
-     * Error code for an unknown error.
-     */
+    /** 未知错误。 */
     UNKNOWN
 }

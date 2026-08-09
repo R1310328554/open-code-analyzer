@@ -17,9 +17,14 @@
 
 package org.apache.rocketmq.tieredstore.core;
 
+/**
+ * 消息存储 Topic 过滤器：判定 Topic 是否应被分层存储排除。
+ */
 public interface MessageStoreFilter {
 
+    /** 若 Topic 应被过滤（不写入分层存储）则返回 true。 */
     boolean filterTopic(String topicName);
 
+    /** 将 Topic 加入黑名单，后续 {@link #filterTopic} 将排除该 Topic。 */
     void addTopicToBlackList(String topicName);
 }

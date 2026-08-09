@@ -16,37 +16,50 @@
  */
 package org.apache.rocketmq.tieredstore.exception;
 
+/**
+ * 分层存储运行时异常，携带 {@link TieredStoreErrorCode} 与可选 requestId/position。
+ */
 public class TieredStoreException extends RuntimeException {
 
+    /** 错误码。 */
     private final TieredStoreErrorCode errorCode;
+    /** 关联请求 ID（可选）。 */
     private String requestId;
+    /** 出错位置偏移（默认 -1 表示未设置）。 */
     private long position = -1L;
 
+    /** 构造带错误码与消息的异常。 */
     public TieredStoreException(TieredStoreErrorCode errorCode, String errorMessage) {
         super(errorMessage);
         this.errorCode = errorCode;
     }
 
+    /** 返回错误码。 */
     public TieredStoreErrorCode getErrorCode() {
         return errorCode;
     }
 
+    /** 返回请求 ID。 */
     public String getRequestId() {
         return requestId;
     }
 
+    /** 设置请求 ID。 */
     public void setRequestId(String requestId) {
         this.requestId = requestId;
     }
 
+    /** 返回出错位置。 */
     public long getPosition() {
         return position;
     }
 
+    /** 设置出错位置。 */
     public void setPosition(long position) {
         this.position = position;
     }
 
+    /** 附加 requestId 与 position 的字符串表示。 */
     @Override
     public String toString() {
         StringBuilder errorStringBuilder = new StringBuilder(super.toString());

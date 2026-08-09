@@ -34,18 +34,30 @@ import org.apache.rocketmq.tieredstore.util.MessageStoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 分层存储追加写文件抽象：管理 FileSegment 链表的恢复、滚动、追加、读取与过期清理。
+ */
 public class FlatAppendFile {
 
+    /** 分层存储模块日志。 */
     protected static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
+    /** RPC 获取远程文件大小失败时的返回值。 */
     public static final long GET_FILE_SIZE_ERROR = -1L;
 
+    /** 逻辑文件路径。 */
     protected final String filePath;
+    /** 文件段类型（CommitLog/CQ/Index）。 */
     protected final FileSegmentType fileType;
+    /** 元数据存储。 */
     protected final MetadataStore metadataStore;
+    /** 文件段工厂。 */
     protected final FileSegmentFactory fileSegmentFactory;
+    /** 文件段表读写锁。 */
     protected final ReentrantReadWriteLock fileSegmentLock;
+    /** 按 baseOffset 排序的文件段列表。 */
     protected final CopyOnWriteArrayList<FileSegment> fileSegmentTable;
 
+    /** 构造并执行 recover 与 recoverFileSize。 */
     protected FlatAppendFile(FileSegmentFactory fileSegmentFactory, FileSegmentType fileType, String filePath) {
 
         this.fileType = fileType;
@@ -58,6 +70,7 @@ public class FlatAppendFile {
         this.recoverFileSize();
     }
 
+    /** 从元数据恢复文件段列表并排序。 */
     public void recover() {
         List<FileSegment> fileSegmentList = new ArrayList<>();
         this.metadataStore.iterateFileSegment(this.filePath, this.fileType, metadata -> {
@@ -72,14 +85,13 @@ public class FlatAppendFile {
     }
 
     /**
-     * Retrieves the correct file size when initializing the file segment.
+     * 初始化文件段时获取远程正确文件大小。
      *
-     * @param fileSegment The file segment to get the size for.
-     * @return The correct length if the remote file exists,
-     *         0 if it does not exist,
-     *         or -1 if the RPC fails.
+     * @param fileSegment 目标文件段
+     * @return 远程存在时返回实际长度，不存在返回 0，RPC 失败返回 -1
      * @see <a href="https://github.com/apache/rocketmq/issues/9544">Related GitHub Issue</a>
      */
+    /** 轮询远程 RPC 直至获取有效文件大小。 */
     public long getFileCorrectSize(FileSegment fileSegment) {
         while (true) {
             long fileSize = fileSegment.getSize();
@@ -99,6 +111,7 @@ public class FlatAppendFile {
         }
     }
 
+    /** 校正最后一个文件段的 commit 位置与远程大小一致。 */
     public void recoverFileSize() {
         if (fileSegmentTable.isEmpty() || FileSegmentType.INDEX.equals(fileType)) {
             return;
@@ -112,6 +125,7 @@ public class FlatAppendFile {
         }
     }
 
+    /** 表为空时创建首个文件段并刷元数据。 */
     public void initOffset(long offset) {
         if (this.fileSegmentTable.isEmpty()) {
             FileSegment fileSegment = fileSegmentFactory.createSegment(fileType, filePath, offset);
@@ -121,6 +135,7 @@ public class FlatAppendFile {
         }
     }
 
+    /** 将文件段大小与时间戳写入元数据存储。 */
     public void flushFileSegmentMeta(FileSegment fileSegment) {
         FileSegmentMetadata metadata = this.metadataStore.getFileSegment(
             this.filePath, fileSegment.getFileType(), fileSegment.getBaseOffset());
@@ -135,43 +150,52 @@ public class FlatAppendFile {
         this.metadataStore.updateFileSegment(metadata);
     }
 
+    /** 返回逻辑文件路径。 */
     public String getFilePath() {
         return filePath;
     }
 
+    /** 返回文件段类型。 */
     public FileSegmentType getFileType() {
         return fileType;
     }
 
+    /** 返回文件段列表。 */
     public List<FileSegment> getFileSegmentList() {
         return fileSegmentTable;
     }
 
+    /** 返回最小 baseOffset。 */
     public long getMinOffset() {
         List<FileSegment> list = this.fileSegmentTable;
         return list.isEmpty() ? 0L : list.get(0).getBaseOffset();
     }
 
+    /** 返回最后一段 commit 偏移。 */
     public long getCommitOffset() {
         List<FileSegment> list = this.fileSegmentTable;
         return list.isEmpty() ? 0L : list.get(list.size() - 1).getCommitOffset();
     }
 
+    /** 返回最后一段 append 偏移。 */
     public long getAppendOffset() {
         List<FileSegment> list = this.fileSegmentTable;
         return list.isEmpty() ? 0L : list.get(list.size() - 1).getAppendOffset();
     }
 
+    /** 返回最早消息时间戳。 */
     public long getMinTimestamp() {
         List<FileSegment> list = this.fileSegmentTable;
         return list.isEmpty() ? GET_FILE_SIZE_ERROR : list.get(0).getMinTimestamp();
     }
 
+    /** 返回最晚消息时间戳。 */
     public long getMaxTimestamp() {
         List<FileSegment> list = this.fileSegmentTable;
         return list.isEmpty() ? GET_FILE_SIZE_ERROR : list.get(list.size() - 1).getMaxTimestamp();
     }
 
+    /** 滚动创建新文件段并刷元数据。 */
     public FileSegment rollingNewFile(long offset) {
         FileSegment fileSegment;
         fileSegmentLock.writeLock().lock();
@@ -185,6 +209,7 @@ public class FlatAppendFile {
         return fileSegment;
     }
 
+    /** 返回当前写入目标（最后一段）。 */
     public FileSegment getFileToWrite() {
         List<FileSegment> fileSegmentList = this.fileSegmentTable;
         if (fileSegmentList.isEmpty()) {
@@ -194,6 +219,7 @@ public class FlatAppendFile {
         }
     }
 
+    /** 追加写入；段满时 commit 并滚动新段。 */
     public AppendResult append(ByteBuffer buffer, long timestamp) {
         AppendResult result;
         fileSegmentLock.writeLock().lock();
@@ -217,6 +243,7 @@ public class FlatAppendFile {
         return result;
     }
 
+    /** 异步 commit 最后一段并刷元数据。 */
     public CompletableFuture<Boolean> commitAsync() {
         List<FileSegment> fileSegmentsList = this.fileSegmentTable;
         if (fileSegmentsList.isEmpty()) {
@@ -231,6 +258,7 @@ public class FlatAppendFile {
         });
     }
 
+    /** 按全局偏移异步读取，跨段时合并缓冲区。 */
     public CompletableFuture<ByteBuffer> readAsync(long offset, int length) {
         List<FileSegment> fileSegmentList = this.fileSegmentTable;
         int index = fileSegmentList.size() - 1;
@@ -259,6 +287,7 @@ public class FlatAppendFile {
                 });
     }
 
+    /** 关闭所有文件段。 */
     public void shutdown() {
         fileSegmentLock.writeLock().lock();
         try {
@@ -268,6 +297,7 @@ public class FlatAppendFile {
         }
     }
 
+    /** 删除 maxTimestamp 早于 expireTimestamp 的过期段。 */
     public void destroyExpiredFile(long expireTimestamp) {
         fileSegmentLock.writeLock().lock();
         try {
@@ -296,6 +326,7 @@ public class FlatAppendFile {
         }
     }
 
+    /** 删除全部文件段。 */
     public void destroy() {
         this.destroyExpiredFile(Long.MAX_VALUE);
     }

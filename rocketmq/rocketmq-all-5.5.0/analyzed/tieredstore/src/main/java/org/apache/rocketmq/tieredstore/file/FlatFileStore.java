@@ -36,16 +36,26 @@ import org.apache.rocketmq.tieredstore.util.MessageStoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 分层 FlatMessageFile 仓库：加载恢复、过期调度删除与按 MessageQueue 管理文件。
+ */
 public class FlatFileStore {
 
+    /** 分层存储日志。 */
     private static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
 
+    /** 元数据存储。 */
     private final MetadataStore metadataStore;
+    /** 存储配置。 */
     private final MessageStoreConfig storeConfig;
+    /** 异步任务执行器。 */
     private final MessageStoreExecutor executor;
+    /** 扁平文件工厂。 */
     private final FlatFileFactory flatFileFactory;
+    /** MessageQueue → FlatMessageFile 映射。 */
     private final ConcurrentMap<MessageQueue, FlatMessageFile> flatFileConcurrentMap;
 
+    /** 构造并初始化工厂与并发映射表。 */
     public FlatFileStore(MessageStoreConfig storeConfig, MetadataStore metadataStore, MessageStoreExecutor executor) {
         this.storeConfig = storeConfig;
         this.metadataStore = metadataStore;
@@ -54,6 +64,7 @@ public class FlatFileStore {
         this.flatFileConcurrentMap = new ConcurrentHashMap<>();
     }
 
+    /** 清空映射并 recover 全部 Topic/Queue 文件。 */
     public boolean load() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         try {
@@ -70,6 +81,7 @@ public class FlatFileStore {
         return true;
     }
 
+    /** 并发恢复各 Topic 下所有 Queue 的 FlatMessageFile。 */
     public void recover() {
         Semaphore semaphore = new Semaphore(storeConfig.getTieredStoreMaxPendingLimit() / 4);
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -86,6 +98,7 @@ public class FlatFileStore {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
+    /** 异步恢复单个 Topic 下全部 Queue。 */
     public CompletableFuture<Void> recoverAsync(TopicMetadata topicMetadata) {
         return CompletableFuture.runAsync(() -> {
             Stopwatch stopwatch = Stopwatch.createStarted();
@@ -103,6 +116,7 @@ public class FlatFileStore {
         }, executor.bufferCommitExecutor);
     }
 
+    /** 定时任务：按保留小时数删除各文件过期段。 */
     public void scheduleDeleteExpireFile() {
         if (!storeConfig.isTieredStoreDeleteFileEnable()) {
             return;
@@ -124,35 +138,43 @@ public class FlatFileStore {
             fileList.size(), stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
+    /** 返回元数据存储。 */
     public MetadataStore getMetadataStore() {
         return metadataStore;
     }
 
+    /** 返回存储配置。 */
     public MessageStoreConfig getStoreConfig() {
         return storeConfig;
     }
 
+    /** 返回扁平文件工厂。 */
     public FlatFileFactory getFlatFileFactory() {
         return flatFileFactory;
     }
 
+    /** 获取或创建指定 Queue 的 FlatMessageFile。 */
     public FlatMessageFile computeIfAbsent(MessageQueue messageQueue) {
         return flatFileConcurrentMap.computeIfAbsent(messageQueue,
             mq -> new FlatMessageFile(flatFileFactory, mq.getTopic(), mq.getQueueId()));
     }
 
+    /** 返回已存在的 FlatMessageFile，不存在则 null。 */
     public FlatMessageFile getFlatFile(MessageQueue messageQueue) {
         return flatFileConcurrentMap.get(messageQueue);
     }
 
+    /** 深拷贝当前全部 FlatMessageFile 列表。 */
     public ImmutableList<FlatMessageFile> deepCopyFlatFileToList() {
         return ImmutableList.copyOf(flatFileConcurrentMap.values());
     }
 
+    /** 关闭全部 FlatMessageFile。 */
     public void shutdown() {
         flatFileConcurrentMap.values().forEach(FlatMessageFile::shutdown);
     }
 
+    /** 移除并销毁指定 Queue 的文件。 */
     public void destroyFile(MessageQueue mq) {
         if (mq == null) {
             return;
@@ -166,6 +188,7 @@ public class FlatFileStore {
         log.info("FlatFileStore destroy file, topic={}, queueId={}", mq.getTopic(), mq.getQueueId());
     }
 
+    /** 关闭并销毁全部文件后清空映射。 */
     public void destroy() {
         this.shutdown();
         flatFileConcurrentMap.values().forEach(FlatMessageFile::destroy);

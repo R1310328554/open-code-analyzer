@@ -18,20 +18,26 @@ package org.apache.rocketmq.tieredstore.index;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 索引文件接口：扩展 {@link IndexService}，提供时间范围、状态与 compaction 能力。
+ */
 public interface IndexFile extends IndexService {
 
-    /**
-     * Enumeration for the status of the index file.
-     */
+    /** 索引文件生命周期状态。 */
+    /** 索引文件生命周期状态枚举。 */
     enum IndexStatusEnum {
-        SHUTDOWN, UNSEALED, SEALED, UPLOAD
+        /** 已关闭 */ SHUTDOWN, /** 未封存 */ UNSEALED, /** 已封存 */ SEALED, /** 已上传 */ UPLOAD
     }
 
+    /** 索引文件起始时间戳。 */
     long getTimestamp();
 
+    /** 索引文件结束时间戳。 */
     long getEndTimestamp();
 
+    /** 当前文件状态。 */
     IndexStatusEnum getFileStatus();
 
+    /** 执行索引 compaction 并返回压缩后缓冲区。 */
     ByteBuffer doCompaction();
 }

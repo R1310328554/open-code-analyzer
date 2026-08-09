@@ -24,54 +24,71 @@ import org.apache.rocketmq.tieredstore.metadata.entity.QueueMetadata;
 import org.apache.rocketmq.tieredstore.metadata.entity.TopicMetadata;
 
 /**
- * Provides tiered metadata storage service to store metadata information of Topic, Queue, FileSegment, etc.
+ * 分层元数据存储服务：管理 Topic、Queue、FileSegment 等元信息的 CRUD 与迭代。
  */
 public interface MetadataStore {
 
     /**
-     * Get the metadata information of specified Topic.
+     * 获取指定 Topic 的元数据。
      *
-     * @param topic The name of Topic.
-     * @return The metadata information of specified Topic, or null if it does not exist.
+     * @param topic Topic 名称
+     * @return 元数据，不存在则 null
      */
+    /** {@inheritDoc} */
     TopicMetadata getTopic(String topic);
 
     /**
-     * Add a new metadata information of Topic.
+     * 新增 Topic 元数据。
      *
-     * @param topic       The name of Topic.
-     * @param reserveTime The reserve time.
-     * @return The newly added metadata information of Topic.
+     * @param topic Topic 名称
+     * @param reserveTime 保留时长
+     * @return 新建的 TopicMetadata
      */
+    /** {@inheritDoc} */
     TopicMetadata addTopic(String topic, long reserveTime);
 
+    /** 更新 Topic 元数据。 */
     void updateTopic(TopicMetadata topicMetadata);
 
+    /** 迭代全部 Topic 元数据。 */
     void iterateTopic(Consumer<TopicMetadata> callback);
 
+    /** 删除 Topic 及其 Queue 元数据。 */
     void deleteTopic(String topic);
 
+    /** 获取指定 MessageQueue 元数据。 */
     QueueMetadata getQueue(MessageQueue mq);
 
+    /** 新增 Queue 元数据。 */
     QueueMetadata addQueue(MessageQueue mq, long baseOffset);
 
+    /** 更新 Queue 元数据。 */
     void updateQueue(QueueMetadata queueMetadata);
 
+    /** 迭代指定 Topic 下全部 Queue。 */
     void iterateQueue(String topic, Consumer<QueueMetadata> callback);
 
+    /** 删除 Queue 元数据。 */
     void deleteQueue(MessageQueue mq);
 
+    /** 获取文件段元数据。 */
     FileSegmentMetadata getFileSegment(String basePath, FileSegmentType fileType, long baseOffset);
 
+    /** 更新或插入文件段元数据。 */
     void updateFileSegment(FileSegmentMetadata fileSegmentMetadata);
 
+    /** 迭代全部类型文件段。 */
     void iterateFileSegment(Consumer<FileSegmentMetadata> callback);
 
+    /** 迭代指定路径与类型的文件段。 */
     void iterateFileSegment(String basePath, FileSegmentType fileType, Consumer<FileSegmentMetadata> callback);
 
+    /** 删除路径下全部文件段元数据。 */
     void deleteFileSegment(String basePath, FileSegmentType fileType);
 
+    /** 删除指定 baseOffset 的文件段元数据。 */
     void deleteFileSegment(String basePath, FileSegmentType fileType, long baseOffset);
 
+    /** 销毁全部元数据。 */
     void destroy();
 }

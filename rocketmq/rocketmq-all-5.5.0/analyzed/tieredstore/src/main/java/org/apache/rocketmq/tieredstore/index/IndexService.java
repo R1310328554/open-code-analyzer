@@ -22,53 +22,58 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.apache.rocketmq.tieredstore.common.AppendResult;
 
+/**
+ * 分层存储索引服务：写入键、按时间范围查询与生命周期管理。
+ */
 public interface IndexService {
 
+    /** 启动索引后台服务。 */
     void start();
 
     /**
-     * Puts a key into the index.
+     * 将消息键写入索引。
      *
-     * @param topic     The topic of the key.
-     * @param topicId   The ID of the topic.
-     * @param queueId   The ID of the queue.
-     * @param keySet    The set of keys to be indexed.
-     * @param offset    The offset value of the key.
-     * @param size      The size of the key.
-     * @param timestamp The timestamp of the key.
-     * @return The result of the put operation.
+     * @param topic Topic 名称
+     * @param topicId Topic 内部 ID
+     * @param queueId 队列 ID
+     * @param keySet 待索引键集合
+     * @param offset CommitLog 偏移
+     * @param size 消息大小
+     * @param timestamp 存储时间戳
+     * @return 写入结果
      */
+    /** {@inheritDoc} */
     AppendResult putKey(
         String topic, int topicId, int queueId, Set<String> keySet, long offset, int size, long timestamp);
 
     /**
-     * Asynchronously queries the index for a specific key within a given time range.
+     * 异步按 Topic、键与时间范围查询索引项。
      *
-     * @param topic     The topic of the key.
-     * @param key       The key to be queried.
-     * @param beginTime The start time of the query range.
-     * @param endTime   The end time of the query range.
-     * @return A CompletableFuture that holds the list of IndexItems matching the query.
+     * @param topic Topic 名称
+     * @param key 查询键
+     * @param maxCount 最大返回条数
+     * @param beginTime 起始时间
+     * @param endTime 结束时间
+     * @return 匹配的 IndexItem 列表
      */
+    /** {@inheritDoc} */
     CompletableFuture<List<IndexItem>> queryAsync(String topic, String key, int maxCount, long beginTime, long endTime);
 
+    /** 强制上传索引文件（默认空实现）。 */
     default void forceUpload() {
     }
 
-    /**
-     * Shutdown the index service.
-     */
+    /** 优雅关闭索引服务。 */
+    /** {@inheritDoc} */
     void shutdown();
 
-    /**
-     * Force shutdown the index service.
-     */
+    /** 强制关闭索引服务。 */
+    /** {@inheritDoc} 默认调用 shutdown。 */
     default void forceShutdown() {
         shutdown();
     };
 
-    /**
-     * Destroys the index service and releases all resources.
-     */
+    /** 销毁索引服务并释放全部资源。 */
+    /** {@inheritDoc} */
     void destroy();
 }

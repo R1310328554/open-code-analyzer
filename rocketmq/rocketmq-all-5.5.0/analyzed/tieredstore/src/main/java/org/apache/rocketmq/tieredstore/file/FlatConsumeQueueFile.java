@@ -19,8 +19,12 @@ package org.apache.rocketmq.tieredstore.file;
 import org.apache.rocketmq.tieredstore.common.FileSegmentType;
 import org.apache.rocketmq.tieredstore.provider.FileSegmentFactory;
 
+/**
+ * ConsumeQueue 分层扁平文件，继承 {@link FlatAppendFile} 的段管理与读写能力。
+ */
 public class FlatConsumeQueueFile extends FlatAppendFile {
 
+    /** 构造指定路径的 ConsumeQueue 文件。 */
     public FlatConsumeQueueFile(FileSegmentFactory fileSegmentFactory, String filePath) {
         super(fileSegmentFactory, FileSegmentType.CONSUME_QUEUE, filePath);
     }
