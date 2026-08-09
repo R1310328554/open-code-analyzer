@@ -24,18 +24,25 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 查询队列最早消息存储时间的响应头：返回最早消息的时间戳（毫秒）。
+ */
 public class GetEarliestMsgStoretimeResponseHeader implements CommandCustomHeader {
+    /** 最早消息的存储时间戳（毫秒）。 */
     @CFNotNull
     private Long timestamp;
 
+    /** 校验响应头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回最早消息存储时间戳。 */
     public Long getTimestamp() {
         return timestamp;
     }
 
+    /** 设置最早消息存储时间戳。 */
     public void setTimestamp(Long timestamp) {
         this.timestamp = timestamp;
     }

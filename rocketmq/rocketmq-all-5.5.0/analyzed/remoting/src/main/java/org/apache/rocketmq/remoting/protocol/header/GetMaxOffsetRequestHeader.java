@@ -31,55 +31,67 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * 查询队列最大消费位点的请求头：指定 Topic、队列 ID 及是否取已提交位点。
+ */
 @RocketMQAction(value = RequestCode.GET_MAX_OFFSET, action = Action.GET)
 public class GetMaxOffsetRequestHeader extends TopicQueueRequestHeader {
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 目标队列 ID。 */
     @CFNotNull
     private Integer queueId;
 
     /**
-     * A message at committed offset has been dispatched from Topic to MessageQueue, so it can be consumed immediately,
-     * while a message at inflight offset is not visible for a consumer temporarily.
-     * Set this flag true if the max committed offset is needed, or false if the max inflight offset is preferred.
-     * The default value is true.
+     * 是否查询已提交（committed）位点的最大值。
+     * 已提交位点表示消息已从 Topic 分发到 MessageQueue 可立即消费；
+     * 未提交（inflight）位点对 Consumer 暂时不可见。默认为 true。
      */
     @CFNullable
     private boolean committed = true;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Topic 名称。 */
     @Override
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     @Override
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回队列 ID。 */
     @Override
     public Integer getQueueId() {
         return queueId;
     }
 
+    /** 设置队列 ID。 */
     @Override
     public void setQueueId(Integer queueId) {
         this.queueId = queueId;
     }
 
+    /** 返回是否查询已提交位点。 */
     public boolean isCommitted() {
         return committed;
     }
 
+    /** 设置是否查询已提交位点。 */
     public void setCommitted(final boolean committed) {
         this.committed = committed;
     }
 
+    /** 返回含 Topic、队列 ID 与 committed 标志的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

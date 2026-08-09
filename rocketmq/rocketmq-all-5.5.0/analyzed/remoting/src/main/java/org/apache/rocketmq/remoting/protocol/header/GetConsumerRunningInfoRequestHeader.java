@@ -28,44 +28,58 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 获取 Consumer 运行时信息的请求头：指定消费组、客户端 ID 及是否采集 JStack。
+ */
 @RocketMQAction(value = RequestCode.GET_CONSUMER_RUNNING_INFO, action = Action.GET)
 public class GetConsumerRunningInfoRequestHeader extends RpcRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 目标 Consumer 客户端 ID。 */
     @CFNotNull
     private String clientId;
+    /** 是否采集 JStack 线程栈，可为空。 */
     @CFNullable
     private boolean jstackEnable;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回客户端 ID。 */
     public String getClientId() {
         return clientId;
     }
 
+    /** 设置客户端 ID。 */
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
 
+    /** 返回是否启用 JStack 采集。 */
     public boolean isJstackEnable() {
         return jstackEnable;
     }
 
+    /** 设置是否启用 JStack 采集。 */
     public void setJstackEnable(boolean jstackEnable) {
         this.jstackEnable = jstackEnable;
     }
 
+    /** 返回含消费组、客户端 ID 与 JStack 开关的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

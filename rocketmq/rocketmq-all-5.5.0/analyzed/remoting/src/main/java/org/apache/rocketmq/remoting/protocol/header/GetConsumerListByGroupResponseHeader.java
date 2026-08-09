@@ -20,8 +20,12 @@ package org.apache.rocketmq.remoting.protocol.header;
 import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 按消费组查询 Consumer 列表的响应头：无附加字段，实际数据在响应体中。
+ */
 public class GetConsumerListByGroupResponseHeader implements CommandCustomHeader {
 
+    /** 校验响应头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }

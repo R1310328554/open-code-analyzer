@@ -27,24 +27,32 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 按消费组查询 Consumer 客户端 ID 列表的请求头。
+ */
 @RocketMQAction(value = RequestCode.GET_CONSUMER_LIST_BY_GROUP, action = Action.SUB)
 public class GetConsumerListByGroupRequestHeader extends RpcRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回含消费组的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

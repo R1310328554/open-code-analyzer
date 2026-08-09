@@ -20,13 +20,19 @@ package org.apache.rocketmq.remoting.protocol.header;
 import java.util.List;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 按消费组查询 Consumer 列表的响应体：返回客户端 ID 列表。
+ */
 public class GetConsumerListByGroupResponseBody extends RemotingSerializable {
+    /** 消费组下在线 Consumer 客户端 ID 列表。 */
     private List<String> consumerIdList;
 
+    /** 返回 Consumer 客户端 ID 列表。 */
     public List<String> getConsumerIdList() {
         return consumerIdList;
     }
 
+    /** 设置 Consumer 客户端 ID 列表。 */
     public void setConsumerIdList(List<String> consumerIdList) {
         this.consumerIdList = consumerIdList;
     }

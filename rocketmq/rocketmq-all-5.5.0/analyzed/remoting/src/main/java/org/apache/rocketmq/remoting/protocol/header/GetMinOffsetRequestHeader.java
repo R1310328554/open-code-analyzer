@@ -30,38 +30,49 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * 查询队列最小消费位点的请求头：指定 Topic 与队列 ID。
+ */
 @RocketMQAction(value = RequestCode.GET_MIN_OFFSET, action = Action.GET)
 public class GetMinOffsetRequestHeader extends TopicQueueRequestHeader {
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 目标队列 ID。 */
     @CFNotNull
     private Integer queueId;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Topic 名称。 */
     @Override
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     @Override
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回队列 ID。 */
     @Override
     public Integer getQueueId() {
         return queueId;
     }
 
+    /** 设置队列 ID。 */
     @Override
     public void setQueueId(Integer queueId) {
         this.queueId = queueId;
     }
 
+    /** 返回含 Topic 与队列 ID 的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

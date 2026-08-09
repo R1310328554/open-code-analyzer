@@ -24,18 +24,25 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 查询队列最大消费位点的响应头：返回最大位点 offset。
+ */
 public class GetMaxOffsetResponseHeader implements CommandCustomHeader {
+    /** 队列最大消费位点。 */
     @CFNotNull
     private Long offset;
 
+    /** 校验响应头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回最大消费位点。 */
     public Long getOffset() {
         return offset;
     }
 
+    /** 设置最大消费位点。 */
     public void setOffset(Long offset) {
         this.offset = offset;
     }

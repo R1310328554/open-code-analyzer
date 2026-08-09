@@ -26,22 +26,27 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 查询消费组在线连接列表的请求头：指定消费组以获取当前连接的 Consumer 客户端。
+ */
 @RocketMQAction(value = RequestCode.GET_CONSUMER_CONNECTION_LIST, action = Action.GET)
 public class GetConsumerConnectionListRequestHeader extends RpcRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
 
+    /** 校验请求头字段（本类无额外校验逻辑）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
-        // To change body of implemented methods use File | Settings | File
-        // Templates.
     }
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
