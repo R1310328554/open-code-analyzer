@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:56:15Z",
-  "files": [
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackStaticTable.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackUtil.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ChannelDuplexHandler.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ClientUpgradeCodec.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2CodecUtil.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2Connection.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ConnectionAdapter.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ConnectionDecoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ConnectionEncoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ConnectionHandler.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ConnectionHandlerBuilder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ConnectionPrefaceAndSettingsFrameWrittenEvent.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ControlFrameLimitEncoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2DataChunkedInput.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2DataFrame.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1238,
-  "done": 675
+  "done": 690
 }
