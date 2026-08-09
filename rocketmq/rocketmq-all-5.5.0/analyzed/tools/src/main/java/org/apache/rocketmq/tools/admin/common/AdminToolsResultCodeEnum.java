@@ -16,28 +16,39 @@
  */
 package org.apache.rocketmq.tools.admin.common;
 
+/**
+ * 管理工具结果码枚举：区分成功与各类远程/业务错误。
+ */
 public enum AdminToolsResultCodeEnum {
 
-    /**
-     *
-     */
+    /** 操作成功。 */
     SUCCESS(200),
 
+    /** Remoting 通信异常。 */
     REMOTING_ERROR(-1001),
+    /** Broker 端返回错误。 */
     MQ_BROKER_ERROR(-1002),
+    /** 客户端异常。 */
     MQ_CLIENT_ERROR(-1003),
+    /** 线程中断异常。 */
     INTERRUPT_ERROR(-1004),
 
+    /** Topic 路由信息不存在。 */
     TOPIC_ROUTE_INFO_NOT_EXIST(-2001),
+    /** 消费端不在线。 */
     CONSUMER_NOT_ONLINE(-2002),
+    /** 广播消费模式下无法精确追踪。 */
     BROADCAST_CONSUMPTION(-2003);
 
+    /** 数值结果码。 */
     private int code;
 
+    /** 绑定数值码。 */
     AdminToolsResultCodeEnum(int code) {
         this.code = code;
     }
 
+    /** 返回数值结果码。 */
     public int getCode() {
         return code;
     }

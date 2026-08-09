@@ -16,6 +16,10 @@
  */
 package org.apache.rocketmq.tools.admin.common;
 
+/**
+ * 管理工具命令处理器接口：封装可执行的管理操作并返回统一结果。
+ */
 public interface AdminToolHandler {
+    /** 执行管理操作，成功或失败均封装为 {@link AdminToolResult}。 */
     AdminToolResult doExecute() throws Exception;
 }

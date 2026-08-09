@@ -124,19 +124,26 @@ import org.apache.rocketmq.tools.command.topic.UpdateTopicListSubCommand;
 import org.apache.rocketmq.tools.command.topic.UpdateTopicPermSubCommand;
 import org.apache.rocketmq.tools.command.topic.UpdateTopicSubCommand;
 
+/**
+ * mqadmin 命令行入口：注册全部 {@link SubCommand} 子命令并解析执行。
+ */
 public class MQAdminStartup {
+    /** 已注册的全部子命令列表。 */
     protected static final List<SubCommand> SUB_COMMANDS = new ArrayList<>();
 
+    /** RocketMQ 安装目录，用于加载 ACL 配置。 */
     private static final String ROCKETMQ_HOME = MixAll.ROCKETMQ_HOME_DIR;
 
+    /** JVM 入口，委托 {@link #main0} 执行。 */
     public static void main(String[] args) {
         main0(args, null);
     }
 
+    /** 解析命令行参数、设置 NameServer 地址并分发到对应子命令。 */
     public static void main0(String[] args, RPCHook rpcHook) {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
-        //PackageConflictDetect.detectFastjson();
+        // PackageConflictDetect.detectFastjson(); // 可选：检测 fastjson 版本冲突
 
         initCommand();
 
@@ -192,6 +199,7 @@ public class MQAdminStartup {
         }
     }
 
+    /** 注册 mqadmin 支持的全部子命令（Topic/Broker/Consumer/ACL 等）。 */
     public static void initCommand() {
         initCommand(new UpdateTopicSubCommand());
         initCommand(new UpdateTopicListSubCommand());
@@ -227,7 +235,7 @@ public class MQAdminStartup {
         initCommand(new ConsumerProgressSubCommand());
         initCommand(new ConsumerStatusSubCommand());
         initCommand(new CloneGroupOffsetCommand());
-        //for producer
+        // 生产者相关命令
         initCommand(new ProducerSubCommand());
 
         initCommand(new ClusterListSubCommand());
@@ -306,7 +314,7 @@ public class MQAdminStartup {
         initCommand(new CheckRocksdbCqWriteProgressCommand());
         initCommand(new SwitchTimerEngineSubCommand());
 
-        // lite topic related
+        // Lite Topic 相关命令
         initCommand(new GetBrokerLiteInfoSubCommand());
         initCommand(new GetParentTopicInfoSubCommand());
         initCommand(new GetLiteTopicInfoSubCommand());
@@ -315,6 +323,7 @@ public class MQAdminStartup {
         initCommand(new TriggerLiteDispatchSubCommand());
     }
 
+    /** 无参数时打印常用子命令列表。 */
     private static void printHelp() {
         System.out.printf("The most commonly used mqadmin commands are:%n");
 
@@ -325,6 +334,7 @@ public class MQAdminStartup {
         System.out.printf("%nSee 'mqadmin help <command>' for more information on a specific command.%n");
     }
 
+    /** 按命令名或别名查找已注册的子命令。 */
     private static SubCommand findSubCommand(final String name) {
         for (SubCommand cmd : SUB_COMMANDS) {
             if (cmd.commandName().equalsIgnoreCase(name) || cmd.commandAlias() != null && cmd.commandAlias().equalsIgnoreCase(name)) {
@@ -335,6 +345,7 @@ public class MQAdminStartup {
         return null;
     }
 
+    /** 剥离首个子命令名，返回剩余参数数组。 */
     private static String[] parseSubArgs(String[] args) {
         if (args.length > 1) {
             String[] result = new String[args.length - 1];
@@ -346,6 +357,7 @@ public class MQAdminStartup {
         return null;
     }
 
+    /** 将单个子命令注册到 SUB_COMMANDS 列表。 */
     public static void initCommand(SubCommand command) {
         SUB_COMMANDS.add(command);
     }

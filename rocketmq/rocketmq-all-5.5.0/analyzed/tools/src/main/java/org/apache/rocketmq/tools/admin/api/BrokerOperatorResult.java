@@ -18,28 +18,38 @@ package org.apache.rocketmq.tools.admin.api;
 
 import java.util.List;
 
+/**
+ * Broker 批量操作结果：分别记录成功与失败的 Broker 标识列表。
+ */
 public class BrokerOperatorResult {
 
+    /** 操作成功的 Broker 列表。 */
     private List<String> successList;
 
+    /** 操作失败的 Broker 列表。 */
     private List<String> failureList;
 
+    /** 返回成功列表。 */
     public List<String> getSuccessList() {
         return successList;
     }
 
+    /** 设置成功列表。 */
     public void setSuccessList(List<String> successList) {
         this.successList = successList;
     }
 
+    /** 返回失败列表。 */
     public List<String> getFailureList() {
         return failureList;
     }
 
+    /** 设置失败列表。 */
     public void setFailureList(List<String> failureList) {
         this.failureList = failureList;
     }
 
+    /** 返回包含 successList 与 failureList 的字符串表示。 */
     @Override
     public String toString() {
         return "BrokerOperatorResult{" +

@@ -16,23 +16,27 @@
  */
 package org.apache.rocketmq.tools.command;
 
+/**
+ * mqadmin 子命令执行异常：封装命令失败时的错误信息。
+ */
 public class SubCommandException extends Exception {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Message.
+     * @param msg 错误消息。
      */
     public SubCommandException(String msg) {
         super(msg);
     }
 
+    /** 使用 {@link String#format} 构造格式化错误消息。 */
     public SubCommandException(String format, Object... args) {
         super(String.format(format, args));
     }
 
     /**
-     * @param msg Message.
-     * @param cause Cause.
+     * @param msg 错误消息。
+     * @param cause 根因异常。
      */
     public SubCommandException(String msg, Throwable cause) {
         super(msg, cause);

@@ -30,6 +30,9 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * copyAcl 子命令：将源 Broker 上的 ACL 规则复制到目标 Broker。
+ */
 public class CopyAclsSubCommand implements SubCommand {
 
     @Override
@@ -38,6 +41,7 @@ public class CopyAclsSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Copy acl to cluster.";
     }
@@ -45,15 +49,15 @@ public class CopyAclsSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
 
-        Option opt = new Option("f", "fromBroker", true, "the source broker that the acls copy from");
+        Option opt = new Option("f", "fromBroker", true, "ACL 复制来源 Broker");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "toBroker", true, "the target broker that the acls copy to");
+        opt = new Option("t", "toBroker", true, "ACL 复制目标 Broker");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("s", "subjects", true, "the subject list of acl to copy.");
+        opt = new Option("s", "subjects", true, "待复制的 ACL subject 列表（逗号分隔，可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -61,6 +65,7 @@ public class CopyAclsSubCommand implements SubCommand {
     }
 
     @Override
+    /** 读取源 Broker ACL，在目标 Broker 上创建或更新对应规则。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 

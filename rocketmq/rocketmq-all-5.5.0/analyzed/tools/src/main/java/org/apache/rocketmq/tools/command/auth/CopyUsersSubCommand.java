@@ -30,6 +30,9 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * copyUser 子命令：将源 Broker 上的用户账户复制到目标 Broker。
+ */
 public class CopyUsersSubCommand implements SubCommand {
 
     @Override
@@ -38,6 +41,7 @@ public class CopyUsersSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Copy user to cluster.";
     }
@@ -45,15 +49,15 @@ public class CopyUsersSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
 
-        Option opt = new Option("f", "fromBroker", true, "the source broker that the users copy from");
+        Option opt = new Option("f", "fromBroker", true, "用户复制来源 Broker");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "toBroker", true, "the target broker that the users copy to");
+        opt = new Option("t", "toBroker", true, "用户复制目标 Broker");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("u", "usernames", true, "the username list of user to copy.");
+        opt = new Option("u", "usernames", true, "待复制的用户名列表（逗号分隔，可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -61,6 +65,7 @@ public class CopyUsersSubCommand implements SubCommand {
     }
 
     @Override
+    /** 读取源 Broker 用户，在目标 Broker 上创建或更新对应账户。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 

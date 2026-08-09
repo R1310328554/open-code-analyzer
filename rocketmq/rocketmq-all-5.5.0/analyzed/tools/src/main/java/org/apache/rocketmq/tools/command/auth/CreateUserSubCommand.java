@@ -29,6 +29,9 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * createUser 子命令：在指定集群或 Broker 上创建用户账户。
+ */
 public class CreateUserSubCommand implements SubCommand {
 
     @Override
@@ -37,6 +40,7 @@ public class CreateUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Create user to cluster.";
     }
@@ -45,24 +49,24 @@ public class CreateUserSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("c", "clusterName", true, "create user to which cluster");
+        Option opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "create user to which broker");
+        opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("u", "username", true, "the username of user to create.");
+        opt = new Option("u", "username", true, "待创建的用户名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("p", "password", true, "the password of user to create");
+        opt = new Option("p", "password", true, "用户密码");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "userType", true, "the userType of user to create");
+        opt = new Option("t", "userType", true, "用户类型（可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -70,6 +74,7 @@ public class CreateUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数并在目标 Broker 上调用 createUser。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 

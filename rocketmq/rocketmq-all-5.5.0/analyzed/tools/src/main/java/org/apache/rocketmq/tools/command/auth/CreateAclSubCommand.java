@@ -32,6 +32,9 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * createAcl 子命令：在指定集群或 Broker 上创建 ACL 访问控制规则。
+ */
 public class CreateAclSubCommand implements SubCommand {
 
     @Override
@@ -40,6 +43,7 @@ public class CreateAclSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Create acl to cluster.";
     }
@@ -48,32 +52,32 @@ public class CreateAclSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("c", "clusterName", true, "create acl to which cluster");
+        Option opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "create acl to which broker");
+        opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("s", "subject", true, "the subject of acl to create.");
+        opt = new Option("s", "subject", true, "ACL 主体（用户名或角色）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("r", "resources", true, "the resources of acl to create");
+        opt = new Option("r", "resources", true, "ACL 资源列表（逗号分隔）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("a", "actions", true, "the actions of acl to create");
+        opt = new Option("a", "actions", true, "ACL 操作权限列表（逗号分隔）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("i", "sourceIp", true, "the sourceIps of acl to create");
+        opt = new Option("i", "sourceIp", true, "来源 IP 白名单（逗号分隔，可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("d", "decision", true, "the decision of acl to create");
+        opt = new Option("d", "decision", true, "ACL 决策（Allow/Deny）");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -81,6 +85,7 @@ public class CreateAclSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数并在目标 Broker 上调用 createAcl。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 

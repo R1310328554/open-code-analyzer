@@ -34,12 +34,18 @@ import org.apache.rocketmq.remoting.protocol.body.ClusterInfo;
 import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.tools.admin.MQAdminExt;
 
+/**
+ * mqadmin 命令行工具辅助类：按集群/Broker 名解析 Master/Slave 地址。
+ */
 public class CommandUtil {
 
+    /** 集群名不存在或 NameServer 连接异常时的提示信息。 */
     private static final String ERROR_MESSAGE = "Make sure the specified clusterName exists or the name server connected to is correct.";
 
+    /** 无 Master 时的占位键。 */
     public static final String NO_MASTER_PLACEHOLDER = "NO_MASTER";
 
+    /** 按集群名拉取 Master 地址到 Slave 地址列表的映射。 */
     public static Map<String/*master addr*/, List<String>/*slave addr*/> fetchMasterAndSlaveDistinguish(
         final MQAdminExt adminExt, final String clusterName)
         throws InterruptedException, RemotingConnectException,
@@ -86,6 +92,7 @@ public class CommandUtil {
         return masterAndSlaveMap;
     }
 
+    /** 返回指定集群内全部 Broker 的 Master 地址集合。 */
     public static Set<String> fetchMasterAddrByClusterName(final MQAdminExt adminExt, final String clusterName)
         throws InterruptedException, RemotingConnectException, RemotingTimeoutException,
         RemotingSendRequestException, MQBrokerException {
@@ -113,6 +120,7 @@ public class CommandUtil {
         return masterSet;
     }
 
+    /** 返回指定集群内全部 Broker（Master + Slave）地址集合。 */
     public static Set<String> fetchMasterAndSlaveAddrByClusterName(final MQAdminExt adminExt, final String clusterName)
         throws InterruptedException, RemotingConnectException, RemotingTimeoutException,
         RemotingSendRequestException, MQBrokerException {
@@ -134,6 +142,7 @@ public class CommandUtil {
         return brokerAddressSet;
     }
 
+    /** 根据 Broker 名解析 Master 地址；不存在则抛异常。 */
     public static String fetchMasterAddrByBrokerName(final MQAdminExt adminExt,
         final String brokerName) throws Exception {
         ClusterInfo clusterInfoSerializeWrapper = adminExt.examineBrokerClusterInfo();
@@ -147,6 +156,7 @@ public class CommandUtil {
         throw new Exception(String.format("No broker address for broker name %s.", brokerName));
     }
 
+    /** 返回指定 Broker 的全部角色地址（Master + Slave）。 */
     public static Set<String> fetchMasterAndSlaveAddrByBrokerName(final MQAdminExt adminExt, final String brokerName)
         throws InterruptedException, RemotingConnectException, RemotingTimeoutException,
         RemotingSendRequestException, MQBrokerException {
@@ -159,6 +169,7 @@ public class CommandUtil {
         return brokerAddressSet;
     }
 
+    /** 返回集群内全部 Broker 名称；集群不存在则抛异常。 */
     public static Set<String> fetchBrokerNameByClusterName(final MQAdminExt adminExt, final String clusterName)
         throws Exception {
         ClusterInfo clusterInfoSerializeWrapper = adminExt.examineBrokerClusterInfo();
@@ -169,6 +180,7 @@ public class CommandUtil {
         return brokerNameSet;
     }
 
+    /** 根据 Broker 地址反查 Broker 名称。 */
     public static String fetchBrokerNameByAddr(final MQAdminExt adminExt, final String addr) throws Exception {
         ClusterInfo clusterInfoSerializeWrapper = adminExt.examineBrokerClusterInfo();
         Map<String/* brokerName */, BrokerData> brokerAddrTable = clusterInfoSerializeWrapper.getBrokerAddrTable();

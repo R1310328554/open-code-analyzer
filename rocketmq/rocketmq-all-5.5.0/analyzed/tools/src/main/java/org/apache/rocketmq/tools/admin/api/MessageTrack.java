@@ -17,31 +17,43 @@
 
 package org.apache.rocketmq.tools.admin.api;
 
+/**
+ * 消息轨迹查询结果：描述某消费组对指定消息的投递/消费状态。
+ */
 public class MessageTrack {
+    /** 消费组名称。 */
     private String consumerGroup;
+    /** 轨迹类型（已消费、过滤、未消费等）。 */
     private TrackType trackType;
+    /** 异常描述（轨迹异常时非空）。 */
     private String exceptionDesc;
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回轨迹类型。 */
     public TrackType getTrackType() {
         return trackType;
     }
 
+    /** 设置轨迹类型。 */
     public void setTrackType(TrackType trackType) {
         this.trackType = trackType;
     }
 
+    /** 返回异常描述。 */
     public String getExceptionDesc() {
         return exceptionDesc;
     }
 
+    /** 设置异常描述。 */
     public void setExceptionDesc(String exceptionDesc) {
         this.exceptionDesc = exceptionDesc;
     }
