@@ -24,9 +24,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 
 /**
- * {@link org.springframework.beans.factory.FactoryBean} that exposes the
- * 'primary' service for the configured service class, obtained through
- * the JDK 1.6 {@link java.util.ServiceLoader} facility.
+ * 通过 JDK 1.6 {@link java.util.ServiceLoader} 机制暴露已配置服务类的
+ *「主」服务实现的 {@link org.springframework.beans.factory.FactoryBean}。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -41,6 +40,7 @@ public class ServiceFactoryBean extends AbstractServiceLoaderBasedFactoryBean im
 			throw new IllegalStateException(
 					"ServiceLoader could not find service for type [" + getServiceType() + "]");
 		}
+		// 返回 ServiceLoader 发现的第一个服务实现
 		return it.next();
 	}
 

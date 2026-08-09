@@ -26,8 +26,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Abstract base class for FactoryBeans operating on the
- * JDK 1.6 {@link java.util.ServiceLoader} facility.
+ * 基于 JDK 1.6 {@link java.util.ServiceLoader} 机制的 FactoryBean 抽象基类。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -36,20 +35,22 @@ import org.springframework.util.ClassUtils;
 public abstract class AbstractServiceLoaderBasedFactoryBean extends AbstractFactoryBean<Object>
 		implements BeanClassLoaderAware {
 
+	/** 目标服务类型（通常为服务的公共 API 接口）。 */
 	private @Nullable Class<?> serviceType;
 
+	/** 用于加载服务实现的类加载器。 */
 	private @Nullable ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
 
 	/**
-	 * Specify the desired service type (typically the service's public API).
+	 * 设置所需的服务类型（通常为服务的公共 API）。
 	 */
 	public void setServiceType(@Nullable Class<?> serviceType) {
 		this.serviceType = serviceType;
 	}
 
 	/**
-	 * Return the desired service type.
+	 * 返回所需的服务类型。
 	 */
 	public @Nullable Class<?> getServiceType() {
 		return this.serviceType;
@@ -62,8 +63,8 @@ public abstract class AbstractServiceLoaderBasedFactoryBean extends AbstractFact
 
 
 	/**
-	 * Delegates to {@link #getObjectToExpose(java.util.ServiceLoader)}.
-	 * @return the object to expose
+	 * 委托给 {@link #getObjectToExpose(java.util.ServiceLoader)} 创建实例。
+	 * @return 要暴露的对象
 	 */
 	@Override
 	protected Object createInstance() {
@@ -72,10 +73,10 @@ public abstract class AbstractServiceLoaderBasedFactoryBean extends AbstractFact
 	}
 
 	/**
-	 * Determine the actual object to expose for the given ServiceLoader.
-	 * <p>Left to concrete subclasses.
-	 * @param serviceLoader the ServiceLoader for the configured service class
-	 * @return the object to expose
+	 * 根据给定的 ServiceLoader 确定实际要暴露的对象。
+	 * <p>由具体子类实现。
+	 * @param serviceLoader 为已配置服务类创建的 ServiceLoader
+	 * @return 要暴露的对象
 	 */
 	protected abstract Object getObjectToExpose(ServiceLoader<?> serviceLoader);
 

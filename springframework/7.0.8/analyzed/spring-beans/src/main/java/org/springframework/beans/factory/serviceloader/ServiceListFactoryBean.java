@@ -23,9 +23,9 @@ import java.util.ServiceLoader;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 
 /**
- * {@link org.springframework.beans.factory.FactoryBean} that exposes <i>all</i>
- * services for the configured service class, represented as a List of service objects,
- * obtained through the JDK 1.6 {@link java.util.ServiceLoader} facility.
+ * 通过 JDK 1.6 {@link java.util.ServiceLoader} 机制暴露已配置服务类的
+ * <i>全部</i>服务实现，以 {@code List} 形式呈现的
+ * {@link org.springframework.beans.factory.FactoryBean}。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -36,6 +36,7 @@ public class ServiceListFactoryBean extends AbstractServiceLoaderBasedFactoryBea
 	@Override
 	protected Object getObjectToExpose(ServiceLoader<?> serviceLoader) {
 		List<Object> result = new ArrayList<>();
+		// 遍历 ServiceLoader 发现的所有服务实现并收集到列表中
 		for (Object loaderObject : serviceLoader) {
 			result.add(loaderObject);
 		}

@@ -21,11 +21,10 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 /**
- * Extension to the standard {@link BeanFactoryPostProcessor} SPI, allowing for
- * the registration of further bean definitions <i>before</i> regular
- * BeanFactoryPostProcessor detection kicks in. In particular,
- * BeanDefinitionRegistryPostProcessor may register further bean definitions
- * which in turn define BeanFactoryPostProcessor instances.
+ * 标准 {@link BeanFactoryPostProcessor} SPI 的扩展，允许在常规
+ * BeanFactoryPostProcessor 检测启动<i>之前</i>注册更多 Bean 定义。
+ * 具体而言，BeanDefinitionRegistryPostProcessor 可注册更多 Bean 定义，
+ * 而这些定义又可声明 BeanFactoryPostProcessor 实例。
  *
  * @author Juergen Hoeller
  * @since 3.0.1
@@ -34,19 +33,18 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor {
 
 	/**
-	 * Modify the application context's internal bean definition registry after its
-	 * standard initialization. All regular bean definitions will have been loaded,
-	 * but no beans will have been instantiated yet. This allows for adding further
-	 * bean definitions before the next post-processing phase kicks in.
-	 * @param registry the bean definition registry used by the application context
-	 * @throws org.springframework.beans.BeansException in case of errors
+	 * 在应用上下文内部 Bean 定义注册表完成标准初始化后对其进行修改。
+	 * 所有常规 Bean 定义此时已加载，但尚未实例化任何 Bean。
+	 * 这允许在下一阶段后处理启动之前添加更多 Bean 定义。
+	 * @param registry 应用上下文使用的 Bean 定义注册表
+	 * @throws org.springframework.beans.BeansException 出错时
 	 */
 	void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException;
 
 	/**
-	 * Empty implementation of {@link BeanFactoryPostProcessor#postProcessBeanFactory}
-	 * since custom {@code BeanDefinitionRegistryPostProcessor} implementations will
-	 * typically only provide a {@link #postProcessBeanDefinitionRegistry} method.
+	 * {@link BeanFactoryPostProcessor#postProcessBeanFactory} 的空实现，
+	 * 因为自定义 {@code BeanDefinitionRegistryPostProcessor} 实现通常
+	 * 仅提供 {@link #postProcessBeanDefinitionRegistry} 方法。
 	 * @since 6.1
 	 */
 	@Override
