@@ -26,13 +26,15 @@ import java.util.List;
 import java.util.Queue;
 
 /**
- * {@link MessageToMessageCodec} that takes care of adding the right {@link SpdyHttpHeaders.Names#STREAM_ID} to the
- * {@link HttpMessage} if one is not present. This makes it possible to just re-use plan handlers current used
- * for HTTP.
+ * 自动维护 {@link SpdyHttpHeaders.Names#STREAM_ID} 与 HTTP 响应的对应关系，
+ * 使现有纯 HTTP Handler 无需感知 SPDY 流 ID 即可生成正确编码。
+ * <p>入站时按请求顺序记录 stream id；出站响应若缺少该头，则从队列取出并补写。
  */
 public class SpdyHttpResponseStreamIdHandler extends
         MessageToMessageCodec<Object, HttpMessage> {
+    /** 占位符：表示对应请求未携带 stream id（如非 SPDY 路径） */
     private static final Integer NO_ID = -1;
+    /** FIFO 队列，与入站 HttpMessage 顺序一一对应 */
     private final Queue<Integer> ids = new ArrayDeque<Integer>();
 
     public SpdyHttpResponseStreamIdHandler() {
@@ -64,6 +66,7 @@ public class SpdyHttpResponseStreamIdHandler extends
                 ids.add(((HttpMessage) msg).headers().getInt(Names.STREAM_ID));
             }
         } else if (msg instanceof SpdyRstStreamFrame) {
+            // 流被对端重置时，从队列移除对应 id，避免 id 错位
             ids.remove(((SpdyRstStreamFrame) msg).streamId());
         }
 

@@ -22,18 +22,20 @@ import io.netty.handler.codec.http.HttpHeadersFactory;
 import java.util.HashMap;
 
 /**
- * A combination of {@link SpdyHttpDecoder} and {@link SpdyHttpEncoder}
+ * 将 {@link SpdyHttpDecoder} 与 {@link SpdyHttpEncoder} 组合为单一 Duplex Handler，
+ * 在 SPDY 帧与 {@link io.netty.handler.codec.http.HttpObject} 之间双向转换。
+ * <p>入站：SPDY 帧 → FullHttpRequest/Response；出站：HttpObject → SPDY 帧。
  */
 public final class SpdyHttpCodec extends CombinedChannelDuplexHandler<SpdyHttpDecoder, SpdyHttpEncoder> {
     /**
-     * Creates a new instance with the specified decoder options.
+     * 使用指定 SPDY 版本与最大内容长度创建编解码器。
      */
     public SpdyHttpCodec(SpdyVersion version, int maxContentLength) {
         super(new SpdyHttpDecoder(version, maxContentLength), new SpdyHttpEncoder(version));
     }
 
     /**
-     * Creates a new instance with the specified decoder options.
+     * 创建实例，并可选择是否校验 HTTP 头合法性（已废弃）。
      */
     @Deprecated
     public SpdyHttpCodec(SpdyVersion version, int maxContentLength, boolean validateHttpHeaders) {
@@ -41,7 +43,7 @@ public final class SpdyHttpCodec extends CombinedChannelDuplexHandler<SpdyHttpDe
     }
 
     /**
-     * Creates a new instance with the specified decoder options.
+     * 创建实例，并注入自定义头/trailer 工厂及用于暂存分片消息的 map。
      */
     public SpdyHttpCodec(SpdyVersion version, int maxContentLength,
                          HttpHeadersFactory headersFactory, HttpHeadersFactory trailersFactory) {

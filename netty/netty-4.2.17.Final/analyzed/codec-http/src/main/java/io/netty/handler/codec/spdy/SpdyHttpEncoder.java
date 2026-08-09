@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Encodes {@link HttpRequest}s, {@link HttpResponse}s, and {@link HttpContent}s
+ * 将 {@link HttpRequest}、{@link HttpResponse} 编码为 SPDY 帧；原：Encodes {@link HttpRequest}s, {@link HttpResponse}s, and {@link HttpContent}s
  * into {@link SpdySynStreamFrame}s and {@link SpdySynReplyFrame}s.
  *
  * <h3>Request Annotations</h3>

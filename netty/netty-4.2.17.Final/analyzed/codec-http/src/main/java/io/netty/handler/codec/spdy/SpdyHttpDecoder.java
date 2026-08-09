@@ -44,13 +44,16 @@ import static io.netty.handler.codec.spdy.SpdyHeaders.HttpNames.*;
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
 /**
- * Decodes {@link SpdySynStreamFrame}s, {@link SpdySynReplyFrame}s,
- * and {@link SpdyDataFrame}s into {@link FullHttpRequest}s and {@link FullHttpResponse}s.
+ * 将 SPDY 流帧重组为完整 HTTP 消息：{@link SpdySynStreamFrame}、{@link SpdySynReplyFrame}、
+ * {@link SpdyHeadersFrame} 与 {@link SpdyDataFrame} → {@link FullHttpRequest}/{@link FullHttpResponse}。
+ * <p>HTTP 与 SPDY 流一一对应；带 body 的消息在 messageMap 中按 streamId 暂存分片。
  */
 public class SpdyHttpDecoder extends MessageToMessageDecoder<SpdyFrame> {
 
     private final int spdyVersion;
+    /** 单条 HTTP 消息 body 允许的最大字节数 */
     private final int maxContentLength;
+    /** streamId → 尚未收齐 body 的半成品 FullHttpMessage */
     private final Map<Integer, FullHttpMessage> messageMap;
     private final HttpHeadersFactory headersFactory;
     private final HttpHeadersFactory trailersFactory;
@@ -141,7 +144,7 @@ public class SpdyHttpDecoder extends MessageToMessageDecoder<SpdyFrame> {
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-        // Release any outstanding messages from the map
+        // Handler 卸载时释放 map 中未完成的 HTTP 消息，避免 ByteBuf 泄漏
         for (Map.Entry<Integer, FullHttpMessage> entry : messageMap.entrySet()) {
             ReferenceCountUtil.safeRelease(entry.getValue());
         }
@@ -166,7 +169,7 @@ public class SpdyHttpDecoder extends MessageToMessageDecoder<SpdyFrame> {
             throws Exception {
         if (msg instanceof SpdySynStreamFrame) {
 
-            // HTTP requests/responses are mapped one-to-one to SPDY streams.
+            // HTTP 请求/响应与 SPDY 流一一对应
             SpdySynStreamFrame spdySynStreamFrame = (SpdySynStreamFrame) msg;
             int streamId = spdySynStreamFrame.streamId();
 
@@ -430,7 +433,7 @@ public class SpdyHttpDecoder extends MessageToMessageDecoder<SpdyFrame> {
 
     private static FullHttpRequest createHttpRequest(SpdyHeadersFrame requestFrame, ByteBufAllocator alloc)
        throws Exception {
-        // Create the first line of the request from the name/value pairs
+        // 从 SPDY 伪头还原 HTTP 请求行
         SpdyHeaders headers     = requestFrame.headers();
         HttpMethod  method      = HttpMethod.valueOf(headers.getAsString(METHOD));
         String      url         = headers.getAsString(PATH);
@@ -473,7 +476,7 @@ public class SpdyHttpDecoder extends MessageToMessageDecoder<SpdyFrame> {
     private FullHttpResponse createHttpResponse(SpdyHeadersFrame responseFrame, ByteBufAllocator alloc)
             throws Exception {
 
-        // Create the first line of the response from the name/value pairs
+        // 从 :status/:version 伪头还原 HTTP 状态行
         SpdyHeaders headers = responseFrame.headers();
         HttpResponseStatus status = HttpResponseStatus.parseLine(headers.get(STATUS));
         HttpVersion version = HttpVersion.valueOf(headers.getAsString(VERSION));

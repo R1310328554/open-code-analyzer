@@ -18,7 +18,8 @@ package io.netty.handler.codec.spdy;
 import java.util.Set;
 
 /**
- * A SPDY Protocol SETTINGS Frame
+ * SPDY 协议的 SETTINGS 帧：协商会话参数（并发流上限、初始窗口大小等）。
+ * <p>各 {@code SETTINGS_*} 常量对应协议规定的设置项 ID；部分项支持持久化标志。
  */
 public interface SpdySettingsFrame extends SpdyFrame {
 
@@ -33,75 +34,63 @@ public interface SpdySettingsFrame extends SpdyFrame {
     int SETTINGS_CLIENT_CERTIFICATE_VECTOR_SIZE = 8;
 
     /**
-     * Returns a {@code Set} of the setting IDs.
-     * The set's iterator will return the IDs in ascending order.
+     * 返回已设置的 setting ID 集合，迭代器按 ID 升序遍历。
      */
     Set<Integer> ids();
 
     /**
-     * Returns {@code true} if the setting ID has a value.
+     * 若指定 ID 已有值，返回 {@code true}。
      */
     boolean isSet(int id);
 
     /**
-     * Returns the value of the setting ID.
-     * Returns -1 if the setting ID is not set.
+     * 返回 setting ID 的值；未设置时返回 -1。
      */
     int getValue(int id);
 
     /**
-     * Sets the value of the setting ID.
-     * The ID cannot be negative and cannot exceed 16777215.
+     * 设置 setting ID 的值（ID 非负且不超过 16777215）。
      */
     SpdySettingsFrame setValue(int id, int value);
 
     /**
-     * Sets the value of the setting ID.
-     * Sets if the setting should be persisted (should only be set by the server).
-     * Sets if the setting is persisted (should only be set by the client).
-     * The ID cannot be negative and cannot exceed 16777215.
+     * 设置值及持久化标志：{@code persistVal} 表示是否要求对端持久化（仅服务器可设），
+     * {@code persisted} 表示发送方声明该值已持久化（仅客户端可设）。
      */
     SpdySettingsFrame setValue(int id, int value, boolean persistVal, boolean persisted);
 
     /**
-     * Removes the value of the setting ID.
-     * Removes all persistence information for the setting.
+     * 移除指定 ID 的值及其持久化元数据。
      */
     SpdySettingsFrame removeValue(int id);
 
     /**
-     * Returns {@code true} if this setting should be persisted.
-     * Returns {@code false} if this setting should not be persisted
-     *         or if the setting ID has no value.
+     * 若该 setting 应被对端持久化，返回 {@code true}；无值或未要求持久化则 {@code false}。
      */
     boolean isPersistValue(int id);
 
     /**
-     * Sets if this setting should be persisted.
-     * Has no effect if the setting ID has no value.
+     * 设置是否要求对端持久化该 setting（仅当 ID 已有值时生效）。
      */
     SpdySettingsFrame setPersistValue(int id, boolean persistValue);
 
     /**
-     * Returns {@code true} if this setting is persisted.
-     * Returns {@code false} if this setting should not be persisted
-     *         or if the setting ID has no value.
+     * 若发送方声明该 setting 已持久化，返回 {@code true}。
      */
     boolean isPersisted(int id);
 
     /**
-     * Sets if this setting is persisted.
-     * Has no effect if the setting ID has no value.
+     * 标记该 setting 是否已持久化（仅当 ID 已有值时生效）。
      */
     SpdySettingsFrame setPersisted(int id, boolean persisted);
 
     /**
-     * Returns {@code true} if previously persisted settings should be cleared.
+     * 是否应清除对端此前持久化的 settings。
      */
     boolean clearPreviouslyPersistedSettings();
 
     /**
-     * Sets if previously persisted settings should be cleared.
+     * 设置是否在应用本帧前清除对端已持久化的 settings。
      */
     SpdySettingsFrame setClearPreviouslyPersistedSettings(boolean clear);
 }

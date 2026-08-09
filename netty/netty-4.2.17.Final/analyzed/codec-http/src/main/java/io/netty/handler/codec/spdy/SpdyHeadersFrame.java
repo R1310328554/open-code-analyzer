@@ -16,34 +16,35 @@
 package io.netty.handler.codec.spdy;
 
 /**
- * A SPDY Protocol HEADERS Frame
+ * SPDY 协议的 HEADERS 帧：在已打开的流上携带附加头块（如 trailing headers）。
+ * <p>与 SYN_STREAM/SYN_REPLY 不同，HEADERS 仅补充或结束某条流上的头信息，
+ * 常与 DATA 帧配合传递 HTTP trailer。
  */
 public interface SpdyHeadersFrame extends SpdyStreamFrame {
 
     /**
-     * Returns {@code true} if this header block is invalid.
-     * A RST_STREAM frame with code PROTOCOL_ERROR should be sent.
+     * 若头块校验失败（非法名值对等），返回 {@code true}。
+     * 对端应回复 {@code PROTOCOL_ERROR} 的 RST_STREAM。
      */
     boolean isInvalid();
 
     /**
-     * Marks this header block as invalid.
+     * 将本头块标记为无效，供解码器在发现协议违规时设置。
      */
     SpdyHeadersFrame setInvalid();
 
     /**
-     * Returns {@code true} if this header block has been truncated due to
-     * length restrictions.
+     * 若因长度限制导致头块被截断，返回 {@code true}。
      */
     boolean isTruncated();
 
     /**
-     * Mark this header block as truncated.
+     * 标记本头块已被截断（超出允许的最大头块大小）。
      */
     SpdyHeadersFrame setTruncated();
 
     /**
-     * Returns the {@link SpdyHeaders}.
+     * 返回本帧携带的 {@link SpdyHeaders} 头集合。
      */
     SpdyHeaders headers();
 

@@ -18,32 +18,31 @@ package io.netty.handler.codec.spdy;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * The SPDY session status code and its description.
+ * SPDY 会话级状态码及其描述，用于 GOAWAY 帧等会话终止场景。
  */
 public class SpdySessionStatus implements Comparable<SpdySessionStatus> {
 
     /**
-     * 0 OK
+     * 0 OK — 正常关闭，无错误。
      */
     public static final SpdySessionStatus OK =
         new SpdySessionStatus(0, "OK");
 
     /**
-     * 1 Protocol Error
+     * 1 Protocol Error — 协议违规，会话必须终止。
      */
     public static final SpdySessionStatus PROTOCOL_ERROR =
         new SpdySessionStatus(1, "PROTOCOL_ERROR");
 
     /**
-     * 2 Internal Error
+     * 2 Internal Error — 端点内部错误导致无法继续会话。
      */
     public static final SpdySessionStatus INTERNAL_ERROR =
         new SpdySessionStatus(2, "INTERNAL_ERROR");
 
     /**
-     * Returns the {@link SpdySessionStatus} represented by the specified code.
-     * If the specified code is a defined SPDY status code, a cached instance
-     * will be returned.  Otherwise, a new instance will be returned.
+     * 根据数值 code 返回对应 {@link SpdySessionStatus}。
+     * 已知常量返回缓存实例，未知 code 构造新对象。
      */
     public static SpdySessionStatus valueOf(int code) {
         switch (code) {
@@ -63,8 +62,7 @@ public class SpdySessionStatus implements Comparable<SpdySessionStatus> {
     private final String statusPhrase;
 
     /**
-     * Creates a new instance with the specified {@code code} and its
-     * {@code statusPhrase}.
+     * 以指定 {@code code} 与 {@code statusPhrase} 创建实例。
      */
     public SpdySessionStatus(int code, String statusPhrase) {
         this.statusPhrase = ObjectUtil.checkNotNull(statusPhrase, "statusPhrase");
@@ -72,14 +70,14 @@ public class SpdySessionStatus implements Comparable<SpdySessionStatus> {
     }
 
     /**
-     * Returns the code of this status.
+     * 返回数值状态码。
      */
     public int code() {
         return code;
     }
 
     /**
-     * Returns the status phrase of this status.
+     * 返回状态短语（如 {@code PROTOCOL_ERROR}）。
      */
     public String statusPhrase() {
         return statusPhrase;

@@ -16,17 +16,18 @@
 package io.netty.handler.codec.spdy;
 
 /**
- * A SPDY Protocol RST_STREAM Frame
+ * SPDY 协议的 RST_STREAM 帧：异常或主动终止单条流。
+ * <p>携带 {@link SpdyStreamStatus} 说明关闭原因；发送后该流对发送方即不可再写。
  */
 public interface SpdyRstStreamFrame extends SpdyStreamFrame {
 
     /**
-     * Returns the status of this frame.
+     * 返回流重置的状态码。
      */
     SpdyStreamStatus status();
 
     /**
-     * Sets the status of this frame.
+     * 设置流重置的状态码。
      */
     SpdyRstStreamFrame setStatus(SpdyStreamStatus status);
 

@@ -27,6 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.netty.handler.codec.spdy.SpdyCodecUtil.*;
 
+/**
+ * SPDY 会话内部状态：活跃流表、流控窗口、待发送 DATA 队列。
+ */
 final class SpdySession {
 
     private final AtomicInteger activeLocalStreams  = new AtomicInteger();

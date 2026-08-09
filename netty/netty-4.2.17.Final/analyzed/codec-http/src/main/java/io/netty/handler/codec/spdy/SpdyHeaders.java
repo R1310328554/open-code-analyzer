@@ -23,37 +23,38 @@ import java.util.List;
 import java.util.Map.Entry;
 
 /**
- * Provides the constants for the standard SPDY HTTP header names and commonly
- * used utility methods that access a {@link SpdyHeadersFrame}.
+ * SPDY 协议中 HTTP 语义头的标准名称常量，以及访问 {@link SpdyHeadersFrame} 的常用工具方法。
+ * <p>SPDY 将请求行/状态行拆成以冒号开头的伪头（如 {@code :method}、{@code :status}），
+ * 与普通 HTTP 头域共存于同一 {@link Headers} 容器。
  */
 public interface SpdyHeaders extends Headers<CharSequence, CharSequence, SpdyHeaders> {
 
     /**
-     * SPDY HTTP header names
+     * SPDY 伪 HTTP 头名称常量（均以 {@code :} 开头，区别于普通头域）。
      */
     final class HttpNames {
         /**
-         * {@code ":host"}
+         * {@code ":host"} — 目标主机，对应 HTTP {@code Host}。
          */
         public static final AsciiString HOST = AsciiString.cached(":host");
         /**
-         * {@code ":method"}
+         * {@code ":method"} — HTTP 方法（GET、POST 等）。
          */
         public static final AsciiString METHOD = AsciiString.cached(":method");
         /**
-         * {@code ":path"}
+         * {@code ":path"} — 请求路径与 query，不含 scheme/host。
          */
         public static final AsciiString PATH = AsciiString.cached(":path");
         /**
-         * {@code ":scheme"}
+         * {@code ":scheme"} — 协议方案，通常为 {@code https}。
          */
         public static final AsciiString SCHEME = AsciiString.cached(":scheme");
         /**
-         * {@code ":status"}
+         * {@code ":status"} — 响应状态码（如 {@code 200}）。
          */
         public static final AsciiString STATUS = AsciiString.cached(":status");
         /**
-         * {@code ":version"}
+         * {@code ":version"} — HTTP 版本字符串（如 {@code HTTP/1.1}）。
          */
         public static final AsciiString VERSION = AsciiString.cached(":version");
 
@@ -61,28 +62,28 @@ public interface SpdyHeaders extends Headers<CharSequence, CharSequence, SpdyHea
     }
 
     /**
-     * {@link Headers#get(Object)} and convert the result to a {@link String}.
+     * 等价于 {@link Headers#get(Object)}，并将首个值转为 {@link String}。
      * @param name the name of the header to retrieve
      * @return the first header value if the header is found. {@code null} if there's no such header.
      */
     String getAsString(CharSequence name);
 
     /**
-     * {@link Headers#getAll(Object)} and convert each element of {@link List} to a {@link String}.
+     * 等价于 {@link Headers#getAll(Object)}，并将列表中每个元素转为 {@link String}。
      * @param name the name of the header to retrieve
      * @return a {@link List} of header values or an empty {@link List} if no values are found.
      */
     List<String> getAllAsString(CharSequence name);
 
     /**
-     * {@link #iterator()} that converts each {@link Entry}'s key and value to a {@link String}.
+     * 等价于 {@link #iterator()}，但将每条 {@link Entry} 的键值均转为 {@link String}。
      */
     Iterator<Entry<String, String>> iteratorAsString();
 
     /**
-     * Returns {@code true} if a header with the {@code name} and {@code value} exists, {@code false} otherwise.
+     * 判断是否存在指定名称与值的头部。
      * <p>
-     * If {@code ignoreCase} is {@code true} then a case insensitive compare is done on the value.
+     * 若 {@code ignoreCase} 为 {@code true}，则对值做大小写不敏感比较。
      * @param name the name of the header to find
      * @param value the value of the header to find
      * @param ignoreCase {@code true} then a case insensitive compare is run to compare values.

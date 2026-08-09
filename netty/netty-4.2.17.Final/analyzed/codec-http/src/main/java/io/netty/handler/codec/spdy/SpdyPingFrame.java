@@ -16,17 +16,18 @@
 package io.netty.handler.codec.spdy;
 
 /**
- * A SPDY Protocol PING Frame
+ * SPDY 协议的 PING 帧：会话级心跳与 RTT 测量，不绑定任何流。
+ * <p>发起方填入唯一 {@code id}，对端收到后应原样回显相同 id 的 PING 帧。
  */
 public interface SpdyPingFrame extends SpdyFrame {
 
     /**
-     * Returns the ID of this frame.
+     * 返回本 PING 帧的标识符。
      */
     int id();
 
     /**
-     * Sets the ID of this frame.
+     * 设置 PING 标识符（发送方应保证在会话内唯一）。
      */
     SpdyPingFrame setId(int id);
 }

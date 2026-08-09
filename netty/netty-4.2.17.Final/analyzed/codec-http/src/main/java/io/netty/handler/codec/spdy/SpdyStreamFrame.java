@@ -16,28 +16,28 @@
 package io.netty.handler.codec.spdy;
 
 /**
- * A SPDY Protocol Frame that is associated with an individual SPDY Stream
+ * 绑定到单条 SPDY 流的帧类型基接口（如 DATA、HEADERS、RST_STREAM 等）。
+ * <p>流 ID 奇偶区分客户端/服务器发起；{@code isLast} 表示本端在该流上不再发送后续帧。
  */
 public interface SpdyStreamFrame extends SpdyFrame {
 
     /**
-     * Returns the Stream-ID of this frame.
+     * 返回本帧所属的 Stream-ID。
      */
     int streamId();
 
     /**
-     * Sets the Stream-ID of this frame.  The Stream-ID must be positive.
+     * 设置 Stream-ID（必须为正整数）。
      */
     SpdyStreamFrame setStreamId(int streamID);
 
     /**
-     * Returns {@code true} if this frame is the last frame to be transmitted
-     * on the stream.
+     * 若本帧是该流上发送方的最后一帧，返回 {@code true}。
      */
     boolean isLast();
 
     /**
-     * Sets if this frame is the last frame to be transmitted on the stream.
+     * 标记本帧是否为该流上的最后一帧（半关闭发送方向）。
      */
     SpdyStreamFrame setLast(boolean last);
 }

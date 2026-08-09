@@ -29,39 +29,44 @@ import static io.netty.handler.codec.spdy.SpdyCodecUtil.isServerId;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Manages streams within a SPDY session.
+ * 管理单条 SPDY 连接上的多路复用流：入站协议校验、出站流控与 GOAWAY/RST_STREAM 错误处理。
+ * <p>应置于帧编解码器之后、业务 Handler 之前；与 {@link SpdySession} 配合维护窗口与活跃流表。
  */
 public class SpdySessionHandler extends ChannelDuplexHandler {
 
+    /** 出站协议违规时复用的无栈异常 */
     private static final SpdyProtocolException PROTOCOL_EXCEPTION =
             SpdyProtocolException.newStatic(null, SpdySessionHandler.class, "handleOutboundMessage(...)");
     private static final SpdyProtocolException STREAM_CLOSED =
             SpdyProtocolException.newStatic("Stream closed", SpdySessionHandler.class, "removeStream(...)");
 
-    private static final int DEFAULT_WINDOW_SIZE = 64 * 1024; // 64 KB default initial window size
+    private static final int DEFAULT_WINDOW_SIZE = 64 * 1024; // 默认初始流控窗口 64 KB
     private int initialSendWindowSize    = DEFAULT_WINDOW_SIZE;
     private int initialReceiveWindowSize = DEFAULT_WINDOW_SIZE;
     private volatile int initialSessionReceiveWindowSize = DEFAULT_WINDOW_SIZE;
 
     private final SpdySession spdySession = new SpdySession(initialSendWindowSize, initialReceiveWindowSize);
+    /** 对端已确认的最大 stream id（用于 GOAWAY 与乱序检测） */
     private int lastGoodStreamId;
 
     private static final int DEFAULT_MAX_CONCURRENT_STREAMS = Integer.MAX_VALUE;
     private int remoteConcurrentStreams = DEFAULT_MAX_CONCURRENT_STREAMS;
     private int localConcurrentStreams  = DEFAULT_MAX_CONCURRENT_STREAMS;
 
+    /** 本端已发出、尚未收到回显的 PING 计数 */
     private final AtomicInteger pings = new AtomicInteger();
 
     private boolean sentGoAwayFrame;
     private boolean receivedGoAwayFrame;
 
+    /** 所有活跃流关闭后触发 channel close 的监听器 */
     private ChannelFutureListener closeSessionFutureListener;
 
     private final boolean server;
     private final int minorVersion;
 
     /**
-     * Creates a new session handler.
+     * 创建会话 Handler。
      *
      * @param version the protocol version
      * @param server  {@code true} if and only if this session handler should
@@ -76,12 +81,7 @@ public class SpdySessionHandler extends ChannelDuplexHandler {
 
     public void setSessionReceiveWindowSize(int sessionReceiveWindowSize) {
         checkPositiveOrZero(sessionReceiveWindowSize, "sessionReceiveWindowSize");
-        // This will not send a window update frame immediately.
-        // If this value increases the allowed receive window size,
-        // a WINDOW_UPDATE frame will be sent when only half of the
-        // session window size remains during data frame processing.
-        // If this value decreases the allowed receive window size,
-        // the window will be reduced as data frames are processed.
+        // 调整会话接收窗口上限；增大时不会立即发 WINDOW_UPDATE，而是在 DATA 处理中剩余 ≤ 一半时补发
         initialSessionReceiveWindowSize = sessionReceiveWindowSize;
     }
 
@@ -681,6 +681,7 @@ public class SpdySessionHandler extends ChannelDuplexHandler {
      * Helper functions
      */
 
+    /** 判断 stream id 是否由对端发起（奇偶与 {@link #server} 相对） */
     private boolean isRemoteInitiatedId(int id) {
         boolean serverId = isServerId(id);
         return server && !serverId || !server && serverId;
@@ -703,7 +704,7 @@ public class SpdySessionHandler extends ChannelDuplexHandler {
     // need to synchronize accesses to sentGoAwayFrame, lastGoodStreamId, and initial window sizes
     private boolean acceptStream(
             int streamId, byte priority, boolean remoteSideClosed, boolean localSideClosed) {
-        // Cannot initiate any new streams after receiving or sending GOAWAY
+        // 已收/发 GOAWAY 后禁止再开新流
         if (receivedGoAwayFrame || sentGoAwayFrame) {
             return false;
         }
