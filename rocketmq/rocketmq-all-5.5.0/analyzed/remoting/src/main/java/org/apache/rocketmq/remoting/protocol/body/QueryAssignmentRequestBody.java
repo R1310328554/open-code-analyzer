@@ -20,18 +20,27 @@ package org.apache.rocketmq.remoting.protocol.body;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 
+/**
+ * 查询消息队列分配（Rebalance 结果）请求体：Topic、消费组、客户端及分配策略。
+ */
 public class QueryAssignmentRequestBody extends RemotingSerializable {
 
+    /** 目标 Topic。 */
     private String topic;
 
+    /** 消费者 Group。 */
     private String consumerGroup;
 
+    /** 发起查询的客户端 ID。 */
     private String clientId;
 
+    /** 队列分配策略名称。 */
     private String strategyName;
 
+    /** 消息模型（集群/广播）。 */
     private MessageModel messageModel;
 
+    /** 返回 Topic。 */
     public String getTopic() {
         return topic;
     }
@@ -40,6 +49,7 @@ public class QueryAssignmentRequestBody extends RemotingSerializable {
         this.topic = topic;
     }
 
+    /** 返回消费组。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
@@ -48,6 +58,7 @@ public class QueryAssignmentRequestBody extends RemotingSerializable {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回客户端 ID。 */
     public String getClientId() {
         return clientId;
     }
@@ -56,6 +67,7 @@ public class QueryAssignmentRequestBody extends RemotingSerializable {
         this.clientId = clientId;
     }
 
+    /** 返回分配策略名。 */
     public String getStrategyName() {
         return strategyName;
     }
@@ -64,6 +76,7 @@ public class QueryAssignmentRequestBody extends RemotingSerializable {
         this.strategyName = strategyName;
     }
 
+    /** 返回消息模型。 */
     public MessageModel getMessageModel() {
         return messageModel;
     }

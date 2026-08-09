@@ -22,18 +22,25 @@ import java.util.Map;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 管理端重置消费位点请求体：MessageQueue → 目标位点映射。
+ */
 public class ResetOffsetBody extends RemotingSerializable {
 
+    /** 待重置的队列与目标位点。 */
     private Map<MessageQueue, Long> offsetTable;
 
+    /** 默认构造，初始化空位点表。 */
     public ResetOffsetBody() {
         offsetTable = new HashMap<>();
     }
 
+    /** 返回位点映射表。 */
     public Map<MessageQueue, Long> getOffsetTable() {
         return offsetTable;
     }
 
+    /** 设置位点映射表。 */
     public void setOffsetTable(Map<MessageQueue, Long> offsetTable) {
         this.offsetTable = offsetTable;
     }

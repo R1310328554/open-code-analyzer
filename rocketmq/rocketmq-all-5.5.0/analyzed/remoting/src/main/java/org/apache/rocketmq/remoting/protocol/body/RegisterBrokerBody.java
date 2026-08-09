@@ -41,13 +41,20 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
+/**
+ * Broker 向 NameServer 注册时的请求体：Topic 配置、FilterServer 列表及队列映射。
+ * 支持 Deflate 压缩编解码以减小大 Topic 表传输体积。
+ */
 public class RegisterBrokerBody extends RemotingSerializable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
+    /** Topic 配置与队列映射序列化包装。 */
     private TopicConfigAndMappingSerializeWrapper topicConfigSerializeWrapper = new TopicConfigAndMappingSerializeWrapper();
+    /** 关联 FilterServer 地址列表。 */
     private List<String> filterServerList = new ArrayList<>();
     private static final long MINIMUM_TAKE_TIME_MILLISECOND = 50;
 
+    /** 序列化注册体；compress 为 true 时使用 Deflate 压缩。 */
     public byte[] encode(boolean compress) {
 
         if (!compress) {
@@ -61,16 +68,16 @@ public class RegisterBrokerBody extends RemotingSerializable {
             assert topicConfigTable != null;
             byte[] buffer = dataVersion.encode();
 
-            // write data version
+            // 写入 DataVersion
             outputStream.write(convertIntToByteArray(buffer.length));
             outputStream.write(buffer);
 
             int topicNumber = topicConfigTable.size();
 
-            // write number of topic configs
+            // 写入 Topic 配置数量
             outputStream.write(convertIntToByteArray(topicNumber));
 
-            // write topic config entry one by one.
+            // 逐条写入 Topic 配置
             for (ConcurrentMap.Entry<String, TopicConfig> next : topicConfigTable.entrySet()) {
                 buffer = next.getValue().encode().getBytes(MixAll.DEFAULT_CHARSET);
                 outputStream.write(convertIntToByteArray(buffer.length));
@@ -79,16 +86,16 @@ public class RegisterBrokerBody extends RemotingSerializable {
 
             buffer = JSON.toJSONString(filterServerList).getBytes(MixAll.DEFAULT_CHARSET);
 
-            // write filter server list json length
+            // 写入 FilterServer 列表 JSON 长度
             outputStream.write(convertIntToByteArray(buffer.length));
 
-            // write filter server list json
+            // 写入 FilterServer 列表 JSON
             outputStream.write(buffer);
 
-            //write the topic queue mapping
+            // 写入 Topic 队列映射
             Map<String, TopicQueueMappingInfo> topicQueueMappingInfoMap = topicConfigSerializeWrapper.getTopicQueueMappingInfoMap();
             if (topicQueueMappingInfoMap == null) {
-                //as the placeholder
+                // 占位空映射
                 topicQueueMappingInfoMap = new ConcurrentHashMap<>();
             }
             outputStream.write(convertIntToByteArray(topicQueueMappingInfoMap.size()));
@@ -112,6 +119,7 @@ public class RegisterBrokerBody extends RemotingSerializable {
         return null;
     }
 
+    /** 反序列化注册体；compressed 为 true 时先解压；5.0+ 解析队列映射。 */
     public static RegisterBrokerBody decode(byte[] data, boolean compressed, MQVersion.Version brokerVersion) throws IOException {
         if (!compressed) {
             return RegisterBrokerBody.decode(data, RegisterBrokerBody.class);
@@ -195,6 +203,7 @@ public class RegisterBrokerBody extends RemotingSerializable {
         return byteBuffer.getInt();
     }
 
+    /** 返回 Topic 配置包装。 */
     public TopicConfigAndMappingSerializeWrapper getTopicConfigSerializeWrapper() {
         return topicConfigSerializeWrapper;
     }
@@ -203,6 +212,7 @@ public class RegisterBrokerBody extends RemotingSerializable {
         this.topicConfigSerializeWrapper = topicConfigSerializeWrapper;
     }
 
+    /** 返回 FilterServer 列表。 */
     public List<String> getFilterServerList() {
         return filterServerList;
     }
@@ -211,6 +221,7 @@ public class RegisterBrokerBody extends RemotingSerializable {
         this.filterServerList = filterServerList;
     }
 
+    /** 浅拷贝 Topic 配置表，避免编码时并发修改。 */
     private ConcurrentMap<String, TopicConfig> cloneTopicConfigTable(
         ConcurrentMap<String, TopicConfig> topicConfigConcurrentMap) {
         if (topicConfigConcurrentMap == null) {

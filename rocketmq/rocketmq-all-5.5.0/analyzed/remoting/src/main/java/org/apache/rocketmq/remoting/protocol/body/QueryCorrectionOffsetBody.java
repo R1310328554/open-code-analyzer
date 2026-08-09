@@ -20,13 +20,19 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 消费位点校正查询响应：queueId → 校正后位点映射。
+ */
 public class QueryCorrectionOffsetBody extends RemotingSerializable {
+    /** queueId → 校正位点。 */
     private Map<Integer, Long> correctionOffsets = new HashMap<>();
 
+    /** 返回校正位点映射。 */
     public Map<Integer, Long> getCorrectionOffsets() {
         return correctionOffsets;
     }
 
+    /** 设置校正位点映射。 */
     public void setCorrectionOffsets(Map<Integer, Long> correctionOffsets) {
         this.correctionOffsets = correctionOffsets;
     }

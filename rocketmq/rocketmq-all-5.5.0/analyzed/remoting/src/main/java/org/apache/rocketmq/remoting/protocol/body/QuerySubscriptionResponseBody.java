@@ -20,12 +20,19 @@ package org.apache.rocketmq.remoting.protocol.body;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 订阅关系查询响应：消费组、Topic 及 {@link SubscriptionData} 详情。
+ */
 public class QuerySubscriptionResponseBody extends RemotingSerializable {
 
+    /** 订阅数据详情。 */
     private SubscriptionData subscriptionData;
+    /** 消费者 Group。 */
     private String group;
+    /** 目标 Topic。 */
     private String topic;
 
+    /** 返回订阅数据。 */
     public SubscriptionData getSubscriptionData() {
         return subscriptionData;
     }
@@ -34,6 +41,7 @@ public class QuerySubscriptionResponseBody extends RemotingSerializable {
         this.subscriptionData = subscriptionData;
     }
 
+    /** 返回消费组。 */
     public String getGroup() {
         return group;
     }
@@ -42,6 +50,7 @@ public class QuerySubscriptionResponseBody extends RemotingSerializable {
         this.group = group;
     }
 
+    /** 返回 Topic。 */
     public String getTopic() {
         return topic;
     }

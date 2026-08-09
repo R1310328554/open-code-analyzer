@@ -21,14 +21,23 @@ import java.util.List;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 查询 ConsumeQueue 索引响应：订阅信息、过滤数据及队列索引条目列表。
+ */
 public class QueryConsumeQueueResponseBody extends RemotingSerializable {
 
+    /** 关联订阅数据。 */
     private SubscriptionData subscriptionData;
+    /** 过滤表达式序列化数据。 */
     private String filterData;
+    /** ConsumeQueue 索引条目列表。 */
     private List<ConsumeQueueData> queueData;
+    /** 返回结果中最大队列逻辑索引。 */
     private long maxQueueIndex;
+    /** 返回结果中最小队列逻辑索引。 */
     private long minQueueIndex;
 
+    /** 返回订阅数据。 */
     public SubscriptionData getSubscriptionData() {
         return subscriptionData;
     }
@@ -45,6 +54,7 @@ public class QueryConsumeQueueResponseBody extends RemotingSerializable {
         this.filterData = filterData;
     }
 
+    /** 返回队列索引列表。 */
     public List<ConsumeQueueData> getQueueData() {
         return queueData;
     }
@@ -53,6 +63,7 @@ public class QueryConsumeQueueResponseBody extends RemotingSerializable {
         this.queueData = queueData;
     }
 
+    /** 返回最大队列索引。 */
     public long getMaxQueueIndex() {
         return maxQueueIndex;
     }
@@ -61,6 +72,7 @@ public class QueryConsumeQueueResponseBody extends RemotingSerializable {
         this.maxQueueIndex = maxQueueIndex;
     }
 
+    /** 返回最小队列索引。 */
     public long getMinQueueIndex() {
         return minQueueIndex;
     }

@@ -21,13 +21,19 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 消费时间跨度查询响应：各队列最早/最晚消息时间与消费延迟。
+ */
 public class QueryConsumeTimeSpanBody extends RemotingSerializable {
+    /** 各队列时间跨度条目列表。 */
     List<QueueTimeSpan> consumeTimeSpanSet = new ArrayList<>();
 
+    /** 返回时间跨度列表。 */
     public List<QueueTimeSpan> getConsumeTimeSpanSet() {
         return consumeTimeSpanSet;
     }
 
+    /** 设置时间跨度列表。 */
     public void setConsumeTimeSpanSet(List<QueueTimeSpan> consumeTimeSpanSet) {
         this.consumeTimeSpanSet = consumeTimeSpanSet;
     }

@@ -21,14 +21,20 @@ import java.util.Set;
 import org.apache.rocketmq.common.message.MessageQueueAssignment;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 队列分配查询响应：返回 {@link MessageQueueAssignment} 集合。
+ */
 public class QueryAssignmentResponseBody extends RemotingSerializable {
 
+    /** 分配给当前客户端的队列集合。 */
     private Set<MessageQueueAssignment> messageQueueAssignments;
 
+    /** 返回队列分配集合。 */
     public Set<MessageQueueAssignment> getMessageQueueAssignments() {
         return messageQueueAssignments;
     }
 
+    /** 设置队列分配集合。 */
     public void setMessageQueueAssignments(
         Set<MessageQueueAssignment> messageQueueAssignments) {
         this.messageQueueAssignments = messageQueueAssignments;

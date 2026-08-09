@@ -24,20 +24,30 @@ import org.apache.rocketmq.remoting.protocol.header.controller.ElectMasterRespon
 
 import java.util.Set;
 
+/**
+ * Controller 模式下 Master 角色变更通知条目：成员组、Master 地址/Epoch 及 syncStateSet。
+ */
 public class RoleChangeNotifyEntry {
 
+    /** Broker 成员组信息。 */
     private final BrokerMemberGroup brokerMemberGroup;
 
+    /** 新 Master 服务地址。 */
     private final String masterAddress;
 
+    /** 新 Master 的 brokerId。 */
     private final Long masterBrokerId;
 
+    /** Master Epoch 版本号。 */
     private final int masterEpoch;
 
+    /** syncStateSet Epoch 版本号。 */
     private final int syncStateSetEpoch;
 
+    /** 同步副本 brokerId 集合。 */
     private final Set<Long> syncStateSet;
 
+    /** 全字段构造。 */
     public RoleChangeNotifyEntry(BrokerMemberGroup brokerMemberGroup, String masterAddress, Long masterBrokerId, int masterEpoch, int syncStateSetEpoch, Set<Long> syncStateSet) {
         this.brokerMemberGroup = brokerMemberGroup;
         this.masterAddress = masterAddress;
@@ -47,6 +57,7 @@ public class RoleChangeNotifyEntry {
         this.syncStateSet = syncStateSet;
     }
 
+    /** 从选举 Master 响应命令解析角色变更条目。 */
     public static RoleChangeNotifyEntry convert(RemotingCommand electMasterResponse) {
         final ElectMasterResponseHeader header = (ElectMasterResponseHeader) electMasterResponse.readCustomHeader();
         BrokerMemberGroup brokerMemberGroup = null;
@@ -62,10 +73,12 @@ public class RoleChangeNotifyEntry {
     }
 
 
+    /** 返回成员组。 */
     public BrokerMemberGroup getBrokerMemberGroup() {
         return brokerMemberGroup;
     }
 
+    /** 返回 Master 地址。 */
     public String getMasterAddress() {
         return masterAddress;
     }
@@ -82,6 +95,7 @@ public class RoleChangeNotifyEntry {
         return masterBrokerId;
     }
 
+    /** 返回 syncStateSet。 */
     public Set<Long> getSyncStateSet() {
         return syncStateSet;
     }

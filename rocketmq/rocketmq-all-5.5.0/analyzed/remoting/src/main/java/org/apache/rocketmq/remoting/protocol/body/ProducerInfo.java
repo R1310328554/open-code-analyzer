@@ -21,13 +21,22 @@ import org.apache.rocketmq.remoting.protocol.LanguageCode;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
 
+/**
+ * 单个生产者客户端元信息：clientId、网络地址、SDK 语言与协议版本。
+ */
 public class ProducerInfo extends RemotingSerializable {
+    /** 客户端唯一标识。 */
     private String clientId;
+    /** 客户端远程 IP 地址。 */
     private String remoteIP;
+    /** SDK 语言类型。 */
     private LanguageCode language;
+    /** Remoting 协议版本号。 */
     private int version;
+    /** 最近一次心跳/注册更新时间戳。 */
     private long lastUpdateTimestamp;
 
+    /** 全字段构造。 */
     public ProducerInfo(String clientId, String remoteIP, LanguageCode language, int version, long lastUpdateTimestamp) {
         this.clientId = clientId;
         this.remoteIP = remoteIP;
@@ -36,6 +45,7 @@ public class ProducerInfo extends RemotingSerializable {
         this.lastUpdateTimestamp = lastUpdateTimestamp;
     }
 
+    /** 返回客户端 ID。 */
     public String getClientId() {
         return clientId;
     }
@@ -44,6 +54,7 @@ public class ProducerInfo extends RemotingSerializable {
         this.clientId = clientId;
     }
 
+    /** 返回远程 IP。 */
     public String getRemoteIP() {
         return remoteIP;
     }
@@ -52,6 +63,7 @@ public class ProducerInfo extends RemotingSerializable {
         this.remoteIP = remoteIP;
     }
 
+    /** 返回 SDK 语言。 */
     public LanguageCode getLanguage() {
         return language;
     }
@@ -60,6 +72,7 @@ public class ProducerInfo extends RemotingSerializable {
         this.language = language;
     }
 
+    /** 返回协议版本。 */
     public int getVersion() {
         return version;
     }
@@ -68,6 +81,7 @@ public class ProducerInfo extends RemotingSerializable {
         this.version = version;
     }
 
+    /** 返回最近更新时间戳。 */
     public long getLastUpdateTimestamp() {
         return lastUpdateTimestamp;
     }
@@ -76,6 +90,7 @@ public class ProducerInfo extends RemotingSerializable {
         this.lastUpdateTimestamp = lastUpdateTimestamp;
     }
 
+    /** 返回调试字符串。 */
     @Override
     public String toString() {
         return String.format("clientId=%s,remoteIP=%s, language=%s, version=%d, lastUpdateTimestamp=%d",

@@ -20,13 +20,19 @@ package org.apache.rocketmq.remoting.protocol.body;
 import java.util.HashSet;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 生产者组在线连接快照：当前已注册的生产者客户端集合。
+ */
 public class ProducerConnection extends RemotingSerializable {
+    /** 在线生产者连接集合。 */
     private HashSet<Connection> connectionSet = new HashSet<>();
 
+    /** 返回连接集合。 */
     public HashSet<Connection> getConnectionSet() {
         return connectionSet;
     }
 
+    /** 设置连接集合。 */
     public void setConnectionSet(HashSet<Connection> connectionSet) {
         this.connectionSet = connectionSet;
     }

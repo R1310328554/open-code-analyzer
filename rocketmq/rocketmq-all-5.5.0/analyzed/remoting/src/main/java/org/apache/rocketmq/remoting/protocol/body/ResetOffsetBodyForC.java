@@ -21,14 +21,20 @@ import java.util.List;
 import org.apache.rocketmq.common.message.MessageQueueForC;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * C 语言客户端重置消费位点请求体：{@link MessageQueueForC} 列表。
+ */
 public class ResetOffsetBodyForC extends RemotingSerializable {
 
+    /** 待重置的 C 风格队列位点列表。 */
     private List<MessageQueueForC> offsetTable;
 
+    /** 返回位点列表。 */
     public List<MessageQueueForC> getOffsetTable() {
         return offsetTable;
     }
 
+    /** 设置位点列表。 */
     public void setOffsetTable(List<MessageQueueForC> offsetTable) {
         this.offsetTable = offsetTable;
     }

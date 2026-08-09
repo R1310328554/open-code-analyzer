@@ -19,26 +19,44 @@ package org.apache.rocketmq.remoting.protocol.body;
 
 import org.apache.rocketmq.common.UtilAll;
 
+/**
+ * Push/Pull 消费 ProcessQueue 运行态快照：缓存消息范围、事务消息、顺序锁及拉取/消费时间戳。
+ */
 public class ProcessQueueInfo {
+    /** 已提交消费位点。 */
     private long commitOffset;
 
+    /** 本地缓存消息最小逻辑位点。 */
     private long cachedMsgMinOffset;
+    /** 本地缓存消息最大逻辑位点。 */
     private long cachedMsgMaxOffset;
+    /** 本地缓存消息条数。 */
     private int cachedMsgCount;
+    /** 本地缓存消息占用内存（MiB）。 */
     private int cachedMsgSizeInMiB;
 
+    /** 事务消息最小位点。 */
     private long transactionMsgMinOffset;
+    /** 事务消息最大位点。 */
     private long transactionMsgMaxOffset;
+    /** 待处理事务消息条数。 */
     private int transactionMsgCount;
 
+    /** 顺序消费队列是否已加锁。 */
     private boolean locked;
+    /** 尝试解锁次数。 */
     private long tryUnlockTimes;
+    /** 最近一次加锁时间戳。 */
     private long lastLockTimestamp;
 
+    /** 队列是否已被丢弃（Rebalance 回收）。 */
     private boolean droped;
+    /** 最近一次拉取时间戳。 */
     private long lastPullTimestamp;
+    /** 最近一次消费时间戳。 */
     private long lastConsumeTimestamp;
 
+    /** 返回已提交位点。 */
     public long getCommitOffset() {
         return commitOffset;
     }
@@ -95,6 +113,7 @@ public class ProcessQueueInfo {
         this.transactionMsgCount = transactionMsgCount;
     }
 
+    /** 返回是否已加锁。 */
     public boolean isLocked() {
         return locked;
     }
@@ -119,6 +138,7 @@ public class ProcessQueueInfo {
         this.lastLockTimestamp = lastLockTimestamp;
     }
 
+    /** 返回队列是否已丢弃。 */
     public boolean isDroped() {
         return droped;
     }
@@ -151,6 +171,7 @@ public class ProcessQueueInfo {
         this.cachedMsgSizeInMiB = cachedMsgSizeInMiB;
     }
 
+    /** 返回便于诊断的可读字符串。 */
     @Override
     public String toString() {
         return "ProcessQueueInfo [commitOffset=" + commitOffset + ", cachedMsgMinOffset="
