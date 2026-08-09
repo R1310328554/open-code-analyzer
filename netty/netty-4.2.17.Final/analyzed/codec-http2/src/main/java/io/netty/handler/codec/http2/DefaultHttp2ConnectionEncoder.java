@@ -38,15 +38,18 @@ import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.min;
 
 /**
- * Default implementation of {@link Http2ConnectionEncoder}.
+ * {@link Http2ConnectionEncoder} 的默认实现：在写帧前更新连接/流状态，并与远端流控协作。
+ * <p>本地 SETTINGS 队列保证 ACK 顺序；实现 {@link Http2SettingsReceivedConsumer} 以支持
+ * 手动 ACK 模式下在写 SETTINGS ACK 时应用最早未确认的对端 SETTINGS。
  */
 public class DefaultHttp2ConnectionEncoder implements Http2ConnectionEncoder, Http2SettingsReceivedConsumer {
     private final Http2FrameWriter frameWriter;
     private final Http2Connection connection;
     private Http2LifecycleManager lifecycleManager;
-    // We prefer ArrayDeque to LinkedList because later will produce more GC.
-    // This initial capacity is plenty for SETTINGS traffic.
+    // ArrayDeque 比 LinkedList GC 压力更小；初始容量 4 足够 SETTINGS 往返
+    /** 本端发出、尚未收到 ACK 的 SETTINGS 帧队列（FIFO）。 */
     private final Queue<Http2Settings> outstandingLocalSettingsQueue = new ArrayDeque<Http2Settings>(4);
+    /** 对端 SETTINGS 待 ACK 队列；手动 ACK 模式下由 {@link Http2SettingsReceivedConsumer} 消费。 */
     private Queue<Http2Settings> outstandingRemoteSettingsQueue;
 
     public DefaultHttp2ConnectionEncoder(Http2Connection connection, Http2FrameWriter frameWriter) {

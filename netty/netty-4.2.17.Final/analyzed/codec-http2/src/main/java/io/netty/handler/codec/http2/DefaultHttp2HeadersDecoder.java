@@ -23,6 +23,10 @@ import static io.netty.handler.codec.http2.Http2Error.COMPRESSION_ERROR;
 import static io.netty.handler.codec.http2.Http2Error.INTERNAL_ERROR;
 import static io.netty.handler.codec.http2.Http2Exception.connectionError;
 
+/**
+ * {@link Http2HeadersDecoder} 默认实现：委托 {@link HpackDecoder} 解压头块，并按配置校验头名/值。
+ * <p>通过指数移动平均估算头列表大小，为 {@link DefaultHttp2Headers} 预分配合理初始容量。
+ */
 public class DefaultHttp2HeadersDecoder implements Http2HeadersDecoder, Http2HeadersDecoder.Configuration {
     private static final float HEADERS_COUNT_WEIGHT_NEW = 1 / 5f;
     private static final float HEADERS_COUNT_WEIGHT_HISTORICAL = 1 - HEADERS_COUNT_WEIGHT_NEW;
@@ -30,11 +34,11 @@ public class DefaultHttp2HeadersDecoder implements Http2HeadersDecoder, Http2Hea
     private final HpackDecoder hpackDecoder;
     private final boolean validateHeaders;
     private final boolean validateHeaderValues;
+    /** 超出此累计头列表大小时触发 GOAWAY（COMPRESSION_ERROR）。 */
     private long maxHeaderListSizeGoAway;
 
     /**
-     * Used to calculate an exponential moving average of header sizes to get an estimate of how large the data
-     * structure for storing headers should be.
+     * 头块条目数的指数移动平均，用于估算 {@link DefaultHttp2Headers} 内部数组初始大小。
      */
     private float headerArraySizeAccumulator = 8;
 

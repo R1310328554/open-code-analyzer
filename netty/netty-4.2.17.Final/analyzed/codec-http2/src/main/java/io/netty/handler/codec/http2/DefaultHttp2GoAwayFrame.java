@@ -23,12 +23,17 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link Http2GoAwayFrame} implementation.
+ * {@link Http2GoAwayFrame} 的默认实现，表示连接级优雅关闭通知。
+ * <p>{@code lastStreamId} 由编码器在写出前根据 {@link #extraStreamIds()} 计算；
+ * 用户通常只需指定 {@link Http2Error} 与可选调试数据。
  */
 public final class DefaultHttp2GoAwayFrame extends DefaultByteBufHolder implements Http2GoAwayFrame {
 
+    /** RFC 7540 错误码，标识关闭原因。 */
     private final long errorCode;
+    /** 对端仍可能合法处理的最高流 ID；{@code -1} 表示由编码器推导。 */
     private final int lastStreamId;
+    /** 在 {@code lastStreamId} 之上额外保护的流数量，供编码器计算最终 lastStreamId。 */
     private int extraStreamIds;
 
     /**

@@ -29,8 +29,13 @@ import static io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER;
 import static io.netty.util.AsciiString.CASE_SENSITIVE_HASHER;
 import static io.netty.util.AsciiString.isUpperCase;
 
+/**
+ * {@link Http2Headers} 的默认实现，基于 {@link DefaultHeaders} 并区分伪头与普通头域顺序。
+ * <p>启用校验时：伪头必须以 {@code :} 开头且为已知名称；普通头名须小写且符合 HTTP/1.1 token 语法（RFC 9113 §8.2.1）。
+ */
 public class DefaultHttp2Headers
         extends DefaultHeaders<CharSequence, CharSequence, Http2Headers> implements Http2Headers {
+    /** 拒绝头名中的大写字母（HTTP/2 要求小写）。 */
     private static final ByteProcessor HTTP2_NAME_VALIDATOR_PROCESSOR = new ByteProcessor() {
         @Override
         public boolean process(byte value) {
@@ -102,13 +107,11 @@ public class DefaultHttp2Headers
         }
     };
 
+    /** 链表中第一个非伪头节点，用于迭代时跳过 :method 等伪头段。 */
     private HeaderEntry<CharSequence, CharSequence> firstNonPseudo = head;
 
     /**
-     * Create a new instance.
-     * <p>
-     * Header names will be validated according to
-     * <a href="https://tools.ietf.org/html/rfc7540">rfc7540</a>.
+     * 创建实例并启用 RFC 7540 头名校验。
      */
     public DefaultHttp2Headers() {
         this(true);

@@ -21,11 +21,15 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.verifyPadding;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@link Http2HeadersFrame} implementation.
+ * {@link Http2HeadersFrame} 的默认实现，承载 HEADERS 或 TRAILERS 语义的头块。
+ * <p>{@code endStream=true} 时本帧同时携带 END_STREAM，常用于仅含头的短请求或尾部 trailers。
  */
 public final class DefaultHttp2HeadersFrame extends AbstractHttp2StreamFrame implements Http2HeadersFrame {
+    /** 待发送或已解码的 HTTP/2 头集合（含伪头）。 */
     private final Http2Headers headers;
+    /** 发送本帧后是否结束该流。 */
     private final boolean endStream;
+    /** 帧级 padding 长度，计入流控但不承载应用数据。 */
     private final int padding;
 
     /**

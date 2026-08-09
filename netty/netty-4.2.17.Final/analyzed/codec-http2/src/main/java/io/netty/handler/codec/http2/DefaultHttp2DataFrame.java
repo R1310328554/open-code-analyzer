@@ -24,12 +24,18 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.verifyPadding;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@link Http2DataFrame} implementation.
+ * {@link Http2DataFrame} 的默认实现，封装 DATA 帧的应用层载荷与流控元数据。
+ * <p>构造时即记录 {@link #initialFlowControlledBytes()}，供本地/远端流控在帧发出前
+ * 按「有效载荷 + padding」扣减窗口，避免后续 {@link ByteBuf} 被修改导致计数失准。
  */
 public final class DefaultHttp2DataFrame extends AbstractHttp2StreamFrame implements Http2DataFrame {
+    /** DATA 帧有效载荷；引用计数由本对象管理。 */
     private final ByteBuf content;
+    /** 是否在发送本帧后关闭该流（END_STREAM 标志）。 */
     private final boolean endStream;
+    /** 协议 padding 字节数，用于流量分析混淆，范围 0–256。 */
     private final int padding;
+    /** 构造时刻计入流控的字节总数（content 可读字节 + padding）。 */
     private final int initialFlowControlledBytes;
 
     /**

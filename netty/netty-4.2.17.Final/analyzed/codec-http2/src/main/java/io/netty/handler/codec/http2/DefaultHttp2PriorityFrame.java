@@ -16,12 +16,16 @@
 package io.netty.handler.codec.http2;
 
 /**
- * Default implementation of {@linkplain Http2PriorityFrame}
+ * {@link Http2PriorityFrame} 的默认实现，描述流的依赖树与调度权重。
+ * <p>{@code exclusive=true} 时本流独占父依赖下的子树，同级兄弟会被移出。
  */
 public final class DefaultHttp2PriorityFrame extends AbstractHttp2StreamFrame implements Http2PriorityFrame {
 
+    /** 所依赖的父流 ID；0 表示依赖连接根。 */
     private final int streamDependency;
+    /** 调度权重 1–256，越大越优先获得带宽。 */
     private final short weight;
+    /** 是否以独占方式挂载到 {@link #streamDependency}。 */
     private final boolean exclusive;
 
     public DefaultHttp2PriorityFrame(int streamDependency, short weight, boolean exclusive) {

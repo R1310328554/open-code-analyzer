@@ -19,11 +19,14 @@ package io.netty.handler.codec.http2;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link Http2PingFrame} implementation.
+ * {@link Http2PingFrame} 的默认实现，承载 8 字节 PING 载荷与 ACK 标志。
+ * <p>RTT 探测时发送 {@code ack=false} 的帧；收到对端 PING 后应回 {@code ack=true} 且载荷不变。
  */
 public class DefaultHttp2PingFrame implements Http2PingFrame {
 
+    /** 8 字节 opaque 数据，ACK 时必须原样回显。 */
     private final long content;
+    /** {@code true} 表示本帧是对先前 PING 的确认。 */
     private final boolean ack;
 
     public DefaultHttp2PingFrame(long content) {

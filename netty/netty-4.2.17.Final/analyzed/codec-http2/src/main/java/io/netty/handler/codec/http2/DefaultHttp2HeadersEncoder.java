@@ -24,11 +24,18 @@ import static io.netty.handler.codec.http2.Http2Error.COMPRESSION_ERROR;
 import static io.netty.handler.codec.http2.Http2Exception.connectionError;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * {@link Http2HeadersEncoder} 默认实现：通过 {@link HpackEncoder} 将 {@link Http2Headers} 序列化为 HPACK 块。
+ * <p>动态表尺寸变更会先写入 {@link #tableSizeChangeOutput}，下次 {@link #encodeHeaders} 时 prepend 到输出，
+ * 以满足 RFC 要求「表大小变更指令位于使用该尺寸的头块之前」。
+ */
 public class DefaultHttp2HeadersEncoder implements
     Http2HeadersEncoder, Http2HeadersEncoder.Configuration, Closeable {
 
     private final HpackEncoder hpackEncoder;
+    /** 判定哪些头域不应进入动态表（如 Authorization）。 */
     private final SensitivityDetector sensitivityDetector;
+    /** 缓存 HPACK 动态表 resize 产生的字节，在下次 encode 前刷出。 */
     private ByteBuf tableSizeChangeOutput;
 
     public DefaultHttp2HeadersEncoder() {
@@ -66,8 +73,7 @@ public class DefaultHttp2HeadersEncoder implements
     @Override
     public void encodeHeaders(int streamId, Http2Headers headers, ByteBuf buffer) throws Http2Exception {
         try {
-            // If there was a change in the table size, serialize the output from the hpackEncoder
-            // resulting from that change.
+            // 动态表大小变更产生的 HPACK 指令须先于本帧头块写入同一缓冲区
             if (tableSizeChangeOutput != null && tableSizeChangeOutput.isReadable()) {
                 buffer.writeBytes(tableSizeChangeOutput);
                 tableSizeChangeOutput.clear();

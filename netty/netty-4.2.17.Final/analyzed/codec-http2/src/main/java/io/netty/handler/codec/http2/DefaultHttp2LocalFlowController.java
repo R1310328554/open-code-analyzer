@@ -34,23 +34,24 @@ import io.netty.handler.codec.http2.Http2Exception.StreamException;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Basic implementation of {@link Http2LocalFlowController}.
- * <p>
- * This class is <strong>NOT</strong> thread safe. The assumption is all methods must be invoked from a single thread.
- * Typically this thread is the event loop thread for the {@link ChannelHandlerContext} managed by this class.
+ * {@link Http2LocalFlowController} 的基础实现，管理本端接收窗口（连接级 + 流级）。
+ * <p><strong>非线程安全</strong>：须在单一 EventLoop 线程调用，通常即绑定本控制器的 {@link ChannelHandlerContext} 所在线程。
+ * <p>接收 DATA 后调用 {@code consumeBytes} 释放窗口；低于 {@link #windowUpdateRatio} 阈值时自动发送 WINDOW_UPDATE。
  */
 public class DefaultHttp2LocalFlowController implements Http2LocalFlowController {
     /**
-     * The default ratio of window size to initial window size below which a {@code WINDOW_UPDATE}
-     * is sent to expand the window.
+     * 默认窗口更新阈值：剩余窗口低于初始窗口的该比例时发送 WINDOW_UPDATE 扩容。
      */
     public static final float DEFAULT_WINDOW_UPDATE_RATIO = 0.5f;
 
     private final Http2Connection connection;
+    /** 每个 {@link Http2Stream} 挂载 {@link FlowState} 的属性键。 */
     private final Http2Connection.PropertyKey stateKey;
     private Http2FrameWriter frameWriter;
     private ChannelHandlerContext ctx;
+    /** 触发 WINDOW_UPDATE 的剩余窗口比例阈值。 */
     private float windowUpdateRatio;
+    /** SETTINGS_INITIAL_WINDOW_SIZE 协商后的初始窗口，新激活流据此初始化。 */
     private int initialWindowSize = DEFAULT_WINDOW_SIZE;
 
     public DefaultHttp2LocalFlowController(Http2Connection connection) {
@@ -58,17 +59,13 @@ public class DefaultHttp2LocalFlowController implements Http2LocalFlowController
     }
 
     /**
-     * Constructs a controller with the given settings.
+     * 构造流控器并注册连接/流生命周期监听。
      *
-     * @param connection the connection state.
-     * @param windowUpdateRatio the window percentage below which to send a {@code WINDOW_UPDATE}.
-     * @param autoRefillConnectionWindow if {@code true}, effectively disables the connection window
-     * in the flow control algorithm as they will always refill automatically without requiring the
-     * application to consume the bytes. When enabled, the maximum bytes you must be prepared to
-     * queue is proportional to {@code maximum number of concurrent streams * the initial window
-     * size per stream}
-     * (<a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_CONCURRENT_STREAMS</a>
-     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_INITIAL_WINDOW_SIZE</a>).
+     * @param connection 关联的 HTTP/2 连接状态。
+     * @param windowUpdateRatio 剩余窗口低于「初始窗口 × 该比例」时发送 WINDOW_UPDATE。
+     * @param autoRefillConnectionWindow 为 {@code true} 时连接级窗口自动补满，应用层无需 consume 连接窗口；
+     *        此时需预备排队字节上限约为「最大并发流数 × 每流初始窗口」
+     *        （{@link Http2Settings#maxConcurrentStreams()} × {@link Http2Settings#initialWindowSize()}）。
      */
     public DefaultHttp2LocalFlowController(Http2Connection connection,
                                            float windowUpdateRatio,
@@ -76,14 +73,14 @@ public class DefaultHttp2LocalFlowController implements Http2LocalFlowController
         this.connection = checkNotNull(connection, "connection");
         windowUpdateRatio(windowUpdateRatio);
 
-        // Add a flow state for the connection.
+        // 连接级流（ID=0）始终挂载 FlowState
         stateKey = connection.newKey();
         FlowState connectionState = autoRefillConnectionWindow ?
                 new AutoRefillState(connection.connectionStream(), initialWindowSize) :
                 new DefaultState(connection.connectionStream(), initialWindowSize);
         connection.connectionStream().setProperty(stateKey, connectionState);
 
-        // Register for notification of new streams.
+        // 新流加入时用轻量占位状态，激活后再分配完整 DefaultState
         connection.addListener(new Http2ConnectionAdapter() {
             @Override
             public void onStreamAdded(Http2Stream stream) {

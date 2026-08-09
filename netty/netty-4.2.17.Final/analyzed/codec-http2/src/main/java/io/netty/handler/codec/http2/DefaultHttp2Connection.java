@@ -58,58 +58,62 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 import static java.lang.Integer.MAX_VALUE;
 
 /**
- * Simple implementation of {@link Http2Connection}.
+ * {@link Http2Connection} 的默认实现：维护流 ID 映射、双端点状态机与活跃流集合。
+ * <p>本地/远端 {@link DefaultEndpoint} 分别跟踪本端发起与对端发起的流；{@link ActiveStreams}
+ * 在迭代回调期间协调并发修改，避免监听器遍历时的结构冲突。
  */
 public class DefaultHttp2Connection implements Http2Connection {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultHttp2Connection.class);
-    // Fields accessed by inner classes
+    // 以下字段供内部类直接访问
+    /** streamId → {@link Http2Stream} 的全局索引，含 ID 为 0 的连接级伪流。 */
     final IntObjectMap<Http2Stream> streamMap = new IntObjectHashMap<Http2Stream>();
+    /** 流上可挂载自定义属性的键注册表。 */
     final PropertyKeyRegistry propertyKeyRegistry = new PropertyKeyRegistry();
+    /** 流 ID 恒为 0 的连接级流，承载连接范围 SETTINGS/流控状态。 */
     final ConnectionStream connectionStream = new ConnectionStream();
+    /** 本端（local）端点：发起方视角的流 ID 奇偶与 reserved 配额。 */
     final DefaultEndpoint<Http2LocalFlowController> localEndpoint;
+    /** 对端（remote）端点：接收对端帧时创建/关闭的流。 */
     final DefaultEndpoint<Http2RemoteFlowController> remoteEndpoint;
 
     /**
-     * We chose a {@link List} over a {@link Set} to avoid allocating an {@link Iterator} objects when iterating over
-     * the listeners.
+     * 流生命周期监听器列表。选用 {@link List} 而非 {@link Set}，避免遍历时分配 {@link Iterator}。
      * <p>
-     * Initial size of 4 because the default configuration currently has 3 listeners
-     * (local/remote flow controller and {@link StreamByteDistributor}) and we leave room for 1 extra.
-     * We could be more aggressive but the ArrayList resize will double the size if we are too small.
+     * 初始容量 4：默认配置约 3 个监听器（本地/远端流控与 {@link StreamByteDistributor}），预留 1 个扩展位。
      */
     final List<Listener> listeners = new ArrayList<Listener>(4);
+    /** 管理「活跃流」集合及回调期间的修改许可。 */
     final ActiveStreams activeStreams;
+    /** 非 {@code null} 表示已调用 {@link #close(Promise)}，禁止再创建新流。 */
     Promise<Void> closePromise;
 
     /**
-     * Creates a new connection with the given settings.
-     * @param server whether or not this end-point is the server-side of the HTTP/2 connection.
+     * 按默认 reserved 流上限创建连接。
+     * @param server 本端是否为 HTTP/2 服务端（决定流 ID 奇偶规则）。
      */
     public DefaultHttp2Connection(boolean server) {
         this(server, DEFAULT_MAX_RESERVED_STREAMS);
     }
 
     /**
-     * Creates a new connection with the given settings.
-     * @param server whether or not this end-point is the server-side of the HTTP/2 connection.
-     * @param maxReservedStreams The maximum amount of streams which can exist in the reserved state for each endpoint.
+     * 创建连接并配置每端点 reserved 状态流的上限。
+     * @param server 本端是否为 HTTP/2 服务端。
+     * @param maxReservedStreams 每个端点允许处于 reserved 状态的最大流数。
      */
     public DefaultHttp2Connection(boolean server, int maxReservedStreams) {
         activeStreams = new ActiveStreams(listeners);
-        // Reserved streams are excluded from the SETTINGS_MAX_CONCURRENT_STREAMS limit according to [1] and the RFC
-        // doesn't define a way to communicate the limit on reserved streams. We rely upon the peer to send RST_STREAM
-        // in response to any locally enforced limits being exceeded [2].
-        // [1] https://tools.ietf.org/html/rfc7540#section-5.1.2
-        // [2] https://tools.ietf.org/html/rfc7540#section-8.2.2
+        // RFC 7540：reserved 流不计入 SETTINGS_MAX_CONCURRENT_STREAMS；协议未定义 reserved 上限的 SETTINGS，
+        // 本地超额时依赖对端以 RST_STREAM 响应（§5.1.2、§8.2.2）。
+        // 服务端 local 端 reserved 不设上限（MAX_VALUE），客户端受 maxReservedStreams 约束
         localEndpoint = new DefaultEndpoint<Http2LocalFlowController>(server, server ? MAX_VALUE : maxReservedStreams);
         remoteEndpoint = new DefaultEndpoint<Http2RemoteFlowController>(!server, maxReservedStreams);
 
-        // Add the connection stream to the map.
+        // 连接级流（ID=0）必须预先放入 map
         streamMap.put(connectionStream.id(), connectionStream);
     }
 
     /**
-     * Determine if {@link #close(Promise)} has been called and no more streams are allowed to be created.
+     * 是否已发起关闭且不再允许创建新流（{@link #closePromise} 已设置）。
      */
     final boolean isClosed() {
         return closePromise != null;
@@ -118,8 +122,7 @@ public class DefaultHttp2Connection implements Http2Connection {
     @Override
     public Future<Void> close(final Promise<Void> promise) {
         checkNotNull(promise, "promise");
-        // Since we allow this method to be called multiple times, we must make sure that all the promises are notified
-        // when all streams are removed and the close operation completes.
+        // 允许多次 close：合并 promise，全部在流清空后完成
         if (closePromise != null) {
             if (closePromise == promise) {
                 // Do nothing
@@ -137,8 +140,7 @@ public class DefaultHttp2Connection implements Http2Connection {
         }
 
         Iterator<PrimitiveEntry<Http2Stream>> itr = streamMap.entries().iterator();
-        // We must take care while iterating the streamMap as to not modify while iterating in case there are other code
-        // paths iterating over the active streams.
+        // 遍历 streamMap 时可能触发 close 修改 map；ActiveStreams 协调是否允许同步删除
         if (activeStreams.allowModifications()) {
             activeStreams.incrementPendingIterations();
             try {

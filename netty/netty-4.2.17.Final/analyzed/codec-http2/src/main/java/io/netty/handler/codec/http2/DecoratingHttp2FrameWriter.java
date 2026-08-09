@@ -22,11 +22,16 @@ import io.netty.channel.ChannelPromise;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Decorator around another {@link Http2FrameWriter} instance.
+ * 对另一个 {@link Http2FrameWriter} 的装饰器基类：所有写帧方法均透明转发给被包装实例。
+ * <p>子类可覆写个别方法以插入日志、指标或协议扩展，而无需重写全部帧类型。
  */
 public class DecoratingHttp2FrameWriter implements Http2FrameWriter {
+    /** 实际执行帧序列化与写入的委托对象。 */
     private final Http2FrameWriter delegate;
 
+    /**
+     * @param delegate 非 {@code null} 的底层帧写入器
+     */
     public DecoratingHttp2FrameWriter(Http2FrameWriter delegate) {
         this.delegate = checkNotNull(delegate, "delegate");
     }

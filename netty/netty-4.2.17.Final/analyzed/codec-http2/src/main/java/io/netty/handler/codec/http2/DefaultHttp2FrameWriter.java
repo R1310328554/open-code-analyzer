@@ -69,20 +69,22 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * A {@link Http2FrameWriter} that supports all frame types defined by the HTTP/2 specification.
+ * 支持 RFC 7540 全部帧类型的 {@link Http2FrameWriter} 实现。
+ * <p>大 HEADERS 块自动拆成 HEADERS + CONTINUATION；padding 从零缓冲区分片写入以复用 direct 内存。
  */
 public class DefaultHttp2FrameWriter implements Http2FrameWriter, Http2FrameSizePolicy, Configuration {
     private static final String STREAM_ID = "Stream ID";
     private static final String STREAM_DEPENDENCY = "Stream Dependency";
     /**
-     * This buffer is allocated to the maximum size of the padding field, and filled with zeros.
-     * When padding is needed it can be taken as a slice of this buffer. Users should call {@link ByteBuf#retain()}
-     * before using their slice.
+     * 预分配至 padding 字段最大长度（255）的全零 direct 缓冲；需要 padding 时 slice 使用，
+     * 调用方须对 slice 先 {@link ByteBuf#retain()}。
      */
     private static final ByteBuf ZERO_BUFFER = LeakPresenceDetector.staticInitializer(() ->
             unreleasableBuffer(directBuffer(MAX_UNSIGNED_BYTE).writeZero(MAX_UNSIGNED_BYTE)).asReadOnly());
 
+    /** HPACK 头块编码器。 */
     private final Http2HeadersEncoder headersEncoder;
+    /** 当前协商的最大帧大小（不含 9 字节帧头）。 */
     private int maxFrameSize;
 
     public DefaultHttp2FrameWriter() {

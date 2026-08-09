@@ -44,27 +44,31 @@ import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.min;
 
 /**
- * Provides the default implementation for processing inbound frame events and delegates to a
- * {@link Http2FrameListener}
- * <p>
- * This class will read HTTP/2 frames and delegate the events to a {@link Http2FrameListener}
- * <p>
- * This interface enforces inbound flow control functionality through
- * {@link Http2LocalFlowController}
+ * 入站 HTTP/2 帧的默认解码器：在 {@link Http2FrameReader} 解析出的原始帧之上施加 RFC 7540 语义，
+ * 并委托 {@link Http2FrameListener}；通过 {@link Http2LocalFlowController} 强制执行入站流控。
+ * <p>连接建立初期由 {@link PrefaceFrameListener} 处理连接前言，SETTINGS 交换完成后切换为用户监听器。
  */
 public class DefaultHttp2ConnectionDecoder implements Http2ConnectionDecoder {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultHttp2ConnectionDecoder.class);
+    /** 在 SETTINGS 完成前处理连接前言与初始 SETTINGS 的内部监听器。 */
     private Http2FrameListener internalFrameListener = new PrefaceFrameListener();
     private final Http2Connection connection;
     private Http2LifecycleManager lifecycleManager;
+    /** 与解码器配对的编码器，用于自动 ACK SETTINGS/PING 等出站响应。 */
     private final Http2ConnectionEncoder encoder;
+    /** 负责从 ByteBuf 解析帧头的底层读取器。 */
     private final Http2FrameReader frameReader;
+    /** 用户注册的帧事件监听器（SETTINGS 握手后生效）。 */
     private Http2FrameListener listener;
+    /** 校验 PUSH_PROMISE 所承诺的请求是否合法。 */
     private final Http2PromisedRequestVerifier requestVerifier;
     private final Http2SettingsReceivedConsumer settingsReceivedConsumer;
+    /** 是否自动回复 PING ACK。 */
     private final boolean autoAckPing;
+    /** 流上缓存 Content-Length 累计值的属性键，用于 DATA 帧长度校验。 */
     private final Http2Connection.PropertyKey contentLengthKey;
     private final boolean validateHeaders;
+    /** 是否强制存在 :method/:scheme/:path 等必需伪头。 */
     private final boolean validateRequiredPseudoHeaders;
 
     public DefaultHttp2ConnectionDecoder(Http2Connection connection,

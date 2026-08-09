@@ -51,33 +51,36 @@ import static io.netty.handler.codec.http2.Http2FrameTypes.SETTINGS;
 import static io.netty.handler.codec.http2.Http2FrameTypes.WINDOW_UPDATE;
 
 /**
- * A {@link Http2FrameReader} that supports all frame types defined by the HTTP/2 specification.
+ * 支持 RFC 7540 全部帧类型的 {@link Http2FrameReader} 实现。
+ * <p>按 9 字节帧头 + 载荷分段读取；HEADERS/PUSH_PROMISE 等头块过大时通过
+ * CONTINUATION 链重组，并在 {@link #readError} 置位后拒绝后续帧以保护连接状态。
  */
 public class DefaultHttp2FrameReader implements Http2FrameReader, Http2FrameSizePolicy, Configuration {
+    /** 小帧合并阈值：低于 maxFrameSize/2 的 continuation 可合并以减少回调次数。 */
     private static final int FRAGMENT_THRESHOLD = MAX_FRAME_SIZE_LOWER_BOUND / 2;
     private final Http2HeadersDecoder headersDecoder;
 
-    /**
-     * {@code true} = reading headers, {@code false} = reading payload.
-     */
+    /** {@code true} 正在读帧头；{@code false} 正在读载荷。 */
     private boolean readingHeaders = true;
     /**
-     * Once set to {@code true} the value will never change. This is set to {@code true} if an unrecoverable error which
-     * renders the connection unusable.
+     * 一旦出现不可恢复错误即置 {@code true} 且不再清除，后续 readFrame 直接失败，
+     * 避免在损坏的连接状态下继续解析。
      */
     private boolean readError;
+    /** 当前正在解析的帧类型（{@link Http2FrameTypes}）。 */
     private byte frameType;
     private int streamId;
     private Http2Flags flags;
     private int payloadLength;
+    /** HEADERS/PUSH_PROMISE 分片重组时的中间状态。 */
     private HeadersContinuation headersContinuation;
+    /** 允许的最大帧载荷长度，由 SETTINGS_MAX_FRAME_SIZE 协商。 */
     private int maxFrameSize = DEFAULT_MAX_FRAME_SIZE;
+    /** 允许合并的小 CONTINUATION 帧数量上限。 */
     private final int maxSmallContinuationFrames;
 
     /**
-     * Create a new instance.
-     * <p>
-     * Header names will be validated.
+     * 使用默认 HPACK 解码器并校验头名。
      */
     public DefaultHttp2FrameReader() {
         this(true);
