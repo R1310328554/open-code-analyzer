@@ -31,23 +31,23 @@ import org.springframework.util.StringUtils;
 /**
  * {@link MessageCodesResolver} 接口的默认实现。
  *
- * <p>对对象错误将按以下顺序创建两条消息码
- *（使用 {@link Format#PREFIX_ERROR_CODE 前缀}
+ * <p>对象错误将按以下顺序生成两条消息码（使用
+ * {@link Format#PREFIX_ERROR_CODE 前缀式}
  * {@link #setMessageCodeFormatter(MessageCodeFormatter) 格式化器} 时）：
  * <ul>
- * <li>1.: code + "." + object name
- * <li>2.: code
+ * <li>1.：code + "." + 对象名
+ * <li>2.：code
  * </ul>
  *
- * <p>对字段规格将按以下顺序创建四条消息码：
+ * <p>字段规范将按以下顺序生成四条消息码：
  * <ul>
- * <li>1.: code + "." + object name + "." + field
- * <li>2.: code + "." + field
- * <li>3.: code + "." + field type
- * <li>4.: code
+ * <li>1.：code + "." + 对象名 + "." + 字段
+ * <li>2.：code + "." + 字段
+ * <li>3.：code + "." + 字段类型
+ * <li>4.：code
  * </ul>
  *
- * <p>例如 errorCode 为 "typeMismatch"、object name 为 "user"、field 为 "age" 时：
+ * <p>例如，code 为 "typeMismatch"、对象名为 "user"、字段为 "age" 时：
  * <ul>
  * <li>1. 尝试 "typeMismatch.user.age"
  * <li>2. 尝试 "typeMismatch.age"
@@ -56,7 +56,7 @@ import org.springframework.util.StringUtils;
  * </ul>
  *
  * <p>因此该解析算法可用于为 "required"、"typeMismatch" 等绑定错误
- * 显示不同粒度的消息：
+ * 展示特定消息：
  * <ul>
  * <li>对象 + 字段级别（"age" 字段，但仅限 "user" 对象）；
  * <li>字段级别（所有 "age" 字段，不限对象名）；
@@ -64,8 +64,8 @@ import org.springframework.util.StringUtils;
  * </ul>
  *
  * <p>对于数组、{@link List} 或 {@link java.util.Map} 属性，
- * 会同时生成针对特定元素与整个集合的 codes。
- * 假设 object "user" 中数组 "groups" 的字段 "name"：
+ * 会同时生成针对特定元素与整个集合的消息码。
+ * 假设对象 "user" 中数组 "groups" 的字段 "name"：
  * <ul>
  * <li>1. 尝试 "typeMismatch.user.groups[0].name"
  * <li>2. 尝试 "typeMismatch.user.groups.name"
@@ -76,13 +76,13 @@ import org.springframework.util.StringUtils;
  * <li>7. 尝试 "typeMismatch"
  * </ul>
  *
- * <p>默认 {@code errorCode} 置于构造消息串的开头。
+ * <p>默认情况下 {@code errorCode} 置于构造消息字符串的开头。
  * 可通过 {@link #setMessageCodeFormatter(MessageCodeFormatter) messageCodeFormatter}
  * 属性指定替代的 {@link MessageCodeFormatter 拼接格式}。
  *
- * <p>若要在资源包中将所有 codes 归入特定类别，
+ * <p>若要在资源包中将所有码归入特定类别，
  * 例如 "validation.typeMismatch.name" 而非默认 "typeMismatch.name"，
- * 可指定要应用的 {@link #setPrefix prefix}。
+ * 可考虑指定要应用的 {@link #setPrefix prefix}。
  *
  * @author Juergen Hoeller
  * @author Phillip Webb
@@ -93,7 +93,7 @@ import org.springframework.util.StringUtils;
 public class DefaultMessageCodesResolver implements MessageCodesResolver, Serializable {
 
 	/**
-	 * 本实现解析消息码时使用的分隔符。
+	 * 本实现在解析消息码时使用的分隔符。
 	 */
 	public static final String CODE_SEPARATOR = ".";
 
@@ -106,8 +106,8 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 
 
 	/**
-	 * 指定本解析器构建的任意 code 要应用的前缀。
-	 * <p>默认无前缀。例如指定 "validation." 可得到
+	 * 指定本解析器构造的任意消息码所应用的前缀。
+	 * <p>默认为无。例如指定 "validation." 可得到
 	 * "validation.typeMismatch.name" 等错误码。
 	 */
 	public void setPrefix(@Nullable String prefix) {
@@ -115,7 +115,7 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	/**
-	 * 返回本解析器构建的任意 code 要应用的前缀。
+	 * 返回本解析器构造的任意消息码所应用的前缀。
 	 * <p>无前缀时返回空字符串。
 	 */
 	protected String getPrefix() {
@@ -123,7 +123,7 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	/**
-	 * 指定本解析器构建消息码的格式。
+	 * 指定本解析器构造的消息码格式。
 	 * <p>默认为 {@link Format#PREFIX_ERROR_CODE}。
 	 * @since 3.2
 	 * @see Format
@@ -139,11 +139,11 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	/**
-	 * 为给定 code 与 field 构建 code 列表：
-	 * 对象/字段特定 code、字段特定 code、纯 error code。
+	 * 为给定 code 与 field 构建码列表：
+	 * 对象/字段特定码、字段特定码、纯错误码。
 	 * <p>数组、List 与 Map 会同时解析特定元素与整个集合。
-	 * <p>生成 codes 的详情见 {@link DefaultMessageCodesResolver 类级 JavaDoc}。
-	 * @return code 列表
+	 * <p>生成码的详情见 {@link DefaultMessageCodesResolver 类级 JavaDoc}。
+	 * @return 码列表
 	 */
 	@Override
 	public String[] resolveMessageCodes(String errorCode, String objectName, String field, @Nullable Class<?> fieldType) {
@@ -174,7 +174,7 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	/**
-	 * 将给定 {@code field} 的带键与不带键条目均添加到给定字段列表。
+	 * 为给定 {@code field} 同时添加带键与不带键的条目到字段列表。
 	 */
 	protected void buildFieldList(String field, List<String> fieldList) {
 		fieldList.add(field);
@@ -194,9 +194,9 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 	}
 
 	/**
-	 * 对本解析器构建的给定消息码进行后处理。
+	 * 对本解析器构造的给定消息码进行后处理。
 	 * <p>默认实现应用指定前缀（若有）。
-	 * @param code 本解析器构建的消息码
+	 * @param code 本解析器构造的消息码
 	 * @return 最终返回的消息码
 	 * @see #setPrefix
 	 */
@@ -206,14 +206,14 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 
 
 	/**
-	 * 常见消息码格式。
+	 * 常用消息码格式。
 	 * @see MessageCodeFormatter
 	 * @see DefaultMessageCodesResolver#setMessageCodeFormatter(MessageCodeFormatter)
 	 */
 	public enum Format implements MessageCodeFormatter {
 
 		/**
-		 * 将 errorCode 前缀到生成的消息码开头，例如：
+		 * 将错误码置于生成消息码的开头，例如：
 		 * {@code errorCode + "." + object name + "." + field}
 		 */
 		PREFIX_ERROR_CODE {
@@ -224,7 +224,7 @@ public class DefaultMessageCodesResolver implements MessageCodesResolver, Serial
 		},
 
 		/**
-		 * 将 errorCode 后缀到生成的消息码末尾，例如：
+		 * 将错误码置于生成消息码的末尾，例如：
 		 * {@code object name + "." + field + "." + errorCode}
 		 */
 		POSTFIX_ERROR_CODE {

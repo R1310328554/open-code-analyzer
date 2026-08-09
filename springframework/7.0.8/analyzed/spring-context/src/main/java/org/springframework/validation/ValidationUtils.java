@@ -27,8 +27,8 @@ import org.springframework.util.StringUtils;
 /**
  * 提供调用 {@link Validator} 与拒绝空字段便捷方法的工具类。
  *
- * <p>在 {@code Validator} 实现中检查空字段时，
- * 使用 {@link #rejectIfEmpty} 或 {@link #rejectIfEmptyOrWhitespace} 可简化为一行代码。
+ * <p>在 {@code Validator} 实现中，使用 {@link #rejectIfEmpty} 或
+ * {@link #rejectIfEmptyOrWhitespace} 可将空字段检查简化为一行代码。
  *
  * @author Juergen Hoeller
  * @author Dmitriy Kopylenko
@@ -47,7 +47,7 @@ public abstract class ValidationUtils {
 	 * @param target 要绑定参数的对象
 	 * @param errors 应存储错误的 {@link Errors} 实例
 	 * @throws IllegalArgumentException 若 {@code Validator} 或 {@code Errors} 参数为 {@code null}，
-	 * 或提供的 {@code Validator} 不 {@link Validator#supports(Class) 支持} 给定对象类型的校验
+	 * 或给定 {@code Validator} 不 {@link Validator#supports(Class) 支持} 给定对象类型的校验
 	 */
 	public static void invokeValidator(Validator validator, Object target, Errors errors) {
 		invokeValidator(validator, target, errors, (Object[]) null);
@@ -58,9 +58,9 @@ public abstract class ValidationUtils {
 	 * @param validator 要调用的 {@code Validator}
 	 * @param target 要绑定参数的对象
 	 * @param errors 应存储错误的 {@link Errors} 实例
-	 * @param validationHints 要传递给校验引擎的一个或多个 hint 对象
+	 * @param validationHints 传递给校验引擎的一个或多个提示对象
 	 * @throws IllegalArgumentException 若 {@code Validator} 或 {@code Errors} 参数为 {@code null}，
-	 * 或提供的 {@code Validator} 不 {@link Validator#supports(Class) 支持} 给定对象类型的校验
+	 * 或给定 {@code Validator} 不 {@link Validator#supports(Class) 支持} 给定对象类型的校验
 	 */
 	public static void invokeValidator(
 			Validator validator, Object target, Errors errors, Object @Nullable ... validationHints) {
@@ -96,10 +96,11 @@ public abstract class ValidationUtils {
 
 
 	/**
-	 * 若值为空，以给定 errorCode 拒绝给定字段。
-	 * <p>此上下文中“空”指 {@code null} 或空字符串 ""。
+	 * 若值为空，以给定错误码拒绝给定字段。
+	 * <p>此处的“空”指 {@code null} 或空字符串 ""。
 	 * <p>无需传入被校验字段所属对象，
-	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * 因 {@link Errors} 实例可自行解析字段值
+	 * （通常持有对目标对象的内部引用）。
 	 * @param errors 要注册错误的 {@code Errors} 实例
 	 * @param field 要检查的字段名
 	 * @param errorCode 错误码，可解释为消息键
@@ -109,10 +110,11 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * 若值为空，以给定 errorCode 与 defaultMessage 拒绝给定字段。
-	 * <p>此上下文中“空”指 {@code null} 或空字符串 ""。
+	 * 若值为空，以给定错误码与默认消息拒绝给定字段。
+	 * <p>此处的“空”指 {@code null} 或空字符串 ""。
 	 * <p>无需传入被校验字段所属对象，
-	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * 因 {@link Errors} 实例可自行解析字段值
+	 * （通常持有对目标对象的内部引用）。
 	 * @param errors 要注册错误的 {@code Errors} 实例
 	 * @param field 要检查的字段名
 	 * @param errorCode 错误码，可解释为消息键
@@ -123,10 +125,11 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * 若值为空，以给定 errorCode 与 errorArgs 拒绝给定字段。
-	 * <p>此上下文中“空”指 {@code null} 或空字符串 ""。
+	 * 若值为空，以给定错误码与错误参数拒绝给定字段。
+	 * <p>此处的“空”指 {@code null} 或空字符串 ""。
 	 * <p>无需传入被校验字段所属对象，
-	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * 因 {@link Errors} 实例可自行解析字段值
+	 * （通常持有对目标对象的内部引用）。
 	 * @param errors 要注册错误的 {@code Errors} 实例
 	 * @param field 要检查的字段名
 	 * @param errorCode 错误码，可解释为消息键
@@ -137,10 +140,11 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * 若值为空，以给定 errorCode、errorArgs 与 defaultMessage 拒绝给定字段。
-	 * <p>此上下文中“空”指 {@code null} 或空字符串 ""。
+	 * 若值为空，以给定错误码、错误参数与默认消息拒绝给定字段。
+	 * <p>此处的“空”指 {@code null} 或空字符串 ""。
 	 * <p>无需传入被校验字段所属对象，
-	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * 因 {@link Errors} 实例可自行解析字段值
+	 * （通常持有对目标对象的内部引用）。
 	 * @param errors 要注册错误的 {@code Errors} 实例
 	 * @param field 要检查的字段名
 	 * @param errorCode 错误码，可解释为消息键
@@ -158,10 +162,11 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * 若值为空或仅含空白，以给定 errorCode 拒绝给定字段。
-	 * <p>此上下文中“空”指 {@code null}、空字符串 "" 或全为空白字符。
+	 * 若值为空或仅含空白，以给定错误码拒绝给定字段。
+	 * <p>此处的“空”指 {@code null}、空字符串 "" 或全为空白字符。
 	 * <p>无需传入被校验字段所属对象，
-	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * 因 {@link Errors} 实例可自行解析字段值
+	 * （通常持有对目标对象的内部引用）。
 	 * @param errors 要注册错误的 {@code Errors} 实例
 	 * @param field 要检查的字段名
 	 * @param errorCode 错误码，可解释为消息键
@@ -171,10 +176,11 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * 若值为空或仅含空白，以给定 errorCode 与 defaultMessage 拒绝给定字段。
-	 * <p>此上下文中“空”指 {@code null}、空字符串 "" 或全为空白字符。
+	 * 若值为空或仅含空白，以给定错误码与默认消息拒绝给定字段。
+	 * <p>此处的“空”指 {@code null}、空字符串 "" 或全为空白字符。
 	 * <p>无需传入被校验字段所属对象，
-	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * 因 {@link Errors} 实例可自行解析字段值
+	 * （通常持有对目标对象的内部引用）。
 	 * @param errors 要注册错误的 {@code Errors} 实例
 	 * @param field 要检查的字段名
 	 * @param errorCode 错误码，可解释为消息键
@@ -187,10 +193,11 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * 若值为空或仅含空白，以给定 errorCode 与 errorArgs 拒绝给定字段。
-	 * <p>此上下文中“空”指 {@code null}、空字符串 "" 或全为空白字符。
+	 * 若值为空或仅含空白，以给定错误码与错误参数拒绝给定字段。
+	 * <p>此处的“空”指 {@code null}、空字符串 "" 或全为空白字符。
 	 * <p>无需传入被校验字段所属对象，
-	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * 因 {@link Errors} 实例可自行解析字段值
+	 * （通常持有对目标对象的内部引用）。
 	 * @param errors 要注册错误的 {@code Errors} 实例
 	 * @param field 要检查的字段名
 	 * @param errorCode 错误码，可解释为消息键
@@ -203,10 +210,11 @@ public abstract class ValidationUtils {
 	}
 
 	/**
-	 * 若值为空或仅含空白，以给定 errorCode、errorArgs 与 defaultMessage 拒绝给定字段。
-	 * <p>此上下文中“空”指 {@code null}、空字符串 "" 或全为空白字符。
+	 * 若值为空或仅含空白，以给定错误码、错误参数与默认消息拒绝给定字段。
+	 * <p>此处的“空”指 {@code null}、空字符串 "" 或全为空白字符。
 	 * <p>无需传入被校验字段所属对象，
-	 * 因 {@link Errors} 实例可自行解析字段值（通常持有目标对象的内部引用）。
+	 * 因 {@link Errors} 实例可自行解析字段值
+	 * （通常持有对目标对象的内部引用）。
 	 * @param errors 要注册错误的 {@code Errors} 实例
 	 * @param field 要检查的字段名
 	 * @param errorCode 错误码，可解释为消息键

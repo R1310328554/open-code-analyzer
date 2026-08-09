@@ -55,7 +55,8 @@ for mod_name, attr in [
     ("wave14a_validation_binding.py", "VALIDATION_BINDING_REPLACEMENTS"),
     ("wave14a_validation_errors.py", "VALIDATION_ERRORS_REPLACEMENTS"),
     ("wave14a_validation_rest_part1.py", "VALIDATION_REST_REPLACEMENTS"),
-    ("wave14a_validation_rest_part2.py", "VALIDATION_REST_PART2_REPLACEMENTS"),
+    ("wave14a_validation_messages.py", "VALIDATION_MESSAGES_REPLACEMENTS"),
+    ("wave14a_validation_validator.py", "VALIDATION_VALIDATOR_REPLACEMENTS"),
 ]:
     FILE_REPLACEMENTS.update(_load_module(mod_name, attr))
 

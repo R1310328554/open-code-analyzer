@@ -19,7 +19,7 @@ package org.springframework.validation;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@link Validator} 接口的扩展变体，增加对校验“提示（hints）”的支持。
+ * {@link Validator} 接口的扩展变体，增加对校验“提示（hint）”的支持。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -28,15 +28,15 @@ import org.jspecify.annotations.Nullable;
 public interface SmartValidator extends Validator {
 
 	/**
-	 * 校验提供的 {@code target} 对象，其类型须为 {@link #supports(Class)} 通常返回 {@code true} 的类型。
-	 * <p>提供的 {@link Errors errors} 实例可用于报告产生的校验错误。
+	 * 校验给定 {@code target} 对象，其类型必须是 {@link #supports(Class)} 通常返回 {@code true} 的类型。
+	 * <p>可使用提供的 {@link Errors errors} 实例报告产生的校验错误。
 	 * <p><b>本 {@code validate()} 变体支持校验提示，
-	 * 例如针对 JSR-303 提供者的校验组</b>（此时提供的 hint 对象须为 {@code Class} 类型的注解参数）。
+	 * 例如针对 JSR-303 提供者的校验分组</b>（此时提示对象需为 {@code Class} 类型的注解参数）。
 	 * <p>注意：实际目标 {@code Validator} 可能忽略校验提示，
-	 * 此时本方法行为应与常规 {@link #validate(Object, Errors)} 相同。
+	 * 此时本方法应与常规 {@link #validate(Object, Errors)} 行为一致。
 	 * @param target 要校验的对象
-	 * @param errors 校验过程的上下文状态
-	 * @param validationHints 要传递给校验引擎的一个或多个 hint 对象
+	 * @param errors 关于校验过程的上下文状态
+	 * @param validationHints 传递给校验引擎的一个或多个提示对象
 	 * @see jakarta.validation.Validator#validate(Object, Class[])
 	 */
 	void validate(Object target, Errors errors, Object... validationHints);
@@ -47,8 +47,8 @@ public interface SmartValidator extends Validator {
 	 * @param targetType 目标类型
 	 * @param fieldName 字段名
 	 * @param value 候选值
-	 * @param errors 校验过程的上下文状态
-	 * @param validationHints 要传递给校验引擎的一个或多个 hint 对象
+	 * @param errors 关于校验过程的上下文状态
+	 * @param validationHints 传递给校验引擎的一个或多个提示对象
 	 * @since 5.1
 	 * @see jakarta.validation.Validator#validateValue(Class, String, Object, Class[])
 	 */
@@ -60,10 +60,10 @@ public interface SmartValidator extends Validator {
 
 	/**
 	 * 返回指定类型的内部校验器实例，必要时逐层解包。
-	 * @param type 要返回的对象的 Class
-	 * @param <T> 要返回的对象类型
-	 * @return 指定类型的校验器实例；无嵌套校验器时返回 {@code null}；
-	 * 指定校验器类型不匹配时可能抛出异常。
+	 * @param type 要返回的对象的类
+	 * @param <T> 要返回的对象的类型
+	 * @return 指定类型的校验器实例；若无嵌套校验器则返回 {@code null}；
+	 * 若指定校验器类型不匹配可能抛出异常。
 	 * @since 6.1
 	 */
 	default <T> @Nullable T unwrap(@Nullable Class<T> type) {
