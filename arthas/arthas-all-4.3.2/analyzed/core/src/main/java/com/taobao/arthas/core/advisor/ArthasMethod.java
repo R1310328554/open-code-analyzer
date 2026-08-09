@@ -8,7 +8,8 @@ import com.alibaba.deps.org.objectweb.asm.Type;
 import com.taobao.arthas.core.util.StringUtils;
 
 /**
- * 
+ * 封装类 + 方法名 + ASM 描述符，延迟解析为 {@link Method} 或 {@link Constructor}。
+ * <p>
  * 主要用于 tt 命令重放使用
  * 
  * @author vlinux on 15/5/24
@@ -16,13 +17,19 @@ import com.taobao.arthas.core.util.StringUtils;
  *
  */
 public class ArthasMethod {
+    /** 声明所属类 */
     private final Class<?> clazz;
+    /** 方法名，构造方法为 {@code <init>} */
     private final String methodName;
+    /** ASM 方法描述符，如 (Ljava/lang/String;)V */
     private final String methodDesc;
 
+    /** 解析后的构造器（仅 {@code <init>}） */
     private Constructor<?> constructor;
+    /** 解析后的 Method 实例 */
     private Method method;
 
+    /** 按 methodDesc 解析参数类型并查找 Method/Constructor，仅执行一次 */
     private void initMethod() {
         if (constructor != null || method != null) {
             return;
@@ -32,7 +39,7 @@ public class ArthasMethod {
             ClassLoader loader = this.clazz.getClassLoader();
             final Type asmType = Type.getMethodType(methodDesc);
 
-            // to arg types
+            // 将 ASM 描述符中的参数类型转为 JVM Class 数组
             final Class<?>[] argsClasses = new Class<?>[asmType.getArgumentTypes().length];
             for (int index = 0; index < argsClasses.length; index++) {
                 // asm class descriptor to jvm class
@@ -152,6 +159,7 @@ public class ArthasMethod {
         }
     }
 
+    /** 反射调用方法或构造实例；需先 {@link #setAccessible} */
     public Object invoke(Object target, Object... args)
             throws IllegalAccessException, InvocationTargetException, InstantiationException {
         initMethod();

@@ -1,11 +1,14 @@
 package com.taobao.arthas.core.advisor;
 
 /**
- * 通知监听器<br/>
+ * 增强回调监听器接口：watch、trace、monitor 等命令在字节码插桩后通过 Spy 分发到此。
+ * <p>
+ * 实现类需处理 before/afterReturning/afterThrowing/atLine 四类通知。
  * Created by vlinux on 15/5/17.
  */
 public interface AdviceListener {
 
+    /** 监听器唯一标识，用于注册与暂停 */
     long id();
 
     /**

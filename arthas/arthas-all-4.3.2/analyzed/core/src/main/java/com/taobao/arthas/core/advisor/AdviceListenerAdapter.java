@@ -11,15 +11,20 @@ import com.taobao.arthas.core.util.Constants;
 import com.taobao.arthas.core.util.StringUtils;
 
 /**
- * 
- * @author hengyunabc 2020-05-20
+ * {@link AdviceListener} 适配基类：将类名/方法签名参数包装为 {@link ArthasMethod}，
+ * 并提供条件表达式、次数上限等 watch 命令通用逻辑。
  *
+ * @author hengyunabc 2020-05-20
  */
 public abstract class AdviceListenerAdapter implements AdviceListener, ProcessAware {
+    /** 全局递增 ID 生成器 */
     private static final  AtomicLong ID_GENERATOR = new AtomicLong(0);
+    /** 关联的 shell 进程，用于输出与终止 */
     private Process process;
+    /** 本监听器实例 ID */
     private long id = ID_GENERATOR.addAndGet(1);
 
+    /** 是否输出详细堆栈等信息 */
     private boolean verbose;
 
     @Override
@@ -45,6 +50,7 @@ public abstract class AdviceListenerAdapter implements AdviceListener, ProcessAw
         this.process = process;
     }
 
+    /** 将原始签名参数转为 {@link ArthasMethod} 后委托子类 */
     @Override
     final public void before(Class<?> clazz, String methodName, String methodDesc, Object target, Object[] args)
             throws Throwable {
@@ -134,6 +140,7 @@ public abstract class AdviceListenerAdapter implements AdviceListener, ProcessAw
                 || ExpressFactory.threadLocalExpress(advice).bind(Constants.COST_VARIABLE, cost).is(conditionExpress);
     }
 
+    /** 在 Advice 上下文中求值 OGNL/表达式并返回结果 */
     protected Object getExpressionResult(String express, Advice advice, double cost) throws ExpressException {
         return ExpressFactory.threadLocalExpress(advice).bind(Constants.COST_VARIABLE, cost).get(express);
     }

@@ -42,11 +42,14 @@ import com.taobao.arthas.core.shell.command.CommandResolver;
 import com.taobao.middleware.cli.annotations.Name;
 
 /**
+ * 内置命令注册表：实现 {@link CommandResolver}，在启动时实例化所有 AnnotatedCommand 并支持禁用列表。
+ * <p>
  * TODO automatically discover the built-in commands.
  * @author beiwei30 on 17/11/2016.
  */
 public class BuiltinCommandPack implements CommandResolver {
     private static final Logger logger = LoggerFactory.getLogger(BuiltinCommandPack.class);
+    /** 已注册且未被 disabledCommands 排除的命令实例 */
     private List<Command> commands = new ArrayList<Command>();
 
     public BuiltinCommandPack(List<String> disabledCommands) {
@@ -58,6 +61,7 @@ public class BuiltinCommandPack implements CommandResolver {
         return commands;
     }
 
+    /** 按固定列表反射创建命令，跳过 disabledCommands 中的名称 */
     private void initCommands(List<String> disabledCommands) {
         List<Class<? extends AnnotatedCommand>> commandClassList = new ArrayList<Class<? extends AnnotatedCommand>>(33);
         commandClassList.add(HelpCommand.class);
@@ -108,6 +112,7 @@ public class BuiltinCommandPack implements CommandResolver {
         commandClassList.add(ProfilerCommand.class);
         commandClassList.add(VmToolCommand.class);
         commandClassList.add(StopCommand.class);
+        // JDK 9+ 且含 JFR 时追加 metaspace、jfr 命令
         try {
             if (ClassLoader.getSystemClassLoader().getResource("jdk/jfr/Recording.class") != null) {
                 commandClassList.add(ClassLoaderMetaspaceCommand.class);

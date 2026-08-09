@@ -5,11 +5,16 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 通知点 Created by vlinux on 15/5/20.
+ * 一次增强回调的上下文快照，封装类加载器、目标实例、参数、返回值/异常及行号局部变量等信息。
+ * <p>
+ * 由 {@link AdviceWeaver} 或 Spy 回调构造，供 watch/trace/line 等命令的监听器读取。
+ * Created by vlinux on 15/5/20.
  */
 public class Advice {
 
+    /** 目标类所属 ClassLoader */
     private final ClassLoader loader;
+    /** 被增强的类 */
     private final Class<?> clazz;
     private final ArthasMethod method;
     private final Object target;
@@ -26,6 +31,7 @@ public class Advice {
     private final boolean isReturn;
     private final boolean isLine;
 
+    /** 是否为方法进入（before）通知 */
     public boolean isBefore() {
         return isBefore;
     }
@@ -150,6 +156,7 @@ public class Advice {
         isLine = (access & AccessPoint.ACCESS_LINE.getValue()) == AccessPoint.ACCESS_LINE.getValue();
     }
 
+    /** 构造方法进入时的 Advice 快照 */
     public static Advice newForBefore(ClassLoader loader,
                                       Class<?> clazz,
                                       ArthasMethod method,
@@ -167,6 +174,7 @@ public class Advice {
         );
     }
 
+    /** 构造正常返回时的 Advice 快照 */
     public static Advice newForAfterReturning(ClassLoader loader,
                                               Class<?> clazz,
                                               ArthasMethod method,
@@ -185,6 +193,7 @@ public class Advice {
         );
     }
 
+    /** 构造异常退出时的 Advice 快照 */
     public static Advice newForAfterThrowing(ClassLoader loader,
                                              Class<?> clazz,
                                              ArthasMethod method,
@@ -204,6 +213,7 @@ public class Advice {
 
     }
 
+    /** 构造行号断点处的 Advice 快照，含局部变量 */
     public static Advice newForLine(ClassLoader loader,
                                     Class<?> clazz,
                                     ArthasMethod method,
@@ -229,6 +239,7 @@ public class Advice {
         );
     }
 
+    /** 将局部变量名与值配对为有序 Map，供表达式求值使用 */
     private static Map<String, Object> buildLocalVarMap(String[] localVarNames, Object[] localVars) {
         if (localVarNames == null || localVars == null) {
             return Collections.emptyMap();
@@ -244,6 +255,7 @@ public class Advice {
         return result;
     }
 
+    /** 过滤掉名为 this 的局部变量，避免与 target 重复 */
     private static LocalVariableSnapshot normalizeLocalVariables(String[] localVarNames, Object[] localVars) {
         if (localVarNames == null || localVars == null) {
             return new LocalVariableSnapshot(localVarNames, localVars);

@@ -67,14 +67,19 @@ import com.taobao.arthas.core.util.affect.EnhancerAffect;
 import com.taobao.arthas.core.util.matcher.Matcher;
 
 /**
- * 对类进行通知增强 Created by vlinux on 15/5/17.
+ * {@link ClassFileTransformer} 实现：对匹配类插入 Spy 拦截器，驱动 watch/trace/line 增强。
+ * <p>
+ * 使用 ByteKit 解析 {@link SpyInterceptors} 并在 {@link AdviceListenerManager} 注册监听器。
+ * Created by vlinux on 15/5/17.
  * @author hengyunabc
  */
 public class Enhancer implements ClassFileTransformer {
 
     private static final Logger logger = LoggerFactory.getLogger(Enhancer.class);
 
+    /** 本次增强关联的监听器 */
     private final AdviceListener listener;
+    /** 是否为 trace 模式（需插桩子调用） */
     private final boolean isTracing;
     private final boolean skipJDKTrace;
     private final Matcher classNameMatcher;
@@ -90,8 +95,9 @@ public class Enhancer implements ClassFileTransformer {
     private boolean isLazy = false;
     private static final ClassLoader selfClassLoader = Enhancer.class.getClassLoader();
 
-    // 被增强的类的缓存
+    // 已成功增强的类，reset 时用于 retransform 还原
     private final static Map<Class<?>/* Class */, Object> classBytesCache = new WeakHashMap<Class<?>, Object>();
+    /** Spy 实现，静态注册到 SpyAPI */
     private static SpyImpl spyImpl = new SpyImpl();
 
     static {
@@ -150,7 +156,7 @@ public class Enhancer implements ClassFileTransformer {
     public byte[] transform(final ClassLoader inClassLoader, String className, Class<?> classBeingRedefined,
             ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
         try {
-            // 检查classloader能否加载到 SpyAPI，如果不能，则放弃增强
+            // 目标 ClassLoader 必须能加载 SpyAPI，否则插桩回调无法执行
             try {
                 if (inClassLoader != null) {
                     inClassLoader.loadClass(SpyAPI.class.getName());
@@ -199,7 +205,7 @@ public class Enhancer implements ClassFileTransformer {
             // remove JSR https://github.com/alibaba/arthas/issues/1304
             classNode = AsmUtils.removeJSRInstructions(classNode);
 
-            // 生成增强字节码
+            // 解析 Spy 拦截器注解并生成 InterceptorProcessor 列表
             DefaultInterceptorClassParser defaultInterceptorClassParser = new DefaultInterceptorClassParser();
 
             final List<InterceptorProcessor> interceptorProcessors = new ArrayList<InterceptorProcessor>();
@@ -331,7 +337,7 @@ public class Enhancer implements ClassFileTransformer {
                     }
                 }
 
-                // enter/exist 总是要插入 listener
+                // 无论是否已有 trace 插桩，enter/exit 监听器都要注册
                 AdviceListenerManager.registerAdviceListener(inClassLoader, className, methodNode.name, methodNode.desc,
                         listener);
                 if (isLineEnhance()) {

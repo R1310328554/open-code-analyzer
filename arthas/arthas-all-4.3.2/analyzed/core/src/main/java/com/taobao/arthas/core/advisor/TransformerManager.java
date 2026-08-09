@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * 
+ * 统一管理 JVM {@link ClassFileTransformer}：按 retransform / watch / trace / lazy 分组链式执行。
  * <pre>
  * * 统一管理 ClassFileTransformer
  * * 每个增强命令对应一个 Enhancer ，也统一在这里管理
@@ -21,7 +21,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class TransformerManager {
 
     private Instrumentation instrumentation;
+    /** watch/monitor 等非 trace 增强器列表 */
     private List<ClassFileTransformer> watchTransformers = new CopyOnWriteArrayList<ClassFileTransformer>();
+    /** trace 增强器列表 */
     private List<ClassFileTransformer> traceTransformers = new CopyOnWriteArrayList<ClassFileTransformer>();
     
     /**
@@ -109,6 +111,7 @@ public class TransformerManager {
         instrumentation.addTransformer(lazyClassFileTransformer, false);
     }
 
+    /** 将 Enhancer 加入 watch 或 trace 分组 */
     public void addTransformer(ClassFileTransformer transformer, boolean isTracing) {
         if (isTracing) {
             traceTransformers.add(transformer);
@@ -135,6 +138,7 @@ public class TransformerManager {
         lazyTransformers.remove(transformer);
     }
 
+    /** 清空各分组并从 Instrumentation 移除代理 transformer */
     public void destroy() {
         reTransformers.clear();
         watchTransformers.clear();

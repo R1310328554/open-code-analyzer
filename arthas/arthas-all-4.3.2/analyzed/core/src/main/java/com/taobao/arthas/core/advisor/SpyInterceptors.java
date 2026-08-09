@@ -11,12 +11,15 @@ import com.alibaba.bytekit.asm.interceptor.annotation.AtInvokeException;
 import com.alibaba.bytekit.asm.interceptor.annotation.AtLine;
 
 /**
- * 
- * @author hengyunabc 2020-06-05
+ * ByteKit 拦截器定义：注解标记 SpyAPI 回调点，由 {@link Enhancer} 解析并织入目标字节码。
+ * <p>
+ * 含 watch（SpyInterceptor1-3）、line（SpyLineInterceptor）、trace（SpyTrace*）等内部类。
  *
+ * @author hengyunabc 2020-06-05
  */
 public class SpyInterceptors {
 
+    /** 方法进入时内联调用 {@link java.arthas.SpyAPI#atEnter} */
     public static class SpyInterceptor1 {
 
         @AtEnter(inline = true)
@@ -26,6 +29,7 @@ public class SpyInterceptors {
         }
     }
     
+    /** 正常返回时内联调用 {@link java.arthas.SpyAPI#atExit} */
     public static class SpyInterceptor2 {
         @AtExit(inline = true)
         public static void atExit(@Binding.This Object target, @Binding.Class Class<?> clazz,
@@ -43,6 +47,7 @@ public class SpyInterceptors {
         }
     }
 
+    /** 在指定源码行内联调用 {@link java.arthas.SpyAPI#atLine}，绑定局部变量 */
     public static class SpyLineInterceptor {
         @AtLine(lines = { -1 }, inline = true)
         public static void atLine(@Binding.This Object target, @Binding.Class Class<?> clazz,
@@ -54,6 +59,7 @@ public class SpyInterceptors {
         }
     }
 
+    /** trace：子调用开始前回调，排除 SpyAPI 与装箱类型 */
     public static class SpyTraceInterceptor1 {
         @AtInvoke(name = "", inline = true, whenComplete = false, excludes = {"java.arthas.SpyAPI", "java.lang.Byte"
                 , "java.lang.Boolean"
@@ -99,6 +105,7 @@ public class SpyInterceptors {
         }
     }
 
+    /** trace 且 skipJDKTrace：排除 java.** 包的 invoke 插桩 */
     public static class SpyTraceExcludeJDKInterceptor1 {
         @AtInvoke(name = "", inline = true, whenComplete = false, excludes = "java.**")
         public static void onInvoke(@Binding.This Object target, @Binding.Class Class<?> clazz,

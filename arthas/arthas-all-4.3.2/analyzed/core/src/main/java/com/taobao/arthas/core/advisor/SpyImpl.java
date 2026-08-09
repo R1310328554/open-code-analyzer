@@ -11,6 +11,9 @@ import com.taobao.arthas.core.shell.system.ProcessAware;
 import com.taobao.arthas.core.util.StringUtils;
 
 /**
+ * {@link java.arthas.SpyAPI.AbstractSpy} 实现：运行时桥接字节码插桩与 {@link AdviceListenerManager}。
+ * <p>
+ * 各 atXxx 方法解析 methodInfo/invokeInfo，查询监听器并分发回调。
  * <pre>
  * 怎么从 className|methodDesc 到 id 对应起来？？
  * 当id少时，可以id自己来判断是否符合？
@@ -24,6 +27,7 @@ import com.taobao.arthas.core.util.StringUtils;
 public class SpyImpl extends AbstractSpy {
     private static final Logger logger = LoggerFactory.getLogger(SpyImpl.class);
 
+    /** 方法进入：查询并回调 before 监听器 */
     @Override
     public void atEnter(Class<?> clazz, String methodInfo, Object target, Object[] args) {
         ClassLoader classLoader = clazz.getClassLoader();
@@ -31,7 +35,7 @@ public class SpyImpl extends AbstractSpy {
         String[] info = StringUtils.splitMethodInfo(methodInfo);
         String methodName = info[0];
         String methodDesc = info[1];
-        // TODO listener 只用查一次，放到 thread local里保存起来就可以了！
+        // TODO 可将 listener 列表缓存到 ThreadLocal，避免每次 Spy 调用都查表
         List<AdviceListener> listeners = AdviceListenerManager.queryAdviceListeners(classLoader, clazz.getName(),
                 methodName, methodDesc);
         if (listeners != null) {
@@ -49,6 +53,7 @@ public class SpyImpl extends AbstractSpy {
 
     }
 
+    /** 正常返回：回调 afterReturning 监听器 */
     @Override
     public void atExit(Class<?> clazz, String methodInfo, Object target, Object[] args, Object returnObject) {
         ClassLoader classLoader = clazz.getClassLoader();
@@ -97,6 +102,7 @@ public class SpyImpl extends AbstractSpy {
         }
     }
 
+    /** 子调用开始前：分发给 {@link InvokeTraceable#invokeBeforeTracing} */
     @Override
     public void atBeforeInvoke(Class<?> clazz, String invokeInfo, Object target) {
         ClassLoader classLoader = clazz.getClassLoader();
@@ -175,6 +181,7 @@ public class SpyImpl extends AbstractSpy {
         }
     }
 
+    /** 命中源码行：回调 atLine 并传递局部变量 */
     @Override
     public void atLine(Class<?> clazz, String methodInfo, int lineNumber, Object target, Object[] args,
             String[] argNames, Object[] localVars, String[] localVarNames) {
@@ -201,6 +208,7 @@ public class SpyImpl extends AbstractSpy {
         }
     }
 
+    /** 关联 shell 进程已终止或停止时跳过该监听器 */
     private static boolean skipAdviceListener(AdviceListener adviceListener) {
         if (adviceListener instanceof ProcessAware) {
             ProcessAware processAware = (ProcessAware) adviceListener;

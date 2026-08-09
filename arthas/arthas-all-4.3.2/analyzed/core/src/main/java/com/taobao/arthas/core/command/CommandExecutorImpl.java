@@ -35,10 +35,13 @@ import java.util.TreeMap;
 import static com.taobao.arthas.common.ArthasConstants.SUBJECT_KEY;
 
 /**
- * 命令执行器，用于执行Arthas命令，支持同步和异步执行
+ * MCP/API 命令执行器：封装 Session、Job 与结果分发，支持同步阻塞与异步前台任务。
+ * <p>
+ * 用于执行 Arthas 命令，支持同步和异步执行。
  */
 public class CommandExecutorImpl implements CommandExecutor {
     private static final Logger logger = LoggerFactory.getLogger(CommandExecutorImpl.class);
+    /** 标记临时 Session，执行完毕后自动销毁 */
     private static final String ONETIME_SESSION_KEY = "oneTimeSession";
     
     private final SessionManager sessionManager;
@@ -51,6 +54,7 @@ public class CommandExecutorImpl implements CommandExecutor {
         this.jobController = sessionManager.getJobController();
     }
 
+    /** 按 sessionId 获取 Session；允许时自动创建一次性 Session */
     public Session getCurrentSession(String sessionId, boolean oneTimeIsAllowed) {
         if (sessionId == null || sessionId.trim().isEmpty()) {
             if (!oneTimeIsAllowed) {
@@ -161,6 +165,7 @@ public class CommandExecutorImpl implements CommandExecutor {
     }
 
     @Override
+    /** 异步执行：加锁、设置 foregroundJob 并立即 run，结果通过 pullResults 拉取 */
     public Map<String, Object> executeAsync(String commandLine, String sessionId) {
         Map<String, Object> result = new TreeMap<>();
         Session session = getCurrentSession(sessionId, false);
@@ -213,6 +218,7 @@ public class CommandExecutorImpl implements CommandExecutor {
     }
 
     @Override
+    /** 从 SharingResultDistributor 按 consumerId 轮询命令输出 */
     public Map<String, Object> pullResults(String sessionId, String consumerId) {
         if (StringUtils.isBlank(consumerId)) {
             return createErrorResult(null, "Consumer ID is null or empty");
@@ -279,6 +285,7 @@ public class CommandExecutorImpl implements CommandExecutor {
     }
 
     @Override
+    /** 创建 API Session 并初始化结果分发器；非 quiet 时追加欢迎信息 */
     public Map<String, Object> createSession(boolean quiet) {
         Session session = sessionManager.createSession();
         if (session == null) {
@@ -365,6 +372,7 @@ public class CommandExecutorImpl implements CommandExecutor {
         }
     }
 
+    /** 轮询 Job 状态直至终止或超时（100ms 间隔） */
     private boolean waitForJob(Job job, int timeout) {
         long startTime = System.currentTimeMillis();
         while (true) {
@@ -465,6 +473,7 @@ public class CommandExecutorImpl implements CommandExecutor {
         }
     }
 
+    /** MCP 模式下的虚拟终端：无真实 stdin/stdout，宽高固定供 Job 使用 */
     public static class McpTerm implements Term {
         private Session session;
 

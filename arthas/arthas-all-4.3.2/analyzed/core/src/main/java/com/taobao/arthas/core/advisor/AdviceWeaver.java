@@ -7,7 +7,8 @@ import com.alibaba.arthas.deps.org.slf4j.Logger;
 import com.alibaba.arthas.deps.org.slf4j.LoggerFactory;
 
 /**
- * 通知编织者<br/>
+ * 按 adviceId 维护 {@link AdviceListener} 注册表，支持注册、暂停与恢复。
+ * <br/>
  * <p/>
  * <h2>线程帧栈与执行帧栈</h2>
  * 编织者在执行通知的时候有两个重要的栈:线程帧栈(threadFrameStack),执行帧栈(frameStack)
@@ -18,7 +19,7 @@ public class AdviceWeaver {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceWeaver.class);
 
-    // 通知监听器集合
+    // adviceId → 监听器，ConcurrentHashMap 支持并发注册
     private final static Map<Long/*ADVICE_ID*/, AdviceListener> advices
             = new ConcurrentHashMap<Long, AdviceListener>();
 
@@ -51,6 +52,7 @@ public class AdviceWeaver {
         }
     }
 
+    /** 按 ID 查找监听器，不存在返回 null */
     public static AdviceListener listener(long id) {
         return advices.get(id);
     }

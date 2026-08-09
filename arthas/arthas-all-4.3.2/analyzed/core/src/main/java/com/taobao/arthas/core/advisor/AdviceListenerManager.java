@@ -15,7 +15,11 @@ import com.taobao.arthas.core.shell.system.Process;
 import com.taobao.arthas.core.shell.system.ProcessAware;
 
 /**
- * 
+ * 按 ClassLoader 与方法键管理 {@link AdviceListener} 的注册与查询。
+ * <p>
+ * watch/trace/line 增强时在 {@link Enhancer} 中注册，{@link SpyImpl} 运行时按键查找并回调。
+ * 定时任务清理已终止 shell 进程关联的监听器。
+ *
  * TODO line 的记录 listener方式？ 还是有string为key，不过 classname|method|desc|num 这样子？
  * 判断是否已插入了，可以在两行中间查询，有没有 SpyAPI 的invoke?
  * 
@@ -52,10 +56,11 @@ import com.taobao.arthas.core.shell.system.ProcessAware;
  */
 public class AdviceListenerManager {
     private static final Logger logger = LoggerFactory.getLogger(AdviceListenerManager.class);
+    /** Bootstrap 类（ClassLoader 为 null）使用的占位 ClassLoader */
     private static final FakeBootstrapClassLoader FAKEBOOTSTRAPCLASSLOADER = new FakeBootstrapClassLoader();
 
     static {
-        // 清理失效的 AdviceListener
+        // 每 3 秒扫描一次，移除关联 shell 进程已 TERMINATED 的监听器
         ArthasBootstrap.getInstance().getScheduledExecutorService().scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -100,6 +105,7 @@ public class AdviceListenerManager {
 
     private static final ConcurrentWeakKeyHashMap<ClassLoader, ClassLoaderAdviceListenerManager> adviceListenerMap = new ConcurrentWeakKeyHashMap<ClassLoader, ClassLoaderAdviceListenerManager>();
 
+    /** 单个 ClassLoader 下的监听器索引，键为 className+methodName+methodDesc 等组合 */
     static class ClassLoaderAdviceListenerManager {
         private ConcurrentHashMap<String, List<AdviceListener>> map = new ConcurrentHashMap<String, List<AdviceListener>>();
 
@@ -185,6 +191,7 @@ public class AdviceListenerManager {
         }
     }
 
+    /** 注册 watch/monitor 类方法级监听器 */
     public static void registerAdviceListener(ClassLoader classLoader, String className, String methodName,
             String methodDesc, AdviceListener listener) {
         classLoader = wrap(classLoader);
@@ -209,6 +216,7 @@ public class AdviceListenerManager {
 
     }
 
+    /** Spy 进入/退出/异常时查询已注册的监听器列表 */
     public static List<AdviceListener> queryAdviceListeners(ClassLoader classLoader, String className,
             String methodName, String methodDesc) {
         classLoader = wrap(classLoader);
@@ -222,6 +230,7 @@ public class AdviceListenerManager {
         return null;
     }
 
+    /** 注册 trace 子调用监听器，键含 owner 以区分调用点 */
     public static void registerTraceAdviceListener(ClassLoader classLoader, String className, String owner,
             String methodName, String methodDesc, AdviceListener listener) {
         classLoader = wrap(classLoader);
@@ -252,6 +261,7 @@ public class AdviceListenerManager {
         return null;
     }
 
+    /** 注册 line 命令在指定源码行的监听器 */
     public static void registerLineAdviceListener(ClassLoader classLoader, String className, String methodName,
             String methodDesc, int lineNumber, AdviceListener listener) {
         classLoader = wrap(classLoader);
@@ -285,6 +295,7 @@ public class AdviceListenerManager {
         return null;
     }
 
+    /** null ClassLoader 映射为 FakeBootstrapClassLoader 以便统一索引 */
     private static ClassLoader wrap(ClassLoader classLoader) {
         if (classLoader != null) {
             return classLoader;

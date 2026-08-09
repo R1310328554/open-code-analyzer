@@ -1,8 +1,9 @@
 package com.taobao.arthas.core.advisor;
 
 /**
- * 方法调用跟踪<br/>
- * 当一个方法内部调用另外一个方法时，会触发此跟踪方法
+ * trace 命令的子调用跟踪接口：增强类内部 invoke 另一方法时由 Spy 触发。
+ * <p>
+ * 当一个方法内部调用另外一个方法时，会触发此跟踪方法。
  * Created by vlinux on 15/5/27.
  */
 public interface InvokeTraceable {
