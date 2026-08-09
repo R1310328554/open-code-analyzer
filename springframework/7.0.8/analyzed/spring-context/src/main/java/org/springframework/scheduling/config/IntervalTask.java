@@ -21,9 +21,8 @@ import java.time.Duration;
 import org.springframework.util.Assert;
 
 /**
- * {@link Task} implementation defining a {@code Runnable} to be executed at a given
- * millisecond interval which may be treated as fixed-rate or fixed-delay depending on
- * context.
+ * 定义在指定毫秒间隔执行的 {@code Runnable} 的 {@link Task} 实现，
+ * 根据上下文可视为固定速率或固定延迟。
  *
  * @author Chris Beams
  * @author Arjen Poutsma
@@ -37,11 +36,11 @@ public class IntervalTask extends DelayedTask {
 
 
 	/**
-	 * Create a new {@code IntervalTask}.
-	 * @param runnable the underlying task to execute
-	 * @param interval how often in milliseconds the task should be executed
-	 * @param initialDelay the initial delay before first execution of the task
-	 * @deprecated as of 6.0, in favor on {@link #IntervalTask(Runnable, Duration, Duration)}
+	 * 创建新的 {@code IntervalTask}。
+	 * @param runnable 要执行的底层任务
+	 * @param interval 任务执行间隔（毫秒）
+	 * @param initialDelay 任务首次执行前的初始延迟
+	 * @deprecated 自 6.0 起，请改用 {@link #IntervalTask(Runnable, Duration, Duration)}
 	 */
 	@Deprecated(since = "6.0")
 	public IntervalTask(Runnable runnable, long interval, long initialDelay) {
@@ -49,10 +48,10 @@ public class IntervalTask extends DelayedTask {
 	}
 
 	/**
-	 * Create a new {@code IntervalTask} with no initial delay.
-	 * @param runnable the underlying task to execute
-	 * @param interval how often in milliseconds the task should be executed
-	 * @deprecated as of 6.0, in favor on {@link #IntervalTask(Runnable, Duration)}
+	 * 创建无初始延迟的新 {@code IntervalTask}。
+	 * @param runnable 要执行的底层任务
+	 * @param interval 任务执行间隔（毫秒）
+	 * @deprecated 自 6.0 起，请改用 {@link #IntervalTask(Runnable, Duration)}
 	 */
 	@Deprecated(since = "6.0")
 	public IntervalTask(Runnable runnable, long interval) {
@@ -60,9 +59,9 @@ public class IntervalTask extends DelayedTask {
 	}
 
 	/**
-	 * Create a new {@code IntervalTask} with no initial delay.
-	 * @param runnable the underlying task to execute
-	 * @param interval how often the task should be executed
+	 * 创建无初始延迟的新 {@code IntervalTask}。
+	 * @param runnable 要执行的底层任务
+	 * @param interval 任务执行间隔
 	 * @since 6.0
 	 */
 	public IntervalTask(Runnable runnable, Duration interval) {
@@ -70,10 +69,10 @@ public class IntervalTask extends DelayedTask {
 	}
 
 	/**
-	 * Create a new {@code IntervalTask}.
-	 * @param runnable the underlying task to execute
-	 * @param interval how often the task should be executed
-	 * @param initialDelay the initial delay before first execution of the task
+	 * 创建新的 {@code IntervalTask}。
+	 * @param runnable 要执行的底层任务
+	 * @param interval 任务执行间隔
+	 * @param initialDelay 任务首次执行前的初始延迟
 	 * @since 6.0
 	 */
 	public IntervalTask(Runnable runnable, Duration interval, Duration initialDelay) {
@@ -83,7 +82,7 @@ public class IntervalTask extends DelayedTask {
 	}
 
 	/**
-	 * Copy constructor.
+	 * 拷贝构造函数。
 	 */
 	IntervalTask(IntervalTask task) {
 		super(task);
@@ -92,8 +91,8 @@ public class IntervalTask extends DelayedTask {
 
 
 	/**
-	 * Return how often in milliseconds the task should be executed.
-	 * @deprecated as of 6.0, in favor of {@link #getIntervalDuration()}
+	 * 返回任务执行间隔（毫秒）。
+	 * @deprecated 自 6.0 起，请改用 {@link #getIntervalDuration()}
 	 */
 	@Deprecated(since = "6.0")
 	public long getInterval() {
@@ -101,7 +100,7 @@ public class IntervalTask extends DelayedTask {
 	}
 
 	/**
-	 * Return how often the task should be executed.
+	 * 返回任务执行间隔。
 	 * @since 6.0
 	 */
 	public Duration getIntervalDuration() {
@@ -109,8 +108,8 @@ public class IntervalTask extends DelayedTask {
 	}
 
 	/**
-	 * Return the initial delay before first execution of the task.
-	 * @deprecated as of 6.0, in favor of {@link #getInitialDelayDuration()}
+	 * 返回任务首次执行前的初始延迟。
+	 * @deprecated 自 6.0 起，请改用 {@link #getInitialDelayDuration()}
 	 */
 	@Deprecated(since = "6.0")
 	public long getInitialDelay() {
@@ -118,7 +117,7 @@ public class IntervalTask extends DelayedTask {
 	}
 
 	/**
-	 * Return the initial delay before first execution of the task.
+	 * 返回任务首次执行前的初始延迟。
 	 * @since 6.0
 	 */
 	@Override

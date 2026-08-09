@@ -26,15 +26,15 @@ import org.springframework.jndi.JndiLocatorDelegate;
 import org.springframework.jndi.JndiTemplate;
 
 /**
- * JNDI-based variant of {@link ConcurrentTaskScheduler}, performing a default lookup for
- * JSR-236's "java:comp/DefaultManagedScheduledExecutorService" in a Jakarta EE environment.
- * Expected to be exposed as a bean, in particular as the default lookup happens in the
- * standard {@link InitializingBean#afterPropertiesSet()} callback.
+ * 基于 JNDI 的 {@link ConcurrentTaskScheduler} 变体，
+ * 在 Jakarta EE 环境中默认查找 JSR-236 的 "java:comp/DefaultManagedScheduledExecutorService"。
+ * 预期作为 Bean 暴露，尤其默认查找发生在标准
+ * {@link InitializingBean#afterPropertiesSet()} 回调中。
  *
- * <p>Note: This class is not strictly JSR-236 based; it can work with any regular
- * {@link java.util.concurrent.ScheduledExecutorService} that can be found in JNDI.
- * The actual adapting to {@link jakarta.enterprise.concurrent.ManagedScheduledExecutorService}
- * happens in the base class {@link ConcurrentTaskScheduler} itself.
+ * <p>注意：本类并非严格基于 JSR-236；可与 JNDI 中找到的任意常规
+ * {@link java.util.concurrent.ScheduledExecutorService} 配合工作。
+ * 实际适配 {@link jakarta.enterprise.concurrent.ManagedScheduledExecutorService}
+ * 在基类 {@link ConcurrentTaskScheduler} 自身中完成。
  *
  * @author Juergen Hoeller
  * @since 4.0
@@ -54,7 +54,7 @@ public class DefaultManagedTaskScheduler extends ConcurrentTaskScheduler impleme
 
 
 	/**
-	 * Set the JNDI template to use for JNDI lookups.
+	 * 设置用于 JNDI 查找的 JNDI 模板。
 	 * @see org.springframework.jndi.JndiAccessor#setJndiTemplate
 	 */
 	public void setJndiTemplate(JndiTemplate jndiTemplate) {
@@ -62,7 +62,7 @@ public class DefaultManagedTaskScheduler extends ConcurrentTaskScheduler impleme
 	}
 
 	/**
-	 * Set the JNDI environment to use for JNDI lookups.
+	 * 设置用于 JNDI 查找的 JNDI 环境。
 	 * @see org.springframework.jndi.JndiAccessor#setJndiEnvironment
 	 */
 	public void setJndiEnvironment(Properties jndiEnvironment) {
@@ -70,9 +70,8 @@ public class DefaultManagedTaskScheduler extends ConcurrentTaskScheduler impleme
 	}
 
 	/**
-	 * Set whether the lookup occurs in a Jakarta EE container, i.e. if the prefix
-	 * "java:comp/env/" needs to be added if the JNDI name doesn't already
-	 * contain it. PersistenceAnnotationBeanPostProcessor's default is "true".
+	 * 设置查找是否发生在 Jakarta EE 容器中，即若 JNDI 名称尚未包含前缀
+	 * "java:comp/env/" 是否需要添加。PersistenceAnnotationBeanPostProcessor 默认为 "true"。
 	 * @see org.springframework.jndi.JndiLocatorSupport#setResourceRef
 	 */
 	public void setResourceRef(boolean resourceRef) {
@@ -80,10 +79,10 @@ public class DefaultManagedTaskScheduler extends ConcurrentTaskScheduler impleme
 	}
 
 	/**
-	 * Specify a JNDI name of the {@link java.util.concurrent.Executor} to delegate to,
-	 * replacing the default JNDI name "java:comp/DefaultManagedScheduledExecutorService".
-	 * <p>This can either be a fully qualified JNDI name, or the JNDI name relative
-	 * to the current environment naming context if "resourceRef" is set to "true".
+	 * 指定要委托的 {@link java.util.concurrent.Executor} 的 JNDI 名称，
+	 * 替换默认 JNDI 名称 "java:comp/DefaultManagedScheduledExecutorService"。
+	 * <p>可以是完全限定 JNDI 名称，或在 "resourceRef" 为 "true" 时
+	 * 相对于当前环境命名上下文的 JNDI 名称。
 	 * @see #setConcurrentExecutor
 	 * @see #setResourceRef
 	 */
