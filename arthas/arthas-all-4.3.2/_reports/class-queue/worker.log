@@ -298,3 +298,18 @@
 2026-08-09T22:20:56Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/TimeTunnelAdviceListener.java wave11b [15:30]
 2026-08-09T22:20:56Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/TimeTunnelCommand.java wave11b [15:30]
 2026-08-09T22:20:56Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/TimeTunnelTable.java wave11b [15:30]
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/model/VersionModel.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/model/VmToolModel.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/model/WatchModel.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/AbstractTraceAdviceListener.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/DashboardCommand.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/DashboardInterruptHandler.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/EnhancerCommand.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/GroovyAdviceListener.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/GroovyScriptCommand.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/HeapDumpCommand.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/JvmCommand.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/LineCommand.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/LineCommandAdviceListener.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/MBeanCommand.java wave11a [0:15] repair
+2026-08-09T22:21:38Z DONE core/src/main/java/com/taobao/arthas/core/command/monitor200/MemoryCommand.java wave11a [0:15] repair
