@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:51:53Z",
   "files": [
-    "redisson/src/main/java/org/redisson/api/RBlockingQueueAsync.java",
-    "redisson/src/main/java/org/redisson/api/RBlockingQueueReactive.java",
-    "redisson/src/main/java/org/redisson/api/RBlockingQueueRx.java",
-    "redisson/src/main/java/org/redisson/api/RBloomFilter.java",
-    "redisson/src/main/java/org/redisson/api/RBloomFilterAsync.java",
-    "redisson/src/main/java/org/redisson/api/RBloomFilterNative.java",
-    "redisson/src/main/java/org/redisson/api/RBloomFilterNativeAsync.java",
-    "redisson/src/main/java/org/redisson/api/RBloomFilterNativeReactive.java",
-    "redisson/src/main/java/org/redisson/api/RBloomFilterNativeRx.java",
-    "redisson/src/main/java/org/redisson/api/RBloomFilterReactive.java",
-    "redisson/src/main/java/org/redisson/api/RBloomFilterRx.java",
-    "redisson/src/main/java/org/redisson/api/RBoundedBlockingQueue.java",
-    "redisson/src/main/java/org/redisson/api/RBoundedBlockingQueueAsync.java",
-    "redisson/src/main/java/org/redisson/api/RBucket.java",
-    "redisson/src/main/java/org/redisson/api/RBucketAsync.java",
     "redisson/src/main/java/org/redisson/api/RBucketReactive.java",
     "redisson/src/main/java/org/redisson/api/RBucketRx.java",
     "redisson/src/main/java/org/redisson/api/RBuckets.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/api/RCollectionRx.java"
   ],
   "remaining_pending": 1532,
-  "done": 1260
+  "done": 1275
 }
