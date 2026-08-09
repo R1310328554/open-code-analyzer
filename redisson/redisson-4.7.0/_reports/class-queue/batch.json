@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:00:15Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/RLexSortedSetAsync.java",
-    "redisson/src/main/java/org/redisson/api/RLexSortedSetReactive.java",
-    "redisson/src/main/java/org/redisson/api/RLexSortedSetRx.java",
-    "redisson/src/main/java/org/redisson/api/RList.java",
-    "redisson/src/main/java/org/redisson/api/RListAsync.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimap.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimapCache.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimapCacheNative.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimapCacheNativeReactive.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimapCacheNativeRx.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimapCacheReactive.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimapCacheRx.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimapReactive.java",
-    "redisson/src/main/java/org/redisson/api/RListMultimapRx.java",
-    "redisson/src/main/java/org/redisson/api/RListReactive.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1442,
-  "done": 1365
+  "done": 1380
 }
