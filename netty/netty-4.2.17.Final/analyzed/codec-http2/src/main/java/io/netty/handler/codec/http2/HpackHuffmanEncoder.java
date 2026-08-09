@@ -37,9 +37,16 @@ import io.netty.util.ByteProcessor;
 import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ * RFC 7541 Appendix B Huffman 编码器：将 HPACK 字面量压缩为更短的位串。
+ * <p>对 {@link AsciiString} 走 {@link ByteProcessor} 快速路径；编码末尾自动
+ * 填充 EOS 符号的位模式以满足字节对齐。
+ */
 final class HpackHuffmanEncoder {
 
+    /** 各 ASCII 符号对应的 Huffman 码字（按符号索引）。 */
     private final int[] codes;
+    /** 各符号码字长度（位）。 */
     private final byte[] lengths;
     private final EncodedLengthProcessor encodedLengthProcessor = new EncodedLengthProcessor();
     private final EncodeProcessor encodeProcessor = new EncodeProcessor();
@@ -60,7 +67,7 @@ final class HpackHuffmanEncoder {
     }
 
     /**
-     * Compresses the input string literal using the Huffman coding.
+     * 用 Huffman 码压缩字符串字面量并写入 {@code out}。
      *
      * @param out the output stream for the compressed data
      * @param data the string literal to be Huffman encoded
@@ -103,7 +110,7 @@ final class HpackHuffmanEncoder {
 
         if (n > 0) {
             current <<= 8 - n;
-            current |= 0xFF >>> n; // this should be EOS symbol
+            current |= 0xFF >>> n; // EOS 符号填充剩余位
             out.writeByte((int) current);
         }
     }
@@ -138,9 +145,12 @@ final class HpackHuffmanEncoder {
         return (int) (len + 7 >> 3);
     }
 
+    /** 逐字节累加码字并刷出完整字节的编码处理器。 */
     private final class EncodeProcessor implements ByteProcessor {
         ByteBuf out;
+        /** 尚未刷出的位缓冲。 */
         private long current;
+        /** 缓冲中有效位数。 */
         private int n;
 
         @Override
@@ -163,7 +173,7 @@ final class HpackHuffmanEncoder {
             try {
                 if (n > 0) {
                     current <<= 8 - n;
-                    current |= 0xFF >>> n; // this should be EOS symbol
+                    current |= 0xFF >>> n; // EOS 符号填充
                     out.writeByte((int) current);
                 }
             } finally {

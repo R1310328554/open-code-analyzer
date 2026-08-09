@@ -20,9 +20,17 @@ import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.buffer.Unpooled;
 import io.netty.util.internal.StringUtil;
 
+/**
+ * {@link Http2UnknownFrame} 的默认实现，表示协议扩展或未识别的帧类型。
+ * <p>当帧类型不在 Netty 内置解码器范围内时，原始类型、标志位与载荷
+ * 被封装为本类，供上层自定义扩展处理；{@code stream} 可为 null（连接级帧）。
+ */
 public final class DefaultHttp2UnknownFrame extends DefaultByteBufHolder implements Http2UnknownFrame {
+    /** RFC 7540 帧类型字节（如 DATA=0x0、HEADERS=0x1）。 */
     private final byte frameType;
+    /** 帧标志位（END_STREAM、END_HEADERS、PADDED 等）。 */
     private final Http2Flags flags;
+    /** 关联的流对象；连接级未知帧时为 null。 */
     private Http2FrameStream stream;
 
     public DefaultHttp2UnknownFrame(byte frameType, Http2Flags flags) {

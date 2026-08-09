@@ -54,19 +54,20 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * An HPACK encoder.
+ * HPACK 编码器：将 {@link Http2Headers} 压缩为 HEADERS 帧载荷。
  *
- * <p>Implementation note:  This class is security sensitive, and depends on users correctly identifying their headers
- * as security sensitive or not.  If a header is considered not sensitive, methods names "insensitive" are used which
- * are fast, but don't provide any security guarantees.
+ * <p><strong>安全说明：</strong>本类对「敏感」头（如 Cookie、Authorization）使用恒定时间比较路径；
+ * 调用方须通过 {@link SensitivityDetector} 正确标记，否则可能泄漏时序信息。
+ * 非敏感头走 {@code insensitive} 快速路径，不提供侧信道防护。
  */
 final class HpackEncoder {
     static final int NOT_FOUND = -1;
+    /** 字符串长度达到此阈值且 Huffman 更短时才选用 Huffman 编码。 */
     static final int HUFF_CODE_THRESHOLD = 512;
-    // a hash map of header fields keyed by header name
+    // 按头名哈希分桶，加速动态表内按名查找
     private final NameEntry[] nameEntries;
 
-    // a hash map of header fields keyed by header name and value
+    // 按头名+头值哈希分桶，加速完全匹配查找
     private final NameValueEntry[] nameValueEntries;
 
     private final NameValueEntry head = new NameValueEntry(-1, AsciiString.EMPTY_STRING,
@@ -78,8 +79,11 @@ final class HpackEncoder {
     private final byte hashMask;
     private final boolean ignoreMaxHeaderListSize;
     private final int huffCodeThreshold;
+    /** 动态表当前占用字节数。 */
     private long size;
+    /** 对端 SETTINGS 限定的最大动态表容量。 */
     private long maxHeaderTableSize;
+    /** SETTINGS_MAX_HEADER_LIST_SIZE 上限。 */
     private long maxHeaderListSize;
 
     /**

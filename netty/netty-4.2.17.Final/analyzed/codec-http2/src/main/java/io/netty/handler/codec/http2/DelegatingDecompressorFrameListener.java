@@ -47,15 +47,22 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * An HTTP2 frame listener that will decompress data frames according to the {@code content-encoding} header for each
- * stream. The decompression provided by this class will be applied to the data for the entire stream.
+ * 按每条流的 {@code content-encoding} 头自动解压 DATA 帧的 {@link Http2FrameListener} 装饰器。
+ * <p>在 {@code onHeadersRead} 时根据编码类型（gzip、deflate、br、snappy、zstd 等）
+ * 为流挂载 {@link EmbeddedChannel} 解压器；解压后的明文交给下游 listener，
+ * 并通过 {@link ConsumedBytesConverter} 将应用层消费的解压字节换算回线上的压缩字节，
+ * 以保持 HTTP/2 流量控制窗口语义正确。
  */
 public class DelegatingDecompressorFrameListener extends Http2FrameListenerDecorator {
 
     private final Http2Connection connection;
+    /** {@code true} 时 deflate 严格按 ZLIB 解码，否则可回退为 NONE。 */
     private final boolean strict;
+    /** 是否已用 ConsumedBytesConverter 包装本地流控器。 */
     private boolean flowControllerInitialized;
+    /** 各流 {@link Http2Decompressor} 在属性表中的键。 */
     private final Http2Connection.PropertyKey propertyKey;
+    /** 解压输出缓冲上限；0 表示不限制（部分编解码器仍可能单次输出 64 KiB）。 */
     private final int maxAllocation;
 
     /**
@@ -141,7 +148,7 @@ public class DelegatingDecompressorFrameListener extends Http2FrameListenerDecor
         final Http2Stream stream = connection.stream(streamId);
         final Http2Decompressor decompressor = decompressor(stream);
         if (decompressor == null) {
-            // The decompressor may be null if no compatible encoding type was found in this stream's headers
+            // 未识别或不需解压的编码，原样透传压缩数据。
             return listener.onDataRead(ctx, streamId, data, padding, endOfStream);
         }
         return decompressor.decompress(ctx, stream, data, padding, endOfStream);
@@ -291,7 +298,7 @@ public class DelegatingDecompressorFrameListener extends Http2FrameListenerDecor
     }
 
     /**
-     * A decorator around the local flow controller that converts consumed bytes from uncompressed to compressed.
+     * 包装本地流控器：应用按解压后字节 {@code consumeBytes}，内部换算为线上压缩字节再扣窗口。
      */
     private final class ConsumedBytesConverter implements Http2LocalFlowController {
         private final Http2LocalFlowController flowController;
@@ -366,7 +373,7 @@ public class DelegatingDecompressorFrameListener extends Http2FrameListenerDecor
     }
 
     /**
-     * Provides the state for stream {@code DATA} frame decompression.
+     * 单条流 DATA 帧解压状态：EmbeddedChannel、压缩/解压字节计数与 padding 传递。
      */
     private static final class Http2Decompressor {
         private final EmbeddedChannel decompressor;

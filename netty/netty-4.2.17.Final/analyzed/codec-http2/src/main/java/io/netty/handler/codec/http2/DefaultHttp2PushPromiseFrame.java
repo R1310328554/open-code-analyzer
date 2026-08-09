@@ -16,14 +16,21 @@
 package io.netty.handler.codec.http2;
 
 /**
- * Default implementation of {@link Http2PushPromiseFrame}
+ * {@link Http2PushPromiseFrame} 的默认实现，承载服务器推送（Server Push）承诺帧。
+ * <p>服务器通过该帧告知客户端即将推送的资源头信息；{@code promisedStreamId} 标识
+ * 将被创建的新流，{@code streamFrame} 则关联发起推送的父流。
  */
 public final class DefaultHttp2PushPromiseFrame implements Http2PushPromiseFrame {
 
+    /** 被承诺（即将推送）的流对象，优先于构造时缓存的 promisedStreamId。 */
     private Http2FrameStream pushStreamFrame;
+    /** 推送资源的 HTTP/2 头（:method、:path 等伪头与普通头）。 */
     private final Http2Headers http2Headers;
+    /** 发送 PUSH_PROMISE 的父流（客户端原始请求所在流）。 */
     private Http2FrameStream streamFrame;
+    /** 帧尾填充字节数，用于流量分析混淆或对齐。 */
     private final int padding;
+    /** 承诺流 ID 的占位值；{@code pushStreamFrame} 未绑定时才直接返回。 */
     private final int promisedStreamId;
 
     public DefaultHttp2PushPromiseFrame(Http2Headers http2Headers) {

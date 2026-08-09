@@ -17,8 +17,14 @@ package io.netty.handler.codec.http2;
 
 import io.netty.handler.codec.EmptyHeaders;
 
+/**
+ * 不可变的空 {@link Http2Headers} 单例，所有 mutator 均抛出 {@link UnsupportedOperationException}。
+ * <p>用于表示「无头字段」或作为默认占位；伪头 getter 仍通过 {@link PseudoHeaderName} 查询，
+ * 在空表上恒为 null。
+ */
 public final class EmptyHttp2Headers
         extends EmptyHeaders<CharSequence, CharSequence, Http2Headers> implements Http2Headers {
+    /** 全局共享的空头表实例。 */
     public static final EmptyHttp2Headers INSTANCE = new EmptyHttp2Headers();
 
     private EmptyHttp2Headers() {

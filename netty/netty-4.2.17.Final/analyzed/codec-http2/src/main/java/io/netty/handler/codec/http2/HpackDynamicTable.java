@@ -34,17 +34,26 @@ package io.netty.handler.codec.http2;
 import static io.netty.handler.codec.http2.Http2CodecUtil.MAX_HEADER_TABLE_SIZE;
 import static io.netty.handler.codec.http2.Http2CodecUtil.MIN_HEADER_TABLE_SIZE;
 
+/**
+ * HPACK 动态表：环形队列存储最近出现的头字段，供索引引用以压缩重复头。
+ * <p>索引 1 为最新条目，{@code length()} 为最旧；容量由 SETTINGS {@code HEADER_TABLE_SIZE} 约束，
+ * 超出时从尾部（最旧）逐条驱逐直至有空间。
+ */
 final class HpackDynamicTable {
 
-    // a circular queue of header fields
+    // 环形队列存放头字段条目
     HpackHeaderField[] hpackHeaderFields;
+    /** 下一写入位置（队列头，最新条目将写入此处）。 */
     int head;
+    /** 最旧条目所在位置（驱逐时从此处移除）。 */
     int tail;
+    /** 当前表内所有条目 size() 之和。 */
     private long size;
+    /** 允许的最大表容量（字节）。 */
     private long capacity = -1; // ensure setCapacity creates the array
 
     /**
-     * Creates a new dynamic table with the specified initial capacity.
+     * 创建指定初始容量的动态表。
      */
     HpackDynamicTable(long initialCapacity) {
         setCapacity(initialCapacity);
@@ -94,10 +103,7 @@ final class HpackDynamicTable {
     }
 
     /**
-     * Add the header field to the dynamic table. Entries are evicted from the dynamic table until
-     * the size of the table and the new header field is less than or equal to the table's capacity.
-     * If the size of the new entry is larger than the table's capacity, the dynamic table will be
-     * cleared.
+     * 将头字段插入动态表；若超出容量则驱逐最旧条目，单条过大则清空整表。
      */
     public void add(HpackHeaderField header) {
         int headerSize = header.size();

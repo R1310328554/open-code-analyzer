@@ -35,21 +35,29 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * Basic implementation of {@link Http2RemoteFlowController}.
+ * {@link Http2RemoteFlowController} 的基础实现，管理出站方向的 HTTP/2 流量控制。
  * <p>
- * This class is <strong>NOT</strong> thread safe. The assumption is all methods must be invoked from a single thread.
- * Typically this thread is the event loop thread for the {@link ChannelHandlerContext} managed by this class.
+ * 本类<strong>非线程安全</strong>，所有方法须在单线程（通常是 {@link ChannelHandlerContext}
+ * 所在 EventLoop）中调用。核心职责：维护连接级与各流级发送窗口、排队待写 {@link FlowControlled}
+ * 帧，并通过 {@link StreamByteDistributor} 公平分配可写字节。
  */
 public class DefaultHttp2RemoteFlowController implements Http2RemoteFlowController {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(DefaultHttp2RemoteFlowController.class);
+    /** 单次分配至少 32 KiB，避免多流各分 1 字节导致有效吞吐过低。 */
     private static final int MIN_WRITABLE_CHUNK = 32 * 1024;
     private final Http2Connection connection;
+    /** 各流 {@link FlowState} 在 {@link Http2Stream} 属性表中的键。 */
     private final Http2Connection.PropertyKey stateKey;
+    /** 按优先级/权重在多条流之间分配可写字节的策略。 */
     private final StreamByteDistributor streamByteDistributor;
+    /** 连接级（stream id 0）流量状态。 */
     private final FlowState connectionState;
+    /** SETTINGS 协商的初始窗口大小，新激活流据此初始化。 */
     private int initialWindowSize = DEFAULT_WINDOW_SIZE;
+    /** 可写性监听器封装，无 listener 时用空实现。 */
     private WritabilityMonitor monitor;
+    /** 绑定后用于实际写出帧的 Channel 上下文。 */
     private ChannelHandlerContext ctx;
 
     public DefaultHttp2RemoteFlowController(Http2Connection connection) {
@@ -71,7 +79,7 @@ public class DefaultHttp2RemoteFlowController implements Http2RemoteFlowControll
         this.connection = checkNotNull(connection, "connection");
         this.streamByteDistributor = checkNotNull(streamByteDistributor, "streamWriteDistributor");
 
-        // Add a flow state for the connection.
+        // 为连接级流注册 FlowState，后续每条新流也会挂载独立状态。
         stateKey = connection.newKey();
         connectionState = new FlowState(connection.connectionStream());
         connection.connectionStream().setProperty(stateKey, connectionState);
@@ -266,22 +274,22 @@ public class DefaultHttp2RemoteFlowController implements Http2RemoteFlowControll
     }
 
     /**
-     * The remote flow control state for a single stream.
+     * 单条流的远端（出站）流量控制状态：窗口、待写队列与可写标记。
      */
     private final class FlowState implements StreamByteDistributor.StreamState {
         private final Http2Stream stream;
+        /** 尚未完全写出的 {@link FlowControlled} 帧队列（FIFO）。 */
         private final Deque<FlowControlled> pendingWriteQueue;
+        /** 当前剩余发送窗口（字节）。 */
         private int window;
+        /** 队列中待写字节总数（含未完全写出的帧）。 */
         private long pendingBytes;
+        /** 上次通知 listener 时的可写状态快照，用于检测变化。 */
         private boolean markedWritable;
 
-        /**
-         * Set to true while a frame is being written, false otherwise.
-         */
+        /** 正在执行 writeAllocatedBytes 时为 true，防止重入修改队列。 */
         private boolean writing;
-        /**
-         * Set to true if cancel() was called.
-         */
+        /** cancel() 已调用时为 true，后续写入应中止并清队。 */
         private boolean cancelled;
 
         FlowState(Http2Stream stream) {
@@ -534,10 +542,12 @@ public class DefaultHttp2RemoteFlowController implements Http2RemoteFlowControll
     }
 
     /**
-     * Abstract class which provides common functionality for writability monitor implementations.
+     * 可写性监控的公共逻辑；子类 {@link ListenerWritabilityMonitor} 在窗口变化时回调 listener。
      */
     private class WritabilityMonitor implements StreamByteDistributor.Writer {
+        /** 防止 writePendingBytes 重入导致字节分配死循环。 */
         private boolean inWritePendingBytes;
+        /** 所有流 pendingBytes 之和，用于判断连接级是否可写。 */
         private long totalPendingBytes;
 
         @Override
@@ -658,11 +668,11 @@ public class DefaultHttp2RemoteFlowController implements Http2RemoteFlowControll
     }
 
     /**
-     * Writability of a {@code stream} is calculated using the following:
+     * 流可写性判定公式：
      * <pre>
-     * Connection Window - Total Queued Bytes > 0 &&
-     * Stream Window - Bytes Queued for Stream > 0 &&
-     * isChannelWritable()
+     * (连接窗口 - 全流排队字节) &gt; 0 &amp;&amp;
+     * (流窗口 - 该流排队字节) &gt; 0 &amp;&amp;
+     * Channel.isWritable()
      * </pre>
      */
     private final class ListenerWritabilityMonitor extends WritabilityMonitor implements Http2StreamVisitor {

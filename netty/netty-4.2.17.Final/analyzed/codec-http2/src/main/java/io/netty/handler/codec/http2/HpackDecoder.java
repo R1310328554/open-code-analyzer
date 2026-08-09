@@ -51,6 +51,11 @@ import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.hasPseu
 import static io.netty.util.AsciiString.EMPTY_STRING;
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
+/**
+ * HPACK 解码器：将 HEADERS/PUSH_PROMISE 帧中的压缩头块还原为 {@link Http2Headers}。
+ * <p>实现 RFC 7541 索引头、字面量头、动态表大小更新等表示形式；维护与编码端同步的
+ * {@link HpackDynamicTable}，并在解码完成后统一做伪头顺序、连接专有头等协议校验。
+ */
 final class HpackDecoder {
     private static final Http2Exception DECODE_ULE_128_DECOMPRESSION_EXCEPTION =
             Http2Exception.newStatic(COMPRESSION_ERROR, "HPACK - decompression failure",
@@ -88,11 +93,17 @@ final class HpackDecoder {
     private static final byte READ_LITERAL_HEADER_VALUE_LENGTH = 7;
     private static final byte READ_LITERAL_HEADER_VALUE = 8;
 
+    /** Huffman 字面量串解码器。 */
     private final HpackHuffmanDecoder huffmanDecoder = new HpackHuffmanDecoder();
+    /** 解码端维护的动态头表。 */
     private final HpackDynamicTable hpackDynamicTable;
+    /** SETTINGS_MAX_HEADER_LIST_SIZE 上限。 */
     private long maxHeaderListSize;
+    /** 本端允许的最大动态表容量。 */
     private long maxDynamicTableSize;
+    /** 编码端声明的动态表容量（由头块内 Dynamic Table Size Update 更新）。 */
     private long encoderMaxDynamicTableSize;
+    /** 为 true 时下一头块开头必须含动态表容量变更指令。 */
     private boolean maxDynamicTableSizeChangeRequired;
 
     /**
@@ -119,20 +130,17 @@ final class HpackDecoder {
     }
 
     /**
-     * Decode the header block into header fields.
-     * <p>
-     * This method assumes the entire header block is contained in {@code in}.
+     * 将完整头块解码为头字段并写入 {@code headers}。
+     * <p>假定 {@code in} 含整个头块；动态表大小更新必须在块首处理（RFC 7541 §4.2）。
      */
     void decode(int streamId, ByteBuf in, Http2Headers headers, boolean validateHeaders) throws Http2Exception {
         Http2HeadersSink sink = new Http2HeadersSink(
                 streamId, headers, maxHeaderListSize, validateHeaders);
-        // Check for dynamic table size updates, which must occur at the beginning:
-        // https://www.rfc-editor.org/rfc/rfc7541.html#section-4.2
+        // 头块开头可连续出现若干 Dynamic Table Size Update（RFC 7541 §4.2）
         decodeDynamicTableSizeUpdates(in);
         decode(in, sink);
 
-        // Now that we've read all of our headers we can perform the validation steps. We must
-        // delay throwing until this point to prevent dynamic table corruption.
+        // 全部头字段读完后才抛校验异常，避免动态表因中途失败而处于不一致状态。
         sink.finish();
     }
 
@@ -149,6 +157,9 @@ final class HpackDecoder {
         }
     }
 
+    /**
+     * 有状态机逐字节解析 HPACK 头块，将字段追加到 {@link Http2HeadersSink}。
+     */
     private void decode(ByteBuf in, Http2HeadersSink sink) throws Http2Exception {
         int index = 0;
         int nameLength = 0;

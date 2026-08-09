@@ -20,10 +20,13 @@ import io.netty.util.internal.StringUtil;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@link Http2ResetFrame} implementation.
+ * {@link Http2ResetFrame} 的默认实现，用于异常终止单个 HTTP/2 流。
+ * <p>对应 {@code RST_STREAM} 帧；{@code errorCode} 遵循 RFC 7540 错误码语义
+ * （如 {@code CANCEL}、{@code REFUSED_STREAM}），告知对端流被重置的原因。
  */
 public final class DefaultHttp2ResetFrame extends AbstractHttp2StreamFrame implements Http2ResetFrame {
 
+    /** RFC 7540 流级错误码，标识重置原因。 */
     private final long errorCode;
 
     /**

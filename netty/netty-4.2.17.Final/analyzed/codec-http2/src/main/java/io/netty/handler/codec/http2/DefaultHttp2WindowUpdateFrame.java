@@ -18,10 +18,13 @@ package io.netty.handler.codec.http2;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link Http2WindowUpdateFrame} implementation.
+ * {@link Http2WindowUpdateFrame} 的默认实现，用于扩大发送方流量控制窗口。
+ * <p>{@code WINDOW_UPDATE} 可作用于连接（stream id 0）或单条流；
+ * {@code windowUpdateIncrement} 为窗口增量（非绝对值），接收方据此允许对端继续发送数据。
  */
 public class DefaultHttp2WindowUpdateFrame extends AbstractHttp2StreamFrame implements Http2WindowUpdateFrame {
 
+    /** 流量控制窗口增量（字节数）。 */
     private final int windowUpdateIncrement;
 
     public DefaultHttp2WindowUpdateFrame(int windowUpdateIncrement) {

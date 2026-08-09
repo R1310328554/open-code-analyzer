@@ -37,12 +37,20 @@ import io.netty.util.ByteProcessor;
 
 import static io.netty.handler.codec.http2.Http2Error.COMPRESSION_ERROR;
 
+/**
+ * RFC 7541 Appendix B Huffman 解码器：将 HPACK 字面量中的 Huffman 编码字节还原为 ASCII 串。
+ * <p>内部用预生成的 {@link #HUFFS} 状态转移表驱动有限状态机，逐 nibble 解码并在
+ * {@link #processNibble} 中输出符号；非法编码或缺少 EOS 填充时抛出 {@code COMPRESSION_ERROR}。
+ */
 final class HpackHuffmanDecoder implements ByteProcessor {
 
-    /* Scroll to the bottom! */
+    /* 预编译 Huffman 树见下方 HUFFS 表 */
 
+    /** 当前码字已对齐到字节边界且合法结束。 */
     private static final byte HUFFMAN_COMPLETE = 1;
+    /** 当前转移应输出一个解码符号。 */
     private static final byte HUFFMAN_EMIT_SYMBOL = 1 << 1;
+    /** 编码非法，解码应失败。 */
     private static final byte HUFFMAN_FAIL = 1 << 2;
 
     private static final int HUFFMAN_COMPLETE_SHIFT = HUFFMAN_COMPLETE << 8;
@@ -50,9 +58,8 @@ final class HpackHuffmanDecoder implements ByteProcessor {
     private static final int HUFFMAN_FAIL_SHIFT = HUFFMAN_FAIL << 8;
 
     /**
-     * A table of byte tuples (state, flags, output).   They are packed together as:
-     * <p>
-     * state<<16 + flags<<8 + output
+     * 状态转移表：每项打包为 {@code state<<16 | flags<<8 | output}，
+     * 高 16 位为下一状态，中间为标志，低 8 位为待输出 ASCII 符号（若有）。
      */
     private static final int[] HUFFS = new int[] {
             // Node 0 (Root Node, never emits symbols.)
@@ -4669,13 +4676,15 @@ final class HpackHuffmanDecoder implements ByteProcessor {
                     Http2Exception.ShutdownHint.HARD_SHUTDOWN, HpackHuffmanDecoder.class, "decode(..)");
 
     private byte[] dest;
+    /** 已写入 dest 的字节数。 */
     private int k;
+    /** FSM 当前状态（含标志位，见 HUFFS 打包格式）。 */
     private int state;
 
     HpackHuffmanDecoder() { }
 
     /**
-     * Decompresses the given Huffman coded string literal.
+     * 解码给定长度的 Huffman 编码字面量。
      *
      * @param buf the string literal to be decoded
      * @return the output stream for the compressed data
@@ -4688,8 +4697,7 @@ final class HpackHuffmanDecoder implements ByteProcessor {
         dest = new byte[length * 8 / 5];
         try {
             int readerIndex = buf.readerIndex();
-            // Using ByteProcessor to reduce bounds-checking and reference-count checking during byte-by-byte
-            // processing of the ByteBuf.
+            // 用 ByteProcessor 逐字节处理，减少边界检查与引用计数开销。
             int endIndex = buf.forEachByte(readerIndex, length, this);
             if (endIndex == -1) {
                 // We did consume the requested length
@@ -4720,8 +4728,7 @@ final class HpackHuffmanDecoder implements ByteProcessor {
     }
 
     private boolean processNibble(int input) {
-        // The high nibble of the flags byte of each row is always zero
-        // (low nibble after shifting row by 12), since there are only 3 flag bits
+        // 每行高 4 位标志恒为 0（右移 12 后仅剩低 nibble），故 index = 状态高 12 位 | 输入 nibble
         int index = state >> 12 | (input & 0x0F);
         state = HUFFS[index];
         if ((state & HUFFMAN_FAIL_SHIFT) != 0) {

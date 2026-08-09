@@ -20,10 +20,13 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link Http2SettingsFrame} implementation.
+ * {@link Http2SettingsFrame} 的默认实现，承载连接级 SETTINGS 参数协商。
+ * <p>常见项包括 {@code HEADER_TABLE_SIZE}、{@code MAX_CONCURRENT_STREAMS}、
+ * {@code INITIAL_WINDOW_SIZE} 等；对端须以 SETTINGS ACK 确认后方可生效。
  */
 public class DefaultHttp2SettingsFrame implements Http2SettingsFrame {
 
+    /** 待发送或已解析的 SETTINGS 键值集合。 */
     private final Http2Settings settings;
 
     public DefaultHttp2SettingsFrame(Http2Settings settings) {

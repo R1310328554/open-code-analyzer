@@ -18,7 +18,8 @@ package io.netty.handler.codec.http2;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link Http2SettingsAckFrame} implementation.
+ * {@link Http2SettingsAckFrame} 的默认实现，表示对端 SETTINGS 帧的确认（ACK）。
+ * <p>SETTINGS ACK 无载荷；收到后表示对端已应用先前发送的 SETTINGS 参数。
  */
 final class DefaultHttp2SettingsAckFrame implements Http2SettingsAckFrame {
     @Override

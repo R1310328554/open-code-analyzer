@@ -34,21 +34,27 @@ package io.netty.handler.codec.http2;
 import static io.netty.handler.codec.http2.HpackUtil.equalsVariableTime;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * HPACK 动态/静态表中的单条头字段（name + value）。
+ * <p>RFC 7541 §4.1：每条目占用 {@code name.length + value.length + HEADER_ENTRY_OVERHEAD} 字节，
+ * 其中 {@code HEADER_ENTRY_OVERHEAD=32} 估算结构体开销。
+ */
 class HpackHeaderField {
 
     // Section 4.1. Calculating Table Size
-    // The additional 32 octets account for an estimated
-    // overhead associated with the structure.
+    // 额外 32 字节估算条目在表结构中的存储开销。
     static final int HEADER_ENTRY_OVERHEAD = 32;
 
     static long sizeOf(CharSequence name, CharSequence value) {
         return name.length() + value.length() + HEADER_ENTRY_OVERHEAD;
     }
 
+    /** 头名（小写 ASCII，HTTP/2 要求）。 */
     final CharSequence name;
+    /** 头值（ISO-8859-1 字节序列的字符视图）。 */
     final CharSequence value;
 
-    // This constructor can only be used if name and value are ISO-8859-1 encoded.
+    // 仅当 name/value 为 ISO-8859-1 编码时可调用此构造器。
     HpackHeaderField(CharSequence name, CharSequence value) {
         this.name = checkNotNull(name, "name");
         this.value = checkNotNull(value, "value");
