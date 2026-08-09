@@ -968,3 +968,10 @@ src/main/java/io/reactivex/rxjava4/core/Observable.java
 src/main/java/io/reactivex/rxjava4/core/Single.java
 src/main/java/io/reactivex/rxjava4/processors/BehaviorProcessor.java
 src/main/java/io/reactivex/rxjava4/processors/MulticastProcessor.java
+src/main/java/io/reactivex/rxjava4/processors/PublishProcessor.java
+src/main/java/io/reactivex/rxjava4/processors/ReplayProcessor.java
+src/main/java/io/reactivex/rxjava4/processors/UnicastProcessor.java
+src/main/java/io/reactivex/rxjava4/schedulers/Schedulers.java
+src/main/java/io/reactivex/rxjava4/subjects/BehaviorSubject.java
+src/main/java/io/reactivex/rxjava4/subjects/ReplaySubject.java
+src/main/java/io/reactivex/rxjava4/subjects/UnicastSubject.java
