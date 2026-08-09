@@ -18,23 +18,19 @@ package io.netty.handler.codec.dns;
 import java.net.InetAddress;
 
 /**
- * An ECS record as defined in <a href="https://tools.ietf.org/html/rfc7871#section-6">Client Subnet in DNS Queries</a>.
+ * EDNS(0) 客户端子网（ECS）选项记录，定义见
+ * <a href="https://tools.ietf.org/html/rfc7871#section-6">Client Subnet in DNS Queries</a>。
+ * <p>
+ * 携带客户端 IP 前缀，供权威服务器按地理位置返回更优解析结果。
  */
 public interface DnsOptEcsRecord extends DnsOptPseudoRecord {
 
-    /**
-     * Returns the leftmost number of significant bits of ADDRESS to be used for the lookup.
-     */
+    /** 返回用于查找的 ADDRESS 最左侧有效位数（源前缀长度）。 */
     int sourcePrefixLength();
 
-    /**
-     * Returns the leftmost number of significant bits of ADDRESS that the response covers.
-     * In queries, it MUST be 0.
-     */
+    /** 返回响应所覆盖的 ADDRESS 最左侧有效位数；查询中必须为 0。 */
     int scopePrefixLength();
 
-    /**
-     * Returns the bytes of the {@link InetAddress} to use.
-     */
+    /** 返回 {@link InetAddress} 的字节表示（IPv4 为 4 字节，IPv6 为 16 字节）。 */
     byte[] address();
 }

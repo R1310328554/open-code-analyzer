@@ -23,23 +23,23 @@ import io.netty.util.internal.StringUtil;
 import java.net.SocketAddress;
 
 /**
- * Provides some utility methods for DNS message implementations.
+ * DNS 报文工具类，提供编解码、toString 格式化等包内辅助方法。
  */
 final class DnsMessageUtil {
 
-    static StringBuilder appendQuery(StringBuilder buf, DnsQuery query) {
+    /** 将查询报文头部与各 section 记录追加到 {@code buf}。 */
         appendQueryHeader(buf, query);
         appendAllRecords(buf, query);
         return buf;
     }
 
-    static StringBuilder appendResponse(StringBuilder buf, DnsResponse response) {
+    /** 将响应报文头部与各 section 记录追加到 {@code buf}。 */
         appendResponseHeader(buf, response);
         appendAllRecords(buf, response);
         return buf;
     }
 
-    static StringBuilder appendRecordClass(StringBuilder buf, int dnsClass) {
+    /** 将 DNS 类编号格式化为 IN/CSNET/CHAOS 等可读名称。 */
         final String name;
         switch (dnsClass &= 0xFFFF) {
         case DnsRecord.CLASS_IN:
@@ -181,7 +181,7 @@ final class DnsMessageUtil {
         }
     }
 
-    static DnsQuery decodeDnsQuery(DnsRecordDecoder decoder, ByteBuf buf, DnsQueryFactory supplier) throws Exception {
+    /** 从 {@link ByteBuf} 解码完整 DNS 查询报文。 */
         DnsQuery query = newQuery(buf, supplier);
         boolean success = false;
         try {
@@ -233,7 +233,7 @@ final class DnsMessageUtil {
         }
     }
 
-    static void encodeDnsResponse(DnsRecordEncoder encoder, DnsResponse response, ByteBuf buf) throws Exception {
+    /** 将 {@link DnsResponse} 编码写入 {@link ByteBuf}。 */
         boolean success = false;
         try {
             encodeHeader(response, buf);
@@ -250,7 +250,7 @@ final class DnsMessageUtil {
     }
 
     /**
-     * Encodes the header that is always 12 bytes long.
+     * 编码固定 12 字节的 DNS 响应头部（含 QR/AA/TC/RD/RA 等标志）。
      *
      * @param response the response header being encoded
      * @param buf      the buffer the encoded data should be written to
@@ -295,6 +295,7 @@ final class DnsMessageUtil {
         }
     }
 
+    /** 工厂接口，用于创建具体 {@link DnsQuery} 实现。 */
     interface DnsQueryFactory {
         DnsQuery newQuery(int id, DnsOpCode dnsOpCode);
     }

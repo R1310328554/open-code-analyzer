@@ -19,16 +19,17 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 
 /**
- * The default {@link DnsRecordEncoder} implementation.
+ * {@link DnsRecordEncoder} 的默认实现，将问题段与资源记录写入 {@link io.netty.buffer.ByteBuf}。
+ * <p>
+ * 支持 PTR、OPT/ECS 伪记录及原始 RDATA 的编码。
  *
  * @see DefaultDnsRecordDecoder
  */
 public class DefaultDnsRecordEncoder implements DnsRecordEncoder {
+    /** ECS 源前缀长度取模 8 的位掩码。 */
     private static final int PREFIX_MASK = Byte.SIZE - 1;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 受保护构造，供子类扩展编码逻辑。 */
     protected DefaultDnsRecordEncoder() { }
 
     @Override
@@ -69,8 +70,8 @@ public class DefaultDnsRecordEncoder implements DnsRecordEncoder {
     private void encodePtrRecord(DnsPtrRecord record, ByteBuf out) throws Exception {
         encodeRecord0(record, out);
         int writerIndex = out.writerIndex();
-        // Skip 2 bytes as these will be used to encode the rdataLen after we know how many bytes were written.
-        // See https://www.rfc-editor.org/rfc/rfc1035.html#section-3.2.1
+        // 先跳过 2 字节 RDATA 长度，写入域名后再回填
+        // 参见 https://www.rfc-editor.org/rfc/rfc1035.html#section-3.2.1
         out.writerIndex(writerIndex + 2);
         encodeName(record.hostname(), out);
         int rdLength = out.writerIndex() - (writerIndex + 2);
@@ -96,7 +97,7 @@ public class DefaultDnsRecordEncoder implements DnsRecordEncoder {
                     sourcePrefixLength + " (expected: 0 >= " + addressBits + ')');
         }
 
-        // See https://www.iana.org/assignments/address-family-numbers/address-family-numbers.xhtml
+        // 地址族编号：1=IPv4，2=IPv6（见 IANA 地址族编号表）
         final short addressNumber = (short) (bytes.length == 4 ? 1 : 2);
         int payloadLength = calculateEcsAddressLength(sourcePrefixLength, lowOrderBitsToPreserve);
 
@@ -105,29 +106,29 @@ public class DefaultDnsRecordEncoder implements DnsRecordEncoder {
                 2 + // FAMILY
                 1 + // SOURCE PREFIX-LENGTH
                 1 + // SCOPE PREFIX-LENGTH
-                payloadLength; //  ADDRESS...
+                payloadLength; // ADDRESS 字节
 
         out.writeShort(fullPayloadLength);
-        out.writeShort(8); // This is the defined type for ECS.
+        out.writeShort(8); // ECS 选项码固定为 8
 
-        out.writeShort(fullPayloadLength - 4); // Not include OPTION-CODE and OPTION-LENGTH
+        out.writeShort(fullPayloadLength - 4); // 不含 OPTION-CODE 与 OPTION-LENGTH
         out.writeShort(addressNumber);
         out.writeByte(sourcePrefixLength);
-        out.writeByte(scopePrefixLength); // Must be 0 in queries.
+        out.writeByte(scopePrefixLength); // 查询中 scope 前缀长度必须为 0
 
         if (lowOrderBitsToPreserve > 0) {
             int bytesLength = payloadLength - 1;
             out.writeBytes(bytes, 0, bytesLength);
 
-            // Pad the leftover of the last byte with zeros.
+            // 末字节不足 8 位时用零填充
             out.writeByte(padWithZeros(bytes[bytesLength], lowOrderBitsToPreserve));
         } else {
-            // The sourcePrefixLength align with Byte so just copy in the bytes directly.
+            // 前缀长度按字节对齐，直接拷贝地址字节
             out.writeBytes(bytes, 0, payloadLength);
         }
     }
 
-    // Package-Private for testing
+    /** 计算 ECS 地址载荷字节数（包内可见，供测试使用）。 */
     static int calculateEcsAddressLength(int sourcePrefixLength, int lowOrderBitsToPreserve) {
         return (sourcePrefixLength >>> 3) + (lowOrderBitsToPreserve != 0 ? 1 : 0);
     }
@@ -142,6 +143,7 @@ public class DefaultDnsRecordEncoder implements DnsRecordEncoder {
         out.writeBytes(content, content.readerIndex(), contentLen);
     }
 
+    /** 将域名编码为 DNS 标签序列，委托 {@link DnsCodecUtil#encodeDomainName}。 */
     protected void encodeName(String name, ByteBuf buf) throws Exception {
         DnsCodecUtil.encodeDomainName(name, buf);
     }

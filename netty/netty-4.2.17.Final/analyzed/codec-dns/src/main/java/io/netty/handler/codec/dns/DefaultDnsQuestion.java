@@ -18,12 +18,12 @@ package io.netty.handler.codec.dns;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link DnsQuestion} implementation.
+ * {@link DnsQuestion} 的默认实现，表示 DNS 查询报文中的问题段。
  */
 public class DefaultDnsQuestion extends AbstractDnsRecord implements DnsQuestion {
 
     /**
-     * Creates a new {@link #CLASS_IN IN-class} question.
+     * 创建 {@link #CLASS_IN IN 类} 问题记录。
      *
      * @param name the domain name of the DNS question
      * @param type the type of the DNS question
@@ -33,7 +33,7 @@ public class DefaultDnsQuestion extends AbstractDnsRecord implements DnsQuestion
     }
 
     /**
-     * Creates a new question.
+     * 创建指定 DNS 类的问题记录。
      *
      * @param name the domain name of the DNS question
      * @param type the type of the DNS question
@@ -51,6 +51,7 @@ public class DefaultDnsQuestion extends AbstractDnsRecord implements DnsQuestion
         super(name, type, dnsClass, 0);
     }
 
+    /** 返回 {@code 类名(域名 类 类型)} 格式的可读字符串。 */
     @Override
     public String toString() {
         StringBuilder buf = new StringBuilder(64);

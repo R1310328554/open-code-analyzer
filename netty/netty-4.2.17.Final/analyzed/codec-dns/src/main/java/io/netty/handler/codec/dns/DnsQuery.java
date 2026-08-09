@@ -16,7 +16,9 @@
 package io.netty.handler.codec.dns;
 
 /**
- * A DNS query message.
+ * DNS 查询报文接口，QR 位为 0 表示客户端发起的请求。
+ * <p>
+ * 重写 {@link DnsMessage} 方法以返回 {@link DnsQuery} 类型，支持链式调用。
  */
 public interface DnsQuery extends DnsMessage {
     @Override

@@ -21,14 +21,14 @@ import io.netty.util.internal.StringUtil;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@code DnsRawRecord} implementation.
+ * {@link DnsRawRecord} 的默认实现，以原始 {@link io.netty.buffer.ByteBuf} 保存 RDATA。
  */
 public class DefaultDnsRawRecord extends AbstractDnsRecord implements DnsRawRecord {
 
     private final ByteBuf content;
 
     /**
-     * Creates a new {@link #CLASS_IN IN-class} record.
+     * 创建 {@link #CLASS_IN IN 类} 原始记录。
      *
      * @param name the domain name
      * @param type the type of the record
@@ -39,7 +39,7 @@ public class DefaultDnsRawRecord extends AbstractDnsRecord implements DnsRawReco
     }
 
     /**
-     * Creates a new record.
+     * 创建指定 DNS 类的原始记录。
      *
      * @param name the domain name
      * @param type the type of the record
@@ -60,6 +60,7 @@ public class DefaultDnsRawRecord extends AbstractDnsRecord implements DnsRawReco
         this.content = checkNotNull(content, "content");
     }
 
+    /** 返回未解析的 RDATA 字节缓冲。 */
     @Override
     public ByteBuf content() {
         return content;
@@ -124,6 +125,7 @@ public class DefaultDnsRawRecord extends AbstractDnsRecord implements DnsRawReco
         return this;
     }
 
+    /** 返回含域名、TTL、类、类型及 RDATA 字节数的摘要字符串。 */
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder(64).append(StringUtil.simpleClassName(this)).append('(');
@@ -138,6 +140,7 @@ public class DefaultDnsRawRecord extends AbstractDnsRecord implements DnsRawReco
                           .append(' ')
                           .append(type.name());
         } else {
+            // OPT 伪记录：TTL 字段编码扩展 RCODE/版本/标志，类字段为 UDP 载荷大小
             buf.append("OPT flags:")
                .append(timeToLive())
                .append(" udp:")

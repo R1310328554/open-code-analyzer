@@ -15,11 +15,12 @@
  */
 package io.netty.handler.codec.dns;
 
+/**
+ * PTR（指针）资源记录接口，将 IP 反向解析为域名。
+ */
 public interface DnsPtrRecord extends DnsRecord {
 
-    /**
-     * Returns the hostname this PTR record resolves to.
-     */
+    /** 返回该 PTR 记录指向的目标主机名。 */
     String hostname();
 
 }

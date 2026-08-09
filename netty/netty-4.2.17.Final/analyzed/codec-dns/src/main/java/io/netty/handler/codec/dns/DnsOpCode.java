@@ -18,38 +18,28 @@ package io.netty.handler.codec.dns;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The DNS {@code OpCode} as defined in <a href="https://tools.ietf.org/html/rfc2929">RFC2929</a>.
+ * DNS 操作码，定义见 <a href="https://tools.ietf.org/html/rfc2929">RFC2929</a>。
+ * <p>
+ * 标识报文类型：标准查询、反向查询、状态、Notify、动态更新等。
  */
 public class DnsOpCode implements Comparable<DnsOpCode> {
 
-    /**
-     * The 'Query' DNS OpCode, as defined in <a href="https://tools.ietf.org/html/rfc1035">RFC1035</a>.
-     */
+    /** 标准查询（Query），见 <a href="https://tools.ietf.org/html/rfc1035">RFC1035</a>。 */
     public static final DnsOpCode QUERY = new DnsOpCode(0x00, "QUERY");
 
-    /**
-     * The 'IQuery' DNS OpCode, as defined in <a href="https://tools.ietf.org/html/rfc1035">RFC1035</a>.
-     */
+    /** 反向查询（IQuery），见 <a href="https://tools.ietf.org/html/rfc1035">RFC1035</a>。 */
     public static final DnsOpCode IQUERY = new DnsOpCode(0x01, "IQUERY");
 
-    /**
-     * The 'Status' DNS OpCode, as defined in <a href="https://tools.ietf.org/html/rfc1035">RFC1035</a>.
-     */
+    /** 状态查询（Status），见 <a href="https://tools.ietf.org/html/rfc1035">RFC1035</a>。 */
     public static final DnsOpCode STATUS = new DnsOpCode(0x02, "STATUS");
 
-    /**
-     * The 'Notify' DNS OpCode, as defined in <a href="https://tools.ietf.org/html/rfc1996">RFC1996</a>.
-     */
+    /** 区域变更通知（Notify），见 <a href="https://tools.ietf.org/html/rfc1996">RFC1996</a>。 */
     public static final DnsOpCode NOTIFY = new DnsOpCode(0x04, "NOTIFY");
 
-    /**
-     * The 'Update' DNS OpCode, as defined in <a href="https://tools.ietf.org/html/rfc2136">RFC2136</a>.
-     */
+    /** 动态更新（Update），见 <a href="https://tools.ietf.org/html/rfc2136">RFC2136</a>。 */
     public static final DnsOpCode UPDATE = new DnsOpCode(0x05, "UPDATE");
 
-    /**
-     * Returns the {@link DnsOpCode} instance of the specified byte value.
-     */
+    /** 根据字节值返回对应 {@link DnsOpCode}；未知值创建 UNKNOWN 实例。 */
     public static DnsOpCode valueOf(int b) {
         switch (b) {
         case 0x00:
@@ -82,6 +72,7 @@ public class DnsOpCode implements Comparable<DnsOpCode> {
         this.name = checkNotNull(name, "name");
     }
 
+    /** 返回操作码的字节值。 */
     public byte byteValue() {
         return byteValue;
     }

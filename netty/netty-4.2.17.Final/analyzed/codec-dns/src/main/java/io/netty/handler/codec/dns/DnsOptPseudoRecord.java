@@ -16,26 +16,19 @@
 package io.netty.handler.codec.dns;
 
 /**
- * An <a href="https://tools.ietf.org/html/rfc6891#section-6.1">OPT RR</a> record.
+ * <a href="https://tools.ietf.org/html/rfc6891#section-6.1">OPT RR</a> 伪记录接口。
  * <p>
- * This is used for <a href="https://tools.ietf.org/html/rfc6891#section-6.1.3">Extension
- * Mechanisms for DNS (EDNS(0))</a>.
+ * 用于 <a href="https://tools.ietf.org/html/rfc6891#section-6.1.3">EDNS(0)</a> 扩展机制，
+ * 将扩展 RCODE、版本、标志及 UDP 载荷大小编码进 TTL 与类字段。
  */
 public interface DnsOptPseudoRecord extends DnsRecord {
 
-    /**
-     * Returns the {@code EXTENDED-RCODE} which is encoded into {@link DnsOptPseudoRecord#timeToLive()}.
-     */
+    /** 返回编码在 {@link DnsOptPseudoRecord#timeToLive()} 高 8 位中的扩展 RCODE。 */
     int extendedRcode();
 
-    /**
-     * Returns the {@code VERSION} which is encoded into {@link DnsOptPseudoRecord#timeToLive()}.
-     */
+    /** 返回编码在 {@link DnsOptPseudoRecord#timeToLive()} 中的 EDNS 版本号。 */
     int version();
 
-    /**
-     * Returns the {@code flags} which includes {@code DO} and {@code Z} which is encoded
-     * into {@link DnsOptPseudoRecord#timeToLive()}.
-     */
+    /** 返回编码在 {@link DnsOptPseudoRecord#timeToLive()} 低 16 位中的标志（含 DO 与 Z）。 */
     int flags();
 }

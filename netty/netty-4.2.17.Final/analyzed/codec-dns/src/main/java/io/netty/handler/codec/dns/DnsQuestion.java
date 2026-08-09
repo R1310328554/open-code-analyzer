@@ -16,12 +16,12 @@
 package io.netty.handler.codec.dns;
 
 /**
- * A DNS question.
+ * DNS 问题段接口，描述客户端希望解析的域名、类型与类。
+ * <p>
+ * 问题段无 TTL，{@link #timeToLive()} 恒返回 0。
  */
 public interface DnsQuestion extends DnsRecord {
-    /**
-     * An unused property. This method will always return {@code 0}.
-     */
+    /** 问题段不使用 TTL，此方法恒返回 {@code 0}。 */
     @Override
     long timeToLive();
 }

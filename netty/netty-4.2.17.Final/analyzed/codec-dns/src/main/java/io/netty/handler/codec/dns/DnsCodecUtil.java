@@ -24,14 +24,16 @@ import io.netty.util.CharsetUtil;
 
 import static io.netty.handler.codec.dns.DefaultDnsRecordDecoder.*;
 
+/** DNS 域名编解码工具类（包内可见）。 */
 final class DnsCodecUtil {
     private DnsCodecUtil() {
-        // Util class
+        // 工具类禁止实例化
     }
 
+    /** 将点分域名编码为 RFC 1035 标签序列（每标签 1 字节长度 + ASCII 字符）。 */
     static void encodeDomainName(String name, ByteBuf buf) {
         if (ROOT.equals(name)) {
-            // Root domain
+            // 根域名以单字节 0 表示
             buf.writeByte(0);
             return;
         }
@@ -43,7 +45,7 @@ final class DnsCodecUtil {
             final int labelLen = label.length();
             if (labelLen == 0) {
                 if (i == labels.length - 1) {
-                    // zero-length label at the end means the end of the name.
+                    // 末尾空标签表示域名结束
                     break;
                 } else {
                     throw new IllegalArgumentException("DNS name contains empty label: " + name);
@@ -67,22 +69,18 @@ final class DnsCodecUtil {
             ByteBufUtil.writeAscii(buf, label);
         }
 
-        buf.writeByte(0); // marks end of name field
+        buf.writeByte(0); // 标记域名结束
     }
 
+    /** 从缓冲中解码域名，支持 RFC 1035 压缩指针与循环检测。 */
     static String decodeDomainName(ByteBuf in) {
         int position = -1;
         int checked = 0;
         final int end = in.writerIndex();
         final int readable = in.readableBytes();
 
-        // Looking at the spec we should always have at least enough readable bytes to read a byte here but it seems
-        // some servers do not respect this for empty names. So just workaround this and return an empty name in this
-        // case.
-        //
-        // See:
-        // - https://github.com/netty/netty/issues/5014
-        // - https://www.ietf.org/rfc/rfc1035.txt , Section 3.1
+        // 规范要求至少可读 1 字节，但部分服务器对空名不遵守；可读字节为 0 时返回根域名
+        // 参见 https://github.com/netty/netty/issues/5014 与 RFC 1035 §3.1
         if (readable == 0) {
             return ROOT;
         }
@@ -106,7 +104,7 @@ final class DnsCodecUtil {
                 }
                 in.readerIndex(next);
 
-                // check for loops
+                // 检测压缩指针是否形成循环
                 checked += 2;
                 if (checked >= end) {
                     throw new CorruptedFrameException("name contains a loop.");
@@ -115,13 +113,13 @@ final class DnsCodecUtil {
                 if (!in.isReadable(len)) {
                     throw new CorruptedFrameException("truncated label in a name");
                 }
-                // See https://datatracker.ietf.org/doc/html/rfc1035#section-2.3.4
+                // 标签长度不得超过 63（RFC 1035 §2.3.4）
                 if (len > 63) {
                     throw new TooLongFrameException("label must be <= 63 but was " + len);
                 }
                 name.append(in.toString(in.readerIndex(), len, CharsetUtil.UTF_8)).append('.');
                 in.skipBytes(len);
-                // See https://datatracker.ietf.org/doc/html/rfc1035#section-2.3.4
+                // 完整域名长度不得超过 255
                 if (name.length() > 255) {
                     throw new TooLongFrameException("domain name must be <= 255 but was " + name.length());
                 }
@@ -146,7 +144,7 @@ final class DnsCodecUtil {
     }
 
     /**
-     * Decompress pointer data.
+     * 将含压缩指针的域名 RDATA 解压为未压缩的域名编码字节。
      * @param compression compressed data
      * @return decompressed data
      */

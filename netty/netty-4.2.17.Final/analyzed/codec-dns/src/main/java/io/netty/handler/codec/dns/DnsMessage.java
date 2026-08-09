@@ -18,128 +18,86 @@ package io.netty.handler.codec.dns;
 import io.netty.util.ReferenceCounted;
 
 /**
- * The superclass which contains core information concerning a {@link DnsQuery} and a {@link DnsResponse}.
+ * DNS 报文公共接口，{@link DnsQuery} 与 {@link DnsResponse} 均继承此接口。
+ * <p>
+ * 定义 ID、opCode、RD/Z 标志及各 section 记录的读写操作。
  */
 public interface DnsMessage extends ReferenceCounted {
 
-    /**
-     * Returns the {@code ID} of this DNS message.
-     */
+    /** 返回报文标识符 {@code ID}。 */
     int id();
 
-    /**
-     * Sets the {@code ID} of this DNS message.
-     */
+    /** 设置报文标识符 {@code ID}。 */
     DnsMessage setId(int id);
 
-    /**
-     * Returns the {@code opCode} of this DNS message.
-     */
+    /** 返回操作码 {@code opCode}。 */
     DnsOpCode opCode();
 
-    /**
-     * Sets the {@code opCode} of this DNS message.
-     */
+    /** 设置操作码 {@code opCode}。 */
     DnsMessage setOpCode(DnsOpCode opCode);
 
-    /**
-     * Returns the {@code RD} (recursion desired} field of this DNS message.
-     */
+    /** 返回期望递归（{@code RD}）标志。 */
     boolean isRecursionDesired();
 
-    /**
-     * Sets the {@code RD} (recursion desired} field of this DNS message.
-     */
+    /** 设置期望递归（{@code RD}）标志。 */
     DnsMessage setRecursionDesired(boolean recursionDesired);
 
-    /**
-     * Returns the {@code Z} (reserved for future use) field of this DNS message.
-     */
+    /** 返回保留字段 {@code Z}（3 位，供将来扩展）。 */
     int z();
 
-    /**
-     * Sets the {@code Z} (reserved for future use) field of this DNS message.
-     */
+    /** 设置保留字段 {@code Z}。 */
     DnsMessage setZ(int z);
 
-    /**
-     * Returns the number of records in the specified {@code section} of this DNS message.
-     */
+    /** 返回指定 {@code section} 中的记录条数。 */
     int count(DnsSection section);
 
-    /**
-     * Returns the number of records in this DNS message.
-     */
+    /** 返回报文中全部 section 的记录总数。 */
     int count();
 
     /**
-     * Returns the first record in the specified {@code section} of this DNS message.
-     * When the specified {@code section} is {@link DnsSection#QUESTION}, the type of the returned record is
-     * always {@link DnsQuestion}.
+     * 返回指定 {@code section} 的首条记录。
+     * {@code section} 为 {@link DnsSection#QUESTION} 时返回类型恒为 {@link DnsQuestion}。
      *
-     * @return {@code null} if this message doesn't have any records in the specified {@code section}
+     * @return 该 section 无记录时返回 {@code null}
      */
     <T extends DnsRecord> T recordAt(DnsSection section);
 
     /**
-     * Returns the record at the specified {@code index} of the specified {@code section} of this DNS message.
-     * When the specified {@code section} is {@link DnsSection#QUESTION}, the type of the returned record is
-     * always {@link DnsQuestion}.
+     * 返回指定 {@code section} 中第 {@code index} 条记录。
+     * {@code section} 为 {@link DnsSection#QUESTION} 时返回类型恒为 {@link DnsQuestion}。
      *
      * @throws IndexOutOfBoundsException if the specified {@code index} is out of bounds
      */
     <T extends DnsRecord> T recordAt(DnsSection section, int index);
 
     /**
-     * Sets the specified {@code section} of this DNS message to the specified {@code record},
-     * making it a single-record section. When the specified {@code section} is {@link DnsSection#QUESTION},
-     * the specified {@code record} must be a {@link DnsQuestion}.
+     * 将指定 {@code section} 设为仅含一条 {@code record}。
+     * {@code section} 为 {@link DnsSection#QUESTION} 时 {@code record} 须为 {@link DnsQuestion}。
      */
     DnsMessage setRecord(DnsSection section, DnsRecord record);
 
     /**
-     * Sets the specified {@code record} at the specified {@code index} of the specified {@code section}
-     * of this DNS message. When the specified {@code section} is {@link DnsSection#QUESTION},
-     * the specified {@code record} must be a {@link DnsQuestion}.
+     * 在指定 {@code section} 的 {@code index} 处设置 {@code record}，返回被替换的旧记录。
+     * {@code section} 为 {@link DnsSection#QUESTION} 时 {@code record} 须为 {@link DnsQuestion}。
      *
      * @return the old record
      * @throws IndexOutOfBoundsException if the specified {@code index} is out of bounds
      */
     <T extends DnsRecord> T setRecord(DnsSection section, int index, DnsRecord record);
 
-    /**
-     * Adds the specified {@code record} at the end of the specified {@code section} of this DNS message.
-     * When the specified {@code section} is {@link DnsSection#QUESTION}, the specified {@code record}
-     * must be a {@link DnsQuestion}.
-     */
+    /** 在指定 {@code section} 末尾追加 {@code record}。 */
     DnsMessage addRecord(DnsSection section, DnsRecord record);
 
-    /**
-     * Adds the specified {@code record} at the specified {@code index} of the specified {@code section}
-     * of this DNS message. When the specified {@code section} is {@link DnsSection#QUESTION}, the specified
-     * {@code record} must be a {@link DnsQuestion}.
-     *
-     * @throws IndexOutOfBoundsException if the specified {@code index} is out of bounds
-     */
+    /** 在指定 {@code section} 的 {@code index} 处插入 {@code record}。 */
     DnsMessage addRecord(DnsSection section, int index, DnsRecord record);
 
-    /**
-     * Removes the record at the specified {@code index} of the specified {@code section} from this DNS message.
-     * When the specified {@code section} is {@link DnsSection#QUESTION}, the type of the returned record is
-     * always {@link DnsQuestion}.
-     *
-     * @return the removed record
-     */
+    /** 移除指定 {@code section} 中第 {@code index} 条记录并返回。 */
     <T extends DnsRecord> T removeRecord(DnsSection section, int index);
 
-    /**
-     * Removes all the records in the specified {@code section} of this DNS message.
-     */
+    /** 清空指定 {@code section} 的全部记录。 */
     DnsMessage clear(DnsSection section);
 
-    /**
-     * Removes all the records in this DNS message.
-     */
+    /** 清空报文全部 section 的记录。 */
     DnsMessage clear();
 
     @Override

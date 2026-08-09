@@ -19,17 +19,18 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.CorruptedFrameException;
 
 /**
- * The default {@link DnsRecordDecoder} implementation.
+ * {@link DnsRecordDecoder} 的默认实现，负责从 {@link io.netty.buffer.ByteBuf} 解析问题段与资源记录。
+ * <p>
+ * 支持 PTR/CNAME/NS/MX 等类型的域名解压缩，其余类型保留原始 RDATA。
  *
  * @see DefaultDnsRecordEncoder
  */
 public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
 
+    /** 根域名占位符。 */
     static final String ROOT = ".";
 
-    /**
-     * Creates a new instance.
-     */
+    /** 受保护构造，供子类扩展解码逻辑。 */
     protected DefaultDnsRecordDecoder() { }
 
     @Override
@@ -47,7 +48,7 @@ public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
 
         final int endOffset = in.writerIndex();
         if (endOffset - in.readerIndex() < 10) {
-            // Not enough data
+            // 剩余字节不足以读取类型/类/TTL/长度字段
             in.readerIndex(startOffset);
             return null;
         }
@@ -59,7 +60,7 @@ public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
         final int offset = in.readerIndex();
 
         if (endOffset - offset < length) {
-            // Not enough data
+            // RDATA 长度超出可读范围
             in.readerIndex(startOffset);
             return null;
         }
@@ -71,7 +72,7 @@ public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
     }
 
     /**
-     * Decodes a record from the information decoded so far by {@link #decodeRecord(ByteBuf)}.
+     * 根据 {@link #decodeRecord(ByteBuf)} 已解析的头部信息解码 RDATA。
      *
      * @param name the domain name of the record
      * @param type the type of the record
@@ -81,16 +82,14 @@ public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
      * @param offset the start offset of the RDATA in {@code in}
      * @param length the length of the RDATA
      *
-     * @return a {@link DnsRawRecord}. Override this method to decode RDATA and return other record implementation.
+     * @return {@link DnsRawRecord} 或具体类型记录；子类可覆写以返回自定义实现。
      */
     protected DnsRecord decodeRecord(
             String name, DnsRecordType type, int dnsClass, long timeToLive,
             ByteBuf in, int offset, int length) throws Exception {
 
-        // DNS message compression means that domain names may contain "pointers" to other positions in the packet
-        // to build a full message. This means the indexes are meaningful and we need the ability to reference the
-        // indexes un-obstructed, and thus we cannot use a slice here.
-        // See https://www.ietf.org/rfc/rfc1035 [4.1.4. Message compression]
+        // DNS 报文压缩使域名可含指针，索引须保持有效，故不能用 slice 而需 duplicate
+        // 参见 https://www.ietf.org/rfc/rfc1035 [4.1.4. Message compression]
         if (type == DnsRecordType.PTR) {
             return new DefaultDnsPtrRecord(
                     name, dnsClass, timeToLive, decodeName0(in.duplicate().setIndex(offset, offset + length)));
@@ -109,7 +108,7 @@ public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
             }
         }
         if (type ==  DnsRecordType.MX) {
-            // MX RDATA: 16-bit preference + exchange (domain name, possibly compressed)
+            // MX RDATA：16 位优先级 + 交换域名（可能压缩）
             if (length < 3) {
                 throw new CorruptedFrameException("MX record RDATA is too short: " + length);
             }
@@ -120,7 +119,7 @@ public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
                 exchange = DnsCodecUtil.decompressDomainName(
                         in.duplicate().setIndex(offset + 2, offset + length));
 
-                // Build decompressed RDATA = [preference][expanded exchange name]
+                // 组装解压后的 RDATA = [优先级][展开后的交换域名]
                 out = in.alloc().buffer(2 + exchange.readableBytes());
                 out.writeShort(pref);
                 out.writeBytes(exchange);
@@ -152,9 +151,7 @@ public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
     }
 
     /**
-     * Retrieves a domain name given a buffer containing a DNS packet. If the
-     * name contains a pointer, the position of the buffer will be set to
-     * directly after the pointer's index after the name has been read.
+     * 从 DNS 报文缓冲中读取域名；若含压缩指针，读完后 readerIndex 置于指针之后。
      *
      * @param in the byte buffer containing the DNS packet
      * @return the domain name for an entry
@@ -164,9 +161,7 @@ public class DefaultDnsRecordDecoder implements DnsRecordDecoder {
     }
 
     /**
-     * Retrieves a domain name given a buffer containing a DNS packet. If the
-     * name contains a pointer, the position of the buffer will be set to
-     * directly after the pointer's index after the name has been read.
+     * 静态入口：委托 {@link DnsCodecUtil#decodeDomainName} 解析域名。
      *
      * @param in the byte buffer containing the DNS packet
      * @return the domain name for an entry

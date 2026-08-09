@@ -19,20 +19,17 @@ import io.netty.buffer.ByteBuf;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/** DNS 查询报文编码器（包内可见），将 {@link DnsQuery} 写入 {@link ByteBuf}。 */
 final class DnsQueryEncoder {
 
     private final DnsRecordEncoder recordEncoder;
 
-    /**
-     * Creates a new encoder with the specified {@code recordEncoder}.
-     */
+    /** 使用指定 {@code recordEncoder} 创建编码器。 */
     DnsQueryEncoder(DnsRecordEncoder recordEncoder) {
         this.recordEncoder = checkNotNull(recordEncoder, "recordEncoder");
     }
 
-    /**
-     * Encodes the given {@link DnsQuery} into a {@link ByteBuf}.
-     */
+    /** 将 {@link DnsQuery} 编码为字节序列（头部 + 问题段 + 附加段）。 */
     void encode(DnsQuery query, ByteBuf out) throws Exception {
         encodeHeader(query, out);
         encodeQuestions(query, out);
@@ -40,7 +37,7 @@ final class DnsQueryEncoder {
     }
 
     /**
-     * Encodes the header that is always 12 bytes long.
+     * 编码固定 12 字节的 DNS 查询头部（QR=0，含 opCode 与 RD 标志）。
      *
      * @param query the query header being encoded
      * @param buf   the buffer the encoded data should be written to
@@ -54,8 +51,8 @@ final class DnsQueryEncoder {
         }
         buf.writeShort(flags);
         buf.writeShort(query.count(DnsSection.QUESTION));
-        buf.writeShort(0); // answerCount
-        buf.writeShort(0); // authorityResourceCount
+        buf.writeShort(0); // 应答段计数固定为 0
+        buf.writeShort(0); // 权威段计数固定为 0
         buf.writeShort(query.count(DnsSection.ADDITIONAL));
     }
 

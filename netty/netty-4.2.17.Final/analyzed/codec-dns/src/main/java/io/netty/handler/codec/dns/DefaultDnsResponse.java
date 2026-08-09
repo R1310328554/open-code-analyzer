@@ -18,7 +18,7 @@ package io.netty.handler.codec.dns;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * The default {@link DnsResponse} implementation.
+ * {@link DnsResponse} 的默认实现，承载 DNS 响应报文头部标志与 RCODE。
  */
 public class DefaultDnsResponse extends AbstractDnsMessage implements DnsResponse {
 
@@ -28,8 +28,7 @@ public class DefaultDnsResponse extends AbstractDnsMessage implements DnsRespons
     private DnsResponseCode code;
 
     /**
-     * Creates a new instance with the {@link DnsOpCode#QUERY} {@code opCode} and
-     * the {@link DnsResponseCode#NOERROR} {@code RCODE}.
+     * 创建 opCode 为 {@link DnsOpCode#QUERY}、RCODE 为 {@link DnsResponseCode#NOERROR} 的响应。
      *
      * @param id the {@code ID} of the DNS response
      */
@@ -38,7 +37,7 @@ public class DefaultDnsResponse extends AbstractDnsMessage implements DnsRespons
     }
 
     /**
-     * Creates a new instance with the {@link DnsResponseCode#NOERROR} {@code RCODE}.
+     * 创建 RCODE 为 {@link DnsResponseCode#NOERROR} 的响应。
      *
      * @param id the {@code ID} of the DNS response
      * @param opCode the {@code opCode} of the DNS response
@@ -48,7 +47,7 @@ public class DefaultDnsResponse extends AbstractDnsMessage implements DnsRespons
     }
 
     /**
-     * Creates a new instance.
+     * 创建完整指定 ID、opCode 与 RCODE 的响应实例。
      *
      * @param id the {@code ID} of the DNS response
      * @param opCode the {@code opCode} of the DNS response
@@ -59,6 +58,7 @@ public class DefaultDnsResponse extends AbstractDnsMessage implements DnsRespons
         setCode(code);
     }
 
+    /** 响应是否由权威服务器发出（AA 标志）。 */
     @Override
     public boolean isAuthoritativeAnswer() {
         return authoritativeAnswer;
@@ -70,6 +70,7 @@ public class DefaultDnsResponse extends AbstractDnsMessage implements DnsRespons
         return this;
     }
 
+    /** 响应是否因 UDP 报文过长而被截断（TC 标志）。 */
     @Override
     public boolean isTruncated() {
         return truncated;
@@ -81,6 +82,7 @@ public class DefaultDnsResponse extends AbstractDnsMessage implements DnsRespons
         return this;
     }
 
+    /** 服务器是否支持递归查询（RA 标志）。 */
     @Override
     public boolean isRecursionAvailable() {
         return recursionAvailable;
@@ -168,6 +170,7 @@ public class DefaultDnsResponse extends AbstractDnsMessage implements DnsRespons
         return (DnsResponse) super.retain(increment);
     }
 
+    /** 委托 {@link DnsMessageUtil#appendResponse} 生成可读摘要。 */
     @Override
     public String toString() {
         return DnsMessageUtil.appendResponse(new StringBuilder(128), this).toString();
