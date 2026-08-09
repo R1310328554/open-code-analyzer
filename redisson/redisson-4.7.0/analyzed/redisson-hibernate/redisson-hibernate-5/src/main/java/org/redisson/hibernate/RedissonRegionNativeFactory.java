@@ -27,26 +27,30 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 使用 Redisson 原生 Map 缓存（{@link RMapCacheNative}）的 Hibernate 5 Region 工厂。
+ * <p>启动前校验 eviction 与 max_idle 配置必须为 0。</p>
  *
+ * @author Nikita Koksharov
  */
 public class RedissonRegionNativeFactory extends RedissonRegionFactory {
 
     private static final long serialVersionUID = 4889779229712681692L;
 
+    /** 校验原生模式下不允许非零的 max_entries 与 max_idle_time，再调用父类启动逻辑。 */
     @Override
     public void start(SessionFactoryOptions settings, Properties properties) throws CacheException {
         Set<Map.Entry<Object, Object>> entrySet = properties.entrySet();
         for (Map.Entry<Object, Object> entry : entrySet) {
             if (entry.getKey().toString().endsWith(RedissonRegionFactory.MAX_ENTRIES_SUFFIX)) {
                 Integer value = Integer.valueOf(entry.getValue().toString());
+                // 原生 Map 模式不支持非零 max_entries。
                 if (value > 0) {
                     throw new IllegalArgumentException(".eviction.max_entries setting can't be non-zero");
                 }
             }
             if (entry.getKey().toString().endsWith(RedissonRegionFactory.MAX_IDLE_SUFFIX)) {
                 Integer value = Integer.valueOf(entry.getValue().toString());
+                // 原生 Map 模式不支持非零 max_idle_time。
                 if (value > 0) {
                     throw new IllegalArgumentException(".expiration.max_idle_time setting can't be non-zero");
                 }
@@ -55,6 +59,7 @@ public class RedissonRegionNativeFactory extends RedissonRegionFactory {
         super.start(settings, properties);
     }
 
+    /** 返回包装后的 {@link RMapCacheNative} 实例作为 Region 底层存储。 */
     @Override
     protected RMapCache<Object, Object> getCache(String regionName, Properties properties, String defaultKey) {
         RMapCacheNative<Object, Object> cache = redisson.getMapCacheNative(regionName);

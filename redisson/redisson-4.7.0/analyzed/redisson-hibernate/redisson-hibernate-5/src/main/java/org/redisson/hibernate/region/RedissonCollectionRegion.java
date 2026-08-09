@@ -34,15 +34,16 @@ import org.redisson.hibernate.strategy.ReadWriteCollectionRegionAccessStrategy;
 import org.redisson.hibernate.strategy.TransactionalCollectionRegionAccessStrategy;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Hibernate 5 集合（Collection）二级缓存 Region，基于 Redisson {@link RMapCache}。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonCollectionRegion extends BaseRegion implements CollectionRegion {
 
     private final Settings settings;
     private final CacheKeysFactory cacheKeysFactory;
     
+    /** @param cacheKeysFactory 缓存键工厂，用于集合键的生成与解析 */
     public RedissonCollectionRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, RegionFactory regionFactory,
                                     CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey, CacheKeysFactory cacheKeysFactory) {
         super(mapCache, serviceManager, regionFactory, metadata, properties, defaultKey);
@@ -50,10 +51,12 @@ public class RedissonCollectionRegion extends BaseRegion implements CollectionRe
         this.cacheKeysFactory = cacheKeysFactory;
     }
     
+    /** 返回本 Region 使用的 {@link CacheKeysFactory}。 */
     public CacheKeysFactory getCacheKeysFactory() {
         return cacheKeysFactory;
     }
 
+    /** 按 {@link AccessType} 构建集合 Region 的并发访问策略。 */
     @Override
     public CollectionRegionAccessStrategy buildAccessStrategy(AccessType accessType) throws CacheException {
         if (accessType == AccessType.READ_ONLY) {

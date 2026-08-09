@@ -23,12 +23,13 @@ import org.redisson.connection.ServiceManager;
 import java.util.Properties;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Hibernate 5 查询结果二级缓存 Region，基于 Redisson {@link RMapCache}。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonQueryRegion extends BaseRegion implements QueryResultsRegion {
 
+    /** 构造查询结果 Region，metadata 为 null（非实体类缓存）。 */
     public RedissonQueryRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager,
             RegionFactory regionFactory, Properties properties, String defaultKey) {
         super(mapCache, serviceManager, regionFactory, null, properties, defaultKey);
