@@ -24,24 +24,19 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 
 /**
- * Operator class that simplifies programmatic transaction demarcation and
- * transaction exception handling.
+ * 简化编程式事务边界与事务异常处理的操作符类。
  *
- * <p>The central method is {@link #transactional}, supporting transactional wrapping
- * of functional sequences code that. This operator handles the transaction lifecycle
- * and possible exceptions such that neither the ReactiveTransactionCallback
- * implementation nor the calling code needs to explicitly handle transactions.
+ * <p>核心方法是 {@link #transactional}，支持对函数式序列代码进行事务包装。
+ * 本操作符处理事务生命周期与可能的异常，
+ * 使 ReactiveTransactionCallback 实现和调用代码均无需显式处理事务。
  *
- * <p>Typical usage: Allows for writing low-level data access objects that use
- * resources such as database connections but are not transaction-aware themselves.
- * Instead, they can implicitly participate in transactions handled by higher-level
- * application services utilizing this class, making calls to the low-level
- * services via an inner-class callback object.
+ * <p>典型用法：编写使用数据库连接等资源但自身不感知事务的底层数据访问对象。
+ * 它们可通过使用本类的高层应用服务处理的事务隐式参与，
+ * 通过内部类回调对象调用底层服务。
  *
- * <p><strong>Note:</strong> Transactional Publishers should avoid Subscription
- * cancellation. See the
- * <a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/data-access.html#tx-prog-operator-cancel">Cancel Signals</a>
- * section of the Spring Framework reference for more details.
+ * <p><strong>注意：</strong>事务 Publisher 应避免 Subscription 取消。
+ * 详见 Spring Framework 参考中的
+ * <a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/data-access.html#tx-prog-operator-cancel">Cancel Signals</a> 章节。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller
@@ -53,59 +48,58 @@ import org.springframework.transaction.TransactionException;
 public interface TransactionalOperator {
 
 	/**
-	 * Wrap the functional sequence specified by the given Flux within a transaction.
-	 * @param flux the Flux that should be executed within the transaction
-	 * @return a result publisher returned by the callback, or {@code null} if none
-	 * @throws TransactionException in case of initialization, rollback, or system errors
-	 * @throws RuntimeException if thrown by the TransactionCallback
+	 * 将给定 Flux 指定的函数式序列包装在事务内。
+	 * @param flux 应在事务内执行的 Flux
+	 * @return 回调返回的结果 Publisher，无则为 {@code null}
+	 * @throws TransactionException 初始化、回滚或系统错误时
+	 * @throws RuntimeException 若 TransactionCallback 抛出
 	 */
 	default <T> Flux<T> transactional(Flux<T> flux) {
 		return execute(it -> flux);
 	}
 
 	/**
-	 * Wrap the functional sequence specified by the given Mono within a transaction.
-	 * @param mono the Mono that should be executed within the transaction
-	 * @return a result publisher returned by the callback
-	 * @throws TransactionException in case of initialization, rollback, or system errors
-	 * @throws RuntimeException if thrown by the TransactionCallback
+	 * 将给定 Mono 指定的函数式序列包装在事务内。
+	 * @param mono 应在事务内执行的 Mono
+	 * @return 回调返回的结果 Publisher
+	 * @throws TransactionException 初始化、回滚或系统错误时
+	 * @throws RuntimeException 若 TransactionCallback 抛出
 	 */
 	default <T> Mono<T> transactional(Mono<T> mono) {
 		return execute(it -> mono).singleOrEmpty();
 	}
 
 	/**
-	 * Execute the action specified by the given callback object within a transaction.
-	 * <p>Allows for returning a result object created within the transaction, that is,
-	 * a domain object or a collection of domain objects. A RuntimeException thrown
-	 * by the callback is treated as a fatal exception that enforces a rollback.
-	 * Such an exception gets propagated to the caller of the template.
-	 * @param action the callback object that specifies the transactional action
-	 * @return a result object returned by the callback
-	 * @throws TransactionException in case of initialization, rollback, or system errors
-	 * @throws RuntimeException if thrown by the TransactionCallback
+	 * 在事务内执行给定回调对象指定的操作。
+	 * <p>允许返回事务内创建的结果对象，即领域对象或领域对象集合。
+	 * 回调抛出的 RuntimeException 视为强制回滚的致命异常，
+	 * 并传播给模板调用方。
+	 * @param action 指定事务操作的回调对象
+	 * @return 回调返回的结果对象
+	 * @throws TransactionException 初始化、回滚或系统错误时
+	 * @throws RuntimeException 若 TransactionCallback 抛出
 	 */
 	<T> Flux<T> execute(TransactionCallback<T> action) throws TransactionException;
 
 
-	// Static builder methods
+	// 静态构建方法
 
 	/**
-	 * Create a new {@link TransactionalOperator} using {@link ReactiveTransactionManager},
-	 * using a default transaction.
-	 * @param transactionManager the transaction management strategy to be used
-	 * @return the transactional operator
+	 * 使用 {@link ReactiveTransactionManager} 创建新的 {@link TransactionalOperator}，
+	 * 使用默认事务。
+	 * @param transactionManager 要使用的事务管理策略
+	 * @return 事务操作符
 	 */
 	static TransactionalOperator create(ReactiveTransactionManager transactionManager){
 		return create(transactionManager, TransactionDefinition.withDefaults());
 	}
 
 	/**
-	 * Create a new {@link TransactionalOperator} using {@link ReactiveTransactionManager}
-	 * and {@link TransactionDefinition}.
-	 * @param transactionManager the transaction management strategy to be used
-	 * @param transactionDefinition the transaction definition to apply
-	 * @return the transactional operator
+	 * 使用 {@link ReactiveTransactionManager} 和 {@link TransactionDefinition}
+	 * 创建新的 {@link TransactionalOperator}。
+	 * @param transactionManager 要使用的事务管理策略
+	 * @param transactionDefinition 要应用的事务定义
+	 * @return 事务操作符
 	 */
 	static TransactionalOperator create(
 			ReactiveTransactionManager transactionManager, TransactionDefinition transactionDefinition){

@@ -21,30 +21,28 @@ import org.reactivestreams.Publisher;
 import org.springframework.transaction.ReactiveTransaction;
 
 /**
- * Callback interface for reactive transactional code. Used with {@link TransactionalOperator}'s
- * {@code execute} method, often as anonymous class within a method implementation.
+ * 响应式事务代码的回调接口。与 {@link TransactionalOperator} 的
+ * {@code execute} 方法配合使用，常在方法实现中作为匿名类。
  *
- * <p>Typically used to assemble various calls to transaction-unaware data access
- * services into a higher-level service method with transaction demarcation. As an
- * alternative, consider the use of declarative transaction demarcation (for example, through
- * Spring's {@link org.springframework.transaction.annotation.Transactional} annotation).
+ * <p>通常用于将多个对事务无感知的数据访问服务调用
+ * 组装到带事务边界的高层服务方法中。也可考虑声明式事务边界
+ * （例如通过 Spring 的 {@link org.springframework.transaction.annotation.Transactional} 注解）。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller
  * @since 5.2
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see TransactionalOperator
  */
 @FunctionalInterface
 public interface TransactionCallback<T> {
 
 	/**
-	 * Gets called by {@link TransactionalOperator} within a transactional context.
-	 * Does not need to care about transactions itself, although it can retrieve and
-	 * influence the status of the current transaction via the given status object,
-	 * for example, setting rollback-only.
-	 * @param status associated transaction status
-	 * @return a result publisher
+	 * 在事务上下文中由 {@link TransactionalOperator} 调用。
+	 * 无需自行管理事务，但可通过给定状态对象获取并影响当前事务状态，
+	 * 例如设置 rollback-only。
+	 * @param status 关联的事务状态
+	 * @return 结果 Publisher
 	 * @see TransactionalOperator#transactional
 	 */
 	Publisher<T> doInTransaction(ReactiveTransaction status);

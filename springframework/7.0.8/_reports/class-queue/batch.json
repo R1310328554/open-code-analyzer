@@ -1,26 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:35:31Z",
   "files": [
-    "spring-tx/src/main/java/org/springframework/transaction/jta/SpringJtaSynchronizationAdapter.java",
-    "spring-tx/src/main/java/org/springframework/transaction/jta/TransactionFactory.java",
-    "spring-tx/src/main/java/org/springframework/transaction/jta/UserTransactionAdapter.java",
-    "spring-tx/src/main/java/org/springframework/transaction/jta/WebLogicJtaTransactionManager.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/GenericReactiveTransaction.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/ReactiveResourceSynchronization.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionCallback.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionContext.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionContextHolder.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionContextManager.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionSynchronization.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionSynchronizationManager.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionSynchronizationUtils.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionalEventPublisher.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionalOperator.java",
-    "spring-tx/src/main/java/org/springframework/transaction/reactive/TransactionalOperatorImpl.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/AbstractTransactionStatus.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/CallbackPreferringPlatformTransactionManager.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/DefaultTransactionDefinition.java",
-    "spring-tx/src/main/java/org/springframework/transaction/support/DefaultTransactionStatus.java",
     "spring-tx/src/main/java/org/springframework/transaction/support/DelegatingTransactionDefinition.java",
     "spring-tx/src/main/java/org/springframework/transaction/support/ResourceHolder.java",
     "spring-tx/src/main/java/org/springframework/transaction/support/ResourceHolderSupport.java",
@@ -43,5 +23,5 @@
     "spring-aop/src/main/java/org/aopalliance/intercept/ConstructorInterceptor.java"
   ],
   "remaining_pending": 464,
-  "done": 1007
+  "done": 1027
 }

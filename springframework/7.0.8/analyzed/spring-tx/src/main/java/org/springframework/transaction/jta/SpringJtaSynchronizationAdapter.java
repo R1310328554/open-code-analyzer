@@ -29,13 +29,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.Assert;
 
 /**
- * Adapter that implements the JTA {@link jakarta.transaction.Synchronization}
- * interface delegating to an underlying Spring
- * {@link org.springframework.transaction.support.TransactionSynchronization}.
+ * 实现 JTA {@link jakarta.transaction.Synchronization} 接口的适配器，
+ * 委托给底层 Spring {@link org.springframework.transaction.support.TransactionSynchronization}。
  *
- * <p>Useful for synchronizing Spring resource management code with plain
- * JTA / EJB CMT transactions, despite the original code being built for
- * Spring transaction synchronization.
+ * <p>尽管原始代码面向 Spring 事务同步构建，
+ * 本适配器仍可用于将 Spring 资源管理代码与纯 JTA / EJB CMT 事务同步。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -54,9 +52,8 @@ public class SpringJtaSynchronizationAdapter implements Synchronization {
 
 
 	/**
-	 * Create a new SpringJtaSynchronizationAdapter for the given Spring
-	 * TransactionSynchronization and JTA TransactionManager.
-	 * @param springSynchronization the Spring TransactionSynchronization to delegate to
+	 * 为给定 Spring TransactionSynchronization 创建新的 SpringJtaSynchronizationAdapter。
+	 * @param springSynchronization 要委托的 Spring TransactionSynchronization
 	 */
 	public SpringJtaSynchronizationAdapter(TransactionSynchronization springSynchronization) {
 		Assert.notNull(springSynchronization, "TransactionSynchronization must not be null");
@@ -64,15 +61,12 @@ public class SpringJtaSynchronizationAdapter implements Synchronization {
 	}
 
 	/**
-	 * Create a new SpringJtaSynchronizationAdapter for the given Spring
-	 * TransactionSynchronization and JTA TransactionManager.
-	 * @param springSynchronization the Spring TransactionSynchronization to delegate to
-	 * @param jtaUserTransaction the JTA UserTransaction to use for rollback-only
-	 * setting in case of an exception thrown in {@code beforeCompletion}
-	 * @deprecated as of 6.0.12 since JTA 1.1+ requires implicit rollback-only setting
-	 * in case of an exception thrown in {@code beforeCompletion}, so the regular
-	 * {@link #SpringJtaSynchronizationAdapter(TransactionSynchronization)} constructor
-	 * is sufficient for all scenarios
+	 * 为给定 Spring TransactionSynchronization 和 JTA UserTransaction 创建新的 SpringJtaSynchronizationAdapter。
+	 * @param springSynchronization 要委托的 Spring TransactionSynchronization
+	 * @param jtaUserTransaction 在 {@code beforeCompletion} 抛出异常时用于设置 rollback-only 的 JTA UserTransaction
+	 * @deprecated 自 6.0.12 起弃用，因 JTA 1.1+ 要求在 {@code beforeCompletion} 抛出异常时
+	 * 隐式设置 rollback-only，常规 {@link #SpringJtaSynchronizationAdapter(TransactionSynchronization)} 构造函数
+	 * 已足以覆盖所有场景
 	 */
 	@Deprecated(since = "6.0.12")
 	public SpringJtaSynchronizationAdapter(TransactionSynchronization springSynchronization,
@@ -83,15 +77,12 @@ public class SpringJtaSynchronizationAdapter implements Synchronization {
 	}
 
 	/**
-	 * Create a new SpringJtaSynchronizationAdapter for the given Spring
-	 * TransactionSynchronization and JTA TransactionManager.
-	 * @param springSynchronization the Spring TransactionSynchronization to delegate to
-	 * @param jtaTransactionManager the JTA TransactionManager to use for rollback-only
-	 * setting in case of an exception thrown in {@code beforeCompletion}
-	 * @deprecated as of 6.0.12 since JTA 1.1+ requires implicit rollback-only setting
-	 * in case of an exception thrown in {@code beforeCompletion}, so the regular
-	 * {@link #SpringJtaSynchronizationAdapter(TransactionSynchronization)} constructor
-	 * is sufficient for all scenarios
+	 * 为给定 Spring TransactionSynchronization 和 JTA TransactionManager 创建新的 SpringJtaSynchronizationAdapter。
+	 * @param springSynchronization 要委托的 Spring TransactionSynchronization
+	 * @param jtaTransactionManager 在 {@code beforeCompletion} 抛出异常时用于设置 rollback-only 的 JTA TransactionManager
+	 * @deprecated 自 6.0.12 起弃用，因 JTA 1.1+ 要求在 {@code beforeCompletion} 抛出异常时
+	 * 隐式设置 rollback-only，常规 {@link #SpringJtaSynchronizationAdapter(TransactionSynchronization)} 构造函数
+	 * 已足以覆盖所有场景
 	 */
 	@Deprecated(since = "6.0.12")
 	public SpringJtaSynchronizationAdapter(TransactionSynchronization springSynchronization,
@@ -104,8 +95,8 @@ public class SpringJtaSynchronizationAdapter implements Synchronization {
 
 
 	/**
-	 * JTA {@code beforeCompletion} callback: just invoked before commit.
-	 * <p>In case of an exception, the JTA transaction will be marked as rollback-only.
+	 * JTA {@code beforeCompletion} 回调：在提交前调用。
+	 * <p>若发生异常，JTA 事务将被标记为 rollback-only。
 	 * @see org.springframework.transaction.support.TransactionSynchronization#beforeCommit
 	 */
 	@Override
@@ -119,16 +110,15 @@ public class SpringJtaSynchronizationAdapter implements Synchronization {
 			throw ex;
 		}
 		finally {
-			// Process Spring's beforeCompletion early, in order to avoid issues
-			// with strict JTA implementations that issue warnings when doing JDBC
-			// operations after transaction completion (for example, Connection.getWarnings).
+			// 提前处理 Spring 的 beforeCompletion，以避免严格 JTA 实现在事务完成后
+			// 执行 JDBC 操作（例如 Connection.getWarnings）时发出警告的问题。
 			this.beforeCompletionCalled = true;
 			this.springSynchronization.beforeCompletion();
 		}
 	}
 
 	/**
-	 * Set the underlying JTA transaction to rollback-only.
+	 * 将底层 JTA 事务设置为 rollback-only。
 	 */
 	private void setRollbackOnlyIfPossible() {
 		if (this.jtaTransaction != null) {
@@ -136,7 +126,7 @@ public class SpringJtaSynchronizationAdapter implements Synchronization {
 				this.jtaTransaction.setRollbackOnly();
 			}
 			catch (UnsupportedOperationException ex) {
-				// Probably Hibernate's WebSphereExtendedJTATransactionLookup pseudo JTA stuff...
+				// 可能是 Hibernate 的 WebSphereExtendedJTATransactionLookup 伪 JTA 实现...
 				logger.debug("JTA transaction handle does not support setRollbackOnly method - " +
 						"relying on JTA provider to mark the transaction as rollback-only based on " +
 						"the exception thrown from beforeCompletion", ex);
@@ -153,21 +143,20 @@ public class SpringJtaSynchronizationAdapter implements Synchronization {
 	}
 
 	/**
-	 * JTA {@code afterCompletion} callback: invoked after commit/rollback.
-	 * <p>Needs to invoke the Spring synchronization's {@code beforeCompletion}
-	 * at this late stage in case of a rollback, since there is no corresponding
-	 * callback with JTA.
+	 * JTA {@code afterCompletion} 回调：在提交/回滚后调用。
+	 * <p>若发生回滚，需在此阶段调用 Spring 同步的 {@code beforeCompletion}，
+	 * 因为 JTA 没有对应的回调。
 	 * @see org.springframework.transaction.support.TransactionSynchronization#beforeCompletion
 	 * @see org.springframework.transaction.support.TransactionSynchronization#afterCompletion
 	 */
 	@Override
 	public void afterCompletion(int status) {
 		if (!this.beforeCompletionCalled) {
-			// beforeCompletion not called before (probably because of JTA rollback).
-			// Perform the cleanup here.
+			// 之前未调用 beforeCompletion（可能因 JTA 回滚）。
+			// 在此执行清理。
 			this.springSynchronization.beforeCompletion();
 		}
-		// Call afterCompletion with the appropriate status indication.
+		// 以适当的状态指示调用 afterCompletion。
 		switch (status) {
 			case Status.STATUS_COMMITTED ->
 				this.springSynchronization.afterCompletion(TransactionSynchronization.STATUS_COMMITTED);

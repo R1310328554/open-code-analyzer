@@ -23,10 +23,9 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Mutable transaction context that encapsulates transactional synchronizations and
- * resources in the scope of a single transaction. Transaction context is typically
- * held by an outer {@link TransactionContextHolder} or referenced directly within
- * from the subscriber context.
+ * 可变事务上下文，封装单个事务范围内的同步与资源。
+ * 事务上下文通常由外层 {@link TransactionContextHolder} 持有，
+ * 或直接在订阅者上下文中引用。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller

@@ -19,14 +19,14 @@ package org.springframework.transaction.reactive;
 import reactor.core.publisher.Mono;
 
 /**
- * {@link TransactionSynchronization} implementation that manages a
- * resource object bound through {@link TransactionSynchronizationManager}.
+ * 管理通过 {@link TransactionSynchronizationManager} 绑定的资源对象的
+ * {@link TransactionSynchronization} 实现。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller
  * @since 5.2
- * @param <O> the resource holder type
- * @param <K> the resource key type
+ * @param <O> 资源持有者类型
+ * @param <K> 资源键类型
  */
 public abstract class ReactiveResourceSynchronization<O, K> implements TransactionSynchronization {
 
@@ -40,10 +40,10 @@ public abstract class ReactiveResourceSynchronization<O, K> implements Transacti
 
 
 	/**
-	 * Create a new ReactiveResourceSynchronization for the given holder.
-	 * @param resourceObject the resource object to manage
-	 * @param resourceKey the key to bind the resource object for
-	 * @param synchronizationManager the synchronization manager bound to the current transaction
+	 * 为给定持有者创建新的 ReactiveResourceSynchronization。
+	 * @param resourceObject 要管理的资源对象
+	 * @param resourceKey 绑定资源对象的键
+	 * @param synchronizationManager 绑定到当前事务的同步管理器
 	 * @see TransactionSynchronizationManager#bindResource
 	 */
 	public ReactiveResourceSynchronization(
@@ -103,8 +103,8 @@ public abstract class ReactiveResourceSynchronization<O, K> implements Transacti
 			if (shouldUnbindAtCompletion()) {
 				boolean releaseNecessary = false;
 				if (this.holderActive) {
-					// The thread-bound resource holder might not be available anymore,
-					// since afterCompletion might get called from a different thread.
+					// 线程绑定的资源持有者可能已不可用，
+					// 因为 afterCompletion 可能从不同线程调用。
 					this.holderActive = false;
 					this.synchronizationManager.unbindResourceIfPossible(this.resourceKey);
 					releaseNecessary = true;
@@ -117,7 +117,7 @@ public abstract class ReactiveResourceSynchronization<O, K> implements Transacti
 				}
 			}
 			else {
-				// Probably a pre-bound resource...
+				// 可能是预绑定的资源...
 				sync = cleanupResource(this.resourceObject, this.resourceKey, (status == STATUS_COMMITTED));
 			}
 			return sync;
@@ -126,21 +126,19 @@ public abstract class ReactiveResourceSynchronization<O, K> implements Transacti
 
 
 	/**
-	 * Return whether this holder should be unbound at completion
-	 * (or should rather be left bound to the thread after the transaction).
-	 * <p>The default implementation returns {@code true}.
+	 * 返回本持有者是否应在完成时解绑
+	 * （或事务后仍保留绑定到线程）。
+	 * <p>默认实现返回 {@code true}。
 	 */
 	protected boolean shouldUnbindAtCompletion() {
 		return true;
 	}
 
 	/**
-	 * Return whether this holder's resource should be released before
-	 * transaction completion ({@code true}) or rather after
-	 * transaction completion ({@code false}).
-	 * <p>Note that resources will only be released when they are
-	 * unbound from the thread ({@link #shouldUnbindAtCompletion()}).
-	 * <p>The default implementation returns {@code true}.
+	 * 返回本持有者的资源是否应在事务完成前释放（{@code true}）
+	 * 或在事务完成后释放（{@code false}）。
+	 * <p>注意，资源仅在与线程解绑时（{@link #shouldUnbindAtCompletion()}）才会释放。
+	 * <p>默认实现返回 {@code true}。
 	 * @see #releaseResource
 	 */
 	protected boolean shouldReleaseBeforeCompletion() {
@@ -148,10 +146,9 @@ public abstract class ReactiveResourceSynchronization<O, K> implements Transacti
 	}
 
 	/**
-	 * Return whether this holder's resource should be released after
-	 * transaction completion ({@code true}).
-	 * <p>The default implementation returns {@code !shouldReleaseBeforeCompletion()},
-	 * releasing after completion if no attempt was made before completion.
+	 * 返回本持有者的资源是否应在事务完成后释放（{@code true}）。
+	 * <p>默认实现返回 {@code !shouldReleaseBeforeCompletion()}，
+	 * 若完成前未尝试释放则在完成后释放。
 	 * @see #releaseResource
 	 */
 	protected boolean shouldReleaseAfterCompletion(O resourceHolder) {
@@ -159,30 +156,28 @@ public abstract class ReactiveResourceSynchronization<O, K> implements Transacti
 	}
 
 	/**
-	 * After-commit callback for the given resource holder.
-	 * Only called when the resource hasn't been released yet
-	 * ({@link #shouldReleaseBeforeCompletion()}).
-	 * @param resourceHolder the resource holder to process
+	 * 给定资源持有者的提交后回调。
+	 * 仅在资源尚未释放时调用（{@link #shouldReleaseBeforeCompletion()}）。
+	 * @param resourceHolder 要处理的资源持有者
 	 */
 	protected Mono<Void> processResourceAfterCommit(O resourceHolder) {
 		return Mono.empty();
 	}
 
 	/**
-	 * Release the given resource (after it has been unbound from the thread).
-	 * @param resourceHolder the resource holder to process
-	 * @param resourceKey the key that the resource object was bound for
+	 * 释放给定资源（在与线程解绑之后）。
+	 * @param resourceHolder 要处理的资源持有者
+	 * @param resourceKey 资源对象绑定的键
 	 */
 	protected Mono<Void> releaseResource(O resourceHolder, K resourceKey) {
 		return Mono.empty();
 	}
 
 	/**
-	 * Perform a cleanup on the given resource (which is left bound to the thread).
-	 * @param resourceHolder the resource holder to process
-	 * @param resourceKey the key that the resource object was bound for
-	 * @param committed whether the transaction has committed ({@code true})
-	 * or rolled back ({@code false})
+	 * 对给定资源执行清理（资源仍绑定到线程）。
+	 * @param resourceHolder 要处理的资源持有者
+	 * @param resourceKey 资源对象绑定的键
+	 * @param committed 事务是否已提交（{@code true}）或已回滚（{@code false}）
 	 */
 	protected Mono<Void> cleanupResource(O resourceHolder, K resourceKey, boolean committed) {
 		return Mono.empty();

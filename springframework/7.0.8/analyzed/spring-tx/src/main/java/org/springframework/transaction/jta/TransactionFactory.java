@@ -22,13 +22,11 @@ import jakarta.transaction.Transaction;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Strategy interface for creating JTA {@link jakarta.transaction.Transaction}
- * objects based on specified transactional characteristics.
+ * 根据指定事务特性创建 JTA {@link jakarta.transaction.Transaction} 对象的策略接口。
  *
- * <p>The default implementation, {@link SimpleTransactionFactory}, simply
- * wraps a standard JTA {@link jakarta.transaction.TransactionManager}.
- * This strategy interface allows for more sophisticated implementations
- * that adapt to vendor-specific JTA extensions.
+ * <p>默认实现 {@link SimpleTransactionFactory} 简单包装标准 JTA
+ * {@link jakarta.transaction.TransactionManager}。
+ * 本策略接口允许更复杂的实现以适配厂商特定 JTA 扩展。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -39,24 +37,21 @@ import org.jspecify.annotations.Nullable;
 public interface TransactionFactory {
 
 	/**
-	 * Create an active Transaction object based on the given name and timeout.
-	 * @param name the transaction name (may be {@code null})
-	 * @param timeout the transaction timeout (may be -1 for the default timeout)
-	 * @return the active Transaction object (never {@code null})
-	 * @throws NotSupportedException if the transaction manager does not support
-	 * a transaction of the specified type
-	 * @throws SystemException if the transaction manager failed to create the
-	 * transaction
+	 * 根据给定名称和超时创建活动 Transaction 对象。
+	 * @param name 事务名称（可为 {@code null}）
+	 * @param timeout 事务超时（-1 表示默认超时）
+	 * @return 活动 Transaction 对象（永不为 {@code null}）
+	 * @throws NotSupportedException 若事务管理器不支持指定类型的事务
+	 * @throws SystemException 若事务管理器创建事务失败
 	 */
 	Transaction createTransaction(@Nullable String name, int timeout) throws NotSupportedException, SystemException;
 
 	/**
-	 * Determine whether the underlying transaction manager supports XA transactions
-	 * managed by a resource adapter (i.e. without explicit XA resource enlistment).
-	 * <p>Typically {@code false}. Checked by
-	 * {@link org.springframework.jca.endpoint.AbstractMessageEndpointFactory}
-	 * in order to differentiate between invalid configuration and valid
-	 * ResourceAdapter-managed transactions.
+	 * 判断底层事务管理器是否支持由资源适配器管理的 XA 事务
+	 * （即无需显式登记 XA 资源）。
+	 * <p>通常为 {@code false}。由
+	 * {@link org.springframework.jca.endpoint.AbstractMessageEndpointFactory} 检查，
+	 * 以区分无效配置与有效的 ResourceAdapter 管理事务。
 	 * @see jakarta.resource.spi.ResourceAdapter#endpointActivation
 	 * @see jakarta.resource.spi.endpoint.MessageEndpointFactory#isDeliveryTransacted
 	 */

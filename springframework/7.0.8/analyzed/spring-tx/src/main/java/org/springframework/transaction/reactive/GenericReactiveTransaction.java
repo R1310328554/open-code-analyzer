@@ -22,16 +22,14 @@ import org.springframework.transaction.ReactiveTransaction;
 import org.springframework.util.Assert;
 
 /**
- * Default implementation of the {@link ReactiveTransaction} interface,
- * used by {@link AbstractReactiveTransactionManager}. Based on the concept
- * of an underlying "transaction object".
+ * {@link ReactiveTransaction} 接口的默认实现，
+ * 由 {@link AbstractReactiveTransactionManager} 使用。基于底层 "事务对象" 概念。
  *
- * <p>Holds all status information that {@link AbstractReactiveTransactionManager}
- * needs internally, including a generic transaction object determined by the
- * concrete transaction manager implementation.
+ * <p>持有 {@link AbstractReactiveTransactionManager} 内部所需的全部状态信息，
+ * 包括由具体事务管理器实现确定的通用事务对象。
  *
- * <p><b>NOTE:</b> This is <i>not</i> intended for use with other ReactiveTransactionManager
- * implementations, in particular not for mock transaction managers in testing environments.
+ * <p><b>注意：</b>本类<i>不</i>供其他 ReactiveTransactionManager 实现使用，
+ * 尤其不用于测试环境中的 mock 事务管理器。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller
@@ -63,20 +61,15 @@ public class GenericReactiveTransaction implements ReactiveTransaction {
 
 
 	/**
-	 * Create a new {@code DefaultReactiveTransactionStatus} instance.
-	 * @param transactionName the defined name of the transaction
-	 * @param transaction underlying transaction object that can hold state
-	 * for the internal transaction implementation
-	 * @param newTransaction if the transaction is new, otherwise participating
-	 * in an existing transaction
-	 * @param newSynchronization if a new transaction synchronization has been
-	 * opened for the given transaction
-	 * @param readOnly whether the transaction is marked as read-only
-	 * @param debug should debug logging be enabled for the handling of this transaction?
-	 * Caching it in here can prevent repeated calls to ask the logging system whether
-	 * debug logging should be enabled.
-	 * @param suspendedResources a holder for resources that have been suspended
-	 * for this transaction, if any
+	 * 创建新的 {@code DefaultReactiveTransactionStatus} 实例。
+	 * @param transactionName 定义的事务名称
+	 * @param transaction 可为内部事务实现保存状态的底层事务对象
+	 * @param newTransaction 若为新事务则为 true，否则为参与现有事务
+	 * @param newSynchronization 若为给定事务开启了新事务同步则为 true
+	 * @param readOnly 事务是否标记为只读
+	 * @param debug 是否为本事务处理启用 debug 日志？
+	 * 在此缓存可避免反复查询日志系统是否启用 debug。
+	 * @param suspendedResources 为本事务挂起的资源的持有者（若有）
 	 * @since 6.1
 	 */
 	public GenericReactiveTransaction(
@@ -101,8 +94,8 @@ public class GenericReactiveTransaction implements ReactiveTransaction {
 	}
 
 	/**
-	 * Return the underlying transaction object.
-	 * @throws IllegalStateException if no transaction is active
+	 * 返回底层事务对象。
+	 * @throws IllegalStateException 若无活动事务
 	 */
 	public Object getTransaction() {
 		Assert.state(this.transaction != null, "No transaction active");
@@ -120,7 +113,7 @@ public class GenericReactiveTransaction implements ReactiveTransaction {
 	}
 
 	/**
-	 * Return if a new transaction synchronization has been opened for this transaction.
+	 * 返回是否已为该事务开启新事务同步。
 	 */
 	public boolean isNewSynchronization() {
 		return this.newSynchronization;
@@ -137,17 +130,15 @@ public class GenericReactiveTransaction implements ReactiveTransaction {
 	}
 
 	/**
-	 * Return whether the progress of this transaction is debugged. This is used by
-	 * {@link AbstractReactiveTransactionManager} as an optimization, to prevent repeated
-	 * calls to {@code logger.isDebugEnabled()}. Not really intended for client code.
+	 * 返回是否 debug 本事务进度。{@link AbstractReactiveTransactionManager} 用作优化，
+	 * 避免反复调用 {@code logger.isDebugEnabled()}。通常不供客户端代码使用。
 	 */
 	public boolean isDebug() {
 		return this.debug;
 	}
 
 	/**
-	 * Return the holder for resources that have been suspended for this transaction,
-	 * if any.
+	 * 返回为本事务挂起的资源的持有者（若有）。
 	 */
 	public @Nullable Object getSuspendedResources() {
 		return this.suspendedResources;
@@ -162,9 +153,8 @@ public class GenericReactiveTransaction implements ReactiveTransaction {
 	}
 
 	/**
-	 * Determine the rollback-only flag via checking this ReactiveTransactionStatus.
-	 * <p>Will only return "true" if the application called {@code setRollbackOnly}
-	 * on this TransactionStatus object.
+	 * 通过检查本 ReactiveTransactionStatus 确定 rollback-only 标志。
+	 * <p>仅当应用在本 TransactionStatus 对象上调用 {@code setRollbackOnly} 时才返回 "true"。
 	 */
 	@Override
 	public boolean isRollbackOnly() {
@@ -172,7 +162,7 @@ public class GenericReactiveTransaction implements ReactiveTransaction {
 	}
 
 	/**
-	 * Mark this transaction as completed, that is, committed or rolled back.
+	 * 将本事务标记为已完成，即已提交或已回滚。
 	 */
 	public void setCompleted() {
 		this.completed = true;

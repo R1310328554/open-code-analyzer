@@ -30,8 +30,7 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.util.Assert;
 
 /**
- * Operator class that simplifies programmatic transaction demarcation and
- * transaction exception handling.
+ * 简化编程式事务边界与事务异常处理的操作符类。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller
@@ -50,11 +49,10 @@ final class TransactionalOperatorImpl implements TransactionalOperator {
 
 
 	/**
-	 * Construct a new TransactionTemplate using the given transaction manager,
-	 * taking its default settings from the given transaction definition.
-	 * @param transactionManager the transaction management strategy to be used
-	 * @param transactionDefinition the transaction definition to copy the
-	 * default settings from. Local properties can still be set to change values.
+	 * 使用给定事务管理器构造新 TransactionTemplate，
+	 * 从给定事务定义复制默认设置。仍可设置本地属性以更改值。
+	 * @param transactionManager 要使用的事务管理策略
+	 * @param transactionDefinition 复制默认设置来源的事务定义
 	 */
 	TransactionalOperatorImpl(ReactiveTransactionManager transactionManager, TransactionDefinition transactionDefinition) {
 		Assert.notNull(transactionManager, "ReactiveTransactionManager must not be null");
@@ -65,7 +63,7 @@ final class TransactionalOperatorImpl implements TransactionalOperator {
 
 
 	/**
-	 * Return the transaction management strategy to be used.
+	 * 返回要使用的事务管理策略。
 	 */
 	public ReactiveTransactionManager getTransactionManager() {
 		return this.transactionManager;
@@ -86,10 +84,10 @@ final class TransactionalOperatorImpl implements TransactionalOperator {
 	}
 
 	/**
-	 * Perform a rollback, handling rollback exceptions properly.
-	 * @param status object representing the transaction
-	 * @param ex the thrown application exception or error
-	 * @throws TransactionException in case of a rollback error
+	 * 执行回滚，正确处理回滚异常。
+	 * @param status 表示事务的对象
+	 * @param ex 抛出的应用异常或错误
+	 * @throws TransactionException 回滚错误时
 	 */
 	private Mono<Void> rollbackOnException(ReactiveTransaction status, Throwable ex) throws TransactionException {
 		logger.debug("Initiating transaction rollback on application exception", ex);
@@ -107,9 +105,8 @@ final class TransactionalOperatorImpl implements TransactionalOperator {
 	}
 
 	/**
-	 * Unwrap the cause of a throwable, if produced by a failure
-	 * during the async resource cleanup in {@link Flux#usingWhen}.
-	 * @param ex the throwable to try to unwrap
+	 * 若由 {@link Flux#usingWhen} 中异步资源清理失败产生，解包 throwable 的原因。
+	 * @param ex 要尝试解包的 throwable
 	 */
 	private Throwable unwrapIfResourceCleanupFailure(Throwable ex) {
 		if (ex instanceof RuntimeException && ex.getCause() != null) {

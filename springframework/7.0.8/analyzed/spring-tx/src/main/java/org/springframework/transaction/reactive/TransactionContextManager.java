@@ -26,10 +26,10 @@ import reactor.util.context.Context;
 import org.springframework.transaction.NoTransactionException;
 
 /**
- * Delegate to register and obtain transactional contexts.
+ * 注册和获取事务上下文的委托类。
  *
- * <p>Typically used by components that intercept or orchestrate transactional flows
- * such as AOP interceptors or transactional operators.
+ * <p>通常由拦截或编排事务流的组件使用，
+ * 如 AOP 拦截器或事务操作符。
  *
  * @author Mark Paluch
  * @since 5.2
@@ -42,12 +42,11 @@ public abstract class TransactionContextManager {
 
 
 	/**
-	 * Obtain the current {@link TransactionContext} from the subscriber context or the
-	 * transactional context holder. Context retrieval fails with NoTransactionException
-	 * if no context or context holder is registered.
-	 * @return the current {@link TransactionContext}
-	 * @throws NoTransactionException if no TransactionContext was found in the
-	 * subscriber context or no context found in a holder
+	 * 从订阅者上下文或事务上下文持有者获取当前 {@link TransactionContext}。
+	 * 若未注册上下文或上下文持有者，获取将失败并抛出 NoTransactionException。
+	 * @return 当前 {@link TransactionContext}
+	 * @throws NoTransactionException 若订阅者上下文中未找到 TransactionContext
+	 * 或持有者中无上下文
 	 */
 	public static Mono<TransactionContext> currentContext() {
 		return Mono.deferContextual(ctx -> {
@@ -65,9 +64,9 @@ public abstract class TransactionContextManager {
 	}
 
 	/**
-	 * Create a {@link TransactionContext} and register it in the subscriber {@link Context}.
-	 * @return functional context registration.
-	 * @throws IllegalStateException if a transaction context is already associated.
+	 * 创建 {@link TransactionContext} 并在订阅者 {@link Context} 中注册。
+	 * @return 函数式上下文注册。
+	 * @throws IllegalStateException 若已关联事务上下文。
 	 * @see Mono#contextWrite(Function)
 	 * @see Flux#contextWrite(Function)
 	 */
@@ -76,11 +75,10 @@ public abstract class TransactionContextManager {
 	}
 
 	/**
-	 * Return a {@link Function} to create or associate a new {@link TransactionContext}.
-	 * Interaction with transactional resources through
-	 * {@link TransactionSynchronizationManager} requires a TransactionContext
-	 * to be registered in the subscriber context.
-	 * @return functional context registration.
+	 * 返回用于创建或关联新 {@link TransactionContext} 的 {@link Function}。
+	 * 通过 {@link TransactionSynchronizationManager} 与事务资源交互
+	 * 需要在订阅者上下文中注册 TransactionContext。
+	 * @return 函数式上下文注册。
 	 */
 	public static Function<Context, Context> getOrCreateContext() {
 		return context -> {
@@ -93,12 +91,10 @@ public abstract class TransactionContextManager {
 	}
 
 	/**
-	 * Return a {@link Function} to create or associate a new
-	 * {@link TransactionContextHolder}. Creation and release of transactions
-	 * within a reactive flow requires a mutable holder that follows a top to
-	 * down execution scheme. Reactor's subscriber context follows a down to top
-	 * approach regarding mutation visibility.
-	 * @return functional context registration.
+	 * 返回用于创建或关联新 {@link TransactionContextHolder} 的 {@link Function}。
+	 * 响应式流内事务的创建与释放需要遵循自上而下执行方案的可变持有者。
+	 * Reactor 订阅者上下文在变更可见性上采用自下而上方式。
+	 * @return 函数式上下文注册。
 	 */
 	public static Function<Context, Context> getOrCreateContextHolder() {
 		return context -> {
@@ -111,7 +107,7 @@ public abstract class TransactionContextManager {
 
 
 	/**
-	 * Stackless variant of {@link NoTransactionException} for reactive flows.
+	 * 用于响应式流的 {@link NoTransactionException} 无堆栈变体。
 	 */
 	@SuppressWarnings("serial")
 	private static class NoTransactionInContextException extends NoTransactionException {
@@ -122,7 +118,7 @@ public abstract class TransactionContextManager {
 
 		@Override
 		public synchronized Throwable fillInStackTrace() {
-			// stackless exception
+			// 无堆栈异常
 			return this;
 		}
 	}

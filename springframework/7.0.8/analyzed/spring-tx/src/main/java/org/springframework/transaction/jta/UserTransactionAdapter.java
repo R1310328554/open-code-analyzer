@@ -27,18 +27,16 @@ import jakarta.transaction.UserTransaction;
 import org.springframework.util.Assert;
 
 /**
- * Adapter for a JTA UserTransaction handle, taking a JTA
- * {@link jakarta.transaction.TransactionManager} reference and creating
- * a JTA {@link jakarta.transaction.UserTransaction} handle for it.
+ * JTA UserTransaction 句柄的适配器，接受 JTA
+ * {@link jakarta.transaction.TransactionManager} 引用并为其创建
+ * JTA {@link jakarta.transaction.UserTransaction} 句柄。
  *
- * <p>The JTA UserTransaction interface is an exact subset of the JTA
- * TransactionManager interface. Unfortunately, it does not serve as
- * super-interface of TransactionManager, though, which requires an
- * adapter such as this class to be used when intending to talk to
- * a TransactionManager handle through the UserTransaction interface.
+ * <p>JTA UserTransaction 接口是 JTA TransactionManager 接口的精确子集。
+ * 遗憾的是它并非 TransactionManager 的超接口，
+ * 因此需要通过本类这样的适配器，才能以 UserTransaction 接口与 TransactionManager 句柄交互。
  *
- * <p>Used internally by Spring's {@link JtaTransactionManager} for certain
- * scenarios. Not intended for direct use in application code.
+ * <p>由 Spring 的 {@link JtaTransactionManager} 在特定场景内部使用。
+ * 不供应用代码直接使用。
  *
  * @author Juergen Hoeller
  * @since 1.1.5
@@ -49,8 +47,8 @@ public class UserTransactionAdapter implements UserTransaction {
 
 
 	/**
-	 * Create a new UserTransactionAdapter for the given TransactionManager.
-	 * @param transactionManager the JTA TransactionManager to wrap
+	 * 为给定 TransactionManager 创建新的 UserTransactionAdapter。
+	 * @param transactionManager 要包装的 JTA TransactionManager
 	 */
 	public UserTransactionAdapter(TransactionManager transactionManager) {
 		Assert.notNull(transactionManager, "TransactionManager must not be null");
@@ -58,7 +56,7 @@ public class UserTransactionAdapter implements UserTransaction {
 	}
 
 	/**
-	 * Return the JTA TransactionManager that this adapter delegates to.
+	 * 返回本适配器委托的 JTA TransactionManager。
 	 */
 	public final TransactionManager getTransactionManager() {
 		return this.transactionManager;

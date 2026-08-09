@@ -19,16 +19,15 @@ package org.springframework.transaction.reactive;
 import reactor.core.publisher.Mono;
 
 /**
- * Interface for reactive transaction synchronization callbacks.
- * Supported by {@link AbstractReactiveTransactionManager}.
+ * 响应式事务同步回调接口。
+ * 由 {@link AbstractReactiveTransactionManager} 支持。
  *
- * <p>TransactionSynchronization implementations can implement the
- * {@link org.springframework.core.Ordered} interface to influence their execution order.
- * A synchronization that does not implement the {@link org.springframework.core.Ordered}
- * interface is appended to the end of the synchronization chain.
+ * <p>TransactionSynchronization 实现可实现 {@link org.springframework.core.Ordered} 接口
+ * 以影响执行顺序。未实现 {@link org.springframework.core.Ordered} 接口的同步
+ * 将追加到同步链末尾。
  *
- * <p>System synchronizations performed by Spring itself use specific order values,
- * allowing for fine-grained interaction with their execution order (if necessary).
+ * <p>Spring 自身执行的系统同步使用特定顺序值，
+ * 必要时可精细控制其执行顺序。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller
@@ -38,19 +37,19 @@ import reactor.core.publisher.Mono;
  */
 public interface TransactionSynchronization {
 
-	/** Completion status in case of proper commit. */
+	/** 正常提交时的完成状态。 */
 	int STATUS_COMMITTED = 0;
 
-	/** Completion status in case of proper rollback. */
+	/** 正常回滚时的完成状态。 */
 	int STATUS_ROLLED_BACK = 1;
 
-	/** Completion status in case of heuristic mixed completion or system errors. */
+	/** 启发式混合完成或系统错误时的完成状态。 */
 	int STATUS_UNKNOWN = 2;
 
 
 	/**
-	 * Suspend this synchronization.
-	 * Supposed to unbind resources from TransactionSynchronizationManager if managing any.
+	 * 挂起本同步。
+	 * 若管理资源，应从 TransactionSynchronizationManager 解绑资源。
 	 * @see TransactionSynchronizationManager#unbindResource
 	 */
 	default Mono<Void> suspend() {
@@ -58,8 +57,8 @@ public interface TransactionSynchronization {
 	}
 
 	/**
-	 * Resume this synchronization.
-	 * Supposed to rebind resources to TransactionSynchronizationManager if managing any.
+	 * 恢复本同步。
+	 * 若管理资源，应重新绑定资源到 TransactionSynchronizationManager。
 	 * @see TransactionSynchronizationManager#bindResource
 	 */
 	default Mono<Void> resume() {
@@ -67,16 +66,14 @@ public interface TransactionSynchronization {
 	}
 
 	/**
-	 * Invoked before transaction commit (before "beforeCompletion").
-	 * <p>This callback does <i>not</i> mean that the transaction will actually be committed.
-	 * A rollback decision can still occur after this method has been called. This callback
-	 * is rather meant to perform work that's only relevant if a commit still has a chance
-	 * to happen, such as flushing SQL statements to the database.
-	 * <p>Note that exceptions will get propagated to the commit caller and cause a
-	 * rollback of the transaction.
-	 * @param readOnly whether the transaction is defined as read-only transaction
-	 * @throws RuntimeException in case of errors; will be <b>propagated to the caller</b>
-	 * (note: do not throw TransactionException subclasses here!)
+	 * 在事务提交前调用（在 "beforeCompletion" 之前）。
+	 * <p>本回调<i>不</i>表示事务一定会提交。
+	 * 调用本方法后仍可能决定回滚。本回调用于执行仅在仍可能提交时
+	 * 才有意义的工作，例如将 SQL 语句 flush 到数据库。
+	 * <p>注意，异常将传播给提交调用方并导致事务回滚。
+	 * @param readOnly 事务是否定义为只读
+	 * @throws RuntimeException 发生错误时；将<b>传播给调用方</b>
+	 * （注意：不要在此抛出 TransactionException 子类！）
 	 * @see #beforeCompletion
 	 */
 	default Mono<Void> beforeCommit(boolean readOnly) {
@@ -84,13 +81,12 @@ public interface TransactionSynchronization {
 	}
 
 	/**
-	 * Invoked before transaction commit/rollback.
-	 * Can perform resource cleanup <i>before</i> transaction completion.
-	 * <p>This method will be invoked after {@code beforeCommit}, even when
-	 * {@code beforeCommit} threw an exception. This callback allows for
-	 * closing resources before transaction completion, for any outcome.
-	 * @throws RuntimeException in case of errors; will be <b>logged but not propagated</b>
-	 * (note: do not throw TransactionException subclasses here!)
+	 * 在事务提交/回滚前调用。
+	 * 可在事务完成<i>前</i>执行资源清理。
+	 * <p>即使 {@code beforeCommit} 抛出异常，本方法也会在 {@code beforeCommit} 之后调用。
+	 * 本回调允许在任意结果下于事务完成前关闭资源。
+	 * @throws RuntimeException 发生错误时；将<b>记录但不传播</b>
+	 * （注意：不要在此抛出 TransactionException 子类！）
 	 * @see #beforeCommit
 	 * @see #afterCompletion
 	 */
@@ -99,37 +95,29 @@ public interface TransactionSynchronization {
 	}
 
 	/**
-	 * Invoked after transaction commit. Can perform further operations right
-	 * <i>after</i> the main transaction has <i>successfully</i> committed.
-	 * <p>Can, for example, commit further operations that are supposed to follow on a successful
-	 * commit of the main transaction, like confirmation messages or emails.
-	 * <p><b>NOTE:</b> The transaction will have been committed already, but the
-	 * transactional resources might still be active and accessible. As a consequence,
-	 * any data access code triggered at this point will still "participate" in the
-	 * original transaction, allowing to perform some cleanup (with no commit following
-	 * anymore!), unless it explicitly declares that it needs to run in a separate
-	 * transaction. Hence: <b>Use {@code PROPAGATION_REQUIRES_NEW} for any
-	 * transactional operation that is called from here.</b>
-	 * @throws RuntimeException in case of errors; will be <b>propagated to the caller</b>
-	 * (note: do not throw TransactionException subclasses here!)
+	 * 在事务提交后调用。可在主事务<i>成功</i>提交<i>后</i>立即执行进一步操作。
+	 * <p>例如，可提交主事务成功提交后应执行的后续操作，如确认消息或邮件。
+	 * <p><b>注意：</b>事务已提交，但事务资源可能仍活动且可访问。
+	 * 因此，此触发的任何数据访问代码仍将 "参与" 原事务，
+	 * 允许执行一些清理（之后不再有提交！），除非显式声明需在独立事务中运行。
+	 * 因此：<b>从此处调用的任何事务操作请使用 {@code PROPAGATION_REQUIRES_NEW}。</b>
+	 * @throws RuntimeException 发生错误时；将<b>传播给调用方</b>
+	 * （注意：不要在此抛出 TransactionException 子类！）
 	 */
 	default Mono<Void> afterCommit() {
 		return Mono.empty();
 	}
 
 	/**
-	 * Invoked after transaction commit/rollback.
-	 * Can perform resource cleanup <i>after</i> transaction completion.
-	 * <p><b>NOTE:</b> The transaction will have been committed or rolled back already,
-	 * but the transactional resources might still be active and accessible. As a
-	 * consequence, any data access code triggered at this point will still "participate"
-	 * in the original transaction, allowing to perform some cleanup (with no commit
-	 * following anymore!), unless it explicitly declares that it needs to run in a
-	 * separate transaction. Hence: <b>Use {@code PROPAGATION_REQUIRES_NEW}
-	 * for any transactional operation that is called from here.</b>
-	 * @param status completion status according to the {@code STATUS_*} constants
-	 * @throws RuntimeException in case of errors; will be <b>logged but not propagated</b>
-	 * (note: do not throw TransactionException subclasses here!)
+	 * 在事务提交/回滚后调用。
+	 * 可在事务完成<i>后</i>执行资源清理。
+	 * <p><b>注意：</b>事务已提交或回滚，但事务资源可能仍活动且可访问。
+	 * 因此，此触发的任何数据访问代码仍将 "参与" 原事务，
+	 * 允许执行一些清理（之后不再有提交！），除非显式声明需在独立事务中运行。
+	 * 因此：<b>从此处调用的任何事务操作请使用 {@code PROPAGATION_REQUIRES_NEW}。</b>
+	 * @param status 根据 {@code STATUS_*} 常量的完成状态
+	 * @throws RuntimeException 发生错误时；将<b>记录但不传播</b>
+	 * （注意：不要在此抛出 TransactionException 子类！）
 	 * @see #STATUS_COMMITTED
 	 * @see #STATUS_ROLLED_BACK
 	 * @see #STATUS_UNKNOWN

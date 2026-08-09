@@ -33,36 +33,30 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.util.Assert;
 
 /**
- * Special {@link JtaTransactionManager} variant for Oracle WebLogic 15.1.1 and higher.
- * Supports the full power of Spring's transaction definitions on WebLogic's
- * transaction coordinator, <i>beyond standard JTA</i>: transaction names,
- * per-transaction isolation levels, and proper resuming of transactions in all cases.
+ * 适用于 Oracle WebLogic 15.1.1 及更高版本的特殊 {@link JtaTransactionManager} 变体。
+ * 在 WebLogic 事务协调器上支持 Spring 事务定义的全部能力，<i>超越标准 JTA</i>：
+ * 事务名称、每事务隔离级别，以及在所有情况下正确恢复事务。
  *
- * <p>Uses WebLogic's special {@code begin(name)} method to start a JTA transaction,
- * in order to make <b>Spring-driven transactions visible in WebLogic's transaction
- * monitor</b>. In case of Spring's declarative transactions, the exposed name will
- * (by default) be the fully-qualified class name + "." + method name.
+ * <p>使用 WebLogic 特殊的 {@code begin(name)} 方法启动 JTA 事务，
+ * 以便<b>使 Spring 驱动的事务在 WebLogic 事务监视器中可见</b>。
+ * 对于 Spring 声明式事务，暴露的名称（默认）为全限定类名 + "." + 方法名。
  *
- * <p>Supports a <b>per-transaction isolation level</b> through WebLogic's corresponding
- * JTA transaction property "ISOLATION LEVEL". This will apply the specified isolation
- * level (e.g. ISOLATION_SERIALIZABLE) to all JDBC Connections that participate in the
- * given transaction.
+ * <p>通过 WebLogic 对应的 JTA 事务属性 "ISOLATION LEVEL" 支持<b>每事务隔离级别</b>。
+ * 这将把指定隔离级别（如 ISOLATION_SERIALIZABLE）应用于参与该事务的所有 JDBC Connection。
  *
- * <p>Invokes WebLogic's special {@code forceResume} method if standard JTA resume
- * failed, to <b>also resume if the target transaction was marked rollback-only</b>.
- * If you're not relying on this feature of transaction suspension in the first
- * place, Spring's standard JtaTransactionManager will behave properly too.
+ * <p>若标准 JTA resume 失败，则调用 WebLogic 特殊的 {@code forceResume} 方法，
+ * 以<b>在目标事务被标记 rollback-only 时也能恢复</b>。
+ * 若本就不依赖事务挂起的此特性，Spring 标准 JtaTransactionManager 也能正常工作。
  *
- * <p>By default, the JTA UserTransaction and TransactionManager handles are
- * fetched directly from WebLogic's {@code TransactionHelper}. This can be
- * overridden by specifying "userTransaction"/"userTransactionName" and
- * "transactionManager"/"transactionManagerName", passing in existing handles
- * or specifying corresponding JNDI locations to look up.
+ * <p>默认情况下，JTA UserTransaction 和 TransactionManager 句柄
+ * 直接从 WebLogic 的 {@code TransactionHelper} 获取。
+ * 可通过指定 "userTransaction"/"userTransactionName" 和
+ * "transactionManager"/"transactionManagerName" 覆盖，传入现有句柄
+ * 或指定相应 JNDI 查找位置。
  *
- * <p>Note: This class was initially removed as of Spring Framework 6.0 but then
- * brought back after the WebLogic 15.1.1 release which finally delivers Jakarta EE 9
- * compatibility. As of Spring Framework 6.2.16, it is available again for manual
- * configuration - as a replacement for the standard {@link JtaTransactionManager}.
+ * <p>注意：本类在 Spring Framework 6.0 中曾移除，
+ * 在 WebLogic 15.1.1 发布（最终提供 Jakarta EE 9 兼容性）后重新引入。
+ * 自 Spring Framework 6.2.16 起，可再次手动配置——作为标准 {@link JtaTransactionManager} 的替代。
  *
  * @author Juergen Hoeller
  * @since 6.2.16
@@ -176,7 +170,7 @@ public class WebLogicJtaTransactionManager extends JtaTransactionManager {
 				logger.debug("Support for WebLogic transaction names not available");
 			}
 
-			// Obtain WebLogic ClientTransactionManager interface.
+			// 获取 WebLogic ClientTransactionManager 接口。
 			Class<?> transactionManagerClass =
 					getClass().getClassLoader().loadClass(CLIENT_TRANSACTION_MANAGER_CLASS_NAME);
 			logger.trace("WebLogic ClientTransactionManager found");
@@ -212,7 +206,7 @@ public class WebLogicJtaTransactionManager extends JtaTransactionManager {
 
 		int timeout = determineTimeout(definition);
 
-		// Apply transaction name (if any) to WebLogic transaction.
+		// 将事务名称（若有）应用到 WebLogic 事务。
 		if (this.weblogicUserTransactionAvailable && definition.getName() != null) {
 			try {
 				if (timeout > TransactionDefinition.TIMEOUT_DEFAULT) {
@@ -242,13 +236,13 @@ public class WebLogicJtaTransactionManager extends JtaTransactionManager {
 			}
 		}
 		else {
-			// No WebLogic UserTransaction available or no transaction name specified
-			// -> standard JTA begin call.
+			// 无 WebLogic UserTransaction 或未指定事务名称
+			// -> 使用标准 JTA begin 调用。
 			applyTimeout(txObject, timeout);
 			txObject.getUserTransaction().begin();
 		}
 
-		// Specify isolation level, if any, through corresponding WebLogic transaction property.
+		// 若有隔离级别，通过相应 WebLogic 事务属性指定。
 		if (this.weblogicTransactionManagerAvailable) {
 			if (definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT) {
 				try {
@@ -347,7 +341,7 @@ public class WebLogicJtaTransactionManager extends JtaTransactionManager {
 		}
 
 		else {
-			// No name specified - standard JTA is sufficient.
+			// 未指定名称 - 标准 JTA 已足够。
 			return super.createTransaction(name, timeout);
 		}
 	}

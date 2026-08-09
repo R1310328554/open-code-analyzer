@@ -25,14 +25,13 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.PayloadApplicationEvent;
 
 /**
- * A delegate for publishing transactional events in a reactive setup.
- * Includes the current Reactor-managed {@link TransactionContext} as
- * a source object for every {@link ApplicationEvent} to be published.
+ * 在响应式环境中发布事务事件的委托类。
+ * 将当前 Reactor 管理的 {@link TransactionContext} 作为
+ * 每个待发布 {@link ApplicationEvent} 的源对象。
  *
- * <p>This delegate is just a convenience. The current {@link TransactionContext}
- * can be directly included as the event source as well, and then published
- * through an {@link ApplicationEventPublisher} such as the Spring
- * {@link org.springframework.context.ApplicationContext}:
+ * <p>本委托仅为便利。当前 {@link TransactionContext} 也可直接作为事件源，
+ * 然后通过 {@link ApplicationEventPublisher}（如 Spring
+ * {@link org.springframework.context.ApplicationContext}）发布：
  *
  * <pre class="code">
  * TransactionContextManager.currentContext()
@@ -52,9 +51,9 @@ public class TransactionalEventPublisher {
 
 
 	/**
-	 * Create a new delegate for publishing transactional events in a reactive setup.
-	 * @param eventPublisher the actual event publisher to use,
-	 * typically a Spring {@link org.springframework.context.ApplicationContext}
+	 * 创建用于在响应式环境中发布事务事件的新委托。
+	 * @param eventPublisher 实际使用的事件发布器，
+	 * 通常为 Spring {@link org.springframework.context.ApplicationContext}
 	 */
 	public TransactionalEventPublisher(ApplicationEventPublisher eventPublisher) {
 		this.eventPublisher = eventPublisher;
@@ -62,11 +61,10 @@ public class TransactionalEventPublisher {
 
 
 	/**
-	 * Publish an event created through the given function which maps the transaction
-	 * source object (the {@link TransactionContext}) to the event instance.
-	 * @param eventCreationFunction a function mapping the source object to the event instance,
-	 * for example, {@code source -> new PayloadApplicationEvent&lt;&gt;(source, "myPayload")}
-	 * @return the Reactor {@link Mono} for the transactional event publication
+	 * 发布由给定函数创建的事件，该函数将事务源对象（{@link TransactionContext}）映射为事件实例。
+	 * @param eventCreationFunction 将源对象映射为事件实例的函数，
+	 * 例如 {@code source -> new PayloadApplicationEvent&lt;&gt;(source, "myPayload")}
+	 * @return 事务事件发布的 Reactor {@link Mono}
 	 */
 	public Mono<Void> publishEvent(Function<TransactionContext, ApplicationEvent> eventCreationFunction) {
 		return TransactionContextManager.currentContext().map(eventCreationFunction)
@@ -74,9 +72,9 @@ public class TransactionalEventPublisher {
 	}
 
 	/**
-	 * Publish an event created for the given payload.
-	 * @param payload the payload to publish as an event
-	 * @return the Reactor {@link Mono} for the transactional event publication
+	 * 发布为给定 payload 创建的事件。
+	 * @param payload 作为事件发布的 payload
+	 * @return 事务事件发布的 Reactor {@link Mono}
 	 */
 	public Mono<Void> publishEvent(Object payload) {
 		if (payload instanceof ApplicationEvent) {

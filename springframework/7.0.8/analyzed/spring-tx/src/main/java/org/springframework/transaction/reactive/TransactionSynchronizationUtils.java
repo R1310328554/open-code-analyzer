@@ -29,8 +29,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Utility methods for triggering specific {@link TransactionSynchronization}
- * callback methods on all currently registered synchronizations.
+ * 在所有当前已注册同步上触发特定 {@link TransactionSynchronization} 回调方法的工具类。
  *
  * @author Mark Paluch
  * @author Juergen Hoeller
@@ -47,19 +46,18 @@ abstract class TransactionSynchronizationUtils {
 
 
 	/**
-	 * Unwrap the given resource handle if necessary; otherwise return
-	 * the given handle as-is.
+	 * 必要时解包给定资源句柄；否则原样返回。
 	 * @see InfrastructureProxy#getWrappedObject()
 	 */
 	static Object unwrapResourceIfNecessary(Object resource) {
 		Assert.notNull(resource, "Resource must not be null");
 		Object resourceRef = resource;
-		// unwrap infrastructure proxy
+		// 解包基础设施代理
 		if (resourceRef instanceof InfrastructureProxy infrastructureProxy) {
 			resourceRef = infrastructureProxy.getWrappedObject();
 		}
 		if (SPRING_AOP_PRESENT) {
-			// now unwrap scoped proxy
+			// 再解包作用域代理
 			resourceRef = ScopedProxyUnwrapper.unwrapIfNecessary(resourceRef);
 		}
 		return resourceRef;
@@ -67,9 +65,8 @@ abstract class TransactionSynchronizationUtils {
 
 
 	/**
-	 * Actually invoke the {@code triggerBeforeCommit} methods of the
-	 * given Spring TransactionSynchronization objects.
-	 * @param synchronizations a List of TransactionSynchronization objects
+	 * 实际调用给定 Spring TransactionSynchronization 对象的 {@code triggerBeforeCommit} 方法。
+	 * @param synchronizations TransactionSynchronization 对象列表
 	 * @see TransactionSynchronization#beforeCommit(boolean)
 	 */
 	public static Mono<Void> triggerBeforeCommit(Collection<TransactionSynchronization> synchronizations, boolean readOnly) {
@@ -77,9 +74,8 @@ abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Actually invoke the {@code beforeCompletion} methods of the
-	 * given Spring TransactionSynchronization objects.
-	 * @param synchronizations a List of TransactionSynchronization objects
+	 * 实际调用给定 Spring TransactionSynchronization 对象的 {@code beforeCompletion} 方法。
+	 * @param synchronizations TransactionSynchronization 对象列表
 	 * @see TransactionSynchronization#beforeCompletion()
 	 */
 	public static Mono<Void> triggerBeforeCompletion(Collection<TransactionSynchronization> synchronizations) {
@@ -89,9 +85,8 @@ abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Actually invoke the {@code afterCommit} methods of the
-	 * given Spring TransactionSynchronization objects.
-	 * @param synchronizations a List of TransactionSynchronization objects
+	 * 实际调用给定 Spring TransactionSynchronization 对象的 {@code afterCommit} 方法。
+	 * @param synchronizations TransactionSynchronization 对象列表
 	 * @see TransactionSynchronization#afterCommit()
 	 */
 	public static Mono<Void> invokeAfterCommit(Collection<TransactionSynchronization> synchronizations) {
@@ -101,11 +96,9 @@ abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Actually invoke the {@code afterCompletion} methods of the
-	 * given Spring TransactionSynchronization objects.
-	 * @param synchronizations a List of TransactionSynchronization objects
-	 * @param completionStatus the completion status according to the
-	 * constants in the TransactionSynchronization interface
+	 * 实际调用给定 Spring TransactionSynchronization 对象的 {@code afterCompletion} 方法。
+	 * @param synchronizations TransactionSynchronization 对象列表
+	 * @param completionStatus 按 TransactionSynchronization 接口常量的完成状态
 	 * @see TransactionSynchronization#afterCompletion(int)
 	 * @see TransactionSynchronization#STATUS_COMMITTED
 	 * @see TransactionSynchronization#STATUS_ROLLED_BACK
@@ -120,7 +113,7 @@ abstract class TransactionSynchronizationUtils {
 
 
 	/**
-	 * Inner class to avoid hard-coded dependency on AOP module.
+	 * 内部类，避免对 AOP 模块的硬编码依赖。
 	 */
 	private static class ScopedProxyUnwrapper {
 
