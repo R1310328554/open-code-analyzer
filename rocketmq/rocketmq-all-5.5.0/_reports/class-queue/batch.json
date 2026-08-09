@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:28:21Z",
-  "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/CMResult.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/CheckClientRequestBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ClusterInfo.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/Connection.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ConsumeByWho.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ConsumeMessageDirectlyResult.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ConsumeQueueData.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ConsumeStatsList.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ConsumeStatus.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ConsumerConnection.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ConsumerOffsetSerializeWrapper.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ConsumerRunningInfo.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/CreateTopicListRequestBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ElectMasterResponseBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/EpochEntryCache.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 618,
-  "done": 855
+  "done": 870
 }
