@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:52:45Z",
   "files": [
-    "store/src/main/java/org/apache/rocketmq/store/ha/autoswitch/MetadataFile.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/autoswitch/TempBrokerMetadata.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/io/AbstractHAReader.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/io/HAReadHook.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/io/HAWriteHook.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/io/HAWriter.java",
-    "store/src/main/java/org/apache/rocketmq/store/hook/PutMessageHook.java",
-    "store/src/main/java/org/apache/rocketmq/store/hook/SendMessageBackHook.java",
-    "store/src/main/java/org/apache/rocketmq/store/index/IndexFile.java",
-    "store/src/main/java/org/apache/rocketmq/store/index/IndexHeader.java",
-    "store/src/main/java/org/apache/rocketmq/store/index/QueryOffsetResult.java",
-    "store/src/main/java/org/apache/rocketmq/store/index/rocksdb/IndexRocksDBRecord.java",
-    "store/src/main/java/org/apache/rocketmq/store/index/rocksdb/IndexRocksDBStore.java",
-    "store/src/main/java/org/apache/rocketmq/store/kv/CommitLogDispatcherCompaction.java",
-    "store/src/main/java/org/apache/rocketmq/store/kv/CompactionPositionMgr.java",
     "store/src/main/java/org/apache/rocketmq/store/kv/CompactionService.java",
     "store/src/main/java/org/apache/rocketmq/store/kv/CompactionStore.java",
     "store/src/main/java/org/apache/rocketmq/store/kv/MessageFetcher.java",
@@ -33,5 +18,5 @@
     "store/src/main/java/org/apache/rocketmq/store/plugin/MessageStoreFactory.java"
   ],
   "remaining_pending": 318,
-  "done": 1140
+  "done": 1155
 }
