@@ -22,19 +22,17 @@ import java.lang.reflect.Proxy;
 import org.springframework.util.ClassUtils;
 
 /**
- * Default {@link AopProxyFactory} implementation, creating either a CGLIB proxy
- * or a JDK dynamic proxy.
+ * 默认 {@link AopProxyFactory} 实现，创建 CGLIB 代理或 JDK 动态代理。
  *
- * <p>Creates a CGLIB proxy if one the following is true for a given
- * {@link AdvisedSupport} instance:
+ * <p>对给定 {@link AdvisedSupport} 实例，若以下任一为真则创建 CGLIB 代理：
  * <ul>
- * <li>the {@code optimize} flag is set
- * <li>the {@code proxyTargetClass} flag is set
- * <li>no proxy interfaces have been specified
+ * <li>设置了 {@code optimize} 标志
+ * <li>设置了 {@code proxyTargetClass} 标志
+ * <li>未指定代理接口
  * </ul>
  *
- * <p>In general, specify {@code proxyTargetClass} to enforce a CGLIB proxy,
- * or specify one or more interfaces to use a JDK dynamic proxy.
+ * <p>通常，指定 {@code proxyTargetClass} 强制 CGLIB 代理，
+ * 或指定一个或多个接口以使用 JDK 动态代理。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -48,7 +46,7 @@ import org.springframework.util.ClassUtils;
 public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
 
 	/**
-	 * Singleton instance of this class.
+	 * 本类的单例实例。
 	 * @since 6.0.10
 	 */
 	public static final DefaultAopProxyFactory INSTANCE = new DefaultAopProxyFactory();

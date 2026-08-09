@@ -35,9 +35,8 @@ import org.springframework.aop.framework.adapter.AdvisorAdapterRegistry;
 import org.springframework.aop.framework.adapter.GlobalAdvisorAdapterRegistry;
 
 /**
- * A simple but definitive way of working out an advice chain for a Method,
- * given an {@link Advised} object. Always rebuilds each advice chain;
- * caching can be provided by subclasses.
+ * 给定 {@link Advised} 对象，为 Method 确定 advice 链的简洁而明确的方式。
+ * 始终重建每条 advice 链；子类可提供缓存。
  *
  * @author Juergen Hoeller
  * @author Rod Johnson
@@ -48,7 +47,7 @@ import org.springframework.aop.framework.adapter.GlobalAdvisorAdapterRegistry;
 public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializable {
 
 	/**
-	 * Singleton instance of this class.
+	 * 本类的单例实例。
 	 * @since 6.0.10
 	 */
 	public static final DefaultAdvisorChainFactory INSTANCE = new DefaultAdvisorChainFactory();
@@ -58,8 +57,7 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 	public List<Object> getInterceptorsAndDynamicInterceptionAdvice(
 			Advised config, Method method, @Nullable Class<?> targetClass) {
 
-		// This is somewhat tricky... We have to process introductions first,
-		// but we need to preserve order in the ultimate list.
+		// 此处略复杂：须先处理引介，但又要保持最终列表中的顺序。
 		AdvisorAdapterRegistry registry = GlobalAdvisorAdapterRegistry.getInstance();
 		Advisor[] advisors = config.getAdvisors();
 		List<Object> interceptorList = new ArrayList<>(advisors.length);
@@ -68,7 +66,7 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 
 		for (Advisor advisor : advisors) {
 			if (advisor instanceof PointcutAdvisor pointcutAdvisor) {
-				// Add it conditionally.
+				// 按条件添加。
 				if (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) {
 					MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();
 					boolean match;
@@ -84,8 +82,8 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 					if (match) {
 						MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
 						if (mm.isRuntime()) {
-							// Creating a new object instance in the getInterceptors() method
-							// isn't a problem as we normally cache created chains.
+							// 在 getInterceptors() 中创建新对象实例通常无妨，
+							// 因为我们一般会缓存已创建的链。
 							for (MethodInterceptor interceptor : interceptors) {
 								interceptorList.add(new InterceptorAndDynamicMethodMatcher(interceptor, mm));
 							}
@@ -112,7 +110,7 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 	}
 
 	/**
-	 * Determine whether the Advisors contain matching introductions.
+	 * 判断通知器是否包含匹配的引介。
 	 */
 	private static boolean hasMatchingIntroductions(Advisor[] advisors, Class<?> actualClass) {
 		for (Advisor advisor : advisors) {

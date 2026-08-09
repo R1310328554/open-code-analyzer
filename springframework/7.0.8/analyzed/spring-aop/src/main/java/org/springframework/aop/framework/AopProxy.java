@@ -19,11 +19,9 @@ package org.springframework.aop.framework;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Delegate interface for a configured AOP proxy, allowing for the creation
- * of actual proxy objects.
+ * 已配置 AOP 代理的委托接口，用于创建实际代理对象。
  *
- * <p>Out-of-the-box implementations are available for JDK dynamic proxies
- * and for CGLIB proxies, as applied by {@link DefaultAopProxyFactory}.
+ * <p>{@link DefaultAopProxyFactory} 提供 JDK 动态代理与 CGLIB 代理的开箱即用实现。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -32,31 +30,29 @@ import org.jspecify.annotations.Nullable;
 public interface AopProxy {
 
 	/**
-	 * Create a new proxy object.
-	 * <p>Uses the AopProxy's default class loader (if necessary for proxy creation):
-	 * usually, the thread context class loader.
-	 * @return the new proxy object (never {@code null})
+	 * 创建新代理对象。
+	 * <p>使用 AopProxy 的默认类加载器（创建代理必要时）：通常为线程上下文类加载器。
+	 * @return 新代理对象（永不返回 {@code null}）
 	 * @see Thread#getContextClassLoader()
 	 */
 	Object getProxy();
 
 	/**
-	 * Create a new proxy object.
-	 * <p>Uses the given class loader (if necessary for proxy creation).
-	 * {@code null} will simply be passed down and thus lead to the low-level
-	 * proxy facility's default, which is usually different from the default chosen
-	 * by the AopProxy implementation's {@link #getProxy()} method.
-	 * @param classLoader the class loader to create the proxy with
-	 * (or {@code null} for the low-level proxy facility's default)
-	 * @return the new proxy object (never {@code null})
+	 * 创建新代理对象。
+	 * <p>使用给定类加载器（创建代理必要时）。
+	 * {@code null} 会向下传递，从而使用底层代理设施的默认值，
+	 * 通常与 AopProxy 实现 {@link #getProxy()} 方法的默认选择不同。
+	 * @param classLoader 创建代理所用的类加载器
+	 * （或 {@code null} 使用底层代理设施默认值）
+	 * @return 新代理对象（永不返回 {@code null}）
 	 */
 	Object getProxy(@Nullable ClassLoader classLoader);
 
 	/**
-	 * Determine the proxy class.
-	 * @param classLoader the class loader to create the proxy class with
-	 * (or {@code null} for the low-level proxy facility's default)
-	 * @return the proxy class
+	 * 确定代理类。
+	 * @param classLoader 创建代理类所用的类加载器
+	 * （或 {@code null} 使用底层代理设施默认值）
+	 * @return 代理类
 	 * @since 6.0
 	 */
 	Class<?> getProxyClass(@Nullable ClassLoader classLoader);

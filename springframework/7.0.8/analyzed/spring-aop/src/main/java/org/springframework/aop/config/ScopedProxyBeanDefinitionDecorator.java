@@ -26,8 +26,8 @@ import org.springframework.beans.factory.xml.BeanDefinitionDecorator;
 import org.springframework.beans.factory.xml.ParserContext;
 
 /**
- * {@link BeanDefinitionDecorator} responsible for parsing the
- * {@code <aop:scoped-proxy/>} tag.
+ * 负责解析 {@code <aop:scoped-proxy/>} 标签的
+ * {@link BeanDefinitionDecorator}。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -46,8 +46,7 @@ class ScopedProxyBeanDefinitionDecorator implements BeanDefinitionDecorator {
 			proxyTargetClass = Boolean.parseBoolean(ele.getAttribute(PROXY_TARGET_CLASS));
 		}
 
-		// Register the original bean definition as it will be referenced by the scoped proxy
-		// and is relevant for tooling (validation, navigation).
+		// 注册原始 Bean 定义，作用域代理会引用它，且对工具（校验、导航）有意义。
 		BeanDefinitionHolder holder =
 				ScopedProxyUtils.createScopedProxy(definition, parserContext.getRegistry(), proxyTargetClass);
 		String targetBeanName = ScopedProxyUtils.getTargetBeanName(definition.getBeanName());

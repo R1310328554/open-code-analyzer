@@ -17,26 +17,19 @@
 package org.springframework.aop.framework;
 
 /**
- * Interface to be implemented by factories that are able to create
- * AOP proxies based on {@link AdvisedSupport} configuration objects.
+ * 能基于 {@link AdvisedSupport} 配置对象创建 AOP 代理的工厂接口。
  *
- * <p>Proxies should observe the following contract:
+ * <p>代理应遵守以下约定：
  * <ul>
- * <li>They should implement all interfaces that the configuration
- * indicates should be proxied.
- * <li>They should implement the {@link Advised} interface.
- * <li>They should implement the equals method to compare proxied
- * interfaces, advice, and target.
- * <li>They should be serializable if all advisors and target
- * are serializable.
- * <li>They should be thread-safe if advisors and target
- * are thread-safe.
+ * <li>实现配置指示应代理的所有接口。
+ * <li>实现 {@link Advised} 接口。
+ * <li>实现 equals 方法以比较被代理接口、advice 与目标。
+ * <li>若所有通知器与目标可序列化，则代理也应可序列化。
+ * <li>若通知器与目标线程安全，则代理也应线程安全。
  * </ul>
  *
- * <p>Proxies may or may not allow advice changes to be made.
- * If they do not permit advice changes (for example, because
- * the configuration was frozen) a proxy should throw an
- * {@link AopConfigException} on an attempted advice change.
+ * <p>代理可能允许或不允许修改 advice。
+ * 若不允许（例如配置已冻结），尝试修改 advice 时应抛出 {@link AopConfigException}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -44,11 +37,10 @@ package org.springframework.aop.framework;
 public interface AopProxyFactory {
 
 	/**
-	 * Create an {@link AopProxy} for the given AOP configuration.
-	 * @param config the AOP configuration in the form of an
-	 * AdvisedSupport object
-	 * @return the corresponding AOP proxy
-	 * @throws AopConfigException if the configuration is invalid
+	 * 为给定 AOP 配置创建 {@link AopProxy}。
+	 * @param config 以 AdvisedSupport 对象形式表示的 AOP 配置
+	 * @return 对应的 AOP 代理
+	 * @throws AopConfigException 若配置无效
 	 */
 	AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException;
 
