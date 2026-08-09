@@ -28,7 +28,6 @@ import static javax.management.MBeanOperationInfo.*;
  */
 public class MBeanView extends ResultView<MBeanModel> {
     @Override
-    @Override
     public void draw(CommandProcess process, MBeanModel result) {
         if (result.getMbeanNames() != null) {
             drawMBeanNames(process, result.getMbeanNames());

@@ -12,7 +12,6 @@ import com.taobao.arthas.core.shell.command.CommandProcess;
  */
 public class MessageView extends ResultView<MessageModel> {
     @Override
-    @Override
     public void draw(CommandProcess process, MessageModel result) {
         writeln(process, result.getMessage());
     }

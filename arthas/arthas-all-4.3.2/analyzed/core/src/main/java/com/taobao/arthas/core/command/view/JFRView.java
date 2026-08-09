@@ -13,7 +13,6 @@ import com.taobao.arthas.core.shell.command.CommandProcess;
  */
 public class JFRView extends ResultView<JFRModel>{
     @Override
-    @Override
     public void draw(CommandProcess process, JFRModel result) {
         // 单行 writeln，避免末尾缺少换行
         writeln(process, result.getJfrOutput());

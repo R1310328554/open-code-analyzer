@@ -29,7 +29,6 @@ import static com.taobao.text.ui.Element.row;
 public class HelpView extends ResultView<HelpModel> {
 
     @Override
-    @Override
     public void draw(CommandProcess process, HelpModel result) {
         if (result.getCommands() != null) {
             // 总览模式：渲染命令列表表格

@@ -11,7 +11,6 @@ import com.taobao.arthas.core.shell.command.CommandProcess;
 public class LineListView extends ResultView<LineListModel> {
 
     @Override
-    @Override
     public void draw(CommandProcess process, LineListModel model) {
         StringBuilder sb = new StringBuilder();
         sb.append("class=").append(model.getClassName());
