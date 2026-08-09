@@ -22,7 +22,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.apache.commons.codec.binary.Hex;
 
+/**
+ * 二进制与 MD5 工具：计算摘要、生成十六进制 MD5，并判断字节是否为 ASCII。
+ */
 public class BinaryUtil {
+    /** 计算二进制数据的 MD5 摘要。 */
     public static byte[] calculateMd5(byte[] binaryData) {
         MessageDigest messageDigest = null;
         try {
@@ -45,9 +49,10 @@ public class BinaryUtil {
     }
 
     /**
-     * Returns true if subject contains only bytes that are spec-compliant ASCII characters.
-     * @param subject
-     * @return
+     * 若 subject 中每个字节均为规范 ASCII 可打印字符（32–126），则返回 true。
+     *
+     * @param subject 待检测字节数组
+     * @return 全部为 ASCII 可打印字符时为 true
      */
     public static boolean isAscii(byte[] subject) {
         if (subject == null) {

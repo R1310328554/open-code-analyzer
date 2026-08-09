@@ -20,10 +20,11 @@ import com.alibaba.fastjson2.JSON;
 import org.apache.commons.lang3.SerializationException;
 
 /**
- * The object serializer based on fastJson
+ * 基于 FastJson2 的 {@link Serializer} 实现。
  */
 public class FastJsonSerializer implements Serializer {
 
+    /** 将对象序列化为 JSON 字节数组；null 返回空数组。 */
     @Override
     public <T> byte[] serialize(T t) throws SerializationException {
         if (t == null) {
@@ -37,6 +38,7 @@ public class FastJsonSerializer implements Serializer {
         }
     }
 
+    /** 从 JSON 字节数组反序列化为指定类型；空输入返回 null。 */
     @Override
     public <T> T deserialize(byte[] bytes, Class<T> type) throws SerializationException {
         if (bytes != null && bytes.length != 0) {

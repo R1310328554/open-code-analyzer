@@ -19,7 +19,11 @@ package org.apache.rocketmq.common.utils;
 
 import java.util.UUID;
 
+/**
+ * 关联 ID 工具：生成用于链路追踪的 UUID 字符串。
+ */
 public class CorrelationIdUtil {
+    /** 生成新的随机关联 ID。 */
     public static String createCorrelationId() {
         return UUID.randomUUID().toString();
     }

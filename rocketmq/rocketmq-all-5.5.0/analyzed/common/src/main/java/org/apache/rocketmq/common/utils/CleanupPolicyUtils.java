@@ -24,11 +24,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Topic 清理策略工具：根据 {@link TopicConfig} 属性解析 {@link CleanupPolicy}。
+ */
 public class CleanupPolicyUtils {
+    /** 判断 Topic 是否配置为 COMPACTION 清理策略。 */
     public static boolean isCompaction(Optional<TopicConfig> topicConfig) {
         return Objects.equals(CleanupPolicy.COMPACTION, getDeletePolicy(topicConfig));
     }
 
+    /** 解析 Topic 的清理策略；缺省或缺失属性时使用默认值。 */
     public static CleanupPolicy getDeletePolicy(Optional<TopicConfig> topicConfig) {
         if (!topicConfig.isPresent()) {
             return CleanupPolicy.valueOf(TopicAttributes.CLEANUP_POLICY_ATTRIBUTE.getDefaultValue());

@@ -19,8 +19,12 @@ package org.apache.rocketmq.common.utils;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * 启动与关闭生命周期抽象基类：按注册顺序启动、逆序预关闭与关闭子组件。
+ */
 public abstract class AbstractStartAndShutdown implements StartAndShutdown {
 
+    /** 待统一管理的启动/关闭组件列表。 */
     protected List<StartAndShutdown> startAndShutdownList = new CopyOnWriteArrayList<>();
 
     protected void appendStartAndShutdown(StartAndShutdown startAndShutdown) {
@@ -50,6 +54,7 @@ public abstract class AbstractStartAndShutdown implements StartAndShutdown {
         }
     }
 
+    /** 追加仅含启动逻辑的组件。 */
     public void appendStart(Start start) {
         this.appendStartAndShutdown(new StartAndShutdown() {
             @Override
@@ -64,6 +69,7 @@ public abstract class AbstractStartAndShutdown implements StartAndShutdown {
         });
     }
 
+    /** 追加仅含关闭逻辑的组件。 */
     public void appendShutdown(Shutdown shutdown) {
         this.appendStartAndShutdown(new StartAndShutdown() {
             @Override

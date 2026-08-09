@@ -22,10 +22,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 异步并行关闭辅助类：为多个 {@link Shutdown} 目标各启线程执行 shutdown，并用 CountDownLatch 等待完成。
+ */
 public class AsyncShutdownHelper {
+    /** 标记是否已完成关闭流程。 */
     private final AtomicBoolean shutdown;
+    /** 待并行关闭的目标列表。 */
     private final List<Shutdown> targetList;
 
+    /** 等待各关闭线程完成的同步器。 */
     private CountDownLatch countDownLatch;
 
     public AsyncShutdownHelper() {
@@ -33,6 +39,7 @@ public class AsyncShutdownHelper {
         this.shutdown = new AtomicBoolean(false);
     }
 
+    /** 注册待关闭目标；若已关闭则忽略。 */
     public void addTarget(Shutdown target) {
         if (shutdown.get()) {
             return;
@@ -40,6 +47,7 @@ public class AsyncShutdownHelper {
         targetList.add(target);
     }
 
+    /** 为各目标启动独立线程执行 shutdown。 */
     public AsyncShutdownHelper shutdown() {
         if (shutdown.get()) {
             return this;
@@ -63,6 +71,7 @@ public class AsyncShutdownHelper {
         return this;
     }
 
+    /** 在指定超时内等待全部关闭线程完成，并标记关闭状态。 */
     public boolean await(long time, TimeUnit unit) throws InterruptedException {
         if (shutdown.get()) {
             return false;

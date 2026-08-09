@@ -19,8 +19,12 @@ package org.apache.rocketmq.common.utils;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * 异常处理工具：解包 CompletionException/ExecutionException，并格式化错误摘要。
+ */
 public class ExceptionUtils {
 
+    /** 若为包装型异步异常则返回其 cause，否则返回原异常。 */
     public static Throwable getRealException(Throwable throwable) {
         if (throwable instanceof CompletionException || throwable instanceof ExecutionException) {
             if (throwable.getCause() != null) {
@@ -30,6 +34,7 @@ public class ExceptionUtils {
         return throwable;
     }
 
+    /** 拼接异常消息、类名及首帧堆栈，便于日志输出。 */
     public static String getErrorDetailMessage(Throwable t) {
         if (t == null) {
             return null;

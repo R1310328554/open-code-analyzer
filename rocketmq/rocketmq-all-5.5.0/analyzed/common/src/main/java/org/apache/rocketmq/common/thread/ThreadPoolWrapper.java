@@ -22,6 +22,9 @@ import com.google.common.base.Objects;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
+/**
+ * 线程池包装类：聚合线程池实例、名称及 {@link ThreadPoolStatusMonitor} 状态监控列表。
+ */
 public class ThreadPoolWrapper {
     private String name;
     private ThreadPoolExecutor threadPoolExecutor;
@@ -34,6 +37,7 @@ public class ThreadPoolWrapper {
         this.statusPrinters = statusPrinters;
     }
 
+    /** 构建 {@link ThreadPoolWrapper} 的 Builder。 */
     public static class ThreadPoolWrapperBuilder {
         private String name;
         private ThreadPoolExecutor threadPoolExecutor;

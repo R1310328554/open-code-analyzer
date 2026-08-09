@@ -20,13 +20,16 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
+/**
+ * {@link ConcurrentMap} 工具：针对 JDK 8 的 computeIfAbsent 性能缺陷提供兼容实现。
+ */
 public abstract class ConcurrentHashMapUtils {
 
+    /** 当前 JVM 是否为 Java 8。 */
     private static boolean isJdk8;
 
     static {
-        // Java 8
-        // Java 9+: 9,11,17
+        // Java 8 使用 1.8.x 版本号前缀；Java 9+ 为 9、11、17 等
         try {
             isJdk8 = System.getProperty("java.version").startsWith("1.8.");
         } catch (Exception ignore) {
@@ -35,10 +38,8 @@ public abstract class ConcurrentHashMapUtils {
     }
 
     /**
-     * A temporary workaround for Java 8 specific performance issue JDK-8161372 .<br> Use implementation of
-     * ConcurrentMap.computeIfAbsent instead.
-     * 
-     * Requirement: <strong>The mapping function should not modify this map during computation.</strong>
+     * 针对 Java 8 特有性能问题 JDK-8161372 的临时规避方案，语义同 {@link ConcurrentMap#computeIfAbsent}。
+     * <p>要求：<strong>映射函数在计算期间不得修改此 map。</strong>
      *
      * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8161372">https://bugs.openjdk.java.net/browse/JDK-8161372</a>
      */
@@ -47,15 +48,14 @@ public abstract class ConcurrentHashMapUtils {
         if (isJdk8) {
             V v = map.get(key);
             if (null == v) {
-                // this bug fix methods maybe cause `func.apply` multiple calls.
+                // 此规避实现可能导致 func.apply 被多次调用
                 v = func.apply(key);
                 if (null == v) {
                     return null;
                 }
                 final V res = map.putIfAbsent(key, v);
                 if (null != res) {
-                    // if pre value present, means other thread put value already, and putIfAbsent not effect
-                    // return exist value
+                    // 已有其他线程写入，putIfAbsent 未生效，返回已存在的值
                     return res;
                 }
             }

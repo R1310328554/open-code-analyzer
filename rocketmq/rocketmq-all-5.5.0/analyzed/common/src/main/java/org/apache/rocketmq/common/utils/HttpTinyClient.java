@@ -27,8 +27,12 @@ import java.util.List;
 import org.apache.rocketmq.common.MQVersion;
 import org.apache.rocketmq.common.MixAll;
 
+/**
+ * 轻量 HTTP 客户端：基于 {@link HttpURLConnection} 的 GET/POST 请求封装。
+ */
 public class HttpTinyClient {
 
+    /** 发送 GET 请求并返回状态码与响应体。 */
     static public HttpResult httpGet(String url, List<String> headers, List<String> paramValues,
         String encoding, long readTimeoutMs) throws IOException {
         String encodedContent = encodingParams(paramValues, encoding);
@@ -59,6 +63,7 @@ public class HttpTinyClient {
         }
     }
 
+    /** 将键值对列表 URL 编码为查询字符串。 */
     static private String encodingParams(List<String> paramValues, String encoding)
         throws UnsupportedEncodingException {
         StringBuilder sb = new StringBuilder();
@@ -76,6 +81,7 @@ public class HttpTinyClient {
         return sb.toString();
     }
 
+    /** 设置请求头及 RocketMQ 客户端默认头（版本号、Content-Type、时间戳）。 */
     static private void setHeaders(HttpURLConnection conn, List<String> headers, String encoding) {
         if (null != headers) {
             for (Iterator<String> iter = headers.iterator(); iter.hasNext(); ) {
@@ -90,7 +96,9 @@ public class HttpTinyClient {
     }
 
     /**
-     * @return the http response of given http post request
+     * 发送 POST 请求并返回 HTTP 响应。
+     *
+     * @return 状态码与响应体
      */
     static public HttpResult httpPost(String url, List<String> headers, List<String> paramValues,
         String encoding, long readTimeoutMs) throws IOException {
@@ -124,6 +132,7 @@ public class HttpTinyClient {
         }
     }
 
+    /** HTTP 响应结果：状态码与响应正文。 */
     static public class HttpResult {
         final public int code;
         final public String content;

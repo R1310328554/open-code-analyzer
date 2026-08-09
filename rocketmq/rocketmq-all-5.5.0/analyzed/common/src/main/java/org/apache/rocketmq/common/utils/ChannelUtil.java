@@ -21,7 +21,11 @@ import io.netty.channel.Channel;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
+/**
+ * Netty {@link Channel} 工具：从远端地址解析客户端 IP。
+ */
 public class ChannelUtil {
+    /** 返回 Channel 远端 IP；无远端地址时返回空串。 */
     public static String getRemoteIp(Channel channel) {
         InetSocketAddress inetSocketAddress = (InetSocketAddress) channel.remoteAddress();
         if (inetSocketAddress == null) {

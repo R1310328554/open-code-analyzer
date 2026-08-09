@@ -29,36 +29,30 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.UtilAll;
 
 /**
- * Entry Checkpoint file util
- * Format:
- * <li>First line:  Entries size
- * <li>Second line: Entries crc32
- * <li>Next: Entry data per line
- * <p>
- * Example:
- * <li>2 (size)
- * <li>773307083 (crc32)
- * <li>7-7000 (entry data)
- * <li>8-8000 (entry data)
+ * 条目 Checkpoint 文件工具。
+ * <p>文件格式：
+ * <li>第一行：条目数量
+ * <li>第二行：条目内容 crc32
+ * <li>后续：每行一条序列化后的条目数据
+ * <p>示例：
+ * <li>2（数量）
+ * <li>773307083（crc32）
+ * <li>7-7000（条目）
+ * <li>8-8000（条目）
  */
 public class CheckpointFile<T> {
 
-    /**
-     * Not check crc32 when value is 0
-     */
+    /** crc32 为 0 时不校验完整性。 */
     private static final int NOT_CHECK_CRC_MAGIC_CODE = 0;
     private final String filePath;
     private final CheckpointSerializer<T> serializer;
 
+    /** Checkpoint 条目与文本行之间的序列化/反序列化接口。 */
     public interface CheckpointSerializer<T> {
-        /**
-         * Serialize entry to line
-         */
+        /** 将条目序列化为单行文本。 */
         String toLine(final T entry);
 
-        /**
-         * DeSerialize line to entry
-         */
+        /** 从单行文本反序列化为条目。 */
         T fromLine(final String line);
     }
 
@@ -67,13 +61,12 @@ public class CheckpointFile<T> {
         this.serializer = serializer;
     }
 
+    /** 返回备份文件路径（主文件路径 + {@code .bak}）。 */
     public String getBackFilePath() {
         return this.filePath + ".bak";
     }
 
-    /**
-     * Write entries to file
-     */
+    /** 将条目列表写入 Checkpoint 文件（含数量与 crc32 头）。 */
     public void write(final List<T> entries) throws IOException {
         if (entries.isEmpty()) {
             return;
@@ -103,13 +96,13 @@ public class CheckpointFile<T> {
                 return result;
             }
             try (BufferedReader reader = Files.newBufferedReader(file.toPath())) {
-                // Read size
+                // 读取条目数量
                 int expectedLines = Integer.parseInt(reader.readLine());
 
-                // Read block crc
+                // 读取整块内容的 crc32
                 int expectedCrc32 = Integer.parseInt(reader.readLine());
 
-                // Read entries
+                // 逐行读取条目数据
                 StringBuilder sb = new StringBuilder();
                 String line = reader.readLine();
                 while (line != null) {
@@ -138,9 +131,7 @@ public class CheckpointFile<T> {
         }
     }
 
-    /**
-     * Read entries from file
-     */
+    /** 从主文件读取条目；主文件为空或失败时回退到备份文件。 */
     public List<T> read() throws IOException {
         try {
             List<T> result = this.read(this.filePath);

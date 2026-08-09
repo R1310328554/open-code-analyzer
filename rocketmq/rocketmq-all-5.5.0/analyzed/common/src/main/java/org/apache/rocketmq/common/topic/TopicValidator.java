@@ -21,9 +21,13 @@ import java.util.Set;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.UtilAll;
 
+/**
+ * Topic 与消费组校验工具：校验命名规则、长度及系统 Topic 集合。
+ */
 public class TopicValidator {
 
-    public static final String AUTO_CREATE_TOPIC_KEY_TOPIC = "TBW102"; // Will be created at broker when isAutoCreateTopicEnable
+    /** 自动创建 Topic 占位键；Broker 开启自动创建时据此生成 Topic。 */
+    public static final String AUTO_CREATE_TOPIC_KEY_TOPIC = "TBW102";
     public static final String RMQ_SYS_SCHEDULE_TOPIC = "SCHEDULE_TOPIC_XXXX";
     public static final String RMQ_SYS_BENCHMARK_TOPIC = "BenchmarkTest";
     public static final String RMQ_SYS_TRANS_HALF_TOPIC = "RMQ_SYS_TRANS_HALF_TOPIC";
@@ -42,17 +46,15 @@ public class TopicValidator {
     public static final boolean[] VALID_CHAR_BIT_MAP = new boolean[128];
     private static final int TOPIC_MAX_LENGTH = 127;
     /*
-     * Group name max length is 120, for it will be used to make up retry and DLQ topic,
-     * like pull retry: %RETRY%group_topic and pop retry: %RETRY%group_topic.
+     * 消费组名最大长度 120，因其会参与拼接重试与死信 Topic，
+     * 例如 Pull 重试 %RETRY%group_topic、Pop 重试 %RETRY%group_topic。
      */
     private static final int GROUP_MAX_LENGTH = 120;
     private static final int RETRY_OR_DLQ_TOPIC_MAX_LENGTH = 255;
 
     private static final Set<String> SYSTEM_TOPIC_SET = new HashSet<>();
 
-    /**
-     * Topic set which client can not send msg!
-     */
+    /** 客户端禁止发送消息的系统 Topic 集合。 */
     private static final Set<String> NOT_ALLOWED_SEND_TOPIC_SET = new HashSet<>();
 
     static {
@@ -78,25 +80,18 @@ public class TopicValidator {
         NOT_ALLOWED_SEND_TOPIC_SET.add(RMQ_SYS_ROCKSDB_TRANS_HALF_TOPIC);
         NOT_ALLOWED_SEND_TOPIC_SET.add(RMQ_SYS_ROCKSDB_TRANS_OP_HALF_TOPIC);
 
-        // regex: ^[%|a-zA-Z0-9_-]+$
-        // %
-        VALID_CHAR_BIT_MAP['%'] = true;
-        // -
-        VALID_CHAR_BIT_MAP['-'] = true;
-        // _
-        VALID_CHAR_BIT_MAP['_'] = true;
-        // |
-        VALID_CHAR_BIT_MAP['|'] = true;
+        // 合法字符正则：^[%|a-zA-Z0-9_-]+$
+        VALID_CHAR_BIT_MAP['%'] = true;  // 百分号
+        VALID_CHAR_BIT_MAP['-'] = true;  // 连字符
+        VALID_CHAR_BIT_MAP['_'] = true;  // 下划线
+        VALID_CHAR_BIT_MAP['|'] = true;  // 竖线
         for (int i = 0; i < VALID_CHAR_BIT_MAP.length; i++) {
             if (i >= '0' && i <= '9') {
-                // 0-9
-                VALID_CHAR_BIT_MAP[i] = true;
+                VALID_CHAR_BIT_MAP[i] = true;  // 数字 0-9
             } else if (i >= 'A' && i <= 'Z') {
-                // A-Z
-                VALID_CHAR_BIT_MAP[i] = true;
+                VALID_CHAR_BIT_MAP[i] = true;  // 大写字母 A-Z
             } else if (i >= 'a' && i <= 'z') {
-                // a-z
-                VALID_CHAR_BIT_MAP[i] = true;
+                VALID_CHAR_BIT_MAP[i] = true;  // 小写字母 a-z
             }
         }
     }
@@ -158,6 +153,7 @@ public class TopicValidator {
         return new ValidateResult(true, "");
     }
 
+    /** Topic/消费组校验结果：是否合法及失败原因说明。 */
     public static class ValidateResult {
         private final boolean valid;
         private final String remark;

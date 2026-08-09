@@ -20,8 +20,12 @@ package org.apache.rocketmq.common.utils;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * {@link CompletableFuture} 链式组合工具：在指定线程池上衔接后续 Future。
+ */
 public class FutureUtils {
 
+    /** 当前 Future 完成后，将结果或异常传递给 nextFuture。 */
     public static <T> CompletableFuture<T> appendNextFuture(CompletableFuture<T> future,
         CompletableFuture<T> nextFuture, ExecutorService executor) {
         future.whenCompleteAsync((t, throwable) -> {
@@ -34,10 +38,12 @@ public class FutureUtils {
         return nextFuture;
     }
 
+    /** 为 Future 追加一个在 executor 上执行的后续阶段。 */
     public static <T> CompletableFuture<T> addExecutor(CompletableFuture<T> future, ExecutorService executor) {
         return appendNextFuture(future, new CompletableFuture<>(), executor);
     }
 
+    /** 创建并以给定异常完成的 Future。 */
     public static <T> CompletableFuture<T> completeExceptionally(Throwable t) {
         CompletableFuture<T> future = new CompletableFuture<>();
         future.completeExceptionally(t);
