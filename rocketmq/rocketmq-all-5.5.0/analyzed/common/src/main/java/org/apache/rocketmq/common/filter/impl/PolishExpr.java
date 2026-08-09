@@ -25,17 +25,22 @@ import static org.apache.rocketmq.common.filter.impl.Operator.LEFTPARENTHESIS;
 import static org.apache.rocketmq.common.filter.impl.Operator.RIGHTPARENTHESIS;
 import static org.apache.rocketmq.common.filter.impl.Operator.createOperator;
 
+/**
+ * 逆波兰表达式（后缀表达式）工具：对过滤表达式分词并应用调度场算法（Shunting-yard）转换。
+ */
 public class PolishExpr {
 
+    /** 将表达式字符串分词后转换为逆波兰序列。 */
     public static List<Op> reversePolish(String expression) {
         return reversePolish(participle(expression));
     }
 
     /**
-     * Shunting-yard algorithm <br/>
-     * http://en.wikipedia.org/wiki/Shunting_yard_algorithm
+     * 调度场算法（Shunting-yard），将中缀 token 序列转为后缀序列。
+     * 参见 http://en.wikipedia.org/wiki/Shunting_yard_algorithm
      *
-     * @return the compute result of Shunting-yard algorithm
+     * @param tokens 分词后的操作数/运算符 token 列表
+     * @return 逆波兰序列
      */
     public static List<Op> reversePolish(List<Op> tokens) {
         List<Op> segments = new ArrayList<>();
@@ -82,9 +87,10 @@ public class PolishExpr {
     }
 
     /**
-     * @param expression
-     * @return
-     * @throws Exception
+     * 按字符扫描表达式，切分为操作数、运算符与括号 token。
+     *
+     * @param expression 原始表达式字符串
+     * @return token 列表
      */
     private static List<Op> participle(String expression) {
         List<Op> segments = new ArrayList<>();
@@ -164,18 +170,22 @@ public class PolishExpr {
         return segments;
     }
 
+    /** 判断 token 是否为操作数。 */
     public static boolean isOperand(Op token) {
         return token instanceof Operand;
     }
 
+    /** 判断 token 是否为左括号。 */
     public static boolean isLeftParenthesis(Op token) {
         return token instanceof Operator && LEFTPARENTHESIS == (Operator) token;
     }
 
+    /** 判断 token 是否为右括号。 */
     public static boolean isRightParenthesis(Op token) {
         return token instanceof Operator && RIGHTPARENTHESIS == (Operator) token;
     }
 
+    /** 判断 token 是否为运算符。 */
     public static boolean isOperator(Op token) {
         return token instanceof Operator;
     }

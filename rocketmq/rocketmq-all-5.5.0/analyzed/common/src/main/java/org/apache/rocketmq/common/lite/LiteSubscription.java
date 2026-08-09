@@ -21,27 +21,38 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 消费组对某 Topic 下 Lite Topic 集合的订阅关系，线程安全维护 liteTopicSet。
+ */
 public class LiteSubscription {
+    /** 消费组名。 */
     private String group;
+    /** 父 Topic 名。 */
     private String topic;
+    /** 已订阅的 Lite Topic 名称集合。 */
     private final Set<String> liteTopicSet = ConcurrentHashMap.newKeySet();
+    /** 最近一次变更时间戳（毫秒）。 */
     private volatile long updateTime = System.currentTimeMillis();
 
+    /** 添加单个 Lite Topic 订阅并刷新 updateTime。 */
     public boolean addLiteTopic(String liteTopic) {
         updateTime();
         return this.liteTopicSet.add(liteTopic);
     }
 
+    /** 批量添加 Lite Topic 订阅。 */
     public void addLiteTopic(Collection<String> set) {
         updateTime();
         this.liteTopicSet.addAll(set);
     }
 
+    /** 移除单个 Lite Topic 订阅。 */
     public boolean removeLiteTopic(String liteTopic) {
         updateTime();
         return this.liteTopicSet.remove(liteTopic);
     }
 
+    /** 批量移除 Lite Topic 订阅。 */
     public void removeLiteTopic(Collection<String> set) {
         updateTime();
         this.liteTopicSet.removeAll(set);
@@ -82,6 +93,7 @@ public class LiteSubscription {
         this.updateTime = updateTime;
     }
 
+    /** 将 updateTime 设为当前时间。 */
     private void updateTime() {
         this.updateTime = System.currentTimeMillis();
     }

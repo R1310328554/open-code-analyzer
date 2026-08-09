@@ -16,10 +16,16 @@
  */
 package org.apache.rocketmq.common.lite;
 
+/**
+ * Lite Topic 消费堆积信息：堆积条数与最早未消费消息时间戳。
+ */
 public class LiteLagInfo {
+    /** Lite Topic 名称。 */
     private String liteTopic;
+    /** 堆积消息条数。 */
     private long lagCount;
-    // earliest unconsumed timestamp
+    // 最早未消费消息的时间戳（毫秒），-1 表示未知
+    /** 最早未消费消息时间戳，默认 -1。 */
     private long earliestUnconsumedTimestamp = -1;
 
     public String getLiteTopic() {

@@ -34,20 +34,32 @@ import org.apache.rocketmq.logging.ch.qos.logback.core.status.StatusManager;
 import org.apache.rocketmq.logging.ch.qos.logback.core.util.Loader;
 import org.apache.rocketmq.logging.ch.qos.logback.core.util.OptionHelper;
 
+/**
+ * RocketMQ 专用 Logback 自动配置：按优先级搜索 rmq.*.logback.xml 配置文件。
+ */
 public class DefaultJoranConfiguratorExt extends DefaultJoranConfigurator {
 
+    /** 测试环境 Logback 配置文件名。 */
     final public static String TEST_AUTOCONFIG_FILE = "rmq.logback-test.xml";
+    /** 通用 Logback 配置文件名。 */
     final public static String AUTOCONFIG_FILE = "rmq.logback.xml";
 
+    /** Proxy 组件 Logback 配置。 */
     final public static String PROXY_AUTOCONFIG_FILE = "rmq.proxy.logback.xml";
+    /** Broker 组件 Logback 配置。 */
     final public static String BROKER_AUTOCONFIG_FILE = "rmq.broker.logback.xml";
 
+    /** NameServer 组件 Logback 配置。 */
     final public static String NAMESRV_AUTOCONFIG_FILE = "rmq.namesrv.logback.xml";
+    /** Controller 组件 Logback 配置。 */
     final public static String CONTROLLER_AUTOCONFIG_FILE = "rmq.controller.logback.xml";
+    /** 工具类 Logback 配置。 */
     final public static String TOOLS_AUTOCONFIG_FILE = "rmq.tools.logback.xml";
 
+    /** 客户端 Logback 配置。 */
     final public static String CLIENT_AUTOCONFIG_FILE = "rmq.client.logback.xml";
 
+    /** 按搜索顺序排列的配置文件名列表。 */
     private final List<String> configFiles;
 
     public DefaultJoranConfiguratorExt() {
@@ -72,10 +84,11 @@ public class DefaultJoranConfiguratorExt extends DefaultJoranConfigurator {
                 e.printStackTrace();
             }
         }
-        // skip other configurator on purpose.
+        // 有意跳过后续 configurator 链。
         return ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
     }
 
+    /** 加载 XML 资源并通过 {@link JoranConfiguratorExt} 完成 Logback 配置。 */
     public void configureByResource(URL url) throws JoranException {
         if (url == null) {
             throw new IllegalArgumentException("URL argument cannot be null");
@@ -91,7 +104,12 @@ public class DefaultJoranConfiguratorExt extends DefaultJoranConfigurator {
         }
     }
 
-    public URL findURLOfDefaultConfigurationFile(boolean updateStatus) {
+    /**
+     * 查找默认 Logback 配置 URL：先系统属性，再按 configFiles 顺序搜索类路径。
+     *
+     * @param updateStatus 是否向 StatusManager 报告搜索过程
+     * @return 找到的配置 URL，未找到返回 null
+     */
         ClassLoader myClassLoader = Loader.getClassLoaderOfObject(this);
         URL url = findConfigFileURLFromSystemProperties(myClassLoader, updateStatus);
         if (url != null) {

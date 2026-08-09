@@ -24,13 +24,22 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * RocketMQ 消息体：Topic、标签、键、用户属性、消息体字节及事务 ID 等。
+ * 系统属性通过 {@link MessageConst} 键写入 properties Map。
+ */
 public class Message implements Serializable {
     private static final long serialVersionUID = 8445773977080406428L;
 
+    /** 消息所属 Topic。 */
     private String topic;
+    /** 消息标志位（系统/业务自定义）。 */
     private int flag;
+    /** 系统属性与用户属性 Map。 */
     private Map<String, String> properties;
+    /** 消息体字节数组。 */
     private byte[] body;
+    /** 事务消息 ID。 */
     private String transactionId;
 
     public Message() {
@@ -40,6 +49,9 @@ public class Message implements Serializable {
         this(topic, "", "", 0, body, true);
     }
 
+    /**
+     * 完整构造：设置 Topic、标签、键、标志、消息体及是否等待存储确认。
+     */
     public Message(String topic, String tags, String keys, int flag, byte[] body, boolean waitStoreMsgOK) {
         this.topic = topic;
         this.flag = flag;
@@ -68,6 +80,7 @@ public class Message implements Serializable {
         this.putProperty(MessageConst.PROPERTY_KEYS, keys);
     }
 
+    /** 写入系统/内部属性（懒初始化 properties）。 */
     void putProperty(final String name, final String value) {
         if (null == this.properties) {
             this.properties = new HashMap<>();
@@ -76,13 +89,19 @@ public class Message implements Serializable {
         this.properties.put(name, value);
     }
 
+    /** 移除指定属性键。 */
     void clearProperty(final String name) {
         if (null != this.properties) {
             this.properties.remove(name);
         }
     }
 
-    public void putUserProperty(final String name, final String value) {
+    /**
+     * 设置用户自定义属性；名称不得与 {@link MessageConst} 系统键冲突。
+     *
+     * @throws RuntimeException 属性名被系统占用
+     * @throws IllegalArgumentException 名或值为 null/空白
+     */
         if (MessageConst.STRING_HASH_SET.contains(name)) {
             throw new RuntimeException(String.format(
                 "The Property<%s> is used by system, input another please", name));
@@ -98,6 +117,7 @@ public class Message implements Serializable {
         this.putProperty(name, value);
     }
 
+    /** 获取用户属性，等价于 {@link #getProperty(String)}。 */
     public String getUserProperty(final String name) {
         return this.getProperty(name);
     }
@@ -143,6 +163,7 @@ public class Message implements Serializable {
         this.setKeys(keys);
     }
 
+    /** 返回延迟级别（未设置时为 0）。 */
     public int getDelayTimeLevel() {
         String t = this.getProperty(MessageConst.PROPERTY_DELAY_TIME_LEVEL);
         if (t != null) {
@@ -152,10 +173,12 @@ public class Message implements Serializable {
         return 0;
     }
 
+    /** 设置延迟消息级别。 */
     public void setDelayTimeLevel(int level) {
         this.putProperty(MessageConst.PROPERTY_DELAY_TIME_LEVEL, String.valueOf(level));
     }
 
+    /** 设置消息优先级，须 >= 0。 */
     public void setPriority(int priority) {
         if (priority < 0) {
             throw new IllegalArgumentException("The priority must be greater than or equal to 0");
@@ -167,6 +190,7 @@ public class Message implements Serializable {
         return NumberUtils.toInt(this.getProperty(MessageConst.PROPERTY_PRIORITY), -1);
     }
 
+    /** 发送时是否等待 Broker 存储确认，默认 true。 */
     public boolean isWaitStoreMsgOK() {
         String result = this.getProperty(MessageConst.PROPERTY_WAIT_STORE_MSG_OK);
         if (null == result) {
@@ -180,6 +204,7 @@ public class Message implements Serializable {
         this.putProperty(MessageConst.PROPERTY_WAIT_STORE_MSG_OK, Boolean.toString(waitStoreMsgOK));
     }
 
+    /** 设置实例 ID（多实例隔离）。 */
     public void setInstanceId(String instanceId) {
         this.putProperty(MessageConst.PROPERTY_INSTANCE_ID, instanceId);
     }
@@ -204,6 +229,7 @@ public class Message implements Serializable {
         return properties;
     }
 
+    /** 包内可见：整体替换 properties Map。 */
     void setProperties(Map<String, String> properties) {
         this.properties = properties;
     }
@@ -235,10 +261,12 @@ public class Message implements Serializable {
             '}';
     }
 
+    /** 设置定时消息延迟秒数。 */
     public void setDelayTimeSec(long sec) {
         this.putProperty(MessageConst.PROPERTY_TIMER_DELAY_SEC, String.valueOf(sec));
     }
 
+    /** 获取定时消息延迟秒数，未设置时为 0。 */
     public long getDelayTimeSec() {
         String t = this.getProperty(MessageConst.PROPERTY_TIMER_DELAY_SEC);
         if (t != null) {
@@ -247,10 +275,12 @@ public class Message implements Serializable {
         return 0;
     }
 
+    /** 设置定时消息延迟毫秒数。 */
     public void setDelayTimeMs(long timeMs) {
         this.putProperty(MessageConst.PROPERTY_TIMER_DELAY_MS, String.valueOf(timeMs));
     }
 
+    /** 获取定时消息延迟毫秒数，未设置时为 0。 */
     public long getDelayTimeMs() {
         String t = this.getProperty(MessageConst.PROPERTY_TIMER_DELAY_MS);
         if (t != null) {
@@ -259,10 +289,12 @@ public class Message implements Serializable {
         return 0;
     }
 
+    /** 设置绝对投递时间戳（毫秒）。 */
     public void setDeliverTimeMs(long timeMs) {
         this.putProperty(MessageConst.PROPERTY_TIMER_DELIVER_MS, String.valueOf(timeMs));
     }
 
+    /** 获取绝对投递时间戳，未设置时为 0。 */
     public long getDeliverTimeMs() {
         String t = this.getProperty(MessageConst.PROPERTY_TIMER_DELIVER_MS);
         if (t != null) {

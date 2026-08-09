@@ -28,7 +28,11 @@ import java.nio.charset.StandardCharsets;
 import org.apache.rocketmq.logging.ch.qos.logback.classic.joran.JoranConfigurator;
 import org.apache.rocketmq.logging.ch.qos.logback.core.joran.spi.JoranException;
 
+/**
+ * Logback Joran 配置扩展：加载 XML 时将包名重映射为 RocketMQ 内置 logback 包。
+ */
 public class JoranConfiguratorExt extends JoranConfigurator {
+    /** 读取 XML 并将 {@code ch.qos.logback} 替换为 RocketMQ 重定位包名。 */
     private InputStream transformXml(InputStream in) throws IOException {
         try {
             String str = CharStreams.toString(new InputStreamReader(in, StandardCharsets.UTF_8));
@@ -41,13 +45,13 @@ public class JoranConfiguratorExt extends JoranConfigurator {
         }
     }
 
+    /** 打开 URL、转换 XML 包名后执行 Logback 配置。 */
     public final void doConfigure0(URL url) throws JoranException {
         InputStream in = null;
         try {
             informContextOfURLUsedForConfiguration(getContext(), url);
             URLConnection urlConnection = url.openConnection();
-            // per http://jira.qos.ch/browse/LBCORE-105
-            // per http://jira.qos.ch/browse/LBCORE-127
+            // 参见 LBCORE-105 / LBCORE-127：禁用 URL 连接缓存
             urlConnection.setUseCaches(false);
 
             InputStream temp = urlConnection.getInputStream();

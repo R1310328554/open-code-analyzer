@@ -17,9 +17,16 @@
 
 package org.apache.rocketmq.common.lite;
 
+/**
+ * Lite Topic 订阅变更动作类型。
+ */
 public enum LiteSubscriptionAction {
+    /** 增量添加部分 Lite Topic。 */
     PARTIAL_ADD,
+    /** 增量移除部分 Lite Topic。 */
     PARTIAL_REMOVE,
+    /** 全量覆盖添加（替换整个订阅集合）。 */
     COMPLETE_ADD,
+    /** 全量移除订阅。 */
     COMPLETE_REMOVE
 }

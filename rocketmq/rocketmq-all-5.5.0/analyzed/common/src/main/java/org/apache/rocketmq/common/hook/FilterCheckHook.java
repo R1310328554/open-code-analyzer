@@ -19,8 +19,19 @@ package org.apache.rocketmq.common.hook;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 消息过滤校验钩子：在消费端对消息体进行额外匹配检查。
+ */
 public interface FilterCheckHook {
+    /** 返回钩子名称，用于注册与日志标识。 */
     String hookName();
 
+    /**
+     * 判断消息体是否通过过滤条件。
+     *
+     * @param isUnitMode 是否单元化模式
+     * @param byteBuffer 消息体字节缓冲
+     * @return 匹配返回 true
+     */
     boolean isFilterMatched(final boolean isUnitMode, final ByteBuffer byteBuffer);
 }

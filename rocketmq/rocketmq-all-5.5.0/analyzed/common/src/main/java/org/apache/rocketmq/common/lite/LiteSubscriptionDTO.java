@@ -19,13 +19,23 @@ package org.apache.rocketmq.common.lite;
 
 import java.util.Set;
 
+/**
+ * Lite Topic 订阅变更传输对象：携带客户端、组、Topic、动作与偏移策略。
+ */
 public class LiteSubscriptionDTO {
+    /** 订阅变更动作。 */
     private LiteSubscriptionAction action;
+    /** 发起变更的客户端 ID。 */
     private String clientId;
+    /** 消费组名。 */
     private String group;
+    /** 父 Topic 名。 */
     private String topic;
+    /** 涉及的 Lite Topic 集合。 */
     private Set<String> liteTopicSet;
+    /** 消费起始偏移策略。 */
     private OffsetOption offsetOption;
+    /** 订阅版本号，用于并发控制。 */
     private long version;
 
     public LiteSubscriptionAction getAction() {

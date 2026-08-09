@@ -19,18 +19,27 @@ package org.apache.rocketmq.common.lite;
 
 import java.util.Objects;
 
+/**
+ * Lite 消费起始偏移选项：支持策略、绝对偏移、尾部 N 条与时间戳四种类型。
+ */
 public class OffsetOption {
 
+    /** 策略值：从最新位置消费。 */
     public static final long POLICY_LAST_VALUE = 0L;
+    /** 策略值：从最早位置消费。 */
     public static final long POLICY_MIN_VALUE = 1L;
+    /** 策略值：从最大偏移消费。 */
     public static final long POLICY_MAX_VALUE = 2L;
 
+    /** 偏移类型。 */
     private Type type;
+    /** 偏移值或策略枚举值，含义取决于 type。 */
     private long value;
 
     public OffsetOption() {
     }
 
+    /** 指定类型与数值构造偏移选项。 */
     public OffsetOption(Type type, long value) {
         this.type = type;
         this.value = value;
@@ -76,10 +85,15 @@ public class OffsetOption {
             '}';
     }
 
+    /** 偏移选项类型。 */
     public enum Type {
+        /** 预定义策略（LAST/MIN/MAX）。 */
         POLICY,
+        /** 绝对逻辑偏移。 */
         OFFSET,
+        /** 从队列尾部向前 N 条。 */
         TAIL_N,
+        /** 按时间戳定位起始消费位点。 */
         TIMESTAMP
     }
 

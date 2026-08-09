@@ -17,10 +17,18 @@
 
 package org.apache.rocketmq.common.filter.impl;
 
+/**
+ * 表达式分词过程中当前字符的语法类别。
+ */
 public enum Type {
+    /** 尚未识别任何字符。 */
     NULL,
+    /** 操作数（标识符/字面量片段）。 */
     OPERAND,
+    /** 逻辑运算符（如 AND/OR）。 */
     OPERATOR,
+    /** 括号。 */
     PARENTHESIS,
+    /** 空白分隔符（空格/制表符）。 */
     SEPAERATOR;
 }

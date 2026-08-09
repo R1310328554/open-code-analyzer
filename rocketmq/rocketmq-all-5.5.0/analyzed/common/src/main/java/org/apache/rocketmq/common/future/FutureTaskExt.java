@@ -20,19 +20,28 @@ package org.apache.rocketmq.common.future;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
+/**
+ * 扩展 {@link FutureTask}，额外保留底层 {@link Runnable} 引用以便外部获取。
+ *
+ * @param <V> 异步任务结果类型
+ */
 public class FutureTaskExt<V> extends FutureTask<V> {
+    /** 构造时传入的 Runnable；Callable 构造路径下为 null。 */
     private final Runnable runnable;
 
+    /** 基于 Callable 创建 FutureTask 扩展。 */
     public FutureTaskExt(final Callable<V> callable) {
         super(callable);
         this.runnable = null;
     }
 
+    /** 基于 Runnable 与预设结果值创建 FutureTask 扩展。 */
     public FutureTaskExt(final Runnable runnable, final V result) {
         super(runnable, result);
         this.runnable = runnable;
     }
 
+    /** 返回关联的 Runnable，Callable 路径下为 null。 */
     public Runnable getRunnable() {
         return runnable;
     }
