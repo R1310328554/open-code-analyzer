@@ -23,11 +23,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 
 /**
- * Exception thrown when a ResultSet has been accessed in an invalid fashion.
- * Such exceptions always have a {@code java.sql.SQLException} root cause.
+ * 以无效方式访问 ResultSet 时抛出的异常。
+ * 此类异常始终以 {@code java.sql.SQLException} 为根因。
  *
- * <p>This typically happens when an invalid ResultSet column index or name
- * has been specified. Also thrown by disconnected SqlRowSets.
+ * <p>通常因指定无效的 ResultSet 列索引或列名导致。
+ * 断开连接的 SqlRowSet 也会抛出。
  *
  * @author Juergen Hoeller
  * @since 1.2
@@ -41,10 +41,10 @@ public class InvalidResultSetAccessException extends InvalidDataAccessResourceUs
 
 
 	/**
-	 * Constructor for InvalidResultSetAccessException.
-	 * @param task name of current task
-	 * @param sql the offending SQL statement
-	 * @param ex the root cause
+	 * InvalidResultSetAccessException 构造器。
+	 * @param task 当前任务名称
+	 * @param sql 有问题的 SQL 语句
+	 * @param ex 根因
 	 */
 	public InvalidResultSetAccessException(String task, String sql, SQLException ex) {
 		super(task + "; invalid ResultSet access for SQL [" + sql + "]", ex);
@@ -52,8 +52,8 @@ public class InvalidResultSetAccessException extends InvalidDataAccessResourceUs
 	}
 
 	/**
-	 * Constructor for InvalidResultSetAccessException.
-	 * @param ex the root cause
+	 * InvalidResultSetAccessException 构造器。
+	 * @param ex 根因
 	 */
 	public InvalidResultSetAccessException(SQLException ex) {
 		super(ex.getMessage(), ex);
@@ -62,15 +62,15 @@ public class InvalidResultSetAccessException extends InvalidDataAccessResourceUs
 
 
 	/**
-	 * Return the wrapped SQLException.
+	 * 返回包装的 SQLException。
 	 */
 	public @Nullable SQLException getSQLException() {
 		return (SQLException) getCause();
 	}
 
 	/**
-	 * Return the SQL that caused the problem.
-	 * @return the offending SQL, if known
+	 * 返回导致问题的 SQL。
+	 * @return 有问题的 SQL（若已知）
 	 */
 	public @Nullable String getSql() {
 		return this.sql;

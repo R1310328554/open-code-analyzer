@@ -17,12 +17,12 @@
 package org.springframework.aop.target;
 
 /**
- * Simple {@link org.springframework.aop.TargetSource} implementation,
- * freshly obtaining the specified target bean from its containing
- * Spring {@link org.springframework.beans.factory.BeanFactory}.
+ * 简单的 {@link org.springframework.aop.TargetSource} 实现，
+ * 每次从所在 Spring {@link org.springframework.beans.factory.BeanFactory}
+ * 获取指定目标 Bean。
  *
- * <p>Can obtain any kind of target bean: singleton, scoped, or prototype.
- * Typically used for scoped beans.
+ * <p>可获取任意类型目标 Bean：单例、作用域或原型。
+ * 通常用于作用域 Bean。
  *
  * @author Juergen Hoeller
  * @since 2.0.3

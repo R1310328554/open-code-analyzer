@@ -27,20 +27,16 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.NamedThreadLocal;
 
 /**
- * Alternative to an object pool. This {@link org.springframework.aop.TargetSource}
- * uses a threading model in which every thread has its own copy of the target.
- * There's no contention for targets. Target object creation is kept to a minimum
- * on the running server.
+ * 对象池的替代方案。本 {@link org.springframework.aop.TargetSource}
+ * 采用每线程持有目标副本的线程模型。
+ * 目标无竞争，运行服务器上目标对象创建次数最少。
  *
- * <p>Application code is written as to a normal pool; callers can't assume they
- * will be dealing with the same instance in invocations in different threads.
- * However, state can be relied on during the operations of a single thread:
- * for example, if one caller makes repeated calls on the AOP proxy.
+ * <p>应用代码写法类似普通池；调用方不能假设不同线程调用会处理同一实例。
+ * 但在单线程操作期间可依赖状态：例如同一调用方多次调用 AOP 代理。
  *
- * <p>Cleanup of thread-bound objects is performed on BeanFactory destruction,
- * calling their {@code DisposableBean.destroy()} method if available.
- * Be aware that many thread-bound objects can be around until the application
- * actually shuts down.
+ * <p>BeanFactory 销毁时清理线程绑定对象，
+ * 若可用则调用其 {@code DisposableBean.destroy()}。
+ * 注意：许多线程绑定对象可能直到应用真正关闭才释放。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -53,9 +49,9 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 		implements ThreadLocalTargetSourceStats, DisposableBean {
 
 	/**
-	 * ThreadLocal holding the target associated with the current
-	 * thread. Unlike most ThreadLocals, which are static, this variable
-	 * is meant to be per thread per instance of the ThreadLocalTargetSource class.
+	 * 持有当前线程关联目标的 ThreadLocal。
+	 * 与多数 static 的 ThreadLocal 不同，
+	 * 本变量为每个 ThreadLocalTargetSource 实例、每线程一份。
 	 */
 	private final ThreadLocal<Object> targetInThread =
 			new NamedThreadLocal<>("Thread-local instance of bean") {
@@ -66,7 +62,7 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 			};
 
 	/**
-	 * Set of managed targets, enabling us to keep track of the targets we've created.
+	 * 受管目标集合，用于跟踪已创建的目标。
 	 */
 	private final Set<Object> targetSet = new HashSet<>();
 
@@ -76,9 +72,8 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 
 
 	/**
-	 * Implementation of abstract getTarget() method.
-	 * We look for a target held in a ThreadLocal. If we don't find one,
-	 * we create one and bind it to the thread. No synchronization is required.
+	 * 抽象 getTarget() 方法的实现。
+	 * 在 ThreadLocal 中查找目标；若无则创建并绑定到线程。无需同步。
 	 */
 	@Override
 	public Object getTarget() throws BeansException {
@@ -89,7 +84,7 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 				logger.debug("No target for prototype '" + this.targetBeanName + "' bound to thread: " +
 						"creating one and binding it to thread '" + Thread.currentThread().getName() + "'");
 			}
-			// Associate target with ThreadLocal.
+			// 将目标关联到 ThreadLocal。
 			target = newPrototypeInstance();
 			this.targetInThread.set(target);
 			synchronized (this.targetSet) {
@@ -103,19 +98,19 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 	}
 
 	/**
-	 * Dispose of targets if necessary; clear ThreadLocal.
+	 * 必要时销毁目标；清除 ThreadLocal。
 	 * @see #destroyPrototypeInstance
 	 */
 	@Override
 	public void destroy() {
-		logger.debug("Destroying ThreadLocalTargetSource bindings");
+		logger.debug("正在销毁 ThreadLocalTargetSource 绑定");
 		synchronized (this.targetSet) {
 			for (Object target : this.targetSet) {
 				destroyPrototypeInstance(target);
 			}
 			this.targetSet.clear();
 		}
-		// Clear ThreadLocal, just in case.
+		// 清除 ThreadLocal，以防万一。
 		this.targetInThread.remove();
 	}
 
@@ -139,8 +134,8 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 
 
 	/**
-	 * Return an introduction advisor mixin that allows the AOP proxy to be
-	 * cast to ThreadLocalInvokerStats.
+	 * 返回 introduction advisor mixin，
+	 * 允许将 AOP 代理转型为 ThreadLocalInvokerStats。
 	 */
 	public IntroductionAdvisor getStatsMixin() {
 		DelegatingIntroductionInterceptor dii = new DelegatingIntroductionInterceptor(this);

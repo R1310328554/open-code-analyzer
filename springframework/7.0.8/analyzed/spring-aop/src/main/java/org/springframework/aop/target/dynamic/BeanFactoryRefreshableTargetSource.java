@@ -20,11 +20,10 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.util.Assert;
 
 /**
- * Refreshable TargetSource that fetches fresh target beans from a BeanFactory.
+ * 从 BeanFactory 获取新目标 Bean 的可刷新 TargetSource。
  *
- * <p>Can be subclassed to override {@code requiresRefresh()} to suppress
- * unnecessary refreshes. By default, a refresh will be performed every time
- * the "refreshCheckDelay" has elapsed.
+ * <p>可子类化并覆盖 {@code requiresRefresh()} 以抑制不必要的刷新。
+ * 默认在 "refreshCheckDelay" 间隔过后每次都会刷新。
  *
  * @author Rob Harrop
  * @author Rod Johnson
@@ -43,12 +42,10 @@ public class BeanFactoryRefreshableTargetSource extends AbstractRefreshableTarge
 
 
 	/**
-	 * Create a new BeanFactoryRefreshableTargetSource for the given
-	 * bean factory and bean name.
-	 * <p>Note that the passed-in BeanFactory should have an appropriate
-	 * bean definition set up for the given bean name.
-	 * @param beanFactory the BeanFactory to fetch beans from
-	 * @param beanName the name of the target bean
+	 * 为给定 BeanFactory 与 Bean 名称创建 BeanFactoryRefreshableTargetSource。
+	 * <p>注意：传入的 BeanFactory 须已为给定 Bean 名称配置相应 Bean 定义。
+	 * @param beanFactory 用于获取 Bean 的 BeanFactory
+	 * @param beanName 目标 Bean 名称
 	 */
 	public BeanFactoryRefreshableTargetSource(BeanFactory beanFactory, String beanName) {
 		Assert.notNull(beanFactory, "BeanFactory is required");
@@ -59,7 +56,7 @@ public class BeanFactoryRefreshableTargetSource extends AbstractRefreshableTarge
 
 
 	/**
-	 * Retrieve a fresh target object.
+	 * 获取新目标对象。
 	 */
 	@Override
 	protected final Object freshTarget() {
@@ -67,10 +64,8 @@ public class BeanFactoryRefreshableTargetSource extends AbstractRefreshableTarge
 	}
 
 	/**
-	 * A template method that subclasses may override to provide a
-	 * fresh target object for the given bean factory and bean name.
-	 * <p>This default implementation fetches a new target bean
-	 * instance from the bean factory.
+	 * 子类可覆盖的模板方法，为给定 BeanFactory 与 Bean 名称提供新目标对象。
+	 * <p>默认实现从 BeanFactory 获取新目标 Bean 实例。
 	 * @see org.springframework.beans.factory.BeanFactory#getBean
 	 */
 	protected Object obtainFreshBean(BeanFactory beanFactory, String beanName) {

@@ -25,32 +25,31 @@ import org.springframework.aop.TargetSource;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Canonical {@code TargetSource} when there is no target
- * (or just the target class known), and behavior is supplied
- * by interfaces and advisors only.
+ * 无目标（或仅已知目标类）时的标准 {@code TargetSource}，
+ * 行为完全由接口与 Advisor 提供。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public final class EmptyTargetSource implements TargetSource, Serializable {
 
-	/** use serialVersionUID from Spring 1.2 for interoperability. */
+	/** 使用 Spring 1.2 的 serialVersionUID 以保证互操作性。 */
 	private static final long serialVersionUID = 3680494563553489691L;
 
 
 	//---------------------------------------------------------------------
-	// Static factory methods
+	// 静态工厂方法
 	//---------------------------------------------------------------------
 
 	/**
-	 * The canonical (Singleton) instance of this {@link EmptyTargetSource}.
+	 * 本 {@link EmptyTargetSource} 的标准（单例）实例。
 	 */
 	public static final EmptyTargetSource INSTANCE = new EmptyTargetSource(null, true);
 
 
 	/**
-	 * Return an EmptyTargetSource for the given target Class.
-	 * @param targetClass the target Class (may be {@code null})
+	 * 为给定目标 Class 返回 EmptyTargetSource。
+	 * @param targetClass 目标 Class（可为 {@code null}）
 	 * @see #getTargetClass()
 	 */
 	public static EmptyTargetSource forClass(@Nullable Class<?> targetClass) {
@@ -58,9 +57,9 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 	}
 
 	/**
-	 * Return an EmptyTargetSource for the given target Class.
-	 * @param targetClass the target Class (may be {@code null})
-	 * @param isStatic whether the TargetSource should be marked as static
+	 * 为给定目标 Class 返回 EmptyTargetSource。
+	 * @param targetClass 目标 Class（可为 {@code null}）
+	 * @param isStatic TargetSource 是否标记为 static
 	 * @see #getTargetClass()
 	 */
 	public static EmptyTargetSource forClass(@Nullable Class<?> targetClass, boolean isStatic) {
@@ -69,7 +68,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 
 
 	//---------------------------------------------------------------------
-	// Instance implementation
+	// 实例实现
 	//---------------------------------------------------------------------
 
 	private final @Nullable Class<?> targetClass;
@@ -78,11 +77,10 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Create a new instance of the {@link EmptyTargetSource} class.
-	 * <p>This constructor is {@code private} to enforce the
-	 * Singleton pattern / factory method pattern.
-	 * @param targetClass the target class to expose (may be {@code null})
-	 * @param isStatic whether the TargetSource is marked as static
+	 * 创建 {@link EmptyTargetSource} 的新实例。
+	 * <p>本构造器为 {@code private}，以强制单例/工厂方法模式。
+	 * @param targetClass 要暴露的目标类（可为 {@code null}）
+	 * @param isStatic TargetSource 是否标记为 static
 	 */
 	private EmptyTargetSource(@Nullable Class<?> targetClass, boolean isStatic) {
 		this.targetClass = targetClass;
@@ -91,7 +89,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Always returns the specified target Class, or {@code null} if none.
+	 * 始终返回指定的目标 Class；若无则 {@code null}。
 	 */
 	@Override
 	public @Nullable Class<?> getTargetClass() {
@@ -99,7 +97,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 	}
 
 	/**
-	 * Always returns {@code true}.
+	 * 始终返回 {@code true}。
 	 */
 	@Override
 	public boolean isStatic() {
@@ -107,7 +105,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 	}
 
 	/**
-	 * Always returns {@code null}.
+	 * 始终返回 {@code null}。
 	 */
 	@Override
 	public @Nullable Object getTarget() {
@@ -116,8 +114,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Returns the canonical instance on deserialization in case
-	 * of no target class, thus protecting the Singleton pattern.
+	 * 在无目标类时反序列化返回标准实例，从而保护单例模式。
 	 */
 	private Object readResolve() {
 		return (this.targetClass == null && this.isStatic ? INSTANCE : this);

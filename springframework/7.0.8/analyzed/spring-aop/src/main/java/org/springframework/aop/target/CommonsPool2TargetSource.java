@@ -27,24 +27,20 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * {@link org.springframework.aop.TargetSource} implementation that holds
- * objects in a configurable Apache Commons2 Pool.
+ * 在可配置的 Apache Commons2 Pool 中持有对象的
+ * {@link org.springframework.aop.TargetSource} 实现。
  *
- * <p>By default, an instance of {@code GenericObjectPool} is created.
- * Subclasses may change the type of {@code ObjectPool} used by
- * overriding the {@code createObjectPool()} method.
+ * <p>默认创建 {@code GenericObjectPool} 实例。
+ * 子类可通过覆盖 {@code createObjectPool()} 更改使用的 {@code ObjectPool} 类型。
  *
- * <p>Provides many configuration properties mirroring those of the Commons Pool
- * {@code GenericObjectPool} class; these properties are passed to the
- * {@code GenericObjectPool} during construction. If creating a subclass of this
- * class to change the {@code ObjectPool} implementation type, pass in the values
- * of configuration properties that are relevant to your chosen implementation.
+ * <p>提供与 Commons Pool {@code GenericObjectPool} 类对应的诸多配置属性；
+ * 构造时传入 {@code GenericObjectPool}。
+ * 若创建子类以更改 {@code ObjectPool} 实现类型，
+ * 请传入与所选实现相关的配置属性值。
  *
- * <p>The {@code testOnBorrow}, {@code testOnReturn} and {@code testWhileIdle}
- * properties are explicitly not mirrored because the implementation of
- * {@code PoolableObjectFactory} used by this class does not implement
- * meaningful validation. All exposed Commons Pool properties use the
- * corresponding Commons Pool defaults.
+ * <p>显式不镜像 {@code testOnBorrow}、{@code testOnReturn} 与 {@code testWhileIdle}，
+ * 因本类使用的 {@code PoolableObjectFactory} 实现未提供有意义的校验。
+ * 所有暴露的 Commons Pool 属性均使用对应默认值。
  *
  * @author Rod Johnson
  * @author Rob Harrop
@@ -77,14 +73,14 @@ public class CommonsPool2TargetSource extends AbstractPoolingTargetSource implem
 	private boolean blockWhenExhausted = GenericObjectPoolConfig.DEFAULT_BLOCK_WHEN_EXHAUSTED;
 
 	/**
-	 * The Apache Commons {@code ObjectPool} used to pool target objects.
+	 * 用于池化目标对象的 Apache Commons {@code ObjectPool}。
 	 */
 	private @Nullable ObjectPool pool;
 
 
 	/**
-	 * Create a CommonsPoolTargetSource with default settings.
-	 * Default maximum size of the pool is 8.
+	 * 以默认设置创建 CommonsPoolTargetSource。
+	 * 池默认最大容量为 8。
 	 * @see #setMaxSize
 	 * @see GenericObjectPoolConfig#setMaxTotal
 	 */
@@ -94,8 +90,8 @@ public class CommonsPool2TargetSource extends AbstractPoolingTargetSource implem
 
 
 	/**
-	 * Set the maximum number of idle objects in the pool.
-	 * Default is 8.
+	 * 设置池中空闲对象的最大数量。
+	 * 默认为 8。
 	 * @see GenericObjectPool#setMaxIdle
 	 */
 	public void setMaxIdle(int maxIdle) {
@@ -193,20 +189,20 @@ public class CommonsPool2TargetSource extends AbstractPoolingTargetSource implem
 
 
 	/**
-	 * Creates and holds an ObjectPool instance.
+	 * 创建并持有 ObjectPool 实例。
 	 * @see #createObjectPool()
 	 */
 	@Override
 	protected final void createPool() {
-		logger.debug("Creating Commons object pool");
+		logger.debug("正在创建 Commons 对象池");
 		this.pool = createObjectPool();
 	}
 
 	/**
-	 * Subclasses can override this if they want to return a specific Commons pool.
-	 * They should apply any configuration properties to the pool here.
-	 * <p>Default is a GenericObjectPool instance with the given pool size.
-	 * @return an empty Commons {@code ObjectPool}.
+	 * 子类可覆盖以返回特定 Commons 池。
+	 * 应在此将配置属性应用到池上。
+	 * <p>默认为具有给定池大小的 GenericObjectPool 实例。
+	 * @return 空的 Commons {@code ObjectPool}
 	 * @see GenericObjectPool
 	 * @see #setMaxSize
 	 */
@@ -224,7 +220,7 @@ public class CommonsPool2TargetSource extends AbstractPoolingTargetSource implem
 
 
 	/**
-	 * Borrows an object from the {@code ObjectPool}.
+	 * 从 {@code ObjectPool} 借用对象。
 	 */
 	@Override
 	public Object getTarget() throws Exception {
@@ -233,7 +229,7 @@ public class CommonsPool2TargetSource extends AbstractPoolingTargetSource implem
 	}
 
 	/**
-	 * Returns the specified object to the underlying {@code ObjectPool}.
+	 * 将指定对象归还底层 {@code ObjectPool}。
 	 */
 	@Override
 	public void releaseTarget(Object target) throws Exception {
@@ -254,19 +250,19 @@ public class CommonsPool2TargetSource extends AbstractPoolingTargetSource implem
 
 
 	/**
-	 * Closes the underlying {@code ObjectPool} when destroying this object.
+	 * 销毁本对象时关闭底层 {@code ObjectPool}。
 	 */
 	@Override
 	public void destroy() throws Exception {
 		if (this.pool != null) {
-			logger.debug("Closing Commons ObjectPool");
+			logger.debug("正在关闭 Commons ObjectPool");
 			this.pool.close();
 		}
 	}
 
 
 	//----------------------------------------------------------------------------
-	// Implementation of org.apache.commons.pool2.PooledObjectFactory interface
+	// org.apache.commons.pool2.PooledObjectFactory 接口实现
 	//----------------------------------------------------------------------------
 
 	@Override

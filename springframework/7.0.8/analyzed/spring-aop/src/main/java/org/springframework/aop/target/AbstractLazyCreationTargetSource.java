@@ -23,16 +23,13 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.TargetSource;
 
 /**
- * {@link org.springframework.aop.TargetSource} implementation that will
- * lazily create a user-managed object.
+ * 延迟创建用户管理对象的 {@link org.springframework.aop.TargetSource} 实现。
  *
- * <p>Creation of the lazy target object is controlled by the user by implementing
- * the {@link #createObject()} method. This {@code TargetSource} will invoke
- * this method the first time the proxy is accessed.
+ * <p>通过实现 {@link #createObject()} 方法由用户控制延迟目标对象的创建。
+ * 本 {@code TargetSource} 在首次访问代理时调用该方法。
  *
- * <p>Useful when you need to pass a reference to some dependency to an object
- * but you don't actually want the dependency to be created until it is first used.
- * A typical scenario for this is a connection to a remote resource.
+ * <p>适用于需要向对象传递某依赖引用、但希望直到首次使用时才创建该依赖的场景。
+ * 典型用例是连接远程资源。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -42,27 +39,24 @@ import org.springframework.aop.TargetSource;
  */
 public abstract class AbstractLazyCreationTargetSource implements TargetSource {
 
-	/** Logger available to subclasses. */
+	/** 供子类使用的日志记录器。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** The lazily initialized target object. */
+	/** 延迟初始化的目标对象。 */
 	private @Nullable Object lazyTarget;
 
 
 	/**
-	 * Return whether the lazy target object of this TargetSource
-	 * has already been fetched.
+	 * 返回本 TargetSource 的延迟目标对象是否已被获取。
 	 */
 	public synchronized boolean isInitialized() {
 		return (this.lazyTarget != null);
 	}
 
 	/**
-	 * This default implementation returns {@code null} if the
-	 * target is {@code null} (it is hasn't yet been initialized),
-	 * or the target class if the target has already been initialized.
-	 * <p>Subclasses may wish to override this method in order to provide
-	 * a meaningful value when the target is still {@code null}.
+	 * 默认实现：若目标为 {@code null}（尚未初始化）则返回 {@code null}，
+	 * 若已初始化则返回目标类。
+	 * <p>子类可覆盖本方法，在目标仍为 {@code null} 时提供有意义的值。
 	 * @see #isInitialized()
 	 */
 	@Override
@@ -71,14 +65,13 @@ public abstract class AbstractLazyCreationTargetSource implements TargetSource {
 	}
 
 	/**
-	 * Returns the lazy-initialized target object,
-	 * creating it on-the-fly if it doesn't exist already.
+	 * 返回延迟初始化的目标对象；若尚不存在则即时创建。
 	 * @see #createObject()
 	 */
 	@Override
 	public synchronized Object getTarget() throws Exception {
 		if (this.lazyTarget == null) {
-			logger.debug("Initializing lazy target object");
+			logger.debug("正在初始化延迟目标对象");
 			this.lazyTarget = createObject();
 		}
 		return this.lazyTarget;
@@ -86,10 +79,10 @@ public abstract class AbstractLazyCreationTargetSource implements TargetSource {
 
 
 	/**
-	 * Subclasses should implement this method to return the lazy initialized object.
-	 * Called the first time the proxy is invoked.
-	 * @return the created object
-	 * @throws Exception if creation failed
+	 * 子类应实现本方法以返回延迟初始化的对象。
+	 * 在首次调用代理时触发。
+	 * @return 创建的对象
+	 * @throws Exception 若创建失败
 	 */
 	protected abstract Object createObject() throws Exception;
 

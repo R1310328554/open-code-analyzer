@@ -23,12 +23,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 
 /**
- * Exception thrown when SQL specified is invalid. Such exceptions always have
- * a {@code java.sql.SQLException} root cause.
+ * 当指定 SQL 无效时抛出的异常。此类异常始终以
+ * {@code java.sql.SQLException} 为根因。
  *
- * <p>It would be possible to have subclasses for no such table, no such column etc.
- * A custom SQLExceptionTranslator could create such more specific exceptions,
- * without affecting code using this class.
+ * <p>可为「无此表」「无此列」等定义子类。
+ * 自定义 SQLExceptionTranslator 可创建更具体的异常，
+ * 而不影响使用本类的代码。
  *
  * @author Rod Johnson
  * @see InvalidResultSetAccessException
@@ -40,10 +40,10 @@ public class BadSqlGrammarException extends InvalidDataAccessResourceUsageExcept
 
 
 	/**
-	 * Constructor for BadSqlGrammarException.
-	 * @param task name of current task
-	 * @param sql the offending SQL statement
-	 * @param ex the root cause
+	 * BadSqlGrammarException 构造器。
+	 * @param task 当前任务名称
+	 * @param sql 有问题的 SQL 语句
+	 * @param ex 根因
 	 */
 	public BadSqlGrammarException(String task, String sql, SQLException ex) {
 		super(task + "; bad SQL grammar [" + sql + "]", ex);
@@ -52,14 +52,14 @@ public class BadSqlGrammarException extends InvalidDataAccessResourceUsageExcept
 
 
 	/**
-	 * Return the wrapped SQLException.
+	 * 返回包装的 SQLException。
 	 */
 	public @Nullable SQLException getSQLException() {
 		return (SQLException) getCause();
 	}
 
 	/**
-	 * Return the SQL that caused the problem.
+	 * 返回导致问题的 SQL。
 	 */
 	public String getSql() {
 		return this.sql;

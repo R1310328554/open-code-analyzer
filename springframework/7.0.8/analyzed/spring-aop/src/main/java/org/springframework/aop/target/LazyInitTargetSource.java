@@ -21,17 +21,14 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.BeansException;
 
 /**
- * {@link org.springframework.aop.TargetSource} that lazily accesses a
- * singleton bean from a {@link org.springframework.beans.factory.BeanFactory}.
+ * 从 {@link org.springframework.beans.factory.BeanFactory} 延迟访问单例 Bean 的
+ * {@link org.springframework.aop.TargetSource}。
  *
- * <p>Useful when a proxy reference is needed on initialization but
- * the actual target object should not be initialized until first use.
- * When the target bean is defined in an
- * {@link org.springframework.context.ApplicationContext} (or a
- * {@code BeanFactory} that is eagerly pre-instantiating singleton beans)
- * it must be marked as "lazy-init" too, else it will be instantiated by said
- * {@code ApplicationContext} (or {@code BeanFactory}) on startup.
- * <p>For example:
+ * <p>适用于初始化时需要代理引用、但目标对象应延迟到首次使用时才初始化的场景。
+ * 当目标 Bean 定义在 {@link org.springframework.context.ApplicationContext}（或
+ * 会 eagerly 预实例化单例的 {@code BeanFactory}）中时，
+ * 也必须标记为 "lazy-init"，否则会在启动时被实例化。
+ * <p>例如：
  *
  * <pre class="code">
  * &lt;bean id="serviceTarget" class="example.MyService" lazy-init="true"&gt;
@@ -46,11 +43,10 @@ import org.springframework.beans.BeansException;
  *   &lt;/property&gt;
  * &lt;/bean&gt;</pre>
  *
- * The "serviceTarget" bean will not get initialized until a method on the
- * "service" proxy gets invoked.
+ * "serviceTarget" Bean 直到调用 "service" 代理上的方法时才会初始化。
  *
- * <p>Subclasses can extend this class and override the {@link #postProcessTargetObject(Object)} to
- * perform some additional processing with the target object when it is first loaded.
+ * <p>子类可扩展本类并覆盖 {@link #postProcessTargetObject(Object)}，
+ * 在目标对象首次加载时执行额外处理。
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -74,9 +70,8 @@ public class LazyInitTargetSource extends AbstractBeanFactoryBasedTargetSource {
 	}
 
 	/**
-	 * Subclasses may override this method to perform additional processing on
-	 * the target object when it is first loaded.
-	 * @param targetObject the target object that has just been instantiated (and configured)
+	 * 子类可覆盖本方法，在目标对象首次加载时执行额外处理。
+	 * @param targetObject 刚实例化（并完成配置）的目标对象
 	 */
 	protected void postProcessTargetObject(Object targetObject) {
 	}

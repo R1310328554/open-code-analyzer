@@ -17,8 +17,8 @@
 package org.springframework.aop.target.dynamic;
 
 /**
- * Interface to be implemented by dynamic target objects,
- * which support reloading and optionally polling for updates.
+ * 动态目标对象应实现的接口，
+ * 支持重新加载并可选择轮询更新。
  *
  * @author Rod Johnson
  * @author Rob Harrop
@@ -27,17 +27,17 @@ package org.springframework.aop.target.dynamic;
 public interface Refreshable {
 
 	/**
-	 * Refresh the underlying target object.
+	 * 刷新底层目标对象。
 	 */
 	void refresh();
 
 	/**
-	 * Return the number of actual refreshes since startup.
+	 * 返回启动以来的实际刷新次数。
 	 */
 	long getRefreshCount();
 
 	/**
-	 * Return the last time an actual refresh happened (as timestamp).
+	 * 返回上次实际刷新的时间（时间戳）。
 	 */
 	long getLastRefreshTime();
 
