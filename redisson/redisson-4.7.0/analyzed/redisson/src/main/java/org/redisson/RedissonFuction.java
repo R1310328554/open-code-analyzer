@@ -29,20 +29,23 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
+ * {@link org.redisson.api.RFunction} 的 Redis 实现。
+ * <p>封装 Redis 7+ Functions 管理（加载、删除、转储/恢复）及 {@code FCALL}/{@code FCALL_RO} 调用。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonFuction implements RFunction {
 
     private final Codec codec;
     private final CommandAsyncExecutor commandExecutor;
 
+    /** 使用全局默认 {@link org.redisson.client.codec.Codec} 构造。 */
     public RedissonFuction(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
         this.codec = commandExecutor.getServiceManager().getCfg().getCodec();
     }
 
+    /** @param codec 函数调用参数与返回值的编解码器 */
     public RedissonFuction(CommandAsyncExecutor commandExecutor, Codec codec) {
         this.commandExecutor = commandExecutor;
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
@@ -162,6 +165,7 @@ public class RedissonFuction implements RFunction {
         return commandExecutor.writeAllVoidAsync(RedisCommands.FUNCTION_RESTORE, payload, "FLUSH");
     }
 
+    /** 使用指定 codec 批量编码函数调用参数。 */
     private List<Object> encode(Collection<?> values, Codec codec) {
         List<Object> result = new ArrayList<>(values.size());
         for (Object object : values) {
@@ -196,6 +200,7 @@ public class RedissonFuction implements RFunction {
     }
 
     @Override
+    /** 向指定键所在 slot 执行函数；{@link FunctionMode#READ} 时使用 {@code FCALL_RO}。 */
     public <R> RFuture<R> callAsync(String key, FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values) {
         List<Object> args = new ArrayList<>();
         args.add(name);

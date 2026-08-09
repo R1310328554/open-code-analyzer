@@ -24,15 +24,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RLongAdder} 的分布式长整型累加器。
+ * <p>本地 {@link java.util.concurrent.atomic.LongAdder} 缓冲增量，
+ * {@link #sum()} 时通过 {@link RedissonBaseAdder} Topic 协议汇总各节点计数。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongAdder {
 
     private final RedissonClient redisson;
     private final LongAdder counter = new LongAdder();
     
+    /** @param name 累加器 Redis 键名前缀 */
     public RedissonLongAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(connectionManager, name, redisson);
 
@@ -40,6 +43,7 @@ public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongA
     }
 
     @Override
+    /** 重置本地 {@link LongAdder}。 */
     protected void doReset() {
         counter.reset();
     }
@@ -55,6 +59,7 @@ public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongA
     }
 
     @Override
+    /** 本地累加 {@code x}，不立即写 Redis。 */
     public void add(long x) {
         counter.add(x);
     }
@@ -70,6 +75,7 @@ public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongA
     }
 
     @Override
+    /** 汇总各节点局部计数并返回总和（默认超时 60 秒）。 */
     public long sum() {
         return get(sumAsync(60, TimeUnit.SECONDS));
     }

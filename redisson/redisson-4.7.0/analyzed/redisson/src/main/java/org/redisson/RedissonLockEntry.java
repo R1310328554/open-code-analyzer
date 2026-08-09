@@ -20,9 +20,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 /**
+ * 分布式锁 Pub/Sub 订阅条目（{@link PubSubEntry} 实现）。
+ * <p>维护重入计数 {@code counter}、{@link Semaphore} 唤醒 latch 及
+ * 锁释放/续期等 {@link Runnable} 监听器队列。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
 
@@ -32,16 +34,19 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
     private final CompletableFuture<RedissonLockEntry> promise;
     private final ConcurrentLinkedQueue<Runnable> listeners = new ConcurrentLinkedQueue<Runnable>();
 
+    /** @param promise 订阅成功时完成的 future */
     public RedissonLockEntry(CompletableFuture<RedissonLockEntry> promise) {
         super();
         this.latch = new Semaphore(0);
         this.promise = promise;
     }
 
+    /** 返回当前重入持有计数。 */
     public int acquired() {
         return counter;
     }
 
+    /** 重入计数加一。 */
     public void acquire() {
         counter++;
     }
@@ -49,6 +54,7 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
         counter+=permits;
     }
 
+    /** 重入计数减一并返回新值。 */
     public int release() {
         return --counter;
     }
@@ -57,6 +63,7 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
         return promise;
     }
 
+    /** 注册监听器；若 latch 已释放则立即执行。 */
     public void addListener(Runnable listener) {
         listeners.add(listener);
 
@@ -65,6 +72,7 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
         }
     }
 
+    /** 从队列取出一个监听器并执行。 */
     public void tryRunListener() {
         Runnable runnableToExecute = listeners.poll();
         if (runnableToExecute != null) {

@@ -23,20 +23,24 @@ import org.redisson.command.CommandAsyncExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Nikita Koksharov
+ * 使用 Redis 原生键 TTL 的 {@link org.redisson.api.RListMultimapCacheNative} 实现。
+ * <p>与 {@link RedissonListMultimapCache} 不同，过期由 Redis {@code EXPIRE} 直接作用于 List 键。
  *
- * @param <K> key
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <K> 映射键类型
+ * @param <V> 列表元素类型
  */
 public class RedissonListMultimapCacheNative<K, V> extends RedissonListMultimap<K, V> implements RListMultimapCacheNative<K, V> {
 
     private final RedissonMultimapCacheNative<K> baseCache;
 
+    /** 使用默认 codec 构造。 */
     public RedissonListMultimapCacheNative(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
         baseCache = new RedissonMultimapCacheNative<>(connectionManager, this, prefix);
     }
 
+    /** @param codec 键与值的编解码器 */
     public RedissonListMultimapCacheNative(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
         baseCache = new RedissonMultimapCacheNative<>(connectionManager, this, prefix);

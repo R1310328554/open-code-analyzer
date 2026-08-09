@@ -46,11 +46,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * {@link org.redisson.api.RMapsImport} 的批量 Hash 导入实现。
+ * <p>缓冲多行后 flush；优先 {@code HIMPORT PREPARE/SET}，
+ * 遇 unknown command 时禁用 HIMPORT 并回退 {@code DEL}+{@code HSET}。
  *
  * @author Nikita Koksharov
- *
- * @param <K> field type
- * @param <V> value type
+ * @param <K> Hash 字段类型
+ * @param <V> Hash 值类型
  */
 public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
 
@@ -64,6 +66,9 @@ public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
     private final AtomicInteger bufferedCount = new AtomicInteger();
     private final AtomicLong importedCount = new AtomicLong();
 
+    /** @param fields 各 Map 共用的字段名（已编码字节序）
+     *  @param batchSize 缓冲达到该行数时自动 flush
+     */
     RedissonMapsImport(CommandAsyncExecutor commandExecutor, Codec codec, List<byte[]> fields, int batchSize) {
         validateFields(fields);
 
@@ -92,6 +97,7 @@ public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
     }
 
     @Override
+    /** 追加一行；缓冲满 {@code batchSize} 时触发 {@link #flushAsync}。 */
     public RFuture<Void> addAsync(String name, List<V> values) {
         if (values.size() != fields.size()) {
             throw new IllegalArgumentException("Amount of values " + values.size()
@@ -119,6 +125,7 @@ public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
     }
 
     @Override
+    /** 循环 drain 缓冲并写入 Redis，直至队列为空。 */
     public RFuture<Void> flushAsync() {
         return new CompletableFutureWrapper<>(flushPortions());
     }
@@ -139,6 +146,7 @@ public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
         return importedCount.get();
     }
 
+    /** 内部：追加已编码行到缓冲队列。 */
     void addEncoded(String name, List<byte[]> encodedValues) {
         buffer.add(new Row(commandExecutor.getServiceManager().getNameMapper().map(name), encodedValues));
         bufferedCount.incrementAndGet();
@@ -157,6 +165,7 @@ public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
         return rows;
     }
 
+    /** 按配置选择 HIMPORT 或 HSET 路径写入。 */
     private CompletionStage<Void> writeAsync(List<Row> rows) {
         if (serviceManager().isHashImportDisabled()) {
             return writeWithHset(rows);
@@ -245,6 +254,7 @@ public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
         return false;
     }
 
+    /** 由字段集合哈希生成 HIMPORT fieldset 名称（{@code rsXXXXXXXX}）。 */
     static String fieldsetName(List<byte[]> fields) {
         return String.format("rs%08x", (int) fieldsHash(fields).getValue()[0]);
     }
@@ -273,6 +283,7 @@ public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
         }
     }
 
+    /** 校验字段非空且无重复。 */
     static void validateFields(List<byte[]> fields) {
         if (fields.isEmpty()) {
             throw new IllegalArgumentException("Fields can't be empty");

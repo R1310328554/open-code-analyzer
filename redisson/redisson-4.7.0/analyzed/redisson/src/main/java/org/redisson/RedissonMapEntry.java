@@ -17,11 +17,20 @@ package org.redisson;
 
 import java.util.Map.Entry;
 
+/**
+ * 不可变 {@link java.util.Map.Entry} 实现，用于 Redisson Map 扫描/迭代结果。
+ * <p>{@link #setValue} 不支持修改。
+ *
+ * @param <K> 键类型
+ * @param <V> 值类型
+ */
 public class RedissonMapEntry<K, V> implements Entry<K, V> {
 
     private final K key;
     private final V value;
     
+    /** @param key 映射键
+     *  @param value 映射值 */
     public RedissonMapEntry(K key, V value) {
         super();
         this.key = key;
@@ -39,6 +48,7 @@ public class RedissonMapEntry<K, V> implements Entry<K, V> {
     }
 
     @Override
+    /** 不支持修改；始终抛出 {@link UnsupportedOperationException}。 */
     public V setValue(V value) {
         throw new UnsupportedOperationException();
     }

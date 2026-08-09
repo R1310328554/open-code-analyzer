@@ -30,11 +30,18 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * {@link org.redisson.api.RJsonBuckets} 的 RedisJSON 批量读写实现。
+ * <p>通过 {@code JSON.MGET}/{@code JSON.MSET} 按 slot 分批访问多个 JSON 键。
+ */
 public final class RedissonJsonBuckets implements RJsonBuckets {
     
     protected final JsonCodec codec;
     protected final CommandAsyncExecutor commandExecutor;
     
+    /** @param codec JSON 编解码器
+     *  @param commandExecutor 异步命令执行器
+     */
     RedissonJsonBuckets(JsonCodec codec, CommandAsyncExecutor commandExecutor) {
         this.codec = codec;
         this.commandExecutor = commandExecutor;
@@ -58,6 +65,7 @@ public final class RedissonJsonBuckets implements RJsonBuckets {
     }
     
     @Override
+    /** 批量读取多个 JSON 键在 {@code path} 下的值，按 slot 合并结果。 */
     public <V> RFuture<Map<String, V>> getAsync(JsonCodec codec, String path, String... keys) {
         if (keys.length == 0) {
             return new CompletableFutureWrapper<>(Collections.emptyMap());
@@ -111,6 +119,7 @@ public final class RedissonJsonBuckets implements RJsonBuckets {
     }
     
     @Override
+    /** 批量写入 JSON 键；空 map 直接返回已完成 future。 */
     public RFuture<Void> setAsync(JsonCodec codec, String path, Map<String, ?> buckets) {
         if (buckets.isEmpty()) {
             return CompletableFutureWrapper.completedNull();

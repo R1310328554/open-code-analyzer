@@ -27,17 +27,20 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RHyperLogLog} 的 Redis HyperLogLog 实现。
+ * <p>封装 {@code PFADD}、{@code PFCOUNT}、{@code PFMERGE} 等基数估算命令。
  *
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <V> 待统计元素类型
  */
 public final class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
+    /** 使用默认 codec 构造。 */
     public RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
+    /** @param codec 元素编解码器 */
     public RedissonHyperLogLog(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }

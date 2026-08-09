@@ -20,17 +20,27 @@ import java.util.Iterator;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 
+/**
+ * {@link RedissonListMultimap} 的键迭代器：对每个映射键遍历其 List 元素。
+ *
+ * @param <K> 映射键类型
+ * @param <V> 列表元素类型
+ * @param <M> Multimap 实现类型
+ */
 public class RedissonListMultimapIterator<K, V, M> extends RedissonMultiMapIterator<K, V, M> {
 
+    /** 使用默认 scan 批次大小构造。 */
     public RedissonListMultimapIterator(RedissonMultimap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec) {
         super(map, commandExecutor, codec);
     }
 
+    /** @param count HSCAN 每批返回的键数量 */
     public RedissonListMultimapIterator(RedissonMultimap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec, int count) {
         super(map, commandExecutor, codec, count);
     }
 
     @Override
+    /** 为指定映射键创建 {@link RedissonList} 本地迭代器。 */
     protected Iterator<V> getIterator(String name, int count) {
         RedissonList<V> set = new RedissonList<V>(codec, commandExecutor, map.getValuesName(name), null);
         return set.iterator();

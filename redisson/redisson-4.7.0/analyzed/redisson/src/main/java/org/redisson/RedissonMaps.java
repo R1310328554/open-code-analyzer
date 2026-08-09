@@ -35,23 +35,28 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * {@link org.redisson.api.RMaps} 的多 Map 批量写入门面。
+ * <p>按字段集合分组后通过 {@link RedissonMapsImport} 批量导入，
+ * 优先使用 Redis {@code HIMPORT}，不支持时回退 {@code HSET}。
  *
  * @author Nikita Koksharov
- *
- * @param <K> field type
- * @param <V> value type
+ * @param <K> Hash 字段类型
+ * @param <V> Hash 值类型
  */
 public class RedissonMaps<K, V> implements RMaps<K, V> {
 
+    /** 未指定时的默认批量 flush 大小。 */
     private static final int DEFAULT_BATCH_SIZE = 500;
 
     private final Codec codec;
     private final CommandAsyncExecutor commandExecutor;
 
+    /** 使用全局默认 codec 构造。 */
     public RedissonMaps(CommandAsyncExecutor commandExecutor) {
         this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor);
     }
 
+    /** @param codec 字段与值的编解码器 */
     public RedissonMaps(Codec codec, CommandAsyncExecutor commandExecutor) {
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
@@ -73,6 +78,7 @@ public class RedissonMaps<K, V> implements RMaps<K, V> {
     }
 
     @Override
+    /** 按字段签名分组后分批写入多个 Redis Hash。 */
     public RFuture<Void> setAsync(Map<String, Map<K, V>> maps, int batchSize) {
         if (batchSize <= 0) {
             throw new IllegalArgumentException("batchSize should be greater than zero");
@@ -86,6 +92,7 @@ public class RedissonMaps<K, V> implements RMaps<K, V> {
     }
 
     @Override
+    /** 根据 {@link MapsImportParams} 创建 {@link RedissonMapsImport} 实例。 */
     public RMapsImport<K, V> createImport(MapsImportArgs<K> args) {
         MapsImportParams<K> params = (MapsImportParams<K>) args;
 
@@ -111,6 +118,7 @@ public class RedissonMaps<K, V> implements RMaps<K, V> {
         return mapsImport.flushAsync().thenCompose(r -> writeGroups(groups, batchSize));
     }
 
+    /** 将具有相同字段集合（及顺序）的 Map 归为一组以便 HIMPORT。 */
     private Map<HashValue, Group> groupByFields(Map<String, Map<K, V>> maps) {
         Map<HashValue, Group> groups = new LinkedHashMap<>();
         for (Map.Entry<String, Map<K, V>> entry : maps.entrySet()) {

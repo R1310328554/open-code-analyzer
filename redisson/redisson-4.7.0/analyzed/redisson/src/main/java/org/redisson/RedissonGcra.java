@@ -38,9 +38,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * {@link org.redisson.api.RGcra} 的 GCRA（Generic Cell Rate Algorithm）限流实现。
+ * <p>速率配置存于独立 Hash 键；{@code tryAcquire} 通过 Lua 调用 Redis {@code GCRA} 命令。
  *
  * @author Su Ko
- *
  */
 public final class RedissonGcra extends RedissonExpirable implements RGcra {
 
@@ -61,10 +62,12 @@ public final class RedissonGcra extends RedissonExpirable implements RGcra {
                 return new GcraConfig(maxBurst, tokensPerPeriod, period);
             }));
 
+    /** @param name 限流器 Redis 键名 */
     public RedissonGcra(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
+    /** 返回存储 maxBurst/rate/period 的配置 Hash 键名。 */
     String getConfigName() {
         return suffixName(getRawName(), "config");
     }
@@ -201,6 +204,7 @@ public final class RedissonGcra extends RedissonExpirable implements RGcra {
         return deleteAsync(getRawName(), getConfigName());
     }
 
+    /** 校验 GCRA 速率参数合法性。 */
     static void validate(long maxBurst, long tokensPerPeriod, Duration period) {
         if (maxBurst < 0) {
             throw new IllegalArgumentException("maxBurst can't be negative");
@@ -213,12 +217,14 @@ public final class RedissonGcra extends RedissonExpirable implements RGcra {
         }
     }
 
+    /** 校验单次申请令牌数必须为正。 */
     static void validateTokens(long tokens) {
         if (tokens <= 0) {
             throw new IllegalArgumentException("tokens must be positive");
         }
     }
 
+    /** 将 {@link Duration} 转为 Redis GCRA 所需的秒数字符串（含小数）。 */
     static String toSeconds(Duration period) {
         return BigDecimal.valueOf(period.getSeconds())
                 .add(BigDecimal.valueOf(period.getNano(), 9))
@@ -226,6 +232,7 @@ public final class RedissonGcra extends RedissonExpirable implements RGcra {
                 .toPlainString();
     }
 
+    /** 从 Redis 配置 Hash 中的 period 字符串还原 {@link Duration}。 */
     static Duration fromSeconds(String seconds) {
         return Duration.ofNanos(new BigDecimal(seconds).movePointRight(9).longValueExact());
     }

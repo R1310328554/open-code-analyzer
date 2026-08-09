@@ -35,9 +35,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * {@link org.redisson.api.RIdGenerator} 的分布式自增 ID 生成器。
+ * <p>本地预分配一段 ID（默认 allocationSize=5000），用完后通过 Lua 原子递增 Redis 计数器。
+ * 请求排队由后台 worker 串行处理，避免并发击穿。
  *
  * @author Nikita Koksharov
- *
  */
 public final class RedissonIdGenerator extends RedissonExpirable implements RIdGenerator {
 
@@ -45,11 +47,13 @@ public final class RedissonIdGenerator extends RedissonExpirable implements RIdG
 
     private String allocationSizeName;
 
+    /** @param name 主计数器 Redis 键；allocation 键为 {@code name:allocation} */
     RedissonIdGenerator(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
         allocationSizeName = getAllocationSizeName(getRawName());
     }
 
+    /** 返回预分配步长键名。 */
     private String getAllocationSizeName(String name) {
         return suffixName(name, "allocation");
     }
@@ -77,6 +81,7 @@ public final class RedissonIdGenerator extends RedissonExpirable implements RIdG
     private final Queue<CompletableFuture<Long>> queue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isWorkerActive = new AtomicBoolean();
 
+    /** 若 worker 未运行则启动 {@link #handleIdRequests} 处理队列。 */
     private void startIdRequestsHandle() {
         if (!isWorkerActive.compareAndSet(false, true)) {
             return;
@@ -85,6 +90,7 @@ public final class RedissonIdGenerator extends RedissonExpirable implements RIdG
         handleIdRequests();
     }
 
+    /** 从本地计数器发放 ID；耗尽时 Lua 批量申请新段并重试队列。 */
     private void handleIdRequests() {
         if (getServiceManager().isShuttingDown()) {
             return;

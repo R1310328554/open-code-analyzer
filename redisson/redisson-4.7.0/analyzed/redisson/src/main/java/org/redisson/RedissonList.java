@@ -21,18 +21,20 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.List}
+ * {@link org.redisson.api.RList} 的分布式并发 List 实现。
+ * <p>底层 Redis {@code LIST}；具体读写逻辑由 {@link BaseRedissonList} 提供。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 列表元素类型
  */
 public class RedissonList<V> extends BaseRedissonList<V> implements RList<V> {
 
+    /** 使用默认 codec 构造。 */
     public RedissonList(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
     }
 
+    /** @param codec 元素编解码器 */
     public RedissonList(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
     }

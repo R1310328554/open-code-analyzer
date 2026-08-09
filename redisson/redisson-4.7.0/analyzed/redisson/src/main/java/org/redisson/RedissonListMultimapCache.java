@@ -29,20 +29,25 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Nikita Koksharov
+ * 带 per-key TTL 的 {@link org.redisson.api.RListMultimapCache} 实现。
+ * <p>过期时间存于 {@code name:redisson_list_multimap_ttl} 有序集；
+ * 查询时 Lua 脚本过滤已过期键对应的 List。
  *
- * @param <K> key
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <K> 映射键类型
+ * @param <V> 列表元素类型
  */
 public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> implements RListMultimapCache<K, V> {
 
     private final RedissonMultimapCache<K> baseCache;
 
+    /** 使用默认 codec 并注册 EvictionScheduler 清理过期键。 */
     public RedissonListMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
         baseCache = new RedissonMultimapCache<>(connectionManager, evictionScheduler, this, getTimeoutSetName(), prefix);
     }
 
+    /** @param codec 键与值的编解码器 */
     public RedissonListMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
         baseCache = new RedissonMultimapCache<>(connectionManager, evictionScheduler, this, getTimeoutSetName(), prefix);
@@ -72,6 +77,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                Arrays.asList(getRawName(), getTimeoutSetName()), System.currentTimeMillis(), keyState, valuesName);
     }
     
+    /** 返回存储各映射键过期时间戳的 ZSET 键名。 */
     String getTimeoutSetName() {
         return suffixName(getRawName(), "redisson_list_multimap_ttl");
     }
@@ -134,6 +140,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     }
 
     @Override
+    /** 返回带 TTL 感知的 List 视图（{@link RedissonListMultimapValues}）。 */
     public RList<V> get(K key) {
         String keyHash = keyHash(key);
         String valuesName = getValuesName(keyHash);

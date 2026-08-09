@@ -31,13 +31,14 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
 /**
- * Sorted set contained values of String type
- * 
- * @author Nikita Koksharov
+ * 元素为 {@link String} 的字典序有序集合（{@link org.redisson.api.RLexSortedSet}）。
+ * <p>基于 Redis {@code ZSET} 的 lex 范围命令（{@code ZRANGEBYLEX}、{@code ZLEXCOUNT} 等）。
  *
+ * @author Nikita Koksharov
  */
 public final class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implements RLexSortedSet {
 
+    /** 使用 {@link StringCodec} 构造 lex 有序集。 */
     public RedissonLexSortedSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(StringCodec.INSTANCE, commandExecutor, name, redisson);
     }
@@ -265,6 +266,7 @@ public final class RedissonLexSortedSet extends RedissonScoredSortedSet<String> 
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.ZLEXCOUNT, getRawName(), fromValue, toValue);
     }
     
+    /** 将边界元素格式化为 Redis lex 区间前缀 {@code [}（含）或 {@code (}（不含）。 */
     private String value(String fromElement, boolean fromInclusive) {
         String fromValue = fromElement.toString();
         if (fromInclusive) {
