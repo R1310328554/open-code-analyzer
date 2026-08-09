@@ -21,10 +21,13 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 
 /**
+ * Apache HttpClient 5.x 默认降级实现，将 {@link BlockException} 包装为 {@link SentinelRpcException}。
+ *
  * @author uuuyuqi
  */
 public class DefaultApacheHttpClientFallback implements ApacheHttpClientFallback {
 
+    /** 包装阻断异常并抛出 {@link SentinelRpcException}。 */
     @Override
     public ClassicHttpResponse handle(ClassicHttpRequest request, BlockException e) {
         throw new SentinelRpcException(e);

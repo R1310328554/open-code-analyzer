@@ -19,35 +19,43 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A group of HTTP API patterns.
+ * 一组 HTTP API 匹配模式，用于定义网关自定义 API 分组。
  *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public class ApiDefinition {
 
+    /** API 分组名称。 */
     private String apiName;
+    /** 匹配谓词项集合。 */
     private Set<ApiPredicateItem> predicateItems;
 
+    /** 无参构造。 */
     public ApiDefinition() {}
 
+    /** 指定 API 名称构造。 */
     public ApiDefinition(String apiName) {
         this.apiName = apiName;
     }
 
+    /** 获取 API 名称。 */
     public String getApiName() {
         return apiName;
     }
 
+    /** 设置 API 名称。 */
     public ApiDefinition setApiName(String apiName) {
         this.apiName = apiName;
         return this;
     }
 
+    /** 获取谓词项集合。 */
     public Set<ApiPredicateItem> getPredicateItems() {
         return predicateItems;
     }
 
+    /** 设置谓词项集合。 */
     public ApiDefinition setPredicateItems(Set<ApiPredicateItem> predicateItems) {
         this.predicateItems = predicateItems;
         return this;

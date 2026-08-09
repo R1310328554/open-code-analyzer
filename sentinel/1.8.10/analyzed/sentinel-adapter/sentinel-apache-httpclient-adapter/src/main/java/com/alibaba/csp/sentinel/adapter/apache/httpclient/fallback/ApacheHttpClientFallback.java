@@ -25,9 +25,18 @@ import org.apache.http.protocol.HttpContext;
 import java.io.IOException;
 
 /**
+ * Apache HttpClient 被 Sentinel 阻断时的降级处理器接口。
+ *
  * @author zhaoyuguang
  */
 public interface ApacheHttpClientFallback {
 
+    /**
+     * 处理被阻断的请求。
+     *
+     * @param request the HTTP request
+     * @param e block exception
+     * @return fallback response
+     */
     CloseableHttpResponse handle(HttpRequestWrapper request, BlockException e);
 }
