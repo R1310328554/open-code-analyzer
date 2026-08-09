@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/RArrayAsync.java",
     "redisson/src/main/java/org/redisson/api/RArrayReactive.java",
     "redisson/src/main/java/org/redisson/api/RArrayRx.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicDouble.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicDoubleAsync.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicDoubleReactive.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicDoubleRx.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicLong.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicLongAsync.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicLongReactive.java",
-    "redisson/src/main/java/org/redisson/api/RAtomicLongRx.java",
-    "redisson/src/main/java/org/redisson/api/RBinaryStream.java",
-    "redisson/src/main/java/org/redisson/api/RBinaryStreamReactive.java",
-    "redisson/src/main/java/org/redisson/api/RBinaryStreamRx.java",
-    "redisson/src/main/java/org/redisson/api/RBlockingDeque.java",
-    "redisson/src/main/java/org/redisson/api/RBlockingDequeAsync.java",
-    "redisson/src/main/java/org/redisson/api/RBlockingDequeReactive.java",
-    "redisson/src/main/java/org/redisson/api/RBlockingDequeRx.java",
-    "redisson/src/main/java/org/redisson/api/RBlockingQueue.java"
+    "redisson/src/main/java/org/redisson/api/RAtomicDouble.java"
   ],
   "remaining_pending": 1562,
-  "done": 1230
+  "done": 1245
 }
