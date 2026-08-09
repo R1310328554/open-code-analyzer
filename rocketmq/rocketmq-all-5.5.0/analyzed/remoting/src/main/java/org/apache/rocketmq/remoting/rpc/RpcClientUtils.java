@@ -20,14 +20,19 @@ import java.nio.ByteBuffer;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * RPC 与 RemotingCommand 互转工具：封装请求/响应命令及 Body 编码。
+ */
 public class RpcClientUtils {
 
+    /** 由 RpcRequest 构造 Remoting 请求命令。 */
     public static RemotingCommand createCommandForRpcRequest(RpcRequest rpcRequest) {
         RemotingCommand cmd = RemotingCommand.createRequestCommand(rpcRequest.getCode(), rpcRequest.getHeader());
         cmd.setBody(encodeBody(rpcRequest.getBody()));
         return cmd;
     }
 
+    /** 由 RpcResponse 构造 Remoting 响应命令。 */
     public static RemotingCommand createCommandForRpcResponse(RpcResponse rpcResponse) {
         RemotingCommand cmd = RemotingCommand.createResponseCommandWithHeader(rpcResponse.getCode(), rpcResponse.getHeader());
         cmd.setRemark(rpcResponse.getException() == null ? "" : rpcResponse.getException().getMessage());
@@ -35,6 +40,7 @@ public class RpcClientUtils {
         return cmd;
     }
 
+    /** 将 Body 编码为字节数组（支持 byte[]、RemotingSerializable、ByteBuffer）。 */
     public static byte[] encodeBody(Object body) {
         if (body == null) {
             return null;

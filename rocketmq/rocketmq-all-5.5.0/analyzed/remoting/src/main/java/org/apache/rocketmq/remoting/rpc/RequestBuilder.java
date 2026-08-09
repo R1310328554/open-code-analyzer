@@ -22,17 +22,23 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.protocol.header.PullMessageRequestHeader;
 
+/**
+ * RPC 请求头构建器：按 RequestCode 实例化对应 Header 并填充 Broker/队列字段。
+ */
 public class RequestBuilder {
 
+    /** RequestCode → 请求头 Class 映射。 */
     private static Map<Integer, Class> requestCodeMap = new HashMap<>();
     static {
         requestCodeMap.put(RequestCode.PULL_MESSAGE, PullMessageRequestHeader.class);
     }
 
+    /** 构建通用 RPC 请求头（目标 Broker 名）。 */
     public static RpcRequestHeader buildCommonRpcHeader(int requestCode, String destBrokerName) {
         return buildCommonRpcHeader(requestCode, null, destBrokerName);
     }
 
+    /** 构建通用 RPC 请求头（含 oneway 标志）。 */
     public static RpcRequestHeader buildCommonRpcHeader(int requestCode, Boolean oneway, String destBrokerName) {
         Class requestHeaderClass = requestCodeMap.get(requestCode);
         if (requestHeaderClass == null) {
@@ -48,18 +54,22 @@ public class RequestBuilder {
         }
     }
 
+    /** 从 MessageQueue 构建 Topic/队列请求头。 */
     public static TopicQueueRequestHeader buildTopicQueueRequestHeader(int requestCode, MessageQueue mq) {
         return buildTopicQueueRequestHeader(requestCode, null, mq.getBrokerName(), mq.getTopic(), mq.getQueueId(), null);
     }
 
+    /** 从 MessageQueue 构建请求头并指定是否逻辑队列。 */
     public static TopicQueueRequestHeader buildTopicQueueRequestHeader(int requestCode, MessageQueue mq, Boolean logic) {
         return buildTopicQueueRequestHeader(requestCode, null, mq.getBrokerName(), mq.getTopic(), mq.getQueueId(), logic);
     }
 
+    /** 从 MessageQueue 构建请求头（含 oneway 与逻辑队列标志）。 */
     public static TopicQueueRequestHeader buildTopicQueueRequestHeader(int requestCode, Boolean oneway, MessageQueue mq, Boolean logic) {
         return buildTopicQueueRequestHeader(requestCode, oneway, mq.getBrokerName(), mq.getTopic(), mq.getQueueId(), logic);
     }
 
+    /** 按 Broker、Topic、queueId 构建 Topic 队列请求头。 */
     public static TopicQueueRequestHeader buildTopicQueueRequestHeader(int requestCode,  Boolean oneway, String destBrokerName, String topic, int queueId, Boolean logic) {
         Class requestHeaderClass = requestCodeMap.get(requestCode);
         if (requestHeaderClass == null) {

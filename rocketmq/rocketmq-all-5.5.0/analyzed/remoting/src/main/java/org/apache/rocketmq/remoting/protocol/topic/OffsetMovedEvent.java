@@ -20,44 +20,60 @@ package org.apache.rocketmq.remoting.protocol.topic;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Offset 被 Broker 强制迁移事件：记录消费组、队列及请求/新 offset。
+ */
 public class OffsetMovedEvent extends RemotingSerializable {
+    /** 发生 offset 迁移的消费组。 */
     private String consumerGroup;
+    /** 受影响的 MessageQueue。 */
     private MessageQueue messageQueue;
+    /** 客户端请求的 offset。 */
     private long offsetRequest;
+    /** Broker 指定的新 offset。 */
     private long offsetNew;
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回消息队列。 */
     public MessageQueue getMessageQueue() {
         return messageQueue;
     }
 
+    /** 设置消息队列。 */
     public void setMessageQueue(MessageQueue messageQueue) {
         this.messageQueue = messageQueue;
     }
 
+    /** 返回请求的 offset。 */
     public long getOffsetRequest() {
         return offsetRequest;
     }
 
+    /** 设置请求的 offset。 */
     public void setOffsetRequest(long offsetRequest) {
         this.offsetRequest = offsetRequest;
     }
 
+    /** 返回新 offset。 */
     public long getOffsetNew() {
         return offsetNew;
     }
 
+    /** 设置新 offset。 */
     public void setOffsetNew(long offsetNew) {
         this.offsetNew = offsetNew;
     }
 
+    /** 返回事件摘要字符串。 */
     @Override
     public String toString() {
         return "OffsetMovedEvent [consumerGroup=" + consumerGroup + ", messageQueue=" + messageQueue

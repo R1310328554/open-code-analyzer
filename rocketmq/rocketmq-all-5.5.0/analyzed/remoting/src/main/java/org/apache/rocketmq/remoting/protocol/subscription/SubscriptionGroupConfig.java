@@ -38,47 +38,68 @@ import static org.apache.rocketmq.common.SubscriptionGroupAttributes.LITE_SUB_WI
 
 import static org.apache.rocketmq.common.SubscriptionGroupAttributes.PRIORITY_FACTOR_ATTRIBUTE;
 
+/**
+ * 订阅组（消费组）配置：控制消费开关、重试、广播/顺序及 Lite 订阅等 Broker 侧策略。
+ */
 public class SubscriptionGroupConfig {
 
+    /** 消费组名称。 */
     private String groupName;
 
+    /** 是否允许该组消费。 */
     private boolean consumeEnable = true;
+    /** 是否从最小 offset 开始消费。 */
     private boolean consumeFromMinEnable = true;
+    /** 是否允许广播消费。 */
     private boolean consumeBroadcastEnable = true;
+    /** 是否顺序消费。 */
     private boolean consumeMessageOrderly = false;
 
+    /** 重试 Topic 队列数量。 */
     private int retryQueueNums = 1;
 
+    /** 最大重试次数。 */
     private int retryMaxTimes = 16;
+    /** 组级重试策略。 */
     private GroupRetryPolicy groupRetryPolicy = new GroupRetryPolicy();
 
+    /** 关联 Broker 实例 ID（默认 Master）。 */
     private long brokerId = MixAll.MASTER_ID;
 
+    /** 消费过慢时路由到的 Broker ID。 */
     private long whichBrokerWhenConsumeSlowly = 1;
 
+    /** 是否在 Consumer 实例变更时通知客户端。 */
     private boolean notifyConsumerIdsChangedEnable = true;
 
+    /** 订阅组系统标志位。 */
     private int groupSysFlag = 0;
 
-    // Only valid for push consumer
+    /** 消费超时分钟数（仅 Push 消费者有效）。 */
     private int consumeTimeoutMinute = 15;
 
+    /** 组内各 Topic 订阅数据集合。 */
     private Set<SimpleSubscriptionData> subscriptionDataSet;
 
+    /** 扩展属性键值（Lite 订阅、优先级等）。 */
     private Map<String, String> attributes = new HashMap<>();
 
+    /** 返回消费组名称。 */
     public String getGroupName() {
         return groupName;
     }
 
+    /** 设置消费组名称。 */
     public void setGroupName(String groupName) {
         this.groupName = groupName;
     }
 
+    /** 是否启用消费。 */
     public boolean isConsumeEnable() {
         return consumeEnable;
     }
 
+    /** 设置是否启用消费。 */
     public void setConsumeEnable(boolean consumeEnable) {
         this.consumeEnable = consumeEnable;
     }
@@ -115,18 +136,22 @@ public class SubscriptionGroupConfig {
         this.retryQueueNums = retryQueueNums;
     }
 
+    /** 返回最大重试次数。 */
     public int getRetryMaxTimes() {
         return retryMaxTimes;
     }
 
+    /** 设置最大重试次数。 */
     public void setRetryMaxTimes(int retryMaxTimes) {
         this.retryMaxTimes = retryMaxTimes;
     }
 
+    /** 返回组重试策略。 */
     public GroupRetryPolicy getGroupRetryPolicy() {
         return groupRetryPolicy;
     }
 
+    /** 设置组重试策略。 */
     public void setGroupRetryPolicy(GroupRetryPolicy groupRetryPolicy) {
         this.groupRetryPolicy = groupRetryPolicy;
     }
@@ -187,12 +212,14 @@ public class SubscriptionGroupConfig {
         this.attributes = attributes;
     }
 
+    /** 从扩展属性读取优先级因子。 */
     @JSONField(serialize = false, deserialize = false)
     public long getPriorityFactor() {
         String factorStr = null == attributes ? null : attributes.get(PRIORITY_FACTOR_ATTRIBUTE.getName());
         return NumberUtils.toLong(factorStr, PRIORITY_FACTOR_ATTRIBUTE.getDefaultValue());
     }
 
+    /** 设置 Lite 订阅绑定的 Topic。 */
     @JSONField(serialize = false, deserialize = false)
     public void setLiteBindTopic(String liteBindTopic) {
         if (liteBindTopic != null) {
@@ -200,11 +227,13 @@ public class SubscriptionGroupConfig {
         }
     }
 
+    /** 返回 Lite 订阅绑定的 Topic。 */
     @JSONField(serialize = false, deserialize = false)
     public String getLiteBindTopic() {
         return attributes.get(LITE_BIND_TOPIC_ATTRIBUTE.getName());
     }
 
+    /** 返回 Lite 订阅客户端配额。 */
     @JSONField(serialize = false, deserialize = false)
     public int getLiteSubClientQuota() {
         long quota = LITE_SUB_CLIENT_QUOTA_ATTRIBUTE.getDefaultValue();
@@ -215,6 +244,7 @@ public class SubscriptionGroupConfig {
         return Math.toIntExact(quota);
     }
 
+    /** 设置 Lite 订阅为独占模式。 */
     @JSONField(serialize = false, deserialize = false)
     public void setLiteSubExclusive(boolean liteSubExclusive) {
         if (liteSubExclusive) {
@@ -222,27 +252,29 @@ public class SubscriptionGroupConfig {
         }
     }
 
+    /** 是否为 Lite 独占订阅。 */
     @JSONField(serialize = false, deserialize = false)
     public boolean isLiteSubExclusive() {
         String subLiteModel = attributes.get(LITE_SUB_MODEL_ATTRIBUTE.getName());
         return Objects.equals(LiteSubModel.Exclusive.name(), subLiteModel);
     }
 
-    /**
-     * Whether to reset offset in exclusive mode
-     */
+    /** 独占模式下是否在特定场景重置 offset。 */
+    /** 独占模式是否重置 offset。 */
     @JSONField(serialize = false, deserialize = false)
     public boolean isResetOffsetInExclusiveMode() {
         String boolStr = attributes.get(LITE_SUB_RESET_OFFSET_EXCLUSIVE_ATTRIBUTE.getName());
         return Boolean.parseBoolean(boolStr);
     }
 
+    /** 取消订阅时是否重置 offset。 */
     @JSONField(serialize = false, deserialize = false)
     public boolean isResetOffsetOnUnsubscribe() {
         String boolStr = attributes.get(LITE_SUB_RESET_OFFSET_UNSUBSCRIBE_ATTRIBUTE.getName());
         return Boolean.parseBoolean(boolStr);
     }
 
+    /** 返回 Lite 客户端最大事件数（-1 表示未设置）。 */
     @JSONField(serialize = false, deserialize = false)
     public int getMaxClientEventCount() {
         String content = attributes.get(LITE_SUB_CLIENT_MAX_EVENT_COUNT_ATTRIBUTE.getName());
@@ -252,6 +284,7 @@ public class SubscriptionGroupConfig {
         return NumberUtils.toInt(content, -1);
     }
 
+    /** 标记为通配 Lite 消费组。 */
     @JSONField(serialize = false, deserialize = false)
     public void setWildcardLiteGroup(boolean wildcard) {
         if (wildcard) {
@@ -259,11 +292,13 @@ public class SubscriptionGroupConfig {
         }
     }
 
+    /** 是否为通配 Lite 消费组。 */
     @JSONField(serialize = false, deserialize = false)
     public boolean isWildcardLiteGroup() {
         return attributes.containsKey(LITE_SUB_WILDCARD_ATTRIBUTE.getName());
     }
 
+    /** 计算配置哈希。 */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -286,6 +321,7 @@ public class SubscriptionGroupConfig {
         return result;
     }
 
+    /** 比较两组配置是否等价。 */
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -312,6 +348,7 @@ public class SubscriptionGroupConfig {
             .isEquals();
     }
 
+    /** 返回调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

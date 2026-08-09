@@ -16,9 +16,14 @@
  */
 package org.apache.rocketmq.remoting.rpc;
 
+/**
+ * 带 Topic 与队列 ID 的 RPC 请求头抽象基类。
+ */
 public abstract class TopicQueueRequestHeader extends TopicRequestHeader {
 
+    /** 返回队列 ID。 */
     public abstract Integer getQueueId();
+    /** 设置队列 ID。 */
     public abstract void setQueueId(Integer queueId);
 
 }

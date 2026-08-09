@@ -16,12 +16,15 @@
  */
 package org.apache.rocketmq.remoting.rpc;
 
+/**
+ * RPC 客户端钩子：在请求发出前或响应返回后可短路返回自定义结果。
+ */
 public abstract class RpcClientHook {
 
-    //if the return is not null, return it
+    /** 请求前拦截；非 null 则直接作为响应返回。 */
     public abstract RpcResponse beforeRequest(RpcRequest rpcRequest) throws RpcException;
 
-    //if the return is not null, return it
+    /** 响应后处理；非 null 则替换原响应返回。 */
     public abstract RpcResponse afterResponse(RpcResponse rpcResponse) throws RpcException;
 
 }

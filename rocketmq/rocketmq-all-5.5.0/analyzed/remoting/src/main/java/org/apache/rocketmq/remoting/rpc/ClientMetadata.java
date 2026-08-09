@@ -33,16 +33,24 @@ import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicQueueMappingInfo;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicQueueMappingUtils;
 
+/**
+ * RPC 客户端元数据缓存：维护 Topic 路由、Broker 地址表及静态 Topic 队列映射。
+ */
 public class ClientMetadata {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /** Topic → 路由数据。 */
     private final ConcurrentMap<String/* Topic */, TopicRouteData> topicRouteTable = new ConcurrentHashMap<>();
+    /** Topic → (MessageQueue → 物理 Broker 名) 静态 Topic 端点表。 */
     private final ConcurrentMap<String/* Topic */, ConcurrentMap<MessageQueue, String/*brokerName*/>> topicEndPointsTable = new ConcurrentHashMap<>();
+    /** Broker 名 → (brokerId → 地址)。 */
     private final ConcurrentMap<String/* Broker Name */, HashMap<Long/* brokerId */, String/* address */>> brokerAddrTable =
         new ConcurrentHashMap<>();
+    /** Broker 名 → (地址 → 版本号)。 */
     private final ConcurrentMap<String/* Broker Name */, HashMap<String/* address */, Integer>> brokerVersionTable =
         new ConcurrentHashMap<>();
 
+    /** 刷新 Topic 路由：更新 Broker 地址表与静态队列端点。 */
     public void freshTopicRoute(String topic, TopicRouteData topicRouteData) {
         if (topic == null
             || topicRouteData == null) {
@@ -66,6 +74,7 @@ public class ClientMetadata {
         }
     }
 
+    /** 从 MessageQueue 解析物理 Broker 名（静态 Topic 走端点表）。 */
     public String getBrokerNameFromMessageQueue(final MessageQueue mq) {
         if (topicEndPointsTable.get(mq.getTopic()) != null
                 && !topicEndPointsTable.get(mq.getTopic()).isEmpty()) {
@@ -74,6 +83,7 @@ public class ClientMetadata {
         return mq.getBrokerName();
     }
 
+    /** 用集群信息批量刷新 Broker 地址表。 */
     public void refreshClusterInfo(ClusterInfo clusterInfo) {
         if (clusterInfo == null
             || clusterInfo.getBrokerAddrTable() == null) {
@@ -84,6 +94,7 @@ public class ClientMetadata {
         }
     }
 
+    /** 查找指定 Broker 组的 Master 地址。 */
     public String findMasterBrokerAddr(String brokerName) {
         if (!brokerAddrTable.containsKey(brokerName)) {
             return null;
@@ -91,10 +102,12 @@ public class ClientMetadata {
         return brokerAddrTable.get(brokerName).get(MixAll.MASTER_ID);
     }
 
+    /** 返回 Broker 地址表。 */
     public ConcurrentMap<String, HashMap<Long, String>> getBrokerAddrTable() {
         return brokerAddrTable;
     }
 
+    /** 将静态 Topic 路由转换为 MessageQueue → 物理 Broker 名映射。 */
     public static ConcurrentMap<MessageQueue, String> topicRouteData2EndpointsForStaticTopic(final String topic, final TopicRouteData route) {
         if (route.getTopicQueueMappingByBroker() == null
                 || route.getTopicQueueMappingByBroker().isEmpty()) {
@@ -138,7 +151,7 @@ public class ClientMetadata {
             }
 
 
-            //accomplish the static logic queues
+            // 补齐静态逻辑队列到物理 Broker 的映射
             for (int i = 0; i < maxTotalNums; i++) {
                 MessageQueue mq = new MessageQueue(topic, TopicQueueMappingUtils.getMockBrokerName(scope), i);
                 if (!mqEndPoints.containsKey(mq)) {

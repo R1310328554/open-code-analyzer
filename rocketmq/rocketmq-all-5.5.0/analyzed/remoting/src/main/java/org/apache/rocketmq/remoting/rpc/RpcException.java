@@ -18,22 +18,30 @@ package org.apache.rocketmq.remoting.rpc;
 
 import org.apache.rocketmq.remoting.exception.RemotingException;
 
+/**
+ * RPC 层异常：携带 Remoting 响应码与错误描述。
+ */
 public class RpcException extends RemotingException {
+    /** Remoting 错误码。 */
     private int errorCode;
+    /** 构造带错误码的 RPC 异常。 */
     public RpcException(int errorCode, String message) {
         super(message);
         this.errorCode = errorCode;
     }
 
+    /** 构造带原因链的 RPC 异常。 */
     public RpcException(int errorCode, String message, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
     }
 
+    /** 返回错误码。 */
     public int getErrorCode() {
         return errorCode;
     }
 
+    /** 设置错误码。 */
     public void setErrorCode(int errorCode) {
         this.errorCode = errorCode;
     }

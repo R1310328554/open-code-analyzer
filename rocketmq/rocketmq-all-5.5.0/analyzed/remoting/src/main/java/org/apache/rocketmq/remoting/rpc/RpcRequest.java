@@ -16,25 +16,35 @@
  */
 package org.apache.rocketmq.remoting.rpc;
 
+/**
+ * RPC 请求封装：RequestCode、自定义 Header 与可选 Body。
+ */
 public class RpcRequest {
+    /** Remoting RequestCode。 */
     int code;
+    /** 请求自定义头。 */
     private RpcRequestHeader header;
+    /** 请求体（可为 null）。 */
     private Object body;
 
+    /** 构造 RPC 请求。 */
     public RpcRequest(int code, RpcRequestHeader header, Object body) {
         this.code = code;
         this.header = header;
         this.body = body;
     }
 
+    /** 返回请求头。 */
     public RpcRequestHeader getHeader() {
         return header;
     }
 
+    /** 返回请求体。 */
     public Object getBody() {
         return body;
     }
 
+    /** 返回 RequestCode。 */
     public int getCode() {
         return code;
     }
