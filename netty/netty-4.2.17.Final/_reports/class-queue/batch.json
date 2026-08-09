@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T23:10:48Z",
   "files": [
-    "buffer/src/main/java/io/netty/buffer/search/SearchProcessorFactory.java",
-    "codec-base/src/main/java/io/netty/handler/codec/AdaptiveCumulator.java",
-    "codec-base/src/main/java/io/netty/handler/codec/AsciiHeadersEncoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/ByteToMessageCodec.java",
-    "codec-base/src/main/java/io/netty/handler/codec/ByteToMessageDecoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/CharSequenceValueConverter.java",
-    "codec-base/src/main/java/io/netty/handler/codec/CodecException.java",
-    "codec-base/src/main/java/io/netty/handler/codec/CodecOutputList.java",
-    "codec-base/src/main/java/io/netty/handler/codec/CorruptedFrameException.java",
-    "codec-base/src/main/java/io/netty/handler/codec/DatagramPacketDecoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/DatagramPacketEncoder.java",
-    "codec-base/src/main/java/io/netty/handler/codec/DateFormatter.java",
-    "codec-base/src/main/java/io/netty/handler/codec/DecoderException.java",
-    "codec-base/src/main/java/io/netty/handler/codec/DecoderResult.java",
-    "codec-base/src/main/java/io/netty/handler/codec/DecoderResultProvider.java",
     "codec-base/src/main/java/io/netty/handler/codec/DefaultHeaders.java",
     "codec-base/src/main/java/io/netty/handler/codec/DefaultHeadersImpl.java",
     "codec-base/src/main/java/io/netty/handler/codec/DelimiterBasedFrameDecoder.java",
@@ -33,5 +18,5 @@
     "codec-base/src/main/java/io/netty/handler/codec/MessageToByteEncoder.java"
   ],
   "remaining_pending": 1808,
-  "done": 90
+  "done": 105
 }
