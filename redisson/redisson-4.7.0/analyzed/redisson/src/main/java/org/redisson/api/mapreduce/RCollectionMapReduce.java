@@ -24,12 +24,12 @@ import org.redisson.api.RSetCache;
 import org.redisson.api.RSortedSet;
 
 /**
- * 
- * MapReduce allows to process large amount of data stored in 
- * {@link RSet}, {@link RList}, {@link RSetCache}, {@link RScoredSortedSet}, {@link RSortedSet} and others  
- * using Mapper, Reducer and/or Collator tasks launched across Redisson Nodes. 
+ * 对 {@link RSet}、{@link RList}、{@link RSetCache}、{@link RScoredSortedSet}、
+ * {@link RSortedSet} 等集合中存储的大量数据执行 MapReduce 处理。
  * <p>
- * Usage example:
+ * Mapper、Reducer 与 Collator 任务会在 Redisson 集群各节点上并行调度。
+ * <p>
+ * 使用示例：
  * 
  * <pre>
  *   public class WordMapper implements RCollectionMapper&lt;String, String, Integer&gt; {
@@ -84,34 +84,34 @@ import org.redisson.api.RSortedSet;
  * 
  * @author Nikita Koksharov
  *
- * @param <VIn> input value
- * @param <KOut> output key
- * @param <VOut> output value
+ * @param <VIn> 输入元素类型
+ * @param <KOut> 输出键类型
+ * @param <VOut> 输出值类型
  */
 public interface RCollectionMapReduce<VIn, KOut, VOut> extends RMapReduceExecutor<VIn, KOut, VOut> {
 
     /**
-     * Defines timeout for MapReduce process
+     * 设置 MapReduce 流程的超时时间。
      * 
-     * @param timeout for process
-     * @param unit of timeout
-     * @return self instance
+     * @param timeout 超时时长
+     * @param unit 时间单位
+     * @return 当前构建器实例
      */
     RCollectionMapReduce<VIn, KOut, VOut> timeout(long timeout, TimeUnit unit);
     
     /**
-     * Setup Mapper object
+     * 配置 Map 阶段的 {@link RCollectionMapper}。
      * 
-     * @param mapper used during MapReduce
-     * @return self instance
+     * @param mapper Map 阶段使用的映射器
+     * @return 当前构建器实例
      */
     RCollectionMapReduce<VIn, KOut, VOut> mapper(RCollectionMapper<VIn, KOut, VOut> mapper);
     
     /**
-     * Setup Reducer object
+     * 配置 Reduce 阶段的 {@link RReducer}。
      * 
-     * @param reducer used during MapReduce
-     * @return self instance
+     * @param reducer Reduce 阶段使用的归约器
+     * @return 当前构建器实例
      */
     RCollectionMapReduce<VIn, KOut, VOut> reducer(RReducer<KOut, VOut> reducer);
     

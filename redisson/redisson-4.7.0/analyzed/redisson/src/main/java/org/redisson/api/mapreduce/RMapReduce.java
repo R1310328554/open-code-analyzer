@@ -18,11 +18,11 @@ package org.redisson.api.mapreduce;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- * MapReduce allows to process large amount of data stored in Redis map 
- * using Mapper, Reducer and/or Collator tasks launched across Redisson Nodes. 
+ * 对 Redis Map 中存储的大量数据执行 MapReduce 处理。
  * <p>
- * Usage example:
+ * Mapper、Reducer 与 Collator 任务会在 Redisson 集群各节点上并行调度。
+ * <p>
+ * 使用示例：
  * 
  * <pre>
  *   public class WordMapper implements RMapper&lt;String, String, String, Integer&gt; {
@@ -77,36 +77,36 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Nikita Koksharov
  *
- * @param <KIn> input key
- * @param <VIn> input value
- * @param <KOut> output key
- * @param <VOut> output value
+ * @param <KIn> 输入键类型
+ * @param <VIn> 输入值类型
+ * @param <KOut> 输出键类型
+ * @param <VOut> 输出值类型
  */
 public interface RMapReduce<KIn, VIn, KOut, VOut> extends RMapReduceExecutor<VIn, KOut, VOut> {
 
     /**
-     * Defines timeout for MapReduce process.
-     * <code>0</code> means infinity timeout.
+     * 设置 MapReduce 流程的超时时间。
+     * <code>0</code> 表示永不超时。
      * 
-     * @param timeout for process
-     * @param unit of timeout
-     * @return self instance
+     * @param timeout 超时时长
+     * @param unit 时间单位
+     * @return 当前构建器实例
      */
     RMapReduce<KIn, VIn, KOut, VOut> timeout(long timeout, TimeUnit unit);
 
     /**
-     * Setup Mapper object
+     * 配置 Map 阶段的 {@link RMapper}。
      * 
-     * @param mapper used during MapReduce
-     * @return self instance
+     * @param mapper Map 阶段使用的映射器
+     * @return 当前构建器实例
      */
     RMapReduce<KIn, VIn, KOut, VOut> mapper(RMapper<KIn, VIn, KOut, VOut> mapper);
     
     /**
-     * Setup Reducer object
+     * 配置 Reduce 阶段的 {@link RReducer}。
      * 
-     * @param reducer used during MapReduce
-     * @return self instance
+     * @param reducer Reduce 阶段使用的归约器
+     * @return 当前构建器实例
      */
     RMapReduce<KIn, VIn, KOut, VOut> reducer(RReducer<KOut, VOut> reducer);
     

@@ -19,22 +19,22 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Collates result from {@link RReducer} tasks and produces a single result object.
- * Executes only once.
+ * 归并 {@link RReducer} 阶段输出的结果映射，生成单一结果对象。
+ * <p>在整个 MapReduce 流程中仅执行一次。
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
- * @param <R> result type
+ * @param <K> 键类型
+ * @param <V> 值类型
+ * @param <R> 最终归并结果类型
  */
 public interface RCollator<K, V, R> extends Serializable {
 
     /**
-     * Collates result map from reduce phase of MapReduce process.
+     * 归并 Reduce 阶段产生的键值映射。
      * 
-     * @param resultMap contains reduced entires
-     * @return single result object
+     * @param resultMap Reduce 阶段输出的完整条目
+     * @return 归并后的单一结果对象
      */
     R collate(Map<K, V> resultMap);
     

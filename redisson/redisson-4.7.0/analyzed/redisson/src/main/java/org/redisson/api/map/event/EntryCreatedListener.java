@@ -16,14 +16,20 @@
 package org.redisson.api.map.event;
 
 /**
- * 
+ * {@link org.redisson.api.RMapCache} 条目<b>创建</b>事件监听器。
+ *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface EntryCreatedListener<K, V> extends MapEntryListener {
 
+    /**
+     * 当新条目被创建时回调。
+     *
+     * @param event 条目事件详情
+     */
     void onCreated(EntryEvent<K, V> event);
     
 }

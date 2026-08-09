@@ -16,6 +16,7 @@
 package org.redisson.api.map;
 
 /**
+ * Map 与 {@link MapWriter} 协同写入的模式。
  *
  * @author Nikita Koksharov
  *
@@ -23,15 +24,14 @@ package org.redisson.api.map;
 public enum WriteMode {
 
     /**
-     * In write behind mode all data written in map object
-     * also written using MapWriter in asynchronous mode.
+     * 写后（Write-Behind）模式：Map 上的写入先落 Redis，
+     * 再通过 {@link MapWriter} 异步刷到外部存储。
      */
     WRITE_BEHIND,
 
     /**
-     * In write through mode all write operations for map object
-     * are synchronized with MapWriter write operations.
-     * If MapWriter throws an error then it will be re-thrown to Map operation caller.
+     * 写穿（Write-Through）模式：Map 写操作与 {@link MapWriter} 同步执行。
+     * 若 {@link MapWriter} 抛出异常，将原样传递给 Map 调用方。
      */
     WRITE_THROUGH
 

@@ -16,14 +16,20 @@
 package org.redisson.api.map.event;
 
 /**
- * 
+ * {@link org.redisson.api.RMapCache} 条目<b>过期</b>事件监听器。
+ *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface EntryExpiredListener<K, V> extends MapEntryListener {
 
+    /**
+     * 当带 TTL 的条目被 Redis 淘汰时回调。
+     *
+     * @param event 条目事件详情
+     */
     void onExpired(EntryEvent<K, V> event);
     
 }

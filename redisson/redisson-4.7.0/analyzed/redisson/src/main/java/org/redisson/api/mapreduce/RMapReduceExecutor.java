@@ -20,65 +20,60 @@ import java.util.Map;
 import org.redisson.api.RFuture;
 
 /**
- * Contains methods for MapReduce process execution.
+ * MapReduce 流程的执行入口，提供同步与异步多种执行方式。
  * 
  * @author Nikita Koksharov
  *
- * @param <VIn> input value
- * @param <KOut> output key
- * @param <VOut> output value
+ * @param <VIn> 输入值类型
+ * @param <KOut> 输出键类型
+ * @param <VOut> 输出值类型
  */
 public interface RMapReduceExecutor<VIn, KOut, VOut> {
 
     /**
-     * Executes MapReduce process across Redisson Nodes
+     * 在 Redisson 集群各节点上同步执行 MapReduce。
      * 
-     * @return map containing reduced keys and values
+     * @return 归约后的键值映射
      */
     Map<KOut, VOut> execute();
     
     /**
-     * Executes MapReduce process across Redisson Nodes
-     * in asynchronous mode
+     * 在 Redisson 集群各节点上异步执行 MapReduce。
      * 
-     * @return map containing reduced keys and values
+     * @return 包含归约结果的 {@link RFuture}
      */
     RFuture<Map<KOut, VOut>> executeAsync();
     
     /**
-     * Executes MapReduce process across Redisson Nodes
-     * and stores result in map with <code>resultMapName</code>
+     * 同步执行 MapReduce，并将结果写入指定名称的 Redis Map。
      * 
-     * @param resultMapName - destination map name
+     * @param resultMapName 目标 Map 名称
      */
     void execute(String resultMapName);
     
     /**
-     * Executes MapReduce process across Redisson Nodes
-     * in asynchronous mode and stores result in map with <code>resultMapName</code>
+     * 异步执行 MapReduce，并将结果写入指定名称的 Redis Map。
      * 
-     * @param resultMapName - destination map name
-     * @return void
+     * @param resultMapName 目标 Map 名称
+     * @return 完成时无返回值的 {@link RFuture}
      */
     RFuture<Void> executeAsync(String resultMapName);
     
     /**
-     * Executes MapReduce process across Redisson Nodes
-     * and collides result using defined <code>collator</code>
+     * 同步执行 MapReduce，并通过 {@link RCollator} 将归约结果合并为单一对象。
      * 
-     * @param <R> result type
-     * @param collator applied to result
-     * @return collated result
+     * @param <R> 归并结果类型
+     * @param collator 应用于 Reduce 输出的归并器
+     * @return 归并后的最终结果
      */
     <R> R execute(RCollator<KOut, VOut, R> collator);
     
     /**
-     * Executes MapReduce process across Redisson Nodes
-     * in asynchronous mode and collides result using defined <code>collator</code>
+     * 异步执行 MapReduce，并通过 {@link RCollator} 将归约结果合并为单一对象。
      * 
-     * @param <R> result type
-     * @param collator applied to result
-     * @return collated result
+     * @param <R> 归并结果类型
+     * @param collator 应用于 Reduce 输出的归并器
+     * @return 包含归并结果的 {@link RFuture}
      */
     <R> RFuture<R> executeAsync(RCollator<KOut, VOut, R> collator);
     

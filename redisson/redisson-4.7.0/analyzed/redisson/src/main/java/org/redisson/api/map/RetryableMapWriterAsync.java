@@ -26,6 +26,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 带重试机制的异步 {@link MapWriterAsync} 装饰器。
+ * <p>
+ * 写入或删除失败时通过 {@link org.redisson.connection.ServiceManager#newTimeout}
+ * 按 {@link org.redisson.api.MapOptions} 配置延迟后重试。
+ * 需注入 {@link org.redisson.connection.ServiceManager} 才能启用重试。
+ */
 public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
 
     private static final Logger log = LoggerFactory.getLogger(RetryableMapWriterAsync.class);
@@ -52,6 +59,7 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
         return result;
     }
 
+    /** 异步写入失败时按剩余次数调度重试。 */
     private void retryWrite(int leftAttempts, Map<K, V> addedMap, CompletableFuture<Void> result) {
         mapWriterAsync.write(addedMap).whenComplete((x, e) -> {
                     if (e == null) {
@@ -84,6 +92,7 @@ public class RetryableMapWriterAsync<K, V> implements MapWriterAsync<K, V> {
         return result;
     }
 
+    /** 异步删除失败时按剩余次数调度重试。 */
     private void retryDelete(int leftAttempts, Collection<K> keys, CompletableFuture<Void> result) {
         mapWriterAsync.delete(keys).whenComplete((x, e) -> {
                     if (e == null) {

@@ -18,7 +18,10 @@ package org.redisson.api.map.event;
 import java.util.EventListener;
 
 /**
- * 
+ * {@link org.redisson.api.RMapCache} 条目事件监听器的标记接口。
+ * <p>
+ * 具体监听创建、更新、移除或过期请实现对应的子接口。
+ *
  * @author Nikita Koksharov
  *
  */

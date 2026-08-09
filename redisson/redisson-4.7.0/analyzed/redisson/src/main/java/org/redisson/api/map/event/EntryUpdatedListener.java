@@ -16,14 +16,20 @@
 package org.redisson.api.map.event;
 
 /**
- * 
+ * {@link org.redisson.api.RMapCache} 条目<b>更新</b>事件监听器。
+ *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface EntryUpdatedListener<K, V> extends MapEntryListener {
 
+    /**
+     * 当已有条目的值被修改时回调。
+     *
+     * @param event 条目事件详情
+     */
     void onUpdated(EntryEvent<K, V> event);
     
 }

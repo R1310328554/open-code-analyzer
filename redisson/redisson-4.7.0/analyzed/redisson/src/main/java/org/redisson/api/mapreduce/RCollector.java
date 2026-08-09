@@ -16,22 +16,21 @@
 package org.redisson.api.mapreduce;
 
 /**
- * Stores each key/value mapping during map phase of MapReduce process.
- * Later used in reduce phase.
- * 
+ * MapReduce Map 阶段用于暂存键值对的收集器，
+ * 其输出供 Reduce 阶段按键分组归约。
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RCollector<K, V> {
 
     /**
-     * Store key/value 
+     * 写入一条待归约的键值映射。
      * 
-     * @param key available to reduce
-     * @param value available to reduce
+     * @param key Reduce 阶段可用的键
+     * @param value Reduce 阶段可用的值
      */
     void emit(K key, V value);
     
