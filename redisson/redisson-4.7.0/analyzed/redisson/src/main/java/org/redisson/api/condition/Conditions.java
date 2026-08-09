@@ -28,19 +28,21 @@ import org.redisson.liveobject.condition.LTCondition;
 import org.redisson.liveobject.condition.ORCondition;
 
 /**
- * Conditions factory to search for Live Objects by fields.
- * 
+ * 按字段构建 Live Object 查询条件的工厂类。
+ * <p>
+ * 提供等于、范围、IN、AND/OR 等组合条件的静态方法。
+ *
  * @author Nikita Koksharov
  *
  */
 public final class Conditions {
 
     /**
-     * Returns "IN" condition for property by <code>name</code> and allowed set of <code>values</code> 
-     * 
-     * @param name - name of property
-     * @param values - array of allowed values 
-     * @return condition
+     * 返回属性 <code>name</code> 取值属于给定集合之一的 IN 条件。
+     *
+     * @param name 属性名
+     * @param values 允许的值数组
+     * @return 查询条件
      */
     public static Condition in(String name, Object... values) {
         List<Condition> conditions = new ArrayList<Condition>();
@@ -51,11 +53,11 @@ public final class Conditions {
     }
 
     /**
-     * Returns "IN" condition for property by <code>name</code> and allowed set of <code>values</code>
-     * 
-     * @param name - name of property
-     * @param values - collection of allowed values 
-     * @return condition
+     * 返回属性 <code>name</code> 取值属于给定集合之一的 IN 条件。
+     *
+     * @param name 属性名
+     * @param values 允许的值集合
+     * @return 查询条件
      */
     public static Condition in(String name, Collection<?> values) {
         List<Condition> conditions = new ArrayList<Condition>();
@@ -66,75 +68,75 @@ public final class Conditions {
     }
     
     /**
-     * Returns "EQUALS" condition which restricts property by <code>name</code> to defined <code>value</code>
-     * 
-     * @param name - name of property
-     * @param value - defined value
-     * @return condition
+     * 返回属性 <code>name</code> 等于 <code>value</code> 的 EQUALS 条件。
+     *
+     * @param name 属性名
+     * @param value 期望值
+     * @return 查询条件
      */
     public static Condition eq(String name, Object value) {
         return new EQCondition(name, value);
     }
     
     /**
-     * Returns "OR" condition for collection of nested <code>conditions</code>
-     * 
-     * @param conditions - nested condition objects
-     * @return condition
+     * 返回多个嵌套条件的 OR 组合条件。
+     *
+     * @param conditions 嵌套条件数组
+     * @return 查询条件
      */
     public static Condition or(Condition... conditions) {
         return new ORCondition(conditions);
     }
 
     /**
-     * Returns "AND" condition for collection of nested <code>conditions</code>
-     * 
-     * @param conditions - nested condition objects
-     * @return condition
+     * 返回多个嵌套条件的 AND 组合条件。
+     *
+     * @param conditions 嵌套条件数组
+     * @return 查询条件
      */
     public static Condition and(Condition... conditions) {
         return new ANDCondition(conditions);
     }
 
     /**
-     * Returns "GREATER THAN" condition which restricts property by <code>name</code> to defined <code>value</code>
-     * 
-     * @param name - name of property
-     * @param value - defined value
-     * @return condition
+     * 返回属性 <code>name</code> 大于 <code>value</code> 的 GT 条件。
+     *
+     * @param name 属性名
+     * @param value 比较值
+     * @return 查询条件
      */
     public static Condition gt(String name, Number value) {
         return new GTCondition(name, value);
     }
 
     /**
-     * Returns "LESS THAN" condition which restricts property by <code>name</code> to defined <code>value</code>
-     * 
-     * @param name - name of property
-     * @param value - defined value
-     * @return condition
+     * 返回属性 <code>name</code> 小于 <code>value</code> 的 LT 条件。
+     *
+     * @param name 属性名
+     * @param value 比较值
+     * @return 查询条件
      */
     public static Condition lt(String name, Number value) {
         return new LTCondition(name, value);
     }
 
     /**
-     * Returns "GREATER THAN ON EQUAL" condition which restricts property by <code>name</code> to defined <code>value</code>
-     * 
-     * @param name - name of property
-     * @param value - defined value
-     * @return condition
+     * 返回属性 <code>name</code> 大于等于 <code>value</code> 的 GE 条件。
+     *
+     * @param name 属性名
+     * @param value 比较值
+     * @return 查询条件
      */
     public static Condition ge(String name, Number value) {
         return new GECondition(name, value);
     }
 
     /**
-     * Returns "LESS THAN ON EQUAL" condition which restricts property by <code>name</code> to defined <code>value</code>
-     * 
-     * @param name - name of property
-     * @param value - defined value
-     * @return condition
+     * 返回属性 <code>name</code> 小于等于 <code>value</code> 的 LE 条件。
+     *
+     * @param name 属性名
+     * @param value 比较值
+     * @return 查询条件
      */
     public static Condition le(String name, Number value) {
         return new LECondition(name, value);

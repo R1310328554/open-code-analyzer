@@ -18,46 +18,48 @@ package org.redisson.api.bucket;
 import java.util.Objects;
 
 /**
- * Arguments for {@link org.redisson.api.RBucket#compareAndDelete(CompareAndDeleteArgs)} method.
- * Defines conditions for conditional deletion of bucket value.
+ * {@link org.redisson.api.RBucket#compareAndDelete(CompareAndDeleteArgs)} 的参数对象；
+ * 定义按当前值比较条件删除 Bucket 的规则。
+ * <p>
+ * 支持值相等/不等及摘要（digest）比较等多种模式。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 值类型
  */
 public interface CompareAndDeleteArgs<V> {
 
     /**
-     * Deletes bucket if stored value does not equal specified object.
-     * Compatible with any Valkey or Redis version.
+     * 当存储值与指定对象不相等时删除 Bucket。
+     * 兼容任意 Valkey 或 Redis 版本。
      *
-     * @param object value to compare
-     * @param <V> value type
-     * @return arguments object
+     * @param object 待比较的值
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <V> CompareAndDeleteArgs<V> unexpected(V object) {
         return new CompareAndDeleteParams<>(ConditionType.UNEXPECTED, object);
     }
 
     /**
-     * Deletes bucket if stored value equals specified object.
-     * Compatible with any Valkey or Redis version.
+     * 当存储值与指定对象相等时删除 Bucket。
+     * 兼容任意 Valkey 或 Redis 版本。
      *
-     * @param object value to compare
-     * @param <V> value type
-     * @return arguments object
+     * @param object 待比较的值
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <V> CompareAndDeleteArgs<V> expected(V object) {
         return new CompareAndDeleteParams<>(ConditionType.EXPECTED, object);
     }
 
     /**
-     * Deletes bucket if stored value's digest equals specified digest.
-     * Uses DELEX IFDEQ command. Requires Valkey 8+ or Redis 8.4+.
+     * 当存储值的摘要与指定摘要相等时删除 Bucket。
+     * 使用 DELEX IFDEQ 命令，需 Valkey 8+ 或 Redis 8.4+。
      *
-     * @param value digest value (hexadecimal string from DIGEST command)
-     * @param <V> value type
-     * @return arguments object
+     * @param value 摘要值（DIGEST 命令返回的十六进制字符串）
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <V> CompareAndDeleteArgs<V> expectedDigest(String value) {
         Objects.requireNonNull(value, "Digest value can't be null");
@@ -65,12 +67,12 @@ public interface CompareAndDeleteArgs<V> {
     }
 
     /**
-     * Deletes bucket if stored value's digest does not equal specified digest.
-     * Uses DELEX IFDNE command. Requires Valkey 8+ or Redis 8.4+.
+     * 当存储值的摘要与指定摘要不同时删除 Bucket。
+     * 使用 DELEX IFDNE 命令，需 Valkey 8+ 或 Redis 8.4+。
      *
-     * @param value digest value (hexadecimal string from DIGEST command)
-     * @param <V> value type
-     * @return arguments object
+     * @param value 摘要值（DIGEST 命令返回的十六进制字符串）
+     * @param <V> 值类型
+     * @return 参数对象
      */
     static <V> CompareAndDeleteArgs<V> unexpectedDigest(String value) {
         Objects.requireNonNull(value, "Digest value can't be null");

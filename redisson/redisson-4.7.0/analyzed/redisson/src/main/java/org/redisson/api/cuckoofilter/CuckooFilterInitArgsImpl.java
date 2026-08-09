@@ -16,6 +16,9 @@
 package org.redisson.api.cuckoofilter;
 
 /**
+ * {@link CuckooFilterInitArgs} 的默认实现。
+ * <p>
+ * 保存容量、桶大小、最大迭代次数及扩容倍率等初始化参数。
  *
  * @author Nikita Koksharov
  *
@@ -31,24 +34,28 @@ public final class CuckooFilterInitArgsImpl implements CuckooFilterInitArgs {
         this.capacity = capacity;
     }
 
+    /** 设置每桶元素数。 */
     @Override
     public CuckooFilterInitArgs bucketSize(long bucketSize) {
         this.bucketSize = bucketSize;
         return this;
     }
 
+    /** 设置最大交换迭代次数。 */
     @Override
     public CuckooFilterInitArgs maxIterations(long maxIterations) {
         this.maxIterations = maxIterations;
         return this;
     }
 
+    /** 设置扩容倍率。 */
     @Override
     public CuckooFilterInitArgs expansion(long expansion) {
         this.expansion = expansion;
         return this;
     }
 
+    /** 返回过滤器容量。 */
     public long getCapacity() {
         return capacity;
     }

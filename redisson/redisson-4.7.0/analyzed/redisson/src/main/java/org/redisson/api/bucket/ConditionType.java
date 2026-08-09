@@ -16,15 +16,22 @@
 package org.redisson.api.bucket;
 
 /**
+ * Bucket 比较并设置/删除操作使用的条件类型枚举。
+ * <p>
+ * 区分值相等/不等及摘要（digest）相等/不等四种模式。
  *
  * @author Nikita Koksharov
  *
  */
 public enum ConditionType {
 
+    /** 当前值等于期望值。 */
     EXPECTED,
+    /** 当前值不等于指定值。 */
     UNEXPECTED,
+    /** 当前值摘要等于期望摘要。 */
     EXPECTED_DIGEST,
+    /** 当前值摘要不等于指定摘要。 */
     UNEXPECTED_DIGEST
 
 }

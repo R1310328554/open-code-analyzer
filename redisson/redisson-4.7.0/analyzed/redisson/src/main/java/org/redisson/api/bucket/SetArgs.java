@@ -20,7 +20,9 @@ import java.time.Instant;
 import java.util.Map;
 
 /**
- * Arguments object.
+ * 批量设置 Bucket 键值对的参数接口。
+ * <p>
+ * 支持指定条目映射，并可配置 TTL、保留原 TTL 或绝对过期时间。
  *
  * @author seakider
  * @author Nikita Koksharov
@@ -29,35 +31,35 @@ import java.util.Map;
 public interface SetArgs {
 
     /**
-     * Defines entries to set
+     * 创建包含待设置条目映射的参数对象。
      *
-     * @param values entries map to set
-     * @return arguments object
+     * @param values 键值映射
+     * @return 参数对象
      */
     static SetArgs entries(Map<String, ?> values) {
         return new SetParams(values);
     }
 
     /**
-     * Defines retain the time to live associated with the keys
+     * 保留各键原有的 TTL（不重置过期时间）。
      *
-     * @return SetArgs object
+     * @return 参数对象
      */
     SetArgs keepTTL();
 
     /**
-     * Defines the specified expiration time.
+     * 为写入的键设置生存时间。
      *
-     * @param ttl time to live duration
-     * @return SetArgs object
+     * @param ttl 生存时长
+     * @return 参数对象
      */
     SetArgs timeToLive(Duration ttl);
 
     /**
-     * Defines the specified Unix time at which the key(s) will expire.
+     * 为写入的键设置绝对过期时间点（Unix 时间）。
      *
-     * @param time expire date
-     * @return SetArgs object
+     * @param time 过期时刻
+     * @return 参数对象
      */
     SetArgs expireAt(Instant time);
 

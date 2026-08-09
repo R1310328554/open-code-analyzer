@@ -16,7 +16,9 @@
 package org.redisson.api.executor;
 
 /**
- * Task listener invoked when task was failed during execution
+ * 分布式执行器任务失败时的回调监听器。
+ * <p>
+ * 当远程任务执行抛出异常时触发 {@link #onFailed(String, Throwable)}。
  *
  * @author Nikita Koksharov
  *
@@ -25,10 +27,10 @@ package org.redisson.api.executor;
 public interface TaskFailureListener extends TaskListener {
 
     /**
-     * Invoked when task was failed during execution
+     * 任务执行失败时调用。
      *
-     * @param taskId - id of task
-     * @param exception - exception during task execution
+     * @param taskId 任务 ID
+     * @param exception 执行期间抛出的异常
      */
     void onFailed(String taskId, Throwable exception);
 

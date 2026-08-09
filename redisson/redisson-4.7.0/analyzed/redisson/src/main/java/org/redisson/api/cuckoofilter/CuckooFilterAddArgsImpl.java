@@ -18,7 +18,11 @@ package org.redisson.api.cuckoofilter;
 import java.util.Collection;
 
 /**
- * @param <V> element type
+ * {@link CuckooFilterAddArgs} 的默认实现。
+ * <p>
+ * 保存待插入元素、自动创建容量及 noCreate 标志。
+ *
+ * @param <V> 元素类型
  *
  * @author Nikita Koksharov
  *
@@ -33,18 +37,21 @@ public final class CuckooFilterAddArgsImpl<V> implements CuckooFilterAddArgs<V> 
         this.items = items;
     }
 
+    /** 设置自动创建时的容量。 */
     @Override
     public CuckooFilterAddArgs<V> capacity(long capacity) {
         this.capacity = capacity;
         return this;
     }
 
+    /** 标记禁止自动创建过滤器。 */
     @Override
     public CuckooFilterAddArgs<V> noCreate() {
         this.noCreate = true;
         return this;
     }
 
+    /** 返回待插入的元素集合。 */
     public Collection<V> getItems() {
         return items;
     }
@@ -53,6 +60,7 @@ public final class CuckooFilterAddArgsImpl<V> implements CuckooFilterAddArgs<V> 
         return capacity;
     }
 
+    /** 返回是否禁止自动创建。 */
     public boolean isNoCreate() {
         return noCreate;
     }

@@ -16,9 +16,9 @@
 package org.redisson.api.cuckoofilter;
 
 /**
- * Arguments for cuckoo filter initialization.
+ * 布谷鸟过滤器初始化参数接口。
  *
- * <p>Usage example:
+ * <p>用法示例：
  * <pre>
  *     filter.init(CuckooFilterInitArgs.capacity(100000)
  *                     .bucketSize(4)
@@ -32,44 +32,42 @@ package org.redisson.api.cuckoofilter;
 public interface CuckooFilterInitArgs {
 
     /**
-     * Creates arguments with the specified capacity.
+     * 创建指定容量的初始化参数。
      *
-     * @param capacity expected number of items to store in the filter
-     * @return arguments instance
+     * @param capacity 过滤器预期存储的元素数量
+     * @return 参数实例
      */
     static CuckooFilterInitArgs capacity(long capacity) {
         return new CuckooFilterInitArgsImpl(capacity);
     }
 
     /**
-     * Defines the number of items per bucket.
+     * 设置每个桶可容纳的元素数量。
      * <p>
-     * Default value is 2.
-     * A higher bucket size improves fill rate but increases error rate.
+     * 默认值为 2；桶越大填充率越高，但误判率也可能上升。
      *
-     * @param bucketSize number of items per bucket
-     * @return arguments instance
+     * @param bucketSize 每桶元素数
+     * @return 参数实例
      */
     CuckooFilterInitArgs bucketSize(long bucketSize);
 
     /**
-     * Defines the maximum number of attempts to swap items
-     * between buckets before declaring the filter full.
+     * 设置判定过滤器已满前，桶间交换元素的最大尝试次数。
      * <p>
-     * Default value is 20.
+     * 默认值为 20。
      *
-     * @param maxIterations max number of swap attempts
-     * @return arguments instance
+     * @param maxIterations 最大交换尝试次数
+     * @return 参数实例
      */
     CuckooFilterInitArgs maxIterations(long maxIterations);
 
     /**
-     * Defines the expansion rate when the filter becomes full.
+     * 设置过滤器满时的扩容倍率。
      * <p>
-     * Default value is 1.
+     * 默认值为 1。
      *
-     * @param expansion expansion rate
-     * @return arguments instance
+     * @param expansion 扩容倍率
+     * @return 参数实例
      */
     CuckooFilterInitArgs expansion(long expansion);
 

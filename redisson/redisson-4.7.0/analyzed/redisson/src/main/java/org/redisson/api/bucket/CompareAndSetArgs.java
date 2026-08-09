@@ -20,61 +20,60 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Arguments for compare-and-set operation on RBucket.
+ * RBucket 比较并设置（compare-and-set）操作的参数接口。
  * <p>
- * Use one of the static factory methods to create a condition, then call {@code set()} to specify
- * the new value, and optionally configure TTL or expiration time.
+ * 先通过静态工厂方法创建比较条件，再调用 {@code set()} 指定新值，
+ * 并可选择配置 TTL 或绝对过期时间。
  * <p>
- * Supports multiple comparison modes:
+ * 支持的比较模式：
  * <ul>
- *   <li>{@link #expected(Object)} - Set if current value equals expected value (compatible with any Redis/Valkey version)</li>
- *   <li>{@link #unexpected(Object)} - Set if current value does not equal unexpected value (compatible with any Redis/Valkey version)</li>
- *   <li>{@link #expectedDigest(String)} - Set if current value's hash digest equals expected digest (requires Redis 8.4+, uses SET IFDEQ)</li>
- *   <li>{@link #unexpectedDigest(String)} - Set if current value's hash digest does not equal unexpected digest (requires Redis 8.4+, uses SET IFDNE)</li>
+ *   <li>{@link #expected(Object)} — 当前值等于期望值时设置（任意 Redis/Valkey 版本）</li>
+ *   <li>{@link #unexpected(Object)} — 当前值不等于指定值时设置（任意 Redis/Valkey 版本）</li>
+ *   <li>{@link #expectedDigest(String)} — 摘要相等时设置（需 Redis 8.4+，SET IFDEQ）</li>
+ *   <li>{@link #unexpectedDigest(String)} — 摘要不同时设置（需 Redis 8.4+，SET IFDNE）</li>
  * </ul>
- * <p>
  *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 值类型
  */
 public interface CompareAndSetArgs<V> {
 
     /**
-     * Creates a condition that succeeds if the current value equals the expected value.
+     * 创建「当前值等于期望值」时成功的比较条件。
      * <p>
-     * This mode is compatible with any Valkey or Redis version.
+     * 兼容任意 Valkey 或 Redis 版本。
      *
-     * @param <V> value type
-     * @param object expected current value (can be null to check for non-existence)
-     * @return condition builder requiring {@code set()} to be called
+     * @param <V> 值类型
+     * @param object 期望的当前值（可为 null 表示键不存在）
+     * @return 需继续调用 {@code set()} 的条件构建器
      */
     static <V> CompareAndSetStep<V> expected(V object) {
         return new CompareAndSetParams<>(ConditionType.EXPECTED, object);
     }
 
     /**
-     * Creates a condition that succeeds if the current value does not equal the unexpected value.
+     * 创建「当前值不等于指定值」时成功的比较条件。
      * <p>
-     * This mode is compatible with any Valkey or Redis version.
+     * 兼容任意 Valkey 或 Redis 版本。
      *
-     * @param <V> value type
-     * @param object unexpected current value
-     * @return condition builder requiring {@code set()} to be called
+     * @param <V> 值类型
+     * @param object 不期望的当前值
+     * @return 需继续调用 {@code set()} 的条件构建器
      */
     static <V> CompareAndSetStep<V> unexpected(V object) {
         return new CompareAndSetParams<>(ConditionType.UNEXPECTED, object);
     }
 
     /**
-     * Creates a condition that succeeds if the hash digest of the current value equals the expected digest.
+     * 创建「当前值摘要等于期望摘要」时成功的比较条件。
      * <p>
-     * This mode uses the SET IFDEQ command and requires Redis 8.4+ or compatible Valkey version.
-     * The digest can be obtained using the DIGEST command.
+     * 使用 SET IFDEQ 命令，需 Redis 8.4+ 或兼容的 Valkey 版本；
+     * 摘要可通过 DIGEST 命令获取。
      *
-     * @param <V> value type
-     * @param value expected hash digest value (hexadecimal string from DIGEST command)
-     * @return condition builder requiring {@code set()} to be called
+     * @param <V> 值类型
+     * @param value 期望的哈希摘要（DIGEST 命令返回的十六进制字符串）
+     * @return 需继续调用 {@code set()} 的条件构建器
      */
     static <V> CompareAndSetStep<V> expectedDigest(String value) {
         Objects.requireNonNull(value, "Digest value can't be null");
@@ -82,14 +81,14 @@ public interface CompareAndSetArgs<V> {
     }
 
     /**
-     * Creates a condition that succeeds if the hash digest of the current value does not equal the unexpected digest.
+     * 创建「当前值摘要不等于指定摘要」时成功的比较条件。
      * <p>
-     * This mode uses the SET IFDNE command and requires Redis 8.4+ or compatible Valkey version.
-     * The digest can be obtained using the DIGEST command.
+     * 使用 SET IFDNE 命令，需 Redis 8.4+ 或兼容的 Valkey 版本；
+     * 摘要可通过 DIGEST 命令获取。
      *
-     * @param <V> value type
-     * @param value unexpected hash digest value (hexadecimal string from DIGEST command)
-     * @return condition builder requiring {@code set()} to be called
+     * @param <V> 值类型
+     * @param value 不期望的哈希摘要（DIGEST 命令返回的十六进制字符串）
+     * @return 需继续调用 {@code set()} 的条件构建器
      */
     static <V> CompareAndSetStep<V> unexpectedDigest(String value) {
         Objects.requireNonNull(value, "Digest value can't be null");
@@ -97,20 +96,20 @@ public interface CompareAndSetArgs<V> {
     }
 
     /**
-     * Sets the time-to-live duration for the key.
-     * This is optional and can be combined with the set operation.
+     * 设置键的生存时间（TTL）。
+     * 可选配置，可与 set 操作组合使用。
      *
-     * @param duration time-to-live duration
-     * @return this instance for method chaining
+     * @param duration 生存时长
+     * @return 当前实例，支持链式调用
      */
     CompareAndSetArgs<V> timeToLive(Duration duration);
 
     /**
-     * Sets the expiration time as an absolute instant.
-     * This is optional and can be combined with the set operation.
+     * 设置键的绝对过期时间点。
+     * 可选配置，可与 set 操作组合使用。
      *
-     * @param time expiration instant
-     * @return this instance for method chaining
+     * @param time 过期时刻
+     * @return 当前实例，支持链式调用
      */
     CompareAndSetArgs<V> expireAt(Instant time);
 

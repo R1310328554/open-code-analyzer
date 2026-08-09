@@ -18,9 +18,9 @@ package org.redisson.api.cuckoofilter;
 import java.util.Collection;
 
 /**
- * Arguments for cuckoo filter bulk add operations.
+ * 布谷鸟过滤器（Cuckoo Filter）批量添加元素的参数接口。
  *
- * <p>Usage example:
+ * <p>用法示例：
  * <pre>
  *     Set&lt;String&gt; added = filter.add(
  *         CuckooFilterAddArgs.&lt;String&gt;items(List.of("a", "b", "c"))
@@ -28,7 +28,7 @@ import java.util.Collection;
  *                 .noCreate());
  * </pre>
  *
- * @param <V> element type
+ * @param <V> 元素类型
  *
  * @author Nikita Koksharov
  *
@@ -36,30 +36,28 @@ import java.util.Collection;
 public interface CuckooFilterAddArgs<V> {
 
     /**
-     * Creates arguments with the specified items to insert.
+     * 创建包含待插入元素集合的参数对象。
      *
-     * @param items elements to insert
-     * @param <V>   element type
-     * @return arguments instance
+     * @param items 待插入元素
+     * @param <V> 元素类型
+     * @return 参数实例
      */
     static <V> CuckooFilterAddArgs<V> items(Collection<V> items) {
         return new CuckooFilterAddArgsImpl<>(items);
     }
 
     /**
-     * Defines the desired capacity if the filter
-     * is auto-created by this command.
+     * 设置命令自动创建过滤器时的期望容量。
      *
-     * @param capacity filter capacity for auto-creation
-     * @return arguments instance
+     * @param capacity 自动创建时的过滤器容量
+     * @return 参数实例
      */
     CuckooFilterAddArgs<V> capacity(long capacity);
 
     /**
-     * Prevents auto-creation of the filter.
-     * The command will fail if the filter does not already exist.
+     * 禁止自动创建过滤器；若过滤器不存在则命令失败。
      *
-     * @return arguments instance
+     * @return 参数实例
      */
     CuckooFilterAddArgs<V> noCreate();
 

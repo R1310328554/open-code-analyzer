@@ -16,21 +16,21 @@
 package org.redisson.api.bucket;
 
 /**
- * Intermediate builder interface for compare-and-set operations.
- * Returned by condition factory methods and requires {@link #set(Object)} to be called.
+ * compare-and-set 操作的中间构建器接口。
+ * <p>
+ * 由条件工厂方法返回，必须继续调用 {@link #set(Object)} 指定新值。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 值类型
  */
 public interface CompareAndSetStep<V> {
 
     /**
-     * Sets the new value to be stored if the condition is met.
-     * This method is required.
+     * 设置条件满足时要存储的新值（必填）。
      *
-     * @param value new value to set
-     * @return CompareAndSetArgs for optional configuration (timeToLive, expireAt)
+     * @param value 新值
+     * @return {@link CompareAndSetArgs}，可继续配置 TTL 或过期时间
      */
     CompareAndSetArgs<V> set(V value);
 

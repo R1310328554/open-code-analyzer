@@ -19,11 +19,13 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Implementation of {@link CompareAndSetStep} and {@link CompareAndSetArgs}.
+ * {@link CompareAndSetStep} 与 {@link CompareAndSetArgs} 的默认实现。
+ * <p>
+ * 保存比较条件、新值以及 TTL/过期时间等可选参数，供 RBucket 内部执行 CAS 操作。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 值类型
  */
 public final class CompareAndSetParams<V> implements CompareAndSetStep<V>, CompareAndSetArgs<V> {
 
@@ -56,24 +58,28 @@ public final class CompareAndSetParams<V> implements CompareAndSetStep<V>, Compa
         }
     }
 
+    /** 设置条件满足时要写入的新值。 */
     @Override
     public CompareAndSetArgs<V> set(V value) {
         this.newValue = value;
         return this;
     }
 
+    /** 设置写入后的生存时间。 */
     @Override
     public CompareAndSetArgs<V> timeToLive(Duration duration) {
         this.timeToLive = duration;
         return this;
     }
 
+    /** 设置写入后的绝对过期时间。 */
     @Override
     public CompareAndSetArgs<V> expireAt(Instant time) {
         this.expireAt = time;
         return this;
     }
 
+    /** 返回比较条件类型。 */
     public ConditionType getConditionType() {
         return conditionType;
     }
@@ -94,6 +100,7 @@ public final class CompareAndSetParams<V> implements CompareAndSetStep<V>, Compa
         return unexpectedDigest;
     }
 
+    /** 返回待写入的新值。 */
     public V getNewValue() {
         return newValue;
     }

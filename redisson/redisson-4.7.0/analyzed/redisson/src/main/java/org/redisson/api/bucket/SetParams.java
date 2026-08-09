@@ -20,6 +20,9 @@ import java.time.Instant;
 import java.util.Map;
 
 /**
+ * {@link SetArgs} 的默认实现，保存待写入条目及 TTL 相关选项。
+ * <p>
+ * 由 {@link SetArgs#entries(java.util.Map)} 工厂方法创建。
  *
  * @author seakider
  *
@@ -35,18 +38,21 @@ public final class SetParams implements SetArgs {
         this.entries = values;
     }
 
+    /** 启用保留原 TTL 选项。 */
     @Override
     public SetArgs keepTTL() {
         this.keepTTL = true;
         return this;
     }
 
+    /** 设置生存时间。 */
     @Override
     public SetArgs timeToLive(Duration ttl) {
         this.timeToLive = ttl;
         return this;
     }
 
+    /** 设置绝对过期时间。 */
     @Override
     public SetArgs expireAt(Instant time) {
         this.expireAt = time;
@@ -65,6 +71,7 @@ public final class SetParams implements SetArgs {
         return expireAt;
     }
 
+    /** 返回待写入的键值映射。 */
     public Map<String, ?> getEntries() {
         return entries;
     }

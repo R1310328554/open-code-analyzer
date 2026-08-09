@@ -16,11 +16,13 @@
 package org.redisson.api.bucket;
 
 /**
- * Implementation of {@link CompareAndDeleteArgs}.
+ * {@link CompareAndDeleteArgs} 的默认实现，保存比较条件类型与比较值/摘要。
+ * <p>
+ * 由静态工厂方法创建，供 {@link org.redisson.api.RBucket} 内部解析。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 值类型
  */
 public final class CompareAndDeleteParams<V> implements CompareAndDeleteArgs<V> {
 
@@ -28,24 +30,29 @@ public final class CompareAndDeleteParams<V> implements CompareAndDeleteArgs<V> 
     private V value;
     private String digest;
 
+    /** 按值比较条件构造参数对象。 */
     CompareAndDeleteParams(ConditionType conditionType, V object) {
         this.conditionType = conditionType;
         this.value = object;
     }
 
+    /** 按摘要比较条件构造参数对象。 */
     CompareAndDeleteParams(ConditionType conditionType, String digest) {
         this.conditionType = conditionType;
         this.digest = digest;
     }
 
+    /** 返回比较条件类型。 */
     public ConditionType getConditionType() {
         return conditionType;
     }
 
+    /** 返回待比较的对象值。 */
     public V getValue() {
         return value;
     }
 
+    /** 返回待比较的摘要值。 */
     public String getDigest() {
         return digest;
     }

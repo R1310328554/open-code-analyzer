@@ -16,8 +16,11 @@
 package org.redisson.api.condition;
 
 /**
- * Interface for conditional object
- * 
+ * Live Object 查询条件的标记接口。
+ * <p>
+ * 具体条件由 {@link Conditions} 工厂创建，
+ * 用于按字段过滤 Live Object 集合。
+ *
  * @author Nikita Koksharov
  *
  */
