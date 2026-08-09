@@ -21,13 +21,11 @@ import java.time.ZoneId;
 import java.util.TimeZone;
 
 /**
- * Cron expression object used in {@link RScheduledExecutorService}.
- * Fully compatible with quartz cron expression.
- * 
- * @see RScheduledExecutorService#schedule(Runnable, CronSchedule)
- * 
- * @author Nikita Koksharov
+ * 用于 {@link RScheduledExecutorService} 的 Cron 表达式对象。
+ * <p>与 Quartz Cron 表达式完全兼容。
  *
+ * @see RScheduledExecutorService#schedule(Runnable, CronSchedule)
+ * @author Nikita Koksharov
  */
 public final class CronSchedule {
 
@@ -41,25 +39,23 @@ public final class CronSchedule {
     }
 
     /**
-     * Creates cron expression object with defined expression string
-     * 
-     * @param expression of cron
-     * @return object
-     * @throws IllegalArgumentException
-     *             wrapping a ParseException if the expression is invalid
+     * 根据 Cron 表达式字符串创建实例（使用系统默认时区）。
+     *
+     * @param expression Cron 表达式
+     * @return CronSchedule 实例
+     * @throws IllegalArgumentException 表达式无效时包装 {@code ParseException}
      */
     public static CronSchedule of(String expression) {
         return of(expression, ZoneId.systemDefault());
     }
 
     /**
-     * Creates cron expression object with defined expression string and time-zone ID
+     * 根据 Cron 表达式与时区 ID 创建实例。
      *
-     * @param expression of cron
-     * @param zoneId id of zone
-     * @return object
-     * @throws IllegalArgumentException
-     *             wrapping a ParseException if the expression is invalid
+     * @param expression Cron 表达式
+     * @param zoneId 时区 ID
+     * @return CronSchedule 实例
+     * @throws IllegalArgumentException 表达式无效时包装 {@code ParseException}
      */
     public static CronSchedule of(String expression, ZoneId zoneId) {
         CronExpression ce = new CronExpression(expression);
@@ -68,14 +64,12 @@ public final class CronSchedule {
     }
 
     /**
-     * Creates cron expression which schedule task execution
-     * every day at the given time 
-     * 
-     * @param hour of schedule
-     * @param minute of schedule
-     * @return object
-     * @throws IllegalArgumentException
-     *             wrapping a ParseException if the expression is invalid
+     * 创建每天在指定时刻执行任务的 Cron 表达式（系统默认时区）。
+     *
+     * @param hour 小时（0–23）
+     * @param minute 分钟（0–59）
+     * @return CronSchedule 实例
+     * @throws IllegalArgumentException 表达式无效时包装 {@code ParseException}
      */
     public static CronSchedule dailyAtHourAndMinute(int hour, int minute) {
         String expression = String.format("0 %d %d ? * *", minute, hour);
@@ -83,15 +77,13 @@ public final class CronSchedule {
     }
 
     /**
-     * Creates cron expression which schedule task execution
-     * every day at the given time in specified time-zone ID
+     * 创建每天在指定时刻、指定时区执行任务的 Cron 表达式。
      *
-     * @param hour of schedule
-     * @param minute of schedule
-     * @param zoneId id of zone
-     * @return object
-     * @throws IllegalArgumentException
-     *             wrapping a ParseException if the expression is invalid
+     * @param hour 小时（0–23）
+     * @param minute 分钟（0–59）
+     * @param zoneId 时区 ID
+     * @return CronSchedule 实例
+     * @throws IllegalArgumentException 表达式无效时包装 {@code ParseException}
      */
     public static CronSchedule dailyAtHourAndMinute(int hour, int minute, ZoneId zoneId) {
         String expression = String.format("0 %d %d ? * *", minute, hour);
@@ -99,14 +91,13 @@ public final class CronSchedule {
     }
 
     /**
-     * Creates cron expression which schedule task execution
-     * every given days of the week at the given time.
-     * Use Calendar object constants to define day.
-     * 
-     * @param hour of schedule
-     * @param minute of schedule
-     * @param daysOfWeek - Calendar object constants
-     * @return object
+     * 创建在指定星期几、指定时刻执行任务的 Cron 表达式（系统默认时区）。
+     * <p>使用 {@link java.util.Calendar} 常量表示星期。
+     *
+     * @param hour 小时（0–23）
+     * @param minute 分钟（0–59）
+     * @param daysOfWeek {@link java.util.Calendar} 星期常量
+     * @return CronSchedule 实例
      */
     public static CronSchedule weeklyOnDayAndHourAndMinute(int hour, int minute, Integer... daysOfWeek) {
         if (daysOfWeek == null || daysOfWeek.length == 0) {
@@ -122,15 +113,14 @@ public final class CronSchedule {
     }
 
     /**
-     * Creates cron expression which schedule task execution
-     * every given days of the week at the given time in specified time-zone ID.
-     * Use Calendar object constants to define day.
+     * 创建在指定星期几、指定时刻与指定时区执行任务的 Cron 表达式。
+     * <p>使用 {@link java.util.Calendar} 常量表示星期。
      *
-     * @param hour of schedule
-     * @param minute of schedule
-     * @param zoneId id of zone
-     * @param daysOfWeek - Calendar object constants
-     * @return object
+     * @param hour 小时（0–23）
+     * @param minute 分钟（0–59）
+     * @param zoneId 时区 ID
+     * @param daysOfWeek {@link java.util.Calendar} 星期常量
+     * @return CronSchedule 实例
      */
     public static CronSchedule weeklyOnDayAndHourAndMinute(int hour, int minute, ZoneId zoneId, Integer... daysOfWeek) {
         if (daysOfWeek == null || daysOfWeek.length == 0) {
@@ -146,13 +136,12 @@ public final class CronSchedule {
     }
 
     /**
-     * Creates cron expression which schedule task execution
-     * every given day of the month at the given time
-     * 
-     * @param hour of schedule
-     * @param minute of schedule
-     * @param dayOfMonth of schedule
-     * @return object
+     * 创建在每月指定日期、指定时刻执行任务的 Cron 表达式（系统默认时区）。
+     *
+     * @param dayOfMonth 月中日期（1–31）
+     * @param hour 小时（0–23）
+     * @param minute 分钟（0–59）
+     * @return CronSchedule 实例
      */
     public static CronSchedule monthlyOnDayAndHourAndMinute(int dayOfMonth, int hour, int minute) {
         String expression = String.format("0 %d %d %d * ?", minute, hour, dayOfMonth);
@@ -160,14 +149,13 @@ public final class CronSchedule {
     }
 
     /**
-     * Creates cron expression which schedule task execution
-     * every given day of the month at the given time in specified time-zone ID.
+     * 创建在每月指定日期、指定时刻与指定时区执行任务的 Cron 表达式。
      *
-     * @param hour of schedule
-     * @param minute of schedule
-     * @param dayOfMonth of schedule
-     * @param zoneId id of zone
-     * @return object
+     * @param dayOfMonth 月中日期（1–31）
+     * @param hour 小时（0–23）
+     * @param minute 分钟（0–59）
+     * @param zoneId 时区 ID
+     * @return CronSchedule 实例
      */
     public static CronSchedule monthlyOnDayAndHourAndMinute(int dayOfMonth, int hour, int minute, ZoneId zoneId) {
         String expression = String.format("0 %d %d %d * ?", minute, hour, dayOfMonth);

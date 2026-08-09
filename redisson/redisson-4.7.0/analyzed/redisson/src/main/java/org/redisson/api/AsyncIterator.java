@@ -18,29 +18,27 @@ package org.redisson.api;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Asynchronous iterator
+ * 异步迭代器接口。
+ * <p>通过 {@link java.util.concurrent.CompletionStage} 非阻塞地判断是否有下一元素并取值。
  *
  * @author Nikita Koksharov
- *
- * @param <V> value type
+ * @param <V> 元素类型
  */
 public interface AsyncIterator<V> {
 
     /**
-     * Returns <code>true</code> if more elements are available.
-     * <p>
-     * NOTE: each invocation returns a new instance of CompletionStage
+     * 判断是否还有更多元素。
+     * <p>注意：每次调用均返回新的 {@link CompletionStage} 实例。
      *
-     * @return <code>true</code> if more elements are available, otherwise <code>false</code>
+     * @return 有更多元素时返回 {@code true}，否则 {@code false}
      */
     CompletionStage<Boolean> hasNext();
 
     /**
-     * Returns next element or NoSuchElementException if no more elements available.
-     * <p>
-     * NOTE: each invocation returns a new instance of CompletionStage
+     * 返回下一元素；无更多元素时完成异常为 {@code NoSuchElementException}。
+     * <p>注意：每次调用均返回新的 {@link CompletionStage} 实例。
      *
-     * @return next element or NoSuchElementException
+     * @return 下一元素，或 {@code NoSuchElementException}
      */
     CompletionStage<V> next();
 

@@ -24,6 +24,10 @@ import java.util.jar.Manifest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Redisson 版本信息工具。
+ * <p>从 classpath 中的 {@code META-INF/MANIFEST.MF} 读取 Bundle 版本并写入日志。
+ */
 public class Version {
 
     private static final Logger log = LoggerFactory.getLogger(Version.class);
@@ -46,7 +50,7 @@ public class Version {
                 }
             }
         } catch (Exception E) {
-            // skip it
+            // 忽略异常
         }
     }
 

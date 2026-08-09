@@ -18,9 +18,11 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 批量命令执行结果。
+ * <p>包含各子命令的响应列表及成功同步的从节点数量。
  *
+ * @author Nikita Koksharov
+ * @param <E> 单条命令响应类型
  */
 public final class BatchResult<E> {
 
@@ -34,18 +36,18 @@ public final class BatchResult<E> {
     }
     
     /**
-     * Returns list of result objects for each command
-     * 
-     * @return list of objects
+     * 返回各子命令的结果对象列表。
+     *
+     * @return 结果对象列表
      */
     public List<E> getResponses() {
         return responses;
     }
 
     /**
-     * Returns amount of successfully synchronized slaves during batch execution
-     * 
-     * @return slaves amount
+     * 返回批量执行期间成功同步的从节点数量。
+     *
+     * @return 从节点数量
      */
     public int getSyncedSlaves() {
         return syncedSlaves;

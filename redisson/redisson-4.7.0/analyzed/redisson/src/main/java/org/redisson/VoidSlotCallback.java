@@ -19,9 +19,10 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * 无返回值的 {@link SlotCallback} 实现。
+ * <p>用于仅需执行副作用、不关心聚合结果的批量槽位操作。
  *
  * @author Nikita Koksharov
- *
  */
 public class VoidSlotCallback implements SlotCallback<Void, Void> {
 

@@ -20,9 +20,11 @@ import java.util.Collection;
 import org.redisson.client.RedisClient;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@code SCAN} 单次迭代返回的结果容器。
+ * <p>包含游标位置、本次扫描到的值集合及执行扫描的 Redis 客户端引用。
  *
+ * @author Nikita Koksharov
+ * @param <R> 扫描值元素类型
  */
 public interface ScanResult<R> {
 

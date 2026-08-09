@@ -17,6 +17,12 @@ package org.redisson.api;
 
 import java.time.Duration;
 
+/**
+ * {@link SyncArgs} 同步参数的抽象基类。
+ * <p>持有同步模式、失败处理策略与超时时间，供各类配置对象继承。
+ *
+ * @param <T> 链式调用返回的具体配置类型
+ */
 public abstract class BaseSyncParams<T> implements SyncArgs<T> {
 
     private SyncMode syncMode = SyncMode.AUTO;

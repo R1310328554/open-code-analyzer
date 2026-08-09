@@ -26,242 +26,209 @@ import javax.cache.integration.CacheWriter;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for JCache
+ * JCache（JSR-107）的 Reactive 风格 API 接口。
+ * <p>各方法返回 Project Reactor 的 {@link Mono}。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface CacheReactive<K, V> {
 
     /**
-    * This method retrieves an entry from the cache.
+    * 从缓存中获取指定键的条目。
     *
-    * If the cache uses the read-through pattern, and the method would return null
-    * because the entry is not present in the cache, then the cache's {@link CacheLoader}
-    * will try to load the entry.
+    * 若启用 read-through 且缓存中不存在该键，
+    * 则通过 {@link CacheLoader} 尝试加载。
     *
-    * @param key the key whose value should be returned
-    * @return the element, or null if the entry does not exist.
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws NullPointerException if the key is null
-    * @throws CacheException if there is a problem retrieving the entry from the cache
+    * @param key 要返回值的键
+    * @return 对应元素；不存在时返回 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws NullPointerException 键为 {@code null}
+    * @throws CacheException 读取条目时出错
     */
     Mono<V> get(K key);
     
     /**
-    * This method accepts a set of requested keys and retrieves a collection of entries from the
-    * {@link CacheReactive}, returning them as a {@link Map} of the associated values.
+    * 根据给定键集合批量从 {@link CacheReactive} 获取条目，
+    * 以 {@link Map} 形式返回键值映射。
     *
-    * If the cache uses the read-through pattern, and the method would return null for a key
-    * because an entry is not present in the cache, the Cache's {@link CacheLoader} will try to
-    * load the entry. If a key's entry cannot be loaded, the key will not appear in the Map.
+    * 若启用 read-through 且某键不在缓存中，
+    * 将通过 {@link CacheLoader} 尝试加载；加载失败的键不会出现在结果 Map 中。
     *
-    * @param keys The keys whose values should be returned.
-    * @return A Map of entries associated with the given keys. If a key is not found
-    * in the cache, it will not be in the Map.
-    * @throws NullPointerException if keys is null or contains a null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem retrieving the entries from the cache
+    * @param keys 要返回值的键集合
+    * @return 与给定键关联的条目 Map；未找到的键不在 Map 中
+    * @throws NullPointerException {@code keys} 为 {@code null} 或包含 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 批量读取条目时出错
     */
     Mono<Map<K, V>> getAll(Set<? extends K> keys);
     
     /**
-    * This method returns a Boolean true/false value, depending on whether the
-    * {@link CacheReactive} has a mapping for a key k such that key.equals(k).
+    * 判断 {@link CacheReactive} 是否包含与给定键相等的映射。
     *
-    *
-    * @param key the key with a possible mapping in the cache.
-    * @return true if such a mapping exists
-    * @throws NullPointerException if key is null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @param key 待检查的键
+    * @return 存在映射时返回 {@code true}
+    * @throws NullPointerException 键为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<Boolean> containsKey(K key);
     
     /**
-    * This method places the given value V in the cache and associates it with the given key K.
+    * 将给定值写入缓存并与键关联。
     *
-    * If the {@link CacheReactive} already has a mapping for the key, the previous
-    * value is replaced by the given value V.
-    * This occurs if and only if {@link #containsKey(Object) c.containsKey(k)}
-    * would return true.)
+    * 若键已存在映射，则用新值替换旧值
+    * （当且仅当 {@link #containsKey(Object) c.containsKey(k)} 返回 {@code true} 时）。
     *
-    * @param key the key to place in the cache
-    * @param value the value to associate with the given key
+    * @param key 要写入的键
+    * @param value 与键关联的值
     * @return void
-    * @throws NullPointerException if the key or value is null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @throws NullPointerException 键或值为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 写入缓存时出错
     */
     Mono<Void> put(K key, V value);
     
     /**
-    * This method places the given key and value in the cache.
-    * Any value already in the cache is returned and replaced by the new given value.
-    * This occurs if and only if {@link #containsKey(Object) c.containsKey(k)}
-    * would return true.)
-    * If there was no value already in the cache, the method returns null.
+    * 写入键值并返回被替换的旧值。
     *
-    * @param key the key to place in the cache
-    * @param value the value to associate with the given key
-    * @return the previous value in the cache, or null if none already existed
-    * @throws NullPointerException if the key or value is null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * 若键已存在映射则返回旧值并替换（当且仅当 {@link #containsKey(Object) c.containsKey(k)} 返回 {@code true}）；
+    * 若原先不存在映射则返回 {@code null}。
+    *
+    * @param key 要写入的键
+    * @param value 与键关联的值
+    * @return 被替换的旧值；原先不存在时返回 {@code null}
+    * @throws NullPointerException 键或值为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 写入缓存时出错
     */
     Mono<V> getAndPut(K key, V value);
     
     /**
-    * This method copies all of the entries from the given Map to the {@link CacheReactive}.
+    * 将给定 Map 中的全部条目复制到 {@link CacheReactive}。
     *
-    * This method is equivalent to calling
-    * {@link #put(Object, Object) put(k, v)} on this cache one time for each mapping
-    * from key k to value v in the given Map.
+    * 等价于对 Map 中每个键值对调用一次 {@link #put(Object, Object) put(k, v)} on this cache one time for each mapping；
+    * 各次写入顺序未定义。
     *
-    * Individual puts may occur in any order.
+    * 若操作期间缓存或 Map 被并发修改，行为未定义。
+    * 默认一致性模式下每次 put 原子，但整体 putAll 不原子，监听器可观察到单次更新。
     *
-    * If entries in the cache corresponding to entries in the Map, or the Map itself, is
-    * changed or removed during this operation, then the behavior of this method is
-    * not defined.
-    *
-    * If default consistency mode is enabled, then each put is atomic but not
-    * the entire putAll operation. Listeners can observe individual updates.
-    *
-    * @param map the Map that contains the entries to be copied to the cache
+    * @param map 要复制到缓存的条目 Map
     * @return void
-    * @throws NullPointerException if the map is null or contains null keys or values.
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache.
+    * @throws NullPointerException Map 为 {@code null} 或含 {@code null} 键/值
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 写入缓存时出错
     */
     Mono<Void> putAll(java.util.Map<? extends K, ? extends V> map);
     
     /**
-    * This method places the given key and value in the cache atomically, if the key is
-    * not already associated with a value in the cache.
+    * 若键尚未关联值，则原子写入键值。
     *
-    * @param key the key to place in the cache
-    * @param value the value to associate with the given key
-    * @return true if the value was successfully placed in the cache
-    * @throws NullPointerException if the key or value is null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @param key 要写入的键
+    * @param value 与键关联的值
+    * @return 成功写入时返回 {@code true}
+    * @throws NullPointerException 键或值为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 写入缓存时出错
     */
     Mono<Boolean> putIfAbsent(K key, V value);
     
     /**
-    * This method deletes the mapping for a given key from the cache, if it is present.
+    * 若存在映射则删除指定键的条目。
     *
-    * This occurs if and only if there is a mapping from key k to
-    * value v such that
-    * (key==null ? k==null : key.equals(k)).
+    * 当且仅当存在键 k 满足 {@code key==null ? k==null : key.equals(k)} 时删除；
+    * 删除成功返回 {@code true}，无映射时返回 {@code false}。
     *
-    *
-    This method returns true if the removal was successful,
-    * or false if there was no such mapping.
-    *
-    *
-    * @param key the key whose mapping will be deleted
-    * @return returns true if successful, or false if there was no mapping
-    * @throws NullPointerException if the key is null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @param key 要删除映射的键
+    * @return 删除成功返回 {@code true}，否则 {@code false}
+    * @throws NullPointerException 键为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<Boolean> remove(K key);
     
     /**
-    * This method atomically removes a key's mapping only if it is currently mapped to the
-    * provided value.
+    * 仅当键当前映射为给定值时，原子删除该映射。
     *
-    * @param key the key whose mapping will be deleted
-    * @param oldValue the value that should be mapped to the given key
-    * @return returns true if successful, or false if there was no such mapping
-    * @throws NullPointerException if the key is null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @param key 要删除映射的键
+    * @param oldValue 期望与键关联的旧值
+    * @return 删除成功返回 {@code true}，否则 {@code false}
+    * @throws NullPointerException 键为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<Boolean> remove(K key, V oldValue);
     
     /**
-    * This method atomically removes the entry for a key only if it is currently mapped to some
-    * value.
+    * 若键当前有映射，则原子删除并返回其值。
     *
-    * @param key the given key
-    * @return the value if it existed, or null if it did not
-    * @throws NullPointerException if the key is null.
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @param key 给定键
+    * @return 存在映射时返回值，否则 {@code null}
+    * @throws NullPointerException 键为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<V> getAndRemove(K key);
     
     /**
-    * This method atomically replaces an entry only if the key is currently mapped to a
-    * given value.
+    * 仅当键当前映射为 {@code oldValue} 时，原子替换为 {@code newValue}。
     *
-    * @param key the key associated with the given oldValue
-    * @param oldValue the value that should be associated with the key
-    * @param newValue the value that will be associated with the key
-    * @return true if the value was replaced, or false if not
-    * @throws NullPointerException if the key or values are null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @param key 与旧值关联的键
+    * @param oldValue 期望的旧值
+    * @param newValue 替换后的新值
+    * @return 替换成功返回 {@code true}，否则 {@code false}
+    * @throws NullPointerException 键或值为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<Boolean> replace(K key, V oldValue, V newValue);
     
     /**
-    * This method atomically replaces an entry only if the key is currently mapped to some
-    * value.
+    * 仅当键当前已有映射时，原子替换为新值。
     *
-    * @param key the key mapped to the given value
-    * @param value the value mapped to the given key
-    * @return true if the value was replaced, or false if not
-    * @throws NullPointerException if the key or value is null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @param key 给定键
+    * @param value 替换后的新值
+    * @return 替换成功返回 {@code true}，否则 {@code false}
+    * @throws NullPointerException 键或值为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<Boolean> replace(K key, V value);
     
     /**
-    * This method atomically replaces a given key's value if and only if the key is currently
-    * mapped to a value.
+    * 若键当前有映射，则原子替换并返回旧值。
     *
-    * @param key the key associated with the given value
-    * @param value the value associated with the given key
-    * @return the previous value mapped to the given key, or
-    * null if there was no such mapping.
-    * @throws NullPointerException if the key or value is null
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @param key 给定键
+    * @param value 替换后的新值
+    * @return 被替换的旧值；原先无映射时返回 {@code null}
+    * @throws NullPointerException 键或值为 {@code null}
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<V> getAndReplace(K key, V value);
     
     /**
-    * This method deletes the entries for the given keys.
+    * 删除给定键集合对应的条目。
     *
-    * The order in which the individual entries are removed is undefined.
+    * 各条目删除顺序未定义。对每个键会触发已注册的
+    * {@link CacheEntryRemovedListener}；若为 write-through 缓存还会调用
+    * {@link CacheWriter}。键集合为空时不调用 {@link CacheWriter}。
     *
-    * For every entry in the key set, the following are called:
-    *
-    •   any registered {@link CacheEntryRemovedListener}s
-    •   if the cache is a write-through cache, the {@link CacheWriter}
-    * If the key set is empty, the {@link CacheWriter} is not called.
-    *
-    * @param keys the keys to remove
+    * @param keys 要删除的键集合
     * @return void
-    * @throws NullPointerException if keys is null or if it contains a null key
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @throws NullPointerException {@code keys} 为 {@code null} 或含 {@code null} 键
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<Void> removeAll(Set<? extends K> keys);
 
     /**
-    * This method empties the cache's contents, without notifying listeners or
-    * {@link CacheWriter}s.
+    * 清空缓存内容，不通知监听器或 {@link CacheWriter}。
     *
     * @return void
-    * @throws IllegalStateException if the cache is in a closed state
-    * @throws CacheException if there is a problem with the cache
+    * @throws IllegalStateException 缓存已关闭
+    * @throws CacheException 访问缓存时出错
     */
     Mono<Void> clear();
 

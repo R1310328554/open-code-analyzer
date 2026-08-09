@@ -22,11 +22,12 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 集群槽位批量执行回调。
+ * <p>按槽分组后构造 Redis 命令与参数，并在各分片结果返回后聚合为最终值。
  *
- * @param <T> type of batch result
- * @param <R> type of result
+ * @author Nikita Koksharov
+ * @param <T> 单条 Redis 命令的批量结果类型
+ * @param <R> 聚合后的最终结果类型
  */
 public interface SlotCallback<T, R> {
 

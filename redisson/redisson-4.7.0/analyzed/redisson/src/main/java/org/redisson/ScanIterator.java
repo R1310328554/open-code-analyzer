@@ -19,9 +19,10 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Redis {@code SCAN} 族命令的迭代器 SPI。
+ * <p>由各类集合实现提供同步/异步扫描能力，并支持在迭代过程中删除元素。
  *
+ * @author Nikita Koksharov
  */
 public interface ScanIterator {
 

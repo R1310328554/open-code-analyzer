@@ -21,47 +21,39 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration for Batch object.
- * 
- * @author Nikita Koksharov
+ * {@link RBatch} 批量操作的配置项。
+ * <p>控制执行模式、响应超时、重试策略及主从/AOF 同步等选项。
  *
+ * @author Nikita Koksharov
  */
 public final class BatchOptions {
     
     public enum ExecutionMode {
 
         /**
-         * Store batched invocations in Redis and execute them atomically as a single command.
-         * <p>
-         * Please note, that in cluster mode all objects should be on the same cluster slot.
-         * https://github.com/antirez/redis/issues/3682 
-         * 
+         * 将批量调用存入 Redis 并以单条命令原子执行（读路径）。
+         * <p>集群模式下所有键须位于同一 slot。
+         * https://github.com/antirez/redis/issues/3682
          */
         REDIS_READ_ATOMIC,
 
         /**
-         * Store batched invocations in Redis and execute them atomically as a single command.
-         * <p>
-         * Please note, that in cluster mode all objects should be on the same cluster slot.
-         * https://github.com/antirez/redis/issues/3682 
-         * 
+         * 将批量调用存入 Redis 并以单条命令原子执行（写路径）。
+         * <p>集群模式下所有键须位于同一 slot。
+         * https://github.com/antirez/redis/issues/3682
          */
         REDIS_WRITE_ATOMIC,
 
         /**
-         * Store batched invocations in memory on Redisson side and execute them on Redis.
-         * <p>
-         * Default mode
-         * 
+         * 在 Redisson 客户端内存中缓存批量调用，再逐条发往 Redis。
+         * <p>默认模式。
          */
         IN_MEMORY,
         
         /**
-         * Store batched invocations on Redisson side and executes them atomically on Redis as a single command.
-         * <p>
-         * Please note, that in cluster mode all objects should be on the same cluster slot.
-         * https://github.com/antirez/redis/issues/3682 
-         * 
+         * 在 Redisson 端缓存批量调用，再以单条 Redis 命令原子执行。
+         * <p>集群模式下所有键须位于同一 slot。
+         * https://github.com/antirez/redis/issues/3682
          */
         IN_MEMORY_ATOMIC,
         
@@ -91,14 +83,12 @@ public final class BatchOptions {
     }
 
     /**
-     * Defines timeout for Redis response. 
-     * Starts to countdown when Redis command has been successfully sent.
-     * <p>
-     * Default is <code>{@link BaseConfig#getTimeout()}</code>
+     * 设置 Redis 响应超时。
+     * <p>自命令成功发送后开始计时；默认取 {@link BaseConfig#getTimeout()}。
      *
-     * @param timeout value
-     * @param unit value
-     * @return self instance
+     * @param timeout 超时数值
+     * @param unit 时间单位
+     * @return 当前实例
      */
     public BatchOptions responseTimeout(long timeout, TimeUnit unit) {
         this.responseTimeout = unit.toMillis(timeout);
@@ -110,13 +100,11 @@ public final class BatchOptions {
     }
 
     /**
-     * Defines attempts amount to send Redis commands batch
-     * if it hasn't been sent already.
-     * <p>
-     * Default is <code>{@link BaseConfig#getRetryAttempts()}</code>
-     * 
-     * @param retryAttempts value
-     * @return self instance
+     * 设置批量命令尚未成功发送时的重试次数。
+     * <p>默认取 {@link BaseConfig#getRetryAttempts()}。
+     *
+     * @param retryAttempts 重试次数
+     * @return 当前实例
      */
     public BatchOptions retryAttempts(int retryAttempts) {
         this.retryAttempts = retryAttempts;
@@ -124,11 +112,11 @@ public final class BatchOptions {
     }
 
     /**
-     * Use {@link #retryDelay(DelayStrategy)} instead
-     * 
-     * @param retryInterval time interval
-     * @param retryIntervalUnit time interval unit
-     * @return self instance
+     * 请改用 {@link #retryDelay(DelayStrategy)}。
+     *
+     * @param retryInterval 重试间隔
+     * @param retryIntervalUnit 间隔时间单位
+     * @return 当前实例
      */
     @Deprecated
     public BatchOptions retryInterval(long retryInterval, TimeUnit retryIntervalUnit) {
@@ -138,7 +126,7 @@ public final class BatchOptions {
 
     
     /**
-     * Use {@link #sync(int, Duration)} instead
+     * 请改用 {@link #sync(int, Duration)}。
      */
     @Deprecated
     public BatchOptions syncSlaves(int slaves, long timeout, TimeUnit unit) {
@@ -148,14 +136,12 @@ public final class BatchOptions {
     }
 
     /**
-     * Synchronize write operations execution within defined timeout
-     * across specified amount of Redis slave nodes.
-     * <p>
-     * NOTE: Redis 3.0+ required
+     * 在指定超时内，将写操作同步到给定数量的 Redis 从节点。
+     * <p>需要 Redis 3.0+。
      *
-     * @param slaves slaves amount for synchronization
-     * @param timeout synchronization timeout
-     * @return self instance
+     * @param slaves 参与同步的从节点数量
+     * @param timeout 同步超时
+     * @return 当前实例
      */
     public BatchOptions sync(int slaves, Duration timeout) {
         this.syncSlaves = slaves;
@@ -171,11 +157,10 @@ public final class BatchOptions {
     }
 
     /**
-     * Inform Redis not to send reply. This allows to save network traffic for commands with batch with big response.
-     * <p>
-     * NOTE: Redis 3.2+ required
+     * 告知 Redis 不返回应答，可节省大批量响应的网络流量。
+     * <p>需要 Redis 3.2+。
      *
-     * @return self instance
+     * @return 当前实例
      */
     public BatchOptions skipResult() {
         skipResult = true;
@@ -183,15 +168,13 @@ public final class BatchOptions {
     }
 
     /**
-     * Synchronize write operations to the AOF within defined timeout
-     * across specified amount of Redis slave nodes and local Redis.
-     * <p>
-     * NOTE: Redis 7.2+ required
+     * 在指定超时内，将写操作同步到 AOF 及给定数量的从节点与本地 Redis。
+     * <p>需要 Redis 7.2+。
      *
-     * @param localNum local Redis amount for synchronization
-     * @param slaves slaves amount for synchronization
-     * @param timeout synchronization timeout
-     * @return self instance
+     * @param localNum 参与同步的本地 Redis 数量
+     * @param slaves 参与同步的从节点数量
+     * @param timeout 同步超时
+     * @return 当前实例
      */
     public BatchOptions syncAOF(int localNum, int slaves, Duration timeout) {
         this.syncSlaves = slaves;
@@ -213,12 +196,11 @@ public final class BatchOptions {
     }
 
     /**
-     * Sets execution mode.
-     * 
+     * 设置批量执行模式。
+     *
      * @see ExecutionMode
-     * 
-     * @param executionMode batch execution mode
-     * @return self instance
+     * @param executionMode 批量执行模式
+     * @return 当前实例
      */
     public BatchOptions executionMode(ExecutionMode executionMode) {
         this.executionMode = executionMode;
@@ -238,17 +220,16 @@ public final class BatchOptions {
     }
 
     /**
-     * Defines the delay strategy for a new attempt to send a batch.
-     * <p>
-     * Default is <code>{@link BaseConfig#getRetryDelay()}}</code>
+     * 设置批量发送失败后的重试延迟策略。
+     * <p>默认取 {@link BaseConfig#getRetryDelay()}。
      *
      * @see DecorrelatedJitterDelay
      * @see EqualJitterDelay
      * @see FullJitterDelay
      * @see ConstantDelay
      *
-     * @param retryDelay delay strategy implementation
-     * @return options instance
+     * @param retryDelay 延迟策略实现
+     * @return 当前实例
      */
     public BatchOptions retryDelay(DelayStrategy retryDelay) {
         this.retryDelay = retryDelay;

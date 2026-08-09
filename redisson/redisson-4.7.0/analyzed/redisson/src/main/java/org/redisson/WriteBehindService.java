@@ -22,9 +22,11 @@ import org.redisson.api.MapOptions;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Map Write-Behind 异步刷盘任务管理器。
+ * <p>按 map 名称维护 {@link MapWriteBehindTask}，在 {@link MapOptions} 启用
+ * write-behind 时启动后台批量写入。
  *
+ * @author Nikita Koksharov
  */
 public final class WriteBehindService {
 

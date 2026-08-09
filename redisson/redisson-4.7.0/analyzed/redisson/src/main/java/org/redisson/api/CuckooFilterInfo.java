@@ -18,10 +18,9 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * Cuckoo filter information returned by the {@code CF.INFO} command.
+ * {@code CF.INFO} 命令返回的布谷鸟过滤器统计信息。
  *
  * @author Nikita Koksharov
- *
  */
 public class CuckooFilterInfo {
 
@@ -35,12 +34,11 @@ public class CuckooFilterInfo {
     private final long maxIterations;
 
     /**
-     * Creates instance from the raw list returned by {@code CF.INFO}.
-     * <p>
-     * The response is a flat list of alternating field names and values:
-     * {@code [field1, value1, field2, value2, ...]}.
+     * 从 {@code CF.INFO} 返回的原始列表构造实例。
+     * <p>响应为字段名与值交替的扁平列表：
+     * {@code [field1, value1, field2, value2, ...]}。
      *
-     * @param info raw response list
+     * @param info 原始响应列表
      */
     public CuckooFilterInfo(List<Object> info) {
         this.size = getLong(info, "Size");
@@ -66,73 +64,72 @@ public class CuckooFilterInfo {
     }
 
     /**
-     * Returns the memory size in bytes.
+     * 返回过滤器占用的内存字节数。
      *
-     * @return size in bytes
+     * @return 字节数
      */
     public long getSize() {
         return size;
     }
 
     /**
-     * Returns the number of buckets in the filter.
+     * 返回过滤器中的桶数量。
      *
-     * @return number of buckets
+     * @return 桶数量
      */
     public long getNumberOfBuckets() {
         return numberOfBuckets;
     }
 
     /**
-     * Returns the number of sub-filters.
+     * 返回子过滤器数量。
      *
-     * @return number of filters
+     * @return 子过滤器数量
      */
     public long getNumberOfFilters() {
         return numberOfFilters;
     }
 
     /**
-     * Returns the number of items inserted into the filter.
+     * 返回已插入的元素数量。
      *
-     * @return number of inserted items
+     * @return 已插入元素数
      */
     public long getNumberOfInsertedItems() {
         return numberOfInsertedItems;
     }
 
     /**
-     * Returns the number of items deleted from the filter.
+     * 返回已删除的元素数量。
      *
-     * @return number of deleted items
+     * @return 已删除元素数
      */
     public long getNumberOfDeletedItems() {
         return numberOfDeletedItems;
     }
 
     /**
-     * Returns the number of items each bucket can hold.
+     * 返回每个桶可容纳的元素数量。
      *
-     * @return bucket size
+     * @return 桶容量
      */
     public long getBucketSize() {
         return bucketSize;
     }
 
     /**
-     * Returns the expansion rate.
+     * 返回扩容倍率。
      *
-     * @return expansion rate
+     * @return 扩容倍率
      */
     public long getExpansionRate() {
         return expansionRate;
     }
 
     /**
-     * Returns the maximum number of swap attempts
-     * before declaring the filter full.
+     * 返回判定过滤器已满前的最大交换尝试次数。
      *
-     * @return max iterations
+     * @return 最大迭代次数
      */
     public long getMaxIterations() {
         return maxIterations;
