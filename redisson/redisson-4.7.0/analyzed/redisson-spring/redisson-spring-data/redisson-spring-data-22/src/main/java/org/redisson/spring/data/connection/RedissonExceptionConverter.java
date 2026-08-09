@@ -27,8 +27,9 @@ import org.springframework.data.redis.ClusterRedirectException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 
 /**
- * Converts Redisson exceptions to Spring compatible
- * 
+ * 将 Redisson 客户端异常映射为 Spring Data Redis {@link DataAccessException}。
+ * <p>连接失败、集群重定向、超时与通用 Redis 错误分别对应不同 Spring 异常类型。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -36,18 +37,22 @@ public class RedissonExceptionConverter implements Converter<Exception, DataAcce
 
     @Override
     public DataAccessException convert(Exception source) {
+        // 连接层错误 -> RedisConnectionFailureException。
         if (source instanceof RedisConnectionException) {
             return new RedisConnectionFailureException(source.getMessage(), source);
         }
+        // 集群 MOVED/ASK 重定向 -> ClusterRedirectException。
         if (source instanceof RedisRedirectException) {
             RedisRedirectException ex = (RedisRedirectException) source;
             return new ClusterRedirectException(ex.getSlot(), ex.getUrl().getHost(), ex.getUrl().getPort(), source);
         }
 
+        // 命令超时 -> QueryTimeoutException。
         if (source instanceof RedisTimeoutException) {
             return new QueryTimeoutException(source.getMessage(), source);
         }
 
+        // 其他 Redis 协议错误 -> InvalidDataAccessApiUsageException。
         if (source instanceof RedisException) {
             return new InvalidDataAccessApiUsageException(source.getMessage(), source);
         }
