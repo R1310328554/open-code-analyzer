@@ -32,11 +32,15 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * gRPC v2 RPC 全名到 Remoting {@link RequestCode} 的映射表，用于监控与限流统计。
+ */
 public class RequestMapping {
     @SuppressWarnings("DoubleBraceInitialization")
+    /** RPC 全名 → RequestCode 静态映射表。 */
     private final static Map<String, Integer> REQUEST_MAP = new HashMap<String, Integer>() {
         {
-            // v2
+            // gRPC v2 协议 RPC 映射
             put(QueryRouteRequest.getDescriptor().getFullName(), RequestCode.GET_ROUTEINFO_BY_TOPIC);
             put(HeartbeatRequest.getDescriptor().getFullName(), RequestCode.HEART_BEAT);
             put(SendMessageRequest.getDescriptor().getFullName(), RequestCode.SEND_MESSAGE_V2);
@@ -51,6 +55,7 @@ public class RequestMapping {
         }
     };
 
+    /** 按 RPC 全名查找 RequestCode，未命中时返回心跳码。 */
     public static int map(String rpcFullName) {
         if (REQUEST_MAP.containsKey(rpcFullName)) {
             return REQUEST_MAP.get(rpcFullName);

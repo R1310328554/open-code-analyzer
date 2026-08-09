@@ -34,16 +34,23 @@ import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.proxy.common.utils.GrpcUtils;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 
+/**
+ * 身份认证 Pipeline：在请求进入业务层前执行 AK/SK 或 Token 认证评估。
+ */
 public class AuthenticationPipeline implements RequestPipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 认证模块配置。 */
     private final AuthConfig authConfig;
+    /** 认证评估器，由工厂按配置创建。 */
     private final AuthenticationEvaluator authenticationEvaluator;
 
+    /** 构造认证 Pipeline 并绑定元数据服务。 */
     public AuthenticationPipeline(AuthConfig authConfig, MessagingProcessor messagingProcessor) {
         this.authConfig = authConfig;
         this.authenticationEvaluator = AuthenticationFactory.getEvaluator(authConfig, messagingProcessor::getMetadataService);
     }
 
+    /** 认证开关开启时构建上下文并执行认证评估。 */
     @Override
     public void execute(ProxyContext context, Metadata headers, GeneratedMessageV3 request) {
         if (!authConfig.isAuthenticationEnabled()) {
@@ -62,12 +69,12 @@ public class AuthenticationPipeline implements RequestPipeline {
     }
 
     /**
-     * Create Context, for extension
+     * 创建认证上下文，子类可覆写以扩展字段。
      *
-     * @param context for extension
-     * @param headers gRPC headers
-     * @param request
-     * @return
+     * @param context Proxy 上下文
+     * @param headers gRPC 请求头
+     * @param request Protobuf 请求体
+     * @return 认证上下文实例
      */
     protected AuthenticationContext newContext(ProxyContext context, Metadata headers, GeneratedMessageV3 request) {
         AuthenticationContext result = AuthenticationFactory.newContext(authConfig, headers, request);

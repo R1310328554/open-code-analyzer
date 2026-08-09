@@ -25,23 +25,30 @@ import org.apache.rocketmq.common.constant.GrpcConstants;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.proxy.processor.channel.ChannelProtocolType;
 
+/**
+ * 上下文初始化 Pipeline：从 gRPC Metadata 填充 {@link ProxyContext} 的地址、客户端与协议信息。
+ */
 public class ContextInitPipeline implements RequestPipeline {
+    /** 将 Metadata 中的客户端元数据写入 ProxyContext。 */
     @Override
     public void execute(ProxyContext context, Metadata headers, GeneratedMessageV3 request) {
         Context ctx = Context.current();
         context.setLocalAddress(getDefaultStringMetadataInfo(headers, GrpcConstants.LOCAL_ADDRESS))
             .setRemoteAddress(getDefaultStringMetadataInfo(headers, GrpcConstants.REMOTE_ADDRESS))
             .setClientID(getDefaultStringMetadataInfo(headers, GrpcConstants.CLIENT_ID))
+            // 标记协议类型为 gRPC v2
             .setProtocolType(ChannelProtocolType.GRPC_V2.getName())
             .setLanguage(getDefaultStringMetadataInfo(headers, GrpcConstants.LANGUAGE))
             .setClientVersion(getDefaultStringMetadataInfo(headers, GrpcConstants.CLIENT_VERSION))
             .setAction(getDefaultStringMetadataInfo(headers, GrpcConstants.SIMPLE_RPC_NAME))
             .setNamespace(getDefaultStringMetadataInfo(headers, GrpcConstants.NAMESPACE_ID));
+        // 记录 gRPC 调用剩余超时毫秒数
         if (ctx.getDeadline() != null) {
             context.setRemainingMs(ctx.getDeadline().timeRemaining(TimeUnit.MILLISECONDS));
         }
     }
 
+    /** 安全读取 Metadata 字符串值，缺失时返回空串。 */
     protected String getDefaultStringMetadataInfo(Metadata headers, Metadata.Key<String> key) {
         return StringUtils.defaultString(headers.get(key));
     }

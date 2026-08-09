@@ -22,25 +22,35 @@ import org.apache.rocketmq.common.constant.HAProxyConstants;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * gRPC Attributes 键常量：承载 HAProxy 解析出的通道 ID 与客户端真实地址等信息。
+ */
 public class AttributeKeys {
 
+    /** Netty 通道唯一标识。 */
     public static final Attributes.Key<String> CHANNEL_ID =
         Attributes.Key.create(HAProxyConstants.CHANNEL_ID);
 
+    /** HAProxy 解析的客户端源 IP 地址。 */
     public static final Attributes.Key<String> PROXY_PROTOCOL_ADDR =
             Attributes.Key.create(HAProxyConstants.PROXY_PROTOCOL_ADDR);
 
+    /** HAProxy 解析的客户端源端口。 */
     public static final Attributes.Key<String> PROXY_PROTOCOL_PORT =
             Attributes.Key.create(HAProxyConstants.PROXY_PROTOCOL_PORT);
 
+    /** HAProxy 解析的服务端目的地址。 */
     public static final Attributes.Key<String> PROXY_PROTOCOL_SERVER_ADDR =
             Attributes.Key.create(HAProxyConstants.PROXY_PROTOCOL_SERVER_ADDR);
 
+    /** HAProxy 解析的服务端目的端口。 */
     public static final Attributes.Key<String> PROXY_PROTOCOL_SERVER_PORT =
             Attributes.Key.create(HAProxyConstants.PROXY_PROTOCOL_SERVER_PORT);
 
+    /** 动态 Attributes 键缓存，避免重复创建。 */
     private static final Map<String, Attributes.Key<String>> ATTRIBUTES_KEY_MAP = new ConcurrentHashMap<>();
 
+    /** 按名称获取或创建 Attributes 键。 */
     public static Attributes.Key<String> valueOf(String name) {
         return ATTRIBUTES_KEY_MAP.computeIfAbsent(name, key -> Attributes.Key.create(name));
     }

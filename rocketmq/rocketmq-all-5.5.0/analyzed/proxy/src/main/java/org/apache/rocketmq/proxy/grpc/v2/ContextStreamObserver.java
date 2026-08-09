@@ -19,11 +19,17 @@ package org.apache.rocketmq.proxy.grpc.v2;
 
 import org.apache.rocketmq.proxy.common.ProxyContext;
 
+/**
+ * 带 {@link ProxyContext} 的流式 Observer：服务端流 RPC 回调中传递请求上下文。
+ */
 public interface ContextStreamObserver<V> {
 
+    /** 收到流式消息时回调，携带当前 Proxy 上下文。 */
     void onNext(ProxyContext ctx, V value);
 
+    /** 流式调用出错时回调。 */
     void onError(Throwable t);
 
+    /** 客户端半关闭或流结束时回调。 */
     void onCompleted();
 }

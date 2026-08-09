@@ -16,30 +16,31 @@
  */
 package org.apache.rocketmq.proxy.config;
 
+/**
+ * 指标采集模式：控制 Proxy 是否从客户端收集指标及采集方式。
+ */
 public enum MetricCollectorMode {
-    /**
-     * Do not collect the metric from clients.
-     */
+    /** 关闭客户端指标采集。 */
     OFF("off"),
-    /**
-     * Collect the metric from clients to the given address.
-     */
+    /** 从客户端采集指标并上报至指定地址。 */
     ON("on"),
-    /**
-     * Collect the metric by the proxy itself.
-     */
+    /** 由 Proxy 自身采集并聚合指标。 */
     PROXY("proxy");
 
+    /** 配置字符串值（off/on/proxy）。 */
     private final String modeString;
 
+    /** 构造枚举项并绑定配置字符串。 */
     MetricCollectorMode(String modeString) {
         this.modeString = modeString;
     }
 
+    /** 返回模式对应的配置字符串。 */
     public String getModeString() {
         return modeString;
     }
 
+    /** 按配置字符串解析枚举，无法识别时默认 {@link #OFF}。 */
     public static MetricCollectorMode getEnumByString(String modeString) {
         for (MetricCollectorMode mode : MetricCollectorMode.values()) {
             if (mode.modeString.equals(modeString.toLowerCase())) {

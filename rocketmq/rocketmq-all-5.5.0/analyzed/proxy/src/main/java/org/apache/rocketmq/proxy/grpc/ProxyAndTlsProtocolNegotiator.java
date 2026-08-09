@@ -66,17 +66,20 @@ import org.apache.rocketmq.proxy.grpc.constant.AttributeKeys;
 import org.apache.rocketmq.remoting.common.TlsMode;
 import org.apache.rocketmq.remoting.netty.TlsSystemConfig;
 
+/**
+ * Proxy 协议与 TLS 协商器：检测 HAProxy 协议头、解析客户端真实地址并按 TLS 模式选择加密或明文管道。
+ */
 public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator.ProtocolNegotiator {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
+    /** HAProxy 解码器管道名称。 */
     private static final String HA_PROXY_DECODER = "HAProxyDecoder";
     private static final String HA_PROXY_HANDLER = "HAProxyHandler";
     private static final String TLS_MODE_HANDLER = "TlsModeHandler";
-    /**
-     * the length of the ssl record header (in bytes)
-     */
+    /** SSL 记录头长度（字节），用于判断是否为加密流量。 */
     private static final int SSL_RECORD_HEADER_LENGTH = 5;
 
+    /** 全局 SslContext，证书热重载时更新。 */
     private static SslContext sslContext;
 
     public ProxyAndTlsProtocolNegotiator() {
@@ -103,6 +106,7 @@ public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator
     public void close() {
     }
 
+    /** 按配置加载或生成 SslContext（支持测试自签模式）。 */
     public static void loadSslContext() throws CertificateException, IOException {
         ProxyConfig proxyConfig = ConfigurationManager.getProxyConfig();
         SslProvider provider;
@@ -138,6 +142,7 @@ public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator
         }
     }
 
+    /** 首包检测 HAProxy 协议并装配后续处理器链。 */
     private class ProxyAndTlsProtocolHandler extends ByteToMessageDecoder {
 
         private final GrpcHttp2ConnectionHandler grpcHandler;
@@ -149,6 +154,7 @@ public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator
         }
 
         @Override
+        /** 检测 HAProxy 协议并注入解码器、地址解析与 TLS 模式处理器。 */
         protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
             try {
                 ProtocolDetectionResult<HAProxyProtocolVersion> ha = HAProxyMessageDecoder.detectProtocol(in);
@@ -184,6 +190,7 @@ public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator
         }
     }
 
+    /** 解析 HAProxy 报文并将源/目的地址写入 gRPC Attributes。 */
     private class HAProxyMessageHandler extends ChannelInboundHandlerAdapter {
 
         private ProtocolNegotiationEvent pne = InternalProtocolNegotiationEvent.getDefault();
@@ -200,10 +207,9 @@ public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator
         }
 
         /**
-         * The definition of key refers to the implementation of nginx
-         * <a href="https://nginx.org/en/docs/http/ngx_http_core_module.html#var_proxy_protocol_addr">ngx_http_core_module</a>
+         * 解析 HAProxy 报文字段，键名定义参考 nginx proxy_protocol 实现。
          *
-         * @param msg
+         * @param msg HAProxy 协议消息
          */
         private void handleWithMessage(HAProxyMessage msg) {
             try {
@@ -240,6 +246,7 @@ public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator
         }
     }
 
+    /** 将 ASCII 类型的 HAProxy TLV 扩展字段写入 Attributes。 */
     protected void handleHAProxyTLV(HAProxyTLV tlv, Attributes.Builder builder) {
         byte[] valueBytes = ByteBufUtil.getBytes(tlv.content());
         if (!BinaryUtil.isAscii(valueBytes)) {
@@ -250,6 +257,7 @@ public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator
         builder.set(key, new String(valueBytes, CharsetUtil.UTF_8));
     }
 
+    /** 按 {@link TlsMode} 配置选择 TLS 或明文 gRPC 处理器。 */
     private class TlsModeHandler extends ByteToMessageDecoder {
 
         private ProtocolNegotiationEvent pne = InternalProtocolNegotiationEvent.getDefault();
@@ -273,7 +281,7 @@ public class ProxyAndTlsProtocolNegotiator implements InternalProtocolNegotiator
                 } else if (TlsMode.DISABLED.equals(tlsMode)) {
                     ctx.pipeline().addAfter(ctx.name(), null, this.plaintext);
                 } else {
-                    // in SslHandler.isEncrypted, it needs at least 5 bytes to judge is encrypted or not
+                    // SslHandler.isEncrypted 至少需要 5 字节判断是否为 TLS 流量
                     if (in.readableBytes() < SSL_RECORD_HEADER_LENGTH) {
                         return;
                     }

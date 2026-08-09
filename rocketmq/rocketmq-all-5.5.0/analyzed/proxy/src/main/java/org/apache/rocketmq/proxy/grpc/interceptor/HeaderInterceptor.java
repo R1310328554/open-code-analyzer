@@ -33,13 +33,18 @@ import org.apache.rocketmq.proxy.grpc.constant.AttributeKeys;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+/**
+ * Header 拦截器：从 gRPC Attributes 与 HAProxy 信息填充远程/本地地址等 Metadata 头。
+ */
 public class HeaderInterceptor implements ServerInterceptor {
+    /** 补全客户端地址、通道 ID 及 HAProxy TLV 头后转发调用。 */
     @Override
     public <R, W> ServerCall.Listener<R> interceptCall(
         ServerCall<R, W> call,
         Metadata headers,
         ServerCallHandler<R, W> next
     ) {
+        // 优先使用 HAProxy 解析的真实客户端地址
         String remoteAddress = getProxyProtocolAddress(call.getAttributes());
         if (StringUtils.isBlank(remoteAddress)) {
             SocketAddress remoteSocketAddress = call.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR);
@@ -51,6 +56,7 @@ public class HeaderInterceptor implements ServerInterceptor {
         String localAddress = parseSocketAddress(localSocketAddress);
         GrpcUtils.putHeaderIfNotExist(headers, GrpcConstants.LOCAL_ADDRESS, localAddress);
 
+        // 将 HAProxy 前缀的 Attributes 同步到 Metadata
         for (Attributes.Key<?> key : call.getAttributes().keys()) {
             if (!StringUtils.startsWith(key.toString(), HAProxyConstants.PROXY_PROTOCOL_PREFIX)) {
                 continue;
@@ -69,6 +75,7 @@ public class HeaderInterceptor implements ServerInterceptor {
         return next.startCall(call, headers);
     }
 
+    /** 将 SocketAddress 格式化为 host:port 字符串。 */
     private String parseSocketAddress(SocketAddress socketAddress) {
         if (socketAddress instanceof InetSocketAddress) {
             InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
@@ -82,6 +89,7 @@ public class HeaderInterceptor implements ServerInterceptor {
         return "";
     }
 
+    /** 从 HAProxy Attributes 拼接客户端 host:port。 */
     private String getProxyProtocolAddress(Attributes attributes) {
         String proxyProtocolAddr = attributes.get(AttributeKeys.PROXY_PROTOCOL_ADDR);
         String proxyProtocolPort = attributes.get(AttributeKeys.PROXY_PROTOCOL_PORT);

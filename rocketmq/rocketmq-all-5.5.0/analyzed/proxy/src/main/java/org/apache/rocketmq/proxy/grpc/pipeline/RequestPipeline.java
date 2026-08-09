@@ -21,10 +21,15 @@ import com.google.protobuf.GeneratedMessageV3;
 import io.grpc.Metadata;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 
+/**
+ * gRPC 请求处理管道接口：各阶段（上下文初始化、认证、授权等）按序执行。
+ */
 public interface RequestPipeline {
 
+    /** 执行当前管道阶段逻辑。 */
     void execute(ProxyContext context, Metadata headers, GeneratedMessageV3 request);
 
+    /** 将当前阶段链接到上游 Pipeline，形成顺序执行链。 */
     default RequestPipeline pipe(RequestPipeline source) {
         return (ctx, headers, request) -> {
             source.execute(ctx, headers, request);

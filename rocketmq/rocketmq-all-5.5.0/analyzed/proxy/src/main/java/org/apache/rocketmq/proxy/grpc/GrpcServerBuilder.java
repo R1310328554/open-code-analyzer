@@ -36,16 +36,23 @@ import org.apache.rocketmq.proxy.grpc.interceptor.GlobalExceptionInterceptor;
 import org.apache.rocketmq.proxy.grpc.interceptor.HeaderInterceptor;
 import org.apache.rocketmq.proxy.service.cert.TlsCertificateManager;
 
+/**
+ * gRPC 服务端构建器：配置 Netty 线程模型、消息大小、空闲超时及拦截器链。
+ */
 public class GrpcServerBuilder {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 底层 Netty gRPC 构建器。 */
     protected NettyServerBuilder serverBuilder;
 
+    /** 关闭等待超时默认值（秒）。 */
     protected long time = 30;
 
+    /** 关闭超时时间单位。 */
     protected TimeUnit unit = TimeUnit.SECONDS;
 
     protected TlsCertificateManager tlsCertificateManager;
 
+    /** 创建构建器并绑定业务线程池、监听端口与 TLS 证书管理器。 */
     public static GrpcServerBuilder newBuilder(ThreadPoolExecutor executor, int port,
         TlsCertificateManager tlsCertificateManager) {
         return new GrpcServerBuilder(executor, port, tlsCertificateManager);
@@ -57,9 +64,10 @@ public class GrpcServerBuilder {
         serverBuilder = NettyServerBuilder.forPort(port)
             .maxConcurrentCallsPerConnection(config.getGrpcMaxConcurrentCallsPerConnection());
 
+        // 安装 HAProxy/TLS 协议协商器
         serverBuilder.protocolNegotiator(new ProxyAndTlsProtocolNegotiator());
 
-        // build server
+        // 按配置选择 Epoll 或 Nio 事件循环并设置消息大小与空闲超时
         int bossLoopNum = config.getGrpcBossLoopNum();
         int workerLoopNum = config.getGrpcWorkerLoopNum();
         int maxInboundMessageSize = config.getGrpcMaxInboundMessageSize();
@@ -84,12 +92,14 @@ public class GrpcServerBuilder {
             port, bossLoopNum, workerLoopNum, maxInboundMessageSize);
     }
 
+    /** 设置优雅关闭等待时长。 */
     public GrpcServerBuilder shutdownTime(long time, TimeUnit unit) {
         this.time = time;
         this.unit = unit;
         return this;
     }
 
+    /** 注册 BindableService 到 gRPC 服务端。 */
     public GrpcServerBuilder addService(BindableService service) {
         this.serverBuilder.addService(service);
         return this;
@@ -100,15 +110,18 @@ public class GrpcServerBuilder {
         return this;
     }
 
+    /** 追加自定义 gRPC 服务端拦截器。 */
     public GrpcServerBuilder appendInterceptor(ServerInterceptor interceptor) {
         this.serverBuilder.intercept(interceptor);
         return this;
     }
 
+    /** 构建 {@link GrpcServer} 实例。 */
     public GrpcServer build() throws Exception {
         return new GrpcServer(this.serverBuilder.build(), time, unit, tlsCertificateManager);
     }
 
+    /** 安装全局异常、上下文与 Header 拦截器链。 */
     public GrpcServerBuilder configInterceptor() {
         this.serverBuilder
             .intercept(new GlobalExceptionInterceptor())

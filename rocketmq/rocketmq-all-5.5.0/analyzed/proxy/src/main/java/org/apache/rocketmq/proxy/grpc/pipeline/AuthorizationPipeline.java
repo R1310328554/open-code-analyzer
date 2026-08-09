@@ -31,16 +31,23 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 
+/**
+ * 授权 Pipeline：认证通过后按资源与操作执行 ACL 授权评估。
+ */
 public class AuthorizationPipeline implements RequestPipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 授权模块配置。 */
     private final AuthConfig authConfig;
+    /** 授权评估器。 */
     private final AuthorizationEvaluator authorizationEvaluator;
 
+    /** 构造授权 Pipeline 并绑定元数据服务。 */
     public AuthorizationPipeline(AuthConfig authConfig, MessagingProcessor messagingProcessor) {
         this.authConfig = authConfig;
         this.authorizationEvaluator = AuthorizationFactory.getEvaluator(authConfig, messagingProcessor::getMetadataService);
     }
 
+    /** 授权开关开启时构建上下文列表并批量评估权限。 */
     @Override
     public void execute(ProxyContext context, Metadata headers, GeneratedMessageV3 request) {
         if (!authConfig.isAuthorizationEnabled()) {
@@ -57,6 +64,7 @@ public class AuthorizationPipeline implements RequestPipeline {
         }
     }
 
+    /** 从请求解析授权上下文列表，子类可覆写扩展。 */
     protected List<AuthorizationContext> newContexts(ProxyContext context, Metadata headers, GeneratedMessageV3 request) {
         return AuthorizationFactory.newContexts(authConfig, headers, request);
     }

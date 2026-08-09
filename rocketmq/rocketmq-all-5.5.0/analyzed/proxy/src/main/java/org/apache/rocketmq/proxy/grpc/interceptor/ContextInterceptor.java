@@ -25,14 +25,19 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import org.apache.rocketmq.common.constant.GrpcConstants;
 
+/**
+ * gRPC 上下文拦截器：将请求 Metadata 绑定到 {@link GrpcConstants#METADATA} Context 键供下游读取。
+ */
 public class ContextInterceptor implements ServerInterceptor {
 
+    /** 将 gRPC Metadata 写入 Context 并继续调用链。 */
     @Override
     public <R, W> ServerCall.Listener<R> interceptCall(
         ServerCall<R, W> call,
         Metadata headers,
         ServerCallHandler<R, W> next
     ) {
+        // 将请求头绑定到 Context，供 Pipeline 与业务层访问
         Context context = Context.current().withValue(GrpcConstants.METADATA, headers);
         return Contexts.interceptCall(context, call, headers, next);
     }
