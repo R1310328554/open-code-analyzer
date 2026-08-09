@@ -27,9 +27,8 @@ import org.springframework.aop.AfterReturningAdvice;
 import org.springframework.util.Assert;
 
 /**
- * Interceptor to wrap an {@link org.springframework.aop.AfterReturningAdvice}.
- * Used internally by the AOP framework; application developers should not need
- * to use this class directly.
+ * 包装 {@link org.springframework.aop.AfterReturningAdvice} 的拦截器。
+ * AOP 框架内部使用；应用开发者通常无需直接使用本类。
  *
  * @author Rod Johnson
  * @see MethodBeforeAdviceInterceptor
@@ -42,8 +41,8 @@ public class AfterReturningAdviceInterceptor implements MethodInterceptor, After
 
 
 	/**
-	 * Create a new AfterReturningAdviceInterceptor for the given advice.
-	 * @param advice the AfterReturningAdvice to wrap
+	 * 为给定 Advice 创建新的 AfterReturningAdviceInterceptor。
+	 * @param advice 要包装的 AfterReturningAdvice
 	 */
 	public AfterReturningAdviceInterceptor(AfterReturningAdvice advice) {
 		Assert.notNull(advice, "Advice must not be null");

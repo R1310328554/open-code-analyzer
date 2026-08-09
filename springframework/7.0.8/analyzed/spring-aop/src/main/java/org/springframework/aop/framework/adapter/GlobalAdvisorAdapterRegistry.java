@@ -17,7 +17,7 @@
 package org.springframework.aop.framework.adapter;
 
 /**
- * Singleton to publish a shared DefaultAdvisorAdapterRegistry instance.
+ * 单例：发布共享的 DefaultAdvisorAdapterRegistry 实例。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -31,21 +31,21 @@ public final class GlobalAdvisorAdapterRegistry {
 
 
 	/**
-	 * Keep track of a single instance so we can return it to classes that request it.
+	 * 维护单一实例，以便返回给请求的类。
 	 */
 	private static AdvisorAdapterRegistry instance = new DefaultAdvisorAdapterRegistry();
 
 	/**
-	 * Return the singleton {@link DefaultAdvisorAdapterRegistry} instance.
+	 * 返回单例 {@link DefaultAdvisorAdapterRegistry} 实例。
 	 */
 	public static AdvisorAdapterRegistry getInstance() {
 		return instance;
 	}
 
 	/**
-	 * Reset the singleton {@link DefaultAdvisorAdapterRegistry}, removing any
-	 * {@link AdvisorAdapterRegistry#registerAdvisorAdapter(AdvisorAdapter) registered}
-	 * adapters.
+	 * 重置单例 {@link DefaultAdvisorAdapterRegistry}，
+	 * 移除所有 {@link AdvisorAdapterRegistry#registerAdvisorAdapter(AdvisorAdapter) 已注册}
+	 * 的适配器。
 	 */
 	static void reset() {
 		instance = new DefaultAdvisorAdapterRegistry();

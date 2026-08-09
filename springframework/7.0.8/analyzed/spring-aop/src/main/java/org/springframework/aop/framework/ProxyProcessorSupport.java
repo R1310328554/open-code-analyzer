@@ -29,8 +29,8 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Base class with common functionality for proxy processors, in particular
- * ClassLoader management and the {@link #evaluateProxyInterfaces} algorithm.
+ * 代理处理器通用功能基类，
+ * 尤其包含 ClassLoader 管理与 {@link #evaluateProxyInterfaces} 算法。
  *
  * @author Juergen Hoeller
  * @since 4.1
@@ -41,8 +41,8 @@ import org.springframework.util.ObjectUtils;
 public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanClassLoaderAware, AopInfrastructureBean {
 
 	/**
-	 * This should run after all other processors, so that it can just add
-	 * an advisor to existing proxies rather than double-proxy.
+	 * 应在所有其他处理器之后运行，
+	 * 以便向现有代理添加 Advisor 而非双重代理。
 	 */
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
@@ -52,10 +52,10 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 
 
 	/**
-	 * Set the ordering which will apply to this processor's implementation
-	 * of {@link Ordered}, used when applying multiple processors.
-	 * <p>The default value is {@code Ordered.LOWEST_PRECEDENCE}, meaning non-ordered.
-	 * @param order the ordering value
+	 * 设置本处理器 {@link Ordered} 实现的排序值，
+	 * 用于应用多个处理器时。
+	 * <p>默认值为 {@code Ordered.LOWEST_PRECEDENCE}，表示无序。
+	 * @param order 排序值
 	 */
 	public void setOrder(int order) {
 		this.order = order;
@@ -67,10 +67,10 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	}
 
 	/**
-	 * Set the ClassLoader to generate the proxy class in.
-	 * <p>Default is the bean ClassLoader, i.e. the ClassLoader used by the containing
-	 * {@link org.springframework.beans.factory.BeanFactory} for loading all bean classes.
-	 * This can be overridden here for specific proxies.
+	 * 设置生成代理类所用的 ClassLoader。
+	 * <p>默认为 Bean ClassLoader，即包含的
+	 * {@link org.springframework.beans.factory.BeanFactory} 加载所有 Bean 类所用的 ClassLoader。
+	 * 可在此为特定代理覆盖。
 	 */
 	public void setProxyClassLoader(@Nullable ClassLoader classLoader) {
 		this.proxyClassLoader = classLoader;
@@ -78,7 +78,7 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	}
 
 	/**
-	 * Return the configured proxy ClassLoader for this processor.
+	 * 返回本处理器配置的代理 ClassLoader。
 	 */
 	protected @Nullable ClassLoader getProxyClassLoader() {
 		return this.proxyClassLoader;
@@ -93,12 +93,11 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 
 
 	/**
-	 * Check the interfaces on the given bean class and apply them to the {@link ProxyFactory},
-	 * if appropriate.
-	 * <p>Calls {@link #isConfigurationCallbackInterface} and {@link #isInternalLanguageInterface}
-	 * to filter for reasonable proxy interfaces, falling back to a target-class proxy otherwise.
-	 * @param beanClass the class of the bean
-	 * @param proxyFactory the ProxyFactory for the bean
+	 * 检查给定 Bean 类的接口，并在适当时应用到 {@link ProxyFactory}。
+	 * <p>调用 {@link #isConfigurationCallbackInterface} 与 {@link #isInternalLanguageInterface}
+	 * 过滤合理的代理接口，否则回退到目标类代理。
+	 * @param beanClass Bean 的类
+	 * @param proxyFactory Bean 的 ProxyFactory
 	 */
 	protected void evaluateProxyInterfaces(Class<?> beanClass, ProxyFactory proxyFactory) {
 		Class<?>[] targetInterfaces = ClassUtils.getAllInterfacesForClass(beanClass, getProxyClassLoader());
@@ -111,7 +110,7 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 			}
 		}
 		if (hasReasonableProxyInterface) {
-			// Must allow for introductions; can't just set interfaces to the target's interfaces only.
+			// 须允许引介；不能仅将接口设为目标接口。
 			for (Class<?> ifc : targetInterfaces) {
 				proxyFactory.addInterface(ifc);
 			}
@@ -122,12 +121,12 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	}
 
 	/**
-	 * Determine whether the given interface is just a container callback and
-	 * therefore not to be considered as a reasonable proxy interface.
-	 * <p>If no reasonable proxy interface is found for a given bean, it will get
-	 * proxied with its full target class, assuming that as the user's intention.
-	 * @param ifc the interface to check
-	 * @return whether the given interface is just a container callback
+	 * 判断给定接口是否仅为容器回调，
+	 * 因此不应视为合理的代理接口。
+	 * <p>若给定 Bean 找不到合理代理接口，
+	 * 将以其完整目标类代理，假定此为用户的意图。
+	 * @param ifc 要检查的接口
+	 * @return 给定接口是否仅为容器回调
 	 */
 	protected boolean isConfigurationCallbackInterface(Class<?> ifc) {
 		return (InitializingBean.class == ifc || DisposableBean.class == ifc || Closeable.class == ifc ||
@@ -135,12 +134,12 @@ public class ProxyProcessorSupport extends ProxyConfig implements Ordered, BeanC
 	}
 
 	/**
-	 * Determine whether the given interface is a well-known internal language interface
-	 * and therefore not to be considered as a reasonable proxy interface.
-	 * <p>If no reasonable proxy interface is found for a given bean, it will get
-	 * proxied with its full target class, assuming that as the user's intention.
-	 * @param ifc the interface to check
-	 * @return whether the given interface is an internal language interface
+	 * 判断给定接口是否为已知内部语言接口，
+	 * 因此不应视为合理的代理接口。
+	 * <p>若给定 Bean 找不到合理代理接口，
+	 * 将以其完整目标类代理，假定此为用户的意图。
+	 * @param ifc 要检查的接口
+	 * @return 给定接口是否为内部语言接口
 	 */
 	protected boolean isInternalLanguageInterface(Class<?> ifc) {
 		return (ifc.getName().equals("groovy.lang.GroovyObject") ||
