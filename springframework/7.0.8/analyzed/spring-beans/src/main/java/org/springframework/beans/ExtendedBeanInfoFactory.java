@@ -23,16 +23,15 @@ import java.lang.reflect.Method;
 import org.springframework.core.Ordered;
 
 /**
- * Extension of {@link StandardBeanInfoFactory} that supports "non-standard"
- * JavaBeans setter methods through introspection by Spring's
- * (package-visible) {@code ExtendedBeanInfo} implementation.
+ * {@link StandardBeanInfoFactory} 的扩展：通过 Spring（包可见）的
+ * {@code ExtendedBeanInfo} 实现对“非标准”JavaBeans setter 方法的内省支持。
  *
- * <p>To be configured via a {@code META-INF/spring.factories} file with the following content:
+ * <p>通过 {@code META-INF/spring.factories} 配置，内容如下：
  *
  * <p>{@code org.springframework.beans.BeanInfoFactory=org.springframework.beans.ExtendedBeanInfoFactory}
  *
- * <p>Ordered at {@link Ordered#LOWEST_PRECEDENCE} to allow other user-defined
- * {@link BeanInfoFactory} types to take precedence.
+ * <p>顺序为 {@link Ordered#LOWEST_PRECEDENCE}，以便用户自定义的
+ * {@link BeanInfoFactory} 可以优先生效。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -42,6 +41,9 @@ import org.springframework.core.Ordered;
  */
 public class ExtendedBeanInfoFactory extends StandardBeanInfoFactory {
 
+	/**
+	 * 获取 bean 类的 BeanInfo；若存在非标准写方法则包装为 ExtendedBeanInfo。
+	 */
 	@Override
 	public BeanInfo getBeanInfo(Class<?> beanClass) throws IntrospectionException {
 		BeanInfo beanInfo = super.getBeanInfo(beanClass);
@@ -49,8 +51,8 @@ public class ExtendedBeanInfoFactory extends StandardBeanInfoFactory {
 	}
 
 	/**
-	 * Return whether the given bean class declares or inherits any non-void
-	 * returning bean property or indexed property setter methods.
+	 * 判断给定 bean 类是否声明或继承了任何返回非 void 的
+	 * bean 属性 / 索引属性 setter 方法。
 	 */
 	private boolean supports(Class<?> beanClass) {
 		for (Method method : beanClass.getMethods()) {

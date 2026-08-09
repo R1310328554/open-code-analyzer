@@ -19,8 +19,7 @@ package org.springframework.beans;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Thrown on an unrecoverable problem encountered in the
- * beans packages or sub-packages, for example, bad class or field.
+ * 在 beans 包或其子包中遇到不可恢复问题时抛出，例如类或字段不合法。
  *
  * @author Rod Johnson
  */
@@ -28,18 +27,17 @@ import org.jspecify.annotations.Nullable;
 public class FatalBeanException extends BeansException {
 
 	/**
-	 * Create a new FatalBeanException with the specified message.
-	 * @param msg the detail message
+	 * 使用指定消息创建 FatalBeanException。
+	 * @param msg 详细消息
 	 */
 	public FatalBeanException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Create a new FatalBeanException with the specified message
-	 * and root cause.
-	 * @param msg the detail message
-	 * @param cause the root cause
+	 * 使用指定消息和根因创建 FatalBeanException。
+	 * @param msg 详细消息
+	 * @param cause 根因
 	 */
 	public FatalBeanException(String msg, @Nullable Throwable cause) {
 		super(msg, cause);

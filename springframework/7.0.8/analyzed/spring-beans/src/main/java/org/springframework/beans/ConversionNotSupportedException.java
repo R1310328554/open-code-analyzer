@@ -21,7 +21,7 @@ import java.beans.PropertyChangeEvent;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown when no suitable editor or converter can be found for a bean property.
+ * 当找不到适合某 bean 属性的编辑器或转换器时抛出的异常。
  *
  * @author Arjen Poutsma
  * @author Juergen Hoeller
@@ -31,10 +31,10 @@ import org.jspecify.annotations.Nullable;
 public class ConversionNotSupportedException extends TypeMismatchException {
 
 	/**
-	 * Create a new ConversionNotSupportedException.
-	 * @param propertyChangeEvent the PropertyChangeEvent that resulted in the problem
-	 * @param requiredType the required target type (or {@code null} if not known)
-	 * @param cause the root cause (may be {@code null})
+	 * 创建一个新的 ConversionNotSupportedException。
+	 * @param propertyChangeEvent 导致问题的 PropertyChangeEvent
+	 * @param requiredType 所需的目标类型（未知时可为 {@code null}）
+	 * @param cause 根因（可为 {@code null}）
 	 */
 	public ConversionNotSupportedException(PropertyChangeEvent propertyChangeEvent,
 			@Nullable Class<?> requiredType, @Nullable Throwable cause) {
@@ -42,10 +42,10 @@ public class ConversionNotSupportedException extends TypeMismatchException {
 	}
 
 	/**
-	 * Create a new ConversionNotSupportedException.
-	 * @param value the offending value that couldn't be converted (may be {@code null})
-	 * @param requiredType the required target type (or {@code null} if not known)
-	 * @param cause the root cause (may be {@code null})
+	 * 创建一个新的 ConversionNotSupportedException。
+	 * @param value 无法转换的问题值（可为 {@code null}）
+	 * @param requiredType 所需的目标类型（未知时可为 {@code null}）
+	 * @param cause 根因（可为 {@code null}）
 	 */
 	public ConversionNotSupportedException(@Nullable Object value, @Nullable Class<?> requiredType, @Nullable Throwable cause) {
 		super(value, requiredType, cause);
