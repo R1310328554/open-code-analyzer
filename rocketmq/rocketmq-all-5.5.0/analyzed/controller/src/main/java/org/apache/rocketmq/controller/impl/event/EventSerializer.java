@@ -20,24 +20,28 @@ import org.apache.commons.lang3.SerializationException;
 import org.apache.rocketmq.common.utils.FastJsonSerializer;
 
 /**
- * EventMessage serializer
+ * 单条 {@link EventMessage} 的序列化器：前缀 2 字节事件类型 ID + JSON 体。
  */
 public class EventSerializer {
+    /** 底层 FastJson 序列化实现。 */
     private final FastJsonSerializer serializer;
 
     public EventSerializer() {
         this.serializer = new FastJsonSerializer();
     }
 
+    /** 向字节数组写入 big-endian short。 */
     private void putShort(byte[] memory, int index, int value) {
         memory[index] = (byte) (value >>> 8);
         memory[index + 1] = (byte) value;
     }
 
+    /** 从字节数组读取 big-endian short。 */
     private short getShort(byte[] memory, int index) {
         return (short) (memory[index] << 8 | memory[index + 1] & 0xFF);
     }
 
+    /** 序列化事件：2 字节类型 ID + JSON 数据。 */
     public byte[] serialize(EventMessage message) throws SerializationException {
         final short eventType = message.getEventType().getId();
         final byte[] data = this.serializer.serialize(message);
@@ -50,6 +54,7 @@ public class EventSerializer {
         return null;
     }
 
+    /** 反序列化事件：解析类型 ID 后按类型分发到具体事件类。 */
     public EventMessage deserialize(byte[] bytes) throws SerializationException {
         if (bytes.length < 2) {
             return null;

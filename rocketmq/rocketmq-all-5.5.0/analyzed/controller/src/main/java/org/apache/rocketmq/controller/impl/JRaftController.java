@@ -64,16 +64,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 基于 SOFA JRaft 的 RocketMQ 控制器：通过 Raft 共识管理 Broker 元数据与主从选举。
+ */
 public class JRaftController implements Controller {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
+    /** JRaft Raft 组服务，负责节点启动与关闭。 */
     private final RaftGroupService raftGroupService;
+    /** 当前 JRaft 节点实例。 */
     private Node node;
+    /** 控制器状态机，处理已提交的 Remoting 请求。 */
     private final JRaftControllerStateMachine stateMachine;
+    /** 控制器运行时配置（选举超时、存储路径等）。 */
     private final ControllerConfig controllerConfig;
+    /** Broker 生命周期监听器列表。 */
     private final List<BrokerLifecycleListener> brokerLifecycleListeners;
     private final Map<PeerId/* jRaft peerId */, String/* Controller RPC Server Addr */> peerIdToAddr;
+    /** 对外提供 Controller RPC 的 Netty 服务端。 */
     private final NettyRemotingServer remotingServer;
 
+    /** 初始化 JRaft 节点、状态机与 Remoting 服务。 */
     public JRaftController(ControllerConfig controllerConfig,
         final ChannelEventListener channelEventListener) throws IOException {
         this.controllerConfig = controllerConfig;
@@ -112,6 +122,7 @@ public class JRaftController implements Controller {
         remotingServer = new NettyRemotingServer(nettyServerConfig, channelEventListener);
     }
 
+    /** 解析初始集群配置，建立 PeerId 到 RPC 地址的映射。 */
     private void initPeerIdMap() {
         String[] peers = this.controllerConfig.getJraftConfig().getjRaftInitConf().split(",");
         String[] rpcAddrs = this.controllerConfig.getJraftConfig().getjRaftControllerRPCAddr().split(",");
@@ -125,6 +136,7 @@ public class JRaftController implements Controller {
     }
 
     @Override
+    /** 启动 Remoting 服务与 JRaft 节点。 */
     public void startup() {
         this.remotingServer.start();
         this.node = this.raftGroupService.start();
@@ -132,6 +144,7 @@ public class JRaftController implements Controller {
     }
 
     @Override
+    /** 停止调度、关闭 Raft 组与 Remoting 服务。 */
     public void shutdown() {
         this.stopScheduling();
         this.raftGroupService.shutdown();
@@ -148,10 +161,12 @@ public class JRaftController implements Controller {
     }
 
     @Override
+    /** 判断当前节点是否为 Raft Leader。 */
     public boolean isLeaderState() {
         return node.isLeader();
     }
 
+    /** 将 Remoting 请求封装为 JRaft Task 并提交到 Leader 节点。 */
     private <T extends CommandCustomHeader> CompletableFuture<RemotingCommand> applyToJRaft(RemotingCommand request) {
         if (!isLeaderState()) {
             final RemotingCommand command = RemotingCommand.createResponseCommand(ResponseCode.CONTROLLER_NOT_LEADER, "The controller is not in leader state");
@@ -248,10 +263,12 @@ public class JRaftController implements Controller {
         return remotingServer;
     }
 
+    /** Leader 任期开始时的回调。 */
     public void onLeaderStart(long term) {
         log.info("Controller start leadership, term: {}.", term);
     }
 
+    /** Leader 任期结束时的回调，停止调度任务。 */
     public void onLeaderStop(Status status) {
         log.info("Controller {} stop leadership, status: {}.", node.getNodeId(), status);
         this.stopScheduling();

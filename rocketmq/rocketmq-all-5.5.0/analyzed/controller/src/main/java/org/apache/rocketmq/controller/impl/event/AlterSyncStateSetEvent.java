@@ -20,14 +20,17 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * The event alters the syncStateSet of target broker.
- * Triggered by the AlterSyncStateSetApi.
+ * 修改目标 Broker 同步副本集（syncStateSet）的控制器事件。
+ * 由 AlterSyncStateSet API 触发。
  */
 public class AlterSyncStateSetEvent implements EventMessage {
 
+    /** 目标 Broker 名称。 */
     private final String brokerName;
+    /** 新的同步副本 BrokerId 集合。 */
     private final Set<Long/*BrokerId*/> newSyncStateSet;
 
+    /** 构造同步副本集变更事件（防御性拷贝集合）。 */
     public AlterSyncStateSetEvent(String brokerName, Set<Long> newSyncStateSet) {
         this.brokerName = brokerName;
         this.newSyncStateSet = new HashSet<>(newSyncStateSet);
@@ -38,10 +41,12 @@ public class AlterSyncStateSetEvent implements EventMessage {
         return EventType.ALTER_SYNC_STATE_SET_EVENT;
     }
 
+    /** 返回目标 Broker 名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 返回新的同步副本集副本（返回拷贝）。 */
     public Set<Long> getNewSyncStateSet() {
         return new HashSet<>(newSyncStateSet);
     }

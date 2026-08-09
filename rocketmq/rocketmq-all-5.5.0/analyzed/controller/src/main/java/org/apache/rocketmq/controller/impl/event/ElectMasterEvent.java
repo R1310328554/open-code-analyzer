@@ -17,13 +17,16 @@
 package org.apache.rocketmq.controller.impl.event;
 
 /**
- * The event trys to elect a new master for target broker.
- * Triggered by the ElectMasterApi.
+ * 为目标 Broker 选举新 Master 的控制器事件。
+ * 由 ElectMaster API 触发。
  */
 public class ElectMasterEvent implements EventMessage {
-    // Mark whether a new master was elected.
+    // 标记是否选举出了新的 Master。
+    /** 是否成功选举新 Master。 */
     private final boolean newMasterElected;
+    /** 目标 Broker 名称。 */
     private final String brokerName;
+    /** 新 Master 的 BrokerId（未选举时为 null）。 */
     private final Long newMasterBrokerId;
 
     public ElectMasterEvent(boolean newMasterElected, String brokerName) {
@@ -34,6 +37,7 @@ public class ElectMasterEvent implements EventMessage {
         this(true, brokerName, newMasterBrokerId);
     }
 
+    /** 构造主从选举事件。 */
     public ElectMasterEvent(boolean newMasterElected, String brokerName, Long newMasterBrokerId) {
         this.newMasterElected = newMasterElected;
         this.brokerName = brokerName;
@@ -45,6 +49,7 @@ public class ElectMasterEvent implements EventMessage {
         return EventType.ELECT_MASTER_EVENT;
     }
 
+    /** 返回是否选举了新 Master。 */
     public boolean getNewMasterElected() {
         return newMasterElected;
     }

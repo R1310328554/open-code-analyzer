@@ -17,12 +17,12 @@
 package org.apache.rocketmq.controller.impl.event;
 
 /**
- * The parent class of Event, the subclass needs to indicate eventType.
+ * 控制器事件消息接口，具体子类需通过 {@link #getEventType()} 声明事件类型。
  */
 public interface EventMessage {
 
     /**
-     * Returns the event type of this message
+     * 返回本消息的事件类型。
      */
     EventType getEventType();
 }

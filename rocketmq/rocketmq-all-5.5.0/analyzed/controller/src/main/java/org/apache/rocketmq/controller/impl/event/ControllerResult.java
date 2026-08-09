@@ -20,11 +20,19 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
+/**
+ * 控制器请求处理结果：包含待应用的 {@link EventMessage} 列表与 RPC 响应头/体。
+ */
 public class ControllerResult<T> {
+    /** 需写入 Raft 日志并应用到状态机的事件列表。 */
     private final List<EventMessage> events;
+    /** RPC 响应头对象。 */
     private final T response;
+    /** 可选的响应体字节数组。 */
     private byte[] body;
+    /** Remoting 响应码，默认成功。 */
     private int responseCode = ResponseCode.SUCCESS;
+    /** 响应备注信息。 */
     private String remark;
 
     public ControllerResult() {
@@ -41,6 +49,7 @@ public class ControllerResult<T> {
         this.response = response;
     }
 
+    /** 工厂方法：由事件列表与响应头构造结果。 */
     public static <T> ControllerResult<T> of(List<EventMessage> events, T response) {
         return new ControllerResult<>(events, response);
     }
@@ -61,6 +70,7 @@ public class ControllerResult<T> {
         this.body = body;
     }
 
+    /** 设置响应码与备注。 */
     public void setCodeAndRemark(int responseCode, String remark) {
         this.responseCode = responseCode;
         this.remark = remark;
@@ -74,6 +84,7 @@ public class ControllerResult<T> {
         return remark;
     }
 
+    /** 追加待应用的控制器事件。 */
     public void addEvent(EventMessage event) {
         this.events.add(event);
     }

@@ -25,10 +25,14 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 批量 {@link EventMessage} 序列化器：每条记录为 type(2B) + length(4B) + JSON 体。
+ */
 public class ListEventSerializer {
     private ListEventSerializer() {
     }
 
+    /** 共享 FastJson 序列化器实例。 */
     private static final Serializer SERIALIZER = new FastJsonSerializer();
 
     private static void putShort(byte[] memory, int index, int value) {
@@ -63,6 +67,7 @@ public class ListEventSerializer {
         return memory[index] << 24 | (memory[index + 1] & 0xFF) << 16 | (memory[index + 2] & 0xFF) << 8 | memory[index + 3] & 0xFF;
     }
 
+    /** 将事件列表序列化为连续字节流，单条失败则记录日志并跳过。 */
     public static byte[] serialize(List<EventMessage> message, Logger log) throws SerializationException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         for (EventMessage eventMessage : message) {
@@ -79,6 +84,7 @@ public class ListEventSerializer {
         return outputStream.toByteArray();
     }
 
+    /** 从字节流逐条解析事件，格式错误或未知类型则记录日志。 */
     public static List<EventMessage> deserialize(byte[] bytes, Logger log) throws SerializationException {
         List<EventMessage> eventMessages = new ArrayList<>();
         if (bytes == null || bytes.length <= 6) {

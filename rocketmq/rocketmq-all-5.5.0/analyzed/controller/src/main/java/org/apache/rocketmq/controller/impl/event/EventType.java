@@ -17,15 +17,21 @@
 package org.apache.rocketmq.controller.impl.event;
 
 /**
- * Event type (name, id);
+ * 控制器事件类型枚举：定义事件名称与 DLedger/JRaft 日志中的类型 ID。
  */
 public enum EventType {
+    /** 修改同步副本集事件。 */
     ALTER_SYNC_STATE_SET_EVENT("AlterSyncStateSetEvent", (short) 1),
+    /** 申请 BrokerId 事件。 */
     APPLY_BROKER_ID_EVENT("ApplyBrokerIdEvent", (short) 2),
+    /** 主 Broker 选举事件。 */
     ELECT_MASTER_EVENT("ElectMasterEvent", (short) 3),
+    /** 只读占位事件（预留）。 */
     READ_EVENT("ReadEvent", (short) 4),
+    /** 清理 Broker 元数据事件。 */
     CLEAN_BROKER_DATA_EVENT("CleanBrokerDataEvent", (short) 5),
 
+    /** 更新 Broker 地址事件。 */
     UPDATE_BROKER_ADDRESS("UpdateBrokerAddressEvent", (short) 6);
 
     private final String name;
@@ -36,6 +42,7 @@ public enum EventType {
         this.id = id;
     }
 
+    /** 按类型 ID 解析枚举值，未知 ID 返回 null。 */
     public static EventType from(short id) {
         switch (id) {
             case 1:

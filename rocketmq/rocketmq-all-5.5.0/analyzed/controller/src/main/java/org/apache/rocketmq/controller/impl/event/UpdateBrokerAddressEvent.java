@@ -17,16 +17,24 @@
 
 package org.apache.rocketmq.controller.impl.event;
 
+/**
+ * 更新 Broker 注册地址的控制器事件，Broker 重启或迁移 IP 时触发。
+ */
 public class UpdateBrokerAddressEvent implements EventMessage {
 
+    /** 集群名称。 */
     private String clusterName;
 
+    /** Broker 名称。 */
     private String brokerName;
 
+    /** 新的 Broker 地址。 */
     private String brokerAddress;
 
+    /** 目标 BrokerId。 */
     private Long brokerId;
 
+    /** 构造 Broker 地址更新事件。 */
     public UpdateBrokerAddressEvent(String clusterName, String brokerName, String brokerAddress, Long brokerId) {
         this.clusterName = clusterName;
         this.brokerName = brokerName;
@@ -61,6 +69,7 @@ public class UpdateBrokerAddressEvent implements EventMessage {
     }
 
     @Override
+    /** 返回 {@link EventType#UPDATE_BROKER_ADDRESS}。 */
     public EventType getEventType() {
         return EventType.UPDATE_BROKER_ADDRESS;
     }

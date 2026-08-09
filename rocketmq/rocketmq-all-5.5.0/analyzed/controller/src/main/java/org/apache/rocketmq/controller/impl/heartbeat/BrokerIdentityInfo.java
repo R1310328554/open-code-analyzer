@@ -21,15 +21,22 @@ import org.apache.rocketmq.common.UtilAll;
 
 import java.util.Objects;
 
+/**
+ * Broker 身份标识：由集群名、Broker 名与 BrokerId 唯一确定一个副本。
+ */
 public class BrokerIdentityInfo implements Serializable {
 
     private static final long serialVersionUID = 883597359635995567L;
+    /** 集群名称。 */
     private final String clusterName;
 
+    /** Broker 名称（Broker Set）。 */
     private final String brokerName;
 
+    /** Broker 副本 ID。 */
     private final Long brokerId;
 
+    /** 构造不可变 Broker 身份三元组。 */
     public BrokerIdentityInfo(String clusterName, String brokerName, Long brokerId) {
         this.clusterName = clusterName;
         this.brokerName = brokerName;
@@ -48,11 +55,13 @@ public class BrokerIdentityInfo implements Serializable {
         return brokerName;
     }
 
+    /** 判断集群名、Broker 名与 ID 是否均为空。 */
     public boolean isEmpty() {
         return UtilAll.isBlank(clusterName) && UtilAll.isBlank(brokerName) && brokerId == null;
     }
 
     @Override
+    /** 按 clusterName、brokerName、brokerId 三元组判等。 */
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;

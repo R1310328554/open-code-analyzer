@@ -75,11 +75,18 @@ import static org.apache.rocketmq.controller.metrics.ControllerMetricsConstant.L
 import static org.apache.rocketmq.controller.metrics.ControllerMetricsConstant.LABEL_CLUSTER_NAME;
 import static org.apache.rocketmq.controller.metrics.ControllerMetricsConstant.LABEL_ELECTION_RESULT;
 
+/**
+ * JRaft 控制器状态机：解码 Remoting 请求、执行业务逻辑并生成 {@link ControllerResult}。
+ */
 public class JRaftControllerStateMachine implements StateMachine {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
+    /** Leader 启动回调列表。 */
     private final List<Consumer<Long>> onLeaderStartCallbacks;
+    /** Leader 停止回调列表。 */
     private final List<Consumer<Status>> onLeaderStopCallbacks;
+    /** Raft 模式下的副本信息管理器。 */
     private final RaftReplicasInfoManager replicasInfoManager;
+    /** 本 JRaft 节点的唯一标识。 */
     private final NodeId nodeId;
 
     public JRaftControllerStateMachine(ControllerConfig controllerConfig, NodeId nodeId) {
@@ -90,6 +97,7 @@ public class JRaftControllerStateMachine implements StateMachine {
     }
 
     @Override
+    /** 逐条应用已提交的 Raft 日志到状态机。 */
     public void onApply(Iterator iter) {
         while (iter.hasNext()) {
             byte[] data = iter.getData().array();
@@ -100,6 +108,7 @@ public class JRaftControllerStateMachine implements StateMachine {
         }
     }
 
+    /** 按请求码分发处理 Controller 事件并回填 Closure 结果。 */
     private void processEvent(ControllerClosure controllerClosure, byte[] data, long term, long index) {
         RemotingCommand request;
         ControllerResult<?> result;
@@ -184,6 +193,7 @@ public class JRaftControllerStateMachine implements StateMachine {
         return replicasInfoManager.alterSyncStateSet(requestHeader, syncStateSet, new RaftReplicasInfoManager.BrokerValidPredicateWithInvokeTime(requestHeader.getInvokeTime(), this.replicasInfoManager));
     }
 
+    /** 执行主 Broker 选举并记录选举指标。 */
     private ControllerResult<ElectMasterResponseHeader> electMaster(ElectMasterRequestHeader request) {
         ControllerResult<ElectMasterResponseHeader> electResult = this.replicasInfoManager.electMaster(request, new DefaultElectPolicy(
             (clusterName, brokerName, brokerId) -> replicasInfoManager.isBrokerActive(clusterName, brokerName, brokerId, request.getInvokeTime()),
@@ -244,6 +254,7 @@ public class JRaftControllerStateMachine implements StateMachine {
     }
 
     @Override
+    /** 异步序列化副本状态并写入快照文件。 */
     public void onSnapshotSave(SnapshotWriter writer, Closure done) {
         byte[] data;
         try {
@@ -269,6 +280,7 @@ public class JRaftControllerStateMachine implements StateMachine {
     }
 
     @Override
+    /** 从快照文件反序列化并恢复副本状态。 */
     public boolean onSnapshotLoad(SnapshotReader reader) {
         if (reader.getFileMeta("data") == null) {
             log.error("Fail to find data file in {}", reader.getPath());
@@ -301,10 +313,12 @@ public class JRaftControllerStateMachine implements StateMachine {
         log.info("node {} Stop Leader, status={}", nodeId.toString(), status);
     }
 
+    /** 注册 Leader 启动回调。 */
     public void registerOnLeaderStart(Consumer<Long> callback) {
         onLeaderStartCallbacks.add(callback);
     }
 
+    /** 注册 Leader 停止回调。 */
     public void registerOnLeaderStop(Consumer<Status> callback) {
         onLeaderStopCallbacks.add(callback);
     }

@@ -29,28 +29,39 @@ import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * JRaft 请求闭包：将 Remoting 请求提交到 Raft 并在提交完成后返回响应。
+ */
 public class ControllerClosure implements Closure {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
+    /** 待提交的 Remoting 请求。 */
     private final RemotingCommand requestEvent;
+    /** 异步响应 Future，供调用方等待结果。 */
     private final CompletableFuture<RemotingCommand> future;
+    /** 状态机处理完成后填充的业务结果。 */
     private ControllerResult<?> controllerResult;
+    /** 关联的 JRaft Task 对象。 */
     private Task task;
 
+    /** 构造闭包并初始化异步 Future。 */
     public ControllerClosure(RemotingCommand requestEvent) {
         this.requestEvent = requestEvent;
         this.future = new CompletableFuture<>();
         this.task = null;
     }
 
+    /** 返回等待 Raft 提交完成的 Future。 */
     public CompletableFuture<RemotingCommand> getFuture() {
         return future;
     }
 
+    /** 设置状态机处理结果，供 run 时构建响应。 */
     public void setControllerResult(ControllerResult<?> controllerResult) {
         this.controllerResult = controllerResult;
     }
 
     @Override
+    /** Raft 提交完成回调：成功则封装响应，失败则返回内部错误码。 */
     public void run(Status status) {
         if (status.isOk()) {
             final RemotingCommand response = RemotingCommand.createResponseCommandWithHeader(controllerResult.getResponseCode(), (CommandCustomHeader) controllerResult.getResponse());
@@ -67,6 +78,7 @@ public class ControllerClosure implements Closure {
         }
     }
 
+    /** 构建携带本闭包的 JRaft Task（编码请求体为日志数据）。 */
     public Task taskWithThisClosure() {
         if (task != null) {
             return task;
@@ -77,6 +89,7 @@ public class ControllerClosure implements Closure {
         return task;
     }
 
+    /** 返回原始 Remoting 请求。 */
     public RemotingCommand getRequestEvent() {
         return requestEvent;
     }

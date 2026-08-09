@@ -17,18 +17,24 @@
 package org.apache.rocketmq.controller.impl.event;
 
 /**
- * The event trys to apply a new id for a new broker.
- * Triggered by the RegisterBrokerApi.
+ * 为新 Broker 申请 BrokerId 的控制器事件。
+ * 由 RegisterBroker API 触发。
  */
 public class ApplyBrokerIdEvent implements EventMessage {
+    /** 集群名称。 */
     private final String clusterName;
+    /** Broker 名称。 */
     private final String brokerName;
+    /** Broker 注册地址。 */
     private final String brokerAddress;
 
+    /** 注册校验码，用于防重放。 */
     private final String registerCheckCode;
 
+    /** 待分配的新 BrokerId。 */
     private final long newBrokerId;
 
+    /** 构造 BrokerId 申请事件。 */
     public ApplyBrokerIdEvent(String clusterName, String brokerName, String brokerAddress, long newBrokerId,
         String registerCheckCode) {
         this.clusterName = clusterName;
