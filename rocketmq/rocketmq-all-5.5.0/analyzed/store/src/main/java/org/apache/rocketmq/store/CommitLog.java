@@ -72,17 +72,17 @@ import org.apache.rocketmq.store.util.LibC;
 import org.rocksdb.RocksDBException;
 
 /**
- * Store all metadata downtime for recovery, data protection reliability
+ * Broker 消息顺序写日志（CommitLog）：所有 Topic 消息追加到 mmap 文件，
+ * 是存储层核心；负责 putMessage、刷盘、HA 同步、异常/正常恢复及 CQ 分发。
+ * 实现 {@link Swappable} 支持冷热数据换出。
  */
 public class CommitLog implements Swappable {
-    // Message's MAGIC CODE daa320a7
+    // 正常消息 MAGIC CODE（0xdaa320a7）
     public final static int MESSAGE_MAGIC_CODE = -626843481;
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
-    // End of file empty MAGIC CODE cbd43194
+    // 文件末尾空白记录 MAGIC CODE（0xcbd43194）
     public final static int BLANK_MAGIC_CODE = -875286124;
-    /**
-     * CRC32 Format: [PROPERTY_CRC32 + NAME_VALUE_SEPARATOR + 10-digit fixed-length string + PROPERTY_SEPARATOR]
-     */
+    /** 属性 CRC32 预留长度（PROPERTY_CRC32=xxx 格式）。 */
     public static final int CRC32_RESERVED_LEN = MessageConst.PROPERTY_CRC32.length() + 1 + 10 + 1;
     protected final MappedFileQueue mappedFileQueue;
     protected final DefaultMessageStore defaultMessageStore;
@@ -93,10 +93,12 @@ public class CommitLog implements Swappable {
     private final AppendMessageCallback appendMessageCallback;
     private final ThreadLocal<PutMessageThreadLocal> putMessageThreadLocal;
 
+    /** 已确认可对外服务的最大物理 offset（HA/Controller 场景）。 */
     protected volatile long confirmOffset = -1L;
 
     private volatile long beginTimeInLock = 0;
 
+    /** 写 CommitLog 全局锁（自旋/可重入/ABS 自适应）。 */
     protected final PutMessageLock putMessageLock;
 
     protected final TopicQueueLock topicQueueLock;
@@ -169,6 +171,7 @@ public class CommitLog implements Swappable {
         return putMessageThreadLocal;
     }
 
+    /** 加载 CommitLog 目录下全部 MappedFile 并校验。 */
     public boolean load() {
         boolean result = this.mappedFileQueue.load();
         if (result && !defaultMessageStore.getMessageStoreConfig().isDataReadAheadEnable()) {
@@ -248,9 +251,7 @@ public class CommitLog implements Swappable {
         return this.mappedFileQueue.deleteExpiredFileByTime(expiredTime, deleteFilesInterval, intervalForcibly, cleanImmediately, deleteFileBatchMax);
     }
 
-    /**
-     * Read CommitLog data, use data replication
-     */
+    /** 按物理 offset 读取 CommitLog 数据（HA 复制场景）。 */
     public SelectMappedBufferResult getData(final long offset) {
         return this.getData(offset, offset == 0);
     }
@@ -333,9 +334,9 @@ public class CommitLog implements Swappable {
     }
 
     /**
-     * When the normal exit, data recovery, all memory data have been flush
+     * 正常关机恢复：从尾部 MappedFile 回放并重建 CQ/Index。
      *
-     * @throws RocksDBException only in rocksdb mode
+     * @throws RocksDBException 仅 RocksDB 模式
      */
     public void recoverNormally(long dispatchFromPhyOffset) throws RocksDBException {
         boolean checkCRCOnRecover = this.defaultMessageStore.getMessageStoreConfig().isCheckCRCOnRecover();
@@ -352,7 +353,7 @@ public class CommitLog implements Swappable {
                 MappedFile mappedFile = mappedFiles.get(index);
                 maxRecoverNum--;
                 if (isMappedFileMatchedRecover(mappedFile, true) || maxRecoverNum <= 0) {
-                    // It's safe to recover from this mapped file
+                    // 该文件末条消息 storeTimestamp 满足恢复条件
                     break;
                 }
                 index--;
@@ -369,13 +370,13 @@ public class CommitLog implements Swappable {
                 DispatchRequest dispatchRequest = this.checkMessageAndReturnSize(byteBuffer, checkCRCOnRecover, checkDupInfo);
                 int size = dispatchRequest.getMsgSize();
                 boolean doDispatch = dispatchRequest.getCommitLogOffset() > dispatchFromPhyOffset;
-                // Normal data
+                // 合法消息：推进 offset 并 dispatch 到 CQ/Index
                 if (dispatchRequest.isSuccess() && size > 0) {
                     lastValidMsgPhyOffset = processOffset + mappedFileOffset;
                     mappedFileOffset += size;
                     this.getMessageStore().onCommitLogDispatch(dispatchRequest, doDispatch, mappedFile, true, false);
                 }
-                // Come the end of the file, switch to the next file Since the
+                // 文件末尾空白记录：切换下一个 MappedFile
                 // return 0 representatives met last hole,
                 // this can not be included in truncate offset
                 else if (dispatchRequest.isSuccess() && size == 0) {
@@ -444,9 +445,9 @@ public class CommitLog implements Swappable {
     }
 
     /**
-     * check the message and returns the message size
+     * 校验并解析单条 CommitLog 记录。
      *
-     * @return 0 Come the end of the file // >0 Normal messages // -1 Message checksum failure
+     * @return 0 文件结束空白；>0 消息字节数；-1 校验失败
      */
     public DispatchRequest checkMessageAndReturnSize(java.nio.ByteBuffer byteBuffer, final boolean checkCRC,
         final boolean checkDupInfo, final boolean readBody) {
@@ -733,10 +734,12 @@ public class CommitLog implements Swappable {
     }
 
     /**
-     * @throws RocksDBException only in rocksdb mode
+     * 异常关机恢复：从最小 storeTimestamp 的 MappedFile 开始扫描重建。
+     *
+     * @throws RocksDBException 仅 RocksDB 模式
      */
     public void recoverAbnormally(long dispatchFromPhyOffset) throws RocksDBException {
-        // recover by the minimum time stamp
+        // 按最小 storeTimestamp 定位起始恢复文件
         boolean checkCRCOnRecover = this.defaultMessageStore.getMessageStoreConfig().isCheckCRCOnRecover();
         boolean checkDupInfo = this.defaultMessageStore.getMessageStoreConfig().isDuplicationEnable();
         boolean checkCommitLogOffsetOnRecover = this.defaultMessageStore.getMessageStoreConfig().isCheckCommitLogOffsetOnRecover();
@@ -966,6 +969,7 @@ public class CommitLog implements Swappable {
         }
     }
 
+    /** 异步写入单条消息：加锁 → append → flush/HA → 返回 Future。 */
     public CompletableFuture<PutMessageResult> asyncPutMessage(final MessageExtBrokerInner msg) {
         // Set the storage time
         if (!defaultMessageStore.getMessageStoreConfig().isDuplicationEnable()) {
@@ -1139,6 +1143,7 @@ public class CommitLog implements Swappable {
         return handleDiskFlushAndHA(putMessageResult, msg, needAckNums, needHandleHA);
     }
 
+    /** 异步批量写入消息。 */
     public CompletableFuture<PutMessageResult> asyncPutMessages(final MessageExtBatch messageExtBatch) {
         messageExtBatch.setStoreTimestamp(System.currentTimeMillis());
         AppendMessageResult result = null;
@@ -1369,9 +1374,7 @@ public class CommitLog implements Swappable {
         return request.future();
     }
 
-    /**
-     * According to receive certain message or offset storage time if an error occurs, it returns -1
-     */
+    /** 读取指定 offset 处消息的 storeTimestamp；失败返回 -1。 */
     public long pickupStoreTimestamp(final long offset, final int size) {
         if (defaultMessageStore.isShutdown()) {
             throw new RuntimeException("message store has shutdown");
@@ -1669,9 +1672,7 @@ public class CommitLog implements Swappable {
         }
     }
 
-    /**
-     * GroupCommit Service
-     */
+    /** 同步刷盘 GroupCommit 服务：批量等待 flush 完成后唤醒生产者。 */
     class GroupCommitService extends FlushCommitLogService {
         private LinkedList<GroupCommitRequest> requestsWrite = new LinkedList<>();
         private LinkedList<GroupCommitRequest> requestsRead = new LinkedList<>();
@@ -1708,7 +1709,7 @@ public class CommitLog implements Swappable {
                         if (flushOK) {
                             break;
                         } else {
-                            // When transientStorePoolEnable is true, the messages in writeBuffer may not be committed
+                            // TransientPool 模式下 writeBuffer 落盘可能延迟，短暂 sleep 等待
                             // to pageCache very quickly, and flushOk here may almost be false, so we can sleep 1ms to
                             // wait for the messages to be committed to pageCache.
                             try {

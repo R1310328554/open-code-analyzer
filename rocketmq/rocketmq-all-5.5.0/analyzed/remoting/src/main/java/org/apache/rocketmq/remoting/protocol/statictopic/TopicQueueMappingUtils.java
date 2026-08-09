@@ -31,14 +31,20 @@ import java.util.Set;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.TopicConfig;
 
+/**
+ * 静态 Topic 队列映射工具：管理逻辑队列 ↔ 物理 Broker 队列的 epoch/offset 映射，
+ * 支持 Remapping、Leader 选举校验及 blockSeq 对齐。
+ */
 public class TopicQueueMappingUtils {
 
+    /** 静态 Topic block 序列默认步长。 */
     public static final int DEFAULT_BLOCK_SEQ_SIZE = 10000;
 
+    /** 映射分配器：按 Broker 负载均衡分配逻辑队列到物理 Broker。 */
     public static class MappingAllocator {
         Map<String, Integer> brokerNumMap = new HashMap<>();
         Map<Integer, String> idToBroker = new HashMap<>();
-        //used for remapping
+        // Remapping 时保留旧 Broker 计数用于优先回迁
         Map<String, Integer> brokerNumMapBeforeRemapping;
         int currentIndex = 0;
         List<String> leastBrokers = new ArrayList<>();
@@ -59,7 +65,7 @@ public class TopicQueueMappingUtils {
                     leastBrokers.add(entry.getKey());
                 }
             }
-            //reduce the remapping
+            // Remapping 场景：优先选择旧映射中计数较少的 Broker
             if (brokerNumMapBeforeRemapping != null
                     && !brokerNumMapBeforeRemapping.isEmpty()) {
                 leastBrokers.sort((o1, o2) -> {
@@ -73,7 +79,7 @@ public class TopicQueueMappingUtils {
                     return i1 - i2;
                 });
             } else {
-                //reduce the imbalance
+                // 非 Remapping：随机打散负载最低的 Broker 列表
                 Collections.shuffle(leastBrokers);
             }
             currentIndex = leastBrokers.size() - 1;
@@ -112,10 +118,12 @@ public class TopicQueueMappingUtils {
     }
 
 
+    /** 构建 MappingAllocator 并刷新负载状态。 */
     public static MappingAllocator buildMappingAllocator(Map<Integer, String> idToBroker, Map<String, Integer> brokerNumMap, Map<String, Integer> brokerNumMapBeforeRemapping) {
         return new MappingAllocator(idToBroker, brokerNumMap, brokerNumMapBeforeRemapping);
     }
 
+    /** 从映射详情列表中取最大 epoch 与对应 queueNum。 */
     public static Map.Entry<Long, Integer> findMaxEpochAndQueueNum(List<TopicQueueMappingDetail> mappingDetailList) {
         long epoch = -1;
         int queueNum = 0;
@@ -377,6 +385,7 @@ public class TopicQueueMappingUtils {
         return globalIdMap;
     }
 
+    /** 返回逻辑队列映射项中的 Leader Broker 名称。 */
     public static String getLeaderBroker(List<LogicQueueMappingItem> items) {
         return getLeaderItem(items).getBname();
     }
@@ -401,6 +410,7 @@ public class TopicQueueMappingUtils {
         }
     }
 
+    /** 将逻辑 offset 向上对齐到 blockSeq 边界。 */
     public static long blockSeqRoundUp(long offset, long blockSeqSize) {
         long num = offset / blockSeqSize;
         long left = offset % blockSeqSize;
@@ -508,6 +518,7 @@ public class TopicQueueMappingUtils {
     }
 
 
+    /** 对静态 Topic 执行 Remapping，生成新 epoch 的队列分配方案。 */
     public static TopicRemappingDetailWrapper remappingStaticTopic(String topic, Map<String, TopicConfigAndQueueMapping> brokerConfigMap, Set<String> targetBrokers) {
         Map.Entry<Long, Integer> maxEpochAndNum = TopicQueueMappingUtils.checkNameEpochNumConsistence(topic, brokerConfigMap);
         Map<Integer, TopicQueueMappingOne> globalIdMap = TopicQueueMappingUtils.checkAndBuildMappingItems(getMappingDetailFromConfig(brokerConfigMap.values()), false, true);
@@ -619,6 +630,7 @@ public class TopicQueueMappingUtils {
         return new TopicRemappingDetailWrapper(topic, TopicRemappingDetailWrapper.TYPE_REMAPPING, newEpoch, brokerConfigMap, brokersToMapIn, brokersToMapOut);
     }
 
+    /** 按逻辑 offset 查找覆盖该区间的 {@link LogicQueueMappingItem}。 */
     public static LogicQueueMappingItem findLogicQueueMappingItem(List<LogicQueueMappingItem> mappingItems, long logicOffset, boolean ignoreNegative) {
         if (mappingItems == null
                 || mappingItems.isEmpty()) {

@@ -48,17 +48,25 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * Proxy 消息处理门面接口：定义生产、消费、POP、事务、路由及客户端注册等异步 API。
+ * gRPC/Remoting 层 Activity 均通过此接口与 Broker 或集群后端交互。
+ */
 public interface MessagingProcessor extends StartAndShutdown {
 
+    /** 默认 RPC 超时（毫秒）。 */
     long DEFAULT_TIMEOUT_MILLS = Duration.ofSeconds(2).toMillis();
 
+    /** POP 消息默认不可见时间下限（毫秒）。 */
     long INVISIBLE_TIME_MS = Duration.ofSeconds(1).toMillis();
 
+    /** 查询消费组订阅配置。 */
     SubscriptionGroupConfig getSubscriptionGroupConfig(
         ProxyContext ctx,
         String consumerGroupName
     );
 
+    /** 为 Proxy 客户端返回 Topic 路由（含 Broker 地址与队列分布）。 */
     ProxyTopicRouteData getTopicRouteDataForProxy(
         ProxyContext ctx,
         List<Address> requestHostAndPortList,
@@ -75,6 +83,7 @@ public interface MessagingProcessor extends StartAndShutdown {
         return sendMessage(ctx, queueSelector, producerGroup, sysFlag, msg, DEFAULT_TIMEOUT_MILLS);
     }
 
+    /** 异步发送消息到选定队列。 */
     CompletableFuture<List<SendResult>> sendMessage(
         ProxyContext ctx,
         QueueSelector queueSelector,
@@ -94,6 +103,7 @@ public interface MessagingProcessor extends StartAndShutdown {
         return forwardMessageToDeadLetterQueue(ctx, handle, messageId, groupName, topicName, DEFAULT_TIMEOUT_MILLS);
     }
 
+    /** 将 POP/Pull 失败消息转发到死信队列（DLQ）。 */
     CompletableFuture<RemotingCommand> forwardMessageToDeadLetterQueue(
         ProxyContext ctx,
         ReceiptHandle handle,
@@ -136,6 +146,7 @@ public interface MessagingProcessor extends StartAndShutdown {
         return endTransaction(ctx, topic, transactionId, messageId, producerGroup, transactionStatus, fromTransactionCheck, DEFAULT_TIMEOUT_MILLS);
     }
 
+    /** 提交或回滚半事务消息。 */
     CompletableFuture<Void> endTransaction(
         ProxyContext ctx,
         String topic,
@@ -147,6 +158,7 @@ public interface MessagingProcessor extends StartAndShutdown {
         long timeoutMillis
     );
 
+    /** POP 模式拉取消息（支持长轮询与 FIFO）。 */
     CompletableFuture<PopResult> popMessage(
         ProxyContext ctx,
         QueueSelector queueSelector,
@@ -281,6 +293,7 @@ public interface MessagingProcessor extends StartAndShutdown {
         boolean suspend
     );
 
+    /** Pull 模式按 offset 拉取消息。 */
     CompletableFuture<PullResult> pullMessage(
         ProxyContext ctx,
         MessageQueue messageQueue,
@@ -294,6 +307,7 @@ public interface MessagingProcessor extends StartAndShutdown {
         long timeoutMillis
     );
 
+    /** 同步更新消费位点。 */
     CompletableFuture<Void> updateConsumerOffset(
         ProxyContext ctx,
         MessageQueue messageQueue,
@@ -317,6 +331,7 @@ public interface MessagingProcessor extends StartAndShutdown {
         long timeoutMillis
     );
 
+    /** 批量锁定 MessageQueue（顺序消费 rebalance 用）。 */
     CompletableFuture<Set<MessageQueue>> lockBatchMQ(
         ProxyContext ctx,
         Set<MessageQueue> mqSet,
@@ -345,6 +360,7 @@ public interface MessagingProcessor extends StartAndShutdown {
         long timeoutMillis
     );
 
+    /** 按 recallHandle 撤回已发送消息。 */
     CompletableFuture<String> recallMessage(
         ProxyContext ctx,
         String topic,
@@ -364,6 +380,7 @@ public interface MessagingProcessor extends StartAndShutdown {
     CompletableFuture<Void> requestOneway(ProxyContext ctx, String brokerName, RemotingCommand request,
         long timeoutMillis);
 
+    /** 注册生产者客户端连接。 */
     void registerProducer(
         ProxyContext ctx,
         String producerGroup,
@@ -433,5 +450,6 @@ public interface MessagingProcessor extends StartAndShutdown {
     MessageReceiptHandle removeReceiptHandle(ProxyContext ctx, Channel channel, String group, String msgID,
         String receiptHandle);
 
+    /** 返回通道上指定消费组未 ACK 的 POP 消息数。 */
     int getUnackedMessageCount(ProxyContext ctx, Channel channel, String group);
 }

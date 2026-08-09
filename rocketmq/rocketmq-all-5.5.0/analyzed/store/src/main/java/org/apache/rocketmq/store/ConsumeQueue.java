@@ -41,20 +41,16 @@ import org.apache.rocketmq.store.queue.MultiDispatchUtils;
 import org.apache.rocketmq.store.queue.QueueOffsetOperator;
 import org.apache.rocketmq.store.queue.ReferredIterator;
 
+/**
+ * 经典 ConsumeQueue 实现：每个 Topic-QueueId 对应独立 CQ 文件，
+ * 每条 20 字节索引指向 CommitLog 物理 offset，供 Pull/GetMessage 按逻辑 offset 定位消息。
+ */
 public class ConsumeQueue implements ConsumeQueueInterface {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
     /**
-     * ConsumeQueue's store unit. Format:
-     * <pre>
-     * ┌───────────────────────────────┬───────────────────┬───────────────────────────────┐
-     * │    CommitLog Physical Offset  │      Body Size    │            Tag HashCode       │
-     * │          (8 Bytes)            │      (4 Bytes)    │             (8 Bytes)         │
-     * ├───────────────────────────────┴───────────────────┴───────────────────────────────┤
-     * │                                     Store Unit                                    │
-     * │                                                                                   │
-     * </pre>
-     * ConsumeQueue's store unit. Size: CommitLog Physical Offset(8) + Body Size(4) + Tag HashCode(8) = 20 Bytes
+     * CQ 存储单元格式（共 20 字节）：
+     * CommitLog 物理 offset(8) + Body 大小(4) + Tag HashCode(8)。
      */
     public static final int CQ_STORE_UNIT_SIZE = 20;
     public static final int MSG_TAG_OFFSET_INDEX = 12;
@@ -72,10 +68,9 @@ public class ConsumeQueue implements ConsumeQueueInterface {
     private final int mappedFileSize;
     private long maxPhysicOffset = -1;
 
-    /**
-     * Minimum offset of the consume file queue that points to valid commit log record.
-     */
+    /** 指向有效 CommitLog 记录的最小逻辑 offset。 */
     private volatile long minLogicOffset = 0;
+    /** 可选扩展 CQ，存储过滤位图等非关键数据。 */
     private ConsumeQueueExt consumeQueueExt = null;
 
     public ConsumeQueue(final String topic, final int queueId, final String storePath, final int mappedFileSize,
@@ -213,6 +208,7 @@ public class ConsumeQueue implements ConsumeQueueInterface {
 
     @Deprecated
     @Override
+    /** 按 storeTimestamp 二分查找最接近的逻辑 offset。 */
     public long getOffsetInQueueByTime(final long timestamp) {
         MappedFile mappedFile = this.mappedFileQueue.getConsumeQueueMappedFileByTime(timestamp,
             messageStore.getCommitLog(), BoundaryType.LOWER);
@@ -534,6 +530,7 @@ public class ConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 删除逻辑 offset 之前的过期 CQ 文件并修正 minOffset。 */
     public int deleteExpiredFile(long offset) {
         int cnt = this.mappedFileQueue.deleteExpiredFileByOffset(offset, CQ_STORE_UNIT_SIZE);
         this.correctMinOffset(offset);
@@ -541,13 +538,13 @@ public class ConsumeQueue implements ConsumeQueueInterface {
     }
 
     /**
-     * Update minLogicOffset such that entries after it would point to valid commit log address.
+     * 修正 minLogicOffset，使后续 CQ 条目指向有效 CommitLog 记录。
      *
-     * @param minCommitLogOffset Minimum commit log offset
+     * @param minCommitLogOffset 最小有效 CommitLog 物理 offset
      */
     @Override
     public void correctMinOffset(long minCommitLogOffset) {
-        // Check if the consume queue is the state of deprecation.
+        // CQ 已全部过期则跳过修正
         if (minLogicOffset >= mappedFileQueue.getMaxOffset()) {
             log.info("ConsumeQueue[Topic={}, queue-id={}] contains no valid entries", topic, queueId);
             return;
@@ -589,7 +586,7 @@ public class ConsumeQueue implements ConsumeQueueInterface {
         MappedFile mappedFile = this.mappedFileQueue.getFirstMappedFile();
         long minExtAddr = 1;
         if (mappedFile != null) {
-            // Search from previous min logical offset. Typically, a consume queue file segment contains 300,000 entries
+            // 从上一次 minLogicOffset 附近搜索，减少全量扫描
             // searching from previous position saves significant amount of comparisons and IOs
             boolean intact = true; // Assume previous value is still valid
             long start = this.minLogicOffset - mappedFile.getFileFromOffset();
@@ -685,6 +682,7 @@ public class ConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 写入一条 CQ 索引（CommitLog offset + size + tagsCode）。 */
     public void putMessagePositionInfoWrapper(DispatchRequest request) {
         final int maxRetries = 30;
         boolean canWrite = this.messageStore.getRunningFlags().isCQWriteable();
@@ -891,6 +889,7 @@ public class ConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 从指定逻辑 offset 起迭代 CQ 条目。 */
     public ReferredIterator<CqUnit> iterateFrom(long startOffset) {
         SelectMappedBufferResult sbr = getIndexBuffer(startOffset);
         if (sbr == null) {
@@ -905,6 +904,7 @@ public class ConsumeQueue implements ConsumeQueueInterface {
     }
 
     @Override
+    /** 读取逻辑 offset 对应的 CQ 单元（含物理 offset 与 tagsCode）。 */
     public CqUnit get(long offset) {
         ReferredIterator<CqUnit> it = iterateFrom(offset);
         if (it == null) {

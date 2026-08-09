@@ -122,6 +122,10 @@ import org.apache.rocketmq.store.util.PerfCounter;
 import org.apache.rocketmq.store.metrics.StoreMetricsManager;
 import org.rocksdb.RocksDBException;
 
+/**
+ * Broker 默认消息存储实现：编排 CommitLog、ConsumeQueue、Index、HA、
+ * Reput、Compaction、Timer/Trans RocksDB 等子系统，是存储层总入口。
+ */
 public class DefaultMessageStore implements MessageStore {
     protected static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     protected static final Logger ERROR_LOG = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
@@ -129,7 +133,7 @@ public class DefaultMessageStore implements MessageStore {
     public final PerfCounter.Ticks perfs = new PerfCounter.Ticks(LOGGER);
 
     private final MessageStoreConfig messageStoreConfig;
-    // CommitLog
+    // 顺序写消息主体
     protected final CommitLog commitLog;
 
     protected final ConsumeQueueStoreInterface consumeQueueStore;
@@ -173,11 +177,10 @@ public class DefaultMessageStore implements MessageStore {
     private TimerMessageRocksDBStore timerMessageRocksDBStore;
     private TransMessageRocksDBStore transMessageRocksDBStore;
 
+    /** CommitLog 分发链：BuildCQ → BuildIndex → BuildTransIndex → Compaction。 */
     private final LinkedList<CommitLogDispatcher> dispatcherList = new LinkedList<>();
 
-    /**
-     * List of stores that require commitlog dispatch and recovery. Each store registers itself when loading.
-     */
+    /** 需在 CommitLog 恢复时分发的存储组件列表（CQ/Index/RocksDB 等）。 */
     private final List<CommitLogDispatchStore> commitLogDispatchStores = new ArrayList<>();
 
     private final RandomAccessFile lockFile;
@@ -185,12 +188,12 @@ public class DefaultMessageStore implements MessageStore {
     private FileLock lock;
 
     boolean shutDownNormal = false;
-    // Max pull msg size
+    // Pull 单次最大消息体累计大小（128MB）
     private final static int MAX_PULL_MSG_SIZE = 128 * 1024 * 1024;
 
     private volatile int aliveReplicasNum = 1;
 
-    // Refer the MessageStore of MasterBroker in the same process.
+    // 同进程 Slave 引用 Master 的 MessageStore（跨 BrokerGroup）
     // If current broker is master, this reference point to null or itself.
     // If current broker is slave, this reference point to the store of master broker, and the two stores belong to
     // different broker groups.
@@ -321,7 +324,9 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     /**
-     * @throws IOException
+     * 加载存储：CommitLog → CQ → Index → recover → 注册 dispatch store。
+     *
+     * @throws IOException 文件 IO 异常
      */
     @Override
     public boolean load() {
@@ -332,10 +337,10 @@ public class DefaultMessageStore implements MessageStore {
             LOGGER.info("last shutdown {}, store path root dir: {}",
                 lastExitOK ? "normally" : "abnormally", messageStoreConfig.getStorePathRootDir());
 
-            // load Commit Log
+            // 1. 加载 CommitLog
             result = this.commitLog.load();
             stateMachine.transitTo(MessageStoreStateMachine.MessageStoreState.LOAD_COMMITLOG_OK, result);
-            // load Consume Queue
+            // 2. 加载 ConsumeQueue
             result = result && this.consumeQueueStore.load();
             stateMachine.transitTo(MessageStoreStateMachine.MessageStoreState.LOAD_CONSUME_QUEUE_OK, result);
             // Register consume queue store for commitlog dispatch
@@ -418,7 +423,9 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     /**
-     * @throws Exception
+     * 启动存储：加文件锁、启动 Reput/CommitLog/CQ/HA/定时任务。
+     *
+     * @throws Exception 加锁或子组件启动失败
      */
     @Override
     public void start() throws Exception {
@@ -444,7 +451,7 @@ public class DefaultMessageStore implements MessageStore {
         this.reputMessageService.setReputFromOffset(this.commitLog.getConfirmOffset());
         this.reputMessageService.start();
 
-        // Checking is not necessary, as long as the dLedger's implementation exactly follows the definition of Recover,
+        // DLedger 模式下 recover 定义一致时可跳过 CQ offset 复检
         // which is eliminating the dispatch inconsistency between the commitLog and consumeQueue at the end of recovery.
         this.doRecheckReputOffsetFromCq();
 
@@ -715,6 +722,7 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     @Override
+    /** 同步写入单条消息（阻塞等待 asyncPutMessage）。 */
     public PutMessageResult putMessage(MessageExtBrokerInner msg) {
         return waitForPutResult(asyncPutMessage(msg));
     }
@@ -852,6 +860,7 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     @Override
+    /** Pull 读消息：经 CQ 索引定位 CommitLog 并应用 MessageFilter。 */
     public GetMessageResult getMessage(final String group, final String topic, final int queueId, final long offset,
         final int maxMsgNums, final MessageFilter messageFilter) {
         return getMessage(group, topic, queueId, offset, maxMsgNums, MAX_PULL_MSG_SIZE, messageFilter);
@@ -878,7 +887,7 @@ public class DefaultMessageStore implements MessageStore {
 
         Optional<TopicConfig> topicConfig = getTopicConfig(topic);
         CleanupPolicy policy = CleanupPolicyUtils.getDeletePolicy(topicConfig);
-        //check request topic flag
+        // Compaction Topic 走 CompactionStore 读路径
         if (Objects.equals(policy, CleanupPolicy.COMPACTION) && messageStoreConfig.isEnableCompaction()) {
             return compactionStore.getMessage(group, topic, queueId, offset, maxMsgNums, maxTotalMsgSize);
         } // else skip
@@ -1136,9 +1145,9 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     /**
-     * Register a store that requires commitlog dispatch and recovery. Each store should register itself when loading.
+     * 注册需在 CommitLog 恢复/分发阶段参与的存储组件。
      *
-     * @param store the store to register
+     * @param store 待注册组件
      */
     public void registerCommitLogDispatchStore(CommitLogDispatchStore store) {
         if (store != null) {
@@ -1273,6 +1282,7 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     @Override
+    /** 返回 CommitLog 当前最大物理 offset。 */
     public long getMaxPhyOffset() {
         return this.commitLog.getMaxOffset();
     }
@@ -2078,6 +2088,7 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     @Override
+    /** 委托 CommitLog 校验并解析消息（Reput/Recover 用）。 */
     public DispatchRequest checkMessageAndReturnSize(final ByteBuffer byteBuffer, final boolean checkCRC,
         final boolean checkDupInfo, final boolean readBody) {
         return this.commitLog.checkMessageAndReturnSize(byteBuffer, checkCRC, checkDupInfo, readBody);

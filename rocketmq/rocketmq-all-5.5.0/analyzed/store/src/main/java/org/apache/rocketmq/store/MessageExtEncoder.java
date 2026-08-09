@@ -31,12 +31,16 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * CommitLog 消息编码器：将 {@link MessageExtBrokerInner} 序列化为
+ * V1/V2 二进制格式写入 Netty ByteBuf，供 appendMessage 零拷贝落盘。
+ */
 public class MessageExtEncoder {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private ByteBuf byteBuf;
-    // The maximum length of the message body.
+    // 消息体最大长度
     private int maxMessageBodySize;
-    // The maximum length of the full message.
+    // 完整消息（含头+属性）最大长度
     private int maxMessageSize;
     private final int crc32ReservedLength;
     private MessageStoreConfig messageStoreConfig;
@@ -49,7 +53,7 @@ public class MessageExtEncoder {
         ByteBufAllocator alloc = UnpooledByteBufAllocator.DEFAULT;
         this.messageStoreConfig = messageStoreConfig;
         this.maxMessageBodySize = messageStoreConfig.getMaxMessageSize();
-        //Reserve 64kb for encoding buffer outside body
+        // 为 header/properties 预留 64KB 编码缓冲
         int maxMessageSize = Integer.MAX_VALUE - maxMessageBodySize >= 64 * 1024 ?
             maxMessageBodySize + 64 * 1024 : Integer.MAX_VALUE;
         byteBuf = alloc.directBuffer(maxMessageSize);
@@ -57,14 +61,15 @@ public class MessageExtEncoder {
         this.crc32ReservedLength = messageStoreConfig.isEnabledAppendPropCRC() ? CommitLog.CRC32_RESERVED_LEN : 0;
     }
 
+    /** 计算含 properties 的完整消息字节长度。 */
     public static int calMsgLength(MessageVersion messageVersion,
         int sysFlag, int bodyLength, int topicLength, int propertiesLength) {
 
         int bornhostLength = (sysFlag & MessageSysFlag.BORNHOST_V6_FLAG) == 0 ? 8 : 20;
         int storehostAddressLength = (sysFlag & MessageSysFlag.STOREHOSTADDRESS_V6_FLAG) == 0 ? 8 : 20;
 
-        return 4 //TOTALSIZE
-            + 4 //MAGICCODE
+        return 4 // TOTALSIZE
+            + 4 // MAGICCODE
             + 4 //BODYCRC
             + 4 //QUEUEID
             + 4 //FLAG
@@ -76,7 +81,7 @@ public class MessageExtEncoder {
             + 8 //STORETIMESTAMP
             + storehostAddressLength //STOREHOSTADDRESS
             + 4 //RECONSUMETIMES
-            + 8 //Prepared Transaction Offset
+            + 8 // 预提交事务 offset
             + 4 + (Math.max(bodyLength, 0)) //BODY
             + messageVersion.getTopicLengthSize() + topicLength //TOPIC
             + 2 + (Math.max(propertiesLength, 0)); //propertiesLength
@@ -106,6 +111,7 @@ public class MessageExtEncoder {
                 + messageVersion.getTopicLengthSize() + topicLength; //TOPIC
     }
 
+    /** 编码消息但不写入 properties（properties 单独 append）。 */
     public PutMessageResult encodeWithoutProperties(MessageExtBrokerInner msgInner) {
 
         final byte[] topicData = msgInner.getTopic().getBytes(MessageDecoder.CHARSET_UTF8);
@@ -172,6 +178,7 @@ public class MessageExtEncoder {
         return null;
     }
 
+    /** 编码单条消息（含 properties）到内部 ByteBuf。 */
     public PutMessageResult encode(MessageExtBrokerInner msgInner) {
         this.byteBuf.clear();
 
@@ -279,6 +286,7 @@ public class MessageExtEncoder {
         return null;
     }
 
+    /** 编码批量消息到 ByteBuffer。 */
     public ByteBuffer encode(final MessageExtBatch messageExtBatch, PutMessageContext putMessageContext) {
         this.byteBuf.clear();
 
@@ -390,6 +398,7 @@ public class MessageExtEncoder {
         return this.maxMessageBodySize;
     }
 
+    /** 动态扩容编码缓冲以适配更大的 maxMessageSize。 */
     public void updateEncoderBufferCapacity(int newMaxMessageBodySize) {
         this.maxMessageBodySize = newMaxMessageBodySize;
         //Reserve 64kb for encoding buffer outside body
@@ -407,6 +416,7 @@ public class MessageExtEncoder {
             keyBuilder = new StringBuilder();
         }
 
+        /** 返回线程绑定的编码器实例。 */
         public MessageExtEncoder getEncoder() {
             return encoder;
         }

@@ -29,13 +29,13 @@ import java.util.List;
 import org.apache.rocketmq.store.logfile.MappedFile;
 
 /**
- * Extend of consume queue, to store something not important,
- * such as message store time, filter bit map and etc.
- * <p/>
- * <li>1. This class is used only by {@link ConsumeQueue}</li>
- * <li>2. And is weakly reliable.</li>
- * <li>3. Be careful, address returned is always less than 0.</li>
- * <li>4. Pls keep this file small.</li>
+ * ConsumeQueue 扩展文件：存储非关键辅助数据（storeTime、过滤位图等）。
+ * <ul>
+ * <li>仅由 {@link ConsumeQueue} 使用；</li>
+ * <li>弱可靠，丢失不影响主链路；</li>
+ * <li>返回地址恒为负值（与主 CQ 区分）；</li>
+ * <li>宜保持文件小巧。</li>
+ * </ul>
  */
 public class ConsumeQueueExt {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
@@ -48,22 +48,21 @@ public class ConsumeQueueExt {
     private final int mappedFileSize;
     private ByteBuffer tempContainer;
 
+    /** 文件末尾空白标记长度（字节）。 */
     public static final int END_BLANK_DATA_LENGTH = 4;
 
-    /**
-     * Addr can not exceed this value.For compatible.
-     */
+    /** 扩展地址上限（兼容旧版本，地址为负）。 */
     public static final long MAX_ADDR = Integer.MIN_VALUE - 1L;
     public static final long MAX_REAL_OFFSET = MAX_ADDR - Long.MIN_VALUE;
 
     /**
-     * Constructor.
+     * 构造扩展 CQ 并初始化 MappedFileQueue。
      *
-     * @param topic topic
-     * @param queueId id of queue
-     * @param storePath root dir of files to store.
-     * @param mappedFileSize file size
-     * @param bitMapLength bit map length.
+     * @param topic          Topic 名
+     * @param queueId        队列 ID
+     * @param storePath      存储根目录
+     * @param mappedFileSize 单文件大小
+     * @param bitMapLength   过滤位图长度
      */
     public ConsumeQueueExt(final String topic,
         final int queueId,
@@ -130,12 +129,7 @@ public class ConsumeQueueExt {
         return this.mappedFileQueue.getTotalFileSize();
     }
 
-    /**
-     * Check whether {@code address} point to extend file.
-     * <p>
-     * Just test {@code address} is less than 0.
-     * </p>
-     */
+    /** 判断 address 是否指向扩展 CQ（值为负）。 */
     public static boolean isExtAddr(final long address) {
         return address <= MAX_ADDR;
     }
@@ -155,13 +149,9 @@ public class ConsumeQueueExt {
     }
 
     /**
-     * Decorate {@code offset} from mapped file, in order to distinguish with tagsCode(saved in cq originally).
-     * <p>
-     * if {@code offset} is greater than or equal to 0, then return {@code offset} + {@link java.lang.Long#MIN_VALUE};
-     * else, just return {@code offset}
-     * </p>
+     * 将 MappedFile 内 offset 装饰为负地址，与主 CQ 的 tagsCode 区分。
      *
-     * @return ext address(value is less than 0)
+     * @return 扩展地址（小于 0）
      */
     public long decorate(final long offset) {
         if (!isExtAddr(offset)) {
@@ -227,6 +217,7 @@ public class ConsumeQueueExt {
      *
      * @return success: < 0: fail: >=0
      */
+    /** 写入扩展单元（storeTime/过滤位图），返回 decorate 后的负地址。 */
     public long put(final CqExtUnit cqExtUnit) {
         final int retryTimes = 3;
         try {
@@ -290,6 +281,7 @@ public class ConsumeQueueExt {
     /**
      * Load data from file when startup.
      */
+    /** 加载扩展 CQ 目录下 MappedFile。 */
     public boolean load() {
         boolean result = this.mappedFileQueue.load();
         log.info("load consume queue extend" + this.topic + "-" + this.queueId + " " + (result ? "OK" : "Failed"));
@@ -306,6 +298,7 @@ public class ConsumeQueueExt {
     /**
      * Recover.
      */
+    /** 恢复扩展 CQ：扫描并重置 maxAddress。 */
     public void recover() {
         final List<MappedFile> mappedFiles = this.mappedFileQueue.getMappedFiles();
         if (mappedFiles == null || mappedFiles.isEmpty()) {
@@ -355,6 +348,7 @@ public class ConsumeQueueExt {
      *
      * @param minAddress less than 0
      */
+    /** 截断 minAddress 之前的扩展数据。 */
     public void truncateByMinAddress(final long minAddress) {
         if (!isExtAddr(minAddress)) {
             return;

@@ -64,24 +64,35 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
+/**
+ * Proxy Remoting 协议服务端：基于 {@link NettyRemotingServer} 暴露经典 Remoting API，
+ * 将 RequestCode 映射到各 Activity（Send/Pull/POP/ACK/事务等），
+ * 并串联认证/授权/上下文初始化 Pipeline。
+ */
 public class RemotingProtocolServer implements StartAndShutdown, RemotingProxyOutClient {
     private final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
+    /** 消息处理门面，Activity 通过它访问 Broker 能力。 */
     protected final MessagingProcessor messagingProcessor;
+    /** Remoting 通道管理，维护客户端连接与转发上下文。 */
     protected final RemotingChannelManager remotingChannelManager;
     protected final ChannelEventListener clientHousekeepingService;
     protected final RemotingServer defaultRemotingServer;
     protected final GetTopicRouteActivity getTopicRouteActivity;
     protected final ClientManagerActivity clientManagerActivity;
     protected final ConsumerManagerActivity consumerManagerActivity;
+    /** 发送/重试/DLQ 消息 Activity。 */
     protected final SendMessageActivity sendMessageActivity;
     protected final RecallMessageActivity recallMessageActivity;
     protected final TransactionActivity transactionActivity;
+    /** Pull/POP/Lite Pull 消息 Activity。 */
     protected final PullMessageActivity pullMessageActivity;
     protected final PopMessageActivity popMessageActivity;
     protected final AckMessageActivity ackMessageActivity;
     protected final ChangeInvisibleTimeActivity changeInvisibleTimeActivity;
+    /** 发送类请求专用线程池。 */
     protected final ThreadPoolExecutor sendMessageExecutor;
+    /** Pull/POP 类请求专用线程池。 */
     protected final ThreadPoolExecutor pullMessageExecutor;
     protected final ThreadPoolExecutor heartbeatExecutor;
     protected final ThreadPoolExecutor updateOffsetExecutor;
@@ -208,7 +219,9 @@ public class RemotingProtocolServer implements StartAndShutdown, RemotingProxyOu
         }
     }
 
+    /** 将各 RequestCode 注册到对应 Activity 与线程池。 */
     protected void registerRemotingServer(RemotingServer remotingServer) {
+        // 发送类：单条/批量/重试回 Broker
         remotingServer.registerProcessor(RequestCode.SEND_MESSAGE, sendMessageActivity, this.sendMessageExecutor);
         remotingServer.registerProcessor(RequestCode.SEND_MESSAGE_V2, sendMessageActivity, this.sendMessageExecutor);
         remotingServer.registerProcessor(RequestCode.SEND_BATCH_MESSAGE, sendMessageActivity, this.sendMessageExecutor);
@@ -221,11 +234,13 @@ public class RemotingProtocolServer implements StartAndShutdown, RemotingProxyOu
         remotingServer.registerProcessor(RequestCode.UNREGISTER_CLIENT, clientManagerActivity, this.defaultExecutor);
         remotingServer.registerProcessor(RequestCode.CHECK_CLIENT_CONFIG, clientManagerActivity, this.defaultExecutor);
 
+        // 拉取类：Pull / Lite Pull / POP
         remotingServer.registerProcessor(RequestCode.PULL_MESSAGE, pullMessageActivity, this.pullMessageExecutor);
         remotingServer.registerProcessor(RequestCode.LITE_PULL_MESSAGE, pullMessageActivity, this.pullMessageExecutor);
         remotingServer.registerProcessor(RequestCode.POP_MESSAGE, pullMessageActivity, this.pullMessageExecutor);
 
         remotingServer.registerProcessor(RequestCode.UPDATE_CONSUMER_OFFSET, consumerManagerActivity, this.updateOffsetExecutor);
+        // 消费位点与 ACK 走 updateOffset 线程池
         remotingServer.registerProcessor(RequestCode.ACK_MESSAGE, consumerManagerActivity, this.updateOffsetExecutor);
         remotingServer.registerProcessor(RequestCode.CHANGE_MESSAGE_INVISIBLETIME, consumerManagerActivity, this.updateOffsetExecutor);
         remotingServer.registerProcessor(RequestCode.GET_CONSUMER_CONNECTION_LIST, consumerManagerActivity, this.updateOffsetExecutor);
@@ -292,6 +307,7 @@ public class RemotingProtocolServer implements StartAndShutdown, RemotingProxyOu
         return future;
     }
 
+    /** 构建 ContextInit → Authentication → Authorization 请求管道。 */
     protected RequestPipeline createRequestPipeline(MessagingProcessor messagingProcessor) {
         RequestPipeline pipeline = (ctx, request, context) -> {
         };
@@ -349,6 +365,7 @@ public class RemotingProtocolServer implements StartAndShutdown, RemotingProxyOu
         return -1;
     }
 
+    /** 定时清理超时未完成的异步 Remoting 请求。 */
     protected void cleanExpireRequest() {
         ProxyConfig config = ConfigurationManager.getProxyConfig();
 

@@ -95,6 +95,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.rocketmq.remoting.common.RemotingHelper.convertChannelFutureToCompletableFuture;
 
+/**
+ * Netty Remoting 客户端：维护 addr → Channel 连接池、NameServer 轮询、
+ * 同步/异步/Oneway 调用及 TLS/Socks5 代理支持。
+ */
 public class NettyRemotingClient extends NettyRemotingAbstract implements RemotingClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_REMOTING_NAME);
 
@@ -110,10 +114,12 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     private final Lock lockChannelTables = new ReentrantLock();
     private final Map<String /* cidr */, SocksProxyConfig /* proxy */> proxyMap = new HashMap<>();
     private final ConcurrentHashMap<String /* cidr */, Bootstrap> bootstrapMap = new ConcurrentHashMap<>();
+    /** Broker/NameServer 地址 → 连接包装（含锁与创建时间）。 */
     private final ConcurrentMap<String /* addr */, ChannelWrapper> channelTables = new ConcurrentHashMap<>();
 
     private final HashedWheelTimer timer = new HashedWheelTimer(r -> new Thread(r, "ClientHouseKeepingService"));
 
+    /** NameServer 地址列表（可热更新）。 */
     private final AtomicReference<List<String>> namesrvAddrList = new AtomicReference<>();
     private final ConcurrentMap<String, Boolean> availableNamesrvAddrMap = new ConcurrentHashMap<>();
     private final AtomicReference<String> namesrvAddrChoosed = new AtomicReference<>();
@@ -123,9 +129,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     private final ExecutorService publicExecutor;
     private final ExecutorService scanExecutor;
 
-    /**
-     * Invoke the callback methods in this executor when process response.
-     */
+    /** 异步响应回调执行线程池。 */
     private ExecutorService callbackExecutor;
     private final ChannelEventListener channelEventListener;
     private EventExecutorGroup defaultEventExecutorGroup;
@@ -194,6 +198,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     }
 
     @Override
+    /** 启动 Bootstrap、扫描线程与 NameServer 心跳。 */
     public void start() {
         if (this.defaultEventExecutorGroup == null) {
             this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(
@@ -345,7 +350,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                         }
                     }
 
-                    // Netty Socks5 Proxy
+                    // 为匹配 CIDR 的地址注入 Netty Socks5 代理 Handler
                     if (proxy != null) {
                         String[] hostAndPort = getHostAndPort(proxy.getAddr());
                         pipeline.addFirst(new Socks5ProxyHandler(
@@ -377,6 +382,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     }
 
     @Override
+    /** 关闭所有 Channel、线程池与定时器。 */
     public void shutdown() {
         try {
             this.timer.stop();
@@ -513,6 +519,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     }
 
     @Override
+    /** 更新 NameServer 地址并触发不可用地址清理。 */
     public void updateNameServerAddressList(List<String> addrs) {
         List<String> old = this.namesrvAddrList.get();
         boolean update = false;
@@ -995,7 +1002,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     class ChannelWrapper {
         private final ReentrantReadWriteLock lock;
         private ChannelFuture channelFuture;
-        // only affected by sync or async request, oneway is not included.
+        // 仅同步/异步请求占用 semaphoreAsync，Oneway 不计入
         private ChannelFuture channelToClose;
         private long lastResponseTime;
         private final String channelAddress;

@@ -74,33 +74,26 @@ import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.RESUL
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.RESULT_PROCESS_REQUEST_FAILED;
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.RESULT_WRITE_CHANNEL_FAILED;
 
+/**
+ * Netty Remoting 抽象基类：管理请求/响应表、信号量流控、Processor 路由
+ * 及请求分发/响应写回逻辑，{@link NettyRemotingClient} 与 {@link NettyRemotingServer} 共用。
+ */
 public abstract class NettyRemotingAbstract {
 
-    /**
-     * Remoting logger instance.
-     */
+    /** Remoting 模块日志实例。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_REMOTING_NAME);
 
-    /**
-     * Semaphore to limit maximum number of on-going one-way requests, which protects system memory footprint.
-     */
+    /** 限制并发 Oneway 请求数，防止内存膨胀。 */
     protected final Semaphore semaphoreOneway;
 
-    /**
-     * Semaphore to limit maximum number of on-going asynchronous requests, which protects system memory footprint.
-     */
+    /** 限制并发异步请求数，防止内存膨胀。 */
     protected final Semaphore semaphoreAsync;
 
-    /**
-     * This map caches all on-going requests.
-     */
+    /** opaque → 进行中的 {@link ResponseFuture} 映射。 */
     protected final ConcurrentMap<Integer /* opaque */, ResponseFuture> responseTable =
         new ConcurrentHashMap<>(256);
 
-    /**
-     * This container holds all processors per request code, aka, for each incoming request, we may look up the
-     * responding processor in this map to handle the request.
-     */
+    /** requestCode → (Processor, Executor) 路由表。 */
     protected final HashMap<Integer/* request code */, Pair<NettyRequestProcessor, ExecutorService>> processorTable =
         new HashMap<>(64);
 
@@ -139,10 +132,10 @@ public abstract class NettyRemotingAbstract {
     }
 
     /**
-     * Constructor, specifying capacity of one-way and asynchronous semaphores.
+     * 构造 Remoting 抽象层并初始化 Oneway/Async 信号量。
      *
-     * @param permitsOneway Number of permits for one-way requests.
-     * @param permitsAsync  Number of permits for asynchronous requests.
+     * @param permitsOneway Oneway 请求许可数
+     * @param permitsAsync  异步请求许可数
      */
     public NettyRemotingAbstract(final int permitsOneway, final int permitsAsync) {
         this.semaphoreOneway = new Semaphore(permitsOneway, true);
@@ -185,19 +178,14 @@ public abstract class NettyRemotingAbstract {
     }
 
     /**
-     * Entry of incoming command processing.
-     *
-     * <p>
-     * <strong>Note:</strong>
-     * The incoming remoting command may be
+     * 入站 Remoting 命令入口：区分请求与响应。
      * <ul>
-     * <li>An inquiry request from a remote peer component;</li>
-     * <li>A response to a previous request issued by this very participant.</li>
+     * <li>远端发起的请求 → {@link #processRequestCommand}；</li>
+     * <li>对本端先前请求的响应 → {@link #processResponseCommand}。</li>
      * </ul>
-     * </p>
      *
-     * @param ctx Channel handler context.
-     * @param msg incoming remoting command.
+     * @param ctx 通道上下文
+     * @param msg 入站 Remoting 命令
      */
     public void processMessageReceived(ChannelHandlerContext ctx, RemotingCommand msg) {
         if (msg != null) {
@@ -334,10 +322,10 @@ public abstract class NettyRemotingAbstract {
     }
 
     /**
-     * Process incoming request command issued by remote peer.
+     * 处理远端请求：查找 Processor、提交线程池或返回 BUSY/GO_AWAY。
      *
-     * @param ctx channel handler context.
-     * @param cmd request command.
+     * @param ctx 通道上下文
+     * @param cmd 请求命令
      */
     public void processRequestCommand(final ChannelHandlerContext ctx, final RemotingCommand cmd) {
         final Pair<NettyRequestProcessor, ExecutorService> matched = this.processorTable.get(cmd.getCode());
@@ -377,7 +365,7 @@ public abstract class NettyRemotingAbstract {
 
         try {
             final RequestTask requestTask = new RequestTask(run, ctx.channel(), cmd);
-            //async execute task, current thread return directly
+            // 异步提交到业务线程池，Netty IO 线程立即返回
             pair.getObject2().submit(requestTask);
         } catch (RejectedExecutionException e) {
             if ((System.currentTimeMillis() % 10000) == 0) {
@@ -460,10 +448,10 @@ public abstract class NettyRemotingAbstract {
     }
 
     /**
-     * Process response from remote peer to the previous issued requests.
+     * 处理远端响应：匹配 opaque 并完成 ResponseFuture 或触发回调。
      *
-     * @param ctx channel handler context.
-     * @param cmd response command instance.
+     * @param ctx 通道上下文
+     * @param cmd 响应命令
      */
     public void processResponseCommand(ChannelHandlerContext ctx, RemotingCommand cmd) {
         final int opaque = cmd.getOpaque();
@@ -484,9 +472,7 @@ public abstract class NettyRemotingAbstract {
         }
     }
 
-    /**
-     * Execute callback in callback executor. If callback executor is null, run directly in current thread
-     */
+    /** 在 callback 线程池执行 InvokeCallback；无池则在当前线程执行。 */
     private void executeInvokeCallback(final ResponseFuture responseFuture) {
         boolean runInThisThread = false;
         ExecutorService executor = this.getCallbackExecutor();
@@ -551,11 +537,7 @@ public abstract class NettyRemotingAbstract {
      */
     public abstract ExecutorService getCallbackExecutor();
 
-    /**
-     * <p>
-     * This method is periodically invoked to scan and expire deprecated request.
-     * </p>
-     */
+    /** 定时扫描 responseTable，清理超时请求并触发超时回调。 */
     public void scanResponseTable() {
         final List<ResponseFuture> rfList = new LinkedList<>();
         Iterator<Entry<Integer, ResponseFuture>> it = this.responseTable.entrySet().iterator();
@@ -580,6 +562,7 @@ public abstract class NettyRemotingAbstract {
         }
     }
 
+    /** 同步 RPC 实现：invokeImpl 后阻塞 get 直到超时。 */
     public RemotingCommand invokeSyncImpl(final Channel channel, final RemotingCommand request,
         final long timeoutMillis)
         throws InterruptedException, RemotingSendRequestException, RemotingTimeoutException {

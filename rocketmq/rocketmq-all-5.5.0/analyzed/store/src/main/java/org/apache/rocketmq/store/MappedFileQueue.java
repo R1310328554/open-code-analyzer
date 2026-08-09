@@ -37,6 +37,11 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.store.logfile.DefaultMappedFile;
 import org.apache.rocketmq.store.logfile.MappedFile;
 
+/**
+ * MappedFile 队列：管理同一存储路径下按 offset 排序的 mmap 文件，
+ * 提供 append、flush、commit、过期删除及按 offset 查找能力。
+ * CommitLog 与 ConsumeQueue 均依赖此组件。
+ */
 public class MappedFileQueue implements Swappable {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger LOG_ERROR = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
@@ -45,20 +50,21 @@ public class MappedFileQueue implements Swappable {
 
     protected final int mappedFileSize;
 
+    /** 按起始 offset 排序的 MappedFile 列表。 */
     protected final CopyOnWriteArrayList<MappedFile> mappedFiles = new CopyOnWriteArrayList<>();
 
     protected final AllocateMappedFileService allocateMappedFileService;
 
+    /** 已刷盘（fsync）的最大物理 offset。 */
     protected long flushedWhere = 0;
+    /** 已 commit 到 PageCache 的最大物理 offset。 */
     protected long committedWhere = 0;
 
     protected volatile long storeTimestamp = 0;
 
     protected RunningFlags runningFlags;
 
-    /**
-     * Configuration flag to use RandomAccessFile instead of MappedByteBuffer for writing
-     */
+    /** 为 true 时用 RandomAccessFile 代替 mmap 写入。 */
     protected boolean writeWithoutMmap = false;
 
     public MappedFileQueue(final String storePath, int mappedFileSize,
@@ -214,6 +220,7 @@ public class MappedFileQueue implements Swappable {
         return mfs;
     }
 
+    /** 截断 offset 之后的脏数据并移除不完整文件。 */
     public void truncateDirtyFiles(long offset) {
         List<MappedFile> willRemoveFiles = new ArrayList<>();
 
@@ -258,6 +265,7 @@ public class MappedFileQueue implements Swappable {
     }
 
 
+    /** 扫描 storePath 加载全部 MappedFile 并排序。 */
     public boolean load() {
         File dir = new File(this.storePath);
         File[] ls = dir.listFiles();
@@ -396,6 +404,7 @@ public class MappedFileQueue implements Swappable {
         return mappedFile;
     }
 
+    /** 获取可写入 startOffset 的最后一个 MappedFile，不足则预分配。 */
     public MappedFile getLastMappedFile(final long startOffset) {
         return getLastMappedFile(startOffset, true);
     }
@@ -500,6 +509,7 @@ public class MappedFileQueue implements Swappable {
         }
     }
 
+    /** 按 storeTimestamp 删除过期 MappedFile。 */
     public int deleteExpiredFileByTime(final long expiredTime,
         final int deleteFilesInterval,
         final long intervalForcibly,
@@ -655,6 +665,7 @@ public class MappedFileQueue implements Swappable {
         return deleteCount;
     }
 
+    /** 刷盘：至少 flushLeastPages 页或全部脏页。 */
     public boolean flush(final int flushLeastPages) {
         boolean result = true;
         MappedFile mappedFile = this.findMappedFileByOffset(this.getFlushedWhere(), this.getFlushedWhere() == 0);
@@ -672,6 +683,7 @@ public class MappedFileQueue implements Swappable {
         return result;
     }
 
+    /** commit：将 writeBuffer 提交到 FileChannel/PageCache。 */
     public synchronized boolean commit(final int commitLeastPages) {
         boolean result = true;
         MappedFile mappedFile = this.findMappedFileByOffset(this.getCommittedWhere(), this.getCommittedWhere() == 0);
@@ -686,11 +698,11 @@ public class MappedFileQueue implements Swappable {
     }
 
     /**
-     * Finds a mapped file by offset.
+     * 按物理 offset 定位 MappedFile。
      *
-     * @param offset Offset.
-     * @param returnFirstOnNotFound If the mapped file is not found, then return the first one.
-     * @return Mapped file or null (when not found and returnFirstOnNotFound is <code>false</code>).
+     * @param offset                目标 offset
+     * @param returnFirstOnNotFound 未命中时是否返回第一个文件
+     * @return MappedFile 或 null
      */
     public MappedFile findMappedFileByOffset(final long offset, final boolean returnFirstOnNotFound) {
         try {

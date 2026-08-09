@@ -63,14 +63,23 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * Proxy 消息处理默认实现：聚合 {@link ProducerProcessor}、{@link ConsumerProcessor}、
+ * {@link TransactionProcessor} 等子处理器，对外提供统一的生产/消费/POP/事务 API。
+ * 支持 LOCAL 模式（嵌入 Broker）与 CLUSTER 模式（远程转发）。
+ */
 public class DefaultMessagingProcessor extends AbstractStartAndShutdown implements MessagingProcessor {
 
+    /** 底层服务管理器，封装路由、元数据与消息服务。 */
     protected ServiceManager serviceManager;
+    /** 生产侧请求处理器。 */
     protected ProducerProcessor producerProcessor;
+    /** 消费侧请求处理器（Pull/POP/ACK/offset）。 */
     protected ConsumerProcessor consumerProcessor;
     protected TransactionProcessor transactionProcessor;
     protected ClientProcessor clientProcessor;
     protected RequestBrokerProcessor requestBrokerProcessor;
+    /** POP 回执句柄生命周期管理（续期、清理）。 */
     protected ReceiptHandleProcessor receiptHandleProcessor;
 
     protected ThreadPoolExecutor producerProcessorExecutor;
@@ -107,6 +116,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
         this.init();
     }
 
+    /** LOCAL 模式工厂：Proxy 与 Broker 同进程，直接调用本地 {@link ServiceManager}。 */
     public static DefaultMessagingProcessor createForLocalMode(BrokerController brokerController) {
         return createForLocalMode(brokerController, null);
     }
@@ -115,6 +125,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
         return new DefaultMessagingProcessor(ServiceManagerFactory.createForLocalMode(brokerController, rpcHook));
     }
 
+    /** CLUSTER 模式工厂：按 ACL 配置构造 RPCHook 并创建远程服务管理器。 */
     public static DefaultMessagingProcessor createForClusterMode() {
         RPCHook rpcHook = null;
         if (!ConfigurationManager.getProxyConfig().isEnableAclRpcHookForClusterMode()) {
@@ -137,6 +148,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
         return new DefaultMessagingProcessor(ServiceManagerFactory.createForClusterMode(rpcHook));
     }
 
+    /** 注册 ServiceManager、ReceiptHandleProcessor 及线程池到生命周期管理。 */
     protected void init() {
         this.appendStartAndShutdown(this.serviceManager);
         this.appendStartAndShutdown(this.receiptHandleProcessor);
@@ -156,6 +168,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
     }
 
     @Override
+    /** 委托 {@link ProducerProcessor} 发送消息。 */
     public CompletableFuture<List<SendResult>> sendMessage(ProxyContext ctx, QueueSelector queueSelector,
         String producerGroup, int sysFlag, List<Message> msg, long timeoutMillis) {
         return this.producerProcessor.sendMessage(ctx, queueSelector, producerGroup, sysFlag, msg, timeoutMillis);
@@ -184,6 +197,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
     }
 
     @Override
+    /** 委托 {@link ConsumerProcessor} 执行 POP 长轮询消费。 */
     public CompletableFuture<PopResult> popMessage(
         ProxyContext ctx,
         QueueSelector queueSelector,
@@ -214,6 +228,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
     }
 
     @Override
+    /** 委托 {@link ConsumerProcessor} 确认 POP 消息。 */
     public CompletableFuture<AckResult> ackMessage(ProxyContext ctx, ReceiptHandle handle, String messageId,
         String consumerGroup, String topic, long timeoutMillis) {
         return this.consumerProcessor.ackMessage(ctx, handle, messageId, consumerGroup, topic, null, timeoutMillis);
@@ -342,6 +357,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
     }
 
     @Override
+    /** 注册消费者连接并同步订阅关系。 */
     public void registerConsumer(ProxyContext ctx, String consumerGroup, ClientChannelInfo clientChannelInfo,
         ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere,
         Set<SubscriptionData> subList, boolean updateSubscription) {
@@ -364,6 +380,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
     }
 
     @Override
+    /** 通道关闭时清理生产/消费注册信息及回执句柄。 */
     public void doChannelCloseEvent(String remoteAddr, Channel channel) {
         this.clientProcessor.doChannelCloseEvent(remoteAddr, channel);
     }
@@ -389,6 +406,7 @@ public class DefaultMessagingProcessor extends AbstractStartAndShutdown implemen
     }
 
     @Override
+    /** 缓存 POP 回执句柄供续期与 ACK 校验。 */
     public void addReceiptHandle(ProxyContext ctx, Channel channel, String group, String msgID,
         MessageReceiptHandle messageReceiptHandle) {
         receiptHandleProcessor.addReceiptHandle(ctx, channel, group, msgID, messageReceiptHandle);

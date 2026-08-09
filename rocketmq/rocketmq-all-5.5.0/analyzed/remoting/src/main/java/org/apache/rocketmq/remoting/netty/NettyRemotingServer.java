@@ -89,6 +89,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Netty Remoting 服务端：绑定监听端口、装配 Pipeline（TLS/编解码/分发），
+ * 支持多 SubRemotingServer 与 Epoll/NIO 双模式。
+ */
 public class NettyRemotingServer extends NettyRemotingAbstract implements RemotingServer {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_REMOTING_NAME);
     private static final Logger TRAFFIC_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_TRAFFIC_NAME);
@@ -106,12 +110,10 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
 
-    /**
-     * NettyRemotingServer may hold multiple SubRemotingServer, each server will be stored in this container with a
-     * ListenPort key.
-     */
+    /** 监听端口 → SubRemotingServer 映射（多端口场景）。 */
     private final ConcurrentMap<Integer/*Port*/, NettyRemotingAbstract> remotingServerTable = new ConcurrentHashMap<>();
 
+    /** TLS 握手 Handler 名称。 */
     public static final String HANDSHAKE_HANDLER_NAME = "handshakeHandler";
     public static final String HA_PROXY_DECODER = "HAProxyDecoder";
     public static final String HA_PROXY_HANDLER = "HAProxyHandler";
@@ -119,10 +121,11 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
     public static final String TLS_HANDLER_NAME = "sslHandler";
     public static final String FILE_REGION_ENCODER_NAME = "fileRegionEncoder";
 
-    // sharable handlers
+    // 可共享的 Pipeline Handler 实例
     protected final TlsModeHandler tlsModeHandler = new TlsModeHandler(TlsSystemConfig.tlsMode);
     protected final NettyEncoder encoder = new NettyEncoder();
     protected final NettyConnectManageHandler connectionManageHandler = new NettyConnectManageHandler();
+    /** 入站 RemotingCommand 解码后的业务 Handler。 */
     protected final NettyServerHandler serverHandler = new NettyServerHandler();
     protected final RemotingCodeDistributionHandler distributionHandler = new RemotingCodeDistributionHandler();
 
@@ -177,6 +180,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
             new ThreadPoolExecutor.DiscardOldestPolicy());
     }
 
+    /** 按 TlsMode 加载或刷新 SSL 上下文。 */
     public void loadSslContext() {
         TlsMode tlsMode = TlsSystemConfig.tlsMode;
         log.info("Server is running in TLS {} mode", tlsMode.getName());
@@ -217,6 +221,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
     }
 
     @Override
+    /** 绑定 listenPort 并启动 Boss/Selector 线程组。 */
     public void start() {
         this.defaultEventExecutorGroup = new DefaultEventExecutorGroup(nettyServerConfig.getServerWorkerThreads(),
             new ThreadFactoryImpl("NettyServerCodecThread_"));
@@ -224,6 +229,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
         initServerBootstrap(serverBootstrap);
 
         try {
+            // 绑定 listenPort 并注册到 remotingServerTable
             ChannelFuture sync = serverBootstrap.bind().sync();
             InetSocketAddress addr = (InetSocketAddress) sync.channel().localAddress();
             if (0 == nettyServerConfig.getListenPort()) {
@@ -241,6 +247,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
             this.nettyEventExecutor.start();
         }
 
+        // 定时扫描超时 ResponseFuture
         TimerTask timerScanResponseTable = new TimerTask() {
             @Override
             public void run(Timeout timeout) {
@@ -307,6 +314,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
     }
 
     @Override
+    /** 优雅关闭 ServerBootstrap 与线程池。 */
     public void shutdown() {
         try {
             if (nettyServerConfig.isEnableShutdownGracefully() && isShuttingDown.compareAndSet(false, true)) {
@@ -658,7 +666,8 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
         }
 
         @Override
-        public void registerProcessor(final int requestCode, final NettyRequestProcessor processor,
+        /** 注册 requestCode 对应的 Processor 与业务线程池。 */
+    public void registerProcessor(final int requestCode, final NettyRequestProcessor processor,
                                       final ExecutorService executor) {
             ExecutorService executorThis = executor;
             if (null == executor) {

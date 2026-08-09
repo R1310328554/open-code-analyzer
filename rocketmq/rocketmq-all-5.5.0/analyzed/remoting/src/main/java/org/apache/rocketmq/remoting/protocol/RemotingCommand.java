@@ -44,12 +44,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * RocketMQ Remoting 协议命令载体：封装 request/response code、opaque、flag、
+ * extFields 与 body，支持 JSON/RocketMQ 两种序列化及自定义 Header 反射编解码。
+ */
 public class RemotingCommand {
+    /** JVM 属性：指定序列化类型（JSON/ROCKETMQ）。 */
     public static final String SERIALIZE_TYPE_PROPERTY = "rocketmq.serialize.type";
     public static final String SERIALIZE_TYPE_ENV = "ROCKETMQ_SERIALIZE_TYPE";
     public static final String REMOTING_VERSION_KEY = "rocketmq.remoting.version";
     static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_REMOTING_NAME);
-    private static final int RPC_TYPE = 0; // 0, REQUEST_COMMAND
+    private static final int RPC_TYPE = 0; // 0=REQUEST_COMMAND
     private static final int RPC_ONEWAY = 1; // 0, RPC
     private static final Map<Class<? extends CommandCustomHeader>, Field[]> CLASS_HASH_MAP =
         new HashMap<>();
@@ -86,6 +91,7 @@ public class RemotingCommand {
     private int code;
     private LanguageCode language = LanguageCode.JAVA;
     private int version = 0;
+    /** 请求/响应关联 ID，客户端生成递增。 */
     private int opaque = requestId.getAndIncrement();
     private int flag = 0;
     private String remark;
@@ -103,6 +109,7 @@ public class RemotingCommand {
     protected RemotingCommand() {
     }
 
+    /** 构造请求命令并绑定自定义 Header。 */
     public static RemotingCommand createRequestCommand(int code, CommandCustomHeader customHeader) {
         RemotingCommand cmd = new RemotingCommand();
         cmd.setCode(code);
@@ -175,6 +182,7 @@ public class RemotingCommand {
         return cmd;
     }
 
+    /** 构造带 remark 的响应命令。 */
     public static RemotingCommand createResponseCommand(int code, String remark) {
         return createResponseCommand(code, remark, null);
     }
@@ -184,6 +192,7 @@ public class RemotingCommand {
         return decode(byteBuffer);
     }
 
+    /** 从 ByteBuffer 解码 RemotingCommand（自动识别序列化类型）。 */
     public static RemotingCommand decode(final ByteBuffer byteBuffer) throws RemotingCommandException {
         return decode(Unpooled.wrappedBuffer(byteBuffer));
     }
@@ -249,11 +258,13 @@ public class RemotingCommand {
         return (type.getCode() << 24) | (source & 0x00FFFFFF);
     }
 
+    /** 标记为响应类型（RPC_TYPE 位置 1）。 */
     public void markResponseType() {
         int bits = 1 << RPC_TYPE;
         this.flag |= bits;
     }
 
+    /** 将 extFields 反序列化到 customHeader 并缓存。 */
     public CommandCustomHeader readCustomHeader() {
         return customHeader;
     }
@@ -384,6 +395,7 @@ public class RemotingCommand {
         return name;
     }
 
+    /** 按当前 RPC 序列化类型编码为 ByteBuffer。 */
     public ByteBuffer encode() {
         // 1> header length size
         int length = 4;
@@ -427,6 +439,7 @@ public class RemotingCommand {
         }
     }
 
+    /** 将 customHeader 字段反射写入 extFields 供网络传输。 */
     public void makeCustomHeaderToNet() {
         if (this.customHeader != null) {
             Field[] fields = getClazzFields(customHeader.getClass());
@@ -509,6 +522,7 @@ public class RemotingCommand {
         return result;
     }
 
+    /** 标记为 Oneway RPC（不期望响应）。 */
     public void markOnewayRPC() {
         int bits = 1 << RPC_ONEWAY;
         this.flag |= bits;

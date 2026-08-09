@@ -80,9 +80,15 @@ import org.apache.rocketmq.remoting.protocol.header.UpdateConsumerOffsetRequestH
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * LOCAL 模式消息服务：Proxy 与 Broker 同进程时，直接调用 Broker Processor
+ *（如 {@link SendMessageProcessor}）处理发送/Pull/POP/ACK，无需网络转发。
+ */
 public class LocalMessageService implements MessageService {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 本地 Broker 控制器，提供各 NettyRequestProcessor。 */
     private final BrokerController brokerController;
+    /** 构造模拟 Channel 以适配 Broker Processor 接口。 */
     private final ChannelManager channelManager;
 
     public LocalMessageService(BrokerController brokerController, ChannelManager channelManager, RPCHook rpcHook) {
@@ -91,6 +97,7 @@ public class LocalMessageService implements MessageService {
     }
 
     @Override
+    /** 本地调用 SendMessageProcessor 发送单条或批量消息。 */
     public CompletableFuture<List<SendResult>> sendMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         List<Message> msgList, SendMessageRequestHeader requestHeader, long timeoutMillis) {
         byte[] body;
@@ -162,6 +169,7 @@ public class LocalMessageService implements MessageService {
     }
 
     @Override
+    /** 本地执行消费失败重试（SendBack）请求。 */
     public CompletableFuture<RemotingCommand> sendMessageBack(ProxyContext ctx, ReceiptHandle handle, String messageId,
         ConsumerSendMsgBackRequestHeader requestHeader, long timeoutMillis) {
         SimpleChannel channel = channelManager.createChannel(ctx);
@@ -180,6 +188,7 @@ public class LocalMessageService implements MessageService {
     }
 
     @Override
+    /** 本地单向提交/回滚事务消息。 */
     public CompletableFuture<Void> endTransactionOneway(ProxyContext ctx, String brokerName,
         EndTransactionRequestHeader requestHeader,
         long timeoutMillis) {
@@ -204,6 +213,7 @@ public class LocalMessageService implements MessageService {
     }
 
     @Override
+    /** 本地调用 PopMessageProcessor 执行 POP 消费。 */
     public CompletableFuture<PopResult> popMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         PopMessageRequestHeader requestHeader, long timeoutMillis) {
         RemotingCommand request = LocalRemotingCommand.createRequestCommand(RequestCode.POP_MESSAGE, requestHeader, ctx.getLanguage());
@@ -262,7 +272,7 @@ public class LocalMessageService implements MessageService {
                 // <topicMark@queueId, msg queueOffset>
                 Map<String, List<Long>> sortMap = new HashMap<>(16);
                 for (MessageExt messageExt : messageExtList) {
-                    // Value of POP_CK is used to determine whether it is a pop retry,
+                    // POP_CK 属性标识是否为 POP 重试消息（topic 可能被 Broker 改写）
                     // cause topic could be rewritten by broker.
                     String key = ExtraInfoUtil.getStartOffsetInfoMapKey(messageExt.getTopic(),
                         messageExt.getProperty(MessageConst.PROPERTY_POP_CK), messageExt.getQueueId());
@@ -351,6 +361,7 @@ public class LocalMessageService implements MessageService {
     }
 
     @Override
+    /** 本地调用 AckMessageProcessor 确认 POP 消息。 */
     public CompletableFuture<AckResult> ackMessage(ProxyContext ctx, ReceiptHandle handle, String messageId,
         AckMessageRequestHeader requestHeader, long timeoutMillis) {
         SimpleChannel channel = channelManager.createChannel(ctx);
@@ -434,12 +445,14 @@ public class LocalMessageService implements MessageService {
     @Override
     public CompletableFuture<PullResult> pullMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         PullMessageRequestHeader requestHeader, long timeoutMillis) {
+        // LOCAL 模式 Pull 走 Pop/Push 路径，此处未实现
         throw new NotImplementedException("pullMessage is not implemented in LocalMessageService");
     }
 
     @Override
     public CompletableFuture<Long> queryConsumerOffset(ProxyContext ctx, AddressableMessageQueue messageQueue,
         QueryConsumerOffsetRequestHeader requestHeader, long timeoutMillis) {
+        // LOCAL 模式 offset 查询未实现（由 Broker 内部管理）
         throw new NotImplementedException("queryConsumerOffset is not implemented in LocalMessageService");
     }
 
@@ -480,6 +493,7 @@ public class LocalMessageService implements MessageService {
     }
 
     @Override
+    /** 本地调用 RecallMessageProcessor 撤回已发送消息。 */
     public CompletableFuture<String> recallMessage(ProxyContext ctx, String brokerName,
         RecallMessageRequestHeader requestHeader, long timeoutMillis) {
         SimpleChannel channel = channelManager.createChannel(ctx);
