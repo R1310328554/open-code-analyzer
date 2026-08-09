@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:43:21Z",
-  "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocket07FrameDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocket07FrameEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocket08FrameDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocket08FrameEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocket13FrameDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocket13FrameEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketChunkedInput.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshakeException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshaker.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshaker00.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshaker07.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshaker08.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshaker13.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshakerFactory.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientProtocolConfig.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1388,
-  "done": 525
+  "done": 540
 }
