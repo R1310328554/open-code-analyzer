@@ -28,5 +28,5 @@
     "src/main/java/com/zaxxer/hikari/metrics/prometheus/PrometheusMetricsTrackerFactory.java"
   ],
   "remaining_pending": 24,
-  "done": 0
+  "done": 25
 }
