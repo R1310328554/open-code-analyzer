@@ -22,8 +22,10 @@ import javax.sql.DataSource;
 import org.springframework.jndi.JndiLocatorSupport;
 
 /**
- * 基于JNDI的{@link DataSourceLookup}实现。
- * <p>对于具体的JNDI配置，建议配置“jndiEnvironment”/“jndiTemplate”属性。
+ * 基于 JNDI 的 {@link DataSourceLookup} 实现。
+ *
+ * <p>如需特定 JNDI 配置，建议配置 "jndiEnvironment"/"jndiTemplate" 属性。
+ *
  * @author Costin Leau
  * @author Juergen Hoeller
  * @since 2.0
@@ -32,16 +34,10 @@ import org.springframework.jndi.JndiLocatorSupport;
  */
 public class JndiDataSourceLookup extends JndiLocatorSupport implements DataSourceLookup {
 
-	/**
-	 * 创建 `JndiDataSourceLookup` 的新实例。
-	 */
 	public JndiDataSourceLookup() {
 		setResourceRef(true);
 	}
 
-	/**
-	 * 获取 Data Source（`DataSource`）。
-	 */
 	@Override
 	public DataSource getDataSource(String dataSourceName) throws DataSourceLookupFailureException {
 		try {

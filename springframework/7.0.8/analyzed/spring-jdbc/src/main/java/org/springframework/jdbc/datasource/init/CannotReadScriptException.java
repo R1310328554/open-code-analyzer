@@ -19,7 +19,8 @@ package org.springframework.jdbc.datasource.init;
 import org.springframework.core.io.support.EncodedResource;
 
 /**
- * 如果无法读取 SQL 脚本，则由 {@link ScriptUtils} 抛出。
+ * 当 SQL 脚本无法读取时，由 {@link ScriptUtils} 抛出。
+ *
  * @author Keith Donald
  * @author Sam Brannen
  * @since 3.0
@@ -28,7 +29,7 @@ import org.springframework.core.io.support.EncodedResource;
 public class CannotReadScriptException extends ScriptException {
 
 	/**
-	 * 创建一个新的 {@code CannotReadScriptException}。
+	 * 创建新的 {@code CannotReadScriptException}。
 	 * @param resource 无法读取的资源
 	 * @param cause 资源访问失败的根本原因
 	 */

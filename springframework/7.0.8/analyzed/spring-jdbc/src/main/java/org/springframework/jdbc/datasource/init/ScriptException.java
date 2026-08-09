@@ -21,7 +21,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessException;
 
 /**
- * 与 SQL 脚本处理相关的数据访问异常层次结构的根。
+ * 与 SQL 脚本处理相关的数据访问异常层次结构的根类。
+ *
  * @author Sam Brannen
  * @since 4.0.3
  */
@@ -29,7 +30,7 @@ import org.springframework.dao.DataAccessException;
 public abstract class ScriptException extends DataAccessException {
 
 	/**
-	 * 创建一个新的 {@code ScriptException}。
+	 * 创建新的 {@code ScriptException}。
 	 * @param message 详细消息
 	 */
 	public ScriptException(String message) {
@@ -37,7 +38,7 @@ public abstract class ScriptException extends DataAccessException {
 	}
 
 	/**
-	 * 创建一个新的 {@code ScriptException}。
+	 * 创建新的 {@code ScriptException}。
 	 * @param message 详细消息
 	 * @param cause 根本原因
 	 */

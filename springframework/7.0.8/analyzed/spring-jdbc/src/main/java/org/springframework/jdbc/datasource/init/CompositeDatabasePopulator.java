@@ -26,7 +26,9 @@ import java.util.List;
 import org.springframework.util.Assert;
 
 /**
- * 复合 {@link DatabasePopulator}，委托给给定 {@code DatabasePopulator} 实现的列表，执行所有脚本。
+ * 组合式 {@link DatabasePopulator}，委托给一组 {@code DatabasePopulator}
+ * 实现并执行全部脚本。
+ *
  * @author Dave Syer
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -39,7 +41,7 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 
 
 	/**
-	 * 创建一个空的 {@code CompositeDatabasePopulator}。
+	 * 创建空的 {@code CompositeDatabasePopulator}。
 	 * @see #setPopulators
 	 * @see #addPopulators
 	 */
@@ -47,8 +49,8 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 使用给定的填充程序创建 {@code CompositeDatabasePopulator}。
-	 * @param populators 委托给一个或多个填充者
+	 * 使用给定 populator 创建 {@code CompositeDatabasePopulator}。
+	 * @param populators 要委托的一个或多个 populator
 	 * @since 4.3
 	 */
 	public CompositeDatabasePopulator(Collection<DatabasePopulator> populators) {
@@ -57,8 +59,8 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 使用给定的填充程序创建 {@code CompositeDatabasePopulator}。
-	 * @param populators 委托给一个或多个填充者
+	 * 使用给定 populator 创建 {@code CompositeDatabasePopulator}。
+	 * @param populators 要委托的一个或多个 populator
 	 * @since 4.3
 	 */
 	public CompositeDatabasePopulator(DatabasePopulator... populators) {
@@ -68,7 +70,7 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 
 
 	/**
-	 * 指定要委托给的一个或多个填充器。
+	 * 指定要委托的一个或多个 populator。
 	 */
 	public void setPopulators(DatabasePopulator... populators) {
 		Assert.notNull(populators, "DatabasePopulators must not be null");
@@ -77,16 +79,13 @@ public class CompositeDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 将一个或多个填充者添加到代表列表中。
+	 * 向委托列表添加一个或多个 populator。
 	 */
 	public void addPopulators(DatabasePopulator... populators) {
 		Assert.notNull(populators, "DatabasePopulators must not be null");
 		this.populators.addAll(Arrays.asList(populators));
 	}
 
-	/**
-	 * 填充（方法 `populate`）。
-	 */
 	@Override
 	public void populate(Connection connection) throws SQLException, ScriptException {
 		Assert.notNull(connection, "Connection must not be null");

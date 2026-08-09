@@ -19,8 +19,10 @@ package org.springframework.jdbc.datasource.lookup;
 import javax.sql.DataSource;
 
 /**
- * 用于按名称查找数据源的策略接口。
- * 例如，<p> 用于解析 JPA {@code persistence.xml} 文件中的数据源名称。
+ * 按名称查找 DataSource 的策略接口。
+ *
+ * <p>例如用于解析 JPA {@code persistence.xml} 文件中的数据源名称。
+ *
  * @author Costin Leau
  * @author Juergen Hoeller
  * @since 2.0
@@ -30,10 +32,10 @@ import javax.sql.DataSource;
 public interface DataSourceLookup {
 
 	/**
-	 * 检索由给定名称标识的数据源。
-	 * @param dataSourceName 数据源的名称
-	 * @return 数据源（绝不是 {@code null}）
-	 * @throws DataSourceLookupFailureException 如果查找失败
+	 * 获取给定名称对应的 DataSource。
+	 * @param dataSourceName DataSource 名称
+	 * @return DataSource（永不为 {@code null}）
+	 * @throws DataSourceLookupFailureException 查找失败时
 	 */
 	DataSource getDataSource(String dataSourceName) throws DataSourceLookupFailureException;
 

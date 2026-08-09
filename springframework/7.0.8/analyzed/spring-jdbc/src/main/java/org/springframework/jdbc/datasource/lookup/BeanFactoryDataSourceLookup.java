@@ -27,7 +27,10 @@ import org.springframework.util.Assert;
 
 /**
  * 基于 Spring {@link BeanFactory} 的 {@link DataSourceLookup} 实现。
- * <p> 将查找由 bean 名称标识的 Spring 托管 bean，期望它们是 {@code javax.sql.DataSource} 类型。
+ *
+ * <p>按 Bean 名称查找 Spring 管理的 Bean，
+ * 期望其类型为 {@code javax.sql.DataSource}。
+ *
  * @author Costin Leau
  * @author Juergen Hoeller
  * @since 2.0
@@ -35,23 +38,24 @@ import org.springframework.util.Assert;
  */
 public class BeanFactoryDataSourceLookup implements DataSourceLookup, BeanFactoryAware {
 
-	/** 工厂相关状态（`beanFactory`）。 */
 	private @Nullable BeanFactory beanFactory;
 
 
 	/**
-	 * 创建 {@link BeanFactoryDataSourceLookup} 类的新实例。 <p>要访问的BeanFactory必须通过{@code
-	 * setBeanFactory}设置。
+	 * 创建 {@link BeanFactoryDataSourceLookup} 的新实例。
+	 * <p>须通过 {@code setBeanFactory} 设置要访问的 BeanFactory。
 	 * @see #setBeanFactory
 	 */
 	public BeanFactoryDataSourceLookup() {
 	}
 
 	/**
-	 * 创建 {@link BeanFactoryDataSourceLookup} 类的新实例。 <p> 如果此对象由 Spring IoC
-	 * 容器创建，则此构造函数的使用是多余的，因为提供的 {@link BeanFactory} 将被创建它的 {@link BeanFactory} 替换（参见 {@link
-	 * BeanFactoryAware} 合约）。因此，仅当您在 Spring IoC 容器的上下文之外使用此类时，才使用此构造函数。
-	 * @param beanFactory 用于查找 {@link DataSource DataSources} 的 bean 工厂
+	 * 创建 {@link BeanFactoryDataSourceLookup} 的新实例。
+	 * <p>若由 Spring IoC 容器创建此对象，使用此构造函数是多余的，
+	 * 所供 {@link BeanFactory} 将被创建它的 {@link BeanFactory} 替换
+	 * （参见 {@link BeanFactoryAware} 契约）。
+	 * 仅在本类用于 Spring IoC 容器外部时使用此构造函数。
+	 * @param beanFactory 用于查找 {@link DataSource DataSources} 的 Bean 工厂
 	 */
 	public BeanFactoryDataSourceLookup(BeanFactory beanFactory) {
 		Assert.notNull(beanFactory, "BeanFactory is required");
@@ -59,18 +63,12 @@ public class BeanFactoryDataSourceLookup implements DataSourceLookup, BeanFactor
 	}
 
 
-	/**
-	 * 设置 Bean Factory（`BeanFactory`）。
-	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
 	}
 
 
-	/**
-	 * 获取 Data Source（`DataSource`）。
-	 */
 	@Override
 	public DataSource getDataSource(String dataSourceName) throws DataSourceLookupFailureException {
 		Assert.state(this.beanFactory != null, "BeanFactory is required");

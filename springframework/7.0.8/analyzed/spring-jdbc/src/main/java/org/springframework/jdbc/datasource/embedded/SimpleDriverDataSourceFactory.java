@@ -24,20 +24,17 @@ import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 
 /**
  * 创建 {@link SimpleDriverDataSource}。
+ *
  * @author Keith Donald
  * @author Juergen Hoeller
  * @since 3.0
  */
 final class SimpleDriverDataSourceFactory implements DataSourceFactory {
 
-	/**
-	 * 方法 `SimpleDriverDataSource`：完成本类中与「Simple Driver Data Source」相关的职责。
-	 */
+	/** 内部持有的 SimpleDriverDataSource 实例。 */
 	private final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
 
-	/**
-	 * 获取 Connection Properties（`ConnectionProperties`）。
-	 */
+	/** 返回用于配置驱动、URL、用户名与密码的连接属性回调。 */
 	@Override
 	public ConnectionProperties getConnectionProperties() {
 		return new ConnectionProperties() {
@@ -63,9 +60,7 @@ final class SimpleDriverDataSourceFactory implements DataSourceFactory {
 		};
 	}
 
-	/**
-	 * 获取 Data Source（`DataSource`）。
-	 */
+	/** 返回已配置的 {@link DataSource} 实例。 */
 	@Override
 	public DataSource getDataSource() {
 		return this.dataSource;

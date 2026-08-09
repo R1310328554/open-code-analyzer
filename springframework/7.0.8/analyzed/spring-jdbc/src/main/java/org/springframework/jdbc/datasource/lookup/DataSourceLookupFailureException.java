@@ -19,7 +19,8 @@ package org.springframework.jdbc.datasource.lookup;
 import org.springframework.dao.NonTransientDataAccessException;
 
 /**
- * DataSourceLookup 实现抛出异常，指示无法获取指定的 DataSource。
+ * DataSourceLookup 实现抛出的异常，表示无法获取指定的 DataSource。
+ *
  * @author Juergen Hoeller
  * @since 2.0
  */
@@ -27,7 +28,7 @@ import org.springframework.dao.NonTransientDataAccessException;
 public class DataSourceLookupFailureException extends NonTransientDataAccessException {
 
 	/**
-	 * DataSourceLookupFailureException 的构造函数。
+	 * DataSourceLookupFailureException 构造函数。
 	 * @param msg 详细消息
 	 */
 	public DataSourceLookupFailureException(String msg) {
@@ -35,9 +36,9 @@ public class DataSourceLookupFailureException extends NonTransientDataAccessExce
 	}
 
 	/**
-	 * DataSourceLookupFailureException 的构造函数。
+	 * DataSourceLookupFailureException 构造函数。
 	 * @param msg 详细消息
-	 * @param cause 根本原因（通常来自使用底层查找 API，例如 JNDI）
+	 * @param cause 根本原因（通常来自 JNDI 等底层查找 API）
 	 */
 	public DataSourceLookupFailureException(String msg, Throwable cause) {
 		super(msg, cause);

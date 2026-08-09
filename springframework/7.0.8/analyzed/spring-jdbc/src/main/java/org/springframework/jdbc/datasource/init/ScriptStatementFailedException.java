@@ -19,7 +19,8 @@ package org.springframework.jdbc.datasource.init;
 import org.springframework.core.io.support.EncodedResource;
 
 /**
- * 如果 SQL 脚本中的语句在对目标数据库执行时失败，则由 {@link ScriptUtils} 抛出。
+ * 当 SQL 脚本中的某条语句在目标数据库上执行失败时，由 {@link ScriptUtils} 抛出。
+ *
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 3.0.5
@@ -28,10 +29,10 @@ import org.springframework.core.io.support.EncodedResource;
 public class ScriptStatementFailedException extends ScriptException {
 
 	/**
-	 * 构造一个新的 {@code ScriptStatementFailedException}。
-	 * @param stmt 实际失败的 SQL 语句
-	 * @param stmtNumber SQL 脚本中的语句编号（即资源中存在的第 n<sup>th</sup> 语句）
-	 * @param encodedResource 从中读取 SQL 语句的资源
+	 * 构造新的 {@code ScriptStatementFailedException}。
+	 * @param stmt 执行失败的实际 SQL 语句
+	 * @param stmtNumber SQL 脚本中的语句序号（即资源中第 n 条语句）
+	 * @param encodedResource 读取 SQL 语句的资源
 	 * @param cause 失败的根本原因
 	 */
 	public ScriptStatementFailedException(String stmt, int stmtNumber, EncodedResource encodedResource, Throwable cause) {
@@ -40,11 +41,11 @@ public class ScriptStatementFailedException extends ScriptException {
 
 
 	/**
-	 * 根据提供的参数构建 SQL 脚本执行失败的错误消息。
-	 * @param stmt 实际失败的 SQL 语句
-	 * @param stmtNumber SQL 脚本中的语句编号（即资源中存在的第 n<sup>th</sup> 语句）
-	 * @param encodedResource 从中读取 SQL 语句的资源
-	 * @return 适合异常的 <em> 详细消息 </em> 或日志记录的错误消息
+	 * 根据给定参数构建 SQL 脚本执行失败的错误消息。
+	 * @param stmt 执行失败的实际 SQL 语句
+	 * @param stmtNumber SQL 脚本中的语句序号（即资源中第 n 条语句）
+	 * @param encodedResource 读取 SQL 语句的资源
+	 * @return 适用于异常<em>详细消息</em>或日志记录的错误消息
 	 * @since 4.2
 	 */
 	public static String buildErrorMessage(String stmt, int stmtNumber, EncodedResource encodedResource) {

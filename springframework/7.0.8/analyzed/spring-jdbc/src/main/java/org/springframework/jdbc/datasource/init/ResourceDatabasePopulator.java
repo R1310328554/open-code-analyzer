@@ -32,9 +32,14 @@ import org.springframework.util.StringUtils;
 
 /**
  * 使用外部资源中定义的 SQL 脚本填充、初始化或清理数据库。
- * <ul> <li>调用 {@link #addScript} 以添加单个 SQL 脚本位置。 <li>调用{@link #addScripts}添加多个SQL脚本位置。
- * <li>请参阅此类中的 setter 方法以获取更多配置选项。 <li>调用 {@link #populate} 或 {@link #execute}
- * 使用配置的脚本初始化或清理数据库。 OCAJAVA9文档
+ *
+ * <ul>
+ * <li>调用 {@link #addScript} 添加单个 SQL 脚本位置。
+ * <li>调用 {@link #addScripts} 添加多个 SQL 脚本位置。
+ * <li>参阅本类 setter 方法获取更多配置选项。
+ * <li>调用 {@link #populate} 或 {@link #execute} 使用已配置脚本初始化或清理数据库。
+ * </ul>
+ *
  * @author Keith Donald
  * @author Dave Syer
  * @author Juergen Hoeller
@@ -51,7 +56,6 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 
 	List<Resource> scripts = new ArrayList<>();
 
-	/** `sqlScriptEncoding`：该类的成员状态。 */
 	private @Nullable String sqlScriptEncoding;
 
 	private String separator = ScriptUtils.DEFAULT_STATEMENT_SEPARATOR;
@@ -62,23 +66,21 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 
 	private String blockCommentEndDelimiter = ScriptUtils.DEFAULT_BLOCK_COMMENT_END_DELIMITER;
 
-	/** `false`：该类的成员状态。 */
 	private boolean continueOnError = false;
 
-	/** `false`：该类的成员状态。 */
 	private boolean ignoreFailedDrops = false;
 
 
 	/**
-	 * 使用默认设置构造一个新的 {@code ResourceDatabasePopulator}。
+	 * 使用默认设置构造新的 {@code ResourceDatabasePopulator}。
 	 * @since 4.0.3
 	 */
 	public ResourceDatabasePopulator() {
 	}
 
 	/**
-	 * 使用所提供脚本的默认设置构造一个新的 {@code ResourceDatabasePopulator}。
-	 * @param scripts 执行初始化或清理数据库的脚本（绝不是 {@code null}）
+	 * 使用默认设置构造新的 {@code ResourceDatabasePopulator}，并指定脚本。
+	 * @param scripts 用于初始化或清理数据库的脚本（永不为 {@code null}）
 	 * @since 4.0.3
 	 */
 	public ResourceDatabasePopulator(Resource... scripts) {
@@ -86,11 +88,12 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 使用提供的值构造一个新的 {@code ResourceDatabasePopulator}。
-	 * @param continueOnError 标志指示应记录 SQL 中的所有故障但不会导致故障
-	 * @param ignoreFailedDrops 标志指示可以忽略失败的 SQL {@code DROP} 语句
-	 * @param sqlScriptEncoding 提供的 SQL 脚本的编码（可能是 {@code null} 或 <em>empty</em> 来指示平台编码）
-	 * @param scripts 执行初始化或清理数据库的脚本（绝不是 {@code null}）
+	 * 使用给定参数构造新的 {@code ResourceDatabasePopulator}。
+	 * @param continueOnError 是否记录 SQL 失败但不导致整体失败
+	 * @param ignoreFailedDrops 是否忽略失败的 SQL {@code DROP} 语句
+	 * @param sqlScriptEncoding 所供 SQL 脚本的编码
+	 * （可为 {@code null} 或<em>空</em> 表示平台编码）
+	 * @param scripts 用于初始化或清理数据库的脚本（永不为 {@code null}）
 	 * @since 4.0.3
 	 */
 	public ResourceDatabasePopulator(boolean continueOnError, boolean ignoreFailedDrops,
@@ -104,8 +107,8 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 
 
 	/**
-	 * 添加要执行的脚本以初始化或清理数据库。
-	 * @param script SQL 脚本的路径（绝不是 {@code null}）
+	 * 添加用于初始化或清理数据库的脚本。
+	 * @param script SQL 脚本路径（永不为 {@code null}）
 	 */
 	public void addScript(Resource script) {
 		Assert.notNull(script, "'script' must not be null");
@@ -113,8 +116,8 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 添加多个要执行的脚本来初始化或清理数据库。
-	 * @param scripts 要执行的脚本（绝不是 {@code null}）
+	 * 添加多个用于初始化或清理数据库的脚本。
+	 * @param scripts 要执行的脚本（永不为 {@code null}）
 	 */
 	public void addScripts(Resource... scripts) {
 		assertContentsOfScriptArray(scripts);
@@ -122,26 +125,24 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 设置要执行的脚本以初始化或清理数据库，替换任何以前添加的脚本。
-	 * @param scripts 要执行的脚本（绝不是 {@code null}）
+	 * 设置用于初始化或清理数据库的脚本，替换此前添加的所有脚本。
+	 * @param scripts 要执行的脚本（永不为 {@code null}）
 	 */
 	public void setScripts(Resource... scripts) {
 		assertContentsOfScriptArray(scripts);
-		// 确保列表可修改
+		// Ensure that the list is modifiable
 		this.scripts = new ArrayList<>(Arrays.asList(scripts));
 	}
 
-	/**
-	 * 方法 `assertContentsOfScriptArray`：完成本类中与「assert Contents Of Script Array」相关的职责。
-	 */
 	private void assertContentsOfScriptArray(Resource... scripts) {
 		Assert.notNull(scripts, "'scripts' must not be null");
 		Assert.noNullElements(scripts, "'scripts' must not contain null elements");
 	}
 
 	/**
-	 * 如果与平台编码不同，请指定已配置 SQL 脚本的编码。
-	 * @param sqlScriptEncoding 脚本中使用的编码（可以是 {@code null} 或空以指示平台编码）
+	 * 指定已配置 SQL 脚本的编码（若与平台编码不同）。
+	 * @param sqlScriptEncoding 脚本使用的编码
+	 * （可为 {@code null} 或空表示平台编码）
 	 * @see #addScript(Resource)
 	 */
 	public void setSqlScriptEncoding(@Nullable String sqlScriptEncoding) {
@@ -149,8 +150,10 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 指定语句分隔符（如果是自定义分隔符）。 <p> 如果未指定，则默认为 {@code ";"}，并回退到 {@code "\n"} 作为最后的手段；可以设置为 {@link Sc
-	 * riptUtils#EOF_STATEMENT_SEPARATOR} 以表明每个脚本包含一个不带分隔符的语句。
+	 * 指定语句分隔符（若使用自定义分隔符）。
+	 * <p>未指定时默认为 {@code ";"}，最后回退为 {@code "\n"}；
+	 * 可设为 {@link ScriptUtils#EOF_STATEMENT_SEPARATOR}
+	 * 表示每个脚本为无分隔符的单条语句。
 	 * @param separator 脚本语句分隔符
 	 */
 	public void setSeparator(String separator) {
@@ -158,8 +161,9 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 设置标识 SQL 脚本中的单行注释的前缀。 <p>默认为 {@code "--"}。
-	 * @param commentPrefix 单行注释的前缀
+	 * 设置 SQL 脚本中标识单行注释的前缀。
+	 * <p>默认为 {@code "--"}。
+	 * @param commentPrefix 单行注释前缀
 	 * @see #setCommentPrefixes(String...)
 	 */
 	public void setCommentPrefix(String commentPrefix) {
@@ -168,8 +172,9 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 设置用于标识 SQL 脚本中的单行注释的前缀。 <p>默认为 {@code ["--"]}。
-	 * @param commentPrefixes 单行注释的前缀
+	 * 设置 SQL 脚本中标识单行注释的前缀。
+	 * <p>默认为 {@code ["--"]}。
+	 * @param commentPrefixes 单行注释前缀
 	 * @since 5.2
 	 */
 	public void setCommentPrefixes(String... commentPrefixes) {
@@ -179,8 +184,10 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 设置标识 SQL 脚本中的块注释的起始分隔符。 <p>默认为 {@code "/*"}。
-	 * @param blockCommentStartDelimiter 块注释的起始分隔符（绝不是 {@code null} 或空）
+	 * 设置 SQL 脚本中标识块注释的起始分隔符。
+	 * <p>默认为 {@code "/*"}。
+	 * @param blockCommentStartDelimiter 块注释起始分隔符
+	 * （永不为 {@code null} 或空）
 	 * @since 4.0.3
 	 * @see #setBlockCommentEndDelimiter
 	 */
@@ -190,8 +197,10 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 设置标识 SQL 脚本内的块注释的结束分隔符。 <p>默认为 <code>"*&#47;"</code>。
-	 * @param blockCommentEndDelimiter 块注释的结束分隔符（绝不是 {@code null} 或空）
+	 * 设置 SQL 脚本中标识块注释的结束分隔符。
+	 * <p>默认为 <code>"*&#47;"</code>。
+	 * @param blockCommentEndDelimiter 块注释结束分隔符
+	 * （永不为 {@code null} 或空）
 	 * @since 4.0.3
 	 * @see #setBlockCommentStartDelimiter
 	 */
@@ -201,17 +210,19 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 指示应记录 SQL 中的所有故障但不会导致故障的标志。 <p>默认为 {@code false}。
-	 * @param continueOnError {@code true} 如果脚本执行出现错误应继续
+	 * 是否记录 SQL 失败但不导致整体失败。
+	 * <p>默认为 {@code false}。
+	 * @param continueOnError 出错时是否继续执行脚本
 	 */
 	public void setContinueOnError(boolean continueOnError) {
 		this.continueOnError = continueOnError;
 	}
 
 	/**
-	 * 指示可以忽略失败的 SQL {@code DROP} 语句的标志。 <p>这对于 SQL 方言不支持 {@code DROP} 语句中的 {@code IF EXISTS} 子
-	 * 句的非嵌入式数据库很有用。 <p>默认为 {@code false}，因此如果填充器意外运行，如果脚本以 {@code DROP} 语句开头，它将快速失败。
-	 * @param ignoreFailedDrops {@code true} 如果失败的删除语句应被忽略
+	 * 是否忽略失败的 SQL {@code DROP} 语句。
+	 * <p>适用于 SQL 方言在 {@code DROP} 语句中不支持 {@code IF EXISTS} 的非嵌入式数据库。
+	 * <p>默认为 {@code false}，若 populator 意外运行且脚本以 {@code DROP} 开头将快速失败。
+	 * @param ignoreFailedDrops 是否忽略失败的 DROP 语句
 	 */
 	public void setIgnoreFailedDrops(boolean ignoreFailedDrops) {
 		this.ignoreFailedDrops = ignoreFailedDrops;
@@ -233,10 +244,10 @@ public class ResourceDatabasePopulator implements DatabasePopulator {
 	}
 
 	/**
-	 * 针对给定的 {@link DataSource} 执行此 {@code ResourceDatabasePopulator}。 <p>委托给 {@link
-	 * DatabasePopulatorUtils#execute}。
-	 * @param dataSource 要执行的 {@code DataSource}（绝不是 {@code null}）
-	 * @throws ScriptException 如果发生错误
+	 * 针对给定 {@link DataSource} 执行本 {@code ResourceDatabasePopulator}。
+	 * <p>委托 {@link DatabasePopulatorUtils#execute}。
+	 * @param dataSource 要执行的目标 {@code DataSource}（永不为 {@code null}）
+	 * @throws ScriptException 发生错误时
 	 * @since 4.1
 	 * @see #populate(Connection)
 	 */

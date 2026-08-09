@@ -29,9 +29,12 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 
 /**
- * SqlUpdate 子类，执行批量更新操作。封装要更新的排队记录，并在调用 {@code flush} 或满足给定批次大小时将它们添加为单个批次。
- * <p> 请注意，该类是 <b> 非线程安全对象 </b>，与此包中的所有其他 JDBC 操作对象相反。您需要为每次使用创建一个新实例，或者在同一线程中重用之前调用 {@code
- *  reset}。
+ * 执行批量更新操作的 SqlUpdate 子类。封装待更新记录的排队逻辑，
+ * 在调用 {@code flush} 或达到给定批量大小时作为单个批次提交。
+ *
+ * <p>注意：与本包中其他 JDBC 操作对象不同，本类为<b>非线程安全对象</b>。
+ * 每次使用需创建新实例，或在同一线程内复用前调用 {@code reset}。
+ *
  * @author Keith Donald
  * @author Juergen Hoeller
  * @since 1.1
@@ -41,15 +44,13 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 public class BatchSqlUpdate extends SqlUpdate {
 
 	/**
-	 * 提交批次之前累积的默认插入数量 (5000)。
+	 * 提交批次前累积的默认插入条数（5000）。
 	 */
 	public static final int DEFAULT_BATCH_SIZE = 5000;
 
 
-	/** `DEFAULT_BATCH_SIZE`：该类的成员状态。 */
 	private int batchSize = DEFAULT_BATCH_SIZE;
 
-	/** `true`：该类的成员状态。 */
 	private boolean trackRowsAffected = true;
 
 	private final Deque<Object[]> parameterQueue = new ArrayDeque<>();
@@ -58,7 +59,7 @@ public class BatchSqlUpdate extends SqlUpdate {
 
 
 	/**
-	 * 允许用作 JavaBean 的构造函数。编译和使用前必须提供DataSource和SQL。
+	 * 允许作为 JavaBean 使用的构造函数。编译和使用前须设置 DataSource 与 SQL。
 	 * @see #setDataSource
 	 * @see #setSql
 	 */
@@ -67,19 +68,19 @@ public class BatchSqlUpdate extends SqlUpdate {
 	}
 
 	/**
-	 * 使用给定的 DataSource 和 SQL 构造更新对象。
+	 * 使用给定 DataSource 与 SQL 构造更新对象。
 	 * @param ds 用于获取连接的 DataSource
-	 * @param sql 要执行的SQL语句
+	 * @param sql 要执行的 SQL 语句
 	 */
 	public BatchSqlUpdate(DataSource ds, String sql) {
 		super(ds, sql);
 	}
 
 	/**
-	 * 使用给定的 DataSource、SQL 和匿名参数构造更新对象。
+	 * 使用给定 DataSource、SQL 与匿名参数构造更新对象。
 	 * @param ds 用于获取连接的 DataSource
-	 * @param sql 要执行的SQL语句
-	 * @param types 参数的 SQL 类型，如 {@code java.sql.Types} 类中定义
+	 * @param sql 要执行的 SQL 语句
+	 * @param types 参数 SQL 类型，定义于 {@code java.sql.Types}
 	 * @see java.sql.Types
 	 */
 	public BatchSqlUpdate(DataSource ds, String sql, int[] types) {
@@ -87,11 +88,11 @@ public class BatchSqlUpdate extends SqlUpdate {
 	}
 
 	/**
-	 * 使用给定的 DataSource、SQL、匿名参数构造一个更新对象，并指定可能受影响的最大行数。
+	 * 使用给定 DataSource、SQL、匿名参数及批量大小构造更新对象。
 	 * @param ds 用于获取连接的 DataSource
-	 * @param sql 要执行的SQL语句
-	 * @param types 参数的 SQL 类型，如 {@code java.sql.Types} 类中定义
-	 * @param batchSize 将触发自动中间刷新的语句数
+	 * @param sql 要执行的 SQL 语句
+	 * @param types 参数 SQL 类型，定义于 {@code java.sql.Types}
+	 * @param batchSize 触发自动中间 flush 的语句数量
 	 * @see java.sql.Types
 	 */
 	public BatchSqlUpdate(DataSource ds, String sql, int[] types, int batchSize) {
@@ -101,15 +102,18 @@ public class BatchSqlUpdate extends SqlUpdate {
 
 
 	/**
-	 * 设置将触发自动中间刷新的语句数。 {@code update} 调用或给定的语句参数将排队直到满足批处理大小，此时它将清空队列并执行批处理。 <p>您还可以使用显式 {@cod
-	 * e flush} 调用刷新已排队的语句。请注意，您需要在对所有参数进行排队后执行此操作，以确保所有语句均已刷新。
+	 * 设置触发自动中间 flush 的语句数量。{@code update} 调用或给定语句参数
+	 * 将排队直至达到批量大小，届时清空队列并执行批次。
+	 * <p>也可通过显式 {@code flush} 调用刷新已排队语句。
+	 * 注意：排队所有参数后须调用 flush，以确保所有语句均已刷新。
 	 */
 	public void setBatchSize(int batchSize) {
 		this.batchSize = batchSize;
 	}
 
 	/**
-	 * 设置是否跟踪受该操作对象执行的批量更新影响的行。 <p>默认为“true”。关闭此选项可以节省行计数列表所需的内存。
+	 * 设置是否跟踪本操作对象执行的批量更新所影响的行数。
+	 * <p>默认为 "true"。关闭可节省行数列表所需内存。
 	 * @see #getRowsAffected()
 	 */
 	public void setTrackRowsAffected(boolean trackRowsAffected) {
@@ -126,11 +130,12 @@ public class BatchSqlUpdate extends SqlUpdate {
 
 
 	/**
-	 * {@code update} 的重写版本，将给定的语句参数添加到队列中，而不是立即执行它们。 SqlUpdate 基类的所有其他 {@code update} 方法都经过此方法
-	 * ，因此行为类似。 <p>需要调用{@code flush}来实际执行批处理。如果达到指定的批量大小，则会发生隐式刷新；您仍然需要最终调用 {@code flush} 来刷新所有
-	 * 语句。
+	 * 重写的 {@code update}，将给定语句参数加入队列而非立即执行。
+	 * SqlUpdate 基类的其他 {@code update} 方法均经此方法，行为类似。
+	 * <p>须调用 {@code flush} 才真正执行批次。
+	 * 达到指定批量大小时会隐式 flush；仍须最终调用 {@code flush} 刷新所有语句。
 	 * @param params 参数对象数组
-	 * @return 受更新影响的行数（始终为 -1，表示“不适用”，因为此方法实际上并未执行该语句）
+	 * @return 更新影响行数（恒为 -1，表示“不适用”，因本方法不实际执行语句）
 	 * @see #flush
 	 */
 	@Override
@@ -149,8 +154,8 @@ public class BatchSqlUpdate extends SqlUpdate {
 	}
 
 	/**
-	 * 触发任何排队的更新操作作为最终批次添加。
-	 * @return 每个语句影响的行数数组
+	 * 触发将已排队的更新操作作为最终批次提交。
+	 * @return 每条语句影响行数的数组
 	 */
 	public int[] flush() {
 		if (this.parameterQueue.isEmpty()) {
@@ -196,8 +201,9 @@ public class BatchSqlUpdate extends SqlUpdate {
 	}
 
 	/**
-	 * 返回所有已执行语句的受影响行数。累积 {@code flush} 的所有返回值，直到调用 {@code reset} 为止。
-	 * @return 每个语句影响的行数数组
+	 * 返回所有已执行语句的影响行数。
+	 * 累积 {@code flush} 的返回值直至调用 {@code reset}。
+	 * @return 每条语句影响行数的数组
 	 * @see #reset
 	 */
 	public int[] getRowsAffected() {
@@ -209,7 +215,7 @@ public class BatchSqlUpdate extends SqlUpdate {
 	}
 
 	/**
-	 * 重置语句参数队列、影响缓存的行以及执行计数。
+	 * 重置语句参数队列、影响行数缓存与执行计数。
 	 */
 	public void reset() {
 		this.parameterQueue.clear();

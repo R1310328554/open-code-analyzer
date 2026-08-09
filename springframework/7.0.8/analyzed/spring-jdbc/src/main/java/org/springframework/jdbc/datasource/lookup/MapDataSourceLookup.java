@@ -27,8 +27,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * 简单的 {@link DataSourceLookup} 实现依赖于映射来进行查找。
- * <p> 适用于测试需要将任意 {@link String} 名称与目标 {@link DataSource} 对象相匹配的环境或应用程序。
+ * 依赖映射进行查找的简单 {@link DataSourceLookup} 实现。
+ *
+ * <p>适用于测试环境，或需将任意 {@link String} 名称
+ * 映射到目标 {@link DataSource} 对象的应用。
+ *
  * @author Costin Leau
  * @author Juergen Hoeller
  * @author Rick Evans
@@ -40,22 +43,23 @@ public class MapDataSourceLookup implements DataSourceLookup {
 
 
 	/**
-	 * 创建 {@link MapDataSourceLookup} 类的新实例。
+	 * 创建 {@link MapDataSourceLookup} 的新实例。
 	 */
 	public MapDataSourceLookup() {
 	}
 
 	/**
-	 * 创建 {@link MapDataSourceLookup} 类的新实例。
-	 * @param dataSources {@link Map} 或 {@link DataSource DataSources}；键是 {@link String Strings}，值是实际的 {@link DataSource} 实例。
+	 * 创建 {@link MapDataSourceLookup} 的新实例。
+	 * @param dataSources {@link DataSource DataSources} 的 {@link Map}；
+	 * 键为 {@link String}，值为实际 {@link DataSource} 实例。
 	 */
 	public MapDataSourceLookup(Map<String, DataSource> dataSources) {
 		setDataSources(dataSources);
 	}
 
 	/**
-	 * 创建 {@link MapDataSourceLookup} 类的新实例。
-	 * @param dataSourceName 要添加提供的 {@link DataSource} 的名称
+	 * 创建 {@link MapDataSourceLookup} 的新实例。
+	 * @param dataSourceName 所供 {@link DataSource} 的注册名称
 	 * @param dataSource 要添加的 {@link DataSource}
 	 */
 	public MapDataSourceLookup(String dataSourceName, DataSource dataSource) {
@@ -64,9 +68,10 @@ public class MapDataSourceLookup implements DataSourceLookup {
 
 
 	/**
-	 * 设置{@link Map}为{@link DataSource DataSources}；键是 {@link String Strings}，值是实际的 {@link
-	 * DataSource} 实例。 <p>如果提供的 {@link Map} 是 {@code null}，则此方法调用实际上无效。
-	 * @param dataSources {@link Map} 表示 {@link DataSource DataSources}
+	 * 设置 {@link DataSource DataSources} 的 {@link Map}；
+	 * 键为 {@link String}，值为实际 {@link DataSource} 实例。
+	 * <p>若所供 {@link Map} 为 {@code null}，此方法调用无实际效果。
+	 * @param dataSources 上述 {@link DataSource DataSources} 的 {@link Map}
 	 */
 	public void setDataSources(@Nullable Map<String, DataSource> dataSources) {
 		if (dataSources != null) {
@@ -75,18 +80,19 @@ public class MapDataSourceLookup implements DataSourceLookup {
 	}
 
 	/**
-	 * 获取该对象维护的 {@link DataSource DataSources} 的 {@link Map}。 <p>返回的{@link Map}是{@link
-	 * Collections#unmodifiableMap(java.util.Map) unmodifiable}。
-	 * @return {@link Map} 或 {@link DataSource DataSources}（绝不是 {@code null}）
+	 * 获取本对象维护的 {@link DataSource DataSources} 的 {@link Map}。
+	 * <p>返回的 {@link Map} 为 {@link Collections#unmodifiableMap(java.util.Map) 不可修改}。
+	 * @return 上述 {@link DataSource DataSources} 的 {@link Map}（永不为 {@code null}）
 	 */
 	public Map<String, DataSource> getDataSources() {
 		return Collections.unmodifiableMap(this.dataSources);
 	}
 
 	/**
-	 * 将提供的 {@link DataSource} 添加到此对象维护的 {@link DataSource DataSources} 映射中。
-	 * @param dataSourceName 要添加提供的 {@link DataSource} 的名称
-	 * @param dataSource 如此添加 {@link DataSource}
+	 * 将所供 {@link DataSource} 添加到本对象维护的
+	 * {@link DataSource DataSources} 映射中。
+	 * @param dataSourceName 所供 {@link DataSource} 的注册名称
+	 * @param dataSource 要添加的 {@link DataSource}
 	 */
 	public void addDataSource(String dataSourceName, DataSource dataSource) {
 		Assert.notNull(dataSourceName, "DataSource name must not be null");
@@ -94,9 +100,6 @@ public class MapDataSourceLookup implements DataSourceLookup {
 		this.dataSources.put(dataSourceName, dataSource);
 	}
 
-	/**
-	 * 获取 Data Source（`DataSource`）。
-	 */
 	@Override
 	public DataSource getDataSource(String dataSourceName) throws DataSourceLookupFailureException {
 		Assert.notNull(dataSourceName, "DataSource name must not be null");
