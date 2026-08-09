@@ -29,7 +29,7 @@ import javax.script.ScriptEngineManager;
 import javax.script.SimpleBindings;
 
 /**
- * Common operations for dealing with a JSR-223 {@link ScriptEngine}.
+ * 处理 JSR-223 {@link ScriptEngine} 的常用操作。
  *
  * @author Juergen Hoeller
  * @since 4.2.2
@@ -37,14 +37,14 @@ import javax.script.SimpleBindings;
 public abstract class StandardScriptUtils {
 
 	/**
-	 * Retrieve a {@link ScriptEngine} from the given {@link ScriptEngineManager}
-	 * by name, delegating to {@link ScriptEngineManager#getEngineByName} but
-	 * throwing a descriptive exception if not found or if initialization failed.
-	 * @param scriptEngineManager the ScriptEngineManager to use
-	 * @param engineName the name of the engine
-	 * @return a corresponding ScriptEngine (never {@code null})
-	 * @throws IllegalArgumentException if no matching engine has been found
-	 * @throws IllegalStateException if the desired engine failed to initialize
+	 * 按名称从给定 {@link ScriptEngineManager} 检索 {@link ScriptEngine}，
+	 * 委托 {@link ScriptEngineManager#getEngineByName}，
+	 * 若未找到或初始化失败则抛出描述性异常。
+	 * @param scriptEngineManager 要使用的 ScriptEngineManager
+	 * @param engineName 引擎名称
+	 * @return 对应的 ScriptEngine（永不为 {@code null}）
+	 * @throws IllegalArgumentException 若未找到匹配引擎
+	 * @throws IllegalStateException 若所需引擎初始化失败
 	 */
 	public static ScriptEngine retrieveEngineByName(ScriptEngineManager scriptEngineManager, String engineName) {
 		ScriptEngine engine = scriptEngineManager.getEngineByName(engineName);

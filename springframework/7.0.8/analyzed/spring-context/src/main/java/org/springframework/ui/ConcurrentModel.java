@@ -26,13 +26,12 @@ import org.springframework.core.Conventions;
 import org.springframework.util.Assert;
 
 /**
- * Implementation of the {@link Model} interface based on a {@link ConcurrentHashMap}
- * for use in concurrent scenarios.
+ * 基于 {@link ConcurrentHashMap} 的 {@link Model} 接口实现，
+ * 用于并发场景。
  *
- * <p>Exposed to handler methods by Spring WebFlux, typically via a declaration of the
- * {@link Model} interface. There is typically no need to create it within user code.
- * If necessary a handler method can return a regular {@code java.util.Map},
- * likely a {@code java.util.ConcurrentMap}, for a pre-determined model.
+ * <p>由 Spring WebFlux 暴露给处理器方法，通常通过声明 {@link Model} 接口。
+ * 用户代码通常无需创建。必要时处理器方法可返回常规 {@code java.util.Map}，
+ * 可能是 {@code java.util.ConcurrentMap}，作为预定模型。
  *
  * @author Rossen Stoyanchev
  * @since 5.0
@@ -41,14 +40,13 @@ import org.springframework.util.Assert;
 public class ConcurrentModel extends ConcurrentHashMap<String, Object> implements Model {
 
 	/**
-	 * Construct a new, empty {@code ConcurrentModel}.
+	 * 构造新的空 {@code ConcurrentModel}。
 	 */
 	public ConcurrentModel() {
 	}
 
 	/**
-	 * Construct a new {@code ConcurrentModel} containing the supplied attribute
-	 * under the supplied name.
+	 * 构造包含所提供属性（以所提供名称）的新 {@code ConcurrentModel}。
 	 * @see #addAttribute(String, Object)
 	 */
 	public ConcurrentModel(String attributeName, Object attributeValue) {
@@ -56,9 +54,8 @@ public class ConcurrentModel extends ConcurrentHashMap<String, Object> implement
 	}
 
 	/**
-	 * Construct a new {@code ConcurrentModel} containing the supplied attribute.
-	 * <p>Uses attribute name generation to generate the key for the supplied model
-	 * object.
+	 * 构造包含所提供属性的新 {@code ConcurrentModel}。
+	 * <p>使用属性名生成器为所提供模型对象生成键。
 	 * @see #addAttribute(Object)
 	 */
 	public ConcurrentModel(Object attributeValue) {
@@ -84,10 +81,10 @@ public class ConcurrentModel extends ConcurrentHashMap<String, Object> implement
 	}
 
 	/**
-	 * Add the supplied attribute under the supplied name.
-	 * @param attributeName the name of the model attribute (never {@code null})
-	 * @param attributeValue the model attribute value (ignored if {@code null},
-	 * just removing an existing entry if any)
+	 * 以给定名称添加所提供的属性。
+	 * @param attributeName 模型属性名称（永不为 {@code null}）
+	 * @param attributeValue 模型属性值（若为 {@code null} 则忽略，
+	 * 仅移除已有条目（若有））
 	 */
 	@Override
 	public ConcurrentModel addAttribute(String attributeName, @Nullable Object attributeValue) {
@@ -97,13 +94,12 @@ public class ConcurrentModel extends ConcurrentHashMap<String, Object> implement
 	}
 
 	/**
-	 * Add the supplied attribute to this {@code Map} using a
-	 * {@link org.springframework.core.Conventions#getVariableName generated name}.
-	 * <p><i>Note: Empty {@link Collection Collections} are not added to
-	 * the model when using this method because we cannot correctly determine
-	 * the true convention name. View code should check for {@code null} rather
-	 * than for empty collections as is already done by JSTL tags.</i>
-	 * @param attributeValue the model attribute value (never {@code null})
+	 * 使用 {@link org.springframework.core.Conventions#getVariableName 生成的名称}
+	 * 将所提供的属性添加到本 {@code Map}。
+	 * <p><i>注意：使用本方法时，空的 {@link Collection Collection}
+	 * 不会添加到模型，因为我们无法正确确定真正的约定名称。
+	 * 视图代码应检查 {@code null} 而非空集合，与 JSTL 标签的做法一致。</i>
+	 * @param attributeValue 模型属性值（永不为 {@code null}）
 	 */
 	@Override
 	public ConcurrentModel addAttribute(Object attributeValue) {
@@ -115,8 +111,8 @@ public class ConcurrentModel extends ConcurrentHashMap<String, Object> implement
 	}
 
 	/**
-	 * Copy all attributes in the supplied {@code Collection} into this
-	 * {@code Map}, using attribute name generation for each element.
+	 * 将所提供 {@code Collection} 中的所有属性复制到本 {@code Map}，
+	 * 为每个元素生成属性名。
 	 * @see #addAttribute(Object)
 	 */
 	@Override
@@ -130,7 +126,7 @@ public class ConcurrentModel extends ConcurrentHashMap<String, Object> implement
 	}
 
 	/**
-	 * Copy all attributes in the supplied {@code Map} into this {@code Map}.
+	 * 将所提供 {@code Map} 中的所有属性复制到本 {@code Map}。
 	 * @see #addAttribute(String, Object)
 	 */
 	@Override
@@ -142,9 +138,8 @@ public class ConcurrentModel extends ConcurrentHashMap<String, Object> implement
 	}
 
 	/**
-	 * Copy all attributes in the supplied {@code Map} into this {@code Map},
-	 * with existing objects of the same name taking precedence (i.e. not getting
-	 * replaced).
+	 * 将所提供 {@code Map} 中的所有属性复制到本 {@code Map}，
+	 * 同名已有对象优先（即不会被替换）。
 	 */
 	@Override
 	public ConcurrentModel mergeAttributes(@Nullable Map<String, ?> attributes) {
@@ -159,9 +154,9 @@ public class ConcurrentModel extends ConcurrentHashMap<String, Object> implement
 	}
 
 	/**
-	 * Does this model contain an attribute of the given name?
-	 * @param attributeName the name of the model attribute (never {@code null})
-	 * @return whether this model contains a corresponding attribute
+	 * 本模型是否包含给定名称的属性？
+	 * @param attributeName 模型属性名称（永不为 {@code null}）
+	 * @return 本模型是否包含对应属性
 	 */
 	@Override
 	public boolean containsAttribute(String attributeName) {

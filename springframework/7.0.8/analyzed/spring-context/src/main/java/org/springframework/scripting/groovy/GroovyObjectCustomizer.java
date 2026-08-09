@@ -19,12 +19,9 @@ package org.springframework.scripting.groovy;
 import groovy.lang.GroovyObject;
 
 /**
- * Strategy used by {@link GroovyScriptFactory} to allow the customization of
- * a created {@link GroovyObject}.
+ * {@link GroovyScriptFactory} 使用的策略，用于定制所创建的 {@link GroovyObject}。
  *
- * <p>This is useful to allow the authoring of DSLs, the replacement of missing
- * methods, and so forth. For example, a custom {@link groovy.lang.MetaClass}
- * could be specified.
+ * <p>可用于编写 DSL、替换缺失方法等。例如，可指定自定义 {@link groovy.lang.MetaClass}。
  *
  * @author Rod Johnson
  * @since 2.0.2
@@ -34,10 +31,9 @@ import groovy.lang.GroovyObject;
 public interface GroovyObjectCustomizer {
 
 	/**
-	 * Customize the supplied {@link GroovyObject}.
-	 * <p>For example, this can be used to set a custom metaclass to
-	 * handle missing methods.
-	 * @param goo the {@code GroovyObject} to customize
+	 * 定制所提供的 {@link GroovyObject}。
+	 * <p>例如，可设置自定义元类以处理缺失的方法。
+	 * @param goo 要定制的 {@code GroovyObject}
 	 */
 	void customize(GroovyObject goo);
 

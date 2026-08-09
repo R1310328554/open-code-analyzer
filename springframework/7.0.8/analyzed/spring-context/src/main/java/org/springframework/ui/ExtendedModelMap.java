@@ -22,12 +22,12 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Subclass of {@link ModelMap} that implements the {@link Model} interface.
+ * 实现 {@link Model} 接口的 {@link ModelMap} 子类。
  *
- * <p>This is an implementation class exposed to handler methods by Spring MVC, typically via
- * a declaration of the {@link org.springframework.ui.Model} interface. There is no need to
- * build it within user code; a plain {@link org.springframework.ui.ModelMap} or even a just
- * a regular {@link Map} with String keys will be good enough to return a user model.
+ * <p>这是 Spring MVC 暴露给处理器方法的实现类，通常通过声明
+ * {@link org.springframework.ui.Model} 接口提供。
+ * 用户代码无需构建它；普通 {@link org.springframework.ui.ModelMap} 或
+ * 甚至带 String 键的常规 {@link Map} 就足以返回用户模型。
  *
  * @author Juergen Hoeller
  * @since 2.5.1

@@ -22,10 +22,8 @@ import org.springframework.scripting.ScriptSource;
 import org.springframework.util.Assert;
 
 /**
- * Static implementation of the
- * {@link org.springframework.scripting.ScriptSource} interface,
- * encapsulating a given String that contains the script source text.
- * Supports programmatic updates of the script String.
+ * {@link org.springframework.scripting.ScriptSource} 接口的静态实现，
+ * 封装包含脚本源文本的给定 String。支持以编程方式更新脚本 String。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -41,18 +39,17 @@ public class StaticScriptSource implements ScriptSource {
 
 
 	/**
-	 * Create a new StaticScriptSource for the given script.
-	 * @param script the script String
+	 * 为给定脚本创建新的 StaticScriptSource。
+	 * @param script 脚本 String
 	 */
 	public StaticScriptSource(String script) {
 		setScript(script);
 	}
 
 	/**
-	 * Create a new StaticScriptSource for the given script.
-	 * @param script the script String
-	 * @param className the suggested class name for the script
-	 * (may be {@code null})
+	 * 为给定脚本创建新的 StaticScriptSource。
+	 * @param script 脚本 String
+	 * @param className 脚本的建议类名（可为 {@code null}）
 	 */
 	public StaticScriptSource(String script, @Nullable String className) {
 		setScript(script);
@@ -60,8 +57,8 @@ public class StaticScriptSource implements ScriptSource {
 	}
 
 	/**
-	 * Set a fresh script String, overriding the previous script.
-	 * @param script the script String
+	 * 设置新的脚本 String，覆盖先前的脚本。
+	 * @param script 脚本 String
 	 */
 	public synchronized void setScript(String script) {
 		Assert.hasText(script, "Script must not be empty");

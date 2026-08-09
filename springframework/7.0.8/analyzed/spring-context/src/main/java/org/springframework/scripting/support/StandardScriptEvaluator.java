@@ -35,8 +35,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * {@code javax.script} (JSR-223) based implementation of Spring's {@link ScriptEvaluator}
- * strategy interface.
+ * 基于 {@code javax.script}（JSR-223）的 Spring {@link ScriptEvaluator}
+ * 策略接口实现。
  *
  * @author Juergen Hoeller
  * @author Costin Leau
@@ -53,23 +53,23 @@ public class StandardScriptEvaluator implements ScriptEvaluator, BeanClassLoader
 
 
 	/**
-	 * Construct a new {@code StandardScriptEvaluator}.
+	 * 构造新的 {@code StandardScriptEvaluator}。
 	 */
 	public StandardScriptEvaluator() {
 	}
 
 	/**
-	 * Construct a new {@code StandardScriptEvaluator} for the given class loader.
-	 * @param classLoader the class loader to use for script engine detection
+	 * 为给定类加载器构造新的 {@code StandardScriptEvaluator}。
+	 * @param classLoader 用于脚本引擎检测的类加载器
 	 */
 	public StandardScriptEvaluator(ClassLoader classLoader) {
 		this.scriptEngineManager = new ScriptEngineManager(classLoader);
 	}
 
 	/**
-	 * Construct a new {@code StandardScriptEvaluator} for the given JSR-223
-	 * {@link ScriptEngineManager} to obtain script engines from.
-	 * @param scriptEngineManager the ScriptEngineManager (or subclass thereof) to use
+	 * 为给定 JSR-223 {@link ScriptEngineManager} 构造新的
+	 * {@code StandardScriptEvaluator}，以从中获取脚本引擎。
+	 * @param scriptEngineManager 要使用的 ScriptEngineManager（或其子类）
 	 * @since 4.2.2
 	 */
 	public StandardScriptEvaluator(ScriptEngineManager scriptEngineManager) {
@@ -78,10 +78,10 @@ public class StandardScriptEvaluator implements ScriptEvaluator, BeanClassLoader
 
 
 	/**
-	 * Set the name of the language meant for evaluating the scripts (for example, "Groovy").
-	 * <p>This is effectively an alias for {@link #setEngineName "engineName"},
-	 * potentially (but not yet) providing common abbreviations for certain languages
-	 * beyond what the JSR-223 script engine factory exposes.
+	 * 设置用于评估脚本的语言名称（例如 "Groovy"）。
+	 * <p>这实际上是 {@link #setEngineName "engineName"} 的别名，
+	 * 将来可能（但尚未）为 JSR-223 脚本引擎工厂未暴露的某些语言
+	 * 提供常见缩写。
 	 * @see #setEngineName
 	 */
 	public void setLanguage(String language) {
@@ -89,8 +89,8 @@ public class StandardScriptEvaluator implements ScriptEvaluator, BeanClassLoader
 	}
 
 	/**
-	 * Set the name of the script engine for evaluating the scripts (for example, "Groovy"),
-	 * as exposed by the JSR-223 script engine factory.
+	 * 设置用于评估脚本的脚本引擎名称（例如 "Groovy"），
+	 * 即 JSR-223 脚本引擎工厂暴露的名称。
 	 * @since 4.2.2
 	 * @see #setLanguage
 	 */
@@ -99,8 +99,8 @@ public class StandardScriptEvaluator implements ScriptEvaluator, BeanClassLoader
 	}
 
 	/**
-	 * Set the globally scoped bindings on the underlying script engine manager,
-	 * shared by all scripts, as an alternative to script argument bindings.
+	 * 在底层脚本引擎管理器上设置全局作用域绑定，
+	 * 由所有脚本共享，作为脚本参数绑定的替代方案。
 	 * @since 4.2.2
 	 * @see #evaluate(ScriptSource, Map)
 	 * @see javax.script.ScriptEngineManager#setBindings(Bindings)
@@ -155,9 +155,9 @@ public class StandardScriptEvaluator implements ScriptEvaluator, BeanClassLoader
 	}
 
 	/**
-	 * Obtain the JSR-223 ScriptEngine to use for the given script.
-	 * @param script the script to evaluate
-	 * @return the ScriptEngine (never {@code null})
+	 * 获取用于给定脚本的 JSR-223 ScriptEngine。
+	 * @param script 要评估的脚本
+	 * @return ScriptEngine（永不为 {@code null}）
 	 */
 	protected ScriptEngine getScriptEngine(ScriptSource script) {
 		ScriptEngineManager scriptEngineManager = this.scriptEngineManager;

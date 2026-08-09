@@ -32,12 +32,11 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link org.springframework.scripting.ScriptSource} implementation
- * based on Spring's {@link org.springframework.core.io.Resource}
- * abstraction. Loads the script text from the underlying Resource's
- * {@link org.springframework.core.io.Resource#getFile() File} or
- * {@link org.springframework.core.io.Resource#getInputStream() InputStream},
- * and tracks the last-modified timestamp of the file (if possible).
+ * 基于 Spring {@link org.springframework.core.io.Resource}
+ * 抽象的 {@link org.springframework.scripting.ScriptSource} 实现。
+ * 从底层 Resource 的 {@link org.springframework.core.io.Resource#getFile() File} 或
+ * {@link org.springframework.core.io.Resource#getInputStream() InputStream} 加载脚本文本，
+ * 并跟踪文件的最后修改时间戳（若可能）。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -48,7 +47,7 @@ import org.springframework.util.StringUtils;
  */
 public class ResourceScriptSource implements ScriptSource {
 
-	/** Logger available to subclasses. */
+	/** 子类可用的 Logger。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private EncodedResource resource;
@@ -59,8 +58,8 @@ public class ResourceScriptSource implements ScriptSource {
 
 
 	/**
-	 * Create a new ResourceScriptSource for the given resource.
-	 * @param resource the EncodedResource to load the script from
+	 * 为给定资源创建新的 ResourceScriptSource。
+	 * @param resource 加载脚本的 EncodedResource
 	 */
 	public ResourceScriptSource(EncodedResource resource) {
 		Assert.notNull(resource, "Resource must not be null");
@@ -68,8 +67,8 @@ public class ResourceScriptSource implements ScriptSource {
 	}
 
 	/**
-	 * Create a new ResourceScriptSource for the given resource.
-	 * @param resource the Resource to load the script from (using UTF-8 encoding)
+	 * 为给定资源创建新的 ResourceScriptSource。
+	 * @param resource 加载脚本的 Resource（使用 UTF-8 编码）
 	 */
 	public ResourceScriptSource(Resource resource) {
 		Assert.notNull(resource, "Resource must not be null");
@@ -78,17 +77,16 @@ public class ResourceScriptSource implements ScriptSource {
 
 
 	/**
-	 * Return the {@link org.springframework.core.io.Resource} to load the
-	 * script from.
+	 * 返回用于加载脚本的 {@link org.springframework.core.io.Resource}。
 	 */
 	public final Resource getResource() {
 		return this.resource.getResource();
 	}
 
 	/**
-	 * Set the encoding used for reading the script resource.
-	 * <p>The default value for regular Resources is "UTF-8".
-	 * A {@code null} value implies the platform default.
+	 * 设置读取脚本资源时使用的编码。
+	 * <p>常规 Resource 的默认值为 "UTF-8"。
+	 * {@code null} 值表示使用平台默认编码。
 	 */
 	public void setEncoding(@Nullable String encoding) {
 		this.resource = new EncodedResource(this.resource.getResource(), encoding);
@@ -112,8 +110,8 @@ public class ResourceScriptSource implements ScriptSource {
 	}
 
 	/**
-	 * Retrieve the current last-modified timestamp of the underlying resource.
-	 * @return the current timestamp, or 0 if not determinable
+	 * 检索底层资源的当前最后修改时间戳。
+	 * @return 当前时间戳，若无法确定则返回 0
 	 */
 	protected long retrieveLastModifiedTime() {
 		try {

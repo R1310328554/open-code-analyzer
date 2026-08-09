@@ -35,9 +35,8 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Abstract implementation of the {@link BindingResult} interface and
- * its super-interface {@link Errors}. Encapsulates common management of
- * {@link ObjectError ObjectErrors} and {@link FieldError FieldErrors}.
+ * {@link BindingResult} 接口及其超接口 {@link Errors} 的抽象实现。
+ * 封装 {@link ObjectError ObjectErrors} 与 {@link FieldError FieldErrors} 的通用管理。
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -61,8 +60,8 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 
 
 	/**
-	 * Create a new AbstractBindingResult instance.
-	 * @param objectName the name of the target object
+	 * 创建新的 AbstractBindingResult 实例。
+	 * @param objectName 目标对象名称
 	 * @see DefaultMessageCodesResolver
 	 */
 	protected AbstractBindingResult(String objectName) {
@@ -71,8 +70,8 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 
 
 	/**
-	 * Set the strategy to use for resolving errors into message codes.
-	 * Default is DefaultMessageCodesResolver.
+	 * 设置将错误解析为消息代码的策略。
+	 * 默认为 DefaultMessageCodesResolver。
 	 * @see DefaultMessageCodesResolver
 	 */
 	public void setMessageCodesResolver(MessageCodesResolver messageCodesResolver) {
@@ -81,7 +80,7 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 	}
 
 	/**
-	 * Return the strategy to use for resolving errors into message codes.
+	 * 返回将错误解析为消息代码的策略。
 	 */
 	public MessageCodesResolver getMessageCodesResolver() {
 		return this.messageCodesResolver;
@@ -228,9 +227,8 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 	}
 
 	/**
-	 * This default implementation determines the type based on the actual
-	 * field value, if any. Subclasses should override this to determine
-	 * the type from a descriptor, even for {@code null} values.
+	 * 本默认实现基于实际字段值（若有）确定类型。
+	 * 子类应覆盖此方法，从描述符确定类型，即使值为 {@code null}。
 	 * @see #getActualFieldValue
 	 */
 	@Override
@@ -250,14 +248,12 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 	//---------------------------------------------------------------------
 
 	/**
-	 * Return a model Map for the obtained state, exposing an Errors
-	 * instance as '{@link #MODEL_KEY_PREFIX MODEL_KEY_PREFIX} + objectName'
-	 * and the object itself.
-	 * <p>Note that the Map is constructed every time you're calling this method.
-	 * Adding things to the map and then re-calling this method will not work.
-	 * <p>The attributes in the model Map returned by this method are usually
-	 * included in the ModelAndView for a form view that uses Spring's bind tag,
-	 * which needs access to the Errors instance.
+	 * 返回所获状态的模型 Map，将 Errors 实例暴露为
+	 * '{@link #MODEL_KEY_PREFIX MODEL_KEY_PREFIX} + objectName' 以及对象本身。
+	 * <p>注意，每次调用本方法都会构造 Map。
+	 * 向 Map 添加内容后再重新调用本方法无效。
+	 * <p>本方法返回的模型 Map 中的属性通常包含在使用 Spring bind 标签的
+	 * 表单视图的 ModelAndView 中，该标签需要访问 Errors 实例。
 	 * @see #getObjectName
 	 * @see #MODEL_KEY_PREFIX
 	 */
@@ -277,9 +273,8 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 	}
 
 	/**
-	 * This implementation delegates to the
-	 * {@link #getPropertyEditorRegistry() PropertyEditorRegistry}'s
-	 * editor lookup facility, if available.
+	 * 本实现委托 {@link #getPropertyEditorRegistry() PropertyEditorRegistry}
+	 * 的编辑器查找功能（若可用）。
 	 */
 	@Override
 	public @Nullable PropertyEditor findEditor(@Nullable String field, @Nullable Class<?> valueType) {
@@ -297,7 +292,7 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 	}
 
 	/**
-	 * This implementation returns {@code null}.
+	 * 本实现返回 {@code null}。
 	 */
 	@Override
 	public @Nullable PropertyEditorRegistry getPropertyEditorRegistry() {
@@ -327,9 +322,8 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 	}
 
 	/**
-	 * Mark the specified disallowed field as suppressed.
-	 * <p>The data binder invokes this for each field value that was
-	 * detected to target a disallowed field.
+	 * 将指定不允许的字段标记为已抑制。
+	 * <p>数据绑定器对每个检测到指向不允许字段的字段值调用此方法。
 	 * @see DataBinder#setAllowedFields
 	 */
 	@Override
@@ -338,9 +332,8 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 	}
 
 	/**
-	 * Return the list of fields that were suppressed during the bind process.
-	 * <p>Can be used to determine whether any field values were targeting
-	 * disallowed fields.
+	 * 返回绑定过程中被抑制的字段列表。
+	 * <p>可用于判断是否有字段值指向不允许的字段。
 	 * @see DataBinder#setAllowedFields
 	 */
 	@Override
@@ -368,25 +361,24 @@ public abstract class AbstractBindingResult extends AbstractErrors implements Bi
 	//---------------------------------------------------------------------
 
 	/**
-	 * Return the wrapped target object.
+	 * 返回包装的目标对象。
 	 */
 	@Override
 	public abstract @Nullable Object getTarget();
 
 	/**
-	 * Extract the actual field value for the given field.
-	 * @param field the field to check
-	 * @return the current value of the field
+	 * 提取给定字段的实际字段值。
+	 * @param field 要检查的字段
+	 * @return 字段的当前值
 	 */
 	protected abstract @Nullable Object getActualFieldValue(String field);
 
 	/**
-	 * Format the given value for the specified field.
-	 * <p>The default implementation simply returns the field value as-is.
-	 * @param field the field to check
-	 * @param value the value of the field (either a rejected value
-	 * other than from a binding error, or an actual field value)
-	 * @return the formatted value
+	 * 格式化给定字段的给定值。
+	 * <p>默认实现直接返回字段值。
+	 * @param field 要检查的字段
+	 * @param value 字段值（非绑定错误的拒绝值或实际字段值）
+	 * @return 格式化后的值
 	 */
 	protected @Nullable Object formatFieldValue(String field, @Nullable Object value) {
 		return value;

@@ -23,23 +23,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicate that the annotated element represents a stereotype for the index.
+ * 表示被注解元素是索引的构造型。
  *
- * <p>The {@code CandidateComponentsIndex} is an alternative to classpath
- * scanning that uses a metadata file generated at compilation time. The
- * index allows retrieving the candidate components (i.e. fully qualified
- * name) based on a stereotype. This annotation instructs the generator to
- * index the element on which the annotated element is present or if it
- * implements or extends from the annotated element. The stereotype is the
- * fully qualified name of the annotated element.
+ * <p>{@code CandidateComponentsIndex} 是类路径扫描的替代方案，
+ * 使用编译时生成的元数据文件。索引允许基于构造型检索候选组件
+ * （即完全限定名）。本注解指示生成器为存在被注解元素的元素建立索引，
+ * 或为其所实现/继承的被注解元素建立索引。构造型即被注解元素的完全限定名。
  *
- * <p>Consider the default {@link Component} annotation that is meta-annotated
- * with this annotation. If a component is annotated with {@link Component},
- * an entry for that component will be added to the index using the
- * {@code org.springframework.stereotype.Component} stereotype.
+ * <p>考虑默认以本注解元注解的 {@link Component} 注解。
+ * 若组件以 {@link Component} 注解，
+ * 将使用 {@code org.springframework.stereotype.Component} 构造型
+ * 为该组件向索引添加条目。
  *
- * <p>This annotation is also honored on meta-annotations. Consider this
- * custom annotation:
+ * <p>本注解在元注解上同样生效。考虑以下自定义注解：
  * <pre class="code">
  * package com.example;
  *
@@ -51,15 +47,15 @@ import java.lang.annotation.Target;
  * public @interface PrivilegedService { ... }
  * </pre>
  *
- * If the above annotation is present on a type, it will be indexed with two
- * stereotypes: {@code org.springframework.stereotype.Component} and
- * {@code com.example.PrivilegedService}. While {@link Service} isn't directly
- * annotated with {@code Indexed}, it is meta-annotated with {@link Component}.
+ * 若上述注解出现在某类型上，将以两种构造型建立索引：
+ * {@code org.springframework.stereotype.Component} 和
+ * {@code com.example.PrivilegedService}。虽然 {@link Service} 未直接以
+ * {@code Indexed} 注解，但它以 {@link Component} 元注解。
  *
- * <p>It is also possible to index all implementations of a certain interface or
- * all the subclasses of a given class by adding {@code @Indexed} on it.
+ * <p>也可通过在接口或类上添加 {@code @Indexed}
+ * 为某接口的所有实现或某类的所有子类建立索引。
  *
- * Consider this base interface:
+ * 考虑以下基接口：
  * <pre class="code">
  * package com.example;
  *
@@ -67,7 +63,7 @@ import java.lang.annotation.Target;
  * public interface AdminService { ... }
  * </pre>
  *
- * Now, consider an implementation of this {@code AdminService} somewhere:
+ * 再考虑某处 {@code AdminService} 的实现：
  * <pre class="code">
  * package com.example.foo;
  *
@@ -76,10 +72,10 @@ import java.lang.annotation.Target;
  * public class ConfigurationAdminService implements AdminService { ... }
  * </pre>
  *
- * Because this class implements an interface that is indexed, it will be
- * automatically included with the {@code com.example.AdminService} stereotype.
- * If there are more {@code @Indexed} interfaces and/or superclasses in the
- * hierarchy, the class will map to all their stereotypes.
+ * 由于该类实现了已建立索引的接口，
+ * 将自动以 {@code com.example.AdminService} 构造型纳入索引。
+ * 若层次结构中还有更多 {@code @Indexed} 接口和/或超类，
+ * 该类将映射到所有相关构造型。
  *
  * @author Stephane Nicoll
  * @since 5.0
