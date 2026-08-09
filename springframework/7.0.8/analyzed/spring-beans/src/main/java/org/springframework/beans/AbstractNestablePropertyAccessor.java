@@ -44,23 +44,19 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class AbstractNestablePropertyAccessor — 意图说明
-
-class `AbstractNestablePropertyAccessor`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/AbstractNestablePropertyAccessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * A basic {@link ConfigurablePropertyAccessor} that provides the necessary
- * infrastructure for all typical use cases.
+ * 基础的 {@link ConfigurablePropertyAccessor}，为常见属性访问场景提供基础设施。
  *
- * <p>This accessor will convert collection and array values to the corresponding
- * target collections or arrays, if necessary. Custom property editors that deal
- * with collections or arrays can either be written via PropertyEditor's
- * {@code setValue}, or against a comma-delimited String via {@code setAsText},
- * as String arrays are converted in such a format if the array itself is not
- * assignable.
+ * <p>必要时会把集合、数组取值转换成目标集合或数组类型。处理集合/数组的自定义
+ * PropertyEditor 既可通过 {@code setValue} 写入对象，也可通过 {@code setAsText}
+ * 处理逗号分隔字符串——当 String 数组本身不可直接赋值时，框架会按该格式转换。
+ *
+ * <p>核心能力：
+ * <ul>
+ * <li>嵌套路径（如 {@code address.street}）与索引/映射键（如 {@code list[0].name}、{@code map[key]}）；</li>
+ * <li>写入前按目标类型做转换（委托 {@link TypeConverterDelegate}）；</li>
+ * <li>可选的自动增长：嵌套路径上的 null 中间节点、数组/List 下标越界时扩容。</li>
+ * </ul>
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -78,29 +74,29 @@ class `AbstractNestablePropertyAccessor`：请结合所属模块与调用方理�
  */
 public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyAccessor {
 
-	// [OCA] 字段 `logger`：类成员状态。
 	/**
-	 * We'll create a lot of these objects, so we don't want a new logger every time.
+	 * 本类实例会大量创建，故共用一个静态 logger，避免每次 new 都新建日志器。
 	 */
 	private static final Log logger = LogFactory.getLog(AbstractNestablePropertyAccessor.class);
 
-	// [OCA] 字段 `autoGrowCollectionLimit`：类成员状态。
+	/** 数组/集合自动扩容时允许的最大下标（默认无上限）。 */
 	private int autoGrowCollectionLimit = Integer.MAX_VALUE;
 
+	/** 当前访问器包装的目标对象（已 unwrap Optional）。 */
 	@Nullable Object wrappedObject;
 
-	// [OCA] 字段 `nestedPath`：类成员状态。
+	/** 相对根对象的嵌套路径前缀，例如 {@code "address."}；根访问器为空串。 */
 	private String nestedPath = "";
 
+	/** 路径顶端的根对象；无嵌套时等于 {@link #wrappedObject}。 */
 	@Nullable Object rootObject;
 
-	/** Map with cached nested Accessors: nested path -> Accessor instance. */
+	/** 嵌套访问器缓存：规范化嵌套路径 → Accessor 实例（保留已注册的自定义编辑器）。 */
 	private @Nullable Map<String, AbstractNestablePropertyAccessor> nestedPropertyAccessors;
 
 
 	/**
-	 * Create a new empty accessor. Wrapped instance needs to be set afterwards.
-	 * Registers default editors.
+	 * 创建空访问器；之后需再设置被包装实例。会注册默认 PropertyEditor。
 	 * @see #setWrappedInstance
 	 */
 	protected AbstractNestablePropertyAccessor() {
@@ -108,7 +104,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Create a new empty accessor. Wrapped instance needs to be set afterwards.
+	 * 创建空访问器；之后需再设置被包装实例。
 	 * @param registerDefaultEditors whether to register default editors
 	 * (can be suppressed if the accessor won't need any type conversion)
 	 * @see #setWrappedInstance
@@ -121,7 +117,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Create a new accessor for the given object.
+	 * 为给定对象创建访问器。
 	 * @param object the object wrapped by this accessor
 	 */
 	protected AbstractNestablePropertyAccessor(Object object) {
@@ -130,7 +126,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Create a new accessor, wrapping a new instance of the specified class.
+	 * 创建访问器，并包装指定类型的新实例。
 	 * @param clazz class to instantiate and wrap
 	 */
 	protected AbstractNestablePropertyAccessor(Class<?> clazz) {
@@ -139,8 +135,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Create a new accessor for the given object,
-	 * registering a nested path that the object is in.
+	 * 为给定对象创建访问器，并登记该对象所处的嵌套路径。
 	 * @param object the object wrapped by this accessor
 	 * @param nestedPath the nested path of the object
 	 * @param rootObject the root object at the top of the path
@@ -151,8 +146,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Create a new accessor for the given object,
-	 * registering a nested path that the object is in.
+	 * 为给定对象创建访问器，并登记嵌套路径；从父访问器继承编辑器相关配置。
 	 * @param object the object wrapped by this accessor
 	 * @param nestedPath the nested path of the object
 	 * @param parent the containing accessor (must not be {@code null})
@@ -167,23 +161,22 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 
 
 	/**
-	 * Specify a limit for array and collection auto-growing.
-	 * <p>Default is unlimited on a plain accessor.
+	 * 设置数组与集合自动扩容的上限。
+	 * <p>普通访问器上默认无限制。
 	 */
 	public void setAutoGrowCollectionLimit(int autoGrowCollectionLimit) {
 		this.autoGrowCollectionLimit = autoGrowCollectionLimit;
 	}
 
 	/**
-	 * Return the limit for array and collection auto-growing.
+	 * 返回数组与集合自动扩容的上限。
 	 */
 	public int getAutoGrowCollectionLimit() {
 		return this.autoGrowCollectionLimit;
 	}
 
 	/**
-	 * Switch the target object, replacing the cached introspection results only
-	 * if the class of the new object is different to that of the replaced object.
+	 * 切换目标对象；仅当新对象的 Class 与旧对象不同时才替换缓存的内省结果。
 	 * @param object the new target object
 	 */
 	public void setWrappedInstance(Object object) {
@@ -191,8 +184,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Switch the target object, replacing the cached introspection results only
-	 * if the class of the new object is different to that of the replaced object.
+	 * 切换目标对象；仅当新对象的 Class 与旧对象不同时才替换缓存的内省结果。
 	 * @param object the new target object
 	 * @param nestedPath the nested path of the object
 	 * @param rootObject the root object at the top of the path
@@ -202,6 +194,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		Assert.notNull(this.wrappedObject, "Target object must not be null");
 		this.nestedPath = (nestedPath != null ? nestedPath : "");
 		this.rootObject = (!this.nestedPath.isEmpty() ? rootObject : this.wrappedObject);
+		// 目标变了，嵌套访问器缓存全部失效
 		this.nestedPropertyAccessors = null;
 		this.typeConverterDelegate = new TypeConverterDelegate(this, this.wrappedObject);
 	}
@@ -216,14 +209,14 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Return the nested path of the object wrapped by this accessor.
+	 * 返回本访问器所包装对象的嵌套路径。
 	 */
 	public final String getNestedPath() {
 		return this.nestedPath;
 	}
 
 	/**
-	 * Return the root object at the top of the path of this accessor.
+	 * 返回路径顶端的根对象。
 	 * @see #getNestedPath
 	 */
 	public final Object getRootInstance() {
@@ -232,7 +225,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Return the class of the root object at the top of the path of this accessor.
+	 * 返回路径顶端根对象的 Class。
 	 * @see #getNestedPath
 	 */
 	public final Class<?> getRootClass() {
@@ -241,6 +234,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 
 	@Override
 	public void setPropertyValue(String propertyName, @Nullable Object value) throws BeansException {
+		// 先沿嵌套路径导航到「最终属性」所在的访问器，再在其上设值
 		AbstractNestablePropertyAccessor nestedPa;
 		try {
 			nestedPa = getPropertyAccessorForPropertyPath(propertyName);
@@ -267,6 +261,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 						"Nested property in path '" + propertyName + "' does not exist", ex);
 			}
 			tokens = getPropertyNameTokens(getFinalPath(nestedPa, propertyName));
+			// 仅当最终落在当前访问器上时，把解析结果缓存进 PropertyValue，避免重复分词
 			if (nestedPa == this) {
 				pv.getOriginalPropertyValue().resolvedTokens = tokens;
 			}
@@ -277,6 +272,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		}
 	}
 
+	/**
+	 * 按 token 写入：有下标/键则走索引属性，否则写本地简单属性。
+	 */
 	protected void setPropertyValue(PropertyTokenHolder tokens, PropertyValue pv) throws BeansException {
 		if (tokens.keys != null) {
 			processKeyedProperty(tokens, pv);
@@ -286,12 +284,12 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		}
 	}
 
+	/**
+	 * 处理带索引/映射键的属性写入，例如 {@code arr[0]}、{@code list[1]}、{@code map[key]}。
+	 * <p>最后一个 key 表示要写入的位置；更前面的 key 用于先取出承载容器。
+	 * 数组与 List 在开启自动增长且未超限时可扩容；Map 则对 key/value 分别做类型转换。
+	 */
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	/* ===== [OCA 中文解析] =====
-方法 processKeyedProperty — 意图与阅读要点
-
-方法 `processKeyedProperty` 复杂度较高（CCN≈18, NLOC≈88）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	private void processKeyedProperty(PropertyTokenHolder tokens, PropertyValue pv) {
 		Object propValue = getPropertyHoldingValue(tokens);
 		PropertyHandler ph = getLocalPropertyHandler(tokens.actualName);
@@ -313,6 +311,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 				Object convertedValue = convertIfNecessary(tokens.canonicalName, oldValue, pv.getValue(),
 						componentType, ph.nested(tokens.keys.length));
 				int length = Array.getLength(propValue);
+				// 下标越界但未超 autoGrow 上限：新建更大数组、回写属性后再 set
 				if (arrayIndex >= length && arrayIndex < this.autoGrowCollectionLimit) {
 					Object newArray = Array.newInstance(componentType, arrayIndex + 1);
 					System.arraycopy(propValue, 0, newArray, 0, length);
@@ -340,6 +339,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 					requiredType.getResolvableType().resolve(), requiredType);
 			int size = list.size();
 			if (index >= size && index < this.autoGrowCollectionLimit) {
+				// 用 null 填到目标下标前一位，再 add；不支持 null 间隙的 List 会失败
 				for (int i = size; i < index; i++) {
 					try {
 						list.add(null);
@@ -367,16 +367,14 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		else if (propValue instanceof Map map) {
 			TypeDescriptor mapKeyType = ph.getMapKeyType(tokens.keys.length);
 			TypeDescriptor mapValueType = ph.getMapValueType(tokens.keys.length);
-			// IMPORTANT: Do not pass full property name in here - property editors
-			// must not kick in for map keys but rather only for map values.
+			// 重要：Map key 转换不要传入完整属性名，以免 PropertyEditor 误作用于 key
 			Object convertedMapKey = convertIfNecessary(null, null, lastKey,
 					mapKeyType.getResolvableType().resolve(), mapKeyType);
 			Object oldValue = null;
 			if (isExtractOldValueForEditor()) {
 				oldValue = map.get(convertedMapKey);
 			}
-			// Pass full property name and old value in here, since we want full
-			// conversion ability for map values.
+			// value 则传入完整属性名与旧值，以便走完整转换链路
 			Object convertedMapValue = convertIfNecessary(tokens.canonicalName, oldValue, pv.getValue(),
 					mapValueType.getResolvableType().resolve(), mapValueType);
 			map.put(convertedMapKey, convertedMapValue);
@@ -389,8 +387,12 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		}
 	}
 
+	/**
+	 * 取出「承载最后一个下标/键」的容器值：对除末尾以外的全部 key 做 get。
+	 * 若中间结果为 null 且允许自动增长，则先为该属性写入默认实例。
+	 */
 	private Object getPropertyHoldingValue(PropertyTokenHolder tokens) {
-		// Apply indexes and map keys: fetch value for all keys but the last one.
+		// 应用除最后一个以外的全部索引/映射键
 		Assert.state(tokens.keys != null, "No token keys");
 		PropertyTokenHolder getterTokens = new PropertyTokenHolder(tokens.actualName);
 		getterTokens.canonicalName = tokens.canonicalName;
@@ -408,7 +410,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		}
 
 		if (propValue == null) {
-			// null map value case
+			// 索引路径上出现 null（例如 map 值为 null）
 			if (isAutoGrowNestedPaths()) {
 				int lastKeyIndex = tokens.canonicalName.lastIndexOf('[');
 				getterTokens.canonicalName = tokens.canonicalName.substring(0, lastKeyIndex);
@@ -423,13 +425,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		return propValue;
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 processLocalProperty — 意图与阅读要点
-
-方法 `processLocalProperty` 复杂度较高（CCN≈19, NLOC≈70）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 写入当前对象上的本地（非索引）属性：可读旧值 → 类型转换 → PropertyHandler.setValue。
+	 */
 	private void processLocalProperty(PropertyTokenHolder tokens, PropertyValue pv) {
 		PropertyHandler ph = getLocalPropertyHandler(tokens.actualName);
 		if (ph == null || !ph.isWritable()) {
@@ -441,8 +439,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 				return;
 			}
 			if (this.suppressNotWritablePropertyException) {
-				// Optimization for common ignoreUnknown=true scenario since the
-				// exception would be caught and swallowed higher up anyway...
+				// ignoreUnknown=true 的常见优化：上层反正会吞掉异常，这里直接返回
 				return;
 			}
 			throw createNotWritablePropertyException(tokens.canonicalName);
@@ -479,6 +476,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			ph.setValue(valueToApply);
 		}
 		catch (TypeMismatchException ex) {
+			// 子类可提供回退写入（例如字段访问），失败则原样抛出
 			if (!ph.setValueFallbackIfPossible(pv.getValue())) {
 				throw ex;
 			}
@@ -492,7 +490,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			else {
 				Throwable cause = ex.getTargetException();
 				if (cause instanceof UndeclaredThrowableException) {
-					// May happen, for example, with Groovy-generated methods
+					// 例如 Groovy 生成方法可能包一层 UndeclaredThrowableException
 					cause = cause.getCause();
 				}
 				throw new MethodInvocationException(propertyChangeEvent, cause);
@@ -516,13 +514,12 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 				return ph.getPropertyType();
 			}
 			else {
-				// Maybe an indexed/mapped property...
+				// 可能是索引/映射属性：尝试实际取值推断类型
 				Object value = getPropertyValue(propertyName);
 				if (value != null) {
 					return value.getClass();
 				}
-				// Check to see if there is a custom editor,
-				// which might give an indication on the desired target type.
+				// 再看自定义编辑器能否暗示目标类型
 				Class<?> editorType = guessPropertyTypeFromEditors(propertyName);
 				if (editorType != null) {
 					return editorType;
@@ -530,7 +527,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			}
 		}
 		catch (InvalidPropertyException ex) {
-			// Consider as not determinable.
+			// 无法确定类型
 		}
 		return null;
 	}
@@ -545,6 +542,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			if (ph != null) {
 				if (tokens.keys != null) {
 					if (ph.isReadable() || ph.isWritable()) {
+						// 索引层数对应嵌套 TypeDescriptor
 						return ph.nested(tokens.keys.length);
 					}
 				}
@@ -556,7 +554,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			}
 		}
 		catch (InvalidPropertyException ex) {
-			// Consider as not determinable.
+			// 无法确定类型
 		}
 		return null;
 	}
@@ -569,13 +567,13 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 				return ph.isReadable();
 			}
 			else {
-				// Maybe an indexed/mapped property...
+				// 可能是索引/映射属性：能成功 get 则视为可读
 				getPropertyValue(propertyName);
 				return true;
 			}
 		}
 		catch (InvalidPropertyException ex) {
-			// Cannot be evaluated, so can't be readable.
+			// 无法求值，即不可读
 		}
 		return false;
 	}
@@ -588,17 +586,20 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 				return ph.isWritable();
 			}
 			else {
-				// Maybe an indexed/mapped property...
+				// 可能是索引/映射属性：能成功 get 则视为可写
 				getPropertyValue(propertyName);
 				return true;
 			}
 		}
 		catch (InvalidPropertyException ex) {
-			// Cannot be evaluated, so can't be writable.
+			// 无法求值，即不可写
 		}
 		return false;
 	}
 
+	/**
+	 * 必要时转换取值；把底层 ConversionException 包装为 Beans 侧异常。
+	 */
 	private @Nullable Object convertIfNecessary(@Nullable String propertyName, @Nullable Object oldValue,
 			@Nullable Object newValue, @Nullable Class<?> requiredType, @Nullable TypeDescriptor td)
 			throws TypeMismatchException {
@@ -619,6 +620,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		}
 	}
 
+	/**
+	 * 按属性 TypeDescriptor 转换待写入值。
+	 */
 	protected @Nullable Object convertForProperty(
 			String propertyName, @Nullable Object oldValue, @Nullable Object newValue, TypeDescriptor td)
 			throws TypeMismatchException {
@@ -633,6 +637,10 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		return nestedPa.getPropertyValue(tokens);
 	}
 
+	/**
+	 * 按 token 读取属性：先取本地属性值，再依次应用数组下标、List/Iterable 索引或 Map 键。
+	 * <p>开启 {@code autoGrowNestedPaths} 时，null 中间节点、越界数组/List 可自动增长。
+	 */
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	protected @Nullable Object getPropertyValue(PropertyTokenHolder tokens) throws BeansException {
 		String propertyName = tokens.canonicalName;
@@ -655,7 +663,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 					}
 				}
 				StringBuilder indexedPropertyName = new StringBuilder(tokens.actualName);
-				// apply indexes and map keys
+				// 逐层应用索引与 Map 键
 				for (int i = 0; i < tokens.keys.length; i++) {
 					String key = tokens.keys[i];
 					if (value == null) {
@@ -675,14 +683,13 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 					}
 					else if (value instanceof Map map) {
 						Class<?> mapKeyType = ph.getResolvableType().getNested(i + 1).asMap().resolveGeneric(0);
-						// IMPORTANT: Do not pass full property name in here - property editors
-						// must not kick in for map keys but rather only for map values.
+						// 重要：Map key 转换不传完整属性名，避免 PropertyEditor 作用到 key
 						TypeDescriptor typeDescriptor = TypeDescriptor.valueOf(mapKeyType);
 						Object convertedMapKey = convertIfNecessary(null, null, key, mapKeyType, typeDescriptor);
 						value = map.get(convertedMapKey);
 					}
 					else if (value instanceof Iterable iterable) {
-						// Apply index to Iterator in case of a Set/Collection/Iterable.
+						// Set/Collection/Iterable：用迭代器按索引取元素（不自动扩容）
 						int index = Integer.parseInt(key);
 						if (value instanceof Collection<?> coll) {
 							if (index < 0 || index >= coll.size()) {
@@ -742,8 +749,8 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 
 
 	/**
-	 * Return the {@link PropertyHandler} for the specified {@code propertyName}, navigating
-	 * if necessary. Return {@code null} if not found rather than throwing an exception.
+	 * 返回指定 {@code propertyName} 的 {@link PropertyHandler}，必要时沿嵌套路径导航。
+	 * 找不到时返回 {@code null}，不抛异常。
 	 * @param propertyName the property to obtain the descriptor for
 	 * @return the property descriptor for the specified property,
 	 * or {@code null} if not found
@@ -756,16 +763,16 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Return a {@link PropertyHandler} for the specified local {@code propertyName}.
-	 * Only used to reach a property available in the current context.
+	 * 返回当前上下文中本地属性 {@code propertyName} 的 {@link PropertyHandler}。
+	 * 仅用于访问「当前包装对象」上的属性。
 	 * @param propertyName the name of a local property
 	 * @return the handler for that property, or {@code null} if it has not been found
 	 */
 	protected abstract @Nullable PropertyHandler getLocalPropertyHandler(String propertyName);
 
 	/**
-	 * Create a new nested property accessor instance.
-	 * Can be overridden in subclasses to create a PropertyAccessor subclass.
+	 * 创建新的嵌套属性访问器实例。
+	 * 子类可覆盖以返回特定的 PropertyAccessor 子类型。
 	 * @param object the object wrapped by this PropertyAccessor
 	 * @param nestedPath the nested path of the object
 	 * @return the nested PropertyAccessor instance
@@ -773,11 +780,14 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	protected abstract AbstractNestablePropertyAccessor newNestedPropertyAccessor(Object object, String nestedPath);
 
 	/**
-	 * Create a {@link NotWritablePropertyException} for the specified property.
+	 * 为指定属性创建 {@link NotWritablePropertyException}。
 	 */
 	protected abstract NotWritablePropertyException createNotWritablePropertyException(String propertyName);
 
 
+	/**
+	 * 若开启自动增长且下标越界未超限，则扩容数组并用默认元素填充空隙后回写。
+	 */
 	private Object growArrayIfNecessary(Object array, int index, String name) {
 		if (!isAutoGrowNestedPaths()) {
 			return array;
@@ -800,6 +810,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		}
 	}
 
+	/**
+	 * 若开启自动增长且下标越界未超限，向集合追加默认元素直到可访问该下标。
+	 */
 	private void growCollectionIfNecessary(Collection<Object> collection, int index, String name,
 			PropertyHandler ph, int nestingLevel) {
 
@@ -818,7 +831,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Get the last component of the path. Also works if not nested.
+	 * 取路径的最后一段（目标 Bean 上的属性名）；非嵌套时原样返回。
 	 * @param pa property accessor to work on
 	 * @param nestedPath property path we know is nested
 	 * @return last component of the path (the property on the target bean)
@@ -831,13 +844,13 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Recursively navigate to return a property accessor for the nested property path.
+	 * 递归导航嵌套属性路径，返回对应层级的属性访问器。
 	 * @param propertyPath property path, which may be nested
 	 * @return a property accessor for the target bean
 	 */
 	protected AbstractNestablePropertyAccessor getPropertyAccessorForPropertyPath(String propertyPath) {
 		int pos = PropertyAccessorUtils.getFirstNestedPropertySeparatorIndex(propertyPath);
-		// Handle nested properties recursively.
+		// 遇到第一个「.」分隔符则拆分，递归进入嵌套访问器
 		if (pos > -1) {
 			String nestedProperty = propertyPath.substring(0, pos);
 			String nestedPath = propertyPath.substring(pos + 1);
@@ -849,16 +862,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 getNestedPropertyAccessor — 意图与阅读要点
-
-方法 `getNestedPropertyAccessor` 复杂度较高（CCN≈10, NLOC≈34）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Retrieve a Property accessor for the given nested property.
-	 * Create a new one if not found in the cache.
-	 * <p>Note: Caching nested PropertyAccessors is necessary now,
-	 * to keep registered custom editors for nested properties.
+	 * 获取给定嵌套属性的访问器；缓存未命中则新建。
+	 * <p>必须缓存嵌套 PropertyAccessor，以便保留为嵌套属性注册的自定义编辑器。
 	 * @param nestedProperty property to create the PropertyAccessor for
 	 * @return the PropertyAccessor instance, either cached or newly created
 	 */
@@ -868,7 +874,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			nestedAccessors = new HashMap<>();
 			this.nestedPropertyAccessors = nestedAccessors;
 		}
-		// Get value of bean property.
+		// 先读出嵌套属性当前值
 		PropertyTokenHolder tokens = getPropertyNameTokens(nestedProperty);
 		String canonicalName = tokens.canonicalName;
 		Object value = getPropertyValue(tokens);
@@ -881,14 +887,14 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			}
 		}
 
-		// Lookup cached sub-PropertyAccessor, create new one if not found.
+		// 查缓存；包装目标已变则重建
 		AbstractNestablePropertyAccessor nestedPa = nestedAccessors.get(canonicalName);
 		if (nestedPa == null || nestedPa.getWrappedInstance() != ObjectUtils.unwrapOptional(value)) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Creating new nested " + getClass().getSimpleName() + " for property '" + canonicalName + "'");
 			}
 			nestedPa = newNestedPropertyAccessor(value, this.nestedPath + canonicalName + NESTED_PROPERTY_SEPARATOR);
-			// Inherit all type-specific PropertyEditors.
+			// 继承默认与自定义 PropertyEditor
 			copyDefaultEditorsTo(nestedPa);
 			copyCustomEditorsTo(nestedPa, canonicalName);
 			nestedAccessors.put(canonicalName, nestedPa);
@@ -901,6 +907,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		return nestedPa;
 	}
 
+	/** 为 token 对应属性创建默认值并写回，再读出返回。 */
 	private Object setDefaultValue(PropertyTokenHolder tokens) {
 		PropertyValue pv = createDefaultPropertyValue(tokens);
 		setPropertyValue(tokens, pv);
@@ -909,6 +916,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		return defaultValue;
 	}
 
+	/** 按属性类型描述符构造默认 PropertyValue（数组/集合/Map/无参构造）。 */
 	private PropertyValue createDefaultPropertyValue(PropertyTokenHolder tokens) {
 		TypeDescriptor desc = getPropertyTypeDescriptor(tokens.canonicalName);
 		if (desc == null) {
@@ -919,13 +927,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		return new PropertyValue(tokens.canonicalName, defaultValue);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 newValue — 意图与阅读要点
-
-方法 `newValue` 复杂度较高（CCN≈10, NLOC≈26）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 按类型创建「自动增长」用的默认实例：数组、Collection、Map，或非 private 无参构造。
+	 */
 	private Object newValue(Class<?> type, @Nullable TypeDescriptor desc, String name) {
 		try {
 			if (type.isArray()) {
@@ -954,7 +958,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 	/**
-	 * Create the array for the given array type.
+	 * 按给定数组类型创建数组；多维数组递归创建一层子数组占位。
 	 * @param arrayType the desired type of the target array
 	 * @return a new array instance
 	 */
@@ -971,13 +975,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 getPropertyNameTokens — 意图与阅读要点
-
-方法 `getPropertyNameTokens` 复杂度较高（CCN≈12, NLOC≈32）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Parse the given property name into the corresponding property name tokens.
+	 * 将属性名解析为 token：实际属性名 + 规范化规范名 + 下标/键序列。
+	 * <p>例如 {@code map['a'][0]} → actualName={@code map}，keys={@code a},{@code 0}。
 	 * @param propertyName the property name to parse
 	 * @return representation of the parsed property tokens
 	 */
@@ -995,6 +995,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 						actualName = propertyName.substring(0, keyStart);
 					}
 					String key = propertyName.substring(keyStart + PROPERTY_KEY_PREFIX.length(), keyEnd);
+					// 去掉 map['key'] / map["key"] 外层引号
 					if (key.length() > 1 && ((key.startsWith("'") && key.endsWith("'")) ||
 							(key.startsWith("\"") && key.endsWith("\"")))) {
 						key = key.substring(1, key.length() - 1);
@@ -1014,24 +1015,25 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		return tokens;
 	}
 
+	/**
+	 * 从 {@code startIndex} 起查找与开括号匹配的闭括号下标，支持键内嵌套 {@code []}。
+	 */
 	private int getPropertyNameKeyEnd(String propertyName, int startIndex) {
 		int unclosedPrefixes = 0;
 		int length = propertyName.length();
 		for (int i = startIndex; i < length; i++) {
 			switch (propertyName.charAt(i)) {
 				case PropertyAccessor.PROPERTY_KEY_PREFIX_CHAR -> {
-					// The property name contains opening prefix(es)...
+					// 属性名中还有未闭合的开括号
 					unclosedPrefixes++;
 				}
 				case PropertyAccessor.PROPERTY_KEY_SUFFIX_CHAR -> {
 					if (unclosedPrefixes == 0) {
-						// No unclosed prefix(es) in the property name (left) ->
-						// this is the suffix we are looking for.
+						// 左侧无未闭合开括号 → 这就是要找的闭括号
 						return i;
 					}
 					else {
-						// This suffix does not close the initial prefix but rather
-						// just one that occurred within the property name.
+						// 只是闭合了属性名内部某层括号
 						unclosedPrefixes--;
 					}
 				}
@@ -1050,22 +1052,19 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class PropertyHandler — 意图说明
-
-class `PropertyHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/AbstractNestablePropertyAccessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * A handler for a specific property.
+	 * 单个属性的读写处理器抽象：屏蔽 JavaBean 与直接字段等不同访问方式。
+	 * <p>子类（如 BeanWrapperImpl、DirectFieldAccessor）提供具体 get/set 与类型描述。
 	 */
 	protected abstract static class PropertyHandler {
 
+		/** 属性声明类型（可能为 null）。 */
 		private final @Nullable Class<?> propertyType;
 
+		/** 是否可读。 */
 		private final boolean readable;
 
+		/** 是否可写。 */
 		private final boolean writable;
 
 		public PropertyHandler(@Nullable Class<?> propertyType, boolean readable, boolean writable) {
@@ -1090,14 +1089,17 @@ class `PropertyHandler`：请结合所属模块与调用方理解其在整体架
 
 		public abstract ResolvableType getResolvableType();
 
+		/** 按嵌套层级解析 Map 的 key 类型。 */
 		public TypeDescriptor getMapKeyType(int nestingLevel) {
 			return TypeDescriptor.valueOf(getResolvableType().getNested(nestingLevel).asMap().resolveGeneric(0));
 		}
 
+		/** 按嵌套层级解析 Map 的 value 类型。 */
 		public TypeDescriptor getMapValueType(int nestingLevel) {
 			return TypeDescriptor.valueOf(getResolvableType().getNested(nestingLevel).asMap().resolveGeneric(1));
 		}
 
+		/** 按嵌套层级解析 Collection 元素类型。 */
 		public TypeDescriptor getCollectionType(int nestingLevel) {
 			return TypeDescriptor.valueOf(getResolvableType().getNested(nestingLevel).asCollection().resolveGeneric());
 		}
@@ -1108,21 +1110,18 @@ class `PropertyHandler`：请结合所属模块与调用方理解其在整体架
 
 		public abstract void setValue(@Nullable Object value) throws Exception;
 
+		/**
+		 * 主写入路径失败时的可选回退（默认不支持）。
+		 * @return {@code true} 表示回退写入成功
+		 */
 		public boolean setValueFallbackIfPossible(@Nullable Object value) {
 			return false;
 		}
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class PropertyTokenHolder — 意图说明
-
-class `PropertyTokenHolder`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/AbstractNestablePropertyAccessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Holder class used to store property tokens.
+	 * 属性名分词结果：实际名、规范化名、以及 {@code []} 中的键/下标序列。
 	 */
 	protected static class PropertyTokenHolder {
 
@@ -1131,10 +1130,13 @@ class `PropertyTokenHolder`：请结合所属模块与调用方理解其在整�
 			this.canonicalName = name;
 		}
 
+		/** 去掉下标后的属性名，如 {@code address}、{@code items}。 */
 		public String actualName;
 
+		/** 规范化后的完整名（含去引号后的键），如 {@code items[0]}。 */
 		public String canonicalName;
 
+		/** 有序的索引/映射键；无下标时为 {@code null}。 */
 		public String @Nullable [] keys;
 	}
 
