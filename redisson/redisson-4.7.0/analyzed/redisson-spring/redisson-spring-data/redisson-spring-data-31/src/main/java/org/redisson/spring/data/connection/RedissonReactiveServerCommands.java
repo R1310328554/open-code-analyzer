@@ -39,12 +39,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 Server 命令实现。
+ * <p>封装 BGSAVE、SAVE、FLUSHDB/FLUSHALL、INFO、CONFIG、TIME、CLIENT LIST 等管理命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveServerCommands extends RedissonBaseReactive implements ReactiveServerCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveServerCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }

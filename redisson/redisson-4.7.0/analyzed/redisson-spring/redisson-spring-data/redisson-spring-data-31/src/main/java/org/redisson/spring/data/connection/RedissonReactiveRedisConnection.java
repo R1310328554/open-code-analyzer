@@ -23,12 +23,16 @@ import org.springframework.data.redis.connection.*;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 单机模式响应式连接门面。
+ * <p>实现 {@link ReactiveRedisConnection}，按数据类型委托各 {@code RedissonReactive*Commands}；
+ * 生命周期由工厂统一管理，{@link #closeLater()} 为空操作。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveRedisConnection extends RedissonBaseReactive implements ReactiveRedisConnection {
 
+    /** 注入响应式命令执行器。 */
     public RedissonReactiveRedisConnection(CommandReactiveExecutor executorService) {
         super(executorService);
     }
