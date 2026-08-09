@@ -30,9 +30,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RLongAdder}/{@link org.redisson.api.RDoubleAdder} 的抽象基类。
+ * <p>通过 {@link RTopic} 广播 sum/reset 消息，各节点上报局部计数后由发起方汇总；
+ * 使用 {@link RSemaphore} 同步多节点响应完成。
  *
+ * @author Nikita Koksharov
  */
 public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpirable {
 
@@ -45,6 +47,9 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     private final RTopic topic;
     private final int listenerId;
     
+    /** 注册 Topic 监听器并递增 {@link AdderEntry} 引用计数。
+     *  @param redisson 用于获取 per-operation 信号量
+     */
     public RedissonBaseAdder(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
 
@@ -85,6 +90,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         });
     }
 
+    /** 各节点处理完 sum/reset 后递减计数；全部完成则释放信号量。 */
     private void release(String id, AdderEntry entry) {
         AtomicInteger counter = getServiceManager().getAddersCounter().computeIfAbsent(id, r -> new AtomicInteger());
         if (counter.incrementAndGet() == entry.getUsage().get()
@@ -100,6 +106,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         }
     }
 
+    /** 子类实现：将本地计数器清零。 */
     protected abstract void doReset();
 
     public void reset() {
@@ -110,6 +117,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         get(resetAsync(timeout, timeUnit));
     }
     
+    /** 广播 SUM 消息，等待各节点上报后合并并删除临时计数键。 */
     public RFuture<T> sumAsync() {
         String id = getServiceManager().generateId();
         RSemaphore semaphore = getSemaphore(id);
@@ -129,6 +137,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         return suffixName(getRawName(), id + ":counter");
     }
 
+    /** 带超时的 sum；超时抛出 {@link TimeoutException}。 */
     public RFuture<T> sumAsync(long timeout, TimeUnit timeUnit) {
         String id = getServiceManager().generateId();
         RSemaphore semaphore = getSemaphore(id);
@@ -155,6 +164,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         });
     }
 
+    /** 广播 CLEAR 消息，各节点 reset 后释放信号量。 */
     public RFuture<Void> resetAsync() {
         String id = getServiceManager().generateId();
         RSemaphore semaphore = getSemaphore(id);
@@ -175,6 +185,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 移除 Topic 监听器并在引用计数归零时清理未完成操作。 */
     public void destroy() {
         topic.removeListener(listenerId);
 
@@ -188,8 +199,10 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         }
     }
 
+    /** 子类实现：将本地增量累加到 id 对应的临时键并返回。 */
     protected abstract RFuture<T> addAndGetAsync(String id);
 
+    /** 子类实现：读取并删除 id 对应的临时汇总键。 */
     protected abstract RFuture<T> getAndDeleteAsync(String id);
 
 }

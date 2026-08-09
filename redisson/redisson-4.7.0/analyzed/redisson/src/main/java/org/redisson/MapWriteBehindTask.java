@@ -31,9 +31,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link MapOptions} Write-Behind 异步落库调度器。
+ * <p>将 {@link MapWriterTask} 写入 Redis 队列，按延迟与批量大小
+ * 调用 {@link MapOptions#getWriter()} 或 {@link MapOptions#getWriterAsync()}。
  *
+ * @author Nikita Koksharov
  */
 public class MapWriteBehindTask {
 
@@ -44,6 +46,10 @@ public class MapWriteBehindTask {
     private final CommandAsyncExecutor commandExecutor;
     private final MapOptions<Object, Object> options;
     
+    /** @param name Map 名称；队列键为 {@code name:write-behind-queue}
+     *  @param commandExecutor 异步命令执行器
+     *  @param options 含 writer、延迟与批量大小等 Write-Behind 配置
+     */
     public MapWriteBehindTask(String name, CommandAsyncExecutor commandExecutor, MapOptions<?, ?> options) {
         super();
         this.commandExecutor = commandExecutor;
@@ -52,6 +58,7 @@ public class MapWriteBehindTask {
         this.writeBehindTasks = new RedissonQueue<>(commandExecutor, queueName, null);
     }
 
+    /** 启动后台轮询；重复调用仅生效一次。 */
     public void start() {
         if (!isStarted.compareAndSet(false, true)) {
             return;
@@ -60,6 +67,7 @@ public class MapWriteBehindTask {
         enqueueTask();
     }
 
+    /** 异步从队列取任务；队列空时 flush 累积批次并重新调度。 */
     private void pollTask(Map<Object, Object> addedMap, List<Object> deletedKeys) {
         RFuture<MapWriterTask> future = writeBehindTasks.pollAsync();
         future.whenComplete((task, e) -> {
@@ -82,6 +90,7 @@ public class MapWriteBehindTask {
         });
     }
 
+    /** 将累积的删除键与新增条目一次性提交给 MapWriter。 */
     private void flushTasks(Map<Object, Object> addedMap, List<Object> deletedKeys) {
         try {
             if (!deletedKeys.isEmpty()) {
@@ -109,6 +118,7 @@ public class MapWriteBehindTask {
         }
     }
 
+    /** 合并单条 {@link MapWriterTask} 到批次；达 {@link MapOptions#getWriteBehindBatchSize()} 时立即 flush。 */
     private void processTask(Map<Object, Object> addedMap, List<Object> deletedKeys, MapWriterTask task) {
         if (task instanceof MapWriterTask.Remove) {
             for (Object key : task.getKeys()) {
@@ -146,6 +156,7 @@ public class MapWriteBehindTask {
         }
     }
 
+    /** 在 {@link MapOptions#getWriteBehindDelay()} 后启动新一轮 poll。 */
     private void enqueueTask() {
         if (!isStarted.get()) {
             return;
@@ -162,10 +173,12 @@ public class MapWriteBehindTask {
         }, options.getWriteBehindDelay(), TimeUnit.MILLISECONDS);
     }
 
+    /** 将 Write-Behind 任务异步入队。 */
     public void addTask(MapWriterTask task) {
         writeBehindTasks.addAsync(task);
     }
 
+    /** 停止调度并 drain 队列中剩余任务后 flush。 */
     public void stop() {
         isStarted.set(false);
 

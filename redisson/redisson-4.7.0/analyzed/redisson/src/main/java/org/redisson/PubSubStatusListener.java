@@ -25,9 +25,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * SUBSCRIBE/UNSUBSCRIBE（及 sharded 变体）状态事件适配器。
+ * <p>待所有 {@code names} 均收到状态确认后，才通知 {@link StatusListener} 一次。
  *
  * @author Nikita Koksharov
- *
  */
 public class PubSubStatusListener implements RedisPubSubListener<Object> {
 
@@ -35,6 +36,7 @@ public class PubSubStatusListener implements RedisPubSubListener<Object> {
     private final String[] names;
     private final Set<String> notified = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    /** @param names 待确认订阅/取消订阅的频道名列表 */
     public PubSubStatusListener(StatusListener listener, String... names) {
         super();
         this.listener = listener;
@@ -50,6 +52,7 @@ public class PubSubStatusListener implements RedisPubSubListener<Object> {
     public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
     }
 
+    /** 逐个消减 notified 集合；全部就绪后触发 onSubscribe/onUnsubscribe。 */
     @Override
     public void onStatus(PubSubType type, CharSequence channel) {
         notified.remove(channel.toString());

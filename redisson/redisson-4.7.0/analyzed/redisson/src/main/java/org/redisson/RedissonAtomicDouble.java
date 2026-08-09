@@ -36,13 +36,16 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
+ * 基于 Redis {@code INCRBYFLOAT} 的分布式 {@link RAtomicDouble} 实现。
+ * <p>提供线程安全的分布式浮点计数器，支持 CAS、条件删除与带界递增。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDouble {
 
+    /** @param commandExecutor 异步 Redis 命令执行器
+     *  @param name Redis 键名
+     */
     public RedissonAtomicDouble(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
@@ -52,6 +55,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
         return get(compareAndDeleteAsync(args));
     }
 
+    /** Lua：当前值满足比较条件时删除键。 */
     @Override
     public RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs args) {
         Objects.requireNonNull(args, "Args can't be null");
@@ -88,6 +92,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
         return get(addAndGetAsync(delta));
     }
 
+    /** {@code INCRBYFLOAT} 原子加 delta 并返回新值。 */
     @Override
     public RFuture<Double> addAndGetAsync(double delta) {
         if (delta == 0) {
@@ -101,6 +106,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
         return get(compareAndSetAsync(expect, update));
     }
 
+    /** Lua CAS：当前值等于 expect（或键不存在且 expect 为 0）时设为 update。 */
     @Override
     public RFuture<Boolean> compareAndSetAsync(double expect, double update) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -142,6 +148,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
                 Collections.<Object>singletonList(getRawName()));
     }
     
+    /** 读取当前浮点值；键不存在时返回 0。 */
     @Override
     public RFuture<Double> getAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GET_DOUBLE, getRawName());
@@ -183,6 +190,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
         return get(incrementAndGetAsync(args));
     }
 
+    /** {@code INCREX} 带上下界、饱和与过期参数的浮点递增。 */
     @Override
     public RFuture<Double> incrementAndGetAsync(DoubleIncrementArgs args) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCREX_DOUBLE, createIncrementParams(args));
@@ -262,6 +270,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
         get(setAsync(newValue));
     }
 
+    /** 直接 SET 新值。 */
     @Override
     public RFuture<Void> setAsync(double newValue) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.SET, getRawName(), BigDecimal.valueOf(newValue).toPlainString());
@@ -272,6 +281,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
         return get(setIfLessAsync(less, value));
     }
     
+    /** 当前值小于 {@code less} 时设为 {@code value}。 */
     @Override
     public RFuture<Boolean> setIfLessAsync(double less, double value) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -290,6 +300,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
         return get(setIfGreaterAsync(greater, value));
     }
     
+    /** 当前值大于 {@code greater} 时设为 {@code value}。 */
     @Override
     public RFuture<Boolean> setIfGreaterAsync(double greater, double value) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -307,6 +318,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
         return Double.toString(get());
     }
 
+    /** {@link IncrByListener} 订阅 {@code __keyevent@*:incrby} 键空间通知。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof IncrByListener) {

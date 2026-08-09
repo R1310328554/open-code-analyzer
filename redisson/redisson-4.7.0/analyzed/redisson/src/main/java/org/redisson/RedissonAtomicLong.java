@@ -35,13 +35,16 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
+ * 基于 Redis {@code INCR/DECR/INCRBY} 的分布式 {@link RAtomicLong} 实现。
+ * <p>对标 {@link java.util.concurrent.atomic.AtomicLong}，支持 CAS、条件删除与带界递增。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong {
 
+    /** @param commandExecutor 异步 Redis 命令执行器
+     *  @param name Redis 键名
+     */
     public RedissonAtomicLong(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
@@ -51,6 +54,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return get(compareAndDeleteAsync(args));
     }
 
+    /** Lua：当前值满足比较条件时删除键。 */
     @Override
     public RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs args) {
         Objects.requireNonNull(args, "Args can't be null");
@@ -86,6 +90,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return get(addAndGetAsync(delta));
     }
 
+    /** {@code INCRBY} 原子加 delta 并返回新值。 */
     @Override
     public RFuture<Long> addAndGetAsync(long delta) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getRawName(), delta);
@@ -96,6 +101,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return get(compareAndSetAsync(expect, update));
     }
 
+    /** Lua CAS：当前值等于 expect（或键不存在且 expect 为 0）时设为 update。 */
     @Override
     public RFuture<Boolean> compareAndSetAsync(long expect, long update) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -139,6 +145,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return get(getAsync());
     }
 
+    /** 读取当前长整型值；键不存在时返回 0。 */
     @Override
     public RFuture<Long> getAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GET_LONG, getRawName());
@@ -180,6 +187,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return get(incrementAndGetAsync(args));
     }
 
+    /** {@code INCREX} 带上下界、饱和与过期参数的整型递增。 */
     @Override
     public RFuture<Long> incrementAndGetAsync(LongIncrementArgs args) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCREX_LONG, createIncrementParams(args));
@@ -250,6 +258,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         get(setAsync(newValue));
     }
 
+    /** 直接 SET 新值。 */
     @Override
     public RFuture<Void> setAsync(long newValue) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.SET, getRawName(), newValue);
@@ -260,6 +269,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return get(setIfLessAsync(less, value));
     }
     
+    /** 当前值小于 {@code less} 时设为 {@code value}。 */
     @Override
     public RFuture<Boolean> setIfLessAsync(long less, long value) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -278,6 +288,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return get(setIfGreaterAsync(greater, value));
     }
     
+    /** 当前值大于 {@code greater} 时设为 {@code value}。 */
     @Override
     public RFuture<Boolean> setIfGreaterAsync(long greater, long value) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -295,6 +306,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
         return Long.toString(get());
     }
 
+    /** {@link IncrByListener} 订阅 {@code __keyevent@*:incrby} 键空间通知。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof IncrByListener) {

@@ -20,9 +20,10 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
 /**
+ * PSUBSCRIBE/PUNSUBSCRIBE 状态事件适配器。
+ * <p>将 Redis Pub/Sub 状态转为 {@link PatternStatusListener} 回调。
  *
  * @author Nikita Koksharov
- *
  */
 public class PubSubPatternStatusListener implements RedisPubSubListener<Object> {
 
@@ -38,6 +39,7 @@ public class PubSubPatternStatusListener implements RedisPubSubListener<Object> 
         this.name = l.name;
     }
 
+    /** @param name 监听的模式名 */
     public PubSubPatternStatusListener(PatternStatusListener listener, String name) {
         super();
         this.listener = listener;
@@ -52,6 +54,7 @@ public class PubSubPatternStatusListener implements RedisPubSubListener<Object> 
     public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
     }
 
+    /** 频道名等于模式名时触发 onPSubscribe/onPUnsubscribe。 */
     @Override
     public void onStatus(PubSubType type, CharSequence channel) {
         if (channel.toString().equals(name)) {

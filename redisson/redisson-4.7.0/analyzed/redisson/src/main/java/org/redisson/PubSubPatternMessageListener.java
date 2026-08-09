@@ -20,10 +20,10 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
 /**
+ * PSUBSCRIBE 模式消息监听器：将匹配的模式消息交给 {@link PatternMessageListener}。
  *
  * @author Nikita Koksharov
- *
- * @param <V> value
+ * @param <V> 消息体类型
  */
 public class PubSubPatternMessageListener<V> implements RedisPubSubListener<V> {
 
@@ -35,6 +35,7 @@ public class PubSubPatternMessageListener<V> implements RedisPubSubListener<V> {
         return name;
     }
 
+    /** @param name 订阅的模式名（如 {@code user:*}） */
     public PubSubPatternMessageListener(Class<V> type, PatternMessageListener<V> listener, String name) {
         super();
         this.listener = listener;
@@ -50,6 +51,7 @@ public class PubSubPatternMessageListener<V> implements RedisPubSubListener<V> {
     public void onMessage(CharSequence channel, V message) {
     }
 
+    /** 模式名匹配且消息类型正确时转发给 listener。 */
     @Override
     public void onPatternMessage(CharSequence pattern, CharSequence channel, V message) {
         // could be subscribed to multiple channels

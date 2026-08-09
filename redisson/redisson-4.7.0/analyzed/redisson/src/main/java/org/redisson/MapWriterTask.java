@@ -21,12 +21,14 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Write-Behind 队列中的可序列化写入任务。
+ * <p>{@link Remove} 表示批量删除键；{@link Add} 表示批量 put。
  *
+ * @author Nikita Koksharov
  */
 public class MapWriterTask implements Serializable {
 
+    /** 删除键任务：{@link #getKeys()} 为待删键集合。 */
     public static class Remove extends MapWriterTask {
 
         public Remove() {
@@ -42,6 +44,7 @@ public class MapWriterTask implements Serializable {
         
     }
 
+    /** 新增/更新任务：{@link #getMap()} 为待写入键值对。 */
     public static class Add extends MapWriterTask {
 
         public Add() {
@@ -63,26 +66,32 @@ public class MapWriterTask implements Serializable {
     public MapWriterTask() {
     }
     
+    /** 单键删除任务。 */
     public MapWriterTask(Object key) {
         this.keys = Collections.singletonList(key);
     }
     
+    /** 单键 put 任务。 */
     public MapWriterTask(Object key, Object value) {
         this.map = Collections.singletonMap(key, value);
     }
     
+    /** 批量 put 任务。 */
     public MapWriterTask(Map<?, ?> map) {
         this.map = map;
     }
     
+    /** 批量删除任务。 */
     public MapWriterTask(Collection<?> keys) {
         this.keys = keys;
     }
 
+    /** 返回待删除键集合（Remove 任务）。 */
     public <V> Collection<V> getKeys() {
         return (Collection<V>) keys;
     }
     
+    /** 返回待写入键值映射（Add 任务）。 */
     public <K, V> Map<K, V> getMap() {
         return (Map<K, V>) map;
     }

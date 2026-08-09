@@ -19,27 +19,32 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * Redis Cluster 多 slot 命令的 {@link Integer} 结果聚合回调。
+ * <p>对各 slot 返回值求和；可选固定 {@link #createParams} 参数覆盖默认行为。
  *
  * @author Nikita Koksharov
- *
  */
 public class IntegerSlotCallback implements SlotCallback<Integer, Integer> {
 
     private final Object[] params;
 
+    /** 使用默认参数策略构造。 */
     public IntegerSlotCallback() {
         this(null);
     }
 
+    /** @param params 若非 null，{@link #createParams} 始终返回该固定参数数组 */
     public IntegerSlotCallback(Object[] params) {
         this.params = params;
     }
 
+    /** 对各 slot 返回的整型值求和。 */
     @Override
     public Integer onResult(Collection<Integer> result) {
         return result.stream().mapToInt(r -> r).sum();
     }
 
+    /** 若构造时指定了固定参数则直接返回，否则委托 {@link SlotCallback} 默认实现。 */
     @Override
     public Object[] createParams(List<Object> params) {
         if (this.params != null) {

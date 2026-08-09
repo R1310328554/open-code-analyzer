@@ -20,14 +20,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 延迟队列/优先级队列的跨节点 {@link QueueTransferTask} 注册表。
+ * <p>同名任务共享实例并通过引用计数复用；计数归零时停止任务。
  *
+ * @author Nikita Koksharov
  */
 public class QueueTransferService {
 
     private final Map<String, QueueTransferTask> tasks = new ConcurrentHashMap<>();
     
+    /** 注册或复用名为 {@code name} 的转移任务；首次调用时 {@link QueueTransferTask#start()}。 */
     public void schedule(String name, QueueTransferTask task) {
         tasks.compute(name, (k, t) -> {
             if (t == null) {
@@ -39,6 +41,7 @@ public class QueueTransferService {
         });
     }
     
+    /** 递减引用计数；归零时 {@link QueueTransferTask#stop()} 并移除。 */
     public void remove(String name) {
         AtomicReference<QueueTransferTask> ref = new AtomicReference<>();
         tasks.compute(name, (k, task) -> {

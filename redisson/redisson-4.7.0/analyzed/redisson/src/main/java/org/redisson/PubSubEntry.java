@@ -18,18 +18,23 @@ package org.redisson;
 import java.util.concurrent.CompletableFuture;
 
 /**
+ * Pub/Sub 订阅条目的引用计数与完成信号。
+ * <p>{@link #acquire}/{@link #release} 管理并发订阅；{@link #getPromise} 在订阅就绪时完成。
  *
- * Nikita Koksharov
- *
+ * @author Nikita Koksharov
  */
 public interface PubSubEntry<E> {
 
+    /** 增加一次引用（默认 1）。 */
     void acquire();
 
+    /** 增加指定数量的引用。 */
     void acquire(int permits);
 
+    /** 释放引用并返回剩余计数。 */
     int release();
 
+    /** 订阅完成或失败时完成的 Future。 */
     CompletableFuture<E> getPromise();
 
 }

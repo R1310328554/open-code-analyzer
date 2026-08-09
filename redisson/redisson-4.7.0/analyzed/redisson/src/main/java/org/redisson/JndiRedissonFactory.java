@@ -25,13 +25,14 @@ import java.io.IOException;
 import java.util.Hashtable;
 
 /**
- * Redisson object factory used to register instance in JNDI registry. 
- * 
- * @author Nikita Koksharov
+ * JNDI {@link ObjectFactory}：从 Reference 中的 YAML 配置路径创建 {@link RedissonClient}。
+ * <p>适用于应用服务器将 Redisson 实例绑定到 JNDI 后供组件查找。
  *
+ * @author Nikita Koksharov
  */
 public class JndiRedissonFactory implements ObjectFactory {
 
+    /** 解析 JNDI {@link Reference} 的 {@code configPath} 地址并构建客户端。 */
     @Override
     public Object getObjectInstance(Object obj, Name name, Context nameCtx, Hashtable<?, ?> environment)
             throws Exception {
@@ -40,6 +41,11 @@ public class JndiRedissonFactory implements ObjectFactory {
         return buildClient(addr.getContent().toString());
     }
     
+    /** 从 YAML 文件加载 {@link Config} 并调用 {@link Redisson#create}。
+     *
+     * @param configPath Redisson YAML 配置文件路径
+     * @throws NamingException 配置解析或客户端创建失败
+     */
     protected RedissonClient buildClient(String configPath) throws NamingException {
         Config config = null;
         try {
