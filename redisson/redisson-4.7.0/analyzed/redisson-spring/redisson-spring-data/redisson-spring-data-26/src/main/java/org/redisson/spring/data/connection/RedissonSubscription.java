@@ -33,21 +33,29 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
+ * Spring Data Redis Pub/Sub {@link AbstractSubscription} 的 Redisson 实现。
+ * <p>通过 {@link PublishSubscribeService} 管理频道/模式订阅，
+将 Redisson 消息转为 {@link DefaultMessage} 回调 {@link MessageListener}；
+若监听器为 {@link SubscriptionListener}，则同步订阅/取消订阅状态事件。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonSubscription extends AbstractSubscription {
 
+    /** 异步 Redis 命令执行器。 */
     private final CommandAsyncExecutor commandExecutor;
+    /** Redisson Pub/Sub 订阅服务。 */
     private final PublishSubscribeService subscribeService;
 
+    /** 绑定异步命令执行器与 Spring 消息监听器。 */
     public RedissonSubscription(CommandAsyncExecutor commandExecutor, MessageListener listener) {
         super(listener, null, null);
         this.commandExecutor = commandExecutor;
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
 
+    /** 对每个频道注册 {@link BaseRedisPubSubListener} 并阻塞等待订阅完成。 */
     @Override
     protected void doSubscribe(byte[]... channels) {
         List<CompletableFuture<?>> list = new ArrayList<>();
@@ -56,6 +64,7 @@ public class RedissonSubscription extends AbstractSubscription {
             CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
                 @Override
                 public void onMessage(CharSequence ch, Object message) {
+                    // 忽略非目标频道的回调（连接复用时可能收到其他频道消息）。
                     if (!Arrays.equals(((ChannelName) ch).getName(), channel)) {
                         return;
                     }
@@ -71,6 +80,7 @@ public class RedissonSubscription extends AbstractSubscription {
                         return;
                     }
 
+                    // SubscriptionListener：记录待通知的已订阅频道。
                     if (getListener() instanceof SubscriptionListener) {
                         subscribed.add(channel);
                     }
@@ -88,6 +98,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 取消指定频道订阅；{@link SubscriptionListener} 时回调 onChannelUnsubscribed。 */
     @Override
     protected void doUnsubscribe(boolean all, byte[]... channels) {
         for (byte[] channel : channels) {
@@ -102,6 +113,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 按模式订阅（PSUBSCRIBE），回调携带 pattern 与 channel。 */
     @Override
     protected void doPsubscribe(byte[]... patterns) {
         List<CompletableFuture<?>> list = new ArrayList<>();
@@ -110,6 +122,7 @@ public class RedissonSubscription extends AbstractSubscription {
             CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
                 @Override
                 public void onPatternMessage(CharSequence pattern, CharSequence ch, Object message) {
+                    // 忽略非目标 pattern 的回调。
                     if (!Arrays.equals(((ChannelName) pattern).getName(), channel)) {
                         return;
                     }
@@ -141,6 +154,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 将 String 或 byte[] 载荷统一为字节数组。 */
     private byte[] toBytes(Object message) {
         if (message instanceof String) {
             return  ((String) message).getBytes();
@@ -148,6 +162,7 @@ public class RedissonSubscription extends AbstractSubscription {
         return (byte[]) message;
     }
 
+    /** PUNSUBSCRIBE：取消指定模式订阅；{@link SubscriptionListener} 时回调 onPatternUnsubscribed。 */
     @Override
     protected void doPUnsubscribe(boolean all, byte[]... patterns) {
         for (byte[] pattern : patterns) {
@@ -162,6 +177,7 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    /** 关闭时取消所有频道与模式订阅。 */
     @Override
     protected void doClose() {
         doUnsubscribe(false, getChannels().toArray(new byte[getChannels().size()][]));
