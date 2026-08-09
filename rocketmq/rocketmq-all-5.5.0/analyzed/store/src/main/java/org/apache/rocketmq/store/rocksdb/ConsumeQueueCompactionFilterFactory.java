@@ -24,19 +24,26 @@ import org.rocksdb.AbstractCompactionFilter;
 import org.rocksdb.AbstractCompactionFilterFactory;
 import org.rocksdb.RemoveConsumeQueueCompactionFilter;
 
+/**
+ * 消费队列 Compaction 过滤器工厂：Compaction 时按最小物理偏移清理过期 cqUnit。
+ */
 public class ConsumeQueueCompactionFilterFactory extends AbstractCompactionFilterFactory<RemoveConsumeQueueCompactionFilter> {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKSDB_LOGGER_NAME);
+    /** 提供当前最小 CommitLog 物理偏移。 */
     private final LongSupplier minPhyOffsetSupplier;
 
+        /** @param minPhyOffsetSupplier 最小物理偏移供应器 */
     public ConsumeQueueCompactionFilterFactory(final LongSupplier minPhyOffsetSupplier) {
         this.minPhyOffsetSupplier = minPhyOffsetSupplier;
     }
 
+    /** Compaction 过滤器工厂名称。 */
     @Override
     public String name() {
         return "ConsumeQueueCompactionFilterFactory";
     }
 
+    /** 创建带当前最小物理偏移的 Compaction 过滤器。 */
     @Override
     public RemoveConsumeQueueCompactionFilter createCompactionFilter(final AbstractCompactionFilter.Context context) {
         long minPhyOffset = this.minPhyOffsetSupplier.getAsLong();

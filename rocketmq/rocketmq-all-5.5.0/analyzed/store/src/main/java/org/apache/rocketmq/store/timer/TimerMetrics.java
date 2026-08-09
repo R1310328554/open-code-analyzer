@@ -49,13 +49,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * 定时消息指标：按 Topic 与延迟分布桶统计定时消息数量。
+ */
 public class TimerMetrics extends ConfigManager {
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
     private transient final Lock lock = new ReentrantLock();
 
+    /** Topic -> 定时消息计数。 */
     private final ConcurrentMap<String, Metric> timingCount = new ConcurrentHashMap<>(1024);
 
+    /** 延迟桶（秒）-> 分布计数。 */
     private final ConcurrentMap<Integer, Metric> timingDistribution = new ConcurrentHashMap<>(1024);
 
     @SuppressWarnings("DoubleBraceInitialization")
@@ -71,17 +77,21 @@ public class TimerMetrics extends ConfigManager {
         }};
     private final DataVersion dataVersion = new DataVersion();
 
+    /** 指标 JSON 持久化路径。 */
     private final String configPath;
 
+        /** @param configPath 指标持久化路径 */
     public TimerMetrics(String configPath) {
         this.configPath = configPath;
     }
 
+    /** 按延迟分布桶累加计数。 */
     public long updateDistPair(int period, int value) {
         Metric distPair = getDistPair(period);
         return distPair.getCount().addAndGet(value);
     }
 
+    /** 按真实 Topic 累加定时消息计数并刷新版本。 */
     public long addAndGet(MessageExt msg, int value) {
         String topic = msg.getProperty(MessageConst.PROPERTY_REAL_TOPIC);
         Metric pair = getTopicPair(topic);
@@ -90,6 +100,7 @@ public class TimerMetrics extends ConfigManager {
         return pair.getCount().addAndGet(value);
     }
 
+    /** 获取或创建延迟分布桶指标。 */
     public Metric getDistPair(Integer period) {
         Metric pair = timingDistribution.get(period);
         if (null != pair) {
@@ -103,6 +114,7 @@ public class TimerMetrics extends ConfigManager {
         return pair;
     }
 
+    /** 获取或创建 Topic 级指标。 */
     public Metric getTopicPair(String topic) {
         Metric pair = timingCount.get(topic);
         if (null != pair) {
@@ -116,14 +128,17 @@ public class TimerMetrics extends ConfigManager {
         return pair;
     }
 
+    /** 返回延迟分布桶边界列表（秒）。 */
     public List<Integer> getTimerDistList() {
         return this.timerDist;
     }
 
+    /** 设置延迟分布桶边界。 */
     public void setTimerDistList(List<Integer> timerDist) {
         this.timerDist = timerDist;
     }
 
+    /** 查询指定 Topic 定时消息累计数。 */
     public long getTimingCount(String topic) {
         Metric pair = timingCount.get(topic);
         if (null == pair) {
@@ -133,6 +148,7 @@ public class TimerMetrics extends ConfigManager {
         }
     }
 
+    /** 返回全部 Topic 定时计数映射。 */
     public Map<String, Metric> getTimingCount() {
         return timingCount;
     }
@@ -144,15 +160,18 @@ public class TimerMetrics extends ConfigManager {
         writer.write(JSON.toJSONString(wrapper, JSONWriter.Feature.BrowserCompatible));
     }
 
-    @Override public String encode() {
+    @Override     /** {@inheritDoc} */
+    public String encode() {
         return encode(false);
     }
 
-    @Override public String configFilePath() {
+    @Override     /** {@inheritDoc} */
+    public String configFilePath() {
         return configPath;
     }
 
-    @Override public void decode(String jsonString) {
+    @Override     /** {@inheritDoc} 从 JSON 恢复指标。 */
+    public void decode(String jsonString) {
         if (jsonString != null) {
             TimerMetricsSerializeWrapper timerMetricsSerializeWrapper = TimerMetricsSerializeWrapper.fromJson(jsonString, TimerMetricsSerializeWrapper.class);
             if (timerMetricsSerializeWrapper != null) {
@@ -162,17 +181,20 @@ public class TimerMetrics extends ConfigManager {
         }
     }
 
-    @Override public String encode(boolean prettyFormat) {
+    @Override     /** {@inheritDoc} */
+    public String encode(boolean prettyFormat) {
         TimerMetricsSerializeWrapper metricsSerializeWrapper = new TimerMetricsSerializeWrapper();
         metricsSerializeWrapper.setDataVersion(this.dataVersion);
         metricsSerializeWrapper.setTimingCount(this.timingCount);
         return metricsSerializeWrapper.toJson(prettyFormat);
     }
 
+    /** 返回指标数据版本。 */
     public DataVersion getDataVersion() {
         return dataVersion;
     }
 
+    /** 清理不在 Topic 配置中的非系统/LMQ 指标。 */
     public void cleanMetrics(Set<String> topics) {
         if (topics == null || topics.isEmpty()) {
             return;
@@ -193,6 +215,7 @@ public class TimerMetrics extends ConfigManager {
         }
     }
 
+    /** 移除指定 Topic 的定时计数。 */
     public boolean removeTimingCount(String topic) {
         try {
             timingCount.remove(topic);
@@ -224,7 +247,8 @@ public class TimerMetrics extends ConfigManager {
         }
     }
 
-    @Override public synchronized void persist() {
+    @Override     /** 原子备份并持久化指标 JSON 文件。 */
+    public synchronized void persist() {
         try {
             // bak metrics file
             String config = configFilePath();

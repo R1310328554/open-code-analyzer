@@ -17,29 +17,37 @@
 
 package org.apache.rocketmq.store.queue.offset;
 
+/**
+ * 消费队列与 CommitLog 偏移边界条目（最大/最小）。
+ */
 public class OffsetEntry {
     /**
-     * Topic identifier. For now, it's topic name directly. In the future, we should use fixed length topic identifier.
+     * Topic 标识；当前直接使用 Topic 名称，后续可改为定长标识。
      */
+    /** Topic 标识。 */
     public String topic;
 
     /**
-     * Queue ID
+     * 队列 ID。
      */
+    /** 队列 ID。 */
     public int queueId;
 
     /**
-     * Flag if the entry is for maximum or minimum
+     * 标记该条目表示最大值还是最小值。
      */
+    /** 最大/最小类型。 */
     public OffsetEntryType type;
 
     /**
-     * Maximum or minimum consume-queue offset.
+     * 消费队列的最大或最小偏移量。
      */
+    /** 消费队列偏移。 */
     public long offset;
 
     /**
-     * Maximum or minimum commit-log offset.
+     * CommitLog 的最大或最小物理偏移。
      */
+    /** CommitLog 物理偏移。 */
     public long commitLogOffset;
 }

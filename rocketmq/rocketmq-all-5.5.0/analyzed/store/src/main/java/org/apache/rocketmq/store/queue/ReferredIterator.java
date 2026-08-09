@@ -19,12 +19,17 @@ package org.apache.rocketmq.store.queue;
 
 import java.util.Iterator;
 
+/**
+ * 可释放资源的迭代器：遍历完成后须调用 {@link #release()} 释放底层引用。
+ */
 public interface ReferredIterator<T> extends Iterator<T> {
 
     /**
-     * Release the referred resources.
+     * 释放迭代器所引用的底层资源。
      */
+    /** 释放迭代器引用的底层资源。 */
     void release();
 
+    /** 返回下一元素并释放资源。 */
     T nextAndRelease();
 }

@@ -31,23 +31,34 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.apache.rocketmq.store.logfile.DefaultMappedFile;
 
+/**
+ * 定时消息检查点：mmap 持久化读取进度、TimerLog 刷盘位与队列偏移。
+ */
 public class TimerCheckpoint {
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final RandomAccessFile randomAccessFile;
     private final FileChannel fileChannel;
     private final MappedByteBuffer mappedByteBuffer;
-    private volatile long lastReadTimeMs = 0; //if it is slave, need to read from master
+    /** 最近一次扫描时间轮的时间（从节点时从主节点同步）。 */
+    private volatile long lastReadTimeMs = 0;
+    /** TimerLog 已刷盘物理位置。 */
     private volatile long lastTimerLogFlushPos = 0;
+    /** TimerQueue 消费偏移。 */
     private volatile long lastTimerQueueOffset = 0;
-    private volatile long masterTimerQueueOffset = 0; // read from master
+    /** 主节点 TimerQueue 偏移（从节点读取）。 */
+    private volatile long masterTimerQueueOffset = 0;
+    /** 检查点数据版本。 */
     private final DataVersion dataVersion = new DataVersion();
 
+        /** 空构造（decode 用）。 */
     public TimerCheckpoint() {
         this.randomAccessFile = null;
         this.fileChannel = null;
         this.mappedByteBuffer = null;
     }
 
+        /** 打开或创建 mmap 检查点文件。 */
     public TimerCheckpoint(final String scpPath) throws IOException {
         File file = new File(scpPath);
         UtilAll.ensureDirOK(file.getParent());
@@ -83,6 +94,7 @@ public class TimerCheckpoint {
         }
     }
 
+    /** 刷盘并释放 mmap/文件句柄。 */
     public void shutdown() {
 
         try {
@@ -105,6 +117,7 @@ public class TimerCheckpoint {
         }
     }
 
+    /** 将检查点字段写入 mmap 并 force。 */
     public void flush() {
         if (null == this.mappedByteBuffer) {
             return;
@@ -120,10 +133,12 @@ public class TimerCheckpoint {
         this.mappedByteBuffer.force();
     }
 
+    /** 返回最近读取时间轮时间。 */
     public long getLastReadTimeMs() {
         return lastReadTimeMs;
     }
 
+    /** 序列化检查点为 ByteBuffer。 */
     public static ByteBuffer encode(TimerCheckpoint another) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(56);
         byteBuffer.putLong(another.getLastReadTimeMs());
@@ -138,6 +153,7 @@ public class TimerCheckpoint {
         return byteBuffer;
     }
 
+    /** 从 ByteBuffer 反序列化检查点。 */
     public static TimerCheckpoint decode(ByteBuffer byteBuffer) {
         TimerCheckpoint tmp = new TimerCheckpoint();
         tmp.setLastReadTimeMs(byteBuffer.getLong());
@@ -153,38 +169,47 @@ public class TimerCheckpoint {
         return tmp;
     }
 
+    /** 设置最近读取时间轮时间。 */
     public void setLastReadTimeMs(long lastReadTimeMs) {
         this.lastReadTimeMs = lastReadTimeMs;
     }
 
+    /** 返回 TimerLog 刷盘位置。 */
     public long getLastTimerLogFlushPos() {
         return lastTimerLogFlushPos;
     }
 
+    /** 设置 TimerLog 刷盘位置。 */
     public void setLastTimerLogFlushPos(long lastTimerLogFlushPos) {
         this.lastTimerLogFlushPos = lastTimerLogFlushPos;
     }
 
+    /** 返回 TimerQueue 偏移。 */
     public long getLastTimerQueueOffset() {
         return lastTimerQueueOffset;
     }
 
+    /** 设置 TimerQueue 偏移。 */
     public void setLastTimerQueueOffset(long lastTimerQueueOffset) {
         this.lastTimerQueueOffset = lastTimerQueueOffset;
     }
 
+    /** 返回主节点 TimerQueue 偏移。 */
     public long getMasterTimerQueueOffset() {
         return masterTimerQueueOffset;
     }
 
+    /** 设置主节点 TimerQueue 偏移。 */
     public void setMasterTimerQueueOffset(final long masterTimerQueueOffset) {
         this.masterTimerQueueOffset = masterTimerQueueOffset;
     }
 
+    /** 递增数据版本号。 */
     public void updateDataVersion(long stateVersion) {
         dataVersion.nextVersion(stateVersion);
     }
 
+    /** 返回数据版本对象。 */
     public DataVersion getDataVersion() {
         return dataVersion;
     }

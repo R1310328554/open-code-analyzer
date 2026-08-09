@@ -38,15 +38,21 @@ import static org.apache.rocketmq.common.config.AbstractRocksDBStorage.CTRL_1;
 import static org.apache.rocketmq.common.config.AbstractRocksDBStorage.CTRL_2;
 
 /**
- * We use RocksDBConsumeQueueTable to store cqUnit.
+ * 基于 RocksDB 的消费队列表：持久化 cqUnit 键值对。
+ */
+/**
+ * RocksDB 消费队列表：构建/查询/删除 cqUnit，支持按时间与物理偏移二分查找。
  */
 public class RocksDBConsumeQueueTable {
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** RocksDB 专用日志。 */
     private static final Logger ROCKSDB_LOG = LoggerFactory.getLogger(LoggerName.ROCKSDB_LOGGER_NAME);
+    /** 存储错误日志。 */
     private static final Logger ERROR_LOG = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
 
     /**
-     * Rocksdb ConsumeQueue's store unit. Format:
+     * RocksDB 消费队列存储单元格式说明。
      *
      * <pre>
      * ┌─────────────────────────┬───────────┬───────────────────────┬───────────┬───────────┬───────────┬───────────────────────┐
@@ -65,13 +71,13 @@ public class RocksDBConsumeQueueTable {
      * │                                                    Value Unit                         │
      * │                                                                                       │
      * </pre>
-     * ConsumeQueue's store unit. Size:
-     * CommitLog Physical Offset(8) + Body Size(4) + Tag HashCode(8) + Msg Store Time(8) = 28 Bytes
+     * 单条 value 固定 28 字节：物理偏移(8)+消息体长(4)+Tag哈希(8)+存储时间(8)。
      */
     private static final int PHY_OFFSET_OFFSET = 0;
     private static final int PHY_MSG_LEN_OFFSET = 8;
     private static final int MSG_TAG_HASHCODE_OFFSET = 12;
     private static final int MSG_STORE_TIME_SIZE_OFFSET = 20;
+    /** cqUnit value 固定长度（28 字节）。 */
     public static final int CQ_UNIT_SIZE = 8 + 4 + 8 + 8;
 
     /**
@@ -90,20 +96,26 @@ public class RocksDBConsumeQueueTable {
      */
     private static final int DELETE_CQ_KEY_LENGTH_WITHOUT_TOPIC_BYTES = 4 + 1 + 1 + 4 + 1;
 
+    /** 底层 RocksDB 存储引擎。 */
     private final ConsumeQueueRocksDBStorage rocksDBStorage;
+    /** 所属 MessageStore。 */
     private final DefaultMessageStore messageStore;
 
+    /** 默认列族句柄（cqUnit）。 */
     private ColumnFamilyHandle defaultCFH;
 
+        /** 绑定 RocksDB 存储与 MessageStore。 */
     public RocksDBConsumeQueueTable(ConsumeQueueRocksDBStorage rocksDBStorage, DefaultMessageStore messageStore) {
         this.rocksDBStorage = rocksDBStorage;
         this.messageStore = messageStore;
     }
 
+    /** 加载默认列族句柄。 */
     public void load() {
         this.defaultCFH = this.rocksDBStorage.getDefaultCFHandle();
     }
 
+    /** 构建 cq key/value 并写入 WriteBatch。 */
     public void buildAndPutCQByteBuffer(final Pair<ByteBuffer, ByteBuffer> cqBBPair, final DispatchEntry request,
         final WriteBatch writeBatch) throws RocksDBException {
         final ByteBuffer cqKey = cqBBPair.getObject1();
@@ -115,6 +127,7 @@ public class RocksDBConsumeQueueTable {
         writeBatch.put(this.defaultCFH, cqKey, cqValue);
     }
 
+    /** 按 topic/queueId/cqOffset 读取 cq value。 */
     public ByteBuffer getCQInKV(final String topic, final int queueId, final long cqOffset) throws RocksDBException {
         final byte[] topicBytes = topic.getBytes(StandardCharsets.UTF_8);
         final ByteBuffer keyBB = buildCQKeyByteBuffer(topicBytes, queueId, cqOffset);
@@ -122,6 +135,7 @@ public class RocksDBConsumeQueueTable {
         return (value != null) ? ByteBuffer.wrap(value) : null;
     }
 
+    /** 批量读取连续 cq offset 的 value 列表。 */
     public List<ByteBuffer> rangeQuery(final String topic, final int queueId, final long startIndex, final int num) throws RocksDBException {
         final byte[] topicBytes = topic.getBytes(StandardCharsets.UTF_8);
         final List<ColumnFamilyHandle> defaultCFHList = new ArrayList<>(num);
@@ -164,11 +178,12 @@ public class RocksDBConsumeQueueTable {
     }
 
     /**
-     * When topic is deleted, we clean up its CqUnit in rocksdb.
-     * @param topic
-     * @param queueId
-     * @throws RocksDBException
+     * Topic 删除时清理其在 RocksDB 中的 CqUnit 记录。
+     * @param topic Topic 名称
+     * @param queueId 队列 ID
+     * @throws RocksDBException RocksDB 操作异常
      */
+    /** 删除 topic+queueId 下全部 cq 键范围。 */
     public void destroyCQ(final String topic, final int queueId, WriteBatch writeBatch) throws RocksDBException {
         final byte[] topicBytes = topic.getBytes(StandardCharsets.UTF_8);
         final ByteBuffer cqStartKey = buildDeleteCQKey(true, topicBytes, queueId);
@@ -179,6 +194,7 @@ public class RocksDBConsumeQueueTable {
         log.info("Rocksdb consumeQueue table delete topic. {}, {}", topic, queueId);
     }
 
+    /** 在 cq 中按消息存储时间二分查找 offset。 */
     public long binarySearchInCQByTime(String topic, int queueId, long high, long low, long timestamp,
         long minPhysicOffset, BoundaryType boundaryType) throws RocksDBException {
         long result = -1L;
@@ -305,6 +321,7 @@ public class RocksDBConsumeQueueTable {
         return result;
     }
 
+    /** 在 cq 中按 CommitLog 物理偏移二分查找。 */
     public PhyAndCQOffset binarySearchInCQ(String topic, int queueId, long high, long low, long targetPhyOffset,
         boolean min) throws RocksDBException {
         long resultCQOffset = -1L;
@@ -344,6 +361,7 @@ public class RocksDBConsumeQueueTable {
         return new PhyAndCQOffset(resultPhyOffset, resultCQOffset);
     }
 
+    /** 分配 Direct ByteBuffer 键值对供 cq 写入复用。 */
     public static Pair<ByteBuffer, ByteBuffer> getCQByteBufferPair() {
         ByteBuffer cqKey = ByteBuffer.allocateDirect(RocksDBConsumeQueueStore.MAX_KEY_LEN);
         ByteBuffer cqValue = ByteBuffer.allocateDirect(CQ_UNIT_SIZE);

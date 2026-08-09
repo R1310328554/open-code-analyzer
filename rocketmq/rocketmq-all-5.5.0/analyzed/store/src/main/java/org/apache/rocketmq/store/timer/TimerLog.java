@@ -26,10 +26,15 @@ import org.apache.rocketmq.store.SelectMappedBufferResult;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 定时消息日志：基于 MappedFileQueue 追加/读取 Timer 单元。
+ */
 public class TimerLog {
     private static Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** TimerLog 文件尾空白块魔数。 */
     public final static int BLANK_MAGIC_CODE = 0xBBCCDDEE ^ 1880681586 + 8;
     private final static int MIN_BLANK_LEN = 4 + 8 + 4;
+    /** 单条 Timer 单元字节长度。 */
     public final static int UNIT_SIZE = 4  //size
             + 8 //prev pos
             + 4 //magic value
@@ -39,29 +44,38 @@ public class TimerLog {
             + 4 //sizePy
             + 4 //hash code of real topic
             + 8; //reserved value, just in case of
+    /** 消息类 Timer 单元前缀长度。 */
     public final static int UNIT_PRE_SIZE_FOR_MSG = 28;
+    /** 指标类 Timer 单元前缀长度。 */
     public final static int UNIT_PRE_SIZE_FOR_METRIC = 40;
+    /** TimerLog 映射文件队列。 */
     private final MappedFileQueue mappedFileQueue;
 
+    /** 单个映射文件大小。 */
     private final int fileSize;
 
+        /** 指定路径与文件大小。 */
     public TimerLog(final String storePath, final int fileSize) {
         this(storePath, fileSize, null, false);
     }
 
+        /** 完整构造 TimerLog。 */
     public TimerLog(final String storePath, final int fileSize, RunningFlags runningFlags, boolean writeWithoutMmap) {
         this.fileSize = fileSize;
         this.mappedFileQueue = new MappedFileQueue(storePath, fileSize, null, runningFlags, writeWithoutMmap);
     }
 
+    /** 加载 TimerLog 映射文件队列。 */
     public boolean load() {
         return this.mappedFileQueue.load();
     }
 
+    /** 追加字节数组到 TimerLog。 */
     public long append(byte[] data) {
         return append(data, 0, data.length);
     }
 
+    /** 追加字节数组指定区间到 TimerLog。 */
     public long append(byte[] data, int pos, int len) {
         MappedFile mappedFile = this.mappedFileQueue.getLastMappedFile();
         if (null == mappedFile || mappedFile.isFull()) {
@@ -97,6 +111,7 @@ public class TimerLog {
         return currPosition;
     }
 
+    /** 按物理偏移读取 Timer 消息体。 */
     public SelectMappedBufferResult getTimerMessage(long offsetPy) {
         MappedFile mappedFile = mappedFileQueue.findMappedFileByOffset(offsetPy);
         if (null == mappedFile)
@@ -104,6 +119,7 @@ public class TimerLog {
         return mappedFile.selectMappedBuffer((int) (offsetPy % mappedFile.getFileSize()));
     }
 
+    /** 返回包含 offset 的整文件映射缓冲。 */
     public SelectMappedBufferResult getWholeBuffer(long offsetPy) {
         MappedFile mappedFile = mappedFileQueue.findMappedFileByOffset(offsetPy);
         if (null == mappedFile)
@@ -111,10 +127,12 @@ public class TimerLog {
         return mappedFile.selectMappedBuffer(0);
     }
 
+    /** 返回底层 MappedFileQueue。 */
     public MappedFileQueue getMappedFileQueue() {
         return mappedFileQueue;
     }
 
+    /** 刷盘并清理全部映射资源。 */
     public void shutdown() {
         try {
             this.mappedFileQueue.flush(0);
@@ -128,6 +146,7 @@ public class TimerLog {
     // be careful.
     // if the format of timerlog changed, this offset has to be changed too
     // so does the batch writing
+    /** 计算当前文件最后一个 Timer 单元的写入偏移（格式变更时需同步修改）。 */
     public int getOffsetForLastUnit() {
 
         return fileSize - (fileSize - MIN_BLANK_LEN) % UNIT_SIZE - MIN_BLANK_LEN - UNIT_SIZE;

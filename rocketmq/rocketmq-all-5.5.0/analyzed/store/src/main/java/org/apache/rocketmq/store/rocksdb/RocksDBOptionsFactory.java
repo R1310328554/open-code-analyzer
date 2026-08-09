@@ -39,8 +39,12 @@ import org.rocksdb.StringAppendOperator;
 import org.rocksdb.WALRecoveryMode;
 import org.rocksdb.util.SizeUnit;
 
+/**
+ * RocksDB 列族与 DB 选项工厂：为 CQ、Offset、Timer 等场景提供调优配置。
+ */
 public class RocksDBOptionsFactory {
 
+    /** 创建消费队列列族选项（Universal Compaction + Bloom）。 */
     public static ColumnFamilyOptions createCQCFOptions(final MessageStore messageStore,
         ConsumeQueueCompactionFilterFactory consumeQueueCompactionFilterFactory) {
         BlockBasedTableConfig blockBasedTableConfig = new BlockBasedTableConfig().
@@ -98,6 +102,7 @@ public class RocksDBOptionsFactory {
                 setOptimizeFiltersForHits(true);
     }
 
+    /** 创建 offset 列族选项（Level Compaction）。 */
     public static ColumnFamilyOptions createOffsetCFOptions() {
         BlockBasedTableConfig blockBasedTableConfig = new BlockBasedTableConfig().
                 setFormatVersion(5).
@@ -132,6 +137,7 @@ public class RocksDBOptionsFactory {
                 setInplaceUpdateSupport(true);
     }
 
+    /** 创建 Pop 消息列族选项。 */
     public static ColumnFamilyOptions createPopCFOptions() {
         BlockBasedTableConfig blockBasedTableConfig = new BlockBasedTableConfig()
             .setFormatVersion(5)
@@ -184,8 +190,8 @@ public class RocksDBOptionsFactory {
     }
 
     /**
-     * Create a rocksdb db options, the user must take care to close it after closing db.
-     * @return
+     * 创建 RocksDB {@link DBOptions}；关闭 DB 后须由调用方负责关闭该对象。
+     * @return DBOptions 实例
      */
     public static DBOptions createDBOptions() {
         //Turn based on https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide
@@ -218,6 +224,7 @@ public class RocksDBOptionsFactory {
                 setUseDirectReads(false);
     }
 
+    /** 创建 Timer 列族选项。 */
     public static ColumnFamilyOptions createTimerCFOptions() {
         BlockBasedTableConfig blockBasedTableConfig = new BlockBasedTableConfig()
             .setFormatVersion(5)
@@ -260,6 +267,7 @@ public class RocksDBOptionsFactory {
             .setMaxBytesForLevelBase(512 * SizeUnit.MB);
     }
 
+    /** 创建事务列族选项。 */
     public static ColumnFamilyOptions createTransCFOptions() {
         BlockBasedTableConfig blockBasedTableConfig = new BlockBasedTableConfig()
             .setFormatVersion(5)
@@ -311,6 +319,7 @@ public class RocksDBOptionsFactory {
             .setOptimizeFiltersForHits(true);
     }
 
+    /** 创建索引列族选项。 */
     public static ColumnFamilyOptions createIndexCFOptions() {
         BlockBasedTableConfig blockBasedTableConfig = new BlockBasedTableConfig()
             .setFormatVersion(5)

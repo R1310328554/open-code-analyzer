@@ -31,21 +31,30 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
+/**
+ * 消费队列 RocksDB 存储引擎：管理默认 CF 与 offset CF。
+ */
 public class ConsumeQueueRocksDBStorage extends AbstractRocksDBStorage {
 
+    /** offset 列族名称字节。 */
     public static final byte[] OFFSET_COLUMN_FAMILY = "offset".getBytes(StandardCharsets.UTF_8);
 
+    /** 所属 MessageStore。 */
     private final MessageStore messageStore;
+    /** offset 列族句柄。 */
     private volatile ColumnFamilyHandle offsetCFHandle;
 
+    /** Compaction 过滤器工厂。 */
     private ConsumeQueueCompactionFilterFactory compactionFilterFactory;
 
+        /** @param messageStore 所属 MessageStore @param dbPath RocksDB 目录 */
     public ConsumeQueueRocksDBStorage(final MessageStore messageStore, final String dbPath) {
         super(dbPath);
         this.messageStore = messageStore;
         this.readOnly = false;
     }
 
+    /** 初始化 DB 与列族选项。 */
     protected void initOptions() {
         this.options = RocksDBOptionsFactory.createDBOptions();
         super.initOptions();
@@ -59,6 +68,7 @@ public class ConsumeQueueRocksDBStorage extends AbstractRocksDBStorage {
     }
 
     @Override
+    /** 打开 RocksDB 并注册 CQ/Offset 列族。 */
     protected boolean postLoad() {
         try {
             UtilAll.ensureDirOK(this.dbPath);
@@ -87,6 +97,7 @@ public class ConsumeQueueRocksDBStorage extends AbstractRocksDBStorage {
     }
 
     @Override
+    /** 关闭 offset CF 与 compaction 过滤器工厂。 */
     protected void preShutdown() {
         if (this.offsetCFHandle != null) {
             this.offsetCFHandle.close();
@@ -98,23 +109,28 @@ public class ConsumeQueueRocksDBStorage extends AbstractRocksDBStorage {
 
     }
 
+    /** 按 key 读取消费队列 value。 */
     public byte[] getCQ(final byte[] keyBytes) throws RocksDBException {
         return get(this.defaultCFHandle, this.totalOrderReadOptions, keyBytes);
     }
 
+    /** 按 key 读取 offset 列族 value。 */
     public byte[] getOffset(final byte[] keyBytes) throws RocksDBException {
         return get(this.offsetCFHandle, this.totalOrderReadOptions, keyBytes);
     }
 
+    /** 批量 multiGet。 */
     public List<byte[]> multiGet(final List<ColumnFamilyHandle> cfhList,
         final List<byte[]> keys) throws RocksDBException {
         return multiGet(this.totalOrderReadOptions, cfhList, keys);
     }
 
+    /** 批量写入 WriteBatch。 */
     public void batchPut(final WriteBatch batch) throws RocksDBException {
         batchPut(this.writeOptions, batch);
     }
 
+    /** 触发手动 Compaction，清理低于 minPhyOffset 的 cqUnit。 */
     public void manualCompaction(final long minPhyOffset) {
         try {
             manualCompaction(minPhyOffset, this.compactRangeOptions);
@@ -123,10 +139,12 @@ public class ConsumeQueueRocksDBStorage extends AbstractRocksDBStorage {
         }
     }
 
+    /** 创建 offset 列族迭代器。 */
     public RocksIterator seekOffsetCF() {
         return this.db.newIterator(this.offsetCFHandle, this.totalOrderReadOptions);
     }
 
+    /** 返回 offset 列族句柄。 */
     public ColumnFamilyHandle getOffsetCFHandle() {
         return this.offsetCFHandle;
     }

@@ -17,7 +17,12 @@
 
 package org.apache.rocketmq.store.queue.offset;
 
+/**
+ * 偏移条目类型：最大值或最小值。
+ */
 public enum OffsetEntryType {
+    /** 最大值边界。 */
     MAXIMUM,
+    /** 最小值边界。 */
     MINIMUM
 }
