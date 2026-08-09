@@ -18,6 +18,10 @@ package io.quarkus.redisson.client.deployment;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
+ * Redisson 客户端扩展的 Quarkus 构建标记项（{@link SimpleBuildItem}）。
+ * <p>表示 {@link QuarkusRedissonClientProcessor#build} 步骤已完成，
+ * 供其他扩展在构建图中依赖 Redisson 客户端就绪状态。
+ *
  * @author Nikita Koksharov
  */
 public final class RedissonClientItemBuild extends SimpleBuildItem {

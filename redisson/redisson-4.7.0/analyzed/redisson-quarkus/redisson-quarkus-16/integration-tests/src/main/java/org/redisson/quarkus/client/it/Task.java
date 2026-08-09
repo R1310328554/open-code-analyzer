@@ -19,10 +19,14 @@ import java.io.Serializable;
 import java.util.concurrent.Callable;
 
 /**
+ * 可序列化的 {@link java.util.concurrent.Callable} 任务，
+ * 提交到 {@link RScheduledExecutorService} 在 Worker 节点执行。
+ *
  * @author Nikita Koksharov
  */
 public class Task implements Callable<String>, Serializable {
 
+    /** 返回 {@code "hello"} 作为分布式执行结果。 */
     @Override
     public String call() throws Exception {
         return "hello";

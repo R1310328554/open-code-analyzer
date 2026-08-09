@@ -16,12 +16,13 @@
 package org.redisson.quarkus.client.it;
 
 /**
+ * 远程服务接口，供 {@link RRemoteService} 注册与动态代理调用。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RemService {
 
+    /** 远程方法：返回执行结果字符串。 */
     String executeMe();
 
 }

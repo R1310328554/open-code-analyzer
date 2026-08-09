@@ -19,13 +19,15 @@ import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
+ * Quarkus {@link io.quarkus.runtime.annotations.Recorder}：
+ * 在运行时初始化阶段触发 {@link RedissonClientProducer} 创建。
  *
  * @author Nikita Koksharov
- *
  */
 @Recorder
 public class RedissonClientRecorder {
 
+    /** 通过 Arc 容器获取生产者实例，完成 Redisson 客户端初始化。 */
     public void createProducer() {
         Arc.container().instance(RedissonClientProducer.class).get();
     }
