@@ -17,16 +17,29 @@ import static com.taobao.text.ui.Element.row;
 import static com.taobao.text.ui.Element.label;
 
 /**
+ * 带样式（颜色、粗体）的 CLI 用法说明格式化器，用于命令帮助输出。
+ *
  * @author ralf0131 2016-12-14 22:16.
  */
 public class StyledUsageFormatter extends UsageMessageFormatter {
 
+    /** 高亮文字使用的颜色 */
     private Color fontColor;
 
+    /**
+     * @param fontColor 标题、选项名等高亮元素的颜色
+     */
     public StyledUsageFormatter(Color fontColor) {
         this.fontColor = fontColor;
     }
 
+    /**
+     * 生成指定 CLI 的带样式用法说明字符串。
+     *
+     * @param cli   命令定义
+     * @param width 渲染宽度
+     * @return 格式化后的用法文本；cli 为 null 时返回空串
+     */
     public static String styledUsage(CLI cli, int width) {
         if(cli == null) {
             return "";
@@ -38,6 +51,9 @@ public class StyledUsageFormatter extends UsageMessageFormatter {
         return usageBuilder.toString();
     }
 
+    /**
+     * 将 USAGE、SUMMARY、DESCRIPTION、OPTIONS 等段落渲染为表格并写入 builder。
+     */
     @Override
     public void usage(StringBuilder builder, String prefix, CLI cli) {
 
@@ -66,7 +82,7 @@ public class StyledUsageFormatter extends UsageMessageFormatter {
             for (Option option : cli.getOptions()) {
                 StringBuilder optionSb = new StringBuilder(32);
 
-                // short name
+                // 短选项名
                 if (isNullOrEmpty(option.getShortName())) {
                     optionSb.append("   ");
                 } else {
@@ -77,7 +93,7 @@ public class StyledUsageFormatter extends UsageMessageFormatter {
                         optionSb.append(',');
                     }
                 }
-                // long name
+                // 长选项名
                 if (!isNullOrEmpty(option.getLongName())) {
                     optionSb.append(" --").append(option.getLongName());
                 }
@@ -99,12 +115,16 @@ public class StyledUsageFormatter extends UsageMessageFormatter {
         builder.append(RenderUtil.render(table, getWidth()));
     }
 
+    /** @return 粗体 + 指定颜色的复合样式 */
     private Style.Composite getHighlightedStyle() {
         return Style.style(Decoration.bold, fontColor);
     }
 
+    /**
+     * 拼接单行命令用法：前缀 + 命令名 + 选项占位 + 参数占位。
+     */
     public String computeUsageLine(String prefix, CLI cli) {
-        // initialise the string buffer
+        // 初始化缓冲区
         StringBuilder buff;
         if (prefix == null) {
             buff = new StringBuilder("  ");
@@ -121,13 +141,13 @@ public class StyledUsageFormatter extends UsageMessageFormatter {
             Collections.sort(cli.getOptions(), getOptionComparator());
         }
 
-        // iterate over the options
+        // 依次追加各选项占位
         for (Option option : cli.getOptions()) {
             appendOption(buff, option);
             buff.append(" ");
         }
 
-        // iterate over the arguments
+        // 依次追加各参数占位
         for (Argument arg : cli.getArguments()) {
             appendArgument(buff, arg, arg.isRequired());
             buff.append(" ");
@@ -136,6 +156,7 @@ public class StyledUsageFormatter extends UsageMessageFormatter {
         return buff.toString();
     }
 
+    /** 不以空格开头的描述行视为小节标题，需要高亮 */
     private boolean shouldBeHighlighted(String line) {
         return !line.startsWith(" ");
     }

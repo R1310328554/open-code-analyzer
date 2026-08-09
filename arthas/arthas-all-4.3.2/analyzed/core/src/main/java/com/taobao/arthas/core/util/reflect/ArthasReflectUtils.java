@@ -19,7 +19,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
- * 反射工具类 Created by vlinux on 15/5/18.
+ * 反射工具类：包扫描、字段读写、类型转换与 {@link ClassLoader#defineClass} 封装。
+ * Created by vlinux on 15/5/18.
  */
 public class ArthasReflectUtils {
 

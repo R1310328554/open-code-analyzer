@@ -4,16 +4,23 @@ import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
 /**
- * Provides a fluent API for generating ANSI escape sequences.
+ * ANSI 转义序列的流式 API：终端颜色、光标、清屏等控制码的链式拼接。
+ * <p>
+ * 可通过系统属性 {@link #DISABLE} 或 {@link #setEnabled(boolean)} 关闭输出；
+ * 禁用时返回 {@link NoAnsi} 空实现，避免向非 TTY 写入无意义控制符。
+ * </p>
  *
  * @author <a href="http://hiramchirino.com">Hiram Chirino</a>
  * @since 1.0
  */
 public class Ansi {
 
+    /** ESC 字符（ASCII 27） */
     private static final char FIRST_ESC_CHAR = 27;
+    /** CSI 前缀的第二字符 '[' */
     private static final char SECOND_ESC_CHAR = '[';
 
+    /** 终端前景/背景颜色枚举 */
     public static enum Color {
         BLACK(0, "BLACK"),
         RED(1, "RED"),
@@ -59,6 +66,7 @@ public class Ansi {
         }
     }
 
+    /** 文本属性（粗体、下划线等）枚举 */
     public static enum Attribute {
         RESET(0, "RESET"),
         INTENSITY_BOLD(1, "INTENSITY_BOLD"),
@@ -98,6 +106,7 @@ public class Ansi {
 
     }
 
+    /** 擦除方向：向前、向后或整屏/整行 */
     public static enum Erase {
         FORWARD(0, "FORWARD"),
         BACKWARD(1, "BACKWARD"),
@@ -121,14 +130,17 @@ public class Ansi {
         }
     }
 
+    /** 系统属性名：设为 true 时全局禁用 ANSI 输出 */
     public static final String DISABLE = Ansi.class.getName() + ".disable";
 
+    /** 运行时检测是否应输出 ANSI（默认读 {@link #DISABLE}） */
     private static Callable<Boolean> detector = new Callable<Boolean>() {
         public Boolean call() throws Exception {
             return !Boolean.getBoolean(DISABLE);
         }
     };
 
+    /** 替换 ANSI 检测逻辑（如单元测试 mock TTY） */
     public static void setDetector(final Callable<Boolean> detector) {
         if (detector == null) {
             throw new IllegalArgumentException();
@@ -155,10 +167,12 @@ public class Ansi {
         holder.set(flag);
     }
 
+    /** @return 当前线程是否启用 ANSI（继承自父线程初始值） */
     public static boolean isEnabled() {
         return holder.get();
     }
 
+    /** 创建 ANSI 构建器；未启用时返回不写控制码的 {@link NoAnsi} */
     public static Ansi ansi() {
         if (isEnabled()) {
             return new Ansi();
@@ -183,6 +197,7 @@ public class Ansi {
         }
     }
 
+    /** 禁用时忽略所有样式与光标操作的空实现 */
     private static class NoAnsi
             extends Ansi {
         public NoAnsi() {
@@ -325,6 +340,7 @@ public class Ansi {
     }
 
     private final StringBuilder builder;
+    /** 待刷新的 SGR 属性码队列，在 append 文本前合并写入 */
     private final ArrayList<Integer> attributeOptions = new ArrayList<Integer>(5);
 
     public Ansi() {
@@ -668,7 +684,7 @@ public class Ansi {
     }
 
     ///////////////////////////////////////////////////////////////////
-    // Private Helper Methods
+    // 私有辅助：转义序列拼接
     ///////////////////////////////////////////////////////////////////
 
     private Ansi appendEscapeSequence(char command) {

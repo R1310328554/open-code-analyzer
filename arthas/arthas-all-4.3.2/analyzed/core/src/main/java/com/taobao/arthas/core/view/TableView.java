@@ -215,7 +215,7 @@ public class TableView implements View {
     }
 
     /*
-     * 获取表格高度
+     * 获取表格高度（各列行数的最大值）
      */
     private int getTableHigh() {
         int tableHigh = 0;
@@ -226,7 +226,7 @@ public class TableView implements View {
     }
 
     /*
-     * 打印分隔行
+     * 绘制列分隔线（+---+ 形式）
      */
     private String drawSeparationLine(int[] widthCacheArray) {
         final StringBuilder separationLineSB = new StringBuilder();

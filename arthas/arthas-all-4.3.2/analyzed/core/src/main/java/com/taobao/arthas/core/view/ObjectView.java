@@ -25,6 +25,7 @@ import static java.lang.String.format;
  * Created by vlinux on 15/5/20.
  */
 public class ObjectView implements View {
+    /** 对象树展开的最大深度上限 */
     public static final int MAX_DEEP = 4;
     private static final Logger logger = LoggerFactory.getLogger(ObjectView.class);
     private static final ObjectWriterProvider JSON_OBJECT_WRITER_PROVIDER = new ObjectWriterProvider(
@@ -37,6 +38,12 @@ public class ObjectView implements View {
                 }
             });
 
+    /**
+     * 将对象序列化为 JSON 字符串（受 GlobalOptions.isUsingJson 影响时的输出路径）。
+     *
+     * @param object 待序列化对象
+     * @return JSON 文本
+     */
     public static String toJsonString(Object object) {
         JSONWriter.Context context = new JSONWriter.Context(JSON_OBJECT_WRITER_PROVIDER);
         context.setMaxLevel(4097);
@@ -679,10 +686,11 @@ public class ObjectView implements View {
     }
 
     /**
-     * append string to a string builder, with upper limit check
-     * @param buf the StringBuilder buffer
-     * @param data the data to be appended
-     * @throws ObjectTooLargeException if the size has exceeded the upper limit
+     * 向 StringBuilder 追加内容，并检查累计长度是否超过 {@link #maxObjectLength}。
+     *
+     * @param buf 目标缓冲区
+     * @param data 待追加字符串
+     * @throws ObjectTooLargeException 超出大小限制时抛出
      */
     private void appendStringBuilder(StringBuilder buf, String data) throws ObjectTooLargeException {
         if (buf.length() + data.length() > maxObjectLength) {
@@ -691,6 +699,7 @@ public class ObjectView implements View {
         buf.append(data);
     }
 
+    /** 对象渲染结果超过允许大小时抛出的受检异常 */
     private static class ObjectTooLargeException extends Exception {
 
         public ObjectTooLargeException(String message) {
@@ -698,6 +707,12 @@ public class ObjectView implements View {
         }
     }
 
+    /**
+     * 规范化对象大小上限：优先使用参数，其次全局 options，最后 HTTP 内容长度常量。
+     *
+     * @param limit 调用方指定上限，可为 null
+     * @return 有效字节上限
+     */
     public static int normalizeMaxObjectLength(Integer limit) {
         if (limit != null && limit > 0) {
             return limit;

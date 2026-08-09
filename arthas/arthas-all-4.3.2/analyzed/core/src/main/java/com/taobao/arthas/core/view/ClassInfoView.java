@@ -9,15 +9,23 @@ import java.lang.reflect.Modifier;
 import java.security.CodeSource;
 
 /**
- * Java类信息控件
+ * Java 类信息展示控件：以表格形式输出类元数据、继承链、类加载器链及可选字段列表。
  * Created by vlinux on 15/5/7.
  */
 public class ClassInfoView implements View {
 
+    /** 待展示的 Class 对象 */
     private final Class<?> clazz;
+    /** 是否在输出中包含字段详情 */
     private final boolean isPrintField;
+    /** 表格第二列可用宽度 */
     private final int width;
 
+    /**
+     * @param clazz 目标类
+     * @param isPrintField 是否渲染 fields 行
+     * @param width 终端宽度，用于列宽计算
+     */
     public ClassInfoView(Class<?> clazz, boolean isPrintField, int width) {
         this.clazz = clazz;
         this.isPrintField = isPrintField;
@@ -29,6 +37,7 @@ public class ClassInfoView implements View {
         return drawClassInfo();
     }
 
+    /** 从 ProtectionDomain 提取 class 文件或 jar 路径 */
     private String getCodeSource(final CodeSource cs) {
         if (null == cs
                 || null == cs.getLocation()
@@ -39,6 +48,7 @@ public class ClassInfoView implements View {
         return cs.getLocation().getFile();
     }
 
+    /** 组装类信息主表格 */
     private String drawClassInfo() {
         final CodeSource cs = clazz.getProtectionDomain().getCodeSource();
 
@@ -74,6 +84,7 @@ public class ClassInfoView implements View {
     }
 
 
+    /** 渲染本类声明字段的 KV 块列表 */
     private String drawField() {
 
         final StringBuilder fieldSB = new StringBuilder();
@@ -102,6 +113,7 @@ public class ClassInfoView implements View {
                 }
 
 
+                // 静态字段尝试读取当前值展示
                 if (Modifier.isStatic(field.getModifiers())) {
                     final boolean isAccessible = field.isAccessible();
                     try {
@@ -123,6 +135,7 @@ public class ClassInfoView implements View {
         return fieldSB.toString();
     }
 
+    /** 类级别注解列表，逗号分隔 */
     private String drawAnnotation() {
         final StringBuilder annotationSB = new StringBuilder();
         final Annotation[] annotationArray = clazz.getDeclaredAnnotations();
@@ -141,6 +154,7 @@ public class ClassInfoView implements View {
         return annotationSB.toString();
     }
 
+    /** 直接实现的接口名列表 */
     private String drawInterface() {
         final StringBuilder interfaceSB = new StringBuilder();
         final Class<?>[] interfaceArray = clazz.getInterfaces();
@@ -157,6 +171,7 @@ public class ClassInfoView implements View {
         return interfaceSB.toString();
     }
 
+    /** 超类继承链，用 {@link LadderView} 阶梯缩进展示 */
     private String drawSuperClass() {
         final LadderView ladderView = new LadderView();
         Class<?> superClass = clazz.getSuperclass();
@@ -174,6 +189,7 @@ public class ClassInfoView implements View {
     }
 
 
+    /** 类加载器委托链，从当前 loader 到 bootstrap */
     private String drawClassLoader() {
         final LadderView ladderView = new LadderView();
         ClassLoader loader = clazz.getClassLoader();
