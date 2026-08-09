@@ -15,11 +15,11 @@
  */
 package io.netty.handler.codec.http2;
 
-/** An HTTP/2 frame. */
+/** HTTP/2 帧的高层对象表示，由 {@link Http2FrameCodec} 在 pipeline 中与 wire 格式互转。 */
 public interface Http2Frame {
 
     /**
-     * Returns the name of the HTTP/2 frame e.g. DATA, GOAWAY, etc.
+     * 帧类型名称，如 {@code DATA}、{@code GOAWAY} 等。
      */
     String name();
 }

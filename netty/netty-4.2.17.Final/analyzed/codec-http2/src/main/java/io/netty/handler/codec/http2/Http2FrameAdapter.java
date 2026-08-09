@@ -18,7 +18,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Convenience class that provides no-op implementations for all methods of {@link Http2FrameListener}.
+ * {@link Http2FrameListener} 的空实现适配器，便于只关心部分入站帧类型的 handler 继承。
  */
 public class Http2FrameAdapter implements Http2FrameListener {
 

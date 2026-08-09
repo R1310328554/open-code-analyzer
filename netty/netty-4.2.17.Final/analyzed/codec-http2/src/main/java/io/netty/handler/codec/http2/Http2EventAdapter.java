@@ -18,13 +18,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * This class brings {@link Http2Connection.Listener} and {@link Http2FrameListener} together to provide
- * NOOP implementation so inheriting classes can selectively choose which methods to override.
+ * 同时实现 {@link Http2Connection.Listener} 与 {@link Http2FrameListener} 的空实现基类，
+ * 子类只需覆写关心的入站帧或流生命周期回调。
  */
 public class Http2EventAdapter implements Http2Connection.Listener, Http2FrameListener {
     @Override
     public int onDataRead(ChannelHandlerContext ctx, int streamId, ByteBuf data, int padding, boolean endOfStream)
             throws Http2Exception {
+        // 默认视为已全部消费，立即归还流控窗口
         return data.readableBytes() + padding;
     }
 

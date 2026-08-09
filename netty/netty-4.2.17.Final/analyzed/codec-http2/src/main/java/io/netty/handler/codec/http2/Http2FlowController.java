@@ -17,11 +17,11 @@ package io.netty.handler.codec.http2;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Base interface for all HTTP/2 flow controllers.
+ * HTTP/2 流控控制器公共接口，本地/远端实现分别管理入站消费与出站发送窗口。
  */
 public interface Http2FlowController {
     /**
-     * Set the {@link ChannelHandlerContext} for which to apply flow control on.
+     * 绑定将要应用流控的 {@link ChannelHandlerContext}；未调用视为编程错误。
      * <p>
      * This <strong>must</strong> be called to properly initialize the {@link Http2FlowController}.
      * Not calling this is considered a programming error.
@@ -31,12 +31,8 @@ public interface Http2FlowController {
     void channelHandlerContext(ChannelHandlerContext ctx) throws Http2Exception;
 
     /**
-     * Sets the connection-wide initial flow control window and updates all stream windows (but not the connection
-     * stream window) by the delta.
-     * <p>
-     * Represents the value for
-     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_INITIAL_WINDOW_SIZE</a>. This method should
-     * only be called by Netty (not users) as a result of a receiving a {@code SETTINGS} frame.
+     * 更新连接级初始窗口，并按增量同步调整各流窗口（连接流本身除外）。
+     * <p>对应 {@code SETTINGS_INITIAL_WINDOW_SIZE}，通常由收到 SETTINGS 帧时内部调用。
      *
      * @param newWindowSize the new initial window size.
      * @throws Http2Exception thrown if any protocol-related error occurred.
@@ -44,31 +40,18 @@ public interface Http2FlowController {
     void initialWindowSize(int newWindowSize) throws Http2Exception;
 
     /**
-     * Gets the connection-wide initial flow control window size that is used as the basis for new stream flow
-     * control windows.
-     * <p>
-     * Represents the value for
-     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_INITIAL_WINDOW_SIZE</a>. The initial value
-     * returned by this method must be {@link Http2CodecUtil#DEFAULT_WINDOW_SIZE}.
+     * 返回新建流时使用的初始窗口大小；默认应为 {@link Http2CodecUtil#DEFAULT_WINDOW_SIZE}。
      */
     int initialWindowSize();
 
     /**
-     * Get the portion of the flow control window for the given stream that is currently available for sending/receiving
-     * frames which are subject to flow control. This quantity is measured in number of bytes.
+     * 指定流当前可用于发送/接收受流控帧的字节数（窗口余量）。
      */
     int windowSize(Http2Stream stream);
 
     /**
-     * Increments the size of the stream's flow control window by the given delta.
-     * <p>
-     * In the case of a {@link Http2RemoteFlowController} this is called upon receipt of a
-     * {@code WINDOW_UPDATE} frame from the remote endpoint to mirror the changes to the window
-     * size.
-     * <p>
-     * For a {@link Http2LocalFlowController} this can be called to request the expansion of the
-     * window size published by this endpoint. It is up to the implementation, however, as to when a
-     * {@code WINDOW_UPDATE} is actually sent.
+     * 将流的流控窗口扩大 {@code delta} 字节。
+     * <p>远端控制器在收到 {@code WINDOW_UPDATE} 时调用；本地控制器可主动请求扩大对端可见窗口。
      *
      * @param stream The subject stream. Use {@link Http2Connection#connectionStream()} for
      *            requesting the size of the connection window.

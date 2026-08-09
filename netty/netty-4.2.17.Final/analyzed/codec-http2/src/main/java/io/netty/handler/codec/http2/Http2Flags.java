@@ -16,15 +16,21 @@
 package io.netty.handler.codec.http2;
 
 /**
- * Provides utility methods for accessing specific flags as defined by the HTTP/2 spec.
+ * HTTP/2 帧头 8 位 flags 的位掩码工具类，提供读/写各语义标志及载荷长度推导。
  */
 public final class Http2Flags {
+    /** DATA/HEADERS：本流最后一个帧。 */
     public static final short END_STREAM = 0x1;
+    /** HEADERS/PUSH_PROMISE/CONTINUATION：头部块结束。 */
     public static final short END_HEADERS = 0x4;
+    /** SETTINGS/PING：本帧为 ACK。 */
     public static final short ACK = 0x1;
+    /** 载荷含 Pad Length 及填充字节。 */
     public static final short PADDED = 0x8;
+    /** HEADERS 含 5 字节优先级字段。 */
     public static final short PRIORITY = 0x20;
 
+    /** 当前 flags 原始位图。 */
     private short value;
 
     public Http2Flags() {
@@ -35,7 +41,7 @@ public final class Http2Flags {
     }
 
     /**
-     * Gets the underlying flags value.
+     * 返回写入帧头时的原始 flags 字节。
      */
     public short value() {
         return value;

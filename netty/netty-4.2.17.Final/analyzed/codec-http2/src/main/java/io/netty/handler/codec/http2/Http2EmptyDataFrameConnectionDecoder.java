@@ -17,11 +17,12 @@ package io.netty.handler.codec.http2;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Enforce a limit on the maximum number of consecutive empty DATA frames (without end_of_stream flag) that are allowed
- * before the connection will be closed.
+ * 装饰 {@link Http2ConnectionDecoder}，限制连续空 {@code DATA} 帧（无 {@code END_STREAM}）的数量，
+ * 超出阈值则以 {@link Http2Error#ENHANCE_YOUR_CALM} 关闭连接，用于缓解空帧 DoS。
  */
 final class Http2EmptyDataFrameConnectionDecoder extends DecoratingHttp2ConnectionDecoder {
 
+    /** 允许连续接收的空 DATA 帧上限（不含 end_of_stream）。 */
     private final int maxConsecutiveEmptyFrames;
 
     Http2EmptyDataFrameConnectionDecoder(Http2ConnectionDecoder delegate, int maxConsecutiveEmptyFrames) {
@@ -33,6 +34,7 @@ final class Http2EmptyDataFrameConnectionDecoder extends DecoratingHttp2Connecti
     @Override
     public void frameListener(Http2FrameListener listener) {
         if (listener != null) {
+            // 在真实 listener 外包一层空帧计数装饰器
             super.frameListener(new Http2EmptyDataFrameListener(listener, maxConsecutiveEmptyFrames));
         } else {
             super.frameListener(null);
@@ -42,7 +44,7 @@ final class Http2EmptyDataFrameConnectionDecoder extends DecoratingHttp2Connecti
     @Override
     public Http2FrameListener frameListener() {
         Http2FrameListener frameListener = frameListener0();
-        // Unwrap the original Http2FrameListener as we add this decoder under the hood.
+        // 对外暴露用户设置的原始 listener，而非内部包装器
         if (frameListener instanceof Http2EmptyDataFrameListener) {
             return ((Http2EmptyDataFrameListener) frameListener).listener;
         }

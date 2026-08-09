@@ -20,12 +20,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
 /**
- * Interface that defines an object capable of producing HTTP/2 data frames.
+ * 能够向对端写出 HTTP/2 {@code DATA} 帧的能力抽象。
+ * <p>实现类通常由 {@link Http2ConnectionEncoder} 承担，负责按流控窗口拆分/合并载荷并写入 pipeline。
  */
 public interface Http2DataWriter {
     /**
-     * Writes a {@code DATA} frame to the remote endpoint. This will result in one or more
-     * frames being written to the context.
+     * 向远端写入 {@code DATA} 帧；大载荷可能被编码器拆成多个帧依次写出。
      *
      * @param ctx the context to use for writing.
      * @param streamId the stream for which to send the frame.

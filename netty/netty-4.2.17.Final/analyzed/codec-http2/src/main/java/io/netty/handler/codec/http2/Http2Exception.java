@@ -26,11 +26,14 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.CONNECTION_STREAM_ID;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Exception thrown when an HTTP/2 error was encountered.
+ * HTTP/2 协议错误异常，携带 {@link Http2Error} 与 {@link ShutdownHint}，可映射为 RST_STREAM 或 GOAWAY。
+ * <p>工厂方法 {@link #connectionError}、{@link #streamError} 等按错误作用域构造合适子类型。
  */
 public class Http2Exception extends Exception {
     private static final long serialVersionUID = -6941186345430164209L;
+    /** RFC 7540 错误码。 */
     private final Http2Error error;
+    /** 建议的连接关闭策略，实现可忽略。 */
     private final ShutdownHint shutdownHint;
 
     public Http2Exception(Http2Error error) {
@@ -87,8 +90,7 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * Use if an error has occurred which can not be isolated to a single stream, but instead applies
-     * to the entire connection.
+     * 连接级错误：无法归属单一流，通常触发 GOAWAY。
      * @param error The type of error as defined by the HTTP/2 specification.
      * @param fmt String with the content and format for the additional debug data.
      * @param args Objects which fit into the format defined by {@code fmt}.
@@ -99,8 +101,7 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * Use if an error has occurred which can not be isolated to a single stream, but instead applies
-     * to the entire connection.
+     * 连接级错误：无法归属单一流，通常触发 GOAWAY。
      * @param error The type of error as defined by the HTTP/2 specification.
      * @param cause The object which caused the error.
      * @param fmt String with the content and format for the additional debug data.
@@ -113,8 +114,7 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * Use if an error has occurred which can not be isolated to a single stream, but instead applies
-     * to the entire connection.
+     * 在已关闭流上尝试创建新流时使用（如对端复用旧 stream id）。
      * @param error The type of error as defined by the HTTP/2 specification.
      * @param fmt String with the content and format for the additional debug data.
      * @param args Objects which fit into the format defined by {@code fmt}.
@@ -125,9 +125,7 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * Use if an error which can be isolated to a single stream has occurred.  If the {@code id} is not
-     * {@link Http2CodecUtil#CONNECTION_STREAM_ID} then a {@link StreamException} will be returned.
-     * Otherwise the error is considered a connection error and a {@link Http2Exception} is returned.
+     * 流级错误：{@code id} 非 {@link Http2CodecUtil#CONNECTION_STREAM_ID} 时返回 {@link StreamException}。
      * @param id The stream id for which the error is isolated to.
      * @param error The type of error as defined by the HTTP/2 specification.
      * @param fmt String with the content and format for the additional debug data.
@@ -143,9 +141,7 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * Use if an error which can be isolated to a single stream has occurred.  If the {@code id} is not
-     * {@link Http2CodecUtil#CONNECTION_STREAM_ID} then a {@link StreamException} will be returned.
-     * Otherwise the error is considered a connection error and a {@link Http2Exception} is returned.
+     * 流级错误：{@code id} 非 {@link Http2CodecUtil#CONNECTION_STREAM_ID} 时返回 {@link StreamException}。
      * @param id The stream id for which the error is isolated to.
      * @param error The type of error as defined by the HTTP/2 specification.
      * @param cause The object which caused the error.
@@ -163,10 +159,7 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * A specific stream error resulting from failing to decode headers that exceeds the max header size list.
-     * If the {@code id} is not {@link Http2CodecUtil#CONNECTION_STREAM_ID} then a
-     * {@link StreamException} will be returned. Otherwise the error is considered a
-     * connection error and a {@link Http2Exception} is returned.
+     * 头部列表过大；解码路径失败时 {@link HeaderListSizeException#duringDecode()} 为 true。
      * @param id The stream id for which the error is isolated to.
      * @param error The type of error as defined by the HTTP/2 specification.
      * @param onDecode Whether this error was caught while decoding headers
@@ -215,26 +208,19 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * Provides a hint as to if shutdown is justified, what type of shutdown should be executed.
+     * 连接关闭策略提示。
      */
     public enum ShutdownHint {
-        /**
-         * Do not shutdown the underlying channel.
-         */
+        /** 不关闭底层 channel。 */
         NO_SHUTDOWN,
-        /**
-         * Attempt to execute a "graceful" shutdown. The definition of "graceful" is left to the implementation.
-         * An example of "graceful" would be wait for some amount of time until all active streams are closed.
-         */
+        /** 优雅关闭：具体语义由实现定义（如等待活跃流结束）。 */
         GRACEFUL_SHUTDOWN,
-        /**
-         * Close the channel immediately after a {@code GOAWAY} is sent.
-         */
+        /** 发送 GOAWAY 后立即关闭 channel。 */
         HARD_SHUTDOWN
     }
 
     /**
-     * Used when a stream creation attempt fails but may be because the stream was previously closed.
+     * 流创建失败且可能因流此前已关闭所致。
      */
     public static final class ClosedStreamCreationException extends Http2Exception {
         private static final long serialVersionUID = -6746542974372246206L;
@@ -253,7 +239,7 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * Represents an exception that can be isolated to a single stream (as opposed to the entire connection).
+     * 可隔离到单流的异常；{@link ShutdownHint#NO_SHUTDOWN}，由 handler 发 RST_STREAM 处理。
      */
     public static class StreamException extends Http2Exception {
         private static final long serialVersionUID = 602472544416984384L;
@@ -290,7 +276,7 @@ public class Http2Exception extends Exception {
     }
 
     /**
-     * Provides the ability to handle multiple stream exceptions with one throw statement.
+     * 一次抛出多个 {@link StreamException} 的聚合容器。
      */
     public static final class CompositeStreamException extends Http2Exception implements Iterable<StreamException> {
         private static final long serialVersionUID = 7091134858213711015L;
@@ -323,8 +309,7 @@ public class Http2Exception extends Exception {
             super(error, message, shutdownHint, shared);
         }
 
-        // Override fillInStackTrace() so we not populate the backtrace via a native call and so leak the
-        // Classloader.
+        // 避免 fillInStackTrace 分配栈并泄漏 ClassLoader
         @Override
         public Throwable fillInStackTrace() {
             return this;

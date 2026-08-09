@@ -19,13 +19,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Enforce a limit on the maximum number of consecutive empty DATA frames (without end_of_stream flag) that are allowed
- * before the connection will be closed.
+ * {@link Http2FrameListener} 装饰器：统计连续空 {@code DATA} 帧，超限抛连接级错误。
+ * <p>收到带载荷、{@code END_STREAM} 或 {@code HEADERS} 时计数器归零。
  */
 final class Http2EmptyDataFrameListener extends Http2FrameListenerDecorator {
     private final int maxConsecutiveEmptyFrames;
 
+    /** 已触发违规后不再重复抛异常。 */
     private boolean violationDetected;
+    /** 当前连续空 DATA 帧计数。 */
     private int emptyDataFrames;
 
     Http2EmptyDataFrameListener(Http2FrameListener listener, int maxConsecutiveEmptyFrames) {
@@ -52,6 +54,7 @@ final class Http2EmptyDataFrameListener extends Http2FrameListenerDecorator {
     @Override
     public void onHeadersRead(ChannelHandlerContext ctx, int streamId, Http2Headers headers,
                               int padding, boolean endStream) throws Http2Exception {
+        // 新消息头意味着新语义阶段，重置空帧计数
         emptyDataFrames = 0;
         super.onHeadersRead(ctx, streamId, headers, padding, endStream);
     }

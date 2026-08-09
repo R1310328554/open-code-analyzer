@@ -19,9 +19,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Provides a decorator around a {@link Http2FrameListener} and delegates all method calls
+ * {@link Http2FrameListener} 的装饰器基类：默认将所有入站帧回调原样委托给被包装的 listener。
+ * <p>子类可覆写个别方法以插入校验、计量或日志，再选择性调用 {@code super}。
  */
 public class Http2FrameListenerDecorator implements Http2FrameListener {
+    /** 被装饰的真实帧监听器。 */
     protected final Http2FrameListener listener;
 
     public Http2FrameListenerDecorator(Http2FrameListener listener) {

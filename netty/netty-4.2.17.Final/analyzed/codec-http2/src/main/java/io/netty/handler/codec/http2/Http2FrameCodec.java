@@ -42,104 +42,31 @@ import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.netty.util.internal.logging.InternalLogLevel.DEBUG;
 
 /**
- * <p>An HTTP/2 handler that maps HTTP/2 frames to {@link Http2Frame} objects and vice versa. For every incoming HTTP/2
- * frame, an {@link Http2Frame} object is created and propagated via {@link #channelRead}. Outbound {@link Http2Frame}
- * objects received via {@link #write} are converted to the HTTP/2 wire format. HTTP/2 frames specific to a stream
- * implement the {@link Http2StreamFrame} interface. The {@link Http2FrameCodec} is instantiated using the
- * {@link Http2FrameCodecBuilder}. It's recommended for channel handlers to inherit from the
- * {@link Http2ChannelDuplexHandler}, as it provides additional functionality like iterating over all active streams or
- * creating outbound streams.
+ * <p>将 HTTP/2 wire 帧与 {@link Http2Frame} 对象互转的高层 handler：入站经 {@link #channelRead} 向上游投递帧对象，
+ * 出站 {@link #write} 接受 {@link Http2Frame} 并编码。流相关帧实现 {@link Http2StreamFrame}，由
+ * {@link Http2FrameCodecBuilder} 构建；业务 handler 建议继承 {@link Http2ChannelDuplexHandler}。
  *
- * <h3>Stream Lifecycle</h3>
- * <p>
- * The frame codec delivers and writes frames for active streams. An active stream is closed when either side sends a
- * {@code RST_STREAM} frame or both sides send a frame with the {@code END_STREAM} flag set. Each
- * {@link Http2StreamFrame} has a {@link Http2FrameStream} object attached that uniquely identifies a particular stream.
+ * <h3>流生命周期</h3>
+ * <p>活跃流在任一端发 {@code RST_STREAM} 或双方均带 {@code END_STREAM} 后关闭；每个 {@link Http2StreamFrame}
+ * 附带 {@link Http2FrameStream} 标识流。读路径帧已绑定 stream，写路径需通过 {@link Http2StreamFrame#stream} 设置。
  *
- * <p>{@link Http2StreamFrame}s read from the channel always a {@link Http2FrameStream} object set, while when writing a
- * {@link Http2StreamFrame} the application code needs to set a {@link Http2FrameStream} object using
- * {@link Http2StreamFrame#stream(Http2FrameStream)}.
+ * <h3>流控</h3>
+ * <p>codec 自动递增流/连接窗口。入站受控帧需写 {@link Http2WindowUpdateFrame} 告知已消费字节；
+ * 本地初始窗口可通过 {@link Http2SettingsFrame} 调整，连接级窗口用 streamId=0 的 {@link Http2WindowUpdateFrame}。
  *
- * <h3>Flow control</h3>
- * <p>
- * The frame codec automatically increments stream and connection flow control windows.
+ * <h3>新入站流</h3>
+ * <p>首帧须为 {@link Http2HeadersFrame}，并附带 {@link Http2FrameStream}。
  *
- * <p>Incoming flow controlled frames need to be consumed by writing a {@link Http2WindowUpdateFrame} with the consumed
- * number of bytes and the corresponding stream identifier set to the frame codec.
+ * <h3>新出站流</h3>
+ * <p>先 {@link Http2ChannelDuplexHandler#newStream()}，再写带 stream 的 {@link Http2HeadersFrame}；
+ * stream id 耗尽时 promise 以 {@link Http2NoMoreStreamIdsException} 失败。
  *
- * <p>The local stream-level flow control window can be changed by writing a {@link Http2SettingsFrame} with the
- * {@link Http2Settings#initialWindowSize()} set to the targeted value.
+ * <h3>错误与引用计数</h3>
+ * <p>连接错误经 {@link ChannelInboundHandler#exceptionCaught} 传播；流错误包装为 {@link Http2FrameStreamException}。
+ * 部分帧实现 {@link ReferenceCounted}，下游 handler 须负责 release。
  *
- * <p>The connection-level flow control window can be changed by writing a {@link Http2WindowUpdateFrame} with the
- * desired window size <em>increment</em> in bytes and the stream identifier set to {@code 0}. By default the initial
- * connection-level flow control window is the same as initial stream-level flow control window.
- *
- * <h3>New inbound Streams</h3>
- * <p>
- * The first frame of an HTTP/2 stream must be an {@link Http2HeadersFrame}, which will have an {@link Http2FrameStream}
- * object attached.
- *
- * <h3>New outbound Streams</h3>
- * <p>
- * A outbound HTTP/2 stream can be created by first instantiating a new {@link Http2FrameStream} object via
- * {@link Http2ChannelDuplexHandler#newStream()}, and then writing a {@link Http2HeadersFrame} object with the stream
- * attached.
- *
- * <pre> {@code
- *     final Http2Stream2 stream = handler.newStream();
- *     ctx.write(headersFrame.stream(stream)).addListener(new ChannelFutureListener() {
- *
- *         @Override
- *         public void operationComplete(ChannelFuture f) {
- *             if (f.isSuccess()) {
- *                 // Stream is active and stream.id() returns a valid stream identifier.
- *                 System.out.println("New stream with id " + stream.id() + " created.");
- *             } else {
- *                 // Stream failed to become active. Handle error.
- *                 if (f.cause() instanceof Http2NoMoreStreamIdsException) {
- *
- *                 } else if (f.cause() instanceof Http2GoAwayException) {
- *
- *                 } else {
- *
- *                 }
- *             }
- *         }
- *     }
- *     }
- * </pre>
- *
- * <p>If a new stream cannot be created due to stream id exhaustion of the endpoint, the {@link ChannelPromise} of the
- * HEADERS frame will fail with a {@link Http2NoMoreStreamIdsException}.
- *
- * <p>The HTTP/2 standard allows for an endpoint to limit the maximum number of concurrently active streams via the
- * {@code SETTINGS_MAX_CONCURRENT_STREAMS} setting. When this limit is reached, no new streams can be created. However,
- * the {@link Http2FrameCodec} can be build with
- * {@link Http2FrameCodecBuilder#encoderEnforceMaxConcurrentStreams(boolean)} enabled, in which case a new stream and
- * its associated frames will be buffered until either the limit is increased or an active stream is closed. It's,
- * however, possible that a buffered stream will never become active. That is, the channel might
- * get closed or a GO_AWAY frame might be received. In the first case, all writes of buffered streams will fail with a
- * {@link Http2ChannelClosedException}. In the second case, all writes of buffered streams with an identifier less than
- * the last stream identifier of the GO_AWAY frame will fail with a {@link Http2GoAwayException}.
- *
- * <h3>Error Handling</h3>
- * <p>
- * Exceptions and errors are propagated via {@link ChannelInboundHandler#exceptionCaught}. Exceptions that apply to
- * a specific HTTP/2 stream are wrapped in a {@link Http2FrameStreamException} and have the corresponding
- * {@link Http2FrameStream} object attached.
- *
- * <h3>Reference Counting</h3>
- * <p>
- * Some {@link Http2StreamFrame}s implement the {@link ReferenceCounted} interface, as they carry
- * reference counted objects (e.g. {@link ByteBuf}s). The frame codec will call {@link ReferenceCounted#retain()} before
- * propagating a reference counted object through the pipeline, and thus an application handler needs to release such
- * an object after having consumed it. For more information on reference counting take a look at
- * <a href="https://netty.io/wiki/reference-counted-objects.html">Reference counted objects</a>
- *
- * <h3>HTTP Upgrade</h3>
- * <p>
- * Server-side HTTP to HTTP/2 upgrade is supported in conjunction with {@link Http2ServerUpgradeCodec}; the necessary
- * HTTP-to-HTTP/2 conversion is performed automatically.
+ * <h3>HTTP 升级</h3>
+ * <p>服务端 h2c 升级配合 {@link Http2ServerUpgradeCodec} 自动完成。
  */
 public class Http2FrameCodec extends Http2ConnectionHandler {
 
@@ -150,17 +77,21 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
             Http2PingFrame.class, Http2SettingsFrame.class, Http2SettingsAckFrame.class, Http2GoAwayFrame.class,
             Http2PushPromiseFrame.class, Http2PriorityFrame.class, Http2UnknownFrame.class };
 
+    /** 在 {@link Http2Stream} 上挂载 {@link Http2FrameStream} 的属性键。 */
     protected final PropertyKey streamKey;
+    /** 标记流 1 是否来自 h2c 升级，升级流不参与常规流控 consume。 */
     private final PropertyKey upgradeKey;
 
+    /** 初始 SETTINGS 中的窗口大小，用于服务端扩大连接级窗口。 */
     private final Integer initialFlowControlWindowSize;
 
     ChannelHandlerContext ctx;
 
     /**
-     * Number of buffered streams if the {@link StreamBufferingEncoder} is used.
+     * 使用 {@link StreamBufferingEncoder} 时尚未激活的出站流数量。
      **/
     private int numBufferedStreams;
+    /** 已分配 stream id 但尚未在 connection 上 materialize 的帧流。 */
     private final IntObjectMap<DefaultHttp2FrameStream> frameStreamToInitializeMap =
             new IntObjectHashMap<DefaultHttp2FrameStream>(8);
 
@@ -177,7 +108,7 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
     }
 
     /**
-     * Creates a new outbound/local stream.
+     * 创建新的出站/本地 {@link Http2FrameStream}（id 初始为 -1，写 HEADERS 后生效）。
      */
     DefaultHttp2FrameStream newStream() {
         return new DefaultHttp2FrameStream();
@@ -219,8 +150,7 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
         this.ctx = ctx;
         super.handlerAdded(ctx);
         handlerAdded0(ctx);
-        // Must be after Http2ConnectionHandler does its initialization in handlerAdded above.
-        // The server will not send a connection preface so we are good to send a window update.
+        // 服务端无连接前言，handler 就绪后即可扩大连接窗口以提升并发吞吐
         Http2Connection connection = connection();
         if (connection.isServer()) {
             tryExpandConnectionFlowControlWindow(connection);
@@ -229,14 +159,12 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
 
     private void tryExpandConnectionFlowControlWindow(Http2Connection connection) throws Http2Exception {
         if (initialFlowControlWindowSize != null) {
-            // The window size in the settings explicitly excludes the connection window. So we manually manipulate the
-            // connection window to accommodate more concurrent data per connection.
+            // SETTINGS 里的 initialWindowSize 不含连接流；此处单独放大连接窗口
             Http2Stream connectionStream = connection.connectionStream();
             Http2LocalFlowController localFlowController = connection.local().flowController();
             final int delta = initialFlowControlWindowSize - localFlowController.initialWindowSize(connectionStream);
-            // Only increase the connection window, don't decrease it.
+            // 增量翻倍，避免单流占满连接窗口
             if (delta > 0) {
-                // Double the delta just so a single stream can't exhaust the connection window.
                 localFlowController.incrementWindowSize(connectionStream, Math.max(delta << 1, delta));
                 flush(ctx);
             }
@@ -296,8 +224,7 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
     }
 
     /**
-     * Processes all {@link Http2Frame}s. {@link Http2StreamFrame}s may only originate in child
-     * streams.
+     * 将 {@link Http2Frame} 写回 wire；{@link Http2StreamFrame} 须来自 {@link #newStream()} 或入站帧。
      */
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
@@ -310,8 +237,7 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
         } else if (msg instanceof Http2WindowUpdateFrame) {
             Http2WindowUpdateFrame frame = (Http2WindowUpdateFrame) msg;
             Http2FrameStream frameStream = frame.stream();
-            // It is legit to send a WINDOW_UPDATE frame for the connection stream. The parent channel doesn't attempt
-            // to set the Http2FrameStream so we assume if it is null the WINDOW_UPDATE is for the connection stream.
+            // stream 为 null 表示连接级 WINDOW_UPDATE（stream id 0）
             try {
                 if (frameStream == null) {
                     increaseInitialConnectionWindow(frame.windowSizeIncrement());
@@ -371,8 +297,7 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
 
     final boolean consumeBytes(int streamId, int bytes) throws Http2Exception {
         Http2Stream stream = connection().stream(streamId);
-        // Upgraded requests are ineligible for stream control. We add the null check
-        // in case the stream has been deregistered.
+        // h2c 升级后的流 1 由 InboundHttpToHttp2Adapter 处理，不参与 consumeBytes
         if (stream != null && streamId == Http2CodecUtil.HTTP_UPGRADE_STREAM_ID) {
             Boolean upgraded = stream.getProperty(upgradeKey);
             if (Boolean.TRUE.equals(upgraded)) {
@@ -587,13 +512,14 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
         return super.isGracefulShutdownComplete() && numBufferedStreams == 0;
     }
 
+    /**  wire 帧 → {@link Http2Frame} 的内部 listener。 */
     private final class FrameListener implements Http2FrameListener {
 
         @Override
         public void onUnknownFrame(
                 ChannelHandlerContext ctx, byte frameType, int streamId, Http2Flags flags, ByteBuf payload) {
             if (streamId == 0) {
-                // Ignore unknown frames on connection stream, for example: HTTP/2 GREASE testing
+                // 连接流上的未知帧忽略（如 GREASE）
                 return;
             }
             Http2FrameStream stream = requireStream(streamId);
@@ -659,7 +585,7 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
             }
             dataframe.stream(stream);
             onHttp2Frame(ctx, dataframe);
-            // We return the bytes in consumeBytes() once the stream channel consumed the bytes.
+            // 延迟归还流控：由下游写 WindowUpdateFrame 时再 consumeBytes
             return 0;
         }
 
@@ -747,7 +673,7 @@ public class Http2FrameCodec extends Http2ConnectionHandler {
     }
 
     /**
-     * {@link Http2FrameStream} implementation.
+     * {@link Http2FrameStream} 默认实现；在 stream 加入 connection 前仅持有预分配 id。
      */
     // TODO(buchgr): Merge Http2FrameStream and Http2Stream.
     static class DefaultHttp2FrameStream implements Http2FrameStream {

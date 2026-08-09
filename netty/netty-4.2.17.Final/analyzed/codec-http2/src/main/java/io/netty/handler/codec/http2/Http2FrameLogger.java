@@ -27,15 +27,18 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Logs HTTP2 frames for debugging purposes.
+ * 调试用途的 HTTP/2 帧日志记录器，由 {@link Http2InboundFrameLogger} /
+ * {@link Http2OutboundFrameLogger} 在读写路径上调用。
  */
 public class Http2FrameLogger extends ChannelHandlerAdapter {
 
+    /** 帧传输方向：入站或出站。 */
     public enum Direction {
         INBOUND,
         OUTBOUND
     }
 
+    /** 非 TRACE 级别下载荷 hex 截断长度。 */
     private static final int BUFFER_LENGTH_THRESHOLD = 64;
     private final InternalLogger logger;
     private final InternalLogLevel level;
@@ -163,11 +166,11 @@ public class Http2FrameLogger extends ChannelHandlerAdapter {
 
     private String toString(ByteBuf buf) {
         if (level == InternalLogLevel.TRACE || buf.readableBytes() <= BUFFER_LENGTH_THRESHOLD) {
-            // Log the entire buffer.
+            // 完整 hex 转储
             return ByteBufUtil.hexDump(buf);
         }
 
-        // Otherwise just log the first 64 bytes.
+        // 否则只记录前 64 字节，避免日志爆炸
         int length = Math.min(buf.readableBytes(), BUFFER_LENGTH_THRESHOLD);
         return ByteBufUtil.hexDump(buf, buf.readerIndex(), length) + "...";
     }

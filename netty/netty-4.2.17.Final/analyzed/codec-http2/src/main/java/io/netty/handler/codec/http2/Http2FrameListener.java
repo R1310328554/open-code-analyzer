@@ -19,11 +19,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * An listener of HTTP/2 frames.
+ * HTTP/2 入站帧回调接口：解码器每解析一帧即调用对应方法；{@link #onDataRead} 返回值参与入站流控。
  */
 public interface Http2FrameListener {
     /**
-     * Handles an inbound {@code DATA} frame.
+     * 处理入站 {@code DATA} 帧。
+     * <p>返回值表示应用已处理的字节数，用于决定是否立即扩大入站流控窗口或延迟至
+     * {@link Http2LocalFlowController#consumeBytes(Http2Stream, int)} 再归还。
      *
      * @param ctx the context from the handler where the frame was read.
      * @param streamId the subject stream for the frame.
@@ -43,18 +45,9 @@ public interface Http2FrameListener {
                    boolean endOfStream) throws Http2Exception;
 
     /**
-     * Handles an inbound {@code HEADERS} frame.
-     * <p>
-     * Only one of the following methods will be called for each {@code HEADERS} frame sequence.
-     * One will be called when the {@code END_HEADERS} flag has been received.
-     * <ul>
-     * <li>{@link #onHeadersRead(ChannelHandlerContext, int, Http2Headers, int, boolean)}</li>
-     * <li>{@link #onHeadersRead(ChannelHandlerContext, int, Http2Headers, int, short, boolean, int, boolean)}</li>
-     * <li>{@link #onPushPromiseRead(ChannelHandlerContext, int, int, Http2Headers, int)}</li>
-     * </ul>
-     * <p>
-     * To say it another way; the {@link Http2Headers} will contain all of the headers
-     * for the current message exchange step (additional queuing is not necessary).
+     * 处理入站 {@code HEADERS} 帧（无内联优先级字段）。
+     * <p>同一 HEADERS 序列在 {@code END_HEADERS} 到达时只会触发本方法、带优先级重载或
+     * {@link #onPushPromiseRead} 之一；{@link Http2Headers} 已包含完整头部块。
      *
      * @param ctx the context from the handler where the frame was read.
      * @param streamId the subject stream for the frame.
@@ -68,19 +61,7 @@ public interface Http2FrameListener {
             boolean endOfStream) throws Http2Exception;
 
     /**
-     * Handles an inbound {@code HEADERS} frame with priority information specified.
-     * Only called if {@code END_HEADERS} encountered.
-     * <p>
-     * Only one of the following methods will be called for each {@code HEADERS} frame sequence.
-     * One will be called when the {@code END_HEADERS} flag has been received.
-     * <ul>
-     * <li>{@link #onHeadersRead(ChannelHandlerContext, int, Http2Headers, int, boolean)}</li>
-     * <li>{@link #onHeadersRead(ChannelHandlerContext, int, Http2Headers, int, short, boolean, int, boolean)}</li>
-     * <li>{@link #onPushPromiseRead(ChannelHandlerContext, int, int, Http2Headers, int)}</li>
-     * </ul>
-     * <p>
-     * To say it another way; the {@link Http2Headers} will contain all of the headers
-     * for the current message exchange step (additional queuing is not necessary).
+     * 处理带优先级信息的 {@code HEADERS} 帧，仅在 {@code END_HEADERS} 时调用。
      *
      * @param ctx the context from the handler where the frame was read.
      * @param streamId the subject stream for the frame.
@@ -99,11 +80,7 @@ public interface Http2FrameListener {
             throws Http2Exception;
 
     /**
-     * Handles an inbound {@code PRIORITY} frame.
-     * <p>
-     * Note that is it possible to have this method called and no stream object exist for either
-     * {@code streamId}, {@code streamDependency}, or both. This is because the {@code PRIORITY} frame can be
-     * sent/received when streams are in the {@code CLOSED} state.
+     * 处理 {@code PRIORITY} 帧；流可能尚未创建或已关闭，{@code streamId} 对应流对象可能不存在。
      *
      * @param ctx the context from the handler where the frame was read.
      * @param streamId the subject stream for the frame.

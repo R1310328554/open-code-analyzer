@@ -19,11 +19,13 @@ package io.netty.handler.codec.http2;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Builder for the {@link Http2FrameCodec}.
+ * {@link Http2FrameCodec} 的 fluent 构建器，继承连接 handler 的全部编解码/安全选项。
+ * <p>典型用法：{@link #forClient()} / {@link #forServer()} 后链式配置再 {@link #build()}。
  */
 public class Http2FrameCodecBuilder extends
         AbstractHttp2ConnectionHandlerBuilder<Http2FrameCodec, Http2FrameCodecBuilder> {
 
+    /** 测试注入自定义帧写入器时使用；生产路径为 null，走父类 build。 */
     private Http2FrameWriter frameWriter;
 
     /**
@@ -220,14 +222,13 @@ public class Http2FrameCodecBuilder extends
     }
 
     /**
-     * Build a {@link Http2FrameCodec} object.
+     * 组装 {@link Http2FrameCodec}；测试路径可手动注入 encoder/decoder 组件。
      */
     @Override
     public Http2FrameCodec build() {
         Http2FrameWriter frameWriter = this.frameWriter;
         if (frameWriter != null) {
-            // This is to support our tests and will never be executed by the user as frameWriter(...)
-            // is package-private.
+            // 仅单测使用：frameWriter(...) 为包私有，用户不会走到此分支
             DefaultHttp2Connection connection = new DefaultHttp2Connection(isServer(), maxReservedStreams());
             Long maxHeaderListSize = initialSettings().maxHeaderListSize();
             Http2FrameReader frameReader = new DefaultHttp2FrameReader(maxHeaderListSize == null ?
@@ -248,6 +249,7 @@ public class Http2FrameCodecBuilder extends
                     isValidateRequiredPseudoHeaders());
             int maxConsecutiveEmptyDataFrames = decoderEnforceMaxConsecutiveEmptyDataFrames();
             if (maxConsecutiveEmptyDataFrames > 0) {
+                // 可选：包装解码器以限制连续空 DATA 帧
                 decoder = new Http2EmptyDataFrameConnectionDecoder(decoder, maxConsecutiveEmptyDataFrames);
             }
             return build(decoder, encoder, initialSettings());
