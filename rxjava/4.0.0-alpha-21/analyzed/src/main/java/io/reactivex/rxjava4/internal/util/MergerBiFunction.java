@@ -18,13 +18,16 @@ import java.util.*;
 import io.reactivex.rxjava4.functions.BiFunction;
 
 /**
- * A BiFunction that merges two Lists into a new list.
- * @param <T> the value type
+ * 将两个 List 按比较器归并为新列表的 {@link BiFunction}。
+ * @param <T> 值类型
  */
 public final class MergerBiFunction<T> implements BiFunction<List<T>, List<T>, List<T>> {
 
     final Comparator<? super T> comparator;
 
+    /**
+     * @param comparator 归并时使用的比较器
+     */
     public MergerBiFunction(Comparator<? super T> comparator) {
         this.comparator = comparator;
     }
@@ -44,7 +47,7 @@ public final class MergerBiFunction<T> implements BiFunction<List<T>, List<T>, L
         T s2 = bt.hasNext() ? bt.next() : null;
 
         while (s1 != null && s2 != null) {
-            if (comparator.compare(s1, s2) < 0) { // s1 comes before s2
+            if (comparator.compare(s1, s2) < 0) { // s1 排在 s2 前
                 both.add(s1);
                 s1 = at.hasNext() ? at.next() : null;
             } else {

@@ -20,25 +20,23 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.core.Observer;
 
 /**
- * Utility methods to perform half-serialization: a form of serialization
- * where onNext is guaranteed to be called from a single thread but
- * onError or onComplete may be called from any threads.
+ * 半序列化工具：保证 onNext 单线程调用，
+ * 而 onError/onComplete 可能来自任意线程。
  */
 public final class HalfSerializer {
-    /** Utility class. */
+    /** 工具类，禁止实例化。 */
     private HalfSerializer() {
         throw new IllegalStateException("No instances!");
     }
 
     /**
-     * Emits the given value if possible and terminates if there was an onComplete or onError
-     * while emitting, drops the value otherwise.
-     * @param <T> the value type
-     * @param subscriber the target Subscriber to emit to
-     * @param value the value to emit
-     * @param wip the serialization work-in-progress counter/indicator
-     * @param errors the holder of Throwables
-     * @return true if the operation succeeded, false if there sequence completed
+     * 若可则发射给定值；发射期间若已 onComplete/onError 则终止，否则丢弃该值。
+     * @param <T> 值类型
+     * @param subscriber 目标 Subscriber
+     * @param value 要发射的值
+     * @param wip 序列化进行中计数/标志
+     * @param errors Throwable 容器
+     * @return 操作成功为 true；序列已完成为 false
      */
     public static <T> boolean onNext(Subscriber<? super T> subscriber, T value,
             AtomicInteger wip, AtomicThrowable errors) {
@@ -53,13 +51,12 @@ public final class HalfSerializer {
     }
 
     /**
-     * Emits the given exception if possible or adds it to the given error container to
-     * be emitted by a concurrent onNext if one is running.
-     * Undeliverable exceptions are sent to the RxJavaPlugins.onError.
-     * @param subscriber the target Subscriber to emit to
-     * @param ex the Throwable to emit
-     * @param wip the serialization work-in-progress counter/indicator
-     * @param errors the holder of Throwables
+     * 若可则发射异常，否则加入错误容器由并发 onNext 稍后发射。
+     * 无法投递的异常交给 RxJavaPlugins.onError。
+     * @param subscriber 目标 Subscriber
+     * @param ex 要发射的 Throwable
+     * @param wip 序列化进行中计数/标志
+     * @param errors Throwable 容器
      */
     public static void onError(Subscriber<?> subscriber, Throwable ex,
             AtomicInteger wip, AtomicThrowable errors) {
@@ -71,11 +68,10 @@ public final class HalfSerializer {
     }
 
     /**
-     * Emits an onComplete signal or an onError signal with the given error or indicates
-     * the concurrently running onNext should do that.
-     * @param subscriber the target Subscriber to emit to
-     * @param wip the serialization work-in-progress counter/indicator
-     * @param errors the holder of Throwables
+     * 发射 onComplete 或 onError，或由并发 onNext 负责终止。
+     * @param subscriber 目标 Subscriber
+     * @param wip 序列化进行中计数/标志
+     * @param errors Throwable 容器
      */
     public static void onComplete(Subscriber<?> subscriber, AtomicInteger wip, AtomicThrowable errors) {
         if (wip.getAndIncrement() == 0) {
@@ -84,13 +80,12 @@ public final class HalfSerializer {
     }
 
     /**
-     * Emits the given value if possible and terminates if there was an onComplete or onError
-     * while emitting, drops the value otherwise.
-     * @param <T> the value type
-     * @param observer the target Observer to emit to
-     * @param value the value to emit
-     * @param wip the serialization work-in-progress counter/indicator
-     * @param errors the holder of Throwables
+     * Observer 版 onNext：逻辑同 Subscriber 版本。
+     * @param <T> 值类型
+     * @param observer 目标 Observer
+     * @param value 要发射的值
+     * @param wip 序列化进行中计数/标志
+     * @param errors Throwable 容器
      */
     public static <T> void onNext(Observer<? super T> observer, T value,
             AtomicInteger wip, AtomicThrowable errors) {
@@ -103,13 +98,11 @@ public final class HalfSerializer {
     }
 
     /**
-     * Emits the given exception if possible or adds it to the given error container to
-     * be emitted by a concurrent onNext if one is running.
-     * Undeliverable exceptions are sent to the RxJavaPlugins.onError.
-     * @param observer the target Subscriber to emit to
-     * @param ex the Throwable to emit
-     * @param wip the serialization work-in-progress counter/indicator
-     * @param errors the holder of Throwables
+     * Observer 版 onError：逻辑同 Subscriber 版本。
+     * @param observer 目标 Observer
+     * @param ex 要发射的 Throwable
+     * @param wip 序列化进行中计数/标志
+     * @param errors Throwable 容器
      */
     public static void onError(Observer<?> observer, Throwable ex,
             AtomicInteger wip, AtomicThrowable errors) {
@@ -121,11 +114,10 @@ public final class HalfSerializer {
     }
 
     /**
-     * Emits an onComplete signal or an onError signal with the given error or indicates
-     * the concurrently running onNext should do that.
-     * @param observer the target Subscriber to emit to
-     * @param wip the serialization work-in-progress counter/indicator
-     * @param errors the holder of Throwables
+     * Observer 版 onComplete：逻辑同 Subscriber 版本。
+     * @param observer 目标 Observer
+     * @param wip 序列化进行中计数/标志
+     * @param errors Throwable 容器
      */
     public static void onComplete(Observer<?> observer, AtomicInteger wip, AtomicThrowable errors) {
         if (wip.getAndIncrement() == 0) {

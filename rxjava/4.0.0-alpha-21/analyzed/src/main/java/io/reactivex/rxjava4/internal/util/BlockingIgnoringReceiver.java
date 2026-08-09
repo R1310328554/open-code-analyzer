@@ -18,23 +18,27 @@ import java.util.concurrent.CountDownLatch;
 import io.reactivex.rxjava4.functions.*;
 
 /**
- * Stores an incoming Throwable (if any) and counts itself down.
+ * 保存收到的 Throwable（若有）并 countDown 自身。
  */
 public final class BlockingIgnoringReceiver
 extends CountDownLatch
 implements Consumer<Throwable>, Action {
+    /** 收到的错误，若无则为 null。 */
     public Throwable error;
 
+    /** 构造 count 为 1 的接收器。 */
     public BlockingIgnoringReceiver() {
         super(1);
     }
 
+    /** 保存异常并 countDown。 */
     @Override
     public void accept(Throwable e) {
         error = e;
         countDown();
     }
 
+    /** 正常完成时 countDown。 */
     @Override
     public void run() {
         countDown();

@@ -19,9 +19,9 @@ import io.reactivex.rxjava4.core.Observer;
 import io.reactivex.rxjava4.functions.*;
 
 /**
- * A linked-array-list implementation that only supports appending and consumption.
+ * 仅支持追加与消费的链式数组列表实现。
  *
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public class AppendOnlyLinkedArrayList<T> {
     final int capacity;
@@ -30,8 +30,8 @@ public class AppendOnlyLinkedArrayList<T> {
     int offset;
 
     /**
-     * Constructs an empty list with a per-link capacity.
-     * @param capacity the capacity of each link
+     * 构造空列表，并指定每个链段的容量。
+     * @param capacity 每个链段的容量
      */
     public AppendOnlyLinkedArrayList(int capacity) {
         this.capacity = capacity;
@@ -40,9 +40,9 @@ public class AppendOnlyLinkedArrayList<T> {
     }
 
     /**
-     * Append a non-null value to the list.
-     * <p>Don't add null to the list!
-     * @param value the value to append
+     * 向列表追加非 null 值。
+     * <p>请勿向列表添加 null！
+     * @param value 要追加的值
      */
     public void add(T value) {
         final int c = capacity;
@@ -58,17 +58,17 @@ public class AppendOnlyLinkedArrayList<T> {
     }
 
     /**
-     * Set a value as the first element of the list.
-     * @param value the value to set
+     * 将值设为列表首元素。
+     * @param value 要设置的值
      */
     public void setFirst(T value) {
         head[0] = value;
     }
 
     /**
-     * Predicate interface suppressing the exception.
+     * 不抛出受检异常的谓词接口。
      *
-     * @param <T> the value type
+     * @param <T> 值类型
      */
     public interface NonThrowingPredicate<T> extends Predicate<T> {
         @Override
@@ -76,9 +76,8 @@ public class AppendOnlyLinkedArrayList<T> {
     }
 
     /**
-     * Loops over all elements of the array until a null element is encountered or
-     * the given predicate returns true.
-     * @param consumer the consumer of values that returns true if the forEach should terminate
+     * 遍历数组元素，直到遇到 null 或给定谓词返回 true。
+     * @param consumer 值消费者；返回 true 时终止 forEach
      */
     @SuppressWarnings("unchecked")
     public void forEachWhile(NonThrowingPredicate<? super T> consumer) {
@@ -99,12 +98,11 @@ public class AppendOnlyLinkedArrayList<T> {
     }
 
     /**
-     * Interprets the contents as NotificationLite objects and calls
-     * the appropriate Subscriber method.
+     * 将内容解释为 NotificationLite 对象并调用相应 Subscriber 方法。
      * 
-     * @param <U> the target type
-     * @param subscriber the subscriber to emit the events to
-     * @return true if a terminal event has been reached
+     * @param <U> 目标类型
+     * @param subscriber 接收事件的 subscriber
+     * @return 若已到达终止事件则为 true
      */
     public <U> boolean accept(Subscriber<? super U> subscriber) {
         Object[] a = head;
@@ -126,12 +124,11 @@ public class AppendOnlyLinkedArrayList<T> {
     }
 
     /**
-     * Interprets the contents as NotificationLite objects and calls
-     * the appropriate Observer method.
+     * 将内容解释为 NotificationLite 对象并调用相应 Observer 方法。
      * 
-     * @param <U> the target type
-     * @param observer the observer to emit the events to
-     * @return true if a terminal event has been reached
+     * @param <U> 目标类型
+     * @param observer 接收事件的 observer
+     * @return 若已到达终止事件则为 true
      */
     public <U> boolean accept(Observer<? super U> observer) {
         Object[] a = head;
@@ -153,12 +150,11 @@ public class AppendOnlyLinkedArrayList<T> {
     }
 
     /**
-     * Loops over all elements of the array until a null element is encountered or
-     * the given predicate returns true.
-     * @param <S> the extra state type
-     * @param state the extra state passed into the consumer
-     * @param consumer the consumer of values that returns true if the forEach should terminate
-     * @throws Throwable if the predicate throws
+     * 遍历数组元素，直到遇到 null 或给定谓词返回 true。
+     * @param <S> 额外状态类型
+     * @param state 传入消费者的额外状态
+     * @param consumer 值消费者；返回 true 时终止 forEach
+     * @throws Throwable 谓词抛出时
      */
     @SuppressWarnings("unchecked")
     public <S> void forEachWhile(S state, BiPredicate<? super S, ? super T> consumer) throws Throwable {

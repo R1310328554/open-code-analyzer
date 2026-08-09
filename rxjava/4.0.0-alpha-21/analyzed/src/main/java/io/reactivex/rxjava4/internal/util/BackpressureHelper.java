@@ -19,19 +19,19 @@ import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Utility class to help with backpressure-related operations such as request aggregation.
+ * 背压相关工具类，用于请求聚合等操作。
  */
 public final class BackpressureHelper {
-    /** Utility class. */
+    /** 工具类，禁止实例化。 */
     private BackpressureHelper() {
         throw new IllegalStateException("No instances!");
     }
 
     /**
-     * Adds two long values and caps the sum at {@link Long#MAX_VALUE}.
-     * @param aValue the first value
-     * @param bValue the second value
-     * @return the sum capped at {@link Long#MAX_VALUE}
+     * 两 long 相加，结果上限为 {@link Long#MAX_VALUE}。
+     * @param aValue 第一个值
+     * @param bValue 第二个值
+     * @return 上限截断后的和
      */
     public static long addCap(long aValue, long bValue) {
         long u = aValue + bValue;
@@ -42,10 +42,10 @@ public final class BackpressureHelper {
     }
 
     /**
-     * Multiplies two long values and caps the product at {@link Long#MAX_VALUE}.
-     * @param aValue the first value
-     * @param bValue the second value
-     * @return the product capped at {@link Long#MAX_VALUE}
+     * 两 long 相乘，结果上限为 {@link Long#MAX_VALUE}。
+     * @param aValue 第一个值
+     * @param bValue 第二个值
+     * @return 上限截断后的积
      */
     public static long multiplyCap(long aValue, long bValue) {
         long u = aValue * bValue;
@@ -58,11 +58,10 @@ public final class BackpressureHelper {
     }
 
     /**
-     * Atomically adds the positive value n to the requested value in the {@link AtomicLong} and
-     * caps the result at {@link Long#MAX_VALUE} and returns the previous value.
-     * @param requested the {@code AtomicLong} holding the current requested value
-     * @param n the value to add, must be positive (not verified)
-     * @return the original value before the add
+     * 原子地将正数 n 加到 {@link AtomicLong} 请求量上，结果上限 {@link Long#MAX_VALUE}，返回加之前的值。
+     * @param requested 持有当前请求量的 {@code AtomicLong}
+     * @param n 要加的值，应为正数（未校验）
+     * @return 加法前的原值
      */
     public static long add(@NonNull AtomicLong requested, long n) {
         for (;;) {
@@ -78,12 +77,10 @@ public final class BackpressureHelper {
     }
 
     /**
-     * Atomically adds the positive value n to the requested value in the {@link AtomicLong} and
-     * caps the result at {@link Long#MAX_VALUE} and returns the previous value and
-     * considers {@link Long#MIN_VALUE} as a cancel indication (no addition then).
-     * @param requested the {@code AtomicLong} holding the current requested value
-     * @param n the value to add, must be positive (not verified)
-     * @return the original value before the add
+     * 原子加请求量，将 {@link Long#MIN_VALUE} 视为取消标记（不再累加）。
+     * @param requested 持有当前请求量的 {@code AtomicLong}
+     * @param n 要加的值，应为正数（未校验）
+     * @return 加法前的原值
      */
     public static long addCancel(@NonNull AtomicLong requested, long n) {
         for (;;) {
@@ -102,10 +99,10 @@ public final class BackpressureHelper {
     }
 
     /**
-     * Atomically subtract the given number (positive, not validated) from the target field unless it contains {@link Long#MAX_VALUE}.
-     * @param requested the target field holding the current requested amount
-     * @param n the produced element count, positive (not validated)
-     * @return the new amount
+     * 原子地从目标字段减去已生产数量（除非当前为 {@link Long#MAX_VALUE}）。
+     * @param requested 持有当前请求量的目标字段
+     * @param n 已生产元素数，应为正数（未校验）
+     * @return 更新后的请求量
      */
     public static long produced(@NonNull AtomicLong requested, long n) {
         for (;;) {
@@ -125,11 +122,10 @@ public final class BackpressureHelper {
     }
 
     /**
-     * Atomically subtract the given number (positive, not validated) from the target field if
-     * it doesn't contain {@link Long#MIN_VALUE} (indicating some cancelled state) or {@link Long#MAX_VALUE} (unbounded mode).
-     * @param requested the target field holding the current requested amount
-     * @param n the produced element count, positive (not validated)
-     * @return the new amount
+     * 原子减已生产数量；若当前为 {@link Long#MIN_VALUE}（已取消）或 {@link Long#MAX_VALUE}（无界）则不修改。
+     * @param requested 持有当前请求量的目标字段
+     * @param n 已生产元素数，应为正数（未校验）
+     * @return 更新后的请求量
      */
     public static long producedCancel(@NonNull AtomicLong requested, long n) {
         for (;;) {

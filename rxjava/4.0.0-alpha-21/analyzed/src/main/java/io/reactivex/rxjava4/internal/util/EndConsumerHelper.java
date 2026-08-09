@@ -25,29 +25,24 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Utility class to help report multiple subscriptions with the same
- * consumer type instead of the internal "Disposable already set!" message
- * that is practically reserved for internal operators and indicate bugs in them.
+ * 辅助报告同一 consumer 类型的重复订阅，
+ * 替代内部 "Disposable already set!" 消息（该消息主要留给内部算子 bug）。
  */
 public final class EndConsumerHelper {
 
     /**
-     * Utility class.
+     * 工具类，禁止实例化。
      */
     private EndConsumerHelper() {
         throw new IllegalStateException("No instances!");
     }
 
     /**
-     * Ensures that the upstream Disposable is null and returns true, otherwise
-     * disposes the next Disposable and if the upstream is not the shared
-     * disposed instance, reports a ProtocolViolationException due to
-     * multiple subscribe attempts.
-     * @param upstream the upstream current value
-     * @param next the Disposable to check for nullness and dispose if necessary
-     * @param observer the class of the consumer to have a personalized
-     * error message if the upstream already contains a non-cancelled Disposable.
-     * @return true if successful, false if the upstream was non-null
+     * 确保上游 Disposable 为 null；否则 dispose next 并在非共享 disposed 实例时报告重复订阅。
+     * @param upstream 上游当前值
+     * @param next 待设置的 Disposable
+     * @param observer consumer 类，用于个性化错误消息
+     * @return 上游为 null 时 true
      */
     public static boolean validate(Disposable upstream, Disposable next, Class<?> observer) {
         Objects.requireNonNull(next, "next is null");
@@ -62,14 +57,11 @@ public final class EndConsumerHelper {
     }
 
     /**
-     * Atomically updates the target upstream AtomicReference from null to the non-null
-     * next Disposable, otherwise disposes next and reports a ProtocolViolationException
-     * if the AtomicReference doesn't contain the shared disposed indicator.
-     * @param upstream the target AtomicReference to update
-     * @param next the Disposable to set on it atomically
-     * @param observer the class of the consumer to have a personalized
-     * error message if the upstream already contains a non-cancelled Disposable.
-     * @return true if successful, false if the content of the AtomicReference was non-null
+     * 原子地将 null 更新为 next Disposable；失败则 dispose next 并报告协议违规。
+     * @param upstream 目标 AtomicReference
+     * @param next 要设置的 Disposable
+     * @param observer consumer 类，用于个性化错误消息
+     * @return CAS 成功为 true
      */
     public static boolean setOnce(AtomicReference<Disposable> upstream, Disposable next, Class<?> observer) {
         Objects.requireNonNull(next, "next is null");
@@ -84,15 +76,11 @@ public final class EndConsumerHelper {
     }
 
     /**
-     * Ensures that the upstream Subscription is null and returns true, otherwise
-     * cancels the next Subscription and if the upstream is not the shared
-     * cancelled instance, reports a ProtocolViolationException due to
-     * multiple subscribe attempts.
-     * @param upstream the upstream current value
-     * @param next the Subscription to check for nullness and cancel if necessary
-     * @param subscriber the class of the consumer to have a personalized
-     * error message if the upstream already contains a non-cancelled Subscription.
-     * @return true if successful, false if the upstream was non-null
+     * 确保上游 Subscription 为 null；否则 cancel next 并在非共享 cancelled 实例时报告重复订阅。
+     * @param upstream 上游当前值
+     * @param next 待设置的 Subscription
+     * @param subscriber consumer 类，用于个性化错误消息
+     * @return 上游为 null 时 true
      */
     public static boolean validate(Subscription upstream, Subscription next, Class<?> subscriber) {
         Objects.requireNonNull(next, "next is null");
@@ -107,14 +95,11 @@ public final class EndConsumerHelper {
     }
 
     /**
-     * Atomically updates the target upstream AtomicReference from null to the non-null
-     * next Subscription, otherwise cancels next and reports a ProtocolViolationException
-     * if the AtomicReference doesn't contain the shared cancelled indicator.
-     * @param upstream the target AtomicReference to update
-     * @param next the Subscription to set on it atomically
-     * @param subscriber the class of the consumer to have a personalized
-     * error message if the upstream already contains a non-cancelled Subscription.
-     * @return true if successful, false if the content of the AtomicReference was non-null
+     * 原子地将 null 更新为 next Subscription；失败则 cancel next 并报告协议违规。
+     * @param upstream 目标 AtomicReference
+     * @param next 要设置的 Subscription
+     * @param subscriber consumer 类，用于个性化错误消息
+     * @return CAS 成功为 true
      */
     public static boolean setOnce(AtomicReference<Subscription> upstream, Subscription next, Class<?> subscriber) {
         Objects.requireNonNull(next, "next is null");
@@ -129,9 +114,9 @@ public final class EndConsumerHelper {
     }
 
     /**
-     * Builds the error message with the consumer class.
-     * @param consumer the class of the consumer
-     * @return the error message string
+     * 根据 consumer 类名构建错误消息。
+     * @param consumer consumer 类名
+     * @return 错误消息字符串
      */
     public static String composeMessage(String consumer) {
         return "It is not allowed to subscribe with a(n) " + consumer + " multiple times. "
@@ -139,10 +124,8 @@ public final class EndConsumerHelper {
     }
 
     /**
-     * Report a ProtocolViolationException with a personalized message referencing
-     * the simple type name of the consumer class and report it via
-     * RxJavaPlugins.onError.
-     * @param consumer the class of the consumer
+     * 报告带个性化消息的 {@link ProtocolViolationException}，并通过 RxJavaPlugins.onError 上报。
+     * @param consumer consumer 类
      */
     public static void reportDoubleSubscription(Class<?> consumer) {
         RxJavaPlugins.onError(new ProtocolViolationException(composeMessage(consumer.getName())));

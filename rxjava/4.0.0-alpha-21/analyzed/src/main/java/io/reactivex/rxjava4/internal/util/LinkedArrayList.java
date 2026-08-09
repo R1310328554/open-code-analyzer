@@ -16,42 +16,40 @@ package io.reactivex.rxjava4.internal.util;
 import java.util.*;
 
 /**
- * A list implementation which combines an ArrayList with a LinkedList to
- * avoid copying values when the capacity needs to be increased.
+ * 结合 ArrayList 与 LinkedList 的列表实现，扩容时避免复制已有元素。
  * <p>
- * The class is non-final to allow embedding it directly and thus saving on object allocation.
+ * 类非 final，便于内嵌以减少对象分配。
  */
 public class LinkedArrayList {
-    /** The capacity of each array segment. */
+    /** 每个数组段的容量。 */
     final int capacityHint;
     /**
-     * Contains the head of the linked array list if not null. The
-     * length is always capacityHint + 1 and the last element is an Object[] pointing
-     * to the next element of the linked array list.
+     * 非 null 时为链式数组列表头；长度恒为 capacityHint + 1，
+     * 末元素为指向下一段的 Object[]。
      */
     Object[] head;
-    /** The tail array where new elements will be added. */
+    /** 当前尾段，新元素追加于此。 */
     Object[] tail;
     /**
-     * The total size of the list; written after elements have been added (release) and
-     * when read, the value indicates how many elements can be safely read (acquire).
+     * 列表总大小；写入在追加之后（release），
+     * 读取时表示可安全读取的元素数（acquire）。
      */
     volatile int size;
-    /** The next available slot in the current tail. */
+    /** 当前尾段下一个可用槽位。 */
     int indexInTail;
     /**
-     * Constructor with the capacity hint of each array segment.
-     * @param capacityHint the expected number of elements to hold (can grow beyond that)
+     * 指定每段容量提示的构造函数。
+     * @param capacityHint 预期元素数（可超出）
      */
     public LinkedArrayList(int capacityHint) {
         this.capacityHint = capacityHint;
     }
     /**
-     * Adds a new element to this list.
-     * @param o the object to add, nulls are accepted
+     * 向列表添加元素。
+     * @param o 要添加的对象，允许 null
      */
     public void add(Object o) {
-        // if no value yet, create the first array
+        // 尚无元素，创建首段数组
         if (size == 0) {
             head = new Object[capacityHint + 1];
             tail = head;
@@ -59,7 +57,7 @@ public class LinkedArrayList {
             indexInTail = 1;
             size = 1;
         } else
-        // if the tail is full, create a new tail and link
+        // 尾段已满，创建新尾段并链接
         if (indexInTail == capacityHint) {
             Object[] t = new Object[capacityHint + 1];
             t[0] = o;
@@ -74,16 +72,16 @@ public class LinkedArrayList {
         }
     }
     /**
-     * Returns the head buffer segment or null if the list is empty.
-     * @return the head object array
+     * 返回头段缓冲区；列表为空时为 null。
+     * @return 头 Object 数组
      */
     public Object[] head() {
         return head; // NOPMD
     }
 
     /**
-     * Returns the total size of the list.
-     * @return the total size of the list
+     * 返回列表总大小。
+     * @return 列表总大小
      */
     public int size() {
         return size;

@@ -17,15 +17,20 @@ import java.util.List;
 
 import io.reactivex.rxjava4.functions.BiFunction;
 
+/**
+ * 将元素追加到 {@link List} 并返回同一列表的 {@link BiFunction} 单例。
+ */
 @SuppressWarnings("rawtypes")
 public enum ListAddBiConsumer implements BiFunction<List, Object, List> {
     INSTANCE;
 
+    /** @return ListAddBiConsumer 单例 */
     @SuppressWarnings("unchecked")
     public static <T> BiFunction<List<T>, T, List<T>> instance() {
         return (BiFunction)INSTANCE;
     }
 
+    /** 将 t2 追加到 t1 并返回 t1。 */
     @SuppressWarnings("unchecked")
     @Override
     public List apply(List t1, Object t2) {

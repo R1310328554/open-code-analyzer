@@ -17,14 +17,19 @@ import java.util.*;
 
 import io.reactivex.rxjava4.functions.Supplier;
 
+/**
+ * 提供空 {@link HashMap} 的 {@link Supplier} 单例。
+ */
 public enum HashMapSupplier implements Supplier<Map<Object, Object>> {
     INSTANCE;
 
+    /** @return 创建空 {@link HashMap} 的 {@link Supplier} 单例 */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static <K, V> Supplier<Map<K, V>> asSupplier() {
         return (Supplier)INSTANCE;
     }
 
+    /** @return 新的空 {@link HashMap} */
     @Override public Map<Object, Object> get() {
         return new HashMap<>();
     }

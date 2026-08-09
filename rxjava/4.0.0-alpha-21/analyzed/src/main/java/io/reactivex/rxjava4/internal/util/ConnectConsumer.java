@@ -17,11 +17,13 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.functions.Consumer;
 
 /**
- * Store the Disposable received from the connection.
+ * 保存 connect 回调收到的 {@link Disposable}。
  */
 public final class ConnectConsumer implements Consumer<Disposable> {
+    /** connect 时收到的 Disposable。 */
     public Disposable disposable;
 
+    /** 保存传入的 Disposable。 */
     @Override
     public void accept(Disposable t) {
         this.disposable = t;

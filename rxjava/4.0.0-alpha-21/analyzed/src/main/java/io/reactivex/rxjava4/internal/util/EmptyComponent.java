@@ -20,17 +20,19 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Singleton implementing many interfaces as empty.
+ * 以空实现同时充当多种接口的单例占位组件。
  */
 public enum EmptyComponent implements FlowableSubscriber<Object>, Observer<Object>, MaybeObserver<Object>,
 SingleObserver<Object>, CompletableObserver, Subscription, Disposable {
     INSTANCE;
 
+    /** @return 作为 {@link Subscriber} 使用的单例 */
     @SuppressWarnings("unchecked")
     public static <T> Subscriber<T> asSubscriber() {
         return (Subscriber<T>)INSTANCE;
     }
 
+    /** @return 作为 {@link Observer} 使用的单例 */
     @SuppressWarnings("unchecked")
     public static <T> Observer<T> asObserver() {
         return (Observer<T>)INSTANCE;
@@ -38,7 +40,7 @@ SingleObserver<Object>, CompletableObserver, Subscription, Disposable {
 
     @Override
     public void dispose() {
-        // deliberately no-op
+        // 故意空操作
     }
 
     @Override

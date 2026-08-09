@@ -22,21 +22,19 @@ import io.reactivex.rxjava4.annotations.*;
 import io.reactivex.rxjava4.exceptions.CompositeException;
 
 /**
- * Terminal atomics for Throwable containers.
+ * Throwable 容器的终止态原子操作工具。
  */
 public final class ExceptionHelper {
 
-    /** Utility class. */
+    /** 工具类，禁止实例化。 */
     private ExceptionHelper() {
         throw new IllegalStateException("No instances!");
     }
 
     /**
-     * If the provided Throwable is an Error this method
-     * throws it, otherwise returns a CompletionException wrapping the error
-     * if that error is a checked exception.
-     * @param error the error to wrap or throw
-     * @return the (wrapped) error
+     * 若 error 为 Error 则直接抛出；否则对受检异常包装为 CompletionException 后返回。
+     * @param error 要包装或抛出的错误
+     * @return 包装后的错误
      */
     @NonNull
     public static RuntimeException wrapOrThrow(@NonNull Throwable error) {
@@ -49,11 +47,10 @@ public final class ExceptionHelper {
         return new CompletionException("You forgot to unwrap me!", error);
     }
     /**
-     * Unwraps a {@link CompletionException} and rethrows its {@link Error}
-     * or {@link RuntimeException} inside it, or returns it as is if
-     * the {@code CompletionException} holds a checked exception.
-     * @param error the error to unwrap and rethrow its cause if possible
-     * @return the {@code error} if it has a checked exception cause
+     * 解包 {@link CompletionException} 并重新抛出其中的 {@link Error} 或 {@link RuntimeException}；
+     * 若 cause 为受检异常则原样返回。
+     * @param error 要解包的错误
+     * @return cause 为受检异常时返回原 error
      * @since 4.0.0
      */
     @NonNull
@@ -69,8 +66,7 @@ public final class ExceptionHelper {
     }
 
     /**
-     * A singleton instance of a Throwable indicating a terminal state for exceptions,
-     * don't leak this.
+     * 表示异常容器终止态的单例 Throwable，请勿泄漏。
      */
     public static final Throwable TERMINATED = new Termination();
 
@@ -104,9 +100,9 @@ public final class ExceptionHelper {
     }
 
     /**
-     * Returns a flattened list of Throwables from tree-like CompositeException chain.
-     * @param t the starting throwable
-     * @return the list of Throwables flattened in a depth-first manner
+     * 将树状 CompositeException 链深度优先展平为 Throwable 列表。
+     * @param t 起始异常
+     * @return 展平后的异常列表
      */
     public static List<Throwable> flatten(Throwable t) {
         List<Throwable> list = new ArrayList<>();
@@ -129,11 +125,11 @@ public final class ExceptionHelper {
     }
 
     /**
-     * Workaround for Java 6 not supporting throwing a final Throwable from a catch block.
-     * @param <E> the generic exception type
-     * @param e the Throwable error to return or throw
-     * @return the Throwable e if it is a subclass of Exception
-     * @throws E the generic exception thrown
+     * Java 6 无法在 catch 中抛出 final Throwable 的变通方法。
+     * @param <E> 泛型异常类型
+     * @param e 要返回或抛出的 Throwable
+     * @return 若 e 为 Exception 子类则返回 e
+     * @throws E 否则抛出
      */
     @SuppressWarnings("unchecked")
     public static <E extends Throwable> Exception throwIfThrowable(Throwable e) throws E {
@@ -143,6 +139,7 @@ public final class ExceptionHelper {
         throw (E)e;
     }
 
+    /** 构建超时终止消息。 */
     public static String timeoutMessage(long timeout, TimeUnit unit) {
         return "The source did not signal an event for "
                 + timeout
@@ -151,6 +148,7 @@ public final class ExceptionHelper {
                 + " and has been terminated.";
     }
 
+    /** 终止态占位异常，不填充堆栈。 */
     static final class Termination extends Throwable {
 
         @Serial
@@ -167,9 +165,9 @@ public final class ExceptionHelper {
     }
 
     /**
-     * Composes a String with a null warning message.
-     * @param prefix the prefix to add to the message.
-     * @return the composed String
+     * 拼接含 null 警告的消息字符串。
+     * @param prefix 消息前缀
+     * @return 拼接后的字符串
      * @since 3.0.0
      */
     public static String nullWarning(String prefix) {
@@ -177,9 +175,9 @@ public final class ExceptionHelper {
     }
 
     /**
-     * Creates a NullPointerException with a composed message via {@link #nullWarning(String)}.
-     * @param prefix the prefix to add to the message.
-     * @return the composed String
+     * 通过 {@link #nullWarning(String)} 创建 NullPointerException。
+     * @param prefix 消息前缀
+     * @return NullPointerException
      * @since 3.0.0
      */
     public static NullPointerException createNullPointerException(String prefix) {
@@ -187,13 +185,12 @@ public final class ExceptionHelper {
     }
 
     /**
-     * Similar to Objects.requireNonNull but composes the error message via
-     * {@link #nullWarning(String)}.
-     * @param <T> the value type
-     * @param value the value to check
-     * @param prefix the prefix to the error message
-     * @return the value
-     * @throws NullPointerException if value is null
+     * 类似 Objects.requireNonNull，但错误消息由 {@link #nullWarning(String)} 拼接。
+     * @param <T> 值类型
+     * @param value 待检查的值
+     * @param prefix 错误消息前缀
+     * @return value
+     * @throws NullPointerException value 为 null 时
      * @since 3.0.0
      */
     public static <T> T nullCheck(T value, String prefix) {
@@ -204,12 +201,10 @@ public final class ExceptionHelper {
     }
 
     /**
-     * Unwraps both throwables if they are wrapped into a {@link CompletionException},
-     * then if both are present, add {@code b} as suppressed to {@code a}
-     * and return a; return b otherwise
-     * @param main the first throwable
-     * @param secondary the second throwable
-     * @return the unwrapped and combined throwable or null if both where
+     * 解包两个可能为 {@link CompletionException} 的异常；若均非 null 则将 b 压入 a 的 suppressed 并返回 a。
+     * @param main 第一个异常
+     * @param secondary 第二个异常
+     * @return 解包合并后的异常，或 null
      */
     @Nullable
     public static Throwable unwrapAndCombine(@Nullable Throwable main, @Nullable Throwable secondary) {
@@ -229,9 +224,9 @@ public final class ExceptionHelper {
     }
 
     /**
-     * Unwraps the given {@link CompletionException}.
-     * @param t the possible throwable to unwrap
-     * @return the unwrapped Throwable
+     * 解包给定 {@link CompletionException}。
+     * @param t 可能需解包的 Throwable
+     * @return 解包后的 Throwable
      */
     public static Throwable unwrap(@Nullable Throwable t) {
         if (t instanceof CompletionException) {
