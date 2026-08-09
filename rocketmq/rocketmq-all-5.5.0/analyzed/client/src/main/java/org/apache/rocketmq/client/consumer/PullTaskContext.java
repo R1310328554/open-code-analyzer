@@ -16,24 +16,33 @@
  */
 package org.apache.rocketmq.client.consumer;
 
+/**
+ * Pull 任务执行上下文：控制下次 pull 延迟并持有当前 {@link MQPullConsumer} 引用。
+ */
 public class PullTaskContext {
 
+    /** 下次 pull 延迟毫秒数，默认 200ms。 */
     private int pullNextDelayTimeMillis = 200;
 
+    /** 关联的 Pull 消费者实例。 */
     private MQPullConsumer pullConsumer;
 
+    /** 返回下次 pull 延迟。 */
     public int getPullNextDelayTimeMillis() {
         return pullNextDelayTimeMillis;
     }
 
+    /** 设置下次 pull 延迟。 */
     public void setPullNextDelayTimeMillis(int pullNextDelayTimeMillis) {
         this.pullNextDelayTimeMillis = pullNextDelayTimeMillis;
     }
 
+    /** 返回 Pull 消费者。 */
     public MQPullConsumer getPullConsumer() {
         return pullConsumer;
     }
 
+    /** 绑定 Pull 消费者。 */
     public void setPullConsumer(MQPullConsumer pullConsumer) {
         this.pullConsumer = pullConsumer;
     }

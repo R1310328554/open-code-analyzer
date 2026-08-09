@@ -19,33 +19,42 @@ package org.apache.rocketmq.client.consumer.listener;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 /**
- * Consumer Orderly consumption context
+ * 顺序消费上下文：控制 offset 自动提交与队列暂停时长。
  */
 public class ConsumeOrderlyContext {
+    /** 当前顺序消费所在队列。 */
     private final MessageQueue messageQueue;
+    /** 消费成功后是否自动提交 offset，默认 true。 */
     private boolean autoCommit = true;
+    /** 暂停当前队列的毫秒数，-1 表示不暂停。 */
     private long suspendCurrentQueueTimeMillis = -1;
 
+    /** 绑定当前消费队列。 */
     public ConsumeOrderlyContext(MessageQueue messageQueue) {
         this.messageQueue = messageQueue;
     }
 
+    /** 是否自动提交 offset。 */
     public boolean isAutoCommit() {
         return autoCommit;
     }
 
+    /** 设置是否自动提交 offset。 */
     public void setAutoCommit(boolean autoCommit) {
         this.autoCommit = autoCommit;
     }
 
+    /** 返回当前消息队列。 */
     public MessageQueue getMessageQueue() {
         return messageQueue;
     }
 
+    /** 返回队列暂停时长（毫秒）。 */
     public long getSuspendCurrentQueueTimeMillis() {
         return suspendCurrentQueueTimeMillis;
     }
 
+    /** 设置队列暂停时长（毫秒）。 */
     public void setSuspendCurrentQueueTimeMillis(long suspendCurrentQueueTimeMillis) {
         this.suspendCurrentQueueTimeMillis = suspendCurrentQueueTimeMillis;
     }

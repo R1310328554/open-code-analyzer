@@ -19,12 +19,15 @@ package org.apache.rocketmq.client.consumer;
 import java.util.Set;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * Topic 队列数变更监听器：Topic 扩缩容导致 {@link MessageQueue} 集合变化时触发。
+ */
 public interface TopicMessageQueueChangeListener {
     /**
-     * This method will be invoked in the condition of queue numbers changed, These scenarios occur when the topic is
-     * expanded or shrunk.
+     * Topic 队列数量变更时回调（扩缩容场景）。
      *
-     * @param messageQueues
+     * @param topic           发生变更的 Topic
+     * @param messageQueues   变更后的队列集合
      */
     void onChanged(String topic, Set<MessageQueue> messageQueues);
 }

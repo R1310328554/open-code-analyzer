@@ -18,6 +18,10 @@ package org.apache.rocketmq.client.consumer;
 
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * Pull 模式消费循环任务回调：对每个已分配 {@link MessageQueue} 执行一次 pull 调度。
+ */
 public interface PullTaskCallback {
+    /** 对指定队列执行一次 pull 任务；可通过 {@link PullTaskContext} 调节下次延迟。 */
     void doPullTask(final MessageQueue mq, final PullTaskContext context);
 }

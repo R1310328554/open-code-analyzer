@@ -17,25 +17,18 @@
 
 package org.apache.rocketmq.client.consumer.listener;
 
+/**
+ * 消费结果类型：用于统计与监控区分成功、超时、异常等场景。
+ */
 public enum ConsumeReturnType {
-    /**
-     * consume return success
-     */
+    /** 正常消费成功。 */
     SUCCESS,
-    /**
-     * consume timeout ,even if success
-     */
+    /** 消费超时（即使业务逻辑已成功）。 */
     TIME_OUT,
-    /**
-     * consume throw exception
-     */
+    /** 消费过程抛出异常。 */
     EXCEPTION,
-    /**
-     * consume return null
-     */
+    /** listener 返回 null。 */
     RETURNNULL,
-    /**
-     * consume return failed
-     */
+    /** 消费明确失败。 */
     FAILED
 }

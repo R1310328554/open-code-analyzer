@@ -17,10 +17,12 @@
 package org.apache.rocketmq.client.consumer;
 
 /**
- * Async message pulling interface
+ * 异步拉取消息回调：{@link MQPullConsumer} 发起 pull 后通过本接口通知结果或异常。
  */
 public interface PullCallback {
+    /** 拉取成功时回调，携带 {@link PullResult}。 */
     void onSuccess(final PullResult pullResult);
 
+    /** 拉取过程发生异常时回调。 */
     void onException(final Throwable e);
 }
