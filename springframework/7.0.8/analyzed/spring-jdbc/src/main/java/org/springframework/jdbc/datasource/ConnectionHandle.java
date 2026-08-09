@@ -19,7 +19,9 @@ package org.springframework.jdbc.datasource;
 import java.sql.Connection;
 
 /**
- * 通过 JDBC 连接句柄实现的简单接口。例如，由 JpaDialect 使用。
+ * JDBC Connection 句柄的简单接口。
+ * 例如 JpaDialect 会使用它。
+ *
  * @author Juergen Hoeller
  * @since 1.1
  * @see SimpleConnectionHandle
@@ -29,13 +31,14 @@ import java.sql.Connection;
 public interface ConnectionHandle {
 
 	/**
-	 * 获取该句柄引用的 JDBC 连接。
+	 * 获取本句柄引用的 JDBC Connection。
 	 */
 	Connection getConnection();
 
 	/**
-	 * 释放该句柄引用的 JDBC 连接。 <p>默认实现为空，假设连接的生命周期由外部管理。
-	 * @param con 要释放的 JDBC 连接
+	 * 释放本句柄引用的 JDBC Connection。
+	 * <p>默认实现为空，假定连接生命周期由外部管理。
+	 * @param con 要释放的 JDBC Connection
 	 */
 	default void releaseConnection(Connection con) {
 	}

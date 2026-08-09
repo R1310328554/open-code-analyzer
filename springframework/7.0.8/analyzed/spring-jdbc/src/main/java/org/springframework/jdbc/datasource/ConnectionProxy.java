@@ -19,9 +19,12 @@ package org.springframework.jdbc.datasource;
 import java.sql.Connection;
 
 /**
- * {@link java.sql.Connection} 的子接口由连接代理实现。允许访问底层目标连接。
- * <p> 当需要转换为原生 JDBC Connection（例如 Oracle 的 OracleConnection）时，可以选中此接口。或者，所有此类连接也支持 JDBC
- * 4.0 的 {@link Connection#unwrap}。
+ * Connection 代理应实现的 {@link java.sql.Connection} 子接口。
+ * 允许访问底层目标 Connection。
+ *
+ * <p>需要转换为原生 JDBC Connection（如 Oracle 的 OracleConnection）时可检查本接口。
+ * 或者，此类连接也支持 JDBC 4.0 的 {@link Connection#unwrap}。
+ *
  * @author Juergen Hoeller
  * @since 1.1
  * @see TransactionAwareDataSourceProxy
@@ -31,8 +34,9 @@ import java.sql.Connection;
 public interface ConnectionProxy extends Connection {
 
 	/**
-	 * 返回此代理的目标连接。 <p>这通常是本机驱动程序连接或连接池中的包装器。
-	 * @return 底层连接（绝不是 {@code null}）
+	 * 返回本代理的目标 Connection。
+	 * <p>通常是原生驱动 Connection 或连接池包装器。
+	 * @return 底层 Connection（永不为 {@code null}）
 	 */
 	Connection getTargetConnection();
 

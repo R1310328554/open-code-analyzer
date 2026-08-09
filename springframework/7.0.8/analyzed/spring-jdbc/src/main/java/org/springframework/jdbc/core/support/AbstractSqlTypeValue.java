@@ -25,16 +25,25 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.SqlTypeValue;
 
 /**
- * SqlTypeValue 接口的抽象实现，用于方便创建应传递到 {@code PreparedStatement.setObject} 方法中的类型值。 {@code
- * createTypeValue} 回调方法可以访问底层 Connection（如果需要创建任何特定于数据库的对象）。
- * StoredProcedure 中的 <p>A 使用示例（将其与超类 javadoc 中的纯 SqlTypeValue 版本进行比较）：
- * <pre class="code">proc.declareParameter(new SqlParameter("myarray", Types.ARRAY,
- * "NUMBERS")); ...
- * 映射<字符串，对象> in = new HashMap<String, Object>(); in.put("myarray", new
- * AbstractSqlTypeValue() { public Object createTypeValue(Connection con, int sqlType,
- * String typeName) throws SQLException { oracle.sql.ArrayDescriptor desc = new
- * oracle.sql.ArrayDescriptor(typeName, con); return new oracle.sql.ARRAY(desc, con,席位); }
- * });映射出=执行（输入）； OCAJAVA0文档
+ * {@link SqlTypeValue} 接口的抽象实现，便于创建应传入
+ * {@code PreparedStatement.setObject} 方法的类型值。
+ * {@code createTypeValue} 回调可访问底层 Connection，以便创建数据库特定对象。
+ *
+ * <p>StoredProcedure 中的使用示例（可与父类 javadoc 中的普通 SqlTypeValue 写法对比）：
+ *
+ * <pre class="code">proc.declareParameter(new SqlParameter("myarray", Types.ARRAY, "NUMBERS"));
+ * ...
+ *
+ * Map&lt;String, Object&gt; in = new HashMap&lt;String, Object&gt;();
+ * in.put("myarray", new AbstractSqlTypeValue() {
+ *   public Object createTypeValue(Connection con, int sqlType, String typeName) throws SQLException {
+ *	   oracle.sql.ArrayDescriptor desc = new oracle.sql.ArrayDescriptor(typeName, con);
+ *	   return new oracle.sql.ARRAY(desc, con, seats);
+ *   }
+ * });
+ * Map out = execute(in);
+ * </pre>
+ *
  * @author Juergen Hoeller
  * @since 1.1
  * @see java.sql.PreparedStatement#setObject(int, Object, int)
@@ -42,9 +51,6 @@ import org.springframework.jdbc.core.SqlTypeValue;
  */
 public abstract class AbstractSqlTypeValue implements SqlTypeValue {
 
-	/**
-	 * 设置 Type Value（`TypeValue`）。
-	 */
 	@Override
 	public final void setTypeValue(PreparedStatement ps, int paramIndex, int sqlType, @Nullable String typeName)
 			throws SQLException {
@@ -59,12 +65,12 @@ public abstract class AbstractSqlTypeValue implements SqlTypeValue {
 	}
 
 	/**
-	 * 创建要传递到 {@code PreparedStatement.setObject} 的类型值。
-	 * @param con JDBC 连接（如果需要创建任何特定于数据库的对象）
-	 * @param sqlType 我们正在设置的参数的 SQL 类型
+	 * 创建要传入 {@code PreparedStatement.setObject} 的类型值。
+	 * @param con JDBC Connection，创建数据库特定对象时可能需要
+	 * @param sqlType 要设置的参数的 SQL 类型
 	 * @param typeName 参数的类型名称
 	 * @return 类型值
-	 * @throws SQLException 如果设置参数值时遇到 SQLException（即无需捕获 SQLException）
+	 * @throws SQLException 设置参数值时遇到 SQLException（无需捕获）
 	 * @see java.sql.PreparedStatement#setObject(int, Object, int)
 	 */
 	protected abstract Object createTypeValue(Connection con, int sqlType, @Nullable String typeName)

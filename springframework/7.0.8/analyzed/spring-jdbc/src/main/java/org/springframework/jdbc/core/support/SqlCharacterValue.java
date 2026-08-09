@@ -29,14 +29,19 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.SqlTypeValue;
 
 /**
- * 表示 SQL 语句的基于字符的参数值的对象，例如 CLOB/NCLOB 或 LONGVARCHAR 列的字符流。
- * <p> 设计用于与 {@link org.springframework.jdbc.core.JdbcTemplate} 以及 {@link
- * org.springframework.jdbc.core.simple.JdbcClient} 一起使用，作为包装目标内容值的参数值传入。
- * <p>可以与{@link org.springframework.jdbc.core.SqlParameterValue}组合用于指定SQL类型，例如{@code new
- * SqlParameterValue(Types.CLOB, new
- * SqlCharacterValue(myContent))}。对于大多数数据库驱动程序，类型提示实际上并不是必需的。
- * <p>注意：仅在实际 CLOB 的情况下指定 {@code Types.CLOB}，否则首选 {@code Types.LONGVARCHAR}。这与 {@link
- * SqlLobValue} 形成鲜明对比，其中字符序列处理较为宽松。
+ * 表示 SQL 语句字符型参数值的对象，例如 CLOB/NCLOB 或 LONGVARCHAR 列的字符流。
+ *
+ * <p>设计用于 {@link org.springframework.jdbc.core.JdbcTemplate} 和
+ * {@link org.springframework.jdbc.core.simple.JdbcClient}，
+ * 作为包装目标内容的参数值传入。
+ *
+ * <p>可与 {@link org.springframework.jdbc.core.SqlParameterValue} 组合以指定 SQL 类型，例如
+ * {@code new SqlParameterValue(Types.CLOB, new SqlCharacterValue(myContent))}。
+ * 多数数据库驱动实际上不需要类型提示。
+ *
+ * <p>注意：仅在实际 CLOB 时使用 {@code Types.CLOB}，否则优先 {@code Types.LONGVARCHAR}。
+ * 这与 {@link SqlLobValue} 对字符序列的宽松处理不同。
+ *
  * @author Juergen Hoeller
  * @since 6.1.4
  * @see SqlBinaryValue
@@ -44,15 +49,13 @@ import org.springframework.jdbc.core.SqlTypeValue;
  */
 public class SqlCharacterValue implements SqlTypeValue {
 
-	/** `content`：该类的成员状态。 */
 	private final Object content;
 
-	/** `length`：该类的成员状态。 */
 	private final long length;
 
 
 	/**
-	 * 使用给定的内容字符串创建一个新的 CLOB 值。
+	 * 使用给定内容字符串创建新的 CLOB 值。
 	 * @param string String 或其他 CharSequence 形式的内容
 	 */
 	public SqlCharacterValue(CharSequence string) {
@@ -61,8 +64,8 @@ public class SqlCharacterValue implements SqlTypeValue {
 	}
 
 	/**
-	 * 为给定内容创建一个新的 {@code SqlCharacterValue}。
-	 * @param characters 内容为字符数组
+	 * 为给定内容创建新的 {@code SqlCharacterValue}。
+	 * @param characters 字符数组形式的内容
 	 */
 	public SqlCharacterValue(char[] characters) {
 		this.content = characters;
@@ -70,9 +73,9 @@ public class SqlCharacterValue implements SqlTypeValue {
 	}
 
 	/**
-	 * 为给定内容创建一个新的 {@code SqlCharacterValue}。
-	 * @param reader 内容阅读器
-	 * @param length 内容的长度（如果未确定则为-1）
+	 * 为给定内容创建新的 {@code SqlCharacterValue}。
+	 * @param reader 内容 Reader
+	 * @param length 内容长度（未知时为 -1）
 	 */
 	public SqlCharacterValue(Reader reader, long length) {
 		this.content = reader;
@@ -80,9 +83,9 @@ public class SqlCharacterValue implements SqlTypeValue {
 	}
 
 	/**
-	 * 为给定内容创建一个新的 {@code SqlCharacterValue}。
-	 * @param asciiStream 内容为 ASCII 流
-	 * @param length 内容的长度（如果未确定则为-1）
+	 * 为给定内容创建新的 {@code SqlCharacterValue}。
+	 * @param asciiStream ASCII 流形式的内容
+	 * @param length 内容长度（未知时为 -1）
 	 */
 	public SqlCharacterValue(InputStream asciiStream, long length) {
 		this.content = asciiStream;
@@ -90,9 +93,6 @@ public class SqlCharacterValue implements SqlTypeValue {
 	}
 
 
-	/**
-	 * 设置 Type Value（`TypeValue`）。
-	 */
 	@Override
 	public void setTypeValue(PreparedStatement ps, int paramIndex, int sqlType, @Nullable String typeName)
 			throws SQLException {
@@ -114,9 +114,6 @@ public class SqlCharacterValue implements SqlTypeValue {
 		}
 	}
 
-	/**
-	 * 设置 String（`String`）。
-	 */
 	private void setString(PreparedStatement ps, int paramIndex, int sqlType, String string)
 			throws SQLException {
 
@@ -131,9 +128,6 @@ public class SqlCharacterValue implements SqlTypeValue {
 		}
 	}
 
-	/**
-	 * 设置 Reader（`Reader`）。
-	 */
 	private void setReader(PreparedStatement ps, int paramIndex, int sqlType, Reader reader, long length)
 			throws SQLException {
 
@@ -163,9 +157,6 @@ public class SqlCharacterValue implements SqlTypeValue {
 		}
 	}
 
-	/**
-	 * 设置 Input Stream（`InputStream`）。
-	 */
 	private void setInputStream(PreparedStatement ps, int paramIndex, InputStream is, long length)
 			throws SQLException {
 

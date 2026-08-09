@@ -26,10 +26,14 @@ import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
 
 /**
- * 包装 JDBC {@link Connection} 的资源持有者。对于特定的 {@link javax.sql.DataSource}，{@link
- * DataSourceTransactionManager} 将此类的实例绑定到线程。
- * <p>从基类继承了对嵌套 JDBC 事务和引用计数功能的仅回滚支持。
- * <p>注意：这是一个 SPI 类，不适合由应用程序使用。
+ * 包装 JDBC {@link Connection} 的资源持有者。
+ * {@link DataSourceTransactionManager} 会将本类实例
+ * 绑定到特定 {@link javax.sql.DataSource} 的线程上下文。
+ *
+ * <p>从基类继承嵌套 JDBC 事务的 rollback-only 支持与引用计数功能。
+ *
+ * <p>注意：这是 SPI 类，不供应用程序直接使用。
+ *
  * @author Juergen Hoeller
  * @since 06.05.2003
  * @see DataSourceTransactionManager
@@ -38,29 +42,25 @@ import org.springframework.util.Assert;
 public class ConnectionHolder extends ResourceHolderSupport {
 
 	/**
-	 * 保存点名称的前缀。
+	 * 保存点名称前缀。
 	 */
 	public static final String SAVEPOINT_NAME_PREFIX = "SAVEPOINT_";
 
 
-	/** 连接相关状态（`connectionHandle`）。 */
 	private @Nullable ConnectionHandle connectionHandle;
 
-	/** 连接相关状态（`currentConnection`）。 */
 	private @Nullable Connection currentConnection;
 
-	/** `false`：该类的成员状态。 */
 	private boolean transactionActive = false;
 
-	/** `savepointsSupported`：该类的成员状态。 */
 	private @Nullable Boolean savepointsSupported;
 
 	private int savepointCounter = 0;
 
 
 	/**
-	 * 为给定的 ConnectionHandle 创建一个新的 ConnectionHolder。
-	 * @param connectionHandle 要保存的 ConnectionHandle
+	 * 为给定 ConnectionHandle 创建新的 ConnectionHolder。
+	 * @param connectionHandle 要持有的 ConnectionHandle
 	 */
 	public ConnectionHolder(ConnectionHandle connectionHandle) {
 		Assert.notNull(connectionHandle, "ConnectionHandle must not be null");
@@ -68,8 +68,9 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * 为给定的 JDBC 连接创建一个新的 ConnectionHolder，用 {@link SimpleConnectionHandle} 包装它，假设没有正在进行的事务。
-	 * @param connection 要保存的 JDBC 连接
+	 * 为给定 JDBC Connection 创建新的 ConnectionHolder，
+	 * 使用 {@link SimpleConnectionHandle} 包装，假定当前无进行中的事务。
+	 * @param connection 要持有的 JDBC Connection
 	 * @see SimpleConnectionHandle
 	 * @see #ConnectionHolder(java.sql.Connection, boolean)
 	 */
@@ -78,9 +79,10 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * 为给定的 JDBC 连接创建一个新的 ConnectionHolder，并用 {@link SimpleConnectionHandle} 包装它。
-	 * @param connection 要保存的 JDBC 连接
-	 * @param transactionActive 给定的连接是否参与正在进行的事务
+	 * 为给定 JDBC Connection 创建新的 ConnectionHolder，
+	 * 使用 {@link SimpleConnectionHandle} 包装。
+	 * @param connection 要持有的 JDBC Connection
+	 * @param transactionActive 给定 Connection 是否参与进行中的事务
 	 * @see SimpleConnectionHandle
 	 */
 	public ConnectionHolder(Connection connection, boolean transactionActive) {
@@ -90,21 +92,21 @@ public class ConnectionHolder extends ResourceHolderSupport {
 
 
 	/**
-	 * 返回此 ConnectionHolder 持有的 ConnectionHandle。
+	 * 返回本 ConnectionHolder 持有的 ConnectionHandle。
 	 */
 	public @Nullable ConnectionHandle getConnectionHandle() {
 		return this.connectionHandle;
 	}
 
 	/**
-	 * 返回此持有者当前是否有连接。
+	 * 返回本持有者当前是否持有 Connection。
 	 */
 	protected boolean hasConnection() {
 		return (this.connectionHandle != null);
 	}
 
 	/**
-	 * 设置此持有者是否代表活动的、由 JDBC 管理的事务。
+	 * 设置本持有者是否表示活跃的、由 JDBC 管理的事务。
 	 * @see DataSourceTransactionManager
 	 */
 	protected void setTransactionActive(boolean transactionActive) {
@@ -112,7 +114,7 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * 返回此持有者是否代表一个活动的、由 JDBC 管理的事务。
+	 * 返回本持有者是否表示活跃的、由 JDBC 管理的事务。
 	 */
 	protected boolean isTransactionActive() {
 		return this.transactionActive;
@@ -120,7 +122,10 @@ public class ConnectionHolder extends ResourceHolderSupport {
 
 
 	/**
-	 * 使用给定的连接覆盖现有的连接句柄。如果给出 {@code null}，则重置句柄。 <p>用于在挂起时释放连接（使用 {@code null} 参数）并在恢复时设置新连接。
+	 * 用给定 Connection 覆盖现有 Connection 句柄。
+	 * 若传入 {@code null} 则重置句柄。
+	 * <p>用于挂起时释放 Connection（传入 {@code null}）
+	 * 以及恢复时设置新 Connection。
 	 */
 	protected void setConnection(@Nullable Connection connection) {
 		if (this.currentConnection != null) {
@@ -138,8 +143,9 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * 返回此 ConnectionHolder 所持有的当前 Connection。 <p>这将是相同的连接，直到 {@code released} 在
-	 * ConnectionHolder 上被调用，这将重置所保持的连接，按需获取新的连接。
+	 * 返回本 ConnectionHolder 当前持有的 Connection。
+	 * <p>在调用 {@code released} 重置之前，将始终是同一 Connection；
+	 * 重置后按需获取新 Connection。
 	 * @see ConnectionHandle#getConnection()
 	 * @see #released()
 	 */
@@ -152,8 +158,9 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * 返回是否支持 JDBC 保存点。在此 ConnectionHolder 的生命周期内缓存该标志。
-	 * @throws SQLException 如果由 JDBC 驱动程序抛出
+	 * 返回是否支持 JDBC 保存点。
+	 * 在本 ConnectionHolder 生命周期内缓存该标志。
+	 * @throws SQLException JDBC 驱动抛出时
 	 */
 	public boolean supportsSavepoints() throws SQLException {
 		if (this.savepointsSupported == null) {
@@ -163,9 +170,10 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * 使用对于连接来说唯一的生成的保存点名称为当前连接创建一个新的 JDBC 保存点。
-	 * @return 新的保存点
-	 * @throws SQLException 如果由 JDBC 驱动程序抛出
+	 * 为当前 Connection 创建新的 JDBC 保存点，
+	 * 使用对该 Connection 唯一的生成名称。
+	 * @return 新的 Savepoint
+	 * @throws SQLException JDBC 驱动抛出时
 	 */
 	public Savepoint createSavepoint() throws SQLException {
 		this.savepointCounter++;
@@ -173,8 +181,10 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	}
 
 	/**
-	 * 释放此 ConnectionHolder 所持有的当前 Connection。 <p>这对于期望“连接借用”的ConnectionHandles是必需的，其中每个返回的Conn
-	 * ection只是临时租用，并且需要在数据操作完成后返回，以使Connection可用于同一事务中的其他操作。
+	 * 释放本 ConnectionHolder 当前持有的 Connection。
+	 * <p>对于期望“连接借用”的 ConnectionHandle 而言这是必要的：
+	 * 每次返回的 Connection 仅临时租借，数据操作完成后须归还，
+	 * 以便同一事务内其他操作继续使用。
 	 */
 	@Override
 	public void released() {
@@ -188,9 +198,6 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	}
 
 
-	/**
-	 * 清空（方法 `clear`）。
-	 */
 	@Override
 	public void clear() {
 		super.clear();

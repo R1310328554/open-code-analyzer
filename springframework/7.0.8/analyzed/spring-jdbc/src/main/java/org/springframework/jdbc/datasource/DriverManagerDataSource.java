@@ -25,25 +25,35 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * 标准 JDBC {@link javax.sql.DataSource} 接口的简单实现，通​​过 bean 属性配置普通的旧 JDBC {@link
- * java.sql.DriverManager}，并从每个 {@code getConnection} 调用返回新的 {@link java.sql.Connection}。
- * <p><b>NOTE：该类不是实际的连接池；它实际上并不池化 Connections.</b> 它只是作为成熟连接池的简单替代，实现相同的标准接口，但在每次调用时创建新的连接。
- * <p> 对于 Jakarta EE 容器外部的测试或独立环境很有用，可以作为相应 ApplicationContext 中的 DataSource bean，也可以与简单的 J
- * NDI 环境结合使用。池假设 {@code Connection.close()} 调用将简单地关闭连接，因此任何数据源感知的持久性代码都应该可以工作。
- * <p><b>NOTE：在特殊的类加载环境（例如 OSGi）中，由于 JDBC DriverManager 的一般类加载问题可以通过直接使用驱动程序来解决（这正是 SimpleD
- * riverDataSource 所做的），因此该类实际上被 {@link SimpleDriverDataSource} 取代。</b>
- * <p>在Jakarta EE容器中，建议使用容器提供的JNDI DataSource。这样的 DataSource 可以通过 {@link
- * org.springframework.jndi.JndiObjectFactoryBean} 在 Spring ApplicationContext 中公开为
- * DataSource bean，以便无缝切换到此类本地 DataSource bean 或从本地 DataSource bean
- * 无缝切换。对于测试，您可以通过第三方的完整解决方案（例如 <a
- * href="https://github.com/h-thurow/Simple-JNDI">Simple-JNDI</a>）设置模拟 JNDI 环境，或者将 bean
- * 定义切换到本地 DataSource（这更简单，因此推荐）。
- * <p>此 {@code DriverManagerDataSource} 类最初是与 <a
- * href="https://commons.apache.org/proper/commons-dbcp">Apache Commons DBCP</a> 和 <a
- * href="https://sourceforge.net/projects/c3p0">C3P0</a> 一起设计的，具有 bean 风格的 {@code
- * BasicDataSource}/{@code ComboPooledDataSource} 类以及用于本地资源设置的配置属性。对于现代 JDBC 连接池，请考虑使用 <a
- * href="https://github.com/brettwooldridge/HikariCP">HikariCP</a>，向应用程序公开相应的 {@code
- * HikariDataSource} 实例。
+ * 标准 JDBC {@link javax.sql.DataSource} 接口的简单实现，
+ * 通过 bean 属性配置传统 {@link java.sql.DriverManager}，
+ * 每次 {@code getConnection} 调用返回新的 {@link java.sql.Connection}。
+ *
+ * <p><b>注意：本类不是真正的连接池，不会复用 Connection。</b>
+ * 它只是完整连接池的简单替代，实现相同标准接口，但每次调用都创建新 Connection。
+ *
+ * <p>适用于 Jakarta EE 容器外的测试或独立环境，
+ * 可作为 ApplicationContext 中的 DataSource bean，或配合简单 JNDI 环境使用。
+ * 假定连接池的 {@code Connection.close()} 调用会直接关闭连接，
+ * 因此任何 DataSource 感知的持久化代码均可正常工作。
+ *
+ * <p><b>注意：在 OSGi 等特殊类加载环境中，由于 DriverManager 的类加载问题，
+ * 本类实质上已被 {@link SimpleDriverDataSource} 取代；
+ * 后者通过直接使用 Driver 解决该问题。</b>
+ *
+ * <p>在 Jakarta EE 容器中，建议使用容器提供的 JNDI DataSource。
+ * 可通过 {@link org.springframework.jndi.JndiObjectFactoryBean} 将其暴露为 Spring
+ * ApplicationContext 中的 DataSource bean，与本类本地 bean 无缝切换。
+ * 测试时可使用第三方完整方案（如 <a href="https://github.com/h-thurow/Simple-JNDI">Simple-JNDI</a>）
+ * 搭建模拟 JNDI 环境，或改用本地 DataSource bean（更简单，推荐）。
+ *
+ * <p>本 {@code DriverManagerDataSource} 最初与
+ * <a href="https://commons.apache.org/proper/commons-dbcp">Apache Commons DBCP</a>
+ * 和 <a href="https://sourceforge.net/projects/c3p0">C3P0</a> 同期设计，
+ * 提供 bean 风格的 {@code BasicDataSource}/{@code ComboPooledDataSource} 配置属性。
+ * 现代 JDBC 连接池可考虑 <a href="https://github.com/brettwooldridge/HikariCP">HikariCP</a>，
+ * 向应用暴露对应的 {@code HikariDataSource} 实例。
+ *
  * @author Juergen Hoeller
  * @since 14.03.2003
  * @see SimpleDriverDataSource
@@ -51,14 +61,15 @@ import org.springframework.util.ClassUtils;
 public class DriverManagerDataSource extends AbstractDriverBasedDataSource {
 
 	/**
-	 * bean 样式配置的构造函数。
+	 * 用于 bean 风格配置的构造函数。
 	 */
 	public DriverManagerDataSource() {
 	}
 
 	/**
-	 * 使用给定的 JDBC URL 创建新的 DriverManagerDataSource，而不指定 JDBC 访问的用户名或密码。
-	 * @param url 用于访问 DriverManager 的 JDBC URL
+	 * 使用给定 JDBC URL 创建新的 DriverManagerDataSource，
+	 * 不指定 JDBC 访问的用户名或密码。
+	 * @param url 访问 DriverManager 使用的 JDBC URL
 	 * @see java.sql.DriverManager#getConnection(String)
 	 */
 	public DriverManagerDataSource(String url) {
@@ -66,10 +77,10 @@ public class DriverManagerDataSource extends AbstractDriverBasedDataSource {
 	}
 
 	/**
-	 * 使用给定的标准 DriverManager 参数创建一个新的 DriverManagerDataSource。
-	 * @param url 用于访问 DriverManager 的 JDBC URL
-	 * @param username 用于访问 DriverManager 的 JDBC 用户名
-	 * @param password 用于访问 DriverManager 的 JDBC 密码
+	 * 使用给定标准 DriverManager 参数创建新的 DriverManagerDataSource。
+	 * @param url 访问 DriverManager 使用的 JDBC URL
+	 * @param username 访问 DriverManager 使用的 JDBC 用户名
+	 * @param password 访问 DriverManager 使用的 JDBC 密码
 	 * @see java.sql.DriverManager#getConnection(String, String, String)
 	 */
 	public DriverManagerDataSource(String url, String username, String password) {
@@ -79,8 +90,9 @@ public class DriverManagerDataSource extends AbstractDriverBasedDataSource {
 	}
 
 	/**
-	 * 使用给定的 JDBC URL 创建新的 DriverManagerDataSource，而不指定 JDBC 访问的用户名或密码。
-	 * @param url 用于访问 DriverManager 的 JDBC URL
+	 * 使用给定 JDBC URL 创建新的 DriverManagerDataSource，
+	 * 不指定 JDBC 访问的用户名或密码。
+	 * @param url 访问 DriverManager 使用的 JDBC URL
 	 * @param conProps JDBC 连接属性
 	 * @see java.sql.DriverManager#getConnection(String)
 	 */
@@ -91,10 +103,11 @@ public class DriverManagerDataSource extends AbstractDriverBasedDataSource {
 
 
 	/**
-	 * 设置 JDBC 驱动程序类名。该驱动程序将在启动时进行初始化，并在 JDK 的 DriverManager 中注册自身。 <p><b>NOTE：DriverManagerDat
-	 * aSource 主要用于访问 <i> 预注册的 </i> JDBC 驱动程序。</b> 如果您需要注册新驱动程序，请考虑使用 {@link SimpleDriverDataSo
-	 * urce}。或者，考虑在实例化此数据源之前自行初始化 JDBC 驱动程序。保留“driverClassName”属性主要是为了向后兼容，以及在 Commons DBCP 和此数
-	 * 据源之间进行迁移。
+	 * 设置 JDBC 驱动类名。启动时将初始化该驱动并向 JDK DriverManager 注册。
+	 * <p><b>注意：DriverManagerDataSource 主要用于访问<i>已注册</i>的 JDBC 驱动。</b>
+	 * 若需注册新驱动，建议使用 {@link SimpleDriverDataSource}。
+	 * 或者在本 DataSource 实例化前自行初始化 JDBC 驱动。
+	 * "driverClassName" 属性主要为向后兼容及 Commons DBCP 与本 DataSource 迁移保留。
 	 * @see java.sql.DriverManager#registerDriver(java.sql.Driver)
 	 * @see SimpleDriverDataSource
 	 */
@@ -113,9 +126,6 @@ public class DriverManagerDataSource extends AbstractDriverBasedDataSource {
 	}
 
 
-	/**
-	 * 获取 Connection From Driver（`ConnectionFromDriver`）。
-	 */
 	@Override
 	protected Connection getConnectionFromDriver(Properties props) throws SQLException {
 		String url = getUrl();
@@ -127,7 +137,8 @@ public class DriverManagerDataSource extends AbstractDriverBasedDataSource {
 	}
 
 	/**
-	 * 使用 DriverManager 中令人讨厌的静态获取连接被提取到受保护的方法中，以便于进行简单的单元测试。
+	 * 将通过 DriverManager 静态方法获取 Connection 的逻辑
+	 * 提取为 protected 方法，便于单元测试。
 	 * @see java.sql.DriverManager#getConnection(String, java.util.Properties)
 	 */
 	protected Connection getConnectionFromDriverManager(String url, Properties props) throws SQLException {

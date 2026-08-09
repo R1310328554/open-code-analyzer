@@ -27,15 +27,23 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.Assert;
 
 /**
- * 目标 {@link javax.sql.DataSource} 的适配器，将当前 Spring 事务的隔离级别（以及可能指定的用户凭据）应用于每个 {@code getConn
- * ection} 调用。如果指定，还应用只读标志。
- * <p> 可用于代理未配置所需隔离级别（和用户凭据）的目标 JNDI 数据源。客户端代码可以像往常一样使用此数据源，而不必担心此类设置。
- * <p>继承了其超类{@link UserCredentialsDataSourceAdapter}应用特定用户凭证的能力；有关该功能的详细信息，请参阅后者的
- * javadoc（例如 {@link #setCredentialsForCurrentThread}）。
- * <p><b>WARNING:</b> 此适配器只是为从其获取的每个连接调用 {@link
- * java.sql.Connection#setTransactionIsolation} 和/或 {@link
- * java.sql.Connection#setReadOnly}。但是，<i>not</i> 会重置这些设置；它更希望目标数据源执行此类重置作为其连接池处理的一部分。
- * <b>确保目标数据源正确清理此类事务状态。</b>
+ * 目标 {@link javax.sql.DataSource} 的适配器，
+ * 在每次 {@code getConnection} 调用时应用当前 Spring 事务的隔离级别
+ * （以及可能指定的用户凭据），并在指定时应用只读标志。
+ *
+ * <p>可用于代理未配置所需隔离级别（及用户凭据）的目标 JNDI DataSource。
+ * 客户端代码可照常使用本 DataSource，无需关心这些设置。
+ *
+ * <p>从超类 {@link UserCredentialsDataSourceAdapter} 继承应用特定用户凭据的能力；
+ * 详见后者 javadoc（例如 {@link #setCredentialsForCurrentThread}）。
+ *
+ * <p><b>警告：</b> 本适配器仅对获取的每个 Connection 调用
+ * {@link java.sql.Connection#setTransactionIsolation} 和/或
+ * {@link java.sql.Connection#setReadOnly}。
+ * 但<i>不会</i>重置这些设置，而是期望目标 DataSource
+ * 在连接池处理中清理此类事务状态。
+ * <b>请确保目标 DataSource 正确清理这些事务状态。</b>
+ *
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 2.0.3
@@ -47,7 +55,7 @@ import org.springframework.util.Assert;
 public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAdapter {
 
 	/**
-	 * {@link TransactionDefinition} 中定义的隔离常量的常量名称到常量值的映射。
+	 * {@link TransactionDefinition} 中定义的隔离级别常量名到常量值的映射。
 	 */
 	static final Map<String, Integer> constants = Map.of(
 			"ISOLATION_DEFAULT", TransactionDefinition.ISOLATION_DEFAULT,
@@ -58,15 +66,15 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 		);
 
 
-	/** `isolationLevel`：该类的成员状态。 */
 	private @Nullable Integer isolationLevel;
 
 
 	/**
-	 * 通过{@link
-	 * org.springframework.transaction.TransactionDefinition}中对应常量的名称设置默认隔离级别&mdash;例如，{@code
-	 * "ISOLATION_SERIALIZABLE"}。 <p>如果未指定，将使用目标数据源的默认值。请注意，特定于事务的隔离值将始终覆盖在数据源级别指定的任何隔离设置。
-	 * @param constantName 常量名称
+	 * 通过 {@link org.springframework.transaction.TransactionDefinition} 中对应常量名
+	 * 设置默认隔离级别，例如 {@code "ISOLATION_SERIALIZABLE"}。
+	 * <p>未指定时使用目标 DataSource 默认值。
+	 * 事务级隔离值始终覆盖 DataSource 级设置。
+	 * @param constantName 常量名
 	 * @see org.springframework.transaction.TransactionDefinition#ISOLATION_READ_UNCOMMITTED
 	 * @see org.springframework.transaction.TransactionDefinition#ISOLATION_READ_COMMITTED
 	 * @see org.springframework.transaction.TransactionDefinition#ISOLATION_REPEATABLE_READ
@@ -81,9 +89,11 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	}
 
 	/**
-	 * 根据 JDBC {@link java.sql.Connection} 常量（相当于相应的 Spring {@link
-	 * org.springframework.transaction.TransactionDefinition} 常量）指定用于连接检索的默认隔离级别。
-	 * <p>如果未指定，将使用目标数据源的默认值。请注意，特定于事务的隔离值将始终覆盖在数据源级别指定的任何隔离设置。
+	 * 按 JDBC {@link java.sql.Connection} 常量（等价于 Spring
+	 * {@link org.springframework.transaction.TransactionDefinition} 常量）
+	 * 指定获取 Connection 时使用的默认隔离级别。
+	 * <p>未指定时使用目标 DataSource 默认值。
+	 * 事务级隔离值始终覆盖 DataSource 级设置。
 	 * @see java.sql.Connection#TRANSACTION_READ_UNCOMMITTED
 	 * @see java.sql.Connection#TRANSACTION_READ_COMMITTED
 	 * @see java.sql.Connection#TRANSACTION_REPEATABLE_READ
@@ -101,7 +111,7 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	}
 
 	/**
-	 * 返回静态指定的隔离级别，如果没有，则返回 {@code null}。
+	 * 返回静态指定的隔离级别，未指定时返回 {@code null}。
 	 */
 	protected @Nullable Integer getIsolationLevel() {
 		return this.isolationLevel;
@@ -109,7 +119,7 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 
 
 	/**
-	 * 将当前隔离级别值和只读标志应用于返回的连接。
+	 * 将当前隔离级别值和只读标志应用到返回的 Connection。
 	 * @see #getCurrentIsolationLevel()
 	 * @see #getCurrentReadOnlyFlag()
 	 */
@@ -128,8 +138,8 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	}
 
 	/**
-	 * 确定当前隔离级别：事务的隔离级别或静态定义的隔离级别。
-	 * @return 当前隔离级别，如果没有，则为 {@code null}
+	 * 确定当前隔离级别：事务隔离级别或静态定义的隔离级别。
+	 * @return 当前隔离级别，无则返回 {@code null}
 	 * @see org.springframework.transaction.support.TransactionSynchronizationManager#getCurrentTransactionIsolationLevel()
 	 * @see #setIsolationLevel
 	 */
@@ -142,8 +152,8 @@ public class IsolationLevelDataSourceAdapter extends UserCredentialsDataSourceAd
 	}
 
 	/**
-	 * 确定当前只读标志：默认情况下，事务的只读提示。
-	 * @return 当前范围有一个只读提示
+	 * 确定当前只读标志：默认取事务的只读提示。
+	 * @return 当前作用域是否存在只读提示
 	 * @see org.springframework.transaction.support.TransactionSynchronizationManager#isCurrentTransactionReadOnly()
 	 */
 	protected @Nullable Boolean getCurrentReadOnlyFlag() {

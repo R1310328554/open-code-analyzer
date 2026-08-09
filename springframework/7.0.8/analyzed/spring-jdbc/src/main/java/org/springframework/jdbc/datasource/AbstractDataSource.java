@@ -26,22 +26,23 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Spring 的 {@link javax.sql.DataSource} 实现的抽象基类，负责填充。
- * 此类上下文中的 <p>“Padding”表示 {@code DataSource} 接口中某些方法的默认实现，例如 {@link
- * #getLoginTimeout()}、{@link #setLoginTimeout(int)} 等。
+ * Spring {@link javax.sql.DataSource} 实现的抽象基类，负责接口“填充”逻辑。
+ *
+ * <p>本类语境下的“填充”指为 {@code DataSource} 接口的若干方法
+ * 提供默认实现，例如 {@link #getLoginTimeout()}、{@link #setLoginTimeout(int)} 等。
+ *
  * @author Juergen Hoeller
  * @since 07.05.2003
  * @see DriverManagerDataSource
  */
 public abstract class AbstractDataSource implements DataSource {
 
-	/**
-	 */
+	/** 子类可用的 Logger。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 
 	/**
-	 * 返回0，表示使用默认的系统超时。
+	 * 返回 0，表示使用系统默认超时。
 	 */
 	@Override
 	public int getLoginTimeout() throws SQLException {
@@ -57,7 +58,7 @@ public abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * 不支持 LogWriter 方法。
+	 * 不支持 LogWriter 相关方法。
 	 */
 	@Override
 	public PrintWriter getLogWriter() {
@@ -65,24 +66,18 @@ public abstract class AbstractDataSource implements DataSource {
 	}
 
 	/**
-	 * 不支持 LogWriter 方法。
+	 * LogWriter methods are not supported.
 	 */
 	@Override
 	public void setLogWriter(PrintWriter pw) throws SQLException {
 		throw new UnsupportedOperationException("setLogWriter");
 	}
 
-	/**
-	 * 获取 Parent Logger（`ParentLogger`）。
-	 */
 	@Override
 	public Logger getParentLogger() {
 		return Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 	}
 
-	/**
-	 * 方法 `unwrap`：完成本类中与「unwrap」相关的职责。
-	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T unwrap(Class<T> iface) throws SQLException {
@@ -93,9 +88,6 @@ public abstract class AbstractDataSource implements DataSource {
 				"] cannot be unwrapped as [" + iface.getName() + "]");
 	}
 
-	/**
-	 * 判断是否 Wrapper For。
-	 */
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
 		return iface.isInstance(this);

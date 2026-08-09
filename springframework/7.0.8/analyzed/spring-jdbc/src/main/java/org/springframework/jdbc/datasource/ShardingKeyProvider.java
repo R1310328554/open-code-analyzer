@@ -22,9 +22,13 @@ import java.sql.ShardingKey;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 用于确定分片键的策略接口，分片键用于在分片数据库上下文中建立直接分片连接。这用作在 {@link org.springframework.jdbc.datasource.Sha
- * rdingKeyDataSourceAdapter} 中提供当前分片键（以及可选的超级分片键）的回调。
- * <p>可以用作简单分片键的函数接口（例如，使用 lambda 表达式），或者在包含超级分片键时用作两种方法接口。
+ * 确定分片键的策略接口，用于在分片数据库场景下建立分片直连。
+ * 作为回调在 {@link org.springframework.jdbc.datasource.ShardingKeyDataSourceAdapter}
+ * 中提供当前分片键（以及可选的上级分片键）。
+ *
+ * <p>简单分片键可作为函数式接口（例如 lambda）使用；
+ * 若需上级分片键，则作为双方法接口使用。
+ *
  * @author Mohamed Lahyane (Anir)
  * @author Juergen Hoeller
  * @since 6.1.2
@@ -33,16 +37,16 @@ import org.jspecify.annotations.Nullable;
 public interface ShardingKeyProvider {
 
 	/**
-	 * 确定分片键。该方法返回与当前上下文相关的分片键，用于获取直接分片连接。
-	 * @return 分片键，或 {@code null}（如果不可用或无法确定）
-	 * @throws SQLException 如果获取分片key出错
+	 * 确定分片键。返回与当前上下文相关、用于获取分片直连的分片键。
+	 * @return 分片键，不可用或无法确定时返回 {@code null}
+	 * @throws SQLException 获取分片键时出错
 	 */
 	@Nullable ShardingKey getShardingKey() throws SQLException;
 
 	/**
-	 * 确定超级分片键（如果有）。该方法返回与当前上下文相关的超级分片键，用于获取直接分片连接。
-	 * @return 超级分片键，如果不可用或无法确定则为 {@code null}（默认）
-	 * @throws SQLException 如果获取超级分片键出错
+	 * 确定上级分片键（若有）。返回与当前上下文相关、用于获取分片直连的上级分片键。
+	 * @return 上级分片键，不可用或无法确定时返回 {@code null}（默认）
+	 * @throws SQLException 获取上级分片键时出错
 	 */
 	default @Nullable ShardingKey getSuperShardingKey() throws SQLException {
 		return null;

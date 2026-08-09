@@ -29,29 +29,40 @@ import org.springframework.jdbc.LobRetrievalFailureException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
 /**
- * 假设 LOB 数据流的抽象 ResultSetExtractor 实现。通常用作内部类，可以访问周围的方法参数。
- * <p>D 委托 {@code streamData} 模板方法将 LOB 内容流式传输到某些 OutputStream（通常使用 LobHandler）。将流式传输期间抛出的
- * IOException 转换为 LobRetrievalFailureException。
- * <p>A 与 JdbcTemplate 的使用示例：
- * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource); // 可重用对象
- * Final LobHandler lobHandler = new DefaultLobHandler(); // 可重用对象
- * jdbcTemplate.query( "从 imagedb 中选择内容，其中 image_name=?", new Object[] {name}, new
- * AbstractLobStreamingResultSetExtractor() { public void streamData(ResultSet rs) 抛出
- * SQLException, IOException { FileCopyUtils.copy(lobHandler.getBlobAsBinaryStream(rs, 1),
- * contentStream); } }); OCAJAVA0文档
+ * 假定以流式方式读取 LOB 数据的抽象 {@link ResultSetExtractor} 实现。
+ * 通常作为内部类使用，可访问外围方法参数。
+ *
+ * <p>委托 {@code streamData} 模板方法将 LOB 内容流式写入 OutputStream，
+ * 通常借助 LobHandler。流式读取期间抛出的 IOException 会转换为 LobRetrievalFailureException。
+ *
+ * <p>与 JdbcTemplate 配合使用的示例：
+ *
+ * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);  // 可复用对象
+ * final LobHandler lobHandler = new DefaultLobHandler();  // 可复用对象
+ *
+ * jdbcTemplate.query(
+ *	   "SELECT content FROM imagedb WHERE image_name=?", new Object[] {name},
+ *	   new AbstractLobStreamingResultSetExtractor() {
+ *	     public void streamData(ResultSet rs) throws SQLException, IOException {
+ *         FileCopyUtils.copy(lobHandler.getBlobAsBinaryStream(rs, 1), contentStream);
+ *       }
+ *     });
+ * </pre>
+ *
  * @author Juergen Hoeller
  * @since 1.0.2
  * @param <T> 结果类型
  * @see org.springframework.jdbc.support.lob.LobHandler
  * @see org.springframework.jdbc.LobRetrievalFailureException
- * @deprecated 6.2 与 {@link org.springframework.jdbc.support.lob.LobHandler} 一起使用，支持 {@link ResultSet#getBinaryStream}/{@link ResultSet#getCharacterStream} 使用
+ * @deprecated 自 6.2 起与 {@link org.springframework.jdbc.support.lob.LobHandler} 一并弃用，
+ * 建议使用 {@link ResultSet#getBinaryStream}/{@link ResultSet#getCharacterStream}
  */
 @Deprecated(since = "6.2")
 public abstract class AbstractLobStreamingResultSetExtractor<T> implements ResultSetExtractor<@Nullable T> {
 
 	/**
-	 * 根据 ResultSet 状态委托handleNoRowFound、handleMultipleRowsFound 和streamData。将streamData
-	 * 抛出的IOException 转换为LobRetrievalFailureException。
+	 * 根据 ResultSet 状态分别委托 handleNoRowFound、handleMultipleRowsFound 和 streamData。
+	 * 将 streamData 抛出的 IOException 转换为 LobRetrievalFailureException。
 	 * @see #handleNoRowFound
 	 * @see #handleMultipleRowsFound
 	 * @see #streamData
@@ -77,8 +88,8 @@ public abstract class AbstractLobStreamingResultSetExtractor<T> implements Resul
 	}
 
 	/**
-	 * 处理 ResultSet 不包含行的情况。
-	 * @throws DataAccessException 相应的异常，默认为 EmptyResultDataAccessException
+	 * 处理 ResultSet 不包含任何行的情况。
+	 * @throws DataAccessException 对应异常，默认抛出 EmptyResultDataAccessException
 	 * @see org.springframework.dao.EmptyResultDataAccessException
 	 */
 	protected void handleNoRowFound() throws DataAccessException {
@@ -88,7 +99,7 @@ public abstract class AbstractLobStreamingResultSetExtractor<T> implements Resul
 
 	/**
 	 * 处理 ResultSet 包含多行的情况。
-	 * @throws DataAccessException 相应的异常，默认情况下为 In CorrectResultSizeDataAccessException
+	 * @throws DataAccessException 对应异常，默认抛出 IncorrectResultSizeDataAccessException
 	 * @see org.springframework.dao.IncorrectResultSizeDataAccessException
 	 */
 	protected void handleMultipleRowsFound() throws DataAccessException {
@@ -97,12 +108,12 @@ public abstract class AbstractLobStreamingResultSetExtractor<T> implements Resul
 	}
 
 	/**
-	 * 将 LOB 内容从给定的 ResultSet 流式传输到某个 OutputStream。 <p>通常用作内部类，可以访问周围的方法参数和周围类的 LobHandler 实例变量
-	 * 。
-	 * @param rs 从中获取 LOB 内容的 ResultSet
-	 * @throws SQLException 如果由 JDBC 方法抛出
-	 * @throws IOException 如果由流访问方法抛出
-	 * @throws DataAccessException 如果出现自定义异常
+	 * 从给定 ResultSet 将 LOB 内容流式写入 OutputStream。
+	 * <p>通常作为内部类使用，可访问外围方法参数及外围类的 LobHandler 实例变量。
+	 * @param rs 读取 LOB 内容的 ResultSet
+	 * @throws SQLException JDBC 方法抛出时
+	 * @throws IOException 流访问方法抛出时
+	 * @throws DataAccessException 自定义异常时
 	 * @see org.springframework.jdbc.support.lob.LobHandler#getBlobAsBinaryStream
 	 * @see org.springframework.util.FileCopyUtils
 	 */

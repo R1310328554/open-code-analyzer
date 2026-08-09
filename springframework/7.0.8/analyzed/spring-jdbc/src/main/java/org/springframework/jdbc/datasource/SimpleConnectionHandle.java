@@ -21,19 +21,19 @@ import java.sql.Connection;
 import org.springframework.util.Assert;
 
 /**
- * {@link ConnectionHandle} 接口的简单实现，包含给定的 JDBC 连接。
+ * {@link ConnectionHandle} 接口的简单实现，持有给定 JDBC Connection。
+ *
  * @author Juergen Hoeller
  * @since 1.1
  */
 public class SimpleConnectionHandle implements ConnectionHandle {
 
-	/** 连接相关状态（`connection`）。 */
 	private final Connection connection;
 
 
 	/**
-	 * 为给定的 Connection 创建一个新的 SimpleConnectionHandle。
-	 * @param connection JDBC 连接
+	 * 为给定 Connection 创建新的 SimpleConnectionHandle。
+	 * @param connection JDBC Connection
 	 */
 	public SimpleConnectionHandle(Connection connection) {
 		Assert.notNull(connection, "Connection must not be null");
@@ -41,7 +41,7 @@ public class SimpleConnectionHandle implements ConnectionHandle {
 	}
 
 	/**
-	 * 按原样返回指定的连接。
+	 * 原样返回指定 Connection。
 	 */
 	@Override
 	public Connection getConnection() {
@@ -49,9 +49,6 @@ public class SimpleConnectionHandle implements ConnectionHandle {
 	}
 
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return "SimpleConnectionHandle: " + this.connection;

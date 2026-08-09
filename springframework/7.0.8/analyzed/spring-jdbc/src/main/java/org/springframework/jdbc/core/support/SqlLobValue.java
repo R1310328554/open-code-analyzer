@@ -30,20 +30,33 @@ import org.springframework.jdbc.support.lob.LobCreator;
 import org.springframework.jdbc.support.lob.LobHandler;
 
 /**
- * 表示 SQL BLOB/CLOB 值参数的对象。 BLOB 可以是输入流或字节数组。 CLOB 可以采用 Reader、InputStream 或 String 的形式。每个 
- * CLOB/BLOB 值将与其长度一起存储。类型基于使用哪个构造函数。此类的实例是有状态且不可变的：使用它们并丢弃它们。
- * <p><b>NOTE：从 6.1.4 开始，此类已被 {@link SqlBinaryValue} 和 {@link SqlCharacterValue}
- * 有效取代，它们能够进行现代 BLOB/CLOB 处理，同时还处理 LONGVARBINARY/LONGVARCHAR.</b> 继续使用此类的唯一原因是自定义 {@link
- * LobHandler}。
- * <p> 该类保存对 {@link LobCreator} 的引用，更新完成后必须关闭该引用。这是通过调用 {@link #cleanup()} 方法来完成的。 {@code L
- * obCreator} 的所有处理均由使用它的框架类完成 - 无需为此类的最终用户设置或关闭 {@code LobCreator}。
- * <p>A使用示例：
- * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource); // 可重用对象
- * LobHandler lobHandler = new DefaultLobHandler(); // 可重用对象
- * jdbcTemplate.update( "INSERT INTO imagedb (image_name, content, description) VALUES (?, 
- * ?, ?)", new Object[] { name, new SqlLobValue(contentStream, contentLength, lobHandler), 
- * new SqlLobValue(description, lobHandler) }, new int[] {Types.VARCHAR, Types.BLOB, Types.
- * CLOB}); OCAJAVA0文档
+ * 表示 SQL BLOB/CLOB 参数值的对象。BLOB 可为 InputStream 或字节数组；
+ * CLOB 可为 Reader、InputStream 或 String。每个 CLOB/BLOB 值与其长度一并存储。
+ * 类型取决于使用的构造函数。本类实例有状态且不可变：用完即弃。
+ *
+ * <p><b>注意：自 6.1.4 起，本类实质上已被 {@link SqlBinaryValue} 和 {@link SqlCharacterValue} 取代，
+ * 后者支持现代 BLOB/CLOB 处理，同时兼容 LONGVARBINARY/LONGVARCHAR。</b>
+ * 继续使用本类的唯一理由是自定义 {@link LobHandler}。
+ *
+ * <p>本类持有 {@link LobCreator} 引用，更新完成后须通过 {@link #cleanup()} 关闭。
+ * 框架类会处理 {@code LobCreator} 的全部生命周期，
+ * 本类使用者无需手动设置或关闭 {@code LobCreator}。
+ *
+ * <p>使用示例：
+ *
+ * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);  // 可复用对象
+ * LobHandler lobHandler = new DefaultLobHandler();  // 可复用对象
+ *
+ * jdbcTemplate.update(
+ *     "INSERT INTO imagedb (image_name, content, description) VALUES (?, ?, ?)",
+ *     new Object[] {
+ *       name,
+ *       new SqlLobValue(contentStream, contentLength, lobHandler),
+ *       new SqlLobValue(description, lobHandler)
+ *     },
+ *     new int[] {Types.VARCHAR, Types.BLOB, Types.CLOB});
+ * </pre>
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 1.1
@@ -52,25 +65,23 @@ import org.springframework.jdbc.support.lob.LobHandler;
  * @see org.springframework.jdbc.core.JdbcTemplate#update(String, Object[], int[])
  * @see org.springframework.jdbc.object.SqlUpdate#update(Object[])
  * @see org.springframework.jdbc.object.StoredProcedure#execute(java.util.Map)
- * @deprecated 6.2，支持 {@link SqlBinaryValue} 和 {@link SqlCharacterValue}
+ * @deprecated 自 6.2 起弃用，建议使用 {@link SqlBinaryValue} 和 {@link SqlCharacterValue}
  */
 @Deprecated(since = "6.2")
 public class SqlLobValue implements DisposableSqlTypeValue {
 
-	/** `content`：该类的成员状态。 */
 	private final @Nullable Object content;
 
-	/** `length`：该类的成员状态。 */
 	private final int length;
 
 	/**
-	 * 引用 LobCreator - 因此我们可以在更新完成后关闭它。
+	 * LobCreator 引用，以便更新完成后关闭。
 	 */
 	private final LobCreator lobCreator;
 
 
 	/**
-	 * 使用 DefaultLobHandler 用给定的字节数组创建一个新的 BLOB 值。
+	 * 使用给定字节数组创建新的 BLOB 值，底层使用 DefaultLobHandler。
 	 * @param bytes 包含 BLOB 值的字节数组
 	 * @see org.springframework.jdbc.support.lob.DefaultLobHandler
 	 */
@@ -79,7 +90,7 @@ public class SqlLobValue implements DisposableSqlTypeValue {
 	}
 
 	/**
-	 * 使用给定的字节数组创建一个新的 BLOB 值。
+	 * 使用给定字节数组创建新的 BLOB 值。
 	 * @param bytes 包含 BLOB 值的字节数组
 	 * @param lobHandler 要使用的 LobHandler
 	 */
@@ -90,8 +101,8 @@ public class SqlLobValue implements DisposableSqlTypeValue {
 	}
 
 	/**
-	 * 使用 DefaultLobHandler 用给定的内容字符串创建一个新的 CLOB 值。
-	 * @param content 包含 CLOB 值的字符串
+	 * 使用给定内容字符串创建新的 CLOB 值，底层使用 DefaultLobHandler。
+	 * @param content 包含 CLOB 值的 String
 	 * @see org.springframework.jdbc.support.lob.DefaultLobHandler
 	 */
 	public SqlLobValue(@Nullable String content) {
@@ -99,8 +110,8 @@ public class SqlLobValue implements DisposableSqlTypeValue {
 	}
 
 	/**
-	 * 使用给定的内容字符串创建一个新的 CLOB 值。
-	 * @param content 包含 CLOB 值的字符串
+	 * 使用给定内容字符串创建新的 CLOB 值。
+	 * @param content 包含 CLOB 值的 String
 	 * @param lobHandler 要使用的 LobHandler
 	 */
 	public SqlLobValue(@Nullable String content, LobHandler lobHandler) {
@@ -110,9 +121,9 @@ public class SqlLobValue implements DisposableSqlTypeValue {
 	}
 
 	/**
-	 * 使用 DefaultLobHandler 使用给定流创建新的 BLOB/CLOB 值。
+	 * 使用给定流创建新的 BLOB/CLOB 值，底层使用 DefaultLobHandler。
 	 * @param stream 包含 LOB 值的流
-	 * @param length LOB 值的长度
+	 * @param length LOB 值长度
 	 * @see org.springframework.jdbc.support.lob.DefaultLobHandler
 	 */
 	public SqlLobValue(InputStream stream, int length) {
@@ -122,7 +133,7 @@ public class SqlLobValue implements DisposableSqlTypeValue {
 	/**
 	 * 使用给定流创建新的 BLOB/CLOB 值。
 	 * @param stream 包含 LOB 值的流
-	 * @param length LOB 值的长度
+	 * @param length LOB 值长度
 	 * @param lobHandler 要使用的 LobHandler
 	 */
 	public SqlLobValue(InputStream stream, int length, LobHandler lobHandler) {
@@ -132,9 +143,9 @@ public class SqlLobValue implements DisposableSqlTypeValue {
 	}
 
 	/**
-	 * 使用 DefaultLobHandler 用给定的字符流创建一个新的 CLOB 值。
+	 * 使用给定字符流创建新的 CLOB 值，底层使用 DefaultLobHandler。
 	 * @param reader 包含 CLOB 值的字符流
-	 * @param length CLOB 值的长度
+	 * @param length CLOB 值长度
 	 * @see org.springframework.jdbc.support.lob.DefaultLobHandler
 	 */
 	public SqlLobValue(Reader reader, int length) {
@@ -142,9 +153,9 @@ public class SqlLobValue implements DisposableSqlTypeValue {
 	}
 
 	/**
-	 * 使用给定的字符流创建一个新的 CLOB 值。
+	 * 使用给定字符流创建新的 CLOB 值。
 	 * @param reader 包含 CLOB 值的字符流
-	 * @param length CLOB 值的长度
+	 * @param length CLOB 值长度
 	 * @param lobHandler 要使用的 LobHandler
 	 */
 	public SqlLobValue(Reader reader, int length, LobHandler lobHandler) {
@@ -155,7 +166,7 @@ public class SqlLobValue implements DisposableSqlTypeValue {
 
 
 	/**
-	 * 通过LobCreator设置指定的内容。
+	 * 通过 LobCreator 设置指定内容。
 	 */
 	@Override
 	public void setTypeValue(PreparedStatement ps, int paramIndex, int sqlType, @Nullable String typeName)
