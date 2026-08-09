@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/connection/TrackedConnectionsHolder.java",
     "redisson/src/main/java/org/redisson/connection/balancer/BaseLoadBalancer.java",
     "redisson/src/main/java/org/redisson/connection/balancer/CommandsLoadBalancer.java",
-    "redisson/src/main/java/org/redisson/connection/balancer/LoadBalancer.java",
-    "redisson/src/main/java/org/redisson/connection/balancer/RandomLoadBalancer.java",
-    "redisson/src/main/java/org/redisson/connection/balancer/RoundRobinLoadBalancer.java",
-    "redisson/src/main/java/org/redisson/connection/balancer/WeightedRoundRobinBalancer.java",
-    "redisson/src/main/java/org/redisson/connection/decoder/BucketsDecoder.java",
-    "redisson/src/main/java/org/redisson/connection/decoder/ListDrainToDecoder.java",
-    "redisson/src/main/java/org/redisson/connection/decoder/MapCacheGetAllDecoder.java",
-    "redisson/src/main/java/org/redisson/connection/decoder/MapGetAllDecoder.java",
-    "redisson/src/main/java/org/redisson/connection/decoder/MapNativeAllDecoder.java",
-    "redisson/src/main/java/org/redisson/connection/pool/ConnectionPool.java",
-    "redisson/src/main/java/org/redisson/connection/pool/MasterConnectionPool.java",
-    "redisson/src/main/java/org/redisson/connection/pool/MasterPubSubConnectionPool.java",
-    "redisson/src/main/java/org/redisson/connection/pool/PubSubConnectionPool.java",
-    "redisson/src/main/java/org/redisson/connection/pool/SlaveConnectionPool.java",
-    "redisson/src/main/java/org/redisson/eviction/EvictionScheduler.java",
-    "redisson/src/main/java/org/redisson/eviction/EvictionTask.java"
+    "redisson/src/main/java/org/redisson/connection/balancer/LoadBalancer.java"
   ],
   "remaining_pending": 272,
-  "done": 2520
+  "done": 2535
 }
