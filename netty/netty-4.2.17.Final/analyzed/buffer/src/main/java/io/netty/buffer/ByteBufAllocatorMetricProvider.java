@@ -18,7 +18,7 @@ package io.netty.buffer;
 public interface ByteBufAllocatorMetricProvider {
 
     /**
-     * Returns a {@link ByteBufAllocatorMetric} for a {@link ByteBufAllocator}.
+     * 返回 {@link ByteBufAllocator} 对应的 {@link ByteBufAllocatorMetric}。
      */
     ByteBufAllocatorMetric metric();
 }

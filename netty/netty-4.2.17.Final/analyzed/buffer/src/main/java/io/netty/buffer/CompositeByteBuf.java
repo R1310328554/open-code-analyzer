@@ -42,9 +42,8 @@ import java.util.NoSuchElementException;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A virtual buffer which shows multiple buffers as a single merged buffer.  It is recommended to use
- * {@link ByteBufAllocator#compositeBuffer()} or {@link Unpooled#wrappedBuffer(ByteBuf...)} instead of calling the
- * constructor explicitly.
+ * 将多个 {@link ByteBuf} 虚拟合并为单一连续视图的缓冲区。
+ * 建议使用 {@link ByteBufAllocator#compositeBuffer()} 或 {@link Unpooled#wrappedBuffer(ByteBuf...)}。
  */
 public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements Iterable<ByteBuf> {
 
@@ -100,7 +99,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
         setIndex(0, capacity());
     }
 
-    // support passing arrays of other types instead of having to copy to a ByteBuf[] first
+    // 支持传入其他类型数组，无需先复制为 ByteBuf[]
     interface ByteWrapper<T> {
         ByteBuf wrap(T bytes);
         boolean isEmpty(T bytes);
@@ -142,7 +141,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
         return new Component[Math.max(initComponents, capacityGuess)];
     }
 
-    // Special constructor used by WrappedCompositeByteBuf
+    // WrappedCompositeByteBuf 使用的特殊构造函数
     CompositeByteBuf(ByteBufAllocator alloc) {
         super(Integer.MAX_VALUE);
         this.alloc = alloc;
@@ -152,13 +151,12 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Add the given {@link ByteBuf}.
+      * 添加指定的 {@link ByteBuf}。
      * <p>
-     * Be aware that this method does not increase the {@code writerIndex} of the {@link CompositeByteBuf}.
-     * If you need to have it increased use {@link #addComponent(boolean, ByteBuf)}.
+     * 注意：本方法不会增加 {@link CompositeByteBuf} 的 {@code writerIndex}；若需递增请使用 {@link #addComponent(boolean, ByteBuf)}.
      * <p>
-     * {@link ByteBuf#release()} ownership of {@code buffer} is transferred to this {@link CompositeByteBuf}.
-     * @param buffer the {@link ByteBuf} to add. {@link ByteBuf#release()} ownership is transferred to this
+     * {@code buffer} 的所有权（{@link ByteBuf#release()}）转移给本 {@link CompositeByteBuf}。
+      * @param buffer 要添加的 {@link ByteBuf}。 {@link ByteBuf#release()} ownership is transferred to this
      * {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponent(ByteBuf buffer) {
@@ -173,7 +171,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * <p>
      * {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects in {@code buffers} is transferred to this
      * {@link CompositeByteBuf}.
-     * @param buffers the {@link ByteBuf}s to add. {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
+      * @param buffers 要添加的 {@link ByteBuf} 集合。 {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
      * ownership of all {@link ByteBuf} objects is transferred to this {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponents(ByteBuf... buffers) {
@@ -188,7 +186,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * <p>
      * {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects in {@code buffers} is transferred to this
      * {@link CompositeByteBuf}.
-     * @param buffers the {@link ByteBuf}s to add. {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
+      * @param buffers 要添加的 {@link ByteBuf} 集合。 {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
      * ownership of all {@link ByteBuf} objects is transferred to this {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponents(Iterable<ByteBuf> buffers) {
@@ -202,8 +200,8 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * If you need to have it increased use {@link #addComponent(boolean, int, ByteBuf)}.
      * <p>
      * {@link ByteBuf#release()} ownership of {@code buffer} is transferred to this {@link CompositeByteBuf}.
-     * @param cIndex the index on which the {@link ByteBuf} will be added.
-     * @param buffer the {@link ByteBuf} to add. {@link ByteBuf#release()} ownership is transferred to this
+      * @param cIndex 添加 {@link ByteBuf} 的组件索引。
+      * @param buffer 要添加的 {@link ByteBuf}。 {@link ByteBuf#release()} ownership is transferred to this
      * {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponent(int cIndex, ByteBuf buffer) {
@@ -211,11 +209,10 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Add the given {@link ByteBuf} and increase the {@code writerIndex} if {@code increaseWriterIndex} is
-     * {@code true}.
+     * 添加 {@link ByteBuf}；若 {@code increaseWriterIndex} 为 {@code true} 则递增写索引。
      *
      * {@link ByteBuf#release()} ownership of {@code buffer} is transferred to this {@link CompositeByteBuf}.
-     * @param buffer the {@link ByteBuf} to add. {@link ByteBuf#release()} ownership is transferred to this
+      * @param buffer 要添加的 {@link ByteBuf}。 {@link ByteBuf#release()} ownership is transferred to this
      * {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponent(boolean increaseWriterIndex, ByteBuf buffer) {
@@ -223,12 +220,11 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Add the given {@link ByteBuf}s and increase the {@code writerIndex} if {@code increaseWriterIndex} is
-     * {@code true}.
+     * 添加多个 {@link ByteBuf}；若 {@code increaseWriterIndex} 为 {@code true} 则递增写索引。
      *
      * {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects in {@code buffers} is transferred to this
      * {@link CompositeByteBuf}.
-     * @param buffers the {@link ByteBuf}s to add. {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
+      * @param buffers 要添加的 {@link ByteBuf} 集合。 {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
      * ownership of all {@link ByteBuf} objects is transferred to this {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponents(boolean increaseWriterIndex, ByteBuf... buffers) {
@@ -244,7 +240,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      *
      * {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects in {@code buffers} is transferred to this
      * {@link CompositeByteBuf}.
-     * @param buffers the {@link ByteBuf}s to add. {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
+      * @param buffers 要添加的 {@link ByteBuf} 集合。 {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
      * ownership of all {@link ByteBuf} objects is transferred to this {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponents(boolean increaseWriterIndex, Iterable<ByteBuf> buffers) {
@@ -252,12 +248,11 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Add the given {@link ByteBuf} on the specific index and increase the {@code writerIndex}
-     * if {@code increaseWriterIndex} is {@code true}.
+     * 在指定索引添加 {@link ByteBuf}；可选递增写索引。
      *
      * {@link ByteBuf#release()} ownership of {@code buffer} is transferred to this {@link CompositeByteBuf}.
-     * @param cIndex the index on which the {@link ByteBuf} will be added.
-     * @param buffer the {@link ByteBuf} to add. {@link ByteBuf#release()} ownership is transferred to this
+      * @param cIndex 添加 {@link ByteBuf} 的组件索引。
+      * @param buffer 要添加的 {@link ByteBuf}。 {@link ByteBuf#release()} ownership is transferred to this
      * {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponent(boolean increaseWriterIndex, int cIndex, ByteBuf buffer) {
@@ -275,7 +270,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Precondition is that {@code buffer != null}.
+      * 前置条件：{@code buffer != null}。
      */
     private int addComponent0(boolean increaseWriterIndex, int cIndex, ByteBuf buffer) {
         assert buffer != null;
@@ -355,10 +350,10 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * <p>
      * {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects in {@code buffers} is transferred to this
      * {@link CompositeByteBuf}.
-     * @param cIndex the index on which the {@link ByteBuf} will be added. {@link ByteBuf#release()} ownership of all
+      * @param cIndex 添加 {@link ByteBuf} 的组件索引。 {@link ByteBuf#release()} ownership of all
      * {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects is transferred to this
      * {@link CompositeByteBuf}.
-     * @param buffers the {@link ByteBuf}s to add. {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
+      * @param buffers 要添加的 {@link ByteBuf} 集合。 {@link ByteBuf#release()} ownership of all {@link ByteBuf#release()}
      * ownership of all {@link ByteBuf} objects is transferred to this {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addComponents(int cIndex, ByteBuf... buffers) {
@@ -448,8 +443,8 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * <p>
      * {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects in {@code buffers} is transferred to this
      * {@link CompositeByteBuf}.
-     * @param cIndex the index on which the {@link ByteBuf} will be added.
-     * @param buffers the {@link ByteBuf}s to add.  {@link ByteBuf#release()} ownership of all
+      * @param cIndex 添加 {@link ByteBuf} 的组件索引。
+      * @param buffers 要添加的 {@link ByteBuf} 集合。  {@link ByteBuf#release()} ownership of all
      * {@link ByteBuf#release()} ownership of all {@link ByteBuf} objects is transferred to this
      * {@link CompositeByteBuf}.
      */
@@ -464,7 +459,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * and in particular will be zero if the provided buffer is not readable.
      * <p>
      * {@link ByteBuf#release()} ownership of {@code buffer} is transferred to this {@link CompositeByteBuf}.
-     * @param buffer the {@link ByteBuf} to add. {@link ByteBuf#release()} ownership is transferred to this
+      * @param buffer 要添加的 {@link ByteBuf}。 {@link ByteBuf#release()} ownership is transferred to this
      * {@link CompositeByteBuf}.
      */
     public CompositeByteBuf addFlattenedComponents(boolean increaseWriterIndex, ByteBuf buffer) {
@@ -560,8 +555,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * This should only be called as last operation from a method as this may adjust the underlying
-     * array of components and so affect the index etc.
+     * 应作为方法中最后一步调用，可能调整底层组件数组并影响索引等。
      */
     private void consolidateIfNeeded() {
         // Consolidate if the number of components will exceed the allowed maximum by the current
@@ -606,9 +600,9 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Remove the {@link ByteBuf} from the given index.
+      * 移除指定索引处的 {@link ByteBuf}。
      *
-     * @param cIndex the index on from which the {@link ByteBuf} will be remove
+      * @param cIndex the index on from which the {@link ByteBuf} will be remove
      */
     public CompositeByteBuf removeComponent(int cIndex) {
         checkComponentIndex(cIndex);
@@ -628,8 +622,8 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     /**
      * Remove the number of {@link ByteBuf}s starting from the given index.
      *
-     * @param cIndex the index on which the {@link ByteBuf}s will be started to removed
-     * @param numComponents the number of components to remove
+      * @param cIndex the index on which the {@link ByteBuf}s will be started to removed
+      * @param numComponents the number of components to remove
      */
     public CompositeByteBuf removeComponents(int cIndex, int numComponents) {
         checkComponentIndex(cIndex, numComponents);
@@ -1556,7 +1550,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * If you need a buffer that represents the component's readable view as seen from the composite
      * buffer, use {@link #componentSlice(int cIndex)} instead.
      *
-     * @param cIndex the index for which the {@link ByteBuf} should be returned
+      * @param cIndex the index for which the {@link ByteBuf} should be returned
      * @return a duplicate of the underlying {@link ByteBuf} on the specified index
      */
     public ByteBuf component(int cIndex) {
@@ -1572,7 +1566,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * contributes to the composite buffer's capacity. The slice will have its own independent
      * {@code readerIndex} and {@code writerIndex}, starting at {@code 0}.
      *
-     * @param cIndex the index for which the sliced {@link ByteBuf} should be returned
+      * @param cIndex the index for which the sliced {@link ByteBuf} should be returned
      * @return a sliced {@link ByteBuf} representing the component's view
      */
     public ByteBuf componentSlice(int cIndex) {
@@ -1583,7 +1577,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     /**
      * Return the {@link ByteBuf} on the specified index
      *
-     * @param offset the offset for which the {@link ByteBuf} should be returned
+      * @param offset the offset for which the {@link ByteBuf} should be returned
      * @return the {@link ByteBuf} on the specified index
      */
     public ByteBuf componentAtOffset(int offset) {
@@ -1594,7 +1588,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
      * Return the internal {@link ByteBuf} on the specified index. Note that updating the indexes of the returned
      * buffer will lead to an undefined behavior of this buffer.
      *
-     * @param cIndex the index for which the {@link ByteBuf} should be returned
+      * @param cIndex the index for which the {@link ByteBuf} should be returned
      */
     public ByteBuf internalComponent(int cIndex) {
         checkComponentIndex(cIndex);
@@ -1602,10 +1596,9 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Return the internal {@link ByteBuf} on the specified offset. Note that updating the indexes of the returned
-     * buffer will lead to an undefined behavior of this buffer.
+     * 返回指定偏移处的内部 {@link ByteBuf}；修改其索引会导致本缓冲区行为未定义。
      *
-     * @param offset the offset for which the {@link ByteBuf} should be returned
+      * @param offset the offset for which the {@link ByteBuf} should be returned
      */
     public ByteBuf internalComponentAtOffset(int offset) {
         return findComponent(offset).slice();
@@ -1751,7 +1744,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Consolidate the composed {@link ByteBuf}s
+      * 合并已组合的 {@link ByteBuf}
      */
     public CompositeByteBuf consolidate() {
         ensureAccessible();
@@ -1760,10 +1753,10 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Consolidate the composed {@link ByteBuf}s
+      * 合并已组合的 {@link ByteBuf}
      *
-     * @param cIndex the index on which to start to compose
-     * @param numComponents the number of components to compose
+      * @param cIndex the index on which to start to compose
+      * @param numComponents the number of components to compose
      */
     public CompositeByteBuf consolidate(int cIndex, int numComponents) {
         checkComponentIndex(cIndex, numComponents);
@@ -1793,7 +1786,7 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Discard all {@link ByteBuf}s which are read.
+      * 丢弃所有已读 {@link ByteBuf}。
      */
     public CompositeByteBuf discardReadComponents() {
         ensureAccessible();
@@ -2386,11 +2379,9 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     }
 
     /**
-     * Decreases the reference count by the specified {@code decrement} and deallocates this object if the reference
-     * count reaches at {@code 0}. At this point it will also decrement the reference count of each internal
-     * component by {@code 1}.
+     * 按 {@code decrement} 减少引用计数；减至 {@code 0} 时释放本对象，并同时将各内部组件引用计数减 1。
      *
-     * @param decrement the number by which the reference count should be decreased
+      * @param decrement the number by which the reference count should be decreased
      * @return {@code true} if and only if the reference count became {@code 0} and this object has been deallocated
      */
     @Override

@@ -19,7 +19,7 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
- * Default implementation of a {@link ByteBufHolder} that holds it's data in a {@link ByteBuf}.
+ * 在 {@link ByteBuf} 中保存数据的 {@link ByteBufHolder} 默认实现。
  *
  */
 public class DefaultByteBufHolder implements ByteBufHolder {
@@ -38,7 +38,7 @@ public class DefaultByteBufHolder implements ByteBufHolder {
     /**
      * {@inheritDoc}
      * <p>
-     * This method calls {@code replace(content().copy())} by default.
+     * 默认调用 {@code replace(content().copy())}。
      */
     @Override
     public ByteBufHolder copy() {
@@ -48,7 +48,7 @@ public class DefaultByteBufHolder implements ByteBufHolder {
     /**
      * {@inheritDoc}
      * <p>
-     * This method calls {@code replace(content().duplicate())} by default.
+     * 默认调用 {@code replace(content().duplicate())}。
      */
     @Override
     public ByteBufHolder duplicate() {
@@ -58,7 +58,7 @@ public class DefaultByteBufHolder implements ByteBufHolder {
     /**
      * {@inheritDoc}
      * <p>
-     * This method calls {@code replace(content().retainedDuplicate())} by default.
+     * 默认调用 {@code replace(content().retainedDuplicate())}。
      */
     @Override
     public ByteBufHolder retainedDuplicate() {
@@ -68,9 +68,8 @@ public class DefaultByteBufHolder implements ByteBufHolder {
     /**
      * {@inheritDoc}
      * <p>
-     * Override this method to return a new instance of this object whose content is set to the specified
-     * {@code content}. The default implementation of {@link #copy()}, {@link #duplicate()} and
-     * {@link #retainedDuplicate()} invokes this method to create a copy.
+     * 子类可覆盖此方法，返回内容设为指定 {@code content} 的新实例；
+     * {@link #copy()}、{@link #duplicate()}、{@link #retainedDuplicate()} 默认通过此方法创建副本。
      */
     @Override
     public ByteBufHolder replace(ByteBuf content) {
@@ -117,8 +116,7 @@ public class DefaultByteBufHolder implements ByteBufHolder {
     }
 
     /**
-     * Return {@link ByteBuf#toString()} without checking the reference count first. This is useful to implement
-     * {@link #toString()}.
+     * 不检查引用计数即调用 {@link ByteBuf#toString()}，便于实现 {@link #toString()}。
      */
     protected final String contentToString() {
         return data.toString();
@@ -130,15 +128,10 @@ public class DefaultByteBufHolder implements ByteBufHolder {
     }
 
     /**
-     * This implementation of the {@code equals} operation is restricted to
-     * work only with instances of the same class. The reason for that is that
-     * Netty library already has a number of classes that extend {@link DefaultByteBufHolder} and
-     * override {@code equals} method with an additional comparison logic and we
-     * need the symmetric property of the {@code equals} operation to be preserved.
+     * 本 {@code equals} 仅与同类型实例比较，以保持 Netty 各子类扩展时的对称性。
      *
-     * @param   o   the reference object with which to compare.
-     * @return  {@code true} if this object is the same as the obj
-     *          argument; {@code false} otherwise.
+      * @param   o   the reference object with which to compare.
+     * @return 若与 obj 相同则为 {@code true}，否则为 {@code false}。
      */
     @Override
     public boolean equals(Object o) {

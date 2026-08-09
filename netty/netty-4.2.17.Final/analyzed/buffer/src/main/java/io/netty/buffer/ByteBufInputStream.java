@@ -28,18 +28,12 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * An {@link InputStream} which reads data from a {@link ByteBuf}.
+ * 从 {@link ByteBuf} 读取数据的 {@link InputStream}。
  * <p>
- * A read operation against this stream will occur at the {@code readerIndex}
- * of its underlying buffer and the {@code readerIndex} will increase during
- * the read operation.  Please note that it only reads up to the number of
- * readable bytes determined at the moment of construction.  Therefore,
- * updating {@link ByteBuf#writerIndex()} will not affect the return
- * value of {@link #available()}.
+ * 读操作在底层缓冲区的 {@code readerIndex} 处进行，并随读取递增。
+ * 注意：可读范围在构造时确定，之后修改 {@link ByteBuf#writerIndex()} 不会影响 {@link #available()}。
  * <p>
- * This stream implements {@link DataInput} for your convenience.
- * The endianness of the stream is not always big endian but depends on
- * the endianness of the underlying buffer.
+ * 同时实现 {@link DataInput}；字节序取决于底层缓冲区，未必为大端。
  *
  * @see ByteBufOutputStream
  */
@@ -49,32 +43,24 @@ public class ByteBufInputStream extends InputStream implements DataInput {
     private final int endIndex;
     private boolean closed;
     /**
-     * To preserve backwards compatibility (which didn't transfer ownership) we support a conditional flag which
-     * indicates if {@link #buffer} should be released when this {@link InputStream} is closed.
-     * However in future releases ownership should always be transferred and callers of this class should call
-     * {@link ReferenceCounted#retain()} if necessary.
+     * 为兼容旧版（不转移所有权），可通过标志指定关闭时是否 {@link ByteBuf#release()}。
+     * 后续版本将始终转移所有权；调用方必要时需自行 {@link ReferenceCounted#retain()}。
      */
     private final boolean releaseOnClose;
 
     /**
-     * Creates a new stream which reads data from the specified {@code buffer}
-     * starting at the current {@code readerIndex} and ending at the current
-     * {@code writerIndex}.
-     * @param buffer The buffer which provides the content for this {@link InputStream}.
+     * 从 {@code buffer} 当前 {@code readerIndex} 读到 {@code writerIndex} 创建输入流。
+      * @param buffer 为此 {@link InputStream} 提供内容的缓冲区。
      */
     public ByteBufInputStream(ByteBuf buffer) {
         this(buffer, buffer.readableBytes());
     }
 
     /**
-     * Creates a new stream which reads data from the specified {@code buffer}
-     * starting at the current {@code readerIndex} and ending at
-     * {@code readerIndex + length}.
-     * @param buffer The buffer which provides the content for this {@link InputStream}.
-     * @param length The length of the buffer to use for this {@link InputStream}.
-     * @throws IndexOutOfBoundsException
-     *         if {@code readerIndex + length} is greater than
-     *            {@code writerIndex}
+     * 从 {@code buffer} 的 {@code readerIndex} 起读取 {@code length} 字节创建输入流。
+      * @param buffer 为此 {@link InputStream} 提供内容的缓冲区。
+      * @param length 此 {@link InputStream} 使用的字节长度。
+      * @throws IndexOutOfBoundsException 若 {@code readerIndex + length} 大于 {@code writerIndex}
      */
     public ByteBufInputStream(ByteBuf buffer, int length) {
         this(buffer, length, false);
@@ -84,9 +70,8 @@ public class ByteBufInputStream extends InputStream implements DataInput {
      * Creates a new stream which reads data from the specified {@code buffer}
      * starting at the current {@code readerIndex} and ending at the current
      * {@code writerIndex}.
-     * @param buffer The buffer which provides the content for this {@link InputStream}.
-     * @param releaseOnClose {@code true} means that when {@link #close()} is called then {@link ByteBuf#release()} will
-     *                       be called on {@code buffer}.
+      * @param buffer 为此 {@link InputStream} 提供内容的缓冲区。
+      * @param releaseOnClose 为 {@code true} 时，{@link #close()} 会对 {@code buffer} 调用 {@link ByteBuf#release()}。
      */
     public ByteBufInputStream(ByteBuf buffer, boolean releaseOnClose) {
         this(buffer, buffer.readableBytes(), releaseOnClose);
@@ -96,9 +81,9 @@ public class ByteBufInputStream extends InputStream implements DataInput {
      * Creates a new stream which reads data from the specified {@code buffer}
      * starting at the current {@code readerIndex} and ending at
      * {@code readerIndex + length}.
-     * @param buffer The buffer which provides the content for this {@link InputStream}.
-     * @param length The length of the buffer to use for this {@link InputStream}.
-     * @param releaseOnClose {@code true} means that when {@link #close()} is called then {@link ByteBuf#release()} will
+      * @param buffer 为此 {@link InputStream} 提供内容的缓冲区。
+      * @param length 此 {@link InputStream} 使用的字节长度。
+      * @param releaseOnClose {@code true} means that when {@link #close()} is called then {@link ByteBuf#release()} will
      *                       be called on {@code buffer}.
      * @throws IndexOutOfBoundsException
      *         if {@code readerIndex + length} is greater than
@@ -128,7 +113,7 @@ public class ByteBufInputStream extends InputStream implements DataInput {
     }
 
     /**
-     * Returns the number of read bytes by this stream so far.
+      * 返回此流目前已读取的字节数。
      */
     public int readBytes() {
         return buffer.readerIndex() - startIndex;
@@ -139,7 +124,7 @@ public class ByteBufInputStream extends InputStream implements DataInput {
         try {
             super.close();
         } finally {
-            // The Closable interface says "If the stream is already closed then invoking this method has no effect."
+            // Closeable 规定：流已关闭时调用 close 无效果
             if (releaseOnClose && !closed) {
                 closed = true;
                 buffer.release();
@@ -152,7 +137,7 @@ public class ByteBufInputStream extends InputStream implements DataInput {
         return endIndex - buffer.readerIndex();
     }
 
-    // Suppress a warning since the class is not thread-safe
+    // 类非线程安全，抑制警告
     @Override
     public void mark(int readlimit) {
         buffer.markReaderIndex();
@@ -184,7 +169,7 @@ public class ByteBufInputStream extends InputStream implements DataInput {
         return len;
     }
 
-    // Suppress a warning since the class is not thread-safe
+    // 类非线程安全，抑制警告
     @Override
     public void reset() throws IOException {
         buffer.resetReaderIndex();

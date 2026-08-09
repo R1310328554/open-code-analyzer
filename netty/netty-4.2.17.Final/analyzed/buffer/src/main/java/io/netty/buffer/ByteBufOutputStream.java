@@ -23,15 +23,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * An {@link OutputStream} which writes data to a {@link ByteBuf}.
+ * 向 {@link ByteBuf} 写入数据的 {@link OutputStream}。
  * <p>
- * A write operation against this stream will occur at the {@code writerIndex}
- * of its underlying buffer and the {@code writerIndex} will increase during
- * the write operation.
+ * 写操作在底层 {@code writerIndex} 处进行并随写入递增。
  * <p>
- * This stream implements {@link DataOutput} for your convenience.
- * The endianness of the stream is not always big endian but depends on
- * the endianness of the underlying buffer.
+ * 同时实现 {@link DataOutput}；字节序取决于底层缓冲区。
  *
  * @see ByteBufInputStream
  */
@@ -44,18 +40,17 @@ public class ByteBufOutputStream extends OutputStream implements DataOutput {
     private final boolean releaseOnClose;
 
     /**
-     * Creates a new stream which writes data to the specified {@code buffer}.
+      * 创建向指定 {@code buffer} 写入数据的流。
      */
     public ByteBufOutputStream(ByteBuf buffer) {
         this(buffer, false);
     }
 
     /**
-     * Creates a new stream which writes data to the specified {@code buffer}.
+      * 创建向指定 {@code buffer} 写入数据的流。
      *
-     * @param buffer Writes data to the buffer for this {@link OutputStream}.
-     * @param releaseOnClose {@code true} means that when {@link #close()} is called then {@link ByteBuf#release()} will
-     *                       be called on {@code buffer}.
+      * @param buffer 此 {@link OutputStream} 写入的目标缓冲区。
+      * @param releaseOnClose 为 {@code true} 时，{@link #close()} 会对 {@code buffer} 调用 {@link ByteBuf#release()}。
      */
     public ByteBufOutputStream(ByteBuf buffer, boolean releaseOnClose) {
         this.releaseOnClose = releaseOnClose;
@@ -64,7 +59,7 @@ public class ByteBufOutputStream extends OutputStream implements DataOutput {
     }
 
     /**
-     * Returns the number of written bytes by this stream so far.
+      * 返回此流目前已写入的字节数。
      */
     public int writtenBytes() {
         return buffer.writerIndex() - startIndex;
@@ -97,9 +92,8 @@ public class ByteBufOutputStream extends OutputStream implements DataOutput {
 
     @Override
     public void writeBytes(String s) throws IOException {
-        // We don't use `ByteBuf.writeCharSequence` here, because `writeBytes` is specified to only write the
-        // lower-order by of multibyte characters (exactly one byte per character in the string), while
-        // `writeCharSequence` will instead write a '?' replacement character.
+        // 不使用 `ByteBuf.writeCharSequence`：`writeBytes` 仅写入字符低 8 位（每字符一字节），
+        // 而 `writeCharSequence` 会写入 '?' 替换字符。
         int length = s.length();
         buffer.ensureWritable(length);
         int offset = buffer.writerIndex();
@@ -161,7 +155,7 @@ public class ByteBufOutputStream extends OutputStream implements DataOutput {
     }
 
     /**
-     * Returns the buffer where this stream is writing data.
+      * 返回此流正在写入数据的缓冲区。
      */
     public ByteBuf buffer() {
         return buffer;

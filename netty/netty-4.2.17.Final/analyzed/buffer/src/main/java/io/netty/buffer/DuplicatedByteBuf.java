@@ -27,15 +27,16 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 
 /**
- * A derived buffer which simply forwards all data access requests to its
- * parent.  It is recommended to use {@link ByteBuf#duplicate()} instead
- * of calling the constructor explicitly.
+ * 派生缓冲区，将所有数据访问转发给父缓冲区。
+ * 建议使用 {@link ByteBuf#duplicate()}，而非直接调用构造函数。
  *
- * @deprecated Do not use.
+ * @deprecated 请勿使用。
  */
 @Deprecated
 public class DuplicatedByteBuf extends AbstractDerivedByteBuf {
 
+    /** 被包装并转发的底层 {@link ByteBuf}。 */
+    /** 被包装并转发的底层 {@link ByteBuf}。 */
     private final ByteBuf buffer;
 
     public DuplicatedByteBuf(ByteBuf buffer) {

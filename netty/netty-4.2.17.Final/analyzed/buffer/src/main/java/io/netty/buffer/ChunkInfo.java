@@ -18,22 +18,22 @@ package io.netty.buffer;
 import io.netty.util.internal.UnstableApi;
 
 /**
- * Information about an allocator chunk.
+ * 分配器内存块（chunk）的元信息。
  */
 @UnstableApi
 interface ChunkInfo {
     /**
-     * The capacity of the chunk, in bytes.
+      * 块容量，单位为字节。
      */
     int capacity();
 
     /**
-     * {@code true} if the chunk contain native memory, otherwise {@code false}.
+      * 若块包含本地（堆外）内存则为 {@code true}，否则为 {@code false}。
      */
     boolean isDirect();
 
     /**
-     * The native memory address of the chunk, if any, otherwise zero.
+      * 块的本地内存地址；若无则为 0。
      */
     long memoryAddress();
 }

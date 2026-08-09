@@ -16,8 +16,8 @@
 package io.netty.buffer;
 
 /**
- * An interface that can be implemented by any object that know how to turn itself into a {@link ByteBuf}.
- * All {@link ByteBuf} classes implement this interface, and return themselves.
+ * 可将自身转换为 {@link ByteBuf} 的对象所实现的接口。
+ * 所有 {@link ByteBuf} 实现类均实现此接口并返回自身。
  */
 public interface ByteBufConvertible {
     /**
@@ -26,7 +26,7 @@ public interface ByteBufConvertible {
      * The conversion or exposure of the {@link ByteBuf} must be idempotent, so that this method can be called
      * either once, or multiple times, without causing any change in program behaviour.
      *
-     * @return A {@link ByteBuf} instance from this object.
+     * @return 由此对象得到的 {@link ByteBuf} 实例。
      */
     ByteBuf asByteBuf();
 }

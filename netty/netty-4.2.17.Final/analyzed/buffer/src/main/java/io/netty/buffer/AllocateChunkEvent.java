@@ -22,20 +22,20 @@ import jdk.jfr.Name;
 @SuppressWarnings("Since15")
 @Name(AllocateChunkEvent.NAME)
 @Label("Chunk Allocation")
-@Description("Triggered when a new memory chunk is allocated for an allocator")
+@Description("分配器为新内存块分配时触发")
 final class AllocateChunkEvent extends AbstractChunkEvent {
     static final String NAME = "io.netty.AllocateChunk";
     private static final AllocateChunkEvent INSTANCE = new AllocateChunkEvent();
 
     /**
-     * Statically check if this event is enabled.
+     * 静态检查此 JFR 事件是否已启用。
      */
     public static boolean isEventEnabled() {
         return INSTANCE.isEnabled();
     }
 
-    @Description("Is this chunk pooled, or is it a one-off allocation for a single buffer?")
+    @Description("该块是否池化，还是为单个缓冲区一次性分配")
     public boolean pooled;
-    @Description("Is this chunk part of a thread-local magazine or arena?")
+    @Description("该块是否属于线程本地 magazine 或 arena")
     public boolean threadLocal;
 }
