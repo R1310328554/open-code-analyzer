@@ -41,9 +41,12 @@ import java.util.function.Function;
 
 
 /**
+ * 分布式转移队列 {@link RTransferQueue} 实现。
+ * <p>基于 Redis LIST 与远程服务，支持 {@link java.util.concurrent.TransferQueue}
+ * 零缓冲转移：生产者可直接将元素交给正在等待的消费者。
  *
  * @author Nikita Koksharov
- *
+ * @param <V> 元素类型
  */
 public class RedissonTransferQueue<V> extends RedissonExpirable implements RTransferQueue<V> {
 
@@ -109,6 +112,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         mapName = ((RedissonRemoteService) remoteService).getRequestTasksMapName(TransferQueueService.class);
     }
 
+    /** 尝试零缓冲转移元素给等待消费者。 */
     @Override
     public boolean tryTransfer(V v) {
         RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
@@ -120,6 +124,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return false;
     }
 
+    /** 异步 tryTransfer。 */
     public RFuture<Boolean> tryTransferAsync(V v) {
         RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
         CompletableFuture<Boolean> result = future.getAddFuture().thenCompose(added -> {
@@ -139,17 +144,20 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 阻塞转移元素给等待消费者。 */
     @Override
     public void transfer(V v) throws InterruptedException {
         RFuture<Void> future = service.invoke(v);
         commandExecutor.getInterrupted(future);
     }
 
+    /** 异步 transfer。 */
     @Override
     public RFuture<Void> transferAsync(V v) {
         return service.invoke(v);
     }
 
+    /** 尝试零缓冲转移元素给等待消费者。 */
     @Override
     public boolean tryTransfer(V v, long timeout, TimeUnit unit) throws InterruptedException {
         RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
@@ -182,6 +190,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return true;
     }
 
+    /** 异步 tryTransfer。 */
     @Override
     public RFuture<Boolean> tryTransferAsync(V v, long timeout, TimeUnit unit) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
@@ -257,32 +266,38 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 转移队列 hasWaitingConsumer 操作。 */
     @Override
     public boolean hasWaitingConsumer() {
         throw new UnsupportedOperationException();
     }
 
+    /** 获取 WaitingConsumerCount。 */
     @Override
     public int getWaitingConsumerCount() {
         throw new UnsupportedOperationException();
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public boolean add(V v) {
         RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
         return commandExecutor.get(future.getAddFuture());
     }
 
+    /** 异步 XADD。 */
     public RFuture<Boolean> addAsync(V v) {
         RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(v).toCompletableFuture();
         return new CompletableFutureWrapper<>(future.getAddFuture());
     }
 
+    /** 尝试入队。 */
     @Override
     public boolean offer(V v) {
         return add(v);
     }
 
+    /** 移除元素。 */
     @Override
     public V remove() {
         V value = poll();
@@ -292,6 +307,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return value;
     }
 
+    /** 出队队首元素。 */
     @Override
     public V poll() {
         TransferQueueServiceImpl s = new TransferQueueServiceImpl();
@@ -300,6 +316,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return (V) s.getResult();
     }
 
+    /** 异步出队。 */
     public RFuture<V> pollAsync() {
         TransferQueueServiceImpl s = new TransferQueueServiceImpl();
         RFuture<Boolean> future = remoteService.tryExecuteAsync(TransferQueueService.class, s, ImmediateEventExecutor.INSTANCE, -1, null);
@@ -309,6 +326,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
     }
 
 
+    /** 转移队列 element 操作。 */
     @Override
     public V element() {
         V value = peek();
@@ -318,11 +336,13 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return value;
     }
 
+    /** 转移队列 peek 操作。 */
     @Override
     public V peek() {
         return get(peekAsync());
     }
 
+    /** 异步执行 peek。 */
     public RFuture<V> peekAsync() {
         return commandExecutor.evalReadAsync(queueName, codec, EVAL_REQUEST,
                 "local id = redis.call('lindex', KEYS[1], 0); "
@@ -333,25 +353,30 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
                 Arrays.asList(queueName, mapName));
     }
 
+    /** 转移队列 put 操作。 */
     @Override
     public void put(V v) throws InterruptedException {
         add(v);
     }
 
+    /** 尝试入队。 */
     @Override
     public boolean offer(V v, long timeout, TimeUnit unit) throws InterruptedException {
         return add(v);
     }
 
+    /** 阻塞直到可取到元素。 */
     @Override
     public V take() throws InterruptedException {
         return poll(0, TimeUnit.MILLISECONDS);
     }
 
+    /** 异步阻塞出队。 */
     public RFuture<V> takeAsync() {
         return pollAsync(0, TimeUnit.MILLISECONDS);
     }
 
+    /** 出队队首元素。 */
     @Override
     public V poll(long timeout, TimeUnit unit) throws InterruptedException {
         TransferQueueServiceImpl s = new TransferQueueServiceImpl();
@@ -359,6 +384,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return (V) s.getResult();
     }
 
+    /** 异步出队。 */
     public RFuture<V> pollAsync(long timeout, TimeUnit unit) {
         TransferQueueServiceImpl s = new TransferQueueServiceImpl();
         RFuture<Boolean> future = remoteService.tryExecuteAsync(TransferQueueService.class, s, ImmediateEventExecutor.INSTANCE, timeout, unit);
@@ -366,16 +392,19 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 转移队列 remainingCapacity 操作。 */
     @Override
     public int remainingCapacity() {
         return Integer.MAX_VALUE;
     }
 
+    /** 移除元素。 */
     @Override
     public boolean remove(Object o) {
         throw new UnsupportedOperationException();
     }
 
+    /** 是否包含指定集合的全部元素。 */
     @Override
     public boolean containsAll(Collection<?> c) {
         if (c.isEmpty()) {
@@ -389,6 +418,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return all;
     }
 
+    /** 批量添加元素。 */
     @Override
     public boolean addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
@@ -402,42 +432,50 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return added;
     }
 
+    /** 批量移除元素。 */
     @Override
     public boolean removeAll(Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
+    /** 仅保留指定集合中的元素。 */
     @Override
     public boolean retainAll(Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
+    /** 清空全部元素。 */
     @Override
     public void clear() {
         RedissonKeys keys = new RedissonKeys(commandExecutor);
         keys.delete(queueName, mapName);
     }
 
+    /** 异步执行 clear。 */
     public RFuture<Void> clearAsync() {
         RedissonKeys keys = new RedissonKeys(commandExecutor);
         CompletionStage<Void> f = keys.deleteAsync(queueName, mapName).thenApply(r -> null);
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 返回元素/条目数量。 */
     @Override
     public int size() {
         return remoteService.getPendingInvocations(TransferQueueService.class);
     }
 
+    /** 异步返回数量。 */
     public RFuture<Integer> sizeAsync() {
         return remoteService.getPendingInvocationsAsync(TransferQueueService.class);
     }
 
+    /** 是否为空。 */
     @Override
     public boolean isEmpty() {
         return size() == 0;
     }
 
+    /** 是否包含指定元素。 */
     @Override
     public boolean contains(Object o) {
         ByteBuf encodedObject = encode(o);
@@ -451,6 +489,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return result;
     }
 
+    /** 异步执行 getValue。 */
     public RFuture<V> getValueAsync(int index) {
         return commandExecutor.evalReadAsync(queueName, codec, EVAL_REQUEST,
                 "local id = redis.call('lindex', KEYS[1], ARGV[1]); "
@@ -462,6 +501,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
     }
 
 
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<V> iterator() {
         return new RedissonListIterator<V>(0) {
@@ -513,23 +553,27 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         };
     }
 
+    /** 转移队列 toArray 操作。 */
     @Override
     public Object[] toArray() {
         List<V> list = readAll();
         return list.toArray();
     }
 
+    /** 转移队列 toArray 操作。 */
     @Override
     public <T> T[] toArray(T[] a) {
         List<V> list = readAll();
         return list.toArray(a);
     }
 
+    /** 转移队列 drainTo 操作。 */
     @Override
     public int drainTo(Collection<? super V> c) {
         return get(drainToAsync(c));
     }
 
+    /** 异步执行 drainTo。 */
     public RFuture<Integer> drainToAsync(Collection<? super V> c) {
         if (c == null) {
             throw new NullPointerException();
@@ -549,6 +593,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
                 Arrays.asList(queueName, mapName));
     }
 
+    /** 转移队列 drainTo 操作。 */
     @Override
     public int drainTo(Collection<? super V> c, int maxElements) {
         if (maxElements <= 0) {
@@ -558,6 +603,7 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return get(drainToAsync(c, maxElements));
     }
 
+    /** 异步执行 drainTo。 */
     public RFuture<Integer> drainToAsync(Collection<? super V> c, int maxElements) {
         if (c == null) {
             throw new NullPointerException();
@@ -578,11 +624,13 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
                 Arrays.asList(queueName, mapName), maxElements);
     }
 
+    /** 一次性读取全部元素。 */
     @Override
     public List<V> readAll() {
         return get(readAllAsync());
     }
 
+    /** 异步一次性读取全部元素。 */
     public RFuture<List<V>> readAllAsync() {
         return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_LIST,
         "local ids = redis.call('lrange', KEYS[1], 0, -1); " +
@@ -597,123 +645,147 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
                 Arrays.asList(queueName, mapName));
     }
 
+    /** 转移队列 pollFromAny 操作。 */
     @Override
     public V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 pollFromAnyWithName 操作。 */
     @Override
     public Entry<String, V> pollFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 pollFromAnyWithName。 */
     @Override
     public RFuture<Entry<String, V>> pollFromAnyWithNameAsync(Duration timeout, String... queueNames) {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 pollLastFromAnyWithName 操作。 */
     @Override
     public Entry<String, V> pollLastFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 pollLastFromAnyWithName。 */
     @Override
     public RFuture<Entry<String, V>> pollLastFromAnyWithNameAsync(Duration timeout, String... queueNames) {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 pollFirstFromAny 操作。 */
     @Override
     public Map<String, List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 pollLastFromAny 操作。 */
     @Override
     public Map<String, List<V>> pollLastFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 pollFirstFromAny。 */
     @Override
     public RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 pollLastFromAny。 */
     @Override
     public RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 pollLastAndOfferFirstTo 操作。 */
     @Override
     public V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 takeLastAndOfferFirstTo 操作。 */
     @Override
     public V takeLastAndOfferFirstTo(String queueName) throws InterruptedException {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 subscribeOnElements 操作。 */
     @Override
     public int subscribeOnElements(Consumer<V> consumer) {
         return getServiceManager().getElementsSubscribeService()
                 .subscribeOnElements(this::takeAsync, consumer);
     }
 
+    /** 转移队列 subscribeOnElements 操作。 */
     @Override
     public int subscribeOnElements(Function<V, CompletionStage<Void>> consumer) {
         return getServiceManager().getElementsSubscribeService()
                 .subscribeOnElements(this::takeAsync, consumer);
     }
 
+    /** 转移队列 unsubscribe 操作。 */
     @Override
     public void unsubscribe(int listenerId) {
         commandExecutor.getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
     }
 
+    /** 转移队列 pollLastAndOfferFirstTo 操作。 */
     @Override
     public V pollLastAndOfferFirstTo(String queueName) {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 move 操作。 */
     @Override
     public List<V> move(QueueMoveElementsArgs args) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 move。 */
     @Override
     public RFuture<List<V>> moveAsync(QueueMoveElementsArgs args) {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 move 操作。 */
     @Override
     public List<V> move(Duration timeout, QueueMoveElementsArgs args) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 move。 */
     @Override
     public RFuture<List<V>> moveAsync(Duration timeout, QueueMoveElementsArgs args) {
         throw new UnsupportedOperationException();
     }
 
+    /** 出队队首元素。 */
     @Override
     public List<V> poll(int limit) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 pollFromAny。 */
     @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 pollLastAndOfferFirstTo。 */
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 takeLastAndOfferFirstTo。 */
     @Override
     public RFuture<V> takeLastAndOfferFirstToAsync(String queueName) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 put。 */
     @Override
     public RFuture<Void> putAsync(V value) {
         RemotePromise<Void> future = (RemotePromise<Void>) service.invoke(value).toCompletableFuture();
@@ -721,56 +793,67 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步入队。 */
     @Override
     public RFuture<Boolean> offerAsync(V e) {
         return addAsync(e);
     }
 
+    /** 异步执行 pollLastAndOfferFirstTo。 */
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步出队。 */
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步 retainAll。 */
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步批量移除。 */
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步检查是否包含。 */
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步 containsAll。 */
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步移除元素。 */
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         throw new UnsupportedOperationException();
     }
 
+    /** 转移队列 indexOf 操作。 */
     @Override
     public int indexOf(V e)  {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步执行 indexOf。 */
     @Override
     public RFuture<Integer> indexOfAsync(V e)  {
         throw new UnsupportedOperationException();

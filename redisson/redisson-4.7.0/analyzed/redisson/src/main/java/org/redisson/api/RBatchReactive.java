@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
  * Reactive interface for Redis pipeline feature.
  * <p>
  * All method invocations on objects
- * from this interface are batched to separate queue and could be executed later
+ * from this interface 会进入独立批处理队列，可稍后
  * with <code>execute()</code> method.
  *
  *
@@ -33,26 +33,26 @@ import reactor.core.publisher.Mono;
 public interface RBatchReactive {
 
     /**
-     * Returns Array instance by <code>name</code>.
+     * 按名称返回 {@link RArray} 批处理对象。
      * <p>
-     * Requires <b>Redis 8.8 or higher.</b>
+     * 需要 <b>Redis 8.8 及以上</b>。
      *
-     * @param <V> value type
-     * @param name name of instance
-     * @return RArray object
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @return {@link RArray} 对象
      */
     <V> RArrayReactive<V> getArray(String name);
 
     /**
-     * Returns Array instance by <code>name</code>
-     * using provided <code>codec</code> for values.
+     * 按名称返回 {@link RArray} 批处理对象
+     * 并使用指定 {@code codec} 编解码值。
      * <p>
-     * Requires <b>Redis 8.8 or higher.</b>
+     * 需要 <b>Redis 8.8 及以上</b>。
      *
-     * @param <V> value type
-     * @param name name of instance
-     * @param codec codec for values
-     * @return RArray object
+     * @param <V> 值类型
+     * @param name 对象名称
+     * @param codec 值编解码器
+     * @return {@link RArray} 对象
      */
     <V> RArrayReactive<V> getArray(String name, Codec codec);
 
@@ -67,17 +67,17 @@ public interface RBatchReactive {
 
     /**
      * Returns cuckoo filter instance by <code>name</code>
-     * using provided <code>codec</code> for values.
+     * 并使用指定 {@code codec} 编解码值。
      *
      * @param <V> type of value
      * @param name name of object
-     * @param codec codec for values
+     * @param codec 值编解码器
      * @return CuckooFilter object
      */
     <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec);
 
     /**
-     * Returns Top-K sketch instance by <code>name</code>.
+     * 按名称返回 Top-K 草图批处理对象。
      *
      * @param <V> type of value
      * @param name name of object
@@ -86,12 +86,12 @@ public interface RBatchReactive {
     <V> RTopKReactive<V> getTopK(String name);
 
     /**
-     * Returns Top-K sketch instance by <code>name</code>
-     * using provided <code>codec</code> for values.
+     * 按名称返回 Top-K 草图批处理对象
+     * 并使用指定 {@code codec} 编解码值。
      *
      * @param <V> type of value
      * @param name name of object
-     * @param codec codec for values
+     * @param codec 值编解码器
      * @return TopK object
      */
     <V> RTopKReactive<V> getTopK(String name, Codec codec);
@@ -113,24 +113,24 @@ public interface RBatchReactive {
     RVectorSetReactive getVectorSet(String name);
 
     /**
-     * Returns bloom filter native instance by <code>name</code>.
-     * Covers BF.* commands.
+     * 按名称返回原生布隆过滤器 {@link RBloomFilterNative} 批处理对象。
+     * 覆盖 BF.* 布隆过滤器命令。
      *
-     * @param <T> type of object
-     * @param name - name of object
-     * @return RBloomFilterNative object
+     * @param <T> 对象类型
+     * @param name 对象名称
+     * @return {@link RBloomFilterNative} 对象
      */
     <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name);
 
     /**
-     * Returns bloom filter native instance by <code>name</code>
-     * using provided <code>codec</code> for objects.
-     * Covers BF.* commands.
+     * 按名称返回原生布隆过滤器批处理对象
+     * 并使用指定 {@code codec} 编解码对象。
+     * 覆盖 BF.* 布隆过滤器命令。
      *
-     * @param <T> type of object
-     * @param name - name of object
-     * @param codec - codec for values
-     * @return RBloomFilterNative object
+     * @param <T> 对象类型
+     * @param name 对象名称
+     * @param codec 值编解码器
+     * @return {@link RBloomFilterNative} 对象
      */
     <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name, Codec codec);
 
@@ -164,7 +164,7 @@ public interface RBatchReactive {
      * Returns geospatial items holder instance by <code>name</code>.
      * 
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return Geo object
      */
     <V> RGeoReactive<V> getGeo(String name);
@@ -174,29 +174,29 @@ public interface RBatchReactive {
      * using provided codec for geospatial members.
      * 
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @param codec - codec for value
      * @return Geo object
      */
     <V> RGeoReactive<V> getGeo(String name, Codec codec);
     
     /**
-     * Returns Set based Multimap instance by name.
+     * 按名称返回 Set Multimap 批处理对象。
      * 
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return SetMultimap object
      */
     <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name);
 
     /**
-     * Returns Set based Multimap instance by name
+     * 按名称返回 Set Multimap 批处理对象
      * using provided codec for both map keys and values.
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @param codec - codec for keys and values
      * @return SetMultimap object
      */
@@ -209,7 +209,7 @@ public interface RBatchReactive {
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return RSetMultimapCacheRx object
      */
     <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCache(String name);
@@ -221,7 +221,7 @@ public interface RBatchReactive {
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @param codec - codec for keys and values
      * @return RSetMultimapCacheRx object
      */
@@ -232,25 +232,25 @@ public interface RBatchReactive {
      * Uses map (value_hash, value) under the hood for minimal memory consumption.
      * Supports value eviction with a given TTL value.
      *
-     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     * <p>若无需逐条 TTL，优先使用普通 Set {@link #getSet(String, Codec)}。</p>
      *
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return SetCache object
      */
     <V> RSetCacheReactive<V> getSetCache(String name);
 
     /**
      * Returns set-based cache instance by <code>name</code>
-     * using provided <code>codec</code> for values.
+     * 并使用指定 {@code codec} 编解码值。
      * Uses map (value_hash, value) under the hood for minimal memory consumption.
      * Supports value eviction with a given TTL value.
      *
-     * <p>If eviction is not required then it's better to use regular map {@link #getSet(String, Codec)}.</p>
+     * <p>若无需逐条 TTL，优先使用普通 Set {@link #getSet(String, Codec)}。</p>
      *
      * @param <V> type of value
-     * @param name - name of object
-     * @param codec - codec for values
+     * @param name 对象名称
+     * @param codec 值编解码器
      * @return SetCache object
      */
     <V> RSetCacheReactive<V> getSetCache(String name, Codec codec);
@@ -260,11 +260,11 @@ public interface RBatchReactive {
      * using provided <code>codec</code> for both cache keys and values.
      * Supports entry eviction with a given TTL value.
      *
-     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
+     * <p>若无需逐条 TTL，优先使用普通 Map {@link #getMap(String, Codec)}。</p>
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @param codec - codec for keys and values
      * @return MapCache object
      */
@@ -274,11 +274,11 @@ public interface RBatchReactive {
      * Returns map-based cache instance by <code>name</code>.
      * Supports entry eviction with a given TTL value.
      *
-     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     * <p>若无需逐条 TTL，优先使用普通 Map {@link #getMap(String)}。</p>
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return MapCache object
      */
     <K, V> RMapCacheReactive<K, V> getMapCache(String name);
@@ -287,7 +287,7 @@ public interface RBatchReactive {
      * Returns map instance by name.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * 需要 <b>Redis 7.4.0+</b> 或 <b>Valkey 9.0.0+</b>。
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -301,7 +301,7 @@ public interface RBatchReactive {
      * using provided codec for both map keys and values.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * 需要 <b>Redis 7.4.0+</b> 或 <b>Valkey 9.0.0+</b>。
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -312,13 +312,13 @@ public interface RBatchReactive {
     <K, V> RMapCacheNativeReactive<K, V> getMapCacheNative(String name, Codec codec);
 
     /**
-     * Returns List based Multimap instance by name.
+     * 按名称返回 List Multimap 批处理对象。
      * Supports key-entry eviction with a given TTL value.
      * Stores insertion order and allows duplicates for values mapped to key.
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * 需要 <b>Redis 7.4.0+</b> 或 <b>Valkey 9.0.0+</b>。
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -328,14 +328,14 @@ public interface RBatchReactive {
     <K, V> RListMultimapCacheReactive<K, V> getListMultimapCacheNative(String name);
 
     /**
-     * Returns List based Multimap instance by name
+     * 按名称返回 List Multimap 批处理对象
      * using provided codec for both map keys and values.
      * Supports key-entry eviction with a given TTL value.
      * Stores insertion order and allows duplicates for values mapped to key.
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * 需要 <b>Redis 7.4.0+</b> 或 <b>Valkey 9.0.0+</b>。
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -346,13 +346,13 @@ public interface RBatchReactive {
     <K, V> RListMultimapCacheReactive<K, V> getListMultimapCacheNative(String name, Codec codec);
 
     /**
-     * Returns Set based Multimap instance by name.
+     * 按名称返回 Set Multimap 批处理对象。
      * Supports key-entry eviction with a given TTL value.
-     * Doesn't allow duplications for values mapped to key.
+     * 同一 key 下不允许重复值。
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * 需要 <b>Redis 7.4.0+</b> 或 <b>Valkey 9.0.0+</b>。
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -362,14 +362,14 @@ public interface RBatchReactive {
     <K, V> RSetMultimapCacheReactive<K, V> getSetMultimapCacheNative(String name);
 
     /**
-     * Returns Set based Multimap instance by name
+     * 按名称返回 Set Multimap 批处理对象
      * using provided codec for both map keys and values.
      * Supports key-entry eviction with a given TTL value.
-     * Doesn't allow duplications for values mapped to key.
+     * 同一 key 下不允许重复值。
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * 需要 <b>Redis 7.4.0+</b> 或 <b>Valkey 9.0.0+</b>。
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -383,7 +383,7 @@ public interface RBatchReactive {
      * Returns object holder by name
      *
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return Bucket object
      */
     <V> RBucketReactive<V> getBucket(String name);
@@ -391,22 +391,22 @@ public interface RBatchReactive {
     <V> RBucketReactive<V> getBucket(String name, Codec codec);
 
     /**
-     * Returns JSON data holder instance by name using provided codec.
+     * 按名称与 codec 返回 JSON 数据持有者批处理对象。
      *
      * @see org.redisson.codec.JacksonCodec
      *
      * @param <V> type of value
      * @param name name of object
-     * @param codec codec for values
+     * @param codec 值编解码器
      * @return JsonBucket object
      */
     <V> RJsonBucketReactive<V> getJsonBucket(String name, JsonCodec codec);
 
     /**
-     * Returns HyperLogLog object by name
+     * 返回 HyperLogLog 批处理对象 by name
      *
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return HyperLogLog object
      */
     <V> RHyperLogLogReactive<V> getHyperLogLog(String name);
@@ -417,7 +417,7 @@ public interface RBatchReactive {
      * Returns list instance by name.
      *
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return List object
      */
     <V> RListReactive<V> getList(String name);
@@ -425,22 +425,22 @@ public interface RBatchReactive {
     <V> RListReactive<V> getList(String name, Codec codec);
 
     /**
-     * Returns List based MultiMap instance by name.
+     * 按名称返回 List Multimap 批处理对象。
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return ListMultimap object
      */
     <K, V> RListMultimapReactive<K, V> getListMultimap(String name);
 
     /**
-     * Returns List based MultiMap instance by name
+     * 按名称返回 List Multimap 批处理对象
      * using provided codec for both map keys and values.
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @param codec - codec for keys and values
      * @return ListMultimap object
      */
@@ -453,7 +453,7 @@ public interface RBatchReactive {
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return RListMultimapCacheRx object
      */
     <K, V> RListMultimapReactive<K, V> getListMultimapCache(String name);
@@ -465,7 +465,7 @@ public interface RBatchReactive {
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @param codec - codec for keys and values
      * @return RListMultimapCacheRx object
      */
@@ -476,7 +476,7 @@ public interface RBatchReactive {
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return Map object
      */
     <K, V> RMapReactive<K, V> getMap(String name);
@@ -487,7 +487,7 @@ public interface RBatchReactive {
      * Returns set instance by name.
      * 
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return Set object
      */
     <V> RSetReactive<V> getSet(String name);
@@ -497,7 +497,7 @@ public interface RBatchReactive {
     /**
      * Returns topic instance by name.
      *
-     * @param name - name of object
+     * @param name 对象名称
      * @return Topic object
      */
     RTopicReactive getTopic(String name);
@@ -505,23 +505,23 @@ public interface RBatchReactive {
     RTopicReactive getTopic(String name, Codec codec);
 
     /**
-     * Returns Sharded Topic instance by name.
+     * 按名称返回分片 Topic 批处理对象。
      * <p>
-     * Messages are delivered to message listeners connected to the same Topic.
+     * 消息投递给连接同一 Topic 的监听器。
      * <p>
      *
-     * @param name - name of object
+     * @param name 对象名称
      * @return Topic object
      */
     RShardedTopicReactive getShardedTopic(String name);
 
     /**
-     * Returns Sharded Topic instance by name using provided codec for messages.
+     * 按名称与消息 codec 返回分片 Topic 批处理对象。
      * <p>
-     * Messages are delivered to message listeners connected to the same Topic.
+     * 消息投递给连接同一 Topic 的监听器。
      * <p>
      *
-     * @param name - name of object
+     * @param name 对象名称
      * @param codec - codec for message
      * @return Topic object
      */
@@ -531,7 +531,7 @@ public interface RBatchReactive {
      * Returns queue instance by name.
      *
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return Queue object
      */
     <V> RQueueReactive<V> getQueue(String name);
@@ -542,7 +542,7 @@ public interface RBatchReactive {
      * Returns blocking queue instance by name.
      * 
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return BlockingQueue object
      */
     <V> RBlockingQueueReactive<V> getBlockingQueue(String name);
@@ -553,7 +553,7 @@ public interface RBatchReactive {
      * Returns blocking deque instance by name.
      * 
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return BlockingDeque object
      */
     <V> RBlockingDequeReactive<V> getBlockingDeque(String name);
@@ -564,7 +564,7 @@ public interface RBatchReactive {
      * Returns deque instance by name.
      * 
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return Deque object
      */
     <V> RDequeReactive<V> getDeque(String name);
@@ -574,24 +574,24 @@ public interface RBatchReactive {
     /**
      * Returns "atomic long" instance by name.
      * 
-     * @param name - name of object
+     * @param name 对象名称
      * @return AtomicLong object
      */
     RAtomicLongReactive getAtomicLong(String name);
 
     /**
-     * Returns atomicDouble instance by name.
+     * 按名称返回 {@link RAtomicDouble} 批处理对象。
      *
-     * @param name - name of object
+     * @param name 对象名称
      * @return AtomicDouble object
      */
     RAtomicDoubleReactive getAtomicDouble(String name);
     
     /**
-     * Returns Redis Sorted Set instance by name
+     * 按名称返回 Redis 有序集合批处理对象
      * 
      * @param <V> type of value
-     * @param name - name of object
+     * @param name 对象名称
      * @return ScoredSortedSet object
      */
     <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name);
@@ -599,11 +599,11 @@ public interface RBatchReactive {
     <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec);
 
     /**
-     * Returns String based Redis Sorted Set instance by name
-     * All elements are inserted with the same score during addition,
+     * 按名称返回基于字符串的有序集合批处理对象
+     * 添加时所有元素使用相同分数插入，
      * in order to force lexicographical ordering
      *
-     * @param name - name of object
+     * @param name 对象名称
      * @return LexSortedSet object
      */
     RLexSortedSetReactive getLexSortedSet(String name);
@@ -648,21 +648,21 @@ public interface RBatchReactive {
 
     /**
      * Returns keys operations.
-     * Each of Redis/Redisson object associated with own key
+     * 每个 Redis/Redisson 对象对应独立键
      *
      * @return Keys object
      */
     RKeysReactive getKeys();
 
     /**
-     * Returns API for RediSearch module
+     * 返回 RediSearch 模块 API 批处理对象
      *
      * @return RSearchReactive object
      */
     RSearchReactive getSearch();
 
     /**
-     * Returns API for RediSearch module using defined codec for attribute values.
+     * 使用指定属性值 codec 返回 RediSearch API 批处理对象。
      *
      * @param codec codec for entry
      * @return RSearchReactive object
@@ -672,7 +672,7 @@ public interface RBatchReactive {
     /**
      * Executes all operations accumulated during Reactive methods invocations Reactivehronously.
      *
-     * In cluster configurations operations grouped by slot ids
+     * 集群配置下按 slot 分组。
      * so may be executed on different servers. Thus command execution order could be changed
      *
      * @return List with result object for each command
@@ -680,9 +680,9 @@ public interface RBatchReactive {
     Mono<BatchResult<?>> execute();
 
     /**
-     * Discard batched commands and release allocated buffers used for parameters encoding.
+     * 丢弃批处理命令并释放参数编码缓冲区。
      *
-     * @return void
+     * @return 无返回值
      */
     Mono<Void> discard();
 

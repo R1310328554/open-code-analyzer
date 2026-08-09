@@ -20,7 +20,7 @@ import java.util.List;
 import org.redisson.api.bitset.BitFieldArgs;
 
 /**
- * Vector of bits that grows as needed.
+ * 按需增长的 Redis 位图 {@link RBitSet} 同步 API；封装 GETBIT/SETBIT、BITCOUNT、BITOP 及位域读写。
  *
  * @author Nikita Koksharov
  *
@@ -28,86 +28,86 @@ import org.redisson.api.bitset.BitFieldArgs;
 public interface RBitSet extends RExpirable, RBitSetAsync {
 
     /**
-     * Returns signed number at specified
-     * <code>offset</code> and <code>size</code>
+     * 读取指定位域的有符号整数；
+     * 参数为 {@code offset} 与 {@code size}。
      *
-     * @param size - size of signed number up to 64 bits
-     * @param offset - offset of signed number
-     * @return signed number
+     * @param size 有符号数位宽（最多 64 位）
+     * @param offset 有符号数偏移
+     * @return 有符号整数
      */
     long getSigned(int size, long offset);
 
     /**
-     * Returns previous value of signed number and replaces it
-     * with defined <code>value</code> at specified <code>offset</code>
+     * 写入指定位域的有符号整数并返回旧值；
+     * 在指定 {@code offset} 处写入 {@code value}。
      *
-     * @param size - size of signed number up to 64 bits
-     * @param offset - offset of signed number
-     * @param value - value of signed number
-     * @return previous value of signed number
+     * @param size 有符号数位宽（最多 64 位）
+     * @param offset 有符号数偏移
+     * @param value 有符号数值
+     * @return 旧有符号整数
      */
     long setSigned(int size, long offset, long value);
 
     /**
-     * Increments current signed value by
-     * defined <code>increment</code> value and <code>size</code>
-     * at specified <code>offset</code>
-     * and returns result.
+     * 将指定位域有符号整数加上
+     * 增量 {@code increment}（位宽 {@code size}）
+     * 位于 {@code offset}，并返回结果。
+     * （见上条）
      *
-     * @param size - size of signed number up to 64 bits
-     * @param offset - offset of signed number
-     * @param increment - increment value
-     * @return result value
+     * @param size 有符号数位宽（最多 64 位）
+     * @param offset 有符号数偏移
+     * @param increment 增量
+     * @return 结果值
      */
     long incrementAndGetSigned(int size, long offset, long increment);
 
     /**
-     * Returns unsigned number at specified
-     * <code>offset</code> and <code>size</code>
+     * 读取指定位域的无符号整数；
+     * 参数为 {@code offset} 与 {@code size}。
      *
-     * @param size - size of unsigned number up to 64 bits
-     * @param offset - offset of unsigned number
-     * @return unsigned number
+     * @param size 无符号数位宽（最多 64 位）
+     * @param offset 无符号数偏移
+     * @return 无符号整数
      */
     long getUnsigned(int size, long offset);
 
     /**
-     * Returns previous value of unsigned number and replaces it
-     * with defined <code>value</code> at specified <code>offset</code>
+     * 写入指定位域的无符号整数并返回旧值；
+     * 在指定 {@code offset} 处写入 {@code value}。
      *
-     * @param size - size of unsigned number up to 64 bits
-     * @param offset - offset of unsigned number
-     * @param value - value of unsigned number
-     * @return previous value of unsigned number
+     * @param size 无符号数位宽（最多 64 位）
+     * @param offset 无符号数偏移
+     * @param value 无符号数值
+     * @return 旧无符号整数
      */
     long setUnsigned(int size, long offset, long value);
 
     /**
-     * Increments current unsigned value by
-     * defined <code>increment</code> value and <code>size</code>
-     * at specified <code>offset</code>
-     * and returns result.
+     * 将指定位域无符号整数加上
+     * 增量 {@code increment}（位宽 {@code size}）
+     * 位于 {@code offset}，并返回结果。
+     * （见上条）
      *
-     * @param size - size of unsigned number up to 64 bits
-     * @param offset - offset of unsigned number
-     * @param increment - increment value
-     * @return result value
+     * @param size 无符号数位宽（最多 64 位）
+     * @param offset 无符号数偏移
+     * @param increment 增量
+     * @return 结果值
      */
     long incrementAndGetUnsigned(int size, long offset, long increment);
 
     /**
-     * Executes BITFIELD command with multiple subcommands
+     * 执行 BITFIELD 多子命令。
      * and returns result list in the same order.
      * if ReadMode is Slave And Args is only get commands,
      * then BITFIELD_RO command will be executed
      *
-     * @param args - bitfield arguments
-     * @return result values
+     * @param args BITFIELD 参数
+     * @return 结果值s
      */
     List<Long> bitField(BitFieldArgs args);
 
     /**
-     * Returns byte number at specified <code>offset</code>
+     * 读取 {@code offset} 处的字节值。
      *
      * @param offset - offset of number
      * @return number
@@ -115,8 +115,8 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     byte getByte(long offset);
 
     /**
-     * Returns previous value of byte number and replaces it
-     * with defined <code>value</code> at specified <code>offset</code>
+     * 写入 {@code offset} 处字节值并返回旧值；
+     * 在指定 {@code offset} 处写入 {@code value}。
      *
      * @param offset - offset of number
      * @param value - value of number
@@ -125,17 +125,17 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     byte setByte(long offset, byte value);
 
     /**
-     * Increments current byte value on defined <code>increment</code> value at specified <code>offset</code>
-     * and returns result.
+     * 在 {@code offset} 处将字节值加上 {@code increment} 并返回结果。
+     * （见上条）
      *
      * @param offset - offset of number
-     * @param increment - increment value
-     * @return result value
+     * @param increment 增量
+     * @return 结果值
      */
     byte incrementAndGetByte(long offset, byte increment);
 
     /**
-     * Returns short number at specified <code>offset</code>
+     * 读取 {@code offset} 处的 short 值。
      *
      * @param offset - offset of number
      * @return number
@@ -143,8 +143,8 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     short getShort(long offset);
 
     /**
-     * Returns previous value of short number and replaces it
-     * with defined <code>value</code> at specified <code>offset</code>
+     * 写入 {@code offset} 处 short 值并返回旧值；
+     * 在指定 {@code offset} 处写入 {@code value}。
      *
      * @param offset - offset of number
      * @param value - value of number
@@ -153,17 +153,17 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     short setShort(long offset, short value);
 
     /**
-     * Increments current short value on defined <code>increment</code> value at specified <code>offset</code>
-     * and returns result.
+     * 在 {@code offset} 处将 short 值加上 {@code increment} 并返回结果。
+     * （见上条）
      *
      * @param offset - offset of number
-     * @param increment - increment value
-     * @return result value
+     * @param increment 增量
+     * @return 结果值
      */
     short incrementAndGetShort(long offset, short increment);
 
     /**
-     * Returns integer number at specified <code>offset</code>
+     * 读取 {@code offset} 处的 int 值。
      *
      * @param offset - offset of number
      * @return number
@@ -171,8 +171,8 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     int getInteger(long offset);
 
     /**
-     * Returns previous value of integer number and replaces it
-     * with defined <code>value</code> at specified <code>offset</code>
+     * 写入 {@code offset} 处 int 值并返回旧值；
+     * 在指定 {@code offset} 处写入 {@code value}。
      *
      * @param offset - offset of number
      * @param value - value of number
@@ -181,17 +181,17 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     int setInteger(long offset, int value);
 
     /**
-     * Increments current integer value on defined <code>increment</code> value at specified <code>offset</code>
-     * and returns result.
+     * 在 {@code offset} 处将 int 值加上 {@code increment} 并返回结果。
+     * （见上条）
      *
      * @param offset - offset of number
-     * @param increment - increment value
-     * @return result value
+     * @param increment 增量
+     * @return 结果值
      */
     int incrementAndGetInteger(long offset, int increment);
 
     /**
-     * Returns long number at specified <code>offset</code>
+     * 读取 {@code offset} 处的 long 值。
      *
      * @param offset - offset of number
      * @return number
@@ -199,8 +199,8 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long getLong(long offset);
 
     /**
-     * Returns previous value of long number and replaces it
-     * with defined <code>value</code> at specified <code>offset</code>
+     * 写入 {@code offset} 处 long 值并返回旧值；
+     * 在指定 {@code offset} 处写入 {@code value}。
      *
      * @param offset - offset of number
      * @param value - value of number
@@ -209,25 +209,25 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long setLong(long offset, long value);
 
     /**
-     * Increments current long value on defined <code>increment</code> value at specified <code>offset</code>
-     * and returns result.
+     * 在 {@code offset} 处将 long 值加上 {@code increment} 并返回结果。
+     * （见上条）
      *
      * @param offset - offset of number
-     * @param increment - increment value
-     * @return result value
+     * @param increment 增量
+     * @return 结果值
      */
     long incrementAndGetLong(long offset, long increment);
 
     /**
-     * Returns "logical size" = index of highest set bit plus one.
-     * Returns zero if there are no any set bit.
+     * 返回"逻辑长度"= 最高置 1 位索引加一。
+     * 若无任何置 1 位则返回 0。
      * 
      * @return "logical size" = index of highest set bit plus one
      */
     long length();
 
     /**
-     * Set all bits to <code>value</code> from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
+     * 将 [{@code fromIndex}, {@code toIndex}) 范围内的位设为 {@code value}。
      * 
      * @param fromIndex inclusive
      * @param toIndex exclusive
@@ -237,7 +237,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     void set(long fromIndex, long toIndex, boolean value);
 
     /**
-     * Set all bits to zero from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
+     * 将全部位清零。 from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
      * 
      * @param fromIndex inclusive
      * @param toIndex exclusive
@@ -246,14 +246,14 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     void clear(long fromIndex, long toIndex);
 
     /**
-     * Copy bits state of source BitSet object to this object
+     * 将源 BitSet 的位状态复制到本对象。
      * 
-     * @param bs - BitSet source
+     * @param bs 源 BitSet
      */
     void set(BitSet bs);
 
     /**
-     * Set all bits to <code>value</code> which index in indexArray
+     * 将 indexArray 中索引对应的位设为 {@code value}。
      *
      * @param indexArray The index array of bits that needs to be set to <code>value</code>
      * @param value true = 1, false = 0
@@ -261,14 +261,14 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     void set(long[] indexArray, boolean value);
 
     /**
-     * Executes NOT operation over all bits
+     * 对全部位执行 NOT。
      *
      * @return length in bytes of the destination key
      */
     long not();
 
     /**
-     * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
+     * 将 [{@code fromIndex}, {@code toIndex}) 范围内的位全部置 1。
      * 
      * @param fromIndex inclusive
      * @param toIndex exclusive
@@ -277,22 +277,22 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     void set(long fromIndex, long toIndex);
 
     /**
-     * Returns number of set bits.
+     * 返回置 1 的位数。
      * 
      * @return number of set bits.
      */
     long size();
 
     /**
-     * Returns <code>true</code> if bit set to one and <code>false</code> overwise.
+     * 位为 1 返回 {@code true}，否则 {@code false}。
      * 
      * @param bitIndex - index of bit
-     * @return <code>true</code> if bit set to one and <code>false</code> overwise.
+     * @return 位为 1 则 {@code true}，否则 {@code false}
      */
     boolean get(long bitIndex);
     
     /**
-     * Returns a boolean array where each element of the array corresponds to the query result of the input parameters.
+     * 返回布尔数组，每个元素对应输入参数的位查询结果。
      *
      * @param bitIndexes indexes of bit
      * @return Returns a boolean array where each element of the array corresponds to the query result of the input parameters.
@@ -304,7 +304,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * 
      * @param bitIndex - index of bit
      * @return <code>true</code> - if previous value was true, 
-     * <code>false</code> - if previous value was false
+     * {@code false} — 若旧值为 false
      */
     boolean set(long bitIndex);
 
@@ -314,7 +314,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * @param bitIndex - index of bit
      * @param value true = 1, false = 0
      * @return <code>true</code> - if previous value was true,
-     * <code>false</code> - if previous value was false
+     * {@code false} — 若旧值为 false
      *
     */
     boolean set(long bitIndex, boolean value);
@@ -322,7 +322,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     byte[] toByteArray();
 
     /**
-     * Returns the number of bits set to one.
+     * 返回置 1 的位数。
      * 
      * @return number of bits
      */
@@ -333,19 +333,19 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * 
      * @param bitIndex - index of bit
      * @return <code>true</code> - if previous value was true, 
-     * <code>false</code> - if previous value was false
+     * {@code false} — 若旧值为 false
      */
     boolean clear(long bitIndex);
 
     /**
-     * Set all bits to zero
+     * 将全部位清零。
      */
     void clear();
 
     BitSet asBitSet();
 
     /**
-     * Executes OR operation over this object and specified bitsets.
+     * 对本对象与指定位集执行 OR。
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
@@ -354,7 +354,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long or(String... bitSetNames);
 
     /**
-     * Executes AND operation over this object and specified bitsets.
+     * 对本对象与指定位集执行 AND。
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
@@ -363,7 +363,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long and(String... bitSetNames);
 
     /**
-     * Executes XOR operation over this object and specified bitsets.
+     * 对本对象与指定位集执行 XOR。
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
@@ -372,7 +372,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long xor(String... bitSetNames);
 
     /**
-     * Executes bitwise DIFF operation over this object and specified bitsets.
+     * 对本对象与指定位集执行 DIFF。
      * Sets bits that are set in this object but not in any of the other bitsets.
      * Stores result into this object.
      *
@@ -382,7 +382,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long diff(String... bitSetNames);
 
     /**
-     * Executes bitwise DIFF1 operation over this object and specified bitsets.
+     * 对本对象与指定位集执行 DIFF1。
      * Sets bits that are set in one or more of the other bitsets but not in this object.
      * Stores result into this object.
      *
@@ -392,7 +392,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long diffInverse(String... bitSetNames);
 
     /**
-     * Executes bitwise ANDOR operation over this object and specified bitsets.
+     * 对本对象与指定位集执行 ANDOR。
      * Sets bits that are set in this object AND also in one or more of the other bitsets.
      * Stores result into this object.
      *
@@ -402,7 +402,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long andOr(String... bitSetNames);
 
     /**
-     * Executes bitwise ONE operation over this object and specified bitsets.
+     * 对本对象与指定位集执行 ONE。
      * Sets bits that are set in exactly one of the provided bitsets.
      * Stores result into this object.
      *

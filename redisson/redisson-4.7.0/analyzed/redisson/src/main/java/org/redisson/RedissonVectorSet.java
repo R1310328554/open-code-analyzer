@@ -38,9 +38,10 @@ import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 
 /**
+ * Redis 向量集合 {@link RVectorSet} 实现（Redis 8.0+）。
+ * <p>支持 HNSW 向量索引、相似度检索、属性存储与字典序范围查询。
  *
  * @author Nikita Koksharov
- *
  */
 public final class RedissonVectorSet extends RedissonExpirable implements RVectorSet {
 
@@ -48,11 +49,13 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         super(commandExecutor, name);
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public boolean add(VectorAddArgs args) {
         return get(addAsync(args));
     }
 
+    /** 异步 XADD。 */
     public RFuture<Boolean> addAsync(VectorAddArgs vargs) {
         VectorAddParams params = (VectorAddParams) vargs;
 
@@ -106,110 +109,134 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.VADD, args.toArray());
     }
 
+    /** 返回元素/条目数量。 */
     @Override
     public int size() {
         return get(sizeAsync());
     }
 
+    /** 异步返回数量。 */
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VCARD, getName());
     }
 
+    /** 向量集合 dimensions 操作。 */
     @Override
     public int dimensions() {
         return get(dimensionsAsync());
     }
 
+    /** 异步执行 dimensions。 */
     public RFuture<Integer> dimensionsAsync() {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VDIM, getName());
     }
 
+    /** 获取 Vector。 */
     @Override
     public List<Double> getVector(String element) {
         return get(getVectorAsync(element));
     }
 
+    /** 异步执行 getVector。 */
     public RFuture<List<Double>> getVectorAsync(String element) {
         return commandExecutor.readAsync(getName(), DoubleCodec.INSTANCE, RedisCommands.VEMB, getName(), element);
     }
 
+    /** 获取 RawVector。 */
     @Override
     public List<Object> getRawVector(String element) {
         return get(getRawVectorAsync(element));
     }
 
+    /** 异步执行 getRawVector。 */
     public RFuture<List<Object>> getRawVectorAsync(String element) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VEMB_RAW, getName(), element, "RAW");
     }
 
+    /** 获取 Attributes。 */
     @Override
     public <T> T getAttributes(String element, Class<T> clazz) {
         return get(getAttributesAsync(element, clazz));
     }
 
+    /** 异步执行 getAttributes。 */
     public <T> RFuture<T> getAttributesAsync(String element, Class<T> clazz) {
         return commandExecutor.readAsync(getName(), new TypedJsonJacksonCodec(clazz), RedisCommands.VGETATTR, getName(), element);
     }
 
+    /** 获取 Info。 */
     @Override
     public VectorInfo getInfo() {
         return get(getInfoAsync());
     }
 
+    /** 异步执行 getInfo。 */
     public RFuture<VectorInfo> getInfoAsync() {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VINFO, getName());
     }
 
+    /** 获取 Neighbors。 */
     @Override
     public List<String> getNeighbors(String element) {
         return get(getNeighborsAsync(element));
     }
 
+    /** 异步执行 getNeighbors。 */
     public RFuture<List<String>> getNeighborsAsync(String element) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VLINKS, getName(), element);
     }
 
+    /** 获取 NeighborEntries。 */
     @Override
     public List<ScoredEntry<String>> getNeighborEntries(String element) {
         return get(getNeighborEntriesAsync(element));
     }
 
+    /** 异步执行 getNeighborEntries。 */
     public RFuture<List<ScoredEntry<String>>> getNeighborEntriesAsync(String element) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VLINKS_WITHSCORES, getName(), element, "WITHSCORES");
     }
 
+    /** 向量集合 random 操作。 */
     @Override
     public String random() {
         return get(randomAsync());
     }
 
+    /** 异步执行 random。 */
     public RFuture<String> randomAsync() {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VRANDMEMBER, getName());
     }
 
+    /** 向量集合 random 操作。 */
     @Override
     public List<String> random(int count) {
         return get(randomAsync(count));
     }
 
+    /** 异步执行 random。 */
     public RFuture<List<String>> randomAsync(int count) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VRANDMEMBER_MULTI, getName(), count);
     }
 
+    /** 移除元素。 */
     @Override
     public boolean remove(String element) {
         return get(removeAsync(element));
     }
 
+    /** 异步移除元素。 */
     public RFuture<Boolean> removeAsync(String element) {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.VREM, getName(), element);
     }
 
+    /** 设置Attributes。 */
     @Override
     public boolean setAttributes(String element, Object attributes, JsonCodec jsonCodec) {
         return get(setAttributesAsync(element, attributes, jsonCodec));
     }
 
+    /** 异步执行 setAttributes。 */
     @Override
     public RFuture<Boolean> setAttributesAsync(String element, Object attributes, JsonCodec jsonCodec) {
         try {
@@ -220,11 +247,13 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         }
     }
 
+    /** 获取 Similar。 */
     @Override
     public List<String> getSimilar(VectorSimilarArgs args) {
         return get(getSimilarAsync(args));
     }
 
+    /** 异步执行 getSimilar。 */
     @Override
     public RFuture<List<String>> getSimilarAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
@@ -234,11 +263,13 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM, args.toArray());
     }
 
+    /** 获取 SimilarEntries。 */
     @Override
     public List<ScoredEntry<String>> getSimilarEntries(VectorSimilarArgs args) {
         return get(getSimilarEntriesAsync(args));
     }
 
+    /** 异步执行 getSimilarEntries。 */
     @Override
     public RFuture<List<ScoredEntry<String>>> getSimilarEntriesAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
@@ -248,11 +279,13 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM_WITHSCORES, args.toArray());
     }
 
+    /** 获取 SimilarEntriesWithAttributes。 */
     @Override
     public List<ScoreAttributesEntry<String>> getSimilarEntriesWithAttributes(VectorSimilarArgs args) {
         return get(getSimilarEntriesWithAttributesAsync(args));
     }
 
+    /** 异步执行 getSimilarEntriesWithAttributes。 */
     @Override
     public RFuture<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributesAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
@@ -260,35 +293,42 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM_WITHSCORESATTRIBS, args.toArray());
     }
 
+    /** 是否包含指定元素。 */
     @Override
     public boolean contains(String element) {
         return get(containsAsync(element));
     }
 
+    /** 异步检查是否包含。 */
     public RFuture<Boolean> containsAsync(String element) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VISMEMBER, getName(), element);
     }
 
+    /** 向量集合 range 操作。 */
     @Override
     public List<String> range(String startElement, String endElement) {
         return get(rangeAsync(startElement, endElement));
     }
 
+    /** 异步执行 range。 */
     public RFuture<List<String>> rangeAsync(String startElement, String endElement) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VRANGE, getName(),
                 rangeBound(startElement), rangeBound(endElement));
     }
 
+    /** 向量集合 range 操作。 */
     @Override
     public List<String> range(String startElement, String endElement, int count) {
         return get(rangeAsync(startElement, endElement, count));
     }
 
+    /** 异步执行 range。 */
     public RFuture<List<String>> rangeAsync(String startElement, String endElement, int count) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VRANGE, getName(),
                 rangeBound(startElement), rangeBound(endElement), count);
     }
 
+    /** 向量集合 rangeBound 操作。 */
     private static String rangeBound(String element) {
         if (element == null) {
             throw new IllegalArgumentException("range bound can't be null");
@@ -300,6 +340,7 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         return "[" + element;
     }
 
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<String> iterator() {
         return new Iterator<String>() {
@@ -352,11 +393,13 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         };
     }
 
+    /** 向量集合 stream 操作。 */
     @Override
     public Stream<String> stream() {
         return toStream(iterator());
     }
 
+    /** 向量集合 createArgs 操作。 */
     private List<Object> createArgs(VectorSimilarParams prms, boolean withscores, boolean withattribs) {
         List<Object> args = new ArrayList<>();
         args.add(getName());

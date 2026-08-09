@@ -42,12 +42,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
+ * 时间序列 {@link RTimeSeries} 实现。
+ * <p>基于 Redis ZSET 按时间戳存储带分数条目，支持范围查询、TTL 与惰性过期淘汰。
  *
  * @author Nikita Koksharov
- *
+ * @param <V> 值类型
+ * @param <L> 标签/元数据类型
  */
 public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTimeSeries<V, L> {
 
+    /** 过期条目淘汰调度器。 */
     private final EvictionScheduler evictionScheduler;
     private String timeoutSetName;
 
@@ -75,81 +79,97 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return prefixName("redisson__ts_ttl", name);
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public void add(long timestamp, V value) {
         addAll(Collections.singletonMap(timestamp, value));
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Void> addAsync(long timestamp, V object) {
         return addAllAsync(Collections.singletonMap(timestamp, object));
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public void add(long timestamp, V object, L label) {
         addAll(Collections.singletonList(new TimeSeriesEntry<>(timestamp, object, label)));
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Void> addAsync(long timestamp, V object, L label) {
         return addAllAsync(Collections.singletonList(new TimeSeriesEntry<>(timestamp, object, label)));
     }
 
+    /** 批量添加元素。 */
     @Override
     public void addAll(Map<Long, V> objects) {
         addAll(objects, 0, TimeUnit.MILLISECONDS);
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public void add(long timestamp, V value, long timeToLive, TimeUnit timeUnit) {
         addAll(Collections.singletonMap(timestamp, value), timeToLive, timeUnit);
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Void> addAsync(long timestamp, V object, long timeToLive, TimeUnit timeUnit) {
         return addAllAsync(Collections.singletonMap(timestamp, object), timeToLive, timeUnit);
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public void add(long timestamp, V object, Duration timeToLive) {
         get(addAsync(timestamp, object, timeToLive));
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Void> addAsync(long timestamp, V object, Duration timeToLive) {
         return addAllAsync(Collections.singletonMap(timestamp, object), timeToLive);
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public void add(long timestamp, V object, L label, Duration timeToLive) {
         addAll(Collections.singletonList(new TimeSeriesEntry<>(timestamp, object, label)), timeToLive);
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Void> addAsync(long timestamp, V object, L label, Duration timeToLive) {
         return addAllAsync(Collections.singletonList(new TimeSeriesEntry<>(timestamp, object, label)), timeToLive);
     }
 
+    /** 批量添加元素。 */
     @Override
     public void addAll(Map<Long, V> objects, long timeToLive, TimeUnit timeUnit) {
         get(addAllAsync(objects, timeToLive, timeUnit));
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Void> addAllAsync(Map<Long, V> objects) {
         return addAllAsync(objects, 0, TimeUnit.MILLISECONDS);
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Void> addAllAsync(Map<Long, V> objects, long timeToLive, TimeUnit timeUnit) {
         return addAllAsync(objects, Duration.ofMillis(timeUnit.toMillis(timeToLive)));
     }
 
+    /** 批量添加元素。 */
     @Override
     public void addAll(Map<Long, V> objects, Duration timeToLive) {
         get(addAllAsync(objects, timeToLive));
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Void> addAllAsync(Map<Long, V> objects, Duration timeToLive) {
         long expirationTime = System.currentTimeMillis();
@@ -193,21 +213,25 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                 params.toArray());
     }
 
+    /** 批量添加元素。 */
     @Override
     public void addAll(Collection<TimeSeriesEntry<V, L>> entries) {
         addAll(entries, null);
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Void> addAllAsync(Collection<TimeSeriesEntry<V, L>> entries) {
         return addAllAsync(entries, null);
     }
 
+    /** 批量添加元素。 */
     @Override
     public void addAll(Collection<TimeSeriesEntry<V, L>> entries, Duration timeToLive) {
         get(addAllAsync(entries, timeToLive));
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Void> addAllAsync(Collection<TimeSeriesEntry<V, L>> entries, Duration timeToLive) {
         long expirationTime = System.currentTimeMillis();
@@ -267,11 +291,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                 params.toArray());
     }
 
+    /** 返回元素/条目数量。 */
     @Override
     public int size() {
         return get(sizeAsync());
     }
 
+    /** 异步返回数量。 */
     @Override
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -281,11 +307,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis());
     }
 
+    /** 读取指定位。 */
     @Override
     public V get(long timestamp) {
         return get(getAsync(timestamp));
     }
 
+    /** 异步执行 get。 */
     @Override
     public RFuture<V> getAsync(long timestamp) {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
@@ -304,11 +332,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), timestamp);
     }
 
+    /** 获取 Entry。 */
     @Override
     public TimeSeriesEntry<V, L> getEntry(long timestamp) {
         return get(getEntryAsync(timestamp));
     }
 
+    /** 异步执行 getEntry。 */
     @Override
     public RFuture<TimeSeriesEntry<V, L>> getEntryAsync(long timestamp) {
         return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_ENTRY,
@@ -330,11 +360,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), timestamp);
     }
 
+    /** 移除元素。 */
     @Override
     public boolean remove(long timestamp) {
         return get(removeAsync(timestamp));
     }
 
+    /** 异步移除元素。 */
     @Override
     public RFuture<Boolean> removeAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -354,11 +386,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), timestamp);
     }
 
+    /** 获取 AndRemove。 */
     @Override
     public V getAndRemove(long timestamp) {
         return get(getAndRemoveAsync(timestamp));
     }
 
+    /** 异步执行 getAndRemove。 */
     @Override
     public RFuture<V> getAndRemoveAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
@@ -379,11 +413,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), timestamp);
     }
 
+    /** 获取 AndRemoveEntry。 */
     @Override
     public TimeSeriesEntry<V, L> getAndRemoveEntry(long timestamp) {
         return get(getAndRemoveEntryAsync(timestamp));
     }
 
+    /** 异步执行 getAndRemoveEntry。 */
     @Override
     public RFuture<TimeSeriesEntry<V, L>> getAndRemoveEntryAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_ENTRY,
@@ -407,106 +443,127 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), timestamp);
     }
 
+    /** 返回最大/尾元素。 */
     @Override
     public V last() {
         return get(lastAsync());
     }
 
+    /** 异步执行 last。 */
     @Override
     public RFuture<V> lastAsync() {
         return listAsync(-1, 1, RedisCommands.EVAL_FIRST_LIST);
     }
 
+    /** 时间序列 lastEntry 操作。 */
     @Override
     public TimeSeriesEntry<V, L> lastEntry() {
         return get(lastEntryAsync());
     }
 
+    /** 异步执行 lastEntry。 */
     @Override
     public RFuture<TimeSeriesEntry<V, L>> lastEntryAsync() {
         return listEntriesAsync(-1, 1, EVAL_FIRST_ENTRY);
     }
 
+    /** 异步执行 last。 */
     @Override
     public RFuture<Collection<V>> lastAsync(int count) {
         return listAsync(-1, count, RedisCommands.EVAL_LIST_REVERSE);
     }
 
+    /** 返回最小/首元素。 */
     @Override
     public V first() {
         return get(firstAsync());
     }
 
+    /** 异步执行 first。 */
     @Override
     public RFuture<V> firstAsync() {
         return listAsync(0, 1, RedisCommands.EVAL_FIRST_LIST);
     }
 
+    /** 时间序列 firstEntry 操作。 */
     @Override
     public TimeSeriesEntry<V, L> firstEntry() {
         return get(firstEntryAsync());
     }
 
+    /** 异步执行 firstEntry。 */
     @Override
     public RFuture<TimeSeriesEntry<V, L>> firstEntryAsync() {
         return listEntriesAsync(0, 1, EVAL_FIRST_ENTRY);
     }
 
+    /** 异步执行 first。 */
     @Override
     public RFuture<Collection<V>> firstAsync(int count) {
         return listAsync(0, count, RedisCommands.EVAL_LIST);
     }
 
+    /** 返回最小/首元素。 */
     @Override
     public Collection<V> first(int count) {
         return get(listAsync(0, count, RedisCommands.EVAL_LIST));
     }
 
+    /** 时间序列 firstEntries 操作。 */
     @Override
     public Collection<TimeSeriesEntry<V, L>> firstEntries(int count) {
         return get(firstEntriesAsync(count));
     }
 
+    /** 异步执行 firstEntries。 */
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> firstEntriesAsync(int count) {
         return listEntriesAsync(0, count, EVAL_ENTRIES);
     }
 
+    /** 返回最大/尾元素。 */
     @Override
     public Collection<V> last(int count) {
         return get(lastAsync(count));
     }
 
+    /** 时间序列 lastEntries 操作。 */
     @Override
     public Collection<TimeSeriesEntry<V, L>> lastEntries(int count) {
         return get(lastEntriesAsync(count));
     }
 
+    /** 异步执行 lastEntries。 */
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> lastEntriesAsync(int count) {
         return listEntriesAsync(-2, count, EVAL_ENTRIES_REVERSE);
     }
 
+    /** 时间序列 firstTimestamp 操作。 */
     @Override
     public Long firstTimestamp() {
         return get(firstTimestampAsync());
     }
 
+    /** 异步执行 firstTimestamp。 */
     @Override
     public RFuture<Long> firstTimestampAsync() {
         return listTimestampAsync(0, 1, RedisCommands.EVAL_FIRST_LIST);
     }
 
+    /** 时间序列 lastTimestamp 操作。 */
     @Override
     public Long lastTimestamp() {
         return get(lastTimestampAsync());
     }
 
+    /** 异步执行 lastTimestamp。 */
     @Override
     public RFuture<Long> lastTimestampAsync() {
         return listTimestampAsync(-1, 1, RedisCommands.EVAL_FIRST_LIST);
     }
 
+    /** 异步执行 listTimestamp。 */
     private RFuture<Long> listTimestampAsync(int startScore, int limit, RedisCommand<?> evalCommandType) {
         return commandExecutor.evalReadAsync(getRawName(), LongCodec.INSTANCE, evalCommandType,
                "local values;" +
@@ -526,6 +583,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), startScore, limit);
     }
 
+    /** 异步执行 list。 */
     private <T> RFuture<T> listAsync(int startScore, int limit, RedisCommand<?> evalCommandType) {
         return commandExecutor.evalReadAsync(getRawName(), codec, evalCommandType,
                "local values;" +
@@ -545,6 +603,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), startScore, limit);
     }
 
+    /** 异步执行 listEntries。 */
     private <T> RFuture<T> listEntriesAsync(int startScore, int limit, RedisCommand<?> evalCommandType) {
         return commandExecutor.evalReadAsync(getRawName(), codec, evalCommandType,
              "local values;" +
@@ -572,11 +631,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
 
+    /** 时间序列 removeRange 操作。 */
     @Override
     public int removeRange(long startTimestamp, long endTimestamp) {
         return get(removeRangeAsync(startTimestamp, endTimestamp));
     }
 
+    /** 异步执行 removeRange。 */
     @Override
     public RFuture<Integer> removeRangeAsync(long startTimestamp, long endTimestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -595,26 +656,31 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), startTimestamp, endTimestamp);
     }
 
+    /** 时间序列 range 操作。 */
     @Override
     public Collection<V> range(long startTimestamp, long endTimestamp, int limit) {
         return get(rangeAsync(startTimestamp, endTimestamp, limit));
     }
 
+    /** 时间序列 range 操作。 */
     @Override
     public Collection<V> range(long startTimestamp, long endTimestamp) {
         return get(rangeAsync(startTimestamp, endTimestamp));
     }
 
+    /** 时间序列 entryRange 操作。 */
     @Override
     public Collection<TimeSeriesEntry<V, L>> entryRange(long startTimestamp, long endTimestamp) {
         return get(entryRangeAsync(false, startTimestamp, endTimestamp, 0));
     }
 
+    /** 时间序列 entryRangeReversed 操作。 */
     @Override
     public Collection<TimeSeriesEntry<V, L>> entryRangeReversed(long startTimestamp, long endTimestamp) {
         return get(entryRangeAsync(true, startTimestamp, endTimestamp, 0));
     }
 
+    /** 异步执行 entryRangeReversed。 */
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeReversedAsync(long startTimestamp, long endTimestamp) {
         return entryRangeAsync(true, startTimestamp, endTimestamp, 0);
@@ -631,11 +697,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     private static final RedisCommand<TimeSeriesEntry<Object, Object>> EVAL_ENTRY =
             new RedisCommand<>("EVAL", new TimeSeriesSingleEntryReplayDecoder());
 
+    /** 异步执行 entryRange。 */
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeAsync(long startTimestamp, long endTimestamp) {
         return entryRangeAsync(false, startTimestamp, endTimestamp, 0);
     }
 
+    /** 异步执行 entryRange。 */
     private RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeAsync(boolean reverse, long startTimestamp, long endTimestamp, int limit) {
         return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_ENTRIES,
           "local result = {}; " +
@@ -682,36 +750,43 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), startTimestamp, endTimestamp, limit, Boolean.compare(reverse, false), encode((Object) null));
     }
 
+    /** 时间序列 rangeReversed 操作。 */
     @Override
     public Collection<V> rangeReversed(long startTimestamp, long endTimestamp, int limit) {
         return get(rangeReversedAsync(startTimestamp, endTimestamp, limit));
     }
 
+    /** 异步执行 range。 */
     @Override
     public RFuture<Collection<V>> rangeAsync(long startTimestamp, long endTimestamp) {
         return rangeAsync(startTimestamp, endTimestamp, 0);
     }
 
+    /** 异步执行 range。 */
     @Override
     public RFuture<Collection<V>> rangeAsync(long startTimestamp, long endTimestamp, int limit) {
         return rangeAsync(false, startTimestamp, endTimestamp, limit);
     }
 
+    /** 时间序列 rangeReversed 操作。 */
     @Override
     public Collection<V> rangeReversed(long startTimestamp, long endTimestamp) {
         return get(rangeReversedAsync(startTimestamp, endTimestamp));
     }
 
+    /** 异步执行 rangeReversed。 */
     @Override
     public RFuture<Collection<V>> rangeReversedAsync(long startTimestamp, long endTimestamp) {
         return rangeReversedAsync(startTimestamp, endTimestamp, 0);
     }
 
+    /** 异步执行 rangeReversed。 */
     @Override
     public RFuture<Collection<V>> rangeReversedAsync(long startTimestamp, long endTimestamp, int limit) {
         return rangeAsync(true, startTimestamp, endTimestamp, limit);
     }
 
+    /** 异步执行 range。 */
     private RFuture<Collection<V>> rangeAsync(boolean reverse, long startTimestamp, long endTimestamp, int limit) {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
           "local result = {}; " +
@@ -752,36 +827,43 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), startTimestamp, endTimestamp, limit, Boolean.compare(reverse, false));
     }
 
+    /** 时间序列 entryRange 操作。 */
     @Override
     public Collection<TimeSeriesEntry<V, L>> entryRange(long startTimestamp, long endTimestamp, int limit) {
         return get(entryRangeAsync(startTimestamp, endTimestamp, limit));
     }
 
+    /** 异步执行 entryRange。 */
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeAsync(long startTimestamp, long endTimestamp, int limit) {
         return entryRangeAsync(false, startTimestamp, endTimestamp, limit);
     }
 
+    /** 时间序列 entryRangeReversed 操作。 */
     @Override
     public Collection<TimeSeriesEntry<V, L>> entryRangeReversed(long startTimestamp, long endTimestamp, int limit) {
         return get(entryRangeReversedAsync(startTimestamp, endTimestamp, limit));
     }
 
+    /** 异步执行 entryRangeReversed。 */
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> entryRangeReversedAsync(long startTimestamp, long endTimestamp, int limit) {
         return entryRangeAsync(true, startTimestamp, endTimestamp, limit);
     }
 
+    /** 弹出最小/首元素。 */
     @Override
     public Collection<V> pollFirst(int count) {
         return get(pollFirstAsync(count));
     }
 
+    /** 弹出最大/尾元素。 */
     @Override
     public Collection<V> pollLast(int count) {
         return get(pollLastAsync(count));
     }
 
+    /** 异步 pollFirst。 */
     @Override
     public RFuture<Collection<V>> pollFirstAsync(int count) {
         if (count <= 0) {
@@ -791,6 +873,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return pollAsync(0, count, RedisCommands.EVAL_LIST);
     }
 
+    /** 异步 pollLast。 */
     @Override
     public RFuture<Collection<V>> pollLastAsync(int count) {
         if (count <= 0) {
@@ -799,11 +882,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return pollAsync(-1, count, RedisCommands.EVAL_LIST_REVERSE);
     }
 
+    /** 时间序列 pollFirstEntries 操作。 */
     @Override
     public Collection<TimeSeriesEntry<V, L>> pollFirstEntries(int count) {
         return get(pollFirstEntriesAsync(count));
     }
 
+    /** 异步执行 pollFirstEntries。 */
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> pollFirstEntriesAsync(int count) {
         if (count <= 0) {
@@ -813,11 +898,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return pollEntriesAsync(0, count, EVAL_ENTRIES);
     }
 
+    /** 时间序列 pollLastEntries 操作。 */
     @Override
     public Collection<TimeSeriesEntry<V, L>> pollLastEntries(int count) {
         return get(pollLastEntriesAsync(count));
     }
 
+    /** 异步执行 pollLastEntries。 */
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> pollLastEntriesAsync(int count) {
         if (count <= 0) {
@@ -826,46 +913,55 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return pollEntriesAsync(-1, count, EVAL_ENTRIES_REVERSE);
     }
 
+    /** 弹出最小/首元素。 */
     @Override
     public V pollFirst() {
         return get(pollFirstAsync());
     }
 
+    /** 弹出最大/尾元素。 */
     @Override
     public V pollLast() {
         return get(pollLastAsync());
     }
 
+    /** 异步 pollFirst。 */
     @Override
     public RFuture<V> pollFirstAsync() {
         return pollAsync(0, 1, RedisCommands.EVAL_FIRST_LIST);
     }
 
+    /** 异步 pollLast。 */
     @Override
     public RFuture<V> pollLastAsync() {
         return pollAsync(-1, 1, RedisCommands.EVAL_FIRST_LIST);
     }
 
+    /** 时间序列 pollFirstEntry 操作。 */
     @Override
     public TimeSeriesEntry<V, L> pollFirstEntry() {
         return get(pollFirstEntryAsync());
     }
 
+    /** 异步执行 pollFirstEntry。 */
     @Override
     public RFuture<TimeSeriesEntry<V, L>> pollFirstEntryAsync() {
         return pollEntriesAsync(0, 1, EVAL_FIRST_ENTRY);
     }
 
+    /** 时间序列 pollLastEntry 操作。 */
     @Override
     public TimeSeriesEntry<V, L> pollLastEntry() {
         return get(pollLastEntryAsync());
     }
 
+    /** 异步执行 pollLastEntry。 */
     @Override
     public RFuture<TimeSeriesEntry<V, L>> pollLastEntryAsync() {
         return pollEntriesAsync(-1, 1, EVAL_FIRST_ENTRY);
     }
 
+    /** 异步出队。 */
     private <T> RFuture<T> pollAsync(int startScore, int limit, RedisCommand<?> command) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, command,
                "local values;" +
@@ -887,6 +983,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             System.currentTimeMillis(), startScore, limit);
     }
 
+    /** 异步执行 pollEntries。 */
     private <T> RFuture<T> pollEntriesAsync(int startScore, int limit, RedisCommand<?> command) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, command,
                "local values;" +
@@ -916,11 +1013,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
 
+    /** 时间序列 scanIterator 操作。 */
     public ListScanResult<Object> scanIterator(String name, RedisClient client, String startPos, int count) {
         RFuture<ListScanResult<Object>> f = scanIteratorAsync(name, client, startPos, count);
         return get(f);
     }
 
+    /** 异步执行 scanIterator。 */
     public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, String startPos, int count) {
         List<Object> params = new ArrayList<>();
         params.add(startPos);
@@ -948,6 +1047,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                 params.toArray());
     }
 
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<V> iterator(int count) {
         return new RedissonBaseIterator<V>() {
@@ -965,21 +1065,25 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         };
     }
 
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<V> iterator() {
         return iterator(10);
     }
 
+    /** 时间序列 stream 操作。 */
     @Override
     public Stream<V> stream() {
         return toStream(iterator());
     }
 
+    /** 时间序列 stream 操作。 */
     @Override
     public Stream<V> stream(int count) {
         return toStream(iterator(count));
     }
 
+    /** 时间序列 destroy 操作。 */
     @Override
     public void destroy() {
         if (evictionScheduler != null) {
@@ -988,32 +1092,38 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         removeListeners();
     }
 
+    /** 异步删除键。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), timeoutSetName);
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return super.expireAsync(timeToLive, timeUnit, param, getRawName(), timeoutSetName);
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, getRawName(), timeoutSetName);
     }
 
+    /** 异步执行 clearExpire。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return clearExpireAsync(getRawName(), timeoutSetName);
     }
 
+    /** 异步执行 sizeInMemory。 */
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
         List<Object> keys = Arrays.asList(getRawName(), timeoutSetName);
         return super.sizeInMemoryAsync(keys);
     }
 
+    /** 异步执行 copy。 */
     @Override
     public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
         String newName = (String) keys.get(1);
@@ -1022,6 +1132,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return super.copyAsync(kks, database, replace);
     }
 
+    /** 异步执行 rename。 */
     @Override
     public RFuture<Void> renameAsync(String nn) {
         String newName = mapName(nn);
@@ -1033,6 +1144,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         });
     }
 
+    /** 异步执行 renamenx。 */
     @Override
     public RFuture<Boolean> renamenxAsync(String nn) {
         String newName = mapName(nn);
@@ -1046,6 +1158,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         });
     }
 
+    /** 时间序列 addListener 操作。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof ScoredSortedSetAddListener) {
@@ -1061,6 +1174,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return super.addListener(listener);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof ScoredSortedSetAddListener) {
@@ -1076,6 +1190,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return super.addListenerAsync(listener);
     }
 
+    /** 时间序列 removeListener 操作。 */
     @Override
     public void removeListener(int listenerId) {
         removeTrackingListener(listenerId);
@@ -1083,6 +1198,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(removeTrackingListenerAsync(listenerId), listenerId,

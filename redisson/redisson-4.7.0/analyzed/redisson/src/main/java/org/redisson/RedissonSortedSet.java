@@ -74,9 +74,12 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     }
 
+    /** 元素比较器（默认自然序）。 */
     private Comparator comparator = Comparator.naturalOrder();
 
+    /** 修改有序集合时使用的分布式锁。 */
     private RLock lock;
+    /** 底层 Redis LIST 存储。 */
     private RedissonList<V> list;
     private RBucket<String> comparatorHolder;
     private RBucket<Object> comparatorInstanceHolder;
@@ -101,11 +104,13 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         list = (RedissonList<V>) redisson.<V>getList(getName(), codec);
     }
     
+    /** 创建 MapReduce 任务入口。 */
     @Override
     public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
         return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor);
     }
 
+    /** 从 Redis 加载已持久化的比较器。 */
     private void loadComparator() {
         try {
             String comparatorSign = comparatorHolder.get();
@@ -165,22 +170,26 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         }
     }
 
+    /** 一次性读取全部元素。 */
     @Override
     public Collection<V> readAll() {
         return get(readAllAsync());
     }
 
+    /** 异步一次性读取全部元素。 */
     @Override
     public RFuture<Collection<V>> readAllAsync() {
         return (RFuture<Collection<V>>) (Object) list.readAllAsync();
     }
 
+    /** 在分布式锁保护下执行异步命令。 */
     protected final <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
         return wrapLockedAsync(() -> {
             return commandExecutor.writeAsync(list.getRawName(), codec, command, params);
         });
     }
 
+    /** 在分布式锁保护下执行异步命令。 */
     protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
         long randomId = getServiceManager().getRandom().nextLong();
         CompletionStage<R> f = lock.lockAsync(randomId).thenCompose(r -> {
@@ -208,6 +217,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步阻塞出队。 */
     protected <T> void takeAsync(CompletableFuture<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
         if (result.isDone()) {
             return;
@@ -259,31 +269,37 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         }, delay, TimeUnit.MICROSECONDS);
     }
 
+    /** 弹出最小/首元素。 */
     @Override
     public V pollFirst() {
         return get(pollFirstAsync());
     }
 
+    /** 异步 pollFirst。 */
     @Override
     public RFuture<V> pollFirstAsync() {
         return wrapLockedAsync(RedisCommands.LPOP, list.getRawName());
     }
 
+    /** 弹出最小/首元素。 */
     @Override
     public Collection<V> pollFirst(int count) {
         return get(pollFirstAsync(count));
     }
 
+    /** 异步 pollFirst。 */
     @Override
     public RFuture<Collection<V>> pollFirstAsync(int count) {
         return (RFuture<Collection<V>>) wrapLockedAsync(RedisCommands.LPOP_LIST, list.getRawName(), count);
     }
 
+    /** 弹出最小/首元素。 */
     @Override
     public V pollFirst(Duration duration) {
         return get(pollFirstAsync(duration));
     }
 
+    /** 异步 pollFirst。 */
     @Override
     public RFuture<V> pollFirstAsync(Duration duration) {
         CompletableFuture<V> result = new CompletableFuture<V>();
@@ -291,11 +307,13 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 弹出最小/首元素。 */
     @Override
     public List<V> pollFirst(Duration duration, int count) {
         return get(pollFirstAsync(duration, count));
     }
 
+    /** 异步 pollFirst。 */
     @Override
     public RFuture<List<V>> pollFirstAsync(Duration duration, int count) {
         CompletableFuture<V> result = new CompletableFuture<>();
@@ -303,31 +321,37 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return new CompletableFutureWrapper<>((CompletableFuture<List<V>>) result);
     }
 
+    /** 弹出最大/尾元素。 */
     @Override
     public V pollLast() {
         return get(pollLastAsync());
     }
 
+    /** 异步 pollLast。 */
     @Override
     public RFuture<V> pollLastAsync() {
         return wrapLockedAsync(RedisCommands.RPOP, list.getRawName());
     }
 
+    /** 弹出最大/尾元素。 */
     @Override
     public Collection<V> pollLast(int count) {
         return get(pollLastAsync(count));
     }
 
+    /** 异步 pollLast。 */
     @Override
     public RFuture<Collection<V>> pollLastAsync(int count) {
         return (RFuture<Collection<V>>) wrapLockedAsync(RedisCommands.RPOP_LIST, list.getRawName(), count);
     }
 
+    /** 弹出最大/尾元素。 */
     @Override
     public V pollLast(Duration duration) {
         return get(pollLastAsync(duration));
     }
 
+    /** 异步 pollLast。 */
     @Override
     public RFuture<V> pollLastAsync(Duration duration) {
         CompletableFuture<V> result = new CompletableFuture<V>();
@@ -335,11 +359,13 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 弹出最大/尾元素。 */
     @Override
     public List<V> pollLast(Duration duration, int count) {
         return get(pollLastAsync(duration, count));
     }
 
+    /** 异步 pollLast。 */
     @Override
     public RFuture<List<V>> pollLastAsync(Duration duration, int count) {
         CompletableFuture<V> result = new CompletableFuture<>();
@@ -347,36 +373,43 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return new CompletableFutureWrapper<>((CompletableFuture<List<V>>) result);
     }
 
+    /** 返回元素/条目数量。 */
     @Override
     public int size() {
         return list.size();
     }
 
+    /** 是否为空。 */
     @Override
     public boolean isEmpty() {
         return list.isEmpty();
     }
 
+    /** 是否包含指定元素。 */
     @Override
     public boolean contains(final Object o) {
         return binarySearch((V) o, codec).getIndex() >= 0;
     }
 
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<V> iterator() {
         return list.iterator();
     }
 
+    /** 有序集合 toArray 操作。 */
     @Override
     public Object[] toArray() {
         return list.toArray();
     }
 
+    /** 有序集合 toArray 操作。 */
     @Override
     public <T> T[] toArray(T[] a) {
         return list.toArray(a);
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public boolean add(V value) {
         lock.lock();
@@ -407,6 +440,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         }
     }
 
+    /** 有序集合 checkComparator 操作。 */
     private void checkComparator() {
         String comparatorSign = comparatorHolder.get();
         if (comparatorSign != null) {
@@ -418,18 +452,21 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         }
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Boolean> addAsync(V value) {
         CompletableFuture<Boolean> f = CompletableFuture.supplyAsync(() -> add(value), getServiceManager().getExecutor());
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步移除元素。 */
     @Override
     public RFuture<Boolean> removeAsync(Object value) {
         CompletableFuture<Boolean> f = CompletableFuture.supplyAsync(() -> remove(value), getServiceManager().getExecutor());
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 移除元素。 */
     @Override
     public boolean remove(Object value) {
         lock.lock();
@@ -449,6 +486,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         }
     }
 
+    /** 是否包含指定集合的全部元素。 */
     @Override
     public boolean containsAll(Collection<?> c) {
         for (Object object : c) {
@@ -459,6 +497,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return true;
     }
 
+    /** 批量添加元素。 */
     @Override
     public boolean addAll(Collection<? extends V> c) {
         boolean changed = false;
@@ -470,6 +509,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return changed;
     }
 
+    /** 仅保留指定集合中的元素。 */
     @Override
     public boolean retainAll(Collection<?> c) {
         boolean changed = false;
@@ -483,6 +523,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return changed;
     }
 
+    /** 批量移除元素。 */
     @Override
     public boolean removeAll(Collection<?> c) {
         boolean changed = false;
@@ -494,32 +535,38 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return changed;
     }
 
+    /** 清空全部元素。 */
     @Override
     public void clear() {
         delete();
     }
 
+    /** 返回当前比较器。 */
     @Override
     public Comparator<? super V> comparator() {
         return comparator;
     }
 
+    /** 有序集合 subSet 操作。 */
     @Override
     public SortedSet<V> subSet(V fromElement, V toElement) {
         throw new UnsupportedOperationException();
 //        return new RedissonSubSortedSet<V>(this, connectionManager, fromElement, toElement);
     }
 
+    /** 有序集合 headSet 操作。 */
     @Override
     public SortedSet<V> headSet(V toElement) {
         return subSet(null, toElement);
     }
 
+    /** 有序集合 tailSet 操作。 */
     @Override
     public SortedSet<V> tailSet(V fromElement) {
         return subSet(fromElement, null);
     }
 
+    /** 返回最小/首元素。 */
     @Override
     public V first() {
         V res = list.getValue(0);
@@ -529,6 +576,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return res;
     }
 
+    /** 返回最大/尾元素。 */
     @Override
     public V last() {
         V res = list.getValue(-1);
@@ -538,18 +586,22 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return res;
     }
 
+    /** 获取 LockName。 */
     private String getLockName() {
         return prefixName("redisson_sortedset_lock", getRawName());
     }
 
+    /** 获取 ComparatorKeyName。 */
     private String getComparatorKeyName() {
         return prefixName("redisson_sortedset_comparator", getRawName());
     }
 
+    /** 获取 ComparatorInstanceKeyName。 */
     private String getComparatorInstanceKeyName() {
         return prefixName("redisson_sortedset_comparator_instance", getRawName());
     }
 
+    /** 尝试设置比较器（仅空集合时成功）。 */
     @Override
     public boolean trySetComparator(Comparator<? super V> comparator) {
         String className = comparator.getClass().getName();
@@ -594,12 +646,14 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return res;
     }
 
+    /** 有序集合 distributedIterator 操作。 */
     @Override
     public Iterator<V> distributedIterator(final int count) {
         String iteratorName = "__redisson_sorted_set_cursor_{" + getRawName() + "}";
         return distributedIterator(iteratorName, count);
     }
 
+    /** 有序集合 distributedIterator 操作。 */
     @Override
     public Iterator<V> distributedIterator(final String iteratorName, final int count) {
         return new RedissonBaseIterator<V>() {
@@ -616,10 +670,12 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         };
     }
 
+    /** 有序集合 distributedScanIterator 操作。 */
     private ScanResult<Object> distributedScanIterator(String iteratorName, int count) {
         return get(distributedScanIteratorAsync(iteratorName, count));
     }
 
+    /** 异步执行 distributedScanIterator。 */
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
         return commandExecutor.evalWriteAsync(list.getRawName(), codec, RedisCommands.EVAL_SCAN,
                 "local start_index = redis.call('get', KEYS[2]); "
@@ -673,6 +729,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
     }
 
     @SuppressWarnings("AvoidInlineConditionals")
+    /** 有序集合 toString 操作。 */
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -689,21 +746,25 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         }
     }
 
+    /** 异步删除键。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), getComparatorKeyName(), getComparatorInstanceKeyName(), getLockName());
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return super.expireAsync(timeToLive, timeUnit, param, getRawName(), getComparatorKeyName(), getComparatorInstanceKeyName(), getLockName());
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), getComparatorKeyName(), getComparatorInstanceKeyName(), getLockName());
     }
 
+    /** 异步执行 clearExpire。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return clearExpireAsync(getRawName(), getComparatorKeyName(), getComparatorInstanceKeyName(), getLockName());

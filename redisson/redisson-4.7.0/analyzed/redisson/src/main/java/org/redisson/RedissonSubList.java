@@ -32,15 +32,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.redisson.client.protocol.RedisCommands.*;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.List}
+ * {@link RedissonList} 的子列表视图，对应 {@link java.util.List#subList} 语义。
+ * <p>对子区间的增删改会映射到底层 Redis LIST 的相应索引范围。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
+    /** 子列表起始索引（含）。 */
     final int fromIndex;
+    /** 子列表结束索引（动态维护）。 */
     AtomicInteger toIndex = new AtomicInteger();
     int size = -1;
 
@@ -50,6 +52,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         this.toIndex.set(toIndex);
     }
 
+    /** 异步返回数量。 */
     public RFuture<Integer> sizeAsync() {
         if (size != -1) {
             return new CompletableFutureWrapper<>(size);
@@ -64,21 +67,25 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         }), getRawName());
     }
 
+    /** 异步一次性读取全部元素。 */
     @Override
     public RFuture<List<V>> readAllAsync() {
         return commandExecutor.readAsync(getRawName(), codec, LRANGE, getRawName(), fromIndex, toIndex.get()-1);
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Boolean> addAsync(V e) {
         return addAllAsync(toIndex.get() - fromIndex, Collections.singleton(e));
     }
 
+    /** 异步移除元素。 */
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
         return removeAllAsync(Collections.singleton(o), 1);
     }
 
+    /** 异步 containsAll。 */
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         List<Object> params = new ArrayList<Object>();
@@ -100,6 +107,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 Collections.<Object>singletonList(getRawName()), params.toArray());
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
@@ -109,6 +117,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return addAllAsync(toIndex.get() - fromIndex, c);
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Boolean> addAllAsync(int index, Collection<? extends V> coll) {
         checkIndex(index);
@@ -148,11 +157,13 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 Collections.<Object>singletonList(getRawName()), args.toArray());
     }
 
+    /** 异步批量移除。 */
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         return removeAllAsync(c, 0);
     }
 
+    /** 异步批量移除。 */
     private RFuture<Boolean> removeAllAsync(Collection<?> c, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(fromIndex);
@@ -179,6 +190,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 Collections.<Object>singletonList(getRawName()), params.toArray());
     }
 
+    /** 异步 retainAll。 */
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         List<Object> params = new ArrayList<Object>();
@@ -212,6 +224,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
 
+    /** 清空全部元素。 */
     @Override
     public void clear() {
         if (fromIndex == 0) {
@@ -232,12 +245,14 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         size = 0;
     }
 
+    /** 异步执行 get。 */
     @Override
     public RFuture<V> getAsync(int index) {
         checkIndex(index);
         return commandExecutor.readAsync(getRawName(), codec, LINDEX, getRawName(), index);
     }
 
+    /** 读取指定位。 */
     @Override
     public V get(int index) {
         return getValue(index);
@@ -247,17 +262,20 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return get(getAsync(index));
     }
 
+    /** 子列表 checkIndex 操作。 */
     private void checkIndex(int index) {
         if (!(index >= fromIndex && index < toIndex.get())) {
             throw new IndexOutOfBoundsException("index: " + index + " but current fromIndex: "+ fromIndex + " toIndex: " + toIndex);
         }
     }
 
+    /** 设置指定位并返回旧值。 */
     @Override
     public V set(int index, V element) {
         return get(setAsync(index, element));
     }
 
+    /** 异步设置位。 */
     @Override
     public RFuture<V> setAsync(int index, V element) {
         checkIndex(index);
@@ -268,22 +286,26 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 Collections.<Object>singletonList(getRawName()), index, encode(element));
     }
 
+    /** 子列表 fastSet 操作。 */
     @Override
     public void fastSet(int index, V element) {
         get(fastSetAsync(index, element));
     }
 
+    /** 异步执行 fastSet。 */
     @Override
     public RFuture<Void> fastSetAsync(int index, V element) {
         checkIndex(index);
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LSET, getRawName(), index, encode(element));
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public void add(int index, V element) {
         addAll(index, Collections.singleton(element));
     }
 
+    /** 移除元素。 */
     @Override
     public V remove(int index) {
         checkIndex(index);
@@ -293,6 +315,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return v;
     }
 
+    /** 子列表 removeInner 操作。 */
     private V removeInner(int index) {
         if (index == 0) {
             RFuture<V> f = commandExecutor.writeAsync(getRawName(), codec, LPOP, getRawName());
@@ -313,6 +336,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return get(f);
     }
 
+    /** 异步执行 indexOf。 */
     public <R> RFuture<R> indexOfAsync(Object o, Convertor<R> convertor) {
         return commandExecutor.evalReadAsync(getRawName(), codec, new RedisCommand<R>("EVAL", convertor),
                 "local items = redis.call('lrange', KEYS[1], tonumber(ARGV[2]), tonumber(ARGV[3])) " +
@@ -325,6 +349,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 Collections.<Object>singletonList(getRawName()), encode(o), fromIndex, toIndex.get()-1);
     }
 
+    /** 异步执行 lastIndexOf。 */
     @Override
     public RFuture<Integer> lastIndexOfAsync(Object o) {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
@@ -342,11 +367,13 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
                 Collections.<Object>singletonList(getRawName()), encode(o), fromIndex, toIndex.get()-1);
     }
 
+    /** 子列表 listIterator 操作。 */
     @Override
     public ListIterator<V> listIterator() {
         return listIterator(fromIndex);
     }
 
+    /** 子列表 listIterator 操作。 */
     @Override
     public ListIterator<V> listIterator(final int fromIndex) {
         checkIndex(fromIndex);
@@ -447,6 +474,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         };
     }
 
+    /** 子列表 subList 操作。 */
     @Override
     public RList<V> subList(int fromIndex, int toIndex) {
         if (fromIndex < this.fromIndex || toIndex >= this.toIndex.get()) {
@@ -459,6 +487,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return new RedissonSubList<V>(codec, commandExecutor, getRawName(), fromIndex, toIndex);
     }
 
+    /** 异步执行 trim。 */
     @Override
     public RFuture<Void> trimAsync(int fromIndex, int toIndex) {
         if (fromIndex < this.fromIndex || toIndex >= this.toIndex.get()) {
@@ -471,12 +500,14 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         return super.trimAsync(fromIndex, toIndex);
     }
 
+    /** 裁剪 Stream 长度。 */
     @Override
     public void trim(int fromIndex, int toIndex) {
         get(trimAsync(fromIndex, toIndex));
     }
 
     @SuppressWarnings("AvoidInlineConditionals")
+    /** 子列表 toString 操作。 */
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -495,6 +526,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     @Override
     @SuppressWarnings("AvoidInlineConditionals")
+    /** 子列表 equals 操作。 */
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -514,6 +546,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     @Override
     @SuppressWarnings("AvoidInlineConditionals")
+    /** 子列表 hashCode 操作。 */
     public int hashCode() {
         int hashCode = 1;
         for (V e : this) {

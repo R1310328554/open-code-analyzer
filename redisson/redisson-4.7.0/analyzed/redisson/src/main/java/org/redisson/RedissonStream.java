@@ -48,23 +48,27 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         super(connectionManager, name);
     }
 
+    /** 校验流条目键非空。 */
     protected void checkKey(Object key) {
         if (key == null) {
             throw new NullPointerException("key can't be null");
         }
     }
 
+    /** 校验流条目值非空。 */
     protected void checkValue(Object value) {
         if (value == null) {
             throw new NullPointerException("value can't be null");
         }
     }
 
+    /** 创建消费者组。 */
     @Override
     public void createGroup(StreamCreateGroupArgs args) {
         get(createGroupAsync(args));
     }
 
+    /** 异步执行 createGroup。 */
     @Override
     public RFuture<Void> createGroupAsync(StreamCreateGroupArgs args) {
         StreamCreateGroupParams pps = (StreamCreateGroupParams) args;
@@ -83,6 +87,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, params.toArray());
     }
 
+    /** 异步执行 ack。 */
     @Override
     public RFuture<Long> ackAsync(String groupName, StreamMessageId... ids) {
         List<Object> params = new ArrayList<Object>();
@@ -93,11 +98,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XACK, params.toArray());
     }
 
+    /** 确认消息已处理。 */
     @Override
     public long ack(String groupName, StreamMessageId... id) {
         return get(ackAsync(groupName, id));
     }
 
+    /** 异步执行 ack。 */
     @Override
     public RFuture<Map<StreamMessageId, StreamEntryStatus>> ackAsync(StreamAckArgs args) {
         StreamAckParams pps = (StreamAckParams) args;
@@ -120,11 +127,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                 params.toArray());
     }
 
+    /** 确认消息已处理。 */
     @Override
     public Map<StreamMessageId, StreamEntryStatus> ack(StreamAckArgs args) {
         return get(ackAsync(args));
     }
 
+    /** 异步执行 nack。 */
     public RFuture<Long> nackAsync(StreamNackArgs args) {
         StreamNackParams pps = (StreamNackParams) args;
         List<Object> params = new ArrayList<Object>();
@@ -147,66 +156,79 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XNACK, params.toArray());
     }
 
+    /** Stream nack 操作。 */
     @Override
     public long nack(StreamNackArgs args) {
         return get(nackAsync(args));
     }
 
+    /** 异步执行 getPendingInfo。 */
     @Override
     public RFuture<PendingResult> getPendingInfoAsync(String groupName) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getRawName(), groupName);
     }
 
+    /** 获取 PendingInfo。 */
     @Override
     public PendingResult getPendingInfo(String groupName) {
         return get(getPendingInfoAsync(groupName));
     }
     
+    /** 异步执行 listPending。 */
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getRawName(), groupName, startId, endId, count, consumerName);
     }
 
+    /** 异步执行 listPending。 */
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, int count) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getRawName(), groupName, startId, endId, count);
     }
 
+    /** 异步执行 listPending。 */
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getRawName(), groupName, "IDLE", idleTimeUnit.toMillis(idleTime), startId, endId, count);
     }
 
+    /** 异步执行 listPending。 */
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getRawName(), groupName, "IDLE", idleTimeUnit.toMillis(idleTime), startId, endId, count, consumerName);
     }
 
+    /** Stream listPending 操作。 */
     @Override
     public List<PendingEntry> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count) {
         return get(listPendingAsync(groupName, startId, endId, count));
     }
 
+    /** Stream listPending 操作。 */
     @Override
     public List<PendingEntry> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count) {
         return get(listPendingAsync(groupName, consumerName, startId, endId, count));
     }
 
+    /** Stream listPending 操作。 */
     @Override
     public List<PendingEntry> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return get(listPendingAsync(groupName, startId, endId, idleTime, idleTimeUnit, count));
     }
 
+    /** Stream listPending 操作。 */
     @Override
     public List<PendingEntry> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return get(listPendingAsync(groupName, consumerName, startId, endId, idleTime, idleTimeUnit, count));
     }
 
+    /** Stream listPending 操作。 */
     @Override
     public List<PendingEntry> listPending(StreamPendingRangeArgs args) {
         return get(listPendingAsync(args));
     }
 
+    /** 异步执行 listPending。 */
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(StreamPendingRangeArgs args) {
         StreamPendingRangeParams pps = (StreamPendingRangeParams) args;
@@ -226,12 +248,14 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, params.toArray());
     }
 
+    /** Stream fastClaim 操作。 */
     @Override
     public List<StreamMessageId> fastClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit,
             StreamMessageId... ids) {
         return get(fastClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, ids));
     }
 
+    /** 异步执行 fastClaim。 */
     @Override
     public RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime,
             TimeUnit idleTimeUnit, StreamMessageId... ids) {
@@ -250,11 +274,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
     }
 
+    /** Stream autoClaim 操作。 */
     @Override
     public AutoClaimResult<K, V> autoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
         return get(autoClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, startId, count));
     }
 
+    /** 异步执行 autoClaim。 */
     @Override
     public RFuture<AutoClaimResult<K, V>> autoClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
         List<Object> params = new ArrayList<>();
@@ -269,21 +295,25 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XAUTOCLAIM, params.toArray());
     }
 
+    /** Stream fastAutoClaim 操作。 */
     @Override
     public FastAutoClaimResult fastAutoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
         return get(fastAutoClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, startId, count));
     }
 
+    /** Stream readGroup 操作。 */
     @Override
     public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMultiReadGroupArgs args) {
         return get(readGroupAsync(groupName, consumerName, args));
     }
 
+    /** Stream readGroup 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, StreamReadGroupArgs args) {
         return get(readGroupAsync(groupName, consumerName, args));
     }
 
+    /** 异步执行 readGroup。 */
     @Override
     public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMultiReadGroupArgs args) {
         StreamMultiReadGroupParams rp = (StreamMultiReadGroupParams) args;
@@ -342,6 +372,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP, params.toArray());
     }
 
+    /** 异步执行 readGroup。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamReadGroupArgs args) {
         StreamReadGroupParams rp = (StreamReadGroupParams) args;
@@ -395,6 +426,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
     }
 
+    /** 异步执行 fastAutoClaim。 */
     @Override
     public RFuture<FastAutoClaimResult> fastAutoClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
         List<Object> params = new ArrayList<>();
@@ -410,6 +442,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XAUTOCLAIM_IDS, params.toArray());
     }
 
+    /** 异步执行 claim。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime,
             TimeUnit idleTimeUnit, StreamMessageId... ids) {
@@ -426,27 +459,32 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.XCLAIM, params.toArray());
     }
 
+    /** 转移 Pending 消息所有权。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit,
                                                     StreamMessageId... ids) {
         return get(claimAsync(groupName, consumerName, idleTime, idleTimeUnit, ids));
     }
 
+    /** 返回元素/条目数量。 */
     @Override
     public long size() {
         return get(sizeAsync());
     }
     
+    /** 异步返回数量。 */
     @Override
     public RFuture<Long> sizeAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XLEN, getRawName());
     }
 
+    /** 从 Stream 读取条目。 */
     @Override
     public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMultiReadArgs args) {
         return get(readAsync(args));
     }
 
+    /** 异步 XREAD。 */
     @Override
     public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMultiReadArgs args) {
         StreamMultiReadParams rp = (StreamMultiReadParams) args;
@@ -487,11 +525,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD, params.toArray());
     }
 
+    /** 从 Stream 读取条目。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> read(StreamReadArgs args) {
         return get(readAsync(args));
     }
 
+    /** 异步 XREAD。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamReadArgs args) {
         StreamReadParams rp = (StreamReadParams) args;
@@ -527,26 +567,31 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public StreamMessageId add(StreamAddArgs<K, V> args) {
         return get(addAsync(args));
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public void add(StreamMessageId id, StreamAddArgs<K, V> args) {
         get(addAsync(id, args));
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<StreamMessageId> addAsync(StreamAddArgs<K, V> args) {
         return addCustomAsync(null, args);
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Void> addAsync(StreamMessageId id, StreamAddArgs<K, V> args) {
         return addCustomAsync(id, args);
     }
 
+    /** 异步执行 addCustom。 */
     public <R> RFuture<R> addCustomAsync(StreamMessageId id, StreamAddArgs<K, V> args) {
         StreamAddParams<K, V> pps = (StreamAddParams<K, V>) args;
 
@@ -610,6 +655,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
     }
 
+    /** 异步执行 addCustom。 */
     private <R> RFuture<R> addCustomAsync(StreamMessageId id, K key, V value, int trimLen, boolean trimStrict) {
         List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
@@ -640,6 +686,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
     }
 
+    /** 异步执行 range。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamRangeArgs args) {
         StreamRangeParams pps = (StreamRangeParams) args;
@@ -656,6 +703,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XRANGE, params.toArray());
     }
 
+    /** Stream value 操作。 */
     private String value(StreamMessageId messageId, boolean exclusive) {
         if (exclusive && messageId != StreamMessageId.MAX && messageId != StreamMessageId.MIN) {
             StringBuilder element = new StringBuilder();
@@ -667,11 +715,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
     }
 
+    /** Stream range 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> range(StreamRangeArgs args) {
         return get(rangeAsync(args));
     }
 
+    /** 异步执行 rangeReversed。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(StreamRangeArgs args) {
         StreamRangeParams pps = (StreamRangeParams) args;
@@ -688,11 +738,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREVRANGE, params.toArray());
     }
 
+    /** Stream rangeReversed 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> rangeReversed(StreamRangeArgs args) {
         return get(rangeReversedAsync(args));
     }
 
+    /** 异步执行 range。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(int count, StreamMessageId startId, StreamMessageId endId) {
         List<Object> params = new ArrayList<Object>();
@@ -708,11 +760,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XRANGE, params.toArray());
     }
 
+    /** Stream range 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> range(int count, StreamMessageId startId, StreamMessageId endId) {
         return get(rangeAsync(count, startId, endId));
     }
 
+    /** 异步执行 rangeReversed。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(int count, StreamMessageId startId, StreamMessageId endId) {
         List<Object> params = new ArrayList<Object>();
@@ -728,31 +782,37 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREVRANGE, params.toArray());
     }
 
+    /** Stream rangeReversed 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> rangeReversed(int count, StreamMessageId startId, StreamMessageId endId) {
         return get(rangeReversedAsync(count, startId, endId));
     }
 
+    /** 异步执行 range。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamMessageId startId, StreamMessageId endId) {
         return rangeAsync(0, startId, endId);
     }
 
+    /** 异步执行 rangeReversed。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(StreamMessageId startId, StreamMessageId endId) {
         return rangeReversedAsync(0, startId, endId);
     }
 
+    /** Stream range 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> range(StreamMessageId startId, StreamMessageId endId) {
         return range(0, startId, endId);
     }
 
+    /** Stream rangeReversed 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> rangeReversed(StreamMessageId startId, StreamMessageId endId) {
         return rangeReversed(0, startId, endId);
     }
 
+    /** 异步移除元素。 */
     @Override
     public RFuture<Long> removeAsync(StreamMessageId... ids) {
         List<Object> params = new ArrayList<Object>();
@@ -762,16 +822,19 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XDEL, params.toArray());
     }
 
+    /** 移除元素。 */
     @Override
     public long remove(StreamMessageId... ids) {
         return get(removeAsync(ids));
     }
 
+    /** 移除元素。 */
     @Override
     public Map<StreamMessageId, StreamEntryStatus> remove(StreamRemoveArgs args) {
         return get(removeAsync(args));
     }
 
+    /** 异步移除元素。 */
     @Override
     public RFuture<Map<StreamMessageId, StreamEntryStatus>> removeAsync(StreamRemoveArgs args) {
         StreamRemoveParams pps = (StreamRemoveParams) args;
@@ -792,51 +855,61 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                 params.toArray());
     }
 
+    /** 异步执行 removeGroup。 */
     @Override
     public RFuture<Void> removeGroupAsync(String groupName) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "DESTROY", getRawName(), groupName);
     }
 
+    /** 删除消费者组。 */
     @Override
     public void removeGroup(String groupName) {
         get(removeGroupAsync(groupName));
     }
 
+    /** Stream createConsumer 操作。 */
     @Override
     public void createConsumer(String groupName, String consumerName) {
         get(createConsumerAsync(groupName, consumerName));
     }
 
+    /** 异步执行 createConsumer。 */
     @Override
     public RFuture<Void> createConsumerAsync(String groupName, String consumerName) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATECONSUMER", getRawName(), groupName, consumerName);
     }
 
+    /** 异步执行 removeConsumer。 */
     @Override
     public RFuture<Long> removeConsumerAsync(String groupName, String consumerName) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP_LONG, "DELCONSUMER", getRawName(), groupName, consumerName);
     }
 
+    /** Stream removeConsumer 操作。 */
     @Override
     public long removeConsumer(String groupName, String consumerName) {
         return get(removeConsumerAsync(groupName, consumerName));
     }
 
+    /** 异步执行 updateGroupMessageId。 */
     @Override
     public RFuture<Void> updateGroupMessageIdAsync(String groupName, StreamMessageId id) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "SETID", getRawName(), groupName, id);
     }
 
+    /** Stream updateGroupMessageId 操作。 */
     @Override
     public void updateGroupMessageId(String groupName, StreamMessageId id) {
         get(updateGroupMessageIdAsync(groupName, id));
     }
     
+    /** 获取 Info。 */
     @Override
     public StreamInfo<K, V> getInfo() {
         return get(getInfoAsync());
     }
 
+    /** 异步执行 getInfo。 */
     @Override
     public RFuture<StreamInfo<K, V>> getInfoAsync() {
         RedisCommand<StreamInfo<Object, Object>> xinfoStream = new RedisCommand<>("XINFO", "STREAM",
@@ -847,21 +920,25 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, xinfoStream, getRawName());
     }
 
+    /** Stream listGroups 操作。 */
     @Override
     public List<StreamGroup> listGroups() {
         return get(listGroupsAsync());
     }
 
+    /** 异步执行 listGroups。 */
     @Override
     public RFuture<List<StreamGroup>> listGroupsAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XINFO_GROUPS, getRawName());
     }
 
+    /** Stream listConsumers 操作。 */
     @Override
     public List<StreamConsumer> listConsumers(String groupName) {
         return get(listConsumersAsync(groupName));
     }
 
+    /** 异步执行 listConsumers。 */
     @Override
     public RFuture<List<StreamConsumer>> listConsumersAsync(String groupName) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XINFO_CONSUMERS, getRawName(), groupName);
@@ -869,6 +946,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     private static final RedisCommand<Map<StreamMessageId, Map<Object, Object>>> EVAL_XRANGE = new RedisCommand("EVAL", RedisCommands.XRANGE.getReplayMultiDecoder());
     
+    /** 异步执行 pendingRange。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
             StreamMessageId endId, int count) {
@@ -884,6 +962,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                 groupName, startId, endId, count);
     }
 
+    /** 异步执行 pendingRange。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName,
                                                                         StreamMessageId startId, StreamMessageId endId, int count) {
@@ -899,6 +978,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                 groupName, startId, endId, count, consumerName);
     }
 
+    /** 异步执行 pendingRange。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
                                                                       StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
@@ -914,6 +994,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                 groupName, idleTimeUnit.toMillis(idleTime), startId, endId, count);
     }
 
+    /** 异步执行 pendingRange。 */
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName,
                                                                       StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
@@ -929,38 +1010,45 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                 groupName, idleTimeUnit.toMillis(idleTime), startId, endId, count, consumerName);
     }
 
+    /** Stream pendingRange 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return get(pendingRangeAsync(groupName, startId, endId, idleTime, idleTimeUnit, count));
     }
 
+    /** Stream pendingRange 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return get(pendingRangeAsync(groupName, consumerName, startId, endId, idleTime, idleTimeUnit, count));
     }
 
+    /** Stream pendingRange 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, String consumerName, StreamMessageId startId,
                                                         StreamMessageId endId, int count) {
         return get(pendingRangeAsync(groupName, consumerName, startId, endId, count));
     }
 
+    /** Stream pendingRange 操作。 */
     @Override
     public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId,
                                                         int count) {
         return get(pendingRangeAsync(groupName, startId, endId, count));
     }
 
+    /** 裁剪 Stream 长度。 */
     @Override
     public long trim(StreamTrimArgs args) {
         return get(trimAsync(args));
     }
 
+    /** 异步执行 trim。 */
     @Override
     public RFuture<Long> trimAsync(StreamTrimArgs args) {
         return trimAsync(args, true);
     }
 
+    /** 异步执行 trim。 */
     private RFuture<Long> trimAsync(StreamTrimArgs args, boolean trimStrict) {
         StreamTrimParams pps = (StreamTrimParams) args;
 
@@ -994,16 +1082,19 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM, params.toArray());
     }
 
+    /** Stream trimNonStrict 操作。 */
     @Override
     public long trimNonStrict(StreamTrimArgs args) {
         return get(trimNonStrictAsync(args));
     }
 
+    /** 异步执行 trimNonStrict。 */
     @Override
     public RFuture<Long> trimNonStrictAsync(StreamTrimArgs args) {
         return trimAsync(args, false);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof StreamAddListener) {
@@ -1031,6 +1122,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return super.addListenerAsync(listener);
     }
 
+    /** Stream addListener 操作。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof StreamAddListener) {
@@ -1061,6 +1153,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return super.addListener(listener);
     }
 
+    /** Stream removeListener 操作。 */
     @Override
     public void removeListener(int listenerId) {
         removeTrackingListener(listenerId);
@@ -1069,6 +1162,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(removeTrackingListenerAsync(listenerId), listenerId,

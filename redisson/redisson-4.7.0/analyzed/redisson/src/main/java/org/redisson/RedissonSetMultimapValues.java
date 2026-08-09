@@ -32,19 +32,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
- * Set based Multimap Cache values holder
+ * 集合型 Multimap Cache 值视图 {@link RSet} 实现。
+ * <p>表示 {@link RedissonSetMultimapCache} 某 key 下的 Set 元素集合；
+ * 读操作会校验过期 ZSET，写操作委托底层 {@link RedissonSet}。
  *
  * @author Nikita Koksharov
- *
- * @param <V> value
+ * @param <V> 元素类型
  */
 public class RedissonSetMultimapValues<V> extends RedissonExpirable implements RSet<V> {
 
     private static final RedisCommand<ListScanResult<Object>> EVAL_SSCAN = new RedisCommand<ListScanResult<Object>>("EVAL", 
                 new ListMultiDecoder2(new ListScanResultReplayDecoder(), new MapValueDecoder(new ObjectListReplayDecoder())));
     
+    /** 底层 Set 委托对象。 */
     private final RSet<V> set;
+    /** Multimap 外层键。 */
     private final Object key;
+    /** 过期时间 ZSET 键名。 */
     private final String timeoutSetName;
     
     public RedissonSetMultimapValues(Codec codec, CommandAsyncExecutor commandExecutor, String name, String timeoutSetName, Object key) {
@@ -54,61 +58,73 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         this.set = new RedissonSet<V>(codec, commandExecutor, name, null);
     }
 
+    /** 返回元素/条目数量。 */
     @Override
     public int size() {
         return get(sizeAsync());
     }
     
+    /** 创建 MapReduce 任务入口。 */
     @Override
     public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
         return null;
     }
     
+    /** 尝试添加元素（Set 语义）。 */
     @Override
     public boolean tryAdd(V... values) {
         return get(tryAddAsync(values));
     }
 
+    /** Set Multimap 值视图 containsEach 操作。 */
     @Override
     public Set<V> containsEach(Collection<V> c) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
+    /** 异步 tryAdd。 */
     @Override
     public RFuture<Boolean> tryAddAsync(V... values) {
         return set.tryAddAsync(values);
     }
 
+    /** 异步执行 clearExpire。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
+    /** 异步执行 remainTimeToLive。 */
     @Override
     public RFuture<Long> remainTimeToLiveAsync() {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
+    /** 异步执行 rename。 */
     @Override
     public RFuture<Void> renameAsync(String newName) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
+    /** 异步执行 renamenx。 */
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
     
+    /** 异步删除键。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -129,17 +145,20 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                 System.currentTimeMillis(), encodeMapKey(key));
     }
 
+    /** 异步执行 sizeInMemory。 */
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
         List<Object> keys = Arrays.<Object>asList(getRawName(), timeoutSetName);
         return super.sizeInMemoryAsync(keys);
     }
 
+    /** 异步执行 copy。 */
     @Override
     public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
         throw new UnsupportedOperationException();
     }
 
+    /** 异步返回数量。 */
     @Override
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
@@ -156,16 +175,19 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                System.currentTimeMillis(), encodeMapKey(key));
     }
 
+    /** 是否为空。 */
     @Override
     public boolean isEmpty() {
         return size() == 0;
     }
 
+    /** 是否包含指定元素。 */
     @Override
     public boolean contains(Object o) {
         return get(containsAsync(o));
     }
 
+    /** 异步检查是否包含。 */
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -182,10 +204,12 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(o));
     }
 
+    /** Set Multimap 值视图 scanIterator 操作。 */
     private ScanResult<Object> scanIterator(RedisClient client, String startPos, String pattern, int count) {
         return get(scanIteratorAsync(client, startPos, pattern, count));
     }
 
+    /** 异步执行 scanIterator。 */
     private RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, String startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
@@ -218,28 +242,33 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
               params.toArray());
     }
 
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<V> iterator(int count) {
         return iterator(null, count);
     }
     
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<V> iterator(String pattern) {
         return iterator(pattern, 10);
     }
 
+    /** Set Multimap 值视图 distributedIterator 操作。 */
     @Override
     public Iterator<V> distributedIterator(final String pattern) {
         String iteratorName = "__redisson_set_cursor_{" + getRawName() + "}";
         return distributedIterator(iteratorName, pattern, 10);
     }
 
+    /** Set Multimap 值视图 distributedIterator 操作。 */
     @Override
     public Iterator<V> distributedIterator(final int count) {
         String iteratorName = "__redisson_set_cursor_{" + getRawName() + "}";
         return distributedIterator(iteratorName, null, count);
     }
 
+    /** Set Multimap 值视图 distributedIterator 操作。 */
     @Override
     public Iterator<V> distributedIterator(final String iteratorName, final String pattern, final int count) {
         return new RedissonBaseIterator<V>() {
@@ -256,10 +285,12 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         };
     }
 
+    /** Set Multimap 值视图 distributedScanIterator 操作。 */
     private ScanResult<Object> distributedScanIterator(String iteratorName, String pattern, int count) {
         return get(distributedScanIteratorAsync(iteratorName, pattern, count));
     }
 
+    /** 异步执行 distributedScanIterator。 */
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, String pattern, int count) {
         List<Object> args = new ArrayList<>(3);
         args.add(System.currentTimeMillis());
@@ -305,6 +336,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                 Arrays.<Object>asList(timeoutSetName, getRawName(), iteratorName), args.toArray());
     }
 
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<V> iterator(final String pattern, final int count) {
         return new RedissonBaseIterator<V>() {
@@ -322,11 +354,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         };
     }
     
+    /** 返回元素迭代器。 */
     @Override
     public Iterator<V> iterator() {
         return iterator(null);
     }
 
+    /** 异步一次性读取全部元素。 */
     @Override
     public RFuture<Set<V>> readAllAsync() {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_MAP_VALUE_SET,
@@ -343,73 +377,87 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
               System.currentTimeMillis(), encodeMapKey(key));
     }
 
+    /** 一次性读取全部元素。 */
     @Override
     public Set<V> readAll() {
         return get(readAllAsync());
     }
 
+    /** Set Multimap 值视图 toArray 操作。 */
     @Override
     public Object[] toArray() {
         Set<Object> res = (Set<Object>) get(readAllAsync());
         return res.toArray();
     }
 
+    /** Set Multimap 值视图 toArray 操作。 */
     @Override
     public <T> T[] toArray(T[] a) {
         Set<Object> res = (Set<Object>) get(readAllAsync());
         return res.toArray(a);
     }
 
+    /** 向 Stream 追加条目。 */
     @Override
     public boolean add(V e) {
         return set.add(e);
     }
 
+    /** 异步 XADD。 */
     @Override
     public RFuture<Boolean> addAsync(V e) {
         return set.addAsync(e);
     }
 
+    /** Set Multimap 值视图 removeRandom 操作。 */
     @Override
     public V removeRandom() {
         return set.removeRandom();
     }
 
+    /** 异步执行 removeRandom。 */
     @Override
     public RFuture<V> removeRandomAsync() {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SPOP_SINGLE, getRawName());
     }
 
+    /** Set Multimap 值视图 removeRandom 操作。 */
     @Override
     public Set<V> removeRandom(int amount) {
         return get(removeRandomAsync(amount));
     }
 
+    /** 异步执行 removeRandom。 */
     @Override
     public RFuture<Set<V>> removeRandomAsync(int amount) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SPOP, getRawName(), amount);
     }
     
+    /** Set Multimap 值视图 random 操作。 */
     @Override
     public V random() {
         return get(randomAsync());
     }
 
+    /** 异步执行 random。 */
     @Override
     public RFuture<V> randomAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SRANDMEMBER_SINGLE, getRawName());
     }
 
+    /** Set Multimap 值视图 random 操作。 */
     @Override
     public Set<V> random(int count) {
         return get(randomAsync(count));
     }
 
+    /** 异步执行 random。 */
     @Override
     public RFuture<Set<V>> randomAsync(int count) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SRANDMEMBER, getRawName(), count);
     }
     
+    /** 异步移除元素。 */
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -426,26 +474,31 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(o));
     }
 
+    /** 移除元素。 */
     @Override
     public boolean remove(Object value) {
         return get(removeAsync((V) value));
     }
 
+    /** 异步执行 move。 */
     @Override
     public RFuture<Boolean> moveAsync(String destination, V member) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SMOVE, getRawName(), destination, encode(member));
     }
 
+    /** Set Multimap 值视图 move 操作。 */
     @Override
     public boolean move(String destination, V member) {
         return get(moveAsync(destination, member));
     }
 
+    /** 是否包含指定集合的全部元素。 */
     @Override
     public boolean containsAll(Collection<?> c) {
         return get(containsAllAsync(c));
     }
 
+    /** 异步 containsAll。 */
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
@@ -473,6 +526,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                    Arrays.<Object>asList(timeoutSetName, getRawName()), args.toArray());
     }
 
+    /** 批量添加元素。 */
     @Override
     public boolean addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
@@ -482,6 +536,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return get(addAllAsync(c));
     }
 
+    /** 异步批量添加。 */
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
@@ -490,6 +545,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SADD_BOOL, args.toArray());
     }
 
+    /** 异步执行 addAllCounted。 */
     @Override
     public RFuture<Integer> addAllCountedAsync(Collection<? extends V> c) {
         List<Object> args = new ArrayList<>(c.size() + 1);
@@ -498,31 +554,37 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SADD, args.toArray());
     }
 
+    /** Set Multimap 值视图 addAllCounted 操作。 */
     @Override
     public int addAllCounted(Collection<? extends V> c) {
         return get(addAllCountedAsync(c));
     }
 
+    /** Set Multimap 值视图 removeAllCounted 操作。 */
     @Override
     public int removeAllCounted(Collection<? extends V> c) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
+    /** 异步执行 removeAllCounted。 */
     @Override
     public RFuture<Integer> removeAllCountedAsync(Collection<? extends V> c) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
+    /** 异步执行 containsEach。 */
     @Override
     public RFuture<Set<V>> containsEachAsync(Collection<V> c) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
     }
 
+    /** 异步执行 iterator。 */
     @Override
     public AsyncIterator<V> iteratorAsync() {
         return iteratorAsync(10);
     }
 
+    /** 异步执行 iterator。 */
     @Override
     public AsyncIterator<V> iteratorAsync(int count) {
         AsyncIterator<V> asyncIterator = new BaseAsyncIterator<V, Object>() {
@@ -536,11 +598,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
     }
 
+    /** 仅保留指定集合中的元素。 */
     @Override
     public boolean retainAll(Collection<?> c) {
         return get(retainAllAsync(c));
     }
 
+    /** 异步 retainAll。 */
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
@@ -580,6 +644,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                        Arrays.<Object>asList(timeoutSetName, getRawName()), args.toArray());
     }
 
+    /** 异步批量移除。 */
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
@@ -606,46 +671,55 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                Arrays.<Object>asList(timeoutSetName, getRawName()), args.toArray());
     }
 
+    /** 获取 CountDownLatch。 */
     @Override
     public RCountDownLatch getCountDownLatch(V value) {
         return set.getCountDownLatch(value);
     }
 
+    /** 获取 PermitExpirableSemaphore。 */
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
         return set.getPermitExpirableSemaphore(value);
     }
 
+    /** 获取 Semaphore。 */
     @Override
     public RSemaphore getSemaphore(V value) {
         return set.getSemaphore(value);
     }
 
+    /** 获取 FairLock。 */
     @Override
     public RLock getFairLock(V value) {
         return set.getFairLock(value);
     }
 
+    /** 获取 ReadWriteLock。 */
     @Override
     public RReadWriteLock getReadWriteLock(V value) {
         return set.getReadWriteLock(value);
     }
 
+    /** 获取 Lock。 */
     @Override
     public RLock getLock(V value) {
         return set.getLock(value);
     }
     
+    /** 批量移除元素。 */
     @Override
     public boolean removeAll(Collection<?> c) {
         return get(removeAllAsync(c));
     }
 
+    /** 与指定集合求并集并写回。 */
     @Override
     public int union(String... names) {
         return get(unionAsync(names));
     }
 
+    /** 异步求并集。 */
     @Override
     public RFuture<Integer> unionAsync(String... names) {
         List<Object> args = new ArrayList<>(names.length + 1);
@@ -654,11 +728,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SUNIONSTORE_INT, args.toArray());
     }
 
+    /** Set Multimap 值视图 readUnion 操作。 */
     @Override
     public Set<V> readUnion(String... names) {
         return get(readUnionAsync(names));
     }
 
+    /** 异步执行 readUnion。 */
     @Override
     public RFuture<Set<V>> readUnionAsync(String... names) {
         List<Object> args = new ArrayList<>(names.length + 1);
@@ -667,16 +743,19 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SUNION, args.toArray());
     }
 
+    /** 清空全部元素。 */
     @Override
     public void clear() {
         delete();
     }
 
+    /** 与指定集合求差集并写回。 */
     @Override
     public int diff(String... names) {
         return get(diffAsync(names));
     }
 
+    /** 异步求差集。 */
     @Override
     public RFuture<Integer> diffAsync(String... names) {
         List<Object> args = new ArrayList<>(names.length + 1);
@@ -685,11 +764,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SDIFFSTORE_INT, args.toArray());
     }
 
+    /** Set Multimap 值视图 readDiff 操作。 */
     @Override
     public Set<V> readDiff(String... names) {
         return get(readDiffAsync(names));
     }
 
+    /** 异步执行 readDiff。 */
     @Override
     public RFuture<Set<V>> readDiffAsync(String... names) {
         List<Object> args = new ArrayList<>(names.length + 1);
@@ -698,11 +779,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SDIFF, args.toArray());
     }
 
+    /** 与指定集合求交集并写回。 */
     @Override
     public int intersection(String... names) {
         return get(intersectionAsync(names));
     }
 
+    /** 异步求交集。 */
     @Override
     public RFuture<Integer> intersectionAsync(String... names) {
         List<Object> args = new ArrayList<>(names.length + 1);
@@ -711,11 +794,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SINTERSTORE_INT, args.toArray());
     }
 
+    /** Set Multimap 值视图 readIntersection 操作。 */
     @Override
     public Set<V> readIntersection(String... names) {
         return get(readIntersectionAsync(names));
     }
 
+    /** 异步执行 readIntersection。 */
     @Override
     public RFuture<Set<V>> readIntersectionAsync(String... names) {
         List<Object> args = new ArrayList<>(names.length + 1);
@@ -724,21 +809,25 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SINTER, args.toArray());
     }
 
+    /** Set Multimap 值视图 countIntersection 操作。 */
     @Override
     public Integer countIntersection(String... names) {
         return get(countIntersectionAsync(names));
     }
 
+    /** 异步执行 countIntersection。 */
     @Override
     public RFuture<Integer> countIntersectionAsync(String... names) {
         return countIntersectionAsync(0, names);
     }
 
+    /** Set Multimap 值视图 countIntersection 操作。 */
     @Override
     public Integer countIntersection(int limit, String... names) {
         return get(countIntersectionAsync(limit, names));
     }
 
+    /** 异步执行 countIntersection。 */
     @Override
     public RFuture<Integer> countIntersectionAsync(int limit, String... names) {
         List<Object> args = new ArrayList<>(names.length + 1);
@@ -752,46 +841,55 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SINTERCARD_INT, args.toArray());
     }
 
+    /** Set Multimap 值视图 countUnion 操作。 */
     @Override
     public Integer countUnion(String... names) {
         return get(countUnionAsync(names));
     }
 
+    /** 异步执行 countUnion。 */
     @Override
     public RFuture<Integer> countUnionAsync(String... names) {
         return countUnionAsync(0, names);
     }
 
+    /** Set Multimap 值视图 countUnion 操作。 */
     @Override
     public Integer countUnion(int limit, String... names) {
         return get(countUnionAsync(limit, names));
     }
 
+    /** 异步执行 countUnion。 */
     @Override
     public RFuture<Integer> countUnionAsync(int limit, String... names) {
         return unionCardAsync(false, limit, names);
     }
 
+    /** Set Multimap 值视图 countUnionApprox 操作。 */
     @Override
     public Integer countUnionApprox(String... names) {
         return get(countUnionApproxAsync(names));
     }
 
+    /** 异步执行 countUnionApprox。 */
     @Override
     public RFuture<Integer> countUnionApproxAsync(String... names) {
         return countUnionApproxAsync(0, names);
     }
 
+    /** Set Multimap 值视图 countUnionApprox 操作。 */
     @Override
     public Integer countUnionApprox(int limit, String... names) {
         return get(countUnionApproxAsync(limit, names));
     }
 
+    /** 异步执行 countUnionApprox。 */
     @Override
     public RFuture<Integer> countUnionApproxAsync(int limit, String... names) {
         return unionCardAsync(true, limit, names);
     }
 
+    /** 异步执行 unionCard。 */
     private RFuture<Integer> unionCardAsync(boolean approx, int limit, String... names) {
         List<Object> args = new ArrayList<>(names.length + 5);
         args.add(names.length + 1);
@@ -807,21 +905,25 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SUNIONCARD_INT, args.toArray());
     }
 
+    /** Set Multimap 值视图 countDiff 操作。 */
     @Override
     public Integer countDiff(String... names) {
         return get(countDiffAsync(names));
     }
 
+    /** 异步执行 countDiff。 */
     @Override
     public RFuture<Integer> countDiffAsync(String... names) {
         return countDiffAsync(0, names);
     }
 
+    /** Set Multimap 值视图 countDiff 操作。 */
     @Override
     public Integer countDiff(int limit, String... names) {
         return get(countDiffAsync(limit, names));
     }
 
+    /** 异步执行 countDiff。 */
     @Override
     public RFuture<Integer> countDiffAsync(int limit, String... names) {
         List<Object> args = new ArrayList<>(names.length + 4);
@@ -835,200 +937,239 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SDIFFCARD_INT, args.toArray());
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public RFuture<Set<V>> readSortAsync(SortOrder order) {
         return set.readSortAsync(order);
     }
 
+    /** Set Multimap 值视图 readSort 操作。 */
     @Override
     public Set<V> readSort(SortOrder order) {
         return set.readSort(order);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public RFuture<Set<V>> readSortAsync(SortOrder order, int offset, int count) {
         return set.readSortAsync(order, offset, count);
     }
 
+    /** Set Multimap 值视图 readSort 操作。 */
     @Override
     public Set<V> readSort(SortOrder order, int offset, int count) {
         return set.readSort(order, offset, count);
     }
 
+    /** Set Multimap 值视图 readSort 操作。 */
     @Override
     public Set<V> readSort(String byPattern, SortOrder order) {
         return set.readSort(byPattern, order);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order) {
         return set.readSortAsync(byPattern, order);
     }
 
+    /** Set Multimap 值视图 readSort 操作。 */
     @Override
     public Set<V> readSort(String byPattern, SortOrder order, int offset, int count) {
         return set.readSort(byPattern, order, offset, count);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order, int offset, int count) {
         return set.readSortAsync(byPattern, order, offset, count);
     }
 
+    /** Set Multimap 值视图 readSort 操作。 */
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
         return set.readSort(byPattern, getPatterns, order);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order) {
         return set.readSortAsync(byPattern, getPatterns, order);
     }
 
+    /** Set Multimap 值视图 readSort 操作。 */
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset,
             int count) {
         return set.readSort(byPattern, getPatterns, order, offset, count);
     }
 
+    /** 异步执行 readSort。 */
     @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order,
             int offset, int count) {
         return set.readSortAsync(byPattern, getPatterns, order, offset, count);
     }
 
+    /** Set Multimap 值视图 readSortAlpha 操作。 */
     @Override
     public Set<V> readSortAlpha(SortOrder order) {
         return set.readSortAlpha(order);
     }
 
+    /** Set Multimap 值视图 readSortAlpha 操作。 */
     @Override
     public Set<V> readSortAlpha(SortOrder order, int offset, int count) {
         return set.readSortAlpha(order, offset, count);
     }
 
+    /** Set Multimap 值视图 readSortAlpha 操作。 */
     @Override
     public Set<V> readSortAlpha(String byPattern, SortOrder order) {
         return set.readSortAlpha(byPattern, order);
     }
 
+    /** Set Multimap 值视图 readSortAlpha 操作。 */
     @Override
     public Set<V> readSortAlpha(String byPattern, SortOrder order, int offset, int count) {
         return set.readSortAlpha(byPattern, order, offset, count);
     }
 
+    /** Set Multimap 值视图 readSortAlpha 操作。 */
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
         return set.readSortAlpha(byPattern, getPatterns, order);
     }
 
+    /** Set Multimap 值视图 readSortAlpha 操作。 */
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return set.readSortAlpha(byPattern, getPatterns, order, offset, count);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public RFuture<Set<V>> readSortAlphaAsync(SortOrder order) {
         return set.readSortAlphaAsync(order);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public RFuture<Set<V>> readSortAlphaAsync(SortOrder order, int offset, int count) {
         return set.readSortAlphaAsync(order, offset, count);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public RFuture<Set<V>> readSortAlphaAsync(String byPattern, SortOrder order) {
         return set.readSortAlphaAsync(byPattern, order);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public RFuture<Set<V>> readSortAlphaAsync(String byPattern, SortOrder order, int offset, int count) {
         return set.readSortAlphaAsync(byPattern, order, offset, count);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order) {
         return set.readSortAlphaAsync(byPattern, getPatterns, order);
     }
 
+    /** 异步执行 readSortAlpha。 */
     @Override
     public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return set.readSortAlphaAsync(byPattern, getPatterns, order, offset, count);
     }
 
+    /** Set Multimap 值视图 sortTo 操作。 */
     @Override
     public int sortTo(String destName, SortOrder order) {
         return set.sortTo(destName, order);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, SortOrder order) {
         return set.sortToAsync(destName, order);
     }
 
+    /** Set Multimap 值视图 sortTo 操作。 */
     @Override
     public int sortTo(String destName, SortOrder order, int offset, int count) {
         return set.sortTo(destName, order, offset, count);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, SortOrder order, int offset, int count) {
         return set.sortToAsync(destName, order, offset, count);
     }
 
+    /** Set Multimap 值视图 sortTo 操作。 */
     @Override
     public int sortTo(String destName, String byPattern, SortOrder order) {
         return set.sortTo(destName, byPattern, order);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order) {
         return set.sortToAsync(destName, byPattern, order);
     }
 
+    /** Set Multimap 值视图 sortTo 操作。 */
     @Override
     public int sortTo(String destName, String byPattern, SortOrder order, int offset, int count) {
         return set.sortTo(destName, byPattern, order, offset, count);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order, int offset, int count) {
         return set.sortToAsync(destName, byPattern, order, offset, count);
     }
 
+    /** Set Multimap 值视图 sortTo 操作。 */
     @Override
     public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
         return set.sortTo(destName, byPattern, getPatterns, order);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
         return set.sortToAsync(destName, byPattern, getPatterns, order);
     }
 
+    /** Set Multimap 值视图 sortTo 操作。 */
     @Override
     public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset,
             int count) {
         return set.sortTo(destName, byPattern, getPatterns, order, offset, count);
     }
 
+    /** 异步执行 sortTo。 */
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order,
             int offset, int count) {
         return set.sortToAsync(destName, byPattern, getPatterns, order, offset, count);
     }
 
+    /** Set Multimap 值视图 stream 操作。 */
     @Override
     public Stream<V> stream(int count) {
         return toStream(iterator(count));
     }
 
+    /** Set Multimap 值视图 stream 操作。 */
     @Override
     public Stream<V> stream(String pattern, int count) {
         return toStream(iterator(pattern, count));
     }
 
+    /** Set Multimap 值视图 stream 操作。 */
     @Override
     public Stream<V> stream(String pattern) {
         return toStream(iterator(pattern));
