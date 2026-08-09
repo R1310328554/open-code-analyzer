@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/client/RedisPubSubConnection.java",
     "redisson/src/main/java/org/redisson/client/RedisPubSubListener.java",
     "redisson/src/main/java/org/redisson/client/RedisReadonlyException.java",
-    "redisson/src/main/java/org/redisson/client/RedisReconnectedException.java",
-    "redisson/src/main/java/org/redisson/client/RedisRedirectException.java",
-    "redisson/src/main/java/org/redisson/client/RedisResponseTimeoutException.java",
-    "redisson/src/main/java/org/redisson/client/RedisRetryException.java",
-    "redisson/src/main/java/org/redisson/client/RedisTimeoutException.java",
-    "redisson/src/main/java/org/redisson/client/RedisTryAgainException.java",
-    "redisson/src/main/java/org/redisson/client/RedisWaitException.java",
-    "redisson/src/main/java/org/redisson/client/RedisWrongPasswordException.java",
-    "redisson/src/main/java/org/redisson/client/SubscribeListener.java",
-    "redisson/src/main/java/org/redisson/client/WriteRedisConnectionException.java",
-    "redisson/src/main/java/org/redisson/client/codec/BaseCodec.java",
-    "redisson/src/main/java/org/redisson/client/codec/BitSetCodec.java",
-    "redisson/src/main/java/org/redisson/client/codec/ByteArrayCodec.java",
-    "redisson/src/main/java/org/redisson/client/codec/Codec.java",
-    "redisson/src/main/java/org/redisson/client/codec/DoubleCodec.java",
-    "redisson/src/main/java/org/redisson/client/codec/IntegerCodec.java"
+    "redisson/src/main/java/org/redisson/client/RedisReconnectedException.java"
   ],
   "remaining_pending": 572,
-  "done": 2220
+  "done": 2235
 }
