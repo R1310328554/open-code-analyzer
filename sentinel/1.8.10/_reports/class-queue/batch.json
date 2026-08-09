@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:01:57Z",
-  "files": [
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterAppFullAssignRequest.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterAppSingleServerAssignRequest.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterClientInfoVO.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterGroupEntity.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ClusterStateSingleVO.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ConnectionDescriptorVO.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/ConnectionGroupVO.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/config/ClusterClientConfig.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/config/ServerFlowConfig.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/config/ServerTransportConfig.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/request/ClusterAppAssignMap.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/request/ClusterClientModifyRequest.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/request/ClusterModifyRequest.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/request/ClusterServerModifyRequest.java",
-    "sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/AppClusterClientStateWrapVO.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 365,
-  "done": 585
+  "done": 600
 }
