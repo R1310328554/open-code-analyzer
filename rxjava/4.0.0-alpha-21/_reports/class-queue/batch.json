@@ -15,23 +15,8 @@
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableFlatMap.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableFlatMapMaybe.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableFlattenIterable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableFromIterable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableGroupBy.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableGroupJoin.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableJoin.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableObserveOn.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowablePublish.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowablePublishMulticast.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReplay.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSwitchMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableWindow.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableWindowBoundarySelector.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableWindowTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableZip.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeMergeArray.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableBufferTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableCache.java"
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableFromIterable.java"
   ],
   "remaining_pending": 34,
-  "done": 913
+  "done": 928
 }

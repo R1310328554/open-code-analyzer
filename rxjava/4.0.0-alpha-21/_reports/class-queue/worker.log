@@ -1286,3 +1286,18 @@
 2026-08-09T18:40:27Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapSinglePerf.java wave30a
 2026-08-09T18:40:27Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapCompletablePerf.java wave30a
 2026-08-09T18:40:27Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapMaybeEmptyPerf.java wave30a
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableGroupBy.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableGroupJoin.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableJoin.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableObserveOn.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowablePublish.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowablePublishMulticast.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReplay.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSwitchMap.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableWindow.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableWindowBoundarySelector.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableWindowTimed.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableZip.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/maybe/MaybeMergeArray.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableBufferTimed.java wave31b mega [15:30]
+2026-08-09T18:43:04Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableCache.java wave31b mega [15:30]
