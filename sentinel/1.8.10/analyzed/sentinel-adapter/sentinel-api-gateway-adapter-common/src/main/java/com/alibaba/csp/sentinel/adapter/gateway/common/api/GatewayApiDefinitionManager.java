@@ -31,7 +31,7 @@ import com.alibaba.csp.sentinel.spi.SpiLoader;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * Manager for gateway API definitions.
+ * 网关 API 定义管理器，负责加载、缓存并通知下游观察者。
  *
  * @author Eric Zhao
  * @since 1.6.0
@@ -44,7 +44,7 @@ public final class GatewayApiDefinitionManager {
     private static SentinelProperty<Set<ApiDefinition>> currentProperty = new DynamicSentinelProperty<>();
 
     /**
-     * The map keeps all found ApiDefinitionChangeObserver (class name as key).
+     * 保存所有已发现的 {@link ApiDefinitionChangeObserver}（以类名为键）。
      */
     private static final Map<String, ApiDefinitionChangeObserver> API_CHANGE_OBSERVERS = new ConcurrentHashMap<>();
 
@@ -78,10 +78,10 @@ public final class GatewayApiDefinitionManager {
     }
 
     /**
-     * Load given gateway API definitions and apply to downstream observers.
+     * 加载给定的网关 API 定义并通知下游观察者。
      *
-     * @param apiDefinitions set of gateway API definitions
-     * @return true if updated, or else false
+     * @param apiDefinitions 网关 API 定义集合
+     * @return 若已更新则返回 true，否则 false
      */
     public static boolean loadApiDefinitions(Set<ApiDefinition> apiDefinitions) {
         return currentProperty.updateValue(apiDefinitions);
@@ -130,7 +130,7 @@ public final class GatewayApiDefinitionManager {
             API_MAP.clear();
             API_MAP.putAll(map);
 
-            // propagate to downstream.
+            // 通知下游监听器。
             notifyDownstreamListeners(validSet);
         }
     }

@@ -30,6 +30,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.param.ParameterMetricStorage;
 import com.alibaba.csp.sentinel.spi.Spi;
 
 /**
+ * 网关参数流控插槽，在调用链中执行网关热点参数限流校验。
+ *
  * @author Eric Zhao
  * @since 1.6.1
  */
@@ -56,7 +58,7 @@ public class GatewayFlowSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
         }
 
         for (ParamFlowRule rule : rules) {
-            // Initialize the parameter metrics.
+            // 初始化参数指标。
             ParameterMetricStorage.initParamMetricsFor(resourceWrapper, rule);
 
             if (!ParamFlowChecker.passCheck(resourceWrapper, rule, count, args)) {

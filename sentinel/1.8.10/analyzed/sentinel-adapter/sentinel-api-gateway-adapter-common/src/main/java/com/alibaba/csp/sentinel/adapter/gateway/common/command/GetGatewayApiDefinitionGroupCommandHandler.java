@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 获取所有自定义网关 API 分组定义的命令处理器。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
