@@ -109,14 +109,24 @@ public class JsonReader implements Closeable {
   private static final int PEEKED_DOUBLE_QUOTED = 9;
   private static final int PEEKED_UNQUOTED = 10;
 
+<<<<<<< Updated upstream
   /** 返回此值时，字符串存于 peekedString。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   private static final int PEEKED_BUFFERED = 11;
 
   private static final int PEEKED_SINGLE_QUOTED_NAME = 12;
   private static final int PEEKED_DOUBLE_QUOTED_NAME = 13;
   private static final int PEEKED_UNQUOTED_NAME = 14;
 
+<<<<<<< Updated upstream
   /** 返回此值时，整数值存于 peekedLong。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   private static final int PEEKED_LONG = 15;
 
   private static final int PEEKED_NUMBER = 16;
@@ -132,7 +142,12 @@ public class JsonReader implements Closeable {
   private static final int NUMBER_CHAR_EXP_SIGN = 6;
   private static final int NUMBER_CHAR_EXP_DIGIT = 7;
 
+<<<<<<< Updated upstream
   /** 输入 JSON 流。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   private final Reader in;
 
   private Strictness strictness = Strictness.LEGACY_STRICT;
@@ -173,7 +188,12 @@ public class JsonReader implements Closeable {
    */
   private String peekedString;
 
+<<<<<<< Updated upstream
   /** 嵌套栈；用手动数组而非 ArrayList 可节省约 20% 开销。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   private int[] stack = new int[32];
 
   private int stackSize = 0;
@@ -193,7 +213,12 @@ public class JsonReader implements Closeable {
   private String[] pathNames = new String[32];
   private int[] pathIndices = new int[32];
 
+<<<<<<< Updated upstream
   /** 创建从 {@code in} 读取 JSON 的新实例。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   public JsonReader(Reader in) {
     this.in = Objects.requireNonNull(in, "in == null");
   }
@@ -358,7 +383,12 @@ public class JsonReader implements Closeable {
     }
   }
 
+<<<<<<< Updated upstream
   /** 当前数组或对象是否还有下一元素。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   public boolean hasNext() throws IOException {
     int p = peeked;
     if (p == PEEKED_NONE) {
@@ -367,7 +397,12 @@ public class JsonReader implements Closeable {
     return p != PEEKED_END_OBJECT && p != PEEKED_END_ARRAY && p != PEEKED_EOF;
   }
 
+<<<<<<< Updated upstream
   /** 返回下一令牌类型但不消费。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   public JsonToken peek() throws IOException {
     int p = peeked;
     if (p == PEEKED_NONE) {
@@ -993,7 +1028,12 @@ public class JsonReader implements Closeable {
     }
   }
 
+<<<<<<< Updated upstream
   /** 将未加引号的值作为字符串返回。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   @SuppressWarnings("fallthrough")
   private String nextUnquotedValue() throws IOException {
     StringBuilder builder = null;
@@ -1611,7 +1651,12 @@ public class JsonReader implements Closeable {
             + TroubleshootingGuide.createUrl(troubleshootingId));
   }
 
+<<<<<<< Updated upstream
   /** 若存在 non-execute 前缀则消费之。 */
+=======
+  /**
+   */
+>>>>>>> Stashed changes
   private void consumeNonExecutePrefix() throws IOException {
     // 通过前导空白快进
     int unused = nextNonWhitespace(true);
