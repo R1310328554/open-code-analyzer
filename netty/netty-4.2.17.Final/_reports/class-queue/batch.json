@@ -15,23 +15,8 @@
     "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicStreamChannel.java",
     "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicStreamChannelConfig.java",
     "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicTransportParameters.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheRecvInfo.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheSendInfo.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/SecureRandomQuicConnectionIdGenerator.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/SegmentedDatagramPacketAllocator.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/SipHash.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/SockaddrIn.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/SslEarlyDataReadyEvent.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/SslSessionTicketKey.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/Brotli.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/BrotliDecoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/BrotliDecompressor.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/BrotliEncoder.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/BrotliMode.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/BrotliOptions.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/ByteBufChecksum.java",
-    "codec-compression/src/main/java/io/netty/handler/codec/compression/Bzip2BitReader.java"
+    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheRecvInfo.java"
   ],
   "remaining_pending": 1658,
-  "done": 240
+  "done": 255
 }
