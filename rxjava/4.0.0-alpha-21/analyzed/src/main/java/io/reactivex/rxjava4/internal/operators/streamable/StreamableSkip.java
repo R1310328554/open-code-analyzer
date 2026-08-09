@@ -24,6 +24,12 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.StreamerCancellation;
 import io.reactivex.rxjava4.operators.*;
 
+/**
+ * 跳过前 {@code count} 个元素后转发上游 Streamable。
+ * 若上游实现 {@link IndexableSource}、{@link EnumerableSource} 或
+ * {@link DeferredEnumerableSource}，则选用对应优化实现。
+ * @param <T> 元素类型
+ */
 public record StreamableSkip<T>(Streamable<T> source, long count) implements Streamable<T> {
 
     @SuppressWarnings("unchecked")
@@ -42,6 +48,7 @@ public record StreamableSkip<T>(Streamable<T> source, long count) implements Str
         return new SkipStreamerBasic<>(upstream, count);
     }
 
+    /** remaining>0 时 drain 跳过；remaining<=0 后直接转发 upstream.next。 */
     static abstract class SkipStreamer<T> extends AtomicInteger implements Streamer<T>, BiConsumer<Boolean, Throwable> {
 
         @Serial
@@ -68,6 +75,7 @@ public record StreamableSkip<T>(Streamable<T> source, long count) implements Str
             return waiter;
         }
 
+        /** 同步或异步拉取 upstream 直至跳过足够元素或上游结束。 */
         void drain() {
             for (;;) {
                 var nextStage = upstream.next().toCompletableFuture();
@@ -87,7 +95,7 @@ public record StreamableSkip<T>(Streamable<T> source, long count) implements Str
                             waiter.complete(true);
                             return;
                         }
-                        // still skipping, try the next upstream value
+                        // 仍在跳过阶段，继续拉取上游下一项
                     } else {
                         waiter.complete(false);
                         return;
@@ -139,6 +147,7 @@ public record StreamableSkip<T>(Streamable<T> source, long count) implements Str
         }
     }
 
+    /** 索引访问时 elementAt 偏移 count；limit 减去已跳过数量。 */
     static final class SkipStreamerIndexed<T> extends SkipStreamer<T>
     implements IndexableSource<T> {
 
@@ -166,6 +175,7 @@ public record StreamableSkip<T>(Streamable<T> source, long count) implements Str
         }
     }
 
+    /** 同步路径：先 nextSync 跳过 count 次再转发。 */
     static final class SkipStreamerEnumerable<T> extends SkipStreamer<T>
     implements EnumerableSource<T> {
 
@@ -191,6 +201,7 @@ public record StreamableSkip<T>(Streamable<T> source, long count) implements Str
 
     }
 
+    /** 延迟可枚举路径：跳过后转发 enumerableReady 与 nextSync。 */
     static final class SkipStreamerDeferredEnumerable<T> extends SkipStreamer<T>
     implements DeferredEnumerableSource<T> {
 

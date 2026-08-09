@@ -22,7 +22,7 @@ import io.reactivex.rxjava4.internal.functions.Functions;
 import io.reactivex.rxjava4.schedulers.SchedulerRunnableIntrospection;
 
 /**
- * Base functionality for direct tasks that manage a runnable and cancellation/completion.
+ * 直接调度任务基类：管理 Runnable、取消与完成状态。
  * @since 2.0.8
  */
 abstract class AbstractDirectTask
@@ -47,6 +47,7 @@ implements Disposable, SchedulerRunnableIntrospection {
         this.interruptOnCancel = interruptOnCancel;
     }
 
+    /** CAS 将 Future 置为 DISPOSED 并按策略 cancelFuture。 */
     @Override
     public final void dispose() {
         Future<?> f = get();
@@ -65,6 +66,7 @@ implements Disposable, SchedulerRunnableIntrospection {
         return f == FINISHED || f == DISPOSED;
     }
 
+    /** 循环 CAS 绑定 Future；若已 FINISHED/DISPOSED 则取消新 Future。 */
     public final void setFuture(Future<?> future) {
         for (;;) {
             Future<?> f = get();
@@ -81,6 +83,7 @@ implements Disposable, SchedulerRunnableIntrospection {
         }
     }
 
+    /** 执行线程为 runner 时用 cancel(false)，否则按 interruptOnCancel。 */
     private void cancelFuture(Future<?> future) {
         if (runner == Thread.currentThread()) {
             future.cancel(false);

@@ -27,6 +27,12 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.internal.fuseable.HasUpstreamSingleSource;
 import io.reactivex.rxjava4.operators.DeferredEnumerableSource;
 
+/**
+ * 订阅 {@link SingleSource}，将 onSuccess 值经 mapper 转为 {@link Iterable} 后作为 Streamable 逐元素发射。
+ * 实现 {@link DeferredEnumerableSource} 以支持同步 nextSync 路径。
+ * @param <T> Single 元素类型
+ * @param <U> Iterable 元素类型
+ */
 public record StreamableSingleFlattenAs<T, U>(
         SingleSource<T> source,
         Function<? super T, @NonNull ? extends Iterable<? extends U>> mapper
@@ -40,6 +46,7 @@ public record StreamableSingleFlattenAs<T, U>(
         return observer;
     }
 
+    /** onSuccess 时拉取 Iterable 首元素并缓存 Iterator；next 迭代剩余元素。 */
     static final class FlattenAsSingleObserver<T, U>
     extends AtomicInteger
     implements SingleObserver<T>, Streamer<U>, DisposableOnly,
@@ -136,6 +143,7 @@ public record StreamableSingleFlattenAs<T, U>(
             iteratorReady.completeExceptionally(e);
         }
 
+        /** 首个元素就绪前 next 返回 iteratorReady。 */
         @Override
         public CompletionStage<Boolean> enumerableReady() {
             return iteratorReady;
@@ -143,7 +151,7 @@ public record StreamableSingleFlattenAs<T, U>(
 
         @Override
         public boolean nextSync() throws Throwable {
-            // because onSuccess will pull out the first item
+            // onSuccess 已预取首元素，首次 nextSync 直接返回 true
             if (!deferredOnce) {
                 deferredOnce = true;
                 return true;

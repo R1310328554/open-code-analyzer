@@ -22,7 +22,7 @@ import io.reactivex.rxjava4.disposables.*;
 import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 
 /**
- * Scheduler that creates and caches a set of thread pools and reuses them if possible.
+ * 创建并缓存线程池 Worker，空闲时复用以降低线程创建开销。
  */
 public final class CachedScheduler extends Scheduler {
     private static final String WORKER_THREAD_NAME_PREFIX = "RxCachedThreadScheduler";
@@ -31,7 +31,7 @@ public final class CachedScheduler extends Scheduler {
     private static final String EVICTOR_THREAD_NAME_PREFIX = "RxCachedWorkerPoolEvictor";
     static final RxThreadFactory EVICTOR_THREAD_FACTORY;
 
-    /** The name of the system property for setting the keep-alive time (in seconds) for this Scheduler workers. */
+    /** 系统属性名：CachedScheduler Worker 空闲保活时间（秒）。 */
     private static final String KEY_KEEP_ALIVE_TIME = "rxjava4.cached-keep-alive-time";
     public static final long KEEP_ALIVE_TIME_DEFAULT = 60;
 
@@ -42,10 +42,10 @@ public final class CachedScheduler extends Scheduler {
     final ThreadFactory threadFactory;
     final AtomicReference<CachedWorkerPool> pool;
 
-    /** The name of the system property for setting the thread priority for this Scheduler. */
+    /** 系统属性名：CachedScheduler 线程优先级。 */
     private static final String KEY_IO_PRIORITY = "rxjava4.cached-priority";
 
-    /** The name of the system property for setting the release behaviour for this Scheduler. */
+    /** 系统属性名：Worker dispose 时是否延迟归还线程池。 */
     private static final String KEY_SCHEDULED_RELEASE = "rxjava4.cached-scheduled-release";
     static boolean USE_SCHEDULED_RELEASE;
 
@@ -70,6 +70,7 @@ public final class CachedScheduler extends Scheduler {
         NONE.shutdown();
     }
 
+    /** 线程池：get 复用或新建 ThreadWorker；evictor 定期清理过期 Worker。 */
     static final class CachedWorkerPool implements Runnable {
         private final long keepAliveTime;
         private final ConcurrentLinkedQueue<ThreadWorker> expiringWorkerQueue;
@@ -110,14 +111,14 @@ public final class CachedScheduler extends Scheduler {
                 }
             }
 
-            // No cached worker found, so create a new one.
+            // 无可用缓存 Worker，创建新实例
             ThreadWorker w = new ThreadWorker(threadFactory);
             allWorkers.add(w);
             return w;
         }
 
         void release(ThreadWorker threadWorker) {
-            // Refresh expire time before putting worker back in pool
+            // 归还池前刷新过期时间戳
             threadWorker.setExpirationTime(now() + keepAliveTime);
 
             expiringWorkerQueue.offer(threadWorker);
@@ -133,8 +134,7 @@ public final class CachedScheduler extends Scheduler {
                             allWorkers.remove(threadWorker);
                         }
                     } else {
-                        // Queue is ordered with the worker that will expire first in the beginning, so when we
-                        // find a non-expired worker we can stop evicting.
+                        // 队列按过期时间排序；遇到未过期 Worker 即可停止驱逐
                         break;
                     }
                 }
@@ -161,9 +161,8 @@ public final class CachedScheduler extends Scheduler {
     }
 
     /**
-     * Constructs an CachedScheduler with the given thread factory and starts the pool of workers.
-     * @param threadFactory thread factory to use for creating worker threads. Note that this takes precedence over any
-     *                      system properties for configuring new thread creation. Cannot be null.
+     * 使用给定 ThreadFactory 构造并启动 Worker 池。
+     * @param threadFactory 创建 Worker 线程的工厂；优先于相关系统属性；不可为 null
      */
     public CachedScheduler(ThreadFactory threadFactory) {
         this.threadFactory = threadFactory;
@@ -197,6 +196,7 @@ public final class CachedScheduler extends Scheduler {
         return pool.get().allWorkers.size();
     }
 
+    /** 绑定单个 ThreadWorker；dispose 后 release 回池（或 scheduleActual 延迟 release）。 */
     static final class EventLoopWorker extends Scheduler.Worker implements Runnable {
         private final CompositeDisposable tasks;
         private final CachedWorkerPool pool;
@@ -218,7 +218,7 @@ public final class CachedScheduler extends Scheduler {
                 if (USE_SCHEDULED_RELEASE) {
                     threadWorker.scheduleActual(this, 0, TimeUnit.NANOSECONDS, null);
                 } else {
-                    // releasing the pool should be the last action
+                    // 直接归还 Worker 至池（无延迟 release）
                     pool.release(threadWorker);
                 }
             }
@@ -238,7 +238,7 @@ public final class CachedScheduler extends Scheduler {
         @Override
         public Disposable schedule(@NonNull Runnable action, long delayTime, @NonNull TimeUnit unit) {
             if (tasks.isDisposed()) {
-                // don't schedule, we are unsubscribed
+                // tasks 已 dispose，不再调度
                 return EmptyDisposable.INSTANCE;
             }
 
@@ -246,6 +246,7 @@ public final class CachedScheduler extends Scheduler {
         }
     }
 
+    /** 带 expirationTime 的池化 Worker，供 evictor 判定是否过期。 */
     static final class ThreadWorker extends NewThreadWorker {
 
         long expirationTime;

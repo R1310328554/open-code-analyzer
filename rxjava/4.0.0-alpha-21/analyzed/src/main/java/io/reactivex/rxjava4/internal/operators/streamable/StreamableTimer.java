@@ -22,10 +22,15 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.*;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 延迟后发射单个 {@code 0L}，随后 next 返回 false。
+ * 可通过 {@link Scheduler} 或 {@link ExecutorService} 调度。
+ */
 public record StreamableTimer(long delay, @NonNull TimeUnit unit,
         @Nullable Scheduler scheduler,
         @Nullable ExecutorService executor) implements Streamable<Long> {
 
+    /** scheduler 与 executor 不可同时为 null。 */
     public StreamableTimer {
         if (scheduler == null && executor == null) {
             throw new IllegalArgumentException("scheduler and executor cannot be both null");
@@ -59,6 +64,7 @@ public record StreamableTimer(long delay, @NonNull TimeUnit unit,
         return streamer;
     }
 
+    /** run 完成 waiter；dispose 时以 CancellationException 结束 waiter。 */
     static final class TimerStreamer extends AtomicReference<Disposable> implements Streamer<Long>,  Runnable, Disposable {
 
         @Serial
@@ -73,6 +79,7 @@ public record StreamableTimer(long delay, @NonNull TimeUnit unit,
             waiter.complete(true);
         }
 
+        /** 非 dispose 状态下 sleep 被中断则 exceptional 完成 waiter。 */
         void interrupedSleep(InterruptedException ex) {
             if (!isDisposed()) {
                 waiter.completeExceptionally(ex);

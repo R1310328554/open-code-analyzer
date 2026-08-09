@@ -22,6 +22,12 @@ import io.reactivex.rxjava4.disposables.StreamerCancellation;
 import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.*;
 
+/**
+ * 资源管理模式：resourceSupplier 获取资源，resourceMapper 创建 Streamable，
+ * finish 时 resourceCleaner 释放资源。
+ * @param <T> 元素类型
+ * @param <R> 资源类型
+ */
 public record StreamableUsing<T, R>(
         Supplier<? extends R> resourceSupplier,
         Function<? super R, ? extends Streamable<? extends T>> resourceMapper,
@@ -50,6 +56,7 @@ implements Streamable<T> {
         return new UsingStreamer<>(source.stream(cancellation), () -> resourceCleaner.accept(resource));
     }
 
+    /** finish 时先 upstream.finish 再 run cleanup（仅一次）。 */
     static final class UsingStreamer<T, R> implements Streamer<T> {
 
         final Streamer<? extends T> upstream;

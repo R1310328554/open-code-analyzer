@@ -21,6 +21,11 @@ import io.reactivex.rxjava4.disposables.StreamerCancellation;
 import io.reactivex.rxjava4.internal.fuseable.HasUpstreamStreamableSource;
 import io.reactivex.rxjava4.operators.*;
 
+/**
+ * 仅转发前 {@code count} 个元素，之后 next 返回 false。
+ * 上游为 {@link IndexableSource} 等时可选用优化 Streamer 实现。
+ * @param <T> 元素类型
+ */
 public record StreamableTake<T>(Streamable<T> source, long count)
 implements Streamable<T>, HasUpstreamStreamableSource<T> {
 
@@ -40,6 +45,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
         return new TakeStreamerBasic<>(upstream, count);
     }
 
+    /** remaining 递减至 0 后 next 固定返回 NEXT_FALSE。 */
     static abstract class TakeStreamerBase<T> implements Streamer<T> {
         final Streamer<T> upstream;
 
@@ -77,6 +83,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
 
     }
 
+    /** limit 为 min(count, 上游 limit)。 */
     static final class TakeStreamerIndexable<T> extends TakeStreamerBase<T>
     implements IndexableSource<T> {
 
@@ -101,6 +108,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
         }
     }
 
+    /** 同步路径：最多 nextSync count 次。 */
     static final class TakeStreamerEnumerable<T> extends TakeStreamerBase<T>
     implements EnumerableSource<T> {
 
@@ -124,6 +132,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
 
     }
 
+    /** 延迟可枚举 take：转发 enumerableReady。 */
     static final class TakeStreamerDeferredEnumerable<T> extends TakeStreamerBase<T>
     implements DeferredEnumerableSource<T> {
 

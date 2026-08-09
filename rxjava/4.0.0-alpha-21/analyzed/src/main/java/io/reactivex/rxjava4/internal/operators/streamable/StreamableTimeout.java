@@ -20,6 +20,10 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.core.Scheduler.Worker;
 import io.reactivex.rxjava4.disposables.*;
 
+/**
+ * 每次 next 与调度器超时竞速；超时则 dispose 主源并切换至 fallback Streamable。
+ * @param <T> 元素类型
+ */
 public record StreamableTimeout<T>(
         Streamable<T> source,
         long timeout, TimeUnit unit, Scheduler scheduler,
@@ -37,6 +41,7 @@ implements Streamable<T> {
         return streamer;
     }
 
+    /** mainNext 与 worker 定时任务 whenEither；超时后订阅 fallback。 */
     static final class TimeoutStreamer<T> implements Streamer<T> {
 
         final long timeout;
@@ -55,6 +60,15 @@ implements Streamable<T> {
 
         Streamer<T> fallbackStreamer;
 
+        /**
+         * @param mainStreamer 主 Streamer
+         * @param mainDisposable 主源 disposable
+         * @param downstreamDisposable 下游 cancellation
+         * @param timeout 超时时长
+         * @param unit 时间单位
+         * @param worker 执行定时任务的 Scheduler.Worker
+         * @param fallback 超时后的备用 Streamable
+         */
         TimeoutStreamer(
                 Streamer<T> mainStreamer, Disposable mainDisposable, StreamerCancellation downstreamDisposable,
                 long timeout, TimeUnit unit, Worker worker, Streamable<T> fallback) {

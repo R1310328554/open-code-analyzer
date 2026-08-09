@@ -24,6 +24,11 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.fuseable.HasUpstreamStreamableSource;
 
+/**
+ * 在上游正常结束后，按 {@code whenFunction} 决定是否重新订阅源 {@link Streamable}。
+ * 每完成一轮消费调用 {@code whenFunction(completionCount)}，返回 true 则再次订阅。
+ * @param <T> 元素类型
+ */
 public record StreamableRepeat<T>(
         Streamable<T> source,
         Function<? super Long, ? extends CompletionStage<Boolean>> whenFunction
@@ -37,6 +42,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
         return streamer;
     }
 
+    /** 三阶段状态机：拉取上游 → finish → 调用 whenFunction 决定是否 repeat。 */
     static final class RepeatStreamer<T>
     implements Streamer<T>, BiConsumer<Object, Throwable> {
 
@@ -67,12 +73,13 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
             this.stage = -1;
         }
 
+        /** wip 串行保护下重新订阅 source 并启动 next 回调链。 */
         void retrySource() {
             if (wipSource.getAndIncrement() != 0) {
                 return;
             }
             do {
-                // FIXME some operators don't clean up their StreamerCancellations so we hand out clean ones for now
+                // FIXME：部分算子未清理 StreamerCancellation，暂为每次重订阅派生新的 cancellation
                 var innerCanceller = downstreamCancellation.derive();
                 currentStreamer = source.stream(innerCanceller);
                 if (stage == 0) {
@@ -121,7 +128,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
                         nextWaiter.completeExceptionally(ex);
                     }
                 }
-            } else { // stage 3
+            } else { // 阶段 3：whenFunction 完成，true 则重试，false 则结束
                 downstreamCancellation.delete(whenFunctionCancel);
                 whenFunctionCancel = null;
                 var cf = nextWaiter;

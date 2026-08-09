@@ -22,6 +22,10 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.fuseable.HasUpstreamStreamableSource;
 
+/**
+ * 转发元素直至 predicate 对 current() 返回 false 或上游结束。
+ * @param <T> 元素类型
+ */
 public record StreamableTakeWhile<T>(Streamable<T> source, Predicate<? super T> predicate)
 implements Streamable<T>, HasUpstreamStreamableSource<T> {
 
@@ -30,6 +34,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
         return new TakeWhileStreamer<>(source.stream(cancellation), predicate);
     }
 
+    /** upstream.next 成功后以 predicate 检验 current，false 则终止序列。 */
     static final class TakeWhileStreamer<T>
     implements Streamer<T>, java.util.function.Function<Boolean, CompletionStage<Boolean>> {
 

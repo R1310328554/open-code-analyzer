@@ -27,6 +27,12 @@ import io.reactivex.rxjava4.disposables.DisposableStreamerCancellation;
 import io.reactivex.rxjava4.disposables.StreamerCancellation;
 import io.reactivex.rxjava4.internal.fuseable.HasUpstreamStreamableSource;
 
+/**
+ * 转发主源元素直至 other 发出首个元素或主源结束；other 先完成则取消主源。
+ * 使用 {@link StreamableHelper#race} 竞速 mainNext 与 otherNext。
+ * @param <T> 主源元素类型
+ * @param <U> other 源元素类型
+ */
 public record StreamableTakeUntil<T, U>(
         Streamable<T> source,
         Streamable<U> other
@@ -47,6 +53,7 @@ public record StreamableTakeUntil<T, U>(
         return streamer;
     }
 
+    /** 并行订阅 main 与 other；other 获胜时 dispose 主 cancellation。 */
     static final class TakeUntilMainStreamer<T, U> implements Streamer<T> {
 
         final Streamer<? extends T> upstream;
@@ -61,6 +68,13 @@ public record StreamableTakeUntil<T, U>(
 
         CompletionStage<Boolean> mainNext;
 
+        /**
+         * @param upstream 主 Streamer
+         * @param otherStreamer other 的 Streamer
+         * @param mainCancellation 主源 cancellation
+         * @param otherCancellation other cancellation
+         * @param otherNext 已启动的 other.next（抑制值并绑定取消）
+         */
         public TakeUntilMainStreamer(
                 Streamer<? extends T> upstream,
                 Streamer<? extends U> otherStreamer,

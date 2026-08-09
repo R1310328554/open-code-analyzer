@@ -29,11 +29,17 @@ import io.reactivex.rxjava4.disposables.DisposableStreamerCancellation;
 import io.reactivex.rxjava4.internal.fuseable.HasUpstreamStreamableSource;
 import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 
+/**
+ * 将 {@link Streamable} 桥接为 {@link Observable}：循环 next 映射为 onNext，
+ * 结束或错误时 onComplete/onError。
+ * @param <T> 元素类型
+ */
 public final class StreamableToObservable<T> extends Observable<T>
 implements HasUpstreamStreamableSource<T> {
 
     final Streamable<T> source;
 
+    /** @param source 上游 Streamable */
     public StreamableToObservable(Streamable<T> source) {
         this.source = source;
     }
@@ -53,6 +59,7 @@ implements HasUpstreamStreamableSource<T> {
         sto.drain();
     }
 
+    /** wip 串行 drain：未完成时 next，done 后 finish 并通知 Observer。 */
     record StreamToObserver<T>(Streamer<T> streamer,
             Observer<? super T> observer,
             DisposableStreamerCancellation cancellation,
@@ -62,6 +69,7 @@ implements HasUpstreamStreamableSource<T> {
             AtomicBoolean disposed)
     implements BiConsumer<Object, Throwable>, Disposable {
 
+        /** 自旋 drain next/finish 直至 wip 归零。 */
         void drain() {
             if (wip.getAndIncrement() != 0) {
                 return;

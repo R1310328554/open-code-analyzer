@@ -28,6 +28,11 @@ import io.reactivex.rxjava4.disposables.DisposableStreamerCancellation;
 import io.reactivex.rxjava4.disposables.StreamerCancellation;
 import io.reactivex.rxjava4.internal.util.AtomicThrowable;
 
+/**
+ * 并行拉取多个 Streamable 的下一项，全部成功则 current 为 {@link List} 快照。
+ * 任一源结束或出错则协调取消并汇总异常。
+ * @param <T> 各源元素类型
+ */
 public record StreamableZip<T>(
         Iterable<? extends Streamable<? extends T>> sources
 ) implements Streamable<List<T>> {
@@ -52,6 +57,7 @@ public record StreamableZip<T>(
         return new ZipStreamer<T>(sourcesList, dc);
     }
 
+    /** wip 计数各 inner next；working 数组暂存 current 值后组装 List.of。 */
     static final class ZipStreamer<T>
     implements Streamer<List<T>>, BiConsumer<Object, Throwable> {
 
@@ -125,6 +131,7 @@ public record StreamableZip<T>(
             return finishReady;
         }
 
+        /** 单路 next 完成：错误则 dispose 并唤醒其余 waiter；全部 true 则 complete nextReady。 */
         void whenComplete(int index, Boolean b, Throwable t) {
             if (t != null) {
                 if (wip.getAndSet(0) != 0) {

@@ -24,6 +24,11 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.BiFunction;
 import io.reactivex.rxjava4.internal.fuseable.HasUpstreamStreamableSource;
 
+/**
+ * 上游出错时按 {@code whenFunction(failureCount, error)} 决定是否重新订阅。
+ * 先 finish 当前 Streamer 再询问 whenFunction，true 则 retrySource。
+ * @param <T> 元素类型
+ */
 public record StreamableRetry<T>(
         Streamable<T> source,
         BiFunction<? super Long, ? super Throwable, ? extends CompletionStage<Boolean>> whenFunction
@@ -37,6 +42,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
         return streamer;
     }
 
+    /** 错误路径：next 失败 → finish → whenFunction 决定是否重试。 */
     static final class RetryStreamer<T>
     implements Streamer<T>, BiConsumer<Object, Throwable> {
 
@@ -69,12 +75,13 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
             this.stage = -1;
         }
 
+        /** wip 串行保护下重新订阅 source。 */
         void retrySource() {
             if (wipSource.getAndIncrement() != 0) {
                 return;
             }
             do {
-                // FIXME some operators don't clean up their StreamerCancellations so we hand out clean ones for now
+                // FIXME：部分算子未清理 StreamerCancellation，暂为每次重订阅派生新的 cancellation
                 var innerCanceller = downstreamCancellation.derive();
                 currentStreamer = source.stream(innerCanceller);
                 if (stage == 0) {
@@ -123,7 +130,7 @@ implements Streamable<T>, HasUpstreamStreamableSource<T> {
                     ex.addSuppressed(u);
                     nextWaiter.completeExceptionally(ex);
                 }
-            } else { // stage 3
+            } else { // 阶段 3：whenFunction 完成，true 则重试，false 则向下游传播终止
                 downstreamCancellation.delete(whenFunctionCancel);
                 whenFunctionCancel = null;
                 var cf = nextWaiter;

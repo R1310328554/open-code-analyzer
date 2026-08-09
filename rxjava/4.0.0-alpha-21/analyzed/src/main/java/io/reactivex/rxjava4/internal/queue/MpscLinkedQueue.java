@@ -12,7 +12,7 @@
  */
 
 /*
- * The code was inspired by the similarly named JCTools class:
+ * 实现思路参考 JCTools 同名类：
  * https://github.com/JCTools/JCTools/blob/master/jctools-core/src/main/java/org/jctools/queues/atomic
  */
 
@@ -25,8 +25,8 @@ import io.reactivex.rxjava4.annotations.Nullable;
 import io.reactivex.rxjava4.operators.SimplePlainQueue;
 
 /**
- * A multi-producer single consumer unbounded queue.
- * @param <T> the contained value type
+ * 多生产者、单消费者无界链表队列。
+ * @param <T> 元素类型
  */
 public final class MpscLinkedQueue<T> implements SimplePlainQueue<T> {
     private final AtomicReference<LinkedQueueNode<T>> producerNode;
@@ -37,21 +37,20 @@ public final class MpscLinkedQueue<T> implements SimplePlainQueue<T> {
         consumerNode = new AtomicReference<>();
         LinkedQueueNode<T> node = new LinkedQueueNode<>();
         spConsumerNode(node);
-        xchgProducerNode(node); // this ensures correct construction: StoreLoad
+        xchgProducerNode(node); // StoreLoad 保证构造可见性
     }
 
     /**
      * {@inheritDoc} <br>
      * <p>
-     * IMPLEMENTATION NOTES:<br>
-     * Offer is allowed from multiple threads.<br>
-     * Offer allocates a new node and:
+     * 实现说明：<br>
+     * 允许多线程 offer。<br>
+     * 分配新节点并：
      * <ol>
-     * <li>Swaps it atomically with current producer node (only one producer 'wins')
-     * <li>Sets the new node as the node following from the swapped producer node
+     * <li>与当前 producer 节点原子交换（仅一个生产者“获胜”）
+     * <li>将新节点链接到被换出的 producer 节点之后
      * </ol>
-     * This works because each producer is guaranteed to 'plant' a new node and link the old node. No 2 producers can
-     * get the same producer node as part of XCHG guarantee.
+     * 每个生产者都会植入新节点并链接旧节点；XCHG 保证无两个生产者取得同一 producer 节点。
      *
      * @see java.util.Queue#offer(java.lang.Object)
      */
@@ -62,44 +61,42 @@ public final class MpscLinkedQueue<T> implements SimplePlainQueue<T> {
         }
         final LinkedQueueNode<T> nextNode = new LinkedQueueNode<>(e);
         final LinkedQueueNode<T> prevProducerNode = xchgProducerNode(nextNode);
-        // Should a producer thread get interrupted here the chain WILL be broken until that thread is resumed
-        // and completes the store in prev.next.
-        prevProducerNode.soNext(nextNode); // StoreStore
+        // 若生产者线程在此被中断，链会断裂直至恢复并完成 prev.next 写入
+        prevProducerNode.soNext(nextNode); // StoreStore 发布链接
         return true;
     }
 
     /**
      * {@inheritDoc} <br>
      * <p>
-     * IMPLEMENTATION NOTES:<br>
-     * Poll is allowed from a SINGLE thread.<br>
-     * Poll reads the next node from the consumerNode and:
+     * 实现说明：<br>
+     * 仅允许单线程 poll。<br>
+     * 从 consumerNode 读取下一节点：
      * <ol>
-     * <li>If it is null, the queue is assumed empty (though it might not be).
-     * <li>If it is not null set it as the consumer node and return it's now evacuated value.
+     * <li>为 null 则视为空（可能仍有生产者在链接）
+     * <li>非 null 则设为 consumer 节点并返回已取出的值
      * </ol>
-     * This means the consumerNode.value is always null, which is also the starting point for the queue. Because null
-     * values are not allowed to be offered this is the only node with its value set to null at any one time.
+     * consumerNode.value 恒为 null（队列哨兵）；禁止 offer null，故任意时刻仅该节点 value 可为 null。
      *
      * @see java.util.Queue#poll()
      */
     @Nullable
     @Override
     public T poll() {
-        LinkedQueueNode<T> currConsumerNode = lpConsumerNode(); // don't load twice, it's alright
+        LinkedQueueNode<T> currConsumerNode = lpConsumerNode(); // 本地加载一次即可
         LinkedQueueNode<T> nextNode = currConsumerNode.lvNext();
         if (nextNode != null) {
-            // we have to null out the value because we are going to hang on to the node
+            // 取出值后清空节点 value，因 consumer 将持有该节点
             final T nextValue = nextNode.getAndNullValue();
             spConsumerNode(nextNode);
-            // unlink previous consumer to help gc
+            // 断开前一 consumer 节点链接以利于 GC
             currConsumerNode.soNext(null);
             return nextValue;
         }
         else if (currConsumerNode != lvProducerNode()) {
-            // spin, we are no longer wait free
+            // 自旋等待链接完成，此路径非 wait-free
             while ((nextNode = currConsumerNode.lvNext()) == null) { } // NOPMD
-            // got the next node...
+            // 已取得下一节点
 
             // we have to null out the value because we are going to hang on to the node
             final T nextValue = nextNode.getAndNullValue();
@@ -142,10 +139,9 @@ public final class MpscLinkedQueue<T> implements SimplePlainQueue<T> {
     /**
      * {@inheritDoc} <br>
      * <p>
-     * IMPLEMENTATION NOTES:<br>
-     * Queue is empty when producerNode is the same as consumerNode. An alternative implementation would be to observe
-     * the producerNode.value is null, which also means an empty queue because only the consumerNode.value is allowed to
-     * be null.
+     * 实现说明：<br>
+     * producerNode 与 consumerNode 相同时队列为空。
+     * 亦可观察 producerNode.value 是否为 null（仅 consumer 哨兵允许 null 值）。
      */
     @Override
     public boolean isEmpty() {
@@ -166,9 +162,9 @@ public final class MpscLinkedQueue<T> implements SimplePlainQueue<T> {
             spValue(val);
         }
         /**
-         * Gets the current value and nulls out the reference to it from this node.
+         * 读取当前 value 并将节点内引用置 null。
          *
-         * @return value
+         * @return 元素值
          */
         public E getAndNullValue() {
             E temp = lpValue();
