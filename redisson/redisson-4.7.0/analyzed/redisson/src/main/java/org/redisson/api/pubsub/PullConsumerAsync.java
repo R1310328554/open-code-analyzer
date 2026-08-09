@@ -21,16 +21,15 @@ import org.redisson.api.RFuture;
 import java.util.List;
 
 /**
- * A pull-based consumer for retrieving messages from a subscription on-demand.
+ * 拉模式消费者的异步 API，按需从订阅拉取消息。
  * <p>
- * Pull consumers provide manual control over message consumption, allowing
- * to request messages when ready to process them.
+ * 应用可在准备好处理时异步请求消息，实现手动控制消费节奏。
  * <p>
- * Retrieved messages must be explicitly acknowledged using {@link #acknowledgeAsync(MessageAckArgs)}
- * or {@link #negativeAcknowledgeAsync(MessageNegativeAckArgs)} (MessageNegativeAckArgs)}. Unacknowledged messages
- * will be automatically redelivered after the visibility timeout expires.
+ * 拉取到的消息须通过 {@link #acknowledgeAsync(MessageAckArgs)}
+ * 或 {@link #negativeAcknowledgeAsync(MessageNegativeAckArgs)} 显式确认；
+ * 未确认的消息在可见性超时后将自动重新投递。
  *
- * @param <V> the type of message values
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *
@@ -38,39 +37,33 @@ import java.util.List;
 public interface PullConsumerAsync<V> extends AcknowledgmentAsync, Consumer {
 
     /**
-     * Retrieves and removes the head of this subscription, or returns {@code null} if this subscription is empty.
+     * 异步拉取并移除订阅队首消息；若订阅为空则结果为 {@code null}。
      * <p>
-     * The retrieved message remains unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledgeAsync(MessageAckArgs)} or {@link #negativeAcknowledgeAsync(MessageNegativeAckArgs)} method.
+     * 消息在调用 {@link #acknowledgeAsync(MessageAckArgs)} 或
+     * {@link #negativeAcknowledgeAsync(MessageNegativeAckArgs)} 前保持未确认状态。
      *
-     * @return the message in the head of this subscription, or {@code null} if this subscription is empty
-     * @throws OperationDisabledException if this operation is disabled
+     * @return 队首消息的异步结果
+     * @throws OperationDisabledException 若此操作被禁用
      */
     RFuture<Message<V>> pullAsync();
 
     /**
-     * Retrieves and removes the head of this subscription with the specified pulling arguments.
-     * <p>
-     * The retrieved message remains unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledgeAsync(MessageAckArgs)} or {@link #negativeAcknowledgeAsync(MessageNegativeAckArgs)} method.
+     * 使用指定拉取参数异步拉取并移除队首消息。
      *
-     * @param args pulling arguments
-     * @return the message in the head of this subscription, or {@code null} if this subscription is empty
-     * @throws OperationDisabledException if this operation is disabled
+     * @param args 拉取参数
+     * @return 队首消息的异步结果
+     * @throws OperationDisabledException 若此操作被禁用
      */
     RFuture<Message<V>> pullAsync(PullArgs args);
 
     /**
-     * Retrieves and removes multiple messages from the subscription with the specified pulling arguments.
+     * 使用指定参数异步批量拉取多条消息。
      * <p>
-     * This batch operation is more efficient than pulling messages individually.
-     * <p>
-     * The retrieved messages remain unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledgeAsync(MessageAckArgs)} or {@link #negativeAcknowledgeAsync(MessageNegativeAckArgs)} method.
+     * 批量拉取比逐条拉取更高效；拉取到的消息须显式确认。
      *
-     * @param pargs pulling arguments
-     * @return a list of retrieved messages
-     * @throws OperationDisabledException if this operation is disabled
+     * @param pargs 拉取参数
+     * @return 消息列表的异步结果
+     * @throws OperationDisabledException 若此操作被禁用
      */
     RFuture<List<Message<V>>> pullManyAsync(PullArgs pargs);
 

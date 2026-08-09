@@ -21,6 +21,7 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
+ * {@link PullArgs} 的默认实现，保存拉取操作的确认模式、超时与批量大小等参数。
  *
  * @author Nikita Koksharov
  *
@@ -64,22 +65,27 @@ public final class PullParams extends BaseSyncParams<PullArgs> implements PullAr
         return this;
     }
 
+    /** 返回拉取阻塞超时，未设置时为 {@code null}。 */
     public Duration getTimeout() {
         return timeout;
     }
 
+    /** 返回消息可见性超时。 */
     public Duration getVisibility() {
         return visibility;
     }
 
+    /** 返回单次拉取的最大条数。 */
     public int getCount() {
         return count;
     }
 
+    /** 返回消息头编解码器，未设置时为 {@code null}。 */
     public Codec getHeadersCodec() {
         return headersCodec;
     }
 
+    /** 返回确认模式。 */
     public AcknowledgeMode getAcknowledgeMode() {
         return acknowledgeMode;
     }

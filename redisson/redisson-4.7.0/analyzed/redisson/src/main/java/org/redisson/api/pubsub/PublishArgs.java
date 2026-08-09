@@ -22,9 +22,9 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
- * Interface defining parameters for topic message publish operations.
+ * 定义主题消息发布操作的参数接口。
  *
- * @param <V> type
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *
@@ -32,26 +32,26 @@ import java.time.Duration;
 public interface PublishArgs<V> extends SyncArgs<PublishArgs<V>> {
 
     /**
-     * Sets the maximum time to wait when adding messages to a full topic with a limited size.
+     * 设置向容量有限且已满的主题追加消息时的最长等待时间。
      *
-     * @param value the maximum time to wait
-     * @return arguments object
+     * @param value 最长等待时间
+     * @return 参数对象
      */
     PublishArgs<V> timeout(Duration value);
 
     /**
-     * Sets the codec to be used for encoding and decoding values of message headers.
+     * 设置用于编解码消息头字段值的 {@link Codec}。
      *
-     * @param codec the codec
-     * @return arguments object
+     * @param codec 编解码器
+     * @return 参数对象
      */
     PublishArgs<V> headersCodec(Codec codec);
 
     /**
-     * Defines messages to be added.
+     * 指定要追加到主题的消息。
      *
-     * @param msgs The message arguments to be added to the topic
-     * @return arguments object
+     * @param msgs 要添加到主题的消息参数
+     * @return 参数对象
      */
     @SafeVarargs
     static <V> PublishArgs<V> messages(MessageArgs<V>... msgs) {

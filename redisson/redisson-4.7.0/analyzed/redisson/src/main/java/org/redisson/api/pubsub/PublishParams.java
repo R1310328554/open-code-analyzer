@@ -22,6 +22,9 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
+ * {@link PublishArgs} 的默认实现，封装主题发布所需的消息列表与可选参数。
+ *
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *
@@ -33,11 +36,21 @@ public final class PublishParams<V> extends BaseSyncParams<PublishArgs<V>> imple
     private Duration timeout;
     private Codec headersCodec;
 
+    /**
+     * 使用指定消息列表构造发布参数。
+     *
+     * @param msgs 要发布的消息参数
+     */
     @SafeVarargs
     public PublishParams(MessageArgs<V>... msgs) {
         this.msgs = msgs;
     }
 
+    /**
+     * 返回待发布的消息参数数组。
+     *
+     * @return 消息参数数组
+     */
     public MessageArgs<V>[] getMsgs() {
         return msgs;
     }
@@ -54,10 +67,20 @@ public final class PublishParams<V> extends BaseSyncParams<PublishArgs<V>> imple
         return this;
     }
 
+    /**
+     * 返回消息头编解码器。
+     *
+     * @return 编解码器，未设置时为 {@code null}
+     */
     public Codec getHeadersCodec() {
         return headersCodec;
     }
 
+    /**
+     * 返回向已满主题追加消息时的最长等待时间。
+     *
+     * @return 超时时间，未设置时为 {@code null}
+     */
     public Duration getTimeout() {
         return timeout;
     }

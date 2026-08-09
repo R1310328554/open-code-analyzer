@@ -21,16 +21,15 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 /**
- * A pull-based consumer for retrieving messages from a subscription on-demand.
+ * 基于 Project Reactor 的拉模式消费者，按需从订阅拉取消息。
  * <p>
- * Pull consumers provide manual control over message consumption, allowing
- * to request messages when ready to process them.
+ * 通过 {@link Mono} 在应用就绪时发起拉取，实现手动控制消费节奏。
  * <p>
- * Retrieved messages must be explicitly acknowledged using {@link #acknowledge(MessageAckArgs)}
- * or {@link #negativeAcknowledge(MessageNegativeAckArgs)}. Unacknowledged messages
- * will be automatically redelivered after the visibility timeout expires.
+ * 拉取到的消息须通过 {@link #acknowledge(MessageAckArgs)}
+ * 或 {@link #negativeAcknowledge(MessageNegativeAckArgs)} 显式确认；
+ * 未确认的消息在可见性超时后将自动重新投递。
  *
- * @param <V> the type of message values
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *
@@ -38,39 +37,32 @@ import java.util.List;
 public interface PullConsumerReactive<V> extends AcknowledgmentReactive, ConsumerReactive {
 
     /**
-     * Retrieves and removes the head of this subscription, or returns {@code null} if this subscription is empty.
+     * 拉取并移除订阅队首消息；若订阅为空则发出空 {@link Mono}。
      * <p>
-     * The retrieved message remains unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledge(MessageAckArgs)} or {@link #negativeAcknowledge(MessageNegativeAckArgs)} method.
+     * 消息在显式确认前保持未确认状态。
      *
-     * @return the message in the head of this subscription, or {@code null} if this subscription is empty
-     * @throws OperationDisabledException if this operation is disabled
+     * @return 队首消息的 {@link Mono}
+     * @throws OperationDisabledException 若此操作被禁用
      */
     Mono<Message<V>> pull();
 
     /**
-     * Retrieves and removes the head of this subscription with the specified pulling arguments.
-     * <p>
-     * The retrieved message remains unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledge(MessageAckArgs)} or {@link #negativeAcknowledge(MessageNegativeAckArgs)} method.
+     * 使用指定拉取参数拉取并移除队首消息。
      *
-     * @param args pulling arguments
-     * @return the message in the head of this subscription, or {@code null} if this subscription is empty
-     * @throws OperationDisabledException if this operation is disabled
+     * @param args 拉取参数
+     * @return 队首消息的 {@link Mono}
+     * @throws OperationDisabledException 若此操作被禁用
      */
     Mono<Message<V>> pull(PullArgs args);
 
     /**
-     * Retrieves and removes multiple messages from the subscription with the specified pulling arguments.
+     * 使用指定参数批量拉取多条消息。
      * <p>
-     * This batch operation is more efficient than pulling messages individually.
-     * <p>
-     * The retrieved messages remain unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledge(MessageAckArgs)} or {@link #negativeAcknowledge(MessageNegativeAckArgs)} method.
+     * 批量拉取比逐条拉取更高效；拉取到的消息须显式确认。
      *
-     * @param pargs pulling arguments
-     * @return a list of retrieved messages
-     * @throws OperationDisabledException if this operation is disabled
+     * @param pargs 拉取参数
+     * @return 消息列表的 {@link Mono}
+     * @throws OperationDisabledException 若此操作被禁用
      */
     Mono<List<Message<V>>> pullMany(PullArgs pargs);
 

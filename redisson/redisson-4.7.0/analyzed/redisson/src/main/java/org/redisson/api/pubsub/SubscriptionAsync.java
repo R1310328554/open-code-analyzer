@@ -20,13 +20,11 @@ import org.redisson.api.RFuture;
 import java.util.Set;
 
 /**
- * Subscription to a reliable pubsub topic.
+ * 可靠 Pub/Sub 主题订阅的异步 API。
  * <p>
- * A subscription maintains its own offset and tracks message consumption independently
- * of other subscriptions on the same topic. Each subscription can have multiple
- * pull or push consumers that share the workload of processing messages.
+ * 每个订阅维护独立偏移；可挂载多个拉模式或推模式消费者共同处理消息。
  *
- * @param <V> the type of message values
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *
@@ -34,85 +32,72 @@ import java.util.Set;
 public interface SubscriptionAsync<V> {
 
     /**
-     * Creates a new pull consumer with an auto-generated name.
-     * <p>
-     * Pull consumers retrieve messages on-demand, providing manual control
-     * over message consumption rate and timing.
+     * 异步创建使用自动生成名称的拉模式消费者。
      *
-     * @return pull consumer object
+     * @return 拉模式消费者的异步结果
      */
     RFuture<PullConsumer<V>> createPullConsumerAsync();
 
     /**
-     * Creates a new pull consumer with the specified configuration.
-     * <p>
-     * Pull consumers retrieve messages on-demand, providing manual control
-     * over message consumption rate and timing.
+     * 异步创建使用指定配置的拉模式消费者。
      *
-     * @param config the consumer configuration
-     * @return pull consumer object
+     * @param config 消费者配置
+     * @return 拉模式消费者的异步结果
      */
     RFuture<PullConsumer<V>> createPullConsumerAsync(ConsumerConfig config);
 
     /**
-     * Creates a new push consumer with an auto-generated name.
-     * <p>
-     * Push consumers receive messages automatically via registered listener,
-     * enabling event-driven message processing.
+     * 异步创建使用自动生成名称的推模式消费者。
      *
-     * @return pull consumer object
+     * @return 推模式消费者的异步结果
      */
     RFuture<PushConsumer<V>> createPushConsumerAsync();
 
     /**
-     * Creates a new push consumer with the specified configuration.
-     * <p>
-     * Push consumers receive messages automatically via registered listeners,
-     * enabling event-driven message processing.
+     * 异步创建使用指定配置的推模式消费者。
      *
-     * @param config the consumer configuration
-     * @return pull consumer object
+     * @param config 消费者配置
+     * @return 推模式消费者的异步结果
      */
     RFuture<PushConsumer<V>> createPushConsumerAsync(ConsumerConfig config);
 
     /**
-     * Returns the names of all consumers registered to this subscription.
+     * 异步返回此订阅下所有已注册消费者的名称。
      *
-     * @return a set of consumer names
+     * @return 消费者名称集合的异步结果
      */
     RFuture<Set<String>> getConsumerNamesAsync();
 
     /**
-     * Checks if a consumer with the specified name exists in this subscription.
+     * 异步检查指定名称的消费者是否存在于本订阅中。
      *
-     * @param name the consumer name to check
-     * @return {@code true} if the consumer exists, {@code false} otherwise
+     * @param name 待检查的消费者名称
+     * @return 是否存在
      */
     RFuture<Boolean> hasConsumerAsync(String name);
 
     /**
-     * Removes the consumer with the specified name from this subscription.
+     * 异步从本订阅移除指定名称的消费者。
      *
-     * @param name the consumer name to remove
-     * @return {@code true} if the consumer was removed, {@code false} if it did not exist
+     * @param name 待移除的消费者名称
+     * @return 是否成功移除
      */
     RFuture<Boolean> removeConsumerAsync(String name);
 
     /**
-     * Moves the subscription offset to the specified position.
+     * 异步将订阅偏移移动到指定位置。
      * <p>
-     * This allows replaying messages from a specific point or skipping
-     * ahead to newer messages. Affects all consumers within this subscription.
+     * 可用于重放或跳过消息；影响本订阅内所有消费者。
      *
-     * @param value the position to seek to
-     * @return void
+     * @param value 目标位置
+     * @return 完成时的异步结果
      */
     RFuture<Void> seekAsync(Position value);
 
     /**
-     * Returns statistics for this subscription.
+     * 异步返回此订阅的统计信息。
      *
-     * @return statistics object
+     * @return 统计对象的异步结果
      */
     RFuture<SubscriptionStatistics> getStatisticsAsync();
 

@@ -16,13 +16,12 @@
 package org.redisson.api.pubsub;
 
 /**
- * Defines the retention behavior for messages in a topic, controlling when messages
- * are stored and when they may be discarded based on subscription state and processing status.
+ * 定义主题中消息的保留策略，控制消息何时存储以及何时根据订阅与处理状态丢弃。
  * <p>
- * The retention mode determines:
+ * 保留模式决定：
  * <ul>
- *   <li>Whether active subscribers are required for message storage</li>
- *   <li>Whether processed messages should be retained or discarded</li>
+ *   <li>存储消息是否要求存在活跃订阅者</li>
+ *   <li>已处理完成的消息是保留还是删除</li>
  * </ul>
  *
  * @author Nikita Koksharov
@@ -31,24 +30,21 @@ package org.redisson.api.pubsub;
 public enum RetentionMode {
 
     /**
-     * Requires at least one subscriber to store messages in the topic. Messages are discarded
-     * when all subscriptions have either acknowledged them, reached the redelivery limit,
-     * or negatively acknowledged them as failed.
+     * 要求至少有一个订阅者才在主题中存储消息。当所有订阅均已确认、
+     * 达到重投上限或否定确认失败后，消息将被丢弃。
      * <p>
-     * Only subscriptions existing at the time of message publication are considered
+     * 仅考虑消息发布时已存在的订阅。
      */
     SUBSCRIPTION_REQUIRED_DELETE_PROCESSED,
 
     /**
-     * Requires at least one subscriber to store messages in the topic. Messages aren't discarded
-     * when all subscriptions have either acknowledged them, reached the redelivery limit,
-     * or negatively acknowledged them as failed.
+     * 要求至少有一个订阅者才存储消息。所有订阅处理完毕（确认、
+     * 达到重投上限或否定确认）后消息仍保留在主题中。
      */
     SUBSCRIPTION_REQUIRED_RETAIN_ALL,
 
     /**
-     * Default mode. Subscribers are not required for message storage. Messages are always stored in the
-     * topic regardless of subscription state or processing status.
+     * 默认模式。不要求订阅者即可存储；无论订阅或处理状态如何，消息始终保留在主题中。
      */
     SUBSCRIPTION_OPTIONAL_RETAIN_ALL
 

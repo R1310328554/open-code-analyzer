@@ -16,17 +16,16 @@
 package org.redisson.api.pubsub;
 
 /**
- * A push-based consumer that receives messages automatically via registered listeners.
+ * 基于 RxJava 3 的推模式消费者，通过监听器自动接收消息。
  * <p>
- * Push consumers provide event-driven message processing, where messages are delivered
- * to the application as soon as they become available.
+ * 消息一旦可用即事件驱动地投递到应用，监听器负责处理与确认。
  * <p>
- * Messages delivered to listeners must be explicitly acknowledged using
- * {@link Acknowledgment#acknowledge(MessageAckArgs)} or
- * {@link Acknowledgment#negativeAcknowledge(MessageNegativeAckArgs)}.
- * Unacknowledged messages will be automatically redelivered after the visibility timeout expires.
+ * 投递的消息须通过
+ * {@link Acknowledgment#acknowledge(MessageAckArgs)} 或
+ * {@link Acknowledgment#negativeAcknowledge(MessageNegativeAckArgs)} 显式确认；
+ * 未确认的消息在可见性超时后将自动重新投递。
  *
- * @param <V> the type of message values
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *
@@ -34,17 +33,14 @@ package org.redisson.api.pubsub;
 public interface PushConsumerRx<V> extends ConsumerRx {
 
     /**
-     * Registers a listener to receive messages from this consumer.
+     * 注册监听器以接收此消费者的消息。
      * <p>
-     * Once registered, the listener will be invoked automatically whenever
-     * new messages are available in the subscription. The listener is responsible
-     * for processing messages and sending acknowledgments.
+     * 注册后，订阅中有新消息可用时将自动回调监听器。
      * <p>
-     * Only one listener can be registered per consumer. To use a different listener,
-     * create a new consumer instance.
+     * 每个消费者只能注册一个监听器；更换监听器需创建新的消费者实例。
      *
-     * @param listenerArgs the listener configuration including the message handler
-     * @throws IllegalStateException if a listener has already been registered
+     * @param listenerArgs 包含消息处理器的监听器配置
+     * @throws IllegalStateException 若已注册过监听器
      */
     void registerListener(MessageListenerArgs<V> listenerArgs);
 

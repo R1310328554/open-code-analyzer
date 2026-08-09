@@ -18,13 +18,12 @@ package org.redisson.api.pubsub;
 import java.util.Set;
 
 /**
- * Subscription to a reliable pubsub topic.
+ * 可靠 Pub/Sub 主题的订阅。
  * <p>
- * A subscription maintains its own offset and tracks message consumption independently
- * of other subscriptions on the same topic. Each subscription can have multiple
- * pull or push consumers that share the workload of processing messages.
+ * 每个订阅维护独立的消费偏移，与同主题上其他订阅互不影响。
+ * 一个订阅可挂载多个拉模式或推模式消费者，共同分担消息处理负载。
  *
- * @param <V> the type of message values
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *
@@ -32,91 +31,82 @@ import java.util.Set;
 public interface Subscription<V> extends SubscriptionAsync<V> {
 
     /**
-     * Creates a new pull consumer with an auto-generated name.
+     * 创建使用自动生成名称的拉模式消费者。
      * <p>
-     * Pull consumers retrieve messages on-demand, providing manual control
-     * over message consumption rate and timing.
+     * 拉模式消费者按需拉取消息，由应用手动控制消费速率与时机。
      *
-     * @return pull consumer object
+     * @return 拉模式消费者
      */
     PullConsumer<V> createPullConsumer();
 
     /**
-     * Creates a new pull consumer with the specified configuration.
-     * <p>
-     * Pull consumers retrieve messages on-demand, providing manual control
-     * over message consumption rate and timing.
+     * 使用指定配置创建拉模式消费者。
      *
-     * @param config the consumer configuration
-     * @return pull consumer object
+     * @param config 消费者配置
+     * @return 拉模式消费者
      */
     PullConsumer<V> createPullConsumer(ConsumerConfig config);
 
     /**
-     * Creates a new push consumer with an auto-generated name.
+     * 创建使用自动生成名称的推模式消费者。
      * <p>
-     * Push consumers receive messages automatically via registered listener,
-     * enabling event-driven message processing.
+     * 推模式消费者通过已注册监听器自动接收消息，实现事件驱动处理。
      *
-     * @return pull consumer object
+     * @return 推模式消费者
      */
     PushConsumer<V> createPushConsumer();
 
     /**
-     * Creates a new push consumer with the specified configuration.
-     * <p>
-     * Push consumers receive messages automatically via registered listeners,
-     * enabling event-driven message processing.
+     * 使用指定配置创建推模式消费者。
      *
-     * @param config the consumer configuration
-     * @return pull consumer object
+     * @param config 消费者配置
+     * @return 推模式消费者
      */
     PushConsumer<V> createPushConsumer(ConsumerConfig config);
 
     /**
-     * Returns the names of all consumers registered to this subscription.
+     * 返回此订阅下所有已注册消费者的名称。
      *
-     * @return a set of consumer names
+     * @return 消费者名称集合
      */
     Set<String> getConsumerNames();
 
     /**
-     * Checks if a consumer with the specified name exists in this subscription.
+     * 检查指定名称的消费者是否存在于本订阅中。
      *
-     * @param name the consumer name to check
-     * @return {@code true} if the consumer exists, {@code false} otherwise
+     * @param name 待检查的消费者名称
+     * @return 存在返回 {@code true}，否则 {@code false}
      */
     boolean hasConsumer(String name);
 
     /**
-     * Removes the consumer with the specified name from this subscription.
+     * 从本订阅移除指定名称的消费者。
      *
-     * @param name the consumer name to remove
-     * @return {@code true} if the consumer was removed, {@code false} if it did not exist
+     * @param name 待移除的消费者名称
+     * @return 成功移除返回 {@code true}，不存在则 {@code false}
      */
     boolean removeConsumer(String name);
 
     /**
-     * Returns the name of this subscription.
+     * 返回此订阅的名称。
      *
-     * @return the subscription name
+     * @return 订阅名称
      */
     String getName();
 
     /**
-     * Moves the subscription offset to the specified position.
+     * 将订阅偏移移动到指定位置。
      * <p>
-     * This allows replaying messages from a specific point or skipping
-     * ahead to newer messages. Affects all consumers within this subscription.
+     * 可用于从某点重放消息或跳转到较新位置；影响本订阅内所有消费者。
      *
-     * @param value the position to seek to
+     * @param value 目标位置
      */
     void seek(Position value);
 
     /**
-     * Returns statistics for this subscription.
+     * 返回此订阅的统计信息。
      *
-     * @return statistics object
+     * @return 统计对象
      */
     SubscriptionStatistics getStatistics();
 
