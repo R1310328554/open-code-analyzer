@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:22:44Z",
-  "files": [
-    "sentinel-demo/sentinel-demo-jax-rs/src/main/java/com/alibaba/csp/sentinel/demo/jaxrs/HelloResource.java",
-    "sentinel-demo/sentinel-demo-jax-rs/src/main/java/com/alibaba/csp/sentinel/demo/jaxrs/JaxRsClientDemo.java",
-    "sentinel-demo/sentinel-demo-jax-rs/src/main/java/com/alibaba/csp/sentinel/demo/jaxrs/JaxRsDemoApplication.java",
-    "sentinel-demo/sentinel-demo-jax-rs/src/main/java/com/alibaba/csp/sentinel/demo/jaxrs/SentinelJaxRsConfig.java",
-    "sentinel-demo/sentinel-demo-log-logback/src/main/java/com/alibaba/csp/sentinel/demo/log/logback/CommandCenterLogLoggerImpl.java",
-    "sentinel-demo/sentinel-demo-log-logback/src/main/java/com/alibaba/csp/sentinel/demo/log/logback/RecordLogLoggerImpl.java",
-    "sentinel-demo/sentinel-demo-motan/src/main/java/com/alibaba/csp/sentinel/demo/motan/SentinelMotanConsumerService.java",
-    "sentinel-demo/sentinel-demo-motan/src/main/java/com/alibaba/csp/sentinel/demo/motan/SentinelMotanProviderService.java",
-    "sentinel-demo/sentinel-demo-motan/src/main/java/com/alibaba/csp/sentinel/demo/motan/service/MotanDemoService.java",
-    "sentinel-demo/sentinel-demo-motan/src/main/java/com/alibaba/csp/sentinel/demo/motan/service/impl/MotanDemoServiceImpl.java",
-    "sentinel-demo/sentinel-demo-nacos-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/nacos/FlowQpsRunner.java",
-    "sentinel-demo/sentinel-demo-nacos-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/nacos/NacosConfigSender.java",
-    "sentinel-demo/sentinel-demo-nacos-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/nacos/NacosDataSourceDemo.java",
-    "sentinel-demo/sentinel-demo-okhttp/src/main/java/com/alibaba/csp/sentinel/demo/okhttp/OkHttpDemoApplication.java",
-    "sentinel-demo/sentinel-demo-okhttp/src/main/java/com/alibaba/csp/sentinel/demo/okhttp/controller/OkHttpTestController.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 185,
-  "done": 750
+  "done": 765
 }
