@@ -1774,3 +1774,18 @@
 2026-08-09T20:32:31Z DONE redisson/src/main/java/org/redisson/RedissonMapCache.java wave57a [0:15] repaired
 2026-08-09T20:32:31Z DONE redisson/src/main/java/org/redisson/RedissonMapCacheNative.java wave57a [0:15] repaired
 2026-08-09T20:32:34Z CLAIM redisson redisson-4.7.0 wave58 n=30 remaining_pending=1082
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/RedissonSetMultimapValues.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/RedissonSortedSet.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/RedissonStream.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/RedissonSubList.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/RedissonTimeSeries.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/RedissonTransferQueue.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/RedissonVectorSet.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/api/LocalCachedMapCacheOptions.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/api/LocalCachedMapOptions.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/api/RBatch.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/api/RBatchReactive.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/api/RBatchRx.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/api/RBitSet.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/api/RBitSetAsync.java wave58a [0:15]
+2026-08-09T20:34:27Z DONE redisson/src/main/java/org/redisson/api/RBitSetReactive.java wave58a [0:15]
