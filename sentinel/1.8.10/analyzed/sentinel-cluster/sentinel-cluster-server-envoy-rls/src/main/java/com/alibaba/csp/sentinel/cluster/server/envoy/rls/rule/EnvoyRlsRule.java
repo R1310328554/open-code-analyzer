@@ -22,6 +22,8 @@ import java.util.Set;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * Envoy RLS 限流规则模型，包含 domain 与资源描述符列表。
+ *
  * @author Eric Zhao
  * @since 1.7.0
  */
@@ -54,6 +56,7 @@ public class EnvoyRlsRule {
             '}';
     }
 
+    /** 资源描述符，绑定一组键值资源与限流阈值 count。 */
     public static class ResourceDescriptor {
 
         private Set<KeyValueResource> resources;
@@ -92,6 +95,7 @@ public class EnvoyRlsRule {
         }
     }
 
+    /** 键值型限流维度，用于标识 descriptor 中的单个匹配条目。 */
     public static class KeyValueResource {
 
         private String key;

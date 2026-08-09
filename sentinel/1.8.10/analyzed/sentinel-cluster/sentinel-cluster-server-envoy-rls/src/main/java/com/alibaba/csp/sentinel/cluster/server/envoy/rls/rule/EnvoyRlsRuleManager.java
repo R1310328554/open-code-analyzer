@@ -36,6 +36,8 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * Envoy RLS 规则管理器，维护 domain 到 {@link EnvoyRlsRule} 的映射并同步为 Sentinel 集群流控规则。
+ *
  * @author Eric Zhao
  * @since 1.7.0
  */
@@ -51,9 +53,9 @@ public final class EnvoyRlsRuleManager {
     }
 
     /**
-     * Listen to the {@link SentinelProperty} for Envoy RLS rules. The property is the source of {@link EnvoyRlsRule}.
+     * 注册 {@link SentinelProperty} 以监听 Envoy RLS 规则变更；该属性为 {@link EnvoyRlsRule} 的数据源。
      *
-     * @param property the property to listen
+     * @param property 待监听的动态属性
      */
     public static void register2Property(SentinelProperty<List<EnvoyRlsRule>> property) {
         AssertUtil.notNull(property, "property cannot be null");
@@ -66,15 +68,16 @@ public final class EnvoyRlsRuleManager {
     }
 
     /**
-     * Load Envoy RLS rules, while former rules will be replaced.
+     * 加载 Envoy RLS 规则，原有规则将被整体替换。
      *
-     * @param rules new rules to load
-     * @return true if there are actual changes, otherwise false
+     * @param rules 待加载的新规则列表
+     * @return 若配置实际发生变更则返回 true，否则 false
      */
     public static boolean loadRules(List<EnvoyRlsRule> rules) {
         return currentProperty.updateValue(rules);
     }
 
+    /** 返回当前已加载的 Envoy RLS 规则副本列表。 */
     public static List<EnvoyRlsRule> getRules() {
         return new ArrayList<>(RULE_MAP.values());
     }
@@ -93,7 +96,7 @@ public final class EnvoyRlsRuleManager {
             RULE_MAP.putAll(ruleMap);
             RecordLog.info("[EnvoyRlsRuleManager] Envoy RLS rules loaded: {}", flowRules);
 
-            // Use the "default" namespace.
+            // 使用 "default" 命名空间加载集群流控规则。
             ClusterFlowRuleManager.loadRules(ServerConstants.DEFAULT_NAMESPACE, flowRules);
         }
 
@@ -118,10 +121,10 @@ public final class EnvoyRlsRuleManager {
     }
 
     /**
-     * Check whether the given Envoy RLS rule is valid.
+     * 校验给定 Envoy RLS 规则是否合法。
      *
-     * @param rule the rule to check
-     * @return true if the rule is valid, otherwise false
+     * @param rule 待校验规则
+     * @return 合法返回 true，否则 false
      */
     public static boolean isValidRule(EnvoyRlsRule rule) {
         if (rule == null || StringUtil.isBlank(rule.getDomain())) {

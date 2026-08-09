@@ -28,17 +28,18 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * <p>The Servlet filter for authentication.</p>
+ * <p>默认登录认证 Servlet 过滤器。</p>
  *
- * <p>Note: some urls are excluded as they needn't auth, such as:</p>
+ * <p>以下 URL 通常无需认证，例如：</p>
  * <ul>
- * <li>index url: {@code /}</li>
- * <li>authentication request url: {@code /login}, {@code /logout}</li>
- * <li>machine registry: {@code /registry/machine}</li>
- * <li>static resources</li>
+ * <li>首页：{@code /}</li>
+ * <li>登录/登出：{@code /login}、{@code /logout}</li>
+ * <li>机器注册：{@code /registry/machine}</li>
+ * <li>静态资源</li>
  * </ul>
  * <p>
- * The excluded urls and urlSuffixes could be configured in {@code application.properties} file.
+ * 排除 URL 与后缀可在 {@code application.properties} 中配置。
+ * </p>
  *
  * @author cdfive
  * @since 1.6.0
@@ -49,21 +50,18 @@ public class DefaultLoginAuthenticationFilter implements LoginAuthenticationFilt
 
     private static final String URL_SUFFIX_DOT = ".";
 
-    /**
-     * Some urls which needn't auth, such as /auth/login, /registry/machine and so on.
-     */
+    /** 无需认证的 URL 列表（如 /auth/login、/registry/machine 等）。 */
+
     @Value("#{'${auth.filter.exclude-urls}'.split(',')}")
     private List<String> authFilterExcludeUrls;
 
-    /**
-     * Some urls with suffixes which needn't auth, such as htm, html, js and so on.
-     */
+    /** 无需认证的 URL 后缀列表（如 htm、html、js 等）。 */
+
     @Value("#{'${auth.filter.exclude-url-suffixes}'.split(',')}")
     private List<String> authFilterExcludeUrlSuffixes;
 
-    /**
-     * Authentication using AuthService interface.
-     */
+    /** 基于 {@link AuthService} 的认证实现。 */
+
     private final AuthService<HttpServletRequest> authService;
 
     public DefaultLoginAuthenticationFilter(AuthService<HttpServletRequest> authService) {
@@ -82,7 +80,7 @@ public class DefaultLoginAuthenticationFilter implements LoginAuthenticationFilt
 
         String servletPath = httpRequest.getServletPath();
 
-        // Exclude the urls which needn't auth
+        // 跳过无需认证的 URL
         boolean authFilterExcludeMatch = authFilterExcludeUrls.stream()
                 .anyMatch(authFilterExcludeUrl -> PATH_MATCHER.match(authFilterExcludeUrl, servletPath));
         if (authFilterExcludeMatch) {
@@ -90,13 +88,13 @@ public class DefaultLoginAuthenticationFilter implements LoginAuthenticationFilt
             return;
         }
 
-        // Exclude the urls with suffixes which needn't auth
+        // 跳过匹配排除后缀的 URL
         for (String authFilterExcludeUrlSuffix : authFilterExcludeUrlSuffixes) {
             if (StringUtils.isBlank(authFilterExcludeUrlSuffix)) {
                 continue;
             }
 
-            // Add . for url suffix so that we needn't add . in property file
+            // 自动补点前缀，配置文件中后缀可不带 "."
             if (!authFilterExcludeUrlSuffix.startsWith(URL_SUFFIX_DOT)) {
                 authFilterExcludeUrlSuffix = URL_SUFFIX_DOT + authFilterExcludeUrlSuffix;
             }
@@ -111,7 +109,7 @@ public class DefaultLoginAuthenticationFilter implements LoginAuthenticationFilt
 
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         if (authUser == null) {
-            // If auth fail, set response status code to 401
+            // 认证失败时返回 401
             httpResponse.setStatus(HttpStatus.UNAUTHORIZED.value());
         } else {
             chain.doFilter(request, response);

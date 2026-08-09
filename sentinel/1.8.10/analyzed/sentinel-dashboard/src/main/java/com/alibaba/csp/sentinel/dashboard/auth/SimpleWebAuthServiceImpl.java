@@ -19,11 +19,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 /**
+ * 基于 HttpSession 的简单 Web 认证服务，从会话中读取 {@link AuthUser}。
+ *
  * @author cdfive
  * @since 1.6.0
  */
 public class SimpleWebAuthServiceImpl implements AuthService<HttpServletRequest> {
 
+    /** HttpSession 中存储 Sentinel 管理员的键名。 */
     public static final String WEB_SESSION_KEY = "session_sentinel_admin";
 
     @Override
@@ -37,6 +40,7 @@ public class SimpleWebAuthServiceImpl implements AuthService<HttpServletRequest>
         return null;
     }
 
+    /** 简单 Web 认证用户实现，默认拥有全部权限。 */
     public static final class SimpleWebAuthUserImpl implements AuthUser {
 
         private String username;

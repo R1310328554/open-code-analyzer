@@ -25,9 +25,10 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 
 /**
- * The web interceptor for privilege-based authorization.
+ * 默认授权拦截器实现，在控制器方法执行前校验 {@link AuthAction} 标注的权限。
  * <p>
- * move from old {@link AuthorizationInterceptor}.
+ * 自旧版 {@link AuthorizationInterceptor} 迁移而来。
+ * </p>
  *
  * @author lkxiaolou
  * @author wxq
@@ -37,6 +38,7 @@ public class DefaultAuthorizationInterceptor implements AuthorizationInterceptor
 
     private final AuthService<HttpServletRequest> authService;
 
+    /** 构造拦截器并注入 {@link AuthService}。 */
     public DefaultAuthorizationInterceptor(AuthService<HttpServletRequest> authService) {
         this.authService = authService;
     }

@@ -21,18 +21,21 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Sentinel dashboard application.
+ * Sentinel 控制台 Spring Boot 启动入口。
+ * <p>启动前在独立线程中触发 {@link com.alibaba.csp.sentinel.init.InitExecutor} 完成 Sentinel 初始化。</p>
  *
  * @author Carpenter Lee
  */
 @SpringBootApplication
 public class DashboardApplication {
 
+    /** 应用主入口：先异步初始化 Sentinel，再启动 Spring Boot。 */
     public static void main(String[] args) {
         triggerSentinelInit();
         SpringApplication.run(DashboardApplication.class, args);
     }
 
+    /** 在后台线程执行 Sentinel 初始化，避免阻塞 Spring 启动。 */
     private static void triggerSentinelInit() {
         new Thread(() -> InitExecutor.doInit()).start();
     }

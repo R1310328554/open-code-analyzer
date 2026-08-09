@@ -19,6 +19,10 @@ import com.alibaba.csp.sentinel.cluster.server.envoy.rls.SentinelEnvoyRlsConstan
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * Envoy RLS 访问日志工具类。
+ * <p>通过环境变量 {@link com.alibaba.csp.sentinel.cluster.server.envoy.rls.SentinelEnvoyRlsConstants#ENABLE_ACCESS_LOG_ENV_KEY}
+ * 控制是否输出限流检查访问日志。</p>
+ *
  * @author Eric Zhao
  */
 public final class RlsAccessLogger {
@@ -33,10 +37,16 @@ public final class RlsAccessLogger {
         }
     }
 
+    /** 返回访问日志是否已启用。 */
     public static boolean isEnabled() {
         return enabled;
     }
 
+    /**
+     * 在启用且 info 非空时输出访问日志。
+     *
+     * @param info 日志内容
+     */
     public static void log(String info) {
         if (enabled && StringUtil.isNotEmpty(info)) {
             System.out.println(info);

@@ -24,7 +24,9 @@ import java.util.List;
 import static com.alibaba.csp.sentinel.cluster.server.envoy.rls.rule.EnvoySentinelRuleConverter.SEPARATOR;
 
 /**
- * gRPC限流入口，实现envoy rls v3 api
+ * Sentinel Envoy RLS v3 gRPC 限流服务实现。
+ * <p>接收 {@link io.envoyproxy.envoy.service.ratelimit.v3.RateLimitRequest}，
+ * 按 descriptor 向集群令牌服务端申请配额并返回 {@link io.envoyproxy.envoy.service.ratelimit.v3.RateLimitResponse}。</p>
  *
  * @author Winjay chan
  * @date 2021/8/4
@@ -39,7 +41,7 @@ public class SentinelEnvoyRlsServiceImpl extends RateLimitServiceGrpc.RateLimitS
             return;
         }
         if (acquireCount == 0) {
-            // Not present, use the default "1" by default.
+            // 未指定 hitsAddend 时默认按 1 次请求计数。
             acquireCount = 1;
         }
 
@@ -53,7 +55,7 @@ public class SentinelEnvoyRlsServiceImpl extends RateLimitServiceGrpc.RateLimitS
             printAccessLogIfNecessary(domain, descriptor, r);
 
             if (r.getStatus() == TokenResultStatus.NO_RULE_EXISTS) {
-                // If the rule of the descriptor is absent, the request will pass directly.
+                // 若 descriptor 无对应规则，则直接放行。
                 r.setStatus(TokenResultStatus.OK);
             }
 
@@ -101,10 +103,10 @@ public class SentinelEnvoyRlsServiceImpl extends RateLimitServiceGrpc.RateLimitS
 
         FlowRule rule = ClusterFlowRuleManager.getFlowRuleById(ruleId);
         if (rule == null) {
-            // Pass if the target rule is absent.
+            // 目标规则不存在时直接放行。
             return Tuple2.of(null, new TokenResult(TokenResultStatus.NO_RULE_EXISTS));
         }
-        // If the rule is present, it should be valid.
+        // 规则存在时应已通过合法性校验。
         return Tuple2.of(rule, SimpleClusterFlowChecker.acquireClusterToken(rule, acquireCount));
     }
 

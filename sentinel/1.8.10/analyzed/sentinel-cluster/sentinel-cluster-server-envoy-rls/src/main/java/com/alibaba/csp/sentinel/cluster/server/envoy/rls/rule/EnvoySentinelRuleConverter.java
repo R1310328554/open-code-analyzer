@@ -25,21 +25,22 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * Envoy RLS 规则与 Sentinel {@link com.alibaba.csp.sentinel.slots.block.flow.FlowRule} 之间的转换器。
+ *
  * @author Eric Zhao
  * @since 1.7.0
  */
 public final class EnvoySentinelRuleConverter {
 
-    /**
-     * Currently we use "|" to separate each key/value entries.
-     */
+    /** 键值条目分隔符，当前使用 "|"。 */
+
     public static final String SEPARATOR = "|";
 
     /**
-     * Convert the {@link EnvoyRlsRule} to a list of Sentinel flow rules.
+     * 将合法 {@link EnvoyRlsRule} 转换为 Sentinel 流控规则列表。
      *
-     * @param rule a valid Envoy RLS rule
-     * @return converted rules
+     * @param rule 合法的 Envoy RLS 规则
+     * @return 转换后的流控规则列表
      */
     public static List<FlowRule> toSentinelFlowRules(EnvoyRlsRule rule) {
         if (!EnvoyRlsRuleManager.isValidRule(rule)) {
@@ -50,8 +51,15 @@ public final class EnvoySentinelRuleConverter {
             .collect(Collectors.toList());
     }
 
+    /**
+     * 将单个资源描述符转换为集群模式 {@link com.alibaba.csp.sentinel.slots.block.flow.FlowRule}。
+     *
+     * @param domain 限流 domain
+     * @param descriptor 资源描述符
+     * @return 对应的流控规则
+     */
     public static FlowRule toSentinelFlowRule(String domain, EnvoyRlsRule.ResourceDescriptor descriptor) {
-        // One descriptor could have only one rule.
+        // 每个 descriptor 仅对应一条流控规则。
         String identifier = generateKey(domain, descriptor);
         long flowId = generateFlowId(identifier);
         return new FlowRule(identifier)
@@ -64,14 +72,27 @@ public final class EnvoySentinelRuleConverter {
                 .setFallbackToLocalWhenFail(false));
     }
 
+    /**
+     * 根据资源键生成集群流控规则 ID。
+     *
+     * @param key 资源标识键
+     * @return 流控规则 ID，key 为空时返回 -1
+     */
     public static long generateFlowId(String key) {
         if (StringUtil.isBlank(key)) {
             return -1L;
         }
-        // Add offset to avoid negative ID.
+        // 加偏移量以避免生成负 ID。
         return (long) Integer.MAX_VALUE + key.hashCode();
     }
 
+    /**
+     * 根据 domain 与 descriptor 中的键值资源生成 Sentinel 资源名。
+     *
+     * @param domain 限流 domain
+     * @param descriptor 资源描述符
+     * @return 拼接后的资源键
+     */
     public static String generateKey(String domain, EnvoyRlsRule.ResourceDescriptor descriptor) {
         AssertUtil.assertNotBlank(domain, "domain cannot be blank");
         AssertUtil.notNull(descriptor, "EnvoyRlsRule.ResourceDescriptor cannot be null");

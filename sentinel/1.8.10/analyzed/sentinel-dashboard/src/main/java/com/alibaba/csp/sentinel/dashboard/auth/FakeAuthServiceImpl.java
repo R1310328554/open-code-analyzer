@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * A fake AuthService implementation, which will pass all user auth checking.
+ * 假认证服务实现，所有权限校验均直接通过，用于关闭鉴权的开发/测试场景。
  *
  * @author Carpenter Lee
  * @since 1.5.0
@@ -43,13 +43,13 @@ public class FakeAuthServiceImpl implements AuthService<HttpServletRequest> {
 
         @Override
         public boolean authTarget(String target, PrivilegeType privilegeType) {
-            // fake implementation, always return true
+            // 假实现，恒返回 true
             return true;
         }
 
         @Override
         public boolean isSuperUser() {
-            // fake implementation, always return true
+            // 假实现，恒返回 true
             return true;
         }
 

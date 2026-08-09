@@ -16,12 +16,21 @@
 package com.alibaba.csp.sentinel.dashboard.client;
 
 /**
+ * 控制台向 Sentinel 客户端发送命令失败时抛出的运行时异常。
+ * <p>重写 {@link #fillInStackTrace()} 以抑制堆栈填充，降低高频失败时的开销。</p>
+ *
  * @author Eric Zhao
  */
 public class CommandFailedException extends RuntimeException {
 
+    /** 构造无消息的命令失败异常。 */
     public CommandFailedException() {}
 
+    /**
+     * 构造带消息的命令失败异常。
+     *
+     * @param message 失败原因描述
+     */
     public CommandFailedException(String message) {
         super(message);
     }

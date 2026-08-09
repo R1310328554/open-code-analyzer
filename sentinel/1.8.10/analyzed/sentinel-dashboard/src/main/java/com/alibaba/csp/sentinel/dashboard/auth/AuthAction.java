@@ -22,6 +22,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 标注控制器方法所需权限的注解，由 {@link AuthorizationInterceptor} 在请求前校验。
+ *
  * @author lkxiaolou
  * @since 1.7.1
  */
@@ -31,17 +33,17 @@ import java.lang.annotation.Target;
 public @interface AuthAction {
 
     /**
-     * @return the privilege type
+     * @return 所需权限类型
      */
     AuthService.PrivilegeType value();
 
     /**
-     * @return the target name to control
+     * @return 请求参数名，用于提取鉴权目标（如应用名）
      */
     String targetName() default "app";
 
     /**
-     * @return the message when permission is denied
+     * @return 权限不足时返回给客户端的提示信息
      */
     String message() default "Permission denied";
 }

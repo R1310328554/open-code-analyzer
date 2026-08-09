@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.dashboard.auth;
 
 /**
- * Interface for authentication and authorization.
+ * 控制台认证与授权服务接口。
  *
  * @author Carpenter Lee
  * @since 1.5.0
@@ -24,89 +24,77 @@ package com.alibaba.csp.sentinel.dashboard.auth;
 public interface AuthService<R> {
 
     /**
-     * Get the authentication user.
+     * 从请求中解析当前认证用户。
      *
-     * @param request the request contains the user information
-     * @return the auth user represent the current user, when the user is illegal, a null value will return.
+     * @param request 携带用户信息的请求对象
+     * @return 当前用户；若未认证或非法则返回 null
      */
     AuthUser getAuthUser(R request);
 
-    /**
-     * Privilege type.
-     */
+    /** 权限类型枚举。 */
+
     enum PrivilegeType {
-        /**
-         * Read rule
-         */
+        /** 读取规则。 */
+
         READ_RULE,
-        /**
-         * Create or modify rule
-         */
+        /** 创建或修改规则。 */
+
         WRITE_RULE,
-        /**
-         * Delete rule
-         */
+        /** 删除规则。 */
+
         DELETE_RULE,
-        /**
-         * Read metrics
-         */
+        /** 读取监控指标。 */
+
         READ_METRIC,
-        /**
-         * Add machine
-         */
+        /** 添加机器。 */
+
         ADD_MACHINE,
-        /**
-         * All privileges above are granted.
-         */
+        /** 授予上述全部权限。 */
+
         ALL
     }
 
-    /**
-     * Represents the current user.
-     */
+    /** 当前认证用户抽象。 */
+
     interface AuthUser {
 
         /**
-         * Query whether current user has the specific privilege to the target, the target
-         * may be an app name or an ip address, or other destination.
+         * 判断当前用户对指定目标是否拥有给定权限；目标可为应用名、IP 等。
          * <p>
-         * This method will use return value to represent  whether user has the specific
-         * privileges to the target, but to throw a RuntimeException to represent no auth
-         * is also a good way.
+         * 通常通过返回值表示是否有权限；抛出 {@link RuntimeException} 表示未授权也是可接受的做法。
          * </p>
          *
-         * @param target        the target to check
-         * @param privilegeType the privilege type to check
-         * @return if current user has the specific privileges to the target, return true,
-         * otherwise return false.
+         * @param target        待校验目标
+         * @param privilegeType 权限类型
+         * @return 有权限返回 true，否则 false
          */
         boolean authTarget(String target, PrivilegeType privilegeType);
 
         /**
-         * Check whether current user is a super-user.
+         * 判断当前用户是否为超级用户。
          *
-         * @return if current user is super user return true, else return false.
+         * @return 超级用户返回 true，否则 false
          */
         boolean isSuperUser();
 
         /**
-         * Get current user's nick name.
+         * 返回当前用户昵称。
          *
-         * @return current user's nick name.
+         * @return 用户昵称
          */
         String getNickName();
 
         /**
-         * Get current user's login name.
+         * 返回当前用户登录名。
          *
-         * @return current user's login name.
+         * @return 登录名
          */
         String getLoginName();
 
         /**
-         * Get current user's ID.
+         * 返回当前用户 ID。
          *
-         * @return ID of current user
+         * @return 用户 ID
          */
         String getId();
     }
