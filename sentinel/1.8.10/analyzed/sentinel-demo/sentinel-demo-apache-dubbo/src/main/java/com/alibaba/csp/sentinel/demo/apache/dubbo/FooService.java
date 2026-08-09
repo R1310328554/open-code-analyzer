@@ -16,13 +16,18 @@
 package com.alibaba.csp.sentinel.demo.apache.dubbo;
 
 /**
+ * Dubbo 演示 RPC 服务接口。
+ *
  * @author Eric Zhao
  */
 public interface FooService {
 
+    /** 问候调用，作为流控/熔断主要测试资源。 */
     String sayHello(String name);
 
+    /** 备用 RPC 方法，Consumer 被限流时可作为降级调用。 */
     String doAnother();
 
+    /** 异常/超时测试：biz 为 true 抛业务异常，timeout 为 true 模拟慢调用。 */
     String exceptionTest(boolean biz, boolean timeout);
 }

@@ -23,6 +23,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Dubbo Provider Spring 配置：应用、组播注册中心与 dubbo 协议端口。
+ *
  * @author Eric Zhao
  */
 @Configuration
@@ -43,6 +45,7 @@ public class ProviderConfiguration {
         return registryConfig;
     }
 
+    /** dubbo 协议监听 25758 端口，与 Consumer 直连地址一致。 */
     @Bean
     public ProtocolConfig protocolConfig() {
         ProtocolConfig protocolConfig = new ProtocolConfig();

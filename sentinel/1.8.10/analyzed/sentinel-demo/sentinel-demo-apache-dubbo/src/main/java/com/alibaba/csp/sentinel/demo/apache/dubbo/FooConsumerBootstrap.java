@@ -29,7 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Please add the following VM arguments:
+ * Apache Dubbo 消费者启动类：演示接口/方法级流控与多种 Consumer Fallback。
+ * <p>启动前请添加 VM 参数：</p>
  * <pre>
  * -Djava.net.preferIPv4Stack=true
  * -Dcsp.sentinel.api.port=8721
@@ -62,7 +63,7 @@ public class FooConsumerBootstrap {
             }
         }
 
-        // method flowcontrol
+        // 方法级流控：在接口 QPS 20 基础上对 sayHello 方法单独限 5 QPS
         Thread.sleep(1000);
         initFlowRule(20, true);
         for (int i = 0; i < 10; i++) {
@@ -78,7 +79,7 @@ public class FooConsumerBootstrap {
             }
         }
 
-        // fallback to result
+        // 注册返回固定字符串的 Consumer Fallback
         Thread.sleep(1000);
         registryCustomFallback();
 
@@ -92,7 +93,7 @@ public class FooConsumerBootstrap {
                 ex.printStackTrace();
             }
         }
-        // fallback to exception
+        // 注册返回 RuntimeException 的 Consumer Fallback
         Thread.sleep(1000);
         registryCustomFallbackForCustomException();
 
@@ -121,17 +122,20 @@ public class FooConsumerBootstrap {
         }
     }
 
+    /** 注册全局 Consumer Fallback：限流时返回 AsyncRpcResult("fallback")。 */
     public static void registryCustomFallback() {
         DubboAdapterGlobalConfig.setConsumerFallback(
                 (invoker, invocation, ex) -> AsyncRpcResult.newDefaultAsyncResult("fallback", invocation));
 
     }
 
+    /** 注册 Fallback：限流时将 RuntimeException 包装进 AsyncRpcResult。 */
     public static void registryCustomFallbackForCustomException() {
         DubboAdapterGlobalConfig.setConsumerFallback(
                 (invoker, invocation, ex) -> AsyncRpcResult.newDefaultAsyncResult(new RuntimeException("fallback"), invocation));
     }
 
+    /** 注册会自身抛错的 Fallback，演示 Fallback 失败时的行为。 */
     public static void registryCustomFallbackWhenFallbackError() {
         DubboAdapterGlobalConfig.setConsumerFallback(
                 (invoker, invocation, ex) -> {
@@ -140,6 +144,7 @@ public class FooConsumerBootstrap {
     }
 
 
+    /** 加载接口级流控规则；method 为 true 时额外加载 sayHello 方法级规则。 */
     private static void initFlowRule(int interfaceFlowLimit, boolean method) {
         FlowRule flowRule = new FlowRule(INTERFACE_RES_KEY)
                 .setCount(interfaceFlowLimit)

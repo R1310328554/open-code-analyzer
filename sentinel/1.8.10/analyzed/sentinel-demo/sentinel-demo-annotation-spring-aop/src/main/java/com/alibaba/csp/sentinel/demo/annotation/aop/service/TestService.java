@@ -16,15 +16,21 @@
 package com.alibaba.csp.sentinel.demo.annotation.aop.service;
 
 /**
+ * 注解限流演示服务接口：覆盖 blockHandler、fallback 与 defaultFallback 场景。
+ *
  * @author Eric Zhao
  */
 public interface TestService {
 
+    /** 无返回值资源，演示 blockHandlerClass 跨类处理。 */
     void test();
 
+    /** 按 long 参数问候，演示 fallback。 */
     String hello(long s);
 
+    /** 按 String 参数问候，演示同名 fallback 重载。 */
     String hello(String s);
 
+    /** 演示 defaultFallback 与 exceptionsToIgnore。 */
     String helloAnother(String name);
 }

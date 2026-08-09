@@ -24,6 +24,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Dubbo 消费者 Spring 配置：应用名、组播注册中心与 Sentinel Filter。
+ *
  * @author Eric Zhao
  */
 @Configuration
@@ -46,11 +48,12 @@ public class ConsumerConfiguration {
     @Bean
     public ConsumerConfig consumerConfig() {
         ConsumerConfig consumerConfig = new ConsumerConfig();
-        // Uncomment below line if you don't want to enable Sentinel for Dubbo service consumers.
+        // 若不想为 Dubbo Consumer 启用 Sentinel，可取消下行注释
         // consumerConfig.setFilter("-sentinel.dubbo.consumer.filter");
         return consumerConfig;
     }
 
+    /** 注册演示用 Consumer 包装 Bean。 */
     @Bean
     public FooServiceConsumer annotationDemoServiceConsumer() {
         return new FooServiceConsumer();

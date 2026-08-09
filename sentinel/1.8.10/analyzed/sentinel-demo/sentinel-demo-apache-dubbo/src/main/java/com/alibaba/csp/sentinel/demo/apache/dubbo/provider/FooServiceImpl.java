@@ -21,21 +21,26 @@ import org.apache.dubbo.config.annotation.Service;
 import java.time.LocalDateTime;
 
 /**
+ * {@link FooService} Provider 实现：供 Consumer 流控/熔断演示调用。
+ *
  * @author Eric Zhao
  */
 @Service
 public class FooServiceImpl implements FooService {
 
+    /** 返回带当前时间的问候语。 */
     @Override
     public String sayHello(String name) {
         return String.format("Hello, %s at %s", name, LocalDateTime.now());
     }
 
+    /** 返回当前时间字符串，用作降级备用结果。 */
     @Override
     public String doAnother() {
         return LocalDateTime.now().toString();
     }
 
+    /** biz 抛 RuntimeException；timeout 睡眠 2 秒模拟慢调用。 */
     @Override
     public String exceptionTest(boolean biz, boolean timeout) {
         if (biz) {

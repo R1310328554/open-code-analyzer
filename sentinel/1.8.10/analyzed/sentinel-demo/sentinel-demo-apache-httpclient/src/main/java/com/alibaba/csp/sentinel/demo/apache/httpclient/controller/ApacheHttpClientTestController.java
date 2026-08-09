@@ -34,6 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 
 /**
+ * Apache HttpClient + Sentinel 出站调用演示控制器。
+ *
  * @author zhaoyuguang
  */
 @RestController
@@ -42,23 +44,27 @@ public class ApacheHttpClientTestController {
     @Value("${server.port}")
     private Integer port;
 
+    /** 被调用的简单回显接口。 */
     @RequestMapping("/httpclient/back")
     public String back() {
         System.out.println("back");
         return "Welcome Back!";
     }
 
+    /** 带路径变量的回显接口，用于资源名归一化演示。 */
     @RequestMapping("/httpclient/back/{id}")
     public String back(@PathVariable String id) {
         System.out.println("back");
         return "Welcome Back! " + id;
     }
 
+    /** 同步 HttpClient 调用 /httpclient/back，自定义资源提取器将 URI 模板化。 */
     @RequestMapping("/httpclient/sync")
     public String sync() throws Exception {
         SentinelApacheHttpClientConfig config = new SentinelApacheHttpClientConfig();
         config.setExtractor(new ApacheHttpClientResourceExtractor() {
 
+            /** 将 /httpclient/back/{id} 归一化为 METHOD:/httpclient/back/{id} 作为 Sentinel 资源名。 */
             @Override
             public String extractor(HttpRequestWrapper request) {
                 String contains = "/httpclient/back/";
@@ -75,6 +81,7 @@ public class ApacheHttpClientTestController {
         return getRemoteString(httpclient, httpGet);
     }
 
+    /** 同步调用带 id 的回显接口，验证路径参数资源归一化。 */
     @RequestMapping("/httpclient/sync/{id}")
     public String sync(@PathVariable String id) throws Exception {
         SentinelApacheHttpClientConfig config = new SentinelApacheHttpClientConfig();
@@ -96,6 +103,7 @@ public class ApacheHttpClientTestController {
         return getRemoteString(httpclient, httpGet);
     }
 
+    /** 执行 GET 请求并读取 UTF-8 响应体，最后关闭 client。 */
     private String getRemoteString(CloseableHttpClient httpclient, HttpGet httpGet) throws IOException {
         String result;
         HttpContext context = new BasicHttpContext();

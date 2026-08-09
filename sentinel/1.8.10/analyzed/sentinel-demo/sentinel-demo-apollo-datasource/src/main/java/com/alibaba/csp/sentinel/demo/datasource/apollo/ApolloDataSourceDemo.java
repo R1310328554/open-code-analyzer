@@ -10,13 +10,12 @@ import com.alibaba.fastjson.TypeReference;
 import java.util.List;
 
 /**
- * This demo shows how to use Apollo as the data source of Sentinel rules.
- * <br />
- * You need to first set up data as follows:
+ * 演示以 Apollo 作为 Sentinel 规则动态数据源。
+ * <p>使用前请在 Apollo 中完成以下配置：</p>
  * <ol>
- *  <li>Create an application with app id as sentinel-demo in Apollo</li>
+ *  <li>创建 appId 为 sentinel-demo 的应用</li>
  *  <li>
- *    Create a configuration with key as flowRules and value as follows:
+ *    新增 key 为 flowRules 的配置，值为：
  *    <pre>
  *      [
           {
@@ -30,10 +29,9 @@ import java.util.List;
         ]
  *    </pre>
  *  </li>
- *  <li>Publish the application namespace</li>
+ *  <li>发布 application 命名空间</li>
  * </ol>
- * Then you could start this demo and adjust the rule configuration as you wish.
- * The rule changes will take effect in real time.
+ * 启动后可实时修改 Apollo 中的规则，变更会立即生效。
  *
  * @author Jason Song
  */
@@ -43,15 +41,14 @@ public class ApolloDataSourceDemo {
 
     public static void main(String[] args) {
         loadRules();
-        // Assume we config: resource is `TestResource`, initial QPS threshold is 5.
+        // 假定 Apollo 中 resource=TestResource、初始 QPS 阈值为 5
         FlowQpsRunner runner = new FlowQpsRunner(KEY, 1, 100);
         runner.simulateTraffic();
         runner.tick();
     }
 
     private static void loadRules() {
-        // Set up basic information, only for demo purpose. You may adjust them based on your actual environment.
-        // For more information, please refer https://github.com/ctripcorp/apollo
+        // 演示用 Apollo 连接参数，生产环境请按实际部署调整，详见 https://github.com/ctripcorp/apollo
         String appId = "sentinel-demo";
         String apolloMetaServerAddress = "http://localhost:8080";
         System.setProperty("app.id", appId);
@@ -59,7 +56,7 @@ public class ApolloDataSourceDemo {
 
         String namespaceName = "application";
         String flowRuleKey = "flowRules";
-        // It's better to provide a meaningful default value.
+        // 建议提供有意义的默认规则 JSON，避免 Apollo 无配置时解析失败
         String defaultFlowRules = "[]";
 
         ReadableDataSource<String, List<FlowRule>> flowRuleDataSource = new ApolloDataSource<>(namespaceName,

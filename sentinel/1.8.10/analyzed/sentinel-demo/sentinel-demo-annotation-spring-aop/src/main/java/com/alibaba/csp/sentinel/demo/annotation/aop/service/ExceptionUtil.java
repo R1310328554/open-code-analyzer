@@ -18,17 +18,17 @@ package com.alibaba.csp.sentinel.demo.annotation.aop.service;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
+ * {@link SentinelResource#blockHandler()} 演示用的 BlockException 处理工具类。
+ *
  * @author Eric Zhao
  */
 public final class ExceptionUtil {
 
+    /**
+     * 被限流/熔断时调用的 blockHandler：参数列表须与原方法一致，末尾追加 BlockException。
+     * 默认须与原方法同 class；跨类时通过 blockHandlerClass 指定且方法须为 static。
+     */
     public static void handleException(BlockException ex) {
-        // Handler method that handles BlockException when blocked.
-        // The method parameter list should match original method, with the last additional
-        // parameter with type BlockException. The return type should be same as the original method.
-        // The block handler method should be located in the same class with original method by default.
-        // If you want to use method in other classes, you can set the blockHandlerClass
-        // with corresponding Class (Note the method in other classes must be static).
         System.out.println("Oops: " + ex.getClass().getCanonicalName());
     }
 }

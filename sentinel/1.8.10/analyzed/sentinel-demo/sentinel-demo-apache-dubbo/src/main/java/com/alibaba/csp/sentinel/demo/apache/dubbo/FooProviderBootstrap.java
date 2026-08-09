@@ -26,7 +26,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- * Provider demo for Apache Dubbo 2.7.x or above. Please add the following VM arguments:
+ * Apache Dubbo 2.7+ 服务提供者启动类。
+ * <p>启动前请添加 VM 参数：</p>
  * <pre>
  * -Djava.net.preferIPv4Stack=true
  * -Dcsp.sentinel.api.port=8720
@@ -38,8 +39,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 public class FooProviderBootstrap {
 
     public static void main(String[] args) {
-        // Users don't need to manually call this method.
-        // Only for eager initialization.
+        // 一般无需手动调用；此处仅为 eager 初始化 Sentinel 组件
         InitExecutor.doInit();
 
 

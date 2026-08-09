@@ -20,6 +20,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
+ * Sentinel Apache HttpClient 适配器 Spring Boot 演示入口。
+ *
  * @author zhaoyuguang
  */
 @SpringBootApplication
@@ -29,6 +31,7 @@ public class ApacheHttpClientDemoApplication implements CommandLineRunner {
         SpringApplication.run(ApacheHttpClientDemoApplication.class);
     }
 
+    /** 启动后无额外逻辑，HTTP 测试由 Controller 接口触发。 */
     @Override
     public void run(String... args) {
     }

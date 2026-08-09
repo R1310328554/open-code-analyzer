@@ -31,7 +31,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Please add the following VM arguments:
+ * Dubbo 消费者异常比例熔断演示：结合 DegradeRule 与异步调用超时触发降级。
+ * <p>启动前请添加 VM 参数：</p>
  * <pre>
  * -Djava.net.preferIPv4Stack=true
  * -Dcsp.sentinel.api.port=8721
@@ -63,7 +64,7 @@ public class FooConsumerExceptionDegradeBootstrap {
                 ex.printStackTrace();
             }
         }
-        // sleep 3s to skip the time window
+        // 休眠 3 秒以跳过熔断统计窗口，再测试超时场景
         initExceptionFallback(3);
         Thread.sleep(3000);
         for (int i = 0; i < 10; i++) {
@@ -81,7 +82,7 @@ public class FooConsumerExceptionDegradeBootstrap {
         Thread.sleep(3000);
 
         try {
-            // timeout to trigger the fallback
+            // 异步调用超时以触发熔断与 Fallback
             CompletableFuture<String> completableFuture = RpcContext.getContext().asyncCall(() -> service.exceptionTest(false, true));
             System.out.println("Result: " + completableFuture.get());
         } catch (Exception e) {
@@ -101,12 +102,14 @@ public class FooConsumerExceptionDegradeBootstrap {
 
     }
 
+    /** 注册 Consumer Fallback：熔断/限流时返回 "fallback" 字符串。 */
     public static void registryCustomFallback() {
         DubboAdapterGlobalConfig.setConsumerFallback(
                 (invoker, invocation, ex) -> AsyncRpcResult.newDefaultAsyncResult("fallback", invocation));
 
     }
 
+    /** 加载异常比例熔断规则：比例阈值 0.5，统计窗口 timewindow 秒。 */
     public static void initExceptionFallback(int timewindow) {
         DegradeRule degradeRule = new DegradeRule(INTERFACE_RES_KEY)
                 .setCount(0.5)
