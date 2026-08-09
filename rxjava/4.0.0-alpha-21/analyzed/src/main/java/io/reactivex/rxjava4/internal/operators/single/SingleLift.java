@@ -19,17 +19,28 @@ import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 
 import java.util.Objects;
 
+/**
+ * 通过 {@link SingleOperator} 变换下游 SingleObserver 后订阅上游。
+ * onLift 返回 null 或抛异常时以 EmptyDisposable.error 终止。
+ * @param <T> 上游元素类型
+ * @param <R> 下游元素类型
+ */
 public final class SingleLift<T, R> extends Single<R> {
 
     final SingleSource<T> source;
 
     final SingleOperator<? extends R, ? super T> onLift;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param onLift 将 downstream Observer 变换为 upstream Observer 的算子
+     */
     public SingleLift(SingleSource<T> source, SingleOperator<? extends R, ? super T> onLift) {
         this.source = source;
         this.onLift = onLift;
     }
 
+    /** 应用 onLift 得到 sr，成功则 source.subscribe(sr)。 */
     @Override
     protected void subscribeActual(SingleObserver<? super R> observer) {
         SingleObserver<? super T> sr;

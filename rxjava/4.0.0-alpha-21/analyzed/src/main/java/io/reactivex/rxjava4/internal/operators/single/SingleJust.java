@@ -16,14 +16,21 @@ package io.reactivex.rxjava4.internal.operators.single;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 
+/**
+ * 立即向订阅者发射常量 value 的 Single。
+ * onSubscribe 使用已 disposed 的 Disposable，随后同步 onSuccess。
+ * @param <T> 元素类型
+ */
 public final class SingleJust<T> extends Single<T> {
 
     final T value;
 
+    /** @param value 要发射的常量值 */
     public SingleJust(T value) {
         this.value = value;
     }
 
+    /** 先 onSubscribe(Disposable.disposed())，再同步 onSuccess(value)。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         observer.onSubscribe(Disposable.disposed());

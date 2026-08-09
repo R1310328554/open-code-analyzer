@@ -15,13 +15,20 @@ package io.reactivex.rxjava4.internal.operators.single;
 
 import io.reactivex.rxjava4.core.*;
 
+/**
+ * 将 {@link SingleSource} 包装为 {@link Single}，不做线程安全或生命周期校验。
+ * 直接透传 subscribe 调用，供内部 unsafe 场景使用。
+ * @param <T> 元素类型
+ */
 public final class SingleFromUnsafeSource<T> extends Single<T> {
     final SingleSource<T> source;
 
+    /** @param source 待包装的上游 SingleSource */
     public SingleFromUnsafeSource(SingleSource<T> source) {
         this.source = source;
     }
 
+    /** 直接调用 source.subscribe，无额外拦截或调度。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         source.subscribe(observer);

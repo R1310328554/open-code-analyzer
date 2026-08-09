@@ -20,21 +20,33 @@ import io.reactivex.rxjava4.functions.Function;
 
 import java.util.Objects;
 
+/**
+ * 对上游 onSuccess 值应用 mapper 后转发给 downstream。
+ * mapper 返回 null 或抛异常时走 onError 路径。
+ * @param <T> 上游元素类型
+ * @param <R> 映射后元素类型
+ */
 public final class SingleMap<T, R> extends Single<R> {
     final SingleSource<? extends T> source;
 
     final Function<? super T, ? extends R> mapper;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param mapper 成功值的映射函数
+     */
     public SingleMap(SingleSource<? extends T> source, Function<? super T, ? extends R> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
+    /** 订阅 MapSingleObserver 拦截 onSuccess 并应用 mapper。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super R> t) {
         source.subscribe(new MapSingleObserver<T, R>(t, mapper));
     }
 
+    /** 成功时 mapper.apply；null 或异常转 onError；错误直接转发。 */
     record MapSingleObserver<T, R>(SingleObserver<? super R> t,
                                    Function<? super T, ? extends R> mapper) implements SingleObserver<T> {
 
@@ -44,6 +56,7 @@ public final class SingleMap<T, R> extends Single<R> {
             }
 
             @Override
+            /** 应用 mapper，非 null 结果则 t.onSuccess(v)。 */
             public void onSuccess(T value) {
                 R v;
                 try {

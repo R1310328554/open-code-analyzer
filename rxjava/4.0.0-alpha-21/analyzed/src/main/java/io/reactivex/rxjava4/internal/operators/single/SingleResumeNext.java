@@ -24,22 +24,33 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.observers.ResumeSingleObserver;
 
+/**
+ * 上游 onError 时由 nextFunction 返回备用 SingleSource 并订阅恢复。
+ * nextFunction 异常则 CompositeException 合并转发。
+ * @param <T> 元素类型
+ */
 public final class SingleResumeNext<T> extends Single<T> {
     final SingleSource<? extends T> source;
 
     final Function<? super Throwable, ? extends SingleSource<? extends T>> nextFunction;
 
+    /**
+     * @param source 主 SingleSource
+     * @param nextFunction 错误时选择备用 SingleSource 的函数
+     */
     public SingleResumeNext(SingleSource<? extends T> source,
             Function<? super Throwable, ? extends SingleSource<? extends T>> nextFunction) {
         this.source = source;
         this.nextFunction = nextFunction;
     }
 
+    /** 订阅 ResumeMainSingleObserver 在 onError 时切换备用源。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
         source.subscribe(new ResumeMainSingleObserver<>(observer, nextFunction));
     }
 
+    /** onError 时 apply nextFunction 并用 ResumeSingleObserver 订阅备用源。 */
     static final class ResumeMainSingleObserver<T> extends AtomicReference<Disposable>
     implements SingleObserver<T>, Disposable {
         @Serial
@@ -67,6 +78,7 @@ public final class SingleResumeNext<T> extends Single<T> {
             downstream.onSuccess(value);
         }
 
+        /** nextFunction 得 source 后 ResumeSingleObserver 桥接订阅。 */
         @Override
         public void onError(Throwable e) {
             SingleSource<? extends T> source;

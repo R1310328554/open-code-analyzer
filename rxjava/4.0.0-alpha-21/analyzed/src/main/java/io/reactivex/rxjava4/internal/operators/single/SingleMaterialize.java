@@ -17,21 +17,21 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.internal.operators.mixed.MaterializeSingleObserver;
 
 /**
- * Turn the signal types of a Single source into a single Notification of
- * equal kind.
- * <p>History: 2.2.4 - experimental
- *
- * @param <T> the element type of the source
+ * 将上游 Single 的终端信号封装为 {@link Notification} 后发射。
+ * 成功 → Notification.createOnNext；错误 → Notification.createOnError。
+ * @param <T> 上游元素类型
  * @since 3.0.0
  */
 public final class SingleMaterialize<T> extends Single<Notification<T>> {
 
     final Single<T> source;
 
+    /** @param source 待物化的上游 Single */
     public SingleMaterialize(Single<T> source) {
         this.source = source;
     }
 
+    /** 用 MaterializeSingleObserver 将 onSuccess/onError 转为 Notification。 */
     @Override
     protected void subscribeActual(SingleObserver<? super Notification<T>> observer) {
         source.subscribe(new MaterializeSingleObserver<>(observer));

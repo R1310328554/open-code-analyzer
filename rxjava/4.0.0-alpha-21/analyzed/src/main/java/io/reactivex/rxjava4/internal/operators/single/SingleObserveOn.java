@@ -20,22 +20,33 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 在指定 {@link Scheduler} 上转发上游 onSuccess/onError。
+ * 收到终端事件后 scheduleDirect(this) 异步通知 downstream。
+ * @param <T> 元素类型
+ */
 public final class SingleObserveOn<T> extends Single<T> {
 
     final SingleSource<T> source;
 
     final Scheduler scheduler;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param scheduler 执行下游回调的调度器
+     */
     public SingleObserveOn(SingleSource<T> source, Scheduler scheduler) {
         this.source = source;
         this.scheduler = scheduler;
     }
 
+    /** 订阅 ObserveOnSingleObserver 缓存事件后调度转发。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
         source.subscribe(new ObserveOnSingleObserver<>(observer, scheduler));
     }
 
+    /** 缓存 value/error，run 时在 scheduler 线程转发给 downstream。 */
     static final class ObserveOnSingleObserver<T> extends AtomicReference<Disposable>
     implements SingleObserver<T>, Disposable, Runnable {
         @Serial
@@ -60,6 +71,7 @@ public final class SingleObserveOn<T> extends Single<T> {
             }
         }
 
+        /** 保存 value 并 scheduleDirect(this) 替换当前 Disposable。 */
         @Override
         public void onSuccess(T value) {
             this.value = value;
@@ -67,6 +79,7 @@ public final class SingleObserveOn<T> extends Single<T> {
             DisposableHelper.replace(this, d);
         }
 
+        /** 保存 error 并 scheduleDirect(this) 替换当前 Disposable。 */
         @Override
         public void onError(Throwable e) {
             this.error = e;
@@ -74,6 +87,7 @@ public final class SingleObserveOn<T> extends Single<T> {
             DisposableHelper.replace(this, d);
         }
 
+        /** 有 error 则 onError，否则 onSuccess(value)。 */
         @Override
         public void run() {
             Throwable ex = error;

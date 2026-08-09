@@ -18,10 +18,9 @@ import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.operators.maybe.MaybeOnErrorComplete;
 
 /**
- * Emits an onComplete if the source emits an onError and the predicate returns true for
- * that Throwable.
- * 
- * @param <T> the value type
+ * 上游 onError 且 predicate 对 Throwable 返回 true 时转为 Maybe 的 onComplete。
+ * predicate 为 false 时正常转发 onError；成功仍 onSuccess。
+ * @param <T> 元素类型
  * @since 3.0.0
  */
 public final class SingleOnErrorComplete<T> extends Maybe<T> {
@@ -30,12 +29,17 @@ public final class SingleOnErrorComplete<T> extends Maybe<T> {
 
     final Predicate<? super Throwable> predicate;
 
+    /**
+     * @param source 上游 Single
+     * @param predicate 判定是否吞掉错误并 onComplete 的谓词
+     */
     public SingleOnErrorComplete(Single<T> source,
             Predicate<? super Throwable> predicate) {
         this.source = source;
         this.predicate = predicate;
     }
 
+    /** 复用 MaybeOnErrorComplete.OnErrorCompleteMultiObserver 处理错误完成逻辑。 */
     @Override
     protected void subscribeActual(MaybeObserver<? super T> observer) {
         source.subscribe(new MaybeOnErrorComplete.OnErrorCompleteMultiObserver<>(observer, predicate));

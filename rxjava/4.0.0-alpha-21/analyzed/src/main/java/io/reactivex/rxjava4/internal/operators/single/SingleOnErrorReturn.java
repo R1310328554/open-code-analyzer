@@ -18,6 +18,11 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.exceptions.*;
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * 上游 onError 时用 valueSupplier 或固定 value 转为 onSuccess。
+ * valueSupplier 异常合并 CompositeException；结果为 null 则 NPE 链式转发。
+ * @param <T> 元素类型
+ */
 public final class SingleOnErrorReturn<T> extends Single<T> {
     final SingleSource<? extends T> source;
 
@@ -25,6 +30,11 @@ public final class SingleOnErrorReturn<T> extends Single<T> {
 
     final T value;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param valueSupplier 按错误计算替代值的函数，可为 null
+     * @param value valueSupplier 为 null 时使用的固定替代值
+     */
     public SingleOnErrorReturn(SingleSource<? extends T> source,
             Function<? super Throwable, ? extends T> valueSupplier, T value) {
         this.source = source;
@@ -32,12 +42,14 @@ public final class SingleOnErrorReturn<T> extends Single<T> {
         this.value = value;
     }
 
+    /** 订阅 OnErrorReturn 拦截 onError 并转为 onSuccess。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
 
         source.subscribe(new OnErrorReturn(observer));
     }
 
+    /** onError 时计算替代值；成功/onSubscribe 直接透传。 */
     final class OnErrorReturn implements SingleObserver<T> {
 
         private final SingleObserver<? super T> observer;
@@ -46,6 +58,7 @@ public final class SingleOnErrorReturn<T> extends Single<T> {
             this.observer = observer;
         }
 
+        /** valueSupplier 或固定 value；null 则 NPE.initCause(e) 转发。 */
         @Override
         public void onError(Throwable e) {
             T v;

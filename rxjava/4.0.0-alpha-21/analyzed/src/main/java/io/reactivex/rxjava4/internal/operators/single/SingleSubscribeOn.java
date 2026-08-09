@@ -20,16 +20,26 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.*;
 
+/**
+ * 在指定 {@link Scheduler} 上异步订阅上游 SingleSource。
+ * 先向 downstream 传递 SubscribeOnObserver，再 scheduleDirect 执行 source.subscribe。
+ * @param <T> 元素类型
+ */
 public final class SingleSubscribeOn<T> extends Single<T> {
     final SingleSource<? extends T> source;
 
     final Scheduler scheduler;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param scheduler 执行订阅操作的调度器
+     */
     public SingleSubscribeOn(SingleSource<? extends T> source, Scheduler scheduler) {
         this.source = source;
         this.scheduler = scheduler;
     }
 
+    /** 创建 SubscribeOnObserver，onSubscribe 后 scheduleDirect(parent) 异步订阅 source。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
         final SubscribeOnObserver<T> parent = new SubscribeOnObserver<>(observer, source);
@@ -41,6 +51,7 @@ public final class SingleSubscribeOn<T> extends Single<T> {
 
     }
 
+    /** run 中 source.subscribe(this)；task 管理调度 Disposable。 */
     static final class SubscribeOnObserver<T>
     extends AtomicReference<Disposable>
     implements SingleObserver<T>, Disposable, Runnable {
@@ -86,6 +97,7 @@ public final class SingleSubscribeOn<T> extends Single<T> {
             return DisposableHelper.isDisposed(get());
         }
 
+        /** 在 scheduler 线程调用 source.subscribe(this)。 */
         @Override
         public void run() {
             source.subscribe(this);

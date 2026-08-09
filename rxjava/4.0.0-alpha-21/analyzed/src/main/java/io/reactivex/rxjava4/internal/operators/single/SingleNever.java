@@ -16,12 +16,17 @@ package io.reactivex.rxjava4.internal.operators.single;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 
+/**
+ * 永不发射 onSuccess/onError 的 Single 单例。
+ * 订阅时仅 onSubscribe(EmptyDisposable.NEVER)。
+ */
 public final class SingleNever extends Single<Object> {
     public static final Single<Object> INSTANCE = new SingleNever();
 
     private SingleNever() {
     }
 
+    /** 向 observer 传递 EmptyDisposable.NEVER，不触发终端事件。 */
     @Override
     protected void subscribeActual(SingleObserver<? super Object> observer) {
         observer.onSubscribe(EmptyDisposable.NEVER);
