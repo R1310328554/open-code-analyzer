@@ -39,6 +39,9 @@ import org.apache.rocketmq.remoting.protocol.LanguageCode;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * OMS Pull 消费者实现：基于 {@link DefaultMQPullConsumer} 定时拉取并配合 {@link LocalMessageCache} 供应用 poll/ack。
+ */
 public class PullConsumerImpl implements PullConsumer {
     private static final Logger log = LoggerFactory.getLogger(PullConsumerImpl.class);
 

@@ -19,17 +19,26 @@ package io.openmessaging.rocketmq.config;
 import io.openmessaging.OMSBuiltinKeys;
 import io.openmessaging.rocketmq.domain.NonStandardKeys;
 
+/**
+ * OMS RocketMQ 客户端配置：映射标准 OMS 键与 RocketMQ 专有扩展项。
+ */
 public class ClientConfig implements OMSBuiltinKeys, NonStandardKeys {
+    /** 驱动实现类名。 */
     private String driverImpl;
+    /** NameServer 接入点地址（可逗号分隔多个）。 */
     private String accessPoints;
+    /** OMS 命名空间。 */
     private String namespace;
     private String producerId;
+    /** 消费者标识（对应 RocketMQ Consumer Group）。 */
     private String consumerId;
+    /** 通用操作超时（毫秒）。 */
     private int operationTimeout = 5000;
     private String region;
     private String routingSource;
     private String routingDestination;
     private String routingExpression;
+    /** RocketMQ 消费组名。 */
     private String rmqConsumerGroup;
     private String rmqProducerGroup = "__OMS_PRODUCER_DEFAULT_GROUP";
     private int rmqMaxRedeliveryTimes = 16;
@@ -37,6 +46,7 @@ public class ClientConfig implements OMSBuiltinKeys, NonStandardKeys {
     private int rmqMaxConsumeThreadNums = 64;
     private int rmqMinConsumeThreadNums = 20;
     private String rmqMessageDestination;
+    /** Pull 模式单次拉取消息条数。 */
     private int rmqPullMessageBatchNums = 32;
     private int rmqPullMessageCacheCapacity = 1000;
 

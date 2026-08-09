@@ -43,6 +43,9 @@ import org.apache.rocketmq.common.utils.ThreadUtils;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Pull 消费者本地消息缓存：缓冲已拉取待 ack 的消息并维护拉取偏移与过期清理。
+ */
 class LocalMessageCache implements ServiceLifecycle {
     private static final Logger log = LoggerFactory.getLogger(LocalMessageCache.class);
 

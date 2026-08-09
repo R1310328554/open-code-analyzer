@@ -16,15 +16,23 @@
  */
 package io.openmessaging.rocketmq.domain;
 
+/**
+ * 非标准 OMS 配置键：RocketMQ 驱动扩展属性名常量。
+ */
 public interface NonStandardKeys {
+    /** RocketMQ 消费组配置键。 */
     String CONSUMER_GROUP = "rmq.consumer.group";
+    /** RocketMQ 生产组配置键。 */
     String PRODUCER_GROUP = "rmq.producer.group";
+    /** 最大重投递次数配置键。 */
     String MAX_REDELIVERY_TIMES = "rmq.max.redelivery.times";
+    /** 消息消费超时（分钟）配置键。 */
     String MESSAGE_CONSUME_TIMEOUT = "rmq.message.consume.timeout";
     String MAX_CONSUME_THREAD_NUMS = "rmq.max.consume.thread.nums";
     String MIN_CONSUME_THREAD_NUMS = "rmq.min.consume.thread.nums";
     String MESSAGE_CONSUME_STATUS = "rmq.message.consume.status";
     String MESSAGE_DESTINATION = "rmq.message.destination";
     String PULL_MESSAGE_BATCH_NUMS = "rmq.pull.message.batch.nums";
+    /** Pull 本地缓存容量配置键。 */
     String PULL_MESSAGE_CACHE_CAPACITY = "rmq.pull.message.cache.capacity";
 }

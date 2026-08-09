@@ -33,7 +33,9 @@ import org.apache.rocketmq.remoting.protocol.header.namesrv.UnRegisterBrokerRequ
  * process.
  */
 public class BatchUnregistrationService extends ServiceThread {
+    /** 路由信息管理器，执行实际注销逻辑。 */
     private final RouteInfoManager routeInfoManager;
+    /** 待处理注销请求阻塞队列。 */
     private BlockingQueue<UnRegisterBrokerRequestHeader> unregistrationQueue;
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
@@ -43,10 +45,10 @@ public class BatchUnregistrationService extends ServiceThread {
     }
 
     /**
-     * Submits an unregister request to this queue.
+     * 将注销请求提交到队列（非阻塞 offer）。
      *
-     * @param unRegisterRequest the request to submit
-     * @return {@code true} if the request was added to this queue, else {@code false}
+     * @param unRegisterRequest 待提交的注销请求
+     * @return {@code true} 表示入队成功，否则 {@code false}
      */
     public boolean submit(UnRegisterBrokerRequestHeader unRegisterRequest) {
         return unregistrationQueue.offer(unRegisterRequest);
@@ -65,7 +67,7 @@ public class BatchUnregistrationService extends ServiceThread {
                 Set<UnRegisterBrokerRequestHeader> unregistrationRequests = new HashSet<>();
                 unregistrationQueue.drainTo(unregistrationRequests);
 
-                // Add polled request
+                // 将本次 take 的请求一并纳入批量处理
                 unregistrationRequests.add(request);
 
                 this.routeInfoManager.unRegisterBroker(unregistrationRequests);
@@ -75,7 +77,7 @@ public class BatchUnregistrationService extends ServiceThread {
         }
     }
 
-    // For test only
+    // 仅供单元测试查询队列长度
     int queueLength() {
         return this.unregistrationQueue.size();
     }

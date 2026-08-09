@@ -20,10 +20,15 @@ import io.netty.channel.Channel;
 import org.apache.rocketmq.namesrv.NamesrvController;
 import org.apache.rocketmq.remoting.ChannelEventListener;
 
+/**
+ * Broker 连接生命周期监听：通道关闭/异常/空闲时通知 {@link RouteInfoManager} 清理路由。
+ */
 public class BrokerHousekeepingService implements ChannelEventListener {
 
+    /** NameServer 控制器，用于访问路由信息管理器。 */
     private final NamesrvController namesrvController;
 
+    /** 绑定 NameServer 控制器。 */
     public BrokerHousekeepingService(NamesrvController namesrvController) {
         this.namesrvController = namesrvController;
     }
@@ -33,16 +38,19 @@ public class BrokerHousekeepingService implements ChannelEventListener {
     }
 
     @Override
+    /** 通道关闭时触发路由清理。 */
     public void onChannelClose(String remoteAddr, Channel channel) {
         this.namesrvController.getRouteInfoManager().onChannelDestroy(channel);
     }
 
     @Override
+    /** 通道异常时同样清理对应 Broker 路由。 */
     public void onChannelException(String remoteAddr, Channel channel) {
         this.namesrvController.getRouteInfoManager().onChannelDestroy(channel);
     }
 
     @Override
+    /** 通道空闲超时视为断开，清理路由。 */
     public void onChannelIdle(String remoteAddr, Channel channel) {
         this.namesrvController.getRouteInfoManager().onChannelDestroy(channel);
     }

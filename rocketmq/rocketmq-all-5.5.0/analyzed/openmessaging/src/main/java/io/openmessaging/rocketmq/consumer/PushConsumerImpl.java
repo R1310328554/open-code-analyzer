@@ -41,6 +41,9 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 
+/**
+ * OMS Push 消费者实现：将 RocketMQ 并发消费回调桥接到 OMS {@link MessageListener}。
+ */
 public class PushConsumerImpl implements PushConsumer {
     private final DefaultMQPushConsumer rocketmqPushConsumer;
     private final KeyValue properties;

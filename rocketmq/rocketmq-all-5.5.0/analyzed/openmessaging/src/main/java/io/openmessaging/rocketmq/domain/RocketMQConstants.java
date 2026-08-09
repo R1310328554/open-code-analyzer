@@ -16,10 +16,13 @@
  */
 package io.openmessaging.rocketmq.domain;
 
+/**
+ * RocketMQ 与 OMS 互操作常量定义。
+ */
 public interface RocketMQConstants {
 
     /**
-     * Key of scheduled message delivery time
+     * 定时消息投递时间的系统属性键。 message delivery time
      */
     String START_DELIVER_TIME = "__STARTDELIVERTIME";
 

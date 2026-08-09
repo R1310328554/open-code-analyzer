@@ -32,6 +32,9 @@ import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.remoting.protocol.route.QueueData;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
+/**
+ * 区域路由 RPC 钩子：在 {@code GET_ROUTEINFO_BY_TOPIC} 响应后按 zone 过滤 Broker 与队列。
+ */
 public class ZoneRouteRPCHook implements RPCHook {
 
     @Override
@@ -59,6 +62,7 @@ public class ZoneRouteRPCHook implements RPCHook {
         response.setBody(filterByZoneName(topicRouteData, zoneName).encode());
     }
 
+    /** 按 zone 过滤 Broker/Queue 及 FilterServer 表。 */
     private TopicRouteData filterByZoneName(TopicRouteData topicRouteData, String zoneName) {
         List<BrokerData> brokerDataReserved = new ArrayList<>();
         Map<String, BrokerData> brokerDataRemoved = new HashMap<>();
@@ -66,7 +70,7 @@ public class ZoneRouteRPCHook implements RPCHook {
             if (brokerData.getBrokerAddrs() == null) {
                 continue;
             }
-            //master down, consume from slave. break nearby route rule.
+            // Master 宕机时保留该 Broker（可从 Slave 消费），打破就近路由规则, consume from slave. break nearby route rule.
             if (brokerData.getBrokerAddrs().get(MixAll.MASTER_ID) == null
                 || StringUtils.equalsIgnoreCase(brokerData.getZoneName(), zoneName)) {
                 brokerDataReserved.add(brokerData);
@@ -83,7 +87,7 @@ public class ZoneRouteRPCHook implements RPCHook {
             }
         }
         topicRouteData.setQueueDatas(queueDataReserved);
-        // remove filter server table by broker address
+        // 按已移除 Broker 地址清理 FilterServer 表项 table by broker address
         if (topicRouteData.getFilterServerTable() != null && !topicRouteData.getFilterServerTable().isEmpty()) {
             for (Entry<String, BrokerData> entry : brokerDataRemoved.entrySet()) {
                 BrokerData brokerData = entry.getValue();

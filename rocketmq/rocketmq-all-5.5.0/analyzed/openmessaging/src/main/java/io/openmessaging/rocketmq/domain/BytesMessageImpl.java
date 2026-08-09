@@ -23,6 +23,9 @@ import io.openmessaging.OMS;
 import io.openmessaging.exception.OMSMessageFormatException;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+/**
+ * OMS 字节消息实现：维护系统头、用户头与二进制消息体。
+ */
 public class BytesMessageImpl implements BytesMessage {
     private KeyValue sysHeaders;
     private KeyValue userHeaders;

@@ -31,11 +31,17 @@ import org.apache.rocketmq.remoting.protocol.header.namesrv.GetRouteInfoRequestH
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 
+/**
+ * 集群测试路由处理器：本地无路由时回退到生产环境 {@link DefaultMQAdminExt} 查询。
+ */
 public class ClusterTestRequestProcessor extends ClientRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
+    /** 连接生产环境的 Admin 客户端，用于远程拉取路由。 */
     private final DefaultMQAdminExt adminExt;
+    /** 生产环境单元名，用于 Admin 实例标识。 */
     private final String productEnvName;
 
+    /** 创建处理器并启动指向生产环境的 Admin 扩展。 */
     public ClusterTestRequestProcessor(NamesrvController namesrvController, String productEnvName) {
         super(namesrvController);
         this.productEnvName = productEnvName;

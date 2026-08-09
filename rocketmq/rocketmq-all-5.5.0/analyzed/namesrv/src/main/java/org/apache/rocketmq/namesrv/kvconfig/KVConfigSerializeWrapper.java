@@ -19,13 +19,19 @@ package org.apache.rocketmq.namesrv.kvconfig;
 import java.util.HashMap;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * KV 配置序列化包装类：将 NameServer 的命名空间键值表持久化为 JSON 并可反序列化加载。
+ */
 public class KVConfigSerializeWrapper extends RemotingSerializable {
+    /** 配置表：外层键为命名空间，内层为键值对。 */
     private HashMap<String/* Namespace */, HashMap<String/* Key */, String/* Value */>> configTable;
 
+    /** 获取完整 KV 配置表。 */
     public HashMap<String, HashMap<String, String>> getConfigTable() {
         return configTable;
     }
 
+    /** 设置 KV 配置表（通常由 JSON 反序列化或导出时填充）。 */
     public void setConfigTable(HashMap<String, HashMap<String, String>> configTable) {
         this.configTable = configTable;
     }

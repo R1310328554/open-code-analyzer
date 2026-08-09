@@ -29,6 +29,9 @@ import io.openmessaging.rocketmq.consumer.PushConsumerImpl;
 import io.openmessaging.rocketmq.producer.ProducerImpl;
 import io.openmessaging.rocketmq.utils.OMSUtil;
 
+/**
+ * OpenMessaging 接入点实现：基于 RocketMQ 创建 Producer/Pull/Push 消费者实例。
+ */
 public class MessagingAccessPointImpl implements MessagingAccessPoint {
 
     private final KeyValue accessPointProperties;

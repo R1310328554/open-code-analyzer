@@ -20,6 +20,9 @@ import org.apache.rocketmq.client.impl.consumer.ProcessQueue;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * Pull 消费待处理请求：封装消息、队列与 ProcessQueue，供本地缓存与 ack 使用。
+ */
 public class ConsumeRequest {
     private final MessageExt messageExt;
     private final MessageQueue messageQueue;
