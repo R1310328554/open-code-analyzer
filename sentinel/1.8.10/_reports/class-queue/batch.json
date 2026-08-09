@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:14:24Z",
   "files": [
-    "sentinel-demo/sentinel-demo-annotation-spring-aop/src/main/java/com/alibaba/csp/sentinel/demo/annotation/aop/controller/DemoController.java",
-    "sentinel-demo/sentinel-demo-annotation-spring-aop/src/main/java/com/alibaba/csp/sentinel/demo/annotation/aop/service/ExceptionUtil.java",
-    "sentinel-demo/sentinel-demo-annotation-spring-aop/src/main/java/com/alibaba/csp/sentinel/demo/annotation/aop/service/TestService.java",
-    "sentinel-demo/sentinel-demo-annotation-spring-aop/src/main/java/com/alibaba/csp/sentinel/demo/annotation/aop/service/TestServiceImpl.java",
-    "sentinel-demo/sentinel-demo-apache-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/apache/dubbo/FooConsumerBootstrap.java",
-    "sentinel-demo/sentinel-demo-apache-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/apache/dubbo/FooConsumerExceptionDegradeBootstrap.java",
-    "sentinel-demo/sentinel-demo-apache-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/apache/dubbo/FooProviderBootstrap.java",
-    "sentinel-demo/sentinel-demo-apache-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/apache/dubbo/FooService.java",
-    "sentinel-demo/sentinel-demo-apache-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/apache/dubbo/consumer/ConsumerConfiguration.java",
-    "sentinel-demo/sentinel-demo-apache-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/apache/dubbo/consumer/FooServiceConsumer.java",
-    "sentinel-demo/sentinel-demo-apache-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/apache/dubbo/provider/FooServiceImpl.java",
-    "sentinel-demo/sentinel-demo-apache-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/apache/dubbo/provider/ProviderConfiguration.java",
-    "sentinel-demo/sentinel-demo-apache-httpclient/src/main/java/com/alibaba/csp/sentinel/demo/apache/httpclient/ApacheHttpClientDemoApplication.java",
-    "sentinel-demo/sentinel-demo-apache-httpclient/src/main/java/com/alibaba/csp/sentinel/demo/apache/httpclient/controller/ApacheHttpClientTestController.java",
-    "sentinel-demo/sentinel-demo-apollo-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/apollo/ApolloDataSourceDemo.java",
     "sentinel-demo/sentinel-demo-apollo-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/apollo/FlowQpsRunner.java",
     "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/AsyncEntryDemo.java",
     "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/authority/AuthorityDemo.java",
@@ -33,5 +18,5 @@
     "sentinel-demo/sentinel-demo-cluster/sentinel-demo-cluster-embedded/src/main/java/com/alibaba/csp/sentinel/demo/cluster/app/config/AopConfig.java"
   ],
   "remaining_pending": 245,
-  "done": 675
+  "done": 690
 }
