@@ -1,7 +1,0 @@
-{
-  "project": "disruptor",
-  "version": "4.0.0",
-  "git_ref": "4.0.0",
-  "repo_url": "https://github.com/LMAX-Exchange/disruptor",
-  "source": "release"
-}

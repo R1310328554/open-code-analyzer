@@ -1,8 +1,0 @@
-{
-  "project": "springframework",
-  "version": "7.0.8",
-  "git_ref": "v7.0.8",
-  "repo_url": "https://github.com/spring-projects/spring-framework",
-  "clone_url": "https://github.com/spring-projects/spring-framework.git",
-  "source": "release"
-}
