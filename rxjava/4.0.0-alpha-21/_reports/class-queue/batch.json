@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:07:06Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableMaterialize.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableMerge.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableMergeArray.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableMergeArrayDelayError.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableMergeDelayErrorIterable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableMergeIterable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableNever.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableObserveOn.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableOnErrorComplete.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableOnErrorReturn.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletablePeek.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableResumeNext.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableSubscribeOn.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableTakeUntilCompletable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableTimeout.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableTimer.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableToFlowable.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/completable/CompletableToObservable.java",
@@ -33,5 +18,5 @@
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableAny.java"
   ],
   "remaining_pending": 752,
-  "done": 225
+  "done": 240
 }
