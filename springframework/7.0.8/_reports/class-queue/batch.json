@@ -1,27 +1,6 @@
 {
-  "claimed_at": "2026-08-09T17:58:08Z",
-  "files": [
-    "spring-aop/src/main/java/org/springframework/aop/config/PointcutComponentDefinition.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/PointcutEntry.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/ScopedProxyBeanDefinitionDecorator.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/SimpleBeanFactoryAwareAspectInstanceFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/SpringConfiguredBeanDefinitionParser.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AbstractAdvisingBeanPostProcessor.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AbstractSingletonProxyFactoryBean.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/Advised.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AdvisedSupportListener.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AdvisorChainFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AopConfigException.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AopContext.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AopInfrastructureBean.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AopProxy.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AopProxyFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/AopProxyUtils.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/CoroutinesUtils.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/DefaultAdvisorChainFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/DefaultAopProxyFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/framework/InterceptorAndDynamicMethodMatcher.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 344,
-  "done": 1127
+  "done": 1147
 }
