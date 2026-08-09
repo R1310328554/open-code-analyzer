@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-/* ===== [OCA 中文解析] =====
-文件意图总览
-
-@Configuration / @ComponentScan / @Import / @Bean 的总加工厂。没有它，注解配置世界转不起来。弯绕点在于：配置类可能被 CGLIB 增强以支持 @Bean 拦截。
-===== [OCA 中文解析结束] ===== */
 package org.springframework.context.annotation;
 
 import java.io.IOException;
@@ -135,25 +130,14 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class ConfigurationClassPostProcessor — 意图说明
-
-BeanDefinitionRegistryPostProcessor：解析配置类并注册衍生 BeanDefinition；也会增强 FULL 模式配置类。
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * {@link BeanFactoryPostProcessor} used for bootstrapping processing of
- * {@link Configuration @Configuration} classes.
+ * 用于引导处理 {@link Configuration @Configuration} 类的 {@link BeanFactoryPostProcessor}。
  *
- * <p>Registered by default when using {@code <context:annotation-config/>} or
- * {@code <context:component-scan/>}. Otherwise, may be declared manually as
- * with any other {@link BeanFactoryPostProcessor}.
+ * <p>使用 {@code <context:annotation-config/>} 或 {@code <context:component-scan/>} 时默认注册；
+ * 否则可像其他 {@link BeanFactoryPostProcessor} 一样手动声明。
  *
- * <p>This post processor is priority-ordered as it is important that any
- * {@link Bean @Bean} methods declared in {@code @Configuration} classes have
- * their corresponding bean definitions registered before any other
- * {@code BeanFactoryPostProcessor} executes.
+ * <p>本后置处理器具有优先顺序：{@code @Configuration} 类中声明的 {@link Bean @Bean} 方法
+ * 对应的 BeanDefinition 须在其他 {@code BeanFactoryPostProcessor} 执行前完成注册。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -165,72 +149,62 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		BeanRegistrationAotProcessor, BeanFactoryInitializationAotProcessor, PriorityOrdered,
 		ResourceLoaderAware, ApplicationStartupAware, BeanClassLoaderAware, EnvironmentAware {
 
-	// [OCA] 字段 `importBeanNameGenerator`：类成员状态。
 	/**
-	 * A {@code BeanNameGenerator} using fully qualified class names as default bean names.
-	 * <p>This default for configuration-level import purposes may be overridden through
-	 * {@link #setBeanNameGenerator}. Note that the default for component scanning purposes
-	 * is a plain {@link AnnotationBeanNameGenerator#INSTANCE}, unless overridden through
-	 * {@link #setBeanNameGenerator} with a unified user-level bean name generator.
+	 * 以全限定类名作为默认 Bean 名的 {@code BeanNameGenerator}。
+	 * <p>配置级导入场景的默认生成器，可通过 {@link #setBeanNameGenerator} 覆盖。
+	 * 组件扫描默认使用 {@link AnnotationBeanNameGenerator#INSTANCE}，
+	 * 除非通过 {@link #setBeanNameGenerator} 统一指定用户级生成器。
 	 * @since 5.2
 	 * @see #setBeanNameGenerator
-	// [OCA] 字段 `IMPORT_BEAN_NAME_GENERATOR`：类成员状态。
 	 */
 	public static final AnnotationBeanNameGenerator IMPORT_BEAN_NAME_GENERATOR =
 			FullyQualifiedAnnotationBeanNameGenerator.INSTANCE;
-	// [OCA] 字段 `IMPORT_REGISTRY_BEAN_NAME`：类成员状态。
 
+	/** ImportRegistry 单例 Bean 的名称。 */
 	private static final String IMPORT_REGISTRY_BEAN_NAME =
 			ConfigurationClassPostProcessor.class.getName() + ".importRegistry";
 
-	// [OCA] 字段 `logger`：类成员状态。
 
 	private final Log logger = LogFactory.getLog(getClass());
-	// [OCA] 字段 `sourceExtractor`：类成员状态。
 
 	private SourceExtractor sourceExtractor = new PassThroughSourceExtractor();
-	// [OCA] 字段 `problemReporter`：类成员状态。
 
 	private ProblemReporter problemReporter = new FailFastProblemReporter();
 
 	private @Nullable Environment environment;
-	// [OCA] 字段 `resourceLoader`：类成员状态。
 
 	private ResourceLoader resourceLoader = new DefaultResourceLoader();
 
 	private @Nullable ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
-	// [OCA] 字段 `metadataReaderFactory`：类成员状态。
 
 	private MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory();
-	// [OCA] 字段 `setMetadataReaderFactoryCalled`：类成员状态。
 
+	/** 是否已通过 setter 显式设置 MetadataReaderFactory。 */
 	private boolean setMetadataReaderFactoryCalled = false;
-	// [OCA] 字段 `registriesPostProcessed`：类成员状态。
 
+	/** 已执行 postProcessBeanDefinitionRegistry 的 registry 标识集合。 */
 	private final Set<Integer> registriesPostProcessed = new HashSet<>();
-	// [OCA] 字段 `factoriesPostProcessed`：类成员状态。
 
+	/** 已执行 postProcessBeanFactory 的 BeanFactory 标识集合。 */
 	private final Set<Integer> factoriesPostProcessed = new HashSet<>();
 
 	private @Nullable ConfigurationClassBeanDefinitionReader reader;
-	// [OCA] 字段 `localBeanNameGeneratorSet`：类成员状态。
 
+	/** 是否通过本处理器 setter 设置了 BeanNameGenerator。 */
 	private boolean localBeanNameGeneratorSet = false;
 
-	// [OCA] 字段 `componentScanBeanNameGenerator`：类成员状态。
-	/* Using short class names as default bean names by default. */
+	/** 组件扫描使用的 Bean 名生成器（默认短类名）。 */
 	private BeanNameGenerator componentScanBeanNameGenerator = AnnotationBeanNameGenerator.INSTANCE;
 
-	/* Using fully qualified class names as default bean names by default. */
+	/** @Import 配置类注册使用的 Bean 名生成器（默认全限定类名）。 */
 	private BeanNameGenerator importBeanNameGenerator = IMPORT_BEAN_NAME_GENERATOR;
 
-	// [OCA] 字段 `applicationStartup`：类成员状态。
 	private ApplicationStartup applicationStartup = ApplicationStartup.DEFAULT;
 
-	// [OCA] 字段 `propertySourceDescriptors`：类成员状态。
+	/** 解析阶段收集的 @PropertySource 描述符，供 AOT 贡献。 */
 	private List<PropertySourceDescriptor> propertySourceDescriptors = Collections.emptyList();
 
-	// [OCA] 字段 `beanRegistrars`：类成员状态。
+	/** 配置类关联的 BeanRegistrar（按配置类名分组）。 */
 	private final MultiValueMap<String, BeanRegistrar> beanRegistrars = new LinkedMultiValueMap<>();
 
 
@@ -240,27 +214,25 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	}
 
 	/**
-	 * Set the {@link SourceExtractor} to use for generated bean definitions
-	 * that correspond to {@link Bean} factory methods.
+	 * 设置与 {@link Bean} 工厂方法对应 BeanDefinition 使用的 {@link SourceExtractor}。
 	 */
 	public void setSourceExtractor(@Nullable SourceExtractor sourceExtractor) {
 		this.sourceExtractor = (sourceExtractor != null ? sourceExtractor : new PassThroughSourceExtractor());
 	}
 
 	/**
-	 * Set the {@link ProblemReporter} to use.
-	 * <p>Used to register any problems detected with {@link Configuration} or {@link Bean}
-	 * declarations. For instance, a @Bean method marked as {@code final} is illegal
-	 * and would be reported as a problem. Defaults to {@link FailFastProblemReporter}.
+	 * 设置要使用的 {@link ProblemReporter}。
+	 * <p>用于登记 {@link Configuration} 或 {@link Bean} 声明中发现的问题，
+	 * 例如标记为 {@code final} 的 @Bean 方法非法。默认为 {@link FailFastProblemReporter}。
 	 */
 	public void setProblemReporter(@Nullable ProblemReporter problemReporter) {
 		this.problemReporter = (problemReporter != null ? problemReporter : new FailFastProblemReporter());
 	}
 
 	/**
-	 * Set the {@link MetadataReaderFactory} to use.
-	 * <p>Default is a {@link CachingMetadataReaderFactory} for the specified
-	 * {@linkplain #setBeanClassLoader bean class loader}.
+	 * 设置要使用的 {@link MetadataReaderFactory}。
+	 * <p>默认为针对 {@linkplain #setBeanClassLoader bean 类加载器} 的
+	 * {@link CachingMetadataReaderFactory}。
 	 */
 	public void setMetadataReaderFactory(MetadataReaderFactory metadataReaderFactory) {
 		Assert.notNull(metadataReaderFactory, "MetadataReaderFactory must not be null");
@@ -269,20 +241,17 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	}
 
 	/**
-	 * Set the {@link BeanNameGenerator} to be used when triggering component scanning
-	 * from {@link Configuration @Configuration} classes and when registering
-	 * {@link Import @Import}'ed configuration classes.
-	 * <p>The default is a standard {@link AnnotationBeanNameGenerator} for scanned
-	 * components (compatible with the default in {@link ClassPathBeanDefinitionScanner})
-	 * and a variant thereof for imported configuration classes (using unique fully-qualified
-	 * class names instead of standard component overriding).
-	 * <p>If the supplied bean name generator is a {@link ConfigurationBeanNameGenerator}
-	 * (such as {@link FullyQualifiedConfigurationBeanNameGenerator}), it also affects the
-	 * default names for {@link Bean @Bean} methods in configuration classes.
-	 * <p>This setter is typically only appropriate when configuring the post-processor as a
-	 * standalone bean definition in XML, for example, not using the dedicated {@code AnnotationConfig*}
-	 * application contexts or the {@code <context:annotation-config>} element. Any bean name
-	 * generator specified against the application context will take precedence over any set here.
+	 * 设置从 {@link Configuration @Configuration} 类触发组件扫描及注册
+	 * {@link Import @Import} 配置类时使用的 {@link BeanNameGenerator}。
+	 * <p>默认对扫描组件使用标准 {@link AnnotationBeanNameGenerator}
+	 * （与 {@link ClassPathBeanDefinitionScanner} 默认一致），
+	 * 对导入配置类使用其变体（以唯一全限定类名避免标准组件覆盖）。
+	 * <p>若提供的生成器为 {@link ConfigurationBeanNameGenerator}
+	 * （如 {@link FullyQualifiedConfigurationBeanNameGenerator}），
+	 * 亦影响配置类中 {@link Bean @Bean} 方法的默认名称。
+	 * <p>本 setter 通常仅在将后置处理器作为独立 BeanDefinition 配置时适用（如 XML），
+	 * 而非使用专用 {@code AnnotationConfig*} 上下文或 {@code <context:annotation-config>}。
+	 * ApplicationContext 上指定的生成器优先于此处设置。
 	 * @since 3.1.1
 	 * @see AnnotationConfigApplicationContext#setBeanNameGenerator(BeanNameGenerator)
 	 * @see AnnotationConfigUtils#CONFIGURATION_BEAN_NAME_GENERATOR
@@ -326,14 +295,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	}
 
 	/**
-	 * Derive further bean definitions from the configuration classes in the registry.
+	 * 从注册表中的配置类派生更多 BeanDefinition。
 	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 postProcessBeanDefinitionRegistry — 意图与阅读要点
-
-扫描并解析配置类，把 @Bean 方法等变成 BeanDefinition 注册进 registry。可能多轮迭代，因为 @Import 会引入新的配置类。
-	===== [OCA 中文解析结束] ===== */
 	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
 		int registryId = System.identityHashCode(registry);
 		if (this.registriesPostProcessed.contains(registryId)) {
@@ -350,8 +314,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	}
 
 	/**
-	 * Prepare the Configuration classes for servicing bean requests at runtime
-	 * by replacing them with CGLIB-enhanced subclasses.
+	 * 通过 CGLIB 增强子类替换 Configuration 类，为运行时 Bean 请求做准备。
 	 */
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
@@ -415,16 +378,11 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 processConfigBeanDefinitions — 意图与阅读要点
-
-方法 `processConfigBeanDefinitions` 复杂度较高（CCN≈23, NLOC≈96）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Build and validate a configuration model based on the registry of
-	 * {@link Configuration} classes.
+	 * 基于 {@link Configuration} 类注册表构建并校验配置模型。
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+		// 1. 收集配置类候选 BeanDefinition
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
@@ -440,19 +398,19 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			}
 		}
 
-		// Return immediately if no @Configuration classes were found
+		// 2. 无 @Configuration 候选则直接返回
 		if (configCandidates.isEmpty()) {
 			return;
 		}
 
-		// Sort by previously determined @Order value, if applicable
+		// 3. 按 @Order 排序（若已确定）
 		configCandidates.sort((bd1, bd2) -> {
 			int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
 			int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
 			return Integer.compare(i1, i2);
 		});
 
-		// Detect any custom bean name generation strategy supplied through the enclosing application context
+		// 4. 检测上下文级 BeanNameGenerator 策略
 		SingletonBeanRegistry singletonRegistry = null;
 		if (registry instanceof SingletonBeanRegistry sbr) {
 			singletonRegistry = sbr;
@@ -478,7 +436,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			this.environment = new StandardEnvironment();
 		}
 
-		// Parse each @Configuration class
+		// 5. 解析配置类（循环直至无新候选）
 		ConfigurationClassParser parser = new ConfigurationClassParser(
 				this.metadataReaderFactory, this.problemReporter, this.environment,
 				this.resourceLoader, this.componentScanBeanNameGenerator, registry);
@@ -528,12 +486,12 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 		while (!candidates.isEmpty());
 
-		// Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
+		// 6. 注册 ImportRegistry 单例以支持 ImportAware @Configuration
 		if (singletonRegistry != null && !singletonRegistry.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
 			singletonRegistry.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
 		}
 
-		// Store the PropertySourceDescriptors to contribute them Ahead-of-time if necessary
+		// 7. 保存 PropertySource 描述符供 AOT 贡献
 		this.propertySourceDescriptors = parser.getPropertySourceDescriptors();
 
 		if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory cachingMetadataReaderFactory) {
@@ -543,15 +501,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 enhanceConfigurationClasses — 意图与阅读要点
-
-对 FULL @Configuration 做 CGLIB 增强，使 @Bean 方法调用也能走容器语义（同配置类内部 @Bean 互调返回的是容器管理实例，而非每次 new）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Post-processes a BeanFactory in search of Configuration class BeanDefinitions;
-	 * any candidates are then enhanced by a {@link ConfigurationClassEnhancer}.
-	 * Candidate status is determined by BeanDefinition attribute metadata.
+	 * 在 BeanFactory 中查找 Configuration 类 BeanDefinition 并增强。
+	 * <p>候选状态由 BeanDefinition 属性元数据判定。
 	 * @see ConfigurationClassEnhancer
 	 */
 	public void enhanceConfigurationClasses(ConfigurableListableBeanFactory beanFactory) {
@@ -629,17 +581,6 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ImportAwareBeanPostProcessor — 意图说明
-
-处理器：容器生命周期中的扩展钩子；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private static class ImportAwareBeanPostProcessor implements InstantiationAwareBeanPostProcessor {
 
 		private final BeanFactory beanFactory;
@@ -670,17 +611,6 @@ class ImportAwareBeanPostProcessor — 意图说明
 			return bean;
 		}
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class ImportAwareAotContribution — 意图说明
-
-class `ImportAwareAotContribution`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private static class ImportAwareAotContribution implements BeanFactoryInitializationAotContribution {
@@ -758,17 +688,6 @@ class `ImportAwareAotContribution`：请结合所属模块与调用方理解其�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class PropertySourcesAotContribution — 意图说明
-
-class `PropertySourcesAotContribution`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private static class PropertySourcesAotContribution implements BeanFactoryInitializationAotContribution {
 
 		private static final String ENVIRONMENT_VARIABLE = "environment";
@@ -793,13 +712,6 @@ class `PropertySourcesAotContribution`：请结合所属模块与调用方理解
 					.add("processPropertySources", this::generateAddPropertySourceProcessorMethod);
 			beanFactoryInitializationCode.addInitializer(generatedMethod.toMethodReference());
 		}
-
-		/* ===== [OCA 中文解析] =====
-方法 registerRuntimeHints — 意图与阅读要点
-
-方法 `registerRuntimeHints` 复杂度较高（CCN≈11, NLOC≈27）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-		===== [OCA 中文解析结束] ===== */
 
 		private void registerRuntimeHints(RuntimeHints hints) {
 			for (PropertySourceDescriptor descriptor : this.descriptors) {
@@ -885,17 +797,6 @@ class `PropertySourcesAotContribution`：请结合所属模块与调用方理解
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class ConfigurationClassProxyBeanRegistrationCodeFragments — 意图说明
-
-代理相关：AOP/事务等横切能力的载体；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private static class ConfigurationClassProxyBeanRegistrationCodeFragments extends BeanRegistrationCodeFragmentsDecorator {
 
 		private final RegisteredBean registeredBean;
@@ -955,17 +856,6 @@ class ConfigurationClassProxyBeanRegistrationCodeFragments — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class BeanRegistrarAotContribution — 意图说明
-
-class `BeanRegistrarAotContribution`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
 	private static class BeanRegistrarAotContribution implements BeanFactoryInitializationAotContribution {
 
 		private static final String CUSTOMIZER_MAP_VARIABLE = "customizers";
@@ -991,13 +881,6 @@ class `BeanRegistrarAotContribution`：请结合所属模块与调用方理解�
 							generationContext, beanFactoryInitializationCode.getClassName()));
 			beanFactoryInitializationCode.addInitializer(generatedMethod.toMethodReference());
 		}
-
-		/* ===== [OCA 中文解析] =====
-方法 generateApplyBeanRegistrarsMethod — 意图与阅读要点
-
-方法 `generateApplyBeanRegistrarsMethod` 复杂度较高（CCN≈11, NLOC≈40）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-		===== [OCA 中文解析结束] ===== */
 
 		private void generateApplyBeanRegistrarsMethod(MethodSpec.Builder method, GenerationContext generationContext,
 				ClassName className) {
@@ -1061,13 +944,6 @@ class `BeanRegistrarAotContribution`：请结合所属模块与调用方理解�
 					CUSTOMIZER_MAP_VARIABLE, LinkedMultiValueMap.class);
 			return code.build();
 		}
-
-		/* ===== [OCA 中文解析] =====
-方法 generateRegisterCode — 意图与阅读要点
-
-方法 `generateRegisterCode` 复杂度较高（CCN≈9, NLOC≈65）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-		===== [OCA 中文解析结束] ===== */
 
 		private CodeBlock generateRegisterCode(ClassName className, GenerationContext generationContext) {
 			Builder code = CodeBlock.builder();
@@ -1189,17 +1065,6 @@ class `BeanRegistrarAotContribution`：请结合所属模块与调用方理解�
 				}
 			}
 		}
-
-
-		/* ===== [OCA 中文解析] =====
-class UnsupportedBeanRegistrationCode — 意图说明
-
-class `UnsupportedBeanRegistrationCode`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassPostProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-		===== [OCA 中文解析结束] ===== */
 
 
 		static class UnsupportedBeanRegistrationCode implements BeanRegistrationCode {
