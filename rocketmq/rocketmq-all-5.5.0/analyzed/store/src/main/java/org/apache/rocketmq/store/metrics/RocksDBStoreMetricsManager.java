@@ -42,17 +42,20 @@ import static org.apache.rocketmq.store.metrics.DefaultStoreMetricsConstant.GAUG
 import static org.apache.rocketmq.store.metrics.DefaultStoreMetricsConstant.LABEL_STORAGE_MEDIUM;
 import static org.apache.rocketmq.store.metrics.DefaultStoreMetricsConstant.LABEL_STORAGE_TYPE;
 
+/**
+ * RocksDB 消费队列指标管理器：采集读写、压缩与缓存命中率等 Ticker 统计。
+ */
 public class RocksDBStoreMetricsManager {
     private Supplier<AttributesBuilder> attributesBuilderSupplier;
     private MessageStoreConfig messageStoreConfig;
 
-    // The cumulative number of bytes read from the database.
+    /** 累计从数据库读取的字节数 Gauge。 */
     private ObservableLongGauge bytesRocksdbRead = new NopObservableLongGauge();
 
-    // The cumulative number of bytes written to the database.
+    /** 累计写入数据库的字节数 Gauge。 */
     private ObservableLongGauge bytesRocksdbWritten = new NopObservableLongGauge();
 
-    // The cumulative number of read operations performed.
+    /** 累计读操作次数 Gauge。 */
     private ObservableLongGauge timesRocksdbRead = new NopObservableLongGauge();
 
     // The cumulative number of write operations performed.
@@ -65,7 +68,7 @@ public class RocksDBStoreMetricsManager {
     // The ratio of the amount of data actually written to the storage medium to the amount of data written by the application.
     private ObservableDoubleGauge bytesRocksdbAmplificationRead = new NopObservableDoubleGauge();
 
-    // The rate at which cache lookups were served from the cache rather than needing to be fetched from disk.
+    /** 块缓存命中率 Gauge。 */
     private ObservableDoubleGauge rocksdbCacheHitRate = new NopObservableDoubleGauge();
 
     private volatile long blockCacheHitTimes = 0;
@@ -76,10 +79,12 @@ public class RocksDBStoreMetricsManager {
 
 
 
+    /** 返回空 View 列表（RocksDB 指标使用默认聚合）。 */
     public List<Pair<InstrumentSelector, ViewBuilder>> getMetricsView() {
         return Lists.newArrayList();
     }
 
+    /** 为 RocksDB 消费队列注册 OpenTelemetry Gauge 回调。 */
     public void init(Meter meter, Supplier<AttributesBuilder> attributesBuilderSupplier,
         ConsumeQueueStoreInterface consumeQueueStore) {
 
@@ -158,6 +163,7 @@ public class RocksDBStoreMetricsManager {
                 });
     }
 
+    /** 创建带默认存储标签的属性构建器。 */
     public AttributesBuilder newAttributesBuilder() {
         if (this.attributesBuilderSupplier == null) {
             return Attributes.builder();

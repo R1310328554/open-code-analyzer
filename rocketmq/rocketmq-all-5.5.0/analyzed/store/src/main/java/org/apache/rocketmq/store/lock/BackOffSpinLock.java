@@ -24,18 +24,25 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 退避自旋锁：CAS 自旋失败后 Thread.sleep(0) 退让，并自适应调整自旋次数。
+ */
 public class BackOffSpinLock implements AdaptiveBackOffSpinLock {
 
+    /** 自旋锁 CAS 标志。 */
     private AtomicBoolean putMessageSpinLock = new AtomicBoolean(true);
 
+    /** 当前最优自旋次数 K。 */
     private int optimalDegree;
 
     private final static int INITIAL_DEGREE = 1000;
 
     private final static int MAX_OPTIMAL_DEGREE = 10000;
 
+    /** 双槽退让次数统计。 */
     private final List<AtomicInteger> numberOfRetreat;
 
+    /** 初始化自旋次数与退让计数器。 */
     public BackOffSpinLock() {
         this.optimalDegree = INITIAL_DEGREE;
 
@@ -44,6 +51,7 @@ public class BackOffSpinLock implements AdaptiveBackOffSpinLock {
         numberOfRetreat.add(new AtomicInteger(0));
     }
 
+    /** CAS 自旋获取锁，失败则退让并计数。 */
     @Override
     public void lock() {
         int spinDegree = this.optimalDegree;
@@ -62,16 +70,19 @@ public class BackOffSpinLock implements AdaptiveBackOffSpinLock {
         }
     }
 
+    /** 释放自旋锁。 */
     @Override
     public void unlock() {
         this.putMessageSpinLock.compareAndSet(false, true);
     }
 
+    /** 从配置更新最优自旋次数。 */
     @Override
     public void update(MessageStoreConfig messageStoreConfig) {
         this.optimalDegree = messageStoreConfig.getSpinLockCollisionRetreatOptimalDegree();
     }
 
+    /** 返回当前自旋次数。 */
     public int getOptimalDegree() {
         return this.optimalDegree;
     }
@@ -80,10 +91,12 @@ public class BackOffSpinLock implements AdaptiveBackOffSpinLock {
         this.optimalDegree = optimalDegree;
     }
 
+    /** 是否仍可继续增大自旋次数。 */
     public boolean isAdapt() {
         return optimalDegree < MAX_OPTIMAL_DEGREE;
     }
 
+    /** 根据竞争情况增大或减小自旋次数。 */
     public synchronized void adapt(boolean isRise) {
         if (isRise) {
             if (optimalDegree * 2 <= MAX_OPTIMAL_DEGREE) {
@@ -100,6 +113,7 @@ public class BackOffSpinLock implements AdaptiveBackOffSpinLock {
         }
     }
 
+    /** 返回指定槽位的退让次数。 */
     public int getNumberOfRetreat(int pos) {
         return numberOfRetreat.get(pos).get();
     }

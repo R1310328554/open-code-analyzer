@@ -50,11 +50,16 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.HeartbeatData;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 消息拉取客户端：通过 Remoting 从主节点 LITE_PULL 拉取压缩所需消息。
+ */
 public class MessageFetcher implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** Netty Remoting 客户端。 */
     private final RemotingClient client;
 
+    /** 创建并启动 Remoting 客户端。 */
     public MessageFetcher() {
         NettyClientConfig nettyClientConfig = new NettyClientConfig();
         nettyClientConfig.setUseTLS(false);
@@ -62,6 +67,7 @@ public class MessageFetcher implements AutoCloseable {
         this.client.start();
     }
 
+    /** 关闭 Remoting 客户端。 */
     @Override
     public void close() throws IOException {
         this.client.shutdown();
@@ -144,6 +150,11 @@ public class MessageFetcher implements AutoCloseable {
         return currPullOffset >= endOffset && endOffset != -1;
     }
 
+    /**
+     * 从主节点循环拉取消息直至 endOffset。
+     *
+     * @param responseHandler 处理每条拉取响应，返回 false 可提前终止
+     */
     public void pullMessageFromMaster(String topic, int queueId, long endOffset, String masterAddr,
                                       BiFunction<Long, RemotingCommand, Boolean> responseHandler) throws Exception {
         long currentPullOffset = 0;

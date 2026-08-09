@@ -26,25 +26,23 @@ import io.opentelemetry.sdk.metrics.InstrumentSelector;
 import io.opentelemetry.sdk.metrics.ViewBuilder;
 
 /**
- * Store metrics manager interface for different message store implementations.
- * This interface provides a unified way to access metrics functionality
- * regardless of the underlying message store type.
+ * 存储指标管理器接口：为不同 MessageStore 实现提供统一的 OpenTelemetry 指标接入。
  */
 public interface StoreMetricsManager {
 
     /**
-     * Initialize metrics with the given meter and attributes builder supplier.
+     * 初始化指标采集。
      *
-     * @param meter                     OpenTelemetry meter
-     * @param attributesBuilderSupplier Metrics attributes builder supplier
-     * @param messageStore             The message store instance
+     * @param meter OpenTelemetry Meter
+     * @param attributesBuilderSupplier 指标属性构建器供应者
+     * @param messageStore MessageStore 实例
      */
     void init(Meter meter, Supplier<AttributesBuilder> attributesBuilderSupplier, MessageStore messageStore);
 
     /**
-     * Get metrics view configuration.
+     * 获取指标 View 配置。
      *
-     * @return List of instrument selector and view builder pairs
+     * @return InstrumentSelector 与 ViewBuilder 对列表
      */
     List<Pair<InstrumentSelector, ViewBuilder>> getMetricsView();
 

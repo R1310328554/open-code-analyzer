@@ -21,14 +21,15 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Shared byte buffer manager for managing some shared ByteBuffers Buffer size is set based on MessageStoreConfig's
- * maxMessageSize
+ * 共享 ByteBuffer 管理器：按 maxMessageSize 分配 DirectByteBuffer 池供并发借用。
  */
 public class SharedByteBufferManager {
 
+    /** 单例实例。 */
     private static volatile SharedByteBufferManager instance;
     private static final Object LOCK = new Object();
 
+    /** 共享缓冲区数组。 */
     private SharedByteBuffer[] sharedByteBuffers;
     private int bufferSize;
     private int maxSharedNum;
@@ -38,9 +39,7 @@ public class SharedByteBufferManager {
         // Private constructor
     }
 
-    /**
-     * Get singleton instance
-     */
+    /** 获取单例实例。 */
     public static SharedByteBufferManager getInstance() {
         if (instance == null) {
             synchronized (LOCK) {
@@ -53,10 +52,10 @@ public class SharedByteBufferManager {
     }
 
     /**
-     * Initialize shared buffers with specified messageSize size and shared buffer number
+     * 初始化共享缓冲区池。
      *
-     * @param maxMessageSize max messageSize size
-     * @param sharedBufferNum number of shared buffers
+     * @param maxMessageSize 最大消息体大小
+     * @param sharedBufferNum 共享缓冲区数量
      */
     public synchronized void init(int maxMessageSize, int sharedBufferNum) {
         if (!initialized) {
@@ -74,9 +73,9 @@ public class SharedByteBufferManager {
     }
 
     /**
-     * Borrow a shared buffer
+     * 随机借用一块共享缓冲区。
      *
-     * @return Shared buffer
+     * @return 共享缓冲区包装
      */
     public SharedByteBuffer borrowSharedByteBuffer() {
         if (!initialized) {
@@ -87,39 +86,40 @@ public class SharedByteBufferManager {
     }
 
     /**
-     * Get current buffer size
+     * 返回缓冲区大小。
      *
-     * @return Buffer size
+     * @return 字节数
      */
     public int getBufferSize() {
         return bufferSize;
     }
 
     /**
-     * Check if initialized
+     * 是否已初始化。
      *
-     * @return Whether initialized
+     * @return 已初始化返回 true
      */
     public boolean isInitialized() {
         return initialized;
     }
 
-    /**
-     * Shared byte buffer class
-     */
+    /** 带 ReentrantLock 的共享 DirectByteBuffer 包装。 */
     public static class SharedByteBuffer {
         private final ReentrantLock lock;
         private final ByteBuffer buffer;
 
+        /** 分配指定大小的 DirectByteBuffer。 */
         public SharedByteBuffer(int size) {
             this.lock = new ReentrantLock();
             this.buffer = ByteBuffer.allocateDirect(size);
         }
 
+        /** 释放锁。 */
         public void release() {
             this.lock.unlock();
         }
 
+        /** 获取锁并返回缓冲区。 */
         public ByteBuffer acquire() {
             this.lock.lock();
             return buffer;

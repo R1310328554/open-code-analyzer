@@ -30,19 +30,27 @@ import org.apache.rocketmq.store.SelectMappedBufferResult;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * 压缩（Compaction）服务：处理 COMPACTION 清理策略 Topic 的分发请求并写入 CompactionStore。
+ */
 public class CompactionService {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** 底层压缩存储。 */
     private final CompactionStore compactionStore;
+    /** 所属 MessageStore。 */
     private final DefaultMessageStore defaultMessageStore;
+    /** CommitLog，用于读取原始消息数据。 */
     private final CommitLog commitLog;
 
+    /** 构造压缩服务。 */
     public CompactionService(CommitLog commitLog, DefaultMessageStore messageStore, CompactionStore compactionStore) {
         this.commitLog = commitLog;
         this.defaultMessageStore = messageStore;
         this.compactionStore = compactionStore;
     }
 
+    /** 处理分发请求：COMPACTION 策略 Topic 则写入压缩日志。 */
     public void putRequest(DispatchRequest request) {
         if (request == null) {
             return;
@@ -69,6 +77,7 @@ public class CompactionService {
         } // else skip if message isn't compaction
     }
 
+    /** 加载 CompactionStore 数据。 */
     public boolean load(boolean exitOK) {
         try {
             compactionStore.load(exitOK);
@@ -85,10 +94,12 @@ public class CompactionService {
 //        super.start();
 //    }
 
+    /** 关闭压缩存储。 */
     public void shutdown() {
         compactionStore.shutdown();
     }
 
+    /** 更新主节点地址。 */
     public void updateMasterAddress(String addr) {
         compactionStore.updateMasterAddress(addr);
     }

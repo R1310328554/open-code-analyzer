@@ -29,9 +29,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 自适应退避自旋锁实现：按 TPS 与退让次数在 SpinLock 与 ReentrantLock 间动态切换。
+ */
 public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
+    /** 当前生效的锁实现。 */
     private AdaptiveBackOffSpinLock adaptiveLock;
     //state
+    /** 切换过程中的全局状态标志。 */
     private AtomicBoolean state = new AtomicBoolean(true);
 
     // Used to determine the switchover between a mutex lock and a spin lock
@@ -49,18 +54,25 @@ public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
 
     private final static String REENTRANT_LOCK = "ReentrantLock";
 
+    /** 可选锁实现映射（SpinLock / ReentrantLock）。 */
     private Map<String, AdaptiveBackOffSpinLock> locks;
 
+    /** 双槽 TPS 计数表。 */
     private final List<AtomicInteger> tpsTable;
 
+    /** 双槽竞争线程集合。 */
     private final List<Set<Thread>> threadTable;
 
+    /** 自旋锁切互斥锁的 TPS 临界点。 */
     private int swapCriticalPoint;
 
+    /** 当前持锁线程数。 */
     private AtomicInteger currentThreadNum = new AtomicInteger(0);
 
+    /** 是否启用自动切换。 */
     private AtomicBoolean isOpen = new AtomicBoolean(true);
 
+    /** 初始化两种锁实现与统计表。 */
     public AdaptiveBackOffSpinLockImpl() {
         this.locks = new HashMap<>();
         this.locks.put(REENTRANT_LOCK, new BackOffReentrantLock());
@@ -77,6 +89,7 @@ public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
         adaptiveLock = this.locks.get(BACK_OFF_SPIN_LOCK);
     }
 
+    /** 加锁并记录 TPS/线程统计。 */
     @Override
     public void lock() {
         int slot = LocalTime.now().getSecond() % 2;
@@ -91,6 +104,7 @@ public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
         this.adaptiveLock.lock();
     }
 
+    /** 解锁并在启用时尝试切换锁类型。 */
     @Override
     public void unlock() {
         this.adaptiveLock.unlock();
@@ -100,11 +114,13 @@ public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
         }
     }
 
+    /** 委托当前锁实现更新配置。 */
     @Override
     public void update(MessageStoreConfig messageStoreConfig) {
         this.adaptiveLock.update(messageStoreConfig);
     }
 
+    /** 根据退让次数与 TPS 决定是否切换锁类型或调整自旋次数。 */
     @Override
     public void swap() {
         if (!this.state.get()) {
@@ -167,6 +183,7 @@ public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
         }
     }
 
+    /** 返回所有锁实现。 */
     public Collection<AdaptiveBackOffSpinLock> getLocks() {
         return this.locks.values();
     }
@@ -175,6 +192,7 @@ public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
         this.locks = locks;
     }
 
+    /** 返回切换状态标志。 */
     public boolean getState() {
         return this.state.get();
     }
@@ -183,6 +201,7 @@ public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
         this.state.set(state);
     }
 
+    /** 返回当前锁实现。 */
     public AdaptiveBackOffSpinLock getAdaptiveLock() {
         return adaptiveLock;
     }
@@ -199,6 +218,7 @@ public class AdaptiveBackOffSpinLockImpl implements AdaptiveBackOffSpinLock {
         return swapCriticalPoint;
     }
 
+    /** 是否启用自动切换。 */
     public boolean isOpen() {
         return this.isOpen.get();
     }

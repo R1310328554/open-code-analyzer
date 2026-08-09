@@ -21,7 +21,17 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import org.apache.rocketmq.store.MessageStore;
 
+/**
+ * MessageStore 插件工厂：按 Broker 配置反射链式包装 AbstractPluginMessageStore。
+ */
 public final class MessageStoreFactory {
+    /**
+     * 构建带插件链的 MessageStore。
+     *
+     * @param context 插件上下文
+     * @param messageStore 原始 MessageStore
+     * @return 包装后的 MessageStore
+     */
     public static MessageStore build(MessageStorePluginContext context,
         MessageStore messageStore) throws IOException {
         String plugin = context.getBrokerConfig().getMessageStorePlugIn();

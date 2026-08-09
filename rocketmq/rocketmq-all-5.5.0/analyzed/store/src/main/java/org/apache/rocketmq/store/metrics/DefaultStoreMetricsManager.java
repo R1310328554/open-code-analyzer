@@ -63,8 +63,13 @@ import static org.apache.rocketmq.store.metrics.DefaultStoreMetricsConstant.LABE
 import static org.apache.rocketmq.store.metrics.DefaultStoreMetricsConstant.LABEL_TIMING_BOUND;
 import static org.apache.rocketmq.store.metrics.DefaultStoreMetricsConstant.LABEL_TOPIC;
 
+/**
+ * 默认存储指标管理器：注册 OpenTelemetry Gauge/Counter/Histogram 并采集存储与时间轮指标。
+ */
 public class DefaultStoreMetricsManager implements StoreMetricsManager {
+    /** 指标属性构建器供应者。 */
     private Supplier<AttributesBuilder> attributesBuilderSupplier;
+    /** 存储配置。 */
     private MessageStoreConfig messageStoreConfig;
 
     private ObservableLongGauge storageSize = new NopObservableLongGauge();
@@ -83,12 +88,15 @@ public class DefaultStoreMetricsManager implements StoreMetricsManager {
     private ObservableLongGauge timerMessageSnapshot = new NopObservableLongGauge();
     private LongHistogram timerMessageSetLatency = new NopLongHistogram();
 
+    /** RocksDB 指标子管理器。 */
     private RocksDBStoreMetricsManager rocksDBStoreMetricsManager;
 
+    /** 构造并初始化 RocksDB 指标管理器。 */
     public DefaultStoreMetricsManager() {
         this.rocksDBStoreMetricsManager = new RocksDBStoreMetricsManager();
     }
 
+    /** 返回延迟消息时延直方图的 View 配置。 */
     public List<Pair<InstrumentSelector, ViewBuilder>> getMetricsView() {
         List<Double> rpcCostTimeBuckets = Arrays.asList(
                 // day * hour * min * second
@@ -108,6 +116,7 @@ public class DefaultStoreMetricsManager implements StoreMetricsManager {
         return Lists.newArrayList(new Pair<>(selector, viewBuilder));
     }
 
+    /** 注册存储、时间轮及 RocksDB 相关 OpenTelemetry 指标。 */
     public void init(Meter meter, Supplier<AttributesBuilder> attributesBuilderSupplier,
         MessageStore messageStore) {
 
@@ -235,12 +244,14 @@ public class DefaultStoreMetricsManager implements StoreMetricsManager {
         }
     }
 
+    /** 定时消息出队计数加 1。 */
     public void incTimerDequeueCount(String topic) {
         this.timerDequeueTotal.add(1, this.newAttributesBuilder()
             .put(LABEL_TOPIC, topic)
             .build());
     }
 
+    /** 定时消息入队计数加 1。 */
     public void incTimerEnqueueCount(String topic) {
         AttributesBuilder attributesBuilder = this.newAttributesBuilder();
         if (topic != null) {
@@ -249,6 +260,7 @@ public class DefaultStoreMetricsManager implements StoreMetricsManager {
         this.timerEnqueueTotal.add(1, attributesBuilder.build());
     }
 
+    /** 创建带默认存储类型/介质标签的属性构建器。 */
     public AttributesBuilder newAttributesBuilder() {
         if (this.attributesBuilderSupplier == null) {
             return Attributes.builder();
@@ -324,6 +336,7 @@ public class DefaultStoreMetricsManager implements StoreMetricsManager {
         this.attributesBuilderSupplier = attributesBuilderSupplier;
     }
 
+    /** 返回 RocksDB 指标管理器。 */
     public RocksDBStoreMetricsManager getRocksDBStoreMetricsManager() {
         return rocksDBStoreMetricsManager;
     }

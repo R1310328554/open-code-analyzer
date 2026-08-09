@@ -18,14 +18,20 @@ package org.apache.rocketmq.store.lock;
 
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * 基于 ReentrantLock 的写消息锁：高竞争场景下的互斥锁备选方案。
+ */
 public class BackOffReentrantLock implements AdaptiveBackOffSpinLock {
+    /** 非公平 ReentrantLock。 */
     private ReentrantLock putMessageNormalLock = new ReentrantLock(); // NonfairSync
 
+    /** 获取互斥锁。 */
     @Override
     public void lock() {
         putMessageNormalLock.lock();
     }
 
+    /** 释放互斥锁。 */
     @Override
     public void unlock() {
         putMessageNormalLock.unlock();

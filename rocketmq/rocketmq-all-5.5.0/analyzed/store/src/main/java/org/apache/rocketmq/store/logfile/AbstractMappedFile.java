@@ -18,5 +18,8 @@ package org.apache.rocketmq.store.logfile;
 
 import org.apache.rocketmq.store.ReferenceResource;
 
+/**
+ * MappedFile 抽象基类：继承引用计数资源并实现 MappedFile 接口。
+ */
 public abstract class AbstractMappedFile extends ReferenceResource implements MappedFile {
 }

@@ -43,17 +43,29 @@ import org.apache.rocketmq.store.GetMessageResult;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * 压缩存储管理器：维护 CompactionLog 表、定时扫描 Topic 配置并调度压缩任务。
+ */
 public class CompactionStore {
 
+    /** 压缩根目录名。 */
     public static final String COMPACTION_DIR = "compaction";
+    /** 压缩日志子目录名。 */
     public static final String COMPACTION_LOG_DIR = "compactionLog";
+    /** 压缩消费队列子目录名。 */
     public static final String COMPACTION_CQ_DIR = "compactionCq";
 
+    /** 压缩存储根路径。 */
     private final String compactionPath;
+    /** 压缩日志路径。 */
     private final String compactionLogPath;
+    /** 压缩消费队列路径。 */
     private final String compactionCqPath;
+    /** 所属 MessageStore。 */
     private final DefaultMessageStore defaultMessageStore;
+    /** 压缩位点管理器。 */
     private final CompactionPositionMgr positionMgr;
+    /** topic_queueId -> CompactionLog 映射表。 */
     private final ConcurrentHashMap<String, CompactionLog> compactionLogTable;
     private final ScheduledExecutorService compactionSchedule;
     private final int scanInterval = 30000;
@@ -64,6 +76,7 @@ public class CompactionStore {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** 构造压缩存储并初始化路径与调度线程池。 */
     public CompactionStore(DefaultMessageStore defaultMessageStore) {
         this.defaultMessageStore = defaultMessageStore;
         this.compactionLogTable = new ConcurrentHashMap<>();
@@ -82,6 +95,7 @@ public class CompactionStore {
         this.compactionInterval = defaultMessageStore.getMessageStoreConfig().getCompactionScheduleInternal();
     }
 
+    /** 从磁盘加载已有 CompactionLog 并启动 Topic 扫描任务。 */
     public void load(boolean exitOk) throws Exception {
         File logRoot = new File(compactionLogPath);
         File[] fileTopicList = logRoot.listFiles();
@@ -161,6 +175,7 @@ public class CompactionStore {
         return clog;
     }
 
+    /** 异步写入压缩消息。 */
     public void putMessage(String topic, int queueId, SelectMappedBufferResult smr) throws Exception {
         CompactionLog clog = loadAndGetClog(topic, queueId);
 
@@ -169,6 +184,7 @@ public class CompactionStore {
         }
     }
 
+    /** 分发路径写入压缩日志。 */
     public void doDispatch(DispatchRequest dispatchRequest, SelectMappedBufferResult smr) throws Exception {
         CompactionLog clog = loadAndGetClog(dispatchRequest.getTopic(), dispatchRequest.getQueueId());
 
@@ -177,6 +193,7 @@ public class CompactionStore {
         }
     }
 
+    /** 从压缩日志按偏移拉取消息。 */
     public GetMessageResult getMessage(final String group, final String topic, final int queueId, final long offset,
         final int maxMsgNums, final int maxTotalMsgSize) {
         CompactionLog log = compactionLogTable.get(topic + "_" + queueId);
@@ -188,22 +205,27 @@ public class CompactionStore {
 
     }
 
+    /** 刷盘所有 CompactionLog。 */
     public void flush(int flushLeastPages) {
         compactionLogTable.values().forEach(log -> log.flush(flushLeastPages));
     }
 
+    /** 刷盘压缩 CommitLog 部分。 */
     public void flushLog(int flushLeastPages) {
         compactionLogTable.values().forEach(log -> log.flushLog(flushLeastPages));
     }
 
+    /** 刷盘压缩 ConsumeQueue 部分。 */
     public void flushCQ(int flushLeastPages) {
         compactionLogTable.values().forEach(log -> log.flushCQ(flushLeastPages));
     }
 
+    /** 更新主节点地址。 */
     public void updateMasterAddress(String addr) {
         this.masterAddr = addr;
     }
 
+    /** 关闭调度线程池并持久化位点。 */
     public void shutdown() {
         // close the thread pool first
         compactionSchedule.shutdown();
@@ -219,26 +241,32 @@ public class CompactionStore {
         positionMgr.persist();
     }
 
+    /** 返回压缩调度线程池。 */
     public ScheduledExecutorService getCompactionSchedule() {
         return compactionSchedule;
     }
 
+    /** 返回压缩日志路径。 */
     public String getCompactionLogPath() {
         return compactionLogPath;
     }
 
+    /** 返回压缩 CQ 路径。 */
     public String getCompactionCqPath() {
         return compactionCqPath;
     }
 
+    /** 返回位点管理器。 */
     public CompactionPositionMgr getPositionMgr() {
         return positionMgr;
     }
 
+    /** 返回偏移映射表大小。 */
     public int getOffsetMapSize() {
         return offsetMapSize;
     }
 
+    /** 返回主节点地址。 */
     public String getMasterAddr() {
         return masterAddr;
     }

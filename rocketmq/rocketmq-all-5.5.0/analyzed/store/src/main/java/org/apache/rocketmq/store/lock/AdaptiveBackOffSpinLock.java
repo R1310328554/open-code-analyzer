@@ -19,17 +19,18 @@ package org.apache.rocketmq.store.lock;
 import org.apache.rocketmq.store.PutMessageLock;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * 自适应退避自旋锁接口：支持配置更新与自旋/互斥锁切换。
+ */
 public interface AdaptiveBackOffSpinLock extends PutMessageLock {
     /**
-     * Configuration update
-     * @param messageStoreConfig
+     * 根据存储配置更新锁参数。
+     * @param messageStoreConfig 存储配置
      */
     default void update(MessageStoreConfig messageStoreConfig) {
     }
 
-    /**
-     * Locking mechanism switching
-     */
+    /** 在自旋锁与互斥锁之间切换。 */
     default void swap() {
     }
 }
