@@ -16,16 +16,18 @@
 package com.alibaba.csp.sentinel.command;
 
 /**
+ * 命令请求执行器：拦截器链中用于将控制权传递给下一环或最终处理器。
+ *
  * @author icodening
  * @since 1.8.4
  */
 public interface CommandRequestExecution<R> {
 
     /**
-     * execute the command request and return the command response.
+     * 继续执行拦截器链或底层 {@link CommandHandler}，返回最终响应。
      *
-     * @param request command request
-     * @return command response
+     * @param request 命令请求
+     * @return 命令响应
      */
     CommandResponse<R> execute(CommandRequest request);
 }

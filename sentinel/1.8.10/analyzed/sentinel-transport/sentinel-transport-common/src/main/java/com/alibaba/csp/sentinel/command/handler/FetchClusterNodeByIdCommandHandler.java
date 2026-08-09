@@ -26,16 +26,19 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 按资源 ID 查询单个 {@link ClusterNode} 的 VO 快照，返回 JSON。
+ * 请求参数 {@code id} 为资源名称；未找到时返回空对象 {@code {}}。
+ *
  * @author qinan.qn
  */
-@CommandMapping(name = "clusterNodeById", desc = "get clusterNode VO by id, request param: id={resourceName}")
+@CommandMapping(name = "clusterNodeById", desc = "按 id 获取 ClusterNode VO，参数 id={resourceName}")
 public class FetchClusterNodeByIdCommandHandler implements CommandHandler<String> {
 
     @Override
     public CommandResponse<String> handle(CommandRequest request) {
         String id = request.getParam("id");
         if (StringUtil.isEmpty(id)) {
-            return CommandResponse.ofFailure(new IllegalArgumentException("Invalid parameter: empty clusterNode name"));
+            return CommandResponse.ofFailure(new IllegalArgumentException("无效参数：clusterNode 名称为空"));
         }
         ClusterNode node = ClusterBuilderSlot.getClusterNode(id);
         if (node != null) {

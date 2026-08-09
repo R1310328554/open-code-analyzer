@@ -30,9 +30,12 @@ import com.alibaba.csp.sentinel.command.vo.NodeVo;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 以 JSON 数组返回从根节点开始的调用树 {@link NodeVo} 列表（前序遍历）。
+ * 用于 Dashboard 或客户端可视化资源层级与实时指标。
+ *
  * @author leyou
  */
-@CommandMapping(name = "jsonTree", desc = "get tree node VO start from root node")
+@CommandMapping(name = "jsonTree", desc = "从根节点获取调用树 NodeVo JSON")
 public class FetchJsonTreeCommandHandler implements CommandHandler<String> {
 
     @Override
@@ -43,7 +46,7 @@ public class FetchJsonTreeCommandHandler implements CommandHandler<String> {
     }
 
     /**
-     * Preorder traversal.
+     * 前序遍历调用树，将每个 {@link DefaultNode} 转为 {@link NodeVo} 并递归子节点。
      */
     private void visit(DefaultNode node, List<NodeVo> results, String parentId) {
         NodeVo vo = NodeVo.fromDefaultNode(node, parentId);

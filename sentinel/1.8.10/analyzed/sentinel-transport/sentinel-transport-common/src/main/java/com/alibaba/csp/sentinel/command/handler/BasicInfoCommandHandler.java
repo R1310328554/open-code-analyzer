@@ -22,11 +22,11 @@ import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 import com.alibaba.csp.sentinel.util.HostNameUtil;
 
 /**
- * The basic info command returns the runtime properties.
+ * 基础信息命令：返回 Sentinel 运行时配置（主机名、端口、应用名等）。
  *
  * @author Eric Zhao
  */
-@CommandMapping(name = "basicInfo", desc = "get sentinel config info")
+@CommandMapping(name = "basicInfo", desc = "获取 Sentinel 运行时配置信息")
 public class BasicInfoCommandHandler implements CommandHandler<String> {
 
     @Override

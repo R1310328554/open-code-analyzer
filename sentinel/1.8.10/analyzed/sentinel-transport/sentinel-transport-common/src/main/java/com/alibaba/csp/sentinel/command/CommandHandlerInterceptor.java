@@ -16,7 +16,8 @@
 package com.alibaba.csp.sentinel.command;
 
 /**
- * Intercepts specified command, and can be extended using SPI.
+ * 命令处理器拦截器：在指定命令执行前后插入自定义逻辑，可通过 SPI 扩展。
+ * 多个拦截器按 SPI 排序后组成责任链，由 {@link InterceptingCommandHandler} 驱动。
  *
  * @author icodening
  * @since 1.8.4
@@ -26,19 +27,19 @@ package com.alibaba.csp.sentinel.command;
 public interface CommandHandlerInterceptor<R> {
 
     /**
-     * whether to intercept the specified command
+     * 判断是否拦截指定命令。
      *
-     * @param commandName command name, eg. getRules
-     * @return "true" means intercept, "false" means skip
+     * @param commandName 命令名称，例如 getRules
+     * @return true 表示参与拦截，false 表示跳过
      */
     boolean shouldIntercept(String commandName);
 
     /**
-     * intercept the given command request, and return a command response
+     * 拦截命令请求：可调用 {@code execution.execute(request)} 继续责任链，或直接返回响应。
      *
-     * @param request   commandRequest
-     * @param execution interceptor chain execution
-     * @return command response
+     * @param request   命令请求
+     * @param execution 拦截器链执行器
+     * @return 命令响应
      */
     CommandResponse<R> intercept(CommandRequest request, CommandRequestExecution<R> execution);
 

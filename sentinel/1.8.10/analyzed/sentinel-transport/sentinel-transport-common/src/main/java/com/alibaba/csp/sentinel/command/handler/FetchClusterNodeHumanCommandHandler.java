@@ -27,9 +27,12 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.clusterbuilder.ClusterBuilderSlot;
 
 /**
+ * 以人类可读表格形式输出 ClusterNode 指标，支持按资源名模糊匹配。
+ * 最多展示 30 条匹配记录，列含线程数、QPS、RT 等运行时统计。
+ *
  * @author qinan.qn
  */
-@CommandMapping(name = "cnode", desc = "get clusterNode metrics by id, request param: id={resourceName}")
+@CommandMapping(name = "cnode", desc = "按 id 获取 ClusterNode 指标表格，参数 id={resourceName}")
 public class FetchClusterNodeHumanCommandHandler implements CommandHandler<String> {
 
     private final static String FORMAT = "%-4s%-80s%-10s%-10s%-10s%-11s%-9s%-6s%-10s%-11s%-9s%-11s";
@@ -39,6 +42,7 @@ public class FetchClusterNodeHumanCommandHandler implements CommandHandler<Strin
     public CommandResponse<String> handle(CommandRequest request) {
         String name = request.getParam("id");
 
+        // id 为空则拒绝请求
         if (StringUtil.isEmpty(name)) {
             return CommandResponse.ofFailure(new IllegalArgumentException("Invalid parameter: empty clusterNode name"));
         }
@@ -53,6 +57,7 @@ public class FetchClusterNodeHumanCommandHandler implements CommandHandler<Strin
                 if (l > nameLength) {
                     nameLength = l;
                 }
+                // 预扫描阶段最多统计 30 条以确定列宽
                 if (++i == 30) {
                     break;
                 }
@@ -81,6 +86,7 @@ public class FetchClusterNodeHumanCommandHandler implements CommandHandler<Strin
                         "", "", "")).append("\n");
                 }
 
+                // 输出阶段同样限制 30 条
                 if (++i == 30) {
                     break;
                 }

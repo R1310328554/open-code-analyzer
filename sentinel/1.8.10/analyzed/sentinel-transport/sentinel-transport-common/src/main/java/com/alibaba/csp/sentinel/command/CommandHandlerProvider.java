@@ -23,7 +23,8 @@ import com.alibaba.csp.sentinel.spi.SpiLoader;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * Provides and filters command handlers registered via SPI.
+ * 命令处理器提供者：通过 SPI 加载 {@link CommandHandler} 实现，
+ * 解析 {@link CommandMapping} 注解获取命令名，并按需包装拦截器链。
  *
  * @author Eric Zhao
  */
@@ -32,9 +33,10 @@ public class CommandHandlerProvider implements Iterable<CommandHandler> {
     private final SpiLoader<CommandHandler> spiLoader = SpiLoader.of(CommandHandler.class);
 
     /**
-     * Get all command handlers annotated with {@link CommandMapping} with command name.
+     * 获取所有带 {@link CommandMapping} 注解的命令处理器，键为命令名。
+     * 若存在 {@link CommandHandlerInterceptor}，则自动包装为 {@link InterceptingCommandHandler}。
      *
-     * @return list of all named command handlers
+     * @return 命令名到处理器的映射
      */
     public Map<String, CommandHandler> namedHandlers() {
         Map<String, CommandHandler> map = new HashMap<String, CommandHandler>();
@@ -45,6 +47,7 @@ public class CommandHandlerProvider implements Iterable<CommandHandler> {
             if (StringUtil.isEmpty(name)) {
                 continue;
             }
+            // 收集对该命令生效的拦截器并包装为责任链
             if (!commandHandlerInterceptors.isEmpty()) {
                 List<CommandHandlerInterceptor> interceptors = new ArrayList<>();
                 for (CommandHandlerInterceptor commandHandlerInterceptor : commandHandlerInterceptors) {
@@ -61,6 +64,7 @@ public class CommandHandlerProvider implements Iterable<CommandHandler> {
         return map;
     }
 
+    /** 从处理器类上的 {@link CommandMapping} 注解解析命令名。 */
     private String parseCommandName(CommandHandler handler) {
         CommandMapping commandMapping = handler.getClass().getAnnotation(CommandMapping.class);
         if (commandMapping != null) {

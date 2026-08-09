@@ -30,16 +30,17 @@ import com.alibaba.csp.sentinel.slots.clusterbuilder.ClusterBuilderSlot;
 import com.alibaba.fastjson.JSONArray;
 
 /**
+ * 返回全部 ClusterNode 的 {@link NodeVo} 列表（JSON）。
+ * 参数 {@code type=notZero} 时可过滤 totalRequest &lt;= 0 的节点。
+ *
  * @author jialiang.linjl
  */
-@CommandMapping(name = "clusterNode", desc = "get all clusterNode VO, use type=notZero to ignore those nodes with totalRequest <=0")
+@CommandMapping(name = "clusterNode", desc = "获取全部 ClusterNode VO，type=notZero 可忽略无流量节点")
 public class FetchSimpleClusterNodeCommandHandler implements CommandHandler<String> {
 
     @Override
     public CommandResponse<String> handle(CommandRequest request) {
-        /*
-         * type==notZero means nodes whose totalRequest <= 0 will be ignored.
-         */
+        /* type=notZero 时忽略 totalRequest <= 0 的节点 */
         String type = request.getParam("type");
         List<NodeVo> list = new ArrayList<NodeVo>();
         Map<ResourceWrapper, ClusterNode> map = ClusterBuilderSlot.getClusterNodeMap();

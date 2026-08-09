@@ -16,17 +16,18 @@
 package com.alibaba.csp.sentinel.command;
 
 /**
- * Represent a handler that handles a {@link CommandRequest}.
+ * 命令处理器接口：将 {@link CommandRequest} 转换为 {@link CommandResponse}。
+ * 各具体命令通过 SPI 注册并由 {@link CommandHandlerProvider} 统一发现。
  *
  * @author Eric Zhao
  */
 public interface CommandHandler<R> {
 
     /**
-     * Handle the given Courier command request.
+     * 处理命令中心传入的请求并返回响应。
      *
-     * @param request the request to handle
-     * @return the response
+     * @param request 待处理的命令请求
+     * @return 成功或失败的命令响应
      */
     CommandResponse<R> handle(CommandRequest request);
 }

@@ -27,14 +27,14 @@ import java.util.Map;
 
 /**
  * <p>
- * List all available command handlers by request: </br>
- * {@code curl http://ip:commandPort/api}
+ * 列出所有已注册命令处理器，返回 JSON 数组（url + desc）。
+ * 示例：{@code curl http://ip:commandPort/api}
  * </p>
  *
  * @author houyi
  * @since 1.5.0
  */
-@CommandMapping(name = "api", desc = "get all available command handlers")
+@CommandMapping(name = "api", desc = "获取全部可用命令处理器列表")
 public class ApiCommandHandler implements CommandHandler<String> {
 
     @Override
@@ -46,6 +46,7 @@ public class ApiCommandHandler implements CommandHandler<String> {
         }
         for (CommandHandler handler : handlers.values()) {
             CommandMapping commandMapping = handler.getClass().getAnnotation(CommandMapping.class);
+            // 跳过未标注 CommandMapping 的处理器
             if (commandMapping == null) {
                 continue;
             }

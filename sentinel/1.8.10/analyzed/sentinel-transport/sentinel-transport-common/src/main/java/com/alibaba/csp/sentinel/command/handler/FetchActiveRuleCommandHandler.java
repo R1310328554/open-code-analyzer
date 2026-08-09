@@ -26,24 +26,31 @@ import com.alibaba.csp.sentinel.slots.system.SystemRuleManager;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 按类型查询当前生效的规则列表（流控/降级/授权/系统），返回 JSON。
+ * 请求参数 {@code type} 取值：flow、degrade、authority、system。
+ *
  * @author jialiang.linjl
  */
-@CommandMapping(name = "getRules", desc = "get all active rules by type, request param: type={ruleType}")
+@CommandMapping(name = "getRules", desc = "按类型获取生效规则，参数 type={ruleType}")
 public class FetchActiveRuleCommandHandler implements CommandHandler<String> {
 
     @Override
     public CommandResponse<String> handle(CommandRequest request) {
         String type = request.getParam("type");
+        // 流控规则
         if ("flow".equalsIgnoreCase(type)) {
             return CommandResponse.ofSuccess(JSON.toJSONString(FlowRuleManager.getRules()));
+        // 降级规则
         } else if ("degrade".equalsIgnoreCase(type)) {
             return CommandResponse.ofSuccess(JSON.toJSONString(DegradeRuleManager.getRules()));
+        // 授权规则
         } else if ("authority".equalsIgnoreCase(type)) {
             return CommandResponse.ofSuccess(JSON.toJSONString(AuthorityRuleManager.getRules()));
+        // 系统规则
         } else if ("system".equalsIgnoreCase(type)) {
             return CommandResponse.ofSuccess(JSON.toJSONString(SystemRuleManager.getRules()));
         } else {
-            return CommandResponse.ofFailure(new IllegalArgumentException("invalid type"));
+            return CommandResponse.ofFailure(new IllegalArgumentException("无效的规则类型 type"));
         }
     }
 

@@ -27,9 +27,12 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.clusterbuilder.ClusterBuilderSlot;
 
 /**
+ * 查询指定 ClusterNode 下各调用来源（origin）的统计指标，以表格文本返回。
+ * 先精确匹配资源名，否则尝试子串匹配；最多输出 30 条 origin 记录。
+ *
  * @author qinan.qn
  */
-@CommandMapping(name = "origin", desc = "get origin clusterNode by id, request param: id={resourceName}")
+@CommandMapping(name = "origin", desc = "按 id 获取 origin 统计表格，参数 id={resourceName}")
 public class FetchOriginCommandHandler implements CommandHandler<String> {
 
     private final static String FORMAT = "%-4s%-80s%-10s%-10s%-11s%-9s%-6s%-10s%-11s%-9s";
@@ -53,6 +56,7 @@ public class FetchOriginCommandHandler implements CommandHandler<String> {
             }
         }
 
+        // 精确匹配失败时退化为子串匹配
         if (!exactly) {
             for (Entry<ResourceWrapper, ClusterNode> e : ClusterBuilderSlot.getClusterNodeMap().entrySet()) {
                 if (e.getKey().getName().indexOf(name) > 0) {
@@ -65,7 +69,7 @@ public class FetchOriginCommandHandler implements CommandHandler<String> {
         }
 
         if (cNode == null) {
-            return CommandResponse.ofSuccess("Not find cNode with id " + name);
+            return CommandResponse.ofSuccess("未找到 id 为 " + name + " 的 ClusterNode");
         }
         int i = 0;
         int nameLength = 0;
@@ -101,6 +105,7 @@ public class FetchOriginCommandHandler implements CommandHandler<String> {
                     .format(format, "", id.substring(start, end), "", "", "", "", "", "", "", "", "", "", "", ""))
                     .append("\n");
             }
+            // 最多展示 30 条 origin
             if (++i == 30) {
                 break;
             }

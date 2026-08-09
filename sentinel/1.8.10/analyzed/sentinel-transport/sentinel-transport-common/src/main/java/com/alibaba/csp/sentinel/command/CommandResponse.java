@@ -16,9 +16,10 @@
 package com.alibaba.csp.sentinel.command;
 
 /**
- * Command response representation of command center.
+ * 命令中心响应模型：封装成功标志、结果对象与可选异常。
+ * 工厂方法 {@link #ofSuccess} 与 {@link #ofFailure} 区分正常与失败路径。
  *
- * @param <R> type of the result
+ * @param <R> 结果类型
  * @author Eric Zhao
  */
 public class CommandResponse<R> {
@@ -38,32 +39,32 @@ public class CommandResponse<R> {
     }
 
     /**
-     * Construct a successful response with given object.
+     * 构造成功响应。
      *
-     * @param result result object
-     * @param <T>    type of the result
-     * @return constructed server response
+     * @param result 结果对象
+     * @param <T>    结果类型
+     * @return 成功响应
      */
     public static <T> CommandResponse<T> ofSuccess(T result) {
         return new CommandResponse<T>(result);
     }
 
     /**
-     * Construct a failed response with given exception.
+     * 构造失败响应（无附加结果）。
      *
-     * @param ex cause of the failure
-     * @return constructed server response
+     * @param ex 失败原因
+     * @return 失败响应
      */
     public static <T> CommandResponse<T> ofFailure(Throwable ex) {
         return new CommandResponse<T>(null, false, ex);
     }
 
     /**
-     * Construct a failed response with given exception.
+     * 构造失败响应，并附带额外结果（如错误提示文本）。
      *
-     * @param ex     cause of the failure
-     * @param result additional message of the failure
-     * @return constructed server response
+     * @param ex     失败原因
+     * @param result 附加结果
+     * @return 失败响应
      */
     public static <T> CommandResponse<T> ofFailure(Throwable ex, T result) {
         return new CommandResponse<T>(result, false, ex);
