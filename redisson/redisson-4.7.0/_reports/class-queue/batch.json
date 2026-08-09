@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:45:10Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/reactive/RedissonMapsReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonReadWriteLockReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonReliableTopicReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonScoredSortedSetReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonSetCacheReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonSetMultimapCacheReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonSetMultimapReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonSetReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonTimeSeriesReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonTopicReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonTransactionReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonTransferQueueReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonVectorSetReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/SetReactiveIterator.java",
-    "redisson/src/main/java/org/redisson/redisnode/RedisNode.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 122,
-  "done": 2685
+  "done": 2700
 }
