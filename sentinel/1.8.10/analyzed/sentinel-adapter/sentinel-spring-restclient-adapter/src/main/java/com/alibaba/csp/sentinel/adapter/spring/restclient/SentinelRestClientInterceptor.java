@@ -30,31 +30,30 @@ import java.io.IOException;
 import java.net.URI;
 
 /**
- * {@link ClientHttpRequestInterceptor} for integrating Sentinel with Spring's
- * {@link org.springframework.web.client.RestClient}.
+ * 将 Sentinel 与 Spring {@link org.springframework.web.client.RestClient} 集成的 {@link ClientHttpRequestInterceptor}。
  *
- * <p>This interceptor creates two levels of Sentinel resources for each request:
+ * <p>本拦截器为每个请求创建两级 Sentinel 资源：
  * <ul>
- * <li><b>Host-level resource</b>: {@code METHOD:scheme://host[:port]},
- * e.g. {@code GET:https://httpbin.org}</li>
- * <li><b>Path-level resource</b>: extracted by {@link RestClientResourceExtractor},
- * by default: {@code METHOD:scheme://host[:port]/path},
- * e.g. {@code GET:https://httpbin.org/get}</li>
+ * <li><b>主机级资源</b>：{@code METHOD:scheme://host[:port]}，
+ * 例如 {@code GET:https://httpbin.org}</li>
+ * <li><b>路径级资源</b>：由 {@link RestClientResourceExtractor} 提取，
+ * 默认格式 {@code METHOD:scheme://host[:port]/path}，
+ * 例如 {@code GET:https://httpbin.org/get}</li>
  * </ul>
  *
- * <p>This dual-level design allows:
+ * <p>双层设计支持：
  * <ul>
- * <li>Host-level flow control for overall traffic to a service</li>
- * <li>Path-level flow control for specific endpoints</li>
- * <li>Circuit breaking at either level</li>
+ * <li>主机级流控：限制对某服务的整体流量</li>
+ * <li>路径级流控：限制特定端点的流量</li>
+ * <li>任一层级均可配置熔断降级</li>
  * </ul>
  *
- * <p>Supports:
+ * <p>支持能力：
  * <ul>
- * <li>Flow control (QPS limiting)</li>
- * <li>Circuit breaking (degrade)</li>
- * <li>Custom resource name extraction via {@link RestClientResourceExtractor}</li>
- * <li>Custom fallback responses via {@link RestClientFallback}</li>
+ * <li>流量控制（QPS 限流）</li>
+ * <li>熔断降级（degrade）</li>
+ * <li>通过 {@link RestClientResourceExtractor} 自定义资源名提取</li>
+ * <li>通过 {@link RestClientFallback} 自定义降级响应</li>
  * </ul>
  *
  * @author QHT, uuuyuqi
@@ -109,7 +108,7 @@ public class SentinelRestClientInterceptor implements ClientHttpRequestIntercept
         } catch (BlockException ex) {
             return handleBlockException(request, body, execution, ex);
         } catch (IOException ex) {
-            // Path entry does not need to be traced if an IO exception occurred.
+            // 发生 IO 异常时无需对路径级 Entry 进行异常追踪。
             Tracer.traceEntry(ex, hostEntry);
             throw ex;
         } finally {

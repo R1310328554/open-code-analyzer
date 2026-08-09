@@ -28,8 +28,7 @@ import reactor.core.publisher.Mono;
 
 
 /**
- * The default implementation of {@link BlockRequestHandler}.
- * Compatible with Spring WebFlux v6x and Spring Cloud Gateway.
+ * {@link BlockRequestHandler} 的默认实现，兼容 Spring WebFlux v6x 与 Spring Cloud Gateway。
  *
  * @author uuuyuqi
  */
@@ -42,7 +41,7 @@ public class DefaultBlockRequestHandler implements BlockRequestHandler {
         if (acceptsHtml(exchange)) {
             return htmlErrorResponse(ex);
         }
-        // JSON result by default.
+        // 默认返回 JSON 结果。
         return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(buildErrorResult(ex));
@@ -60,7 +59,7 @@ public class DefaultBlockRequestHandler implements BlockRequestHandler {
     }
 
     /**
-     * Reference from {@code DefaultErrorWebExceptionHandler} of Spring Boot.
+     * 逻辑参考 Spring Boot 的 {@code DefaultErrorWebExceptionHandler}。
      */
     private boolean acceptsHtml(ServerWebExchange exchange) {
         try {
