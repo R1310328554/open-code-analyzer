@@ -15,23 +15,8 @@
     "codec-http/src/main/java/io/netty/handler/codec/http/multipart/InterfaceHttpData.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/multipart/InterfaceHttpPostRequestDecoder.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/multipart/InternalAttribute.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/multipart/MemoryAttribute.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/multipart/MemoryFileUpload.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/multipart/MixedAttribute.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/multipart/MixedFileUpload.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/BinaryWebSocketFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/CloseWebSocketFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/ContinuationWebSocketFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/PingWebSocketFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/PongWebSocketFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/RandomWebSocketFrameMaskGenerator.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/TextWebSocketFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/Utf8FrameValidator.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/Utf8Validator.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocket00FrameDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocket00FrameEncoder.java"
+    "codec-http/src/main/java/io/netty/handler/codec/http/multipart/MemoryAttribute.java"
   ],
   "remaining_pending": 1418,
-  "done": 480
+  "done": 495
 }
