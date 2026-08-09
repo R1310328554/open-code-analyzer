@@ -34,9 +34,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 客户端侧读缓存（Client-side caching）的 {@link org.redisson.api.RClientSideCaching} 实现。
+ * <p>对带 {@code read} 前缀的异步读命令做本地缓存；订阅 Redis 失效通知后按键清理。
+ * <p>支持 NONE/LRU/LFU/SOFT/WEAK 等驱逐策略。
  *
  * @author Nikita Koksharov
- *
  */
 public final class RedissonClientSideCaching implements RClientSideCaching {
 
@@ -73,6 +75,7 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
         listenerId = r.join();
     }
 
+    /** Redis 推送键失效时，移除该逻辑名下所有本地缓存条目。 */
     public void clearCache(String name) {
         Set<CacheKeyParams> keys = name2cacheKey.remove(name);
         if (keys == null) {
@@ -84,6 +87,7 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
         }
     }
 
+    /** 为 {@link CommandAsyncExecutor} 创建动态代理：拦截 read 方法并命中本地缓存。 */
     public <T> T create(Object instance, Class<T> clazz) {
         InvocationHandler handler = (proxy, method, args) -> {
             if (!method.getName().contains("read")) {
@@ -222,6 +226,7 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
         return new RedissonGeo<>(codec, commandExecutor, name, null);
     }
 
+    /** 取消失效订阅并从 {@link org.redisson.connection.ServiceManager} 注销。 */
     @Override
     public void destroy() {
         PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();

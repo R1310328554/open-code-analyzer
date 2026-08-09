@@ -35,14 +35,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Redis based implementation of Fenced Lock with reentrancy support.
- * <p>
- * Each lock acquisition increases fencing token. It should be
- * checked if it's greater or equal with the previous one by
- * the service guarded by this lock and reject operation if condition is false.
+ * 支持可重入的 Redis 栅栏锁（Fenced Lock）实现。
+ * <p>每次成功加锁递增 fencing token；受保护服务应校验新 token 不小于上次值，
+ * 否则拒绝操作，以防过期锁持有者写入。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonFencedLock extends RedissonLock implements RFencedLock {
 
@@ -90,7 +87,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
         }
         CompletionStage<List<Long>> f = ttlRemainingFuture.thenApply(res -> {
             Long ttl = res.get(0);
-            // lock acquired
+            // 已成功获锁
             if (ttl == -1) {
                 if (leaseTime > 0) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
@@ -162,7 +159,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
             }
 
             Long ttl = res.get(0);
-            // lock acquired
+            // 已成功获锁
             if (ttl == -1) {
                 if (!result.complete(res.get(1))) {
                     unlockAsync(currentThreadId);
@@ -235,7 +232,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
             }
 
             Long ttl = res.get(0);
-            // lock acquired
+            // 已成功获锁
             if (ttl == -1) {
                 unsubscribe(entry, currentThreadId);
                 if (!result.complete(res.get(1))) {
@@ -253,7 +250,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
                 return;
             }
 
-            // waiting for message
+            // 等待 Pub/Sub 解锁通知
             long current = System.currentTimeMillis();
             if (entry.getLatch().tryAcquire()) {
                 tryLockAsync(time, waitTime, leaseTime, unit, entry, result, currentThreadId);

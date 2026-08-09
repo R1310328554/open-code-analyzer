@@ -20,6 +20,11 @@ import org.redisson.misc.ReclosableLatch;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+/**
+ * {@link RedissonCountDownLatch} 的 Pub/Sub 订阅条目。
+ * <p>维护引用计数、{@link org.redisson.misc.ReclosableLatch} 唤醒信号
+ * 及计数变化时的监听器队列。
+ */
 public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDownLatchEntry> {
 
     private int counter;
@@ -34,6 +39,7 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
         this.promise = promise;
     }
 
+    /** 增加一次订阅引用。 */
     public void acquire() {
         counter++;
     }
@@ -49,6 +55,7 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
         return promise;
     }
 
+    /** 注册计数变化或 latch 打开时的回调。 */
     public void addListener(Runnable listener) {
         listeners.add(listener);
     }
@@ -61,6 +68,7 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
         return listeners;
     }
 
+    /** 返回用于阻塞/唤醒等待线程的可重闭 latch。 */
     public ReclosableLatch getLatch() {
         return latch;
     }

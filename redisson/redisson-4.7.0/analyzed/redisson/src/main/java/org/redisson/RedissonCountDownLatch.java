@@ -33,13 +33,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
- *
- * It has a advantage over {@link java.util.concurrent.CountDownLatch} --
- * count can be reset via {@link #trySetCount}.
+ * {@link java.util.concurrent.CountDownLatch} 的分布式替代实现。
+ * <p>相较 JDK 版本，可通过 {@link #trySetCount} 重置计数；
+ * 计数归零时通过 Pub/Sub 唤醒等待线程。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonCountDownLatch extends RedissonObject implements RCountDownLatch {
 
@@ -65,7 +63,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         RedissonCountDownLatchEntry entry = commandExecutor.getInterrupted(future);
         try {
             while (getCount() > 0) {
-                // waiting for open state
+                // 等待 latch 打开（计数归零通知）
                 entry.getLatch().await();
             }
         } finally {
@@ -139,7 +137,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                     return false;
                 }
                 current = System.currentTimeMillis();
-                // waiting for open state
+                // 等待 latch 打开（计数归零通知）
                 promise.join().getLatch().await(remainTime, TimeUnit.MILLISECONDS);
 
                 remainTime -= System.currentTimeMillis() - current;

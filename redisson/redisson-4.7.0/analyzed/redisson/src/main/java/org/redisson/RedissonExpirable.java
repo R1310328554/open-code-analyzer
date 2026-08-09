@@ -30,9 +30,11 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 带过期能力的 Redisson 对象的抽象基类。
+ * <p>封装 {@code PEXPIRE/PEXPIREAT/PERSIST/PTTL/PEXPIRETIME} 及
+ * NX/XX/GT/LT 等条件过期变体；多键 Lua 脚本保证批量键任一成功即返回 true。
  *
+ * @author Nikita Koksharov
  */
 abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
@@ -204,6 +206,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.PEXPIRETIME, getRawName());
     }
 
+    /** 对多个键设置相对过期时间；{@code param} 为 Redis 条件子命令（NX/XX/GT/LT 等）。 */
     protected RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"
@@ -221,6 +224,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
                 + "return result; ", Arrays.asList(keys), timeUnit.toMillis(timeToLive), param);
     }
 
+    /** 对多个键设置绝对过期时间戳（毫秒）。 */
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"
@@ -238,6 +242,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
                 + "return result; ", Arrays.asList(keys), timestamp, param);
     }
 
+    /** 对多个键执行 {@code PERSIST}，清除过期时间。 */
     protected RFuture<Boolean> clearExpireAsync(String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"

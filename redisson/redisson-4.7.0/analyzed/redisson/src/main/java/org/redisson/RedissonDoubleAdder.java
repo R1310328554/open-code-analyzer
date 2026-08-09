@@ -24,9 +24,10 @@ import org.redisson.api.RedissonClient;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RDoubleAdder} 实现：跨节点汇总 {@link java.util.concurrent.atomic.DoubleAdder} 局部增量。
+ * <p>继承 {@link RedissonBaseAdder}，通过 Topic 广播 sum/reset 并写入临时 {@link RAtomicDouble} 键。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RDoubleAdder {
 

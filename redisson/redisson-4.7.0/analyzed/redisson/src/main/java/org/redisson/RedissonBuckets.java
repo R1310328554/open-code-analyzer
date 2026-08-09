@@ -34,9 +34,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 批量 {@link org.redisson.api.RBucket} 操作的 {@link org.redisson.api.RBuckets} 实现。
+ * <p>通过 {@code MGET/MSET/MSETNX/MSETEX} 等命令在集群上分槽批量读写；
+ * 键名经 {@link org.redisson.api.NameMapper} 映射。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonBuckets implements RBuckets {
 

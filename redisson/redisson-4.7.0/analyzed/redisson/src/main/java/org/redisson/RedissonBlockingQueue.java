@@ -36,10 +36,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
- *
- * <p>Queue size limited by Redis server memory amount. This is why {@link #remainingCapacity()} always
- * returns <code>Integer.MAX_VALUE</code>
+ * {@link java.util.concurrent.BlockingQueue} 的分布式并发实现。
+ * <p>基于 Redis {@code BLPOP/BLMPOP/BRPOPLPUSH} 等命令实现阻塞与批量转移；
+ * 容量受 Redis 内存限制，{@link #remainingCapacity()} 恒为 {@code Integer.MAX_VALUE}。
  *
  * @author pdeschen@gmail.com
  * @author Nikita Koksharov

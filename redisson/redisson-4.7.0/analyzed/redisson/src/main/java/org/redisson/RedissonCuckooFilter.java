@@ -35,13 +35,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Distributed implementation of cuckoo filter
- * based on Redis Bloom module {@code CF.*} commands.
+ * 基于 Redis Bloom 模块 {@code CF.*} 命令的分布式布谷鸟过滤器实现。
+ * <p>支持 {@code CF.RESERVE/CF.ADD/CF.INSERT/CF.MEXISTS/CF.DEL} 等操作。
  *
- * @param <V> element type
- *
+ * @param <V> 元素类型
  * @author Nikita Koksharov
- *
  */
 public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCuckooFilter<V> {
 
@@ -237,6 +235,7 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 getRawName());
     }
 
+    /** 组装 {@code CF.INSERT/CF.INSERTNX} 的参数列表（含 CAPACITY/NOCREATE/ITEMS）。 */
     private List<Object> buildInsertParams(CuckooFilterAddArgsImpl<V> a,
                                             List<V> itemList) {
         List<Object> params = new ArrayList<>();

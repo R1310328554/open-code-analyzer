@@ -37,9 +37,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 基于 Redis 字符串 {@code APPEND/GETRANGE/SETRANGE} 的二进制流实现。
+ * <p>提供 {@link java.io.InputStream}/{@link java.io.OutputStream}、
+ * {@link java.nio.channels.SeekableByteChannel} 与 {@link java.nio.channels.AsynchronousByteChannel}，
+ * 将 Redis 键当作可随机读写的字节序列。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBinaryStream {
 

@@ -40,7 +40,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 /**
- * Base class for implementing distributed locks
+ * 分布式锁实现的抽象基类。
+ * <p>封装租约续期、按线程 ID 加解锁、持有计数与 {@link Condition} 等通用逻辑；
+ * 具体加锁算法由 {@link RedissonLock}、{@link RedissonFairLock} 等子类实现。
  *
  * @author Danila Varatyntsev
  * @author Nikita Koksharov
@@ -101,7 +103,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     @Override
     public Condition newCondition() {
-        // TODO implement
+        // TODO 待实现
         throw new UnsupportedOperationException();
     }
 

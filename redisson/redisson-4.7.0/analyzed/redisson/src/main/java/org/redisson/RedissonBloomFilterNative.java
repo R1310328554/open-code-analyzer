@@ -51,11 +51,11 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
 /**
- * Bloom filter based on BF.* commands
+ * 基于 Redis {@code BF.*} 命令的原生布隆过滤器实现。
+ * <p>支持 {@code BF.RESERVE/BF.ADD/BF.INSERT/BF.MEXISTS} 及扫描导出等操作。
  *
  * @author Su Ko
- *
- * @param <T> type of object
+ * @param <T> 元素类型
  */
 public class RedissonBloomFilterNative<T> extends RedissonExpirable implements RBloomFilterNative<T> {
 

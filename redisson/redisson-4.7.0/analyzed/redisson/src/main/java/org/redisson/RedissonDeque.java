@@ -32,11 +32,11 @@ import org.redisson.command.CommandAsyncExecutor;
 import java.util.*;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.Queue}
+ * {@link java.util.Deque} 的分布式并发实现（Redis List）。
+ * <p>支持双端 push/pop、{@code LMOVE/BLMOVE} 转移及键空间事件监听。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 集合元素类型
  */
 public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
