@@ -20,12 +20,8 @@ package com.alibaba.csp.sentinel.slots.block.flow.param;
  * @since 0.2.0
  */
 public enum RollingParamEvent {
-    /**
-     * Indicates that the request successfully passed the slot chain (entry).
-     */
+    /** 请求已成功通过槽链（entry）。 */
     REQUEST_PASSED,
-    /**
-     * Indicates that the request is blocked by a specific slot.
-     */
+    /** 请求被某槽位阻塞。 */
     REQUEST_BLOCKED
 }

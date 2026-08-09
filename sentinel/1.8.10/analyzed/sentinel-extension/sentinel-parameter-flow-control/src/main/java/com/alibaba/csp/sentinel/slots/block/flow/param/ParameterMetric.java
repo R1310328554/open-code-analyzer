@@ -28,7 +28,7 @@ import com.alibaba.csp.sentinel.slots.statistic.cache.CacheMap;
 import com.alibaba.csp.sentinel.slots.statistic.cache.ConcurrentLinkedHashMapWrapper;
 
 /**
- * Metrics for frequent ("hot spot") parameters.
+ * 热点参数指标：维护令牌桶、匀速排队计时器与线程计数。
  *
  * @author Eric Zhao
  * @since 0.2.0
@@ -41,27 +41,19 @@ public class ParameterMetric {
 
     private final Object lock = new Object();
 
-    /**
-     * Format: (rule, (value, timeRecorder))
-     *
-     * @since 1.6.0
-     */
+    /** 结构：(规则, (参数值, 上次通过时间))，用于匀速排队。 @since 1.6.0 */
     private final Map<ParamFlowRule, CacheMap<Object, AtomicLong>> ruleTimeCounters = new HashMap<>();
 
-    /**
-     * Format: (rule, (value, tokenCounter))
-     *
-     * @since 1.6.0
-     */
+    /** 结构：(规则, (参数值, 令牌状态))，用于 QPS 令牌桶。 @since 1.6.0 */
     private final Map<ParamFlowRule, CacheMap<Object, AtomicReference<TokenUpdateStatus>>> ruleTokenCounter = new HashMap<>();
 
     private final Map<Integer, CacheMap<Object, AtomicInteger>> threadCountMap = new HashMap<>();
 
     /**
-     * Get the token counter for given parameter rule.
+     * 获取指定规则的令牌计数器映射。
      *
-     * @param rule valid parameter rule
-     * @return the associated token counter
+     * @param rule 合法参数规则
+     * @return 参数值 → 令牌状态
      * @since 1.8.8
      */
     CacheMap<Object, AtomicReference<TokenUpdateStatus>> getRuleStampedTokenCounter(ParamFlowRule rule) {
@@ -77,10 +69,10 @@ public class ParameterMetric {
     }
 
     /**
-     * Get the time record counter for given parameter rule.
+     * 获取指定规则的匀速排队时间记录器。
      *
-     * @param rule valid parameter rule
-     * @return the associated time counter
+     * @param rule 合法参数规则
+     * @return 参数值 → 上次通过时间
      * @since 1.6.0
      */
     public CacheMap<Object, AtomicLong> getRuleTimeCounter(ParamFlowRule rule) {
@@ -252,9 +244,9 @@ public class ParameterMetric {
     }
 
     /**
-     * Get the token counter map. Package-private for test.
+     * 获取令牌计数器映射（包级可见，供测试使用）。
      *
-     * @return the token counter map
+     * @return 规则 → 令牌映射
      */
     Map<ParamFlowRule, CacheMap<Object, AtomicReference<TokenUpdateStatus>>> getRuleTokenCounterMap() {
         return ruleTokenCounter;

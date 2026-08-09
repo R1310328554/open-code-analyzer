@@ -20,8 +20,8 @@ import com.alibaba.csp.sentinel.slots.statistic.ParamFlowStatisticExitCallback;
 import com.alibaba.csp.sentinel.slots.statistic.StatisticSlotCallbackRegistry;
 
 /**
- * Init function for adding callbacks to {@link StatisticSlotCallbackRegistry} to record metrics
- * for frequent parameters in {@link com.alibaba.csp.sentinel.slots.statistic.StatisticSlot}.
+ * 初始化函数：向 {@link StatisticSlotCallbackRegistry} 注册热点参数统计回调，
+ * 在 {@link com.alibaba.csp.sentinel.slots.statistic.StatisticSlot} 中记录参数级指标。
  *
  * @author Eric Zhao
  * @since 0.2.0

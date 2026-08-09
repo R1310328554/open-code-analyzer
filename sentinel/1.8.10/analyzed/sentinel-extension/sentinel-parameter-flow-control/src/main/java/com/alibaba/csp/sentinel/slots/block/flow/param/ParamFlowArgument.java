@@ -16,12 +16,12 @@
 package com.alibaba.csp.sentinel.slots.block.flow.param;
 
 /**
- * ParamFlowArgument
+ * 热点参数流控参数接口：实现类可自定义用于限流的键值。
  */
 public interface ParamFlowArgument {
 
     /**
-     * @return the object as a key of param flow limit
+     * @return 作为热点参数流控键的对象
      */
     Object paramFlowKey();
 }

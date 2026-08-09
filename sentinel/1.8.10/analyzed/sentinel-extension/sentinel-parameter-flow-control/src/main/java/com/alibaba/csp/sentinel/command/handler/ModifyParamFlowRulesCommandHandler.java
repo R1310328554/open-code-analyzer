@@ -30,6 +30,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.fastjson.JSONArray;
 
 /**
+ * 命令处理器：接收并全量替换热点参数流控规则，可选同步写入可写数据源。
+ *
  * @author Eric Zhao
  * @since 0.2.0
  */
@@ -51,7 +53,7 @@ public class ModifyParamFlowRulesCommandHandler implements CommandHandler<String
             return CommandResponse.ofFailure(e, "decode rule data error");
         }
 
-        RecordLog.info("[API Server] Receiving rule change (type:parameter flow rule): {}", data);
+        RecordLog.info("[API Server] 收到规则变更（类型：热点参数流控）: {}", data);
 
         String result = SUCCESS_MSG;
         List<ParamFlowRule> flowRules = JSONArray.parseArray(data, ParamFlowRule.class);
@@ -63,12 +65,12 @@ public class ModifyParamFlowRulesCommandHandler implements CommandHandler<String
     }
 
     /**
-     * Write target value to given data source.
+     * 将规则列表写入可写数据源持久化。
      *
-     * @param dataSource writable data source
-     * @param value target value to save
-     * @param <T> value type
-     * @return true if write successful or data source is empty; false if error occurs
+     * @param dataSource 可写数据源
+     * @param value 待保存的规则列表
+     * @param <T> 值类型
+     * @return 写入成功或数据源为空时返回 true；异常时返回 false
      */
     private <T> boolean writeToDataSource(WritableDataSource<T> dataSource, T value) {
         if (dataSource != null) {

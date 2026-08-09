@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.slots.block.flow.param;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
- * Block exception for frequent ("hot-spot") parameter flow control.
+ * 热点参数流控触发时抛出的阻塞异常。
  *
  * @author jialiang.linjl
  * @since 0.2.0
@@ -53,9 +53,9 @@ public class ParamFlowException extends BlockException {
     }
 
     /**
-     * Get the parameter value that triggered the parameter flow control.
+     * 获取触发参数流控的参数值。
      *
-     * @return the parameter value
+     * @return 参数值字符串
      * @since 1.4.2
      */
     public String getLimitParam() {
@@ -63,10 +63,10 @@ public class ParamFlowException extends BlockException {
     }
 
     /**
-     * Get triggered rule.
-     * Note: the rule result is a reference to rule map and SHOULD NOT be modified.
+     * 获取触发的规则。
+     * 注意：返回的规则引用自内部规则映射，请勿修改。
      *
-     * @return triggered rule
+     * @return 触发的 ParamFlowRule
      * @since 1.4.2
      */
     @Override

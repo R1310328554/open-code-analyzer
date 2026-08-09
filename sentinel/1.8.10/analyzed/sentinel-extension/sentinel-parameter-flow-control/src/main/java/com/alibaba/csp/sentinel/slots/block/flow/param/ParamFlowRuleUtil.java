@@ -34,15 +34,17 @@ import com.alibaba.csp.sentinel.util.function.Function;
 import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
+ * 热点参数流控规则工具类：校验、解析例外项与构建资源映射。
+ *
  * @author Eric Zhao
  */
 public final class ParamFlowRuleUtil {
 
     /**
-     * Check whether the provided rule is valid.
+     * 校验参数流控规则是否合法。
      *
-     * @param rule any parameter rule
-     * @return true if valid, otherwise false
+     * @param rule 待校验规则
+     * @return 合法返回 true，否则 false
      */
     public static boolean isValidRule(ParamFlowRule rule) {
         return rule != null && !StringUtil.isBlank(rule.getResource()) && rule.getCount() >= 0
@@ -81,9 +83,9 @@ public final class ParamFlowRuleUtil {
     }
 
     /**
-     * Fill the parameter rule with parsed items.
+     * 解析并填充规则的例外项映射。
      *
-     * @param rule valid parameter rule
+     * @param rule 合法规则
      */
     public static void fillExceptionFlowItems(ParamFlowRule rule) {
         if (rule != null) {
@@ -97,10 +99,10 @@ public final class ParamFlowRuleUtil {
     }
 
     /**
-     * Build the flow rule map from raw list of flow rules, grouping by resource name.
+     * 将原始规则列表按资源名聚合为映射。
      *
-     * @param list raw list of flow rules
-     * @return constructed new flow rule map; empty map if list is null or empty, or no valid rules
+     * @param list 原始规则列表
+     * @return 资源名 → 规则列表；无有效规则时返回空映射
      * @since 1.6.1
      */
     public static Map<String, List<ParamFlowRule>> buildParamRuleMap(List<ParamFlowRule> list) {
@@ -202,7 +204,7 @@ public final class ParamFlowRuleUtil {
         }
         Map<Object, Integer> itemMap = new HashMap<>(items.size());
         for (ParamFlowItem item : items) {
-            // Value should not be null.
+            // 例外项参数值不可为 null
             Object value;
             try {
                 value = parseItemValue(item.getObject(), item.getClassType());
@@ -224,10 +226,10 @@ public final class ParamFlowRuleUtil {
             throw new IllegalArgumentException("Null value");
         }
         if (StringUtil.isBlank(classType)) {
-            // If the class type is not provided, then treat it as string.
+            // 未指定类型时按字符串处理
             return value;
         }
-        // Handle primitive type.
+        // 解析基本类型及包装类
         if (int.class.toString().equals(classType) || Integer.class.getName().equals(classType)) {
             return Integer.parseInt(value);
         } else if (boolean.class.toString().equals(classType) || Boolean.class.getName().equals(classType)) {

@@ -25,7 +25,7 @@ import com.alibaba.csp.sentinel.spi.Spi;
 import java.util.List;
 
 /**
- * A processor slot that is responsible for flow control by frequent ("hot spot") parameters.
+ * 热点参数流控处理器槽：按方法参数值执行 QPS/线程数限流。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -52,7 +52,7 @@ public class ParamFlowSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
             if (-paramIdx <= length) {
                 rule.setParamIdx(length + paramIdx);
             } else {
-                // Illegal index, give it a illegal positive value, latter rule checking will pass.
+                // 非法索引转为正数占位，后续校验将放行
                 rule.setParamIdx(-paramIdx);
             }
         }
@@ -70,14 +70,14 @@ public class ParamFlowSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
         for (ParamFlowRule rule : rules) {
             applyRealParamIdx(rule, args.length);
 
-            // Initialize the parameter metrics.
+            // 初始化该规则对应的参数指标
             ParameterMetricStorage.initParamMetricsFor(resourceWrapper, rule);
 
             if (!ParamFlowChecker.passCheck(resourceWrapper, rule, count, args)) {
                 String triggeredParam = "";
                 if (args.length > rule.getParamIdx()) {
                     Object value = args[rule.getParamIdx()];
-                    // Assign actual value with the result of paramFlowKey method
+                    // 使用 paramFlowKey() 获取实际触发限流的参数值
                     if (value instanceof ParamFlowArgument) {
                         value = ((ParamFlowArgument) value).paramFlowKey();
                     }

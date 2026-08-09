@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Rule checker for parameter flow control.
+ * 热点参数流控规则校验器：支持本地 QPS/线程数限流与集群模式。
  *
  * @author Eric Zhao
  * @since 0.2.0
@@ -53,14 +53,14 @@ public final class ParamFlowChecker {
             return true;
         }
 
-        // Get parameter value.
+        // 提取参数值
         Object value = args[paramIdx];
 
-        // Assign value with the result of paramFlowKey method
+        // 若参数实现 ParamFlowArgument，则使用 paramFlowKey() 作为实际限流键
         if (value instanceof ParamFlowArgument) {
             value = ((ParamFlowArgument) value).paramFlowKey();
         }
-        // If value is null, then pass
+        // 参数值为 null 时直接放行
         if (value == null) {
             return true;
         }
@@ -131,7 +131,7 @@ public final class ParamFlowChecker {
             return true;
         }
 
-        // Calculate max token count (threshold)
+        // 计算最大令牌数（阈值），含例外项单独阈值
         Set<Object> exclusionItems = rule.getParsedHotItems().keySet();
         long tokenCount = (long) rule.getCount();
         if (exclusionItems.contains(value)) {
@@ -154,14 +154,14 @@ public final class ParamFlowChecker {
                     new TokenUpdateStatus(currentTime, maxCount - acquireCount)
             ));
             if (atomicLastStatus == null) {
-                // Token never added, just replenish the tokens and consume {@code acquireCount} immediately.
+                // 首次访问：初始化令牌并立即消耗 acquireCount
                 return true;
             }
 
-            // Calculate the time duration since last token was added.
+            // 计算距上次补充令牌的时间间隔
             TokenUpdateStatus lastStatus = atomicLastStatus.get();
             long passTime = currentTime - lastStatus.getLastAddTokenTime();
-            // A simplified token bucket algorithm that will replenish the tokens only when statistic window has passed.
+            // 简化令牌桶：仅在统计窗口过期后补充令牌
             long newQps;
             if (passTime > rule.getDurationInSec() * 1000) {
                 long restQps = lastStatus.getRestQps();
@@ -274,8 +274,7 @@ public final class ParamFlowChecker {
 
             TokenService clusterService = pickClusterService();
             if (clusterService == null) {
-                // No available cluster client or server, fallback to local or
-                // pass in need.
+                // 无可用集群客户端/服务端，按配置降级本地校验或直接放行
                 return fallbackToLocalOrPass(resourceWrapper, rule, count, params);
             }
 
@@ -299,7 +298,7 @@ public final class ParamFlowChecker {
         if (rule.getClusterConfig().isFallbackToLocalWhenFail()) {
             return passLocalCheck(resourceWrapper, rule, count, value);
         } else {
-            // The rule won't be activated, just pass.
+            // 未启用降级本地校验时，集群失败则直接放行
             return true;
         }
     }

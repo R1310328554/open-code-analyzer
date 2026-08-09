@@ -21,8 +21,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowSlot;
  * @author Eric Zhao
  * @since 0.2.0
  *
- * @deprecated since 1.7.2, we can use @Spi(order = -3000) to adjust the order of {@link ParamFlowSlot},
- * this class is reserved for compatibility with older versions.
+ * @deprecated 自 1.7.2 起已废弃；可通过 {@link ParamFlowSlot} 上的 @Spi(order = -3000) 调整槽位顺序，
+ * 本类仅为兼容旧版本保留。
  *
  * @see ParamFlowSlot
  * @see DefaultSlotChainBuilder

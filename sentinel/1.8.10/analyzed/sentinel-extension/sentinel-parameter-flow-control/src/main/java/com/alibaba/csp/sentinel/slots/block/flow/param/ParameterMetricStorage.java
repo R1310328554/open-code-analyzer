@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * 热点参数指标存储：按资源名维护 {@link ParameterMetric} 实例。
+ *
  * @author Eric Zhao
  * @since 1.6.1
  */
@@ -30,17 +32,14 @@ public final class ParameterMetricStorage {
 
     private static final Map<String, ParameterMetric> metricsMap = new ConcurrentHashMap<>();
 
-    /**
-     * Lock for a specific resource.
-     */
+    /** 创建指标时的全局锁。 */
     private static final Object LOCK = new Object();
 
     /**
-     * Init the parameter metric and index map for given resource.
-     * Package-private for test.
+     * 为指定资源初始化参数指标及规则相关计数器。
      *
-     * @param resourceWrapper resource to init
-     * @param rule            relevant rule
+     * @param resourceWrapper 资源包装
+     * @param rule 关联规则
      */
     public static void initParamMetricsFor(ResourceWrapper resourceWrapper, /*@Valid*/ ParamFlowRule rule) {
         if (resourceWrapper == null || resourceWrapper.getName() == null) {
@@ -48,7 +47,7 @@ public final class ParameterMetricStorage {
         }
         String resourceName = resourceWrapper.getName();
         ParameterMetric metric;
-        // Assume that the resource is valid.
+        // 假定资源名合法，按需懒创建 ParameterMetric
         if ((metric = metricsMap.get(resourceName)) == null) {
             synchronized (LOCK) {
                 if ((metric = metricsMap.get(resourceName)) == null) {

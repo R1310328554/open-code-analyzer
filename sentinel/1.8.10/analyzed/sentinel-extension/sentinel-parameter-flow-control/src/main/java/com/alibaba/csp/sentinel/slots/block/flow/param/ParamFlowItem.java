@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.slots.block.flow.param;
 
 /**
- * A flow control item for a specific parameter value.
+ * 针对特定参数值的流控例外项（单独阈值）。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -36,6 +36,7 @@ public class ParamFlowItem {
         this.classType = classType;
     }
 
+    /** 根据运行时对象构造例外项，自动记录 classType。 */
     public static <T> ParamFlowItem newItem(T object, Integer count) {
         if (object == null) {
             throw new IllegalArgumentException("Invalid object: null");

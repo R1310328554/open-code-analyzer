@@ -28,7 +28,7 @@ import com.alibaba.csp.sentinel.slots.block.RuleManager;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * Manager for frequent ("hot-spot") parameter flow rules.
+ * 热点参数流控规则管理器：加载、监听与按资源聚合规则。
  *
  * @author jialiang.linjl
  * @author Eric Zhao
@@ -45,9 +45,9 @@ public final class ParamFlowRuleManager {
     }
 
     /**
-     * Load parameter flow rules. Former rules will be replaced.
+     * 加载热点参数流控规则，全量替换已有规则。
      *
-     * @param rules new rules to load.
+     * @param rules 新规则列表
      */
     public static void loadRules(List<ParamFlowRule> rules) {
         try {
@@ -58,11 +58,10 @@ public final class ParamFlowRuleManager {
     }
 
     /**
-     * Listen to the {@link SentinelProperty} for {@link ParamFlowRule}s. The
-     * property is the source of {@link ParamFlowRule}s. Parameter flow rules
-     * can also be set by {@link #loadRules(List)} directly.
+     * 注册 {@link SentinelProperty} 作为规则来源并监听变更；
+     * 也可直接调用 {@link #loadRules(List)} 设置规则。
      *
-     * @param property the property to listen
+     * @param property 动态属性
      */
     public static void register2Property(SentinelProperty<List<ParamFlowRule>> property) {
         AssertUtil.notNull(property, "property cannot be null");
@@ -83,9 +82,9 @@ public final class ParamFlowRuleManager {
     }
 
     /**
-     * Get a copy of the rules.
+     * 获取全部规则的副本。
      *
-     * @return a new copy of the rules.
+     * @return 规则列表副本
      */
     public static List<ParamFlowRule> getRules() {
         return PARAM_FLOW_RULES.getRules();
@@ -110,13 +109,13 @@ public final class ParamFlowRuleManager {
         private Map<String, List<ParamFlowRule>> aggregateAndPrepareParamRules(List<ParamFlowRule> list) {
             Map<String, List<ParamFlowRule>> newRuleMap = ParamFlowRuleUtil.buildParamRuleMap(list);
             if (newRuleMap == null || newRuleMap.isEmpty()) {
-                // No parameter flow rules, so clear all the metrics.
+                // 无参数流控规则时清空全部参数指标
                 ParameterMetricStorage.getMetricsMap().clear();
                 RecordLog.info("[ParamFlowRuleManager] No parameter flow rules, clearing all parameter metrics");
                 return newRuleMap;
             }
 
-            // Clear unused parameter metrics.
+            // 清理已移除资源或规则的参数指标
             for (Map.Entry<String, List<ParamFlowRule>> entry : PARAM_FLOW_RULES.getOriginalRules().entrySet()) {
                 String resource = entry.getKey();
                 if (!newRuleMap.containsKey(resource)) {

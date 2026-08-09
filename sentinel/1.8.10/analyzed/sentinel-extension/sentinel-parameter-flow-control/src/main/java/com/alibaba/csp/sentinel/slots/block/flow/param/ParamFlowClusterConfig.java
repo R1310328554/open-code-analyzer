@@ -19,28 +19,22 @@ import com.alibaba.csp.sentinel.slots.block.ClusterRuleConstant;
 import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 
 /**
- * Parameter flow rule config in cluster mode.
+ * 热点参数流控在集群模式下的配置项。
  *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ParamFlowClusterConfig {
 
-    /**
-     * Global unique ID.
-     */
+    /** 集群流控规则的全局唯一 ID。 */
     private Long flowId;
 
-    /**
-     * Threshold type (average by local value or global value).
-     */
+    /** 阈值类型（按本地均值或全局均值统计）。 */
     private int thresholdType = ClusterRuleConstant.FLOW_THRESHOLD_AVG_LOCAL;
     private boolean fallbackToLocalWhenFail = false;
 
     private int sampleCount = ClusterRuleConstant.DEFAULT_CLUSTER_SAMPLE_COUNT;
-    /**
-     * The time interval length of the statistic sliding window (in milliseconds)
-     */
+    /** 统计滑动窗口的时间长度（毫秒）。 */
     private int windowIntervalMs = RuleConstant.DEFAULT_WINDOW_INTERVAL_MS;
 
     public Long getFlowId() {
