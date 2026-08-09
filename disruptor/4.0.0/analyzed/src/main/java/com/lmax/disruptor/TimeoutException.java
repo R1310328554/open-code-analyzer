@@ -1,15 +1,14 @@
 package com.lmax.disruptor;
 
 /**
- * Wait strategies may throw this Exception to inform callers that a
- * message has not been detected within a specific time window.
- * For efficiency, a single instance is provided.
+ * 等待策略可在指定时间窗口内未检测到消息时抛出本异常以通知调用方。
+ * 为节省开销，提供单例实例。
  */
 @SuppressWarnings({"serial", "lgtm[java/non-sync-override]"})
 public final class TimeoutException extends Exception
 {
     /**
-     * The efficiency saving singleton instance
+     * 单例实例，避免重复分配
      */
     public static final TimeoutException INSTANCE = new TimeoutException();
 

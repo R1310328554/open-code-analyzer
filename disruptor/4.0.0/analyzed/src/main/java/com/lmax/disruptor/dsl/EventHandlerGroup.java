@@ -26,9 +26,9 @@ import com.lmax.disruptor.SequenceBarrier;
 import java.util.Arrays;
 
 /**
- * A group of {@link EventProcessor}s used as part of the {@link Disruptor}.
+ * 作为 {@link Disruptor} 组成部分的 {@link EventProcessor} 组。
  *
- * @param <T> the type of entry used by the event processors.
+ * @param <T> 事件处理器处理的事件类型
  */
 public class EventHandlerGroup<T>
 {
@@ -47,10 +47,10 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * Create a new event handler group that combines the consumers in this group with <code>otherHandlerGroup</code>.
+     * 将本组消费者与 {@code otherHandlerGroup} 合并为新的处理器组。
      *
-     * @param otherHandlerGroup the event handler group to combine.
-     * @return a new EventHandlerGroup combining the existing and new consumers into a single dependency group.
+     * @param otherHandlerGroup 要合并的事件处理器组
+     * @return 合并现有与新消费者后的 {@link EventHandlerGroup}
      */
     public EventHandlerGroup<T> and(final EventHandlerGroup<T> otherHandlerGroup)
     {
@@ -63,10 +63,10 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * Create a new event handler group that combines the handlers in this group with <code>processors</code>.
+     * 将本组处理器与 {@code processors} 合并为新的处理器组。
      *
-     * @param processors the processors to combine.
-     * @return a new EventHandlerGroup combining the existing and new processors into a single dependency group.
+     * @param processors 要合并的处理器
+     * @return 合并现有与新处理器后的 {@link EventHandlerGroup}
      */
     public EventHandlerGroup<T> and(final EventProcessor... processors)
     {
@@ -83,16 +83,15 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * <p>Set up batch handlers to consume events from the ring buffer. These handlers will only process events
-     * after every {@link EventProcessor} in this group has processed the event.</p>
+     * <p>配置批处理处理器消费 RingBuffer 事件。仅当本组中每个 {@link EventProcessor}
+     * 都已处理完该事件后，这些处理器才会开始处理。</p>
      *
-     * <p>This method is generally used as part of a chain. For example if the handler <code>A</code> must
-     * process events before handler <code>B</code>:</p>
+     * <p>通常作为链式调用的一部分。例如处理器 {@code A} 必须在 {@code B} 之前处理事件：</p>
      *
      * <pre><code>dw.handleEventsWith(A).then(B);</code></pre>
      *
-     * @param handlers the batch handlers that will process events.
-     * @return a {@link EventHandlerGroup} that can be used to set up a event processor barrier over the created event processors.
+     * @param handlers 将处理事件的批处理器
+     * @return 可用于在新建事件处理器上设置屏障的 {@link EventHandlerGroup}
      */
     @SafeVarargs
     public final EventHandlerGroup<T> then(final EventHandler<? super T>... handlers)
@@ -101,17 +100,16 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * <p>Set up batch handlers to consume events from the ring buffer. These handlers will only process events
-     * after every {@link EventProcessor} in this group has processed the event.</p>
+     * <p>配置可回卷批处理处理器消费 RingBuffer 事件。仅当本组中每个 {@link EventProcessor}
+     * 都已处理完该事件后，这些处理器才会开始处理。</p>
      *
-     * <p>This method is generally used as part of a chain. For example if the handler <code>A</code> must
-     * process events before handler <code>B</code>:</p>
+     * <p>通常作为链式调用的一部分。例如处理器 {@code A} 必须在 {@code B} 之前处理事件：</p>
      *
      * <pre><code>dw.handleEventsWith(A).then(B);</code></pre>
      *
-     * @param batchRewindStrategy a {@link BatchRewindStrategy} for customizing how to handle a {@link RewindableException}.
-     * @param handlers            the rewindable event handlers that will process events.
-     * @return a {@link EventHandlerGroup} that can be used to set up a event processor barrier over the created event processors.
+     * @param batchRewindStrategy 自定义 {@link RewindableException} 处理方式的 {@link BatchRewindStrategy}
+     * @param handlers 将处理事件的可回卷处理器
+     * @return 可用于在新建事件处理器上设置屏障的 {@link EventHandlerGroup}
      */
     @SafeVarargs
     public final EventHandlerGroup<T> then(final BatchRewindStrategy batchRewindStrategy,
@@ -121,14 +119,13 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * <p>Set up custom event processors to handle events from the ring buffer. The Disruptor will
-     * automatically start these processors when {@link Disruptor#start()} is called.</p>
+     * <p>配置自定义事件处理器消费 RingBuffer 事件。调用 {@link Disruptor#start()} 时
+     * Disruptor 会自动启动这些处理器。</p>
      *
-     * <p>This method is generally used as part of a chain. For example if the handler <code>A</code> must
-     * process events before handler <code>B</code>:</p>
+     * <p>通常作为链式调用的一部分。例如处理器 {@code A} 必须在 {@code B} 之前处理事件。</p>
      *
-     * @param eventProcessorFactories the event processor factories to use to create the event processors that will process events.
-     * @return a {@link EventHandlerGroup} that can be used to chain dependencies.
+     * @param eventProcessorFactories 用于创建事件处理器的工厂
+     * @return 可用于继续链接依赖关系的 {@link EventHandlerGroup}
      */
     @SafeVarargs
     public final EventHandlerGroup<T> then(final EventProcessorFactory<T>... eventProcessorFactories)
@@ -137,16 +134,15 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * <p>Set up batch handlers to handle events from the ring buffer. These handlers will only process events
-     * after every {@link EventProcessor} in this group has processed the event.</p>
+     * <p>配置批处理处理器处理 RingBuffer 事件。仅当本组中每个 {@link EventProcessor}
+     * 都已处理完该事件后，这些处理器才会开始处理。</p>
      *
-     * <p>This method is generally used as part of a chain. For example if <code>A</code> must
-     * process events before <code>B</code>:</p>
+     * <p>通常作为链式调用的一部分。例如 {@code A} 必须在 {@code B} 之前处理事件：</p>
      *
      * <pre><code>dw.after(A).handleEventsWith(B);</code></pre>
      *
-     * @param handlers the batch handlers that will process events.
-     * @return a {@link EventHandlerGroup} that can be used to set up a event processor barrier over the created event processors.
+     * @param handlers 将处理事件的批处理器
+     * @return 可用于在新建事件处理器上设置屏障的 {@link EventHandlerGroup}
      */
     @SafeVarargs
     public final EventHandlerGroup<T> handleEventsWith(final EventHandler<? super T>... handlers)
@@ -155,17 +151,16 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * <p>Set up batch handlers to handle events from the ring buffer. These handlers will only process events
-     * after every {@link EventProcessor} in this group has processed the event.</p>
+     * <p>配置可回卷批处理处理器处理 RingBuffer 事件。仅当本组中每个 {@link EventProcessor}
+     * 都已处理完该事件后，这些处理器才会开始处理。</p>
      *
-     * <p>This method is generally used as part of a chain. For example if <code>A</code> must
-     * process events before <code>B</code>:</p>
+     * <p>通常作为链式调用的一部分。例如 {@code A} 必须在 {@code B} 之前处理事件：</p>
      *
      * <pre><code>dw.after(A).handleEventsWith(B);</code></pre>
      *
-     * @param batchRewindStrategy a {@link BatchRewindStrategy} for customizing how to handle a {@link RewindableException}.
-     * @param handlers            the rewindable event handlers that will process events.
-     * @return a {@link EventHandlerGroup} that can be used to set up a event processor barrier over the created event processors.
+     * @param batchRewindStrategy 自定义 {@link RewindableException} 处理方式的 {@link BatchRewindStrategy}
+     * @param handlers 将处理事件的可回卷处理器
+     * @return 可用于在新建事件处理器上设置屏障的 {@link EventHandlerGroup}
      */
     @SafeVarargs
     public final EventHandlerGroup<T> handleEventsWith(final BatchRewindStrategy batchRewindStrategy,
@@ -175,16 +170,15 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * <p>Set up custom event processors to handle events from the ring buffer. The Disruptor will
-     * automatically start these processors when {@link Disruptor#start()} is called.</p>
+     * <p>配置自定义事件处理器处理 RingBuffer 事件。调用 {@link Disruptor#start()} 时
+     * Disruptor 会自动启动这些处理器。</p>
      *
-     * <p>This method is generally used as part of a chain. For example if <code>A</code> must
-     * process events before <code>B</code>:</p>
+     * <p>通常作为链式调用的一部分。例如 {@code A} 必须在 {@code B} 之前处理事件：</p>
      *
      * <pre><code>dw.after(A).handleEventsWith(B);</code></pre>
      *
-     * @param eventProcessorFactories the event processor factories to use to create the event processors that will process events.
-     * @return a {@link EventHandlerGroup} that can be used to chain dependencies.
+     * @param eventProcessorFactories 用于创建事件处理器的工厂
+     * @return 可用于继续链接依赖关系的 {@link EventHandlerGroup}
      */
     @SafeVarargs
     public final EventHandlerGroup<T> handleEventsWith(final EventProcessorFactory<T>... eventProcessorFactories)
@@ -193,11 +187,10 @@ public class EventHandlerGroup<T>
     }
 
     /**
-     * Create a dependency barrier for the processors in this group.
-     * This allows custom event processors to have dependencies on
-     * {@link com.lmax.disruptor.BatchEventProcessor}s created by the disruptor.
+     * 为本组处理器创建依赖屏障，使自定义事件处理器可依赖
+     * Disruptor 创建的 {@link com.lmax.disruptor.BatchEventProcessor}。
      *
-     * @return a {@link SequenceBarrier} including all the processors in this group.
+     * @return 包含本组所有处理器的 {@link SequenceBarrier}
      */
     public SequenceBarrier asSequenceBarrier()
     {

@@ -1,17 +1,17 @@
 package com.lmax.disruptor;
 
 /**
- * The result returned from the {@link BatchRewindStrategy} that decides whether to rewind or throw the exception
+ * {@link BatchRewindStrategy} 的返回结果，决定是回卷重放还是向上抛出异常。
  */
 public enum RewindAction
 {
     /**
-     * Rewind and replay the whole batch from  he beginning
+     * 回卷并从批次开头重新播放
      */
     REWIND,
 
     /**
-     * rethrows the exception, delegating it to the configured {@link ExceptionHandler}
+     * 重新抛出异常，交由已配置的 {@link ExceptionHandler} 处理
      */
     THROW
 }

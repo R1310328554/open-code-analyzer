@@ -22,10 +22,9 @@ import com.lmax.disruptor.SequenceBarrier;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Wrapper class to tie together a particular event processing stage</p>
+ * 包装特定事件处理阶段的辅助类。
  *
- * <p><p>Tracks the event processor instance, the event handler instance, and sequence barrier which the stage is attached to.</p>
- *
+ * <p>跟踪事件处理器实例、事件处理器实例，以及该阶段所附着的序号屏障。</p>
  */
 class EventProcessorInfo implements ConsumerInfo
 {
@@ -81,7 +80,7 @@ class EventProcessorInfo implements ConsumerInfo
     }
 
     /**
-     *
+     * 标记本处理器已被其他屏障引用，不再视为依赖链末端。
      */
     @Override
     public void markAsUsedInBarrier()

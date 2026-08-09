@@ -5,12 +5,11 @@ import java.util.concurrent.TimeUnit;
 import static com.lmax.disruptor.util.Util.awaitNanos;
 
 /**
- * Blocking strategy that uses a lock and condition variable for {@link EventProcessor}s waiting on a barrier.
- * However it will periodically wake up if it has been idle for specified period by throwing a
- * {@link TimeoutException}.  To make use of this, the event handler class should override
- * {@link EventHandler#onTimeout(long)}, which the {@link BatchEventProcessor} will call if the timeout occurs.
+ * 使用锁与条件变量让 {@link EventProcessor} 在屏障上阻塞等待的等待策略。
+ * 若在指定空闲时间后仍未等到事件，则抛出 {@link TimeoutException}。
+ * 事件处理器可覆盖 {@link EventHandler#onTimeout(long)}，{@link BatchEventProcessor} 会在超时时调用它。
  *
- * <p>This strategy can be used when throughput and low-latency are not as important as CPU resource.
+ * <p>当吞吐量与低延迟不如 CPU 资源重要时可选用本策略。
  */
 public class TimeoutBlockingWaitStrategy implements WaitStrategy
 {
@@ -18,8 +17,8 @@ public class TimeoutBlockingWaitStrategy implements WaitStrategy
     private final long timeoutInNanos;
 
     /**
-     * @param timeout how long to wait before waking up
-     * @param units the unit in which timeout is specified
+     * @param timeout 唤醒前的最长等待时间
+     * @param units 超时时间单位
      */
     public TimeoutBlockingWaitStrategy(final long timeout, final TimeUnit units)
     {
@@ -37,6 +36,7 @@ public class TimeoutBlockingWaitStrategy implements WaitStrategy
         long timeoutNanos = timeoutInNanos;
 
         long availableSequence;
+        // 步骤 1：若主游标尚未到达目标序号，在互斥锁上带超时地等待
         if (cursorSequence.get() < sequence)
         {
             synchronized (mutex)
@@ -53,6 +53,7 @@ public class TimeoutBlockingWaitStrategy implements WaitStrategy
             }
         }
 
+        // 步骤 2：主游标已推进后，等待依赖序号追上目标
         while ((availableSequence = dependentSequence.get()) < sequence)
         {
             barrier.checkAlert();

@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Provides a repository mechanism to associate {@link EventHandler}s with {@link EventProcessor}s
+ * 将 {@link EventHandler} 与 {@link EventProcessor} 关联起来的仓储机制。
  */
 class ConsumerRepository
 {

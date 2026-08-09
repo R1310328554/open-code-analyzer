@@ -18,10 +18,10 @@ package com.lmax.disruptor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Phased wait strategy for waiting {@link EventProcessor}s on a barrier.
+ * 供 {@link EventProcessor} 在屏障上等待的分阶段退避等待策略。
  *
- * <p>This strategy can be used when throughput and low-latency are not as important as CPU resource.
- * Spins, then yields, then waits using the configured fallback WaitStrategy.
+ * <p>当吞吐量与低延迟不如 CPU 资源重要时可选用本策略。
+ * 先忙等自旋，再 {@link Thread#yield()}，最后回退到配置的备用 {@link WaitStrategy}。
  */
 public final class PhasedBackoffWaitStrategy implements WaitStrategy
 {
@@ -31,11 +31,10 @@ public final class PhasedBackoffWaitStrategy implements WaitStrategy
     private final WaitStrategy fallbackStrategy;
 
     /**
-     *
-     * @param spinTimeout The maximum time in to busy spin for.
-     * @param yieldTimeout The maximum time in to yield for.
-     * @param units Time units used for the timeout values.
-     * @param fallbackStrategy After spinning + yielding, the strategy to fall back to
+     * @param spinTimeout 忙等自旋的最长时间
+     * @param yieldTimeout 让出 CPU 的最长时间
+     * @param units 上述超时值的时间单位
+     * @param fallbackStrategy 自旋与让出结束后使用的回退策略
      */
     public PhasedBackoffWaitStrategy(
         final long spinTimeout,
@@ -49,12 +48,12 @@ public final class PhasedBackoffWaitStrategy implements WaitStrategy
     }
 
     /**
-     * Construct {@link PhasedBackoffWaitStrategy} with fallback to {@link BlockingWaitStrategy}
+     * 构造以 {@link BlockingWaitStrategy} 为回退的 {@link PhasedBackoffWaitStrategy}。
      *
-     * @param spinTimeout The maximum time in to busy spin for.
-     * @param yieldTimeout The maximum time in to yield for.
-     * @param units Time units used for the timeout values.
-     * @return The constructed wait strategy.
+     * @param spinTimeout 忙等自旋的最长时间
+     * @param yieldTimeout 让出 CPU 的最长时间
+     * @param units 上述超时值的时间单位
+     * @return 构造完成的等待策略
      */
     public static PhasedBackoffWaitStrategy withLock(
         final long spinTimeout,
@@ -67,12 +66,12 @@ public final class PhasedBackoffWaitStrategy implements WaitStrategy
     }
 
     /**
-     * Construct {@link PhasedBackoffWaitStrategy} with fallback to {@link LiteBlockingWaitStrategy}
+     * 构造以 {@link LiteBlockingWaitStrategy} 为回退的 {@link PhasedBackoffWaitStrategy}。
      *
-     * @param spinTimeout The maximum time in to busy spin for.
-     * @param yieldTimeout The maximum time in to yield for.
-     * @param units Time units used for the timeout values.
-     * @return The constructed wait strategy.
+     * @param spinTimeout 忙等自旋的最长时间
+     * @param yieldTimeout 让出 CPU 的最长时间
+     * @param units 上述超时值的时间单位
+     * @return 构造完成的等待策略
      */
     public static PhasedBackoffWaitStrategy withLiteLock(
         final long spinTimeout,
@@ -85,12 +84,12 @@ public final class PhasedBackoffWaitStrategy implements WaitStrategy
     }
 
     /**
-     * Construct {@link PhasedBackoffWaitStrategy} with fallback to {@link SleepingWaitStrategy}
+     * 构造以 {@link SleepingWaitStrategy} 为回退的 {@link PhasedBackoffWaitStrategy}。
      *
-     * @param spinTimeout The maximum time in to busy spin for.
-     * @param yieldTimeout The maximum time in to yield for.
-     * @param units Time units used for the timeout values.
-     * @return The constructed wait strategy.
+     * @param spinTimeout 忙等自旋的最长时间
+     * @param yieldTimeout 让出 CPU 的最长时间
+     * @param units 上述超时值的时间单位
+     * @return 构造完成的等待策略
      */
     public static PhasedBackoffWaitStrategy withSleep(
         final long spinTimeout,
@@ -112,11 +111,13 @@ public final class PhasedBackoffWaitStrategy implements WaitStrategy
 
         do
         {
+            // 步骤 1：依赖序号已到达则立即返回
             if ((availableSequence = dependentSequence.get()) >= sequence)
             {
                 return availableSequence;
             }
 
+            // 步骤 2：自旋计数耗尽后按已耗时选择让出或回退策略
             if (0 == --counter)
             {
                 if (0 == startTime)

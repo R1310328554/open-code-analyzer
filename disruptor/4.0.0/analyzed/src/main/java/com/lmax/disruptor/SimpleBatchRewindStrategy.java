@@ -1,7 +1,7 @@
 package com.lmax.disruptor;
 
 /**
- * Batch rewind strategy that always rewinds
+ * 始终选择回卷重放的批次回卷策略。
  */
 public class SimpleBatchRewindStrategy implements BatchRewindStrategy
 {

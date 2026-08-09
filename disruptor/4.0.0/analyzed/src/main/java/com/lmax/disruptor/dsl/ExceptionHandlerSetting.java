@@ -21,11 +21,11 @@ import com.lmax.disruptor.EventProcessor;
 import com.lmax.disruptor.ExceptionHandler;
 
 /**
- * A support class used as part of setting an exception handler for a specific event handler.
- * For example:
+ * 为特定事件处理器配置异常处理器的辅助类。
+ * 例如：
  * <pre><code>disruptorWizard.handleExceptionsIn(eventHandler).with(exceptionHandler);</code></pre>
  *
- * @param <T> the type of event being handled.
+ * @param <T> 正在处理的事件类型
  */
 public class ExceptionHandlerSetting<T>
 {
@@ -41,9 +41,9 @@ public class ExceptionHandlerSetting<T>
     }
 
     /**
-     * Specify the {@link ExceptionHandler} to use with the event handler.
+     * 为事件处理器指定 {@link ExceptionHandler}。
      *
-     * @param exceptionHandler the exception handler to use.
+     * @param exceptionHandler 要使用的异常处理器
      */
     @SuppressWarnings("unchecked")
     public void with(final ExceptionHandler<? super T> exceptionHandler)

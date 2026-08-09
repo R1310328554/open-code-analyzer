@@ -17,50 +17,49 @@ package com.lmax.disruptor;
 
 
 /**
- * Coordination barrier for tracking the cursor for publishers and sequence of
- * dependent {@link EventProcessor}s for processing a data structure
+ * 协调屏障：跟踪发布者游标，以及依赖本屏障的 {@link EventProcessor} 的消费序号。
  */
 public interface SequenceBarrier
 {
     /**
-     * Wait for the given sequence to be available for consumption.
+     * 等待指定序号可供消费。
      *
-     * @param sequence to wait for
-     * @return the sequence up to which is available
-     * @throws AlertException       if a status change has occurred for the Disruptor
-     * @throws InterruptedException if the thread needs awaking on a condition variable.
-     * @throws TimeoutException     if a timeout occurs while waiting for the supplied sequence.
+     * @param sequence 要等待的序号
+     * @return 当前可读的最高序号
+     * @throws AlertException Disruptor 状态已变更时抛出
+     * @throws InterruptedException 线程在条件变量上被唤醒时抛出
+     * @throws TimeoutException 等待超时
      */
     long waitFor(long sequence) throws AlertException, InterruptedException, TimeoutException;
 
     /**
-     * Get the current cursor value that can be read.
+     * 获取当前可读的游标值。
      *
-     * @return value of the cursor for entries that have been published.
+     * @return 已发布条目的游标值
      */
     long getCursor();
 
     /**
-     * The current alert status for the barrier.
+     * 屏障当前的告警状态。
      *
-     * @return true if in alert otherwise false.
+     * @return 若处于告警状态则为 {@code true}，否则为 {@code false}
      */
     boolean isAlerted();
 
     /**
-     * Alert the {@link EventProcessor}s of a status change and stay in this status until cleared.
+     * 向 {@link EventProcessor} 发出状态变更告警，并保持该状态直至清除。
      */
     void alert();
 
     /**
-     * Clear the current alert status.
+     * 清除当前告警状态。
      */
     void clearAlert();
 
     /**
-     * Check if an alert has been raised and throw an {@link AlertException} if it has.
+     * 检查是否已触发告警，若已触发则抛出 {@link AlertException}。
      *
-     * @throws AlertException if alert has been raised.
+     * @throws AlertException 已触发告警时抛出
      */
     void checkAlert() throws AlertException;
 }

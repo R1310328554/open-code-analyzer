@@ -1,44 +1,43 @@
 package com.lmax.disruptor;
 
 /**
- * Operations related to the sequencing of items in a {@link RingBuffer}.
- * See the two child interfaces, {@link Sequencer} and {@link EventSequencer} for more details.
+ * 与 {@link RingBuffer} 中条目排序相关的操作。
+ * 详见子接口 {@link Sequencer} 与 {@link EventSequencer}。
  */
 public interface Sequenced
 {
     /**
-     * The capacity of the data structure to hold entries.
+     * 数据结构可容纳的条目容量。
      *
-     * @return the size of the RingBuffer.
+     * @return RingBuffer 的大小
      */
     int getBufferSize();
 
     /**
-     * Has the buffer got capacity to allocate another sequence.  This is a concurrent
-     * method so the response should only be taken as an indication of available capacity.
+     * 缓冲区是否还有容量申领下一个序号。本方法为并发语义，返回值仅作容量参考。
      *
-     * @param requiredCapacity in the buffer
-     * @return true if the buffer has the capacity to allocate the next sequence otherwise false.
+     * @param requiredCapacity 所需容量
+     * @return 若有足够容量申领下一序号则为 {@code true}，否则为 {@code false}
      */
     boolean hasAvailableCapacity(int requiredCapacity);
 
     /**
-     * Get the remaining capacity for this sequencer.
+     * 获取本序号器的剩余容量。
      *
-     * @return The number of slots remaining.
+     * @return 剩余槽位数
      */
     long remainingCapacity();
 
     /**
-     * Claim the next event in sequence for publishing.
+     * 申领下一个待发布事件的序号。
      *
-     * @return the claimed sequence value
+     * @return 已申领的序号
      */
     long next();
 
     /**
-     * Claim the next n events in sequence for publishing.  This is for batch event producing.  Using batch producing
-     * requires a little care and some math.
+     * 批量申领接下来 n 个待发布事件的序号，适用于批量生产。
+     * 批量生产需注意用法与算术关系：
      * <pre>
      * int n = 10;
      * long hi = sequencer.next(n);
@@ -49,45 +48,42 @@ public interface Sequenced
      * sequencer.publish(lo, hi);
      * </pre>
      *
-     * @param n the number of sequences to claim
-     * @return the highest claimed sequence value
+     * @param n 要申领的序号数量
+     * @return 已申领的最高序号
      */
     long next(int n);
 
     /**
-     * Attempt to claim the next event in sequence for publishing.  Will return the
-     * number of the slot if there is at least <code>requiredCapacity</code> slots
-     * available.
+     * 尝试申领下一个待发布事件的序号。
+     * 当至少存在 {@code requiredCapacity} 个可用槽位时返回槽位编号。
      *
-     * @return the claimed sequence value
-     * @throws InsufficientCapacityException thrown if there is no space available in the ring buffer.
+     * @return 已申领的序号
+     * @throws InsufficientCapacityException RingBuffer 无可用空间时抛出
      */
     long tryNext() throws InsufficientCapacityException;
 
     /**
-     * Attempt to claim the next n events in sequence for publishing.  Will return the
-     * highest numbered slot if there is at least <code>requiredCapacity</code> slots
-     * available.  Have a look at {@link Sequencer#next()} for a description on how to
-     * use this method.
+     * 尝试批量申领接下来 n 个待发布事件的序号。
+     * 用法参见 {@link Sequencer#next()}。
      *
-     * @param n the number of sequences to claim
-     * @return the claimed sequence value
-     * @throws InsufficientCapacityException thrown if there is no space available in the ring buffer.
+     * @param n 要申领的序号数量
+     * @return 已申领的最高序号
+     * @throws InsufficientCapacityException RingBuffer 无可用空间时抛出
      */
     long tryNext(int n) throws InsufficientCapacityException;
 
     /**
-     * Publishes a sequence. Call when the event has been filled.
+     * 发布一个序号，在事件填充完成后调用。
      *
-     * @param sequence the sequence to be published.
+     * @param sequence 要发布的序号
      */
     void publish(long sequence);
 
     /**
-     * Batch publish sequences.  Called when all of the events have been filled.
+     * 批量发布序号区间，在所有事件填充完成后调用。
      *
-     * @param lo first sequence number to publish
-     * @param hi last sequence number to publish
+     * @param lo 要发布的起始序号
+     * @param hi 要发布的结束序号
      */
     void publish(long lo, long hi);
 }

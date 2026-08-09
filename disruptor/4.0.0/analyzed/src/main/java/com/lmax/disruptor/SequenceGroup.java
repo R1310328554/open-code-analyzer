@@ -20,11 +20,10 @@ import com.lmax.disruptor.util.Util;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
- * A {@link Sequence} group that can dynamically have {@link Sequence}s added and removed while being
- * thread safe.
+ * 可动态增删 {@link Sequence} 且线程安全的 {@link Sequence} 组。
  *
- * <p>The {@link SequenceGroup#get()} and {@link SequenceGroup#set(long)} methods are lock free and can be
- * concurrently be called with the {@link SequenceGroup#add(Sequence)} and {@link SequenceGroup#remove(Sequence)}.
+ * <p>{@link SequenceGroup#get()} 与 {@link SequenceGroup#set(long)} 为无锁实现，
+ * 可与 {@link SequenceGroup#add(Sequence)}、{@link SequenceGroup#remove(Sequence)} 并发调用。
  */
 public final class SequenceGroup extends Sequence
 {
@@ -33,7 +32,7 @@ public final class SequenceGroup extends Sequence
     private volatile Sequence[] sequences = new Sequence[0];
 
     /**
-     * Default Constructor
+     * 默认构造器
      */
     public SequenceGroup()
     {
@@ -41,9 +40,9 @@ public final class SequenceGroup extends Sequence
     }
 
     /**
-     * Get the minimum sequence value for the group.
+     * 获取组内最小序号值。
      *
-     * @return the minimum sequence value for the group.
+     * @return 组内最小序号
      */
     @Override
     public long get()
@@ -52,9 +51,9 @@ public final class SequenceGroup extends Sequence
     }
 
     /**
-     * Set all {@link Sequence}s in the group to a given value.
+     * 将组内所有 {@link Sequence} 设为给定值。
      *
-     * @param value to set the group of sequences to.
+     * @param value 要设置的序号值
      */
     @Override
     public void set(final long value)
@@ -67,10 +66,10 @@ public final class SequenceGroup extends Sequence
     }
 
     /**
-     * Add a {@link Sequence} into this aggregate.  This should only be used during
-     * initialisation.  Use {@link SequenceGroup#addWhileRunning(Cursored, Sequence)}
+     * 向本聚合体添加 {@link Sequence}，仅应在初始化阶段使用。
+     * 运行期请使用 {@link SequenceGroup#addWhileRunning(Cursored, Sequence)}。
      *
-     * @param sequence to be added to the aggregate.
+     * @param sequence 要添加的序号
      * @see SequenceGroup#addWhileRunning(Cursored, Sequence)
      */
     public void add(final Sequence sequence)
@@ -89,10 +88,10 @@ public final class SequenceGroup extends Sequence
     }
 
     /**
-     * Remove the first occurrence of the {@link Sequence} from this aggregate.
+     * 从本聚合体移除 {@link Sequence} 的首次出现。
      *
-     * @param sequence to be removed from this aggregate.
-     * @return true if the sequence was removed otherwise false.
+     * @param sequence 要移除的序号
+     * @return 成功移除返回 {@code true}，否则返回 {@code false}
      */
     public boolean remove(final Sequence sequence)
     {
@@ -100,9 +99,9 @@ public final class SequenceGroup extends Sequence
     }
 
     /**
-     * Get the size of the group.
+     * 获取组的大小。
      *
-     * @return the size of the group.
+     * @return 组内序号数量
      */
     public int size()
     {
@@ -110,13 +109,11 @@ public final class SequenceGroup extends Sequence
     }
 
     /**
-     * Adds a sequence to the sequence group after threads have started to publish to
-     * the Disruptor.  It will set the sequences to cursor value of the ringBuffer
-     * just after adding them.  This should prevent any nasty rewind/wrapping effects.
+     * 在 Disruptor 已开始发布后向序号组添加序号。
+     * 添加后会将新序号设为 RingBuffer 当前游标，以避免回卷/环绕带来的副作用。
      *
-     * @param cursored The data structure that the owner of this sequence group will
-     *                 be pulling it's events from.
-     * @param sequence The sequence to add.
+     * @param cursored 本序号组所属方从中拉取事件的数据结构
+     * @param sequence 要添加的序号
      */
     public void addWhileRunning(final Cursored cursored, final Sequence sequence)
     {

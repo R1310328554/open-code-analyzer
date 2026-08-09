@@ -18,9 +18,9 @@ package com.lmax.disruptor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * No operation version of a {@link EventProcessor} that simply tracks a {@link Sequence}.
+ * 不执行实际业务逻辑的 {@link EventProcessor} 实现，仅跟踪一个 {@link Sequence}。
  *
- * <p>This is useful in tests or for pre-filling a {@link RingBuffer} from a publisher.
+ * <p>适用于测试场景，或发布者预填充 {@link RingBuffer} 时作为占位消费者。
  */
 public final class NoOpEventProcessor implements EventProcessor
 {
@@ -28,9 +28,9 @@ public final class NoOpEventProcessor implements EventProcessor
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     /**
-     * Construct a {@link EventProcessor} that simply tracks a {@link Sequence} object.
+     * 构造仅跟踪 {@link Sequence} 的 {@link EventProcessor}。
      *
-     * @param sequencer to track.
+     * @param sequencer 要跟踪的序号器
      */
     public NoOpEventProcessor(final RingBuffer<?> sequencer)
     {
@@ -65,7 +65,7 @@ public final class NoOpEventProcessor implements EventProcessor
     }
 
     /**
-     * Sequence that follows (by wrapping) another sequence
+     * 包装并跟随另一序号源的 {@link Sequence} 实现
      */
     private static final class SequencerFollowingSequence extends Sequence
     {

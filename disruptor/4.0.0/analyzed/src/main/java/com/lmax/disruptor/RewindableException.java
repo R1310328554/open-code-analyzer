@@ -1,14 +1,13 @@
 package com.lmax.disruptor;
 
 /**
- * A special exception that can be thrown while using the {@link BatchEventProcessor}.
- * On throwing this exception the {@link BatchEventProcessor} can choose to rewind and replay the batch or throw
- * depending on the {@link BatchRewindStrategy}
+ * 使用 {@link BatchEventProcessor} 时可抛出的特殊异常。
+ * 抛出后 {@link BatchEventProcessor} 根据 {@link BatchRewindStrategy} 决定回卷重放或向上抛出。
  */
 public class RewindableException extends Throwable
 {
     /**
-     * @param cause The underlying cause of the exception.
+     * @param cause 异常的底层原因
      */
     public RewindableException(final Throwable cause)
     {

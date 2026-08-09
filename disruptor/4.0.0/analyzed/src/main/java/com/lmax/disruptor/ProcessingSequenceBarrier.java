@@ -17,8 +17,8 @@ package com.lmax.disruptor;
 
 
 /**
- * {@link SequenceBarrier} handed out for gating {@link EventProcessor}s on a cursor sequence and optional dependent {@link EventProcessor}(s),
- * using the given WaitStrategy.
+ * 基于游标序号与可选依赖 {@link EventProcessor} 门控 {@link EventProcessor} 时发放的 {@link SequenceBarrier}，
+ * 使用指定 {@link WaitStrategy} 进行等待。
  */
 final class ProcessingSequenceBarrier implements SequenceBarrier
 {
@@ -53,6 +53,7 @@ final class ProcessingSequenceBarrier implements SequenceBarrier
     {
         checkAlert();
 
+        // 步骤 1：通过等待策略阻塞直至依赖序号可用
         long availableSequence = waitStrategy.waitFor(sequence, cursorSequence, dependentSequence, this);
 
         if (availableSequence < sequence)
@@ -60,6 +61,7 @@ final class ProcessingSequenceBarrier implements SequenceBarrier
             return availableSequence;
         }
 
+        // 步骤 2：返回连续已发布的最高可读序号
         return sequencer.getHighestPublishedSequence(sequence, availableSequence);
     }
 

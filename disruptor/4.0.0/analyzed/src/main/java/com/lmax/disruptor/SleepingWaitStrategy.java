@@ -18,15 +18,11 @@ package com.lmax.disruptor;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Sleeping strategy that initially spins, then uses a Thread.yield(), and
- * eventually sleep (<code>LockSupport.parkNanos(n)</code>) for the minimum
- * number of nanos the OS and JVM will allow while the
- * {@link com.lmax.disruptor.EventProcessor}s are waiting on a barrier.
+ * 睡眠等待策略：先自旋，再 {@link Thread#yield()}，最终在 {@link EventProcessor}
+ * 等待屏障时使用 {@code LockSupport.parkNanos(n)} 睡眠操作系统允许的最小纳秒数。
  *
- * <p>This strategy is a good compromise between performance and CPU resource.
- * Latency spikes can occur after quiet periods.  It will also reduce the impact
- * on the producing thread as it will not need signal any conditional variables
- * to wake up the event handling thread.
+ * <p>在性能与 CPU 占用之间取得较好平衡。空闲一段时间后可能出现延迟尖峰。
+ * 对发布线程影响较小，因其无需唤醒条件变量上的事件处理线程。
  */
 public final class SleepingWaitStrategy implements WaitStrategy
 {
@@ -38,7 +34,7 @@ public final class SleepingWaitStrategy implements WaitStrategy
     private final long sleepTimeNs;
 
     /**
-     * Provides a sleeping wait strategy with the default retry and sleep settings
+     * 使用默认重试次数与睡眠时长的睡眠等待策略。
      */
     public SleepingWaitStrategy()
     {
@@ -46,7 +42,7 @@ public final class SleepingWaitStrategy implements WaitStrategy
     }
 
     /**
-     * @param retries How many times the strategy should retry before sleeping
+     * @param retries 进入睡眠前的重试次数
      */
     public SleepingWaitStrategy(final int retries)
     {
@@ -54,8 +50,8 @@ public final class SleepingWaitStrategy implements WaitStrategy
     }
 
     /**
-     * @param retries How many times the strategy should retry before sleeping
-     * @param sleepTimeNs How long the strategy should sleep, in nanoseconds
+     * @param retries 进入睡眠前的重试次数
+     * @param sleepTimeNs 每次睡眠时长（纳秒）
      */
     public SleepingWaitStrategy(final int retries, final long sleepTimeNs)
     {

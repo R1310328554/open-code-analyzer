@@ -47,20 +47,18 @@ abstract class SingleProducerSequencerFields extends SingleProducerSequencerPad
     }
 
     /**
-     * Set to -1 as sequence starting point
+     * 序号起始点设为 -1
      */
     long nextValue = Sequence.INITIAL_VALUE;
     long cachedValue = Sequence.INITIAL_VALUE;
 }
 
 /**
- * Coordinator for claiming sequences for access to a data structure while tracking dependent {@link Sequence}s.
- * Not safe for use from multiple threads as it does not implement any barriers.
+ * 在跟踪依赖 {@link Sequence} 的同时协调单发布者线程对数据结构的序号申领。
+ * 未实现多线程屏障，不可在多线程间安全使用。
  *
- * <p>* Note on {@link Sequencer#getCursor()}:  With this sequencer the cursor value is updated after the call
- * to {@link Sequencer#publish(long)} is made.
+ * <p>关于 {@link Sequencer#getCursor()}：本序号器在调用 {@link Sequencer#publish(long)} 之后才更新游标值。
  */
-
 public final class SingleProducerSequencer extends SingleProducerSequencerFields
 {
     protected byte
@@ -73,10 +71,10 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
         p70, p71, p72, p73, p74, p75, p76, p77;
 
     /**
-     * Construct a Sequencer with the selected wait strategy and buffer size.
+     * 以指定等待策略与缓冲区大小构造序号器。
      *
-     * @param bufferSize   the size of the buffer that this will sequence over.
-     * @param waitStrategy for those waiting on sequences.
+     * @param bufferSize 本序号器所编排的缓冲区大小
+     * @param waitStrategy 等待序号可用的策略
      */
     public SingleProducerSequencer(final int bufferSize, final WaitStrategy waitStrategy)
     {
@@ -151,6 +149,7 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
             cursor.setVolatile(nextValue);  // StoreLoad fence
 
             long minSequence;
+            // 步骤：环绕点超过门控序号时，自旋等待消费者推进
             while (wrapPoint > (minSequence = Util.getMinimumSequence(gatingSequences, nextValue)))
             {
                 LockSupport.parkNanos(1L); // TODO: Use waitStrategy to spin?
@@ -268,15 +267,13 @@ public final class SingleProducerSequencer extends SingleProducerSequencerFields
     }
 
     /**
-     * Only used when assertions are enabled.
+     * 仅在启用断言时使用。
      */
     private static class ProducerThreadAssertion
     {
         /**
-         * Tracks the threads publishing to {@code SingleProducerSequencer}s to identify if more than one
-         * thread accesses any {@code SingleProducerSequencer}.
-         * I.e. it helps developers detect early if they use the wrong
-         * {@link com.lmax.disruptor.dsl.ProducerType}.
+         * 跟踪向各 {@code SingleProducerSequencer} 发布的线程，帮助检测是否有多线程访问同一实例，
+         * 即开发者是否误用了 {@link com.lmax.disruptor.dsl.ProducerType}。
          */
         private static final Map<SingleProducerSequencer, Thread> PRODUCERS = new HashMap<>();
 

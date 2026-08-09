@@ -16,7 +16,18 @@
 
 package com.lmax.disruptor;
 
+/**
+ * 批次回卷时决定下一处理序号的回调接口。
+ */
 public interface RewindHandler
 {
+    /**
+     * 在捕获 {@link RewindableException} 后尝试回卷，并返回下一应处理的序号。
+     *
+     * @param e 可回卷异常
+     * @param startOfBatchSequence 当前批次起始序号
+     * @return 回卷后应继续处理的序号
+     * @throws RewindableException 若仍无法继续处理可再次抛出
+     */
     long attemptRewindGetNextSequence(RewindableException e, long startOfBatchSequence) throws RewindableException;
 }

@@ -16,27 +16,24 @@
 package com.lmax.disruptor;
 
 /**
- * Callback interface to be implemented for processing events as they become available in the {@link RingBuffer}
- * with support for throwing a {@link RewindableException} when an even cannot be processed currently but may succeed on retry.
+ * 处理 {@link RingBuffer} 中可用事件的回调接口，支持在暂时无法处理时抛出 {@link RewindableException} 以触发重试。
  *
- * @param <T> event implementation storing the data for sharing during exchange or parallel coordination of an event.
- * @see BatchEventProcessor#setExceptionHandler(ExceptionHandler) if you want to handle exceptions propagated out of the handler.
+ * @param <T> 事件中承载的数据类型
+ * @see BatchEventProcessor#setExceptionHandler(ExceptionHandler) 若需处理从处理器传播出的其他异常
  */
 public interface RewindableEventHandler<T> extends EventHandlerBase<T>
 {
     /**
-     * Called when a publisher has published an event to the {@link RingBuffer}.  The {@link BatchEventProcessor} will
-     * read messages from the {@link RingBuffer} in batches, where a batch is all of the events available to be
-     * processed without having to wait for any new event to arrive.  This can be useful for event handlers that need
-     * to do slower operations like I/O as they can group together the data from multiple events into a single
-     * operation.  Implementations should ensure that the operation is always performed when endOfBatch is true as
-     * the time between that message and the next one is indeterminate.
+     * 当发布者向 {@link RingBuffer} 发布事件时调用。{@link BatchEventProcessor} 以批次方式读取事件：
+     * 一批指在不等待新事件到达的前提下，当前可处理的所有事件。
+     * 对需要较慢操作（如 I/O）的处理器，可将多个事件合并为一次操作。
+     * 实现应确保在 {@code endOfBatch} 为 {@code true} 时执行该操作，因为与下一条消息之间的间隔不确定。
      *
-     * @param event      published to the {@link RingBuffer}
-     * @param sequence   of the event being processed
-     * @param endOfBatch flag to indicate if this is the last event in a batch from the {@link RingBuffer}
-     * @throws RewindableException if the EventHandler would like the batch event processor to process the entire batch again.
-     * @throws Exception if the EventHandler would like the exception handled further up the chain.
+     * @param event 发布到 {@link RingBuffer} 的事件
+     * @param sequence 正在处理的事件序号
+     * @param endOfBatch 是否为当前批次的最后一个事件
+     * @throws RewindableException 若希望批次处理器重新处理整个批次
+     * @throws Exception 若希望将异常交由上层链处理
      */
     @Override
     void onEvent(T event, long sequence, boolean endOfBatch) throws RewindableException, Exception;

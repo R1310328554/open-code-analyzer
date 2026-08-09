@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import static java.util.Arrays.copyOf;
 
 /**
- * Provides static methods for managing a {@link SequenceGroup} object.
+ * 管理 {@link SequenceGroup} 的静态工具方法。
  */
 class SequenceGroups
 {
@@ -40,6 +40,7 @@ class SequenceGroups
             updatedSequences = copyOf(currentSequences, currentSequences.length + sequencesToAdd.length);
             cursorSequence = cursor.getCursor();
 
+            // 步骤：将新序号初始化为当前游标并写入扩展后的数组
             int index = currentSequences.length;
             for (Sequence sequence : sequencesToAdd)
             {
@@ -49,6 +50,7 @@ class SequenceGroups
         }
         while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
 
+        // 步骤：CAS 成功后再次对齐游标，防止添加期间游标已推进
         cursorSequence = cursor.getCursor();
         for (Sequence sequence : sequencesToAdd)
         {
@@ -76,6 +78,7 @@ class SequenceGroups
                 break;
             }
 
+            // 步骤：构建不含目标序号的新数组
             final int oldSize = oldSequences.length;
             newSequences = new Sequence[oldSize - numToRemove];
 
