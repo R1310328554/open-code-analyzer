@@ -635,3 +635,13 @@ spring-context/src/main/java/org/springframework/jmx/JmxException.java
 spring-context/src/main/java/org/springframework/jmx/MBeanServerNotFoundException.java
 spring-context/src/main/java/org/springframework/jmx/access/ConnectorDelegate.java
 spring-context/src/main/java/org/springframework/jmx/access/InvalidInvocationException.java
+spring-context/src/main/java/org/springframework/jmx/export/UnableToRegisterMBeanException.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/AnnotationJmxAttributeSource.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/AnnotationMBeanExporter.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedAttribute.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedMetric.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedNotification.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedNotifications.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedOperation.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedOperationParameter.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedOperationParameters.java
