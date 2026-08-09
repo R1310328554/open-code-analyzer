@@ -44,7 +44,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Controller regarding APIs of degrade rules. Refactored since 1.8.0.
+ * 熔断降级规则 REST API（1.8.0 起重构）。
+ * <p>支持查询、增删改及向客户端发布 {@link DegradeRuleEntity}。
  *
  * @author Carpenter Lee
  * @author Eric Zhao
@@ -62,6 +63,7 @@ public class DegradeController {
     @Autowired
     private AppManagement appManagement;
 
+    /** 查询指定机器的降级规则并同步到本地仓库。 */
     @GetMapping("/rules.json")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<DegradeRuleEntity>> apiQueryMachineRules(String app, String ip, Integer port) {
@@ -87,6 +89,7 @@ public class DegradeController {
         }
     }
 
+    /** 新增降级规则并发布到客户端。 */
     @PostMapping("/rule")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<DegradeRuleEntity> apiAddRule(@RequestBody DegradeRuleEntity entity) {
@@ -109,6 +112,7 @@ public class DegradeController {
         return Result.ofSuccess(entity);
     }
 
+    /** 更新降级规则，保留原 app/ip/port 绑定。 */
     @PutMapping("/rule/{id}")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<DegradeRuleEntity> apiUpdateRule(@PathVariable("id") Long id,
@@ -143,6 +147,7 @@ public class DegradeController {
         return Result.ofSuccess(entity);
     }
 
+    /** 删除降级规则并同步到客户端。 */
     @DeleteMapping("/rule/{id}")
     @AuthAction(PrivilegeType.DELETE_RULE)
     public Result<Long> delete(@PathVariable("id") Long id) {
@@ -167,11 +172,13 @@ public class DegradeController {
         return Result.ofSuccess(id);
     }
 
+    /** 将机器上全部降级规则推送到 Sentinel 客户端。 */
     private boolean publishRules(String app, String ip, Integer port) {
         List<DegradeRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
         return sentinelApiClient.setDegradeRuleOfMachine(app, ip, port, rules);
     }
 
+    /** 校验降级规则字段，含熔断策略与阈值约束。 */
     private <R> Result<R> checkEntityInternal(DegradeRuleEntity entity) {
         if (StringUtil.isBlank(entity.getApp())) {
             return Result.ofFail(-1, "app can't be blank");

@@ -35,6 +35,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 应用与机器管理 REST API。
+ * <p>提供应用列表、机器查询及手动移除机器等接口。
+ *
  * @author Carpenter Lee
  */
 @RestController
@@ -44,11 +47,13 @@ public class AppController {
     @Autowired
     private AppManagement appManagement;
 
+    /** 返回所有已注册应用名称。 */
     @GetMapping("/names.json")
     public Result<List<String>> queryApps(HttpServletRequest request) {
         return Result.ofSuccess(appManagement.getAppNames());
     }
 
+    /** 返回应用摘要信息列表，按应用名排序。 */
     @GetMapping("/briefinfos.json")
     public Result<List<AppInfo>> queryAppInfos(HttpServletRequest request) {
         List<AppInfo> list = new ArrayList<>(appManagement.getBriefApps());
@@ -56,6 +61,7 @@ public class AppController {
         return Result.ofSuccess(list);
     }
 
+    /** 查询指定应用下的机器列表。 */
     @GetMapping(value = "/{app}/machines.json")
     public Result<List<MachineInfoVo>> getMachinesByApp(@PathVariable("app") String app) {
         AppInfo appInfo = appManagement.getDetailApp(app);
@@ -67,6 +73,7 @@ public class AppController {
         return Result.ofSuccess(MachineInfoVo.fromMachineInfoList(list));
     }
     
+    /** 按 IP 与端口从应用中移除机器。 */
     @RequestMapping(value = "/{app}/machine/remove.json")
     public Result<String> removeMachineById(
             @PathVariable("app") String app,

@@ -34,6 +34,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 资源调用链实时统计 API。
+ * <p>从客户端拉取资源树或集群节点视图并转换为 {@link ResourceVo}。
+ *
  * @author Carpenter Lee
  */
 @RestController
@@ -46,14 +49,13 @@ public class ResourceController {
     private SentinelApiClient httpFetcher;
 
     /**
-     * Fetch real time statistics info of the machine.
+     * 拉取指定机器的资源实时统计信息。
      *
-     * @param ip        ip to fetch
-     * @param port      port of the ip
-     * @param type      one of [root, default, cluster], 'root' means fetching from tree root node, 'default' means
-     *                  fetching from tree default node, 'cluster' means fetching from cluster node.
-     * @param searchKey key to search
-     * @return node statistics info.
+     * @param ip        目标机器 IP
+     * @param port      目标机器端口
+     * @param type      取值 root、default 或 cluster：root/default 返回调用树，cluster 返回集群节点列表
+     * @param searchKey 资源名过滤关键字
+     * @return 资源统计视图列表
      */
     @GetMapping("/machineResource.json")
     public Result<List<ResourceVo>> fetchResourceChainListOfMachine(String ip, Integer port, String type,
@@ -75,7 +77,7 @@ public class ResourceController {
             treeNode.searchIgnoreCase(searchKey);
             return Result.ofSuccess(ResourceVo.fromResourceTreeNode(treeNode));
         } else {
-            // Normal (cluster node).
+            // cluster 类型：拉取集群节点列表。
             List<NodeVo> nodeVos = httpFetcher.fetchClusterNodeOfMachine(ip, port, true);
             if (nodeVos == null) {
                 return Result.ofSuccess(null);

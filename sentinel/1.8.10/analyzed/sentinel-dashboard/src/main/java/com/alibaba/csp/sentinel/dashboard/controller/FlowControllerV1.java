@@ -45,7 +45,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Flow rule controller.
+ * 流控规则 v1 REST API。
+ * <p>提供规则的查询、增删改，并通过 {@link SentinelApiClient} 异步推送到客户端。
  *
  * @author leyou
  * @author Eric Zhao
@@ -64,6 +65,7 @@ public class FlowControllerV1 {
     @Autowired
     private SentinelApiClient sentinelApiClient;
 
+    /** 查询指定机器的流控规则并同步到内存仓库。 */
     @GetMapping("/rules")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<FlowRuleEntity>> apiQueryMachineRules(@RequestParam String app,
@@ -91,6 +93,7 @@ public class FlowControllerV1 {
         }
     }
 
+    /** 校验流控规则字段，含 grade、strategy、controlBehavior 与集群模式。 */
     private <R> Result<R> checkEntityInternal(FlowRuleEntity entity) {
         if (StringUtil.isBlank(entity.getApp())) {
             return Result.ofFail(-1, "app can't be null or empty");
@@ -141,6 +144,7 @@ public class FlowControllerV1 {
         return null;
     }
 
+    /** 新增流控规则并等待异步发布完成（最多 5 秒）。 */
     @PostMapping("/rule")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<FlowRuleEntity> apiAddFlowRule(@RequestBody FlowRuleEntity entity) {
@@ -166,6 +170,7 @@ public class FlowControllerV1 {
         }
     }
 
+    /** 按 id 部分更新流控规则字段并重新发布。 */
     @PutMapping("/save.json")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<FlowRuleEntity> apiUpdateFlowRule(Long id, String app,
@@ -246,6 +251,7 @@ public class FlowControllerV1 {
         }
     }
 
+    /** 删除流控规则并同步到客户端。 */
     @DeleteMapping("/delete.json")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<Long> apiDeleteFlowRule(Long id) {
@@ -274,6 +280,7 @@ public class FlowControllerV1 {
         }
     }
 
+    /** 异步将机器上全部流控规则推送到 Sentinel 客户端。 */
     private CompletableFuture<Void> publishRules(String app, String ip, Integer port) {
         List<FlowRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
         return sentinelApiClient.setFlowRuleOfMachineAsync(app, ip, port, rules);

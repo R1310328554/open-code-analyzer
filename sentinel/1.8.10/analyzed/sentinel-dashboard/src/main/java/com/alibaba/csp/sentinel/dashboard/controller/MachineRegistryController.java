@@ -31,6 +31,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+/**
+ * 客户端机器心跳注册 API。
+ * <p>接收 Sentinel 客户端上报的机器信息并写入 {@link AppManagement}。
+ */
 @Controller
 @RequestMapping(value = "/registry", produces = MediaType.APPLICATION_JSON_VALUE)
 public class MachineRegistryController {
@@ -40,6 +44,7 @@ public class MachineRegistryController {
     @Autowired
     private AppManagement appManagement;
 
+    /** 处理客户端心跳，校验 app/ip/port 并更新机器最后心跳时间。 */
     @ResponseBody
     @RequestMapping("/machine")
     public Result<?> receiveHeartBeat(String app,
@@ -61,10 +66,12 @@ public class MachineRegistryController {
         if (hostname != null && hostname.length() > 256) {
             return Result.ofFail(-1, "hostname too long");
         }
+        // 端口尚未就绪时拒绝注册。
         if (port == -1) {
             logger.warn("Receive heartbeat from " + ip + " but port not set yet");
             return Result.ofFail(-1, "your port not set yet");
         }
+        // 客户端版本号缺失时使用 unknown。
         String sentinelVersion = StringUtil.isBlank(v) ? "unknown" : v;
 
         version = version == null ? System.currentTimeMillis() : version;

@@ -23,57 +23,46 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.lang.NonNull;
 
 /**
- * <p>Dashboard local config support.</p>
- * <p>
- * Dashboard supports configuration loading by several ways by order:<br>
- * 1. System.properties<br>
- * 2. Env
- * </p>
+ * Dashboard 本地配置读取工具。
+ * <p>按优先级从环境变量、系统属性加载配置并缓存：</p>
+ * <ol>
+ *   <li>环境变量</li>
+ *   <li>System.getProperty</li>
+ * </ol>
  *
  * @author jason
  * @since 1.5.0
  */
 public class DashboardConfig {
 
+    /** 机器健康判定默认超时（毫秒）。 */
     public static final int DEFAULT_MACHINE_HEALTHY_TIMEOUT_MS = 60_000;
 
-    /**
-     * Login username
-     */
+    /** 登录用户名配置键。 */
     public static final String CONFIG_AUTH_USERNAME = "sentinel.dashboard.auth.username";
 
-    /**
-     * Login password
-     */
+    /** 登录密码配置键。 */
     public static final String CONFIG_AUTH_PASSWORD = "sentinel.dashboard.auth.password";
 
-    /**
-     * Hide application name in sidebar when it has no healthy machines after specific period in millisecond.
-     */
+    /** 无健康机器超过指定毫秒后在侧栏隐藏应用名的配置键。 */
     public static final String CONFIG_HIDE_APP_NO_MACHINE_MILLIS = "sentinel.dashboard.app.hideAppNoMachineMillis";
-    /**
-     * Remove application when it has no healthy machines after specific period in millisecond.
-     */
+    /** 无健康机器超过指定毫秒后移除应用的配置键。 */
     public static final String CONFIG_REMOVE_APP_NO_MACHINE_MILLIS = "sentinel.dashboard.removeAppNoMachineMillis";
-    /**
-     * Timeout
-     */
+    /** 机器不健康判定超时配置键。 */
     public static final String CONFIG_UNHEALTHY_MACHINE_MILLIS = "sentinel.dashboard.unhealthyMachineMillis";
-    /**
-     * Auto remove unhealthy machine after specific period in millisecond.
-     */
+    /** 不健康机器自动移除超时配置键。 */
     public static final String CONFIG_AUTO_REMOVE_MACHINE_MILLIS = "sentinel.dashboard.autoRemoveMachineMillis";
 
     private static final ConcurrentMap<String, Object> cacheMap = new ConcurrentHashMap<>();
     
     @NonNull
     private static String getConfig(String name) {
-        // env
+        // 优先读取环境变量。
         String val = System.getenv(name);
         if (StringUtils.isNotEmpty(val)) {
             return val;
         }
-        // properties
+        // 其次读取 JVM 系统属性。
         val = System.getProperty(name);
         if (StringUtils.isNotEmpty(val)) {
             return val;
@@ -110,30 +99,37 @@ public class DashboardConfig {
         return val;
     }
 
+    /** @return 配置的登录用户名，未配置时返回 null */
     public static String getAuthUsername() {
         return getConfigStr(CONFIG_AUTH_USERNAME);
     }
 
+    /** @return 配置的登录密码，未配置时返回 null */
     public static String getAuthPassword() {
         return getConfigStr(CONFIG_AUTH_PASSWORD);
     }
 
+    /** @return 侧栏隐藏无机器应用的超时毫秒数 */
     public static int getHideAppNoMachineMillis() {
         return getConfigInt(CONFIG_HIDE_APP_NO_MACHINE_MILLIS, 0, 60000);
     }
     
+    /** @return 自动移除无机器应用的超时毫秒数 */
     public static int getRemoveAppNoMachineMillis() {
         return getConfigInt(CONFIG_REMOVE_APP_NO_MACHINE_MILLIS, 0, 120000);
     }
     
+    /** @return 自动移除不健康机器的超时毫秒数 */
     public static int getAutoRemoveMachineMillis() {
         return getConfigInt(CONFIG_AUTO_REMOVE_MACHINE_MILLIS, 0, 300000);
     }
     
+    /** @return 机器不健康判定超时毫秒数 */
     public static int getUnhealthyMachineMillis() {
         return getConfigInt(CONFIG_UNHEALTHY_MACHINE_MILLIS, DEFAULT_MACHINE_HEALTHY_TIMEOUT_MS, 30000);
     }
     
+    /** 清空配置缓存，便于测试或热更新后重新加载。 */
     public static void clearCache() {
         cacheMap.clear();
     }

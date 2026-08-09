@@ -40,6 +40,9 @@ import com.alibaba.csp.sentinel.dashboard.datasource.entity.MetricEntity;
 import com.alibaba.csp.sentinel.dashboard.domain.vo.MetricVo;
 
 /**
+ * 监控指标查询 API。
+ * <p>支持按应用分页查询 Top 资源指标及单资源时序数据。
+ *
  * @author leyou
  */
 @Controller
@@ -48,11 +51,13 @@ public class MetricController {
 
     private static Logger logger = LoggerFactory.getLogger(MetricController.class);
 
+    /** 单次查询最大时间跨度（1 小时）。 */
     private static final long maxQueryIntervalMs = 1000 * 60 * 60;
 
     @Autowired
     private MetricsRepository<MetricEntity> metricStore;
 
+    /** 分页查询应用下 Top 资源的时序指标，支持关键字过滤与升降序。 */
     @ResponseBody
     @RequestMapping("/queryTopResourceMetric.json")
     public Result<?> queryTopResourceMetric(final String app,
@@ -127,7 +132,7 @@ public class MetricController {
         resultMap.put("pageSize", pageSize);
 
         Map<String, Iterable<MetricVo>> map2 = new LinkedHashMap<>();
-        // order matters.
+        // 保持与 topResource 分页顺序一致。
         for (String identity : topResource) {
             map2.put(identity, map.get(identity));
         }
@@ -135,6 +140,7 @@ public class MetricController {
         return Result.ofSuccess(resultMap);
     }
 
+    /** 查询单个资源在指定时间范围内的指标序列。 */
     @ResponseBody
     @RequestMapping("/queryByAppAndResource.json")
     public Result<?> queryByAppAndResource(String app, String identity, Long startTime, Long endTime) {
@@ -159,6 +165,7 @@ public class MetricController {
         return Result.ofSuccess(sortMetricVoAndDistinct(vos));
     }
 
+    /** 按时间戳排序并去重，同一时刻保留 gmtCreate 较新的记录。 */
     private Iterable<MetricVo> sortMetricVoAndDistinct(List<MetricVo> vos) {
         if (vos == null) {
             return null;

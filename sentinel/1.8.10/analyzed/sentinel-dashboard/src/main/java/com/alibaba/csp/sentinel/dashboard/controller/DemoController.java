@@ -31,17 +31,22 @@ import com.alibaba.csp.sentinel.SphU;
 import com.alibaba.csp.sentinel.context.ContextUtil;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
+/**
+ * Sentinel 功能演示控制器，用于构造调用链、循环与慢请求等测试场景。
+ */
 @Controller
 @RequestMapping(value = "/demo", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DemoController {
 
     Logger logger = LoggerFactory.getLogger(MachineRegistryController.class);
 
+    /** 返回演示首页视图名。 */
     @RequestMapping("/greeting")
     public String greeting() {
         return "index";
     }
 
+    /** 构造嵌套 {@link SphU#entry} 调用链以演示链路流控。 */
     @RequestMapping("/link")
     @ResponseBody
     public String link() throws BlockException {
@@ -59,6 +64,7 @@ public class DemoController {
         return "successfully create a call link";
     }
 
+    /** 启动多线程循环访问资源，用于压测与规则验证。 */
     @RequestMapping("/loop")
     @ResponseBody
     public String loop(String name, int time) throws BlockException {
@@ -70,6 +76,7 @@ public class DemoController {
         return "successfully create a loop thread";
     }
 
+    /** 启动带慢调用（sleep）的循环线程，用于 RT 熔断演示。 */
     @RequestMapping("/slow")
     @ResponseBody
     public String slow(String name, int time) throws BlockException {
@@ -81,6 +88,7 @@ public class DemoController {
         return "successfully create a loop thread";
     }
 
+    /** 后台循环执行 {@link SphU#entry} 的任务。 */
     static class RunTask implements Runnable {
         int time;
         boolean stop = false;
@@ -94,6 +102,7 @@ public class DemoController {
             this.slow = slow;
         }
 
+        /** 在独立上下文中循环 entry/exit，可选模拟慢请求。 */
         @Override
         public void run() {
             long startTime = System.currentTimeMillis();

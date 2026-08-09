@@ -16,17 +16,24 @@
 package com.alibaba.csp.sentinel.dashboard.client;
 
 /**
+ * 客户端命令未找到异常。
+ * <p>当 Sentinel 客户端不支持或未注册某 API 命令时抛出；
+ * {@link #fillInStackTrace()} 被重写为空操作以降低热路径开销。
+ *
  * @author Eric Zhao
  * @since 0.2.1
  */
 public class CommandNotFoundException extends Exception {
 
+    /** 无参构造。 */
     public CommandNotFoundException() { }
 
+    /** @param message 异常描述 */
     public CommandNotFoundException(String message) {
         super(message);
     }
 
+    /** 不填充堆栈，避免频繁创建异常时的性能损耗。 */
     @Override
     public synchronized Throwable fillInStackTrace() {
         return this;

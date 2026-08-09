@@ -44,6 +44,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 授权规则（黑白名单）REST API。
+ * <p>从客户端拉取规则、持久化到 {@link RuleRepository} 并在变更后推送到目标机器。
+ *
  * @author Eric Zhao
  * @since 0.2.1
  */
@@ -60,6 +63,7 @@ public class AuthorityRuleController {
     @Autowired
     private AppManagement appManagement;
 
+    /** 查询指定机器上的全部授权规则并同步到本地仓库。 */
     @GetMapping("/rules")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<AuthorityRuleEntity>> apiQueryAllRulesForMachine(@RequestParam String app,
@@ -87,6 +91,7 @@ public class AuthorityRuleController {
         }
     }
 
+    /** 校验授权规则实体字段合法性。 */
     private <R> Result<R> checkEntityInternal(AuthorityRuleEntity entity) {
         if (entity == null) {
             return Result.ofFail(-1, "bad rule body");
@@ -116,6 +121,7 @@ public class AuthorityRuleController {
         return null;
     }
 
+    /** 新增授权规则并推送到客户端。 */
     @PostMapping("/rule")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<AuthorityRuleEntity> apiAddAuthorityRule(@RequestBody AuthorityRuleEntity entity) {
@@ -139,6 +145,7 @@ public class AuthorityRuleController {
         return Result.ofSuccess(entity);
     }
 
+    /** 按 id 更新授权规则并重新发布。 */
     @PutMapping("/rule/{id}")
     @AuthAction(PrivilegeType.WRITE_RULE)
     public Result<AuthorityRuleEntity> apiUpdateParamFlowRule(@PathVariable("id") Long id,
@@ -169,6 +176,7 @@ public class AuthorityRuleController {
         return Result.ofSuccess(entity);
     }
 
+    /** 删除授权规则并同步到客户端。 */
     @DeleteMapping("/rule/{id}")
     @AuthAction(PrivilegeType.DELETE_RULE)
     public Result<Long> apiDeleteRule(@PathVariable("id") Long id) {
@@ -190,6 +198,7 @@ public class AuthorityRuleController {
         return Result.ofSuccess(id);
     }
 
+    /** 将机器上全部授权规则推送到 Sentinel 客户端。 */
     private boolean publishRules(String app, String ip, Integer port) {
         List<AuthorityRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
         return sentinelApiClient.setAuthorityRuleOfMachine(app, ip, port, rules);

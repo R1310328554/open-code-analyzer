@@ -50,6 +50,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 热点参数流控规则 REST API。
+ * <p>依赖客户端 0.2.0+ 及 param-flow 扩展；不支持时返回 4041 错误码。
+ *
  * @author Eric Zhao
  * @since 0.2.1
  */
@@ -66,6 +69,7 @@ public class ParamFlowRuleController {
     @Autowired
     private RuleRepository<ParamFlowRuleEntity, Long> repository;
 
+    /** 检查目标机器 Sentinel 版本是否支持热点参数流控。 */
     private boolean checkIfSupported(String app, String ip, int port) {
         try {
             return Optional.ofNullable(appManagement.getDetailApp(app))
@@ -73,12 +77,13 @@ public class ParamFlowRuleController {
                 .flatMap(m -> VersionUtils.parseVersion(m.getVersion())
                     .map(v -> v.greaterOrEqual(version020)))
                 .orElse(true);
-            // If error occurred or cannot retrieve machine info, return true.
+            // 无法获取机器信息时默认可用，由客户端调用时再判定。
         } catch (Exception ex) {
             return true;
         }
     }
 
+    /** 查询指定机器的热点参数流控规则。 */
     @GetMapping("/rules")
     @AuthAction(PrivilegeType.READ_RULE)
     public Result<List<ParamFlowRuleEntity>> apiQueryAllRulesForMachine(@RequestParam String app,
@@ -117,10 +122,12 @@ public class ParamFlowRuleController {
         }
     }
 
+    /** 判断异常是否因客户端命令不存在（版本不支持）。 */
     private boolean isNotSupported(Throwable ex) {
         return ex instanceof CommandNotFoundException;
     }
 
+    /** 新增热点参数流控规则并发布。 */
     @PostMapping("/rule")
     @AuthAction(AuthService.PrivilegeType.WRITE_RULE)
     public Result<ParamFlowRuleEntity> apiAddParamFlowRule(@RequestBody ParamFlowRuleEntity entity) {
@@ -153,6 +160,7 @@ public class ParamFlowRuleController {
         }
     }
 
+    /** 校验热点参数流控规则实体字段。 */
     private <R> Result<R> checkEntityInternal(ParamFlowRuleEntity entity) {
         if (entity == null) {
             return Result.ofFail(-1, "bad rule body");
@@ -190,6 +198,7 @@ public class ParamFlowRuleController {
         return null;
     }
 
+    /** 更新热点参数流控规则。 */
     @PutMapping("/rule/{id}")
     @AuthAction(AuthService.PrivilegeType.WRITE_RULE)
     public Result<ParamFlowRuleEntity> apiUpdateParamFlowRule(@PathVariable("id") Long id,
@@ -230,6 +239,7 @@ public class ParamFlowRuleController {
         }
     }
 
+    /** 删除热点参数流控规则。 */
     @DeleteMapping("/rule/{id}")
     @AuthAction(PrivilegeType.DELETE_RULE)
     public Result<Long> apiDeleteRule(@PathVariable("id") Long id) {
@@ -258,15 +268,18 @@ public class ParamFlowRuleController {
         }
     }
 
+    /** 异步将机器上全部热点参数规则推送到客户端。 */
     private CompletableFuture<Void> publishRules(String app, String ip, Integer port) {
         List<ParamFlowRuleEntity> rules = repository.findAllByMachine(MachineInfo.of(app, ip, port));
         return sentinelApiClient.setParamFlowRuleOfMachine(app, ip, port, rules);
     }
 
+    /** 返回客户端不支持热点参数流控的标准错误响应。 */
     private <R> Result<R> unsupportedVersion() {
         return Result.ofFail(4041,
             "Sentinel client not supported for parameter flow control (unsupported version or dependency absent)");
     }
 
+    /** 支持热点参数流控的最低 minor 版本（0.2.x）。 */
     private final SentinelVersion version020 = new SentinelVersion().setMinorVersion(2);
 }

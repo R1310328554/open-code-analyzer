@@ -31,6 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 
 /**
+ * Dashboard 登录、登出与会话校验 API。
+ * <p>支持通过 {@link DashboardConfig} 或配置文件覆盖默认凭据。
+ *
  * @author cdfive
  * @since 1.6.0
  */
@@ -49,6 +52,7 @@ public class AuthController {
     @Autowired
     private AuthService<HttpServletRequest> authService;
 
+    /** 校验用户名密码并在 Session 中写入登录用户。 */
     @PostMapping("/login")
     public Result<AuthService.AuthUser> login(HttpServletRequest request, String username, String password) {
         if (StringUtils.isNotBlank(DashboardConfig.getAuthUsername())) {
@@ -60,9 +64,8 @@ public class AuthController {
         }
 
         /*
-         * If auth.username or auth.password is blank(set in application.properties or VM arguments),
-         * auth will pass, as the front side validate the input which can't be blank,
-         * so user can input any username or password(both are not blank) to login in that case.
+         * 若 auth.username 或 auth.password 未配置（留空），则跳过凭据校验；
+         * 前端仍要求非空输入，因此任意非空用户名密码均可登录。
          */
         if (StringUtils.isNotBlank(authUsername) && !authUsername.equals(username)
                 || StringUtils.isNotBlank(authPassword) && !authPassword.equals(password)) {
@@ -75,12 +78,14 @@ public class AuthController {
         return Result.ofSuccess(authUser);
     }
 
+    /** 使当前 Session 失效，完成登出。 */
     @PostMapping(value = "/logout")
     public Result<?> logout(HttpServletRequest request) {
         request.getSession().invalidate();
         return Result.ofSuccess(null);
     }
 
+    /** 检查当前请求是否已登录。 */
     @PostMapping(value = "/check")
     public Result<?> check(HttpServletRequest request) {
         AuthService.AuthUser authUser = authService.getAuthUser(request);
