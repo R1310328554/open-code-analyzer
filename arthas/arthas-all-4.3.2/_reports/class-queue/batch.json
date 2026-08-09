@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T22:26:17Z",
   "files": [
-    "core/src/main/java/com/taobao/arthas/core/distribution/DistributorOptions.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/PackingResultDistributor.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/ResultConsumer.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/ResultConsumerHelper.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/ResultDistributor.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/SharingResultDistributor.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/impl/CompositeResultDistributorImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/impl/PackingResultDistributorImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/impl/ResultConsumerImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/impl/SharingResultDistributorImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/impl/TermResultDistributorImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/env/AbstractPropertyResolver.java",
-    "core/src/main/java/com/taobao/arthas/core/env/ArthasEnvironment.java",
-    "core/src/main/java/com/taobao/arthas/core/env/ConfigurablePropertyResolver.java",
-    "core/src/main/java/com/taobao/arthas/core/env/ConversionService.java",
     "core/src/main/java/com/taobao/arthas/core/env/EnumerablePropertySource.java",
     "core/src/main/java/com/taobao/arthas/core/env/Environment.java",
     "core/src/main/java/com/taobao/arthas/core/env/MapPropertySource.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/com/taobao/arthas/core/env/convert/ConfigurableConversionService.java"
   ],
   "remaining_pending": 375,
-  "done": 390
+  "done": 405
 }
