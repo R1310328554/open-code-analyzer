@@ -1355,3 +1355,10 @@ tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateStaticTopicSub
 tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicListSubCommand.java
 tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicPermSubCommand.java
 tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicSubCommand.java
+tools/src/main/java/org/apache/rocketmq/tools/monitor/DefaultMonitorListener.java
+tools/src/main/java/org/apache/rocketmq/tools/monitor/DeleteMsgsEvent.java
+tools/src/main/java/org/apache/rocketmq/tools/monitor/FailedMsgs.java
+tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorConfig.java
+tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorListener.java
+tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorService.java
+tools/src/main/java/org/apache/rocketmq/tools/monitor/UndoneMsgs.java

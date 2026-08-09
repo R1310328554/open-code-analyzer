@@ -1,14 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:07:30Z",
-  "files": [
-    "tools/src/main/java/org/apache/rocketmq/tools/monitor/DefaultMonitorListener.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/monitor/DeleteMsgsEvent.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/monitor/FailedMsgs.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorConfig.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorListener.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/monitor/MonitorService.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/monitor/UndoneMsgs.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 124,
-  "done": 1357
+  "done": 1364
 }
