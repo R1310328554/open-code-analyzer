@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:57:40Z",
   "files": [
-    "store/src/main/java/org/apache/rocketmq/store/timer/TimerWheel.java",
-    "store/src/main/java/org/apache/rocketmq/store/timer/rocksdb/TimerRocksDBRecord.java",
-    "store/src/main/java/org/apache/rocketmq/store/transaction/TransMessageRocksDBStore.java",
-    "store/src/main/java/org/apache/rocketmq/store/transaction/TransRocksDBRecord.java",
-    "store/src/main/java/org/apache/rocketmq/store/util/LibC.java",
-    "store/src/main/java/org/apache/rocketmq/store/util/PerfCounter.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/MessageStoreExecutor.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/common/AppendResult.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/common/FileSegmentType.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/common/GetMessageResultExt.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/common/GroupCommitContext.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/common/SelectBufferResult.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/core/MessageStoreDispatcher.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/core/MessageStoreDispatcherImpl.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/core/MessageStoreFetcher.java",
     "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/core/MessageStoreFilter.java",
     "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/core/MessageStoreTopicFilter.java",
     "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/exception/TieredStoreErrorCode.java",
@@ -33,5 +18,5 @@
     "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/metadata/MetadataStore.java"
   ],
   "remaining_pending": 258,
-  "done": 1200
+  "done": 1215
 }
