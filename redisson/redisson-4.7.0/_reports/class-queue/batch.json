@@ -15,23 +15,8 @@
     "redisson-spring/redisson-spring-data/redisson-spring-data-24/src/main/java/org/redisson/spring/data/connection/SecondsConvertor.java",
     "redisson-spring/redisson-spring-data/redisson-spring-data-24/src/main/java/org/redisson/spring/data/connection/SetReplayDecoder.java",
     "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/BinaryConvertor.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/ByteBufferGeoResultsDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/DataTypeConvertor.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/DistanceConvertor.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/GeoResultsDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/ObjectListReplayDecoder2.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/PointDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/PropertiesDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/PropertiesListDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/RedisClusterNodeDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/RedissonBaseReactive.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/RedissonConnectionFactory.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/RedissonExceptionConverter.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterGeoCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterHashCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterHyperLogLogCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/RedissonReactiveClusterKeyCommands.java"
+    "redisson-spring/redisson-spring-data/redisson-spring-data-25/src/main/java/org/redisson/spring/data/connection/ByteBufferGeoResultsDecoder.java"
   ],
   "remaining_pending": 2282,
-  "done": 510
+  "done": 525
 }
