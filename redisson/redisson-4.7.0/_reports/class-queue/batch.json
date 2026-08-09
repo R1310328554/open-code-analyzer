@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:35:14Z",
   "files": [
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonReactiveSubscription.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonSentinelConnection.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/RedissonSubscription.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/ScoredSortedListReplayDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/ScoredSortedSetBlockingReplayDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/ScoredSortedSetReplayDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/ScoredSortedSetReplayDecoderV2.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/ScoredSortedSingleBlockingReplayDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/ScoredSortedSingleReplayDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/SecondsConvertor.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/SetReplayDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-41/src/main/java/org/redisson/spring/data/connection/SingleMapEntryDecoder.java",
-    "redisson-spring/redisson-spring-transaction/src/main/java/org/redisson/spring/transaction/ReactiveRedissonResourceHolder.java",
-    "redisson-spring/redisson-spring-transaction/src/main/java/org/redisson/spring/transaction/ReactiveRedissonTransactionManager.java",
-    "redisson-spring/redisson-spring-transaction/src/main/java/org/redisson/spring/transaction/ReactiveRedissonTransactionObject.java",
     "redisson-spring/redisson-spring-transaction/src/main/java/org/redisson/spring/transaction/RedissonTransactionHolder.java",
     "redisson-spring/redisson-spring-transaction/src/main/java/org/redisson/spring/transaction/RedissonTransactionManager.java",
     "redisson-spring/redisson-spring-transaction/src/main/java/org/redisson/spring/transaction/RedissonTransactionObject.java",
@@ -33,5 +18,5 @@
     "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/AttributeMessage.java"
   ],
   "remaining_pending": 1742,
-  "done": 1050
+  "done": 1065
 }
