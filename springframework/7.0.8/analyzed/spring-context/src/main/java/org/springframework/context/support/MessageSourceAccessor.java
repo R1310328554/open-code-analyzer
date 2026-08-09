@@ -26,11 +26,9 @@ import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 /**
- * Helper class for easy access to messages from a MessageSource,
- * providing various overloaded getMessage methods.
+ * 便于从 MessageSource 访问消息的辅助类，提供多种重载的 getMessage 方法。
  *
- * <p>Available from ApplicationObjectSupport, but also reusable
- * as a standalone helper to delegate to in application objects.
+ * <p>可通过 ApplicationObjectSupport 获取，也可作为独立辅助类在应用对象中委托使用。
  *
  * @author Juergen Hoeller
  * @since 23.10.2003
@@ -38,15 +36,16 @@ import org.springframework.context.i18n.LocaleContextHolder;
  */
 public class MessageSourceAccessor {
 
+	/** 被包装的 MessageSource。 */
 	private final MessageSource messageSource;
 
+	/** 默认区域；为 null 时使用 LocaleContextHolder 的区域。 */
 	private final @Nullable Locale defaultLocale;
 
 
 	/**
-	 * Create a new MessageSourceAccessor, using LocaleContextHolder's locale
-	 * as default locale.
-	 * @param messageSource the MessageSource to wrap
+	 * 创建新的 MessageSourceAccessor，以 LocaleContextHolder 的区域作为默认区域。
+	 * @param messageSource 要包装的 MessageSource
 	 * @see org.springframework.context.i18n.LocaleContextHolder#getLocale()
 	 */
 	public MessageSourceAccessor(MessageSource messageSource) {
@@ -55,9 +54,9 @@ public class MessageSourceAccessor {
 	}
 
 	/**
-	 * Create a new MessageSourceAccessor, using the given default locale.
-	 * @param messageSource the MessageSource to wrap
-	 * @param defaultLocale the default locale to use for message access
+	 * 创建新的 MessageSourceAccessor，使用给定默认区域。
+	 * @param messageSource 要包装的 MessageSource
+	 * @param defaultLocale 消息访问使用的默认区域
 	 */
 	public MessageSourceAccessor(MessageSource messageSource, Locale defaultLocale) {
 		this.messageSource = messageSource;
@@ -66,10 +65,9 @@ public class MessageSourceAccessor {
 
 
 	/**
-	 * Return the default locale to use if no explicit locale has been given.
-	 * <p>The default implementation returns the default locale passed into the
-	 * corresponding constructor, or LocaleContextHolder's locale as fallback.
-	 * Can be overridden in subclasses.
+	 * 返回未显式指定区域时使用的默认区域。
+	 * <p>默认实现返回传入对应构造函数的默认区域，或回退到 LocaleContextHolder 的区域。
+	 * 子类可覆盖。
 	 * @see #MessageSourceAccessor(org.springframework.context.MessageSource, java.util.Locale)
 	 * @see org.springframework.context.i18n.LocaleContextHolder#getLocale()
 	 */
@@ -78,10 +76,10 @@ public class MessageSourceAccessor {
 	}
 
 	/**
-	 * Retrieve the message for the given code and the default Locale.
-	 * @param code the code of the message
-	 * @param defaultMessage the String to return if the lookup fails
-	 * @return the message
+	 * 使用默认区域检索给定代码的消息。
+	 * @param code 消息代码
+	 * @param defaultMessage 查找失败时返回的字符串
+	 * @return 消息文本
 	 */
 	public String getMessage(String code, String defaultMessage) {
 		String msg = this.messageSource.getMessage(code, null, defaultMessage, getDefaultLocale());
@@ -89,11 +87,11 @@ public class MessageSourceAccessor {
 	}
 
 	/**
-	 * Retrieve the message for the given code and the given Locale.
-	 * @param code the code of the message
-	 * @param defaultMessage the String to return if the lookup fails
-	 * @param locale the Locale in which to do lookup
-	 * @return the message
+	 * 使用给定区域检索给定代码的消息。
+	 * @param code 消息代码
+	 * @param defaultMessage 查找失败时返回的字符串
+	 * @param locale 查找使用的区域
+	 * @return 消息文本
 	 */
 	public String getMessage(String code, String defaultMessage, Locale locale) {
 		String msg = this.messageSource.getMessage(code, null, defaultMessage, locale);
@@ -101,11 +99,11 @@ public class MessageSourceAccessor {
 	}
 
 	/**
-	 * Retrieve the message for the given code and the default Locale.
-	 * @param code the code of the message
-	 * @param args arguments for the message, or {@code null} if none
-	 * @param defaultMessage the String to return if the lookup fails
-	 * @return the message
+	 * 使用默认区域检索给定代码的消息。
+	 * @param code 消息代码
+	 * @param args 消息参数，无则为 {@code null}
+	 * @param defaultMessage 查找失败时返回的字符串
+	 * @return 消息文本
 	 */
 	public String getMessage(String code, Object @Nullable [] args, String defaultMessage) {
 		String msg = this.messageSource.getMessage(code, args, defaultMessage, getDefaultLocale());
@@ -113,12 +111,12 @@ public class MessageSourceAccessor {
 	}
 
 	/**
-	 * Retrieve the message for the given code and the given Locale.
-	 * @param code the code of the message
-	 * @param args arguments for the message, or {@code null} if none
-	 * @param defaultMessage the String to return if the lookup fails
-	 * @param locale the Locale in which to do lookup
-	 * @return the message
+	 * 使用给定区域检索给定代码的消息。
+	 * @param code 消息代码
+	 * @param args 消息参数，无则为 {@code null}
+	 * @param defaultMessage 查找失败时返回的字符串
+	 * @param locale 查找使用的区域
+	 * @return 消息文本
 	 */
 	public String getMessage(String code, Object @Nullable [] args, String defaultMessage, Locale locale) {
 		String msg = this.messageSource.getMessage(code, args, defaultMessage, locale);
@@ -126,67 +124,65 @@ public class MessageSourceAccessor {
 	}
 
 	/**
-	 * Retrieve the message for the given code and the default Locale.
-	 * @param code the code of the message
-	 * @return the message
-	 * @throws org.springframework.context.NoSuchMessageException if not found
+	 * 使用默认区域检索给定代码的消息。
+	 * @param code 消息代码
+	 * @return 消息文本
+	 * @throws org.springframework.context.NoSuchMessageException 若未找到
 	 */
 	public String getMessage(String code) throws NoSuchMessageException {
 		return this.messageSource.getMessage(code, null, getDefaultLocale());
 	}
 
 	/**
-	 * Retrieve the message for the given code and the given Locale.
-	 * @param code the code of the message
-	 * @param locale the Locale in which to do lookup
-	 * @return the message
-	 * @throws org.springframework.context.NoSuchMessageException if not found
+	 * 使用给定区域检索给定代码的消息。
+	 * @param code 消息代码
+	 * @param locale 查找使用的区域
+	 * @return 消息文本
+	 * @throws org.springframework.context.NoSuchMessageException 若未找到
 	 */
 	public String getMessage(String code, Locale locale) throws NoSuchMessageException {
 		return this.messageSource.getMessage(code, null, locale);
 	}
 
 	/**
-	 * Retrieve the message for the given code and the default Locale.
-	 * @param code the code of the message
-	 * @param args arguments for the message, or {@code null} if none
-	 * @return the message
-	 * @throws org.springframework.context.NoSuchMessageException if not found
+	 * 使用默认区域检索给定代码的消息。
+	 * @param code 消息代码
+	 * @param args 消息参数，无则为 {@code null}
+	 * @return 消息文本
+	 * @throws org.springframework.context.NoSuchMessageException 若未找到
 	 */
 	public String getMessage(String code, Object @Nullable [] args) throws NoSuchMessageException {
 		return this.messageSource.getMessage(code, args, getDefaultLocale());
 	}
 
 	/**
-	 * Retrieve the message for the given code and the given Locale.
-	 * @param code the code of the message
-	 * @param args arguments for the message, or {@code null} if none
-	 * @param locale the Locale in which to do lookup
-	 * @return the message
-	 * @throws org.springframework.context.NoSuchMessageException if not found
+	 * 使用给定区域检索给定代码的消息。
+	 * @param code 消息代码
+	 * @param args 消息参数，无则为 {@code null}
+	 * @param locale 查找使用的区域
+	 * @return 消息文本
+	 * @throws org.springframework.context.NoSuchMessageException 若未找到
 	 */
 	public String getMessage(String code, Object @Nullable [] args, Locale locale) throws NoSuchMessageException {
 		return this.messageSource.getMessage(code, args, locale);
 	}
 
 	/**
-	 * Retrieve the given MessageSourceResolvable (for example, an ObjectError instance)
-	 * in the default Locale.
-	 * @param resolvable the MessageSourceResolvable
-	 * @return the message
-	 * @throws org.springframework.context.NoSuchMessageException if not found
+	 * 在默认区域中解析给定 MessageSourceResolvable（例如 ObjectError 实例）。
+	 * @param resolvable MessageSourceResolvable
+	 * @return 消息文本
+	 * @throws org.springframework.context.NoSuchMessageException 若未找到
 	 */
 	public String getMessage(MessageSourceResolvable resolvable) throws NoSuchMessageException {
 		return this.messageSource.getMessage(resolvable, getDefaultLocale());
 	}
 
 	/**
-	 * Retrieve the given MessageSourceResolvable (for example, an ObjectError instance)
-	 * in the given Locale.
-	 * @param resolvable the MessageSourceResolvable
-	 * @param locale the Locale in which to do lookup
-	 * @return the message
-	 * @throws org.springframework.context.NoSuchMessageException if not found
+	 * 在指定区域中解析给定 MessageSourceResolvable（例如 ObjectError 实例）。
+	 * @param resolvable MessageSourceResolvable
+	 * @param locale 查找使用的区域
+	 * @return 消息文本
+	 * @throws org.springframework.context.NoSuchMessageException 若未找到
 	 */
 	public String getMessage(MessageSourceResolvable resolvable, Locale locale) throws NoSuchMessageException {
 		return this.messageSource.getMessage(resolvable, locale);

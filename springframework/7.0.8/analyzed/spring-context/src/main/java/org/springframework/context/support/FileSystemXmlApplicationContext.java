@@ -24,29 +24,25 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
 /**
- * Standalone XML application context, taking the context definition files
- * from the file system or from URLs, interpreting plain paths as relative
- * file system locations (for example, "mydir/myfile.txt"). Useful for test harnesses
- * as well as for standalone environments.
+ * 独立的 XML 应用上下文，从文件系统或 URL 加载上下文定义文件，
+ * 将普通路径解释为相对文件系统位置（例如 "mydir/myfile.txt"）。
+ * 适用于测试框架以及独立运行环境。
  *
- * <p><b>NOTE:</b> Plain paths will always be interpreted as relative
- * to the current VM working directory, even if they start with a slash.
- * (This is consistent with the semantics in a Servlet container.)
- * <b>Use an explicit "file:" prefix to enforce an absolute file path.</b>
+ * <p><b>注意：</b>普通路径始终相对于当前 JVM 工作目录解析，
+ * 即使以斜杠开头也是如此。（这与 Servlet 容器中的语义一致。）
+ * <b>请使用显式的 "file:" 前缀以强制使用绝对文件路径。</b>
  *
- * <p>The config location defaults can be overridden via {@link #getConfigLocations},
- * Config locations can either denote concrete files like "/myfiles/context.xml"
- * or Ant-style patterns like "/myfiles/*-context.xml" (see the
- * {@link org.springframework.util.AntPathMatcher} javadoc for pattern details).
+ * <p>可通过 {@link #getConfigLocations} 覆盖默认配置位置。
+ * 配置位置可以是具体文件（如 "/myfiles/context.xml"），
+ * 也可以是 Ant 风格模式（如 "/myfiles/*-context.xml"），
+ * 模式细节参见 {@link org.springframework.util.AntPathMatcher} 的 JavaDoc。
  *
- * <p>Note: In case of multiple config locations, later bean definitions will
- * override ones defined in earlier loaded files. This can be leveraged to
- * deliberately override certain bean definitions via an extra XML file.
+ * <p>注意：存在多个配置位置时，后加载文件中的 Bean 定义会覆盖先加载文件中的定义。
+ * 可借此通过额外的 XML 文件有意覆盖某些 Bean 定义。
  *
- * <p><b>This is a simple, one-stop shop convenience ApplicationContext.
- * Consider using the {@link GenericApplicationContext} class in combination
- * with an {@link org.springframework.beans.factory.xml.XmlBeanDefinitionReader}
- * for more flexible context setup.</b>
+ * <p><b>这是简单的一站式便捷 {@link ApplicationContext}。
+ * 若需更灵活的上下文装配，可考虑将 {@link GenericApplicationContext}
+ * 与 {@link org.springframework.beans.factory.xml.XmlBeanDefinitionReader} 组合使用。</b>
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -57,7 +53,7 @@ import org.springframework.core.io.Resource;
 public class FileSystemXmlApplicationContext extends AbstractXmlApplicationContext {
 
 	/**
-	 * Create a new FileSystemXmlApplicationContext for bean-style configuration.
+	 * 创建用于 Bean 风格配置的新 FileSystemXmlApplicationContext。
 	 * @see #setConfigLocation
 	 * @see #setConfigLocations
 	 * @see #afterPropertiesSet()
@@ -66,8 +62,8 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	}
 
 	/**
-	 * Create a new FileSystemXmlApplicationContext for bean-style configuration.
-	 * @param parent the parent context
+	 * 创建用于 Bean 风格配置的新 FileSystemXmlApplicationContext。
+	 * @param parent 父上下文
 	 * @see #setConfigLocation
 	 * @see #setConfigLocations
 	 * @see #afterPropertiesSet()
@@ -77,45 +73,40 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	}
 
 	/**
-	 * Create a new FileSystemXmlApplicationContext, loading the definitions
-	 * from the given XML file and automatically refreshing the context.
-	 * @param configLocation file path
-	 * @throws BeansException if context creation failed
+	 * 创建新的 FileSystemXmlApplicationContext，从给定 XML 文件加载定义并自动刷新上下文。
+	 * @param configLocation 文件路径
+	 * @throws BeansException 若上下文创建失败
 	 */
 	public FileSystemXmlApplicationContext(String configLocation) throws BeansException {
 		this(new String[] {configLocation}, true, null);
 	}
 
 	/**
-	 * Create a new FileSystemXmlApplicationContext, loading the definitions
-	 * from the given XML files and automatically refreshing the context.
-	 * @param configLocations array of file paths
-	 * @throws BeansException if context creation failed
+	 * 创建新的 FileSystemXmlApplicationContext，从给定 XML 文件加载定义并自动刷新上下文。
+	 * @param configLocations 文件路径数组
+	 * @throws BeansException 若上下文创建失败
 	 */
 	public FileSystemXmlApplicationContext(String... configLocations) throws BeansException {
 		this(configLocations, true, null);
 	}
 
 	/**
-	 * Create a new FileSystemXmlApplicationContext with the given parent,
-	 * loading the definitions from the given XML files and automatically
-	 * refreshing the context.
-	 * @param configLocations array of file paths
-	 * @param parent the parent context
-	 * @throws BeansException if context creation failed
+	 * 创建带指定父上下文的新 FileSystemXmlApplicationContext，
+	 * 从给定 XML 文件加载定义并自动刷新上下文。
+	 * @param configLocations 文件路径数组
+	 * @param parent 父上下文
+	 * @throws BeansException 若上下文创建失败
 	 */
 	public FileSystemXmlApplicationContext(String[] configLocations, ApplicationContext parent) throws BeansException {
 		this(configLocations, true, parent);
 	}
 
 	/**
-	 * Create a new FileSystemXmlApplicationContext, loading the definitions
-	 * from the given XML files.
-	 * @param configLocations array of file paths
-	 * @param refresh whether to automatically refresh the context,
-	 * loading all bean definitions and creating all singletons.
-	 * Alternatively, call refresh manually after further configuring the context.
-	 * @throws BeansException if context creation failed
+	 * 创建新的 FileSystemXmlApplicationContext，从给定 XML 文件加载定义。
+	 * @param configLocations 文件路径数组
+	 * @param refresh 是否自动刷新上下文（加载全部 Bean 定义并创建全部单例）；
+	 * 也可在进一步配置上下文后手动调用 refresh
+	 * @throws BeansException 若上下文创建失败
 	 * @see #refresh()
 	 */
 	public FileSystemXmlApplicationContext(String[] configLocations, boolean refresh) throws BeansException {
@@ -123,14 +114,13 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 	}
 
 	/**
-	 * Create a new FileSystemXmlApplicationContext with the given parent,
-	 * loading the definitions from the given XML files.
-	 * @param configLocations array of file paths
-	 * @param refresh whether to automatically refresh the context,
-	 * loading all bean definitions and creating all singletons.
-	 * Alternatively, call refresh manually after further configuring the context.
-	 * @param parent the parent context
-	 * @throws BeansException if context creation failed
+	 * 创建带指定父上下文的新 FileSystemXmlApplicationContext，
+	 * 从给定 XML 文件加载定义。
+	 * @param configLocations 文件路径数组
+	 * @param refresh 是否自动刷新上下文（加载全部 Bean 定义并创建全部单例）；
+	 * 也可在进一步配置上下文后手动调用 refresh
+	 * @param parent 父上下文
+	 * @throws BeansException 若上下文创建失败
 	 * @see #refresh()
 	 */
 	public FileSystemXmlApplicationContext(
@@ -146,12 +136,11 @@ public class FileSystemXmlApplicationContext extends AbstractXmlApplicationConte
 
 
 	/**
-	 * Resolve resource paths as file system paths.
-	 * <p>Note: Even if a given path starts with a slash, it will get
-	 * interpreted as relative to the current VM working directory.
-	 * This is consistent with the semantics in a Servlet container.
-	 * @param path the path to the resource
-	 * @return the Resource handle
+	 * 将资源路径解析为文件系统路径。
+	 * <p>注意：即使给定路径以斜杠开头，也会相对于当前 JVM 工作目录解析。
+	 * 这与 Servlet 容器中的语义一致。
+	 * @param path 资源路径
+	 * @return 资源句柄
 	 * @see org.springframework.web.context.support.XmlWebApplicationContext#getResourceByPath
 	 */
 	@Override
