@@ -1,4 +1,0 @@
-tieredstore/src/main/java/org/apache/rocketmq/tieredstore/index/IndexStoreService.java
-tools/src/main/java/org/apache/rocketmq/tools/admin/DefaultMQAdminExt.java
-tools/src/main/java/org/apache/rocketmq/tools/admin/DefaultMQAdminExtImpl.java
-tools/src/main/java/org/apache/rocketmq/tools/admin/MQAdminExt.java
