@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.adapter.gateway.common.api.ApiDefinition;
 import com.alibaba.csp.sentinel.adapter.gateway.common.api.ApiDefinitionChangeObserver;
 
 /**
+ * Spring Cloud Gateway API 定义变更观察者，在定义更新时重新加载匹配器。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

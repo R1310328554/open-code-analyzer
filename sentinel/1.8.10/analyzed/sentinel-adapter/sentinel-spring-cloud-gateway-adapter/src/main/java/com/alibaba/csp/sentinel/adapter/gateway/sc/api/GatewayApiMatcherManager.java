@@ -26,6 +26,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
+ * Spring Cloud Gateway 自定义 API 匹配器管理器，维护 API 名称到 {@link WebExchangeApiMatcher} 的映射。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 路由路径匹配谓词工厂，提供 Ant、精确与正则等多种匹配策略。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

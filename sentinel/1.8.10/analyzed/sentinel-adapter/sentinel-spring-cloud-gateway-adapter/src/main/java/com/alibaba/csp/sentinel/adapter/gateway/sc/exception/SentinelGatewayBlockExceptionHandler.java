@@ -30,6 +30,8 @@ import org.springframework.web.server.WebExceptionHandler;
 import reactor.core.publisher.Mono;
 
 /**
+ * Spring Cloud Gateway 的 Sentinel 流控异常处理器，将 {@link BlockException} 转为 HTTP 响应。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -52,7 +54,7 @@ public class SentinelGatewayBlockExceptionHandler implements WebExceptionHandler
         if (exchange.getResponse().isCommitted()) {
             return Mono.error(ex);
         }
-        // This exception handler only handles rejection by Sentinel.
+        // 本处理器仅处理 Sentinel 触发的流控异常。
         if (!BlockException.isBlockException(ex)) {
             return Mono.error(ex);
         }

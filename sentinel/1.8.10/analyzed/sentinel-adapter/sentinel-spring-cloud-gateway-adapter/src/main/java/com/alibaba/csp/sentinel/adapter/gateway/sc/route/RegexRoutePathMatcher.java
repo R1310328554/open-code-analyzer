@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 基于正则表达式的路由路径匹配器。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
