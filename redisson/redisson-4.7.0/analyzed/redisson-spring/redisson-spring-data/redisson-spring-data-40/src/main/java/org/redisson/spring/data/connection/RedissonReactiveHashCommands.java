@@ -61,18 +61,23 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 Hash 命令实现。
+ * <p>封装 HSET/HMSET、HMGET、HEXISTS、HDEL、HLEN、HKEYS、HVALS、HGETALL 等命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveHashCommands extends RedissonBaseReactive implements ReactiveHashCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveHashCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
     
     private static final RedisCommand<String> HMSET = new RedisCommand<String>("HMSET");
 
+    /** 单字段走 HSET/HSETNX；多字段走 HMSET。 */
+    /** HSET：写入 hash 字段。 */
     @Override
     public Flux<BooleanResponse<HSetCommand>> hSet(Publisher<HSetCommand> commands) {
         return execute(commands, command -> {
@@ -81,6 +86,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
             Assert.notNull(command.getFieldValueMap(), "FieldValueMap must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
+            // 单 field-value 对使用 HSET 或 HSETNX。
             if (command.getFieldValueMap().size() == 1) {
                 Entry<ByteBuffer, ByteBuffer> entry = command.getFieldValueMap().entrySet().iterator().next();
                 byte[] mapKeyBuf = toByteArray(entry.getKey());
@@ -113,6 +119,8 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         return parts;
     });
 
+    /** HMGET：过滤 null 后返回与请求 fields 对齐的值列表。 */
+    /** HMGET：批量读取 hash 字段。 */
     @Override
     public Flux<MultiValueResponse<HGetCommand, ByteBuffer>> hMGet(Publisher<HGetCommand> commands) {
         return execute(commands, command -> {
@@ -137,6 +145,8 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** HEXISTS：判断 hash 字段是否存在。 */
+    /** HEXISTS：判断 hash 字段是否存在。 */
     @Override
     public Flux<BooleanResponse<HExistsCommand>> hExists(Publisher<HExistsCommand> commands) {
         return execute(commands, command -> {
@@ -152,6 +162,8 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** HDEL：删除一个或多个 hash 字段。 */
+    /** HDEL：删除 hash 字段。 */
     @Override
     public Flux<NumericResponse<HDelCommand, Long>> hDel(Publisher<HDelCommand> commands) {
         return execute(commands, command -> {
@@ -168,6 +180,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** HLEN：返回 hash 字段数量。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> hLen(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
@@ -180,6 +193,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** HKEYS：返回 hash 全部字段名。 */
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<ByteBuffer>>> hKeys(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
@@ -193,6 +207,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** HVALS：返回 hash 全部字段值。 */
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<ByteBuffer>>> hVals(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
@@ -206,6 +221,8 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** HGETALL：返回 hash 全部 field-value 条目流。 */
+    /** HGETALL：返回 hash 全部 field-value。 */
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<Entry<ByteBuffer, ByteBuffer>>>> hGetAll(
             Publisher<KeyCommand> commands) {
@@ -221,6 +238,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** hScan：Hash 命令。 */
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<Entry<ByteBuffer, ByteBuffer>>>> hScan(
             Publisher<KeyScanCommand> commands) {
@@ -250,6 +268,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<Long> HSTRLEN = new RedisCommand<Long>("HSTRLEN");
     
+    /** HSTRLEN：返回 hash 字段值字节长度。 */
     @Override
     public Flux<NumericResponse<HStrLenCommand, Long>> hStrLen(Publisher<HStrLenCommand> commands) {
         return execute(commands, command -> {
@@ -265,6 +284,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** hRandField：Hash 命令。 */
     @Override
     public Flux<CommandResponse<HRandFieldCommand, Flux<ByteBuffer>>> hRandField(Publisher<HRandFieldCommand> commands) {
         return execute(commands, command -> {
@@ -283,6 +303,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** hRandFieldWithValues：Hash 命令。 */
     @Override
     public Flux<CommandResponse<HRandFieldCommand, Flux<Entry<ByteBuffer, ByteBuffer>>>> hRandFieldWithValues(Publisher<HRandFieldCommand> commands) {
         return execute(commands, command -> {
@@ -305,6 +326,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<List<Long>> HEXPIRE = new RedisCommand<>("HEXPIRE", new ObjectListReplayDecoder<>());
 
+    /** applyHashFieldExpiration：Redis 命令实现。 */
     @Override
     public Flux<NumericResponse<HashExpireCommand, Long>> applyHashFieldExpiration(Publisher<HashExpireCommand> commands) {
         return execute(commands, command -> {
@@ -335,6 +357,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<List<Long>> HPERSIST = new RedisStrictCommand<>("HPERSIST", new ObjectListReplayDecoder<>());
 
+    /** hPersist：Hash 命令。 */
     @Override
     public Flux<NumericResponse<HashFieldsCommand, Long>> hPersist(Publisher<HashFieldsCommand> commands) {
         return execute(commands, command -> {
@@ -357,6 +380,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<List<Long>> HTTL = new RedisCommand<>("HTTL", new ObjectListReplayDecoder<>());
 
+    /** hTtl：Hash 命令。 */
     @Override
     public Flux<NumericResponse<HashFieldsCommand, Long>> hTtl(Publisher<HashFieldsCommand> commands) {
         return execute(commands, command -> {
@@ -379,6 +403,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<List<Long>> HPTTL = new RedisCommand<>("HPTTL", new ObjectListReplayDecoder<>());
 
+    /** hpTtl：Redis 命令实现。 */
     @Override
     public Flux<NumericResponse<HashFieldsCommand, Long>> hpTtl(Publisher<HashFieldsCommand> commands) {
         return execute(commands, command -> {
@@ -407,6 +432,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         return parts;
     });
 
+    /** hGetDel：Hash 命令。 */
     @Override
     public Flux<MultiValueResponse<HGetDelCommand, ByteBuffer>> hGetDel(Publisher<HGetDelCommand> commands) {
         return execute(commands, command -> {
@@ -443,6 +469,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         return parts;
     });
 
+    /** hGetEx：Hash 命令。 */
     @Override
     public Flux<MultiValueResponse<HGetExCommand, ByteBuffer>> hGetEx(Publisher<HGetExCommand> commands) {
         return execute(commands, command -> {
@@ -496,6 +523,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<String> HSETEX = new RedisCommand<>("HSETEX");
 
+    /** hSetEx：Hash 命令。 */
     @Override
     public Flux<BooleanResponse<HSetExCommand>> hSetEx(Publisher<HSetExCommand> commands) {
         return execute(commands, command -> {

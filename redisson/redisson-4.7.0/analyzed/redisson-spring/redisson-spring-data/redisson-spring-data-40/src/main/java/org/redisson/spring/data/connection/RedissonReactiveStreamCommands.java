@@ -41,16 +41,22 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * Spring Data Redis 响应式 Stream 命令实现。
+ * <p>封装 XADD/XACK/XDEL、XRANGE/XREVRANGE、XREAD/XREADGROUP、
+XGROUP 消费者组管理及 XTRIM 等 Redis Stream 操作。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveStreamCommands extends RedissonBaseReactive implements ReactiveStreamCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveStreamCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** 将 {@link RecordId} 列表转为 Redis 命令所需的字符串 ID 列表。 */
+    /** 将 RecordId 列表转为 Redis 命令参数字符串列表。 */
     private static List<String> toStringList(List<RecordId> recordIds) {
         return recordIds.stream().map(RecordId::getValue).collect(Collectors.toList());
     }
@@ -256,6 +262,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** XACK：确认消费组已处理指定消息 ID。 */
     @Override
     public Flux<ReactiveRedisConnection.NumericResponse<AcknowledgeCommand, Long>> xAck(Publisher<AcknowledgeCommand> publisher) {
         return execute(publisher, command -> {
@@ -275,6 +282,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** XADD：向 Stream 追加一条记录，支持自动生成或指定 ID。 */
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<AddStreamRecord, RecordId>> xAdd(Publisher<AddStreamRecord> publisher) {
         return execute(publisher, command -> {
@@ -307,6 +315,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** XDEL：按 ID 删除 Stream 中的消息。 */
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<DeleteCommand, Long>> xDel(Publisher<DeleteCommand> publisher) {
         return execute(publisher, command -> {
@@ -324,6 +333,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** XLEN：返回 Stream 当前长度。 */
     @Override
     public Flux<ReactiveRedisConnection.NumericResponse<ReactiveRedisConnection.KeyCommand, Long>> xLen(Publisher<ReactiveRedisConnection.KeyCommand> publisher) {
         return execute(publisher, command -> {
@@ -337,11 +347,13 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** XRANGE：按 ID 范围正序读取 Stream 记录。 */
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<RangeCommand, Flux<ByteBufferRecord>>> xRange(Publisher<RangeCommand> publisher) {
         return range(RedisCommands.XRANGE, publisher);
     }
 
+    /** XRANGE/XREVRANGE 共用实现：组装边界、COUNT 参数并解码为 {@link ByteBufferRecord} 流。 */
     private Flux<ReactiveRedisConnection.CommandResponse<RangeCommand, Flux<ByteBufferRecord>>> range(RedisCommand<?> rangeCommand, Publisher<RangeCommand> publisher) {
         return execute(publisher, command -> {
 
@@ -380,6 +392,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 将 Spring {@link Range} 下界转为 Redis Stream ID 字符串（含开区间前缀）。 */
     String toLowerBound(Range range) {
         StringBuilder s = new StringBuilder();
         if (!range.getLowerBound().isInclusive()) {
@@ -394,6 +407,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         return s.toString();
     }
 
+    /** 将 Spring {@link Range} 上界转为 Redis Stream ID 字符串（含开区间前缀）。 */
     String toUpperBound(Range range) {
         StringBuilder s = new StringBuilder();
         if (!range.getUpperBound().isInclusive()) {
@@ -408,6 +422,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         return s.toString();
     }
 
+    /** XREAD/XREADGROUP：阻塞或非阻塞读取一个或多个 Stream，支持 COUNT/BLOCK/NOACK。 */
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<ReadCommand, Flux<ByteBufferRecord>>> read(Publisher<ReadCommand> publisher) {
         return execute(publisher, command -> {
@@ -481,6 +496,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
 
     private static final RedisStrictCommand<String> XGROUP_STRING = new RedisStrictCommand<>("XGROUP");
 
+    /** XGROUP：创建消费组、删除消费者或销毁消费组。 */
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<GroupCommand, String>> xGroup(Publisher<GroupCommand> publisher) {
         return execute(publisher, command -> {
@@ -509,15 +525,18 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
                 return m.map(v -> new ReactiveRedisConnection.CommandResponse<>(command, v > 0 ? "OK" : "Error"));
             }
 
+            // 未知 XGROUP 子命令。
             throw new IllegalArgumentException("unknown command " + command.getAction());
         });
     }
 
+    /** XREVRANGE：按 ID 范围逆序读取 Stream 记录。 */
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<RangeCommand, Flux<ByteBufferRecord>>> xRevRange(Publisher<RangeCommand> publisher) {
         return range(RedisCommands.XREVRANGE, publisher);
     }
 
+    /** XTRIM MAXLEN：按最大长度裁剪 Stream。 */
     @Override
     public Flux<ReactiveRedisConnection.NumericResponse<ReactiveRedisConnection.KeyCommand, Long>> xTrim(Publisher<TrimCommand> publisher) {
         return execute(publisher, command -> {
