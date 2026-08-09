@@ -24,18 +24,14 @@ import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 
 /**
- * Base class for those {@link BeanDefinitionParser} implementations that
- * need to parse and define just a <i>single</i> {@code BeanDefinition}.
+ * 仅需解析并定义<i>单个</i> {@code BeanDefinition} 的 {@link BeanDefinitionParser} 实现基类。
  *
- * <p>Extend this parser class when you want to create a single bean definition
- * from an arbitrarily complex XML element. You may wish to consider extending
- * the {@link AbstractSimpleBeanDefinitionParser} when you want to create a
- * single bean definition from a relatively simple custom XML element.
+ * <p>当需要从任意复杂 XML 元素创建单个 Bean 定义时继承本类。
+ * 若 XML 元素较简单，可考虑 {@link AbstractSimpleBeanDefinitionParser}。
  *
- * <p>The resulting {@code BeanDefinition} will be automatically registered
- * with the {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}.
- * Your job simply is to {@link #doParse parse} the custom XML {@link Element}
- * into a single {@code BeanDefinition}.
+ * <p>生成的 {@code BeanDefinition} 会自动注册到
+ * {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}。
+ * 子类只需实现 {@link #doParse}，将自定义 XML {@link Element} 解析为单个 {@code BeanDefinition}。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -48,14 +44,11 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDefinitionParser {
 
 	/**
-	 * Creates a {@link BeanDefinitionBuilder} instance for the
-	 * {@link #getBeanClass bean Class} and passes it to the
-	 * {@link #doParse} strategy method.
-	 * @param element the element that is to be parsed into a single BeanDefinition
-	 * @param parserContext the object encapsulating the current state of the parsing process
-	 * @return the BeanDefinition resulting from the parsing of the supplied {@link Element}
-	 * @throws IllegalStateException if the bean {@link Class} returned from
-	 * {@link #getBeanClass(org.w3c.dom.Element)} is {@code null}
+	 * 为 {@link #getBeanClass Bean 类} 创建 {@link BeanDefinitionBuilder}，并交给 {@link #doParse} 填充。
+	 * @param element 待解析为单个 BeanDefinition 的元素
+	 * @param parserContext 封装当前解析状态
+	 * @return 解析得到的 BeanDefinition
+	 * @throws IllegalStateException 若 {@link #getBeanClass(org.w3c.dom.Element)} 返回 {@code null}
 	 * @see #doParse
 	 */
 	@Override
@@ -78,11 +71,11 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 		builder.getRawBeanDefinition().setSource(parserContext.extractSource(element));
 		BeanDefinition containingBd = parserContext.getContainingBeanDefinition();
 		if (containingBd != null) {
-			// Inner bean definition must receive same scope as containing bean.
+			// 内部 Bean 与外层 Bean 使用相同作用域
 			builder.setScope(containingBd.getScope());
 		}
 		if (parserContext.isDefaultLazyInit()) {
-			// Default-lazy-init applies to custom bean definitions as well.
+			// default-lazy-init 同样适用于自定义 Bean 定义
 			builder.setLazyInit(true);
 		}
 		doParse(element, parserContext, builder);
@@ -90,28 +83,21 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 	}
 
 	/**
-	 * Determine the name for the parent of the currently parsed bean,
-	 * in case of the current bean being defined as a child bean.
-	 * <p>The default implementation returns {@code null},
-	 * indicating a root bean definition.
-	 * @param element the {@code Element} that is being parsed
-	 * @return the name of the parent bean for the currently parsed bean,
-	 * or {@code null} if none
+	 * 确定当前解析 Bean 的父 Bean 名（子 Bean 定义场景）。
+	 * <p>默认返回 {@code null}，表示根 Bean 定义。
+	 * @param element 正在解析的 {@code Element}
+	 * @return 父 Bean 名，无则 {@code null}
 	 */
 	protected @Nullable String getParentName(Element element) {
 		return null;
 	}
 
 	/**
-	 * Determine the bean class corresponding to the supplied {@link Element}.
-	 * <p>Note that, for application classes, it is generally preferable to
-	 * override {@link #getBeanClassName} instead, in order to avoid a direct
-	 * dependence on the bean implementation class. The BeanDefinitionParser
-	 * and its NamespaceHandler can be used within an IDE plugin then, even
-	 * if the application classes are not available on the plugin's classpath.
-	 * @param element the {@code Element} that is being parsed
-	 * @return the {@link Class} of the bean that is being defined via parsing
-	 * the supplied {@code Element}, or {@code null} if none
+	 * 确定与给定 {@link Element} 对应的 Bean 类。
+	 * <p>对应用类，通常优先覆盖 {@link #getBeanClassName}，避免直接依赖实现类，
+	 * 以便解析器在 IDE 插件中可用（应用类未必在插件类路径上）。
+	 * @param element 正在解析的 {@code Element}
+	 * @return Bean 的 {@link Class}，无则 {@code null}
 	 * @see #getBeanClassName
 	 */
 	protected @Nullable Class<?> getBeanClass(Element element) {
@@ -119,10 +105,9 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 	}
 
 	/**
-	 * Determine the bean class name corresponding to the supplied {@link Element}.
-	 * @param element the {@code Element} that is being parsed
-	 * @return the class name of the bean that is being defined via parsing
-	 * the supplied {@code Element}, or {@code null} if none
+	 * 确定与给定 {@link Element} 对应的 Bean 类名。
+	 * @param element 正在解析的 {@code Element}
+	 * @return Bean 类名，无则 {@code null}
 	 * @see #getBeanClass
 	 */
 	protected @Nullable String getBeanClassName(Element element) {
@@ -130,13 +115,11 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 	}
 
 	/**
-	 * Parse the supplied {@link Element} and populate the supplied
-	 * {@link BeanDefinitionBuilder} as required.
-	 * <p>The default implementation delegates to the {@code doParse}
-	 * version without ParserContext argument.
-	 * @param element the XML element being parsed
-	 * @param parserContext the object encapsulating the current state of the parsing process
-	 * @param builder used to define the {@code BeanDefinition}
+	 * 解析给定 {@link Element} 并填充 {@link BeanDefinitionBuilder}。
+	 * <p>默认委托给不带 ParserContext 的 {@code doParse} 重载。
+	 * @param element 待解析的 XML 元素
+	 * @param parserContext 封装当前解析状态
+	 * @param builder 用于构建 {@code BeanDefinition}
 	 * @see #doParse(Element, BeanDefinitionBuilder)
 	 */
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
@@ -144,11 +127,10 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 	}
 
 	/**
-	 * Parse the supplied {@link Element} and populate the supplied
-	 * {@link BeanDefinitionBuilder} as required.
-	 * <p>The default implementation does nothing.
-	 * @param element the XML element being parsed
-	 * @param builder used to define the {@code BeanDefinition}
+	 * 解析给定 {@link Element} 并填充 {@link BeanDefinitionBuilder}。
+	 * <p>默认无操作。
+	 * @param element 待解析的 XML 元素
+	 * @param builder 用于构建 {@code BeanDefinition}
 	 */
 	protected void doParse(Element element, BeanDefinitionBuilder builder) {
 	}

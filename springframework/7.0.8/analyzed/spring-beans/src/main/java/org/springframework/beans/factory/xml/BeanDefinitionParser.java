@@ -22,14 +22,11 @@ import org.w3c.dom.Element;
 import org.springframework.beans.factory.config.BeanDefinition;
 
 /**
- * Interface used by the {@link DefaultBeanDefinitionDocumentReader} to handle custom,
- * top-level (directly under {@code <beans/>}) tags.
+ * 供 {@link DefaultBeanDefinitionDocumentReader} 处理自定义顶层标签（直接位于 {@code <beans/>} 下）的接口。
  *
- * <p>Implementations are free to turn the metadata in the custom tag into as many
- * {@link BeanDefinition BeanDefinitions} as required.
+ * <p>实现可将自定义标签元数据转为任意数量的 {@link BeanDefinition}。
  *
- * <p>The parser locates a {@link BeanDefinitionParser} from the associated
- * {@link NamespaceHandler} for the namespace in which the custom tag resides.
+ * <p>解析器从自定义标签所在命名空间的关联 {@link NamespaceHandler} 中定位 {@link BeanDefinitionParser}。
  *
  * @author Rob Harrop
  * @since 2.0
@@ -39,18 +36,14 @@ import org.springframework.beans.factory.config.BeanDefinition;
 public interface BeanDefinitionParser {
 
 	/**
-	 * Parse the specified {@link Element} and register the resulting
-	 * {@link BeanDefinition BeanDefinition(s)} with the
-	 * {@link org.springframework.beans.factory.xml.ParserContext#getRegistry() BeanDefinitionRegistry}
-	 * embedded in the supplied {@link ParserContext}.
-	 * <p>Implementations must return the primary {@link BeanDefinition} that results
-	 * from the parse if they will ever be used in a nested fashion (for example as
-	 * an inner tag in a {@code <property/>} tag). Implementations may return
-	 * {@code null} if they will <strong>not</strong> be used in a nested fashion.
-	 * @param element the element that is to be parsed into one or more {@link BeanDefinition BeanDefinitions}
-	 * @param parserContext the object encapsulating the current state of the parsing process;
-	 * provides access to a {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}
-	 * @return the primary {@link BeanDefinition}
+	 * 解析指定 {@link Element}，将得到的 {@link BeanDefinition} 注册到
+	 * {@link ParserContext} 内嵌的
+	 * {@link org.springframework.beans.factory.xml.ParserContext#getRegistry() BeanDefinitionRegistry}。
+	 * <p>若将用于嵌套场景（如 {@code <property/>} 内的内部标签），必须返回解析得到的主 {@link BeanDefinition}；
+	 * 若<strong>不会</strong>嵌套使用，可返回 {@code null}。
+	 * @param element 待解析为一个或多个 {@link BeanDefinition} 的元素
+	 * @param parserContext 封装当前解析状态，可访问 {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}
+	 * @return 主 {@link BeanDefinition}
 	 */
 	@Nullable BeanDefinition parse(Element element, ParserContext parserContext);
 

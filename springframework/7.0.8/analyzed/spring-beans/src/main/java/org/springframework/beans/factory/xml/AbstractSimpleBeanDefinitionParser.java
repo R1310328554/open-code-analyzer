@@ -26,78 +26,27 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Convenient base class for when there exists a one-to-one mapping
- * between attribute names on the element that is to be parsed and
- * the property names on the {@link Class} being configured.
+ * 便捷基类：待解析元素上的属性名与待配置 {@link Class} 的属性名一一对应。
  *
- * <p>Extend this parser class when you want to create a single
- * bean definition from a relatively simple custom XML element. The
- * resulting {@code BeanDefinition} will be automatically
- * registered with the relevant
- * {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}.
+ * <p>当需要从相对简单的自定义 XML 元素创建单个 Bean 定义时继承本解析器。
+ * 生成的 {@code BeanDefinition} 会自动注册到
+ * {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}。
  *
- * <p>An example will hopefully make the use of this particular parser
- * class immediately clear. Consider the following class definition:
+ * <p>示例：给定类 {@code SimpleCache} 含 {@code setName}、{@code setTimeout}、
+ * {@code setEvictionPolicy} 等 setter，XML 标签
+ * {@code <caching:cache name="..." timeout="..." eviction-policy="..."/>}
+ * 只需子类实现 {@link #getBeanClass(Element)} 返回 {@code SimpleCache.class} 即可。
  *
- * <pre class="code">public class SimpleCache implements Cache {
- *
- *     public void setName(String name) {...}
- *     public void setTimeout(int timeout) {...}
- *     public void setEvictionPolicy(EvictionPolicy policy) {...}
- *
- *     // remaining class definition elided for clarity...
- * }</pre>
- *
- * <p>Then let us assume the following XML tag has been defined to
- * permit the easy configuration of instances of the above class;
- *
- * <pre class="code">&lt;caching:cache name="..." timeout="..." eviction-policy="..."/&gt;</pre>
- *
- * <p>All that is required of the Java developer tasked with writing
- * the parser to parse the above XML tag into an actual
- * {@code SimpleCache} bean definition is the following:
- *
- * <pre class="code">public class SimpleCacheBeanDefinitionParser extends AbstractSimpleBeanDefinitionParser {
- *
- *     protected Class getBeanClass(Element element) {
- *         return SimpleCache.class;
- *     }
- * }</pre>
- *
- * <p>Please note that the {@code AbstractSimpleBeanDefinitionParser}
- * is limited to populating the created bean definition with property values.
- * if you want to parse constructor arguments and nested elements from the
- * supplied XML element, then you will have to implement the
+ * <p>注意：{@code AbstractSimpleBeanDefinitionParser} 仅能将属性值填入 Bean 定义。
+ * 若需解析构造器参数或嵌套元素，应实现
  * {@link #postProcess(org.springframework.beans.factory.support.BeanDefinitionBuilder, org.w3c.dom.Element)}
- * method and do such parsing yourself, or (more likely) subclass the
- * {@link AbstractSingleBeanDefinitionParser} or {@link AbstractBeanDefinitionParser}
- * classes directly.
+ * 或继承 {@link AbstractSingleBeanDefinitionParser} / {@link AbstractBeanDefinitionParser}。
  *
- * <p>The process of actually registering the
- * {@code SimpleCacheBeanDefinitionParser} with the Spring XML parsing
- * infrastructure is described in the Spring Framework reference documentation
- * (in one of the appendices).
- *
- * <p>For an example of this parser in action (so to speak), do look at
- * the source code for the
- * {@link org.springframework.beans.factory.xml.UtilNamespaceHandler.PropertiesBeanDefinitionParser};
- * the observant (and even not so observant) reader will immediately notice that
- * there is next to no code in the implementation. The
- * {@code PropertiesBeanDefinitionParser} populates a
- * {@link org.springframework.beans.factory.config.PropertiesFactoryBean}
- * from an XML element that looks like this:
- *
- * <pre class="code">&lt;util:properties location="jdbc.properties"/&gt;</pre>
- *
- * <p>The observant reader will notice that the sole attribute on the
- * {@code <util:properties/>} element matches the
- * {@link org.springframework.beans.factory.config.PropertiesFactoryBean#setLocation(org.springframework.core.io.Resource)}
- * method name on the {@code PropertiesFactoryBean} (the general
- * usage thus illustrated holds true for any number of attributes).
- * All that the {@code PropertiesBeanDefinitionParser} needs
- * actually do is supply an implementation of the
- * {@link #getBeanClass(org.w3c.dom.Element)} method to return the
- * {@code PropertiesFactoryBean} type.
+ * <p>注册解析器到 Spring XML 基础设施的说明见 Spring 参考文档附录。
+ * 可参考 {@link org.springframework.beans.factory.xml.UtilNamespaceHandler.PropertiesBeanDefinitionParser}：
+ * {@code <util:properties location="jdbc.properties"/>} 的 {@code location} 属性
+ * 对应 {@link org.springframework.beans.factory.config.PropertiesFactoryBean#setLocation(org.springframework.core.io.Resource)}，
+ * 解析器只需在 {@link #getBeanClass(org.w3c.dom.Element)} 中返回 {@code PropertiesFactoryBean} 类型。
  *
  * @author Rob Harrop
  * @author Rick Evans
@@ -108,19 +57,12 @@ import org.springframework.util.StringUtils;
 public abstract class AbstractSimpleBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
 
 	/**
-	 * Parse the supplied {@link Element} and populate the supplied
-	 * {@link BeanDefinitionBuilder} as required.
-	 * <p>This implementation maps any attributes present on the
-	 * supplied element to {@link org.springframework.beans.PropertyValue}
-	 * instances, and
-	 * {@link BeanDefinitionBuilder#addPropertyValue(String, Object) adds them}
-	 * to the
-	 * {@link org.springframework.beans.factory.config.BeanDefinition builder}.
-	 * <p>The {@link #extractPropertyName(String)} method is used to
-	 * reconcile the name of an attribute with the name of a JavaBean
-	 * property.
-	 * @param element the XML element being parsed
-	 * @param builder used to define the {@code BeanDefinition}
+	 * 解析给定 {@link Element} 并填充 {@link BeanDefinitionBuilder}。
+	 * <p>本实现将元素上的属性映射为 {@link org.springframework.beans.PropertyValue}，
+	 * 并通过 {@link BeanDefinitionBuilder#addPropertyValue(String, Object)} 加入构建器。
+	 * {@link #extractPropertyName(String)} 用于将属性名与 JavaBean 属性名对齐。
+	 * @param element 待解析的 XML 元素
+	 * @param builder 用于构建 {@code BeanDefinition}
 	 * @see #extractPropertyName(String)
 	 */
 	@Override
@@ -139,12 +81,10 @@ public abstract class AbstractSimpleBeanDefinitionParser extends AbstractSingleB
 	}
 
 	/**
-	 * Determine whether the given attribute is eligible for being
-	 * turned into a corresponding bean property value.
-	 * <p>The default implementation considers any attribute as eligible,
-	 * except for the "id" attribute and namespace declaration attributes.
-	 * @param attribute the XML attribute to check
-	 * @param parserContext the {@code ParserContext}
+	 * 判断给定属性是否应转为 Bean 属性值。
+	 * <p>默认除 {@code id} 与命名空间声明属性外均可。
+	 * @param attribute 待检查的 XML 属性
+	 * @param parserContext {@code ParserContext}
 	 * @see #isEligibleAttribute(String)
 	 */
 	protected boolean isEligibleAttribute(Attr attribute, ParserContext parserContext) {
@@ -154,40 +94,31 @@ public abstract class AbstractSimpleBeanDefinitionParser extends AbstractSingleB
 	}
 
 	/**
-	 * Determine whether the given attribute is eligible for being
-	 * turned into a corresponding bean property value.
-	 * <p>The default implementation considers any attribute as eligible,
-	 * except for the "id" attribute.
-	 * @param attributeName the attribute name taken straight from the
-	 * XML element being parsed (never {@code null})
+	 * 判断给定属性名是否应转为 Bean 属性值。
+	 * <p>默认除 {@code id} 外均可。
+	 * @param attributeName 来自 XML 元素的属性名（永不为 {@code null}）
 	 */
 	protected boolean isEligibleAttribute(String attributeName) {
 		return !ID_ATTRIBUTE.equals(attributeName);
 	}
 
 	/**
-	 * Extract a JavaBean property name from the supplied attribute name.
-	 * <p>The default implementation uses the
-	 * {@link Conventions#attributeNameToPropertyName(String)}
-	 * method to perform the extraction.
-	 * <p>The name returned must obey the standard JavaBean property name
-	 * conventions. For example for a class with a setter method
-	 * '{@code setBingoHallFavourite(String)}', the name returned had
-	 * better be '{@code bingoHallFavourite}' (with that exact casing).
-	 * @param attributeName the attribute name taken straight from the
-	 * XML element being parsed (never {@code null})
-	 * @return the extracted JavaBean property name (must never be {@code null})
+	 * 从属性名提取 JavaBean 属性名。
+	 * <p>默认使用 {@link Conventions#attributeNameToPropertyName(String)}。
+	 * 返回名须符合 JavaBean 规范，例如 setter {@code setBingoHallFavourite(String)}
+	 * 对应属性名 {@code bingoHallFavourite}（大小写须一致）。
+	 * @param attributeName 来自 XML 元素的属性名（永不为 {@code null}）
+	 * @return 提取的 JavaBean 属性名（永不为 {@code null}）
 	 */
 	protected String extractPropertyName(String attributeName) {
 		return Conventions.attributeNameToPropertyName(attributeName);
 	}
 
 	/**
-	 * Hook method that derived classes can implement to inspect/change a
-	 * bean definition after parsing is complete.
-	 * <p>The default implementation does nothing.
-	 * @param beanDefinition the parsed (and probably totally defined) bean definition being built
-	 * @param element the XML element that was the source of the bean definition's metadata
+	 * 解析完成后的钩子，子类可检查或修改 Bean 定义。
+	 * <p>默认无操作。
+	 * @param beanDefinition 已解析（通常已完整定义）的 Bean 定义
+	 * @param element 元数据来源的 XML 元素
 	 */
 	protected void postProcess(BeanDefinitionBuilder beanDefinition, Element element) {
 	}

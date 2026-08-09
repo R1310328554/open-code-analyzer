@@ -30,22 +30,13 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
-/* ===== [OCA 中文解析] =====
-class BeanConfigurerSupport — 意图说明
-
-class `BeanConfigurerSupport`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/wiring/BeanConfigurerSupport.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Convenient base class for bean configurers that can perform Dependency Injection
- * on objects (however they may be created). Typically subclassed by AspectJ aspects.
+ * Bean 配置器的便捷基类：可对对象（无论其如何创建）执行依赖注入。
+ * 通常由 AspectJ 切面子类化使用。
  *
- * <p>Subclasses may also need a custom metadata resolution strategy, in the
- * {@link BeanWiringInfoResolver} interface. The default implementation looks for
- * a bean with the same name as the fully-qualified class name. (This is the default
- * name of the bean in a Spring XML file if the '{@code id}' attribute is not used.)
-
+ * <p>子类可能还需要自定义元数据解析策略，即 {@link BeanWiringInfoResolver} 接口。
+ * 默认实现查找与全限定类名同名的 Bean（这也是 Spring XML 中未指定 {@code id} 属性时的默认 Bean 名）。
+ *
  * @author Rob Harrop
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -56,19 +47,19 @@ class `BeanConfigurerSupport`：请结合所属模块与调用方理解其在整
  */
 public class BeanConfigurerSupport implements BeanFactoryAware, InitializingBean, DisposableBean {
 
-	// [OCA] 字段 `logger`：类成员状态。
-	/** Logger available to subclasses. */
+	/** 子类可用的日志记录器。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/** 用于解析 Bean 装配元数据的解析器。 */
 	private volatile @Nullable BeanWiringInfoResolver beanWiringInfoResolver;
 
+	/** 执行装配时使用的可配置 Bean 工厂。 */
 	private volatile @Nullable ConfigurableListableBeanFactory beanFactory;
 
 
 	/**
-	 * Set the {@link BeanWiringInfoResolver} to use.
-	 * <p>The default behavior is to look for a bean with the same name as the class.
-	 * As an alternative, consider using annotation-driven bean wiring.
+	 * 设置要使用的 {@link BeanWiringInfoResolver}。
+	 * <p>默认行为是查找与类名同名的 Bean。也可考虑使用注解驱动的 Bean 装配。
 	 * @see ClassNameBeanWiringInfoResolver
 	 * @see org.springframework.beans.factory.annotation.AnnotationBeanWiringInfoResolver
 	 */
@@ -78,7 +69,7 @@ public class BeanConfigurerSupport implements BeanFactoryAware, InitializingBean
 	}
 
 	/**
-	 * Set the {@link BeanFactory} in which this aspect must configure beans.
+	 * 设置本切面执行 Bean 配置所依赖的 {@link BeanFactory}。
 	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
@@ -93,17 +84,16 @@ public class BeanConfigurerSupport implements BeanFactoryAware, InitializingBean
 	}
 
 	/**
-	 * Create the default BeanWiringInfoResolver to be used if none was
-	 * specified explicitly.
-	 * <p>The default implementation builds a {@link ClassNameBeanWiringInfoResolver}.
-	 * @return the default BeanWiringInfoResolver (never {@code null})
+	 * 创建未显式指定时使用的默认 {@link BeanWiringInfoResolver}。
+	 * <p>默认实现构造 {@link ClassNameBeanWiringInfoResolver}。
+	 * @return 默认 BeanWiringInfoResolver（永不为 {@code null}）
 	 */
 	protected @Nullable BeanWiringInfoResolver createDefaultBeanWiringInfoResolver() {
 		return new ClassNameBeanWiringInfoResolver();
 	}
 
 	/**
-	 * Check that a {@link BeanFactory} has been set.
+	 * 校验 {@link BeanFactory} 是否已设置。
 	 */
 	@Override
 	public void afterPropertiesSet() {
@@ -111,8 +101,7 @@ public class BeanConfigurerSupport implements BeanFactoryAware, InitializingBean
 	}
 
 	/**
-	 * Release references to the {@link BeanFactory} and
-	 * {@link BeanWiringInfoResolver} when the container is destroyed.
+	 * 容器销毁时释放对 {@link BeanFactory} 和 {@link BeanWiringInfoResolver} 的引用。
 	 */
 	@Override
 	public void destroy() {
@@ -121,16 +110,10 @@ public class BeanConfigurerSupport implements BeanFactoryAware, InitializingBean
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-方法 configureBean — 意图与阅读要点
-
-方法 `configureBean` 复杂度较高（CCN≈15, NLOC≈45）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Configure the bean instance.
-	 * <p>Subclasses can override this to provide custom configuration logic.
-	 * Typically called by an aspect, for all bean instances matched by a pointcut.
-	 * @param beanInstance the bean instance to configure (must <b>not</b> be {@code null})
+	 * 配置 Bean 实例。
+	 * <p>子类可覆盖以提供自定义配置逻辑。通常由切面在切点匹配到的所有 Bean 实例上调用。
+	 * @param beanInstance 待配置的 Bean 实例（<b>不得</b>为 {@code null}）
 	 */
 	public void configureBean(Object beanInstance) {
 		if (this.beanFactory == null) {
@@ -146,7 +129,7 @@ public class BeanConfigurerSupport implements BeanFactoryAware, InitializingBean
 		Assert.state(bwiResolver != null, "No BeanWiringInfoResolver available");
 		BeanWiringInfo bwi = bwiResolver.resolveWiringInfo(beanInstance);
 		if (bwi == null) {
-			// Skip the bean if no wiring info given.
+			// 无装配元数据则跳过
 			return;
 		}
 
@@ -157,12 +140,12 @@ public class BeanConfigurerSupport implements BeanFactoryAware, InitializingBean
 			String beanName = bwi.getBeanName();
 			if (bwi.indicatesAutowiring() || (bwi.isDefaultBeanName() && beanName != null &&
 					!beanFactory.containsBean(beanName))) {
-				// Perform autowiring (also applying standard factory / post-processor callbacks).
+				// 执行自动装配（同时应用标准工厂/后处理器回调）
 				beanFactory.autowireBeanProperties(beanInstance, bwi.getAutowireMode(), bwi.getDependencyCheck());
 				beanFactory.initializeBean(beanInstance, (beanName != null ? beanName : ""));
 			}
 			else {
-				// Perform explicit wiring based on the specified bean definition.
+				// 按指定 Bean 定义执行显式装配
 				beanFactory.configureBean(beanInstance, (beanName != null ? beanName : ""));
 			}
 		}

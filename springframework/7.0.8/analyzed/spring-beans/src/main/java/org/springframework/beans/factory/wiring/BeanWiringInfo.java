@@ -22,9 +22,9 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.util.Assert;
 
 /**
- * Holder for bean wiring metadata information about a particular class. Used in
- * conjunction with the {@link org.springframework.beans.factory.annotation.Configurable}
- * annotation and the AspectJ {@code AnnotationBeanConfigurerAspect}.
+ * 持有某一特定类的 Bean 装配元数据，与
+ * {@link org.springframework.beans.factory.annotation.Configurable} 注解及
+ * AspectJ {@code AnnotationBeanConfigurerAspect} 配合使用。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -36,53 +36,53 @@ import org.springframework.util.Assert;
 public class BeanWiringInfo {
 
 	/**
-	 * Constant that indicates autowiring bean properties by name.
+	 * 表示按名称自动装配 Bean 属性的常量。
 	 * @see #BeanWiringInfo(int, boolean)
 	 * @see org.springframework.beans.factory.config.AutowireCapableBeanFactory#AUTOWIRE_BY_NAME
 	 */
 	public static final int AUTOWIRE_BY_NAME = AutowireCapableBeanFactory.AUTOWIRE_BY_NAME;
 
 	/**
-	 * Constant that indicates autowiring bean properties by type.
+	 * 表示按类型自动装配 Bean 属性的常量。
 	 * @see #BeanWiringInfo(int, boolean)
 	 * @see org.springframework.beans.factory.config.AutowireCapableBeanFactory#AUTOWIRE_BY_TYPE
 	 */
 	public static final int AUTOWIRE_BY_TYPE = AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE;
 
 
+	/** 目标 Bean 定义的名称；为 null 时表示自动装配模式。 */
 	private @Nullable String beanName;
 
+	/** 是否为建议的默认 Bean 名（未必对应工厂中的实际定义）。 */
 	private boolean isDefaultBeanName = false;
 
+	/** 自动装配模式，默认为不自动装配。 */
 	private int autowireMode = AutowireCapableBeanFactory.AUTOWIRE_NO;
 
+	/** 自动装配后是否执行依赖检查。 */
 	private boolean dependencyCheck = false;
 
 
 	/**
-	 * Create a default BeanWiringInfo that suggests plain initialization of
-	 * factory and post-processor callbacks that the bean class may expect.
+	 * 创建默认 BeanWiringInfo，仅建议执行 Bean 类可能期望的工厂与后处理器回调初始化。
 	 */
 	public BeanWiringInfo() {
 	}
 
 	/**
-	 * Create a new BeanWiringInfo that points to the given bean name.
-	 * @param beanName the name of the bean definition to take the property values from
-	 * @throws IllegalArgumentException if the supplied beanName is {@code null},
-	 * is empty, or consists wholly of whitespace
+	 * 创建指向给定 Bean 名的 BeanWiringInfo。
+	 * @param beanName 用于获取属性值的 Bean 定义名
+	 * @throws IllegalArgumentException 若 beanName 为 {@code null}、空或仅含空白
 	 */
 	public BeanWiringInfo(String beanName) {
 		this(beanName, false);
 	}
 
 	/**
-	 * Create a new BeanWiringInfo that points to the given bean name.
-	 * @param beanName the name of the bean definition to take the property values from
-	 * @param isDefaultBeanName whether the given bean name is a suggested
-	 * default bean name, not necessarily matching an actual bean definition
-	 * @throws IllegalArgumentException if the supplied beanName is {@code null},
-	 * is empty, or consists wholly of whitespace
+	 * 创建指向给定 Bean 名的 BeanWiringInfo。
+	 * @param beanName 用于获取属性值的 Bean 定义名
+	 * @param isDefaultBeanName 给定名称是否为建议的默认 Bean 名（未必对应实际 Bean 定义）
+	 * @throws IllegalArgumentException 若 beanName 为 {@code null}、空或仅含空白
 	 */
 	public BeanWiringInfo(String beanName, boolean isDefaultBeanName) {
 		Assert.hasText(beanName, "'beanName' must not be empty");
@@ -91,13 +91,10 @@ public class BeanWiringInfo {
 	}
 
 	/**
-	 * Create a new BeanWiringInfo that indicates autowiring.
-	 * @param autowireMode one of the constants {@link #AUTOWIRE_BY_NAME} /
-	 * {@link #AUTOWIRE_BY_TYPE}
-	 * @param dependencyCheck whether to perform a dependency check for object
-	 * references in the bean instance (after autowiring)
-	 * @throws IllegalArgumentException if the supplied {@code autowireMode}
-	 * is not one of the allowed values
+	 * 创建表示自动装配的 BeanWiringInfo。
+	 * @param autowireMode 常量之一：{@link #AUTOWIRE_BY_NAME} / {@link #AUTOWIRE_BY_TYPE}
+	 * @param dependencyCheck 自动装配后是否对 Bean 实例中的对象引用执行依赖检查
+	 * @throws IllegalArgumentException 若 autowireMode 不是允许的值
 	 * @see #AUTOWIRE_BY_NAME
 	 * @see #AUTOWIRE_BY_TYPE
 	 */
@@ -111,38 +108,35 @@ public class BeanWiringInfo {
 
 
 	/**
-	 * Return whether this BeanWiringInfo indicates autowiring.
+	 * 返回本 BeanWiringInfo 是否表示自动装配（即未指定 beanName）。
 	 */
 	public boolean indicatesAutowiring() {
 		return (this.beanName == null);
 	}
 
 	/**
-	 * Return the specific bean name that this BeanWiringInfo points to, if any.
+	 * 返回本 BeanWiringInfo 指向的 Bean 名（若有）。
 	 */
 	public @Nullable String getBeanName() {
 		return this.beanName;
 	}
 
 	/**
-	 * Return whether the specific bean name is a suggested default bean name,
-	 * not necessarily matching an actual bean definition in the factory.
+	 * 返回指定 Bean 名是否为建议的默认名，未必对应工厂中的实际 Bean 定义。
 	 */
 	public boolean isDefaultBeanName() {
 		return this.isDefaultBeanName;
 	}
 
 	/**
-	 * Return one of the constants {@link #AUTOWIRE_BY_NAME} /
-	 * {@link #AUTOWIRE_BY_TYPE}, if autowiring is indicated.
+	 * 若表示自动装配，返回 {@link #AUTOWIRE_BY_NAME} 或 {@link #AUTOWIRE_BY_TYPE} 之一。
 	 */
 	public int getAutowireMode() {
 		return this.autowireMode;
 	}
 
 	/**
-	 * Return whether to perform a dependency check for object references
-	 * in the bean instance (after autowiring).
+	 * 返回自动装配后是否对 Bean 实例中的对象引用执行依赖检查。
 	 */
 	public boolean getDependencyCheck() {
 		return this.dependencyCheck;

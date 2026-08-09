@@ -32,10 +32,10 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Simple object instantiation strategy for use in a BeanFactory.
+ * 在 {@link BeanFactory} 中使用的简单对象实例化策略。
  *
- * <p>Does not support Method Injection, although it provides hooks for subclasses
- * to override to add Method Injection support, for example by overriding methods.
+ * <p>不支持方法注入（Method Injection），但为子类提供了可覆盖的钩子，
+ * 以便通过覆盖方法等方式添加方法注入支持。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -44,25 +44,24 @@ import org.springframework.util.StringUtils;
  */
 public class SimpleInstantiationStrategy implements InstantiationStrategy {
 
+	/** 当前正在调用的工厂方法，用于区分容器调用与用户代码调用。 */
 	private static final ThreadLocal<Method> currentlyInvokedFactoryMethod = new ThreadLocal<>();
 
 
 	/**
-	 * Return the factory method currently being invoked or {@code null} if none.
-	 * <p>Allows factory method implementations to determine whether the current
-	 * caller is the container itself as opposed to user code.
+	 * 返回当前正在调用的工厂方法；若无则返回 {@code null}。
+	 * <p>允许工厂方法实现判断当前调用方是容器本身还是用户代码。
 	 */
 	public static @Nullable Method getCurrentlyInvokedFactoryMethod() {
 		return currentlyInvokedFactoryMethod.get();
 	}
 
 	/**
-	 * Invoke the given {@code instanceSupplier} with the factory method exposed
-	 * as being invoked.
-	 * @param method the factory method to expose
-	 * @param instanceSupplier the instance supplier
-	 * @param <T> the type of the instance
-	 * @return the result of the instance supplier
+	 * 在将指定工厂方法标记为"正在调用"的上下文中，执行给定的 {@code instanceSupplier}。
+	 * @param method 要暴露的工厂方法
+	 * @param instanceSupplier 实例供应器
+	 * @param <T> 实例类型
+	 * @return 实例供应器的执行结果
 	 * @since 6.2
 	 */
 	public static <T> T instantiateWithFactoryMethod(Method method, Supplier<T> instanceSupplier) {
@@ -84,7 +83,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
-		// Don't override the class with CGLIB if no overrides.
+		// 无方法覆盖时，无需用 CGLIB 替换类
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {
@@ -95,6 +94,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
 					}
 					try {
+						// 解析并缓存无参构造器
 						constructorToUse = clazz.getDeclaredConstructor();
 						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
 					}
@@ -106,16 +106,15 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 			return BeanUtils.instantiateClass(constructorToUse);
 		}
 		else {
-			// Must generate CGLIB subclass.
+			// 存在方法覆盖，必须生成 CGLIB 子类
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}
 
 	/**
-	 * Subclasses can override this method, which is implemented to throw
-	 * UnsupportedOperationException, if they can instantiate an object with
-	 * the Method Injection specified in the given RootBeanDefinition.
-	 * Instantiation should use a no-arg constructor.
+	 * 子类可覆盖此方法：若支持按给定 {@link RootBeanDefinition} 中的方法注入来实例化对象，
+	 * 则提供实现。实例化应使用无参构造器。
+	 * <p>默认实现抛出 {@link UnsupportedOperationException}。
 	 */
 	protected Object instantiateWithMethodInjection(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		throw new UnsupportedOperationException("Method Injection not supported in SimpleInstantiationStrategy");
@@ -134,10 +133,9 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	}
 
 	/**
-	 * Subclasses can override this method, which is implemented to throw
-	 * UnsupportedOperationException, if they can instantiate an object with
-	 * the Method Injection specified in the given RootBeanDefinition.
-	 * Instantiation should use the given constructor and parameters.
+	 * 子类可覆盖此方法：若支持按给定 {@link RootBeanDefinition} 中的方法注入来实例化对象，
+	 * 则提供实现。实例化应使用指定构造器及参数。
+	 * <p>默认实现抛出 {@link UnsupportedOperationException}。
 	 */
 	protected Object instantiateWithMethodInjection(RootBeanDefinition bd, @Nullable String beanName,
 			BeanFactory owner, @Nullable Constructor<?> ctor, Object... args) {
@@ -153,6 +151,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 			try {
 				ReflectionUtils.makeAccessible(factoryMethod);
 				Object result = factoryMethod.invoke(factoryBean, args);
+				// 工厂方法返回 null 时用 NullBean 占位
 				if (result == null) {
 					result = new NullBean();
 				}
@@ -175,6 +174,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 			catch (InvocationTargetException ex) {
 				String msg = "Factory method '" + factoryMethod.getName() + "' threw exception with message: " +
 						ex.getTargetException().getMessage();
+				// 检测工厂 Bean 循环依赖，提示改为 static 工厂方法
 				if (bd.getFactoryBeanName() != null && owner instanceof ConfigurableBeanFactory cbf &&
 						cbf.isCurrentlyInCreation(bd.getFactoryBeanName())) {
 					msg = "Circular reference involving containing bean '" + bd.getFactoryBeanName() + "' - consider " +

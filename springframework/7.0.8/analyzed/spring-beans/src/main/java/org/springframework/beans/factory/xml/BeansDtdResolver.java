@@ -29,13 +29,12 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 /**
- * {@link EntityResolver} implementation for the Spring beans DTD,
- * to load the DTD from the Spring class path (or JAR file).
+ * Spring beans DTD 的 {@link EntityResolver} 实现，从 Spring 类路径（或 JAR）加载 DTD。
  *
- * <p>Fetches "spring-beans.dtd" from the class path resource
- * "/org/springframework/beans/factory/xml/spring-beans.dtd",
- * no matter whether specified as some local URL that includes "spring-beans"
- * in the DTD name or as "https://www.springframework.org/dtd/spring-beans-2.0.dtd".
+ * <p>无论 systemId 是含 {@code spring-beans} 的本地 URL，还是
+ * {@code https://www.springframework.org/dtd/spring-beans-2.0.dtd}，
+ * 均从类路径资源 {@code /org/springframework/beans/factory/xml/spring-beans.dtd}
+ * 加载 {@code spring-beans.dtd}。
  *
  * @author Juergen Hoeller
  * @author Colin Sampaleanu
@@ -44,8 +43,10 @@ import org.springframework.core.io.Resource;
  */
 public class BeansDtdResolver implements EntityResolver {
 
+	/** DTD 文件扩展名。 */
 	private static final String DTD_EXTENSION = ".dtd";
 
+	/** Spring beans DTD 名称片段。 */
 	private static final String DTD_NAME = "spring-beans";
 
 	private static final Log logger = LogFactory.getLog(BeansDtdResolver.class);
@@ -84,7 +85,7 @@ public class BeansDtdResolver implements EntityResolver {
 			}
 		}
 
-		// Fall back to the parser's default behavior.
+		// 回退到解析器默认行为
 		return null;
 	}
 
