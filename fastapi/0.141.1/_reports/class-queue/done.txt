@@ -220,3 +220,13 @@ docs_src/dependencies/tutorial014_an_py310.py
 docs_src/dependency_testing/__init__.py
 docs_src/dependency_testing/tutorial001_an_py310.py
 docs_src/dependency_testing/tutorial001_py310.py
+docs_src/frontend/__init__.py
+docs_src/frontend/tutorial001_py310.py
+docs_src/frontend/tutorial002_py310.py
+docs_src/frontend/tutorial003_py310.py
+docs_src/frontend/tutorial004_py310.py
+docs_src/frontend/tutorial005_py310.py
+docs_src/frontend/tutorial006_py310.py
+docs_src/generate_clients/__init__.py
+docs_src/generate_clients/tutorial001_py310.py
+docs_src/generate_clients/tutorial002_py310.py
