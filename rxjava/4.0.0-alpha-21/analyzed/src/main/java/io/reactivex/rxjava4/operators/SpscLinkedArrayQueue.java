@@ -24,9 +24,10 @@ import io.reactivex.rxjava4.annotations.Nullable;
 import io.reactivex.rxjava4.internal.util.Pow2;
 
 /**
- * A single-producer single-consumer array-backed queue which can allocate new arrays in case the consumer is slower
- * than the producer.
- * @param <T> the contained value type
+ * SPSC 链表式数组队列：消费慢于生产时可分配新数组岛并链接。
+ * 末槽 HAS_NEXT 指向下一岛；支持原子双元素 offer。
+ *
+ * @param <T> 元素类型
  * @since 3.1.1
  */
 public final class SpscLinkedArrayQueue<T> implements SimplePlainQueue<T> {
@@ -46,9 +47,7 @@ public final class SpscLinkedArrayQueue<T> implements SimplePlainQueue<T> {
     private static final Object HAS_NEXT = new Object();
 
     /**
-     * Constructs a linked array-based queue instance with the given
-     * island size rounded up to the next power of 2.
-     * @param bufferSize the maximum number of elements per island
+     * @param bufferSize 每个数组岛的最大元素数（向上取 2 的幂，至少 8）
      */
     public SpscLinkedArrayQueue(final int bufferSize) {
         int p2capacity = Pow2.roundToPowerOfTwo(Math.max(8, bufferSize));
@@ -63,11 +62,8 @@ public final class SpscLinkedArrayQueue<T> implements SimplePlainQueue<T> {
         soProducerIndex(0L);
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * This implementation is correct for single producer thread use only.
-     */
+    /** {@inheritDoc} 仅单生产者线程安全。 */
+    /** look-ahead 或 resize 新岛后写入；仅单生产者。 */
     @Override
     public boolean offer(final T e) {
         if (null == e) {
@@ -126,11 +122,8 @@ public final class SpscLinkedArrayQueue<T> implements SimplePlainQueue<T> {
         soElement(curr, nextOffset, null); // Avoid GC nepotism
         return nextBuffer;
     }
-    /**
-     * {@inheritDoc}
-     * <p>
-     * This implementation is correct for single consumer thread use only.
-     */
+    /** {@inheritDoc} 仅单消费者线程安全。 */
+    /** 遇 HAS_NEXT 则切换到下一岛再取；仅单消费者。 */
     @Nullable
     @SuppressWarnings("unchecked")
     @Override
@@ -165,11 +158,7 @@ public final class SpscLinkedArrayQueue<T> implements SimplePlainQueue<T> {
         return n;
     }
 
-    /**
-     * Returns the next element in this queue without removing it or {@code null}
-     * if this queue is empty
-     * @return the next element or {@code null}
-     */
+    /** 窥视队首元素不移除；空则 null。 */
     @SuppressWarnings("unchecked")
     @Nullable
     public T peek() {
@@ -197,10 +186,7 @@ public final class SpscLinkedArrayQueue<T> implements SimplePlainQueue<T> {
         while (poll() != null || !isEmpty()) { } // NOPMD
     }
 
-    /**
-     * Returns the number of elements in the queue.
-     * @return the number of elements in the queue
-     */
+    /** 估算队列长度（先读 consumer 再读 producer，可能高估）。 */
     public int size() {
         /*
          * It is possible for a thread to be interrupted or reschedule between the read of the producer and
@@ -267,11 +253,8 @@ public final class SpscLinkedArrayQueue<T> implements SimplePlainQueue<T> {
     }
 
     /**
-     * Offer two elements at the same time.
-     * <p>Don't use the regular offer() with this at all!
-     * @param first the first value, not null
-     * @param second the second value, not null
-     * @return true if the queue accepted the two new values
+     * 原子入队两个元素；勿与普通 offer 混用。
+     * 空间不足时扩容新岛并链接。
      */
     @Override
     public boolean offer(T first, T second) {

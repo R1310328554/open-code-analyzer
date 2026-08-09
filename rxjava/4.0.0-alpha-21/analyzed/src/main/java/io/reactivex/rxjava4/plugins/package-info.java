@@ -12,7 +12,7 @@
  */
 
 /**
- * Contains the central plugin handler {@link io.reactivex.rxjava4.plugins.RxJavaPlugins}
- * class to hook into the lifecycle of the base reactive types and schedulers.
+ * 全局插件入口 {@link io.reactivex.rxjava4.plugins.RxJavaPlugins}：
+ * 挂钩基础响应式类型与 Scheduler 的生命周期。
  */
 package io.reactivex.rxjava4.plugins;

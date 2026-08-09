@@ -17,25 +17,18 @@ import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.functions.Supplier;
 
 /**
- * A marker interface indicating that a scalar, constant value
- * is held by the implementing reactive type which can be
- * safely extracted during assembly time can be used for
- * optimization.
- * <p>
- * Implementors of {@link #get()} should not throw any exception.
- * <p>
- * Design note: the interface extends {@link Supplier} because if a scalar
- * is safe to extract during assembly time, it is also safe to extract at
- * subscription time or later. This allows optimizations to deal with such
- * single-element sources uniformly.
- * <p>
- * @param <T> the scalar value type held by the implementing reactive type
+ * 标记接口：实现类持有可在装配期安全提取的标量常量，供算子优化。
+ *
+ * <p>{@link #get()} 不应抛异常。
+ * <p>继承 {@link Supplier}：装配期可提取则订阅期亦可，便于统一处理单元素源。
+ *
+ * @param <T> 标量值类型
  * @since 3.1.1
  */
 @FunctionalInterface
 public interface ScalarSupplier<@NonNull T> extends Supplier<T> {
 
-    // overridden to remove the throws Throwable
+    /** 覆写以去掉 throws Throwable。 */
     @Override
     T get();
 }

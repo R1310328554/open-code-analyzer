@@ -16,20 +16,19 @@ package io.reactivex.rxjava4.parallel;
 import io.reactivex.rxjava4.annotations.NonNull;
 
 /**
- * Convenience interface and callback used by the {@link ParallelFlowable#to} operator to turn a ParallelFlowable into
- * another value fluently.
+ * {@link ParallelFlowable#to} 的回调：将 ParallelFlowable 转换为任意类型 R。
  * <p>History: 2.1.7 - experimental
- * @param <T> the upstream type
- * @param <R> the output type
+ *
+ * @param <T> 上游元素类型
+ * @param <R> 转换结果类型
  * @since 2.2
  */
 @FunctionalInterface
 public interface ParallelFlowableConverter<T, R> {
     /**
-     * Applies a function to the upstream ParallelFlowable and returns a converted value of type {@code R}.
-     *
-     * @param upstream the upstream ParallelFlowable instance
-     * @return the converted value
+     * 对 upstream 应用转换逻辑并返回 R。
+     * @param upstream 上游 ParallelFlowable
+     * @return 转换结果
      */
     @NonNull
     R apply(@NonNull ParallelFlowable<T> upstream);

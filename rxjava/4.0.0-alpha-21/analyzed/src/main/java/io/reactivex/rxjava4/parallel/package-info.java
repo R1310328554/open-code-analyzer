@@ -12,7 +12,7 @@
  */
 
 /**
- * Contains the base type {@link io.reactivex.rxjava4.parallel.ParallelFlowable},
- * a sub-DSL for working with {@link io.reactivex.rxjava4.core.Flowable} sequences in parallel.
+ * 并行流子 DSL：{@link io.reactivex.rxjava4.parallel.ParallelFlowable} 及
+ * 在多条 rail 上并行处理 {@link io.reactivex.rxjava4.core.Flowable} 的相关类型。
  */
 package io.reactivex.rxjava4.parallel;

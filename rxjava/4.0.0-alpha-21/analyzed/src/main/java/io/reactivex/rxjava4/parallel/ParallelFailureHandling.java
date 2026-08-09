@@ -16,26 +16,18 @@ package io.reactivex.rxjava4.parallel;
 import io.reactivex.rxjava4.functions.BiFunction;
 
 /**
- * Enumerations for handling failure within a parallel operator.
+ * 并行算子内错误处理策略枚举，同时作为 BiFunction 恒返回自身。
  * <p>History: 2.0.8 - experimental
  * @since 2.2
  */
 public enum ParallelFailureHandling implements BiFunction<Long, Throwable, ParallelFailureHandling> {
-    /**
-     * The current rail is stopped and the error is dropped.
-     */
+    /** 停止当前 rail 并丢弃错误。 */
     STOP,
-    /**
-     * The current rail is stopped and the error is signaled.
-     */
+    /** 停止当前 rail 并向下游传播错误。 */
     ERROR,
-    /**
-     * The current value and error is ignored and the rail resumes with the next item.
-     */
+    /** 跳过当前项与错误，继续处理下一项。 */
     SKIP,
-    /**
-     * Retry the current value.
-     */
+    /** 重试当前元素。 */
     RETRY;
 
     @Override

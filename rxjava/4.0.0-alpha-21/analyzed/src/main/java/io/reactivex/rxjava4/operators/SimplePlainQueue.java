@@ -16,9 +16,10 @@ package io.reactivex.rxjava4.operators;
 import io.reactivex.rxjava4.annotations.*;
 
 /**
- * Override of the {@link SimpleQueue} interface with no {@code throws Throwable} on {@code poll()}.
+ * {@link SimpleQueue} 变体：{@code poll()} 不声明 throws Throwable。
+ * 供 SPSC 队列等不通过融合函数抛错的实现使用。
  *
- * @param <T> the value type to offer and poll, not null
+ * @param <T> offer/poll 的元素类型，非 null
  * @since 3.1.1
  */
 public interface SimplePlainQueue<@NonNull T> extends SimpleQueue<T> {

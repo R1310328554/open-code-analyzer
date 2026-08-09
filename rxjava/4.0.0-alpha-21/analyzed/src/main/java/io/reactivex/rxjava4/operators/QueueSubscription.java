@@ -18,42 +18,18 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.annotations.NonNull;
 
 /**
- * An interface extending {@link SimpleQueue} and {@link Subscription} and allows negotiating
- * the fusion mode between subsequent operators of the {@link io.reactivex.rxjava4.core.Flowable Flowable} base reactive type.
- * <p>
- * The negotiation happens in subscription time when the upstream
- * calls the {@code onSubscribe} with an instance of this interface. The
- * downstream has then the obligation to call {@link #requestFusion(int)}
- * with the appropriate mode before calling {@code request()}.
- * <p>
- * In <b>synchronous fusion</b>, all upstream values are either already available or is generated
- * when {@link #poll()} is called synchronously. When the {@link #poll()} returns null,
- * that is the indication if a terminated stream. Downstream should not call {@link #request(long)}
- * in this mode. In this mode, the upstream won't call the onXXX methods.
- * <p>
- * In <b>asynchronous fusion</b>, upstream values may become available to {@link #poll()} eventually.
- * Upstream signals {@code onError()} and {@code onComplete()} as usual, however,
- * {@code onNext} will be called with {@code null} instead of the actual value.
- * Downstream should treat such onNext as indication that {@link #poll()} can be called.
- * In this mode, the downstream still has to call {@link #request(long)}
- * to indicate it is prepared to receive more values.
- * <p>
- * The general rules for consuming the {@link SimpleQueue} interface:
- * <ul>
- * <li> {@link #poll()} and {@link #clear()} has to be called sequentially (from within a serializing drain-loop).</li>
- * <li>In addition, callers of {@link #poll()} should be prepared to catch exceptions.</li>
- * <li>Due to how computation attaches to the {@link #poll()}, {@link #poll()} may return
- * {@code null} even if a preceding {@link #isEmpty()} returned false.</li>
- * </ul>
- * <p>
- * Implementations should only allow calling the following methods and the rest of the
- * {@link SimpleQueue} interface methods should throw {@link UnsupportedOperationException}:
- * <ul>
- * <li>{@link #poll()}</li>
- * <li>{@link #isEmpty()}</li>
- * <li>{@link #clear()}</li>
- * </ul>
- * @param <T> the value type transmitted through the queue
+ * Flowable 侧融合队列：同时是 {@link SimpleQueue} 与 {@link Subscription}。
+ * 订阅时 upstream 以本接口 onSubscribe，下游须在 request 前调用 {@link #requestFusion(int)}。
+ *
+ * <p><b>同步融合</b>：poll 同步取数，null 表终止；不应再 request。
+ * <p><b>异步融合</b>：onNext(null) 提示可 poll，仍需 request 背压。
+ *
+ * <p>消费规则：poll/clear 须串行 drain-loop；poll 可能抛异常；
+ * isEmpty 为 false 时 poll 仍可能因融合函数返回 null。
+ *
+ * <p>融合实现通常仅支持 poll、isEmpty、clear，其余抛 UnsupportedOperationException。
+ *
+ * @param <T> 队列元素类型
  * @see QueueDisposable
  * @since 3.1.1
  */

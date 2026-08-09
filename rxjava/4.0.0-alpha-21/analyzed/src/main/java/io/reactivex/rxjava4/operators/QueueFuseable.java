@@ -16,70 +16,43 @@ package io.reactivex.rxjava4.operators;
 import io.reactivex.rxjava4.annotations.NonNull;
 
 /**
- * Represents a {@link SimpleQueue} plus the means and constants for requesting a fusion mode.
- * @param <T> the value type returned by the SimpleQueue.poll()
+ * 扩展 {@link SimpleQueue}，定义算子融合（fusion）模式常量与协商方法。
+ * 上游/下游通过 {@link #requestFusion(int)} 决定是否用 poll 替代 onNext 链。
+ *
+ * @param <T> poll 返回的元素类型
  * @since 3.1.1
  */
 public interface QueueFuseable<@NonNull T> extends SimpleQueue<T> {
-    /**
-     * Returned by the {@link #requestFusion(int)} if the upstream doesn't support
-     * the requested mode.
-     */
+    /** 上游不支持所请求融合模式时 {@link #requestFusion(int)} 的返回值。 */
     int NONE = 0;
 
     /**
-     * Request a synchronous fusion mode and can be returned by {@link #requestFusion(int)}
-     * for an accepted mode.
-     * <p>
-     * In synchronous fusion, all upstream values are either already available or is generated
-     * when {@link #poll()} is called synchronously. When the {@link #poll()} returns null,
-     * that is the indication if a terminated stream.
-     * In this mode, the upstream won't call the onXXX methods and callers of
-     * {@link #poll()} should be prepared to catch exceptions. Note that {@link #poll()} has
-     * to be called sequentially (from within a serializing drain-loop).
+     * 同步融合：值在 poll 时同步产生或已就绪；poll 返回 null 表示终止。
+     * 此模式下上游不调用 onXXX，poll 须在串行 drain-loop 中调用并捕获异常。
      */
     int SYNC = 1;
 
     /**
-     * Request an asynchronous fusion mode and can be returned by {@link #requestFusion(int)}
-     * for an accepted mode.
-     * <p>
-     * In asynchronous fusion, upstream values may become available to {@link #poll()} eventually.
-     * Upstream signals onError() and onComplete() as usual but onNext may not actually contain
-     * the upstream value but have {@code null} instead. Downstream should treat such onNext as indication
-     * that {@link #poll()} can be called. Note that {@link #poll()} has to be called sequentially
-     * (from within a serializing drain-loop). In addition, callers of {@link #poll()} should be
-     * prepared to catch exceptions.
+     * 异步融合：上游值最终 经 poll 可用；onNext(null) 提示可 poll。
+     * onError/onComplete 仍正常；poll 须串行调用并捕获异常。
      */
     int ASYNC = 2;
 
-    /**
-     * Request any of the {@link #SYNC} or {@link #ASYNC} modes.
-     */
+    /** 请求 SYNC 或 ASYNC 任一可接受模式（位或）。 */
     int ANY = SYNC | ASYNC;
 
     /**
-     * Used in binary or combination with the other constants as an input to {@link #requestFusion(int)}
-     * indicating that the {@link #poll()} will be called behind an asynchronous boundary and thus
-     * may change the non-trivial computation locations attached to the {@link #poll()} chain of
-     * fused operators.
-     * <p>
-     * For example, fusing map() and observeOn() may move the computation of the map's function over to
-     * the thread run after the observeOn(), which is generally unexpected.
+     * 与 SYNC/ASYNC 组合使用：poll 将在异步边界之后调用，
+     * 可能改变融合链上计算所在线程（如 map+observeOn 时 map 跑到 observeOn 线程）。
      */
     int BOUNDARY = 4;
 
     /**
-     * Request a fusion mode from the upstream.
-     * <p>
-     * This should be called before {@code onSubscribe} returns.
-     * <p>
-     * Calling this method multiple times or after {@code onSubscribe} finished is not allowed
-     * and may result in undefined behavior.
-     * <p>
-     * @param mode the requested fusion mode, allowed values are {@link #SYNC}, {@link #ASYNC},
-     * {@link #ANY} combined with {@link #BOUNDARY} (e.g., {@code requestFusion(SYNC | BOUNDARY)}).
-     * @return the established fusion mode: {@link #NONE}, {@link #SYNC}, {@link #ASYNC}.
+     * 在 onSubscribe 返回前向 upstream 请求融合模式。
+     * 不可重复调用或于 onSubscribe 之后调用。
+     *
+     * @param mode SYNC、ASYNC、ANY，可与 BOUNDARY 组合
+     * @return 实际建立的 NONE、SYNC 或 ASYNC
      */
     int requestFusion(int mode);
 

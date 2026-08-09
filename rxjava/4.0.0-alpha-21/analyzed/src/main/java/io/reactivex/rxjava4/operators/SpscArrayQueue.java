@@ -25,18 +25,11 @@ import io.reactivex.rxjava4.annotations.Nullable;
 import io.reactivex.rxjava4.internal.util.Pow2;
 
 /**
- * A Single-Producer-Single-Consumer queue backed by a pre-allocated buffer.
- * <p>
- * This implementation is a mashup of the <a href="http://sourceforge.net/projects/mc-fastflow/">Fast Flow</a>
- * algorithm with an optimization of the offer method taken from the <a
- * href="http://staff.ustc.edu.cn/~bhua/publications/IJPP_draft.pdf">BQueue</a> algorithm (a variation on Fast
- * Flow), and adjusted to comply with Queue.offer semantics regarding capacity.<br>
- * For convenience the relevant papers are available in the resources folder:<br>
- * <i>2010 - Pisa - SPSC Queues on Shared Cache Multi-Core Systems.pdf<br>
- * 2012 - Junchang- BQueue- Efficient and Practical Queuing.pdf <br>
- * </i> This implementation is wait free.
+ * 预分配缓冲区的单生产者单消费者（SPSC）无锁队列（源自 JCTools）。
+ * 融合 Fast Flow 与 BQueue 的 offer 优化，容量满时 offer 返回 false。
+ * wait-free；容量向上取 2 的幂。
  *
- * @param <E> the element type of the queue
+ * @param <E> 元素类型
  * @since 3.1.1
  */
 public final class SpscArrayQueue<E> extends AtomicReferenceArray<E> implements SimplePlainQueue<E> {
@@ -50,10 +43,7 @@ public final class SpscArrayQueue<E> extends AtomicReferenceArray<E> implements 
     final int lookAheadStep;
 
     /**
-     * Constructs an array-backed queue with the given capacity rounded
-     * up to the next power of 2 size.
-     * @param capacity the maximum number of elements the queue would hold,
-     *                 rounded up to the next power of 2
+     * @param capacity 最大元素数（向上取 2 的幂作为数组长度）
      */
     public SpscArrayQueue(int capacity) {
         super(Pow2.roundToPowerOfTwo(capacity));
@@ -63,6 +53,7 @@ public final class SpscArrayQueue<E> extends AtomicReferenceArray<E> implements 
         lookAheadStep = Math.min(capacity / 4, MAX_LOOK_AHEAD_STEP);
     }
 
+    /** look-ahead 探测空槽；满则 false；lazySet 更新 producerIndex。 */
     @Override
     public boolean offer(E e) {
         if (null == e) {
@@ -85,12 +76,14 @@ public final class SpscArrayQueue<E> extends AtomicReferenceArray<E> implements 
         return true;
     }
 
+    /** 连续两次 offer（FIXME：非原子双入队）。 */
     @Override
     public boolean offer(E v1, E v2) {
         // FIXME
         return offer(v1) && offer(v2);
     }
 
+    /** 读槽位非 null 则推进 consumerIndex 并清空槽。 */
     @Nullable
     @Override
     public E poll() {
@@ -106,6 +99,7 @@ public final class SpscArrayQueue<E> extends AtomicReferenceArray<E> implements 
         return e;
     }
 
+    /** producerIndex == consumerIndex。 */
     @Override
     public boolean isEmpty() {
         return producerIndex.get() == consumerIndex.get();
@@ -119,6 +113,7 @@ public final class SpscArrayQueue<E> extends AtomicReferenceArray<E> implements 
         consumerIndex.lazySet(newIndex);
     }
 
+    /** 循环 poll 直至空（poll 弱保证需配合 isEmpty）。 */
     @Override
     public void clear() {
         // we have to test isEmpty because of the weaker poll() guarantee

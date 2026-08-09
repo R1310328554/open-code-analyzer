@@ -16,19 +16,19 @@ package io.reactivex.rxjava4.parallel;
 import io.reactivex.rxjava4.annotations.NonNull;
 
 /**
- * Interface to compose ParallelFlowable.
+ * 组合 ParallelFlowable 的函数式接口（compose 参数）。
  * <p>History: 2.0.8 - experimental
- * @param <Upstream> the upstream value type
- * @param <Downstream> the downstream value type
+ *
+ * @param <Upstream> 上游元素类型
+ * @param <Downstream> 下游元素类型
  * @since 2.2
  */
 @FunctionalInterface
 public interface ParallelTransformer<@NonNull Upstream, @NonNull Downstream> {
     /**
-     * Applies a function to the upstream ParallelFlowable and returns a ParallelFlowable with
-     * optionally different element type.
-     * @param upstream the upstream ParallelFlowable instance
-     * @return the transformed ParallelFlowable instance
+     * 变换 upstream 并返回（可能换型的）ParallelFlowable。
+     * @param upstream 上游实例
+     * @return 变换后的 ParallelFlowable
      */
     @NonNull
     ParallelFlowable<Downstream> apply(@NonNull ParallelFlowable<Upstream> upstream);

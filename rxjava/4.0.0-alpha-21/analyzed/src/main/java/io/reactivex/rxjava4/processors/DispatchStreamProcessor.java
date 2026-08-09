@@ -25,12 +25,10 @@ import io.reactivex.rxjava4.internal.operators.streamable.*;
 import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 
 /**
- * Signals the various {@link #next(Object)} and {@link #finish(Throwable)} events to one or more
- * downstream {@link Streamer}s.
- * <p>
- * This is equivalent with to a {@link PublishProcessor} or {@link MulticastProcessor}, adapted to
- * the {@link Streamable} world.
- * @param <T> the element type of the input and output values
+ * Streamable 版多播处理器：将 {@link #next(Object)} 与 {@link #finish(Throwable)}
+ * 分发给多个 {@link Streamer}，语义类似 {@link PublishProcessor}。
+ *
+ * @param <T> 输入输出元素类型
  * @since 4.0.0
  */
 public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
@@ -43,6 +41,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
 
     volatile Throwable terminalEvent;
 
+    /** 注册 DispatchStreamer；已终止则返回 failed/empty Streamer。 */
     @Override
     public @NonNull Streamer<@NonNull T> stream(@NonNull StreamerCancellation cancellation) {
         var result = new DispatchStreamer<T>(this);
@@ -57,6 +56,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
         return StreamableEmpty.createEmpty();
     }
 
+    /** 向所有 streamer 并发 send，awaitAllBoolean 合并结果。 */
     @Override
     public CompletionStage<Boolean> next(@NonNull T item) {
         @SuppressWarnings("unchecked")
@@ -71,6 +71,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
         return StreamableHelper.awaitAllBoolean(waiters);
     }
 
+    /** 置 terminalEvent，向所有 streamer error/finish 并清空列表。 */
     @Override
     public CompletionStage<Void> finish(@Nullable Throwable throwable) {
         terminalEvent = throwable == null ? ExceptionHelper.TERMINATED : throwable;
@@ -86,6 +87,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
         return StreamableHelper.awaitAllVoid(waiters);
     }
 
+    /** CAS 追加 streamer；已 TERMINATED 则 false。 */
     boolean add(DispatchStreamer<T> streamer) {
         for (;;) {
             var currentStreamers = streamers.get();
@@ -101,6 +103,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
         }
     }
 
+    /** CAS 从 streamers 数组移除。 */
     boolean remove(DispatchStreamer<T> streamer) {
         for (;;) {
             var currentStreamers = streamers.get();
@@ -132,27 +135,32 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
         }
     }
 
+    /** 是否有活跃 streamer。 */
     @Override
     public boolean hasStreamers() {
         return streamers.get().length != 0;
     }
 
+    /** 当前 streamer 数量。 */
     @Override
     public int streamerCount() {
         return streamers.get().length;
     }
 
+    /** terminalEvent 为 TERMINATED 哨兵。 */
     @Override
     public boolean hasComplete() {
         return terminalEvent == ExceptionHelper.TERMINATED;
     }
 
+    /** terminalEvent 为非 TERMINATED 的 Throwable。 */
     @Override
     public boolean hasThrowable() {
         var te = terminalEvent;
         return te != null && te != ExceptionHelper.TERMINATED;
     }
 
+    /** 返回终止错误，正常完成则 null。 */
     @Override
     public @Nullable Throwable getThrowable() {
         var te = terminalEvent;
@@ -183,6 +191,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
             producerReady = new StageResumable<>();
         }
 
+        /** consumerReady 就绪后 await producerReady 取下一项。 */
         @Override
         public @NonNull CompletionStage<Boolean> next() {
             // I O.println("DispatchStreamer.next()");
@@ -198,12 +207,14 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
             return t;
         }
 
+        /** 返回最近一次 apply 写入的 current。 */
         @Override
         public @NonNull T current() {
             // I O.println("DispatchStreamer.current(" + current + ")");
             return current;
         }
 
+        /** 移除自身并完成 consumerReady(false)。 */
         @Override
         public @NonNull CompletionStage<Void> finish() {
             // I O.println("DispatchStreamer.finish()");
@@ -214,6 +225,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
             return FINISHED;
         }
 
+        /** 等待 consumer 就绪后设置 incoming 并 resume producer。 */
         CompletionStage<Boolean> send(T item) {
             // I O.println("DispatchStreamer.send(" + item + ") // <-----------------------");
             return consumerReady.await().thenApply(v -> {
@@ -224,6 +236,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
             });
         }
 
+        /** finish 时 completeExceptionally 或 complete(false) producerReady。 */
         CompletionStage<Void> error(Throwable t) {
             // I O.println("DispatchStreamer.error(" + t + ") // <-------------------------");
             return consumerReady.await().thenAccept(_ -> {
@@ -235,6 +248,7 @@ public final class DispatchStreamProcessor<T> implements StreamProcessor<T, T> {
             });
         }
 
+        /** 移除并以 CancellationException 结束 producerReady。 */
         @Override
         public void dispose() {
             // I O.println("DispatchStreamer.dispose()");

@@ -12,7 +12,7 @@
  */
 
 /**
- * Classes and interfaces for writing advanced operators within and outside RxJava.
+ * 编写 RxJava 内外高级算子所需的队列、融合等接口与实现。
  */
 
 package io.reactivex.rxjava4.operators;

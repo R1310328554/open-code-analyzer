@@ -24,96 +24,15 @@ import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Processor that emits the very last value followed by a completion event or the received error
- * to {@link Subscriber}s.
- * <p>
- * <img width="640" height="239" src="https://raw.github.com/wiki/ReactiveX/RxJava/images/rx-operators/AsyncProcessor.png" alt="">
- * <p>
- * This processor does not have a public constructor by design; a new empty instance of this
- * {@code AsyncProcessor} can be created via the {@link #create()} method.
- * <p>
- * Since an {@code AsyncProcessor} is a Reactive Streams {@code Processor} type,
- * {@code null}s are not allowed (<a href="https://github.com/reactive-streams/reactive-streams-jvm#2.13">Rule 2.13</a>)
- * as parameters to {@link #onNext(Object)} and {@link #onError(Throwable)}. Such calls will result in a
- * {@link NullPointerException} being thrown and the processor's state is not changed.
- * <p>
- * {@code AsyncProcessor} is a {@link io.reactivex.rxjava4.core.Flowable} as well as a {@link FlowableProcessor} and supports backpressure from the downstream but
- * its {@link Subscriber}-side consumes items in an unbounded manner.
- * <p>
- * When this {@code AsyncProcessor} is terminated via {@link #onError(Throwable)}, the
- * last observed item (if any) is cleared and late {@link Subscriber}s only receive
- * the {@code onError} event.
- * <p>
- * The {@code AsyncProcessor} caches the latest item internally and it emits this item only when {@code onComplete} is called.
- * Therefore, it is not recommended to use this {@code Processor} with infinite or never-completing sources.
- * <p>
- * Even though {@code AsyncProcessor} implements the {@link Subscriber} interface, calling
- * {@code onSubscribe} is not required (<a href="https://github.com/reactive-streams/reactive-streams-jvm#2.12">Rule 2.12</a>)
- * if the processor is used as a standalone source. However, calling {@code onSubscribe}
- * after the {@code AsyncProcessor} reached its terminal state will result in the
- * given {@link Subscription} being cancelled immediately.
- * <p>
- * Calling {@link #onNext(Object)}, {@link #onError(Throwable)} and {@link #onComplete()}
- * is required to be serialized (called from the same thread or called non-overlappingly from different threads
- * through external means of serialization). The {@link #toSerialized()} method available to all {@code FlowableProcessor}s
- * provides such serialization and also protects against reentrance (i.e., when a downstream {@code Subscriber}
- * consuming this processor also wants to call {@link #onNext(Object)} on this processor recursively).
- * The implementation of {@code onXXX} methods are technically thread-safe but non-serialized calls
- * to them may lead to undefined state in the currently subscribed {@code Subscriber}s.
- * <p>
- * This {@code AsyncProcessor} supports the standard state-peeking methods {@link #hasComplete()}, {@link #hasThrowable()},
- * {@link #getThrowable()} and {@link #hasSubscribers()} as well as means to read the very last observed value -
- * after this {@code AsyncProcessor} has been completed - in a non-blocking and thread-safe
- * manner via {@link #hasValue()} or {@link #getValue()}.
- * <dl>
- *  <dt><b>Backpressure:</b></dt>
- *  <dd>The {@code AsyncProcessor} honors the backpressure of the downstream {@code Subscriber}s and won't emit
- *  its single value to a particular {@code Subscriber} until that {@code Subscriber} has requested an item.
- *  When the {@code AsyncProcessor} is subscribed to a {@link io.reactivex.rxjava4.core.Flowable}, the processor consumes this
- *  {@code Flowable} in an unbounded manner (requesting {@link Long#MAX_VALUE}) as only the very last upstream item is
- *  retained by it.
- *  </dd>
- *  <dt><b>Scheduler:</b></dt>
- *  <dd>{@code AsyncProcessor} does not operate by default on a particular {@link io.reactivex.rxjava4.core.Scheduler} and
- *  the {@code Subscriber}s get notified on the thread where the terminating {@code onError} or {@code onComplete}
- *  methods were invoked.</dd>
- *  <dt><b>Error handling:</b></dt>
- *  <dd>When the {@link #onError(Throwable)} is called, the {@code AsyncProcessor} enters into a terminal state
- *  and emits the same {@code Throwable} instance to the last set of {@code Subscriber}s. During this emission,
- *  if one or more {@code Subscriber}s dispose their respective {@code Subscription}s, the
- *  {@code Throwable} is delivered to the global error handler via
- *  {@link io.reactivex.rxjava4.plugins.RxJavaPlugins#onError(Throwable)} (multiple times if multiple {@code Subscriber}s
- *  cancel at once).
- *  If there were no {@code Subscriber}s subscribed to this {@code AsyncProcessor} when the {@code onError()}
- *  was called, the global error handler is not invoked.
- *  </dd>
- * </dl>
- * <p>
- * Example usage:
- * <pre><code>
- * AsyncProcessor&lt;Object&gt; processor = AsyncProcessor.create();
- * 
- * TestSubscriber&lt;Object&gt; ts1 = processor.test();
+ * 异步处理器：onComplete 时向 Subscriber 发射最后一个 onNext 值，
+ * 或 onError 时发射错误；晚订阅者也能收到缓存的最后一项。
  *
- * ts1.assertEmpty();
+ * <p>通过 {@link #create()} 创建；onNext/onError 禁止 null。
+ * <p>内部只保留最新一项，onComplete 前不向下游发射；不适合无限流。
+ * <p>onXXX 须串行调用，可用 {@link #toSerialized()}；作为上游时 request(Long.MAX_VALUE)。
+ * <p>支持 hasComplete/hasThrowable/getValue 等状态查询。
  *
- * processor.onNext(1);
- *
- * // AsyncProcessor only emits when onComplete was called.
- * ts1.assertEmpty();
- *
- * processor.onNext(2);
- * processor.onComplete();
- *
- * // onComplete triggers the emission of the last cached item and the onComplete event.
- * ts1.assertResult(2);
- *
- * TestSubscriber&lt;Object&gt; ts2 = processor.test();
- *
- * // late Subscribers receive the last cached item too
- * ts2.assertResult(2);
- * </code></pre>
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
 
@@ -125,32 +44,26 @@ public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
 
     final AtomicReference<AsyncSubscription<T>[]> subscribers;
 
-    /** Write before updating subscribers, read after reading subscribers as TERMINATED. */
+    /** 在 subscribers 置 TERMINATED 前写入，读后可见。 */
     Throwable error;
 
     /** Write before updating subscribers, read after reading subscribers as TERMINATED. */
     T value;
 
-    /**
-     * Creates a new AsyncProcessor.
-     * @param <T> the value type to be received and emitted
-     * @return the new AsyncProcessor instance
-     */
+    /** 创建空的 AsyncProcessor。 */
     @CheckReturnValue
     @NonNull
     public static <T> AsyncProcessor<T> create() {
         return new AsyncProcessor<>();
     }
 
-    /**
-     * Constructs an AsyncProcessor.
-     * @since 2.0
-     */
+    /** 包内构造：subscribers 初始为 EMPTY。 */
     @SuppressWarnings("unchecked")
     AsyncProcessor() {
         this.subscribers = new AtomicReference<AsyncSubscription<T>[]>(EMPTY);
     }
 
+    /** 已终止则 cancel；否则无界 request(MAX_VALUE)。 */
     @Override
     public void onSubscribe(@NonNull Subscription s) {
         if (subscribers.get() == TERMINATED) {
@@ -161,6 +74,7 @@ public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
         s.request(Long.MAX_VALUE);
     }
 
+    /** 非终止时覆盖缓存 value（不立即发射）。 */
     @Override
     public void onNext(@NonNull T t) {
         ExceptionHelper.nullCheck(t, "onNext called with a null value.");
@@ -170,6 +84,7 @@ public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
         value = t;
     }
 
+    /** 清空 value、置 error，向所有订阅者 onError；已终止则 RxJavaPlugins.onError。 */
     @SuppressWarnings("unchecked")
     @Override
     public void onError(@NonNull Throwable t) {
@@ -185,6 +100,7 @@ public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
         }
     }
 
+    /** 向订阅者 complete(最后一项) 或 onComplete（无值时）。 */
     @SuppressWarnings("unchecked")
     @Override
     public void onComplete() {
@@ -229,6 +145,7 @@ public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
         return subscribers.get() == TERMINATED ? error : null;
     }
 
+    /** 注册 AsyncSubscription；已终止则 replay 错误或最后一项。 */
     @Override
     protected void subscribeActual(@NonNull Subscriber<? super T> s) {
         AsyncSubscription<T> as = new AsyncSubscription<>(s, this);
@@ -252,12 +169,7 @@ public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
         }
     }
 
-    /**
-     * Tries to add the given subscriber to the subscribers array atomically
-     * or returns false if the processor has terminated.
-     * @param ps the subscriber to add
-     * @return true if successful, false if the processor has terminated
-     */
+    /** CAS 扩展 subscribers 数组；已 TERMINATED 则 false。 */
     boolean add(AsyncSubscription<T> ps) {
         for (;;) {
             AsyncSubscription<T>[] a = subscribers.get();
@@ -277,10 +189,7 @@ public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
         }
     }
 
-    /**
-     * Atomically removes the given subscriber if it is subscribed to this processor.
-     * @param ps the subscriber's subscription wrapper to remove
-     */
+    /** CAS 从 subscribers 移除指定订阅包装。 */
     @SuppressWarnings("unchecked")
     void remove(AsyncSubscription<T> ps) {
         for (;;) {
@@ -317,21 +226,13 @@ public final class AsyncProcessor<@NonNull T> extends FlowableProcessor<T> {
         }
     }
 
-    /**
-     * Returns true if this processor has any value.
-     * <p>The method is thread-safe.
-     * @return true if this processor has any value
-     */
+    /** 已终止且 value 非 null 时 true。 */
     @CheckReturnValue
     public boolean hasValue() {
         return subscribers.get() == TERMINATED && value != null;
     }
 
-    /**
-     * Returns a single value this processor currently has or null if no such value exists.
-     * <p>The method is thread-safe.
-     * @return a single value this processor currently has or null if no such value exists
-     */
+    /** 终止后返回缓存的最后一项，否则 null。 */
     @Nullable
     @CheckReturnValue
     public T getValue() {
