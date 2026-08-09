@@ -21,11 +21,17 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.rocketmq.store.CommitLogDispatcher;
 import org.apache.rocketmq.tieredstore.file.FlatFileInterface;
 
+/**
+ * 分层存储 CommitLog 分发器：调度异步上传与组提交。
+ */
 public interface MessageStoreDispatcher extends CommitLogDispatcher {
 
+        /** 启动分发服务。 */
     void start();
 
+        /** 关闭分发服务。 */
     void shutdown();
 
+        /** 调度异步组提交上传。 */
     CompletableFuture<Boolean> doScheduleDispatch(FlatFileInterface flatFile, boolean force);
 }

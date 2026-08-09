@@ -24,27 +24,38 @@ import org.apache.rocketmq.store.GetMessageStatus;
 import org.apache.rocketmq.store.MessageFilter;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 
+/**
+ * 扩展拉取结果：携带 tagCode 列表，支持对象存储顺序读取后的过滤。
+ */
 public class GetMessageResultExt extends GetMessageResult {
 
+    /** 与消息列表对应的 Tag 哈希码。 */
     private final List<Long> tagCodeList;
 
     public GetMessageResultExt() {
         this.tagCodeList = new ArrayList<>();
     }
 
+        /** 添加消息并记录 tagCode。 */
     public void addMessageExt(SelectMappedBufferResult bufferResult, long queueOffset, long tagCode) {
         super.addMessage(bufferResult, queueOffset);
         this.tagCodeList.add(tagCode);
     }
 
+        /** 返回 tagCode 列表。 */
     public List<Long> getTagCodeList() {
         return tagCodeList;
     }
 
     /**
-     * Due to the message fetched from the object storage is sequential,
+
+     * 对象存储按序拉取消息，过滤在数据读取完成后执行。
+ * @param messageFilter 消息过滤器
+ * @return 过滤后的拉取结果
      * do message filtering occurs after the data retrieval.
+     
      */
+        /** 对顺序拉取结果执行 CQ/CommitLog 过滤。 */
     public GetMessageResult doFilterMessage(MessageFilter messageFilter) {
         if (GetMessageStatus.FOUND != super.getStatus() || messageFilter == null) {
             return this;

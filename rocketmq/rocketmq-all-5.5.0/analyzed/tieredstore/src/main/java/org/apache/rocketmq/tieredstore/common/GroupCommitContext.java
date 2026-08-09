@@ -21,19 +21,27 @@ import java.util.List;
 import org.apache.rocketmq.store.DispatchRequest;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 
+/**
+ * 分层存储组提交上下文：聚合待上传缓冲与 DispatchRequest。
+ */
 public class GroupCommitContext {
 
+    /** 组提交结束的消费队列偏移。 */
     private long endOffset;
 
+    /** 待释放的映射缓冲列表。 */
     private List<SelectMappedBufferResult> bufferList;
 
+    /** 组提交产生的 DispatchRequest 列表。 */
     private List<DispatchRequest> dispatchRequests;
 
+        /** 返回组提交结束偏移。 */
     public long getEndOffset() {
         return endOffset;
     }
 
-    public void setEndOffset(long endOffset) {
+        /** 设置组提交结束偏移。 */
+    public void setEndOffset(long endOffset)
         this.endOffset = endOffset;
     }
 
@@ -53,6 +61,7 @@ public class GroupCommitContext {
         this.dispatchRequests = dispatchRequests;
     }
 
+        /** 释放缓冲并清空请求列表。 */
     public void release() {
         if (bufferList != null) {
             for (SelectMappedBufferResult bufferResult : bufferList) {

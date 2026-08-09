@@ -58,6 +58,12 @@ import org.apache.rocketmq.tieredstore.util.MessageStoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 分层存储分发实现：扫描本地 CQ 并组提交到对象存储，失败时缓存上下文。
+ */
+/**
+ * 分层存储 CommitLog 分发器：调度异步上传与组提交。
+ */
 public class MessageStoreDispatcherImpl extends ServiceThread implements MessageStoreDispatcher {
 
     protected static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
@@ -65,12 +71,16 @@ public class MessageStoreDispatcherImpl extends ServiceThread implements Message
     protected final String brokerName;
     protected final MessageStore defaultStore;
     protected final MessageStoreConfig storeConfig;
+    /** 所属分层 MessageStore。 */
     protected final TieredMessageStore messageStore;
+    /** 扁平文件存储。 */
     protected final FlatFileStore flatFileStore;
     protected final MessageStoreExecutor storeExecutor;
     protected final MessageStoreFilter topicFilter;
+    /** 限制并发分发任务数。 */
     protected final Semaphore semaphore;
     protected final IndexService indexService;
+    /** 组提交失败时缓存的上下文。 */
     protected final Map<FlatFileInterface, GroupCommitContext> failedGroupCommitMap;
 
     public MessageStoreDispatcherImpl(TieredMessageStore messageStore) {
@@ -97,6 +107,7 @@ public class MessageStoreDispatcherImpl extends ServiceThread implements Message
         return failedGroupCommitMap;
     }
 
+        /** 在信号量控制下触发分发。 */
     public void dispatchWithSemaphore(FlatFileInterface flatFile) {
         try {
             if (stopped) {
@@ -113,6 +124,7 @@ public class MessageStoreDispatcherImpl extends ServiceThread implements Message
     }
 
     @Override
+        /** 接收 CommitLog 分发并注册 FlatFile。 */
     public void dispatch(DispatchRequest request) {
         if (stopped || topicFilter != null && topicFilter.filterTopic(request.getTopic())) {
             return;
@@ -328,10 +340,12 @@ public class MessageStoreDispatcherImpl extends ServiceThread implements Message
         return CompletableFuture.completedFuture(false);
     }
 
-    public CompletableFuture<Boolean> commitAsync(FlatFileInterface flatFile) {
+        /** 异步提交 FlatFile 到对象存储。 */
+    public CompletableFuture<Boolean> commitAsync(FlatFileInterface flatFile)
         return flatFile.commitAsync();
     }
 
+        /** 异步构建索引文件并释放上下文。 */
     public void constructIndexFile(long topicId, GroupCommitContext groupCommitContext) {
         MessageStoreExecutor.getInstance().bufferCommitExecutor.submit(() -> {
             if (storeConfig.isMessageIndexEnable()) {
@@ -347,8 +361,13 @@ public class MessageStoreDispatcherImpl extends ServiceThread implements Message
     }
 
     /**
-     * Building indexes with offsetId is no longer supported because offsetId has changed in tiered storage
+
+     * 分层存储中 offsetId 已变更，不再支持基于 offsetId 建索引。
+ * @param topicId Topic 数值 ID
+ * @param request 分发请求
+     
      */
+        /** 为单条 DispatchRequest 写入索引 key。 */
     public void constructIndexFile0(long topicId, DispatchRequest request) {
         Set<String> keySet = new HashSet<>();
         if (StringUtils.isNotBlank(request.getUniqKey())) {
@@ -361,6 +380,7 @@ public class MessageStoreDispatcherImpl extends ServiceThread implements Message
             request.getCommitLogOffset(), request.getMsgSize(), request.getStoreTimestamp());
     }
 
+        /** 释放已关闭 FlatFile 的挂起组提交上下文。 */
     public void releaseClosedPendingGroupCommit() {
         Iterator<Map.Entry<FlatFileInterface, GroupCommitContext>> iterator = failedGroupCommitMap.entrySet().iterator();
         while (iterator.hasNext()) {

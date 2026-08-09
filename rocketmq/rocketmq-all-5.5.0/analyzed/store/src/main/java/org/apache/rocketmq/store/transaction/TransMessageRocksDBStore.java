@@ -48,12 +48,20 @@ import org.apache.rocketmq.store.stats.BrokerStatsManager;
 import org.rocksdb.RocksDBException;
 import static org.apache.rocketmq.store.rocksdb.MessageRocksDBStorage.TRANS_COLUMN_FAMILY;
 
+/**
+ * 基于 RocksDB 的事务消息存储：从 CommitLog 分发构建事务索引并异步写入 RocksDB。
+ */
 public class TransMessageRocksDBStore implements CommitLogDispatchStore {
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 存储错误日志。 */
     private static final Logger logError = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
+    /** 删除半事务消息的操作 Tag。 */
     private static final String REMOVE_TAG = "d";
     private static final byte[] FILL_BYTE = new byte[] {(byte) 0};
+    /** 事务索引构建队列默认容量。 */
     private static final int DEFAULT_CAPACITY = 100000;
+    /** 批量写入 RocksDB 的批大小。 */
     private static final int BATCH_SIZE = 1000;
     private static final int MAX_GET_MSG_TIMES = 3;
     private static final int INITIAL = 0, RUNNING = 1, SHUTDOWN = 2;
@@ -66,6 +74,7 @@ public class TransMessageRocksDBStore implements CommitLogDispatchStore {
     private final SocketAddress storeHost;
     private ThreadLocal<ByteBuffer> bufferLocal = null;
     private TransIndexBuildService transIndexBuildService;
+    /** 待构建事务索引的记录队列。 */
     protected BlockingQueue<TransRocksDBRecord> originTransMsgQueue;
 
     public TransMessageRocksDBStore(final MessageStore messageStore, final BrokerStatsManager brokerStatsManager, final SocketAddress storeHost) {
@@ -92,6 +101,7 @@ public class TransMessageRocksDBStore implements CommitLogDispatchStore {
         log.info("TransMessageRocksDBStore start success, lastOffsetPy: {}", lastOffsetPy);
     }
 
+        /** 关闭全部线程池。 */
     public void shutdown() {
         if (this.state != RUNNING || this.state == SHUTDOWN) {
             return;
@@ -103,6 +113,7 @@ public class TransMessageRocksDBStore implements CommitLogDispatchStore {
         log.info("TransMessageRocksDBStore shutdown success");
     }
 
+        /** 从 CommitLog 分发请求构建事务索引记录。 */
     public void buildTransIndex(DispatchRequest dispatchRequest) {
         if (null == dispatchRequest || dispatchRequest.getCommitLogOffset() < 0L || dispatchRequest.getMsgSize() <= 0 || state != RUNNING || null == this.originTransMsgQueue) {
             logError.error("TransMessageRocksDBStore buildTransIndex error, dispatchRequest: {}, state: {}, originTransMsgQueue: {}", dispatchRequest, state, originTransMsgQueue);
@@ -160,6 +171,7 @@ public class TransMessageRocksDBStore implements CommitLogDispatchStore {
         }
     }
 
+        /** 写入 op 半消息删除 prepare 消息。 */
     public void deletePrepareMessage(MessageExt messageExt) {
         if (null == messageExt) {
             logError.error("TransMessageRocksDBStore deletePrepareMessage error, messageExt is null");
@@ -184,6 +196,7 @@ public class TransMessageRocksDBStore implements CommitLogDispatchStore {
         }
     }
 
+        /** 按物理偏移与大小读取 CommitLog 消息。 */
     public MessageExt getMessage(long offsetPy, int sizePy) {
         if (offsetPy < 0L || sizePy <= 0 || sizePy > storeConfig.getMaxMessageSize()) {
             logError.error("TransMessageRocksDBStore getMessage param error, offsetPy: {}, sizePy: {}, maxMsgSizeConfig: {}", offsetPy, sizePy, storeConfig.getMaxMessageSize());
@@ -246,7 +259,8 @@ public class TransMessageRocksDBStore implements CommitLogDispatchStore {
         }
     }
 
-    public Integer getCheckTimes(String topic, String uniqKey, Long offsetPy) {
+        /** 查询事务消息回查次数。 */
+    public Integer getCheckTimes(String topic, String uniqKey, Long offsetPy)
         if (StringUtils.isEmpty(topic) || StringUtils.isEmpty(uniqKey) || null == offsetPy || offsetPy < 0L) {
             return null;
         }

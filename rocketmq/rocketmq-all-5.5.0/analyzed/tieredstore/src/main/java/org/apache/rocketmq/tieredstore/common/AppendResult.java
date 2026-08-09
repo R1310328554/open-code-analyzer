@@ -19,27 +19,41 @@ package org.apache.rocketmq.tieredstore.common;
 public enum AppendResult {
 
     /**
-     * The append operation was successful.
+
+     * 追加写入成功。
+     
      */
     SUCCESS,
 
     /**
-     * The buffer used for the append operation is full.
+
+     * 追加缓冲区已满。
+     
      */
+    /** 追加缓冲区已满。 */
     BUFFER_FULL,
 
     /**
-     * The file is full and cannot accept more data.
+
+     * 文件已满，无法继续写入。
+     
      */
+    /** 文件已满。 */
     FILE_FULL,
 
     /**
-     * The file is closed and cannot accept more data.
+
+     * 文件已关闭，无法接受数据。
+     
      */
+    /** 文件已关闭。 */
     FILE_CLOSED,
 
     /**
-     * An unknown error occurred during the append operation.
+
+     * 追加过程中发生未知错误。
+     
      */
+    /** 未知错误。 */
     UNKNOWN_ERROR
 }

@@ -24,13 +24,19 @@ import java.util.concurrent.TimeUnit;
 import org.apache.rocketmq.common.ThreadFactoryImpl;
 import org.apache.rocketmq.common.utils.ThreadUtils;
 
+/**
+ * 分层存储线程池单例：管理缓冲提交/拉取与文件回收执行器。
+ */
 public class MessageStoreExecutor {
 
+    /** 缓冲提交线程池任务队列。 */
     public final BlockingQueue<Runnable> bufferCommitThreadPoolQueue;
     public final BlockingQueue<Runnable> bufferFetchThreadPoolQueue;
     public final BlockingQueue<Runnable> fileRecyclingThreadPoolQueue;
 
+    /** 分层存储通用调度线程池。 */
     public final ScheduledExecutorService commonExecutor;
+    /** 缓冲提交线程池。 */
     public final ExecutorService bufferCommitExecutor;
     public final ExecutorService bufferFetchExecutor;
     public final ExecutorService fileRecyclingExecutor;
@@ -39,6 +45,7 @@ public class MessageStoreExecutor {
         private static final MessageStoreExecutor INSTANCE = new MessageStoreExecutor();
     }
 
+        /** 返回单例执行器。 */
     public static MessageStoreExecutor getInstance() {
         return SingletonHolder.INSTANCE;
     }
@@ -84,6 +91,7 @@ public class MessageStoreExecutor {
         }
     }
 
+        /** 关闭全部线程池。 */
     public void shutdown() {
         this.shutdownExecutor(this.commonExecutor);
         this.shutdownExecutor(this.bufferCommitExecutor);

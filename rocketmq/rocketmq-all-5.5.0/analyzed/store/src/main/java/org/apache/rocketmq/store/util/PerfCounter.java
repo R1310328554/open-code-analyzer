@@ -26,6 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 延迟分布性能计数器：按耗时桶统计 TPS 与 TP 分位值。
+ */
 public class PerfCounter {
 
     private long last = System.currentTimeMillis();
@@ -39,8 +42,10 @@ public class PerfCounter {
     };
 
     private final Logger logger;
+    /** 日志前缀标识。 */
     private String prefix = "DEFAULT";
 
+        /** 返回最近一次统计窗口 TPS。 */
     public float getLastTps() {
         if (System.currentTimeMillis() - last <= maxTimeMsPerCount  + 3000) {
             return lastTps;
@@ -49,7 +54,9 @@ public class PerfCounter {
     }
 
     //1000 * ms, 1000 * 10 ms, then 100ms every slots
+    /** 按耗时索引的计数桶数组。 */
     private final AtomicInteger[] count;
+    /** 当前窗口累计计数。 */
     private final AtomicLong allCount;
     private final int maxNumPerCount;
     private final int maxTimeMsPerCount;
@@ -74,10 +81,12 @@ public class PerfCounter {
         reset();
     }
 
+        /** 记录一次耗时样本。 */
     public void flow(long cost) {
         flow(cost, 1);
     }
 
+        /** 记录指定数量的耗时样本。 */
     public void flow(long cost, int num) {
         if (cost < 0) return;
         allCount.addAndGet(num);
@@ -95,6 +104,7 @@ public class PerfCounter {
         }
     }
 
+        /** 输出 TP 分位与延迟分布统计。 */
     public void print() {
         int min = this.getMin();
         int max = this.getMax();
@@ -197,6 +207,7 @@ public class PerfCounter {
         return 99999999;
     }
 
+        /** 重置计数桶与窗口。 */
     public void reset() {
         for (int i = 0; i < count.length; i++) {
             if (count[i] == null) {
@@ -209,10 +220,12 @@ public class PerfCounter {
         last = System.currentTimeMillis();
     }
 
+        /** 开始计时采样。 */
     public void startTick() {
         lastTickMs.get().set(System.currentTimeMillis());
     }
 
+        /** 结束计时并记录耗时。 */
     public void endTick() {
         flow(System.currentTimeMillis() - lastTickMs.get().get());
     }

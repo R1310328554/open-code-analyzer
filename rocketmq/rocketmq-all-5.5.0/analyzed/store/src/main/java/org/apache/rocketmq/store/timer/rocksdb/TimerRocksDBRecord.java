@@ -24,20 +24,35 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Timer RocksDB 键值记录：序列化延迟时间、唯一键与 CommitLog 物理位置。
+ */
 public class TimerRocksDBRecord {
+    /** 存储错误日志。 */
     private static final Logger logError = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
+    /** RocksDB 写入操作标志。 */
     public static final byte TIMER_ROCKSDB_PUT = (byte)0;
+    /** RocksDB 删除操作标志。 */
     public static final byte TIMER_ROCKSDB_DELETE = (byte)1;
+    /** RocksDB 更新操作标志。 */
     public static final byte TIMER_ROCKSDB_UPDATE = (byte)2;
     private static final int VALUE_LENGTH = Integer.BYTES + Long.BYTES;
 
+    /** 延迟触发时间戳。 */
     private long delayTime;
+    /** 定时消息唯一键。 */
     private String uniqKey;
+    /** CommitLog 消息体大小。 */
     private int sizePy;
+    /** CommitLog 物理偏移。 */
     private long offsetPy;
+    /** 消费队列逻辑偏移。 */
     private long queueOffset;
+    /** 检查点偏移。 */
     private long checkPoint;
+    /** 操作类型标志（put/delete/update）。 */
     private byte actionFlag;
+    /** 关联的消息体（可选）。 */
     private MessageExt messageExt;
 
     public TimerRocksDBRecord() {}
@@ -51,6 +66,7 @@ public class TimerRocksDBRecord {
         this.queueOffset = queueOffset;
     }
 
+        /** 序列化为 RocksDB key 字节。 */
     public byte[] getKeyBytes() {
         if (StringUtils.isEmpty(uniqKey) || delayTime <= 0L) {
             return null;
@@ -65,6 +81,7 @@ public class TimerRocksDBRecord {
         }
     }
 
+        /** 序列化为 RocksDB value 字节。 */
     public byte[] getValueBytes() {
         if (sizePy <= 0 || offsetPy < 0L) {
             return null;
@@ -77,6 +94,7 @@ public class TimerRocksDBRecord {
         }
     }
 
+        /** 从 key/value 解码 Timer 记录。 */
     public static TimerRocksDBRecord decode(byte[] key, byte[] value) {
         if (null == key || key.length < Long.BYTES || null == value || value.length != VALUE_LENGTH) {
             return null;

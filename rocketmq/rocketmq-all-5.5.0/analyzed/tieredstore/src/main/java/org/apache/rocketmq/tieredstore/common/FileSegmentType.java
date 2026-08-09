@@ -18,12 +18,18 @@ package org.apache.rocketmq.tieredstore.common;
 
 import java.util.Arrays;
 
+/**
+ * 分层存储文件段类型：CommitLog、ConsumeQueue 或 Index。
+ */
 public enum FileSegmentType {
 
+    /** CommitLog 文件段。 */
     COMMIT_LOG(0),
 
+    /** ConsumeQueue 文件段。 */
     CONSUME_QUEUE(1),
 
+    /** Index 文件段。 */
     INDEX(2);
 
     private final int code;
@@ -32,11 +38,13 @@ public enum FileSegmentType {
         this.code = code;
     }
 
+        /** 返回文件段类型编码。 */
     public int getCode() {
         return code;
     }
 
-    public static FileSegmentType valueOf(int fileType) {
+        /** 按编码解析文件段类型。 */
+    public static FileSegmentType valueOf(int fileType)
         return Arrays.stream(FileSegmentType.values())
             .filter(segmentType -> segmentType.getCode() == fileType)
             .findFirst()

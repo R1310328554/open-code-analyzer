@@ -22,23 +22,35 @@ import com.sun.jna.NativeLong;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 
+/**
+ * JNA 封装的 libc 接口：提供 mlock、madvise、msync 等内存映射系统调用。
+ */
 public interface LibC extends Library {
+    /** libc 单例实例。 */
     LibC INSTANCE = (LibC) Native.loadLibrary(Platform.isWindows() ? "msvcrt" : "c", LibC.class);
 
+    /** madvise 正常访问模式。 */
     int MADV_NORMAL = 0;
+    /** madvise 随机访问模式。 */
     int MADV_RANDOM = 1;
+    /** madvise 预读提示。 */
     int MADV_WILLNEED = 3;
+    /** madvise 释放页缓存提示。 */
     int MADV_DONTNEED = 4;
 
     int MCL_CURRENT = 1;
     int MCL_FUTURE = 2;
     int MCL_ONFAULT = 4;
 
+    /** 异步同步内存到磁盘。 */
     /* sync memory asynchronously */
     int MS_ASYNC = 0x0001;
+    /** 使映射与缓存失效。 */
     /* invalidate mappings & caches */
     int MS_INVALIDATE = 0x0002;
+    /** 同步刷盘内存映射。 */
     /* synchronous memory sync */
+    /** msync 同步刷盘标志。 */
     int MS_SYNC = 0x0004;
 
     int mlock(Pointer var1, NativeLong var2);

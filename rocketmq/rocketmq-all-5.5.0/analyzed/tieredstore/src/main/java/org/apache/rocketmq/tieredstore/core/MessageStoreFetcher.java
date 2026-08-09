@@ -23,58 +23,74 @@ import org.apache.rocketmq.store.GetMessageResult;
 import org.apache.rocketmq.store.MessageFilter;
 import org.apache.rocketmq.store.QueryMessageResult;
 
+/**
+ * 分层存储异步消息拉取接口：支持按时间/偏移查询与 key 检索。
+ */
 public interface MessageStoreFetcher {
 
     /**
-     * Asynchronous get the store time of the earliest message in this store.
+
+     * 异步获取该队列最早消息的存储时间戳。
      *
-     * @return timestamp of the earliest message in this store.
+     * @return 该 Store 中最早消息存储时间戳
+     
      */
+        /** 异步获取最早消息存储时间。 */
     CompletableFuture<Long> getEarliestMessageTimeAsync(String topic, int queueId);
 
     /**
-     * Asynchronous get the store time of the message specified.
+
+     * 异步获取指定消费队列偏移对应消息的存储时间戳。
      *
-     * @param topic              Message topic.
-     * @param queueId            Queue ID.
-     * @param consumeQueueOffset Consume queue offset.
-     * @return store timestamp of the message.
+     * @param topic 消息 Topic。
+     * @param queueId 队列 ID。
+     * @param consumeQueueOffset 消费队列逻辑偏移。
+     * @return 消息存储时间戳。
+     
      */
     CompletableFuture<Long> getMessageStoreTimeStampAsync(String topic, int queueId, long consumeQueueOffset);
 
     /**
-     * Look up the physical offset of the message whose store timestamp is as specified.
+
+     * 按存储时间戳查找匹配的消费队列偏移。
      *
-     * @param topic     Topic of the message.
-     * @param queueId   Queue ID.
-     * @param timestamp Timestamp to look up.
-     * @return physical offset which matches.
+     * @param topic 消息 Topic。
+     * @param queueId 队列 ID。
+     * @param timestamp 待查找的时间戳。
+     * @return 匹配的消费队列偏移。
+     
      */
     long getOffsetInQueueByTime(String topic, int queueId, long timestamp, BoundaryType type);
 
     /**
-     * Asynchronous get message
+
+     * 异步拉取消息。
      *
-     * @param group         Consumer group that launches this query.
-     * @param topic         Topic to query.
-     * @param queueId       Queue ID to query.
-     * @param offset        Logical offset to start from.
-     * @param maxCount      Maximum count of messages to query.
-     * @param messageFilter Message filter used to screen desired messages.
-     * @return Matched messages.
+     * @param group 发起查询的消费者组。
+     * @param topic 待查询 Topic。
+     * @param queueId 待查询队列 ID。
+     * @param offset 起始逻辑偏移。
+     * @param maxCount 最多拉取消息条数。
+     * @param messageFilter 消息过滤器。
+     * @return 匹配的消息结果。
+     
      */
+        /** 异步拉取消息。 */
     CompletableFuture<GetMessageResult> getMessageAsync(
         String group, String topic, int queueId, long offset, int maxCount, MessageFilter messageFilter);
 
     /**
-     * Asynchronous query messages by given key.
+
+     * 按 key 异步查询消息。
      *
-     * @param topic    Topic of the message.
-     * @param key      Message key.
-     * @param maxCount Maximum count of the messages possible.
-     * @param begin    Begin timestamp.
-     * @param end      End timestamp.
+     * @param topic 消息 Topic。
+     * @param key 消息 Key。
+     * @param maxCount 最多返回消息条数。
+     * @param begin 起始时间戳。
+     * @param end 结束时间戳。
+     
      */
+        /** 按 key 异步查询消息。 */
     CompletableFuture<QueryMessageResult> queryMessageAsync(
         String topic, String key, int maxCount, long begin, long end);
 }

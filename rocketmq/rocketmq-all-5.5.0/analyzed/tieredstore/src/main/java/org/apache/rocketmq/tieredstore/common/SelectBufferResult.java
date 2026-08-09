@@ -20,11 +20,16 @@ package org.apache.rocketmq.tieredstore.common;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 分层存储选缓冲结果：封装 ByteBuffer、偏移、大小与 tagCode。
+ */
 public class SelectBufferResult {
 
+    /** 堆外 Direct 缓冲，读写槽位数据。 */
     private final ByteBuffer byteBuffer;
     private final long startOffset;
     private final int size;
+    /** 消息 Tag 哈希码。 */
     private final long tagCode;
     private final AtomicLong accessCount;
 
@@ -36,22 +41,27 @@ public class SelectBufferResult {
         this.accessCount = new AtomicLong();
     }
 
+        /** 返回消息 ByteBuffer。 */
     public ByteBuffer getByteBuffer() {
         return byteBuffer;
     }
 
+        /** 返回起始物理偏移。 */
     public long getStartOffset() {
         return startOffset;
     }
 
+        /** 返回消息大小。 */
     public int getSize() {
         return size;
     }
 
+        /** 返回 Tag 哈希码。 */
     public long getTagCode() {
         return tagCode;
     }
 
+        /** 返回访问计数器。 */
     public AtomicLong getAccessCount() {
         return accessCount;
     }

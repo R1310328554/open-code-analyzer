@@ -35,17 +35,27 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+/**
+ * 定时消息时间轮：基于 mmap/堆外缓冲管理槽位，支持快照备份与恢复。
+ */
 public class TimerWheel {
 
+    /** 存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 时间轮文件名前缀。 */
     public static final String TIMER_WHEEL_FILE_NAME = "timerwheel";
+    /** 槽位空白/忽略占位常量。 */
     public static final int BLANK = -1, IGNORE = -2;
+    /** 时间轮槽位总数（实际索引为 2 倍）。 */
     public final int slotsTotal;
+    /** 槽位时间精度（毫秒）。 */
     public final int precisionMs;
     private final String fileName;
+    /** mmap 映射的时间轮文件缓冲。 */
     private final MappedByteBuffer mappedByteBuffer;
     private final RandomAccessFile randomAccessFile;
     private final FileChannel fileChannel;
+    /** 堆外 Direct 缓冲，读写槽位数据。 */
     private final ByteBuffer byteBuffer;
     private final ThreadLocal<ByteBuffer> localBuffer = new ThreadLocal<ByteBuffer>() {
         @Override
@@ -57,6 +67,7 @@ public class TimerWheel {
 
     private long snapOffset;
 
+        /** 构造时间轮（无快照偏移）。 */
     public TimerWheel(String fileName, int slotsTotal, int precisionMs) throws IOException {
         this(fileName, slotsTotal, precisionMs, -1);
     }
@@ -99,10 +110,12 @@ public class TimerWheel {
         }
     }
 
+        /** 关闭全部线程池。 */
     public void shutdown() {
         shutdown(true);
     }
 
+        /** 关闭时间轮，可选是否刷盘。 */
     public void shutdown(boolean flush) {
         if (flush) {
             try {
@@ -124,6 +137,7 @@ public class TimerWheel {
         }
     }
 
+        /** 将 Direct 缓冲变更同步到 mmap 并 force。 */
     public void flush() {
         if (mappedByteBuffer == null) {
             return;
@@ -142,15 +156,20 @@ public class TimerWheel {
     }
 
     /**
-     * Perform backup operation.
+
+     * 执行时间轮快照备份：按 flag 选择快照文件，写入临时文件后原子重命名。
+ * @param flushWhere 用于选择快照文件的 flag
+ * @throws IOException 备份过程 I/O 异常
      * <p>
      * Select snapshot file based on the provided flag, write current buffer content to a temporary file,
      * then rename the temporary file to the formal snapshot file. If rename fails, delete the temporary file.
      * Finally clean up expired snapshot files.
      *
      * @param flushWhere Flag used to select snapshot file.
-     * @throws IOException If I/O error occurs during backup process.
+     * @throws IOException 备份过程 I/O 异常
+     
      */
+        /** 按 flag 备份时间轮到快照文件。 */
     public void backup(long flushWhere) throws IOException {
         // Get current local buffer and position it to the beginning
         ByteBuffer bf = localBuffer.get();
@@ -182,10 +201,14 @@ public class TimerWheel {
     }
 
     /**
-     * Select snapshot file name based on flag.
+
+     * 根据 flag 选择快照文件名。
+ * @param flag 快照标识 flag
+ * @return 快照文件路径
      *
      * @param flag Flag used to select or identify snapshot file.
-     * @return Name of the snapshot file.
+     * @return 快照文件路径
+     
      */
     private String selectSnapshotByFlag(long flag) {
         if (flag < 0) {
@@ -195,11 +218,14 @@ public class TimerWheel {
     }
 
     /**
-     * Clean up expired snapshot files.
+
+     * 清理过期快照：删除 flag 较小的快照文件，保留 flag 最大的两个。
      * <p>
      * This method will find and delete all snapshot files with flags smaller than the specified value
      * under the current file name, keeping the two snapshot files with the largest flags.
+     
      */
+        /** 清理过期快照文件。 */
     public void cleanExpiredSnapshot() {
         File dir = new File(this.fileName).getParentFile();
         File[] files = dir.listFiles();
@@ -229,10 +255,14 @@ public class TimerWheel {
     }
 
     /**
-     * Get the maximum flag from existing snapshot files.
+
+     * 获取已有快照文件中的最大 flag。
+ * @return 最大 flag，无快照时返回 -1
      *
-     * @return The maximum flag value, or -1 if no snapshot files exist
+     * @return 最大 flag，无快照时返回 -1
+     
      */
+        /** 返回时间轮目录下最大快照 flag。 */
     public static long getMaxSnapshotFlag(String timerWheelPath) {
         File dir = new File(timerWheelPath).getParentFile();
         File[] files = dir.listFiles();
@@ -254,7 +284,9 @@ public class TimerWheel {
     }
 
     /**
-     * Wrapper class for file and flag
+
+     * 快照文件与 flag 的包装类
+     
      */
     private static class FileWithFlag {
         final File file;
@@ -266,6 +298,7 @@ public class TimerWheel {
         }
     }
 
+        /** 按毫秒时间获取槽位（精度对齐）。 */
     public Slot getSlot(long timeMs) {
         Slot slot = getRawSlot(timeMs);
         if (slot.timeMs != timeMs / precisionMs * precisionMs) {
@@ -275,16 +308,19 @@ public class TimerWheel {
     }
 
     //testable
+        /** 读取原始槽位数据（测试用）。 */
     public Slot getRawSlot(long timeMs) {
         localBuffer.get().position(getSlotIndex(timeMs) * Slot.SIZE);
         return new Slot(localBuffer.get().getLong() * precisionMs,
             localBuffer.get().getLong(), localBuffer.get().getLong(), localBuffer.get().getInt(), localBuffer.get().getInt());
     }
 
+        /** 计算时间对应的槽位索引。 */
     public int getSlotIndex(long timeMs) {
         return (int) (timeMs / precisionMs % (slotsTotal * 2));
     }
 
+        /** 写入槽位首尾物理偏移。 */
     public void putSlot(long timeMs, long firstPos, long lastPos) {
         localBuffer.get().position(getSlotIndex(timeMs) * Slot.SIZE);
         // To be compatible with previous version.
@@ -294,6 +330,7 @@ public class TimerWheel {
         localBuffer.get().putLong(lastPos);
     }
 
+        /** 写入槽位及计数与魔数。 */
     public void putSlot(long timeMs, long firstPos, long lastPos, int num, int magic) {
         localBuffer.get().position(getSlotIndex(timeMs) * Slot.SIZE);
         localBuffer.get().putLong(timeMs / precisionMs);
@@ -303,6 +340,7 @@ public class TimerWheel {
         localBuffer.get().putInt(magic);
     }
 
+        /** 修正槽位偏移，可选强制覆盖。 */
     public void reviseSlot(long timeMs, long firstPos, long lastPos, boolean force) {
         localBuffer.get().position(getSlotIndex(timeMs) * Slot.SIZE);
 
@@ -323,6 +361,7 @@ public class TimerWheel {
     }
 
     //check the timerwheel to see if its stored offset > maxOffset in timerlog
+        /** 检查时间轮存储偏移是否超过 TimerLog 最大偏移。 */
     public long checkPhyPos(long timeStartMs, long maxOffset) {
         long minFirst = Long.MAX_VALUE;
         int firstSlotIndex = getSlotIndex(timeStartMs);
@@ -343,10 +382,12 @@ public class TimerWheel {
         return minFirst;
     }
 
+        /** 返回指定时间槽位的消息计数。 */
     public long getNum(long timeMs) {
         return getSlot(timeMs).num;
     }
 
+        /** 统计从起始时间起的槽位消息总数。 */
     public long getAllNum(long timeStartMs) {
         int allNum = 0;
         int firstSlotIndex = getSlotIndex(timeStartMs);
@@ -362,6 +403,7 @@ public class TimerWheel {
         return allNum;
     }
 
+        /** 返回时间轮文件路径。 */
     public String getFileName() {
         return fileName;
     }

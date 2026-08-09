@@ -23,17 +23,29 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 事务 RocksDB 记录：编码 topic、uniqKey、物理偏移与回查次数。
+ */
 public class TransRocksDBRecord {
+    /** 存储错误日志。 */
     private static final Logger logError = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
+    /** RocksDB value 固定长度。 */
     public static final int VALUE_LENGTH = Integer.BYTES + Integer.BYTES;
+    /** 事务 key 中 topic 与 uniqKey 分隔符。 */
     private static final String KEY_SPLIT = "@";
     protected long offsetPy;
     private String topic;
+    /** 定时消息唯一键。 */
     private String uniqKey;
+    /** 事务回查次数。 */
     private int checkTimes = 0;
+    /** CommitLog 消息体大小。 */
     private int sizePy;
+    /** 是否为操作（op）半消息。 */
     private boolean isOp;
+    /** 是否标记删除。 */
     private boolean delete;
+    /** 关联的消息体（可选）。 */
     private MessageExt messageExt;
 
     public TransRocksDBRecord(long offsetPy, String topic, String uniqKey, int sizePy, int checkTimes) {
@@ -53,6 +65,7 @@ public class TransRocksDBRecord {
 
     public TransRocksDBRecord() {}
 
+        /** 序列化为 RocksDB key 字节。 */
     public byte[] getKeyBytes() {
         if (offsetPy < 0L || StringUtils.isEmpty(topic) || StringUtils.isEmpty(uniqKey)) {
             return null;
@@ -62,6 +75,7 @@ public class TransRocksDBRecord {
         return ByteBuffer.allocate(keyLength).putLong(offsetPy).put(keySuffixBytes).array();
     }
 
+        /** 序列化为 RocksDB value 字节。 */
     public byte[] getValueBytes() {
         if (checkTimes < 0 || sizePy <= 0) {
             logError.error("TransRocksDBRecord getValueBytes error, checkTimes: {}, sizePy: {}", checkTimes, sizePy);
@@ -70,6 +84,7 @@ public class TransRocksDBRecord {
         return ByteBuffer.allocate(VALUE_LENGTH).putInt(checkTimes).putInt(sizePy).array();
     }
 
+        /** 从 key/value 解码事务记录。 */
     public static TransRocksDBRecord decode(byte[] key, byte[] value) {
         if (null == key || key.length <= Long.BYTES || null == value || value.length != VALUE_LENGTH) {
             logError.error("TransRocksDBRecord decode param error, key: {}, value: {}", key, value);
