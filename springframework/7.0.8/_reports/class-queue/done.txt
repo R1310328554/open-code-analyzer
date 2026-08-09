@@ -1461,3 +1461,13 @@ spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/CallMetaDataCon
 spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/GenericCallMetaDataProvider.java
 spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/GenericTableMetaDataProvider.java
 spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/TableMetaDataContext.java
+spring-tx/src/main/java/org/springframework/transaction/reactive/AbstractReactiveTransactionManager.java
+spring-tx/src/main/java/org/springframework/transaction/support/AbstractPlatformTransactionManager.java
+spring-tx/src/main/java/org/springframework/transaction/support/TransactionSynchronizationManager.java
+spring-aop/src/main/java/org/springframework/aop/aspectj/AbstractAspectJAdvice.java
+spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJAdviceParameterNameDiscoverer.java
+spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJExpressionPointcut.java
+spring-aop/src/main/java/org/springframework/aop/config/ConfigBeanDefinitionParser.java
+spring-aop/src/main/java/org/springframework/aop/framework/AdvisedSupport.java
+spring-aop/src/main/java/org/springframework/aop/framework/CglibAopProxy.java
+spring-aop/src/main/java/org/springframework/aop/framework/ProxyFactoryBean.java
