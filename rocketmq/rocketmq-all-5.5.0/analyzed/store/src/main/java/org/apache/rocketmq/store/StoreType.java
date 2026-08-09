@@ -22,25 +22,33 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 消息存储后端类型：默认文件存储或 RocksDB 存储。
+ */
 public enum StoreType {
+    /** 默认 CommitLog + 文件消费队列。 */
     DEFAULT("default"),
+    /** 默认 CommitLog + RocksDB 消费队列。 */
     DEFAULT_ROCKSDB("defaultRocksDB");
 
+    /** 配置字符串标识。 */
     private String storeType;
 
+    /** 按字符串标识构造枚举常量。 */
     StoreType(String storeType) {
         this.storeType = storeType;
     }
 
+    /** 返回存储类型字符串。 */
     public String getStoreType() {
         return storeType;
     }
 
     /**
-     * convert string to set of StoreType
+     * 将分号分隔的配置字符串解析为 StoreType 集合。
      *
-     * @param str example "default;defaultRocksDB"
-     * @return set of StoreType
+     * @param str 示例 "default;defaultRocksDB"
+     * @return StoreType 集合
      */
     public static Set<StoreType> fromString(String str) {
         if (str == null || str.trim().isEmpty()) {

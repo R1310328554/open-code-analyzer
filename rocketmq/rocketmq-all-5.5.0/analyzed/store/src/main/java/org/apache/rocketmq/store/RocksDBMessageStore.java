@@ -25,14 +25,19 @@ import org.apache.rocketmq.store.queue.ConsumeQueueStoreInterface;
 import org.apache.rocketmq.store.queue.RocksDBConsumeQueueStore;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
+/**
+ * 基于 RocksDB 的消息存储实现：消费队列持久化到 RocksDB 而非本地文件。
+ */
 public class RocksDBMessageStore extends DefaultMessageStore {
 
+    /** 构造 RocksDB 版 MessageStore，委托父类完成 CommitLog 等初始化。 */
     public RocksDBMessageStore(final MessageStoreConfig messageStoreConfig, final BrokerStatsManager brokerStatsManager,
         final MessageArrivingListener messageArrivingListener, final BrokerConfig brokerConfig, final ConcurrentMap<String, TopicConfig> topicConfigTable) throws
         IOException {
         super(messageStoreConfig, brokerStatsManager, messageArrivingListener, brokerConfig, topicConfigTable);
     }
 
+    /** 创建 RocksDB 消费队列存储实例。 */
     @Override
     public ConsumeQueueStoreInterface createConsumeQueueStore() {
         return new RocksDBConsumeQueueStore(this);

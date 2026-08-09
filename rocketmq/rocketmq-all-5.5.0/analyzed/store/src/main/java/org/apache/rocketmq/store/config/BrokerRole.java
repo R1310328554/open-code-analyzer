@@ -16,8 +16,14 @@
  */
 package org.apache.rocketmq.store.config;
 
+/**
+ * Broker 角色枚举：异步主、同步主或从节点，影响刷盘与复制策略。
+ */
 public enum BrokerRole {
+    /** 异步复制主节点。 */
     ASYNC_MASTER,
+    /** 同步复制主节点。 */
     SYNC_MASTER,
+    /** 从节点，只读复制。 */
     SLAVE;
 }

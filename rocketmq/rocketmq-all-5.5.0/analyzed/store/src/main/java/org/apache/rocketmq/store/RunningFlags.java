@@ -16,31 +16,45 @@
  */
 package org.apache.rocketmq.store;
 
+/**
+ * Broker 存储运行标志位：以位掩码表示可读、可写、磁盘满、围栏及索引错误等状态。
+ */
 public class RunningFlags {
 
+    /** 不可读标志位。 */
     private static final int NOT_READABLE_BIT = 1;
 
+    /** 不可写标志位。 */
     private static final int NOT_WRITEABLE_BIT = 1 << 1;
 
+    /** 逻辑队列写入错误标志位。 */
     private static final int WRITE_LOGICS_QUEUE_ERROR_BIT = 1 << 2;
 
+    /** 索引文件写入错误标志位。 */
     private static final int WRITE_INDEX_FILE_ERROR_BIT = 1 << 3;
 
+    /** 物理磁盘已满标志位。 */
     private static final int DISK_FULL_BIT = 1 << 4;
 
+    /** 围栏（fenced）标志位，禁止写入。 */
     private static final int FENCED_BIT = 1 << 5;
 
+    /** 逻辑磁盘已满标志位。 */
     private static final int LOGIC_DISK_FULL_BIT = 1 << 6;
 
+    /** 当前组合标志位。 */
     private volatile int flagBits = 0;
 
+    /** 默认构造，所有标志位清零。 */
     public RunningFlags() {
     }
 
+    /** 返回原始标志位整型值。 */
     public int getFlagBits() {
         return flagBits;
     }
 
+    /** 若当前不可读则清除不可读位，并返回变更前的可读状态。 */
     public boolean getAndMakeReadable() {
         boolean result = this.isReadable();
         if (!result) {
@@ -49,14 +63,17 @@ public class RunningFlags {
         return result;
     }
 
+    /** 是否可读（未置 NOT_READABLE 位）。 */
     public boolean isReadable() {
         return (this.flagBits & NOT_READABLE_BIT) == 0;
     }
 
+    /** 是否处于围栏状态。 */
     public boolean isFenced() {
         return (this.flagBits & FENCED_BIT) != 0;
     }
 
+    /** 若当前可读则置不可读位，并返回变更前的可读状态。 */
     public boolean getAndMakeNotReadable() {
         boolean result = this.isReadable();
         if (result) {
@@ -65,10 +82,12 @@ public class RunningFlags {
         return result;
     }
 
+    /** 清除逻辑队列写入错误标志。 */
     public void clearLogicsQueueError() {
         this.flagBits &= ~WRITE_LOGICS_QUEUE_ERROR_BIT;
     }
 
+    /** 若当前不可写则尝试清除不可写位，返回变更前是否可写。 */
     public boolean getAndMakeWriteable() {
         boolean result = this.isWriteable();
         if (!result) {
@@ -77,6 +96,7 @@ public class RunningFlags {
         return result;
     }
 
+    /** 综合判断是否可写（无不可写、队列错误、磁盘满、索引错误、围栏等）。 */
     public boolean isWriteable() {
         if ((this.flagBits & (NOT_WRITEABLE_BIT | WRITE_LOGICS_QUEUE_ERROR_BIT | DISK_FULL_BIT | WRITE_INDEX_FILE_ERROR_BIT | FENCED_BIT | LOGIC_DISK_FULL_BIT)) == 0) {
             return true;
@@ -85,6 +105,7 @@ public class RunningFlags {
         return false;
     }
 
+    /** 仅检查 NOT_WRITEABLE 位是否未置位。 */
     public boolean isStoreWriteable() {
         if ((this.flagBits & NOT_WRITEABLE_BIT) == 0) {
             return true;
@@ -94,6 +115,7 @@ public class RunningFlags {
     }
 
 
+    /** 消费队列是否可写（忽略物理磁盘满标志）。 */
     //for consume queue, just ignore the DISK_FULL_BIT
     public boolean isCQWriteable() {
         if ((this.flagBits & (NOT_WRITEABLE_BIT | WRITE_LOGICS_QUEUE_ERROR_BIT | WRITE_INDEX_FILE_ERROR_BIT | LOGIC_DISK_FULL_BIT)) == 0) {
@@ -103,6 +125,7 @@ public class RunningFlags {
         return false;
     }
 
+    /** 若当前可写则置不可写位，返回变更前是否可写。 */
     public boolean getAndMakeStoreNotWriteable() {
         boolean result = this.isWriteable();
         if (result) {
@@ -111,10 +134,12 @@ public class RunningFlags {
         return result;
     }
 
+    /** 标记逻辑队列写入错误。 */
     public void makeLogicsQueueError() {
         this.flagBits |= WRITE_LOGICS_QUEUE_ERROR_BIT;
     }
 
+    /** 设置或清除围栏标志。 */
     public void makeFenced(boolean fenced) {
         if (fenced) {
             this.flagBits |= FENCED_BIT;
@@ -123,6 +148,7 @@ public class RunningFlags {
         }
     }
 
+    /** 逻辑队列是否写入错误。 */
     public boolean isLogicsQueueError() {
         if ((this.flagBits & WRITE_LOGICS_QUEUE_ERROR_BIT) == WRITE_LOGICS_QUEUE_ERROR_BIT) {
             return true;
@@ -131,10 +157,12 @@ public class RunningFlags {
         return false;
     }
 
+    /** 标记索引文件写入错误。 */
     public void makeIndexFileError() {
         this.flagBits |= WRITE_INDEX_FILE_ERROR_BIT;
     }
 
+    /** 索引文件是否写入错误。 */
     public boolean isIndexFileError() {
         if ((this.flagBits & WRITE_INDEX_FILE_ERROR_BIT) == WRITE_INDEX_FILE_ERROR_BIT) {
             return true;
@@ -143,24 +171,28 @@ public class RunningFlags {
         return false;
     }
 
+    /** 置物理磁盘满标志，返回变更前是否未满。 */
     public boolean getAndMakeDiskFull() {
         boolean result = !((this.flagBits & DISK_FULL_BIT) == DISK_FULL_BIT);
         this.flagBits |= DISK_FULL_BIT;
         return result;
     }
 
+    /** 清除物理磁盘满标志，返回变更前是否未满。 */
     public boolean getAndMakeDiskOK() {
         boolean result = !((this.flagBits & DISK_FULL_BIT) == DISK_FULL_BIT);
         this.flagBits &= ~DISK_FULL_BIT;
         return result;
     }
 
+    /** 置逻辑磁盘满标志，返回变更前是否未满。 */
     public boolean getAndMakeLogicDiskFull() {
         boolean result = !((this.flagBits & LOGIC_DISK_FULL_BIT) == LOGIC_DISK_FULL_BIT);
         this.flagBits |= LOGIC_DISK_FULL_BIT;
         return result;
     }
 
+    /** 清除逻辑磁盘满标志，返回变更前是否未满。 */
     public boolean getAndMakeLogicDiskOK() {
         boolean result = !((this.flagBits & LOGIC_DISK_FULL_BIT) == LOGIC_DISK_FULL_BIT);
         this.flagBits &= ~LOGIC_DISK_FULL_BIT;

@@ -28,20 +28,32 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.store.logfile.DefaultMappedFile;
 
+/**
+ * 存储检查点文件：mmap 持久化物理/逻辑消息时间戳、索引时间及刷盘偏移等元数据。
+ */
 public class StoreCheckpoint {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final RandomAccessFile randomAccessFile;
     private final FileChannel fileChannel;
     private final MappedByteBuffer mappedByteBuffer;
+    /** 逻辑消息时间戳临时值（刷盘前）。 */
     private volatile long tmpLogicsMsgTimestamp = 0;
+    /** 已持久化的物理消息最大时间戳。 */
     private volatile long physicMsgTimestamp = 0;
+    /** 已持久化的逻辑消息最大时间戳。 */
     private volatile long logicsMsgTimestamp = 0;
+    /** 逻辑队列物理偏移临时值。 */
     private volatile long tmpLogicsPhysicalOffset = 0;
+    /** 已持久化的逻辑队列物理偏移。 */
     private volatile long logicsPhysicalOffset = 0;
+    /** 索引文件最大消息时间戳。 */
     private volatile long indexMsgTimestamp = 0;
+    /** 主节点已刷盘确认的物理偏移。 */
     private volatile long masterFlushedOffset = 0;
+    /** 已确认的最小物理偏移（用于过期删除）。 */
     private volatile long confirmPhyOffset = 0;
 
+    /** 打开或创建检查点文件并 mmap 一页；若已存在则加载各字段。 */
     public StoreCheckpoint(final String scpPath) throws IOException {
         File file = new File(scpPath);
         UtilAll.ensureDirOK(file.getParent());
@@ -74,11 +86,12 @@ public class StoreCheckpoint {
         }
     }
 
+    /** 刷盘后解除 mmap 并关闭文件通道。 */
     public void shutdown() {
 
         this.flush();
 
-        // unmap mappedByteBuffer
+        // 解除 mmap 映射
         UtilAll.cleanBuffer(this.mappedByteBuffer);
 
         try {
@@ -88,6 +101,7 @@ public class StoreCheckpoint {
         }
     }
 
+    /** 将各时间戳与偏移写入 mmap 并 force 到磁盘。 */
     public void flush() {
         try {
             this.mappedByteBuffer.putLong(0, this.physicMsgTimestamp);
@@ -102,18 +116,22 @@ public class StoreCheckpoint {
         }
     }
 
+    /** 返回物理消息时间戳。 */
     public long getPhysicMsgTimestamp() {
         return physicMsgTimestamp;
     }
 
+    /** 设置物理消息时间戳。 */
     public void setPhysicMsgTimestamp(long physicMsgTimestamp) {
         this.physicMsgTimestamp = physicMsgTimestamp;
     }
 
+    /** 返回逻辑消息时间戳。 */
     public long getLogicsMsgTimestamp() {
         return logicsMsgTimestamp;
     }
 
+    /** 设置逻辑消息时间戳。 */
     public void setLogicsMsgTimestamp(long logicsMsgTimestamp) {
         this.logicsMsgTimestamp = logicsMsgTimestamp;
     }
@@ -150,10 +168,12 @@ public class StoreCheckpoint {
         this.confirmPhyOffset = confirmPhyOffset;
     }
 
+    /** 返回物理/逻辑/索引时间戳中的最小值（减 3 秒缓冲）。 */
     public long getMinTimestampIndex() {
         return Math.min(this.getMinTimestamp(), this.indexMsgTimestamp);
     }
 
+    /** 返回物理与逻辑时间戳的较小值减 3 秒。 */
     public long getMinTimestamp() {
         long min = Math.min(this.physicMsgTimestamp, this.logicsMsgTimestamp);
 

@@ -17,9 +17,11 @@
 package org.apache.rocketmq.store;
 
 /**
- * Clean up page-table on super large disk
+ * 超大磁盘场景下可交换映射：定期 swap/clean MappedFile 以降低页表占用。
  */
 public interface Swappable {
+    /** 按保留数量与间隔将冷 MappedFile 换出内存。 */
     void swapMap(int reserveNum, long forceSwapIntervalMs, long normalSwapIntervalMs);
+    /** 清理已换出且超过强制间隔的 MappedFile 映射。 */
     void cleanSwappedMap(long forceCleanSwapIntervalMs);
 }

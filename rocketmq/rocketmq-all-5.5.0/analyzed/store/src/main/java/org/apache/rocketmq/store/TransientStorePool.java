@@ -28,14 +28,22 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.store.util.LibC;
 
+/**
+ *  transient 写入缓冲池：预分配 direct ByteBuffer 并 mlock，供 CommitLog 双写路径借用。
+ */
 public class TransientStorePool {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** 缓冲池容量（块数）。 */
     private final int poolSize;
+    /** 每块 direct buffer 大小（通常等于 mappedFileSize）。 */
     private final int fileSize;
+    /** 可用 direct buffer 双端队列。 */
     private final Deque<ByteBuffer> availableBuffers;
+    /** 是否执行真实 commit（否则仅写 transient 缓冲）。 */
     private volatile boolean isRealCommit = true;
 
+    /** 构造指定容量与块大小的缓冲池。 */
     public TransientStorePool(final int poolSize, final int fileSize) {
         this.poolSize = poolSize;
         this.fileSize = fileSize;
@@ -43,8 +51,9 @@ public class TransientStorePool {
     }
 
     /**
-     * It's a heavy init method.
+     * 重量级初始化：分配 direct buffer 并 mlock 锁定物理页。
      */
+    /** 预分配并锁定全部 direct buffer。 */
     public void init() {
         for (int i = 0; i < poolSize; i++) {
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect(fileSize);
@@ -57,6 +66,7 @@ public class TransientStorePool {
         }
     }
 
+    /** 释放 mlock 并销毁缓冲池。 */
     public void destroy() {
         for (ByteBuffer byteBuffer : availableBuffers) {
             final long address = PlatformDependent.directBufferAddress(byteBuffer);
@@ -65,28 +75,33 @@ public class TransientStorePool {
         }
     }
 
+    /** 归还借出的 buffer 到池首。 */
     public void returnBuffer(ByteBuffer byteBuffer) {
         byteBuffer.position(0);
         byteBuffer.limit(fileSize);
         this.availableBuffers.offerFirst(byteBuffer);
     }
 
+    /** 从池首借出一块 buffer；余量不足 40% 时打 warn 日志。 */
     public ByteBuffer borrowBuffer() {
         ByteBuffer buffer = availableBuffers.pollFirst();
         if (availableBuffers.size() < poolSize * 0.4) {
-            log.warn("TransientStorePool only remain {} sheets.", availableBuffers.size());
+            log.warn("TransientStorePool 剩余缓冲仅 {} 块.", availableBuffers.size());
         }
         return buffer;
     }
 
+    /** 返回当前可用 buffer 数量。 */
     public int availableBufferNums() {
         return availableBuffers.size();
     }
 
+    /** 是否真实 commit 到 MappedFile。 */
     public boolean isRealCommit() {
         return isRealCommit;
     }
 
+    /** 设置是否真实 commit。 */
     public void setRealCommit(boolean realCommit) {
         isRealCommit = realCommit;
     }

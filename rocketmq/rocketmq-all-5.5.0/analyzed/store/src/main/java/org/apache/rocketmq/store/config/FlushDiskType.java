@@ -16,7 +16,12 @@
  */
 package org.apache.rocketmq.store.config;
 
+/**
+ * 刷盘策略：同步刷盘保证持久化，异步刷盘提升吞吐。
+ */
 public enum FlushDiskType {
+    /** 同步刷盘，写入线程等待 fsync 完成。 */
     SYNC_FLUSH,
+    /** 异步刷盘，由后台线程批量落盘。 */
     ASYNC_FLUSH
 }

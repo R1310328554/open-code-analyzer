@@ -19,25 +19,34 @@ package org.apache.rocketmq.store;
 
 import org.apache.rocketmq.store.logfile.MappedFile;
 
+/**
+ * MappedFile 选择结果：仅包含文件引用与有效写入大小，不含 ByteBuffer 视图。
+ */
 public class SelectMappedFileResult {
 
+    /** 当前 MappedFile 内有效数据大小。 */
     protected int size;
 
+    /** 选中的 MappedFile 实例。 */
     protected MappedFile mappedFile;
 
+    /** 构造指定大小与文件的查询结果。 */
     public SelectMappedFileResult(int size, MappedFile mappedFile) {
         this.size = size;
         this.mappedFile = mappedFile;
     }
 
+    /** 返回有效数据大小。 */
     public int getSize() {
         return size;
     }
 
+    /** 设置有效数据大小。 */
     public void setSize(int size) {
         this.size = size;
     }
 
+    /** 返回 MappedFile 引用。 */
     public MappedFile getMappedFile() {
         return mappedFile;
     }

@@ -30,12 +30,17 @@ import java.nio.ByteBuffer;
 
 import static java.lang.String.format;
 
+/**
+ * 存储层工具类：物理内存探测、MappedFile 追加及消息解码等辅助方法。
+ */
 public class StoreUtil {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** JVM 可见的物理内存总量（字节）。 */
     public static final long TOTAL_PHYSICAL_MEMORY_SIZE = getTotalPhysicalMemorySize();
 
     @SuppressWarnings("restriction")
+    /** 通过 OperatingSystemMXBean 获取物理内存，不可用时默认 24GB。 */
     public static long getTotalPhysicalMemorySize() {
         long physicalTotal = 1024 * 1024 * 1024 * 24L;
         OperatingSystemMXBean osmxb = ManagementFactory.getOperatingSystemMXBean();
@@ -46,6 +51,7 @@ public class StoreUtil {
         return physicalTotal;
     }
 
+    /** 向 MappedFile 追加数据，失败时抛出 RuntimeException。 */
     public static void fileAppend(MappedFile file, ByteBuffer data) {
         boolean success = file.appendMessage(data);
         if (!success) {
@@ -53,10 +59,12 @@ public class StoreUtil {
         }
     }
 
+    /** 以末文件起始偏移为当前位置获取文件队列快照。 */
     public static FileQueueSnapshot getFileQueueSnapshot(MappedFileQueue mappedFileQueue) {
         return getFileQueueSnapshot(mappedFileQueue, mappedFileQueue.getLastMappedFile().getFileFromOffset());
     }
 
+    /** 按指定 currentFile 偏移计算首尾文件索引与落后条数。 */
     public static FileQueueSnapshot getFileQueueSnapshot(MappedFileQueue mappedFileQueue, final long currentFile) {
         try {
             Preconditions.checkNotNull(mappedFileQueue, "file queue shouldn't be null");
@@ -74,11 +82,12 @@ public class StoreUtil {
             boolean exist = firstFile.getFileFromOffset() <= currentFile && currentFile <= lastFile.getFileFromOffset();
             return new FileQueueSnapshot(firstFile, firstFileIndex, lastFile, lastFileIndex, currentFile, currentFileIndex, behind, exist);
         } catch (Exception e) {
-            log.error("[BUG] get file queue snapshot failed. fileQueue: {}, currentFile: {}", mappedFileQueue, currentFile, e);
+            log.error("[BUG] 获取文件队列快照失败. fileQueue: {}, currentFile: {}", mappedFileQueue, currentFile, e);
         }
         return new FileQueueSnapshot();
     }
 
+    /** 按物理偏移与大小从 MessageStore 读取并解码单条消息。 */
     public static MessageExt getMessage(long offsetPy, int sizePy, MessageStore messageStore, ByteBuffer byteBuffer) {
         try {
             if (offsetPy < 0L || sizePy <= 0 || null == messageStore || null == byteBuffer) {

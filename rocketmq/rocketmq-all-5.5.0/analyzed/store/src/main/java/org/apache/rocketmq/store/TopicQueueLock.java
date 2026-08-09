@@ -22,10 +22,16 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * Topic-Queue 分段锁：按 topicQueueKey 哈希到固定数量 ReentrantLock，降低锁竞争。
+ */
 public class TopicQueueLock {
+    /** 锁分段数量。 */
     private final int size;
+    /** 分段锁列表。 */
     private final List<Lock> lockList;
 
+    /** 默认 32 个分段锁。 */
     public TopicQueueLock() {
         this.size = 32;
         this.lockList = new ArrayList<>(32);
@@ -34,6 +40,7 @@ public class TopicQueueLock {
         }
     }
 
+    /** 指定分段数量构造。 */
     public TopicQueueLock(int size) {
         this.size = size;
         this.lockList = new ArrayList<>(size);
@@ -42,11 +49,13 @@ public class TopicQueueLock {
         }
     }
 
+    /** 对 topicQueueKey 对应分段加锁。 */
     public void lock(String topicQueueKey) {
         Lock lock = this.lockList.get((topicQueueKey.hashCode() & 0x7fffffff) % this.size);
         lock.lock();
     }
 
+    /** 释放 topicQueueKey 对应分段锁。 */
     public void unlock(String topicQueueKey) {
         Lock lock = this.lockList.get((topicQueueKey.hashCode() & 0x7fffffff) % this.size);
         lock.unlock();
