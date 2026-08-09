@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-/* ===== [OCA 中文解析] =====
-文件意图总览
-
-类型转换委派：把字符串/集合/数组等转成目标属性类型，编辑器与 ConversionService 在此合流。
-===== [OCA 中文解析结束] ===== */
 package org.springframework.beans;
 
 import java.beans.PropertyEditor;
@@ -45,18 +40,11 @@ import org.springframework.util.NumberUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class TypeConverterDelegate — 意图说明
-
-BeanWrapper 内部的转换执行者。
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Internal helper class for converting property values to target types.
+ * 将属性值转换为目标类型的内部辅助类。
  *
- * <p>Works on a given {@link PropertyEditorRegistrySupport} instance.
- * Used as a delegate by {@link BeanWrapperImpl} and {@link SimpleTypeConverter}.
+ * <p>基于给定的 {@link PropertyEditorRegistrySupport} 实例工作，
+ * 由 {@link BeanWrapperImpl} 与 {@link SimpleTypeConverter} 作为委托使用。
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -68,27 +56,27 @@ BeanWrapper 内部的转换执行者。
  */
 class TypeConverterDelegate {
 
-	// [OCA] 字段 `logger`：类成员状态。
 	private static final Log logger = LogFactory.getLog(TypeConverterDelegate.class);
 
-	// [OCA] 字段 `propertyEditorRegistry`：类成员状态。
+	/** 属性 Editor 注册表，提供自定义/默认 Editor 与 {@link ConversionService}。 */
 	private final PropertyEditorRegistrySupport propertyEditorRegistry;
 
+	/** 当前操作的目标 Bean 实例，可作为 Editor 上下文（如枚举解析）。 */
 	private final @Nullable Object targetObject;
 
 
 	/**
-	 * Create a new TypeConverterDelegate for the given editor registry.
-	 * @param propertyEditorRegistry the editor registry to use
+	 * 为给定 Editor 注册表创建 {@code TypeConverterDelegate}。
+	 * @param propertyEditorRegistry 要使用的 Editor 注册表
 	 */
 	public TypeConverterDelegate(PropertyEditorRegistrySupport propertyEditorRegistry) {
 		this(propertyEditorRegistry, null);
 	}
 
 	/**
-	 * Create a new TypeConverterDelegate for the given editor registry and bean instance.
-	 * @param propertyEditorRegistry the editor registry to use
-	 * @param targetObject the target object to work on (as context that can be passed to editors)
+	 * 为给定 Editor 注册表与 Bean 实例创建 {@code TypeConverterDelegate}。
+	 * @param propertyEditorRegistry 要使用的 Editor 注册表
+	 * @param targetObject 操作目标对象（可作为上下文传给 Editor）
 	 */
 	public TypeConverterDelegate(PropertyEditorRegistrySupport propertyEditorRegistry, @Nullable Object targetObject) {
 		this.propertyEditorRegistry = propertyEditorRegistry;
@@ -97,14 +85,14 @@ class TypeConverterDelegate {
 
 
 	/**
-	 * Convert the value to the required type for the specified property.
-	 * @param propertyName name of the property
-	 * @param oldValue the previous value, if available (may be {@code null})
-	 * @param newValue the proposed new value
-	 * @param requiredType the type we must convert to
-	 * (or {@code null} if not known, for example in case of a collection element)
-	 * @return the new value, possibly the result of type conversion
-	 * @throws IllegalArgumentException if type conversion failed
+	 * 将值转换为指定属性所需的目标类型。
+	 * @param propertyName 属性名
+	 * @param oldValue 旧值（若有，可为 {@code null}）
+	 * @param newValue 拟设置的新值
+	 * @param requiredType 必须转换到的类型
+	 * （若未知可为 {@code null}，例如集合元素场景）
+	 * @return 新值，可能经类型转换得到
+	 * @throws IllegalArgumentException 类型转换失败时
 	 */
 	public <T> @Nullable T convertIfNecessary(@Nullable String propertyName, @Nullable Object oldValue,
 			Object newValue, @Nullable Class<T> requiredType) throws IllegalArgumentException {
@@ -113,16 +101,17 @@ class TypeConverterDelegate {
 	}
 
 	/**
-	 * Convert the value to the required type (if necessary from a String),
-	 * for the specified property.
-	 * @param propertyName name of the property
-	 * @param oldValue the previous value, if available (may be {@code null})
-	 * @param newValue the proposed new value
-	 * @param requiredType the type we must convert to
-	 * (or {@code null} if not known, for example in case of a collection element)
-	 * @param typeDescriptor the descriptor for the target property or field
-	 * @return the new value, possibly the result of type conversion
-	 * @throws IllegalArgumentException if type conversion failed
+	 * 将值（必要时从 {@link String}）转换为指定属性所需类型。
+	 * <p>核心转换入口：依次尝试自定义 Editor、{@link ConversionService}、
+	 * 默认 Editor，再应用数组/集合/Map/枚举等标准转换规则。
+	 * @param propertyName 属性名
+	 * @param oldValue 旧值（若有，可为 {@code null}）
+	 * @param newValue 拟设置的新值
+	 * @param requiredType 必须转换到的类型
+	 * （若未知可为 {@code null}，例如集合元素场景）
+	 * @param typeDescriptor 目标属性或字段的类型描述符
+	 * @return 新值，可能经类型转换得到
+	 * @throws IllegalArgumentException 类型转换失败时
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> @Nullable T convertIfNecessary(@Nullable String propertyName, @Nullable Object oldValue, @Nullable Object newValue,
@@ -296,13 +285,6 @@ class TypeConverterDelegate {
 
 		return (T) convertedValue;
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 attemptToConvertStringToEnum — 意图与阅读要点
-
-方法 `attemptToConvertStringToEnum` 复杂度较高（CCN≈11, NLOC≈39）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
 
 	private Object attemptToConvertStringToEnum(Class<?> requiredType, String trimmedValue, Object currentConvertedValue) {
 		Object convertedValue = currentConvertedValue;
@@ -494,11 +476,6 @@ class TypeConverterDelegate {
 	}
 
 	@SuppressWarnings("unchecked")
-	/* ===== [OCA 中文解析] =====
-方法 convertToTypedCollection — 意图与阅读要点
-
-方法 `convertToTypedCollection` 复杂度较高（CCN≈21, NLOC≈65）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	private Collection<?> convertToTypedCollection(Collection<?> original, @Nullable String propertyName,
 			Class<?> requiredType, @Nullable TypeDescriptor typeDescriptor) {
 
@@ -572,11 +549,6 @@ class TypeConverterDelegate {
 	}
 
 	@SuppressWarnings("unchecked")
-	/* ===== [OCA 中文解析] =====
-方法 convertToTypedMap — 意图与阅读要点
-
-方法 `convertToTypedMap` 复杂度较高（CCN≈25, NLOC≈70）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	private Map<?, ?> convertToTypedMap(Map<?, ?> original, @Nullable String propertyName,
 			Class<?> requiredType, @Nullable TypeDescriptor typeDescriptor) {
 

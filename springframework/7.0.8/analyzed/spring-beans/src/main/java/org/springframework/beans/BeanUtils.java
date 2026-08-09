@@ -53,22 +53,14 @@ import org.springframework.util.ConcurrentReferenceHashMap;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class BeanUtils — 意图说明
-
-class `BeanUtils`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/BeanUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Static convenience methods for JavaBeans: for instantiating beans,
- * checking bean property types, copying bean properties, etc.
+ * JavaBeans 相关的静态便捷方法：实例化 Bean、检查 Bean 属性类型、复制 Bean 属性等。
  *
- * <p>Mainly for internal use within the framework, but to some degree also
- * useful for application classes. Consider
- * <a href="https://commons.apache.org/proper/commons-beanutils/">Apache Commons BeanUtils</a>,
- * <a href="https://github.com/ExpediaGroup/bull">BULL - Bean Utils Light Library</a>,
- * or similar third-party frameworks for more comprehensive bean utilities.
+ * <p>主要用于框架内部，但在一定程度上也对应用类有用。若需更全面的 Bean 工具，
+ * 可考虑
+ * <a href="https://commons.apache.org/proper/commons-beanutils/">Apache Commons BeanUtils</a>、
+ * <a href="https://github.com/ExpediaGroup/bull">BULL - Bean Utils Light Library</a>
+ * 或类似的第三方框架。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -78,9 +70,11 @@ class `BeanUtils`：请结合所属模块与调用方理解其在整体架构中
  */
 public abstract class BeanUtils {
 
+	/** 已知不存在对应 Editor 的类型集合，避免重复查找。 */
 	private static final Set<Class<?>> unknownEditorTypes =
 			Collections.newSetFromMap(new ConcurrentReferenceHashMap<>(64));
 
+	/** 基本类型在构造器参数缺省时的默认值映射。 */
 	private static final Map<Class<?>, Object> DEFAULT_TYPE_VALUES = Map.of(
 			boolean.class, false,
 			byte.class, (byte) 0,
@@ -91,17 +85,17 @@ public abstract class BeanUtils {
 			double.class, 0D,
 			char.class, '\0');
 
-	// [OCA] 字段 `KOTLIN_REFLECT_PRESENT`：类成员状态。
+	/** 运行时是否可用 Kotlin 反射（避免硬依赖）。 */
 	private static final boolean KOTLIN_REFLECT_PRESENT = KotlinDetector.isKotlinReflectPresent();
 
 
 	/**
-	 * Convenience method to instantiate a class using its no-arg constructor.
-	 * @param clazz class to instantiate
-	 * @return the new instance
-	 * @throws BeanInstantiationException if the bean cannot be instantiated
+	 * 使用无参构造器实例化类的便捷方法。
+	 * @param clazz 待实例化的类
+	 * @return 新实例
+	 * @throws BeanInstantiationException 若 Bean 无法实例化
 	 * @see Class#newInstance()
-	 * @deprecated following the deprecation of {@link Class#newInstance()} in JDK 9
+	 * @deprecated 随 JDK 9 中 {@link Class#newInstance()} 的弃用而弃用
 	 */
 	@Deprecated(since = "5.0")
 	public static <T> T instantiate(Class<T> clazz) throws BeanInstantiationException {
@@ -120,25 +114,16 @@ public abstract class BeanUtils {
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 instantiateClass — 意图与阅读要点
-
-方法 `instantiateClass` 复杂度较高（CCN≈8, NLOC≈23）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Instantiate a class using its 'primary' constructor (for Kotlin classes,
-	 * potentially having default arguments declared) or its default constructor
-	 * (for regular Java classes, expecting a standard no-arg setup).
-	 * <p>Note that this method tries to set the constructor accessible
-	 * if given a non-accessible (that is, non-public) constructor.
-	 * @param clazz the class to instantiate
-	 * @return the new instance
-	 * @throws BeanInstantiationException if the bean cannot be instantiated.
-	 * The cause may notably indicate a {@link NoSuchMethodException} if no
-	 * primary/default constructor was found, a {@link NoClassDefFoundError}
-	 * or other {@link LinkageError} in case of an unresolvable class definition
-	 * (for example, due to a missing dependency at runtime), or an exception thrown
-	 * from the constructor invocation itself.
+	 * 使用「主构造器」（Kotlin 类，可能声明了默认参数）或默认构造器
+	 * （普通 Java 类，期望标准无参设置）实例化类。
+	 * <p>若给定不可访问（即非 public）的构造器，本方法会尝试将其设为可访问。
+	 * @param clazz 待实例化的类
+	 * @return 新实例
+	 * @throws BeanInstantiationException 若 Bean 无法实例化。
+	 * 原因可能尤其为：未找到主/默认构造器时的 {@link NoSuchMethodException}；
+	 * 类定义无法解析时的 {@link NoClassDefFoundError} 或其他 {@link LinkageError}
+	 * （例如运行时缺少依赖）；或构造器调用本身抛出的异常。
 	 * @see Constructor#newInstance
 	 */
 	public static <T> T instantiateClass(Class<T> clazz) throws BeanInstantiationException {
@@ -148,9 +133,11 @@ public abstract class BeanUtils {
 		}
 		Constructor<T> ctor;
 		try {
+			// 优先尝试无参声明构造器
 			ctor = clazz.getDeclaredConstructor();
 		}
 		catch (NoSuchMethodException ex) {
+			// 回退到 Kotlin 主构造器或 Record 规范构造器
 			ctor = findPrimaryConstructor(clazz);
 			if (ctor == null) {
 				throw new BeanInstantiationException(clazz, "No default constructor found", ex);
@@ -163,44 +150,29 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Instantiate a class using its no-arg constructor and return the new instance
-	 * as the specified assignable type.
-	 * <p>Useful in cases where the type of the class to instantiate (clazz) is not
-	 * available, but the type desired (assignableTo) is known.
-	 * <p>Note that this method tries to set the constructor accessible if given a
-	 * non-accessible (that is, non-public) constructor.
-	 * @param clazz class to instantiate
-	 * @param assignableTo type that clazz must be assignableTo
-	 * @return the new instance
-	 * @throws BeanInstantiationException if the bean cannot be instantiated
+	 * 使用无参构造器实例化类，并以指定可赋值类型返回新实例。
+	 * <p>适用于待实例化类（{@code clazz}）类型不可用、但期望类型（{@code assignableTo}）已知的情形。
+	 * <p>若给定不可访问（即非 public）的构造器，本方法会尝试将其设为可访问。
+	 * @param clazz 待实例化的类
+	 * @param assignableTo {@code clazz} 必须可赋值给的目标类型
+	 * @return 新实例
+	 * @throws BeanInstantiationException 若 Bean 无法实例化
 	 * @see Constructor#newInstance
 	 */
 	@SuppressWarnings("unchecked")
-	/* ===== [OCA 中文解析] =====
-方法 instantiateClass — 意图与阅读要点
-
-方法 `instantiateClass` 复杂度较高（CCN≈8, NLOC≈23）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public static <T> T instantiateClass(Class<?> clazz, Class<T> assignableTo) throws BeanInstantiationException {
 		Assert.isAssignable(assignableTo, clazz);
 		return (T) instantiateClass(clazz);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 instantiateClass — 意图与阅读要点
-
-方法 `instantiateClass` 复杂度较高（CCN≈8, NLOC≈23）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Convenience method to instantiate a class using the given constructor.
-	 * <p>Note that this method tries to set the constructor accessible if given a
-	 * non-accessible (that is, non-public) constructor, and supports Kotlin classes
-	 * with optional parameters and default values.
-	 * @param ctor the constructor to instantiate
-	 * @param args the constructor arguments to apply (use {@code null} for an unspecified
-	 * parameter, Kotlin optional parameters and Java primitive types are supported)
-	 * @return the new instance
-	 * @throws BeanInstantiationException if the bean cannot be instantiated
+	 * 使用给定构造器实例化类的便捷方法。
+	 * <p>若给定不可访问（即非 public）的构造器，本方法会尝试将其设为可访问；
+	 * 并支持带可选参数与默认值的 Kotlin 类。
+	 * @param ctor 用于实例化的构造器
+	 * @param args 构造器参数（未指定参数可传 {@code null}；支持 Kotlin 可选参数与 Java 基本类型）
+	 * @return 新实例
+	 * @throws BeanInstantiationException 若 Bean 无法实例化
 	 * @see Constructor#newInstance
 	 */
 	public static <T> T instantiateClass(Constructor<T> ctor, @Nullable Object... args) throws BeanInstantiationException {
@@ -218,6 +190,7 @@ public abstract class BeanUtils {
 				}
 				Class<?>[] parameterTypes = ctor.getParameterTypes();
 				@Nullable Object[] argsWithDefaultValues = new Object[args.length];
+				// 将 null 基本类型参数替换为对应默认值
 				for (int i = 0 ; i < args.length; i++) {
 					if (args[i] == null) {
 						Class<?> parameterType = parameterTypes[i];
@@ -245,13 +218,11 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Return a resolvable constructor for the provided class, either a primary or single
-	 * public constructor with arguments, a single non-public constructor with arguments
-	 * or simply a default constructor.
-	 * <p>Callers have to be prepared to resolve arguments for the returned constructor's
-	 * parameters, if any.
-	 * @param clazz the class to check
-	 * @throws IllegalStateException in case of no unique constructor found at all
+	 * 返回给定类可解析的构造器：主构造器、唯一的带参 public 构造器、
+	 * 唯一的非 public 带参构造器，或简单的默认构造器。
+	 * <p>调用方须准备好为返回构造器的参数（若有）解析实参。
+	 * @param clazz 待检查的类
+	 * @throws IllegalStateException 若完全找不到唯一构造器
 	 * @since 5.3
 	 * @see #findPrimaryConstructor
 	 */
@@ -264,36 +235,34 @@ public abstract class BeanUtils {
 
 		Constructor<?>[] ctors = clazz.getConstructors();
 		if (ctors.length == 1) {
-			// A single public constructor
+			// 唯一的 public 构造器
 			return (Constructor<T>) ctors[0];
 		}
 		else if (ctors.length == 0) {
-			// No public constructors -> check non-public
+			// 无 public 构造器 → 检查非 public
 			ctors = clazz.getDeclaredConstructors();
 			if (ctors.length == 1) {
-				// A single non-public constructor, for example, from a non-public record type
+				// 唯一的非 public 构造器，例如非 public Record 类型
 				return (Constructor<T>) ctors[0];
 			}
 		}
 
-		// Several constructors -> let's try to take the default constructor
+		// 多个构造器 → 尝试默认无参构造器
 		try {
 			return clazz.getDeclaredConstructor();
 		}
 		catch (NoSuchMethodException ex) {
-			// Giving up...
+			// 放弃
 		}
 
-		// No unique constructor at all
+		// 完全没有唯一构造器
 		throw new IllegalStateException("No primary or single unique constructor found for " + clazz);
 	}
 
 	/**
-	 * Return the primary constructor of the provided class. For Kotlin classes, this
-	 * returns the Java constructor corresponding to the Kotlin primary constructor
-	 * (as defined in the Kotlin specification). For Java records, this returns the
-	 * canonical constructor. Otherwise, this simply returns {@code null}.
-	 * @param clazz the class to check
+	 * 返回给定类的主构造器。对 Kotlin 类，返回与 Kotlin 主构造器（按 Kotlin 规范定义）
+	 * 对应的 Java 构造器；对 Java Record，返回规范构造器；否则返回 {@code null}。
+	 * @param clazz 待检查的类
 	 * @since 5.0
 	 * @see <a href="https://kotlinlang.org/docs/reference/classes.html#constructors">Kotlin constructors</a>
 	 * @see <a href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-8.html#jls-8.10.4">Record constructor declarations</a>
@@ -305,7 +274,7 @@ public abstract class BeanUtils {
 		}
 		if (clazz.isRecord()) {
 			try {
-				// Use the canonical constructor which is always present
+				// 使用始终存在的规范构造器
 				RecordComponent[] components = clazz.getRecordComponents();
 				Class<?>[] paramTypes = new Class<?>[components.length];
 				for (int i = 0; i < components.length; i++) {
@@ -320,16 +289,14 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Find a method with the given method name and the given parameter types,
-	 * declared on the given class or one of its superclasses. Prefers public methods,
-	 * but will return a protected, package access, or private method too.
-	 * <p>Checks {@code Class.getMethod} first, falling back to
-	 * {@code findDeclaredMethod}. This allows to find public methods
-	 * without issues even in environments with restricted Java security settings.
-	 * @param clazz the class to check
-	 * @param methodName the name of the method to find
-	 * @param paramTypes the parameter types of the method to find
-	 * @return the Method object, or {@code null} if not found
+	 * 在给定类或其超类上查找具有指定方法名与参数类型的方法。
+	 * 优先 public 方法，但也会返回 protected、包访问或 private 方法。
+	 * <p>先调用 {@code Class.getMethod}，失败则回退到 {@code findDeclaredMethod}。
+	 * 这样即使在 Java 安全设置受限的环境中也能无问题地找到 public 方法。
+	 * @param clazz 待检查的类
+	 * @param methodName 要查找的方法名
+	 * @param paramTypes 要查找的方法的参数类型
+	 * @return Method 对象，未找到则返回 {@code null}
 	 * @see Class#getMethod
 	 * @see #findDeclaredMethod
 	 */
@@ -343,14 +310,13 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Find a method with the given method name and the given parameter types,
-	 * declared on the given class or one of its superclasses. Will return a public,
-	 * protected, package access, or private method.
-	 * <p>Checks {@code Class.getDeclaredMethod}, cascading upwards to all superclasses.
-	 * @param clazz the class to check
-	 * @param methodName the name of the method to find
-	 * @param paramTypes the parameter types of the method to find
-	 * @return the Method object, or {@code null} if not found
+	 * 在给定类或其超类上查找具有指定方法名与参数类型的方法。
+	 * 可返回 public、protected、包访问或 private 方法。
+	 * <p>调用 {@code Class.getDeclaredMethod}，并向上遍历所有超类。
+	 * @param clazz 待检查的类
+	 * @param methodName 要查找的方法名
+	 * @param paramTypes 要查找的方法的参数类型
+	 * @return Method 对象，未找到则返回 {@code null}
 	 * @see Class#getDeclaredMethod
 	 */
 	public static @Nullable Method findDeclaredMethod(Class<?> clazz, String methodName, Class<?>... paramTypes) {
@@ -366,17 +332,15 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Find a method with the given method name and minimal parameters (best case: none),
-	 * declared on the given class or one of its superclasses. Prefers public methods,
-	 * but will return a protected, package access, or private method too.
-	 * <p>Checks {@code Class.getMethods} first, falling back to
-	 * {@code findDeclaredMethodWithMinimalParameters}. This allows for finding public
-	 * methods without issues even in environments with restricted Java security settings.
-	 * @param clazz the class to check
-	 * @param methodName the name of the method to find
-	 * @return the Method object, or {@code null} if not found
-	 * @throws IllegalArgumentException if methods of the given name were found but
-	 * could not be resolved to a unique method with minimal parameters
+	 * 在给定类或其超类上查找具有指定方法名且参数最少（理想情况为无参）的方法。
+	 * 优先 public 方法，但也会返回 protected、包访问或 private 方法。
+	 * <p>先调用 {@code Class.getMethods}，失败则回退到
+	 * {@code findDeclaredMethodWithMinimalParameters}。
+	 * 这样即使在 Java 安全设置受限的环境中也能无问题地找到 public 方法。
+	 * @param clazz 待检查的类
+	 * @param methodName 要查找的方法名
+	 * @return Method 对象，未找到则返回 {@code null}
+	 * @throws IllegalArgumentException 若找到同名方法但无法解析为唯一的参数最少方法
 	 * @see Class#getMethods
 	 * @see #findDeclaredMethodWithMinimalParameters
 	 */
@@ -391,15 +355,13 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Find a method with the given method name and minimal parameters (best case: none),
-	 * declared on the given class or one of its superclasses. Will return a public,
-	 * protected, package access, or private method.
-	 * <p>Checks {@code Class.getDeclaredMethods}, cascading upwards to all superclasses.
-	 * @param clazz the class to check
-	 * @param methodName the name of the method to find
-	 * @return the Method object, or {@code null} if not found
-	 * @throws IllegalArgumentException if methods of the given name were found but
-	 * could not be resolved to a unique method with minimal parameters
+	 * 在给定类或其超类上查找具有指定方法名且参数最少（理想情况为无参）的方法。
+	 * 可返回 public、protected、包访问或 private 方法。
+	 * <p>调用 {@code Class.getDeclaredMethods}，并向上遍历所有超类。
+	 * @param clazz 待检查的类
+	 * @param methodName 要查找的方法名
+	 * @return Method 对象，未找到则返回 {@code null}
+	 * @throws IllegalArgumentException 若找到同名方法但无法解析为唯一的参数最少方法
 	 * @see Class#getDeclaredMethods
 	 */
 	public static @Nullable Method findDeclaredMethodWithMinimalParameters(Class<?> clazz, String methodName)
@@ -413,13 +375,11 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Find a method with the given method name and minimal parameters (best case: none)
-	 * in the given list of methods.
-	 * @param methods the methods to check
-	 * @param methodName the name of the method to find
-	 * @return the Method object, or {@code null} if not found
-	 * @throws IllegalArgumentException if methods of the given name were found but
-	 * could not be resolved to a unique method with minimal parameters
+	 * 在给定方法列表中查找具有指定方法名且参数最少（理想情况为无参）的方法。
+	 * @param methods 待检查的方法数组
+	 * @param methodName 要查找的方法名
+	 * @return Method 对象，未找到则返回 {@code null}
+	 * @throws IllegalArgumentException 若找到同名方法但无法解析为唯一的参数最少方法
 	 */
 	public static @Nullable Method findMethodWithMinimalParameters(Method[] methods, String methodName)
 			throws IllegalArgumentException {
@@ -435,11 +395,11 @@ public abstract class BeanUtils {
 				}
 				else if (!method.isBridge() && targetMethod.getParameterCount() == numParams) {
 					if (targetMethod.isBridge()) {
-						// Prefer regular method over bridge...
+						// 优先普通方法而非桥接方法
 						targetMethod = method;
 					}
 					else {
-						// Additional candidate with same length
+						// 参数个数相同的额外候选
 						numMethodsFoundWithCurrentMinimumArgs++;
 					}
 				}
@@ -455,20 +415,18 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Parse a method signature in the form {@code methodName[([arg_list])]},
-	 * where {@code arg_list} is an optional, comma-separated list of fully-qualified
-	 * type names, and attempts to resolve that signature against the supplied {@code Class}.
-	 * <p>When not supplying an argument list ({@code methodName}) the method whose name
-	 * matches and has the least number of parameters will be returned. When supplying an
-	 * argument type list, only the method whose name and argument types match will be returned.
-	 * <p>Note then that {@code methodName} and {@code methodName()} are <strong>not</strong>
-	 * resolved in the same way. The signature {@code methodName} means the method called
-	 * {@code methodName} with the least number of arguments, whereas {@code methodName()}
-	 * means the method called {@code methodName} with exactly 0 arguments.
-	 * <p>If no method can be found, then {@code null} is returned.
-	 * @param signature the method signature as String representation
-	 * @param clazz the class to resolve the method signature against
-	 * @return the resolved Method
+	 * 解析形如 {@code methodName[([arg_list])]} 的方法签名，
+	 * 其中 {@code arg_list} 为可选的、逗号分隔的全限定类型名列表，
+	 * 并尝试在给定 {@code Class} 上解析该签名。
+	 * <p>不提供参数列表（{@code methodName}）时，返回名称匹配且参数最少的方法。
+	 * 提供参数类型列表时，仅返回名称与参数类型均匹配的方法。
+	 * <p>注意：{@code methodName} 与 {@code methodName()} 的解析方式<strong>不同</strong>。
+	 * 签名 {@code methodName} 表示参数最少的 {@code methodName} 方法；
+	 * {@code methodName()} 表示恰好 0 个参数的 {@code methodName} 方法。
+	 * <p>若找不到方法则返回 {@code null}。
+	 * @param signature 方法签名的字符串表示
+	 * @param clazz 用于解析方法签名的类
+	 * @return 解析得到的 Method
 	 * @see #findMethod
 	 * @see #findMethodWithMinimalParameters
 	 */
@@ -509,47 +467,44 @@ public abstract class BeanUtils {
 
 
 	/**
-	 * Retrieve the JavaBeans {@code PropertyDescriptor}s of a given class.
-	 * @param clazz the Class to retrieve the PropertyDescriptors for
-	 * @return an array of {@code PropertyDescriptors} for the given class
-	 * @throws BeansException if PropertyDescriptor look fails
+	 * 获取给定类的 JavaBeans {@code PropertyDescriptor} 数组。
+	 * @param clazz 要获取 PropertyDescriptor 的 Class
+	 * @return 给定类的 {@code PropertyDescriptors} 数组
+	 * @throws BeansException 若 PropertyDescriptor 查找失败
 	 */
 	public static PropertyDescriptor[] getPropertyDescriptors(Class<?> clazz) throws BeansException {
 		return CachedIntrospectionResults.forClass(clazz).getPropertyDescriptors();
 	}
 
 	/**
-	 * Retrieve the JavaBeans {@code PropertyDescriptors} for the given property.
-	 * @param clazz the Class to retrieve the PropertyDescriptor for
-	 * @param propertyName the name of the property
-	 * @return the corresponding PropertyDescriptor, or {@code null} if none
-	 * @throws BeansException if PropertyDescriptor lookup fails
+	 * 获取给定属性的 JavaBeans {@code PropertyDescriptor}。
+	 * @param clazz 要获取 PropertyDescriptor 的 Class
+	 * @param propertyName 属性名
+	 * @return 对应的 PropertyDescriptor，若无则返回 {@code null}
+	 * @throws BeansException 若 PropertyDescriptor 查找失败
 	 */
 	public static @Nullable PropertyDescriptor getPropertyDescriptor(Class<?> clazz, String propertyName) throws BeansException {
 		return CachedIntrospectionResults.forClass(clazz).getPropertyDescriptor(propertyName);
 	}
 
 	/**
-	 * Find a JavaBeans {@code PropertyDescriptor} for the given method,
-	 * with the method either being the read method or the write method for
-	 * that bean property.
-	 * @param method the method to find a corresponding PropertyDescriptor for,
-	 * introspecting its declaring class
-	 * @return the corresponding PropertyDescriptor, or {@code null} if none
-	 * @throws BeansException if PropertyDescriptor lookup fails
+	 * 为给定方法查找 JavaBeans {@code PropertyDescriptor}，
+	 * 该方法须为该 Bean 属性的读方法或写方法。
+	 * @param method 要查找对应 PropertyDescriptor 的方法，对其声明类进行内省
+	 * @return 对应的 PropertyDescriptor，若无则返回 {@code null}
+	 * @throws BeansException 若 PropertyDescriptor 查找失败
 	 */
 	public static @Nullable PropertyDescriptor findPropertyForMethod(Method method) throws BeansException {
 		return findPropertyForMethod(method, method.getDeclaringClass());
 	}
 
 	/**
-	 * Find a JavaBeans {@code PropertyDescriptor} for the given method,
-	 * with the method either being the read method or the write method for
-	 * that bean property.
-	 * @param method the method to find a corresponding PropertyDescriptor for
-	 * @param clazz the (most specific) class to introspect for descriptors
-	 * @return the corresponding PropertyDescriptor, or {@code null} if none
-	 * @throws BeansException if PropertyDescriptor lookup fails
+	 * 为给定方法查找 JavaBeans {@code PropertyDescriptor}，
+	 * 该方法须为该 Bean 属性的读方法或写方法。
+	 * @param method 要查找对应 PropertyDescriptor 的方法
+	 * @param clazz 用于内省描述符的（最具体）类
+	 * @return 对应的 PropertyDescriptor，若无则返回 {@code null}
+	 * @throws BeansException 若 PropertyDescriptor 查找失败
 	 * @since 3.2.13
 	 */
 	public static @Nullable PropertyDescriptor findPropertyForMethod(Method method, Class<?> clazz) throws BeansException {
@@ -564,13 +519,12 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Find a JavaBeans PropertyEditor following the 'Editor' suffix convention
-	 * (for example, "mypackage.MyDomainClass" &rarr; "mypackage.MyDomainClassEditor").
-	 * <p>Compatible to the standard JavaBeans convention as implemented by
-	 * {@link java.beans.PropertyEditorManager} but isolated from the latter's
-	 * registered default editors for primitive types.
-	 * @param targetType the type to find an editor for
-	 * @return the corresponding editor, or {@code null} if none found
+	 * 按「Editor」后缀约定查找 JavaBeans PropertyEditor
+	 * （例如 "mypackage.MyDomainClass" → "mypackage.MyDomainClassEditor"）。
+	 * <p>与 {@link java.beans.PropertyEditorManager} 实现的
+	 * 标准 JavaBeans 约定兼容，但与后者为基本类型注册的默认 Editor 隔离。
+	 * @param targetType 要查找 Editor 的类型
+	 * @return 对应的 Editor，未找到则返回 {@code null}
 	 */
 	public static @Nullable PropertyEditor findEditorByConvention(@Nullable Class<?> targetType) {
 		if (targetType == null || targetType.isArray() || unknownEditorTypes.contains(targetType)) {
@@ -586,7 +540,7 @@ public abstract class BeanUtils {
 				}
 			}
 			catch (Throwable ex) {
-				// for example, AccessControlException on Google App Engine
+				// 例如 Google App Engine 上的 AccessControlException
 				return null;
 			}
 		}
@@ -602,22 +556,21 @@ public abstract class BeanUtils {
 				}
 				return (PropertyEditor) instantiateClass(editorClass);
 			}
-			// Misbehaving ClassLoader returned null instead of ClassNotFoundException
-			// - fall back to unknown editor type registration below
+			// 行为异常的 ClassLoader 返回 null 而非 ClassNotFoundException
+			// — 回退到下方未知 Editor 类型登记
 		}
 		catch (ClassNotFoundException ex) {
-			// Ignore - fall back to unknown editor type registration below
+			// 忽略 — 回退到下方未知 Editor 类型登记
 		}
 		unknownEditorTypes.add(targetType);
 		return null;
 	}
 
 	/**
-	 * Determine the bean property type for the given property from the
-	 * given classes/interfaces, if possible.
-	 * @param propertyName the name of the bean property
-	 * @param beanClasses the classes to check against
-	 * @return the property type, or {@code Object.class} as fallback
+	 * 从给定类/接口中确定指定属性的 Bean 属性类型（若可能）。
+	 * @param propertyName Bean 属性名
+	 * @param beanClasses 待检查的类
+	 * @return 属性类型，回退为 {@code Object.class}
 	 */
 	public static Class<?> findPropertyType(String propertyName, Class<?> @Nullable ... beanClasses) {
 		if (beanClasses != null) {
@@ -632,10 +585,10 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Determine whether the specified property has a unique write method,
-	 * i.e. is writable but does not declare overloaded setter methods.
-	 * @param pd the PropertyDescriptor for the property
-	 * @return {@code true} if writable and unique, {@code false} otherwise
+	 * 判断指定属性是否具有唯一的写方法，
+	 * 即可写且未声明重载 setter 方法。
+	 * @param pd 属性的 PropertyDescriptor
+	 * @return 可写且唯一时为 {@code true}，否则为 {@code false}
 	 * @since 6.1.4
 	 */
 	public static boolean hasUniqueWriteMethod(PropertyDescriptor pd) {
@@ -648,10 +601,9 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Obtain a new MethodParameter object for the write method of the
-	 * specified property.
-	 * @param pd the PropertyDescriptor for the property
-	 * @return a corresponding MethodParameter object
+	 * 为指定属性的写方法获取新的 MethodParameter 对象。
+	 * @param pd 属性的 PropertyDescriptor
+	 * @return 对应的 MethodParameter 对象
 	 */
 	public static MethodParameter getWriteMethodParameter(PropertyDescriptor pd) {
 		if (pd instanceof GenericTypeAwarePropertyDescriptor gpd) {
@@ -665,12 +617,12 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Determine required parameter names for the given constructor,
-	 * considering the JavaBeans {@link ConstructorProperties} annotation
-	 * as well as Spring's {@link DefaultParameterNameDiscoverer}.
-	 * @param ctor the constructor to find parameter names for
-	 * @return the parameter names (matching the constructor's parameter count)
-	 * @throws IllegalStateException if the parameter names are not resolvable
+	 * 确定给定构造器的必需参数名，
+	 * 同时考虑 JavaBeans {@link ConstructorProperties} 注解
+	 * 与 Spring 的 {@link DefaultParameterNameDiscoverer}。
+	 * @param ctor 要查找参数名的构造器
+	 * @return 参数名（与构造器参数个数匹配）
+	 * @throws IllegalStateException 若参数名无法解析
 	 * @since 5.3
 	 * @see ConstructorProperties
 	 * @see DefaultParameterNameDiscoverer
@@ -689,13 +641,11 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Check if the given type represents a "simple" property: a simple value
-	 * type or an array of simple value types.
-	 * <p>See {@link #isSimpleValueType(Class)} for the definition of <em>simple
-	 * value type</em>.
-	 * <p>Used to determine properties to check for a "simple" dependency-check.
-	 * @param type the type to check
-	 * @return whether the given type represents a "simple" property
+	 * 检查给定类型是否表示「简单」属性：简单值类型或简单值类型数组。
+	 * <p>参见 {@link #isSimpleValueType(Class)} 对<em>简单值类型</em>的定义。
+	 * <p>用于确定在「简单」依赖检查中要检查的属性。
+	 * @param type 待检查的类型
+	 * @return 给定类型是否表示「简单」属性
 	 * @see org.springframework.beans.factory.support.RootBeanDefinition#DEPENDENCY_CHECK_SIMPLE
 	 * @see org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#checkDependencies
 	 * @see #isSimpleValueType(Class)
@@ -706,17 +656,15 @@ public abstract class BeanUtils {
 	}
 
 	/**
-	 * Check if the given type represents a "simple" value type for
-	 * bean property and data binding purposes:
-	 * a primitive or primitive wrapper, an {@code Enum}, a {@code String}
-	 * or other {@code CharSequence}, a {@code Number}, a {@code Date},
-	 * a {@code Temporal}, a {@code UUID}, a {@code URI}, a {@code URL},
-	 * a {@code Locale}, or a {@code Class}.
-	 * <p>{@code Void} and {@code void} are not considered simple value types.
-	 * <p>As of 6.1, this method delegates to {@link ClassUtils#isSimpleValueType}
-	 * as-is but could potentially add further rules for bean property purposes.
-	 * @param type the type to check
-	 * @return whether the given type represents a "simple" value type
+	 * 检查给定类型在 Bean 属性与数据绑定语境下是否表示「简单」值类型：
+	 * 基本类型或包装类、{@code Enum}、{@code String} 或其他 {@code CharSequence}、
+	 * {@code Number}、{@code Date}、{@code Temporal}、{@code UUID}、{@code URI}、
+	 * {@code URL}、{@code Locale} 或 {@code Class}。
+	 * <p>{@code Void} 与 {@code void} 不视为简单值类型。
+	 * <p>自 6.1 起，本方法原样委托给 {@link ClassUtils#isSimpleValueType}，
+	 * 但未来可能为 Bean 属性用途增加更多规则。
+	 * @param type 待检查的类型
+	 * @return 给定类型是否表示「简单」值类型
 	 * @see #isSimpleProperty(Class)
 	 * @see ClassUtils#isSimpleValueType(Class)
 	 */
@@ -725,115 +673,80 @@ public abstract class BeanUtils {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-方法 copyProperties — 意图与阅读要点
-
-方法 `copyProperties` 复杂度较高（CCN≈14, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Copy the property values of the given source bean into the target bean.
-	 * <p>Note: The source and target classes do not have to match or even be derived
-	 * from each other, as long as the properties match. Any bean properties that the
-	 * source bean exposes but the target bean does not will silently be ignored.
-	 * <p>This is just a convenience method. For more complex transfer needs,
-	 * consider using a full {@link BeanWrapper}.
-	 * <p>As of Spring Framework 5.3, this method honors generic type information
-	 * when matching properties in the source and target objects.
-	 * <p>The following table provides a non-exhaustive set of examples of source
-	 * and target property types that can be copied as well as source and target
-	 * property types that cannot be copied.
+	 * 将源 Bean 的属性值复制到目标 Bean。
+	 * <p>注意：源与目标类不必相同或存在继承关系，只要属性匹配即可。
+	 * 源 Bean 暴露但目标 Bean 没有的属性会被静默忽略。
+	 * <p>这只是便捷方法。更复杂的传输需求请考虑使用完整的 {@link BeanWrapper}。
+	 * <p>自 Spring Framework 5.3 起，本方法在匹配源与目标对象属性时会尊重泛型类型信息。
+	 * <p>下表给出源与目标属性类型可复制及不可复制的非穷尽示例。
 	 * <table border="1">
-	 * <tr><th>source property type</th><th>target property type</th><th>copy supported</th></tr>
-	 * <tr><td>{@code Integer}</td><td>{@code Integer}</td><td>yes</td></tr>
-	 * <tr><td>{@code Integer}</td><td>{@code Number}</td><td>yes</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Integer>}</td><td>yes</td></tr>
-	 * <tr><td>{@code List<?>}</td><td>{@code List<?>}</td><td>yes</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<?>}</td><td>yes</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<? extends Number>}</td><td>yes</td></tr>
-	 * <tr><td>{@code String}</td><td>{@code Integer}</td><td>no</td></tr>
-	 * <tr><td>{@code Number}</td><td>{@code Integer}</td><td>no</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Long>}</td><td>no</td></tr>
-	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Number>}</td><td>no</td></tr>
+	 * <tr><th>源属性类型</th><th>目标属性类型</th><th>是否支持复制</th></tr>
+	 * <tr><td>{@code Integer}</td><td>{@code Integer}</td><td>是</td></tr>
+	 * <tr><td>{@code Integer}</td><td>{@code Number}</td><td>是</td></tr>
+	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Integer>}</td><td>是</td></tr>
+	 * <tr><td>{@code List<?>}</td><td>{@code List<?>}</td><td>是</td></tr>
+	 * <tr><td>{@code List<Integer>}</td><td>{@code List<?>}</td><td>是</td></tr>
+	 * <tr><td>{@code List<Integer>}</td><td>{@code List<? extends Number>}</td><td>是</td></tr>
+	 * <tr><td>{@code String}</td><td>{@code Integer}</td><td>否</td></tr>
+	 * <tr><td>{@code Number}</td><td>{@code Integer}</td><td>否</td></tr>
+	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Long>}</td><td>否</td></tr>
+	 * <tr><td>{@code List<Integer>}</td><td>{@code List<Number>}</td><td>否</td></tr>
 	 * </table>
-	 * @param source the source bean
-	 * @param target the target bean
-	 * @throws BeansException if the copying failed
+	 * @param source 源 Bean
+	 * @param target 目标 Bean
+	 * @throws BeansException 若复制失败
 	 * @see BeanWrapper
 	 */
 	public static void copyProperties(Object source, Object target) throws BeansException {
 		copyProperties(source, target, null, (String[]) null);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 copyProperties — 意图与阅读要点
-
-方法 `copyProperties` 复杂度较高（CCN≈14, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Copy the property values of the given source bean into the given target bean,
-	 * only setting properties defined in the given "editable" class (or interface).
-	 * <p>Note: The source and target classes do not have to match or even be derived
-	 * from each other, as long as the properties match. Any bean properties that the
-	 * source bean exposes but the target bean does not will silently be ignored.
-	 * <p>This is just a convenience method. For more complex transfer needs,
-	 * consider using a full {@link BeanWrapper}.
-	 * <p>As of Spring Framework 5.3, this method honors generic type information
-	 * when matching properties in the source and target objects. See the
-	 * documentation for {@link #copyProperties(Object, Object)} for details.
-	 * @param source the source bean
-	 * @param target the target bean
-	 * @param editable the class (or interface) to restrict property setting to
-	 * @throws BeansException if the copying failed
+	 * 将源 Bean 的属性值复制到目标 Bean，仅设置给定「可编辑」类（或接口）中定义的属性。
+	 * <p>注意：源与目标类不必相同或存在继承关系，只要属性匹配即可。
+	 * 源 Bean 暴露但目标 Bean 没有的属性会被静默忽略。
+	 * <p>这只是便捷方法。更复杂的传输需求请考虑使用完整的 {@link BeanWrapper}。
+	 * <p>自 Spring Framework 5.3 起，本方法在匹配源与目标对象属性时会尊重泛型类型信息。
+	 * 详见 {@link #copyProperties(Object, Object)} 的文档。
+	 * @param source 源 Bean
+	 * @param target 目标 Bean
+	 * @param editable 限制属性设置范围的类（或接口）
+	 * @throws BeansException 若复制失败
 	 * @see BeanWrapper
 	 */
 	public static void copyProperties(Object source, Object target, Class<?> editable) throws BeansException {
 		copyProperties(source, target, editable, (String[]) null);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 copyProperties — 意图与阅读要点
-
-方法 `copyProperties` 复杂度较高（CCN≈14, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Copy the property values of the given source bean into the given target bean,
-	 * ignoring the given "ignoreProperties".
-	 * <p>Note: The source and target classes do not have to match or even be derived
-	 * from each other, as long as the properties match. Any bean properties that the
-	 * source bean exposes but the target bean does not will silently be ignored.
-	 * <p>This is just a convenience method. For more complex transfer needs,
-	 * consider using a full {@link BeanWrapper}.
-	 * <p>As of Spring Framework 5.3, this method honors generic type information
-	 * when matching properties in the source and target objects. See the
-	 * documentation for {@link #copyProperties(Object, Object)} for details.
-	 * @param source the source bean
-	 * @param target the target bean
-	 * @param ignoreProperties array of property names to ignore
-	 * @throws BeansException if the copying failed
+	 * 将源 Bean 的属性值复制到目标 Bean，忽略给定的 {@code ignoreProperties}。
+	 * <p>注意：源与目标类不必相同或存在继承关系，只要属性匹配即可。
+	 * 源 Bean 暴露但目标 Bean 没有的属性会被静默忽略。
+	 * <p>这只是便捷方法。更复杂的传输需求请考虑使用完整的 {@link BeanWrapper}。
+	 * <p>自 Spring Framework 5.3 起，本方法在匹配源与目标对象属性时会尊重泛型类型信息。
+	 * 详见 {@link #copyProperties(Object, Object)} 的文档。
+	 * @param source 源 Bean
+	 * @param target 目标 Bean
+	 * @param ignoreProperties 要忽略的属性名数组
+	 * @throws BeansException 若复制失败
 	 * @see BeanWrapper
 	 */
 	public static void copyProperties(Object source, Object target, String... ignoreProperties) throws BeansException {
 		copyProperties(source, target, null, ignoreProperties);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 copyProperties — 意图与阅读要点
-
-方法 `copyProperties` 复杂度较高（CCN≈14, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Copy the property values of the given source bean into the given target bean.
-	 * <p>Note: The source and target classes do not have to match or even be derived
-	 * from each other, as long as the properties match. Any bean properties that the
-	 * source bean exposes but the target bean does not will silently be ignored.
-	 * <p>As of Spring Framework 5.3, this method honors generic type information
-	 * when matching properties in the source and target objects. See the
-	 * documentation for {@link #copyProperties(Object, Object)} for details.
-	 * @param source the source bean
-	 * @param target the target bean
-	 * @param editable the class (or interface) to restrict property setting to
-	 * @param ignoreProperties array of property names to ignore
-	 * @throws BeansException if the copying failed
+	 * 将源 Bean 的属性值复制到目标 Bean。
+	 * <p>注意：源与目标类不必相同或存在继承关系，只要属性匹配即可。
+	 * 源 Bean 暴露但目标 Bean 没有的属性会被静默忽略。
+	 * <p>自 Spring Framework 5.3 起，本方法在匹配源与目标对象属性时会尊重泛型类型信息。
+	 * 详见 {@link #copyProperties(Object, Object)} 的文档。
+	 * @param source 源 Bean
+	 * @param target 目标 Bean
+	 * @param editable 限制属性设置范围的类（或接口）
+	 * @param ignoreProperties 要忽略的属性名数组
+	 * @throws BeansException 若复制失败
 	 * @see BeanWrapper
 	 */
 	private static void copyProperties(Object source, Object target, @Nullable Class<?> editable,
@@ -852,6 +765,7 @@ public abstract class BeanUtils {
 		}
 		PropertyDescriptor[] targetPds = getPropertyDescriptors(actualEditable);
 		Set<String> ignoredProps = (ignoreProperties != null ? new HashSet<>(Arrays.asList(ignoreProperties)) : null);
+		// 源与目标类型不同时，单独缓存源类的内省结果
 		CachedIntrospectionResults sourceResults = (actualEditable != source.getClass() ?
 				CachedIntrospectionResults.forClass(source.getClass()) : null);
 
@@ -881,6 +795,7 @@ public abstract class BeanUtils {
 		}
 	}
 
+	/** 判断读方法与写方法的类型是否可赋值（含泛型感知）。 */
 	private static boolean isAssignable(Method writeMethod, Method readMethod,
 			PropertyDescriptor sourcePd, PropertyDescriptor targetPd) {
 
@@ -894,7 +809,7 @@ public abstract class BeanUtils {
 		else {
 			ResolvableType sourceType = ((GenericTypeAwarePropertyDescriptor) sourcePd).getReadMethodType();
 			ResolvableType targetType = ((GenericTypeAwarePropertyDescriptor) targetPd).getWriteMethodType();
-			// Ignore generic types in assignable check if either ResolvableType has unresolvable generics.
+			// 若任一侧 ResolvableType 含不可解析泛型，则忽略泛型仅做可赋值检查
 			return (sourceType.hasUnresolvableGenerics() || targetType.hasUnresolvableGenerics() ?
 					ClassUtils.isAssignable(writeMethod.getParameterTypes()[0], readMethod.getReturnType()) :
 					targetType.isAssignableFrom(sourceType));
@@ -902,21 +817,14 @@ public abstract class BeanUtils {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class KotlinDelegate — 意图说明
-
-class `KotlinDelegate`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/BeanUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Inner class to avoid a hard dependency on Kotlin at runtime.
+	 * 内部类，避免运行时对 Kotlin 的硬依赖。
 	 */
 	private static class KotlinDelegate {
 
 		/**
-		 * Retrieve the Java constructor corresponding to the Kotlin primary constructor, if any.
-		 * @param clazz the {@link Class} of the Kotlin class
+		 * 获取与 Kotlin 主构造器对应的 Java 构造器（若有）。
+		 * @param clazz Kotlin 类的 {@link Class}
 		 * @see <a href="https://kotlinlang.org/docs/reference/classes.html#constructors">
 		 * https://kotlinlang.org/docs/reference/classes.html#constructors</a>
 		 */
@@ -947,10 +855,9 @@ class `KotlinDelegate`：请结合所属模块与调用方理解其在整体架�
 		}
 
 		/**
-		 * Instantiate a Kotlin class using the provided constructor.
-		 * @param ctor the constructor of the Kotlin class to instantiate
-		 * @param args the constructor arguments to apply
-		 * (use {@code null} for unspecified parameter if needed)
+		 * 使用给定构造器实例化 Kotlin 类。
+		 * @param ctor 要实例化的 Kotlin 类构造器
+		 * @param args 构造器参数（未指定参数可传 {@code null}）
 		 */
 		public static <T> T instantiateClass(Constructor<T> ctor, @Nullable Object... args)
 				throws IllegalAccessException, InvocationTargetException, InstantiationException {
@@ -971,6 +878,7 @@ class `KotlinDelegate`：请结合所属模块与调用方理解其在整体架�
 			if (parameters.isEmpty()) {
 				return kotlinConstructor.call();
 			}
+			// 按参数映射调用，跳过可选且为 null 的参数
 			Map<KParameter, Object> argParameters = CollectionUtils.newHashMap(parameters.size());
 			for (int i = 0 ; i < args.length ; i++) {
 				if (!(parameters.get(i).isOptional() && args[i] == null)) {
@@ -980,6 +888,7 @@ class `KotlinDelegate`：请结合所属模块与调用方理解其在整体架�
 			return kotlinConstructor.callBy(argParameters);
 		}
 
+		/** 构造器是否带有 Kotlin 默认参数标记参数。 */
 		public static boolean hasDefaultConstructorMarker(Constructor<?> ctor) {
 			int parameterCount = ctor.getParameterCount();
 			return parameterCount > 0 && ctor.getParameters()[parameterCount -1].getType() == DefaultConstructorMarker.class;
