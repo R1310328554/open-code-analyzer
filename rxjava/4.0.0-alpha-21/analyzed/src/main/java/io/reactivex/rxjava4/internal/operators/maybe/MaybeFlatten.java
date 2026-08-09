@@ -24,47 +24,46 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * 将上游 Maybe 的 onSuccess 值映射为 {@link SingleSource} 并订阅，
- * 以 Maybe 形式向下游发射 Single 结果。
- * <p>History: 2.0.2 - experimental
- * @param <T> 输入元素类型
- * @param <R> 结果类型
- * @since 2.1
+ * 将上游 onSuccess 值映射为 {@link MaybeSource} 并转发其信号。
+ *
+ * @param <T> 上游元素类型
+ * @param <R> 结果元素类型
  */
-public final class MaybeFlatMapSingle<T, R> extends Maybe<R> {
+public final class MaybeFlatten<T, R> extends AbstractMaybeWithUpstream<T, R> {
 
-    final MaybeSource<T> source;
-
-    final Function<? super T, ? extends SingleSource<? extends R>> mapper;
+    final Function<? super T, ? extends MaybeSource<? extends R>> mapper;
 
     /**
-     * @param source 上游 MaybeSource
-     * @param mapper 由 T 映射 SingleSource
+     * @param source 上游 Maybe
+     * @param mapper 将值映射为 MaybeSource 的函数
      */
-    public MaybeFlatMapSingle(MaybeSource<T> source, Function<? super T, ? extends SingleSource<? extends R>> mapper) {
-        this.source = source;
+    public MaybeFlatten(MaybeSource<T> source, Function<? super T, ? extends MaybeSource<? extends R>> mapper) {
+        super(source);
         this.mapper = mapper;
     }
 
-    /** FlatMapMaybeObserver onSuccess 时 subscribe FlatMapSingleObserver。 */
+    /** 订阅 FlatMapMaybeObserver 并在 onSuccess 时 flatMap 内部 MaybeSource。 */
     @Override
-    protected void subscribeActual(MaybeObserver<? super R> downstream) {
-        source.subscribe(new FlatMapMaybeObserver<>(downstream, mapper));
+    protected void subscribeActual(MaybeObserver<? super R> observer) {
+        source.subscribe(new FlatMapMaybeObserver<>(observer, mapper));
     }
 
-    /** 持有 mapper；onSuccess 后切换到 Single 订阅。 */
+    /** onSuccess 时应用 mapper 并订阅内部 MaybeSource。 */
     static final class FlatMapMaybeObserver<T, R>
     extends AtomicReference<Disposable>
     implements MaybeObserver<T>, Disposable {
 
         @Serial
-        private static final long serialVersionUID = 4827726964688405508L;
+        private static final long serialVersionUID = 4375739915521278546L;
 
         final MaybeObserver<? super R> downstream;
 
-        final Function<? super T, ? extends SingleSource<? extends R>> mapper;
+        final Function<? super T, ? extends MaybeSource<? extends R>> mapper;
 
-        FlatMapMaybeObserver(MaybeObserver<? super R> actual, Function<? super T, ? extends SingleSource<? extends R>> mapper) {
+        Disposable upstream;
+
+        FlatMapMaybeObserver(MaybeObserver<? super R> actual,
+                Function<? super T, ? extends MaybeSource<? extends R>> mapper) {
             this.downstream = actual;
             this.mapper = mapper;
         }
@@ -72,6 +71,7 @@ public final class MaybeFlatMapSingle<T, R> extends Maybe<R> {
         @Override
         public void dispose() {
             DisposableHelper.dispose(this);
+            upstream.dispose();
         }
 
         @Override
@@ -81,25 +81,28 @@ public final class MaybeFlatMapSingle<T, R> extends Maybe<R> {
 
         @Override
         public void onSubscribe(Disposable d) {
-            if (DisposableHelper.setOnce(this, d)) {
+            if (DisposableHelper.validate(this.upstream, d)) {
+                this.upstream = d;
+
                 downstream.onSubscribe(this);
             }
         }
 
+        /** 应用 mapper 获取 MaybeSource 并订阅 InnerObserver。 */
         @Override
         public void onSuccess(T value) {
-            SingleSource<? extends R> ss;
+            MaybeSource<? extends R> source;
 
             try {
-                ss = Objects.requireNonNull(mapper.apply(value), "The mapper returned a null SingleSource");
+                source = Objects.requireNonNull(mapper.apply(value), "The mapper returned a null MaybeSource");
             } catch (Throwable ex) {
                 Exceptions.throwIfFatal(ex);
-                onError(ex);
+                downstream.onError(ex);
                 return;
             }
 
             if (!isDisposed()) {
-                ss.subscribe(new FlatMapSingleObserver<R>(this, downstream));
+                source.subscribe(new InnerObserver());
             }
         }
 
@@ -112,25 +115,29 @@ public final class MaybeFlatMapSingle<T, R> extends Maybe<R> {
         public void onComplete() {
             downstream.onComplete();
         }
-    }
 
-    /** Single 结果 relay 到 Maybe downstream；Disposable 写入 parent。 */
-    record FlatMapSingleObserver<R>(AtomicReference<Disposable> parent,
-                                    MaybeObserver<? super R> downstream) implements SingleObserver<R> {
+        /** 转发内部 MaybeSource 的 onSuccess/onError/onComplete。 */
+        final class InnerObserver implements MaybeObserver<R> {
 
-        @Override
-            public void onSubscribe(final Disposable d) {
-                DisposableHelper.replace(parent, d);
+            @Override
+            public void onSubscribe(Disposable d) {
+                DisposableHelper.setOnce(FlatMapMaybeObserver.this, d);
             }
 
             @Override
-            public void onSuccess(final R value) {
+            public void onSuccess(R value) {
                 downstream.onSuccess(value);
             }
 
             @Override
-            public void onError(final Throwable e) {
+            public void onError(Throwable e) {
                 downstream.onError(e);
             }
+
+            @Override
+            public void onComplete() {
+                downstream.onComplete();
+            }
         }
+    }
 }

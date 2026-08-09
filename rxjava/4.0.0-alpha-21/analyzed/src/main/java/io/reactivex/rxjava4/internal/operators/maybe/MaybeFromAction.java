@@ -1,0 +1,67 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+package io.reactivex.rxjava4.internal.operators.maybe;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.disposables.*;
+import io.reactivex.rxjava4.exceptions.Exceptions;
+import io.reactivex.rxjava4.functions.*;
+import io.reactivex.rxjava4.plugins.RxJavaPlugins;
+
+/**
+ * 执行 {@link Action}，异常时 onError，正常完成时 onComplete。
+ *
+ * @param <T> 元素类型
+ */
+public final class MaybeFromAction<T> extends Maybe<T> implements Supplier<T> {
+
+    final Action action;
+
+    /** @param action 待执行的 Action */
+    public MaybeFromAction(Action action) {
+        this.action = action;
+    }
+
+    /** 执行 action.run() 并转发异常或 onComplete。 */
+    @Override
+    protected void subscribeActual(MaybeObserver<? super T> observer) {
+        Disposable d = Disposable.empty();
+        observer.onSubscribe(d);
+
+        if (!d.isDisposed()) {
+
+            try {
+                action.run();
+            } catch (Throwable ex) {
+                Exceptions.throwIfFatal(ex);
+                if (!d.isDisposed()) {
+                    observer.onError(ex);
+                } else {
+                    RxJavaPlugins.onError(ex);
+                }
+                return;
+            }
+
+            if (!d.isDisposed()) {
+                observer.onComplete();
+            }
+        }
+    }
+
+    @Override
+    public T get() throws Throwable {
+        action.run();
+        return null; // 视为 onComplete()
+    }
+}

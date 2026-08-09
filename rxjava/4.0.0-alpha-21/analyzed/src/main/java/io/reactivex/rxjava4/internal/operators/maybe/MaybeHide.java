@@ -15,54 +15,42 @@ package io.reactivex.rxjava4.internal.operators.maybe;
 
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
-import io.reactivex.rxjava4.exceptions.Exceptions;
-import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * 用 {@link Predicate} 过滤上游 onSuccess 值；
- * 返回 false 时向下游 onComplete。
+ * 隐藏上游 {@link Maybe} 及其通过 onSubscribe 传递的 {@link Disposable} 身份，
+ * 防止下游直接 dispose 上游。
  *
- * @param <T> 上游元素类型
+ * @param <T> 元素类型
  */
-public final class MaybeFilter<T> extends AbstractMaybeWithUpstream<T, T> {
+public final class MaybeHide<T> extends AbstractMaybeWithUpstream<T, T> {
 
-    final Predicate<? super T> predicate;
-
-    /**
-     * @param source 上游 MaybeSource
-     * @param predicate 过滤谓词
-     */
-    public MaybeFilter(MaybeSource<T> source, Predicate<? super T> predicate) {
+    /** @param source 上游 Maybe */
+    public MaybeHide(MaybeSource<T> source) {
         super(source);
-        this.predicate = predicate;
     }
 
-    /** 包装为 FilterMaybeObserver。 */
+    /** 订阅 HideMaybeObserver 并包装 Disposable。 */
     @Override
     protected void subscribeActual(MaybeObserver<? super T> observer) {
-        source.subscribe(new FilterMaybeObserver<>(observer, predicate));
+        source.subscribe(new HideMaybeObserver<>(observer));
     }
 
-    /** predicate.test 为 true 则 onSuccess，否则 onComplete。 */
-    static final class FilterMaybeObserver<T> implements MaybeObserver<T>, Disposable {
+    /** 透传信号，onSubscribe 时向下游传递自身而非上游 Disposable。 */
+    static final class HideMaybeObserver<T> implements MaybeObserver<T>, Disposable {
 
         final MaybeObserver<? super T> downstream;
 
-        final Predicate<? super T> predicate;
-
         Disposable upstream;
 
-        FilterMaybeObserver(MaybeObserver<? super T> actual, Predicate<? super T> predicate) {
-            this.downstream = actual;
-            this.predicate = predicate;
+        HideMaybeObserver(MaybeObserver<? super T> downstream) {
+            this.downstream = downstream;
         }
 
         @Override
         public void dispose() {
-            Disposable d = this.upstream;
-            this.upstream = DisposableHelper.DISPOSED;
-            d.dispose();
+            upstream.dispose();
+            upstream = DisposableHelper.DISPOSED;
         }
 
         @Override
@@ -81,21 +69,7 @@ public final class MaybeFilter<T> extends AbstractMaybeWithUpstream<T, T> {
 
         @Override
         public void onSuccess(T value) {
-            boolean b;
-
-            try {
-                b = predicate.test(value);
-            } catch (Throwable ex) {
-                Exceptions.throwIfFatal(ex);
-                downstream.onError(ex);
-                return;
-            }
-
-            if (b) {
-                downstream.onSuccess(value);
-            } else {
-                downstream.onComplete();
-            }
+            downstream.onSuccess(value);
         }
 
         @Override

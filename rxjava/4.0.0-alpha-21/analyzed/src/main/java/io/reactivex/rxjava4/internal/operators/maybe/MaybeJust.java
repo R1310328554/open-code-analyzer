@@ -15,25 +15,31 @@ package io.reactivex.rxjava4.internal.operators.maybe;
 
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
+import io.reactivex.rxjava4.operators.ScalarSupplier;
 
 /**
- * 订阅后立即 onError 固定 {@link Throwable}。
+ * 发射常量值，实现 {@link ScalarSupplier} 以支持融合优化。
  *
  * @param <T> 元素类型
  */
-public final class MaybeError<T> extends Maybe<T> {
+public final class MaybeJust<T> extends Maybe<T> implements ScalarSupplier<T> {
 
-    final Throwable error;
+    final T value;
 
-    /** @param error 要发出的异常 */
-    public MaybeError(Throwable error) {
-        this.error = error;
+    /** @param value 待发射的常量值 */
+    public MaybeJust(T value) {
+        this.value = value;
     }
 
-    /** onSubscribe(Disposable.disposed()) 后 onError。 */
+    /** 立即 onSubscribe(Disposable.disposed()) 并 onSuccess(value)。 */
     @Override
     protected void subscribeActual(MaybeObserver<? super T> observer) {
         observer.onSubscribe(Disposable.disposed());
-        observer.onError(error);
+        observer.onSuccess(value);
+    }
+
+    @Override
+    public T get() {
+        return value;
     }
 }
