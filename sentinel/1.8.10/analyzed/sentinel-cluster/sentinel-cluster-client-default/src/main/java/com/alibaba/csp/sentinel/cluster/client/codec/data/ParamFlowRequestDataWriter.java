@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * 热点参数流控请求数据写入器，将参数列表序列化为 {@link ByteBuf}。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  * @since 1.4.0
@@ -54,14 +56,14 @@ public class ParamFlowRequestDataWriter implements EntityWriter<ParamFlowRequest
         params = resolveValidParams(params);
         target.writeInt(params.size());
 
-        // Serialize parameters with type flag.
+        // 按类型标志序列化各参数。
         for (Object param : params) {
             encodeValue(param, target);
         }
     }
 
     /**
-     * Get valid parameters in provided parameter list
+     * 从给定参数列表中筛选可传输的有效参数。
      *
      * @param params
      * @return
@@ -88,7 +90,7 @@ public class ParamFlowRequestDataWriter implements EntityWriter<ParamFlowRequest
     }
 
     private void encodeValue(Object param, ByteBuf target) {
-        // Handle primitive type.
+        // 处理基本类型。
         if (param instanceof Integer || int.class.isInstance(param)) {
             target.writeByte(ClusterConstants.PARAM_TYPE_INTEGER);
             target.writeInt((Integer) param);
@@ -113,7 +115,7 @@ public class ParamFlowRequestDataWriter implements EntityWriter<ParamFlowRequest
             target.writeByte(ClusterConstants.PARAM_TYPE_SHORT);
             target.writeShort((Short) param);
         } else {
-            // Unexpected type, drop.
+            // 未知类型，丢弃。
         }
     }
 
@@ -129,12 +131,12 @@ public class ParamFlowRequestDataWriter implements EntityWriter<ParamFlowRequest
         if (value == null) {
             return 0;
         }
-        // Layout for primitives: |type flag(1)|value|
-        // size = original size + type flag (1)
+        // 基本类型布局：|type flag(1)|value|
+        // 大小 = 原始大小 + 类型标志(1)
         if (value instanceof Integer || int.class.isInstance(value)) {
             return 5;
         } else if (value instanceof String) {
-            // Layout for string: |type flag(1)|length(4)|string content|
+            // 字符串布局：|type flag(1)|length(4)|string content|
             String tmpValue = (String) value;
             byte[] tmpChars = tmpValue.getBytes();
             return 1 + 4 + tmpChars.length;
@@ -151,7 +153,7 @@ public class ParamFlowRequestDataWriter implements EntityWriter<ParamFlowRequest
         } else if (short.class.isInstance(value) || value instanceof Short) {
             return 3;
         } else {
-            // Ignore unexpected type.
+            // 忽略未知类型。
             return 0;
         }
     }

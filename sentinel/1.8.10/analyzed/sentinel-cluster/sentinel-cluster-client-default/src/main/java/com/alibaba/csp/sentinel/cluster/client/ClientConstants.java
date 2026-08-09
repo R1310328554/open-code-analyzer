@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.client;
 
 /**
+ * 集群令牌客户端常量，定义消息类型与客户端状态码。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

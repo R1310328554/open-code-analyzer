@@ -20,6 +20,8 @@ import com.alibaba.csp.sentinel.cluster.codec.EntityDecoder;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * Ping 响应数据解码器，解析服务端返回的状态码。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -29,7 +31,7 @@ public class PingResponseDataDecoder implements EntityDecoder<ByteBuf, Integer> 
     public Integer decode(ByteBuf source) {
         int size = source.readableBytes();
         if (size == 1) {
-            // Compatible with old version (< 1.7.0).
+            // 兼容旧版本（< 1.7.0）。
             return (int) source.readByte();
         }
         if (size >= 4) {

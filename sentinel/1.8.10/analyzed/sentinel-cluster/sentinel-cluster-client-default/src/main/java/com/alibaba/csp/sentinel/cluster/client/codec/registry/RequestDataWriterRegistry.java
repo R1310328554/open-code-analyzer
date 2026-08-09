@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.cluster.codec.EntityWriter;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 请求数据写入器注册表，按消息类型映射 {@link EntityWriter}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

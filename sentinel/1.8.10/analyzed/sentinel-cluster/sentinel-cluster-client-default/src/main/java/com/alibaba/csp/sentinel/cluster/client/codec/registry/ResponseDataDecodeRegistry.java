@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.cluster.codec.EntityDecoder;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 响应数据解码器注册表，按消息类型映射 {@link EntityDecoder}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

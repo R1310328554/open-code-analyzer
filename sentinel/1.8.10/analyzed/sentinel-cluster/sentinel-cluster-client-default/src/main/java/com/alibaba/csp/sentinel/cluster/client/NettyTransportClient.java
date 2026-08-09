@@ -53,7 +53,7 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.util.concurrent.GenericFutureListener;
 
 /**
- * Netty transport client implementation for Sentinel cluster transport.
+ * Sentinel 集群传输的 Netty 客户端实现。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -178,14 +178,14 @@ public class NettyTransportClient implements ClusterTransportClient {
 
     @Override
     public void stop() throws Exception {
-        // Stop retrying for connection.
+        // 停止连接重试。
         shouldRetry.set(false);
 
         while (currentState.get() == ClientConstants.CLIENT_STATUS_PENDING) {
             try {
                 Thread.sleep(200);
             } catch (Exception ex) {
-                // Ignore.
+                // 忽略。
             }
         }
 
@@ -227,7 +227,7 @@ public class NettyTransportClient implements ClusterTransportClient {
 
             SimpleEntry<ChannelPromise, ClusterResponse> entry = TokenClientPromiseHolder.getEntry(xid);
             if (entry == null || entry.getValue() == null) {
-                // Should not go through here.
+                // 不应执行到此处。
                 throw new SentinelClusterException(ClusterErrorMessages.UNEXPECTED_STATUS);
             }
             return entry.getValue();

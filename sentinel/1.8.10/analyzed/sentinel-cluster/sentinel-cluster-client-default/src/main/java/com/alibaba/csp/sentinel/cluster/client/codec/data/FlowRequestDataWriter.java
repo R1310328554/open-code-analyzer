@@ -21,9 +21,12 @@ import com.alibaba.csp.sentinel.cluster.request.data.FlowRequestData;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 流控令牌请求数据写入器，二进制布局如下：
+ * <pre>
  * +-------------------+--------------+----------------+---------------+------------------+
  * | RequestID(8 byte) | Type(1 byte) | FlowID(8 byte) | Count(4 byte) | PriorityFlag (1) |
  * +-------------------+--------------+----------------+---------------+------------------+
+ * </pre>
  *
  * @author Eric Zhao
  * @since 1.4.0

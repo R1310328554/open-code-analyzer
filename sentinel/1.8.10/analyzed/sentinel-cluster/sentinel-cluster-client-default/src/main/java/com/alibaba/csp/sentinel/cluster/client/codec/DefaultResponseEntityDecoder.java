@@ -24,9 +24,9 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import io.netty.buffer.ByteBuf;
 
 /**
- * <p>Default entity decoder for any {@link ClusterResponse} entity.</p>
+ * <p>任意 {@link ClusterResponse} 实体的默认解码器。</p>
  *
- * <p>Decode format:</p>
+ * <p>解码格式：</p>
  * <pre>
  * +--------+---------+-----------+---------+
  * | xid(4) | type(1) | status(1) | data... |

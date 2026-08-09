@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.cluster.codec.response.ResponseEntityDecoder;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
+ * 集群客户端实体编解码器提供者，通过 SPI 加载请求写入器与响应解码器。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

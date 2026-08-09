@@ -25,6 +25,8 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 默认集群请求实体写入器，将 {@link ClusterRequest} 序列化为 {@link ByteBuf}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -40,9 +42,9 @@ public class DefaultRequestEntityWriter implements RequestEntityWriter<ClusterRe
                 + " dropping the request", type);
             return;
         }
-        // Write head part of request.
+        // 写入请求头部分。
         writeHead(request, target);
-        // Write data part.
+        // 写入请求数据部分。
         requestDataWriter.writeTo(request.getData(), target);
     }
 

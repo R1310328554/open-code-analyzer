@@ -21,6 +21,8 @@ import com.alibaba.csp.sentinel.cluster.response.data.FlowTokenResponseData;
 import io.netty.buffer.ByteBuf;
 
 /**
+ * 流控令牌响应数据解码器，解析剩余配额与等待时间。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

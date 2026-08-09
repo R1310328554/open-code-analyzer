@@ -26,6 +26,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
+ * Netty 集群请求编码器，将 {@link ClusterRequest} 编码为字节流。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

@@ -37,7 +37,7 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * Default implementation of {@link ClusterTokenClient}.
+ * {@link ClusterTokenClient} 的默认实现。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -93,7 +93,7 @@ public class DefaultClusterTokenClient implements ClusterTokenClient {
             if (transportClient != null) {
                 transportClient.stop();
             }
-            // Replace with new, even if the new client is not ready.
+            // 即使新客户端尚未就绪，也替换为新连接。
             this.transportClient = new NettyTransportClient(config.getServerHost(), config.getServerPort());
             this.serverDescriptor = new TokenServerDescriptor(config.getServerHost(), config.getServerPort());
             startClientIfScheduled();

@@ -30,6 +30,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 /**
+ * Netty 集群响应解码器，将字节流解码为 {@link Response}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -44,7 +46,7 @@ public class NettyResponseDecoder extends ByteToMessageDecoder {
             return;
         }
 
-        // TODO: handle decode error here.
+        // TODO: 在此处理解码错误。
         Response response = responseDecoder.decode(in);
         if (response != null) {
             out.add(response);
