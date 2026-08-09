@@ -68,3 +68,13 @@ docs_src/authentication_error_status_code/__init__.py
 docs_src/authentication_error_status_code/tutorial001_an_py310.py
 docs_src/background_tasks/__init__.py
 docs_src/background_tasks/tutorial001_py310.py
+fastapi/dependencies/utils.py
+fastapi/openapi/utils.py
+fastapi/param_functions.py
+fastapi/params.py
+fastapi/security/oauth2.py
+docs_src/app_testing/app_b_py310/__init__.py
+docs_src/app_testing/app_b_py310/main.py
+docs_src/app_testing/app_b_py310/test_main.py
+docs_src/app_testing/tutorial001_py310.py
+docs_src/app_testing/tutorial002_py310.py
