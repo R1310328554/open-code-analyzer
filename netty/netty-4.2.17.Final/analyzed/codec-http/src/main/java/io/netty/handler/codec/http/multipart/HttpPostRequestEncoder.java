@@ -52,43 +52,26 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * This encoder will help to encode Request for a FORM as POST.
- *
- * <P>According to RFC 7231, POST, PUT and OPTIONS allow to have a body.
- * This encoder will support widely all methods except TRACE since the RFC notes
- * for GET, DELETE, HEAD and CONNECT: (replaces XXX by one of these methods)</P>
- * <P>"A payload within a XXX request message has no defined semantics;
- * sending a payload body on a XXX request might cause some existing
- * implementations to reject the request."</P>
- * <P>On the contrary, for TRACE method, RFC says:</P>
- * <P>"A client MUST NOT send a message body in a TRACE request."</P>
+ * 将表单数据编码为 POST（或 PUT/OPTIONS 等）请求体的 {@link ChunkedInput}。
+ * <p>
+ * 支持 {@code application/x-www-form-urlencoded} 与 {@code multipart/form-data}；
+ * RFC 7231 允许 POST/PUT/OPTIONS 带 body，TRACE 禁止带 body。
  */
 public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
 
-    /**
-     * Different modes to use to encode form data.
-     */
+    /** URL 编码模式（影响空格与特殊字符转义规则）。 */
+
     public enum EncoderMode {
-        /**
-         * Legacy mode which should work for most. It is known to not work with OAUTH. For OAUTH use
-         * {@link EncoderMode#RFC3986}. The W3C form recommendations this for submitting post form data.
-         */
+        /** 传统 RFC1738 模式；OAuth 场景请用 {@link EncoderMode#RFC3986}。 */
+
         RFC1738,
 
-        /**
-         * Mode which is more new and is used for OAUTH
-         */
+        /** RFC3986 模式，OAuth 等场景使用。 */
+
         RFC3986,
 
-        /**
-         * The HTML5 spec disallows mixed mode in multipart/form-data
-         * requests. More concretely this means that more files submitted
-         * under the same name will not be encoded using mixed mode, but
-         * will be treated as distinct fields.
-         *
-         * Reference:
-         *   https://www.w3.org/TR/html5/forms.html#multipart-form-data
-         */
+        /** HTML5 模式：同名多文件不使用 mixed，各自独立 part。 */
+
         HTML5
     }
 
@@ -99,52 +82,42 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
     private static final String PLUS_REPLACEMENT = "%20";
     private static final String TILDE_REPLACEMENT = "%7E";
 
-    /**
-     * Factory used to create InterfaceHttpData
-     */
+    /** 创建 {@link InterfaceHttpData} 的工厂。 */
+
     private final HttpDataFactory factory;
 
-    /**
-     * Request to encode
-     */
+    /** 待编码的 HTTP 请求（头会被改写 Content-Type 等）。 */
+
     private final HttpRequest request;
 
-    /**
-     * Default charset to use
-     */
+    /** 默认字符集。 */
+
     private final Charset charset;
 
-    /**
-     * Chunked false by default
-     */
+    /** 是否以分块方式输出，默认 {@code false}。 */
+
     private boolean isChunked;
 
-    /**
-     * InterfaceHttpData for Body (without encoding)
-     */
+    /** 用户添加的原始正文数据项（未编码）。 */
+
     private final List<InterfaceHttpData> bodyListDatas;
-    /**
-     * The final Multipart List of InterfaceHttpData including encoding
-     */
+    /** 含 boundary、头字段等编码后的完整 multipart 序列。 */
+
     final List<InterfaceHttpData> multipartHttpDatas;
 
-    /**
-     * Does this request is a Multipart request
-     */
+    /** 是否 multipart 编码模式。 */
+
     private final boolean isMultipart;
 
-    /**
-     * If multipart, this is the boundary for the flobal multipart
-     */
+    /** 外层 multipart boundary 字符串。 */
+
     String multipartDataBoundary;
 
-    /**
-     * If multipart, there could be internal multiparts (mixed) to the global multipart. Only one level is allowed.
-     */
+    /** 内层 multipart/mixed boundary（仅一层）。 */
+
     String multipartMixedBoundary;
-    /**
-     * To check if the header has been finalized
-     */
+    /** 请求头是否已最终确定（Content-Length / chunked 等）。 */
+
     private boolean headerFinalized;
 
     private final EncoderMode encoderMode;
@@ -210,9 +183,9 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
         if (HttpMethod.TRACE.equals(request.method())) {
             throw new ErrorDataEncoderException("Cannot create a Encoder if request is a TRACE");
         }
-        // Fill default values
+        // 初始化 multipart boundary 与 body 列表
         bodyListDatas = new ArrayList<InterfaceHttpData>();
-        // default mode
+        // 默认 RFC1738 编码模式
         isLastChunk = false;
         isLastChunkSent = false;
         isMultipart = multipart;
@@ -223,9 +196,8 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
         }
     }
 
-    /**
-     * Clean all HttpDatas (on Disk) for the current request.
-     */
+    /** 清理当前请求关联的磁盘临时文件。 */
+
     public void cleanFiles() {
         factory.cleanRequestHttpData(request);
     }
@@ -255,55 +227,39 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
      */
     private long globalProgress;
 
-    /**
-     * True if this request is a Multipart request
-     *
-     * @return True if this request is a Multipart request
-     */
+    /** 是否为 multipart 编码。 */
+
     public boolean isMultipart() {
         return isMultipart;
     }
 
-    /**
-     * Init the delimiter for Global Part (Data).
-     */
+    /** 初始化外层 multipart boundary。 */
+
     private void initDataMultipart() {
         multipartDataBoundary = getNewMultipartDelimiter();
     }
 
-    /**
-     * Init the delimiter for Mixed Part (Mixed).
-     */
+    /** 初始化内层 multipart/mixed boundary。 */
+
     private void initMixedMultipart() {
         multipartMixedBoundary = getNewMultipartDelimiter();
     }
 
-    /**
-     *
-     * @return a newly generated Delimiter (either for DATA or MIXED)
-     */
+    /** 生成随机 hex boundary 字符串（DATA 或 MIXED）。 */
+
     private static String getNewMultipartDelimiter() {
-        // construct a generated delimiter
+        // 生成随机 boundary 分隔符
         return Long.toHexString(ThreadLocalRandom.current().nextLong());
     }
 
-    /**
-     * This getMethod returns a List of all InterfaceHttpData from body part.<br>
+    /** 返回已添加的正文 {@link InterfaceHttpData} 列表。 */
 
-     * @return the list of InterfaceHttpData from Body part
-     */
     public List<InterfaceHttpData> getBodyListAttributes() {
         return bodyListDatas;
     }
 
-    /**
-     * Set the Body HttpDatas list
-     *
-     * @throws NullPointerException
-     *             for datas
-     * @throws ErrorDataEncoderException
-     *             if the encoding is in error or if the finalize were already done
-     */
+    /** 批量设置正文数据项（会清空原有列表）。 */
+
     public void setBodyHttpDatas(List<InterfaceHttpData> datas) throws ErrorDataEncoderException {
         ObjectUtil.checkNotNull(datas, "datas");
         globalBodySize = 0;
@@ -316,64 +272,23 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
         }
     }
 
-    /**
-     * Add a simple attribute in the body as Name=Value
-     *
-     * @param name
-     *            name of the parameter
-     * @param value
-     *            the value of the parameter
-     * @throws NullPointerException
-     *             for name
-     * @throws ErrorDataEncoderException
-     *             if the encoding is in error or if the finalize were already done
-     */
+    /** 添加 name=value 表单属性。 */
+
     public void addBodyAttribute(String name, String value) throws ErrorDataEncoderException {
         String svalue = value != null? value : StringUtil.EMPTY_STRING;
         Attribute data = factory.createAttribute(request, checkNotNull(name, "name"), svalue);
         addBodyHttpData(data);
     }
 
-    /**
-     * Add a file as a FileUpload
-     *
-     * @param name
-     *            the name of the parameter
-     * @param file
-     *            the file to be uploaded (if not Multipart mode, only the filename will be included)
-     * @param contentType
-     *            the associated contentType for the File
-     * @param isText
-     *            True if this file should be transmitted in Text format (else binary)
-     * @throws NullPointerException
-     *             for name and file
-     * @throws ErrorDataEncoderException
-     *             if the encoding is in error or if the finalize were already done
-     */
+    /** 添加磁盘 {@link File} 作为文件上传 part。 */
+
     public void addBodyFileUpload(String name, File file, String contentType, boolean isText)
             throws ErrorDataEncoderException {
         addBodyFileUpload(name, file.getName(), file, contentType, isText);
     }
 
-    /**
-     * Add a file as a FileUpload
-     *
-     * @param name
-     *            the name of the parameter
-     * @param file
-     *            the file to be uploaded (if not Multipart mode, only the filename will be included)
-     * @param filename
-     *            the filename to use for this File part, empty String will be ignored by
-     *            the encoder
-     * @param contentType
-     *            the associated contentType for the File
-     * @param isText
-     *            True if this file should be transmitted in Text format (else binary)
-     * @throws NullPointerException
-     *             for name and file
-     * @throws ErrorDataEncoderException
-     *             if the encoding is in error or if the finalize were already done
-     */
+    /** 指定客户端文件名添加文件上传 part。 */
+
     public void addBodyFileUpload(String name, String filename, File file, String contentType, boolean isText)
             throws ErrorDataEncoderException {
         checkNotNull(name, "name");
@@ -403,22 +318,8 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
         addBodyHttpData(fileUpload);
     }
 
-    /**
-     * Add a series of Files associated with one File parameter
-     *
-     * @param name
-     *            the name of the parameter
-     * @param file
-     *            the array of files
-     * @param contentType
-     *            the array of content Types associated with each file
-     * @param isText
-     *            the array of isText attribute (False meaning binary mode) for each file
-     * @throws IllegalArgumentException
-     *             also throws if array have different sizes
-     * @throws ErrorDataEncoderException
-     *             if the encoding is in error or if the finalize were already done
-     */
+    /** 批量添加同名多文件上传。 */
+
     public void addBodyFileUploads(String name, File[] file, String[] contentType, boolean[] isText)
             throws ErrorDataEncoderException {
         if (file.length != contentType.length && file.length != isText.length) {
@@ -429,14 +330,8 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
         }
     }
 
-    /**
-     * Add the InterfaceHttpData to the Body list
-     *
-     * @throws NullPointerException
-     *             for data
-     * @throws ErrorDataEncoderException
-     *             if the encoding is in error or if the finalize were already done
-     */
+    /** 添加任意 {@link InterfaceHttpData} 并更新 Content-Length 估算。 */
+
     public void addBodyHttpData(InterfaceHttpData data) throws ErrorDataEncoderException {
         if (headerFinalized) {
             throw new ErrorDataEncoderException("Cannot add value once finalized");
@@ -446,7 +341,7 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
             if (data instanceof Attribute) {
                 Attribute attribute = (Attribute) data;
                 try {
-                    // name=value& with encoded name and attribute
+                    // urlencoded: 编码后的 name=value&
                     String key = encodeAttribute(attribute.getName(), charset);
                     String value = encodeAttribute(attribute.getValue(), charset);
                     Attribute newattribute = factory.createAttribute(request, key, value);
@@ -456,9 +351,9 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
                     throw new ErrorDataEncoderException(e);
                 }
             } else if (data instanceof FileUpload) {
-                // since not Multipart, only name=filename => Attribute
+                // 非 multipart 时文件名作为 Attribute 值
                 FileUpload fileUpload = (FileUpload) data;
-                // name=filename& with encoded name and filename
+                // urlencoded 形式 name=filename&
                 String key = encodeAttribute(fileUpload.getName(), charset);
                 String value = encodeAttribute(fileUpload.getFilename(), charset);
                 Attribute newattribute = factory.createAttribute(request, key, value);
@@ -510,7 +405,7 @@ public class HttpPostRequestEncoder implements ChunkedInput<HttpContent> {
             }
             InternalAttribute internal = new InternalAttribute(charset);
             if (!multipartHttpDatas.isEmpty()) {
-                // previously a data field so CRLF
+                // 上一 part 为字段，先输出 CRLF
                 internal.addValue("\r\n");
             }
             internal.addValue("--" + multipartDataBoundary + "\r\n");

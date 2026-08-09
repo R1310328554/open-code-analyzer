@@ -19,42 +19,34 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpConstants;
 
 /**
- * Shared Static object between HttpMessageDecoder, HttpPostRequestDecoder and HttpPostRequestEncoder
+ * {@link HttpPostRequestDecoder}、{@link HttpPostRequestEncoder} 等共用的 multipart 解析/编码工具。
+ * <p>
+ * 提供换行查找、分隔符搜索、Content-Transfer-Encoding 枚举及缓冲预读优化。
  */
 final class HttpPostBodyUtil {
 
+    /** 默认分块读写大小（8096 字节）。 */
     public static final int chunkSize = 8096;
 
-    /**
-     * Default Content-Type in binary form
-     */
+    /** 默认二进制 Content-Type（{@code application/octet-stream}）。 */
+
     public static final String DEFAULT_BINARY_CONTENT_TYPE = "application/octet-stream";
 
-    /**
-     * Default Content-Type in Text form
-     */
+    /** 默认文本 Content-Type（{@code text/plain}）。 */
+
     public static final String DEFAULT_TEXT_CONTENT_TYPE = "text/plain";
 
-    /**
-     * Allowed mechanism for multipart
-     * mechanism := "7bit"
-                  / "8bit"
-                  / "binary"
-       Not allowed: "quoted-printable"
-                  / "base64"
-     */
+    /** multipart 允许的 Content-Transfer-Encoding 机制（7bit/8bit/binary）。 */
+
     public enum TransferEncodingMechanism {
-        /**
-         * Default encoding
-         */
+        /** 7bit 编码（默认）。 */
+
         BIT7("7bit"),
-        /**
-         * Short lines but not in ASCII - no encoding
-         */
+        /** 8bit：短行非 ASCII，无需额外编码。 */
+
         BIT8("8bit"),
-        /**
-         * Could be long text not in ASCII - no encoding
-         */
+        /** binary：长二进制或非 ASCII 文本。 */
+
         BINARY("binary");
 
         private final String value;
@@ -76,10 +68,8 @@ final class HttpPostBodyUtil {
     private HttpPostBodyUtil() {
     }
 
-    /**
-    * This class intends to decrease the CPU in seeking ahead some bytes in
-    * HttpPostRequestDecoder
-    */
+    /** 在 {@link HttpPostRequestDecoder} 中通过底层字节数组预读，减少 CPU 开销。 */
+
     static class SeekAheadOptimize {
         byte[] bytes;
         int readerIndex;
@@ -88,9 +78,8 @@ final class HttpPostBodyUtil {
         int limit;
         ByteBuf buffer;
 
-        /**
-         * @param buffer buffer with a backing byte array
-         */
+        /** @param buffer 须带 backing byte array 的 {@link ByteBuf} */
+
         SeekAheadOptimize(ByteBuf buffer) {
             if (!buffer.hasArray()) {
                 throw new IllegalArgumentException("buffer hasn't backing byte array");
@@ -102,31 +91,23 @@ final class HttpPostBodyUtil {
             limit = buffer.arrayOffset() + buffer.writerIndex();
         }
 
-        /**
-        *
-        * @param minus this value will be used as (currentPos - minus) to set
-        * the current readerIndex in the buffer.
-        */
+        /** 将读位置回退 {@code minus} 并同步 {@code readerIndex}。 */
+
         void setReadPosition(int minus) {
             pos -= minus;
             readerIndex = getReadPosition(pos);
             buffer.readerIndex(readerIndex);
         }
 
-        /**
-        *
-        * @param index raw index of the array (pos in general)
-        * @return the value equivalent of raw index to be used in readerIndex(value)
-        */
+        /** 将底层数组下标转换为 {@code readerIndex} 等价偏移。 */
+
         int getReadPosition(int index) {
             return index - origPos + readerIndex;
         }
     }
 
-    /**
-     * Find the first non whitespace
-     * @return the rank of the first non whitespace
-     */
+    /** 从 {@code offset} 起查找首个非空白字符下标。 */
+
     static int findNonWhitespace(String sb, int offset) {
         int result;
         for (result = offset; result < sb.length(); result ++) {
@@ -137,10 +118,8 @@ final class HttpPostBodyUtil {
         return result;
     }
 
-    /**
-     * Find the end of String
-     * @return the rank of the end of string
-     */
+    /** 从末尾向前跳过空白，返回有效内容结束下标。 */
+
     static int findEndOfString(String sb) {
         int result;
         for (result = sb.length(); result > 0; result --) {
@@ -151,14 +130,8 @@ final class HttpPostBodyUtil {
         return result;
     }
 
-    /**
-     * Try to find first LF or CRLF as Line Breaking
-     *
-     * @param buffer the buffer to search in
-     * @param index the index to start from in the buffer
-     * @return a relative position from index > 0 if LF or CRLF is found
-     *         or < 0 if not found
-     */
+    /** 自 {@code index} 起查找首个 LF/CRLF 换行，返回相对偏移或 {@code -1}。 */
+
     static int findLineBreak(ByteBuf buffer, int index) {
         int toRead = buffer.readableBytes() - (index - buffer.readerIndex());
         int posFirstChar = buffer.bytesBefore(index, toRead, HttpConstants.LF);
@@ -172,14 +145,8 @@ final class HttpPostBodyUtil {
         return posFirstChar;
     }
 
-    /**
-     * Try to find last LF or CRLF as Line Breaking
-     *
-     * @param buffer the buffer to search in
-     * @param index the index to start from in the buffer
-     * @return a relative position from index > 0 if LF or CRLF is found
-     *         or < 0 if not found
-     */
+    /** 自 {@code index} 起查找连续换行中的最后一处，返回相对偏移。 */
+
     static int findLastLineBreak(ByteBuf buffer, int index) {
         int candidate = findLineBreak(buffer, index);
         int findCRLF = 0;
@@ -204,19 +171,8 @@ final class HttpPostBodyUtil {
         return candidate - findCRLF;
     }
 
-    /**
-     * Try to find the delimiter, with LF or CRLF in front of it (added as delimiters) if needed
-     *
-     * @param buffer the buffer to search in
-     * @param index the index to start from in the buffer
-     * @param delimiter the delimiter as byte array
-     * @param precededByLineBreak true if it must be preceded by LF or CRLF, else false
-     * @return a relative position from index > 0 if delimiter found designing the start of it
-     *         (including LF or CRLF is asked)
-     *         or a number < 0 if delimiter is not found
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset + delimiter.length} is greater than {@code buffer.capacity}
-     */
+    /** 查找 multipart 边界分隔符；{@code precededByLineBreak} 要求前有 LF/CRLF。 */
+
     static int findDelimiter(ByteBuf buffer, int index, byte[] delimiter, boolean precededByLineBreak) {
         final int delimiterLength = delimiter.length;
         final int readerIndex = buffer.readerIndex();
@@ -225,14 +181,14 @@ final class HttpPostBodyUtil {
         int newOffset = index;
         boolean delimiterNotFound = true;
         while (delimiterNotFound && delimiterLength <= toRead) {
-            // Find first position: delimiter
+            // 先定位分隔符首字节
             int posDelimiter = buffer.bytesBefore(newOffset, toRead, delimiter[0]);
             if (posDelimiter < 0) {
                 return -1;
             }
             newOffset += posDelimiter;
             toRead -= posDelimiter;
-            // Now check for delimiter
+            // 逐字节匹配完整分隔符
             if (toRead >= delimiterLength) {
                 delimiterNotFound = false;
                 for (int i = 0; i < delimiterLength; i++) {
@@ -245,7 +201,7 @@ final class HttpPostBodyUtil {
                 }
             }
             if (!delimiterNotFound) {
-                // Delimiter found, find if necessary: LF or CRLF
+                // 分隔符已找到，按需回溯换行前缀
                 if (precededByLineBreak && newOffset > readerIndex) {
                     if (buffer.getByte(newOffset - 1) == HttpConstants.LF) {
                         newOffset--;

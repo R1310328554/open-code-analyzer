@@ -28,17 +28,20 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
- * This decoder will decode Body and can handle POST BODY.
- *
- * You <strong>MUST</strong> call {@link #destroy()} after completion to release all resources.
- *
+ * POST 请求体解码器门面，按 Content-Type 委托 multipart 或标准表单解码器。
+ * <p>
+ * 支持分块传输；完成后<strong>必须</strong>调用 {@link #destroy()}。
+ * 默认丢弃阈值 {@value #DEFAULT_DISCARD_THRESHOLD} 字节，最大字段数 {@value #DEFAULT_MAX_FIELDS}。
  */
 public class HttpPostRequestDecoder implements InterfaceHttpPostRequestDecoder {
 
+    /** 默认缓冲丢弃阈值：10 MiB。 */
     static final int DEFAULT_DISCARD_THRESHOLD = 10 * 1024 * 1024;
 
+    /** 默认单表单最大字段数。 */
     static final int DEFAULT_MAX_FIELDS = 128;
 
+    /** 解码单字段时默认最大缓冲字节数。 */
     static final int DEFAULT_MAX_BUFFERED_BYTES = 1024;
 
     private final InterfaceHttpPostRequestDecoder decoder;
@@ -111,7 +114,7 @@ public class HttpPostRequestDecoder implements InterfaceHttpPostRequestDecoder {
         ObjectUtil.checkNotNull(request, "request");
         ObjectUtil.checkNotNull(charset, "charset");
 
-        // Fill default values
+        // 按 Content-Type 选择具体解码器实现
         if (isMultipart(request)) {
             decoder = new HttpPostMultipartRequestDecoder(factory, request, charset);
         } else {
@@ -179,17 +182,16 @@ public class HttpPostRequestDecoder implements InterfaceHttpPostRequestDecoder {
      * ...contents of file2.gif... => MIXEDFILEUPLOAD --BbC04y-- =>
      * MIXEDCLOSEDELIMITER --AaB03x-- => CLOSEDELIMITER
      *
-     * Once CLOSEDELIMITER is found, last getStatus is EPILOGUE
+     * 找到 CLOSEDELIMITER 后进入 EPILOGUE 终态。
      */
+    /** multipart 解码状态机各阶段。 */
     protected enum MultiPartStatus {
         NOTSTARTED, PREAMBLE, HEADERDELIMITER, DISPOSITION, FIELD, FILEUPLOAD, MIXEDPREAMBLE, MIXEDDELIMITER,
         MIXEDDISPOSITION, MIXEDFILEUPLOAD, MIXEDCLOSEDELIMITER, CLOSEDELIMITER, PREEPILOGUE, EPILOGUE
     }
 
-    /**
-     * Check if the given request is a multipart request
-     * @return True if the request is a Multipart request
-     */
+    /** 判断请求是否为 {@code multipart/form-data}。 */
+
     public static boolean isMultipart(HttpRequest request) {
         String mimeType = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
         if (mimeType != null && mimeType.startsWith(HttpHeaderValues.MULTIPART_FORM_DATA.toString())) {
@@ -198,13 +200,10 @@ public class HttpPostRequestDecoder implements InterfaceHttpPostRequestDecoder {
         return false;
     }
 
-    /**
-     * Check from the request ContentType if this request is a Multipart request.
-     * @return an array of String if multipartDataBoundary exists with the multipartDataBoundary
-     * as first element, charset if any as second (missing if not set), else null
-     */
+    /** 从 Content-Type 解析 boundary 与可选 charset，失败返回 {@code null}。 */
+
     protected static String[] getMultipartDataBoundary(String contentType) {
-        // Check if Post using "multipart/form-data; boundary=--89421926422648 [; charset=xxx]"
+        // 解析 multipart/form-data; boundary=... [; charset=...]
         String[] headerContentType = splitHeaderContentType(contentType);
         final String multiPartHeader = HttpHeaderValues.MULTIPART_FORM_DATA.toString();
         if (headerContentType[0].regionMatches(true, 0, multiPartHeader, 0 , multiPartHeader.length())) {
@@ -308,11 +307,8 @@ public class HttpPostRequestDecoder implements InterfaceHttpPostRequestDecoder {
         decoder.removeHttpDataFromClean(data);
     }
 
-    /**
-     * Split the very first line (Content-Type value) in 3 Strings
-     *
-     * @return the array of 3 Strings
-     */
+    /** 将 Content-Type 首行拆为 [主类型, 参数1, 参数2] 三段。 */
+
     private static String[] splitHeaderContentType(String sb) {
         int aStart;
         int aEnd;
@@ -342,10 +338,8 @@ public class HttpPostRequestDecoder implements InterfaceHttpPostRequestDecoder {
         return new String[] { sb.substring(aStart, aEnd), sb.substring(bStart, bEnd), sb.substring(cStart, cEnd) };
     }
 
-    /**
-     * Exception when try reading data from request in chunked format, and not
-     * enough data are available (need more chunks)
-     */
+    /** 分块解码数据不足，需继续 {@link #offer} 更多块。 */
+
     public static class NotEnoughDataDecoderException extends DecoderException {
         private static final long serialVersionUID = -7846841864603865638L;
 
@@ -365,16 +359,14 @@ public class HttpPostRequestDecoder implements InterfaceHttpPostRequestDecoder {
         }
     }
 
-    /**
-     * Exception when the body is fully decoded, even if there is still data
-     */
+    /** 正文已完全解码，无更多 {@link InterfaceHttpData} 可读。 */
+
     public static class EndOfDataDecoderException extends DecoderException {
         private static final long serialVersionUID = 1336267941020800769L;
     }
 
-    /**
-     * Exception when an error occurs while decoding
-     */
+    /** 解码过程发生错误（字符集、格式等）。 */
+
     public static class ErrorDataDecoderException extends DecoderException {
         private static final long serialVersionUID = 5020247425493164465L;
 
@@ -394,16 +386,14 @@ public class HttpPostRequestDecoder implements InterfaceHttpPostRequestDecoder {
         }
     }
 
-    /**
-     * Exception when the maximum number of fields for a given form is reached
-     */
+    /** 表单字段数超过 {@code maxFields} 上限。 */
+
     public static final class TooManyFormFieldsException extends DecoderException {
         private static final long serialVersionUID = 1336267941020800769L;
     }
 
-    /**
-     * Exception when a field content is too long
-     */
+    /** 单字段缓冲超过 {@code maxBufferedBytes} 上限。 */
+
     public static final class TooLongFormFieldException extends DecoderException {
         private static final long serialVersionUID = 1336267941020800769L;
     }

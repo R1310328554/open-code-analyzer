@@ -26,24 +26,30 @@ import java.nio.charset.Charset;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 
 /**
- * Disk implementation of Attributes
+ * 基于磁盘临时文件的 {@link Attribute} 实现，适合超大表单字段。
+ * <p>
+ * 数据写入临时文件而非堆内存；可通过 {@link #baseDirectory} 与
+ * {@link #deleteOnExitTemporaryFile} 配置存储位置与退出时清理策略。
  */
 public class DiskAttribute extends AbstractDiskHttpData implements Attribute {
+    /** 全局默认临时文件基目录，{@code null} 使用系统默认。 */
     public static String baseDirectory;
 
+    /** 是否在 JVM 退出时删除临时文件，默认 {@code true}。 */
     public static boolean deleteOnExitTemporaryFile = true;
 
+    /** 临时文件名前缀。 */
     public static final String prefix = "Attr_";
 
+    /** 临时文件名后缀。 */
     public static final String postfix = ".att";
 
     private String baseDir;
 
     private boolean deleteOnExit;
 
-    /**
-     * Constructor used for huge Attribute
-     */
+    /** 构造大体积 Attribute，默认字符集与全局磁盘配置。 */
+
     public DiskAttribute(String name) {
         this(name, HttpConstants.DEFAULT_CHARSET);
     }
@@ -94,7 +100,7 @@ public class DiskAttribute extends AbstractDiskHttpData implements Attribute {
 
     public DiskAttribute(String name, String value, Charset charset,
                          String baseDir, boolean deleteOnExit) throws IOException {
-        super(name, charset, 0); // Attribute have no default size
+        super(name, charset, 0); // Attribute 无默认 Content-Length
         setValue(value);
         this.baseDir = baseDir == null ? baseDirectory : baseDir;
         this.deleteOnExit = deleteOnExit;

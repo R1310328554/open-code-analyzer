@@ -18,47 +18,34 @@ package io.netty.handler.codec.http.multipart;
 import io.netty.buffer.ByteBuf;
 
 /**
- * FileUpload interface that could be in memory, on temporary file or any other implementations.
- *
- * Most methods are inspired from java.io.File API.
+ * 文件上传接口，实现可为内存、临时磁盘文件等。
+ * <p>
+ * 多数方法语义借鉴 {@code java.io.File}；扩展 {@link HttpData} 提供
+ * 文件名、Content-Type、Content-Transfer-Encoding 等 multipart 元数据。
  */
 public interface FileUpload extends HttpData {
-    /**
-     * Returns the original filename in the client's filesystem,
-     * as provided by the browser (or other client software).
-     * @return the original filename
-     */
+    /** 返回客户端（浏览器）提供的原始文件名。 */
+
     String getFilename();
 
-    /**
-     * Set the original filename.
-     * <p>
-     * <strong>Note:</strong> This method validates that the filename is safe for including in an HTTP request,
-     * and will throw an exception if that's not the case.
-     */
+    /** 设置原始文件名；会校验是否可安全用于 HTTP 请求，非法字符抛异常。 */
+
     void setFilename(String filename);
 
-    /**
-     * Set the Content Type passed by the browser if defined
-     * @param contentType Content Type to set - must be not null
-     */
+    /** 设置浏览器提供的 Content-Type，不可为 {@code null}。 */
+
     void setContentType(String contentType);
 
-    /**
-     * Returns the content type passed by the browser or null if not defined.
-     * @return the content type passed by the browser or null if not defined.
-     */
+    /** 返回浏览器 Content-Type，未定义时 {@code null}。 */
+
     String getContentType();
 
-    /**
-     * Set the Content-Transfer-Encoding type from String as 7bit, 8bit or binary
-     */
+    /** 设置 Content-Transfer-Encoding（7bit、8bit 或 binary）。 */
+
     void setContentTransferEncoding(String contentTransferEncoding);
 
-    /**
-     * Returns the Content-Transfer-Encoding
-     * @return the Content-Transfer-Encoding
-     */
+    /** 返回 Content-Transfer-Encoding。 */
+
     String getContentTransferEncoding();
 
     @Override

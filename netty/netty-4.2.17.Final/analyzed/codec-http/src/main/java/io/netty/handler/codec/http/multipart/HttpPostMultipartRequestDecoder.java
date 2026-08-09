@@ -48,93 +48,75 @@ import java.util.TreeMap;
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * This decoder will decode Body and can handle POST BODY.
- *
- * You <strong>MUST</strong> call {@link #destroy()} after completion to release all resources.
- *
+ * {@code multipart/form-data} POST 正文解码器，含 mixed 嵌套 multipart 支持。
+ * <p>
+ * 状态机按 boundary 解析字段与 {@link FileUpload}；完成后须 {@link #destroy()}。
  */
 public class HttpPostMultipartRequestDecoder implements InterfaceHttpPostRequestDecoder {
 
-    /**
-     * Factory used to create InterfaceHttpData
-     */
+    /** 创建 {@link InterfaceHttpData} 的工厂。 */
+
     private final HttpDataFactory factory;
 
-    /**
-     * Request to decode
-     */
+    /** 待解码的 HTTP 请求。 */
+
     private final HttpRequest request;
 
-    /**
-     * The maximum number of fields allows by the form
-     */
+    /** 表单允许的最大字段数，{@code -1} 不限。 */
+
     private final int maxFields;
 
-    /**
-     * The maximum number of accumulated bytes when decoding a field
-     */
+    /** 解码单字段时允许的最大累计字节数。 */
+
     private final int maxBufferedBytes;
 
-    /**
-     * Default charset to use
-     */
+    /** 默认字符集（可被 part 内 charset 覆盖）。 */
+
     private Charset charset;
 
-    /**
-     * Does the last chunk already received
-     */
+    /** 是否已收到最后一个 {@link HttpContent} 块。 */
+
     private boolean isLastChunk;
 
-    /**
-     * HttpDatas from Body
-     */
+    /** 已解码正文数据项列表（顺序）。 */
+
     private final List<InterfaceHttpData> bodyListHttpData = new ArrayList<InterfaceHttpData>();
 
-    /**
-     * HttpDatas as Map from Body
-     */
+    /** 按字段名索引的数据项映射（忽略大小写）。 */
+
     private final Map<String, List<InterfaceHttpData>> bodyMapHttpData = new TreeMap<String, List<InterfaceHttpData>>(
             CaseIgnoringComparator.INSTANCE);
 
-    /**
-     * The current channelBuffer
-     */
+    /** 尚未消费完的原始字节缓冲。 */
+
     private ByteBuf undecodedChunk;
 
-    /**
-     * Body HttpDatas current position
-     */
+    /** {@link #next()} 迭代当前下标。 */
+
     private int bodyListHttpDataRank;
 
-    /**
-     * If multipart, this is the boundary for the global multipart
-     */
+    /** 外层 multipart 边界字符串。 */
+
     private final String multipartDataBoundary;
 
-    /**
-     * If multipart, there could be internal multiparts (mixed) to the global
-     * multipart. Only one level is allowed.
-     */
+    /** 内层 multipart/mixed 边界（仅允许一层嵌套）。 */
+
     private String multipartMixedBoundary;
 
-    /**
-     * Current getStatus
-     */
+    /** 当前 multipart 解码状态 {@link HttpPostRequestDecoder.MultiPartStatus}。 */
+
     private MultiPartStatus currentStatus = MultiPartStatus.NOTSTARTED;
 
-    /**
-     * Used in Multipart
-     */
+    /** 当前 part 解析中的 Content-Disposition 等头属性。 */
+
     private Map<CharSequence, Attribute> currentFieldAttributes;
 
-    /**
-     * The current FileUpload that is currently in decode process
-     */
+    /** 正在部分解码的 {@link FileUpload}。 */
+
     private FileUpload currentFileUpload;
 
-    /**
-     * The current Attribute that is currently in decode process
-     */
+    /** 正在部分解码的 {@link Attribute}。 */
+
     private Attribute currentAttribute;
 
     private boolean destroyed;
@@ -215,7 +197,7 @@ public class HttpPostMultipartRequestDecoder implements InterfaceHttpPostRequest
         this.factory = checkNotNull(factory, "factory");
         this.maxFields = maxFields;
         this.maxBufferedBytes = maxBufferedBytes;
-        // Fill default values
+        // 从 Content-Type 解析 boundary 并初始化
 
         String contentTypeValue = this.request.headers().get(HttpHeaderNames.CONTENT_TYPE);
         if (contentTypeValue == null) {
@@ -239,8 +221,7 @@ public class HttpPostMultipartRequestDecoder implements InterfaceHttpPostRequest
 
         try {
             if (request instanceof HttpContent) {
-                // Offer automatically if the given request is als type of HttpContent
-                // See #1089
+                // 请求本身带 body 时自动 offer（#1089）
                 offer((HttpContent) request);
             } else {
                 parseBody();
@@ -374,7 +355,7 @@ public class HttpPostMultipartRequestDecoder implements InterfaceHttpPostRequest
         ByteBuf buf = content.content();
         if (undecodedChunk == null) {
             undecodedChunk =
-                    // Since the Handler will release the incoming later on, we need to copy it
+                    // Handler 稍后释放入站缓冲，此处须拷贝
                     //
                     // We are explicit allocate a buffer and NOT calling copy() as otherwise it may set a maxCapacity
                     // which is not really usable for us as we may exceed it once we add more bytes.
@@ -388,11 +369,10 @@ public class HttpPostMultipartRequestDecoder implements InterfaceHttpPostRequest
         }
         if (undecodedChunk != null && undecodedChunk.writerIndex() > discardThreshold) {
             if (undecodedChunk.refCnt() == 1) {
-                // It's safe to call discardBytes() as we are the only owner of the buffer.
+                // 独占引用时可安全 discardBytes 回收已读内存
                 undecodedChunk.discardReadBytes();
             } else {
-                // There seems to be multiple references of the buffer. Let's copy the data and release the buffer to
-                // ensure we can give back memory to the system.
+                // 多引用时拷贝数据并释放原缓冲以归还内存
                 ByteBuf buffer = undecodedChunk.alloc().buffer(undecodedChunk.readableBytes());
                 buffer.writeBytes(undecodedChunk);
                 undecodedChunk.release();
@@ -417,7 +397,7 @@ public class HttpPostMultipartRequestDecoder implements InterfaceHttpPostRequest
         checkDestroyed();
 
         if (currentStatus == MultiPartStatus.EPILOGUE) {
-            // OK except if end of list
+            // 正常，除非已到列表末尾
             if (bodyListHttpDataRank >= bodyListHttpData.size()) {
                 throw new EndOfDataDecoderException();
             }
@@ -501,7 +481,7 @@ public class HttpPostMultipartRequestDecoder implements InterfaceHttpPostRequest
      */
     private void parseBodyMultipart() {
         if (undecodedChunk == null || undecodedChunk.readableBytes() == 0) {
-            // nothing to decode
+            // 无更多数据可解码
             return;
         }
         InterfaceHttpData data = decodeMultipart(currentStatus);

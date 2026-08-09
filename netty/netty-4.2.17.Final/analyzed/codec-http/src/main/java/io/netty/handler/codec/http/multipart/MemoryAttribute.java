@@ -26,7 +26,9 @@ import java.nio.charset.Charset;
 import static io.netty.buffer.Unpooled.*;
 
 /**
- * Memory implementation of Attributes
+ * 基于堆内存的 {@link Attribute} 实现，适合小体积表单字段。
+ * <p>
+ * 内容保存在 {@link ByteBuf} 中；超过工厂阈值时会改用 {@link DiskAttribute}。
  */
 public class MemoryAttribute extends AbstractMemoryHttpData implements Attribute {
 
@@ -47,11 +49,11 @@ public class MemoryAttribute extends AbstractMemoryHttpData implements Attribute
     }
 
     public MemoryAttribute(String name, String value) throws IOException {
-        this(name, value, HttpConstants.DEFAULT_CHARSET); // Attribute have no default size
+        this(name, value, HttpConstants.DEFAULT_CHARSET); // Attribute 无默认 Content-Length
     }
 
     public MemoryAttribute(String name, String value, Charset charset) throws IOException {
-        super(name, charset, 0); // Attribute have no default size
+        super(name, charset, 0); // Attribute 无默认 Content-Length
         setValue(value);
     }
 

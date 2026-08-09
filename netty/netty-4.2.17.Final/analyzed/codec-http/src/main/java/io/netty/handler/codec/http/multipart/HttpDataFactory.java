@@ -20,63 +20,44 @@ import io.netty.handler.codec.http.HttpRequest;
 import java.nio.charset.Charset;
 
 /**
- * Interface to enable creation of InterfaceHttpData objects
+ * 创建 {@link InterfaceHttpData}（{@link Attribute}、{@link FileUpload}）的工厂接口。
+ * <p>
+ * 负责按请求选择内存/磁盘/混合存储，并维护待清理临时文件的列表。
  */
 public interface HttpDataFactory {
 
-    /**
-     * To set a max size limitation on fields. Exceeding it will generate an ErrorDataDecoderException.
-     * A value of -1 means no limitation (default).
-     */
+    /** 设置字段最大字节限制，{@code -1} 不限；超限抛 {@link HttpPostRequestDecoder.ErrorDataDecoderException}。 */
+
     void setMaxLimit(long max);
 
-    /**
-     *
-     * @param request associated request
-     * @return a new Attribute with no value
-     */
+    /** 创建空值 {@link Attribute}。 */
+
     Attribute createAttribute(HttpRequest request, String name);
 
-    /**
-     * @param request associated request
-     * @param name name of the attribute
-     * @param definedSize defined size from request for this attribute
-     * @return a new Attribute with no value
-     */
+    /** 创建带声明 Content-Length 的空 {@link Attribute}。 */
+
     Attribute createAttribute(HttpRequest request, String name, long definedSize);
 
-    /**
-     * @param request associated request
-     * @return a new Attribute
-     */
+    /** 创建带初始字符串值的 {@link Attribute}。 */
+
     Attribute createAttribute(HttpRequest request, String name, String value);
 
-    /**
-     * @param request associated request
-     * @param size the size of the Uploaded file
-     * @return a new FileUpload
-     */
+    /** 创建 {@link FileUpload}，{@code size} 为请求声明的文件大小。 */
+
     FileUpload createFileUpload(HttpRequest request, String name, String filename,
                                 String contentType, String contentTransferEncoding, Charset charset,
                                 long size);
 
-    /**
-     * Remove the given InterfaceHttpData from clean list (will not delete the file, except if the file
-     * is still a temporary one as setup at construction)
-     * @param request associated request
-     */
+    /** 从清理列表移除数据项；临时文件仍可能被删除。 */
+
     void removeHttpDataFromClean(HttpRequest request, InterfaceHttpData data);
 
-    /**
-     * Remove all InterfaceHttpData from virtual File storage from clean list for the request
-     *
-     * @param request associated request
-     */
+    /** 清理指定请求关联的全部临时 {@link InterfaceHttpData}。 */
+
     void cleanRequestHttpData(HttpRequest request);
 
-    /**
-     * Remove all InterfaceHttpData from virtual File storage from clean list for all requests
-     */
+    /** 清理所有请求的临时 {@link InterfaceHttpData}。 */
+
     void cleanAllHttpData();
 
     /**

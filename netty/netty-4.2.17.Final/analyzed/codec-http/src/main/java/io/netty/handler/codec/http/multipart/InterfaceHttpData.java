@@ -18,22 +18,23 @@ package io.netty.handler.codec.http.multipart;
 import io.netty.util.ReferenceCounted;
 
 /**
- * Interface for all Objects that could be encoded/decoded using HttpPostRequestEncoder/Decoder
+ * 可由 {@link HttpPostRequestEncoder}/{@link HttpPostRequestDecoder} 编解码的数据项接口。
+ * <p>
+ * 实现 {@link ReferenceCounted} 以管理 {@link ByteBuf} 引用；按 {@link HttpDataType} 区分
+ * 普通属性、文件上传与编码器内部占位项。
  */
 public interface InterfaceHttpData extends Comparable<InterfaceHttpData>, ReferenceCounted {
+    /** multipart 数据项类型：表单属性、文件上传、编码器内部项。 */
     enum HttpDataType {
         Attribute, FileUpload, InternalAttribute
     }
 
-    /**
-     * Returns the name of this InterfaceHttpData.
-     */
+    /** 返回表单字段名（multipart {@code name}）。 */
+
     String getName();
 
-    /**
-     *
-     * @return The HttpDataType
-     */
+    /** 返回数据项类型 {@link HttpDataType}。 */
+
     HttpDataType getHttpDataType();
 
     @Override

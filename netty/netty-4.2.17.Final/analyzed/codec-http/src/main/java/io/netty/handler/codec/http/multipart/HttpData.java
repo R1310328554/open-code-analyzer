@@ -24,197 +24,95 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 
 /**
- * Extended interface for InterfaceHttpData
+ * {@link InterfaceHttpData} 的扩展接口，同时实现 {@link ByteBufHolder}。
+ * <p>
+ * 表示 multipart 或表单中的具名数据体（属性或文件），支持分块写入、
+ * 内存/磁盘存储、大小限制与 {@link ByteBuf} 生命周期管理。
  */
 public interface HttpData extends InterfaceHttpData, ByteBufHolder {
 
-    /**
-     * Returns the maxSize for this HttpData.
-     */
+    /** 返回本数据项允许的最大字节数。 */
+
     long getMaxSize();
 
-    /**
-     * Set the maxSize for this HttpData. When limit will be reached, an exception will be raised.
-     * Setting it to (-1) means no limitation.
-     *
-     * By default, to be set from the HttpDataFactory.
-     */
+    /** 设置最大字节限制，{@code -1} 表示不限；超限抛异常，通常由 {@link HttpDataFactory} 配置。 */
+
     void setMaxSize(long maxSize);
 
-    /**
-     * Check if the new size is not reaching the max limit allowed.
-     * The limit is always computed in terms of bytes.
-     */
+    /** 检查新累计大小是否超过上限（以字节计）。 */
+
     void checkSize(long newSize) throws IOException;
 
-    /**
-     * Set the content from the ChannelBuffer (erase any previous data)
-     * <p>{@link ByteBuf#release()} ownership of {@code buffer} is transferred to this {@link HttpData}.
-     *
-     * @param buffer
-     *            must be not null
-     * @throws IOException
-     */
+    /** 用 {@link ByteBuf} 覆盖原有内容；{@code buffer} 所有权转移给本对象。 */
+
     void setContent(ByteBuf buffer) throws IOException;
 
-    /**
-     * Add the content from the ChannelBuffer
-     * <p>{@link ByteBuf#release()} ownership of {@code buffer} is transferred to this {@link HttpData}.
-     *
-     * @param buffer
-     *            must be not null except if last is set to False
-     * @param last
-     *            True of the buffer is the last one
-     * @throws IOException
-     */
+    /** 追加 {@link ByteBuf} 内容；{@code last=true} 表示最后一块并完成解码。 */
+
     void addContent(ByteBuf buffer, boolean last) throws IOException;
 
-    /**
-     * Set the content from the file (erase any previous data)
-     *
-     * @param file
-     *            must be not null
-     * @throws IOException
-     */
+    /** 从 {@link File} 读取并覆盖内容。 */
+
     void setContent(File file) throws IOException;
 
-    /**
-     * Set the content from the inputStream (erase any previous data)
-     *
-     * @param inputStream
-     *            must be not null
-     * @throws IOException
-     */
+    /** 从 {@link InputStream} 读取并覆盖内容。 */
+
     void setContent(InputStream inputStream) throws IOException;
 
-    /**
-     *
-     * @return True if the InterfaceHttpData is completed (all data are stored)
-     */
+    /** 是否已接收并存储全部数据块。 */
+
     boolean isCompleted();
 
-    /**
-     * Returns the size in byte of the InterfaceHttpData
-     *
-     * @return the size of the InterfaceHttpData
-     */
+    /** 返回当前已存储内容的字节长度。 */
+
     long length();
 
-    /**
-     * Returns the defined length of the HttpData.
-     *
-     * If no Content-Length is provided in the request, the defined length is
-     * always 0 (whatever during decoding or in final state).
-     *
-     * If Content-Length is provided in the request, this is this given defined length.
-     * This value does not change, whatever during decoding or in the final state.
-     *
-     * This method could be used for instance to know the amount of bytes transmitted for
-     * one particular HttpData, for example one {@link FileUpload} or any known big {@link Attribute}.
-     *
-     * @return the defined length of the HttpData
-     */
+    /** 返回请求中声明的 Content-Length；无声明时为 0，解码过程中不变。 */
+
     long definedLength();
 
-    /**
-     * Deletes the underlying storage for a file item, including deleting any
-     * associated temporary disk file.
-     */
+    /** 删除底层存储（含临时磁盘文件）。 */
+
     void delete();
 
-    /**
-     * Returns the contents of the file item as an array of bytes.<br>
-     * Note: this method will allocate a lot of memory, if the data is currently stored on the file system.
-     *
-     * @return the contents of the file item as an array of bytes.
-     * @throws IOException
-     */
+    /** 以字节数组返回全部内容；磁盘存储时会大量分配堆内存。 */
+
     byte[] get() throws IOException;
 
-    /**
-     * Returns the content of the file item as a ByteBuf.<br>
-     * Note: this method will allocate a lot of memory, if the data is currently stored on the file system.
-     *
-     * @return the content of the file item as a ByteBuf
-     * @throws IOException
-     */
+    /** 以 {@link ByteBuf} 返回全部内容；磁盘存储时可能大量分配内存。 */
+
     ByteBuf getByteBuf() throws IOException;
 
-    /**
-     * Returns a ChannelBuffer for the content from the current position with at
-     * most length read bytes, increasing the current position of the Bytes
-     * read. Once it arrives at the end, it returns an EMPTY_BUFFER and it
-     * resets the current position to 0.
-     *
-     * @return a ChannelBuffer for the content from the current position or an
-     *         EMPTY_BUFFER if there is no more data to return
-     */
+    /** 从当前读位置返回最多 {@code length} 字节的块；读完后返回空缓冲并重置位置。 */
+
     ByteBuf getChunk(int length) throws IOException;
 
-    /**
-     * Returns the contents of the file item as a String, using the default
-     * character encoding.
-     *
-     * @return the contents of the file item as a String, using the default
-     *         character encoding.
-     * @throws IOException
-     */
+    /** 以默认字符集解码为字符串。 */
+
     String getString() throws IOException;
 
-    /**
-     * Returns the contents of the file item as a String, using the specified
-     * charset.
-     *
-     * @param encoding
-     *            the charset to use
-     * @return the contents of the file item as a String, using the specified
-     *         charset.
-     * @throws IOException
-     */
+    /** 以指定 {@link Charset} 解码为字符串。 */
+
     String getString(Charset encoding) throws IOException;
 
-    /**
-     * Set the Charset passed by the browser if defined
-     *
-     * @param charset
-     *            Charset to set - must be not null
-     */
+    /** 设置浏览器声明的字符集，不可为 {@code null}。 */
+
     void setCharset(Charset charset);
 
-    /**
-     * Returns the Charset passed by the browser or null if not defined.
-     *
-     * @return the Charset passed by the browser or null if not defined.
-     */
+    /** 返回浏览器字符集，未定义时 {@code null}。 */
+
     Charset getCharset();
 
-    /**
-     * A convenience getMethod to write an uploaded item to disk. If a previous one
-     * exists, it will be deleted. Once this getMethod is called, if successful,
-     * the new file will be out of the cleaner of the factory that creates the
-     * original InterfaceHttpData object.
-     *
-     * @param dest
-     *            destination file - must be not null
-     * @return True if the write is successful
-     * @throws IOException
-     */
+    /** 将内容写入目标文件；成功后脱离工厂清理列表。 */
+
     boolean renameTo(File dest) throws IOException;
 
-    /**
-     * Provides a hint as to whether or not the file contents will be read from
-     * memory.
-     *
-     * @return True if the file contents is in memory.
-     */
+    /** 内容是否完全在内存中（{@code true} 表示非磁盘临时文件）。 */
+
     boolean isInMemory();
 
-    /**
-     *
-     * @return the associated File if this data is represented in a file
-     * @exception IOException
-     *                if this data is not represented by a file
-     */
+    /** 返回关联的磁盘 {@link File}；纯内存实现会抛 {@link IOException}。 */
+
     File getFile() throws IOException;
 
     @Override

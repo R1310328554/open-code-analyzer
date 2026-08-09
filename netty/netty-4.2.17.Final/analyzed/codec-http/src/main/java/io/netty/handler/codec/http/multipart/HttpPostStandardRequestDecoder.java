@@ -45,72 +45,59 @@ import java.util.TreeMap;
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * This decoder will decode Body and can handle POST BODY.
- *
- * You <strong>MUST</strong> call {@link #destroy()} after completion to release all resources.
- *
+ * {@code application/x-www-form-urlencoded} POST 正文解码器。
+ * <p>
+ * 复用 {@link QueryStringDecoder} 语义解析 {@code name=value&} 序列；须 {@link #destroy()}。
  */
 public class HttpPostStandardRequestDecoder implements InterfaceHttpPostRequestDecoder {
 
-    /**
-     * Factory used to create InterfaceHttpData
-     */
+    /** 创建 {@link InterfaceHttpData} 的工厂。 */
+
     private final HttpDataFactory factory;
 
-    /**
-     * Request to decode
-     */
+    /** 待解码的 HTTP 请求。 */
+
     private final HttpRequest request;
 
-    /**
-     * Default charset to use
-     */
+    /** 表单 URL 解码默认字符集。 */
+
     private final Charset charset;
 
-    /**
-     * The maximum number of fields allows by the form
-     */
+    /** 表单最大字段数。 */
+
     private final int maxFields;
 
-    /**
-     * The maximum number of accumulated bytes when decoding a field
-     */
+    /** 单字段最大累计字节数。 */
+
     private final int maxBufferedBytes;
 
-    /**
-     * Does the last chunk already received
-     */
+    /** 是否已收到最后一块正文。 */
+
     private boolean isLastChunk;
 
-    /**
-     * HttpDatas from Body
-     */
+    /** 已解码数据项顺序列表。 */
+
     private final List<InterfaceHttpData> bodyListHttpData = new ArrayList<InterfaceHttpData>();
 
-    /**
-     * HttpDatas as Map from Body
-     */
+    /** 按字段名索引的映射。 */
+
     private final Map<String, List<InterfaceHttpData>> bodyMapHttpData = new TreeMap<String, List<InterfaceHttpData>>(
             CaseIgnoringComparator.INSTANCE);
 
-    /**
-     * The current channelBuffer
-     */
+    /** 未消费完的原始缓冲。 */
+
     private ByteBuf undecodedChunk;
 
-    /**
-     * Body HttpDatas current position
-     */
+    /** {@link #next()} 迭代位置。 */
+
     private int bodyListHttpDataRank;
 
-    /**
-     * Current getStatus
-     */
+    /** 当前解码状态。 */
+
     private MultiPartStatus currentStatus = MultiPartStatus.NOTSTARTED;
 
-    /**
-     * The current Attribute that is currently in decode process
-     */
+    /** 正在部分解码的 {@link Attribute}。 */
+
     private Attribute currentAttribute;
 
     private boolean destroyed;
@@ -193,8 +180,7 @@ public class HttpPostStandardRequestDecoder implements InterfaceHttpPostRequestD
         this.maxBufferedBytes = maxBufferedBytes;
         try {
             if (request instanceof HttpContent) {
-                // Offer automatically if the given request is as type of HttpContent
-                // See #1089
+                // 请求带 body 时自动 offer（#1089）
                 offer((HttpContent) request);
             } else {
                 parseBody();
@@ -328,7 +314,7 @@ public class HttpPostStandardRequestDecoder implements InterfaceHttpPostRequestD
         ByteBuf buf = content.content();
         if (undecodedChunk == null) {
             undecodedChunk =
-                    // Since the Handler will release the incoming later on, we need to copy it
+                    // Handler 稍后释放入站缓冲，须拷贝
                     //
                     // We are explicit allocate a buffer and NOT calling copy() as otherwise it may set a maxCapacity
                     // which is not really usable for us as we may exceed it once we add more bytes.

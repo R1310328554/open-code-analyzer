@@ -18,26 +18,31 @@ package io.netty.handler.codec.http.multipart;
 import io.netty.handler.codec.http.HttpConstants;
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * {@link FileUpload} 的 hashCode/equals/compareTo 及出站文件名校验工具类。
+ */
 final class FileUploadUtil {
 
+    /** 工具类禁止实例化。 */
     private FileUploadUtil() { }
 
+    /** 基于字段名（忽略大小写语义由 equals 保证）计算哈希。 */
     static int hashCode(FileUpload upload) {
         return upload.getName().hashCode();
     }
 
+    /** 两上传项字段名忽略大小写相等则视为相同。 */
     static boolean equals(FileUpload upload1, FileUpload upload2) {
         return upload1.getName().equalsIgnoreCase(upload2.getName());
     }
 
+    /** 按字段名忽略大小写排序比较。 */
     static int compareTo(FileUpload upload1, FileUpload upload2) {
         return upload1.getName().compareToIgnoreCase(upload2.getName());
     }
 
     /**
-     * Control characters, the DEL character, double-quote, and backslash are either disallowed or strongly discouraged,
-     * depending on which {@code multipart/form-data} specification you read.
-     * This method conservatively rejects all of them, and is used for <em>outbound</em> (encoding) filenames.
+     * 出站（编码）文件名校验：拒绝控制字符、DEL、双引号与反斜杠。
      * @param filename The filename to check.
      * @return The validated filename, unchanged.
      */
@@ -45,7 +50,7 @@ final class FileUploadUtil {
         int length = ObjectUtil.checkNotNull(filename, "filename").length();
         for (int i = 0; i < length; i++) {
             char c = filename.charAt(i);
-            if (c < HttpConstants.SP /*control character block*/ || c == HttpConstants.DEL ||
+            if (c < HttpConstants.SP /* 控制字符 */ || c == HttpConstants.DEL ||
                     c == HttpConstants.DOUBLE_QUOTE || c == HttpConstants.BACKSLASH) {
                 throw new IllegalArgumentException(
                         String.format("Illegal filename character 0x%02x at index %d", (int) c, i));

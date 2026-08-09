@@ -25,8 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This Attribute is only for Encoder use to insert special command between object if needed
- * (like Multipart Mixed mode)
+ * 仅供 {@link HttpPostRequestEncoder} 使用的内部 {@link Attribute}，插入 multipart 控制片段。
+ * <p>
+ * 例如 Mixed 模式下的边界、Content-Disposition 等，不参与业务表单字段解析。
  */
 final class InternalAttribute extends AbstractReferenceCounted implements InterfaceHttpData {
     private final List<ByteBuf> value = new ArrayList<ByteBuf>();
@@ -42,6 +43,7 @@ final class InternalAttribute extends AbstractReferenceCounted implements Interf
         return HttpDataType.InternalAttribute;
     }
 
+    /** 在末尾追加一段编码后的字符串片段。 */
     public void addValue(String value) {
         ObjectUtil.checkNotNull(value, "value");
         ByteBuf buf = Unpooled.copiedBuffer(value, charset);
@@ -49,6 +51,7 @@ final class InternalAttribute extends AbstractReferenceCounted implements Interf
         size += buf.readableBytes();
     }
 
+    /** 在指定下标插入字符串片段。 */
     public void addValue(String value, int rank) {
         ObjectUtil.checkNotNull(value, "value");
         ByteBuf buf = Unpooled.copiedBuffer(value, charset);
@@ -56,6 +59,7 @@ final class InternalAttribute extends AbstractReferenceCounted implements Interf
         size += buf.readableBytes();
     }
 
+    /** 替换指定下标的片段并释放旧 {@link ByteBuf}。 */
     public void setValue(String value, int rank) {
         ObjectUtil.checkNotNull(value, "value");
         ByteBuf buf = Unpooled.copiedBuffer(value, charset);
@@ -103,22 +107,24 @@ final class InternalAttribute extends AbstractReferenceCounted implements Interf
         return result.toString();
     }
 
+    /** 返回全部片段累计字节数。 */
     public int size() {
         return size;
     }
 
+    /** 合并所有片段为单个 composite {@link ByteBuf}。 */
     public ByteBuf toByteBuf() {
         return Unpooled.compositeBuffer().addComponents(value).writerIndex(size()).readerIndex(0);
     }
 
     @Override
     public String getName() {
-        return "InternalAttribute";
+        return "InternalAttribute"; // 固定名称，非真实表单字段
     }
 
     @Override
     protected void deallocate() {
-        // Do nothing
+        // 无额外堆外资源需释放
     }
 
     @Override

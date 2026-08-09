@@ -26,15 +26,21 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
- * Disk FileUpload implementation that stores file into real files
+ * 基于磁盘临时文件的 {@link FileUpload} 实现，上传内容写入真实文件。
+ * <p>
+ * 适合大文件上传，避免占用堆内存；文件名经 {@link FileUploadUtil#validateFileNameForMultiPart} 校验。
  */
 public class DiskFileUpload extends AbstractDiskHttpData implements FileUpload {
+    /** 全局默认临时文件基目录。 */
     public static String baseDirectory;
 
+    /** 是否在 JVM 退出时删除临时文件。 */
     public static boolean deleteOnExitTemporaryFile = true;
 
+    /** 临时文件前缀。 */
     public static final String prefix = "FUp_";
 
+    /** 临时文件后缀。 */
     public static final String postfix = ".tmp";
 
     private final String baseDir;
@@ -127,7 +133,7 @@ public class DiskFileUpload extends AbstractDiskHttpData implements FileUpload {
         try {
             file = getFile();
         } catch (IOException e) {
-            // Should not occur.
+            // 不应发生
         }
 
         return HttpHeaderNames.CONTENT_DISPOSITION + ": " +
@@ -153,7 +159,7 @@ public class DiskFileUpload extends AbstractDiskHttpData implements FileUpload {
 
     @Override
     protected String getDiskFilename() {
-        return "upload";
+        return "upload"; // 磁盘文件名固定为 upload
     }
 
     @Override

@@ -20,129 +20,60 @@ import io.netty.handler.codec.http.HttpContent;
 import java.util.List;
 
 /**
- * This decoder will decode Body and can handle POST BODY.
- *
- * You <strong>MUST</strong> call {@link #destroy()} after completion to release all resources.
+ * POST 请求体解码器接口，支持 {@code application/x-www-form-urlencoded} 与 multipart。
+ * <p>
+ * 完成后<strong>必须</strong>调用 {@link #destroy()} 释放临时文件与缓冲。
  */
 public interface InterfaceHttpPostRequestDecoder {
-    /**
-     * True if this request is a Multipart request
-     *
-     * @return True if this request is a Multipart request
-     */
+    /** 是否为 {@code multipart/form-data} 请求。 */
+
     boolean isMultipart();
 
-    /**
-     * Set the amount of bytes after which read bytes in the buffer should be discarded.
-     * Setting this lower gives lower memory usage but with the overhead of more memory copies.
-     * Use {@code 0} to disable it.
-     */
+    /** 设置已读字节丢弃阈值；越小内存占用越低但拷贝越多，{@code 0} 禁用。 */
+
     void setDiscardThreshold(int discardThreshold);
 
-    /**
-     * Return the threshold in bytes after which read data in the buffer should be discarded.
-     */
+    /** 返回缓冲丢弃阈值（字节）。 */
+
     int getDiscardThreshold();
 
-    /**
-     * This getMethod returns a List of all HttpDatas from body.<br>
-     *
-     * If chunked, all chunks must have been offered using offer() getMethod. If
-     * not, NotEnoughDataDecoderException will be raised.
-     *
-     * @return the list of HttpDatas from Body part for POST getMethod
-     * @throws HttpPostRequestDecoder.NotEnoughDataDecoderException
-     *             Need more chunks
-     */
+    /** 返回正文全部 {@link InterfaceHttpData}；分块传输须先 {@link #offer} 完所有块。 */
+
     List<InterfaceHttpData> getBodyHttpDatas();
 
-    /**
-     * This getMethod returns a List of all HttpDatas with the given name from
-     * body.<br>
-     *
-     * If chunked, all chunks must have been offered using offer() getMethod. If
-     * not, NotEnoughDataDecoderException will be raised.
-     *
-     * @return All Body HttpDatas with the given name (ignore case)
-     * @throws HttpPostRequestDecoder.NotEnoughDataDecoderException
-     *             need more chunks
-     */
+    /** 按名称（忽略大小写）返回全部匹配的数据项。 */
+
     List<InterfaceHttpData> getBodyHttpDatas(String name);
 
-    /**
-     * This getMethod returns the first InterfaceHttpData with the given name from
-     * body.<br>
-     *
-     * If chunked, all chunks must have been offered using offer() getMethod. If
-     * not, NotEnoughDataDecoderException will be raised.
-     *
-     * @return The first Body InterfaceHttpData with the given name (ignore
-     *         case)
-     * @throws HttpPostRequestDecoder.NotEnoughDataDecoderException
-     *             need more chunks
-     */
+    /** 返回首个匹配名称的数据项（忽略大小写）。 */
+
     InterfaceHttpData getBodyHttpData(String name);
 
-    /**
-     * Initialized the internals from a new chunk
-     *
-     * @param content
-     *            the new received chunk
-     * @throws HttpPostRequestDecoder.ErrorDataDecoderException
-     *             if there is a problem with the charset decoding or other
-     *             errors
-     */
+    /** 喂入新的 {@link HttpContent} 分块并推进解码状态机。 */
+
     InterfaceHttpPostRequestDecoder offer(HttpContent content);
 
-    /**
-     * True if at current getStatus, there is an available decoded
-     * InterfaceHttpData from the Body.
-     *
-     * This getMethod works for chunked and not chunked request.
-     *
-     * @return True if at current getStatus, there is a decoded InterfaceHttpData
-     * @throws HttpPostRequestDecoder.EndOfDataDecoderException
-     *             No more data will be available
-     */
+    /** 是否还有已完整解码、可供 {@link #next()} 消费的数据项。 */
+
     boolean hasNext();
 
-    /**
-     * Returns the next available InterfaceHttpData or null if, at the time it
-     * is called, there is no more available InterfaceHttpData. A subsequent
-     * call to offer(httpChunk) could enable more data.
-     *
-     * Be sure to call {@link InterfaceHttpData#release()} after you are done
-     * with processing to make sure to not leak any resources
-     *
-     * @return the next available InterfaceHttpData or null if none
-     * @throws HttpPostRequestDecoder.EndOfDataDecoderException
-     *             No more data will be available
-     */
+    /** 返回下一个完整数据项；用毕须 {@link InterfaceHttpData#release()}。 */
+
     InterfaceHttpData next();
 
-    /**
-     * Returns the current InterfaceHttpData if currently in decoding status,
-     * meaning all data are not yet within, or null if there is no InterfaceHttpData
-     * currently in decoding status (either because none yet decoded or none currently partially
-     * decoded). Full decoded ones are accessible through hasNext() and next() methods.
-     *
-     * @return the current InterfaceHttpData if currently in decoding status or null if none.
-     */
+    /** 返回当前正在部分解码的数据项；完整项通过 {@link #hasNext()}/{@link #next()} 获取。 */
+
     InterfaceHttpData currentPartialHttpData();
 
-    /**
-     * Destroy the {@link InterfaceHttpPostRequestDecoder} and release all it resources. After this method
-     * was called it is not possible to operate on it anymore.
-     */
+    /** 销毁解码器并释放全部资源，之后不可再使用。 */
+
     void destroy();
 
-    /**
-     * Clean all HttpDatas (on Disk) for the current request.
-     */
+    /** 清理当前请求关联的磁盘临时 {@link InterfaceHttpData}。 */
+
     void cleanFiles();
 
-    /**
-     * Remove the given FileUpload from the list of FileUploads to clean
-     */
+    /** 从待清理列表移除指定 {@link InterfaceHttpData}（如已持久化到业务路径）。 */
+
     void removeHttpDataFromClean(InterfaceHttpData data);
 }
