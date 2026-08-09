@@ -16,17 +16,15 @@
 package com.alibaba.csp.sentinel.cluster.server.config;
 
 /**
- * 集群令牌服务端传输配置变更观察者。
- *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface ServerTransportConfigObserver {
 
     /**
-     * 服务端传输配置（如端口）变更时的回调。
+     * Callback on server transport config (e.g. port) change.
      *
-     * @param config 新的服务端传输配置
+     * @param config new server transport config
      */
     void onTransportConfigChange(ServerTransportConfig config);
 }

@@ -18,14 +18,11 @@ package com.alibaba.csp.sentinel.cluster.server.config;
 import com.alibaba.csp.sentinel.cluster.ClusterConstants;
 
 /**
- * 集群令牌服务端传输配置，定义 Netty 监听端口与连接空闲超时。
- *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ServerTransportConfig {
 
-    /** 默认连接空闲超时（秒）。 */
     public static final int DEFAULT_IDLE_SECONDS = 600;
 
     private int port;

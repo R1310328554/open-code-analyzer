@@ -32,9 +32,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 /**
- * 获取集群令牌服务端运行信息的命令处理器。
- * <p>聚合连接分组、传输/流控配置、命名空间集合、各命名空间 QPS 限额及 embedded 模式等，供控制台或客户端查询。
- *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -73,7 +70,7 @@ public class FetchClusterServerInfoCommandHandler implements CommandHandler<Stri
             .fluentPut("namespaceSet", namespaceSet)
             .fluentPut("embedded", ClusterServerConfigManager.isEmbedded());
 
-        // 自 1.5.0 起携带 appName，便于调用方识别令牌服务端所属应用。
+        // Since 1.5.0 the appName is carried so that the caller can identify the appName of the token server.
         info.put("appName", AppNameUtil.getAppName());
 
         return CommandResponse.ofSuccess(info.toJSONString());

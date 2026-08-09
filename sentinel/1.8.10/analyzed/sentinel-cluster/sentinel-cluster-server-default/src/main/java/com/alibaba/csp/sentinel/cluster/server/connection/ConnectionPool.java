@@ -30,7 +30,7 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import io.netty.channel.Channel;
 
 /**
- * 通用连接池，基于 {@code ip:port} 键管理 {@link Connection} 并扫描空闲连接。
+ * Universal connection pool for connection management.
  *
  * @author xuyue
  * @author Eric Zhao
@@ -42,12 +42,12 @@ public class ConnectionPool {
     private static final ScheduledExecutorService TIMER = Executors.newScheduledThreadPool(2);
 
     /**
-     * 连接映射，格式：{@code ip:port} → connection。
+     * Format: ("ip:port", connection)
      */
     private final Map<String, Connection> CONNECTION_MAP = new ConcurrentHashMap<String, Connection>();
 
     /**
-     * 周期性扫描空闲连接的任务句柄。
+     * Periodic scan task.
      */
     private ScheduledFuture scanTaskFuture = null;
 
@@ -61,7 +61,7 @@ public class ConnectionPool {
     }
 
     /**
-     * 启动长空闲连接的扫描任务。
+     * Start the scan task for long-idle connections.
      */
     private synchronized void startScan() {
         if (scanTaskFuture == null
@@ -73,10 +73,10 @@ public class ConnectionPool {
     }
 
     /**
-     * 将 Netty Channel 格式化为 {@code ip:port} 连接键。
+     * Format to "ip:port".
      *
-     * @param channel Netty 通道
-     * @return 格式化后的连接键
+     * @param channel channel
+     * @return formatted key
      */
     private String getConnectionKey(Channel channel) {
         InetSocketAddress socketAddress = (InetSocketAddress)channel.remoteAddress();

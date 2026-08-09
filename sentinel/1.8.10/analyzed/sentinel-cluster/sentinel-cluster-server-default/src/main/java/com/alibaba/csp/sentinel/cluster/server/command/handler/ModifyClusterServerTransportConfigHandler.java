@@ -24,10 +24,6 @@ import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * 修改集群令牌服务端传输配置的命令处理器。
- * <p>从请求参数读取 port 与 idleSeconds，构造 {@link com.alibaba.csp.sentinel.cluster.server.config.ServerTransportConfig}
- * 并加载为全局传输配置。
- *
  * @author Eric Zhao
  * @since 1.4.0
  */

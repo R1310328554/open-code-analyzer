@@ -21,8 +21,6 @@ import java.net.SocketAddress;
 import io.netty.channel.Channel;
 
 /**
- * 基于 Netty {@link Channel} 的 {@link Connection} 实现。
- *
  * @author xuyue
  * @since 1.4.0
  */
@@ -78,9 +76,9 @@ public class NettyConnection implements Connection {
 
     @Override
     public void close() {
-        // 从连接池移除。
+        // Remove from connection pool.
         pool.remove(channel);
-        // 关闭底层连接。
+        // Close the connection.
         if (channel != null && channel.isActive()){
             channel.close();
         }

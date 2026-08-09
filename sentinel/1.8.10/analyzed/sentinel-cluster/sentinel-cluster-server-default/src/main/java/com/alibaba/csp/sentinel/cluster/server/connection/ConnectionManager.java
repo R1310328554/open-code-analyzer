@@ -22,7 +22,7 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * 命名空间维度的 {@link ConnectionGroup} 管理器，维护连接注册与下线。
+ * Manager for namespace-scope {@link ConnectionGroup}.
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -30,19 +30,19 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 public final class ConnectionManager {
 
     /**
-     * 连接映射（命名空间 → 连接分组）。
+     * Connection map (namespace, connection).
      */
     private static final Map<String, ConnectionGroup> CONN_MAP = new ConcurrentHashMap<>();
     /**
-     * 地址到命名空间的反向映射（address → namespace）。
+     * namespace map (address, namespace).
      */
     private static final Map<String, String> NAMESPACE_MAP = new ConcurrentHashMap<>();
 
     /**
-     * 获取指定命名空间的当前连接数。
+     * Get connected count for specific namespace.
      *
-     * @param namespace 待查询的命名空间
-     * @return 该命名空间的连接数
+     * @param namespace namespace to check
+     * @return connected count for specific namespace
      */
     public static int getConnectedCount(String namespace) {
         AssertUtil.notEmpty(namespace, "namespace should not be empty");

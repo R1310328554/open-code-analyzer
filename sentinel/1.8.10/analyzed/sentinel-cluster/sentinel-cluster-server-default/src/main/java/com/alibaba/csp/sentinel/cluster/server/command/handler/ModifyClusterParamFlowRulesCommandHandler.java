@@ -29,10 +29,6 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.fastjson.JSONArray;
 
 /**
- * 修改指定命名空间集群热点参数流控规则的命令处理器。
- * <p>接收 URL 解码后的 JSON 数组，解析为 {@link com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule}
- * 并委托 {@link com.alibaba.csp.sentinel.cluster.flow.rule.ClusterParamFlowRuleManager} 加载。
- *
  * @author Eric Zhao
  * @since 1.4.0
  */

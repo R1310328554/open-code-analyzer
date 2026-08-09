@@ -18,31 +18,21 @@ package com.alibaba.csp.sentinel.cluster.server.connection;
 import java.net.SocketAddress;
 
 /**
- * 集群令牌服务端连接抽象，封装本地/远端地址与最近读时间等信息。
- *
  * @author xuyue
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface Connection extends AutoCloseable {
 
-    /** 返回连接的本地地址。 */
     SocketAddress getLocalAddress();
 
-    /** 返回远端端口。 */
     int getRemotePort();
 
-    /** 返回远端 IP 地址。 */
     String getRemoteIP();
 
-    /** 刷新最近读时间戳。
-     *
-     * @param lastReadTime 最近读时间（毫秒）
-     */
+    void refreshLastReadTime(long lastReadTime);
 
-    /** 返回最近读时间戳（毫秒）。 */
     long getLastReadTime();
 
-    /** 返回连接唯一键，通常为 {@code ip:port} 格式。 */
     String getConnectionKey();
 }

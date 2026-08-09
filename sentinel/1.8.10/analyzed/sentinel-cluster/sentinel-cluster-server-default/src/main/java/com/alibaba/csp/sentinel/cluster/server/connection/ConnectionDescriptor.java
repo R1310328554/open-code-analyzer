@@ -18,8 +18,6 @@ package com.alibaba.csp.sentinel.cluster.server.connection;
 import java.util.Objects;
 
 /**
- * 连接描述符，以 address（{@code ip:port}）为主键标识一条客户端连接。
- *
  * @author Eric Zhao
  * @since 1.4.0
  */

@@ -30,10 +30,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
 /**
- * 修改集群令牌服务端命名空间集合的命令处理器。
- * <p>接收 URL 解码后的 JSON 字符串集合，委托
- * {@link com.alibaba.csp.sentinel.cluster.server.config.ClusterServerConfigManager#loadServerNamespaceSet} 生效。
- *
  * @author Eric Zhao
  * @since 1.4.0
  */
