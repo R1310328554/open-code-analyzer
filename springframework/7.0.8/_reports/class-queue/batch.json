@@ -1,6 +1,13 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 64,
+  "claimed_at": "2026-08-09T18:30:40Z",
+  "files": [
+    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlFeatureNotImplementedException.java",
+    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlHandler.java",
+    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlValue.java",
+    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlBinaryStreamProvider.java",
+    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlCharacterStreamProvider.java",
+    "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlResultProvider.java"
+  ],
+  "remaining_pending": 58,
   "done": 1427
 }

@@ -56,9 +56,3 @@ spring-jdbc/src/main/java/org/springframework/jdbc/support/SQLErrorCodeSQLExcept
 spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/DefaultLobHandler.java
 spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/ResultSetWrappingSqlRowSet.java
 spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/SqlRowSet.java
-spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlFeatureNotImplementedException.java
-spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlHandler.java
-spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/SqlXmlValue.java
-spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlBinaryStreamProvider.java
-spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlCharacterStreamProvider.java
-spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/XmlResultProvider.java
