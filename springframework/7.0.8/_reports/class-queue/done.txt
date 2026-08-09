@@ -4,3 +4,4 @@ spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractBea
 spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractAutowireCapableBeanFactory.java
 spring-beans/src/main/java/org/springframework/beans/factory/support/ConstructorResolver.java
 spring-beans/src/main/java/org/springframework/beans/factory/annotation/AutowiredAnnotationBeanPostProcessor.java
+spring-beans/src/main/java/org/springframework/beans/AbstractNestablePropertyAccessor.java

@@ -1,4 +1,3 @@
-spring-beans/src/main/java/org/springframework/beans/AbstractNestablePropertyAccessor.java
 spring-beans/src/main/java/org/springframework/beans/AbstractPropertyAccessor.java
 spring-beans/src/main/java/org/springframework/beans/BeanInfoFactory.java
 spring-beans/src/main/java/org/springframework/beans/BeanInstantiationException.java
