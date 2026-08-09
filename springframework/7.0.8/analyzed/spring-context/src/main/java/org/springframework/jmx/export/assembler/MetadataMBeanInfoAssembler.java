@@ -43,13 +43,10 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Implementation of the {@link MBeanInfoAssembler} interface that reads
- * the management interface information from source level metadata.
+ * {@link MBeanInfoAssembler} 接口的实现，从源码级元数据读取管理接口信息。
  *
- * <p>Uses the {@link JmxAttributeSource} strategy interface, so that
- * metadata can be read using any supported implementation. Out of the box,
- * Spring provides an implementation based on annotations:
- * {@code AnnotationJmxAttributeSource}.
+ * <p>通过 {@link JmxAttributeSource} 策略接口读取元数据，支持多种实现。
+ * Spring 内置基于注解的实现：{@code AnnotationJmxAttributeSource}。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -61,20 +58,19 @@ import org.springframework.util.StringUtils;
 public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssembler
 		implements AutodetectCapableMBeanInfoAssembler, InitializingBean {
 
+	/** 读取 JMX 元数据的策略源。 */
 	private @Nullable JmxAttributeSource attributeSource;
 
 
 	/**
-	 * Create a new {@code MetadataMBeanInfoAssembler} which needs to be
-	 * configured through the {@link #setAttributeSource} method.
+	 * 创建 MetadataMBeanInfoAssembler，须通过 {@link #setAttributeSource} 配置。
 	 */
 	public MetadataMBeanInfoAssembler() {
 	}
 
 	/**
-	 * Create a new {@code MetadataMBeanInfoAssembler} for the given
-	 * {@code JmxAttributeSource}.
-	 * @param attributeSource the JmxAttributeSource to use
+	 * 使用给定 JmxAttributeSource 创建 MetadataMBeanInfoAssembler。
+	 * @param attributeSource 要使用的 JmxAttributeSource
 	 */
 	public MetadataMBeanInfoAssembler(JmxAttributeSource attributeSource) {
 		Assert.notNull(attributeSource, "JmxAttributeSource must not be null");
@@ -83,8 +79,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 
 
 	/**
-	 * Set the {@code JmxAttributeSource} implementation to use for
-	 * reading the metadata from the bean class.
+	 * 设置用于从 Bean 类读取元数据的 JmxAttributeSource 实现。
 	 * @see org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource
 	 */
 	public void setAttributeSource(JmxAttributeSource attributeSource) {
@@ -106,8 +101,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 
 
 	/**
-	 * Throws an IllegalArgumentException if it encounters a JDK dynamic proxy.
-	 * Metadata can only be read from target classes and CGLIB proxies!
+	 * 若遇到 JDK 动态代理则抛出 IllegalArgumentException。元数据只能从目标类与 CGLIB 代理读取。
 	 */
 	@Override
 	protected void checkManagedBean(Object managedBean) throws IllegalArgumentException {
@@ -119,10 +113,9 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Used for auto-detection of beans. Checks to see if the bean's class has a
-	 * {@code ManagedResource} attribute. If so, it will add it to the list of included beans.
-	 * @param beanClass the class of the bean
-	 * @param beanName the name of the bean in the bean factory
+	 * 用于 Bean 自动检测：检查 Bean 类是否带有 ManagedResource 属性。若有，则将其纳入注册列表。
+	 * @param beanClass Bean 的类
+	 * @param beanName Bean 在 BeanFactory 中的名称
 	 */
 	@Override
 	public boolean includeBean(Class<?> beanClass, String beanName) {
@@ -130,10 +123,10 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Vote on the inclusion of an attribute accessor.
-	 * @param method the accessor method
-	 * @param beanKey the key associated with the MBean in the beans map
-	 * @return whether the method has the appropriate metadata
+	 * 对属性访问器进行纳入投票。
+	 * @param method 访问器方法
+	 * @param beanKey beans 映射中与该 MBean 关联的键
+	 * @return 方法是否带有相应元数据
 	 */
 	@Override
 	protected boolean includeReadAttribute(Method method, String beanKey) {
@@ -141,10 +134,10 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Votes on the inclusion of an attribute mutator.
-	 * @param method the mutator method
-	 * @param beanKey the key associated with the MBean in the beans map
-	 * @return whether the method has the appropriate metadata
+	 * 对属性修改器进行纳入投票。
+	 * @param method 修改器方法
+	 * @param beanKey beans 映射中与该 MBean 关联的键
+	 * @return 方法是否带有相应元数据
 	 */
 	@Override
 	protected boolean includeWriteAttribute(Method method, String beanKey) {
@@ -152,10 +145,10 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Votes on the inclusion of an operation.
-	 * @param method the operation method
-	 * @param beanKey the key associated with the MBean in the beans map
-	 * @return whether the method has the appropriate metadata
+	 * 对操作进行纳入投票。
+	 * @param method 操作方法
+	 * @param beanKey beans 映射中与该 MBean 关联的键
+	 * @return 方法是否带有相应元数据
 	 */
 	@Override
 	protected boolean includeOperation(Method method, String beanKey) {
@@ -164,22 +157,22 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Checks to see if the given Method has the {@code ManagedAttribute} attribute.
+	 * 检查给定 Method 是否带有 ManagedAttribute 属性。
 	 */
 	private boolean hasManagedAttribute(Method method) {
 		return (obtainAttributeSource().getManagedAttribute(method) != null);
 	}
 
 	/**
-	 * Checks to see if the given Method has the {@code ManagedMetric} attribute.
+	 * 检查给定 Method 是否带有 ManagedMetric 属性。
 	 */
 	private boolean hasManagedMetric(Method method) {
 		return (obtainAttributeSource().getManagedMetric(method) != null);
 	}
 
 	/**
-	 * Checks to see if the given Method has the {@code ManagedOperation} attribute.
-	 * @param method the method to check
+	 * 检查给定 Method 是否带有 ManagedOperation 属性。
+	 * @param method 待检查的方法
 	 */
 	private boolean hasManagedOperation(Method method) {
 		return (obtainAttributeSource().getManagedOperation(method) != null);
@@ -187,8 +180,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 
 
 	/**
-	 * Reads managed resource description from the source level metadata.
-	 * Returns an empty {@code String} if no description can be found.
+	 * 从源码级元数据读取受管资源描述；找不到时返回空 String。
 	 */
 	@Override
 	protected String getDescription(Object managedBean, String beanKey) {
@@ -197,9 +189,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Creates a description for the attribute corresponding to this property
-	 * descriptor. Attempts to create the description using metadata from either
-	 * the getter or setter attributes, otherwise uses the property name.
+	 * 为与属性描述符对应的属性创建描述。优先使用 getter 或 setter 元数据中的描述，否则使用属性名。
 	 */
 	@Override
 	protected String getAttributeDescription(PropertyDescriptor propertyDescriptor, String beanKey) {
@@ -227,8 +217,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Retrieves the description for the supplied {@code Method} from the
-	 * metadata. Uses the method name is no description is present in the metadata.
+	 * 从元数据获取给定 Method 的描述；元数据中无描述时使用方法名。
 	 */
 	@Override
 	protected String getOperationDescription(Method method, String beanKey) {
@@ -254,9 +243,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Reads {@code MBeanParameterInfo} from the {@code ManagedOperationParameter}
-	 * attributes attached to a method. Returns an empty array of {@code MBeanParameterInfo}
-	 * if no attributes are found.
+	 * 从方法上附带的 ManagedOperationParameter 属性读取 MBeanParameterInfo。未找到属性时返回空数组。
 	 */
 	@Override
 	protected MBeanParameterInfo[] getOperationParameters(Method method, String beanKey) {
@@ -276,8 +263,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Reads the {@link ManagedNotification} metadata from the {@code Class} of the managed resource
-	 * and generates and returns the corresponding {@link ModelMBeanNotificationInfo} metadata.
+	 * 从受管资源 Class 的 ManagedNotification 元数据生成对应的 ModelMBeanNotificationInfo 元数据。
 	 */
 	@Override
 	protected ModelMBeanNotificationInfo[] getNotificationInfo(Object managedBean, String beanKey) {
@@ -295,10 +281,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Adds descriptor fields from the {@code ManagedResource} attribute
-	 * to the MBean descriptor. Specifically, adds the {@code currencyTimeLimit},
-	 * {@code persistPolicy}, {@code persistPeriod}, {@code persistLocation}
-	 * and {@code persistName} descriptor fields if they are present in the metadata.
+	 * 将 ManagedResource 属性中的描述符字段添加到 MBean 描述符，包括 currencyTimeLimit、persistPolicy、persistPeriod、persistLocation 与 persistName（若元数据中存在）。
 	 */
 	@Override
 	protected void populateMBeanDescriptor(Descriptor desc, Object managedBean, String beanKey) {
@@ -332,8 +315,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Adds descriptor fields from the {@code ManagedAttribute} attribute or the {@code ManagedMetric} attribute
-	 * to the attribute descriptor.
+	 * 将 ManagedAttribute 或 ManagedMetric 属性中的描述符字段添加到属性描述符。
 	 */
 	@Override
 	protected void populateAttributeDescriptor(
@@ -396,9 +378,7 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Adds descriptor fields from the {@code ManagedAttribute} attribute
-	 * to the attribute descriptor. Specifically, adds the {@code currencyTimeLimit}
-	 * descriptor field if it is present in the metadata.
+	 * 将 ManagedAttribute 属性中的描述符字段添加到操作描述符，主要是 currencyTimeLimit（若元数据中存在）。
 	 */
 	@Override
 	protected void populateOperationDescriptor(Descriptor desc, Method method, String beanKey) {
@@ -409,39 +389,29 @@ public class MetadataMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssem
 	}
 
 	/**
-	 * Determines which of two {@code int} values should be used as the value
-	 * for an attribute descriptor. In general, only the getter or the setter will
-	 * have a non-negative value, so we use that value. In the event that both values
-	 * are non-negative, we use the greater of the two. This method can be used to
-	 * resolve any {@code int} valued descriptor where there are two possible values.
-	 * @param getter the int value associated with the getter for this attribute
-	 * @param setter the int associated with the setter for this attribute
+	 * 在 getter 与 setter 两个 int 值中选取属性描述符应使用的值。通常仅一方为非负值；若两者皆非负，取较大者。
+	 * @param getter getter 关联的 int 值
+	 * @param setter setter 关联的 int 值
 	 */
 	private int resolveIntDescriptor(int getter, int setter) {
 		return Math.max(getter, setter);
 	}
 
 	/**
-	 * Locates the value of a descriptor based on values attached
-	 * to both the getter and setter methods. If both have values
-	 * supplied then the value attached to the getter is preferred.
-	 * @param getter the Object value associated with the get method
-	 * @param setter the Object value associated with the set method
-	 * @return the appropriate Object to use as the value for the descriptor
+	 * 根据 getter 与 setter 附带的值确定描述符值；两者皆有值时优先 getter。
+	 * @param getter getter 关联的 Object 值
+	 * @param setter setter 关联的 Object 值
+	 * @return 描述符应使用的 Object 值
 	 */
 	private @Nullable Object resolveObjectDescriptor(@Nullable Object getter, @Nullable Object setter) {
 		return (getter != null ? getter : setter);
 	}
 
 	/**
-	 * Locates the value of a descriptor based on values attached
-	 * to both the getter and setter methods. If both have values
-	 * supplied then the value attached to the getter is preferred.
-	 * The supplied default value is used to check to see if the value
-	 * associated with the getter has changed from the default.
-	 * @param getter the String value associated with the get method
-	 * @param setter the String value associated with the set method
-	 * @return the appropriate String to use as the value for the descriptor
+	 * 根据 getter 与 setter 附带的值确定描述符值；两者皆有值时优先 getter。
+	 * @param getter getter 关联的 String 值
+	 * @param setter setter 关联的 String 值
+	 * @return 描述符应使用的 String 值
 	 */
 	private @Nullable String resolveStringDescriptor(@Nullable String getter, @Nullable String setter) {
 		return (StringUtils.hasLength(getter) ? getter : setter);

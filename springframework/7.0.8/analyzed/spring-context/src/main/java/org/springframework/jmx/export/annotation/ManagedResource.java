@@ -26,13 +26,11 @@ import java.lang.annotation.Target;
 import org.springframework.core.annotation.AliasFor;
 
 /**
- * Class-level annotation that indicates to register instances of a class with a JMX server,
- * corresponding to the {@link org.springframework.jmx.export.metadata.ManagedResource} attribute.
+ * 类级别注解，指示将某类的实例注册到 JMX 服务器，
+ * 对应 {@link org.springframework.jmx.export.metadata.ManagedResource} 元数据属性。
  *
- * <p><b>Note:</b> This annotation is marked as inherited, allowing for generic
- * management-aware base classes. In such a scenario, it is recommended to
- * <i>not</i> specify an object name value since this would lead to naming
- * collisions in case of multiple subclasses getting registered.
+ * <p><b>注意：</b>该注解标记为 {@code @Inherited}，便于编写可管理的通用基类。
+ * 在此场景下，建议<i>不要</i>指定 objectName 值，否则多个子类同时注册时可能发生命名冲突。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -47,7 +45,7 @@ import org.springframework.core.annotation.AliasFor;
 public @interface ManagedResource {
 
 	/**
-	 * Alias for the {@link #objectName} attribute, for simple default usage.
+	 * {@link #objectName} 属性的别名，便于简写默认用法。
 	 */
 	@AliasFor("objectName")
 	String value() default "";
@@ -55,20 +53,28 @@ public @interface ManagedResource {
 	@AliasFor("value")
 	String objectName() default "";
 
+	/** MBean 描述信息。 */
 	String description() default "";
 
+	/** 缓存/刷新时间限制（秒），{@code -1} 表示未指定。 */
 	int currencyTimeLimit() default -1;
 
+	/** 是否记录 MBean 调用日志。 */
 	boolean log() default false;
 
+	/** 日志文件路径。 */
 	String logFile() default "";
 
+	/** 持久化策略。 */
 	String persistPolicy() default "";
 
+	/** 持久化周期。 */
 	int persistPeriod() default -1;
 
+	/** 持久化名称。 */
 	String persistName() default "";
 
+	/** 持久化位置。 */
 	String persistLocation() default "";
 
 }

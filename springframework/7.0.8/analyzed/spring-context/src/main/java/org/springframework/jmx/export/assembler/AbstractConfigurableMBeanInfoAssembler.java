@@ -31,8 +31,7 @@ import org.springframework.jmx.export.metadata.ManagedNotification;
 import org.springframework.util.StringUtils;
 
 /**
- * Base class for MBeanInfoAssemblers that support configurable
- * JMX notification behavior.
+ * 支持可配置 JMX 通知行为的 {@code MBeanInfoAssembler} 基类。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
