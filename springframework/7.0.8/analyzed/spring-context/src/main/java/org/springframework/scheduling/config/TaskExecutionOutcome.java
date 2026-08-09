@@ -23,14 +23,13 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Outcome of a {@link Task} execution.
+ * {@link Task} 执行的结果。
  *
  * @author Brian Clozel
  * @since 6.2
- * @param executionTime the instant when the task execution started, or
- * {@code null} if the task has not started
- * @param status the {@link Status} of the execution outcome
- * @param throwable the exception thrown from the task execution, if any
+ * @param executionTime 任务开始执行的瞬间，未开始则为 {@code null}
+ * @param status 执行结果的 {@link Status}
+ * @param throwable 任务执行抛出的异常（若有）
  */
 public record TaskExecutionOutcome(@Nullable Instant executionTime, Status status, @Nullable Throwable throwable) {
 
@@ -54,27 +53,27 @@ public record TaskExecutionOutcome(@Nullable Instant executionTime, Status statu
 
 
 	/**
-	 * Status of the task execution outcome.
+	 * 任务执行结果的状态。
 	 */
 	public enum Status {
 
 		/**
-		 * The task has not been executed so far.
+		 * 任务尚未执行。
 		 */
 		NONE,
 
 		/**
-		 * The task execution has been started and is ongoing.
+		 * 任务执行已开始且进行中。
 		 */
 		STARTED,
 
 		/**
-		 * The task execution finished successfully.
+		 * 任务执行已成功完成。
 		 */
 		SUCCESS,
 
 		/**
-		 * The task execution finished with an error.
+		 * 任务执行以错误结束。
 		 */
 		ERROR
 

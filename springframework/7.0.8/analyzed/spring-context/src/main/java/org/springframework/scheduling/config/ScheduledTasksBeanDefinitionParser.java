@@ -28,15 +28,8 @@ import org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class ScheduledTasksBeanDefinitionParser — 意图说明
-
-Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spring-context/src/main/java/org/springframework/scheduling/config/ScheduledTasksBeanDefinitionParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Parser for the 'scheduled-tasks' element of the scheduling namespace.
+ * 调度命名空间中 'scheduled-tasks' 元素的解析器。
  *
  * @author Mark Fisher
  * @author Chris Beams
@@ -44,10 +37,8 @@ Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spri
  */
 public class ScheduledTasksBeanDefinitionParser extends AbstractSingleBeanDefinitionParser {
 
-	// [OCA] 字段 `ELEMENT_SCHEDULED`：类成员状态。
 	private static final String ELEMENT_SCHEDULED = "scheduled";
 
-	// [OCA] 字段 `ZERO_INITIAL_DELAY`：类成员状态。
 	private static final long ZERO_INITIAL_DELAY = 0;
 
 
@@ -62,11 +53,6 @@ public class ScheduledTasksBeanDefinitionParser extends AbstractSingleBeanDefini
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 doParse — 意图与阅读要点
-
-方法 `doParse` 复杂度较高（CCN≈17, NLOC≈68）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
 		builder.setLazyInit(false); // lazy scheduled tasks are a contradiction in terms -> force to false
 		ManagedList<RuntimeBeanReference> cronTaskList = new ManagedList<>();

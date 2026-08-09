@@ -26,18 +26,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Representation of a
- * <a href="https://www.manpagez.com/man/5/crontab/">crontab expression</a>
- * that can calculate the next time it matches.
+ * 可计算下次匹配时间的
+ * <a href="https://www.manpagez.com/man/5/crontab/">crontab 表达式</a>表示。
  *
- * <p>{@code CronExpression} instances are created through {@link #parse(String)};
- * the next match is determined with {@link #next(Temporal)}.
+ * <p>{@code CronExpression} 实例通过 {@link #parse(String)} 创建；
+ * 下次匹配时间由 {@link #next(Temporal)} 确定。
  *
- * <p>Supports a Quartz day-of-month/week field with an L/# expression. Follows
- * common cron conventions in every other respect, including 0-6 for SUN-SAT
- * (plus 7 for SUN as well). Note that Quartz deviates from the day-of-week
- * convention in cron through 1-7 for SUN-SAT whereas Spring strictly follows
- * cron even in combination with the optional Quartz-specific L/# expressions.
+ * <p>支持带 L/# 表达式的 Quartz 日/周字段。其余方面遵循常见 cron 约定，
+ * 包括 SUN-SAT 使用 0-6（SUN 也可用 7）。
+ * 注意 Quartz 在 cron 中对星期几使用 1-7 表示 SUN-SAT，
+ * 而 Spring 即使结合可选 Quartz 专有 L/# 表达式也严格遵循 cron 约定。
  *
  * @author Arjen Poutsma
  * @since 5.3
@@ -74,10 +72,10 @@ public final class CronExpression {
 
 
 	/**
-	 * Parse the given
-	 * <a href="https://www.manpagez.com/man/5/crontab/">crontab expression</a>
-	 * string into a {@code CronExpression}.
-	 * The string has six single space-separated time and date fields:
+	 * 将给定
+	 * <a href="https://www.manpagez.com/man/5/crontab/">crontab 表达式</a>
+	 * 字符串解析为 {@code CronExpression}。
+	 * 字符串包含六个以单个空格分隔的日期时间字段：
 	 * <pre>
 	 * &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472; second (0-59)
 	 * &#9474; &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472; minute (0 - 59)
@@ -90,88 +88,79 @@ public final class CronExpression {
 	 * &#42; &#42; &#42; &#42; &#42; &#42;
 	 * </pre>
 	 *
-	 * <p>The following rules apply:
+	 * <p>适用以下规则：
 	 * <ul>
 	 * <li>
-	 * A field may be an asterisk ({@code *}), which always stands for
-	 * "first-last". For the "day of the month" or "day of the week" fields, a
-	 * question mark ({@code ?}) may be used instead of an asterisk.
+	 * 字段可以是星号 ({@code *})，始终表示“首尾范围”。
+	 * 对于“日”或“星期几”字段，可用问号 ({@code ?}) 代替星号。
 	 * </li>
 	 * <li>
-	 * Ranges of numbers are expressed by two numbers separated with a hyphen
-	 * ({@code -}). The specified range is inclusive.
+	 * 数字范围由连字符 ({@code -}) 分隔的两个数字表示，范围包含两端。
 	 * </li>
-	 * <li>Following a range (or {@code *}) with {@code /n} specifies
-	 * the interval of the number's value through the range.
+	 * <li>在范围（或 {@code *}）后接 {@code /n} 表示该范围内数值的步进间隔。
 	 * </li>
 	 * <li>
-	 * English names can also be used for the "month" and "day of week" fields.
-	 * Use the first three letters of the particular day or month (case does not
-	 * matter).
+	 * “月”和“星期几”字段也可使用英文名称。
+	 * 使用对应日或月的前三个字母（大小写不敏感）。
 	 * </li>
 	 * <li>
-	 * The "day of month" and "day of week" fields can contain a
-	 * {@code L}-character, which stands for "last", and has a different meaning
-	 * in each field:
+	 * “日”和“星期几”字段可包含 {@code L} 字符，表示“最后”，
+	 * 在各字段中含义不同：
 	 * <ul>
 	 * <li>
-	 * In the "day of month" field, {@code L} stands for "the last day of the
-	 * month". If followed by an negative offset (i.e. {@code L-n}), it means
-	 * "{@code n}th-to-last day of the month". If followed by {@code W} (i.e.
-	 * {@code LW}), it means "the last weekday of the month".
+	 * 在“日”字段中，{@code L} 表示“当月最后一天”。
+	 * 若后跟负偏移（即 {@code L-n}），表示“当月倒数第 {@code n} 天”。
+	 * 若后跟 {@code W}（即 {@code LW}），表示“当月最后一个工作日”。
 	 * </li>
 	 * <li>
-	 * In the "day of week" field, {@code dL} or {@code DDDL} stands for
-	 * "the last day of week {@code d} (or {@code DDD}) in the month".
+	 * 在“星期几”字段中，{@code dL} 或 {@code DDDL} 表示
+	 * “当月最后一个星期 {@code d}（或 {@code DDD}）”。
 	 * </li>
 	 * </ul>
 	 * </li>
 	 * <li>
-	 * The "day of month" field can be {@code nW}, which stands for "the nearest
-	 * weekday to day of the month {@code n}".
-	 * If {@code n} falls on Saturday, this yields the Friday before it.
-	 * If {@code n} falls on Sunday, this yields the Monday after,
-	 * which also happens if {@code n} is {@code 1} and falls on a Saturday
-	 * (i.e. {@code 1W} stands for "the first weekday of the month").
+	 * “日”字段可为 {@code nW}，表示“距当月第 {@code n} 日最近的工作日”。
+	 * 若 {@code n} 为周六，则取前一个周五。
+	 * 若 {@code n} 为周日，则取后一个周一；
+	 * 若 {@code n} 为 {@code 1} 且落在周六，同样取后一个周一
+	 * （即 {@code 1W} 表示“当月第一个工作日”）。
 	 * </li>
 	 * <li>
-	 * The "day of week" field can be {@code d#n} (or {@code DDD#n}), which
-	 * stands for "the {@code n}-th day of week {@code d} (or {@code DDD}) in
-	 * the month".
+	 * “星期几”字段可为 {@code d#n}（或 {@code DDD#n}），
+	 * 表示“当月第 {@code n} 个星期 {@code d}（或 {@code DDD}）”。
 	 * </li>
 	 * </ul>
 	 *
-	 * <p>Example expressions:
+	 * <p>示例表达式：
 	 * <ul>
-	 * <li>{@code "0 0 * * * *"} = the top of every hour of every day</li>
-	 * <li><code>"*&#47;10 * * * * *"</code> = every ten seconds</li>
-	 * <li>{@code "0 0 8-10 * * *"} = 8, 9 and 10 o'clock of every day</li>
-	 * <li>{@code "0 0 6,19 * * *"} = 6:00 AM and 7:00 PM every day</li>
-	 * <li>{@code "0 0/30 8-10 * * *"} = 8:00, 8:30, 9:00, 9:30, 10:00 and 10:30 every day</li>
-	 * <li>{@code "0 0 9-17 * * MON-FRI"} = on the hour nine-to-five weekdays</li>
-	 * <li>{@code "0 0 0 25 12 ?"} = every Christmas Day at midnight</li>
-	 * <li>{@code "0 0 0 L * *"} = last day of the month at midnight</li>
-	 * <li>{@code "0 0 0 L-3 * *"} = third-to-last day of the month at midnight</li>
-	 * <li>{@code "0 0 0 1W * *"} = first weekday of the month at midnight</li>
-	 * <li>{@code "0 0 0 LW * *"} = last weekday of the month at midnight</li>
-	 * <li>{@code "0 0 0 * * 5L"} = last Friday of the month at midnight</li>
-	 * <li>{@code "0 0 0 * * THUL"} = last Thursday of the month at midnight</li>
-	 * <li>{@code "0 0 0 ? * 5#2"} = the second Friday in the month at midnight</li>
-	 * <li>{@code "0 0 0 ? * MON#1"} = the first Monday in the month at midnight</li>
+	 * <li>{@code "0 0 * * * *"} = 每天每小时的整点</li>
+	 * <li><code>"*&#47;10 * * * * *"</code> = 每十秒</li>
+	 * <li>{@code "0 0 8-10 * * *"} = 每天 8、9、10 点</li>
+	 * <li>{@code "0 0 6,19 * * *"} = 每天 6:00 和 19:00</li>
+	 * <li>{@code "0 0/30 8-10 * * *"} = 每天 8:00、8:30、9:00、9:30、10:00 和 10:30</li>
+	 * <li>{@code "0 0 9-17 * * MON-FRI"} = 工作日上午 9 点至下午 5 点整点</li>
+	 * <li>{@code "0 0 0 25 12 ?"} = 每年圣诞节午夜</li>
+	 * <li>{@code "0 0 0 L * *"} = 每月最后一天午夜</li>
+	 * <li>{@code "0 0 0 L-3 * *"} = 每月倒数第三天午夜</li>
+	 * <li>{@code "0 0 0 1W * *"} = 每月第一个工作日午夜</li>
+	 * <li>{@code "0 0 0 LW * *"} = 每月最后一个工作日午夜</li>
+	 * <li>{@code "0 0 0 * * 5L"} = 每月最后一个周五午夜</li>
+	 * <li>{@code "0 0 0 * * THUL"} = 每月最后一个周四午夜</li>
+	 * <li>{@code "0 0 0 ? * 5#2"} = 每月第二个周五午夜</li>
+	 * <li>{@code "0 0 0 ? * MON#1"} = 每月第一个周一午夜</li>
 	 * </ul>
 	 *
-	 * <p>The following macros are also supported.
+	 * <p>还支持以下宏。
 	 * <ul>
-	 * <li>{@code "@yearly"} (or {@code "@annually"}) to run un once a year, i.e. {@code "0 0 0 1 1 *"}</li>
-	 * <li>{@code "@monthly"} to run once a month, i.e. {@code "0 0 0 1 * *"}</li>
-	 * <li>{@code "@weekly"} to run once a week, i.e. {@code "0 0 0 * * 0"}</li>
-	 * <li>{@code "@daily"} (or {@code "@midnight"}) to run once a day, i.e. {@code "0 0 0 * * *"}</li>
-	 * <li>{@code "@hourly"} to run once an hour, i.e. {@code "0 0 * * * *"}</li>
+	 * <li>{@code "@yearly"}（或 {@code "@annually"}）每年运行一次，即 {@code "0 0 0 1 1 *"}</li>
+	 * <li>{@code "@monthly"} 每月运行一次，即 {@code "0 0 0 1 * *"}</li>
+	 * <li>{@code "@weekly"} 每周运行一次，即 {@code "0 0 0 * * 0"}</li>
+	 * <li>{@code "@daily"}（或 {@code "@midnight"}）每天运行一次，即 {@code "0 0 0 * * *"}</li>
+	 * <li>{@code "@hourly"} 每小时运行一次，即 {@code "0 0 * * * *"}</li>
 	 * </ul>
-	 * @param expression the expression string to parse
-	 * @return the parsed {@code CronExpression} object
-	 * @throws IllegalArgumentException in the expression does not conform to
-	 * the cron format
+	 * @param expression 待解析的表达式字符串
+	 * @return 解析后的 {@code CronExpression} 对象
+	 * @throws IllegalArgumentException 表达式不符合 cron 格式时
 	 */
 	public static CronExpression parse(String expression) {
 		Assert.hasLength(expression, "Expression must not be empty");
@@ -200,9 +189,9 @@ public final class CronExpression {
 	}
 
 	/**
-	 * Determine whether the given string represents a valid cron expression.
-	 * @param expression the expression to evaluate
-	 * @return {@code true} if the given expression is a valid cron expression
+	 * 判断给定字符串是否为有效的 cron 表达式。
+	 * @param expression 待评估的表达式
+	 * @return 若给定表达式有效则返回 {@code true}
 	 * @since 5.3.8
 	 */
 	public static boolean isValidExpression(@Nullable String expression) {
@@ -231,11 +220,10 @@ public final class CronExpression {
 
 
 	/**
-	 * Calculate the next {@link Temporal} that matches this expression.
-	 * @param temporal the seed value
-	 * @param <T> the type of temporal
-	 * @return the next temporal that matches this expression, or {@code null}
-	 * if no such temporal can be found
+	 * 计算匹配本表达式的下一个 {@link Temporal}。
+	 * @param temporal 种子值
+	 * @param <T> 时间类型
+	 * @return 匹配本表达式的下一个 temporal，找不到则返回 {@code null}
 	 */
 	public <T extends Temporal & Comparable<? super T>> @Nullable T next(T temporal) {
 		return nextOrSame(ChronoUnit.NANOS.addTo(temporal, 1));
@@ -276,7 +264,7 @@ public final class CronExpression {
 	}
 
 	/**
-	 * Return the expression string used to create this {@code CronExpression}.
+	 * 返回用于创建本 {@code CronExpression} 的表达式字符串。
 	 */
 	@Override
 	public String toString() {

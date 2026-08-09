@@ -19,7 +19,7 @@ package org.springframework.scheduling.config;
 import java.time.Duration;
 
 /**
- * {@link Task} implementation defining a {@code Runnable} with an initial delay.
+ * 定义带初始延迟的 {@code Runnable} 的 {@link Task} 实现。
  *
  * @author Juergen Hoeller
  * @since 6.1
@@ -28,9 +28,9 @@ import java.time.Duration;
 public class OneTimeTask extends DelayedTask {
 
 	/**
-	 * Create a new {@code DelayedTask}.
-	 * @param runnable the underlying task to execute
-	 * @param initialDelay the initial delay before execution of the task
+	 * 创建新的 {@code DelayedTask}。
+	 * @param runnable 要执行的底层任务
+	 * @param initialDelay 任务执行前的初始延迟
 	 */
 	public OneTimeTask(Runnable runnable, Duration initialDelay) {
 		super(runnable, initialDelay);

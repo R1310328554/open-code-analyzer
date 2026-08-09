@@ -22,8 +22,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 
 /**
- * Runnable wrapper that catches any exception or error thrown from its
- * delegate Runnable and allows an {@link ErrorHandler} to handle it.
+ * 捕获委托 {@code Runnable} 抛出的任何异常或错误，
+ * 并允许 {@link ErrorHandler} 处理的 Runnable 包装器。
  *
  * @author Juergen Hoeller
  * @author Mark Fisher
@@ -37,9 +37,9 @@ public class DelegatingErrorHandlingRunnable implements Runnable {
 
 
 	/**
-	 * Create a new DelegatingErrorHandlingRunnable.
-	 * @param delegate the Runnable implementation to delegate to
-	 * @param errorHandler the ErrorHandler for handling any exceptions
+	 * 创建新的 DelegatingErrorHandlingRunnable。
+	 * @param delegate 要委托的 Runnable 实现
+	 * @param errorHandler 处理异常的 ErrorHandler
 	 */
 	public DelegatingErrorHandlingRunnable(Runnable delegate, ErrorHandler errorHandler) {
 		Assert.notNull(delegate, "Delegate must not be null");

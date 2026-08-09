@@ -26,8 +26,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Efficient bitwise-operator extension of {@link CronField}.
- * Created using the {@code parse*} methods.
+ * {@link CronField} 的高效位运算扩展。
+ * 通过 {@code parse*} 方法创建。
  *
  * @author Arjen Poutsma
  * @author Juergen Hoeller
@@ -49,7 +49,7 @@ final class BitsCronField extends CronField {
 
 
 	/**
-	 * Return a {@code BitsCronField} enabled for 0 nanoseconds.
+	 * 返回启用 0 纳秒的 {@code BitsCronField}。
 	 */
 	private static BitsCronField forZeroNanos() {
 		BitsCronField field = new BitsCronField(Type.NANO);
@@ -58,42 +58,42 @@ final class BitsCronField extends CronField {
 	}
 
 	/**
-	 * Parse the given value into a seconds {@code BitsCronField}, the first entry of a cron expression.
+	 * 将给定值解析为秒 {@code BitsCronField}，即 cron 表达式的第一项。
 	 */
 	public static BitsCronField parseSeconds(String value) {
 		return parseField(value, Type.SECOND);
 	}
 
 	/**
-	 * Parse the given value into a minutes {@code BitsCronField}, the second entry of a cron expression.
+	 * 将给定值解析为分 {@code BitsCronField}，即 cron 表达式的第二项。
 	 */
 	public static BitsCronField parseMinutes(String value) {
 		return BitsCronField.parseField(value, Type.MINUTE);
 	}
 
 	/**
-	 * Parse the given value into an hours {@code BitsCronField}, the third entry of a cron expression.
+	 * 将给定值解析为时 {@code BitsCronField}，即 cron 表达式的第三项。
 	 */
 	public static BitsCronField parseHours(String value) {
 		return BitsCronField.parseField(value, Type.HOUR);
 	}
 
 	/**
-	 * Parse the given value into a days of months {@code BitsCronField}, the fourth entry of a cron expression.
+	 * 将给定值解析为日 {@code BitsCronField}，即 cron 表达式的第四项。
 	 */
 	public static BitsCronField parseDaysOfMonth(String value) {
 		return parseDate(value, Type.DAY_OF_MONTH);
 	}
 
 	/**
-	 * Parse the given value into a month {@code BitsCronField}, the fifth entry of a cron expression.
+	 * 将给定值解析为月 {@code BitsCronField}，即 cron 表达式的第五项。
 	 */
 	public static BitsCronField parseMonth(String value) {
 		return BitsCronField.parseField(value, Type.MONTH);
 	}
 
 	/**
-	 * Parse the given value into a days of week {@code BitsCronField}, the sixth entry of a cron expression.
+	 * 将给定值解析为星期几 {@code BitsCronField}，即 cron 表达式的第六项。
 	 */
 	public static BitsCronField parseDaysOfWeek(String value) {
 		BitsCronField result = parseDate(value, Type.DAY_OF_WEEK);

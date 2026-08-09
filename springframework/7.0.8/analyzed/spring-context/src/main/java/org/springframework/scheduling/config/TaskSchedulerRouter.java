@@ -48,17 +48,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.StringValueResolver;
 import org.springframework.util.function.SingletonSupplier;
 
-/* ===== [OCA 中文解析] =====
-class TaskSchedulerRouter — 意图说明
-
-class `TaskSchedulerRouter`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/scheduling/config/TaskSchedulerRouter.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * A routing implementation of the {@link TaskScheduler} interface,
- * delegating to a target scheduler based on an identified qualifier
- * or using a default scheduler otherwise.
+ * {@link TaskScheduler} 接口的路由实现，
+ * 根据识别的限定符委托给目标调度器，否则使用默认调度器。
  *
  * @author Juergen Hoeller
  * @since 6.1
@@ -66,16 +58,13 @@ class `TaskSchedulerRouter`：请结合所属模块与调用方理解其在整�
  */
 public class TaskSchedulerRouter implements TaskScheduler, BeanNameAware, BeanFactoryAware, DisposableBean {
 
-	// [OCA] 字段 `DEFAULT_TASK_SCHEDULER_BEAN_NAME`：类成员状态。
 	/**
-	 * The default name of the {@link TaskScheduler} bean to pick up: {@value}.
-	 * <p>Note that the initial lookup happens by type; this is just the fallback
-	 * in case of multiple scheduler beans found in the context.
+	 * 要选取的 {@link TaskScheduler} Bean 默认名称：{@value}。
+	 * <p>初始查找按类型进行；此名称仅作为上下文中存在多个调度器 Bean 时的回退。
 	 */
 	public static final String DEFAULT_TASK_SCHEDULER_BEAN_NAME = "taskScheduler";
 
 
-	// [OCA] 字段 `logger`：类成员状态。
 	protected static final Log logger = LogFactory.getLog(TaskSchedulerRouter.class);
 
 	private @Nullable String beanName;
@@ -84,15 +73,13 @@ public class TaskSchedulerRouter implements TaskScheduler, BeanNameAware, BeanFa
 
 	private @Nullable StringValueResolver embeddedValueResolver;
 
-	// [OCA] 字段 `defaultScheduler`：类成员状态。
 	private final Supplier<TaskScheduler> defaultScheduler = SingletonSupplier.of(this::determineDefaultScheduler);
 
 	private volatile @Nullable ScheduledExecutorService localExecutor;
 
 
 	/**
-	 * The bean name for this router, or the bean name of the containing
-	 * bean if the router instance is internally held.
+	 * 本路由器的 Bean 名称，或路由器实例内部持有时所属 Bean 的名称。
 	 */
 	@Override
 	public void setBeanName(@Nullable String name) {
@@ -100,7 +87,7 @@ public class TaskSchedulerRouter implements TaskScheduler, BeanNameAware, BeanFa
 	}
 
 	/**
-	 * The bean factory for scheduler lookups.
+	 * 用于调度器查找的 Bean 工厂。
 	 */
 	@Override
 	public void setBeanFactory(@Nullable BeanFactory beanFactory) {
@@ -169,13 +156,6 @@ public class TaskSchedulerRouter implements TaskScheduler, BeanNameAware, BeanFa
 					this.beanFactory, ScheduledExecutorService.class, qualifier));
 		}
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 determineDefaultScheduler — 意图与阅读要点
-
-方法 `determineDefaultScheduler` 复杂度较高（CCN≈13, NLOC≈61）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
 
 	protected TaskScheduler determineDefaultScheduler() {
 		Assert.state(this.beanFactory != null, "BeanFactory must be set to find default scheduler");
@@ -263,7 +243,7 @@ public class TaskSchedulerRouter implements TaskScheduler, BeanNameAware, BeanFa
 
 
 	/**
-	 * Destroy the local default executor, if any.
+	 * 销毁本地默认执行器（若有）。
 	 */
 	@Override
 	public void destroy() {

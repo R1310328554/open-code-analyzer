@@ -28,11 +28,9 @@ import org.springframework.beans.support.ArgumentConvertingMethodInvoker;
 import org.springframework.util.ClassUtils;
 
 /**
- * Adapter that implements the {@link Runnable} interface as a configurable
- * method invocation based on Spring's MethodInvoker.
+ * 基于 Spring MethodInvoker 的可配置方法调用、实现 {@link Runnable} 接口的适配器。
  *
- * <p>Inherits common configuration properties from
- * {@link org.springframework.util.MethodInvoker}.
+ * <p>继承 {@link org.springframework.util.MethodInvoker} 的通用配置属性。
  *
  * @author Juergen Hoeller
  * @since 1.2.4
@@ -78,8 +76,8 @@ public class MethodInvokingRunnable extends ArgumentConvertingMethodInvoker
 	}
 
 	/**
-	 * Build a message for an invocation failure exception.
-	 * @return the error message, including the target method name etc
+	 * 构建方法调用失败异常的消息。
+	 * @return 错误消息，包含目标方法名等信息
 	 */
 	protected String getInvocationFailureMessage() {
 		return "Invocation of method '" + getTargetMethod() +

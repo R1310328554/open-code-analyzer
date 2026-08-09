@@ -23,7 +23,8 @@ import org.springframework.scheduling.support.ScheduledTaskObservationDocumentat
 import org.springframework.util.StringUtils;
 
 /**
- * Default implementation for {@link ScheduledTaskObservationConvention}.
+ * {@link ScheduledTaskObservationConvention} 的默认实现，
+ * 为定时任务执行提供 Micrometer 观测约定。
  * @author Brian Clozel
  * @since 6.1
  */

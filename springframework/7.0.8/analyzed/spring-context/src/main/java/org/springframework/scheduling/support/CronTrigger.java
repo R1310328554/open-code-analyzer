@@ -29,14 +29,13 @@ import org.springframework.scheduling.TriggerContext;
 import org.springframework.util.Assert;
 
 /**
- * {@link Trigger} implementation for cron expressions. Wraps a
- * {@link CronExpression} which parses according to common crontab conventions.
+ * cron 表达式的 {@link Trigger} 实现，包装按常见 crontab 约定解析的
+ * {@link CronExpression}。
  *
- * <p>Supports a Quartz day-of-month/week field with an L/# expression. Follows
- * common cron conventions in every other respect, including 0-6 for SUN-SAT
- * (plus 7 for SUN as well). Note that Quartz deviates from the day-of-week
- * convention in cron through 1-7 for SUN-SAT whereas Spring strictly follows
- * cron even in combination with the optional Quartz-specific L/# expressions.
+ * <p>支持带 L/# 表达式的 Quartz 日/周字段。其余方面遵循常见 cron 约定，
+ * 包括 SUN-SAT 使用 0-6（SUN 也可用 7）。
+ * 注意 Quartz 在 cron 中对星期几使用 1-7 表示 SUN-SAT，
+ * 而 Spring 即使结合可选 Quartz 专有 L/# 表达式也严格遵循 cron 约定。
  *
  * @author Juergen Hoeller
  * @author Arjen Poutsma
@@ -51,12 +50,10 @@ public class CronTrigger implements Trigger {
 
 
 	/**
-	 * Build a {@code CronTrigger} from the pattern provided in the default time zone.
-	 * <p>This is equivalent to the {@link CronTrigger#forLenientExecution} factory
-	 * method. Original trigger firings may be skipped if the previous task is still
-	 * running; if this is not desirable, consider {@link CronTrigger#forFixedExecution}.
-	 * @param expression a space-separated list of time fields, following cron
-	 * expression conventions
+	 * 使用默认时区中的模式构建 {@code CronTrigger}。
+	 * <p>等价于 {@link CronTrigger#forLenientExecution} 工厂方法。
+	 * 若前一任务仍在运行，可能跳过原定触发；若不希望如此，请考虑 {@link CronTrigger#forFixedExecution}。
+	 * @param expression 遵循 cron 表达式约定的空格分隔时间字段列表
 	 * @see CronTrigger#forLenientExecution
 	 * @see CronTrigger#forFixedExecution
 	 */
@@ -66,13 +63,11 @@ public class CronTrigger implements Trigger {
 	}
 
 	/**
-	 * Build a {@code CronTrigger} from the pattern provided in the given time zone,
-	 * with the same lenient execution as {@link CronTrigger#CronTrigger(String)}.
-	 * <p>Note that such explicit time zone customization is usually not necessary,
-	 * using {@link org.springframework.scheduling.TaskScheduler#getClock()} instead.
-	 * @param expression a space-separated list of time fields, following cron
-	 * expression conventions
-	 * @param timeZone a time zone in which the trigger times will be generated
+	 * 使用给定 TimeZone 中的模式构建 {@code CronTrigger}，
+	 * 执行策略与 {@link CronTrigger#CronTrigger(String)} 相同（宽松模式）。
+	 * <p>通常无需显式自定义时区，应使用 {@link org.springframework.scheduling.TaskScheduler#getClock()}。
+	 * @param expression 遵循 cron 表达式约定的空格分隔时间字段列表
+	 * @param timeZone 生成触发时间的时区
 	 */
 	public CronTrigger(String expression, TimeZone timeZone) {
 		this.expression = CronExpression.parse(expression);
@@ -81,13 +76,11 @@ public class CronTrigger implements Trigger {
 	}
 
 	/**
-	 * Build a {@code CronTrigger} from the pattern provided in the given time zone,
-	 * with the same lenient execution as {@link CronTrigger#CronTrigger(String)}.
-	 * <p>Note that such explicit time zone customization is usually not necessary,
-	 * using {@link org.springframework.scheduling.TaskScheduler#getClock()} instead.
-	 * @param expression a space-separated list of time fields, following cron
-	 * expression conventions
-	 * @param zoneId a time zone in which the trigger times will be generated
+	 * 使用给定 ZoneId 中的模式构建 {@code CronTrigger}，
+	 * 执行策略与 {@link CronTrigger#CronTrigger(String)} 相同（宽松模式）。
+	 * <p>通常无需显式自定义时区，应使用 {@link org.springframework.scheduling.TaskScheduler#getClock()}。
+	 * @param expression 遵循 cron 表达式约定的空格分隔时间字段列表
+	 * @param zoneId 生成触发时间的时区
 	 * @since 5.3
 	 * @see CronExpression#parse(String)
 	 */
@@ -99,7 +92,7 @@ public class CronTrigger implements Trigger {
 
 
 	/**
-	 * Return the cron pattern that this trigger has been built with.
+	 * 返回构建本触发器时使用的 cron 模式。
 	 */
 	public String getExpression() {
 		return this.expression.toString();
@@ -107,10 +100,9 @@ public class CronTrigger implements Trigger {
 
 
 	/**
-	 * Determine the next execution time according to the given trigger context.
-	 * <p>Next execution times are calculated based on the
-	 * {@linkplain TriggerContext#lastCompletion completion time} of the
-	 * previous execution; therefore, overlapping executions won't occur.
+	 * 根据给定触发器上下文确定下次执行时间。
+	 * <p>下次执行时间基于上次执行的
+	 * {@linkplain TriggerContext#lastCompletion 完成时间}计算，因此不会重叠执行。
 	 */
 	@Override
 	public @Nullable Instant nextExecution(TriggerContext triggerContext) {
@@ -162,17 +154,13 @@ public class CronTrigger implements Trigger {
 
 
 	/**
-	 * Create a {@link CronTrigger} for lenient execution, to be rescheduled
-	 * after every task based on the completion time.
-	 * <p>This variant does not make up for missed trigger firings if the
-	 * associated task has taken too long. As a consequence, original trigger
-	 * firings may be skipped if the previous task is still running.
-	 * <p>This is equivalent to the regular {@link CronTrigger} constructor.
-	 * Note that lenient execution is scheduler-dependent: it may skip trigger
-	 * firings with long-running tasks on a thread pool while executing at
-	 * {@link #forFixedExecution}-like precision with new threads per task.
-	 * @param expression a space-separated list of time fields, following cron
-	 * expression conventions
+	 * 创建宽松执行的 {@link CronTrigger}，每次任务完成后按完成时间重新调度。
+	 * <p>若关联任务耗时过长，本变体不会补发错过的触发。
+	 * 因此若前一任务仍在运行，可能跳过原定触发。
+	 * <p>等价于常规 {@link CronTrigger} 构造函数。
+	 * 注意宽松执行依赖调度器：线程池上长任务可能跳过触发，
+	 * 而每任务新线程时可能接近 {@link #forFixedExecution} 精度。
+	 * @param expression 遵循 cron 表达式约定的空格分隔时间字段列表
 	 * @since 6.1.3
 	 * @see #resumeLenientExecution
 	 */
@@ -181,17 +169,12 @@ public class CronTrigger implements Trigger {
 	}
 
 	/**
-	 * Create a {@link CronTrigger} for lenient execution, to be rescheduled
-	 * after every task based on the completion time.
-	 * <p>This variant does not make up for missed trigger firings if the
-	 * associated task has taken too long. As a consequence, original trigger
-	 * firings may be skipped if the previous task is still running.
-	 * @param expression a space-separated list of time fields, following cron
-	 * expression conventions
-	 * @param resumptionTimestamp the timestamp to resume from (the last-known
-	 * completion timestamp), with the new trigger calculated from there and
-	 * possibly immediately firing (but only once, every subsequent calculation
-	 * will start from the completion time of that first resumed trigger)
+	 * 创建宽松执行的 {@link CronTrigger}，每次任务完成后按完成时间重新调度。
+	 * <p>若关联任务耗时过长，本变体不会补发错过的触发。
+	 * 因此若前一任务仍在运行，可能跳过原定触发。
+	 * @param expression 遵循 cron 表达式约定的空格分隔时间字段列表
+	 * @param resumptionTimestamp 恢复起点时间戳（上次已知完成时间），
+	 * 从此计算新触发并可能立即触发（仅一次，后续计算均从该首次恢复触发的完成时间开始）
 	 * @since 6.1.3
 	 * @see #forLenientExecution
 	 */
@@ -205,15 +188,11 @@ public class CronTrigger implements Trigger {
 	}
 
 	/**
-	 * Create a {@link CronTrigger} for fixed execution, to be rescheduled
-	 * after every task based on the last scheduled time.
-	 * <p>This variant makes up for missed trigger firings if the associated task
-	 * has taken too long, scheduling a task for every original trigger firing.
-	 * Such follow-up tasks may execute late but will never be skipped.
-	 * <p>Immediate versus late execution in case of long-running tasks may
-	 * be scheduler-dependent but the guarantee to never skip a task is portable.
-	 * @param expression a space-separated list of time fields, following cron
-	 * expression conventions
+	 * 创建固定执行的 {@link CronTrigger}，每次任务完成后按上次计划时间重新调度。
+	 * <p>若关联任务耗时过长，本变体会补发错过的触发，为每个原定触发安排任务。
+	 * 后续任务可能延迟执行但绝不会被跳过。
+	 * <p>长任务情况下立即或延迟执行可能依赖调度器，但不跳过任务的保证可移植。
+	 * @param expression 遵循 cron 表达式约定的空格分隔时间字段列表
 	 * @since 6.1.3
 	 * @see #resumeFixedExecution
 	 */
@@ -228,16 +207,12 @@ public class CronTrigger implements Trigger {
 	}
 
 	/**
-	 * Create a {@link CronTrigger} for fixed execution, to be rescheduled
-	 * after every task based on the last scheduled time.
-	 * <p>This variant makes up for missed trigger firings if the associated task
-	 * has taken too long, scheduling a task for every original trigger firing.
-	 * Such follow-up tasks may execute late but will never be skipped.
-	 * @param expression a space-separated list of time fields, following cron
-	 * expression conventions
-	 * @param resumptionTimestamp the timestamp to resume from (the last-known
-	 * scheduled timestamp), with every trigger in-between immediately firing
-	 * to make up for every execution that would have happened in the meantime
+	 * 创建固定执行的 {@link CronTrigger}，每次任务完成后按上次计划时间重新调度。
+	 * <p>若关联任务耗时过长，本变体会补发错过的触发，为每个原定触发安排任务。
+	 * 后续任务可能延迟执行但绝不会被跳过。
+	 * @param expression 遵循 cron 表达式约定的空格分隔时间字段列表
+	 * @param resumptionTimestamp 恢复起点时间戳（上次已知计划时间），
+	 * 其间每个触发立即补发，以弥补期间本应发生的每次执行
 	 * @since 6.1.3
 	 * @see #forFixedExecution
 	 */

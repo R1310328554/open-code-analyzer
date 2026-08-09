@@ -19,7 +19,8 @@ package org.springframework.scheduling.config;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * {@code NamespaceHandler} for the 'task' namespace.
+ * 'task' 命名空间的 {@code NamespaceHandler}，
+ * 注册 annotation-driven、executor、scheduled-tasks 和 scheduler 等 XML 元素解析器。
  *
  * @author Mark Fisher
  * @since 3.0
