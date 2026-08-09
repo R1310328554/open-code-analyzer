@@ -15,23 +15,8 @@
     "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/config/WebFluxConfig.java",
     "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/controller/BazController.java",
     "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/controller/FooController.java",
-    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/service/BazService.java",
-    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/service/FooService.java",
-    "sentinel-demo/sentinel-demo-spring-webmvc/src/main/java/com/alibaba/csp/sentinel/demo/spring/webmvc/WebMvcDemoApplication.java",
-    "sentinel-demo/sentinel-demo-spring-webmvc/src/main/java/com/alibaba/csp/sentinel/demo/spring/webmvc/config/InterceptorConfig.java",
-    "sentinel-demo/sentinel-demo-spring-webmvc/src/main/java/com/alibaba/csp/sentinel/demo/spring/webmvc/config/SentinelSpringMvcBlockHandlerConfig.java",
-    "sentinel-demo/sentinel-demo-spring-webmvc/src/main/java/com/alibaba/csp/sentinel/demo/spring/webmvc/controller/WebMvcTestController.java",
-    "sentinel-demo/sentinel-demo-spring-webmvc/src/main/java/com/alibaba/csp/sentinel/demo/spring/webmvc/vo/ResultWrapper.java",
-    "sentinel-demo/sentinel-demo-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/demo/transport/springmvc/TransportSpringMvcDemoApplication.java",
-    "sentinel-demo/sentinel-demo-zookeeper-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/zookeeper/ZookeeperConfigSender.java",
-    "sentinel-demo/sentinel-demo-zookeeper-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/zookeeper/ZookeeperDataSourceDemo.java",
-    "sentinel-demo/sentinel-demo-zuul-gateway/src/main/java/com/alibaba/csp/sentinel/demo/zuul/gateway/GatewayRuleConfig.java",
-    "sentinel-demo/sentinel-demo-zuul-gateway/src/main/java/com/alibaba/csp/sentinel/demo/zuul/gateway/ZuulConfig.java",
-    "sentinel-demo/sentinel-demo-zuul-gateway/src/main/java/com/alibaba/csp/sentinel/demo/zuul/gateway/ZuulGatewayDemoApplication.java",
-    "sentinel-demo/sentinel-demo-zuul2-gateway/src/main/java/com/alibaba/csp/sentinel/demo/zuul2/gateway/FiltersRegisteringService.java",
-    "sentinel-demo/sentinel-demo-zuul2-gateway/src/main/java/com/alibaba/csp/sentinel/demo/zuul2/gateway/GatewayRuleConfig.java",
-    "sentinel-demo/sentinel-demo-zuul2-gateway/src/main/java/com/alibaba/csp/sentinel/demo/zuul2/gateway/SampleServerStartup.java"
+    "sentinel-demo/sentinel-demo-spring-webflux/src/main/java/com/alibaba/csp/sentinel/demo/spring/webflux/service/BazService.java"
   ],
   "remaining_pending": 155,
-  "done": 765
+  "done": 780
 }
