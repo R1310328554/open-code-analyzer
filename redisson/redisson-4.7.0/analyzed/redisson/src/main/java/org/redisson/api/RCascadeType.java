@@ -16,35 +16,35 @@
 package org.redisson.api;
 
 /**
- * Live Object cascade type.
- * 
- * @author Nikita Koksharov
+ * Live Object 级联操作类型。
+ * <p>控制 {@link RLiveObjectService} 持久化、合并、分离、删除时的关联对象传播行为。
  *
+ * @author Nikita Koksharov
  */
 public enum RCascadeType {
 
     /**
-     * Includes all cascade types.
+     * 包含所有级联类型。
      */
     ALL,
     
     /**
-     * Cascade persist operation during {@link RLiveObjectService#persist} method invocation. 
+     * 在调用 {@link RLiveObjectService#persist} 时级联持久化关联对象。
      */
     PERSIST,
     
     /**
-     * Cascade detach operation during {@link RLiveObjectService#detach} method invocation. 
+     * 在调用 {@link RLiveObjectService#detach} 时级联分离关联对象。
      */
     DETACH,
     
     /**
-     * Cascade merge operation during {@link RLiveObjectService#merge} method invocation. 
+     * 在调用 {@link RLiveObjectService#merge} 时级联合并关联对象。
      */
     MERGE,
     
     /**
-     * Cascade delete operation during {@link RLiveObjectService#delete} method invocation. 
+     * 在调用 {@link RLiveObjectService#delete} 时级联删除关联对象。
      */
     DELETE
     

@@ -20,10 +20,10 @@ import org.redisson.api.bucket.SetArgs;
 import java.util.Map;
 
 /**
- * Operations over multiple Bucket objects.
- * 
- * @author Nikita Koksharov
+ * 对多个 {@link RBucket} 的批量操作异步 API。
+ * <p>各方法返回 {@link RFuture}。
  *
+ * @author Nikita Koksharov
  */
 public interface RBucketsAsync {
 
@@ -48,27 +48,27 @@ public interface RBucketsAsync {
     RFuture<Boolean> trySetAsync(Map<String, ?> buckets);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      *
-     * @param buckets - map of buckets
+     * @param buckets 键到值的映射
      * @return void
      */
     RFuture<Void> setAsync(Map<String, ?> buckets);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      * If all of them is already exist
      *
-     * @param args - args
+     * @param args 参数
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     RFuture<Boolean> setIfAllKeysExistAsync(SetArgs args);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      * If none of the specified keys exist
      *
-     * @param args - args
+     * @param args 参数
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     RFuture<Boolean> setIfAllKeysAbsentAsync(SetArgs args);

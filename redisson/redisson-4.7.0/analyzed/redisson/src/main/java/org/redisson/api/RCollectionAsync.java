@@ -18,11 +18,11 @@ package org.redisson.api;
 import java.util.Collection;
 
 /**
- * Common async interface for collection object
- * 
- * @author Nikita Koksharov
+ * 分布式集合对象的通用异步 API 接口。
+ * <p>各方法返回 {@link RFuture}。
  *
- * @param <V> type of value
+ * @author Nikita Koksharov
+ * @param <V> 元素类型
  */
 public interface RCollectionAsync<V> extends RExpirableAsync {
 
@@ -46,9 +46,9 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
     RFuture<Boolean> removeAllAsync(Collection<?> c);
 
     /**
-     * Returns <code>true</code> if this collection contains encoded state of the specified element.
+     * 若本集合包含指定元素（按序列化状态比较）则返回 {@code true}。
      *
-     * @param o element whose presence in this collection is to be tested
+     * @param o 元素
      * @return <code>true</code> if this collection contains the specified
      *         element and <code>false</code> otherwise
      */
@@ -74,25 +74,25 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
     RFuture<Boolean> removeAsync(Object o);
 
     /**
-     * Returns number of elements in this collection.
+     * 返回集合元素数量。
      *
-     * @return size of collection
+     * @return 元素数量
      */
     RFuture<Integer> sizeAsync();
 
     /**
-     * Adds element into this collection.
+     * 向集合添加元素。
      * 
-     * @param e - element to add
+     * @param e 待添加元素
      * @return <code>true</code> if an element was added 
      *          and <code>false</code> if it is already present
      */
     RFuture<Boolean> addAsync(V e);
 
     /**
-     * Adds all elements contained in the specified collection
+     * 批量添加指定集合中的全部元素。
      * 
-     * @param c - collection of elements to add
+     * @param c 集合
      * @return <code>true</code> if at least one element was added 
      *          and <code>false</code> if all elements are already present
      */

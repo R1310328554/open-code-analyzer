@@ -55,10 +55,10 @@ import java.util.List;
 public interface RCircularBuffer<V> extends RExpirable, RCircularBufferAsync<V> {
 
     /**
-     * Sets capacity of this buffer only if it wasn't set before.
+     * 仅当尚未设置容量时初始化缓冲区容量。
      *
-     * @param capacity buffer capacity
-     * @return {@code true} if capacity set successfully,
+     * @param capacity 缓冲区容量
+     * @return 见方法说明
      *         {@code false} if capacity already set
      */
     boolean trySetCapacity(int capacity);
@@ -76,9 +76,9 @@ public interface RCircularBuffer<V> extends RExpirable, RCircularBufferAsync<V> 
     void setCapacity(int capacity);
 
     /**
-     * Returns capacity of this buffer.
+     * 返回缓冲区容量。
      *
-     * @return buffer capacity, or {@code 0} if capacity wasn't set
+     * @return 缓冲区容量；未设置时为 {@code 0}
      */
     int capacity();
 
@@ -91,24 +91,24 @@ public interface RCircularBuffer<V> extends RExpirable, RCircularBufferAsync<V> 
     int remainingCapacity();
 
     /**
-     * Adds the specified value to the tail of this buffer.
+     * 将指定值追加到缓冲区尾部。
      * <p>
      * If the buffer is full the oldest value is overwritten.
      * Buffer capacity must be defined before usage.
      *
-     * @param value value to add
-     * @return {@code true} if value was added
+     * @param value 值
+     * @return 见方法说明
      */
     boolean add(V value);
 
     /**
-     * Adds the specified values to the tail of this buffer in iteration order.
+     * 按迭代顺序批量追加值到尾部。
      * <p>
      * Values wrap around and overwrite the oldest values once the buffer is full.
      * Buffer capacity must be defined before usage.
      *
-     * @param values values to add
-     * @return {@code true} if at least one value was added
+     * @param values 值集合
+     * @return 见方法说明
      */
     boolean addAll(Collection<? extends V> values);
 
@@ -127,103 +127,103 @@ public interface RCircularBuffer<V> extends RExpirable, RCircularBufferAsync<V> 
     long set(int size, V... values);
 
     /**
-     * Returns the value stored at the specified ring index.
+     * 返回指定环槽下标处的值。
      *
-     * @param index ring index
+     * @param index 环槽下标
      * @return value stored at the specified ring index, or {@code null} if absent
      */
     V get(long index);
 
     /**
-     * Returns the {@code count} most recently added values.
+     * 返回最近追加的 {@code count} 个值。
      *
-     * @param count number of values to return
-     * @param reverse if {@code true} values are returned newest-first,
+     * @param count 返回数量
+     * @param reverse 排序方向
      *                otherwise in insertion order (oldest-first)
-     * @return most recently added values
+     * @return 最近追加的值列表
      */
     List<V> lastItems(int count, boolean reverse);
 
     /**
-     * Returns values stored in the specified ring index range (inclusive).
+     * 返回指定环槽下标区间（含端点）内的值。
      *
-     * @param startIndex start ring index
-     * @param endIndex end ring index
-     * @return values stored in the specified ring index range
+     * @param startIndex 起始环槽下标
+     * @param endIndex 结束环槽下标
+     * @return 指定区间内的值列表
      */
     List<V> range(long startIndex, long endIndex);
 
     /**
-     * Returns all retained values in insertion order (oldest-first).
+     * 按插入顺序（最旧在前）返回所有保留值。
      *
-     * @return all retained values
+     * @return 全部保留值
      */
     List<V> readAll();
 
     /**
-     * Returns the number of values currently stored in this buffer.
+     * 返回当前存储的值数量。
      *
-     * @return number of stored values
+     * @return 已存储值数量
      */
     int size();
 
     /**
-     * Returns the sum of the numeric values currently stored in this buffer.
+     * 返回当前存储数值的总和。
      *
      * @return sum of values, or {@code null} if the buffer is empty
      */
     Double sum();
 
     /**
-     * Returns the sum of the numeric values stored in the specified ring index range.
+     * 返回指定环槽下标区间内数值的总和。
      *
-     * @param startIndex start ring index
-     * @param endIndex end ring index
+     * @param startIndex 起始环槽下标
+     * @param endIndex 结束环槽下标
      * @return sum of values
      */
     Double sum(long startIndex, long endIndex);
 
     /**
-     * Returns the minimum numeric value currently stored in this buffer.
+     * 返回当前存储数值的最小值。
      *
      * @return minimum value, or {@code null} if the buffer is empty
      */
     Double min();
 
     /**
-     * Returns the minimum numeric value stored in the specified ring index range.
+     * 返回指定环槽下标区间内的最小值。
      *
-     * @param startIndex start ring index
-     * @param endIndex end ring index
+     * @param startIndex 起始环槽下标
+     * @param endIndex 结束环槽下标
      * @return minimum value
      */
     Double min(long startIndex, long endIndex);
 
     /**
-     * Returns the maximum numeric value currently stored in this buffer.
+     * 返回当前存储数值的最大值。
      *
      * @return maximum value, or {@code null} if the buffer is empty
      */
     Double max();
 
     /**
-     * Returns the maximum numeric value stored in the specified ring index range.
+     * 返回指定环槽下标区间内的最大值。
      *
-     * @param startIndex start ring index
-     * @param endIndex end ring index
+     * @param startIndex 起始环槽下标
+     * @param endIndex 结束环槽下标
      * @return maximum value
      */
     Double max(long startIndex, long endIndex);
 
     /**
-     * Removes all values from this buffer while keeping the configured capacity.
+     * 清空所有值但保留已配置的容量。
      */
     void clear();
 
     /**
-     * Returns {@code true} if this buffer contains no values.
+     * 若缓冲区无任何值则返回 {@code true}。
      *
-     * @return {@code true} if this buffer is empty
+     * @return 见方法说明
      */
     boolean isEmpty();
 
@@ -236,7 +236,7 @@ public interface RCircularBuffer<V> extends RExpirable, RCircularBufferAsync<V> 
     boolean isFull();
 
     /**
-     * Returns the most recently added value without removing it.
+     * 返回最近追加的值但不移除。
      *
      * @return the newest value, or {@code null} if this buffer is empty
      */
@@ -251,80 +251,80 @@ public interface RCircularBuffer<V> extends RExpirable, RCircularBufferAsync<V> 
     V peekFirst();
 
     /**
-     * Returns the values stored at the specified ring indexes.
+     * 返回指定多个环槽下标处的值。
      *
-     * @param indexes ring indexes
-     * @return values stored at the specified ring indexes
+     * @param indexes 环槽下标集合
+     * @return 指定下标处的值列表
      */
     List<V> get(long... indexes);
 
     /**
-     * Returns the number of values equal to the specified value currently stored in this buffer.
+     * 返回当前存储中与指定值相等的元素个数。
      *
-     * @param value value to match
-     * @return number of matching values
+     * @param value 值
+     * @return 匹配元素个数
      */
     long count(V value);
 
     /**
-     * Returns {@code true} if this buffer contains the specified value.
+     * 若缓冲区包含指定值则返回 {@code true}。
      *
-     * @param value value to match
-     * @return {@code true} if the value is present
+     * @param value 值
+     * @return 见方法说明
      */
     boolean contains(V value);
 
     /**
-     * Returns the average of the numeric values currently stored in this buffer.
+     * 返回当前存储数值的平均值。
      *
      * @return average value, or {@code null} if the buffer is empty
      */
     Double average();
 
     /**
-     * Returns the bitwise AND of the numeric values currently stored in this buffer.
+     * 返回当前存储数值的按位与结果。
      *
      * @return bitwise AND result, or {@code null} if the buffer is empty
      */
     Long bitAnd();
 
     /**
-     * Returns the bitwise AND of the numeric values stored in the specified ring index range.
+     * 返回指定环槽下标区间内数值的按位与结果。
      *
-     * @param startIndex start ring index
-     * @param endIndex end ring index
+     * @param startIndex 起始环槽下标
+     * @param endIndex 结束环槽下标
      * @return bitwise AND result
      */
     Long bitAnd(long startIndex, long endIndex);
 
     /**
-     * Returns the bitwise OR of the numeric values currently stored in this buffer.
+     * 返回当前存储数值的按位或结果。
      *
      * @return bitwise OR result, or {@code null} if the buffer is empty
      */
     Long bitOr();
 
     /**
-     * Returns the bitwise OR of the numeric values stored in the specified ring index range.
+     * 返回指定环槽下标区间内数值的按位或结果。
      *
-     * @param startIndex start ring index
-     * @param endIndex end ring index
+     * @param startIndex 起始环槽下标
+     * @param endIndex 结束环槽下标
      * @return bitwise OR result
      */
     Long bitOr(long startIndex, long endIndex);
 
     /**
-     * Returns the bitwise XOR of the numeric values currently stored in this buffer.
+     * 返回当前存储数值的按位异或结果。
      *
      * @return bitwise XOR result, or {@code null} if the buffer is empty
      */
     Long bitXor();
 
     /**
-     * Returns the bitwise XOR of the numeric values stored in the specified ring index range.
+     * 返回指定环槽下标区间内数值的按位异或结果。
      *
-     * @param startIndex start ring index
-     * @param endIndex end ring index
+     * @param startIndex 起始环槽下标
+     * @param endIndex 结束环槽下标
      * @return bitwise XOR result
      */
     Long bitXor(long startIndex, long endIndex);

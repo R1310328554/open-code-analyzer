@@ -20,10 +20,10 @@ import org.redisson.api.bucket.SetArgs;
 import java.util.Map;
 
 /**
- * Operations over multiple Bucket objects.
- * 
- * @author Nikita Koksharov
+ * 对多个 {@link RBucket} 的批量操作接口。
+ * <p>支持 MGET/MSET 等 Redis 批量命令语义。
  *
+ * @author Nikita Koksharov
  */
 public interface RBuckets extends RBucketsAsync {
 
@@ -48,26 +48,26 @@ public interface RBuckets extends RBucketsAsync {
     boolean trySet(Map<String, ?> buckets);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      *
-     * @param buckets - map of buckets
+     * @param buckets 键到值的映射
      */
     void set(Map<String, ?> buckets);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      * If all of them is already exist
      *
-     * @param args - args
+     * @param args 参数
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     boolean setIfAllKeysExist(SetArgs args);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      * If none of the specified keys exist
      *
-     * @param args - args
+     * @param args 参数
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     boolean setIfAllKeysAbsent(SetArgs args);

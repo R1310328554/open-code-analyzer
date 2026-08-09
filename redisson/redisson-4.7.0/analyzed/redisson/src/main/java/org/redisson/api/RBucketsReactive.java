@@ -21,10 +21,10 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 
 /**
- * Operations over multiple Bucket objects.
- * 
- * @author Nikita Koksharov
+ * 对多个 {@link RBucket} 的批量操作 Reactor API。
+ * <p>各方法返回 {@link Mono}。
  *
+ * @author Nikita Koksharov
  */
 public interface RBucketsReactive {
 
@@ -49,27 +49,27 @@ public interface RBucketsReactive {
     Mono<Boolean> trySet(Map<String, ?> buckets);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      *
-     * @param buckets - map of buckets
+     * @param buckets 键到值的映射
      * @return void
      */
     Mono<Void> set(Map<String, ?> buckets);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      * If all of them is already exist
      *
-     * @param args - args
+     * @param args 参数
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     Mono<Boolean> setIfAllKeysExist(SetArgs args);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      * If none of the specified keys exist
      *
-     * @param args - args
+     * @param args 参数
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     Mono<Boolean> setIfAllKeysAbsent(SetArgs args);

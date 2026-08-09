@@ -27,89 +27,89 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * Reactive implementation of object holder. Max size of object is 512MB
+ * {@link RBucket} 的 RxJava 风格 API 接口。
+ * <p>单个对象最大 512MB；各方法返回 {@link Single}、{@link Maybe} 或 {@link Completable}。
  *
  * @author Nikita Koksharov
- *
- * @param <V> - the type of object
+ * @param <V> 存储对象类型
  */
 public interface RBucketRx<V> extends RExpirableRx {
 
     /**
-     * Returns size of object in bytes
+     * 返回对象序列化后的字节大小。
      * 
-     * @return object size
+     * @return 对象字节大小
      */
     Single<Long> size();
 
     /**
-     * Sets value only if object holder doesn't exist.
+     * 仅当 Redis 键不存在时设置值（NX）。
      *
-     * @param value - value to set
-     * @return {@code true} if successful, or {@code false} if
+     * @param value 值
+     * @return 见方法说明
      *         element was already set
      */
     Single<Boolean> setIfAbsent(V value);
 
     /**
-     * Sets value with defined duration only if object holder doesn't exist.
+     * 仅当键不存在时设置值并指定过期时长。
      *
-     * @param value value to set
-     * @param duration expiration duration
-     * @return {@code true} if successful, or {@code false} if
+     * @param value 值
+     * @param duration 过期时长
+     * @return 见方法说明
      *         element was already set
      */
     Single<Boolean> setIfAbsent(V value, Duration duration);
 
     /**
-     * Use {@link #setIfAbsent(Object)} instead
+     * 已废弃，请改用 {@link #setIfAbsent(Object)}。
      * 
-     * @param value - value to set
-     * @return {@code true} if successful, or {@code false} if
+     * @param value 值
+     * @return 见方法说明
      *         element was already set
      */
     @Deprecated
     Single<Boolean> trySet(V value);
 
     /**
-     * Use {@link #setIfAbsent(Object, Duration)} instead
+     * 已废弃，请改用 {@link #setIfAbsent(Object, Duration)}。
      * 
-     * @param value - value to set
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
-     * @return {@code true} if successful, or {@code false} if
+     * @param value 值
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 见方法说明
      *         element was already set
      */
     @Deprecated
     Single<Boolean> trySet(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Sets value only if it's already exists.
+     * 仅当键已存在时更新值（XX）。
      *
-     * @param value - value to set
-     * @return {@code true} if successful, or {@code false} if
+     * @param value 值
+     * @return 见方法说明
      *         element wasn't set
      */
     Single<Boolean> setIfExists(V value);
 
     /**
-     * Use {@link #setIfExists(Object, Duration)} instead
+     * 已废弃，请改用 {@link #setIfExists(Object, Duration)}。
      *
-     * @param value - value to set
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
-     * @return {@code true} if successful, or {@code false} if
+     * @param value 值
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 见方法说明
      *         element wasn't set
      */
     @Deprecated
     Single<Boolean> setIfExists(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Sets <code>value</code> with expiration <code>duration</code> only if object holder already exists.
+     * 仅当键已存在时设置 {@code value} 并指定过期时长 {@code duration}。
      *
-     * @param value value to set
-     * @param duration expiration duration
-     * @return {@code true} if successful, or {@code false} if
+     * @param value 值
+     * @param duration 过期时长
+     * @return 见方法说明
      *         element wasn't set
      */
     Single<Boolean> setIfExists(V value, Duration duration);
@@ -158,20 +158,20 @@ public interface RBucketRx<V> extends RExpirableRx {
     Single<Boolean> compareAndDelete(CompareAndDeleteArgs<V> args);
 
     /**
-     * Retrieves current element in the holder and replaces it with <code>newValue</code>. 
+     * 读取当前值并以 {@code newValue} 替换，返回旧值。
      * 
-     * @param newValue - value to set
-     * @return previous value
+     * @param newValue 新值
+     * @return 替换前的旧值
      */
     Maybe<V> getAndSet(V newValue);
     
     /**
-     * Use {@link #getAndSet(Object, Duration)} instead
+     * 已废弃，请改用 {@link #getAndSet(Object, Duration)}。
      * 
-     * @param value - value to set
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
-     * @return previous value
+     * @param value 值
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 替换前的旧值
      */
     @Deprecated
     Maybe<V> getAndSet(V value, long timeToLive, TimeUnit timeUnit);
@@ -187,95 +187,95 @@ public interface RBucketRx<V> extends RExpirableRx {
     Maybe<V> getAndSet(V value, Duration duration);
 
     /**
-     * Retrieves current element in the holder and sets an expiration duration for it.
+     * 读取当前值并为其设置过期时长。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上.</b>
      *
-     * @param duration of object time to live interval
-     * @return element
+     * @param duration 过期时长
+     * @return 当前值
      */
     Maybe<V> getAndExpire(Duration duration);
 
     /**
-     * Retrieves current element in the holder and sets an expiration date for it.
+     * 读取当前值并设置绝对过期时刻。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上.</b>
      *
      * @param time of exact object expiration moment
-     * @return element
+     * @return 当前值
      */
     Maybe<V> getAndExpire(Instant time);
 
     /**
-     * Retrieves current element in the holder and clears expiration date set before.
+     * 读取当前值并清除已设置的过期时间。
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上.</b>
      *
-     * @return element
+     * @return 当前值
      */
     Maybe<V> getAndClearExpire();
 
     /**
-     * Retrieves element stored in the holder.
+     * 返回容器中存储的值。
      * 
-     * @return element
+     * @return 当前值
      */
     Maybe<V> get();
     
     /**
-     * Retrieves element in the holder and removes it.
+     * 读取当前值并删除该 Redis 键。
      * 
-     * @return element
+     * @return 当前值
      */
     Maybe<V> getAndDelete();
 
     /**
-     * Stores element into the holder. 
+     * 将值写入容器。
      * 
-     * @param value - value to set
+     * @param value 值
      * @return void
      */
     Completable set(V value);
 
     /**
-     * Use {@link #set(Object, Duration)} instead
+     * 已废弃，请改用 {@link #set(Object, Duration)}。
      * 
-     * @param value - value to set
-     * @param timeToLive - time to live interval
-     * @param timeUnit - unit of time to live interval
+     * @param value 值
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
      * @return void
      */
     @Deprecated
     Completable set(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Stores <code>value</code> into the holder with defined expiration <code>duration</code>.
+     * 写入 {@code value} 并设置过期时长 {@code duration}。
      *
-     * @param value value to set
-     * @param duration expiration duration
+     * @param value 值
+     * @param duration 过期时长
      */
     Completable set(V value, Duration duration);
 
     /**
-     * Set value and keep existing TTL.
+     * 设置新值并保留原有 TTL。
      * <p>
-     * Requires <b>Redis 6.0.0 and higher.</b>
+     * 需要 <b>Redis 6.0.0 及以上.</b>
      *
-     * @param value - value to set
+     * @param value 值
      * @return void
      */
     Completable setAndKeepTTL(V value);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      * @see org.redisson.api.listener.SetObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     Single<Integer> addListener(ObjectListener listener);
 

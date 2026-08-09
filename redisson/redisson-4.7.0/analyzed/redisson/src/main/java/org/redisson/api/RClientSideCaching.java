@@ -18,17 +18,18 @@ package org.redisson.api;
 import org.redisson.client.codec.Codec;
 
 /**
+ * 客户端侧读缓存（Client-side caching）API。
+ * <p>在 Redis 6 跟踪模式下本地缓存热点对象，减少网络往返。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RClientSideCaching extends RDestroyable {
 
     /**
-     * Returns object holder instance by name.
+     * 按名称获取 {@link RBucket} 实例（客户端侧缓存）。
      *
      * @param <V> type of value
-     * @param name name of object
+     * @param name 名称
      * @return Bucket object
      */
     <V> RBucket<V> getBucket(String name);
@@ -71,10 +72,10 @@ public interface RClientSideCaching extends RDestroyable {
     <K, V> RStream<K, V> getStream(String name, Codec codec);
 
     /**
-     * Returns set instance by name.
+     * 按名称获取 {@link RSet} 实例。
      *
      * @param <V> type of value
-     * @param name name of object
+     * @param name 名称
      * @return Set object
      */
     <V> RSet<V> getSet(String name);
@@ -145,10 +146,10 @@ public interface RClientSideCaching extends RDestroyable {
     <V> RScoredSortedSet<V> getScoredSortedSet(String name, Codec codec);
 
     /**
-     * Returns list instance by name.
+     * 按名称获取 {@link RList} 实例。
      *
      * @param <V> type of value
-     * @param name name of object
+     * @param name 名称
      * @return List object
      */
     <V> RList<V> getList(String name);
@@ -165,10 +166,10 @@ public interface RClientSideCaching extends RDestroyable {
     <V> RList<V> getList(String name, Codec codec);
 
     /**
-     * Returns unbounded queue instance by name.
+     * 按名称获取无界 {@link RQueue} 实例。
      *
      * @param <V> type of value
-     * @param name of object
+     * @param name 名称
      * @return queue object
      */
     <V> RQueue<V> getQueue(String name);
@@ -185,10 +186,10 @@ public interface RClientSideCaching extends RDestroyable {
     <V> RQueue<V> getQueue(String name, Codec codec);
 
     /**
-     * Returns unbounded deque instance by name.
+     * 按名称获取无界 {@link RDeque} 实例。
      *
      * @param <V> type of value
-     * @param name name of object
+     * @param name 名称
      * @return Deque object
      */
     <V> RDeque<V> getDeque(String name);
@@ -205,10 +206,10 @@ public interface RClientSideCaching extends RDestroyable {
     <V> RDeque<V> getDeque(String name, Codec codec);
 
     /**
-     * Returns unbounded blocking queue instance by name.
+     * 按名称获取无界 {@link RBlockingQueue} 实例。
      *
      * @param <V> type of value
-     * @param name name of object
+     * @param name 名称
      * @return BlockingQueue object
      */
     <V> RBlockingQueue<V> getBlockingQueue(String name);
@@ -225,10 +226,10 @@ public interface RClientSideCaching extends RDestroyable {
     <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec);
 
     /**
-     * Returns unbounded blocking deque instance by name.
+     * 按名称获取无界 {@link RBlockingDeque} 实例。
      *
      * @param <V> type of value
-     * @param name name of object
+     * @param name 名称
      * @return BlockingDeque object
      */
     <V> RBlockingDeque<V> getBlockingDeque(String name);
@@ -245,10 +246,10 @@ public interface RClientSideCaching extends RDestroyable {
     <V> RBlockingDeque<V> getBlockingDeque(String name, Codec codec);
 
     /**
-     * Returns geospatial items holder instance by <code>name</code>.
+     * 按名称获取 {@link RGeo} 地理空间容器实例。
      *
      * @param <V> type of value
-     * @param name name of object
+     * @param name 名称
      * @return Geo object
      */
     <V> RGeo<V> getGeo(String name);

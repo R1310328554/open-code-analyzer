@@ -22,10 +22,10 @@ import org.redisson.api.bucket.SetArgs;
 import java.util.Map;
 
 /**
- * Operations over multiple Bucket objects.
- * 
- * @author Nikita Koksharov
+ * 对多个 {@link RBucket} 的批量操作 RxJava API。
+ * <p>各方法返回 {@link Single} 或 {@link Completable}。
  *
+ * @author Nikita Koksharov
  */
 public interface RBucketsRx {
 
@@ -50,27 +50,27 @@ public interface RBucketsRx {
     Single<Boolean> trySet(Map<String, ?> buckets);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      *
-     * @param buckets - map of buckets
+     * @param buckets 键到值的映射
      * @return void
      */
     Completable set(Map<String, ?> buckets);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      * If all of them is already exist
      *
-     * @param args - args
+     * @param args 参数
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     Single<Boolean> setIfAllKeysExist(SetArgs args);
 
     /**
-     * Saves objects mapped by Redis key.
+     * 批量写入键值映射。
      * If none of the specified keys exist
      *
-     * @param args - args
+     * @param args 参数
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     Single<Boolean> setIfAllKeysAbsent(SetArgs args);

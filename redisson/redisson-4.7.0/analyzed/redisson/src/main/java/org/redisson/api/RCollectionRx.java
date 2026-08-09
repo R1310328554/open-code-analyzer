@@ -23,18 +23,18 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * Common RxJava2 interface for collection object
- * 
- * @author Nikita Koksharov
+ * 分布式集合对象的通用 RxJava 风格 API 接口。
+ * <p>各方法返回 {@link Single} 或 {@link Flowable}。
  *
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <V> 元素类型
  */
 public interface RCollectionRx<V> extends RExpirableRx {
 
     /**
-     * Returns iterator over collection elements
+     * 返回集合元素的响应式迭代流。
      * 
-     * @return iterator
+     * @return 元素流
      */
     Flowable<V> iterator();
 
@@ -58,9 +58,9 @@ public interface RCollectionRx<V> extends RExpirableRx {
     Single<Boolean> removeAll(Collection<?> c);
 
     /**
-     * Returns <code>true</code> if this collection contains encoded state of the specified element.
+     * 若本集合包含指定元素（按序列化状态比较）则返回 {@code true}。
      *
-     * @param o element whose presence in this collection is to be tested
+     * @param o 元素
      * @return <code>true</code> if this collection contains the specified
      *         element and <code>false</code> otherwise
      */
@@ -86,25 +86,25 @@ public interface RCollectionRx<V> extends RExpirableRx {
     Single<Boolean> remove(V o);
 
     /**
-     * Returns number of elements in this collection.
+     * 返回集合元素数量。
      *
-     * @return size of collection
+     * @return 元素数量
      */
     Single<Integer> size();
 
     /**
-     * Adds element into this collection.
+     * 向集合添加元素。
      * 
-     * @param e - element to add
+     * @param e 待添加元素
      * @return <code>true</code> if an element was added 
      *          and <code>false</code> if it is already present
      */
     Single<Boolean> add(V e);
 
     /**
-     * Adds all elements contained in the specified collection
+     * 批量添加指定集合中的全部元素。
      * 
-     * @param c - collection of elements to add
+     * @param c 集合
      * @return <code>true</code> if at least one element was added 
      *          and <code>false</code> if all elements are already present
      */
