@@ -15,11 +15,11 @@
 package io.netty.handler.codec.http2;
 
 /**
- * Signifies that the <a href="https://tools.ietf.org/html/rfc7540#section-3.5">connection preface</a> and
- * the initial SETTINGS frame have been sent. The client sends the preface, and the server receives the preface.
- * The client shouldn't write any data until this event has been processed.
+ * 表示连接前言（RFC 7540 §3.5）与初始 SETTINGS 帧已写入完成。
+ * <p>客户端发送前言；服务器接收前言。客户端应在处理此事件之前避免发送应用数据。
  */
 public final class Http2ConnectionPrefaceAndSettingsFrameWrittenEvent {
+    /** 单例事件对象，通过 reference equality 识别。 */
     static final Http2ConnectionPrefaceAndSettingsFrameWrittenEvent INSTANCE =
             new Http2ConnectionPrefaceAndSettingsFrameWrittenEvent();
 

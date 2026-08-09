@@ -35,11 +35,14 @@ import io.netty.util.AsciiString;
 import io.netty.util.internal.ConstantTimeUtils;
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ * HPACK 编解码辅助工具：常量时间字符串比较、字面量索引类型枚举，以及 RFC 7541 附录 B Huffman 码表。
+ */
 final class HpackUtil {
     /**
-     * Compare two {@link CharSequence} objects without leaking timing information.
+     * 常量时间比较两个 {@link CharSequence}，避免通过比较耗时泄露头域内容（侧信道防护）。
      * <p>
-     * The {@code int} return type is intentional and is designed to allow cascading of constant time operations:
+     * 返回 {@code int} 而非 {@code boolean} 是有意设计，便于链式常量时间运算：
      * <pre>
      *     String s1 = "foo";
      *     String s2 = "foo";
@@ -66,7 +69,7 @@ final class HpackUtil {
     }
 
     /**
-     * Compare two {@link CharSequence}s.
+     * 可变时间比较，用于静态表查找等非安全敏感路径（性能优先）。
      * @param s1 the first value.
      * @param s2 the second value.
      * @return {@code false} if not equal. {@code true} if equal.
@@ -75,15 +78,16 @@ final class HpackUtil {
         return AsciiString.contentEquals(s1, s2);
     }
 
-    // Section 6.2. Literal Header Field Representation
+    // RFC 7541 §6.2 字面量头域的索引策略
     enum IndexType {
-        INCREMENTAL, // Section 6.2.1. Literal Header Field with Incremental Indexing
-        NONE,        // Section 6.2.2. Literal Header Field without Indexing
-        NEVER        // Section 6.2.3. Literal Header Field never Indexed
+        INCREMENTAL, // §6.2.1 增量索引：写入动态表
+        NONE,        // §6.2.2 不索引：一次性字面量
+        NEVER        // §6.2.3 永不索引：敏感头域（如 Cookie）禁止入表
     }
 
-    // Appendix B: Huffman Codes
+    // Appendix B: Huffman Codes — 256 个符号 + EOS 的 canonical Huffman 编码
     // https://tools.ietf.org/html/rfc7541#appendix-B
+    /** 每个 ASCII 字节对应的 Huffman 码位模式（含 EOS 符号）。 */
     static final int[] HUFFMAN_CODES = {
             0x1ff8,
             0x7fffd8,
@@ -344,6 +348,7 @@ final class HpackUtil {
             0x3fffffff // EOS
     };
 
+    /** 与 {@link #HUFFMAN_CODES} 一一对应的码长（位），解码时用于逐位读取。 */
     static final byte[] HUFFMAN_CODE_LENGTHS = {
             13, 23, 28, 28, 28, 28, 28, 28, 28, 24, 30, 28, 28, 30, 28, 28,
             28, 28, 28, 28, 28, 28, 30, 28, 28, 28, 28, 28, 28, 28, 28, 28,
@@ -364,9 +369,10 @@ final class HpackUtil {
             30 // EOS
     };
 
+    /** Huffman 表 EOS（End-of-String）符号索引，解码时遇到即结束当前字符串。 */
     static final int HUFFMAN_EOS = 256;
 
     private HpackUtil() {
-        // utility class
+        // 工具类
     }
 }

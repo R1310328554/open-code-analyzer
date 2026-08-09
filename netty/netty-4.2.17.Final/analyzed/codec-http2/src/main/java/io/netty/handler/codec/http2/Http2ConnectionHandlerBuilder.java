@@ -21,7 +21,7 @@ import io.netty.handler.codec.http2.Http2HeadersEncoder.SensitivityDetector;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Builder which builds {@link Http2ConnectionHandler} objects.
+ * 构建 {@link Http2ConnectionHandler} 的 fluent builder，配置项继承自 {@link AbstractHttp2ConnectionHandlerBuilder}。
  */
 public final class Http2ConnectionHandlerBuilder
         extends AbstractHttp2ConnectionHandlerBuilder<Http2ConnectionHandler, Http2ConnectionHandlerBuilder> {

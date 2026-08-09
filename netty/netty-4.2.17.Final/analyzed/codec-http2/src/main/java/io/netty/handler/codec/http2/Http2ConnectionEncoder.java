@@ -21,12 +21,12 @@ import io.netty.channel.ChannelPromise;
 
 
 /**
- * Handler for outbound HTTP/2 traffic.
+ * HTTP/2 出站编码门面，继承 {@link Http2FrameWriter} 并集成连接状态、远端流控与 SETTINGS 队列。
  */
 public interface Http2ConnectionEncoder extends Http2FrameWriter {
 
     /**
-     * Sets the lifecycle manager. Must be called as part of initialization before the encoder is used.
+     * 绑定生命周期管理器，编码器初始化阶段必须调用。
      */
     void lifecycleManager(Http2LifecycleManager lifecycleManager);
 
@@ -46,8 +46,7 @@ public interface Http2ConnectionEncoder extends Http2FrameWriter {
     Http2FrameWriter frameWriter();
 
     /**
-     * Gets the local settings on the top of the queue that has been sent but not ACKed. This may
-     * return {@code null}.
+     * 取出已发送但尚未 ACK 的本地 SETTINGS（队列头）；无则 {@code null}。
      */
     Http2Settings pollSentSettings();
 
@@ -57,8 +56,7 @@ public interface Http2ConnectionEncoder extends Http2FrameWriter {
     void remoteSettings(Http2Settings settings) throws Http2Exception;
 
     /**
-     * Writes the given data to the internal {@link Http2FrameWriter} without performing any
-     * state checks on the connection/stream.
+     * 绕过连接/流状态检查，直接向底层 {@link Http2FrameWriter} 写原始帧（内部/测试用途）。
      */
     @Override
     ChannelFuture writeFrame(ChannelHandlerContext ctx, byte frameType, int streamId,

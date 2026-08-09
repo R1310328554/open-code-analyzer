@@ -39,20 +39,25 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Constants and utility method used for encoding/decoding HTTP2 frames.
+ * HTTP/2 帧编解码常量与工具方法：连接前言、帧头格式、SETTINGS 标识符、流 ID 规则及流控辅助计算。
  */
 public final class Http2CodecUtil {
+    /** 连接级伪流 ID（stream 0），SETTINGS/PING/GOAWAY 等帧使用。 */
     public static final int CONNECTION_STREAM_ID = 0;
+    /** h2c 升级后首个业务流 ID，客户端预留用于接收升级响应。 */
     public static final int HTTP_UPGRADE_STREAM_ID = 1;
+    /** Upgrade 请求中携带本端 SETTINGS 的 HTTP/1 头名。 */
     public static final CharSequence HTTP_UPGRADE_SETTINGS_HEADER = AsciiString.cached("HTTP2-Settings");
+    /** 明文升级协议标识（HTTP/1.1 Upgrade: h2c）。 */
     public static final CharSequence HTTP_UPGRADE_PROTOCOL_NAME = "h2c";
+    /** TLS ALPN 协商的 HTTP/2 协议名。 */
     public static final CharSequence TLS_UPGRADE_PROTOCOL_NAME = ApplicationProtocolNames.HTTP_2;
 
+    /** PING 帧固定 8 字节 opaque 载荷。 */
     public static final int PING_FRAME_PAYLOAD_LENGTH = 8;
     public static final short MAX_UNSIGNED_BYTE = 0xff;
     /**
-     * The maximum number of padding bytes. That is the 255 padding bytes appended to the end of a frame and the 1 byte
-     * pad length field.
+     * 单帧 padding 上限：255 字节填充 + 1 字节 Pad Length 字段。
      */
     public static final int MAX_PADDING = 256;
     public static final long MAX_UNSIGNED_INT = 0xffffffffL;
@@ -63,6 +68,7 @@ public final class Http2CodecUtil {
     public static final short MAX_WEIGHT = 256;
     public static final short MIN_WEIGHT = 1;
 
+    /** RFC 7540 连接前言（24 字节 magic string），握手首包必须发送/接收。 */
     private static final ByteBuf CONNECTION_PREFACE = LeakPresenceDetector.staticInitializer(() ->
             unreleasableBuffer(directBuffer(24).writeBytes("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".getBytes(UTF_8)))
                     .asReadOnly());
@@ -104,9 +110,8 @@ public final class Http2CodecUtil {
     public static final short DEFAULT_PRIORITY_WEIGHT = 16;
     public static final int DEFAULT_HEADER_TABLE_SIZE = 4096;
     /**
-     * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">The initial value of this setting is unlimited</a>.
-     * However in practice we don't want to allow our peers to use unlimited memory by default. So we take advantage
-     * of the <q>For any given request, a lower limit than what is advertised MAY be enforced.</q> loophole.
+     * RFC 7540 规定 SETTINGS_MAX_HEADER_LIST_SIZE 初始为「无限制」；
+     * 实践中默认 8192 字节，利用规范允许的对端可强制执行更低上限的条款限制内存占用。
      */
     public static final long DEFAULT_HEADER_LIST_SIZE = 8192;
     public static final int DEFAULT_MAX_FRAME_SIZE = MAX_FRAME_SIZE_LOWER_BOUND;
@@ -127,14 +132,13 @@ public final class Http2CodecUtil {
     static final int DEFAULT_MAX_CONCURRENT_STREAMS = SMALLEST_MAX_CONCURRENT_STREAMS;
 
     /**
-     * Calculate the threshold in bytes which should trigger a {@code GO_AWAY} if a set of headers exceeds this amount.
+     * 计算触发 GOAWAY 的头列表大小阈值：为 {@code maxHeaderListSize * 1.25}（用位移避免浮点）。
      * @param maxHeaderListSize
-     *      <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a> for the local
-     *      endpoint.
-     * @return the threshold in bytes which should trigger a {@code GO_AWAY} if a set of headers exceeds this amount.
+     *      本端 {@link #SETTINGS_MAX_HEADER_LIST_SIZE} 当前值。
+     * @return 超过此字节数应发送 GOAWAY 而非仅 RST_STREAM。
      */
     public static long calculateMaxHeaderListSizeGoAway(long maxHeaderListSize) {
-        // This is equivalent to `maxHeaderListSize * 1.25` but we avoid floating point multiplication.
+        // 等价于 maxHeaderListSize * 1.25
         return maxHeaderListSize + (maxHeaderListSize >>> 2);
     }
 
@@ -143,10 +147,11 @@ public final class Http2CodecUtil {
     public static final int DEFAULT_MAX_QUEUED_CONTROL_FRAMES = 10000;
 
     /**
-     * Returns {@code true} if the stream is an outbound stream.
+     * 判断 streamId 是否为本端（由 {@code server} 标识的角色）发起的出站流。
+     * <p>规则：客户端用奇数 ID，服务器用偶数 ID（0 为连接级）。
      *
-     * @param server    {@code true} if the endpoint is a server, {@code false} otherwise.
-     * @param streamId  the stream identifier
+     * @param server    {@code true} 表示本端为服务器。
+     * @param streamId  流标识符。
      */
     public static boolean isOutboundStream(boolean server, int streamId) {
         boolean even = (streamId & 1) == 0;
@@ -172,10 +177,10 @@ public final class Http2CodecUtil {
     }
 
     /**
-     * Returns a buffer containing the {@link #CONNECTION_PREFACE}.
+     * 返回连接前言 {@link #CONNECTION_PREFACE} 的可 retain 副本，避免修改 readerIndex 影响全局缓存。
      */
     public static ByteBuf connectionPrefaceBuf() {
-        // Return a duplicate so that modifications to the reader index will not affect the original buffer.
+        // 返回 duplicate，修改读索引不影响原始只读 buffer
         return CONNECTION_PREFACE.retainedDuplicate();
     }
 
@@ -263,8 +268,7 @@ public final class Http2CodecUtil {
     }
 
     /**
-     * Provides the ability to associate the outcome of multiple {@link ChannelPromise}
-     * objects into a single {@link ChannelPromise} object.
+     * 将多个 {@link ChannelPromise} 聚合为单一结果：全部成功才 success，任一失败则携带首个失败原因。
      */
     static final class SimpleChannelPromiseAggregator extends DefaultChannelPromise {
         private final ChannelPromise promise;

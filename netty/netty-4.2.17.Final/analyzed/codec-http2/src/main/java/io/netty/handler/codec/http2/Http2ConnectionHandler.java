@@ -53,31 +53,33 @@ import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * Provides the default implementation for processing inbound frame events and delegates to a
- * {@link Http2FrameListener}
- * <p>
- * This class will read HTTP/2 frames and delegate the events to a {@link Http2FrameListener}
- * <p>
- * This interface enforces inbound flow control functionality through
- * {@link Http2LocalFlowController}
+ * HTTP/2 连接核心 handler：继承 {@link ByteToMessageDecoder} 解码入站帧，实现 {@link Http2LifecycleManager} 管理连接生命周期，
+ * 并实现 {@link ChannelOutboundHandler} 写出站帧。
+ * <p>入站帧经 {@link Http2ConnectionDecoder} 解析后交给 {@link Http2FrameListener}；入站流控由 {@link Http2LocalFlowController} 强制执行。
  */
 public class Http2ConnectionHandler extends ByteToMessageDecoder implements Http2LifecycleManager,
                                                                             ChannelOutboundHandler {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Http2ConnectionHandler.class);
 
+    /** 头过大时随 RST/GOAWAY 附带的简化响应头。 */
     private static final Http2Headers HEADERS_TOO_LARGE_HEADERS = ReadOnlyHttp2Headers.serverHeaders(false,
             HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE.codeAsText());
+    /** 用于检测对端误发 HTTP/1.x 响应的前缀 buffer。 */
     private static final ByteBuf HTTP_1_X_BUF = Unpooled.unreleasableBuffer(
         Unpooled.wrappedBuffer(new byte[] {'H', 'T', 'T', 'P', '/', '1', '.'})).asReadOnly();
 
     private final Http2ConnectionDecoder decoder;
     private final Http2ConnectionEncoder encoder;
     private final Http2Settings initialSettings;
+    /** 为 true 时 channel close 与 GOAWAY 解耦，便于优雅关闭。 */
     private final boolean decoupleCloseAndGoAway;
+    /** 握手时是否立即 flush 连接前言与初始 SETTINGS。 */
     private final boolean flushPreface;
     private ChannelFutureListener closeListener;
+    /** 当前字节解码阶段（前言 / 帧 / 升级等）。 */
     private BaseDecoder byteDecoder;
+    /** 优雅关闭超时：全部流关闭后等待多久再关连接，-1 表示无限等待。 */
     private long gracefulShutdownTimeoutMillis;
 
     protected Http2ConnectionHandler(Http2ConnectionDecoder decoder, Http2ConnectionEncoder encoder,
@@ -104,9 +106,7 @@ public class Http2ConnectionHandler extends ByteToMessageDecoder implements Http
     }
 
     /**
-     * Get the amount of time (in milliseconds) this endpoint will wait for all streams to be closed before closing
-     * the connection during the graceful shutdown process. Returns -1 if this connection is configured to wait
-     * indefinitely for all streams to close.
+     * 优雅关闭超时（毫秒）：GOAWAY 后等待所有流结束再关连接；-1 表示一直等到全部流关闭。
      */
     public long gracefulShutdownTimeoutMillis() {
         return gracefulShutdownTimeoutMillis;

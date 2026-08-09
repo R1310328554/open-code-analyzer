@@ -20,16 +20,17 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 /**
- * Manager for the state of an HTTP/2 connection with the remote end-point.
+ * HTTP/2 连接状态管理器：维护本端/对端 {@link Endpoint} 视图、流生命周期、GOAWAY 状态及应用自定义流属性。
+ * <p>典型实现为 {@link DefaultHttp2Connection}，由 {@link Http2ConnectionHandler} 驱动帧收发时更新状态。
  */
 public interface Http2Connection {
     /**
-     * Listener for life-cycle events for streams in this connection.
+     * 流生命周期监听器：流从创建、激活、半关闭到移除及 GOAWAY 事件均可订阅。
+     * <p>回调中抛出 {@link RuntimeException} 仅记录日志，不会向上传播。
      */
     interface Listener {
         /**
-         * Notifies the listener that the given stream was added to the connection. This stream may
-         * not yet be active (i.e. {@code OPEN} or {@code HALF CLOSED}).
+         * 流已加入连接（可能尚未 OPEN/HALF_CLOSED）。
          * <p>
          * If a {@link RuntimeException} is thrown it will be logged and <strong>not propagated</strong>.
          * Throwing from this method is not supported and is considered a programming error.
@@ -37,7 +38,7 @@ public interface Http2Connection {
         void onStreamAdded(Http2Stream stream);
 
         /**
-         * Notifies the listener that the given stream was made active (i.e. {@code OPEN} or {@code HALF CLOSED}).
+         * 流进入活跃态（OPEN 或 HALF_CLOSED）。
          * <p>
          * If a {@link RuntimeException} is thrown it will be logged and <strong>not propagated</strong>.
          * Throwing from this method is not supported and is considered a programming error.
@@ -45,10 +46,7 @@ public interface Http2Connection {
         void onStreamActive(Http2Stream stream);
 
         /**
-         * Notifies the listener that the given stream has transitioned from {@code OPEN} to {@code HALF CLOSED}.
-         * This method will <strong>not</strong> be called until a state transition occurs from when
-         * {@link #onStreamActive(Http2Stream)} was called.
-         * The stream can be inspected to determine which side is {@code HALF CLOSED}.
+         * 流从 OPEN 转为 HALF_CLOSED；可通过 {@link Http2Stream} 判断哪一侧已关闭。
          * <p>
          * If a {@link RuntimeException} is thrown it will be logged and <strong>not propagated</strong>.
          * Throwing from this method is not supported and is considered a programming error.
@@ -56,8 +54,7 @@ public interface Http2Connection {
         void onStreamHalfClosed(Http2Stream stream);
 
         /**
-         * Notifies the listener that the given stream is now {@code CLOSED} in both directions and will no longer
-         * be accessible via {@link #forEachActiveStream(Http2StreamVisitor)}.
+         * 流双向均已 CLOSED，不再出现在 {@link #forEachActiveStream(Http2StreamVisitor)} 中。
          * <p>
          * If a {@link RuntimeException} is thrown it will be logged and <strong>not propagated</strong>.
          * Throwing from this method is not supported and is considered a programming error.
@@ -65,9 +62,7 @@ public interface Http2Connection {
         void onStreamClosed(Http2Stream stream);
 
         /**
-         * Notifies the listener that the given stream has now been removed from the connection and
-         * will no longer be returned via {@link Http2Connection#stream(int)}. The connection may
-         * maintain inactive streams for some time before removing them.
+         * 流已从连接移除，{@link Http2Connection#stream(int)} 不再返回；非活跃流可能延迟回收。
          * <p>
          * If a {@link RuntimeException} is thrown it will be logged and <strong>not propagated</strong>.
          * Throwing from this method is not supported and is considered a programming error.
@@ -75,7 +70,7 @@ public interface Http2Connection {
         void onStreamRemoved(Http2Stream stream);
 
         /**
-         * Called when a {@code GOAWAY} frame was sent for the connection.
+         * 本端已发送 GOAWAY。
          * <p>
          * If a {@link RuntimeException} is thrown it will be logged and <strong>not propagated</strong>.
          * Throwing from this method is not supported and is considered a programming error.
@@ -86,11 +81,8 @@ public interface Http2Connection {
         void onGoAwaySent(int lastStreamId, long errorCode, ByteBuf debugData);
 
         /**
-         * Called when a {@code GOAWAY} was received from the remote endpoint. This event handler duplicates {@link
-         * Http2FrameListener#onGoAwayRead(io.netty.channel.ChannelHandlerContext, int, long, ByteBuf)}
-         * but is added here in order to simplify application logic for handling {@code GOAWAY} in a uniform way. An
-         * application should generally not handle both events, but if it does this method is called second, after
-         * notifying the {@link Http2FrameListener}.
+         * 收到对端 GOAWAY；与 {@link Http2FrameListener#onGoAwayRead} 语义重复，便于统一处理。
+         * 应用层通常只处理其一；若两者都注册，本方法在 frameListener 之后调用。
          * <p>
          * If a {@link RuntimeException} is thrown it will be logged and <strong>not propagated</strong>.
          * Throwing from this method is not supported and is considered a programming error.
@@ -102,7 +94,7 @@ public interface Http2Connection {
     }
 
     /**
-     * A view of the connection from one endpoint (local or remote).
+     * 从某一端点（本端 local 或对端 remote）视角观察连接的 API。
      */
     interface Endpoint<F extends Http2FlowController> {
         /**
@@ -241,16 +233,14 @@ public interface Http2Connection {
     }
 
     /**
-     * A key to be used for associating application-defined properties with streams within this connection.
+     * 应用可在流上挂载自定义数据的属性键，由 {@link #newKey()} 分配且连接内唯一。
      */
     interface PropertyKey {
     }
 
     /**
-     * Close this connection. No more new streams can be created after this point and
-     * all streams that exists (active or otherwise) will be closed and removed.
-     * <p>Note if iterating active streams via {@link #forEachActiveStream(Http2StreamVisitor)} and an exception is
-     * thrown it is necessary to call this method again to ensure the close completes.
+     * 关闭连接：禁止新建流，关闭并移除所有现存流，完成后通知 listener 并兑现 promise。
+     * <p>若在 {@link #forEachActiveStream} 迭代中抛异常，需再次调用以确保关闭完成。
      * @param promise Will be completed when all streams have been removed, and listeners have been notified.
      * @return A future that will be completed when all streams have been removed, and listeners have been notified.
      */
@@ -284,8 +274,7 @@ public interface Http2Connection {
     boolean streamMayHaveExisted(int streamId);
 
     /**
-     * Gets the stream object representing the connection, itself (i.e. stream zero). This object
-     * always exists.
+     * 获取 stream 0 对象，代表连接本身，始终存在。
      */
     Http2Stream connectionStream();
 

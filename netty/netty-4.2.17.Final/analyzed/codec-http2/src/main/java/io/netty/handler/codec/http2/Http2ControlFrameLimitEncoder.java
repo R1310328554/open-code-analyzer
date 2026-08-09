@@ -23,17 +23,19 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
- * {@link DecoratingHttp2ConnectionEncoder} which guards against a remote peer that will trigger a massive amount
- * of control frames but will not consume our responses to these.
- * This encoder will tear-down the connection once we reached the configured limit to reduce the risk of DDOS.
+ * {@link DecoratingHttp2ConnectionEncoder} 装饰器：限制未 ACK 的控制帧（SETTINGS ACK、PING ACK、RST_STREAM）积压数量。
+ * <p>对端大量触发控制帧却不消费应答时，达到阈值后发送 GOAWAY 并关闭连接，降低慢速控制帧类 DoS 风险。
  */
 final class Http2ControlFrameLimitEncoder extends DecoratingHttp2ConnectionEncoder {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Http2ControlFrameLimitEncoder.class);
+    /** 当前已写出但 promise 尚未完成的控制帧计数。 */
     private int outstandingControlFrames;
 
     private final int maxOutstandingControlFrames;
+    /** promise 完成时递减 {@link #outstandingControlFrames}。 */
     private final ChannelFutureListener outstandingControlFramesListener = f-> outstandingControlFrames--;
     private Http2LifecycleManager lifecycleManager;
+    /** 已达上限后不再发送新的控制帧应答。 */
     private boolean limitReached;
 
     Http2ControlFrameLimitEncoder(Http2ConnectionEncoder delegate, int maxOutstandingControlFrames) {
@@ -59,7 +61,7 @@ final class Http2ControlFrameLimitEncoder extends DecoratingHttp2ConnectionEncod
 
     @Override
     public ChannelFuture writePing(ChannelHandlerContext ctx, boolean ack, long data, ChannelPromise promise) {
-        // Only apply the limit to ping acks.
+        // 仅对 PING ACK 计入控制帧上限，主动 PING 不受限
         if (ack) {
             ChannelPromise newPromise = handleOutstandingControlFrames(ctx, promise);
             if (newPromise == null) {
@@ -83,7 +85,7 @@ final class Http2ControlFrameLimitEncoder extends DecoratingHttp2ConnectionEncod
     private ChannelPromise handleOutstandingControlFrames(ChannelHandlerContext ctx, ChannelPromise promise) {
         if (!limitReached) {
             if (outstandingControlFrames == maxOutstandingControlFrames) {
-                // Let's try to flush once as we may be able to flush some of the control frames.
+                // 达上限前先 flush 一次，尝试清空已完成的控制帧
                 ctx.flush();
             }
             if (outstandingControlFrames == maxOutstandingControlFrames) {
@@ -93,14 +95,13 @@ final class Http2ControlFrameLimitEncoder extends DecoratingHttp2ConnectionEncod
                 logger.info("{} Maximum number {} of outstanding control frames reached, closing channel.",
                         ctx.channel(), maxOutstandingControlFrames, exception);
 
-                // First notify the Http2LifecycleManager and then close the connection.
+                // 先通知 lifecycleManager 再关闭 channel
                 lifecycleManager.onError(ctx, true, exception);
                 ctx.close();
             }
             outstandingControlFrames++;
 
-            // We did not reach the limit yet, add the listener to decrement the number of outstanding control frames
-            // once the promise was completed
+            // 未达上限：promise 完成时递减计数
             return promise.unvoid().addListener(outstandingControlFramesListener);
         }
         return promise;

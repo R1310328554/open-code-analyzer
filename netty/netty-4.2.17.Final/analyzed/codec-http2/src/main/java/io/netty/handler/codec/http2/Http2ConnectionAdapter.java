@@ -17,7 +17,7 @@ package io.netty.handler.codec.http2;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Provides empty implementations of all {@link Http2Connection.Listener} methods.
+ * {@link Http2Connection.Listener} 的空实现适配器，子类只需覆写关心的回调。
  */
 public class Http2ConnectionAdapter implements Http2Connection.Listener {
     @Override

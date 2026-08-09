@@ -36,15 +36,20 @@ import static io.netty.util.ReferenceCountUtil.release;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Client-side cleartext upgrade codec from HTTP to HTTP/2.
+ * 客户端明文 HTTP/1.1 → HTTP/2（h2c）升级编解码器，实现 {@link HttpClientUpgradeHandler.UpgradeCodec}。
+ * <p>在 Upgrade 请求中注入 Base64 编码的 {@code HTTP2-Settings} 头，101 响应后切换 pipeline 并预留流 1 给升级响应。
  */
 public class Http2ClientUpgradeCodec implements HttpClientUpgradeHandler.UpgradeCodec {
 
     private static final List<CharSequence> UPGRADE_HEADERS = Collections.singletonList(HTTP_UPGRADE_SETTINGS_HEADER);
 
+    /** pipeline 中 HTTP/2 连接 handler 的名称，null 时自动生成。 */
     private final String handlerName;
+    /** 底层连接状态机，负责 onHttpClientUpgrade 预留流 1。 */
     private final Http2ConnectionHandler connectionHandler;
+    /** 升级成功后实际写入 pipeline 的 handler（可与 connectionHandler 相同）。 */
     private final ChannelHandler upgradeToHandler;
+    /** 可选的 {@link Http2MultiplexHandler}，与 {@link Http2FrameCodec} 配合使用。 */
     private final ChannelHandler http2MultiplexHandler;
 
     public Http2ClientUpgradeCodec(Http2FrameCodec frameCodec, ChannelHandler upgradeToHandler) {
@@ -125,17 +130,16 @@ public class Http2ClientUpgradeCodec implements HttpClientUpgradeHandler.Upgrade
     public void upgradeTo(ChannelHandlerContext ctx, FullHttpResponse upgradeResponse)
         throws Exception {
         try {
-            // Add the handler to the pipeline.
+            // 将 HTTP/2 handler 插入当前 handler 之后，完成协议切换
             ctx.pipeline().addAfter(ctx.name(), handlerName, upgradeToHandler);
 
-            // Add the Http2 Multiplex handler as this handler handle events produced by the connectionHandler.
-            // See https://github.com/netty/netty/issues/9495
+            // Http2MultiplexHandler 处理 connectionHandler 产生的事件（见 netty#9495）
             if (http2MultiplexHandler != null) {
                 final String name = ctx.pipeline().context(connectionHandler).name();
                 ctx.pipeline().addAfter(name, null, http2MultiplexHandler);
             }
 
-            // Reserve local stream 1 for the response.
+            // 客户端升级场景下预留本地流 1，用于接收服务器对 Upgrade 的 HTTP/2 响应
             connectionHandler.onHttpClientUpgrade();
         } catch (Http2Exception e) {
             ctx.fireExceptionCaught(e);
@@ -144,8 +148,7 @@ public class Http2ClientUpgradeCodec implements HttpClientUpgradeHandler.Upgrade
     }
 
     /**
-     * Converts the current settings for the handler to the Base64-encoded representation used in
-     * the HTTP2-Settings upgrade header.
+     * 将本端 {@link Http2Settings} 序列化为 SETTINGS 帧载荷，再 Base64（URL_SAFE）编码供 HTTP2-Settings 头使用。
      */
     private CharSequence getSettingsHeaderValue(ChannelHandlerContext ctx) {
         ByteBuf buf = null;

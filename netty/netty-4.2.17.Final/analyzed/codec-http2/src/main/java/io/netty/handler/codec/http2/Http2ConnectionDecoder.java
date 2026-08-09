@@ -21,15 +21,13 @@ import java.io.Closeable;
 import java.util.List;
 
 /**
- * Handler for inbound traffic on behalf of {@link Http2ConnectionHandler}. Performs basic protocol
- * conformance on inbound frames before calling the delegate {@link Http2FrameListener} for
- * application-specific processing. Note that frames of an unknown type (i.e. HTTP/2 extensions)
- * will skip all protocol checks and be given directly to the listener for processing.
+ * {@link Http2ConnectionHandler} 的入站解码门面：在调用 {@link Http2FrameListener} 前做协议一致性校验。
+ * <p>未知帧类型（扩展帧）跳过校验直接交给 listener；标准帧违反 RFC 7540 则抛 {@link Http2Exception}。
  */
 public interface Http2ConnectionDecoder extends Closeable {
 
     /**
-     * Sets the lifecycle manager. Must be called as part of initialization before the decoder is used.
+     * 绑定生命周期管理器，解码器初始化阶段必须调用。
      */
     void lifecycleManager(Http2LifecycleManager lifecycleManager);
 
@@ -56,7 +54,7 @@ public interface Http2ConnectionDecoder extends Closeable {
     Http2FrameListener frameListener();
 
     /**
-     * Called by the {@link Http2ConnectionHandler} to decode the next frame from the input buffer.
+     * 由 {@link Http2ConnectionHandler} 调用，从输入缓冲解码下一帧并写入 {@code out} 列表。
      */
     void decodeFrame(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Http2Exception;
 
@@ -66,7 +64,7 @@ public interface Http2ConnectionDecoder extends Closeable {
     Http2Settings localSettings();
 
     /**
-     * Indicates whether or not the first initial {@code SETTINGS} frame was received from the remote endpoint.
+     * 是否已收到对端首个 SETTINGS 帧（连接前言握手完成标志之一）。
      */
     boolean prefaceReceived();
 

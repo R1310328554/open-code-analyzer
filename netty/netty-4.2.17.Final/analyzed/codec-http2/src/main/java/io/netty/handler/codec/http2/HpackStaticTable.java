@@ -43,11 +43,16 @@ import java.util.List;
 
 import static io.netty.handler.codec.http2.HpackUtil.equalsVariableTime;
 
+/**
+ * RFC 7541 附录 A 定义的 HPACK 静态表：61 条预置头域，编码时可直接用索引引用而无需字面量传输。
+ * <p>启动时构建两个哈希表——按头名查最小索引、按「名+非空值」查完整索引，供 {@link HpackEncoder}/{@link HpackDecoder} 快速命中。
+ */
 final class HpackStaticTable {
 
+    /** 静态表中未找到匹配项时的返回值。 */
     static final int NOT_FOUND = -1;
 
-    // Appendix A: Static Table
+    // Appendix A: Static Table — RFC 7541 附录 A 完整 61 项静态表
     // https://tools.ietf.org/html/rfc7541#appendix-A
     private static final List<HpackHeaderField> STATIC_TABLE = Arrays.asList(
     /*  1 */ newEmptyPseudoHeaderField(PseudoHeaderName.AUTHORITY),
@@ -141,16 +146,15 @@ final class HpackStaticTable {
         return new HpackHeaderField(name.value(), AsciiString.EMPTY_STRING);
     }
 
-    // The table size and bit shift are chosen so that each hash bucket contains a single header name.
+    // 表大小与位移经过精心选取，使每个哈希桶仅容纳一个头名，查找 O(1) 且无链式冲突
     private static final int HEADER_NAMES_TABLE_SIZE = 1 << 9;
 
     private static final int HEADER_NAMES_TABLE_SHIFT = PlatformDependent.BIG_ENDIAN_NATIVE_ORDER ? 22 : 18;
 
-    // A table mapping header names to their associated indexes.
+    /** 头名 → 最小静态索引 的查找表（含是否空值标志）。 */
     private static final HeaderNameIndex[] HEADER_NAMES = new HeaderNameIndex[HEADER_NAMES_TABLE_SIZE];
     static {
-        // Iterate through the static table in reverse order to
-        // save the smallest index for a given name in the table.
+        // 逆序遍历静态表，使同名头域保留最小索引（HPACK 索引越小编码越短）
         for (int index = STATIC_TABLE.size(); index > 0; index--) {
             HpackHeaderField entry = getEntry(index);
             int bucket = headerNameBucket(entry.name);
@@ -164,13 +168,13 @@ final class HpackStaticTable {
         }
     }
 
-    // The table size and bit shift are chosen so that each hash bucket contains a single header.
+    // 非空值头域表：桶数 64，同样保证每桶唯一，用于「名+值」完全匹配查找
     private static final int HEADERS_WITH_NON_EMPTY_VALUES_TABLE_SIZE = 1 << 6;
 
     private static final int HEADERS_WITH_NON_EMPTY_VALUES_TABLE_SHIFT =
       PlatformDependent.BIG_ENDIAN_NATIVE_ORDER ? 0 : 6;
 
-    // A table mapping headers with non-empty values to their associated indexes.
+    /** 名+非空值 → 静态索引，支持 Indexed Header Field 整项命中。 */
     private static final HeaderIndex[] HEADERS_WITH_NON_EMPTY_VALUES =
       new HeaderIndex[HEADERS_WITH_NON_EMPTY_VALUES_TABLE_SIZE];
     static {
@@ -189,21 +193,18 @@ final class HpackStaticTable {
         }
     }
 
-    /**
-     * The number of header fields in the static table.
-     */
+    /** 静态表条目总数（61）。 */
     static final int length = STATIC_TABLE.size();
 
     /**
-     * Return the header field at the given index value.
+     * 按 HPACK 索引（1-based）返回静态表项。
      */
     static HpackHeaderField getEntry(int index) {
         return STATIC_TABLE.get(index - 1);
     }
 
     /**
-     * Returns the lowest index value for the given header field name in the static table. Returns
-     * -1 if the header field name is not in the static table.
+     * 返回给定头名在静态表中的最小索引；不存在则 {@link #NOT_FOUND}。
      */
     static int getIndex(CharSequence name) {
         HeaderNameIndex entry = getEntry(name);
@@ -211,8 +212,7 @@ final class HpackStaticTable {
     }
 
     /**
-     * Returns the index value for the given header field in the static table. Returns -1 if the
-     * header field is not in the static table.
+     * 按头名+值查找完整静态表项索引；空值时仅匹配「名+空值」条目，否则走非空值哈希表。
      */
     static int getIndexInsensitive(CharSequence name, CharSequence value) {
         if (value.length() == 0) {
@@ -251,6 +251,7 @@ final class HpackStaticTable {
         return (AsciiString.hashCode(s) >> shift) & mask;
     }
 
+    /** 头名索引条目：记录最小索引及该条目是否以空值为值。 */
     private static final class HeaderNameIndex {
         final CharSequence name;
         final int index;
@@ -263,6 +264,7 @@ final class HpackStaticTable {
         }
     }
 
+    /** 完整头域（名+非空值）索引条目。 */
     private static final class HeaderIndex {
         final CharSequence name;
         final CharSequence value;
@@ -275,7 +277,7 @@ final class HpackStaticTable {
         }
     }
 
-    // singleton
+    // 工具类，禁止实例化
     private HpackStaticTable() {
     }
 }

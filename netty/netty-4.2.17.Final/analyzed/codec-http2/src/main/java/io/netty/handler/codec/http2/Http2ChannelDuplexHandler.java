@@ -22,17 +22,17 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.util.internal.StringUtil;
 
 /**
- * A {@link ChannelDuplexHandler} providing additional functionality for HTTP/2. Specifically it allows to:
+ * 面向 HTTP/2 的 {@link ChannelDuplexHandler} 基类，在 pipeline 中依赖前置的 {@link Http2FrameCodec}。
  * <ul>
- *     <li>Create new outbound streams using {@link #newStream()}.</li>
- *     <li>Iterate over all active streams using {@link #forEachActiveStream(Http2FrameStreamVisitor)}.</li>
+ *     <li>{@link #newStream()} 创建出站流（线程安全）。</li>
+ *     <li>{@link #forEachActiveStream(Http2FrameStreamVisitor)} 遍历当前活跃流（仅 event loop 线程）。</li>
  * </ul>
  *
- * <p>The {@link Http2FrameCodec} is required to be part of the {@link ChannelPipeline} before this handler is added,
- * or else an {@link IllegalStateException} will be thrown.
+ * <p>必须在 {@link Http2FrameCodec} 之后加入 pipeline，否则 {@link #handlerAdded} 抛出 {@link IllegalStateException}。
  */
 public abstract class Http2ChannelDuplexHandler extends ChannelDuplexHandler {
 
+    /** 从 pipeline 解析到的 {@link Http2FrameCodec}，handler 移除后置 null。 */
     private volatile Http2FrameCodec frameCodec;
 
     @Override
@@ -42,7 +42,7 @@ public abstract class Http2ChannelDuplexHandler extends ChannelDuplexHandler {
     }
 
     protected void handlerAdded0(@SuppressWarnings("unused") ChannelHandlerContext ctx) throws Exception {
-        // NOOP
+        // 子类可覆写以在 frameCodec 就绪后做初始化
     }
 
     @Override
@@ -59,7 +59,7 @@ public abstract class Http2ChannelDuplexHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Creates a new {@link Http2FrameStream} object.
+     * 创建新的 {@link Http2FrameStream}，用于客户端主动发起请求或服务器推送前的流对象分配。
      *
      * <p>This method is <em>thread-safe</em>.
      */
@@ -73,7 +73,7 @@ public abstract class Http2ChannelDuplexHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Allows to iterate over all currently active streams.
+     * 遍历所有当前活跃（OPEN / HALF_CLOSED）的 HTTP/2 流。
      *
      * <p>This method may only be called from the eventloop thread.
      */

@@ -21,11 +21,8 @@ import io.netty.handler.stream.ChunkedInput;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * A {@link ChunkedInput} that fetches data chunk by chunk for use with HTTP/2 Data Frames.
- * <p>
- * Each chunk from the input data will be wrapped within a {@link Http2DataFrame}. At the end of the input data,
- * {@link Http2DataFrame#isEndStream()} will be set to true and will be written.
- * <p>
+ * 将 {@link ChunkedInput} 逐块包装为 {@link Http2DataFrame} 的适配器，适用于大文件/流式响应。
+ * <p>每块数据对应一帧 DATA；输入耗尽时最后一帧设置 {@link Http2DataFrame#isEndStream()}=true。
  * <p>
  * <pre>
  *
@@ -47,6 +44,7 @@ public final class Http2DataChunkedInput implements ChunkedInput<Http2DataFrame>
 
     private final ChunkedInput<ByteBuf> input;
     private final Http2FrameStream stream;
+    /** 是否已发送带 END_STREAM 的最后一帧。 */
     private boolean endStreamSent;
 
     /**
@@ -63,7 +61,7 @@ public final class Http2DataChunkedInput implements ChunkedInput<Http2DataFrame>
     @Override
     public boolean isEndOfInput() throws Exception {
         if (input.isEndOfInput()) {
-            // Only end of input after last HTTP chunk has been sent
+            // 底层输入已耗尽，但须等 END_STREAM 帧发出后才算真正 endOfInput
             return endStreamSent;
         }
         return false;

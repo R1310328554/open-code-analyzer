@@ -19,29 +19,28 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
 /**
- * HTTP/2 DATA frame.
+ * HTTP/2 DATA 帧抽象：承载应用载荷，同时是 {@link Http2StreamFrame} 与 {@link ByteBufHolder}。
  */
 public interface Http2DataFrame extends Http2StreamFrame, ByteBufHolder {
 
     /**
-     * Frame padding to use. Will be non-negative and less than 256.
+     * 帧 padding 字节数，非负且小于 256。
      */
     int padding();
 
     /**
-     * Payload of DATA frame. Will not be {@code null}.
+     * DATA 帧载荷，永不为 {@code null}（可为 empty buffer）。
      */
     @Override
     ByteBuf content();
 
     /**
-     * Returns the number of bytes that are flow-controlled initially, so even if the {@link #content()} is consumed
-     * this will not change.
+     * 初始计入流控的字节数；即使后续消费 {@link #content()} 此值不变，用于 WINDOW_UPDATE 计算。
      */
     int initialFlowControlledBytes();
 
     /**
-     * Returns {@code true} if the END_STREAM flag is set.
+     * 是否设置 END_STREAM 标志（本帧结束该流）。
      */
     boolean isEndStream();
 
