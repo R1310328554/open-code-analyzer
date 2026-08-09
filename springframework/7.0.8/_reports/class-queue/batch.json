@@ -1,16 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:43:48Z",
-  "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/LazyConnectionDataSourceProxy.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/init/ScriptUtils.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/object/RdbmsOperation.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/object/SqlQuery.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/JdbcUtils.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/SQLErrorCodeSQLExceptionTranslator.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/lob/DefaultLobHandler.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/ResultSetWrappingSqlRowSet.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/rowset/SqlRowSet.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 1482
+  "done": 1491
 }
