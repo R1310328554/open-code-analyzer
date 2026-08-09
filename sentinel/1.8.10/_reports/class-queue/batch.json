@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:19:46Z",
-  "files": [
-    "sentinel-demo/sentinel-demo-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/dubbo/demo1/FooProviderBootstrap.java",
-    "sentinel-demo/sentinel-demo-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/dubbo/demo1/FooServiceImpl.java",
-    "sentinel-demo/sentinel-demo-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/dubbo/demo1/ProviderConfiguration.java",
-    "sentinel-demo/sentinel-demo-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/dubbo/demo2/FooConsumerBootstrap.java",
-    "sentinel-demo/sentinel-demo-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/dubbo/demo2/FooProviderBootstrap.java",
-    "sentinel-demo/sentinel-demo-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/dubbo/demo2/FooServiceImpl.java",
-    "sentinel-demo/sentinel-demo-dubbo/src/main/java/com/alibaba/csp/sentinel/demo/dubbo/demo2/ProviderConfiguration.java",
-    "sentinel-demo/sentinel-demo-dynamic-file-rule/src/main/java/com/alibaba/csp/sentinel/demo/file/rule/FileDataSourceDemo.java",
-    "sentinel-demo/sentinel-demo-dynamic-file-rule/src/main/java/com/alibaba/csp/sentinel/demo/file/rule/FileDataSourceInit.java",
-    "sentinel-demo/sentinel-demo-dynamic-file-rule/src/main/java/com/alibaba/csp/sentinel/demo/file/rule/FlowQpsRunner.java",
-    "sentinel-demo/sentinel-demo-dynamic-file-rule/src/main/java/com/alibaba/csp/sentinel/demo/file/rule/JarFileDataSourceDemo.java",
-    "sentinel-demo/sentinel-demo-etcd-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/etcd/EtcdConfigSender.java",
-    "sentinel-demo/sentinel-demo-etcd-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/etcd/EtcdDataSourceDemo.java",
-    "sentinel-demo/sentinel-demo-jax-rs/src/main/java/com/alibaba/csp/sentinel/demo/jaxrs/CustomExceptionMapper.java",
-    "sentinel-demo/sentinel-demo-jax-rs/src/main/java/com/alibaba/csp/sentinel/demo/jaxrs/HelloEntity.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 215,
-  "done": 720
+  "done": 735
 }
