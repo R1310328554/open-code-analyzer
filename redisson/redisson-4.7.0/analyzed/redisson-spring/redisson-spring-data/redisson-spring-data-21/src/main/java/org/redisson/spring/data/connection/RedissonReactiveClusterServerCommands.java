@@ -33,16 +33,21 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * 集群模式下 Spring Data Redis 响应式 Server 命令实现。
+ * <p>继承 {@link RedissonReactiveServerCommands} 并实现 {@link ReactiveClusterServerCommands}；
+支持对单个 {@link RedisClusterNode} 执行 BGSAVE、INFO、CONFIG 等管理命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveClusterServerCommands extends RedissonReactiveServerCommands implements ReactiveClusterServerCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveClusterServerCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** 在指定节点触发 BGREWRITEAOF。 */
     @Override
     public Mono<String> bgReWriteAof(RedisClusterNode node) {
         return execute(node, BGREWRITEAOF);
@@ -70,6 +75,7 @@ public class RedissonReactiveClusterServerCommands extends RedissonReactiveServe
     
     private static final RedisStrictCommand<String> FLUSHDB = new RedisStrictCommand<String>("FLUSHDB");
 
+    /** 在指定节点执行 FLUSHDB。 */
     @Override
     public Mono<String> flushDb(RedisClusterNode node) {
         return execute(node, FLUSHDB);
@@ -77,6 +83,7 @@ public class RedissonReactiveClusterServerCommands extends RedissonReactiveServe
     
     private static final RedisStrictCommand<String> FLUSHALL = new RedisStrictCommand<String>("FLUSHALL");
 
+    /** 在指定节点执行 FLUSHALL。 */
     @Override
     public Mono<String> flushAll(RedisClusterNode node) {
         return execute(node, FLUSHALL);
@@ -93,6 +100,7 @@ public class RedissonReactiveClusterServerCommands extends RedissonReactiveServe
     }
 
 
+    /** 读取指定节点的 INFO 默认段。 */
     @Override
     public Mono<Properties> info(RedisClusterNode node) {
         return execute(node, INFO_DEFAULT);
@@ -125,6 +133,7 @@ public class RedissonReactiveClusterServerCommands extends RedissonReactiveServe
 
     private static final StringToRedisClientInfoConverter CONVERTER = new StringToRedisClientInfoConverter();
     
+    /** 获取指定节点的 CLIENT LIST 并转换为 {@link RedisClientInfo} 流。 */
     @Override
     public Flux<RedisClientInfo> getClientList(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
