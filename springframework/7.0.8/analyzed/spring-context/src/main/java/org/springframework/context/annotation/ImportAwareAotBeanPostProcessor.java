@@ -30,16 +30,17 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.util.ClassUtils;
 
 /**
- * A {@link BeanPostProcessor} that honors {@link ImportAware} callback using
- * a mapping computed at build time.
+ * 使用构建时计算的映射来触发 {@link ImportAware} 回调的 {@link BeanPostProcessor}。
  *
  * @author Stephane Nicoll
  * @since 6.0
  */
 public final class ImportAwareAotBeanPostProcessor implements BeanPostProcessor, PriorityOrdered {
 
+	/** 元数据读取工厂，用于加载导入方配置类的注解元数据。 */
 	private final MetadataReaderFactory metadataReaderFactory;
 
+	/** 被导入类到其导入方配置类全限定名的映射。 */
 	private final Map<String, String> importsMapping;
 
 
@@ -63,11 +64,13 @@ public final class ImportAwareAotBeanPostProcessor implements BeanPostProcessor,
 	}
 
 	private void setAnnotationMetadata(ImportAware instance) {
+		// 查找导入该 ImportAware 实例的配置类
 		String importingClass = getImportingClassFor(instance);
 		if (importingClass == null) {
 			return; // import aware configuration class not imported
 		}
 		try {
+			// 读取导入方配置类的注解元数据并注入
 			MetadataReader metadataReader = this.metadataReaderFactory.getMetadataReader(importingClass);
 			instance.setImportMetadata(metadataReader.getAnnotationMetadata());
 		}

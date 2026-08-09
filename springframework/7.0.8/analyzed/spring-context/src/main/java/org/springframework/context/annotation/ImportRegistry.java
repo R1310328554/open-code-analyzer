@@ -21,15 +21,23 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
- * Registry of imported class {@link AnnotationMetadata}.
+ * 已导入类的 {@link AnnotationMetadata} 注册表。
  *
  * @author Juergen Hoeller
  * @author Phillip Webb
  */
 interface ImportRegistry {
 
+	/**
+	 * 返回导入给定类的配置类的注解元数据。
+	 * @param importedClass 被导入类的全限定名
+	 */
 	@Nullable AnnotationMetadata getImportingClassFor(String importedClass);
 
+	/**
+	 * 移除给定导入配置类的注册信息。
+	 * @param importingClass 导入方的配置类全限定名
+	 */
 	void removeImportingClass(String importingClass);
 
 }

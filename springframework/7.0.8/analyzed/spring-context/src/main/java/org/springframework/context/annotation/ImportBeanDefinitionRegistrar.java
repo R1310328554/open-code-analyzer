@@ -22,17 +22,15 @@ import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
- * Interface to be implemented by types that register additional bean definitions when
- * processing @{@link Configuration} classes. Useful when operating at the bean definition
- * level (as opposed to {@code @Bean} method/instance level) is desired or necessary.
+ * 处理 @{@link Configuration} 类时注册额外 Bean 定义的类型应实现的接口。
+ * 适用于希望在 Bean 定义级别（而非 {@code @Bean} 方法/实例级别）操作的场景。
  *
- * <p>Along with {@code @Configuration} and {@link ImportSelector}, classes of this type
- * may be provided to the @{@link Import} annotation (or may also be returned from an
- * {@code ImportSelector}).
+ * <p>与 {@code @Configuration} 和 {@link ImportSelector} 一样，本类型可提供给
+ * @{@link Import} 注解（也可由 {@code ImportSelector} 返回）。
  *
- * <p>An {@link ImportBeanDefinitionRegistrar} may implement any of the following
- * {@link org.springframework.beans.factory.Aware Aware} interfaces, and their respective
- * methods will be called prior to {@link #registerBeanDefinitions}:
+ * <p>{@link ImportBeanDefinitionRegistrar} 可实现以下任意
+ * {@link org.springframework.beans.factory.Aware Aware} 接口，
+ * 其对应方法将在 {@link #registerBeanDefinitions} 之前调用：
  * <ul>
  * <li>{@link org.springframework.context.EnvironmentAware EnvironmentAware}</li>
  * <li>{@link org.springframework.beans.factory.BeanFactoryAware BeanFactoryAware}
@@ -40,8 +38,7 @@ import org.springframework.core.type.AnnotationMetadata;
  * <li>{@link org.springframework.context.ResourceLoaderAware ResourceLoaderAware}
  * </ul>
  *
- * <p>Alternatively, the class may provide a single constructor with one or more of
- * the following supported parameter types:
+ * <p>或者，该类可提供接受以下一种或多种受支持参数类型的单参构造函数：
  * <ul>
  * <li>{@link org.springframework.core.env.Environment Environment}</li>
  * <li>{@link org.springframework.beans.factory.BeanFactory BeanFactory}</li>
@@ -49,7 +46,7 @@ import org.springframework.core.type.AnnotationMetadata;
  * <li>{@link org.springframework.core.io.ResourceLoader ResourceLoader}</li>
  * </ul>
  *
- * <p>See implementations and associated unit tests for usage examples.
+ * <p>用法示例请参阅实现类及相关单元测试。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -61,21 +58,19 @@ import org.springframework.core.type.AnnotationMetadata;
 public interface ImportBeanDefinitionRegistrar {
 
 	/**
-	 * Register bean definitions as necessary based on the given annotation metadata of
-	 * the importing {@code @Configuration} class.
-	 * <p>Note that {@link BeanDefinitionRegistryPostProcessor} types may <em>not</em> be
-	 * registered here, due to lifecycle constraints related to {@code @Configuration}
-	 * class processing.
-	 * <p>The default implementation delegates to
-	 * {@link #registerBeanDefinitions(AnnotationMetadata, BeanDefinitionRegistry)}.
-	 * @param importingClassMetadata annotation metadata of the importing class
-	 * @param registry current bean definition registry
-	 * @param importBeanNameGenerator the bean name generator strategy for imported beans:
-	 * {@link ConfigurationClassPostProcessor#IMPORT_BEAN_NAME_GENERATOR} by default, or a
-	 * user-provided one if {@link ConfigurationClassPostProcessor#setBeanNameGenerator}
-	 * has been set. In the latter case, the passed-in strategy will be the same used for
-	 * component scanning in the containing application context (otherwise, the default
-	 * component-scan naming strategy is {@link AnnotationBeanNameGenerator#INSTANCE}).
+	 * 根据导入方 {@code @Configuration} 类的给定注解元数据，按需注册 Bean 定义。
+	 * <p>注意：由于与 {@code @Configuration} 类处理相关的生命周期约束，
+	 * 此处<em>不得</em>注册 {@link BeanDefinitionRegistryPostProcessor} 类型。
+	 * <p>默认实现委托给
+	 * {@link #registerBeanDefinitions(AnnotationMetadata, BeanDefinitionRegistry)}。
+	 * @param importingClassMetadata 导入类的注解元数据
+	 * @param registry 当前 Bean 定义注册表
+	 * @param importBeanNameGenerator 导入 Bean 的名称生成策略：默认使用
+	 * {@link ConfigurationClassPostProcessor#IMPORT_BEAN_NAME_GENERATOR}；
+	 * 若已设置 {@link ConfigurationClassPostProcessor#setBeanNameGenerator}，
+	 * 则使用用户提供的策略。后一种情况下，传入策略与包含应用上下文中组件扫描
+	 * 使用的策略相同（否则默认组件扫描命名策略为
+	 * {@link AnnotationBeanNameGenerator#INSTANCE}）。
 	 * @since 5.2
 	 * @see ConfigurationClassPostProcessor#IMPORT_BEAN_NAME_GENERATOR
 	 * @see ConfigurationClassPostProcessor#setBeanNameGenerator
@@ -87,14 +82,12 @@ public interface ImportBeanDefinitionRegistrar {
 	}
 
 	/**
-	 * Register bean definitions as necessary based on the given annotation metadata of
-	 * the importing {@code @Configuration} class.
-	 * <p>Note that {@link BeanDefinitionRegistryPostProcessor} types may <em>not</em> be
-	 * registered here, due to lifecycle constraints related to {@code @Configuration}
-	 * class processing.
-	 * <p>The default implementation is empty.
-	 * @param importingClassMetadata annotation metadata of the importing class
-	 * @param registry current bean definition registry
+	 * 根据导入方 {@code @Configuration} 类的给定注解元数据，按需注册 Bean 定义。
+	 * <p>注意：由于与 {@code @Configuration} 类处理相关的生命周期约束，
+	 * 此处<em>不得</em>注册 {@link BeanDefinitionRegistryPostProcessor} 类型。
+	 * <p>默认实现为空。
+	 * @param importingClassMetadata 导入类的注解元数据
+	 * @param registry 当前 Bean 定义注册表
 	 */
 	default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 	}

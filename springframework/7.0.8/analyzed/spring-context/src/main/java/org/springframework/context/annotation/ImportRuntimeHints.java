@@ -26,14 +26,11 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
 /**
- * Indicates that one or more {@link RuntimeHintsRegistrar} implementations
- * should be processed.
+ * 指示应处理一个或多个 {@link RuntimeHintsRegistrar} 实现。
  *
- * <p>Unlike declaring {@link RuntimeHintsRegistrar} using
- * {@code META-INF/spring/aot.factories}, this annotation allows for more flexible
- * registration where it is only processed if the annotated component or bean
- * method is actually registered in the bean factory. To illustrate this
- * behavior, consider the following example:
+ * <p>与通过 {@code META-INF/spring/aot.factories} 声明 {@link RuntimeHintsRegistrar} 不同，
+ * 本注解允许更灵活的注册：仅当带注解的组件或 Bean 方法实际在 Bean 工厂中注册时才处理。
+ * 以下示例说明了此行为：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -47,17 +44,14 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
  *     }
  * }</pre>
  *
- * <p>If the configuration class above is processed, {@code MyHints} will be
- * contributed only if {@code MyCondition} matches. If the condition does not
- * match, {@code MyService} will not be defined as a bean and the hints will
- * not be processed either.
+ * <p>若上述配置类被处理，仅当 {@code MyCondition} 匹配时才会贡献 {@code MyHints}。
+ * 若条件不匹配，{@code MyService} 不会定义为 Bean，hints 也不会被处理。
  *
- * <p>{@code @ImportRuntimeHints} can also be applied to any test class that uses
- * the <em>Spring TestContext Framework</em> to load an {@code ApplicationContext}.
+ * <p>{@code @ImportRuntimeHints} 也可应用于使用<em>Spring TestContext Framework</em>
+ * 加载 {@code ApplicationContext} 的任意测试类。
  *
- * <p>If several components or test classes refer to the same {@link RuntimeHintsRegistrar}
- * implementation, the registrar will only be invoked once for the given bean factory
- * processing or test suite.
+ * <p>若多个组件或测试类引用同一 {@link RuntimeHintsRegistrar} 实现，
+ * 对于给定的 Bean 工厂处理或测试套件，该注册器仅调用一次。
  *
  * @author Brian Clozel
  * @author Stephane Nicoll
@@ -71,7 +65,7 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 public @interface ImportRuntimeHints {
 
 	/**
-	 * {@link RuntimeHintsRegistrar} implementations to process.
+	 * 要处理的 {@link RuntimeHintsRegistrar} 实现。
 	 */
 	Class<? extends RuntimeHintsRegistrar>[] value();
 

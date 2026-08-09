@@ -21,21 +21,17 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.type.MethodMetadata;
 
 /**
- * Extended variant of {@link FullyQualifiedAnnotationBeanNameGenerator} for
- * {@link Configuration @Configuration} class purposes, not only enforcing
- * fully-qualified names for component and configuration classes themselves
- * but also fully-qualified default bean names ("className.methodName") for
- * {@link Bean @Bean} methods. By default, this only affects methods without
- * an explicit {@link Bean#name() name} attribute specified.
+ * 面向 {@link Configuration @Configuration} 类用途的
+ * {@link FullyQualifiedAnnotationBeanNameGenerator} 扩展变体：不仅对组件类和配置类本身
+ * 强制使用全限定名称，还对 {@link Bean @Bean} 方法使用全限定默认 Bean 名称
+ * （格式为 {@code "className.methodName"}）。默认情况下，这仅影响未显式指定
+ * {@link Bean#name() name} 属性的方法。
  *
- * <p>This provides an alternative to the default bean name generation for
- * {@code @Bean} methods (which uses the plain method name), primarily for use
- * in large applications with potential bean name overlaps. Favor this bean
- * naming strategy over {@code FullyQualifiedAnnotationBeanNameGenerator} if
- * you expect such naming conflicts for {@code @Bean} methods, as long as the
- * application does not depend on {@code @Bean} method names as bean names.
- * Where the name does matter, make sure to declare {@code @Bean("myBeanName")}
- * in such a scenario, even if it repeats the method name as the bean name.
+ * <p>这为 {@code @Bean} 方法的默认 Bean 名称生成（使用纯方法名）提供了替代方案，
+ * 主要用于可能存在 Bean 名称重叠的大型应用。若预期 {@code @Bean} 方法会出现此类
+ * 命名冲突，且应用不依赖 {@code @Bean} 方法名作为 Bean 名称，应优先选用本策略而非
+ * {@code FullyQualifiedAnnotationBeanNameGenerator}。若名称确实重要，即使与方法名重复，
+ * 也应显式声明 {@code @Bean("myBeanName")}。
  *
  * @author Juergen Hoeller
  * @since 7.0
@@ -48,8 +44,8 @@ public class FullyQualifiedConfigurationBeanNameGenerator extends FullyQualified
 		implements ConfigurationBeanNameGenerator {
 
 	/**
-	 * A convenient constant for a default {@code FullyQualifiedConfigurationBeanNameGenerator}
-	 * instance, as used for configuration-level import purposes.
+	 * 默认 {@code FullyQualifiedConfigurationBeanNameGenerator} 实例的便捷常量，
+	 * 用于配置级导入场景。
 	 */
 	public static final FullyQualifiedConfigurationBeanNameGenerator INSTANCE =
 			new FullyQualifiedConfigurationBeanNameGenerator();

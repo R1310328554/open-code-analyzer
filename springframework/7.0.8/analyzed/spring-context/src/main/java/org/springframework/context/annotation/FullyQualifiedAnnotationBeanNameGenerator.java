@@ -20,20 +20,17 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.util.Assert;
 
 /**
- * An extension of {@code AnnotationBeanNameGenerator} that uses the fully qualified
- * class name as the default bean name if an explicit bean name is not supplied via
- * a supported type-level annotation such as {@code @Component} (see
- * {@link AnnotationBeanNameGenerator} for details on supported annotations).
+ * {@code AnnotationBeanNameGenerator} 的扩展：若未通过 {@code @Component} 等受支持的
+ * 类型级注解显式指定 Bean 名称，则默认使用全限定类名作为 Bean 名称（受支持注解详见
+ * {@link AnnotationBeanNameGenerator}）。
  *
- * <p>Favor this bean naming strategy over {@code AnnotationBeanNameGenerator} if
- * you run into naming conflicts due to multiple autodetected components having the
- * same non-qualified class name (i.e., classes with identical names but residing in
- * different packages). If you need such conflict avoidance for {@link Bean @Bean}
- * methods as well, consider {@link FullyQualifiedConfigurationBeanNameGenerator}.
+ * <p>若因多个自动检测到的组件具有相同的非限定类名（即类名相同但位于不同包）而导致命名冲突，
+ * 应优先选用本命名策略而非 {@code AnnotationBeanNameGenerator}。
+ * 若 {@link Bean @Bean} 方法也需要避免此类冲突，请考虑
+ * {@link FullyQualifiedConfigurationBeanNameGenerator}。
  *
- * <p>Note that an instance of this class is used by default for configuration-level
- * import purposes; whereas, the default for component scanning purposes is a plain
- * {@code AnnotationBeanNameGenerator}.
+ * <p>注意：配置级导入场景默认使用本类实例；而组件扫描场景默认使用普通的
+ * {@code AnnotationBeanNameGenerator}。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -46,8 +43,8 @@ import org.springframework.util.Assert;
 public class FullyQualifiedAnnotationBeanNameGenerator extends AnnotationBeanNameGenerator {
 
 	/**
-	 * A convenient constant for a default {@code FullyQualifiedAnnotationBeanNameGenerator}
-	 * instance, as used for configuration-level import purposes.
+	 * 默认 {@code FullyQualifiedAnnotationBeanNameGenerator} 实例的便捷常量，
+	 * 用于配置级导入场景。
 	 * @since 5.2.11
 	 */
 	public static final FullyQualifiedAnnotationBeanNameGenerator INSTANCE =

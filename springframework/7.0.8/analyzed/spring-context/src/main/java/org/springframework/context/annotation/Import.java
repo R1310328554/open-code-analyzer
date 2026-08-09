@@ -25,36 +25,29 @@ import java.lang.annotation.Target;
 import org.springframework.beans.factory.BeanRegistrar;
 
 /**
- * Indicates one or more <em>component classes</em> to import &mdash; typically
- * {@link Configuration @Configuration} classes.
+ * 指示要导入的一个或多个<em>组件类</em>——通常是 {@link Configuration @Configuration} 类。
  *
- * <p>Provides functionality equivalent to the {@code <import/>} element in Spring XML.
+ * <p>提供与 Spring XML 中 {@code <import/>} 元素等价的功能。
  *
- * <p>Allows for importing {@code @Configuration} classes, {@link ImportSelector},
- * {@link ImportBeanDefinitionRegistrar}, and {@link BeanRegistrar} implementations,
- * as well as regular component classes (analogous to
- * {@link AnnotationConfigApplicationContext#register}).
+ * <p>允许导入 {@code @Configuration} 类、{@link ImportSelector}、
+ * {@link ImportBeanDefinitionRegistrar} 和 {@link BeanRegistrar} 实现，
+ * 以及普通组件类（类似于 {@link AnnotationConfigApplicationContext#register}）。
  *
- * <p>{@code @Bean} definitions declared in imported {@code @Configuration} classes should be
- * accessed by using {@link org.springframework.beans.factory.annotation.Autowired @Autowired}
- * injection. Either the bean itself can be autowired, or the configuration class instance
- * declaring the bean can be autowired. The latter approach allows for explicit, IDE-friendly
- * navigation between {@code @Configuration} class methods.
+ * <p>应通过 {@link org.springframework.beans.factory.annotation.Autowired @Autowired}
+ * 注入来访问导入的 {@code @Configuration} 类中声明的 {@code @Bean} 定义。
+ * 既可自动装配 Bean 本身，也可自动装配声明该 Bean 的配置类实例。
+ * 后者便于在 IDE 中显式导航 {@code @Configuration} 类方法。
  *
- * <p>May be declared directly at the class level or as a meta-annotation.
- * {@code @Import} annotations declared directly at the class level are processed
- * after {@code @Import} annotations declared as meta-annotations, which allows
- * directly declared imports to override beans registered via {@code @Import}
- * meta-annotations.
+ * <p>可直接在类级别声明，也可作为元注解使用。
+ * 直接在类级别声明的 {@code @Import} 注解在作为元注解声明的 {@code @Import} 之后处理，
+ * 从而允许直接声明的导入覆盖通过 {@code @Import} 元注解注册的 Bean。
  *
- * <p>As of Spring Framework 7.0, {@code @Import} annotations declared on interfaces
- * implemented by {@code @Configuration} classes are also supported. Locally declared
- * {@code @Import} annotations are processed after {@code @Import} annotations on
- * interfaces, which allows local imports to override beans registered via
- * {@code @Import} annotations inherited from interfaces.
+ * <p>自 Spring Framework 7.0 起，也支持在 {@code @Configuration} 类实现的接口上
+ * 声明的 {@code @Import} 注解。本地声明的 {@code @Import} 在接口上的 {@code @Import}
+ * 之后处理，从而允许本地导入覆盖通过接口继承的 {@code @Import} 注解注册的 Bean。
  *
- * <p>If XML or other non-{@code @Configuration} bean definition resources need to be
- * imported, use the {@link ImportResource @ImportResource} annotation instead.
+ * <p>若需导入 XML 或其他非 {@code @Configuration} 的 Bean 定义资源，
+ * 请改用 {@link ImportResource @ImportResource} 注解。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -70,9 +63,8 @@ import org.springframework.beans.factory.BeanRegistrar;
 public @interface Import {
 
 	/**
-	 * {@link Configuration @Configuration}, {@link ImportSelector},
-	 * {@link ImportBeanDefinitionRegistrar}, {@link BeanRegistrar},
-	 * or regular component classes to import.
+	 * 要导入的 {@link Configuration @Configuration}、{@link ImportSelector}、
+	 * {@link ImportBeanDefinitionRegistrar}、{@link BeanRegistrar} 或普通组件类。
 	 */
 	Class<?>[] value();
 

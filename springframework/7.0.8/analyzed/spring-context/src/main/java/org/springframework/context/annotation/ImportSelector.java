@@ -23,13 +23,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
- * Interface to be implemented by types that determine which @{@link Configuration}
- * class(es) should be imported based on a given selection criteria, usually one or
- * more annotation attributes.
+ * 根据给定选择条件（通常是一个或多个注解属性）决定应导入哪些
+ * @{@link Configuration} 类的类型应实现的接口。
  *
- * <p>An {@link ImportSelector} may implement any of the following
- * {@link org.springframework.beans.factory.Aware Aware} interfaces,
- * and their respective methods will be called prior to {@link #selectImports}:
+ * <p>{@link ImportSelector} 可实现以下任意
+ * {@link org.springframework.beans.factory.Aware Aware} 接口，
+ * 其对应方法将在 {@link #selectImports} 之前调用：
  * <ul>
  * <li>{@link org.springframework.context.EnvironmentAware EnvironmentAware}</li>
  * <li>{@link org.springframework.beans.factory.BeanFactoryAware BeanFactoryAware}</li>
@@ -37,8 +36,7 @@ import org.springframework.core.type.AnnotationMetadata;
  * <li>{@link org.springframework.context.ResourceLoaderAware ResourceLoaderAware}</li>
  * </ul>
  *
- * <p>Alternatively, the class may provide a single constructor with one or more of
- * the following supported parameter types:
+ * <p>或者，该类可提供接受以下一种或多种受支持参数类型的单参构造函数：
  * <ul>
  * <li>{@link org.springframework.core.env.Environment Environment}</li>
  * <li>{@link org.springframework.beans.factory.BeanFactory BeanFactory}</li>
@@ -46,10 +44,9 @@ import org.springframework.core.type.AnnotationMetadata;
  * <li>{@link org.springframework.core.io.ResourceLoader ResourceLoader}</li>
  * </ul>
  *
- * <p>{@code ImportSelector} implementations are usually processed in the same way
- * as regular {@code @Import} annotations, however, it is also possible to defer
- * selection of imports until all {@code @Configuration} classes have been processed
- * (see {@link DeferredImportSelector} for details).
+ * <p>{@code ImportSelector} 实现通常与普通 {@code @Import} 注解以相同方式处理，
+ * 但也可将导入选择推迟到所有 {@code @Configuration} 类处理完毕之后
+ * （详见 {@link DeferredImportSelector}）。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -62,20 +59,18 @@ import org.springframework.core.type.AnnotationMetadata;
 public interface ImportSelector {
 
 	/**
-	 * Select and return the names of which class(es) should be imported based on
-	 * the {@link AnnotationMetadata} of the importing @{@link Configuration} class.
-	 * @return the class names, or an empty array if none
+	 * 根据导入方 @{@link Configuration} 类的 {@link AnnotationMetadata}，
+	 * 选择并返回应导入的类名。
+	 * @param importingClassMetadata 导入类的注解元数据
+	 * @return 类名数组；若无则返回空数组
 	 */
 	String[] selectImports(AnnotationMetadata importingClassMetadata);
 
 	/**
-	 * Return a predicate for excluding classes from the import candidates, to be
-	 * transitively applied to all classes found through this selector's imports.
-	 * <p>If this predicate returns {@code true} for a given fully-qualified
-	 * class name, said class will not be considered as an imported configuration
-	 * class, bypassing class file loading as well as metadata introspection.
-	 * @return the filter predicate for fully-qualified candidate class names
-	 * of transitively imported configuration classes, or {@code null} if none
+	 * 返回用于从导入候选中排除类的谓词，将传递应用于通过本选择器导入发现的所有类。
+	 * <p>若此谓词对给定全限定类名返回 {@code true}，则该类不会被视为导入的配置类，
+	 * 从而跳过类文件加载和元数据内省。
+	 * @return 传递导入的配置类候选全限定类名的过滤谓词；若无则返回 {@code null}
 	 * @since 5.2.4
 	 */
 	default @Nullable Predicate<String> getExclusionFilter() {
