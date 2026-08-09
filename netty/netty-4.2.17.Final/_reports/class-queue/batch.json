@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:01:30Z",
-  "files": [
-    "buffer/src/main/java/io/netty/buffer/AllocateChunkEvent.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufAllocator.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufAllocatorMetric.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufAllocatorMetricProvider.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufConvertible.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufHolder.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufInputStream.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufOutputStream.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufProcessor.java",
-    "buffer/src/main/java/io/netty/buffer/ByteBufUtil.java",
-    "buffer/src/main/java/io/netty/buffer/ChunkInfo.java",
-    "buffer/src/main/java/io/netty/buffer/CompositeByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/DefaultByteBufHolder.java",
-    "buffer/src/main/java/io/netty/buffer/DuplicatedByteBuf.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1898,
-  "done": 15
+  "done": 30
 }
