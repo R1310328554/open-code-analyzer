@@ -25,36 +25,50 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+/**
+ * {@link MonitorListener} 的默认实现：将监控事件输出到 SLF4J 日志。
+ * <p>适用于命令行或独立进程中的轻量级监控场景。
+ */
 public class DefaultMonitorListener implements MonitorListener {
+    /** 监控日志统一前缀。 */
     private final static String LOG_PREFIX = "[MONITOR] ";
+    /** 需运维关注的告警类日志前缀。 */
     private final static String LOG_NOTIFY = LOG_PREFIX + " [NOTIFY] ";
+    /** 本监听器使用的日志记录器。 */
     private final Logger logger = LoggerFactory.getLogger(DefaultMonitorListener.class);
 
+    /** 使用默认日志配置构造监听器。 */
     public DefaultMonitorListener() {
     }
 
+    /** 一轮监控开始时打印分隔日志。 */
     @Override
     public void beginRound() {
         logger.info("{}=========================================beginRound", LOG_PREFIX);
     }
 
+    /** 记录未消费消息积压统计。 */
     @Override
     public void reportUndoneMsgs(UndoneMsgs undoneMsgs) {
         logger.info("{}reportUndoneMsgs: {}", LOG_PREFIX, undoneMsgs);
     }
 
+    /** 记录近期消费失败消息汇总。 */
     @Override
     public void reportFailedMsgs(FailedMsgs failedMsgs) {
         logger.info("{}reportFailedMsgs: {}", LOG_PREFIX, failedMsgs);
     }
 
+    /** 记录 Broker 偏移量迁移导致的消息删除事件。 */
     @Override
     public void reportDeleteMsgsEvent(DeleteMsgsEvent deleteMsgsEvent) {
         logger.info("{}reportDeleteMsgsEvent: {}", LOG_PREFIX, deleteMsgsEvent);
     }
 
+    /** 分析并记录消费者运行态：订阅一致性与队列堆积。 */
     @Override
     public void reportConsumerRunningInfo(TreeMap<String, ConsumerRunningInfo> criTable) {
+        // 无运行态数据时告警
         if (criTable == null || criTable.isEmpty()) {
             logger.warn("{}ConsumerRunningInfo is empty.", LOG_NOTIFY);
             return;
@@ -69,6 +83,7 @@ public class DefaultMonitorListener implements MonitorListener {
         String consumerGroup = firstValue.getProperties().getProperty("consumerGroup");
 
         {
+            // 校验同组各客户端订阅是否一致
             boolean result = ConsumerRunningInfo.analyzeSubscription(criTable);
             if (!result) {
                 logger.info("{}reportConsumerRunningInfo: ConsumerGroup: {}, Subscription different", LOG_NOTIFY, consumerGroup);
@@ -76,6 +91,7 @@ public class DefaultMonitorListener implements MonitorListener {
         }
 
         {
+            // 逐客户端分析 ProcessQueue 堆积与延迟
             Iterator<Entry<String, ConsumerRunningInfo>> it = criTable.entrySet().iterator();
             while (it.hasNext()) {
                 Entry<String, ConsumerRunningInfo> next = it.next();
@@ -91,6 +107,7 @@ public class DefaultMonitorListener implements MonitorListener {
         }
     }
 
+    /** 一轮监控结束时打印分隔日志。 */
     @Override
     public void endRound() {
         logger.info("{}=========================================endRound", LOG_PREFIX);

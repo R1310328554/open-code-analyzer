@@ -17,35 +17,49 @@
 
 package org.apache.rocketmq.tools.monitor;
 
+/**
+ * 消费失败消息统计快照。
+ * <p>按消费组与 Topic 维度汇总近期失败条数，供 {@link MonitorListener} 上报。
+ */
 public class FailedMsgs {
+    /** 消费组名称。 */
     private String consumerGroup;
+    /** 业务 Topic 名称。 */
     private String topic;
+    /** 近期消费失败消息总数。 */
     private long failedMsgsTotalRecently;
 
+    /** @return 消费组名称 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** @param consumerGroup 消费组名称 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
 
+    /** @return Topic 名称 */
     public String getTopic() {
         return topic;
     }
 
+    /** @param topic Topic 名称 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** @return 近期失败消息总数 */
     public long getFailedMsgsTotalRecently() {
         return failedMsgsTotalRecently;
     }
 
+    /** @param failedMsgsTotalRecently 近期失败消息总数 */
     public void setFailedMsgsTotalRecently(long failedMsgsTotalRecently) {
         this.failedMsgsTotalRecently = failedMsgsTotalRecently;
     }
 
+    /** @return 便于日志输出的字符串表示 */
     @Override
     public String toString() {
         return "FailedMsgs [consumerGroup=" + consumerGroup + ", topic=" + topic
