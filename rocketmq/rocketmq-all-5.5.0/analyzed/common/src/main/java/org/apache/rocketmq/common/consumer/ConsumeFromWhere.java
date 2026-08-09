@@ -16,15 +16,24 @@
  */
 package org.apache.rocketmq.common.consumer;
 
+/**
+ * 消费者首次启动或位点丢失时的起始消费位置策略。
+ */
 public enum ConsumeFromWhere {
+    /** 从队列最新位点（last offset）开始消费。 */
     CONSUME_FROM_LAST_OFFSET,
 
+    /** @deprecated 首次启动从最小位点开始，后续从最新位点开始。 */
     @Deprecated
     CONSUME_FROM_LAST_OFFSET_AND_FROM_MIN_WHEN_BOOT_FIRST,
+    /** @deprecated 从队列最小位点开始消费。 */
     @Deprecated
     CONSUME_FROM_MIN_OFFSET,
+    /** @deprecated 从队列最大位点开始消费。 */
     @Deprecated
     CONSUME_FROM_MAX_OFFSET,
+    /** 从队列最早位点（first offset）开始消费。 */
     CONSUME_FROM_FIRST_OFFSET,
+    /** 按指定时间戳回溯消费。 */
     CONSUME_FROM_TIMESTAMP,
 }

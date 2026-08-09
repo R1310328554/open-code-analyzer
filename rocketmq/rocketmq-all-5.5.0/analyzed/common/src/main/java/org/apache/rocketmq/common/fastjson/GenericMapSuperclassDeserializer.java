@@ -26,10 +26,21 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
- * workaround https://github.com/alibaba/fastjson/issues/3730
+ * 泛型 Map 子类反序列化器：从父类 {@link ParameterizedType} 读取 K/V 类型并逐键解析。
+ * 用于规避 fastjson issue #3730。
  */
 public class GenericMapSuperclassDeserializer implements ObjectReader<Object> {
+    /** 单例实例。 */
     public static final GenericMapSuperclassDeserializer INSTANCE = new GenericMapSuperclassDeserializer();
+    /**
+     * 反序列化继承自 Map 的自定义类型：无参构造实例化后按泛型参数解析键值对。
+     *
+     * @param reader JSON 读取器
+     * @param type 目标类型
+     * @param fieldName 字段名
+     * @param features 解析特性位
+     * @return 填充后的 Map 实例
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Object readObject(JSONReader reader, Type type, Object fieldName, long features) {

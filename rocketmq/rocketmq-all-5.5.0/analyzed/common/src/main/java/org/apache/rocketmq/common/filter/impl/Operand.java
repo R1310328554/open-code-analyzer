@@ -17,8 +17,12 @@
 
 package org.apache.rocketmq.common.filter.impl;
 
+/**
+ * 过滤表达式操作数（如 Tag 名、字面量）。
+ */
 public class Operand extends Op {
 
+    /** @param symbol 操作数符号 */
     public Operand(String symbol) {
         super(symbol);
     }

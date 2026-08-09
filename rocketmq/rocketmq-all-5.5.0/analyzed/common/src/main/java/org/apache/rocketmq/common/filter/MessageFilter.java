@@ -19,6 +19,16 @@ package org.apache.rocketmq.common.filter;
 
 import org.apache.rocketmq.common.message.MessageExt;
 
+/**
+ * 消息过滤 SPI：Broker/Consumer 按订阅表达式判定消息是否匹配。
+ */
 public interface MessageFilter {
+    /**
+     * 判断消息是否通过过滤。
+     *
+     * @param msg 待检消息
+     * @param context 过滤上下文（含消费组等）
+     * @return true 表示匹配订阅条件
+     */
     boolean match(final MessageExt msg, final FilterContext context);
 }

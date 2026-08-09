@@ -17,13 +17,23 @@
 
 package org.apache.rocketmq.common.constant;
 
+/**
+ * HAProxy PROXY Protocol 相关属性键名常量。
+ */
 public class HAProxyConstants {
 
+    /** Netty Channel 属性中的通道 ID 键。 */
     public static final String CHANNEL_ID = "channel_id";
+    /** PROXY Protocol 属性键前缀。 */
     public static final String PROXY_PROTOCOL_PREFIX = "proxy_protocol_";
+    /** 客户端源地址（PROXY Protocol 解析结果）。 */
     public static final String PROXY_PROTOCOL_ADDR = PROXY_PROTOCOL_PREFIX + "addr";
+    /** 客户端源端口。 */
     public static final String PROXY_PROTOCOL_PORT = PROXY_PROTOCOL_PREFIX + "port";
+    /** 服务端本地地址。 */
     public static final String PROXY_PROTOCOL_SERVER_ADDR = PROXY_PROTOCOL_PREFIX + "server_addr";
+    /** 服务端本地端口。 */
     public static final String PROXY_PROTOCOL_SERVER_PORT = PROXY_PROTOCOL_PREFIX + "server_port";
+    /** PROXY Protocol TLV 扩展字段键前缀（十六进制类型码）。 */
     public static final String PROXY_PROTOCOL_TLV_PREFIX = PROXY_PROTOCOL_PREFIX + "tlv_0x";
 }

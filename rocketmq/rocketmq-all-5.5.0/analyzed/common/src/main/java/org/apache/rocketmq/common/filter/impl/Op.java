@@ -17,18 +17,25 @@
 
 package org.apache.rocketmq.common.filter.impl;
 
+/**
+ * 过滤表达式 AST 节点基类：操作数与运算符均继承此类。
+ */
 public abstract class Op {
 
+    /** 符号字面量（如 {@code &&}、{@code tag1}）。 */
     private String symbol;
 
+    /** @param symbol 符号字符串 */
     protected Op(String symbol) {
         this.symbol = symbol;
     }
 
+    /** 返回符号字面量。 */
     public String getSymbol() {
         return symbol;
     }
 
+    /** 返回符号字符串表示。 */
     public String toString() {
         return symbol;
     }

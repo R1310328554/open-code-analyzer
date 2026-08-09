@@ -17,13 +17,19 @@
 
 package org.apache.rocketmq.common.filter;
 
+/**
+ * 消息过滤上下文：向 {@link MessageFilter} 传递消费侧附加信息。
+ */
 public class FilterContext {
+    /** 当前消费组名。 */
     private String consumerGroup;
 
+    /** 返回消费组名。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }

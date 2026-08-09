@@ -19,20 +19,28 @@ package org.apache.rocketmq.common.entity;
 
 import java.util.Objects;
 
+/**
+ * 客户端 ID 与消费组的复合键，用于 Map/Set 去重与哈希索引。
+ */
 public class ClientGroup {
 
+    /** 客户端实例 ID。 */
     public final String clientId;
+    /** 消费组名。 */
     public final String group;
-    /**
-     * Cache the hash code for the object
-     */
-    private int hash; // Default to 0
+    /** 缓存的 hashCode（懒计算，0 表示未计算）。 */
+    private int hash; // 默认为 0
 
+    /**
+     * @param clientId 客户端 ID
+     * @param group 消费组名
+     */
     public ClientGroup(String clientId, String group) {
         this.clientId = clientId;
         this.group = group;
     }
 
+    /** 按 clientId 与 group 判等。 */
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) {
@@ -43,6 +51,7 @@ public class ClientGroup {
             && Objects.equals(group, that.group);
     }
 
+    /** 懒计算并缓存 hashCode。 */
     @Override
     public int hashCode() {
         if (hash == 0) {
@@ -51,6 +60,7 @@ public class ClientGroup {
         return hash;
     }
 
+    /** 返回调试字符串。 */
     @Override
     public String toString() {
         return "ClientGroup{" +
