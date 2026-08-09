@@ -18,44 +18,57 @@ package org.redisson.api.bloomfilter;
 import java.util.Collection;
 
 /**
- * BloomFilter Params for BF.INSERT command
+ * {@code BF.INSERT} 命令参数的默认实现，封装待插入元素及可选容量、误判率、扩展等配置。
  *
  * @author Su Ko
- *
+ * @param <V> 元素类型
  */
 public class BloomFilterInsertParams<V> implements BloomFilterInsertArgs<V>, OptionalBloomFilterInsertArgs<V> {
+    /** 待插入的元素集合。 */
     private final Collection<V> elements;
 
+    /** 期望误判率，可选。 */
     private Double errorRate;
+    /** 设计容量，可选。 */
     private Long capacity;
+    /** 扩展倍率，与 nonScaling 互斥。 */
     private Long expansionRate;
+    /** 是否禁止创建新子过滤器。 */
     private Boolean nonScaling;
+    /** 过滤器不存在时是否跳过创建。 */
     private Boolean noCreate;
 
+    /** 以给定元素集合构造插入参数。 */
     public BloomFilterInsertParams(Collection<V> elements) {
         this.elements = elements;
     }
 
+    /** 返回期望误判率。 */
     public Double getErrorRate() {
         return errorRate;
     }
 
+    /** 返回设计容量。 */
     public Long getCapacity() {
         return capacity;
     }
 
+    /** 返回扩展倍率。 */
     public Long getExpansionRate() {
         return expansionRate;
     }
 
+    /** 返回 noCreate 选项。 */
     public Boolean isNoCreate() {
         return noCreate;
     }
 
+    /** 返回 nonScaling 选项。 */
     public Boolean isNonScaling() {
         return nonScaling;
     }
 
+    /** 返回待插入元素集合。 */
     public Collection<V> getElements() {
         return elements;
     }

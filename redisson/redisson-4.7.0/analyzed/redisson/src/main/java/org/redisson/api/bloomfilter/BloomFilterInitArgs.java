@@ -16,16 +16,16 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * BloomFilterInitArgs for BF.RESERVE command
+ * {@code BF.RESERVE} 命令初始化参数构建器入口；通过 {@link #create()} 开始链式配置。
  *
  * @author Su Ko
  */
 public interface BloomFilterInitArgs {
 
     /**
-     * Defines BloomFilter to BF.RESERVE command
+     * 创建 {@code BF.RESERVE} 参数构建流程，下一步设置期望误判率。
      *
-     * @return ErrorRateBloomFilterInitArgs
+     * @return 误判率配置阶段
      */
     static ErrorRateBloomFilterInitArgs create(){
         return new BloomFilterInitParams();

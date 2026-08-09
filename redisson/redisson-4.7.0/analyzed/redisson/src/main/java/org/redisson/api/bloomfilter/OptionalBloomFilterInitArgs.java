@@ -16,29 +16,27 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * OptionalBloomFilterInitArgs for BF.RESERVE command
+ * {@code BF.RESERVE} 构建链中的可选参数阶段；可配置扩展倍率或非缩放模式。
  *
  * @author Su Ko
  */
 public interface OptionalBloomFilterInitArgs extends BloomFilterInitArgs{
 
     /**
-     * Defines BloomFilter to BF.RESERVE command
+     * 设置扩展倍率：达到容量创建新子过滤器时，新子过滤器大小为上一子过滤器大小乘以该值。
+     * 与 {@link #nonScaling(boolean)} 互斥。
      *
-     * @param expansionRate is the value that is multiplied by the size of the last subfilter when a new subfilter is created when capacity is reached.
-     * expansionRate and nonScaling are mutually exclusive
-     *
-     * @return OptionalBloomFilterInitArgs
+     * @param expansionRate 扩展倍率
+     * @return 当前构建器
      */
     OptionalBloomFilterInitArgs expansionRate(long expansionRate);
 
     /**
-     * Defines BloomFilter to BF.RESERVE command
+     * 启用非缩放模式：达到容量时不创建新子过滤器。
+     * 与 {@link #expansionRate(long)} 互斥。
      *
-     * @param nonScaling is option that prevents subfliters from being created even when fcapacity is reached.
-     * expansionRate and nonScaling are mutually exclusive
-     *
-     * @return OptionalBloomFilterInitArgs
+     * @param nonScaling 是否禁止扩展
+     * @return 当前构建器
      */
     OptionalBloomFilterInitArgs nonScaling(boolean nonScaling);
 }

@@ -16,16 +16,19 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * BloomFilterInitParams for BF.RESERVE command
+ * {@code BF.RESERVE} 命令参数的默认实现，实现误判率、容量及可选扩展/非缩放配置的链式构建。
  *
  * @author Su Ko
- *
  */
 public class BloomFilterInitParams implements BloomFilterInitArgs, ErrorRateBloomFilterInitArgs, CapacityBloomFilterInitArgs, OptionalBloomFilterInitArgs {
 
+    /** 期望误判率（0 到 1 之间）。 */
     private double errorRate;
+    /** 设计容量（预期插入元素数）。 */
     private long capacity;
+    /** 扩展倍率，与 nonScaling 互斥。 */
     private Long expansionRate;
+    /** 是否禁止在达到容量时创建新子过滤器。 */
     private Boolean nonScaling;
 
     @Override
@@ -52,18 +55,22 @@ public class BloomFilterInitParams implements BloomFilterInitArgs, ErrorRateBloo
         return this;
     }
 
+    /** 返回期望误判率。 */
     public double getErrorRate() {
         return errorRate;
     }
 
+    /** 返回设计容量。 */
     public long getCapacity() {
         return capacity;
     }
 
+    /** 返回扩展倍率，未设置时为 null。 */
     public Long getExpansionRate() {
         return expansionRate;
     }
 
+    /** 返回是否启用非缩放模式。 */
     public Boolean isNonScaling() {
         return nonScaling;
     }

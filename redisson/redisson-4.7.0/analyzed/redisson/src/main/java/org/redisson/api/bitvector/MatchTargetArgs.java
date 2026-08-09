@@ -16,32 +16,23 @@
 package org.redisson.api.bitvector;
 
 /**
- * Intermediate stage in the construction of {@link MatchExactArgs}. Produced by
- * {@link MatchExactArgs#mask(long)} and consumed by {@link #target(long)}, which
- * yields a fully-constructed {@link MatchExactArgs} ready for use with
- * {@link org.redisson.api.RBitVectorStore#matchExact(MatchExactArgs)} or further
- * tuning.
+ * 构建 {@link MatchExactArgs} 的中间阶段；由 {@link MatchExactArgs#mask(long)} 产生，
+ * 经 {@link #target(long)} 完成并得到可用于 {@link org.redisson.api.RBitVectorStore#matchExact(MatchExactArgs)} 的完整参数。
  * <p>
- * This staged construction enforces at compile time that both a mask and a target
- * are supplied for an exact-match query.
+ * 分阶段构建在编译期强制精确匹配查询必须同时提供掩码与目标值。
  *
  * @see MatchExactArgs
- *
  * @author Nikita Koksharov
- *
  */
 public interface MatchTargetArgs {
 
     /**
-     * Sets the target bit pattern to match against the bits selected by the mask.
-     * The completed predicate is {@code (vector & mask) == target}.
+     * 设置掩码选定比特位上须匹配的目标比特模式；完整谓词为 {@code (vector & mask) == target}。
      * <p>
-     * If {@code value} has any bits set outside of the previously-supplied mask,
-     * the predicate is unsatisfiable and a subsequent query will produce an empty
-     * result.
+     * 若 {@code value} 在先前提供的掩码外有置位比特，则谓词不可满足，后续查询结果为空。
      *
-     * @param value the target bit pattern within the masked positions
-     * @return a fully-constructed {@link MatchExactArgs} ready to use or further configure
+     * @param value 掩码范围内的目标比特模式
+     * @return 可立即使用或继续配置的完整 {@link MatchExactArgs}
      */
     MatchExactArgs target(long value);
 

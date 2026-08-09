@@ -18,16 +18,18 @@ package org.redisson.api.bloomfilter;
 import java.util.Collection;
 
 /**
- * BloomFilterInsertArgs for BF.INSERT command
+ * {@code BF.INSERT} 命令插入参数构建器入口；以待插入元素集合开始链式配置。
  *
  * @author Su Ko
+ * @param <V> 元素类型
  */
 public interface BloomFilterInsertArgs<V> {
 
     /**
-     * Defines BloomFilter to BF.INSERT command
+     * 以给定元素集合创建 {@code BF.INSERT} 参数构建器。
      *
-     * @return ErrorRateBloomFilterInitArgs
+     * @param elements 待插入元素集合
+     * @return 可继续配置容量、误判率等选项的构建器
      */
     static <V> OptionalBloomFilterInsertArgs<V> elements(Collection<V> elements) {
         return new BloomFilterInsertParams<>(elements);

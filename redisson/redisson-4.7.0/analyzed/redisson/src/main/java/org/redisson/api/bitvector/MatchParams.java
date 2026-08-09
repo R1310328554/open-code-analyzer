@@ -17,12 +17,21 @@ package org.redisson.api.bitvector;
 
 import java.time.Duration;
 
+/**
+ * {@link MatchArgs} 的默认实现，封装 matchAll/matchAny/matchNone 查询的掩码及迭代调优参数。
+ *
+ * @author Nikita Koksharov
+ */
 public final class MatchParams implements MatchArgs {
 
+    /** 参与查询谓词的位掩码。 */
     long mask;
+    /** 每次服务端往返拉取的键数量，默认 10。 */
     int chunkSize = 10;
+    /** 服务端迭代状态 TTL，默认 5 分钟。 */
     Duration chunkFetchTTL = Duration.ofMinutes(5);
 
+    /** 以给定掩码创建参数对象。 */
     MatchParams(long mask) {
         this.mask = mask;
     }
@@ -39,14 +48,17 @@ public final class MatchParams implements MatchArgs {
         return this;
     }
 
+    /** 返回位掩码。 */
     public long getMask() {
         return mask;
     }
 
+    /** 返回迭代批次大小。 */
     public int getChunkSize() {
         return chunkSize;
     }
 
+    /** 返回服务端迭代状态 TTL。 */
     public Duration getChunkFetchTTL() {
         return chunkFetchTTL;
     }

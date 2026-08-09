@@ -16,58 +16,50 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * OptionalBloomFilterInsertArgs for BF.INSERT command
+ * {@code BF.INSERT} 构建链中的可选参数阶段；可配置容量、误判率、扩展及 noCreate 等选项。
  *
  * @author Su Ko
+ * @param <V> 元素类型
  */
 public interface OptionalBloomFilterInsertArgs<V> extends BloomFilterInsertArgs<V> {
 
     /**
-     * Defines BloomFilter to BF.INSERT command
+     * 设置设计容量（预期插入元素数，须大于 0）；达到容量时创建新子过滤器。
      *
-     * @param capacity is number of entries intended to be added to the filter. must be greater than 0
-     * When the number of entries reaches capacity, a new subfilter is created.
-     *
-     * @return OptionalBloomFilterInsertArgs
+     * @param capacity 预期插入元素数
+     * @return 当前构建器
      */
     OptionalBloomFilterInsertArgs<V> capacity(long capacity);
 
     /**
-     * Defines BloomFilter to BF.INSERT command
+     * 设置期望误判率（须大于 0 且小于 1）。
      *
-     * @param errorRate is desired probability for false positives. must be greater than 0 and less than 1
-     *
-     * @return OptionalBloomFilterInsertArgs
+     * @param errorRate 期望误判率
+     * @return 当前构建器
      */
     OptionalBloomFilterInsertArgs<V> errorRate(double errorRate);
 
     /**
-     * Defines BloomFilter to BF.INSERT command
+     * 设置扩展倍率；与 {@link #nonScaling(boolean)} 互斥。
      *
-     * @param expansionRate is the value that is multiplied by the size of the last subfilter when a new subfilter is created when capacity is reached.
-     * expansionRate and nonScaling are mutually exclusive
-     *
-     * @return OptionalBloomFilterInsertArgs
+     * @param expansionRate 扩展倍率
+     * @return 当前构建器
      */
     OptionalBloomFilterInsertArgs<V> expansionRate(long expansionRate);
 
     /**
-     * Defines BloomFilter to BF.INSERT command
+     * 启用非缩放模式；与 {@link #expansionRate(long)} 互斥。
      *
-     * @param nonScaling is option that prevents subfliters from being created even when fcapacity is reached.
-     * expansionRate and nonScaling are mutually exclusive
-     *
-     * @return OptionalBloomFilterInsertArgs
+     * @param nonScaling 是否禁止扩展
+     * @return 当前构建器
      */
     OptionalBloomFilterInsertArgs<V> nonScaling(boolean nonScaling);
 
     /**
-     * Defines BloomFilter to BF.INSERT command
+     * 设置 noCreate：过滤器不存在时不自动创建。
      *
-     * @param noCreate is option that prevents subfliters from being created even when fcapacity is reached.
-     * expansionRate and nonScaling are mutually exclusive
-     *
-     * @return OptionalBloomFilterInsertArgs
+     * @param noCreate 是否跳过自动创建
+     * @return 当前构建器
      */
     OptionalBloomFilterInsertArgs<V> noCreate(boolean noCreate);
 }

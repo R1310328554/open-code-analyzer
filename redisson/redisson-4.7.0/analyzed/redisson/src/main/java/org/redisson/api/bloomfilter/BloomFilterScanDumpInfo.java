@@ -16,11 +16,10 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * BloomFilter ScanDump Info for BF.SCANDUMP
- * if returned iterator is 0 and data is empty, iteration is complete
+ * {@code BF.SCANDUMP} 迭代导出的一页结果；包含游标与二进制数据块。
+ * 当返回的 iterator 为 0 且 data 为空时表示迭代完成。
  *
  * @author Su Ko
- *
  */
 public class BloomFilterScanDumpInfo {
     private final long iterator;
@@ -31,10 +30,12 @@ public class BloomFilterScanDumpInfo {
         this.data = data;
     }
 
+    /** 返回下次 SCANDUMP 应使用的游标值。 */
     public long getIterator() {
         return iterator;
     }
 
+    /** 返回本页导出的二进制数据。 */
     public byte[] getData() {
         return data;
     }

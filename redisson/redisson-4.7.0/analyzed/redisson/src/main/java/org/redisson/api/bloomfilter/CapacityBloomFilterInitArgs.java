@@ -16,19 +16,18 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * CapacityBloomFilterInitArgs for BF.RESERVE command
+ * {@code BF.RESERVE} 构建链中的容量配置阶段；设置预期插入元素数。
  *
  * @author Su Ko
  */
 public interface CapacityBloomFilterInitArgs {
 
     /**
-     * Defines BloomFilter to BF.RESERVE command
+     * 设置过滤器设计容量（预期插入元素数，须大于 0）。
+     * 达到容量后将创建新的子过滤器（除非启用 nonScaling）。
      *
-     * @param capacity is number of entries intended to be added to the filter. must be greater than 0
-     * When the number of entries reaches capacity, a new subfilter is created.
-     *
-     * @return OptionalBloomFilterInitArgs
+     * @param capacity 预期插入元素数
+     * @return 可选扩展参数配置阶段
      */
     OptionalBloomFilterInitArgs capacity(long capacity);
 }

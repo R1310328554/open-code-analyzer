@@ -16,16 +16,20 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * BloomFilter option for info command
+ * {@code BF.INFO} 命令可选返回字段枚举；{@link #getOptionString()} 为 Redis 协议字段名。
  *
  * @author Su Ko
- *
  */
 public enum BloomFilterInfoOption {
+    /** 设计容量字段。 */
     CAPACITY("CAPACITY"),
+    /** 位数组大小字段。 */
     SIZE("SIZE"),
+    /** 子过滤器数量字段。 */
     FILTERS("FILTERS"),
+    /** 已插入元素数字段。 */
     ITEMS("ITEMS"),
+    /** 扩展倍率字段。 */
     EXPANSION("EXPANSION");
 
     private final String option;
@@ -34,6 +38,7 @@ public enum BloomFilterInfoOption {
         this.option = option;
     }
 
+    /** 返回 Redis 协议中的选项字符串。 */
     public String getOptionString() {
         return option;
     }

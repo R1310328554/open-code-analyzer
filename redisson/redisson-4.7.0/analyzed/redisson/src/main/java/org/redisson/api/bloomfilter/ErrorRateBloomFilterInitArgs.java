@@ -16,18 +16,17 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * ErrorRateBloomFilterInitArgs for BF.RESERVE command
+ * {@code BF.RESERVE} 构建链中的误判率配置阶段；设置期望假阳性概率。
  *
  * @author Su Ko
  */
 public interface ErrorRateBloomFilterInitArgs {
 
     /**
-     * Defines BloomFilter to BF.RESERVE command
+     * 设置期望误判率（假阳性概率，须大于 0 且小于 1）。
      *
-     * @param errorRate is desired probability for false positives. must be greater than 0 and less than 1
-     *
-     * @return CapacityBloomFilterInitArgs
+     * @param errorRate 期望误判率
+     * @return 容量配置阶段
      */
     CapacityBloomFilterInitArgs errorRate(double errorRate);
 }

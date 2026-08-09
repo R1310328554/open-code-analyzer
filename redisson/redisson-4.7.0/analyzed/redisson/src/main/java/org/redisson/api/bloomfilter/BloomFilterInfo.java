@@ -16,10 +16,10 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * BloomFilter info for BF.INFO command
+ * 布隆过滤器信息值对象，对应 Redis {@code BF.INFO} 命令的返回字段。
+ * 包含容量、位数组大小、子过滤器数量、已插入元素数及扩展倍率等元数据。
  *
  * @author Su Ko
- *
  */
 public class BloomFilterInfo {
     private final long capacity;
@@ -36,22 +36,27 @@ public class BloomFilterInfo {
         this.expansionRate = expansionRate;
     }
 
+    /** 返回扩展倍率（创建新子过滤器时上一子过滤器大小的乘数）。 */
     public long getExpansionRate() {
         return expansionRate;
     }
 
+    /** 返回已插入元素数量。 */
     public long getItemCount() {
         return itemCount;
     }
 
+    /** 返回子过滤器（sub-filter）数量。 */
     public long getSubFilterCount() {
         return subFilterCount;
     }
 
+    /** 返回位数组总大小（比特数）。 */
     public long getSize() {
         return size;
     }
 
+    /** 返回设计容量（预期可插入元素数）。 */
     public long getCapacity() {
         return capacity;
     }
