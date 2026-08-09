@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:12:12Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/client/RedisClusterDownException.java",
-    "redisson/src/main/java/org/redisson/client/RedisConnection.java",
-    "redisson/src/main/java/org/redisson/client/RedisConnectionException.java",
-    "redisson/src/main/java/org/redisson/client/RedisException.java",
-    "redisson/src/main/java/org/redisson/client/RedisLoadingException.java",
-    "redisson/src/main/java/org/redisson/client/RedisMasterDownException.java",
-    "redisson/src/main/java/org/redisson/client/RedisMovedException.java",
-    "redisson/src/main/java/org/redisson/client/RedisNoReplicasException.java",
-    "redisson/src/main/java/org/redisson/client/RedisNoScriptException.java",
-    "redisson/src/main/java/org/redisson/client/RedisNodeNotFoundException.java",
-    "redisson/src/main/java/org/redisson/client/RedisOutOfMemoryException.java",
-    "redisson/src/main/java/org/redisson/client/RedisPubSubConnection.java",
-    "redisson/src/main/java/org/redisson/client/RedisPubSubListener.java",
-    "redisson/src/main/java/org/redisson/client/RedisReadonlyException.java",
-    "redisson/src/main/java/org/redisson/client/RedisReconnectedException.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 572,
-  "done": 2235
+  "done": 2250
 }
