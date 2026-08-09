@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * RediSearch 聚合查询结果。
+ * <p>
+ * 包含匹配文档总数、属性列表及可选的游标 ID，用于分页读取大量聚合数据。
  *
  * @author Nikita Koksharov
  *
@@ -30,11 +33,24 @@ public final class AggregationResult {
 
     private long cursorId = -1;
 
+    /**
+     * 构造不含游标的聚合结果。
+     *
+     * @param total 匹配文档总数
+     * @param attributes 属性列表
+     */
     public AggregationResult(long total, List<Map<String, Object>> attributes) {
         this.total = total;
         this.attributes = attributes;
     }
 
+    /**
+     * 构造含游标 ID 的聚合结果。
+     *
+     * @param total 匹配文档总数
+     * @param attributes 属性列表
+     * @param cursorId 游标 ID，无游标时为 -1
+     */
     public AggregationResult(long total, List<Map<String, Object>> attributes, long cursorId) {
         this.total = total;
         this.attributes = attributes;
@@ -42,27 +58,27 @@ public final class AggregationResult {
     }
 
     /**
-     * Returns cursor id value.
+     * 返回游标 ID，用于后续分批读取。
      *
-     * @return cursor id value
+     * @return 游标 ID 值
      */
     public long getCursorId() {
         return cursorId;
     }
 
     /**
-     * Returns total amount of attributes.
+     * 返回匹配文档总数。
      *
-     * @return total amount of attributes
+     * @return 文档总数
      */
     public long getTotal() {
         return total;
     }
 
     /**
-     * List of attributes mapped by attribute name.
+     * 返回按属性名映射的结果列表。
      *
-     * @return list of attributes
+     * @return 属性列表
      */
     public List<Map<String, Object>> getAttributes() {
         return attributes;

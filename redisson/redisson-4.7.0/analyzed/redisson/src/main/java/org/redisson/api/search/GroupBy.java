@@ -18,6 +18,9 @@ package org.redisson.api.search;
 import java.util.Arrays;
 
 /**
+ * RediSearch 聚合查询的分组（GROUPBY）配置接口。
+ * <p>
+ * 指定分组字段及应用于各组的归约器（reducer）。
  *
  * @author Nikita Koksharov
  *
@@ -25,20 +28,20 @@ import java.util.Arrays;
 public interface GroupBy {
 
     /**
-     * Defines field names used to group.
+     * 指定用于分组的字段名。
      *
-     * @param names field names
-     * @return config object
+     * @param names 字段名列表
+     * @return 分组配置对象
      */
     static GroupBy fieldNames(String... names) {
         return new GroupParams(Arrays.asList(names));
     }
 
     /**
-     * Defines reducer objects.
+     * 指定应用于各分组的归约器。
      *
-     * @param reducers reducer objects
-     * @return config object
+     * @param reducers 归约器对象
+     * @return 分组配置对象
      */
     GroupBy reducers(Reducer... reducers);
 

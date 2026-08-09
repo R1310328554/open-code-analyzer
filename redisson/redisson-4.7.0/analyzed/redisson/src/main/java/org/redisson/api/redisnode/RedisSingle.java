@@ -16,7 +16,9 @@
 package org.redisson.api.redisnode;
 
 /**
- * Valkey or Redis Single node API interface
+ * Valkey 或 Redis 单节点部署的访问 API。
+ * <p>
+ * 用于获取单机模式下的唯一 Redis 主节点实例。
  *
  * @author Nikita Koksharov
  *
@@ -24,9 +26,9 @@ package org.redisson.api.redisnode;
 public interface RedisSingle extends BaseRedisNodes {
 
     /**
-     * Returns Valkey or Redis node
+     * 返回 Valkey 或 Redis 单节点实例。
      *
-     * @return Redis node
+     * @return Redis 主节点
      */
     RedisMaster getInstance();
 

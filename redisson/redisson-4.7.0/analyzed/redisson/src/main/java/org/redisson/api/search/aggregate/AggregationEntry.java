@@ -15,9 +15,17 @@
  */
 package org.redisson.api.search.aggregate;
 
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
+ * RediSearch 聚合查询结果条目。
+ * <p>
+ * 表示单条聚合记录，包含匹配文档总数及属性键值映射。
  *
  * @author seakider
  *
@@ -26,15 +34,31 @@ public class AggregationEntry {
     private final long total;
     private final Map<String, Object> attributes;
 
+    /**
+     * 构造聚合结果条目。
+     *
+     * @param total 匹配文档总数
+     * @param attributes 属性键值映射
+     */
     public AggregationEntry(long total, Map<String, Object> attributes) {
         this.total = total;
         this.attributes = attributes;
     }
 
+    /**
+     * 返回匹配文档总数。
+     *
+     * @return 文档总数
+     */
     public long getTotal() {
         return total;
     }
 
+    /**
+     * 返回属性键值映射。
+     *
+     * @return 属性映射
+     */
     public Map<String, Object> getAttributes() {
         return attributes;
     }

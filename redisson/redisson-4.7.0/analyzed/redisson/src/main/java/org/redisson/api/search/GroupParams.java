@@ -20,6 +20,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * {@link GroupBy} 的分组参数实现。
+ * <p>
+ * 持有分组字段名列表及关联的归约器集合。
  *
  * @author Nikita Koksharov
  *
@@ -39,10 +42,20 @@ public final class GroupParams implements GroupBy {
         return this;
     }
 
+    /**
+     * 返回分组字段名列表。
+     *
+     * @return 字段名列表
+     */
     public List<String> getFieldNames() {
         return fieldNames;
     }
 
+    /**
+     * 返回关联的归约器列表。
+     *
+     * @return 归约器列表
+     */
     public List<Reducer> getReducers() {
         return reducers;
     }

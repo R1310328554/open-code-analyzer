@@ -16,7 +16,9 @@
 package org.redisson.api.search;
 
 /**
- * Expression that is applied on properties
+ * 应用于文档属性上的 RediSearch 表达式。
+ * <p>
+ * 用于聚合查询的 APPLY 阶段，对字段执行计算并可通过别名引用结果。
  *
  * @author Nikita Koksharov
  *
@@ -26,15 +28,31 @@ public final class Expression {
     private final String value;
     private final String as;
 
+    /**
+     * 构造搜索表达式。
+     *
+     * @param expression 表达式内容
+     * @param as 结果别名
+     */
     public Expression(String expression, String as) {
         this.value = expression;
         this.as = as;
     }
 
+    /**
+     * 返回表达式内容。
+     *
+     * @return 表达式字符串
+     */
     public String getValue() {
         return value;
     }
 
+    /**
+     * 返回结果别名。
+     *
+     * @return 别名字符串
+     */
     public String getAs() {
         return as;
     }

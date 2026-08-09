@@ -16,12 +16,22 @@
 package org.redisson.api.redisnode;
 
 /**
+ * Redis Cluster 槽位（slot）状态变更命令枚举。
+ * <p>
+ * 对应 CLUSTER SETSLOT 子命令，用于集群重分片或故障迁移期间标记槽位状态。
  *
  * @author Nikita Koksharov
  *
  */
 public enum SetSlotCommand {
 
-    MIGRATING, IMPORTING, STABLE, NODE
+    /** 槽位正在迁出（migrating）至目标节点 */
+    MIGRATING,
+    /** 槽位正在从源节点导入（importing） */
+    IMPORTING,
+    /** 槽位处于稳定（stable）状态，无迁移进行中 */
+    STABLE,
+    /** 将槽位绑定到指定节点 */
+    NODE
 
 }

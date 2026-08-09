@@ -18,7 +18,9 @@ package org.redisson.api.redisnode;
 import java.util.Collection;
 
 /**
- * Valkey or Redis Sentinel Master Slave nodes API interface
+ * Valkey 或 Redis Sentinel 主从部署的节点访问 API。
+ * <p>
+ * 在 {@link RedisMasterSlave} 主从节点能力之上，额外提供 Sentinel 哨兵节点的查询与定位。
  *
  * @author Nikita Koksharov
  *
@@ -26,18 +28,18 @@ import java.util.Collection;
 public interface RedisSentinelMasterSlave extends RedisMasterSlave {
 
     /**
-     * Returns collection of Redis Sentinel nodes belongs to this Redis setup.
+     * 返回当前 Redis 部署所关联的所有 Sentinel 哨兵节点。
      *
-     * @return Redis Sentinel nodes
+     * @return Sentinel 哨兵节点集合
      */
     Collection<RedisSentinel> getSentinels();
 
     /**
-     * Returns Redis Sentinel node by defined address.
+     * 按地址获取 Redis Sentinel 哨兵节点。
      * <p>
-     * Address example: <code>redis://127.0.0.1:9233</code>
+     * 地址示例：<code>redis://127.0.0.1:9233</code>
      *
-     * @return Redis Sentinel node
+     * @return 对应的 Sentinel 哨兵节点
      */
     RedisSentinel getSentinel(String address);
 

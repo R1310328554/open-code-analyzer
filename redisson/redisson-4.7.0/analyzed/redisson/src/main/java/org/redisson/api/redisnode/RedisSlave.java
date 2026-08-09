@@ -16,7 +16,10 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Slave node API interface
+ * Redis 从节点（Slave）同步访问 API。
+ * <p>
+ * 组合 {@link RedisNode} 通用节点操作与 {@link RedisSlaveAsync} 异步能力，
+ * 用于主从复制拓扑中的从节点管理与命令执行。
  *
  * @author Nikita Koksharov
  *

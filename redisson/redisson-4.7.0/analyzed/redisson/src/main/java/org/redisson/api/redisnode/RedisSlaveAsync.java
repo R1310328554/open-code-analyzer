@@ -16,7 +16,9 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Slave node API interface
+ * Redis 从节点（Slave）异步访问 API。
+ * <p>
+ * 继承 {@link RedisNodeAsync}，提供非阻塞方式访问主从复制拓扑中的从节点。
  *
  * @author Nikita Koksharov
  *
