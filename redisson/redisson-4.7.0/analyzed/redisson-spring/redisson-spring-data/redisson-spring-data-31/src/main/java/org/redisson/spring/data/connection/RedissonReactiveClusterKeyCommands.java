@@ -42,16 +42,21 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
 /**
+ * 集群模式下 Spring Data Redis 响应式 Key 命令实现。
+ * <p>继承 {@link RedissonReactiveKeyCommands} 并实现 {@link ReactiveClusterKeyCommands}；
+跨 slot 的 RENAME 通过 DUMP/RESTORE 与 TTL 迁移完成。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyCommands implements ReactiveClusterKeyCommands {
 
+    /** 注入响应式命令执行器。 */
     public RedissonReactiveClusterKeyCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** 在指定集群节点上执行 KEYS 并合并各 master 结果。 */
     @Override
     public Mono<List<ByteBuffer>> keys(RedisClusterNode node, ByteBuffer pattern) {
         Mono<List<String>> m = executorService.reactive(() -> {
@@ -65,6 +70,7 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
         return m.map(v -> v.stream().map(t -> ByteBuffer.wrap(t.getBytes(CharsetUtil.UTF_8))).collect(Collectors.toList()));
     }
 
+    /** 在指定节点上执行 RANDOMKEY。 */
     @Override
     public Mono<ByteBuffer> randomKey(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
@@ -74,6 +80,7 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
         return m.map(v -> ByteBuffer.wrap(v));
     }
 
+    /** 同 slot 走父类 RENAME；跨 slot 时 DUMP+RESTORE 后删除旧 key。 */
     @Override
     public Flux<BooleanResponse<RenameCommand>> rename(Publisher<RenameCommand> commands) {
 
@@ -84,6 +91,7 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
             byte[] keyBuf = toByteArray(command.getKey());
             byte[] newKeyBuf = toByteArray(command.getNewKey());
 
+            // 源 key 与目标 key 在同一 hash slot，可直接 RENAME。
             if (executorService.getConnectionManager().calcSlot(keyBuf) == executorService.getConnectionManager().calcSlot(newKeyBuf)) {
                 return super.rename(commands);
             }
@@ -105,6 +113,7 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
         });
     }
 
+    /** 跨 slot 时仅当新 key 不存在且 DUMP 成功才 RESTORE 并删除旧 key。 */
     @Override
     public Flux<ReactiveRedisConnection.BooleanResponse<RenameCommand>> renameNX(Publisher<RenameCommand> commands) {
         return execute(commands, command -> {

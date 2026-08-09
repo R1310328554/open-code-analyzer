@@ -42,7 +42,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 List 命令实现。
+ * <p>封装 LPUSH/RPUSH、LRANGE、LTRIM、LINSERT、LPOP/RPOP、BLPOP/BRPOP 等列表操作。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -53,6 +55,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
     private static final RedisStrictCommand<Long> RPUSHX = new RedisStrictCommand<Long>("RPUSHX");
     private static final RedisStrictCommand<Long> LPUSHX = new RedisStrictCommand<Long>("LPUSHX");
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveListCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
@@ -64,6 +67,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             Assert.notNull(command.getKey(), "Key must not be null!");
             Assert.notEmpty(command.getValues(), "Values must not be null or empty!");
 
+            // PUSHX 仅允许单个 value。
             if (!command.getUpsert() && command.getValues().size() > 1) {
                 throw new InvalidDataAccessApiUsageException(
                         String.format("%s PUSHX only allows one value!", command.getDirection()));
