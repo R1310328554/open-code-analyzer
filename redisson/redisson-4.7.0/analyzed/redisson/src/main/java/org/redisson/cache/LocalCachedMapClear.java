@@ -18,15 +18,21 @@ package org.redisson.cache;
 import java.io.Serializable;
 
 /**
- * 
+ * 本地缓存清空广播消息。
+ * <p>
+ * 由发起清空的实例发布，其他实例收到后清空本地缓存。
+ *
  * @author Nikita Koksharov
  *
  */
 @SuppressWarnings("serial")
 public class LocalCachedMapClear implements Serializable {
 
+    /** 发起清空操作的实例 ID（接收方需排除自身）。 */
     private byte[] excludedId;
+    /** 清空请求 ID，用于信号量协调。 */
     private byte[] requestId;
+    /** 接收方处理完成后是否释放信号量。 */
     private boolean releaseSemaphore;
 
     public LocalCachedMapClear() {

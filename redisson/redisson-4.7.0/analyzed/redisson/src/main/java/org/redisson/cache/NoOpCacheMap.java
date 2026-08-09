@@ -22,19 +22,25 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ * 无操作本地缓存映射。
+ * <p>
+ * 当 {@link org.redisson.api.LocalCachedMapOptions#getCacheSize()} 为 {@code -1} 时使用，
+ * 始终不存储任何数据。
  *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class NoOpCacheMap<K, V> implements ConcurrentMap<K, V> {
 
+    /** {@inheritDoc} 始终返回 0。 */
     @Override
     public int size() {
         return 0;
     }
 
+    /** {@inheritDoc} 始终返回 {@code false}（与空缓存语义不同）。 */
     @Override
     public boolean isEmpty() {
         return false;
@@ -50,11 +56,13 @@ public class NoOpCacheMap<K, V> implements ConcurrentMap<K, V> {
         return false;
     }
 
+    /** {@inheritDoc} 始终返回 {@code null}，不缓存任何值。 */
     @Override
     public V get(Object key) {
         return null;
     }
 
+    /** {@inheritDoc} 忽略写入，始终返回 {@code null}。 */
     @Override
     public V put(K key, V value) {
         return null;

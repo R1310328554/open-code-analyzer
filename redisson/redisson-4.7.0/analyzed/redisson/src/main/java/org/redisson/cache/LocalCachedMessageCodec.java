@@ -26,17 +26,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ * 本地缓存同步消息的编解码器。
+ * <p>
+ * 支持清空、失效、更新、禁用/启用及确认等多种消息类型的序列化。
+ *
  * @author Nikita Koksharov
  *
  */
 public class LocalCachedMessageCodec extends BaseCodec {
 
+    /** 单例实例。 */
     public static final LocalCachedMessageCodec INSTANCE = new LocalCachedMessageCodec();
     
     private final Decoder<Object> decoder = (buf, state) -> {
         byte type = buf.readByte();
-        if (type == 0x0) {
+        if (type == 0x0) { // 清空消息
             byte[] excludedId = new byte[16];
             buf.readBytes(excludedId);
             byte[] id = new byte[16];
@@ -45,7 +49,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
             return new LocalCachedMapClear(excludedId, id, releaseSemaphore);
         }
 
-        if (type == 0x1) {
+        if (type == 0x1) { // 失效消息
             byte[] excludedId = new byte[16];
             buf.readBytes(excludedId);
             int hashesCount = buf.readInt();
@@ -58,7 +62,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
             return new LocalCachedMapInvalidate(excludedId, hashes);
         }
 
-        if (type == 0x2) {
+        if (type == 0x2) { // 更新消息
             byte[] excludedId = new byte[16];
             buf.readBytes(excludedId);
             List<LocalCachedMapUpdate.Entry> entries = new ArrayList<LocalCachedMapUpdate.Entry>();
@@ -78,7 +82,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
             return new LocalCachedMapUpdate(excludedId, entries);
         }
 
-        if (type == 0x3) {
+        if (type == 0x3) { // 禁用消息
             byte len = buf.readByte();
             CharSequence requestId = buf.readCharSequence(len, CharsetUtil.US_ASCII);
             long timeout = buf.readLong();
@@ -93,11 +97,11 @@ public class LocalCachedMessageCodec extends BaseCodec {
             return new LocalCachedMapDisable(requestId.toString(), hashes, timeout, disableCache);
         }
 
-        if (type == 0x4) {
+        if (type == 0x4) { // 禁用确认
             return new LocalCachedMapDisableAck();
         }
 
-        if (type == 0x5) {
+        if (type == 0x5) { // 启用消息
             byte len = buf.readByte();
             CharSequence requestId = buf.readCharSequence(len, CharsetUtil.UTF_8);
             boolean enableCache = buf.readBoolean();
@@ -111,14 +115,14 @@ public class LocalCachedMessageCodec extends BaseCodec {
             return new LocalCachedMapEnable(requestId.toString(), hashes, enableCache);
         }
 
-        if (type == 0x6) {
+        if (type == 0x6) { // 禁用键记录
             byte len = buf.readByte();
             CharSequence requestId = buf.readCharSequence(len, CharsetUtil.US_ASCII);
             long timeout = buf.readLong();
             return new LocalCachedMapDisabledKey(requestId.toString(), timeout);
         }
 
-        throw new IllegalArgumentException("Can't parse packet");
+        throw new IllegalArgumentException("无法解析本地缓存消息包");
     };
     
     private final Encoder encoder = in -> {
@@ -207,7 +211,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
             return result;
         }
 
-        throw new IllegalArgumentException("Can't encode packet " + in);
+        throw new IllegalArgumentException("无法编码本地缓存消息包 " + in);
     };
 
 

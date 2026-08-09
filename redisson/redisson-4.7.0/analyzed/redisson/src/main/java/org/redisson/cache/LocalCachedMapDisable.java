@@ -18,15 +18,22 @@ package org.redisson.cache;
 import java.io.Serializable;
 
 /**
- * 
+ * 本地缓存禁用广播消息。
+ * <p>
+ * 可禁用指定键或整个本地缓存，并在超时后自动恢复。
+ *
  * @author Nikita Koksharov
  *
  */
 public class LocalCachedMapDisable implements Serializable {
 
+    /** 待禁用键的哈希数组。 */
     private byte[][] keyHashes;
+    /** 禁用持续时间（毫秒）。 */
     private long timeout;
+    /** 发起禁用请求的唯一标识。 */
     private String requestId;
+    /** 是否禁用整个本地缓存（而非仅指定键）。 */
     private boolean disableCache;
 
     public boolean isDisableCache() {
