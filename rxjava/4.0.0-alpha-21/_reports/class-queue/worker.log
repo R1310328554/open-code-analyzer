@@ -1048,3 +1048,18 @@
 2026-08-09T18:10:41Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnEvent.java wave22a [0:15]
 2026-08-09T18:10:41Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnLifecycle.java wave22a [0:15]
 2026-08-09T18:10:41Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnSubscribe.java wave22a [0:15]
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnSuccess.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDoOnTerminate.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleEquals.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleError.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFlatMap.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFlatMapBiSelector.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFlatMapCompletable.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFlatMapIterableFlowable.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFlatMapIterableObservable.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFlatMapMaybe.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFlatMapNotification.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFlatMapPublisher.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFromCallable.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFromPublisher.java wave22b
+2026-08-09T18:10:53Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleFromSupplier.java wave22b
