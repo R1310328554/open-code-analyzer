@@ -3,14 +3,6 @@ spring-beans/src/main/java/org/springframework/beans/ExtendedBeanInfo.java
 spring-beans/src/main/java/org/springframework/beans/PropertyEditorRegistrySupport.java
 spring-beans/src/main/java/org/springframework/beans/TypeConverterDelegate.java
 spring-beans/src/main/java/org/springframework/beans/factory/BeanFactoryUtils.java
-spring-beans/src/main/java/org/springframework/beans/factory/config/ConstructorArgumentValues.java
-spring-beans/src/main/java/org/springframework/beans/factory/config/PropertyOverrideConfigurer.java
-spring-beans/src/main/java/org/springframework/beans/factory/config/PropertyPathFactoryBean.java
-spring-beans/src/main/java/org/springframework/beans/factory/config/PropertyPlaceholderConfigurer.java
-spring-beans/src/main/java/org/springframework/beans/factory/config/PropertyResourceConfigurer.java
-spring-beans/src/main/java/org/springframework/beans/factory/config/ServiceLocatorFactoryBean.java
-spring-beans/src/main/java/org/springframework/beans/factory/config/YamlProcessor.java
-spring-beans/src/main/java/org/springframework/beans/factory/groovy/GroovyBeanDefinitionReader.java
 spring-beans/src/main/java/org/springframework/beans/factory/serviceloader/AbstractServiceLoaderBasedFactoryBean.java
 spring-beans/src/main/java/org/springframework/beans/factory/serviceloader/ServiceFactoryBean.java
 spring-beans/src/main/java/org/springframework/beans/factory/serviceloader/ServiceListFactoryBean.java
