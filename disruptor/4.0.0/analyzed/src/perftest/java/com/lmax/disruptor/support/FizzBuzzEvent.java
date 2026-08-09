@@ -17,6 +17,9 @@ package com.lmax.disruptor.support;
 
 import com.lmax.disruptor.EventFactory;
 
+/**
+ * FizzBuzz 性能测试事件：携带数值及 fizz/buzz 标记。
+ */
 public final class FizzBuzzEvent
 {
     private boolean fizz = false;
@@ -28,6 +31,7 @@ public final class FizzBuzzEvent
         return value;
     }
 
+    /** 设置新数值并重置 fizz/buzz 标记。 */
     public void setValue(final long value)
     {
         fizz = false;
@@ -55,5 +59,6 @@ public final class FizzBuzzEvent
         this.buzz = buzz;
     }
 
+    /** RingBuffer 预分配事件工厂。 */
     public static final EventFactory<FizzBuzzEvent> EVENT_FACTORY = () -> new FizzBuzzEvent();
 }

@@ -19,6 +19,9 @@ import com.lmax.disruptor.util.PaddedLong;
 
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * 基于阻塞队列的事件计数处理器：从队列取事件并对指定计数器加一。
+ */
 public final class EventCountingQueueProcessor implements Runnable
 {
     private volatile boolean running;
@@ -34,6 +37,7 @@ public final class EventCountingQueueProcessor implements Runnable
         this.index = index;
     }
 
+    /** 请求停止消费循环。 */
     public void halt()
     {
         running = false;
@@ -48,6 +52,7 @@ public final class EventCountingQueueProcessor implements Runnable
             try
             {
                 blockingQueue.take();
+                // 步骤：每消费一个事件，对应槽位计数器加一
                 counters[index].set(counters[index].get() + 1L);
             }
             catch (InterruptedException ex)

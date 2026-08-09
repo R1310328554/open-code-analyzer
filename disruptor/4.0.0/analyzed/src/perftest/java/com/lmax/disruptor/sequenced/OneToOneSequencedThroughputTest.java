@@ -36,15 +36,15 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
 
 /**
  * <pre>
- * UniCast a series of items between 1 publisher and 1 event processor.
+ * 单播：1 个发布者与 1 个事件处理器之间传递一系列事件。
  *
  * +----+    +-----+
  * | P1 |--->| EP1 |
  * +----+    +-----+
  *
- * Disruptor:
+ * Disruptor：
  * ==========
- *              track to prevent wrap
+ *              跟踪序号以防环绕
  *              +------------------+
  *              |                  |
  *              |                  v
@@ -56,10 +56,10 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
  *                        +--------+
  *                          waitFor
  *
- * P1  - Publisher 1
- * RB  - RingBuffer
- * SB  - SequenceBarrier
- * EP1 - EventProcessor 1
+ * P1  - 发布者 1
+ * RB  - 环形缓冲区
+ * SB  - 序号屏障
+ * EP1 - 事件处理器 1
  *
  * </pre>
  */

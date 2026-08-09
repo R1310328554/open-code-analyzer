@@ -38,7 +38,7 @@ import static com.lmax.disruptor.RingBuffer.createMultiProducer;
 /**
  * <pre>
  *
- * Sequence a series of events from multiple publishers going to one event processor.
+ * 多发布者向单一事件处理器顺序发送一系列事件。
  *
  * +----+
  * | P1 |------+
@@ -53,9 +53,9 @@ import static com.lmax.disruptor.RingBuffer.createMultiProducer;
  * +----+
  *
  *
- * Disruptor:
+ * Disruptor：
  * ==========
- *             track to prevent wrap
+ *             跟踪序号以防环绕
  *             +--------------------+
  *             |                    |
  *             |                    v
@@ -71,12 +71,12 @@ import static com.lmax.disruptor.RingBuffer.createMultiProducer;
  * | P3 |------+
  * +----+
  *
- * P1  - Publisher 1
- * P2  - Publisher 2
- * P3  - Publisher 3
- * RB  - RingBuffer
- * SB  - SequenceBarrier
- * EP1 - EventProcessor 1
+ * P1  - 发布者 1
+ * P2  - 发布者 2
+ * P3  - 发布者 3
+ * RB  - 环形缓冲区
+ * SB  - 序号屏障
+ * EP1 - 事件处理器 1
  *
  * </pre>
  */

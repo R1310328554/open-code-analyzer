@@ -31,7 +31,7 @@ import java.util.concurrent.Future;
 /**
  * <pre>
  *
- * Sequence a series of events from multiple publishers going to one event processor.
+ * 多发布者向单一事件处理器顺序发送一系列事件。
  *
  * +----+
  * | P1 |------+
@@ -46,7 +46,7 @@ import java.util.concurrent.Future;
  * +----+
  *
  *
- * Queue Based:
+ * 基于队列：
  * ============
  *
  * +----+  put
@@ -61,11 +61,11 @@ import java.util.concurrent.Future;
  * | P3 |------+
  * +----+
  *
- * P1  - Publisher 1
- * P2  - Publisher 2
- * P3  - Publisher 3
- * Q1  - Queue 1
- * EP1 - EventProcessor 1
+ * P1  - 发布者 1
+ * P2  - 发布者 2
+ * P3  - 发布者 3
+ * Q1  - 队列 1
+ * EP1 - 事件处理器 1
  *
  * </pre>
  */

@@ -37,10 +37,9 @@ import static com.lmax.disruptor.RingBuffer.createSingleProducer;
 /**
  * <pre>
  *
- * Ping pongs between 2 event handlers and measures the latency of
- * a round trip.
+ * 两个事件处理器之间乒乓往返，测量单次往返延迟。
  *
- * Disruptor:
+ * Disruptor：
  * ==========
  *               +----------+
  *               |          |
@@ -56,16 +55,16 @@ import static com.lmax.disruptor.RingBuffer.createSingleProducer;
  *               |          |
  *               +----------+
  *
- * EP1 - Pinger
- * EP2 - Ponger
- * RB1 - PingBuffer
- * SB1 - PingBarrier
- * RB2 - PongBuffer
- * SB2 - PongBarrier
+ * EP1 - Ping 端
+ * EP2 - Pong 端
+ * RB1 - Ping 环形缓冲区
+ * SB1 - Ping 序号屏障
+ * RB2 - Pong 环形缓冲区
+ * SB2 - Pong 序号屏障
  *
  * </pre>
  *
- * <p>Note: <b>This test is only useful on a system using an invariant TSC in user space from the System.nanoTime() call.</b>
+ * <p>注意：<b>本测试仅在用户态 System.nanoTime() 使用不变 TSC 的系统上有意义。</b>
  */
 public final class PingPongSequencedLatencyTest
 {

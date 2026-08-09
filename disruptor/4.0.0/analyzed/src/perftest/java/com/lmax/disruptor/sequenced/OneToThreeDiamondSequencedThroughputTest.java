@@ -36,7 +36,7 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
 
 /**
  * <pre>
- * Produce an event replicated to two event processors and fold back to a single third event processor.
+ * 将事件复制到两个事件处理器，再汇聚到第三个事件处理器。
  *
  *           +-----+
  *    +----->| EP1 |------+
@@ -50,9 +50,9 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
  *    +----->| EP2 |------+
  *           +-----+
  *
- * Disruptor:
+ * Disruptor：
  * ==========
- *                    track to prevent wrap
+ *                    跟踪序号以防环绕
  *              +-------------------------------+
  *              |                               |
  *              |                               v
@@ -69,13 +69,13 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
  *              +-------| EP2 |<-----+
  *             waitFor  +-----+
  *
- * P1  - Publisher 1
- * RB  - RingBuffer
- * SB1 - SequenceBarrier 1
- * EP1 - EventProcessor 1
- * EP2 - EventProcessor 2
- * SB2 - SequenceBarrier 2
- * EP3 - EventProcessor 3
+ * P1  - 发布者 1
+ * RB  - 环形缓冲区
+ * SB1 - 序号屏障 1
+ * EP1 - 事件处理器 1
+ * EP2 - 事件处理器 2
+ * SB2 - 序号屏障 2
+ * EP3 - 事件处理器 3
  *
  * </pre>
  */

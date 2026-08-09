@@ -35,17 +35,16 @@ import static com.lmax.disruptor.RingBuffer.createSingleProducer;
 import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
 
 /**
- * Pipeline a series of stages from a publisher to ultimate event processor.
- * Each event processor depends on the output of the event processor.
+ * 流水线：从发布者经多个阶段到达最终事件处理器，每个处理器依赖前一级的输出。
  *
  * <pre>{@code
  * +----+    +-----+    +-----+    +-----+
  * | P1 |--->| EP1 |--->| EP2 |--->| EP3 |
  * +----+    +-----+    +-----+    +-----+
  *
- * Disruptor:
+ * Disruptor：
  * ==========
- *                           track to prevent wrap
+ *                           跟踪序号以防环绕
  *              +----------------------------------------------------------------+
  *              |                                                                |
  *              |                                                                v
@@ -56,14 +55,14 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
  *              |         |                     |                     |
  *              +---------+---------------------+---------------------+
  *
- * P1  - Publisher 1
- * RB  - RingBuffer
- * SB1 - SequenceBarrier 1
- * EP1 - EventProcessor 1
- * SB2 - SequenceBarrier 2
- * EP2 - EventProcessor 2
- * SB3 - SequenceBarrier 3
- * EP3 - EventProcessor 3
+ * P1  - 发布者 1
+ * RB  - 环形缓冲区
+ * SB1 - 序号屏障 1
+ * EP1 - 事件处理器 1
+ * SB2 - 序号屏障 2
+ * EP2 - 事件处理器 2
+ * SB3 - 序号屏障 3
+ * EP3 - 事件处理器 3
  * }</pre>
  */
 public final class OneToThreePipelineSequencedThroughputTest extends AbstractPerfTestDisruptor

@@ -20,6 +20,9 @@ import com.lmax.disruptor.util.PaddedLong;
 
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * FizzBuzz 流水线事件处理器：按步骤判定整除 3/5 或统计 fizz+buzz。
+ */
 public final class FizzBuzzEventHandler implements EventHandler<FizzBuzzEvent>
 {
     private final FizzBuzzStep fizzBuzzStep;
@@ -32,6 +35,7 @@ public final class FizzBuzzEventHandler implements EventHandler<FizzBuzzEvent>
         this.fizzBuzzStep = fizzBuzzStep;
     }
 
+    /** 重置计数器并绑定完成 latch（在 expectedCount 序号处触发）。 */
     public void reset(final CountDownLatch latch, final long expectedCount)
     {
         fizzBuzzCounter.set(0L);
@@ -50,6 +54,7 @@ public final class FizzBuzzEventHandler implements EventHandler<FizzBuzzEvent>
         switch (fizzBuzzStep)
         {
             case FIZZ:
+                // 步骤：能被 3 整除则标记 fizz
                 if (0 == (event.getValue() % 3))
                 {
                     event.setFizz(true);
@@ -57,6 +62,7 @@ public final class FizzBuzzEventHandler implements EventHandler<FizzBuzzEvent>
                 break;
 
             case BUZZ:
+                // 步骤：能被 5 整除则标记 buzz
                 if (0 == (event.getValue() % 5))
                 {
                     event.setBuzz(true);
@@ -64,6 +70,7 @@ public final class FizzBuzzEventHandler implements EventHandler<FizzBuzzEvent>
                 break;
 
             case FIZZ_BUZZ:
+                // 步骤：同时满足 fizz 与 buzz 时累加计数
                 if (event.isFizz() && event.isBuzz())
                 {
                     fizzBuzzCounter.set(fizzBuzzCounter.get() + 1L);

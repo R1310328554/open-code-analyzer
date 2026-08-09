@@ -18,6 +18,9 @@ package com.lmax.disruptor.support;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * 基于阻塞队列的 FizzBuzz 处理器：FIZZ/BUZZ 分支判定，FIZZ_BUZZ 分支汇聚统计。
+ */
 public final class FizzBuzzQueueProcessor implements Runnable
 {
     private final FizzBuzzStep fizzBuzzStep;
@@ -53,6 +56,7 @@ public final class FizzBuzzQueueProcessor implements Runnable
         return fizzBuzzCounter;
     }
 
+    /** 重置内部计数与完成 latch。 */
     public void reset(final CountDownLatch latch)
     {
         fizzBuzzCounter = 0L;
@@ -60,6 +64,7 @@ public final class FizzBuzzQueueProcessor implements Runnable
         this.latch = latch;
     }
 
+    /** 请求停止消费循环。 */
     public void halt()
     {
         running = false;
@@ -93,6 +98,7 @@ public final class FizzBuzzQueueProcessor implements Runnable
                     {
                         final boolean fizz = fizzOutputQueue.take().booleanValue();
                         final boolean buzz = buzzOutputQueue.take().booleanValue();
+                        // 步骤：两路均为 true 时计入 fizzBuzz 命中
                         if (fizz && buzz)
                         {
                             ++fizzBuzzCounter;

@@ -37,7 +37,7 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
 /**
  * <pre>
  *
- * MultiCast a series of items between 1 publisher and 3 event processors.
+ * 多播：1 个发布者与 3 个事件处理器之间传递一系列事件。
  *
  *           +-----+
  *    +----->| EP1 |
@@ -51,9 +51,9 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
  *    +----->| EP3 |
  *           +-----+
  *
- * Disruptor:
+ * Disruptor：
  * ==========
- *                             track to prevent wrap
+ *                             跟踪序号以防环绕
  *             +--------------------+----------+----------+
  *             |                    |          |          |
  *             |                    v          v          v
@@ -65,12 +65,12 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIfNot;
  *                        +---------+----------+----------+
  *                                      waitFor
  *
- * P1  - Publisher 1
- * RB  - RingBuffer
- * SB  - SequenceBarrier
- * EP1 - EventProcessor 1
- * EP2 - EventProcessor 2
- * EP3 - EventProcessor 3
+ * P1  - 发布者 1
+ * RB  - 环形缓冲区
+ * SB  - 序号屏障
+ * EP1 - 事件处理器 1
+ * EP2 - 事件处理器 2
+ * EP3 - 事件处理器 3
  *
  * </pre>
  */

@@ -30,10 +30,9 @@ import java.util.concurrent.Future;
 /**
  * <pre>
  *
- * Ping pongs between 2 event handlers and measures the latency of
- * a round trip.
+ * 两个事件处理器之间乒乓往返，测量单次往返延迟。
  *
- * Queue Based:
+ * 基于队列：
  * ============
  *               +---take---+
  *               |          |
@@ -49,14 +48,14 @@ import java.util.concurrent.Future;
  *               |          |
  *               +---take---+
  *
- * P1 - QueuePinger
- * P2 - QueuePonger
- * Q1 - PingQueue
- * Q2 - PongQueue
+ * P1 - 队列 Ping 端
+ * P2 - 队列 Pong 端
+ * Q1 - Ping 队列
+ * Q2 - Pong 队列
  *
  * </pre>
  *
- * <p>Note: <b>This test is only useful on a system using an invariant TSC in user space from the System.nanoTime() call.</b>
+ * <p>注意：<b>本测试仅在用户态 System.nanoTime() 使用不变 TSC 的系统上有意义。</b>
  */
 public final class PingPongQueueLatencyTest
 {
