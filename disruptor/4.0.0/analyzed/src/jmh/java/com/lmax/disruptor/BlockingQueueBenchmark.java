@@ -23,16 +23,25 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 对比 {@link ArrayBlockingQueue} 与 Disruptor 生产侧性能的 JMH 基准。
+ */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
 @Fork(1)
 public class BlockingQueueBenchmark
 {
+    /** 有界阻塞队列，作为对照组。 */
     private BlockingQueue<SimpleEvent> arrayBlockingQueue;
+    /** 消费者线程是否继续运行。 */
     private volatile boolean consumerRunning;
+    /** 复用的测试事件对象。 */
     private SimpleEvent simpleEvent;
 
+    /**
+     * 启动后台消费者线程并准备测试事件。
+     */
     @Setup
     public void setup(final Blackhole bh) throws InterruptedException
     {
@@ -59,6 +68,9 @@ public class BlockingQueueBenchmark
         simpleEvent.setValue(0);
     }
 
+    /**
+     * 测量向阻塞队列 {@code offer} 事件的平均耗时。
+     */
     @Benchmark
     public void producing() throws InterruptedException
     {
@@ -68,12 +80,18 @@ public class BlockingQueueBenchmark
         }
     }
 
+    /**
+     * 停止消费者线程。
+     */
     @TearDown
     public void tearDown()
     {
         consumerRunning = false;
     }
 
+    /**
+     * 独立运行本基准。
+     */
     public static void main(final String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()

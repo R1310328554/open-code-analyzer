@@ -23,15 +23,23 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 单生产者、单消费者场景下 Disruptor 发布延迟的 JMH 基准。
+ */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Thread)
 @Fork(1)
 public class SingleProducerSingleConsumer
 {
+    /** 环形缓冲区。 */
     private RingBuffer<SimpleEvent> ringBuffer;
+    /** Disruptor 实例。 */
     private Disruptor<SimpleEvent> disruptor;
 
+    /**
+     * 配置单生产者 Disruptor 并启动消费者。
+     */
     @Setup
     public void setup(final Blackhole bh)
     {
@@ -46,6 +54,9 @@ public class SingleProducerSingleConsumer
         ringBuffer = disruptor.start();
     }
 
+    /**
+     * 测量单线程发布一条事件的平均耗时。
+     */
     @Benchmark
     public void producing()
     {
@@ -55,12 +66,18 @@ public class SingleProducerSingleConsumer
         ringBuffer.publish(sequence);
     }
 
+    /**
+     * 关闭 Disruptor。
+     */
     @TearDown
     public void tearDown()
     {
         disruptor.shutdown();
     }
 
+    /**
+     * 独立运行本基准。
+     */
     public static void main(final String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()

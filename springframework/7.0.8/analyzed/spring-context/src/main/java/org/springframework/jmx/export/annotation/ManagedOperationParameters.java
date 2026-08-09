@@ -23,12 +23,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Method-level annotation used as a container for one or more
- * {@code @ManagedOperationParameter} declarations.
+ * 方法级注解，用作一个或多个 {@code @ManagedOperationParameter} 声明的容器。
  *
- * <p>Note, however, that use of the {@code @ManagedOperationParameters} container
- * is completely optional since {@code @ManagedOperationParameter} is a
- * {@linkplain java.lang.annotation.Repeatable repeatable} annotation.
+ * <p>注意，由于 {@code @ManagedOperationParameter} 是
+ * {@linkplain java.lang.annotation.Repeatable 可重复}注解，
+ * 使用 {@code @ManagedOperationParameters} 容器完全可选。
  *
  * @author Rob Harrop
  * @since 1.2

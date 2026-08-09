@@ -18,10 +18,10 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-/*
- * Based on false-sharing benchmark in open JDK
- * @see https://github.com/openjdk/jmh/blob/master/jmh-samples/src/main/java/org/openjdk/jmh/samples/JMHSample_22_FalseSharing.java
- *
+/**
+ * JMH 基准：验证 RingBuffer 字段填充对伪共享的影响。
+ * 基于 OpenJDK JMH 伪共享示例。
+ * @see <a href="https://github.com/openjdk/jmh/blob/master/jmh-samples/src/main/java/org/openjdk/jmh/samples/JMHSample_22_FalseSharing.java">JMHSample_22_FalseSharing</a>
  */
 
 @BenchmarkMode(Mode.Throughput)
@@ -32,10 +32,9 @@ import java.util.concurrent.TimeUnit;
 public class RingBufferFalseSharingBenchmark
 {
     /*
-     * We take advantage of the inheritance trick used in RingBuffer
-     * to create an object without the padding that occur after the fields.
+     * 利用 RingBuffer 的继承技巧，构造字段之后不含填充的对象。
      *
-     * Java object layout using JDK15:
+     * JDK 15 下的 Java 对象布局：
      * com.lmax.disruptor.RingBufferFalseSharingBenchmark$HalfPaddedRingBufferWithNoisyNeighbour object internals:
  OFFSET  SIZE                           TYPE DESCRIPTION                                        VALUE
       0    12                                (object header)                                    N/A
@@ -131,7 +130,7 @@ Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
     }
 
     /*
-     * A fully padded RingBuffer using longs
+     * 使用字节字段完整填充的 RingBuffer
      */
 
     @State(Scope.Group)
@@ -152,7 +151,7 @@ Space losses: 0 bytes internal + 4 bytes external = 4 bytes total
         }
     }
 
-    /* Java object layout using JDK15:
+    /* JDK 15 下的 Java 对象布局：
     com.lmax.disruptor.RingBufferFalseSharingBenchmark$PaddedRingBufferWithNoisyNeighbour object internals:
  OFFSET  SIZE                           TYPE DESCRIPTION                                    VALUE
       0    12                                (object header)                                N/A

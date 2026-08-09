@@ -24,12 +24,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Type-level annotation used as a container for one or more
- * {@code @ManagedNotification} declarations.
+ * 类型级注解，用作一个或多个 {@code @ManagedNotification} 声明的容器。
  *
- * <p>Note, however, that use of the {@code @ManagedNotifications} container
- * is completely optional since {@code @ManagedNotification} is a
- * {@linkplain java.lang.annotation.Repeatable repeatable} annotation.
+ * <p>注意，由于 {@code @ManagedNotification} 是
+ * {@linkplain java.lang.annotation.Repeatable 可重复}注解，
+ * 使用 {@code @ManagedNotifications} 容器完全可选。
  *
  * @author Rob Harrop
  * @since 2.0
