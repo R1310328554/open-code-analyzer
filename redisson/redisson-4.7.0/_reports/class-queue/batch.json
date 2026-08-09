@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:44:56Z",
   "files": [
-    "redisson/src/main/java/org/redisson/RedissonMultiMapIterator.java",
-    "redisson/src/main/java/org/redisson/RedissonMultimapCache.java",
-    "redisson/src/main/java/org/redisson/RedissonMultimapCacheNative.java",
-    "redisson/src/main/java/org/redisson/RedissonNode.java",
-    "redisson/src/main/java/org/redisson/RedissonNonReentrantFairLock.java",
-    "redisson/src/main/java/org/redisson/RedissonNonReentrantLock.java",
-    "redisson/src/main/java/org/redisson/RedissonPatternTopic.java",
-    "redisson/src/main/java/org/redisson/RedissonPriorityBlockingDeque.java",
-    "redisson/src/main/java/org/redisson/RedissonPriorityBlockingQueue.java",
-    "redisson/src/main/java/org/redisson/RedissonPriorityDeque.java",
-    "redisson/src/main/java/org/redisson/RedissonQueue.java",
-    "redisson/src/main/java/org/redisson/RedissonQueueSemaphore.java",
-    "redisson/src/main/java/org/redisson/RedissonReadLock.java",
-    "redisson/src/main/java/org/redisson/RedissonReadWriteLock.java",
-    "redisson/src/main/java/org/redisson/RedissonRedLock.java",
     "redisson/src/main/java/org/redisson/RedissonReference.java",
     "redisson/src/main/java/org/redisson/RedissonReliableTopic.java",
     "redisson/src/main/java/org/redisson/RedissonRingBuffer.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/RedissonWriteLock.java"
   ],
   "remaining_pending": 1622,
-  "done": 1170
+  "done": 1185
 }
