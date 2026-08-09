@@ -25,6 +25,9 @@ import org.redisson.liveobject.misc.ClassUtils;
 import java.io.Serializable;
 
 /**
+ * 可序列化的 Redisson 对象引用，保存类型名、Redis 键名与可选 {@link org.redisson.client.codec.Codec}。
+ * <p>支持 {@link org.redisson.api.RObject}、Reactive/Rx 变体及 {@link org.redisson.api.annotation.REntity} 类型；
+ * Reactive/Rx 接口会映射到对应的同步实现类名。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  * @author Nikita Koksharov
@@ -37,13 +40,17 @@ public class RedissonReference implements Serializable {
     private String keyName;
     private String codec;
 
+    /** 无参构造，供序列化框架使用。 */
     public RedissonReference() {
     }
 
+    /** @param type Redisson 对象接口或 LiveObject 类型
+     *  @param keyName Redis 键名 */
     public RedissonReference(Class<?> type, String keyName) {
         this(type, keyName, null);
     }
 
+    /** @param codec 可选编解码器；非空时保存其类全名 */
     public RedissonReference(Class<?> type, String keyName, Codec codec) {
         if (!ClassUtils.isAnnotationPresent(type, REntity.class)
                 && !RObject.class.isAssignableFrom(type)
@@ -72,14 +79,14 @@ public class RedissonReference implements Serializable {
         }
     }
 
-    /**
-     * @return the type
-     * @throws java.lang.ClassNotFoundException - if the class cannot be located
-     */
+    /** @return 同步 {@link org.redisson.api.RObject} 实现类
+     *  @throws java.lang.ClassNotFoundException 类不在 classpath 时 */
+
     public Class<?> getType() throws ClassNotFoundException {
         return Class.forName(type);
     }
 
+    /** 返回 {@code type + "Rx"} 对应的 RxJava 接口类；LiveObject 不支持。 */
     public Class<?> getRxJavaType() throws ClassNotFoundException {
         String rxName = type + "Rx";
         if (isAvailable(rxName)) {
@@ -88,10 +95,9 @@ public class RedissonReference implements Serializable {
         throw new ClassNotFoundException("There is no RxJava compatible type for " + type);
     }
 
-    /**
-     * @return the type
-     * @throws java.lang.ClassNotFoundException - if the class cannot be located
-     */
+    /** @return Reactive 变体类（{@code type + "Reactive"}）
+     *  @throws java.lang.ClassNotFoundException 无对应 Reactive 类型时 */
+
     public Class<?> getReactiveType() throws ClassNotFoundException {
         String reactiveName = type + "Reactive";
         if (isAvailable(reactiveName)) {
@@ -100,23 +106,20 @@ public class RedissonReference implements Serializable {
         throw new ClassNotFoundException("There is no Reactive compatible type for " + type);
     }
 
-    /**
-     * @return type name in string
-     */
+    /** @return 已解析的同步实现类全名字符串 */
+
     public String getTypeName() {
         return type;
     }
 
-    /**
-     * @return the keyName
-     */
+    /** @return Redis 键名 */
+
     public String getKeyName() {
         return keyName;
     }
 
-    /**
-     * @param keyName the keyName to set
-     */
+    /** @param keyName 要设置的 Redis 键名 */
+
     public void setKeyName(String keyName) {
         this.keyName = keyName;
     }
@@ -125,10 +128,9 @@ public class RedissonReference implements Serializable {
         return codec;
     }
 
-    /**
-     * @return the codec
-     * @throws java.lang.ClassNotFoundException - if the class cannot be located
-     */
+    /** @return 编解码器类；未指定时返回 {@code null}
+     *  @throws java.lang.ClassNotFoundException codec 类无法加载时 */
+
     public Class<? extends Codec> getCodecType() throws ClassNotFoundException {
         if (codec != null) {
             return (Class<? extends Codec>) Class.forName(codec);
@@ -136,6 +138,7 @@ public class RedissonReference implements Serializable {
         return null;
     }
 
+    /** 探测给定类名是否可通过 {@link Class#forName} 加载。 */
     private boolean isAvailable(String type) {
         try {
             Class.forName(type);

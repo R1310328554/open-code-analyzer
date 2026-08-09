@@ -33,13 +33,14 @@ import org.redisson.pubsub.PubSubConnectionEntry;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Sharded Topic for Redis Cluster. Messages are delivered to message listeners connected to the same Topic.
+ * Redis Cluster 分片主题 {@link org.redisson.api.RShardedTopic} 实现。
+ * <p>使用 {@code SPUBLISH}/{@code SSUBSCRIBE}；消息仅投递到同一 slot 上的监听器。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonShardedTopic extends RedissonTopic implements RShardedTopic {
 
+    /** 使用默认 codec 构造。 */
     public RedissonShardedTopic(CommandAsyncExecutor commandExecutor, String... names) {
         super(commandExecutor, names);
     }
@@ -52,11 +53,13 @@ public class RedissonShardedTopic extends RedissonTopic implements RShardedTopic
         super(codec, commandExecutor, nameMapper, names);
     }
 
+    /** 创建不经 {@link NameMapper} 映射的原始分片主题实例。 */
     public static RedissonTopic createRaw(Codec codec, CommandAsyncExecutor commandExecutor, String... names) {
         return new RedissonShardedTopic(codec, commandExecutor, NameMapper.direct(), names);
     }
 
     @Override
+    /** 通过 {@code SSUBSCRIBE} 注册分片 Pub/Sub 监听器。 */
     protected RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
         CompletableFuture<PubSubConnectionEntry> future = subscribeService.ssubscribe(codec, channelNames, pubSubListener);
         CompletableFuture<Integer> f = future.thenApply(res -> {
@@ -66,6 +69,7 @@ public class RedissonShardedTopic extends RedissonTopic implements RShardedTopic
     }
 
     @Override
+    /** 通过 {@code SPUBLISH} 向分片频道发布消息。 */
     public RFuture<Long> publishAsync(Object message) {
         String name = getName();
         return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.SPUBLISH, name, commandExecutor.encode(codec, message));

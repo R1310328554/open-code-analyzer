@@ -34,10 +34,11 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RRingBuffer} 的固定容量环形队列实现。
+ * <p>容量存于独立设置键；{@code RPUSH} 超出上限时 {@code LPOP} 丢弃最旧元素。
  *
- * @param <V> value type
+ * @author Nikita Koksharov
+ * @param <V> 元素类型
  */
 public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuffer<V> {
 
@@ -45,17 +46,20 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     
     private final String settingsName;
     
+    /** 使用默认 codec；设置键前缀 {@code redisson_rb:}。 */
     public RedissonRingBuffer(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
         settingsName = prefixName("redisson_rb", getRawName());
     }
     
+    /** @param codec 元素编解码器 */
     public RedissonRingBuffer(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
         settingsName = prefixName("redisson_rb", getRawName());
     }
 
     @Override
+    /** 仅当设置键不存在时写入容量（{@code SETNX}）。 */
     public RFuture<Boolean> trySetCapacityAsync(int capacity) {
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.SETNX, settingsName, capacity);
     }
@@ -66,6 +70,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     }
 
     @Override
+    /** 设置容量并在必要时 {@code LTRIM} 截断队列。 */
     public RFuture<Void> setCapacityAsync(int capacity) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "redis.call('set', KEYS[2], ARGV[1]); " +
@@ -82,6 +87,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     }
 
     @Override
+    /** 追加元素；超出容量时弹出队首。容量未定义时 Lua 断言失败。 */
     public RFuture<Boolean> addAsync(V e) {
         return commandExecutor.evalWriteNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local limit = redis.call('get', KEYS[2]); "
@@ -126,6 +132,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     }
 
     @Override
+    /** 返回 {@code max(0, capacity - llen)}。 */
     public RFuture<Integer> remainingCapacityAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local limit = redis.call('get', KEYS[2]); "
@@ -152,6 +159,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     }
 
     @Override
+    /** 读取末尾 {@code count} 个元素（最新）。 */
     public RFuture<List<V>> readNewestAsync(int count) {
         if (count <= 0) {
             return new CompletableFutureWrapper<>(Collections.<V>emptyList());
@@ -165,6 +173,7 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     }
 
     @Override
+    /** 读取队首 {@code count} 个元素（最旧）。 */
     public RFuture<List<V>> readOldestAsync(int count) {
         if (count <= 0) {
             return new CompletableFutureWrapper<>(Collections.<V>emptyList());

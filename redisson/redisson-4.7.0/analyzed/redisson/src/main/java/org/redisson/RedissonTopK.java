@@ -30,13 +30,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Distributed implementation of Top-K
- * based on Redis Bloom module {@code TOPK.*} commands.
+ * {@link org.redisson.api.RTopK} 的分布式 Top-K 频率 sketch 实现。
+ * <p>基于 RedisBloom 模块 {@code TOPK.*} 命令，近似追踪高频元素。
  *
- * @param <V> element type
- *
+ * @param <V> 元素类型
  * @author Nikita Koksharov
- *
  */
 public class RedissonTopK<V> extends RedissonExpirable implements RTopK<V> {
 
@@ -44,6 +42,8 @@ public class RedissonTopK<V> extends RedissonExpirable implements RTopK<V> {
     private static final long DEFAULT_DEPTH = 7;
     private static final double DEFAULT_DECAY = 0.9;
 
+    /** @param codec 元素编解码器
+     *  @param name Top-K 结构 Redis 键名 */
     public RedissonTopK(Codec codec,
                         CommandAsyncExecutor commandExecutor,
                         String name) {
@@ -56,6 +56,7 @@ public class RedissonTopK<V> extends RedissonExpirable implements RTopK<V> {
     }
 
     @Override
+    /** 以默认 width/depth/decay 初始化 Top-K（{@code TOPK.RESERVE}）。 */
     public RFuture<Void> initAsync(int topK) {
         return commandExecutor.writeAsync(
                 getRawName(), StringCodec.INSTANCE,
@@ -110,6 +111,7 @@ public class RedissonTopK<V> extends RedissonExpirable implements RTopK<V> {
     }
 
     @Override
+    /** 追加元素；若被挤出 Top-K 则返回被替换项，否则返回 null。 */
     public RFuture<V> addAsync(V item) {
         return commandExecutor.writeAsync(
                 getRawName(), codec,
@@ -239,6 +241,7 @@ public class RedissonTopK<V> extends RedissonExpirable implements RTopK<V> {
     }
 
     @Override
+    /** 返回当前 Top-K 元素列表（{@code TOPK.LIST}）。 */
     public RFuture<List<V>> listAsync() {
         return commandExecutor.readAsync(
                 getRawName(), codec,
@@ -252,6 +255,7 @@ public class RedissonTopK<V> extends RedissonExpirable implements RTopK<V> {
     }
 
     @Override
+    /** 返回 Top-K 元素及其近似计数（{@code TOPK.LIST WITHCOUNT}）。 */
     public RFuture<Map<V, Long>> listWithCountAsync() {
         return commandExecutor.readAsync(
                 getRawName(), codec,

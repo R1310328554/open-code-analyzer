@@ -17,10 +17,15 @@ package org.redisson;
 
 import org.redisson.client.RedisException;
 
+/**
+ * Redisson 客户端关闭过程中抛出的异常。
+ * <p>表示操作因 {@link org.redisson.connection.ConnectionManager} 正在关停而无法完成。
+ */
 public class RedissonShutdownException extends RedisException {
 
     private static final long serialVersionUID = -2694051226420789395L;
 
+    /** @param message 异常描述 */
     public RedissonShutdownException(String message) {
         super(message);
     }

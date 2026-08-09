@@ -23,20 +23,24 @@ import org.redisson.command.CommandAsyncExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RSetMultimapCacheNative} 的原生 TTL 集合多映射实现。
+ * <p>键级过期由 Redis 原生 {@code EXPIRE} 管理，无需 {@link EvictionScheduler}。
  *
- * @param <K> key
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <K> 映射键类型
+ * @param <V> 集合元素类型
  */
 public class RedissonSetMultimapCacheNative<K, V> extends RedissonSetMultimap<K, V> implements RSetMultimapCacheNative<K, V> {
 
     private final RedissonMultimapCacheNative<K> baseCache;
 
+    /** 使用默认 codec 构造。 */
     public RedissonSetMultimapCacheNative(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
         baseCache = new RedissonMultimapCacheNative<>(connectionManager, this, prefix);
     }
 
+    /** @param codec 键与元素编解码器 */
     public RedissonSetMultimapCacheNative(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
         baseCache = new RedissonMultimapCacheNative<>(connectionManager, this, prefix);
@@ -48,6 +52,7 @@ public class RedissonSetMultimapCacheNative<K, V> extends RedissonSetMultimap<K,
     }
     
     @Override
+    /** 为单个映射键设置原生 TTL，委托 {@link RedissonMultimapCacheNative}。 */
     public RFuture<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
         return baseCache.expireKeyAsync(key, timeToLive, timeUnit);
     }

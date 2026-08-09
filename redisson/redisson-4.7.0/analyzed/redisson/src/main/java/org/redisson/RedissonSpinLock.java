@@ -30,13 +30,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.locks.Lock}
- * Implements reentrant lock.<br>
- * Lock will be removed automatically if client disconnects.
- * This lock implementation doesn't use pub/sub mechanism. It can be used in large Redis clusters despite current naive
- * pub/sub implementation.
- * <p>
- * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order.
+ * {@link java.util.concurrent.locks.Lock} 的分布式自旋锁实现（可重入）。
+ * <p>不使用 Pub/Sub，通过退避策略轮询 {@code tryLock}，适合大规模集群。
+ * 客户端断开时锁自动释放；<b>非公平</b>，不保证获取顺序。
  *
  * @author Danila Varatyntsev
  */
@@ -48,6 +44,7 @@ public final class RedissonSpinLock extends RedissonBaseLock {
 
     final CommandAsyncExecutor commandExecutor;
 
+    /** @param backOff 获取失败时的退避策略 */
     RedissonSpinLock(CommandAsyncExecutor commandExecutor, String name,
                             LockOptions.BackOff backOff) {
         super(commandExecutor, name);
@@ -80,6 +77,7 @@ public final class RedissonSpinLock extends RedissonBaseLock {
     }
 
     @Override
+    /** 自旋尝试获取锁直至成功；{@code leaseTime <= 0} 时使用看门狗续期。 */
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
         long threadId = Thread.currentThread().getId();
         Long ttl = tryAcquire(leaseTime, unit, threadId);
@@ -125,6 +123,7 @@ public final class RedissonSpinLock extends RedissonBaseLock {
         return get(tryLockAsync());
     }
 
+    /** Lua：不存在或当前线程已持有时 HINCRBY 并重置 TTL；否则返回剩余 TTL。 */
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
@@ -199,6 +198,7 @@ public final class RedissonSpinLock extends RedissonBaseLock {
     }
 
 
+    /** Lua 递减重入计数；计数归零时 DEL 键并通过 latch 通知等待者。 */
     protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, long timeout) {
         return evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local val = redis.call('get', KEYS[2]); " +
@@ -232,6 +232,7 @@ public final class RedissonSpinLock extends RedissonBaseLock {
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 异步自旋锁：失败时按 {@link LockOptions.BackOffPolicy} 调度重试。 */
     private void lockAsync(long leaseTime, TimeUnit unit, long currentThreadId, CompletableFuture<Void> result,
                            LockOptions.BackOffPolicy backOffPolicy) {
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);

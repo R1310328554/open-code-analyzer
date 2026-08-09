@@ -29,28 +29,33 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 /**
- * Lock will be removed automatically if client disconnects.
+ * {@link org.redisson.api.RLock} 读写锁中的写锁实现。
+ * <p>Hash 字段 {@code mode=write} 标记写模式；可重入。
+ * 客户端断开时锁自动释放；释放后若有读锁则切换为 {@code mode=read}。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonWriteLock extends RedissonLock implements RLock {
 
+    /** @param name 读写锁共享 Redis Hash 键名 */
     protected RedissonWriteLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
     @Override
+    /** 返回写锁 Pub/Sub 通知频道（前缀 {@code redisson_rwlock:}）。 */
     String getChannelName() {
         return prefixName("redisson_rwlock", getRawName());
     }
 
     @Override
+    /** 写锁线程字段名为 {@code {uuid}:{threadId}:write}。 */
     protected String getLockName(long threadId) {
         return super.getLockName(threadId) + ":write";
     }
     
     @Override
+    /** Lua：无 mode 或已有写锁且同线程时获取/重入；否则返回剩余 TTL。 */
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
                             "local mode = redis.call('hget', KEYS[1], 'mode'); " +
@@ -117,6 +122,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     }
     
     @Override
+    /** 写锁不支持 {@link Condition}。 */
     public Condition newCondition() {
         throw new UnsupportedOperationException();
     }
@@ -136,6 +142,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     }
 
     @Override
+    /** 当 Hash 中 {@code mode} 字段为 {@code write} 时视为已加写锁。 */
     public boolean isLocked() {
         RFuture<String> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.HGET, getRawName(), "mode");
         String res = get(future);

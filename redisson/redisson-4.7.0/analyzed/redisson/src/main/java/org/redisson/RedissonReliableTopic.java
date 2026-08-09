@@ -42,14 +42,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * {@link org.redisson.api.RReliableTopic} 的 Redis Stream 可靠主题实现。
+ * <p>发布通过 {@code XADD}；订阅创建消费者组并轮询 pending/新消息，
+ * 看门狗在 ZSet 中续期订阅者，超时订阅者会被清理。
  *
  * @author Nikita Koksharov
- *
  */
 public final class RedissonReliableTopic extends RedissonExpirable implements RReliableTopic {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonReliableTopic.class);
 
+    /** 监听器条目：消息类型与 {@link MessageListener} 实例。 */
     private static class Entry {
 
         private final Class<?> type;
@@ -77,6 +80,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
     private final AtomicBoolean subscribed = new AtomicBoolean();
     private final String timeoutName;
 
+    /** @param name Stream 键名；超时 ZSet 为 {@code name:timeout} */
     RedissonReliableTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
         stream = new RedissonStream<>(new CompositeCodec(StringCodec.INSTANCE, codec), commandExecutor, name);
@@ -84,10 +88,12 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
         this.timeoutName = getTimeout(getRawName());
     }
 
+    /** 使用全局默认 codec 构造。 */
     RedissonReliableTopic(CommandAsyncExecutor commandExecutor, String name) {
         this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, name);
     }
 
+    /** 返回订阅者看门狗 ZSet 键名。 */
     private String getTimeout(String name) {
         return suffixName(name, "timeout");
     }
@@ -132,6 +138,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
     }
 
     @Override
+    /** 向 Stream 追加消息并返回当前消费者组数量。 */
     public RFuture<Long> publishAsync(Object message) {
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "redis.call('xadd', KEYS[1], '*', 'm', ARGV[1]); "
@@ -142,6 +149,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
     }
 
     @Override
+    /** 注册监听器；首个订阅者创建消费者组并启动 {@link #poll} 循环。 */
     public <M> RFuture<String> addListenerAsync(Class<M> type, MessageListener<M> listener) {
         String id = getServiceManager().generateId();
         listeners.put(id, new Entry(type, listener));
@@ -166,6 +174,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 拉取 pending 或未投递消息，分派给匹配类型的监听器并 ACK。 */
     private void poll(String id) {
         RFuture<Map<StreamMessageId, Map<String, Object>>> f = stream.pendingRangeAsync(id, StreamMessageId.MIN, StreamMessageId.MAX, 100);
         CompletionStage<Map<StreamMessageId, Map<String, Object>>> ff = f.thenCompose(r -> {
@@ -313,6 +322,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
         return CompletableFutureWrapper.completedNull();
     }
 
+    /** 销毁消费者组、取消读/看门狗任务并从 ZSet 移除订阅者。 */
     private RFuture<Void> removeSubscriber() {
         if (!subscribed.compareAndSet(true, false)) {
             return CompletableFutureWrapper.completedNull();
@@ -347,6 +357,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
                 Arrays.asList(getRawName()));
     }
 
+    /** 周期性续期看门狗 ZSet 中订阅者分数，防止被当作过期清理。 */
     private void renewExpiration() {
         timeoutTask = getServiceManager().newTimeout(t -> {
             if (!subscribed.get() || getServiceManager().isShuttingDown()) {

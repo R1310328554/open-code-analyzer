@@ -30,20 +30,24 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RScript} 的 Lua 脚本执行门面。
+ * <p>支持 {@code SCRIPT LOAD/EXISTS/FLUSH/KILL} 及 {@code EVAL}/{@code EVALSHA}；
+ * 只读模式优先尝试 {@code EVALSHA_RO}，不支持时自动回退。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonScript implements RScript {
 
     private final Codec codec;
     private final CommandAsyncExecutor commandExecutor;
 
+    /** 使用全局默认 codec 构造。 */
     public RedissonScript(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
         this.codec = commandExecutor.getServiceManager().getCfg().getCodec();
     }
     
+    /** @param codec 脚本参数与返回值的编解码器 */
     public RedissonScript(CommandAsyncExecutor commandExecutor, Codec codec) {
         this.commandExecutor = commandExecutor;
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
@@ -59,6 +63,7 @@ public class RedissonScript implements RScript {
     }
 
     @Override
+    /** 向所有 Redis 节点加载脚本，返回首个节点的 SHA1。 */
     public RFuture<String> scriptLoadAsync(String luaScript) {
         List<CompletableFuture<String>> futures = commandExecutor.executeAllAsync(RedisCommands.SCRIPT_LOAD, luaScript);
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -67,6 +72,7 @@ public class RedissonScript implements RScript {
     }
 
     @Override
+    /** 向指定键所在 slot 的节点加载脚本。 */
     public RFuture<String> scriptLoadAsync(String key, String luaScript) {
         return commandExecutor.writeAsync(key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, luaScript);
     }
@@ -82,6 +88,7 @@ public class RedissonScript implements RScript {
         return eval(key, mode, luaScript, returnType, keys, values);
     }
 
+    /** 从 KEYS 列表取首个键作为路由 slot 的键。 */
     private static String getKey(List<Object> keys) {
         String key = null;
         if (!keys.isEmpty()) {
@@ -198,6 +205,7 @@ public class RedissonScript implements RScript {
         return evalAsync(null, mode, luaScript, returnType, Collections.emptyList());
     }
 
+    /** 使用指定 codec 批量编码脚本 ARGV 参数。 */
     private List<Object> encode(Collection<?> values, Codec codec) {
         List<Object> result = new ArrayList<Object>(values.size());
         for (Object object : values) {
@@ -207,6 +215,7 @@ public class RedissonScript implements RScript {
     }
     
     @Override
+    /** 按 {@link Mode} 在指定键 slot 执行 {@code EVALSHA}；只读且支持时走 {@code EVALSHA_RO}。 */
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType,
             List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
@@ -238,6 +247,7 @@ public class RedissonScript implements RScript {
     }
 
     @Override
+    /** 在指定键 slot 执行 {@code EVAL}；{@link Mode#READ_ONLY} 时使用 evalRead。 */
     public <R> RFuture<R> evalAsync(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys,
             Object... values) {
         String mappedKey = commandExecutor.getServiceManager().getNameMapper().map(key);

@@ -36,10 +36,11 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
+ * {@link org.redisson.api.RTopic} 的分布式 Pub/Sub 主题实现。
+ * <p>消息通过 {@code PUBLISH} 广播，集群内所有订阅同一频道的监听器均可收到。
+ * 支持多频道名与 {@link NameMapper} 映射。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonTopic implements RTopic {
 
@@ -49,10 +50,12 @@ public class RedissonTopic implements RTopic {
     final List<ChannelName> channelNames = new ArrayList<>();
     final Codec codec;
 
+    /** 使用全局默认 codec 构造。 */
     public RedissonTopic(CommandAsyncExecutor commandExecutor, String... names) {
         this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, names);
     }
 
+    /** 创建不经 {@link NameMapper} 映射的原始主题实例。 */
     public static RedissonTopic createRaw(CommandAsyncExecutor commandExecutor, String... names) {
         return new RedissonTopic(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, NameMapper.direct(), names);
     }
@@ -65,6 +68,7 @@ public class RedissonTopic implements RTopic {
         this(codec, commandExecutor, commandExecutor.getServiceManager().getNameMapper(), names);
     }
 
+    /** @param nameMapper 频道名映射器；各 name 经 map 后转为 {@link ChannelName} */
     public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, NameMapper nameMapper, String... names) {
         this.commandExecutor = commandExecutor;
         for (String name : names) {
@@ -92,6 +96,7 @@ public class RedissonTopic implements RTopic {
     }
 
     @Override
+    /** 向首个频道名 {@code PUBLISH} 编码后的消息。 */
     public RFuture<Long> publishAsync(Object message) {
         String name = getName();
         return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PUBLISH, name, commandExecutor.encode(codec, message));
@@ -121,6 +126,7 @@ public class RedissonTopic implements RTopic {
         return addListenerAsync(pubSubListener);
     }
 
+    /** 订阅所有 {@link #channelNames} 并返回监听器 id（identityHashCode）。 */
     protected RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
         CompletableFuture<List<PubSubConnectionEntry>> future = subscribeService.subscribe(codec, channelNames, pubSubListener);
         CompletableFuture<Integer> f = future.thenApply(res -> {
@@ -181,6 +187,7 @@ public class RedissonTopic implements RTopic {
     }
 
     @Override
+    /** 查询各频道订阅者总数（{@code PUBSUB NUMSUB}）。 */
     public RFuture<Long> countSubscribersAsync() {
         return commandExecutor.writeAsync(names.get(0), LongCodec.INSTANCE, RedisCommands.PUBSUB_NUMSUB, names.toArray());
     }

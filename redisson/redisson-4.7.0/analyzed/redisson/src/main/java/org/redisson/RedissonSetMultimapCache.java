@@ -29,20 +29,25 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Nikita Koksharov
+ * {@link org.redisson.api.RSetMultimapCache} 的带 TTL 集合多映射实现。
+ * <p>键级过期时间存于 ZSet；{@link EvictionScheduler} 负责后台清理。
+ * 各映射值集合为独立 Redis Set。
  *
- * @param <K> key
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <K> 映射键类型
+ * @param <V> 集合元素类型
  */
 public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> implements RSetMultimapCache<K, V> {
 
     private final RedissonMultimapCache<K> baseCache;
     
+    /** 使用默认 codec 构造；{@code baseCache} 委托过期与删除。 */
     public RedissonSetMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
         baseCache = new RedissonMultimapCache<>(connectionManager, evictionScheduler, this, getTimeoutSetName(), prefix);
     }
 
+    /** @param codec 键与元素编解码器 */
     public RedissonSetMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
         baseCache = new RedissonMultimapCache<>(connectionManager, evictionScheduler, this, getTimeoutSetName(), prefix);
@@ -73,6 +78,7 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
                System.currentTimeMillis(), keyState, setName);
     }
     
+    /** 返回键级过期 ZSet 名称（后缀 {@code redisson_set_multimap_ttl}）。 */
     String getTimeoutSetName() {
         return suffixName(getRawName(), "redisson_set_multimap_ttl");
     }
@@ -128,6 +134,7 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
     }
 
     @Override
+    /** 返回指定键对应的 {@link RedissonSetMultimapValues} 视图（含 TTL 感知）。 */
     public RSet<V> get(K key) {
         String keyHash = keyHash(key);
         String setName = getValuesName(keyHash);
@@ -175,6 +182,7 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
     }
     
     @Override
+    /** 为单个映射键设置存活时间，委托 {@link RedissonMultimapCache}。 */
     public RFuture<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
         return baseCache.expireKeyAsync(key, timeToLive, timeUnit);
     }

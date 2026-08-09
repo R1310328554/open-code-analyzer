@@ -24,10 +24,12 @@ import org.redisson.client.RedisConnection;
 import org.redisson.connection.ConnectionManager;
 
 /**
+ * {@link RedissonSortedSet} 的有界子视图（{@link java.util.SortedSet}）。
+ * <p>由 {@code headValue}/{@code tailValue} 界定 score 范围；
+ * 大部分 mutating/查询方法当前未实现（抛出 {@link UnsupportedOperationException}）。
  *
  * @author Nikita Koksharov
- *
- * @param <V>
+ * @param <V> 元素类型
  */
 // TODO compare tail or head value with current in case of absence this value
 class RedissonSubSortedSet<V> implements SortedSet<V> {
@@ -38,6 +40,8 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
     private V headValue;
     private V tailValue;
 
+    /** @param headValue 子集下界元素（含）
+     *  @param tailValue 子集上界元素（含） */
     RedissonSubSortedSet(RedissonSortedSet<V> redissonSortedSet, ConnectionManager connectionManager, V headValue, V tailValue) {
         super();
         this.headValue = headValue;
@@ -239,6 +243,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
     }
 
     @Override
+    /** 委托底层 {@link RedissonSortedSet#comparator()}。 */
     public Comparator<? super V> comparator() {
         return redissonSortedSet.comparator();
     }
@@ -257,11 +262,13 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
     }
 
     @Override
+    /** 返回 {@code (null, toElement]} 子集视图。 */
     public SortedSet<V> headSet(V toElement) {
         return subSet(null, toElement);
     }
 
     @Override
+    /** 返回 {@code [fromElement, null)} 子集视图。 */
     public SortedSet<V> tailSet(V fromElement) {
         return subSet(fromElement, null);
     }

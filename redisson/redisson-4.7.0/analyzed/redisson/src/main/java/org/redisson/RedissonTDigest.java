@@ -31,14 +31,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Distributed implementation of t-digest
- * based on Redis Bloom module {@code TDIGEST.*} commands.
+ * {@link org.redisson.api.RTDigest} 的分布式 t-digest 实现。
+ * <p>基于 RedisBloom 模块 {@code TDIGEST.*} 命令，用于流式分位数与 CDF 估算。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonTDigest extends RedissonExpirable implements RTDigest {
 
+    /** @param name t-digest 结构 Redis 键名 */
     public RedissonTDigest(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
@@ -60,6 +60,7 @@ public class RedissonTDigest extends RedissonExpirable implements RTDigest {
     }
 
     @Override
+    /** 创建 t-digest 并指定压缩因子。 */
     public RFuture<Void> createAsync(int compression) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE,
                 RedisCommands.TDIGEST_CREATE, getRawName(), "COMPRESSION", compression);
@@ -82,6 +83,7 @@ public class RedissonTDigest extends RedissonExpirable implements RTDigest {
     }
 
     @Override
+    /** 批量追加观测值（{@code TDIGEST.ADD}）。 */
     public RFuture<Void> addAsync(double... values) {
         List<Object> params = new ArrayList<>(values.length + 1);
         params.add(getRawName());
@@ -115,6 +117,7 @@ public class RedissonTDigest extends RedissonExpirable implements RTDigest {
     }
 
     @Override
+    /** 合并其他 t-digest 键，支持 COMPRESSION/OVERRIDE 选项。 */
     public RFuture<Void> mergeWithAsync(TDigestMergeArgs args) {
         TDigestMergeArgsImpl a = (TDigestMergeArgsImpl) args;
         List<String> keys = new ArrayList<>(a.getKeys());
@@ -164,6 +167,7 @@ public class RedissonTDigest extends RedissonExpirable implements RTDigest {
     }
 
     @Override
+    /** 查询给定分位点对应的值（{@code TDIGEST.QUANTILE}）。 */
     public RFuture<List<Double>> quantileAsync(double... quantiles) {
         return commandExecutor.readAsync(getRawName(), TDigestDoubleCodec.INSTANCE,
                 RedisCommands.TDIGEST_QUANTILE, doubleParams(quantiles));
@@ -276,6 +280,7 @@ public class RedissonTDigest extends RedissonExpirable implements RTDigest {
         return params.toArray();
     }
 
+    /** 将 double 转为 Redis TDIGEST 可接受的字符串（含 nan/inf）。 */
     private static String toStr(double value) {
         if (Double.isNaN(value)) {
             return "nan";
