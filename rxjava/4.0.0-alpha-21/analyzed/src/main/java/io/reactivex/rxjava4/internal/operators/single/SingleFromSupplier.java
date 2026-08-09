@@ -22,18 +22,21 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Calls a supplier and emits its value or exception to the incoming SingleObserver.
- * @param <T> the value type returned
+ * 订阅时调用 supplier.get() 获取值并 onSuccess，
+ * 异常则 onError（已 dispose 时 RxJavaPlugins.onError）。
+ * @param <T> 返回值类型
  * @since 3.0.0
  */
 public final class SingleFromSupplier<T> extends Single<T> {
 
     final Supplier<? extends T> supplier;
 
+    /** @param supplier 提供单值的 Supplier */
     public SingleFromSupplier(Supplier<? extends T> supplier) {
         this.supplier = supplier;
     }
 
+    /** 先 onSubscribe(empty Disposable)，再 supplier.get() 并发射结果。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         Disposable d = Disposable.empty();

@@ -24,12 +24,12 @@ import io.reactivex.rxjava4.functions.*;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Maps a source item to another SingleSource then calls a BiFunction with the
- * original item and the secondary item to generate the final result.
+ * 将上游成功值经 mapper 映射为 inner SingleSource，
+ * 再以 resultSelector 合并原值与 inner 成功值生成最终结果。
  *
- * @param <T> the main value type
- * @param <U> the second value type
- * @param <R> the result value type
+ * @param <T> 主值类型
+ * @param <U> inner SingleSource 成功值类型
+ * @param <R> 最终结果类型
  * @since 3.0.0
  */
 public final class SingleFlatMapBiSelector<T, U, R> extends Single<R> {
@@ -40,6 +40,11 @@ public final class SingleFlatMapBiSelector<T, U, R> extends Single<R> {
 
     final BiFunction<? super T, ? super U, ? extends R> resultSelector;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param mapper 将主值映射为 inner SingleSource 的函数
+     * @param resultSelector 合并 (T, U) 为 R 的 BiFunction
+     */
     public SingleFlatMapBiSelector(SingleSource<T> source,
             Function<? super T, ? extends SingleSource<? extends U>> mapper,
             BiFunction<? super T, ? super U, ? extends R> resultSelector) {
@@ -48,11 +53,13 @@ public final class SingleFlatMapBiSelector<T, U, R> extends Single<R> {
         this.resultSelector = resultSelector;
     }
 
+    /** 订阅 FlatMapBiMainObserver 执行 map + bi-select。 */
     @Override
     protected void subscribeActual(SingleObserver<? super R> observer) {
         source.subscribe(new FlatMapBiMainObserver<T, U, R>(observer, mapper, resultSelector));
     }
 
+    /** 主 Observer：缓存 value 后订阅 inner SingleSource。 */
     static final class FlatMapBiMainObserver<T, U, R>
     implements SingleObserver<T>, Disposable {
 
@@ -84,6 +91,7 @@ public final class SingleFlatMapBiSelector<T, U, R> extends Single<R> {
             }
         }
 
+        /** mapper 获取 next，缓存 value 后 inner.subscribe(inner)。 */
         @Override
         public void onSuccess(T value) {
             SingleSource<? extends U> next;
@@ -107,6 +115,7 @@ public final class SingleFlatMapBiSelector<T, U, R> extends Single<R> {
             inner.downstream.onError(e);
         }
 
+        /** inner Observer：onSuccess 时 resultSelector.apply(t, u) 发射 R。 */
         static final class InnerObserver<T, U, R>
         extends AtomicReference<Disposable>
         implements SingleObserver<U> {
@@ -131,6 +140,7 @@ public final class SingleFlatMapBiSelector<T, U, R> extends Single<R> {
                 DisposableHelper.setOnce(this, d);
             }
 
+            /** resultSelector 合并缓存的 T 与 U 后 downstream.onSuccess(r)。 */
             @Override
             public void onSuccess(U value) {
                 T t = this.value;

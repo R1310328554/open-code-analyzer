@@ -23,21 +23,34 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 将上游 Single 的 onSuccess 值经 mapper 映射为 inner SingleSource，
+ * 订阅 inner 并将其结果转发至下游。
+ *
+ * @param <T> 上游成功值类型
+ * @param <R> 下游结果类型
+ */
 public final class SingleFlatMap<T, R> extends Single<R> {
     final SingleSource<? extends T> source;
 
     final Function<? super T, ? extends SingleSource<? extends R>> mapper;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param mapper 将成功值映射为 inner SingleSource 的函数
+     */
     public SingleFlatMap(SingleSource<? extends T> source, Function<? super T, ? extends SingleSource<? extends R>> mapper) {
         this.mapper = mapper;
         this.source = source;
     }
 
+    /** 订阅 SingleFlatMapCallback，onSuccess 时 flatMap inner SingleSource。 */
     @Override
     protected void subscribeActual(SingleObserver<? super R> downstream) {
         source.subscribe(new SingleFlatMapCallback<T, R>(downstream, mapper));
     }
 
+    /** 上游 Observer：onSuccess 时 mapper 并订阅 inner SingleSource。 */
     static final class SingleFlatMapCallback<T, R>
     extends AtomicReference<Disposable>
     implements SingleObserver<T>, Disposable {
@@ -71,6 +84,7 @@ public final class SingleFlatMap<T, R> extends Single<R> {
             }
         }
 
+        /** mapper 获取 inner SingleSource 并订阅 FlatMapSingleObserver。 */
         @Override
         public void onSuccess(T value) {
             SingleSource<? extends R> o;
@@ -93,6 +107,7 @@ public final class SingleFlatMap<T, R> extends Single<R> {
             downstream.onError(e);
         }
 
+        /** inner SingleSource 的 Observer：DisposableHelper.replace 管理订阅。 */
         record FlatMapSingleObserver<R>(AtomicReference<Disposable> parent,
                                         SingleObserver<? super R> downstream) implements SingleObserver<R> {
 

@@ -18,23 +18,35 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.Consumer;
 
+/**
+ * 在上游 Single 成功时执行 onSuccess 副作用回调，
+ * 再向下游转发同一成功值（回调异常转 onError）。
+ *
+ * @param <T> 元素类型
+ */
 public final class SingleDoOnSuccess<T> extends Single<T> {
 
     final SingleSource<T> source;
 
     final Consumer<? super T> onSuccess;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param onSuccess 成功值到达时执行的 Consumer
+     */
     public SingleDoOnSuccess(SingleSource<T> source, Consumer<? super T> onSuccess) {
         this.source = source;
         this.onSuccess = onSuccess;
     }
 
+    /** 订阅 DoOnSuccess 包装 Observer 执行副作用后转发。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
 
         source.subscribe(new DoOnSuccess(observer));
     }
 
+    /** onSuccess 时先 onSuccess.accept 再 downstream.onSuccess。 */
     final class DoOnSuccess implements SingleObserver<T> {
 
         final SingleObserver<? super T> downstream;
@@ -48,6 +60,7 @@ public final class SingleDoOnSuccess<T> extends Single<T> {
             downstream.onSubscribe(d);
         }
 
+        /** 执行副作用后转发成功值；回调异常转 downstream.onError。 */
         @Override
         public void onSuccess(T value) {
             try {

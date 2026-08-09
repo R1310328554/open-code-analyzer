@@ -30,10 +30,11 @@ import io.reactivex.rxjava4.internal.subscriptions.*;
 import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 
 /**
- * Maps a success value into an Iterable and streams it back as a Flowable.
+ * 将 Single 成功值经 mapper 映射为 Iterable，
+ * 以带背压的 Flowable 逐元素向下游发射。
  *
- * @param <T> the source value type
- * @param <R> the element type of the Iterable
+ * @param <T> 上游成功值类型
+ * @param <R> Iterable 元素类型
  */
 public final class SingleFlatMapIterableFlowable<T, R> extends Flowable<R> {
 
@@ -41,17 +42,23 @@ public final class SingleFlatMapIterableFlowable<T, R> extends Flowable<R> {
 
     final Function<? super T, ? extends Iterable<? extends R>> mapper;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param mapper 将成功值映射为 Iterable 的函数
+     */
     public SingleFlatMapIterableFlowable(SingleSource<T> source,
             Function<? super T, ? extends Iterable<? extends R>> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
+    /** 订阅 FlatMapIterableObserver 将 Iterable 展开为 Flowable 序列。 */
     @Override
     protected void subscribeActual(Subscriber<? super R> s) {
         source.subscribe(new FlatMapIterableObserver<>(s, mapper));
     }
 
+    /** 背压 Iterable 展开：onSuccess 后 drain 按 requested 逐元素 onNext。 */
     static final class FlatMapIterableObserver<T, R>
     extends BasicIntQueueSubscription<R>
     implements SingleObserver<T> {
@@ -89,6 +96,7 @@ public final class SingleFlatMapIterableFlowable<T, R> extends Flowable<R> {
             }
         }
 
+        /** mapper 获取 Iterator；空 Iterable 则 onComplete，否则 drain。 */
         @Override
         public void onSuccess(T value) {
             Iterator<? extends R> iterator;
@@ -133,6 +141,7 @@ public final class SingleFlatMapIterableFlowable<T, R> extends Flowable<R> {
             upstream = DisposableHelper.DISPOSED;
         }
 
+        /** wip 门控：按 requested 从 iterator 逐 next 并 onNext/onComplete。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -215,6 +224,7 @@ public final class SingleFlatMapIterableFlowable<T, R> extends Flowable<R> {
             }
         }
 
+        /** requested==MAX 时无背压限制地逐元素发射。 */
         void fastPath(Subscriber<? super R> a, Iterator<? extends R> iterator) {
             for (;;) {
                 if (cancelled) {

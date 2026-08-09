@@ -19,14 +19,22 @@ import io.reactivex.rxjava4.functions.Supplier;
 import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 
+/**
+ * 订阅时调用 errorSupplier 获取 Throwable，
+ * 经 EmptyDisposable.error 立即向下游发射错误。
+ *
+ * @param <T> 元素类型（永不成功发射）
+ */
 public final class SingleError<T> extends Single<T> {
 
     final Supplier<? extends Throwable> errorSupplier;
 
+    /** @param errorSupplier 提供要发射的 Throwable 的 Supplier */
     public SingleError(Supplier<? extends Throwable> errorSupplier) {
         this.errorSupplier = errorSupplier;
     }
 
+    /** 调用 errorSupplier.get() 后 EmptyDisposable.error 通知下游。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         Throwable error;

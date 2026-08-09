@@ -21,14 +21,22 @@ import io.reactivex.rxjava4.disposables.*;
 import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 订阅时同步调用 callable.call()，
+ * 成功则 onSuccess，异常则 onError（已 dispose 时 RxJavaPlugins.onError）。
+ *
+ * @param <T> 元素类型
+ */
 public final class SingleFromCallable<T> extends Single<T> {
 
     final Callable<? extends T> callable;
 
+    /** @param callable 提供单值的 Callable */
     public SingleFromCallable(Callable<? extends T> callable) {
         this.callable = callable;
     }
 
+    /** 先 onSubscribe(empty Disposable)，再 callable.call() 并发射结果。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         Disposable d = Disposable.empty();

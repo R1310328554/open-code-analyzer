@@ -24,8 +24,9 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Maps the success value of the source SingleSource into a Completable.
- * @param <T> the value type of the source SingleSource
+ * 将上游 Single 的 onSuccess 值经 mapper 映射为 CompletableSource，
+ * 订阅 inner Completable 并转发其 onComplete/onError。
+ * @param <T> 上游 SingleSource 的值类型
  */
 public final class SingleFlatMapCompletable<T> extends Completable {
 
@@ -33,11 +34,16 @@ public final class SingleFlatMapCompletable<T> extends Completable {
 
     final Function<? super T, ? extends CompletableSource> mapper;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param mapper 将成功值映射为 CompletableSource 的函数
+     */
     public SingleFlatMapCompletable(SingleSource<T> source, Function<? super T, ? extends CompletableSource> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
+    /** 创建 FlatMapCompletableObserver 并订阅上游 SingleSource。 */
     @Override
     protected void subscribeActual(CompletableObserver observer) {
         FlatMapCompletableObserver<T> parent = new FlatMapCompletableObserver<>(observer, mapper);
@@ -45,6 +51,7 @@ public final class SingleFlatMapCompletable<T> extends Completable {
         source.subscribe(parent);
     }
 
+    /** 兼作 SingleObserver 与 CompletableObserver：onSuccess 时 flatMap inner Completable。 */
     static final class FlatMapCompletableObserver<T>
     extends AtomicReference<Disposable>
     implements SingleObserver<T>, CompletableObserver, Disposable {
@@ -77,6 +84,7 @@ public final class SingleFlatMapCompletable<T> extends Completable {
             DisposableHelper.replace(this, d);
         }
 
+        /** mapper 获取 CompletableSource 并 subscribe(this) 转发信号。 */
         @Override
         public void onSuccess(T value) {
             CompletableSource cs;

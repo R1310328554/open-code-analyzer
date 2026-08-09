@@ -26,20 +26,19 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 
 /**
- * A Flowable that emits items based on applying a specified function to the item emitted by the
- * source Single, where that function returns a Publisher.
+ * 将 Single 的 onSuccess 值经 mapper 映射为 Publisher，
+ * 订阅 inner Publisher 并以 Flowable 形式转发其元素（支持背压）。
  * <p>
  * <img width="640" height="305" src="https://raw.github.com/wiki/ReactiveX/RxJava/images/rx-operators/Single.flatMapPublisher.v3.png" alt="">
  * <dl>
  *  <dt><b>Backpressure:</b></dt>
- *  <dd>The returned {@code Flowable} honors the backpressure of the downstream consumer
- *  and the {@code Publisher} returned by the mapper function is expected to honor it as well.</dd>
+ *  <dd>返回的 {@code Flowable} 遵守下游背压，mapper 返回的 {@code Publisher} 亦应遵守。</dd>
  * <dt><b>Scheduler:</b></dt>
- * <dd>{@code flatMapPublisher} does not operate by default on a particular {@link Scheduler}.</dd>
+ * <dd>{@code flatMapPublisher} 默认不在特定 {@link Scheduler} 上运行。</dd>
  * </dl>
  * 
- * @param <T> the source value type
- * @param <R> the result value type
+ * @param <T> 上游成功值类型
+ * @param <R> 下游元素类型
  * 
  * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX operators documentation: FlatMap</a>
  * @since 2.1.15
@@ -49,17 +48,23 @@ public final class SingleFlatMapPublisher<T, R> extends Flowable<R> {
     final SingleSource<T> source;
     final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param mapper 将成功值映射为 Publisher 的函数
+     */
     public SingleFlatMapPublisher(SingleSource<T> source,
             Function<? super T, ? extends Publisher<? extends R>> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
+    /** 订阅 SingleFlatMapPublisherObserver 在 onSuccess 时 flatMap inner Publisher。 */
     @Override
     protected void subscribeActual(Subscriber<? super R> downstream) {
         source.subscribe(new SingleFlatMapPublisherObserver<>(downstream, mapper));
     }
 
+    /** 兼作 SingleObserver 与 FlowableSubscriber：deferredSetOnce 协调背压 request。 */
     static final class SingleFlatMapPublisherObserver<S, T> extends AtomicLong
             implements SingleObserver<S>, FlowableSubscriber<T>, Subscription {
 
@@ -84,6 +89,7 @@ public final class SingleFlatMapPublisher<T, R> extends Flowable<R> {
             downstream.onSubscribe(this);
         }
 
+        /** mapper 获取 Publisher 并 subscribe(this) 转发 onNext/onComplete/onError。 */
         @Override
         public void onSuccess(S value) {
             Publisher<? extends T> f;
@@ -119,6 +125,7 @@ public final class SingleFlatMapPublisher<T, R> extends Flowable<R> {
             downstream.onError(e);
         }
 
+        /** SubscriptionHelper.deferredRequest 将 request 转发至 inner Subscription。 */
         @Override
         public void request(long n) {
             SubscriptionHelper.deferredRequest(parent, this, n);

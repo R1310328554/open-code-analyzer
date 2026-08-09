@@ -22,19 +22,28 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 订阅 Publisher 并取首个 onNext 元素作为 Single 成功值；
+ * 多于一个元素则 IndexOutOfBoundsException，空序列则 NoSuchElementException。
+ *
+ * @param <T> 元素类型
+ */
 public final class SingleFromPublisher<T> extends Single<T> {
 
     final Publisher<? extends T> publisher;
 
+    /** @param publisher 上游 Publisher（期望 0 或 1 个元素） */
     public SingleFromPublisher(Publisher<? extends T> publisher) {
         this.publisher = publisher;
     }
 
+    /** 订阅 ToSingleObserver，request(MAX) 收集唯一元素。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
         publisher.subscribe(new ToSingleObserver<T>(observer));
     }
 
+    /** Publisher→Single 适配：缓存首个 onNext，onComplete 时 onSuccess 或 onError。 */
     static final class ToSingleObserver<T> implements FlowableSubscriber<T>, Disposable {
         final SingleObserver<? super T> downstream;
 
@@ -61,6 +70,7 @@ public final class SingleFromPublisher<T> extends Single<T> {
             }
         }
 
+        /** 首元素缓存；第二个元素 cancel 并 IndexOutOfBoundsException。 */
         @Override
         public void onNext(T t) {
             if (done) {
@@ -87,6 +97,7 @@ public final class SingleFromPublisher<T> extends Single<T> {
             downstream.onError(t);
         }
 
+        /** 有缓存值则 onSuccess；否则 NoSuchElementException。 */
         @Override
         public void onComplete() {
             if (done) {

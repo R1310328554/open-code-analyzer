@@ -20,16 +20,27 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 并行订阅两个 SingleSource，待两者均 onSuccess 后
+ * 用 Objects.equals 比较并发射 Boolean 结果。
+ *
+ * @param <T> 上游元素类型
+ */
 public final class SingleEquals<T> extends Single<Boolean> {
 
     final SingleSource<? extends T> first;
     final SingleSource<? extends T> second;
 
+    /**
+     * @param first 第一个 SingleSource
+     * @param second 第二个 SingleSource
+     */
     public SingleEquals(SingleSource<? extends T> first, SingleSource<? extends T> second) {
         this.first = first;
         this.second = second;
     }
 
+    /** 并行订阅 first/second，count==2 时比较 values 并 onSuccess。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super Boolean> observer) {
 
@@ -43,6 +54,7 @@ public final class SingleEquals<T> extends Single<Boolean> {
         second.subscribe(new InnerObserver<T>(1, set, values, observer, count));
     }
 
+    /** 单路 Observer：缓存 values[index]，两路到齐后 Objects.equals 比较。 */
     record InnerObserver<T>(int index, CompositeDisposable set, Object[] values,
                             SingleObserver<? super Boolean> downstream,
                             AtomicInteger count) implements SingleObserver<T> {
@@ -52,6 +64,7 @@ public final class SingleEquals<T> extends Single<Boolean> {
                 set.add(d);
             }
 
+            /** 写入 values[index]；count 达 2 时发射 equals 结果。 */
             @Override
             public void onSuccess(T value) {
                 values[index] = value;
@@ -61,6 +74,7 @@ public final class SingleEquals<T> extends Single<Boolean> {
                 }
             }
 
+            /** 首错时 dispose 集合并 onError；已终止则 RxJavaPlugins.onError。 */
             @Override
             public void onError(Throwable e) {
                 int state = count.getAndSet(-1);

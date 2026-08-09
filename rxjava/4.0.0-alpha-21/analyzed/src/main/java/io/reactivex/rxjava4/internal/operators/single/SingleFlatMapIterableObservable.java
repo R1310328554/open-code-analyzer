@@ -26,10 +26,11 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.observers.BasicIntQueueDisposable;
 
 /**
- * Maps a success value into an Iterable and streams it back as an Observable.
+ * 将 Single 成功值经 mapper 映射为 Iterable，
+ * 以 Observable 逐元素向下游发射（无背压）。
  *
- * @param <T> the source value type
- * @param <R> the element type of the Iterable
+ * @param <T> 上游成功值类型
+ * @param <R> Iterable 元素类型
  */
 public final class SingleFlatMapIterableObservable<T, R> extends Observable<R> {
 
@@ -37,17 +38,23 @@ public final class SingleFlatMapIterableObservable<T, R> extends Observable<R> {
 
     final Function<? super T, ? extends Iterable<? extends R>> mapper;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param mapper 将成功值映射为 Iterable 的函数
+     */
     public SingleFlatMapIterableObservable(SingleSource<T> source,
             Function<? super T, ? extends Iterable<? extends R>> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
+    /** 订阅 FlatMapIterableObserver 将 Iterable 同步展开为 Observable 序列。 */
     @Override
     protected void subscribeActual(Observer<? super R> observer) {
         source.subscribe(new FlatMapIterableObserver<>(observer, mapper));
     }
 
+    /** Iterable 展开 Observer：outputFused 时走 poll 融合路径。 */
     static final class FlatMapIterableObserver<T, R>
     extends BasicIntQueueDisposable<R>
     implements SingleObserver<T> {
@@ -82,6 +89,7 @@ public final class SingleFlatMapIterableObservable<T, R> extends Observable<R> {
             }
         }
 
+        /** 空 Iterable 则 onComplete；融合模式或 for 循环逐 next 并 onNext。 */
         @Override
         public void onSuccess(T value) {
             Observer<? super R> a = downstream;
