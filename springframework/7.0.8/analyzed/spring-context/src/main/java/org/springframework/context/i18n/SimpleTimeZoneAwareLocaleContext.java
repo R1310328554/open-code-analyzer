@@ -22,11 +22,10 @@ import java.util.TimeZone;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Simple implementation of the {@link TimeZoneAwareLocaleContext} interface,
- * always returning a specified {@code Locale} and {@code TimeZone}.
+ * {@link TimeZoneAwareLocaleContext} 接口的简单实现，
+ * 始终返回指定的 {@code Locale} 和 {@code TimeZone}。
  *
- * <p>Note: Prefer the use of {@link SimpleLocaleContext} when only setting
- * a Locale but no TimeZone.
+ * <p>注意：若只需设置 Locale 而不设置 TimeZone，优先使用 {@link SimpleLocaleContext}。
  *
  * @author Juergen Hoeller
  * @author Nicholas Williams
@@ -36,15 +35,15 @@ import org.jspecify.annotations.Nullable;
  */
 public class SimpleTimeZoneAwareLocaleContext extends SimpleLocaleContext implements TimeZoneAwareLocaleContext {
 
+	/** 要暴露的固定时区。 */
 	private final @Nullable TimeZone timeZone;
 
 
 	/**
-	 * Create a new SimpleTimeZoneAwareLocaleContext that exposes the specified
-	 * Locale and TimeZone. Every {@link #getLocale()} call will return the given
-	 * Locale, and every {@link #getTimeZone()} call will return the given TimeZone.
-	 * @param locale the Locale to expose
-	 * @param timeZone the TimeZone to expose
+	 * 创建新的 SimpleTimeZoneAwareLocaleContext，暴露指定的 Locale 和 TimeZone。
+	 * 每次 {@link #getLocale()} 调用返回给定 Locale，每次 {@link #getTimeZone()} 调用返回给定 TimeZone。
+	 * @param locale 要暴露的 Locale
+	 * @param timeZone 要暴露的 TimeZone
 	 */
 	public SimpleTimeZoneAwareLocaleContext(@Nullable Locale locale, @Nullable TimeZone timeZone) {
 		super(locale);

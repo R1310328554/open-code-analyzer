@@ -21,8 +21,7 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Simple implementation of the {@link LocaleContext} interface,
- * always returning a specified {@code Locale}.
+ * {@link LocaleContext} 接口的简单实现，始终返回指定的 {@code Locale}。
  *
  * @author Juergen Hoeller
  * @since 1.2
@@ -32,13 +31,14 @@ import org.jspecify.annotations.Nullable;
  */
 public class SimpleLocaleContext implements LocaleContext {
 
+	/** 要暴露的固定区域设置。 */
 	private final @Nullable Locale locale;
 
 
 	/**
-	 * Create a new {@code SimpleLocaleContext} that exposes the specified {@link Locale}.
-	 * <p>Every {@link #getLocale()} call will return this locale.
-	 * @param locale the {@code Locale} to expose, or {@code null} for no specific one
+	 * 创建新的 {@code SimpleLocaleContext}，暴露指定的 {@link Locale}。
+	 * <p>每次调用 {@link #getLocale()} 都将返回该区域设置。
+	 * @param locale 要暴露的 {@code Locale}，或 {@code null} 表示无特定区域设置
 	 */
 	public SimpleLocaleContext(@Nullable Locale locale) {
 		this.locale = locale;

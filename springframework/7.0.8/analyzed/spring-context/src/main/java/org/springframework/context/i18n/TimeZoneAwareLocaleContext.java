@@ -21,11 +21,10 @@ import java.util.TimeZone;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Extension of {@link LocaleContext}, adding awareness of the current time zone.
+ * {@link LocaleContext} 的扩展，增加对当前时区的感知能力。
  *
- * <p>Having this variant of LocaleContext set to {@link LocaleContextHolder} means
- * that some TimeZone-aware infrastructure has been configured, even if it may not
- * be able to produce a non-null TimeZone at the moment.
+ * <p>在 {@link LocaleContextHolder} 中设置此变体的 LocaleContext 表示
+ * 已配置时区感知的基础设施，即使当前可能尚无法提供非 null 的 TimeZone。
  *
  * @author Juergen Hoeller
  * @author Nicholas Williams
@@ -35,9 +34,8 @@ import org.jspecify.annotations.Nullable;
 public interface TimeZoneAwareLocaleContext extends LocaleContext {
 
 	/**
-	 * Return the current TimeZone, which can be fixed or determined dynamically,
-	 * depending on the implementation strategy.
-	 * @return the current TimeZone, or {@code null} if no specific TimeZone associated
+	 * 返回当前 TimeZone；可为固定值或动态确定，取决于实现策略。
+	 * @return 当前 TimeZone，或 {@code null} 表示未关联特定时区
 	 */
 	@Nullable TimeZone getTimeZone();
 
