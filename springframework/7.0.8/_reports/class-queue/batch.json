@@ -1,27 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:08:29Z",
-  "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/InterruptibleBatchPreparedStatementSetter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ParameterDisposer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ParameterMapper.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ParameterizedPreparedStatementSetter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/PreparedStatementCallback.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/PreparedStatementCreator.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/PreparedStatementCreatorFactory.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/PreparedStatementSetter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ResultSetExtractor.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ResultSetSupportingSqlParameter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/RowCallbackHandler.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/RowCountCallbackHandler.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/RowMapper.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/RowMapperResultSetExtractor.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SimplePropertyRowMapper.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SingleColumnRowMapper.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlInOutParameter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlOutParameter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlParameter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlParameterValue.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 224,
-  "done": 1247
+  "done": 1267
 }
