@@ -1,3 +1,5 @@
+"""教程 005（Annotated）：OAuth2 作用域（scopes）——JWT 携带 scope，Security 依赖校验权限。"""
+
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -43,6 +45,8 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
+    """JWT 解码结果：username 与 scope 列表。"""
+
     username: str | None = None
     scopes: list[str] = []
 
@@ -65,9 +69,9 @@ DUMMY_HASH = password_hash.hash("dummypassword")
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
     scopes={"me": "Read information about the current user.", "items": "Read items."},
-)
+)  # scopes 写入 OpenAPI，/docs 展示可选 scope
 
-app = FastAPI()
+app = FastAPI()  # 创建 FastAPI 应用实例
 
 
 def verify_password(plain_password, hashed_password):
@@ -108,6 +112,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 async def get_current_user(
     security_scopes: SecurityScopes, token: Annotated[str, Depends(oauth2_scheme)]
 ):
+    """SecurityScopes 注入当前端点所需 scope；JWT payload.scope 为空格分隔字符串。"""
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
     else:
@@ -143,6 +148,7 @@ async def get_current_user(
 async def get_current_active_user(
     current_user: Annotated[User, Security(get_current_user, scopes=["me"])],
 ):
+    """Security(..., scopes=["me"]) 要求令牌含 me scope 且用户未禁用。"""
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
@@ -152,6 +158,7 @@ async def get_current_active_user(
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
+    """登录时将 form_data.scopes 写入 JWT scope 字段。"""
     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
@@ -167,6 +174,7 @@ async def login_for_access_token(
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> User:
+    """需 me scope（经 get_current_active_user 间接要求）。"""
     return current_user
 
 
@@ -174,9 +182,11 @@ async def read_users_me(
 async def read_own_items(
     current_user: Annotated[User, Security(get_current_active_user, scopes=["items"])],
 ):
+    """额外要求 items scope；令牌 scope 不足则 401 Not enough permissions。"""
     return [{"item_id": "Foo", "owner": current_user.username}]
 
 
 @app.get("/status/")
 async def read_system_status(current_user: Annotated[User, Depends(get_current_user)]):
+    """仅需有效 JWT，不强制特定 scope。"""
     return {"status": "ok"}

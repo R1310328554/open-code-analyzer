@@ -1,10 +1,12 @@
+"""教程 007（Annotated）：HTTP Basic 安全校验——secrets.compare_digest 防时序攻击。"""
+
 import secrets
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-app = FastAPI()
+app = FastAPI()  # 创建 FastAPI 应用实例
 
 security = HTTPBasic()
 
@@ -12,6 +14,7 @@ security = HTTPBasic()
 def get_current_username(
     credentials: Annotated[HTTPBasicCredentials, Depends(security)],
 ):
+    """常量时间比较用户名与密码；失败抛 401 并带 WWW-Authenticate: Basic。"""
     current_username_bytes = credentials.username.encode("utf8")
     correct_username_bytes = b"stanleyjobson"
     is_correct_username = secrets.compare_digest(
@@ -33,4 +36,5 @@ def get_current_username(
 
 @app.get("/users/me")
 def read_current_user(username: Annotated[str, Depends(get_current_username)]):
+    """Depends(get_current_username) 完成 Basic 认证，端点仅收到已验证的 username。"""
     return {"username": username}

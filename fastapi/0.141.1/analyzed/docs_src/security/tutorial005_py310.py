@@ -1,3 +1,5 @@
+"""教程 005：OAuth2 scopes——SecurityScopes + Security 依赖，按端点校验 JWT 中的 scope。"""
+
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -66,7 +68,7 @@ oauth2_scheme = OAuth2PasswordBearer(
     scopes={"me": "Read information about the current user.", "items": "Read items."},
 )
 
-app = FastAPI()
+app = FastAPI()  # 创建 FastAPI 应用实例
 
 
 def verify_password(plain_password, hashed_password):
@@ -107,6 +109,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 async def get_current_user(
     security_scopes: SecurityScopes, token: str = Depends(oauth2_scheme)
 ):
+    """SecurityScopes 自动注入；逐 scope 对比 token_data.scopes。"""
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
     else:
@@ -142,6 +145,7 @@ async def get_current_user(
 async def get_current_active_user(
     current_user: User = Security(get_current_user, scopes=["me"]),
 ):
+    """Security 替代 Depends，并声明所需 OAuth2 scope。"""
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
@@ -151,6 +155,7 @@ async def get_current_active_user(
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Token:
+    """客户端在表单中请求 scopes，写入 JWT payload.scope。"""
     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
@@ -171,9 +176,11 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)) -
 async def read_own_items(
     current_user: User = Security(get_current_active_user, scopes=["items"]),
 ):
+    """Security(get_current_active_user, scopes=["items"]) 叠加 items 权限检查。"""
     return [{"item_id": "Foo", "owner": current_user.username}]
 
 
 @app.get("/status/")
 async def read_system_status(current_user: User = Depends(get_current_user)):
+    """任意有效 JWT 即可访问，不要求 scope。"""
     return {"status": "ok"}

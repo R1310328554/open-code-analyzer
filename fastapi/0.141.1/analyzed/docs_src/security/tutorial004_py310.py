@@ -1,3 +1,5 @@
+"""教程 004：JWT 访问令牌——Depends 写法，pwdlib + PyJWT 实现真实 OAuth2 密码流。"""
+
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -26,15 +28,21 @@ fake_users_db = {
 
 
 class Token(BaseModel):
+    """令牌响应体。"""
+
     access_token: str
     token_type: str
 
 
 class TokenData(BaseModel):
+    """JWT 解码后的 username 载体。"""
+
     username: str | None = None
 
 
 class User(BaseModel):
+    """API 层用户模型。"""
+
     username: str
     email: str | None = None
     full_name: str | None = None
@@ -42,6 +50,8 @@ class User(BaseModel):
 
 
 class UserInDB(User):
+    """含 hashed_password 的持久化用户。"""
+
     hashed_password: str
 
 
@@ -51,7 +61,7 @@ DUMMY_HASH = password_hash.hash("dummypassword")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-app = FastAPI()
+app = FastAPI()  # 创建 FastAPI 应用实例
 
 
 def verify_password(plain_password, hashed_password):
@@ -69,6 +79,7 @@ def get_user(db, username: str):
 
 
 def authenticate_user(fake_db, username: str, password: str):
+    """凭据校验；不存在用户时用 DUMMY_HASH 保持恒定耗时。"""
     user = get_user(fake_db, username)
     if not user:
         verify_password(password, DUMMY_HASH)
@@ -79,6 +90,7 @@ def authenticate_user(fake_db, username: str, password: str):
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    """HS256 签发 JWT，payload 含 exp 过期时间。"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -90,6 +102,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
+    """Depends(oauth2_scheme) 提供 token，jwt.decode 验证签名与 exp。"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -119,6 +132,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Token:
+    """表单登录；sub 写入 username，返回 JWT access_token。"""
     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -140,4 +154,5 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)) -
 
 @app.get("/users/me/items/")
 async def read_own_items(current_user: User = Depends(get_current_active_user)):
+    """需有效 JWT；返回归属当前用户的示例 items。"""
     return [{"item_id": "Foo", "owner": current_user.username}]
