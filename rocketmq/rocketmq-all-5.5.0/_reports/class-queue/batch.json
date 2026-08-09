@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:33:26Z",
-  "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/SetMessageRequestModeRequestBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/SubscriptionGroupList.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/SubscriptionGroupWrapper.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/SyncStateSet.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/TopicConfigAndMappingSerializeWrapper.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/TopicConfigSerializeWrapper.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/TopicList.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/TopicQueueMappingSerializeWrapper.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/UnlockBatchRequestBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/UserInfo.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/filter/FilterAPI.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/AckMessageRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/AddBrokerRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ChangeInvisibleTimeRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ChangeInvisibleTimeResponseHeader.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 588,
-  "done": 885
+  "done": 900
 }
