@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:14:39Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableRepeat.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableRetry.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableSingleFlattenAs.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableSkip.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableTake.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableTakeUntil.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableTakeWhile.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableTimeout.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableTimer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableToObservable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableUsing.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/streamable/StreamableZip.java",
-    "src/main/java/io/reactivex/rxjava4/internal/queue/MpscLinkedQueue.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/AbstractDirectTask.java",
-    "src/main/java/io/reactivex/rxjava4/internal/schedulers/CachedScheduler.java",
     "src/main/java/io/reactivex/rxjava4/internal/schedulers/ComputationScheduler.java",
     "src/main/java/io/reactivex/rxjava4/internal/schedulers/DisposeOnCancel.java",
     "src/main/java/io/reactivex/rxjava4/internal/schedulers/ImmediateThinScheduler.java",
@@ -33,5 +18,5 @@
     "src/main/java/io/reactivex/rxjava4/internal/schedulers/SharedScheduler.java"
   ],
   "remaining_pending": 242,
-  "done": 705
+  "done": 720
 }
