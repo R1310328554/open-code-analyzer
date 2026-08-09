@@ -18,26 +18,29 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Consumes the source ObservableSource and emits its last item, the defaultItem
- * if empty or a NoSuchElementException if even the defaultItem is null.
- * 
- * @param <T> the value type
+ * 消费上游 {@link ObservableSource} 并发射最后一个元素：
+ * 有元素时 onSuccess，上游为空时 onComplete（无默认值路径）。
+ *
+ * @param <T> 上游元素类型
  */
 public final class ObservableLastMaybe<T> extends Maybe<T> {
 
     final ObservableSource<T> source;
 
+    /** @param source 上游 ObservableSource */
     public ObservableLastMaybe(ObservableSource<T> source) {
         this.source = source;
     }
 
-    // TODO fuse back to Observable
+    // TODO 融合回 Observable
 
+    /** 订阅 LastObserver，在 onComplete 时将最后一项映射为 Maybe 信号。 */
     @Override
     protected void subscribeActual(MaybeObserver<? super T> observer) {
         source.subscribe(new LastObserver<>(observer));
     }
 
+    /** 缓存上游最后一项，完成时 onSuccess 或 onComplete。 */
     static final class LastObserver<T> implements Observer<T>, Disposable {
 
         final MaybeObserver<? super T> downstream;
@@ -70,6 +73,7 @@ public final class ObservableLastMaybe<T> extends Maybe<T> {
             }
         }
 
+        /** 覆盖保存最后一项，不立即向下游发射。 */
         @Override
         public void onNext(T t) {
             item = t;
@@ -82,6 +86,7 @@ public final class ObservableLastMaybe<T> extends Maybe<T> {
             downstream.onError(t);
         }
 
+        /** 有缓存项时 onSuccess，否则 onComplete（空 Maybe）。 */
         @Override
         public void onComplete() {
             upstream = DisposableHelper.DISPOSED;

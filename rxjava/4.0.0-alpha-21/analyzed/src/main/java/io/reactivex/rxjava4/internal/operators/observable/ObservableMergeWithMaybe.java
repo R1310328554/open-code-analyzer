@@ -24,10 +24,10 @@ import io.reactivex.rxjava4.operators.SimplePlainQueue;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 
 /**
- * Merges an Observable and a Maybe by emitting the items of the Observable and the success
- * value of the Maybe and waiting until both the Observable and Maybe terminate normally.
+ * 合并 {@link Observable} 与 {@link Maybe}：交错发射 Observable 元素与 Maybe 的 onSuccess 值，
+ * 两者均正常终止后才 onComplete。
  * <p>History: 2.1.10 - experimental
- * @param <T> the element type of the Observable
+ * @param <T> Observable 元素类型
  * @since 2.2
  */
 public final class ObservableMergeWithMaybe<T> extends AbstractObservableWithUpstream<T, T> {
@@ -71,8 +71,10 @@ public final class ObservableMergeWithMaybe<T> extends AbstractObservableWithUps
 
         volatile int otherState;
 
+        /** Maybe 已成功且值尚未消费。 */
         static final int OTHER_STATE_HAS_VALUE = 1;
 
+        /** Maybe 已消费或为空（onComplete）。 */
         static final int OTHER_STATE_CONSUMED_OR_EMPTY = 2;
 
         MergeWithObserver(Observer<? super T> downstream) {
@@ -135,6 +137,7 @@ public final class ObservableMergeWithMaybe<T> extends AbstractObservableWithUps
             }
         }
 
+        /** Maybe onSuccess：立即或入队后 drain 发射。 */
         void otherSuccess(T value) {
             if (compareAndSet(0, 1)) {
                 downstream.onNext(value);
@@ -176,6 +179,7 @@ public final class ObservableMergeWithMaybe<T> extends AbstractObservableWithUps
             }
         }
 
+        /** 串行 drain：先消费 Maybe 缓存值，再 poll 主队列，双端完成时 onComplete。 */
         void drainLoop() {
             Observer<? super T> actual = this.downstream;
             int missed = 1;
@@ -229,6 +233,7 @@ public final class ObservableMergeWithMaybe<T> extends AbstractObservableWithUps
             }
         }
 
+        /** Maybe 侧 Observer，成功/完成/错误回调至 parent。 */
         static final class OtherObserver<T> extends AtomicReference<Disposable>
         implements MaybeObserver<T> {
 

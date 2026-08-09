@@ -20,10 +20,10 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Consumes the source ObservableSource and emits its last item, the defaultItem
- * if empty or a NoSuchElementException if even the defaultItem is null.
- * 
- * @param <T> the value type
+ * 消费上游 {@link ObservableSource} 并发射最后一个元素：
+ * 有元素时 onSuccess；为空时发 defaultItem 或 {@link NoSuchElementException}。
+ *
+ * @param <T> 上游元素类型
  */
 public final class ObservableLastSingle<T> extends Single<T> {
 
@@ -31,18 +31,24 @@ public final class ObservableLastSingle<T> extends Single<T> {
 
     final T defaultItem;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param defaultItem 上游为空时的默认值（null 表示无默认值）
+     */
     public ObservableLastSingle(ObservableSource<T> source, T defaultItem) {
         this.source = source;
         this.defaultItem = defaultItem;
     }
 
-    // TODO fuse back to Observable
+    // TODO 融合回 Observable
 
+    /** 订阅 LastObserver 并将最后一项映射为 Single 信号。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         source.subscribe(new LastObserver<>(observer, defaultItem));
     }
 
+    /** 缓存最后一项，完成时 onSuccess 或处理 defaultItem 逻辑。 */
     static final class LastObserver<T> implements Observer<T>, Disposable {
 
         final SingleObserver<? super T> downstream;
@@ -78,6 +84,7 @@ public final class ObservableLastSingle<T> extends Single<T> {
             }
         }
 
+        /** 覆盖保存最后一项。 */
         @Override
         public void onNext(T t) {
             item = t;
@@ -90,6 +97,7 @@ public final class ObservableLastSingle<T> extends Single<T> {
             downstream.onError(t);
         }
 
+        /** 有缓存项或 defaultItem 时 onSuccess，否则 onError(NoSuchElementException)。 */
         @Override
         public void onComplete() {
             upstream = DisposableHelper.DISPOSED;

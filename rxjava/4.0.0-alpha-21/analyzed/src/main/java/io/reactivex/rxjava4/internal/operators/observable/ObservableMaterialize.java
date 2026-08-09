@@ -17,8 +17,15 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 将上游 onNext/onError/onComplete 包装为 {@link Notification} 并以 onNext 发射；
+ * 终端事件（onError/onComplete）之后仍 onComplete 下游。
+ *
+ * @param <T> 上游元素类型
+ */
 public final class ObservableMaterialize<T> extends AbstractObservableWithUpstream<T, Notification<T>> {
 
+    /** @param source 上游 ObservableSource */
     public ObservableMaterialize(ObservableSource<T> source) {
         super(source);
     }
@@ -28,6 +35,7 @@ public final class ObservableMaterialize<T> extends AbstractObservableWithUpstre
         source.subscribe(new MaterializeObserver<>(t));
     }
 
+    /** 将每个上游信号转为对应 Notification 并转发。 */
     static final class MaterializeObserver<T> implements Observer<T>, Disposable {
         final Observer<? super Notification<T>> downstream;
 
@@ -55,11 +63,13 @@ public final class ObservableMaterialize<T> extends AbstractObservableWithUpstre
             return upstream.isDisposed();
         }
 
+        /** 发射 {@link Notification#createOnNext}。 */
         @Override
         public void onNext(T t) {
             downstream.onNext(Notification.createOnNext(t));
         }
 
+        /** 发射 {@link Notification#createOnError} 后 onComplete。 */
         @Override
         public void onError(Throwable t) {
             Notification<T> v = Notification.createOnError(t);
@@ -67,6 +77,7 @@ public final class ObservableMaterialize<T> extends AbstractObservableWithUpstre
             downstream.onComplete();
         }
 
+        /** 发射 {@link Notification#createOnComplete} 后 onComplete。 */
         @Override
         public void onComplete() {
             Notification<T> v = Notification.createOnComplete();

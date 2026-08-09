@@ -24,10 +24,10 @@ import io.reactivex.rxjava4.operators.SimplePlainQueue;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 
 /**
- * Merges an Observable and a Single by emitting the items of the Observable and the success
- * value of the Single and waiting until both the Observable and Single terminate normally.
+ * 合并 {@link Observable} 与 {@link Single}：交错发射 Observable 元素与 Single 的 onSuccess 值，
+ * 主序列完成且 Single 已成功后才 onComplete。
  * <p>History: 2.1.10 - experimental
- * @param <T> the element type of the Observable
+ * @param <T> Observable 元素类型
  * @since 2.2
  */
 public final class ObservableMergeWithSingle<T> extends AbstractObservableWithUpstream<T, T> {
@@ -71,8 +71,10 @@ public final class ObservableMergeWithSingle<T> extends AbstractObservableWithUp
 
         volatile int otherState;
 
+        /** Single 已成功且值尚未消费。 */
         static final int OTHER_STATE_HAS_VALUE = 1;
 
+        /** Single 值已消费（Single 无 onComplete）。 */
         static final int OTHER_STATE_CONSUMED_OR_EMPTY = 2;
 
         MergeWithObserver(Observer<? super T> downstream) {
@@ -135,6 +137,7 @@ public final class ObservableMergeWithSingle<T> extends AbstractObservableWithUp
             }
         }
 
+        /** Single onSuccess：立即或入队后 drain 发射。 */
         void otherSuccess(T value) {
             if (compareAndSet(0, 1)) {
                 downstream.onNext(value);
@@ -171,6 +174,7 @@ public final class ObservableMergeWithSingle<T> extends AbstractObservableWithUp
             }
         }
 
+        /** 串行 drain：消费 Single 缓存值与主队列，双端就绪时 onComplete。 */
         void drainLoop() {
             Observer<? super T> actual = this.downstream;
             int missed = 1;
@@ -224,6 +228,7 @@ public final class ObservableMergeWithSingle<T> extends AbstractObservableWithUp
             }
         }
 
+        /** Single 侧 Observer，成功/错误回调至 parent。 */
         static final class OtherObserver<T> extends AtomicReference<Disposable>
         implements SingleObserver<T> {
 

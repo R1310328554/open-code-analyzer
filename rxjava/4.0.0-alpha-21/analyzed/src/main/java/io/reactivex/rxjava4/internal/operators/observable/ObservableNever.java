@@ -16,12 +16,18 @@ package io.reactivex.rxjava4.internal.operators.observable;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 
+/**
+ * 永不发射元素且永不终止的 {@link Observable} 单例；
+ * 订阅时仅 onSubscribe({@link EmptyDisposable#NEVER})。
+ */
 public final class ObservableNever extends Observable<Object> {
+    /** 全局单例实例。 */
     public static final Observable<Object> INSTANCE = new ObservableNever();
 
     private ObservableNever() {
     }
 
+    /** 仅设置 NEVER Disposable，不发射任何事件。 */
     @Override
     protected void subscribeActual(Observer<? super Object> o) {
         o.onSubscribe(EmptyDisposable.NEVER);

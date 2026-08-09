@@ -21,12 +21,25 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 import java.util.Objects;
 
+/**
+ * 将上游 onNext/onError/onComplete 分别映射为新的 {@link ObservableSource} 并作为
+ * 下游 onNext 发射（onError 映射后还会 onComplete）。
+ *
+ * @param <T> 上游元素类型
+ * @param <R> 映射后 ObservableSource 的元素类型
+ */
 public final class ObservableMapNotification<T, R> extends AbstractObservableWithUpstream<T, ObservableSource<? extends R>> {
 
     final Function<? super T, ? extends ObservableSource<? extends R>> onNextMapper;
     final Function<? super Throwable, ? extends ObservableSource<? extends R>> onErrorMapper;
     final Supplier<? extends ObservableSource<? extends R>> onCompleteSupplier;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param onNextMapper onNext 时的 ObservableSource 映射
+     * @param onErrorMapper onError 时的 ObservableSource 映射
+     * @param onCompleteSupplier onComplete 时提供 ObservableSource 的 Supplier
+     */
     public ObservableMapNotification(
             ObservableSource<T> source,
             Function<? super T, ? extends ObservableSource<? extends R>> onNextMapper,
@@ -43,6 +56,7 @@ public final class ObservableMapNotification<T, R> extends AbstractObservableWit
         source.subscribe(new MapNotificationObserver<>(t, onNextMapper, onErrorMapper, onCompleteSupplier));
     }
 
+    /** 按事件类型调用对应 mapper 并将结果 ObservableSource 作为 onNext 转发。 */
     static final class MapNotificationObserver<T, R>
     implements Observer<T>, Disposable {
         final Observer<? super ObservableSource<? extends R>> downstream;
@@ -80,6 +94,7 @@ public final class ObservableMapNotification<T, R> extends AbstractObservableWit
             return upstream.isDisposed();
         }
 
+        /** onNextMapper 求值后以 ObservableSource 形式 onNext。 */
         @Override
         public void onNext(T t) {
             ObservableSource<? extends R> p;
@@ -95,6 +110,7 @@ public final class ObservableMapNotification<T, R> extends AbstractObservableWit
             downstream.onNext(p);
         }
 
+        /** onErrorMapper 求值后 onNext 映射源并 onComplete；mapper 异常则 CompositeException。 */
         @Override
         public void onError(Throwable t) {
             ObservableSource<? extends R> p;
@@ -111,6 +127,7 @@ public final class ObservableMapNotification<T, R> extends AbstractObservableWit
             downstream.onComplete();
         }
 
+        /** onCompleteSupplier 求值后 onNext 映射源并 onComplete。 */
         @Override
         public void onComplete() {
             ObservableSource<? extends R> p;

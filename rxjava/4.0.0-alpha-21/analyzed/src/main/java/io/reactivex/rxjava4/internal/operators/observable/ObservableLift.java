@@ -20,34 +20,39 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Allows lifting operators into a chain of Observables.
+ * 将 {@link ObservableOperator} 提升（lift）进 Observable 链。
  *
- * <p>By having a concrete ObservableSource as lift, operator fusing can now identify
- * both the source and the operation inside it via casting, unlike the lambda version of this.
+ * <p>相比 lambda 版 lift，具体 {@link ObservableSource} 包装使 operator fusion
+ * 可通过类型转换同时识别上游与内部操作。
  *
- * @param <T> the upstream value type
- * @param <R> the downstream parameter type
+ * @param <T> 上游元素类型
+ * @param <R> 下游元素类型
  */
 public final class ObservableLift<R, T> extends AbstractObservableWithUpstream<T, R> {
-    /** The actual operator. */
+    /** 实际应用的 {@link ObservableOperator}。 */
     final ObservableOperator<? extends R, ? super T> operator;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param operator 对下游 Observer 进行变换的算子
+     */
     public ObservableLift(ObservableSource<T> source, ObservableOperator<? extends R, ? super T> operator) {
         super(source);
         this.operator = operator;
     }
 
+    /** 调用 operator.apply 得到 lifted Observer 后订阅上游。 */
     @Override
     public void subscribeActual(Observer<? super R> observer) {
         Observer<? super T> liftedObserver;
         try {
             liftedObserver = Objects.requireNonNull(operator.apply(observer), "Operator " + operator + " returned a null Observer");
-        } catch (NullPointerException e) { // NOPMD
+        } catch (NullPointerException e) { // NOPMD — operator 返回 null Observer
             throw e;
         } catch (Throwable e) {
             Exceptions.throwIfFatal(e);
-            // can't call onError because no way to know if a Disposable has been set or not
-            // can't call onSubscribe because the call might have set a Disposable already
+            // 无法 onError：尚不确定 Disposable 是否已设置
+            // 无法 onSubscribe：apply 可能已设置 Disposable
             RxJavaPlugins.onError(e);
 
             NullPointerException npe = new NullPointerException("Actually not, but can't throw other exceptions due to RS");

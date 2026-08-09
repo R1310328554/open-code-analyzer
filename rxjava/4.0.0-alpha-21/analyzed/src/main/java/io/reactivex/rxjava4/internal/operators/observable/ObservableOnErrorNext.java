@@ -20,9 +20,19 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.SequentialDisposable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 上游 onError 时由 {@link Function} 提供备用 {@link ObservableSource} 并订阅续流；
+ * 仅首次 onError 触发切换，后续错误按 once/done 标志处理。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableOnErrorNext<T> extends AbstractObservableWithUpstream<T, T> {
     final Function<? super Throwable, ? extends ObservableSource<? extends T>> nextSupplier;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param nextSupplier 由 Throwable 映射备用 ObservableSource 的函数
+     */
     public ObservableOnErrorNext(ObservableSource<T> source,
                                  Function<? super Throwable, ? extends ObservableSource<? extends T>> nextSupplier) {
         super(source);
@@ -36,6 +46,7 @@ public final class ObservableOnErrorNext<T> extends AbstractObservableWithUpstre
         source.subscribe(parent);
     }
 
+    /** 经 {@link SequentialDisposable} 仲裁上游与备用源订阅。 */
     static final class OnErrorNextObserver<T> implements Observer<T> {
         final Observer<? super T> downstream;
         final Function<? super Throwable, ? extends ObservableSource<? extends T>> nextSupplier;
@@ -64,6 +75,7 @@ public final class ObservableOnErrorNext<T> extends AbstractObservableWithUpstre
             downstream.onNext(t);
         }
 
+        /** 首次 onError 时 nextSupplier 求值并 subscribe 备用源；null 则 NPE。 */
         @Override
         public void onError(Throwable t) {
             if (once) {

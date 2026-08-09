@@ -26,15 +26,12 @@ import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Shares a single underlying connection to the upstream ObservableSource
- * and multicasts events to all subscribed observers until the upstream
- * completes or the connection is disposed.
+ * 共享单一上游连接并向所有订阅者多播事件，直至上游终止或连接 dispose。
  * <p>
- * The difference to ObservablePublish is that when the upstream terminates,
- * late observers will receive that terminal event until the connection is
- * disposed and the ConnectableObservable is reset to its fresh state.
+ * 上游终止后，迟到的订阅者仍会收到该终端事件，直到连接 dispose 且
+ * {@link ConnectableObservable} 被 reset 至初始状态。
  *
- * @param <T> the element type
+ * @param <T> 元素类型
  * @since 2.2.10
  */
 public final class ObservablePublish<T> extends ConnectableObservable<T>
@@ -49,6 +46,7 @@ implements HasUpstreamObservableSource<T> {
         this.current = new AtomicReference<>();
     }
 
+    /** 获取或创建 PublishConnection，首次 connect 时订阅上游。 */
     @Override
     public void connect(Consumer<? super Disposable> connection) {
         boolean doConnect = false;
@@ -81,13 +79,14 @@ implements HasUpstreamObservableSource<T> {
         }
     }
 
+    /** 将 observer 加入当前连接；已终止连接则直接转发终端事件。 */
     @Override
     protected void subscribeActual(Observer<? super T> observer) {
         PublishConnection<T> conn;
 
         for (;;) {
             conn = current.get();
-            // we don't create a fresh connection if the current is terminated
+            // 当前连接已终止时不创建新连接
             if (conn == null) {
                 PublishConnection<T> fresh = new PublishConnection<>(current);
                 if (!current.compareAndSet(conn, fresh)) {
@@ -106,7 +105,7 @@ implements HasUpstreamObservableSource<T> {
             }
             return;
         }
-        // Late observers will be simply terminated
+        // 迟到订阅者直接收到已缓存的终端事件
         Throwable error = conn.error;
         if (error != null) {
             observer.onError(error);
@@ -128,6 +127,7 @@ implements HasUpstreamObservableSource<T> {
         return source;
     }
 
+    /** 多播连接：维护 InnerDisposable 数组并向全部下游转发事件。 */
     static final class PublishConnection<T>
     extends AtomicReference<InnerDisposable<T>[]>
     implements Observer<T>, Disposable {
@@ -175,6 +175,7 @@ implements HasUpstreamObservableSource<T> {
             DisposableHelper.setOnce(upstream, d);
         }
 
+        /** 向所有活跃 InnerDisposable 的 downstream 广播 onNext。 */
         @Override
         public void onNext(T t) {
             for (InnerDisposable<T> inner : get()) {
@@ -256,10 +257,8 @@ implements HasUpstreamObservableSource<T> {
     }
 
     /**
-     * Intercepts the dispose signal from the downstream and
-     * removes itself from the connection's observers array
-     * at most once.
-     * @param <T> the element type
+     * 拦截下游 dispose 信号，至多一次从连接的 observers 数组中移除自身。
+     * @param <T> 元素类型
      */
     static final class InnerDisposable<T>
     extends AtomicReference<PublishConnection<T>>

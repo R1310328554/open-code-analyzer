@@ -20,16 +20,20 @@ import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Emits an onComplete if the source emits an onError and the predicate returns true for
- * that Throwable.
- * 
- * @param <T> the value type
+ * 上游 onError 时若 {@link Predicate} 对 Throwable 返回 true，则转为 onComplete；
+ * 否则原样转发 onError。predicate 异常则 {@link CompositeException}。
+ *
+ * @param <T> 上游元素类型
  * @since 3.0.0
  */
 public final class ObservableOnErrorComplete<T> extends AbstractObservableWithUpstream<T, T> {
 
     final Predicate<? super Throwable> predicate;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param predicate 判定是否吞掉错误的谓词
+     */
     public ObservableOnErrorComplete(ObservableSource<T> source,
             Predicate<? super Throwable> predicate) {
         super(source);
@@ -41,6 +45,7 @@ public final class ObservableOnErrorComplete<T> extends AbstractObservableWithUp
         source.subscribe(new OnErrorCompleteObserver<>(observer, predicate));
     }
 
+    /** onNext/onComplete 直通；onError 经 predicate 决定 onComplete 或 onError。 */
     public static final class OnErrorCompleteObserver<T>
     implements Observer<T>, Disposable {
 
@@ -69,6 +74,7 @@ public final class ObservableOnErrorComplete<T> extends AbstractObservableWithUp
             downstream.onNext(value);
         }
 
+        /** predicate.test 为 true 时 onComplete，否则转发原错误。 */
         @Override
         public void onError(Throwable e) {
             boolean b;

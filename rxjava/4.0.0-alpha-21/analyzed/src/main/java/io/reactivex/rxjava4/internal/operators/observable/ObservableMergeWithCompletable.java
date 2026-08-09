@@ -22,16 +22,20 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.util.*;
 
 /**
- * Merges an Observable and a Completable by emitting the items of the Observable and waiting until
- * both the Observable and Completable complete normally.
+ * 合并 {@link Observable} 与 {@link Completable}：转发 Observable 的 onNext，
+ * 且两者均正常完成时才向下游 onComplete。
  * <p>History: 2.1.10 - experimental
- * @param <T> the element type of the Observable
+ * @param <T> Observable 元素类型
  * @since 2.2
  */
 public final class ObservableMergeWithCompletable<T> extends AbstractObservableWithUpstream<T, T> {
 
     final CompletableSource other;
 
+    /**
+     * @param source 主 Observable 上游
+     * @param other 与之合并的 Completable
+     */
     public ObservableMergeWithCompletable(Observable<T> source, CompletableSource other) {
         super(source);
         this.other = other;
@@ -45,6 +49,7 @@ public final class ObservableMergeWithCompletable<T> extends AbstractObservableW
         other.subscribe(parent.otherObserver);
     }
 
+    /** 协调主序列与 Completable：双端均完成时经 {@link HalfSerializer} 终止。 */
     static final class MergeWithObserver<T> extends AtomicInteger
     implements Observer<T>, Disposable {
 
@@ -86,6 +91,7 @@ public final class ObservableMergeWithCompletable<T> extends AbstractObservableW
             HalfSerializer.onError(downstream, ex, this, errors);
         }
 
+        /** 主序列完成；若 other 已完成则向下游 onComplete。 */
         @Override
         public void onComplete() {
             mainDone = true;
@@ -111,6 +117,7 @@ public final class ObservableMergeWithCompletable<T> extends AbstractObservableW
             HalfSerializer.onError(downstream, ex, this, errors);
         }
 
+        /** Completable 完成；若主序列已完成则向下游 onComplete。 */
         void otherComplete() {
             otherDone = true;
             if (mainDone) {
@@ -118,6 +125,7 @@ public final class ObservableMergeWithCompletable<T> extends AbstractObservableW
             }
         }
 
+        /** Completable 侧 Observer，完成/错误回调至 parent。 */
         static final class OtherObserver extends AtomicReference<Disposable>
         implements CompletableObserver {
 

@@ -19,8 +19,18 @@ import io.reactivex.rxjava4.exceptions.*;
 import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 上游 onError 时由 {@link Function} 提供替代值，以 onNext 发射后 onComplete；
+ * valueSupplier 异常则 {@link CompositeException}，返回 null 则 NPE。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableOnErrorReturn<T> extends AbstractObservableWithUpstream<T, T> {
     final Function<? super Throwable, ? extends T> valueSupplier;
+    /**
+     * @param source 上游 ObservableSource
+     * @param valueSupplier 由 Throwable 映射替代值的函数
+     */
     public ObservableOnErrorReturn(ObservableSource<T> source, Function<? super Throwable, ? extends T> valueSupplier) {
         super(source);
         this.valueSupplier = valueSupplier;
@@ -31,6 +41,7 @@ public final class ObservableOnErrorReturn<T> extends AbstractObservableWithUpst
         source.subscribe(new OnErrorReturnObserver<>(t, valueSupplier));
     }
 
+    /** onNext/onComplete 直通；onError 经 valueSupplier 转为 onNext+onComplete。 */
     static final class OnErrorReturnObserver<T> implements Observer<T>, Disposable {
         final Observer<? super T> downstream;
         final Function<? super Throwable, ? extends T> valueSupplier;
@@ -65,6 +76,7 @@ public final class ObservableOnErrorReturn<T> extends AbstractObservableWithUpst
             downstream.onNext(t);
         }
 
+        /** valueSupplier 求值后 onNext 替代值并 onComplete。 */
         @Override
         public void onError(Throwable t) {
             T v;

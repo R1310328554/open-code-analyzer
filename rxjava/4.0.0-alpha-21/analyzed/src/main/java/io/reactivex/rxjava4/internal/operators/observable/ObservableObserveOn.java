@@ -27,10 +27,22 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 import java.io.Serial;
 
+/**
+ * 将上游事件调度到指定 {@link Scheduler} 的 Worker 线程执行；
+ * 经队列缓冲并支持 SYNC/ASYNC queue fusion。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableObserveOn<T> extends AbstractObservableWithUpstream<T, T> {
     final Scheduler scheduler;
     final boolean delayError;
     final int bufferSize;
+    /**
+     * @param source 上游 ObservableSource
+     * @param scheduler 目标调度器
+     * @param delayError true 时先 drain 队列再 onError
+     * @param bufferSize 非 fusion 时的队列容量
+     */
     public ObservableObserveOn(ObservableSource<T> source, Scheduler scheduler, boolean delayError, int bufferSize) {
         super(source);
         this.scheduler = scheduler;
@@ -38,6 +50,7 @@ public final class ObservableObserveOn<T> extends AbstractObservableWithUpstream
         this.bufferSize = bufferSize;
     }
 
+    /** TrampolineScheduler 直接订阅；否则创建 Worker 并包装 ObserveOnObserver。 */
     @Override
     protected void subscribeActual(Observer<? super T> observer) {
         if (scheduler instanceof TrampolineScheduler) {
@@ -49,6 +62,7 @@ public final class ObservableObserveOn<T> extends AbstractObservableWithUpstream
         }
     }
 
+    /** 在 Worker 上 drain 队列：normal 路径逐元素，fused 路径 poll null 推进。 */
     static final class ObserveOnObserver<T> extends BasicIntQueueDisposable<T>
     implements Observer<T>, Runnable {
 
@@ -160,12 +174,14 @@ public final class ObservableObserveOn<T> extends AbstractObservableWithUpstream
             return disposed;
         }
 
+        /** 通过 worker.schedule(this) 触发 drain。 */
         void schedule() {
             if (getAndIncrement() == 0) {
                 worker.schedule(this);
             }
         }
 
+        /** 非 fusion：从 queue poll 并在 Worker 线程 onNext。 */
         void drainNormal() {
             int missed = 1;
 
@@ -212,6 +228,7 @@ public final class ObservableObserveOn<T> extends AbstractObservableWithUpstream
             }
         }
 
+        /** ASYNC fusion：onNext(null) 驱动上游 poll。 */
         void drainFused() {
             int missed = 1;
 
@@ -260,6 +277,7 @@ public final class ObservableObserveOn<T> extends AbstractObservableWithUpstream
             }
         }
 
+        /** 根据 delayError 策略在 done/empty 时 onComplete 或 onError。 */
         boolean checkTerminated(boolean d, boolean empty, Observer<? super T> a) {
             if (disposed) {
                 queue.clear();
