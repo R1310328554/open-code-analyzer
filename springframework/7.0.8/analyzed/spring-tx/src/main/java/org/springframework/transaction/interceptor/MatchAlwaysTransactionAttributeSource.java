@@ -25,11 +25,10 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Very simple implementation of TransactionAttributeSource which will always return
- * the same TransactionAttribute for all methods fed to it. The TransactionAttribute
- * may be specified, but will otherwise default to PROPAGATION_REQUIRED. This may be
- * used in the cases where you want to use the same transaction attribute with all
- * methods being handled by a transaction interceptor.
+ * {@link TransactionAttributeSource} 的极简实现：对传入的所有方法始终返回
+ * 同一个 {@link TransactionAttribute}。可显式指定该属性，否则默认为
+ * PROPAGATION_REQUIRED。适用于希望事务拦截器处理的所有方法
+ * 使用相同事务属性的场景。
  *
  * @author Colin Sampaleanu
  * @author Juergen Hoeller
@@ -44,9 +43,8 @@ public class MatchAlwaysTransactionAttributeSource implements TransactionAttribu
 
 
 	/**
-	 * Allows a transaction attribute to be specified, using the String form, for
-	 * example, "PROPAGATION_REQUIRED".
-	 * @param transactionAttribute the String form of the transactionAttribute to use.
+	 * 允许指定事务属性，可使用字符串形式，例如 "PROPAGATION_REQUIRED"。
+	 * @param transactionAttribute 要使用的事务属性（字符串形式）。
 	 * @see org.springframework.transaction.interceptor.TransactionAttributeEditor
 	 */
 	public void setTransactionAttribute(TransactionAttribute transactionAttribute) {

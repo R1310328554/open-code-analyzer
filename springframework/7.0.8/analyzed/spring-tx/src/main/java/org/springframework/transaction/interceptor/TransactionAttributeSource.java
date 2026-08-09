@@ -21,10 +21,10 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Strategy interface used by {@link TransactionInterceptor} for metadata retrieval.
+ * {@link TransactionInterceptor} 用于获取元数据的策略接口。
  *
- * <p>Implementations know how to source transaction attributes, whether from configuration,
- * metadata attributes at source level (such as annotations), or anywhere else.
+ * <p>实现类知道如何获取事务属性，无论来自配置、
+ * 源码级元数据属性（如注解）或其他来源。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -36,17 +36,15 @@ import org.jspecify.annotations.Nullable;
 public interface TransactionAttributeSource {
 
 	/**
-	 * Determine whether the given class is a candidate for transaction attributes
-	 * in the metadata format of this {@code TransactionAttributeSource}.
-	 * <p>If this method returns {@code false}, the methods on the given class
-	 * will not get traversed for {@link #getTransactionAttribute} introspection.
-	 * Returning {@code false} is therefore an optimization for non-affected
-	 * classes, whereas {@code true} simply means that the class needs to get
-	 * fully introspected for each method on the given class individually.
-	 * @param targetClass the class to introspect
-	 * @return {@code false} if the class is known to have no transaction
-	 * attributes at class or method level; {@code true} otherwise. The default
-	 * implementation returns {@code true}, leading to regular introspection.
+	 * 判断给定类是否为本 {@code TransactionAttributeSource} 元数据格式下
+	 * 事务属性的候选类。
+	 * <p>若返回 {@code false}，给定类上的方法将不会为
+	 * {@link #getTransactionAttribute} 内省而遍历。
+	 * 因此对不受影响类返回 {@code false} 是一种优化，
+	 * 而 {@code true} 仅表示需要对该类每个方法逐一完整内省。
+	 * @param targetClass 要内省的类
+	 * @return 若已知类在类或方法级别无事务属性则为 {@code false}，否则为 {@code true}。
+	 * 默认实现返回 {@code true}，进行常规内省。
 	 * @since 5.2
 	 * @see #hasTransactionAttribute
 	 */
@@ -55,10 +53,9 @@ public interface TransactionAttributeSource {
 	}
 
 	/**
-	 * Determine whether there is a transaction attribute for the given method.
-	 * @param method the method to introspect
-	 * @param targetClass the target class (can be {@code null},
-	 * in which case the declaring class of the method must be used)
+	 * 判断给定方法是否存在事务属性。
+	 * @param method 要内省的方法
+	 * @param targetClass 目标类（可为 {@code null}，此时须使用方法声明类）
 	 * @since 6.2
 	 * @see #getTransactionAttribute
 	 */
@@ -67,12 +64,10 @@ public interface TransactionAttributeSource {
 	}
 
 	/**
-	 * Return the transaction attribute for the given method,
-	 * or {@code null} if the method is non-transactional.
-	 * @param method the method to introspect
-	 * @param targetClass the target class (can be {@code null},
-	 * in which case the declaring class of the method must be used)
-	 * @return the matching transaction attribute, or {@code null} if none found
+	 * 返回给定方法的事务属性，若方法非事务性则为 {@code null}。
+	 * @param method 要内省的方法
+	 * @param targetClass 目标类（可为 {@code null}，此时须使用方法声明类）
+	 * @return 匹配的事务属性，未找到则为 {@code null}
 	 */
 	@Nullable TransactionAttribute getTransactionAttribute(Method method, @Nullable Class<?> targetClass);
 

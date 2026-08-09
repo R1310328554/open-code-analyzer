@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-/* ===== [OCA 中文解析] =====
-文件意图总览
-
-事务拦截器：把 @Transactional 变成环绕通知，委托 TransactionAspectSupport 管边界。
-===== [OCA 中文解析结束] ===== */
 package org.springframework.transaction.interceptor;
 
 import java.io.IOException;
@@ -39,25 +34,16 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionExecution;
 import org.springframework.transaction.TransactionManager;
 
-/* ===== [OCA 中文解析] =====
-class TransactionInterceptor — 意图说明
-
-AOP MethodInterceptor，执行事务性 invoke。
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * AOP Alliance MethodInterceptor for declarative transaction
- * management using the common Spring transaction infrastructure
- * ({@link org.springframework.transaction.PlatformTransactionManager}/
- * {@link org.springframework.transaction.ReactiveTransactionManager}).
+ * 使用 Spring 通用事务基础设施
+ * （{@link org.springframework.transaction.PlatformTransactionManager}/
+ * {@link org.springframework.transaction.ReactiveTransactionManager}）
+ * 进行声明式事务管理的 AOP Alliance MethodInterceptor。
  *
- * <p>Derives from the {@link TransactionAspectSupport} class which
- * contains the integration with Spring's underlying transaction API.
- * TransactionInterceptor simply calls the relevant superclass methods
- * such as {@link #invokeWithinTransaction} in the correct order.
+ * <p>派生自 {@link TransactionAspectSupport}，其中包含与 Spring 底层事务 API 的集成。
+ * TransactionInterceptor 仅按正确顺序调用 {@link #invokeWithinTransaction} 等超类方法。
  *
- * <p>TransactionInterceptors are thread-safe.
+ * <p>TransactionInterceptor 是线程安全的。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -74,8 +60,8 @@ public class TransactionInterceptor extends TransactionAspectSupport
 
 
 	/**
-	 * Create a new TransactionInterceptor.
-	 * <p>Transaction manager and transaction attributes still need to be set.
+	 * 创建新的 TransactionInterceptor。
+	 * <p>仍需设置事务管理器与事务属性。
 	 * @see #setTransactionManager
 	 * @see #setTransactionAttributes(java.util.Properties)
 	 * @see #setTransactionAttributeSource(TransactionAttributeSource)
@@ -84,9 +70,9 @@ public class TransactionInterceptor extends TransactionAspectSupport
 	}
 
 	/**
-	 * Create a new TransactionInterceptor.
-	 * @param ptm the default transaction manager to perform the actual transaction management
-	 * @param tas the attribute source to be used to find transaction attributes
+	 * 创建新的 TransactionInterceptor。
+	 * @param ptm 执行实际事务管理的默认事务管理器
+	 * @param tas 用于查找事务属性的属性源
 	 * @since 5.2.5
 	 * @see #setTransactionManager
 	 * @see #setTransactionAttributeSource
@@ -97,12 +83,12 @@ public class TransactionInterceptor extends TransactionAspectSupport
 	}
 
 	/**
-	 * Create a new TransactionInterceptor.
-	 * @param ptm the default transaction manager to perform the actual transaction management
-	 * @param tas the attribute source to be used to find transaction attributes
+	 * 创建新的 TransactionInterceptor。
+	 * @param ptm 执行实际事务管理的默认事务管理器
+	 * @param tas 用于查找事务属性的属性源
 	 * @see #setTransactionManager
 	 * @see #setTransactionAttributeSource
-	 * @deprecated in favor of
+	 * @deprecated 请改用
 	 * {@link #TransactionInterceptor(TransactionManager, TransactionAttributeSource)}
 	 */
 	@Deprecated(since = "5.2.5")
@@ -112,12 +98,12 @@ public class TransactionInterceptor extends TransactionAspectSupport
 	}
 
 	/**
-	 * Create a new TransactionInterceptor.
-	 * @param ptm the default transaction manager to perform the actual transaction management
-	 * @param attributes the transaction attributes in properties format
+	 * 创建新的 TransactionInterceptor。
+	 * @param ptm 执行实际事务管理的默认事务管理器
+	 * @param attributes Properties 格式的事务属性
 	 * @see #setTransactionManager
 	 * @see #setTransactionAttributes(java.util.Properties)
-	 * @deprecated in favor of {@link #setTransactionAttributes(Properties)}
+	 * @deprecated 请改用 {@link #setTransactionAttributes(Properties)}
 	 */
 	@Deprecated(since = "5.2.5")
 	public TransactionInterceptor(PlatformTransactionManager ptm, Properties attributes) {
@@ -133,12 +119,12 @@ public class TransactionInterceptor extends TransactionAspectSupport
 
 	@Override
 	public @Nullable Object invoke(MethodInvocation invocation) throws Throwable {
-		// Work out the target class: may be {@code null}.
-		// The TransactionAttributeSource should be passed the target class
-		// as well as the method, which may be from an interface.
+		// 确定目标类：可能为 {@code null}。
+		// TransactionAttributeSource 应同时传入目标类与方法，
+		// 方法可能来自接口。
 		Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
 
-		// Adapt to TransactionAspectSupport's invokeWithinTransaction...
+		// 适配 TransactionAspectSupport 的 invokeWithinTransaction...
 		return invokeWithinTransaction(invocation.getMethod(), targetClass, new InvocationCallback() {
 			@Override
 			public @Nullable Object proceedWithInvocation() throws Throwable {
@@ -164,14 +150,14 @@ public class TransactionInterceptor extends TransactionAspectSupport
 
 
 	//---------------------------------------------------------------------
-	// Serialization support
+	// 序列化支持
 	//---------------------------------------------------------------------
 
 	private void writeObject(ObjectOutputStream oos) throws IOException {
-		// Rely on default serialization, although this class itself doesn't carry state anyway...
+		// 依赖默认序列化，尽管本类本身并不携带状态...
 		oos.defaultWriteObject();
 
-		// Deserialize superclass fields.
+		// 反序列化超类字段。
 		oos.writeObject(getTransactionManagerBeanName());
 		oos.writeObject(getTransactionManager());
 		oos.writeObject(getTransactionAttributeSource());
@@ -179,12 +165,12 @@ public class TransactionInterceptor extends TransactionAspectSupport
 	}
 
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-		// Rely on default serialization, although this class itself doesn't carry state anyway...
+		// 依赖默认序列化，尽管本类本身并不携带状态...
 		ois.defaultReadObject();
 
-		// Serialize all relevant superclass fields.
-		// Superclass can't implement Serializable because it also serves as base class
-		// for AspectJ aspects (which are not allowed to implement Serializable)!
+		// 序列化所有相关超类字段。
+		// 超类不能实现 Serializable，因为它也作为 AspectJ 切面的基类
+		// （AspectJ 切面不允许实现 Serializable）！
 		setTransactionManagerBeanName((String) ois.readObject());
 		setTransactionManager((PlatformTransactionManager) ois.readObject());
 		setTransactionAttributeSource((TransactionAttributeSource) ois.readObject());

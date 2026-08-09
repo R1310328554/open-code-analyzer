@@ -21,18 +21,16 @@ import java.beans.PropertyEditorSupport;
 import org.springframework.util.StringUtils;
 
 /**
- * PropertyEditor for {@link TransactionAttribute} objects. Accepts a String of form
+ * {@link TransactionAttribute} 对象的 PropertyEditor。接受如下形式的字符串：
  * <p>{@code PROPAGATION_NAME, ISOLATION_NAME, readOnly, timeout_NNNN,+Exception1,-Exception2}
- * <p>where only propagation code is required. For example:
+ * <p>其中仅传播代码为必填。例如：
  * <p>{@code PROPAGATION_MANDATORY, ISOLATION_DEFAULT}
  *
- * <p>The tokens can be in <strong>any</strong> order. Propagation and isolation codes
- * must use the names of the constants in the TransactionDefinition class. Timeout values
- * are in seconds. If no timeout is specified, the transaction manager will apply a default
- * timeout specific to the particular transaction manager.
+ * <p>标记可以<strong>任意</strong>顺序排列。传播与隔离代码必须使用
+ * TransactionDefinition 类中常量的名称。超时值为秒。
+ * 若未指定超时，事务管理器将应用其特定的默认超时。
  *
- * <p>A "+" before an exception name substring indicates that transactions should commit
- * even if this exception is thrown; a "-" that they should roll back.
+ * <p>异常名称子串前的 "+" 表示即使抛出该异常也应提交事务；"-" 表示应回滚。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -42,24 +40,24 @@ import org.springframework.util.StringUtils;
 public class TransactionAttributeEditor extends PropertyEditorSupport {
 
 	/**
-	 * Format is PROPAGATION_NAME,ISOLATION_NAME,readOnly,timeout_NNNN,+Exception1,-Exception2.
-	 * Null or the empty string means that the method is non-transactional.
+	 * 格式为 PROPAGATION_NAME,ISOLATION_NAME,readOnly,timeout_NNNN,+Exception1,-Exception2。
+	 * null 或空字符串表示方法非事务性。
 	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		if (StringUtils.hasLength(text)) {
-			// tokenize it with ","
+			// 以 "," 分词
 			String[] tokens = StringUtils.commaDelimitedListToStringArray(text);
 			RuleBasedTransactionAttribute attr = new RuleBasedTransactionAttribute();
 			for (String token : tokens) {
-				// Trim leading and trailing whitespace.
+				// 去除首尾空白。
 				String trimmedToken = token.strip();
-				// Check whether token contains illegal whitespace within text.
+				// 检查标记内部是否含非法空白。
 				if (StringUtils.containsWhitespace(trimmedToken)) {
 					throw new IllegalArgumentException(
 							"Transaction attribute token contains illegal whitespace: [" + trimmedToken + "]");
 				}
-				// Check token type.
+				// 检查标记类型。
 				if (trimmedToken.startsWith(RuleBasedTransactionAttribute.PREFIX_PROPAGATION)) {
 					attr.setPropagationBehaviorName(trimmedToken);
 				}
@@ -83,7 +81,7 @@ public class TransactionAttributeEditor extends PropertyEditorSupport {
 					throw new IllegalArgumentException("Invalid transaction attribute token: [" + trimmedToken + "]");
 				}
 			}
-			attr.resolveAttributeStrings(null);  // placeholders expected to be pre-resolved
+			attr.resolveAttributeStrings(null);  // 占位符预期已预先解析
 			setValue(attr);
 		}
 		else {

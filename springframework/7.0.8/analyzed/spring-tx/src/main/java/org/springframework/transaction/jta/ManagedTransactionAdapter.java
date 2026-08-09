@@ -29,9 +29,9 @@ import jakarta.transaction.TransactionManager;
 import org.springframework.util.Assert;
 
 /**
- * Adapter for a managed JTA Transaction handle, taking a JTA
- * {@link jakarta.transaction.TransactionManager} reference and creating
- * a JTA {@link jakarta.transaction.Transaction} handle for it.
+ * 受管 JTA Transaction 句柄的适配器，接受 JTA
+ * {@link jakarta.transaction.TransactionManager} 引用并为其创建
+ * JTA {@link jakarta.transaction.Transaction} 句柄。
  *
  * @author Juergen Hoeller
  * @since 3.0.2
@@ -42,8 +42,8 @@ public class ManagedTransactionAdapter implements Transaction {
 
 
 	/**
-	 * Create a new ManagedTransactionAdapter for the given TransactionManager.
-	 * @param transactionManager the JTA TransactionManager to wrap
+	 * 为给定 TransactionManager 创建新的 ManagedTransactionAdapter。
+	 * @param transactionManager 要包装的 JTA TransactionManager
 	 */
 	public ManagedTransactionAdapter(TransactionManager transactionManager) throws SystemException {
 		Assert.notNull(transactionManager, "TransactionManager must not be null");
@@ -51,7 +51,7 @@ public class ManagedTransactionAdapter implements Transaction {
 	}
 
 	/**
-	 * Return the JTA TransactionManager that this adapter delegates to.
+	 * 返回本适配器委托的 JTA TransactionManager。
 	 */
 	public final TransactionManager getTransactionManager() {
 		return this.transactionManager;
