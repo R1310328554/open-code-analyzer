@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T23:05:43Z",
   "files": [
-    "buffer/src/main/java/io/netty/buffer/EmptyByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/FixedCompositeByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/FreeBufferEvent.java",
-    "buffer/src/main/java/io/netty/buffer/FreeChunkEvent.java",
-    "buffer/src/main/java/io/netty/buffer/HeapByteBufUtil.java",
-    "buffer/src/main/java/io/netty/buffer/IntPriorityQueue.java",
-    "buffer/src/main/java/io/netty/buffer/PoolArena.java",
-    "buffer/src/main/java/io/netty/buffer/PoolArenaMetric.java",
-    "buffer/src/main/java/io/netty/buffer/PoolChunk.java",
-    "buffer/src/main/java/io/netty/buffer/PoolChunkList.java",
-    "buffer/src/main/java/io/netty/buffer/PoolChunkListMetric.java",
-    "buffer/src/main/java/io/netty/buffer/PoolChunkMetric.java",
-    "buffer/src/main/java/io/netty/buffer/PoolSubpage.java",
-    "buffer/src/main/java/io/netty/buffer/PoolSubpageMetric.java",
-    "buffer/src/main/java/io/netty/buffer/PoolThreadCache.java",
     "buffer/src/main/java/io/netty/buffer/PooledByteBuf.java",
     "buffer/src/main/java/io/netty/buffer/PooledByteBufAllocator.java",
     "buffer/src/main/java/io/netty/buffer/PooledByteBufAllocatorMetric.java",
@@ -33,5 +18,5 @@
     "buffer/src/main/java/io/netty/buffer/SimpleLeakAwareByteBuf.java"
   ],
   "remaining_pending": 1868,
-  "done": 30
+  "done": 45
 }
