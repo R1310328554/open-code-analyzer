@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:09:37Z",
-  "files": [
-    "broker/src/main/java/org/apache/rocketmq/broker/pop/orderly/QueueLevelConsumerManager.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/AbstractSendMessageProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/AckMessageProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/AdminBrokerProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/ChangeInvisibleTimeProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/LiteManagerProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/PopBufferMergeService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/PopLiteMessageProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/PopMessageProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/PopReviveService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/PullMessageProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/processor/SendMessageProcessor.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/schedule/ScheduleMessageService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/subscription/SubscriptionGroupManager.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/topic/TopicConfigManager.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 94,
-  "done": 1379
+  "done": 1394
 }
