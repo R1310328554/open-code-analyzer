@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.slots.block;
 import com.alibaba.csp.sentinel.node.IntervalProperty;
 
 /**
+ * Sentinel 规则相关常量定义。
+ *
  * @author youji.zj
  * @author jialiang.linjl
  */
@@ -28,11 +30,11 @@ public final class RuleConstant {
 
     public static final int DEGRADE_GRADE_RT = 0;
     /**
-     * Degrade by biz exception ratio in the current {@link IntervalProperty#INTERVAL} second(s).
+     * 按当前 {@link IntervalProperty#INTERVAL} 秒内的业务异常比例进行熔断降级。
      */
     public static final int DEGRADE_GRADE_EXCEPTION_RATIO = 1;
     /**
-     * Degrade by biz exception count in the last 60 seconds.
+     * 按最近 60 秒内的业务异常数进行熔断降级。
      */
     public static final int DEGRADE_GRADE_EXCEPTION_COUNT = 2;
 

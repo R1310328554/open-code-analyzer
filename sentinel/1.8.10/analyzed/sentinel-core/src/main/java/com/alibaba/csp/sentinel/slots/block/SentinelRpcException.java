@@ -16,8 +16,7 @@
 package com.alibaba.csp.sentinel.slots.block;
 
 /**
- * A {@link RuntimeException} marks sentinel RPC exception. The stack trace
- * is removed for high performance.
+ * 标记 Sentinel RPC 异常的 {@link RuntimeException}。为提升性能，不填充堆栈跟踪。
  *
  * @author leyou
  */

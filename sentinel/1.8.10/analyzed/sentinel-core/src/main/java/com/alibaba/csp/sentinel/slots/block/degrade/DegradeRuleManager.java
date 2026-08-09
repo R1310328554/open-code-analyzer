@@ -36,7 +36,7 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * The rule manager for circuit breaking rules ({@link DegradeRule}).
+ * 熔断降级规则（{@link DegradeRule}）的管理器。
  *
  * @author youji.zj
  * @author jialiang.linjl
@@ -56,10 +56,10 @@ public final class DegradeRuleManager {
     }
 
     /**
-     * Listen to the {@link SentinelProperty} for {@link DegradeRule}s. The property is the source
-     * of {@link DegradeRule}s. Degrade rules can also be set by {@link #loadRules(List)} directly.
+     * 监听 {@link DegradeRule} 的 {@link SentinelProperty}。该属性是 {@link DegradeRule}
+     * 的配置来源；也可通过 {@link #loadRules(List)} 直接设置规则。
      *
-     * @param property the property to listen.
+     * @param property 要监听的属性
      */
     public static void register2Property(SentinelProperty<List<DegradeRule>> property) {
         AssertUtil.notNull(property, "property cannot be null");
@@ -80,11 +80,10 @@ public final class DegradeRuleManager {
     }
 
     /**
-     * <p>Get existing circuit breaking rules.</p>
-     * <p>Note: DO NOT modify the rules from the returned list directly.
-     * The behavior is <strong>undefined</strong>.</p>
+     * <p>获取当前已加载的熔断降级规则。</p>
+     * <p>注意：不要直接修改返回列表中的规则，否则行为<strong>未定义</strong>。</p>
      *
-     * @return list of existing circuit breaking rules, or empty list if no rules were loaded
+     * @return 已加载的熔断降级规则列表；若无规则则返回空列表
      */
     public static List<DegradeRule> getRules() {
         return ruleMap.getRules();
@@ -95,9 +94,9 @@ public final class DegradeRuleManager {
     }
 
     /**
-     * Load {@link DegradeRule}s, former rules will be replaced.
+     * 加载 {@link DegradeRule}，原有规则将被替换。
      *
-     * @param rules new rules to load.
+     * @param rules 要加载的新规则
      */
     public static void loadRules(List<DegradeRule> rules) {
         try {
@@ -108,11 +107,11 @@ public final class DegradeRuleManager {
     }
 
     /**
-     * Set degrade rules for provided resource. Former rules of the resource will be replaced.
+     * 为指定资源设置熔断降级规则，该资源原有规则将被替换。
      *
-     * @param resourceName valid resource name
-     * @param rules        new rule set to load
-     * @return whether the rules has actually been updated
+     * @param resourceName 有效的资源名
+     * @param rules        要加载的新规则集
+     * @return 规则是否实际被更新
      * @since 1.5.0
      */
     public static boolean setRulesForResource(String resourceName, Set<DegradeRule> rules) {
@@ -157,10 +156,10 @@ public final class DegradeRuleManager {
     }
 
     /**
-     * Create a circuit breaker instance from provided circuit breaking rule.
+     * 根据给定的熔断降级规则创建熔断器实例。
      *
-     * @param rule a valid circuit breaking rule
-     * @return new circuit breaker based on provided rule; null if rule is invalid or unsupported type
+     * @param rule 有效的熔断降级规则
+     * @return 基于规则创建的新熔断器；若规则无效或策略不支持则返回 null
      */
     private static CircuitBreaker newCircuitBreakerFrom(/*@Valid*/ DegradeRule rule) {
         switch (rule.getGrade()) {

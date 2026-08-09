@@ -23,7 +23,8 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 /**
- * Unified rule management tool, mainly used for matching and caching of regular rules and simple rules.
+ * 统一的规则管理工具，主要用于正则规则与简单规则的匹配和缓存。
+ *
  * @author quguai
  * @date 2023/10/9 20:35
  */
@@ -47,10 +48,10 @@ public class RuleManager<R> {
     }
 
     /**
-     * Update rules from datasource, split rules map by regex,
-     * rebuild the regex rule cache to reduce the performance loss caused by publish rules.
+     * 从数据源更新规则，按正则表达式拆分规则映射，
+     * 重建正则规则缓存以减少发布规则时的性能损耗。
      *
-     * @param rulesMap origin rules map
+     * @param rulesMap 原始规则映射
      */
     public void updateRules(Map<String, List<R>> rulesMap) {
         originalRules = rulesMap;
@@ -81,9 +82,10 @@ public class RuleManager<R> {
     }
 
     /**
-     * Get rules by resource name, save the rule list after regular matching to improve performance
-     * @param resource resource name
-     * @return matching rule list
+     * 按资源名获取规则，将正则匹配后的规则列表缓存以提升性能。
+     *
+     * @param resource 资源名
+     * @return 匹配到的规则列表
      */
     public List<R> getRules(String resource) {
         List<R> result = new ArrayList<>(simpleRules.getOrDefault(resource, Collections.emptyList()));
@@ -107,8 +109,9 @@ public class RuleManager<R> {
     }
 
     /**
-     * Get rules from regex rules and simple rules
-     * @return rule list
+     * 获取正则规则与简单规则中的全部规则。
+     *
+     * @return 规则列表
      */
     public List<R> getRules() {
         List<R> rules = new ArrayList<>();
@@ -122,17 +125,19 @@ public class RuleManager<R> {
     }
 
     /**
-     * Get origin rules, includes regex and simple rules
-     * @return original rules
+     * 获取原始规则，包含正则规则与简单规则。
+     *
+     * @return 原始规则映射
      */
     public Map<String, List<R>> getOriginalRules() {
         return originalRules;
     }
 
     /**
-     * Determine whether has rule based on the resource name
-     * @param resource resource name
-     * @return whether
+     * 根据资源名判断是否配置了规则。
+     *
+     * @param resource 资源名
+     * @return 是否已配置规则
      */
 
     public boolean hasConfig(String resource) {
@@ -143,9 +148,10 @@ public class RuleManager<R> {
     }
 
     /**
-     * Is valid regex rules
-     * @param rule rule
-     * @return weather valid regex rule
+     * 校验规则的资源名字段是否为合法的正则表达式。
+     *
+     * @param rule 待校验规则
+     * @return 是否为合法的正则规则
      */
     public static boolean checkRegexResourceField(AbstractRule rule) {
         if (!rule.isRegex()) {

@@ -22,23 +22,18 @@ import java.util.Objects;
 
 /**
  * <p>
- * Degrade is used when the resources are in an unstable state, these resources
- * will be degraded within the next defined time window. There are two ways to
- * measure whether a resource is stable or not:
+ * 降级（熔断）用于资源处于不稳定状态时，在接下来定义的时间窗口内对该资源进行降级处理。
+ * 判断资源是否稳定有两种方式：
  * </p>
  * <ul>
  * <li>
- * Average response time ({@code DEGRADE_GRADE_RT}): When
- * the average RT exceeds the threshold ('count' in 'DegradeRule', in milliseconds), the
- * resource enters a quasi-degraded state. If the RT of next coming 5
- * requests still exceed this threshold, this resource will be downgraded, which
- * means that in the next time window (defined in 'timeWindow', in seconds) all the
- * access to this resource will be blocked.
+ * 平均响应时间（{@code DEGRADE_GRADE_RT}）：当平均 RT 超过阈值
+ * （{@code DegradeRule} 中的 {@code count}，单位为毫秒）时，资源进入准降级状态。
+ * 若后续 5 个请求的 RT 仍超过该阈值，则触发降级，即在下一个时间窗口
+ * （{@code timeWindow}，单位为秒）内阻断对该资源的所有访问。
  * </li>
  * <li>
- * Exception ratio: When the ratio of exception count per second and the
- * success qps exceeds the threshold, access to the resource will be blocked in
- * the coming window.
+ * 异常比例：当每秒异常数与成功 QPS 之比超过阈值时，在即将到来的时间窗口内阻断对该资源的访问。
  * </li>
  * </ul>
  *
@@ -54,42 +49,41 @@ public class DegradeRule extends AbstractRule {
     }
 
     /**
-     * Circuit breaking strategy (0: average RT, 1: exception ratio, 2: exception count).
+     * 熔断策略（0：平均 RT，1：异常比例，2：异常数）。
      */
     private int grade = RuleConstant.DEGRADE_GRADE_RT;
 
     /**
-     * Threshold count. The exact meaning depends on the field of grade.
+     * 阈值。具体含义取决于 {@code grade} 字段。
      * <ul>
-     *     <li>In average RT mode, it means the maximum response time(RT) in milliseconds.</li>
-     *     <li>In exception ratio mode, it means exception ratio which between 0.0 and 1.0.</li>
-     *     <li>In exception count mode, it means exception count</li>
+     *     <li>平均 RT 模式下，表示最大响应时间（RT），单位为毫秒。</li>
+     *     <li>异常比例模式下，表示 0.0 到 1.0 之间的异常比例。</li>
+     *     <li>异常数模式下，表示异常计数。</li>
      * <ul/>
      */
     private double count;
 
     /**
-     * Recovery timeout (in seconds) when circuit breaker opens. After the timeout, the circuit breaker will
-     * transform to half-open state for trying a few requests.
+     * 熔断器打开后的恢复超时时间（秒）。超时后熔断器将转为半开状态，尝试放行少量请求。
      */
     private int timeWindow;
 
     /**
-     * Minimum number of requests (in an active statistic time span) that can trigger circuit breaking.
+     * 在活跃统计时间窗口内触发熔断所需的最小请求数。
      *
      * @since 1.7.0
      */
     private int minRequestAmount = RuleConstant.DEGRADE_DEFAULT_MIN_REQUEST_AMOUNT;
 
     /**
-     * The threshold of slow request ratio in RT mode.
+     * RT 模式下慢请求比例的阈值。
      *
      * @since 1.8.0
      */
     private double slowRatioThreshold = 1.0d;
 
     /**
-     * The interval statistics duration in millisecond.
+     * 统计时间窗口的间隔（毫秒）。
      *
      * @since 1.8.0
      */

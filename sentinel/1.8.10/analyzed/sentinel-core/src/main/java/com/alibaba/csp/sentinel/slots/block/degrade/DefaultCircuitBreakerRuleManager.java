@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The rule manager for universal default circuit breaker rule.
+ * 通用默认熔断规则的管理器。
  *
  * @author wuwen
  * @author Eric Zhao
@@ -49,7 +49,7 @@ public final class DefaultCircuitBreakerRuleManager {
     private static volatile Set<DegradeRule> rules = new HashSet<>();
 
     /**
-     * Resources in this set will not be affected by default rules.
+     * 此集合中的资源不受默认规则影响。
      */
     private static final Set<String> excludedResource = ConcurrentHashMap.newKeySet();
 
@@ -62,9 +62,9 @@ public final class DefaultCircuitBreakerRuleManager {
     }
 
     /**
-     * Listen to the {@link SentinelProperty} for default circuit breaker rules.
+     * 监听默认熔断规则的 {@link SentinelProperty}。
      *
-     * @param property the property to listen.
+     * @param property 要监听的属性
      */
     public static void register2Property(SentinelProperty<List<DegradeRule>> property) {
         AssertUtil.notNull(property, "property cannot be null");
@@ -93,9 +93,9 @@ public final class DefaultCircuitBreakerRuleManager {
     }
 
     /**
-     * Exclude the resource that does not require default rules.
+     * 将不需要默认规则的资源加入排除列表。
      *
-     * @param resourceName the name of resource that does not require default rules
+     * @param resourceName 不需要默认规则的资源名
      */
     public static void addExcludedResource(String resourceName) {
         if (StringUtil.isEmpty(resourceName)) {
@@ -116,9 +116,9 @@ public final class DefaultCircuitBreakerRuleManager {
     }
 
     /**
-     * Load default circuit breaker rules, former rules will be replaced.
+     * 加载默认熔断规则，原有规则将被替换。
      *
-     * @param rules new rules to load.
+     * @param rules 要加载的新规则
      */
     public static boolean loadRules(List<DegradeRule> rules) {
         try {
@@ -138,10 +138,10 @@ public final class DefaultCircuitBreakerRuleManager {
     }
 
     /**
-     * Create a circuit breaker instance from provided circuit breaking rule.
+     * 根据给定的熔断降级规则创建熔断器实例。
      *
-     * @param rule a valid circuit breaking rule
-     * @return new circuit breaker based on provided rule; null if rule is invalid or unsupported type
+     * @param rule 有效的熔断降级规则
+     * @return 基于规则创建的新熔断器；若规则无效或策略不支持则返回 null
      */
     private static CircuitBreaker newCircuitBreakerFrom(/*@Valid*/ DegradeRule rule) {
         switch (rule.getGrade()) {

@@ -16,16 +16,16 @@
 package com.alibaba.csp.sentinel.slots.block;
 
 /**
- * Base interface of all rules.
+ * 所有规则的基础接口。
  *
  * @author youji.zj
  */
 public interface Rule {
 
     /**
-     * Get target resource of this rule.
+     * 获取本规则的目标资源名。
      *
-     * @return target resource of this rule
+     * @return 本规则的目标资源名
      */
     String getResource();
 

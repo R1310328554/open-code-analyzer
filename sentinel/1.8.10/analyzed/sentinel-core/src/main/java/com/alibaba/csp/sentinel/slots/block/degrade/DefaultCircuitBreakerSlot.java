@@ -29,7 +29,7 @@ import com.alibaba.csp.sentinel.spi.Spi;
 import java.util.List;
 
 /**
- * <p>A {@link ProcessorSlot} dedicates to universal default circuit breaker.</p>
+ * <p>专门负责通用默认熔断的 {@link ProcessorSlot}。</p>
  *
  * @author wuwen
  * @since 2.0.0

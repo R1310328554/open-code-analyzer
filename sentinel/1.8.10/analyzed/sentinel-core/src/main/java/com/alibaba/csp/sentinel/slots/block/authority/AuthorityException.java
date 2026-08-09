@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.slots.block.authority;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
- * Block exception for request origin access (authority) control.
+ * 请求来源访问控制（黑白名单）被阻断时抛出的异常。
  *
  * @author youji.zj
  * @author Eric Zhao
@@ -47,10 +47,10 @@ public class AuthorityException extends BlockException {
     }
 
     /**
-     * Get triggered rule.
-     * Note: the rule result is a reference to rule map and SHOULD NOT be modified.
+     * 获取触发的规则。
+     * 注意：返回的规则引用指向规则映射，不应被修改。
      *
-     * @return triggered rule
+     * @return 触发的规则
      * @since 1.4.2
      */
     @Override

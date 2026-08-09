@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * Rule checker for white/black list authority.
+ * 黑白名单访问控制规则的校验器。
  *
  * @author Eric Zhao
  * @since 0.2.0

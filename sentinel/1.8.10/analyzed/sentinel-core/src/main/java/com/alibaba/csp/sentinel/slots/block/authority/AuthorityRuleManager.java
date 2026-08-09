@@ -32,7 +32,7 @@ import com.alibaba.csp.sentinel.property.PropertyListener;
 import com.alibaba.csp.sentinel.property.SentinelProperty;
 
 /**
- * Manager for authority rules.
+ * 黑白名单访问控制规则的管理器。
  *
  * @author youji.zj
  * @author jialiang.linjl
@@ -62,9 +62,9 @@ public final class AuthorityRuleManager {
     }
 
     /**
-     * Load the authority rules to memory.
+     * 将黑白名单规则加载到内存。
      *
-     * @param rules list of authority rules
+     * @param rules 黑白名单规则列表
      */
     public static void loadRules(List<AuthorityRule> rules) {
         currentProperty.updateValue(rules);
@@ -75,9 +75,9 @@ public final class AuthorityRuleManager {
     }
 
     /**
-     * Get a copy of the rules.
+     * 获取规则副本。
      *
-     * @return a new copy of the rules.
+     * @return 规则的新副本
      */
     public static List<AuthorityRule> getRules() {
         return authorityRules.getRules();

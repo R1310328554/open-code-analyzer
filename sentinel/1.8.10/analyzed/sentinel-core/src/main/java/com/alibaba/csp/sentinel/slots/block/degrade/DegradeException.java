@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.slots.block.degrade;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /***
+ * 熔断降级被触发时抛出的阻断异常。
+ *
  * @author youji.zj
  */
 public class DegradeException extends BlockException {
@@ -44,10 +46,10 @@ public class DegradeException extends BlockException {
     }
 
     /**
-     * Get triggered rule.
-     * Note: the rule result is a reference to rule map and SHOULD NOT be modified.
+     * 获取触发的规则。
+     * 注意：返回的规则引用指向规则映射，不应被修改。
      *
-     * @return triggered rule
+     * @return 触发的规则
      * @since 1.4.2
      */
     @Override

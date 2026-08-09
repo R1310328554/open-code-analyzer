@@ -26,7 +26,7 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.spi.Spi;
 
 /**
- * A {@link ProcessorSlot} that dedicates to {@link AuthorityRule} checking.
+ * 专门负责 {@link AuthorityRule} 校验的 {@link ProcessorSlot}。
  *
  * @author leyou
  * @author Eric Zhao

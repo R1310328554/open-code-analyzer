@@ -29,7 +29,7 @@ import com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker.CircuitBreake
 import com.alibaba.csp.sentinel.spi.Spi;
 
 /**
- * A {@link ProcessorSlot} dedicates to circuit breaking.
+ * 专门负责熔断降级校验的 {@link ProcessorSlot}。
  *
  * @author Carpenter Lee
  * @author Eric Zhao
