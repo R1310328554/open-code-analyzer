@@ -32,6 +32,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
 /**
+ * 独立 Token Server 演示 {@link InitFunc}：从 Nacos 加载 namespace、传输配置与集群规则。
+ *
  * @author Eric Zhao
  */
 public class DemoClusterServerInitFunc implements InitFunc {
@@ -43,14 +45,14 @@ public class DemoClusterServerInitFunc implements InitFunc {
 
     @Override
     public void init() throws Exception {
-        // Register cluster flow rule property supplier which creates data source by namespace.
+        // 按 namespace 注册集群流控规则 Supplier
         ClusterFlowRuleManager.setPropertySupplier(namespace -> {
             ReadableDataSource<String, List<FlowRule>> ds = new NacosDataSource<>(remoteAddress, groupId,
                 namespace + DemoConstants.FLOW_POSTFIX,
                 source -> JSON.parseObject(source, new TypeReference<List<FlowRule>>() {}));
             return ds.getProperty();
         });
-        // Register cluster parameter flow rule property supplier.
+        // 按 namespace 注册集群热点参数规则 Supplier
         ClusterParamFlowRuleManager.setPropertySupplier(namespace -> {
             ReadableDataSource<String, List<ParamFlowRule>> ds = new NacosDataSource<>(remoteAddress, groupId,
                 namespace + DemoConstants.PARAM_FLOW_POSTFIX,
@@ -58,11 +60,11 @@ public class DemoClusterServerInitFunc implements InitFunc {
             return ds.getProperty();
         });
 
-        // Server namespace set (scope) data source.
+        // Server 管辖的 namespace 集合数据源
         ReadableDataSource<String, Set<String>> namespaceDs = new NacosDataSource<>(remoteAddress, groupId,
             namespaceSetDataId, source -> JSON.parseObject(source, new TypeReference<Set<String>>() {}));
         ClusterServerConfigManager.registerNamespaceSetProperty(namespaceDs.getProperty());
-        // Server transport configuration data source.
+        // Server 传输层（端口、空闲超时等）配置数据源
         ReadableDataSource<String, ServerTransportConfig> transportConfigDs = new NacosDataSource<>(remoteAddress,
             groupId, serverTransportDataId,
             source -> JSON.parseObject(source, new TypeReference<ServerTransportConfig>() {}));

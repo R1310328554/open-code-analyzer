@@ -16,13 +16,18 @@
 package com.alibaba.csp.sentinel.demo.cluster;
 
 /**
+ * 集群演示常量：应用名与 Nacos 规则 dataId 后缀。
+ *
  * @author Eric Zhao
  */
 public final class DemoConstants {
 
+    /** 演示应用名，亦作为 Server namespace。 */
     public static final String APP_NAME = "appA";
 
+    /** 流控规则 dataId 后缀。 */
     public static final String FLOW_POSTFIX = "-flow-rules";
+    /** 热点参数规则 dataId 后缀。 */
     public static final String PARAM_FLOW_POSTFIX = "-param-rules";
 
     private DemoConstants() {}

@@ -21,14 +21,13 @@ import com.alibaba.csp.sentinel.command.CommandResponse;
 import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 
 /**
- * This class is a demo shows how to create and register a customized CommandHandler.
+ * 自定义 {@link CommandHandler} 注册演示。
  *
  * <ul>
- * <li>1. Create a class which implements the {@link CommandHandler} SPI interface</li>
- * <li>2. Use a {@link CommandMapping} to specify the url and desc of your CommandHandler</li>
- * <li>3. Implement your own {@code handle} method </li>
- * <li>4. Add your CommandHandler in {@code com.alibaba.csp.sentinel.command.CommandHandler} file which is stored in
- * {@code resources/META-INF/services/} directory </li>
+ * <li>1. 实现 {@link CommandHandler} SPI 接口</li>
+ * <li>2. 用 {@link CommandMapping} 声明命令名与描述</li>
+ * <li>3. 实现 {@code handle} 方法</li>
+ * <li>4. 在 {@code resources/META-INF/services/com.alibaba.csp.sentinel.command.CommandHandler} 中注册</li>
  * </ul>
  *
  * @author houyi
@@ -36,6 +35,7 @@ import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 @CommandMapping(name = "echo", desc = "echo command for demo")
 public class EchoCommandHandler implements CommandHandler<String> {
 
+    /** 读取 name 参数并回显；未传参时提示提交 name。 */
     @Override
     public CommandResponse<String> handle(CommandRequest request) {
         String name = request.getParam("name");

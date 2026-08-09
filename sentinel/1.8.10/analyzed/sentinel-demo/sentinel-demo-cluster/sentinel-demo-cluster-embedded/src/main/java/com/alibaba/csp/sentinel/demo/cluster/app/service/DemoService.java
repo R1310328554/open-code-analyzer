@@ -21,18 +21,21 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import org.springframework.stereotype.Service;
 
 /**
+ * 集群演示业务服务：{@link SentinelResource} 绑定 blockHandler 处理限流。
+ *
  * @author Eric Zhao
  */
 @Service
 public class DemoService {
 
+    /** 问候资源，被限流时调用 sayHelloBlockHandler。 */
     @SentinelResource(blockHandler = "sayHelloBlockHandler")
     public String sayHello(String name) {
         return "Hello, " + name;
     }
 
+    /** sayHello 的 blockHandler：打印异常并返回友好提示。 */
     public String sayHelloBlockHandler(String name, BlockException ex) {
-        // This is the block handler.
         ex.printStackTrace();
         return String.format("Oops, <%s> blocked by Sentinel", name);
     }

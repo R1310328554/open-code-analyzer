@@ -23,9 +23,8 @@ import com.alibaba.csp.sentinel.cluster.server.config.ClusterServerConfigManager
 import com.alibaba.csp.sentinel.cluster.server.config.ServerTransportConfig;
 
 /**
- * <p>Cluster server demo (alone mode).</p>
- * <p>Here we init the cluster server dynamic data sources in
- * {@link com.alibaba.csp.sentinel.demo.cluster.init.DemoClusterServerInitFunc}.</p>
+ * <p>集群 Token Server 独立模式演示入口。</p>
+ * <p>动态数据源初始化见 {@link com.alibaba.csp.sentinel.demo.cluster.init.DemoClusterServerInitFunc}。</p>
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -33,18 +32,17 @@ import com.alibaba.csp.sentinel.cluster.server.config.ServerTransportConfig;
 public class ClusterServerDemo {
 
     public static void main(String[] args) throws Exception {
-        // Not embedded mode by default (alone mode).
+        // 默认非嵌入式，以独立进程运行 Token Server
         ClusterTokenServer tokenServer = new SentinelDefaultTokenServer();
 
-        // A sample for manually load config for cluster server.
-        // It's recommended to use dynamic data source to cluster manage config and rules.
-        // See the sample in DemoClusterServerInitFunc for detail.
+        // 以下为手动加载 Server 配置的示例；生产环境建议用 Nacos 等动态数据源
+        // 详见 DemoClusterServerInitFunc
         ClusterServerConfigManager.loadGlobalTransportConfig(new ServerTransportConfig()
             .setIdleSeconds(600)
             .setPort(11111));
         ClusterServerConfigManager.loadServerNamespaceSet(Collections.singleton(DemoConstants.APP_NAME));
 
-        // Start the server.
+        // 启动 Token Server
         tokenServer.start();
     }
 }

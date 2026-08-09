@@ -21,16 +21,20 @@ import com.alibaba.csp.sentinel.command.CommandRequestExecution;
 import com.alibaba.csp.sentinel.command.CommandResponse;
 
 /**
+ * 仅拦截 {@code echo} 命令：打印参数并包装返回结果。
+ *
  * @author icodening
  * @date 2022.03.23
  */
 public class EchoCommandHandlerInterceptor implements CommandHandlerInterceptor<String> {
 
+    /** 仅当命令名为 echo 时拦截。 */
     @Override
     public boolean shouldIntercept(String commandName) {
         return "echo".equals(commandName);
     }
 
+    /** 记录请求参数，执行原 handler 后将结果包在 intercept result 前缀中返回。 */
     @Override
     public CommandResponse<String> intercept(CommandRequest request, CommandRequestExecution<String> execution) {
         System.out.println("[EchoCommandHandlerInterceptor] intercept 'echo' command,all params is " + request.getParameters() + "");

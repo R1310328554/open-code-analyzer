@@ -18,15 +18,22 @@ package com.alibaba.csp.sentinel.demo.cluster.entity;
 import java.util.Set;
 
 /**
+ * 集群分组实体：描述 Token Server 机器及其关联 Client 集合。
+ * <p>machineId 格式为 {@code ip@commandPort}，commandPort 为 Dashboard 通信端口。</p>
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */
 public class ClusterGroupEntity {
 
+    /** Token Server 机器标识（ip@commandPort）。 */
     private String machineId;
+    /** Token Server 对外 IP。 */
     private String ip;
+    /** Token Server 监听端口。 */
     private Integer port;
 
+    /** 归属该 Server 的 Client machineId 集合。 */
     private Set<String> clientSet;
 
     public String getMachineId() {

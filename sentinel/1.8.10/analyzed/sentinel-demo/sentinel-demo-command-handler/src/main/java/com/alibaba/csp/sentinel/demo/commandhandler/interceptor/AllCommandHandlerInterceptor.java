@@ -22,17 +22,21 @@ import com.alibaba.csp.sentinel.command.CommandResponse;
 import com.alibaba.csp.sentinel.spi.Spi;
 
 /**
+ * 全局命令拦截器：拦截所有 CommandHandler 调用并统计耗时。
+ *
  * @author icodening
  * @date 2022.03.23
  */
 @Spi(order = Spi.ORDER_HIGHEST)
 public class AllCommandHandlerInterceptor implements CommandHandlerInterceptor {
 
+    /** 拦截全部命令。 */
     @Override
     public boolean shouldIntercept(String commandName) {
         return true;
     }
 
+    /** 打印开始/结束日志，捕获异常后原样抛出，finally 输出耗时。 */
     @Override
     public CommandResponse intercept(CommandRequest request, CommandRequestExecution execution) {
         System.out.println("[AllCommandHandlerInterceptor] start");

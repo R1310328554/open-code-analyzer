@@ -22,7 +22,8 @@ import com.alibaba.csp.sentinel.slots.block.SentinelRpcException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- * Please add the following VM arguments:
+ * 经典 Dubbo Consumer 启动类：循环调用 sayHello 演示流控阻塞。
+ * <p>启动前请添加 VM 参数：</p>
  * <pre>
  * -Djava.net.preferIPv4Stack=true
  * -Dcsp.sentinel.api.port=8721
@@ -45,6 +46,7 @@ public class FooConsumerBootstrap {
                 String message = service.sayHello("Eric");
                 System.out.println("Success: " + message);
             } catch (SentinelRpcException ex) {
+                // 被 Sentinel 限流/熔断时抛出 SentinelRpcException
                 System.out.println("Blocked");
             } catch (Exception ex) {
                 ex.printStackTrace();

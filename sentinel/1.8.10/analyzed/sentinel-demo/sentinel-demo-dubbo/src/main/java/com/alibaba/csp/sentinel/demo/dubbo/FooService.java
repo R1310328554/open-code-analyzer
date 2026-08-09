@@ -16,10 +16,14 @@
 package com.alibaba.csp.sentinel.demo.dubbo;
 
 /**
+ * 经典 Dubbo 演示 RPC 服务接口。
+ *
  * @author Eric Zhao
  */
 public interface FooService {
+    /** 问候调用，Consumer 流控主要测试资源。 */
     String sayHello(String name);
 
+    /** 备用 RPC 方法。 */
     String doAnother();
 }

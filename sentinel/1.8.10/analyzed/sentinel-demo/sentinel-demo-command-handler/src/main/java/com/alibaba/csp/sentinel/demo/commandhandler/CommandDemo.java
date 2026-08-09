@@ -18,11 +18,10 @@ package com.alibaba.csp.sentinel.demo.commandhandler;
 import com.alibaba.csp.sentinel.init.InitExecutor;
 
 /**
- * <p>To run this demo, we need to add the {@code sentinel-transport-simple-http} dependency.</p>
+ * <p>运行本演示需引入 {@code sentinel-transport-simple-http} 依赖。</p>
  * <p>
- * As soon as the CommandCenter has been initialized, we can visit {@code http://ip:commandPort/api}
- * to see all available command APIs (by default the port is 8719).
- * We can also visit our customized {@code /echo} command.
+ * CommandCenter 初始化后可访问 {@code http://ip:commandPort/api} 查看内置命令 API（默认端口 8719）。
+ * 亦可访问自定义 {@code /echo} 命令。
  * </p>
  *
  * @author Eric Zhao
@@ -30,7 +29,7 @@ import com.alibaba.csp.sentinel.init.InitExecutor;
 public class CommandDemo {
 
     public static void main(String[] args) {
-        // Only for demo. You don't have to do this in your application.
+        // 仅演示用；业务应用通常由 SPI 自动触发 InitFunc
         InitExecutor.doInit();
 
         System.out.println("Sentinel CommandCenter has been initialized");

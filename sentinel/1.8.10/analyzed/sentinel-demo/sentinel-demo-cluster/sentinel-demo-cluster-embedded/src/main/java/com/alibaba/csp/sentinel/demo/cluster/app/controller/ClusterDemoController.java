@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
+ * 集群限流嵌入式演示 REST 控制器：暴露 /hello/{name} 触发 {@link DemoService}。
+ *
  * @author Eric Zhao
  */
 @RestController
@@ -31,6 +33,7 @@ public class ClusterDemoController {
     @Autowired
     private DemoService service;
 
+    /** GET /hello/{name}：调用 sayHello 并走集群/本地 Sentinel 规则。 */
     @GetMapping("/hello/{name}")
     public String apiHello(@PathVariable String name) throws Exception {
         return service.sayHello(name);

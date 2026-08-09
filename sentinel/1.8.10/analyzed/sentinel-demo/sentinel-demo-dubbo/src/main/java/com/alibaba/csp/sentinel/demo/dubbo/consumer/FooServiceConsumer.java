@@ -19,17 +19,22 @@ import com.alibaba.csp.sentinel.demo.dubbo.FooService;
 import com.alibaba.dubbo.config.annotation.Reference;
 
 /**
+ * {@link FooService} 消费者封装：通过 {@link Reference} 直连 Provider。
+ *
  * @author Eric Zhao
  */
 public class FooServiceConsumer {
 
+    /** 直连本地 Provider，超时 3000ms。 */
     @Reference(url = "dubbo://127.0.0.1:25758", timeout = 3000)
     private FooService fooService;
 
+    /** 转发 sayHello RPC 调用。 */
     public String sayHello(String name) {
         return fooService.sayHello(name);
     }
 
+    /** 转发 doAnother RPC 调用。 */
     public String doAnother() {
         return fooService.doAnother();
     }

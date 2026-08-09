@@ -43,6 +43,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
 /**
+ * 嵌入式集群演示 {@link InitFunc}：从 Nacos 加载流控规则、Client/Server 配置与集群拓扑。
+ *
  * @author Eric Zhao
  */
 public class DemoClusterInitFunc implements InitFunc {
@@ -59,22 +61,22 @@ public class DemoClusterInitFunc implements InitFunc {
 
     @Override
     public void init() throws Exception {
-        // Register client dynamic rule data source.
+        // 注册 Client 侧动态流控/热点规则数据源
         initDynamicRuleProperty();
 
-        // Register token client related data source.
-        // Token client common config:
+        // 注册 Token Client 相关数据源
+        // Client 通用配置：
         initClientConfigProperty();
-        // Token client assign config (e.g. target token server) retrieved from assign map:
+        // Client 指派配置（目标 Token Server），从 cluster-map 解析：
         initClientServerAssignProperty();
 
-        // Register token server related data source.
-        // Register dynamic rule data source supplier for token server:
+        // 注册 Token Server 相关数据源
+        // 为 Token Server 注册按 namespace 拉取规则的 Supplier：
         registerClusterRuleSupplier();
-        // Token server transport config extracted from assign map:
+        // Token Server 传输配置，同样从 cluster-map 提取：
         initServerTransportConfigProperty();
 
-        // Init cluster state property for extracting mode from cluster map data source.
+        // 根据 cluster-map 推断本机角色（Server / Client / 未启动）
         initStateProperty();
     }
 
@@ -106,14 +108,13 @@ public class DemoClusterInitFunc implements InitFunc {
     }
 
     private void registerClusterRuleSupplier() {
-        // Register cluster flow rule property supplier which creates data source by namespace.
-        // Flow rule dataId format: ${namespace}-flow-rules
+        // 按 namespace 注册集群流控规则 Supplier，dataId 格式：${namespace}-flow-rules
         ClusterFlowRuleManager.setPropertySupplier(namespace -> {
             ReadableDataSource<String, List<FlowRule>> ds = new NacosDataSource<>(remoteAddress, groupId,
                 namespace + DemoConstants.FLOW_POSTFIX, source -> JSON.parseObject(source, new TypeReference<List<FlowRule>>() {}));
             return ds.getProperty();
         });
-        // Register cluster parameter flow rule property supplier which creates data source by namespace.
+        // 按 namespace 注册集群热点参数规则 Supplier
         ClusterParamFlowRuleManager.setPropertySupplier(namespace -> {
             ReadableDataSource<String, List<ParamFlowRule>> ds = new NacosDataSource<>(remoteAddress, groupId,
                 namespace + DemoConstants.PARAM_FLOW_POSTFIX, source -> JSON.parseObject(source, new TypeReference<List<ParamFlowRule>>() {}));
@@ -122,9 +123,9 @@ public class DemoClusterInitFunc implements InitFunc {
     }
 
     private void initClientServerAssignProperty() {
-        // Cluster map format:
+        // cluster-map JSON 示例：
         // [{"clientSet":["112.12.88.66@8729","112.12.88.67@8727"],"ip":"112.12.88.68","machineId":"112.12.88.68@8728","port":11111}]
-        // machineId: <ip@commandPort>, commandPort for port exposed to Sentinel dashboard (transport module)
+        // machineId 为 ip@commandPort，commandPort 即 transport 模块暴露给 Dashboard 的端口
         ReadableDataSource<String, ClusterClientAssignConfig> clientAssignDs = new NacosDataSource<>(remoteAddress, groupId,
             clusterMapDataId, source -> {
             List<ClusterGroupEntity> groupList = JSON.parseObject(source, new TypeReference<List<ClusterGroupEntity>>() {});
@@ -150,12 +151,12 @@ public class DemoClusterInitFunc implements InitFunc {
     }
 
     private int extractMode(List<ClusterGroupEntity> groupList) {
-        // If any server group machineId matches current, then it's token server.
+        // 若某 Server 分组的 machineId 与当前机器一致，则本机为 Token Server
         if (groupList.stream().anyMatch(this::machineEqual)) {
             return ClusterStateManager.CLUSTER_SERVER;
         }
-        // If current machine belongs to any of the token server group, then it's token client.
-        // Otherwise it's unassigned, should be set to NOT_STARTED.
+        // 若当前 machineId 出现在某 Server 的 clientSet 中，则为 Token Client
+        // 否则尚未分配角色，状态为 NOT_STARTED
         boolean canBeClient = groupList.stream()
             .flatMap(e -> e.getClientSet().stream())
             .filter(Objects::nonNull)
@@ -174,7 +175,7 @@ public class DemoClusterInitFunc implements InitFunc {
         if (groupList.stream().anyMatch(this::machineEqual)) {
             return Optional.empty();
         }
-        // Build client assign config from the client set of target server group.
+        // 从目标 Server 分组构建 Client 指派配置（Server IP + 端口）
         for (ClusterGroupEntity group : groupList) {
             if (group.getClientSet().contains(getCurrentMachineId())) {
                 String ip = group.getIp();
@@ -190,7 +191,7 @@ public class DemoClusterInitFunc implements InitFunc {
     }
 
     private String getCurrentMachineId() {
-        // Note: this may not work well for container-based env.
+        // 注意：容器环境下 ip@port 识别可能不准确
         return HostNameUtil.getIp() + SEPARATOR + TransportConfig.getRuntimePort();
     }
 
