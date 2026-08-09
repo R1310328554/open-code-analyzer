@@ -23,22 +23,33 @@ import io.reactivex.rxjava4.functions.Action;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 下游 dispose 时先执行 onDispose Action，再 dispose 上游。
+ * AtomicReference 存 Action，getAndSet(null) 保证仅调用一次。
+ * @param <T> 元素类型
+ */
 public final class SingleDoOnDispose<T> extends Single<T> {
     final SingleSource<T> source;
 
     final Action onDispose;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param onDispose dispose 时执行的 Action
+     */
     public SingleDoOnDispose(SingleSource<T> source, Action onDispose) {
         this.source = source;
         this.onDispose = onDispose;
     }
 
+    /** 订阅 DoOnDisposeObserver 拦截 dispose 路径。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
 
         source.subscribe(new DoOnDisposeObserver<>(observer, onDispose));
     }
 
+    /** dispose 时 getAndSet Action 并 run，再 upstream.dispose。 */
     static final class DoOnDisposeObserver<T>
     extends AtomicReference<Action>
     implements SingleObserver<T>, Disposable {
@@ -54,6 +65,7 @@ public final class SingleDoOnDispose<T> extends Single<T> {
             this.lazySet(onDispose);
         }
 
+        /** 取并清空 Action 后 run；再 dispose 上游。 */
         @Override
         public void dispose() {
             Action a = getAndSet(null);

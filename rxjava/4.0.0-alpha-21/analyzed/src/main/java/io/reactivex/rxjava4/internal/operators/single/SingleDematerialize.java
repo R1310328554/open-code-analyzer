@@ -22,11 +22,11 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import java.util.Objects;
 
 /**
- * Maps the success value of the source to a Notification, then
- * maps it back to the corresponding signal type.
+ * 将上游 Single 成功值经 selector 映射为 {@link Notification}，
+ * 再按 Notification 类型转为 Maybe 的 onSuccess/onComplete/onError。
  * <p>History: 2.2.4 - experimental
- * @param <T> the element type of the source
- * @param <R> the element type of the Notification and result
+ * @param <T> 上游元素类型
+ * @param <R> Notification 与结果元素类型
  * @since 3.0.0
  */
 public final class SingleDematerialize<T, R> extends Maybe<R> {
@@ -35,16 +35,22 @@ public final class SingleDematerialize<T, R> extends Maybe<R> {
 
     final Function<? super T, Notification<R>> selector;
 
+    /**
+     * @param source 上游 Single
+     * @param selector 将成功值映射为 Notification 的函数
+     */
     public SingleDematerialize(Single<T> source, Function<? super T, Notification<R>> selector) {
         this.source = source;
         this.selector = selector;
     }
 
+    /** 订阅 DematerializeObserver 处理 Notification 分支。 */
     @Override
     protected void subscribeActual(MaybeObserver<? super R> observer) {
         source.subscribe(new DematerializeObserver<>(observer, selector));
     }
 
+    /** 按 Notification.isOnNext/isOnComplete/isOnError 转发 Maybe 信号。 */
     static final class DematerializeObserver<T, R> implements SingleObserver<T>, Disposable {
 
         final MaybeObserver<? super R> downstream;
@@ -77,6 +83,7 @@ public final class SingleDematerialize<T, R> extends Maybe<R> {
             }
         }
 
+        /** selector 映射 Notification 后分支转发 onSuccess/onComplete/onError。 */
         @Override
         public void onSuccess(T t) {
             Notification<R> notification;

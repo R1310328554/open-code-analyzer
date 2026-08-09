@@ -25,22 +25,34 @@ import io.reactivex.rxjava4.internal.observers.ResumeSingleObserver;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 先订阅 other {@link Publisher}，收到首个 onNext 或 onComplete 后再订阅 source Single。
+ * 通过 request(Long.MAX_VALUE) 无界拉取 other；dispose 时 cancel 上游。
+ * @param <T> 目标 Single 元素类型
+ * @param <U> other Publisher 元素类型
+ */
 public final class SingleDelayWithPublisher<T, U> extends Single<T> {
 
     final SingleSource<T> source;
 
     final Publisher<U> other;
 
+    /**
+     * @param source 待延迟订阅的 SingleSource
+     * @param other 必须先发出或完成的 Publisher
+     */
     public SingleDelayWithPublisher(SingleSource<T> source, Publisher<U> other) {
         this.source = source;
         this.other = other;
     }
 
+    /** 订阅 OtherSubscriber 并 request 无界等待 other 首事件。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         other.subscribe(new OtherSubscriber<>(observer, source));
     }
 
+    /** other 的 FlowableSubscriber：onNext 时 cancel 并触发完成逻辑。 */
     static final class OtherSubscriber<T, U>
     extends AtomicReference<Disposable>
     implements FlowableSubscriber<U>, Disposable {
@@ -61,6 +73,7 @@ public final class SingleDelayWithPublisher<T, U> extends Single<T> {
             this.source = source;
         }
 
+        /** 校验 Subscription 后 request(Long.MAX_VALUE) 无界拉取。 */
         @Override
         public void onSubscribe(Subscription s) {
             if (SubscriptionHelper.validate(this.upstream, s)) {
@@ -97,6 +110,7 @@ public final class SingleDelayWithPublisher<T, U> extends Single<T> {
             source.subscribe(new ResumeSingleObserver<>(this, downstream));
         }
 
+        /** cancel 上游 Subscription 并 dispose 自身 Disposable。 */
         @Override
         public void dispose() {
             upstream.cancel();

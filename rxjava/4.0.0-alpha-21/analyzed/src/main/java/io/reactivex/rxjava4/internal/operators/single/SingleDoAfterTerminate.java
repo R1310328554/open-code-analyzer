@@ -21,9 +21,10 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Calls an action after pushing the current item or an error to the downstream.
+ * 在 downstream 收到 onSuccess 或 onError 之后调用 onAfterTerminate。
+ * 回调异常走 RxJavaPlugins.onError，不影响已转发的终端事件。
  * <p>History: 2.0.6 - experimental
- * @param <T> the value type
+ * @param <T> 元素类型
  * @since 2.1
  */
 public final class SingleDoAfterTerminate<T> extends Single<T> {
@@ -32,16 +33,22 @@ public final class SingleDoAfterTerminate<T> extends Single<T> {
 
     final Action onAfterTerminate;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param onAfterTerminate 终端事件转发后执行的 Action
+     */
     public SingleDoAfterTerminate(SingleSource<T> source, Action onAfterTerminate) {
         this.source = source;
         this.onAfterTerminate = onAfterTerminate;
     }
 
+    /** 订阅 DoAfterTerminateObserver 在成功或错误后触发 Action。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         source.subscribe(new DoAfterTerminateObserver<>(observer, onAfterTerminate));
     }
 
+    /** onSuccess/onError 均先转发再 onAfterTerminate()。 */
     static final class DoAfterTerminateObserver<T> implements SingleObserver<T>, Disposable {
 
         final SingleObserver<? super T> downstream;
@@ -88,6 +95,7 @@ public final class SingleDoAfterTerminate<T> extends Single<T> {
             return upstream.isDisposed();
         }
 
+        /** 执行 Action；异常经 RxJavaPlugins 上报。 */
         private void onAfterTerminate() {
             try {
                 onAfterTerminate.run();

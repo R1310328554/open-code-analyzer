@@ -24,9 +24,10 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Execute an action after an onSuccess, onError or a dispose event.
+ * 在 onSuccess、onError 或 dispose 后执行 onFinally，且仅执行一次。
+ * AtomicInteger CAS 门控保证 runFinally 不重复调用。
  * <p>History: 2.0.1 - experimental
- * @param <T> the value type
+ * @param <T> 元素类型
  * @since 2.1
  */
 public final class SingleDoFinally<T> extends Single<T> {
@@ -35,16 +36,22 @@ public final class SingleDoFinally<T> extends Single<T> {
 
     final Action onFinally;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param onFinally 终止或 dispose 后执行的 Action
+     */
     public SingleDoFinally(SingleSource<T> source, Action onFinally) {
         this.source = source;
         this.onFinally = onFinally;
     }
 
+    /** 订阅 DoFinallyObserver 在三种路径触发 runFinally。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         source.subscribe(new DoFinallyObserver<>(observer, onFinally));
     }
 
+    /** compareAndSet(0,1) 保证 onFinally 仅执行一次。 */
     static final class DoFinallyObserver<T> extends AtomicInteger implements SingleObserver<T>, Disposable {
 
         @Serial
@@ -93,6 +100,7 @@ public final class SingleDoFinally<T> extends Single<T> {
             return upstream.isDisposed();
         }
 
+        /** CAS 成功后 run onFinally；异常走 RxJavaPlugins。 */
         void runFinally() {
             if (compareAndSet(0, 1)) {
                 try {

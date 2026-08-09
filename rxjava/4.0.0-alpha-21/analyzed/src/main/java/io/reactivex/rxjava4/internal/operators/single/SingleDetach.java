@@ -18,24 +18,28 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Breaks the references between the upstream and downstream when the Maybe terminates.
+ * 终止时断开 upstream 与 downstream 的引用，便于 GC 回收观察者链。
+ * onSuccess/onError 后将 downstream 置 null，upstream 置 DISPOSED。
  * <p>History: 2.1.5 - experimental
- * @param <T> the value type
+ * @param <T> 元素类型
  * @since 2.2
  */
 public final class SingleDetach<T> extends Single<T> {
 
     final SingleSource<T> source;
 
+    /** @param source 上游 SingleSource */
     public SingleDetach(SingleSource<T> source) {
         this.source = source;
     }
 
+    /** 订阅 DetachSingleObserver 在终止时清空引用。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         source.subscribe(new DetachSingleObserver<>(observer));
     }
 
+    /** dispose 时清空 downstream；终止后 upstream 置 DISPOSED。 */
     static final class DetachSingleObserver<T> implements SingleObserver<T>, Disposable {
 
         SingleObserver<? super T> downstream;
@@ -67,6 +71,7 @@ public final class SingleDetach<T> extends Single<T> {
             }
         }
 
+        /** 清空引用后转发 onSuccess，避免持有 downstream。 */
         @Override
         public void onSuccess(T value) {
             upstream = DisposableHelper.DISPOSED;
@@ -77,6 +82,7 @@ public final class SingleDetach<T> extends Single<T> {
             }
         }
 
+        /** 清空引用后转发 onError。 */
         @Override
         public void onError(Throwable e) {
             upstream = DisposableHelper.DISPOSED;

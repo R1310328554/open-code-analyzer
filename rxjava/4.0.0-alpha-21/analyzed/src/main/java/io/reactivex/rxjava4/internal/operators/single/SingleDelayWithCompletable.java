@@ -21,22 +21,33 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.observers.ResumeSingleObserver;
 
+/**
+ * 先订阅 other {@link CompletableSource}，其 onComplete 后再订阅 source Single。
+ * other 出错则直接 onError，不订阅 source。
+ * @param <T> 目标 Single 元素类型
+ */
 public final class SingleDelayWithCompletable<T> extends Single<T> {
 
     final SingleSource<T> source;
 
     final CompletableSource other;
 
+    /**
+     * @param source 待延迟订阅的 SingleSource
+     * @param other 必须先完成的 CompletableSource
+     */
     public SingleDelayWithCompletable(SingleSource<T> source, CompletableSource other) {
         this.source = source;
         this.other = other;
     }
 
+    /** 订阅 other，完成后再 ResumeSingleObserver 订阅 source。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         other.subscribe(new OtherObserver<>(observer, source));
     }
 
+    /** Completable 观察者：onComplete 时 ResumeSingleObserver 订阅 source。 */
     static final class OtherObserver<T>
     extends AtomicReference<Disposable>
     implements CompletableObserver, Disposable {
@@ -66,6 +77,7 @@ public final class SingleDelayWithCompletable<T> extends Single<T> {
             downstream.onError(e);
         }
 
+        /** other 完成后用 ResumeSingleObserver 桥接 source。 */
         @Override
         public void onComplete() {
             source.subscribe(new ResumeSingleObserver<>(this, downstream));

@@ -21,9 +21,9 @@ import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Calls a callback when the upstream calls onSubscribe with a disposable.
- *
- * @param <T> the value type
+ * 上游调用 onSubscribe 时先执行 onSubscribe Consumer，再转发 Disposable 给 downstream。
+ * 回调异常则 dispose 上游并以 EmptyDisposable.error 终止；done 门控忽略后续事件。
+ * @param <T> 元素类型
  */
 public final class SingleDoOnSubscribe<T> extends Single<T> {
 
@@ -31,16 +31,22 @@ public final class SingleDoOnSubscribe<T> extends Single<T> {
 
     final Consumer<? super Disposable> onSubscribe;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param onSubscribe 收到 Disposable 时执行的 Consumer
+     */
     public SingleDoOnSubscribe(SingleSource<T> source, Consumer<? super Disposable> onSubscribe) {
         this.source = source;
         this.onSubscribe = onSubscribe;
     }
 
+    /** 订阅 DoOnSubscribeSingleObserver 拦截 onSubscribe。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
         source.subscribe(new DoOnSubscribeSingleObserver<>(observer, onSubscribe));
     }
 
+    /** done 标志：onSubscribe 失败后忽略 onSuccess/onError。 */
     static final class DoOnSubscribeSingleObserver<T> implements SingleObserver<T> {
 
         final SingleObserver<? super T> downstream;
@@ -54,6 +60,7 @@ public final class SingleDoOnSubscribe<T> extends Single<T> {
             this.onSubscribe = onSubscribe;
         }
 
+        /** accept 成功则 downstream.onSubscribe；异常则 done 并 error 终止。 */
         @Override
         public void onSubscribe(Disposable d) {
             try {

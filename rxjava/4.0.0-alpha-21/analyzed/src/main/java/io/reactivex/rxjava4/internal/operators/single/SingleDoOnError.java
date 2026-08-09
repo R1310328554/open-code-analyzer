@@ -18,23 +18,34 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.exceptions.*;
 import io.reactivex.rxjava4.functions.Consumer;
 
+/**
+ * 上游 onError 时先调用 onError Consumer，再转发错误给 downstream。
+ * Consumer 抛异常则合并为 CompositeException。
+ * @param <T> 元素类型
+ */
 public final class SingleDoOnError<T> extends Single<T> {
 
     final SingleSource<T> source;
 
     final Consumer<? super Throwable> onError;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param onError 错误发生时的 Consumer
+     */
     public SingleDoOnError(SingleSource<T> source, Consumer<? super Throwable> onError) {
         this.source = source;
         this.onError = onError;
     }
 
+    /** 订阅 DoOnError 拦截 onError 路径。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
 
         source.subscribe(new DoOnError(observer));
     }
 
+    /** onError 时 accept 后 downstream.onError；回调异常合并异常。 */
     final class DoOnError implements SingleObserver<T> {
         private final SingleObserver<? super T> downstream;
 
@@ -52,6 +63,7 @@ public final class SingleDoOnError<T> extends Single<T> {
             downstream.onSuccess(value);
         }
 
+        /** 调用 onError.accept；异常则 CompositeException 合并转发。 */
         @Override
         public void onError(Throwable e) {
             try {

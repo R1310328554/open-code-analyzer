@@ -22,10 +22,9 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Invokes callbacks upon {@code onSubscribe} from upstream and
- * {@code dispose} from downstream.
- *
- * @param <T> the element type of the flow
+ * 在上游 onSubscribe 与下游 dispose 时分别调用 onSubscribe Consumer 与 onDispose Action。
+ * onSubscribe 回调异常则 dispose 上游并以 EmptyDisposable.error 终止。
+ * @param <T> 元素类型
  * @since 3.0.0
  */
 public final class SingleDoOnLifecycle<T> extends Single<T> {
@@ -36,6 +35,11 @@ public final class SingleDoOnLifecycle<T> extends Single<T> {
 
     final Action onDispose;
 
+    /**
+     * @param upstream 上游 Single
+     * @param onSubscribe 上游 onSubscribe 时接收 Disposable 的 Consumer
+     * @param onDispose 下游 dispose 时执行的 Action
+     */
     public SingleDoOnLifecycle(Single<T> upstream, Consumer<? super Disposable> onSubscribe,
             Action onDispose) {
         this.source = upstream;
@@ -43,11 +47,13 @@ public final class SingleDoOnLifecycle<T> extends Single<T> {
         this.onDispose = onDispose;
     }
 
+    /** 订阅 SingleLifecycleObserver 桥接生命周期回调。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         source.subscribe(new SingleLifecycleObserver<>(observer, onSubscribe, onDispose));
     }
 
+    /** onSubscribe 先 accept 再 validate；dispose 先 onDispose 再 upstream.dispose。 */
     static final class SingleLifecycleObserver<T> implements SingleObserver<T>, Disposable {
 
         final SingleObserver<? super T> downstream;
@@ -64,6 +70,7 @@ public final class SingleDoOnLifecycle<T> extends Single<T> {
             this.onDispose = onDispose;
         }
 
+        /** 先 onSubscribe.accept；异常则 dispose 并以 error 终止订阅。 */
         @Override
         public void onSubscribe(@NonNull Disposable d) {
             // this way, multiple calls to onSubscribe can show up in tests that use doOnSubscribe to validate behavior
@@ -100,6 +107,7 @@ public final class SingleDoOnLifecycle<T> extends Single<T> {
             }
         }
 
+        /** 先 onDispose.run 再 upstream.dispose 并置 DISPOSED。 */
         @Override
         public void dispose() {
             try {

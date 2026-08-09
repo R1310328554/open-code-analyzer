@@ -22,22 +22,34 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.observers.ResumeSingleObserver;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 先订阅 other {@link ObservableSource}，收到首个 onNext 或 onComplete 后再订阅 source Single。
+ * other 出错则转发 onError；done 门控避免重复订阅 source。
+ * @param <T> 目标 Single 元素类型
+ * @param <U> other Observable 元素类型
+ */
 public final class SingleDelayWithObservable<T, U> extends Single<T> {
 
     final SingleSource<T> source;
 
     final ObservableSource<U> other;
 
+    /**
+     * @param source 待延迟订阅的 SingleSource
+     * @param other 必须先发出或完成的 ObservableSource
+     */
     public SingleDelayWithObservable(SingleSource<T> source, ObservableSource<U> other) {
         this.source = source;
         this.other = other;
     }
 
+    /** 订阅 OtherSubscriber 监听 other 的首事件或完成。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         other.subscribe(new OtherSubscriber<>(observer, source));
     }
 
+    /** other 的 Observer：onNext 时 dispose 并触发 onComplete 逻辑。 */
     static final class OtherSubscriber<T, U>
     extends AtomicReference<Disposable>
     implements Observer<U>, Disposable {
@@ -64,6 +76,7 @@ public final class SingleDelayWithObservable<T, U> extends Single<T> {
             }
         }
 
+        /** 收到首元素后 dispose 自身并走 onComplete 路径订阅 source。 */
         @Override
         public void onNext(U value) {
             get().dispose();
@@ -80,6 +93,7 @@ public final class SingleDelayWithObservable<T, U> extends Single<T> {
             downstream.onError(e);
         }
 
+        /** done 门控后 ResumeSingleObserver 订阅 source。 */
         @Override
         public void onComplete() {
             if (done) {
