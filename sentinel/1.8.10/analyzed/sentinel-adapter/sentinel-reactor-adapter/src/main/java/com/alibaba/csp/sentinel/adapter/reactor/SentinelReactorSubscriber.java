@@ -31,6 +31,8 @@ import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
 
 /**
+ * Reactor 订阅者，在响应式流生命周期内管理 Sentinel 异步 Entry 的创建与退出。
+ *
  * @author Eric Zhao
  * @since 1.5.0
  */
@@ -74,10 +76,10 @@ public class SentinelReactorSubscriber<T> extends InheritableBaseSubscriber<T> {
                                         Runnable f) {
         Optional<com.alibaba.csp.sentinel.context.Context> contextOpt = contextSupplier.get();
         if (!contextOpt.isPresent()) {
-            // Provided context is absent, use current context.
+            // 未提供上下文时，使用当前上下文。
             f.run();
         } else {
-            // Run on provided context.
+            // 在提供的上下文上执行。
             ContextUtil.runOnContext(contextOpt.get(), f);
         }
     }
@@ -85,7 +87,7 @@ public class SentinelReactorSubscriber<T> extends InheritableBaseSubscriber<T> {
     private void entryWhenSubscribed() {
         ContextConfig sentinelContextConfig = entryConfig.getContextConfig();
         if (sentinelContextConfig != null) {
-            // If current we're already in a context, the context config won't work.
+            // 若当前已处于上下文中，context 配置将不会生效。
             ContextUtil.enter(sentinelContextConfig.getContextName(), sentinelContextConfig.getOrigin());
         }
         try {
@@ -94,9 +96,9 @@ public class SentinelReactorSubscriber<T> extends InheritableBaseSubscriber<T> {
             this.currentEntry = entry;
             actual.onSubscribe(this);
         } catch (BlockException ex) {
-            // Mark as completed (exited) explicitly.
+            // 显式标记 Entry 已完成（已退出）。
             entryExited.set(true);
-            // Signal cancel and propagate the {@code BlockException}.
+            // 发送 cancel 信号并传播 {@code BlockException}。
             cancel();
             actual.onSubscribe(this);
             actual.onError(ex);
@@ -123,9 +125,9 @@ public class SentinelReactorSubscriber<T> extends InheritableBaseSubscriber<T> {
             () -> actual.onNext(value));
 
         if (unary) {
-            // For some cases of unary operator (Mono), we have to do this during onNext hook.
-            // e.g. this kind of order: onSubscribe() -> onNext() -> cancel() -> onComplete()
-            // the onComplete hook will not be executed so we'll need to complete the entry in advance.
+            // 对于部分一元操作符（Mono）场景，需在 onNext 钩子中提前完成 Entry。
+            // 例如：onSubscribe() -> onNext() -> cancel() -> onComplete()
+            // 此时 onComplete 钩子不会执行，因此需提前完成 Entry。
             tryCompleteEntry();
         }
     }
@@ -138,15 +140,15 @@ public class SentinelReactorSubscriber<T> extends InheritableBaseSubscriber<T> {
 
     @Override
     protected boolean shouldCallErrorDropHook() {
-        // When flow control triggered or stream terminated, the incoming
-        // deprecated exceptions should be dropped implicitly, so we'll not call the `onErrorDropped` hook.
+        // 流控触发或流终止时，应隐式丢弃后续异常，
+        // 因此不调用 `onErrorDropped` 钩子。
         return !entryExited.get();
     }
 
     @Override
     protected void hookOnError(Throwable t) {
         if (currentEntry != null && currentEntry.getAsyncContext() != null) {
-            // Normal requests with non-BlockException will go through here.
+            // 非 BlockException 的正常请求异常会经过此处。
             Tracer.traceContext(t, 1, currentEntry.getAsyncContext());
         }
         tryCompleteEntry();

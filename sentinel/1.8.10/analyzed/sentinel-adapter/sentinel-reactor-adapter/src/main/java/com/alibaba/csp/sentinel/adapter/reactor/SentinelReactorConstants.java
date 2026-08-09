@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.adapter.reactor;
 
 /**
+ * Reactor 适配器常量定义。
+ *
  * @author Eric Zhao
  * @since 1.5.0
  */

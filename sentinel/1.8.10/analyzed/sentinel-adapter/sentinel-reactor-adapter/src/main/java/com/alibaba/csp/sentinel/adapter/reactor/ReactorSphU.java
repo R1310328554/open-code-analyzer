@@ -27,7 +27,7 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import reactor.core.publisher.Mono;
 
 /**
- * A {@link SphU} adapter with Project Reactor.
+ * 面向 Project Reactor 的 {@link SphU} 适配器，将 {@link Mono} 流与 Sentinel 异步 Entry 绑定。
  *
  * @author Eric Zhao
  * @since 1.5.0
@@ -52,7 +52,7 @@ public final class ReactorSphU {
                     if (sentinelContext == null) {
                         return context;
                     }
-                    // TODO: check GC friendly?
+                    // TODO: 检查对 GC 是否友好？
                     return context.put(SentinelReactorConstants.SENTINEL_CONTEXT_KEY, sentinelContext);
                 }).doOnSuccessOrError((o, t) -> {
                     if (entry != null && entryWrapper.compareAndSet(entry, null)) {

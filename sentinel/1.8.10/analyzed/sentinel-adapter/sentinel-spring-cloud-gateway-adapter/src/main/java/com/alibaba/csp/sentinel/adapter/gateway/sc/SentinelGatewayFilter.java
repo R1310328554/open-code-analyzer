@@ -41,6 +41,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
+ * Spring Cloud Gateway 全局过滤器，对路由与自定义 API 定义执行 Sentinel 流控。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

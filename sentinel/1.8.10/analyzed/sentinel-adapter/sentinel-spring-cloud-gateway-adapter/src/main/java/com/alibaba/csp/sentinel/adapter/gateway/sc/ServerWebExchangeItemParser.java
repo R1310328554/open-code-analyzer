@@ -24,6 +24,8 @@ import org.springframework.http.HttpCookie;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * 基于 {@link ServerWebExchange} 的请求属性解析器，供网关热点参数流控使用。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */

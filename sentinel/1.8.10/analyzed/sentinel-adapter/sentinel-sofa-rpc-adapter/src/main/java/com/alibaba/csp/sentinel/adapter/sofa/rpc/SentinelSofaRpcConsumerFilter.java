@@ -32,12 +32,12 @@ import static com.alibaba.csp.sentinel.adapter.sofa.rpc.SofaRpcUtils.getMethodRe
 import static com.alibaba.csp.sentinel.adapter.sofa.rpc.SofaRpcUtils.getMethodArguments;
 
 /**
- * SOFARPC service consumer filter for Sentinel, auto activated by default.
+ * Sentinel 集成的 SOFARPC Consumer 过滤器，默认自动激活。
  *
- * If you want to disable the consumer filter, you can configure:
+ * 如需禁用 Consumer 过滤器，可配置：
  * <pre>ConsumerConfig.setParameter("sofa.rpc.sentinel.enabled", "false");</pre>
  *
- * or add setting in rpc-config.json:
+ * 或在 rpc-config.json 中添加：
  * <pre>"sofa.rpc.sentinel.enabled": false </pre>
  *
  * @author cdfive
@@ -48,7 +48,7 @@ public class SentinelSofaRpcConsumerFilter extends AbstractSofaRpcFilter {
 
     @Override
     public SofaResponse invoke(FilterInvoker invoker, SofaRequest request) throws SofaRpcException {
-        // Now only support sync invoke.
+        // 当前仅支持同步调用。
         if (request.getInvokeType() != null && !RpcConstants.INVOKER_TYPE_SYNC.equals(request.getInvokeType())) {
             return invoker.invoke(request);
         }

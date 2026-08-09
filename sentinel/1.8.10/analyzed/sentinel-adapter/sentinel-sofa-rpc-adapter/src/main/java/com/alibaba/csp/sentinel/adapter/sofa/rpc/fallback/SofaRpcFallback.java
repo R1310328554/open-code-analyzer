@@ -21,19 +21,19 @@ import com.alipay.sofa.rpc.core.response.SofaResponse;
 import com.alipay.sofa.rpc.filter.FilterInvoker;
 
 /**
- * Sentinel fallback handler for SOFARPC services.
+ * SOFARPC 适配器降级处理器接口。
  *
  * @author cdfive
  */
 public interface SofaRpcFallback {
 
     /**
-     * Handle the block exception and provide fallback result.
+     * 处理流控异常并提供降级结果。
      *
      * @param invoker FilterInvoker
      * @param request SofaRequest
-     * @param ex block exception
-     * @return fallback result
+     * @param ex 流控异常
+     * @return 降级结果
      */
     SofaResponse handle(FilterInvoker invoker, SofaRequest request, BlockException ex);
 }

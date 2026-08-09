@@ -22,6 +22,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoOperator;
 
 /**
+ * 包装 {@link Mono} 的 Sentinel 操作符，在订阅时创建异步 Entry 并委托给 {@link SentinelReactorSubscriber}。
+ *
  * @author Eric Zhao
  * @since 1.5.0
  */

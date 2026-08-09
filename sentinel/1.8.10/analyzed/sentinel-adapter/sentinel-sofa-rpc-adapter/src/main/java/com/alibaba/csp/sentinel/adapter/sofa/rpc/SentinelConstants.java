@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.adapter.sofa.rpc;
 
 /**
+ * SOFARPC 适配器常量定义。
+ *
  * @author cdfive
  * @since 1.7.2
  */

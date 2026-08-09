@@ -28,6 +28,8 @@ import com.alipay.sofa.rpc.filter.Filter;
 import com.alipay.sofa.rpc.filter.FilterInvoker;
 
 /**
+ * SOFARPC Sentinel 过滤器抽象基类，提供启用判断与异常追踪能力。
+ *
  * @author cdfive
  */
 abstract class AbstractSofaRpcFilter extends Filter {

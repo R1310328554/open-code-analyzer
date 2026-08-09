@@ -19,19 +19,39 @@ import com.alipay.sofa.rpc.common.RemotingConstants;
 import com.alipay.sofa.rpc.core.request.SofaRequest;
 
 /**
+ * SOFARPC 适配器工具类，用于构建接口与方法级 Sentinel 资源名。
+ *
  * @author cdfive
  */
 public class SofaRpcUtils {
 
+    /**
+     * 从请求头获取调用方应用名。
+     *
+     * @param request SOFARPC 请求
+     * @return 应用名，不存在时返回空字符串
+     */
     public static String getApplicationName(SofaRequest request) {
         String appName = (String) request.getRequestProp(RemotingConstants.HEAD_APP_NAME);
         return appName == null ? "" : appName;
     }
 
+    /**
+     * 获取接口级 Sentinel 资源名。
+     *
+     * @param request SOFARPC 请求
+     * @return 接口资源名
+     */
     public static String getInterfaceResourceName(SofaRequest request) {
         return request.getInterfaceName();
     }
 
+    /**
+     * 获取方法级 Sentinel 资源名，格式为 接口名#方法名(参数签名)。
+     *
+     * @param request SOFARPC 请求
+     * @return 方法资源名
+     */
     public static String getMethodResourceName(SofaRequest request) {
         StringBuilder buf = new StringBuilder(64);
         buf.append(request.getInterfaceName())
@@ -53,6 +73,12 @@ public class SofaRpcUtils {
         return buf.toString();
     }
 
+    /**
+     * 获取方法调用参数数组，用于热点参数流控。
+     *
+     * @param request SOFARPC 请求
+     * @return 方法参数数组
+     */
     public static Object[] getMethodArguments(SofaRequest request) {
         return request.getMethodArgs();
     }

@@ -24,7 +24,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * A transformer that transforms given {@code Publisher} to a wrapped Sentinel reactor operator.
+ * 将给定 {@code Publisher} 转换为包装后的 Sentinel Reactor 操作符。
  *
  * @author Eric Zhao
  * @since 1.5.0

@@ -34,12 +34,12 @@ import static com.alibaba.csp.sentinel.adapter.sofa.rpc.SofaRpcUtils.getMethodRe
 import static com.alibaba.csp.sentinel.adapter.sofa.rpc.SofaRpcUtils.getMethodArguments;
 
 /**
- * SOFARPC service provider filter for Sentinel, auto activated by default.
+ * Sentinel 集成的 SOFARPC Provider 过滤器，默认自动激活。
  *
- * If you want to disable the provider filter, you can configure:
+ * 如需禁用 Provider 过滤器，可配置：
  * <pre>ProviderConfig.setParameter("sofa.rpc.sentinel.enabled", "false");</pre>
  *
- * or add setting in rpc-config.json file:
+ * 或在 rpc-config.json 中添加：
  * <pre>
  * {
  *   "sofa.rpc.sentinel.enabled": false
@@ -54,7 +54,7 @@ public class SentinelSofaRpcProviderFilter extends AbstractSofaRpcFilter {
 
     @Override
     public SofaResponse invoke(FilterInvoker invoker, SofaRequest request) throws SofaRpcException {
-        // Now only support sync invoke.
+        // 当前仅支持同步调用。
         if (request.getInvokeType() != null && !RpcConstants.INVOKER_TYPE_SYNC.equals(request.getInvokeType())) {
             return invoker.invoke(request);
         }

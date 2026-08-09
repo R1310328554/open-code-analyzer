@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.adapter.sofa.rpc.fallback;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * Global Sentinel fallback registry for SOFARPC services.
+ * SOFARPC 适配器全局降级处理器注册表。
  *
  * @author cdfive
  */
@@ -27,19 +27,39 @@ public final class SofaRpcFallbackRegistry {
     private static volatile SofaRpcFallback providerFallback = new DefaultSofaRpcFallback();
     private static volatile SofaRpcFallback consumerFallback = new DefaultSofaRpcFallback();
 
+    /**
+     * 获取 Provider 侧降级处理器。
+     *
+     * @return Provider 降级处理器
+     */
     public static SofaRpcFallback getProviderFallback() {
         return providerFallback;
     }
 
+    /**
+     * 设置 Provider 侧降级处理器。
+     *
+     * @param providerFallback Provider 降级处理器
+     */
     public static void setProviderFallback(SofaRpcFallback providerFallback) {
         AssertUtil.notNull(providerFallback, "providerFallback cannot be null");
         SofaRpcFallbackRegistry.providerFallback = providerFallback;
     }
 
+    /**
+     * 获取 Consumer 侧降级处理器。
+     *
+     * @return Consumer 降级处理器
+     */
     public static SofaRpcFallback getConsumerFallback() {
         return consumerFallback;
     }
 
+    /**
+     * 设置 Consumer 侧降级处理器。
+     *
+     * @param consumerFallback Consumer 降级处理器
+     */
     public static void setConsumerFallback(SofaRpcFallback consumerFallback) {
         AssertUtil.notNull(consumerFallback, "consumerFallback cannot be null");
         SofaRpcFallbackRegistry.consumerFallback = consumerFallback;

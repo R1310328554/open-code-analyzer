@@ -22,8 +22,7 @@ import com.alipay.sofa.rpc.core.response.SofaResponse;
 import com.alipay.sofa.rpc.filter.FilterInvoker;
 
 /**
- * Default Sentinel fallback handler for SOFARPC services.
- * Just wrap and throw the exception.
+ * SOFARPC 适配器默认降级处理器，将 {@link BlockException} 包装为 {@link SentinelRpcException} 抛出。
  *
  * @author cdfive
  */
@@ -31,7 +30,7 @@ public class DefaultSofaRpcFallback implements SofaRpcFallback {
 
     @Override
     public SofaResponse handle(FilterInvoker invoker, SofaRequest request, BlockException ex) {
-        // Just wrap and throw the exception.
+        // 包装并抛出异常。
         throw new SentinelRpcException(ex);
     }
 }
