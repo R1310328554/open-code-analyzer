@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:23:31Z",
-  "files": [
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicChannelAddress.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicChannelConfig.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicClientCodec.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicCodec.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicConnection.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicConnectionPathStats.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicConnectionStats.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicServerCodec.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicSslContext.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicSslEngine.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicSslEngineMap.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicStreamChannel.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicStreamChannelConfig.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheQuicTransportParameters.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/QuicheRecvInfo.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1658,
-  "done": 255
+  "done": 270
 }
