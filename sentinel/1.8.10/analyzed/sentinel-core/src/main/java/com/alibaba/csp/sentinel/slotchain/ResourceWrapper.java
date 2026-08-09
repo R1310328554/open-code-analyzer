@@ -19,7 +19,7 @@ import com.alibaba.csp.sentinel.EntryType;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * A wrapper of resource name and type.
+ * 资源名称与类型的包装器，作为 Slot 链处理的基本输入。
  *
  * @author qinan.qn
  * @author jialiang.linjl
@@ -41,27 +41,27 @@ public abstract class ResourceWrapper {
     }
 
     /**
-     * Get the resource name.
+     * 获取资源名称。
      *
-     * @return the resource name
+     * @return 资源名称
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Get {@link EntryType} of this wrapper.
+     * 获取本包装器的 {@link EntryType}。
      *
-     * @return {@link EntryType} of this wrapper.
+     * @return 入口类型
      */
     public EntryType getEntryType() {
         return entryType;
     }
 
     /**
-     * Get the classification of this resource.
+     * 获取资源分类。
      *
-     * @return the classification of this resource
+     * @return 资源分类标识
      * @since 1.7.0
      */
     public int getResourceType() {
@@ -69,14 +69,14 @@ public abstract class ResourceWrapper {
     }
 
     /**
-     * Get the beautified resource name to be showed.
+     * 获取用于展示的友好资源名称。
      *
-     * @return the beautified resource name
+     * @return 展示用资源名称
      */
     public abstract String getShowName();
 
     /**
-     * Only {@link #getName()} is considered.
+     * 仅依据 {@link #getName()} 计算哈希值。
      */
     @Override
     public int hashCode() {
@@ -84,7 +84,7 @@ public abstract class ResourceWrapper {
     }
 
     /**
-     * Only {@link #getName()} is considered.
+     * 仅依据 {@link #getName()} 判断相等性。
      */
     @Override
     public boolean equals(Object obj) {

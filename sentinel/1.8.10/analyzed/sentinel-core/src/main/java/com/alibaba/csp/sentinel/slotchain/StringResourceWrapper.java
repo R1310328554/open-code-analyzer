@@ -19,21 +19,24 @@ import com.alibaba.csp.sentinel.EntryType;
 import com.alibaba.csp.sentinel.ResourceTypeConstants;
 
 /**
- * Common string resource wrapper.
+ * 以字符串标识资源的通用包装器。
  *
  * @author qinan.qn
  * @author jialiang.linjl
  */
 public class StringResourceWrapper extends ResourceWrapper {
 
+    /** 使用默认资源类型构造字符串资源包装器。 */
     public StringResourceWrapper(String name, EntryType e) {
         super(name, e, ResourceTypeConstants.COMMON);
     }
 
+    /** 指定资源类型构造字符串资源包装器。 */
     public StringResourceWrapper(String name, EntryType e, int resType) {
         super(name, e, resType);
     }
 
+    /** 返回用于展示的资源名称。 */
     @Override
     public String getShowName() {
         return name;

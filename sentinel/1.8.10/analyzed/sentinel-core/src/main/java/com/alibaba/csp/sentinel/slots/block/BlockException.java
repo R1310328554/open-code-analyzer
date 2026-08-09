@@ -16,8 +16,7 @@
 package com.alibaba.csp.sentinel.slots.block;
 
 /**
- * Abstract exception indicating blocked by Sentinel due to flow control,
- * circuit breaking or system protection triggered.
+ * Sentinel 阻断异常的抽象基类，表示因流控、熔断或系统保护而被拦截。
  *
  * @author youji.zj
  */
@@ -29,12 +28,11 @@ public abstract class BlockException extends Exception {
     public static final String BLOCK_EXCEPTION_MSG_PREFIX = "SentinelBlockException: ";
 
     /**
-     * <p>this constant RuntimeException has no stack trace, just has a message
-     * {@link #BLOCK_EXCEPTION_FLAG} that marks its name.
+     * <p>无堆栈的占位 {@link RuntimeException}，消息为 {@link #BLOCK_EXCEPTION_FLAG}，
+     * 用于快速抛出阻断信号。
      * </p>
      * <p>
-     * Use {@link #isBlockException(Throwable)} to check whether one Exception
-     * Sentinel Blocked Exception.
+     * 请使用 {@link #isBlockException(Throwable)} 判断异常是否为 Sentinel 阻断异常。
      * </p>
      */
     public static RuntimeException THROW_OUT_EXCEPTION = new RuntimeException(BLOCK_EXCEPTION_FLAG);
@@ -76,6 +74,7 @@ public abstract class BlockException extends Exception {
         this.rule = rule;
     }
 
+    /** 不填充堆栈，降低阻断异常的开销。 */
     @Override
     public Throwable fillInStackTrace() {
         return this;
@@ -89,6 +88,7 @@ public abstract class BlockException extends Exception {
         this.ruleLimitApp = ruleLimitApp;
     }
 
+    /** 转换为带 Sentinel 前缀的运行时异常。 */
     public RuntimeException toRuntimeException() {
         RuntimeException t = new RuntimeException(BLOCK_EXCEPTION_MSG_PREFIX + getClass().getSimpleName());
         t.setStackTrace(sentinelStackTrace);
@@ -96,15 +96,14 @@ public abstract class BlockException extends Exception {
     }
 
     /**
-     * Check whether the exception is sentinel blocked exception. One exception is sentinel blocked
-     * exception only when:
+     * 判断异常是否为 Sentinel 阻断异常。满足以下任一条件即为阻断异常：
      * <ul>
-     * <li>the exception or its (sub-)cause is {@link BlockException}, or</li>
-     * <li>the exception's message or any of its sub-cause's message is prefixed by {@link #BLOCK_EXCEPTION_FLAG}</li>
+     * <li>异常或其（子）cause 为 {@link BlockException}；或</li>
+     * <li>异常或其子 cause 的消息以 {@link #BLOCK_EXCEPTION_FLAG} 为前缀。</li>
      * </ul>
      *
-     * @param t the exception.
-     * @return return true if the exception marks sentinel blocked exception.
+     * @param t 待检查的异常
+     * @return 若为 Sentinel 阻断异常则返回 true
      */
     public static boolean isBlockException(Throwable t) {
         if (null == t) {
@@ -126,6 +125,7 @@ public abstract class BlockException extends Exception {
         return false;
     }
 
+    /** 获取触发阻断的规则（若有）。 */
     public AbstractRule getRule() {
         return rule;
     }

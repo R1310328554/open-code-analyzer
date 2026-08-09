@@ -19,14 +19,16 @@ import com.alibaba.csp.sentinel.context.Context;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
- * Callback for entering {@link com.alibaba.csp.sentinel.slots.statistic.StatisticSlot} (passed and blocked).
+ * 进入 {@link com.alibaba.csp.sentinel.slots.statistic.StatisticSlot} 时的回调（通过或被阻断）。
  *
  * @author Eric Zhao
  * @since 0.2.0
  */
 public interface ProcessorSlotEntryCallback<T> {
 
+    /** 资源通过统计槽时的回调。 */
     void onPass(Context context, ResourceWrapper resourceWrapper, T param, int count, Object... args) throws Exception;
 
+    /** 资源被 Sentinel 阻断时的回调。 */
     void onBlocked(BlockException ex, Context context, ResourceWrapper resourceWrapper, T param, int count, Object... args);
 }

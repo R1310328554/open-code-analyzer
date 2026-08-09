@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.slots.block;
 import java.util.Objects;
 
 /**
- * Abstract rule entity.
+ * 规则实体的抽象基类，封装资源名、来源应用等公共字段。
  *
  * @author youji.zj
  * @author Eric Zhao
@@ -26,28 +26,28 @@ import java.util.Objects;
 public abstract class AbstractRule implements Rule {
 
     /**
-     * rule id.
+     * 规则 ID。
      */
     private Long id;
 
     /**
-     * Resource name.
+     * 资源名称。
      */
     private String resource;
 
     /**
      * <p>
-     * Application name that will be limited by origin.
-     * The default limitApp is {@code default}, which means allowing all origin apps.
+     * 按来源限流/授权的应用名称。
+     * 默认值为 {@code default}，表示允许全部来源应用。
      * </p>
      * <p>
-     * For authority rules, multiple origin name can be separated with comma (',').
+     * 授权规则中多个来源名可用逗号（{@code ,}）分隔。
      * </p>
      */
     private String limitApp;
 
     /**
-     * Whether to match resource names according to regular rules
+     * 是否使用正则匹配资源名称。
      */
     private boolean regex;
 
@@ -123,6 +123,7 @@ public abstract class AbstractRule implements Rule {
         return str1.equals(str2);
     }
 
+    /** 将本规则安全转型为指定子类型。 */
     public <T extends AbstractRule> T as(Class<T> clazz) {
         return (T)this;
     }

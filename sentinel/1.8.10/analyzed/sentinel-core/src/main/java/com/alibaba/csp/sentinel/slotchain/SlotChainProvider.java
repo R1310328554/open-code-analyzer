@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.slots.DefaultSlotChainBuilder;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
- * A provider for creating slot chains via resolved slot chain builder SPI.
+ * 通过 SPI 解析 {@link SlotChainBuilder} 并创建槽链的全局提供者。
  *
  * @author Eric Zhao
  * @since 0.2.0
@@ -30,21 +30,21 @@ public final class SlotChainProvider {
     private static volatile SlotChainBuilder slotChainBuilder = null;
 
     /**
-     * The load and pick process is not thread-safe, but it's okay since the method should be only invoked
-     * via {@code lookProcessChain} in {@link com.alibaba.csp.sentinel.CtSph} under lock.
+     * 加载并创建新的槽链。加载过程非线程安全，
+     * 但仅在 {@link com.alibaba.csp.sentinel.CtSph} 的 {@code lookProcessChain} 加锁调用，因此可接受。
      *
-     * @return new created slot chain
+     * @return 新创建的槽链
      */
     public static ProcessorSlotChain newSlotChain() {
         if (slotChainBuilder != null) {
             return slotChainBuilder.build();
         }
 
-        // Resolve the slot chain builder SPI.
+        // 通过 SPI 解析 SlotChainBuilder 实现。
         slotChainBuilder = SpiLoader.of(SlotChainBuilder.class).loadFirstInstanceOrDefault();
 
         if (slotChainBuilder == null) {
-            // Should not go through here.
+            // 不应走到此分支，回退到默认构建器。
             RecordLog.warn("[SlotChainProvider] Wrong state when resolving slot chain builder, using default");
             slotChainBuilder = new DefaultSlotChainBuilder();
         } else {

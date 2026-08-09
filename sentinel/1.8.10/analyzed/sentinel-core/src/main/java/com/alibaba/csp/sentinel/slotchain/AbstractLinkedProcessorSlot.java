@@ -18,6 +18,9 @@ package com.alibaba.csp.sentinel.slotchain;
 import com.alibaba.csp.sentinel.context.Context;
 
 /**
+ * 处理器槽链表的抽象基类，以链表方式串联各 {@link ProcessorSlot}。
+ * <p>通过 {@link #fireEntry} / {@link #fireExit} 将调用传递给下一个槽位。</p>
+ *
  * @author qinan.qn
  * @author jialiang.linjl
  */
@@ -25,6 +28,7 @@ public abstract class AbstractLinkedProcessorSlot<T> implements ProcessorSlot<T>
 
     private AbstractLinkedProcessorSlot<?> next = null;
 
+    /** 触发链中下一个槽位的 entry 处理。 */
     @Override
     public void fireEntry(Context context, ResourceWrapper resourceWrapper, Object obj, int count, boolean prioritized, Object... args)
         throws Throwable {
@@ -33,6 +37,7 @@ public abstract class AbstractLinkedProcessorSlot<T> implements ProcessorSlot<T>
         }
     }
 
+    /** 将入参转换为泛型类型后调用本槽位的 {@link #entry}。 */
     @SuppressWarnings("unchecked")
     void transformEntry(Context context, ResourceWrapper resourceWrapper, Object o, int count, boolean prioritized, Object... args)
         throws Throwable {
@@ -40,6 +45,7 @@ public abstract class AbstractLinkedProcessorSlot<T> implements ProcessorSlot<T>
         entry(context, resourceWrapper, t, count, prioritized, args);
     }
 
+    /** 触发链中下一个槽位的 exit 处理。 */
     @Override
     public void fireExit(Context context, ResourceWrapper resourceWrapper, int count, Object... args) {
         if (next != null) {
@@ -47,10 +53,12 @@ public abstract class AbstractLinkedProcessorSlot<T> implements ProcessorSlot<T>
         }
     }
 
+    /** 获取链表中的下一个处理器槽。 */
     public AbstractLinkedProcessorSlot<?> getNext() {
         return next;
     }
 
+    /** 设置链表中的下一个处理器槽。 */
     public void setNext(AbstractLinkedProcessorSlot<?> next) {
         this.next = next;
     }

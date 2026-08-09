@@ -18,12 +18,13 @@ package com.alibaba.csp.sentinel.slotchain;
 import com.alibaba.csp.sentinel.context.Context;
 
 /**
- * Callback for exiting {@link com.alibaba.csp.sentinel.slots.statistic.StatisticSlot} (passed and blocked).
+ * 退出 {@link com.alibaba.csp.sentinel.slots.statistic.StatisticSlot} 时的回调。
  *
  * @author Eric Zhao
  * @since 0.2.0
  */
 public interface ProcessorSlotExitCallback {
 
+    /** 资源退出统计槽时的回调。 */
     void onExit(Context context, ResourceWrapper resourceWrapper, int count, Object... args);
 }

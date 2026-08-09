@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.slotchain;
 
 /**
- * The builder for processor slot chain.
+ * 处理器槽链的构建器 SPI 接口。
  *
  * @author qinan.qn
  * @author leyou
@@ -25,9 +25,9 @@ package com.alibaba.csp.sentinel.slotchain;
 public interface SlotChainBuilder {
 
     /**
-     * Build the processor slot chain.
+     * 构建处理器槽链。
      *
-     * @return a processor slot that chain some slots together
+     * @return 串联多个槽位的处理器链
      */
     ProcessorSlotChain build();
 }

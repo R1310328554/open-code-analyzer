@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.slotchain;
 import com.alibaba.csp.sentinel.context.Context;
 
 /**
+ * {@link ProcessorSlotChain} 的默认实现，维护首尾指针以支持槽位增删。
+ *
  * @author qinan.qn
  * @author jialiang.linjl
  */
@@ -39,6 +41,7 @@ public class DefaultProcessorSlotChain extends ProcessorSlotChain {
     };
     AbstractLinkedProcessorSlot<?> end = first;
 
+    /** 在槽链头部插入处理器槽。 */
     @Override
     public void addFirst(AbstractLinkedProcessorSlot<?> protocolProcessor) {
         protocolProcessor.setNext(first.getNext());
@@ -48,6 +51,7 @@ public class DefaultProcessorSlotChain extends ProcessorSlotChain {
         }
     }
 
+    /** 在槽链尾部追加处理器槽。 */
     @Override
     public void addLast(AbstractLinkedProcessorSlot<?> protocolProcessor) {
         end.setNext(protocolProcessor);
@@ -55,26 +59,29 @@ public class DefaultProcessorSlotChain extends ProcessorSlotChain {
     }
 
     /**
-     * Same as {@link #addLast(AbstractLinkedProcessorSlot)}.
+     * 与 {@link #addLast(AbstractLinkedProcessorSlot)} 等价。
      *
-     * @param next processor to be added.
+     * @param next 待追加的处理器槽
      */
     @Override
     public void setNext(AbstractLinkedProcessorSlot<?> next) {
         addLast(next);
     }
 
+    /** 返回链中第一个实际业务槽（跳过头节点）。 */
     @Override
     public AbstractLinkedProcessorSlot<?> getNext() {
         return first.getNext();
     }
 
+    /** 从链头开始执行 entry 流程。 */
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, Object t, int count, boolean prioritized, Object... args)
         throws Throwable {
         first.transformEntry(context, resourceWrapper, t, count, prioritized, args);
     }
 
+    /** 从链头开始执行 exit 流程。 */
     @Override
     public void exit(Context context, ResourceWrapper resourceWrapper, int count, Object... args) {
         first.exit(context, resourceWrapper, count, args);

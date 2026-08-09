@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.slotchain;
 import com.alibaba.csp.sentinel.context.Context;
 
 /**
- * A container of some process and ways of notification when the process is finished.
+ * 处理器槽接口：封装一段处理逻辑，并提供 entry/exit 完成后的链式通知机制。
  *
  * @author qinan.qn
  * @author jialiang.linjl
@@ -28,50 +28,52 @@ import com.alibaba.csp.sentinel.context.Context;
 public interface ProcessorSlot<T> {
 
     /**
-     * Entrance of this slot.
+     * 本槽位的入口处理。
      *
-     * @param context         current {@link Context}
-     * @param resourceWrapper current resource
-     * @param param           generics parameter, usually is a {@link com.alibaba.csp.sentinel.node.Node}
-     * @param count           tokens needed
-     * @param prioritized     whether the entry is prioritized
-     * @param args            parameters of the original call
-     * @throws Throwable blocked exception or unexpected error
+     * @param context         当前 {@link Context}
+     * @param resourceWrapper 当前资源
+     * @param param           泛型参数，通常为 {@link com.alibaba.csp.sentinel.node.Node}
+     * @param count           所需令牌数
+     * @param prioritized     是否为优先级入口
+     * @param args            原始调用的参数
+     * @throws Throwable 被阻断或发生意外错误
      */
     void entry(Context context, ResourceWrapper resourceWrapper, T param, int count, boolean prioritized,
                Object... args) throws Throwable;
 
     /**
-     * Means finish of {@link #entry(Context, ResourceWrapper, Object, int, boolean, Object...)}.
+     * 表示本槽位 {@link #entry(Context, ResourceWrapper, Object, int, boolean, Object...)} 处理完成，
+     * 继续触发后续槽位。
      *
-     * @param context         current {@link Context}
-     * @param resourceWrapper current resource
-     * @param obj             relevant object (e.g. Node)
-     * @param count           tokens needed
-     * @param prioritized     whether the entry is prioritized
-     * @param args            parameters of the original call
-     * @throws Throwable blocked exception or unexpected error
+     * @param context         当前 {@link Context}
+     * @param resourceWrapper 当前资源
+     * @param obj             相关对象（如 Node）
+     * @param count           所需令牌数
+     * @param prioritized     是否为优先级入口
+     * @param args            原始调用的参数
+     * @throws Throwable 被阻断或发生意外错误
      */
     void fireEntry(Context context, ResourceWrapper resourceWrapper, Object obj, int count, boolean prioritized,
                    Object... args) throws Throwable;
 
     /**
-     * Exit of this slot.
+     * 本槽位的退出处理。
      *
-     * @param context         current {@link Context}
-     * @param resourceWrapper current resource
-     * @param count           tokens needed
-     * @param args            parameters of the original call
+     * @param context         当前 {@link Context}
+     * @param resourceWrapper 当前资源
+     * @param count           所需令牌数
+     * @param args            原始调用的参数
      */
     void exit(Context context, ResourceWrapper resourceWrapper, int count, Object... args);
 
     /**
-     * Means finish of {@link #exit(Context, ResourceWrapper, int, Object...)}.
+     * 表示本槽位 {@link #exit(Context, ResourceWrapper, int, Object...)} 处理完成，
+     * 继续触发后续槽位。
      *
-     * @param context         current {@link Context}
-     * @param resourceWrapper current resource
-     * @param count           tokens needed
-     * @param args            parameters of the original call
+     * @param context         当前 {@link Context}
+     * @param resourceWrapper 当前资源
+     * @param count           所需令牌数
+     * @param args            原始调用的参数
      */
     void fireExit(Context context, ResourceWrapper resourceWrapper, int count, Object... args);
 }

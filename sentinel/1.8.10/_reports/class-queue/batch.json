@@ -33,5 +33,5 @@
     "sentinel-core/src/main/java/com/alibaba/csp/sentinel/slots/block/degrade/DegradeSlot.java"
   ],
   "remaining_pending": 845,
-  "done": 90
+  "done": 105
 }

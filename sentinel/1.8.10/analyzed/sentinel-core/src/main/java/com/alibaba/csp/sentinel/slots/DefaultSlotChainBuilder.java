@@ -27,7 +27,7 @@ import com.alibaba.csp.sentinel.spi.SpiLoader;
 import java.util.List;
 
 /**
- * Builder for a default {@link ProcessorSlotChain}.
+ * 默认 {@link ProcessorSlotChain} 的构建器，通过 SPI 加载并排序全部 {@link ProcessorSlot}。
  *
  * @author qinan.qn
  * @author leyou
@@ -35,6 +35,7 @@ import java.util.List;
 @Spi(isDefault = true)
 public class DefaultSlotChainBuilder implements SlotChainBuilder {
 
+    /** 按 SPI 顺序组装默认槽链。 */
     @Override
     public ProcessorSlotChain build() {
         ProcessorSlotChain chain = new DefaultProcessorSlotChain();

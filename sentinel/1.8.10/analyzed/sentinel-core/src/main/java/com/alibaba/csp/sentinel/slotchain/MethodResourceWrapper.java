@@ -23,7 +23,7 @@ import com.alibaba.csp.sentinel.util.IdUtil;
 import com.alibaba.csp.sentinel.util.MethodUtil;
 
 /**
- * Resource wrapper for method invocation.
+ * 方法调用的资源包装器，以反射 {@link Method} 标识受保护资源。
  *
  * @author qinan.qn
  */
@@ -31,19 +31,23 @@ public class MethodResourceWrapper extends ResourceWrapper {
 
     private final transient Method method;
 
+    /** 使用默认资源类型构造方法资源包装器。 */
     public MethodResourceWrapper(Method method, EntryType e) {
         this(method, e, ResourceTypeConstants.COMMON);
     }
 
+    /** 指定资源类型构造方法资源包装器。 */
     public MethodResourceWrapper(Method method, EntryType e, int resType) {
         super(MethodUtil.resolveMethodName(method), e, resType);
         this.method = method;
     }
 
+    /** 获取被包装的 {@link Method}。 */
     public Method getMethod() {
         return method;
     }
 
+    /** 返回用于展示的资源名称。 */
     @Override
     public String getShowName() {
         return name;
