@@ -24,12 +24,15 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
- * 
+ * 将 Redis 扁平 key-value 列表响应解码为 {@link Properties}。
+ * <p>按偶数下标为 key、奇数下标为 value 成对写入属性表。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PropertiesListDecoder implements MultiDecoder<Properties> {
 
+    /** 步长为 2 遍历 parts，将 key/value 填入 {@link Properties}。 */
     @Override
     public Properties decode(List<Object> parts, State state) {
         Properties result = new Properties();
