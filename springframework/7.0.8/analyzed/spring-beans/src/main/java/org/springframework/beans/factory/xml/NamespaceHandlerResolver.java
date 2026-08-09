@@ -19,8 +19,8 @@ package org.springframework.beans.factory.xml;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Used by the {@link org.springframework.beans.factory.xml.DefaultBeanDefinitionDocumentReader} to
- * locate a {@link NamespaceHandler} implementation for a particular namespace URI.
+ * 供 {@link org.springframework.beans.factory.xml.DefaultBeanDefinitionDocumentReader} 使用，
+ * 为特定命名空间 URI 定位 {@link NamespaceHandler} 实现。
  *
  * @author Rob Harrop
  * @since 2.0
@@ -31,10 +31,9 @@ import org.jspecify.annotations.Nullable;
 public interface NamespaceHandlerResolver {
 
 	/**
-	 * Resolve the namespace URI and return the located {@link NamespaceHandler}
-	 * implementation.
-	 * @param namespaceUri the relevant namespace URI
-	 * @return the located {@link NamespaceHandler} (may be {@code null})
+	 * 解析命名空间 URI 并返回定位到的 {@link NamespaceHandler} 实现。
+	 * @param namespaceUri 相关命名空间 URI
+	 * @return 定位到的 {@link NamespaceHandler}（可为 {@code null}）
 	 */
 	@Nullable NamespaceHandler resolve(String namespaceUri);
 

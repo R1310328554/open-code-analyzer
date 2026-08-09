@@ -28,21 +28,18 @@ import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.core.Conventions;
 
 /**
- * Simple {@code NamespaceHandler} implementation that maps custom attributes
- * directly through to bean properties. An important point to note is that this
- * {@code NamespaceHandler} does not have a corresponding schema since there
- * is no way to know in advance all possible attribute names.
+ * 简单 {@code NamespaceHandler} 实现，将自定义属性直接映射到 bean 属性。
+ * 需注意的重要一点是，此 {@code NamespaceHandler} 没有对应的 schema，
+ * 因为无法预先知道所有可能的属性名。
  *
- * <p>An example of the usage of this {@code NamespaceHandler} is shown below:
+ * <p>此 {@code NamespaceHandler} 的用法示例如下：
  *
  * <pre class="code">
  * &lt;bean id=&quot;rob&quot; class=&quot;..TestBean&quot; p:name=&quot;Rob Harrop&quot; p:spouse-ref=&quot;sally&quot;/&gt;</pre>
  *
- * Here the '{@code p:name}' corresponds directly to the '{@code name}'
- * property on class '{@code TestBean}'. The '{@code p:spouse-ref}'
- * attributes corresponds to the '{@code spouse}' property and, rather
- * than being the concrete value, it contains the name of the bean that will
- * be injected into that property.
+ * 此处 '{@code p:name}' 直接对应类 '{@code TestBean}' 上的 '{@code name}' 属性。
+ * '{@code p:spouse-ref}' 属性对应 '{@code spouse}' 属性，其值不是具体值，
+ * 而是将注入该属性的 bean 名称。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller

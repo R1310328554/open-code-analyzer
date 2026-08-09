@@ -32,26 +32,22 @@ import org.springframework.core.Conventions;
 import org.springframework.util.StringUtils;
 
 /**
- * Simple {@code NamespaceHandler} implementation that maps custom
- * attributes directly through to bean properties. An important point to note is
- * that this {@code NamespaceHandler} does not have a corresponding schema
- * since there is no way to know in advance all possible attribute names.
+ * 简单 {@code NamespaceHandler} 实现，将自定义属性直接映射到 bean 构造参数。
+ * 需注意的重要一点是，此 {@code NamespaceHandler} 没有对应的 schema，
+ * 因为无法预先知道所有可能的属性名。
  *
- * <p>An example of the usage of this {@code NamespaceHandler} is shown below:
+ * <p>此 {@code NamespaceHandler} 的用法示例如下：
  *
  * <pre class="code">
  * &lt;bean id=&quot;author&quot; class=&quot;..TestBean&quot; c:name=&quot;Enescu&quot; c:work-ref=&quot;compositions&quot;/&gt;
  * </pre>
  *
- * Here the '{@code c:name}' corresponds directly to the '{@code name}
- * ' argument declared on the constructor of class '{@code TestBean}'. The
- * '{@code c:work-ref}' attributes corresponds to the '{@code work}'
- * argument and, rather than being the concrete value, it contains the name of
- * the bean that will be considered as a parameter.
+ * 此处 '{@code c:name}' 直接对应类 '{@code TestBean}' 构造函数上声明的
+ * '{@code name}' 参数。'{@code c:work-ref}' 属性对应 '{@code work}' 参数，
+ * 其值不是具体值，而是将作为参数考虑的 bean 名称。
  *
- * <b>Note</b>: This implementation supports only named parameters - there is no
- * support for indexes or types. Furthermore, the names are used as hints by
- * the container which, by default, does type introspection.
+ * <b>注意</b>：此实现仅支持命名参数——不支持索引或类型。
+ * 此外，名称作为容器的提示，容器默认进行类型自省。
  *
  * @author Costin Leau
  * @since 3.1
@@ -84,7 +80,7 @@ public class SimpleConstructorNamespaceHandler implements NamespaceHandler {
 			ConstructorArgumentValues cvs = definition.getBeanDefinition().getConstructorArgumentValues();
 			boolean ref = false;
 
-			// handle -ref arguments
+			// 处理 -ref 参数
 			if (argName.endsWith(REF_SUFFIX)) {
 				ref = true;
 				argName = argName.substring(0, argName.length() - REF_SUFFIX.length());
@@ -93,15 +89,15 @@ public class SimpleConstructorNamespaceHandler implements NamespaceHandler {
 			ValueHolder valueHolder = new ValueHolder(ref ? new RuntimeBeanReference(argValue) : argValue);
 			valueHolder.setSource(parserContext.getReaderContext().extractSource(attr));
 
-			// handle "escaped"/"_" arguments
+			// 处理 "转义"/"_" 参数
 			if (argName.startsWith(DELIMITER_PREFIX)) {
 				String arg = argName.substring(1).trim();
 
-				// fast default check
+				// 快速默认检查
 				if (!StringUtils.hasText(arg)) {
 					cvs.addGenericArgumentValue(valueHolder);
 				}
-				// assume an index otherwise
+				// 否则假定为索引
 				else {
 					int index = -1;
 					try {
@@ -125,7 +121,7 @@ public class SimpleConstructorNamespaceHandler implements NamespaceHandler {
 					cvs.addIndexedArgumentValue(index, valueHolder);
 				}
 			}
-			// no escaping -> ctr name
+			// 无转义 → 构造参数名
 			else {
 				String name = Conventions.attributeNameToPropertyName(argName);
 				if (containsArgWithName(name, cvs)) {

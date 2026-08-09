@@ -29,9 +29,8 @@ import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 
 /**
- * Context that gets passed along a bean definition parsing process,
- * encapsulating all relevant configuration as well as state.
- * Nested inside an {@link XmlReaderContext}.
+ * 在 bean 定义解析过程中传递的上下文，封装所有相关配置与状态。
+ * 嵌套于 {@link XmlReaderContext} 内部。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller

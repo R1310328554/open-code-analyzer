@@ -31,28 +31,17 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.ResourceUtils;
 
-/* ===== [OCA 中文解析] =====
-class ResourceEntityResolver — 意图说明
-
-解析器：名称/类型/占位符等到具体对象的转换；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/xml/ResourceEntityResolver.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * {@code EntityResolver} implementation that tries to resolve entity references
- * through a {@link org.springframework.core.io.ResourceLoader} (usually,
- * relative to the resource base of an {@code ApplicationContext}), if applicable.
- * Extends {@link DelegatingEntityResolver} to also provide DTD and XSD lookup.
+ * {@code EntityResolver} 实现，在适用时尝试通过 {@link org.springframework.core.io.ResourceLoader}
+ *（通常相对于 {@code ApplicationContext} 的资源基路径）解析实体引用。
+ * 继承 {@link DelegatingEntityResolver} 以同时提供 DTD 与 XSD 查找。
  *
- * <p>Allows to use standard XML entities to include XML snippets into an
- * application context definition, for example to split a large XML file
- * into various modules. The include paths can be relative to the
- * application context's resource base as usual, instead of relative
- * to the JVM working directory (the XML parser's default).
+ * <p>允许使用标准 XML 实体将 XML 片段包含到应用上下文定义中，例如将大型 XML 文件
+ * 拆分为多个模块。include 路径可按惯例相对于应用上下文的资源基路径，
+ * 而非相对于 JVM 工作目录（XML 解析器的默认行为）。
  *
- * <p>Note: In addition to relative paths, every URL that specifies a
- * file in the current system root, i.e. the JVM working directory,
- * will be interpreted relative to the application context too.
+ * <p>注意：除相对路径外，指定当前系统根（即 JVM 工作目录）中文件的每个 URL，
+ * 也将按应用上下文进行相对解析。
  *
  * @author Juergen Hoeller
  * @since 31.07.2003
@@ -61,18 +50,14 @@ class ResourceEntityResolver — 意图说明
  */
 public class ResourceEntityResolver extends DelegatingEntityResolver {
 
-	// [OCA] 字段 `logger`：类成员状态。
 	private static final Log logger = LogFactory.getLog(ResourceEntityResolver.class);
 
-	// [OCA] 字段 `resourceLoader`：类成员状态。
 	private final ResourceLoader resourceLoader;
 
 
 	/**
-	 * Create a ResourceEntityResolver for the specified ResourceLoader
-	 * (usually, an ApplicationContext).
-	 * @param resourceLoader the ResourceLoader (or ApplicationContext)
-	 * to load XML entity includes with
+	 * 为指定的 ResourceLoader（通常为 ApplicationContext）创建 ResourceEntityResolver。
+	 * @param resourceLoader 用于加载 XML 实体 include 的 ResourceLoader（或 ApplicationContext）
 	 */
 	public ResourceEntityResolver(ResourceLoader resourceLoader) {
 		super(resourceLoader.getClassLoader());
@@ -92,17 +77,17 @@ public class ResourceEntityResolver extends DelegatingEntityResolver {
 				String decodedSystemId = URLDecoder.decode(systemId, StandardCharsets.UTF_8);
 				String givenUrl = ResourceUtils.toURL(decodedSystemId).toString();
 				String systemRootUrl = new File("").toURI().toURL().toString();
-				// Try relative to resource base if currently in system root.
+				// 若当前位于系统根目录，则尝试相对于资源基路径解析
 				if (givenUrl.startsWith(systemRootUrl)) {
 					resourcePath = givenUrl.substring(systemRootUrl.length());
 				}
 			}
 			catch (Exception ex) {
-				// Typically a MalformedURLException or AccessControlException.
+				// 通常为 MalformedURLException 或 AccessControlException
 				if (logger.isDebugEnabled()) {
 					logger.debug("Could not resolve XML entity [" + systemId + "] against system root URL", ex);
 				}
-				// No URL (or no resolvable URL) -> try relative to resource base.
+				// 无 URL（或无法解析的 URL）→ 尝试相对于资源基路径
 				resourcePath = systemId;
 			}
 			if (resourcePath != null) {
@@ -126,26 +111,22 @@ public class ResourceEntityResolver extends DelegatingEntityResolver {
 	}
 
 	/**
-	 * A fallback method for {@link #resolveEntity(String, String)} that is used when a
-	 * "schema" entity (DTD or XSD) cannot be resolved as a local resource. The default
-	 * behavior is to perform remote resolution over HTTPS.
-	 * <p>Subclasses can override this method to change the default behavior.
+	 * {@link #resolveEntity(String, String)} 的回退方法，在无法将 "schema" 实体（DTD 或 XSD）
+	 * 解析为本地资源时使用。默认行为是通过 HTTPS 执行远程解析。
+	 * <p>子类可覆盖此方法以更改默认行为。
 	 * <ul>
-	 * <li>Return {@code null} to fall back to the parser's
-	 * {@linkplain org.xml.sax.EntityResolver#resolveEntity(String, String) default behavior}.</li>
-	 * <li>Throw an exception to prevent remote resolution of the DTD or XSD.</li>
+	 * <li>返回 {@code null} 以回退到解析器的
+	 * {@linkplain org.xml.sax.EntityResolver#resolveEntity(String, String) 默认行为}。</li>
+	 * <li>抛出异常以阻止 DTD 或 XSD 的远程解析。</li>
 	 * </ul>
-	 * @param publicId the public identifier of the external entity being referenced,
-	 * or null if none was supplied
-	 * @param systemId the system identifier of the external entity being referenced,
-	 * representing the URL of the DTD or XSD
-	 * @return an InputSource object describing the new input source, or null to request
-	 * that the parser open a regular URI connection to the system identifier
+	 * @param publicId 所引用外部实体的公共标识符，若无则传入 null
+	 * @param systemId 所引用外部实体的系统标识符，表示 DTD 或 XSD 的 URL
+	 * @return 描述新输入源的 InputSource 对象，或返回 null 以请求解析器打开指向系统标识符的常规 URI 连接
 	 * @since 6.0.4
 	 */
 	protected @Nullable InputSource resolveSchemaEntity(@Nullable String publicId, String systemId) {
 		InputSource source;
-		// External dtd/xsd lookup via https even for canonical http declaration
+		// 即使规范声明为 http，也通过 https 进行外部 dtd/xsd 查找
 		String url = systemId;
 		if (url.startsWith("http:")) {
 			url = "https:" + url.substring(5);
@@ -162,7 +143,7 @@ public class ResourceEntityResolver extends DelegatingEntityResolver {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Could not resolve XML entity [" + systemId + "] through URL [" + url + "]", ex);
 			}
-			// Fall back to the parser's default behavior.
+			// 回退到解析器默认行为
 			source = null;
 		}
 		return source;

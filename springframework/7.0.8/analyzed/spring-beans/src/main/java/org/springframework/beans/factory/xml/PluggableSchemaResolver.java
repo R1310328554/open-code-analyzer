@@ -35,21 +35,17 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * {@link EntityResolver} implementation that attempts to resolve schema URLs into
- * local {@link ClassPathResource classpath resources} using a set of mappings files.
+ * {@link EntityResolver} 实现，尝试通过一组映射文件将 schema URL 解析为
+ * 本地 {@link ClassPathResource classpath resources}。
  *
- * <p>By default, this class will look for mapping files in the classpath using the
- * pattern: {@code META-INF/spring.schemas} allowing for multiple files to exist on
- * the classpath at any one time.
+ * <p>默认情况下，本类使用模式 {@code META-INF/spring.schemas} 在类路径中查找映射文件，
+ * 允许类路径上同时存在多个此类文件。
  *
- * <p>The format of {@code META-INF/spring.schemas} is a properties file where each line
- * should be of the form {@code systemId=schema-location} where {@code schema-location}
- * should also be a schema file in the classpath. Since {@code systemId} is commonly a
- * URL, one must be careful to escape any ':' characters which are treated as delimiters
- * in properties files.
+ * <p>{@code META-INF/spring.schemas} 的格式为 properties 文件，每行应为
+ * {@code systemId=schema-location} 形式，其中 {@code schema-location} 也应为类路径中的 schema 文件。
+ * 由于 {@code systemId} 通常为 URL，需注意转义 properties 文件中作为分隔符的 ':' 字符。
  *
- * <p>The pattern for the mapping files can be overridden using the
- * {@link #PluggableSchemaResolver(ClassLoader, String)} constructor.
+ * <p>可使用 {@link #PluggableSchemaResolver(ClassLoader, String)} 构造器覆盖映射文件的模式。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -58,8 +54,8 @@ import org.springframework.util.CollectionUtils;
 public class PluggableSchemaResolver implements EntityResolver {
 
 	/**
-	 * The location of the file that defines schema mappings.
-	 * Can be present in multiple JAR files.
+	 * 定义 schema 映射的文件位置。
+	 * 可存在于多个 JAR 文件中。
 	 */
 	public static final String DEFAULT_SCHEMA_MAPPINGS_LOCATION = "META-INF/spring.schemas";
 
@@ -70,15 +66,13 @@ public class PluggableSchemaResolver implements EntityResolver {
 
 	private final String schemaMappingsLocation;
 
-	/** Stores the mapping of schema URL &rarr; local schema path. */
+	/** 存储 schema URL → 本地 schema 路径的映射。 */
 	private volatile @Nullable Map<String, String> schemaMappings;
 
 
 	/**
-	 * Loads the schema URL &rarr; schema file location mappings using the default
-	 * mapping file pattern "META-INF/spring.schemas".
-	 * @param classLoader the ClassLoader to use for loading
-	 * (can be {@code null} to use the default ClassLoader)
+	 * 使用默认映射文件模式 "META-INF/spring.schemas" 加载 schema URL → schema 文件位置映射。
+	 * @param classLoader 用于加载的 ClassLoader（可为 {@code null} 以使用默认 ClassLoader）
 	 * @see PropertiesLoaderUtils#loadAllProperties(String, ClassLoader)
 	 */
 	public PluggableSchemaResolver(@Nullable ClassLoader classLoader) {
@@ -87,12 +81,9 @@ public class PluggableSchemaResolver implements EntityResolver {
 	}
 
 	/**
-	 * Loads the schema URL &rarr; schema file location mappings using the given
-	 * mapping file pattern.
-	 * @param classLoader the ClassLoader to use for loading
-	 * (can be {@code null} to use the default ClassLoader)
-	 * @param schemaMappingsLocation the location of the file that defines schema mappings
-	 * (must not be empty)
+	 * 使用给定的映射文件模式加载 schema URL → schema 文件位置映射。
+	 * @param classLoader 用于加载的 ClassLoader（可为 {@code null} 以使用默认 ClassLoader）
+	 * @param schemaMappingsLocation 定义 schema 映射的文件位置（不得为空）
 	 * @see PropertiesLoaderUtils#loadAllProperties(String, ClassLoader)
 	 */
 	public PluggableSchemaResolver(@Nullable ClassLoader classLoader, String schemaMappingsLocation) {
@@ -112,7 +103,7 @@ public class PluggableSchemaResolver implements EntityResolver {
 		if (systemId != null) {
 			String resourceLocation = getSchemaMappings().get(systemId);
 			if (resourceLocation == null && systemId.startsWith("https:")) {
-				// Retrieve canonical http schema mapping even for https declaration
+				// 即使声明为 https，也检索规范的 http schema 映射
 				resourceLocation = getSchemaMappings().get("http:" + systemId.substring(6));
 			}
 			if (resourceLocation != null) {
@@ -134,12 +125,12 @@ public class PluggableSchemaResolver implements EntityResolver {
 			}
 		}
 
-		// Fall back to the parser's default behavior.
+		// 回退到解析器默认行为
 		return null;
 	}
 
 	/**
-	 * Load the specified schema mappings lazily.
+	 * 延迟加载指定的 schema 映射。
 	 */
 	private Map<String, String> getSchemaMappings() {
 		Map<String, String> schemaMappings = this.schemaMappings;

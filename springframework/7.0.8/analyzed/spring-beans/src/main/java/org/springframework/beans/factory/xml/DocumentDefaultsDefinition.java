@@ -21,9 +21,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.parsing.DefaultsDefinition;
 
 /**
- * Simple JavaBean that holds the defaults specified at the {@code <beans>}
- * level in a standard Spring XML bean definition document:
- * {@code default-lazy-init}, {@code default-autowire}, etc.
+ * 简单 JavaBean，保存标准 Spring XML bean 定义文档中 {@code <beans>} 级别指定的默认值：
+ * {@code default-lazy-init}、{@code default-autowire} 等。
  *
  * @author Juergen Hoeller
  * @since 2.0.2
@@ -46,94 +45,94 @@ public class DocumentDefaultsDefinition implements DefaultsDefinition {
 
 
 	/**
-	 * Set the default lazy-init flag for the document that's currently parsed.
+	 * 设置当前正在解析的文档的默认 lazy-init 标志。
 	 */
 	public void setLazyInit(@Nullable String lazyInit) {
 		this.lazyInit = lazyInit;
 	}
 
 	/**
-	 * Return the default lazy-init flag for the document that's currently parsed.
+	 * 返回当前正在解析的文档的默认 lazy-init 标志。
 	 */
 	public @Nullable String getLazyInit() {
 		return this.lazyInit;
 	}
 
 	/**
-	 * Set the default merge setting for the document that's currently parsed.
+	 * 设置当前正在解析的文档的默认 merge 设置。
 	 */
 	public void setMerge(@Nullable String merge) {
 		this.merge = merge;
 	}
 
 	/**
-	 * Return the default merge setting for the document that's currently parsed.
+	 * 返回当前正在解析的文档的默认 merge 设置。
 	 */
 	public @Nullable String getMerge() {
 		return this.merge;
 	}
 
 	/**
-	 * Set the default autowire setting for the document that's currently parsed.
+	 * 设置当前正在解析的文档的默认 autowire 设置。
 	 */
 	public void setAutowire(@Nullable String autowire) {
 		this.autowire = autowire;
 	}
 
 	/**
-	 * Return the default autowire setting for the document that's currently parsed.
+	 * 返回当前正在解析的文档的默认 autowire 设置。
 	 */
 	public @Nullable String getAutowire() {
 		return this.autowire;
 	}
 
 	/**
-	 * Set the default autowire-candidate pattern for the document that's currently parsed.
-	 * Also accepts a comma-separated list of patterns.
+	 * 设置当前正在解析的文档的默认 autowire-candidate 模式。
+	 * 也接受逗号分隔的模式列表。
 	 */
 	public void setAutowireCandidates(@Nullable String autowireCandidates) {
 		this.autowireCandidates = autowireCandidates;
 	}
 
 	/**
-	 * Return the default autowire-candidate pattern for the document that's currently parsed.
-	 * May also return a comma-separated list of patterns.
+	 * 返回当前正在解析的文档的默认 autowire-candidate 模式。
+	 * 也可能返回逗号分隔的模式列表。
 	 */
 	public @Nullable String getAutowireCandidates() {
 		return this.autowireCandidates;
 	}
 
 	/**
-	 * Set the default init-method setting for the document that's currently parsed.
+	 * 设置当前正在解析的文档的默认 init-method 设置。
 	 */
 	public void setInitMethod(@Nullable String initMethod) {
 		this.initMethod = initMethod;
 	}
 
 	/**
-	 * Return the default init-method setting for the document that's currently parsed.
+	 * 返回当前正在解析的文档的默认 init-method 设置。
 	 */
 	public @Nullable String getInitMethod() {
 		return this.initMethod;
 	}
 
 	/**
-	 * Set the default destroy-method setting for the document that's currently parsed.
+	 * 设置当前正在解析的文档的默认 destroy-method 设置。
 	 */
 	public void setDestroyMethod(@Nullable String destroyMethod) {
 		this.destroyMethod = destroyMethod;
 	}
 
 	/**
-	 * Return the default destroy-method setting for the document that's currently parsed.
+	 * 返回当前正在解析的文档的默认 destroy-method 设置。
 	 */
 	public @Nullable String getDestroyMethod() {
 		return this.destroyMethod;
 	}
 
 	/**
-	 * Set the configuration source {@code Object} for this metadata element.
-	 * <p>The exact type of the object will depend on the configuration mechanism used.
+	 * 设置此元数据元素的配置源 {@code Object}。
+	 * <p>对象的确切类型取决于所使用的配置机制。
 	 */
 	public void setSource(@Nullable Object source) {
 		this.source = source;
