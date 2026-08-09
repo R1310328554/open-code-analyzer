@@ -16,7 +16,10 @@
 package org.redisson.api;
 
 /**
- * 
+ * 有序集合的排序方向。
+ * <p>
+ * {@link #ASC} 升序，{@link #DESC} 降序。
+ *
  * @author Nikita Koksharov
  *
  */

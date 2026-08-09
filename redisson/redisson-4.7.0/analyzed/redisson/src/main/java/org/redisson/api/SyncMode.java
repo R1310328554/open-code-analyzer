@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Defines the synchronization modes used for replication with Valkey or Redis replica instances.
+ * 定义与 Valkey 或 Redis 副本实例复制时的同步模式。
  *
  * @author Nikita Koksharov
  *
@@ -24,23 +24,20 @@ package org.redisson.api;
 public enum SyncMode {
 
     /**
-     * Ensures data durability by blocking until write operations are confirmed as persisted to the
-     * memory and the Append-Only File (AOF) on the primary Redis instance and replicas if the AOF persistence feature is enabled.
-     * If AOF persistence is unavailable, falls back to blocking until replica instances acknowledge
-     * that write operations have been applied to memory.
-     * If neither durability mechanism is available, proceeds without synchronization guarantees.
+     * 通过阻塞直至写操作在主节点及副本的内存与 AOF 中持久化确认来保证数据持久性（启用 AOF 时）；
+     * 若 AOF 不可用，则退化为阻塞直至副本确认写操作已写入内存；
+     * 若两种机制均不可用，则不提供同步保证继续执行。
      *
      */
     AUTO,
 
     /**
-     * Ensures data durability by blocking until replica instances acknowledge that write operations have been applied to memory.
+     * 阻塞直至副本确认写操作已写入内存，以保证数据持久性。
      */
     ACK,
 
     /**
-     * Ensures data durability by blocking until write operations are confirmed as persisted to the
-     * Append-Only File (AOF) on the primary Redis instance and replicas.
+     * 阻塞直至主节点及副本的 AOF 确认写操作已持久化，以保证数据持久性。
      * <p>
      * NOTE: Redis 7.2.0+ or any Valkey version is required
      *

@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 /**
+ * {@link SetIntersectionArgs} 的默认实现，
+ * 封装有序集合交集读操作的键名、权重与聚合参数。
  *
  * @author seakider
  *

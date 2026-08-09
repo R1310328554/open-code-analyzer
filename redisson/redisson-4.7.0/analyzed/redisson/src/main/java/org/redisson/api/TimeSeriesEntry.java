@@ -18,12 +18,12 @@ package org.redisson.api;
 import java.util.Objects;
 
 /**
- * Time-series collection entry
+ * 时间序列集合条目。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value type
- * @param <L> label type
+ * @param <V> 值类型
+ * @param <L> 标签类型
  */
 public class TimeSeriesEntry<V, L> {
 

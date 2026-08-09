@@ -16,18 +16,17 @@
 package org.redisson.api;
 
 /**
- * Arguments object for RScoredSortedSet.readUnion() methods.
+ * RScoredSortedSet.readUnion() 方法的参数对象。
  *
  * @author seakider
  *
  */
 public interface SetUnionArgs extends SetReadArgs<SetUnionArgs> {
     /**
-     * Define arguments object that
-     * union with current ScoredSortedSet
+     * 定义与当前 ScoredSortedSet 求并集的参数对象。
      *
-     * @param names names of the specified ScoredSortedSets.
-     * @return arguments object
+     * @param names 指定的 ScoredSortedSet 名称
+     * @return 参数对象
      */
     static SetUnionArgs names(String... names) {
         return new SetUnionParams(names);

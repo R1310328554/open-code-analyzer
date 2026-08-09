@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration for Transaction.
+ * 事务配置。
  * 
  * @author Nikita Koksharov
  *
@@ -47,14 +47,14 @@ public final class TransactionOptions {
     }
 
     /**
-     * Defines timeout for Redis response. 
-     * Starts to countdown when transaction has been successfully sent.
+     * 定义 Redis 响应超时；
+     * 从事务成功发送后开始计时。
      * <p>
      * Default is <code>3000 milliseconds</code>
      * 
-     * @param timeout value
-     * @param unit value
-     * @return self instance
+     * @param timeout 超时值
+     * @param unit 时间单位
+     * @return 当前实例
      */
     public TransactionOptions responseTimeout(long timeout, TimeUnit unit) {
         this.responseTimeout = unit.toMillis(timeout);
@@ -66,13 +66,12 @@ public final class TransactionOptions {
     }
 
     /**
-     * Defines attempts amount to send transaction
-     * if it hasn't been sent already.
+     * 定义事务尚未成功发送时的重试次数。
      * <p>
      * Default is <code>3 attempts</code>
      * 
-     * @param retryAttempts value
-     * @return self instance
+     * @param retryAttempts 重试次数
+     * @return 当前实例
      */
     public TransactionOptions retryAttempts(int retryAttempts) {
         this.retryAttempts = retryAttempts;
@@ -84,14 +83,13 @@ public final class TransactionOptions {
     }
     
     /**
-     * Defines time interval for each attempt to send transaction 
-     * if it hasn't been sent already.
+     * 定义事务尚未成功发送时每次重试的间隔时间。
      * <p>
      * Default is <code>1500 milliseconds</code>
      * 
-     * @param retryInterval time interval
-     * @param retryIntervalUnit time interval unit
-     * @return self instance
+     * @param retryInterval 重试间隔
+     * @param retryIntervalUnit 重试间隔单位
+     * @return 当前实例
      */
     public TransactionOptions retryInterval(long retryInterval, TimeUnit retryIntervalUnit) {
         this.retryInterval = retryIntervalUnit.toMillis(retryInterval);
@@ -99,11 +97,11 @@ public final class TransactionOptions {
     }
 
     /**
-     * Use {@link #syncSlaves} method instead.
+     * 请改用 {@link #syncSlaves} 方法。
      *
-     * @param syncTimeout synchronization timeout
-     * @param syncUnit synchronization timeout time unit
-     * @return self instance
+     * @param syncTimeout 同步超时
+     * @param syncUnit 同步超时时间单位
+     * @return 当前实例
      */
     @Deprecated
     public TransactionOptions syncSlavesTimeout(long syncTimeout, TimeUnit syncUnit) {
@@ -115,8 +113,7 @@ public final class TransactionOptions {
     }
 
     /**
-     * Synchronize write operations execution within defined timeout
-     * across specified amount of Redis slave nodes.
+     * 在指定超时内，将写操作同步到指定数量的 Redis 从节点。
      * <p>
      * Default slaves value is <code>0</code> which means available slaves
      * at the moment of execution and <code>-1</code> means no sync at all.
@@ -124,12 +121,12 @@ public final class TransactionOptions {
      * Default timeout value is <code>5000 milliseconds</code>
      * NOTE: Redis 3.0+ required
      *
-     * @param slaves slaves amount for synchronization.
+     * @param slaves 参与同步的从节点数量
      *                 Default value is <code>0</code> which means available slaves
      *                 at the moment of execution and <code>-1</code> means no sync at all.
-     * @param timeout synchronization timeout
-     * @param unit synchronization timeout time unit
-     * @return self instance
+     * @param timeout 同步超时
+     * @param unit 同步超时时间单位
+     * @return 当前实例
      */
     public TransactionOptions syncSlaves(int slaves, long timeout, TimeUnit unit) {
         this.syncSlaves = slaves;
@@ -145,14 +142,14 @@ public final class TransactionOptions {
         return timeout;
     }
     /**
-     * If transaction hasn't been committed within <code>timeout</code> it will rollback automatically.
-     * Set <code>-1</code> to disable.
+     * 若事务在 <code>timeout</code> 内未提交则自动回滚；
+     * 设为 <code>-1</code> 可禁用。
      * <p>
      * Default is <code>5000 milliseconds</code>
      * 
-     * @param timeout in milliseconds
-     * @param timeoutUnit timeout time unit
-     * @return self instance
+     * @param timeout 超时时间
+     * @param timeoutUnit 超时时间单位
+     * @return 当前实例
      */
     public TransactionOptions timeout(long timeout, TimeUnit timeoutUnit) {
         if (timeout == -1) {

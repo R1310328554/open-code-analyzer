@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 /**
+ * {@code TOPK.INFO} 命令返回的 Top-K 草图信息。
  *
  * @author Nikita Koksharov
  *
@@ -35,36 +36,36 @@ public class TopKInfo {
     }
 
     /**
-     * Returns the number of top items the Top-K keeps track of.
+     * 返回 Top-K 跟踪的最高频元素数量。
      *
-     * @return number of top items (k)
+     * @return 跟踪的最高频元素数（k）
      */
     public long getTopK() {
         return topK;
     }
 
     /**
-     * Returns the number of counters in each array (width).
+     * 返回每个计数器数组的宽度（width）。
      *
-     * @return width
+     * @return 计数器数组宽度
      */
     public long getWidth() {
         return width;
     }
 
     /**
-     * Returns the number of counter arrays (depth).
+     * 返回计数器数组层数（depth）。
      *
-     * @return depth
+     * @return 计数器数组层数
      */
     public long getDepth() {
         return depth;
     }
 
     /**
-     * Returns the probability of a counter being decreased on collision.
+     * 返回计数器冲突时被衰减的概率。
      *
-     * @return counter decay probability
+     * @return 计数器衰减概率
      */
     public double getDecay() {
         return decay;

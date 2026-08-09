@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 /**
+ * 有序集合读操作（交集/并集）的可选参数。
  *
  * @author seakider
  *
@@ -25,18 +26,18 @@ import org.redisson.api.RScoredSortedSet.Aggregate;
 public interface SetReadArgs<T> {
 
     /**
-     * Defines a weight multiplier for each ScoredSortedSet
+     * 为每个 ScoredSortedSet 定义权重乘数。
      *
-     * @param weights weight multiplier
-     * @return arguments object
+     * @param weights 权重乘数
+     * @return 参数对象
      */
     T weights(Double... weights);
 
     /**
-     * Defines aggregation method
+     * 定义分数聚合方式。
      *
-     * @param aggregate score aggregation mode
-     * @return arguments object
+     * @param aggregate 分数聚合模式
+     * @return 参数对象
      */
     T aggregate(Aggregate aggregate);
 

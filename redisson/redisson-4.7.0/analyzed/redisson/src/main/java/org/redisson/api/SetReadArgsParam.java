@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 /**
+ * {@link SetReadArgs} 的基类实现，保存键名、权重与聚合方式。
  *
  * @author seakider
  *

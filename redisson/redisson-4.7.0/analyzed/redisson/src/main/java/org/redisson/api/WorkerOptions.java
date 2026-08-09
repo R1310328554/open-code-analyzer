@@ -28,7 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration for RExecutorService workers.
+ * RExecutorService 工作线程配置。
  * 
  * @author Nikita Koksharov
  *
@@ -54,11 +54,11 @@ public final class WorkerOptions {
     }
 
     /**
-     * Defines workers amount used to execute tasks.
+     * 定义用于执行任务的工作线程数量。
      * Default is <code>1</code>.
      * 
-     * @param workers workers amount
-     * @return self instance
+     * @param workers 工作线程数量
+     * @return 当前实例
      */
     public WorkerOptions workers(int workers) {
         this.workers = workers;
@@ -66,10 +66,10 @@ public final class WorkerOptions {
     }
     
     /**
-     * Use {@code tasksInjector(new SpringTasksInjector(beanFactory)} instead.
+     * 请改用 {@code tasksInjector(new SpringTasksInjector(beanFactory))}。
      *
-     * @param beanFactory Spring BeanFactory instance
-     * @return self instance
+     * @param beanFactory Spring BeanFactory 实例
+     * @return 当前实例
      */
     @Deprecated
     public WorkerOptions beanFactory(BeanFactory beanFactory) {
@@ -80,11 +80,11 @@ public final class WorkerOptions {
     }
 
     /**
-     * Defines TasksInjector instance to execute tasks with CDI.
-     * For example, Spring's '@Autowired', '@Value' or JSR-330's '@Inject' annotation.
+     * 定义用于 CDI 注入的任务执行器；
+     * 例如 Spring 的 {@code @Autowired}、{@code @Value} 或 JSR-330 的 {@code @Inject}。
      *
-     * @param tasksInjector task
-     * @return self instance
+     * @param tasksInjector 任务注入器
+     * @return 当前实例
      *
      * @see SpringTasksInjector
      */
@@ -102,11 +102,11 @@ public final class WorkerOptions {
     }
     
     /**
-     * Defines custom ExecutorService to execute tasks.
-     * {@link Config#setExecutor(ExecutorService)} is used by default.
+     * 定义用于执行任务的自定义 {@link ExecutorService}；
+     * 默认使用 {@link Config#setExecutor(ExecutorService)}。
      * 
-     * @param executorService custom ExecutorService
-     * @return self instance
+     * @param executorService 自定义 ExecutorService
+     * @return 当前实例
      */
     public WorkerOptions executorService(ExecutorService executorService) {
         this.executorService = executorService;
@@ -114,11 +114,11 @@ public final class WorkerOptions {
     }
 
     /**
-     * Defines task timeout since task execution start moment
+     * 定义自任务开始执行起的超时时间。
      *
-     * @param timeout timeout of task
-     * @param unit time unit
-     * @return self instance
+     * @param timeout 任务超时
+     * @param unit 时间单位
+     * @return 当前实例
      */
     public WorkerOptions taskTimeout(long timeout, TimeUnit unit) {
         this.taskTimeout = unit.toMillis(timeout);
@@ -130,15 +130,14 @@ public final class WorkerOptions {
     }
 
     /**
-     * Defines the lateness threshold for scheduled tasks.
+     * 定义定时任务的迟到阈值。
      * <p>
-     * If a worker picks up a scheduled task later than this threshold past its
-     * intended execution time, the task is skipped instead of executed.
+     * 若工作线程在计划执行时间超过该阈值后才领取任务，则跳过而非执行。
      * <p>
      * Default is <code>null</code> - disabled, all missed tasks run immediately.
      *
-     * @param threshold maximum allowed lateness
-     * @return self instance
+     * @param threshold 允许的最大迟到时间
+     * @return 当前实例
      */
     public WorkerOptions taskLateThreshold(Duration threshold) {
         this.taskLateThreshold = threshold.toMillis();
@@ -150,15 +149,15 @@ public final class WorkerOptions {
     }
 
     /**
-     * Adds task listener
+     * 添加任务监听器。
      *
      * @see org.redisson.api.executor.TaskSuccessListener
      * @see org.redisson.api.executor.TaskFailureListener
      * @see org.redisson.api.executor.TaskStartedListener
      * @see org.redisson.api.executor.TaskFinishedListener
      *
-     * @param listener - task listener
-     * @return self instance
+     * @param listener 任务监听器
+     * @return 当前实例
      */
     public WorkerOptions addListener(TaskListener listener) {
         listeners.add(listener);

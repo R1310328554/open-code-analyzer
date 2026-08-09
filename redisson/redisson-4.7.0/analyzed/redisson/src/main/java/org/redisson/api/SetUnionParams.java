@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 /**
+ * {@link SetUnionArgs} 的默认实现，
+ * 封装有序集合并集读操作的键名、权重与聚合参数。
  *
  * @author seakider
  *

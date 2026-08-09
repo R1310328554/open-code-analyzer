@@ -18,44 +18,44 @@ package org.redisson.api;
 import java.time.Duration;
 
 /**
- * Interface defining parameters for queue synchronization.
- * These parameters control how queue operations are synchronized with secondary Valkey or Redis nodes.
+ * 定义队列同步参数的接口；
+ * 控制队列操作如何与 Valkey 或 Redis 从节点同步。
  *
- * @param <T> type
+ * @param <T> 参数对象类型
  * @author Nikita Koksharov
  */
 public interface SyncArgs<T> {
 
     /**
-     * Sets the synchronization mode to be used for current operation.
+     * 设置当前操作使用的同步模式。
      * <p>
      * Default value is SyncMode.AUTO
      *
-     * @param syncMode the synchronization mode
-     * @return arguments object
+     * @param syncMode 同步模式
+     * @return 参数对象
      * @see SyncMode
      */
     T syncMode(SyncMode syncMode);
 
     /**
-     * Sets the behavior when synchronization with secondary nodes fails.
+     * 设置与从节点同步失败时的处理方式。
      * <p>
      * Default value is SyncFailureMode.LOG_WARNING
      *
-     * @param syncFailureMode the failure handling mode
-     * @return The current instance for method chaining
+     * @param syncFailureMode 失败处理模式
+     * @return 当前实例，支持链式调用
      * @see SyncFailureMode
      */
     T syncFailureMode(SyncFailureMode syncFailureMode);
 
     /**
-     * Sets the timeout duration for synchronization of the current operation.
-     * Defines how long the system will wait for acknowledgment from secondary nodes.
+     * 设置当前操作的同步超时时间；
+     * 即等待从节点确认的最长时间。
      * <p>
      * Default value is 1 second.
      *
-     * @param timeout The maximum time to wait for synchronization to complete
-     * @return arguments object
+     * @param timeout 等待同步完成的最长时间
+     * @return 参数对象
      */
     T syncTimeout(Duration timeout);
 

@@ -16,8 +16,7 @@
 package org.redisson.api;
 
 /**
- * Defines the behavior modes when synchronization with Valkey or Redis secondary nodes
- * fails.
+ * 定义与 Valkey 或 Redis 从节点同步失败时的行为模式。
  *
  * @author Nikita Koksharov
  *
@@ -25,19 +24,17 @@ package org.redisson.api;
 public enum SyncFailureMode {
 
     /**
-     * When synchronization fails, throw an exception to the caller.
+     * 同步失败时向调用方抛出异常。
      * <p>
-     * This mode is useful in scenarios where synchronization failures should
-     * be immediately visible and handled by the application code.
+     * 适用于需要应用代码立即感知并处理同步失败的场景。
      * </p>
      */
     THROW_EXCEPTION,
 
     /**
-     * When synchronization fails, log a warning message but continue execution.
+     * 同步失败时记录警告日志并继续执行。
      * <p>
-     * This mode is suitable for non-critical synchronization operations where
-     * the application can continue functioning despite synchronization issues.
+     * 适用于非关键同步操作，即使同步异常应用仍可继续运行。
      * </p>
      */
     LOG_WARNING

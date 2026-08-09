@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * t-digest information returned by the {@code TDIGEST.INFO} command.
+ * {@code TDIGEST.INFO} 命令返回的 t-digest 信息。
  *
  * @author Nikita Koksharov
  *
@@ -50,81 +50,81 @@ public class TDigestInfo {
     }
 
     /**
-     * Returns the compression factor of the sketch.
+     * 返回草图的压缩因子。
      *
-     * @return compression
+     * @return 压缩因子
      */
     public long getCompression() {
         return compression;
     }
 
     /**
-     * Returns the number of centroids the sketch can hold.
+     * 返回草图可容纳的质心数量。
      *
-     * @return capacity
+     * @return 容量
      */
     public long getCapacity() {
         return capacity;
     }
 
     /**
-     * Returns the number of merged centroids.
+     * 返回已合并的质心数量。
      *
-     * @return merged nodes
+     * @return 已合并质心数
      */
     public long getMergedNodes() {
         return mergedNodes;
     }
 
     /**
-     * Returns the number of buffered, not yet merged centroids.
+     * 返回尚未合并的缓冲质心数量。
      *
-     * @return unmerged nodes
+     * @return 未合并质心数
      */
     public long getUnmergedNodes() {
         return unmergedNodes;
     }
 
     /**
-     * Returns the total weight of merged centroids.
+     * 返回已合并质心的总权重。
      *
-     * @return merged weight
+     * @return 已合并权重
      */
     public double getMergedWeight() {
         return mergedWeight;
     }
 
     /**
-     * Returns the total weight of buffered, not yet merged centroids.
+     * 返回尚未合并缓冲质心的总权重。
      *
-     * @return unmerged weight
+     * @return 未合并权重
      */
     public double getUnmergedWeight() {
         return unmergedWeight;
     }
 
     /**
-     * Returns the number of observations added to the sketch.
+     * 返回已添加到草图的观测值数量。
      *
-     * @return observations
+     * @return 观测值数量
      */
     public long getObservations() {
         return observations;
     }
 
     /**
-     * Returns the number of compaction operations performed on the sketch.
+     * 返回草图执行的压缩（compaction）次数。
      *
-     * @return total compressions
+     * @return 压缩次数
      */
     public long getTotalCompressions() {
         return totalCompressions;
     }
 
     /**
-     * Returns the number of bytes allocated for the sketch.
+     * 返回草图占用的字节数。
      *
-     * @return memory usage in bytes
+     * @return 内存占用（字节）
      */
     public long getMemoryUsage() {
         return memoryUsage;
