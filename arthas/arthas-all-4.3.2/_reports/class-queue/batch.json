@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T22:53:28Z",
   "files": [
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/factory/NativeAgentProxyRegistryFactory.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/registry/NativeAgentProxyRegistry.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/registry/impl/EtcdNativeAgentProxyRegistry.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/registry/impl/ZookeeperNativeAgentProxyRegistry.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/server/NativeAgentProxyBootstrap.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/server/handler/RequestHandler.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/server/handler/http/HttpNativeAgentHandler.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/server/handler/http/HttpRequestHandler.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/server/handler/ws/WebSocketClientHandler.java",
-    "labs/cluster-management/native-agent-proxy/src/main/java/com/alibaba/arthas/nat/agent/proxy/server/handler/ws/WsRequestHandler.java",
-    "labs/cluster-management/native-agent/src/main/java/com/alibaba/arthas/nat/agent/core/ArthasHomeHandler.java",
-    "labs/cluster-management/native-agent/src/main/java/com/alibaba/arthas/nat/agent/core/JvmAttachmentHandler.java",
-    "labs/cluster-management/native-agent/src/main/java/com/alibaba/arthas/nat/agent/core/ListJvmProcessHandler.java",
-    "labs/cluster-management/native-agent/src/main/java/com/alibaba/arthas/nat/agent/core/MonitorTargetPidHandler.java",
-    "labs/cluster-management/native-agent/src/main/java/com/alibaba/arthas/nat/agent/factory/NativeAgentRegistryFactory.java",
     "labs/cluster-management/native-agent/src/main/java/com/alibaba/arthas/nat/agent/registry/NativeAgentRegistry.java",
     "labs/cluster-management/native-agent/src/main/java/com/alibaba/arthas/nat/agent/registry/impl/EtcdNativeAgentRegistry.java",
     "labs/cluster-management/native-agent/src/main/java/com/alibaba/arthas/nat/agent/registry/impl/ZookeeperNativeAgentRegistry.java",
@@ -33,5 +18,5 @@
     "memorycompiler/src/main/java/com/taobao/arthas/compiler/DynamicCompiler.java"
   ],
   "remaining_pending": 45,
-  "done": 720
+  "done": 735
 }
