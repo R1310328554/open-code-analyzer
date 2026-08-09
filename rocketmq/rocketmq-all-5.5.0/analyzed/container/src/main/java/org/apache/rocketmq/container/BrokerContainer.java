@@ -49,6 +49,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Broker 容器：在单 JVM 内托管多个 Master/Slave/dLedger Broker 实例，
+ * 共享 Netty RemotingServer 与 OuterAPI，通过 {@link BrokerContainerProcessor} 路由请求。
+ * 适用于容器化/多租户 Broker 部署场景。
+ */
 public class BrokerContainer implements IBrokerContainer {
     private static final Logger LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
@@ -62,8 +67,11 @@ public class BrokerContainer implements IBrokerContainer {
     protected final BrokerOuterAPI brokerOuterAPI;
     protected final ContainerClientHouseKeepingService containerClientHouseKeepingService;
 
+    /** 已注册的 Slave Broker 控制器映射。 */
     protected final ConcurrentMap<BrokerIdentity, InnerSalveBrokerController> slaveBrokerControllers = new ConcurrentHashMap<>();
+    /** 已注册的 Master Broker 控制器映射。 */
     protected final ConcurrentMap<BrokerIdentity, InnerBrokerController> masterBrokerControllers = new ConcurrentHashMap<>();
+    /** 已注册的 dLedger Broker 控制器映射。 */
     protected final ConcurrentMap<BrokerIdentity, InnerBrokerController> dLedgerBrokerControllers = new ConcurrentHashMap<>();
     protected final List<BrokerBootHook> brokerBootHookList = new ArrayList<>();
     protected final BrokerContainerProcessor brokerContainerProcessor;
@@ -154,7 +162,7 @@ public class BrokerContainer implements IBrokerContainer {
         if (this.brokerContainerConfig.getNamesrvAddr() != null) {
             this.updateNamesrvAddr();
             LOG.info("Set user specified name server address: {}", this.brokerContainerConfig.getNamesrvAddr());
-            // also auto update namesrv if specify
+            // 若配置了 namesrvAddr 则自动更新 NameServer 地址
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -215,25 +223,25 @@ public class BrokerContainer implements IBrokerContainer {
 
     @Override
     public void shutdown() {
-        // Shutdown slave brokers
+        // 先关闭全部 Slave Broker
         for (InnerSalveBrokerController slaveBrokerController : slaveBrokerControllers.values()) {
             slaveBrokerController.shutdown();
         }
 
         slaveBrokerControllers.clear();
 
-        // Shutdown master brokers
+        // 再关闭全部 Master Broker
         for (BrokerController masterBrokerController : masterBrokerControllers.values()) {
             masterBrokerController.shutdown();
         }
 
         masterBrokerControllers.clear();
 
-        // Shutdown dLedger brokers
+        // 关闭 dLedger Broker
         dLedgerBrokerControllers.values().forEach(InnerBrokerController::shutdown);
         dLedgerBrokerControllers.clear();
 
-        // Shutdown the remoting server with a high priority to avoid further traffic
+        // 高优先级关闭 RemotingServer，阻止新流量进入
         if (this.remotingServer != null) {
             this.remotingServer.shutdown();
         }
@@ -299,7 +307,7 @@ public class BrokerContainer implements IBrokerContainer {
         BrokerIdentity brokerIdentity = brokerController.getBrokerIdentity();
         final BrokerController previousBroker = dLedgerBrokerControllers.putIfAbsent(brokerIdentity, brokerController);
         if (previousBroker == null) {
-            // New dLedger broker added, start it
+            // 新增 dLedger Broker，启动之
             try {
                 final boolean initResult = brokerController.initialize();
                 if (!initResult) {
@@ -330,7 +338,7 @@ public class BrokerContainer implements IBrokerContainer {
         BrokerIdentity brokerIdentity = masterBroker.getBrokerIdentity();
         final BrokerController previousBroker = masterBrokerControllers.putIfAbsent(brokerIdentity, masterBroker);
         if (previousBroker == null) {
-            // New master broker added, start it
+            // 新增 Master Broker，启动之
             try {
                 final boolean initResult = masterBroker.initialize();
                 if (!initResult) {
@@ -356,10 +364,10 @@ public class BrokerContainer implements IBrokerContainer {
     }
 
     /**
-     * This function will create a slave broker along with the main broker, and start it with a different port.
+     * 随主 Broker 一并创建 Slave Broker，使用不同端口启动。
      *
-     * @param slaveBrokerConfig the specific slave broker config
-     * @throws Exception is thrown if an error occurs
+     * @param slaveBrokerConfig Slave Broker 配置
+     * @throws Exception 启动失败时抛出
      */
     public InnerSalveBrokerController addSlaveBroker(final BrokerConfig slaveBrokerConfig,
         final MessageStoreConfig storeConfig, final AuthConfig authConfig) throws Exception {
@@ -376,7 +384,7 @@ public class BrokerContainer implements IBrokerContainer {
         BrokerIdentity brokerIdentity = slaveBroker.getBrokerIdentity();
         final InnerSalveBrokerController previousBroker = slaveBrokerControllers.putIfAbsent(brokerIdentity, slaveBroker);
         if (previousBroker == null) {
-            // New slave broker added, start it
+            // 新增 Slave Broker，启动之
             try {
                 final boolean initResult = slaveBroker.initialize();
                 if (!initResult) {

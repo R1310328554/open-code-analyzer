@@ -57,12 +57,15 @@ import org.rocksdb.Status;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
+/**
+ * RocksDB 存储抽象基类：封装 DB 打开/关闭、ColumnFamily 管理、
+ * Atomic Flush 写入选项及 Jemalloc 堆外内存分配。
+ * 供 Broker/Controller 等模块的 RocksDB 持久化实现继承。
+ */
 public abstract class AbstractRocksDBStorage {
     protected static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKSDB_LOGGER_NAME);
 
-    /**
-     * Direct Jemalloc allocator
-     */
+    /** 基于 Jemalloc 的 Direct 内存分配器。 */
     public static final PooledByteBufAllocator POOLED_ALLOCATOR = new PooledByteBufAllocator(true);
 
     public static final byte CTRL_0 = '\u0000';
@@ -121,14 +124,12 @@ public abstract class AbstractRocksDBStorage {
         initFlushOptions();
     }
 
-    /**
-     * Write options for <a href="https://github.com/facebook/rocksdb/wiki/Atomic-flush">Atomic Flush</a>
-     */
+    /** Atomic Flush 写入选项（多 ColumnFamily 原子落盘）。 */
     protected void initWriteOptions() {
         this.writeOptions = new WriteOptions();
         this.writeOptions.setSync(false);
         this.writeOptions.setDisableWAL(true);
-        // https://github.com/facebook/rocksdb/wiki/Write-Stalls
+        // 参见 RocksDB Write-Stalls 文档
         this.writeOptions.setNoSlowdown(false);
     }
 
@@ -484,9 +485,7 @@ public abstract class AbstractRocksDBStorage {
         }
     }
 
-    /**
-     * Close column family handles except the default column family
-     */
+    /** 关闭除 default 外的全部 ColumnFamily 句柄。 */
     protected abstract void preShutdown();
 
     public boolean isLoaded() {
@@ -515,19 +514,19 @@ public abstract class AbstractRocksDBStorage {
             }
             this.db.cancelAllBackgroundWork(true);
             this.db.pauseBackgroundWork();
-            //The close order matters.
-            //1. close column family handles
+            // 关闭顺序很重要
+            // 1. 关闭 ColumnFamily 句柄
             preShutdown();
 
             if (this.defaultCFHandle.isOwningHandle()) {
                 this.defaultCFHandle.close();
             }
 
-            //2. close column family options.
+            // 2. 关闭 ColumnFamily 选项
             for (final ColumnFamilyOptions opt : this.cfOptions) {
                 opt.close();
             }
-            //3. close options
+            // 3. 关闭 DBOptions
             if (this.writeOptions != null) {
                 this.writeOptions.close();
             }
@@ -543,7 +542,7 @@ public abstract class AbstractRocksDBStorage {
             if (this.flushOptions != null) {
                 this.flushOptions.close();
             }
-            //4. close db.
+            // 4. 关闭 DB 实例
             if (db != null && !this.readOnly) {
                 try {
                     this.db.syncWal();
@@ -596,7 +595,7 @@ public abstract class AbstractRocksDBStorage {
 
         try {
             if (db != null) {
-                // For atomic-flush, we have to explicitly specify column family handles
+                // Atomic Flush 需显式指定全部 ColumnFamily 句柄
                 // See https://github.com/rust-rocksdb/rust-rocksdb/pull/793
                 // and https://github.com/facebook/rocksdb/blob/8ad4c7efc48d301f5e85467105d7019a49984dc8/include/rocksdb/db.h#L1667
                 this.db.flush(flushOptions, columnFamilyHandles);
@@ -660,7 +659,7 @@ public abstract class AbstractRocksDBStorage {
                 } finally {
                     reloadPermit.release();
                 }
-                // try to reload rocksdb next time
+                // 下次启动时尝试重新加载 RocksDB
                 if (!result) {
                     LOGGER.info("reload rocksdb Retry. {}", dbPath);
                     scheduleReloadRocksdb0();

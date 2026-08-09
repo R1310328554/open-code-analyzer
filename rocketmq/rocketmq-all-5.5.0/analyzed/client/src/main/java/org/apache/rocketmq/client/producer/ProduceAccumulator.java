@@ -42,17 +42,24 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 
+/**
+ * 发送消息聚合器：将同 topic+MessageQueue 的小消息在内存中攒批，
+ * 达到 holdSize/holdMs 阈值后合并为 {@link MessageBatch} 发送，降低网络开销。
+ * 由 {@link MQClientManager} 按 clientId 复用。
+ */
 public class ProduceAccumulator {
-    // totalHoldSize normal value
+    // 全局缓冲上限默认值 32MB
     private long totalHoldSize = 32 * 1024 * 1024;
-    // holdSize normal value
+    // 单批聚合大小阈值默认值 32KB
     private long holdSize = 32 * 1024;
-    // holdMs normal value
+    // 单批最大等待时间默认值 10ms
     private int holdMs = 10;
     private final Logger log = LoggerFactory.getLogger(DefaultMQProducer.class);
     private final GuardForSyncSendService guardThreadForSyncSend;
     private final GuardForAsyncSendService guardThreadForAsyncSend;
+    /** 同步发送聚合缓冲：AggregateKey → 待发送批次。 */
     private final Map<AggregateKey, MessageAccumulation> syncSendBatchs = new ConcurrentHashMap<AggregateKey, MessageAccumulation>();
+    /** 异步发送聚合缓冲。 */
     private final Map<AggregateKey, MessageAccumulation> asyncSendBatchs = new ConcurrentHashMap<AggregateKey, MessageAccumulation>();
     private final AtomicLong currentlyHoldSize = new AtomicLong(0);
     private final String instanceName;
@@ -63,6 +70,7 @@ public class ProduceAccumulator {
         this.guardThreadForAsyncSend = new GuardForAsyncSendService(this.instanceName);
     }
 
+    /** 同步发送 Guard：周期性检查 syncSendBatchs 并 flush 超时批次。 */
     private class GuardForSyncSendService extends ServiceThread {
         private final String serviceName;
 
@@ -110,6 +118,7 @@ public class ProduceAccumulator {
         }
     }
 
+    /** 异步发送 Guard：周期性检查 asyncSendBatchs 并 flush 超时批次。 */
     private class GuardForAsyncSendService extends ServiceThread {
         private final String serviceName;
 
@@ -155,11 +164,13 @@ public class ProduceAccumulator {
         }
     }
 
+    /** 启动同步/异步 Guard 守护线程，定时 flush 超时批次。 */
     void start() {
         guardThreadForSyncSend.start();
         guardThreadForAsyncSend.start();
     }
 
+    /** 关闭 Guard 线程并 flush 剩余批次。 */
     void shutdown() {
         guardThreadForSyncSend.shutdown();
         guardThreadForAsyncSend.shutdown();
@@ -222,6 +233,7 @@ public class ProduceAccumulator {
         return previous == null ? batch : previous;
     }
 
+    /** 同步发送：尝试将消息追加到聚合批次，满批则立即发送。 */
     SendResult send(Message msg,
         DefaultMQProducer defaultMQProducer) throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
         AggregateKey partitionKey = new AggregateKey(msg);

@@ -98,6 +98,11 @@ import org.apache.rocketmq.remoting.protocol.header.SendMessageRequestHeader;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 默认 Producer 内部实现：路由选择、同步/异步/Oneway 发送、
+ * 事务消息二阶段、延迟/顺序消息及 SendMessageHook 回调。
+ * 由 {@link DefaultMQProducer} 委托调用。
+ */
 public class DefaultMQProducerImpl implements MQProducerInner {
 
     private final Logger log = LoggerFactory.getLogger(DefaultMQProducerImpl.class);
@@ -118,7 +123,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     private MQFaultStrategy mqFaultStrategy;
     private ExecutorService asyncSenderExecutor;
 
-    // backpressure related
+    // 背压相关：限制异步发送并发数与在途消息大小
     private Semaphore semaphoreAsyncSendNum;
     private Semaphore semaphoreAsyncSendSize;
 
@@ -533,9 +538,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         return this.mQClientFactory.getMQAdminImpl().queryMessageByUniqKey(topic, uniqKey);
     }
 
-    /**
-     * DEFAULT ASYNC -------------------------------------------------------
-     */
+    /** 默认异步发送（由客户端选择队列） ------------------------------------------------------- */
     public void send(Message msg,
         SendCallback sendCallback) throws MQClientException, RemotingException, InterruptedException {
         send(msg, sendCallback, this.defaultMQProducer.getSendMsgTimeout());
@@ -769,7 +772,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     try {
                         beginTimestampPrev = System.currentTimeMillis();
                         if (times > 0) {
-                            //Reset topic with namespace during resend.
+                            // 重发时按 namespace 重置 topic
                             msg.setTopic(this.defaultMQProducer.withNamespace(msg.getTopic()));
                         }
                         long costTime = beginTimestampPrev - beginTimestampFirst;
@@ -778,9 +781,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                             break;
                         }
                         long curTimeout = timeout - costTime;
-                        // Get the maximum timeout allowed per request
+                        // 获取单次请求允许的最大超时
                         long maxSendTimeoutPerRequest = defaultMQProducer.getSendMsgMaxTimeoutPerRequest();
-                        // Determine if retries are still possible
+                        // 判断是否仍可重试
                         boolean canRetryAgain = times + 1 < timesTotal;
                         // If retries are possible, and the current timeout exceeds the max allowed timeout, set the current timeout to the max allowed
                         if (maxSendTimeoutPerRequest > -1 && canRetryAgain && curTimeout > maxSendTimeoutPerRequest) {
@@ -816,7 +819,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         continue;
                     } catch (RemotingException e) {
                         endTimestamp = System.currentTimeMillis();
-                        // Set this broker unreachable when detecting schedule task is running for RemotingException.
+                        // 定时任务场景下 RemotingException 时将 Broker 标记为不可达
                         // Otherwise, isolate this broker.
                         this.updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, true, !this.mqFaultStrategy.isStartDetectorEnable());
                         log.warn("sendKernelImpl exception, resend at once, InvokeID: {}, RT: {}ms, Broker: {}", invokeID, endTimestamp - beginTimestampPrev, mq, e);
@@ -929,7 +932,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
             byte[] prevBody = msg.getBody();
             try {
-                //for MessageBatch,ID has been set in the generating process
+                // MessageBatch 的 msgId 已在组批阶段生成
                 if (!(msg instanceof MessageBatch)) {
                     MessageClientIDSetter.setUniqID(msg);
                 }
@@ -1024,7 +1027,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         Message tmpMessage = msg;
                         boolean messageCloned = false;
                         if (msgBodyCompressed) {
-                            //If msg body was compressed, msgbody should be reset using prevBody.
+                            // 若消息体已压缩，需用 prevBody 还原后再重试
                             //Clone new message using compressed message body and recover origin massage.
                             //Fix bug:https://github.com/apache/rocketmq-externals/issues/66
                             tmpMessage = MessageAccessor.cloneMessage(msg);
@@ -1111,7 +1114,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
     private boolean tryToCompressMessage(final Message msg) {
         if (msg instanceof MessageBatch) {
-            //batch does not support compressing right now
+            // 批量发送暂不支持压缩
             return false;
         }
         byte[] body = msg.getBody();
@@ -1206,9 +1209,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         }
     }
 
-    /**
-     * DEFAULT ONEWAY -------------------------------------------------------
-     */
+    /** 默认 Oneway 发送（不等待 Broker 响应） ------------------------------------------------------- */
     public void sendOneway(Message msg) throws MQClientException, RemotingException, InterruptedException {
         try {
             this.sendDefaultImpl(msg, CommunicationMode.ONEWAY, null, this.defaultMQProducer.getSendMsgTimeout());
@@ -1217,9 +1218,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         }
     }
 
-    /**
-     * KERNEL SYNC -------------------------------------------------------
-     */
+    /** 内核同步发送（指定 MessageQueue） ------------------------------------------------------- */
     public SendResult send(Message msg, MessageQueue mq)
         throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         return send(msg, mq, this.defaultMQProducer.getSendMsgTimeout());
@@ -1243,9 +1242,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         return this.sendKernelImpl(msg, mq, CommunicationMode.SYNC, null, null, timeout);
     }
 
-    /**
-     * KERNEL ASYNC -------------------------------------------------------
-     */
+    /** 内核异步发送（指定 MessageQueue） ------------------------------------------------------- */
     public void send(Message msg, MessageQueue mq, SendCallback sendCallback)
         throws MQClientException, RemotingException, InterruptedException {
         send(msg, mq, sendCallback, this.defaultMQProducer.getSendMsgTimeout());
@@ -1298,9 +1295,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         executeAsyncMessageSend(runnable, msg, newCallBack, timeout, beginStartTime);
     }
 
-    /**
-     * KERNEL ONEWAY -------------------------------------------------------
-     */
+    /** 内核 Oneway 发送（指定 MessageQueue） ------------------------------------------------------- */
     public void sendOneway(Message msg,
         MessageQueue mq) throws MQClientException, RemotingException, InterruptedException {
         this.makeSureStateOK();
@@ -1585,7 +1580,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         tryToFindTopicPublishInfo(topic);
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(handleEntity.getBrokerName());
         brokerAddr = StringUtils.isNotEmpty(brokerAddr) ?
-            // find another address to support multi proxy endpoints,
+            // 多 Proxy 端点场景下尝试备用地址
             // may cause failure request in proxy-less mode when the broker is temporarily unavailable
             brokerAddr : this.mQClientFactory.findBrokerAddrByTopic(topic);
         if (StringUtils.isEmpty(brokerAddr)) {

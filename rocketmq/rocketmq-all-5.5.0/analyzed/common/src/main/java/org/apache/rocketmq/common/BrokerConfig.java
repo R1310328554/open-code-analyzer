@@ -25,6 +25,11 @@ import org.apache.rocketmq.common.metrics.MetricsExporterType;
 import org.apache.rocketmq.common.topic.TopicValidator;
 import org.apache.rocketmq.common.utils.NetworkUtil;
 
+/**
+ * Broker 运行时配置：监听端口、线程池规模、NameServer 交互间隔、
+ * POP/Lite/事务/轨迹/ACL 等特性开关。继承 {@link BrokerIdentity} 的集群与 brokerId 信息。
+ * 标注 {@link ImportantField} 的字段变更需持久化并同步。
+ */
 public class BrokerConfig extends BrokerIdentity {
 
     private String brokerConfigPath = null;
@@ -33,9 +38,7 @@ public class BrokerConfig extends BrokerIdentity {
     @ImportantField
     private String namesrvAddr = System.getProperty(MixAll.NAMESRV_ADDR_PROPERTY, System.getenv(MixAll.NAMESRV_ADDR_ENV));
 
-    /**
-     * Listen port for single broker
-     */
+    /** 单 Broker 监听端口（默认 6888）。 */
     @ImportantField
     private int listenPort = 6888;
 
@@ -63,9 +66,7 @@ public class BrokerConfig extends BrokerIdentity {
     private String msgTraceTopicName = TopicValidator.RMQ_SYS_TRACE_TOPIC;
     @ImportantField
     private boolean traceTopicEnable = false;
-    /**
-     * thread numbers for send message thread pool.
-     */
+    /** SendMessageProcessor 线程池大小。 */
     private int sendMessageThreadPoolNums = Math.min(PROCESSOR_NUMBER, 4);
     private int putMessageFutureThreadPoolNums = Math.min(PROCESSOR_NUMBER, 4);
     private int pullMessageThreadPoolNums = 16 + PROCESSOR_NUMBER * 2;
@@ -81,9 +82,7 @@ public class BrokerConfig extends BrokerIdentity {
     private int heartbeatThreadPoolNums = Math.min(32, PROCESSOR_NUMBER);
     private int recoverThreadPoolNums = 32;
 
-    /**
-     * Thread numbers for EndTransactionProcessor
-     */
+    /** EndTransactionProcessor 线程池大小（事务消息二阶段）。 */
     private int endTransactionThreadPoolNums = Math.max(8 + PROCESSOR_NUMBER * 2,
             sendMessageThreadPoolNums * 4);
 
@@ -155,19 +154,19 @@ public class BrokerConfig extends BrokerIdentity {
 
     private boolean traceOn = true;
 
-    // Switch of filter bit map calculation.
+    // 消费队列 Filter 位图计算开关
     // If switch on:
     // 1. Calculate filter bit map when construct queue.
     // 2. Filter bit map will be saved to consume queue extend file if allowed.
     private boolean enableCalcFilterBitMap = false;
 
-    //Reject the pull consumer instance to pull messages from broker.
+    // 拒绝 Pull 消费者从本 Broker 拉取消息
     private boolean rejectPullConsumerEnable = false;
 
     // Expect num of consumers will use filter.
     private int expectConsumerNumUseFilter = 32;
 
-    // Error rate of bloom filter, 1~100.
+    // Bloom 过滤器误判率，取值 1~100
     private int maxErrorRateOfBloomFilter = 20;
 
     //how long to clean filter data after dead.Default: 24h
@@ -181,26 +180,16 @@ public class BrokerConfig extends BrokerIdentity {
 
     private boolean forceRegister = true;
 
-    /**
-     * This configurable item defines interval of topics registration of broker to name server. Allowing values are
-     * between 10,000 and 60,000 milliseconds.
-     */
+    /** Broker 向 NameServer 注册 topic 的间隔（毫秒，允许 10000~60000）。 */
     private int registerNameServerPeriod = 1000 * 30;
 
-    /**
-     * This configurable item defines interval of update name server address. Default: 120 * 1000 milliseconds
-     */
+    /** 从 NameServer 拉取地址列表的间隔（默认 120 秒）。 */
     private int updateNameServerAddrPeriod = 1000 * 120;
 
-    /**
-     * the interval to send heartbeat to name server for liveness detection.
-     */
+    /** 向 NameServer 发送心跳的间隔（存活检测）。 */
     private int brokerHeartbeatInterval = 1000;
 
-    /**
-     * How long the broker will be considered as inactive by nameserver since last heartbeat. Effective only if
-     * enableSlaveActingMaster is true
-     */
+    /** 自上次心跳起超过该毫秒数，NameServer 视 Broker 为非活跃（enableSlaveActingMaster 时生效）。 */
     private long brokerNotActiveTimeoutMillis = 10 * 1000;
 
     private boolean enableNetWorkFlowControl = false;
@@ -235,7 +224,7 @@ public class BrokerConfig extends BrokerIdentity {
     private boolean enableNotifyBeforePopCalculateLag = true;
     private boolean enableNotifyAfterPopOrderLockRelease = true;
     private boolean initPopOffsetByCheckMsgInMem = true;
-    // read message from pop retry topic v1, for the compatibility, will be removed in the future version
+    // 兼容读取 POP 重试 topic v1，后续版本将移除
     private boolean retrieveMessageFromPopRetryTopicV1 = true;
     private boolean enableRetryTopicV2 = false;
     private int popFromRetryProbability = 20;
@@ -251,7 +240,7 @@ public class BrokerConfig extends BrokerIdentity {
     private int popReviveConcurrency = 32;
     private int popReviveMaxAttemptTimes = 16;
     private boolean popReviveSkipIfGroupAbsent = true;
-    // each message queue will have a corresponding retry queue
+    // 每个 MessageQueue 对应独立 POP 重试队列
     private boolean useSeparateRetryQueue = false;
     private boolean realTimeNotifyConsumerChange = true;
 
@@ -263,9 +252,7 @@ public class BrokerConfig extends BrokerIdentity {
     // The period to sync broker member group from namesrv, default value is 1 second
     private int syncBrokerMemberGroupPeriod = 1000;
 
-    /**
-     * the interval of pulling topic information from the named server
-     */
+    /** 从 NameServer 拉取 topic 路由信息的间隔。 */
     private long loadBalancePollNameServerInterval = 1000 * 30;
 
     /**
@@ -514,7 +501,7 @@ public class BrokerConfig extends BrokerIdentity {
 
     private long liteSubscriptionCheckTimeoutMills = TimeUnit.MINUTES.toMillis(3);
 
-    // make sense for rocksdb store
+    // 仅 RocksDB 存储模式下有意义
     private boolean persistConsumerOffsetIncrementally = false;
 
     private long maxLiteSubscriptionCount = 100000;

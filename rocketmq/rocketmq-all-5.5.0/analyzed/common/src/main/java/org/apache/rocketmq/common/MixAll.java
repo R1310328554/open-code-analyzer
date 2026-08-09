@@ -59,12 +59,14 @@ import org.apache.rocketmq.common.utils.IOTinyUtils;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * RocketMQ 全局常量与工具方法：环境变量、默认 Group/Topic 前缀、
+ * 重试/DLQ topic 命名、本机地址解析及配置文件读写等。
+ */
 public class MixAll {
     public static final String ROCKETMQ_HOME_ENV = "ROCKETMQ_HOME";
     public static final String ROCKETMQ_HOME_PROPERTY = "rocketmq.home.dir";
-    /**
-     * unify the home dir
-     */
+    /** 统一的 RocketMQ 安装目录（系统属性优先于环境变量）。 */
     public static final String ROCKETMQ_HOME_DIR = System.getProperty(ROCKETMQ_HOME_PROPERTY, System.getenv(ROCKETMQ_HOME_ENV));
     public static final String NAMESRV_ADDR_ENV = "NAMESRV_ADDR";
     public static final String NAMESRV_ADDR_PROPERTY = "rocketmq.namesrv.addr";
@@ -73,6 +75,7 @@ public class MixAll {
     public static final String DEFAULT_NAMESRV_ADDR_LOOKUP = "jmenv.tbsite.net";
     public static final String WS_DOMAIN_NAME = System.getProperty("rocketmq.namesrv.domain", DEFAULT_NAMESRV_ADDR_LOOKUP);
     public static final String WS_DOMAIN_SUBGROUP = System.getProperty("rocketmq.namesrv.domain.subgroup", "nsaddr");
+    /** 默认 Producer 组名。 */
     public static final String DEFAULT_PRODUCER_GROUP = "DEFAULT_PRODUCER";
     public static final String DEFAULT_CONSUMER_GROUP = "DEFAULT_CONSUMER";
     public static final String TOOLS_CONSUMER_GROUP = "TOOLS_CONSUMER";
@@ -92,6 +95,7 @@ public class MixAll {
     public static final List<String> LOCAL_INET_ADDRESS = getLocalInetAddress();
     public static final String LOCALHOST = localhost();
     public static final String DEFAULT_CHARSET = "UTF-8";
+    /** Master Broker 的 brokerId。 */
     public static final long MASTER_ID = 0L;
     public static final long FIRST_SLAVE_ID = 1L;
 
@@ -100,7 +104,9 @@ public class MixAll {
     public final static int UNIT_PRE_SIZE_FOR_MSG = 28;
     public final static int ALL_ACK_IN_SYNC_STATE_SET = -1;
 
+    /** 消费重试 topic 前缀：%RETRY%{consumerGroup}。 */
     public static final String RETRY_GROUP_TOPIC_PREFIX = "%RETRY%";
+    /** 死信队列 topic 前缀：%DLQ%{consumerGroup}。 */
     public static final String DLQ_GROUP_TOPIC_PREFIX = "%DLQ%";
     public static final String REPLY_TOPIC_POSTFIX = "REPLY_TOPIC";
     public static final String UNIQUE_MSG_QUERY_FLAG = "_UNIQUE_KEY_QUERY";
@@ -176,6 +182,7 @@ public class MixAll {
         return wsAddr;
     }
 
+    /** 根据消费组生成重试 topic 名。 */
     public static String getRetryTopic(final String consumerGroup) {
         return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
     }
@@ -196,6 +203,7 @@ public class MixAll {
         return PREDEFINE_GROUP_SET.contains(consumerGroup);
     }
 
+    /** 根据消费组生成死信 topic 名。 */
     public static String getDLQTopic(final String consumerGroup) {
         return DLQ_GROUP_TOPIC_PREFIX + consumerGroup;
     }
@@ -483,14 +491,14 @@ public class MixAll {
         }
     }
 
-    //Reverse logic comparing to RemotingUtil method, consider refactor in RocketMQ 5.0
+    // 与 RemotingUtil 逻辑相反，RocketMQ 5.0 考虑重构
     public static String getLocalhostByNetworkInterface() throws SocketException {
         List<String> candidatesHost = new ArrayList<>();
         Enumeration<NetworkInterface> enumeration = NetworkInterface.getNetworkInterfaces();
 
         while (enumeration.hasMoreElements()) {
             NetworkInterface networkInterface = enumeration.nextElement();
-            // Workaround for docker0 bridge
+            // docker0 网桥场景的 workaround
             if ("docker0".equals(networkInterface.getName()) || !networkInterface.isUp()) {
                 continue;
             }
@@ -500,7 +508,7 @@ public class MixAll {
                 if (address.isLoopbackAddress()) {
                     continue;
                 }
-                //ip4 higher priority
+                // IPv4 地址优先于 IPv6
                 if (address instanceof Inet6Address) {
                     candidatesHost.add(address.getHostAddress());
                     continue;
@@ -513,7 +521,7 @@ public class MixAll {
             return candidatesHost.get(0);
         }
 
-        // Fallback to loopback
+        // 兜底使用回环地址
         return localhost();
     }
 

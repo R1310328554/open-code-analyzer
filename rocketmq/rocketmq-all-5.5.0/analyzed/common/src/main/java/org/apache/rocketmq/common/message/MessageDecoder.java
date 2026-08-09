@@ -35,6 +35,11 @@ import org.apache.rocketmq.common.compression.Compressor;
 import org.apache.rocketmq.common.compression.CompressorFactory;
 import org.apache.rocketmq.common.sysflag.MessageSysFlag;
 
+/**
+ * CommitLog 消息编解码器：定义 V1/V2 二进制格式，
+ * 负责 MessageExt 与 ByteBuffer 互转、msgId 生成及属性解析。
+ * magic code 区分 {@link #MESSAGE_MAGIC_CODE} 与 {@link #MESSAGE_MAGIC_CODE_V2}。
+ */
 public class MessageDecoder {
 //    public final static int MSG_ID_LENGTH = 8 + 8;
 
@@ -44,11 +49,11 @@ public class MessageDecoder {
     public final static int MESSAGE_PHYSIC_OFFSET_POSITION = 28;
     public final static int MESSAGE_STORE_TIMESTAMP_POSITION = 56;
 
-    // Set message magic code v2 if topic length > 127
+    // topic 长度 >127 时使用 V2 magic code
     public final static int MESSAGE_MAGIC_CODE = -626843481;
     public final static int MESSAGE_MAGIC_CODE_V2 = -626843477;
 
-    // End of file empty MAGIC CODE cbd43194
+    // 文件末尾空白记录 magic code
     public final static int BLANK_MAGIC_CODE = -875286124;
     public static final char NAME_VALUE_SEPARATOR = 1;
     public static final char PROPERTY_SEPARATOR = 2;
@@ -70,6 +75,7 @@ public class MessageDecoder {
 //        + 4 // 13 RECONSUMETIMES
 //        + 8; // 14 Prepared Transaction Offset
 
+    /** 根据 storeHost 与物理 offset 生成 msgId（IP+port+offset）。 */
     public static String createMessageId(final ByteBuffer input, final ByteBuffer addr, final long offset) {
         input.flip();
         int msgIDLength = addr.limit() == 8 ? 16 : 28;
@@ -96,22 +102,22 @@ public class MessageDecoder {
         byte[] bytes = UtilAll.string2bytes(msgId);
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
 
-        // address(ip+port)
+        // 地址段：IP + port
         byte[] ip = new byte[msgId.length() == 32 ? 4 : 16];
         byteBuffer.get(ip);
         int port = byteBuffer.getInt();
         SocketAddress address = new InetSocketAddress(InetAddress.getByAddress(ip), port);
 
-        // offset
+        // 物理 offset
         long offset = byteBuffer.getLong();
 
         return new MessageId(address, offset);
     }
 
     /**
-     * Just decode properties from msg buffer.
+     * 仅从 CommitLog buffer 解析消息属性（properties 段）。
      *
-     * @param byteBuffer msg commit log buffer.
+     * @param byteBuffer CommitLog 消息 buffer
      */
     public static Map<String, String> decodeProperties(ByteBuffer byteBuffer) {
         int sysFlag = byteBuffer.getInt(SYSFLAG_POSITION);
@@ -234,10 +240,10 @@ public class MessageDecoder {
                 + 0;
             byteBuffer = ByteBuffer.allocate(storeSize);
         }
-        // 1 TOTALSIZE
+        // 1 总长度 TOTALSIZE
         byteBuffer.putInt(storeSize);
 
-        // 2 MAGICCODE
+        // 2 魔数 MAGICCODE
         byteBuffer.putInt(MESSAGE_MAGIC_CODE);
 
         // 3 BODYCRC
@@ -305,12 +311,12 @@ public class MessageDecoder {
     }
 
     /**
-     * Encode without store timestamp and store host, skip blank msg.
+     * 编码消息（不含 store 时间戳与 storeHost），跳过空白消息。
      *
-     * @param messageExt   msg
-     * @param needCompress need compress or not
-     * @return byte array
-     * @throws IOException when compress failed
+     * @param messageExt 待编码消息
+     * @param needCompress 是否压缩消息体
+     * @return 编码后的字节数组
+     * @throws IOException 压缩失败时抛出
      */
     public static byte[] encodeUniquely(MessageExt messageExt, boolean needCompress) throws IOException {
         byte[] body = messageExt.getBody();
@@ -509,14 +515,14 @@ public class MessageDecoder {
                     byteBuffer.get(body);
 
                     if (checkCRC) {
-                        //crc body
+                        // 校验消息体 CRC
                         int crc = UtilAll.crc32(body, 0, bodyLen);
                         if (crc != bodyCRC) {
                             throw new Exception("Msg crc is error!");
                         }
                     }
 
-                    // inflate body
+                    // 解压消息体
                     if (deCompressBody && (sysFlag & MessageSysFlag.COMPRESSED_FLAG) == MessageSysFlag.COMPRESSED_FLAG) {
                         Compressor compressor = CompressorFactory.getCompressor(MessageSysFlag.getCompressionType(sysFlag));
                         body = compressor.decompress(body);
@@ -661,7 +667,7 @@ public class MessageDecoder {
     }
 
     public static byte[] encodeMessage(Message message) {
-        //only need flag, body, properties
+        // 仅编码 flag、body、properties
         byte[] body = message.getBody();
         int bodyLen = body.length;
         String properties = messageProperties2String(message.getProperties());
@@ -731,7 +737,7 @@ public class MessageDecoder {
     }
 
     public static byte[] encodeMessages(List<Message> messages) {
-        //TO DO refactor, accumulate in one buffer, avoid copies
+        // TODO：重构为单 buffer 累积，减少拷贝
         List<byte[]> encodedMessages = new ArrayList<>(messages.size());
         int allSize = 0;
         for (Message message : messages) {

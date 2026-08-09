@@ -45,10 +45,17 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 消费端 Rebalance 抽象基类：维护 MessageQueue ↔ ProcessQueue 映射，
+ * 执行队列分配/回收、Broker 端 lock/unlock，并协调 Pull/POP 请求下发。
+ * 子类 {@link RebalancePushImpl}、{@link RebalancePullImpl} 等实现具体策略。
+ */
 public abstract class RebalanceImpl {
     protected static final Logger log = LoggerFactory.getLogger(RebalanceImpl.class);
 
+    /** Push/Pull 模式下 MessageQueue → ProcessQueue 映射。 */
     protected final ConcurrentMap<MessageQueue, ProcessQueue> processQueueTable = new ConcurrentHashMap<>(64);
+    /** POP 模式下 MessageQueue → PopProcessQueue 映射。 */
     protected final ConcurrentMap<MessageQueue, PopProcessQueue> popProcessQueueTable = new ConcurrentHashMap<>(64);
 
     protected final ConcurrentMap<String/* topic */, Set<MessageQueue>> topicSubscribeInfoTable =
@@ -59,6 +66,7 @@ public abstract class RebalanceImpl {
     protected MessageModel messageModel;
     protected AllocateMessageQueueStrategy allocateMessageQueueStrategy;
     protected MQClientInstance mQClientFactory;
+    /** 向 Broker 查询 MessageQueueAssignment 的超时（毫秒）。 */
     private static final int QUERY_ASSIGNMENT_TIMEOUT = 3000;
 
     public RebalanceImpl(String consumerGroup, MessageModel messageModel,
@@ -70,6 +78,7 @@ public abstract class RebalanceImpl {
         this.mQClientFactory = mQClientFactory;
     }
 
+    /** 向 Broker 解锁单个 MessageQueue（顺序消费释放队列锁）。 */
     public void unlock(final MessageQueue mq, final boolean oneway) {
         FindBrokerResult findBrokerResult = this.mQClientFactory.findBrokerAddressInSubscribe(this.mQClientFactory.getBrokerNameFromMessageQueue(mq), MixAll.MASTER_ID, true);
         if (findBrokerResult != null) {
@@ -149,6 +158,7 @@ public abstract class RebalanceImpl {
         return result;
     }
 
+    /** 向 Broker 申请锁定 MessageQueue，顺序消费 Pull 前必须成功。 */
     public boolean lock(final MessageQueue mq) {
         FindBrokerResult findBrokerResult = this.mQClientFactory.findBrokerAddressInSubscribe(this.mQClientFactory.getBrokerNameFromMessageQueue(mq), MixAll.MASTER_ID, true);
         if (findBrokerResult != null) {
@@ -229,6 +239,7 @@ public abstract class RebalanceImpl {
         return true;
     }
 
+    /** Rebalance 主入口：遍历订阅 topic 并执行 rebalanceByTopic。 */
     public boolean doRebalance(final boolean isOrder) {
         boolean balanced = true;
         Map<String, SubscriptionData> subTable = this.getSubscriptionInner();
@@ -353,7 +364,7 @@ public abstract class RebalanceImpl {
             return false;
         }
 
-        // null means invalid result, we should skip the update logic
+        // null 表示 Broker 返回无效，跳过本次 ProcessQueue 更新
         if (messageQueueAssignments == null) {
             return false;
         }
@@ -427,7 +438,7 @@ public abstract class RebalanceImpl {
         final boolean needLockMq) {
         boolean changed = false;
 
-        // drop process queues no longer belong me
+        // 标记不再归属本消费者的 ProcessQueue 为 dropped
         HashMap<MessageQueue, ProcessQueue> removeQueueMap = new HashMap<>(this.processQueueTable.size());
         Iterator<Entry<MessageQueue, ProcessQueue>> it = this.processQueueTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -448,7 +459,7 @@ public abstract class RebalanceImpl {
             }
         }
 
-        // remove message queues no longer belong me
+        // 移除不再归属本消费者的 MessageQueue 条目
         for (Entry<MessageQueue, ProcessQueue> entry : removeQueueMap.entrySet()) {
             MessageQueue mq = entry.getKey();
             ProcessQueue pq = entry.getValue();
@@ -460,7 +471,7 @@ public abstract class RebalanceImpl {
             }
         }
 
-        // add new message queue
+        // 为新分配的 MessageQueue 创建 ProcessQueue 并触发 offset 计算
         boolean allMQLocked = true;
         List<PullRequest> pullRequestList = new ArrayList<>();
         for (MessageQueue mq : mqSet) {
@@ -525,7 +536,7 @@ public abstract class RebalanceImpl {
 
         if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
             if (mq2PopAssignment.isEmpty() && !mq2PushAssignment.isEmpty()) {
-                //pop switch to push
+                // POP 切换为 Push：订阅 POP 重试 topic
                 //subscribe pop retry topic
                 try {
                     final String retryTopic = KeyBuilder.buildPopRetryTopic(topic, getConsumerGroup());
@@ -535,7 +546,7 @@ public abstract class RebalanceImpl {
                 }
 
             } else if (!mq2PopAssignment.isEmpty() && mq2PushAssignment.isEmpty()) {
-                //push switch to pop
+                // Push 切换为 POP：取消 POP 重试 topic 订阅
                 //unsubscribe pop retry topic
                 try {
                     final String retryTopic = KeyBuilder.buildPopRetryTopic(topic, getConsumerGroup());
@@ -590,7 +601,7 @@ public abstract class RebalanceImpl {
 
                 if (mq.getTopic().equals(topic)) {
                     if (!mq2PopAssignment.containsKey(mq)) {
-                        //the queue is no longer your assignment
+                        // 该队列已不在 Broker 分配结果中
                         pq.setDropped(true);
                         removeQueueMap.put(mq, pq);
                     } else if (pq.isPullExpired() && this.consumeType() == ConsumeType.CONSUME_PASSIVELY) {
@@ -706,10 +717,11 @@ public abstract class RebalanceImpl {
     public abstract void removeDirtyOffset(final MessageQueue mq);
 
     /**
-     * When the network is unstable, using this interface may return wrong offset.
-     * It is recommended to use computePullFromWhereWithException instead.
-     * @param mq
-     * @return offset
+     * 计算 Pull 起始 offset；网络不稳定时可能返回错误值。
+     * 推荐使用 {@link #computePullFromWhereWithException}。
+     *
+     * @param mq 目标 MessageQueue
+     * @return Pull 起始 offset
      */
     @Deprecated
     public abstract long computePullFromWhere(final MessageQueue mq);
@@ -726,6 +738,7 @@ public abstract class RebalanceImpl {
 
     public abstract PopProcessQueue createPopProcessQueue();
 
+    /** 修正 offset 时移除多余 ProcessQueue 并标记 dropped。 */
     public void removeProcessQueue(final MessageQueue mq) {
         ProcessQueue prev = this.processQueueTable.remove(mq);
         if (prev != null) {

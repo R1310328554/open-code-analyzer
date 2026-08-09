@@ -93,6 +93,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.rocketmq.remoting.rpc.ClientMetadata.topicRouteData2EndpointsForStaticTopic;
 
+/**
+ * RocketMQ 客户端实例：同一 clientId 下共享 Netty 连接、路由表、心跳与 Rebalance 服务。
+ * 管理 producerTable/consumerTable/adminExtTable，是客户端侧的核心调度中心。
+ */
 public class MQClientInstance {
     private final static long LOCK_TIMEOUT_MILLIS = 3000;
     private final static long RESET_OFFSET_MAX_WAIT = 10;
@@ -101,32 +105,26 @@ public class MQClientInstance {
     private final String clientId;
     private final long bootTimestamp = System.currentTimeMillis();
 
-    /**
-     * The container of the producer in the current client. The key is the name of producerGroup.
-     */
+    /** 当前客户端内的 Producer 容器，key 为 producerGroup。 */
     private final ConcurrentMap<String, MQProducerInner> producerTable = new ConcurrentHashMap<>();
 
-    /**
-     * The container of the consumer in the current client. The key is the name of consumerGroup.
-     */
+    /** 当前客户端内的 Consumer 容器，key 为 consumerGroup。 */
     private final ConcurrentMap<String, MQConsumerInner> consumerTable = new ConcurrentHashMap<>();
 
-    /**
-     * The container of the adminExt in the current client. The key is the name of adminExtGroup.
-     */
+    /** 当前客户端内的 AdminExt 容器，key 为 adminExtGroup。 */
     private final ConcurrentMap<String, MQAdminExtInner> adminExtTable = new ConcurrentHashMap<>();
     private final NettyClientConfig nettyClientConfig;
     private final MQClientAPIImpl mQClientAPIImpl;
     private final MQAdminImpl mQAdminImpl;
+    /** topic → 路由信息（Broker 列表、Queue 读写权限等）。 */
     private final ConcurrentMap<String/* Topic */, TopicRouteData> topicRouteTable = new ConcurrentHashMap<>();
     private final ConcurrentMap<String/* Topic */, ConcurrentMap<MessageQueue, String/*brokerName*/>> topicEndPointsTable = new ConcurrentHashMap<>();
     private final Lock lockNamesrv = new ReentrantLock();
     private final Lock lockHeartbeat = new ReentrantLock();
 
     /**
-     * The container which stores the brokerClusterInfo. The key of the map is the broker name.
-     * And the value is the broker instance list that belongs to the broker cluster.
-     * For the sub map, the key is the id of single broker instance, and the value is the address.
+     * Broker 集群地址表：brokerName → (brokerId → address)。
+     * 由 NameServer 路由更新与心跳维护。
      */
     private final ConcurrentMap<String, HashMap<Long, String>> brokerAddrTable = new ConcurrentHashMap<>();
 
@@ -139,6 +137,7 @@ public class MQClientInstance {
     private final DefaultMQProducer defaultMQProducer;
     private final ConsumerStatsManager consumerStatsManager;
     private final AtomicLong sendHeartbeatTimesTotal = new AtomicLong(0);
+    /** 客户端生命周期状态（CREATE_JUST/RUNNING/SHUTDOWN_ALREADY 等）。 */
     private ServiceState serviceState = ServiceState.CREATE_JUST;
     private final Random random = new Random();
     private ExecutorService concurrentHeartbeatExecutor;
@@ -232,7 +231,7 @@ public class MQClientInstance {
 
     public static TopicPublishInfo topicRouteData2TopicPublishInfo(final String topic, final TopicRouteData route) {
         TopicPublishInfo info = new TopicPublishInfo();
-        // TO DO should check the usage of raw route, it is better to remove such field
+        // TODO：评估 raw route 字段用途，后续版本考虑移除
         info.setTopicRouteData(route);
         if (route.getOrderTopicConf() != null && route.getOrderTopicConf().length() > 0) {
             String[] brokers = route.getOrderTopicConf().split(";");
@@ -313,17 +312,17 @@ public class MQClientInstance {
             switch (this.serviceState) {
                 case CREATE_JUST:
                     this.serviceState = ServiceState.START_FAILED;
-                    // If not specified,looking address from name server
+                    // 未显式指定 namesrvAddr 时从 NameServer 拉取地址
                     if (null == this.clientConfig.getNamesrvAddr()) {
                         this.mQClientAPIImpl.fetchNameServerAddr();
                     }
-                    // Start request-response channel
+                    // 启动 Netty 请求-响应通道
                     this.mQClientAPIImpl.start();
-                    // Start various schedule tasks
+                    // 启动定时任务（路由更新、心跳、持久化 offset 等）
                     this.startScheduledTask();
-                    // Start pull service
+                    // 启动 PullMessageService 后台线程
                     this.pullMessageService.start();
-                    // Start rebalance service
+                    // 启动 RebalanceService 后台线程
                     this.rebalanceService.start();
                     // Start push service
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
@@ -436,9 +435,7 @@ public class MQClientInstance {
         return newOffsetTable;
     }
 
-    /**
-     * Remove offline broker
-     */
+    /** 移除已下线的 Broker 地址并清理相关路由缓存。 */
     private void cleanOfflineBroker() {
         try {
             if (this.lockNamesrv.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
@@ -496,7 +493,7 @@ public class MQClientInstance {
                     continue;
                 }
                 // may need to check one broker every cluster...
-                // assume that the configs of every broker in cluster are the same.
+                // 假设同一集群内各 Broker 配置一致
                 String addr = findBrokerAddrByTopic(subscriptionData.getTopic());
 
                 if (addr != null) {
@@ -873,7 +870,7 @@ public class MQClientInstance {
         }
 
         try {
-            // wait all tasks finish
+            // 等待异步任务全部完成后再返回
             latch.await();
         } catch (InterruptedException ie) {
             log.warn("Interrupted while waiting for broker heartbeat tasks to complete", ie);

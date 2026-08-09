@@ -56,22 +56,18 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 
 /**
- * This class is the entry point for applications intending to send messages. </p>
+ * 应用发送消息的入口类。
  * <p>
- * It's fine to tune fields which exposes getter/setter methods, but keep in mind, all of them should work well out of
- * box for most scenarios. </p>
+ * 可通过 getter/setter 调整配置，但多数场景下默认参数即可满足需求。
+ * 本类聚合多种 {@code send} 方法向 Broker 投递消息，各有适用场景，使用前建议理解差异。
+ * </p>
  * <p>
- * This class aggregates various <code>send</code> methods to deliver messages to broker(s). Each of them has pros and
- * cons; you'd better understand strengths and weakness of them before actually coding. </p>
- *
- * <p> <strong>Thread Safety:</strong> After configuring and starting process, this class can be regarded as thread-safe
- * and used among multiple threads context. </p>
+ * <strong>线程安全：</strong>配置并 start 后可在多线程环境下使用。
+ * </p>
  */
 public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
-    /**
-     * Wrapping internal implementations for virtually all methods presented in this class.
-     */
+    /** 封装本类几乎全部方法的内部实现 {@link DefaultMQProducerImpl}。 */
     protected final transient DefaultMQProducerImpl defaultMQProducerImpl;
     private final Logger logger = LoggerFactory.getLogger(DefaultMQProducer.class);
     private final Set<Integer> retryResponseCodes = new CopyOnWriteArraySet<>(Arrays.asList(
@@ -86,38 +82,25 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     ));
 
     /**
-     * Producer group conceptually aggregates all producer instances of exactly same role, which is particularly
-     * important when transactional messages are involved. </p>
-     * <p>
-     * For non-transactional messages, it does not matter as long as it's unique per process. </p>
-     * <p>
-     * See <a href="https://rocketmq.apache.org/docs/introduction/02concepts">core concepts</a> for more discussion.
+     * Producer 组：聚合职责相同的 Producer 实例，事务消息场景下尤为重要。
+     * <p>非事务消息在同一进程内保持唯一即可。</p>
+     * <p>详见 <a href="https://rocketmq.apache.org/docs/introduction/02concepts">核心概念</a>。</p>
      */
     private String producerGroup;
 
-    /**
-     * Topics that need to be initialized for transaction producer
-     */
+    /** 事务 Producer 需要预先初始化的 topic 集合。 */
     private List<String> topics;
 
-    /**
-     * Just for testing or demo program
-     */
+    /** 仅用于测试或 Demo 程序。 */
     private String createTopicKey = TopicValidator.AUTO_CREATE_TOPIC_KEY_TOPIC;
 
-    /**
-     * Number of queues to create per default topic.
-     */
+    /** 自动创建 topic 时的默认队列数。 */
     private volatile int defaultTopicQueueNums = 4;
 
-    /**
-     * Timeout for sending messages.
-     */
+    /** 发送消息默认超时（毫秒）。 */
     private int sendMsgTimeout = 3000;
 
-    /**
-     * Max timeout for sending messages per request.
-     */
+    /** 单次发送请求允许的最大超时（毫秒）。 */
     private int sendMsgMaxTimeoutPerRequest = -1;
 
     /**
@@ -357,7 +340,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     public DefaultMQProducer(final String namespace, final String producerGroup, RPCHook rpcHook,
         boolean enableMsgTrace, final String customizedTraceTopic) {
         this(namespace, producerGroup, rpcHook);
-        //if client open the message trace feature
+        // 客户端开启消息轨迹功能时注册 Trace Hook
         this.enableTrace = enableMsgTrace;
         this.traceTopic = customizedTraceTopic;
     }
@@ -432,15 +415,15 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     }
 
     private boolean canBatch(Message msg) {
-        // produceAccumulator is full
+        // ProduceAccumulator 缓冲已满，降级为直接发送
         if (!produceAccumulator.tryAddMessage(msg)) {
             return false;
         }
-        // delay message do not support batch processing
+        // 延迟消息不支持批量聚合
         if (msg.getDelayTimeLevel() > 0 || msg.getDelayTimeMs() > 0 || msg.getDelayTimeSec() > 0 || msg.getDeliverTimeMs() > 0) {
             return false;
         }
-        // retry message do not support batch processing
+        // 重试消息不支持批量聚合
         if (msg.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
             return false;
         }
@@ -758,7 +741,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
     public SendResult sendDirect(Message msg, MessageQueue mq,
         SendCallback sendCallback) throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
-        // send in sync mode
+        // 以同步模式发送
         if (sendCallback == null) {
             if (mq == null) {
                 return this.defaultMQProducerImpl.send(msg);

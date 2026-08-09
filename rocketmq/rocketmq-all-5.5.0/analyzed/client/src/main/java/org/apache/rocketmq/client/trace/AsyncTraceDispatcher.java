@@ -51,6 +51,11 @@ import org.apache.rocketmq.remoting.RPCHook;
 
 import static org.apache.rocketmq.client.trace.TraceConstants.TRACE_INSTANCE_NAME;
 
+/**
+ * 异步消息轨迹分发器：将 Send/Consume 轨迹上下文写入内存队列，
+ * 后台线程批量序列化后发送到 RMQ_SYS_TRACE_TOPIC。
+ * 实现 {@link TraceDispatcher}，供 Producer/Consumer 注册 Trace Hook。
+ */
 public class AsyncTraceDispatcher implements TraceDispatcher {
     private static final Logger log = LoggerFactory.getLogger(AsyncTraceDispatcher.class);
     private static final AtomicInteger COUNTER = new AtomicInteger();
@@ -64,11 +69,14 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
     private AtomicLong discardCount;
     private Thread worker;
     private final ThreadPoolExecutor traceExecutor;
+    /** 待上报的轨迹上下文队列（容量 2048）。 */
     private final ArrayBlockingQueue<TraceContext> traceContextQueue;
     private final ArrayBlockingQueue<Runnable> appenderQueue;
     private volatile Thread shutDownHook;
 
+    /** 宿主 Producer 实现（Producer 侧轨迹）。 */
     private DefaultMQProducerImpl hostProducer;
+    /** 宿主 Push Consumer 实现（Consumer 侧轨迹）。 */
     private DefaultMQPushConsumerImpl hostConsumer;
     private volatile ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex();
     private volatile String traceTopicName;
@@ -82,7 +90,7 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
     private long lastFlushTime = System.currentTimeMillis();
 
     public AsyncTraceDispatcher(String group, Type type, int batchNum, String traceTopicName, RPCHook rpcHook) {
-        this.batchNum = Math.min(batchNum, 20);/* max value 20*/
+        this.batchNum = Math.min(batchNum, 20);/* 单批最多 20 条轨迹 */
         this.maxMsgSize = 128000;
         this.discardCount = new AtomicLong(0L);
         this.traceContextQueue = new ArrayBlockingQueue<>(2048);
@@ -171,7 +179,7 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
             traceProducerInstance.setProducerGroup(genGroupNameForTrace());
             traceProducerInstance.setSendMsgTimeout(5000);
             traceProducerInstance.setVipChannelEnabled(false);
-            // The max size of message is 128K
+            // 单条轨迹消息最大 128KB
             traceProducerInstance.setMaxMessageSize(maxMsgSize);
         }
         return traceProducerInstance;
@@ -231,7 +239,7 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
             try {
                 Runtime.getRuntime().addShutdownHook(shutDownHook);
             } catch (IllegalStateException e) {
-                // ignore - VM is already shutting down
+                // 忽略：JVM 已在关闭
             }
         }
     }
@@ -282,7 +290,7 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
                 return;
             }
         }
-        // To prevent an infinite loop, add a wait time between each two task executions
+        // 防止无限循环，两次任务执行间加入等待
         Thread.sleep(5);
     }
 
@@ -359,15 +367,15 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
         }
 
         /**
-         * Send message trace data
+         * 通过 MQ 发送一批消息轨迹数据。
          *
-         * @param keySet     the keyset in this batch(including msgId in original message not offsetMsgId)
-         * @param data       the message trace data in this batch
-         * @param traceTopic the topic which message trace data will send to
+         * @param keySet 本批 key 集合（含原始 msgId，非 offsetMsgId）
+         * @param data 本批轨迹 JSON 数据
+         * @param traceTopic 轨迹数据目标 topic
          */
         private void sendTraceDataByMQ(Set<String> keySet, final String data, String traceTopic) {
             final Message message = new Message(traceTopic, data.getBytes(StandardCharsets.UTF_8));
-            // Keyset of message trace includes msgId of or original message
+            // 轨迹 keySet 包含原始消息的 msgId
             message.setKeys(keySet);
             try {
                 Set<String> traceBrokerSet = tryGetMessageQueueBrokerSet(traceProducer.getDefaultMQProducerImpl(), traceTopic);
@@ -383,7 +391,7 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
                     }
                 };
                 if (traceBrokerSet.isEmpty()) {
-                    // No cross set
+                    // 禁止跨 set 发送轨迹
                     traceProducer.send(message, callback, 5000);
                 } else {
                     traceProducer.send(message, new MessageQueueSelector() {

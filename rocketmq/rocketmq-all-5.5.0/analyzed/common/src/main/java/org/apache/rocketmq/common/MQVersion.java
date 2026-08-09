@@ -16,10 +16,16 @@
  */
 package org.apache.rocketmq.common;
 
+/**
+ * RocketMQ 协议版本号管理：{@link Version} 枚举按 ordinal 递增，
+ * 用于 Broker/Client 心跳与特性协商。{@link #CURRENT_VERSION} 对应当前发行版。
+ */
 public class MQVersion {
 
+    /** 当前代码库对应的协议版本 ordinal（V5_5_0）。 */
     public static final int CURRENT_VERSION = Version.V5_5_0.ordinal();
 
+    /** 将版本 ordinal 转为枚举名称字符串；超出范围返回最高已知版本。 */
     public static String getVersionDesc(int value) {
         int length = Version.values().length;
         if (value >= length) {
@@ -29,6 +35,7 @@ public class MQVersion {
         return Version.values()[value].name();
     }
 
+    /** 将版本 ordinal 转为 {@link Version} 枚举；超出范围返回最高已知版本。 */
     public static Version value2Version(int value) {
         int length = Version.values().length;
         if (value >= length) {
@@ -38,6 +45,7 @@ public class MQVersion {
         return Version.values()[value];
     }
 
+    /** 历史版本枚举：从 V3_0_0 到 V5_9_9，末尾 HIGHER_VERSION 表示未知更高版本。 */
     public enum Version {
         V3_0_0_SNAPSHOT,
         V3_0_0_ALPHA1,
@@ -940,6 +948,7 @@ public class MQVersion {
         V5_9_9_SNAPSHOT,
         V5_9_9,
 
+        /** 高于当前代码库已知版本的占位符。 */
         HIGHER_VERSION
     }
 }

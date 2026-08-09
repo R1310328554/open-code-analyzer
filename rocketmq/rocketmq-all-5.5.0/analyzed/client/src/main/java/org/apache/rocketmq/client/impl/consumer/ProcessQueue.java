@@ -34,22 +34,25 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.body.ProcessQueueInfo;
 
 /**
- * Queue consumption snapshot
+ * 队列消费快照：维护单个 {@link MessageQueue} 上已拉取但未提交 offset 的消息缓冲。
+ * 并发消费使用 {@link #msgTreeMap}；顺序消费额外使用 {@link #consumingMsgOrderlyTreeMap}
+ * 配合 {@link #takeMessages}/{@link #commit}/{@link #rollback} 实现两阶段提交。
  */
 public class ProcessQueue {
+    /** 顺序消费 Broker 端队列锁的最大存活时间（毫秒），超时需续锁。 */
     public final static long REBALANCE_LOCK_MAX_LIVE_TIME =
         Long.parseLong(System.getProperty("rocketmq.client.rebalance.lockMaxLiveTime", "30000"));
     public final static long REBALANCE_LOCK_INTERVAL = Long.parseLong(System.getProperty("rocketmq.client.rebalance.lockInterval", "20000"));
+    /** Pull 空闲超过该毫秒数视为过期，Rebalance 时可回收 ProcessQueue。 */
     private final static long PULL_MAX_IDLE_TIME = Long.parseLong(System.getProperty("rocketmq.client.pull.pullMaxIdleTime", "120000"));
     private final Logger log = LoggerFactory.getLogger(ProcessQueue.class);
     private final ReadWriteLock treeMapLock = new ReentrantReadWriteLock();
+    /** queueOffset → 待消费消息（并发/顺序共用主缓冲）。 */
     private final TreeMap<Long, MessageExt> msgTreeMap = new TreeMap<>();
     private final AtomicLong msgCount = new AtomicLong();
     private final AtomicLong msgSize = new AtomicLong();
     private final ReadWriteLock consumeLock = new ReentrantReadWriteLock();
-    /**
-     * A subset of msgTreeMap, will only be used when orderly consume
-     */
+    /** 顺序消费专用：已从 msgTreeMap 取出、正在消费中的消息子集。 */
     private final TreeMap<Long, MessageExt> consumingMsgOrderlyTreeMap = new TreeMap<>();
     private final AtomicLong tryUnlockTimes = new AtomicLong(0);
     private volatile long queueOffsetMax = 0L;
@@ -61,6 +64,7 @@ public class ProcessQueue {
     private volatile boolean consuming = false;
     private volatile long msgAccCnt = 0;
 
+    /** 顺序消费队列锁是否已过期（超过 REBALANCE_LOCK_MAX_LIVE_TIME）。 */
     public boolean isLockExpired() {
         return (System.currentTimeMillis() - this.lastLockTimestamp) > REBALANCE_LOCK_MAX_LIVE_TIME;
     }
@@ -70,7 +74,10 @@ public class ProcessQueue {
     }
 
     /**
-     * @param pushConsumer
+     * 清理超时未消费消息：并发模式下将队首超时消息 SendBack（重试级别 3）。
+     * 顺序消费不执行此逻辑。
+     *
+     * @param pushConsumer Push 消费者实例
      */
     public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
         if (pushConsumer.isConsumeOrderly()) {
@@ -126,6 +133,7 @@ public class ProcessQueue {
         }
     }
 
+    /** 写入 Pull 到的消息；若此前未在消费中则返回 true 触发 ConsumeMessageService 调度。 */
     public boolean putMessage(final List<MessageExt> msgs) {
         boolean dispatchToConsume = false;
         try {
@@ -184,6 +192,7 @@ public class ProcessQueue {
         return 0;
     }
 
+    /** 消费成功后移除消息并返回下一待提交 offset（并发模式）。 */
     public long removeMessage(final List<MessageExt> msgs) {
         long result = -1;
         final long now = System.currentTimeMillis();
@@ -250,6 +259,7 @@ public class ProcessQueue {
         this.locked = locked;
     }
 
+    /** 顺序消费失败：将 consumingMsgOrderlyTreeMap 中的消息归还 msgTreeMap。 */
     public void rollback() {
         try {
             this.treeMapLock.writeLock().lockInterruptibly();
@@ -264,6 +274,7 @@ public class ProcessQueue {
         }
     }
 
+    /** 顺序消费成功：清空 consumingMsgOrderlyTreeMap 并返回下一 offset。 */
     public long commit() {
         try {
             this.treeMapLock.writeLock().lockInterruptibly();
@@ -309,6 +320,7 @@ public class ProcessQueue {
         }
     }
 
+    /** 顺序消费：从 msgTreeMap 取出最多 batchSize 条消息移入 consuming 子集。 */
     public List<MessageExt> takeMessages(final int batchSize) {
         List<MessageExt> result = new ArrayList<>(batchSize);
         final long now = System.currentTimeMillis();
@@ -341,12 +353,10 @@ public class ProcessQueue {
         return result;
     }
 
-    /**
-     * Return the result that whether current message is exist in the process queue or not.
-     */
+    /** 判断指定消息是否仍存在于 ProcessQueue 缓冲中。 */
     public boolean containsMessage(MessageExt message) {
         if (message == null) {
-            // should never reach here.
+            // 正常不应传入 null
             return false;
         }
         try {

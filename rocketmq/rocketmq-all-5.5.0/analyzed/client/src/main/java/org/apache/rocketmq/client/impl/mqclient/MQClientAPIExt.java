@@ -94,11 +94,17 @@ import org.apache.rocketmq.remoting.protocol.header.UnlockBatchMqRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.UpdateConsumerOffsetRequestHeader;
 import org.apache.rocketmq.remoting.protocol.heartbeat.HeartbeatData;
 
+/**
+ * 客户端 Remoting API 扩展：在 {@link MQClientAPIImpl} 基础上封装
+ * Proxy/Lite/POP 等新协议请求，并提供 {@link MqClientAdminImpl} 管理接口。
+ * 供 {@link MQClientInstance} 调用 Broker/Proxy。
+ */
 public class MQClientAPIExt extends MQClientAPIImpl {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
     private final ClientConfig clientConfig;
 
+    /** 客户端管理 API 实现（topic/订阅/offset 等运维操作）。 */
     private final MqClientAdminImpl mqClientAdmin;
 
     public MQClientAPIExt(
@@ -122,6 +128,7 @@ public class MQClientAPIExt extends MQClientAPIImpl {
         this.mqClientAdmin = new MqClientAdminImpl(getRemotingClient());
     }
 
+    /** 更新 NameServer 地址列表；优先使用 clientConfig 中显式配置的 namesrvAddr。 */
     public boolean updateNameServerAddressList() {
         if (this.clientConfig.getNamesrvAddr() != null) {
             this.updateNameServerAddressList(this.clientConfig.getNamesrvAddr());
@@ -131,6 +138,7 @@ public class MQClientAPIExt extends MQClientAPIImpl {
         return false;
     }
 
+    /** 向 Broker 发送 Oneway 心跳（不等待响应）。 */
     public CompletableFuture<Void> sendHeartbeatOneway(
         String brokerAddr,
         HeartbeatData heartbeatData,
@@ -149,6 +157,7 @@ public class MQClientAPIExt extends MQClientAPIImpl {
         return future;
     }
 
+    /** 异步发送心跳并返回 Broker 协议版本号。 */
     public CompletableFuture<Integer> sendHeartbeatAsync(
         String brokerAddr,
         HeartbeatData heartbeatData,
@@ -169,6 +178,7 @@ public class MQClientAPIExt extends MQClientAPIImpl {
         });
     }
 
+    /** 异步发送消息到 Broker。 */
     public CompletableFuture<SendResult> sendMessageAsync(
         String brokerAddr,
         String brokerName,
@@ -234,6 +244,7 @@ public class MQClientAPIExt extends MQClientAPIImpl {
         return this.getRemotingClient().invoke(brokerAddr, request, timeoutMillis);
     }
 
+    /** 异步 POP 消息。 */
     public CompletableFuture<PopResult> popMessageAsync(
         String brokerAddr,
         String brokerName,
@@ -361,6 +372,7 @@ public class MQClientAPIExt extends MQClientAPIImpl {
         return future;
     }
 
+    /** 异步 Pull 消息。 */
     public CompletableFuture<PullResult> pullMessageAsync(
         String brokerAddr,
         PullMessageRequestHeader requestHeader,
@@ -765,6 +777,7 @@ public class MQClientAPIExt extends MQClientAPIImpl {
         return future;
     }
 
+    /** 返回客户端 Admin API 实例。 */
     public MqClientAdminImpl getMqClientAdmin() {
         return mqClientAdmin;
     }

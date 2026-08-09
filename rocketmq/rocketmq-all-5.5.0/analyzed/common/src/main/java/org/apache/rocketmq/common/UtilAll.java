@@ -50,6 +50,10 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 通用工具类：时间格式化、CRC32、堆外内存释放、
+ * IP 校验、文件读写及消息压缩/解压（旧 API，推荐 {@link org.apache.rocketmq.common.compression.Compressor}）。
+ */
 public class UtilAll {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
     private static final Logger STORE_LOG = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
@@ -63,7 +67,7 @@ public class UtilAll {
     static {
         HEX_ARRAY = "0123456789ABCDEF".toCharArray();
         Supplier<Integer> supplier = () -> {
-            // format: "pid@hostname"
+            // 格式："pid@hostname"
             String currentJVM = ManagementFactory.getRuntimeMXBean().getName();
             try {
                 return Integer.parseInt(currentJVM.substring(0, currentJVM.indexOf('@')));
@@ -112,6 +116,7 @@ public class UtilAll {
         return nf.format(offset);
     }
 
+    /** 计算自 beginTime 起经过的毫秒数。 */
     public static long computeElapsedTimeMilliseconds(final long beginTime) {
         return System.currentTimeMillis() - beginTime;
     }
@@ -356,9 +361,7 @@ public class UtilAll {
         return (byte) "0123456789ABCDEF".indexOf(c);
     }
 
-    /**
-     * use {@link org.apache.rocketmq.common.compression.Compressor#decompress(byte[])} instead.
-     */
+    /** 已废弃：请使用 {@link org.apache.rocketmq.common.compression.Compressor#decompress(byte[])}。 */
     @Deprecated
     public static byte[] uncompress(final byte[] src) throws IOException {
         byte[] result = src;
@@ -400,9 +403,7 @@ public class UtilAll {
         return result;
     }
 
-    /**
-     * use {@link org.apache.rocketmq.common.compression.Compressor#compress(byte[], int)} instead.
-     */
+    /** 已废弃：请使用 {@link org.apache.rocketmq.common.compression.Compressor#compress(byte[], int)}。 */
     @Deprecated
     public static byte[] compress(final byte[] src, final int level) throws IOException {
         byte[] result = src;
@@ -473,6 +474,7 @@ public class UtilAll {
         return str;
     }
 
+    /** 判断字符串是否为 null 或仅含空白字符。 */
     public static boolean isBlank(String str) {
         return StringUtils.isBlank(str);
     }
@@ -525,10 +527,10 @@ public class UtilAll {
             throw new RuntimeException("illegal ipv4 bytes");
         }
 
-        //10.0.0.0~10.255.255.255
-        //172.16.0.0~172.31.255.255
-        //192.168.0.0~192.168.255.255
-        //127.0.0.0~127.255.255.255
+        // A 类内网 10.0.0.0~10.255.255.255
+        // B 类内网 172.16.0.0~172.31.255.255
+        // C 类内网 192.168.0.0~192.168.255.255
+        // 回环地址 127.0.0.0~127.255.255.255
         if (ip[0] == (byte) 10) {
             return true;
         } else if (ip[0] == (byte) 127) {
@@ -698,8 +700,8 @@ public class UtilAll {
     }
 
     /**
-     * Free direct-buffer's memory actively.
-     * @param buffer Direct buffer to free.
+     * 主动释放 DirectBuffer 堆外内存。
+     * @param buffer 待释放的 DirectBuffer
      */
     public static void cleanBuffer(final ByteBuffer buffer) {
         if (null == buffer) {
