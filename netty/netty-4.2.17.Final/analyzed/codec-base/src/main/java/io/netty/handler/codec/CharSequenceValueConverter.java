@@ -21,7 +21,9 @@ import java.text.ParseException;
 import java.util.Date;
 
 /**
- * Converts to/from native types, general {@link Object}, and {@link CharSequence}s.
+ * {@link CharSequence} 与原生类型、{@link Object} 之间的双向 {@link ValueConverter} 实现。
+ * <p>
+ * 对 {@link AsciiString} 做快速路径解析；HTTP 日期通过 {@link DateFormatter} 转换。
  */
 public class CharSequenceValueConverter implements ValueConverter<CharSequence> {
     public static final CharSequenceValueConverter INSTANCE = new CharSequenceValueConverter();

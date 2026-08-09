@@ -25,33 +25,24 @@ import io.netty.util.AsciiString;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * 将 ASCII 协议头（名/值对）编码写入 {@link ByteBuf}，支持可配置分隔符与换行符。
+ */
 public final class AsciiHeadersEncoder {
 
-    /**
-     * The separator characters to insert between a header name and a header value.
-     */
+    /** 头名与头值之间的分隔符样式。 */
     public enum SeparatorType {
-        /**
-         * {@code ':'}
-         */
+        /** 仅冒号 {@code ':'} */
         COLON,
-        /**
-         * {@code ': '}
-         */
+        /** 冒号加空格 {@code ': '} */
         COLON_SPACE,
     }
 
-    /**
-     * The newline characters to insert between header entries.
-     */
+    /** 相邻头字段之间的换行样式。 */
     public enum NewlineType {
-        /**
-         * {@code '\n'}
-         */
+        /** 仅 LF {@code '\n'} */
         LF,
-        /**
-         * {@code '\r\n'}
-         */
+        /** CRLF {@code '\r\n'} */
         CRLF
     }
 
@@ -59,16 +50,19 @@ public final class AsciiHeadersEncoder {
     private final SeparatorType separatorType;
     private final NewlineType newlineType;
 
+    /** 默认 {@link SeparatorType#COLON_SPACE} 与 {@link NewlineType#CRLF}。 */
     public AsciiHeadersEncoder(ByteBuf buf) {
         this(buf, SeparatorType.COLON_SPACE, NewlineType.CRLF);
     }
 
+    /** @param buf 目标缓冲区；@param separatorType 名值分隔符；@param newlineType 行尾换行 */ 
     public AsciiHeadersEncoder(ByteBuf buf, SeparatorType separatorType, NewlineType newlineType) {
         this.buf = ObjectUtil.checkNotNull(buf, "buf");
         this.separatorType = ObjectUtil.checkNotNull(separatorType, "separatorType");
         this.newlineType = ObjectUtil.checkNotNull(newlineType, "newlineType");
     }
 
+    /** 将单条头字段 {@code name:value} 追加写入 buf。 */
     public void encode(Entry<CharSequence, CharSequence> entry) {
         final CharSequence name = entry.getKey();
         final CharSequence value = entry.getValue();

@@ -27,23 +27,11 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 /**
- * A formatter for HTTP header dates, such as "Expires" and "Date" headers, or "expires" field in "Set-Cookie".
- *
- * On the parsing side, it honors RFC6265 (so it supports RFC1123).
- * Note that:
- * <ul>
- *     <li>Day of week is ignored and not validated</li>
- *     <li>Timezone is ignored, as RFC6265 assumes UTC</li>
- * </ul>
- * If you're looking for a date format that validates day of week, or supports other timezones, consider using
- * java.util.DateTimeFormatter.RFC_1123_DATE_TIME.
- *
- * On the formatting side, it uses a subset of RFC1123 (2 digit day-of-month and 4 digit year) as per RFC2616.
- * This subset supports RFC6265.
- *
- * @see <a href="https://tools.ietf.org/html/rfc6265#section-5.1.1">RFC6265</a> for the parsing side
- * @see <a href="https://tools.ietf.org/html/rfc1123#page-55">RFC1123</a> and
- * <a href="https://tools.ietf.org/html/rfc2616#section-3.3.1">RFC2616</a> for the encoding side.
+ * HTTP 头日期（Date、Expires、Set-Cookie expires 等）的解析与格式化工具。
+ * <p>
+ * 解析遵循 RFC6265（兼容 RFC1123）：忽略星期与时区，假定 UTC。
+ * 格式化使用 RFC2616 要求的 RFC1123 子集（两位日、四位年）。
+ * @see <a href="https://tools.ietf.org/html/rfc6265#section-5.1.1">RFC6265</a>
  */
 public final class DateFormatter {
 
@@ -79,20 +67,20 @@ public final class DateFormatter {
             };
 
     /**
-     * Parse some text into a {@link Date}, according to RFC6265
-     * @param txt text to parse
-     * @return a {@link Date}, or null if text couldn't be parsed
+     * 按 RFC6265 解析整段文本为 {@link Date}。
+     * @param txt 待解析文本
+     * @return 解析成功返回日期，否则 {@code null}
      */
     public static Date parseHttpDate(CharSequence txt) {
         return parseHttpDate(txt, 0, txt.length());
     }
 
     /**
-     * Parse some text into a {@link Date}, according to RFC6265
-     * @param txt text to parse
-     * @param start the start index inside {@code txt}
-     * @param end the end index inside {@code txt}
-     * @return a {@link Date}, or null if text couldn't be parsed
+     * 解析 {@code txt[start,end)} 子串。
+     * @param txt 源文本
+     * @param start 起始下标（含）
+     * @param end 结束下标（不含）
+     * @return 解析成功返回日期，否则 {@code null}
      */
     public static Date parseHttpDate(CharSequence txt, int start, int end) {
         int length = end - start;
@@ -108,19 +96,19 @@ public final class DateFormatter {
     }
 
     /**
-     * Format a {@link Date} into RFC1123 format
-     * @param date the date to format
-     * @return a RFC1123 string
+     * 将 {@link Date} 格式化为 RFC1123 字符串（如 {@code Sun, 09 Aug 2026 12:00:00 GMT}）。
+     * @param date 待格式化日期
+     * @return RFC1123 格式字符串
      */
     public static String format(Date date) {
         return formatter().format0(checkNotNull(date, "date"));
     }
 
     /**
-     * Append a {@link Date} to a {@link StringBuilder} into RFC1123 format
-     * @param date the date to format
-     * @param sb the StringBuilder
-     * @return the same StringBuilder
+     * 将日期以 RFC1123 格式追加到 {@link StringBuilder}。
+     * @param date 待格式化日期
+     * @param sb 目标构建器
+     * @return 同一 {@code sb} 实例
      */
     public static StringBuilder append(Date date, StringBuilder sb) {
         return formatter().append0(checkNotNull(date, "date"), checkNotNull(sb, "sb"));
@@ -132,7 +120,7 @@ public final class DateFormatter {
         return formatter;
     }
 
-    // delimiter = %x09 / %x20-2F / %x3B-40 / %x5B-60 / %x7B-7E
+    // RFC6265 分隔符集合
     private static boolean isDelim(char c) {
         return DELIMITERS.get(c);
     }
@@ -146,7 +134,7 @@ public final class DateFormatter {
     }
 
     private final GregorianCalendar cal = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-    private final StringBuilder sb = new StringBuilder(29); // Sun, 27 Nov 2016 19:37:15 GMT
+    private final StringBuilder sb = new StringBuilder(29); // RFC1123 典型长度
     private boolean timeFound;
     private int hours;
     private int minutes;

@@ -24,12 +24,10 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import java.util.List;
 
 /**
- * A decoder that decodes the content of the received {@link DatagramPacket} using
- * the specified {@link ByteBuf} decoder. E.g.,
- *
+ * 将 {@link DatagramPacket} 的 {@link ByteBuf} 载荷委托给指定 {@link MessageToMessageDecoder}
+ * 解码，并透传其生命周期回调。
  * <pre><code>
- * {@link ChannelPipeline} pipeline = ...;
- * pipeline.addLast("udpDecoder", new {@link DatagramPacketDecoder}(new {@code ProtobufDecoder}(...));
+ * pipeline.addLast("udpDecoder", new DatagramPacketDecoder(new ProtobufDecoder(...)));
  * </code></pre>
  */
 public class DatagramPacketDecoder extends MessageToMessageDecoder<DatagramPacket> {
@@ -37,9 +35,7 @@ public class DatagramPacketDecoder extends MessageToMessageDecoder<DatagramPacke
     private final MessageToMessageDecoder<ByteBuf> decoder;
 
     /**
-     * Create a {@link DatagramPacket} decoder using the specified {@link ByteBuf} decoder.
-     *
-     * @param decoder the specified {@link ByteBuf} decoder
+     * @param decoder 处理 {@link DatagramPacket#content()} 的 {@link ByteBuf} 解码器
      */
     public DatagramPacketDecoder(MessageToMessageDecoder<ByteBuf> decoder) {
         super(DatagramPacket.class);

@@ -24,14 +24,14 @@ import java.util.RandomAccess;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Special {@link AbstractList} implementation which is used within our codec base classes.
+ * 编解码基类内部使用的专用 {@link AbstractList}，支持线程本地池化与快速无边界访问。
  */
 final class CodecOutputList extends AbstractList<Object> implements RandomAccess {
 
     private static final CodecOutputListRecycler NOOP_RECYCLER = new CodecOutputListRecycler() {
         @Override
         public void recycle(CodecOutputList object) {
-            // drop on the floor and let the GC handle it.
+            // 池耗尽时的新实例交给 GC
         }
     };
 
@@ -39,7 +39,7 @@ final class CodecOutputList extends AbstractList<Object> implements RandomAccess
             new FastThreadLocal<CodecOutputLists>() {
                 @Override
                 protected CodecOutputLists initialValue() throws Exception {
-                    // 16 CodecOutputList per Thread are cached.
+                    // 每线程缓存 16 个 CodecOutputList
                     return new CodecOutputLists(16);
                 }
             };
@@ -58,7 +58,7 @@ final class CodecOutputList extends AbstractList<Object> implements RandomAccess
         CodecOutputLists(int numElements) {
             elements = new CodecOutputList[MathUtil.safeFindNextPositivePowerOfTwo(numElements)];
             for (int i = 0; i < elements.length; ++i) {
-                // Size of 16 should be good enough for the majority of all users as an initial capacity.
+                // 初始容量 16 对多数解码场景足够
                 elements[i] = new CodecOutputList(this, 16);
             }
             count = elements.length;
@@ -68,8 +68,7 @@ final class CodecOutputList extends AbstractList<Object> implements RandomAccess
 
         public CodecOutputList getOrCreate() {
             if (count == 0) {
-                // Return a new CodecOutputList which will not be cached. We use a size of 4 to keep the overhead
-                // low.
+                // 池空时分配不可回收实例，初始容量 4 降低开销
                 return new CodecOutputList(NOOP_RECYCLER, 4);
             }
             --count;
@@ -122,7 +121,7 @@ final class CodecOutputList extends AbstractList<Object> implements RandomAccess
         try {
             insert(size, element);
         } catch (IndexOutOfBoundsException ignore) {
-            // This should happen very infrequently so we just catch the exception and try again.
+            // 扩容极少发生，捕获 IndexOutOfBounds 后扩容重试
             expandArray();
             insert(size, element);
         }
@@ -173,22 +172,17 @@ final class CodecOutputList extends AbstractList<Object> implements RandomAccess
 
     @Override
     public void clear() {
-        // We only set the size to 0 and not null out the array. Null out the array will explicit requested by
-        // calling recycle()
+        // clear 仅置 size=0；显式 null 数组须调用 recycle()
         maxSeenSize = Math.max(maxSeenSize, size);
         size = 0;
     }
 
-    /**
-     * Returns {@code true} if any elements where added or set. This will be reset once {@link #recycle()} was called.
-     */
+    /** 自上次 {@link #recycle()} 以来是否写入过元素；用于判断是否需要 fireChannelRead。 */
     boolean insertSinceRecycled() {
         return insertSinceRecycled;
     }
 
-    /**
-     * Recycle the array which will clear it and null out all entries in the internal storage.
-     */
+    /** 归还线程本地池：清空数组元素并复位状态。 */
     void recycle() {
         int len = Math.max(maxSeenSize, size);
         for (int i = 0; i < len; i ++) {
@@ -201,9 +195,7 @@ final class CodecOutputList extends AbstractList<Object> implements RandomAccess
         recycler.recycle(this);
     }
 
-    /**
-     * Returns the element on the given index. This operation will not do any range-checks and so is considered unsafe.
-     */
+    /** 无边界检查的快速取元素，仅供内部 fireChannelRead 使用。 */
     Object getUnsafe(int index) {
         return array[index];
     }
@@ -221,7 +213,7 @@ final class CodecOutputList extends AbstractList<Object> implements RandomAccess
     }
 
     private void expandArray() {
-        // double capacity
+        // 容量翻倍
         int newCapacity = array.length << 1;
 
         if (newCapacity < 0) {

@@ -14,10 +14,13 @@
  */
 package io.netty.buffer.search;
 
+/**
+ * 搜索处理器工厂；每次调用 {@link #newSearchProcessor()} 返回独立的状态实例。
+ */
 public interface SearchProcessorFactory {
 
     /**
-     * Returns a new {@link SearchProcessor}.
+     * 创建新的 {@link SearchProcessor} 实例。
      */
     SearchProcessor newSearchProcessor();
 

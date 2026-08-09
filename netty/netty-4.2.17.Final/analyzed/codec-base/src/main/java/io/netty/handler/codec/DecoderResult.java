@@ -18,6 +18,10 @@ package io.netty.handler.codec;
 import io.netty.util.Signal;
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * 解码结果：成功、未完成或失败（携带 {@link Throwable}）。
+ * 使用 {@link io.netty.util.Signal} 单例表示成功/未完成，避免多余分配。
+ */
 public class DecoderResult {
 
     protected static final Signal SIGNAL_UNFINISHED = Signal.valueOf(DecoderResult.class, "UNFINISHED");
@@ -36,18 +40,22 @@ public class DecoderResult {
         this.cause = ObjectUtil.checkNotNull(cause, "cause");
     }
 
+    /** 是否已结束解码（成功或失败，非 UNFINISHED）。 */
     public boolean isFinished() {
         return cause != SIGNAL_UNFINISHED;
     }
 
+    /** 是否为成功结果。 */
     public boolean isSuccess() {
         return cause == SIGNAL_SUCCESS;
     }
 
+    /** 是否为失败结果（含具体 cause）。 */
     public boolean isFailure() {
         return cause != SIGNAL_SUCCESS && cause != SIGNAL_UNFINISHED;
     }
 
+    /** 失败时返回原因；成功或未完成时返回 {@code null}。 */
     public Throwable cause() {
         if (isFailure()) {
             return cause;

@@ -16,35 +16,27 @@
 package io.netty.handler.codec;
 
 /**
- * An {@link CodecException} which is thrown by a decoder.
+ * 解码器抛出的 {@link CodecException}。
  */
 public class DecoderException extends CodecException {
 
     private static final long serialVersionUID = 6926716840699621852L;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建无参实例。 */
     public DecoderException() {
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建新实例。 */
     public DecoderException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建新实例。 */
     public DecoderException(String message) {
         super(message);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建新实例。 */
     public DecoderException(Throwable cause) {
         super(cause);
     }

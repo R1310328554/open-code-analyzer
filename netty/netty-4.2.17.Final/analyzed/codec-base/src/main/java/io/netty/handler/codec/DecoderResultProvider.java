@@ -17,17 +17,12 @@
 package io.netty.handler.codec;
 
 /**
- * Provides the accessor methods for the {@link DecoderResult} property of a decoded message.
+ * 为已解码消息提供 {@link DecoderResult} 的读写访问。
  */
 public interface DecoderResultProvider {
-    /**
-     * Returns the result of decoding this object.
-     */
+    /** 返回该对象的解码结果。 */
     DecoderResult decoderResult();
 
-    /**
-     * Updates the result of decoding this object. This method is supposed to be invoked by a decoder.
-     * Do not call this method unless you know what you are doing.
-     */
+    /** 由解码器更新解码结果；非解码逻辑请勿调用。 */
     void setDecoderResult(DecoderResult result);
 }

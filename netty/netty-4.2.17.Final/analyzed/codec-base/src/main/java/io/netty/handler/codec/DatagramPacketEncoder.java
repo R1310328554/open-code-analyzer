@@ -29,29 +29,17 @@ import java.net.SocketAddress;
 import java.util.List;
 
 /**
- * An encoder that encodes the content in {@link AddressedEnvelope} to {@link DatagramPacket} using
- * the specified message encoder. E.g.,
- *
- * <pre><code>
- * {@link ChannelPipeline} pipeline = ...;
- * pipeline.addLast("udpEncoder", new {@link DatagramPacketEncoder}(new {@code ProtobufEncoder}(...));
- * </code></pre>
- *
- * Note: As UDP packets are out-of-order, you should make sure the encoded message size are not greater than
- * the max safe packet size in your particular network path which guarantees no packet fragmentation.
- *
- * @param <M> the type of message to be encoded
+ * 将 {@link AddressedEnvelope} 中的消息经指定编码器转为 {@link ByteBuf}，
+ * 再封装为带收发地址的 {@link DatagramPacket}。
+ * <p>
+ * UDP 无序且易分片，编码后载荷应小于路径 MTU 安全上限。
+ * @param <M> 信封内待编码的消息类型
  */
 public class DatagramPacketEncoder<M> extends MessageToMessageEncoder<AddressedEnvelope<M, InetSocketAddress>> {
 
     private final MessageToMessageEncoder<? super M> encoder;
 
-    /**
-     * Create an encoder that encodes the content in {@link AddressedEnvelope} to {@link DatagramPacket} using
-     * the specified message encoder.
-     *
-     * @param encoder the specified message encoder
-     */
+    /** @param encoder 将 {@code M} 编码为 {@link ByteBuf} 的编码器 */
     public DatagramPacketEncoder(MessageToMessageEncoder<? super M> encoder) {
         this.encoder = checkNotNull(encoder, "encoder");
     }
@@ -80,7 +68,7 @@ public class DatagramPacketEncoder<M> extends MessageToMessageEncoder<AddressedE
         }
         Object content = out.get(0);
         if (content instanceof ByteBuf) {
-            // Replace the ByteBuf with a DatagramPacket.
+            // 将 ByteBuf 替换为带地址的 DatagramPacket
             out.set(0, new DatagramPacket((ByteBuf) content, msg.recipient(), msg.sender()));
         } else {
             throw new EncoderException(

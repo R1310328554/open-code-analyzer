@@ -24,12 +24,10 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
- * A Codec for on-the-fly encoding/decoding of bytes to messages and vise-versa.
- *
- * This can be thought of as a combination of {@link ByteToMessageDecoder} and {@link MessageToByteEncoder}.
- *
- * Be aware that sub-classes of {@link ByteToMessageCodec} <strong>MUST NOT</strong>
- * annotated with {@link @Sharable}.
+ * 字节流与消息双向编解码的复合 {@link ChannelDuplexHandler}，
+ * 等价于 {@link ByteToMessageDecoder} 与 {@link MessageToByteEncoder} 的组合。
+ * <p>
+ * 子类<strong>不得</strong>标注 {@link @Sharable}。
  */
 public abstract class ByteToMessageCodec<I> extends ChannelDuplexHandler {
 
@@ -48,26 +46,20 @@ public abstract class ByteToMessageCodec<I> extends ChannelDuplexHandler {
         }
     };
 
-    /**
-     * see {@link #ByteToMessageCodec(boolean)} with {@code true} as boolean parameter.
-     */
+    /** 等价于 {@link #ByteToMessageCodec(boolean)}({@code true})。 */
     protected ByteToMessageCodec() {
         this(true);
     }
 
-    /**
-     * see {@link #ByteToMessageCodec(Class, boolean)} with {@code true} as boolean value.
-     */
+    /** 等价于 {@link #ByteToMessageCodec(Class, boolean)}(..., {@code true})。 */
     protected ByteToMessageCodec(Class<? extends I> outboundMessageType) {
         this(outboundMessageType, true);
     }
 
     /**
-     * Create a new instance which will try to detect the types to match out of the type parameter of the class.
-     *
-     * @param preferDirect          {@code true} if a direct {@link ByteBuf} should be tried to be used as target for
-     *                              the encoded messages. If {@code false} is used it will allocate a heap
-     *                              {@link ByteBuf}, which is backed by an byte array.
+     * 从泛型参数推断出站消息类型。
+     * @param preferDirect {@code true} 优先使用直接 {@link ByteBuf} 作为编码目标；
+     *                     {@code false} 则分配堆 {@link ByteBuf}。
      */
     protected ByteToMessageCodec(boolean preferDirect) {
         ensureNotSharable();
@@ -76,12 +68,8 @@ public abstract class ByteToMessageCodec<I> extends ChannelDuplexHandler {
     }
 
     /**
-     * Create a new instance
-     *
-     * @param outboundMessageType   The type of messages to match
-     * @param preferDirect          {@code true} if a direct {@link ByteBuf} should be tried to be used as target for
-     *                              the encoded messages. If {@code false} is used it will allocate a heap
-     *                              {@link ByteBuf}, which is backed by an byte array.
+     * @param outboundMessageType 出站消息类型
+     * @param preferDirect 同 {@link #ByteToMessageCodec(boolean)}
      */
     protected ByteToMessageCodec(Class<? extends I> outboundMessageType, boolean preferDirect) {
         ensureNotSharable();
@@ -89,11 +77,7 @@ public abstract class ByteToMessageCodec<I> extends ChannelDuplexHandler {
         encoder = new Encoder(preferDirect, outboundMessageType);
     }
 
-    /**
-     * Returns {@code true} if and only if the specified message can be encoded by this codec.
-     *
-     * @param msg the message
-     */
+    /** @param msg 待编码消息；{@code true} 表示本 codec 可处理 */
     public boolean acceptOutboundMessage(Object msg) throws Exception {
         return outboundMsgMatcher.match(msg);
     }
@@ -136,23 +120,16 @@ public abstract class ByteToMessageCodec<I> extends ChannelDuplexHandler {
         }
     }
 
-    /**
-     * @see MessageToByteEncoder#encode(ChannelHandlerContext, Object, ByteBuf)
-     */
+    /** @see MessageToByteEncoder#encode(ChannelHandlerContext, Object, ByteBuf) 子类实现编码逻辑 */
     protected abstract void encode(ChannelHandlerContext ctx, I msg, ByteBuf out) throws Exception;
 
-    /**
-     * @see ByteToMessageDecoder#decode(ChannelHandlerContext, ByteBuf, List)
-     */
+    /** @see ByteToMessageDecoder#decode(ChannelHandlerContext, ByteBuf, List) 子类实现解码逻辑 */
     protected abstract void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception;
 
-    /**
-     * @see ByteToMessageDecoder#decodeLast(ChannelHandlerContext, ByteBuf, List)
-     */
+    /** @see ByteToMessageDecoder#decodeLast(ChannelHandlerContext, ByteBuf, List) 通道关闭时的收尾解码 */
     protected void decodeLast(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         if (in.isReadable()) {
-            // Only call decode() if there is something left in the buffer to decode.
-            // See https://github.com/netty/netty/issues/4386
+            // 缓冲仍有可读字节时才 decode；见 issue #4386
             decode(ctx, in, out);
         }
     }
