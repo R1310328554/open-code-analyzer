@@ -2528,3 +2528,18 @@
 2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/command/RedisQueuedBatchExecutor.java wave83a [0:15] repair after 83b mark wipe
 2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/config/BaseConfig.java wave83a [0:15] repair after 83b mark wipe
 2026-08-09T21:30:53Z DONE redisson/src/main/java/org/redisson/config/BaseMasterSlaveServersConfig.java wave83a [0:15] repair after 83b mark wipe
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/HostNatMapper.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/HostPortNatMapper.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/MasterSlaveServersConfig.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/NameMapper.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/NatMapper.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/PropertiesConvertor.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/Protocol.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/ReadMode.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/RedissonNodeConfig.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/RedissonNodeFileConfig.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/ReplicatedServersConfig.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/SentinelServersConfig.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/ShardedSubscriptionMode.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/SingleServerConfig.java wave84a [0:15]
+2026-08-09T21:32:12Z DONE redisson/src/main/java/org/redisson/config/SslProvider.java wave84a [0:15]
