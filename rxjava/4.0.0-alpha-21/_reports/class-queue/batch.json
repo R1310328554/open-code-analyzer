@@ -15,23 +15,8 @@
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureLatest.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureReduce.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnBackpressureReduceWith.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnErrorComplete.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnErrorNext.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnErrorReturn.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRange.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRangeLong.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReduce.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReduceMaybe.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReduceSeedSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableReduceWithSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRefCount.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRepeat.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRepeatUntil.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRepeatWhen.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRetryBiPredicate.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRetryPredicate.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableRetryWhen.java"
+    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableOnErrorComplete.java"
   ],
   "remaining_pending": 662,
-  "done": 315
+  "done": 330
 }

@@ -22,14 +22,14 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpResponse;
 
 /**
- * RestClient 被 Sentinel 流控阻断时的降级处理器接口。
+ * Fallback handler for RestClient when request is blocked by Sentinel.
  *
  * @author QHT, uuuyuqi
  */
 public interface RestClientFallback {
 
     /**
-     * 处理被流控阻断的请求并返回降级响应。
+     * Handle the blocked request and return a fallback response.
      *
      * @param request HTTP request entity
      * @param body request body

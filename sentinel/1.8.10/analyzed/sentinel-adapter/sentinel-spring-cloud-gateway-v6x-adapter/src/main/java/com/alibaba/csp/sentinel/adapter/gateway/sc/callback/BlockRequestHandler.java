@@ -20,7 +20,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * 被流控阻断请求的响应式处理器。
+ * Reactive handler for the blocked request.
  *
  * @author Eric Zhao
  */
@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
 public interface BlockRequestHandler {
 
     /**
-     * 处理被流控阻断的请求。
+     * Handle the blocked request.
      *
      * @param exchange server exchange object
      * @param t block exception

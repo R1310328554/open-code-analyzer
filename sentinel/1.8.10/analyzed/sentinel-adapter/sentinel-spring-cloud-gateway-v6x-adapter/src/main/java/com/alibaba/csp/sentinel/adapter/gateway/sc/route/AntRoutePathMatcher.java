@@ -23,8 +23,6 @@ import org.springframework.util.PathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
- * 基于 Ant 风格路径模式的路由匹配器，用于网关 API 路径谓词匹配。
- *
  * @author Eric Zhao
  * @since 1.6.0
  */

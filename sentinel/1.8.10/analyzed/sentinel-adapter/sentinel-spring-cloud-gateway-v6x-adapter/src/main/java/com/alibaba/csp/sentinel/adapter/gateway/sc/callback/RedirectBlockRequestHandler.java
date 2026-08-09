@@ -24,8 +24,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * 将流控阻断请求重定向到指定 URL 的 {@link BlockRequestHandler} 实现。
- *
  * @author Eric Zhao
  * @since 1.6.0
  */

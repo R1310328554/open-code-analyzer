@@ -30,8 +30,6 @@ import org.springframework.web.server.WebExceptionHandler;
 import reactor.core.publisher.Mono;
 
 /**
- * Spring Cloud Gateway 流控异常处理器，将 Sentinel 阻断异常委托给 {@link GatewayCallbackManager}。
- *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -54,7 +52,7 @@ public class SentinelGatewayBlockExceptionHandler implements WebExceptionHandler
         if (exchange.getResponse().isCommitted()) {
             return Mono.error(ex);
         }
-        // 本异常处理器仅处理 Sentinel 流控拒绝。
+        // This exception handler only handles rejection by Sentinel.
         if (!BlockException.isBlockException(ex)) {
             return Mono.error(ex);
         }

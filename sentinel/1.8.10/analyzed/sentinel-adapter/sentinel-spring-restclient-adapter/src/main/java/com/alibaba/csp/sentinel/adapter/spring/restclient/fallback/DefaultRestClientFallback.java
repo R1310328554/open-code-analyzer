@@ -23,7 +23,7 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpResponse;
 
 /**
- * RestClient 默认降级处理器，将 {@link BlockException} 包装为 {@link SentinelRpcException} 抛出。
+ * Default fallback handler for RestClient.
  *
  * @author QHT, uuuyuqi
  */
@@ -32,7 +32,7 @@ public class DefaultRestClientFallback implements RestClientFallback {
     @Override
     public ClientHttpResponse handle(HttpRequest request, byte[] body,
                                      ClientHttpRequestExecution execution, BlockException ex) {
-        // 包装并抛出异常。
+        // Just wrap and throw the exception.
         throw new SentinelRpcException(ex);
     }
 }

@@ -22,8 +22,6 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
- * Spring Cloud Gateway 回调管理器，统一管理阻断请求处理器与请求来源解析器。
- *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -32,11 +30,11 @@ public final class GatewayCallbackManager {
     private static final Function<ServerWebExchange, String> DEFAULT_ORIGIN_PARSER = (w) -> "";
 
     /**
-     * 阻断请求处理器：(serverExchange, exception) -> response
+     * BlockRequestHandler: (serverExchange, exception) -> response
      */
     private static volatile BlockRequestHandler blockHandler = new DefaultBlockRequestHandler();
     /**
-     * 请求来源解析器：(serverExchange) -> origin
+     * RequestOriginParser: (serverExchange) -> origin
      */
     private static volatile Function<ServerWebExchange, String> requestOriginParser = DEFAULT_ORIGIN_PARSER;
 
