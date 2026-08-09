@@ -655,3 +655,13 @@ spring-context/src/main/java/org/springframework/jmx/export/MBeanExportOperation
 spring-context/src/main/java/org/springframework/jmx/export/MBeanExporterListener.java
 spring-context/src/main/java/org/springframework/jmx/export/NotificationListenerBean.java
 spring-context/src/main/java/org/springframework/jmx/export/SpringModelMBean.java
+spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedResource.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/AbstractConfigurableMBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/AbstractMBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/AutodetectCapableMBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/InterfaceBasedMBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/MBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/MetadataMBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/MethodExclusionMBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/MethodNameBasedMBeanInfoAssembler.java
+spring-context/src/main/java/org/springframework/jmx/export/assembler/SimpleReflectiveMBeanInfoAssembler.java

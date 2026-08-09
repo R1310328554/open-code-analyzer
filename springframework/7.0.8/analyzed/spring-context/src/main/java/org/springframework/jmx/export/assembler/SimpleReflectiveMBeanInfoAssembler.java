@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2002-present the original author or authors.
  *
@@ -19,9 +20,9 @@ package org.springframework.jmx.export.assembler;
 import java.lang.reflect.Method;
 
 /**
- * Simple subclass of {@code AbstractReflectiveMBeanInfoAssembler}
- * that always votes yes for method and property inclusion, effectively exposing
- * all public methods and properties as operations and attributes.
+ * {@code AbstractReflectiveMBeanInfoAssembler} 的简单子类，
+ * 对方法与属性的纳入始终返回 {@code true}，从而将所有 public 方法与属性
+ * 分别暴露为 JMX 操作与属性。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -30,7 +31,7 @@ import java.lang.reflect.Method;
 public class SimpleReflectiveMBeanInfoAssembler extends AbstractConfigurableMBeanInfoAssembler {
 
 	/**
-	 * Always returns {@code true}.
+	 * 始终返回 {@code true}。
 	 */
 	@Override
 	protected boolean includeReadAttribute(Method method, String beanKey) {
@@ -38,7 +39,7 @@ public class SimpleReflectiveMBeanInfoAssembler extends AbstractConfigurableMBea
 	}
 
 	/**
-	 * Always returns {@code true}.
+	 * 始终返回 {@code true}。
 	 */
 	@Override
 	protected boolean includeWriteAttribute(Method method, String beanKey) {
@@ -46,7 +47,7 @@ public class SimpleReflectiveMBeanInfoAssembler extends AbstractConfigurableMBea
 	}
 
 	/**
-	 * Always returns {@code true}.
+	 * 始终返回 {@code true}。
 	 */
 	@Override
 	protected boolean includeOperation(Method method, String beanKey) {

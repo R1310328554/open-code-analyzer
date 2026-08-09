@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2002-present the original author or authors.
  *
@@ -31,7 +32,7 @@ import org.springframework.jmx.export.metadata.ManagedNotification;
 import org.springframework.util.StringUtils;
 
 /**
- * 支持可配置 JMX 通知行为的 {@code MBeanInfoAssembler} 基类。
+ * 支持可配置 JMX 通知行为的 MBeanInfoAssembler 基类。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -39,11 +40,17 @@ import org.springframework.util.StringUtils;
  */
 public abstract class AbstractConfigurableMBeanInfoAssembler extends AbstractReflectiveMBeanInfoAssembler {
 
+	/** 全局默认的通知元数据。 */
 	private ModelMBeanNotificationInfo @Nullable [] notificationInfos;
 
+	/** Bean 键到通知元数据数组的映射。 */
 	private final Map<String, ModelMBeanNotificationInfo[]> notificationInfoMappings = new HashMap<>();
 
 
+	/**
+	 * 设置全局通知元数据，将 {@code ManagedNotification} 转换为 ModelMBean 通知信息。
+	 * @param notificationInfos 通知元数据数组
+	 */
 	public void setNotificationInfos(ManagedNotification[] notificationInfos) {
 		ModelMBeanNotificationInfo[] infos = new ModelMBeanNotificationInfo[notificationInfos.length];
 		for (int i = 0; i < notificationInfos.length; i++) {
@@ -53,6 +60,11 @@ public abstract class AbstractConfigurableMBeanInfoAssembler extends AbstractRef
 		this.notificationInfos = infos;
 	}
 
+	/**
+	 * 设置 Bean 键到通知元数据的映射。
+	 * 映射值可为单个 {@code ManagedNotification} 或其集合。
+	 * @param notificationInfoMappings Bean 键到通知配置的映射
+	 */
 	public void setNotificationInfoMappings(Map<String, Object> notificationInfoMappings) {
 		notificationInfoMappings.forEach((beanKey, result) ->
 				this.notificationInfoMappings.put(beanKey, extractNotificationMetadata(result)));
@@ -71,6 +83,11 @@ public abstract class AbstractConfigurableMBeanInfoAssembler extends AbstractRef
 		return (result != null ? result : new ModelMBeanNotificationInfo[0]);
 	}
 
+	/**
+	 * 从映射值中提取通知元数据，支持单个 {@code ManagedNotification} 或集合。
+	 * @param mapValue 映射中的值
+	 * @return ModelMBeanNotificationInfo 数组
+	 */
 	private ModelMBeanNotificationInfo[] extractNotificationMetadata(Object mapValue) {
 		if (mapValue instanceof ManagedNotification mn) {
 			return new ModelMBeanNotificationInfo[] {JmxMetadataUtils.convertToModelMBeanNotificationInfo(mn)};
