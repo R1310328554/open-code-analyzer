@@ -2,3 +2,4 @@ spring-beans/src/main/java/org/springframework/beans/factory/support/DefaultSing
 spring-beans/src/main/java/org/springframework/beans/factory/support/DefaultListableBeanFactory.java
 spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractBeanFactory.java
 spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractAutowireCapableBeanFactory.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/ConstructorResolver.java
