@@ -2318,3 +2318,18 @@
 2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/PingConnectionHandler.java wave76a [0:15] repair after 76b wipe
 2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/PubSubEntry.java wave76a [0:15] repair after 76b wipe
 2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/PubSubKey.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/EmptyConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/EmptyListConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/EmptyMapConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/EmptySetConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/InstantReplyConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/IntegerReplayConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/JsonTypeConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/LongNullReplayConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/LongNumberConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/LongReplayConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/NumberConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/ShortReplayConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/StreamIdConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/StringToListConvertor.java wave77b [15:30]
+2026-08-09T21:17:34Z DONE redisson/src/main/java/org/redisson/client/protocol/convertor/TimeObjectDecoder.java wave77b [15:30]
