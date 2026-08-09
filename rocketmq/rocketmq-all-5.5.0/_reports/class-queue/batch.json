@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:22:44Z",
   "files": [
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/enums/PolicyType.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/exception/AuthorizationException.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/factory/AuthorizationFactory.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/manager/AuthorizationMetadataManager.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/manager/AuthorizationMetadataManagerImpl.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/model/Acl.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/model/Environment.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/model/Policy.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/model/PolicyEntry.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/model/RequestContext.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/model/Resource.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/provider/AuthorizationMetadataProvider.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/provider/AuthorizationProvider.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/provider/DefaultAuthorizationProvider.java",
-    "auth/src/main/java/org/apache/rocketmq/auth/authorization/provider/LocalAuthorizationMetadataProvider.java",
     "auth/src/main/java/org/apache/rocketmq/auth/authorization/strategy/AbstractAuthorizationStrategy.java",
     "auth/src/main/java/org/apache/rocketmq/auth/authorization/strategy/AuthorizationStrategy.java",
     "auth/src/main/java/org/apache/rocketmq/auth/authorization/strategy/StatefulAuthorizationStrategy.java",
@@ -33,5 +18,5 @@
     "broker/src/main/java/org/apache/rocketmq/broker/BrokerStartup.java"
   ],
   "remaining_pending": 1428,
-  "done": 30
+  "done": 45
 }
