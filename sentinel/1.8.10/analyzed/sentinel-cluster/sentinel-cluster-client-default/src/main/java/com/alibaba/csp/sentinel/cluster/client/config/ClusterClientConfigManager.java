@@ -27,13 +27,15 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * 集群客户端配置管理器，维护服务端分配与客户端参数，并监听动态配置变更。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public final class ClusterClientConfigManager {
 
     /**
-     * Client config properties.
+     * 客户端配置属性（服务端地址、端口、超时等）。
      */
     private static volatile String serverHost = null;
     private static volatile int serverPort = ClusterConstants.DEFAULT_CLUSTER_SERVER_PORT;
@@ -94,7 +96,7 @@ public final class ClusterClientConfigManager {
     }
 
     /**
-     * Apply new {@link ClusterClientConfig}, while the former config will be replaced.
+     * 应用新的 {@link ClusterClientConfig}，将替换原有配置。
      *
      * @param config new config to apply
      */

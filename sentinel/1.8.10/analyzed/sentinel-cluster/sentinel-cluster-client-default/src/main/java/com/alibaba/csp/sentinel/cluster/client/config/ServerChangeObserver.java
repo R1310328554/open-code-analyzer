@@ -16,13 +16,15 @@
 package com.alibaba.csp.sentinel.cluster.client.config;
 
 /**
+ * 远程令牌服务器地址变更观察者。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface ServerChangeObserver {
 
     /**
-     * Callback on remote server address change.
+     * 远程服务器地址变更时的回调。
      *
      * @param assignConfig new cluster assignment config
      */

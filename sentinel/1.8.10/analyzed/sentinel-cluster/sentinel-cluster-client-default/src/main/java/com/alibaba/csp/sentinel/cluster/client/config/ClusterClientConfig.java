@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.client.config;
 
 /**
+ * 集群客户端全局配置，如请求超时时间等参数。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

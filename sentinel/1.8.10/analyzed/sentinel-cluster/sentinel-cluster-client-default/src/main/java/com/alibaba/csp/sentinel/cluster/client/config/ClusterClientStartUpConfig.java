@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
  * <p>
- * this class dedicated to reading startup configurations of cluster client
+ * 集群客户端启动配置读取工具，从 Sentinel 全局配置中解析启动参数。
  * </p>
  *
  * @author lianglin
@@ -31,7 +31,7 @@ public class ClusterClientStartUpConfig {
     private static final String MAX_PARAM_BYTE_SIZE = "csp.sentinel.cluster.max.param.byte.size";
 
     /**
-     * Get the max bytes params can be serialized
+     * 获取热点参数序列化允许的最大字节数。
      *
      * @return the max bytes, may be null
      */

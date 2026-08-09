@@ -30,6 +30,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 修改集群客户端配置的命令处理器，接收 JSON 并应用新配置。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

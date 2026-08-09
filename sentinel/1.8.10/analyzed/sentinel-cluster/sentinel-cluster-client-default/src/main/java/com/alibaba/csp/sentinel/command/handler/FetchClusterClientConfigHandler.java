@@ -26,6 +26,8 @@ import com.alibaba.csp.sentinel.command.entity.ClusterClientStateEntity;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 获取集群客户端当前配置与连接状态的命令处理器。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

@@ -19,6 +19,8 @@ import com.alibaba.csp.sentinel.cluster.client.config.ClusterClientAssignConfig;
 import com.alibaba.csp.sentinel.cluster.client.config.ClusterClientConfig;
 
 /**
+ * 集群客户端状态实体，用于命令接口查询与修改客户端配置。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */

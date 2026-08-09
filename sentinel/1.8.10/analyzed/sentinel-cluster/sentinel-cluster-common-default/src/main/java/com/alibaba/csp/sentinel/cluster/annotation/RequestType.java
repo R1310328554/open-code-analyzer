@@ -22,7 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Request type annotation for handlers, codes, etc.
+ * 请求类型注解，用于标记处理器、编解码器等组件所处理的消息类型。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
 public @interface RequestType {
 
     /**
-     * Type of the request to handle.
+     * 待处理请求的消息类型。
      *
      * @return type of the request
      */

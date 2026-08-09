@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster;
 
 /**
+ * 集群模块错误消息常量。
+ *
  * @author jialiang.ljl
  * @since 1.4.0
  */

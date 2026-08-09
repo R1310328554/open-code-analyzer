@@ -28,6 +28,8 @@ import com.alibaba.csp.sentinel.init.InitFunc;
 import com.alibaba.csp.sentinel.init.InitOrder;
 
 /**
+ * 集群客户端默认初始化函数，注册 Ping、流控与热点参数请求的编解码器。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

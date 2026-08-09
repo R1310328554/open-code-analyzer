@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster;
 
 /**
+ * 集群模块通用常量，定义消息类型、响应状态、参数类型与默认端口/超时。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.client.config;
 
 /**
+ * 集群客户端服务端分配配置，指定令牌服务器的主机与端口。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */

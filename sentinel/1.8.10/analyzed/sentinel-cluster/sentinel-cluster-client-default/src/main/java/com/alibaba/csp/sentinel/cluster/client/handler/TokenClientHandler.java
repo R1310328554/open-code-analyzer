@@ -29,7 +29,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
- * Netty client handler for Sentinel token client.
+ * Sentinel 令牌客户端的 Netty 入站处理器，负责 Ping 与响应分发。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -66,7 +66,7 @@ public class TokenClientHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void fireClientPing(ChannelHandlerContext ctx) {
-        // Data body: namespace of the client.
+        // 数据体：客户端所属命名空间。
         ClusterRequest<String> ping = new ClusterRequest<String>().setId(0)
             .setType(ClusterConstants.MSG_TYPE_PING)
             .setData(ConfigSupplierRegistry.getNamespaceSupplier().get());

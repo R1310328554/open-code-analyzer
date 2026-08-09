@@ -24,6 +24,8 @@ import com.alibaba.csp.sentinel.cluster.response.ClusterResponse;
 import io.netty.channel.ChannelPromise;
 
 /**
+ * 令牌客户端异步请求 Promise 持有者，按请求 ID 关联 {@link ChannelPromise} 与响应。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
