@@ -32,9 +32,10 @@ import org.apache.hc.core5.http.HttpException;
 import java.io.IOException;
 
 /**
- * Apache HttpClient 5.x 的 Sentinel 适配器。
+ * Apache HttpClient 5.x adapter for Sentinel.
  *
- * <p>实现 {@link ExecChainHandler}，拦截出站 HTTP 请求并以 Sentinel 流控保护。</p>
+ * <p>This handler implements {@link ExecChainHandler} to intercept outgoing HTTP requests
+ * and protect them with Sentinel flow control.</p>
  *
  * <p>Usage example:</p>
  * <pre>{@code
@@ -50,12 +51,10 @@ public class SentinelApacheHttpClient5Handler implements ExecChainHandler {
 
     private final SentinelApacheHttpClientConfig config;
 
-    /** 使用默认配置构造处理器。 */
     public SentinelApacheHttpClient5Handler() {
         this.config = new SentinelApacheHttpClientConfig();
     }
 
-    /** 使用指定配置构造处理器。 */
     public SentinelApacheHttpClient5Handler(SentinelApacheHttpClientConfig config) {
         this.config = config;
     }

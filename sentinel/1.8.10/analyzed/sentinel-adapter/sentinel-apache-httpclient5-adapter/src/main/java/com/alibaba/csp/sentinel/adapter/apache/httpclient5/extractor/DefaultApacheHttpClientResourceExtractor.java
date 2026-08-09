@@ -19,10 +19,11 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 
 /**
- * {@link ApacheHttpClientResourceExtractor} 的默认实现。
+ * Default implementation of {@link ApacheHttpClientResourceExtractor}.
  *
- * <p>生成 {@code METHOD:url} 格式的资源名，并去除 query string 与 fragment，
- * 与 OkHttp 适配器的命名约定一致。</p>
+ * <p>Generates resource name in the format {@code METHOD:url}, with query string
+ * and fragment stripped. This is consistent with the OkHttp adapter's resource naming
+ * convention.</p>
  *
  * @author uuuyuqi
  */

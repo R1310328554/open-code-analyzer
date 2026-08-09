@@ -16,58 +16,36 @@
 package com.alibaba.csp.sentinel.adapter.gateway.common;
 
 /**
- * 网关适配器常量定义，包含资源模式、参数解析策略与 URL 匹配策略等。
- *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public final class SentinelGatewayConstants {
 
-    /** 网关应用类型标识。 */
     public static final int APP_TYPE_GATEWAY = 1;
 
-    /** 资源模式：按路由 ID。 */
     public static final int RESOURCE_MODE_ROUTE_ID = 0;
-    /** 资源模式：按自定义 API 名称。 */
     public static final int RESOURCE_MODE_CUSTOM_API_NAME = 1;
 
-    /** 参数解析策略：客户端 IP。 */
     public static final int PARAM_PARSE_STRATEGY_CLIENT_IP = 0;
-    /** 参数解析策略：Host。 */
     public static final int PARAM_PARSE_STRATEGY_HOST = 1;
-    /** 参数解析策略：请求 Header。 */
     public static final int PARAM_PARSE_STRATEGY_HEADER = 2;
-    /** 参数解析策略：URL 参数。 */
     public static final int PARAM_PARSE_STRATEGY_URL_PARAM = 3;
-    /** 参数解析策略：Cookie。 */
     public static final int PARAM_PARSE_STRATEGY_COOKIE = 4;
 
-    /** URL 匹配策略：精确匹配。 */
     public static final int URL_MATCH_STRATEGY_EXACT = 0;
-    /** URL 匹配策略：前缀匹配。 */
     public static final int URL_MATCH_STRATEGY_PREFIX = 1;
-    /** URL 匹配策略：正则匹配。 */
     public static final int URL_MATCH_STRATEGY_REGEX = 2;
 
-    /** 参数匹配策略：精确匹配。 */
     public static final int PARAM_MATCH_STRATEGY_EXACT = 0;
-    /** 参数匹配策略：前缀匹配。 */
     public static final int PARAM_MATCH_STRATEGY_PREFIX = 1;
-    /** 参数匹配策略：正则匹配。 */
     public static final int PARAM_MATCH_STRATEGY_REGEX = 2;
-    /** 参数匹配策略：包含匹配。 */
     public static final int PARAM_MATCH_STRATEGY_CONTAINS = 3;
 
-    /** 默认网关 Context 名称。 */
     public static final String GATEWAY_CONTEXT_DEFAULT = "sentinel_gateway_context_default";
-    /** 网关 Context 名称前缀。 */
     public static final String GATEWAY_CONTEXT_PREFIX = "sentinel_gateway_context$$";
-    /** 路由级网关 Context 名称前缀。 */
     public static final String GATEWAY_CONTEXT_ROUTE_PREFIX = "sentinel_gateway_context$$route$$";
 
-    /** 参数未匹配时的占位符。 */
     public static final String GATEWAY_NOT_MATCH_PARAM = "$NM";
-    /** 默认参数占位符。 */
     public static final String GATEWAY_DEFAULT_PARAM = "$D";
 
     private SentinelGatewayConstants() {}

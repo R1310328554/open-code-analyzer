@@ -21,17 +21,13 @@ import java.util.Set;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * API 谓词组合项，以 AND 逻辑聚合多个 {@link ApiPredicateItem}。
- *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public class ApiPredicateGroupItem implements ApiPredicateItem {
 
-    /** 组合内的谓词项集合。 */
     private final Set<ApiPredicateItem> items = new HashSet<>();
 
-    /** 向组合中添加谓词项。 */
     public ApiPredicateGroupItem addItem(ApiPredicateItem item) {
         AssertUtil.notNull(item, "item cannot be null");
         items.add(item);

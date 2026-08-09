@@ -18,14 +18,14 @@ package com.alibaba.csp.sentinel.adapter.apache.httpclient5.extractor;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 
 /**
- * 从 Apache HttpClient 5.x 请求中提取 Sentinel 资源名的接口。
+ * Extracts Sentinel resource name from an Apache HttpClient 5.x request.
  *
  * @author uuuyuqi
  */
 public interface ApacheHttpClientResourceExtractor {
 
     /**
-     * 从给定请求中提取资源名。
+     * Extract resource name from the given request.
      *
      * @param request the HTTP request
      * @return the resource name, or {@code null}/{@code ""} to skip Sentinel protection

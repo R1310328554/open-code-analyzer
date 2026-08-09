@@ -18,15 +18,13 @@ package com.alibaba.csp.sentinel.adapter.gateway.common.api;
 import java.util.Set;
 
 /**
- * 网关 API 定义变更观察者，在定义更新时接收通知。
- *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public interface ApiDefinitionChangeObserver {
 
     /**
-     * 通知观察者网关 API 定义已更新。
+     * Notify the observer about the new gateway API definitions.
      *
      * @param apiDefinitions new set of gateway API definition
      */

@@ -20,14 +20,14 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 
 /**
- * Apache HttpClient 5.x 请求被 Sentinel 阻断时的降级处理器接口。
+ * Fallback handler for Apache HttpClient 5.x when the request is blocked by Sentinel.
  *
  * @author uuuyuqi
  */
 public interface ApacheHttpClientFallback {
 
     /**
-     * 处理被阻断的请求。
+     * Handle the blocked request.
      *
      * @param request the original HTTP request
      * @param e       the block exception
