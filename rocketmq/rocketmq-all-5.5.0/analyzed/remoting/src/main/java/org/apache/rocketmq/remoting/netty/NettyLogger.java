@@ -24,36 +24,47 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Netty 内部日志桥接：将 Netty {@code InternalLogger} 转发至 RocketMQ SLF4J 日志体系。
+ */
 public class NettyLogger {
 
+    /** 标记 Netty 日志工厂是否已初始化。 */
     private static AtomicBoolean nettyLoggerSeted = new AtomicBoolean(false);
     
+    /** Netty 日志输出级别阈值，默认 ERROR。 */
     private static InternalLogLevel nettyLogLevel = InternalLogLevel.ERROR;
 
+    /** 一次性安装 Netty 日志桥接工厂。 */
     public static void initNettyLogger() {
         if (!nettyLoggerSeted.get()) {
             try {
                 io.netty.util.internal.logging.InternalLoggerFactory.setDefaultFactory(new NettyBridgeLoggerFactory());
             } catch (Throwable e) {
-                //ignore
+                // 初始化失败时忽略，沿用 Netty 默认日志
             }
             nettyLoggerSeted.set(true);
         }
     }
 
+    /** 创建 {@link NettyBridgeLogger} 实例的工厂。 */
     private static class NettyBridgeLoggerFactory extends io.netty.util.internal.logging.InternalLoggerFactory {
         @Override
+        /** 按 logger 名称创建桥接实例。 */
         protected io.netty.util.internal.logging.InternalLogger newInstance(String s) {
             return new NettyBridgeLogger(s);
         }
     }
 
+    /** 将 Netty 日志级别映射到 SLF4J 的桥接实现。 */
     private static class NettyBridgeLogger implements io.netty.util.internal.logging.InternalLogger {
 
         private Logger logger = null;
 
+        /** 仅携带异常时的默认日志前缀。 */
         private static final String EXCEPTION_MESSAGE = "Unexpected exception:";
 
+        /** 绑定指定名称的 SLF4J Logger。 */
         public NettyBridgeLogger(String name) {
             logger = LoggerFactory.getLogger(name);
         }
@@ -64,11 +75,13 @@ public class NettyLogger {
         }
 
         @Override
+        /** 判断给定 Netty 级别是否满足当前阈值。 */
         public boolean isEnabled(InternalLogLevel internalLogLevel) {
             return nettyLogLevel.ordinal() <= internalLogLevel.ordinal();
         }
 
         @Override
+        /** 按级别转发单参数日志。 */
         public void log(InternalLogLevel internalLogLevel, String s) {
             if (internalLogLevel.equals(InternalLogLevel.DEBUG)) {
                 logger.debug(s);

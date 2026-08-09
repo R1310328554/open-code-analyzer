@@ -25,9 +25,13 @@ import java.lang.reflect.Type;
 import java.util.Base64;
 import java.util.BitSet;
 
+/**
+ * Fastjson2 {@link BitSet} 序列化器：以 Base64 编码的字节数组读写。
+ */
 public class BitSetSerializerDeserializer implements ObjectReader<BitSet>, ObjectWriter<BitSet> {
 
     @Override
+    /** 将 BitSet 转为字节数组并以 Base64 写入 JSON。 */
     public void write(JSONWriter writer, Object object, Object fieldName, Type fieldType, long features) {
         if (object == null) {
             writer.writeBase64(null);
@@ -37,6 +41,7 @@ public class BitSetSerializerDeserializer implements ObjectReader<BitSet>, Objec
     }
 
     @Override
+    /** 从 Base64 字符串解码并还原 BitSet。 */
     public BitSet readObject(JSONReader reader, Type fieldType, Object fieldName, long features) {
         if (reader.nextIfNull()) {
             return null;
@@ -50,11 +55,13 @@ public class BitSetSerializerDeserializer implements ObjectReader<BitSet>, Objec
     }
 
     @Override
+    /** 返回 Fastjson2 特性位掩码。 */
     public long getFeatures() {
         return 0L;
     }
 
     @Override
+    /** 返回目标类型 BitSet.class。 */
     public Class<BitSet> getObjectClass() {
         return ObjectReader.super.getObjectClass();
     }

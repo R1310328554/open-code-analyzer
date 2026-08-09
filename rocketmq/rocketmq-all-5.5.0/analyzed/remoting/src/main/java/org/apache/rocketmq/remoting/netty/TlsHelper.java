@@ -64,16 +64,19 @@ import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.tlsServerNeedCl
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.tlsServerTrustCertPath;
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.tlsTestModeEnable;
 
+/**
+ * TLS/SSL 上下文构建工具：读取配置、解密私钥并组装 Netty {@link SslContext}。
+ */
 public class TlsHelper {
 
     public interface DecryptionStrategy {
         /**
-         * Decrypt the target encrpted private key file.
+         * 解密加密的私钥文件。
          *
-         * @param privateKeyEncryptPath A pathname string
-         * @param forClient tells whether it's a client-side key file
-         * @return An input stream for a decrypted key file
-         * @throws IOException if an I/O error has occurred
+         * @param privateKeyEncryptPath 私钥文件路径
+         * @param forClient 是否为客户端侧私钥
+         * @return 解密后私钥的输入流
+         * @throws IOException I/O 错误时抛出
          */
         InputStream decryptPrivateKey(String privateKeyEncryptPath, boolean forClient) throws IOException;
     }
@@ -89,10 +92,12 @@ public class TlsHelper {
     };
 
 
+    /** 注册自定义私钥解密策略。 */
     public static void registerDecryptionStrategy(final DecryptionStrategy decryptionStrategy) {
         TlsHelper.decryptionStrategy = decryptionStrategy;
     }
 
+    /** 按客户端或服务端模式构建 {@link SslContext}，支持测试模式与双向认证。 */
     public static SslContext buildSslContext(boolean forClient) throws IOException, CertificateException {
         File configFile = new File(TlsSystemConfig.tlsConfigFile);
         extractTlsConfigFromFile(configFile);
@@ -101,10 +106,10 @@ public class TlsHelper {
         SslProvider provider;
         if (OpenSsl.isAvailable()) {
             provider = SslProvider.OPENSSL;
-            LOGGER.info("Using OpenSSL provider");
+            LOGGER.info("Using OpenSSL provider"); // 使用 OpenSSL 加速
         } else {
             provider = SslProvider.JDK;
-            LOGGER.info("Using JDK SSL provider");
+            LOGGER.info("Using JDK SSL provider"); // 回退至 JDK SSL
         }
 
         SslContextBuilder sslContextBuilder = null;
@@ -161,6 +166,7 @@ public class TlsHelper {
         return sslContextBuilder.build();
     }
 
+    /** 追加密码套件与协议版本配置。 */
     protected static void moreTlsConfig(SslContextBuilder sslContextBuilder) {
         if (tlsCiphers != null) {
             sslContextBuilder.ciphers(Arrays.asList(tlsCiphers.split(",")));
@@ -171,7 +177,7 @@ public class TlsHelper {
     }
     private static void extractTlsConfigFromFile(final File configFile) {
         if (!(configFile.exists() && configFile.isFile() && configFile.canRead())) {
-            LOGGER.info("Tls config file doesn't exist, skip it");
+            LOGGER.info("Tls config file doesn't exist, skip it"); // 配置文件不存在则跳过
             return;
         }
 
@@ -210,7 +216,7 @@ public class TlsHelper {
     }
 
     private static void logTheFinalUsedTlsConfig() {
-        LOGGER.info("Log the final used tls related configuration");
+        LOGGER.info("Log the final used tls related configuration"); // 输出最终 TLS 配置
         LOGGER.info("{} = {}", TLS_TEST_MODE_ENABLE, tlsTestModeEnable);
         LOGGER.debug("{} = {}", TLS_SERVER_NEED_CLIENT_AUTH, tlsServerNeedClientAuth);
         LOGGER.debug("{} = {}", TLS_SERVER_KEYPATH, tlsServerKeyPath);
@@ -227,6 +233,7 @@ public class TlsHelper {
         LOGGER.debug("{} = {}", TLS_PROTOCOLS, tlsProtocols);
     }
 
+    /** 将配置字符串解析为 Netty {@link ClientAuth} 枚举。 */
     private static ClientAuth parseClientAuthMode(String authMode) {
         if (null == authMode || authMode.trim().isEmpty()) {
             return ClientAuth.NONE;
@@ -242,9 +249,7 @@ public class TlsHelper {
         return ClientAuth.NONE;
     }
 
-    /**
-     * Determine if a string is {@code null} or {@link String#isEmpty()} returns {@code true}.
-     */
+    /** 判断字符串是否为 null 或空串。 */
     private static boolean isNullOrEmpty(String s) {
         return s == null || s.isEmpty();
     }

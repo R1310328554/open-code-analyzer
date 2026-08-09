@@ -26,10 +26,15 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Netty 出站编码器：将 {@link RemotingCommand} 快速序列化为字节流写入 {@link ByteBuf}。
+ * 可安全共享于多个 ChannelPipeline。
+ */
 @ChannelHandler.Sharable
 public class NettyEncoder extends MessageToByteEncoder<RemotingCommand> {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_REMOTING_NAME);
 
+    /** 编码 Remoting 命令头与消息体；异常时记录日志并关闭通道。 */
     @Override
     public void encode(ChannelHandlerContext ctx, RemotingCommand remotingCommand, ByteBuf out)
         throws Exception {

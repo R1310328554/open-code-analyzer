@@ -27,10 +27,15 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Remoting 请求/响应码分布统计 Handler：入站与出站分别计数各 code 出现次数。
+ */
 @ChannelHandler.Sharable
 public class RemotingCodeDistributionHandler extends ChannelDuplexHandler {
 
+    /** 入站请求码计数表。 */
     private final ConcurrentMap<Integer, LongAdder> inboundDistribution;
+    /** 出站响应码计数表。 */
     private final ConcurrentMap<Integer, LongAdder> outboundDistribution;
 
     public RemotingCodeDistributionHandler() {
@@ -38,17 +43,20 @@ public class RemotingCodeDistributionHandler extends ChannelDuplexHandler {
         outboundDistribution = new ConcurrentHashMap<>();
     }
 
+    /** 递增指定请求码的入站计数。 */
     private void countInbound(int requestCode) {
         LongAdder item = inboundDistribution.computeIfAbsent(requestCode, k -> new LongAdder());
         item.increment();
     }
 
+    /** 递增指定响应码的出站计数。 */
     private void countOutbound(int responseCode) {
         LongAdder item = outboundDistribution.computeIfAbsent(responseCode, k -> new LongAdder());
         item.increment();
     }
 
     @Override
+    /** 统计入站 {@link RemotingCommand} 的请求码并向下游传递。 */
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof RemotingCommand) {
             RemotingCommand cmd = (RemotingCommand) msg;
@@ -58,6 +66,7 @@ public class RemotingCodeDistributionHandler extends ChannelDuplexHandler {
     }
 
     @Override
+    /** 统计出站 {@link RemotingCommand} 的响应码并写入通道。 */
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof RemotingCommand) {
             RemotingCommand cmd = (RemotingCommand) msg;
@@ -94,10 +103,12 @@ public class RemotingCodeDistributionHandler extends ChannelDuplexHandler {
         return null;
     }
 
+    /** 获取并重置入站码分布快照字符串。 */
     public String getInBoundSnapshotString() {
         return this.snapshotToString(this.getDistributionSnapshot(this.inboundDistribution));
     }
 
+    /** 获取并重置出站码分布快照字符串。 */
     public String getOutBoundSnapshotString() {
         return this.snapshotToString(this.getDistributionSnapshot(this.outboundDistribution));
     }

@@ -20,11 +20,13 @@ import io.netty.channel.ChannelHandlerContext;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
 /**
- * Common remoting command processor
+ * Remoting 请求处理器：按请求码处理 {@link RemotingCommand} 并决定是否拒绝新请求。
  */
 public interface NettyRequestProcessor {
+    /** 处理入站 Remoting 请求并返回响应命令。 */
     RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
         throws Exception;
 
+    /** 返回 true 表示当前应拒绝新请求（如流控或关闭中）。 */
     boolean rejectRequest();
 }

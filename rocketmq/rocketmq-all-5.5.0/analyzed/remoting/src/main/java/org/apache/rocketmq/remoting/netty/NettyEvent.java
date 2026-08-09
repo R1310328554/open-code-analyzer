@@ -18,25 +18,35 @@ package org.apache.rocketmq.remoting.netty;
 
 import io.netty.channel.Channel;
 
+/**
+ * Netty 通道生命周期事件封装：携带事件类型、远端地址与 {@link Channel} 引用。
+ */
 public class NettyEvent {
+    /** 事件类型。 */
     private final NettyEventType type;
+    /** 远端地址字符串。 */
     private final String remoteAddr;
+    /** 关联的 Netty 通道。 */
     private final Channel channel;
 
+    /** 构造通道事件对象。 */
     public NettyEvent(NettyEventType type, String remoteAddr, Channel channel) {
         this.type = type;
         this.remoteAddr = remoteAddr;
         this.channel = channel;
     }
 
+    /** 返回事件类型。 */
     public NettyEventType getType() {
         return type;
     }
 
+    /** 返回远端地址。 */
     public String getRemoteAddr() {
         return remoteAddr;
     }
 
+    /** 返回关联通道。 */
     public Channel getChannel() {
         return channel;
     }

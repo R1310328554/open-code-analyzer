@@ -16,19 +16,30 @@
  */
 package org.apache.rocketmq.remoting.netty;
 
+/**
+ * Netty Remoting 服务端配置：绑定地址、线程池、信号量与 Socket 缓冲区参数。
+ */
 public class NettyServerConfig implements Cloneable {
 
     /**
-     * Bind address may be hostname, IPv4 or IPv6.
-     * By default, it's wildcard address, listening all network interfaces.
+     * 绑定地址，可为主机名、IPv4 或 IPv6。
+     * 默认 0.0.0.0，监听全部网卡。
      */
+    /** 服务端绑定地址。 */
     private String bindAddress = "0.0.0.0";
+    /** 监听端口，0 表示由系统分配。 */
     private int listenPort = 0;
+    /** Boss/Worker 事件循环线程数。 */
     private int serverWorkerThreads = 8;
+    /** 异步回调专用线程数，0 表示共享公共线程池。 */
     private int serverCallbackExecutorThreads = 0;
+    /** Selector 线程数。 */
     private int serverSelectorThreads = 3;
+    /** 服务端单向请求并发信号量上限。 */
     private int serverOnewaySemaphoreValue = 256;
+    /** 服务端异步请求并发信号量上限。 */
     private int serverAsyncSemaphoreValue = 64;
+    /** 通道读写空闲超时秒数。 */
     private int serverChannelMaxIdleTimeSeconds = 120;
 
     private int serverSocketSndBufSize = NettySystemConfig.socketSndbufSize;
@@ -39,16 +50,15 @@ public class NettyServerConfig implements Cloneable {
     private boolean serverNettyWorkerGroupEnable = true;
     private boolean serverPooledByteBufAllocatorEnable = true;
 
+    /** 关闭时是否优雅等待未完成请求。 */
     private boolean enableShutdownGracefully = false;
+    /** 优雅关闭最长等待秒数。 */
     private int shutdownWaitTimeSeconds = 30;
 
     /**
-     * make install
-     *
-     *
-     * ../glibc-2.10.1/configure \ --prefix=/usr \ --with-headers=/usr/include \
-     * --host=x86_64-linux-gnu \ --build=x86_64-pc-linux-gnu \ --without-gd
+     * 是否在 Linux 上使用 Epoll 原生 Selector（需 glibc 支持）。
      */
+    /** 启用 Epoll 原生 Selector。 */
     private boolean useEpollNativeSelector = false;
 
     public String getBindAddress() {

@@ -17,13 +17,20 @@
 
 package org.apache.rocketmq.remoting.netty;
 
+/**
+ * Netty Remoting 全局系统属性：Socket 缓冲区、信号量与连接超时等 JVM 级默认值。
+ */
 public class NettySystemConfig {
+    /** 系统属性键：是否启用 Netty 池化 ByteBuf 分配器。 */
     public static final String COM_ROCKETMQ_REMOTING_NETTY_POOLED_BYTE_BUF_ALLOCATOR_ENABLE =
         "com.rocketmq.remoting.nettyPooledByteBufAllocatorEnable";
+    /** 系统属性键：Socket 发送缓冲区大小。 */
     public static final String COM_ROCKETMQ_REMOTING_SOCKET_SNDBUF_SIZE =
         "com.rocketmq.remoting.socket.sndbuf.size";
+    /** 系统属性键：Socket 接收缓冲区大小。 */
     public static final String COM_ROCKETMQ_REMOTING_SOCKET_RCVBUF_SIZE =
         "com.rocketmq.remoting.socket.rcvbuf.size";
+    /** 系统属性键：服务端 Socket backlog 队列长度。 */
     public static final String COM_ROCKETMQ_REMOTING_SOCKET_BACKLOG =
         "com.rocketmq.remoting.socket.backlog";
     public static final String COM_ROCKETMQ_REMOTING_CLIENT_ASYNC_SEMAPHORE_VALUE =
@@ -43,12 +50,15 @@ public class NettySystemConfig {
     public static final String COM_ROCKETMQ_REMOTING_WRITE_BUFFER_LOW_WATER_MARK =
         "com.rocketmq.remoting.write.buffer.low.water.mark";
 
+    /** 是否启用池化 ByteBuf 分配器（默认 false）。 */
     public static final boolean NETTY_POOLED_BYTE_BUF_ALLOCATOR_ENABLE = //
         Boolean.parseBoolean(System.getProperty(COM_ROCKETMQ_REMOTING_NETTY_POOLED_BYTE_BUF_ALLOCATOR_ENABLE, "false"));
+    /** 客户端异步请求信号量默认值。 */
     public static final int CLIENT_ASYNC_SEMAPHORE_VALUE = //
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_CLIENT_ASYNC_SEMAPHORE_VALUE, "65535"));
     public static final int CLIENT_ONEWAY_SEMAPHORE_VALUE =
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_CLIENT_ONEWAY_SEMAPHORE_VALUE, "65535"));
+    /** Socket 发送缓冲区字节数，0 表示使用系统默认。 */
     public static int socketSndbufSize =
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_SOCKET_SNDBUF_SIZE, "0"));
     public static int socketRcvbufSize =
@@ -57,14 +67,17 @@ public class NettySystemConfig {
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_SOCKET_BACKLOG, "1024"));
     public static int clientWorkerSize =
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_CLIENT_WORKER_SIZE, "4"));
+    /** 客户端连接超时毫秒数。 */
     public static int connectTimeoutMillis =
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_CLIENT_CONNECT_TIMEOUT, "3000"));
     public static int clientChannelMaxIdleTimeSeconds =
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_CLIENT_CHANNEL_MAX_IDLE_SECONDS, "120"));
     public static boolean clientCloseSocketIfTimeout =
         Boolean.parseBoolean(System.getProperty(COM_ROCKETMQ_REMOTING_CLIENT_CLOSE_SOCKET_IF_TIMEOUT, "true"));
+    /** 写缓冲区高水位标记字节数。 */
     public static int writeBufferHighWaterMark =
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_WRITE_BUFFER_HIGH_WATER_MARK_VALUE, "0"));
+    /** 写缓冲区低水位标记字节数。 */
     public static int writeBufferLowWaterMark =
         Integer.parseInt(System.getProperty(COM_ROCKETMQ_REMOTING_WRITE_BUFFER_LOW_WATER_MARK, "0"));
 

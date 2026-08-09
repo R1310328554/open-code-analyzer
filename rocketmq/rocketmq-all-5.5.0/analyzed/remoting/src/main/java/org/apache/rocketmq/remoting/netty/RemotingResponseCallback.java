@@ -19,6 +19,10 @@ package org.apache.rocketmq.remoting.netty;
 
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Remoting 异步响应回调：收到 {@link RemotingCommand} 响应时触发。
+ */
 public interface RemotingResponseCallback {
+    /** 处理异步 RPC 响应。 */
     void callback(RemotingCommand response);
 }

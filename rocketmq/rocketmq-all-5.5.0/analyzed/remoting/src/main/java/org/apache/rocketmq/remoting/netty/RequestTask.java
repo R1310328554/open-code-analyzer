@@ -20,11 +20,19 @@ package org.apache.rocketmq.remoting.netty;
 import io.netty.channel.Channel;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 服务端请求处理任务：封装 Runnable、通道与原始请求，支持停止执行与快速写回响应。
+ */
 public class RequestTask implements Runnable {
+    /** 实际业务处理逻辑。 */
     private final Runnable runnable;
+    /** 任务创建时间戳，用于去重与监控。 */
     private final long createTimestamp = System.currentTimeMillis();
+    /** 请求来源通道。 */
     private final Channel channel;
+    /** 原始 Remoting 请求。 */
     private final RemotingCommand request;
+    /** 为 true 时 {@link #run()} 跳过业务逻辑。 */
     private volatile boolean stopRun = false;
 
     public RequestTask(final Runnable runnable, final Channel channel, final RemotingCommand request) {
@@ -75,11 +83,13 @@ public class RequestTask implements Runnable {
     }
 
     @Override
+    /** 未被停止时执行业务 Runnable。 */
     public void run() {
         if (!this.stopRun)
             this.runnable.run();
     }
 
+    /** 构造响应并写回客户端，opaque 与请求一致。 */
     public void returnResponse(int code, String remark) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(code, remark);
         response.setOpaque(request.getOpaque());
