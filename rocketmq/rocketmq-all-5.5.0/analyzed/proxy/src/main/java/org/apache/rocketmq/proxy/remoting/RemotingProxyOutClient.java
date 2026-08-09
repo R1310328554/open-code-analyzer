@@ -21,7 +21,11 @@ import io.netty.channel.Channel;
 import java.util.concurrent.CompletableFuture;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Proxy 出站 Remoting 客户端接口：向客户端通道异步发送 Remoting 命令。
+ */
 public interface RemotingProxyOutClient {
 
+    /** 经指定 {@link Channel} 向客户端发起 RPC 并返回异步响应。 */
     CompletableFuture<RemotingCommand> invokeToClient(Channel channel, RemotingCommand request, long timeoutMillis);
 }

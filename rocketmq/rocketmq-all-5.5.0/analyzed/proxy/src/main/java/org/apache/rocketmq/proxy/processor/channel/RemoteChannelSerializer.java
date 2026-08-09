@@ -27,6 +27,9 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * {@link RemoteChannel} JSON 序列化工具：供 Broker 转发与跨 Proxy 路由使用。
+ */
 public class RemoteChannelSerializer {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     private static final String REMOTE_PROXY_IP_KEY = "remoteProxyIp";
@@ -35,6 +38,7 @@ public class RemoteChannelSerializer {
     private static final String TYPE_KEY = "type";
     private static final String EXTEND_ATTRIBUTE_KEY = "extendAttribute";
 
+    /** 将远程通道各字段编码为 JSON 字符串。 */
     public static String toJson(RemoteChannel remoteChannel) {
         Map<String, Object> data = new HashMap<>();
         data.put(REMOTE_PROXY_IP_KEY, remoteChannel.getRemoteProxyIp());
@@ -45,6 +49,7 @@ public class RemoteChannelSerializer {
         return JSON.toJSONString(data);
     }
 
+    /** 从 JSON 解析并重建 {@link RemoteChannel}，失败时记录日志并返回 null。 */
     public static RemoteChannel decodeFromJson(String jsonData) {
         if (StringUtils.isBlank(jsonData)) {
             return null;

@@ -46,10 +46,14 @@ import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.tlsServerNeedCl
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.tlsServerTrustCertPath;
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.tlsTestModeEnable;
 
+/**
+ * 多协议 TLS 辅助类：构建支持 ALPN HTTP/2 协商的服务端 {@link io.netty.handler.ssl.SslContext}。
+ */
 public class MultiProtocolTlsHelper extends TlsHelper {
     private final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     private static final DecryptionStrategy DECRYPTION_STRATEGY = (privateKeyEncryptPath, forClient) -> new FileInputStream(privateKeyEncryptPath);
 
+    /** 根据系统 TLS 配置创建支持 HTTP/2 ALPN 的 SslContext。 */
     public static SslContext buildSslContext() throws IOException, CertificateException {
         TlsHelper.buildSslContext(false);
         SslProvider provider;
@@ -62,6 +66,7 @@ public class MultiProtocolTlsHelper extends TlsHelper {
         }
 
         SslContextBuilder sslContextBuilder;
+        // 测试模式：使用自签名证书，客户端认证可选
         if (tlsTestModeEnable) {
             SelfSignedCertificate selfSignedCertificate = new SelfSignedCertificate();
             sslContextBuilder = SslContextBuilder
@@ -98,6 +103,7 @@ public class MultiProtocolTlsHelper extends TlsHelper {
         return sslContextBuilder.build();
     }
 
+    /** 解析 tls.server.need.client.auth 配置为 Netty {@link ClientAuth} 枚举。 */
     private static ClientAuth parseClientAuthMode(String authMode) {
         if (null == authMode || authMode.trim().isEmpty()) {
             return ClientAuth.NONE;

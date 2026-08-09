@@ -19,12 +19,15 @@ package org.apache.rocketmq.proxy.processor.validator;
 
 import org.apache.rocketmq.common.attribute.TopicMessageType;
 
+/**
+ * Topic 消息类型校验接口：确保消息属性与 Topic 声明类型一致。
+ */
 public interface TopicMessageTypeValidator {
     /**
-     * Will throw {@link org.apache.rocketmq.proxy.common.ProxyException} if validate failed.
+     * 校验消息类型；失败时抛出 {@link org.apache.rocketmq.proxy.common.ProxyException}。
      *
-     * @param expectedType Target topic
-     * @param actualType   Message's type
+     * @param expectedType Topic 声明的期望类型
+     * @param actualType   消息实际携带的类型
      */
     void validate(TopicMessageType expectedType, TopicMessageType actualType);
 }

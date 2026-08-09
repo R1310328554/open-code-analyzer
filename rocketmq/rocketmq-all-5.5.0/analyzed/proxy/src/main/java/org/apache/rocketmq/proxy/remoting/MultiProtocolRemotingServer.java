@@ -38,16 +38,19 @@ import java.io.IOException;
 import java.security.cert.CertificateException;
 
 /**
- * support remoting and http2 protocol at one port
+ * 多协议 Remoting 服务端：在同一端口同时支持 Remoting 与 HTTP/2 协议。
  */
 public class MultiProtocolRemotingServer extends NettyRemotingServer {
 
     private final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     private final NettyServerConfig nettyServerConfig;
 
+    /** 经典 Remoting 协议处理器。 */
     private final RemotingProtocolHandler remotingProtocolHandler;
+    /** HTTP/2 协议代理处理器。 */
     protected Http2ProtocolProxyHandler http2ProtocolProxyHandler;
 
+    /** 初始化 Remoting 与 HTTP/2 协议处理器并注册到协商链。 */
     public MultiProtocolRemotingServer(NettyServerConfig nettyServerConfig, ChannelEventListener channelEventListener) {
         super(nettyServerConfig, channelEventListener);
         this.nettyServerConfig = nettyServerConfig;
@@ -61,6 +64,7 @@ public class MultiProtocolRemotingServer extends NettyRemotingServer {
     }
 
     @Override
+    /** 按 TLS 模式加载多协议 {@link io.netty.handler.ssl.SslContext}。 */
     public void loadSslContext() {
         TlsMode tlsMode = TlsSystemConfig.tlsMode;
         log.info("Server is running in TLS {} mode", tlsMode.getName());
@@ -76,6 +80,7 @@ public class MultiProtocolRemotingServer extends NettyRemotingServer {
     }
 
     @Override
+    /** 配置握手、空闲检测与协议协商处理器链。 */
     protected ChannelPipeline configChannel(SocketChannel ch) {
         return ch.pipeline()
             .addLast(this.getDefaultEventExecutorGroup(), HANDSHAKE_HANDLER_NAME, new HandshakeHandler())

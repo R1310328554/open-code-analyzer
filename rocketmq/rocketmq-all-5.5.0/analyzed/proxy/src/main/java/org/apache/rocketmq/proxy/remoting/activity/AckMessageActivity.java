@@ -24,13 +24,18 @@ import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.proxy.remoting.pipeline.RequestPipeline;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Remoting 消息确认（ACK）活动：将 ACK 请求转发至 Broker。
+ */
 public class AckMessageActivity extends AbstractRemotingActivity {
+    /** 构造 ACK 活动处理器。 */
     public AckMessageActivity(RequestPipeline requestPipeline,
         MessagingProcessor messagingProcessor) {
         super(requestPipeline, messagingProcessor);
     }
 
     @Override
+    /** 以 3 秒超时将 ACK 请求异步转发至 Broker。 */
     protected RemotingCommand processRequest0(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         return request(ctx, request, context, Duration.ofSeconds(3).toMillis());

@@ -17,7 +17,11 @@
 
 package org.apache.rocketmq.proxy.processor.channel;
 
+/**
+ * 通道扩展属性读取接口：供跨 Proxy 转发时携带协议相关元数据。
+ */
 public interface ChannelExtendAttributeGetter {
 
+    /** 返回序列化后的通道扩展属性字符串。 */
     String getChannelExtendAttribute();
 }

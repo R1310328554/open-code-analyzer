@@ -17,7 +17,11 @@
 
 package org.apache.rocketmq.proxy.processor.channel;
 
+/**
+ * 远程通道转换接口：将本地 {@link io.netty.channel.Channel} 映射为 {@link RemoteChannel}。
+ */
 public interface RemoteChannelConverter {
 
+    /** 导出可序列化的 {@link RemoteChannel} 快照。 */
     RemoteChannel toRemoteChannel();
 }

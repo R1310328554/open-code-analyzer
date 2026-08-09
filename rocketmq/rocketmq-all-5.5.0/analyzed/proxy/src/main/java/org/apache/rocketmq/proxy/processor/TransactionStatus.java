@@ -16,8 +16,14 @@
  */
 package org.apache.rocketmq.proxy.processor;
 
+/**
+ * 事务消息状态枚举：表示半消息在 Broker 侧的最终决议。
+ */
 public enum TransactionStatus {
+    /** 状态未知，需继续回查。 */
     UNKNOWN,
+    /** 提交事务，消息对消费者可见。 */
     COMMIT,
+    /** 回滚事务，丢弃半消息。 */
     ROLLBACK
 }

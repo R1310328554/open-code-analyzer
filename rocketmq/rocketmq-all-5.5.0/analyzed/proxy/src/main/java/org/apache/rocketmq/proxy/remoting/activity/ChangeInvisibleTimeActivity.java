@@ -24,13 +24,18 @@ import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.proxy.remoting.pipeline.RequestPipeline;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Remoting 修改 POP 消息不可见时间活动：转发续期请求至 Broker。
+ */
 public class ChangeInvisibleTimeActivity extends AbstractRemotingActivity {
+    /** 构造不可见时间修改活动处理器。 */
     public ChangeInvisibleTimeActivity(RequestPipeline requestPipeline,
         MessagingProcessor messagingProcessor) {
         super(requestPipeline, messagingProcessor);
     }
 
     @Override
+    /** 以 3 秒超时将续期请求异步转发至 Broker。 */
     protected RemotingCommand processRequest0(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception {
         return request(ctx, request, context, Duration.ofSeconds(3).toMillis());

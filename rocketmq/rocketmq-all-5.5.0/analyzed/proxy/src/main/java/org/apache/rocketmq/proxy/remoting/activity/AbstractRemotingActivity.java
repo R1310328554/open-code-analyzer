@@ -40,9 +40,14 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
+/**
+ * Remoting 请求活动基类：统一管道执行、Broker 转发与异常响应映射。
+ */
 public abstract class AbstractRemotingActivity implements NettyRequestProcessor {
     protected final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 消息处理器，负责与 Broker 交互。 */
     protected final MessagingProcessor messagingProcessor;
+    /** 扩展字段名：目标 Broker 名称。 */
     protected static final String BROKER_NAME_FIELD = "bname";
     protected static final String BROKER_NAME_FIELD_FOR_SEND_MESSAGE_V2 = "n";
     @SuppressWarnings("DoubleBraceInitialization")
@@ -54,13 +59,16 @@ public abstract class AbstractRemotingActivity implements NettyRequestProcessor 
             put(ProxyExceptionCode.TRANSACTION_DATA_NOT_FOUND, ResponseCode.SUCCESS);
         }
     };
+    /** 请求预处理管道（鉴权、上下文填充等）。 */
     protected final RequestPipeline requestPipeline;
 
+    /** 注入请求管道与消息处理器。 */
     public AbstractRemotingActivity(RequestPipeline requestPipeline, MessagingProcessor messagingProcessor) {
         this.requestPipeline = requestPipeline;
         this.messagingProcessor = messagingProcessor;
     }
 
+    /** 解析 bname 字段并将请求转发至目标 Broker（支持 oneway）。 */
     protected RemotingCommand request(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context, long timeoutMillis) throws Exception {
         String brokerName;
@@ -91,6 +99,7 @@ public abstract class AbstractRemotingActivity implements NettyRequestProcessor 
     }
 
     @Override
+    /** 创建上下文、执行管道并委派子类 {@link #processRequest0} 处理。 */
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         ProxyContext context = createContext();
         try {
@@ -111,13 +120,16 @@ public abstract class AbstractRemotingActivity implements NettyRequestProcessor 
         return false;
     }
 
+    /** 子类实现具体 Remoting 请求逻辑。 */
     protected abstract RemotingCommand processRequest0(ChannelHandlerContext ctx, RemotingCommand request,
         ProxyContext context) throws Exception;
 
+    /** 创建默认 {@link ProxyContext} 实例。 */
     protected ProxyContext createContext() {
         return ProxyContext.create();
     }
 
+    /** 将 {@link ProxyException} 等异常映射为 Remoting 响应码并写回。 */
     protected void writeErrResponse(ChannelHandlerContext ctx, final ProxyContext context,
         final RemotingCommand request, Throwable t) {
         t = ExceptionUtils.getRealException(t);
@@ -147,6 +159,7 @@ public abstract class AbstractRemotingActivity implements NettyRequestProcessor 
         writeResponse(ctx, context, request, response, null);
     }
 
+    /** 填充 region/trace 等扩展字段并将响应写回客户端。 */
     protected void writeResponse(ChannelHandlerContext ctx, final ProxyContext context,
         final RemotingCommand request, RemotingCommand response, Throwable t) {
         if (request.isOnewayRPC()) {

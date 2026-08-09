@@ -17,18 +17,27 @@
 
 package org.apache.rocketmq.proxy.processor.channel;
 
+/**
+ * 客户端通道协议类型：标识 RemoteChannel 所代表的接入协议。
+ */
 public enum ChannelProtocolType {
+    /** 未知或未识别的协议。 */
     UNKNOWN("unknown"),
+    /** gRPC v2 协议客户端。 */
     GRPC_V2("grpc_v2"),
+    /** gRPC v1 协议客户端。 */
     GRPC_V1("grpc_v1"),
+    /** 经典 Remoting 协议客户端。 */
     REMOTING("remoting");
 
     private final String name;
 
+    /** 绑定协议类型的字符串标识。 */
     ChannelProtocolType(String name) {
         this.name = name;
     }
 
+    /** 返回协议名称字符串。 */
     public String getName() {
         return name;
     }
