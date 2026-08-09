@@ -59,14 +59,19 @@ import org.apache.rocketmq.remoting.protocol.header.ConsumeMessageDirectlyResult
 import org.apache.rocketmq.remoting.protocol.header.GetConsumerRunningInfoRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.NotifyUnsubscribeLiteRequestHeader;
 
+/**
+ * gRPC 客户端虚拟通道：通过 Telemetry 双向流向客户端推送指令与异步结果。
+ */
 public class GrpcClientChannel extends ProxyChannel implements ChannelExtendAttributeGetter, RemoteChannelConverter {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
     private final GrpcChannelManager grpcChannelManager;
     private final GrpcClientSettingsManager grpcClientSettingsManager;
 
+    /** Telemetry 下行流观察者引用，null 表示连接已断开。 */
     private final AtomicReference<StreamObserver<TelemetryCommand>> telemetryCommandRef = new AtomicReference<>();
     private final Object telemetryWriteLock = new Object();
+    /** 客户端唯一标识。 */
     private final String clientId;
 
     public GrpcClientChannel(ProxyRelayService proxyRelayService, GrpcClientSettingsManager grpcClientSettingsManager,
@@ -80,6 +85,7 @@ public class GrpcClientChannel extends ProxyChannel implements ChannelExtendAttr
     }
 
     @Override
+    /** 将客户端 Settings 序列化为 JSON 作为通道扩展属性。 */
     public String getChannelExtendAttribute() {
         Settings settings = this.grpcClientSettingsManager.getRawClientSettings(this.clientId);
         if (settings == null) {
@@ -93,6 +99,7 @@ public class GrpcClientChannel extends ProxyChannel implements ChannelExtendAttr
         return null;
     }
 
+    /** 从 gRPC 通道扩展属性反序列化 Settings。 */
     public static Settings parseChannelExtendAttribute(Channel channel) {
         if (ChannelHelper.getChannelProtocolType(channel).equals(ChannelProtocolType.GRPC_V2) &&
             channel instanceof ChannelExtendAttributeGetter) {
@@ -114,6 +121,7 @@ public class GrpcClientChannel extends ProxyChannel implements ChannelExtendAttr
     }
 
     @Override
+    /** 转换为 {@link RemoteChannel} 供 Broker 侧识别。 */
     public RemoteChannel toRemoteChannel() {
         return new RemoteChannel(
             ConfigurationManager.getProxyConfig().getLocalServeAddr(),
@@ -157,6 +165,7 @@ public class GrpcClientChannel extends ProxyChannel implements ChannelExtendAttr
         }
     }
 
+    /** 绑定 Telemetry 下行流观察者。 */
     public void setClientObserver(StreamObserver<TelemetryCommand> future) {
         this.telemetryCommandRef.set(future);
     }
@@ -166,6 +175,7 @@ public class GrpcClientChannel extends ProxyChannel implements ChannelExtendAttr
     }
 
     @Override
+    /** 通道是否已绑定 Telemetry 观察者（即在线）。 */
     public boolean isOpen() {
         return this.telemetryCommandRef.get() != null;
     }
@@ -260,6 +270,7 @@ public class GrpcClientChannel extends ProxyChannel implements ChannelExtendAttr
         return clientId;
     }
 
+    /** 线程安全地向客户端写入 Telemetry 指令。 */
     public void writeTelemetryCommand(TelemetryCommand command) {
         StreamObserver<TelemetryCommand> observer = this.telemetryCommandRef.get();
         if (observer == null) {

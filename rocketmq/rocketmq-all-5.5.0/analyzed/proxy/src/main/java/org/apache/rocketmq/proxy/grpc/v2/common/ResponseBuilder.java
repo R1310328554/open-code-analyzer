@@ -35,9 +35,13 @@ import org.apache.rocketmq.proxy.service.route.TopicRouteHelper;
 import org.apache.rocketmq.remoting.exception.RemotingTimeoutException;
 import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
+/**
+ * gRPC 响应状态构建器：将各类异常与 Remoting 响应码映射为 gRPC {@link Status}。
+ */
 public class ResponseBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** Remoting 响应码到 gRPC {@link Code} 的映射表。 */
     protected static final Map<Integer, Code> RESPONSE_CODE_MAPPING = new ConcurrentHashMap<>();
 
     protected static final Object INSTANCE_CREATE_LOCK = new Object();
@@ -53,6 +57,7 @@ public class ResponseBuilder {
         RESPONSE_CODE_MAPPING.put(ClientErrorCode.ACCESS_BROKER_TIMEOUT, Code.PROXY_TIMEOUT);
     }
 
+    /** 获取单例 ResponseBuilder。 */
     public static ResponseBuilder getInstance() {
         if (instance == null) {
             synchronized (INSTANCE_CREATE_LOCK) {
@@ -64,9 +69,11 @@ public class ResponseBuilder {
         return instance;
     }
 
+    /** 根据异常类型链式解析并构建 gRPC Status。 */
     public Status buildStatus(Throwable t) {
         t = ExceptionUtils.getRealException(t);
 
+        // 将 ProxyException 包装为 GrpcProxyException
         if (t instanceof ProxyException) {
             t = new GrpcProxyException((ProxyException) t);
         }
@@ -96,6 +103,7 @@ public class ResponseBuilder {
         return buildStatus(Code.INTERNAL_SERVER_ERROR, ExceptionUtils.getErrorDetailMessage(t));
     }
 
+    /** 以 gRPC Code 与消息文本构建 Status。 */
     public Status buildStatus(Code code, String message) {
         return Status.newBuilder()
             .setCode(code)
@@ -103,6 +111,7 @@ public class ResponseBuilder {
             .build();
     }
 
+    /** 以 Remoting 响应码与备注构建 Status。 */
     public Status buildStatus(int remotingResponseCode, String remark) {
         String message = remark;
         if (message == null) {
@@ -114,6 +123,7 @@ public class ResponseBuilder {
             .build();
     }
 
+    /** 将 Remoting 响应码映射为 gRPC Code，未知则返回 INTERNAL_SERVER_ERROR。 */
     public Code buildCode(int remotingResponseCode) {
         return RESPONSE_CODE_MAPPING.getOrDefault(remotingResponseCode, Code.INTERNAL_SERVER_ERROR);
     }

@@ -35,12 +35,18 @@ import org.apache.rocketmq.proxy.service.relay.ProxyRelayResult;
 import org.apache.rocketmq.proxy.service.relay.ProxyRelayService;
 import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
+/**
+ * gRPC 客户端通道管理器：按 clientId 维护 {@link GrpcClientChannel} 及异步回调 nonce 映射。
+ */
 public class GrpcChannelManager implements StartAndShutdown {
     private final ProxyRelayService proxyRelayService;
     private final GrpcClientSettingsManager grpcClientSettingsManager;
+    /** clientId 到 gRPC 通道的并发映射。 */
     protected final ConcurrentMap<String, GrpcClientChannel> clientIdChannelMap = new ConcurrentHashMap<>();
 
+    /** 异步回调 nonce 自增生成器。 */
     protected final AtomicLong nonceIdGenerator = new AtomicLong(0);
+    /** nonce 到远程调用 Future 的映射，供 Telemetry 回写结果。 */
     protected final ConcurrentMap<String /* nonce */, ResultFuture> resultNonceFutureMap = new ConcurrentHashMap<>();
 
     protected final ScheduledExecutorService scheduledExecutorService = ThreadUtils.newSingleThreadScheduledExecutor(
@@ -60,11 +66,13 @@ public class GrpcChannelManager implements StartAndShutdown {
         );
     }
 
+    /** 按 clientId 创建或复用 gRPC 客户端通道。 */
     public GrpcClientChannel createChannel(ProxyContext ctx, String clientId) {
         return this.clientIdChannelMap.computeIfAbsent(clientId,
             k -> new GrpcClientChannel(proxyRelayService, grpcClientSettingsManager, this, ctx, clientId));
     }
 
+    /** 按 clientId 获取已注册通道，不存在则返回 null。 */
     public GrpcClientChannel getChannel(String clientId) {
         return clientIdChannelMap.get(clientId);
     }
@@ -73,6 +81,7 @@ public class GrpcChannelManager implements StartAndShutdown {
         return this.clientIdChannelMap.remove(clientId);
     }
 
+    /** 注册异步响应 Future 并返回唯一 nonce。 */
     public <T> String addResponseFuture(CompletableFuture<ProxyRelayResult<T>> responseFuture) {
         String nonce = this.nextNonce();
         this.resultNonceFutureMap.put(nonce, new ResultFuture<>(responseFuture));
@@ -91,6 +100,7 @@ public class GrpcChannelManager implements StartAndShutdown {
         return String.valueOf(this.nonceIdGenerator.getAndIncrement());
     }
 
+    /** 定时扫描并超时完成未响应的 nonce Future。 */
     protected void scanExpireResultFuture() {
         ProxyConfig proxyConfig = ConfigurationManager.getProxyConfig();
         long timeOutMs = TimeUnit.SECONDS.toMillis(proxyConfig.getGrpcProxyRelayRequestTimeoutInSeconds());
@@ -120,6 +130,7 @@ public class GrpcChannelManager implements StartAndShutdown {
 
     }
 
+    /** 包装异步 Future 及其创建时间戳。 */
     protected static class ResultFuture<T> {
         public CompletableFuture<ProxyRelayResult<T>> future;
         public long createTime = System.currentTimeMillis();

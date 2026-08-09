@@ -53,8 +53,12 @@ import org.apache.rocketmq.remoting.protocol.subscription.GroupRetryPolicy;
 import org.apache.rocketmq.remoting.protocol.subscription.GroupRetryPolicyType;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * gRPC 客户端 Settings 管理器：缓存、合并 Broker/Proxy 配置并定期清理离线客户端。
+ */
 public class GrpcClientSettingsManager extends ServiceThread implements StartAndShutdown {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** clientId 到原始 Settings 的全局缓存。 */
     protected static final Map<String, Settings> CLIENT_SETTINGS_MAP = new ConcurrentHashMap<>();
 
     private final MessagingProcessor messagingProcessor;
@@ -63,10 +67,12 @@ public class GrpcClientSettingsManager extends ServiceThread implements StartAnd
         this.messagingProcessor = messagingProcessor;
     }
 
+    /** 获取未经合并的原始 Settings。 */
     public Settings getRawClientSettings(String clientId) {
         return CLIENT_SETTINGS_MAP.get(clientId);
     }
 
+    /** 获取合并 Producer/Consumer 与 Metric 配置后的 Settings。 */
     public Settings getClientSettings(ProxyContext ctx) {
         String clientId = ctx.getClientID();
         Settings settings = getRawClientSettings(clientId);
@@ -81,6 +87,7 @@ public class GrpcClientSettingsManager extends ServiceThread implements StartAnd
         return mergeMetric(settings);
     }
 
+    /** 将 Proxy 生产者相关配置合并进 Settings。 */
     protected static Settings mergeProducerData(Settings settings) {
         ProxyConfig config = ConfigurationManager.getProxyConfig();
         Settings.Builder builder = settings.toBuilder();
@@ -108,6 +115,7 @@ public class GrpcClientSettingsManager extends ServiceThread implements StartAnd
         return mergeSubscriptionData(settings, config);
     }
 
+    /** 按 Proxy 配置构造 Metric 采集端点并写入 Settings。 */
     protected Settings mergeMetric(Settings settings) {
         // Construct metric according to the proxy config
         final ProxyConfig proxyConfig = ConfigurationManager.getProxyConfig();
@@ -185,6 +193,7 @@ public class GrpcClientSettingsManager extends ServiceThread implements StartAnd
             .build();
     }
 
+    /** 更新指定 clientId 的 Settings 缓存。 */
     public void updateClientSettings(ProxyContext ctx, String clientId, Settings settings) {
         if (settings.hasSubscription()) {
             settings = createDefaultConsumerSettingsBuilder().mergeFrom(settings).build();
@@ -219,8 +228,8 @@ public class GrpcClientSettingsManager extends ServiceThread implements StartAnd
     }
 
     /**
-     * Remove all lite subscriptions when client offline.
-     * 
+     * 客户端离线时移除其 Lite 订阅。
+     *
      * @param ctx       Proxy context
      * @param clientId  Client identifier
      * @param settings  Current client settings, if available
@@ -261,6 +270,7 @@ public class GrpcClientSettingsManager extends ServiceThread implements StartAnd
     }
 
     @Override
+    /** 后台线程周期扫描并移除已无活跃通道的 Settings。 */
     protected void onWaitEnd() {
         Set<String> clientIdSet = CLIENT_SETTINGS_MAP.keySet();
         for (String clientId : clientIdSet) {

@@ -39,8 +39,12 @@ import org.apache.rocketmq.proxy.grpc.v2.common.ResponseBuilder;
 import org.apache.rocketmq.proxy.grpc.v2.common.ResponseWriter;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 
+/**
+ * ReceiveMessage 流式响应写入器：按 POP 状态逐条推送消息并在异常时 NACK。
+ */
 public class ReceiveMessageResponseStreamWriter {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 写流失败时将消息 NACK 的不可见时长（1 秒）。 */
     protected static final long NACK_INVISIBLE_TIME = Duration.ofSeconds(1).toMillis();
 
     protected final MessagingProcessor messagingProcessor;
@@ -57,6 +61,7 @@ public class ReceiveMessageResponseStreamWriter {
         writeAndComplete(ctx, request, popResult, null);
     }
 
+    /** 按 POP 状态写入响应帧，可选执行写后回调（如注册 receipt handle）。 */
     public void writeAndComplete(ProxyContext ctx, ReceiveMessageRequest request, PopResult popResult, Runnable doAfterWrite) {
         PopStatus status = popResult.getPopStatus();
         List<MessageExt> messageFoundList = popResult.getMsgFoundList();
@@ -118,10 +123,12 @@ public class ReceiveMessageResponseStreamWriter {
         }
     }
 
+    /** 将 {@link MessageExt} 转换为 gRPC {@link Message}。 */
     protected Message convertToMessage(MessageExt messageExt) {
         return GrpcConverter.getInstance().buildMessage(messageExt);
     }
 
+    /** 写消息失败时将 POP checkpoint 设为极短不可见时长以快速重投。 */
     protected void processThrowableWhenWriteMessage(Throwable throwable,
         ProxyContext ctx, ReceiveMessageRequest request, MessageExt messageExt) {
 
@@ -143,6 +150,7 @@ public class ReceiveMessageResponseStreamWriter {
         );
     }
 
+    /** 以指定错误码写入单帧响应并完成流。 */
     public void writeAndComplete(ProxyContext ctx, Code code, String message) {
         writeResponseWithErrorIgnore(
             ReceiveMessageResponse.newBuilder().setStatus(ResponseBuilder.getInstance().buildStatus(code, message)).build());
@@ -163,6 +171,7 @@ public class ReceiveMessageResponseStreamWriter {
         }
     }
 
+    /** 发送 delivery timestamp 帧并调用 onCompleted 结束流。 */
     protected void onComplete() {
         writeResponseWithErrorIgnore(ReceiveMessageResponse.newBuilder()
             .setDeliveryTimestamp(Timestamps.fromMillis(System.currentTimeMillis()))

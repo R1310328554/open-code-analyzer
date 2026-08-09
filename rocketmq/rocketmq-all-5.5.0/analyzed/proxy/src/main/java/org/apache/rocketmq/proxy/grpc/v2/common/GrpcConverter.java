@@ -48,12 +48,16 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.NamespaceUtil;
 
+/**
+ * gRPC 与 RocketMQ 内部消息模型双向转换工具（单例）。
+ */
 public class GrpcConverter {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
     protected static final Object INSTANCE_CREATE_LOCK = new Object();
     protected static volatile GrpcConverter instance;
 
+    /** 获取线程安全的单例实例。 */
     public static GrpcConverter getInstance() {
         if (instance == null) {
             synchronized (INSTANCE_CREATE_LOCK) {
@@ -65,6 +69,7 @@ public class GrpcConverter {
         return instance;
     }
 
+    /** 由 {@link MessageExt} 构建 gRPC {@link MessageQueue}。 */
     public MessageQueue buildMessageQueue(MessageExt messageExt, String brokerName) {
         Broker broker = Broker.getDefaultInstance();
         if (!StringUtils.isEmpty(brokerName)) {
@@ -83,6 +88,7 @@ public class GrpcConverter {
             .build();
     }
 
+    /** 将 gRPC 过滤类型映射为 RocketMQ 表达式类型字符串。 */
     public String buildExpressionType(FilterType filterType) {
         switch (filterType) {
             case SQL:
@@ -93,6 +99,7 @@ public class GrpcConverter {
         }
     }
 
+    /** 将 {@link MessageExt} 完整转换为 gRPC {@link Message}。 */
     public Message buildMessage(MessageExt messageExt) {
         Map<String, String> userProperties = buildUserAttributes(messageExt);
         SystemProperties systemProperties = buildSystemProperties(messageExt);
@@ -106,6 +113,7 @@ public class GrpcConverter {
             .build();
     }
 
+    /** 提取非系统属性的用户自定义属性。 */
     protected Map<String, String> buildUserAttributes(MessageExt messageExt) {
         Map<String, String> userAttributes = new HashMap<>();
         Map<String, String> properties = messageExt.getProperties();
@@ -119,10 +127,11 @@ public class GrpcConverter {
         return userAttributes;
     }
 
+    /** 组装 gRPC 系统属性（标签、时间戳、receipt handle 等）。 */
     protected SystemProperties buildSystemProperties(MessageExt messageExt) {
         SystemProperties.Builder systemPropertiesBuilder = SystemProperties.newBuilder();
 
-        // tag
+        // 消息标签
         String tag = messageExt.getUserProperty(MessageConst.PROPERTY_TAGS);
         if (tag != null) {
             systemPropertiesBuilder.setTag(tag);
@@ -253,6 +262,7 @@ public class GrpcConverter {
         return systemPropertiesBuilder.build();
     }
 
+    /** 将带命名空间的资源名拆分为 gRPC {@link Resource}。 */
     public Resource buildResource(String resourceNameWithNamespace) {
         return Resource.newBuilder()
             .setResourceNamespace(NamespaceUtil.getNamespaceFromResource(resourceNameWithNamespace))
@@ -260,6 +270,7 @@ public class GrpcConverter {
             .build();
     }
 
+    /** 将 Topic 消息类型枚举映射为 gRPC MessageType。 */
     protected MessageType convertToGrpcMessageType(TopicMessageType topicMessageType) {
         switch (topicMessageType) {
             case TRANSACTION:

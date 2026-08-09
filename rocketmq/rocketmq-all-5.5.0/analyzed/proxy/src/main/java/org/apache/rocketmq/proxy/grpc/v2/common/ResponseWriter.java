@@ -25,12 +25,16 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * gRPC 流式响应写入工具：检测客户端取消并安全调用 onNext/onCompleted。
+ */
 public class ResponseWriter {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
     protected static final Object INSTANCE_CREATE_LOCK = new Object();
     protected static volatile ResponseWriter instance;
 
+    /** 获取单例 ResponseWriter。 */
     public static ResponseWriter getInstance() {
         if (instance == null) {
             synchronized (INSTANCE_CREATE_LOCK) {
@@ -42,16 +46,19 @@ public class ResponseWriter {
         return instance;
     }
 
+    /** 写入单条响应并在成功后调用 onCompleted。 */
     public <T> void write(StreamObserver<T> observer, final T response) {
         if (writeResponse(observer, response)) {
             observer.onCompleted();
         }
     }
 
+    /** 写入响应，客户端已取消时返回 false。 */
     public <T> boolean writeResponse(StreamObserver<T> observer, final T response) {
         if (null == response) {
             return false;
         }
+        // 开始写入 gRPC 响应
         log.debug("start to write response. response: {}", response);
         if (isCancelled(observer)) {
             log.warn("client has cancelled the request. response to write: {}", response);
@@ -69,6 +76,7 @@ public class ResponseWriter {
         return true;
     }
 
+    /** 判断 {@link ServerCallStreamObserver} 是否已被客户端取消。 */
     public <T> boolean isCancelled(StreamObserver<T> observer) {
         if (observer instanceof ServerCallStreamObserver) {
             final ServerCallStreamObserver<T> serverCallStreamObserver = (ServerCallStreamObserver<T>) observer;

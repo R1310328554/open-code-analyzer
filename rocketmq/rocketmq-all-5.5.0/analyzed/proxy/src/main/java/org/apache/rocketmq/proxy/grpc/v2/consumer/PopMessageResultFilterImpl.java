@@ -22,20 +22,28 @@ import org.apache.rocketmq.proxy.common.utils.FilterUtils;
 import org.apache.rocketmq.proxy.processor.PopMessageResultFilter;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * POP 拉取结果过滤器：按标签匹配与最大重试次数决定保留、丢弃或转 DLQ。
+ */
 public class PopMessageResultFilterImpl implements PopMessageResultFilter {
 
+    /** 允许的最大投递尝试次数（含重试）。 */
     private final int maxAttempts;
 
+    /** @param maxAttempts 最大投递尝试次数 */
     public PopMessageResultFilterImpl(int maxAttempts) {
         this.maxAttempts = maxAttempts;
     }
 
     @Override
+    /** 过滤单条 POP 消息：标签不匹配则跳过，超限则转 DLQ。 */
     public FilterResult filterMessage(ProxyContext ctx, String consumerGroup, SubscriptionData subscriptionData,
         MessageExt messageExt) {
+        // 标签与订阅表达式不匹配
         if (!FilterUtils.isTagMatched(subscriptionData.getTagsSet(), messageExt.getTags())) {
             return FilterResult.NO_MATCH;
         }
+        // 重试次数已达上限，转入死信队列
         if (messageExt.getReconsumeTimes() >= maxAttempts) {
             return FilterResult.TO_DLQ;
         }

@@ -47,29 +47,39 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.common.utils.StartAndShutdown;
 
+/**
+ * gRPC v2 消息活动接口：定义路由、收发、事务与 Telemetry 等 RPC 入口。
+ */
 public interface GrpcMessagingActivity extends StartAndShutdown {
 
+    /** 查询 Topic 路由。 */
     CompletableFuture<QueryRouteResponse> queryRoute(ProxyContext ctx, QueryRouteRequest request);
 
+    /** 客户端心跳保活。 */
     CompletableFuture<HeartbeatResponse> heartbeat(ProxyContext ctx, HeartbeatRequest request);
 
+    /** 发送单条或批量消息。 */
     CompletableFuture<SendMessageResponse> sendMessage(ProxyContext ctx, SendMessageRequest request);
 
     CompletableFuture<QueryAssignmentResponse> queryAssignment(ProxyContext ctx, QueryAssignmentRequest request);
 
+    /** 流式 POP 拉取消息。 */
     void receiveMessage(ProxyContext ctx, ReceiveMessageRequest request,
         StreamObserver<ReceiveMessageResponse> responseObserver);
 
+    /** 确认已消费消息。 */
     CompletableFuture<AckMessageResponse> ackMessage(ProxyContext ctx, AckMessageRequest request);
 
     CompletableFuture<ForwardMessageToDeadLetterQueueResponse> forwardMessageToDeadLetterQueue(ProxyContext ctx,
         ForwardMessageToDeadLetterQueueRequest request);
 
+    /** 提交或回滚事务消息。 */
     CompletableFuture<EndTransactionResponse> endTransaction(ProxyContext ctx, EndTransactionRequest request);
 
     CompletableFuture<NotifyClientTerminationResponse> notifyClientTermination(ProxyContext ctx,
         NotifyClientTerminationRequest request);
 
+    /** 修改 POP 消息不可见时长。 */
     CompletableFuture<ChangeInvisibleDurationResponse> changeInvisibleDuration(ProxyContext ctx,
         ChangeInvisibleDurationRequest request);
 
@@ -77,5 +87,6 @@ public interface GrpcMessagingActivity extends StartAndShutdown {
 
     CompletableFuture<SyncLiteSubscriptionResponse> syncLiteSubscription(ProxyContext ctx, SyncLiteSubscriptionRequest request);
 
+    /** 双向 Telemetry 流，用于服务端主动推送。 */
     ContextStreamObserver<TelemetryCommand> telemetry(StreamObserver<TelemetryCommand> responseObserver);
 }

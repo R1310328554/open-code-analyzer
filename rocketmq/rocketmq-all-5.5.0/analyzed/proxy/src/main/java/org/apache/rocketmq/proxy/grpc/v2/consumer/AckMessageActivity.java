@@ -41,6 +41,9 @@ import org.apache.rocketmq.proxy.processor.BatchAckResult;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 import org.apache.rocketmq.proxy.service.message.ReceiptHandleMessage;
 
+/**
+ * gRPC 消息确认活动：支持批量 ACK 与逐条 ACK 两种模式。
+ */
 public class AckMessageActivity extends AbstractMessagingActivity {
 
     public AckMessageActivity(MessagingProcessor messagingProcessor, GrpcClientSettingsManager grpcClientSettingsManager,
@@ -48,6 +51,7 @@ public class AckMessageActivity extends AbstractMessagingActivity {
         super(messagingProcessor, grpcClientSettingsManager, grpcChannelManager);
     }
 
+    /** 处理 ACK 请求，按配置选择批量或逐条确认。 */
     public CompletableFuture<AckMessageResponse> ackMessage(ProxyContext ctx, AckMessageRequest request) {
         CompletableFuture<AckMessageResponse> future = new CompletableFuture<>();
 
@@ -68,6 +72,7 @@ public class AckMessageActivity extends AbstractMessagingActivity {
         return future;
     }
 
+    /** 批量解码 receipt handle 并调用 {@link MessagingProcessor#batchAckMessage}。 */
     protected CompletableFuture<AckMessageResponse> ackMessageInBatch(ProxyContext ctx, String group, String topic, AckMessageRequest request) {
         List<ReceiptHandleMessage> handleMessageList = new ArrayList<>(request.getEntriesCount());
 
@@ -89,6 +94,7 @@ public class AckMessageActivity extends AbstractMessagingActivity {
             });
     }
 
+    /** 将批量 ACK 结果转换为 gRPC 条目。 */
     protected AckMessageResultEntry convertToAckMessageResultEntry(BatchAckResult batchAckResult) {
         ReceiptHandleMessage handleMessage = batchAckResult.getReceiptHandleMessage();
         AckMessageResultEntry.Builder resultBuilder = AckMessageResultEntry.newBuilder()
@@ -107,6 +113,7 @@ public class AckMessageActivity extends AbstractMessagingActivity {
         return resultBuilder.build();
     }
 
+    /** 逐条并行 ACK 并汇总响应状态码。 */
     protected CompletableFuture<AckMessageResponse> ackMessageOneByOne(ProxyContext ctx, String group, String topic, AckMessageRequest request) {
         CompletableFuture<AckMessageResponse> resultFuture = new CompletableFuture<>();
         CompletableFuture<AckMessageResultEntry>[] futures = new CompletableFuture[request.getEntriesCount()];
@@ -184,6 +191,7 @@ public class AckMessageActivity extends AbstractMessagingActivity {
             .build();
     }
 
+    /** 根据各条目状态码集合设置整体响应 Status。 */
     protected void setAckResponseStatus(AckMessageResponse.Builder responseBuilder, Set<Code> responseCodes) {
         if (responseCodes.size() > 1) {
             responseBuilder.setStatus(ResponseBuilder.getInstance().buildStatus(Code.MULTIPLE_RESULTS, Code.MULTIPLE_RESULTS.name()));
@@ -195,6 +203,7 @@ public class AckMessageActivity extends AbstractMessagingActivity {
         }
     }
 
+    /** 解析 receipt handle，优先使用本地缓存的最新 handle。 */
     protected String getHandleString(ProxyContext ctx, String group, AckMessageRequest request, AckMessageEntry ackMessageEntry) {
         String handleString = ackMessageEntry.getReceiptHandle();
         GrpcClientChannel channel = grpcChannelManager.getChannel(ctx.getClientID());

@@ -51,7 +51,11 @@ import org.apache.rocketmq.proxy.service.route.MessageQueueView;
 import org.apache.rocketmq.remoting.protocol.filter.FilterAPI;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * gRPC POP 拉取消息活动：处理长轮询、自动续期与 Lite 消费者分支逻辑。
+ */
 public class ReceiveMessageActivity extends AbstractMessagingActivity {
+    /** 引入 ILLEGAL_POLLING_TIME 错误码的客户端最低版本。 */
     private static final String ILLEGAL_POLLING_TIME_INTRODUCED_CLIENT_VERSION = "5.0.3";
 
     public ReceiveMessageActivity(MessagingProcessor messagingProcessor,
@@ -59,6 +63,7 @@ public class ReceiveMessageActivity extends AbstractMessagingActivity {
         super(messagingProcessor, grpcClientSettingsManager, grpcChannelManager);
     }
 
+    /** 校验长轮询与不可见时长后发起 POP 并通过流式 Writer 回写。 */
     public void receiveMessage(ProxyContext ctx, ReceiveMessageRequest request,
         StreamObserver<ReceiveMessageResponse> responseObserver) {
         ReceiveMessageResponseStreamWriter writer = createWriter(ctx, responseObserver);
@@ -132,7 +137,7 @@ public class ReceiveMessageActivity extends AbstractMessagingActivity {
                         String.format("The client [%s] is disconnected.", ctx.getClientID()));
                     return;
                 }
-                // check lite consumer max unacked messages
+                // 检查 Lite 消费者未 ACK 消息数是否超限
                 int unackedMessageCount = messagingProcessor.getUnackedMessageCount(ctx, clientChannel, group);
                 if (proxyConfig.getMaxLiteRenewNumPerChannel() < unackedMessageCount) {
                     writer.writeAndComplete(ctx, Code.FORBIDDEN,
@@ -192,6 +197,7 @@ public class ReceiveMessageActivity extends AbstractMessagingActivity {
         }
     }
 
+    /** 自动续期模式下，拉取成功后注册 receipt handle 到本地缓存。 */
     private Runnable handleAutoRenew(ProxyContext ctx, ReceiveMessageRequest request,
         String group, String topic, PopResult popResult, ReceiveMessageResponseStreamWriter writer
     ) {
@@ -221,6 +227,7 @@ public class ReceiveMessageActivity extends AbstractMessagingActivity {
         };
     }
 
+    /** 创建流式响应写入器。 */
     protected ReceiveMessageResponseStreamWriter createWriter(ProxyContext ctx,
         StreamObserver<ReceiveMessageResponse> responseObserver) {
         return new ReceiveMessageResponseStreamWriter(
@@ -229,6 +236,7 @@ public class ReceiveMessageActivity extends AbstractMessagingActivity {
         );
     }
 
+    /** POP 队列选择器：优先按请求指定 Broker 选队列。 */
     protected static class ReceiveMessageQueueSelector implements QueueSelector {
 
         private final String brokerName;

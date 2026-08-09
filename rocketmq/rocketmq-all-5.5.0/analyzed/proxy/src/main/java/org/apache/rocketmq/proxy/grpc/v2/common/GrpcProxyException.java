@@ -22,11 +22,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.rocketmq.proxy.common.ProxyException;
 import org.apache.rocketmq.proxy.common.ProxyExceptionCode;
 
+/**
+ * gRPC Proxy 运行时异常：携带 gRPC {@link Code} 或将 {@link ProxyException} 映射为 gRPC 错误码。
+ */
 public class GrpcProxyException extends RuntimeException {
 
+    /** 底层 Proxy 业务异常（可选）。 */
     private ProxyException proxyException;
+    /** 直接指定的 gRPC 错误码（可选）。 */
     private Code code;
 
+    /** {@link ProxyExceptionCode} 到 gRPC {@link Code} 的映射表。 */
     protected static final Map<ProxyExceptionCode, Code> CODE_MAPPING = new ConcurrentHashMap<>();
 
     static {
@@ -37,6 +43,7 @@ public class GrpcProxyException extends RuntimeException {
         CODE_MAPPING.put(ProxyExceptionCode.MESSAGE_PROPERTY_CONFLICT_WITH_TYPE, Code.MESSAGE_PROPERTY_CONFLICT_WITH_TYPE);
     }
 
+    /** 以 gRPC 错误码与消息构造异常。 */
     public GrpcProxyException(Code code, String message) {
         super(message);
         this.code = code;
@@ -47,11 +54,13 @@ public class GrpcProxyException extends RuntimeException {
         this.code = code;
     }
 
+    /** 由 {@link ProxyException} 包装构造。 */
     public GrpcProxyException(ProxyException proxyException) {
         super(proxyException);
         this.proxyException = proxyException;
     }
 
+    /** 解析并返回 gRPC 错误码（优先直接 code，其次映射 ProxyException）。 */
     public Code getCode() {
         if (this.code != null) {
             return this.code;

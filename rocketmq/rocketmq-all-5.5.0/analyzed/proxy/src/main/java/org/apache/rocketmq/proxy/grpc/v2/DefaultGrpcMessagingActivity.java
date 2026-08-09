@@ -61,12 +61,19 @@ import org.apache.rocketmq.proxy.grpc.v2.route.RouteActivity;
 import org.apache.rocketmq.proxy.grpc.v2.transaction.EndTransactionActivity;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 
+/**
+ * gRPC v2 消息活动默认实现：聚合路由、收发、事务与客户端管理等子 Activity。
+ */
 public class DefaultGrpcMessagingActivity extends AbstractStartAndShutdown implements GrpcMessagingActivity {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
+    /** 客户端 Settings 缓存与合并管理器。 */
     protected GrpcClientSettingsManager grpcClientSettingsManager;
+    /** gRPC 客户端通道与异步回调 nonce 管理器。 */
     protected GrpcChannelManager grpcChannelManager;
+    /** POP 拉取消息活动处理器。 */
     protected ReceiveMessageActivity receiveMessageActivity;
+    /** 消息确认（ACK）活动处理器。 */
     protected AckMessageActivity ackMessageActivity;
     protected ChangeInvisibleDurationActivity changeInvisibleDurationActivity;
     protected SendMessageActivity sendMessageActivity;
@@ -76,10 +83,12 @@ public class DefaultGrpcMessagingActivity extends AbstractStartAndShutdown imple
     protected RouteActivity routeActivity;
     protected ClientActivity clientActivity;
 
+    /** 构造默认 gRPC 消息活动并初始化各子模块。 */
     protected DefaultGrpcMessagingActivity(MessagingProcessor messagingProcessor) {
         this.init(messagingProcessor);
     }
 
+    /** 创建 Settings/Channel 管理器及全部子 Activity 实例。 */
     protected void init(MessagingProcessor messagingProcessor) {
         this.grpcClientSettingsManager = new GrpcClientSettingsManager(messagingProcessor);
         this.grpcChannelManager = new GrpcChannelManager(messagingProcessor.getProxyRelayService(), this.grpcClientSettingsManager);
@@ -98,6 +107,7 @@ public class DefaultGrpcMessagingActivity extends AbstractStartAndShutdown imple
     }
 
     @Override
+    /** 查询 Topic 路由信息。 */
     public CompletableFuture<QueryRouteResponse> queryRoute(ProxyContext ctx, QueryRouteRequest request) {
         return this.routeActivity.queryRoute(ctx, request);
     }
@@ -119,6 +129,7 @@ public class DefaultGrpcMessagingActivity extends AbstractStartAndShutdown imple
     }
 
     @Override
+    /** 流式接收 POP 消息并写入 {@link StreamObserver}。 */
     public void receiveMessage(ProxyContext ctx, ReceiveMessageRequest request,
         StreamObserver<ReceiveMessageResponse> responseObserver) {
         this.receiveMessageActivity.receiveMessage(ctx, request, responseObserver);
@@ -165,6 +176,7 @@ public class DefaultGrpcMessagingActivity extends AbstractStartAndShutdown imple
     }
 
     @Override
+    /** 建立双向 Telemetry 流以推送客户端指令。 */
     public ContextStreamObserver<TelemetryCommand> telemetry(StreamObserver<TelemetryCommand> responseObserver) {
         return this.clientActivity.telemetry(responseObserver);
     }

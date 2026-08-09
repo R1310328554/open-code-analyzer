@@ -32,6 +32,9 @@ import org.apache.rocketmq.proxy.grpc.v2.common.GrpcClientSettingsManager;
 import org.apache.rocketmq.proxy.grpc.v2.common.ResponseBuilder;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 
+/**
+ * 修改 POP 消息不可见时长活动：续期或缩短消费窗口。
+ */
 public class ChangeInvisibleDurationActivity extends AbstractMessagingActivity {
 
     public ChangeInvisibleDurationActivity(MessagingProcessor messagingProcessor,
@@ -39,6 +42,7 @@ public class ChangeInvisibleDurationActivity extends AbstractMessagingActivity {
         super(messagingProcessor, grpcClientSettingsManager, grpcChannelManager);
     }
 
+    /** 校验参数后调用 Broker 修改不可见时长。 */
     public CompletableFuture<ChangeInvisibleDurationResponse> changeInvisibleDuration(ProxyContext ctx,
         ChangeInvisibleDurationRequest request) {
         CompletableFuture<ChangeInvisibleDurationResponse> future = new CompletableFuture<>();
@@ -50,6 +54,7 @@ public class ChangeInvisibleDurationActivity extends AbstractMessagingActivity {
             ReceiptHandle receiptHandle = ReceiptHandle.decode(request.getReceiptHandle());
             String group = request.getGroup().getName();
 
+            // 若本地缓存有续期后的 handle，则替换请求中的 handle
             MessageReceiptHandle messageReceiptHandle = messagingProcessor.removeReceiptHandle(ctx, grpcChannelManager.getChannel(ctx.getClientID()), group, request.getMessageId(), receiptHandle.getReceiptHandle());
             if (messageReceiptHandle != null) {
                 receiptHandle = ReceiptHandle.decode(messageReceiptHandle.getReceiptHandleStr());
@@ -72,6 +77,7 @@ public class ChangeInvisibleDurationActivity extends AbstractMessagingActivity {
         return future;
     }
 
+    /** 将 Broker ACK 结果转换为 gRPC 响应（含新 receipt handle）。 */
     protected ChangeInvisibleDurationResponse convertToChangeInvisibleDurationResponse(ProxyContext ctx,
         ChangeInvisibleDurationRequest request, AckResult ackResult) {
         if (AckStatus.OK.equals(ackResult.getStatus())) {
