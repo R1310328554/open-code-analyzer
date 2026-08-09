@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T21:01:33Z",
   "files": [
-    "redisson/src/main/java/org/redisson/api/search/index/HNSWVectorIndex.java",
-    "redisson/src/main/java/org/redisson/api/search/index/HNSWVectorIndexParams.java",
-    "redisson/src/main/java/org/redisson/api/search/index/HNSWVectorOptionalArgs.java",
-    "redisson/src/main/java/org/redisson/api/search/index/IndexInfo.java",
-    "redisson/src/main/java/org/redisson/api/search/index/IndexOptions.java",
-    "redisson/src/main/java/org/redisson/api/search/index/IndexType.java",
-    "redisson/src/main/java/org/redisson/api/search/index/NumericIndex.java",
-    "redisson/src/main/java/org/redisson/api/search/index/NumericIndexParams.java",
-    "redisson/src/main/java/org/redisson/api/search/index/PhoneticMatcher.java",
-    "redisson/src/main/java/org/redisson/api/search/index/SVSVamanaVectorIndex.java",
-    "redisson/src/main/java/org/redisson/api/search/index/SVSVamanaVectorIndexParams.java",
-    "redisson/src/main/java/org/redisson/api/search/index/SVSVamanaVectorOptionalArgs.java",
-    "redisson/src/main/java/org/redisson/api/search/index/SortMode.java",
-    "redisson/src/main/java/org/redisson/api/search/index/TagIndex.java",
-    "redisson/src/main/java/org/redisson/api/search/index/TagIndexParams.java",
     "redisson/src/main/java/org/redisson/api/search/index/TextIndex.java",
     "redisson/src/main/java/org/redisson/api/search/index/TextIndexParams.java",
     "redisson/src/main/java/org/redisson/api/search/index/VectorDimParam.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/api/search/query/NumericFilter.java"
   ],
   "remaining_pending": 722,
-  "done": 2070
+  "done": 2085
 }
