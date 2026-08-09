@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
- * Decodes a {@link DatagramPacket} into a {@link DatagramDnsResponse}.
+ * 将 {@link DatagramPacket} 解码为 {@link DatagramDnsResponse}。
  */
 @ChannelHandler.Sharable
 public class DatagramDnsResponseDecoder extends MessageToMessageDecoder<DatagramPacket> {
@@ -33,14 +33,14 @@ public class DatagramDnsResponseDecoder extends MessageToMessageDecoder<Datagram
     private final DnsResponseDecoder<InetSocketAddress> responseDecoder;
 
     /**
-     * Creates a new decoder with {@linkplain DnsRecordDecoder#DEFAULT the default record decoder}.
+     * 使用 {@linkplain DnsRecordDecoder#DEFAULT 默认记录解码器} 创建解码器。
      */
     public DatagramDnsResponseDecoder() {
         this(DnsRecordDecoder.DEFAULT);
     }
 
     /**
-     * Creates a new decoder with the specified {@code recordDecoder}.
+     * 使用指定 {@code recordDecoder} 创建解码器。
      */
     public DatagramDnsResponseDecoder(DnsRecordDecoder recordDecoder) {
         super(DatagramPacket.class);

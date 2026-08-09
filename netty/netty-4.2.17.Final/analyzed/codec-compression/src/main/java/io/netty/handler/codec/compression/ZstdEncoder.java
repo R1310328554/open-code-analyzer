@@ -31,11 +31,11 @@ import static io.netty.handler.codec.compression.ZstdConstants.DEFAULT_BLOCK_SIZ
 import static io.netty.handler.codec.compression.ZstdConstants.DEFAULT_MAX_ENCODE_SIZE;
 
 /**
- *  Compresses a {@link ByteBuf} using the Zstandard algorithm.
- *  See <a href="https://facebook.github.io/zstd">Zstandard</a>.
+ * 使用 Zstandard 算法压缩 {@link ByteBuf}。
+ * 参见 <a href="https://facebook.github.io/zstd">Zstandard</a>。
  */
 public final class ZstdEncoder extends MessageToByteEncoder<ByteBuf> {
-    // Don't use static here as we want to still allow to load the classes.
+    // 不用 static，以便在类加载失败时仍能加载本类
     {
         try {
             io.netty.handler.codec.compression.Zstd.ensureAvailability();
@@ -49,31 +49,30 @@ public final class ZstdEncoder extends MessageToByteEncoder<ByteBuf> {
     private ByteBuf buffer;
 
     /**
-     * Creates a new Zstd encoder.
+     * 创建默认 Zstd 编码器。
      *
-     * Please note that if you use the default constructor, the default BLOCK_SIZE and MAX_BLOCK_SIZE
-     * will be used. If you want to specify BLOCK_SIZE and MAX_BLOCK_SIZE yourself,
-     * please use {@link ZstdEncoder(int,int)} constructor
+     * 默认构造使用默认 BLOCK_SIZE 与 MAX_BLOCK_SIZE；
+     * 若需自定义，请使用 {@link ZstdEncoder(int,int)}。
      */
     public ZstdEncoder() {
         this(DEFAULT_COMPRESSION_LEVEL, DEFAULT_BLOCK_SIZE, DEFAULT_MAX_ENCODE_SIZE);
     }
 
     /**
-     * Creates a new Zstd encoder.
+     * 创建指定压缩级别的 Zstd 编码器。
      *  @param  compressionLevel
-     *            specifies the level of the compression
+     *            压缩级别
      */
     public ZstdEncoder(int compressionLevel) {
         this(compressionLevel, DEFAULT_BLOCK_SIZE, DEFAULT_MAX_ENCODE_SIZE);
     }
 
     /**
-     * Creates a new Zstd encoder.
+     * 创建指定块大小与最大编码尺寸的 Zstd 编码器。
      *  @param  blockSize
-     *            is used to calculate the compressionLevel
+     *            用于分块压缩的块大小
      *  @param  maxEncodeSize
-     *            specifies the size of the largest compressed object
+     *            单块压缩结果允许的最大字节数
      */
     public ZstdEncoder(int blockSize, int maxEncodeSize) {
         this(DEFAULT_COMPRESSION_LEVEL, blockSize, maxEncodeSize);
@@ -81,11 +80,11 @@ public final class ZstdEncoder extends MessageToByteEncoder<ByteBuf> {
 
     /**
      * @param  blockSize
-     *           is used to calculate the compressionLevel
+     *           分块压缩的块大小
      * @param  maxEncodeSize
-     *           specifies the size of the largest compressed object
+     *           单块压缩结果允许的最大字节数
      * @param  compressionLevel
-     *           specifies the level of the compression
+     *           压缩级别
      */
     public ZstdEncoder(int compressionLevel, int blockSize, int maxEncodeSize) {
         super(ByteBuf.class, true);
@@ -104,7 +103,7 @@ public final class ZstdEncoder extends MessageToByteEncoder<ByteBuf> {
 
         int remaining = msg.readableBytes() + buffer.readableBytes();
 
-        // quick overflow check
+        // 快速溢出检查
         if (remaining < 0) {
             throw new EncoderException("too much data to allocate a buffer for compression");
         }
@@ -113,8 +112,7 @@ public final class ZstdEncoder extends MessageToByteEncoder<ByteBuf> {
         while (remaining > 0) {
             int curSize = Math.min(blockSize, remaining);
             remaining -= curSize;
-            // calculate the max compressed size with Zstd.compressBound since
-            // it returns the maximum size of the compressed data
+            // 用 Zstd.compressBound 估算最大压缩后尺寸
             bufferSize = Math.max(bufferSize, Zstd.compressBound(curSize));
         }
 
@@ -143,8 +141,7 @@ public final class ZstdEncoder extends MessageToByteEncoder<ByteBuf> {
                 flushBufferedData(out);
             }
         }
-        // return the remaining data in the buffer
-        // when buffer size is smaller than the block size
+        // 块小于 blockSize 时刷出缓冲中剩余数据
         if (buffer.isReadable()) {
             flushBufferedData(out);
         }

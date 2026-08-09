@@ -18,10 +18,10 @@ package io.netty.handler.codec.dns;
 import io.netty.util.internal.StringUtil;
 
 /**
- * An <a href="https://tools.ietf.org/html/rfc6891#section-6.1">OPT RR</a> record.
+ * <a href="https://tools.ietf.org/html/rfc6891#section-6.1">OPT RR</a> 伪记录。
  *
- * This is used for <a href="https://tools.ietf.org/html/rfc6891#section-6.1.3">
- *     Extension Mechanisms for DNS (EDNS(0))</a>.
+ * 用于 <a href="https://tools.ietf.org/html/rfc6891#section-6.1.3">
+ *     DNS 扩展机制 EDNS(0)</a>。
  */
 public abstract class AbstractDnsOptPseudoRrRecord extends AbstractDnsRecord implements DnsOptPseudoRecord {
 
@@ -33,9 +33,9 @@ public abstract class AbstractDnsOptPseudoRrRecord extends AbstractDnsRecord imp
         super(StringUtil.EMPTY_STRING, DnsRecordType.OPT, maxPayloadSize, 0);
     }
 
-    // See https://tools.ietf.org/html/rfc6891#section-6.1.3
+    // 参见 RFC 6891 §6.1.3
     private static long packIntoLong(int val, int val2) {
-        // We are currently not support DO and Z fields, just use 0.
+        // 暂不支持 DO 与 Z 字段，填 0
         return ((val & 0xffL) << 24 | (val2 & 0xff) << 16) & 0xFFFFFFFFL;
     }
 

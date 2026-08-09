@@ -16,24 +16,24 @@
 package io.netty.handler.codec.dns;
 
 /**
- * The default {@link DnsQuery} implementation.
+ * {@link DnsQuery} 的默认实现。
  */
 public class DefaultDnsQuery extends AbstractDnsMessage implements DnsQuery {
 
     /**
-     * Creates a new instance with the {@link DnsOpCode#QUERY} {@code opCode}.
+     * 使用 {@link DnsOpCode#QUERY} 操作码创建实例。
      *
-     * @param id the {@code ID} of the DNS query
+     * @param id DNS 查询 {@code ID}
      */
     public DefaultDnsQuery(int id) {
         super(id);
     }
 
     /**
-     * Creates a new instance.
+     * 创建带指定操作码的实例。
      *
-     * @param id the {@code ID} of the DNS query
-     * @param opCode the {@code opCode} of the DNS query
+     * @param id DNS 查询 {@code ID}
+     * @param opCode DNS 查询操作码
      */
     public DefaultDnsQuery(int id, DnsOpCode opCode) {
         super(id, opCode);

@@ -24,7 +24,7 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * A skeletal implementation of {@link DnsRecord}.
+ * {@link DnsRecord} 的骨架实现，封装名称、类型、类与 TTL。
  */
 public abstract class AbstractDnsRecord implements DnsRecord {
 
@@ -35,22 +35,22 @@ public abstract class AbstractDnsRecord implements DnsRecord {
     private int hashCode;
 
     /**
-     * Creates a new {@link #CLASS_IN IN-class} record.
+     * 创建 {@link #CLASS_IN IN 类} 记录。
      *
-     * @param name the domain name
-     * @param type the type of the record
-     * @param timeToLive the TTL value of the record
+     * @param name 域名
+     * @param type 记录类型
+     * @param timeToLive 记录 TTL
      */
     protected AbstractDnsRecord(String name, DnsRecordType type, long timeToLive) {
         this(name, type, CLASS_IN, timeToLive);
     }
 
     /**
-     * Creates a new record.
+     * 创建指定 DNS 类的记录。
      *
-     * @param name the domain name
-     * @param type the type of the record
-     * @param dnsClass the class of the record, usually one of the following:
+     * @param name 域名
+     * @param type 记录类型
+     * @param dnsClass 记录类，常见取值：
      *                 <ul>
      *                     <li>{@link #CLASS_IN}</li>
      *                     <li>{@link #CLASS_CSNET}</li>
@@ -59,12 +59,12 @@ public abstract class AbstractDnsRecord implements DnsRecord {
      *                     <li>{@link #CLASS_NONE}</li>
      *                     <li>{@link #CLASS_ANY}</li>
      *                 </ul>
-     * @param timeToLive the TTL value of the record
+     * @param timeToLive 记录 TTL
      */
     protected AbstractDnsRecord(String name, DnsRecordType type, int dnsClass, long timeToLive) {
         checkPositiveOrZero(timeToLive, "timeToLive");
-        // Convert to ASCII which will also check that the length is not too big.
-        // See:
+        // 转为 ASCII 并校验长度上限
+        // 参见：
         //   - https://github.com/netty/netty/issues/4937
         //   - https://github.com/netty/netty/issues/4935
         this.name = appendTrailingDot(IDNtoASCII(name));
@@ -76,9 +76,8 @@ public abstract class AbstractDnsRecord implements DnsRecord {
     private static String IDNtoASCII(String name) {
         checkNotNull(name, "name");
         if (PlatformDependent.isAndroid() && DefaultDnsRecordDecoder.ROOT.equals(name)) {
-            // Prior Android 10 there was a bug that did not correctly parse ".".
-            //
-            // See https://github.com/netty/netty/issues/10034
+            // Android 10 之前 IDN 无法正确解析 "."
+            // 参见 https://github.com/netty/netty/issues/10034
             return name;
         }
         return IDN.toASCII(name);

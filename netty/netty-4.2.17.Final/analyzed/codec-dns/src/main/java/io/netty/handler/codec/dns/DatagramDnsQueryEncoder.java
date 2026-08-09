@@ -26,8 +26,8 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
- * Encodes a {@link DatagramDnsQuery} (or an {@link AddressedEnvelope} of {@link DnsQuery}} into a
- * {@link DatagramPacket}.
+ * 将 {@link DatagramDnsQuery}（或 {@link DnsQuery} 的 {@link AddressedEnvelope}）
+ * 编码为 {@link DatagramPacket}。
  */
 @ChannelHandler.Sharable
 public class DatagramDnsQueryEncoder extends MessageToMessageEncoder<AddressedEnvelope<DnsQuery, InetSocketAddress>> {
@@ -35,14 +35,14 @@ public class DatagramDnsQueryEncoder extends MessageToMessageEncoder<AddressedEn
     private final DnsQueryEncoder encoder;
 
     /**
-     * Creates a new encoder with {@linkplain DnsRecordEncoder#DEFAULT the default record encoder}.
+     * 使用 {@linkplain DnsRecordEncoder#DEFAULT 默认记录编码器} 创建编码器。
      */
     public DatagramDnsQueryEncoder() {
         this(DnsRecordEncoder.DEFAULT);
     }
 
     /**
-     * Creates a new encoder with the specified {@code recordEncoder}.
+     * 使用指定 {@code recordEncoder} 创建编码器。
      */
     public DatagramDnsQueryEncoder(DnsRecordEncoder recordEncoder) {
         this.encoder = new DnsQueryEncoder(recordEncoder);
@@ -71,8 +71,8 @@ public class DatagramDnsQueryEncoder extends MessageToMessageEncoder<AddressedEn
     }
 
     /**
-     * Allocate a {@link ByteBuf} which will be used for constructing a datagram packet.
-     * Sub-classes may override this method to return a {@link ByteBuf} with a perfect matching initial capacity.
+     * 分配用于构造数据报包的 {@link ByteBuf}。
+     * 子类可覆写以返回初始容量更精确的缓冲。
      */
     protected ByteBuf allocateBuffer(
         ChannelHandlerContext ctx,

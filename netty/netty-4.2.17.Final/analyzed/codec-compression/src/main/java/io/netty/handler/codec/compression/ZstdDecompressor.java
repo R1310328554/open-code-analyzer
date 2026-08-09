@@ -26,14 +26,14 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Decompresses a compressed block {@link ByteBuf} using the Zstandard algorithm.
- * See <a href="https://facebook.github.io/zstd">Zstandard</a>.
+ * 使用 Zstandard 算法解压压缩块 {@link ByteBuf}。
+ * 参见 <a href="https://facebook.github.io/zstd">Zstandard</a>。
  */
 @UnstableApi
 public final class ZstdDecompressor implements Decompressor {
     /**
-     * Default upper bound on the {@code Window_Log} accepted by the decompressor.
-     * {@code 27} corresponds to a 128 MiB decompression window.
+     * 解压器接受的 {@code Window_Log} 默认上限。
+     * {@code 27} 对应 128 MiB 解压窗口。
      */
     public static final int DEFAULT_MAX_WINDOW_LOG = 27;
     private static final int MIN_WINDOW_LOG = 10;
@@ -46,7 +46,7 @@ public final class ZstdDecompressor implements Decompressor {
     private final ZstdInputStreamNoFinalizer output;
 
     ZstdDecompressor(Builder builder, ByteBufAllocator allocator) {
-        // Don't use static here as we want to still allow to load the classes.
+        // 不用 static，以便在类加载失败时仍能加载本类
         try {
             Zstd.ensureAvailability();
         } catch (Throwable throwable) {
@@ -135,7 +135,7 @@ public final class ZstdDecompressor implements Decompressor {
         try {
             output.close();
         } catch (IOException ignored) {
-            // ignore
+            // 忽略关闭异常
         }
     }
 
@@ -152,14 +152,13 @@ public final class ZstdDecompressor implements Decompressor {
         }
 
         /**
-         * Set the upper bound on the accepted {@code Window_Log}.
+         * 设置接受的 {@code Window_Log} 上限。
          * <p>
-         * The window log size bounds the memory usage of the sliding window for ZSTD frame decompression. Frames
-         * declaring a larger window will be rejected to bound the memory the decompressor may allocate per stream.
+         * 窗口对数限制 ZSTD 帧解压滑动窗口的内存占用；
+         * 声明更大窗口的帧将被拒绝，以限制每条流可分配的内存。
          *
-         * @param maxWindowLog upper bound on the {@code Window_Log} field of incoming frames; must be in
-         *                     {@code [10, 31]}
-         * @return This builder
+         * @param maxWindowLog 入站帧 {@code Window_Log} 字段的上限，须在 {@code [10, 31]}
+         * @return 本构建器
          */
         @UnstableApi
         public Builder maxWindowLog(int maxWindowLog) {

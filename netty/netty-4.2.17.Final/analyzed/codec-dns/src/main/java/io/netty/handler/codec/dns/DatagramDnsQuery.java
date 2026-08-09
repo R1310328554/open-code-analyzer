@@ -21,7 +21,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 /**
- * A {@link DnsQuery} implementation for UDP/IP.
+ * 基于 UDP/IP 的 {@link DnsQuery} 实现，携带发送方与接收方地址。
  */
 public class DatagramDnsQuery extends DefaultDnsQuery
         implements AddressedEnvelope<DatagramDnsQuery, InetSocketAddress> {
@@ -30,11 +30,11 @@ public class DatagramDnsQuery extends DefaultDnsQuery
     private final InetSocketAddress recipient;
 
     /**
-     * Creates a new instance with the {@link DnsOpCode#QUERY} {@code opCode}.
+     * 使用 {@link DnsOpCode#QUERY} 操作码创建实例。
      *
-     * @param sender the address of the sender
-     * @param recipient the address of the recipient
-     * @param id the {@code ID} of the DNS query
+     * @param sender 发送方地址
+     * @param recipient 接收方地址
+     * @param id DNS 查询 {@code ID}
      */
     public DatagramDnsQuery(
             InetSocketAddress sender, InetSocketAddress recipient, int id) {
@@ -42,12 +42,12 @@ public class DatagramDnsQuery extends DefaultDnsQuery
     }
 
     /**
-     * Creates a new instance.
+     * 创建带指定操作码的实例。
      *
-     * @param sender the address of the sender
-     * @param recipient the address of the recipient
-     * @param id the {@code ID} of the DNS query
-     * @param opCode the {@code opCode} of the DNS query
+     * @param sender 发送方地址
+     * @param recipient 接收方地址
+     * @param id DNS 查询 {@code ID}
+     * @param opCode DNS 查询操作码
      */
     public DatagramDnsQuery(
             InetSocketAddress sender, InetSocketAddress recipient, int id, DnsOpCode opCode) {

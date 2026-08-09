@@ -21,7 +21,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 /**
- * A {@link DnsResponse} implementation for UDP/IP.
+ * 基于 UDP/IP 的 {@link DnsResponse} 实现，携带发送方与接收方地址。
  */
 public class DatagramDnsResponse extends DefaultDnsResponse
         implements AddressedEnvelope<DatagramDnsResponse, InetSocketAddress> {
@@ -30,37 +30,36 @@ public class DatagramDnsResponse extends DefaultDnsResponse
     private final InetSocketAddress recipient;
 
     /**
-     * Creates a new instance with the {@link DnsOpCode#QUERY} {@code opCode} and
-     * the {@link DnsResponseCode#NOERROR} {@code RCODE}.
+     * 使用 {@link DnsOpCode#QUERY} 与 {@link DnsResponseCode#NOERROR} 创建实例。
      *
-     * @param sender the address of the sender
-     * @param recipient the address of the recipient
-     * @param id the {@code ID} of the DNS response
+     * @param sender 发送方地址
+     * @param recipient 接收方地址
+     * @param id DNS 响应 {@code ID}
      */
     public DatagramDnsResponse(InetSocketAddress sender, InetSocketAddress recipient, int id) {
         this(sender, recipient, id, DnsOpCode.QUERY, DnsResponseCode.NOERROR);
     }
 
     /**
-     * Creates a new instance with the {@link DnsResponseCode#NOERROR} responseCode.
+     * 使用 {@link DnsResponseCode#NOERROR} 响应码创建实例。
      *
-     * @param sender the address of the sender
-     * @param recipient the address of the recipient
-     * @param id the {@code ID} of the DNS response
-     * @param opCode the {@code opCode} of the DNS response
+     * @param sender 发送方地址
+     * @param recipient 接收方地址
+     * @param id DNS 响应 {@code ID}
+     * @param opCode DNS 响应操作码
      */
     public DatagramDnsResponse(InetSocketAddress sender, InetSocketAddress recipient, int id, DnsOpCode opCode) {
         this(sender, recipient, id, opCode, DnsResponseCode.NOERROR);
     }
 
     /**
-     * Creates a new instance.
+     * 创建完整配置的实例。
      *
-     * @param sender the address of the sender
-     * @param recipient the address of the recipient
-     * @param id the {@code ID} of the DNS response
-     * @param opCode the {@code opCode} of the DNS response
-     * @param responseCode the {@code RCODE} of the DNS response
+     * @param sender 发送方地址
+     * @param recipient 接收方地址
+     * @param id DNS 响应 {@code ID}
+     * @param opCode DNS 响应操作码
+     * @param responseCode DNS 响应 {@code RCODE}
      */
     public DatagramDnsResponse(
             InetSocketAddress sender, InetSocketAddress recipient,

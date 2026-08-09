@@ -24,8 +24,7 @@ import static io.netty.handler.codec.compression.ZstdConstants.DEFAULT_BLOCK_SIZ
 import static io.netty.handler.codec.compression.ZstdConstants.DEFAULT_MAX_ENCODE_SIZE;
 
 /**
- * {@link ZstdOptions} holds compressionLevel for
- * Zstd compression.
+ * {@link ZstdOptions} 保存 Zstd 压缩的级别、块大小与最大编码尺寸。
  */
 public class ZstdOptions implements CompressionOptions {
 
@@ -33,23 +32,19 @@ public class ZstdOptions implements CompressionOptions {
     private final int compressionLevel;
     private final int maxEncodeSize;
 
-    /**
-     * Default implementation of {@link ZstdOptions} with{compressionLevel(int)} set to
-     * {@link ZstdConstants#DEFAULT_COMPRESSION_LEVEL},{@link ZstdConstants#DEFAULT_BLOCK_SIZE},
-     * {@link ZstdConstants#DEFAULT_MAX_ENCODE_SIZE}
-     */
+    /** 默认 Zstd 选项：默认压缩级别、块大小与最大编码尺寸。 */
     static final ZstdOptions DEFAULT = new ZstdOptions(DEFAULT_COMPRESSION_LEVEL, DEFAULT_BLOCK_SIZE,
             DEFAULT_MAX_ENCODE_SIZE);
 
     /**
-     * Create a new {@link ZstdOptions}
+     * 创建自定义 {@link ZstdOptions}。
      *
      * @param  blockSize
-     *           is used to calculate the compressionLevel
+     *           分块压缩的块大小
      * @param  maxEncodeSize
-     *           specifies the size of the largest compressed object
+     *           单块压缩结果允许的最大字节数
      * @param  compressionLevel
-     *           specifies the level of the compression
+     *           压缩级别
      */
     ZstdOptions(int compressionLevel, int blockSize, int maxEncodeSize) {
         if (!Zstd.isAvailable()) {

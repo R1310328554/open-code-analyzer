@@ -19,15 +19,18 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 import io.netty.util.internal.StringUtil;
 
+/**
+ * {@link DnsPtrRecord} 的默认实现，将域名映射到主机名。
+ */
 public class DefaultDnsPtrRecord extends AbstractDnsRecord implements DnsPtrRecord {
 
     private final String hostname;
 
     /**
-     * Creates a new PTR record.
+     * 创建 PTR 记录。
      *
-     * @param name the domain name
-     * @param dnsClass the class of the record, usually one of the following:
+     * @param name 域名
+     * @param dnsClass 记录类，常见取值：
      *                 <ul>
      *                     <li>{@link #CLASS_IN}</li>
      *                     <li>{@link #CLASS_CSNET}</li>
@@ -36,8 +39,8 @@ public class DefaultDnsPtrRecord extends AbstractDnsRecord implements DnsPtrReco
      *                     <li>{@link #CLASS_NONE}</li>
      *                     <li>{@link #CLASS_ANY}</li>
      *                 </ul>
-     * @param timeToLive the TTL value of the record
-     * @param hostname the hostname this PTR record resolves to.
+     * @param timeToLive 记录 TTL
+     * @param hostname PTR 解析到的主机名
      */
     public DefaultDnsPtrRecord(
             String name, int dnsClass, long timeToLive, String hostname) {

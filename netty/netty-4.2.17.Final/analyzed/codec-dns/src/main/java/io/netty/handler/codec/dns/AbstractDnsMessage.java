@@ -29,7 +29,7 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A skeletal implementation of {@link DnsMessage}.
+ * {@link DnsMessage} 的骨架实现，管理各段记录与引用计数。
  */
 public abstract class AbstractDnsMessage extends AbstractReferenceCounted implements DnsMessage {
 
@@ -45,22 +45,21 @@ public abstract class AbstractDnsMessage extends AbstractReferenceCounted implem
     private boolean recursionDesired;
     private byte z;
 
-    // To reduce the memory footprint of a message,
-    // each of the following fields is a single record or a list of records.
+    // 为减小消息内存占用，各段字段存单条记录或记录列表
     private Object questions;
     private Object answers;
     private Object authorities;
     private Object additionals;
 
     /**
-     * Creates a new instance with the specified {@code id} and {@link DnsOpCode#QUERY} opCode.
+     * 使用指定 {@code id} 与 {@link DnsOpCode#QUERY} 操作码创建实例。
      */
     protected AbstractDnsMessage(int id) {
         this(id, DnsOpCode.QUERY);
     }
 
     /**
-     * Creates a new instance with the specified {@code id} and {@code opCode}.
+     * 使用指定 {@code id} 与 {@code opCode} 创建实例。
      */
     protected AbstractDnsMessage(int id, DnsOpCode opCode) {
         setId(id);

@@ -23,20 +23,20 @@ import java.net.InetAddress;
 import java.util.Arrays;
 
 /**
- * Default {@link DnsOptEcsRecord} implementation.
+ * {@link DnsOptEcsRecord} 的默认实现，携带客户端子网（ECS）信息。
  */
 public final class DefaultDnsOptEcsRecord extends AbstractDnsOptPseudoRrRecord implements DnsOptEcsRecord {
     private final int srcPrefixLength;
     private final byte[] address;
 
     /**
-     * Creates a new instance.
+     * 创建完整配置的 ECS 记录。
      *
-     * @param maxPayloadSize the suggested max payload size in bytes
-     * @param extendedRcode the extended rcode
-     * @param version the version
-     * @param srcPrefixLength the prefix length
-     * @param address the bytes of the {@link InetAddress} to use
+     * @param maxPayloadSize 建议的最大 UDP 负载（字节）
+     * @param extendedRcode 扩展响应码
+     * @param version EDNS 版本
+     * @param srcPrefixLength 源地址前缀长度
+     * @param address {@link InetAddress} 的字节表示
      */
     public DefaultDnsOptEcsRecord(int maxPayloadSize, int extendedRcode, int version,
                                   int srcPrefixLength, byte[] address) {
@@ -46,23 +46,22 @@ public final class DefaultDnsOptEcsRecord extends AbstractDnsOptPseudoRrRecord i
     }
 
     /**
-     * Creates a new instance.
+     * 创建 ECS 记录（扩展码与版本默认为 0）。
      *
-     * @param maxPayloadSize the suggested max payload size in bytes
-     * @param srcPrefixLength the prefix length
-     * @param address the bytes of the {@link InetAddress} to use
+     * @param maxPayloadSize 建议的最大 UDP 负载（字节）
+     * @param srcPrefixLength 源地址前缀长度
+     * @param address {@link InetAddress} 的字节表示
      */
     public DefaultDnsOptEcsRecord(int maxPayloadSize, int srcPrefixLength, byte[] address) {
         this(maxPayloadSize, 0, 0, srcPrefixLength, address);
     }
 
     /**
-     * Creates a new instance.
+     * 按 {@link InternetProtocolFamily} 创建 ECS 记录。
      *
-     * @param maxPayloadSize    the suggested max payload size in bytes
-     * @param protocolFamily    the {@link InternetProtocolFamily} to use. This should be the same as the one used to
-     *                          send the query.
-     * @deprecated              use {@link DefaultDnsOptEcsRecord#DefaultDnsOptEcsRecord(int, SocketProtocolFamily)}
+     * @param maxPayloadSize    建议的最大 UDP 负载（字节）
+     * @param protocolFamily    协议族，应与发送查询时一致
+     * @deprecated              请使用 {@link DefaultDnsOptEcsRecord#DefaultDnsOptEcsRecord(int, SocketProtocolFamily)}
      */
     @Deprecated
     public DefaultDnsOptEcsRecord(int maxPayloadSize, InternetProtocolFamily protocolFamily) {
@@ -70,11 +69,10 @@ public final class DefaultDnsOptEcsRecord extends AbstractDnsOptPseudoRrRecord i
     }
 
     /**
-     * Creates a new instance.
+     * 按 {@link SocketProtocolFamily} 创建 ECS 记录。
      *
-     * @param maxPayloadSize        the suggested max payload size in bytes
-     * @param socketProtocolFamily  the {@link SocketProtocolFamily} to use. This should be the same as the one used to
-     *                              send the query.
+     * @param maxPayloadSize        建议的最大 UDP 负载（字节）
+     * @param socketProtocolFamily  套接字协议族，应与发送查询时一致
      */
     public DefaultDnsOptEcsRecord(int maxPayloadSize, SocketProtocolFamily socketProtocolFamily) {
         this(maxPayloadSize, 0, 0, 0, localAddress(socketProtocolFamily));

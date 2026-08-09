@@ -28,8 +28,8 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Encodes a {@link DatagramDnsResponse} (or an {@link AddressedEnvelope} of {@link DnsResponse}} into a
- * {@link DatagramPacket}.
+ * 将 {@link DatagramDnsResponse}（或 {@link DnsResponse} 的 {@link AddressedEnvelope}）
+ * 编码为 {@link DatagramPacket}。
  */
 @ChannelHandler.Sharable
 public class DatagramDnsResponseEncoder
@@ -38,14 +38,14 @@ public class DatagramDnsResponseEncoder
     private final DnsRecordEncoder recordEncoder;
 
     /**
-     * Creates a new encoder with {@linkplain DnsRecordEncoder#DEFAULT the default record encoder}.
+     * 使用 {@linkplain DnsRecordEncoder#DEFAULT 默认记录编码器} 创建编码器。
      */
     public DatagramDnsResponseEncoder() {
         this(DnsRecordEncoder.DEFAULT);
     }
 
     /**
-     * Creates a new encoder with the specified {@code recordEncoder}.
+     * 使用指定 {@code recordEncoder} 创建编码器。
      */
     public DatagramDnsResponseEncoder(DnsRecordEncoder recordEncoder) {
         this.recordEncoder = checkNotNull(recordEncoder, "recordEncoder");
@@ -65,8 +65,8 @@ public class DatagramDnsResponseEncoder
     }
 
     /**
-     * Allocate a {@link ByteBuf} which will be used for constructing a datagram packet.
-     * Sub-classes may override this method to return a {@link ByteBuf} with a perfect matching initial capacity.
+     * 分配用于构造数据报包的 {@link ByteBuf}。
+     * 子类可覆写以返回初始容量更精确的缓冲。
      */
     protected ByteBuf allocateBuffer(
         ChannelHandlerContext ctx,
