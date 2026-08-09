@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:16:33Z",
-  "files": [
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLKeylessManagerFactory.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLKeylessPrivateKey.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLKeylog.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLKeylogCallback.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLLoggingKeylog.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLNativeStaticallyReferencedJniMethods.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLPrivateKeyMethod.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLPrivateKeyMethodDecryptTask.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLPrivateKeyMethodSignTask.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLPrivateKeyMethodTask.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLSessionCallback.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLSessionTicketCallback.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLTask.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/BoringSSLTlsextServernameCallback.java",
-    "codec-classes-quic/src/main/java/io/netty/handler/codec/quic/ConnectionIdChannelMap.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1748,
-  "done": 165
+  "done": 180
 }
